@@ -19,6 +19,7 @@ function stepSim(ts){
   updateCrumbles(16.6);
   updateDoorsAndSwitches(16.6, [p1, p2]);
   updateMovingPlatforms(16.6, [p1, p2]);
+  syncSwitchCarriers();   // Hebel auf bewegtem Boden fahren mit
   updateSpikes(p1);
   updateSpikes(p2);
   updateBirds();     // nur Deko (17-deko.js)
@@ -32,6 +33,7 @@ function movingThings(){
   const list = [p1, p2];
   for(const s of solids) if(s.type==='moveplat') list.push(s);
   for(const h of hooks) if(h.moving) list.push(h);
+  for(const sw of switchDefs) if(sw.carrier) list.push(sw);
   for(const b of birds) if(b.state === 'fly') list.push(b);
   return list;
 }

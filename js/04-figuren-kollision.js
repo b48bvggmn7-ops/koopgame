@@ -22,6 +22,7 @@ function resetLevel(){
   for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.openTimer=0; } }
   for(const s of solids){ if(s.type==='moveplat'){ s.x=s.startX; s.y=s.startY; s.moveDir=1; s.tripActive=false; } }
   for(const sw of switchDefs) sw.wasPressed = false;
+  if(typeof syncSwitchCarriers === 'function') syncSwitchCarriers();   // mitfahrende Hebel zurück an den Start
   for(const c of coins){ c.taken = false; c.pop = 0; c.takenAt = 0; }
   coinFx = []; // Neustart: Münzen wieder da (beim Sterben bleiben sie gesammelt)
   for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; } }

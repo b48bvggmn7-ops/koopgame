@@ -153,6 +153,22 @@ function updateMovingPlatforms(dt, players){
   }
 }
 
+// Hebel auf bewegtem Boden fahren mit: steht ein Hebel direkt auf einem bewegten Stück (Hebel-Kästchen genau
+// darüber), merkt er sich seinen Abstand dazu und wird nach jedem Bewegungsschritt mitgeführt.
+// Die Zuordnung passiert beim ersten Aufruf nach dem Laden (an den Startpositionen der Stücke).
+function syncSwitchCarriers(){
+  for(const sw of switchDefs){
+    if(sw.carrier === undefined){
+      const foot = sw.y + 20;   // Unterkante des Hebel-Kästchens = Oberkante des Bodens
+      const plat = solids.find(s => s.type==='moveplat' && Math.abs(s.startY - foot) < 2 &&
+                                     sw.x >= s.startX && sw.x < s.startX + s.w);
+      sw.carrier = plat || null;
+      if(plat){ sw.offX = sw.x - plat.startX; sw.offY = sw.y - plat.startY; }
+    }
+    if(sw.carrier){ sw.x = sw.carrier.x + sw.offX; sw.y = sw.carrier.y + sw.offY; }
+  }
+}
+
 // Bewegte Teile OHNE Schalter fahren erst los, wenn ihr Fahrweg ins Bild kommt – so sieht man sie
 // von Anfang an fahren, statt mitten in eine Bewegung hineinzulaufen. Mehrteiliger Boden startet gemeinsam.
 const MOVER_VIEW_MARGIN = 40;   // so weit (px) muss der Fahrweg schon im Bild sein

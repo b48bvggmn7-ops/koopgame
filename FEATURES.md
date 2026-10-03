@@ -60,6 +60,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Tasten-Hinweis (J / Num 2 / ○) über dem Hebel, wenn jemand davor steht. J ist zusätzlich "Seil geben" am Haken.
   - Schalter-Zuordnung sichtbar: Nummern 1–20 mit je eigener Farbe (LINK_COLORS, ab 21 automatisch); Hebel-Kugel, Tür-Rahmen und Plaketten an
     Türen/bewegtem Boden/bewegten Haken in derselben Farbe + Nummer. Verbindungslinien bewusst ENTFERNT (Nutzerwunsch).
+  - Hebel auf bewegtem Boden fahren mit (Hebel-Kästchen direkt über dem Stück; syncSwitchCarriers) und lassen
+    sich unterwegs betätigen; bei Tod/Neustart zurück an den Start. Hebel auf festem Boden bleiben stehen.
   - Bewegter Boden zeigt seinen Fahrweg: gepunktete Schiene, Endpunkte, gestrichelter Umriss an Start und Ziel
   - Stacheln können in 4 Richtungen zeigen (spike.dir 0=oben,1=rechts,2=unten,3=links; Treffer = ganzes Kästchen)
   - Schalter, bewegter Boden, Stacheln, Checkpoints gelten für beide Spieler

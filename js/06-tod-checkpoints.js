@@ -97,6 +97,7 @@ function resetMovers(){
   for(const s of solids){ if(s.type==='moveplat'){ s.x=s.startX; s.y=s.startY; s.moveDir=1; s.tripActive=false; } }
   for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; } }
   for(const sw of switchDefs) sw.wasPressed = false;
+  syncSwitchCarriers();   // mitfahrende Hebel gleich mit zurück
   // wer noch an einem bewegten Haken hängt, lässt los (der Haken springt ja zurück)
   for(const pl of [p1,p2]) if(pl && pl.hookAttached && pl.anchor && pl.anchor.moving) pl.hookAttached = false;
 }

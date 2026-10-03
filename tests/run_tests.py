@@ -491,6 +491,27 @@ async def dateien_immer_frisch(g):
     html = (ROOT / 'editor' / 'index.html').read_text()
     assert "editor.js?v=" in html, 'editor.js ohne ?v='
 
+@test
+async def hebel_faehrt_mit_boden(g):
+    """Ein Hebel auf bewegtem Boden fährt mit, lässt sich unterwegs betätigen und springt beim Neustart zurück."""
+    mp = {'x': 400, 'y': 600, 'w': 120, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 800, 'targetY': 600, 'speed': 2}
+    await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       movingPlatforms=[mp], switches=[{'x': 460, 'y': 580, 'link': 3}, {'x': 1000, 'y': 660, 'link': 4}],
+                       doors=[{'x': 1500, 'y': 660, 'link': 3}]))
+    await g.ev("solids.filter(s=>s.type==='moveplat').forEach(s=>s.tripActive=true)")
+    await g.p.wait_for_timeout(700)
+    st = await g.ev("(()=>{ const pl=solids.find(s=>s.type==='moveplat'); const sw=switchDefs[0], fix=switchDefs[1]; return {px:pl.x, py:pl.y, sx:sw.x, sy:sw.y, fx:fix.x}; })()")
+    assert st['px'] > 420, f'Boden fährt nicht: {st}'
+    assert abs(st['sx'] - (st['px'] + 60)) < 0.01 and abs(st['sy'] - (st['py'] - 20)) < 0.01, f'Hebel fährt nicht mit: {st}'
+    assert st['fx'] == 1000, f'Hebel auf festem Boden hat sich bewegt: {st}'
+    # unterwegs betätigen: Affe neben den mitgefahrenen Hebel stellen
+    await g.ev("p1.x = switchDefs[0].x - 20; p1.y = solids.find(s=>s.type==='moveplat').y; p1.vy = 0; p1.grounded = true")
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(150)
+    assert await g.ev("solids.find(s=>s.type==='door').open"), 'mitgefahrener Hebel lässt sich nicht betätigen'
+    await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(100)
+    st = await g.ev("(()=>{ const pl=solids.find(s=>s.type==='moveplat'); return {px:pl.x, sx:switchDefs[0].x}; })()")
+    assert st['px'] < 520 and abs(st['sx'] - (st['px'] + 60)) < 0.01, f'Hebel nach Neustart nicht mit dem Boden am Start: {st}'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):
