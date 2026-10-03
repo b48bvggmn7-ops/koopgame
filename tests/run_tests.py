@@ -443,11 +443,38 @@ async def editor_testen_knopf(g):
         assert any('Zurück zum Editor' in t for t in texte), f'Pausenmenü: {texte}'
         await p.click('.mItem:has-text("Zurück zum Editor")'); await p.wait_for_timeout(600)
         assert '/editor/' in p.url, f'nicht zurück im Editor: {p.url}'
+        # Editor weiter rechts gescrollt -> Figuren starten dort (auf dem Boden, nicht im Loch/auf Stacheln)
+        draft['cols'] = 120
+        draft['tiles'] = [[c, 17, 'ground'] for c in range(120) if not 60 <= c <= 62] + [[c, 12, 'crumble'] for c in range(70, 74)]
+        draft['spikes'] = [{'c': c, 'r': 16, 'dir': 0} for c in range(66, 70)]
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        await p.evaluate("const w=document.getElementById('canvasWrap'); w.scrollLeft = 50*40 / (document.getElementById('c').width / document.getElementById('c').getBoundingClientRect().width)")
+        await p.wait_for_timeout(100)
+        vis = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
+        await p.click('#testBtn'); await p.wait_for_timeout(800)
+        pos = await g.ev("({m:[p1.x,p1.y], f:[p2.x,p2.y], cam:camPos, dead:!!deathState})")
+        assert vis[0]*40 <= pos['m'][0] <= vis[1]*40 and vis[0]*40 - 40 <= pos['f'][0] <= vis[1]*40 + 40, f'Start nicht im Editor-Ausschnitt {vis}: {pos}'
+        assert abs(pos['m'][1] - 680) < 2 and abs(pos['f'][1] - 680) < 2 and not pos['dead'], f'nicht auf dem Boden: {pos}'
+        for x in (pos['m'][0], pos['f'][0]):
+            assert not (60*40 <= x < 63*40) and not (66*40 <= x < 70*40), f'Start im Loch/auf Stacheln: {x}'
+        assert pos['cam'] > 1000, f'Kamera nicht an der Startstelle: {pos}'
+        await g.p.wait_for_timeout(1200)
+        assert not await g.ev('!!deathState'), 'Figur stirbt direkt nach dem Start'
         # normaler Spielstart (ohne ?test=1) zeigt weiter das Hauptmenü, kein „Zurück zum Editor“
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(400)
         assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Hauptmenü fehlt beim normalen Start'
     finally:
         srv.shutdown()
+
+@test
+async def dateien_immer_frisch(g):
+    """Alle Spiel-Skripte werden mit ?v=<Zeit> geladen -> Browser nimmt nie alte Kopien aus dem Zwischenspeicher."""
+    srcs = await g.ev("[...document.scripts].map(s=>s.src).filter(Boolean)")
+    js = [x for x in srcs if '/js/' in x]
+    assert len(js) >= 19 and all('?v=' in x for x in js), f'Skripte ohne ?v=: {[x for x in js if "?v=" not in x]}'
+    html = (ROOT / 'editor' / 'index.html').read_text()
+    assert "editor.js?v=" in html, 'editor.js ohne ?v='
 
 # ---------------------------------------------------------------- Runner
 

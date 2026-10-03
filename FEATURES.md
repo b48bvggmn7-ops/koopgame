@@ -5,6 +5,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 
 ## Spiel (index.html + js/)
 ```
+  - Immer neueste Dateien: index.html lädt alle js/-Dateien mit ?v=<Zeit>, der Editor seine editor.js ebenso
+    (kein Strg+F5 mehr nötig, nachdem eine Änderung online ist)
   MONCHICHI KOOP – SPIEL – FUNKTIONSLISTE
   - Figuren: süßer Affe (eigene Zeichnung, ersetzt Kenney-Affe) und pinkes Schweinchen, beide mit Zwinker-Bild
     (monkeyBlink/pigBlink, alle ~3-5 s kurz); Schatten nur wenn am Boden
@@ -148,6 +150,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Export im Spiel-Format (Textfeld kopieren oder als .json-Datei speichern)
   - Knopf „▶ Testen“ (gelb, oben): legt das aktuelle Level im Browser ab (localStorage monchichi_test_level,
     Spiel-Format) und öffnet sofort das Spiel damit (index.html?test=1, ohne Hauptmenü, ohne Speichern/Hochladen).
+    Beide Figuren starten dort, wo man im Editor gerade baut (sichtbarer Ausschnitt, ~1/3 von links; freies Kästchen
+    über festem Boden/Wand, nicht Bröckelboden/bewegt/Stacheln, unterste Ebene; Spielerin 2 daneben); das gilt auch
+    als Start nach dem Sterben. Ist der Editor ganz links, normaler Start. Kamera startet gleich dort.
     Im Pausenmenü (Esc/Options/☰) dann zusätzlich „✏️ Zurück zum Editor“. Fürs schnelle Ausprobieren;
     für alle sichtbar wird ein Level weiterhin erst über das Projekt (levels/).
   - ✕ oben rechts schließt den Editor und führt zurück zum Spiel (Hauptmenü); Arbeitsstand bleibt im Browser

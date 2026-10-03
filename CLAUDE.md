@@ -24,7 +24,8 @@
 - `index.html` – Spielseite (HTML/CSS) und lädt die Skripte in `js/` **in fester Reihenfolge**.
 - `js/00-…` bis `js/99-start.js` – das Spiel. **Klassische `<script>`-Dateien ohne Module und ohne Build-Schritt**:
   alle teilen sich einen gemeinsamen Gültigkeitsbereich (z. B. `p1`, `solids`, `KEYS` sind überall sichtbar).
-  Neue Dateien in `index.html` an der passenden Stelle eintragen. Keine globalen Namen verwenden, die es im
+  Neue Dateien in `index.html` in die Lade-Liste (kleines Skript am Ende, hängt `?v=<Zeit>` gegen alte Browser-Kopien an)
+  an der passenden Stelle eintragen. Keine globalen Namen verwenden, die es im
   Browser schon gibt (z. B. `top`, `name`, `status`, `parent`).
   - 00 Canvas/Bilder · 01 Level-Aufbau · 02 Physik-Werte · 03 Eingabe (Tastatur/Controller) ·
     04 Figuren/Kollision · 05 Level-Objekte (Bröckelboden, Hebel, Türen, bewegte Teile/Haken) ·

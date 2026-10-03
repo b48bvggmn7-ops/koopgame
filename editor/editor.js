@@ -692,8 +692,39 @@
 
   // „▶ Testen“: aktuelles Level im Browser ablegen und das Spiel damit öffnen (16-menue.js: startEditorTest).
   // Der Arbeitsstand ist ohnehin schon im Browser gesichert; „Zurück zum Editor“ im Pausenmenü führt hierher zurück.
+  // Startplatz für den Test: dort, wo man gerade baut (sichtbarer Ausschnitt, etwa 1/3 von links).
+  // Gesucht wird ein freies Kästchen direkt über festem Boden/Wand – nicht auf Bröckelboden, bewegten Teilen
+  // oder Stacheln. Bei mehreren Ebenen die unterste. Spielerin 2 möglichst ein Kästchen links daneben.
+  function testSpot(){
+    const k = cvs.width / cvs.getBoundingClientRect().width;            // Bildschirm-px -> Editor-px
+    const c0 = Math.floor(wrap.scrollLeft * k / TILE);
+    const c1 = Math.ceil((wrap.scrollLeft + wrap.clientWidth) * k / TILE);
+    if(c0 <= 2) return null;                                              // ganz links: normaler Start
+    const target = c0 + Math.round((c1 - c0) / 3);
+    const solidAt = (c, r)=>{ const t = tiles[c+','+r]; return (t==='ground' || t==='wall' || t==='platform') && !moverForCell(c, r); };
+    const spikeAt = (c, r)=> spikes.some(sp=> sp.c===c && sp.r===r);
+    const standable = (c, r)=> r > 0 && !tiles[c+','+r] && !spikeAt(c, r) && solidAt(c, r+1);
+    const cols = [];
+    for(let c = c0; c <= c1; c++) cols.push(c);
+    cols.sort((a, b)=> Math.abs(a - target) - Math.abs(b - target));
+    for(const c of cols){
+      for(let r = ROWS - 2; r >= 1; r--){
+        if(!standable(c, r)) continue;
+        const cF = standable(c - 1, r) ? c - 1 : standable(c + 1, r) ? c + 1 : c;
+        return {m: {c, r}, f: {c: cF, r}};
+      }
+    }
+    return null;
+  }
   document.getElementById('testBtn').addEventListener('click', ()=>{
-    try{ localStorage.setItem('monchichi_test_level', exportLevel()); }
+    const data = JSON.parse(exportLevel());
+    const spot = testSpot();
+    if(spot){
+      data.startM = {x: spot.m.c*TILE + TILE/2, y: spot.m.r*TILE + TILE};
+      data.startF = {x: spot.f.c*TILE + TILE/2, y: spot.f.r*TILE + TILE};
+      data.testStart = true;
+    }
+    try{ localStorage.setItem('monchichi_test_level', JSON.stringify(data)); }
     catch(e){ flash('Testen geht nicht: Browser-Speicher voll/gesperrt'); return; }
     location.href = '../index.html?test=1';
   });

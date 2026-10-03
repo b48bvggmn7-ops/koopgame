@@ -129,25 +129,15 @@
   </div>
 </div>
 
-<script src="js/00-setup.js"></script>
-<script src="js/01-level.js"></script>
-<script src="js/02-physik-werte.js"></script>
-<script src="js/03-eingabe.js"></script>
-<script src="js/04-figuren-kollision.js"></script>
-<script src="js/05-level-objekte.js"></script>
-<script src="js/06-tod-checkpoints.js"></script>
-<script src="js/07-effekte-ton-muenzen.js"></script>
-<script src="js/08-figur-physik-seil.js"></script>
-<script src="js/09-kamera.js"></script>
-<script src="js/10-figuren-zeichnen.js"></script>
-<script src="js/11-hintergrund.js"></script>
-<script src="js/12-welt-zeichnen.js"></script>
-<script src="js/13-anzeige-leistung.js"></script>
-<script src="js/14-spielschleife.js"></script>
-<script src="js/15-level-laden.js"></script>
-<script src="js/16-menue.js"></script>
-<script src="js/17-deko.js"></script>
-<script src="js/99-start.js"></script>
+<script>
+// Spiel-Dateien in fester Reihenfolge laden. Neue Dateien hier eintragen.
+// ?v=<Zeit> sorgt dafür, dass der Browser immer die neueste Version holt (nie alte Dateien aus dem Zwischenspeicher).
+(function(){
+  const v = Date.now();
+  for(const f of ['00-setup', '01-level', '02-physik-werte', '03-eingabe', '04-figuren-kollision', '05-level-objekte', '06-tod-checkpoints', '07-effekte-ton-muenzen', '08-figur-physik-seil', '09-kamera', '10-figuren-zeichnen', '11-hintergrund', '12-welt-zeichnen', '13-anzeige-leistung', '14-spielschleife', '15-level-laden', '16-menue', '17-deko', '99-start'])
+    document.write('<script src="js/' + f + '.js?v=' + v + '"><\/script>');
+})();
+</script>
 </body>
 
 </html>

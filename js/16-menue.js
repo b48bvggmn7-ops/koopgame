@@ -243,7 +243,8 @@ function pollMenuPads(){
 
 // ---------- Test aus dem Editor ----------
 // Der Editor-Knopf „▶ Testen“ legt das aktuelle Level (Spiel-Format) im Browser ab und öffnet index.html?test=1.
-// Dann startet das Spiel sofort mit diesem Level (ohne Hauptmenü); im Pausenmenü gibt es „Zurück zum Editor“.
+// Dann startet das Spiel sofort mit diesem Level (ohne Hauptmenü), beide Figuren dort, wo man im Editor gerade
+// gebaut hat (der Editor setzt dafür startM/startF); im Pausenmenü gibt es „Zurück zum Editor“.
 const EDITOR_TEST_KEY = 'monchichi_test_level';
 let editorTestMode = false;
 function startEditorTest(){
@@ -253,6 +254,8 @@ function startEditorTest(){
   if(!data || !Array.isArray(data.solids)) return false;
   editorTestMode = true;
   startLevel(data);
+  // Kamera gleich an die Startstelle setzen (sonst fährt sie erst vom Levelanfang dorthin)
+  camPos = Math.max(0, Math.min(LEVEL_W - VW, Math.min(p1.x, p2.x) - CAM_LEFT));
   return true;
 }
 
