@@ -440,11 +440,13 @@ async def editor_testen_knopf(g):
         assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
         assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
         assert abs(await g.ev('p1.x') - 140) < 30, 'Start nicht aus dem Editor'
-        await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+        # Pausenmenü (☰-Knopf) bietet „Zurück zum Editor“; Esc beendet den Test direkt
+        await p.click('#menuBtn'); await p.wait_for_timeout(100)
         texte = await menu_texte(p)
         assert any('Zurück zum Editor' in t for t in texte), f'Pausenmenü: {texte}'
-        await p.click('.mItem:has-text("Zurück zum Editor")'); await p.wait_for_timeout(600)
-        assert '/editor/' in p.url, f'nicht zurück im Editor: {p.url}'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(100)   # schließt erst die Pause
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(600)   # beendet den Test
+        assert '/editor/' in p.url, f'Esc führt nicht zurück in den Editor: {p.url}'
         # Editor weiter rechts gescrollt -> Figuren starten dort (auf dem Boden, nicht im Loch/auf Stacheln)
         draft['cols'] = 120
         draft['tiles'] = [[c, 17, 'ground'] for c in range(120) if not 60 <= c <= 62] + [[c, 12, 'crumble'] for c in range(70, 74)]
@@ -463,6 +465,11 @@ async def editor_testen_knopf(g):
         assert pos['cam'] > 1000, f'Kamera nicht an der Startstelle: {pos}'
         await g.p.wait_for_timeout(1200)
         assert not await g.ev('!!deathState'), 'Figur stirbt direkt nach dem Start'
+        # Esc -> zurück im Editor an derselben Stelle
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        assert '/editor/' in p.url, f'Esc führt nicht zurück: {p.url}'
+        back = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); return w.scrollLeft*c.width/c.getBoundingClientRect().width/40; })()")
+        assert abs(back - vis[0]) < 1, f'Editor nicht an der alten Stelle: {back} statt {vis[0]}'
         # normaler Spielstart (ohne ?test=1) zeigt weiter das Hauptmenü, kein „Zurück zum Editor“
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(400)
         assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Hauptmenü fehlt beim normalen Start'

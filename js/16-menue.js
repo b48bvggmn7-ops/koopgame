@@ -65,7 +65,7 @@ function showPauseMenu(){
   menuAddItem('▶ Weiterspielen', closeMenu);
   menuAddItem('↺ Level neu starten', ()=>{ resetLevel(); closeMenu(); });
   menuAddItem('☰ Zurück zum Menü', showMainMenu);
-  if(editorTestMode) menuAddItem('✏️ Zurück zum Editor', ()=>{ location.href = 'editor/index.html'; });
+  if(editorTestMode) menuAddItem('✏️ Zurück zum Editor (Esc)', backToEditor);
   menuSelect(0);
 }
 
@@ -192,6 +192,8 @@ function convertEditorSnapshot(d){
 // keine Tastendrücke. Losgelassene Tasten (keyup) kommen weiter an, damit nichts "hängen" bleibt.
 document.addEventListener('keydown', e=>{
   if(!menuActive()){
+    // Testmodus aus dem Editor: Esc beendet den Test sofort (auch auf dem Tod-Bildschirm) -> zurück zum Editor
+    if(e.code === 'Escape' && editorTestMode){ e.preventDefault(); e.stopPropagation(); backToEditor(); return; }
     if(e.code === 'Escape' && !deathState){ e.preventDefault(); e.stopPropagation(); showPauseMenu(); }
     return;
   }
@@ -247,6 +249,8 @@ function pollMenuPads(){
 // gebaut hat (der Editor setzt dafür startM/startF); im Pausenmenü gibt es „Zurück zum Editor“.
 const EDITOR_TEST_KEY = 'monchichi_test_level';
 let editorTestMode = false;
+// zurück in den Editor – der stellt dann die Stelle wieder ein, an der „Testen“ geklickt wurde
+function backToEditor(){ location.href = 'editor/index.html?from=test'; }
 function startEditorTest(){
   if(!/[?&]test=1\b/.test(location.search)) return false;
   let data = null;

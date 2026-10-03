@@ -716,6 +716,13 @@
     }
     return null;
   }
+  // Rückkehr aus dem Test (index.html -> editor/index.html?from=test): an die gemerkte Stelle scrollen
+  if(/[?&]from=test\b/.test(location.search)){
+    let px = NaN;
+    try{ px = Number(localStorage.getItem('monchichi_editor_scroll')); }catch(e){}
+    if(px > 0) requestAnimationFrame(()=>{ wrap.scrollLeft = px * cvs.getBoundingClientRect().width / cvs.width; });
+    try{ history.replaceState(null, '', location.pathname); }catch(e){}
+  }
   document.getElementById('testBtn').addEventListener('click', ()=>{
     const data = JSON.parse(exportLevel());
     const spot = testSpot();
@@ -724,6 +731,8 @@
       data.startF = {x: spot.f.c*TILE + TILE/2, y: spot.f.r*TILE + TILE};
       data.testStart = true;
     }
+    // Stelle merken (in Editor-Pixeln, unabhängig von der Fenstergröße), damit es nach dem Test dort weitergeht
+    try{ localStorage.setItem('monchichi_editor_scroll', String(wrap.scrollLeft * cvs.width / cvs.getBoundingClientRect().width)); }catch(e){}
     try{ localStorage.setItem('monchichi_test_level', JSON.stringify(data)); }
     catch(e){ flash('Testen geht nicht: Browser-Speicher voll/gesperrt'); return; }
     location.href = '../index.html?test=1';
