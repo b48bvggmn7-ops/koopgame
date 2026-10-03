@@ -347,6 +347,24 @@ async def projekt_levels_beide_formate_gleich(g):
             b = sorted(json.dumps(o, sort_keys=True) for o in spiel[k])
             assert a == b, f"{L['datei']}: {k} verschieden"
 
+@test
+async def haken_schwung_holen(g):
+    """Am Haken: Taste halten drückt NICHT sofort weit zur Seite; im Takt schaukeln baut Schwung auf."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
+    setup = """(()=>{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+150+p1.h*0.6; p1.vx=0; p1.vy=0; p1.grounded=false;
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=150; p1.ropeMax=200; window.__ang=[];
+      if(!window.__os){ window.__os=stepSim; stepSim=function(ts){
+        if(window.__pump){ KEYS.KeyD = p1.vx>=0; KEYS.KeyA = p1.vx<0; }
+        __os(ts); if(p1.hookAttached) __ang.push(Math.atan2(p1.x-hooks[0].x,(p1.y-p1.h*0.6)-hooks[0].y)*180/Math.PI); }; } })()"""
+    await g.ev(setup); await g.hold(('KeyD',), 500)
+    ang = await g.ev('__ang')
+    assert ang and max(ang) < 32, f'rechts halten schwingt zu weit: {max(ang or [0]):.0f}°'
+    await g.ev(setup); await g.ev('window.__pump=true'); await g.p.wait_for_timeout(3000)
+    await g.ev('window.__pump=false; KEYS.KeyD=false; KEYS.KeyA=false')
+    ang = await g.ev('__ang')
+    assert ang and max(abs(a) for a in ang) > 55, f'Schaukeln baut zu wenig Schwung auf: {max(abs(a) for a in ang or [0]):.0f}°'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

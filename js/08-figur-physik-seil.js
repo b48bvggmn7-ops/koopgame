@@ -98,7 +98,7 @@ function updatePlayer(player, now){
 
   if(player.male && player.hookAttached){
     player.vy += GRAVITY * 0.9;
-    player.vx += moveDir * 0.35;
+    if(moveDir !== 0 && player.vx*moveDir > -0.3) player.vx += moveDir * SWING_PUSH;
     const lenBefore = player.ropeLen;
     if(isPulling) player.ropeLen = Math.max(HOOK_MIN_LEN, player.ropeLen - ROPE_PULL_SPEED);
     if(isSlacking) player.ropeLen = Math.min(player.ropeMax, player.ropeLen + ROPE_ADJUST_SPEED);

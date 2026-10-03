@@ -25,6 +25,10 @@ const ROPE_ADJUST_SPEED = 4.2;   // Seil geben (runterlassen)
 const ROPE_PULL_SPEED = 2.4;     // ranziehen – langsamer, damit es kontrolliert wirkt
 const HOOK_MIN_LEN = 46;
 const HOOK_RELEASE_BOOST = -4.5;
+// Schwung holen am Seil (wie beim Schaukeln): die Laufen-Taste schiebt nur, wenn man in die Richtung drückt,
+// in die die Figur gerade schwingt (oder sie fast stillhängt). Vorher: immer 0,35 -> Taste halten drückte die
+// Figur sofort weit zur Seite (0,5 s halten = 45°, jetzt ~26°). Größer = mehr Schwung pro Druck.
+const SWING_PUSH = 0.2;
 
 const GLIDE_RAMP_MS = 2600;
 const GLIDE_START_GRAV = 0.10;
