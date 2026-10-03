@@ -28,6 +28,7 @@
   function curRadius(){ const v=Number(radiusInput.value); return v>0 ? v : 6.5; }
   let movers = [];             // [{c,r,dc,dr,speed}] Anker-Kästchen + Verschiebung
   let moveDrag = null;         // {c,r,tc,tr} während Pfeil gezogen wird
+  let selMove = null;          // ausgewählte Bewegung zum Nachbearbeiten: {mv} (Boden/Wand) oder {hook}
   const speedSelect = document.getElementById('speedSelect');
   const moveSwitchSelect = document.getElementById('moveSwitchSelect');
   function curMoveLink(){ return moveSwitchSelect.value ? Number(moveSwitchSelect.value) : null; }
@@ -78,7 +79,25 @@
   // Arbeitsstand (Entwurf) lokal im Browser
   const STORAGE_KEY = 'monchichi_level_editor_v2';
   let dirty = false;
+  // Bei „Verknüpfung“ und „per Schalter“ zeigen: welche Nummern sind schon vergeben (✓ + wofür)
+  function updateLinkMarks(){
+    const uses = {};
+    const add = (n, what)=>{ if(!n) return; (uses[n] = uses[n] || new Set()).add(what); };
+    for(const s of switches) add(s.link, 'Schalter');
+    for(const d of doors) add(d.link, 'Tür');
+    for(const mv of movers) add(mv.link, 'Bewegung');
+    for(const h of hooks) if(h.move) add(h.move.link, 'Haken');
+    for(const sel of [linkSelect, moveSwitchSelect]){
+      for(const o of sel.options){
+        const n = o.value || o.textContent.trim();
+        if(!/^\d+$/.test(n)) continue;
+        o.value = n;                                   // Wert bleibt die reine Nummer
+        o.textContent = uses[n] ? `${n}  ✓ ${[...uses[n]].join(', ')}` : n;
+      }
+    }
+  }
   function save(){
+    updateLinkMarks();
     dirty = true;
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify({...snapshot(), currentLevelId, currentLevelName}));
@@ -104,12 +123,14 @@
       (currentLevelName || 'Unbenanntes Level') + (dirty && currentLevelName ? ' •' : '');
   }
   updateName();
+  updateLinkMarks();
 
   document.querySelectorAll('.tool').forEach(el=>{
     el.addEventListener('click', ()=>{
       document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));
       el.classList.add('active');
       currentTool = el.dataset.tool;
+      if(currentTool !== 'move') selectMove(null);
     });
   });
 
@@ -221,7 +242,7 @@
       const hk = hooks.find(h=>h.c===c&&h.r===r);
       if(hk) moveDrag = {c,r,tc:c,tr:r,hook:hk};
       else if(tiles[c+','+r]) moveDrag = {c,r,tc:c,tr:r};
-      else flash('Bewegung: auf einen Haken oder ein Boden-/Wand-Kästchen klicken und zum Ziel ziehen');
+      else { selectMove(null); flash('Bewegung: auf einen Haken oder ein Boden-/Wand-Kästchen klicken und zum Ziel ziehen'); }
       return;
     }
     clickNotDrag = true;
@@ -233,19 +254,47 @@
     const {c,r,tc,tr,hook} = moveDrag; moveDrag=null;
     if(hook){
       // Bewegter Haken: Bewegung hängt direkt am Haken
-      if(tc===c && tr===r){ if(hook.move){ delete hook.move; save(); flash('Haken-Bewegung entfernt'); } return; }
+      if(tc===c && tr===r){   // nur geklickt: Bewegung zum Bearbeiten auswählen
+        if(hook.move) selectMove({hook}); else { selectMove(null); flash('Dieser Haken bewegt sich noch nicht – zum Ziel ziehen'); }
+        return;
+      }
       hook.move = {dc:tc-c, dr:tr-r, speed:Number(speedSelect.value), link:curMoveLink()};
-      ensureRoom(tc); save(); return;
+      ensureRoom(tc); save(); selectMove({hook}); return;
     }
     const existing = moverForCell(c,r);
     if(tc===c && tr===r){
-      if(existing){ movers = movers.filter(m=>m!==existing.mv); save(); flash('Pfeil entfernt'); }
+      if(existing) selectMove({mv: existing.mv});
+      else { selectMove(null); flash('Dieses Stück bewegt sich noch nicht – zum Ziel ziehen'); }
       return;
     }
     if(existing) movers = movers.filter(m=>m!==existing.mv);
-    movers.push({c, r, dc:tc-c, dr:tr-r, speed:Number(speedSelect.value), link:curMoveLink()});
-    ensureRoom(tc); save();
+    const mv = {c, r, dc:tc-c, dr:tr-r, speed:Number(speedSelect.value), link:curMoveLink()};
+    movers.push(mv);
+    ensureRoom(tc); save(); selectMove({mv});
   }
+  // ---------- Bewegung nachträglich bearbeiten ----------
+  // Auswahl per Klick (Werkzeug „Bewegung“); dann zeigen Tempo/„per Schalter“ deren Werte, Änderungen gelten sofort.
+  // Entfernen per Knopf „✕ Bewegung entfernen“ oder Entf/Backspace; Esc oder Klick ins Leere hebt die Auswahl auf.
+  const moveDelBtn = document.getElementById('moveDelBtn');
+  function selData(){ return !selMove ? null : selMove.hook ? selMove.hook.move : selMove.mv; }
+  function selectMove(sel){
+    selMove = sel;
+    const d = selData();
+    if(!d){ selMove = null; moveDelBtn.style.display = 'none'; return; }
+    const sp = String(d.speed || 4.5);
+    if([...speedSelect.options].some(o=>o.value===sp)) speedSelect.value = sp;
+    moveSwitchSelect.value = d.link ? String(d.link) : '';
+    moveDelBtn.style.display = '';
+    flash('Bewegung ausgewählt – Tempo/Schalter oben ändern, ziehen = neues Ziel, Entf = entfernen');
+  }
+  function deleteSelMove(){
+    if(!selMove) return;
+    if(selMove.hook) delete selMove.hook.move; else movers = movers.filter(m=>m!==selMove.mv);
+    selectMove(null); save(); flash('Bewegung entfernt');
+  }
+  speedSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.speed = Number(speedSelect.value); save(); } });
+  moveSwitchSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.link = curMoveLink(); save(); } });
+  moveDelBtn.addEventListener('click', deleteSelMove);
   window.addEventListener('mouseup', ()=>{ painting=false; eraseDrag=false; finishMoveDrag(); });
   let flashT=0, flashMsg='';
   function flash(m){ flashMsg=m; flashT=performance.now(); document.getElementById('coordLabel').textContent=m; }
@@ -452,7 +501,11 @@
   });
   window.addEventListener('keydown', e=>{
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); document.getElementById('saveBtn').click(); }
-    if(e.key==='Escape') closeLevels();
+    if(e.key==='Escape'){ closeLevels(); selectMove(null); }
+    if((e.key==='Delete' || e.key==='Backspace') && selMove){
+      const tag = document.activeElement ? document.activeElement.tagName : '';
+      if(tag!=='INPUT' && tag!=='TEXTAREA'){ e.preventDefault(); deleteSelMove(); }
+    }
     // Enter = „▶ Testen“ – aber nicht beim Tippen in ein Feld und nicht, wenn ein Fenster (Levels/Export) offen ist
     if((e.key==='Enter' || e.code==='NumpadEnter') && !e.repeat){
       const el = document.activeElement, tag = el ? el.tagName : '';
@@ -587,6 +640,29 @@
       ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#4fc3f7'; ctx.lineWidth=2;
       ctx.beginPath(); ctx.arc(h.c*TILE+TILE/2, h.r*TILE+TILE/2, TILE*0.42, 0, Math.PI*2); ctx.stroke(); ctx.restore();
       if(mv.dc!==0 || mv.dr!==0) drawMoveArrow(mv);
+    }
+
+    // ausgewählte Bewegung gelb hervorheben (verschwindet, wenn das Stück inzwischen gelöscht wurde)
+    if(selMove){
+      if(selMove.hook ? !(hooks.includes(selMove.hook) && selMove.hook.move) : !moverGroups().some(x=>x.mv===selMove.mv)) selectMove(null);
+    }
+    if(selMove){
+      ctx.save(); ctx.strokeStyle='#ffd23f'; ctx.lineWidth=3; ctx.shadowColor='rgba(255,210,63,.8)'; ctx.shadowBlur=8;
+      if(selMove.hook){
+        const h = selMove.hook; ctx.beginPath(); ctx.arc(h.c*TILE+TILE/2, h.r*TILE+TILE/2, TILE*0.5, 0, Math.PI*2); ctx.stroke();
+      } else {
+        const x = moverGroups().find(x=>x.mv===selMove.mv);
+        if(x) for(const [cx,cy] of x.g.cells){
+          const k=(a,b)=>x.g.keys.has(a+','+b), X=cx*TILE, Y=cy*TILE;
+          ctx.beginPath();
+          if(!k(cx,cy-1)){ ctx.moveTo(X,Y); ctx.lineTo(X+TILE,Y); }
+          if(!k(cx,cy+1)){ ctx.moveTo(X,Y+TILE); ctx.lineTo(X+TILE,Y+TILE); }
+          if(!k(cx-1,cy)){ ctx.moveTo(X,Y); ctx.lineTo(X,Y+TILE); }
+          if(!k(cx+1,cy)){ ctx.moveTo(X+TILE,Y); ctx.lineTo(X+TILE,Y+TILE); }
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
     }
 
     function drawMoveArrow(mv){

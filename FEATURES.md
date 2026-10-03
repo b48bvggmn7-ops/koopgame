@@ -142,6 +142,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Export coin.color; gemeinsam 10 sammeln, sonst alle), Schalter + Tür (Verknüpfungs-Nummer 1–20; im Spiel ein Hebel, per Taste), Bewegung ➜ (zusammenhängendes Stück pendelt, Tempo wählbar,
     optional „per Schalter“ 1–20 → Schalter startet die Bewegung, danach dauerhaft; bei Tod zurück an Start; auch mit Haken:
     Bewegung vom Haken aus ziehen → Haken pendelt, Daten in hook.move {dc,dr,speed,link}),
+    Bewegung nachträglich bearbeiten: Klick (ohne Ziehen) mit „Bewegung“ auf ein bewegtes Stück/einen bewegten Haken
+    WÄHLT es aus (gelb umrandet; früher: Klick = Pfeil löschen). Tempo und „per Schalter“ zeigen dann dessen Werte,
+    Änderungen gelten sofort; Ziehen = neues Ziel; „✕ Bewegung entfernen“ bzw. Entf/Backspace entfernt; Esc/Klick ins
+    Leere/anderes Werkzeug hebt die Auswahl auf.
+    Vergebene Verknüpfungs-Nummern: in „Verknüpfung“ und „per Schalter“ steht hinter benutzten Nummern „✓“ + wofür
+    (Schalter, Tür, Bewegung, Haken) – trotzdem weiter wählbar.
     Start ♂, Start ♀, Ziel, Radieren
   - Rechtsklick (auch ziehen) = Radierer, unabhängig vom Werkzeug
   - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt

@@ -512,6 +512,41 @@ async def hebel_faehrt_mit_boden(g):
     st = await g.ev("(()=>{ const pl=solids.find(s=>s.type==='moveplat'); return {px:pl.x, sx:switchDefs[0].x}; })()")
     assert st['px'] < 520 and abs(st['sx'] - (st['px'] + 60)) < 0.01, f'Hebel nach Neustart nicht mit dem Boden am Start: {st}'
 
+@test
+async def editor_bewegung_nachbearbeiten(g):
+    """Editor: Klick auf bewegtes Stück wählt es aus; Tempo/Schalter änderbar; Entf entfernt. Vergebene Nummern mit ✓."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)] + [[10, 12, 'ground'], [11, 12, 'ground']],
+                 'movers': [{'c': 10, 'r': 12, 'dc': 4, 'dr': 0, 'speed': 2, 'link': None}],
+                 'switches': [{'c': 3, 'r': 16, 'link': 3}], 'doors': [{'c': 20, 'r': 16, 'link': 5}],
+                 'hooks': [], 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        opts = await p.eval_on_selector_all('#linkSelect option', 'os => os.map(o => [o.value, o.textContent])')
+        o = dict(opts)
+        assert '✓' in o['3'] and 'Schalter' in o['3'] and '✓' in o['5'] and 'Tür' in o['5'] and '✓' not in o['1'], f'Markierung: {opts[:6]}'
+        async def click_cell(c, r):
+            box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+            await p.mouse.click(box['x'] + (c*40 + 20)*k, box['y'] + (r*40 + 20)*k)
+        await p.click('.tool[data-tool="move"]')
+        await click_cell(10, 12); await p.wait_for_timeout(100)
+        assert await p.is_visible('#moveDelBtn'), 'Bewegung nicht ausgewählt'
+        assert await p.input_value('#speedSelect') == '2', 'Tempo der Auswahl nicht angezeigt'
+        await p.select_option('#speedSelect', '4.5'); await p.select_option('#moveSwitchSelect', '3')
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        assert d['movers'] and d['movers'][0]['speed'] == 4.5 and d['movers'][0]['link'] == 3, f'Änderung nicht übernommen: {d["movers"]}'
+        assert d['movers'][0]['dc'] == 4, 'Ziel hat sich verändert'
+        t3 = await p.evaluate("[...document.getElementById('moveSwitchSelect').options].find(o=>o.value==='3').textContent")
+        assert 'Bewegung' in t3 and 'Schalter' in t3, f'per-Schalter-Liste: {t3}'
+        await p.keyboard.press('Delete'); await p.wait_for_timeout(100)
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        assert d['movers'] == [], f'Entf entfernt die Bewegung nicht: {d["movers"]}'
+        assert not await p.is_visible('#moveDelBtn'), 'Entfernen-Knopf bleibt sichtbar'
+    finally:
+        srv.shutdown()
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):
