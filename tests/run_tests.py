@@ -420,6 +420,8 @@ async def broeckelboden_animation(g):
     assert st['gone'] and st['n'] >= 12 and st['d'] > 0 and st['poly'], f'kein Zerspringen: {st}'
     await g.p.wait_for_timeout(1000)
     assert await g.ev("solids.find(s=>s.type==='crumble').fragments === null"), 'Brocken verschwinden nicht'
+    # sieht anders aus als normaler Boden: eigene Zeichenfunktion mit Sandstein-Farben
+    assert await g.ev("typeof drawCrumbleBlocks==='function' && CRUMBLE_PAL.light!==undefined"), 'kein eigenes Bröckelboden-Aussehen'
 
 @test
 async def editor_testen_knopf(g):

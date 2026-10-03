@@ -63,6 +63,76 @@ function drawCoin3D(x, y, r, ang, pal, alpha, glow, g){
 // Bröckelboden: wachsende Risse und rieselnde Krümel während der Vorwarnung (ohne Spielzustand zu ändern:
 // alles wird aus s.timer berechnet)
 function crumbleRnd(a, b){ const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; return v - Math.floor(v); }
+// Bröckelboden-Aussehen: lose, sandfarbene Steinbrocken mit dunklen Fugen, trockenes Moos oben,
+// bröselige Unterseite mit hängenden Krümeln und ab und zu rieselndem Sand -> klar anders als normaler Boden.
+const CRUMBLE_PAL = {light:'#e6c88f', mid:'#cfa66a', dark:'#a97c47', edge:'#6b4a26', gap:'rgba(60,35,15,.75)',
+                     moss:'#9bab5c', mossLight:'#c2cf7e', speck:'rgba(120,85,45,.55)'};
+function drawCrumbleBlocks(s, x, y){
+  const T = 40, nx = Math.max(1, Math.round(s.w/T)), ny = Math.max(1, Math.round(s.h/T));
+  ctx.save();
+  // dunkle Fugen/Hintergrund
+  ctx.fillStyle = CRUMBLE_PAL.gap; roundRect(x + 1, y + 2, s.w - 2, s.h - 3, 7); ctx.fill();
+  for(let iy = 0; iy < ny; iy++){
+    for(let ix = 0; ix < nx; ix++){
+      const wx = s.x + ix*T, wy = s.y + iy*T, bx = x + ix*T, by = y + iy*T;
+      const r = k => crumbleRnd(wx + k*7.3, wy + k*3.1);
+      // zwei Brocken pro Kästchen (oben/unten versetzt) mit leicht schiefen Kanten
+      const split = 17 + r(1)*6;
+      for(const [y0, y1, k] of [[1, split, 2], [split + 2, T - 2, 5]]){
+        const inset = 1.6;
+        const pts = [[bx + inset + r(k)*2, by + y0 + r(k+1)*1.5], [bx + T - inset - r(k+2)*2, by + y0 + r(k+3)*1.5],
+                     [bx + T - inset - r(k+4)*2.5, by + y1 - r(k+5)*1.5], [bx + inset + r(k+6)*2.5, by + y1 - r(k+7)*1.5]];
+        const g = ctx.createLinearGradient(0, by + y0, 0, by + y1);
+        g.addColorStop(0, CRUMBLE_PAL.light); g.addColorStop(0.6, CRUMBLE_PAL.mid); g.addColorStop(1, CRUMBLE_PAL.dark);
+        ctx.fillStyle = g; ctx.beginPath();
+        pts.forEach(([px, py], i)=> i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = CRUMBLE_PAL.edge; ctx.lineWidth = 1.2; ctx.stroke();
+        // heller Lichtrand oben
+        ctx.strokeStyle = 'rgba(255,245,215,.6)'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(pts[0][0] + 2, pts[0][1] + 1.5); ctx.lineTo(pts[1][0] - 2, pts[1][1] + 1.5); ctx.stroke();
+        // Steinchen-Sprenkel
+        ctx.fillStyle = CRUMBLE_PAL.speck;
+        for(let q = 0; q < 3; q++){
+          ctx.beginPath(); ctx.arc(bx + 6 + r(k+8+q)*28, by + y0 + 4 + r(k+11+q)*(y1 - y0 - 8), 1 + r(k+14+q)*1.2, 0, Math.PI*2); ctx.fill();
+        }
+        // feiner Haarriss
+        if(r(k+17) > 0.4){
+          const cx0 = bx + 8 + r(k+18)*24;
+          ctx.strokeStyle = 'rgba(80,50,20,.6)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(cx0, by + y0 + 2); ctx.lineTo(cx0 + 3 - r(k+19)*6, by + (y0 + y1)/2); ctx.lineTo(cx0 + 1, by + y1 - 2); ctx.stroke();
+        }
+      }
+    }
+  }
+  // trockenes Moos oben (nur wo nichts darüber liegt) – kein sattes Gras wie beim normalen Boden
+  for(let ix = 0; ix < nx; ix++){
+    const wx = s.x + ix*T, bx = x + ix*T;
+    ctx.fillStyle = CRUMBLE_PAL.moss;
+    ctx.beginPath(); ctx.moveTo(bx + 2, y + 4);
+    for(let q = 0; q <= 6; q++) ctx.lineTo(bx + 2 + q*6, y + 1 + crumbleRnd(wx + q, 3)*2.5);
+    for(let q = 6; q >= 0; q--) ctx.lineTo(bx + 2 + q*6, y + 4 + crumbleRnd(wx + q, 5)*3.5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = CRUMBLE_PAL.mossLight;
+    for(let q = 0; q < 3; q++){ ctx.beginPath(); ctx.arc(bx + 6 + crumbleRnd(wx, q + 9)*28, y + 2.5, 1.4, 0, Math.PI*2); ctx.fill(); }
+  }
+  // bröselige Unterseite: hängende Krümel
+  const bottom = y + s.h - 1;
+  ctx.fillStyle = CRUMBLE_PAL.dark;
+  for(let q = 0; q < s.w/9; q++){
+    const px = x + 4 + crumbleRnd(s.x + q, 21)*(s.w - 8), len = 2 + crumbleRnd(q, s.x)*5;
+    ctx.beginPath(); ctx.moveTo(px - 2.5, bottom - 1); ctx.lineTo(px + 2.5, bottom - 1); ctx.lineTo(px + crumbleRnd(q, 4) - 0.5, bottom + len); ctx.closePath(); ctx.fill();
+  }
+  // ab und zu rieselt etwas Sand herunter (rein zeitbasiert, kein Spielzustand)
+  const tt = performance.now();
+  for(let q = 0; q < Math.max(1, Math.round(s.w/60)); q++){
+    const period = 1800 + crumbleRnd(s.x, q)*1400, ph = ((tt + crumbleRnd(q, s.y)*period) % period) / period;
+    if(ph > 0.35) continue;
+    const a = ph/0.35, px = x + 6 + crumbleRnd(s.x + q*13, Math.floor((tt + crumbleRnd(q, s.y)*period)/period))*(s.w - 12);
+    ctx.globalAlpha = 1 - a; ctx.fillStyle = CRUMBLE_PAL.mid;
+    for(let d = 0; d < 3; d++) ctx.fillRect(px + d*1.5 - 1.5, bottom + 3 + a*26 + d*4, 2, 2);
+  }
+  ctx.restore();
+}
 function drawCrumbleWarning(s, x, y, t){
   ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for(let cx0 = 12; cx0 < s.w - 6; cx0 += 26){
@@ -91,7 +161,7 @@ function drawCrumbleWarning(s, x, y, t){
 }
 // Zerbrechen: drehende Brocken (oben mit Gras), Steinchen und Staubwolke
 function drawCrumbleBreak(s){
-  const pal = {grass:'#5cb883', grassTop:'#8fd9a8', dirt1:'#c99468', dirt2:'#a86f45', edge:'#6e4122'};
+  const pal = {grass:'#9bab5c', grassTop:'#c2cf7e', dirt1:CRUMBLE_PAL.light, dirt2:CRUMBLE_PAL.dark, edge:CRUMBLE_PAL.edge};
   const k = Math.min(1, s.breakElapsed/CRUMBLE_FRAGMENT_LIFE);
   const fade = k < 0.6 ? 1 : 1 - (k - 0.6)/0.4;
   ctx.save();
@@ -467,7 +537,7 @@ function drawSolidLook(s, look, x){
       const t = s.triggered ? Math.min(1, s.timer/CRUMBLE_TRIGGER_MS) : 0;
       const shake = t > 0 ? Math.sin(s.timer*0.09 + s.x)*(0.4 + 2.8*Math.pow(t, 1.5)) : 0;
       const sx = x + shake, sy = s.y + (t > 0 ? Math.cos(s.timer*0.13)*t*1.2 : 0);
-      drawGroundPiece(s, sx, sy, shake, GROUND_PAL.c, true);
+      drawCrumbleBlocks(s, sx, sy);
       if(t > 0){
         drawCrumbleWarning(s, sx, sy, t);
         const pulse = t > 0.5 ? 0.16*(0.5 + 0.5*Math.sin(s.timer*0.05)) : 0;
