@@ -421,6 +421,34 @@ async def broeckelboden_animation(g):
     await g.p.wait_for_timeout(1000)
     assert await g.ev("solids.find(s=>s.type==='crumble').fragments === null"), 'Brocken verschwinden nicht'
 
+@test
+async def editor_testen_knopf(g):
+    """Editor „▶ Testen“ öffnet das Spiel sofort mit dem aktuellen Editor-Level; Pause -> „Zurück zum Editor“."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)],
+                 'coins': [{'c': 10, 'r': 15, 'color': 'gold'}, {'c': 12, 'r': 15, 'color': 'blue'}, {'c': 14, 'r': 15, 'color': 'pink'}],
+                 'startM': {'c': 3, 'r': 16}, 'startF': {'c': 2, 'r': 16}, 'goal': {'c': 35, 'r': 16},
+                 'hooks': [], 'switches': [], 'doors': [], 'spikes': [], 'checkpoints': [], 'movers': []}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        await p.click('#testBtn'); await p.wait_for_timeout(800)
+        assert 'index.html?test=1' in p.url and '/editor/' not in p.url, f'Spiel nicht geöffnet: {p.url}'
+        assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
+        assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
+        assert abs(await g.ev('p1.x') - 140) < 30, 'Start nicht aus dem Editor'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+        texte = await menu_texte(p)
+        assert any('Zurück zum Editor' in t for t in texte), f'Pausenmenü: {texte}'
+        await p.click('.mItem:has-text("Zurück zum Editor")'); await p.wait_for_timeout(600)
+        assert '/editor/' in p.url, f'nicht zurück im Editor: {p.url}'
+        # normaler Spielstart (ohne ?test=1) zeigt weiter das Hauptmenü, kein „Zurück zum Editor“
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(400)
+        assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Hauptmenü fehlt beim normalen Start'
+    finally:
+        srv.shutdown()
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

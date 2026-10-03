@@ -690,6 +690,13 @@
     return JSON.stringify(out, null, 2);
   }
 
+  // „▶ Testen“: aktuelles Level im Browser ablegen und das Spiel damit öffnen (16-menue.js: startEditorTest).
+  // Der Arbeitsstand ist ohnehin schon im Browser gesichert; „Zurück zum Editor“ im Pausenmenü führt hierher zurück.
+  document.getElementById('testBtn').addEventListener('click', ()=>{
+    try{ localStorage.setItem('monchichi_test_level', exportLevel()); }
+    catch(e){ flash('Testen geht nicht: Browser-Speicher voll/gesperrt'); return; }
+    location.href = '../index.html?test=1';
+  });
   document.getElementById('exportBtn').addEventListener('click', ()=>{
     document.getElementById('exportText').value = exportLevel();
     document.getElementById('exportBox').classList.add('show');

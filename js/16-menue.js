@@ -65,6 +65,7 @@ function showPauseMenu(){
   menuAddItem('▶ Weiterspielen', closeMenu);
   menuAddItem('↺ Level neu starten', ()=>{ resetLevel(); closeMenu(); });
   menuAddItem('☰ Zurück zum Menü', showMainMenu);
+  if(editorTestMode) menuAddItem('✏️ Zurück zum Editor', ()=>{ location.href = 'editor/index.html'; });
   menuSelect(0);
 }
 
@@ -240,4 +241,19 @@ function pollMenuPads(){
   menuClearPressed();
 }
 
-showMainMenu();
+// ---------- Test aus dem Editor ----------
+// Der Editor-Knopf „▶ Testen“ legt das aktuelle Level (Spiel-Format) im Browser ab und öffnet index.html?test=1.
+// Dann startet das Spiel sofort mit diesem Level (ohne Hauptmenü); im Pausenmenü gibt es „Zurück zum Editor“.
+const EDITOR_TEST_KEY = 'monchichi_test_level';
+let editorTestMode = false;
+function startEditorTest(){
+  if(!/[?&]test=1\b/.test(location.search)) return false;
+  let data = null;
+  try{ data = JSON.parse(localStorage.getItem(EDITOR_TEST_KEY) || 'null'); }catch(e){ data = null; }
+  if(!data || !Array.isArray(data.solids)) return false;
+  editorTestMode = true;
+  startLevel(data);
+  return true;
+}
+
+if(!startEditorTest()) showMainMenu();
