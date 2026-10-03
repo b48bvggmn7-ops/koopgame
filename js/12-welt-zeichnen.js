@@ -193,6 +193,66 @@ function drawCrumbleBreak(s){
   }
   ctx.restore();
 }
+// Tür als Holztor mit Eisenbeschlägen; Rahmen + Edelstein in der Farbe ihres Hebels.
+// Öffnen/Schließen: das Tor gleitet nach oben/unten (nur Anzeige – die Kollision schaltet sofort).
+function drawDoor(s, x, col){
+  const target = s.open ? 1 : 0;
+  s.anim = s.anim === undefined ? target : s.anim + (target - s.anim)*(1 - Math.pow(0.78, frameDt/STEP));
+  if(Math.abs(s.anim - target) < 0.01) s.anim = target;
+  const y = s.y, w = s.w, h = s.h;
+  ctx.save();
+  // Rahmen (immer sichtbar, damit man sieht, wo die Tür ist)
+  ctx.fillStyle = 'rgba(40,25,10,.35)'; ctx.fillRect(x + 3, y, w - 6, h);
+  // übereinander gestapelte Türen derselben Nummer bekommen EINEN durchgehenden Rahmen
+  if(s.nbUp === undefined){
+    s.nbUp = solids.some(d => d.type==='door' && d.link===s.link && d.x===s.x && Math.abs(d.y + d.h - s.y) < 1);
+    s.nbDown = solids.some(d => d.type==='door' && d.link===s.link && d.x===s.x && Math.abs(s.y + s.h - d.y) < 1);
+  }
+  ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath();
+  const t0 = s.nbUp ? y : y + 1.5, t1 = s.nbDown ? y + h : y + h - 1.5;
+  ctx.moveTo(x + 1.5, t0); ctx.lineTo(x + 1.5, t1); ctx.moveTo(x + w - 1.5, t0); ctx.lineTo(x + w - 1.5, t1);
+  if(!s.nbUp){ ctx.moveTo(x, y + 1.5); ctx.lineTo(x + w, y + 1.5); }
+  if(!s.nbDown){ ctx.moveTo(x, y + h - 1.5); ctx.lineTo(x + w, y + h - 1.5); }
+  ctx.stroke();
+  const vis = h*(1 - s.anim);
+  if(vis > 0.5){
+    ctx.beginPath(); ctx.rect(x + 3, y, w - 6, vis); ctx.clip();
+    const off = -(h - vis);                      // Tor schiebt sich nach oben weg
+    // Bretter
+    const nb = 3, bw = (w - 6)/nb;
+    for(let i = 0; i < nb; i++){
+      const bx = x + 3 + i*bw, g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+      g.addColorStop(0, '#8d5a2b'); g.addColorStop(0.5, '#a96d36'); g.addColorStop(1, '#7a4b22');
+      ctx.fillStyle = g; ctx.fillRect(bx, y + off, bw, h);
+      ctx.strokeStyle = 'rgba(50,28,10,.6)'; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, y + off + 0.5, bw - 1, h - 1);
+      ctx.strokeStyle = 'rgba(60,35,12,.35)';   // Maserung
+      ctx.beginPath(); ctx.moveTo(bx + bw*0.35, y + off + 4); ctx.quadraticCurveTo(bx + bw*0.6, y + off + h*0.5, bx + bw*0.4, y + off + h - 4); ctx.stroke();
+    }
+    // Eisenbänder mit Nieten
+    for(const fy of [0.22, 0.72]){
+      const by = y + off + h*fy;
+      ctx.fillStyle = '#4a4f57'; ctx.fillRect(x + 3, by - 3, w - 6, 6);
+      ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x + 3, by - 3, w - 6, 1.5);
+      ctx.fillStyle = '#9aa3ad';
+      for(const rx of [x + 7, x + w/2, x + w - 7]){ ctx.beginPath(); ctx.arc(rx, by, 1.6, 0, Math.PI*2); ctx.fill(); }
+    }
+    // Edelstein in Hebel-Farbe
+    const gy = y + off + h*0.47;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + w/2, gy - 5); ctx.lineTo(x + w/2 + 4.5, gy); ctx.lineTo(x + w/2, gy + 5); ctx.lineTo(x + w/2 - 4.5, gy); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x + w/2 - 1.5, gy - 3, 1.5, 2);
+    // Unterkante (Spitzen des Tors)
+    ctx.fillStyle = '#4a4f57';
+    for(let i = 0; i < 3; i++){
+      const tx = x + 3 + (i + 0.5)*(w - 6)/3;
+      ctx.beginPath(); ctx.moveTo(tx - 4, y + off + h - 3); ctx.lineTo(tx + 4, y + off + h - 3); ctx.lineTo(tx, y + off + h + 1); ctx.closePath(); ctx.fill();
+    }
+  } else {
+    // offen: oben sieht man den eingefahrenen Torrand
+    if(!s.nbUp){ ctx.fillStyle = '#6b4420'; ctx.fillRect(x + 3, y, w - 6, 3); }
+  }
+  ctx.restore();
+}
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_LEFT px),
   // damit man möglichst viel von dem sieht, was als Nächstes kommt. Die vordere Figur
@@ -500,6 +560,7 @@ function drawSolidLook(s, look, x){
   for(const s of solids){
     if(s.gone){
       if(s.type==='crumble' && s.fragments) drawCrumbleBreak(s);
+      if(s.type==='door'){ const dx = s.x-camX; if(dx+s.w >= -20 && dx <= VW+20) drawDoor(s, dx, linkColor(s.link)); }
       continue;
     }
     const x = s.x-camX;
@@ -514,17 +575,7 @@ function drawSolidLook(s, look, x){
     if(s.type==='wall'){
       drawWallPiece(s, x, s.y, 0, 0);
     } else if(s.type==='door'){
-      const grad = ctx.createLinearGradient(x,s.y,x,s.y+s.h);
-      grad.addColorStop(0,'#b57bd6'); grad.addColorStop(1,'#7a3f9e');
-      ctx.fillStyle = grad;
-      ctx.fillRect(x,s.y,s.w,s.h);
-      ctx.strokeStyle='#4a2260'; ctx.lineWidth=2;
-      for(let ly=s.y+8; ly<s.y+s.h; ly+=12){
-        ctx.beginPath(); ctx.moveTo(x+4,ly); ctx.lineTo(x+s.w-4,ly); ctx.stroke();
-      }
-      // Rahmen in der Farbe des zugehörigen Schalters
-      ctx.strokeStyle = linkColor(s.link); ctx.lineWidth = 3;
-      ctx.strokeRect(x+1.5, s.y+1.5, s.w-3, s.h-3);
+      drawDoor(s, x, linkColor(s.link));
     } else if(s.type==='moveplat'){
       const grad = ctx.createLinearGradient(x,s.y,x,s.y+s.h);
       grad.addColorStop(0,'#6cc9ef'); grad.addColorStop(1,'#2e8fb8');
@@ -613,9 +664,7 @@ function drawSolidLook(s, look, x){
   for(const sw of switchDefs){
     const x=sw.x-camX;
     if(x<-30||x>VW+30) continue;
-    const anyOpen = solids.some(d=>(d.type==='door' && d.link===sw.link && d.open) ||
-      (d.type==='moveplat' && d.switchLink===sw.link && d.tripActive)) ||
-      hooks.some(h=>h.moving && h.switchLink===sw.link && h.tripActive);
+    const anyOpen = !!linkOn[sw.link];   // Hebel steht rechts, solange er eingeschaltet ist
     const col = linkColor(sw.link);
     // Hebel: Sockel am Boden, Stange mit Kugel. Aus = nach links geneigt, an = nach rechts.
     const target = anyOpen ? 1 : 0;

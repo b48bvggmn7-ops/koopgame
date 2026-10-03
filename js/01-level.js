@@ -8,6 +8,7 @@ const CEILING_MARGIN = 0; // zurückgesetzt auf die vorherige Bildschirmgröße
 
 let solids = [];
 let switchDefs = [];
+let linkOn = {};          // Hebel-Zustand je Verknüpfungs-Nummer: true = eingeschaltet (Tür offen / Bewegung läuft)
 let hooks = [];
 let spikes = [];
 let coins = [];          // {x,y,taken,pop}
@@ -92,7 +93,7 @@ function buildLevel(data){
   for(const d of (data.doors||[])){
     // Editor liefert den Mittelpunkt des Kästchens -> in obere linke Ecke umrechnen
     const dw = d.w||40, dh = d.h||40;
-    solids.push({x:d.x-dw/2, y:d.y-dh/2, w:dw, h:dh, type:'door', link:d.link, open:false, openTimer:0});
+    solids.push({x:d.x-dw/2, y:d.y-dh/2, w:dw, h:dh, type:'door', link:d.link, open:false});
   }
   for(const mp of movingPlatforms){
     solids.push({x:mp.x, y:mp.y, w:mp.w||40, h:mp.h||40, type:'moveplat', link:mp.link,

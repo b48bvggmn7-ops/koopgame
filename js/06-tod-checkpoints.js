@@ -37,7 +37,8 @@ function continueAfterDeath(){
     keys:{left:'ArrowLeft',right:'ArrowRight',jump:'Numpad0',glide:'Numpad1'}, spawn:{...fPos}, umbrella:0});
   // zerbröselter Boden und Türen kommen zurück, bewegte Teile an den Start
   for(const s of solids){ if(s.type==='crumble'){ s.triggered=false; s.gone=false; s.timer=0; s.fragments=null; s.breakElapsed=0; } }
-  for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.openTimer=0; } }
+  for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; } }
+  linkOn = {};   // alle Hebel wieder aus
   resetMovers();
   nudgeFree(p1); nudgeFree(p2);
   // die Taste zum Weitermachen soll nicht gleich springen/Haken schießen

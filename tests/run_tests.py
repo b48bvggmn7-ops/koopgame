@@ -547,6 +547,38 @@ async def editor_bewegung_nachbearbeiten(g):
     finally:
         srv.shutdown()
 
+@test
+async def hebel_ein_aus(g):
+    """Hebel schaltet ein/aus: Tür bleibt offen (kein 5-s-Zuklappen) und schließt beim 2. Mal – erst wenn frei;
+    schaltergesteuerter Boden stoppt beim 2. Mal an Ort und Stelle und fährt beim 3. Mal von dort weiter."""
+    mp = {'x': 600, 'y': 500, 'w': 80, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 1000, 'targetY': 500, 'speed': 3, 'switchLink': 2}
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
+                       switches=[{'x': 240, 'y': 660, 'link': 1}, {'x': 140, 'y': 660, 'link': 2}],
+                       doors=[{'x': 420, 'y': 660, 'link': 1}], movingPlatforms=[mp]))
+    door = "solids.find(s=>s.type==='door')"
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(150)
+    assert await g.ev(door + ".open"), 'Tür geht nicht auf'
+    await g.p.wait_for_timeout(5400)
+    assert await g.ev(door + ".open"), 'Tür ist von allein wieder zugegangen'
+    # Affe in die Tür stellen, Schweinchen betätigt den Hebel -> Tür wartet, bis der Affe raus ist
+    await g.ev("p2.x = 240; p2.y = 680; p1.x = 420; p1.y = 680; p1.vx = 0")
+    await g.p.wait_for_timeout(80)
+    await g.p.keyboard.press('Numpad2'); await g.p.wait_for_timeout(150)
+    assert await g.ev(door + ".open"), 'Tür klemmt den Affen ein'
+    await g.ev("p1.x = 200"); await g.p.wait_for_timeout(150)
+    assert not await g.ev(door + ".open"), 'Tür schließt beim 2. Betätigen nicht'
+    # bewegter Boden über Hebel 2
+    plat = "solids.find(s=>s.type==='moveplat')"
+    await g.ev("p1.x = 140; p1.vx = 0"); await g.p.wait_for_timeout(80)
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(500)
+    x1 = await g.ev(plat + ".x"); assert x1 > 610, f'Boden fährt nicht los: {x1}'
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(60)
+    x2 = await g.ev(plat + ".x"); await g.p.wait_for_timeout(400)
+    x3 = await g.ev(plat + ".x")
+    assert abs(x3 - x2) < 0.01 and x3 > 610, f'Boden stoppt nicht an Ort und Stelle: {x2} -> {x3}'
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(300)
+    assert await g.ev(plat + ".x") > x3 + 5, 'Boden fährt beim 3. Mal nicht weiter'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

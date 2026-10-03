@@ -60,6 +60,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Tasten-Hinweis (J / Num 2 / ○) über dem Hebel, wenn jemand davor steht. J ist zusätzlich "Seil geben" am Haken.
   - Schalter-Zuordnung sichtbar: Nummern 1–20 mit je eigener Farbe (LINK_COLORS, ab 21 automatisch); Hebel-Kugel, Tür-Rahmen und Plaketten an
     Türen/bewegtem Boden/bewegten Haken in derselben Farbe + Nummer. Verbindungslinien bewusst ENTFERNT (Nutzerwunsch).
+  - Hebel = Ein/Aus-Schalter je Nummer (linkOn): 1. Betätigen ein (Türen auf, schaltergesteuerter Boden/Wand/Haken
+    fahren los), 2. Betätigen aus (Türen schließen – erst sobald niemand darin steht –, Bewegungen bleiben genau
+    dort stehen), 3. Betätigen wieder ein (fahren von dort weiter). Hebel steht rechts, solange ein. Tod/Neustart:
+    alles aus (Türen zu, Bewegungen am Start).
+  - Tür-Aussehen (drawDoor): Holztor aus 3 Brettern mit Eisenbändern, Nieten, Spitzen unten und Edelstein in der
+    Hebel-Farbe; Rahmen in Hebel-Farbe bleibt auch offen sichtbar; Tor gleitet beim Öffnen/Schließen nach oben/unten
   - Hebel auf bewegtem Boden fahren mit (Hebel-Kästchen direkt über dem Stück; syncSwitchCarriers) und lassen
     sich unterwegs betätigen; bei Tod/Neustart zurück an den Start. Hebel auf festem Boden bleiben stehen.
   - Bewegter Boden zeigt seinen Fahrweg: gepunktete Schiene, Endpunkte, gestrichelter Umriss an Start und Ziel
@@ -87,7 +93,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     trockenes Moos oben, hängende Krümel unten, ab und zu rieselt Sand -> klar anders als normaler Boden;
     Brocken beim Zerspringen in denselben Farben
   - Bröckelboden (0,6 s, zerfällt in Fragmente; Animation: zittert immer stärker, Risse wachsen, Krümel rieseln,
-    pulsiert rot; zerspringt in unregelmäßige Brocken mit Gras + Steinchen + Staubwolke, ~0,75 s sichtbar), Schalter+Tür (Tür 5 s offen), Stacheln (zurück zum Checkpoint)
+    pulsiert rot; zerspringt in unregelmäßige Brocken mit Gras + Steinchen + Staubwolke, ~0,75 s sichtbar), Schalter+Tür (Tür bleibt offen, bis der Hebel nochmal betätigt wird – früher 5 s offen, Nutzerwunsch geändert), Stacheln (zurück zum Checkpoint)
   - Tür-Koordinaten aus dem Editor = Mittelpunkt des Kästchens (wird beim Laden in obere linke Ecke umgerechnet)
   - Bewegliche Stücke (movingPlatforms, look=ground/wall/platform, group, speed), pendeln, nehmen Spieler mit;
     Textur fährt mit dem Stück mit (am Stück verankert), kein Extra-Rand;

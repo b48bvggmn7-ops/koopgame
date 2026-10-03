@@ -67,7 +67,7 @@ function updateCrumbles(dt){
   }
 }
 
-const DOOR_OPEN_MS = 5000;
+// Türen bleiben offen, bis der Hebel nochmal betätigt wird (früher: nach 5 s automatisch zu – Nutzerwunsch geändert).
 // ---------- Schalter = kleiner Hebel, mit Taste betätigen ----------
 // Spieler 1: Tastatur J / Controller Kreis · Spielerin 2: Tastatur Num 2 / Controller Kreis
 const LEVER_RANGE_X = 60, LEVER_RANGE_Y = 60;
@@ -80,18 +80,24 @@ function useKeyPressed(player){
 function leverNear(player, sw){
   return Math.abs(player.x - sw.x) < LEVER_RANGE_X && Math.abs((player.y - player.h*0.5) - sw.y) < LEVER_RANGE_Y;
 }
+// Hebel = Ein/Aus-Schalter je Verknüpfungs-Nummer:
+//  ein -> Türen öffnen (bleiben offen), bewegter Boden/Wand/Haken fahren los bzw. weiter
+//  aus -> Türen schließen (erst wenn niemand drinsteht), Bewegungen bleiben genau dort stehen
+// Bei Tod/Neustart ist alles wieder aus (Türen zu, Bewegungen am Start).
 function triggerSwitch(sw, player){
   const now = performance.now();
+  const on = !linkOn[sw.link];
+  linkOn[sw.link] = on;
   for(const d of solids){
-    if(d.type==='door' && d.link===sw.link){ d.open=true; d.gone=true; d.openTimer=0; }
+    if(d.type!=='door' || d.link!==sw.link) continue;
+    if(on){ d.open = true; d.gone = true; d.closing = false; }
+    else d.closing = true;            // schließt in updateDoorsAndSwitches, sobald frei
   }
-  // Bewegter Boden/Haken: Schalter startet die Bewegung, danach fährt sie dauerhaft hin und her
-  // (bis jemand stirbt -> alles zurück an den Start, Schalter muss erneut betätigt werden)
   for(const m of solids){
-    if(m.type==='moveplat' && m.switchCtl && m.switchLink===sw.link && !m.tripActive){ m.tripActive = true; m.moveDir = 1; }
+    if(m.type==='moveplat' && m.switchCtl && m.switchLink===sw.link) m.tripActive = on;
   }
   for(const h of hooks){
-    if(h.moving && h.switchCtl && h.switchLink===sw.link && !h.tripActive){ h.tripActive = true; h.moveDir = 1; }
+    if(h.moving && h.switchCtl && h.switchLink===sw.link) h.tripActive = on;
   }
   player.leverAnim = {t0: now, dir: Math.sign(sw.x - player.x) || player.facing || 1};
   sw.pulledT = now;
@@ -109,10 +115,11 @@ function updateDoorsAndSwitches(dt, players){
     }
     if(best) triggerSwitch(best, player);
   }
+  // Tür schließen, sobald keine Figur mehr darin steht (niemand wird eingeklemmt)
   for(const d of solids){
-    if(d.type==='door' && d.open){
-      d.openTimer += dt;
-      if(d.openTimer >= DOOR_OPEN_MS){ d.open=false; d.gone=false; }
+    if(d.type==='door' && d.closing){
+      const blocked = players.some(p => rectsOverlap({x:p.x-p.w/2, y:p.y-p.h, w:p.w, h:p.h}, d));
+      if(!blocked){ d.open = false; d.gone = false; d.closing = false; }
     }
   }
 }
