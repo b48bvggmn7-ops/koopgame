@@ -23,7 +23,7 @@ window.addEventListener('keyup', e=>{
 // Controller 1 -> Affe, Controller 2 -> Schweinchen. Er drückt dieselben "virtuellen Tasten"
 // wie die Tastatur, deshalb funktioniert alles andere automatisch mit. Tastatur geht parallel weiter.
 // PS4: Kreuz = springen, Viereck = Fähigkeit (Affe: Haken, Schweinchen: Schirm halten),
-//      R2/R1 = Seil einholen, L2/L1 = Seil geben, Options = Neustart. Laufen: linker Stick oder Steuerkreuz.
+//      R2/R1 = Seil einholen, L2/L1 = Seil geben, Options = Pausenmenü. Laufen: linker Stick oder Steuerkreuz.
 const PAD = {};              // aktueller Controller-Zustand je virtueller Taste
 const PAD_MAP = [
   {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', pull:'KeyW', slack:'KeyS', use:'Pad1Use'},
@@ -74,7 +74,8 @@ function pollGamepads(){
     if(b(9)) restart = true;               // Options / Start
     if(el){ el.classList.add('on'); el.textContent = '🎮 Controller '+(i+1)+' verbunden'; }
   }
-  if(restart && !prevRestart && !deathState) resetLevel();   // nach einem Tod macht Options einfach weiter
+  // Options öffnet das Pausenmenü (mit „Level neu starten“) – siehe pollMenuPads in 16-menue.js;
+  // nach einem Tod macht Options wie bisher einfach weiter
   prevRestart = restart;
 }
 window.addEventListener('gamepadconnected', ()=>{ padBlocked = false; });

@@ -54,6 +54,18 @@ class Game:
           stepSim=function(ts){ __trace.push([p1.x,p1.y,p2.x,p2.y]); return __origStep(ts); }; }""")
     async def trace(self): return await self.ev('window.__trace')
 
+def webserver():
+    """Kleiner Webserver für den Projektordner (fetch() geht nicht bei file://)."""
+    class Leise(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a): pass
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(Leise, directory=str(ROOT)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    srv.url = f'http://127.0.0.1:{srv.server_address[1]}/'
+    return srv
+
+async def menu_texte(p):
+    return await p.eval_on_selector_all('#menuItems .mItem', 'els => els.map(e => e.textContent)')
+
 TESTS = []
 def test(fn): TESTS.append(fn); return fn
 
@@ -184,14 +196,10 @@ async def wandsprung_controller(g):
 @test
 async def editor_projekt_levels(g):
     """Editor zeigt Levels aus levels/levels.json, lädt sie und lädt das aktuelle Level als 2 Dateien herunter."""
-    class Leise(http.server.SimpleHTTPRequestHandler):
-        def log_message(self, *a): pass
-    handler = functools.partial(Leise, directory=str(ROOT))
-    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    srv = webserver()
     try:
         p = g.p
-        await p.goto(f'http://127.0.0.1:{srv.server_address[1]}/editor/index.html'); await p.wait_for_timeout(300)
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.click('#levelsBtn'); await p.wait_for_timeout(500)
         liste = json.loads((ROOT / 'levels' / 'levels.json').read_text())
         namen = await p.eval_on_selector_all('#projectList .lvl .nm', 'els => els.map(e => e.textContent)')
@@ -211,6 +219,92 @@ async def editor_projekt_levels(g):
         assert 'solids' in inhalt['level-1.json'] and len(ed['coins']) == len(erwartet['coins']), 'Spiel-Datei falsch'
     finally:
         srv.shutdown()
+
+@test
+async def menue_beim_start(g):
+    """Beim Start erscheint das Hauptmenü, das Spiel steht still; Tastatur navigiert."""
+    p = g.p
+    assert await g.ev("document.getElementById('menu').classList.contains('show')"), 'kein Menü beim Start'
+    texte = await menu_texte(p)
+    assert any('Spielen' in t for t in texte) and any('Level-Editor' in t for t in texte), f'Menü: {texte}'
+    x0 = await g.ev('p1.x'); await g.hold(('KeyD',), 400)
+    assert abs(await g.ev('p1.x') - x0) < 0.01, 'Spiel läuft hinter dem Menü weiter'
+    await p.keyboard.press('ArrowDown')
+    assert 'Level-Editor' in await p.text_content('.mItem.sel'), 'Pfeil runter wählt nicht'
+    await p.keyboard.press('ArrowUp'); await p.keyboard.press('Enter'); await p.wait_for_timeout(200)
+    assert await p.text_content('#menuTitle') == 'Level wählen', 'Enter öffnet Levelauswahl nicht'
+    h2 = await p.eval_on_selector_all('#menuItems h2', 'els => els.map(e => e.textContent)')
+    assert h2 == ['Levels', 'Meine Levels'], f'Gruppen: {h2}'
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+    assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Esc führt nicht zurück'
+
+@test
+async def menue_projekt_und_meine_levels(g):
+    """Levelauswahl zeigt Projekt-Levels (levels.json) und im Editor gespeicherte Levels und lädt sie."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
+        snap = {'cols': 40, 'tiles': [[c, 17, 'ground'] for c in range(30)] + [[5, 12, 'ground'], [6, 12, 'ground']],
+                'movers': [{'c': 5, 'r': 12, 'dc': 4, 'dr': 0, 'speed': 3}], 'hooks': [{'c': 10, 'r': 8, 'radius': 5}],
+                'coins': [{'c': 3, 'r': 15, 'color': 'pink'}], 'startM': {'c': 2, 'r': 16}, 'startF': {'c': 1, 'r': 16},
+                'goal': {'c': 28, 'r': 16}, 'switches': [], 'doors': [], 'spikes': [], 'checkpoints': []}
+        await p.evaluate("d => localStorage.setItem('monchichi_saved_levels_v1', JSON.stringify({mein: {name: 'Mein Test', updatedAt: 1, data: d}}))", snap)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
+        liste = json.loads((ROOT / 'levels' / 'levels.json').read_text())
+        texte = await menu_texte(p)
+        assert texte[:len(liste)] == [L['name'] for L in liste], f'Projekt-Levels fehlen: {texte}'
+        assert 'Mein Test' in texte, f'Meine Levels fehlen: {texte}'
+        assert liste[0]['name'] in await p.text_content('.mItem.sel'), 'erstes Level nicht gewählt'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
+        spiel = json.loads((ROOT / 'levels' / liste[0]['datei']).read_text())
+        assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü bleibt offen'
+        assert await g.ev('coins.length') == len(spiel['coins']), 'falsches Projekt-Level geladen'
+        # zurück zum Menü und eigenes Level laden
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+        assert await p.text_content('#menuTitle') == 'Pause', 'Esc öffnet keine Pause'
+        await p.keyboard.press('ArrowDown'); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter')
+        assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Zurück zum Menü geht nicht'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
+        await p.click('.mItem:has-text("Mein Test")'); await p.wait_for_timeout(300)
+        assert await g.ev("coins.length===1 && coins[0].color==='pink' && hooks.length===1"), 'eigenes Level falsch'
+        assert await g.ev("solids.filter(s=>s.type==='moveplat').length") >= 1, 'bewegter Boden fehlt'
+        assert abs(await g.ev('p1.x') - 100) < 30, 'Start nicht übernommen'
+    finally:
+        srv.shutdown()
+
+@test
+async def pause_tastatur(g):
+    """Esc öffnet die Pause (Spiel steht), Esc nochmal spielt weiter; Tasten springen danach nicht los."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    p = g.p
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+    assert await p.text_content('#menuTitle') == 'Pause', 'keine Pause'
+    x0 = await g.ev('p1.x'); await g.hold(('KeyD',), 300)
+    assert abs(await g.ev('p1.x') - x0) < 0.01, 'Spiel läuft in der Pause weiter'
+    await p.keyboard.press('Space'); await p.wait_for_timeout(200)   # „Weiterspielen“
+    assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Weiterspielen geht nicht'
+    assert await g.ev('p1.vy') == 0, 'Auswahl-Taste hat Sprung ausgelöst'
+    await g.hold(('KeyD',), 300)
+    assert await g.ev('p1.x') > x0 + 20, 'nach der Pause keine Steuerung'
+
+@test
+async def pause_controller(g):
+    """Options öffnet/schließt die Pause; Steuerkreuz + ✕ wählen „Zurück zum Menü“."""
+    await g.p.add_init_script(PAD_STUB); await g.p.reload(); await g.p.wait_for_timeout(500)
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    async def tippe(n):
+        await g.ev(f"window.__pad.buttons[{n}]={{pressed:true,value:1}}"); await g.p.wait_for_timeout(80)
+        await g.ev(f"window.__pad.buttons[{n}]={{pressed:false,value:0}}"); await g.p.wait_for_timeout(80)
+    await tippe(9)
+    assert await g.p.text_content('#menuTitle') == 'Pause', 'Options öffnet keine Pause'
+    await tippe(9)
+    assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Options schließt Pause nicht'
+    await tippe(9); await tippe(13); await tippe(13); await tippe(0)
+    assert await g.p.text_content('#menuTitle') == 'Monchichi Koop', 'Controller-Auswahl geht nicht'
+    await tippe(0); await g.p.wait_for_timeout(200)
+    assert await g.p.text_content('#menuTitle') == 'Level wählen', '✕ öffnet Levelauswahl nicht'
+    await tippe(1)
+    assert await g.p.text_content('#menuTitle') == 'Monchichi Koop', '○ führt nicht zurück'
 
 # ---------------------------------------------------------------- Runner
 

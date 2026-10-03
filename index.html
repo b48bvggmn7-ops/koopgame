@@ -75,6 +75,21 @@
     pointer-events:none;
   }
   #toast.show{opacity:1;}
+  /* ---------- Hauptmenü / Pausenmenü (js/16-menue.js) ---------- */
+  #menu{ position:absolute; inset:0; z-index:30; display:none; align-items:center; justify-content:center;
+    background:rgba(16,24,34,.62); }
+  #menu.show{ display:flex; }
+  #menuBox{ background:var(--panel-bg); border-radius:16px; padding:22px 26px; width:min(460px, calc(100% - 32px));
+    max-height:calc(100% - 32px); display:flex; flex-direction:column; gap:8px; box-shadow:0 10px 40px rgba(0,0,0,.35); }
+  #menuBox h1{ margin:0 0 6px; text-align:center; font-size:30px; color:var(--accent); letter-spacing:.5px; }
+  #menuBox h2{ margin:10px 0 2px; font-size:13px; color:var(--panel-sub); text-transform:uppercase; letter-spacing:1px; }
+  #menuItems{ display:flex; flex-direction:column; gap:6px; overflow-y:auto; padding:2px; }
+  .mItem{ display:block; width:100%; text-align:left; border:2px solid transparent; border-radius:10px; cursor:pointer;
+    background:rgba(255,255,255,.08); color:var(--panel-text); font-size:16px; padding:10px 14px; font-family:inherit; }
+  .mItem.sel{ border-color:var(--accent); background:rgba(255,209,102,.18); }
+  .mItem.small{ font-size:13px; padding:7px 12px; color:var(--panel-sub); }
+  .mHint{ font-size:12.5px; color:var(--panel-sub); padding:2px 4px; }
+  #menuFoot{ margin-top:6px; font-size:11.5px; color:var(--panel-sub); text-align:center; }
 </style>
 </head>
 <body>
@@ -104,6 +119,13 @@
   </div>
   <div id="perf">Messe…</div>
 <div id="toast">Beide im Ziel! 🎉<br><span style="font-size:12px;">Drücke R für einen neuen Versuch</span></div>
+  <div id="menu" class="show">
+    <div id="menuBox">
+      <h1 id="menuTitle">Monchichi Koop</h1>
+      <div id="menuItems"></div>
+      <div id="menuFoot">↑ ↓ auswählen · Enter / Leertaste / ✕ bestätigen · Esc / ○ zurück</div>
+    </div>
+  </div>
 </div>
 
 <script src="js/00-setup.js"></script>
@@ -122,6 +144,7 @@
 <script src="js/13-anzeige-leistung.js"></script>
 <script src="js/14-spielschleife.js"></script>
 <script src="js/15-level-laden.js"></script>
+<script src="js/16-menue.js"></script>
 <script src="js/99-start.js"></script>
 </body>
 

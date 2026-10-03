@@ -56,6 +56,15 @@ function loop(ts){
   frameDt = Math.min(250, Math.max(0, ts - lastFrameTs));   // nach Tab-Wechsel nicht aufholen
   lastFrameTs = ts;
   pollGamepads();
+  pollMenuPads();
+  if(menuActive()){   // Hauptmenü / Pause: Spiel steht still, Bild bleibt stehen
+    simAcc = 0;
+    const tAM = performance.now();
+    drawInterpolated(1); updateHUD();
+    perfFrame(ts, tStart, tAM, performance.now());
+    requestAnimationFrame(loop);
+    return;
+  }
   if(deathState){
     if(deathState.go){ continueAfterDeath(); rememberPrev(); }
     simAcc = 0;

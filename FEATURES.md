@@ -29,7 +29,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (CAM_LEFT/CAM_RIGHT) -> man sieht möglichst viel vom Weg; max. Abstand ~1 Bildschirmbreite; Ziel erst geschafft, wenn BEIDE da sind
   - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
     Stick/Steuerkreuz laufen, Kreuz springen, Viereck = Haken bzw. Schirm, Kreis = Hebel, hoch = ranziehen, runter = Seil geben,
-    Options = Neustart; Status "Controller verbunden" in den Steuerungs-Kästen
+    Options = Pausenmenü (darin „Level neu starten“; früher direkt Neustart); Status "Controller verbunden" in den Steuerungs-Kästen
   - Flüssigkeit: Kamera wird auf ganze Pixel gerundet (camPos weich, camX gerundet), Figuren und bewegte Teile
     ebenfalls -> kein Zittern gegeneinander; kein backdrop-filter über dem Spielbild (kostet GPU jedes Bild)
   - Dezenter Parallax-Hintergrund: heller Himmelsverlauf, ziehende Wolken, ferne Hügel, nähere Hügel mit
@@ -93,7 +93,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Stick kräftig bewegen, ab 0,6 s) -> BEIDE starten am letzten gemeinsamen Checkpoint; Bröckelboden/Türen/
     bewegte Teile zurückgesetzt, Münzen bleiben. Freie Stelle wird per nudgeFree gesichert.
   - Decken-Begrenzung, Kenney-Tiles
-  - "Level laden (JSON)": liest Editor-Export (Spiel-Format) oder altes Editor-Rohformat
+  - "Level laden (JSON)": liest Editor-Export (Spiel-Format) oder altes Editor-Rohformat (bleibt als Notlösung;
+    auch im Hauptmenü als „Level-Datei laden (Notlösung)“; Laden schließt das Menü)
+  - Hauptmenü beim Start (js/16-menue.js): Titel, „Spielen“ → Levelauswahl, „Level-Editor“ (öffnet editor/).
+    Levelauswahl in zwei Gruppen: „Levels“ (levels/levels.json, Dateien im Spiel-Format aus levels/) und
+    „Meine Levels“ (im Editor in diesem Browser gespeichert, localStorage monchichi_saved_levels_v1, werden
+    beim Laden wie beim Editor-Export umgerechnet). Projekt-Levels nur, wenn das Spiel über die Webseite läuft.
+    Solange ein Menü offen ist, steht das Spiel still und bekommt keine Tastendrücke.
+    Bedienung: ↑/↓ bzw. W/S, Enter/Leertaste/Num 0 bestätigen, Esc/Backspace zurück; Controller: Steuerkreuz/
+    Stick, ✕ bestätigen, ○ zurück; Maus geht auch.
+  - Pausenmenü: Esc bzw. Options im Spiel (nicht auf dem Tod-Bildschirm, dort macht jede Taste wie bisher weiter):
+    „Weiterspielen“, „Level neu starten“, „Zurück zum Menü“; Esc/Options/○ schließt die Pause wieder
 ```
 
 ## Level-Editor (editor/)
