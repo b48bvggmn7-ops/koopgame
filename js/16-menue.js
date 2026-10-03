@@ -218,6 +218,12 @@ document.addEventListener('keydown', e=>{
   else if(e.code === 'Escape' || e.code === 'Backspace') menuBack();
 }, true);
 
+// Knopf „☰ Menü“ unten links im Spiel öffnet das Pausenmenü (wie Esc / Options)
+document.getElementById('menuBtn').addEventListener('click', e=>{
+  e.currentTarget.blur();   // sonst löst die Leertaste später den Knopf erneut aus
+  if(!menuActive()) showPauseMenu();
+});
+
 // Level aus Datei laden (Notlösung, Button im Spiel und im Menü) schließt das Menü
 document.getElementById('loadLevelInput').addEventListener('change', ()=>{ if(menuActive()) closeMenu(); });
 

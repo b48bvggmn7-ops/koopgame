@@ -306,6 +306,47 @@ async def pause_controller(g):
     await tippe(1)
     assert await g.p.text_content('#menuTitle') == 'Monchichi Koop', '○ führt nicht zurück'
 
+@test
+async def menue_knopf_und_editor_schliessen(g):
+    """Knopf „☰ Menü“ im Spiel öffnet die Pause; ✕ oben rechts im Editor führt zurück zum Spiel-Menü."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    p = g.p
+    await p.click('#menuBtn'); await p.wait_for_timeout(100)
+    assert await p.text_content('#menuTitle') == 'Pause', 'Menü-Knopf öffnet keine Pause'
+    srv = webserver()
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        box = await p.locator('#closeEditorBtn').bounding_box()
+        assert box and box['x'] > 1200 and box['y'] < 120, f'✕ nicht oben rechts: {box}'
+        await p.click('#closeEditorBtn'); await p.wait_for_timeout(500)
+        assert p.url.endswith('/index.html') and '/editor/' not in p.url, f'nicht zurück im Spiel: {p.url}'
+        assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Hauptmenü fehlt'
+    finally:
+        srv.shutdown()
+
+@test
+async def projekt_levels_beide_formate_gleich(g):
+    """Jedes Level in levels.json: Spiel-Format und Editor-Format beschreiben dasselbe Level."""
+    def zellen(solids):
+        out = set()
+        for s in solids:
+            for x in range(s['x'], s['x'] + s['w'], 40):
+                for y in range(s['y'], s['y'] + s['h'], 40): out.add((x, y, s.get('look') or s.get('type')))
+        return out
+    for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
+        spiel = json.loads((ROOT / 'levels' / L['datei']).read_text())
+        ed = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
+        umg = await g.ev(f"convertEditorSnapshot({json.dumps(ed)})")
+        assert ed.get('name') == L['name'], f"{L['datei']}: Name {ed.get('name')} statt {L['name']}"
+        assert zellen(umg['solids']) == zellen(spiel['solids']), f"{L['datei']}: Boden/Wände verschieden"
+        assert zellen(umg['movingPlatforms']) == zellen(spiel['movingPlatforms']), f"{L['datei']}: bewegte Teile verschieden"
+        for k in ('startM', 'startF', 'goal'):
+            assert umg[k] == spiel[k], f"{L['datei']}: {k} verschieden"
+        for k in ('coins', 'hooks', 'checkpoints', 'spikes', 'switches', 'doors'):
+            a = sorted(json.dumps(o, sort_keys=True) for o in umg[k])
+            b = sorted(json.dumps(o, sort_keys=True) for o in spiel[k])
+            assert a == b, f"{L['datei']}: {k} verschieden"
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

@@ -104,6 +104,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Stick, ✕ bestätigen, ○ zurück; Maus geht auch.
   - Pausenmenü: Esc bzw. Options im Spiel (nicht auf dem Tod-Bildschirm, dort macht jede Taste wie bisher weiter):
     „Weiterspielen“, „Level neu starten“, „Zurück zum Menü“; Esc/Options/○ schließt die Pause wieder
+    Zusätzlich Knopf „☰ Menü (Esc)“ unten links im Spiel (öffnet dasselbe Pausenmenü)
 ```
 
 ## Level-Editor (editor/)
@@ -128,6 +129,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Plattform-Werkzeug bewusst entfernt (Nutzerwunsch, Boden reicht); alte Plattform-Kacheln in
     gespeicherten Levels werden weiter angezeigt/exportiert und lassen sich radieren
   - Export im Spiel-Format (Textfeld kopieren oder als .json-Datei speichern)
+  - ✕ oben rechts schließt den Editor und führt zurück zum Spiel (Hauptmenü); Arbeitsstand bleibt im Browser
   - Fenster „Levels“ zeigt zusätzlich „Levels im Projekt“ (aus levels/levels.json) und lädt sie per „Laden“
     aus levels/editor-format/ (nur wenn der Editor über die Webseite geöffnet ist, nicht als lokale Datei)
   - Button „📦 Ins Projekt aufnehmen“ (im Fenster „Levels“): lädt das aktuelle Level als zwei Dateien herunter –

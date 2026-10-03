@@ -429,6 +429,8 @@
   function closeLevels(){ levelBox.classList.remove('show'); }
 
   document.getElementById('levelsBtn').addEventListener('click', openLevels);
+  // ✕ oben rechts: zurück zum Spiel (Hauptmenü); der Arbeitsstand ist schon im Browser gesichert
+  document.getElementById('closeEditorBtn').addEventListener('click', ()=>{ location.href = '../index.html'; });
   document.getElementById('closeLevels').addEventListener('click', closeLevels);
   document.getElementById('saveAsBtn').addEventListener('click', ()=> saveLevel(nameInput.value));
   nameInput.addEventListener('keydown', e=>{ if(e.key==='Enter') saveLevel(nameInput.value); });
