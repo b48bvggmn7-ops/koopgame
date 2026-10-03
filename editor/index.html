@@ -41,6 +41,7 @@
   #levelPanel{background:var(--panel); border-radius:12px; padding:16px; max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column; gap:10px;}
   #levelPanel input{flex:1; background:#0f161e; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px;}
   #levelList{overflow-y:auto; display:flex; flex-direction:column; gap:6px; min-height:60px;}
+  #projectList{overflow-y:auto; display:flex; flex-direction:column; gap:6px; max-height:160px;}
   .lvl{display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:12.5px;}
   .lvl .nm{flex:1; color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .lvl .dt{color:var(--sub); font-size:11px;}
@@ -177,8 +178,11 @@
     </div>
     <div id="status"></div>
     <div id="levelList"></div>
+    <h2 style="margin:4px 0 0;color:#fff;font-size:13px;">Levels im Projekt</h2>
+    <div id="projectList"></div>
     <div class="rowbtns">
       <button class="action secondary" id="newLevelBtn">Neues leeres Level</button>
+      <button class="action secondary" id="projectBtn" title="Lädt das aktuelle Level als zwei Dateien herunter (Editor-Format und Spiel-Format)">📦 Ins Projekt aufnehmen</button>
       <button class="action" id="closeLevels">Schließen</button>
     </div>
   </div>

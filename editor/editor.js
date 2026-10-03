@@ -384,10 +384,47 @@
       return false;
     }
   }
+  // Levels aus dem Projekt (levels/levels.json + levels/editor-format/…) – nur lesen
+  const projectList = document.getElementById('projectList');
+  const PROJECT_DIR = '../levels/';
+  function projectHint(t){
+    projectList.innerHTML = '';
+    const d=document.createElement('div'); d.className='hint'; d.textContent=t; projectList.appendChild(d);
+  }
+  async function refreshProjectList(){
+    let list;
+    try{
+      const r = await fetch(PROJECT_DIR+'levels.json', {cache:'no-store'});
+      if(!r.ok) throw 0;
+      list = await r.json();
+    }catch(e){ projectHint('Projekt-Levels hier nicht erreichbar (nur wenn der Editor über die Webseite geöffnet ist).'); return; }
+    if(!Array.isArray(list) || !list.length){ projectHint('Keine Levels im Projekt.'); return; }
+    projectList.innerHTML = '';
+    for(const P of list){
+      const row=document.createElement('div'); row.className='lvl';
+      const nm=document.createElement('span'); nm.className='nm'; nm.textContent=P.name||P.datei;
+      const dt=document.createElement('span'); dt.className='dt'; dt.textContent=P.datei;
+      const ld=document.createElement('button'); ld.className='mini'; ld.textContent='Laden';
+      const doLoad = async ()=>{
+        try{
+          const r = await fetch(PROJECT_DIR+'editor-format/'+encodeURIComponent(P.datei), {cache:'no-store'});
+          if(!r.ok) throw 0;
+          const d = await r.json();
+          applySnapshot(d); currentLevelId=null; currentLevelName=P.name||d.name||null;
+          save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels();
+        }catch(e){ setStatus(`„${P.name||P.datei}“ konnte nicht geladen werden.`, true); }
+      };
+      ld.onclick=()=>{
+        if(dirty) armConfirm(ld, 'Ungespeichertes geht verloren – laden?', doLoad);
+        else doLoad();
+      };
+      row.append(nm, dt, ld); projectList.appendChild(row);
+    }
+  }
   function openLevels(){
     nameInput.value = currentLevelName || '';
     setStatus(db ? '' : 'Levels werden in diesem Browser gespeichert.');
-    levelBox.classList.add('show'); refreshList();
+    levelBox.classList.add('show'); refreshList(); refreshProjectList();
   }
   function closeLevels(){ levelBox.classList.remove('show'); }
 
@@ -680,6 +717,18 @@
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1000);
     }};
   }
+  // „Ins Projekt aufnehmen“: zwei Dateien herunterladen – Spiel-Format (gehört nach levels/)
+  // und Editor-Format (gehört nach levels/editor-format/, dort ohne „.editor“ im Namen)
+  document.getElementById('projectBtn').addEventListener('click', async ()=>{
+    if(!downloads){ setStatus('Herunterladen ist hier nicht möglich.', true); return; }
+    const base = (currentLevelName ? slug(currentLevelName) : 'monchichi-level');
+    const editorData = JSON.stringify({name: currentLevelName || 'Unbenanntes Level', ...snapshot()});
+    try{
+      await downloads.save({filename: base+'.json', data: new Blob([exportLevel()], {type:'application/json'})});
+      await downloads.save({filename: base+'.editor.json', data: new Blob([editorData], {type:'application/json'})});
+      setStatus(`Heruntergeladen: ${base}.json (Spiel-Format → levels/) und ${base}.editor.json (Editor-Format → levels/editor-format/ als ${base}.json).`);
+    }catch(e){ setStatus('Herunterladen fehlgeschlagen.', true); }
+  });
   document.getElementById('copyBtn').addEventListener('click', ()=>{
     const ta = document.getElementById('exportText');
     ta.select();

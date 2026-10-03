@@ -15,7 +15,7 @@ Ausführen (im Projektordner):
 Die Spiel-Dateien sind klassische <script>-Dateien mit gemeinsamem Gültigkeitsbereich. Deshalb können
 die Tests Spielzustände direkt lesen (z. B. p1.x, solids, coins) – im Spiel selbst ist dafür nichts nötig.
 """
-import asyncio, json, os, sys, tempfile
+import asyncio, functools, http.server, json, os, sys, tempfile, threading
 from pathlib import Path
 from playwright.async_api import async_playwright
 
@@ -180,6 +180,37 @@ async def wandsprung_controller(g):
     await g.ev("window.__pad.axes[0]=-1; window.__pad.buttons[0]={pressed:true,value:1}")
     await g.p.wait_for_timeout(250)
     assert await g.ev('p1.vx') < 0 or await g.ev('p1.x') < 360, 'kein Wandsprung'
+
+@test
+async def editor_projekt_levels(g):
+    """Editor zeigt Levels aus levels/levels.json, lädt sie und lädt das aktuelle Level als 2 Dateien herunter."""
+    class Leise(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a): pass
+    handler = functools.partial(Leise, directory=str(ROOT))
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        p = g.p
+        await p.goto(f'http://127.0.0.1:{srv.server_address[1]}/editor/index.html'); await p.wait_for_timeout(300)
+        await p.click('#levelsBtn'); await p.wait_for_timeout(500)
+        liste = json.loads((ROOT / 'levels' / 'levels.json').read_text())
+        namen = await p.eval_on_selector_all('#projectList .lvl .nm', 'els => els.map(e => e.textContent)')
+        assert namen == [L['name'] for L in liste], f'Projekt-Liste falsch: {namen}'
+        await p.click('#projectList .lvl:nth-child(1) button'); await p.wait_for_timeout(400)
+        erwartet = json.loads((ROOT / 'levels' / 'editor-format' / liste[0]['datei']).read_text())
+        assert (await p.text_content('#curName')).startswith(liste[0]['name']), 'Name nicht übernommen'
+        await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+        dateien = []
+        p.on('download', lambda d: dateien.append(d))
+        await p.click('#projectBtn'); await p.wait_for_timeout(800)
+        namen = sorted(d.suggested_filename for d in dateien)
+        assert namen == ['level-1.editor.json', 'level-1.json'], f'Downloads: {namen}'
+        inhalt = {d.suggested_filename: json.loads(Path(await d.path()).read_text()) for d in dateien}
+        ed = inhalt['level-1.editor.json']
+        assert ed['name'] == 'Level 1' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, erwartet['tiles'])), 'Editor-Datei falsch'
+        assert 'solids' in inhalt['level-1.json'] and len(ed['coins']) == len(erwartet['coins']), 'Spiel-Datei falsch'
+    finally:
+        srv.shutdown()
 
 # ---------------------------------------------------------------- Runner
 
