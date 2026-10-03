@@ -1,0 +1,582 @@
+// 12-welt-zeichnen.js – Teil des Spiels "Monchichi Koop".
+// Alle js/*.js-Dateien teilen sich einen gemeinsamen Gültigkeitsbereich (klassische <script>-Tags,
+// keine Module) und werden in index.html in fester Reihenfolge geladen.
+
+let camX = 0;     // gerundete Kamera zum Zeichnen (ganze Pixel -> kein Flimmern/Zittern der Welt)
+let camPos = 0;   // weiche, ungerundete Kameraposition
+const particles = Array.from({length:18}, () => ({
+  x: Math.random()*LEVEL_W, y: Math.random()*H,
+  r: 1+Math.random()*2, speed: 0.15+Math.random()*0.35,
+  phase: Math.random()*Math.PI*2, par: 0.5+Math.random()*0.4,
+}));
+function draw(){
+  // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_LEFT px),
+  // damit man möglichst viel von dem sieht, was als Nächstes kommt. Die vordere Figur
+  // bleibt trotzdem immer im Bild (mind. CAM_RIGHT px vom rechten Rand).
+  const back = Math.min(p1.x, p2.x), front = Math.max(p1.x, p2.x);
+  const camLeft = Math.max(back - CAM_LEFT, front - FRONT_MAX * VW);
+  const targetCam = Math.max(0, Math.min(LEVEL_W-VW, camLeft));
+  camPos += (targetCam-camPos) * (1 - Math.pow(1-0.12, frameDt/STEP));   // gleich schnell bei jeder Bildrate
+  camX = Math.round(camPos);
+
+  ctx.clearRect(0,0,W,H);
+  tNowCp = performance.now();
+  drawBackground();
+  ctx.save();
+  ctx.translate(0, CEILING_MARGIN);
+  // Zoom: Spielwelt verkleinern, unten bündig (Boden bleibt unten, oben wird mehr Himmel sichtbar)
+  if(zoom !== 1){ ctx.translate(0, H*(1-zoom)); ctx.scale(zoom, zoom); }
+
+  // weiche Lichtstrahlen von oben
+  ctx.save();
+  for(let i=0;i<2;i++){
+    const rx = ((i*420 - camX*0.5) % (VW+500)) - 100;
+    const rg = ctx.createLinearGradient(rx,0,rx+160,H);
+    rg.addColorStop(0, colorOf('--ray'));
+    rg.addColorStop(1, 'rgba(255,244,200,0)');
+    ctx.fillStyle = rg;
+    ctx.beginPath();
+    ctx.moveTo(rx,0); ctx.lineTo(rx+90,0); ctx.lineTo(rx-40,H); ctx.lineTo(rx-130,H);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // treibende Lichtpartikel
+  for(const pt of particles){
+    pt.y -= pt.speed * frameDt/STEP;
+    pt.phase += 0.02 * frameDt/STEP;
+    if(pt.y < -20){ pt.y = H+10; pt.x = Math.random()*LEVEL_W; }
+    const sx = pt.x - camX*pt.par;
+    if(sx<-10||sx>VW+10) continue;
+    const flick = 0.5 + Math.sin(pt.phase)*0.5;
+    ctx.fillStyle = `rgba(234,255,176,${(0.15+flick*0.5).toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(sx, pt.y, pt.r, 0, Math.PI*2); ctx.fill();
+  }
+
+  ctx.fillStyle = '#3a2416';
+  ctx.fillRect(0-camX, LEVEL_H, LEVEL_W, 4);
+
+  const STRIP_W = 140, STRIP_H = 140;
+  // anchor: Bezugspunkt der Textur. Standard = Welt (feste Teile), bei bewegten Stücken = das Stück selbst
+  function drawTiledH(img, sx, sy, sw, sh, anchor){
+    const iw = img.naturalWidth||img.width, ih = img.naturalHeight||img.height;
+    const a = anchor===undefined ? 0 : anchor;
+    const worldStart = sx - ((((sx-a)%STRIP_W)+STRIP_W)%STRIP_W);
+    for(let wx=worldStart; wx<sx+sw; wx+=STRIP_W){
+      const tL = Math.max(wx, sx), tR = Math.min(wx+STRIP_W, sx+sw);
+      if(tR<=tL) continue;
+      const srcX=(tL-wx)/STRIP_W*iw, srcW=(tR-tL)/STRIP_W*iw;
+      ctx.drawImage(img, srcX,0,srcW,ih, tL-camX, sy, tR-tL, sh);
+    }
+  }
+  function drawTiledV(img, sx, sy, sw, sh, anchor){
+    const iw = img.naturalWidth||img.width, ih = img.naturalHeight||img.height;
+    const a = anchor===undefined ? 0 : anchor;
+    const worldStart = sy - ((((sy-a)%STRIP_H)+STRIP_H)%STRIP_H);
+    for(let wy=worldStart; wy<sy+sh; wy+=STRIP_H){
+      const tT = Math.max(wy, sy), tB = Math.min(wy+STRIP_H, sy+sh);
+      if(tB<=tT) continue;
+      const srcY=(tT-wy)/STRIP_H*ih, srcH=(tB-tT)/STRIP_H*ih;
+      ctx.drawImage(img, 0,srcY,iw,srcH, sx-camX, tT, sw, tB-tT);
+    }
+  }
+  // Boden direkt gezeichnet (statt Textur-Streifen): durchgehendes Gras mit welliger Kante,
+  // Erde mit Verlauf, runde Ecken nur an echten Enden, nahtlos zu angrenzenden Stücken.
+  // off = Verschiebung der Wellen (bei bewegten Stücken fährt das Muster mit)
+  const GROUND_PAL = {
+    g: {grassTop:'#5fe093', grass:'#34c46c', grassDark:'#23a257', dirt1:'#e19a5a', dirt2:'#c77c3d', stripe:'rgba(150,85,35,.28)', edge:'#a8662f'},
+    c: {grassTop:'#8fd9a8', grass:'#5cb883', grassDark:'#3f9467', dirt1:'#c99468', dirt2:'#a86f45', stripe:'rgba(110,60,25,.3)', edge:'#8a5430'},
+  };
+  const R_CORNER = 9, GRASS_H = 12;
+  function waveY(wx){ return Math.sin(wx*0.055)*2.4 + Math.sin(wx*0.137+1.3)*1.2; }
+  function drawGroundPiece(s, x, y, off, pal, cracked){
+    const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[]};
+    const coveredAt = px => nb.above.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
+    const topFreeL = !coveredAt(1), topFreeR = !coveredAt(w-1);
+    const tl = (!nb.l && topFreeL) ? R_CORNER : 0, tr = (!nb.r && topFreeR) ? R_CORNER : 0;
+    const bl = (!nb.l && !nb.b) ? R_CORNER : 0, br = (!nb.r && !nb.b) ? R_CORNER : 0;
+    // Erde
+    const g = ctx.createLinearGradient(0, y, 0, y+h);
+    g.addColorStop(0, pal.dirt1); g.addColorStop(1, pal.dirt2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x+tl, y);
+    ctx.lineTo(x+w-tr, y); if(tr) ctx.arcTo(x+w, y, x+w, y+tr, tr);
+    ctx.lineTo(x+w, y+h-br); if(br) ctx.arcTo(x+w, y+h, x+w-br, y+h, br);
+    ctx.lineTo(x+bl, y+h); if(bl) ctx.arcTo(x, y+h, x, y+h-bl, bl);
+    ctx.lineTo(x, y+tl); if(tl) ctx.arcTo(x, y, x+tl, y, tl);
+    ctx.closePath(); ctx.fill();
+    // weiche Wellenstreifen in der Erde
+    if(h >= 30){
+      ctx.strokeStyle = pal.stripe; ctx.lineWidth = 3;
+      for(const [fy, ph] of [[0.55, 0.7], [0.82, 2.1]]){
+        ctx.beginPath();
+        for(let px = 3; px <= w-3; px += 6){
+          const yy = y + h*fy + Math.sin((x+camX+px-off)*0.045+ph)*2.2;
+          if(px===3) ctx.moveTo(x+px, yy); else ctx.lineTo(x+px, yy);
+        }
+        ctx.stroke();
+      }
+    }
+    if(!nb.b){ ctx.fillStyle = pal.edge; ctx.globalAlpha = 0.35; ctx.fillRect(x+bl, y+h-3, w-bl-br, 3); ctx.globalAlpha = 1; }
+    // Gras nur auf freien Abschnitten der Oberseite
+    const spans = []; let start = null;
+    for(let px = 0; px <= w; px += 4){
+      const free = !coveredAt(Math.min(w-0.5, Math.max(0.5, px)));
+      if(free && start===null) start = px;
+      if((!free || px>=w) && start!==null){ spans.push([start, free ? w : px]); start = null; }
+    }
+    for(const [a, b] of spans){
+      const capL = (a===0) ? tl : 0, capR = (b===w) ? tr : 0;
+      ctx.beginPath();
+      ctx.moveTo(x+a, y+capL);
+      if(capL) ctx.arcTo(x+a, y, x+a+capL, y, capL); else ctx.lineTo(x+a, y);
+      ctx.lineTo(x+b-capR, y);
+      if(capR) ctx.arcTo(x+b, y, x+b, y+capR, capR); else ctx.lineTo(x+b, y);
+      for(let px = b; px >= a; px -= 5){
+        ctx.lineTo(x+px, y + GRASS_H + waveY(x+camX+px-off));
+      }
+      ctx.lineTo(x+a, y + GRASS_H + waveY(x+camX+a-off));
+      ctx.closePath();
+      ctx.fillStyle = pal.grass; ctx.fill();
+      ctx.strokeStyle = pal.grassDark; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for(let px = a+ (capL?3:0); px <= b-(capR?3:0); px += 5){
+        const yy = y + GRASS_H + waveY(x+camX+px-off) + 1;
+        if(px===a+(capL?3:0)) ctx.moveTo(x+px, yy); else ctx.lineTo(x+px, yy);
+      }
+      ctx.stroke();
+      // heller Glanzstreifen oben
+      ctx.fillStyle = pal.grassTop;
+      ctx.fillRect(x+a+Math.max(capL,2), y+2, Math.max(0, (b-a)-Math.max(capL,2)-Math.max(capR,2)), 3);
+    }
+    // Risse beim Bröckelboden (fest an der Welt verankert, damit sie nicht flackern)
+    if(cracked){
+      ctx.strokeStyle = 'rgba(80,40,15,.75)'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+      for(let cx0 = 12; cx0 < w-6; cx0 += 26){
+        const seed = Math.sin((s.x+cx0)*12.9898)*43758.5453, rnd = seed - Math.floor(seed);
+        const sx0 = x + cx0 + rnd*8;
+        ctx.beginPath();
+        ctx.moveTo(sx0, y + GRASS_H + 2);
+        ctx.lineTo(sx0 - 5 + rnd*4, y + h*0.45);
+        ctx.lineTo(sx0 + 4, y + h*0.62);
+        ctx.lineTo(sx0 - 2, y + h - 4);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // ---------- Wand als Mauerwerk ----------
+  // Steinquader (40x20) direkt gezeichnet, Fugen an der Welt ausgerichtet -> laufen über alle
+  // angrenzenden Wandstücke nahtlos durch (senkrecht wie waagerecht, auch große Flächen).
+  // Kanten/Ecken nur dort, wo die Wand wirklich aufhört. offX/offY: bewegte Wand -> Muster fährt mit.
+  const WALL = {top:'#a9b8c1', bottom:'#8796a0', mortar:'rgba(58,70,79,.42)', hi:'#cad6dc', shade:'#5d6b74', side:'rgba(70,82,90,.55)'};
+  function drawWallPiece(s, x, y, offX, offY){
+    const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[],below:[]};
+    const cov = (list, px) => list.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
+    const topFreeL = !cov(nb.above, 1), topFreeR = !cov(nb.above, w-1);
+    const botFreeL = !cov(nb.below, 1), botFreeR = !cov(nb.below, w-1);
+    const R = 5;
+    const tl = (!nb.l && topFreeL) ? R : 0, tr = (!nb.r && topFreeR) ? R : 0;
+    const bl = (!nb.l && botFreeL) ? R : 0, br = (!nb.r && botFreeR) ? R : 0;
+    // Grundfläche (leichter Verlauf, an der Welt ausgerichtet, damit Stapel nicht streifig wirken)
+    const wy0 = y - offY;
+    const g = ctx.createLinearGradient(0, y - (((wy0 % 80)+80)%80), 0, y - (((wy0 % 80)+80)%80) + 80);
+    g.addColorStop(0, WALL.top); g.addColorStop(0.5, WALL.bottom); g.addColorStop(1, WALL.top);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x+tl, y);
+    ctx.lineTo(x+w-tr, y); if(tr) ctx.arcTo(x+w, y, x+w, y+tr, tr);
+    ctx.lineTo(x+w, y+h-br); if(br) ctx.arcTo(x+w, y+h, x+w-br, y+h, br);
+    ctx.lineTo(x+bl, y+h); if(bl) ctx.arcTo(x, y+h, x, y+h-bl, bl);
+    ctx.lineTo(x, y+tl); if(tl) ctx.arcTo(x, y, x+tl, y, tl);
+    ctx.closePath(); ctx.fill();
+    // Steinquader: leichte Helligkeits-Unterschiede + Fugen
+    const CH = 20, BW = 40;
+    const wx0 = x + camX - offX;                     // Weltkoordinate der linken Kante
+    for(let cy = y - (((wy0 % CH)+CH)%CH); cy < y + h; cy += CH){
+      const course = Math.round((cy - y + wy0) / CH);
+      const shift = (course & 1) ? BW/2 : 0;
+      const top = Math.max(cy, y), bot = Math.min(cy + CH, y + h);
+      // Fuge oben an dieser Steinreihe (nicht am oberen Rand, außer dort grenzt Wand an)
+      if(cy > y + 0.5 || (cy >= y - 0.5 && !topFreeL && !topFreeR)){
+        if(cy > y - 0.5 && cy < y + h - 0.5){
+          ctx.fillStyle = WALL.mortar; ctx.fillRect(x + (cy <= y+0.5 && tl ? tl : 0), cy - 1, w, 2);
+        }
+      }
+      // senkrechte Fugen + Tönung je Stein
+      let bx = x - ((((wx0 + shift) % BW) + BW) % BW);
+      for(; bx < x + w; bx += BW){
+        const L = Math.max(bx, x), Rr = Math.min(bx + BW, x + w);
+        const seed = Math.sin((Math.round(bx - x + wx0)*0.731 + course*12.9898)) * 43758.5453;
+        const v = seed - Math.floor(seed);
+        ctx.fillStyle = v > 0.5 ? `rgba(255,255,255,${(v-0.5)*0.16})` : `rgba(30,40,48,${(0.5-v)*0.14})`;
+        ctx.fillRect(L + 1, top + 1, Math.max(0, Rr - L - 2), Math.max(0, bot - top - 2));
+        if(bx > x + 0.5 && bx < x + w - 0.5){ ctx.fillStyle = WALL.mortar; ctx.fillRect(bx - 1, top, 2, bot - top); }
+      }
+    }
+    // Kanten: oben heller Rand, unten Schatten, Seiten dunkler – nur wo die Wand endet
+    ctx.fillStyle = WALL.hi;
+    const spans = (list) => { const out=[]; let st=null; for(let px=0; px<=w; px+=4){ const free=!cov(list, Math.min(w-0.5, Math.max(0.5,px))); if(free && st===null) st=px; if((!free || px>=w) && st!==null){ out.push([st, free?w:px]); st=null; } } return out; };
+    for(const [a,b] of spans(nb.above)){ const l = a===0 ? tl : 0, r = b===w ? tr : 0; ctx.fillRect(x+a+l, y, (b-a)-l-r, 3); }
+    ctx.fillStyle = WALL.shade;
+    for(const [a,b] of spans(nb.below)){ const l = a===0 ? bl : 0, r = b===w ? br : 0; ctx.fillRect(x+a+l, y+h-3, (b-a)-l-r, 3); }
+    ctx.fillStyle = WALL.side;
+    if(!nb.l) ctx.fillRect(x, y+tl, 2, h-tl-bl);
+    if(!nb.r) ctx.fillRect(x+w-3, y+tr, 3, h-tr-br);
+  }
+
+  // Bewegte Stücke sehen aus wie normaler Boden/Wand. Die Textur ist am Stück selbst verankert
+  // (nicht an der Welt), damit sie mitfährt statt unter dem Stück durchzurutschen.
+  // Farbe je Schalter-Nummer: Schalter und alles, was er steuert, tragen dieselbe Farbe + Nummer
+const LINK_COLORS = {1:'#ff922b', 2:'#339af0', 3:'#9775fa', 4:'#12b886', 5:'#f06595', 6:'#e0b000',
+  7:'#e8590c', 8:'#1c7ed6', 9:'#7048e8', 10:'#2b8a3e', 11:'#c2255c', 12:'#a07800', 13:'#0b7285', 14:'#d6336c',
+  15:'#5c940d', 16:'#862e9c', 17:'#e67700', 18:'#364fc7', 19:'#087f5b', 20:'#b02525'};
+// ab 21 (falls je nötig): automatisch verteilte Farbtöne
+const linkColor = n => LINK_COLORS[n] || `hsl(${(n*137.5)%360},60%,45%)`;
+// bewegter Boden je Gruppe zusammengefasst: Umriss jetzt, Umriss am Start, Verschiebung
+function moverGroupInfo(){
+  const map = new Map();
+  for(const s of solids){
+    if(s.type!=='moveplat') continue;
+    const key = s.group===undefined ? s : s.group;
+    let g = map.get(key);
+    if(!g){ g = {minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity, sMinX:Infinity,sMinY:Infinity,sMaxX:-Infinity,sMaxY:-Infinity,
+                 dx:s.targetX-s.startX, dy:s.targetY-s.startY, switchCtl:s.switchCtl, switchLink:s.switchLink, tripActive:s.tripActive};
+            map.set(key, g); }
+    g.minX=Math.min(g.minX,s.x); g.minY=Math.min(g.minY,s.y); g.maxX=Math.max(g.maxX,s.x+s.w); g.maxY=Math.max(g.maxY,s.y+s.h);
+    g.sMinX=Math.min(g.sMinX,s.startX); g.sMinY=Math.min(g.sMinY,s.startY); g.sMaxX=Math.max(g.sMaxX,s.startX+s.w); g.sMaxY=Math.max(g.sMaxY,s.startY+s.h);
+  }
+  return [...map.values()];
+}
+function drawLinkBadge(x, y, link, active){
+  const col = linkColor(link);
+  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(x, y, 8.5, 0, Math.PI*2); ctx.fill();
+  if(active){ ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.arc(x, y, 14 + Math.sin(performance.now()*0.008)*1.5, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
+  ctx.fillStyle = '#fff'; ctx.font = (link > 9 ? 'bold 9.5px' : 'bold 11px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(link), x, y+0.5);
+}
+// Was steuert Schalter n? Liefert Punkte (Weltkoordinaten) für Plaketten und Verbindungslinien
+function linkTargets(link){
+  const pts = [];
+  for(const d of solids){
+    if(d.type!=='door' || d.link!==link) continue;
+    // nur die oberste Tür einer Säule bekommt die Plakette
+    const above = solids.some(o=>o.type==='door' && o.link===link && Math.abs(o.x-d.x)<1 && Math.abs(o.y+o.h-d.y)<1);
+    if(!above) pts.push({x:d.x+d.w/2, y:d.y-12, kind:'door', active:d.open});
+  }
+  for(const g of moverGroupInfo()){
+    // Plakette direkt AUF dem bewegten Boden (nicht darüber), damit sie nicht wie ein zweites Tür-Schild wirkt
+    if(g.switchCtl && g.switchLink===link) pts.push({x:(g.minX+g.maxX)/2, y:(g.minY+g.maxY)/2 + 3, kind:'plat', active:g.tripActive});
+  }
+  for(const h of hooks){
+    if(h.moving && h.switchCtl && h.switchLink===link) pts.push({x:h.x+18, y:h.y-18, kind:'hook', active:h.tripActive});
+  }
+  return pts;
+}
+
+function drawSolidLook(s, look, x){
+    const ax = s.x - s.startX, ay = s.y - s.startY; // bisher gefahrene Strecke
+    if(look==='platform'){
+      ctx.fillStyle = colorOf('--platform-shadow');
+      roundRect(x+6, s.y+s.h+2, Math.max(0,s.w-12), 6, 3); ctx.fill();
+    }
+    if(look==='wall'){
+      drawWallPiece(s, x, Math.round(s.y), ax, ay);
+    } else if(look==='ground'){
+      drawGroundPiece(s, x, Math.round(s.y), ax, GROUND_PAL.g, false);
+    } else {
+      const img = look==='platform' ? ASSETS.platformWood : ASSETS.groundGrass;
+      if(img.complete && img.naturalWidth) drawTiledH(img, s.x, s.y, s.w, s.h, ax);
+      else { ctx.fillStyle = colorOf(look==='platform' ? '--platform' : '--ground'); ctx.fillRect(x,s.y,s.w,s.h); }
+    }
+  }
+  // Fahrweg bewegter Böden als gepunktete Schiene (wie bei bewegten Haken) + Endpunkte
+  for(const g of moverGroupInfo()){
+    const cx = (g.sMinX+g.sMaxX)/2 - camX, cy = (g.sMinY+g.sMaxY)/2;
+    const tx = cx + g.dx, ty = cy + g.dy;
+    if(Math.max(cx,tx) < -60 || Math.min(cx,tx) > VW+60) continue;
+    ctx.save(); ctx.setLineDash([3,7]); ctx.lineCap='round';
+    ctx.strokeStyle='rgba(0,120,160,.45)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle='rgba(0,120,160,.5)';
+    for(const [px,py] of [[cx,cy],[tx,ty]]){ ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill(); }
+    // gestrichelter Umriss am jeweils anderen Ende, damit man sieht, wohin das Stück fährt
+    const w = g.sMaxX-g.sMinX, h = g.sMaxY-g.sMinY;
+    ctx.save(); ctx.setLineDash([6,5]); ctx.strokeStyle='rgba(0,120,160,.35)'; ctx.lineWidth=2;
+    ctx.strokeRect(Math.round(g.sMinX - camX + g.dx)+1, Math.round(g.sMinY + g.dy)+1, w-2, h-2);
+    ctx.strokeRect(Math.round(g.sMinX - camX)+1, Math.round(g.sMinY)+1, w-2, h-2);
+    ctx.restore();
+  }
+  for(const s of solids){
+    if(s.gone){
+      if(s.type==='crumble' && s.fragments){
+        const fadeT = 1 - Math.min(1, s.breakElapsed/CRUMBLE_FRAGMENT_LIFE);
+        for(const f of s.fragments){
+          const fx = f.x-camX;
+          ctx.save();
+          ctx.translate(fx, f.y);
+          ctx.rotate(f.rot);
+          ctx.globalAlpha = Math.max(0, fadeT);
+          ctx.fillStyle = colorOf('--ground-line');
+          roundRect(-f.w/2, -f.h/2, f.w, f.h, 3); ctx.fill();
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+      }
+      continue;
+    }
+    const x = s.x-camX;
+    if(x+s.w < -20 || x > VW+20) continue;
+    if(s.type==='moveplat' && s.look){ drawSolidLook(s, s.look, Math.round(x)); continue; }
+
+    if(s.type==='platform'){
+      ctx.fillStyle = colorOf('--platform-shadow');
+      roundRect(x+6, s.y+s.h+2, Math.max(0,s.w-12), 6, 3); ctx.fill();
+    }
+
+    if(s.type==='wall'){
+      drawWallPiece(s, x, s.y, 0, 0);
+    } else if(s.type==='door'){
+      const grad = ctx.createLinearGradient(x,s.y,x,s.y+s.h);
+      grad.addColorStop(0,'#b57bd6'); grad.addColorStop(1,'#7a3f9e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x,s.y,s.w,s.h);
+      ctx.strokeStyle='#4a2260'; ctx.lineWidth=2;
+      for(let ly=s.y+8; ly<s.y+s.h; ly+=12){
+        ctx.beginPath(); ctx.moveTo(x+4,ly); ctx.lineTo(x+s.w-4,ly); ctx.stroke();
+      }
+      // Rahmen in der Farbe des zugehörigen Schalters
+      ctx.strokeStyle = linkColor(s.link); ctx.lineWidth = 3;
+      ctx.strokeRect(x+1.5, s.y+1.5, s.w-3, s.h-3);
+    } else if(s.type==='moveplat'){
+      const grad = ctx.createLinearGradient(x,s.y,x,s.y+s.h);
+      grad.addColorStop(0,'#6cc9ef'); grad.addColorStop(1,'#2e8fb8');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x,s.y,s.w,s.h);
+      ctx.strokeStyle='#1e6f96'; ctx.lineWidth=2;
+      ctx.strokeRect(x+2,s.y+2,s.w-4,s.h-4);
+    } else if(s.type==='crumble'){
+      drawGroundPiece(s, x, s.y, 0, GROUND_PAL.c, true);
+      const t = s.triggered ? Math.min(1, s.timer/CRUMBLE_TRIGGER_MS) : 0;
+      const flicker = s.triggered && s.timer>CRUMBLE_TRIGGER_MS*0.6 ? (Math.sin(performance.now()*0.06)>0 ? 0.45 : 0) : 0;
+      ctx.fillStyle = `rgba(220,40,30,${(t*0.35+flicker).toFixed(2)})`;
+      ctx.fillRect(x,s.y,s.w,s.h);
+    } else if(s.type==='ground'){
+      drawGroundPiece(s, x, s.y, 0, GROUND_PAL.g, false);
+    } else {
+      const img = s.type==='platform' ? ASSETS.platformWood : ASSETS.groundGrass;
+      if(img.complete && img.naturalWidth) drawTiledH(img, s.x, s.y, s.w, s.h);
+      else {
+        ctx.fillStyle = colorOf(s.type==='platform' ? '--platform' : '--ground');
+        ctx.fillRect(x,s.y,s.w,s.h);
+      }
+    }
+  }
+
+  // Fahrweg bewegter Haken als gepunktete Schiene
+  for(const h of hooks){
+    if(!h.moving) continue;
+    ctx.save(); ctx.setLineDash([3,7]); ctx.lineCap='round';
+    ctx.strokeStyle='rgba(0,120,160,.45)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(h.startX-camX, h.startY); ctx.lineTo(h.targetX-camX, h.targetY); ctx.stroke();
+    ctx.restore();
+  }
+  for(const h of hooks){
+    const x=h.x-camX, range=hookRange(h);
+    if(x<-range-30||x>VW+range+30) continue;
+    const originX = p1.x, originY = p1.y - p1.h*0.6;
+    const dist = Math.hypot(h.x-originX, h.y-originY);
+    const inRange = dist <= range;
+    ctx.fillStyle = inRange ? 'rgba(80,170,255,0.16)' : 'rgba(150,150,150,0.12)';
+    ctx.strokeStyle = inRange ? 'rgba(80,170,255,0.55)' : 'rgba(150,150,150,0.35)';
+    ctx.lineWidth = inRange ? 2 : 1.4;
+    ctx.beginPath(); ctx.arc(x,h.y,range,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  }
+  for(const h of hooks){
+    const x=h.x-camX;
+    if(x<-30||x>VW+30) continue;
+    const pulse = 3 + Math.sin(performance.now()*0.005 + h.x*0.05)*2;
+    ctx.fillStyle = colorOf('--hook-glow');
+    ctx.beginPath(); ctx.arc(x,h.y,20+pulse,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = colorOf('--hook-ring'); ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(x,h.y,9,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = colorOf('--hook'); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,h.y,12,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = colorOf('--hook-core');
+    ctx.beginPath(); ctx.arc(x,h.y,4.5,0,Math.PI*2); ctx.fill();
+  }
+
+  for(const sp of spikes){
+    const x=sp.x-camX;
+    if(x<-30||x>VW+30) continue;
+    // Stacheln können in 4 Richtungen zeigen (dir 0=oben, 1=rechts, 2=unten, 3=links)
+    ctx.save();
+    ctx.translate(Math.round(x), sp.y - sp.h/2);
+    ctx.rotate((sp.dir||0) * Math.PI/2);
+    ctx.fillStyle = '#7f1d1d';
+    const baseY = sp.h/2 - 2, topY = sp.h/2 - sp.h*0.85;
+    for(const off of [-0.28,0,0.28]){
+      ctx.beginPath();
+      ctx.moveTo(off*sp.w-sp.w*0.16, baseY);
+      ctx.lineTo(off*sp.w, topY);
+      ctx.lineTo(off*sp.w+sp.w*0.16, baseY);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  for(const sw of switchDefs){
+    const x=sw.x-camX;
+    if(x<-30||x>VW+30) continue;
+    const anyOpen = solids.some(d=>(d.type==='door' && d.link===sw.link && d.open) ||
+      (d.type==='moveplat' && d.switchLink===sw.link && d.tripActive)) ||
+      hooks.some(h=>h.moving && h.switchLink===sw.link && h.tripActive);
+    const col = linkColor(sw.link);
+    // Hebel: Sockel am Boden, Stange mit Kugel. Aus = nach links geneigt, an = nach rechts.
+    const target = anyOpen ? 1 : 0;
+    sw.anim = sw.anim===undefined ? target : sw.anim + (target - sw.anim) * 0.25;
+    let ang = -0.6 + sw.anim*1.2;
+    if(sw.pulledT){ const k = (performance.now()-sw.pulledT)/260; if(k < 1) ang += Math.sin(k*Math.PI)*0.15; } // kleiner Nachschwung
+    const baseY = sw.y + 20;                 // Kästchen-Unterkante = Boden
+    const xr = Math.round(x);
+    // Stange
+    ctx.save(); ctx.translate(xr, baseY-9); ctx.rotate(ang);
+    ctx.strokeStyle = '#6b5a4a'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-26); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0,-28,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(-2.2,-30.5,2.3,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    // Sockel mit Nummer
+    ctx.fillStyle = 'rgba(0,0,0,.15)'; roundRect(xr-17, baseY-12, 34, 13, 5); ctx.fill();
+    ctx.fillStyle = '#8c7b69'; roundRect(xr-16, baseY-14, 32, 13, 5); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xr, baseY-8, sw.link > 9 ? 7.5 : 6.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font=(sw.link > 9 ? 'bold 8px' : 'bold 9px') + ' sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(sw.link), xr, baseY-7.5);
+    if(anyOpen){ ctx.strokeStyle = col; ctx.globalAlpha = 0.4 + 0.25*Math.sin(performance.now()*0.008); ctx.lineWidth = 2.5;
+      roundRect(xr-20, baseY-18, 40, 20, 8); ctx.stroke(); ctx.globalAlpha = 1; }
+    // Tasten-Hinweis, wenn jemand davor steht
+    const hints = [];
+    if(leverNear(p1, sw)) hints.push(padConnected[0] ? '○' : 'J');
+    if(leverNear(p2, sw)) hints.push(padConnected[1] ? '○' : 'Num 2');
+    if(hints.length){
+      const label = [...new Set(hints)].join(' / ');
+      ctx.font = 'bold 12px sans-serif';
+      const tw = ctx.measureText(label).width + 14, hy = baseY - 62 + Math.sin(performance.now()*0.006)*2;
+      ctx.fillStyle = 'rgba(20,28,38,.85)'; roundRect(xr - tw/2, hy, tw, 20, 6); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label, xr, hy+10.5);
+    }
+  }
+
+  // Plaketten an allem, was ein Schalter steuert (gleiche Farbe + Nummer wie der Hebel)
+  const seen = new Set();
+  for(const sw of switchDefs){
+    if(seen.has(sw.link)) continue; seen.add(sw.link);
+    for(const t of linkTargets(sw.link)){
+      const x = t.x - camX; if(x < -20 || x > VW+20) continue;
+      drawLinkBadge(Math.round(x), Math.round(t.y), sw.link, t.active);
+    }
+  }
+
+  // Checkpoint-Fahnen
+  for(let i=0;i<checkpointDefs.length;i++){
+    const cp = checkpointDefs[i];
+    const x = Math.round(cp.x - camX), base = cp.y;
+    if(x < -40 || x > VW+60) continue;
+    const poleH = 66;
+    // Mast + Fuß
+    ctx.fillStyle = '#8a7a66'; roundRect(x-7, base-5, 14, 5, 2); ctx.fill();
+    ctx.fillStyle = '#efe6d6'; ctx.fillRect(x-2, base-poleH, 4, poleH);
+    ctx.fillStyle = '#ffcf4d'; ctx.beginPath(); ctx.arc(x, base-poleH-2, 4, 0, Math.PI*2); ctx.fill();
+    // Fahne: unten grau, geht hoch, sobald beide vorbei sind
+    const raised = i <= activeCp && cp.raiseT;
+    let k = raised ? Math.min(1, (tNowCp - cp.raiseT)/700) : 0;
+    k = 1 - Math.pow(1-k, 3);
+    const fy = base - 20 - k*(poleH-22);
+    const wave = Math.sin(tNowCp*0.006 + i)*3*(raised?1:0.3);
+    ctx.fillStyle = raised ? '#ff7a59' : '#c9c3b8';
+    ctx.beginPath();
+    ctx.moveTo(x+2, fy);
+    ctx.quadraticCurveTo(x+16, fy-3+wave, x+28, fy+7+wave*0.5);
+    ctx.quadraticCurveTo(x+16, fy+13+wave, x+2, fy+16);
+    ctx.closePath(); ctx.fill();
+    if(raised){ ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(x+12, fy+7+wave*0.4, 3, 0, Math.PI*2); ctx.fill(); }
+    // Punkte: wer ist schon vorbei (braun = Affe, rosa = Schweinchen)
+    if(!raised){
+      ctx.fillStyle = cp.reachedM ? '#9b6340' : 'rgba(0,0,0,.15)';
+      ctx.beginPath(); ctx.arc(x-8, base-11, 3.5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = cp.reachedF ? '#f48cab' : 'rgba(0,0,0,.15)';
+      ctx.beginPath(); ctx.arc(x+8, base-11, 3.5, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  // Münzen: drehen sich (Breite pulsiert), eingesammelte hüpfen hoch und blenden aus
+  const tNow = performance.now();
+  for(const c of coins){
+    let x = c.x-camX;
+    if(x<-30||x>VW+30) continue;
+    if(c.nudgeT && !c.taken){ const a = tNow - c.nudgeT; if(a < 380) x += Math.sin(a*0.07) * 4 * (1 - a/380); }
+    const pal = COIN_PAL[c.color] || COIN_PAL.gold;
+    let lift, alpha = 1, scale = 1, spin;
+    if(c.taken){
+      const k = Math.min(1, (tNow - (c.takenAt||tNow)) / 420);
+      if(k >= 1) continue;
+      lift = 46 * (1 - Math.pow(1-k, 3));                 // schnellt hoch, bremst ab
+      scale = k < 0.35 ? 1 + k/0.35*0.5 : 1.5 * (1 - (k-0.35)/0.65);  // wächst kurz, schrumpft weg
+      alpha = k < 0.6 ? 1 : 1 - (k-0.6)/0.4;
+      spin = Math.abs(Math.cos(tNow*0.03 + c.x));          // schnelle Drehung
+    } else {
+      lift = Math.sin(tNow*0.003 + c.x*0.02)*2.5;
+      spin = Math.abs(Math.cos(tNow*0.004 + c.x*0.013));
+    }
+    const r = 11*scale, rx = Math.max(2.5*scale, r*spin);
+    if(r < 1) continue;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, c.y - lift);
+    ctx.fillStyle = pal[0]; ctx.beginPath(); ctx.ellipse(0,0,rx,r,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = pal[1]; ctx.beginPath(); ctx.ellipse(0,0,Math.max(0.5,rx-2.5*scale),Math.max(0.5,r-2.5*scale),0,0,Math.PI*2); ctx.fill();
+    if(spin > 0.35){ ctx.fillStyle = pal[2]; ctx.fillRect(-1.5*spin, -r*0.5, 3*spin, r); }
+    ctx.restore();
+  }
+
+  const gx = goal.x-camX;
+  const signImg = ASSETS.signExit;
+  if(signImg.complete && signImg.naturalWidth){
+    const sw=56, sh=56;
+    ctx.drawImage(signImg, gx-sw/2, goal.y-sh, sw, sh);
+  } else {
+    ctx.strokeStyle = '#5a4a3a'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(gx,goal.y); ctx.lineTo(gx,goal.y-48); ctx.stroke();
+    ctx.fillStyle = '#5fb768';
+    ctx.beginPath(); ctx.moveTo(gx,goal.y-48); ctx.lineTo(gx+28,goal.y-40); ctx.lineTo(gx,goal.y-32); ctx.fill();
+  }
+
+  drawCharacter(p2, camX);
+  drawCharacter(p1, camX);
+  drawCoinFx(camX);
+  if(deathState && deathState.phrase) drawDeathBubble();
+
+  // Hinweis am Ziel, wenn noch Münzen fehlen
+  const have = coinsCollected();
+  if(coinsNeeded > 0 && have < coinsNeeded && (p1.atGoal || p2.atGoal)){
+    const msg = 'Noch ' + (coinsNeeded-have) + ' Münze' + (coinsNeeded-have===1?'':'n') + '!';
+    ctx.font = 'bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tw = ctx.measureText(msg).width + 20;
+    ctx.fillStyle = 'rgba(20,28,38,.8)'; roundRect(gx-tw/2, goal.y-92, tw, 26, 8); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; ctx.fillText(msg, gx, goal.y-79);
+  }
+  ctx.restore();
+  drawOffscreenArrows();
+  drawContinuePrompt();
+  if(testJumpMsg && performance.now() - testJumpT < 1800){
+    ctx.font = 'bold 16px sans-serif';
+    const tw = ctx.measureText(testJumpMsg).width + 28;
+    ctx.fillStyle = 'rgba(20,28,38,.85)'; roundRect(W/2 - tw/2, 130, tw, 34, 10); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(testJumpMsg, W/2, 148);
+  }
+}

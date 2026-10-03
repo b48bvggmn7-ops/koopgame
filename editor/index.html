@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monchichi Level-Editor</title>
+<style>
+  :root{
+    --bg:#1b2430; --panel:#242f3d; --panel2:#2c3a4a; --border:#3a4b5c;
+    --text:#eaf2f8; --sub:#9db2c4; --accent:#ffd166; --accent2:#5fc98f;
+    box-sizing:border-box;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
+  #app{display:flex; flex-direction:column; height:100%;}
+  header{padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  header h1{font-size:14px; margin:0; margin-right:12px; color:var(--accent); font-weight:700;}
+  .tool{background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:8px; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .tool.active{background:var(--accent); color:#3a2a00; border-color:var(--accent); font-weight:700;}
+  .swatch{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  .spacer{flex:1;}
+  button.action{background:var(--accent2); color:#08331c; border:none; padding:7px 12px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer;}
+  button.action.secondary{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+  #main{flex:1; display:flex; overflow:hidden;}
+  #canvasWrap{flex:1; overflow:auto; position:relative; background:#16202b;}
+  canvas{display:block; cursor:crosshair;}
+  #side{width:250px; background:var(--panel); border-left:1px solid var(--border); padding:12px; overflow-y:auto; font-size:12px; line-height:1.6; color:var(--sub);}
+  #side h2{font-size:12.5px; color:var(--text); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.04em;}
+  #side h2:first-child{margin-top:0;}
+  .ref-row{display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dashed var(--border);}
+  .ref-row b{color:var(--text); font-weight:600;}
+  #exportBox{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:10; padding:20px;}
+  #exportBox.show{display:flex;}
+  #exportPanel{background:var(--panel); border-radius:12px; padding:16px; max-width:700px; width:100%; max-height:80vh; display:flex; flex-direction:column; gap:8px;}
+  #exportPanel textarea{width:100%; height:300px; background:#0f161e; color:#9fe6a0; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; border-radius:8px; border:1px solid var(--border); padding:10px;}
+  .rowbtns{display:flex; gap:8px; justify-content:flex-end;}
+  .hint{font-size:11px; color:var(--sub); margin-top:4px;}
+  #levelBox{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:10; padding:20px;}
+  #levelBox.show{display:flex;}
+  #levelPanel{background:var(--panel); border-radius:12px; padding:16px; max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column; gap:10px;}
+  #levelPanel input{flex:1; background:#0f161e; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px;}
+  #levelList{overflow-y:auto; display:flex; flex-direction:column; gap:6px; min-height:60px;}
+  .lvl{display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:12.5px;}
+  .lvl .nm{flex:1; color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lvl .dt{color:var(--sub); font-size:11px;}
+  .lvl.cur{border-color:var(--accent);}
+  .mini{background:transparent; border:1px solid var(--border); color:var(--text); border-radius:6px; padding:3px 8px; font-size:11.5px; cursor:pointer;}
+  .mini.del{color:#ff8a80;}
+  .armed{ background:#c0392b !important; color:#fff !important; border-color:#c0392b !important; }
+  #status{font-size:11.5px; color:var(--sub); min-height:16px;}
+  #curName{font-size:12px; color:var(--sub); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .coord{position:fixed; bottom:8px; left:8px; background:rgba(0,0,0,.55); padding:4px 8px; border-radius:6px; font-size:11px; color:var(--text); pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>🐒 Level-Editor</h1>
+    <div class="tool active" data-tool="ground"><span class="swatch" style="background:#8a6a3a"></span>Boden</div>
+    <div class="tool" data-tool="wall"><span class="swatch" style="background:#7a8890"></span>Wand</div>
+    <div class="tool" data-tool="crumble"><span class="swatch" style="background:#c77b3f"></span>Bröckelboden</div>
+    <div class="tool" data-tool="checkpoint"><span class="swatch" style="background:#ff7a59"></span>Checkpoint ⚐</div>
+    <div class="tool" data-tool="coin"><span class="swatch" style="background:#ffc93c"></span>Münze</div>
+    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Wer die Münze einsammeln kann">
+      Farbe
+      <select id="coinColor" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="blue">🔵 Blau – Affe</option><option value="pink">🩷 Pink – Schweinchen</option><option value="gold">🟡 Gold – beide</option>
+      </select>
+    </label>
+    <div class="tool" data-tool="spike"><span class="swatch" style="background:#7f1d1d"></span>Stacheln</div>
+    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="In welche Richtung die Stacheln zeigen">
+      Spitzen
+      <select id="spikeDir" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="0">▲ oben</option><option value="1">▶ rechts</option><option value="2">▼ unten</option><option value="3">◀ links</option>
+      </select>
+    </label>
+    <div class="tool" data-tool="hook"><span class="swatch" style="background:#ffd166"></span>Haken</div>
+    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Reichweite des Hakens in Kästchen">
+      Radius
+      <input id="radiusInput" type="number" min="1" max="20" step="0.5" value="6.5" style="width:56px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+    </label>
+    <div class="tool" data-tool="switch"><span class="swatch" style="background:#ff9f43"></span>Schalter</div>
+    <div class="tool" data-tool="door"><span class="swatch" style="background:#9b59b6"></span>Tür</div>
+    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
+      Verknüpfung
+      <select id="linkSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+      </select>
+    </label>
+    <div class="tool" data-tool="move"><span class="swatch" style="background:#4fc3f7"></span>Bewegung ➜</div>
+    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
+      Tempo
+      <select id="speedSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="2">Langsam</option><option value="3">Mittel</option><option value="4.5" selected>Schnell</option>
+      </select>
+    </label>
+    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Bewegter Boden: an Schalter koppeln">
+      per Schalter
+      <select id="moveSwitchSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="">– fährt immer –</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+      </select>
+    </label>
+    <div class="tool" data-tool="startM"><span class="swatch" style="background:#3a7bd5"></span>Start ♂</div>
+    <div class="tool" data-tool="startF"><span class="swatch" style="background:#e0669e"></span>Start ♀</div>
+    <div class="tool" data-tool="goal"><span class="swatch" style="background:#5fc98f"></span>Ziel</div>
+    <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
+    <div class="spacer"></div>
+    <span id="curName">Unbenanntes Level</span>
+    <button class="action secondary" id="extendBtn" title="Level um 20 Spalten nach rechts verlängern">+20 Spalten ➜</button>
+    <button class="action secondary" id="clearBtn">Alles löschen</button>
+    <button class="action secondary" id="levelsBtn">📂 Levels</button>
+    <button class="action" id="saveBtn">💾 Speichern</button>
+    <button class="action" id="exportBtn">Exportieren</button>
+  </header>
+  <div id="main">
+    <div id="canvasWrap">
+      <canvas id="c"></canvas>
+      <div class="coord" id="coordLabel">Spalte 0, Reihe 0</div>
+    </div>
+    <div id="side">
+      <h2>Raster</h2>
+      <div class="ref-row"><span>1 Kästchen</span><b>40 px</b></div>
+      <div class="hint">Jedes Kästchen = eine feste Einheit. Boden/Wand: klicken/ziehen zum Malen, nochmal klicken zum Entfernen. Haken/Schalter/Tür: jeder Klick setzt einen NEUEN Punkt (beliebig viele möglich). Start/Ziel gibt's je nur einmal.</div>
+      <div class="hint"><b style="color:var(--text)">Rechtsklick</b> (auch gedrückt ziehen) = Radierer, egal welches Werkzeug aktiv ist.</div>
+      <div class="hint">Das Level wächst nach rechts automatisch mit, sobald du nah am Rand malst – oder per „+20 Spalten“. Mausrad scrollt seitlich.</div>
+      <div class="hint"><b style="color:var(--text)">Bewegung ➜:</b> Erst ganz normal Boden (oder Wand) malen. Dann mit „Bewegung“ auf ein Kästchen davon klicken und zum Zielpunkt ziehen. Das ganze zusammenhängende Stück (gleiche Sorte) fährt dann immer hin und zurück. Ohne Ziehen draufklicken = Pfeil entfernen. Funktioniert genauso mit einem Haken: vom Haken aus ziehen → der Haken pendelt (auch per Schalter). „per Schalter“ vor dem Ziehen wählen: dann steht das Stück still, bis jemand den Schalter (Hebel) mit dieser Nummer betätigt, und fährt ab da dauerhaft hin und her. Ohne Schalter fährt es von Anfang an. Stirbt jemand, springen alle bewegten Teile zurück an den Start (mit Schalter warten sie dann wieder). Tipp: bewegtes Stück darf nicht direkt an gleichartigen festen Boden grenzen, sonst gehört der mit dazu.</div>
+      <div class="ref-row"><span>Aktuelle Länge</span><b id="lenLabel">60 Spalten</b></div>
+
+      <h2>Bewegungs-Referenz</h2>
+      <div class="ref-row"><span>Normaler Sprung</span><b>~4 breit, 3 hoch</b></div>
+      <div class="ref-row"><span>Wandsprung-Reichweite</span><b>~6 breit, 5 hoch</b></div>
+      <div class="ref-row"><span>Sicherer Wandsprung-Spalt</span><b>~2 breit</b></div>
+      <div class="ref-row"><span>Haken max. Reichweite</span><b>~6–7 Kästchen</b></div>
+      <div class="ref-row"><span>Segelflug (grob)</span><b>~19 breit pro 7–8 tief</b></div>
+      <div class="hint">Richtwerte zum Grobplanen. Ich prüfe dein Level danach trotzdem per Simulation, bevor ich es einbaue – das hier ersetzt nicht die Kontrolle, spart aber Rateraten.</div>
+
+      <h2>Legende</h2>
+      <div class="ref-row"><span>Boden</span><b>durchgehend, blockiert</b></div>
+      <div class="ref-row"><span>Wand</span><b>für Wandsprung/Haken</b></div>
+      <div class="ref-row"><span>Bröckelboden</span><b>bricht 3 Sek. nach Betreten weg</b></div>
+      <div class="ref-row"><span>Haken</span><b>Ankerpunkt (nur ♂)</b></div>
+      <div class="hint">Haken-Radius (in Kästchen) vor dem Setzen oben einstellen. Mit dem Haken-Werkzeug auf einen vorhandenen Haken klicken übernimmt den eingestellten Radius.</div>
+      <div class="ref-row"><span>Stacheln</span><b>Berührung = zurück zum Checkpoint</b></div>
+      <div class="hint">Richtung der Spitzen oben bei „Spitzen“ wählen (z. B. ▼ unter eine Decke, ◀/▶ an Wände). Mit dem Stacheln-Werkzeug auf vorhandene Stacheln klicken dreht sie um 90°.</div>
+      <div class="hint"><b style="color:var(--text)">Schalter</b> sind im Spiel kleine Hebel in der Farbe ihrer Nummer. Man betätigt sie mit einer Taste (Affe J, Schweinchen Num 2, Controller Kreis). Den Schalter auf das Kästchen direkt über dem Boden setzen.</div>
+      <div class="ref-row"><span>Checkpoints</span><b id="cpCount">0 gesetzt</b></div>
+      <div class="hint">Checkpoint auf das Kästchen direkt ÜBER dem Boden setzen (wie Start/Ziel). Er zählt erst, wenn BEIDE vorbei sind – dann geht die Fahne hoch. Stirbt jemand, starten beide am letzten erreichten Checkpoint (sonst am Start).</div>
+      <div class="ref-row"><span>Münzen</span><b id="coinCount">0 gesetzt</b></div>
+      <div id="coinBalance" style="margin:4px 0 6px; padding:8px 10px; border-radius:8px; background:var(--panel2); font-size:12.5px; line-height:1.6;"></div>
+      <div class="hint">Blaue Münzen kann nur der Affe einsammeln, pinke nur das Schweinchen, goldene beide. Farbe oben bei „Farbe“ wählen; mit dem Münz-Werkzeug auf eine vorhandene Münze klicken wechselt ihre Farbe. Das Ziel zählt erst mit 10 Münzen (hat das Level weniger als 10, müssen alle gesammelt werden).</div>
+      <div class="ref-row"><span>Schalter/Tür</span><b>gleiche Zahl = verknüpft</b></div>
+      <div class="hint">Tür schließt sich 5 Sek. nach dem Öffnen automatisch wieder (Timing beim Bau berücksichtigen).</div>
+      <div class="hint">Vor dem Setzen von Schalter/Tür oben die Verknüpfungs-Nummer wählen – Schalter und Tür mit derselben Nummer gehören zusammen. Eine Nummer kann auch mehrfach vorkommen (z. B. 2 Schalter, 1 Tür).</div>
+    </div>
+  </div>
+</div>
+
+<div id="exportBox">
+  <div id="exportPanel">
+    <h2 style="margin:0;color:#fff;font-size:14px;">Export</h2>
+    <textarea id="exportText" readonly></textarea>
+    <div class="rowbtns">
+      <button class="action secondary" id="downloadBtn" style="display:none">Als Datei speichern (fürs Spiel)</button>
+      <button class="action secondary" id="copyBtn">In Zwischenablage kopieren</button>
+      <button class="action" id="closeExport">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div id="levelBox">
+  <div id="levelPanel">
+    <h2 style="margin:0;color:#fff;font-size:14px;">Levels</h2>
+    <div style="display:flex; gap:8px;">
+      <input id="levelName" placeholder="Name des Levels, z. B. Welt 1-1" maxlength="60">
+      <button class="action" id="saveAsBtn">Speichern</button>
+    </div>
+    <div id="status"></div>
+    <div id="levelList"></div>
+    <div class="rowbtns">
+      <button class="action secondary" id="newLevelBtn">Neues leeres Level</button>
+      <button class="action" id="closeLevels">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<script src="editor.js"></script>
+</body>
+
+</html>
