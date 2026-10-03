@@ -1,0 +1,121 @@
+# Funktionsliste – Monchichi Koop
+
+Diese Liste beschreibt ALLES, was Spiel und Editor können. Vor jeder Änderung prüfen, dass nichts davon
+verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen ohne Rückfrage beim Nutzer.
+
+## Spiel (index.html + js/)
+```
+  MONCHICHI KOOP – SPIEL – FUNKTIONSLISTE
+  - Figuren: süßer Affe (eigene Zeichnung, ersetzt Kenney-Affe) und pinkes Schweinchen, beide mit Zwinker-Bild
+    (monkeyBlink/pigBlink, alle ~3-5 s kurz); Schatten nur wenn am Boden
+  - Spieler 1 (♂): A/D, Leertaste springen/Wandsprung, G Haken, W ranziehen, S Seil geben (H/J fürs Seil entfallen;
+    Controller: Steuerkreuz/Stick hoch = ranziehen, runter = Seil geben; R/L-Tasten fürs Seil entfallen)
+  - Seil ist elastisch: streift man beim Schwingen eine Wand, löst es NICHT, die Figur wird aufgehalten/rutscht
+    entlang; hängt sie fest, dehnt sich das Seil (dünner, orange-rot, zittert, zieht zurück). Es REISST NIE
+    (bei >70 px Dehnung gibt es Seil nach). Gelöst wird es per G, Springen oder wenn man am Seil auf etwas LANDET
+    (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …). Vom Boden aus eingehakt bleibt es dran
+    (ropeWasAirborne), damit man sich mit W / Hoch hochziehen kann. Ranziehen langsamer (ROPE_PULL_SPEED 2,4)
+    und ohne Schwung Richtung Haken (kein Hüpfen oben); runterlassen bis zum Rand des Reichweiten-Rings (ropeMax).
+  - Spielerin 2 (♀, pinkes Schweinchen – eigenes Sprite im Kenney-Round-Stil, Asset "pig"): Pfeil links/rechts, Nummernblock-0 springen/Wandsprung (normale 0 geht auch),
+    Nummernblock-1 in der Luft halten = Segelschirm (eigene Taste, normale 1 geht auch) (klappt weich auf, schwingt, sie hängt aufrecht); Start aus Editor (startF)
+  - Spielerin 2 kann NICHT eingehakt werden (bewusst entfernt, Nutzerwunsch) – G greift nur Haken
+  - KEIN ZOOM (Nutzerentscheidung: Spielfeld bleibt immer 16:9 gleich groß, Ziel Vollbild; Zoom nach oben/
+    nur seitlich verworfen). Kamera: hintere Figur ~300 px vom linken Rand, vordere höchstens bei 75 % der
+    Bildbreite (FRONT_MAX). Passen beide nicht ins Bild, folgt die Kamera der VORDEREN Figur (Abstand max.
+    1,25 Bildschirmbreiten = hintere höchstens einen halben Bildschirm außerhalb, keepTogether/MAX_SEPARATION); die hintere erscheint als Pfeil mit
+    Gesicht + Abstand in Kästchen am linken Rand.
+    Sichtbare Weltbreite = VW (für Ausschnitt-/Sichtbarkeitsprüfungen VW statt W benutzen!)
+  - Gemeinsame Kamera schaut nach vorn: hintere Figur ~300 px vom linken Rand, vordere mind. 70 px vom rechten
+    (CAM_LEFT/CAM_RIGHT) -> man sieht möglichst viel vom Weg; max. Abstand ~1 Bildschirmbreite; Ziel erst geschafft, wenn BEIDE da sind
+  - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
+    Stick/Steuerkreuz laufen, Kreuz springen, Viereck = Haken bzw. Schirm, Kreis = Hebel, hoch = ranziehen, runter = Seil geben,
+    Options = Neustart; Status "Controller verbunden" in den Steuerungs-Kästen
+  - Flüssigkeit: Kamera wird auf ganze Pixel gerundet (camPos weich, camX gerundet), Figuren und bewegte Teile
+    ebenfalls -> kein Zittern gegeneinander; kein backdrop-filter über dem Spielbild (kostet GPU jedes Bild)
+  - Dezenter Parallax-Hintergrund: heller Himmelsverlauf, ziehende Wolken, ferne Hügel, nähere Hügel mit
+    Bäumchen-Silhouetten; kontrastarm und heller als alle Spielelemente; vorgezeichnet (billig pro Bild)
+  - Fester Spieltakt: Physik immer 60 Schritte/s (Akkumulator in loop/stepSim), Anzeige dazwischen interpoliert
+    (drawInterpolated: Figuren, bewegter Boden, bewegte Haken) -> auf 120/144-Hz-Bildschirmen NICHT schneller;
+    Kamera-Nachziehen und Lichtpartikel ebenfalls zeitbasiert
+  - Leistungs-Anzeige unten rechts (Taste F ein/aus): Bilder/Sek., Ruckler, Arbeitszeit pro Bild (Logik/Zeichnen)
+    und Einschätzung: Problem im Spiel-Code vs. Rechner/Browser liefert zu wenig Bilder vs. >70-Hz-Bildschirm
+  - Schalter = kleiner HEBEL, mit Taste betätigen (nicht mehr drauftreten): Spieler 1 J / Controller Kreis,
+    Spielerin 2 Num 2 (normale 2 geht auch) / Controller Kreis; Reichweite ~60 px; Figur lehnt sich animiert zum
+    Hebel, Hebel kippt von links nach rechts (bleibt rechts, solange das Gesteuerte aktiv ist), "Klack"-Ton;
+    Tasten-Hinweis (J / Num 2 / ○) über dem Hebel, wenn jemand davor steht. J ist zusätzlich "Seil geben" am Haken.
+  - Schalter-Zuordnung sichtbar: Nummern 1–20 mit je eigener Farbe (LINK_COLORS, ab 21 automatisch); Hebel-Kugel, Tür-Rahmen und Plaketten an
+    Türen/bewegtem Boden/bewegten Haken in derselben Farbe + Nummer. Verbindungslinien bewusst ENTFERNT (Nutzerwunsch).
+  - Bewegter Boden zeigt seinen Fahrweg: gepunktete Schiene, Endpunkte, gestrichelter Umriss an Start und Ziel
+  - Stacheln können in 4 Richtungen zeigen (spike.dir 0=oben,1=rechts,2=unten,3=links; Treffer = ganzes Kästchen)
+  - Schalter, bewegter Boden, Stacheln, Checkpoints gelten für beide Spieler
+  - Münzfarben (coin.color): blau = nur Affe, pink = nur Schweinchen, gold = beide; falsche Figur -> Münze wackelt;
+    Effekte (Ring/Funken) in Münzfarbe; Münz-Kasten zeigt zusätzlich "● Affe a/b  ● Schwein a/b"
+  - Münzen (data.coins [{x,y}] aus dem Editor): beide sammeln gemeinsam, Zähler als Kästchen oben mittig (HTML-HUD); Ziel zählt erst
+    mit 10 Münzen (oder allen, wenn weniger im Level); am Ziel Hinweis "Noch X Münzen!"; beim Sterben bleiben
+    gesammelte Münzen, bei Neustart (R) sind alle wieder da; Aufsammel-Effekt: Münze schnellt hoch/dreht/verpufft,
+    Funkelsterne, Lichtring, "+1", Zähler hüpft, kleiner "Bling"-Ton (WebAudio), schnelle Folge = jeweils höherer Ton
+  - Bewegte Haken (hook.targetX/targetY/speed/switchLink aus dem Editor): pendeln wie bewegter Boden,
+    optional per Schalter gestartet, dann dauerhaft (ohne Schalter: erst ab Sichtbarkeit, s. activateVisibleMovers); gepunktete Schiene zeigt den Weg; Seil zieht Spieler 1 mit
+  - Sprint (länger halten = schneller), Wandsprung nur mit Schwung UND Richtungstaste von der Wand weg
+    (Streichen wurde getestet: zu einfach -> wieder aktiv), skaliert mit Tempo; pro Wandseite nur
+    einmal (lastWallJumpSide, Reset bei Bodenkontakt) -> keine Einzelwand-Kletterei, Kamin-Klettern geht;
+    Zeitfenster für den Wandsprung 180 ms nach letztem Wandkontakt (Tastatur) bzw. 250 ms, wenn per Controller gesprungen;
+    Controller zusätzlich: zuletzt berührte Wandseite zählt auch nach dem Loslösen (lastWallSide), und ✕ darf bis
+    150 ms vor dem Stick-Umlenken kommen (wjPendingUntil). Tastatur bewusst unverändert.
+  - Haken mit eigenem Radius pro Haken (Standard 260px), Reichweiten-Kreis grau/blau, greift nicht durch Wände
+  - Bröckelboden (0,6 s, zerfällt in Fragmente), Schalter+Tür (Tür 5 s offen), Stacheln (zurück zum Checkpoint)
+  - Tür-Koordinaten aus dem Editor = Mittelpunkt des Kästchens (wird beim Laden in obere linke Ecke umgerechnet)
+  - Bewegliche Stücke (movingPlatforms, look=ground/wall/platform, group, speed), pendeln, nehmen Spieler mit;
+    Textur fährt mit dem Stück mit (am Stück verankert), kein Extra-Rand;
+    optional switchLink: gibt es einen Schalter mit der Nummer, startet das Betreten des Schalters die Bewegung,
+    danach pendelt es dauerhaft; ohne Schalter fährt es erst los, wenn sein Fahrweg ins Bild kommt
+    (activateVisibleMovers, 40 px Vorlauf), dann dauerhaft; mehrteiliger Boden startet gemeinsam
+  - Stirbt jemand (Stacheln/runtergefallen): ALLE bewegten Böden und Haken springen an ihren Start zurück (beim Weitermachen);
+    ohne Schalter fahren sie sofort wieder los, mit Schalter warten sie auf erneutes Betätigen
+  - Kollision (collideAxis): Überlappungen < 0,01 px (Rundungsfehler) ignoriert; seitliches Herausschieben um mehr
+    als die Figurbreite bei nur knapper Höhen-Überlappung wird stattdessen senkrecht gelöst -> kein "Teleport" ans
+    Ende eines Decken-/Bodenstreifens mehr (trat z. B. bei Decken-Unterkante 480 auf, Figur 32,3 px hoch)
+  - Wand wird als Mauerwerk direkt gezeichnet (drawWallPiece): Steinquader 40x20 im Versatz, Fugen an der Welt
+    ausgerichtet -> nahtlos über angrenzende Wandstücke, senkrecht/waagerecht/flächig; heller Rand oben, Schatten
+    unten, runde Ecken nur an echten Enden (Nachbarn via computeGroundNeighbors, Familie 'w'/'mw')
+  - Boden & Bröckelboden werden direkt gezeichnet (keine abgeschnittenen Textur-Streifen mehr): Gras mit Welle,
+    runde Ecken nur an echten Enden, nahtlos zu Nachbarn (computeGroundNeighbors)
+  - Test-Hilfe: Taste C = zum nächsten Checkpoint springen, X = zum vorherigen/Start (auch ungeschafft);
+    Hinweis "Test: Checkpoint n von m" im Bild. Bewusst OHNE neue HTML-Elemente.
+  - (Artifact-Zeit) Das Spiel startete in der Artifact-Ansicht nicht, wenn der Kommentar VOR <html> > ~8 KB war.
+    Im GitHub-Projekt nicht mehr relevant, Bilder liegen jetzt als Dateien in assets/.
+  - Checkpoints aus dem Editor (data.checkpoints [{x,y}]): zählen erst, wenn BEIDE vorbei sind (Punkte am Mast
+    zeigen, wer schon durch ist) -> Fahne geht hoch + Funken + kleine Fanfare. Automatische Pro-Figur-Checkpoints
+    entfernt. Ohne erreichten Checkpoint = Start.
+  - Tod (Stacheln/Absturz): Spiel pausiert, Figur verpufft; NUR MANCHMAL (~1/3, spätestens nach 3 stillen Toden)
+    schüttelt die andere genervt den Kopf mit Sprechblase (zufälliger Spruch: "Idiot!", "Einmal mit Profis…",
+    "Arschloch!" …), dann "Beliebige Taste drücken" (Tastatur, Maus, JEDE Controller-Taste inkl. Options oder
+    Stick kräftig bewegen, ab 0,6 s) -> BEIDE starten am letzten gemeinsamen Checkpoint; Bröckelboden/Türen/
+    bewegte Teile zurückgesetzt, Münzen bleiben. Freie Stelle wird per nudgeFree gesichert.
+  - Decken-Begrenzung, Kenney-Tiles
+  - "Level laden (JSON)": liest Editor-Export (Spiel-Format) oder altes Editor-Rohformat
+```
+
+## Level-Editor (editor/)
+```
+  MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE
+  - Werkzeuge: Boden, Wand, Bröckelboden, Stacheln, Haken (mit Radius in Kästchen),
+    Checkpoint ⚐ (zählt, wenn beide vorbei sind; Export sortiert nach x, Fußpunkt wie Start),
+    Stacheln in 4 Richtungen (Auswahl „Spitzen“ ▲▶▼◀; Klick auf vorhandene Stacheln dreht um 90°; Export dir 0-3),
+    Münzen in 3 Farben (Auswahl „Farbe“: Blau = nur Affe, Pink = nur Schweinchen, Gold = beide; Klick auf
+    vorhandene Münze wechselt die Farbe; Zähler in der Seitenleiste zeigt Blau/Pink/Gold + ob Blau = Pink;
+    Export coin.color; gemeinsam 10 sammeln, sonst alle), Schalter + Tür (Verknüpfungs-Nummer 1–20; im Spiel ein Hebel, per Taste), Bewegung ➜ (zusammenhängendes Stück pendelt, Tempo wählbar,
+    optional „per Schalter“ 1–20 → Schalter startet die Bewegung, danach dauerhaft; bei Tod zurück an Start; auch mit Haken:
+    Bewegung vom Haken aus ziehen → Haken pendelt, Daten in hook.move {dc,dr,speed,link}),
+    Start ♂, Start ♀, Ziel, Radieren
+  - Rechtsklick (auch ziehen) = Radierer, unabhängig vom Werkzeug
+  - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt
+  - Level wächst nach rechts automatisch mit, „+20 Spalten“-Button, Mausrad scrollt seitlich
+  - Bestätigungen (Löschen, Alles löschen, Neues Level, Laden/Überschreiben bei ungespeicherten Änderungen) per
+    2. Klick direkt am Button (armConfirm) bzw. 2. Speichern – KEIN confirm()/alert(): ist im Artifact blockiert!
+  - Levels speichern/laden/löschen mit Namen (Artifact-Datenbank, Collection "levels"), Strg+S
+  - Arbeitsstand-Autosave im Browser (localStorage)
+  - Plattform-Werkzeug bewusst entfernt (Nutzerwunsch, Boden reicht); alte Plattform-Kacheln in
+    gespeicherten Levels werden weiter angezeigt/exportiert und lassen sich radieren
+  - Export im Spiel-Format (Textfeld kopieren oder als .json-Datei speichern)
+```
