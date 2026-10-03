@@ -63,6 +63,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Schalter, bewegter Boden, Stacheln, Checkpoints gelten für beide Spieler
   - Münzfarben (coin.color): blau = nur Affe, pink = nur Schweinchen, gold = beide; falsche Figur -> Münze wackelt;
     Effekte (Ring/Funken) in Münzfarbe; Münz-Kasten zeigt zusätzlich "● Affe a/b  ● Schwein a/b"
+  - Münzen-Aussehen (drawCoin3D): etwas größer (Radius 12,5 statt 11, nur Zeichnung – Einsammel-Bereich
+    unverändert), 3D: sichtbare Kante beim Drehen, Lichtverlauf, geprägter Innenring mit Stern, Glanzlicht;
+    dunkler Umriss, weicher Schein in Münzfarbe und leichter Schatten -> heben sich vom Dschungel ab
   - Münzen (data.coins [{x,y}] aus dem Editor): beide sammeln gemeinsam, Zähler als Kästchen oben mittig (HTML-HUD); Ziel zählt erst
     mit 10 Münzen (oder allen, wenn weniger im Level); am Ziel Hinweis "Noch X Münzen!"; beim Sterben bleiben
     gesammelte Münzen, bei Neustart (R) sind alle wieder da; Aufsammel-Effekt: Münze schnellt hoch/dreht/verpufft,

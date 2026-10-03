@@ -9,6 +9,57 @@ const particles = Array.from({length:18}, () => ({
   r: 1+Math.random()*2, speed: 0.15+Math.random()*0.35,
   phase: Math.random()*Math.PI*2, par: 0.5+Math.random()*0.4,
 }));
+// Münze in 3D: Kante (Dicke) wird beim Drehen seitlich sichtbar, Fläche mit Licht oben links,
+// geprägter Innenring, Glanzlicht; dunkler Umriss + weicher Schein und Schatten -> hebt sich vom
+// Dschungel-Hintergrund ab. Nur Zeichnung – der Einsammel-Bereich (updateCoins) ist unabhängig davon.
+const COIN_DRAW_R = 12.5;   // vorher 11
+function drawCoin3D(x, y, r, ang, pal, alpha, glow, g){
+  if(r < 1) return;
+  const c = g || ctx;   // g: andere Zeichenfläche (für Tests)
+  const cs = Math.cos(ang), face = Math.max(0.12, Math.abs(cs)), rx = r*face;
+  const thick = r*0.28*Math.sqrt(1 - face*face) + r*0.04;    // sichtbare Kante, am größten in Seitenansicht
+  const side = Math.sin(ang) >= 0 ? 1 : -1;
+  c.save(); c.globalAlpha = alpha; c.translate(x, y);
+  if(glow){
+    const gl = c.createRadialGradient(0, 0, r*0.6, 0, 0, r*1.9);
+    gl.addColorStop(0, `rgba(${pal[3]},0.38)`); gl.addColorStop(1, `rgba(${pal[3]},0)`);
+    c.fillStyle = gl; c.beginPath(); c.arc(0, 0, r*1.9, 0, Math.PI*2); c.fill();
+    c.fillStyle = 'rgba(20,40,20,0.18)';                    // weicher Schatten nach unten rechts
+    c.beginPath(); c.ellipse(2.5, 3.5, Math.max(rx, thick) + 1, r, 0, 0, Math.PI*2); c.fill();
+  }
+  // Kante (Rückseite + Verbindungsstück)
+  c.fillStyle = pal[0];
+  c.beginPath(); c.ellipse(-side*thick, 0, rx, r, 0, 0, Math.PI*2); c.fill();
+  c.fillRect(Math.min(0, -side*thick), -r, thick, r*2);
+  c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = 1;
+  for(let k = -3; k <= 3; k++){ const yy = k*r/4; c.beginPath(); c.moveTo(0, yy); c.lineTo(-side*thick, yy); c.stroke(); }
+  // Vorderseite mit Lichtverlauf
+  const fg = c.createLinearGradient(-rx, -r, rx, r);
+  fg.addColorStop(0, pal[2]); fg.addColorStop(0.45, pal[1]); fg.addColorStop(1, pal[0]);
+  c.fillStyle = fg; c.beginPath(); c.ellipse(0, 0, rx, r, 0, 0, Math.PI*2); c.fill();
+  c.strokeStyle = 'rgba(40,25,0,0.45)'; c.lineWidth = 1.4; c.stroke();
+  // geprägter Innenring (oben dunkel, unten hell = vertieft)
+  const ir = r*0.68, irx = rx*0.68;
+  if(irx > 1.2){
+    c.lineWidth = Math.max(1, r*0.12);
+    c.strokeStyle = pal[0]; c.beginPath(); c.ellipse(0, 0, irx, ir, 0, Math.PI, Math.PI*2); c.stroke();
+    c.strokeStyle = pal[2]; c.beginPath(); c.ellipse(0, 0, irx, ir, 0, 0, Math.PI); c.stroke();
+    // Stern in der Mitte
+    if(face > 0.3){
+      c.fillStyle = pal[2]; c.beginPath();
+      for(let k = 0; k < 10; k++){
+        const a = -Math.PI/2 + k*Math.PI/5, rr = (k % 2 ? 0.18 : 0.42)*r;
+        c.lineTo(Math.cos(a)*rr*face, Math.sin(a)*rr);
+      }
+      c.closePath(); c.fill();
+      c.strokeStyle = pal[0]; c.lineWidth = 0.8; c.stroke();
+    }
+  }
+  // Glanzlicht
+  c.fillStyle = 'rgba(255,255,255,0.75)';
+  c.beginPath(); c.ellipse(-rx*0.42, -r*0.48, Math.max(0.6, rx*0.22), r*0.14, -0.6, 0, Math.PI*2); c.fill();
+  c.restore();
+}
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_LEFT px),
   // damit man möglichst viel von dem sieht, was als Nächstes kommt. Die vordere Figur
@@ -524,25 +575,19 @@ function drawSolidLook(s, look, x){
     if(x<-30||x>VW+30) continue;
     if(c.nudgeT && !c.taken){ const a = tNow - c.nudgeT; if(a < 380) x += Math.sin(a*0.07) * 4 * (1 - a/380); }
     const pal = COIN_PAL[c.color] || COIN_PAL.gold;
-    let lift, alpha = 1, scale = 1, spin;
+    let lift, alpha = 1, scale = 1, ang;
     if(c.taken){
       const k = Math.min(1, (tNow - (c.takenAt||tNow)) / 420);
       if(k >= 1) continue;
       lift = 46 * (1 - Math.pow(1-k, 3));                 // schnellt hoch, bremst ab
       scale = k < 0.35 ? 1 + k/0.35*0.5 : 1.5 * (1 - (k-0.35)/0.65);  // wächst kurz, schrumpft weg
       alpha = k < 0.6 ? 1 : 1 - (k-0.6)/0.4;
-      spin = Math.abs(Math.cos(tNow*0.03 + c.x));          // schnelle Drehung
+      ang = tNow*0.03 + c.x;                               // schnelle Drehung
     } else {
       lift = Math.sin(tNow*0.003 + c.x*0.02)*2.5;
-      spin = Math.abs(Math.cos(tNow*0.004 + c.x*0.013));
+      ang = tNow*0.004 + c.x*0.013;
     }
-    const r = 11*scale, rx = Math.max(2.5*scale, r*spin);
-    if(r < 1) continue;
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, c.y - lift);
-    ctx.fillStyle = pal[0]; ctx.beginPath(); ctx.ellipse(0,0,rx,r,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = pal[1]; ctx.beginPath(); ctx.ellipse(0,0,Math.max(0.5,rx-2.5*scale),Math.max(0.5,r-2.5*scale),0,0,Math.PI*2); ctx.fill();
-    if(spin > 0.35){ ctx.fillStyle = pal[2]; ctx.fillRect(-1.5*spin, -r*0.5, 3*spin, r); }
-    ctx.restore();
+    drawCoin3D(x, c.y - lift, COIN_DRAW_R*scale, ang, pal, alpha, !c.taken);
   }
 
   const gx = goal.x-camX;

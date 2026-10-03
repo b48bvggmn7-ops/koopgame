@@ -391,6 +391,20 @@ async def deko_frei_von_spielobjekten(g):
     assert not bad, f'Deko auf Spielobjekten bei x={bad}'
     assert await g.ev('decoPlants.length') > 0, 'gar keine Pflanzen'
 
+@test
+async def muenzen_groesser_3d(g):
+    """Münzen werden größer gezeichnet (Radius > 11) und haben in Seitenansicht eine sichtbare Kante."""
+    res = await g.ev("""(()=>{ const cv = document.createElement('canvas'); cv.width = cv.height = 200;
+      const c = cv.getContext('2d'), a = (x,y)=>c.getImageData(x,y,1,1).data[3];
+      drawCoin3D(100, 100, COIN_DRAW_R, 0, COIN_PAL.gold, 1, false, c);
+      const face = [a(100,100+COIN_DRAW_R-1), a(100,100-COIN_DRAW_R+1), a(100+11.5,100)];
+      c.clearRect(0,0,200,200);
+      drawCoin3D(100, 100, COIN_DRAW_R, Math.PI/2 - 0.05, COIN_PAL.gold, 1, false, c);
+      let w = 0; for(let x=80;x<120;x++) if(a(x,100)>200) w++;
+      return {r: COIN_DRAW_R, face, w}; })()""")
+    assert res['r'] > 11 and all(v > 0 for v in res['face']), f'Münze nicht größer: {res}'
+    assert res['w'] >= 3, f'keine sichtbare Kante in Seitenansicht: {res}'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):
