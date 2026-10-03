@@ -405,6 +405,22 @@ async def muenzen_groesser_3d(g):
     assert res['r'] > 11 and all(v > 0 for v in res['face']), f'Münze nicht größer: {res}'
     assert res['w'] >= 3, f'keine sichtbare Kante in Seitenansicht: {res}'
 
+@test
+async def broeckelboden_animation(g):
+    """Bröckelboden hält weiter 0,6 s, zerspringt dann in viele Brocken mit Staub; danach ist alles weg."""
+    await g.load(level([ground(0, 680, 300), ground(400, 600, 160, 40, 'crumble'), ground(400, 680, 600)],
+                       {'x': 480, 'y': 600}, {'x': 60, 'y': 680}))
+    await g.ev("solids.find(s=>s.type==='crumble').triggered=false")
+    await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); s.triggered=true; s.timer=0; })()")
+    await g.p.wait_for_timeout(420)
+    st = await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); return {gone:s.gone, t:s.timer}; })()")
+    assert not st['gone'], f'bricht zu früh: {st}'
+    await g.p.wait_for_timeout(450)
+    st = await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); return {gone:s.gone, n:(s.fragments||[]).length, d:(s.dust||[]).length, poly:!!(s.fragments&&s.fragments[0].pts)}; })()")
+    assert st['gone'] and st['n'] >= 12 and st['d'] > 0 and st['poly'], f'kein Zerspringen: {st}'
+    await g.p.wait_for_timeout(1000)
+    assert await g.ev("solids.find(s=>s.type==='crumble').fragments === null"), 'Brocken verschwinden nicht'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

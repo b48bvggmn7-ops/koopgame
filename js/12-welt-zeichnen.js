@@ -60,6 +60,69 @@ function drawCoin3D(x, y, r, ang, pal, alpha, glow, g){
   c.beginPath(); c.ellipse(-rx*0.42, -r*0.48, Math.max(0.6, rx*0.22), r*0.14, -0.6, 0, Math.PI*2); c.fill();
   c.restore();
 }
+// Bröckelboden: wachsende Risse und rieselnde Krümel während der Vorwarnung (ohne Spielzustand zu ändern:
+// alles wird aus s.timer berechnet)
+function crumbleRnd(a, b){ const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; return v - Math.floor(v); }
+function drawCrumbleWarning(s, x, y, t){
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for(let cx0 = 12; cx0 < s.w - 6; cx0 += 26){
+    const r = crumbleRnd(s.x + cx0, s.y);
+    const px = x + cx0 + r*8, py = y + s.h*0.5;
+    for(const dir of [-1, 1]){
+      const len = (8 + r*10)*t;
+      ctx.strokeStyle = 'rgba(60,28,8,.85)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(px, py);
+      ctx.lineTo(px + dir*len*0.6, py - len*0.35); ctx.lineTo(px + dir*len, py + len*0.2*(r - 0.5)); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,220,180,.35)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(px + 1, py + 1); ctx.lineTo(px + dir*len*0.6 + 1, py - len*0.35 + 1); ctx.stroke();
+    }
+  }
+  // Krümel rieseln unten heraus
+  const n = Math.round(s.w/12);
+  for(let i = 0; i < n; i++){
+    const start = crumbleRnd(i, s.x)*CRUMBLE_TRIGGER_MS*0.7, age = s.timer - start;
+    if(age < 0) continue;
+    const fx = x + 4 + crumbleRnd(s.x, i)*(s.w - 8), fy = y + s.h - 2 + 0.00035*age*age + age*0.02;
+    ctx.globalAlpha = Math.max(0, 1 - age/500);
+    ctx.fillStyle = i % 3 ? '#8a5430' : '#c99468';
+    ctx.fillRect(fx, fy, 2.5, 2.5);
+  }
+  ctx.restore();
+}
+// Zerbrechen: drehende Brocken (oben mit Gras), Steinchen und Staubwolke
+function drawCrumbleBreak(s){
+  const pal = {grass:'#5cb883', grassTop:'#8fd9a8', dirt1:'#c99468', dirt2:'#a86f45', edge:'#6e4122'};
+  const k = Math.min(1, s.breakElapsed/CRUMBLE_FRAGMENT_LIFE);
+  const fade = k < 0.6 ? 1 : 1 - (k - 0.6)/0.4;
+  ctx.save();
+  for(const d of (s.dust||[])){
+    const dx = d.x - camX;
+    if(dx < -40 || dx > VW + 40) continue;
+    const a = 0.5*(1 - k);
+    const g = ctx.createRadialGradient(dx, d.y, 0, dx, d.y, d.r);
+    g.addColorStop(0, `rgba(200,165,120,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(200,165,120,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(dx, d.y, d.r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = Math.max(0, fade);
+  for(const f of s.fragments){
+    const fx = f.x - camX;
+    if(fx < -40 || fx > VW + 40) continue;
+    ctx.save(); ctx.translate(fx, f.y); ctx.rotate(f.rot);
+    ctx.beginPath(); f.pts.forEach(([px, py], i)=> i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath();
+    const g = ctx.createLinearGradient(0, -12, 0, 12);
+    g.addColorStop(0, pal.dirt1); g.addColorStop(1, pal.dirt2);
+    ctx.fillStyle = f.pebble ? pal.dirt2 : g; ctx.fill();
+    if(f.grassTop !== null){
+      ctx.save(); ctx.clip();
+      ctx.fillStyle = pal.grass; ctx.fillRect(-40, f.grassTop, 80, 11);
+      ctx.fillStyle = pal.grassTop; ctx.fillRect(-40, f.grassTop, 80, 4);
+      ctx.restore();
+    }
+    ctx.strokeStyle = pal.edge; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_LEFT px),
   // damit man möglichst viel von dem sieht, was als Nächstes kommt. Die vordere Figur
@@ -366,20 +429,7 @@ function drawSolidLook(s, look, x){
   }
   for(const s of solids){
     if(s.gone){
-      if(s.type==='crumble' && s.fragments){
-        const fadeT = 1 - Math.min(1, s.breakElapsed/CRUMBLE_FRAGMENT_LIFE);
-        for(const f of s.fragments){
-          const fx = f.x-camX;
-          ctx.save();
-          ctx.translate(fx, f.y);
-          ctx.rotate(f.rot);
-          ctx.globalAlpha = Math.max(0, fadeT);
-          ctx.fillStyle = colorOf('--ground-line');
-          roundRect(-f.w/2, -f.h/2, f.w, f.h, 3); ctx.fill();
-          ctx.restore();
-        }
-        ctx.globalAlpha = 1;
-      }
+      if(s.type==='crumble' && s.fragments) drawCrumbleBreak(s);
       continue;
     }
     const x = s.x-camX;
@@ -413,11 +463,17 @@ function drawSolidLook(s, look, x){
       ctx.strokeStyle='#1e6f96'; ctx.lineWidth=2;
       ctx.strokeRect(x+2,s.y+2,s.w-4,s.h-4);
     } else if(s.type==='crumble'){
-      drawGroundPiece(s, x, s.y, 0, GROUND_PAL.c, true);
+      // Vorwarnung: zittert immer stärker, Risse wachsen, Krümel rieseln, glüht rot (nur Anzeige)
       const t = s.triggered ? Math.min(1, s.timer/CRUMBLE_TRIGGER_MS) : 0;
-      const flicker = s.triggered && s.timer>CRUMBLE_TRIGGER_MS*0.6 ? (Math.sin(performance.now()*0.06)>0 ? 0.45 : 0) : 0;
-      ctx.fillStyle = `rgba(220,40,30,${(t*0.35+flicker).toFixed(2)})`;
-      ctx.fillRect(x,s.y,s.w,s.h);
+      const shake = t > 0 ? Math.sin(s.timer*0.09 + s.x)*(0.4 + 2.8*Math.pow(t, 1.5)) : 0;
+      const sx = x + shake, sy = s.y + (t > 0 ? Math.cos(s.timer*0.13)*t*1.2 : 0);
+      drawGroundPiece(s, sx, sy, shake, GROUND_PAL.c, true);
+      if(t > 0){
+        drawCrumbleWarning(s, sx, sy, t);
+        const pulse = t > 0.5 ? 0.16*(0.5 + 0.5*Math.sin(s.timer*0.05)) : 0;
+        ctx.fillStyle = `rgba(220,40,30,${(t*0.3 + pulse).toFixed(2)})`;
+        roundRect(sx, sy, s.w, s.h, 6); ctx.fill();
+      }
     } else if(s.type==='ground'){
       drawGroundPiece(s, x, s.y, 0, GROUND_PAL.g, false);
     } else {

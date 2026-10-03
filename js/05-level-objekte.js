@@ -2,39 +2,67 @@
 // Alle js/*.js-Dateien teilen sich einen gemeinsamen Gültigkeitsbereich (klassische <script>-Tags,
 // keine Module) und werden in index.html in fester Reihenfolge geladen.
 
-const CRUMBLE_TRIGGER_MS = 600;
-const CRUMBLE_FRAGMENT_LIFE = 400;
+const CRUMBLE_TRIGGER_MS = 600;     // so lange nach dem Betreten hält er noch (unverändert)
+const CRUMBLE_FRAGMENT_LIFE = 750;  // so lange sind Brocken/Staub danach sichtbar (nur Deko)
+
+// Zerbrechen: unregelmäßige Brocken aus einem verwackelten Gitter (passen lückenlos zusammen),
+// obere Reihe mit Gras; dazu Staubwolken. Alles nur Anzeige – die Kollision ist sofort weg.
+function breakCrumble(s){
+  s.gone = true; // Kollision sofort weg, Spieler fällt durch
+  s.breakElapsed = 0;
+  const nx = Math.max(2, Math.round(s.w/20)), ny = 2;
+  const pts = [];
+  for(let iy = 0; iy <= ny; iy++){
+    pts.push([]);
+    for(let ix = 0; ix <= nx; ix++){
+      const inner = ix > 0 && ix < nx && iy > 0 && iy < ny;
+      const jx = (ix > 0 && ix < nx) ? (Math.random() - 0.5)*8 : 0;
+      const jy = inner ? (Math.random() - 0.5)*10 : 0;
+      pts[iy].push([s.x + ix*s.w/nx + jx, s.y + iy*s.h/ny + jy]);
+    }
+  }
+  const midX = s.x + s.w/2;
+  s.fragments = [];
+  for(let iy = 0; iy < ny; iy++){
+    for(let ix = 0; ix < nx; ix++){
+      const poly = [pts[iy][ix], pts[iy][ix+1], pts[iy+1][ix+1], pts[iy+1][ix]];
+      const cx = poly.reduce((a, p)=>a + p[0], 0)/4, cy = poly.reduce((a, p)=>a + p[1], 0)/4;
+      s.fragments.push({
+        x: cx, y: cy, pts: poly.map(([px, py])=>[px - cx, py - cy]), grassTop: iy === 0 ? s.y - cy : null,
+        vx: (cx - midX)/s.w*3 + (Math.random() - 0.5)*2.2,
+        vy: -2.5 - Math.random()*2.8 + iy*1.2,
+        rot: 0, vrot: (Math.random() - 0.5)*0.3,
+      });
+    }
+  }
+  // kleine Steinchen
+  for(let i = 0; i < Math.round(s.w/14); i++){
+    const r = 2 + Math.random()*2.5;
+    s.fragments.push({x: s.x + Math.random()*s.w, y: s.y + s.h*(0.3 + Math.random()*0.6),
+      pts: [[-r, -r*0.7], [r*0.8, -r], [r, r*0.6], [-r*0.6, r]], grassTop: null, pebble: true,
+      vx: (Math.random() - 0.5)*4, vy: -1.5 - Math.random()*3, rot: 0, vrot: (Math.random() - 0.5)*0.5});
+  }
+  s.dust = [];
+  for(let i = 0; i < Math.round(s.w/16) + 3; i++){
+    s.dust.push({x: s.x + Math.random()*s.w, y: s.y + s.h*(0.2 + Math.random()*0.8),
+      vx: (Math.random() - 0.5)*1.6, vy: -0.4 - Math.random()*0.8, r: 8 + Math.random()*10});
+  }
+}
 
 function updateCrumbles(dt){
   for(const s of solids){
     if(s.type!=='crumble') continue;
     if(s.triggered && !s.gone){
       s.timer += dt;
-      if(s.timer >= CRUMBLE_TRIGGER_MS){
-        s.gone = true; // Kollision sofort weg, Spieler fällt durch
-        s.breakElapsed = 0;
-        const cols=3, rows=2;
-        s.fragments = [];
-        for(let iy=0; iy<rows; iy++){
-          for(let ix=0; ix<cols; ix++){
-            s.fragments.push({
-              x: s.x + (ix+0.5)*(s.w/cols),
-              y: s.y + (iy+0.5)*(s.h/rows),
-              w: s.w/cols - 3, h: s.h/rows - 3,
-              vx: (Math.random()-0.5)*3.5,
-              vy: -3 - Math.random()*2.5,
-              rot: 0, vrot: (Math.random()-0.5)*0.35,
-            });
-          }
-        }
-      }
+      if(s.timer >= CRUMBLE_TRIGGER_MS) breakCrumble(s);
     } else if(s.gone && s.fragments && s.breakElapsed < CRUMBLE_FRAGMENT_LIFE){
       s.breakElapsed += dt;
       for(const f of s.fragments){
-        f.vy += 0.55;
+        f.vy += 0.5;
         f.x += f.vx; f.y += f.vy; f.rot += f.vrot;
       }
-      if(s.breakElapsed >= CRUMBLE_FRAGMENT_LIFE) s.fragments = null;
+      for(const d of (s.dust||[])){ d.x += d.vx; d.y += d.vy; d.vx *= 0.96; d.r += 0.35; }
+      if(s.breakElapsed >= CRUMBLE_FRAGMENT_LIFE){ s.fragments = null; s.dust = null; }
     }
   }
 }
