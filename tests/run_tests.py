@@ -435,8 +435,14 @@ async def editor_testen_knopf(g):
                  'hooks': [], 'switches': [], 'doors': [], 'spikes': [], 'checkpoints': [], 'movers': []}
         await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
         await p.reload(); await p.wait_for_timeout(300)
-        await p.click('#testBtn'); await p.wait_for_timeout(800)
-        assert 'index.html?test=1' in p.url and '/editor/' not in p.url, f'Spiel nicht geöffnet: {p.url}'
+        # Enter im Namensfeld (Levels-Fenster) startet KEINEN Test
+        await p.click('#levelsBtn'); await p.fill('#levelName', 'x'); await p.keyboard.press('Escape')
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        assert '/editor/' in p.url, 'Enter im Textfeld hat den Test gestartet'
+        await p.click('#c', position={'x': 5, 'y': 5}, button='right'); await p.wait_for_timeout(100)   # Fokus weg vom Feld
+        await p.evaluate("document.activeElement && document.activeElement.blur()")
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(800)   # Enter = Testen
+        assert 'index.html?test=1' in p.url and '/editor/' not in p.url, f'Enter startet den Test nicht: {p.url}'
         assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
         assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
         assert abs(await g.ev('p1.x') - 140) < 30, 'Start nicht aus dem Editor'

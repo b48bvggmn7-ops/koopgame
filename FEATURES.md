@@ -151,6 +151,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Plattform-Werkzeug bewusst entfernt (Nutzerwunsch, Boden reicht); alte Plattform-Kacheln in
     gespeicherten Levels werden weiter angezeigt/exportiert und lassen sich radieren
   - Export im Spiel-Format (Textfeld kopieren oder als .json-Datei speichern)
+  - Taste Enter im Editor = „▶ Testen“ (nicht beim Tippen in ein Feld, nicht bei offenem Levels-/Export-Fenster)
   - Knopf „▶ Testen“ (gelb, oben): legt das aktuelle Level im Browser ab (localStorage monchichi_test_level,
     Spiel-Format) und öffnet sofort das Spiel damit (index.html?test=1, ohne Hauptmenü, ohne Speichern/Hochladen).
     Beide Figuren starten dort, wo man im Editor gerade baut (sichtbarer Ausschnitt, ~1/3 von links; freies Kästchen

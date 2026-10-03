@@ -453,6 +453,13 @@
   window.addEventListener('keydown', e=>{
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); document.getElementById('saveBtn').click(); }
     if(e.key==='Escape') closeLevels();
+    // Enter = „▶ Testen“ – aber nicht beim Tippen in ein Feld und nicht, wenn ein Fenster (Levels/Export) offen ist
+    if((e.key==='Enter' || e.code==='NumpadEnter') && !e.repeat){
+      const el = document.activeElement, tag = el ? el.tagName : '';
+      const typing = tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT' || (el && el.isContentEditable);
+      const dialog = levelBox.classList.contains('show') || document.getElementById('exportBox').classList.contains('show');
+      if(!typing && !dialog){ e.preventDefault(); document.getElementById('testBtn').click(); }
+    }
   });
 
   if(window.claude && typeof window.claude.use==='function'){
