@@ -379,6 +379,8 @@ function drawSolidLook(s, look, x){
     }
   }
 
+  drawGroundDeco();   // Dschungel-Pflanzen und Moos (17-deko.js)
+
   // Fahrweg bewegter Haken als gepunktete Schiene
   for(const h of hooks){
     if(!h.moving) continue;
@@ -555,6 +557,7 @@ function drawSolidLook(s, look, x){
     ctx.beginPath(); ctx.moveTo(gx,goal.y-48); ctx.lineTo(gx+28,goal.y-40); ctx.lineTo(gx,goal.y-32); ctx.fill();
   }
 
+  drawBirds();
   drawCharacter(p2, camX);
   drawCharacter(p1, camX);
   drawCoinFx(camX);

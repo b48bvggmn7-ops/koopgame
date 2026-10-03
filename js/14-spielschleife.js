@@ -21,6 +21,7 @@ function stepSim(ts){
   updateMovingPlatforms(16.6, [p1, p2]);
   updateSpikes(p1);
   updateSpikes(p2);
+  updateBirds();     // nur Deko (17-deko.js)
   if(!won && p1.atGoal && p2.atGoal && coinsCollected() >= coinsNeeded){
     won = true;
     document.getElementById('toast').classList.add('show');
@@ -31,6 +32,7 @@ function movingThings(){
   const list = [p1, p2];
   for(const s of solids) if(s.type==='moveplat') list.push(s);
   for(const h of hooks) if(h.moving) list.push(h);
+  for(const b of birds) if(b.state === 'fly') list.push(b);
   return list;
 }
 function rememberPrev(){

@@ -7,7 +7,6 @@
 // Bedienung: Tastatur (↑/↓ bzw. W/S, Enter/Leertaste/Num 0, Esc/Backspace zurück),
 // Controller (Steuerkreuz/Stick, ✕ bestätigen, ○ zurück, Options = Pause) und Maus.
 const PROJECT_LEVELS = 'levels/';
-const EDITOR_LEVELS_KEY = 'monchichi_saved_levels_v1';   // gleicher Browser-Speicher wie der Editor
 const menuEl = document.getElementById('menu');
 const menuItemsEl = document.getElementById('menuItems');
 const menuTitleEl = document.getElementById('menuTitle');
@@ -69,13 +68,7 @@ function showPauseMenu(){
   menuSelect(0);
 }
 
-// Levels aus dem Projekt (levels/levels.json) und vom Editor in diesem Browser gespeicherte
-function editorSavedLevels(){
-  let o = {};
-  try{ o = JSON.parse(localStorage.getItem(EDITOR_LEVELS_KEY) || '{}') || {}; }catch(e){ o = {}; }
-  return Object.entries(o).map(([id, v])=>({id, ...v})).filter(L => L && L.data)
-    .sort((a, b)=> (b.updatedAt||0) - (a.updatedAt||0));
-}
+// Levels aus dem Projekt (levels/levels.json). „Meine Levels“ (Browser-Speicher) bewusst entfernt (Nutzerwunsch).
 function startLevel(data){
   buildLevel(data);
   resetLevel();
@@ -87,15 +80,6 @@ async function showLevelSelect(){
   const projectSlot = document.createElement('div');
   projectSlot.className = 'mHint'; projectSlot.textContent = 'Lade …';
   menuItemsEl.appendChild(projectSlot);
-  menuAddText('h2', 'Meine Levels');
-  const mine = editorSavedLevels();
-  if(!mine.length) menuAddText('div', 'Noch keine im Editor gespeichert.', 'mHint');
-  for(const L of mine){
-    menuAddItem(L.name || L.id, ()=>{
-      try{ startLevel(convertEditorSnapshot(L.data)); }
-      catch(e){ projectSlot.textContent = `„${L.name}“ konnte nicht geladen werden.`; }
-    });
-  }
   menuAddItem('← Zurück', showMainMenu, 'small');
   menuSelect(0);
 

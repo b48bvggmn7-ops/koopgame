@@ -35,8 +35,18 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Options = Pausenmenü (darin „Level neu starten“; früher direkt Neustart); Status "Controller verbunden" in den Steuerungs-Kästen
   - Flüssigkeit: Kamera wird auf ganze Pixel gerundet (camPos weich, camX gerundet), Figuren und bewegte Teile
     ebenfalls -> kein Zittern gegeneinander; kein backdrop-filter über dem Spielbild (kostet GPU jedes Bild)
-  - Dezenter Parallax-Hintergrund: heller Himmelsverlauf, ziehende Wolken, ferne Hügel, nähere Hügel mit
-    Bäumchen-Silhouetten; kontrastarm und heller als alle Spielelemente; vorgezeichnet (billig pro Bild)
+  - Dschungel-Hintergrund (js/11-hintergrund.js, ersetzt die früheren Hügel – Nutzerwunsch „mehr Dschungel“):
+    dunstiges Morgenlicht mit Sonne, weich ziehende Wolken, ferne Felstürme im Nebel, Regenwald-Kronen mit
+    Felswand und animiertem Wasserfall (fallende Streifen + Gischt), hohe Bäume mit Schirmkronen, Palmen und
+    Lianen, Unterholz, nahe große Blätter und Farne; ab und zu zieht ein ferner Vogelschwarm vorbei.
+    Parallax (weit weg = langsamer, heller, unschärfer), alles dunstig und heller als die Spielelemente;
+    vorgezeichnet (billig pro Bild). Seitenrand der Seite dunkelgrün.
+  - Dschungel-Deko in der Welt (js/17-deko.js, reine Deko ohne Kollision): Farne, Gras, rote Helikonien,
+    rosa Blümchen, große Blätter auf freien Boden-Oberseiten (wiegen sich, weichen Figuren aus), Moos auf
+    Wand-Oberseiten und Ranken an Wandseiten; NIE auf/an Münzen, Stacheln, Hebeln, Checkpoints, Ziel, Türen,
+    Bröckelboden, bewegtem Boden. Bunte Vögel (blau/rot/gelb/grün) sitzen auf dem Boden, picken/hüpfen und
+    flattern mit leisem Zwitschern weg, wenn eine Figur näher als 170 px kommt (BIRD_SCARE_DIST); nach ~9 s
+    kommen sie zurück, wenn niemand in der Nähe ist. Nicht in der Nähe des Starts, mind. 520 px Abstand.
   - Fester Spieltakt: Physik immer 60 Schritte/s (Akkumulator in loop/stepSim), Anzeige dazwischen interpoliert
     (drawInterpolated: Figuren, bewegter Boden, bewegte Haken) -> auf 120/144-Hz-Bildschirmen NICHT schneller;
     Kamera-Nachziehen und Lichtpartikel ebenfalls zeitbasiert
@@ -99,9 +109,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - "Level laden (JSON)": liest Editor-Export (Spiel-Format) oder altes Editor-Rohformat (bleibt als Notlösung;
     auch im Hauptmenü als „Level-Datei laden (Notlösung)“; Laden schließt das Menü)
   - Hauptmenü beim Start (js/16-menue.js): Titel, „Spielen“ → Levelauswahl, „Level-Editor“ (öffnet editor/).
-    Levelauswahl in zwei Gruppen: „Levels“ (levels/levels.json, Dateien im Spiel-Format aus levels/) und
-    „Meine Levels“ (im Editor in diesem Browser gespeichert, localStorage monchichi_saved_levels_v1, werden
-    beim Laden wie beim Editor-Export umgerechnet). Projekt-Levels nur, wenn das Spiel über die Webseite läuft.
+    Levelauswahl zeigt nur „Levels“ (levels/levels.json, Dateien im Spiel-Format aus levels/). Die frühere
+    Gruppe „Meine Levels“ (im Browser gespeicherte Editor-Levels) ist auf Nutzerwunsch entfernt (irritierend).
+    Projekt-Levels nur, wenn das Spiel über die Webseite läuft.
     Solange ein Menü offen ist, steht das Spiel still und bekommt keine Tastendrücke.
     Bedienung: ↑/↓ bzw. W/S, Enter/Leertaste/Num 0 bestätigen, Esc/Backspace zurück; Controller: Steuerkreuz/
     Stick, ✕ bestätigen, ○ zurück; Maus geht auch.

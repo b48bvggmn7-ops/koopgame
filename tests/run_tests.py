@@ -234,41 +234,38 @@ async def menue_beim_start(g):
     await p.keyboard.press('ArrowUp'); await p.keyboard.press('Enter'); await p.wait_for_timeout(200)
     assert await p.text_content('#menuTitle') == 'Level wählen', 'Enter öffnet Levelauswahl nicht'
     h2 = await p.eval_on_selector_all('#menuItems h2', 'els => els.map(e => e.textContent)')
-    assert h2 == ['Levels', 'Meine Levels'], f'Gruppen: {h2}'
+    assert h2 == ['Levels'], f'Gruppen: {h2} (nur „Levels“, „Meine Levels“ entfernt)'
     await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
     assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Esc führt nicht zurück'
 
 @test
-async def menue_projekt_und_meine_levels(g):
-    """Levelauswahl zeigt Projekt-Levels (levels.json) und im Editor gespeicherte Levels und lädt sie."""
+async def menue_projekt_levels(g):
+    """Levelauswahl zeigt nur die Projekt-Levels (levels.json), nicht die im Browser gespeicherten, und lädt sie."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
-        snap = {'cols': 40, 'tiles': [[c, 17, 'ground'] for c in range(30)] + [[5, 12, 'ground'], [6, 12, 'ground']],
-                'movers': [{'c': 5, 'r': 12, 'dc': 4, 'dr': 0, 'speed': 3}], 'hooks': [{'c': 10, 'r': 8, 'radius': 5}],
-                'coins': [{'c': 3, 'r': 15, 'color': 'pink'}], 'startM': {'c': 2, 'r': 16}, 'startF': {'c': 1, 'r': 16},
-                'goal': {'c': 28, 'r': 16}, 'switches': [], 'doors': [], 'spikes': [], 'checkpoints': []}
+        snap = {'cols': 40, 'tiles': [[c, 17, 'ground'] for c in range(30)], 'startM': {'c': 2, 'r': 16}}
         await p.evaluate("d => localStorage.setItem('monchichi_saved_levels_v1', JSON.stringify({mein: {name: 'Mein Test', updatedAt: 1, data: d}}))", snap)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
         liste = json.loads((ROOT / 'levels' / 'levels.json').read_text())
         texte = await menu_texte(p)
         assert texte[:len(liste)] == [L['name'] for L in liste], f'Projekt-Levels fehlen: {texte}'
-        assert 'Mein Test' in texte, f'Meine Levels fehlen: {texte}'
+        assert 'Mein Test' not in texte and len(texte) == len(liste) + 1, f'Browser-Levels sollen fehlen: {texte}'
         assert liste[0]['name'] in await p.text_content('.mItem.sel'), 'erstes Level nicht gewählt'
         await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
         spiel = json.loads((ROOT / 'levels' / liste[0]['datei']).read_text())
         assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü bleibt offen'
         assert await g.ev('coins.length') == len(spiel['coins']), 'falsches Projekt-Level geladen'
-        # zurück zum Menü und eigenes Level laden
+        # Pause -> zurück zum Menü -> zweites Level
         await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
         assert await p.text_content('#menuTitle') == 'Pause', 'Esc öffnet keine Pause'
         await p.keyboard.press('ArrowDown'); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter')
         assert await p.text_content('#menuTitle') == 'Monchichi Koop', 'Zurück zum Menü geht nicht'
-        await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
-        await p.click('.mItem:has-text("Mein Test")'); await p.wait_for_timeout(300)
-        assert await g.ev("coins.length===1 && coins[0].color==='pink' && hooks.length===1"), 'eigenes Level falsch'
-        assert await g.ev("solids.filter(s=>s.type==='moveplat').length") >= 1, 'bewegter Boden fehlt'
-        assert abs(await g.ev('p1.x') - 100) < 30, 'Start nicht übernommen'
+        if len(liste) > 1:
+            await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
+            await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
+            spiel2 = json.loads((ROOT / 'levels' / liste[1]['datei']).read_text())
+            assert await g.ev('coins.length') == len(spiel2['coins']), 'zweites Level nicht geladen'
     finally:
         srv.shutdown()
 
@@ -364,6 +361,35 @@ async def haken_schwung_holen(g):
     await g.ev('window.__pump=false; KEYS.KeyD=false; KEYS.KeyA=false')
     ang = await g.ev('__ang')
     assert ang and max(abs(a) for a in ang) > 55, f'Schaukeln baut zu wenig Schwung auf: {max(abs(a) for a in ang or [0]):.0f}°'
+
+@test
+async def deko_vogel_flattert_weg(g):
+    """Vögel sitzen auf dem Boden und flattern weg, wenn eine Figur kommt (reine Deko, keine Kollision)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.p.wait_for_timeout(200)
+    n = await g.ev('birds.length')
+    assert n >= 2, f'zu wenige Vögel: {n}'
+    b0 = await g.ev("(()=>{ const b=birds.find(b=>b.state==='sit'); return b && {x:b.x, y:b.y}; })()")
+    assert b0 and b0['y'] == 680, f'Vogel sitzt nicht auf dem Boden: {b0}'
+    await g.ev(f"p1.x={b0['x']} - 60; p1.vx=0")
+    await g.p.wait_for_timeout(500)
+    b1 = await g.ev(f"(()=>{{ const b=birds.find(b=>b.homeX==={b0['x']}); return {{state:b.state, y:b.y}}; }})()")
+    assert b1['state'] in ('fly', 'gone') and b1['y'] < 640, f'Vogel fliegt nicht weg: {b1}'
+
+@test
+async def deko_frei_von_spielobjekten(g):
+    """Pflanzen und Vögel stehen nie auf Münzen, Stacheln, Hebeln, Checkpoints oder am Ziel."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       coins=[{'x': x, 'y': 660} for x in range(420, 2900, 160)],
+                       spikes=[{'x': 500, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}, {'x': 1300, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}],
+                       switches=[{'x': 900, 'y': 660, 'link': 1}], checkpoints=[{'x': 1500, 'y': 680}],
+                       goal={'x': 2800, 'y': 680}))
+    await g.p.wait_for_timeout(200)
+    bad = await g.ev("""(()=>{ const pts=[...coins.map(c=>c.x), ...spikes.map(s=>s.x), ...switchDefs.map(s=>s.x), ...checkpointDefs.map(c=>c.x), goal.x];
+      const deko=[...decoPlants.map(p=>p.x), ...birds.map(b=>b.homeX)];
+      return deko.filter(x=>pts.some(px=>Math.abs(px-x)<24)); })()""")
+    assert not bad, f'Deko auf Spielobjekten bei x={bad}'
+    assert await g.ev('decoPlants.length') > 0, 'gar keine Pflanzen'
 
 # ---------------------------------------------------------------- Runner
 
