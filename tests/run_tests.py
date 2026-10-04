@@ -354,18 +354,33 @@ async def level1_bis_spalte_800(g):
     await g.load(str(ROOT / 'levels' / 'level-1.json'))
     assert await g.ev("goal.x") >= 790 * 40, "Ziel nicht am Ende (Spalte ~800)"
     assert await g.ev("coins.length") >= 200, "zu wenige Münzen"
-    # Affe steht am Hebel auf der Insel (Spalte 313), Schweinchen auf der Brücke (Spalte 302)
-    await g.ev("p1.x=313*40+20; p1.y=11*40; p2.x=302*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
+    # Affe steht am Hebel auf der Insel (Spalte 314), Schweinchen auf der Brücke (Spalte 302)
+    await g.ev("p1.x=314*40+20; p1.y=10*40; p2.x=302*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
     await g.p.wait_for_timeout(300)
     await g.p.keyboard.press('KeyJ')
-    for _ in range(200):
-        if await g.ev("p2.x") >= 313 * 40: break
+    for _ in range(300):
+        if await g.ev("p2.x") >= 319 * 40: break
         await g.p.wait_for_timeout(30)
     else:
         raise AssertionError("Brücke fährt das Schweinchen nicht rüber")
     await g.p.keyboard.down('ArrowRight'); await g.p.wait_for_timeout(1000); await g.p.keyboard.up('ArrowRight')
     st = await g.ev("({x:p2.x, y:p2.y, dead:!!deathState})")
-    assert not st['dead'] and st['x'] > 316 * 40 and abs(st['y'] - 14 * 40) < 2, f"Schweinchen nicht drüben: {st}"
+    assert not st['dead'] and st['x'] > 323 * 40 and abs(st['y'] - 14 * 40) < 2, f"Schweinchen nicht drüben: {st}"
+
+@test
+async def level1_muenzen_und_haken(g):
+    """Level 1: nur blaue/pinke Münzen, keine Münze in Boden/Wand/Tür, Haken-Radius höchstens 5 Kästchen."""
+    lv = json.loads((ROOT / 'levels' / 'level-1.json').read_text())
+    farben = {c['color'] for c in lv['coins']}
+    assert farben <= {'blue', 'pink'}, f"andere Münzfarben: {farben}"
+    feste = lv['solids'] + lv['doors'] + lv['movingPlatforms']
+    for c in lv['coins']:
+        for s in feste:
+            w, h = s.get('w', 40), s.get('h', 40)
+            x0, y0 = (s['x'], s['y']) if 'w' in s else (s['x'] - 20, s['y'] - 20)
+            assert not (x0 < c['x'] < x0 + w and y0 < c['y'] < y0 + h), f"Münze im Stein: {c} in {s}"
+    for hk in lv['hooks']:
+        assert hk['radius'] <= 5 * 40, f"Haken zu groß: {hk}"
 
 @test
 async def haken_schwung_holen(g):

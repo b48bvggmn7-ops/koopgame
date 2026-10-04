@@ -189,13 +189,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Zusätzlich Knopf „☰ Menü (Esc)“ unten links im Spiel (öffnet dasselbe Pausenmenü)
   - Level 1 (levels/level-1.json + editor-format): Teil des Nutzers bis Spalte 240 unverändert, danach
     Erweiterung bis Spalte ~800 (Ziel bei 796), 10 Abschnitte mit Münzen und Koop-Rätseln, getrennte Wege:
-    2) Schweinchen segelt zur Insel, Hebel 3 fährt die Plattform für den Affen; 3) Affe schwingt am Haken auf
-    die hohe Insel, Hebel 4 fährt die Brücke fürs Schweinchen über die Grube; 4) zwei Stockwerke, Hebel unten
-    öffnet Tür oben und umgekehrt (5/6); 5) Bröckel-Brücke über Stacheln + Wandsprung-Kamin; 6) Hebel 7 fährt
-    Plattform, Aufzug, Hebel 8 öffnet Tür; 7) Münzjagd auf fahrenden Plattformen + Bonus-Turm (Bröckelstufen);
-    8) Schaukel-Haken über Stachelfeld (Schweinchen segelt); 9) Affe oben mit fahrendem Haken, Schweinchen unten,
-    Hebel 11/12 öffnen sich gegenseitig die Türen; 10) Finale: Segeln → Hebel 14 Plattform, Aufzug zum
-    Münz-Plateau, Abstieg zum Ziel. 19 Checkpoints, 207 Münzen.
+    2) Schweinchen segelt vom Turm zur Insel, Hebel 3 fährt die Plattform für den Affen; 3) Affe schwingt am
+    Haken auf die hohe Insel, Hebel 4 fährt die Brücke fürs Schweinchen; 4) Affe schwingt ins obere Stockwerk,
+    Schweinchen bleibt unten, Hebel unten öffnet Tür oben und umgekehrt (5/6); 5) Bröckel-Brücke über Stacheln
+    + Wandsprung-Kamin; 6) Schweinchen segelt zu Hebel 7 (fährt den Affen), Aufzug, Hebel 8 öffnet Tür;
+    7) Münzjagd auf fahrenden Plattformen + Bonus-Turm (Bröckelstufen); 8) Stachelgrube: Affe hangelt an zwei
+    Haken, Schweinchen segelt vom hohen Turm; 9) Affe oben an zwei Haken, Schweinchen unten, Hebel 11/12 öffnen
+    sich gegenseitig die Türen; 10) Finale: Segeln → Hebel 14 fährt den Affen, Aufzug zum Münz-Plateau, Ziel.
+    Regeln (Nutzerwunsch): nur blaue (Affe) und pinke (Schweinchen) Münzen, jeweils auf dem Weg der Figur
+    (Segel-/Schwungbahnen vom Test-Bot gemessen); keine Münze in Boden/Wand/Tür; Haken-Radius höchstens 5 Kästchen;
+    Wege eindeutig: Nur-Schweinchen-Lücken sind mind. ~5 Kästchen weiter als der Affe springen kann (mit Gefälle,
+    Stacheln darunter), Nur-Affe-Stellen sind für das Schweinchen klar zu weit (>= 18 flach) oder 4 Reihen höher.
 ```
 
 ## Level-Editor (editor/)
