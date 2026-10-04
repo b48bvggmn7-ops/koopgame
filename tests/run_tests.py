@@ -579,6 +579,15 @@ async def hebel_ein_aus(g):
     await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(300)
     assert await g.ev(plat + ".x") > x3 + 5, 'Boden fährt beim 3. Mal nicht weiter'
 
+@test
+async def stacheln_neues_aussehen(g):
+    """Stacheln: Metall-Bild vorhanden; Berührung tötet weiterhin (Treffer-Bereich unverändert)."""
+    await g.load(level([ground(0, 680, 1400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       spikes=[{'x': 300, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}]))
+    assert await g.ev("SPIKE_SPRITE instanceof HTMLCanvasElement && SPIKE_SPRITE.width >= 40"), 'Stachel-Bild fehlt'
+    await g.hold(('KeyD',), 900)
+    assert await g.ev('!!deathState'), 'Stacheln töten nicht mehr'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

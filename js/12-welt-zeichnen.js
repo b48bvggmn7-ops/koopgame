@@ -253,6 +253,38 @@ function drawDoor(s, x, col){
   }
   ctx.restore();
 }
+// Stacheln: glänzende Metallkegel auf einer Eisenleiste (einmal vorgezeichnet, zeigt nach oben;
+// beim Zeichnen je nach Richtung gedreht). Nur Aussehen – der Treffer-Bereich bleibt das ganze Kästchen.
+const SPIKE_SPRITE = (()=>{
+  const S = 2, c = document.createElement('canvas'); c.width = 40*S; c.height = 40*S;
+  const g = c.getContext('2d'); g.scale(S, S);
+  // Schatten am Boden
+  g.fillStyle = 'rgba(30,20,10,.25)'; g.beginPath(); g.ellipse(20, 38.5, 19, 2.5, 0, 0, Math.PI*2); g.fill();
+  // Spitzen
+  const n = 4, bw = 40/n;
+  for(let i = 0; i < n; i++){
+    const cx = bw*(i + 0.5), tip = 5 + (i % 2)*2, base = 34, hw = bw*0.48;
+    const L = g.createLinearGradient(cx - hw, 0, cx, 0);
+    L.addColorStop(0, '#f4f7fa'); L.addColorStop(1, '#a9b2bd');
+    g.fillStyle = L; g.beginPath(); g.moveTo(cx, tip); g.lineTo(cx - hw, base); g.lineTo(cx, base); g.closePath(); g.fill();
+    const R = g.createLinearGradient(cx, 0, cx + hw, 0);
+    R.addColorStop(0, '#7f8995'); R.addColorStop(1, '#454c56');
+    g.fillStyle = R; g.beginPath(); g.moveTo(cx, tip); g.lineTo(cx, base); g.lineTo(cx + hw, base); g.closePath(); g.fill();
+    g.strokeStyle = '#262a30'; g.lineWidth = 1.1; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(cx - hw, base); g.lineTo(cx, tip); g.lineTo(cx + hw, base); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.arc(cx - 0.6, tip + 3, 0.9, 0, Math.PI*2); g.fill();   // Glanz an der Spitze
+    g.fillStyle = 'rgba(160,30,30,.55)'; g.beginPath(); g.moveTo(cx, tip); g.lineTo(cx - 1.4, tip + 3.2); g.lineTo(cx + 1.4, tip + 3.2); g.closePath(); g.fill(); // rötliche Spitze = gefährlich
+  }
+  // Eisenleiste mit Nieten
+  const B = g.createLinearGradient(0, 33, 0, 40);
+  B.addColorStop(0, '#6b727c'); B.addColorStop(0.5, '#4a5059'); B.addColorStop(1, '#2c3036');
+  g.fillStyle = B; g.beginPath(); g.roundRect ? g.roundRect(0.5, 33, 39, 6.5, 2) : g.rect(0.5, 33, 39, 6.5); g.fill();
+  g.strokeStyle = '#1f2227'; g.lineWidth = 1; g.stroke();
+  g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(2, 33.6, 36, 1);
+  g.fillStyle = '#b8c0c9';
+  for(const rx of [5, 15, 25, 35]){ g.beginPath(); g.arc(rx, 36.4, 1.2, 0, Math.PI*2); g.fill(); }
+  return c;
+})();
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_LEFT px),
   // damit man möglichst viel von dem sieht, was als Nächstes kommt. Die vordere Figur
@@ -649,15 +681,7 @@ function drawSolidLook(s, look, x){
     ctx.save();
     ctx.translate(Math.round(x), sp.y - sp.h/2);
     ctx.rotate((sp.dir||0) * Math.PI/2);
-    ctx.fillStyle = '#7f1d1d';
-    const baseY = sp.h/2 - 2, topY = sp.h/2 - sp.h*0.85;
-    for(const off of [-0.28,0,0.28]){
-      ctx.beginPath();
-      ctx.moveTo(off*sp.w-sp.w*0.16, baseY);
-      ctx.lineTo(off*sp.w, topY);
-      ctx.lineTo(off*sp.w+sp.w*0.16, baseY);
-      ctx.closePath(); ctx.fill();
-    }
+    ctx.drawImage(SPIKE_SPRITE, -sp.w/2, -sp.h/2, sp.w, sp.h);
     ctx.restore();
   }
 
