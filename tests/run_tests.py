@@ -610,6 +610,20 @@ async def geraeusche(g):
     await g.p.keyboard.press('Escape'); await g.p.keyboard.press('KeyM'); await g.p.wait_for_timeout(50)
     assert not await g.ev("soundMuted"), 'M schaltet nicht wieder ein'
 
+@test
+async def wetter_regen_und_sonne(g):
+    """Wetter: Regen (Tropfen-Spritzer, Hintergrund dunkler) und Sonne mit Regenbogen – ohne Einfluss aufs Spiel."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.ev("weatherForce('rain')"); await g.p.wait_for_timeout(800)
+    st = await g.ev("({r: weather.rain, sp: weather.splashes.length, phase: weather.phase})")
+    assert st['phase'] == 'rain' and st['r'] > 0.9 and st['sp'] > 0, f'kein Regen: {st}'
+    x0 = await g.ev('p1.x'); await g.hold(('KeyD',), 500)
+    assert await g.ev('p1.x') - x0 > 50, 'Figur läuft im Regen nicht normal'
+    # Ablauf: nach dem Regen klart es auf und es gibt einen Regenbogen
+    await g.ev("weather.t = weather.len"); await g.p.wait_for_timeout(100)
+    st = await g.ev("({phase: weather.phase, bow: weather.rainbow})")
+    assert st['phase'] == 'clear' and st['bow'] > 0, f'kein Aufklaren/Regenbogen: {st}'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

@@ -817,6 +817,7 @@ function drawSolidLook(s, look, x){
     ctx.fillStyle = '#ffd23f'; ctx.fillText(msg, gx, goal.y-79);
   }
   ctx.restore();
+  weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
   drawOffscreenArrows();
   drawContinuePrompt();
   if(testJumpMsg && performance.now() - testJumpT < 1800){

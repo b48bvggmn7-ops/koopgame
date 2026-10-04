@@ -82,11 +82,11 @@ function buildBackground(){
   {
     const g = BG_SKY.getContext('2d');
     const sky = g.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#a8d3c6'); sky.addColorStop(0.42, '#e3eed6');
-    sky.addColorStop(0.62, '#f5ecca'); sky.addColorStop(1, '#d2e8d2');
+    sky.addColorStop(0, '#8fcbe0'); sky.addColorStop(0.35, '#d6ecdf');
+    sky.addColorStop(0.58, '#ffe9bf'); sky.addColorStop(0.7, '#f8e2b0'); sky.addColorStop(1, '#d5e8cc');   // warmes Licht am Horizont
     g.fillStyle = sky; g.fillRect(0, 0, W, H);
     const sun = g.createRadialGradient(930, 290, 0, 930, 290, 470);
-    sun.addColorStop(0, 'rgba(255,250,222,0.95)'); sun.addColorStop(0.12, 'rgba(255,240,185,0.55)');
+    sun.addColorStop(0, 'rgba(255,252,230,1)'); sun.addColorStop(0.06, 'rgba(255,244,200,0.95)'); sun.addColorStop(0.14, 'rgba(255,226,160,0.55)');
     sun.addColorStop(0.45, 'rgba(255,232,170,0.18)'); sun.addColorStop(1, 'rgba(255,232,170,0)');
     g.fillStyle = sun; g.fillRect(0, 0, W, H);
   }
@@ -317,6 +317,7 @@ function drawWaterfallFlow(off, t){
 }
 function drawBackground(){
   ctx.drawImage(BG_SKY, 0, 0);
+  if(typeof weatherSkyFx === 'function') weatherSkyFx();   // Sonnenstrahlen, Regenbogen (19-wetter.js)
   const t = performance.now();
   for(const L of BG_LAYERS){
     let off = camX*L.par + t*L.drift;
@@ -326,4 +327,5 @@ function drawBackground(){
     if(L.par === 0.03) drawSkyFlock(t);
     if(BG_WATERFALLS.length && BG_WATERFALLS[0].layer === L) drawWaterfallFlow(off, t);
   }
+  if(typeof weatherBgTint === 'function') weatherBgTint();   // Regen: Hintergrund dunkler
 }

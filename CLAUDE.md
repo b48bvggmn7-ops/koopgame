@@ -31,7 +31,7 @@
     04 Figuren/Kollision · 05 Level-Objekte (Bröckelboden, Hebel, Türen, bewegte Teile/Haken) ·
     06 Tod/Checkpoints (+ Test-Sprung C/X) · 07 Effekte/Ton/Münzen · 08 Figuren-Physik/Seil ·
     09 Kamera · 10 Figuren zeichnen · 11 Dschungel-Hintergrund · 12 Welt zeichnen · 13 Anzeige/Leistung ·
-    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 99 Start
+    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 99 Start
 - `assets/` – Bilder (Figuren, Schild …).
 - `editor/` – Level-Editor (`editor/index.html` + `editor/editor.js`).
 - `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), `levels/levels.json` = Liste der Levels,

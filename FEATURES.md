@@ -43,6 +43,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Lianen, Unterholz, nahe große Blätter und Farne; ab und zu zieht ein ferner Vogelschwarm vorbei.
     Parallax (weit weg = langsamer, heller, unschärfer), alles dunstig und heller als die Spielelemente;
     vorgezeichnet (billig pro Bild). Seitenrand der Seite dunkelgrün.
+  - Wetter & Stimmung (js/19-wetter.js, reine Deko): wärmerer Himmel (goldenes Licht am Horizont, kräftigere Sonne
+    mit sich langsam drehenden Strahlen), immer leichter warmer Schimmer + weiche Vignette. Ablauf: Sonne 70–120 s ->
+    zieht zu (7 s) -> Regenschauer 30–45 s -> klart auf (7 s) mit Regenbogen (~22 s) -> Sonne … Regen: schräge Tropfen
+    vor der Welt, Spritzer auf allen Oberseiten, Hintergrund dunkler/kühler (Spielfeld bleibt hell). Ton: leises
+    Regenrauschen + Tropfen wie auf einem schrägen Glas-Dachfenster („tick“/„plink“); bei Sonne ab und zu Vogelgezwitscher.
+    Zum Testen in der Konsole: weatherForce('rain') / weatherForce('sun').
   - Dschungel-Deko in der Welt (js/17-deko.js, reine Deko ohne Kollision): Farne, Gras, rote Helikonien,
     rosa Blümchen, große Blätter auf freien Boden-Oberseiten (wiegen sich, weichen Figuren aus), Moos auf
     Wand-Oberseiten und Ranken an Wandseiten; NIE auf/an Münzen, Stacheln, Hebeln, Checkpoints, Ziel, Türen,
