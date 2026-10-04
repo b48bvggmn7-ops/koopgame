@@ -588,6 +588,28 @@ async def stacheln_neues_aussehen(g):
     await g.hold(('KeyD',), 900)
     assert await g.ev('!!deathState'), 'Stacheln töten nicht mehr'
 
+@test
+async def geraeusche(g):
+    """Springen, Landen, Haken, Bröckelboden, Tod lösen Geräusche aus; M schaltet den Ton aus/an (gemerkt)."""
+    await g.load(level([ground(0, 680, 1400), ground(500, 560, 80, 40, 'crumble')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       hooks=[{'x': 160, 'y': 500, 'radius': 260}]))
+    await g.ev("SFX_LOG.length = 0")
+    await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(1200)
+    log = await g.ev("SFX_LOG.slice()")
+    assert 'jump' in log and 'land' in log, f'Sprung/Landung ohne Ton: {log}'
+    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(150)
+    assert 'hook' in await g.ev("SFX_LOG.slice()"), 'Haken ohne Ton'
+    await g.ev("solids.find(s=>s.type==='crumble').triggered = true")
+    await g.p.wait_for_timeout(900)
+    log = await g.ev("SFX_LOG.slice()")
+    assert 'crumblewarn' in log and 'crumble' in log, f'Bröckelboden ohne Ton: {log}'
+    await g.p.keyboard.press('KeyM'); await g.p.wait_for_timeout(50)
+    assert await g.ev("soundMuted && localStorage.getItem('monchichi_mute')==='1'"), 'M schaltet nicht stumm'
+    await g.p.keyboard.press('Escape'); await g.p.wait_for_timeout(100)
+    assert any('Ton ist aus' in t for t in await menu_texte(g.p)), 'Ton-Schalter fehlt im Pausenmenü'
+    await g.p.keyboard.press('Escape'); await g.p.keyboard.press('KeyM'); await g.p.wait_for_timeout(50)
+    assert not await g.ev("soundMuted"), 'M schaltet nicht wieder ein'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

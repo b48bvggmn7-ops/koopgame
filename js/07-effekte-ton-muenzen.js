@@ -8,6 +8,13 @@
 let coinFx = [];              // {type, x, y, t0, ...}
 let coinCombo = 0, lastCoinT = 0;
 let audioCtx = null;
+// Gesamtlautstärke (Ton aus/an mit M, siehe 18-sound.js) – alle Geräusche laufen hier durch
+let masterGain = null, soundMuted = false;
+try{ soundMuted = localStorage.getItem('monchichi_mute') === '1'; }catch(e){}
+function audioOut(){
+  if(!masterGain){ masterGain = audioCtx.createGain(); masterGain.gain.value = soundMuted ? 0 : 1; masterGain.connect(audioCtx.destination); }
+  return masterGain;
+}
 function coinPickupFx(c){
   const now = performance.now();
   c.takenAt = now;
@@ -46,7 +53,7 @@ function playTones(notes, type, vol){
       g.gain.setValueAtTime(0.0001, t+start);
       g.gain.exponentialRampToValueAtTime(vol, t+start+0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t+start+dur);
-      o.connect(g); g.connect(audioCtx.destination);
+      o.connect(g); g.connect(audioOut());
       o.start(t+start); o.stop(t+start+dur+0.02);
     }
   }catch(e){}
@@ -63,7 +70,7 @@ function playCoinSound(combo){
       g.gain.setValueAtTime(0.0001, t+start);
       g.gain.exponentialRampToValueAtTime(0.07, t+start+0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t+start+dur);
-      o.connect(g); g.connect(audioCtx.destination);
+      o.connect(g); g.connect(audioOut());
       o.start(t+start); o.stop(t+start+dur+0.02);
     }
   }catch(e){}

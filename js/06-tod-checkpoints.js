@@ -25,7 +25,7 @@ function die(player){
     const a = i/9*Math.PI*2;
     coinFx.push({type:'poof', x:player.x, y:py, t0:now, vx:Math.cos(a)*1.6, vy:Math.sin(a)*1.6-0.6, size:9+Math.random()*7});
   }
-  playTones([[330,0,0.12],[247,0.1,0.22]], 'triangle', 0.09);
+  SFX.death();   // "Plopp" + traurig abwärts (18-sound.js)
 }
 function continueAfterDeath(){
   const cp = activeCp >= 0 ? checkpointDefs[activeCp] : null;

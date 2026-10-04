@@ -101,7 +101,7 @@ function triggerSwitch(sw, player){
   }
   player.leverAnim = {t0: now, dir: Math.sign(sw.x - player.x) || player.facing || 1};
   sw.pulledT = now;
-  playTones([[180,0,0.05],[260,0.05,0.07]], 'square', 0.05);   // "klack"
+  SFX.lever(on);   // Holz-Klack (18-sound.js)
 }
 function updateDoorsAndSwitches(dt, players){
   for(const player of players){

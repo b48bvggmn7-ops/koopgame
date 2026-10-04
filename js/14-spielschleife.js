@@ -23,6 +23,7 @@ function stepSim(ts){
   updateSpikes(p1);
   updateSpikes(p2);
   updateBirds();     // nur Deko (17-deko.js)
+  sfxObserve();      // Geräusche zu Sprung/Landung/… (18-sound.js), ändert nichts am Spiel
   if(!won && p1.atGoal && p2.atGoal && coinsCollected() >= coinsNeeded){
     won = true;
     document.getElementById('toast').classList.add('show');

@@ -75,6 +75,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Schalter, bewegter Boden, Stacheln, Checkpoints gelten für beide Spieler
   - Münzfarben (coin.color): blau = nur Affe, pink = nur Schweinchen, gold = beide; falsche Figur -> Münze wackelt;
     Effekte (Ring/Funken) in Münzfarbe; Münz-Kasten zeigt zusätzlich "● Affe a/b  ● Schwein a/b"
+  - Geräusche (js/18-sound.js, alle im Browser erzeugt): weiches „Hupp“ beim Springen (Schweinchen höher), Klopfer +
+    höheres Hupp beim Wandsprung, dumpfes Aufsetzen beim Landen (je schneller, desto kräftiger), leises Gras-Rascheln
+    beim Laufen, metallisches „Tink“ beim Einhaken, Wusch beim Loslassen, „Fwump“ beim Schirm, Holz-Klack am Hebel
+    (ein höher, aus tiefer), schabendes Holztor + Klong, Knirschen/Zerbröseln beim Bröckelboden, „Plopp“ + traurig
+    abwärts gleitendes Pfeifen beim Sterben. Ein Beobachter (sfxObserve) erkennt die Ereignisse an Zustandsänderungen
+    und ändert nichts am Spiel. Taste M = Ton aus/an (gemerkt), auch im Pausenmenü („🔊 Ton ist an …“).
   - Münzen-Aussehen (drawCoin3D): etwas größer (Radius 12,5 statt 11, nur Zeichnung – Einsammel-Bereich
     unverändert), 3D: sichtbare Kante beim Drehen, Lichtverlauf, geprägter Innenring mit Stern, Glanzlicht;
     dunkler Umriss, weicher Schein in Münzfarbe und leichter Schatten -> heben sich vom Dschungel ab

@@ -65,6 +65,7 @@ function showPauseMenu(){
   menuAddItem('▶ Weiterspielen', closeMenu);
   menuAddItem('↺ Level neu starten', ()=>{ resetLevel(); closeMenu(); });
   menuAddItem('☰ Zurück zum Menü', showMainMenu);
+  menuAddItem(soundMuted ? '🔇 Ton ist aus – einschalten (M)' : '🔊 Ton ist an – ausschalten (M)', ()=>{ setMuted(!soundMuted); showPauseMenu(); menuSelect(3); });
   if(editorTestMode) menuAddItem('✏️ Zurück zum Editor (Esc)', backToEditor);
   menuSelect(0);
 }
