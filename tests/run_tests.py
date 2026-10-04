@@ -535,6 +535,29 @@ async def wetter_wechselt_selten(g):
     assert await g.ev("weather.phase === 'sun' && weather.len >= 150")
 
 @test
+async def stachelwand_faehrt_mit(g):
+    """Stacheln, die mit dem Fuß an einem bewegten Stück kleben, fahren mit (bewegliche Stachelwand) und töten;
+    in den bestehenden Levels fährt kein Stachel aus Versehen mit."""
+    wall = {'x': 400, 'y': 360, 'w': 40, 'h': 320, 'type': 'moveplat', 'look': 'wall', 'group': 1,
+            'targetX': 2400, 'targetY': 360, 'speed': 3}
+    sp = [{'x': 460, 'y': 680 - 40*k, 'w': 40, 'h': 40, 'dir': 1} for k in range(8)]
+    await g.load(level([ground(0, 680, 3000)], {'x': 900, 'y': 680}, {'x': 860, 'y': 680},
+                       movingPlatforms=[wall], spikes=sp))
+    assert await g.ev("spikes.every(s => s.carrier)"), 'Stacheln hängen nicht an der Wand'
+    x0 = await g.ev("spikes[0].x")
+    await g.p.wait_for_timeout(1200)
+    assert await g.ev("spikes[0].x") > x0 + 60, 'Stacheln fahren nicht mit'
+    for _ in range(60):
+        if await g.ev("!!deathState"): break
+        await g.p.wait_for_timeout(100)
+    assert await g.ev("!!deathState"), 'fahrende Stacheln töten nicht'
+    for name in ('level-1.json', 'level-2.json', 'level-3.json'):
+        await g.load(str(ROOT / 'levels' / name))
+        n = await g.ev("spikes.filter(s => s.carrier).length")
+        want = json.loads((ROOT / 'levels' / name).read_text()).get('_mitfahrendeStacheln', 0)
+        assert n == want, f'{name}: {n} mitfahrende Stacheln, erwartet {want}'
+
+@test
 async def ziel_tanz_dann_menue(g):
     """Beide im Ziel: Figuren tanzen (Eingaben ruhen), danach öffnet sich das Hauptmenü."""
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 330, 'y': 680},

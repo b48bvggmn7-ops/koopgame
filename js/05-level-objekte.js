@@ -163,7 +163,30 @@ function updateMovingPlatforms(dt, players){
 // Hebel auf bewegtem Boden fahren mit: steht ein Hebel direkt auf einem bewegten Stück (Hebel-Kästchen genau
 // darüber), merkt er sich seinen Abstand dazu und wird nach jedem Bewegungsschritt mitgeführt.
 // Die Zuordnung passiert beim ersten Aufruf nach dem Laden (an den Startpositionen der Stücke).
+// Stacheln an bewegten Teilen fahren mit (bewegliche Stachelwand, Stachel-Presse): ein Stachel-Kästchen, das
+// mit seinem FUSS an einem bewegten Stück klebt (dir 0 = zeigt nach oben -> Stück darunter, 2 = nach unten ->
+// Stück darüber, 1 = nach rechts -> Stück links daneben, 3 = nach links -> Stück rechts daneben), fährt mit.
+// Zuordnung beim ersten Aufruf nach dem Laden (Startpositionen), wie bei den Hebeln.
+function syncSpikeCarriers(){
+  for(const sp of spikes){
+    if(sp.carrier === undefined){
+      const d = sp.dir || 0, top = sp.y - 40, L = sp.x - 20, R = sp.x + 20;
+      const plat = solids.find(s => {
+        if(s.type !== 'moveplat') return false;
+        const sx = s.startX, sy = s.startY;
+        if(d === 0) return Math.abs(sy - sp.y) < 2 && sp.x > sx && sp.x < sx + s.w;
+        if(d === 2) return Math.abs(sy + s.h - top) < 2 && sp.x > sx && sp.x < sx + s.w;
+        if(d === 1) return Math.abs(sx + s.w - L) < 2 && sp.y - 20 > sy && sp.y - 20 < sy + s.h;
+        return Math.abs(sx - R) < 2 && sp.y - 20 > sy && sp.y - 20 < sy + s.h;
+      });
+      sp.carrier = plat || null;
+      if(plat){ sp.offX = sp.x - plat.startX; sp.offY = sp.y - plat.startY; }
+    }
+    if(sp.carrier){ sp.x = sp.carrier.x + sp.offX; sp.y = sp.carrier.y + sp.offY; }
+  }
+}
 function syncSwitchCarriers(){
+  syncSpikeCarriers();
   for(const sw of switchDefs){
     if(sw.carrier === undefined){
       const foot = sw.y + 20;   // Unterkante des Hebel-Kästchens = Oberkante des Bodens

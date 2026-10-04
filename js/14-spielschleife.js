@@ -36,6 +36,7 @@ function movingThings(){
   for(const s of solids) if(s.type==='moveplat') list.push(s);
   for(const h of hooks) if(h.moving) list.push(h);
   for(const sw of switchDefs) if(sw.carrier) list.push(sw);
+  for(const sp of spikes) if(sp.carrier) list.push(sp);   // mitfahrende Stacheln weich zeichnen
   for(const b of birds) if(b.state === 'fly') list.push(b);
   return list;
 }
