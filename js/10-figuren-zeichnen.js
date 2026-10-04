@@ -120,7 +120,9 @@ function drawCharacter(player, camX){
   // sehr leichtes Stauchen/Strecken abhängig von der Vertikalgeschwindigkeit (rein optisch)
   const squashY = 1 - Math.min(0.05, Math.abs(player.vy)*0.0025);
   const squashX = 1 + (1-squashY)*0.6;
-  ctx.scale(squashX, squashY);
+  // dazu Landen/Absprung/Atmen (21-figuren-leben.js), an den Füßen verankert
+  const [lx, ly] = typeof charSquash === 'function' ? charSquash(player) : [1, 1];
+  ctx.translate(0, player.h*0.5); ctx.scale(squashX*lx, squashY*ly); ctx.translate(0, -player.h*0.5);
 
   // Rollrotation abhängig von der zurückgelegten Strecke (wie ein rollender Ball)
   let wob = 0;

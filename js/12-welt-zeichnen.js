@@ -803,8 +803,10 @@ function drawSolidLook(s, look, x){
 
   drawCritters();   // Schmetterlinge, Frösche, Schnecken, Pilze, Knospen, Faultier (20-tiere.js)
   drawBirds();
+  drawDust();       // Staubwölkchen (21-figuren-leben.js)
   drawCharacter(p2, camX);
   drawCharacter(p1, camX);
+  drawHearts();     // Herzchen, wenn beide nah beieinander stehen
   drawCoinFx(camX);
   if(deathState && deathState.phrase) drawDeathBubble();
 

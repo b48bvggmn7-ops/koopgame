@@ -646,6 +646,21 @@ async def tiere_reagieren(g):
     assert await g.ev("critters[2].open") > 0.8, 'Knospe geht nicht auf'
     assert not await g.ev('!!deathState'), 'Deko beeinflusst das Spiel'
 
+@test
+async def figuren_leben(g):
+    """Figuren: Strecken beim Absprung, Stauchen + Staub beim Landen, Herzchen wenn beide nah beieinander stehen."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 160, 'y': 680}))
+    await g.p.keyboard.down('Space'); await g.p.wait_for_timeout(60)
+    st = await g.ev("({j: !!p1._jumpT, sq: charSquash(p1), dust: dustFx.length})")
+    await g.p.keyboard.up('Space')
+    assert st['j'] and st['sq'][1] > 1.02 and st['dust'] > 0, f'kein Strecken/Staub beim Absprung: {st}'
+    await g.p.wait_for_timeout(1300)
+    assert await g.ev("!!p1._landT && dustFx.length >= 0"), 'Landung nicht erkannt'
+    await g.ev("p1._landT = performance.now() - 100; p1._landV = 1")
+    assert (await g.ev("charSquash(p1)"))[1] < 0.9, 'kein Stauchen beim Landen'
+    await g.ev("p1.x = 200; p2.x = 170"); await g.p.wait_for_timeout(2600)
+    assert await g.ev("heartFx.length") > 0, 'keine Herzchen, obwohl beide beieinander stehen'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

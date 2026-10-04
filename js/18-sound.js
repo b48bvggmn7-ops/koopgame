@@ -136,9 +136,10 @@ function sfxObserve(){
     const pr = pl._snd || (pl._snd = {grounded: pl.grounded, vy: pl.vy, hook: pl.hookAttached, umb: pl.umbrella || 0, dist: 0, n: 0, wall: 0});
     if(pl.vy < -7 && pr.vy > -3 && !pl.hookAttached){
       if(pr.hook) SFX.hookRelease();
-      else if(pr.wall) SFX.wallJump(pl); else SFX.jump(pl);
+      else if(pr.wall){ SFX.wallJump(pl); if(typeof fxJump === 'function') fxJump(pl, true); }
+      else { SFX.jump(pl); if(typeof fxJump === 'function') fxJump(pl, false); }
     }
-    if(pl.grounded && !pr.grounded && pr.vy > 3.5) SFX.land(pl, pr.vy);
+    if(pl.grounded && !pr.grounded && pr.vy > 3.5){ SFX.land(pl, pr.vy); if(typeof fxLand === 'function') fxLand(pl, pr.vy); }
     if(pl.hookAttached && !pr.hook) SFX.hookAttach();
     if(!pl.male && (pl.umbrella || 0) > 0.2 && pr.umb <= 0.2) SFX.umbrella();
     if(pl.grounded && Math.abs(pl.vx) > 1){

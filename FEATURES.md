@@ -43,6 +43,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Lianen, Unterholz, nahe große Blätter und Farne; ab und zu zieht ein ferner Vogelschwarm vorbei.
     Parallax (weit weg = langsamer, heller, unschärfer), alles dunstig und heller als die Spielelemente;
     vorgezeichnet (billig pro Bild). Seitenrand der Seite dunkelgrün.
+  - Figuren mit mehr Leben (js/21-figuren-leben.js, nur Anzeige): Strecken beim Absprung, Stauchen beim Landen (je nach
+    Fallhöhe, an den Füßen verankert), sanftes Atmen im Stehen, Staubwölkchen bei Landung/Sprung/Wandsprung.
+    Entdeckung: stehen Affe und Schweinchen ~1,5 s dicht beieinander, steigen Herzchen auf (mit leisem Ton).
   - Süße Tiere & Entdeckungen (js/20-tiere.js, reine Deko): Schmetterlinge (flattern, weichen aus), Frösche (atmen,
     quaken ab und zu, hüpfen weg wenn man kommt), Schnecken (kriechen, ziehen sich ins Haus zurück), Pilze (federn +
     „boing“ beim Drüberlaufen), Blumenknospen (gehen beim Vorbeikommen mit Glitzer + Ton auf), selten: schlafendes
