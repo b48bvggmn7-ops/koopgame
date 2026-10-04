@@ -161,3 +161,17 @@
 @keyframes shake{0%,100%{translate:0 0}25%{translate:-.8cqw 0}75%{translate:.8cqw 0}}
 @media (prefers-reduced-motion:reduce){#sm *,#sm *::before,#sm *::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}}
 #sm #sm-s-options .pan{height:auto;min-height:56cqh}
+/* Blätter-Vorhang beim Levelstart (curtainIntoLevel in js/24-startmenue.js) */
+#leafCurtain{position:fixed;inset:0;z-index:80;pointer-events:none;overflow:hidden;display:none}
+#leafCurtain.on{display:block}
+#leafCurtain .half{position:absolute;top:-4%;height:108%;width:62%;transition:transform .65s cubic-bezier(.6,0,.3,1)}
+#leafCurtain .half svg{display:block;width:100%;height:100%;filter:drop-shadow(0 0 2vw rgba(0,0,0,.5))}
+#leafCurtain .half.l{left:0;transform:translateX(-112%)}
+#leafCurtain .half.r{right:0;transform:translateX(112%)}
+#leafCurtain.closed .half{transform:none}
+#leafCurtain .lt{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .35s ease;text-align:center}
+#leafCurtain.title .lt{opacity:1}
+#leafCurtain .lt-n{display:block;font:900 9vw/.9 "Big Shoulders Display",Impact,sans-serif;text-transform:uppercase;transform:skewX(-8deg);
+  background:linear-gradient(#f6ffe0 20%,#c6ff3d 85%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 .5vw 0 rgba(0,0,0,.45))}
+#leafCurtain .lt-name{display:block;margin-top:1vw;font:800 3vw/1 "Manrope",system-ui,sans-serif;color:#eaf7ee;letter-spacing:.06em}

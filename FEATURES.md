@@ -191,6 +191,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1 (Fortschritt neu,
     vorher Rückfrage). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
     (Countdown startet dann dieses Level; Zurück führt wieder zur Levelauswahl, die Auswahl bleibt).
+  - Levelstart aus dem Startmenü (Nutzerwahl): Blätter-Vorhang – große Dschungelblätter schieben sich von links und
+    rechts zu, darauf die Titeltafel „Level N“ + Name (z. B. „Dschungel“), dann gehen die Blätter auf
+    (curtainIntoLevel in 24-startmenue.js, menuScreen = 'curtain', Spiel steht still). Danach Ankunft der Figuren
+    (js/25-level-intro.js, ~2 s, fester Takt): Schweinchen schwebt mit offenem Schirm von oben herunter, Affe
+    schwingt an einer grünen Liane (kommt von oben aus dem Blätterdach) herein – von links, sonst von rechts, ohne
+    Platz seilt er sich senkrecht ab; landen mit Plumps/Staub auf ihren Startplätzen. Währenddessen ruhen Eingaben
+    und Stacheln. Nicht nach Tod/Neustart (R)/Level-Datei und nicht im Test aus dem Editor.
     Levelauswahl: Karten aus levels/levels.json („titel“: Dschungel, Baumkronen, Ruinen), Einträge mit
     „versteckt“: true fehlen (alter Entwurf von Level 3 – Datei bleibt, im Editor weiter ladbar); danach
     „Coming soon“-Karten bis Level 6 (nicht startbar). Freischalten nacheinander (Spielstand im Browser,

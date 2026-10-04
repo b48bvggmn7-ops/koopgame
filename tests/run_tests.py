@@ -74,8 +74,8 @@ async def startmenue_bis_level(g, tasten_vorher=()):
     for k in tasten_vorher:
         await p.keyboard.press(k); await p.wait_for_timeout(350)
     await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
-    for _ in range(80):
-        if await g.ev("menuScreen") is None: return
+    for _ in range(120):   # Countdown, Blätter-Vorhang, Ankunft der Figuren
+        if await g.ev("menuScreen === null && !introActive()"): return
         await p.wait_for_timeout(100)
     raise AssertionError('Level startet nach der Spielerwahl nicht')
 
@@ -298,8 +298,8 @@ async def menue_projekt_levels(g):
         assert await sm_screen(g) == 'sm-s-levels', 'Zurück aus der Spielerwahl führt nicht zur Levelauswahl'
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
-        for _ in range(60):
-            if await g.ev("menuScreen") is None: break
+        for _ in range(120):
+            if await g.ev("menuScreen === null && !introActive()"): break
             await p.wait_for_timeout(100)
         spiel2 = json.loads((ROOT / 'levels' / 'level-2.json').read_text())
         assert await g.ev('coins.length') == len(spiel2['coins']), 'Level 2 nicht geladen'
@@ -325,6 +325,36 @@ async def startmenue_fortschritt_und_wahl(g):
         sv = await g.ev("GameMenu.getSave()")
         assert 1 in sv['completed'] and sv['unlocked'] >= 2, f'Fortschritt nicht gemerkt: {sv}'
         assert 'freigeschaltet' in await p.text_content('#sm-toast'), 'kein Freischalt-Hinweis'
+    finally:
+        srv.shutdown()
+
+@test
+async def levelstart_vorhang_und_ankunft(g):
+    """Levelstart aus dem Menü: Blätter-Vorhang mit Titeltafel („Level 1“ + Name), dann Ankunft: Schweinchen schwebt
+    mit Schirm herunter, Affe hängt an der Liane; Eingaben ruhen; danach stehen beide auf ihren Startplätzen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        sah_titel = False; sah_ankunft = False
+        for _ in range(150):
+            if await g.ev("document.getElementById('leafCurtain').classList.contains('title')"):
+                sah_titel = True
+                assert await g.ev("document.querySelector('#leafCurtain .lt-n').textContent") == 'Level 1'
+            st = await g.ev("levelIntro && menuScreen === null ? ({t: levelIntro.t, py: p2.y, fy: levelIntro.f.y, u: p2.umbrella, vine: p1.introVine}) : null")
+            if st and st['t'] < 60:
+                if st['py'] < st['fy'] - 40 and st['u'] > 0.5 and st['vine']: sah_ankunft = True
+                await p.keyboard.down('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.up('ArrowRight')   # Eingabe ruht
+            if sah_ankunft and await g.ev("!introActive()"): break
+            await p.wait_for_timeout(50)
+        assert sah_titel, 'keine Titeltafel'
+        assert sah_ankunft, 'keine Ankunft (Schirm/Liane)'
+        await p.wait_for_timeout(400)
+        st = await g.ev("({a: p1.grounded, b: p2.grounded, m: menuScreen, ax: p1.x, bx: p2.x, sm: levelStartM.x, sf: levelStartF.x})")
+        assert st['a'] and st['b'] and st['m'] is None, f'nicht sauber gelandet: {st}'
+        assert abs(st['ax'] - st['sm']) < 30 and abs(st['bx'] - st['sf']) < 30, f'nicht am Startplatz: {st}'
     finally:
         srv.shutdown()
 

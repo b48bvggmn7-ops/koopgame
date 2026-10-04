@@ -194,6 +194,7 @@ function convertEditorSnapshot(d){
 document.addEventListener('keydown', e=>{
   // Startmenü (24-startmenue.js) bedient sich selbst
   if(menuScreen === 'start'){ e.stopPropagation(); if(typeof smKeyDown === 'function') smKeyDown(e); return; }
+  if(menuScreen === 'curtain'){ e.preventDefault(); e.stopPropagation(); return; }   // Blätter-Vorhang beim Levelstart
   if(!menuActive()){
     // Testmodus aus dem Editor: Esc beendet den Test sofort (auch auf dem Tod-Bildschirm) -> zurück zum Editor
     if(e.code === 'Escape' && editorTestMode){ e.preventDefault(); e.stopPropagation(); backToEditor(); return; }
@@ -222,7 +223,7 @@ document.getElementById('loadLevelInput').addEventListener('change', ()=>{ if(me
 // (nach einem Tod macht Options wie bisher einfach weiter).
 const menuPadPrev = [{}, {}];
 function pollMenuPads(){
-  if(menuScreen === 'start'){ menuClearPressed(); return; }   // Startmenü liest die Controller selbst
+  if(menuScreen === 'start' || menuScreen === 'curtain'){ menuClearPressed(); return; }   // Startmenü liest die Controller selbst
   let pads = [];
   try{ pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; }catch(e){ pads = []; }
   for(let i = 0; i < 2; i++){

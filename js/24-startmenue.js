@@ -323,13 +323,56 @@ async function playLevel(i) {
     const r = await fetch(PROJECT_LEVELS + encodeURIComponent(lvl.datei), { cache: 'no-store' });
     if (!r.ok) throw 0;
     const data = await r.json();
-    setMonkeyPlayer(lastPlayers.monkey);
-    currentLevelNo = i + 1;
-    hideMenu();
-    startLevel(data);                        // 16-menue.js: Level aufbauen, Spiel läuft
+    await curtainIntoLevel(i + 1, lvl.name, () => {
+      setMonkeyPlayer(lastPlayers.monkey);
+      currentLevelNo = i + 1;
+      hideMenu();
+      startLevel(data);                      // 16-menue.js: Level aufbauen
+      menuScreen = 'curtain';                // Spiel steht still, bis die Blätter auf sind
+      if (typeof startLevelIntro === 'function') startLevelIntro();   // Ankunft der Figuren (25-level-intro.js)
+    });
   } catch (e) {
+    menuScreen = 'start'; curtainEl.className = '';
     toast('Level konnte nicht geladen werden'); go('levels');
   }
+}
+/* ---- Blätter-Vorhang mit Titeltafel: Menü -> Level ---- */
+const wait = ms => new Promise(res => setTimeout(res, ms));
+function leafHalf(side) {
+  // große Dschungelblätter, die zur Bildmitte hin herausragen
+  const leaf = (x, y, rot, len, wid, col) =>
+    `<g transform="translate(${x} ${y}) rotate(${rot})"><path d="M0 0Q${len*.45} ${-wid} ${len} 0Q${len*.45} ${wid} 0 0Z" fill="${col}"/>` +
+    `<path d="M0 0L${len*.92} 0" stroke="rgba(0,0,0,.25)" stroke-width="3" fill="none"/></g>`;
+  const cols = ['#0e5235', '#13663f', '#0b4630', '#17724a', '#0f5a3a'];
+  let g = '';
+  for (let k = 0; k < 16; k++) {
+    const y = -40 + k*62, len = 300 + (k*53) % 160, rot = side < 0 ? (k % 2 ? 12 : -14) : (k % 2 ? 168 : 194);
+    g += leaf(side < 0 ? 420 : 380, y, rot, len, 70 + (k*17) % 40, cols[k % cols.length]);
+  }
+  const base = '<rect x="0" y="0" width="800" height="1000" fill="#08331f"/>';   // ganze Hälfte deckend (überlappt in der Mitte)
+  return `<svg viewBox="0 0 800 1000" preserveAspectRatio="none">${base}${g}</svg>`;
+}
+const curtainEl = document.createElement('div');
+curtainEl.id = 'leafCurtain';
+curtainEl.innerHTML = `<div class="half l">${leafHalf(-1)}</div><div class="half r">${leafHalf(1)}</div>` +
+  `<div class="lt"><div><b class="lt-n"></b><span class="lt-name"></span></div></div>`;
+document.body.appendChild(curtainEl);
+async function curtainIntoLevel(no, name, build) {
+  menuScreen = 'curtain';
+  curtainEl.querySelector('.lt-n').textContent = 'Level ' + no;
+  curtainEl.querySelector('.lt-name').textContent = name;
+  curtainEl.className = 'on'; void curtainEl.offsetWidth;
+  curtainEl.className = 'on closed';               // Blätter schieben sich zu
+  await wait(700);
+  build();                                         // hinter den Blättern: Level aufbauen, Figuren bereit
+  curtainEl.className = 'on closed title';         // Titeltafel
+  await wait(1400);
+  curtainEl.className = 'on closed';
+  await wait(250);
+  curtainEl.className = 'on';                      // Blätter gehen auf
+  await wait(650);
+  curtainEl.className = '';
+  menuScreen = null; menuClearPressed();           // jetzt läuft das Spiel (zuerst die Ankunft)
 }
 function completeLevel(n) {
   if (!save.completed.includes(n)) save.completed.push(n);
