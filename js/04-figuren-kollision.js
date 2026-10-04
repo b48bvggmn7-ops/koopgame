@@ -32,7 +32,6 @@ function resetLevel(){
   nudgeFree(p1); nudgeFree(p2);
   won = false;
   document.getElementById('toast').classList.remove('show');
-  if(typeof levelIntro !== 'undefined') levelIntro = null;   // Neustart bricht die Ankunft ab
 }
 
 // Steht eine Figur an (x,y) (Füße) frei, ohne in Boden/Wand/Tür zu stecken?

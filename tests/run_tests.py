@@ -74,8 +74,8 @@ async def startmenue_bis_level(g, tasten_vorher=()):
     for k in tasten_vorher:
         await p.keyboard.press(k); await p.wait_for_timeout(350)
     await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
-    for _ in range(120):   # Countdown, Blätter-Vorhang, Ankunft der Figuren
-        if await g.ev("menuScreen === null && !introActive()"): return
+    for _ in range(120):   # Countdown und Blätter-Vorhang
+        if await g.ev("menuScreen === null"): return
         await p.wait_for_timeout(100)
     raise AssertionError('Level startet nach der Spielerwahl nicht')
 
@@ -299,7 +299,7 @@ async def menue_projekt_levels(g):
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
         for _ in range(120):
-            if await g.ev("menuScreen === null && !introActive()"): break
+            if await g.ev("menuScreen === null"): break
             await p.wait_for_timeout(100)
         spiel2 = json.loads((ROOT / 'levels' / 'level-2.json').read_text())
         assert await g.ev('coins.length') == len(spiel2['coins']), 'Level 2 nicht geladen'
@@ -329,35 +329,42 @@ async def startmenue_fortschritt_und_wahl(g):
         srv.shutdown()
 
 @test
-async def levelstart_vorhang_und_ankunft(g):
-    """Levelstart aus dem Menü: Blätter-Vorhang mit Titeltafel („Level 1“ + Name), dann Ankunft: Schweinchen schwebt
-    mit Schirm herunter, Affe springt mit Salto aus dem Blätterdach; Eingaben ruhen; danach stehen beide am Startplatz."""
+async def levelstart_vorhang(g):
+    """Levelstart aus dem Menü: Vorhang aus einzelnen Blättern fliegt zusammen, Titeltafel „Level 1“ + Name,
+    Blätter fliegen wieder weg; die Figuren stehen dabei einfach an ihren Startplätzen und sind sofort steuerbar."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        assert await g.ev("document.querySelectorAll('#leafCurtain .leaf').length") > 100, 'zu wenige Blätter'
         await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
-        sah_titel = False; sah_ankunft = False
-        for _ in range(150):
+        sah_titel = False
+        for _ in range(200):
             if await g.ev("document.getElementById('leafCurtain').classList.contains('title')"):
                 sah_titel = True
                 assert await g.ev("document.querySelector('#leafCurtain .lt-n').textContent") == 'Level 1'
-            st = await g.ev("levelIntro && menuScreen === null ? ({t: levelIntro.t, py: p2.y, fy: levelIntro.f.y, u: p2.umbrella, my: p1.y, mf: levelIntro.m.y, rot: p1.rollAngle, hook: p1.hookAttached}) : null")
-            if st and st['t'] < 55:
-                assert not st['hook'], 'Affe hängt noch an einer Liane'
-                if st['py'] < st['fy'] - 40 and st['u'] > 0.5 and st['my'] < st['mf'] - 40 and st['rot'] > 0.5: sah_ankunft = True
-                await p.keyboard.down('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.up('ArrowRight')   # Eingabe ruht
-            if sah_ankunft and await g.ev("!introActive()"): break
+                st = await g.ev("({ax: p1.x, bx: p2.x, sm: levelStartM.x, sf: levelStartF.x})")
+                assert abs(st['ax'] - st['sm']) < 2 and abs(st['bx'] - st['sf']) < 2, f'Figuren nicht am Start: {st}'
+            if sah_titel and await g.ev("menuScreen === null"): break
             await p.wait_for_timeout(50)
         assert sah_titel, 'keine Titeltafel'
-        assert sah_ankunft, 'keine Ankunft (Schirm / Salto)'
-        await p.wait_for_timeout(400)
-        st = await g.ev("({a: p1.grounded, b: p2.grounded, m: menuScreen, ax: p1.x, bx: p2.x, sm: levelStartM.x, sf: levelStartF.x})")
-        assert st['a'] and st['b'] and st['m'] is None, f'nicht sauber gelandet: {st}'
-        assert abs(st['ax'] - st['sm']) < 30 and abs(st['bx'] - st['sf']) < 30, f'nicht am Startplatz: {st}'
+        assert await g.ev("menuScreen") is None, 'Spiel startet nach dem Vorhang nicht'
+        assert await g.ev("typeof levelIntro === 'undefined'"), 'Ankunfts-Animation soll weg sein'
+        x0 = await g.ev("p2.x"); await g.hold(('ArrowRight',), 400)
+        assert await g.ev("p2.x") > x0 + 20, 'nach dem Vorhang nicht steuerbar'
     finally:
         srv.shutdown()
+
+@test
+async def verknuepfungen_bis_20(g):
+    """Alle Projekt-Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen)."""
+    for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
+        d = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
+        links = [s['link'] for s in d.get('switches', [])] + [x['link'] for x in d.get('doors', [])] + \
+                [m['link'] for m in d.get('movers', []) if m.get('link')] + \
+                [h['move']['link'] for h in d.get('hooks', []) if h.get('move') and h['move'].get('link')]
+        assert all(1 <= n <= 20 for n in links), f"{L['datei']}: Verknüpfungen über 20: {sorted(set(n for n in links if n > 20))}"
 
 @test
 async def vollbild_esc_bleibt(g):

@@ -191,27 +191,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1 (Fortschritt neu,
     vorher Rückfrage). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
     (Countdown startet dann dieses Level; Zurück führt wieder zur Levelauswahl, die Auswahl bleibt).
-  - Levelstart aus dem Startmenü (Nutzerwahl): Blätter-Vorhang – zwei Hälften aus dichten Schichten vieler
-    Dschungelblätter (schlanke Blätter, Herzblätter mit Schlitzen, Palmwedel; hinten dunkel, vorne hell, Mitte weich
-    überblendet – keine glatte Fläche, Nutzerwunsch) schieben sich von links und rechts zu, darauf die Titeltafel „Level N“ + Name (z. B. „Dschungel“), dann gehen die Blätter auf
-    (curtainIntoLevel in 24-startmenue.js, menuScreen = 'curtain', Spiel steht still). Danach Ankunft der Figuren
-    (js/25-level-intro.js, ~2 s, fester Takt): Schweinchen schwebt mit offenem Schirm von oben herunter, Affe
-    springt aus dem Blätterdach herunter, macht einen doppelten Salto und landet mit kleinem Hüpfer, Plumps und
-    Staub (die frühere Liane hat der Nutzer abgelehnt). Währenddessen ruhen Eingaben
-    und Stacheln. Nicht nach Tod/Neustart (R)/Level-Datei und nicht im Test aus dem Editor.
-    Levelauswahl: Karten aus levels/levels.json („titel“: Dschungel, Baumkronen, Ruinen), Einträge mit
-    „versteckt“: true fehlen (alter Entwurf von Level 3 – Datei bleibt, im Editor weiter ladbar); danach
-    „Coming soon“-Karten bis Level 6 (nicht startbar). Freischalten nacheinander (Spielstand im Browser,
-    monchichi.save); Fortschrittsbalken; nach dem Ziel-Tanz Rückkehr zur Levelauswahl mit „Level N freigeschaltet!“.
-    Optionen: Steuerung (Tastatur/Controller, passend zur Spielerwahl), Lautstärke Gesamt/Musik/Effekte
-    (VOL in 07-effekte-ton-muenzen.js, gemerkt als monchichi_vol; 100 % = bisherige Lautstärke; Musik =
-    Akkorde/Klavier, Effekte = Geräusche + Vögel/Regen/Fluss/Wind), Knopf „Alle Level freischalten (zum Testen)“.
-    Beenden → „Bis bald!“-Bildschirm. Bedienung: Tastatur (A/D/W/S, Pfeile, Enter/Leertaste/Num 0, Esc), Controller,
-    Maus. Menü-Klänge = Spiel-Klänge, die Musik des Spiels läuft weiter (keine zweite Musik).
-    Solange das Startmenü offen ist: menuScreen = 'start', Spiel steht still.
-    Der Level-Editor ist auf Nutzerwunsch NICHT mehr im Menü („ausgelagert“): eigene Seite editor/ (Adresse
-    …/editor/), „Testen“ aus dem Editor startet das Spiel weiter direkt im Level. „Level-Datei laden“ gibt es nur
-    noch über den Knopf „Level laden (JSON)“ unten im Spiel. (Früheres Hauptmenü aus 16-menue.js ersetzt.)
+  - Levelstart aus dem Startmenü (Nutzerwahl): Vorhang aus EINZELNEN Blättern (~240 Blätter: schlanke Blätter,
+    Herzblätter mit Schlitzen, Palmwedel; hinten dunkel, vorne hell) – jedes fliegt vom nächsten Bildrand an seinen
+    Platz (außen zuerst, zur Mitte später), bis alles voller Blätter ist; darauf die Titeltafel „Level N“ + Name
+    (z. B. „Dschungel“), dann fliegen die Blätter wieder hinaus (curtainIntoLevel in 24-startmenue.js,
+    menuScreen = 'curtain', Spiel steht still). Die Figuren stehen dabei einfach an ihren Startplätzen
+    (Nutzerwunsch; die frühere Ankunfts-Animation mit Schirm/Liane/Salto ist entfernt).
   - Spielerwahl tauscht die Tasten: Tasten gehören zu SPIELERN (KEYSETS in 03-eingabe.js), nicht zu Figuren.
     Spielt Spieler 1 das Schweinchen: Schweinchen A/D, Leertaste, G = Schirm, J = Hebel; Affe Pfeile, Num 0,
     Num 1 = Haken, ↑/↓ = Seil, Num 2 = Hebel; Controller 1 steuert dann das Schweinchen. Anzeige oben passt sich an.
@@ -246,10 +231,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     7) Seilbahn: Schweinchen segelt zu Hebel 7, der den Haken mit dem hängenden Affen schräg rüberfährt; 8) Türen-
     Staffel mit 4 Hebeln (Affe oben per Haken, Schweinchen unten); 9) fahrender Haken (Affe) / hoher Turm (Schweinchen);
     Erweiterung (Nutzer: zu kurz/zu einfach): 11) Stachel-Pressen (Stachelblöcke fahren von der Decke auf und ab –
-    im richtigen Moment durchlaufen); 12) Hebel in der Luft (Hebel 26 auf kleinem Sims, nur der Affe kommt per
-    Haken hin; Tür für beide); 13) Stachelwand-Jagd (Hebel 28 öffnet das Tor UND lässt eine Stachelwand los, die
-    über Gruben und Bröckel-Stege hinterherfährt – ~2 s Vorsprung); 14) Welcher Hebel? (drei Hebel 29/30/31, nur
-    30 öffnet die Tür, 29 und 31 lassen eine Presse auf den Ziehenden fallen – auf Nummern/Farben achten);
+    im richtigen Moment durchlaufen); 12) Hebel in der Luft (Hebel 12 auf kleinem Sims, nur der Affe kommt per
+    Haken hin; Tür für beide); 13) Stachelwand-Jagd (Hebel 13 öffnet das Tor UND lässt eine Stachelwand los, die
+    über Gruben und Bröckel-Stege hinterherfährt – ~2 s Vorsprung); 14) Welcher Hebel? (drei Hebel 14/15/16, nur
+    15 öffnet die Tür, 14 und 16 lassen eine Presse auf den Ziehenden fallen – auf Nummern/Farben achten);
     15) Stachel-Pendel (rutschende Stachelblöcke am Boden überspringen); 16) Aufzug zum Münz-Plateau, Ziel (794).
   - Level 3 „Ruinen“ (levels/level-3.json, 800 Spalten, schwerer, mehr Timing): 1) Bröckel-Hüpfer (kleine Inseln
     halten nur kurz); 2) Zickzack-Kamin (zwei versetzte Schächte); 3) Schweinchen segelt mit Zwischenlandung auf einer
@@ -259,11 +244,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     6) Schweinchen fährt auf der Plattform und legt unterwegs die mitfahrenden Hebel 7/8 um → Türen oben auf dem Steg
     für den Affen; 7) fahrender + feste Haken (Affe), Turm → Bröckel-Säule → Boden (Schweinchen); 8) Türen-Staffel
     über Bröckelboden; Erweiterung: 10) Pressen über Gruben (unter jeder zweiten Presse fehlt der Boden ->
-    im richtigen Moment springen); 11) Stachelwand-Jagd 2 (schneller, mitten im Lauf Hebel 42 für die Tür);
-    12) Ein Hebel, zwei Folgen (Hebel 43 öffnet Tür 43, startet aber die Presse davor; Tür 44 hat ihren Hebel VOR
-    der Presse -> Reihenfolge überlegen); 13) Zwei Fähigkeiten (Hebel 46 nur segelnd erreichbar, Hebel 45 nur am
+    im richtigen Moment springen); 11) Stachelwand-Jagd 2 (schneller, mitten im Lauf Hebel 14 für die Tür);
+    12) Ein Hebel, zwei Folgen (Hebel 15 öffnet Tür 15, startet aber die Presse davor; Tür 16 hat ihren Hebel VOR
+    der Presse -> Reihenfolge überlegen); 13) Zwei Fähigkeiten (Hebel 18 nur segelnd erreichbar, Hebel 17 nur am
     Haken; zwei Türen hintereinander); 14) Endspurt-Jagd (schnellste Stachelwand + rutschender Stachelblock);
     15) Finale: Schweinchen durch den Kamin über die Bröckel-Brücke, Affe an drei Haken darunter, Ziel (796).
+  - Alle Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen; Level 2/3 umnummeriert).
   - Alle neuen Levels (2/3) folgen denselben Regeln wie Level 1 (nur blaue/pinke Münzen, keine Münzen in Steinen,
     Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.
   - Das frühere vom Nutzer hochgeladene „Level 3“ heißt jetzt „Level 3 (alter Entwurf)“

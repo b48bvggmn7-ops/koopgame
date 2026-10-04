@@ -328,8 +328,7 @@ async function playLevel(i) {
       currentLevelNo = i + 1;
       hideMenu();
       startLevel(data);                      // 16-menue.js: Level aufbauen
-      menuScreen = 'curtain';                // Spiel steht still, bis die Blätter auf sind
-      if (typeof startLevelIntro === 'function') startLevelIntro();   // Ankunft der Figuren (25-level-intro.js)
+      menuScreen = 'curtain';                // Spiel steht still, bis die Blätter auf sind (Figuren stehen am Start)
     });
   } catch (e) {
     menuScreen = 'start'; curtainEl.className = '';
@@ -338,68 +337,72 @@ async function playLevel(i) {
 }
 /* ---- Blätter-Vorhang mit Titeltafel: Menü -> Level ---- */
 const wait = ms => new Promise(res => setTimeout(res, ms));
-function leafHalf(side) {
-  // dichte Schichten aus vielen Dschungelblättern (schlanke Blätter, breite Herzblätter, gefiederte Palmwedel);
-  // hinten dunkel, vorne hell – keine leere grüne Fläche. Fester Zufall, damit es immer gleich aussieht.
-  let seed = side < 0 ? 7 : 13;
+// Vorhang aus EINZELNEN Blättern: jedes Blatt fliegt vom nächsten Bildrand an seinen Platz (außen zuerst,
+// zur Mitte hin später), bis das Bild ganz voller Blätter ist; beim Öffnen fliegen sie wieder hinaus.
+// Fester Zufall, damit es immer gleich aussieht.
+function curtainLeaves() {
+  let seed = 11;
   const R = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-  const uid = side < 0 ? 'L' : 'R';
   const grads = [['#04210f', '#0b3f22'], ['#0a3a20', '#17602f'], ['#11552c', '#2b8a3e'], ['#1d7a37', '#4fb053'], ['#2f8f3f', '#7ccf63']];
-  let defs = '<defs>';
-  grads.forEach((g, k) => { defs += `<linearGradient id="lf${uid}${k}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${g[0]}"/><stop offset="1" stop-color="${g[1]}"/></linearGradient>`; });
-  defs += '</defs>';
-  const slim = (len, wid, k) => {           // schlankes Blatt mit Mittelrippe und Seitenadern
+  let defs = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>';
+  grads.forEach((g, k) => { defs += `<linearGradient id="lfg${k}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${g[0]}"/><stop offset="1" stop-color="${g[1]}"/></linearGradient>`; });
+  defs += '</defs></svg>';
+  // Blattformen in einem Feld 0..300 × -60..60 (Spitze rechts)
+  const slim = k => {
     let v = '';
-    for (let a = 0.18; a < 0.9; a += 0.14) v += `M${len*a} 0L${len*(a+0.09)} ${-wid*0.55*(1-a)}M${len*a} 0L${len*(a+0.09)} ${wid*0.55*(1-a)}`;
-    return `<path d="M0 0C${len*.25} ${-wid} ${len*.7} ${-wid*.8} ${len} 0C${len*.7} ${wid*.8} ${len*.25} ${wid} 0 0Z" fill="url(#lf${uid}${k})" stroke="rgba(0,0,0,.25)" stroke-width="2"/>` +
-           `<path d="M0 0L${len*.96} 0${v}" stroke="rgba(0,20,8,.35)" stroke-width="2.2" fill="none"/>`;
+    for (let a = 0.18; a < 0.9; a += 0.14) v += `M${300*a} 0L${300*(a+0.09)} ${-33*(1-a)}M${300*a} 0L${300*(a+0.09)} ${33*(1-a)}`;
+    return `<path d="M0 0C75 -60 210 -48 300 0C210 48 75 60 0 0Z" fill="url(#lfg${k})" stroke="rgba(0,0,0,.25)" stroke-width="2"/>` +
+           `<path d="M0 0L288 0${v}" stroke="rgba(0,20,8,.35)" stroke-width="2.2" fill="none"/>`;
   };
-  const heart = (len, wid, k) =>            // breites Herzblatt (wie Monstera, mit Schlitzen)
-    `<path d="M0 0C${len*.1} ${-wid*1.1} ${len*.85} ${-wid*1.2} ${len} 0C${len*.85} ${wid*1.2} ${len*.1} ${wid*1.1} 0 0Z" fill="url(#lf${uid}${k})" stroke="rgba(0,0,0,.25)" stroke-width="2"/>` +
-    `<path d="M${len*.35} ${-wid*.85}L${len*.48} ${-wid*.2}M${len*.62} ${-wid*.8}L${len*.66} ${-wid*.15}M${len*.38} ${wid*.85}L${len*.5} ${wid*.2}M${len*.64} ${wid*.78}L${len*.68} ${wid*.14}" stroke="rgba(3,30,14,.55)" stroke-width="${wid*.05}" stroke-linecap="round"/>` +
-    `<path d="M0 0L${len*.95} 0" stroke="rgba(0,20,8,.4)" stroke-width="3" fill="none"/>`;
-  const palm = (len, k) => {                // gefiederter Palmwedel
-    let f = `<path d="M0 0Q${len*.5} ${-len*.12} ${len} 0" stroke="url(#lf${uid}${k})" stroke-width="5" fill="none"/>`;
+  const heart = k =>
+    `<path d="M0 0C30 -66 255 -72 300 0C255 72 30 66 0 0Z" fill="url(#lfg${k})" stroke="rgba(0,0,0,.25)" stroke-width="2"/>` +
+    `<path d="M105 -51L144 -12M186 -48L198 -9M114 51L150 12M192 47L204 8" stroke="rgba(3,30,14,.55)" stroke-width="3" stroke-linecap="round"/>` +
+    `<path d="M0 0L285 0" stroke="rgba(0,20,8,.4)" stroke-width="3" fill="none"/>`;
+  const palm = k => {
+    let f = `<path d="M0 0Q150 -20 300 0" stroke="url(#lfg${k})" stroke-width="5" fill="none"/>`;
     for (let a = 0.08; a < 0.97; a += 0.06) {
-      const x = len*a, y = -len*.12*4*a*(1-a), l = len*.32*Math.sin(Math.PI*Math.min(1, a*1.1));
-      f += `<path d="M${x} ${y}Q${x + l*.5} ${y - l*.6} ${x + l*.9} ${y - l*.55}M${x} ${y}Q${x + l*.5} ${y + l*.6} ${x + l*.9} ${y + l*.65}" stroke="url(#lf${uid}${k})" stroke-width="${7*(1.1-a)}" stroke-linecap="round" fill="none"/>`;
+      const x = 300*a, y = -20*4*a*(1-a), l = 70*Math.sin(Math.PI*Math.min(1, a*1.1));
+      f += `<path d="M${x} ${y}Q${x + l*.5} ${y - l*.6} ${x + l*.9} ${y - l*.55}M${x} ${y}Q${x + l*.5} ${y + l*.6} ${x + l*.9} ${y + l*.65}" stroke="url(#lfg${k})" stroke-width="${7*(1.1-a)}" stroke-linecap="round" fill="none"/>`;
     }
     return f;
   };
-  let g = '';
-  const layers = [[0, 46, 1.25], [1, 52, 1.05], [2, 48, 0.9], [3, 34, 0.75], [4, 18, 0.6]];   // Farbe, Anzahl, Größe
-  for (const [k, n, sc] of layers) {
-    for (let q = 0; q < n; q++) {
-      const x = R()*900 - 50, y = R()*860 - 30;
-      // Blätter zeigen grob zur Bildmitte (links -> nach rechts, rechts -> nach links)
-      const dir = side < 0 ? 0 : 180, rot = dir + (R() - 0.5)*120;
-      const kind = R(), len = (170 + R()*190)*sc, wid = (40 + R()*45)*sc;
-      const shape = kind < 0.45 ? slim(len, wid, k) : kind < 0.75 ? heart(len*0.8, wid*1.1, k) : palm(len*1.2, k);
-      g += `<g transform="translate(${x.toFixed(0)} ${y.toFixed(0)}) rotate(${rot.toFixed(0)})">${shape}</g>`;
+  let html = defs;
+  // drei Schichten: hinten große dunkle, Mitte, vorne kleinere helle Blätter – Raster mit Zufall, dicht überlappend
+  const layers = [[0, 9, 6, 30], [1, 10, 7, 26], [2, 9, 6, 22], [3, 8, 5, 18], [4, 6, 4, 14]];
+  for (const [k, cols, rows, size] of layers) {
+    for (let a = 0; a < cols; a++) for (let b = 0; b < rows; b++) {
+      const cx = (a + 0.5 + (R() - 0.5)*0.9) / cols * 112 - 6, cy = (b + 0.5 + (R() - 0.5)*0.9) / rows * 112 - 6;   // Mitte in %
+      const len = size*(0.8 + R()*0.5);                     // Blattlänge in vw
+      const rot = (cx < 50 ? 0 : 180) + (R() - 0.5)*140;    // grob zur Bildmitte zeigend
+      const dx = cx - 50, dy = (cy - 50)*0.6, dl = Math.hypot(dx, dy) || 1;
+      const fx = dx/dl*90, fy = dy/dl*70;                  // Anflug vom nächsten Rand (vw / vh)
+      const delay = (1 - Math.min(1, dl/60))*0.32 + R()*0.08 + k*0.03;
+      const kind = R(), shape = kind < 0.45 ? slim(k) : kind < 0.75 ? heart(k) : palm(k);
+      html += `<div class="leaf" style="left:${(cx).toFixed(1)}%;top:${cy.toFixed(1)}%;width:${len.toFixed(1)}vw;height:${(len*0.4).toFixed(1)}vw;` +
+              `--fx:${fx.toFixed(0)}vw;--fy:${fy.toFixed(0)}vh;--r0:${(rot + (R() - 0.5)*160).toFixed(0)}deg;--r:${rot.toFixed(0)}deg;--d:${delay.toFixed(2)}s">` +
+              `<svg viewBox="0 -60 300 120" preserveAspectRatio="none">${shape}</svg></div>`;
     }
   }
-  const base = '<rect x="-50" y="-50" width="900" height="900" fill="#03180b"/>';
-  return `<svg viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">${defs}${base}${g}</svg>`;
+  return html;
 }
 const curtainEl = document.createElement('div');
 curtainEl.id = 'leafCurtain';
-curtainEl.innerHTML = `<div class="half l">${leafHalf(-1)}</div><div class="half r">${leafHalf(1)}</div>` +
-  `<div class="lt"><div><b class="lt-n"></b><span class="lt-name"></span></div></div>`;
+curtainEl.innerHTML = '<div class="cbg"></div>' + curtainLeaves() + `<div class="lt"><div><b class="lt-n"></b><span class="lt-name"></span></div></div>`;
 document.body.appendChild(curtainEl);
 async function curtainIntoLevel(no, name, build) {
   menuScreen = 'curtain';
   curtainEl.querySelector('.lt-n').textContent = 'Level ' + no;
   curtainEl.querySelector('.lt-name').textContent = name;
   curtainEl.className = 'on'; void curtainEl.offsetWidth;
-  curtainEl.className = 'on closed';               // Blätter schieben sich zu
-  await wait(700);
+  curtainEl.className = 'on closed';               // Blätter fliegen zusammen
+  await wait(1050);
   build();                                         // hinter den Blättern: Level aufbauen, Figuren bereit
   curtainEl.className = 'on closed title';         // Titeltafel
   await wait(1400);
   curtainEl.className = 'on closed';
   await wait(250);
-  curtainEl.className = 'on';                      // Blätter gehen auf
-  await wait(650);
+  curtainEl.className = 'on';                      // Blätter fliegen wieder hinaus
+  await wait(1050);
   curtainEl.className = '';
   menuScreen = null; menuClearPressed();           // jetzt läuft das Spiel (zuerst die Ankunft)
 }

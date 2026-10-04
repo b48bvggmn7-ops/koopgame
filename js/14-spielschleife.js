@@ -11,12 +11,9 @@ let simAcc = 0, lastFrameTs = 0, frameDt = STEP;
 function stepSim(ts){
   if(won && ++winSteps === WIN_DANCE_STEPS) winFinish();   // nach dem Tanz zurück ins Menü (21-figuren-leben.js)
   activateVisibleMovers();
-  const arriving = typeof introStep === 'function' && introStep();   // Ankunft beim Levelstart (25-level-intro.js)
-  if(!arriving){
-    updatePlayer(p1, ts);
-    updatePlayer(p2, ts);
-    keepTogether();   // vordere Figur darf höchstens 1,25 Bildschirmbreiten vor der hinteren sein
-  }
+  updatePlayer(p1, ts);
+  updatePlayer(p2, ts);
+  keepTogether();   // vordere Figur darf höchstens 1,25 Bildschirmbreiten vor der hinteren sein
   updateMovingHooks();
   updateCoins([p1, p2]);
   updateCheckpoints();
@@ -24,7 +21,8 @@ function stepSim(ts){
   updateDoorsAndSwitches(16.6, [p1, p2]);
   updateMovingPlatforms(16.6, [p1, p2]);
   syncSwitchCarriers();   // Hebel auf bewegtem Boden fahren mit
-  if(!arriving){ updateSpikes(p1); updateSpikes(p2); }
+  updateSpikes(p1);
+  updateSpikes(p2);
   updateBirds();     // nur Deko (17-deko.js)
   sfxObserve();      // Geräusche zu Sprung/Landung/… (18-sound.js), ändert nichts am Spiel
   if(!won && p1.atGoal && p2.atGoal && coinsCollected() >= coinsNeeded){
