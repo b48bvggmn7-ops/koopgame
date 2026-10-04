@@ -65,7 +65,8 @@ function danceMove(pl){
 }
 function winFinish(){
   document.getElementById('toast').classList.remove('show');
-  if(typeof showMainMenu === 'function') showMainMenu();
+  if(typeof startMenuLevelWon === 'function') startMenuLevelWon();   // Level geschafft merken -> Levelauswahl (24-startmenue.js)
+  else if(typeof showMainMenu === 'function') showMainMenu();
 }
 function drawHearts(){
   const t = performance.now();

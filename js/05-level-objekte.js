@@ -72,7 +72,7 @@ function updateCrumbles(dt){
 // Spieler 1: Tastatur J / Controller Kreis · Spielerin 2: Tastatur Num 2 / Controller Kreis
 const LEVER_RANGE_X = 60, LEVER_RANGE_Y = 60;
 function useKeyPressed(player){
-  const codes = player===p1 ? ['KeyJ','Pad1Use'] : ['Numpad2','Pad2Use'];
+  const codes = [player.keys.use, player.keys.padUse];   // je nach Spielerwahl (03-eingabe.js)
   let hit = false;
   for(const c of codes){ if(KEYS[c+'_pressed']){ hit = true; KEYS[c+'_pressed'] = false; } }
   return hit;

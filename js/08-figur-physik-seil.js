@@ -80,7 +80,7 @@ function updatePlayer(player, now){
   if(right){ moveDir = 1; player.facing = 1; }
 
   if(player.male){
-    const hookPressed = !frozen && KEYS['KeyG_pressed']; KEYS['KeyG_pressed']=false;
+    const hookPressed = !frozen && KEYS[player.keys.hook+'_pressed']; KEYS[player.keys.hook+'_pressed']=false;
     if(hookPressed){
       if(player.hookAttached){
         player.hookAttached = false;

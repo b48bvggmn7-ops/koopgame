@@ -1,18 +1,22 @@
 [
  {
   "datei": "level-1.json",
-  "name": "Level 1"
+  "name": "Level 1",
+  "titel": "Dschungel"
  },
  {
   "datei": "level-2.json",
-  "name": "Level 2"
+  "name": "Level 2",
+  "titel": "Baumkronen"
  },
  {
   "datei": "level-3.json",
-  "name": "Level 3"
+  "name": "Level 3",
+  "titel": "Ruinen"
  },
  {
   "datei": "level-3-alter-entwurf.json",
-  "name": "Level 3 (alter Entwurf)"
+  "name": "Level 3 (alter Entwurf)",
+  "versteckt": true
  }
 ]

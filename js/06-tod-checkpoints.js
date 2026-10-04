@@ -32,9 +32,9 @@ function continueAfterDeath(){
   const mPos = cp ? {x:cp.x-18, y:cp.y} : {x:levelStartM.x, y:levelStartM.y};
   const fPos = cp ? {x:cp.x+18, y:cp.y} : {x:levelStartF.x, y:levelStartF.y};
   p1 = makePlayer({x:mPos.x,y:mPos.y, male:true,
-    keys:{left:'KeyA',right:'KeyD',jump:'Space',hook:'KeyG',pull:'KeyW',slack:'KeyS'}, spawn:{...mPos}});
+    keys:keysFor(true), spawn:{...mPos}});
   p2 = makePlayer({x:fPos.x,y:fPos.y, male:false,
-    keys:{left:'ArrowLeft',right:'ArrowRight',jump:'Numpad0',glide:'Numpad1'}, spawn:{...fPos}, umbrella:0});
+    keys:keysFor(false), spawn:{...fPos}, umbrella:0});
   // zerbröselter Boden und Türen kommen zurück, bewegte Teile an den Start
   for(const s of solids){ if(s.type==='crumble'){ s.triggered=false; s.gone=false; s.timer=0; s.fragments=null; s.breakElapsed=0; } }
   for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; } }

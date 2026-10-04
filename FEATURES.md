@@ -180,13 +180,28 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Decken-Begrenzung, Kenney-Tiles
   - "Level laden (JSON)": liest Editor-Export (Spiel-Format) oder altes Editor-Rohformat (bleibt als Notlösung;
     auch im Hauptmenü als „Level-Datei laden (Notlösung)“; Laden schließt das Menü)
-  - Hauptmenü beim Start (js/16-menue.js): Titel, „Spielen“ → Levelauswahl, „Level-Editor“ (öffnet editor/).
-    Levelauswahl zeigt nur „Levels“ (levels/levels.json, Dateien im Spiel-Format aus levels/). Die frühere
-    Gruppe „Meine Levels“ (im Browser gespeicherte Editor-Levels) ist auf Nutzerwunsch entfernt (irritierend).
-    Projekt-Levels nur, wenn das Spiel über die Webseite läuft.
-    Solange ein Menü offen ist, steht das Spiel still und bekommt keine Tastendrücke.
-    Bedienung: ↑/↓ bzw. W/S, Enter/Leertaste/Num 0 bestätigen, Esc/Backspace zurück; Controller: Steuerkreuz/
-    Stick, ✕ bestätigen, ○ zurück; Maus geht auch.
+  - Startmenü (js/24-startmenue.js + css/startmenue.css, nach der Artefakt-Vorlage „Startscreens“ des Nutzers):
+    Titelbild „Monchichi Koop“ mit Affe und Schweinchen („Beliebige Taste drücken“) → Hauptmenü „Spielen ·
+    Fortfahren (erst nach dem ersten Spiel) · Optionen · Beenden“ → Spielerwahl „Wer spielt wen?“ (Spieler 1 =
+    A/D/Leertaste + Controller 1, Spieler 2 = Pfeile/Num 0 + Controller 2; mit links/rechts die Seite = Figur
+    wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1 (Fortschritt neu,
+    vorher Rückfrage), „Fortfahren“ führt zur Levelauswahl.
+    Levelauswahl: Karten aus levels/levels.json („titel“: Dschungel, Baumkronen, Ruinen), Einträge mit
+    „versteckt“: true fehlen (alter Entwurf von Level 3 – Datei bleibt, im Editor weiter ladbar); danach
+    „Coming soon“-Karten bis Level 6 (nicht startbar). Freischalten nacheinander (Spielstand im Browser,
+    monchichi.save); Fortschrittsbalken; nach dem Ziel-Tanz Rückkehr zur Levelauswahl mit „Level N freigeschaltet!“.
+    Optionen: Steuerung (Tastatur/Controller, passend zur Spielerwahl), Lautstärke Gesamt/Musik/Effekte
+    (VOL in 07-effekte-ton-muenzen.js, gemerkt als monchichi_vol; 100 % = bisherige Lautstärke; Musik =
+    Akkorde/Klavier, Effekte = Geräusche + Vögel/Regen/Fluss/Wind), Knopf „Alle Level freischalten (zum Testen)“.
+    Beenden → „Bis bald!“-Bildschirm. Bedienung: Tastatur (A/D/W/S, Pfeile, Enter/Leertaste/Num 0, Esc), Controller,
+    Maus. Menü-Klänge = Spiel-Klänge, die Musik des Spiels läuft weiter (keine zweite Musik).
+    Solange das Startmenü offen ist: menuScreen = 'start', Spiel steht still.
+    Der Level-Editor ist auf Nutzerwunsch NICHT mehr im Menü („ausgelagert“): eigene Seite editor/ (Adresse
+    …/editor/), „Testen“ aus dem Editor startet das Spiel weiter direkt im Level. „Level-Datei laden“ gibt es nur
+    noch über den Knopf „Level laden (JSON)“ unten im Spiel. (Früheres Hauptmenü aus 16-menue.js ersetzt.)
+  - Spielerwahl tauscht die Tasten: Tasten gehören zu SPIELERN (KEYSETS in 03-eingabe.js), nicht zu Figuren.
+    Spielt Spieler 1 das Schweinchen: Schweinchen A/D, Leertaste, G = Schirm, J = Hebel; Affe Pfeile, Num 0,
+    Num 1 = Haken, ↑/↓ = Seil, Num 2 = Hebel; Controller 1 steuert dann das Schweinchen. Anzeige oben passt sich an.
   - Pausenmenü: Esc bzw. Options im Spiel (nicht auf dem Tod-Bildschirm, dort macht jede Taste wie bisher weiter):
     „Weiterspielen“, „Level neu starten“, „Zurück zum Menü“; Esc/Options/○ schließt die Pause wieder
     Zusätzlich Knopf „☰ Menü (Esc)“ unten links im Spiel (öffnet dasselbe Pausenmenü)

@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Monchichi Koop – Mechanik-Prototyp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --sky1:#2f5a45; --sky2:#1d3a2c;
@@ -97,8 +100,8 @@
   <canvas id="c" width="1280" height="720"></canvas>
   <div class="hud">
     <div class="card">
-      <div><b>Spieler 1</b> <span class="p1">● männlich, Haken</span></div>
-      <div>A/D bewegen · Leertaste springen/Wandsprung · G Haken schießen/lösen · W ranziehen · S Seil geben · J am Hebel = Schalter</div>
+      <div id="hudMHead"><b>Spieler 1</b> <span class="p1">● männlich, Haken</span></div>
+      <div id="hudMKeys">A/D bewegen · Leertaste springen/Wandsprung · G Haken schießen/lösen · W ranziehen · S Seil geben · J am Hebel = Schalter</div>
       <div class="statusrow"><span class="dot" id="p1w"></span> an Wand <span class="dot" id="p1g"></span> Boden <span class="dot" id="p1h"></span> Haken aktiv</div>
       <div class="padline" id="pad1">🎮 Controller 1: nicht verbunden</div>
     </div>
@@ -106,8 +109,8 @@
       <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#ffd23f;box-shadow:inset 0 0 0 3px #d99a00;vertical-align:-2px;margin-right:8px;"></span><span id="coinText">0 / 10</span>
     </div>
     <div class="card">
-      <div><b>Spielerin 2</b> <span class="p2">● Schweinchen, Schirm</span></div>
-      <div>← → bewegen · Num&nbsp;0 springen/Wandsprung · Num&nbsp;1 in der Luft halten = Schirm (segeln) · Num&nbsp;2 am Hebel = Schalter</div>
+      <div id="hudFHead"><b>Spielerin 2</b> <span class="p2">● Schweinchen, Schirm</span></div>
+      <div id="hudFKeys">← → bewegen · Num&nbsp;0 springen/Wandsprung · Num&nbsp;1 in der Luft halten = Schirm (segeln) · Num&nbsp;2 am Hebel = Schalter</div>
       <div class="statusrow"><span class="dot" id="p2w"></span> an Wand <span class="dot" id="p2g"></span> Boden <span class="dot" id="p2s"></span> Schirm offen</div>
       <div class="padline" id="pad2">🎮 Controller 2: nicht verbunden</div>
     </div>
@@ -134,7 +137,8 @@
 // ?v=<Zeit> sorgt dafür, dass der Browser immer die neueste Version holt (nie alte Dateien aus dem Zwischenspeicher).
 (function(){
   const v = Date.now();
-  for(const f of ['00-setup', '01-level', '02-physik-werte', '03-eingabe', '04-figuren-kollision', '05-level-objekte', '06-tod-checkpoints', '07-effekte-ton-muenzen', '08-figur-physik-seil', '09-kamera', '10-figuren-zeichnen', '11-hintergrund', '12-welt-zeichnen', '13-anzeige-leistung', '14-spielschleife', '15-level-laden', '16-menue', '17-deko', '18-sound', '19-wetter', '20-tiere', '21-figuren-leben', '22-musik-ambiente', '23-audio-dateien', '99-start'])
+  document.write('<link rel="stylesheet" href="css/startmenue.css?v=' + v + '">');
+  for(const f of ['00-setup', '01-level', '02-physik-werte', '03-eingabe', '04-figuren-kollision', '05-level-objekte', '06-tod-checkpoints', '07-effekte-ton-muenzen', '08-figur-physik-seil', '09-kamera', '10-figuren-zeichnen', '11-hintergrund', '12-welt-zeichnen', '13-anzeige-leistung', '14-spielschleife', '15-level-laden', '16-menue', '17-deko', '18-sound', '19-wetter', '20-tiere', '21-figuren-leben', '22-musik-ambiente', '23-audio-dateien', '24-startmenue', '99-start'])
     document.write('<script src="js/' + f + '.js?v=' + v + '"><\/script>');
 })();
 </script>

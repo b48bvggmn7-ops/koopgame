@@ -10,7 +10,7 @@ const PROJECT_LEVELS = 'levels/';
 const menuEl = document.getElementById('menu');
 const menuItemsEl = document.getElementById('menuItems');
 const menuTitleEl = document.getElementById('menuTitle');
-let menuScreen = 'main';     // 'main' | 'levels' | 'pause' | null (= Spiel läuft)
+let menuScreen = 'main';     // 'start' (Startmenü, 24-startmenue.js) | 'pause' | null (= Spiel läuft); früher auch 'main'/'levels'
 let menuSel = 0;
 let menuList = [];           // [{el, action}] – wählbare Einträge in Reihenfolge
 
@@ -192,6 +192,8 @@ function convertEditorSnapshot(d){
 // Läuft vor den Spiel-Tasten (capture auf document): solange ein Menü offen ist, sieht das Spiel
 // keine Tastendrücke. Losgelassene Tasten (keyup) kommen weiter an, damit nichts "hängen" bleibt.
 document.addEventListener('keydown', e=>{
+  // Startmenü (24-startmenue.js) bedient sich selbst
+  if(menuScreen === 'start'){ e.stopPropagation(); if(typeof smKeyDown === 'function') smKeyDown(e); return; }
   if(!menuActive()){
     // Testmodus aus dem Editor: Esc beendet den Test sofort (auch auf dem Tod-Bildschirm) -> zurück zum Editor
     if(e.code === 'Escape' && editorTestMode){ e.preventDefault(); e.stopPropagation(); backToEditor(); return; }
@@ -220,6 +222,7 @@ document.getElementById('loadLevelInput').addEventListener('change', ()=>{ if(me
 // (nach einem Tod macht Options wie bisher einfach weiter).
 const menuPadPrev = [{}, {}];
 function pollMenuPads(){
+  if(menuScreen === 'start'){ menuClearPressed(); return; }   // Startmenü liest die Controller selbst
   let pads = [];
   try{ pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; }catch(e){ pads = []; }
   for(let i = 0; i < 2; i++){
@@ -264,4 +267,4 @@ function startEditorTest(){
   return true;
 }
 
-if(!startEditorTest()) showMainMenu();
+// Start: Editor-Test oder Titelbild des Startmenüs – siehe 99-start.js

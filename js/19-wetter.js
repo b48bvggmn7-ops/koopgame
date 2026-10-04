@@ -232,7 +232,7 @@ function weatherAudio(dt){
   const ownRain = typeof fileAudio !== 'undefined' && fileAudio.ok.rain;   // eigene Regen-Aufnahme (23-audio-dateien.js)
   if(rainSnd === null && rainBufs && r > 0.02 && !ownRain) rainStart();
   if(rainSnd){
-    const now = audioCtx.currentTime, heavy = Math.max(0, (r - 0.25)/0.75), k = ownRain ? 0 : 1;
+    const now = audioCtx.currentTime, heavy = Math.max(0, (r - 0.25)/0.75), k = ownRain ? 0 : VOL.sfx;
     rainSnd.bed.gain.setTargetAtTime(0.10*r*k, now, 0.5);
     rainSnd.patter.gain.setTargetAtTime(0.16*Math.pow(heavy, 1.2)*k, now, 0.5);
     rainSnd.metal.gain.setTargetAtTime(0.10*Math.min(1, r*1.4)*k, now, 0.5);

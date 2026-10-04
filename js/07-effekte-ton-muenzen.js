@@ -10,10 +10,20 @@ let coinCombo = 0, lastCoinT = 0;
 let audioCtx = null;
 // Gesamtlautstärke (Ton aus/an mit M, siehe 18-sound.js) – alle Geräusche laufen hier durch
 const MASTER_VOL = 0.7;   // Gesamtlautstärke aller Geräusche, Musik und Umgebung (1 = voll)
+// Lautstärke-Regler aus dem Menü „Optionen“ (0–1, 1 = wie bisher), im Browser gemerkt:
+// master = alles, music = Musik (Akkorde/Klavier), sfx = Geräusche und Umgebung (Vögel, Regen, Fluss)
+const VOL = {master: 1, music: 1, sfx: 1};
+try{ Object.assign(VOL, JSON.parse(localStorage.getItem('monchichi_vol') || '{}')); }catch(e){}
+function masterLevel(){ return soundMuted ? 0 : MASTER_VOL*VOL.master; }
+function setVolume(k, v){
+  VOL[k] = Math.max(0, Math.min(1, v));
+  try{ localStorage.setItem('monchichi_vol', JSON.stringify(VOL)); }catch(e){}
+  if(masterGain) masterGain.gain.value = masterLevel();
+}
 let masterGain = null, soundMuted = false;
 try{ soundMuted = localStorage.getItem('monchichi_mute') === '1'; }catch(e){}
 function audioOut(){
-  if(!masterGain){ masterGain = audioCtx.createGain(); masterGain.gain.value = soundMuted ? 0 : MASTER_VOL; masterGain.connect(audioCtx.destination); }
+  if(!masterGain){ masterGain = audioCtx.createGain(); masterGain.gain.value = masterLevel(); masterGain.connect(audioCtx.destination); }
   return masterGain;
 }
 function coinPickupFx(c){

@@ -224,7 +224,7 @@ function sfxPlay(name, o){
     const list = sfxBank[name], src = a.createBufferSource();
     src.buffer = list[Math.floor(Math.random()*list.length)];
     src.playbackRate.value = (o.rate || 1)*(1 + (Math.random() - 0.5)*0.07);
-    const g = a.createGain(); g.gain.value = (SFX_VOL[name] || 0.15)*(o.vol || 1)*(0.9 + Math.random()*0.2);
+    const g = a.createGain(); g.gain.value = (SFX_VOL[name] || 0.15)*(o.vol || 1)*VOL.sfx*(0.9 + Math.random()*0.2);
     src.connect(g);
     let outNode = g;
     if(a.createStereoPanner){ const p = a.createStereoPanner(); p.pan.value = sfxPan(o.x); g.connect(p); outNode = p; }
@@ -297,7 +297,7 @@ function sfxObserve(){
 function setMuted(m){
   soundMuted = m;
   try{ localStorage.setItem('monchichi_mute', m ? '1' : '0'); }catch(e){}
-  if(masterGain) masterGain.gain.value = m ? 0 : MASTER_VOL;
+  if(masterGain) masterGain.gain.value = masterLevel();
   if(typeof weatherSetMuted === 'function') weatherSetMuted(m);
   testJumpMsg = m ? '🔇 Ton aus (M)' : '🔊 Ton an (M)'; testJumpT = performance.now();
 }

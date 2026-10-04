@@ -109,7 +109,7 @@ function fileMusicRestart(fade, delay){
   }, (delay || 0)*1000);
   fileAudio.musicHold = now + 9999;
 }
-function fileMusicTarget(){ return FILE_VOL.music*(1 - 0.3*weather.rain); }
+function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rain); }
 
 // jedes Bild (aus musicUpdate) – nur Lautstärken/Filter, nichts am Spiel
 function fileAudioUpdate(){
@@ -135,8 +135,8 @@ function fileAudioUpdate(){
   // Vögel: verstummen im Regen, kommen danach langsam zurück
   fileAudio.birdsBack = r > 0.3 ? 0 : Math.min(1, fileAudio.birdsBack + 0.0015);
   const L = fileAudio.loops;
-  if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*sun*sun*fileAudio.birdsBack, now, 1.2);
-  if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*r, now, 0.8);
+  if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.sfx*sun*sun*fileAudio.birdsBack, now, 1.2);
+  if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*VOL.sfx*r, now, 0.8);
   if(L.river){
     // Wasserfall im Bild? (Hintergrund-Ebene mit Wasserfall, gleiche Rechnung wie beim Zeichnen)
     let near = 0;
@@ -145,6 +145,6 @@ function fileAudioUpdate(){
       for(const base of [0, BG_TW]){ const x = wf.x - off + base; near = Math.max(near, 1 - Math.min(1, Math.abs(x - VW/2)/(VW*0.7))); }
     }
     const afterRain = weather.phase === 'clear' || (weather.phase === 'sun' && weather.t < 30) ? 0.3 : 0;
-    L.river.gain.setTargetAtTime(FILE_VOL.river*(0.45 + 0.35*near + 0.3*r + afterRain), now, 1.5);
+    L.river.gain.setTargetAtTime(FILE_VOL.river*VOL.sfx*(0.45 + 0.35*near + 0.3*r + afterRain), now, 1.5);
   }
 }

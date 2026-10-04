@@ -15,9 +15,9 @@ let p1, p2, won=false, winSteps=0, winT0=0;
 
 function resetLevel(){
   p1 = makePlayer({x:levelStartM.x,y:levelStartM.y, male:true,
-    keys:{left:'KeyA',right:'KeyD',jump:'Space',hook:'KeyG',pull:'KeyW',slack:'KeyS'}, spawn:{x:levelStartM.x,y:levelStartM.y}});
+    keys:keysFor(true), spawn:{x:levelStartM.x,y:levelStartM.y}});
   p2 = makePlayer({x:levelStartF.x,y:levelStartF.y, male:false,
-    keys:{left:'ArrowLeft',right:'ArrowRight',jump:'Numpad0',glide:'Numpad1'}, spawn:{x:levelStartF.x,y:levelStartF.y}, umbrella:0});
+    keys:keysFor(false), spawn:{x:levelStartF.x,y:levelStartF.y}, umbrella:0});
   for(const s of solids){ if(s.type==='crumble'){ s.triggered=false; s.gone=false; s.timer=0; s.fragments=null; s.breakElapsed=0; } }
   for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; } }
   linkOn = {};   // alle Hebel wieder aus

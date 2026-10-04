@@ -25,10 +25,40 @@ window.addEventListener('keyup', e=>{
 // PS4: Kreuz = springen, Viereck = Fähigkeit (Affe: Haken, Schweinchen: Schirm halten),
 //      R2/R1 = Seil einholen, L2/L1 = Seil geben, Options = Pausenmenü. Laufen: linker Stick oder Steuerkreuz.
 const PAD = {};              // aktueller Controller-Zustand je virtueller Taste
-const PAD_MAP = [
-  {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', pull:'KeyW', slack:'KeyS', use:'Pad1Use'},
-  {left:'ArrowLeft', right:'ArrowRight', jump:'Numpad0', ability:'Numpad1', pull:null, slack:null, use:'Pad2Use'},
-];
+// Tasten-Sätze je SPIELER (nicht je Figur): Spieler 1 = linke Tastaturhälfte + Controller 1,
+// Spieler 2 = Pfeile/Nummernblock + Controller 2. Wer welche Figur steuert, wählt man im Startmenü
+// („Wer spielt wen?“, js/24-startmenue.js). Standard wie bisher: Spieler 1 = Affe, Spieler 2 = Schweinchen.
+const KEYSETS = {
+  1: {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', pull:'KeyW', slack:'KeyS', use:'KeyJ', padUse:'Pad1Use'},
+  2: {left:'ArrowLeft', right:'ArrowRight', jump:'Numpad0', ability:'Numpad1', pull:'ArrowUp', slack:'ArrowDown', use:'Numpad2', padUse:'Pad2Use'},
+};
+let monkeyPlayer = 1;        // welcher Spieler (1/2) den Affen steuert
+function keysFor(male){
+  const s = KEYSETS[male ? monkeyPlayer : 3 - monkeyPlayer];
+  return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse}
+              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse};
+}
+function setMonkeyPlayer(n){
+  monkeyPlayer = n === 2 ? 2 : 1;
+  if(typeof p1 !== 'undefined' && p1) p1.keys = keysFor(true);
+  if(typeof p2 !== 'undefined' && p2) p2.keys = keysFor(false);
+  updateHudKeys();
+}
+// Anzeige oben links/rechts: welcher Spieler welche Figur mit welchen Tasten steuert
+function updateHudKeys(){
+  const txt = {
+    1: 'A/D bewegen · Leertaste springen/Wandsprung · G {ab} · J am Hebel = Schalter',
+    2: '← → bewegen · Num&nbsp;0 springen/Wandsprung · Num&nbsp;1 {ab} · Num&nbsp;2 am Hebel = Schalter'};
+  const rope = {1: ' · W ranziehen · S Seil geben', 2: ' · ↑ ranziehen · ↓ Seil geben'};
+  const mP = monkeyPlayer, fP = 3 - monkeyPlayer;
+  const set = (id, html)=>{ const el = document.getElementById(id); if(el) el.innerHTML = html; };
+  set('hudMHead', '<b>Spieler ' + mP + '</b> <span class="p1">● Affe, Haken</span>');
+  set('hudMKeys', txt[mP].replace('{ab}', 'Haken schießen/lösen') + rope[mP]);
+  set('hudFHead', '<b>Spieler ' + fP + '</b> <span class="p2">● Schweinchen, Schirm</span>');
+  set('hudFKeys', txt[fP].replace('{ab}', 'in der Luft halten = Schirm (segeln)'));
+}
+const PAD_MAP = [1, 2].map(n => ({left:KEYSETS[n].left, right:KEYSETS[n].right, jump:KEYSETS[n].jump, ability:KEYSETS[n].ability,
+                                   pull:KEYSETS[n].pull, slack:KEYSETS[n].slack, use:KEYSETS[n].padUse}));
 let padBlocked = false;
 function isDown(code){ return !!(KEYS[code] || PAD[code]); }
 function setPad(code, val){

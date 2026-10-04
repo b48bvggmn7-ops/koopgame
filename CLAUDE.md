@@ -31,7 +31,7 @@
     04 Figuren/Kollision · 05 Level-Objekte (Bröckelboden, Hebel, Türen, bewegte Teile/Haken) ·
     06 Tod/Checkpoints (+ Test-Sprung C/X) · 07 Effekte/Ton/Münzen · 08 Figuren-Physik/Seil ·
     09 Kamera · 10 Figuren zeichnen · 11 Dschungel-Hintergrund · 12 Welt zeichnen · 13 Anzeige/Leistung ·
-    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 99 Start
+    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Levelkarten; Stil in css/startmenue.css) · 99 Start
 - `assets/` – Bilder (Figuren, Schild …); `assets/audio/` – eigene Aufnahmen des Nutzers (FL Studio).
 - `editor/` – Level-Editor (`editor/index.html` + `editor/editor.js`).
 - `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), `levels/levels.json` = Liste der Levels,
@@ -59,6 +59,7 @@
 | Hebel | J | Num 2 | ○ |
 | Neustart / Leistungsanzeige / Test-Sprung | R / F / C, X | | – |
 | Pausenmenü (mit Neustart) | Esc | | Options |
+| (Tasten gehören zu Spielern; wer welche Figur spielt, wählt man im Startmenü) | | | |
 | Ton aus/an | M | | (Pausenmenü) |
 
 ## Geplante nächste Schritte (mit dem Nutzer abgesprochen)
