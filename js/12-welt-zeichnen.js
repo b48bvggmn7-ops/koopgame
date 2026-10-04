@@ -801,6 +801,7 @@ function drawSolidLook(s, look, x){
     ctx.beginPath(); ctx.moveTo(gx,goal.y-48); ctx.lineTo(gx+28,goal.y-40); ctx.lineTo(gx,goal.y-32); ctx.fill();
   }
 
+  drawCritters();   // Schmetterlinge, Frösche, Schnecken, Pilze, Knospen, Faultier (20-tiere.js)
   drawBirds();
   drawCharacter(p2, camX);
   drawCharacter(p1, camX);

@@ -624,6 +624,28 @@ async def wetter_regen_und_sonne(g):
     st = await g.ev("({phase: weather.phase, bow: weather.rainbow})")
     assert st['phase'] == 'clear' and st['bow'] > 0, f'kein Aufklaren/Regenbogen: {st}'
 
+@test
+async def tiere_reagieren(g):
+    """Süße Tiere: Frosch hüpft weg, Pilz federt mit Ton, Knospe geht auf, Faultier wacht auf (alles nur Deko)."""
+    await g.load(level([ground(0, 680, 4000), ground(1200, 400, 200, 40)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.p.wait_for_timeout(200)
+    # feste Testtiere einsetzen (die zufällige Verteilung hängt vom Level ab)
+    await g.ev("""critters = [
+      {kind:'frog', x:700, y:680, home:700, minX:300, maxX:3900, dir:1, hop:null, t:0, nextCroak:99},
+      {kind:'mush', x:1000, y:680, squish:0, lastT:0, big:false},
+      {kind:'bud', x:1600, y:680, open:0, target:0, col:'#ff7eb0'},
+      {kind:'sloth', x:1300, y:440, awake:0, wave:0, found:false}]; critFor = solids; SFX_LOG.length = 0""")
+    await g.ev("p1.x = 640; p1.vx = 0"); await g.p.wait_for_timeout(600)
+    fx = await g.ev("critters[0].x")
+    assert fx > 740, f'Frosch hüpft nicht weg: {fx}'
+    await g.ev("p1.x = 1000"); await g.p.wait_for_timeout(150)
+    assert 'mushroom' in await g.ev("SFX_LOG.slice()") and await g.ev("critters[1].squish") > 0.3, 'Pilz federt nicht'
+    await g.ev("p1.x = 1300"); await g.p.wait_for_timeout(900)
+    assert await g.ev("critters[3].awake") > 0.8 and 'discover' in await g.ev("SFX_LOG.slice()"), 'Faultier wacht nicht auf'
+    await g.ev("p1.x = 1600"); await g.p.wait_for_timeout(800)
+    assert await g.ev("critters[2].open") > 0.8, 'Knospe geht nicht auf'
+    assert not await g.ev('!!deathState'), 'Deko beeinflusst das Spiel'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):
