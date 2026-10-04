@@ -77,8 +77,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Sonne: Wind in den Blättern (Böen), leise Grillen, plätschernder Bach (Stereo-Schleifen; Vogelgezwitscher im
     Hintergrund dafür entfernt – Nutzerwahl). Lautstärken: MUSIC_VOL, AMB_VOL. M schaltet alles stumm.
   - Wetter & Stimmung (js/19-wetter.js, reine Deko): wärmerer Himmel (goldenes Licht am Horizont, kräftigere Sonne
-    mit sich langsam drehenden Strahlen), immer leichter warmer Schimmer + weiche Vignette. Ablauf: Sonne 70–120 s ->
-    zieht zu (7 s) -> Regenschauer 30–45 s -> klart auf (7 s) mit Regenbogen (~22 s) -> Sonne … Regen: schräge Tropfen
+    mit sich langsam drehenden Strahlen), immer leichter warmer Schimmer + weiche Vignette. Ablauf: Sonne 4–7 min (erste Sonne
+    2,5 min; früher 70–120 s, Nutzer: wechselt zu oft) -> zieht zu (7 s) -> Regenschauer 45–75 s -> klart auf (7 s) mit Regenbogen (~22 s) -> Sonne … Regen: schräge Tropfen
     vor der Welt, Spritzer auf allen Oberseiten, Hintergrund dunkler/kühler (Spielfeld bleibt hell). Regen-Klang (ASMR,
     wie auf schrägem Blechdach/Dachfenster, dicht + tiefes Dach-Brummen): vorab im Hintergrund in kleinen Häppchen berechnete Stereo-Schleifen aus
     tausenden Einzeltropfen – warmes rosa Rauschen als Bett, dichtes Prasseln (winzige Einschläge links/rechts verteilt),
@@ -124,9 +124,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Knistern (je nach Fallhöhe), Wandsprung = Holz-„Tock“, Münze = gläsernes Murmel-Klirren mit Glitzern (Folge-Münzen
     höher), Haken = Karabiner-„Klick-Klink“, Loslassen = Seil-Surren, Schirm = Stoff ploppt auf + flattert, Hebel =
     hölzernes Ratschen-Klick-Klack (ein höher/aus tiefer), Tür = knarzendes Holz + Klopfen, Bröckelboden = rieselnder
-    Sand, dann kullernde Steinchen + Rumpeln, Sterben = niedlicher Seifenblasen-„Plopp“ + Staubwölkchen + Glitzer (vorher traurige Kalimba – Nutzer fand es nicht gut), Checkpoint = Spieluhr,
-    Pilz = Gummi-„Boing“, Frosch = Quaken, Knospe = Plopp + Spieluhr, Herzchen = Kalimba, Vögel = Flügelflattern,
-    Entdeckung = Spieluhr-Glitzer, Menü = sanfte Klicks. Lautstärken je Geräusch in SFX_VOL. Ein Beobachter (sfxObserve)
+    Sand, dann kullernde Steinchen + Rumpeln, Sterben = niedlicher Seifenblasen-„Plopp“ + Staubwölkchen + Glitzer (vorher traurige Kalimba – Nutzer fand es nicht gut), Checkpoint = Holz-Klopfen + Rascheln,
+    Pilz = Gummi-„Boing“, Frosch = Quaken, Knospe = weiches Laub-Plopp, Herzchen = leises „Pomf“, Vögel = Flügelflattern,
+    Entdeckung = Laub-Rascheln mit Holz-Tock (Klingeln NUR bei Münzen – Nutzerwunsch), Menü = sanfte Klicks. Lautstärken je Geräusch in SFX_VOL. Ein Beobachter (sfxObserve)
     erkennt Ereignisse an Zustandsänderungen und ändert nichts am Spiel. Taste M = Ton aus/an (gemerkt), auch im Pausenmenü.
   - Münzen-Aussehen (drawCoin3D): etwas größer (Radius 12,5 statt 11, nur Zeichnung – Einsammel-Bereich
     unverändert), 3D: sichtbare Kante beim Drehen, Lichtverlauf, geprägter Innenring mit Stern, Glanzlicht;

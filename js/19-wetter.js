@@ -7,12 +7,12 @@
 // Regen: schräge Tropfen vor der Welt, kleine Spritzer auf allen Oberseiten, dunklerer Himmel (nur Hintergrund –
 // das Spielfeld bleibt hell). Ton: sanftes Rauschen + Tropfen wie auf einem schrägen Dachfenster.
 // Bei Sonne: warme Sonnenstrahlen, ab und zu Vogelgezwitscher. Immer: leichter warmer Schimmer + weiche Vignette.
-const WEATHER_SUN_S = [70, 120];     // Sekunden Sonne (zufällig dazwischen)
-const WEATHER_RAIN_S = [30, 45];     // Sekunden Regen
+const WEATHER_SUN_S = [240, 420];    // Sekunden Sonne (zufällig dazwischen) – seltener Wechsel (Nutzerwunsch; früher 70–120)
+const WEATHER_RAIN_S = [45, 75];     // Sekunden Regen (früher 30–45)
 const WEATHER_FADE_S = 7;            // Übergang zu/auf
 const RAINBOW_S = 22;                // so lange bleibt der Regenbogen nach dem Regen
 
-const weather = {phase: 'sun', t: 0, len: 45, rain: 0, rainbow: 0, splashes: [], nextChirp: 6};
+const weather = {phase: 'sun', t: 0, len: 150, rain: 0, rainbow: 0, splashes: [], nextChirp: 6};
 function weatherRand(a){ return a[0] + Math.random()*(a[1] - a[0]); }
 // zum Ausprobieren/Testen: weatherForce('rain') oder weatherForce('sun')
 function weatherForce(ph){

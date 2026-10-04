@@ -518,6 +518,23 @@ async def level3_fahrstuhl_unter_stacheln(g):
     assert await g.ev("spikes.some(s => Math.abs(s.x - (131*40+20)) < 1 && s.dir === 2)"), "Stacheln an der Decke fehlen"
 
 @test
+async def nur_muenzen_klingeln(g):
+    """Glocken-/Spieluhr-Klänge nur bei Münzen: Checkpoint, Entdeckung, Knospe (Blumen), Herzchen klingen nicht."""
+    src = (ROOT / 'js' / '18-sound.js').read_text()
+    for name in ('checkpoint', 'discover', 'bud', 'heart'):
+        zeile = next(l for l in src.splitlines() if l.strip().startswith(name + ':'))
+        i = src.index(zeile); block = src[i:src.index('return b; },', i)]
+        for klang in ('musicbox', 'kalimba', 'glass', 'NOTE('):
+            assert klang not in block, f'{name} klingelt noch ({klang})'
+    assert 'glass' in src[src.index('    coin:'):src.index('return b; },', src.index('    coin:'))], 'Münze klingt nicht mehr'
+
+@test
+async def wetter_wechselt_selten(g):
+    """Wetter wechselt seltener: Sonne 4–7 Minuten, Regen 45–75 s, am Anfang 2,5 Minuten Sonne."""
+    assert await g.ev("WEATHER_SUN_S[0]") >= 240 and await g.ev("WEATHER_RAIN_S[1]") <= 75
+    assert await g.ev("weather.phase === 'sun' && weather.len >= 150")
+
+@test
 async def ziel_tanz_dann_menue(g):
     """Beide im Ziel: Figuren tanzen (Eingaben ruhen), danach öffnet sich das Hauptmenü."""
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 330, 'y': 680},

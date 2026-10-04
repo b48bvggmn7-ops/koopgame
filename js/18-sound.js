@@ -161,16 +161,19 @@ function* sfxBuild(a, out){
                      swish(b, 0.01, 0.26, 2600, 600, 0.9, 0.45, 0, 0.1);
                      puff(b, 0.015, 0.2, 1600, 0.35, 0, 0.05);
                      grains(b, 0.05, 0.5, 16, 6500, 11000, 0.004, 0.012, 0.18, 0.9, 'decay'); return b; },
-    checkpoint:()=>{ const b = mk(1.4); [84, 88, 91, 96].forEach((n, i)=> modal(b, i*0.11, NOTE(n), musicbox, 0.5, 0.5, (i - 1.5)*0.2, 0.1)); return b; },
+    // Kein Klingeln außer bei Münzen (Nutzerwunsch): Checkpoint, Entdeckung, Knospe, Herzchen klingen nach Holz/Laub/Luft
+    checkpoint:()=>{ const b = mk(0.9); modal(b, 0, 180, wood, 0.08, 0.9, -0.2, 0.5); modal(b, 0.14, 240, wood, 0.08, 0.8, 0.2, 0.5);
+                     swish(b, 0.05, 0.4, 500, 1500, 1.0, 0.5, 0, 0.3); grains(b, 0.05, 0.4, 40, 1500, 5000, 0.0004, 0.0015, 0.35, 0.5, 'decay'); return b; },
     mushroom:  ()=>{ const b = mk(0.35); const st = 0, len = Math.ceil(0.22*SR); let ph = 0;
                      for(let i = 0; i < len; i++){ const k = i/len, f = 260 + 300*Math.sin(Math.PI*Math.min(1, k*1.6))*Math.exp(-k*2) + Math.sin(i/SR*2*Math.PI*28)*25;
                        ph += 2*Math.PI*f/SR; const v = Math.sin(ph)*Math.exp(-k*4)*Math.min(1, i/200)*0.8; b.L[st + i] += v*0.7; b.R[st + i] += v*0.7; }
                      grains(b, 0, 0.05, 10, 1500, 4000, 0.0006, 0.002, 0.3, 0.2); return b; },
     frog:      ()=>{ const b = mk(0.45); for(const t0 of [0, 0.16]){ for(let i = 0; i < 7; i++) modal(b, t0 + i*0.016, rnd(380, 430), [[1, 1], [2.8, 0.6], [4.2, 0.3]], 0.012, 0.6, 0, 0.3); } return b; },
-    discover:  ()=>{ const b = mk(1.4); [88, 91, 95, 100, 103].forEach((n, i)=> modal(b, i*0.075, NOTE(n), musicbox, 0.55, 0.4, (i - 2)*0.25, 0.05));
-                     grains(b, 0.1, 0.8, 25, 7000, 11000, 0.003, 0.01, 0.12, 0.9, 'decay'); return b; },
-    bud:       ()=>{ const b = mk(0.8); thump(b, 0, 500, 900, 0.03, 0.4); modal(b, 0.03, NOTE(91), musicbox, 0.4, 0.35, 0, 0.05); modal(b, 0.1, NOTE(96), musicbox, 0.4, 0.25, 0, 0.05); return b; },
-    heart:     ()=>{ const b = mk(0.7); modal(b, 0, NOTE(rnd(84, 92) | 0), kalimba, 0.35, 0.5, 0, 0.1); return b; },
+    discover:  ()=>{ const b = mk(0.9); swish(b, 0, 0.5, 400, 1800, 1.0, 0.6, 0, 0.3);
+                     grains(b, 0.05, 0.6, 50, 1200, 4500, 0.0004, 0.0015, 0.35, 0.5, 'decay'); modal(b, 0.05, 220, wood, 0.08, 0.5, 0, 0.4); return b; },
+    bud:       ()=>{ const b = mk(0.45); thump(b, 0, 500, 900, 0.03, 0.4); puff(b, 0.01, 0.12, 1400, 0.5, 0, 0.03);
+                     grains(b, 0.02, 0.25, 40, 1500, 5000, 0.0004, 0.0015, 0.3, 0.4, 'decay'); return b; },
+    heart:     ()=>{ const b = mk(0.35); puff(b, 0, 0.15, 900, 0.5, 0, 0.05); thump(b, 0, 220, 330, 0.06, 0.4); return b; },
     birdFlap:  ()=>{ const b = mk(0.5); for(let i = 0; i < 9; i++) swish(b, i*0.045, 0.04, 900, 1800, 1.0, 0.5*(1 - i/10), rnd(-0.3, 0.3), 0.3); return b; },
     menuTick:  ()=>{ const b = mk(0.08); modal(b, 0, 2600, wood, 0.003, 0.6, 0, 0.8); return b; },
     menuOk:    ()=>{ const b = mk(0.5); thump(b, 0, 300, 520, 0.05, 0.5); modal(b, 0.02, NOTE(88), musicbox, 0.3, 0.35, 0, 0.05); return b; },
