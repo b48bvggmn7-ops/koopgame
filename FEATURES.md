@@ -114,6 +114,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Stacheln-Aussehen (SPIKE_SPRITE): 4 glänzende Metallkegel mit Glanz und rötlicher Spitze auf einer Eisenleiste
     mit Nieten, leichter Schatten; gedreht je Richtung
   - Stacheln können in 4 Richtungen zeigen (spike.dir 0=oben,1=rechts,2=unten,3=links; Treffer = ganzes Kästchen)
+  - Mitfahrende Stacheln (syncSpikeCarriers in 05-level-objekte.js): klebt ein Stachel mit seinem Fuß an einem
+    bewegten Stück (zeigt nach oben -> Stück darunter, nach unten -> darüber, nach rechts -> links daneben, nach links
+    -> rechts daneben), fährt er mit -> Stachelwände, Stachel-Pressen, rutschende Stachelblöcke. Im Editor einfach
+    Stacheln direkt an ein bewegtes Teil setzen (der Editor zeigt sie an der Startstelle).
   - Schalter, bewegter Boden, Stacheln, Checkpoints gelten für beide Spieler
   - Münzfarben (coin.color): blau = nur Affe, pink = nur Schweinchen, gold = beide; falsche Figur -> Münze wackelt;
     Effekte (Ring/Funken) in Münzfarbe; Münz-Kasten zeigt zusätzlich "● Affe a/b  ● Schwein a/b"
@@ -223,22 +227,32 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Segel-/Schwungbahnen vom Test-Bot gemessen); keine Münze in Boden/Wand/Tür; Haken-Radius höchstens 5 Kästchen;
     Wege eindeutig: Nur-Schweinchen-Lücken sind mind. ~5 Kästchen weiter als der Affe springen kann (mit Gefälle,
     Stacheln darunter), Nur-Affe-Stellen sind für das Schweinchen klar zu weit (>= 18 flach) oder 4 Reihen höher.
-  - Level 2 „Baumkronen“ (levels/level-2.json, ~450 Spalten, etwas knapper als Level 1, neue Mechaniken):
+  - Level 2 „Baumkronen“ (levels/level-2.json, 800 Spalten, etwas knapper als Level 1, neue Mechaniken):
     1) Bröckel-Trittsteine; 2) hoher Wandsprung-Kamin für beide; 3) Schweinchen segelt tief zu Hebel 2 → schräg
     fahrende Plattform bringt den Affen; 4) Fahrstuhl anhalten: Schweinchen schaltet Hebel 3 an/aus, Affe steigt oben
     durchs Loch aus; dann getrennt (Affe oben an zwei Haken, Schweinchen unten über Bröckel), Hebel 4/5 öffnen sich
     gegenseitig die Türen; 5) Hebel AUF der fahrenden Plattform (beide fahren mit); 6) Bröckel-Treppe nach oben;
     7) Seilbahn: Schweinchen segelt zu Hebel 7, der den Haken mit dem hängenden Affen schräg rüberfährt; 8) Türen-
     Staffel mit 4 Hebeln (Affe oben per Haken, Schweinchen unten); 9) fahrender Haken (Affe) / hoher Turm (Schweinchen);
-    10) Aufzug zum Münz-Plateau, Ziel.
-  - Level 3 „Ruinen“ (levels/level-3.json, ~430 Spalten, schwerer, mehr Timing): 1) Bröckel-Hüpfer (kleine Inseln
+    Erweiterung (Nutzer: zu kurz/zu einfach): 11) Stachel-Pressen (Stachelblöcke fahren von der Decke auf und ab –
+    im richtigen Moment durchlaufen); 12) Hebel in der Luft (Hebel 26 auf kleinem Sims, nur der Affe kommt per
+    Haken hin; Tür für beide); 13) Stachelwand-Jagd (Hebel 28 öffnet das Tor UND lässt eine Stachelwand los, die
+    über Gruben und Bröckel-Stege hinterherfährt – ~2 s Vorsprung); 14) Welcher Hebel? (drei Hebel 29/30/31, nur
+    30 öffnet die Tür, 29 und 31 lassen eine Presse auf den Ziehenden fallen – auf Nummern/Farben achten);
+    15) Stachel-Pendel (rutschende Stachelblöcke am Boden überspringen); 16) Aufzug zum Münz-Plateau, Ziel (794).
+  - Level 3 „Ruinen“ (levels/level-3.json, 800 Spalten, schwerer, mehr Timing): 1) Bröckel-Hüpfer (kleine Inseln
     halten nur kurz); 2) Zickzack-Kamin (zwei versetzte Schächte); 3) Schweinchen segelt mit Zwischenlandung auf einer
     Bröckel-Säule, Hebel 3 → Plattform für den Affen; 4) Fahrstuhl unter Stacheln: der Affe muss ihn mit Hebel 4
     rechtzeitig anhalten, sonst sticht die Decke; Schweinchen öffnet oben Tür 5 für den Affen; 5) Stachel-Tunnel mit
     Bröckelboden (nicht springen, nicht stehen bleiben) fürs Schweinchen, Dreier-Haken-Kette für den Affen;
     6) Schweinchen fährt auf der Plattform und legt unterwegs die mitfahrenden Hebel 7/8 um → Türen oben auf dem Steg
     für den Affen; 7) fahrender + feste Haken (Affe), Turm → Bröckel-Säule → Boden (Schweinchen); 8) Türen-Staffel
-    über Bröckelboden; 9) Finale: Schweinchen durch den Kamin über die Bröckel-Brücke, Affe an drei Haken darunter.
+    über Bröckelboden; Erweiterung: 10) Pressen über Gruben (unter jeder zweiten Presse fehlt der Boden ->
+    im richtigen Moment springen); 11) Stachelwand-Jagd 2 (schneller, mitten im Lauf Hebel 42 für die Tür);
+    12) Ein Hebel, zwei Folgen (Hebel 43 öffnet Tür 43, startet aber die Presse davor; Tür 44 hat ihren Hebel VOR
+    der Presse -> Reihenfolge überlegen); 13) Zwei Fähigkeiten (Hebel 46 nur segelnd erreichbar, Hebel 45 nur am
+    Haken; zwei Türen hintereinander); 14) Endspurt-Jagd (schnellste Stachelwand + rutschender Stachelblock);
+    15) Finale: Schweinchen durch den Kamin über die Bröckel-Brücke, Affe an drei Haken darunter, Ziel (796).
   - Alle neuen Levels (2/3) folgen denselben Regeln wie Level 1 (nur blaue/pinke Münzen, keine Münzen in Steinen,
     Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.
   - Das frühere vom Nutzer hochgeladene „Level 3“ heißt jetzt „Level 3 (alter Entwurf)“
