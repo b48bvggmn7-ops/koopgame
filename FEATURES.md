@@ -189,7 +189,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Fortfahren (erst nach dem ersten Spiel) · Optionen · Beenden“ → Spielerwahl „Wer spielt wen?“ (Spieler 1 =
     A/D/Leertaste + Controller 1, Spieler 2 = Pfeile/Num 0 + Controller 2; mit links/rechts die Seite = Figur
     wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1 (Fortschritt neu,
-    vorher Rückfrage), „Fortfahren“ führt zur Levelauswahl.
+    vorher Rückfrage). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
+    (Countdown startet dann dieses Level; Zurück führt wieder zur Levelauswahl, die Auswahl bleibt).
     Levelauswahl: Karten aus levels/levels.json („titel“: Dschungel, Baumkronen, Ruinen), Einträge mit
     „versteckt“: true fehlen (alter Entwurf von Level 3 – Datei bleibt, im Editor weiter ladbar); danach
     „Coming soon“-Karten bis Level 6 (nicht startbar). Freischalten nacheinander (Spielstand im Browser,

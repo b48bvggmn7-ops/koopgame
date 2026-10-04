@@ -278,11 +278,7 @@ async def menue_projekt_levels(g):
         texte = await p.eval_on_selector_all('#sm-menu .mi', 'els => els.map(e => e.textContent)')
         assert texte == ['Spielen', 'Fortfahren', 'Optionen', 'Beenden'], f'Menü: {texte}'
         await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
-        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
-        for _ in range(60):
-            if await sm_screen(g) == 'sm-s-levels': break
-            await p.wait_for_timeout(100)
-        assert await sm_screen(g) == 'sm-s-levels', 'Fortfahren führt nicht zur Levelauswahl'
+        assert await sm_screen(g) == 'sm-s-levels', 'Fortfahren führt nicht direkt zur Levelauswahl'
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
         assert namen == ['Dschungel', 'Baumkronen', 'Ruinen', 'Coming soon', 'Coming soon', 'Coming soon'], f'Karten: {namen}'
         # Level 2 gesperrt
@@ -294,10 +290,15 @@ async def menue_projekt_levels(g):
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100)    # von „Ruinen“ auf Karte 4
         await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await g.ev("menuScreen") == 'start', 'Coming-soon-Level startet'
-        # freigeschaltetes Level 2 startet
+        # freigeschaltetes Level 2: erst Spielerwahl, dann startet es
         await p.keyboard.press('ArrowLeft'); await p.keyboard.press('ArrowLeft'); await p.wait_for_timeout(100)
-        await p.keyboard.press('Enter')
-        for _ in range(40):
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-select', 'nach der Levelwahl keine Spielerwahl'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-levels', 'Zurück aus der Spielerwahl führt nicht zur Levelauswahl'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        for _ in range(60):
             if await g.ev("menuScreen") is None: break
             await p.wait_for_timeout(100)
         spiel2 = json.loads((ROOT / 'levels' / 'level-2.json').read_text())

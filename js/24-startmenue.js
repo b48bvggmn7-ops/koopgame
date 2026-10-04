@@ -405,7 +405,7 @@ S.menu = {
         });
       } else go('select', 'new');
     }
-    else if (id === 'continue') go('select', 'continue');
+    else if (id === 'continue') go('levels');           // Fortfahren: erst Level wählen, dann Spielerwahl
     else if (id === 'options') go('options');
     else if (id === 'quit') quitGame();
   }
@@ -501,6 +501,7 @@ const PKEYS = { 1: ['A', 'D', 'Leertaste'], 2: ['←', '→', 'Num 0'] };
 S.select = {
   el: $('#sm-s-select'), mode: 'new', side: { 1: 'L', 2: 'R' }, ready: { 1: false, 2: false }, busy: false, timer: null, poll: null,
   enter(mode) {
+    // mode: 'new' (Neues Spiel -> Level 1) oder {level: i} (aus der Levelauswahl)
     this.mode = mode || this.mode;
     this.side = { 1: 'L', 2: 'R' }; this.ready = { 1: false, 2: false }; this.busy = false;
     this.render(); this.padInfo(); this.poll = setInterval(() => this.padInfo(), 700);
@@ -545,7 +546,7 @@ S.select = {
     else if (type === 'back') {
       Snd.play('back');
       if (this.ready[1] || this.ready[2]) { this.unready(); this.render(); }
-      else go('menu');
+      else go(this.mode === 'new' ? 'menu' : 'levels', 'keep');
     }
   },
   countdown() {
@@ -566,7 +567,7 @@ S.select = {
     lastPlayers = { monkey: this.playerOn('L'), pig: this.playerOn('R') };
     this.busy = false;
     if (this.mode === 'new') { resetSave(); playLevel(0); }
-    else go('levels');
+    else playLevel(this.mode.level);
   }
 };
 $('#sm-pc-monkey').addEventListener('click', () => S.select.act('left', 'kbd1'));
@@ -581,8 +582,8 @@ $('#sm-go-btn').addEventListener('click', () => {
    ===================================================================== */
 S.levels = {
   el: $('#sm-s-levels'), idx: 0,
-  enter() {
-    this.idx = clamp(save.unlocked, 1, realCount()) - 1;
+  enter(arg) {
+    if (arg !== 'keep') this.idx = clamp(save.unlocked, 1, realCount()) - 1;   // zurück aus der Spielerwahl: Auswahl behalten
     const box = $('#sm-cards'); box.innerHTML = '';
     CONFIG.levels.forEach((l, i) => {
       const b = mk('<button class="lc" type="button" tabindex="-1"></button>');
@@ -628,7 +629,7 @@ S.levels = {
       if (this.idx >= save.unlocked || CONFIG.levels[this.idx].soon) {
         Snd.play('locked');
         const b = $$('#sm-cards .lc')[this.idx]; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
-      } else playLevel(this.idx);
+      } else { Snd.play('ok'); go('select', { level: this.idx }); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
   }
