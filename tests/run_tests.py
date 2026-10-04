@@ -770,17 +770,19 @@ async def seil_absprung_wie_schwung(g):
         await g.load(level([ground(0, 680, 4000)], {'x': 880, 'y': 680}, {'x': 840, 'y': 680}, hooks=[{'x': 1000, 'y': 300, 'radius': 260}]))
         await g.ev(f"""(()=>{{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+180+p1.h*0.6; p1.vx={vx0}; p1.vy=0; p1.grounded=false;
           p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; }})()""")
-        await g.ev("window.__rv=null; if(!window.__or){ window.__or=stepSim; stepSim=function(ts){ const was=p1.hookAttached; __or(ts); if(was && !p1.hookAttached && !window.__rv) window.__rv=p1.vx; }; }")
+        await g.ev("""window.__rv=null; window.__rv10=null; window.__rn=0; if(!window.__or){ window.__or=stepSim; stepSim=function(ts){ const was=p1.hookAttached; __or(ts);
+          if(was && !p1.hookAttached && window.__rv===null){ window.__rv=p1.vx; window.__rn=0; }
+          else if(window.__rv!==null && ++window.__rn===10) window.__rv10=p1.vx; }; }""")
         if vx0 == 0: await g.p.keyboard.down('KeyD')
         await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(300)
-        rv, vx = await g.ev("window.__rv"), await g.ev("p1.vx")
+        rv, vx = await g.ev("window.__rv"), await g.ev("window.__rv10")   # vx 10 Schritte nach dem Loslassen
         if vx0 == 0:
             await g.p.keyboard.up('KeyD')
             assert rv is not None and abs(rv) < 2, f'künstlicher Schub beim Abspringen aus dem Stand: {rv}'
             assert vx <= 7.3, f'zu schnell ohne Schwung: {vx}'
         else:
             assert rv is not None and abs(rv - 6) < 1.2, f'Abflug passt nicht zum Schwung (6): {rv}'
-            assert vx > 5, f'Schwung nach dem Loslassen weg: {vx}'
+            assert vx > rv*0.88, f'Schwung nach dem Loslassen weg: {rv} -> {vx}'
 
 # ---------------------------------------------------------------- Runner
 
