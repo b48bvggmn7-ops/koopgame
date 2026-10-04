@@ -48,8 +48,31 @@ function drawDust(){
   }
   ctx.globalAlpha = 1;
 }
+// ---------- Siegestanz ----------
+// Sind beide im Ziel, tanzen Affe und Schweinchen (WIN_DANCE_STEPS Rechenschritte = 4,5 s), dann geht es
+// zurück ins Hauptmenü. Eingaben ruhen solange (08-figur-physik-seil.js), der Tanz selbst ist nur Anzeige.
+const WIN_DANCE_STEPS = 270;
+const DANCE_BEAT = 420;   // ms pro Hüpfer
+function danceMove(pl){
+  const t = performance.now() - winT0 + (pl.male ? 0 : DANCE_BEAT/2);   // im Wechsel hüpfen
+  const beat = t/DANCE_BEAT, ph = beat % 1;
+  const hop = Math.sin(ph*Math.PI);                       // 0 -> 1 -> 0 pro Takt
+  const bar = Math.floor(beat) % 4;
+  let rot = Math.sin(beat*Math.PI)*0.28;                  // hin und her wippen
+  if(bar === 3) rot = ph*Math.PI*2*(pl.male ? 1 : -1);    // jeder 4. Takt: einmal im Kreis drehen
+  const land = ph < 0.18 ? Math.sin(ph/0.18*Math.PI)*0.12 : 0;   // kurz gestaucht beim Aufkommen
+  return {dy: -hop*16, rot, sx: (bar === 1 ? -1 : 1)*(1 + land), sy: 1 - land};   // Takt 2: zur anderen Seite schauen
+}
+function winFinish(){
+  document.getElementById('toast').classList.remove('show');
+  if(typeof showMainMenu === 'function') showMainMenu();
+}
 function drawHearts(){
   const t = performance.now();
+  if(won && p1 && p2 && Math.random() < frameDt/220){    // Herzchen und Freude beim Tanzen
+    const pl = Math.random() < 0.5 ? p1 : p2;
+    heartFx.push({x: pl.x + (Math.random() - 0.5)*24, y: pl.y - 50, t0: t, wob: Math.random()*6});
+  }
   const close = p1 && p2 && !deathState && Math.abs(p1.x - p2.x) < 56 && Math.abs(p1.y - p2.y) < 10 && p1.grounded && p2.grounded &&
                 Math.abs(p1.vx) < 0.3 && Math.abs(p2.vx) < 0.3;
   togetherMs = close ? togetherMs + Math.min(100, frameDt) : 0;

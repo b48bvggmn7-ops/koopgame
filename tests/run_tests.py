@@ -383,6 +383,30 @@ async def level1_muenzen_und_haken(g):
         assert hk['radius'] <= 5 * 40, f"Haken zu groß: {hk}"
 
 @test
+async def ziel_tanz_dann_menue(g):
+    """Beide im Ziel: Figuren tanzen (Eingaben ruhen), danach öffnet sich das Hauptmenü."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 330, 'y': 680},
+                       goal={'x': 315, 'y': 680}))
+    for _ in range(40):
+        if await g.ev("won"): break
+        await g.p.wait_for_timeout(50)
+    assert await g.ev("won"), "Sieg nicht erkannt"
+    assert await g.ev("document.getElementById('toast').classList.contains('show')")
+    x0 = await g.ev("p1.x")
+    await g.hold(['KeyD'], 600)
+    await g.p.keyboard.up('KeyD')
+    assert abs(await g.ev("p1.x") - x0) < 1, "Figur läuft während des Tanzes weg"
+    d = await g.ev("danceMove(p1)")
+    assert d['dy'] <= 0 and abs(d['sx']) > 0.5, f"Tanz-Bewegung seltsam: {d}"
+    assert await g.ev("menuScreen") is None, "Menü kommt zu früh"
+    for _ in range(120):
+        if await g.ev("menuScreen") == 'main': break
+        await g.p.wait_for_timeout(50)
+    assert await g.ev("menuScreen") == 'main', "nach dem Tanz kein Hauptmenü"
+    assert not await g.ev("document.getElementById('toast').classList.contains('show')")
+    await g.ev("closeMenu()")
+
+@test
 async def haken_schwung_holen(g):
     """Am Haken: Taste halten drückt NICHT sofort weit zur Seite; im Takt schaukeln baut Schwung auf."""
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},

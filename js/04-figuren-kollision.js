@@ -11,7 +11,7 @@ function makePlayer(opts){
   }, opts);
 }
 
-let p1, p2, won=false;
+let p1, p2, won=false, winSteps=0, winT0=0;
 
 function resetLevel(){
   p1 = makePlayer({x:levelStartM.x,y:levelStartM.y, male:true,

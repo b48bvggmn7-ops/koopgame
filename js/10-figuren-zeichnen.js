@@ -138,7 +138,12 @@ function drawCharacter(player, camX){
     if(k < 1){ const e = Math.sin(k*Math.PI); lean = player.leverAnim.dir * 0.45 * e; ctx.translate(player.leverAnim.dir*6*e, -3*e); }
     else player.leverAnim = null;
   }
-  ctx.rotate((deathState && player === deathState.other ? 0 : (lean ? 0 : player.rollAngle)) + wob + lean);
+  // Siegestanz (21-figuren-leben.js): hüpfen, wippen, drehen – nur Anzeige
+  if(won && typeof danceMove === 'function'){
+    const d = danceMove(player);
+    ctx.translate(0, d.dy); ctx.rotate(d.rot); ctx.scale(d.sx, d.sy);
+  }
+  ctx.rotate((deathState && player === deathState.other ? 0 : (lean || won ? 0 : player.rollAngle)) + wob + lean);
 
   const size = Math.max(player.w, player.h)*1.55;
   if(img && img.complete && img.naturalWidth){

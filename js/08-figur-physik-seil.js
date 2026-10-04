@@ -69,9 +69,10 @@ function findHookTarget(player){
 }
 
 function updatePlayer(player, now){
-  const left = isDown(player.keys.left), right = isDown(player.keys.right);
-  const jumpHeld = isDown(player.keys.jump);
-  const jumpPressed = KEYS[player.keys.jump+'_pressed'];
+  const frozen = won;   // beide im Ziel: Figuren tanzen, Eingaben ruhen
+  const left = !frozen && isDown(player.keys.left), right = !frozen && isDown(player.keys.right);
+  const jumpHeld = !frozen && isDown(player.keys.jump);
+  const jumpPressed = !frozen && KEYS[player.keys.jump+'_pressed'];
   KEYS[player.keys.jump+'_pressed'] = false;
 
   let moveDir = 0;
@@ -79,7 +80,7 @@ function updatePlayer(player, now){
   if(right){ moveDir = 1; player.facing = 1; }
 
   if(player.male){
-    const hookPressed = KEYS['KeyG_pressed']; KEYS['KeyG_pressed']=false;
+    const hookPressed = !frozen && KEYS['KeyG_pressed']; KEYS['KeyG_pressed']=false;
     if(hookPressed){
       if(player.hookAttached){
         player.hookAttached = false;
@@ -98,8 +99,8 @@ function updatePlayer(player, now){
     }
   }
 
-  const isPulling = player.male && isDown(player.keys.pull);
-  const isSlacking = player.male && isDown(player.keys.slack);
+  const isPulling = player.male && !frozen && isDown(player.keys.pull);
+  const isSlacking = player.male && !frozen && isDown(player.keys.slack);
 
   if(player.male && player.hookAttached){
     player.vy += GRAVITY * 0.9;
@@ -165,7 +166,7 @@ function updatePlayer(player, now){
 
     let gliding = false;
     // Schweinchen segelt mit eigener Taste (Num 1 halten), Springen bleibt auf Num 0
-    if(!player.male && isDown(player.keys.glide) && !player.grounded && player.vy > -1){
+    if(!player.male && !frozen && isDown(player.keys.glide) && !player.grounded && player.vy > -1){
       gliding = true;
       player.glideTimer += 16.6;
       const t = Math.min(1, player.glideTimer/GLIDE_RAMP_MS);

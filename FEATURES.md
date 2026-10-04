@@ -37,6 +37,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Sichtbare Weltbreite = VW (für Ausschnitt-/Sichtbarkeitsprüfungen VW statt W benutzen!)
   - Gemeinsame Kamera schaut nach vorn: hintere Figur ~300 px vom linken Rand, vordere mind. 70 px vom rechten
     (CAM_LEFT/CAM_RIGHT) -> man sieht möglichst viel vom Weg; max. Abstand ~1 Bildschirmbreite; Ziel erst geschafft, wenn BEIDE da sind
+  - Im Ziel (beide da, genug Münzen): Hinweis „Beide im Ziel! 🎉“, Affe und Schweinchen tanzen 4,5 s (im Wechsel
+    hüpfen, wippen, zur Seite schauen, jeder 4. Takt eine Drehung, Herzchen; WIN_DANCE_STEPS in 21-figuren-leben.js),
+    Eingaben ruhen solange; danach öffnet sich das Hauptmenü (früher: Hinweis „Drücke R für einen neuen Versuch“)
   - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
     Stick/Steuerkreuz laufen, Kreuz springen, Viereck = Haken bzw. Schirm, Kreis = Hebel, hoch = ranziehen, runter = Seil geben,
     Options = Pausenmenü (darin „Level neu starten“; früher direkt Neustart); Status "Controller verbunden" in den Steuerungs-Kästen

@@ -9,6 +9,7 @@
 const STEP = 1000/60;
 let simAcc = 0, lastFrameTs = 0, frameDt = STEP;
 function stepSim(ts){
+  if(won && ++winSteps === WIN_DANCE_STEPS) winFinish();   // nach dem Tanz zurück ins Menü (21-figuren-leben.js)
   activateVisibleMovers();
   updatePlayer(p1, ts);
   updatePlayer(p2, ts);
@@ -25,7 +26,7 @@ function stepSim(ts){
   updateBirds();     // nur Deko (17-deko.js)
   sfxObserve();      // Geräusche zu Sprung/Landung/… (18-sound.js), ändert nichts am Spiel
   if(!won && p1.atGoal && p2.atGoal && coinsCollected() >= coinsNeeded){
-    won = true;
+    won = true; winSteps = 0; winT0 = performance.now();
     document.getElementById('toast').classList.add('show');
   }
 }
