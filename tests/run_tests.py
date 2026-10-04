@@ -532,20 +532,21 @@ async def level2_und_3_regeln(g):
 
 @test
 async def level2_fahrstuhl_anhalten(g):
-    """Level 2, Abschnitt 4: Schweinchen schaltet den Fahrstuhl (Hebel 3) an und wieder aus, der Affe steigt oben aus."""
+    """Level 2, Abschnitt 4 (Nutzer-Version): Schweinchen schaltet den Fahrstuhl (Hebel 3) an und auf Höhe des oberen
+    Bodens wieder aus; der Affe läuft oben heraus (ganz oben warten Stacheln an der Decke)."""
     await g.load(str(ROOT / 'levels' / 'level-2.json'))
     await g.ev("p1.x=111*40+40; p1.y=14*40; p2.x=107*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
     await g.p.wait_for_timeout(300)
     await g.p.keyboard.press('Numpad2')
-    for _ in range(300):
-        if await g.ev("p1.y") <= 8 * 40 + 4: break
-        await g.p.wait_for_timeout(16)
+    for _ in range(400):
+        if await g.ev("p1.y") <= 8 * 40 + 1: break
+        await g.p.wait_for_timeout(5)
     else:
         raise AssertionError("Fahrstuhl fährt nicht hoch")
     await g.p.keyboard.press('Numpad2'); await g.p.wait_for_timeout(300)
     y = await g.ev("p1.y"); await g.p.wait_for_timeout(300)
     assert abs(await g.ev("p1.y") - y) < 1, "Fahrstuhl hält nicht an"
-    await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(900); await g.p.keyboard.up('KeyD')
+    await g.p.keyboard.down('KeyD'); await g.p.wait_for_timeout(900); await g.p.keyboard.up('KeyD')
     st = await g.ev("({x:p1.x, y:p1.y, d:!!deathState})")
     assert not st['d'] and st['x'] > 114 * 40 and abs(st['y'] - 8 * 40) < 2, f"Affe nicht oben ausgestiegen: {st}"
 

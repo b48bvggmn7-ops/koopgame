@@ -236,6 +236,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     über Gruben und Bröckel-Stege hinterherfährt – ~2 s Vorsprung); 14) Welcher Hebel? (drei Hebel 14/15/16, nur
     15 öffnet die Tür, 14 und 16 lassen eine Presse auf den Ziehenden fallen – auf Nummern/Farben achten);
     15) Stachel-Pendel (rutschende Stachelblöcke am Boden überspringen); 16) Aufzug zum Münz-Plateau, Ziel (794).
+    Level 2 wurde vom Nutzer im Editor überarbeitet und eingespielt (u. a. Stacheln über dem Fahrstuhl in
+    Abschnitt 4, schnellere Stachelwände, ~814 Spalten) – die Abschnittsliste oben ist nur noch grob gültig.
+    Beim Einspielen wurden Verknüpfungen über 20 umnummeriert (28 -> 14 Stachelwand-Jagd, 30 -> 15), damit
+    Spiel und Editor zusammenpassen; Spiel- und Editor-Format sind daraus neu erzeugt und identisch.
   - Level 3 „Ruinen“ (levels/level-3.json, 800 Spalten, schwerer, mehr Timing): 1) Bröckel-Hüpfer (kleine Inseln
     halten nur kurz); 2) Zickzack-Kamin (zwei versetzte Schächte); 3) Schweinchen segelt mit Zwischenlandung auf einer
     Bröckel-Säule, Hebel 3 → Plattform für den Affen; 4) Fahrstuhl unter Stacheln: der Affe muss ihn mit Hebel 4
