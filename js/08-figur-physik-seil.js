@@ -32,6 +32,11 @@ function updateSpikes(player){
   }
 }
 
+// Loslassen vom Seil: Schwung mitnehmen (siehe ROPE_FLING_* in 02-physik-werte.js)
+function ropeFling(player){
+  if(Math.abs(player.vx) > 1) player.vx += Math.sign(player.vx)*ROPE_FLING_BOOST;
+  player.ropeFling = true;
+}
 function touchingWall(player, side){
   const probe = {x: side<0 ? player.x-player.w/2-4 : player.x+player.w/2, y:player.y-player.h+4, w:4, h:player.h-8};
   for(const s of solids){ if(!s.gone && rectsOverlap(probe,s)) return true; }
@@ -79,6 +84,7 @@ function updatePlayer(player, now){
     if(hookPressed){
       if(player.hookAttached){
         player.hookAttached = false;
+        ropeFling(player);
       } else {
         const target = findHookTarget(player);
         if(target){
@@ -133,9 +139,11 @@ function updatePlayer(player, now){
     if(jumpPressed && player.hookAttached){
       player.hookAttached = false;
       player.vy += HOOK_RELEASE_BOOST;
+      ropeFling(player);
     }
   } else {
     const control = player.grounded ? 1 : AIR_CONTROL;
+    if(player.grounded || player.onWall) player.ropeFling = false;   // Abflug endet beim Landen / an der Wand
     if(player.wjInputLock > 0){
       player.wjInputLock -= 16.6;
       player.vx *= FRICTION_AIR; // Schwung klingt natürlich ab, wird nur nicht gegengesteuert
@@ -146,10 +154,11 @@ function updatePlayer(player, now){
         player.vx += moveDir * SPRINT_ACCEL;
       }
       if(moveDir === 0){
-        player.vx *= player.grounded ? FRICTION_GROUND : FRICTION_AIR;
+        player.vx *= player.grounded ? FRICTION_GROUND : (player.ropeFling ? ROPE_FLING_DRAG : FRICTION_AIR);
         if(Math.abs(player.vx) < 0.05) player.vx = 0;
       }
-      player.vx = Math.max(-SPRINT_MAX_SPEED, Math.min(SPRINT_MAX_SPEED, player.vx));
+      const vmax = player.ropeFling ? ROPE_FLING_MAX : SPRINT_MAX_SPEED;
+      player.vx = Math.max(-vmax, Math.min(vmax, player.vx));
     }
 
     let gliding = false;

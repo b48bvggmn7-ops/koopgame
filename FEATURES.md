@@ -18,6 +18,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …). Vom Boden aus eingehakt bleibt es dran
     (ropeWasAirborne), damit man sich mit W / Hoch hochziehen kann. Ranziehen langsamer (ROPE_PULL_SPEED 2,4)
     und ohne Schwung Richtung Haken (kein Hüpfen oben); runterlassen bis zum Rand des Reichweiten-Rings (ropeMax).
+  - Abflug vom Seil (Springen oder G): Schwung bleibt erhalten – kein Kappen auf Laufgeschwindigkeit mehr, bis
+    ROPE_FLING_MAX 15, ohne Taste nur leichte Luftbremse (ROPE_FLING_DRAG 0,993 statt 0,94), +1,5 Extra-Schub in
+    Schwungrichtung; endet beim Landen oder an einer Wand (vorher: „bleibt auf der Stelle“).
   - Schwung holen am Haken wie beim Schaukeln (SWING_PUSH 0,2): die Laufen-Taste schiebt nur, wenn man in die
     Richtung drückt, in die der Affe gerade schwingt (oder er fast stillhängt). Taste nur halten drückt ihn nicht
     mehr sofort weit zur Seite (0,5 s halten: früher ~45°, jetzt ~26°); im Takt rechts/links baut schnell Schwung auf.
@@ -58,7 +61,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (verstummen im Regen, kommen danach langsam zurück), regen.mp3 mit dem Schauer (ersetzt den erzeugten Regen, nur
     leise „Plopps“ bleiben), fluss.mp3 immer leise, lauter nach Regen und wenn der Wasserfall im Bild ist. Kurze
     Dateien = nahtlose Schleife (MP3-Stille abgeschnitten, letzte Sekunde in den Anfang geblendet). Lautstärken:
-    FILE_VOL. Lädt eine Datei nicht, bleibt der erzeugte Klang (Klavier, Grillen, Bach, Regen) als Ersatz.
+    FILE_VOL (Musik 0,55, Vögel 0,6, Regen 0,8, Fluss 2,0). Blockiert der Browser das Abspielen, startet die Musik beim
+    nächsten Tastendruck/Klick. Leistungsanzeige (F) zeigt den Musik-Zustand (spielt/lädt/blockiert/Datei lädt nicht).
+    Lädt eine Datei nicht, bleibt der erzeugte Klang (Klavier, Grillen, Bach, Regen) als Ersatz.
   - Hintergrundmusik + Sonnen-Ambiente (js/22-musik-ambiente.js, alles im Browser erzeugt, keine Aufnahmen):
     ruhiges, verträumtes Klavier (Nutzerwahl), live komponiert: warme Akkordfolgen in F-Dur (~64 Schläge/min), gebrochene
     Akkorde links, Melodie-Motive rechts (wiederholt + leicht verändert, Atempausen), weicher Raumhall. Klavierton aus
@@ -114,7 +119,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Knistern (je nach Fallhöhe), Wandsprung = Holz-„Tock“, Münze = gläsernes Murmel-Klirren mit Glitzern (Folge-Münzen
     höher), Haken = Karabiner-„Klick-Klink“, Loslassen = Seil-Surren, Schirm = Stoff ploppt auf + flattert, Hebel =
     hölzernes Ratschen-Klick-Klack (ein höher/aus tiefer), Tür = knarzendes Holz + Klopfen, Bröckelboden = rieselnder
-    Sand, dann kullernde Steinchen + Rumpeln, Sterben = sanftes „Puff“ + traurige Kalimba, Checkpoint = Spieluhr,
+    Sand, dann kullernde Steinchen + Rumpeln, Sterben = niedlicher Seifenblasen-„Plopp“ + Staubwölkchen + Glitzer (vorher traurige Kalimba – Nutzer fand es nicht gut), Checkpoint = Spieluhr,
     Pilz = Gummi-„Boing“, Frosch = Quaken, Knospe = Plopp + Spieluhr, Herzchen = Kalimba, Vögel = Flügelflattern,
     Entdeckung = Spieluhr-Glitzer, Menü = sanfte Klicks. Lautstärken je Geräusch in SFX_VOL. Ein Beobachter (sfxObserve)
     erkennt Ereignisse an Zustandsänderungen und ändert nichts am Spiel. Taste M = Ton aus/an (gemerkt), auch im Pausenmenü.

@@ -659,8 +659,8 @@ async def figuren_leben(g):
     assert st['j'] and st['sq'][1] > 1.02 and st['dust'] > 0, f'kein Strecken/Staub beim Absprung: {st}'
     await g.p.wait_for_timeout(1300)
     assert await g.ev("!!p1._landT && dustFx.length >= 0"), 'Landung nicht erkannt'
-    await g.ev("p1._landT = performance.now() - 100; p1._landV = 1")
-    assert (await g.ev("charSquash(p1)"))[1] < 0.9, 'kein Stauchen beim Landen'
+    sq = await g.ev("(()=>{ p1._landT = performance.now() - 100; p1._landV = 1; return charSquash(p1); })()")
+    assert sq[1] < 0.9, f'kein Stauchen beim Landen: {sq}'
     await g.ev("p1.x = 200; p2.x = 170"); await g.p.wait_for_timeout(2600)
     assert await g.ev("heartFx.length") > 0, 'keine Herzchen, obwohl beide beieinander stehen'
 
@@ -744,6 +744,21 @@ async def eigene_aufnahmen(g):
         assert await g.ev("fileAudio.el.currentTime") < 3, 'Musik startet nach dem Tod nicht von vorne'
     finally:
         srv.shutdown()
+
+@test
+async def seil_abflug_mit_schwung(g):
+    """Vom Seil loslassen (Springen) mit Schwung: Affe fliegt weit weiter, auch ohne Taste (kein Abbremsen auf 7,2)."""
+    await g.load(level([ground(0, 680, 4000)], {'x': 900, 'y': 680}, {'x': 860, 'y': 680}, hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
+    await g.ev("""(()=>{ const h=hooks[0]; p1.x=h.x-60; p1.y=h.y+170+p1.h*0.6; p1.vx=11; p1.vy=0; p1.grounded=false;
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; })()""")
+    await g.p.wait_for_timeout(50)
+    await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(40)
+    st = await g.ev("({hook: p1.hookAttached, vx: p1.vx, x: p1.x})")
+    assert not st['hook'], 'Springen löst das Seil nicht'
+    await g.p.wait_for_timeout(250)
+    st2 = await g.ev("({vx: p1.vx, x: p1.x, g: p1.grounded})")
+    assert st2['vx'] > 8 or st2['g'], f'Schwung nach dem Loslassen weg: {st} -> {st2}'
+    assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
 
 # ---------------------------------------------------------------- Runner
 

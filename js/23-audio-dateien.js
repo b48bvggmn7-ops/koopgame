@@ -13,7 +13,7 @@
 // Lädt eine Datei nicht (z. B. Spiel als Datei geöffnet), bleibt der erzeugte Klang aus 19/22 aktiv.
 const AUDIO_FILES = {music: 'assets/audio/musik.mp3', birds: 'assets/audio/voegel.mp3',
                      rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3'};
-const FILE_VOL = {music: 0.30, birds: 0.8, rain: 0.8, river: 3.0};   // Fluss ist in der Aufnahme sehr leise -> angehoben
+const FILE_VOL = {music: 0.55, birds: 0.6, rain: 0.8, river: 2.0};   // Musik vorne, Vögel/Fluss dezent dahinter (Fluss-Aufnahme ist sehr leise)
 const MUSIC_START_DELAY = 2.5;   // Sekunden Stille, bevor die Musik einsetzt
 const MUSIC_FADE_IN = 7;         // Sekunden Einblenden
 const MUSIC_RESTART_DELAY = 1.5; // nach dem Weitermachen (Tod) erst kurz still, dann von vorne
@@ -55,8 +55,8 @@ function fileAudioStart(){
     fileAudio.gain = a.createGain(); fileAudio.gain.gain.value = 0;
     node.connect(fileAudio.shelf); fileAudio.shelf.connect(fileAudio.muffle); fileAudio.muffle.connect(fileAudio.gain); fileAudio.gain.connect(audioOut());
     fileAudio.el = el;
-    el.addEventListener('playing', ()=>{ fileAudio.ok.music = true; });
-    el.addEventListener('error', ()=>{ fileAudio.ok.music = false; });
+    el.addEventListener('playing', ()=>{ fileAudio.ok.music = true; fileAudio.blocked = false; });
+    el.addEventListener('error', ()=>{ fileAudio.ok.music = false; fileAudio.err = true; });
     setTimeout(()=> fileMusicRestart(MUSIC_FADE_IN, 0), MUSIC_START_DELAY*1000);
   }catch(e){}
   // kurze Schleifen: laden, dekodieren, nahtlos machen
@@ -71,6 +71,28 @@ function fileAudioStart(){
       }).catch(()=>{ fileAudio.ok[key] = false; });
   }
 }
+// Abspielen; blockiert der Browser das (Autoplay-Regeln), klappt es beim nächsten Tastendruck/Klick
+function fileMusicPlay(){
+  const el = fileAudio.el; if(!el) return;
+  const p = el.play();
+  if(p && p.catch) p.catch(()=>{ fileAudio.blocked = true; });
+}
+function fileMusicUnblock(){ if(fileAudio.el && fileAudio.blocked && fileAudio.el.paused) fileMusicPlay(); }
+window.addEventListener('keydown', fileMusicUnblock);
+window.addEventListener('pointerdown', fileMusicUnblock);
+// Zustand für die Leistungsanzeige (Taste F)
+function audioStatusText(){
+  if(soundMuted) return 'Ton: aus (M)';
+  if(!audioCtx || audioCtx.state !== 'running') return 'Ton: wartet auf ersten Tastendruck';
+  const el = fileAudio.el;
+  if(!el) return 'Musik: startet gleich';
+  if(fileAudio.err) return 'Musik: Datei lädt nicht';
+  if(fileAudio.blocked) return 'Musik: vom Browser blockiert – Taste drücken';
+  if(el.paused) return 'Musik: Pause';
+  const t = Math.floor(el.currentTime), vol = fileAudio.gain ? fileAudio.gain.gain.value : 0;
+  return 'Musik: spielt ' + Math.floor(t/60) + ':' + String(t%60).padStart(2, '0') + '  Lautst. ' + Math.round(vol*100) + '%' +
+         (el.readyState < 3 ? ' (lädt…)' : '');
+}
 // Musik von vorne, nach "delay" Sekunden Stille über "fade" Sekunden weich einblenden
 function fileMusicRestart(fade, delay){
   const el = fileAudio.el, g = fileAudio.gain; if(!el || !g) return;
@@ -79,7 +101,7 @@ function fileMusicRestart(fade, delay){
   g.gain.linearRampToValueAtTime(0, now + 0.05);
   setTimeout(()=>{
     if(deathState) return;               // inzwischen gestorben -> Neustart kommt nach dem Weitermachen
-    try{ el.currentTime = 0; const p = el.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
+    try{ el.currentTime = 0; fileMusicPlay(); }catch(e){}
     const t = audioCtx.currentTime;
     g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(fileMusicTarget(), t + fade);

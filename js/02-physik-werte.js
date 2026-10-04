@@ -29,6 +29,11 @@ const HOOK_RELEASE_BOOST = -4.5;
 // in die die Figur gerade schwingt (oder sie fast stillhängt). Vorher: immer 0,35 -> Taste halten drückte die
 // Figur sofort weit zur Seite (0,5 s halten = 45°, jetzt ~26°). Größer = mehr Schwung pro Druck.
 const SWING_PUSH = 0.2;
+// Loslassen vom Seil (Springen oder G): Schwung bleibt erhalten ("Abflug"), bis man landet oder eine Wand berührt.
+// Vorher wurde er sofort auf Laufgeschwindigkeit (7,2) gekappt und ohne Taste stark gebremst -> "bleibt auf der Stelle".
+const ROPE_FLING_BOOST = 1.5;   // Extra-Schub in Schwungrichtung beim Loslassen
+const ROPE_FLING_MAX = 15;      // so schnell darf man nach dem Loslassen höchstens fliegen (Laufen: 7,2)
+const ROPE_FLING_DRAG = 0.993;  // Luftbremse ohne Taste im Abflug (normal in der Luft: 0,94)
 
 const GLIDE_RAMP_MS = 2600;
 const GLIDE_START_GRAV = 0.10;

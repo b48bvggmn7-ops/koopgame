@@ -70,6 +70,7 @@ function perfFrame(ts, tStart, tAfterUpdate, tEnd){
         'Arbeit/Bild:  <span class="v '+cls(avgWork,5,10)+'">'+avgWork.toFixed(1)+' ms</span>  (max '+maxWork.toFixed(1)+')\n'+
         '  davon Logik '+(perf.sumUpd/perf.n).toFixed(1)+' ms, Zeichnen '+(perf.sumDraw/perf.n).toFixed(1)+' ms\n'+
         '<span class="v '+vcls+'">'+verdict+'</span>\n'+
+        (typeof audioStatusText === 'function' ? audioStatusText() + '\n' : '') +
         '<span style="opacity:.6">F = Anzeige aus/an</span>';
     }
     perf.uneven=0; perf.n=0; perf.sumDt=0; perf.maxDt=0; perf.long=0; perf.sumWork=0; perf.maxWork=0; perf.sumUpd=0; perf.sumDraw=0; perf.since=ts;

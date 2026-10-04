@@ -153,8 +153,14 @@ function* sfxBuild(a, out){
     crumbleBreak:()=>{ const b = mk(0.9); puff(b, 0, 0.35, 450, 0.8, 0, 0.02); thump(b, 0, 110, 50, 0.2, 0.6);
                      for(let i = 0; i < 30; i++){ const u = R(); modal(b, u*u*0.7, rnd(1000, 3600), wood, rnd(0.004, 0.012), rnd(0.25, 0.7), rnd(-0.7, 0.7), 0.5); }
                      grains(b, 0, 0.6, 150, 2500, 8000, 0.0003, 0.001, 0.25, 0.8, 'decay'); return b; },
-    death:     ()=>{ const b = mk(1.3); swish(b, 0, 0.3, 1800, 350, 0.8, 1.0, 0, 0.12); puff(b, 0, 0.18, 1500, 0.5, 0, 0.02);
-                     [[76, 0.12], [72, 0.36], [69, 0.62]].forEach(([n, t])=> modal(b, t, NOTE(n), kalimba, 0.45, 0.55, 0, 0.15)); return b; },
+    death:     ()=>{ const b = mk(0.8);   // niedlicher Seifenblasen-„Plopp“ + Staubwölkchen + Glitzer (nicht traurig)
+                     const len = Math.ceil(0.06*SR); let ph = 0;
+                     for(let i = 0; i < len; i++){ const k = i/len; ph += 2*Math.PI*(260*Math.pow(4.2, k))/SR;
+                       const v = Math.sin(ph)*Math.min(1, i/(0.002*SR))*Math.pow(1 - k, 1.5)*0.9; b.L[i] += v; b.R[i] += v; }
+                     thump(b, 0, 170, 85, 0.12, 0.35);
+                     swish(b, 0.01, 0.26, 2600, 600, 0.9, 0.45, 0, 0.1);
+                     puff(b, 0.015, 0.2, 1600, 0.35, 0, 0.05);
+                     grains(b, 0.05, 0.5, 16, 6500, 11000, 0.004, 0.012, 0.18, 0.9, 'decay'); return b; },
     checkpoint:()=>{ const b = mk(1.4); [84, 88, 91, 96].forEach((n, i)=> modal(b, i*0.11, NOTE(n), musicbox, 0.5, 0.5, (i - 1.5)*0.2, 0.1)); return b; },
     mushroom:  ()=>{ const b = mk(0.35); const st = 0, len = Math.ceil(0.22*SR); let ph = 0;
                      for(let i = 0; i < len; i++){ const k = i/len, f = 260 + 300*Math.sin(Math.PI*Math.min(1, k*1.6))*Math.exp(-k*2) + Math.sin(i/SR*2*Math.PI*28)*25;
