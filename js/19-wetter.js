@@ -229,16 +229,17 @@ function weatherAudio(dt){
   if(!audioCtx || audioCtx.state !== 'running' || soundMuted) return;
   const r = weather.rain;
   rainPrepare();                                   // Tropfen-Schleifen im Hintergrund vorberechnen
-  if(rainSnd === null && rainBufs && r > 0.02) rainStart();
+  const ownRain = typeof fileAudio !== 'undefined' && fileAudio.ok.rain;   // eigene Regen-Aufnahme (23-audio-dateien.js)
+  if(rainSnd === null && rainBufs && r > 0.02 && !ownRain) rainStart();
   if(rainSnd){
-    const now = audioCtx.currentTime, heavy = Math.max(0, (r - 0.25)/0.75);
-    rainSnd.bed.gain.setTargetAtTime(0.10*r, now, 0.5);
-    rainSnd.patter.gain.setTargetAtTime(0.16*Math.pow(heavy, 1.2), now, 0.5);
-    rainSnd.metal.gain.setTargetAtTime(0.10*Math.min(1, r*1.4), now, 0.5);
+    const now = audioCtx.currentTime, heavy = Math.max(0, (r - 0.25)/0.75), k = ownRain ? 0 : 1;
+    rainSnd.bed.gain.setTargetAtTime(0.10*r*k, now, 0.5);
+    rainSnd.patter.gain.setTargetAtTime(0.16*Math.pow(heavy, 1.2)*k, now, 0.5);
+    rainSnd.metal.gain.setTargetAtTime(0.10*Math.min(1, r*1.4)*k, now, 0.5);
   }
   if(r > 0.04){
     // leichter Regen: einzelne Tropfen (dicht wird es über die Schleifen)
-    rainLightAcc += dt*14*r*(1 - Math.min(1, r));
+    rainLightAcc += ownRain ? 0 : dt*14*r*(1 - Math.min(1, r));
     while(rainLightAcc >= 1){
       rainLightAcc -= 1;
       const f = 2800 + Math.random()*2600;
@@ -249,8 +250,8 @@ function weatherAudio(dt){
     while(rainDripAcc >= 1){
       rainDripAcc -= 1;
       const f = 650 + Math.random()*450, w = Math.random()*0.2;
-      sTone(f, w, 0.13, {to: f*0.42, vol: 0.03});
-      sNoise(w, 0.06, {filter: 'lowpass', f: 1800, vol: 0.012});
+      sTone(f, w, 0.13, {to: f*0.42, vol: ownRain ? 0.015 : 0.03});
+      sNoise(w, 0.06, {filter: 'lowpass', f: 1800, vol: ownRain ? 0.006 : 0.012});
     }
   }
   if(typeof musicUpdate === 'function') musicUpdate();   // Klaviermusik + Wind/Grillen/Bach (22-musik-ambiente.js)

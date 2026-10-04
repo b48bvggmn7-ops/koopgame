@@ -58,6 +58,9 @@ def webserver():
     """Kleiner Webserver für den Projektordner (fetch() geht nicht bei file://)."""
     class Leise(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *a): pass
+        def handle(self):
+            try: super().handle()
+            except (ConnectionResetError, BrokenPipeError): pass   # Browser bricht Musik-Streams ab – harmlos
     srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(Leise, directory=str(ROOT)))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     srv.url = f'http://127.0.0.1:{srv.server_address[1]}/'
@@ -708,6 +711,39 @@ async def musik_und_ambiente(g):
             if await g.ev("mus.ready && mus.log.length > 0"): break
             await g.p.wait_for_timeout(500)
         assert await g.ev("mus.ready && mus.log.length > 0"), 'Musik spielt nicht'
+
+@test
+async def eigene_aufnahmen(g):
+    """Eigene Aufnahmen: Vögel/Regen/Fluss laufen als nahtlose Schleife, Musik streamt, blendet ein,
+    blendet beim Tod aus und startet nach dem Weitermachen von vorne."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(300)   # Ton freischalten + Menü
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
+        if not await g.ev("audioCtx && audioCtx.state === 'running'"):
+            return   # ohne Tonausgabe (manche Testumgebungen) nichts zu prüfen
+        for _ in range(30):
+            if await g.ev("fileAudio.ok.birds && fileAudio.ok.rain && fileAudio.ok.river && fileAudio.ok.music"): break
+            await p.wait_for_timeout(500)
+        ok = await g.ev("({...fileAudio.ok})")
+        assert ok.get('birds') and ok.get('rain') and ok.get('river'), f'Schleifen nicht geladen: {ok}'
+        assert ok.get('music'), f'Musik spielt nicht: {ok}'
+        # nahtlose Schleife: Anfang/Ende ohne Stille
+        assert await g.ev("""(()=>{ const src = audioCtx.createBuffer(2, 44100*4, 44100);
+            for(let c=0;c<2;c++){ const d=src.getChannelData(c); for(let i=0;i<d.length;i++) d[i]=Math.random()*0.4-0.2; }
+            const b = fileLoopBuffer(audioCtx, src, 1); const d = b.getChannelData(0);
+            return Math.abs(b.length - 44100*3) < 50 && Math.abs(d[0]) < 0.25; })()"""), 'Schleife kaputt'
+        await p.wait_for_timeout(3000)
+        t1 = await g.ev("fileAudio.el.currentTime")
+        assert t1 > 1, f'Musik läuft nicht weiter: {t1}'
+        # Tod -> ausblenden; weitermachen -> von vorne
+        await g.ev("die(p1)"); await p.wait_for_timeout(1500)
+        assert await g.ev("fileAudio.gain.gain.value") < 0.05, 'Musik blendet beim Tod nicht aus'
+        await p.keyboard.press('KeyA'); await p.wait_for_timeout(2600)
+        assert await g.ev("fileAudio.el.currentTime") < 3, 'Musik startet nach dem Tod nicht von vorne'
+    finally:
+        srv.shutdown()
 
 # ---------------------------------------------------------------- Runner
 

@@ -207,13 +207,15 @@ function musicSchedule(){
 // jedes Bild aus dem Wetter aufgerufen
 function musicUpdate(){
   if(!audioCtx || audioCtx.state !== 'running') return;
+  // eigene Aufnahmen (23-audio-dateien.js) haben Vorrang; was davon läuft, ersetzt den erzeugten Klang
+  const own = typeof fileAudio !== 'undefined' ? (fileAudioUpdate(), fileAudio.ok) : {};
   musicPrepare();
   if(!mus.ready) return;
   if(mus.nextT < audioCtx.currentTime) mus.nextT = audioCtx.currentTime + 0.1;   // nach Pause/Tab-Wechsel nicht nachholen
-  musicSchedule();
+  if(!own.music) musicSchedule();
   const now = audioCtx.currentTime, sun = 1 - weather.rain;
-  mus.bus.gain.setTargetAtTime(MUSIC_VOL*(1 - 0.4*weather.rain), now, 1.5);
-  mus.ambNodes.wind.gain.setTargetAtTime(AMB_VOL.wind*(0.35 + 0.65*sun), now, 1);
-  mus.ambNodes.crickets.gain.setTargetAtTime(AMB_VOL.crickets*sun, now, 1);
-  mus.ambNodes.brook.gain.setTargetAtTime(AMB_VOL.brook*(0.5 + 0.5*sun), now, 1);
+  mus.bus.gain.setTargetAtTime(own.music ? 0 : MUSIC_VOL*(1 - 0.4*weather.rain), now, 1.5);
+  mus.ambNodes.wind.gain.setTargetAtTime(AMB_VOL.wind*(0.35 + 0.65*sun)*(own.birds ? 0.5 : 1), now, 1);
+  mus.ambNodes.crickets.gain.setTargetAtTime(own.birds ? 0 : AMB_VOL.crickets*sun, now, 1);
+  mus.ambNodes.brook.gain.setTargetAtTime(own.river ? 0 : AMB_VOL.brook*(0.5 + 0.5*sun), now, 1);
 }

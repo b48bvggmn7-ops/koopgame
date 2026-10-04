@@ -51,6 +51,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     „boing“ beim Drüberlaufen), Blumenknospen (gehen beim Vorbeikommen mit Glitzer + Ton auf), selten: schlafendes
     Faultier unter schwebendem Boden (Zzz, wacht auf und winkt, Entdecker-Glitzer-Ton) und EIN goldener Schmetterling
     pro Level (Entdecker-Ton). Verteilung fest je Level (nicht auf Münzen/Stacheln/Hebeln/Checkpoints/Ziel/Start).
+  - Eigene Aufnahmen des Nutzers (assets/audio/, js/23-audio-dateien.js) haben Vorrang vor dem erzeugten Klang:
+    musik.mp3 (20 min Akkorde) wird gestreamt, setzt erst nach 2,5 s Stille ein und blendet über 7 s ein; beim Tod
+    sanft aus, nach dem Weitermachen 1,5 s Pause, dann von vorne mit 5 s Einblenden. Pausenmenü: Musik gedämpft
+    (Tiefpass, „hinter einer Tür“), Regenbogen: heller (Höhen +6 dB), Regen: 30 % leiser. voegel.mp3 bei Sonne
+    (verstummen im Regen, kommen danach langsam zurück), regen.mp3 mit dem Schauer (ersetzt den erzeugten Regen, nur
+    leise „Plopps“ bleiben), fluss.mp3 immer leise, lauter nach Regen und wenn der Wasserfall im Bild ist. Kurze
+    Dateien = nahtlose Schleife (MP3-Stille abgeschnitten, letzte Sekunde in den Anfang geblendet). Lautstärken:
+    FILE_VOL. Lädt eine Datei nicht, bleibt der erzeugte Klang (Klavier, Grillen, Bach, Regen) als Ersatz.
   - Hintergrundmusik + Sonnen-Ambiente (js/22-musik-ambiente.js, alles im Browser erzeugt, keine Aufnahmen):
     ruhiges, verträumtes Klavier (Nutzerwahl), live komponiert: warme Akkordfolgen in F-Dur (~64 Schläge/min), gebrochene
     Akkorde links, Melodie-Motive rechts (wiederholt + leicht verändert, Atempausen), weicher Raumhall. Klavierton aus
