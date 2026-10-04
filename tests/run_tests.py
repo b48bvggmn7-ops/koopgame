@@ -348,6 +348,26 @@ async def projekt_levels_beide_formate_gleich(g):
             assert a == b, f"{L['datei']}: {k} verschieden"
 
 @test
+async def level1_bis_spalte_800(g):
+    """Level 1 geht bis Spalte ~800; Abschnitt 3: Affe legt Hebel 4 auf der hohen Insel um,
+    die Brücke trägt das Schweinchen über die Grube (beide helfen sich gegenseitig)."""
+    await g.load(str(ROOT / 'levels' / 'level-1.json'))
+    assert await g.ev("goal.x") >= 790 * 40, "Ziel nicht am Ende (Spalte ~800)"
+    assert await g.ev("coins.length") >= 200, "zu wenige Münzen"
+    # Affe steht am Hebel auf der Insel (Spalte 313), Schweinchen auf der Brücke (Spalte 302)
+    await g.ev("p1.x=313*40+20; p1.y=11*40; p2.x=302*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
+    await g.p.wait_for_timeout(300)
+    await g.p.keyboard.press('KeyJ')
+    for _ in range(200):
+        if await g.ev("p2.x") >= 313 * 40: break
+        await g.p.wait_for_timeout(30)
+    else:
+        raise AssertionError("Brücke fährt das Schweinchen nicht rüber")
+    await g.p.keyboard.down('ArrowRight'); await g.p.wait_for_timeout(1000); await g.p.keyboard.up('ArrowRight')
+    st = await g.ev("({x:p2.x, y:p2.y, dead:!!deathState})")
+    assert not st['dead'] and st['x'] > 316 * 40 and abs(st['y'] - 14 * 40) < 2, f"Schweinchen nicht drüben: {st}"
+
+@test
 async def haken_schwung_holen(g):
     """Am Haken: Taste halten drückt NICHT sofort weit zur Seite; im Takt schaukeln baut Schwung auf."""
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},

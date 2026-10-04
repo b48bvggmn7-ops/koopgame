@@ -187,6 +187,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Pausenmenü: Esc bzw. Options im Spiel (nicht auf dem Tod-Bildschirm, dort macht jede Taste wie bisher weiter):
     „Weiterspielen“, „Level neu starten“, „Zurück zum Menü“; Esc/Options/○ schließt die Pause wieder
     Zusätzlich Knopf „☰ Menü (Esc)“ unten links im Spiel (öffnet dasselbe Pausenmenü)
+  - Level 1 (levels/level-1.json + editor-format): Teil des Nutzers bis Spalte 240 unverändert, danach
+    Erweiterung bis Spalte ~800 (Ziel bei 796), 10 Abschnitte mit Münzen und Koop-Rätseln, getrennte Wege:
+    2) Schweinchen segelt zur Insel, Hebel 3 fährt die Plattform für den Affen; 3) Affe schwingt am Haken auf
+    die hohe Insel, Hebel 4 fährt die Brücke fürs Schweinchen über die Grube; 4) zwei Stockwerke, Hebel unten
+    öffnet Tür oben und umgekehrt (5/6); 5) Bröckel-Brücke über Stacheln + Wandsprung-Kamin; 6) Hebel 7 fährt
+    Plattform, Aufzug, Hebel 8 öffnet Tür; 7) Münzjagd auf fahrenden Plattformen + Bonus-Turm (Bröckelstufen);
+    8) Schaukel-Haken über Stachelfeld (Schweinchen segelt); 9) Affe oben mit fahrendem Haken, Schweinchen unten,
+    Hebel 11/12 öffnen sich gegenseitig die Türen; 10) Finale: Segeln → Hebel 14 Plattform, Aufzug zum
+    Münz-Plateau, Abstieg zum Ziel. 19 Checkpoints, 207 Münzen.
 ```
 
 ## Level-Editor (editor/)
