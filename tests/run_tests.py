@@ -375,11 +375,19 @@ async def pause_controller(g):
 
 @test
 async def menue_knopf_und_editor_schliessen(g):
-    """Knopf „☰ Menü“ im Spiel öffnet die Pause; ✕ oben rechts im Editor führt zurück zum Spiel-Menü."""
+    """Spielansicht aufgeräumt: keine Knöpfe unten links, keine Steuerungs-Erklärung, keine FPS-Anzeige (F zeigt sie),
+    Spielbild füllt die Breite; Esc öffnet die Pause; ✕ oben rechts im Editor führt zurück zum Spiel-Menü."""
     await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
     p = g.p
-    await p.click('#menuBtn'); await p.wait_for_timeout(100)
-    assert await p.text_content('#menuTitle') == 'Pause', 'Menü-Knopf öffnet keine Pause'
+    for sel in ('#gameBtns', '#perf', '#hudMKeys', '#hudFKeys'):
+        assert not await p.is_visible(sel), f'{sel} soll unsichtbar sein'
+    w = await g.ev("document.getElementById('c').getBoundingClientRect().width")
+    assert w > 1390, f'Spielbild füllt den Bildschirm nicht: {w}'
+    await p.keyboard.press('KeyF'); await p.wait_for_timeout(100)
+    assert await p.is_visible('#perf'), 'F zeigt die Leistungsanzeige nicht'
+    await p.keyboard.press('KeyF')
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+    assert await p.text_content('#menuTitle') == 'Pause', 'Esc öffnet keine Pause'
     srv = webserver()
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
@@ -635,8 +643,8 @@ async def editor_testen_knopf(g):
         assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
         assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
         assert abs(await g.ev('p1.x') - 140) < 30, 'Start nicht aus dem Editor'
-        # Pausenmenü (☰-Knopf) bietet „Zurück zum Editor“; Esc beendet den Test direkt
-        await p.click('#menuBtn'); await p.wait_for_timeout(100)
+        # Pausenmenü bietet „Zurück zum Editor“; Esc beendet den Test direkt
+        await p.evaluate("showPauseMenu()"); await p.wait_for_timeout(100)
         texte = await menu_texte(p)
         assert any('Zurück zum Editor' in t for t in texte), f'Pausenmenü: {texte}'
         await p.keyboard.press('Escape'); await p.wait_for_timeout(100)   # schließt erst die Pause

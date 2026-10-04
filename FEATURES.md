@@ -94,7 +94,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Fester Spieltakt: Physik immer 60 Schritte/s (Akkumulator in loop/stepSim), Anzeige dazwischen interpoliert
     (drawInterpolated: Figuren, bewegter Boden, bewegte Haken) -> auf 120/144-Hz-Bildschirmen NICHT schneller;
     Kamera-Nachziehen und Lichtpartikel ebenfalls zeitbasiert
-  - Leistungs-Anzeige unten rechts (Taste F ein/aus): Bilder/Sek., Ruckler, Arbeitszeit pro Bild (Logik/Zeichnen)
+  - Leistungs-Anzeige unten rechts (Taste F ein/aus, beim Start AUS – Nutzerwunsch): Bilder/Sek., Ruckler, Arbeitszeit pro Bild (Logik/Zeichnen)
     und Einschätzung: Problem im Spiel-Code vs. Rechner/Browser liefert zu wenig Bilder vs. >70-Hz-Bildschirm
   - Schalter = kleiner HEBEL, mit Taste betätigen (nicht mehr drauftreten): Spieler 1 J / Controller Kreis,
     Spielerin 2 Num 2 (normale 2 geht auch) / Controller Kreis; Reichweite ~60 px; Figur lehnt sich animiert zum
@@ -204,7 +204,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Num 1 = Haken, ↑/↓ = Seil, Num 2 = Hebel; Controller 1 steuert dann das Schweinchen. Anzeige oben passt sich an.
   - Pausenmenü: Esc bzw. Options im Spiel (nicht auf dem Tod-Bildschirm, dort macht jede Taste wie bisher weiter):
     „Weiterspielen“, „Level neu starten“, „Zurück zum Menü“; Esc/Options/○ schließt die Pause wieder
-    Zusätzlich Knopf „☰ Menü (Esc)“ unten links im Spiel (öffnet dasselbe Pausenmenü)
+    Knöpfe unten links („Level neu starten“, „☰ Menü“, „Level laden (JSON)“) sind auf Nutzerwunsch AUSGEBLENDET
+    (R = Neustart, Esc / Options = Pause gehen weiter; Level aus Datei laden geht damit nicht mehr per Knopf).
+  - Spielansicht aufgeräumt (Nutzerwunsch): Steuerungs-Erklärungen oben links/rechts ausgeblendet (stehen im
+    Startmenü unter Optionen), nur der Münz-Zähler bleibt. Spielbild füllt den Bildschirm (16:9, ohne Rand).
+  - Vollbild: beim ersten Tastendruck/Klick im Titelbild schaltet das Spiel in den Vollbild-Modus (Browser-Regel:
+    nicht per Controller); in den Optionen „Vollbild an / aus“; Esc/F11 im Browser verlässt es.
   - Level 1 (levels/level-1.json + editor-format): Teil des Nutzers bis Spalte 240 unverändert, danach
     Erweiterung bis Spalte ~800 (Ziel bei 796), 10 Abschnitte mit Münzen und Koop-Rätseln, getrennte Wege:
     2) Schweinchen segelt vom Turm zur Insel, Hebel 3 fährt die Plattform für den Affen; 3) Affe schwingt am

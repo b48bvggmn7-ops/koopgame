@@ -57,6 +57,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
       <div class="opt-row vol" id="sm-row-master"><label>Gesamt <b id="sm-v-master"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-master" tabindex="-1"></div>
       <div class="opt-row vol" id="sm-row-music"><label>Musik <b id="sm-v-music"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-music" tabindex="-1"></div>
       <div class="opt-row vol" id="sm-row-sfx"><label>Effekte <b id="sm-v-sfx"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-sfx" tabindex="-1"></div>
+      <div class="opt-row" id="sm-row-fs"><button class="btn unlock" id="sm-fs" type="button" tabindex="-1">Vollbild an / aus</button></div>
       <div class="opt-row" id="sm-row-unlock"><button class="btn unlock" id="sm-unlock" type="button" tabindex="-1">Alle Level freischalten (zum Testen)</button></div>
     </div>
     <button class="btn back" id="sm-opt-back" type="button" tabindex="-1">← Zurück</button>
@@ -345,8 +346,9 @@ function resetSave() { save = { played: false, unlocked: 1, completed: [] }; per
 S.title = {
   el: $('#sm-s-title'), done: false,
   enter() { this.done = false; },
-  act() {
+  act(type, src) {
     if (this.done) return; this.done = true;
+    if (src !== 'pad0' && src !== 'pad1') goFullscreen();   // Controller dürfen kein Vollbild auslösen (Browser)
     Snd.start(); Snd.play('hop');
     $$('.bob', this.el).forEach(h => { h.style.animation = 'hop .5s cubic-bezier(.3,1.6,.5,1)'; });
     setTimeout(() => { $$('.bob', this.el).forEach(h => { h.style.animation = ''; }); go('menu'); }, 450);
@@ -419,7 +421,7 @@ function quitGame() {
 S.options = {
   el: $('#sm-s-options'), idx: 0, view: 'keyboard', rows: [],
   enter() {
-    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-unlock'), $('#sm-opt-back')];
+    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-opt-back')];
     this.idx = 0; this.drawControls(); this.syncVol(); this.paint();
   },
   paint() { this.rows.forEach((r, i) => r.classList.toggle('sel', i === this.idx)); },
@@ -454,8 +456,9 @@ S.options = {
     }
     else if (type === 'confirm') {
       if (this.idx === 0) this.toggleView();
-      else if (this.idx === 4) unlockAll();
-      else if (this.idx === 5) { Snd.play('back'); go('menu'); }
+      else if (this.idx === 4) toggleFullscreen();
+      else if (this.idx === 5) unlockAll();
+      else if (this.idx === 6) { Snd.play('back'); go('menu'); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
   }
@@ -476,7 +479,19 @@ function unlockAll() {
   save.unlocked = realCount(); save.played = true; persist();
   Snd.play('ok'); toast('Alle Level freigeschaltet');
 }
-$('#sm-unlock').addEventListener('click', () => { S.options.idx = 4; S.options.paint(); unlockAll(); });
+$('#sm-unlock').addEventListener('click', () => { S.options.idx = 5; S.options.paint(); unlockAll(); });
+$('#sm-fs').addEventListener('click', () => { S.options.idx = 4; S.options.paint(); toggleFullscreen(); });
+// Vollbild: geht nur nach einem Tastendruck/Klick (Browser-Regel) – deshalb beim ersten Tastendruck im Titelbild
+function goFullscreen() {
+  const el = document.documentElement;
+  if (document.fullscreenElement || !el.requestFullscreen) return;
+  try { const pr = el.requestFullscreen(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* nicht erlaubt */ }
+}
+function toggleFullscreen() {
+  Snd.play('ok');
+  if (document.fullscreenElement) { try { const pr = document.exitFullscreen(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }
+  else goFullscreen();
+}
 
 /* =====================================================================
    4) SPIELERWAHL

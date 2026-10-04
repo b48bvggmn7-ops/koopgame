@@ -35,7 +35,7 @@ function updateHUD(){
 // ---------- Leistungs-Anzeige (Taste F ein/aus) ----------
 // Trennt zwei Ursachen: Braucht UNSER Code zu lange pro Bild ("Arbeit")? Oder liefert der
 // Browser/Rechner einfach zu wenig Bilder, obwohl unser Code schnell fertig ist?
-const perf = {last:0, n:0, sumDt:0, maxDt:0, long:0, sumWork:0, maxWork:0, sumUpd:0, sumDraw:0, since:0, show:true};
+const perf = {last:0, n:0, sumDt:0, maxDt:0, long:0, sumWork:0, maxWork:0, sumUpd:0, sumDraw:0, since:0, show:false};   // ausgeblendet; Taste F zeigt sie
 window.addEventListener('keydown', e=>{ if(e.code==='KeyF'){ perf.show=!perf.show; document.getElementById('perf').style.display = perf.show?'':'none'; } });
 function perfFrame(ts, tStart, tAfterUpdate, tEnd){
   if(perf.last){

@@ -34,7 +34,9 @@
     padding-bottom:env(safe-area-inset-bottom,0px);
   }
   #wrap{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
-  canvas{ display:block; max-width:100%; max-height:100%; background:transparent; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,.25); touch-action:none; }
+  /* Spielbild füllt den Bildschirm (16:9, ohne Verzerrung) – im Vollbild randlos */
+  canvas{ display:block; width:min(100vw, 177.78vh); height:min(100vh, 56.25vw); background:transparent; touch-action:none; }
+  .ctrlCard{ display:none; }   /* Steuerungs-Erklärung ausgeblendet (Nutzerwunsch); steht im Startmenü unter Optionen */
 
   .hud{
     position:absolute; top:14px; left:14px; right:14px;
@@ -99,7 +101,7 @@
 <div id="wrap">
   <canvas id="c" width="1280" height="720"></canvas>
   <div class="hud">
-    <div class="card">
+    <div class="card ctrlCard">
       <div id="hudMHead"><b>Spieler 1</b> <span class="p1">● männlich, Haken</span></div>
       <div id="hudMKeys">A/D bewegen · Leertaste springen/Wandsprung · G Haken schießen/lösen · W ranziehen · S Seil geben · J am Hebel = Schalter</div>
       <div class="statusrow"><span class="dot" id="p1w"></span> an Wand <span class="dot" id="p1g"></span> Boden <span class="dot" id="p1h"></span> Haken aktiv</div>
@@ -108,20 +110,20 @@
     <div class="card" id="coinCard" style="display:none; align-self:flex-start; font-size:18px; font-weight:700; padding:8px 16px; white-space:nowrap;">
       <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#ffd23f;box-shadow:inset 0 0 0 3px #d99a00;vertical-align:-2px;margin-right:8px;"></span><span id="coinText">0 / 10</span>
     </div>
-    <div class="card">
+    <div class="card ctrlCard">
       <div id="hudFHead"><b>Spielerin 2</b> <span class="p2">● Schweinchen, Schirm</span></div>
       <div id="hudFKeys">← → bewegen · Num&nbsp;0 springen/Wandsprung · Num&nbsp;1 in der Luft halten = Schirm (segeln) · Num&nbsp;2 am Hebel = Schalter</div>
       <div class="statusrow"><span class="dot" id="p2w"></span> an Wand <span class="dot" id="p2g"></span> Boden <span class="dot" id="p2s"></span> Schirm offen</div>
       <div class="padline" id="pad2">🎮 Controller 2: nicht verbunden</div>
     </div>
   </div>
-  <div style="position:absolute; bottom:14px; left:14px; display:flex; gap:8px;">
+  <div id="gameBtns" style="position:absolute; bottom:14px; left:14px; display:none; gap:8px;"><!-- auf Nutzerwunsch ausgeblendet (R / Esc / Options gehen weiter) -->
     <button id="resetBtn">Level neu starten (R)</button>
     <button id="menuBtn" style="background:#3a4b5c; color:#eaf2f8; border:none; padding:8px 12px; border-radius:8px; font-size:12.5px; cursor:pointer;">☰ Menü (Esc)</button>
     <button id="loadLevelBtn" style="background:#3a4b5c; color:#eaf2f8; border:none; padding:8px 12px; border-radius:8px; font-size:12.5px; cursor:pointer;">Level laden (JSON)</button>
     <input type="file" id="loadLevelInput" accept="application/json" style="display:none;">
   </div>
-  <div id="perf">Messe…</div>
+  <div id="perf" style="display:none">Messe…</div>
 <div id="toast">Beide im Ziel! 🎉</div>
   <div id="menu" class="show">
     <div id="menuBox">
