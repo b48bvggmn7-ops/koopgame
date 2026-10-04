@@ -612,6 +612,8 @@ async def geraeusche(g):
     assert any('Ton ist aus' in t for t in await menu_texte(g.p)), 'Ton-Schalter fehlt im Pausenmenü'
     await g.p.keyboard.press('Escape'); await g.p.keyboard.press('KeyM'); await g.p.wait_for_timeout(50)
     assert not await g.ev("soundMuted"), 'M schaltet nicht wieder ein'
+    assert await g.ev("!masterGain || Math.abs(masterGain.gain.value - MASTER_VOL) < 0.01"), 'Gesamtlautstärke nach Wieder-Einschalten falsch'
+    assert await g.ev("MASTER_VOL < 1 && FILE_VOL.music < 0.5"), 'Gesamt-/Musiklautstärke nicht reduziert'
 
 @test
 async def wetter_regen_und_sonne(g):

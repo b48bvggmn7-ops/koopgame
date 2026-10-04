@@ -13,7 +13,7 @@
 // Lädt eine Datei nicht (z. B. Spiel als Datei geöffnet), bleibt der erzeugte Klang aus 19/22 aktiv.
 const AUDIO_FILES = {music: 'assets/audio/musik.mp3', birds: 'assets/audio/voegel.mp3',
                      rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3'};
-const FILE_VOL = {music: 0.55, birds: 0.6, rain: 0.8, river: 2.0};   // Musik vorne, Vögel/Fluss dezent dahinter (Fluss-Aufnahme ist sehr leise)
+const FILE_VOL = {music: 0.38, birds: 0.6, rain: 0.8, river: 2.0};   // Musik vorne, Vögel/Fluss dezent dahinter (Fluss-Aufnahme ist sehr leise)
 const MUSIC_START_DELAY = 2.5;   // Sekunden Stille, bevor die Musik einsetzt
 const MUSIC_FADE_IN = 7;         // Sekunden Einblenden
 const MUSIC_RESTART_DELAY = 1.5; // nach dem Weitermachen (Tod) erst kurz still, dann von vorne

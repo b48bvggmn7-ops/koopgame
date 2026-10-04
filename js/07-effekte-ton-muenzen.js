@@ -9,10 +9,11 @@ let coinFx = [];              // {type, x, y, t0, ...}
 let coinCombo = 0, lastCoinT = 0;
 let audioCtx = null;
 // Gesamtlautstärke (Ton aus/an mit M, siehe 18-sound.js) – alle Geräusche laufen hier durch
+const MASTER_VOL = 0.7;   // Gesamtlautstärke aller Geräusche, Musik und Umgebung (1 = voll)
 let masterGain = null, soundMuted = false;
 try{ soundMuted = localStorage.getItem('monchichi_mute') === '1'; }catch(e){}
 function audioOut(){
-  if(!masterGain){ masterGain = audioCtx.createGain(); masterGain.gain.value = soundMuted ? 0 : 1; masterGain.connect(audioCtx.destination); }
+  if(!masterGain){ masterGain = audioCtx.createGain(); masterGain.gain.value = soundMuted ? 0 : MASTER_VOL; masterGain.connect(audioCtx.destination); }
   return masterGain;
 }
 function coinPickupFx(c){

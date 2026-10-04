@@ -297,7 +297,7 @@ function sfxObserve(){
 function setMuted(m){
   soundMuted = m;
   try{ localStorage.setItem('monchichi_mute', m ? '1' : '0'); }catch(e){}
-  if(masterGain) masterGain.gain.value = m ? 0 : 1;
+  if(masterGain) masterGain.gain.value = m ? 0 : MASTER_VOL;
   if(typeof weatherSetMuted === 'function') weatherSetMuted(m);
   testJumpMsg = m ? '🔇 Ton aus (M)' : '🔊 Ton an (M)'; testJumpT = performance.now();
 }
