@@ -32,9 +32,8 @@ function updateSpikes(player){
   }
 }
 
-// Loslassen vom Seil: Schwung mitnehmen (siehe ROPE_FLING_* in 02-physik-werte.js)
+// Loslassen vom Seil: Schwung unverändert mitnehmen (siehe ROPE_FLING_* in 02-physik-werte.js)
 function ropeFling(player){
-  if(Math.abs(player.vx) > 1) player.vx += Math.sign(player.vx)*ROPE_FLING_BOOST;
   player.ropeFling = true;
 }
 function touchingWall(player, side){
@@ -138,9 +137,7 @@ function updatePlayer(player, now){
 
     if(jumpPressed && player.hookAttached){
       player.hookAttached = false;
-      // richtiger Absprung: nach oben mindestens ROPE_JUMP_V, mit Richtungstaste kräftig in diese Richtung
-      player.vy = Math.min(player.vy + HOOK_RELEASE_BOOST, ROPE_JUMP_V);
-      if(moveDir !== 0 && player.vx*moveDir < ROPE_JUMP_VX) player.vx = moveDir*ROPE_JUMP_VX;
+      player.vy += HOOK_RELEASE_BOOST;   // kleiner Hub nach oben; seitlich bleibt genau der Schwung
       ropeFling(player);
     }
   } else {

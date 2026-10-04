@@ -31,12 +31,9 @@ const HOOK_RELEASE_BOOST = -4.5;
 const SWING_PUSH = 0.2;
 // Loslassen vom Seil (Springen oder G): Schwung bleibt erhalten ("Abflug"), bis man landet oder eine Wand berührt.
 // Vorher wurde er sofort auf Laufgeschwindigkeit (7,2) gekappt und ohne Taste stark gebremst -> "bleibt auf der Stelle".
-const ROPE_FLING_BOOST = 1.5;   // Extra-Schub in Schwungrichtung beim Loslassen
 const ROPE_FLING_MAX = 15;      // so schnell darf man nach dem Loslassen höchstens fliegen (Laufen: 7,2)
 const ROPE_FLING_DRAG = 0.993;  // Luftbremse ohne Taste im Abflug (normal in der Luft: 0,94)
-// Springen vom Seil = richtiger Sprung (vorher nur kleiner Hopser -> "springt nur gerade hoch"):
-const ROPE_JUMP_V = -10.5;      // Mindest-Sprung nach oben beim Abspringen vom Seil (normaler Sprung: -12,6)
-const ROPE_JUMP_VX = 8.5;       // mit gedrückter Richtung mindestens so schnell in diese Richtung (Laufen: 4,4–7,2)
+// Kein künstlicher Schub beim Loslassen (Nutzerwunsch): Abfluggeschwindigkeit = Schwunggeschwindigkeit.
 
 const GLIDE_RAMP_MS = 2600;
 const GLIDE_START_GRAV = 0.10;
