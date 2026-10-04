@@ -25,7 +25,7 @@ function die(player){
     const a = i/9*Math.PI*2;
     coinFx.push({type:'poof', x:player.x, y:py, t0:now, vx:Math.cos(a)*1.6, vy:Math.sin(a)*1.6-0.6, size:9+Math.random()*7});
   }
-  SFX.death();   // "Plopp" + traurig abwärts (18-sound.js)
+  SFX.death(player.x);   // "Plopp" + traurig abwärts (18-sound.js)
 }
 function continueAfterDeath(){
   const cp = activeCp >= 0 ? checkpointDefs[activeCp] : null;
@@ -90,7 +90,7 @@ function updateCheckpoints(){
         coinFx.push({type:'spark', x:cp.x+14, y:cp.y-66, t0:now, vx:Math.cos(a)*(2+Math.random()*2), vy:Math.sin(a)*(2+Math.random()*2),
                      size: 4+Math.random()*3, star: k%2===0});
       }
-      playTones([[523,0,0.1],[659,0.09,0.1],[784,0.18,0.25]], 'square', 0.06);
+      SFX.checkpoint(cp.x);   // Spieluhr-Melodie (18-sound.js)
     }
   }
 }

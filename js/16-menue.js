@@ -32,7 +32,7 @@ function menuSelect(i){
   const el = menuList[menuSel].el;
   if(el.scrollIntoView) el.scrollIntoView({block:'nearest'});
 }
-function menuActivate(){ if(menuList[menuSel]) menuList[menuSel].action(); }
+function menuActivate(){ if(menuList[menuSel]){ SFX.menuOk(); menuList[menuSel].action(); } }
 
 function menuAddItem(text, action, cls){
   const b = document.createElement('button');
@@ -200,8 +200,8 @@ document.addEventListener('keydown', e=>{
   }
   e.preventDefault(); e.stopPropagation();
   if(e.repeat && !['ArrowUp','ArrowDown','KeyW','KeyS'].includes(e.code)) return;
-  if(e.code === 'ArrowUp' || e.code === 'KeyW') menuSelect(menuSel - 1);
-  else if(e.code === 'ArrowDown' || e.code === 'KeyS') menuSelect(menuSel + 1);
+  if(e.code === 'ArrowUp' || e.code === 'KeyW'){ menuSelect(menuSel - 1); SFX.menuTick(); }
+  else if(e.code === 'ArrowDown' || e.code === 'KeyS'){ menuSelect(menuSel + 1); SFX.menuTick(); }
   else if(['Enter','NumpadEnter','Space','Numpad0'].includes(e.code)) menuActivate();
   else if(e.code === 'Escape' || e.code === 'Backspace') menuBack();
 }, true);
@@ -233,8 +233,8 @@ function pollMenuPads(){
       if(menuScreen === 'pause') closeMenu();
       else if(!menuActive() && !deathState) showPauseMenu();
     } else if(menuActive()){
-      if(edge('up')) menuSelect(menuSel - 1);
-      else if(edge('down')) menuSelect(menuSel + 1);
+      if(edge('up')){ menuSelect(menuSel - 1); SFX.menuTick(); }
+      else if(edge('down')){ menuSelect(menuSel + 1); SFX.menuTick(); }
       else if(edge('ok')) menuActivate();
       else if(edge('back')) menuBack();
     }

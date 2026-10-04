@@ -55,7 +55,7 @@ function drawHearts(){
   togetherMs = close ? togetherMs + Math.min(100, frameDt) : 0;
   if(togetherMs > 1500 && Math.random() < frameDt/700){
     heartFx.push({x: (p1.x + p2.x)/2 + (Math.random() - 0.5)*20, y: Math.min(p1.y, p2.y) - 40, t0: t, wob: Math.random()*6});
-    if(heartFx.length === 1 || Math.random() < 0.3) sTone(1320 + Math.random()*300, 0, 0.12, {type: 'triangle', vol: 0.012});
+    if(heartFx.length === 1 || Math.random() < 0.3) SFX.heart((p1.x + p2.x)/2);
   }
   for(let i = heartFx.length - 1; i >= 0; i--){
     const h = heartFx[i], k = (t - h.t0)/1400;

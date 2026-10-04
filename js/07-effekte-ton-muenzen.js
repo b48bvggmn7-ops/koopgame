@@ -29,7 +29,7 @@ function coinPickupFx(c){
     coinFx.push({type:'spark', x:c.x, y:c.y, t0:now, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 1.2,
                  size: 4 + Math.random()*3.5, star: i%2===0, col: c.color==='gold' ? null : pal});
   }
-  playCoinSound(coinCombo);
+  if(!(typeof SFX !== 'undefined' && SFX.coin(coinCombo, c.x))) playCoinSound(coinCombo);   // gläsernes Klirren (18-sound.js), sonst alter Ton
   const cc = document.getElementById('coinCard');
   if(cc){ cc.classList.remove('bump'); void cc.offsetWidth; cc.classList.add('bump'); }
 }

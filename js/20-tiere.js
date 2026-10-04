@@ -76,7 +76,7 @@ function updateCritters(dt){
       const tx = c.hx + Math.sin(c.ph*0.7)*38 + (near ? Math.sign(c.x - near.x || 1)*60*c.flee : 0);
       const ty = c.hy + Math.sin(c.ph*1.3)*16 - 50*c.flee;
       c.x += (tx - c.x)*Math.min(1, dt*0.004); c.y += (ty - c.y)*Math.min(1, dt*0.004);
-      if(c.gold && !c.found && near){ c.found = true; c.foundT = t; SFX.discover(); }
+      if(c.gold && !c.found && near){ c.found = true; c.foundT = t; SFX.discover(c.x); }
     } else if(c.kind === 'frog'){
       c.t += dt;
       if(c.hop){
@@ -88,10 +88,10 @@ function updateCritters(dt){
         if(near){
           let dir = Math.sign(c.x - near.x) || 1, x1 = c.x + dir*(60 + Math.random()*30);
           if(x1 < c.minX || x1 > c.maxX){ dir = -dir; x1 = Math.max(c.minX, Math.min(c.maxX, c.x + dir*70)); }
-          c.dir = dir; c.hop = {t0: t, x0: c.x, x1}; SFX.frog();
+          c.dir = dir; c.hop = {t0: t, x0: c.x, x1}; SFX.frog(c.x);
         } else {
           c.nextCroak -= dt/1000;
-          if(c.nextCroak <= 0){ c.nextCroak = 6 + Math.random()*10; c.croakT = t; if(Math.abs(c.x - camX - VW/2) < VW*0.6) SFX.frog(); }
+          if(c.nextCroak <= 0){ c.nextCroak = 6 + Math.random()*10; c.croakT = t; if(Math.abs(c.x - camX - VW/2) < VW*0.6) SFX.frog(c.x); }
         }
       }
     } else if(c.kind === 'snail'){
@@ -103,15 +103,15 @@ function updateCritters(dt){
       }
     } else if(c.kind === 'mush'){
       const on = critNearPlayer(c.x, c.y - 14, 18, 24);
-      if(on && t - c.lastT > 600){ c.lastT = t; SFX.mushroom(); }
+      if(on && t - c.lastT > 600){ c.lastT = t; SFX.mushroom(c.x); }
       c.squish = on ? Math.min(1, c.squish + dt*0.02) : Math.max(0, c.squish - dt*0.006);
     } else if(c.kind === 'bud'){
-      if(critNearPlayer(c.x, c.y - 12, 60, 60) && c.target === 0){ c.target = 1; c.openT = t; sTone(1568, 0, 0.18, {type: 'triangle', vol: 0.018}); sTone(2093, 0.06, 0.2, {type: 'triangle', vol: 0.014}); }
+      if(critNearPlayer(c.x, c.y - 12, 60, 60) && c.target === 0){ c.target = 1; c.openT = t; SFX.bud(c.x); }
       c.open += (c.target - c.open)*Math.min(1, dt*0.004);
     } else if(c.kind === 'sloth'){
       const near = critNearPlayer(c.x, c.y + 40, 150, 260);
       c.awake = near ? Math.min(1, c.awake + dt*0.002) : Math.max(0, c.awake - dt*0.0004);
-      if(near && !c.found && c.awake > 0.8){ c.found = true; SFX.discover(); }
+      if(near && !c.found && c.awake > 0.8){ c.found = true; SFX.discover(c.x); }
     }
   }
 }

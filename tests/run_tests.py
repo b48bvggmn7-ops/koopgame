@@ -675,6 +675,19 @@ async def regen_klang(g):
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
         assert await g.ev("!!rainBufs"), 'Regen-Klang wurde nicht vorberechnet'
 
+@test
+async def asmr_klangbibliothek(g):
+    """Alle Geräusche: Klangbibliothek (Stereo, mehrere Varianten) wird gebaut; Abspielen klappt nach dem ersten Tastendruck."""
+    st = await g.ev("""(()=>{ const out={}; const it=sfxBuild(new OfflineAudioContext(2,44100,44100), out); while(!it.next().done){}
+      const names = Object.keys(out.bank); const bad = names.filter(k => !out.bank[k].length || out.bank[k][0].numberOfChannels !== 2);
+      return {names, bad, steps: out.bank.step.length, ir: !!out.ir, vol: names.filter(k => !(k in SFX_VOL))}; })()""")
+    need = ['step', 'land', 'jump', 'wall', 'coin', 'hookAttach', 'rope', 'umbrella', 'lever', 'doorOpen', 'doorClose',
+            'crumbleWarn', 'crumbleBreak', 'death', 'checkpoint', 'mushroom', 'frog', 'discover', 'bud', 'heart', 'birdFlap', 'menuTick', 'menuOk']
+    assert all(n in st['names'] for n in need) and not st['bad'] and st['steps'] >= 4 and st['ir'] and not st['vol'], f'Bibliothek: {st}'
+    await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF'); await g.p.wait_for_timeout(1500)
+    if await g.ev("audioCtx && audioCtx.state === 'running'"):
+        assert await g.ev("!!sfxBank && sfxPlay('coin', {x: p1.x})"), 'Geräusch lässt sich nicht abspielen'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

@@ -92,12 +92,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Schalter, bewegter Boden, Stacheln, Checkpoints gelten für beide Spieler
   - Münzfarben (coin.color): blau = nur Affe, pink = nur Schweinchen, gold = beide; falsche Figur -> Münze wackelt;
     Effekte (Ring/Funken) in Münzfarbe; Münz-Kasten zeigt zusätzlich "● Affe a/b  ● Schwein a/b"
-  - Geräusche (js/18-sound.js, alle im Browser erzeugt): weiches „Hupp“ beim Springen (Schweinchen höher), Klopfer +
-    höheres Hupp beim Wandsprung, dumpfes Aufsetzen beim Landen (je schneller, desto kräftiger), leises Gras-Rascheln
-    beim Laufen, metallisches „Tink“ beim Einhaken, Wusch beim Loslassen, „Fwump“ beim Schirm, Holz-Klack am Hebel
-    (ein höher, aus tiefer), schabendes Holztor + Klong, Knirschen/Zerbröseln beim Bröckelboden, „Plopp“ + traurig
-    abwärts gleitendes Pfeifen beim Sterben. Ein Beobachter (sfxObserve) erkennt die Ereignisse an Zustandsänderungen
-    und ändert nichts am Spiel. Taste M = Ton aus/an (gemerkt), auch im Pausenmenü („🔊 Ton ist an …“).
+  - Geräusche ASMR-artig (js/18-sound.js, alle im Browser erzeugt): Klangbibliothek aus feinen Material-Klängen, einmal
+    im Hintergrund in kleinen Häppchen berechnet (~1 s nach dem ersten Tastendruck), Stereo, mehrere Varianten + kleine
+    Zufalls-Tonhöhe (nie zweimal gleich), links/rechts je nach Ort im Bild, Hauch Nachhall. Laufen = Knistern auf
+    Moos/Laub (Schweinchen leiser/heller), Springen = weiches Stoff-„Fwip“, Landen = gedämpfter Plumps ins Moos mit
+    Knistern (je nach Fallhöhe), Wandsprung = Holz-„Tock“, Münze = gläsernes Murmel-Klirren mit Glitzern (Folge-Münzen
+    höher), Haken = Karabiner-„Klick-Klink“, Loslassen = Seil-Surren, Schirm = Stoff ploppt auf + flattert, Hebel =
+    hölzernes Ratschen-Klick-Klack (ein höher/aus tiefer), Tür = knarzendes Holz + Klopfen, Bröckelboden = rieselnder
+    Sand, dann kullernde Steinchen + Rumpeln, Sterben = sanftes „Puff“ + traurige Kalimba, Checkpoint = Spieluhr,
+    Pilz = Gummi-„Boing“, Frosch = Quaken, Knospe = Plopp + Spieluhr, Herzchen = Kalimba, Vögel = Flügelflattern,
+    Entdeckung = Spieluhr-Glitzer, Menü = sanfte Klicks. Lautstärken je Geräusch in SFX_VOL. Ein Beobachter (sfxObserve)
+    erkennt Ereignisse an Zustandsänderungen und ändert nichts am Spiel. Taste M = Ton aus/an (gemerkt), auch im Pausenmenü.
   - Münzen-Aussehen (drawCoin3D): etwas größer (Radius 12,5 statt 11, nur Zeichnung – Einsammel-Bereich
     unverändert), 3D: sichtbare Kante beim Drehen, Lichtverlauf, geprägter Innenring mit Stern, Glanzlicht;
     dunkler Umriss, weicher Schein in Münzfarbe und leichter Schatten -> heben sich vom Dschungel ab

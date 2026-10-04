@@ -209,7 +209,8 @@ function updateBirds(){
           b.state = 'fly'; b.dir = dx >= 0 ? 1 : -1;
           b.vx = b.dir*(2.4 + Math.random()*1.2); b.vy = -3.2 - Math.random()*1.2; b.t = 0;
           const f = 2100 + Math.random()*500;   // leises Zwitschern
-          playTones([[f, 0, 0.05], [f*1.2, 0.07, 0.05]], 'sine', 0.018);
+          playTones([[f, 0, 0.05], [f*1.2, 0.07, 0.05]], 'sine', 0.012);
+          SFX.birdFlap(b.x);   // Flügelflattern (18-sound.js)
           break;
         }
       }
