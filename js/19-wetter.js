@@ -145,16 +145,17 @@ function* rainSynthSteps(a, out){
   const sr = a.sampleRate, n = Math.floor(sr*RAIN_LOOP_S);
   const bufs = {bed: a.createBuffer(2, n, sr), patter: a.createBuffer(2, n, sr), metal: a.createBuffer(2, n, sr)};
   // Bett: rosa Rauschen (Paul-Kellet-Filter) + Tiefpass, leicht atmende Lautstärke (ganze Perioden -> nahtlos)
-  const k = 1 - Math.exp(-2*Math.PI*1400/sr);
+  const k = 1 - Math.exp(-2*Math.PI*1100/sr), kd = 1 - Math.exp(-2*Math.PI*220/sr);   // warm + tiefes Blechdach-Brummen
   for(let ch = 0; ch < 2; ch++){
     const d = bufs.bed.getChannelData(ch);
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, lp = 0;
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, lp = 0, drum = 0;
     for(let i = 0; i < n; i++){
       const w = Math.random()*2 - 1;
       b0 = 0.99886*b0 + w*0.0555179; b1 = 0.99332*b1 + w*0.0750759; b2 = 0.96900*b2 + w*0.1538520;
       b3 = 0.86650*b3 + w*0.3104856; b4 = 0.55000*b4 + w*0.5329522; b5 = -0.7616*b5 - w*0.0168980;
       lp += ((b0 + b1 + b2 + b3 + b4 + b5 + w*0.5362)*0.11 - lp)*k;
-      d[i] = lp*(0.85 + 0.15*Math.sin(2*Math.PI*i/n*3 + ch));
+      drum += (lp - drum)*kd;
+      d[i] = (lp + drum*1.6)*(0.85 + 0.15*Math.sin(2*Math.PI*i/n*3 + ch));
       if((i & 32767) === 0) yield;
     }
   }
@@ -176,16 +177,16 @@ function* rainSynthSteps(a, out){
     }
   }
   const rnd = (a0, a1)=> a0 + Math.random()*(a1 - a0);
-  for(let i = 0; i < RAIN_LOOP_S*190; i++){            // Prasseln
+  for(let i = 0; i < RAIN_LOOP_S*300; i++){            // Prasseln (dicht, gleichmäßig)
     drop(bufs.patter, rnd(0, RAIN_LOOP_S), [[rnd(2200, 7500), 1]], rnd(0.0006, 0.0024), Math.pow(Math.random(), 2.2)*0.35 + 0.03, Math.random(), 0.7);
-    if(i % 200 === 0) yield;
+    if(i % 250 === 0) yield;
   }
   for(let i = 0; i < RAIN_LOOP_S*24; i++){             // Glas-"tick"
     const f = rnd(3200, 5600);
     drop(bufs.patter, rnd(0, RAIN_LOOP_S), [[f, 1], [f*1.51, 0.4]], rnd(0.004, 0.009), rnd(0.06, 0.18), Math.random(), 0.3);
   }
   yield;
-  for(let i = 0; i < RAIN_LOOP_S*13; i++){             // Metall-"ping/plonk"
+  for(let i = 0; i < RAIN_LOOP_S*20; i++){             // Metall-"ping/plonk"
     const f = rnd(650, 2100);
     drop(bufs.metal, rnd(0, RAIN_LOOP_S), [[f, 1], [f*2.32, 0.5], [f*3.86, 0.28], [f*5.4, 0.14]], rnd(0.025, 0.07), rnd(0.05, 0.16), Math.random(), 0.15);
     if(i % 10 === 0) yield;
@@ -251,12 +252,6 @@ function weatherAudio(dt){
       sTone(f, w, 0.13, {to: f*0.42, vol: 0.03});
       sNoise(w, 0.06, {filter: 'lowpass', f: 1800, vol: 0.012});
     }
-  } else if(weather.phase === 'sun' && weather.rain < 0.05){
-    weather.nextChirp -= dt;
-    if(weather.nextChirp <= 0){
-      weather.nextChirp = 5 + Math.random()*9;
-      const base = 2200 + Math.random()*1400, n = 2 + Math.floor(Math.random()*4);
-      for(let i = 0; i < n; i++) sTone(base*(1 + (i%2)*0.12), i*0.11, 0.07, {to: base*(1.15 + (i%2)*0.1), vol: 0.008});
-    }
   }
+  if(typeof musicUpdate === 'function') musicUpdate();   // Klaviermusik + Wind/Grillen/Bach (22-musik-ambiente.js)
 }

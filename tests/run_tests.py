@@ -688,6 +688,27 @@ async def asmr_klangbibliothek(g):
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
         assert await g.ev("!!sfxBank && sfxPlay('coin', {x: p1.x})"), 'Geräusch lässt sich nicht abspielen'
 
+@test
+async def musik_und_ambiente(g):
+    """Klaviermusik: Takte in F-Dur, beim Regenbogen heller (höher); Klavier/Wind/Grillen/Bach werden vorberechnet."""
+    st = await g.ev("""(()=>{ const out={}; const it=musicBuild(new OfflineAudioContext(2,44100,44100), out); while(!it.next().done){}
+      mus.motif = null; const normal=[], bright=[];
+      for(let b=0;b<16;b++){ normal.push(...musicCompose(b,false)); }
+      mus.motif = null; for(let b=0;b<16;b++){ bright.push(...musicCompose(b,true)); }
+      const F = [5,7,9,10,0,2,4];
+      const inKey = [...normal, ...bright].every(e => F.includes(((e.midi%12)+12)%12));
+      const avg = a => a.filter(e=>e.midi>=60).reduce((s,e)=>s+e.midi,0)/Math.max(1,a.filter(e=>e.midi>=60).length);
+      return {piano:Object.keys(out.piano).length, amb:!!(out.wind&&out.crickets&&out.brook), n:normal.length, inKey, up: avg(bright)-avg(normal)}; })()""")
+    assert st['piano'] == 4 and st['amb'] and st['n'] > 100, f'Musik/Ambiente fehlt: {st}'
+    assert st['inKey'], 'Töne außerhalb von F-Dur'
+    assert st['up'] > 8, f'Regenbogen-Musik nicht heller: {st}'
+    await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')
+    if await g.ev("audioCtx && audioCtx.state === 'running'"):
+        for _ in range(24):
+            if await g.ev("mus.ready && mus.log.length > 0"): break
+            await g.p.wait_for_timeout(500)
+        assert await g.ev("mus.ready && mus.log.length > 0"), 'Musik spielt nicht'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):

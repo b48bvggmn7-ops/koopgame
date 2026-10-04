@@ -51,14 +51,21 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     „boing“ beim Drüberlaufen), Blumenknospen (gehen beim Vorbeikommen mit Glitzer + Ton auf), selten: schlafendes
     Faultier unter schwebendem Boden (Zzz, wacht auf und winkt, Entdecker-Glitzer-Ton) und EIN goldener Schmetterling
     pro Level (Entdecker-Ton). Verteilung fest je Level (nicht auf Münzen/Stacheln/Hebeln/Checkpoints/Ziel/Start).
+  - Hintergrundmusik + Sonnen-Ambiente (js/22-musik-ambiente.js, alles im Browser erzeugt, keine Aufnahmen):
+    ruhiges, verträumtes Klavier (Nutzerwahl), live komponiert: warme Akkordfolgen in F-Dur (~64 Schläge/min), gebrochene
+    Akkorde links, Melodie-Motive rechts (wiederholt + leicht verändert, Atempausen), weicher Raumhall. Klavierton aus
+    Obertönen mit Saiten-Unschärfe, Hammer-Anschlag und zwei leicht verstimmten Saiten (vorberechnet in Häppchen).
+    Regenbogen: dieselbe Musik heller (Melodie eine Oktave höher + funkelnde Doppelung). Bei Regen etwas leiser.
+    Sonne: Wind in den Blättern (Böen), leise Grillen, plätschernder Bach (Stereo-Schleifen; Vogelgezwitscher im
+    Hintergrund dafür entfernt – Nutzerwahl). Lautstärken: MUSIC_VOL, AMB_VOL. M schaltet alles stumm.
   - Wetter & Stimmung (js/19-wetter.js, reine Deko): wärmerer Himmel (goldenes Licht am Horizont, kräftigere Sonne
     mit sich langsam drehenden Strahlen), immer leichter warmer Schimmer + weiche Vignette. Ablauf: Sonne 70–120 s ->
     zieht zu (7 s) -> Regenschauer 30–45 s -> klart auf (7 s) mit Regenbogen (~22 s) -> Sonne … Regen: schräge Tropfen
     vor der Welt, Spritzer auf allen Oberseiten, Hintergrund dunkler/kühler (Spielfeld bleibt hell). Regen-Klang (ASMR,
-    wie auf schrägem Metalldach/Dachfenster): vorab im Hintergrund in kleinen Häppchen berechnete Stereo-Schleifen aus
+    wie auf schrägem Blechdach/Dachfenster, dicht + tiefes Dach-Brummen): vorab im Hintergrund in kleinen Häppchen berechnete Stereo-Schleifen aus
     tausenden Einzeltropfen – warmes rosa Rauschen als Bett, dichtes Prasseln (winzige Einschläge links/rechts verteilt),
     gläserne „tick“-Tropfen, metallische „ping/plonk“-Tropfen mit Nachklang; live dazu satte „Plopps“ aus der Dachrinne;
-    bei leichtem Regen nur vereinzelte Tropfen. Bei Sonne ab und zu Vogelgezwitscher.
+    bei leichtem Regen nur vereinzelte Tropfen.
     Zum Testen in der Konsole: weatherForce('rain') / weatherForce('sun').
   - Dschungel-Deko in der Welt (js/17-deko.js, reine Deko ohne Kollision): Farne, Gras, rote Helikonien,
     rosa Blümchen, große Blätter auf freien Boden-Oberseiten (wiegen sich, weichen Figuren aus), Moos auf
