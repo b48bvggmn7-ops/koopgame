@@ -154,19 +154,7 @@ function drawCharacter(player, camX){
   }
   ctx.restore();
 
-  if(player.male && player.hookAttached && player.introVine){
-    // Liane bei der Ankunft (25-level-intro.js): grün, leicht durchhängend, mit ein paar Blättchen
-    const ax = player.anchor.x - camX, ay = player.anchor.y, bx = px, by = py - player.h*0.6;
-    const mx = (ax + bx)/2 + (by - ay)*0.06, my = (ay + by)/2 + 6;
-    ctx.strokeStyle = '#3f6b25'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(ax + 4, -20); ctx.quadraticCurveTo(ax - 6, ay*0.5, ax, ay);   // kommt von oben aus dem Blätterdach
-    ctx.quadraticCurveTo(mx, my, bx, by); ctx.stroke();
-    ctx.fillStyle = '#5c9a34';
-    for(let k = 1; k < 6; k++){
-      const s = k/6, lx = (1-s)*(1-s)*ax + 2*(1-s)*s*mx + s*s*bx, ly = (1-s)*(1-s)*ay + 2*(1-s)*s*my + s*s*by;
-      ctx.beginPath(); ctx.ellipse(lx + (k%2 ? 5 : -5), ly, 5, 2.4, k%2 ? 0.5 : -0.5, 0, Math.PI*2); ctx.fill();
-    }
-  } else if(player.male && player.hookAttached){
+  if(player.male && player.hookAttached){
     // gedehntes Seil: wird dünner, färbt sich orange-rot und zittert
     const st = Math.min(1, (player.ropeStretch||0) / ROPE_SNAP_STRETCH);
     ctx.strokeStyle = st > 0.05 ? `rgb(${Math.round(60+st*172)},${Math.round(110-st*60)},${Math.round(190-st*160)})` : colorOf('--rope');

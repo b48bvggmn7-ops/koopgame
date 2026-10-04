@@ -191,12 +191,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1 (Fortschritt neu,
     vorher Rückfrage). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
     (Countdown startet dann dieses Level; Zurück führt wieder zur Levelauswahl, die Auswahl bleibt).
-  - Levelstart aus dem Startmenü (Nutzerwahl): Blätter-Vorhang – große Dschungelblätter schieben sich von links und
-    rechts zu, darauf die Titeltafel „Level N“ + Name (z. B. „Dschungel“), dann gehen die Blätter auf
+  - Levelstart aus dem Startmenü (Nutzerwahl): Blätter-Vorhang – zwei Hälften aus dichten Schichten vieler
+    Dschungelblätter (schlanke Blätter, Herzblätter mit Schlitzen, Palmwedel; hinten dunkel, vorne hell, Mitte weich
+    überblendet – keine glatte Fläche, Nutzerwunsch) schieben sich von links und rechts zu, darauf die Titeltafel „Level N“ + Name (z. B. „Dschungel“), dann gehen die Blätter auf
     (curtainIntoLevel in 24-startmenue.js, menuScreen = 'curtain', Spiel steht still). Danach Ankunft der Figuren
     (js/25-level-intro.js, ~2 s, fester Takt): Schweinchen schwebt mit offenem Schirm von oben herunter, Affe
-    schwingt an einer grünen Liane (kommt von oben aus dem Blätterdach) herein – von links, sonst von rechts, ohne
-    Platz seilt er sich senkrecht ab; landen mit Plumps/Staub auf ihren Startplätzen. Währenddessen ruhen Eingaben
+    springt aus dem Blätterdach herunter, macht einen doppelten Salto und landet mit kleinem Hüpfer, Plumps und
+    Staub (die frühere Liane hat der Nutzer abgelehnt). Währenddessen ruhen Eingaben
     und Stacheln. Nicht nach Tod/Neustart (R)/Level-Datei und nicht im Test aus dem Editor.
     Levelauswahl: Karten aus levels/levels.json („titel“: Dschungel, Baumkronen, Ruinen), Einträge mit
     „versteckt“: true fehlen (alter Entwurf von Level 3 – Datei bleibt, im Editor weiter ladbar); danach
@@ -221,7 +222,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Spielansicht aufgeräumt (Nutzerwunsch): Steuerungs-Erklärungen oben links/rechts ausgeblendet (stehen im
     Startmenü unter Optionen), nur der Münz-Zähler bleibt. Spielbild füllt den Bildschirm (16:9, ohne Rand).
   - Vollbild: beim ersten Tastendruck/Klick im Titelbild schaltet das Spiel in den Vollbild-Modus (Browser-Regel:
-    nicht per Controller); in den Optionen „Vollbild an / aus“; Esc/F11 im Browser verlässt es.
+    nicht per Controller); in den Optionen „Vollbild an / aus“. Im Vollbild wird Esc fürs Spiel gesperrt
+    (Tastatur-Sperre, Chrome/Edge): Esc öffnet die Pause, LANGES Halten von Esc verlässt das Vollbild
+    (Nutzerwunsch). Andere Browser (Firefox/Safari) erlauben das nicht – dort verlässt Esc das Vollbild.
   - Level 1 (levels/level-1.json + editor-format): Teil des Nutzers bis Spalte 240 unverändert, danach
     Erweiterung bis Spalte ~800 (Ziel bei 796), 10 Abschnitte mit Münzen und Koop-Rätseln, getrennte Wege:
     2) Schweinchen segelt vom Turm zur Insel, Hebel 3 fährt die Plattform für den Affen; 3) Affe schwingt am

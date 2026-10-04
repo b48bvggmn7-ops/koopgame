@@ -331,7 +331,7 @@ async def startmenue_fortschritt_und_wahl(g):
 @test
 async def levelstart_vorhang_und_ankunft(g):
     """Levelstart aus dem Menü: Blätter-Vorhang mit Titeltafel („Level 1“ + Name), dann Ankunft: Schweinchen schwebt
-    mit Schirm herunter, Affe hängt an der Liane; Eingaben ruhen; danach stehen beide auf ihren Startplätzen."""
+    mit Schirm herunter, Affe springt mit Salto aus dem Blätterdach; Eingaben ruhen; danach stehen beide am Startplatz."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
@@ -343,20 +343,33 @@ async def levelstart_vorhang_und_ankunft(g):
             if await g.ev("document.getElementById('leafCurtain').classList.contains('title')"):
                 sah_titel = True
                 assert await g.ev("document.querySelector('#leafCurtain .lt-n').textContent") == 'Level 1'
-            st = await g.ev("levelIntro && menuScreen === null ? ({t: levelIntro.t, py: p2.y, fy: levelIntro.f.y, u: p2.umbrella, vine: p1.introVine}) : null")
-            if st and st['t'] < 60:
-                if st['py'] < st['fy'] - 40 and st['u'] > 0.5 and st['vine']: sah_ankunft = True
+            st = await g.ev("levelIntro && menuScreen === null ? ({t: levelIntro.t, py: p2.y, fy: levelIntro.f.y, u: p2.umbrella, my: p1.y, mf: levelIntro.m.y, rot: p1.rollAngle, hook: p1.hookAttached}) : null")
+            if st and st['t'] < 55:
+                assert not st['hook'], 'Affe hängt noch an einer Liane'
+                if st['py'] < st['fy'] - 40 and st['u'] > 0.5 and st['my'] < st['mf'] - 40 and st['rot'] > 0.5: sah_ankunft = True
                 await p.keyboard.down('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.up('ArrowRight')   # Eingabe ruht
             if sah_ankunft and await g.ev("!introActive()"): break
             await p.wait_for_timeout(50)
         assert sah_titel, 'keine Titeltafel'
-        assert sah_ankunft, 'keine Ankunft (Schirm/Liane)'
+        assert sah_ankunft, 'keine Ankunft (Schirm / Salto)'
         await p.wait_for_timeout(400)
         st = await g.ev("({a: p1.grounded, b: p2.grounded, m: menuScreen, ax: p1.x, bx: p2.x, sm: levelStartM.x, sf: levelStartF.x})")
         assert st['a'] and st['b'] and st['m'] is None, f'nicht sauber gelandet: {st}'
         assert abs(st['ax'] - st['sm']) < 30 and abs(st['bx'] - st['sf']) < 30, f'nicht am Startplatz: {st}'
     finally:
         srv.shutdown()
+
+@test
+async def vollbild_esc_bleibt(g):
+    """Im Vollbild wird Esc fürs Spiel gesperrt (Tastatur-Sperre), damit Esc die Pause öffnet statt das Vollbild zu verlassen."""
+    await g.ev("""(()=>{ window.__lock = null;
+        Object.defineProperty(navigator, 'keyboard', {configurable: true, value: {lock: k => { window.__lock = k; return Promise.resolve(); }, unlock: () => { window.__lock = 'frei'; }}});
+        Object.defineProperty(document, 'fullscreenElement', {configurable: true, get: () => document.documentElement});
+        document.dispatchEvent(new Event('fullscreenchange')); })()""")
+    assert await g.ev("JSON.stringify(window.__lock)") == '["Escape"]', 'Esc wird im Vollbild nicht gesperrt'
+    await g.ev("""(()=>{ Object.defineProperty(document, 'fullscreenElement', {configurable: true, get: () => null});
+        document.dispatchEvent(new Event('fullscreenchange')); })()""")
+    assert await g.ev("window.__lock") == 'frei', 'Sperre wird nach dem Vollbild nicht gelöst'
 
 @test
 async def startmenue_lautstaerke(g):

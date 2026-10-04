@@ -166,10 +166,11 @@
 #leafCurtain.on{display:block}
 #leafCurtain .half{position:absolute;top:-4%;height:108%;width:62%;transition:transform .65s cubic-bezier(.6,0,.3,1)}
 #leafCurtain .half svg{display:block;width:100%;height:100%;filter:drop-shadow(0 0 2vw rgba(0,0,0,.5))}
-#leafCurtain .half.l{left:0;transform:translateX(-112%)}
-#leafCurtain .half.r{right:0;transform:translateX(112%)}
+#leafCurtain .half.l{left:0;transform:translateX(-112%);-webkit-mask-image:linear-gradient(to left,transparent 0,#000 9%);mask-image:linear-gradient(to left,transparent 0,#000 9%)}
+#leafCurtain .half.r{right:0;transform:translateX(112%);-webkit-mask-image:linear-gradient(to right,transparent 0,#000 9%);mask-image:linear-gradient(to right,transparent 0,#000 9%)}
 #leafCurtain.closed .half{transform:none}
-#leafCurtain .lt{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .35s ease;text-align:center}
+#leafCurtain .lt{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .35s ease;text-align:center;
+  background:radial-gradient(ellipse 34% 30% at 50% 50%,rgba(2,20,9,.75),rgba(2,20,9,0))}
 #leafCurtain.title .lt{opacity:1}
 #leafCurtain .lt-n{display:block;font:900 9vw/.9 "Big Shoulders Display",Impact,sans-serif;text-transform:uppercase;transform:skewX(-8deg);
   background:linear-gradient(#f6ffe0 20%,#c6ff3d 85%);-webkit-background-clip:text;background-clip:text;color:transparent;

@@ -339,18 +339,47 @@ async function playLevel(i) {
 /* ---- Blätter-Vorhang mit Titeltafel: Menü -> Level ---- */
 const wait = ms => new Promise(res => setTimeout(res, ms));
 function leafHalf(side) {
-  // große Dschungelblätter, die zur Bildmitte hin herausragen
-  const leaf = (x, y, rot, len, wid, col) =>
-    `<g transform="translate(${x} ${y}) rotate(${rot})"><path d="M0 0Q${len*.45} ${-wid} ${len} 0Q${len*.45} ${wid} 0 0Z" fill="${col}"/>` +
-    `<path d="M0 0L${len*.92} 0" stroke="rgba(0,0,0,.25)" stroke-width="3" fill="none"/></g>`;
-  const cols = ['#0e5235', '#13663f', '#0b4630', '#17724a', '#0f5a3a'];
+  // dichte Schichten aus vielen Dschungelblättern (schlanke Blätter, breite Herzblätter, gefiederte Palmwedel);
+  // hinten dunkel, vorne hell – keine leere grüne Fläche. Fester Zufall, damit es immer gleich aussieht.
+  let seed = side < 0 ? 7 : 13;
+  const R = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const uid = side < 0 ? 'L' : 'R';
+  const grads = [['#04210f', '#0b3f22'], ['#0a3a20', '#17602f'], ['#11552c', '#2b8a3e'], ['#1d7a37', '#4fb053'], ['#2f8f3f', '#7ccf63']];
+  let defs = '<defs>';
+  grads.forEach((g, k) => { defs += `<linearGradient id="lf${uid}${k}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${g[0]}"/><stop offset="1" stop-color="${g[1]}"/></linearGradient>`; });
+  defs += '</defs>';
+  const slim = (len, wid, k) => {           // schlankes Blatt mit Mittelrippe und Seitenadern
+    let v = '';
+    for (let a = 0.18; a < 0.9; a += 0.14) v += `M${len*a} 0L${len*(a+0.09)} ${-wid*0.55*(1-a)}M${len*a} 0L${len*(a+0.09)} ${wid*0.55*(1-a)}`;
+    return `<path d="M0 0C${len*.25} ${-wid} ${len*.7} ${-wid*.8} ${len} 0C${len*.7} ${wid*.8} ${len*.25} ${wid} 0 0Z" fill="url(#lf${uid}${k})" stroke="rgba(0,0,0,.25)" stroke-width="2"/>` +
+           `<path d="M0 0L${len*.96} 0${v}" stroke="rgba(0,20,8,.35)" stroke-width="2.2" fill="none"/>`;
+  };
+  const heart = (len, wid, k) =>            // breites Herzblatt (wie Monstera, mit Schlitzen)
+    `<path d="M0 0C${len*.1} ${-wid*1.1} ${len*.85} ${-wid*1.2} ${len} 0C${len*.85} ${wid*1.2} ${len*.1} ${wid*1.1} 0 0Z" fill="url(#lf${uid}${k})" stroke="rgba(0,0,0,.25)" stroke-width="2"/>` +
+    `<path d="M${len*.35} ${-wid*.85}L${len*.48} ${-wid*.2}M${len*.62} ${-wid*.8}L${len*.66} ${-wid*.15}M${len*.38} ${wid*.85}L${len*.5} ${wid*.2}M${len*.64} ${wid*.78}L${len*.68} ${wid*.14}" stroke="rgba(3,30,14,.55)" stroke-width="${wid*.05}" stroke-linecap="round"/>` +
+    `<path d="M0 0L${len*.95} 0" stroke="rgba(0,20,8,.4)" stroke-width="3" fill="none"/>`;
+  const palm = (len, k) => {                // gefiederter Palmwedel
+    let f = `<path d="M0 0Q${len*.5} ${-len*.12} ${len} 0" stroke="url(#lf${uid}${k})" stroke-width="5" fill="none"/>`;
+    for (let a = 0.08; a < 0.97; a += 0.06) {
+      const x = len*a, y = -len*.12*4*a*(1-a), l = len*.32*Math.sin(Math.PI*Math.min(1, a*1.1));
+      f += `<path d="M${x} ${y}Q${x + l*.5} ${y - l*.6} ${x + l*.9} ${y - l*.55}M${x} ${y}Q${x + l*.5} ${y + l*.6} ${x + l*.9} ${y + l*.65}" stroke="url(#lf${uid}${k})" stroke-width="${7*(1.1-a)}" stroke-linecap="round" fill="none"/>`;
+    }
+    return f;
+  };
   let g = '';
-  for (let k = 0; k < 16; k++) {
-    const y = -40 + k*62, len = 300 + (k*53) % 160, rot = side < 0 ? (k % 2 ? 12 : -14) : (k % 2 ? 168 : 194);
-    g += leaf(side < 0 ? 420 : 380, y, rot, len, 70 + (k*17) % 40, cols[k % cols.length]);
+  const layers = [[0, 46, 1.25], [1, 52, 1.05], [2, 48, 0.9], [3, 34, 0.75], [4, 18, 0.6]];   // Farbe, Anzahl, Größe
+  for (const [k, n, sc] of layers) {
+    for (let q = 0; q < n; q++) {
+      const x = R()*900 - 50, y = R()*860 - 30;
+      // Blätter zeigen grob zur Bildmitte (links -> nach rechts, rechts -> nach links)
+      const dir = side < 0 ? 0 : 180, rot = dir + (R() - 0.5)*120;
+      const kind = R(), len = (170 + R()*190)*sc, wid = (40 + R()*45)*sc;
+      const shape = kind < 0.45 ? slim(len, wid, k) : kind < 0.75 ? heart(len*0.8, wid*1.1, k) : palm(len*1.2, k);
+      g += `<g transform="translate(${x.toFixed(0)} ${y.toFixed(0)}) rotate(${rot.toFixed(0)})">${shape}</g>`;
+    }
   }
-  const base = '<rect x="0" y="0" width="800" height="1000" fill="#08331f"/>';   // ganze Hälfte deckend (überlappt in der Mitte)
-  return `<svg viewBox="0 0 800 1000" preserveAspectRatio="none">${base}${g}</svg>`;
+  const base = '<rect x="-50" y="-50" width="900" height="900" fill="#03180b"/>';
+  return `<svg viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">${defs}${base}${g}</svg>`;
 }
 const curtainEl = document.createElement('div');
 curtainEl.id = 'leafCurtain';
@@ -530,6 +559,14 @@ function goFullscreen() {
   if (document.fullscreenElement || !el.requestFullscreen) return;
   try { const pr = el.requestFullscreen(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* nicht erlaubt */ }
 }
+// Im Vollbild Esc fürs Spiel behalten (Pause), statt das Vollbild zu verlassen: Tastatur-Sperre (Chrome/Edge).
+// Dann beendet erst LANGES Halten von Esc das Vollbild (Hinweis zeigt der Browser). Andere Browser: Esc = raus.
+function lockEscape() {
+  const kb = navigator.keyboard;
+  if (document.fullscreenElement && kb && kb.lock) { try { const pr = kb.lock(['Escape']); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }
+  else if (!document.fullscreenElement && kb && kb.unlock) { try { kb.unlock(); } catch (e) {} }
+}
+document.addEventListener('fullscreenchange', lockEscape);
 function toggleFullscreen() {
   Snd.play('ok');
   if (document.fullscreenElement) { try { const pr = document.exitFullscreen(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }
