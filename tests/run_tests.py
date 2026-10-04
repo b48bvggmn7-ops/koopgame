@@ -383,6 +383,63 @@ async def level1_muenzen_und_haken(g):
         assert hk['radius'] <= 5 * 40, f"Haken zu groß: {hk}"
 
 @test
+async def level2_und_3_regeln(g):
+    """Level 2 und 3: nur blaue/pinke Münzen, keine Münze in Stein/Tür/bewegtem Teil, Haken höchstens 5 Kästchen,
+    Ziel ganz rechts, Start links."""
+    for name in ('level-2.json', 'level-3.json'):
+        lv = json.loads((ROOT / 'levels' / name).read_text())
+        farben = {c['color'] for c in lv['coins']}
+        assert farben <= {'blue', 'pink'}, f"{name}: andere Münzfarben {farben}"
+        assert len(lv['coins']) >= 40, f"{name}: zu wenige Münzen"
+        feste = lv['solids'] + lv['doors'] + lv['movingPlatforms']
+        for c in lv['coins']:
+            for s in feste:
+                w, h = s.get('w', 40), s.get('h', 40)
+                x0, y0 = (s['x'], s['y']) if 'w' in s else (s['x'] - 20, s['y'] - 20)
+                assert not (x0 < c['x'] < x0 + w and y0 < c['y'] < y0 + h), f"{name}: Münze im Stein {c}"
+        for hk in lv['hooks']:
+            assert hk['radius'] <= 5 * 40, f"{name}: Haken zu groß {hk}"
+        assert lv['goal']['x'] > 400 * 40 and lv['startM']['x'] < 10 * 40, f"{name}: Start/Ziel falsch"
+
+@test
+async def level2_fahrstuhl_anhalten(g):
+    """Level 2, Abschnitt 4: Schweinchen schaltet den Fahrstuhl (Hebel 3) an und wieder aus, der Affe steigt oben aus."""
+    await g.load(str(ROOT / 'levels' / 'level-2.json'))
+    await g.ev("p1.x=111*40+40; p1.y=14*40; p2.x=107*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
+    await g.p.wait_for_timeout(300)
+    await g.p.keyboard.press('Numpad2')
+    for _ in range(300):
+        if await g.ev("p1.y") <= 8 * 40 + 4: break
+        await g.p.wait_for_timeout(16)
+    else:
+        raise AssertionError("Fahrstuhl fährt nicht hoch")
+    await g.p.keyboard.press('Numpad2'); await g.p.wait_for_timeout(300)
+    y = await g.ev("p1.y"); await g.p.wait_for_timeout(300)
+    assert abs(await g.ev("p1.y") - y) < 1, "Fahrstuhl hält nicht an"
+    await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(900); await g.p.keyboard.up('KeyD')
+    st = await g.ev("({x:p1.x, y:p1.y, d:!!deathState})")
+    assert not st['d'] and st['x'] > 114 * 40 and abs(st['y'] - 8 * 40) < 2, f"Affe nicht oben ausgestiegen: {st}"
+
+@test
+async def level3_fahrstuhl_unter_stacheln(g):
+    """Level 3, Abschnitt 4: fährt der Fahrstuhl ganz hoch, sticht die Decke; hält der Affe ihn an (Hebel 4),
+    steigt das Schweinchen oben aus."""
+    await g.load(str(ROOT / 'levels' / 'level-3.json'))
+    await g.ev("p2.x=131*40+40; p2.y=14*40; p1.x=127*40+20; p1.y=15*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
+    await g.p.wait_for_timeout(300)
+    await g.p.keyboard.press('KeyJ')
+    for _ in range(300):
+        if await g.ev("p2.y") <= 8 * 40 + 4: break
+        await g.p.wait_for_timeout(16)
+    else:
+        raise AssertionError("Fahrstuhl fährt nicht hoch")
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(300)
+    await g.p.keyboard.down('ArrowRight'); await g.p.keyboard.press('Numpad0'); await g.p.wait_for_timeout(900); await g.p.keyboard.up('ArrowRight')
+    st = await g.ev("({x:p2.x, y:p2.y, d:!!deathState})")
+    assert not st['d'] and st['x'] > 134 * 40 and abs(st['y'] - 8 * 40) < 2, f"Schweinchen nicht ausgestiegen: {st}"
+    assert await g.ev("spikes.some(s => Math.abs(s.x - (131*40+20)) < 1 && s.dir === 2)"), "Stacheln an der Decke fehlen"
+
+@test
 async def ziel_tanz_dann_menue(g):
     """Beide im Ziel: Figuren tanzen (Eingaben ruhen), danach öffnet sich das Hauptmenü."""
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 330, 'y': 680},

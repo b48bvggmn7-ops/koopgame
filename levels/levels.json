@@ -4,7 +4,15 @@
   "name": "Level 1"
  },
  {
+  "datei": "level-2.json",
+  "name": "Level 2"
+ },
+ {
   "datei": "level-3.json",
   "name": "Level 3"
+ },
+ {
+  "datei": "level-3-alter-entwurf.json",
+  "name": "Level 3 (alter Entwurf)"
  }
 ]

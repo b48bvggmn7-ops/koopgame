@@ -203,6 +203,26 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Segel-/Schwungbahnen vom Test-Bot gemessen); keine Münze in Boden/Wand/Tür; Haken-Radius höchstens 5 Kästchen;
     Wege eindeutig: Nur-Schweinchen-Lücken sind mind. ~5 Kästchen weiter als der Affe springen kann (mit Gefälle,
     Stacheln darunter), Nur-Affe-Stellen sind für das Schweinchen klar zu weit (>= 18 flach) oder 4 Reihen höher.
+  - Level 2 „Baumkronen“ (levels/level-2.json, ~450 Spalten, etwas knapper als Level 1, neue Mechaniken):
+    1) Bröckel-Trittsteine; 2) hoher Wandsprung-Kamin für beide; 3) Schweinchen segelt tief zu Hebel 2 → schräg
+    fahrende Plattform bringt den Affen; 4) Fahrstuhl anhalten: Schweinchen schaltet Hebel 3 an/aus, Affe steigt oben
+    durchs Loch aus; dann getrennt (Affe oben an zwei Haken, Schweinchen unten über Bröckel), Hebel 4/5 öffnen sich
+    gegenseitig die Türen; 5) Hebel AUF der fahrenden Plattform (beide fahren mit); 6) Bröckel-Treppe nach oben;
+    7) Seilbahn: Schweinchen segelt zu Hebel 7, der den Haken mit dem hängenden Affen schräg rüberfährt; 8) Türen-
+    Staffel mit 4 Hebeln (Affe oben per Haken, Schweinchen unten); 9) fahrender Haken (Affe) / hoher Turm (Schweinchen);
+    10) Aufzug zum Münz-Plateau, Ziel.
+  - Level 3 „Ruinen“ (levels/level-3.json, ~430 Spalten, schwerer, mehr Timing): 1) Bröckel-Hüpfer (kleine Inseln
+    halten nur kurz); 2) Zickzack-Kamin (zwei versetzte Schächte); 3) Schweinchen segelt mit Zwischenlandung auf einer
+    Bröckel-Säule, Hebel 3 → Plattform für den Affen; 4) Fahrstuhl unter Stacheln: der Affe muss ihn mit Hebel 4
+    rechtzeitig anhalten, sonst sticht die Decke; Schweinchen öffnet oben Tür 5 für den Affen; 5) Stachel-Tunnel mit
+    Bröckelboden (nicht springen, nicht stehen bleiben) fürs Schweinchen, Dreier-Haken-Kette für den Affen;
+    6) Schweinchen fährt auf der Plattform und legt unterwegs die mitfahrenden Hebel 7/8 um → Türen oben auf dem Steg
+    für den Affen; 7) fahrender + feste Haken (Affe), Turm → Bröckel-Säule → Boden (Schweinchen); 8) Türen-Staffel
+    über Bröckelboden; 9) Finale: Schweinchen durch den Kamin über die Bröckel-Brücke, Affe an drei Haken darunter.
+  - Alle neuen Levels (2/3) folgen denselben Regeln wie Level 1 (nur blaue/pinke Münzen, keine Münzen in Steinen,
+    Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.
+  - Das frühere vom Nutzer hochgeladene „Level 3“ heißt jetzt „Level 3 (alter Entwurf)“
+    (levels/level-3-alter-entwurf.json), unverändert, am Ende der Levelliste.
 ```
 
 ## Level-Editor (editor/)
