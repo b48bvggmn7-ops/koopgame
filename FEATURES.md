@@ -54,8 +54,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Wetter & Stimmung (js/19-wetter.js, reine Deko): wärmerer Himmel (goldenes Licht am Horizont, kräftigere Sonne
     mit sich langsam drehenden Strahlen), immer leichter warmer Schimmer + weiche Vignette. Ablauf: Sonne 70–120 s ->
     zieht zu (7 s) -> Regenschauer 30–45 s -> klart auf (7 s) mit Regenbogen (~22 s) -> Sonne … Regen: schräge Tropfen
-    vor der Welt, Spritzer auf allen Oberseiten, Hintergrund dunkler/kühler (Spielfeld bleibt hell). Ton: leises
-    Regenrauschen + Tropfen wie auf einem schrägen Glas-Dachfenster („tick“/„plink“); bei Sonne ab und zu Vogelgezwitscher.
+    vor der Welt, Spritzer auf allen Oberseiten, Hintergrund dunkler/kühler (Spielfeld bleibt hell). Regen-Klang (ASMR,
+    wie auf schrägem Metalldach/Dachfenster): vorab im Hintergrund in kleinen Häppchen berechnete Stereo-Schleifen aus
+    tausenden Einzeltropfen – warmes rosa Rauschen als Bett, dichtes Prasseln (winzige Einschläge links/rechts verteilt),
+    gläserne „tick“-Tropfen, metallische „ping/plonk“-Tropfen mit Nachklang; live dazu satte „Plopps“ aus der Dachrinne;
+    bei leichtem Regen nur vereinzelte Tropfen. Bei Sonne ab und zu Vogelgezwitscher.
     Zum Testen in der Konsole: weatherForce('rain') / weatherForce('sun').
   - Dschungel-Deko in der Welt (js/17-deko.js, reine Deko ohne Kollision): Farne, Gras, rote Helikonien,
     rosa Blümchen, große Blätter auf freien Boden-Oberseiten (wiegen sich, weichen Figuren aus), Moos auf

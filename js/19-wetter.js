@@ -131,36 +131,125 @@ function weatherFront(){
 // Regen: leises Rauschen (dauerhafter Rauschquelle, Lautstärke folgt dem Regen) + einzelne Tropfen, die wie auf
 // einem schrägen Glas-Dachfenster "tick"/"plink" machen; ab und zu ein dicker Tropfen von einem Blatt ("plopp").
 // Sonne: ab und zu ein Vogel in der Ferne.
-let rainNodes = null, rainDropAcc = 0;
-function weatherAudio(dt){
-  if(!audioCtx || audioCtx.state !== 'running' || soundMuted) { if(rainNodes) rainNodes.g.gain.value = 0; return; }
-  const r = weather.rain;
-  if(!rainNodes && r > 0.02){
-    try{
-      const src = audioCtx.createBufferSource(); src.buffer = sfxNoise(); src.loop = true;
-      const hp = audioCtx.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.value = 2400; hp.Q.value = 0.5;
-      const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6000;
+// Regen-Klang wie auf einem schrägen Metalldach / Dachfenster (ASMR):
+// Einmal vorab berechnete, nahtlos wiederholte STEREO-Schleifen aus tausenden Einzeltropfen:
+//  - Bett: weiches, warmes rosa Rauschen (tiefpass) statt Zischen
+//  - Prasseln: winzige, sehr kurze Einschläge (2–7 kHz), jeder an einer anderen Stelle links/rechts
+//  - Glas: feine "tick"-Tropfen mit kurzem gläsernem Nachklang
+//  - Metall: vereinzelte "ping/plonk"-Tropfen mit metallischen Obertönen und längerem Nachklingen
+// Live dazu: ab und zu ein satter "Plopp" aus der Dachrinne; bei leichtem Regen nur vereinzelte Tropfen.
+const RAIN_LOOP_S = 6;
+let rainSnd = null, rainDripAcc = 0, rainLightAcc = 0;
+// Berechnung in kleinen Häppchen (Generator), damit nichts ruckelt; läuft im Hintergrund nach dem ersten Tastendruck
+function* rainSynthSteps(a, out){
+  const sr = a.sampleRate, n = Math.floor(sr*RAIN_LOOP_S);
+  const bufs = {bed: a.createBuffer(2, n, sr), patter: a.createBuffer(2, n, sr), metal: a.createBuffer(2, n, sr)};
+  // Bett: rosa Rauschen (Paul-Kellet-Filter) + Tiefpass, leicht atmende Lautstärke (ganze Perioden -> nahtlos)
+  const k = 1 - Math.exp(-2*Math.PI*1400/sr);
+  for(let ch = 0; ch < 2; ch++){
+    const d = bufs.bed.getChannelData(ch);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, lp = 0;
+    for(let i = 0; i < n; i++){
+      const w = Math.random()*2 - 1;
+      b0 = 0.99886*b0 + w*0.0555179; b1 = 0.99332*b1 + w*0.0750759; b2 = 0.96900*b2 + w*0.1538520;
+      b3 = 0.86650*b3 + w*0.3104856; b4 = 0.55000*b4 + w*0.5329522; b5 = -0.7616*b5 - w*0.0168980;
+      lp += ((b0 + b1 + b2 + b3 + b4 + b5 + w*0.5362)*0.11 - lp)*k;
+      d[i] = lp*(0.85 + 0.15*Math.sin(2*Math.PI*i/n*3 + ch));
+      if((i & 32767) === 0) yield;
+    }
+  }
+  // einzelner Tropfen: gedämpfte Schwingungen (schnell per Rekursion statt sin()) + kleiner Rausch-Klick, Stereo
+  function drop(buf, t0, parts, decay, amp, pan, click){
+    const L = buf.getChannelData(0), R = buf.getChannelData(1);
+    const gl = Math.sqrt(1 - pan)*amp, gr = Math.sqrt(pan)*amp;
+    const len = Math.min(n, Math.ceil(decay*4.5*sr)), start = Math.floor(t0*sr);
+    const ef = Math.exp(-1/(decay*sr)), cf = Math.exp(-4/(decay*sr));
+    const osc = parts.map(([f, pa])=>{ const w = 2*Math.PI*f/sr; return {c: 2*Math.cos(w), s1: Math.sin(w)*pa, s0: 0}; });
+    let env = 1, cenv = click;
+    for(let i = 0; i < len; i++){
+      let v = 0;
+      for(const o of osc){ v += o.s0; const nx = o.c*o.s1 - o.s0; o.s0 = o.s1; o.s1 = nx; }
+      v = v*env + (Math.random()*2 - 1)*cenv;
+      env *= ef; cenv *= cf;
+      const j = (start + i) % n;
+      L[j] += v*gl; R[j] += v*gr;
+    }
+  }
+  const rnd = (a0, a1)=> a0 + Math.random()*(a1 - a0);
+  for(let i = 0; i < RAIN_LOOP_S*190; i++){            // Prasseln
+    drop(bufs.patter, rnd(0, RAIN_LOOP_S), [[rnd(2200, 7500), 1]], rnd(0.0006, 0.0024), Math.pow(Math.random(), 2.2)*0.35 + 0.03, Math.random(), 0.7);
+    if(i % 200 === 0) yield;
+  }
+  for(let i = 0; i < RAIN_LOOP_S*24; i++){             // Glas-"tick"
+    const f = rnd(3200, 5600);
+    drop(bufs.patter, rnd(0, RAIN_LOOP_S), [[f, 1], [f*1.51, 0.4]], rnd(0.004, 0.009), rnd(0.06, 0.18), Math.random(), 0.3);
+  }
+  yield;
+  for(let i = 0; i < RAIN_LOOP_S*13; i++){             // Metall-"ping/plonk"
+    const f = rnd(650, 2100);
+    drop(bufs.metal, rnd(0, RAIN_LOOP_S), [[f, 1], [f*2.32, 0.5], [f*3.86, 0.28], [f*5.4, 0.14]], rnd(0.025, 0.07), rnd(0.05, 0.16), Math.random(), 0.15);
+    if(i % 10 === 0) yield;
+  }
+  for(const key of ['patter', 'metal']){               // auf gleiche Lautheit bringen
+    let peak = 0.001;
+    for(let ch = 0; ch < 2; ch++){ const d = bufs[key].getChannelData(ch); for(let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i])); }
+    for(let ch = 0; ch < 2; ch++){ const d = bufs[key].getChannelData(ch); for(let i = 0; i < n; i++) d[i] *= 0.9/peak; }
+    yield;
+  }
+  out.bufs = bufs;
+}
+// komplett auf einmal (für Hörproben/Tests)
+function rainSynth(a){ const out = {}; for(const _ of rainSynthSteps(a, out)){} return out.bufs; }
+let rainBufs = null, rainJob = null;
+function rainPrepare(){
+  if(rainBufs || rainJob || !audioCtx) return;
+  const out = {}, it = rainSynthSteps(audioCtx, out);
+  rainJob = true;
+  const tick = ()=>{
+    const t0 = performance.now();
+    while(performance.now() - t0 < 6){ if(it.next().done){ rainBufs = out.bufs; return; } }
+    setTimeout(tick, 16);
+  };
+  setTimeout(tick, 500);
+}
+function rainStart(){
+  try{
+    const bufs = rainBufs, nodes = {};
+    for(const key of ['bed', 'patter', 'metal']){
+      const src = audioCtx.createBufferSource(); src.buffer = bufs[key]; src.loop = true;
       const g = audioCtx.createGain(); g.gain.value = 0;
-      src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(audioOut()); src.start();
-      rainNodes = {src, g};
-    }catch(e){}
+      src.connect(g); g.connect(audioOut()); src.start(0, Math.random()*RAIN_LOOP_S);
+      nodes[key] = g;
+    }
+    rainSnd = nodes;
+  }catch(e){ rainSnd = false; }
+}
+function weatherAudio(dt){
+  if(!audioCtx || audioCtx.state !== 'running' || soundMuted) return;
+  const r = weather.rain;
+  rainPrepare();                                   // Tropfen-Schleifen im Hintergrund vorberechnen
+  if(rainSnd === null && rainBufs && r > 0.02) rainStart();
+  if(rainSnd){
+    const now = audioCtx.currentTime, heavy = Math.max(0, (r - 0.25)/0.75);
+    rainSnd.bed.gain.setTargetAtTime(0.10*r, now, 0.5);
+    rainSnd.patter.gain.setTargetAtTime(0.16*Math.pow(heavy, 1.2), now, 0.5);
+    rainSnd.metal.gain.setTargetAtTime(0.10*Math.min(1, r*1.4), now, 0.5);
   }
-  if(rainNodes){
-    const target = 0.035*r*r;
-    rainNodes.g.gain.setTargetAtTime(target, audioCtx.currentTime, 0.4);
-  }
-  if(r > 0.15){
-    rainDropAcc += dt*r*26;                         // Tropfen pro Sekunde
-    while(rainDropAcc >= 1){
-      rainDropAcc -= 1;
-      const when = Math.random()*0.05, glass = Math.random() < 0.75;
-      if(glass){                                    // helles "tick" auf der Scheibe
-        const f = 2600 + Math.random()*2600;
-        sTone(f, when, 0.035 + Math.random()*0.03, {to: f*0.82, vol: 0.006 + Math.random()*0.008});
-      } else {                                      // dicker Tropfen: "plink"
-        const f = 900 + Math.random()*700;
-        sTone(f, when, 0.09, {to: f*0.6, vol: 0.012});
-      }
+  if(r > 0.04){
+    // leichter Regen: einzelne Tropfen (dicht wird es über die Schleifen)
+    rainLightAcc += dt*14*r*(1 - Math.min(1, r));
+    while(rainLightAcc >= 1){
+      rainLightAcc -= 1;
+      const f = 2800 + Math.random()*2600;
+      sTone(f, Math.random()*0.05, 0.03 + Math.random()*0.03, {to: f*0.85, vol: 0.006 + Math.random()*0.006});
+    }
+    // satter "Plopp" aus der Dachrinne
+    rainDripAcc += dt*1.1*r;
+    while(rainDripAcc >= 1){
+      rainDripAcc -= 1;
+      const f = 650 + Math.random()*450, w = Math.random()*0.2;
+      sTone(f, w, 0.13, {to: f*0.42, vol: 0.03});
+      sNoise(w, 0.06, {filter: 'lowpass', f: 1800, vol: 0.012});
     }
   } else if(weather.phase === 'sun' && weather.rain < 0.05){
     weather.nextChirp -= dt;

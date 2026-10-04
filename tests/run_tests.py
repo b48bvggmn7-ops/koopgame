@@ -661,6 +661,20 @@ async def figuren_leben(g):
     await g.ev("p1.x = 200; p2.x = 170"); await g.p.wait_for_timeout(2600)
     assert await g.ev("heartFx.length") > 0, 'keine Herzchen, obwohl beide beieinander stehen'
 
+@test
+async def regen_klang(g):
+    """Regen-Klang: Stereo-Schleifen (Bett, Prasseln, Metall) werden im Hintergrund vorberechnet, nicht stumm, L≠R."""
+    st = await g.ev("""(()=>{ const b = rainSynth(new OfflineAudioContext(2, 44100, 44100)); const out = {};
+      for(const k of ['bed','patter','metal']){ const L=b[k].getChannelData(0), R=b[k].getChannelData(1); let e=0, d=0;
+        for(let i=0;i<L.length;i+=7){ e+=Math.abs(L[i]); d+=Math.abs(L[i]-R[i]); } out[k]={ch:b[k].numberOfChannels, sec:b[k].duration, e, d}; }
+      return out; })()""")
+    for k, v in st.items():
+        assert v['ch'] == 2 and v['sec'] >= 5 and v['e'] > 1 and v['d'] > 0.5, f'{k} kaputt: {v}'
+    await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')   # Ton freischalten (erster Tastendruck)
+    await g.ev("weatherForce('rain')"); await g.p.wait_for_timeout(2500)
+    if await g.ev("audioCtx && audioCtx.state === 'running'"):
+        assert await g.ev("!!rainBufs"), 'Regen-Klang wurde nicht vorberechnet'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):
