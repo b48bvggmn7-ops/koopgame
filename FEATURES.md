@@ -18,6 +18,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …). Vom Boden aus eingehakt bleibt es dran
     (ropeWasAirborne), damit man sich mit W / Hoch hochziehen kann. Ranziehen langsamer (ROPE_PULL_SPEED 2,4)
     und ohne Schwung Richtung Haken (kein Hüpfen oben); runterlassen bis zum Rand des Reichweiten-Rings (ropeMax).
+  - Springen vom Seil = richtiger Absprung: nach oben mindestens ROPE_JUMP_V (-10,5), mit gedrückter Richtung
+    mindestens ROPE_JUMP_VX (8,5) in diese Richtung (vorher nur kleiner Hopser -> „springt nur gerade hoch“). Im Abflug
+    macht Taste-Halten nicht schneller als normal; nur echter Seil-Schwung darf schneller sein (bis 15).
   - Abflug vom Seil (Springen oder G): Schwung bleibt erhalten – kein Kappen auf Laufgeschwindigkeit mehr, bis
     ROPE_FLING_MAX 15, ohne Taste nur leichte Luftbremse (ROPE_FLING_DRAG 0,993 statt 0,94), +1,5 Extra-Schub in
     Schwungrichtung; endet beim Landen oder an einer Wand (vorher: „bleibt auf der Stelle“).

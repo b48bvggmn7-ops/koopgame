@@ -138,7 +138,9 @@ function updatePlayer(player, now){
 
     if(jumpPressed && player.hookAttached){
       player.hookAttached = false;
-      player.vy += HOOK_RELEASE_BOOST;
+      // richtiger Absprung: nach oben mindestens ROPE_JUMP_V, mit Richtungstaste kräftig in diese Richtung
+      player.vy = Math.min(player.vy + HOOK_RELEASE_BOOST, ROPE_JUMP_V);
+      if(moveDir !== 0 && player.vx*moveDir < ROPE_JUMP_VX) player.vx = moveDir*ROPE_JUMP_VX;
       ropeFling(player);
     }
   } else {
@@ -148,6 +150,7 @@ function updatePlayer(player, now){
       player.wjInputLock -= 16.6;
       player.vx *= FRICTION_AIR; // Schwung klingt natürlich ab, wird nur nicht gegengesteuert
     } else {
+      const vxBefore = player.vx;
       player.vx += moveDir * MOVE_SPEED * 0.35 * control;
       // Sprint-Aufbau: am Boden weiter in dieselbe Richtung halten baut über die Basisgeschwindigkeit hinaus Tempo auf
       if(player.grounded && moveDir !== 0 && Math.abs(player.vx) >= MOVE_SPEED*0.9 && Math.sign(player.vx) === moveDir){
@@ -157,7 +160,9 @@ function updatePlayer(player, now){
         player.vx *= player.grounded ? FRICTION_GROUND : (player.ropeFling ? ROPE_FLING_DRAG : FRICTION_AIR);
         if(Math.abs(player.vx) < 0.05) player.vx = 0;
       }
-      const vmax = player.ropeFling ? ROPE_FLING_MAX : SPRINT_MAX_SPEED;
+      // Abflug vom Seil: vorhandener Schwung (bis ROPE_FLING_MAX) bleibt, aber Taste halten beschleunigt
+      // nicht über die normale Höchstgeschwindigkeit hinaus
+      const vmax = player.ropeFling ? Math.min(ROPE_FLING_MAX, Math.max(SPRINT_MAX_SPEED, Math.abs(vxBefore))) : SPRINT_MAX_SPEED;
       player.vx = Math.max(-vmax, Math.min(vmax, player.vx));
     }
 

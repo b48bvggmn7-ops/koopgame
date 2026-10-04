@@ -760,6 +760,23 @@ async def seil_abflug_mit_schwung(g):
     assert st2['vx'] > 8 or st2['g'], f'Schwung nach dem Loslassen weg: {st} -> {st2}'
     assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
 
+@test
+async def seil_absprung_mit_richtung(g):
+    """Ruhig am Seil hängen, rechts halten + Springen: Affe springt richtig ab (hoch UND nach rechts), nicht nur hoch.
+    In der Luft macht Rechts-Halten aber nicht schneller als normal (kein Turbo ohne Schwung)."""
+    await g.load(level([ground(0, 680, 4000)], {'x': 880, 'y': 680}, {'x': 840, 'y': 680}, hooks=[{'x': 1000, 'y': 300, 'radius': 260}]))
+    await g.ev("""(()=>{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+180+p1.h*0.6; p1.vx=0; p1.vy=0; p1.grounded=false;
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; window.__minY = p1.y;
+      if(!window.__oj){ window.__oj=stepSim; stepSim=function(ts){ __oj(ts); window.__minY=Math.min(window.__minY, p1.y); }; } })()""")
+    x0, y0 = await g.ev("p1.x"), await g.ev("p1.y")
+    await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(500)
+    st = await g.ev("({x: p1.x, vx: p1.vx, minY: window.__minY, hook: p1.hookAttached})")
+    await g.p.keyboard.up('KeyD')
+    assert not st['hook'], 'Springen löst das Seil nicht'
+    assert st['x'] - x0 > 150, f'kein Absprung nach rechts: {st}'
+    assert y0 - st['minY'] > 40, f'Absprung geht nicht nach oben: {st}'
+    assert st['vx'] < 11, f'zu schnell ohne echten Schwung: {st}'
+
 # ---------------------------------------------------------------- Runner
 
 async def main(filter_):
