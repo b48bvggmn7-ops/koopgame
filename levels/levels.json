@@ -20,6 +20,11 @@
   "titel": "Mondnacht"
  },
  {
+  "datei": "level-5.json",
+  "name": "Level 5",
+  "titel": "Kristallhöhle"
+ },
+ {
   "datei": "level-3-alter-entwurf.json",
   "name": "Level 3 (alter Entwurf)",
   "versteckt": true

@@ -274,6 +274,20 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Schweinchen hält Druckplatte 6, Affe fährt; zu lange gedrückt = Stacheldecke; oben Hebel 7 -> Tür 7 unten im
     Schacht; 7) Wandsprung-Schlucht: zwei Kamine (Breite 4) im Zickzack, dann drei weite Sprünge auf schmale Simse
     über Stacheln (Affe an der Sprunggrenze); 8) Finale: Kamin der Breite 5 hinauf zum Ziel (440).
+  - Level 5 „Kristallhöhle“ (levels/level-5.json, 480 Spalten, Thema hoehle = noch dunkler, SEHR schwer, alles mit
+    dem Koop-Bot geprüft; neues Element Aufwind): 1) Aufstieg: Schweinchen fliegt in zwei Wind-Säulen auf Stufe und
+    Klippe, der Affe zieht sich an zwei Haken hoch; 2) Windtür: eine waagerechte Tür sperrt die Wind-Säule – der Affe
+    hält unten Druckplatte 2, das Schweinchen fliegt hoch und zieht Hebel 3 für Tür 3; 3) versteckter Gang: niedriger
+    Tunnel, der scheinbar endet (Scheinwand); Hebel 4 steckt in einer Nische über der Decke und ist nur im Sprung durch
+    eine Scheindecke erreichbar (Münze darunter als Hinweis); 4) steigende Stacheln: Hebel 5 lässt einen Stachelboden
+    aus der Grube steigen (1,3 px/Schritt; mit kurzen Denkpausen knapp) – Affe an zwei Haken, Schweinchen durch zwei
+    Wind-Säulen hinauf aufs Plateau; 5) Fähre unter den Pressen: die Fähre fährt nur, solange jemand auf einer
+    Druckplatte 6 steht (je eine an jedem Ufer); zwei Stachelpressen stampfen über der Strecke, wer die Platte hält,
+    muss im richtigen Moment loslassen (dauernd drücken = Fahrer erwischt); Strecke so kurz, dass Fahrer und Platte
+    nie mehr als 40 Kästchen auseinander sind; 6) Wind-Slalom: oben fliegt das Schweinchen über die Stachel-Trennwand
+    (vier Kästchen breite Landepolster, Wind-Säule mit Stacheldecke: Schirm rechtzeitig zu), unten hangelt der Affe
+    an sechs Haken; 7) Finale: zwei Haken (Affe) und zwei Wind-Säulen (Schweinchen), die obere mit Tür, die nur
+    aufgeht, wenn der Affe oben auf dem Turm Druckplatte 8 hält; Ziel auf dem Turm (410).
   - Alle Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen; Level 2/3 umnummeriert).
   - Alle neuen Levels (2/3) folgen denselben Regeln wie Level 1 (nur blaue/pinke Münzen, keine Münzen in Steinen,
     Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.
