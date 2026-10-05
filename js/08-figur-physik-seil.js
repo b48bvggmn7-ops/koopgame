@@ -166,7 +166,8 @@ function updatePlayer(player, now){
 
     let gliding = false;
     // Schweinchen segelt mit eigener Taste (Num 1 halten), Springen bleibt auf Num 0
-    if(!player.male && !frozen && isDown(player.keys.glide) && !player.grounded && player.vy > -1){
+    const windy = !player.male && winds.length && inWind(player);
+    if(!player.male && !frozen && isDown(player.keys.glide) && !player.grounded && (player.vy > -1 || windy)){
       gliding = true;
       player.glideTimer += 16.6;
       const t = Math.min(1, player.glideTimer/GLIDE_RAMP_MS);
@@ -174,6 +175,10 @@ function updatePlayer(player, now){
       const maxFall = GLIDE_MAX_FALL_START + (GLIDE_MAX_FALL_END-GLIDE_MAX_FALL_START)*t;
       player.vy += grav;
       if(player.vy > maxFall) player.vy = maxFall;
+      if(windy){   // Aufwind trägt den Schirm nach oben (05-level-objekte.js)
+        player.glideTimer = 0;
+        player.vy = Math.max(-WIND_MAX_UP, player.vy - WIND_LIFT);
+      }
     } else {
       player.vy += GRAVITY;
     }
@@ -233,6 +238,7 @@ function updatePlayer(player, now){
   player.standingOn = null;
   player.x += player.vx; collideAxis(player,'x');
   player.y += player.vy; collideAxis(player,'y');
+  if(bouncers.length) checkBounce(player);   // Sprungpilz (05-level-objekte.js)
   if(player.male && player.hookAttached){
     // LANDET man am Seil auf etwas (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …) -> Seil lösen.
     // Vom Boden aus eingehakt bleibt es dran, damit man sich mit W / Hoch zum Haken hochziehen kann.

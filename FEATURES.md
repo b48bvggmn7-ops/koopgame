@@ -285,6 +285,21 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Neue Tiere: Glühwürmchen, Eidechse, Kristall, Fledermaus (flattert weg, kommt später zurück). Ohne "theme" = Dschungel.
     Editor: Auswahl „Thema“ oben in der Leiste (wird gespeichert, exportiert, beim Testen benutzt; Editor-Fläche
     in der Grundfarbe des Themas). Test level_themen.
+  - NEUE ELEMENTE (für schwere Koop-Rätsel ab Level 4; Spiel-Format: plates, winds, bouncers, solids type 'fake'):
+      Druckplatte (plates {x,y,link}): Verknüpfung ist AN, solange mindestens eine Figur darauf steht; runter ->
+        AUS (Tür schließt, sobald niemand mehr drin steht; Bewegung hält an). Eine Figur hält, die andere geht durch.
+        Gold-Steinplatte mit Nummer, sinkt beim Draufstehen ein; Klack-Ton. Gleiche Nummer nicht zusätzlich für
+        einen Hebel benutzen. Bewegte Teile/Haken „per Schalter“ funktionieren auch mit Druckplatten.
+      Aufwind (winds {x,y,w,h}): trägt das Schweinchen mit offenem Schirm nach oben (WIND_LIFT 1,15, höchstens
+        WIND_MAX_UP 6,5 px/Schritt), auch wenn sie gerade steigt; Schirm-Zeit beginnt im Wind von vorn. Den Affen
+        trägt er NICHT. Sichtbar als heller Streifen mit aufsteigenden Schlieren und Blättchen.
+      Scheinwand (solids type 'fake', im Spiel in fakeWalls): sieht exakt aus wie Wand (nahtlos mit echten
+        Wänden), liegt ÜBER Hebeln/Münzen und versteckt sie; keine Kollision (man läuft hindurch, kein Wandsprung).
+        Steht eine Figur drin oder direkt davor, wird sie halb durchsichtig. In dunklen Themen leuchten versteckte
+        Hebel/Münzen nicht durch.
+      Sprungpilz (bouncers {x,y} Fußpunkt): wer darauf landet oder drüberläuft, wird hochgeschleudert
+        (BOUNCE_V -17,2 ≈ 5,8 Kästchen; Wandsprung danach wieder möglich), Pilz staucht sich, Quietsch-Ton.
+    Tests neue_elemente, editor_neue_werkzeuge.
 ```
 
 ## Level-Editor (editor/)
@@ -315,6 +330,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Plattform-Werkzeug bewusst entfernt (Nutzerwunsch, Boden reicht); alte Plattform-Kacheln in
     gespeicherten Levels werden weiter angezeigt/exportiert und lassen sich radieren
   - Export im Spiel-Format (Textfeld kopieren oder als .json-Datei speichern)
+  - Neue Werkzeuge: Scheinwand (Kachel, gestrichelt mit „?“; im Spiel durchlaufbar), Aufwind (Kachel, hellblau mit
+    Pfeil; trägt das Schweinchen mit Schirm), Sprungpilz (Punkt), Druckplatte (Punkt mit Verknüpfungs-Nummer, wie
+    Schalter; erscheint in den ✓-Markierungen als „Druckplatte“). Scheinwand und Aufwind lassen sich nicht bewegen.
   - Auswahl „Thema“ (oben): Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,
     Kristallhöhle, Feuerberg); gespeichert in snapshot/Export als "theme"; Editor-Fläche in der Grundfarbe
   - Taste Enter im Editor = „▶ Testen“ (nicht beim Tippen in ein Feld, nicht bei offenem Levels-/Export-Fenster)

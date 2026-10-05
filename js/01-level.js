@@ -18,6 +18,11 @@ let deathState = null;   // gesetzt, solange nach einem Tod auf "beliebige Taste
 let coinsNeeded = 0;     // 10, oder alle, wenn das Level weniger hat
 const COINS_GOAL = 10;
 let movingPlatforms = [];
+// Neue Elemente (Level 4–6): Druckplatte, Aufwind, Scheinwand, Sprungpilz
+let plates = [];         // {x,y,link,down} Druckplatte: Verknüpfung ist AN, solange jemand draufsteht
+let winds = [];          // {x,y,w,h} Aufwind: trägt das Schweinchen mit offenem Schirm nach oben
+let fakeWalls = [];      // {x,y,w,h} Scheinwand: sieht aus wie Wand, man kann durchlaufen (versteckte Wege)
+let bouncers = [];       // {x,y} Sprungpilz (Fußpunkt): schleudert hoch, wer draufkommt
 let goal = {x:0, y:0};
 let checkpoints = [[0,60,680]];
 let levelStartM = {x:60, y:680};
@@ -72,7 +77,11 @@ const DEFAULT_LEVEL = {
 };
 
 function buildLevel(data){
-  solids = (data.solids||[]).map(s=>({...s}));
+  solids = (data.solids||[]).filter(s=>s.type!=='fake').map(s=>({...s}));
+  fakeWalls = (data.solids||[]).filter(s=>s.type==='fake').map(s=>({...s}));
+  plates = (data.plates||[]).map(p=>({x:p.x, y:p.y, link:p.link, down:false}));
+  winds = (data.winds||[]).map(w=>({...w}));
+  bouncers = (data.bouncers||[]).map(b=>({x:b.x, y:b.y, squish:0}));
   switchDefs = (data.switches||[]).map(s=>({...s}));
   hooks = (data.hooks||[]).map(h=>{
     const o = {...h};
@@ -80,7 +89,7 @@ function buildLevel(data){
       // Bewegter Haken: pendelt wie bewegter Boden, optional per Schalter
       o.moving = true; o.startX = h.x; o.startY = h.y; o.moveDir = 1; o.tripActive = false;
       o.switchLink = h.switchLink||null;
-      o.switchCtl = !!(h.switchLink && (data.switches||[]).some(sw=>sw.link===h.switchLink));
+      o.switchCtl = !!(h.switchLink && ((data.switches||[]).some(sw=>sw.link===h.switchLink) || (data.plates||[]).some(p=>p.link===h.switchLink)));
     }
     return o;
   });
@@ -100,7 +109,7 @@ function buildLevel(data){
       look: mp.look==='crumble' ? 'ground' : mp.look, group: mp.group, speed: mp.speed,
       switchLink: mp.switchLink||null,
       // Nur schaltergesteuert, wenn es im Level auch einen Schalter mit dieser Nummer gibt
-      switchCtl: !!(mp.switchLink && switchDefs.some(sw=>sw.link===mp.switchLink)), tripActive:false,
+      switchCtl: !!(mp.switchLink && (switchDefs.some(sw=>sw.link===mp.switchLink) || plates.some(p=>p.link===mp.switchLink))), tripActive:false,
       startX:mp.x, startY:mp.y, targetX:mp.targetX, targetY:mp.targetY, moveDir:1});
   }
 
@@ -140,13 +149,13 @@ let levelTheme = 'dschungel';
 function groundFamily(s){
   if(s.type==='ground') return 'g';
   if(s.type==='crumble') return 'c';
-  if(s.type==='wall') return 'w';
+  if(s.type==='wall' || s.type==='fake') return 'w';   // Scheinwand geht nahtlos in echte Wand über
   if(s.type==='moveplat' && s.look==='ground') return 'm'+s.group;
   if(s.type==='moveplat' && s.look==='wall') return 'mw'+s.group;
   return null;
 }
 function computeGroundNeighbors(){
-  const list = solids.filter(groundFamily);
+  const list = solids.concat(fakeWalls).filter(groundFamily);
   for(const s of list){
     const fam = groundFamily(s);
     const sx = s.type==='moveplat' ? s.startX : s.x, sy = s.type==='moveplat' ? s.startY : s.y;

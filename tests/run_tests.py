@@ -1118,6 +1118,82 @@ async def level_themen(g):
         srv.shutdown()
 
 @test
+async def neue_elemente(g):
+    """Druckplatte (Tür offen nur solange jemand draufsteht), Aufwind (trägt das Schweinchen mit Schirm hoch,
+    den Affen nicht), Scheinwand (durchlaufbar, sieht aus wie Wand), Sprungpilz (schleudert ~6 Kästchen hoch)."""
+    lv = level([ground(0, 680, 3000)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680},
+               plates=[{'x': 300, 'y': 660, 'link': 3}], doors=[{'x': 620, 'y': 660, 'link': 3}, {'x': 620, 'y': 620, 'link': 3}])
+    await g.load(lv)
+    tuer = "solids.filter(s=>s.type==='door').every(d=>d.gone)"
+    assert not await g.ev(tuer), 'Tür ist am Anfang offen'
+    await g.hold(('KeyD',), 420); await g.p.wait_for_timeout(250)
+    x = await g.ev('p1.x')
+    assert abs(x - 300) < 40, f'Affe nicht auf der Platte: {x}'
+    if abs(x - 300) >= 16: await g.ev('p1.x = 300; p1.vx = 0')
+    await g.p.wait_for_timeout(200)
+    assert await g.ev(tuer), 'Druckplatte öffnet die Tür nicht'
+    assert await g.ev('plates[0].down'), 'Platte nicht gedrückt'
+    await g.ev('p1.x = 460'); await g.p.wait_for_timeout(250)
+    assert not await g.ev(tuer), 'Tür bleibt offen, obwohl niemand mehr auf der Platte steht'
+
+    # Aufwind: Schweinchen mit Schirm steigt, Affe nicht
+    lv = level([ground(0, 680, 3000)], {'x': 700, 'y': 680}, {'x': 300, 'y': 680},
+               winds=[{'x': 240, 'y': 120, 'w': 120, 'h': 560}])
+    await g.load(lv); await g.p.wait_for_timeout(200)
+    await g.p.keyboard.down('Numpad0'); await g.p.wait_for_timeout(60); await g.p.keyboard.down('Numpad1')
+    await g.p.wait_for_timeout(1400)
+    y = await g.ev('p2.y')
+    await g.p.keyboard.up('Numpad0'); await g.p.keyboard.up('Numpad1')
+    assert y < 400, f'Aufwind trägt das Schweinchen nicht: y={y:.0f}'
+    await g.ev('p1.x = 300; p1.y = 680; p2.x = 700'); await g.p.wait_for_timeout(200)
+    await g.hold(('Space',), 200); await g.p.wait_for_timeout(900)
+    assert await g.ev('p1.y') > 660, 'Aufwind trägt auch den Affen'
+
+    # Scheinwand: Affe läuft hindurch
+    lv = level([ground(0, 680, 3000), {'x': 400, 'y': 440, 'w': 120, 'h': 240, 'type': 'fake'}],
+               {'x': 300, 'y': 680}, {'x': 100, 'y': 680})
+    await g.load(lv)
+    assert await g.ev('fakeWalls.length') == 1 and await g.ev("!solids.some(s=>s.type==='fake')"), 'Scheinwand nicht geladen'
+    await g.hold(('KeyD',), 900)
+    assert await g.ev('p1.x') > 540, f"Affe kommt nicht durch die Scheinwand: {await g.ev('p1.x')}"
+
+    # Sprungpilz: drüberlaufen -> hoch geschleudert
+    lv = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, bouncers=[{'x': 380, 'y': 680}])
+    await g.load(lv)
+    await g.ev("window.__minY = 999; if(!window.__bo){ window.__bo = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minY = Math.min(window.__minY, p1.y); }; }")
+    await g.hold(('KeyD',), 300); await g.p.wait_for_timeout(1200)
+    hoch = 680 - await g.ev('window.__minY')
+    assert 200 < hoch < 280, f'Sprungpilz: {hoch:.0f} px hoch (erwartet ~230)'
+
+@test
+async def editor_neue_werkzeuge(g):
+    """Editor: Scheinwand, Aufwind, Sprungpilz und Druckplatte setzen -> Export und Spiel-Umwandlung enthalten sie."""
+    srv = webserver()
+    try:
+        p = g.p
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        snap = {'cols': 60, 'tiles': [[c, 15, 'ground'] for c in range(20)] + [[5, 14, 'fake'], [5, 13, 'fake'], [8, 10, 'wind'], [8, 11, 'wind'], [9, 10, 'wind']],
+                'plates': [{'c': 3, 'r': 14, 'link': 4}], 'bouncers': [{'c': 12, 'r': 14}], 'doors': [{'c': 15, 'r': 14, 'link': 4}],
+                'startM': {'c': 1, 'r': 14}, 'startF': {'c': 2, 'r': 14}}
+        await p.evaluate(f"localStorage.setItem('monchichi_level_editor_v2', JSON.stringify({json.dumps(snap)}))")
+        await p.reload(); await p.wait_for_timeout(300)
+        for tool in ('fake', 'wind', 'bounce', 'plate'):
+            assert await p.query_selector(f'.tool[data-tool="{tool}"]'), f'Werkzeug {tool} fehlt'
+        await p.click('#exportBtn'); await p.wait_for_timeout(200)
+        exp = json.loads(await p.eval_on_selector('#exportText', 'e => e.value'))
+        assert any(s['type'] == 'fake' for s in exp['solids']), 'Scheinwand fehlt im Export'
+        assert sum(w['w']*w['h'] for w in exp['winds']) == 3*1600, f"Aufwind falsch: {exp['winds']}"
+        assert exp['plates'] == [{'x': 140, 'y': 580, 'link': 4}], f"Druckplatte falsch: {exp['plates']}"
+        assert exp['bouncers'] == [{'x': 500, 'y': 600}], f"Sprungpilz falsch: {exp['bouncers']}"
+        # gleiche Umwandlung im Spiel (Projekt-Levels im Editor-Format)
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['plates'] == exp['plates'] and umg['bouncers'] == exp['bouncers'], 'Spiel wandelt anders um als der Editor'
+        assert sum(w['w']*w['h'] for w in umg['winds']) == 3*1600 and any(s['type'] == 'fake' for s in umg['solids'])
+    finally:
+        srv.shutdown()
+
+@test
 async def kamera_ruhig_bei_zwei(g):
     """Kamera wackelt nicht: kleine Hin-und-her-Bewegungen der hinteren Figur bewegen das Bild nicht,
     gemeinsames Vorwärtslaufen schon; Bild ist 5 % herausgezoomt."""

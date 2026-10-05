@@ -11,7 +11,9 @@
 
   const COLORS = {
     ground:'#8a6a3a', wall:'#7a8890', platform:'#8ea86a', crumble:'#c77b3f',
+    fake:'#7a8890', wind:'rgba(160,220,255,0.28)',   // Scheinwand (wie Wand, gestrichelt), Aufwind (durchsichtig)
   };
+  const SOLID_TILES = ['ground','wall','platform','crumble'];   // nur diese können sich bewegen
 
   let tiles = {}; // key "c,r" -> type
   let hooks = []; let switches = []; let doors = [];
@@ -24,6 +26,8 @@
   let clickNotDrag = false;
   let coins = [];              // [{c,r,color}]  color: 'blue' (Affe) | 'pink' (Schweinchen) | 'gold' (beide)
   let checkpoints = [];        // [{c,r}]
+  let plates = [];             // [{c,r,link}] Druckplatte: Verknüpfung AN, solange jemand draufsteht
+  let bouncers = [];           // [{c,r}] Sprungpilz
   const radiusInput = document.getElementById('radiusInput');
   function curRadius(){ const v=Number(radiusInput.value); return v>0 ? v : 6.5; }
   let movers = [];             // [{c,r,dc,dr,speed}] Anker-Kästchen + Verschiebung
@@ -43,7 +47,7 @@
   function maxUsedCol(){
     let m = -1;
     for(const k in tiles){ const c = +k.split(',')[0]; if(c>m) m=c; }
-    for(const p of [...hooks, ...switches, ...doors, ...spikes, ...coins, ...checkpoints, startM, startF, goal]) if(p && p.c>m) m=p.c;
+    for(const p of [...hooks, ...switches, ...doors, ...spikes, ...coins, ...checkpoints, ...plates, ...bouncers, startM, startF, goal]) if(p && p.c>m) m=p.c;
     for(const mv of movers) if(mv.c+mv.dc>m) m=mv.c+mv.dc;
     for(const h of hooks) if(h.move && h.c+h.move.dc>m) m=h.c+h.move.dc;
     return m;
@@ -63,7 +67,7 @@
     return {
       cols: COLS,
       tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }),
-      hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, theme
+      hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, theme, plates, bouncers
     };
   }
   function applySnapshot(d){
@@ -78,6 +82,8 @@
     spikes = (d.spikes||[]).map(x=>({...x}));
     coins = (d.coins||[]).map(x=>({...x}));
     checkpoints = (d.checkpoints||[]).map(x=>({...x}));
+    plates = (d.plates||[]).map(x=>({...x}));
+    bouncers = (d.bouncers||[]).map(x=>({...x}));
     theme = THEME_BG[d.theme] ? d.theme : 'dschungel'; themeSelect.value = theme;
     fitCols(d.cols);
   }
@@ -91,6 +97,7 @@
     const add = (n, what)=>{ if(!n) return; (uses[n] = uses[n] || new Set()).add(what); };
     for(const s of switches) add(s.link, 'Schalter');
     for(const d of doors) add(d.link, 'Tür');
+    for(const p of plates) add(p.link, 'Druckplatte');
     for(const mv of movers) add(mv.link, 'Bewegung');
     for(const h of hooks) if(h.move) add(h.move.link, 'Haken');
     for(const sel of [linkSelect, moveSwitchSelect]){
@@ -193,6 +200,8 @@
     spikes = spikes.filter(h=>!(h.c===c&&h.r===r));
     coins = coins.filter(h=>!(h.c===c&&h.r===r));
     checkpoints = checkpoints.filter(h=>!(h.c===c&&h.r===r));
+    plates = plates.filter(h=>!(h.c===c&&h.r===r));
+    bouncers = bouncers.filter(h=>!(h.c===c&&h.r===r));
     switches = switches.filter(s=>!(s.c===c&&s.r===r));
     doors = doors.filter(d=>!(d.c===c&&d.r===r));
     if(startM && startM.c===c && startM.r===r) startM=null;
@@ -227,6 +236,11 @@
     } else if(tool==='door'){
       const link = Number(linkSelect.value);
       if(!doors.some(d=>d.c===c&&d.r===r)) doors.push({c,r,link});
+    } else if(tool==='plate'){
+      const link = Number(linkSelect.value);
+      if(!plates.some(d=>d.c===c&&d.r===r)) plates.push({c,r,link});
+    } else if(tool==='bounce'){
+      if(!bouncers.some(d=>d.c===c&&d.r===r)) bouncers.push({c,r});
     }
     else if(tool==='startM'){ startM = {c,r}; }
     else if(tool==='startF'){ startF = {c,r}; }
@@ -235,7 +249,7 @@
     save();
   }
 
-  const DRAG_TOOLS = ['ground','wall','platform','crumble','spike','coin','erase'];
+  const DRAG_TOOLS = ['ground','wall','platform','crumble','spike','coin','erase','fake','wind'];
   cvs.addEventListener('contextmenu', e=> e.preventDefault());
   cvs.addEventListener('mousedown', e=>{
     if(e.button!==0 && e.button!==2) return;
@@ -247,7 +261,7 @@
       painting=false;
       const hk = hooks.find(h=>h.c===c&&h.r===r);
       if(hk) moveDrag = {c,r,tc:c,tr:r,hook:hk};
-      else if(tiles[c+','+r]) moveDrag = {c,r,tc:c,tr:r};
+      else if(SOLID_TILES.includes(tiles[c+','+r])) moveDrag = {c,r,tc:c,tr:r};
       else { selectMove(null); flash('Bewegung: auf einen Haken oder ein Boden-/Wand-Kästchen klicken und zum Ziel ziehen'); }
       return;
     }
@@ -539,9 +553,19 @@
     for(let r=0;r<=ROWS;r+=5){ ctx.beginPath(); ctx.moveTo(0,r*TILE); ctx.lineTo(COLS*TILE,r*TILE); ctx.stroke(); }
 
     for(const key in tiles){
-      const [c,r] = key.split(',').map(Number);
-      ctx.fillStyle = COLORS[tiles[key]];
+      const [c,r] = key.split(',').map(Number), t = tiles[key];
+      ctx.fillStyle = COLORS[t];
       ctx.fillRect(c*TILE+1, r*TILE+1, TILE-2, TILE-2);
+      if(t === 'fake'){   // Scheinwand: gestrichelter Rand + „?“
+        ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(c*TILE+3, r*TILE+3, TILE-6, TILE-6); ctx.restore();
+        ctx.fillStyle = 'rgba(255,224,102,.8)'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('?', c*TILE+TILE/2, r*TILE+TILE/2+1);
+      } else if(t === 'wind'){   // Aufwind: Pfeil nach oben
+        ctx.strokeStyle = 'rgba(200,240,255,.75)'; ctx.lineWidth = 2;
+        const X = c*TILE+TILE/2, Y = r*TILE;
+        ctx.beginPath(); ctx.moveTo(X, Y+TILE-8); ctx.lineTo(X, Y+8); ctx.moveTo(X-6, Y+14); ctx.lineTo(X, Y+8); ctx.lineTo(X+6, Y+14); ctx.stroke();
+      }
     }
     for(const cp of checkpoints){
       const X=cp.c*TILE, Y=cp.r*TILE;
@@ -599,6 +623,19 @@
     }
     for(const s of switches) drawLinked(s, '#ff9f43', '#8a4f14');
     for(const d of doors) drawLinked(d, '#9b59b6', '#5a2d69');
+    for(const p of plates){   // Druckplatte: flache Platte unten im Kästchen mit Nummer
+      const X = p.c*TILE, Y = p.r*TILE;
+      ctx.fillStyle = '#c9a227'; ctx.fillRect(X+4, Y+TILE-12, TILE-8, 10);
+      ctx.strokeStyle = '#6b5410'; ctx.lineWidth = 2; ctx.strokeRect(X+4, Y+TILE-12, TILE-8, 10);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(p.link), X+TILE/2, Y+TILE/2-6);
+    }
+    for(const b of bouncers){   // Sprungpilz
+      const X = b.c*TILE+TILE/2, Y = b.r*TILE+TILE;
+      ctx.fillStyle = '#f3e7d3'; ctx.fillRect(X-4, Y-12, 8, 12);
+      ctx.fillStyle = '#4fbf5a'; ctx.beginPath(); ctx.ellipse(X, Y-12, 16, 11, 0, Math.PI, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#eaffd0'; ctx.beginPath(); ctx.arc(X-6, Y-16, 2.5, 0, Math.PI*2); ctx.arc(X+5, Y-18, 2, 0, Math.PI*2); ctx.fill();
+    }
     if(startM) drawMarker(startM,'#3a7bd5','♂');
     if(startF) drawMarker(startF,'#e0669e','♀');
     if(goal) drawMarker(goal,'#5fc98f','⚑');
@@ -740,14 +777,14 @@
     const groups = moverGroups();
     const movingKeys = new Set();
     groups.forEach(x=>x.g.keys.forEach(k=>movingKeys.add(k)));
-    const byType = {ground:[], wall:[], platform:[], crumble:[]};
+    const byType = {ground:[], wall:[], platform:[], crumble:[], fake:[], wind:[]};
     for(const key in tiles){
-      if(movingKeys.has(key)) continue;
+      if(movingKeys.has(key) || !byType[tiles[key]]) continue;
       const [c,r] = key.split(',').map(Number);
       byType[tiles[key]].push({c,r});
     }
     let solids = [];
-    for(const type of ['ground','wall','platform','crumble']){
+    for(const type of ['ground','wall','platform','crumble','fake']){
       const rects = mergeRects(byType[type]);
       for(const rect of rects) solids.push({...rect, type});
     }
@@ -777,6 +814,9 @@
       startM: startM ? {x:startM.c*TILE+TILE/2, y:startM.r*TILE+TILE} : null,
       startF: startF ? {x:startF.c*TILE+TILE/2, y:startF.r*TILE+TILE} : null,
       goal: goal ? {x:goal.c*TILE+TILE/2, y:goal.r*TILE+TILE} : null,
+      plates: plates.map(p=>({x:p.c*TILE+TILE/2, y:p.r*TILE+TILE/2, link:p.link})),
+      bouncers: bouncers.map(b=>({x:b.c*TILE+TILE/2, y:b.r*TILE+TILE})),
+      winds: mergeRects(byType.wind),
       theme,
     };
     return JSON.stringify(out, null, 2);

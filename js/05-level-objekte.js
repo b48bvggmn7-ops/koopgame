@@ -84,26 +84,64 @@ function leverNear(player, sw){
 //  ein -> Türen öffnen (bleiben offen), bewegter Boden/Wand/Haken fahren los bzw. weiter
 //  aus -> Türen schließen (erst wenn niemand drinsteht), Bewegungen bleiben genau dort stehen
 // Bei Tod/Neustart ist alles wieder aus (Türen zu, Bewegungen am Start).
-function triggerSwitch(sw, player){
-  const now = performance.now();
-  const on = !linkOn[sw.link];
-  linkOn[sw.link] = on;
+// Verknüpfung ein-/ausschalten (Hebel und Druckplatte)
+function setLink(link, on){
+  linkOn[link] = on;
   for(const d of solids){
-    if(d.type!=='door' || d.link!==sw.link) continue;
+    if(d.type!=='door' || d.link!==link) continue;
     if(on){ d.open = true; d.gone = true; d.closing = false; }
     else d.closing = true;            // schließt in updateDoorsAndSwitches, sobald frei
   }
   for(const m of solids){
-    if(m.type==='moveplat' && m.switchCtl && m.switchLink===sw.link) m.tripActive = on;
+    if(m.type==='moveplat' && m.switchCtl && m.switchLink===link) m.tripActive = on;
   }
   for(const h of hooks){
-    if(h.moving && h.switchCtl && h.switchLink===sw.link) h.tripActive = on;
+    if(h.moving && h.switchCtl && h.switchLink===link) h.tripActive = on;
   }
+}
+function triggerSwitch(sw, player){
+  const now = performance.now();
+  const on = !linkOn[sw.link];
+  setLink(sw.link, on);
   player.leverAnim = {t0: now, dir: Math.sign(sw.x - player.x) || player.facing || 1};
   sw.pulledT = now;
   SFX.lever(on, sw.x);   // Holz-Klack (18-sound.js)
 }
+// Druckplatte: Verknüpfung ist AN, solange mindestens eine Figur auf einer Platte dieser Nummer steht.
+// Steigt man herunter, geht sie wieder AUS (Tür schließt, sobald niemand mehr drinsteht; Bewegung hält an).
+function onPlate(player, pl){
+  return player.grounded && Math.abs(player.y - (pl.y + 20)) < 3 && Math.abs(player.x - pl.x) < 20 + player.w/2 - 4;
+}
+function updatePlates(players){
+  const want = {};
+  for(const pl of plates){
+    const down = players.some(p => onPlate(p, pl));
+    if(down && !pl.down) SFX.lever(true, pl.x);
+    pl.down = down;
+    want[pl.link] = want[pl.link] || down;
+  }
+  for(const link in want){ if(!!linkOn[link] !== want[link]) setLink(Number(link), want[link]); }
+}
+// Aufwind: Rechteck-Bereiche, die das Schweinchen mit offenem Schirm nach oben tragen
+const WIND_LIFT = 1.15, WIND_MAX_UP = 6.5;
+function inWind(player){
+  const box = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
+  return winds.some(w => rectsOverlap(box, w));
+}
+// Sprungpilz: wer auf ihm landet oder drüberläuft, wird hochgeschleudert (ca. 6 Kästchen hoch)
+const BOUNCE_V = -17.2;
+function checkBounce(player){
+  if(player.hookAttached || player.vy < 0) return;
+  for(const b of bouncers){
+    if(Math.abs(player.x - b.x) < 14 + player.w/2 && player.y > b.y - 14 && player.y <= b.y + 1){
+      player.vy = BOUNCE_V; player.grounded = false; player.glideTimer = 0; player.lastWallJumpSide = 0;
+      b.squish = 1; SFX.mushroom(b.x);
+      return;
+    }
+  }
+}
 function updateDoorsAndSwitches(dt, players){
+  updatePlates(players);
   for(const player of players){
     if(!useKeyPressed(player)) continue;
     // nächstgelegenen Hebel in Reichweite betätigen

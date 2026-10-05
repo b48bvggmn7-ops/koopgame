@@ -738,9 +738,69 @@ function drawSolidLook(s, look, x){
     }
   }
 
+  // Druckplatten: Steinplatte mit Nummer, sinkt ein, solange jemand draufsteht
+  for(const pl of plates){
+    const x = Math.round(pl.x - camX);
+    if(x < -40 || x > VW + 40) continue;
+    const baseY = pl.y + 20, col = linkColor(pl.link), d = pl.down ? 4 : 0;
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; roundRect(x - 20, baseY - 6, 40, 6, 2); ctx.fill();
+    ctx.fillStyle = '#6b5410'; roundRect(x - 19, baseY - 11 + d, 38, 11 - d, 3); ctx.fill();
+    ctx.fillStyle = pl.down ? col : '#d9b44a'; roundRect(x - 17, baseY - 10 + d, 34, 8 - d*0.5, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(x - 15, baseY - 10 + d, 30, 1.5);
+    ctx.fillStyle = pl.down ? '#fff' : col; ctx.beginPath(); ctx.arc(x, baseY - 4.5 + d/2, 5.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = pl.down ? col : '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(pl.link), x, baseY - 4 + d/2);
+  }
+  // Sprungpilze: großer federnder Pilz, staucht sich beim Abspringen
+  for(const b of bouncers){
+    const x = Math.round(b.x - camX);
+    if(x < -40 || x > VW + 40) continue;
+    b.squish = Math.max(0, b.squish - frameDt*0.004);
+    const sq = Math.sin(b.squish*Math.PI)*0.35;
+    ctx.save(); ctx.translate(x, b.y); ctx.scale(1 + sq, 1 - sq);
+    ctx.fillStyle = '#f3e7d3'; roundRect(-6, -14, 12, 14, 3); ctx.fill();
+    const g = ctx.createRadialGradient(-5, -22, 2, 0, -16, 20);
+    g.addColorStop(0, '#b6f07a'); g.addColorStop(1, '#3fa34a');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -14, 19, 12, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#eaffd0';
+    for(const [dx, dy, r] of [[-9, -18, 2.6], [2, -22, 2.3], [10, -16, 2]]){ ctx.beginPath(); ctx.arc(dx, dy, r, 0, Math.PI*2); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.6;   // kleiner Pfeil nach oben
+    ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, -40); ctx.moveTo(-4, -36); ctx.lineTo(0, -41); ctx.lineTo(4, -36); ctx.stroke();
+    ctx.restore();
+  }
+  // Aufwind: zarte, nach oben ziehende Luftschlieren und Blättchen
+  const tw = performance.now();
+  for(const w of winds){
+    const x0 = w.x - camX;
+    if(x0 + w.w < -20 || x0 > VW + 20) continue;
+    const gr = ctx.createLinearGradient(0, w.y + w.h, 0, w.y);
+    gr.addColorStop(0, 'rgba(220,245,255,0.24)'); gr.addColorStop(1, 'rgba(220,245,255,0.04)');
+    ctx.fillStyle = gr; ctx.fillRect(x0, w.y, w.w, w.h);
+    // aufsteigende Blättchen
+    for(let i = 0; i < Math.round(w.w*w.h/9000) + 2; i++){
+      const ph = ((tw*0.00035 + i*0.618) % 1), lx = x0 + ((i*0.37) % 1)*w.w + Math.sin(tw*0.004 + i)*8, ly = w.y + w.h - ph*w.h;
+      ctx.save(); ctx.translate(lx, ly); ctx.rotate(tw*0.006 + i); ctx.globalAlpha = Math.sin(ph*Math.PI);
+      ctx.fillStyle = i % 2 ? '#8fd18a' : '#d8f0a0'; ctx.beginPath(); ctx.ellipse(0, 0, 5, 2.4, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.strokeStyle = 'rgba(240,252,255,0.75)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    const n = Math.max(2, Math.round(w.w/26));
+    for(let i = 0; i < n; i++){
+      const lx = x0 + (i + 0.5)*w.w/n;
+      for(let k = 0; k < Math.ceil(w.h/90); k++){
+        const ph = ((tw*0.0009 + i*0.37 + k*0.5) % 1), yy = w.y + w.h - ph*w.h;
+        if(yy < w.y + 6) continue;
+        ctx.globalAlpha = Math.sin(ph*Math.PI)*0.8;
+        ctx.beginPath(); ctx.moveTo(lx + Math.sin(tw*0.003 + i + k)*4, yy);
+        ctx.quadraticCurveTo(lx + 6, yy - 14, lx + Math.sin(tw*0.003 + i + k + 1)*4, yy - 28); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   // Plaketten an allem, was ein Schalter steuert (gleiche Farbe + Nummer wie der Hebel)
   const seen = new Set();
-  for(const sw of switchDefs){
+  for(const sw of [...switchDefs, ...plates]){
     if(seen.has(sw.link)) continue; seen.add(sw.link);
     for(const t of linkTargets(sw.link)){
       const x = t.x - camX; if(x < -20 || x > VW+20) continue;
@@ -814,6 +874,16 @@ function drawSolidLook(s, look, x){
     ctx.beginPath(); ctx.moveTo(gx,goal.y-48); ctx.lineTo(gx+28,goal.y-40); ctx.lineTo(gx,goal.y-32); ctx.fill();
   }
 
+  // Scheinwände: sehen aus wie Wand und liegen ÜBER Hebeln/Münzen (versteckt); wer drinsteht, sieht hindurch
+  for(const f of fakeWalls){
+    const x = Math.round(f.x - camX);
+    if(x + f.w < -20 || x > VW + 20) continue;
+    const inside = [p1, p2].some(p => rectsOverlap({x:p.x-p.w/2, y:p.y-p.h, w:p.w, h:p.h}, {x:f.x-60, y:f.y-60, w:f.w+120, h:f.h+120}));
+    f.alpha = f.alpha === undefined ? 1 : f.alpha + ((inside ? 0.35 : 1) - f.alpha)*Math.min(1, frameDt*0.01);
+    ctx.save(); ctx.globalAlpha = f.alpha;
+    drawWallPiece(f, x, f.y, 0, 0);
+    ctx.restore();
+  }
   drawCritters();   // Schmetterlinge, Frösche, Schnecken, Pilze, Knospen, Faultier (20-tiere.js)
   drawBirds();
   drawDust();       // Staubwölkchen (21-figuren-leben.js)
