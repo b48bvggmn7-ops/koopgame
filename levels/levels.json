@@ -25,6 +25,11 @@
   "titel": "Kristallhöhle"
  },
  {
+  "datei": "level-6.json",
+  "name": "Level 6",
+  "titel": "Feuerberg"
+ },
+ {
   "datei": "level-3-alter-entwurf.json",
   "name": "Level 3 (alter Entwurf)",
   "versteckt": true

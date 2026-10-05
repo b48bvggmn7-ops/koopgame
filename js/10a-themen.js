@@ -228,7 +228,7 @@ function themeLights(){
   if(goal) L.push([goal.x, goal.y - 30, 140]);
   for(const h of hooks) L.push([h.x, h.y, 60]);
   for(const sw of switchDefs) if(!hidden(sw.x, sw.y)) L.push([sw.x, sw.y, 60]);   // versteckte Hebel nicht verraten
-  for(const pl of plates) L.push([pl.x, pl.y + 10, 50]);
+  for(const pl of plates) if(!hidden(pl.x, pl.y)) L.push([pl.x, pl.y + 10, 50]);
   if(typeof critters !== 'undefined') for(const c of critters) if(c.glow) L.push([c.x, c.y - (c.kind === 'crystal' ? 12 : 0), c.glow]);
   return L;
 }

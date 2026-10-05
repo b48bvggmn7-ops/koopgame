@@ -288,6 +288,20 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (vier Kästchen breite Landepolster, Wind-Säule mit Stacheldecke: Schirm rechtzeitig zu), unten hangelt der Affe
     an sechs Haken; 7) Finale: zwei Haken (Affe) und zwei Wind-Säulen (Schweinchen), die obere mit Tür, die nur
     aufgeht, wenn der Affe oben auf dem Turm Druckplatte 8 hält; Ziel auf dem Turm (410).
+  - Level 6 „Feuerberg“ (levels/level-6.json, 520 Spalten, Thema vulkan, das SCHWERSTE Level, alles mit dem Koop-Bot
+    geprüft; neues Element Sprungpilz): 1) Pilz-Sprünge über die Lava: 2 Kästchen schmale Säulen mit je zwei Pilzen,
+    die hinteren bröckeln, Abstand 10 (in der Luft voll nach rechts halten); 2) Pilz-Jagd: Hebel 2 startet die
+    Stachelwand (4,5), über zwei Mauern nur per Pilz, Bröckelboden, Pilzsäule mitten in der Lava, Tür 2 am Ende;
+    3) geheime Kammer: Tür 3 öffnet nur Druckplatte 3, die in einer versteckten Kammer über der Decke liegt – hinein
+    nur mit dem Sprungpilz durch eine Scheindecke; drüben Platte 3 für den Partner; 4) über der Lava: Affe springt per
+    Pilz an zwei hohe Haken, landet auf der nächsten Pilzsäule und nimmt zwei weitere Haken; Schweinchen nimmt den
+    ersten Pilz und fliegt dann von Wind-Säule zu Wind-Säule; 5) Feuerschlot: im Kamin (Breite 4) startet Hebel 5
+    steigende Lava (2,0) – beide per Wandsprung nach oben (mit kurzer Denkpause knapp); 6) Pressen-Gang: vier
+    Stachelpressen im niedrigen Gang, Bröckelboden genau darunter – nicht unter einer Presse springen, nicht stehen
+    bleiben; 7) Finale am Vulkangipfel: Hebel 7 lässt die Lava im Krater steigen (1,15); Affe Pilz -> Haken -> Sims ->
+    Pilz -> Haken -> Gipfel, Schweinchen Wind -> Sims -> Pilz -> Wind -> Gipfel; Ziel auf dem Gipfel (432).
+  - Startmenü: alle sechs Levelkarten sind jetzt echte Levels (Dschungel, Baumkronen, Ruinen, Mondnacht, Kristallhöhle,
+    Feuerberg); kein „Coming soon“ mehr.
   - Alle Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen; Level 2/3 umnummeriert).
   - Alle neuen Levels (2/3) folgen denselben Regeln wie Level 1 (nur blaue/pinke Münzen, keine Münzen in Steinen,
     Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.

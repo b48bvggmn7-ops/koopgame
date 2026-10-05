@@ -1090,7 +1090,7 @@ async def seil_absprung_wie_schwung(g):
 async def level_themen(g):
     """Jedes Level hat sein eigenes Aussehen (Thema): Level 1 Dschungel, 2 Abendrot, 3 Ruinen; alle 6 Themen
     zeichnen fehlerfrei; Nacht/Höhle sind dunkel mit Licht um die Figuren; der Editor speichert das Thema."""
-    erwartet = {'level-1.json': 'dschungel', 'level-2.json': 'abend', 'level-3.json': 'ruinen', 'level-4.json': 'nacht', 'level-5.json': 'hoehle'}
+    erwartet = {'level-1.json': 'dschungel', 'level-2.json': 'abend', 'level-3.json': 'ruinen', 'level-4.json': 'nacht', 'level-5.json': 'hoehle', 'level-6.json': 'vulkan'}
     for datei, th in erwartet.items():
         d = json.loads((ROOT / 'levels' / datei).read_text())
         assert d.get('theme') == th, f'{datei}: Thema {d.get("theme")} statt {th}'
