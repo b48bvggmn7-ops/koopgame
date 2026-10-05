@@ -1073,6 +1073,40 @@ async def seil_absprung_wie_schwung(g):
 
 # ---------------------------------------------------------------- Runner
 
+@test
+async def kamera_ruhig_bei_zwei(g):
+    """Kamera wackelt nicht: kleine Hin-und-her-Bewegungen der hinteren Figur bewegen das Bild nicht,
+    gemeinsames Vorwärtslaufen schon; Bild ist 10 % herausgezoomt."""
+    assert abs(await g.ev('zoom') - 0.9) < 1e-9, 'Zoom ist nicht 0,9'
+    assert abs(await g.ev('VW') - 1280/0.9) < 1, 'sichtbare Weltbreite passt nicht zum Zoom'
+    await g.load(level([ground(0, 680, 6000)], {'x': 600, 'y': 680}, {'x': 700, 'y': 680}))
+    await g.p.wait_for_timeout(1500)
+    await g.hold(('KeyA',), 300); await g.p.wait_for_timeout(1200)
+    cam0 = await g.ev('camPos')
+    for _ in range(3):   # Affe (hinten) zappelt hin und her und springt
+        await g.hold(('KeyD', 'Space'), 150); await g.hold(('KeyA',), 150)
+    await g.p.wait_for_timeout(300)
+    cam1 = await g.ev('camPos')
+    assert abs(cam1 - cam0) < 3, f'Kamera wackelt mit: {cam0:.0f} -> {cam1:.0f}'
+    await g.hold(('KeyD', 'ArrowRight'), 1500); await g.p.wait_for_timeout(600)
+    cam2 = await g.ev('camPos')
+    assert cam2 > cam1 + 200, f'Kamera folgt beim Vorwärtslaufen nicht: {cam1:.0f} -> {cam2:.0f}'
+    back = await g.ev('Math.min(p1.x,p2.x) - camPos')
+    front = await g.ev('Math.max(p1.x,p2.x) - camPos')
+    assert back > 100 and front < await g.ev('VW') - 100, f'Figuren nicht gut im Bild: {back:.0f} / {front:.0f}'
+
+@test
+async def spieltempo_langsamer(g):
+    """Spiel läuft 10 % langsamer (GAME_SPEED 0,9): in 1 s laufen ~10 % weniger Weg, Sprünge gleich weit."""
+    assert abs(await g.ev('GAME_SPEED') - 0.9) < 1e-9, 'GAME_SPEED ist nicht 0,9'
+    await g.load(level([ground(0, 680, 6000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
+    await g.p.wait_for_timeout(500)
+    n0 = await g.ev('window.__steps = 0, (function(){ if(!window.__cnt){ window.__cnt = 1; const o = stepSim; stepSim = function(ts){ window.__steps++; return o(ts); }; } })(), performance.now()')
+    await g.p.wait_for_timeout(2000)
+    n = await g.ev('window.__steps'); dt = await g.ev('performance.now()') - n0
+    rate = n / dt * 1000
+    assert 48 <= rate <= 56, f'Rechenschritte pro Sekunde: {rate:.1f} (erwartet ~54)'
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

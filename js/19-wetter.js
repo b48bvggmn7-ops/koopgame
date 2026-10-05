@@ -112,7 +112,7 @@ function weatherFront(){
   }
   weather.splashes = weather.splashes.filter(sp => t - sp.t0 < 320);
   if(weather.splashes.length){
-    ctx.save(); ctx.strokeStyle = 'rgba(220,235,255,0.7)'; ctx.fillStyle = 'rgba(220,235,255,0.75)'; ctx.lineWidth = 1;
+    ctx.save(); applyWorldZoom(); ctx.strokeStyle = 'rgba(220,235,255,0.7)'; ctx.fillStyle = 'rgba(220,235,255,0.75)'; ctx.lineWidth = 1;
     for(const sp of weather.splashes){
       const k = (t - sp.t0)/320, x = sp.x - camX;
       ctx.globalAlpha = 1 - k;

@@ -45,7 +45,9 @@
 - **Kollision:** `collideAxis` ignoriert Überlappungen < `COLLIDE_EPS` (Rundungsfehler) und schiebt nie quer
   über weite Strecken – sonst „teleportieren“ Figuren beim Springen unter Decken (Test `decke_kein_teleport`).
 - Figurenhöhe 32,3 px (Kommazahl!) – bei Positionsberechnungen an Rundung denken.
-- Kein Zoom (bewusste Entscheidung). Kamera folgt der vorderen Figur, Abstand max. 1,25 Bildschirmbreiten.
+- Zoom 0,9 (10 % heraus, Nutzerwunsch; früher kein Zoom) -> sichtbare Weltbreite `VW` statt `W` benutzen.
+  Kamera mit Totzone gegen Wackeln (`cameraTarget`), folgt der vorderen Figur, wenn beide nicht ins Bild passen.
+- Spieltempo `GAME_SPEED` 0,9 (14-spielschleife.js): 60 Schritte pro *Spielsekunde*, real also 54/s.
 - Spielstand-Werte (Sprung, Tempo, Wandsprung-Zeitfenster …) stehen in `js/02-physik-werte.js` bzw. am Anfang
   der jeweiligen Datei als Konstanten in GROSSBUCHSTABEN.
 

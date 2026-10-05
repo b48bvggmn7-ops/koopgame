@@ -65,7 +65,7 @@ function testJump(step){
   });
   won = false; document.getElementById('toast').classList.remove('show');
   continueAfterDeath();                       // setzt beide an den (Test-)Checkpoint, Bröckelboden/Türen/Teile zurück
-  camPos = Math.max(0, Math.min(LEVEL_W-W, Math.min(p1.x,p2.x) - CAM_LEFT));   // Kamera direkt hin
+  camPos = Math.max(0, Math.min(LEVEL_W-VW, Math.min(p1.x,p2.x) - CAM_LEFT));   // Kamera direkt hin
   testJumpMsg = target < 0 ? 'Test: Start' : 'Test: Checkpoint ' + (target+1) + ' von ' + checkpointDefs.length;
   testJumpT = now;
 }

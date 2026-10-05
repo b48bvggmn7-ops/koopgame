@@ -286,13 +286,11 @@ const SPIKE_SPRITE = (()=>{
   return c;
 })();
 function draw(){
-  // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_LEFT px),
-  // damit man möglichst viel von dem sieht, was als Nächstes kommt. Die vordere Figur
-  // bleibt trotzdem immer im Bild (mind. CAM_RIGHT px vom rechten Rand).
-  const back = Math.min(p1.x, p2.x), front = Math.max(p1.x, p2.x);
-  const camLeft = Math.max(back - CAM_LEFT, front - FRONT_MAX * VW);
-  const targetCam = Math.max(0, Math.min(LEVEL_W-VW, camLeft));
-  camPos += (targetCam-camPos) * (1 - Math.pow(1-0.12, frameDt/STEP));   // gleich schnell bei jeder Bildrate
+  // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_BACK_MIN..CAM_BACK_PUSH px,
+  // Totzone gegen Wackeln, cameraTarget in 09-kamera.js), damit man möglichst viel von dem sieht,
+  // was als Nächstes kommt. Die vordere Figur bleibt trotzdem immer im Bild (höchstens FRONT_MAX).
+  const targetCam = cameraTarget(camPos);
+  camPos += (targetCam-camPos) * (1 - Math.pow(1-CAM_FOLLOW, frameDt/STEP));   // gleich schnell bei jeder Bildrate
   camX = Math.round(camPos);
 
   ctx.clearRect(0,0,W,H);
@@ -301,7 +299,7 @@ function draw(){
   ctx.save();
   ctx.translate(0, CEILING_MARGIN);
   // Zoom: Spielwelt verkleinern, unten bündig (Boden bleibt unten, oben wird mehr Himmel sichtbar)
-  if(zoom !== 1){ ctx.translate(0, H*(1-zoom)); ctx.scale(zoom, zoom); }
+  applyWorldZoom();
 
   // weiche Lichtstrahlen von oben
   ctx.save();

@@ -7,6 +7,9 @@
 // 60, 120 oder 144 Bilder zeigt. Sonst wäre das Spiel auf schnellen Bildschirmen doppelt so schnell.
 // Zwischen zwei Rechenschritten wird für die Anzeige weich überblendet (Interpolation).
 const STEP = 1000/60;
+// Spieltempo (Nutzerwunsch „etwas langsamer“): 0,9 = alles läuft 10 % langsamer (Figuren, bewegte Teile,
+// Bröckelboden …). Sprunghöhen und -weiten bleiben gleich, die Levels bleiben also schaffbar. 1 = normal.
+const GAME_SPEED = 0.9;
 let simAcc = 0, lastFrameTs = 0, frameDt = STEP;
 function stepSim(ts){
   if(won && ++winSteps === WIN_DANCE_STEPS) winFinish();   // nach dem Tanz zurück ins Menü (21-figuren-leben.js)
@@ -81,7 +84,7 @@ function loop(ts){
     requestAnimationFrame(loop);
     return;
   }
-  simAcc += frameDt;
+  simAcc += frameDt * GAME_SPEED;
   let steps = 0;
   while(simAcc >= STEP && steps < 5){
     rememberPrev();
