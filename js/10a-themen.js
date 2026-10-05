@@ -221,12 +221,12 @@ const darkCtx = darkCanvas.getContext('2d');
 function themeLights(){
   // Lichtquellen in Welt-Koordinaten: [x, y, Radius]
   const L = [];
+  const hidden = (x, y)=> fakeWalls.some(f => x > f.x && x < f.x + f.w && y > f.y && y < f.y + f.h);   // hinter Scheinwand
   for(const p of [p1, p2]) if(p) L.push([p.x, p.y - p.h*0.5, 230]);
   for(const c of coins) if(!c.taken && !hidden(c.x, c.y)) L.push([c.x, c.y, 46]);
   for(const cp of checkpointDefs) L.push([cp.x, cp.y - 30, 90]);
   if(goal) L.push([goal.x, goal.y - 30, 140]);
   for(const h of hooks) L.push([h.x, h.y, 60]);
-  const hidden = (x, y)=> fakeWalls.some(f => x > f.x && x < f.x + f.w && y > f.y && y < f.y + f.h);
   for(const sw of switchDefs) if(!hidden(sw.x, sw.y)) L.push([sw.x, sw.y, 60]);   // versteckte Hebel nicht verraten
   for(const pl of plates) L.push([pl.x, pl.y + 10, 50]);
   if(typeof critters !== 'undefined') for(const c of critters) if(c.glow) L.push([c.x, c.y - (c.kind === 'crystal' ? 12 : 0), c.glow]);

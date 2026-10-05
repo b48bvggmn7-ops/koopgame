@@ -280,18 +280,23 @@ async def menue_projekt_levels(g):
         await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-levels', 'Fortfahren führt nicht direkt zur Levelauswahl'
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
-        assert namen == ['Dschungel', 'Baumkronen', 'Ruinen', 'Coming soon', 'Coming soon', 'Coming soon'], f'Karten: {namen}'
+        echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
+        assert echte[:4] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
+        assert namen == (echte + ['Coming soon']*6)[:max(6, len(echte))], f'Karten: {namen}'
         # Level 2 gesperrt
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await g.ev("menuScreen") == 'start', 'gesperrtes Level startet'
         # Coming soon startet nie
         await g.ev("GameMenu.unlockAll()")
         await g.ev("startMenuShow('levels')"); await p.wait_for_timeout(700)
-        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100)    # von „Ruinen“ auf Karte 4
-        await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
-        assert await g.ev("menuScreen") == 'start', 'Coming-soon-Level startet'
+        pos = len(echte) - 1                                     # Auswahl steht auf dem letzten echten Level
+        if len(echte) < 6:
+            await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); pos += 1   # erste „Coming soon“-Karte
+            await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
+            assert await g.ev("menuScreen") == 'start', 'Coming-soon-Level startet'
         # freigeschaltetes Level 2: erst Spielerwahl, dann startet es
-        await p.keyboard.press('ArrowLeft'); await p.keyboard.press('ArrowLeft'); await p.wait_for_timeout(100)
+        for _ in range(pos - 1): await p.keyboard.press('ArrowLeft')
+        await p.wait_for_timeout(100)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-select', 'nach der Levelwahl keine Spielerwahl'
         await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
@@ -514,14 +519,17 @@ async def level1_muenzen_und_haken(g):
 
 @test
 async def level2_und_3_regeln(g):
-    """Level 2 und 3: nur blaue/pinke Münzen, keine Münze in Stein/Tür/bewegtem Teil, Haken höchstens 5 Kästchen,
-    Ziel ganz rechts, Start links."""
-    for name in ('level-2.json', 'level-3.json'):
+    """Level 2 bis 6: nur blaue/pinke Münzen, keine Münze in Stein/Tür/bewegtem Teil, Haken höchstens 5 Kästchen,
+    Ziel ganz rechts, Start links; ab Level 4 gleich viele blaue wie pinke Münzen und ein eigenes Thema."""
+    namen = [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text())
+             if not L.get('versteckt') and L['datei'] != 'level-1.json']
+    assert 'level-4.json' in namen, 'Level 4 fehlt in levels.json'
+    for name in namen:
         lv = json.loads((ROOT / 'levels' / name).read_text())
         farben = {c['color'] for c in lv['coins']}
         assert farben <= {'blue', 'pink'}, f"{name}: andere Münzfarben {farben}"
         assert len(lv['coins']) >= 40, f"{name}: zu wenige Münzen"
-        feste = lv['solids'] + lv['doors'] + lv['movingPlatforms']
+        feste = [s for s in lv['solids'] if s.get('type') != 'fake'] + lv['doors'] + lv['movingPlatforms']
         for c in lv['coins']:
             for s in feste:
                 w, h = s.get('w', 40), s.get('h', 40)
@@ -530,6 +538,10 @@ async def level2_und_3_regeln(g):
         for hk in lv['hooks']:
             assert hk['radius'] <= 5 * 40, f"{name}: Haken zu groß {hk}"
         assert lv['goal']['x'] > 400 * 40 and lv['startM']['x'] < 10 * 40, f"{name}: Start/Ziel falsch"
+        if name not in ('level-2.json', 'level-3.json'):
+            nb = sum(c['color'] == 'blue' for c in lv['coins'])
+            assert nb * 2 == len(lv['coins']), f"{name}: Blau/Pink nicht ausgeglichen"
+            assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan'), f"{name}: Thema {lv.get('theme')}"
 
 @test
 async def level2_fahrstuhl_anhalten(g):
@@ -604,7 +616,7 @@ async def stachelwand_faehrt_mit(g):
         if await g.ev("!!deathState"): break
         await g.p.wait_for_timeout(100)
     assert await g.ev("!!deathState"), 'fahrende Stacheln töten nicht'
-    for name in ('level-1.json', 'level-2.json', 'level-3.json'):
+    for name in [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]:
         await g.load(str(ROOT / 'levels' / name))
         n = await g.ev("spikes.filter(s => s.carrier).length")
         want = json.loads((ROOT / 'levels' / name).read_text()).get('_mitfahrendeStacheln', 0)
@@ -1078,13 +1090,16 @@ async def seil_absprung_wie_schwung(g):
 async def level_themen(g):
     """Jedes Level hat sein eigenes Aussehen (Thema): Level 1 Dschungel, 2 Abendrot, 3 Ruinen; alle 6 Themen
     zeichnen fehlerfrei; Nacht/Höhle sind dunkel mit Licht um die Figuren; der Editor speichert das Thema."""
-    erwartet = {'level-1.json': 'dschungel', 'level-2.json': 'abend', 'level-3.json': 'ruinen'}
+    erwartet = {'level-1.json': 'dschungel', 'level-2.json': 'abend', 'level-3.json': 'ruinen', 'level-4.json': 'nacht'}
     for datei, th in erwartet.items():
         d = json.loads((ROOT / 'levels' / datei).read_text())
         assert d.get('theme') == th, f'{datei}: Thema {d.get("theme")} statt {th}'
     assert await g.ev("THEME_ORDER.join(',')") == 'dschungel,abend,ruinen,nacht,hoehle,vulkan'
     await g.load(level([ground(0, 680, 3000), ground(400, 560, 200, 40, 'wall'), ground(700, 680, 120, 40, 'crumble')],
-                       {'x': 300, 'y': 680}, {'x': 260, 'y': 680}, theme='nacht'))
+                       {'x': 300, 'y': 680}, {'x': 260, 'y': 680}, theme='nacht',
+                       coins=[{'x': 500, 'y': 600, 'color': 'blue'}], switches=[{'x': 900, 'y': 660, 'link': 1}],
+                       hooks=[{'x': 1000, 'y': 400, 'radius': 160}], checkpoints=[{'x': 1100, 'y': 680}]))
+    await g.p.wait_for_timeout(300)   # dunkles Thema mit Münzen, Hebel, Haken: Zeichnen ohne Fehler
     assert await g.ev('themeName') == 'nacht', 'Thema aus der Level-Datei nicht übernommen'
     farben = set()
     for th in ('dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'):

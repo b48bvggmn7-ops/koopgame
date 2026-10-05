@@ -261,6 +261,19 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     der Presse -> Reihenfolge überlegen); 13) Zwei Fähigkeiten (Hebel 18 nur segelnd erreichbar, Hebel 17 nur am
     Haken; zwei Türen hintereinander); 14) Endspurt-Jagd (schnellste Stachelwand + rutschender Stachelblock);
     15) Finale: Schweinchen durch den Kamin über die Bröckel-Brücke, Affe an drei Haken darunter, Ziel (796).
+  - Level 4 „Mondnacht“ (levels/level-4.json, 520 Spalten, Thema nacht = dunkel, SEHR schwer; jede Stelle mit dem
+    Koop-Bot geprüft, viele an der Grenze des Schaffbaren): 1) Bröckel-Sprint: 2 Kästchen schmale Bröckel-Inseln,
+    Lücken 6/6/5/5 (Sprunggrenze, nicht stehen bleiben); 2) Schleuse: Druckplatte 1 außen hält Tür 1 offen, drinnen
+    liegt Platte 1 auf einem hohen Sims (nur per Wand-Rücksprung von der hängenden Wand), dann Platte 2 / Tür 2 /
+    Platte 2 draußen – nur zu zweit; 3) versteckter Hebel: Tür 3 ohne sichtbaren Hebel, Kamin (Breite 3) über einen
+    Felsblock, an dessen Rückseite unten eine Scheinwand in eine Kammer mit Hebel 3 führt (Münzen als Hinweis);
+    4) getrennte Höhen: Kamin auf einen Turm, Schweinchen segelt über Dach-Lücken (13 = Segelgrenze), Affe hangelt
+    darunter an fünf Haken; 5) Stachelwand-Jagd: Hebel 5 startet zwei Stachelwände (oben 6,3 / unten 5,4), Affe an
+    sieben Haken, Tür 9 versperrt seine Bahn bis das Schweinchen oben im Lauf Hebel 9 zieht, ihre Tür 10 öffnet
+    Hebel 10 (mit kurzer Reaktionszeit bleiben ~2–3 Kästchen Vorsprung); 6) Fahrstuhl zwischen Stachelwänden:
+    Schweinchen hält Druckplatte 6, Affe fährt; zu lange gedrückt = Stacheldecke; oben Hebel 7 -> Tür 7 unten im
+    Schacht; 7) Wandsprung-Schlucht: zwei Kamine (Breite 4) im Zickzack, dann drei weite Sprünge auf schmale Simse
+    über Stacheln (Affe an der Sprunggrenze); 8) Finale: Kamin der Breite 5 hinauf zum Ziel (440).
   - Alle Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen; Level 2/3 umnummeriert).
   - Alle neuen Levels (2/3) folgen denselben Regeln wie Level 1 (nur blaue/pinke Münzen, keine Münzen in Steinen,
     Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.

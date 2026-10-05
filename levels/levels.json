@@ -15,6 +15,11 @@
   "titel": "Ruinen"
  },
  {
+  "datei": "level-4.json",
+  "name": "Level 4",
+  "titel": "Mondnacht"
+ },
+ {
   "datei": "level-3-alter-entwurf.json",
   "name": "Level 3 (alter Entwurf)",
   "versteckt": true
