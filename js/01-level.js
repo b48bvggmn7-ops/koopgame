@@ -130,7 +130,10 @@ function buildLevel(data){
   for(const h of hooks) maxX = Math.max(maxX, h.x, h.moving ? h.targetX : 0);
   LEVEL_W = maxX + 200;
   computeGroundNeighbors();
+  levelTheme = data.theme || 'dschungel';   // Aussehen des Levels (10a-themen.js)
+  if(typeof setTheme === 'function') setTheme(levelTheme);
 }
+let levelTheme = 'dschungel';
 
 // Für schön gezeichneten Boden: welche Seiten eines Bodenstücks grenzen an ein gleichartiges Stück?
 // (dort keine runden Ecken und kein Gras, sondern nahtloser Übergang)

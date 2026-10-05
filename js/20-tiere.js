@@ -17,6 +17,7 @@ function critNearPlayer(x, y, dx, dy){
 }
 function buildCritters(){
   critFor = solids; critters = [];
+  const CT = THEME.critters;
   const keep = [];
   for(const c of coins) keep.push([c.x, c.y]);
   for(const sp of spikes) keep.push([sp.x, sp.y - 20]);
@@ -39,28 +40,42 @@ function buildCritters(){
       const r = decoHash(cx + 5, s.y + 9), mid = cx + 20;
       const far = k => !lastKind[k] || Math.abs(lastKind[k] - mid) > 420;
       if(nearStart(mid)) continue;
-      if(r < 0.05 && far('frog')){ lastKind.frog = mid;
+      // Boden-Tiere je Level-Thema (10a-themen.js): Leiter aus [Art, Anteil]
+      let acc = 0, kind = null;
+      for(const [k, w] of CT.ground){ acc += w; if(r < acc){ kind = k; break; } }
+      if(kind === 'frog' && far('frog')){ lastKind.frog = mid;
         critters.push({kind: 'frog', x: mid, y: s.y, home: mid, minX: s.x + 10, maxX: s.x + s.w - 10, dir: r < 0.035 ? -1 : 1, hop: null, t: Math.random()*5000, nextCroak: 3 + Math.random()*8});
-      } else if(r < 0.13 && far('snail') && s.w >= 120){ lastKind.snail = mid;
+      } else if(kind === 'snail' && far('snail') && s.w >= 120){ lastKind.snail = mid;
         critters.push({kind: 'snail', x: mid, y: s.y, minX: s.x + 8, maxX: s.x + s.w - 8, dir: 1, hide: 0});
-      } else if(r < 0.21 && far('mush')){ lastKind.mush = mid;
-        critters.push({kind: 'mush', x: mid + (r*40 % 14) - 7, y: s.y, squish: 0, lastT: 0, big: r < 0.17});
-      } else if(r < 0.30 && far('bud')){ lastKind.bud = mid;
-        critters.push({kind: 'bud', x: mid, y: s.y, open: 0, target: 0, col: r < 0.25 ? '#ff7eb0' : '#ffb347'});
+      } else if(kind === 'mush' && far('mush')){ lastKind.mush = mid;
+        critters.push({kind: 'mush', x: mid + (r*40 % 14) - 7, y: s.y, squish: 0, lastT: 0, big: r*7 % 1 < 0.5,
+                       glowCap: CT.mushGlow ? (r*13 % 1 < 0.5 ? '#6af0ff' : '#c08aff') : null, glow: CT.mushGlow ? 60 : 0});
+      } else if(kind === 'bud' && far('bud')){ lastKind.bud = mid;
+        critters.push({kind: 'bud', x: mid, y: s.y, open: 0, target: 0, col: r*7 % 1 < 0.5 ? '#ff7eb0' : '#ffb347'});
+      } else if(kind === 'lizard' && far('lizard') && s.w >= 120){ lastKind.lizard = mid;
+        critters.push({kind: 'lizard', x: mid, y: s.y, minX: s.x + 12, maxX: s.x + s.w - 12, dir: r*11 % 1 < 0.5 ? -1 : 1, run: 0, t: Math.random()*4000,
+                       col: CT.lizardCol || ['#5cc27a', '#e0a040', '#3fa7e0'][Math.floor(r*997) % 3]});
+      } else if(kind === 'crystal' && far('crystal')){ lastKind.crystal = mid;
+        const cols = CT.crystalCols || ['#5ee0ff', '#b48cff', '#7af0d0'];
+        critters.push({kind: 'crystal', x: mid + (r*40 % 14) - 7, y: s.y, col: cols[Math.floor(r*991) % cols.length], lit: 0, glow: 70, big: r*5 % 1 < 0.5});
       }
       const rb = decoHash(cx + 77, s.y + 31);
       if(rb < 0.16 && far('fly')){ lastKind.fly = mid;
         const gold = !goldDone && rb > 0.12 && mid > levelStartM.x + 800;
         if(gold) goldDone = true;
-        critters.push({kind: 'butterfly', hx: mid, hy: s.y - 50, x: mid, y: s.y - 50, ph: r*100, flee: 0, gold, found: false,
-                       col: gold ? '#ffd23f' : ['#7ec8ff', '#ff9ecb', '#ffd166', '#b69cff'][Math.floor(rb*1000) % 4]});
+        const air = gold ? 'butterfly' : CT.air;
+        critters.push({kind: air, hx: mid, hy: s.y - 50, x: mid, y: s.y - 50, ph: r*100, flee: 0, gold, found: false,
+                       glow: air === 'firefly' ? 70 : 0,
+                       col: gold ? '#ffd23f' : CT.airCols[Math.floor(rb*1000) % CT.airCols.length]});
       }
     }
-    // Faultier unter schwebendem Boden (Unterseite frei, darunter Luft)
-    if(slothCount < 2 && s.w >= 120 && s.y > 120 && s.y + s.h + 90 < LEVEL_H){
+    // Faultier bzw. Fledermaus unter schwebendem Boden (Unterseite frei, darunter Luft)
+    if(slothCount < (CT.hanging === 'bat' ? 4 : 2) && s.w >= 120 && s.y > 120 && s.y + s.h + 90 < LEVEL_H){
       const ux = s.x + s.w*0.5;
       if(!decoSolidAt(ux, s.y + s.h + 4) && !decoSolidAt(ux, s.y + s.h + 70) && decoHash(s.x, s.y) < 0.5 && !blocked(ux, s.y + s.h + 60)){
-        critters.push({kind: 'sloth', x: ux, y: s.y + s.h, awake: 0, wave: 0, found: false}); slothCount++;
+        if(CT.hanging === 'bat') critters.push({kind: 'bat', x: ux, y: s.y + s.h, hx: ux, hy: s.y + s.h, state: 'hang', t: 0, vx: 0, vy: 0, ph: Math.random()*9});
+        else critters.push({kind: 'sloth', x: ux, y: s.y + s.h, awake: 0, wave: 0, found: false});
+        slothCount++;
       }
     }
   }
@@ -108,6 +123,37 @@ function updateCritters(dt){
     } else if(c.kind === 'bud'){
       if(critNearPlayer(c.x, c.y - 12, 60, 60) && c.target === 0){ c.target = 1; c.openT = t; SFX.bud(c.x); }
       c.open += (c.target - c.open)*Math.min(1, dt*0.004);
+    } else if(c.kind === 'firefly'){
+      // Glühwürmchen: schwirrt um seinen Platz, blinkt, weicht aus
+      c.ph += dt*0.004;
+      const near = critNearPlayer(c.x, c.y, 80, 70);
+      c.flee = near ? Math.min(1, c.flee + dt*0.004) : Math.max(0, c.flee - dt*0.0008);
+      const tx = c.hx + Math.sin(c.ph*0.6)*45 + (near ? Math.sign(c.x - near.x || 1)*60*c.flee : 0);
+      const ty = c.hy + Math.sin(c.ph*1.1)*22 - 40*c.flee;
+      c.x += (tx - c.x)*Math.min(1, dt*0.003); c.y += (ty - c.y)*Math.min(1, dt*0.003);
+      c.glow = 40 + 40*Math.max(0, Math.sin(c.ph*2.2));
+    } else if(c.kind === 'lizard'){
+      // Eidechse: sonnt sich, flitzt davon, wenn jemand kommt
+      c.t += dt;
+      const near = critNearPlayer(c.x, c.y - 6, 100, 60);
+      if(near && c.run <= 0){ c.dir = Math.sign(c.x - near.x) || 1; c.run = 700; }
+      if(c.run > 0){
+        c.run -= dt; c.x += c.dir*dt*0.32;
+        if(c.x > c.maxX){ c.x = c.maxX; c.dir = -1; } if(c.x < c.minX){ c.x = c.minX; c.dir = 1; }
+      }
+    } else if(c.kind === 'crystal'){
+      const near = critNearPlayer(c.x, c.y - 12, 60, 50);
+      c.lit += ((near ? 1 : 0) - c.lit)*Math.min(1, dt*0.004);
+      c.glow = 60 + 60*c.lit;
+    } else if(c.kind === 'bat'){
+      // Fledermaus: hängt kopfüber, flattert davon, kommt später zurück
+      c.t += dt; c.ph += dt*0.03;
+      if(c.state === 'hang'){
+        if(critNearPlayer(c.x, c.y + 30, 130, 180)){ c.state = 'fly'; c.t = 0; c.vx = (Math.random() < 0.5 ? -1 : 1)*(0.12 + Math.random()*0.06); c.vy = 0.05; SFX.birdFlap(c.x); }
+      } else if(c.state === 'fly'){
+        c.vy -= dt*0.00012; c.x += c.vx*dt; c.y += c.vy*dt + Math.sin(c.ph)*0.6;
+        if(c.t > 3500){ c.state = 'gone'; c.t = 0; }
+      } else if(c.t > 9000 && !critNearPlayer(c.hx, c.hy, 700, 600)){ c.state = 'hang'; c.x = c.hx; c.y = c.hy; c.t = 0; }
     } else if(c.kind === 'sloth'){
       const near = critNearPlayer(c.x, c.y + 40, 150, 260);
       c.awake = near ? Math.min(1, c.awake + dt*0.002) : Math.max(0, c.awake - dt*0.0004);
@@ -130,6 +176,10 @@ function drawCritters(){
     else if(c.kind === 'mush') drawMushroom(c, x);
     else if(c.kind === 'bud') drawBud(c, x, t);
     else if(c.kind === 'sloth') drawSloth(c, x, t);
+    else if(c.kind === 'firefly') drawFirefly(c, x, t);
+    else if(c.kind === 'lizard') drawLizard(c, x, t);
+    else if(c.kind === 'crystal') drawCrystalCrit(c, x, t);
+    else if(c.kind === 'bat'){ if(c.state !== 'gone') drawBat(c, x, t); }
     ctx.restore();
   }
 }
@@ -198,8 +248,12 @@ function drawMushroom(c, x){
   const s = c.big ? 1.25 : 1, sq = c.squish;
   ctx.translate(x, c.y + 1); ctx.scale(s*(1 + sq*0.35), s*(1 - sq*0.4));
   ctx.fillStyle = '#f3e7d3'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-3, -11, 6, 11, 2) : ctx.rect(-3, -11, 6, 11); ctx.fill();
+  if(c.glowCap){   // Leuchtpilz (Nacht/Höhle)
+    ctx.fillStyle = c.glowCap + '44'; ctx.beginPath(); ctx.arc(0, -12, 18, 0, Math.PI*2); ctx.fill();
+  }
   const g = ctx.createRadialGradient(-3, -16, 1, 0, -12, 11);
-  g.addColorStop(0, '#ff7a6b'); g.addColorStop(1, '#d63c3c');
+  if(c.glowCap){ g.addColorStop(0, '#ffffff'); g.addColorStop(1, c.glowCap); }
+  else { g.addColorStop(0, '#ff7a6b'); g.addColorStop(1, '#d63c3c'); }
   ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -11, 10, 7, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#fff';
   for(const [dx, dy, r] of [[-5, -13, 1.8], [1, -16, 1.6], [5, -12, 1.4], [-1, -12, 1.1]]){ ctx.beginPath(); ctx.arc(dx, dy, r, 0, Math.PI*2); ctx.fill(); }
@@ -247,5 +301,67 @@ function drawSloth(c, x, t){
     ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = 'bold 10px sans-serif';
     const k = (t*0.0006) % 1;
     ctx.globalAlpha = 1 - k; ctx.fillText('z', 14 + k*8, 22 - k*16); ctx.globalAlpha = Math.max(0, 0.7 - k); ctx.fillText('z', 20 + k*6, 14 - k*14);
+  }
+}
+
+function drawFirefly(c, x, t){
+  const k = c.glow/80;
+  const g = ctx.createRadialGradient(x, c.y, 0, x, c.y, 14);
+  g.addColorStop(0, c.col); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.globalAlpha = 0.35 + 0.65*k; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, c.y, 14, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1; ctx.fillStyle = '#fffbe0'; ctx.beginPath(); ctx.arc(x, c.y, 2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  const f = Math.abs(Math.sin(t*0.03 + c.ph));
+  ctx.beginPath(); ctx.ellipse(x - 2, c.y - 2, 2.5, 1 + f, -0.5, 0, Math.PI*2); ctx.ellipse(x + 2, c.y - 2, 2.5, 1 + f, 0.5, 0, Math.PI*2); ctx.fill();
+}
+function drawLizard(c, x, t){
+  const run = c.run > 0, wig = run ? Math.sin(t*0.05)*0.35 : Math.sin(t*0.003 + c.minX)*0.05;
+  ctx.translate(x, c.y); ctx.scale(c.dir*1.2, 1.2);
+  ctx.fillStyle = 'rgba(20,20,10,.18)'; ctx.beginPath(); ctx.ellipse(0, 0, 13, 2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = c.col; ctx.lineCap = 'round';
+  // Schwanz (geschwungen)
+  ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-6, -3); ctx.quadraticCurveTo(-14, -3 + wig*10, -20, 0 - wig*6); ctx.stroke();
+  // Beine
+  ctx.lineWidth = 2;
+  for(const [lx, s] of [[-4, 1], [5, -1]]){ ctx.beginPath(); ctx.moveTo(lx, -3); ctx.lineTo(lx + s*wig*6 - 2, 0); ctx.moveTo(lx, -3); ctx.lineTo(lx - s*wig*6 + 2, 0); ctx.stroke(); }
+  // Körper + Kopf
+  ctx.fillStyle = c.col; ctx.beginPath(); ctx.ellipse(0, -4, 8, 3.2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(9, -5, 4.5, 3, 0.15, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(1, -5.5, 5, 1, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(10.5, -6.5, 1.6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#1d1d1d'; ctx.beginPath(); ctx.arc(11, -6.5, 0.9, 0, Math.PI*2); ctx.fill();
+}
+function drawCrystalCrit(c, x, t){
+  const s = (c.big ? 1.1 : 0.8), l = c.lit;
+  ctx.translate(x, c.y + 1);
+  const g = ctx.createRadialGradient(0, -12, 0, 0, -12, 26 + 10*l);
+  g.addColorStop(0, c.col + (l > 0.5 ? 'aa' : '66')); g.addColorStop(1, c.col + '00');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -12, 26 + 10*l, 0, Math.PI*2); ctx.fill();
+  for(const [dx, a, len, w] of [[-5, -0.35, 16, 4], [0, 0, 24, 5], [6, 0.4, 14, 3.5]]){
+    ctx.save(); ctx.translate(dx*s, 0); ctx.rotate(a); ctx.scale(s, s);
+    ctx.fillStyle = c.col; ctx.beginPath(); ctx.moveTo(-w, 0); ctx.lineTo(-w, -len*0.75); ctx.lineTo(0, -len); ctx.lineTo(w, -len*0.75); ctx.lineTo(w, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${(0.35 + 0.3*l + 0.1*Math.sin(t*0.004 + dx)).toFixed(2)})`;
+    ctx.beginPath(); ctx.moveTo(-w*0.2, 0); ctx.lineTo(-w*0.2, -len*0.75); ctx.lineTo(0, -len); ctx.lineTo(w*0.5, -len*0.75); ctx.lineTo(w*0.5, 0); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+function drawBat(c, x, t){
+  ctx.translate(x, c.y);
+  if(c.state === 'hang'){
+    // kopfüber, Flügel eingewickelt, schaukelt leicht
+    ctx.rotate(Math.sin(t*0.002 + c.ph)*0.08);
+    ctx.strokeStyle = '#2a2230'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-2, 4); ctx.moveTo(2, 0); ctx.lineTo(2, 4); ctx.stroke();
+    ctx.fillStyle = '#4a3c58'; ctx.beginPath(); ctx.ellipse(0, 13, 7, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#5c4c6c'; ctx.beginPath(); ctx.arc(0, 23, 5.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-4, 26); ctx.lineTo(-6, 31); ctx.lineTo(-2, 27); ctx.moveTo(4, 26); ctx.lineTo(6, 31); ctx.lineTo(2, 27); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; for(const ex of [-2, 2]){ ctx.beginPath(); ctx.arc(ex, 22, 1.2, 0, Math.PI*2); ctx.fill(); }
+  } else {
+    const f = Math.sin(t*0.035 + c.ph);
+    ctx.fillStyle = '#4a3c58';
+    for(const sd of [-1, 1]){
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(sd*8, -10*f, sd*16, -4*f); ctx.lineTo(sd*12, 3); ctx.lineTo(sd*8, 1); ctx.lineTo(sd*5, 4); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#5c4c6c'; ctx.beginPath(); ctx.ellipse(0, 1, 4.5, 5.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ffd23f'; for(const ex of [-1.7, 1.7]){ ctx.beginPath(); ctx.arc(ex, -0.5, 1.1, 0, Math.PI*2); ctx.fill(); }
   }
 }

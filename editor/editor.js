@@ -34,6 +34,11 @@
   function curMoveLink(){ return moveSwitchSelect.value ? Number(moveSwitchSelect.value) : null; }
 
   const linkSelect = document.getElementById('linkSelect');
+  // Level-Thema (Aussehen im Spiel: Hintergrund, Farben, Tiere – js/10a-themen.js)
+  const THEME_BG = {dschungel:'#13261b', abend:'#2e1c30', ruinen:'#2e2818', nacht:'#0c1428', hoehle:'#191329', vulkan:'#2e120e'};
+  let theme = 'dschungel';
+  const themeSelect = document.getElementById('themeSelect');
+  themeSelect.addEventListener('change', ()=>{ theme = themeSelect.value; save(); draw(); });
 
   function maxUsedCol(){
     let m = -1;
@@ -58,7 +63,7 @@
     return {
       cols: COLS,
       tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }),
-      hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers
+      hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, theme
     };
   }
   function applySnapshot(d){
@@ -73,6 +78,7 @@
     spikes = (d.spikes||[]).map(x=>({...x}));
     coins = (d.coins||[]).map(x=>({...x}));
     checkpoints = (d.checkpoints||[]).map(x=>({...x}));
+    theme = THEME_BG[d.theme] ? d.theme : 'dschungel'; themeSelect.value = theme;
     fitCols(d.cols);
   }
 
@@ -494,6 +500,7 @@
   document.getElementById('newLevelBtn').addEventListener('click', e=>{
     const doNew = ()=>{
       tiles={}; hooks=[]; switches=[]; doors=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
+      theme='dschungel'; themeSelect.value=theme;
       currentLevelId=null; currentLevelName=null; setCols(MIN_COLS); save(); dirty=false; updateName();
       wrap.scrollLeft=0; closeLevels();
     };
@@ -521,6 +528,7 @@
 
   function draw(){
     ctx.clearRect(0,0,cvs.width,cvs.height);
+    ctx.fillStyle = THEME_BG[theme] || THEME_BG.dschungel; ctx.fillRect(0, 0, cvs.width, cvs.height);
     // Grid
     ctx.lineWidth = 1; ctx.strokeStyle = '#25323f';
     for(let c=0;c<=COLS;c++){ ctx.beginPath(); ctx.moveTo(c*TILE,0); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
@@ -769,6 +777,7 @@
       startM: startM ? {x:startM.c*TILE+TILE/2, y:startM.r*TILE+TILE} : null,
       startF: startF ? {x:startF.c*TILE+TILE/2, y:startF.r*TILE+TILE} : null,
       goal: goal ? {x:goal.c*TILE+TILE/2, y:goal.r*TILE+TILE} : null,
+      theme,
     };
     return JSON.stringify(out, null, 2);
   }

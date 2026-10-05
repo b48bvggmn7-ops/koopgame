@@ -4,11 +4,17 @@
 
 let camX = 0;     // gerundete Kamera zum Zeichnen (ganze Pixel -> kein Flimmern/Zittern der Welt)
 let camPos = 0;   // weiche, ungerundete Kameraposition
-const particles = Array.from({length:18}, () => ({
-  x: Math.random()*LEVEL_W, y: Math.random()*H,
-  r: 1+Math.random()*2, speed: 0.15+Math.random()*0.35,
-  phase: Math.random()*Math.PI*2, par: 0.5+Math.random()*0.4,
-}));
+// Licht-Teilchen je Thema (10a-themen.js): schweben hoch (float), Glühwürmchen (firefly) oder Glut (ember)
+let particles = [];
+function initParticles(){
+  const P = THEME.particles;
+  particles = Array.from({length: P.n}, () => ({
+    x: Math.random()*LEVEL_W, y: Math.random()*H,
+    r: 1+Math.random()*2, speed: (P.mode === 'ember' ? 0.5 : 0.15)+Math.random()*0.35,
+    phase: Math.random()*Math.PI*2, par: 0.5+Math.random()*0.4, wx: Math.random()*1000,
+  }));
+}
+initParticles();
 // Münze in 3D: Kante (Dicke) wird beim Drehen seitlich sichtbar, Fläche mit Licht oben links,
 // geprägter Innenring, Glanzlicht; dunkler Umriss + weicher Schein und Schatten -> hebt sich vom
 // Dschungel-Hintergrund ab. Nur Zeichnung – der Einsammel-Bereich (updateCoins) ist unabhängig davon.
@@ -67,6 +73,7 @@ function crumbleRnd(a, b){ const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; 
 // bröselige Unterseite mit hängenden Krümeln und ab und zu rieselndem Sand -> klar anders als normaler Boden.
 const CRUMBLE_PAL = {light:'#e6c88f', mid:'#cfa66a', dark:'#a97c47', edge:'#6b4a26', gap:'rgba(60,35,15,.75)',
                      moss:'#9bab5c', mossLight:'#c2cf7e', speck:'rgba(120,85,45,.55)'};
+const CRUMBLE_PAL_DEFAULT = {...CRUMBLE_PAL};   // je Level-Thema überschrieben (setTheme, 10a-themen.js)
 function drawCrumbleBlocks(s, x, y){
   const T = 40, nx = Math.max(1, Math.round(s.w/T)), ny = Math.max(1, Math.round(s.h/T));
   ctx.save();
@@ -303,10 +310,10 @@ function draw(){
 
   // weiche Lichtstrahlen von oben
   ctx.save();
-  for(let i=0;i<2;i++){
+  for(let i=0;i<(THEME.ray ? 2 : 0);i++){
     const rx = ((i*420 - camX*0.5) % (VW+500)) - 100;
     const rg = ctx.createLinearGradient(rx,0,rx+160,H);
-    rg.addColorStop(0, colorOf('--ray'));
+    rg.addColorStop(0, THEME.ray);
     rg.addColorStop(1, 'rgba(255,244,200,0)');
     ctx.fillStyle = rg;
     ctx.beginPath();
@@ -316,14 +323,25 @@ function draw(){
   ctx.restore();
 
   // treibende Lichtpartikel
+  const PM = THEME.particles;
   for(const pt of particles){
-    pt.y -= pt.speed * frameDt/STEP;
-    pt.phase += 0.02 * frameDt/STEP;
+    const k = frameDt/STEP;
+    pt.phase += 0.02 * k;
+    if(PM.mode === 'firefly'){   // Glühwürmchen: schwirren langsam umher, blinken
+      pt.y += Math.sin(pt.phase*0.7 + pt.wx)*0.35*k - pt.speed*0.2*k; pt.x += Math.cos(pt.phase*0.5 + pt.wx)*0.4*k;
+    } else {
+      pt.y -= pt.speed * k;
+      if(PM.mode === 'ember') pt.x += Math.sin(pt.phase*1.5 + pt.wx)*0.5*k;
+    }
     if(pt.y < -20){ pt.y = H+10; pt.x = Math.random()*LEVEL_W; }
     const sx = pt.x - camX*pt.par;
     if(sx<-10||sx>VW+10) continue;
-    const flick = 0.5 + Math.sin(pt.phase)*0.5;
-    ctx.fillStyle = `rgba(234,255,176,${(0.15+flick*0.5).toFixed(2)})`;
+    const flick = PM.mode === 'firefly' ? Math.max(0, Math.sin(pt.phase*1.6)) : 0.5 + Math.sin(pt.phase)*0.5;
+    if(PM.mode !== 'float'){
+      ctx.fillStyle = `rgba(${PM.col},${(0.12*flick).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(sx, pt.y, pt.r*4, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.fillStyle = `rgba(${PM.col},${(0.15+flick*0.6).toFixed(2)})`;
     ctx.beginPath(); ctx.arc(sx, pt.y, pt.r, 0, Math.PI*2); ctx.fill();
   }
 
@@ -357,10 +375,7 @@ function draw(){
   // Boden direkt gezeichnet (statt Textur-Streifen): durchgehendes Gras mit welliger Kante,
   // Erde mit Verlauf, runde Ecken nur an echten Enden, nahtlos zu angrenzenden Stücken.
   // off = Verschiebung der Wellen (bei bewegten Stücken fährt das Muster mit)
-  const GROUND_PAL = {
-    g: {grassTop:'#5fe093', grass:'#34c46c', grassDark:'#23a257', dirt1:'#e19a5a', dirt2:'#c77c3d', stripe:'rgba(150,85,35,.28)', edge:'#a8662f'},
-    c: {grassTop:'#8fd9a8', grass:'#5cb883', grassDark:'#3f9467', dirt1:'#c99468', dirt2:'#a86f45', stripe:'rgba(110,60,25,.3)', edge:'#8a5430'},
-  };
+  const GROUND_PAL = {g: THEME.ground};   // Farben je Level-Thema (10a-themen.js)
   const R_CORNER = 9, GRASS_H = 12;
   function waveY(wx){ return Math.sin(wx*0.055)*2.4 + Math.sin(wx*0.137+1.3)*1.2; }
   function drawGroundPiece(s, x, y, off, pal, cracked){
@@ -444,7 +459,7 @@ function draw(){
   // Steinquader (40x20) direkt gezeichnet, Fugen an der Welt ausgerichtet -> laufen über alle
   // angrenzenden Wandstücke nahtlos durch (senkrecht wie waagerecht, auch große Flächen).
   // Kanten/Ecken nur dort, wo die Wand wirklich aufhört. offX/offY: bewegte Wand -> Muster fährt mit.
-  const WALL = {top:'#a9b8c1', bottom:'#8796a0', mortar:'rgba(58,70,79,.42)', hi:'#cad6dc', shade:'#5d6b74', side:'rgba(70,82,90,.55)'};
+  const WALL = THEME.wall;   // Farben je Level-Thema (10a-themen.js)
   function drawWallPiece(s, x, y, offX, offY){
     const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[],below:[]};
     const cov = (list, px) => list.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
@@ -564,7 +579,7 @@ function drawSolidLook(s, look, x){
     } else if(look==='ground'){
       drawGroundPiece(s, x, Math.round(s.y), ax, GROUND_PAL.g, false);
     } else {
-      const img = look==='platform' ? ASSETS.platformWood : ASSETS.groundGrass;
+      const img = themedImg(look==='platform' ? ASSETS.platformWood : ASSETS.groundGrass);
       if(img.complete && img.naturalWidth) drawTiledH(img, s.x, s.y, s.w, s.h, ax);
       else { ctx.fillStyle = colorOf(look==='platform' ? '--platform' : '--ground'); ctx.fillRect(x,s.y,s.w,s.h); }
     }
@@ -628,7 +643,7 @@ function drawSolidLook(s, look, x){
     } else if(s.type==='ground'){
       drawGroundPiece(s, x, s.y, 0, GROUND_PAL.g, false);
     } else {
-      const img = s.type==='platform' ? ASSETS.platformWood : ASSETS.groundGrass;
+      const img = themedImg(s.type==='platform' ? ASSETS.platformWood : ASSETS.groundGrass);
       if(img.complete && img.naturalWidth) drawTiledH(img, s.x, s.y, s.w, s.h);
       else {
         ctx.fillStyle = colorOf(s.type==='platform' ? '--platform' : '--ground');
@@ -818,6 +833,8 @@ function drawSolidLook(s, look, x){
     ctx.fillStyle = '#ffd23f'; ctx.fillText(msg, gx, goal.y-79);
   }
   ctx.restore();
+  if(THEME.tint){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
+  drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
   weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
   drawOffscreenArrows();
   drawContinuePrompt();

@@ -185,6 +185,7 @@ function convertEditorSnapshot(d){
     switches: (d.switches||[]).map(s=>({x:s.c*T+T/2, y:s.r*T+T/2, link:s.link})),
     doors: (d.doors||[]).map(dd=>({x:dd.c*T+T/2, y:dd.r*T+T/2, link:dd.link})),
     startM: foot(d.startM), startF: foot(d.startF), goal: foot(d.goal),
+    theme: d.theme || undefined,
   };
 }
 

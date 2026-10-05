@@ -23,6 +23,7 @@ function weatherForce(ph){
 function weatherUpdate(dt){
   const w = weather;
   w.t += dt;
+  if(!THEME.rain && w.phase !== 'sun'){ w.phase = 'sun'; w.t = 0; w.len = weatherRand(WEATHER_SUN_S); }   // Höhle/Vulkan: kein Regen
   if(w.t >= w.len){
     w.t = 0;
     if(w.phase === 'sun'){ w.phase = 'cloud'; w.len = WEATHER_FADE_S; }
@@ -39,8 +40,8 @@ function weatherUpdate(dt){
 // --- Himmel: Sonnenstrahlen und Regenbogen (hinter allen Ebenen) ---
 function weatherSkyFx(){
   const sunAmt = 1 - weather.rain, t = performance.now();
-  if(sunAmt > 0.05){
-    ctx.save(); ctx.globalAlpha = 0.22*sunAmt; ctx.translate(930, 290);
+  if(sunAmt > 0.05 && THEME.sunRays && THEME.sun){
+    ctx.save(); ctx.globalAlpha = 0.22*sunAmt; ctx.translate(THEME.sun.x, THEME.sun.y);
     ctx.rotate(t*0.00002);
     for(let i = 0; i < 12; i++){
       ctx.rotate(Math.PI*2/12);
@@ -50,7 +51,7 @@ function weatherSkyFx(){
     }
     ctx.restore();
   }
-  if(weather.rainbow > 0){
+  if(weather.rainbow > 0 && THEME.rainbow){
     const k = weather.rainbow, a = Math.min(1, k/3) * Math.min(1, (RAINBOW_S - k)/5) * 0.45;
     ctx.save(); ctx.globalAlpha = a; ctx.lineWidth = 9;
     const cols = ['#ff5a5a', '#ffa64d', '#ffe36b', '#7be07b', '#5ab4ff', '#8a7bff', '#c77bff'];
@@ -109,6 +110,16 @@ function weatherFront(){
         weather.splashes.push({x: s.x + Math.random()*s.w, y: s.y + 1, t0: t});
       }
     }
+  }
+  if(THEME.ash){   // Vulkan: feine Asche rieselt langsam (statt Regen)
+    ctx.save(); ctx.fillStyle = 'rgba(200,190,185,0.55)';
+    for(let i = 0; i < 70; i++){
+      const sx = (i*97.13) % 1, sy = (i*61.7) % 1, speed = 0.03 + (i % 5)*0.008;
+      const y = ((sy*H + t*speed) % (H + 20)) - 10;
+      const x = ((sx*(W + 200) + Math.sin(t*0.0008 + i)*30 - camX*0.6) % (W + 200) + W + 200) % (W + 200) - 100;
+      ctx.fillRect(x, y, 2 + (i % 3), 2);
+    }
+    ctx.restore();
   }
   weather.splashes = weather.splashes.filter(sp => t - sp.t0 < 320);
   if(weather.splashes.length){

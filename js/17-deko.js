@@ -122,7 +122,9 @@ function buildDeco(){
       sinceBird += 40;
       if(sinceBird >= DECO_BIRD_EVERY && !nearStart(mid) && r > 0.3 && !birds.some(b => Math.abs(b.homeX - mid) < DECO_BIRD_GAP)){
         sinceBird = 0;
-        const pal = BIRD_PALS[Math.floor(decoHash(cx, 7)*BIRD_PALS.length)];
+        const pals = THEME.birds;   // Vögel je Level-Thema (10a-themen.js); Höhle: keine
+        if(!pals.length) continue;
+        const pal = pals[Math.floor(decoHash(cx, 7)*pals.length)];
         birds.push({x: mid, y: s.y, homeX: mid, homeY: s.y, pal, dir: r > 0.65 ? -1 : 1,
                      state: 'sit', t: 0, vx: 0, vy: 0, flap: 0, hop: 0, peck: 0});
         continue;
@@ -156,29 +158,30 @@ function drawGroundDeco(){
     const x = m.x - camX;
     if(x < -50 || x > VW + 50) continue;
     if(!m.side){
-      ctx.fillStyle = '#5aa35a';
+      ctx.fillStyle = THEME.moss.base;
       ctx.beginPath(); ctx.moveTo(x, m.y + 6);
       for(let k = 0; k <= 8; k++) ctx.lineTo(x + k*5, m.y + 2 + Math.sin(k*1.9 + m.seed*20)*2.2);
       ctx.lineTo(x + 40, m.y + 8);
       for(let k = 8; k >= 0; k--) ctx.lineTo(x + k*5, m.y + 8 + (k % 3)*2.5 + m.seed*4);
       ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#7cc36f';
+      ctx.fillStyle = THEME.moss.light;
       for(let k = 0; k < 4; k++){ ctx.beginPath(); ctx.arc(x + 5 + k*10 + m.seed*6, m.y + 3, 2.6, 0, Math.PI*2); ctx.fill(); }
     } else {
       const sway = Math.sin(t*0.0012 + m.seed*30)*2;
-      ctx.strokeStyle = '#3f8a4c'; ctx.lineWidth = 2;
+      ctx.strokeStyle = THEME.moss.vine; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x, m.y + 2);
       ctx.quadraticCurveTo(x + m.side*(5 + sway), m.y + 20, x + m.side*(1 + sway*0.5), m.y + 36 + m.seed*20); ctx.stroke();
-      ctx.fillStyle = '#5aae5e';
+      ctx.fillStyle = THEME.moss.leaf;
       for(let k = 0; k < 4; k++){
         const yy = m.y + 8 + k*8, xx = x + m.side*(3 + Math.sin(k + m.seed*9)*2 + sway*0.6);
         ctx.beginPath(); ctx.ellipse(xx + m.side*3, yy, 4, 2.2, m.side*(0.5 + k*0.2), 0, Math.PI*2); ctx.fill();
       }
     }
   }
-  // Pflanzen (wiegen sich leicht, weichen Figuren aus)
+  // Pflanzen (wiegen sich leicht, weichen Figuren aus); Farben je Level-Thema
+  const sprites = themedSprites(DECO_SPRITES);
   for(const pl of decoPlants){
-    const img = DECO_SPRITES[pl.kind], x = pl.x - camX;
+    const img = sprites[pl.kind], x = pl.x - camX;
     if(x < -60 || x > VW + 60) continue;
     let bend = Math.sin(t*0.0016 + pl.ph)*0.05;
     for(const p of [p1, p2]){
@@ -251,10 +254,22 @@ function drawBirds(){
     ctx.fillStyle = pal.belly; ctx.beginPath(); ctx.ellipse(2, 2.5, 6, 4, 0, 0, Math.PI*2); ctx.fill();
     // Kopf
     ctx.fillStyle = pal.body; ctx.beginPath(); ctx.arc(6, -6, 5.5, 0, Math.PI*2); ctx.fill();
+    if(pal.owl){   // Eule (Nacht): Federohren, große gelbe Augen, kurzer Schnabel
+      ctx.fillStyle = pal.body;
+      ctx.beginPath(); ctx.moveTo(2, -10); ctx.lineTo(1, -15); ctx.lineTo(5, -11); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(8, -11); ctx.lineTo(11, -15); ctx.lineTo(11, -9); ctx.fill();
+      ctx.fillStyle = pal.belly; ctx.beginPath(); ctx.ellipse(6.5, -6, 5, 4, 0, 0, Math.PI*2); ctx.fill();
+      for(const ex of [4.5, 8.8]){
+        ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(ex, -6.5, 2.1, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#1d1d1d'; ctx.beginPath(); ctx.arc(ex + 0.3, -6.5, 1.1, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle = pal.beak; ctx.beginPath(); ctx.moveTo(6, -5); ctx.lineTo(7.5, -2.5); ctx.lineTo(9, -5); ctx.closePath(); ctx.fill();
+    } else {
     ctx.fillStyle = pal.beak; ctx.beginPath(); ctx.moveTo(10.5, -7); ctx.lineTo(15, -5.5); ctx.lineTo(10.5, -4); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(7.5, -7, 2.2, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#1d1d1d'; ctx.beginPath(); ctx.arc(8, -7, 1.3, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8.4, -7.5, 0.5, 0, Math.PI*2); ctx.fill();
+    }
     ctx.fillStyle = 'rgba(255,120,140,0.45)'; ctx.beginPath(); ctx.arc(6, -4, 1.6, 0, Math.PI*2); ctx.fill();
     // Flügel
     ctx.fillStyle = pal.wing;

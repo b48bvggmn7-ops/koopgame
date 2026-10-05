@@ -471,6 +471,7 @@ async def projekt_levels_beide_formate_gleich(g):
         assert zellen(umg['movingPlatforms']) == zellen(spiel['movingPlatforms']), f"{L['datei']}: bewegte Teile verschieden"
         for k in ('startM', 'startF', 'goal'):
             assert umg[k] == spiel[k], f"{L['datei']}: {k} verschieden"
+        assert umg.get('theme') == spiel.get('theme'), f"{L['datei']}: Thema verschieden"
         for k in ('coins', 'hooks', 'checkpoints', 'spikes', 'switches', 'doors'):
             a = sorted(json.dumps(o, sort_keys=True) for o in umg[k])
             b = sorted(json.dumps(o, sort_keys=True) for o in spiel[k])
@@ -1072,6 +1073,49 @@ async def seil_absprung_wie_schwung(g):
             assert vx > rv*0.88, f'Schwung nach dem Loslassen weg: {rv} -> {vx}'
 
 # ---------------------------------------------------------------- Runner
+
+@test
+async def level_themen(g):
+    """Jedes Level hat sein eigenes Aussehen (Thema): Level 1 Dschungel, 2 Abendrot, 3 Ruinen; alle 6 Themen
+    zeichnen fehlerfrei; Nacht/Höhle sind dunkel mit Licht um die Figuren; der Editor speichert das Thema."""
+    erwartet = {'level-1.json': 'dschungel', 'level-2.json': 'abend', 'level-3.json': 'ruinen'}
+    for datei, th in erwartet.items():
+        d = json.loads((ROOT / 'levels' / datei).read_text())
+        assert d.get('theme') == th, f'{datei}: Thema {d.get("theme")} statt {th}'
+    assert await g.ev("THEME_ORDER.join(',')") == 'dschungel,abend,ruinen,nacht,hoehle,vulkan'
+    await g.load(level([ground(0, 680, 3000), ground(400, 560, 200, 40, 'wall'), ground(700, 680, 120, 40, 'crumble')],
+                       {'x': 300, 'y': 680}, {'x': 260, 'y': 680}, theme='nacht'))
+    assert await g.ev('themeName') == 'nacht', 'Thema aus der Level-Datei nicht übernommen'
+    farben = set()
+    for th in ('dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'):
+        await g.ev(f"setTheme('{th}')"); await g.p.wait_for_timeout(350)
+        # Farbe des Himmels oben links unterscheidet sich je Thema
+        farben.add(await g.ev("Array.from(BG_SKY.getContext('2d').getImageData(5, 5, 1, 1).data).slice(0,3).join(',')"))
+        assert await g.ev('THEME.ground.grass'), 'keine Bodenfarbe'
+    assert len(farben) == 6, f'Themen sehen gleich aus: {farben}'
+    # dunkles Thema: Bild um die Figur heller als weit weg
+    await g.ev("setTheme('hoehle')"); await g.p.wait_for_timeout(400)
+    hell = await g.ev("""(()=>{ const sx=Math.round((p1.x-camX)*zoom), sy=Math.round((p1.y-p1.h*0.5)*zoom+H*(1-zoom));
+        const a = darkCtx.getImageData(sx, sy, 1, 1).data[3], b = darkCtx.getImageData(Math.min(W-2, sx+600), 60, 1, 1).data[3]; return [a, b]; })()""")
+    assert hell[0] < hell[1], f'kein Licht um die Figur: {hell}'
+    # ohne Thema: Dschungel
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 260, 'y': 680}))
+    assert await g.ev('themeName') == 'dschungel'
+    # Editor: Thema wählen -> gespeichert, exportiert und im Spiel-Format
+    srv = webserver()
+    try:
+        p = g.p
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.select_option('#themeSelect', 'vulkan'); await p.wait_for_timeout(100)
+        roh = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2')).theme")
+        assert roh == 'vulkan', f'Editor speichert das Thema nicht: {roh}'
+        await p.reload(); await p.wait_for_timeout(300)
+        assert await p.eval_on_selector('#themeSelect', 'e => e.value') == 'vulkan', 'Thema nach Neuladen weg'
+        await p.click('#exportBtn'); await p.wait_for_timeout(200)
+        exp = json.loads(await p.eval_on_selector('#exportText', 'e => e.value'))
+        assert exp.get('theme') == 'vulkan', 'Export ohne Thema'
+    finally:
+        srv.shutdown()
 
 @test
 async def kamera_ruhig_bei_zwei(g):

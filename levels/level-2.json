@@ -3764,5 +3764,6 @@
     "x": 31780,
     "y": 600
   },
-  "_mitfahrendeStacheln": 38
+  "_mitfahrendeStacheln": 38,
+  "theme": "abend"
 }

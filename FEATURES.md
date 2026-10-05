@@ -266,6 +266,25 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.
   - Das frühere vom Nutzer hochgeladene „Level 3“ heißt jetzt „Level 3 (alter Entwurf)“
     (levels/level-3-alter-entwurf.json), unverändert, am Ende der Levelliste.
+  - LEVEL-THEMEN (Nutzerwunsch: jedes Level sieht anders aus; js/10a-themen.js, Level-Feld "theme"):
+    Ein Thema ändert NUR das Aussehen (keine Physik): Himmel (Sonne/Mond/Sterne), alle 4 Hintergrund-Ebenen,
+    Farben von Boden, Wand, Bröckelboden, Moos, Plattform-Holz und Pflanzen, Vögel, welche Tiere vorkommen,
+    Licht-Teilchen, Wetter, Lichtstrahlen, Farbstich und ob es dunkel ist.
+      dschungel = Dschungel am Morgen (wie bisher; Level 1)
+      abend     = Baumkronen im Abendrot: violett-oranger Himmel, tiefe Sonne, Silhouetten-Wald, Aras/Tukane,
+                  Glühwürmchen-Lichter (Level 2)
+      ruinen    = Tempelruinen am Mittag: Stufentempel/Stupas in der Ferne, Säulen und Bögen, Sandstein-Wände,
+                  trockenes Gras, Eidechsen (flitzen davon), Tauben/Spatzen, Fledermäuse unter Vorsprüngen (Level 3)
+      nacht     = Mondnacht: Mond + Sterne, dunkelblau, Eulen, Glühwürmchen, Leuchtpilze, Fledermäuse; DUNKEL –
+                  um Figuren, Münzen, Haken, Hebel, Checkpoints, Ziel und leuchtende Tiere bleibt es hell (Level 4)
+      hoehle    = Kristallhöhle: Tropfsteine, leuchtende Kristalle (leuchten heller, wenn man nah ist; kein Ton,
+                  Klingeln bleibt den Münzen vorbehalten), unterirdischer Wasserfall, Leuchtmoos, keine Vögel,
+                  kein Regen; noch dunkler (Level 5)
+      vulkan    = Feuerberg: roter Himmel, Vulkan mit Lavaströmen und Rauch, Lavafall, verkohlte Bäume, Basalt-Wände
+                  mit glühenden Fugen, Glut-Funken steigen auf, Asche rieselt statt Regen, Feuer-Salamander (Level 6)
+    Neue Tiere: Glühwürmchen, Eidechse, Kristall, Fledermaus (flattert weg, kommt später zurück). Ohne "theme" = Dschungel.
+    Editor: Auswahl „Thema“ oben in der Leiste (wird gespeichert, exportiert, beim Testen benutzt; Editor-Fläche
+    in der Grundfarbe des Themas). Test level_themen.
 ```
 
 ## Level-Editor (editor/)
@@ -296,6 +315,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Plattform-Werkzeug bewusst entfernt (Nutzerwunsch, Boden reicht); alte Plattform-Kacheln in
     gespeicherten Levels werden weiter angezeigt/exportiert und lassen sich radieren
   - Export im Spiel-Format (Textfeld kopieren oder als .json-Datei speichern)
+  - Auswahl „Thema“ (oben): Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,
+    Kristallhöhle, Feuerberg); gespeichert in snapshot/Export als "theme"; Editor-Fläche in der Grundfarbe
   - Taste Enter im Editor = „▶ Testen“ (nicht beim Tippen in ein Feld, nicht bei offenem Levels-/Export-Fenster)
   - Knopf „▶ Testen“ (gelb, oben): legt das aktuelle Level im Browser ab (localStorage monchichi_test_level,
     Spiel-Format) und öffnet sofort das Spiel damit (index.html?test=1, ohne Hauptmenü, ohne Speichern/Hochladen).

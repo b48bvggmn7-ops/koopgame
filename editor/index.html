@@ -108,6 +108,17 @@
     <div class="tool" data-tool="goal"><span class="swatch" style="background:#5fc98f"></span>Ziel</div>
     <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
     <div class="spacer"></div>
+    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Aussehen des Levels im Spiel: Himmel, Hintergrund, Farben, Tiere">
+      Thema
+      <select id="themeSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="dschungel">🌿 Dschungel (Morgen)</option>
+        <option value="abend">🌅 Abendrot</option>
+        <option value="ruinen">🏛️ Tempelruinen</option>
+        <option value="nacht">🌙 Mondnacht</option>
+        <option value="hoehle">💎 Kristallhöhle</option>
+        <option value="vulkan">🌋 Feuerberg</option>
+      </select>
+    </label>
     <span id="curName">Unbenanntes Level</span>
     <button class="action secondary" id="extendBtn" title="Level um 20 Spalten nach rechts verlängern">+20 Spalten ➜</button>
     <button class="action secondary" id="clearBtn">Alles löschen</button>

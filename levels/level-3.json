@@ -5222,5 +5222,6 @@
     "x": 31860,
     "y": 600
   },
-  "_mitfahrendeStacheln": 33
+  "_mitfahrendeStacheln": 33,
+  "theme": "ruinen"
 }
