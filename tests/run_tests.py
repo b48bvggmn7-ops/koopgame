@@ -125,6 +125,49 @@ async def decke_kein_teleport(g):
     assert not bad, f'Teleport bei (Decke, Ganghöhe, Figur): {bad[:5]}'
 
 @test
+async def fahrende_platte_kein_durchfahren(g):
+    """Bewegte Platten (hoch/runter) schieben Figuren hinaus statt sie durchzulassen: wer unter einer sinkenden
+    Platte springt oder steht, steckt nie darin und landet nie plötzlich obendrauf; mitfahren geht nicht durch Wände."""
+    mps = [{'x': 400, 'y': 40, 'w': 120, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 400, 'targetY': 640, 'speed': 3},
+           {'x': 600, 'y': 640, 'w': 120, 'h': 40, 'look': 'wall', 'group': 2, 'targetX': 600, 'targetY': 40, 'speed': 4.5},
+           {'x': 900, 'y': 560, 'w': 120, 'h': 40, 'look': 'ground', 'group': 3, 'targetX': 1400, 'targetY': 560, 'speed': 3}]
+    await g.load(level([ground(0, 680, 2000), ground(760, 200, 40, 480, 'wall'), ground(1200, 400, 40, 150, 'wall')],
+                       {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, movingPlatforms=mps))
+    await g.ev("closeMenu(); deathState=null")
+    bad = await g.p.evaluate("""() => {
+      const bad = []; let seed = 7;
+      const rnd = () => { seed = (seed*16807) % 2147483647; return seed/2147483647; };
+      const plats = solids.filter(s=>s.type==='moveplat').slice(0, 2);
+      const inside = () => { const b={x:p1.x-p1.w/2,y:p1.y-p1.h,w:p1.w,h:p1.h};
+        return solids.some(s=>{ if(s.gone) return false;
+          const ox=Math.min(b.x+b.w,s.x+s.w)-Math.max(b.x,s.x), oy=Math.min(b.y+b.h,s.y+s.h)-Math.max(b.y,s.y); return ox>1&&oy>1; }); };
+      for(let run=0; run<150; run++){
+        resetLevel(); menuScreen='pause'; deathState=null; for(const k in KEYS) KEYS[k]=false;
+        plats.forEach(s=>s.tripActive=true);
+        p2.x=100; p2.y=680; p1.x=300+rnd()*450; p1.y=680; p1.vx=0; p1.vy=0;
+        const pre=Math.floor(rnd()*400); for(let i=0;i<pre;i++) updateMovingPlatforms(16.6, []);
+        if(inside()) continue;
+        let keys={}, ts=0;
+        for(let f=0; f<300 && !deathState; f++){
+          ts+=16.6; for(const k in KEYS) KEYS[k]=false;
+          if(f%15===0) keys={l:rnd()<0.35, r:rnd()<0.35, j:rnd()<0.5};
+          if(keys.l) KEYS[p1.keys.left]=true; if(keys.r) KEYS[p1.keys.right]=true;
+          if(keys.j){ KEYS[p1.keys.jump]=true; if(f%15===0) KEYS[p1.keys.jump+'_pressed']=true; }
+          const y0=p1.y; stepSim(ts);
+          if(inside()) { bad.push(['steckt drin', run, f]); break; }
+          if(p1.y - y0 < -22) { bad.push(['nach oben versetzt', run, f]); break; }
+        }
+      }
+      // Mitfahren auf der waagerechten Platte gegen die Wand: Figur bleibt an der Wand stehen
+      resetLevel(); menuScreen='pause'; deathState=null; for(const k in KEYS) KEYS[k]=false;
+      const h = solids.filter(s=>s.type==='moveplat')[2]; h.tripActive = true;
+      p1.x = h.x + 100; p1.y = h.y; p1.vx = 0; p1.vy = 0; p1.grounded = true;
+      for(let f=0; f<120; f++){ stepSim(f*16.6); if(p1.x + p1.w/2 > 1200.5) { bad.push(['durch die Wand', p1.x]); break; } }
+      return bad;
+    }""")
+    assert not bad, f'Figur fährt durch bewegte Platte / Wand: {bad[:5]}'
+
+@test
 async def seil_vom_boden_hochziehen(g):
     """Vom Boden einhaken bleibt dran; W zieht hoch."""
     await g.load(level([ground(0, 680, 1400)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},

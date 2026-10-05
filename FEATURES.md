@@ -119,6 +119,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Hebel auf bewegtem Boden fahren mit (Hebel-Kästchen direkt über dem Stück; syncSwitchCarriers) und lassen
     sich unterwegs betätigen; bei Tod/Neustart zurück an den Start. Hebel auf festem Boden bleiben stehen.
   - Bewegter Boden zeigt seinen Fahrweg: gepunktete Schiene, Endpunkte, gestrichelter Umriss an Start und Ziel
+  - Bewegte Teile sind fest: fährt ein Stück in eine Figur hinein (von oben, unten oder seitlich), wird sie zur
+    nächsten freien Seite hinausgeschoben – bevorzugt in Fahrtrichtung, nie gegen sie (eine sinkende Platte setzt
+    niemanden plötzlich obendrauf; wer darunter steht, wird zur Seite geschoben). Mitfahren auf einem Stück geht
+    nicht durch Wände/Decken (pushOutOfMover/playerBlocked in 05-level-objekte.js, Test fahrende_platte_kein_durchfahren).
   - Stacheln-Aussehen (SPIKE_SPRITE): 4 glänzende Metallkegel mit Glanz und rötlicher Spitze auf einer Eisenleiste
     mit Nieten, leichter Schatten; gedreht je Richtung
   - Stacheln können in 4 Richtungen zeigen (spike.dir 0=oben,1=rechts,2=unten,3=links; Treffer = ganzes Kästchen)

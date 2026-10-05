@@ -184,18 +184,61 @@ function updateMovingPlatforms(dt, players){
     s.x += stepX; s.y += stepY;
     players.forEach((player, i)=>{
     const onTop = onTopList[i];
-    if(onTop && !carried.has(player)){ player.x += stepX; player.y += stepY; carried.add(player); }
-    else if(!onTop){
-      // Seitlich gegen den Spieler fahren: Spieler wegschieben statt einklemmen
-      const box = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
-      if(rectsOverlap(box, s)){
-        if(stepY < 0 && player.y - s.y < 12){ player.y = s.y; player.vy = 0; player.grounded = true; }
-        else if(stepX > 0) player.x = s.x + s.w + player.w/2;
-        else if(stepX < 0) player.x = s.x - player.w/2;
-      }
+    if(onTop && !carried.has(player)){
+      player.x += stepX; player.y += stepY; carried.add(player);
+      // nie durch feste Wände/Decken mitnehmen: wird es eng, bleibt die Figur stehen (rutscht von der Platte)
+      if(stepX && playerBlocked(player, s)) player.x -= stepX;
+      if(stepY && playerBlocked(player, s)) player.y -= stepY;
     }
+    else if(!onTop) pushOutOfMover(player, s, stepX, stepY);
     });
   }
+}
+// Fährt ein bewegtes Stück in eine Figur hinein (von oben, unten oder der Seite), wird sie zur nächsten freien
+// Seite hinausgeschoben – bevorzugt in Fahrtrichtung. Sonst bliebe sie im Stück stecken und die Kollision würde
+// sie im nächsten Schritt plötzlich obendrauf setzen („durch die Platte“ / „auf einmal über der Wand“).
+function playerBlocked(player, except){
+  const b = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
+  for(const o of solids){
+    if(o === except || o.gone) continue;
+    const ox = Math.min(b.x+b.w, o.x+o.w) - Math.max(b.x, o.x);
+    const oy = Math.min(b.y+b.h, o.y+o.h) - Math.max(b.y, o.y);
+    if(ox > COLLIDE_EPS && oy > COLLIDE_EPS) return true;
+  }
+  return false;
+}
+function pushOutOfMover(player, s, stepX, stepY){
+  const box = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
+  const ox = Math.min(box.x+box.w, s.x+s.w) - Math.max(box.x, s.x);
+  const oy = Math.min(box.y+box.h, s.y+s.h) - Math.max(box.y, s.y);
+  if(ox <= COLLIDE_EPS || oy <= COLLIDE_EPS) return;
+  const above = box.y + box.h/2 < s.y + s.h/2, left = player.x < s.x + s.w/2;
+  const cand = {
+    up:    {x: player.x, y: s.y, d: player.y - s.y},
+    down:  {x: player.x, y: s.y + s.h + player.h, d: s.y + s.h + player.h - player.y},
+    left:  {x: s.x - player.w/2, y: player.y, d: player.x - (s.x - player.w/2)},
+    right: {x: s.x + s.w + player.w/2, y: player.y, d: s.x + s.w + player.w/2 - player.x},
+  };
+  // Fahrtrichtung zuerst (seitlich fahrende Wände schieben wie bisher in Fahrtrichtung, steigende Böden
+  // heben die Figur nur hoch, wenn sie knapp mit den Füßen drinsteckt), danach die kürzeste Strecke
+  let first = null;
+  if(Math.abs(stepX) >= Math.abs(stepY) && stepX) first = stepX > 0 ? 'right' : 'left';
+  else if(stepY < 0 && (above || cand.up.d < 12)) first = 'up';
+  else if(stepY > 0 && !above) first = 'down';
+  // gegen die Fahrtrichtung (z. B. von einer sinkenden Platte nach OBEN) nur als allerletzter Ausweg
+  const against = stepY > 0 ? 'up' : stepY < 0 ? 'down' : stepX > 0 ? 'left' : stepX < 0 ? 'right' : '';
+  const order = Object.keys(cand).sort((a, b) => (cand[a].d + (a === against ? 1e4 : 0)) - (cand[b].d + (b === against ? 1e4 : 0)));
+  if(first) order.unshift(first);
+  let pick = null;
+  for(const k of order){
+    player.x = cand[k].x; player.y = cand[k].y;
+    if(!playerBlocked(player, s)){ pick = k; break; }
+  }
+  if(!pick){ pick = first || order[0]; }
+  player.x = cand[pick].x; player.y = cand[pick].y;
+  if(pick === 'up'){ player.vy = 0; player.grounded = true; }
+  else if(pick === 'down') player.vy = Math.max(player.vy, stepY, 0);
+  else if((pick === 'right' && player.vx < 0) || (pick === 'left' && player.vx > 0)) player.vx = 0;
 }
 
 // Hebel auf bewegtem Boden fahren mit: steht ein Hebel direkt auf einem bewegten Stück (Hebel-Kästchen genau
