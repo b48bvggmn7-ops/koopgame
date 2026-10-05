@@ -1076,9 +1076,9 @@ async def seil_absprung_wie_schwung(g):
 @test
 async def kamera_ruhig_bei_zwei(g):
     """Kamera wackelt nicht: kleine Hin-und-her-Bewegungen der hinteren Figur bewegen das Bild nicht,
-    gemeinsames Vorwärtslaufen schon; Bild ist 10 % herausgezoomt."""
-    assert abs(await g.ev('zoom') - 0.9) < 1e-9, 'Zoom ist nicht 0,9'
-    assert abs(await g.ev('VW') - 1280/0.9) < 1, 'sichtbare Weltbreite passt nicht zum Zoom'
+    gemeinsames Vorwärtslaufen schon; Bild ist 5 % herausgezoomt."""
+    assert abs(await g.ev('zoom') - 0.95) < 1e-9, 'Zoom ist nicht 0,95'
+    assert abs(await g.ev('VW') - 1280/0.95) < 1, 'sichtbare Weltbreite passt nicht zum Zoom'
     await g.load(level([ground(0, 680, 6000)], {'x': 600, 'y': 680}, {'x': 700, 'y': 680}))
     await g.p.wait_for_timeout(1500)
     await g.hold(('KeyA',), 300); await g.p.wait_for_timeout(1200)

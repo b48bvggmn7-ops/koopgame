@@ -6,11 +6,11 @@
 // Bildschirm links außerhalb des Bildes sein -> max. Abstand = 0,75 + 0,5 = 1,25 Bildschirmbreiten (1600 px = 40 K)
 const MAX_SEPARATION = Math.round(W * 1.25);
 const CAM_LEFT = 300, CAM_RIGHT = 70;
-// Zoom (Nutzerwunsch): Spielwelt 10 % kleiner -> man sieht mehr; Bild bleibt 16:9, Boden unten bündig,
+// Zoom (Nutzerwunsch): Spielwelt 5 % kleiner (erst 10 %, dann „5 % weniger“) -> man sieht mehr; Bild bleibt 16:9, Boden unten bündig,
 // oben wird ein Streifen Himmel/Hintergrund sichtbar.
 // Passen beide nicht ins Bild, folgt die Kamera der vorderen Figur; die hintere erscheint als Pfeil am Rand.
 const FRONT_MAX = 0.75;   // vordere Figur steht höchstens bei 75 % der Bildbreite -> immer Blick nach vorn
-const zoom = 0.9;
+const zoom = 0.95;
 const VW = W / zoom;   // sichtbare Weltbreite   // (CAM_LEFT war 150 -> zu eng)   // Kamera: Abstand hintere Figur zum linken / vordere zum rechten Rand
 // Ruhige Kamera (gegen Wackeln bei zwei Spielern): Totzone für die hintere Figur. Solange sie zwischen
 // CAM_BACK_MIN und CAM_BACK_PUSH px vom linken Rand steht, bleibt das Bild stehen (Zappeln, Springen,
