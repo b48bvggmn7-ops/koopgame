@@ -223,12 +223,16 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Münz-Zähler oben links). Wer mehr Tode hat: Zahl rot und das Gesicht wird mit jedem Tod Vorsprung größer (+12 % je
     Tod, höchstens +80 %); bei jedem Tod hüpft die Zahl. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu
     geladenes Level beginnt bei 0 (deathCount in 01-level.js; Test tode_zaehler).
-  - Level-Bilanz beim Ziel-Tanz: „BEIDE IM ZIEL“, beide Gesichter mit Toden (wer mehr Tode hat, größer und rot),
-    darunter „Meiste Tode: …“ bzw. „Gleich oft gestorben“ / „Ohne einen einzigen Tod“ (kein „Tollpatsch“, keine Sprüche).
+  - Beide im Ziel: während des Tanzes nur kurz „Beide im Ziel! 🎉“; danach ein Statistik-Bildschirm im Stil von
+    Hauptmenü/Levelauswahl („LEVEL GESCHAFFT“, Level-Nummer + Name): für Affe und Schweinchen je eine Glas-Karte mit
+    Gesicht, Münzen (selbst gesammelt, / Münzen der eigenen Farbe) und Toden; Zahlen zählen hoch; Schilder
+    „Mehr Münzen“ (grün) / „Mehr Tode“ (rot). „Weiter“ (Springen/Enter/✕) -> Levelauswahl.
+  - Levelauswahl nach „Level geschafft“: auf der Karte des neu freigeschalteten Levels liegt ein goldenes Schloss,
+    es wackelt, der Bügel springt auf und es platzt in goldene Splitter, die Karte leuchtet golden auf; danach
+    „Level x freigeschaltet!“. War nichts neu freizuschalten (Level schon geschafft), geht es ohne Schloss weiter.
   - Unter jeder geschafften Levelkarte eine knappe Zeile: Totenkopf, Affe x, Schweinchen y (höhere Zahl rot); gemerkt
-    wird die letzte geschaffte Runde (save.stats).
-  - Hauptmenü: die Figur mit insgesamt mehr Toden (Summe über alle geschafften Levels) trägt eine Totenkopf-Maske
-    (Knochen-Maske mit roten Augen, Riss und Zähnen); Gleichstand = keine Maske (Test duell_unter_levelkarte).
+    wird die letzte geschaffte Runde (save.stats). Keine Totenkopf-Maske im Hauptmenü (Nutzerwunsch, wieder entfernt).
+    (Tests duell_unter_levelkarte, startmenue_fortschritt_und_wahl)
   - Vollbild: beim ersten Tastendruck/Klick im Titelbild schaltet das Spiel in den Vollbild-Modus (Browser-Regel:
     nicht per Controller); in den Optionen „Vollbild an / aus“. Im Vollbild wird Esc fürs Spiel gesperrt
     (Tastatur-Sperre, Chrome/Edge): Esc öffnet die Pause, LANGES Halten von Esc verlässt das Vollbild

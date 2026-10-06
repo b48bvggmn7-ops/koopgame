@@ -104,7 +104,7 @@ async def start_ohne_fehler(g):
 async def tode_zaehler(g):
     """Tode-Duell oben rechts: Tode je Figur (Affe / Schwein), keine Münzen (die stehen oben links); wer mehr Tode hat,
     ist rot und wird mit jedem Tod Vorsprung größer. Zählt pro Level: Weitermachen und R lassen den Stand,
-    ein neu geladenes Level beginnt bei 0. Level-Bilanz ohne „Tollpatsch“."""
+    ein neu geladenes Level beginnt bei 0."""
     lvl = level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680})
     await g.load(lvl)
     karte = "(() => { const c = document.getElementById('duelCard'), r = c.getBoundingClientRect(), d = w => c.querySelector('.duo.' + w);" \
@@ -125,8 +125,6 @@ async def tode_zaehler(g):
     assert (k['m'], k['f']) == ('1', '3') and k['leadF'] and not k['leadM'], f'Zähler falsch: {k}'
     assert k['gf'] > k['gm'] * 1.15, f'Schweinchen (mehr Tode) nicht größer: {k}'
     assert groessen[1] > groessen[0] + 1, f'wird mit mehr Toden nicht größer: {groessen}'
-    html = await g.ev("winSummaryHTML()")
-    assert 'Schweinchen' in html and 'Tollpatsch' not in html and '🪙' not in html, f'Level-Bilanz falsch: {html}'
     await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(150)
     assert (await g.ev(karte))['f'] == '3', 'R setzt den Zähler zurück'
     await g.load(lvl)
@@ -135,27 +133,37 @@ async def tode_zaehler(g):
 
 @test
 async def duell_unter_levelkarte(g):
-    """Geschafftes Level: unter der Levelkarte steht knapp, wie oft wer gestorben ist (eine Zeile, gemerkt im
-    Spielstand); im Hauptmenü trägt die Figur mit insgesamt mehr Toden eine Totenkopf-Maske."""
+    """Level geschafft: nach dem Tanz ein Statistik-Bildschirm (Münzen und Tode je Figur, im Stil des Startmenüs),
+    „Weiter“ führt zur Levelauswahl, wo auf dem neu freigeschalteten Level ein goldenes Schloss platzt. Unter der
+    geschafften Levelkarte steht eine knappe Tode-Zeile. Keine Totenkopf-Maske im Hauptmenü."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await startmenue_bis_level(g)
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && menuScreen === null", timeout=10000)
-        await g.ev("deathCount.m = 1; deathCount.f = 4; deathState = null; won = true; winSteps = 0; winT0 = performance.now(); showWinSummary()")
-        assert 'Meiste Tode' in await g.ev("document.getElementById('toast').textContent"), 'keine Level-Bilanz'
-        await p.wait_for_function("document.querySelector('#sm-cards .lc .duel')", timeout=15000)
-        st = await g.ev("GameMenu.getSave().stats[1]")
-        assert st['m'] == 1 and st['f'] == 4, f'Stand nicht gemerkt: {st}'
+        await g.ev("deathCount.m = 1; deathCount.f = 4; let k = 0; for(const c of coins){ if(c.color === 'blue' && k < 3){ c.taken = true; c.takenBy = 'm'; k++; } }"
+                   " deathState = null; won = true; winSteps = 0; winT0 = performance.now(); showWinSummary()")
+        await p.wait_for_function("document.querySelector('#sm-s-results.active')", timeout=20000)
+        await p.wait_for_timeout(1800)   # Zahlen zählen hoch
+        r = await g.ev("({m: document.getElementById('sm-r-m').textContent, f: document.getElementById('sm-r-f').textContent})")
+        assert 'Münzen' in r['m'] and 'Tode' in r['m'] and '3' in r['m'] and '4' in r['f'], f'Statistik falsch: {r}'
+        assert 'Mehr Münzen' in r['m'] and 'Mehr Tode' in r['f'], f'Hervorhebung falsch: {r}'
+        st = await g.ev("GameMenu.getSave()")
+        assert st['stats']['1']['m'] == 1 and st['stats']['1']['f'] == 4 and st['unlocked'] >= 2, f'Stand nicht gemerkt: {st}'
+        await p.keyboard.press('Enter')
+        await p.wait_for_function("document.querySelector('#sm-s-levels.active')", timeout=5000)
+        await p.wait_for_function("document.querySelector('#sm-cards .lc .ulock')", timeout=3000)   # Schloss auf Level 2
+        assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
+        await p.wait_for_function("document.querySelector('.ulock.burst')", timeout=5000)
+        await p.wait_for_function("!document.querySelector('.ulock')", timeout=5000)
         zeile = await g.ev("(() => { const d = document.querySelector('#sm-cards .lc .duel');"
                            " return {txt: d.textContent, lead: [...d.querySelectorAll('b.lead')].map(b => b.textContent)}; })()")
-        assert '1' in zeile['txt'] and zeile['lead'] == ['4'] and 'Tollpatsch' not in zeile['txt'], f'Levelkarte: {zeile}'
+        assert '1' in zeile['txt'] and zeile['lead'] == ['4'], f'Levelkarte: {zeile}'
         for _ in range(3):   # Levelauswahl -> Hauptmenü (kurze Eingabesperre nach dem Bildschirmwechsel)
             await p.wait_for_timeout(600); await p.keyboard.press('Escape'); await p.wait_for_timeout(600)
             if await sm_screen(g) == 'sm-s-menu': break
         assert await sm_screen(g) == 'sm-s-menu', f'Esc führt nicht ins Hauptmenü: {await sm_screen(g)}'
-        maske = await g.ev("[...document.querySelectorAll('#sm-s-menu .bob[data-char]')].filter(b => b.querySelector('.skullmask')).map(b => b.dataset.char)")
-        assert maske == ['pig'], f'Totenkopf-Maske falsch: {maske}'
+        assert not await g.ev("!!document.querySelector('#sm-s-menu .skullmask')"), 'Totenkopf-Maske im Hauptmenü'
     finally:
         srv.shutdown()
 
@@ -415,7 +423,7 @@ async def menue_projekt_levels(g):
 
 @test
 async def startmenue_fortschritt_und_wahl(g):
-    """Geschafftes Level schaltet das nächste frei (Levelauswahl mit Hinweis); Spielerwahl tauscht die Tasten:
+    """Geschafftes Level schaltet das nächste frei (Statistik, dann Levelauswahl mit Hinweis); Spielerwahl tauscht die Tasten:
     Spieler 1 aufs Schweinchen -> Schweinchen mit A/D/Leertaste, Affe mit Pfeilen/Num 0/Num 1."""
     srv = webserver(); p = g.p
     try:
@@ -428,10 +436,12 @@ async def startmenue_fortschritt_und_wahl(g):
         x0 = await g.ev('p2.x'); await g.hold(('KeyD',), 400)
         assert await g.ev('p2.x') > x0 + 20, 'Spieler 1 steuert das Schweinchen nicht'
         await g.ev("winFinish()"); await p.wait_for_timeout(700)
-        assert await sm_screen(g) == 'sm-s-levels', 'nach dem Ziel keine Levelauswahl'
+        assert await sm_screen(g) == 'sm-s-results', 'nach dem Ziel kein Statistik-Bildschirm'
         sv = await g.ev("GameMenu.getSave()")
         assert 1 in sv['completed'] and sv['unlocked'] >= 2, f'Fortschritt nicht gemerkt: {sv}'
-        assert 'freigeschaltet' in await p.text_content('#sm-toast'), 'kein Freischalt-Hinweis'
+        await p.wait_for_timeout(400); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-levels', 'nach der Statistik keine Levelauswahl'
+        await p.wait_for_function("document.getElementById('sm-toast').textContent.includes('freigeschaltet')", timeout=5000)
     finally:
         srv.shutdown()
 

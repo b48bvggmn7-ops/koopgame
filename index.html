@@ -63,14 +63,6 @@
   .duo b{ min-width:1ch; text-align:center; transition:color .3s; }
   .duo.lead b{ color:#ff5c6c; }
   .duo.bump b{ animation:coinBump .35s ease-out; }
-  /* Level-Bilanz beim Ziel-Tanz (im #toast) */
-  #toast .wt{ font-size:13px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; opacity:.75; margin-bottom:14px; }
-  #toast .wsum{ display:flex; align-items:flex-end; justify-content:center; gap:26px; }
-  #toast .ws{ --grow:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
-  #toast .ws .ava{ width:64px; height:64px; object-fit:contain; transform:scale(var(--grow)); transform-origin:50% 100%; margin-top:calc((var(--grow) - 1)*64px); }
-  #toast .ws b{ font-size:26px; font-variant-numeric:tabular-nums; } #toast .ws.lead b{ color:#ff5c6c; }
-  #toast .mid{ width:22px; height:22px; color:rgba(255,255,255,.4); align-self:center; }
-  #toast .note{ margin-top:12px; font-size:14px; opacity:.85; }
   @keyframes coinBump{ 0%{transform:scale(1)} 30%{transform:scale(1.28)} 60%{transform:scale(.95)} 100%{transform:scale(1)} }
   .padline{ margin-top:4px; font-size:11.5px; opacity:.85; }
   .padline.on{ color:#7ee2a0; opacity:1; }

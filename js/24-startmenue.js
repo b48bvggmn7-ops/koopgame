@@ -96,6 +96,15 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
     <button class="btn byebtn" id="sm-bye-back" type="button" tabindex="-1">Doch noch eine Runde</button>
   </section>
 
+  <!-- 7) Level geschafft: Statistik nach dem Ziel-Tanz (Münzen und Tode je Figur) -->
+  <section class="screen" id="sm-s-results" aria-label="Level geschafft">
+    <div class="l-title display grad">Level geschafft</div>
+    <div class="r-level" id="sm-r-level"></div>
+    <div class="r-card glass" id="sm-r-m"></div>
+    <div class="r-card glass" id="sm-r-f"></div>
+    <div class="foot"><button class="btn primary sel" id="sm-r-go" type="button" tabindex="-1">Weiter</button></div>
+  </section>
+
   <div class="modal" id="sm-modal" role="dialog" aria-modal="true">
     <div class="modal-box glass"><h3 id="sm-modal-title"></h3><p id="sm-modal-text"></p><div class="modal-btns" id="sm-modal-btns"></div></div>
   </div>
@@ -406,12 +415,13 @@ async function curtainIntoLevel(no, name, build) {
   curtainEl.className = '';
   menuScreen = null; menuClearPressed();           // jetzt läuft das Spiel (zuerst die Ankunft)
 }
-function completeLevel(n) {
+function completeLevel(n, quiet) {
   if (!save.completed.includes(n)) save.completed.push(n);
   const before = save.unlocked;
   save.unlocked = Math.max(save.unlocked, Math.min(n + 1, realCount()));
   persist();
-  toast(save.unlocked > before ? `Level ${save.unlocked} freigeschaltet!` : `Level ${n} geschafft!`);
+  if (!quiet) toast(save.unlocked > before ? `Level ${save.unlocked} freigeschaltet!` : `Level ${n} geschafft!`);
+  return save.unlocked > before ? save.unlocked : 0;   // neu freigeschaltetes Level (0 = keins)
 }
 function resetSave() { save = { played: false, unlocked: 1, completed: [] }; persist(); }
 
@@ -448,7 +458,6 @@ S.menu = {
       { id: 'quit', label: 'Beenden' }
     ].filter(Boolean);
     this.idx = clamp(this.idx, 0, this.items.length - 1);
-    if (typeof applySkullMask === 'function') applySkullMask(save.stats);   // Totenkopf-Maske für den mit mehr Toden (25-duell.js)
     const box = $('#sm-menu'); box.innerHTML = '';
     this.items.forEach((it, i) => {
       const b = mk(`<button class="mi" type="button" tabindex="-1">${it.label}</button>`);
@@ -668,6 +677,7 @@ S.levels = {
   el: $('#sm-s-levels'), idx: 0,
   enter(arg) {
     if (arg !== 'keep') this.idx = clamp(save.unlocked, 1, realCount()) - 1;   // zurück aus der Spielerwahl: Auswahl behalten
+    const unlock = arg && typeof arg === 'object' && arg.unlock >= 0 ? arg.unlock : -1;   // nach „Level geschafft“
     const box = $('#sm-cards'); box.innerHTML = '';
     CONFIG.levels.forEach((l, i) => {
       const b = mk('<button class="lc" type="button" tabindex="-1"></button>');
@@ -679,6 +689,7 @@ S.levels = {
     $('#sm-l-count').innerHTML = `Fortschritt<br><b>${done} / ${n}</b>`;
     $('#sm-lbar-i').style.width = (done / n * 100) + '%';
     this.paint(true);
+    if (unlock >= 0 && $$('#sm-cards .lc')[unlock]) { this.idx = unlock; this.paint(true); unlockAnimation($$('#sm-cards .lc')[unlock], unlock + 1); }
   },
   paint(instant) {
     const cards = $$('#sm-cards .lc');
@@ -724,6 +735,61 @@ S.levels = {
 /* =====================================================================
    6) TSCHÜSS
    ===================================================================== */
+/* =====================================================================
+   7) LEVEL GESCHAFFT – Statistik (Münzen, Tode) nach dem Ziel-Tanz, dann Levelauswahl mit Schloss-Animation
+   ===================================================================== */
+S.results = {
+  el: $('#sm-s-results'), arg: null,
+  enter(arg) {
+    this.arg = arg || {};
+    const st = this.arg.st || { m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0 }, lv = CONFIG.levels[(this.arg.n || 1) - 1];
+    $('#sm-r-level').textContent = lv ? `Level ${this.arg.n} · ${lv.name}` : '';
+    const moreDeaths = st.m > st.f ? 'm' : st.f > st.m ? 'f' : '', moreCoins = st.cm > st.cf ? 'm' : st.cf > st.cm ? 'f' : '';
+    for (const w of ['m', 'f']) {
+      const c = w === 'm' ? st.cm : st.cf, t = w === 'm' ? st.tm : st.tf, d = w === 'm' ? st.m : st.f;
+      const badges = (moreCoins === w ? '<span class="rb coin">Mehr Münzen</span>' : '') + (moreDeaths === w ? '<span class="rb death">Mehr Tode</span>' : '');
+      $('#sm-r-' + w).innerHTML = `<div class="r-face">${charSVG(w === 'm' ? 'monkey' : 'pig')}</div>
+        <div class="r-name">${w === 'm' ? CONFIG.characters.monkey.name : CONFIG.characters.pig.name}</div>
+        <div class="r-badges">${badges}</div>
+        <div class="r-row"><span>Münzen</span><b class="coin" data-to="${c}">0</b>${t ? `<small>/ ${t}</small>` : ''}</div>
+        <div class="r-row"><span>Tode</span><b class="death" data-to="${d}">0</b></div>`;
+    }
+    // Zahlen hochzählen
+    const t0 = performance.now(), nums = $$('#sm-s-results b[data-to]');
+    clearInterval(this.cnt);
+    this.cnt = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0 - 450) / 900);
+      nums.forEach(b => { b.textContent = Math.round(Math.max(0, k) * Number(b.dataset.to)); });
+      if (k >= 1) clearInterval(this.cnt);
+    }, 30);
+  },
+  leave() { clearInterval(this.cnt); },
+  act(type) {
+    if (type === 'confirm' || type === 'back') this.next();
+  },
+  next() {
+    Snd.play('ok');
+    const fresh = this.arg && this.arg.fresh;
+    go('levels', fresh ? { unlock: fresh - 1 } : undefined);
+  }
+};
+$('#sm-r-go').addEventListener('click', () => S.results.next());
+
+// goldenes Schloss auf der Karte des neu freigeschalteten Levels: wackelt, platzt in Splitter, Karte leuchtet auf
+function unlockAnimation(card, n) {
+  const shards = Array.from({ length: 10 }, (_, i) => `<i style="--a:${i * 36 + 8}deg;--d:${9 + (i % 3) * 3}cqw"></i>`).join('');
+  const ov = mk(`<div class="ulock"><svg class="lock" viewBox="0 0 64 76" aria-hidden="true">
+      <defs><linearGradient id="sm-gGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".45" stop-color="#ffc83a"/><stop offset="1" stop-color="#c47a00"/></linearGradient></defs>
+      <path class="shackle" d="M16 34V22a16 16 0 0 1 32 0v12" fill="none" stroke="url(#sm-gGold)" stroke-width="8" stroke-linecap="round"/>
+      <rect x="6" y="32" width="52" height="40" rx="9" fill="url(#sm-gGold)" stroke="#8a5300" stroke-width="2"/>
+      <circle cx="32" cy="48" r="6" fill="#6b3f00"/><rect x="29" y="50" width="6" height="12" rx="3" fill="#6b3f00"/>
+    </svg><div class="shards">${shards}</div></div>`);
+  card.appendChild(ov);
+  setTimeout(() => ov.classList.add('shake'), 350);
+  setTimeout(() => { ov.classList.add('burst'); card.classList.add('flash'); Snd.play('go'); }, 1250);
+  setTimeout(() => { ov.remove(); card.classList.remove('flash'); toast(`Level ${n} freigeschaltet!`); }, 2100);
+}
+
 S.goodbye = {
   el: $('#sm-s-goodbye'),
   enter() { Snd.stop(); },
@@ -818,12 +884,12 @@ function updateEyes() {
    ANBINDUNG AN DAS SPIEL
    ===================================================================== */
 function active() { return typeof menuScreen !== 'undefined' && menuScreen === 'start'; }
-function showMenuScreen(name) {
+function showMenuScreen(name, arg) {
   menuScreen = 'start';                       // Spiel steht still, Spiel-Tasten ruhen (16-menue.js)
   menuEl.classList.remove('show');            // altes Menü (nur noch für die Pause) ausblenden
   smRoot.classList.add('on');
   Snd.resume();
-  go(name);
+  go(name, arg);
 }
 function hideMenu() { smRoot.classList.remove('on'); if (cur && cur.leave) cur.leave(); }
 async function loadLevelList() {
@@ -841,10 +907,9 @@ async function loadLevelList() {
 // Level geschafft (nach dem Tanz, 21-figuren-leben.js): Fortschritt merken, zurück zur Levelauswahl
 window.startMenuLevelWon = () => {
   const n = currentLevelNo; currentLevelNo = 0;
-  if (n && typeof levelStats === 'function') {     // Duell-Stand dieser Runde unter der Levelkarte merken (25-duell.js)
-    save.stats = save.stats || {}; save.stats[n] = levelStats();
-  }
-  if (n) { completeLevel(n); showMenuScreen('levels'); }
+  const st = typeof levelStats === 'function' ? levelStats() : null;   // Münzen/Tode dieser Runde (25-duell.js)
+  if (n && st) { save.stats = save.stats || {}; save.stats[n] = { m: st.m, f: st.f }; }   // für die Levelkarte merken
+  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh }); }
   else showMenuScreen('menu');
 };
 window.showTitleScreen = () => showMenuScreen('title');

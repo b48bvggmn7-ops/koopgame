@@ -125,8 +125,6 @@
 #sm .lc .duel .skullIcon{width:1.3cqw;height:1.3cqw;opacity:.7}
 #sm .lc .duel img{width:1.7cqw;height:1.7cqw;object-fit:contain;margin-left:.3cqw}
 #sm .lc .duel b.lead{color:#ff5c6c}
-#sm .skullmask{position:absolute;left:0;top:0;width:100%;height:auto;pointer-events:none}
-#sm .bob[data-char]{position:relative}
 #sm .lc .st{display:block;margin-top:.4cqh;font-size:1.5cqw;color:var(--mute);font-weight:700}
 #sm .lc.lock{opacity:.5}
 #sm .lc.lock .n{color:var(--mute)}
@@ -184,3 +182,39 @@
   background:linear-gradient(#f6ffe0 20%,#c6ff3d 85%);-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 .5vw 0 rgba(0,0,0,.45))}
 #leafCurtain .lt-name{display:block;margin-top:1vw;font:800 3vw/1 "Manrope",system-ui,sans-serif;color:#eaf7ee;letter-spacing:.06em}
+
+/* 7) Level geschafft: Statistik (js/24-startmenue.js S.results) */
+#sm .r-level{position:absolute;left:6cqw;top:17.5cqh;font-size:2.2cqw;font-weight:800;color:var(--mute)}
+#sm .r-card{position:absolute;top:30cqh;width:34cqw;height:54cqh;padding:3cqh 2.4cqw;display:flex;flex-direction:column;align-items:center;
+  animation:pop .5s cubic-bezier(.3,1.5,.5,1) both}
+#sm #sm-r-m{left:12cqw;animation-delay:.1s} #sm #sm-r-f{right:12cqw;animation-delay:.25s}
+#sm .r-face{width:12cqw;margin-top:-10cqh}
+#sm .r-face .char{width:100%;height:auto;display:block;filter:drop-shadow(0 1cqh 1.2cqh rgba(0,0,0,.5));animation:bob 3.6s ease-in-out infinite}
+#sm .r-name{font-weight:800;font-size:2.6cqw;margin-top:.6cqh}
+#sm .r-badges{display:flex;gap:.6cqw;min-height:3.4cqh;margin:.8cqh 0 1.6cqh}
+#sm .rb{font-size:1.25cqw;font-weight:800;padding:.5cqh 1cqw;border-radius:5cqw;letter-spacing:.04em;text-transform:uppercase}
+#sm .rb.coin{background:var(--lime);color:#06210f}
+#sm .rb.death{background:#ff5c6c;color:#2a0508}
+#sm .r-row{width:100%;display:flex;align-items:baseline;gap:1cqw;padding:1.4cqh 0;border-top:.12cqw solid var(--line)}
+#sm .r-row span{flex:1;font-size:1.9cqw;font-weight:700;color:var(--mute)}
+#sm .r-row b{font:900 5.4cqw/1 "Big Shoulders Display",sans-serif;font-variant-numeric:tabular-nums}
+#sm .r-row b.coin{color:var(--lime)} #sm .r-row b.death{color:#ff7a86}
+#sm .r-row small{font-size:1.7cqw;font-weight:700;color:var(--mute)}
+#sm #sm-s-results .foot{bottom:5cqh}
+/* goldenes Schloss, das auf der neu freigeschalteten Levelkarte platzt */
+#sm .lc .ulock{position:absolute;inset:0;border-radius:1.2cqw;background:rgba(4,20,15,.82);display:grid;place-items:center;z-index:3;
+  transition:background .45s}
+#sm .lc .ulock .lock{width:6cqw;filter:drop-shadow(0 0 1.6cqw rgba(255,200,58,.75));transition:transform .35s cubic-bezier(.3,1.5,.5,1),opacity .35s}
+#sm .lc .ulock.shake .lock{animation:lockShake .5s ease-in-out 2}
+#sm .lc .ulock.shake .shackle{animation:shackleUp .9s ease-in-out both}
+#sm .lc .ulock.burst{background:rgba(4,20,15,0)}
+#sm .lc .ulock.burst .lock{transform:scale(1.9);opacity:0}
+#sm .lc .ulock .shards{position:absolute;left:50%;top:50%;width:0;height:0}
+#sm .lc .ulock .shards i{position:absolute;width:1.1cqw;height:1.1cqw;margin:-.55cqw;border-radius:.2cqw;opacity:0;
+  background:linear-gradient(135deg,#fff2a8,#ffc83a 60%,#c47a00);box-shadow:0 0 .8cqw rgba(255,200,58,.8)}
+#sm .lc .ulock.burst .shards i{animation:shard .8s cubic-bezier(.15,.7,.3,1) both}
+#sm .lc.flash{animation:cardFlash .9s ease-out}
+@keyframes lockShake{0%,100%{rotate:0deg}25%{rotate:-12deg}75%{rotate:12deg}}
+@keyframes shackleUp{0%,60%{translate:0 0}100%{translate:0 -5px}}
+@keyframes shard{0%{opacity:1;transform:rotate(var(--a)) translateX(0) rotate(0)}100%{opacity:0;transform:rotate(var(--a)) translateX(var(--d)) rotate(220deg)}}
+@keyframes cardFlash{0%{box-shadow:0 0 0 0 rgba(255,200,58,.9)}100%{box-shadow:0 0 0 2.5cqw rgba(255,200,58,0)}}
