@@ -688,7 +688,9 @@ S.levels = {
       const extra = soon ? '<span class="st">Bald verfügbar</span>'
                   : sel ? (locked ? '<span class="st">Gesperrt</span>' : '<span class="go">Start</span>')
                         : `<span class="st">${done ? '✓ Geschafft' : locked ? 'Gesperrt' : 'Bereit'}</span>`;
-      b.innerHTML = `<div class="n">${i + 1}</div><div><span class="nm">${CONFIG.levels[i].name}</span>${extra}</div>`;
+      const duel = done && save.stats && save.stats[i + 1] && typeof levelCardStatsHTML === 'function'
+        ? `<span class="duel">${levelCardStatsHTML(save.stats[i + 1])}</span>` : '';   // Tode der letzten geschafften Runde
+      b.innerHTML = `<div class="n">${i + 1}</div><div><span class="nm">${CONFIG.levels[i].name}</span>${duel}${extra}</div>`;
     });
     const sel = cards[this.idx], pair = $('#sm-pair');
     if (instant) pair.classList.add('nt');
@@ -838,6 +840,9 @@ async function loadLevelList() {
 // Level geschafft (nach dem Tanz, 21-figuren-leben.js): Fortschritt merken, zurück zur Levelauswahl
 window.startMenuLevelWon = () => {
   const n = currentLevelNo; currentLevelNo = 0;
+  if (n && typeof levelStats === 'function') {     // Duell-Stand dieser Runde unter der Levelkarte merken (25-duell.js)
+    save.stats = save.stats || {}; save.stats[n] = levelStats();
+  }
   if (n) { completeLevel(n); showMenuScreen('levels'); }
   else showMenuScreen('menu');
 };

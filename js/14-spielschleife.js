@@ -30,7 +30,8 @@ function stepSim(ts){
   sfxObserve();      // Geräusche zu Sprung/Landung/… (18-sound.js), ändert nichts am Spiel
   if(!won && p1.atGoal && p2.atGoal && coinsCollected() >= coinsNeeded){
     won = true; winSteps = 0; winT0 = performance.now();
-    document.getElementById('toast').classList.add('show');
+    if(typeof showWinSummary === 'function') showWinSummary();   // Level-Bilanz (25-duell.js)
+    else document.getElementById('toast').classList.add('show');
   }
 }
 // alles, was sich bewegt: Position vor dem Rechenschritt merken

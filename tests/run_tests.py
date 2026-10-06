@@ -102,28 +102,52 @@ async def start_ohne_fehler(g):
 
 @test
 async def tode_zaehler(g):
-    """Oben rechts zählt ein Tode-Zähler je Figur (Affe / Schwein) mit; wer öfter stirbt, wird hervorgehoben;
-    Weitermachen und R lassen den Stand, ein neu geladenes Level beginnt bei 0."""
-    lvl = level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680})
+    """Duell-Tafel oben rechts: Tode und eigene Münzen je Figur (Affe / Schwein); öfter gestorben = 🩹 „Tollpatsch“,
+    mehr Münzen = 👑. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu geladenes Level beginnt bei 0."""
+    lvl = level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
+                coins=[{'x': 400, 'y': 660, 'color': 'blue'}, {'x': 500, 'y': 660, 'color': 'blue'}])
     await g.load(lvl)
-    karte = "(() => { const c = document.getElementById('deathCard'), r = c.getBoundingClientRect();" \
+    karte = "(() => { const c = document.getElementById('duelCard'), r = c.getBoundingClientRect(), d = w => c.querySelector('.duo.' + w);" \
             " return {m: document.getElementById('deathM').textContent, f: document.getElementById('deathF').textContent," \
+            " cm: document.getElementById('coinsM').textContent, cf: document.getElementById('coinsF').textContent," \
             " sichtbar: getComputedStyle(c).display !== 'none' && r.width > 0, rechts: innerWidth - r.right, oben: r.top," \
-            " leadM: document.getElementById('deathM').parentNode.classList.contains('lead')," \
-            " leadF: document.getElementById('deathF').parentNode.classList.contains('lead')}; })()"
+            " leadM: d('m').classList.contains('lead'), leadF: d('f').classList.contains('lead')," \
+            " richM: d('m').classList.contains('rich'), richF: d('f').classList.contains('rich')}; })()"
     k = await g.ev(karte)
-    assert k['sichtbar'] and k['rechts'] < 40 and k['oben'] < 40, f'Zähler nicht oben rechts: {k}'
-    assert k['m'] == '0' and k['f'] == '0', f'Zähler startet nicht bei 0: {k}'
+    assert k['sichtbar'] and k['rechts'] < 40 and k['oben'] < 40, f'Duell-Tafel nicht oben rechts: {k}'
+    assert (k['m'], k['f'], k['cm'], k['cf']) == ('0', '0', '0', '0'), f'Tafel startet nicht bei 0: {k}'
     for wer in ('p2', 'p2', 'p1'):
         await g.ev(f"die({wer})"); await g.p.wait_for_timeout(700)
         await g.ev("deathState.canContinueAt = 0; requestContinue()"); await g.p.wait_for_timeout(150)
+    await g.ev("p1.x = 400; p1.y = 680"); await g.p.wait_for_timeout(300)   # Affe sammelt eine Münze
     k = await g.ev(karte)
-    assert (k['m'], k['f']) == ('1', '2') and k['leadF'] and not k['leadM'], f'Zähler falsch: {k}'
+    assert (k['m'], k['f'], k['cm'], k['cf']) == ('1', '2', '1', '0'), f'Zähler falsch: {k}'
+    assert k['leadF'] and not k['leadM'] and k['richM'] and not k['richF'], f'Tollpatsch/Krone falsch: {k}'
+    html = await g.ev("winSummaryHTML()")
+    assert 'Tollpatsch des Levels' in html and 'Schweinchen' in html, f'Level-Bilanz ohne Tollpatsch: {html}'
     await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(150)
     assert (await g.ev(karte))['f'] == '2', 'R setzt den Zähler zurück'
     await g.load(lvl)
     k = await g.ev(karte)
     assert (k['m'], k['f']) == ('0', '0'), f'Neues Level beginnt nicht bei 0: {k}'
+
+@test
+async def duell_unter_levelkarte(g):
+    """Geschafftes Level: die Tode der Runde und der Tollpatsch stehen unter der Levelkarte (gemerkt im Spielstand)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await startmenue_bis_level(g)
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && menuScreen === null", timeout=10000)
+        await g.ev("deathCount.m = 1; deathCount.f = 4; deathState = null; won = true; winSteps = 0; winT0 = performance.now(); showWinSummary()")
+        assert 'Tollpatsch des Levels' in await g.ev("document.getElementById('toast').textContent"), 'keine Level-Bilanz'
+        await p.wait_for_function("document.querySelector('#sm-cards .lc .duel')", timeout=15000)
+        st = await g.ev("GameMenu.getSave().stats[1]")
+        assert st['m'] == 1 and st['f'] == 4, f'Stand nicht gemerkt: {st}'
+        txt = await g.ev("document.querySelector('#sm-cards .lc .duel').textContent")
+        assert '4' in txt and 'Tollpatsch' in txt and 'Schweinchen' in txt, f'Levelkarte zeigt keinen Tollpatsch: {txt}'
+    finally:
+        srv.shutdown()
 
 @test
 async def decke_kein_teleport(g):
@@ -1059,7 +1083,10 @@ async def tiere_reagieren(g):
 async def figuren_leben(g):
     """Figuren: Strecken beim Absprung, Stauchen + Staub beim Landen, Herzchen wenn beide nah beieinander stehen."""
     await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 160, 'y': 680}))
-    await g.p.keyboard.down('Space'); await g.p.wait_for_timeout(60)
+    await g.p.wait_for_function("p1.grounded && !deathState", timeout=5000)   # erst springen, wenn der Affe steht
+    await g.p.keyboard.down('Space')
+    try: await g.p.wait_for_function("!!p1._jumpT", timeout=3000)   # langsame Rechner: auf den Absprung warten
+    except Exception: pass
     st = await g.ev("({j: !!p1._jumpT, sq: charSquash(p1), dust: dustFx.length})")
     await g.p.keyboard.up('Space')
     assert st['j'] and st['sq'][1] > 1.02 and st['dust'] > 0, f'kein Strecken/Staub beim Absprung: {st}'

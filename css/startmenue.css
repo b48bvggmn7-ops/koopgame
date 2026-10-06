@@ -121,6 +121,9 @@
   display:flex;flex-direction:column;justify-content:space-between}
 #sm .lc .n{font:900 7cqw/.85 "Big Shoulders Display",sans-serif;color:var(--lime)}
 #sm .lc .nm{display:block;font-weight:800;font-size:1.7cqw;line-height:1.15}
+#sm .lc .duel{display:block;margin-top:.5cqh;padding:.5cqh .6cqw;border-radius:.7cqw;background:rgba(0,0,0,.28);font-size:1.25cqw;font-weight:800;line-height:1.3}
+#sm .lc .duel .ds{display:block;white-space:nowrap}
+#sm .lc .duel .dt{display:block;color:#ffc9d8;font-size:1.1cqw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sm .lc .st{display:block;margin-top:.4cqh;font-size:1.5cqw;color:var(--mute);font-weight:700}
 #sm .lc.lock{opacity:.5}
 #sm .lc.lock .n{color:var(--mute)}
