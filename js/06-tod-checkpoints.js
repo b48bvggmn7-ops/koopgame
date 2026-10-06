@@ -16,6 +16,9 @@ function die(player){
   deathsWithoutComplaint = (deathsWithoutComplaint||0);
   const complain = deathsWithoutComplaint >= 3 || Math.random() < 0.33;
   deathsWithoutComplaint = complain ? 0 : deathsWithoutComplaint + 1;
+  deathCount[player === p1 ? 'm' : 'f']++;
+  const dc = document.getElementById('deathCard');   // Zähler oben rechts kurz hüpfen lassen
+  if(dc){ dc.classList.remove('bump'); void dc.offsetWidth; dc.classList.add('bump'); }
   deathState = {victim: player, other: player===p1 ? p2 : p1, t0: now, canContinueAt: now + 600,
                 phrase: complain ? phrase : null, go:false};
   player.hookAttached = false;

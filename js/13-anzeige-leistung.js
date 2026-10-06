@@ -30,6 +30,13 @@ function updateHUD(){
       part('Affe', bA, bT, '#74c0fc'); part('Schwein', pA, pT, '#faa2c1');
     }
   } else cc.style.display = 'none';
+  // Tode-Zähler oben rechts: Affe / Schwein, wer öfter gestorben ist, wird hervorgehoben
+  const dm = document.getElementById('deathM'), df = document.getElementById('deathF');
+  if(dm && (dm.textContent !== String(deathCount.m) || df.textContent !== String(deathCount.f))){
+    dm.textContent = deathCount.m; df.textContent = deathCount.f;
+    dm.parentNode.classList.toggle('lead', deathCount.m > deathCount.f);
+    df.parentNode.classList.toggle('lead', deathCount.f > deathCount.m);
+  }
 }
 
 // ---------- Leistungs-Anzeige (Taste F ein/aus) ----------

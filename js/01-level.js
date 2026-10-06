@@ -76,7 +76,10 @@ const DEFAULT_LEVEL = {
   goal: {x:2260, y:520},
 };
 
+// Tode je Figur im aktuellen Level (Anzeige oben rechts: wer stirbt öfter?) – beim Laden eines Levels wieder 0
+let deathCount = {m: 0, f: 0};
 function buildLevel(data){
+  deathCount = {m: 0, f: 0};
   solids = (data.solids||[]).filter(s=>s.type!=='fake').map(s=>({...s}));
   fakeWalls = (data.solids||[]).filter(s=>s.type==='fake').map(s=>({...s}));
   plates = (data.plates||[]).map(p=>({x:p.x, y:p.y, link:p.link, down:false}));

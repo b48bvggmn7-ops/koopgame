@@ -218,6 +218,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (R = Neustart, Esc / Options = Pause gehen weiter; Level aus Datei laden geht damit nicht mehr per Knopf).
   - Spielansicht aufgeräumt (Nutzerwunsch): Steuerungs-Erklärungen oben links/rechts ausgeblendet (stehen im
     Startmenü unter Optionen), nur der Münz-Zähler bleibt. Spielbild füllt den Bildschirm (16:9, ohne Rand).
+  - Tode-Zähler oben rechts (Nutzerwunsch „wer stirbt öfter?“): 💀 🐒 Affe / 🐷 Schwein, Zahl in Spielerfarbe; wer
+    öfter gestorben ist, leuchtet; hüpft bei jedem Tod. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu
+    geladenes Level beginnt bei 0 (deathCount in 01-level.js, Anzeige in updateHUD; Test tode_zaehler).
   - Vollbild: beim ersten Tastendruck/Klick im Titelbild schaltet das Spiel in den Vollbild-Modus (Browser-Regel:
     nicht per Controller); in den Optionen „Vollbild an / aus“. Im Vollbild wird Esc fürs Spiel gesperrt
     (Tastatur-Sperre, Chrome/Edge): Esc öffnet die Pause, LANGES Halten von Esc verlässt das Vollbild

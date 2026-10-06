@@ -101,6 +101,31 @@ async def start_ohne_fehler(g):
     assert await g.ev('typeof frameDt==="number"'), 'Spielschleife läuft nicht'
 
 @test
+async def tode_zaehler(g):
+    """Oben rechts zählt ein Tode-Zähler je Figur (Affe / Schwein) mit; wer öfter stirbt, wird hervorgehoben;
+    Weitermachen und R lassen den Stand, ein neu geladenes Level beginnt bei 0."""
+    lvl = level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680})
+    await g.load(lvl)
+    karte = "(() => { const c = document.getElementById('deathCard'), r = c.getBoundingClientRect();" \
+            " return {m: document.getElementById('deathM').textContent, f: document.getElementById('deathF').textContent," \
+            " sichtbar: getComputedStyle(c).display !== 'none' && r.width > 0, rechts: innerWidth - r.right, oben: r.top," \
+            " leadM: document.getElementById('deathM').parentNode.classList.contains('lead')," \
+            " leadF: document.getElementById('deathF').parentNode.classList.contains('lead')}; })()"
+    k = await g.ev(karte)
+    assert k['sichtbar'] and k['rechts'] < 40 and k['oben'] < 40, f'Zähler nicht oben rechts: {k}'
+    assert k['m'] == '0' and k['f'] == '0', f'Zähler startet nicht bei 0: {k}'
+    for wer in ('p2', 'p2', 'p1'):
+        await g.ev(f"die({wer})"); await g.p.wait_for_timeout(700)
+        await g.ev("deathState.canContinueAt = 0; requestContinue()"); await g.p.wait_for_timeout(150)
+    k = await g.ev(karte)
+    assert (k['m'], k['f']) == ('1', '2') and k['leadF'] and not k['leadM'], f'Zähler falsch: {k}'
+    await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(150)
+    assert (await g.ev(karte))['f'] == '2', 'R setzt den Zähler zurück'
+    await g.load(lvl)
+    k = await g.ev(karte)
+    assert (k['m'], k['f']) == ('0', '0'), f'Neues Level beginnt nicht bei 0: {k}'
+
+@test
 async def decke_kein_teleport(g):
     """Springen unter Decken aller Höhen (links/rechts, beide Figuren): niemand springt quer >15 px."""
     bad = []
@@ -972,8 +997,11 @@ async def geraeusche(g):
     """Springen, Landen, Haken, Bröckelboden, Tod lösen Geräusche aus; M schaltet den Ton aus/an (gemerkt)."""
     await g.load(level([ground(0, 680, 1400), ground(500, 560, 80, 40, 'crumble')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        hooks=[{'x': 160, 'y': 500, 'radius': 260}]))
+    await g.p.wait_for_function("p1.grounded && !deathState", timeout=5000)   # erst springen, wenn der Affe sicher steht
     await g.ev("SFX_LOG.length = 0")
-    await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(1200)
+    await g.p.keyboard.press('Space')
+    try: await g.p.wait_for_function("SFX_LOG.includes('jump') && SFX_LOG.includes('land')", timeout=3000)
+    except Exception: pass
     log = await g.ev("SFX_LOG.slice()")
     assert 'jump' in log and 'land' in log, f'Sprung/Landung ohne Ton: {log}'
     await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(150)
