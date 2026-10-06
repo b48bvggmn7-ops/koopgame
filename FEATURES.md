@@ -272,7 +272,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Platte 2 draußen – nur zu zweit; 3) versteckter Hebel: Tür 3 ohne sichtbaren Hebel, Kamin (Breite 3) über einen
     Felsblock, an dessen Rückseite unten eine Scheinwand in eine Kammer mit Hebel 3 führt (Münzen als Hinweis);
     4) getrennte Höhen: Kamin auf einen Turm, Schweinchen segelt über Dach-Lücken (13 = Segelgrenze), Affe hangelt
-    darunter an fünf Haken; 5) Stachelwand-Jagd: Hebel 5 startet zwei Stachelwände (oben 6,3 / unten 5,4), Affe an
+    darunter an fünf Haken; 5) Stachelwand-Jagd: Hebel 5 öffnet die Tore 5 (unten vor den Haken, oben auf der Brücke) – startet aber
+    zwei Stachelwände (oben 6,3 / unten 5,4), Affe an
     sieben Haken, Tür 9 versperrt seine Bahn bis das Schweinchen oben im Lauf Hebel 9 zieht, ihre Tür 10 öffnet
     Hebel 10 (mit kurzer Reaktionszeit bleiben ~2–3 Kästchen Vorsprung); 6) Fahrstuhl zwischen Stachelwänden:
     Schweinchen hält Druckplatte 6, Affe fährt; zu lange gedrückt = Stacheldecke; oben Hebel 7 -> Tür 7 unten im
@@ -283,8 +284,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Klippe, der Affe zieht sich an zwei Haken hoch; 2) Windtür: eine waagerechte Tür sperrt die Wind-Säule – der Affe
     hält unten Druckplatte 2, das Schweinchen fliegt hoch und zieht Hebel 3 für Tür 3; 3) versteckter Gang: niedriger
     Tunnel, der scheinbar endet (Scheinwand); Hebel 4 steckt in einer Nische über der Decke und ist nur im Sprung durch
-    eine Scheindecke erreichbar (Münze darunter als Hinweis); 4) steigende Stacheln: Hebel 5 lässt einen Stachelboden
-    aus der Grube steigen (1,3 px/Schritt; mit kurzen Denkpausen knapp) – Affe an zwei Haken, Schweinchen durch zwei
+    eine Scheindecke erreichbar (Münze darunter als Hinweis); 4) steigende Stacheln: Hebel 5 öffnet das Tor am Startsims
+    – und lässt dabei einen Stachelboden aus der Grube steigen (1,3 px/Schritt; mit kurzen Denkpausen knapp) – Affe an zwei Haken, Schweinchen durch zwei
     Wind-Säulen hinauf aufs Plateau; 5) Fähre unter den Pressen: die Fähre fährt nur, solange jemand auf einer
     Druckplatte 6 steht (je eine an jedem Ufer); zwei Stachelpressen stampfen über der Strecke, wer die Platte hält,
     muss im richtigen Moment loslassen (dauernd drücken = Fahrer erwischt); Strecke so kurz, dass Fahrer und Platte
@@ -294,16 +295,19 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     aufgeht, wenn der Affe oben auf dem Turm Druckplatte 8 hält; Ziel auf dem Turm (410).
   - Level 6 „Feuerberg“ (levels/level-6.json, 520 Spalten, Thema vulkan, das SCHWERSTE Level, alles mit dem Koop-Bot
     geprüft; neues Element Sprungpilz): 1) Pilz-Sprünge über die Lava: 2 Kästchen schmale Säulen mit je zwei Pilzen,
-    die hinteren bröckeln, Abstand 10 (in der Luft voll nach rechts halten); 2) Pilz-Jagd: Hebel 2 startet die
-    Stachelwand (4,5), über zwei Mauern nur per Pilz, Bröckelboden, Pilzsäule mitten in der Lava, Tür 2 am Ende;
+    die hinteren bröckeln, Abstand 10 (in der Luft voll nach rechts halten); 2) Pilz-Jagd: Hebel 2 öffnet das Tor gleich daneben
+    (und Tür 2 am Ende) – startet aber die Stachelwand (4,5), über zwei Mauern nur per Pilz, Bröckelboden, Pilzsäule mitten in der Lava, Tür 2 am Ende;
     3) geheime Kammer: Tür 3 öffnet nur Druckplatte 3, die in einer versteckten Kammer über der Decke liegt – hinein
     nur mit dem Sprungpilz durch eine Scheindecke; drüben Platte 3 für den Partner; 4) über der Lava: Affe springt per
     Pilz an zwei hohe Haken, landet auf der nächsten Pilzsäule und nimmt zwei weitere Haken; Schweinchen nimmt den
-    ersten Pilz und fliegt dann von Wind-Säule zu Wind-Säule; 5) Feuerschlot: im Kamin (Breite 4) startet Hebel 5
-    steigende Lava (2,0) – beide per Wandsprung nach oben (mit kurzer Denkpause knapp); 6) Pressen-Gang: vier
+    ersten Pilz und fliegt dann von Wind-Säule zu Wind-Säule; 5) Feuerschlot: im Kamin (Breite 4) öffnet Hebel 5
+    oben das Ausgangstor – und startet steigende Lava (2,0) – beide per Wandsprung nach oben (mit kurzer Denkpause knapp); 6) Pressen-Gang: vier
     Stachelpressen im niedrigen Gang, Bröckelboden genau darunter – nicht unter einer Presse springen, nicht stehen
-    bleiben; 7) Finale am Vulkangipfel: Hebel 7 lässt die Lava im Krater steigen (1,15); Affe Pilz -> Haken -> Sims ->
+    bleiben; 7) Finale am Vulkangipfel: Hebel 7 öffnet das Kratertor – und lässt die Lava im Krater steigen (1,15); Affe Pilz -> Haken -> Sims ->
     Pilz -> Haken -> Gipfel, Schweinchen Wind -> Sims -> Pilz -> Wind -> Gipfel; Ziel auf dem Gipfel (432).
+  - Jeder Hebel hat einen Grund (Test hebel_haben_grund): jeder Hebel / jede Druckplatte bewirkt etwas, und ein
+    Hebel, der eine Gefahr startet (Stachelwand, steigende Stacheln/Lava), öffnet immer auch ein Tor, durch das man
+    muss – „ich muss ihn ziehen, sonst komme ich nicht weiter, aber dann wird es gefährlich“.
   - Startmenü: alle sechs Levelkarten sind jetzt echte Levels (Dschungel, Baumkronen, Ruinen, Mondnacht, Kristallhöhle,
     Feuerberg); kein „Coming soon“ mehr.
   - Alle Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen; Level 2/3 umnummeriert).

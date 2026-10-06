@@ -458,9 +458,10 @@ async def pause_controller(g):
     """Options öffnet/schließt die Pause; Steuerkreuz + ✕ wählen „Zurück zum Menü“."""
     await g.p.add_init_script(PAD_STUB); await g.p.reload(); await g.p.wait_for_timeout(500)
     await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
-    async def tippe(n):
-        await g.ev(f"window.__pad.buttons[{n}]={{pressed:true,value:1}}"); await g.p.wait_for_timeout(80)
-        await g.ev(f"window.__pad.buttons[{n}]={{pressed:false,value:0}}"); await g.p.wait_for_timeout(80)
+    zwei_bilder = "new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))"
+    async def tippe(n):   # so lange halten/loslassen, bis das Menü (fragt einmal pro Bild ab) es sicher gesehen hat
+        await g.ev(f"window.__pad.buttons[{n}]={{pressed:true,value:1}}"); await g.ev(zwei_bilder); await g.p.wait_for_timeout(60)
+        await g.ev(f"window.__pad.buttons[{n}]={{pressed:false,value:0}}"); await g.ev(zwei_bilder); await g.p.wait_for_timeout(60)
     await tippe(9)
     assert await g.p.text_content('#menuTitle') == 'Pause', 'Options öffnet keine Pause'
     await tippe(9)
@@ -585,6 +586,31 @@ async def level2_und_3_regeln(g):
             nb = sum(c['color'] == 'blue' for c in lv['coins'])
             assert nb * 2 == len(lv['coins']), f"{name}: Blau/Pink nicht ausgeglichen"
             assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan'), f"{name}: Thema {lv.get('theme')}"
+
+@test
+async def hebel_haben_grund(g):
+    """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil oder bewegter Haken),
+    und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man
+    keinen Grund, ihn zu ziehen (Nutzerwunsch: „es muss in sich schlüssig sein“)."""
+    fehler = []
+    for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
+        if L.get('versteckt'): continue
+        await g.load(str(ROOT / 'levels' / L['datei']))
+        fehler += await g.ev("""(() => {
+          syncSwitchCarriers();
+          const out = [], name = %s;
+          const trig = [...switchDefs.map(s=>['Hebel', s.link]), ...plates.map(p=>['Platte', p.link])];
+          for(const [art, l] of trig){
+            const doors = solids.filter(d=>d.type==='door' && d.link===l).length;
+            const movers = solids.filter(m=>m.type==='moveplat' && m.switchLink===l);
+            const hk = hooks.filter(h=>h.moving && h.switchLink===l).length;
+            if(!doors && !movers.length && !hk) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m));
+            if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
+          }
+          return out;
+        })()""" % json.dumps(L['datei']))
+    assert not fehler, f'Hebel ohne Grund: {sorted(set(fehler))}'
 
 @test
 async def level2_fahrstuhl_anhalten(g):
@@ -824,7 +850,9 @@ async def editor_testen_knopf(g):
         back = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
         assert back[0] + 1 < 94 < back[1] - 1, f'Editor zeigt nicht die Figuren (Spalte 94): Ansicht {back}'
         # nochmal Enter -> Test startet wieder bei den Figuren
-        await p.keyboard.press('Enter'); await p.wait_for_timeout(800)
+        await p.keyboard.press('Enter')
+        await p.wait_for_url('**/index.html?test=1', timeout=8000)
+        await p.wait_for_function("typeof p1 !== 'undefined' && !!p1", timeout=8000); await p.wait_for_timeout(300)
         x2 = await g.ev('p1.x') / 40
         assert abs(x2 - 94) < 4, f'Erneuter Test startet nicht bei den Figuren: Spalte {x2}'
         # normaler Spielstart (ohne ?test=1) zeigt weiter das Hauptmenü, kein „Zurück zum Editor“
@@ -1290,11 +1318,23 @@ async def spieltempo_langsamer(g):
     assert abs(await g.ev('GAME_SPEED') - 0.9) < 1e-9, 'GAME_SPEED ist nicht 0,9'
     await g.load(level([ground(0, 680, 6000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
     await g.p.wait_for_timeout(500)
-    n0 = await g.ev('window.__steps = 0, (function(){ if(!window.__cnt){ window.__cnt = 1; const o = stepSim; stepSim = function(ts){ window.__steps++; return o(ts); }; } })(), performance.now()')
+    # Schritte zählen und die echten Bildzeiten mitschreiben (auf langsamen Rechnern holt das Spiel pro Bild höchstens
+    # 5 Schritte nach -> erwartete Schritte aus den Bildzeiten mit Tempo 0,9 nachrechnen statt starr ~54/s zu verlangen)
+    await g.ev('''window.__steps = 0; window.__dts = [];
+      const o = stepSim; stepSim = function(ts){ window.__steps++; return o(ts); };
+      const l = loop; loop = function(ts){ const s0 = window.__steps; l(ts); window.__dts.push([frameDt, window.__steps - s0]); };''')
     await g.p.wait_for_timeout(2000)
-    n = await g.ev('window.__steps'); dt = await g.ev('performance.now()') - n0
-    rate = n / dt * 1000
-    assert 48 <= rate <= 56, f'Rechenschritte pro Sekunde: {rate:.1f} (erwartet ~54)'
+    n, dts = await g.ev('[window.__steps, window.__dts]')
+    acc, erwartet, zeit = 0.0, 0, 0.0
+    for i, (dt, _) in enumerate(dts):
+        if i == 0: continue   # erstes Bild nach dem Einhängen: Startwert des Zählers unbekannt
+        acc += dt * 0.9; k = 0
+        while acc >= 1000/60 and k < 5: acc -= 1000/60; k += 1
+        if k >= 5: acc = 0
+        erwartet += k; zeit += dt
+    n_ab_2 = sum(s for _, s in dts[1:])
+    assert abs(n_ab_2 - erwartet) <= 3, f'Spieltempo passt nicht zu 0,9: {n_ab_2} Schritte statt {erwartet}'
+    assert n > 30, f'Spiel läuft kaum: {n} Schritte in 2 s'
 
 async def main(filter_):
     async with async_playwright() as pw:
