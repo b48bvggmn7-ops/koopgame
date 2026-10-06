@@ -848,11 +848,17 @@
     }
     return null;
   }
-  // Rückkehr aus dem Test (index.html -> editor/index.html?from=test): an die gemerkte Stelle scrollen
+  // Rückkehr aus dem Test (index.html -> editor/index.html?from=test): dorthin scrollen, wo die Figuren zuletzt
+  // standen (so, dass „Testen“ wieder genau dort startet: Figuren bei 1/3 der Ansicht); sonst an die alte Stelle
   if(/[?&]from=test\b/.test(location.search)){
-    let px = NaN;
+    let px = NaN, focus = NaN;
     try{ px = Number(localStorage.getItem('monchichi_editor_scroll')); }catch(e){}
-    if(px > 0) requestAnimationFrame(()=>{ wrap.scrollLeft = px * cvs.getBoundingClientRect().width / cvs.width; });
+    try{ focus = Number(localStorage.getItem('monchichi_editor_focus') ?? NaN); localStorage.removeItem('monchichi_editor_focus'); }catch(e){}
+    requestAnimationFrame(()=>{
+      const k = cvs.width / cvs.getBoundingClientRect().width;   // Editor-px pro Bildschirm-px
+      if(focus > 0) wrap.scrollLeft = Math.max(0, (focus - wrap.clientWidth * k / 3) / k);
+      else if(px > 0) wrap.scrollLeft = px / k;
+    });
     try{ history.replaceState(null, '', location.pathname); }catch(e){}
   }
   document.getElementById('testBtn').addEventListener('click', ()=>{

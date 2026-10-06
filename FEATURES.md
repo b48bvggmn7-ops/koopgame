@@ -387,8 +387,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     über festem Boden/Wand, nicht Bröckelboden/bewegt/Stacheln, unterste Ebene; Spielerin 2 daneben); das gilt auch
     als Start nach dem Sterben. Ist der Editor ganz links, normaler Start. Kamera startet gleich dort.
     Esc beendet den Test sofort (ohne Pausenmenü, auch auf dem Tod-Bildschirm) und führt zurück in den Editor –
-    genau an die Stelle, an der „Testen“ geklickt wurde (editor/index.html?from=test, localStorage
-    monchichi_editor_scroll). Options/☰ öffnen im Test das Pausenmenü mit „✏️ Zurück zum Editor (Esc)“. Fürs schnelle Ausprobieren;
+    an die Stelle, an der die Figuren gerade stehen (hintere Figur bei ~1/3 der Ansicht, Nutzerwunsch: testen und
+    gleich dort anpassen; erneut Enter startet wieder dort). Fallback: Stelle, an der „Testen“ geklickt wurde
+    (editor/index.html?from=test, localStorage monchichi_editor_focus bzw. monchichi_editor_scroll). Options/☰ öffnen im Test das Pausenmenü mit „✏️ Zurück zum Editor (Esc)“. Fürs schnelle Ausprobieren;
     für alle sichtbar wird ein Level weiterhin erst über das Projekt (levels/).
   - ✕ oben rechts schließt den Editor und führt zurück zum Spiel (Hauptmenü); Arbeitsstand bleibt im Browser
   - Fenster „Levels“ zeigt zusätzlich „Levels im Projekt“ (aus levels/levels.json) und lädt sie per „Laden“

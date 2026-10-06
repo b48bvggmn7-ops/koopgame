@@ -816,11 +816,17 @@ async def editor_testen_knopf(g):
         assert pos['cam'] > 1000, f'Kamera nicht an der Startstelle: {pos}'
         await g.p.wait_for_timeout(1200)
         assert not await g.ev('!!deathState'), 'Figur stirbt direkt nach dem Start'
-        # Esc -> zurück im Editor an derselben Stelle
+        # weiterlaufen, dann Esc -> Editor zeigt die Stelle, wo die Figuren JETZT stehen (Nutzerwunsch)
+        await g.ev("p1.x = 95*40+20; p2.x = 94*40+20; p1.y = p2.y = 680; p1.vx = p2.vx = 0")
+        await p.wait_for_timeout(100)
         await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
         assert '/editor/' in p.url, f'Esc führt nicht zurück: {p.url}'
-        back = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); return w.scrollLeft*c.width/c.getBoundingClientRect().width/40; })()")
-        assert abs(back - vis[0]) < 1, f'Editor nicht an der alten Stelle: {back} statt {vis[0]}'
+        back = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
+        assert back[0] + 1 < 94 < back[1] - 1, f'Editor zeigt nicht die Figuren (Spalte 94): Ansicht {back}'
+        # nochmal Enter -> Test startet wieder bei den Figuren
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(800)
+        x2 = await g.ev('p1.x') / 40
+        assert abs(x2 - 94) < 4, f'Erneuter Test startet nicht bei den Figuren: Spalte {x2}'
         # normaler Spielstart (ohne ?test=1) zeigt weiter das Hauptmenü, kein „Zurück zum Editor“
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(400)
         assert await sm_screen(g) == 'sm-s-title', 'Startmenü fehlt beim normalen Start'
@@ -1259,8 +1265,13 @@ async def kamera_ruhig_bei_zwei(g):
     assert abs(await g.ev('VW') - 1280/0.95) < 1, 'sichtbare Weltbreite passt nicht zum Zoom'
     await g.load(level([ground(0, 680, 6000)], {'x': 600, 'y': 680}, {'x': 700, 'y': 680}))
     await g.p.wait_for_timeout(1500)
-    await g.hold(('KeyA',), 300); await g.p.wait_for_timeout(1200)
+    await g.hold(('KeyA',), 700); await g.p.wait_for_timeout(1200)   # Affe ganz hinten im ruhigen Bereich
     cam0 = await g.ev('camPos')
+    for _ in range(20):   # unter Last braucht die Kamera länger zum Ausrollen -> warten, bis sie steht
+        await g.p.wait_for_timeout(200)
+        c = await g.ev('camPos')
+        if abs(c - cam0) < 0.3: break
+        cam0 = c
     for _ in range(3):   # Affe (hinten) zappelt hin und her und springt
         await g.hold(('KeyD', 'Space'), 150); await g.hold(('KeyA',), 150)
     await g.p.wait_for_timeout(300)

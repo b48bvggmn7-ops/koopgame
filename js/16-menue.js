@@ -259,8 +259,12 @@ function pollMenuPads(){
 // gebaut hat (der Editor setzt dafür startM/startF); im Pausenmenü gibt es „Zurück zum Editor“.
 const EDITOR_TEST_KEY = 'monchichi_test_level';
 let editorTestMode = false;
-// zurück in den Editor – der stellt dann die Stelle wieder ein, an der „Testen“ geklickt wurde
-function backToEditor(){ location.href = 'editor/index.html?from=test'; }
+// zurück in den Editor – der zeigt dann die Stelle, an der die Figuren gerade stehen (hintere Figur, in Welt-Pixeln),
+// damit man direkt dort weiterbauen und mit Enter wieder von dort testen kann
+function backToEditor(){
+  try{ localStorage.setItem('monchichi_editor_focus', String(Math.round(Math.min(p1.x, p2.x)))); }catch(e){}
+  location.href = 'editor/index.html?from=test';
+}
 function startEditorTest(){
   if(!/[?&]test=1\b/.test(location.search)) return false;
   let data = null;
