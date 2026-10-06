@@ -218,16 +218,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (R = Neustart, Esc / Options = Pause gehen weiter; Level aus Datei laden geht damit nicht mehr per Knopf).
   - Spielansicht aufgeräumt (Nutzerwunsch): Steuerungs-Erklärungen oben links/rechts ausgeblendet (stehen im
     Startmenü unter Optionen), nur der Münz-Zähler bleibt. Spielbild füllt den Bildschirm (16:9, ohne Rand).
-  - Duell-Tafel oben rechts (Nutzerwunsch „wer stirbt öfter, wer hat mehr Münzen?“, 25-duell.js): Affe gegen
-    Schweinchen mit Gesicht, Toden 💀 und SELBST gesammelten Münzen 🪙 (coin.takenBy), „VS“ in der Mitte. Mehr Münzen
-    = hüpfende 👑 über dem Gesicht; öfter gestorben = 🩹 Pflaster + wackelndes Schild „Tollpatsch“; bei jedem Tod
-    hüpft das Gesicht. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu geladenes Level beginnt bei 0
-    (deathCount in 01-level.js; Test tode_zaehler).
-  - Level-Bilanz beim Ziel-Tanz: „Beide im Ziel! 🎉“ mit beiden Gesichtern, Toden und Münzen, Krone/Pflaster,
-    „🩹 Tollpatsch des Levels: …“ (Gesicht wackelt schwindelig) und ein lustiger Spruch (z. B. „… hat 3× den Boden
-    geküsst 💋“); bei Gleichstand „ein Herz und eine Seele 💕“, ohne Tod „ihr seid Profis! ✨“.
-  - Unter jeder geschafften Levelkarte (Levelauswahl) stehen die Tode der letzten geschafften Runde (💀 🐒 x · 🐷 y)
-    und der Tollpatsch (im Spielstand gemerkt: save.stats; Test duell_unter_levelkarte).
+  - Tode-Duell oben rechts (25-duell.js; Nutzerwunsch „wer stirbt öfter?“, modern und schlicht): dunkle Pille mit
+    Affen-Gesicht, Zahl, kleinem Totenkopf, Zahl, Schweinchen-Gesicht. Nur Tode, keine Münzen (die stehen im
+    Münz-Zähler oben links). Wer mehr Tode hat: Zahl rot und das Gesicht wird mit jedem Tod Vorsprung größer (+12 % je
+    Tod, höchstens +80 %); bei jedem Tod hüpft die Zahl. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu
+    geladenes Level beginnt bei 0 (deathCount in 01-level.js; Test tode_zaehler).
+  - Level-Bilanz beim Ziel-Tanz: „BEIDE IM ZIEL“, beide Gesichter mit Toden (wer mehr Tode hat, größer und rot),
+    darunter „Meiste Tode: …“ bzw. „Gleich oft gestorben“ / „Ohne einen einzigen Tod“ (kein „Tollpatsch“, keine Sprüche).
+  - Unter jeder geschafften Levelkarte eine knappe Zeile: Totenkopf, Affe x, Schweinchen y (höhere Zahl rot); gemerkt
+    wird die letzte geschaffte Runde (save.stats).
+  - Hauptmenü: die Figur mit insgesamt mehr Toden (Summe über alle geschafften Levels) trägt eine Totenkopf-Maske
+    (Knochen-Maske mit roten Augen, Riss und Zähnen); Gleichstand = keine Maske (Test duell_unter_levelkarte).
   - Vollbild: beim ersten Tastendruck/Klick im Titelbild schaltet das Spiel in den Vollbild-Modus (Browser-Regel:
     nicht per Controller); in den Optionen „Vollbild an / aus“. Im Vollbild wird Esc fürs Spiel gesperrt
     (Tastatur-Sperre, Chrome/Edge): Esc öffnet die Pause, LANGES Halten von Esc verlässt das Vollbild

@@ -448,6 +448,7 @@ S.menu = {
       { id: 'quit', label: 'Beenden' }
     ].filter(Boolean);
     this.idx = clamp(this.idx, 0, this.items.length - 1);
+    if (typeof applySkullMask === 'function') applySkullMask(save.stats);   // Totenkopf-Maske für den mit mehr Toden (25-duell.js)
     const box = $('#sm-menu'); box.innerHTML = '';
     this.items.forEach((it, i) => {
       const b = mk(`<button class="mi" type="button" tabindex="-1">${it.label}</button>`);

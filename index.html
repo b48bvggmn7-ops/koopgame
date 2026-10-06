@@ -50,48 +50,27 @@
   #perf .ok{ color:#7ee2a0; } #perf .warn{ color:#ffd23f; } #perf .bad{ color:#ff8a80; }
   #coinCard{ transition: transform .08s ease-out; }
   #coinCard.bump{ animation: coinBump .35s ease-out; }
-  /* Duell-Tafel oben rechts (25-duell.js): Affe gegen Schweinchen – Tode 💀, eigene Münzen 🪙,
-     👑 = mehr Münzen, 🩹 + „Tollpatsch“ = öfter gestorben */
-  #duelCard{ position:absolute; top:12px; right:14px; display:flex; align-items:center; gap:10px; padding:8px 14px 10px;
-    border-radius:18px; pointer-events:none; white-space:nowrap;
-    background:linear-gradient(135deg, rgba(40,90,140,.88), rgba(24,30,44,.9) 48%, rgba(150,60,100,.88));
-    box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.12); }
-  #duelCard .vs{ font:900 16px/1 system-ui,sans-serif; color:#ffe066; text-shadow:0 2px 0 #a8580a, 0 0 10px rgba(255,200,60,.6);
-    transform:rotate(-8deg); }
-  .duo{ display:flex; align-items:center; gap:8px; position:relative; }
-  .duo.f{ flex-direction:row-reverse; }
-  .duo .ava{ position:relative; width:42px; height:42px; flex:none; }
-  .duo .ava img{ width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
-  .duo .crown, .duo .band{ position:absolute; font-size:17px; opacity:0; transform:scale(.3); transition:opacity .25s, transform .3s cubic-bezier(.3,1.6,.5,1); }
-  .duo .crown{ top:-13px; left:11px; }
-  .duo .band{ bottom:-3px; right:-5px; }
-  .duo.rich .crown{ opacity:1; transform:scale(1); animation:crownBob 1.6s ease-in-out infinite; }
-  .duo.lead .band{ opacity:1; transform:scale(1) rotate(-20deg); }
-  .duo .nums{ display:flex; flex-direction:column; gap:1px; font-size:15px; font-weight:800; line-height:1.15; }
-  .duo.f .nums{ align-items:flex-end; }
-  .duo.m b{ color:#9fd4ff; } .duo.f b{ color:#ffb3d1; }
-  .duo .tag{ position:absolute; bottom:-15px; left:0; right:0; text-align:center; font-size:10px; font-weight:800; letter-spacing:.3px;
-    color:#ffd6d6; opacity:0; transition:opacity .25s; }
-  .duo.lead .tag{ opacity:1; animation:tagWiggle 2.4s ease-in-out infinite; }
-  .duo.bump .ava{ animation:coinBump .4s ease-out; }
-  @keyframes crownBob{ 0%,100%{ translate:0 0 } 50%{ translate:0 -3px } }
-  @keyframes tagWiggle{ 0%,80%,100%{ rotate:0deg } 85%{ rotate:-6deg } 90%{ rotate:6deg } 95%{ rotate:-3deg } }
+  /* Tode-Duell oben rechts (25-duell.js): nur Gesichter + Tode; wer mehr Tode hat, wird größer (--grow) */
+  #duelCard{ position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:12px; padding:7px 14px;
+    border-radius:999px; pointer-events:none; white-space:nowrap; color:#f3f5f8;
+    background:rgba(14,18,26,.62); border:1px solid rgba(255,255,255,.14); box-shadow:0 8px 24px rgba(0,0,0,.28);
+    font:800 22px/1 system-ui,-apple-system,"Segoe UI",sans-serif; font-variant-numeric:tabular-nums; }
+  #duelCard .mid{ align-self:center; width:18px; height:18px; color:rgba(255,255,255,.45); }
+  .skullIcon{ width:100%; height:100%; display:block; }
+  .duo{ --grow:1; display:flex; align-items:center; gap:8px; }
+  .duo .ava{ width:calc(34px*var(--grow)); height:calc(34px*var(--grow)); object-fit:contain;
+    transition:width .45s cubic-bezier(.3,1.5,.5,1), height .45s cubic-bezier(.3,1.5,.5,1); filter:drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+  .duo b{ min-width:1ch; text-align:center; transition:color .3s; }
+  .duo.lead b{ color:#ff5c6c; }
+  .duo.bump b{ animation:coinBump .35s ease-out; }
   /* Level-Bilanz beim Ziel-Tanz (im #toast) */
-  #toast .wt{ font-size:22px; font-weight:900; margin-bottom:22px; }
-  #toast .wsum{ display:flex; align-items:center; justify-content:center; gap:22px; }
-  #toast .vs{ font:900 22px/1 system-ui,sans-serif; color:#ffe066; text-shadow:0 2px 0 #a8580a; transform:rotate(-8deg); }
-  #toast .ws{ display:flex; flex-direction:column; align-items:center; gap:3px; min-width:110px; }
-  #toast .ws .ava{ position:relative; width:72px; height:72px; }
-  #toast .ws .ava img{ width:100%; height:100%; object-fit:contain; }
-  #toast .ws .crown, #toast .ws .band{ position:absolute; font-size:26px; display:none; }
-  #toast .ws .crown{ top:-20px; left:23px; } #toast .ws .band{ bottom:-4px; right:-8px; transform:rotate(-20deg); }
-  #toast .ws.rich .crown, #toast .ws.lead .band{ display:block; }
-  #toast .ws.lead .ava{ animation:dizzy 1.6s ease-in-out infinite; }
-  #toast .ws .nm{ font-weight:800; font-size:15px; }
-  #toast .ws .row{ font-size:16px; } #toast .ws.m b{ color:#9fd4ff; } #toast .ws.f b{ color:#ffb3d1; }
-  #toast .award{ margin-top:12px; font-size:16px; font-weight:800; color:#ffd6d6; }
-  #toast .line{ margin-top:4px; font-size:14px; opacity:.92; }
-  @keyframes dizzy{ 0%,100%{ rotate:-6deg } 50%{ rotate:6deg } }
+  #toast .wt{ font-size:13px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; opacity:.75; margin-bottom:14px; }
+  #toast .wsum{ display:flex; align-items:flex-end; justify-content:center; gap:26px; }
+  #toast .ws{ --grow:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  #toast .ws .ava{ width:64px; height:64px; object-fit:contain; transform:scale(var(--grow)); transform-origin:50% 100%; margin-top:calc((var(--grow) - 1)*64px); }
+  #toast .ws b{ font-size:26px; font-variant-numeric:tabular-nums; } #toast .ws.lead b{ color:#ff5c6c; }
+  #toast .mid{ width:22px; height:22px; color:rgba(255,255,255,.4); align-self:center; }
+  #toast .note{ margin-top:12px; font-size:14px; opacity:.85; }
   @keyframes coinBump{ 0%{transform:scale(1)} 30%{transform:scale(1.28)} 60%{transform:scale(.95)} 100%{transform:scale(1)} }
   .padline{ margin-top:4px; font-size:11.5px; opacity:.85; }
   .padline.on{ color:#7ee2a0; opacity:1; }
@@ -159,12 +138,10 @@
       <div class="padline" id="pad2">🎮 Controller 2: nicht verbunden</div>
     </div>
   </div>
-  <div id="duelCard" title="Duell in diesem Level: Tode und eigene Münzen">
-    <div class="duo m"><div class="ava"><img src="assets/monkey.png" alt="Affe"><span class="crown">👑</span><span class="band">🩹</span></div>
-      <div class="nums"><span>💀 <b id="deathM">0</b></span><span>🪙 <b id="coinsM">0</b></span></div><div class="tag">Tollpatsch</div></div>
-    <div class="vs">VS</div>
-    <div class="duo f"><div class="ava"><img src="assets/pig.png" alt="Schweinchen"><span class="crown">👑</span><span class="band">🩹</span></div>
-      <div class="nums"><span><b id="deathF">0</b> 💀</span><span><b id="coinsF">0</b> 🪙</span></div><div class="tag">Tollpatsch</div></div>
+  <div id="duelCard" title="Tode in diesem Level">
+    <div class="duo m"><img class="ava" src="assets/monkey.png" alt="Affe"><b id="deathM">0</b></div>
+    <div class="mid"><svg class="skullIcon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.9 2 3 5.6 3 10.3c0 2.7 1.3 4.6 3 5.8V19a1 1 0 0 0 1 1h1.5v-2h1.5v2h4v-2h1.5v2H17a1 1 0 0 0 1-1v-2.9c1.7-1.2 3-3.1 3-5.8C21 5.6 17.1 2 12 2zm-3.6 11.2a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4zm7.2 0a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4zM12 13.6l1.2 2.2h-2.4z"/></svg></div>
+    <div class="duo f"><b id="deathF">0</b><img class="ava" src="assets/pig.png" alt="Schweinchen"></div>
   </div>
   <div id="gameBtns" style="position:absolute; bottom:14px; left:14px; display:none; gap:8px;"><!-- auf Nutzerwunsch ausgeblendet (R / Esc / Options gehen weiter) -->
     <button id="resetBtn">Level neu starten (R)</button>

@@ -219,7 +219,7 @@ function updateCoins(players){
     for(const pl of players){
       const cx = pl.x, cy = pl.y - pl.h*0.5;
       if(Math.abs(cx - c.x) < 24 && Math.abs(cy - c.y) < 26){
-        if(canCollect(pl, c)){ c.taken = true; c.takenBy = pl === p1 ? 'm' : 'f'; c.pop = 0; coinPickupFx(c); break; }
+        if(canCollect(pl, c)){ c.taken = true; c.pop = 0; coinPickupFx(c); break; }
         else if(!c.nudgeT || now - c.nudgeT > 500) c.nudgeT = now;   // falsche Figur: Münze wackelt nur
       }
     }

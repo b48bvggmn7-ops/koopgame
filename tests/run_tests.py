@@ -102,50 +102,60 @@ async def start_ohne_fehler(g):
 
 @test
 async def tode_zaehler(g):
-    """Duell-Tafel oben rechts: Tode und eigene Münzen je Figur (Affe / Schwein); öfter gestorben = 🩹 „Tollpatsch“,
-    mehr Münzen = 👑. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu geladenes Level beginnt bei 0."""
-    lvl = level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
-                coins=[{'x': 400, 'y': 660, 'color': 'blue'}, {'x': 500, 'y': 660, 'color': 'blue'}])
+    """Tode-Duell oben rechts: Tode je Figur (Affe / Schwein), keine Münzen (die stehen oben links); wer mehr Tode hat,
+    ist rot und wird mit jedem Tod Vorsprung größer. Zählt pro Level: Weitermachen und R lassen den Stand,
+    ein neu geladenes Level beginnt bei 0. Level-Bilanz ohne „Tollpatsch“."""
+    lvl = level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680})
     await g.load(lvl)
     karte = "(() => { const c = document.getElementById('duelCard'), r = c.getBoundingClientRect(), d = w => c.querySelector('.duo.' + w);" \
+            " const gr = w => d(w).querySelector('.ava').getBoundingClientRect().width;" \
             " return {m: document.getElementById('deathM').textContent, f: document.getElementById('deathF').textContent," \
-            " cm: document.getElementById('coinsM').textContent, cf: document.getElementById('coinsF').textContent," \
             " sichtbar: getComputedStyle(c).display !== 'none' && r.width > 0, rechts: innerWidth - r.right, oben: r.top," \
-            " leadM: d('m').classList.contains('lead'), leadF: d('f').classList.contains('lead')," \
-            " richM: d('m').classList.contains('rich'), richF: d('f').classList.contains('rich')}; })()"
+            " muenzen: /🪙|Münz/.test(c.textContent), leadM: d('m').classList.contains('lead'), leadF: d('f').classList.contains('lead')," \
+            " gm: gr('m'), gf: gr('f')}; })()"
     k = await g.ev(karte)
-    assert k['sichtbar'] and k['rechts'] < 40 and k['oben'] < 40, f'Duell-Tafel nicht oben rechts: {k}'
-    assert (k['m'], k['f'], k['cm'], k['cf']) == ('0', '0', '0', '0'), f'Tafel startet nicht bei 0: {k}'
-    for wer in ('p2', 'p2', 'p1'):
+    assert k['sichtbar'] and k['rechts'] < 40 and k['oben'] < 40, f'Tafel nicht oben rechts: {k}'
+    assert (k['m'], k['f']) == ('0', '0') and not k['muenzen'], f'Tafel startet nicht bei 0 / zeigt Münzen: {k}'
+    groessen = []
+    for wer in ('p2', 'p2', 'p1', 'p2'):
         await g.ev(f"die({wer})"); await g.p.wait_for_timeout(700)
-        await g.ev("deathState.canContinueAt = 0; requestContinue()"); await g.p.wait_for_timeout(150)
-    await g.ev("p1.x = 400; p1.y = 680"); await g.p.wait_for_timeout(300)   # Affe sammelt eine Münze
+        await g.ev("deathState.canContinueAt = 0; requestContinue()"); await g.p.wait_for_timeout(600)
+        groessen.append((await g.ev(karte))['gf'])
     k = await g.ev(karte)
-    assert (k['m'], k['f'], k['cm'], k['cf']) == ('1', '2', '1', '0'), f'Zähler falsch: {k}'
-    assert k['leadF'] and not k['leadM'] and k['richM'] and not k['richF'], f'Tollpatsch/Krone falsch: {k}'
+    assert (k['m'], k['f']) == ('1', '3') and k['leadF'] and not k['leadM'], f'Zähler falsch: {k}'
+    assert k['gf'] > k['gm'] * 1.15, f'Schweinchen (mehr Tode) nicht größer: {k}'
+    assert groessen[1] > groessen[0] + 1, f'wird mit mehr Toden nicht größer: {groessen}'
     html = await g.ev("winSummaryHTML()")
-    assert 'Tollpatsch des Levels' in html and 'Schweinchen' in html, f'Level-Bilanz ohne Tollpatsch: {html}'
+    assert 'Schweinchen' in html and 'Tollpatsch' not in html and '🪙' not in html, f'Level-Bilanz falsch: {html}'
     await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(150)
-    assert (await g.ev(karte))['f'] == '2', 'R setzt den Zähler zurück'
+    assert (await g.ev(karte))['f'] == '3', 'R setzt den Zähler zurück'
     await g.load(lvl)
     k = await g.ev(karte)
     assert (k['m'], k['f']) == ('0', '0'), f'Neues Level beginnt nicht bei 0: {k}'
 
 @test
 async def duell_unter_levelkarte(g):
-    """Geschafftes Level: die Tode der Runde und der Tollpatsch stehen unter der Levelkarte (gemerkt im Spielstand)."""
+    """Geschafftes Level: unter der Levelkarte steht knapp, wie oft wer gestorben ist (eine Zeile, gemerkt im
+    Spielstand); im Hauptmenü trägt die Figur mit insgesamt mehr Toden eine Totenkopf-Maske."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await startmenue_bis_level(g)
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && menuScreen === null", timeout=10000)
         await g.ev("deathCount.m = 1; deathCount.f = 4; deathState = null; won = true; winSteps = 0; winT0 = performance.now(); showWinSummary()")
-        assert 'Tollpatsch des Levels' in await g.ev("document.getElementById('toast').textContent"), 'keine Level-Bilanz'
+        assert 'Meiste Tode' in await g.ev("document.getElementById('toast').textContent"), 'keine Level-Bilanz'
         await p.wait_for_function("document.querySelector('#sm-cards .lc .duel')", timeout=15000)
         st = await g.ev("GameMenu.getSave().stats[1]")
         assert st['m'] == 1 and st['f'] == 4, f'Stand nicht gemerkt: {st}'
-        txt = await g.ev("document.querySelector('#sm-cards .lc .duel').textContent")
-        assert '4' in txt and 'Tollpatsch' in txt and 'Schweinchen' in txt, f'Levelkarte zeigt keinen Tollpatsch: {txt}'
+        zeile = await g.ev("(() => { const d = document.querySelector('#sm-cards .lc .duel');"
+                           " return {txt: d.textContent, lead: [...d.querySelectorAll('b.lead')].map(b => b.textContent)}; })()")
+        assert '1' in zeile['txt'] and zeile['lead'] == ['4'] and 'Tollpatsch' not in zeile['txt'], f'Levelkarte: {zeile}'
+        for _ in range(3):   # Levelauswahl -> Hauptmenü (kurze Eingabesperre nach dem Bildschirmwechsel)
+            await p.wait_for_timeout(600); await p.keyboard.press('Escape'); await p.wait_for_timeout(600)
+            if await sm_screen(g) == 'sm-s-menu': break
+        assert await sm_screen(g) == 'sm-s-menu', f'Esc führt nicht ins Hauptmenü: {await sm_screen(g)}'
+        maske = await g.ev("[...document.querySelectorAll('#sm-s-menu .bob[data-char]')].filter(b => b.querySelector('.skullmask')).map(b => b.dataset.char)")
+        assert maske == ['pig'], f'Totenkopf-Maske falsch: {maske}'
     finally:
         srv.shutdown()
 
