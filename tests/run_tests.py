@@ -194,15 +194,15 @@ async def scheinwand_glitzert(g):
 @test
 async def himmel_ohne_unsichtbare_decke(g):
     """Zoom zeigt über Reihe 0 einen Streifen Himmel: dort kann man hineinspringen (keine unsichtbare Decke mehr bei
-    Reihe 0), die Decke ist der obere Bildrand. Wände/Türen, die bis Reihe 0 reichen, gehen bis zum Bildrand weiter
-    (man springt nicht darüber). Der Editor zeigt denselben Himmelsstreifen in gleicher Höhe. Bild unverzerrt 16:9,
-    Figuren im echten Seitenverhältnis."""
-    await g.load(level([ground(0, 680, 3000), ground(200, 120, 160, 40), ground(600, 0, 40, 400, 'wall')],
+    Reihe 0), die Decke ist der obere Bildrand. Im Editor sind die 3 Himmel-Reihen (−1 … −3) ganz normal bebaubar;
+    was dort steht, steht im Spiel an derselben Stelle. Der Editor passt ohne senkrechtes Scrollen ins Fenster.
+    Bild unverzerrt 16:9, Figuren im echten Seitenverhältnis."""
+    await g.load(level([ground(0, 680, 3000), ground(200, 120, 160, 40), ground(600, -120, 40, 520, 'wall')],
                        {'x': 280, 'y': 120}, {'x': 100, 'y': 680}))
     sky = await g.ev("SKY_ROOM")
     assert abs(sky - (720/0.85 - 720)) < 0.5, f'Himmelsstreifen falsch: {sky}'
     wand = await g.ev("(() => { const w = solids.find(s => s.type === 'wall'); return [w.y, w.h]; })()")
-    assert abs(wand[0] + sky) < 0.5 and abs(wand[1] - (400 + sky)) < 0.5, f'Wand reicht nicht bis zum Bildrand: {wand}'
+    assert wand == [-120, 520], f'Wand im Himmel verändert: {wand}'
     await g.ev("p1.x = 280; p1.y = 120; p1.vx = p1.vy = 0; deathState = null; window.__minTop = 1e9")
     await g.p.wait_for_function("p1.grounded", timeout=3000)
     await g.ev("""(() => { const o = stepSim; stepSim = function(ts){ const r = o(ts); window.__minTop = Math.min(window.__minTop, p1.y - p1.h); return r; }; })()""")
@@ -218,13 +218,25 @@ async def himmel_ohne_unsichtbare_decke(g):
       try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { ctx.drawImage = o; }
       return out; })()""")
     assert fig and all(abs(a - b) < 0.01 for a, b in fig), f'Affe verzerrt gezeichnet: {fig}'
-    # Editor: Himmelsstreifen über dem Raster, gleich hoch wie im Spiel
+    # Editor: 3 Himmel-Reihen über Reihe 0, bebaubar; ganze Höhe ohne senkrechtes Scrollen sichtbar
     srv = webserver()
     try:
         await g.p.goto(srv.url + 'editor/index.html'); await g.p.wait_for_timeout(300)
-        band = await g.ev("(() => { const b = document.getElementById('skyBand').getBoundingClientRect(), c = document.getElementById('c').getBoundingClientRect();"
-                          " return {h: b.height, unten: b.bottom, raster: c.top, breit: Math.abs(b.width - c.width) < 2}; })()")
-        assert abs(band['h'] - sky) < 1.5 and abs(band['unten'] - band['raster']) < 1 and band['breit'], f'Himmel im Editor: {band}'
+        await g.p.evaluate("localStorage.removeItem('monchichi_level_editor_v2')"); await g.p.reload(); await g.p.wait_for_timeout(400)
+        await g.p.click('[data-tool="wall"]')
+        box = await g.ev("(() => { const c = document.getElementById('c'), r = c.getBoundingClientRect(), w = document.getElementById('canvasWrap');"
+                         " return {x: r.left, y: r.top, s: r.height / c.height, rows: c.height / 40, scrollt: w.scrollHeight > w.clientHeight + 1}; })()")
+        assert box['rows'] == 21 and not box['scrollt'], f'Editor: Höhe/Scrollen falsch: {box}'
+        # Klick in die oberste Himmel-Reihe (Reihe −3), Spalte 5
+        await g.p.mouse.click(box['x'] + (5*40 + 20) * box['s'], box['y'] + 20 * box['s'])
+        await g.p.wait_for_timeout(150)
+        teile = await g.ev("JSON.parse(localStorage.getItem('monchichi_level_editor_v2')).tiles")
+        assert [5, -3, 'wall'] in teile, f'Himmel-Reihe nicht bebaubar: {teile}'
+        # im Spiel steht das Kästchen an derselben Stelle (Reihe −3 = y −120)
+        sp = await g.ev("JSON.stringify(JSON.parse(localStorage.getItem('monchichi_level_editor_v2')))")
+        await g.p.goto(GAME); await g.p.wait_for_timeout(300)
+        conv = await g.ev(f"convertEditorSnapshot({sp}).solids.filter(s => s.type === 'wall')")
+        assert any(t['x'] == 200 and t['y'] == -120 for t in conv), f'Himmel-Kästchen im Spiel falsch: {conv}'
     finally:
         srv.shutdown()
 
@@ -1038,7 +1050,7 @@ async def editor_bewegung_nachbearbeiten(g):
         assert '✓' in o['3'] and 'Schalter' in o['3'] and '✓' in o['5'] and 'Tür' in o['5'] and '✓' not in o['1'], f'Markierung: {opts[:6]}'
         async def click_cell(c, r):
             box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
-            await p.mouse.click(box['x'] + (c*40 + 20)*k, box['y'] + (r*40 + 20)*k)
+            await p.mouse.click(box['x'] + (c*40 + 20)*k, box['y'] + ((r + 3)*40 + 20)*k)   # 3 Himmel-Reihen über Reihe 0
         await p.click('.tool[data-tool="move"]')
         await click_cell(10, 12); await p.wait_for_timeout(100)
         assert await p.is_visible('#moveDelBtn'), 'Bewegung nicht ausgewählt'

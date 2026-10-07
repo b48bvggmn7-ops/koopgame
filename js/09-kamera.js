@@ -11,8 +11,8 @@ const CAM_LEFT = 300, CAM_RIGHT = 70;
 // Passen beide nicht ins Bild, folgt die Kamera der vorderen Figur; die hintere erscheint als Pfeil am Rand.
 const FRONT_MAX = 0.75;   // vordere Figur steht höchstens bei 75 % der Bildbreite -> immer Blick nach vorn
 const zoom = 0.85;
-// so viel Welt (px) ist über Reihe 0 sichtbar (Himmels-Streifen): dort darf man hinspringen; Wände/Türen, die bis
-// ganz oben reichen, werden beim Laden bis zum Bildrand verlängert (extendToSky in 01-level.js)
+// so viel Welt (px) ist über Reihe 0 sichtbar (Himmels-Streifen ≈ 127 px): dort darf man hinspringen und im Editor
+// bauen (Himmel-Reihen −1 … −3, editor.js SKY); die Decke ist der obere Bildrand
 const SKY_ROOM = H / zoom - H;
 const VW = W / zoom;   // sichtbare Weltbreite   // (CAM_LEFT war 150 -> zu eng)   // Kamera: Abstand hintere Figur zum linken / vordere zum rechten Rand
 // Ruhige Kamera (gegen Wackeln bei zwei Spielern): Totzone für die hintere Figur. Solange sie zwischen

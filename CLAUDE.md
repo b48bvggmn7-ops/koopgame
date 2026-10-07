@@ -47,9 +47,9 @@
 - Figurenhöhe 32,3 px (Kommazahl!) – bei Positionsberechnungen an Rundung denken.
 - Zoom 0,85 (15 % heraus, Nutzerwunsch; vorher 0,95, davor 0,9, früher kein Zoom) -> sichtbare Weltbreite `VW` statt `W` benutzen.
   Kamera mit Totzone gegen Wackeln (`cameraTarget`), folgt der vorderen Figur, wenn beide nicht ins Bild passen.
-  Über Reihe 0 ist ein Streifen Himmel sichtbar (`SKY_ROOM` ≈ 127 px), Decke = oberer Bildrand; was bis Reihe 0 reicht,
-  wird beim Laden bis dorthin verlängert (`extendToSky`). Der Editor zeigt den Streifen ebenfalls (`#skyBand`, 127 px –
-  bei Zoom-Änderung mit anpassen!).
+  Über Reihe 0 ist ein Streifen Himmel sichtbar (`SKY_ROOM` ≈ 127 px), Decke = oberer Bildrand. Im Editor sind das
+  die bebaubaren Reihen −1 … −3 (`SKY` in editor.js; Level-Daten dürfen negative Reihen/y haben) – bei Zoom-Änderung
+  mit anpassen! Editor-Ansicht skaliert auf die Fensterhöhe (`fitView`).
 - Spieltempo `GAME_SPEED` 0,9 (14-spielschleife.js): 60 Schritte pro *Spielsekunde*, real also 54/s.
 - Spielstand-Werte (Sprung, Tempo, Wandsprung-Zeitfenster …) stehen in `js/02-physik-werte.js` bzw. am Anfang
   der jeweiligen Datei als Konstanten in GROSSBUCHSTABEN.

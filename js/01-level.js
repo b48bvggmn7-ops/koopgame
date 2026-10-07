@@ -141,26 +141,11 @@ function buildLevel(data){
   for(const s of solids) maxX = Math.max(maxX, s.x+s.w, s.type==='moveplat' ? s.targetX+s.w : 0);
   for(const h of hooks) maxX = Math.max(maxX, h.x, h.moving ? h.targetX : 0);
   LEVEL_W = maxX + 200;
-  extendToSky();
   computeGroundNeighbors();
   levelTheme = data.theme || 'dschungel';   // Aussehen des Levels (10a-themen.js)
   if(typeof setTheme === 'function') setTheme(levelTheme);
 }
 let levelTheme = 'dschungel';
-// Durch den Zoom ist über Reihe 0 ein Streifen Himmel sichtbar, in den man springen kann (Nutzerwunsch: keine
-// unsichtbare Decke). Was im Editor bis ganz oben reicht (Wand, Boden, Tür, Scheinwand, waagerecht fahrende Wand),
-// geht deshalb im Spiel bis zum oberen Bildrand weiter – sonst könnte man darüber hinwegspringen.
-function extendToSky(){
-  const room = typeof SKY_ROOM === 'number' ? SKY_ROOM : 0;
-  if(room <= 0) return;
-  const tall = s => s.type==='ground' || s.type==='wall' || s.type==='door' || s.type==='fake' ||
-                    (s.type==='moveplat' && s.startY < 1 && s.targetY < 1);
-  for(const s of solids.concat(fakeWalls)){
-    if(!tall(s) || s.y > 0.5) continue;
-    s.y -= room; s.h += room;
-    if(s.type==='moveplat'){ s.startY -= room; s.targetY -= room; }
-  }
-}
 
 // Für schön gezeichneten Boden: welche Seiten eines Bodenstücks grenzen an ein gleichartiges Stück?
 // (dort keine runden Ecken und kein Gras, sondern nahtloser Übergang)

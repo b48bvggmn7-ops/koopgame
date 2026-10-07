@@ -3,6 +3,8 @@
 (function(){
   const TILE = 40;
   const MIN_COLS = 60, ROWS = 18;
+  // Himmel: so viele Reihen ÜBER Reihe 0 zeigt das Spiel durch den Zoom (Reihen −1 … −3); dort darf man ganz normal bauen
+  const SKY = 3;
   const EDGE_MARGIN = 15;   // so viele leere Spalten bleiben rechts immer frei
   let COLS = MIN_COLS;
   const cvs = document.getElementById('c');
@@ -56,10 +58,18 @@
     n = Math.max(MIN_COLS, n);
     if(n === COLS && cvs.width === COLS*TILE) return;
     COLS = n;
-    cvs.width = COLS*TILE; cvs.height = ROWS*TILE;
-    const sky = document.getElementById('skyBand'); if(sky) sky.style.width = cvs.width + 'px';   // Himmel über dem Raster
+    cvs.width = COLS*TILE; cvs.height = (ROWS + SKY)*TILE;
+    fitView();
     document.getElementById('lenLabel').textContent = COLS + ' Spalten';
   }
+  // Ansicht so verkleinern, dass die ganze Höhe (Himmel + 18 Reihen) ohne Scrollen ins Fenster passt (nie vergrößern)
+  function fitView(){
+    const avail = wrap.clientHeight - 16;   // Platz für die waagerechte Scrollleiste
+    const s = Math.min(1, Math.max(0.3, avail / cvs.height));
+    cvs.style.width = (cvs.width * s) + 'px'; cvs.style.height = (cvs.height * s) + 'px';
+  }
+  window.addEventListener('resize', fitView);
+  requestAnimationFrame(fitView);   // nach dem ersten Aufbau der Seite (dann steht die Fensterhöhe fest)
   function ensureRoom(c){ if(c + EDGE_MARGIN > COLS) setCols(c + EDGE_MARGIN); }
   function fitCols(extra){ setCols(Math.max(extra||0, maxUsedCol() + 1 + EDGE_MARGIN)); }
 
@@ -152,7 +162,7 @@
     const rect = cvs.getBoundingClientRect();
     const px = (e.clientX - rect.left) * (cvs.width/rect.width);
     const py = (e.clientY - rect.top) * (cvs.height/rect.height);
-    return {c: Math.floor(px/TILE), r: Math.floor(py/TILE)};
+    return {c: Math.floor(px/TILE), r: Math.floor(py/TILE) - SKY};   // Reihe 0 = alte Oberkante, darüber Himmel (negativ)
   }
 
   // Zusammenhängendes Stück gleicher Sorte (4er-Nachbarschaft)
@@ -211,7 +221,7 @@
   }
 
   function applyTool(c,r,forceErase){
-    if(c<0||r<0||c>=COLS||r>=ROWS) return;
+    if(c<0||r<-SKY||c>=COLS||r>=ROWS) return;
     const key = c+','+r;
     const tool = forceErase ? 'erase' : currentTool;
     if(tool==='erase'){ eraseAt(c,r); save(); return; }
@@ -321,7 +331,7 @@
   function flash(m){ flashMsg=m; flashT=performance.now(); document.getElementById('coordLabel').textContent=m; }
   cvs.addEventListener('mousemove', e=>{
     const {c,r} = cellFromEvent(e);
-    if(moveDrag){ moveDrag.tc=Math.max(0,c); moveDrag.tr=Math.max(0,Math.min(ROWS-1,r)); ensureRoom(moveDrag.tc); }
+    if(moveDrag){ moveDrag.tc=Math.max(0,c); moveDrag.tr=Math.max(-SKY,Math.min(ROWS-1,r)); ensureRoom(moveDrag.tc); }
     if(performance.now()-flashT > 2500)
       document.getElementById('coordLabel').textContent = moveDrag
         ? `Bewegung: ${moveDrag.tc-moveDrag.c} Kästchen seitlich, ${moveDrag.tr-moveDrag.r} Kästchen hoch/runter`
@@ -341,7 +351,7 @@
       if(hk) moveDrag={c,r,tc:c,tr:r,hook:hk}; else if(tiles[c+','+r]) moveDrag={c,r,tc:c,tr:r}; return; }
     painting=true; applyTool(c,r); }, {passive:false});
   cvs.addEventListener('touchmove', e=>{ e.preventDefault(); const t=e.touches[0]; const {c,r}=cellFromEvent(t);
-    if(moveDrag){ moveDrag.tc=Math.max(0,c); moveDrag.tr=Math.max(0,Math.min(ROWS-1,r)); ensureRoom(moveDrag.tc); return; }
+    if(moveDrag){ moveDrag.tc=Math.max(0,c); moveDrag.tr=Math.max(-SKY,Math.min(ROWS-1,r)); ensureRoom(moveDrag.tc); return; }
     if(DRAG_TOOLS.includes(currentTool)) applyTool(c,r); }, {passive:false});
   cvs.addEventListener('touchend', ()=>{ painting=false; finishMoveDrag(); });
 
@@ -544,14 +554,19 @@
   function draw(){
     ctx.clearRect(0,0,cvs.width,cvs.height);
     ctx.fillStyle = THEME_BG[theme] || THEME_BG.dschungel; ctx.fillRect(0, 0, cvs.width, cvs.height);
+    ctx.fillStyle = 'rgba(120,175,230,.13)'; ctx.fillRect(0, 0, cvs.width, SKY*TILE);   // Himmel-Reihen leicht heller
+    ctx.save(); ctx.translate(0, SKY*TILE);   // ab hier: Reihe 0 bei y = 0, Himmel-Reihen negativ
     // Grid
     ctx.lineWidth = 1; ctx.strokeStyle = '#25323f';
-    for(let c=0;c<=COLS;c++){ ctx.beginPath(); ctx.moveTo(c*TILE,0); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
-    for(let r=0;r<=ROWS;r++){ ctx.beginPath(); ctx.moveTo(0,r*TILE); ctx.lineTo(COLS*TILE,r*TILE); ctx.stroke(); }
+    for(let c=0;c<=COLS;c++){ ctx.beginPath(); ctx.moveTo(c*TILE,-SKY*TILE); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
+    for(let r=-SKY;r<=ROWS;r++){ ctx.beginPath(); ctx.moveTo(0,r*TILE); ctx.lineTo(COLS*TILE,r*TILE); ctx.stroke(); }
     // stärkere Linie alle 5 Kästchen
     ctx.strokeStyle = '#33465a';
-    for(let c=0;c<=COLS;c+=5){ ctx.beginPath(); ctx.moveTo(c*TILE,0); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
+    for(let c=0;c<=COLS;c+=5){ ctx.beginPath(); ctx.moveTo(c*TILE,-SKY*TILE); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
     for(let r=0;r<=ROWS;r+=5){ ctx.beginPath(); ctx.moveTo(0,r*TILE); ctx.lineTo(COLS*TILE,r*TILE); ctx.stroke(); }
+    // frühere Oberkante (Reihe 0) gestrichelt; darüber die Himmel-Reihen, die das Spiel durch den Zoom zeigt
+    ctx.save(); ctx.setLineDash([6,5]); ctx.strokeStyle = 'rgba(160,200,240,.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(COLS*TILE, 0); ctx.stroke(); ctx.restore();
 
     for(const key in tiles){
       const [c,r] = key.split(',').map(Number), t = tiles[key];
@@ -753,6 +768,7 @@
       ctx.fillText(String(p.link), cx, cy+1);
     }
 
+    ctx.restore();   // Verschiebung um die Himmel-Reihen
     requestAnimationFrame(draw);
   }
   draw();
@@ -836,12 +852,12 @@
     const target = c0 + Math.round((c1 - c0) / 3);
     const solidAt = (c, r)=>{ const t = tiles[c+','+r]; return (t==='ground' || t==='wall' || t==='platform') && !moverForCell(c, r); };
     const spikeAt = (c, r)=> spikes.some(sp=> sp.c===c && sp.r===r);
-    const standable = (c, r)=> r > 0 && !tiles[c+','+r] && !spikeAt(c, r) && solidAt(c, r+1);
+    const standable = (c, r)=> r > -SKY && !tiles[c+','+r] && !spikeAt(c, r) && solidAt(c, r+1);
     const cols = [];
     for(let c = c0; c <= c1; c++) cols.push(c);
     cols.sort((a, b)=> Math.abs(a - target) - Math.abs(b - target));
     for(const c of cols){
-      for(let r = ROWS - 2; r >= 1; r--){
+      for(let r = ROWS - 2; r > -SKY; r--){
         if(!standable(c, r)) continue;
         const cF = standable(c - 1, r) ? c - 1 : standable(c + 1, r) ? c + 1 : c;
         return {m: {c, r}, f: {c: cF, r}};

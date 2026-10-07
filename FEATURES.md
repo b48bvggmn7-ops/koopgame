@@ -34,10 +34,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Weltbreite VW = 1280/0,85 ≈ 1506 px (≈ 37,6 Kästchen).
   - Himmel über dem Level (Nutzerwunsch „keine durchsichtige Decke“): durch den Zoom sind über Reihe 0 gut 3 Kästchen
     Himmel sichtbar (SKY_ROOM = 720/0,85 − 720 ≈ 127 px). Dort kann man hineinspringen; die Decke ist der obere
-    Bildrand (früher: unsichtbare Decke genau bei Reihe 0). Wand, Boden, Tür, Scheinwand und waagerecht fahrende
-    Wände, die bis Reihe 0 reichen, gehen im Spiel bis zum Bildrand weiter (extendToSky in 01-level.js), damit
-    niemand darüber hinwegspringt. Der Editor zeigt denselben Streifen („☁ Himmel im Spiel“, 127 px, nicht bebaubar)
-    über dem Raster, damit die Höhen übereinstimmen (Test himmel_ohne_unsichtbare_decke).
+    Bildrand (früher: unsichtbare Decke genau bei Reihe 0). Im Editor sind das die 3 Himmel-Reihen −1 … −3 über
+    Reihe 0 (leicht heller, Reihe 0 gestrichelt) – dort kann man ganz normal bauen (Nutzerwunsch); im Spiel steht
+    alles an derselben Stelle. In Level 1–6 wurden Wände/Böden/Türen/Scheinwände und waagerecht fahrende Wände, die
+    bis Reihe 0 reichten, einmalig bis Reihe −3 verlängert (sonst könnte man jetzt darüber springen). (früher kurz:
+    automatisch verlängert + nicht bebaubarer Himmelsstreifen im Editor – ersetzt.)
+  - Editor-Ansicht passt sich der Fensterhöhe an: Himmel + 18 Reihen (21 Reihen) passen ohne senkrechtes Scrollen
+    ins Fenster (nie größer als 1:1); seitlich scrollt man weiter (Test himmel_ohne_unsichtbare_decke).
   - Unverzerrt: Spielfeld immer genau 16:9 (bei jeder Fenstergröße geprüft); Affe/Schweinchen werden im echten
     Seitenverhältnis ihrer Bilder gezeichnet (308 × 257 – früher ins Quadrat gestreckt, also 20 % zu hoch),
     Unterkante unverändert; ebenso das Gesicht im Pfeil am Bildrand.
