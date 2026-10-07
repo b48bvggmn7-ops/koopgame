@@ -706,7 +706,8 @@ async def level1_muenzen_und_haken(g):
 @test
 async def level2_und_3_regeln(g):
     """Level 2 bis 6: nur blaue/pinke Münzen, keine Münze in Stein/Tür/bewegtem Teil, Haken höchstens 5 Kästchen,
-    Ziel ganz rechts, Start links; ab Level 4 gleich viele blaue wie pinke Münzen und ein eigenes Thema."""
+    Ziel ganz rechts, Start links; ab Level 4 ein eigenes Thema, ab Level 5 gleich viele blaue wie pinke Münzen
+    (Level 2–4 hat der Nutzer selbst gestaltet)."""
     namen = [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text())
              if not L.get('versteckt') and L['datei'] != 'level-1.json']
     assert 'level-4.json' in namen, 'Level 4 fehlt in levels.json'
@@ -725,9 +726,10 @@ async def level2_und_3_regeln(g):
             assert hk['radius'] <= 5 * 40, f"{name}: Haken zu groß {hk}"
         assert lv['goal']['x'] > 400 * 40 and lv['startM']['x'] < 10 * 40, f"{name}: Start/Ziel falsch"
         if name not in ('level-2.json', 'level-3.json'):
+            assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan'), f"{name}: Thema {lv.get('theme')}"
+        if name not in ('level-2.json', 'level-3.json', 'level-4.json'):   # Level 2–4 vom Nutzer gestaltet: eigene Münzverteilung
             nb = sum(c['color'] == 'blue' for c in lv['coins'])
             assert nb * 2 == len(lv['coins']), f"{name}: Blau/Pink nicht ausgeglichen"
-            assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan'), f"{name}: Thema {lv.get('theme')}"
 
 @test
 async def hebel_haben_grund(g):

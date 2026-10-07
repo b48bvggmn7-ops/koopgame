@@ -293,7 +293,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     der Presse -> Reihenfolge überlegen); 13) Zwei Fähigkeiten (Hebel 18 nur segelnd erreichbar, Hebel 17 nur am
     Haken; zwei Türen hintereinander); 14) Endspurt-Jagd (schnellste Stachelwand + rutschender Stachelblock);
     15) Finale: Schweinchen durch den Kamin über die Bröckel-Brücke, Affe an drei Haken darunter, Ziel (796).
-  - Level 4 „Mondnacht“ (levels/level-4.json, 520 Spalten, Thema nacht = dunkel, SEHR schwer; jede Stelle mit dem
+  - Level 4: jetzt die vom Nutzer im Editor überarbeitete Fassung (hochgeladen und eingespielt, 463 Spalten,
+    Thema nacht; Editor-Format aus seiner Spiel-Datei zurückgerechnet, beide Formate geprüft gleich). Eigene
+    Münzverteilung (32 blau / 31 pink) – die Regel „gleich viele“ gilt deshalb erst ab Level 5.
+    Die folgende Beschreibung ist der frühere Entwurf, auf dem die Fassung des Nutzers aufbaut:
+  - (früher) Level 4 „Mondnacht“ (levels/level-4.json, 520 Spalten, Thema nacht = dunkel, SEHR schwer; jede Stelle mit dem
     Koop-Bot geprüft, viele an der Grenze des Schaffbaren): 1) Bröckel-Sprint: 2 Kästchen schmale Bröckel-Inseln,
     Lücken 6/6/5/5 (Sprunggrenze, nicht stehen bleiben); 2) Schleuse: Druckplatte 1 außen hält Tür 1 offen, drinnen
     liegt Platte 1 auf einem hohen Sims (nur per Wand-Rücksprung von der hängenden Wand), dann Platte 2 / Tür 2 /
