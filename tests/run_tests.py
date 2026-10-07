@@ -168,6 +168,30 @@ async def duell_unter_levelkarte(g):
         srv.shutdown()
 
 @test
+async def scheinwand_glitzert(g):
+    """Scheinwände glitzern dezent: zu jeder Zeit blitzt nur ein kleiner Teil der Kästchen kurz auf (kein Dauerleuchten),
+    über die Zeit aber jedes einmal; steht eine Figur in/an der Scheinwand (durchsichtig), glitzert sie nicht."""
+    await g.load(level([ground(0, 680, 3000), ground(600, 440, 400, 240, 'fake')], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    r = await g.ev("""(() => {
+      const realNow = performance.now, realFill = ctx.fill; let n = 0;
+      ctx.fill = function(){ n++; return realFill.apply(this, arguments); };
+      const counts = [], seen = new Set();
+      try {
+        for(let t = 0; t < 3200; t += 64){
+          performance.now = () => 100000 + t; n = 0; drawFakeGlints(); counts.push(n / 2);   // 2 Füllungen je Funkelpunkt
+        }
+        fakeWalls[0].alpha = 0.35; performance.now = () => 100000; n = 0;
+        for(let t = 0; t < 3200; t += 64){ performance.now = () => 100000 + t; drawFakeGlints(); }
+        var drinnen = n;
+      } finally { performance.now = realNow; ctx.fill = realFill; fakeWalls[0].alpha = 1; }
+      return {counts, drinnen, kaestchen: (400/40)*(240/40)};
+    })()""")
+    avg = sum(r['counts']) / len(r['counts'])
+    assert 0 < avg <= r['kaestchen'] * 0.3, f"Glitzern nicht dezent/fehlt: im Schnitt {avg} von {r['kaestchen']} Kästchen"
+    assert max(r['counts']) < r['kaestchen'] * 0.45, f"zu viel auf einmal: {max(r['counts'])}"
+    assert r['drinnen'] == 0, 'Scheinwand glitzert, obwohl sie durchsichtig ist'
+
+@test
 async def decke_kein_teleport(g):
     """Springen unter Decken aller Höhen (links/rechts, beide Figuren): niemand springt quer >15 px."""
     bad = []

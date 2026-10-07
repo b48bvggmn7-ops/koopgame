@@ -905,6 +905,7 @@ function drawSolidLook(s, look, x){
   ctx.restore();
   if(THEME.tint){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
   drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
+  drawFakeGlints();      // dezentes Glitzern an Scheinwänden (auch im Dunkeln sichtbar)
   weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
   drawOffscreenArrows();
   drawContinuePrompt();
@@ -915,4 +916,40 @@ function drawSolidLook(s, look, x){
     ctx.fillStyle = '#ffd23f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(testJumpMsg, W/2, 148);
   }
+}
+
+// ---------- Scheinwände glitzern dezent (Nutzerwunsch: „ein bisschen erkennen, nicht zu auffällig“) ----------
+// Pro Kästchen ein fester, zufällig wirkender Funkelpunkt, der ab und zu kurz aufblitzt (nur Zeichnen, kein Spielzustand).
+const FAKE_GLINT_PERIOD = 3200;   // ms bis ein Funkelpunkt wieder aufblitzt
+const FAKE_GLINT_ON = 0.16;       // Anteil der Zeit, in der er sichtbar ist
+const FAKE_GLINT_ALPHA = 0.55;    // höchste Deckkraft
+function glintHash(a, b){ const s = Math.sin(a*127.1 + b*311.7)*43758.5453; return s - Math.floor(s); }
+function drawFakeGlints(){
+  if(!fakeWalls.length) return;
+  const now = performance.now();
+  ctx.save(); applyWorldZoom();
+  for(const f of fakeWalls){
+    const x0 = f.x - camX;
+    if(x0 + f.w < -20 || x0 > VW + 20) continue;
+    const vis = (f.alpha === undefined ? 1 : f.alpha);   // steht jemand drin (Wand durchsichtig), kein Glitzern
+    if(vis < 0.6) continue;
+    for(let ty = f.y; ty < f.y + f.h - 1; ty += 40){
+      for(let tx = f.x; tx < f.x + f.w - 1; tx += 40){
+        const c = Math.round(tx/40), r = Math.round(ty/40);
+        const ph = ((now/FAKE_GLINT_PERIOD) + glintHash(c, r)) % 1;
+        if(ph > FAKE_GLINT_ON) continue;
+        const k = Math.sin(ph/FAKE_GLINT_ON*Math.PI);   // weich auf und ab
+        const gx = tx - camX + 8 + glintHash(r, c)*24, gy = ty + 8 + glintHash(c + 7, r + 3)*24;
+        const s = 2.5 + k*3;
+        ctx.globalAlpha = k*FAKE_GLINT_ALPHA*vis;
+        ctx.fillStyle = '#fffbe6';
+        ctx.beginPath();                                   // vierzackiger Stern
+        ctx.moveTo(gx, gy - s); ctx.quadraticCurveTo(gx, gy, gx + s, gy); ctx.quadraticCurveTo(gx, gy, gx, gy + s);
+        ctx.quadraticCurveTo(gx, gy, gx - s, gy); ctx.quadraticCurveTo(gx, gy, gx, gy - s); ctx.fill();
+        ctx.globalAlpha = k*0.25*vis;
+        ctx.beginPath(); ctx.arc(gx, gy, s*0.9, 0, Math.PI*2); ctx.fill();   // leichter Schein
+      }
+    }
+  }
+  ctx.restore();
 }

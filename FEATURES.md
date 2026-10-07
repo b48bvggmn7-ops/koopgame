@@ -362,6 +362,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Wänden), liegt ÜBER Hebeln/Münzen und versteckt sie; keine Kollision (man läuft hindurch, kein Wandsprung).
         Steht eine Figur drin oder direkt davor, wird sie halb durchsichtig. In dunklen Themen leuchten versteckte
         Hebel/Münzen nicht durch.
+        Dezentes Glitzern (Nutzerwunsch: „ein bisschen erkennen, nicht zu auffällig“): je Kästchen ein kleiner
+        heller Funkelstern an fester Stelle, der etwa alle 3 s kurz weich aufblitzt (16 % der Zeit, Deckkraft
+        höchstens 55 %); auch in dunklen Leveln sichtbar; ist die Wand durchsichtig (Figur davor), kein Glitzern
+        (drawFakeGlints in 12-welt-zeichnen.js; Test scheinwand_glitzert).
       Sprungpilz (bouncers {x,y} Fußpunkt): wer darauf landet oder drüberläuft, wird hochgeschleudert
         (BOUNCE_V -17,2 ≈ 5,8 Kästchen; Wandsprung danach wieder möglich), Pilz staucht sich, Quietsch-Ton.
     Tests neue_elemente, editor_neue_werkzeuge.
