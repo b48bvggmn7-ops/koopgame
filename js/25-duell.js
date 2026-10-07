@@ -49,12 +49,6 @@ function duelBump(who){
   el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
 }
 
-// ---------- beim Ziel-Tanz: kurze Einblendung (die Zahlen zeigt danach der Statistik-Bildschirm, 24-startmenue.js) ----------
-function showWinSummary(){
-  const t = document.getElementById('toast');
-  t.textContent = 'Beide im Ziel! 🎉'; t.classList.add('show');
-}
-
 // eine knappe Zeile für die Levelkarte (gemerkter Stand der letzten geschafften Runde)
 function levelCardStatsHTML(st){
   if(!st) return '';

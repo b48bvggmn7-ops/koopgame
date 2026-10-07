@@ -142,7 +142,7 @@ async def duell_unter_levelkarte(g):
         await startmenue_bis_level(g)
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && menuScreen === null", timeout=10000)
         await g.ev("deathCount.m = 1; deathCount.f = 4; let k = 0; for(const c of coins){ if(c.color === 'blue' && k < 3){ c.taken = true; c.takenBy = 'm'; k++; } }"
-                   " deathState = null; won = true; winSteps = 0; winT0 = performance.now(); showWinSummary()")
+                   " deathState = null; won = true; winSteps = 0; winT0 = performance.now()")
         await p.wait_for_function("document.querySelector('#sm-s-results.active')", timeout=20000)
         await p.wait_for_timeout(1800)   # Zahlen zählen hoch
         r = await g.ev("({m: document.getElementById('sm-r-m').textContent, f: document.getElementById('sm-r-f').textContent})")
@@ -762,14 +762,14 @@ async def stachelwand_faehrt_mit(g):
 
 @test
 async def ziel_tanz_dann_menue(g):
-    """Beide im Ziel: Figuren tanzen (Eingaben ruhen), danach öffnet sich das Hauptmenü."""
+    """Beide im Ziel: Figuren tanzen (Eingaben ruhen), ohne Hinweis „Beide im Ziel“, danach öffnet sich das Hauptmenü."""
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 330, 'y': 680},
                        goal={'x': 315, 'y': 680}))
     for _ in range(40):
         if await g.ev("won"): break
         await g.p.wait_for_timeout(50)
     assert await g.ev("won"), "Sieg nicht erkannt"
-    assert await g.ev("document.getElementById('toast').classList.contains('show')")
+    assert not await g.ev("document.getElementById('toast').classList.contains('show')"), "Hinweis „Beide im Ziel“ erscheint noch"
     x0 = await g.ev("p1.x")
     await g.hold(['KeyD'], 600)
     await g.p.keyboard.up('KeyD')

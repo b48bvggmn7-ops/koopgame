@@ -46,7 +46,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Sichtbare Weltbreite = VW (für Ausschnitt-/Sichtbarkeitsprüfungen VW statt W benutzen!)
   - Gemeinsame Kamera schaut nach vorn: hintere Figur ~300 px vom linken Rand, vordere mind. 70 px vom rechten
     (CAM_LEFT/CAM_RIGHT) -> man sieht möglichst viel vom Weg; max. Abstand ~1 Bildschirmbreite; Ziel erst geschafft, wenn BEIDE da sind
-  - Im Ziel (beide da, genug Münzen): Hinweis „Beide im Ziel! 🎉“, Affe und Schweinchen tanzen 4,5 s (im Wechsel
+  - Im Ziel (beide da, genug Münzen): Affe und Schweinchen tanzen 4,5 s (ohne Hinweis „Beide im Ziel“ – Nutzerwunsch) (im Wechsel
     hüpfen, wippen, zur Seite schauen, jeder 4. Takt eine Drehung, Herzchen; WIN_DANCE_STEPS in 21-figuren-leben.js),
     Eingaben ruhen solange; danach öffnet sich das Hauptmenü (früher: Hinweis „Drücke R für einen neuen Versuch“)
   - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
@@ -224,7 +224,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Münz-Zähler oben links). Wer mehr Tode hat: Zahl rot und das Gesicht wird mit jedem Tod Vorsprung größer (+12 % je
     Tod, höchstens +80 %); bei jedem Tod hüpft die Zahl. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu
     geladenes Level beginnt bei 0 (deathCount in 01-level.js; Test tode_zaehler).
-  - Beide im Ziel: während des Tanzes nur kurz „Beide im Ziel! 🎉“; danach ein Statistik-Bildschirm im Stil von
+  - Beide im Ziel: während des Tanzes keine Einblendung; danach ein Statistik-Bildschirm im Stil von
     Hauptmenü/Levelauswahl („LEVEL GESCHAFFT“, Level-Nummer + Name): für Affe und Schweinchen je eine Glas-Karte mit
     Gesicht, Münzen (selbst gesammelt, / Münzen der eigenen Farbe) und Toden; Zahlen zählen hoch; Schilder
     „Mehr Münzen“ (grün) / „Mehr Tode“ (rot). „Weiter“ (Springen/Enter/✕) -> Levelauswahl.
