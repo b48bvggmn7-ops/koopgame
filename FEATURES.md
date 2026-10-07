@@ -29,8 +29,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Spielerin 2 (♀, pinkes Schweinchen – eigenes Sprite im Kenney-Round-Stil, Asset "pig"): Pfeil links/rechts, Nummernblock-0 springen/Wandsprung (normale 0 geht auch),
     Nummernblock-1 in der Luft halten = Segelschirm (eigene Taste, normale 1 geht auch) (klappt weich auf, schwingt, sie hängt aufrecht); Start aus Editor (startF)
   - Spielerin 2 kann NICHT eingehakt werden (bewusst entfernt, Nutzerwunsch) – G greift nur Haken
-  - ZOOM 5 % heraus (zoom 0,95; Nutzerwunsch: erst 10 % = 0,9, dann „5 % weniger“; früher „kein Zoom“): Bild bleibt 16:9,
-    Boden unten bündig, oben ein schmaler Streifen Hintergrund/Himmel; sichtbare Weltbreite VW = 1280/0,95 ≈ 1347 px (≈ 33,7 Kästchen).
+  - ZOOM 15 % heraus (zoom 0,85; Nutzerwunsch: erst 10 % = 0,9, dann „5 % weniger“ = 0,95, dann „noch mal 10 % raus“;
+    früher „kein Zoom“): Bild bleibt 16:9, Boden unten bündig, oben ein Streifen Hintergrund/Himmel; sichtbare
+    Weltbreite VW = 1280/0,85 ≈ 1506 px (≈ 37,6 Kästchen).
   - Ruhige Kamera gegen Wackeln bei zwei Spielern (Totzone, cameraTarget in 09-kamera.js): solange die hintere
     Figur 180–420 px (CAM_BACK_MIN/CAM_BACK_PUSH) vom linken Rand steht, bleibt das Bild stehen – Zappeln,
     Springen, Schaukeln am Seil bewegen es nicht; erst darüber/darunter fährt es mit, weicher als vorher
@@ -38,7 +39,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Spieltempo 10 % langsamer (GAME_SPEED 0,9 in 14-spielschleife.js): alles läuft gleichmäßig langsamer (Figuren,
     bewegte Teile, Bröckelboden, Stachelwände); Sprunghöhen/-weiten bleiben gleich -> Levels bleiben schaffbar.
     Test spieltempo_langsamer.
-  - (früher: KEIN ZOOM, Spielfeld immer gleich groß; jetzt durch Zoom 0,95 ersetzt.) Kamera: hintere Figur 180–420 px vom linken Rand (früher fest ~300 px), vordere höchstens bei 75 % der
+  - (früher: KEIN ZOOM, Spielfeld immer gleich groß; jetzt durch Zoom 0,85 ersetzt.) Kamera: hintere Figur 180–420 px vom linken Rand (früher fest ~300 px), vordere höchstens bei 75 % der
     Bildbreite (FRONT_MAX). Passen beide nicht ins Bild, folgt die Kamera der VORDEREN Figur (Abstand max.
     1,25 Bildschirmbreiten = hintere höchstens einen halben Bildschirm außerhalb, keepTogether/MAX_SEPARATION); die hintere erscheint als Pfeil mit
     Gesicht + Abstand in Kästchen am linken Rand.
