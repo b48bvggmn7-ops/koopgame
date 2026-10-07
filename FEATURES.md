@@ -32,6 +32,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - ZOOM 15 % heraus (zoom 0,85; Nutzerwunsch: erst 10 % = 0,9, dann „5 % weniger“ = 0,95, dann „noch mal 10 % raus“;
     früher „kein Zoom“): Bild bleibt 16:9, Boden unten bündig, oben ein Streifen Hintergrund/Himmel; sichtbare
     Weltbreite VW = 1280/0,85 ≈ 1506 px (≈ 37,6 Kästchen).
+  - Himmel über dem Level (Nutzerwunsch „keine durchsichtige Decke“): durch den Zoom sind über Reihe 0 gut 3 Kästchen
+    Himmel sichtbar (SKY_ROOM = 720/0,85 − 720 ≈ 127 px). Dort kann man hineinspringen; die Decke ist der obere
+    Bildrand (früher: unsichtbare Decke genau bei Reihe 0). Wand, Boden, Tür, Scheinwand und waagerecht fahrende
+    Wände, die bis Reihe 0 reichen, gehen im Spiel bis zum Bildrand weiter (extendToSky in 01-level.js), damit
+    niemand darüber hinwegspringt. Der Editor zeigt denselben Streifen („☁ Himmel im Spiel“, 127 px, nicht bebaubar)
+    über dem Raster, damit die Höhen übereinstimmen (Test himmel_ohne_unsichtbare_decke).
+  - Unverzerrt: Spielfeld immer genau 16:9 (bei jeder Fenstergröße geprüft); Affe/Schweinchen werden im echten
+    Seitenverhältnis ihrer Bilder gezeichnet (308 × 257 – früher ins Quadrat gestreckt, also 20 % zu hoch),
+    Unterkante unverändert; ebenso das Gesicht im Pfeil am Bildrand.
   - Ruhige Kamera gegen Wackeln bei zwei Spielern (Totzone, cameraTarget in 09-kamera.js): solange die hintere
     Figur 180–420 px (CAM_BACK_MIN/CAM_BACK_PUSH) vom linken Rand steht, bleibt das Bild stehen – Zappeln,
     Springen, Schaukeln am Seil bewegen es nicht; erst darüber/darunter fährt es mit, weicher als vorher

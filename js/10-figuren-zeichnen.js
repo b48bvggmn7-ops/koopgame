@@ -147,7 +147,10 @@ function drawCharacter(player, camX){
 
   const size = Math.max(player.w, player.h)*1.55;
   if(img && img.complete && img.naturalWidth){
-    ctx.drawImage(img, -size/2, -size/2, size, size);
+    // im echten Seitenverhältnis des Bildes (308 × 257) – früher ins Quadrat gestreckt = 20 % zu hoch;
+    // Unterkante bleibt, wo sie war (Figur sitzt weiter genau auf dem Boden)
+    const hgt = size * img.naturalHeight / img.naturalWidth;
+    ctx.drawImage(img, -size/2, size/2 - hgt, size, hgt);
   } else {
     ctx.fillStyle = player.male ? colorOf('--p1-accent') : colorOf('--p2-accent');
     ctx.beginPath(); ctx.arc(0,0,size*0.4,0,Math.PI*2); ctx.fill();

@@ -57,6 +57,7 @@
     if(n === COLS && cvs.width === COLS*TILE) return;
     COLS = n;
     cvs.width = COLS*TILE; cvs.height = ROWS*TILE;
+    const sky = document.getElementById('skyBand'); if(sky) sky.style.width = cvs.width + 'px';   // Himmel über dem Raster
     document.getElementById('lenLabel').textContent = COLS + ' Spalten';
   }
   function ensureRoom(c){ if(c + EDGE_MARGIN > COLS) setCols(c + EDGE_MARGIN); }

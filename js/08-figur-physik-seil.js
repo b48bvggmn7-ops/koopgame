@@ -259,9 +259,10 @@ function updatePlayer(player, now){
   }
   if(player.grounded){ player.glideTimer = 0; player.wjInputLock = 0; player.lastWallJumpSide = 0; }
 
-  // Decken-Grenze: nicht oben aus dem Bild springen können (mit zusätzlichem Spielraum)
-  if(player.y - player.h < -CEILING_MARGIN){
-    player.y = player.h - CEILING_MARGIN;
+  // Decken-Grenze: oberer Bildrand (über Reihe 0 ist durch den Zoom ein Streifen Himmel sichtbar, SKY_ROOM in 09-kamera.js)
+  const ceilY = -CEILING_MARGIN - SKY_ROOM;
+  if(player.y - player.h < ceilY){
+    player.y = player.h + ceilY;
     if(player.vy < 0) player.vy = 0;
   }
 

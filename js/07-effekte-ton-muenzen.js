@@ -142,7 +142,7 @@ function drawOffscreenArrows(){
     ctx.fillStyle = pl.male ? '#c58b5a' : '#f6a9c1';
     ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill();
     const img = pl.male ? ASSETS.monkey : ASSETS.pig;
-    if(img && img.complete && img.naturalWidth) ctx.drawImage(img, -16, -15, 32, 30);
+    if(img && img.complete && img.naturalWidth){ const ih = 32*img.naturalHeight/img.naturalWidth; ctx.drawImage(img, -16, -ih/2, 32, ih); }   // ohne Verzerren
     // Abstand in Kästchen
     const dist = Math.round(Math.abs(side < 0 ? (camX - pl.x) : (pl.x - (camX + VW))) / 40);
     ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';

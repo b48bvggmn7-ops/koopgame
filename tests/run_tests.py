@@ -192,6 +192,43 @@ async def scheinwand_glitzert(g):
     assert r['drinnen'] == 0, 'Scheinwand glitzert, obwohl sie durchsichtig ist'
 
 @test
+async def himmel_ohne_unsichtbare_decke(g):
+    """Zoom zeigt über Reihe 0 einen Streifen Himmel: dort kann man hineinspringen (keine unsichtbare Decke mehr bei
+    Reihe 0), die Decke ist der obere Bildrand. Wände/Türen, die bis Reihe 0 reichen, gehen bis zum Bildrand weiter
+    (man springt nicht darüber). Der Editor zeigt denselben Himmelsstreifen in gleicher Höhe. Bild unverzerrt 16:9,
+    Figuren im echten Seitenverhältnis."""
+    await g.load(level([ground(0, 680, 3000), ground(200, 120, 160, 40), ground(600, 0, 40, 400, 'wall')],
+                       {'x': 280, 'y': 120}, {'x': 100, 'y': 680}))
+    sky = await g.ev("SKY_ROOM")
+    assert abs(sky - (720/0.85 - 720)) < 0.5, f'Himmelsstreifen falsch: {sky}'
+    wand = await g.ev("(() => { const w = solids.find(s => s.type === 'wall'); return [w.y, w.h]; })()")
+    assert abs(wand[0] + sky) < 0.5 and abs(wand[1] - (400 + sky)) < 0.5, f'Wand reicht nicht bis zum Bildrand: {wand}'
+    await g.ev("p1.x = 280; p1.y = 120; p1.vx = p1.vy = 0; deathState = null; window.__minTop = 1e9")
+    await g.p.wait_for_function("p1.grounded", timeout=3000)
+    await g.ev("""(() => { const o = stepSim; stepSim = function(ts){ const r = o(ts); window.__minTop = Math.min(window.__minTop, p1.y - p1.h); return r; }; })()""")
+    await g.p.keyboard.down('Space'); await g.p.wait_for_timeout(500); await g.p.keyboard.up('Space')
+    await g.p.wait_for_timeout(400)
+    top = await g.ev("window.__minTop")
+    assert top < -20 and top >= -sky - 0.5, f'kein Sprung in den Himmel (höchster Punkt {top})'
+    # Bild nicht verzerrt: Spielfeld 16:9, Figuren-Bild im Verhältnis seiner Datei
+    r = await g.ev("(() => { const c = document.getElementById('c').getBoundingClientRect(); return c.width / c.height; })()")
+    assert abs(r - 16/9) < 0.01, f'Spielfeld verzerrt: {r}'
+    fig = await g.ev("""(() => { const o = ctx.drawImage, out = [];
+      ctx.drawImage = function(img, x, y, w, h){ if(img === ASSETS.monkey || img === ASSETS.monkeyBlink) out.push([w / h, img.naturalWidth / img.naturalHeight]); return o.apply(this, arguments); };
+      try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { ctx.drawImage = o; }
+      return out; })()""")
+    assert fig and all(abs(a - b) < 0.01 for a, b in fig), f'Affe verzerrt gezeichnet: {fig}'
+    # Editor: Himmelsstreifen über dem Raster, gleich hoch wie im Spiel
+    srv = webserver()
+    try:
+        await g.p.goto(srv.url + 'editor/index.html'); await g.p.wait_for_timeout(300)
+        band = await g.ev("(() => { const b = document.getElementById('skyBand').getBoundingClientRect(), c = document.getElementById('c').getBoundingClientRect();"
+                          " return {h: b.height, unten: b.bottom, raster: c.top, breit: Math.abs(b.width - c.width) < 2}; })()")
+        assert abs(band['h'] - sky) < 1.5 and abs(band['unten'] - band['raster']) < 1 and band['breit'], f'Himmel im Editor: {band}'
+    finally:
+        srv.shutdown()
+
+@test
 async def decke_kein_teleport(g):
     """Springen unter Decken aller Höhen (links/rechts, beide Figuren): niemand springt quer >15 px."""
     bad = []
