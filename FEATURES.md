@@ -35,7 +35,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Himmel über dem Level (Nutzerwunsch „keine durchsichtige Decke“): durch den Zoom sind über Reihe 0 gut 3 Kästchen
     Himmel sichtbar (SKY_ROOM = 720/0,85 − 720 ≈ 127 px). Dort kann man hineinspringen; die Decke ist der obere
     Bildrand (früher: unsichtbare Decke genau bei Reihe 0). Im Editor sind das die 3 Himmel-Reihen −1 … −3 über
-    Reihe 0 (leicht heller, Reihe 0 gestrichelt) – dort kann man ganz normal bauen (Nutzerwunsch); im Spiel steht
+    Reihe 0 – dort kann man ganz normal bauen (Nutzerwunsch), deshalb ohne besondere Kennzeichnung; im Spiel steht
     alles an derselben Stelle. In Level 1–6 wurden Wände/Böden/Türen/Scheinwände und waagerecht fahrende Wände, die
     bis Reihe 0 reichten, einmalig bis Reihe −3 verlängert (sonst könnte man jetzt darüber springen). (früher kurz:
     automatisch verlängert + nicht bebaubarer Himmelsstreifen im Editor – ersetzt.)
@@ -131,7 +131,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Hebel-Farbe; Rahmen in Hebel-Farbe bleibt auch offen sichtbar; Tor gleitet beim Öffnen/Schließen nach oben/unten
   - Hebel auf bewegtem Boden fahren mit (Hebel-Kästchen direkt über dem Stück; syncSwitchCarriers) und lassen
     sich unterwegs betätigen; bei Tod/Neustart zurück an den Start. Hebel auf festem Boden bleiben stehen.
-  - Bewegter Boden zeigt seinen Fahrweg: gepunktete Schiene, Endpunkte, gestrichelter Umriss an Start und Ziel
+  - (entfernt auf Nutzerwunsch: Fahrweg-Anzeige bewegter Böden und Haken – gepunktete Schiene, Endpunkte, gestrichelte
+    Umrisse an Start und Ziel. Bewegte Teile zeigen ihren Weg nicht mehr an.)
+  - Plaketten (Nummer im Kreis über Türen usw.) bleiben immer im Bild: reicht eine Tür bis in die oberste Himmel-Reihe,
+    sitzt die Plakette im obersten Türteil statt darüber (Test plakette_im_bild).
   - Bewegte Teile sind fest: fährt ein Stück in eine Figur hinein (von oben, unten oder seitlich), wird sie zur
     nächsten freien Seite hinausgeschoben – bevorzugt in Fahrtrichtung, nie gegen sie (eine sinkende Platte setzt
     niemanden plötzlich obendrauf; wer darunter steht, wird zur Seite geschoben). Mitfahren auf einem Stück geht
@@ -165,7 +168,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     gesammelte Münzen, bei Neustart (R) sind alle wieder da; Aufsammel-Effekt: Münze schnellt hoch/dreht/verpufft,
     Funkelsterne, Lichtring, "+1", Zähler hüpft, kleiner "Bling"-Ton (WebAudio), schnelle Folge = jeweils höherer Ton
   - Bewegte Haken (hook.targetX/targetY/speed/switchLink aus dem Editor): pendeln wie bewegter Boden,
-    optional per Schalter gestartet, dann dauerhaft (ohne Schalter: erst ab Sichtbarkeit, s. activateVisibleMovers); gepunktete Schiene zeigt den Weg; Seil zieht Spieler 1 mit
+    optional per Schalter gestartet, dann dauerhaft (ohne Schalter: erst ab Sichtbarkeit, s. activateVisibleMovers); Seil zieht Spieler 1 mit
   - Sprint (länger halten = schneller), Wandsprung nur mit Schwung UND Richtungstaste von der Wand weg
     (Streichen wurde getestet: zu einfach -> wieder aktiv), skaliert mit Tempo; pro Wandseite nur
     einmal (lastWallJumpSide, Reset bei Bodenkontakt) -> keine Einzelwand-Kletterei, Kamin-Klettern geht;

@@ -554,7 +554,6 @@
   function draw(){
     ctx.clearRect(0,0,cvs.width,cvs.height);
     ctx.fillStyle = THEME_BG[theme] || THEME_BG.dschungel; ctx.fillRect(0, 0, cvs.width, cvs.height);
-    ctx.fillStyle = 'rgba(120,175,230,.13)'; ctx.fillRect(0, 0, cvs.width, SKY*TILE);   // Himmel-Reihen leicht heller
     ctx.save(); ctx.translate(0, SKY*TILE);   // ab hier: Reihe 0 bei y = 0, Himmel-Reihen negativ
     // Grid
     ctx.lineWidth = 1; ctx.strokeStyle = '#25323f';
@@ -564,9 +563,6 @@
     ctx.strokeStyle = '#33465a';
     for(let c=0;c<=COLS;c+=5){ ctx.beginPath(); ctx.moveTo(c*TILE,-SKY*TILE); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
     for(let r=0;r<=ROWS;r+=5){ ctx.beginPath(); ctx.moveTo(0,r*TILE); ctx.lineTo(COLS*TILE,r*TILE); ctx.stroke(); }
-    // frühere Oberkante (Reihe 0) gestrichelt; darüber die Himmel-Reihen, die das Spiel durch den Zoom zeigt
-    ctx.save(); ctx.setLineDash([6,5]); ctx.strokeStyle = 'rgba(160,200,240,.5)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(COLS*TILE, 0); ctx.stroke(); ctx.restore();
 
     for(const key in tiles){
       const [c,r] = key.split(',').map(Number), t = tiles[key];

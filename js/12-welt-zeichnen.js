@@ -584,24 +584,7 @@ function drawSolidLook(s, look, x){
       else { ctx.fillStyle = colorOf(look==='platform' ? '--platform' : '--ground'); ctx.fillRect(x,s.y,s.w,s.h); }
     }
   }
-  // Fahrweg bewegter Böden als gepunktete Schiene (wie bei bewegten Haken) + Endpunkte
-  for(const g of moverGroupInfo()){
-    const cx = (g.sMinX+g.sMaxX)/2 - camX, cy = (g.sMinY+g.sMaxY)/2;
-    const tx = cx + g.dx, ty = cy + g.dy;
-    if(Math.max(cx,tx) < -60 || Math.min(cx,tx) > VW+60) continue;
-    ctx.save(); ctx.setLineDash([3,7]); ctx.lineCap='round';
-    ctx.strokeStyle='rgba(0,120,160,.45)'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle='rgba(0,120,160,.5)';
-    for(const [px,py] of [[cx,cy],[tx,ty]]){ ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill(); }
-    // gestrichelter Umriss am jeweils anderen Ende, damit man sieht, wohin das Stück fährt
-    const w = g.sMaxX-g.sMinX, h = g.sMaxY-g.sMinY;
-    ctx.save(); ctx.setLineDash([6,5]); ctx.strokeStyle='rgba(0,120,160,.35)'; ctx.lineWidth=2;
-    ctx.strokeRect(Math.round(g.sMinX - camX + g.dx)+1, Math.round(g.sMinY + g.dy)+1, w-2, h-2);
-    ctx.strokeRect(Math.round(g.sMinX - camX)+1, Math.round(g.sMinY)+1, w-2, h-2);
-    ctx.restore();
-  }
+  // (Fahrweg-Linien/Umrisse bewegter Böden auf Nutzerwunsch entfernt)
   for(const s of solids){
     if(s.gone){
       if(s.type==='crumble' && s.fragments) drawCrumbleBreak(s);
@@ -654,14 +637,7 @@ function drawSolidLook(s, look, x){
 
   drawGroundDeco();   // Dschungel-Pflanzen und Moos (17-deko.js)
 
-  // Fahrweg bewegter Haken als gepunktete Schiene
-  for(const h of hooks){
-    if(!h.moving) continue;
-    ctx.save(); ctx.setLineDash([3,7]); ctx.lineCap='round';
-    ctx.strokeStyle='rgba(0,120,160,.45)'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.moveTo(h.startX-camX, h.startY); ctx.lineTo(h.targetX-camX, h.targetY); ctx.stroke();
-    ctx.restore();
-  }
+  // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
   for(const h of hooks){
     const x=h.x-camX, range=hookRange(h);
     if(x<-range-30||x>VW+range+30) continue;
@@ -804,7 +780,8 @@ function drawSolidLook(s, look, x){
     if(seen.has(sw.link)) continue; seen.add(sw.link);
     for(const t of linkTargets(sw.link)){
       const x = t.x - camX; if(x < -20 || x > VW+20) continue;
-      drawLinkBadge(Math.round(x), Math.round(t.y), sw.link, t.active);
+      // nie über den oberen Bildrand hinaus (Tür bis in die oberste Himmel-Reihe: Plakette ins oberste Türteil)
+      drawLinkBadge(Math.round(x), Math.round(Math.max(t.y, -SKY_ROOM + 14)), sw.link, t.active);
     }
   }
 

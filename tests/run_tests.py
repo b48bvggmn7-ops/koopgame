@@ -241,6 +241,24 @@ async def himmel_ohne_unsichtbare_decke(g):
         srv.shutdown()
 
 @test
+async def plakette_im_bild(g):
+    """Nummer im Kreis (Plakette) über einer Tür bleibt im Bild, auch wenn die Tür bis in die oberste Himmel-Reihe reicht;
+    bewegte Teile zeigen keine gestrichelte Fahrweg-Anzeige mehr."""
+    mp = {'x': 800, 'y': 600, 'w': 80, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 1200, 'targetY': 600, 'speed': 3}
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
+                       switches=[{'x': 300, 'y': 660, 'link': 2}],
+                       doors=[{'x': 520, 'y': -100, 'link': 2}, {'x': 520, 'y': -60, 'link': 2}, {'x': 520, 'y': -20, 'link': 2}],
+                       movingPlatforms=[mp]))
+    r = await g.ev("""(() => { const o = ctx.arc, oDash = ctx.setLineDash, kreise = [], striche = [];
+      ctx.arc = function(x, y, rad){ if(rad === 11) kreise.push(this.getTransform().transformPoint(new DOMPoint(x, y - rad)).y); return o.apply(this, arguments); };
+      ctx.setLineDash = function(a){ if(a && a.length) striche.push(a.join(',')); return oDash.apply(this, arguments); };
+      try { draw(); } finally { ctx.arc = o; ctx.setLineDash = oDash; }
+      return {kreise, striche}; })()""")
+    assert r['kreise'], 'keine Plakette gezeichnet'
+    assert min(r['kreise']) >= -0.5, f"Plakette ragt oben aus dem Bild: {r['kreise']}"
+    assert '6,5' not in r['striche'] and '3,7' not in r['striche'], f"Fahrweg-Striche noch da: {r['striche']}"
+
+@test
 async def decke_kein_teleport(g):
     """Springen unter Decken aller Höhen (links/rechts, beide Figuren): niemand springt quer >15 px."""
     bad = []
