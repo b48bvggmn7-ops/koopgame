@@ -85,6 +85,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
     <div class="cards" id="sm-cards"></div>
     <div class="lbar"><i id="sm-lbar-i"></i></div>
     <div class="hint" id="sm-l-hint"></div>
+    <button class="btn l-pack glass" id="sm-l-pack" type="button" tabindex="-1"></button>
     <button class="btn l-coll glass" id="sm-l-coll" type="button" tabindex="-1"></button>
   </section>
 
@@ -678,7 +679,7 @@ S.levels = {
   el: $('#sm-s-levels'), idx: 0,
   enter(arg) {
     if (arg !== 'keep') this.idx = clamp(save.unlocked, 1, realCount()) - 1;   // zurück aus der Spielerwahl: Auswahl behalten
-    this.onColl = false;
+    this.top = '';
     const unlock = arg && typeof arg === 'object' && arg.unlock >= 0 ? arg.unlock : -1;   // nach „Level geschafft“
     const box = $('#sm-cards'); box.innerHTML = '';
     CONFIG.levels.forEach((l, i) => {
@@ -697,7 +698,7 @@ S.levels = {
     const cards = $$('#sm-cards .lc');
     cards.forEach((b, i) => {
       const soon = !!CONFIG.levels[i].soon;
-      const locked = soon || i >= save.unlocked, done = save.completed.includes(i + 1), sel = i === this.idx && !this.onColl;
+      const locked = soon || i >= save.unlocked, done = save.completed.includes(i + 1), sel = i === this.idx && !this.top;
       b.className = 'lc' + (locked ? ' lock' : '') + (soon ? ' soon' : '') + (sel ? ' sel' : '');
       const extra = soon ? '<span class="st">Bald verfügbar</span>'
                   : sel ? (locked ? '<span class="st">Gesperrt</span>' : '<span class="go">Start</span>')
@@ -714,33 +715,47 @@ S.levels = {
     $('#sm-l-hint').textContent = CONFIG.levels[this.idx].soon ? '🌱 Coming soon – an diesem Level wird noch gebaut'
       : this.idx >= save.unlocked
       ? `🔒 Gesperrt – schafft erst Level ${this.idx}`
-      : '◀ ▶ wählen · Springen starten · ▲ Umkleide · Esc zurück';
-    if (this.onColl) $('#sm-l-hint').textContent = 'Springen: Umkleide öffnen · ▼ zurück zu den Leveln';
+      : '◀ ▶ wählen · Springen starten · ▲ Packages & Umkleide · Esc zurück';
+    if (this.top) $('#sm-l-hint').textContent = `◀ ▶ wählen · Springen: ${this.top === 'pack' ? 'Packages öffnen' : 'Umkleide öffnen'} · ▼ zurück zu den Leveln`;
   },
-  // Menüpunkt „Umkleide“ (28-packages.js): Cosmetics ansehen/anlegen (auch gesperrte), ungeöffnete Packages.
-  // Erreichbar mit ▲ (dann Springen), E / Num 1 / □ / △ oder Klick.
+  // Menüpunkte oben rechts (28-packages.js): „🎁 X Packages öffnen“ und „👕 Umkleide“ (nur Ausrüsten, auch gesperrte zu sehen).
+  // ▲ springt in diese Reihe (zuerst Packages), ◀ ▶ wechselt, Springen öffnet, ▼ zurück zu den Levelkarten.
+  // Direkt: E / Num 1 / □ / △ = Umkleide; Klick geht auch.
   paintColl() {
-    const b = $('#sm-l-coll'); if (typeof cosmeticsSave === 'undefined') { b.style.display = 'none'; return; }
+    const b = $('#sm-l-coll'), pb = $('#sm-l-pack');
+    if (typeof cosmeticsSave === 'undefined') { b.style.display = pb.style.display = 'none'; return; }
     const n = cosmeticsSave.pending.m + cosmeticsSave.pending.f;
     const have = collectionCount('m') + collectionCount('f'), all = COSMETICS.length*2;
-    b.classList.toggle('sel', !!this.onColl);
-    b.innerHTML = `<span class="ic">👕</span><span class="tx"><b>Umkleide</b><small>${have} / ${all} Items gesammelt</small></span>` +
-      (n ? `<span class="cnt">🎁 ${n}</span>` : '') + `<span class="kk">${this.onColl ? 'Springen' : '▲ / E / □'}</span>`;
+    b.classList.toggle('sel', this.top === 'coll'); pb.classList.toggle('sel', this.top === 'pack');
+    pb.classList.toggle('none', !n);
+    pb.innerHTML = `<span class="ic">🎁</span><span class="tx"><b>${n} Packages öffnen</b><small>Affe ${cosmeticsSave.pending.m} · Schweinchen ${cosmeticsSave.pending.f}</small></span>`;
+    b.innerHTML = `<span class="ic">👕</span><span class="tx"><b>Umkleide</b><small>${have} / ${all} Items gesammelt</small></span>`;
   },
-  openColl() { if (!S.collection) return; this.onColl = false; Snd.play('ok'); go('collection', { ret: ['levels', 'keep'] }); },
+  openColl() { if (!S.collection) return; this.top = ''; Snd.play('ok'); go('collection', { ret: ['levels', 'keep'] }); },
+  openPacks() {
+    if (!S.packs) return;
+    if (!(cosmeticsSave.pending.m + cosmeticsSave.pending.f)) {
+      Snd.play('locked'); toast('Keine Packages – schafft ein Level!');
+      const pb = $('#sm-l-pack'); pb.classList.remove('shake'); void pb.offsetWidth; pb.classList.add('shake'); return;
+    }
+    this.top = ''; Snd.play('ok'); go('packs', { ret: ['levels', 'keep'] });
+  },
+  setTop(t) { this.top = t; this.paintColl(); this.paint(); Snd.play('move'); },
   select(i) {
     if (i === this.idx) return;
     this.idx = i; this.paint(); Snd.play('move');
   },
   act(type) {
     const n = CONFIG.levels.length;
-    if (this.onColl) {   // Menüpunkt „Umkleide“ ausgewählt
-      if (type === 'confirm' || type === 'swap') this.openColl();
+    if (this.top) {   // obere Reihe (Packages / Umkleide) ausgewählt
+      if (type === 'confirm') { if (this.top === 'pack') this.openPacks(); else this.openColl(); }
+      else if (type === 'swap') this.openColl();
       else if (type === 'back') { Snd.play('back'); go('menu'); }
-      else if (type !== 'up') { this.onColl = false; this.paintColl(); this.paint(); Snd.play('move'); }
+      else if (type === 'left' || type === 'right') this.setTop(this.top === 'pack' ? 'coll' : 'pack');
+      else if (type === 'down') this.setTop('');
       return;
     }
-    if (type === 'up' && S.collection) { this.onColl = true; this.paintColl(); this.paint(); Snd.play('move'); }
+    if (type === 'up' && S.collection) this.setTop('pack');
     else if (type === 'open') this.openColl();
     else if (type === 'left') this.select(clamp(this.idx - 1, 0, n - 1));
     else if (type === 'right' || type === 'down') this.select(clamp(this.idx + 1, 0, n - 1));
@@ -751,10 +766,11 @@ S.levels = {
       } else { Snd.play('ok'); go('select', { level: this.idx }); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
-    else if (type === 'swap' && S.collection) this.act('open');
+    else if (type === 'swap' && S.collection) this.openColl();
   }
 };
-$('#sm-l-coll').addEventListener('click', () => S.levels.act('open'));
+$('#sm-l-coll').addEventListener('click', () => S.levels.openColl());
+$('#sm-l-pack').addEventListener('click', () => S.levels.openPacks());
 
 /* =====================================================================
    6) TSCHÜSS
@@ -772,9 +788,11 @@ S.results = {
     for (const w of ['m', 'f']) {
       const c = w === 'm' ? st.cm : st.cf, t = w === 'm' ? st.tm : st.tf, d = w === 'm' ? st.m : st.f;
       const badges = (moreCoins === w ? '<span class="rb coin">Mehr Münzen</span>' : '') + (moreDeaths === w ? '<span class="rb death">Mehr Tode</span>' : '');
+      // neu gewonnene Packages dieser Figur (1 fürs Ziel, +1 für alle Münzen)
+      const pk = this.arg.packs ? `<span class="rb pack" title="${this.arg.packs > 1 ? 'Ziel + alle Münzen' : 'Ziel geschafft'}">🎁 +${this.arg.packs} Package${this.arg.packs > 1 ? 's' : ''}</span>` : '';
       $('#sm-r-' + w).innerHTML = `<div class="r-face">${charSVG(w === 'm' ? 'monkey' : 'pig')}</div>
         <div class="r-name">${w === 'm' ? CONFIG.characters.monkey.name : CONFIG.characters.pig.name}</div>
-        <div class="r-badges">${badges}</div>
+        <div class="r-badges">${pk}${badges}</div>
         <div class="r-row"><span>Münzen</span><b class="coin" data-to="${c}">0</b>${t ? `<small>/ ${t}</small>` : ''}</div>
         <div class="r-row"><span>Tode</span><b class="death" data-to="${d}">0</b></div>`;
     }
@@ -952,8 +970,8 @@ window.startMenuLevelWon = () => {
   const st = typeof levelStats === 'function' ? levelStats() : null;   // Münzen/Tode dieser Runde (25-duell.js)
   if (n && st) { save.stats = save.stats || {}; save.stats[n] = { m: st.m, f: st.f }; }   // für die Levelkarte merken
   // Packages: 1 fürs Schaffen, +1 wenn alle Münzen gesammelt – für beide Figuren (26-kosmetik-daten.js)
-  if (n && typeof awardPackages === 'function') awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken));
-  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh }); }
+  const packs = n && typeof awardPackages === 'function' ? awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken)) : 0;
+  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh, packs }); }
   else showMenuScreen('menu');
 };
 window.showTitleScreen = () => showMenuScreen('title');

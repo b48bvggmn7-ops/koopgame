@@ -457,7 +457,6 @@ host.insertBefore(mk(`<section class="screen" id="sm-s-collection" aria-label="U
       <canvas class="co-cv" width="560" height="420"></canvas>
       <div class="co-count"></div>
       <div class="co-bars"></div>
-      <button class="btn co-open" type="button" tabindex="-1"></button>
     </div>
     <div class="co-slots"></div>
     <div class="co-grid"></div>
@@ -520,10 +519,6 @@ const CO = {
   },
   paint() {
     $$('.co-chars .btn', this.el).forEach(b => { b.classList.toggle('on', b.dataset.w === this.who); b.classList.toggle('sel', this.area === 0 && ['m', 'f'].indexOf(b.dataset.w) === this.ci); });
-    const n = cosmeticsSave.pending[this.who], ob = $('.co-open', this.el);
-    ob.innerHTML = `🎁 Packages öffnen <span class="cnt">${cosmeticsSave.pending.m + cosmeticsSave.pending.f}</span>`;
-    ob.classList.toggle('sel', this.area === 0 && this.ci === 2);
-    ob.classList.toggle('dim', !(cosmeticsSave.pending.m + cosmeticsSave.pending.f));
     $$('.co-slots .btn', this.el).forEach((b, i) => { b.classList.toggle('on', i === this.slot); b.classList.toggle('sel', this.area === 1 && i === this.slot); });
     $$('.co-tile', this.el).forEach((b, i) => b.classList.toggle('sel', this.area === 2 && i === this.idx));
     const it = this.list()[this.idx], info = $('.co-info', this.el);
@@ -560,20 +555,15 @@ const CO = {
       Snd.play('move');
     } else {
       if (type === 'left') this.ci = Math.max(0, this.ci - 1);
-      else if (type === 'right') this.ci = Math.min(2, this.ci + 1);
+      else if (type === 'right') this.ci = Math.min(1, this.ci + 1);
       else if (type === 'down') this.area = 1;
       else if (type === 'confirm') {
-        if (this.ci < 2) this.setWho(this.ci ? 'f' : 'm');
-        else this.openPacks();
+        this.setWho(this.ci ? 'f' : 'm');
         return;
       }
       Snd.play('move');
     }
     this.paint();
-  },
-  openPacks() {
-    if (!(cosmeticsSave.pending.m + cosmeticsSave.pending.f)) { Snd.play('locked'); toast('Keine Packages – schafft ein Level!'); return; }
-    Snd.play('ok'); go('packs', { ret: ['collection', { ret: this.ret, who: this.who }] });
   },
   frame(t) {
     if (!this.el.classList.contains('active')) { this.raf = 0; return; }
@@ -593,7 +583,6 @@ const CO = {
 };
 S.collection = CO;
 $$('.co-chars .btn', CO.el).forEach(b => b.addEventListener('click', () => CO.setWho(b.dataset.w)));
-$('.co-open', CO.el).addEventListener('click', () => CO.openPacks());
 $('.co-back', CO.el).addEventListener('click', () => CO.act('back'));
 
 window.PackagesUI = { PK, CO, PSFX, drawItemIcon };   // für Tests

@@ -1561,11 +1561,18 @@ async def packages_vergabe(g):
         assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'nicht alle Münzen -> 1 Package je Figur erwartet'
         k = await g.ev("({sicht: getComputedStyle(document.getElementById('sm-r-pack')).display !== 'none', text: document.getElementById('sm-r-pack').textContent, weiter: document.getElementById('sm-r-go').classList.contains('sel')})")
         assert k['sicht'] and '2' in k['text'] and k['weiter'], f'Packages-Knopf: {k}'
+        for w in ('m', 'f'):   # jede Figur zeigt ihr neues Package
+            assert '+1 Package' in await p.text_content(f'#sm-r-{w} .r-badges'), f'Statistik {w}: keine Anzeige der neuen Packages'
         await p.wait_for_timeout(300); await p.keyboard.press('KeyA'); await p.wait_for_timeout(200); await p.keyboard.press('Space')
         await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-packs', 'Packages-Knopf öffnet den Öffnen-Bildschirm nicht'
         await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-levels', 'Fertig führt nicht zur Levelauswahl'
+        await p.wait_for_timeout(2600)   # Schloss-Animation
+        assert '2 Packages öffnen' in await p.text_content('#sm-l-pack'), 'Levelauswahl zeigt „2 Packages öffnen“ nicht'
+        await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-packs', 'Menüpunkt „Packages öffnen“ öffnet den Öffnen-Bildschirm nicht'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
         assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'ungeöffnete Packages müssen im Inventar bleiben'
     finally:
         srv.shutdown()
@@ -1615,7 +1622,11 @@ async def sammlung_ausruesten(g):
         await p.wait_for_timeout(500)
         assert 'Umkleide' in await p.text_content('#sm-l-coll'), 'kein Menüpunkt Umkleide in der Levelauswahl'
         await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200)
-        assert await g.ev("document.getElementById('sm-l-coll').classList.contains('sel')"), '▲ wählt die Umkleide nicht aus'
+        assert await g.ev("document.getElementById('sm-l-pack').classList.contains('sel')"), '▲ wählt „Packages öffnen“ nicht aus'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
+        assert await sm_screen(g) == 'sm-s-levels', 'ohne Packages darf sich der Öffnen-Bildschirm nicht öffnen'
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(200)
+        assert await g.ev("document.getElementById('sm-l-coll').classList.contains('sel')"), '▶ wählt die Umkleide nicht aus'
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-collection', 'Springen auf „Umkleide“ öffnet sie nicht'
         # gesperrte Items: mit Namen, grau (kaum Farbe) und Schloss

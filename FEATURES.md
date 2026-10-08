@@ -395,7 +395,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).
         Affe und Schweinchen haben ihr eigenes Inventar. Gespeichert im Browser (monchichi_cosmetics_v1).
       Öffnen: freiwillig – im Statistik-Bildschirm „Level geschafft“ Knopf „🎁 Packages öffnen (n)“ neben „Weiter“
-        („Weiter“ ist vorausgewählt), oder später über die Sammlung. Ungeöffnete bleiben im Inventar.
+        („Weiter“ ist vorausgewählt), oder später in der Levelauswahl über den Menüpunkt „🎁 X Packages öffnen“
+        (oben rechts neben der Umkleide; zeigt die Zahl je Figur; ohne Packages grau, Hinweis beim Drücken).
+        Ungeöffnete bleiben im Inventar. Im Statistik-Bildschirm steht bei jeder Figur „🎁 +1/+2 Packages“.
         Bildschirm geteilt: links Affe, rechts Schweinchen, beide gleichzeitig mit ihrer eigenen Springen-Taste
         (Spieler 1: Leertaste/✕, Spieler 2: Enter/✕), oder Klick auf die Hälfte. Esc/„Fertig“ zurück (nicht mitten im Öffnen).
         Ablauf „Wundernuss“ (Nuss mit Schleife in Figurenfarbe): fällt herein → wackelt immer stärker (Klacker-Ticks,
@@ -418,14 +420,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Gesicht bleibt drauf). Prestige: Saturn, Galaxie, Riesenblase, Inferno, Blitzkugel, Regenbogen (mit Funkeln).
         Alles funktioniert bei voller 360°-Drehung (Test cosmetics_zeichnen_rollfest); Partikel/Begleiter laufen im
         festen Takt (cosmeticsStep in stepSim).
-      Umkleide (früher „Sammlung“): fester Menüpunkt in der Levelauswahl oben rechts (👕 Umkleide, „x / 132 Items
-        gesammelt“ für beide Figuren, 🎁-Zahl bei ungeöffneten Packages). Erreichbar mit ▲ (Punkt leuchtet, dann
-        Springen; ▼/◀/▶ zurück zu den Levelkarten), E / Num 1 / □ / △ oder Klick. Je Figur (umschalten mit E / Num 1 / □):
+      Umkleide (früher „Sammlung“, nur zum Ausrüsten): fester Menüpunkt in der Levelauswahl oben rechts (👕 Umkleide,
+        „x / 132 Items gesammelt“ für beide Figuren). Menüreihe oben: ▲ wählt „Packages öffnen“, ◀ ▶ wechselt zur
+        Umkleide, Springen öffnet, ▼ zurück zu den Levelkarten; E / Num 1 / □ / △ oder Klick öffnen die Umkleide direkt.
+        Je Figur (umschalten mit E / Num 1 / □):
         Zähler „x / 66 gesammelt“, Balken je Seltenheit, Slot-Reiter mit x/y, Kacheln mit Bild – auch alle GESPERRTEN
         Items mit Namen, grau und dunkel mit 🔒 und gestricheltem Rahmen in der Seltenheitsfarbe; „✓ angelegt“, „×n“ bei
         Duplikaten; Springen legt an bzw. ab; gesperrte lassen sich nicht anlegen (Wackeln).
-        Große Vorschau: die Figur rollt mit allen Cosmetics hin und her.
-        Knopf „🎁 Packages öffnen“ von hier aus.
+        Große Vorschau: die Figur rollt mit allen Cosmetics hin und her. (Packages werden nicht hier geöffnet.)
       Tests packages_wahrscheinlichkeiten, packages_duplikate, packages_vergabe, packages_oeffnen, sammlung_ausruesten.
 ```
 
