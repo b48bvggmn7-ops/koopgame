@@ -281,12 +281,11 @@ function updatePlayer(player, now){
     player.umbrella += (target - player.umbrella) * (target ? 0.28 : 0.35);
     if(player.umbrella < 0.01) player.umbrella = 0;
   }
-  // Figuren rollen nicht mehr (Nutzerwunsch: Arme/Beine, seitlich laufen) – Schrittphase fürs Zeichnen der Beine
-  // und Ruhezeit (nach IDLE_FRONT_STEPS ohne Bewegung dreht sich die Figur nach vorn und winkt/tanzt, 10-figuren-zeichnen.js)
-  player.rollAngle = 0;
-  if(player.grounded) player.walkPhase = (player.walkPhase || 0) + Math.abs(player.vx) * 0.17;
-  const resting = player.grounded && Math.abs(player.vx) < 0.15 && !player.hookAttached && !(player.umbrella > 0.05);
-  player.idleSteps = resting ? (player.idleSteps || 0) + 1 : 0;
+  if(!player.male && player.umbrella > 0.05){
+    player.rollAngle = Math.atan2(Math.sin(player.rollAngle), Math.cos(player.rollAngle)) * 0.8;
+  } else {
+    player.rollAngle += player.vx / (player.w*0.5);
+  }
   player.blink -= 16.6;
   if(player.blink < 0) player.blink = 2800+Math.random()*2600;
 }

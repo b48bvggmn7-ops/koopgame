@@ -259,36 +259,6 @@ async def plakette_im_bild(g):
     assert '6,5' not in r['striche'] and '3,7' not in r['striche'], f"Fahrweg-Striche noch da: {r['striche']}"
 
 @test
-async def figuren_arme_beine(g):
-    """Figuren haben Arme mit Händen und Beine mit Füßen, rollen nicht mehr, laufen seitlich (Schrittphase läuft mit);
-    nach 5 s Stillstand drehen sie sich nach vorn und winken oder tanzen. Auch die Menü-Figuren haben Hände und Füße."""
-    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
-    await g.p.wait_for_function("p1.grounded && !deathState", timeout=5000)
-    await g.ev("p1.walkPhase = 0")
-    await g.hold(('KeyD',), 500)
-    r = await g.ev("({roll: p1.rollAngle, phase: p1.walkPhase, pose: charPose(p1)})")
-    assert r['roll'] == 0 and r['phase'] > 1, f'Figur rollt noch / keine Schritte: {r}'
-    glieder = await g.ev("""(() => { const o = drawLimb, out = []; drawLimb = function(part){ out.push(part.kind); return o.apply(this, arguments); };
-      try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { drawLimb = o; } return out; })()""")
-    assert glieder.count('arm') == 2 and glieder.count('leg') == 2, f'Arme/Beine fehlen: {glieder}'
-    await g.p.wait_for_timeout(400)
-    vorher = await g.ev("charPose(p1).view")
-    assert vorher == 'side', f'dreht sich zu früh nach vorn: {vorher}'
-    await g.ev("p1.idleSteps = IDLE_FRONT_STEPS - 2"); await g.p.wait_for_timeout(300)
-    nach = await g.ev("charPose(p1)")
-    assert nach['view'] == 'front' and nach['anim'] in ('wave', 'dance'), f'nach 5 s kein Winken/Tanzen: {nach}'
-    assert await g.ev("IDLE_FRONT_STEPS") == 300, '5 Sekunden = 300 Rechenschritte'
-    await g.hold(('KeyD',), 200)
-    assert await g.ev("charPose(p1).view") == 'side', 'beim Losgehen nicht wieder seitlich'
-    srv = webserver()
-    try:
-        await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(600)
-        m = await g.ev("[...document.querySelectorAll('#sm .char')].map(c => [c.querySelectorAll('.hands circle').length, c.querySelectorAll('.legs ellipse').length])")
-        assert m and all(h >= 2 and f == 2 for h, f in m), f'Menü-Figuren ohne Hände/Füße: {m}'
-    finally:
-        srv.shutdown()
-
-@test
 async def decke_kein_teleport(g):
     """Springen unter Decken aller Höhen (links/rechts, beide Figuren): niemand springt quer >15 px."""
     bad = []

@@ -26,16 +26,16 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
 
   <!-- 1) Titel -->
   <section class="screen" id="sm-s-title" aria-label="Titelbildschirm">
-    <div class="big hero-l" style="left:-1cqw;bottom:-12cqh;width:42cqw;rotate:7deg"><div class="bob" data-char="monkey"></div></div>
-    <div class="big hero-r" style="right:-1cqw;bottom:-12cqh;width:42cqw;rotate:-7deg"><div class="bob" data-char="pig"></div></div>
+    <div class="big hero-l" style="left:-5cqw;bottom:-24cqh;width:48cqw;rotate:7deg"><div class="bob" data-char="monkey"></div></div>
+    <div class="big hero-r" style="right:-5cqw;bottom:-24cqh;width:48cqw;rotate:-7deg"><div class="bob" data-char="pig"></div></div>
     <div class="t-logo"><span class="display grad" id="sm-logo"></span></div>
     <div class="prompt glass" id="sm-press">Beliebige Taste drücken</div>
   </section>
 
   <!-- 2) Menü -->
   <section class="screen" id="sm-s-menu" aria-label="Hauptmenü">
-    <div class="big" style="right:-2cqw;bottom:-14cqh;width:38cqw;rotate:-8deg"><div class="bob" data-char="pig"></div></div>
-    <div class="big" style="right:27cqw;bottom:-20cqh;width:38cqw;rotate:6deg"><div class="bob" data-char="monkey"></div></div>
+    <div class="big" style="right:-9cqw;bottom:-28cqh;width:44cqw;rotate:-8deg"><div class="bob" data-char="pig"></div></div>
+    <div class="big" style="right:20cqw;bottom:-36cqh;width:44cqw;rotate:6deg"><div class="bob" data-char="monkey"></div></div>
     <div class="m-logo display grad" id="sm-logo-sm"></div>
     <div class="menu" id="sm-menu"></div>
   </section>
@@ -66,8 +66,8 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
   <!-- 4) Spielerwahl -->
   <section class="screen" id="sm-s-select" aria-label="Spielerwahl">
     <div class="half l"></div><div class="half r"></div>
-    <div class="big" style="left:5cqw;bottom:-12cqh;width:38cqw;rotate:4deg"><div class="bob pc" id="sm-pc-monkey" data-char="monkey"></div></div>
-    <div class="big" style="right:5cqw;bottom:-12cqh;width:38cqw;rotate:-4deg"><div class="bob pc" id="sm-pc-pig" data-char="pig"></div></div>
+    <div class="big" style="left:2cqw;bottom:-22cqh;width:44cqw;rotate:4deg"><div class="bob pc" id="sm-pc-monkey" data-char="monkey"></div></div>
+    <div class="big" style="right:2cqw;bottom:-22cqh;width:44cqw;rotate:-4deg"><div class="bob pc" id="sm-pc-pig" data-char="pig"></div></div>
     <div class="s-title display">Wer spielt wen?</div>
     <div class="ptag glass" id="sm-badge-L"></div>
     <div class="ptag glass" id="sm-badge-R"></div>
@@ -89,8 +89,8 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
 
   <!-- 6) Tschüss -->
   <section class="screen" id="sm-s-goodbye" aria-label="Auf Wiedersehen">
-    <div class="big" style="left:10cqw;bottom:-10cqh;width:33cqw;rotate:6deg"><div class="bob" data-char="monkey"></div></div>
-    <div class="big" style="right:10cqw;bottom:-10cqh;width:33cqw;rotate:-6deg"><div class="bob" data-char="pig"></div></div>
+    <div class="big" style="left:8cqw;bottom:-22cqh;width:38cqw;rotate:6deg"><div class="bob" data-char="monkey"></div></div>
+    <div class="big" style="right:8cqw;bottom:-22cqh;width:38cqw;rotate:-6deg"><div class="bob" data-char="pig"></div></div>
     <div class="s-title display">Bis bald!</div>
     <div class="bye glass">Du kannst dieses Fenster jetzt schließen.</div>
     <button class="btn byebtn" id="sm-bye-back" type="button" tabindex="-1">Doch noch eine Runde</button>
@@ -173,14 +173,7 @@ let lastPlayers = { monkey: 1, pig: 2 };
    FIGUREN (SVG, Gradienten sind oben in <defs>)
    ===================================================================== */
 function monkeySVG() {
-  return `<svg class="char monkey" viewBox="-24 -14 268 242" aria-hidden="true">
-  <!-- Beine mit Füßen (hinter dem Körper, wie im Spiel) -->
-  <g class="legs">
-    <path d="M86 192 L80 214M134 192 L140 214" stroke="#4a2a14" stroke-width="22" stroke-linecap="round" fill="none"/>
-    <path d="M86 192 L80 214M134 192 L140 214" stroke="#8a5530" stroke-width="15" stroke-linecap="round" fill="none"/>
-    <ellipse cx="74" cy="216" rx="20" ry="10" fill="#f1c9a0" stroke="#4a2a14" stroke-width="4"/>
-    <ellipse cx="146" cy="216" rx="20" ry="10" fill="#f1c9a0" stroke="#4a2a14" stroke-width="4"/>
-  </g>
+  return `<svg class="char monkey" viewBox="0 -14 220 240" aria-hidden="true">
   <circle cx="26" cy="118" r="30" fill="url(#sm-gMonkey)"/><circle cx="26" cy="118" r="16" fill="#e9a58f"/>
   <circle cx="194" cy="118" r="30" fill="url(#sm-gMonkey)"/><circle cx="194" cy="118" r="16" fill="#e9a58f"/>
   <circle cx="110" cy="122" r="94" fill="url(#sm-gMonkey)"/>
@@ -196,26 +189,10 @@ function monkeySVG() {
   <path d="M90 160Q110 180 130 160" fill="none" stroke="#5a3219" stroke-width="5" stroke-linecap="round"/>
   <circle cx="110" cy="122" r="94" fill="url(#sm-gShade)"/>
   <circle cx="110" cy="122" r="92" fill="none" stroke="url(#sm-gRim)" stroke-width="5"/>
-  <!-- Hände (vorne): eine Pfote unten, die zur Bildmitte zeigende Hand winkt -->
-  <g class="hands">
-    <circle cx="38" cy="186" r="16" fill="#f1c9a0" stroke="#4a2a14" stroke-width="4"/>
-    <g class="arm-wave arm-wave-r">
-      <path d="M184 158 L226 84" stroke="#4a2a14" stroke-width="20" stroke-linecap="round" fill="none"/>
-      <path d="M184 158 L226 84" stroke="#8a5530" stroke-width="13" stroke-linecap="round" fill="none"/>
-      <circle cx="226" cy="84" r="15" fill="#f1c9a0" stroke="#4a2a14" stroke-width="4"/>
-    </g>
-  </g>
 </svg>`;
 }
 function pigSVG() {
-  return `<svg class="char pig" viewBox="-24 -14 268 242" aria-hidden="true">
-  <!-- Beine mit Füßen (hinter dem Körper, wie im Spiel) -->
-  <g class="legs">
-    <path d="M86 192 L80 214M134 192 L140 214" stroke="#b84a74" stroke-width="22" stroke-linecap="round" fill="none"/>
-    <path d="M86 192 L80 214M134 192 L140 214" stroke="#f7a6c2" stroke-width="15" stroke-linecap="round" fill="none"/>
-    <ellipse cx="74" cy="216" rx="20" ry="10" fill="#e9739c" stroke="#b84a74" stroke-width="4"/>
-    <ellipse cx="146" cy="216" rx="20" ry="10" fill="#e9739c" stroke="#b84a74" stroke-width="4"/>
-  </g>
+  return `<svg class="char pig" viewBox="0 -14 220 240" aria-hidden="true">
   <path d="M34 86C14 46 26 14 74 30 56 44 50 62 50 90z" fill="url(#sm-gPig)"/><path d="M44 72C34 50 40 36 62 40 54 50 52 60 52 74z" fill="#ffc0d3" opacity=".8"/>
   <path d="M186 86C206 46 194 14 146 30 164 44 170 62 170 90z" fill="url(#sm-gPig)"/><path d="M176 72C186 50 180 36 158 40 166 50 168 60 168 74z" fill="#ffc0d3" opacity=".8"/>
   <circle cx="110" cy="122" r="94" fill="url(#sm-gPig)"/>
@@ -230,15 +207,6 @@ function pigSVG() {
   <path d="M90 186Q110 202 130 186" fill="none" stroke="#b83a65" stroke-width="5" stroke-linecap="round"/>
   <circle cx="110" cy="122" r="94" fill="url(#sm-gShade)"/>
   <circle cx="110" cy="122" r="92" fill="none" stroke="url(#sm-gRim)" stroke-width="5"/>
-  <!-- Hände (vorne): eine Pfote unten, die zur Bildmitte zeigende Hand winkt -->
-  <g class="hands">
-    <circle cx="182" cy="186" r="16" fill="#e9739c" stroke="#b84a74" stroke-width="4"/>
-    <g class="arm-wave arm-wave-l">
-      <path d="M36 158 L-6 84" stroke="#b84a74" stroke-width="20" stroke-linecap="round" fill="none"/>
-      <path d="M36 158 L-6 84" stroke="#f7a6c2" stroke-width="13" stroke-linecap="round" fill="none"/>
-      <circle cx="-6" cy="84" r="15" fill="#e9739c" stroke="#b84a74" stroke-width="4"/>
-    </g>
-  </g>
 </svg>`;
 }
 const charSVG = k => (k === 'monkey' ? monkeySVG() : pigSVG());

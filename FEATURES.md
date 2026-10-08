@@ -75,17 +75,6 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Figuren mit mehr Leben (js/21-figuren-leben.js, nur Anzeige): Strecken beim Absprung, Stauchen beim Landen (je nach
     Fallhöhe, an den Füßen verankert), sanftes Atmen im Stehen, Staubwölkchen bei Landung/Sprung/Wandsprung.
     Entdeckung: stehen Affe und Schweinchen ~1,5 s dicht beieinander, steigen Herzchen auf (mit leisem Ton).
-  - Arme, Hände, Beine, Füße (Nutzerwunsch; 10-figuren-zeichnen.js, nur Anzeige): das Gesicht ist der Körper und steht
-    auf zwei Beinen mit Füßen, Arme mit Händen schauen seitlich hervor (Affe braun/hautfarben, Schweinchen rosa/pink).
-    Die Figuren ROLLEN NICHT MEHR wie ein Ball (früher Rollrotation), sondern laufen seitlich: Beine treten in
-    Laufrichtung (Schrittphase walkPhase), Arme schwingen gegengleich, der Körper ist leicht gedreht. Haltungen: im
-    Sprung Arme hoch, am Haken eine Hand am Seil, mit Schirm eine Hand am Griff. Nach 5 s Stillstand
-    (IDLE_FRONT_STEPS = 300 Schritte) dreht sich die Figur nach vorn zum Spieler und winkt bzw. tanzt im Wechsel
-    (je 3 s; das Schweinchen beginnt mit Tanzen); Siegestanz ebenfalls von vorn. Körper etwas kleiner (38 px breit),
-    damit die Figur mit Beinen etwa so hoch bleibt wie vorher (Test figuren_arme_beine).
-  - Menü-Figuren (24-startmenue.js, SVG) passend dazu: Beine mit Füßen unter dem Körper (sichtbar, wo die Figur ganz
-    im Bild ist: Levelauswahl, „Level geschafft“), eine Pfote unten am Körper und die zur Bildmitte zeigende Hand
-    erhoben – sie winkt alle paar Sekunden (Affe und Schweinchen versetzt).
   - Süße Tiere & Entdeckungen (js/20-tiere.js, reine Deko): Schmetterlinge (flattern, weichen aus), Frösche (atmen,
     quaken ab und zu, hüpfen weg wenn man kommt), Schnecken (kriechen, ziehen sich ins Haus zurück), Pilze (federn +
     „boing“ beim Drüberlaufen), Blumenknospen (gehen beim Vorbeikommen mit Glitzer + Ton auf), selten: schlafendes
