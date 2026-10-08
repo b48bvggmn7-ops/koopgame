@@ -299,6 +299,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Level 4: jetzt die vom Nutzer im Editor überarbeitete Fassung (hochgeladen und eingespielt, 463 Spalten,
     Thema nacht; Editor-Format aus seiner Spiel-Datei zurückgerechnet, beide Formate geprüft gleich). Eigene
     Münzverteilung (32 blau / 31 pink) – die Regel „gleich viele“ gilt deshalb erst ab Level 5.
+    Auf Wunsch des Nutzers reichen alle Wände, Türen (5, 10) und die obere fahrende Stachelwand, die bis Reihe 0 gingen,
+    jetzt bis in den Himmel (Reihe −3).
     Die folgende Beschreibung ist der frühere Entwurf, auf dem die Fassung des Nutzers aufbaut:
   - (früher) Level 4 „Mondnacht“ (levels/level-4.json, 520 Spalten, Thema nacht = dunkel, SEHR schwer; jede Stelle mit dem
     Koop-Bot geprüft, viele an der Grenze des Schaffbaren): 1) Bröckel-Sprint: 2 Kästchen schmale Bröckel-Inseln,
