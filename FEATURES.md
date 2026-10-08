@@ -406,19 +406,21 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Affe und Schweinchen haben ihr eigenes Inventar. Gespeichert im Browser (monchichi_cosmetics_v1).
       Gewinner-Animation im Statistik-Bildschirm „Level geschafft“: jede Figurenkarte hat eine Zeile „Packages“
         (darunter „Ziel geschafft“ bzw. „Ziel + alle Münzen“); nach dem Hochzählen von Münzen/Toden regnet Konfetti,
-        je Karte fällt eine Wundernuss mit weichem runden Leuchten herein (pulsiert bei jedem Zählschritt), und ein eigener Zähler je Figur zählt
+        je Karte fällt ein kleines Geschenkpaket mit weichem runden Leuchten herein (pulsiert bei jedem Zählschritt), und ein eigener Zähler je Figur zählt
         einzeln hoch (0 → 1 → 2), jeder Schritt mit Aufploppen und aufsteigendem Glockenton.
       Öffnen: freiwillig – im Statistik-Bildschirm Knopf „Packages öffnen (n)“ neben „Weiter“ („Weiter“ ist
         vorausgewählt), oder später in der Levelauswahl über den eigenen Menüpunkt „Packages öffnen“.
         Ungeöffnete bleiben im Inventar.
         Bildschirm geteilt: links Affe, rechts Schweinchen, beide gleichzeitig mit ihrer eigenen Springen-Taste
         (Spieler 1: Leertaste/✕, Spieler 2: Enter/✕), oder Klick auf die Hälfte. Esc/„Fertig“ zurück (nicht mitten im Öffnen).
-        Ablauf „Wundernuss“ (Nuss mit Schleife in Figurenfarbe): fällt herein → wackelt immer stärker (Klacker-Ticks,
-        steigender Spannungston) → Riss, Licht dringt heraus (zuletzt in der Farbe der Seltenheit) → platzt (Schalen,
-        Funken, Blitz) → Figur erscheint mit dem Item → Seltenheit + Name + „Neu!“/„Doppelt ×n“ → „Anlegen“ / „Behalten“.
+        Ablauf „Geschenkpaket“ (Papier in Figurenfarbe – Affe blau, Schweinchen pink – mit Punkten, goldenes Band
+        mit Schleife; früher eine Nuss, die man kaum erkannte): fällt herein → wackelt immer stärker (Klacker-Ticks,
+        steigender Spannungston), Bandfasern fliegen → das Band spannt sich und franst an der Deckelkante aus, der
+        Deckel drückt nach oben, Licht dringt aus dem Spalt (zuletzt in der Farbe der Seltenheit) → Band reißt
+        („Schnapp“), Deckel fliegt weg, Band- und Papierfetzen, Funken, Blitz → Figur erscheint mit dem Item → Seltenheit + Name + „Neu!“/„Doppelt ×n“ → „Anlegen“ / „Behalten“.
         Je seltener, desto größer: längeres Wackeln, mehr Funken, ab Selten drehende Lichtstrahlen und Sterne,
         ab Episch Bildschirmwackeln und Akkord, ab Legendär Konfetti-Regen und großer Schriftzug, Prestige mit
-        Regenbogen-Strahlen und schwebendem Chor-Akkord. Leer: Rauchwolke, Deckel klappt nur müde auf, eine Fliege
+        Regenbogen-Strahlen und schwebendem Chor-Akkord. Leer: Rauchwolke, Deckel hebt sich nur müde und kippt zur Seite, eine Fliege
         summt heraus, trauriges „Wah-wah-wah-waaah“, kurzer trockener Spruch, Knopf „Weiter“.
       Seltenheiten: Leer 10 %, Gewöhnlich 42 %, Ungewöhnlich 25 %, Selten 13 %, Episch 7 %, Legendär 2,5 %, Prestige 0,5 %
         (Farben grau, weiß, grün, blau, lila, gold, pink/Regenbogen).

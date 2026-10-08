@@ -1565,6 +1565,7 @@ async def packages_vergabe(g):
         await p.wait_for_function("document.querySelector('#sm-s-results').classList.contains('win')", timeout=5000)
         await p.wait_for_function("[...document.querySelectorAll('#sm-s-results .r-pack b.pack')].map(b => b.textContent).join() === '1,1'", timeout=5000)
         assert 'packCount' in await g.ev("SFX_LOG.slice()"), 'kein Ton beim Hochzählen der Packages'
+        assert await g.ev("document.querySelectorAll('#sm-s-results .r-giftbox svg.gift').length") == 2, 'kein Geschenkpaket in den Karten'
         await p.wait_for_timeout(300); await p.keyboard.press('KeyA'); await p.wait_for_timeout(200); await p.keyboard.press('Space')
         await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-packs', 'Packages-Knopf öffnet den Öffnen-Bildschirm nicht'

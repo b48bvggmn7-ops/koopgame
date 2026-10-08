@@ -218,11 +218,14 @@ const ICON = {
   pack: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="12" rx="2"/><path d="M3.5 12.5h17M12 8.5v12"/><path d="M12 8.5C10.6 5.2 6.8 4.6 6.8 6.9S10.2 8.5 12 8.5zM12 8.5c1.4-3.3 5.2-3.9 5.2-1.6S13.8 8.5 12 8.5z"/></svg>',
   hanger: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5.6a2 2 0 1 1 2 2v1.3"/><path d="M12 8.9 3.3 15.2a1.4 1.4 0 0 0 .8 2.5h15.8a1.4 1.4 0 0 0 .8-2.5L12 8.9z"/></svg>'
 };
-// die „Wundernuss“ als kleines Bild (Belohnung im Statistik-Bildschirm)
-const nutSVG = col => `<svg class="nut" viewBox="-80 -110 160 200" aria-hidden="true"><defs><radialGradient id="sm-gNut" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#c48a52"/><stop offset=".55" stop-color="#8a5528"/><stop offset="1" stop-color="#4a2a10"/></radialGradient></defs>
-  <ellipse cx="0" cy="0" rx="70" ry="82" fill="url(#sm-gNut)" stroke="#2a1404" stroke-width="4"/><rect x="-10" y="-82" width="20" height="164" fill="${col}"/>
-  <path d="M-96 0l16 8 16-8 16 8 16-8 16 8 16-8 16 8 16-8 16 8 16-8" transform="scale(.72)" fill="none" stroke="rgba(30,12,2,.55)" stroke-width="5"/>
-  <ellipse cx="-18" cy="-92" rx="20" ry="12" transform="rotate(-25 -18 -92)" fill="${col}"/><ellipse cx="18" cy="-92" rx="20" ry="12" transform="rotate(25 18 -92)" fill="${col}"/><circle cx="0" cy="-86" r="9" fill="${col}"/></svg>`;
+// das Geschenkpaket als kleines Bild (Belohnung im Statistik-Bildschirm), Papier in Figurenfarbe, goldenes Band
+const giftSVG = w => { const p = w === 'm' ? ['#7cc0ff', '#2f78d0', '#1f5aa6'] : ['#ffa8cc', '#d9488a', '#a8326a'];
+  return `<svg class="gift" viewBox="-82 -90 164 175" aria-hidden="true"><defs><linearGradient id="sm-gGift${w}" x1="0" x2="1"><stop offset="0" stop-color="${p[1]}"/><stop offset=".45" stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></linearGradient></defs>
+  <rect x="-66" y="-16" width="132" height="96" rx="8" fill="url(#sm-gGift${w})" stroke="${p[2]}" stroke-width="3"/>
+  <rect x="-11" y="-16" width="22" height="96" fill="#ffd23f"/><rect x="-66" y="26" width="132" height="16" fill="#ffd23f"/>
+  <rect x="-76" y="-42" width="152" height="28" rx="7" fill="${p[0]}" stroke="${p[2]}" stroke-width="3"/><rect x="-11" y="-42" width="22" height="28" fill="#ffd23f"/>
+  <path d="M0 -44C-14 -74 -48 -78 -40 -52C-34 -40 -12 -42 0 -44ZM0 -44C14 -74 48 -78 40 -52C34 -40 12 -42 0 -44Z" fill="#ffd23f" stroke="#c99700" stroke-width="2.5"/>
+  <ellipse cx="0" cy="-47" rx="9" ry="8" fill="#ffd23f" stroke="#c99700" stroke-width="2.5"/></svg>`; };
 
 /* =====================================================================
    DSCHUNGEL-HINTERGRUND
@@ -805,9 +808,9 @@ S.results = {
         <div class="r-row"><span>Münzen</span><b class="coin" data-to="${c}">0</b>${t ? `<small>/ ${t}</small>` : ''}</div>
         <div class="r-row"><span>Tode</span><b class="death" data-to="${d}">0</b></div>
         ${this.arg.packs ? `<div class="r-row r-pack"><span>Packages<em>${this.arg.packs > 1 ? 'Ziel + alle Münzen' : 'Ziel geschafft'}</em></span>
-          <span class="r-nutbox"><i class="rays"></i>${nutSVG(w === 'm' ? '#f6a93b' : '#ff86b4')}</span><b class="pack">0</b></div>` : ''}`;
+          <span class="r-giftbox"><i class="rays"></i>${giftSVG(w)}</span><b class="pack">0</b></div>` : ''}`;
     }
-    // Gewinner-Animation: nach dem Hochzählen fallen die Nüsse in die Karten, der Package-Zähler zählt einzeln hoch
+    // Gewinner-Animation: nach dem Hochzählen fallen die Geschenkpakete in die Karten, der Package-Zähler zählt einzeln hoch
     this.el.classList.remove('win'); clearTimeout(this.winT); (this.popT || []).forEach(clearTimeout); this.popT = [];
     if (this.arg.packs) this.winT = setTimeout(() => this.reward(this.arg.packs), 1500);
     // Zahlen hochzählen
@@ -828,7 +831,7 @@ S.results = {
     if (typeof sTone === 'function') { sTone(523, 0, 0.2, { type: 'triangle', vol: 0.06*VOL.sfx }); sTone(784, 0.08, 0.3, { type: 'triangle', vol: 0.06*VOL.sfx }); }
     for (let i = 1; i <= n; i++) this.popT.push(setTimeout(() => {
       $$('#sm-s-results .r-pack b.pack').forEach(b => { b.textContent = i; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
-      $$('#sm-s-results .r-nutbox').forEach(x => { x.classList.remove('hit'); void x.offsetWidth; x.classList.add('hit'); });
+      $$('#sm-s-results .r-giftbox').forEach(x => { x.classList.remove('hit'); void x.offsetWidth; x.classList.add('hit'); });
       if (typeof sTone === 'function') { const f = 660*Math.pow(2, (i - 1)*4/12); sTone(f, 0, 0.25, { type: 'triangle', vol: 0.07*VOL.sfx }); sTone(f*2, 0.03, 0.2, { vol: 0.03*VOL.sfx }); }
       if (typeof sfxLog === 'function') sfxLog('packCount');
     }, 500 + (i - 1)*600));
@@ -1008,7 +1011,7 @@ document.getElementById('loadLevelInput').addEventListener('change', () => { cur
 window.GameMenu = { config: CONFIG, completeLevel, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
                     show: showMenuScreen, levelsReady: () => CONFIG.levels.length > 0,
                     // für weitere Menü-Bildschirme (28-packages.js)
-                    ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, nutSVG, config: CONFIG,
+                    ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, giftSVG, config: CONFIG,
                           whoOf: src => { const p = srcPlayer(src); return !p ? null : p === lastPlayers.monkey ? 'm' : 'f'; },
                           playerOf: who => who === 'm' ? lastPlayers.monkey : lastPlayers.pig } };
 })();

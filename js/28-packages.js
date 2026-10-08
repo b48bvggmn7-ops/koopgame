@@ -3,10 +3,11 @@
 // keine Module) und werden in index.html in fester Reihenfolge geladen.
 
 // ---------- Packages öffnen + Sammlung (Menü-Bildschirme, Stil in css/packages.css) ----------
-// „Wundernuss“: eine verschnürte Dschungel-Nuss je Package. Öffnen: Nuss erscheint → wackelt immer stärker →
-// Risse, Licht dringt heraus (zuletzt in der Farbe der Seltenheit) → Spannungston → Nuss platzt → Item erscheint
+// Geschenkpaket je Package (Papier in Figurenfarbe, goldenes Band mit Schleife). Öffnen: Paket fällt herein → wackelt
+// immer stärker → Band spannt sich und franst aus, Licht dringt unter dem Deckel hervor (zuletzt in der Farbe der
+// Seltenheit) → Spannungston → Band reißt, Deckel fliegt weg → Item erscheint
 // (je seltener, desto mehr Funken, Strahlen, Konfetti, Fanfare) → Name + Seltenheit → „Anlegen“ oder „Behalten“.
-// Leer: Rauchwölkchen, Nuss klappt nur müde auf, eine Fliege summt heraus, trauriges Posaunen-Wah-wah.
+// Leer: Rauchwölkchen, Deckel hebt sich nur müde, eine Fliege summt heraus, trauriges Posaunen-Wah-wah.
 // Beide Figuren öffnen gleichzeitig: links Affe, rechts Schweinchen, jede mit ihrer eigenen Springen-Taste.
 // Sammlung: alle Cosmetics je Figur (besessen / angelegt / fehlt, Seltenheit), Vorschau mit rollender Kugel.
 // Alles hier ist reine Anzeige im Menü – nichts davon verändert das Spiel (Tempo, Sprung, Kollision, Münzen …).
@@ -16,7 +17,6 @@ const UI = window.GameMenu && window.GameMenu.ui;
 if (!UI) return;
 const { S, go, toast, mk, $, $$, Snd, charSVG } = UI;
 const WHO_NAME = { m: 'Affe', f: 'Schweinchen' };
-const WHO_COL = { m: '#f6a93b', f: '#ff86b4' };          // Schleife der Nuss je Figur
 const faceImg = who => who === 'm' ? ASSETS.monkey : ASSETS.pig;
 const clamp01 = v => Math.max(0, Math.min(1, v));
 const easeOutBack = k => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3*Math.pow(k - 1, 3) + c1*Math.pow(k - 1, 2); };
@@ -42,6 +42,7 @@ const PSFX = {
   },
   burst(rank) {
     sfxLog('packBurst');
+    sNoise(0, 0.05, { filter: 'highpass', f: 3000, vol: sv(0.16) }); sTone(900, 0, 0.12, { type: 'triangle', to: 300, vol: sv(0.05) });   // Band reißt (Schnapp)
     sNoise(0, 0.55, { filter: 'lowpass', f: 3600, to: 180, vol: sv(0.22), q: 0.7 });
     sTone(95, 0, 0.4, { to: 38, vol: sv(0.22) });
     if (rank >= 4) sNoise(0.02, 1.2, { filter: 'highpass', f: 4000, to: 9000, vol: sv(0.05), attack: 0.02 });
@@ -120,71 +121,76 @@ function drawPreview(c, cx, cy, sc, who, items, pv, ghost) {
 const itemsWith = (who, item) => { const it = cosItemsOf(who); if (item) it[item.slot] = item; return it; };
 
 /* =====================================================================
-   DIE WUNDERNUSS
+   DAS GESCHENKPAKET (Papier in Figurenfarbe, goldenes Band mit Schleife)
    ===================================================================== */
-function seamPath(c, sign) {   // Zickzack-Naht; sign -1 = obere Hälfte, +1 = untere
-  c.beginPath(); c.moveTo(-120, sign*200);
-  for (let i = 0; i <= 12; i++) c.lineTo(-96 + i*16, (i % 2 ? -8 : 8));
-  c.lineTo(120, sign*200); c.closePath();
-}
-function nutShell(c, col) {
-  const g = c.createRadialGradient(-26, -34, 8, 0, 0, 92);
-  g.addColorStop(0, '#c48a52'); g.addColorStop(0.55, '#8a5528'); g.addColorStop(1, '#4a2a10');
-  c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, 70, 82, 0, 0, Math.PI*2); c.fill();
-  c.save(); c.beginPath(); c.ellipse(0, 0, 70, 82, 0, 0, Math.PI*2); c.clip();
-  c.strokeStyle = 'rgba(40,20,5,.28)'; c.lineWidth = 2;   // Fasern
-  for (let i = -5; i <= 5; i++) { c.beginPath(); c.moveTo(i*13, -90); c.quadraticCurveTo(i*18, 0, i*13, 90); c.stroke(); }
-  c.fillStyle = col; c.fillRect(-10, -90, 20, 180);                              // Band
-  c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(-10, -90, 5, 180);
+const GIFT = { m: { paper: ['#7cc0ff', '#2f78d0'], dark: '#1f5aa6' }, f: { paper: ['#ffa8cc', '#d9488a'], dark: '#a8326a' } };
+const RIB = '#ffd23f', RIB_D = '#c99700';
+function rrect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function giftBody(c, g, cut) {   // Karton: y -16 … 80; cut = Band ist gerissen (oben ausgefranst)
+  const gr = c.createLinearGradient(-70, 0, 70, 0); gr.addColorStop(0, g.paper[1]); gr.addColorStop(0.45, g.paper[0]); gr.addColorStop(1, g.paper[1]);
+  c.fillStyle = gr; rrect(c, -66, -16, 132, 96, 8); c.fill();
+  c.save(); rrect(c, -66, -16, 132, 96, 8); c.clip();
+  c.fillStyle = 'rgba(255,255,255,.16)';   // Punkte-Muster
+  for (let y = -6; y < 80; y += 22) for (let x = -58 + ((y/22) % 2 ? 11 : 0); x < 66; x += 22) { c.beginPath(); c.arc(x, y, 3.2, 0, Math.PI*2); c.fill(); }
+  c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-66, 60, 132, 20);   // Schatten unten
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(-66, -16, 132, 7);    // Schatten unter dem Deckel
+  c.fillStyle = RIB; c.fillRect(-11, cut ? -2 : -16, 22, 96 + (cut ? -14 : 0));   // senkrechtes Band
+  c.fillRect(-66, 26, 132, 16);                                       // waagerechtes Band
+  c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-11, cut ? -2 : -16, 5, 96); c.fillRect(-66, 26, 132, 4);
+  if (cut) { c.fillStyle = RIB; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-11 + i*5.5, -2); c.lineTo(-8 + i*5.5, -9 - (i % 2)*4); c.lineTo(-5.5 + i*5.5, -2); c.fill(); } }
   c.restore();
-  c.strokeStyle = 'rgba(30,14,2,.6)'; c.lineWidth = 3; c.beginPath(); c.ellipse(0, 0, 70, 82, 0, 0, Math.PI*2); c.stroke();
+  c.strokeStyle = g.dark; c.lineWidth = 3; rrect(c, -66, -16, 132, 96, 8); c.stroke();
 }
-function nutBow(c, col) {      // Schleife oben (zwei Schlaufen + Blätter)
-  c.save(); c.translate(0, -80);
-  c.fillStyle = '#4f9a3c'; for (const s of [-1, 1]) { c.save(); c.scale(s, 1); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(40, -30, 62, -8); c.quadraticCurveTo(34, 4, 0, 0); c.fill(); c.restore(); }
-  c.fillStyle = col; c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 2;
-  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s*18, -12, 20, 12, s*0.5, 0, Math.PI*2); c.fill(); c.stroke(); }
-  c.beginPath(); c.arc(0, -6, 9, 0, Math.PI*2); c.fill(); c.stroke();
+function giftLid(c, g, cut, strain) {   // Deckel: y -42 … -14, mit Band und Schleife
+  const gr = c.createLinearGradient(0, -42, 0, -14); gr.addColorStop(0, g.paper[0]); gr.addColorStop(1, g.paper[1]);
+  c.fillStyle = gr; rrect(c, -76, -42, 152, 28, 7); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(-70, -40, 140, 4);
+  // Band über den Deckel; unter Spannung wird es an der Kante dünn und franst aus
+  const bw = 22*(1 - 0.55*(strain || 0));
+  c.fillStyle = RIB; c.fillRect(-bw/2, -42, bw, cut ? 22 : 28);
+  if (strain > 0.4 && !cut) { c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 1.4; for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(i*bw*0.3, -20); c.lineTo(i*bw*0.35, -14); c.stroke(); } }
+  c.strokeStyle = g.dark; c.lineWidth = 3; rrect(c, -76, -42, 152, 28, 7); c.stroke();
+  // Schleife
+  c.save(); c.translate(0, -44);
+  c.fillStyle = RIB; c.strokeStyle = RIB_D; c.lineWidth = 2.5;
+  for (const s of [-1, 1]) {
+    c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(s*14, -30, s*48, -34, s*40, -8); c.bezierCurveTo(s*34, 4, s*12, 2, 0, 0); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(s*4, 2); c.lineTo(s*22, 18); c.lineTo(s*14, 20); c.lineTo(s*2, 4); c.fill();   // Bandenden
+  }
+  c.beginPath(); c.ellipse(0, -3, 9, 8, 0, 0, Math.PI*2); c.fill(); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(-3, -6, 3, 2, 0, 0, Math.PI*2); c.fill();
   c.restore();
 }
-// o = {crack, open, leak, leakCol, col, rot, sc, fade, lazy}
-function drawNut(c, x, y, o) {
+// o = {who, crack (Band-Spannung), open, leak, leakCol, rot, sc, fade, lazy}
+function drawGift(c, x, y, o) {
+  const g = GIFT[o.who] || GIFT.m, open = o.open || 0, fade = o.fade === undefined ? 1 : o.fade;
   c.save(); c.translate(x, y); c.rotate(o.rot || 0); c.scale(o.sc || 1, o.sc || 1);
-  const open = o.open || 0, fade = o.fade === undefined ? 1 : o.fade;
   if (open <= 0) {
-    // Lichtstrahlen aus den Rissen
-    if (o.leak > 0) {
+    const lift = (o.crack || 0)*5;   // Deckel drückt schon etwas nach oben
+    if (o.leak > 0) {                // Licht dringt aus dem Spalt unter dem Deckel
       c.save(); c.globalCompositeOperation = 'lighter';
       for (let i = 0; i < 9; i++) {
-        const px = -84 + i*21, a = -Math.PI/2 + (i - 4)*0.28 + Math.sin(performance.now()*0.004 + i)*0.05, len = 50 + o.leak*240;
-        for (const dir of [1, -1]) {
-          const ang = dir > 0 ? a : a + Math.PI, g = c.createLinearGradient(px, 0, px + Math.cos(ang)*len, Math.sin(ang)*len);
-          g.addColorStop(0, hexA(o.leakCol, 0.55*o.leak)); g.addColorStop(1, hexA(o.leakCol, 0));
-          c.fillStyle = g; c.beginPath(); c.moveTo(px - 4, 0); c.lineTo(px + Math.cos(ang - 0.08)*len, Math.sin(ang - 0.08)*len);
-          c.lineTo(px + Math.cos(ang + 0.08)*len, Math.sin(ang + 0.08)*len); c.lineTo(px + 4, 0); c.fill();
-        }
+        const px = -64 + i*16, a = -Math.PI/2 + (i - 4)*0.3 + Math.sin(performance.now()*0.004 + i)*0.05, len = 60 + o.leak*240;
+        const gg = c.createLinearGradient(px, -15, px + Math.cos(a)*len, -15 + Math.sin(a)*len);
+        gg.addColorStop(0, hexA(o.leakCol, 0.55*o.leak)); gg.addColorStop(1, hexA(o.leakCol, 0));
+        c.fillStyle = gg; c.beginPath(); c.moveTo(px - 4, -15); c.lineTo(px + Math.cos(a - 0.08)*len, -15 + Math.sin(a - 0.08)*len);
+        c.lineTo(px + Math.cos(a + 0.08)*len, -15 + Math.sin(a + 0.08)*len); c.lineTo(px + 4, -15); c.fill();
       }
       c.restore();
+      c.fillStyle = hexA(o.leakCol, 0.9*o.leak); c.fillRect(-64, -16 - lift, 128, lift + 2);   // heller Spalt
     }
-    nutShell(c, o.col); nutBow(c, o.col);
-    if (o.crack > 0) {   // Riss wächst von links nach rechts
-      const n = Math.max(1, Math.round(o.crack*13));
-      c.lineCap = 'round'; c.lineJoin = 'round';
-      c.strokeStyle = o.leak > 0 ? hexA(o.leakCol, 0.5 + o.leak*0.5) : 'rgba(30,12,2,.85)'; c.lineWidth = 3 + o.leak*3;
-      c.shadowColor = o.leakCol; c.shadowBlur = o.leak*24;
-      c.beginPath(); for (let i = 0; i < n; i++) { const px = -96 + i*16, py = i % 2 ? -8 : 8; if (i) c.lineTo(px, py); else c.moveTo(px, py); } c.stroke();
-      c.shadowBlur = 0;
-    }
+    giftBody(c, g, false);
+    c.save(); c.translate(0, -lift); giftLid(c, g, false, o.crack || 0); c.restore();
   } else {
-    // zwei Hälften fliegen auseinander (bei „leer“ klappt nur der Deckel müde auf)
+    // Band reißt, Deckel fliegt weg (bei „leer“ hebt er sich nur müde und kippt zur Seite)
     c.globalAlpha = fade;
     const lz = o.lazy;
-    c.save(); c.translate(lz ? 34*open : -60*open, lz ? -26*open : -150*open); c.rotate(lz ? 0.5*open + Math.sin(performance.now()*0.006)*0.04*open : -1.3*open);
-    c.save(); seamPath(c, -1); c.clip(); nutShell(c, o.col); nutBow(c, o.col); c.restore(); c.restore();
-    c.save(); c.translate(lz ? 0 : 50*open, lz ? 0 : 90*open); c.rotate(lz ? 0 : 0.6*open);
-    c.save(); seamPath(c, 1); c.clip(); nutShell(c, o.col); c.restore();
-    c.fillStyle = 'rgba(25,10,0,.75)'; c.beginPath(); c.ellipse(0, 4, 62, 14, 0, 0, Math.PI*2); c.fill();   // dunkles Innere
-    c.restore();
+    giftBody(c, g, true);
+    c.fillStyle = 'rgba(15,10,25,.8)'; c.beginPath(); c.ellipse(0, -15, 60, 6 + open*4, 0, 0, Math.PI*2); c.fill();   // dunkles Innere
+    c.save();
+    if (lz) { c.translate(30*open, -28*open); c.rotate(0.38*open + Math.sin(performance.now()*0.006)*0.04*open); }
+    else { c.translate(-50*open, -190*open); c.rotate(-1.1*open); }
+    giftLid(c, g, true, 0); c.restore();
   }
   c.restore();
 }
@@ -258,9 +264,9 @@ const PK = {
         const a = Math.random()*Math.PI*2, v = sp*(0.3 + Math.random());
         s.parts.push({ k: rank >= 3 && i % 3 === 0 ? 'star' : 'spark', x: cx, y: cy, vx: Math.cos(a)*v, vy: Math.sin(a)*v - 1, r: 2 + Math.random()*3 + rank*0.4, life: 50 + Math.random()*50, max: 100, col: i % 4 ? col : '#ffffff', rot: a });
       }
-      for (let i = 0; i < 14; i++) {   // Nussschalen-Splitter
+      for (let i = 0; i < 14; i++) {   // Band- und Papierfetzen
         const a = -Math.PI/2 + (Math.random() - 0.5)*2.6, v = 4 + Math.random()*5;
-        s.parts.push({ k: 'chip', x: cx, y: cy, vx: Math.cos(a)*v, vy: Math.sin(a)*v, r: 3 + Math.random()*4, life: 80, max: 80, col: '#6b3f1c', rot: a, g: 0.25 });
+        s.parts.push({ k: 'chip', x: cx, y: cy, vx: Math.cos(a)*v, vy: Math.sin(a)*v, r: 3 + Math.random()*4, life: 80, max: 80, col: i % 2 ? RIB : GIFT[s.who].paper[0], rot: a, g: 0.25 });
       }
       if (rank >= 5) this.confetti(s, 70);
     }
@@ -319,7 +325,7 @@ const PK = {
       const s = this.sides[w];
       if (s.phase === 'shake') {
         const k = (now - s.t0)/s.dur;
-        if (k > 0.35 && Math.random() < k*0.35) s.parts.push({ k: 'chip', x: this.cx(w) + (Math.random() - 0.5)*120, y: 430, vx: (Math.random() - 0.5)*2, vy: -1 - Math.random()*2, r: 1.5 + Math.random()*2, life: 40, max: 40, col: '#5a3418', rot: 0, g: 0.25 });
+        if (k > 0.35 && Math.random() < k*0.35) s.parts.push({ k: 'chip', x: this.cx(w) + (Math.random() - 0.5)*24, y: 430 - 16, vx: (Math.random() - 0.5)*3, vy: -1.5 - Math.random()*2, r: 1.2 + Math.random()*1.5, life: 40, max: 40, col: RIB, rot: 0, g: 0.25 });   // Bandfasern
         if (k >= 1) this.burst(s);
       } else if (s.phase === 'reveal') {
         if (now - s.tb > 650 + RARITY[s.res.rarity].rank*170) { s.phase = 'choose'; this.paintSide(w); }
@@ -378,23 +384,23 @@ const PK = {
     if (s.phase === 'idle') {
       if (n) {
         // weitere Nüsse klein dahinter (Stapel), vorne die nächste – fällt kurz herein
-        for (let i = Math.min(n, 4) - 1; i >= 1; i--) drawNut(c, cx + (i % 2 ? 1 : -1)*(70 + i*22), 500 - i*4, { col: WHO_COL[w], sc: 0.42, rot: (i % 2 ? 0.2 : -0.2) });
+        for (let i = Math.min(n, 4) - 1; i >= 1; i--) drawGift(c, cx + (i % 2 ? 1 : -1)*(70 + i*22), 500 - i*4, { who: w, sc: 0.42, rot: (i % 2 ? 0.2 : -0.2) });
         const k = clamp01((t - s.enter)/420), dropY = (1 - easeOutBack(k))*-160;
-        drawNut(c, cx, cy + Math.sin(t*0.003)*7 + dropY, { col: WHO_COL[w], rot: Math.sin(t*0.002)*0.05, sc: 1 + Math.sin(t*0.004)*0.015 });
+        drawGift(c, cx, cy + Math.sin(t*0.003)*7 + dropY, { who: w, rot: Math.sin(t*0.002)*0.05, sc: 1 + Math.sin(t*0.004)*0.015 });
       } else {
         c.strokeStyle = 'rgba(234,247,238,.25)'; c.setLineDash([10, 10]); c.lineWidth = 4;
-        c.beginPath(); c.ellipse(cx, cy, 70, 82, 0, 0, Math.PI*2); c.stroke(); c.setLineDash([]);
+        rrect(c, cx - 70, cy - 44, 140, 126, 10); c.stroke(); c.setLineDash([]);
       }
     } else if (s.phase === 'shake') {
       const k = clamp01((t - s.t0)/s.dur), amp = 2 + k*k*16, freq = 0.05 + k*0.05;
       const leak = clamp01((k - 0.5)/0.5), late = clamp01((k - 0.78)/0.22);
       const leakCol = s.res.empty ? mixHex('#fff2c0', '#9aa3ab', late) : mixHex('#fff2c0', rc, late);
-      // leichtes Leuchten hinter der Nuss
+      // leichtes Leuchten hinter dem Paket
       if (leak > 0) { const gg = c.createRadialGradient(cx, cy, 10, cx, cy, 260); gg.addColorStop(0, hexA(leakCol, 0.45*leak)); gg.addColorStop(1, hexA(leakCol, 0)); c.fillStyle = gg; c.fillRect(x0, 0, 800, 900); }
-      drawNut(c, cx + Math.sin(t*freq*3.1)*amp, cy + Math.cos(t*freq*2.3)*amp*0.4, { col: WHO_COL[w], rot: Math.sin(t*freq*2)*0.06*(0.3 + k), sc: 1 + k*0.1 + Math.sin(t*0.03)*0.01*k, crack: clamp01((k - 0.25)/0.55), leak, leakCol });
+      drawGift(c, cx + Math.sin(t*freq*3.1)*amp, cy + Math.cos(t*freq*2.3)*amp*0.4, { who: w, rot: Math.sin(t*freq*2)*0.06*(0.3 + k), sc: 1 + k*0.1 + Math.sin(t*0.03)*0.01*k, crack: clamp01((k - 0.25)/0.55), leak, leakCol });
     } else if (s.res && s.res.empty) {
       const k = clamp01((t - s.tb)/600);
-      drawNut(c, cx, cy + 40, { col: WHO_COL[w], open: easeOutBack(k)*0.8, lazy: true, fade: 1 });
+      drawGift(c, cx, cy + 40, { who: w, open: easeOutBack(k)*0.8, lazy: true, fade: 1 });
       // Fliege summt heraus und kreist
       const ft = (t - s.tb)/1000, fx = cx + Math.sin(ft*3.1)*90*Math.min(1, ft), fy = cy - 40 - Math.min(ft, 1.2)*90 + Math.sin(ft*5.3)*24;
       c.fillStyle = '#1b1b1f'; c.strokeStyle = 'rgba(234,247,238,.8)'; c.lineWidth = 2; c.beginPath(); c.ellipse(fx, fy, 7, 5, 0, 0, Math.PI*2); c.fill(); c.stroke();
@@ -404,7 +410,7 @@ const PK = {
       c.beginPath(); for (let i = 1; i < 14; i++) { const tt = ft - i*0.05; if (tt < 0) break; const xx = cx + Math.sin(tt*3.1)*90*Math.min(1, tt), yy = cy - 40 - Math.min(tt, 1.2)*90 + Math.sin(tt*5.3)*24; if (i === 1) c.moveTo(xx, yy); else c.lineTo(xx, yy); } c.stroke(); c.setLineDash([]);
     } else if (revealed) {
       const k = clamp01((t - s.tb)/520);
-      if (k < 1) drawNut(c, cx, cy, { col: WHO_COL[w], open: k, fade: 1 - k });
+      if (k < 1) drawGift(c, cx, cy, { who: w, open: k, fade: 1 - k });
       // Glanz hinter dem Item
       const gg = c.createRadialGradient(cx, cy, 10, cx, cy, 200); gg.addColorStop(0, hexA(rc, 0.55)); gg.addColorStop(1, hexA(rc, 0));
       c.fillStyle = gg; c.beginPath(); c.arc(cx, cy, 200, 0, Math.PI*2); c.fill();
@@ -428,7 +434,7 @@ function mixHex(a, b, k) {
   const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16), m = (s) => Math.round(((A >> s) & 255)*(1 - k) + ((B >> s) & 255)*k);
   return '#' + ((1 << 24) + (m(16) << 16) + (m(8) << 8) + m(0)).toString(16).slice(1);
 }
-const EMPTY_JOKES = ['Nur heiße Luft …', 'Hier wohnt nur eine Fliege.', 'Pfff … die Nuss war hohl.', 'Nichts drin. Nicht mal Staub.', 'Die Fliege sagt danke.'];
+const EMPTY_JOKES = ['Nur heiße Luft …', 'Hier wohnt nur eine Fliege.', 'Pfff … das Paket war leer.', 'Nichts drin. Nicht mal Staub.', 'Die Fliege sagt danke.'];
 const origBurst = PK.burst;
 PK.burst = function (s) { if (s.res && s.res.empty) s.joke = EMPTY_JOKES[Math.floor(Math.random()*EMPTY_JOKES.length)]; origBurst.call(this, s); };
 S.packs = PK;
@@ -439,7 +445,7 @@ for (const w of ['m', 'f']) {
     if (s.phase === 'choose') PK.decide(s, Number(b.dataset.a)); else if (s.phase === 'emptyChoose') PK.decide(s, 1);
   }));
 }
-$('.pk-cv', PK.el).addEventListener('click', e => {   // Klick auf eine Hälfte = diese Nuss öffnen
+$('.pk-cv', PK.el).addEventListener('click', e => {   // Klick auf eine Hälfte = dieses Paket öffnen
   const r = e.currentTarget.getBoundingClientRect(), w = (e.clientX - r.left) < r.width/2 ? 'm' : 'f';
   PK.sideAct(w, 'confirm');
 });
