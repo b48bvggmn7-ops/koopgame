@@ -193,10 +193,6 @@ function drawAura(c, x, y, r, item, layer){
     }
     if(k === 'frost'){ glowCircle(c, x, y, r*0.8, r*1.7, 'rgba(200,240,255,.45)', 'rgba(200,240,255,0)'); }
     if(k === 'toxic'){ const w = Math.sin(t*0.006)*2; glowCircle(c, x, y, r*0.8, r*1.6 + w, 'rgba(160,255,80,.45)', 'rgba(90,210,60,0)'); }
-    if(k === 'shadow'){
-      for(let i = 0; i < 7; i++){ const a = i/7*Math.PI*2 + t*0.0009, d = r*(1.05 + 0.15*Math.sin(t*0.003 + i));
-        glowCircle(c, x + Math.cos(a)*d, y + Math.sin(a)*d, 0, r*0.7, 'rgba(40,20,70,.45)', 'rgba(40,20,70,0)'); }
-    }
     if(k === 'magic'){ glowCircle(c, x, y, r*0.7, r*1.8, 'rgba(255,140,240,.35)', 'rgba(180,107,255,0)'); }
     if(k === 'lightning'){ glowCircle(c, x, y, r*0.8, r*1.8, 'rgba(140,200,255,.35)', 'rgba(140,200,255,0)'); }
     if(k === 'shards'){ glowCircle(c, x, y, r*0.8, r*1.9, 'rgba(200,180,255,.35)', 'rgba(127,216,255,0)'); }
@@ -309,10 +305,6 @@ function drawSkinBall(c, r, item, faceImg, faceW, faceH, faceY){
   const shade = () => { const g = c.createRadialGradient(-r*0.35, -r*0.4, r*0.1, 0, 0, r); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(0.6, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.28)'); c.fillStyle = g; circle(); c.fill(); };
   const outline = (col) => { c.strokeStyle = col || 'rgba(0,0,0,.45)'; c.lineWidth = 1.4; circle(); c.stroke(); };
   switch(k){
-    case 'egg':
-      c.save(); c.scale(0.92, 1.08); c.fillStyle = '#fbf3e4'; circle(); c.fill();
-      c.fillStyle = 'rgba(170,140,100,.35)'; for(const [a, d] of [[0.4, 0.5], [2.1, 0.6], [3.7, 0.4], [5.1, 0.7]]){ c.beginPath(); c.arc(Math.cos(a)*r*d, Math.sin(a)*r*d, 1.6, 0, Math.PI*2); c.fill(); }
-      shade(); outline('rgba(150,120,80,.6)'); c.restore(); face(0.62); break;
     case 'football':
       c.fillStyle = '#ffffff'; circle(); c.fill();
       c.fillStyle = '#20232a'; for(const [a, d] of [[0, 0], [0.6, 0.78], [1.86, 0.78], [3.12, 0.78], [4.38, 0.78], [5.64, 0.78]]){ const px = Math.cos(a)*r*d, py = Math.sin(a)*r*d; cosStar(c, px, py, d ? 5 : 6, a, 5); c.fill(); }
@@ -355,11 +347,6 @@ function drawSkinBall(c, r, item, faceImg, faceW, faceH, faceY){
         c.fillRect(gx + 0.4, gy + 0.4, s - 0.8, s - 0.8); }
       c.restore(); shade(); outline(); face(0.58);
       c.fillStyle = 'rgba(255,255,255,.9)'; cosStar(c, Math.cos(t*0.003)*r*0.6, -r*0.5, 3, t*0.004, 4); c.fill(); break; }
-    case 'icecube':
-      face(0.66);
-      c.fillStyle = 'rgba(190,235,255,.35)'; c.strokeStyle = 'rgba(230,250,255,.95)'; c.lineWidth = 1.8;
-      c.beginPath(); c.roundRect ? c.roundRect(-r*1.02, -r*1.02, r*2.04, r*2.04, r*0.35) : c.rect(-r, -r, 2*r, 2*r); c.fill(); c.stroke();
-      c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.moveTo(-r*0.8, -r*0.75); c.lineTo(-r*0.2, -r*0.75); c.lineTo(-r*0.75, -r*0.2); c.closePath(); c.fill(); break;
     case 'planet': {
       c.save(); circle(); c.clip();
       c.fillStyle = '#2e7fd6'; c.fillRect(-r, -r, 2*r, 2*r);

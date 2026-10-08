@@ -1693,9 +1693,10 @@ async def cosmetics_kein_vorteil(g):
 
 @test
 async def packages_menue_design(g):
-    """Keine Kategorie „Anhängsel“ mehr; Levelauswahl: „Packages öffnen“ und „Umkleide“ als eigene Menüpunkte ohne Emojis,
+    """Keine Kategorie „Anhängsel“ und kein Ei/Eiswürfel/Schatten-Aura mehr; Levelauswahl: „Packages öffnen“ und „Umkleide“ als eigene Menüpunkte ohne Emojis,
     die sich nie mit den Figuren über der gewählten Levelkarte überschneiden (auch bei Level 5/6)."""
     assert await g.ev("SLOTS.every(s => s.id !== 'attach') && COSMETICS.every(c => c.slot !== 'attach')"), 'Anhängsel noch vorhanden'
+    assert await g.ev("['skin_egg', 'skin_icecube', 'aura_shadow'].every(id => !COSMETIC[id])"), 'Ei/Eiswürfel/Schatten-Aura noch vorhanden'
     await g.ev("GameMenu.unlockAll(); GameMenu.show('levels')"); await g.p.wait_for_timeout(600)
     for i in range(6):
         await g.ev(f"document.querySelectorAll('#sm-cards .lc')[{i}].click()"); await g.p.wait_for_timeout(500)

@@ -396,7 +396,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Affe und Schweinchen haben ihr eigenes Inventar. Gespeichert im Browser (monchichi_cosmetics_v1).
       Gewinner-Animation im Statistik-Bildschirm „Level geschafft“: jede Figurenkarte hat eine Zeile „Packages“
         (darunter „Ziel geschafft“ bzw. „Ziel + alle Münzen“); nach dem Hochzählen von Münzen/Toden regnet Konfetti,
-        je Karte fällt eine Wundernuss mit drehenden Lichtstrahlen herein, und ein eigener Zähler je Figur zählt
+        je Karte fällt eine Wundernuss mit weichem runden Leuchten herein (pulsiert bei jedem Zählschritt), und ein eigener Zähler je Figur zählt
         einzeln hoch (0 → 1 → 2), jeder Schritt mit Aufploppen und aufsteigendem Glockenton.
       Öffnen: freiwillig – im Statistik-Bildschirm Knopf „Packages öffnen (n)“ neben „Weiter“ („Weiter“ ist
         vorausgewählt), oder später in der Levelauswahl über den eigenen Menüpunkt „Packages öffnen“.
@@ -415,22 +415,23 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Duplikate: Gewöhnlich/Ungewöhnlich erlaubt (fehlende bevorzugt); Selten/Episch nur, wenn alles dieser Stufe
         schon da ist (dann lieber ein fehlendes einer tieferen Stufe); Legendär/Prestige nie (dann ein fehlendes
         Item der nächsttieferen Stufe).
-      58 Items in 5 Slots (je Slot eins angelegt; die Kategorie „Anhängsel“ wurde auf Nutzerwunsch entfernt): Roll-Spur (je schneller, desto mehr), Aura, Begleiter (folgt,
+      55 Items in 5 Slots (je Slot eins angelegt; auf Nutzerwunsch entfernt: Kategorie „Anhängsel“, Ei, Eiswürfel,
+        Schatten-Aura): Roll-Spur (je schneller, desto mehr), Aura, Begleiter (folgt,
         hüpft beim Springen mit, Leerlauf-Animation; Geist/Fledermaus/Roboter schweben), Kreisende Objekte (seltener =
-        mehr Objekte), Kugel-Skins (Ei, Fußball, Tennisball, Käse,
-        Basketball, Melone, Wolle, Billard, Kürbis, Disco, Eiswürfel, Planet, Kristallkugel … – rollen komplett mit,
+        mehr Objekte), Kugel-Skins (Fußball, Tennisball, Käse,
+        Basketball, Melone, Wolle, Billard, Kürbis, Disco, Planet, Kristallkugel … – rollen komplett mit,
         Gesicht bleibt drauf). Prestige: Saturn, Galaxie, Riesenblase, Inferno, Blitzkugel, Regenbogen (mit Funkeln).
         Alles funktioniert bei voller 360°-Drehung (Test cosmetics_zeichnen_rollfest); Partikel/Begleiter laufen im
         festen Takt (cosmeticsStep in stepSim).
       Levelauswahl: oben rechts neben dem Titel zwei eigene Menüpunkte im modernen Kachel-Stil ohne Emojis
         (Linien-Icons): „Packages öffnen“ (Geschenk-Icon mit Zahl, darunter „Affe x · Schweinchen y“; ohne Packages
-        blass, Drücken -> Hinweis) und „Umkleide“ (Kleiderbügel-Icon, „x / 116 Items gesammelt“). Sie liegen so hoch,
+        blass, Drücken -> Hinweis) und „Umkleide“ (Kleiderbügel-Icon, „x / 110 Items gesammelt“). Sie liegen so hoch,
         dass sie sich nie mit den Figuren über der gewählten Levelkarte überschneiden. „Fortschritt x / 6“ steht
         jetzt unten rechts. ▲ wählt „Packages öffnen“, ◀ ▶ wechselt zur Umkleide, Springen öffnet, ▼ zurück zu den
         Levelkarten; E / Num 1 / □ / △ oder Klick öffnen die Umkleide direkt. Hinweise ohne Emojis.
       Umkleide (früher „Sammlung“, nur zum Ausrüsten):
         Je Figur (umschalten mit E / Num 1 / □):
-        Zähler „x / 58 gesammelt“, Balken je Seltenheit, Slot-Reiter mit x/y, Kacheln mit Bild – auch alle GESPERRTEN
+        Zähler „x / 55 gesammelt“, Balken je Seltenheit, Slot-Reiter mit x/y, Kacheln mit Bild – auch alle GESPERRTEN
         Items mit Namen, grau und dunkel mit gezeichnetem Schloss und gestricheltem Rahmen in der Seltenheitsfarbe; „Angelegt“, „×n“ bei
         Duplikaten; Springen legt an bzw. ab; gesperrte lassen sich nicht anlegen (Wackeln).
         Große Vorschau: die Figur rollt mit allen Cosmetics hin und her. (Packages werden nicht hier geöffnet.)
