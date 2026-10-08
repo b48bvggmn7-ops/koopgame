@@ -956,9 +956,14 @@
     }catch(e){ ghSay('Levelliste nicht erreichbar – Editor bitte über die Webseite öffnen.', true); }
   }
   async function ghApi(path, opt){
-    const r = await fetch(GH.api + '/repos/' + GH.owner + '/' + GH.repo + path, {...(opt||{}),
+    // cache:'no-store': sonst liefert der Browser bis zu 60 s lang den alten Stand von main -> zweites Hochladen
+    // kurz hintereinander scheitert mit HTTP 422 („kein Fast-Forward“)
+    const r = await fetch(GH.api + '/repos/' + GH.owner + '/' + GH.repo + path, {...(opt||{}), cache:'no-store',
       headers:{'Accept':'application/vnd.github+json', 'Authorization':'Bearer ' + ghToken(), 'Content-Type':'application/json'}});
-    if(!r.ok){ const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+    if(!r.ok){
+      let msg = ''; try{ msg = (await r.json()).message || ''; }catch(e){}
+      const e = new Error('HTTP ' + r.status + (msg ? ': ' + msg : '')); e.status = r.status; throw e;
+    }
     return r.json();
   }
   async function ghUpload(){
@@ -986,7 +991,7 @@
           flash('Auf GitHub gespeichert: ' + name);
           return;
         }catch(e){
-          if(e.status === 422 && attempt === 0) continue;   // jemand hat gleichzeitig gespeichert: einmal neu versuchen
+          if(e.status === 422 && attempt === 0){ await new Promise(r => setTimeout(r, 800)); continue; }   // main hat sich gerade geändert: neu versuchen
           throw e;
         }
       }

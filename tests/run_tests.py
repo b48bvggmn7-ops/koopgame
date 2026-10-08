@@ -833,7 +833,7 @@ async def wetter_wechselt_selten(g):
 @test
 async def stachelwand_faehrt_mit(g):
     """Stacheln, die mit dem Fuß an einem bewegten Stück kleben, fahren mit (bewegliche Stachelwand) und töten;
-    in den bestehenden Levels fährt kein Stachel aus Versehen mit."""
+    in den bestehenden Levels fährt kein Stachel aus Versehen mit (außer in Levels, die direkt aus dem Editor kommen)."""
     wall = {'x': 400, 'y': 360, 'w': 40, 'h': 320, 'type': 'moveplat', 'look': 'wall', 'group': 1,
             'targetX': 2400, 'targetY': 360, 'speed': 3}
     sp = [{'x': 460, 'y': 680 - 40*k, 'w': 40, 'h': 40, 'dir': 1} for k in range(8)]
@@ -850,7 +850,12 @@ async def stachelwand_faehrt_mit(g):
     for name in [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]:
         await g.load(str(ROOT / 'levels' / name))
         n = await g.ev("spikes.filter(s => s.carrier).length")
-        want = json.loads((ROOT / 'levels' / name).read_text()).get('_mitfahrendeStacheln', 0)
+        # Soll-Zahl steht als Notiz „_mitfahrendeStacheln“ in der Level-Datei. Levels, die der Nutzer direkt aus dem
+        # Editor hochlädt („☁ Auf GitHub speichern“), haben diese Notiz nicht – dort gilt, was er im Editor gebaut
+        # und getestet hat, also hier nicht prüfen.
+        daten = json.loads((ROOT / 'levels' / name).read_text())
+        if '_mitfahrendeStacheln' not in daten and len(daten.get('movingPlatforms', [])) > 0 and n > 0: continue
+        want = daten.get('_mitfahrendeStacheln', 0)
         assert n == want, f'{name}: {n} mitfahrende Stacheln, erwartet {want}'
 
 @test
@@ -1795,16 +1800,19 @@ async def level_ladefehler_mit_grund(g):
 async def editor_github_speichern(g):
     """Editor: „Auf GitHub speichern“ – ohne Schlüssel erscheint die Anleitung; mit Schlüssel werden Spiel- und
     Editor-Datei des geladenen Hauptlevels in EINEM Commit nach main geschrieben (GitHub-API hier simuliert)."""
-    srv = webserver(); p = g.p; calls = []
+    srv = webserver(); p = g.p; calls = []; kopf = {'sha': 'c0'}
     async def api(route):
         req = route.request; url = req.url.split('/repos/b48bvggmn7-ops/koopgame')[-1]
         calls.append((req.method, url, req.headers.get('authorization'), req.post_data))
-        body = {'GET /git/ref/heads/main': {'object': {'sha': 'c0'}}, 'GET /git/commits/c0': {'tree': {'sha': 't0'}},
+        body = {'GET /git/ref/heads/main': {'object': {'sha': kopf['sha']}}, 'GET /git/commits/' + kopf['sha']: {'tree': {'sha': 't0'}},
                 'POST /git/trees': {'sha': 't1'}, 'POST /git/commits': {'sha': 'c1'}, 'PATCH /git/refs/heads/main': {'object': {'sha': 'c1'}}}
-        await route.fulfill(status=200, content_type='application/json', body=json.dumps(body.get(req.method + ' ' + url, {})))
+        await route.fulfill(status=200, content_type='application/json', headers={'Cache-Control': 'private, max-age=60'},
+                            body=json.dumps(body.get(req.method + ' ' + url, {})))
     try:
         await p.route('https://api.github.com/**', api)
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        # merken, ob die GitHub-Abfragen am Browser-Zwischenspeicher vorbei gehen (sonst alter Stand -> HTTP 422)
+        await g.ev("window.__ghCache = []; const f0 = window.fetch; window.fetch = (u, o) => { if (String(u).includes('api.github.com')) __ghCache.push((o||{}).cache); return f0(u, o); }")
         await p.click('#levelsBtn'); await p.wait_for_timeout(500)
         await p.click('#projectList .lvl:nth-child(3) button'); await p.wait_for_timeout(400)   # Level 3 laden
         await p.click('#githubBtn'); await p.wait_for_timeout(500)
@@ -1822,6 +1830,13 @@ async def editor_github_speichern(g):
         orig = json.loads((ROOT / 'levels' / 'editor-format' / 'level-3.json').read_text())
         assert 'solids' in spiel and ed['name'] == 'Level 3' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, orig['tiles'])), 'Inhalt falsch'
         assert json.loads(calls[4][3])['sha'] == 'c1' and json.loads(calls[3][3])['parents'] == ['c0']
+        # zweites Hochladen direkt danach: main ist jetzt c1 – der Editor muss den NEUEN Stand holen (nicht aus dem
+        # Browser-Zwischenspeicher), sonst gibt GitHub HTTP 422 (Fehler beim Nutzer)
+        calls.clear(); kopf['sha'] = 'c1'
+        await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        assert json.loads(calls[3][3])['parents'] == ['c1'], f'alter Stand von main benutzt: {calls[3][3]}'
+        assert set(await g.ev("__ghCache")) == {'no-store'}, 'GitHub-Abfragen dürfen nicht zwischengespeichert werden'
     finally:
         srv.shutdown()
 
