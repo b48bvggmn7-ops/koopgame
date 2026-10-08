@@ -444,7 +444,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Levelkarten; E / Num 1 / □ / △ oder Klick öffnen die Umkleide direkt. Hinweise ohne Emojis.
       Umkleide (früher „Sammlung“, nur zum Ausrüsten):
         Je Figur (umschalten mit E / Num 1 / □):
-        Zähler „x / 55 gesammelt“, Balken je Seltenheit, Slot-Reiter mit x/y, Kacheln mit Bild – auch alle GESPERRTEN
+        Fortschritt modern und aufgeräumt: Ring mit Prozent + „Sammlung x / 55 Items gesammelt“, darunter je Seltenheit
+        Farbpunkt, Name, Zahl und dünner leuchtender Balken (zwei Spalten), Slot-Reiter mit x/y, Kacheln mit Bild – auch alle GESPERRTEN
         Items mit Namen, grau und dunkel mit gezeichnetem Schloss und gestricheltem Rahmen in der Seltenheitsfarbe; „Angelegt“, „×n“ bei
         Duplikaten; Springen legt an bzw. ab; gesperrte lassen sich nicht anlegen (Wackeln).
         Große Vorschau: die Figur rollt mit allen Cosmetics hin und her. (Packages werden nicht hier geöffnet.)

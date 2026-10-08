@@ -552,10 +552,14 @@ const CO = {
       drawItemIcon($('canvas', t), it, this.who, own);   // erst im Dokument zeichnen (sonst wirkt der Grau-Filter nicht)
     });
     const have = collectionCount(this.who);
-    $('.co-count', this.el).innerHTML = `<b>${have}</b> / ${COSMETICS.length} gesammelt`;
+    // Fortschritt: Ring mit Prozent + schlichte Liste je Seltenheit (Name, Zahl, dünner Balken)
+    const pct = Math.round(have/COSMETICS.length*100);
+    $('.co-count', this.el).innerHTML = `<div class="ring" style="--p:${have/COSMETICS.length*100}%"><b>${pct}<small>%</small></b></div>
+      <div class="txt"><span class="lbl">Sammlung</span><span class="tot"><b>${have}</b> / ${COSMETICS.length}</span><span class="sub">Items gesammelt</span></div>`;
     $('.co-bars', this.el).innerHTML = RARITIES.slice(1).map(r => {
       const all = COSMETICS.filter(c => c.rarity === r.id), own = all.filter(c => ownedCount(this.who, c.id)).length;
-      return `<span style="--rc:${r.color}" title="${r.name}"><i style="width:${own/all.length*100}%"></i><em>${r.name} ${own}/${all.length}</em></span>`;
+      return `<div class="rr${own >= all.length ? ' full' : ''}" style="--rc:${r.color}" title="${r.name}"><span class="nm"><i></i>${r.name}</span><span class="n"><b>${own}</b>/${all.length}</span>
+        <span class="tr"><i style="width:${own/all.length*100}%"></i></span></div>`;
     }).join('');
     this.paint();
   },
