@@ -988,7 +988,8 @@
           await ghApi('/git/refs/heads/' + GH.branch, {method:'PATCH', body: JSON.stringify({sha: commit.sha})});
           currentProjectFile = datei; save(); dirty = false; updateName();
           ghSay(`✓ Gespeichert als ${name}. In 1–2 Minuten ist es online (im Spiel dann Strg + F5).`);
-          flash('Auf GitHub gespeichert: ' + name);
+          flash('✓ Auf GitHub gespeichert: ' + name + ' – in 1–2 Min. online');
+          setTimeout(()=> ghBox.classList.remove('show'), 1200);   // Fenster schließt sich nach Erfolg von selbst
           return;
         }catch(e){
           if(e.status === 422 && attempt === 0){ await new Promise(r => setTimeout(r, 800)); continue; }   // main hat sich gerade geändert: neu versuchen

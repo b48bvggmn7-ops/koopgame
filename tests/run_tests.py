@@ -1832,13 +1832,27 @@ async def editor_github_speichern(g):
         assert json.loads(calls[4][3])['sha'] == 'c1' and json.loads(calls[3][3])['parents'] == ['c0']
         # zweites Hochladen direkt danach: main ist jetzt c1 – der Editor muss den NEUEN Stand holen (nicht aus dem
         # Browser-Zwischenspeicher), sonst gibt GitHub HTTP 422 (Fehler beim Nutzer)
+        await p.wait_for_function("!document.getElementById('ghBox').classList.contains('show')", timeout=4000)   # schließt von selbst
         calls.clear(); kopf['sha'] = 'c1'
+        await p.click('#githubBtn'); await p.wait_for_timeout(400)
         await p.click('#ghUpload')
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
         assert json.loads(calls[3][3])['parents'] == ['c1'], f'alter Stand von main benutzt: {calls[3][3]}'
         assert set(await g.ev("__ghCache")) == {'no-store'}, 'GitHub-Abfragen dürfen nicht zwischengespeichert werden'
     finally:
         srv.shutdown()
+
+@test
+async def scheinwand_ohne_moos_verrat(g):
+    """Auf Flächen direkt unter einer Scheinwand wächst kein Moos/Gras (und keine Ranken daneben) – sonst sähe man den
+    versteckten Weg."""
+    lvl = level([ground(0, 680, 2000), {'x': 400, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'},
+                 {'x': 400, 'y': 320, 'w': 200, 'h': 120, 'type': 'fake'}, {'x': 800, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'}],
+                {'x': 100, 'y': 680}, {'x': 60, 'y': 680})
+    await g.load(lvl)
+    k = await g.ev("""(() => { buildDeco(); const unter = decoMoss.filter(m => !m.side && m.x >= 400 && m.x < 600 && m.y === 440).length,
+      frei = decoMoss.filter(m => !m.side && m.x >= 800 && m.x < 1000 && m.y === 440).length; return [unter, frei]; })()""")
+    assert k[0] == 0 and k[1] == 5, f'Moos unter Scheinwand / auf freier Wand: {k}'
 
 async def main(filter_):
     async with async_playwright() as pw:

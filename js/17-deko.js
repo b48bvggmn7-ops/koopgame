@@ -87,11 +87,14 @@ const BIRD_PALS = [
 ];
 
 // Steht an (x,y) ein festes Teil? (bewegte Teile, Türen, Bröckelboden zählen nicht als "fest")
+// Scheinwände zählen hier MIT: sonst wüchse Moos/Gras auf der Fläche darunter bzw. Ranken an der Seite daneben
+// und man sähe, dass dort ein versteckter Weg ist (Nutzerwunsch)
 function decoSolidAt(x, y){
   for(const s of solids){
     if(s.type !== 'ground' && s.type !== 'wall' && s.type !== 'platform') continue;
     if(x >= s.x && x < s.x + s.w && y >= s.y && y < s.y + s.h) return true;
   }
+  for(const s of fakeWalls) if(x >= s.x && x < s.x + s.w && y >= s.y && y < s.y + s.h) return true;
   return false;
 }
 function buildDeco(){

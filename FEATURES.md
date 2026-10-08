@@ -394,7 +394,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         trägt er NICHT. Sichtbar als heller Streifen mit aufsteigenden Schlieren und Blättchen.
       Scheinwand (solids type 'fake', im Spiel in fakeWalls): sieht exakt aus wie Wand (nahtlos mit echten
         Wänden), liegt ÜBER Hebeln/Münzen und versteckt sie; keine Kollision (man läuft hindurch, kein Wandsprung).
-        Steht eine Figur drin oder direkt davor, wird sie halb durchsichtig. In dunklen Themen leuchten versteckte
+        Steht eine Figur drin oder direkt davor, wird sie halb durchsichtig.
+        Kein Verrat durch Deko: auf Flächen direkt unter einer Scheinwand wächst kein Moos/Gras, keine Pflanzen/Vögel,
+        und an Wandseiten daneben keine Ranken (Scheinwände zählen für die Deko als fest; Test scheinwand_ohne_moos_verrat). In dunklen Themen leuchten versteckte
         Hebel/Münzen nicht durch.
         Dezentes Glitzern (Nutzerwunsch: „ein bisschen erkennen, nicht zu auffällig“): je Kästchen ein kleiner
         heller Funkelstern an fester Stelle, der etwa alle 3 s kurz weich aufblitzt (16 % der Zeit, Deckkraft
@@ -515,6 +517,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Einmalig: persönlicher GitHub-Schlüssel („Fine-grained token“, nur Repo koopgame, Contents: Read and write) –
     Anleitung im Fenster; der Schlüssel liegt nur im Browser (localStorage monchichi_github_token), „Schlüssel
     entfernen“ löscht ihn. Fehler werden verständlich angezeigt (Schlüssel ungültig, keine Berechtigung, Netz).
+    Nach erfolgreichem Hochladen schließt sich das Fenster nach ~1 s von selbst (Hinweis unten links im Editor).
+    Mehrmals hintereinander hochladen geht (GitHub-Abfragen ohne Zwischenspeicher).
     Test editor_github_speichern (GitHub-API simuliert).
   - Button „📦 Ins Projekt aufnehmen“ (im Fenster „Levels“): lädt das aktuelle Level als zwei Dateien herunter –
     <name>.json (Spiel-Format, gehört nach levels/) und <name>.editor.json (Editor-Format, gehört nach
