@@ -50,6 +50,15 @@
   .mini.del{color:#ff8a80;}
   .armed{ background:#c0392b !important; color:#fff !important; border-color:#c0392b !important; }
   #status{font-size:11.5px; color:var(--sub); min-height:16px;}
+  /* Auf GitHub speichern */
+  #ghBox{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:11; padding:20px;}
+  #ghBox.show{display:flex;}
+  #ghPanel{background:var(--panel); border-radius:12px; padding:16px; max-width:520px; width:100%; display:flex; flex-direction:column; gap:10px; font-size:12.5px; color:var(--text);}
+  #ghPanel select, #ghPanel input{background:#0f161e; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px;}
+  #ghPanel .sect{display:flex; flex-direction:column; gap:6px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:10px;}
+  #ghPanel ol{margin:4px 0 0 18px; padding:0; color:var(--sub); line-height:1.5;}
+  #ghPanel a{color:var(--accent);}
+  #ghStatus{min-height:16px; font-size:12px; color:var(--sub);}
   #curName{font-size:12px; color:var(--sub); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .coord{position:fixed; bottom:8px; left:8px; background:rgba(0,0,0,.55); padding:4px 8px; border-radius:6px; font-size:11px; color:var(--text); pointer-events:none;}
 </style>
@@ -130,6 +139,7 @@
     <button class="action" id="saveBtn">💾 Speichern</button>
     <button class="action" id="testBtn" title="Das aktuelle Level sofort im Spiel ausprobieren (ohne Speichern/Hochladen)" style="background:#ffd166; color:#3a2a00;">▶ Testen</button>
     <button class="action" id="exportBtn">Exportieren</button>
+    <button class="action" id="githubBtn" title="Das Level direkt ins Projekt auf GitHub speichern – ist nach 1–2 Minuten online im Spiel">☁ Auf GitHub speichern</button>
     <button class="action secondary" id="closeEditorBtn" title="Editor schließen und zurück zum Spiel (der Arbeitsstand bleibt im Browser erhalten)" style="position:absolute; top:10px; right:14px; font-size:16px; line-height:1; padding:6px 11px;">✕</button>
   </header>
   <div id="main">
@@ -184,6 +194,33 @@
       <button class="action secondary" id="copyBtn">In Zwischenablage kopieren</button>
       <button class="action" id="closeExport">Schließen</button>
     </div>
+  </div>
+</div>
+
+<div id="ghBox">
+  <div id="ghPanel">
+    <h2 style="margin:0;color:#fff;font-size:14px;">Auf GitHub speichern</h2>
+    <div class="sect" id="ghSave">
+      <label for="ghTarget">Als welches Level speichern?</label>
+      <select id="ghTarget"></select>
+      <div class="hint">Überschreibt dieses Level im Projekt (Spiel- und Editor-Datei). Nach 1–2 Minuten ist es online – dann im Spiel Strg + F5.</div>
+      <div class="rowbtns"><button class="action" id="ghUpload">Hochladen</button></div>
+    </div>
+    <div class="sect" id="ghKeySect">
+      <b>Zugangsschlüssel (einmalig einrichten)</b>
+      <ol>
+        <li>Auf GitHub einloggen und <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">neuen Schlüssel anlegen</a> („Fine-grained token“).</li>
+        <li>Name z. B. „Level-Editor“, Ablauf z. B. 1 Jahr.</li>
+        <li>„Repository access“: <b>Only select repositories</b> → <b>koopgame</b>.</li>
+        <li>„Permissions“ → „Repository permissions“ → <b>Contents: Read and write</b>.</li>
+        <li>„Generate token“, den Schlüssel kopieren und hier einfügen.</li>
+      </ol>
+      <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off">
+      <div class="hint">Der Schlüssel bleibt nur in diesem Browser gespeichert und darf nur dieses eine Projekt ändern.</div>
+      <div class="rowbtns"><button class="action secondary" id="ghForget">Schlüssel entfernen</button><button class="action" id="ghKeySave">Schlüssel speichern</button></div>
+    </div>
+    <div id="ghStatus"></div>
+    <div class="rowbtns"><button class="action secondary" id="ghKeyShow">Schlüssel ändern</button><button class="action" id="ghClose">Schließen</button></div>
   </div>
 </div>
 

@@ -1791,6 +1791,40 @@ async def level_ladefehler_mit_grund(g):
     finally:
         srv.shutdown()
 
+@test
+async def editor_github_speichern(g):
+    """Editor: „Auf GitHub speichern“ – ohne Schlüssel erscheint die Anleitung; mit Schlüssel werden Spiel- und
+    Editor-Datei des geladenen Hauptlevels in EINEM Commit nach main geschrieben (GitHub-API hier simuliert)."""
+    srv = webserver(); p = g.p; calls = []
+    async def api(route):
+        req = route.request; url = req.url.split('/repos/b48bvggmn7-ops/koopgame')[-1]
+        calls.append((req.method, url, req.headers.get('authorization'), req.post_data))
+        body = {'GET /git/ref/heads/main': {'object': {'sha': 'c0'}}, 'GET /git/commits/c0': {'tree': {'sha': 't0'}},
+                'POST /git/trees': {'sha': 't1'}, 'POST /git/commits': {'sha': 'c1'}, 'PATCH /git/refs/heads/main': {'object': {'sha': 'c1'}}}
+        await route.fulfill(status=200, content_type='application/json', body=json.dumps(body.get(req.method + ' ' + url, {})))
+    try:
+        await p.route('https://api.github.com/**', api)
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.click('#levelsBtn'); await p.wait_for_timeout(500)
+        await p.click('#projectList .lvl:nth-child(3) button'); await p.wait_for_timeout(400)   # Level 3 laden
+        await p.click('#githubBtn'); await p.wait_for_timeout(500)
+        assert await g.ev("getComputedStyle(document.getElementById('ghKeySect')).display !== 'none'"), 'ohne Schlüssel keine Anleitung'
+        await p.fill('#ghToken', 'github_pat_TEST123'); await p.click('#ghKeySave'); await p.wait_for_timeout(200)
+        assert await g.ev("document.getElementById('ghTarget').value") == 'level-3.json', 'geladenes Hauptlevel nicht vorausgewählt'
+        await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        wege = [c[0] + ' ' + c[1] for c in calls]
+        assert wege == ['GET /git/ref/heads/main', 'GET /git/commits/c0', 'POST /git/trees', 'POST /git/commits', 'PATCH /git/refs/heads/main'], wege
+        assert all(c[2] == 'Bearer github_pat_TEST123' for c in calls), 'Schlüssel nicht mitgeschickt'
+        tree = json.loads(calls[2][3])['tree']
+        assert [t['path'] for t in tree] == ['levels/level-3.json', 'levels/editor-format/level-3.json'], tree
+        spiel, ed = json.loads(tree[0]['content']), json.loads(tree[1]['content'])
+        orig = json.loads((ROOT / 'levels' / 'editor-format' / 'level-3.json').read_text())
+        assert 'solids' in spiel and ed['name'] == 'Level 3' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, orig['tiles'])), 'Inhalt falsch'
+        assert json.loads(calls[4][3])['sha'] == 'c1' and json.loads(calls[3][3])['parents'] == ['c0']
+    finally:
+        srv.shutdown()
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

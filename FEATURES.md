@@ -508,6 +508,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - ✕ oben rechts schließt den Editor und führt zurück zum Spiel (Hauptmenü); Arbeitsstand bleibt im Browser
   - Fenster „Levels“ zeigt zusätzlich „Levels im Projekt“ (aus levels/levels.json) und lädt sie per „Laden“
     aus levels/editor-format/ (nur wenn der Editor über die Webseite geöffnet ist, nicht als lokale Datei)
+  - Button „☁ Auf GitHub speichern“ (Werkzeugleiste): speichert das aktuelle Level direkt ins Projekt – Spiel-Datei
+    (levels/<datei>) und Editor-Datei (levels/editor-format/<datei>) in EINEM Commit nach main; GitHub Pages baut die
+    Seite neu, nach 1–2 Minuten ist es online (im Spiel Strg + F5). Auswahl „Als welches Level speichern?“ (Hauptlevels
+    aus levels.json; ein aus „Levels im Projekt“ geladenes Level ist vorausgewählt, gemerkt als currentProjectFile).
+    Einmalig: persönlicher GitHub-Schlüssel („Fine-grained token“, nur Repo koopgame, Contents: Read and write) –
+    Anleitung im Fenster; der Schlüssel liegt nur im Browser (localStorage monchichi_github_token), „Schlüssel
+    entfernen“ löscht ihn. Fehler werden verständlich angezeigt (Schlüssel ungültig, keine Berechtigung, Netz).
+    Test editor_github_speichern (GitHub-API simuliert).
   - Button „📦 Ins Projekt aufnehmen“ (im Fenster „Levels“): lädt das aktuelle Level als zwei Dateien herunter –
     <name>.json (Spiel-Format, gehört nach levels/) und <name>.editor.json (Editor-Format, gehört nach
     levels/editor-format/ als <name>.json); Eintrag in levels/levels.json bleibt Handarbeit

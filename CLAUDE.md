@@ -17,7 +17,9 @@
 3. **FEATURES.md pflegen:** Jede Verhaltensänderung dort eintragen. Nichts entfernen, ohne den Nutzer zu fragen.
 4. **Kleine Schritte:** pro Wunsch ein Commit mit kurzer deutscher Beschreibung.
 5. Wenn der Nutzer mit etwas unzufrieden ist: lieber auf den letzten guten Stand zurück (git) als lange herumprobieren.
-6. **Direkt in `main` übernehmen:** Sind alle Tests grün, die Änderung immer sofort committen und nach `main` pushen
+6. **Vor dem Arbeiten `main` holen** (`git fetch origin main` + auf den neuesten Stand bringen): Der Nutzer speichert
+   Levels auch direkt aus dem Editor auf GitHub („☁ Auf GitHub speichern“ = eigene Commits auf `main`).
+7. **Direkt in `main` übernehmen:** Sind alle Tests grün, die Änderung immer sofort committen und nach `main` pushen
    (vom Nutzer ausdrücklich so gewünscht), damit sie automatisch online geht. Bei roten Tests nichts nach `main`.
 
 ## Aufbau

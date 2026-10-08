@@ -120,11 +120,12 @@
       }
     }
   }
+  let currentProjectFile = null;   // aus „Levels im Projekt“ geladen? dann z. B. 'level-3.json' (für „Auf GitHub speichern“)
   function save(){
     updateLinkMarks();
     dirty = true;
     try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({...snapshot(), currentLevelId, currentLevelName}));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({...snapshot(), currentLevelId, currentLevelName, currentProjectFile}));
     }catch(e){}
     updateName();
   }
@@ -135,6 +136,7 @@
         const d = JSON.parse(raw);
         applySnapshot(d);
         currentLevelId = d.currentLevelId||null; currentLevelName = d.currentLevelName||null;
+        currentProjectFile = d.currentProjectFile||null;
         return;
       }
     }catch(e){}
@@ -407,7 +409,7 @@
       dt.textContent = L.updatedAt ? new Date(L.updatedAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
       const ld=document.createElement('button'); ld.className='mini'; ld.textContent='Laden';
       const doLoad = ()=>{
-        applySnapshot(L.data||{}); currentLevelId=L.id; currentLevelName=L.name;
+        applySnapshot(L.data||{}); currentLevelId=L.id; currentLevelName=L.name; currentProjectFile=null;
         save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels();
       };
       ld.onclick=()=>{
@@ -490,7 +492,7 @@
           const r = await fetch(PROJECT_DIR+'editor-format/'+encodeURIComponent(P.datei), {cache:'no-store'});
           if(!r.ok) throw 0;
           const d = await r.json();
-          applySnapshot(d); currentLevelId=null; currentLevelName=P.name||d.name||null;
+          applySnapshot(d); currentLevelId=null; currentLevelName=P.name||d.name||null; currentProjectFile=P.datei;
           save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels();
         }catch(e){ setStatus(`„${P.name||P.datei}“ konnte nicht geladen werden.`, true); }
       };
@@ -526,7 +528,7 @@
     const doNew = ()=>{
       tiles={}; hooks=[]; switches=[]; doors=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
       theme='dschungel'; themeSelect.value=theme;
-      currentLevelId=null; currentLevelName=null; setCols(MIN_COLS); save(); dirty=false; updateName();
+      currentLevelId=null; currentLevelName=null; currentProjectFile=null; setCols(MIN_COLS); save(); dirty=false; updateName();
       wrap.scrollLeft=0; closeLevels();
     };
     if(dirty) armConfirm(e.currentTarget, 'Ungespeichertes geht verloren – trotzdem?', doNew); else doNew();
@@ -929,6 +931,88 @@
       setStatus(`Heruntergeladen: ${base}.json (Spiel-Format → levels/) und ${base}.editor.json (Editor-Format → levels/editor-format/ als ${base}.json).`);
     }catch(e){ setStatus('Herunterladen fehlgeschlagen.', true); }
   });
+  // ---------- Auf GitHub speichern ----------
+  // Schreibt Spiel-Datei (levels/<datei>) und Editor-Datei (levels/editor-format/<datei>) in EINEM Commit nach main
+  // (GitHub-API, Git-Daten: Baum + Commit + Branch weiterschieben). Danach baut GitHub Pages die Seite neu (1–2 Min).
+  // Zugang: persönlicher „Fine-grained“-Schlüssel des Nutzers (nur dieses Repo, Contents: Read and write), liegt nur
+  // im Browser (localStorage). Ohne Schlüssel: Anleitung zum Einrichten.
+  const GH = {owner:'b48bvggmn7-ops', repo:'koopgame', branch:'main', api:'https://api.github.com', key:'monchichi_github_token'};
+  const ghBox = document.getElementById('ghBox'), ghStatus = document.getElementById('ghStatus');
+  const ghToken = () => { try{ return localStorage.getItem(GH.key) || ''; }catch(e){ return ''; } };
+  function ghSay(t, err){ ghStatus.textContent = t || ''; ghStatus.style.color = err ? '#ff8a80' : 'var(--sub)'; }
+  function ghShowKey(on){ document.getElementById('ghKeySect').style.display = on ? '' : 'none'; document.getElementById('ghSave').style.display = on ? 'none' : ''; }
+  async function ghOpen(){
+    ghSay(''); ghBox.classList.add('show');
+    ghShowKey(!ghToken());
+    const sel = document.getElementById('ghTarget'); sel.innerHTML = '';
+    try{
+      const r = await fetch(PROJECT_DIR+'levels.json', {cache:'no-store'}); if(!r.ok) throw 0;
+      for(const P of (await r.json())){
+        if(P.versteckt) continue;
+        const o = document.createElement('option'); o.value = P.datei; o.textContent = `${P.name}${P.titel ? ' – '+P.titel : ''} (${P.datei})`;
+        o.dataset.name = P.name || ''; sel.appendChild(o);
+      }
+      if(currentProjectFile) sel.value = currentProjectFile;
+    }catch(e){ ghSay('Levelliste nicht erreichbar – Editor bitte über die Webseite öffnen.', true); }
+  }
+  async function ghApi(path, opt){
+    const r = await fetch(GH.api + '/repos/' + GH.owner + '/' + GH.repo + path, {...(opt||{}),
+      headers:{'Accept':'application/vnd.github+json', 'Authorization':'Bearer ' + ghToken(), 'Content-Type':'application/json'}});
+    if(!r.ok){ const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+    return r.json();
+  }
+  async function ghUpload(){
+    const sel = document.getElementById('ghTarget'), datei = sel.value, opt = sel.selectedOptions[0];
+    if(!datei){ ghSay('Bitte ein Level auswählen.', true); return; }
+    if(!ghToken()){ ghShowKey(true); ghSay('Erst den Zugangsschlüssel einrichten.', true); return; }
+    const name = (opt && opt.dataset.name) || currentLevelName || datei;
+    const files = [
+      {path:'levels/' + datei, content: exportLevel() + '\n'},
+      {path:'levels/editor-format/' + datei, content: JSON.stringify({name, ...snapshot()})},
+    ];
+    const btn = document.getElementById('ghUpload'); btn.disabled = true; ghSay('Wird hochgeladen …');
+    try{
+      for(let attempt = 0; attempt < 2; attempt++){
+        try{
+          const ref = await ghApi('/git/ref/heads/' + GH.branch);
+          const head = await ghApi('/git/commits/' + ref.object.sha);
+          const tree = await ghApi('/git/trees', {method:'POST', body: JSON.stringify({base_tree: head.tree.sha,
+            tree: files.map(f => ({path: f.path, mode:'100644', type:'blob', content: f.content}))})});
+          const commit = await ghApi('/git/commits', {method:'POST', body: JSON.stringify({
+            message: `${name} im Editor bearbeitet (${datei})`, tree: tree.sha, parents: [ref.object.sha]})});
+          await ghApi('/git/refs/heads/' + GH.branch, {method:'PATCH', body: JSON.stringify({sha: commit.sha})});
+          currentProjectFile = datei; save(); dirty = false; updateName();
+          ghSay(`✓ Gespeichert als ${name}. In 1–2 Minuten ist es online (im Spiel dann Strg + F5).`);
+          flash('Auf GitHub gespeichert: ' + name);
+          return;
+        }catch(e){
+          if(e.status === 422 && attempt === 0) continue;   // jemand hat gleichzeitig gespeichert: einmal neu versuchen
+          throw e;
+        }
+      }
+    }catch(e){
+      const st = e.status;
+      ghSay(st === 401 ? 'Schlüssel ungültig oder abgelaufen – bitte neu einrichten.'
+          : (st === 403 || st === 404) ? 'Keine Berechtigung – beim Schlüssel „koopgame“ und „Contents: Read and write“ auswählen.'
+          : 'Hochladen fehlgeschlagen (' + (e.message || e) + '). Internet prüfen und nochmal versuchen.', true);
+      if(st === 401 || st === 403 || st === 404) ghShowKey(true);
+    }finally{ btn.disabled = false; }
+  }
+  document.getElementById('githubBtn').addEventListener('click', ghOpen);
+  document.getElementById('ghClose').addEventListener('click', ()=> ghBox.classList.remove('show'));
+  document.getElementById('ghUpload').addEventListener('click', ghUpload);
+  document.getElementById('ghKeyShow').addEventListener('click', ()=> ghShowKey(true));
+  document.getElementById('ghKeySave').addEventListener('click', ()=>{
+    const t = document.getElementById('ghToken').value.trim();
+    if(!/^(github_pat_|ghp_)/.test(t)){ ghSay('Das sieht nicht wie ein GitHub-Schlüssel aus (beginnt mit „github_pat_“).', true); return; }
+    try{ localStorage.setItem(GH.key, t); }catch(e){ ghSay('Konnte nicht gespeichert werden.', true); return; }
+    document.getElementById('ghToken').value = ''; ghShowKey(false); ghSay('Schlüssel gespeichert – jetzt „Hochladen“.');
+  });
+  document.getElementById('ghForget').addEventListener('click', ()=>{
+    try{ localStorage.removeItem(GH.key); }catch(e){}
+    ghShowKey(true); ghSay('Schlüssel aus diesem Browser entfernt.');
+  });
+
   document.getElementById('copyBtn').addEventListener('click', ()=>{
     const ta = document.getElementById('exportText');
     ta.select();
