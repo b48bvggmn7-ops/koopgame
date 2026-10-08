@@ -128,10 +128,11 @@ function inWind(player){
   const box = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
   return winds.some(w => rectsOverlap(box, w));
 }
-// Sprungpilz: wer auf ihm landet oder drüberläuft, wird hochgeschleudert (ca. 6 Kästchen hoch)
+// Sprungpilz: nur wer von oben darauf springt/fällt, wird hochgeschleudert (ca. 6 Kästchen hoch);
+// einfach drüberlaufen tut nichts (Nutzerwunsch)
 const BOUNCE_V = -17.2;
-function checkBounce(player){
-  if(player.hookAttached || player.vy < 0) return;
+function checkBounce(player, wasGrounded, fallVy){
+  if(player.hookAttached || player.vy < 0 || wasGrounded || !(fallVy > 0)) return;
   for(const b of bouncers){
     if(Math.abs(player.x - b.x) < 14 + player.w/2 && player.y > b.y - 14 && player.y <= b.y + 1){
       player.vy = BOUNCE_V; player.grounded = false; player.glideTimer = 0; player.lastWallJumpSide = 0;

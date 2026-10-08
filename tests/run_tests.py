@@ -1390,7 +1390,7 @@ async def level_themen(g):
 @test
 async def neue_elemente(g):
     """Druckplatte (Tür offen nur solange jemand draufsteht), Aufwind (trägt das Schweinchen mit Schirm hoch,
-    den Affen nicht), Scheinwand (durchlaufbar, sieht aus wie Wand), Sprungpilz (schleudert ~6 Kästchen hoch)."""
+    den Affen nicht), Scheinwand (durchlaufbar, sieht aus wie Wand), Sprungpilz (schleudert ~6 Kästchen hoch, nur beim Draufspringen)."""
     lv = level([ground(0, 680, 3000)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680},
                plates=[{'x': 300, 'y': 660, 'link': 3}], doors=[{'x': 620, 'y': 660, 'link': 3}, {'x': 620, 'y': 620, 'link': 3}])
     await g.load(lv)
@@ -1427,11 +1427,16 @@ async def neue_elemente(g):
     await g.hold(('KeyD',), 900)
     assert await g.ev('p1.x') > 540, f"Affe kommt nicht durch die Scheinwand: {await g.ev('p1.x')}"
 
-    # Sprungpilz: drüberlaufen -> hoch geschleudert
+    # Sprungpilz: drüberlaufen -> nichts passiert; draufspringen -> hoch geschleudert
     lv = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, bouncers=[{'x': 380, 'y': 680}])
     await g.load(lv)
-    await g.ev("window.__minY = 999; if(!window.__bo){ window.__bo = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minY = Math.min(window.__minY, p1.y); }; }")
+    await g.ev("window.__minY = 999; window.__minVy = 0; if(!window.__bo){ window.__bo = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minY = Math.min(window.__minY, p1.y); window.__minVy = Math.min(window.__minVy, p1.vy); }; }")
     await g.hold(('KeyD',), 300); await g.p.wait_for_timeout(1200)
+    hoch = 680 - await g.ev('window.__minY')
+    assert hoch < 5 and await g.ev('p1.x') > 400, f'Sprungpilz beim Drüberlaufen ausgelöst: {hoch:.0f} px hoch'
+    await g.ev("p1.x = 380; p1.y = 520; p1.vx = 0; p1.vy = 2; p1.grounded = false; p1._px = p1.x; p1._py = p1.y; window.__minVy = 0; window.__minY = 999")
+    await g.p.wait_for_timeout(1500)
+    assert await g.ev('window.__minVy') <= -17, f"Sprungpilz beim Draufspringen nicht ausgelöst: {await g.ev('window.__minVy')}"
     hoch = 680 - await g.ev('window.__minY')
     assert 200 < hoch < 280, f'Sprungpilz: {hoch:.0f} px hoch (erwartet ~230)'
 

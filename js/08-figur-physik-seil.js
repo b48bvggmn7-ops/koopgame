@@ -234,11 +234,12 @@ function updatePlayer(player, now){
     }
   }
 
+  const wasGrounded = player.grounded, fallVy = player.vy;   // für den Sprungpilz: kam die Figur von oben angeflogen?
   player.grounded = false;
   player.standingOn = null;
   player.x += player.vx; collideAxis(player,'x');
   player.y += player.vy; collideAxis(player,'y');
-  if(bouncers.length) checkBounce(player);   // Sprungpilz (05-level-objekte.js)
+  if(bouncers.length) checkBounce(player, wasGrounded, fallVy);   // Sprungpilz (05-level-objekte.js)
   if(player.male && player.hookAttached){
     // LANDET man am Seil auf etwas (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …) -> Seil lösen.
     // Vom Boden aus eingehakt bleibt es dran, damit man sich mit W / Hoch zum Haken hochziehen kann.

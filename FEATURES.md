@@ -402,7 +402,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         heller Funkelstern an fester Stelle, der etwa alle 3 s kurz weich aufblitzt (16 % der Zeit, Deckkraft
         höchstens 55 %); auch in dunklen Leveln sichtbar; ist die Wand durchsichtig (Figur davor), kein Glitzern
         (drawFakeGlints in 12-welt-zeichnen.js; Test scheinwand_glitzert).
-      Sprungpilz (bouncers {x,y} Fußpunkt): wer darauf landet oder drüberläuft, wird hochgeschleudert
+      Sprungpilz (bouncers {x,y} Fußpunkt): nur wer von oben darauf springt/fällt, wird hochgeschleudert
+        (einfach drüberlaufen tut nichts – Nutzerwunsch)
         (BOUNCE_V -17,2 ≈ 5,8 Kästchen; Wandsprung danach wieder möglich), Pilz staucht sich, Quietsch-Ton.
     Tests neue_elemente, editor_neue_werkzeuge.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
