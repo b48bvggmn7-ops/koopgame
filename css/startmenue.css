@@ -218,3 +218,9 @@
 @keyframes shackleUp{0%,60%{translate:0 0}100%{translate:0 -5px}}
 @keyframes shard{0%{opacity:1;transform:rotate(var(--a)) translateX(0) rotate(0)}100%{opacity:0;transform:rotate(var(--a)) translateX(var(--d)) rotate(220deg)}}
 @keyframes cardFlash{0%{box-shadow:0 0 0 0 rgba(255,200,58,.9)}100%{box-shadow:0 0 0 2.5cqw rgba(255,200,58,0)}}
+/* Figuren mit Armen/Händen/Füßen (js/24-startmenue.js): die rechte Hand winkt ab und zu, das Schweinchen versetzt */
+#sm .char .arm-wave{transform-box:view-box;animation:menuWave 5s ease-in-out infinite}
+#sm .char .arm-wave-r{transform-origin:184px 158px}
+#sm .char .arm-wave-l{transform-origin:36px 158px;animation-name:menuWaveL;animation-delay:-2.5s}
+@keyframes menuWave{0%,60%,100%{transform:rotate(0deg)}68%{transform:rotate(-22deg)}76%{transform:rotate(6deg)}84%{transform:rotate(-22deg)}92%{transform:rotate(6deg)}}
+@keyframes menuWaveL{0%,60%,100%{transform:rotate(0deg)}68%{transform:rotate(22deg)}76%{transform:rotate(-6deg)}84%{transform:rotate(22deg)}92%{transform:rotate(-6deg)}}
