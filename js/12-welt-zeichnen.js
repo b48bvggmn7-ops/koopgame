@@ -300,6 +300,7 @@ function draw(){
   camPos += (targetCam-camPos) * (1 - Math.pow(1-CAM_FOLLOW, frameDt/STEP));   // gleich schnell bei jeder Bildrate
   camX = Math.round(camPos);
 
+  ctx.setTransform(RS, 0, 0, RS, 0, 0);   // volle Bildschirmauflösung (00-setup.js)
   ctx.clearRect(0,0,W,H);
   tNowCp = performance.now();
   drawBackground();

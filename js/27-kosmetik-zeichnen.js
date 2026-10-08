@@ -18,7 +18,7 @@ const cosRand = (a, b) => a + Math.random()*(b - a);
 
 // Kugel-Daten einer Spielfigur (Weltkoordinaten; Mitte des Gesichts)
 function playerRig(P){
-  return {x:P.x, y:P.y - P.h*0.5 + 4, r:21, roll:P.rollAngle || 0, vx:P.vx, vy:P.vy, grounded:P.grounded, facing:P.facing || 1};
+  return {x:P.x, y:P.y - P.h*0.5 + 5, r:21, roll:P.rollAngle || 0, vx:P.vx, vy:P.vy, grounded:P.grounded, facing:P.facing || 1};
 }
 
 // ===== Schritt im festen Takt: Spur-Partikel erzeugen/bewegen, Bahn merken, Begleiter nachziehen =====

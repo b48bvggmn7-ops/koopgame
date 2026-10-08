@@ -9,7 +9,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (kein Strg+F5 mehr nötig, nachdem eine Änderung online ist)
   MONCHICHI KOOP – SPIEL – FUNKTIONSLISTE
   - Figuren: süßer Affe (eigene Zeichnung, ersetzt Kenney-Affe) und pinkes Schweinchen, beide mit Zwinker-Bild
-    (monkeyBlink/pigBlink, alle ~3-5 s kurz); Schatten nur wenn am Boden
+    (monkeyBlink/pigBlink, alle ~3-5 s kurz). Bild immer im echten Seitenverhältnis (nicht verzerrt); gedreht wird
+    genau um die Mitte des runden Kopfes (HEAD_CENTER, Ohren zählen nicht), damit die Kugel rund rollt statt zu eiern.
+    Weicher, natürlicher Schatten auf dem Boden darunter (verlaufend), auch im Sprung: je höher, desto kleiner und blasser.
+  - Scharfes Bild: die Leinwand wird in der echten Bildschirmauflösung gezeichnet (CSS-Größe × Pixeldichte, höchstens
+    2560 Pixel breit; Spiel-Koordinaten bleiben 1280×720, Skalierung RS in 00-setup.js) statt 1280×720 hochzuskalieren
+    – Level und Figuren wirken dadurch glatt statt verpixelt/verschwommen; passt sich beim Vollbild/Fenstergröße an.
   - Spieler 1 (♂): A/D, Leertaste springen/Wandsprung, G Haken, W ranziehen, S Seil geben (H/J fürs Seil entfallen;
     Controller: Steuerkreuz/Stick hoch = ranziehen, runter = Seil geben; R/L-Tasten fürs Seil entfallen)
   - Seil ist elastisch: streift man beim Schwingen eine Wand, löst es NICHT, die Figur wird aufgehalten/rutscht
@@ -73,7 +78,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Parallax (weit weg = langsamer, heller, unschärfer), alles dunstig und heller als die Spielelemente;
     vorgezeichnet (billig pro Bild). Seitenrand der Seite dunkelgrün.
   - Figuren mit mehr Leben (js/21-figuren-leben.js, nur Anzeige): Strecken beim Absprung, Stauchen beim Landen (je nach
-    Fallhöhe, an den Füßen verankert), sanftes Atmen im Stehen, Staubwölkchen bei Landung/Sprung/Wandsprung.
+    Fallhöhe, an den Füßen verankert) – beides nur kurz und dezent; kein Dauer-Atmen und kein Stauchen beim Fallen mehr
+    (Nutzerwunsch: Figuren sollen nicht verzerrt wirken). Staubwölkchen bei Landung/Sprung/Wandsprung.
     Entdeckung: stehen Affe und Schweinchen ~1,5 s dicht beieinander, steigen Herzchen auf (mit leisem Ton).
   - Süße Tiere & Entdeckungen (js/20-tiere.js, reine Deko): Schmetterlinge (flattern, weichen aus), Frösche (atmen,
     quaken ab und zu, hüpfen weg wenn man kommt), Schnecken (kriechen, ziehen sich ins Haus zurück), Pilze (federn +

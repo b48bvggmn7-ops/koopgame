@@ -1202,7 +1202,7 @@ async def figuren_leben(g):
     except Exception: pass
     st = await g.ev("({j: !!p1._jumpT, sq: charSquash(p1), dust: dustFx.length})")
     await g.p.keyboard.up('Space')
-    assert st['j'] and st['sq'][1] > 1.02 and st['dust'] > 0, f'kein Strecken/Staub beim Absprung: {st}'
+    assert st['j'] and st['sq'][1] > 1.005 and st['dust'] > 0, f'kein Strecken/Staub beim Absprung: {st}'
     await g.p.wait_for_timeout(1300)
     assert await g.ev("!!p1._landT && dustFx.length >= 0"), 'Landung nicht erkannt'
     sq = await g.ev("(()=>{ p1._landT = performance.now() - 100; p1._landV = 1; return charSquash(p1); })()")
@@ -1706,6 +1706,25 @@ async def packages_menue_design(g):
     txt = await g.ev("document.getElementById('sm-l-pack').textContent + document.getElementById('sm-l-coll').textContent + document.getElementById('sm-l-hint').textContent")
     import re
     assert not re.search('[\U0001F300-\U0001FAFF]', txt), f'Emoji im Menü: {txt}'
+
+@test
+async def figuren_rollen_rund(g):
+    """Figuren rollen rund um die Kopfmitte (Drehpunkt bleibt bei jedem Winkel gleich und liegt in der Kopfmitte,
+    Ohren zählen nicht), Bild unverzerrt; die Leinwand hat die echte Bildschirmauflösung (scharf statt hochskaliert)."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
+    r = await g.ev("""(() => { const piv = [], orig = ctx.rotate.bind(ctx), dimg = ctx.drawImage.bind(ctx); let rec = false, sz = null;
+      ctx.rotate = a => { if (rec) { const m = ctx.getTransform(); piv.push([m.e, m.f]); } return orig(a); };
+      ctx.drawImage = function(im, ...r) { if (rec && im === ASSETS.monkey && r.length === 4) sz = [r[2], r[3]]; return dimg(im, ...r); };
+      p1.blink = 9999;
+      for (const a of [0, 1.1, 2.2, 3.3, 4.4]) { p1.rollAngle = a; ctx.setTransform(1, 0, 0, 1, 0, 0); rec = true; drawCharacter(p1, camX); rec = false; }
+      delete ctx.rotate; delete ctx.drawImage;
+      const size = Math.max(p1.w, p1.h)*1.55, hgt = size*257/308, hy = size/2 - hgt + HEAD_CENTER.monkey[1]*hgt;
+      return {piv, sz, headY: Math.round(p1.y) - p1.h*0.5 + hy, cw: cvs.width, rect: cvs.getBoundingClientRect().width, rs: RS}; })()""")
+    xs = {round(p[0], 2) for p in r['piv']}; ys = {round(p[1], 2) for p in r['piv']}
+    assert len(xs) == 1 and len(ys) == 1, f'Drehpunkt wandert beim Rollen: {r["piv"]}'
+    assert abs(list(ys)[0] - r['headY']) < 1.5, f'Drehpunkt nicht in der Kopfmitte: {r}'
+    assert r['sz'] and abs(r['sz'][1]/r['sz'][0] - 257/308) < 0.002, f'Figur verzerrt: {r}'
+    assert abs(r['cw'] - min(2560, max(1280, round(r['rect'])))) <= 2 and abs(r['rs'] - r['cw']/1280) < 1e-6, f'Leinwand nicht in Bildschirmauflösung: {r}'
 
 async def main(filter_):
     async with async_playwright() as pw:

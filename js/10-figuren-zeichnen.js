@@ -99,6 +99,18 @@ function drawUmbrella(player, px, py){
   ctx.restore();
 }
 
+// Mitte des runden Kopfes im Figurenbild (Anteil von Breite/Höhe, gemessen an assets/*.png; Ohren nicht mitgerechnet)
+const HEAD_CENTER = {monkey: [153.5/308, 132/257], pig: [153.5/308, 139.5/257]};
+// Oberkante des Bodens direkt unter einer Figur (für den Schatten), null = nichts darunter
+function groundBelow(P){
+  let best = null;
+  for(const s of solids){
+    if(s.gone || s.type === 'fake') continue;
+    if(s.x > P.x + P.w*0.3 || s.x + s.w < P.x - P.w*0.3 || s.y < P.y - 2 || s.y > P.y + 400) continue;
+    if(best === null || s.y < best) best = s.y;
+  }
+  return best;
+}
 function drawCharacter(player, camX){
   if(deathState && player === deathState.victim) return; // verpufft
   // auf ganze Pixel runden: Figur, Boden und Kamera liegen im selben Raster -> kein Zittern gegeneinander
@@ -114,18 +126,22 @@ function drawCharacter(player, camX){
   ctx.save();
   ctx.translate(px, py - player.h*0.5);
 
-  // Schatten nur, wenn der Charakter auf dem Boden steht (nicht beim Springen/Segeln)
-  if(player.grounded){
-    ctx.fillStyle = 'rgba(20,30,15,.22)';
-    ctx.beginPath(); ctx.ellipse(0, player.h*0.5+3, player.w*0.55, 5, 0,0,Math.PI*2); ctx.fill();
+  // weicher Schatten auf dem Boden darunter: wird kleiner und blasser, je höher die Figur ist (auch im Sprung)
+  const gy = groundBelow(player);
+  if(gy !== null){
+    const hgt0 = Math.max(0, gy - player.y), k = Math.max(0, 1 - hgt0/220);
+    if(k > 0){
+      const sy0 = gy - (py - player.h*0.5) - 1, rw = player.w*(0.45 + 0.35*k), a = 0.42*k;
+      const g = ctx.createRadialGradient(0, sy0, 0, 0, sy0, rw);
+      g.addColorStop(0, `rgba(10,18,8,${a})`); g.addColorStop(0.55, `rgba(10,18,8,${a*0.55})`); g.addColorStop(1, 'rgba(10,18,8,0)');
+      ctx.save(); ctx.translate(0, sy0); ctx.scale(1, 0.24); ctx.translate(0, -sy0);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, sy0, rw, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    }
   }
 
-  // sehr leichtes Stauchen/Strecken abhängig von der Vertikalgeschwindigkeit (rein optisch)
-  const squashY = 1 - Math.min(0.05, Math.abs(player.vy)*0.0025);
-  const squashX = 1 + (1-squashY)*0.6;
-  // dazu Landen/Absprung/Atmen (21-figuren-leben.js), an den Füßen verankert
+  // Landen/Absprung kurz stauchen/strecken (21-figuren-leben.js), an den Füßen verankert
   const [lx, ly] = typeof charSquash === 'function' ? charSquash(player) : [1, 1];
-  ctx.translate(0, player.h*0.5); ctx.scale(squashX*lx, squashY*ly); ctx.translate(0, -player.h*0.5);
+  ctx.translate(0, player.h*0.5); ctx.scale(lx, ly); ctx.translate(0, -player.h*0.5);
 
   // Rollrotation abhängig von der zurückgelegten Strecke (wie ein rollender Ball)
   let wob = 0;
@@ -148,19 +164,15 @@ function drawCharacter(player, camX){
   }
   const rollA = (deathState && player === deathState.other ? 0 : (lean || won ? 0 : player.rollAngle)) + wob + lean;
   const size = Math.max(player.w, player.h)*1.55;
-  if(skin){
-    // Kugel-Skin: um die Kugelmitte (4 px unter der Bildmitte) drehen, Gesicht klein darauf
-    const hgt = img && img.naturalWidth ? size * img.naturalHeight / img.naturalWidth : size*0.83;
-    ctx.translate(0, 4); ctx.rotate(rollA);
-    drawSkinBall(ctx, 21, skin, img, size, hgt, size/2 - hgt/2 - 4);
-  } else ctx.rotate(rollA);
-
-  if(skin){ /* schon gezeichnet */ }
+  // im echten Seitenverhältnis des Bildes (308 × 257); gedreht wird genau um die Mitte des runden Kopfes
+  // (HEAD_CENTER, Ohren zählen nicht mit) – so rollt die Kugel rund statt zu eiern
+  const hgt = img && img.naturalWidth ? size * img.naturalHeight / img.naturalWidth : size*0.83;
+  const [fx, fy] = HEAD_CENTER[player.male ? 'monkey' : 'pig'];
+  const hx = -size/2 + fx*size, hy = size/2 - hgt + fy*hgt;
+  ctx.translate(hx, hy); ctx.rotate(rollA);
+  if(skin) drawSkinBall(ctx, 21, skin, img, size, hgt, (0.5 - fy)*hgt);   // Kugel-Skin, Gesicht klein darauf
   else if(img && img.complete && img.naturalWidth){
-    // im echten Seitenverhältnis des Bildes (308 × 257) – früher ins Quadrat gestreckt = 20 % zu hoch;
-    // Unterkante bleibt, wo sie war (Figur sitzt weiter genau auf dem Boden)
-    const hgt = size * img.naturalHeight / img.naturalWidth;
-    ctx.drawImage(img, -size/2, size/2 - hgt, size, hgt);
+    ctx.drawImage(img, -fx*size, -fy*hgt, size, hgt);
   } else {
     ctx.fillStyle = player.male ? colorOf('--p1-accent') : colorOf('--p2-accent');
     ctx.beginPath(); ctx.arc(0,0,size*0.4,0,Math.PI*2); ctx.fill();

@@ -4,7 +4,19 @@
 
 const cvs = document.getElementById('c');
 const ctx = cvs.getContext('2d');
-const W = cvs.width, H = cvs.height;
+const W = 1280, H = 720;   // Spielfeld in Spiel-Pixeln (alles wird in diesen Koordinaten gezeichnet)
+// Scharfes Bild: die Leinwand hat so viele echte Pixel wie auf dem Bildschirm (× Pixeldichte, höchstens 2560 breit)
+// statt 1280×720 hochzuskalieren. draw() setzt dazu am Anfang die Skalierung RS (Spiel-Pixel -> Leinwand-Pixel).
+let RS = 1;
+function fitCanvasRes(){
+  const r = cvs.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const want = Math.max(W, Math.min(2560, Math.round((r.width || W)*dpr)));
+  if(cvs.width !== want){ cvs.width = want; cvs.height = Math.round(want*H/W); }
+  RS = cvs.width / W;
+}
+fitCanvasRes();
+window.addEventListener('resize', fitCanvasRes);
+document.addEventListener('fullscreenchange', () => setTimeout(fitCanvasRes, 50));
 const css = getComputedStyle(document.documentElement);
 const ASSET_SRC = {
   pig: "assets/pig.png",

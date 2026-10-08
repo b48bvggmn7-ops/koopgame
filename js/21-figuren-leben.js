@@ -30,9 +30,9 @@ function fxJump(pl, wall){
 function charSquash(pl){
   const t = performance.now();
   let sx = 1, sy = 1;
-  if(pl._landT){ const k = (t - pl._landT)/200; if(k < 1){ const a = Math.sin(k*Math.PI)*0.2*pl._landV; sy -= a; sx += a*0.9; } }
-  if(pl._jumpT){ const k = (t - pl._jumpT)/180; if(k < 1){ const a = Math.sin(k*Math.PI)*0.14; sy += a; sx -= a*0.6; } }
-  if(pl.grounded && Math.abs(pl.vx) < 0.15){ const b = Math.sin(t*0.0035 + (pl.male ? 0 : 1.7))*0.018; sy += b; sx -= b*0.5; }   // atmen
+  // nur kurz und dezent (Nutzerwunsch: Figuren sollen nicht verzerrt wirken; kein Dauer-Atmen mehr)
+  if(pl._landT){ const k = (t - pl._landT)/200; if(k < 1){ const a = Math.sin(k*Math.PI)*0.12*pl._landV; sy -= a; sx += a*0.9; } }
+  if(pl._jumpT){ const k = (t - pl._jumpT)/180; if(k < 1){ const a = Math.sin(k*Math.PI)*0.07; sy += a; sx -= a*0.6; } }
   return [sx, sy];
 }
 function drawDust(){
