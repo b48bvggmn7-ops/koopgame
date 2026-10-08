@@ -406,15 +406,16 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Affe und Schweinchen haben ihr eigenes Inventar. Gespeichert im Browser (monchichi_cosmetics_v1).
       Gewinner-Animation im Statistik-Bildschirm „Level geschafft“: jede Figurenkarte hat eine Zeile „Packages“
         (darunter „Ziel geschafft“ bzw. „Ziel + alle Münzen“); nach dem Hochzählen von Münzen/Toden regnet Konfetti,
-        je Karte fällt ein kleines Geschenkpaket mit weichem runden Leuchten herein (pulsiert bei jedem Zählschritt), und ein eigener Zähler je Figur zählt
+        je Karte fällt ein kleines oranges Geschenkpaket mit weichem runden Leuchten herein (pulsiert bei jedem Zählschritt), und ein eigener Zähler je Figur zählt
         einzeln hoch (0 → 1 → 2), jeder Schritt mit Aufploppen und aufsteigendem Glockenton.
       Öffnen: freiwillig – im Statistik-Bildschirm Knopf „Packages öffnen (n)“ neben „Weiter“ („Weiter“ ist
         vorausgewählt), oder später in der Levelauswahl über den eigenen Menüpunkt „Packages öffnen“.
         Ungeöffnete bleiben im Inventar.
         Bildschirm geteilt: links Affe, rechts Schweinchen, beide gleichzeitig mit ihrer eigenen Springen-Taste
         (Spieler 1: Leertaste/✕, Spieler 2: Enter/✕), oder Klick auf die Hälfte. Esc/„Fertig“ zurück (nicht mitten im Öffnen).
-        Ablauf „Geschenkpaket“ (Papier in Figurenfarbe – Affe blau, Schweinchen pink – mit Punkten, goldenes Band
-        mit Schleife; früher eine Nuss, die man kaum erkannte): fällt herein → wackelt immer stärker (Klacker-Ticks,
+        Ablauf „Geschenkpaket“ (realistisch, leicht schräg von vorn mit Vorderseite, Seite und Deckel-Oberseite,
+        oranges Papier mit feiner Struktur, dunkelbraunes Satinband mit Schleife, Licht von oben; 1,3× groß; weicher
+        Schatten nur unter dem Paket auf dem Boden – beim Hüpfen bleibt er unten; früher eine Nuss, dann bunte Pakete): fällt herein → wackelt immer stärker (Klacker-Ticks,
         steigender Spannungston), Bandfasern fliegen → das Band spannt sich und franst an der Deckelkante aus, der
         Deckel drückt nach oben, Licht dringt aus dem Spalt (zuletzt in der Farbe der Seltenheit) → Band reißt
         („Schnapp“), Deckel fliegt weg, Band- und Papierfetzen, Funken, Blitz → Figur erscheint mit dem Item → Seltenheit + Name + „Neu!“/„Doppelt ×n“ → „Anlegen“ / „Behalten“.

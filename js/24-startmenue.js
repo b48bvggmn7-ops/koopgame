@@ -218,14 +218,20 @@ const ICON = {
   pack: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="12" rx="2"/><path d="M3.5 12.5h17M12 8.5v12"/><path d="M12 8.5C10.6 5.2 6.8 4.6 6.8 6.9S10.2 8.5 12 8.5zM12 8.5c1.4-3.3 5.2-3.9 5.2-1.6S13.8 8.5 12 8.5z"/></svg>',
   hanger: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5.6a2 2 0 1 1 2 2v1.3"/><path d="M12 8.9 3.3 15.2a1.4 1.4 0 0 0 .8 2.5h15.8a1.4 1.4 0 0 0 .8-2.5L12 8.9z"/></svg>'
 };
-// das Geschenkpaket als kleines Bild (Belohnung im Statistik-Bildschirm), Papier in Figurenfarbe, goldenes Band
-const giftSVG = w => { const p = w === 'm' ? ['#7cc0ff', '#2f78d0', '#1f5aa6'] : ['#ffa8cc', '#d9488a', '#a8326a'];
-  return `<svg class="gift" viewBox="-82 -90 164 175" aria-hidden="true"><defs><linearGradient id="sm-gGift${w}" x1="0" x2="1"><stop offset="0" stop-color="${p[1]}"/><stop offset=".45" stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></linearGradient></defs>
-  <rect x="-66" y="-16" width="132" height="96" rx="8" fill="url(#sm-gGift${w})" stroke="${p[2]}" stroke-width="3"/>
-  <rect x="-11" y="-16" width="22" height="96" fill="#ffd23f"/><rect x="-66" y="26" width="132" height="16" fill="#ffd23f"/>
-  <rect x="-76" y="-42" width="152" height="28" rx="7" fill="${p[0]}" stroke="${p[2]}" stroke-width="3"/><rect x="-11" y="-42" width="22" height="28" fill="#ffd23f"/>
-  <path d="M0 -44C-14 -74 -48 -78 -40 -52C-34 -40 -12 -42 0 -44ZM0 -44C14 -74 48 -78 40 -52C34 -40 12 -42 0 -44Z" fill="#ffd23f" stroke="#c99700" stroke-width="2.5"/>
-  <ellipse cx="0" cy="-47" rx="9" ry="8" fill="#ffd23f" stroke="#c99700" stroke-width="2.5"/></svg>`; };
+// das Geschenkpaket als kleines Bild (Belohnung im Statistik-Bildschirm): oranges Papier, braunes Satinband,
+// leicht schräg von vorn (wie im Packages-Bildschirm, 28-packages.js)
+const giftSVG = () => `<svg class="gift" viewBox="-84 -92 176 186" aria-hidden="true">
+  <ellipse cx="-4" cy="84" rx="86" ry="10" fill="rgba(0,0,0,.35)"/>
+  <polygon points="-66,-16 44,-16 44,80 -66,80" fill="#f58a2c" stroke="#8a3c08" stroke-width="2.5"/>
+  <polygon points="44,-16 66,-26 66,70 44,80" fill="#b8520b" stroke="#8a3c08" stroke-width="2.5"/>
+  <rect x="-22" y="-16" width="22" height="96" fill="#4a2c1c"/><rect x="-66" y="24" width="110" height="16" fill="#4a2c1c"/>
+  <polygon points="44,24 66,14 66,30 44,40" fill="#4a2c1c"/>
+  <polygon points="-74,-42 -52,-52 74,-52 52,-42" fill="#ffb766" stroke="#8a3c08" stroke-width="2.5"/>
+  <polygon points="-74,-42 52,-42 52,-14 -74,-14" fill="#ff9a3c" stroke="#8a3c08" stroke-width="2.5"/>
+  <polygon points="52,-42 74,-52 74,-24 52,-14" fill="#c85a0c" stroke="#8a3c08" stroke-width="2.5"/>
+  <rect x="-22" y="-42" width="22" height="28" fill="#4a2c1c"/><polygon points="-22,-42 0,-52 22,-52 0,-42" fill="#4a2c1c"/>
+  <path d="M0 -47C-12 -75 -44 -77 -38 -53C-32 -43 -12 -45 0 -47ZM0 -47C12 -75 44 -77 38 -53C32 -43 12 -45 0 -47Z" fill="#6a4030" stroke="#2a160c" stroke-width="2"/>
+  <ellipse cx="0" cy="-49" rx="8" ry="7" fill="#4a2c1c" stroke="#2a160c" stroke-width="2"/></svg>`;
 
 /* =====================================================================
    DSCHUNGEL-HINTERGRUND
@@ -808,7 +814,7 @@ S.results = {
         <div class="r-row"><span>Münzen</span><b class="coin" data-to="${c}">0</b>${t ? `<small>/ ${t}</small>` : ''}</div>
         <div class="r-row"><span>Tode</span><b class="death" data-to="${d}">0</b></div>
         ${this.arg.packs ? `<div class="r-row r-pack"><span>Packages<em>${this.arg.packs > 1 ? 'Ziel + alle Münzen' : 'Ziel geschafft'}</em></span>
-          <span class="r-giftbox"><i class="rays"></i>${giftSVG(w)}</span><b class="pack">0</b></div>` : ''}`;
+          <span class="r-giftbox"><i class="rays"></i>${giftSVG()}</span><b class="pack">0</b></div>` : ''}`;
     }
     // Gewinner-Animation: nach dem Hochzählen fallen die Geschenkpakete in die Karten, der Package-Zähler zählt einzeln hoch
     this.el.classList.remove('win'); clearTimeout(this.winT); (this.popT || []).forEach(clearTimeout); this.popT = [];

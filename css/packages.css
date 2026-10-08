@@ -1,10 +1,10 @@
 /* Packages öffnen + Sammlung (js/28-packages.js) – alles unter #sm, Stil wie Startmenü */
 #sm .btn .cnt{display:inline-grid;place-items:center;min-width:2.2cqw;height:2.2cqw;padding:0 .5cqw;margin-left:.4cqw;border-radius:2cqw;
-  background:#ff5fd2;color:#fff;font-size:1.3cqw}
+  background:#ff8a1f;color:#fff;font-size:1.3cqw}
 #sm .ico{width:1em;height:1em;display:inline-block;vertical-align:-.15em}
-#sm .btn.pack{background:linear-gradient(90deg,#ffb52e,#ff7ac8);color:#2a0418;border-color:transparent;display:inline-flex;align-items:center;gap:.6cqw}
-#sm .btn.pack .cnt{background:#2a0418;color:#ffd27a}
-#sm .btn.pack.sel{box-shadow:0 0 2.4cqw rgba(255,122,200,.6)}
+#sm .btn.pack{background:linear-gradient(90deg,#ffb547,#ff7a1a);color:#2a1004;border-color:transparent;display:inline-flex;align-items:center;gap:.6cqw}
+#sm .btn.pack .cnt{background:#2a1004;color:#ffd27a}
+#sm .btn.pack.sel{box-shadow:0 0 2.4cqw rgba(255,140,40,.6)}
 #sm .btn.dim{opacity:.45}
 /* Levelauswahl: zwei eigene Menüpunkte oben rechts (Packages öffnen · Umkleide) */
 #sm .l-coll,#sm .l-pack{position:absolute;top:6.5cqh;width:20cqw;display:flex;align-items:center;gap:1.1cqw;padding:1.3cqh 1.2cqw;
@@ -13,10 +13,10 @@
 #sm .l-coll{right:5cqw} #sm .l-pack{right:25.8cqw}
 #sm .l-coll .ic,#sm .l-pack .ic{position:relative;flex:none;display:grid;place-items:center;width:4.4cqw;height:4.4cqw;border-radius:.9cqw;
   font-size:2.5cqw;color:var(--lime);background:rgba(198,255,61,.1);border:.12cqw solid rgba(198,255,61,.35)}
-#sm .l-pack .ic{color:#ffd27a;background:linear-gradient(135deg,rgba(255,181,46,.25),rgba(255,122,200,.25));border-color:rgba(255,190,120,.6)}
+#sm .l-pack .ic{color:#ffd27a;background:linear-gradient(135deg,rgba(255,181,46,.25),rgba(255,122,26,.25));border-color:rgba(255,190,120,.6)}
 #sm .l-pack:not(.none) .ic{animation:packGlow 2.2s ease-in-out infinite}
 #sm .l-pack .num{position:absolute;right:-.8cqw;top:-.8cqw;min-width:2cqw;height:2cqw;padding:0 .45cqw;border-radius:2cqw;display:grid;place-items:center;
-  font:800 1.15cqw/1 "Manrope",sans-serif;font-style:normal;color:#2a0418;background:linear-gradient(135deg,#ffd27a,#ff7ac8)}
+  font:800 1.15cqw/1 "Manrope",sans-serif;font-style:normal;color:#2a1004;background:linear-gradient(135deg,#ffd27a,#ff8a1f)}
 #sm .l-coll .tx,#sm .l-pack .tx{display:flex;flex-direction:column;gap:.5cqh;min-width:0}
 #sm .l-coll .tx b,#sm .l-pack .tx b{font:800 1.35cqw/1.1 "Manrope",sans-serif;letter-spacing:.01em;white-space:nowrap}
 #sm .l-coll .tx small,#sm .l-pack .tx small{font-size:1.05cqw;color:var(--mute);font-weight:600;white-space:nowrap}
