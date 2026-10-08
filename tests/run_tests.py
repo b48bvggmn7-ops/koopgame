@@ -1726,6 +1726,21 @@ async def figuren_rollen_rund(g):
     assert r['sz'] and abs(r['sz'][1]/r['sz'][0] - 257/308) < 0.002, f'Figur verzerrt: {r}'
     assert abs(r['cw'] - min(2560, max(1280, round(r['rect'])))) <= 2 and abs(r['rs'] - r['cw']/1280) < 1e-6, f'Leinwand nicht in Bildschirmauflösung: {r}'
 
+@test
+async def anzeigen_muenzen_tode(g):
+    """Münz-Anzeige oben links je Figur (blau/pink, gesammelt / vorhanden, Balken), keine Gold-Zählung „x / 10“ mehr und
+    keine Mindest-Münzen fürs Ziel; Tode-Anzeige oben rechts größer (wächst mit dem Bildschirm), mit „TODE“."""
+    coins = [{'x': 400 + i*40, 'y': 640, 'color': 'blue'} for i in range(3)] + [{'x': 600 + i*40, 'y': 640, 'color': 'pink'} for i in range(2)]
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 160, 'y': 680}, coins=coins))
+    await g.ev("coins[0].taken = true; coins[3].taken = true"); await g.p.wait_for_timeout(300)
+    k = await g.ev("""({m: document.getElementById('coinM').textContent, mt: document.getElementById('coinMT').textContent,
+      f: document.getElementById('coinF').textContent, ft: document.getElementById('coinFT').textContent,
+      bar: parseFloat(document.getElementById('coinMBar').style.width), txt: document.getElementById('coinCard').textContent,
+      need: coinsNeeded, h: document.getElementById('duelCard').getBoundingClientRect().height, tode: document.getElementById('duelCard').textContent})""")
+    assert (k['m'], k['mt'], k['f'], k['ft']) == ('1', '/ 3', '1', '/ 2'), f'Münz-Anzeige: {k}'
+    assert 32 < k['bar'] < 35 and '/ 10' not in k['txt'] and k['need'] == 0, f'Gold-Zählung/Pflicht noch da: {k}'
+    assert k['h'] >= 50 and 'TODE' in k['tode'], f'Tode-Anzeige zu klein/ohne Beschriftung: {k}'
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

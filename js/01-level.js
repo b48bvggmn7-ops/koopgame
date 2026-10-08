@@ -15,8 +15,7 @@ let coins = [];          // {x,y,taken,pop}
 let checkpointDefs = []; // {x,y,reachedM,reachedF,raiseT} aus dem Editor, nach x sortiert
 let activeCp = -1;       // Index des zuletzt von BEIDEN erreichten Checkpoints (-1 = Start)
 let deathState = null;   // gesetzt, solange nach einem Tod auf "beliebige Taste" gewartet wird
-let coinsNeeded = 0;     // 10, oder alle, wenn das Level weniger hat
-const COINS_GOAL = 10;
+let coinsNeeded = 0;     // Mindest-Münzen fürs Ziel: 0 (Pflicht auf Nutzerwunsch entfernt)
 let movingPlatforms = [];
 // Neue Elemente (Level 4–6): Druckplatte, Aufwind, Scheinwand, Sprungpilz
 let plates = [];         // {x,y,link,down} Druckplatte: Verknüpfung ist AN, solange jemand draufsteht
@@ -100,7 +99,7 @@ function buildLevel(data){
   coins = (data.coins||[]).map(c=>({x:c.x, y:c.y, color: c.color||'gold', taken:false, pop:0}));
   checkpointDefs = (data.checkpoints||[]).map(c=>({x:c.x, y:c.y, reachedM:false, reachedF:false, raiseT:0}))
                      .sort((a,b)=>a.x-b.x);
-  coinsNeeded = Math.min(COINS_GOAL, coins.length);
+  coinsNeeded = 0;   // keine Mindest-Münzen fürs Ziel mehr (Nutzerwunsch: gemeinsame Gold-Zählung „x / 10“ entfernt)
   movingPlatforms = (data.movingPlatforms||[]).map(m=>({...m}));
   for(const d of (data.doors||[])){
     // Editor liefert den Mittelpunkt des Kästchens -> in obere linke Ecke umrechnen

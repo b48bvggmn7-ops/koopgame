@@ -9,25 +9,18 @@ function updateHUD(){
   document.getElementById('p2w').classList.toggle('on', !!p2.onWall);
   document.getElementById('p2g').classList.toggle('on', p2.grounded);
   document.getElementById('p2s').classList.toggle('on', p2.umbrella > 0.5);
+  // Münzen oben links: je Figur gesammelt / vorhanden + Balken (Affe blau, Schweinchen pink)
   const cc = document.getElementById('coinCard');
-  if(coinsNeeded > 0){
+  if(coins.length){
     cc.style.display = '';
-    const have = coinsCollected();
-    const t = document.getElementById('coinText');
-    const txt = have + ' / ' + coinsNeeded;
-    if(t.textContent !== txt) t.textContent = txt;
-    t.style.color = have >= coinsNeeded ? '#7ee2a0' : '';
-    // Aufteilung nach Farbe (nur wenn es blaue/pinke Münzen gibt)
-    let split = document.getElementById('coinSplit');
-    if(!split){ split = document.createElement('span'); split.id = 'coinSplit'; split.style.cssText = 'font-size:13px; margin-left:12px; opacity:.95;'; cc.appendChild(split); }
-    const cnt = col => { let a=0,b=0; for(const c of coins) if(c.color===col){ b++; if(c.taken) a++; } return [a,b]; };
-    const [bA,bT] = cnt('blue'), [pA,pT] = cnt('pink');
-    const key = bA+'/'+bT+'|'+pA+'/'+pT;
-    if(split.dataset.key !== key){
-      split.dataset.key = key; split.textContent = '';
-      const part = (label, a, t, color) => { if(!t) return; const e = document.createElement('span');
-        e.style.cssText = 'margin-left:8px; color:'+color; e.textContent = '\u25CF ' + label + ' ' + a + '/' + t; split.appendChild(e); };
-      part('Affe', bA, bT, '#74c0fc'); part('Schwein', pA, pT, '#faa2c1');
+    const cnt = col => { let a = 0, b = 0; for(const c of coins) if(c.color === col){ b++; if(c.taken) a++; } return [a, b]; };
+    for(const [w, col] of [['M', 'blue'], ['F', 'pink']]){
+      const [a, t] = cnt(col), key = a + '/' + t, el = document.getElementById('coin' + w);
+      if(el.dataset.key === key) continue;
+      el.dataset.key = key; el.textContent = a;
+      document.getElementById('coin' + w + 'T').textContent = '/ ' + t;
+      document.getElementById('coin' + w + 'Bar').style.width = (t ? a/t*100 : 0) + '%';
+      el.closest('.cc').classList.toggle('full', t > 0 && a >= t);
     }
   } else cc.style.display = 'none';
   if(typeof updateDuelHUD === 'function') updateDuelHUD();   // Duell-Tafel oben rechts (25-duell.js)

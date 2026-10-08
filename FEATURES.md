@@ -63,7 +63,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Sichtbare Weltbreite = VW (für Ausschnitt-/Sichtbarkeitsprüfungen VW statt W benutzen!)
   - Gemeinsame Kamera schaut nach vorn: hintere Figur ~300 px vom linken Rand, vordere mind. 70 px vom rechten
     (CAM_LEFT/CAM_RIGHT) -> man sieht möglichst viel vom Weg; max. Abstand ~1 Bildschirmbreite; Ziel erst geschafft, wenn BEIDE da sind
-  - Im Ziel (beide da, genug Münzen): Affe und Schweinchen tanzen 4,5 s (ohne Hinweis „Beide im Ziel“ – Nutzerwunsch) (im Wechsel
+  - Im Ziel (beide da): Affe und Schweinchen tanzen 4,5 s (ohne Hinweis „Beide im Ziel“ – Nutzerwunsch) (im Wechsel
     hüpfen, wippen, zur Seite schauen, jeder 4. Takt eine Drehung, Herzchen; WIN_DANCE_STEPS in 21-figuren-leben.js),
     Eingaben ruhen solange; danach öffnet sich das Hauptmenü (früher: Hinweis „Drücke R für einen neuen Versuch“)
   - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
@@ -169,8 +169,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Münzen-Aussehen (drawCoin3D): etwas größer (Radius 12,5 statt 11, nur Zeichnung – Einsammel-Bereich
     unverändert), 3D: sichtbare Kante beim Drehen, Lichtverlauf, geprägter Innenring mit Stern, Glanzlicht;
     dunkler Umriss, weicher Schein in Münzfarbe und leichter Schatten -> heben sich vom Dschungel ab
-  - Münzen (data.coins [{x,y}] aus dem Editor): beide sammeln gemeinsam, Zähler als Kästchen oben mittig (HTML-HUD); Ziel zählt erst
-    mit 10 Münzen (oder allen, wenn weniger im Level); am Ziel Hinweis "Noch X Münzen!"; beim Sterben bleiben
+  - Münzen (data.coins [{x,y}] aus dem Editor): blau = Affe, pink = Schweinchen. Keine Mindest-Münzen mehr fürs Ziel
+    (die gemeinsame Gold-Zählung „x / 10“ und der Hinweis „Noch X Münzen!“ wurden auf Nutzerwunsch entfernt).
+    Münz-Anzeige oben links (modern, wächst mit der Bildschirmgröße): dunkle Glas-Karte mit je einer Spalte pro
+    Figur – leuchtende Münze in Figurenfarbe, große Zahl „gesammelt / vorhanden“, Fortschrittsbalken; voll = Zahl grün;
+    beim Einsammeln dreht sich die Münze der passenden Spalte und die Zahl hüpft. Beim Sterben bleiben
     gesammelte Münzen, bei Neustart (R) sind alle wieder da; Aufsammel-Effekt: Münze schnellt hoch/dreht/verpufft,
     Funkelsterne, Lichtring, "+1", Zähler hüpft, kleiner "Bling"-Ton (WebAudio), schnelle Folge = jeweils höherer Ton
   - Bewegte Haken (hook.targetX/targetY/speed/switchLink aus dem Editor): pendeln wie bewegter Boden,
@@ -240,8 +243,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (R = Neustart, Esc / Options = Pause gehen weiter; Level aus Datei laden geht damit nicht mehr per Knopf).
   - Spielansicht aufgeräumt (Nutzerwunsch): Steuerungs-Erklärungen oben links/rechts ausgeblendet (stehen im
     Startmenü unter Optionen), nur der Münz-Zähler bleibt. Spielbild füllt den Bildschirm (16:9, ohne Rand).
-  - Tode-Duell oben rechts (25-duell.js; Nutzerwunsch „wer stirbt öfter?“, modern und schlicht): dunkle Pille mit
-    Affen-Gesicht, Zahl, kleinem Totenkopf, Zahl, Schweinchen-Gesicht. Nur Tode, keine Münzen (die stehen im
+  - Tode-Duell oben rechts (25-duell.js; Nutzerwunsch „wer stirbt öfter?“, größer und moderner): dunkle Glas-Karte,
+    wächst mit der Bildschirmgröße; Gesichter in Farbringen (Affe blau, Schweinchen pink), große Zahlen, in der Mitte
+    Totenkopf mit „TODE“; wer vorne liegt (mehr Tode): Ring und Zahl rot leuchtend. Nur Tode, keine Münzen (die stehen im
     Münz-Zähler oben links). Wer mehr Tode hat: Zahl rot und das Gesicht wird mit jedem Tod Vorsprung größer (+12 % je
     Tod, höchstens +80 %); bei jedem Tod hüpft die Zahl. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu
     geladenes Level beginnt bei 0 (deathCount in 01-level.js; Test tode_zaehler).

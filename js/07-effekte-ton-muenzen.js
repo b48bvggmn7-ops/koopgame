@@ -41,7 +41,7 @@ function coinPickupFx(c){
                  size: 4 + Math.random()*3.5, star: i%2===0, col: c.color==='gold' ? null : pal});
   }
   if(!(typeof SFX !== 'undefined' && SFX.coin(coinCombo, c.x))) playCoinSound(coinCombo);   // gläsernes Klirren (18-sound.js), sonst alter Ton
-  const cc = document.getElementById('coinCard');
+  const cc = document.querySelector('#coinCard .cc.' + (c.color === 'pink' ? 'f' : 'm'));   // Spalte der Münzfarbe hüpft
   if(cc){ cc.classList.remove('bump'); void cc.offsetWidth; cc.classList.add('bump'); }
 }
 // Tonausgabe schon beim ersten Tastendruck/Klick starten (nicht mitten im Spielbild -> kein Ruckler)
