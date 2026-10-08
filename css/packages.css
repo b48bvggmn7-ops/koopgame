@@ -4,8 +4,15 @@
 #sm .btn.pack{background:linear-gradient(90deg,#ffb52e,#ff5fd2);color:#2a0418;border-color:#ffcf3d}
 #sm .btn.pack.sel{box-shadow:0 0 2.4cqw rgba(255,95,210,.7)}
 #sm .btn.dim{opacity:.45}
-#sm .l-coll{position:absolute;right:6cqw;bottom:3.4cqh;font-size:1.6cqw;padding:1cqh 1.6cqw;z-index:4}
-#sm .l-coll .kk{font-size:1.1cqw;color:var(--mute);margin-right:.4cqw}
+#sm .l-coll{position:absolute;right:6cqw;top:22cqh;display:flex;align-items:center;gap:1cqw;padding:1.2cqh 1.8cqw 1.2cqh 1.2cqw;
+  border-radius:1.4cqw;z-index:4;text-align:left;border:.18cqw solid var(--line)}
+#sm .l-coll .ic{font-size:3cqw;line-height:1}
+#sm .l-coll .tx{display:flex;flex-direction:column;gap:.4cqh}
+#sm .l-coll .tx b{font:900 2.6cqw/1 "Big Shoulders Display",sans-serif;text-transform:uppercase;letter-spacing:.02em}
+#sm .l-coll .tx small{font-size:1.15cqw;color:var(--mute);font-weight:700}
+#sm .l-coll .kk{font-size:1cqw;color:var(--mute);font-weight:700;align-self:flex-end}
+#sm .l-coll.sel{background:var(--lime);color:#06210f;border-color:var(--lime)}
+#sm .l-coll.sel .tx small,#sm .l-coll.sel .kk{color:#06210f}
 
 /* --- Packages öffnen --- */
 #sm #sm-s-packs{background:radial-gradient(ellipse at 50% 60%,rgba(10,50,30,.6),rgba(2,10,7,.92))}
@@ -61,7 +68,8 @@
   box-shadow:inset 0 -1.2cqh 2cqh -1cqh color-mix(in srgb,var(--rc) 45%,transparent);transition:transform .12s}
 #sm .co-tile canvas{width:100%;height:auto;display:block}
 #sm .co-tile .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-#sm .co-tile.miss{opacity:.55;border-style:dashed}
+#sm .co-tile.miss{opacity:.7;border-style:dashed}
+#sm .co-tile.miss .nm{color:var(--mute)}
 #sm .co-tile.eq{background:rgba(198,255,61,.14)}
 #sm .co-tile.sel{transform:scale(1.07);box-shadow:0 0 0 .25cqw var(--lime),0 0 1.6cqw var(--rc);z-index:2}
 #sm .co-tile .eqb{position:absolute;top:.5cqh;left:.4cqw;font-size:.9cqw;font-weight:800;padding:.2cqh .5cqw;border-radius:2cqw;background:var(--lime);color:#06210f}

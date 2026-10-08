@@ -1606,16 +1606,26 @@ async def packages_oeffnen(g):
 
 @test
 async def sammlung_ausruesten(g):
-    """Sammlung (Levelauswahl -> E): je Figur besessen / angelegt / fehlt mit Seltenheit; Springen legt an bzw. ab;
+    """Umkleide (Menüpunkt in der Levelauswahl: ▲ + Springen, E oder Klick): je Figur besessen / angelegt / fehlt mit Seltenheit; Springen legt an bzw. ab;
     fehlende Items lassen sich nicht anlegen; E wechselt die Figur; alles bleibt nach Neuladen gespeichert."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await g.ev("cosmeticsReset(); cosmeticsSave.owned.m.trail_bubbles = 2; cosmeticsPersist(); GameMenu.show('levels')")
         await p.wait_for_timeout(500)
-        assert 'Sammlung' in await p.text_content('#sm-l-coll'), 'kein Sammlung-Knopf in der Levelauswahl'
+        assert 'Umkleide' in await p.text_content('#sm-l-coll'), 'kein Menüpunkt Umkleide in der Levelauswahl'
+        await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200)
+        assert await g.ev("document.getElementById('sm-l-coll').classList.contains('sel')"), '▲ wählt die Umkleide nicht aus'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-collection', 'Springen auf „Umkleide“ öffnet sie nicht'
+        # gesperrte Items: mit Namen, grau (kaum Farbe) und Schloss
+        grau = await g.ev("""(() => { const t = [...document.querySelectorAll('#sm-s-collection .co-tile.miss')].find(e => e.textContent.includes('Regenbogen'));
+          const d = t.querySelector('canvas').getContext('2d').getImageData(0, 0, 150, 100).data; let n = 0;
+          for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - d[i+1]) > 20 || Math.abs(d[i+1] - d[i+2]) > 20) n++; return n; })()""")
+        assert grau < 900, f'gesperrtes Item nicht grau: {grau} farbige Pixel'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
         await p.keyboard.press('KeyE'); await p.wait_for_timeout(700)
-        assert await sm_screen(g) == 'sm-s-collection', 'E öffnet die Sammlung nicht'
+        assert await sm_screen(g) == 'sm-s-collection', 'E öffnet die Umkleide nicht'
         k = await g.ev("""({tiles: document.querySelectorAll('#sm-s-collection .co-tile').length, miss: document.querySelectorAll('#sm-s-collection .co-tile.miss').length,
           count: document.querySelector('#sm-s-collection .co-count').textContent, names: [...document.querySelectorAll('#sm-s-collection .co-tile .nm')].map(e => e.textContent)})""")
         assert k['tiles'] == await g.ev("COSMETICS.filter(c => c.slot === 'trail').length") and k['miss'] == k['tiles'] - 1, f'Kacheln: {k}'

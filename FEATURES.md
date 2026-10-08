@@ -418,10 +418,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Gesicht bleibt drauf). Prestige: Saturn, Galaxie, Riesenblase, Inferno, Blitzkugel, Regenbogen (mit Funkeln).
         Alles funktioniert bei voller 360°-Drehung (Test cosmetics_zeichnen_rollfest); Partikel/Begleiter laufen im
         festen Takt (cosmeticsStep in stepSim).
-      Sammlung: Levelauswahl → Knopf „Sammlung“ bzw. E / Num 1 / □ / △. Je Figur (umschalten mit E / Num 1 / □):
-        Zähler „x / 66 gesammelt“, Balken je Seltenheit, Slot-Reiter mit x/y, Kacheln mit Bild (fehlende als „???“
-        mit Rahmen in der Seltenheitsfarbe), „✓ angelegt“, „×n“ bei Duplikaten; Springen legt an bzw. ab; fehlende
-        lassen sich nicht anlegen (Wackeln). Große Vorschau: die Figur rollt mit allen Cosmetics hin und her.
+      Umkleide (früher „Sammlung“): fester Menüpunkt in der Levelauswahl oben rechts (👕 Umkleide, „x / 132 Items
+        gesammelt“ für beide Figuren, 🎁-Zahl bei ungeöffneten Packages). Erreichbar mit ▲ (Punkt leuchtet, dann
+        Springen; ▼/◀/▶ zurück zu den Levelkarten), E / Num 1 / □ / △ oder Klick. Je Figur (umschalten mit E / Num 1 / □):
+        Zähler „x / 66 gesammelt“, Balken je Seltenheit, Slot-Reiter mit x/y, Kacheln mit Bild – auch alle GESPERRTEN
+        Items mit Namen, grau und dunkel mit 🔒 und gestricheltem Rahmen in der Seltenheitsfarbe; „✓ angelegt“, „×n“ bei
+        Duplikaten; Springen legt an bzw. ab; gesperrte lassen sich nicht anlegen (Wackeln).
+        Große Vorschau: die Figur rollt mit allen Cosmetics hin und her.
         Knopf „🎁 Packages öffnen“ von hier aus.
       Tests packages_wahrscheinlichkeiten, packages_duplikate, packages_vergabe, packages_oeffnen, sammlung_ausruesten.
 ```

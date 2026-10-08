@@ -450,8 +450,8 @@ $('.pk-back', PK.el).addEventListener('click', () => { if (!PK.busy()) PK.exit()
 /* =====================================================================
    BILDSCHIRM: SAMMLUNG (besessen / angelegt / fehlt, Seltenheit, Vorschau, Ausrüsten)
    ===================================================================== */
-host.insertBefore(mk(`<section class="screen" id="sm-s-collection" aria-label="Sammlung">
-    <div class="l-title display">Sammlung</div>
+host.insertBefore(mk(`<section class="screen" id="sm-s-collection" aria-label="Umkleide">
+    <div class="l-title display">Umkleide</div>
     <div class="co-left glass">
       <div class="co-chars"><button class="btn" data-w="m" type="button" tabindex="-1"><span class="mini">${charSVG('monkey')}</span>Affe</button><button class="btn" data-w="f" type="button" tabindex="-1"><span class="mini">${charSVG('pig')}</span>Schweinchen</button></div>
       <canvas class="co-cv" width="560" height="420"></canvas>
@@ -472,15 +472,13 @@ const CO_COLS = 6;
 // kleines Bild eines Items (einmal gezeichnet, keine Animation)
 function drawItemIcon(cv, item, who, owned) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
-  if (!owned) {
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(cv.width/2, cv.height/2 + 4, 30, 0, Math.PI*2); c.fill();
-    c.fillStyle = hexA(RARITY[item.rarity].color, 0.7); c.font = '900 40px "Big Shoulders Display", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('?', cv.width/2, cv.height/2 + 6); return;
-  }
   const pv = newPreview(), items = { trail: null, aura: null, pet: null, orbit: null, attach: null, skin: null };
   items[item.slot] = item;
   for (let i = 0; i < 40; i++) { pv.t = 0; pv.x = -40 + i*1.6; pv.vx = 1.6; pv.y = 0; pv.vy = 0; pv.grounded = true; pv.roll += 0.08; cosStep(previewRig(pv), pv.st, who, items); }
+  if (!owned) c.filter = 'grayscale(1) brightness(.55)';   // gesperrt: grau und dunkel, aber erkennbar
   drawPreview(c, cv.width/2 - 6, cv.height - 18, 1.35, who, items, pv);
+  c.filter = 'none';
+  if (!owned) { c.font = '28px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🔒', cv.width - 22, 22); }
 }
 const CO = {
   el: $('#sm-s-collection'), who: 'm', slot: 0, area: 2, idx: 0, ci: 0, raf: 0, last: 0, acc: 0, pv: newPreview(), ret: null,
@@ -506,11 +504,11 @@ const CO = {
     this.list().forEach((it, i) => {
       const own = ownedCount(this.who, it.id), eq = isEquipped(this.who, it.id);
       const t = mk(`<button class="co-tile${own ? '' : ' miss'}${eq ? ' eq' : ''}" type="button" tabindex="-1" style="--rc:${RARITY[it.rarity].color}">
-        <canvas width="150" height="100"></canvas><span class="nm">${own ? it.name : '???'}</span>
+        <canvas width="150" height="100"></canvas><span class="nm">${it.name}</span>
         ${eq ? '<span class="eqb">✓ angelegt</span>' : ''}${own > 1 ? `<span class="dup">×${own}</span>` : ''}</button>`);
-      drawItemIcon($('canvas', t), it, this.who, own);
       t.addEventListener('click', () => { if (this.area === 2 && this.idx === i) this.act('confirm'); else { this.area = 2; this.idx = i; this.paint(); Snd.play('move'); } });
       grid.appendChild(t);
+      drawItemIcon($('canvas', t), it, this.who, own);   // erst im Dokument zeichnen (sonst wirkt der Grau-Filter nicht)
     });
     const have = collectionCount(this.who);
     $('.co-count', this.el).innerHTML = `<b>${have}</b> / ${COSMETICS.length} gesammelt`;
@@ -532,8 +530,8 @@ const CO = {
     if (it) {
       const own = ownedCount(this.who, it.id), eq = isEquipped(this.who, it.id), r = RARITY[it.rarity];
       info.style.setProperty('--rc', r.color);
-      info.innerHTML = `<span class="rar">${r.name}</span><b>${own ? it.name : 'Noch nicht gefunden'}</b>
-        <span class="st">${eq ? '✓ Angelegt – Springen zum Ablegen' : own ? `Im Besitz${own > 1 ? ' (×' + own + ')' : ''} – Springen zum Anlegen` : 'Fehlt noch – vielleicht im nächsten Package!'}</span>`;
+      info.innerHTML = `<span class="rar">${r.name}</span><b>${it.name}</b>
+        <span class="st">${eq ? '✓ Angelegt – Springen zum Ablegen' : own ? `Im Besitz${own > 1 ? ' (×' + own + ')' : ''} – Springen zum Anlegen` : '🔒 Gesperrt – vielleicht im nächsten Package!'}</span>`;
     }
     $('.co-hint', this.el).textContent = 'Pfeile wählen · Springen an-/ablegen · E / Num 1 / □ Figur wechseln · Esc zurück';
   },
@@ -598,5 +596,5 @@ $$('.co-chars .btn', CO.el).forEach(b => b.addEventListener('click', () => CO.se
 $('.co-open', CO.el).addEventListener('click', () => CO.openPacks());
 $('.co-back', CO.el).addEventListener('click', () => CO.act('back'));
 
-window.PackagesUI = { PK, CO, PSFX };   // für Tests
+window.PackagesUI = { PK, CO, PSFX, drawItemIcon };   // für Tests
 })();

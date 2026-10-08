@@ -678,6 +678,7 @@ S.levels = {
   el: $('#sm-s-levels'), idx: 0,
   enter(arg) {
     if (arg !== 'keep') this.idx = clamp(save.unlocked, 1, realCount()) - 1;   // zurück aus der Spielerwahl: Auswahl behalten
+    this.onColl = false;
     const unlock = arg && typeof arg === 'object' && arg.unlock >= 0 ? arg.unlock : -1;   // nach „Level geschafft“
     const box = $('#sm-cards'); box.innerHTML = '';
     CONFIG.levels.forEach((l, i) => {
@@ -696,7 +697,7 @@ S.levels = {
     const cards = $$('#sm-cards .lc');
     cards.forEach((b, i) => {
       const soon = !!CONFIG.levels[i].soon;
-      const locked = soon || i >= save.unlocked, done = save.completed.includes(i + 1), sel = i === this.idx;
+      const locked = soon || i >= save.unlocked, done = save.completed.includes(i + 1), sel = i === this.idx && !this.onColl;
       b.className = 'lc' + (locked ? ' lock' : '') + (soon ? ' soon' : '') + (sel ? ' sel' : '');
       const extra = soon ? '<span class="st">Bald verfügbar</span>'
                   : sel ? (locked ? '<span class="st">Gesperrt</span>' : '<span class="go">Start</span>')
@@ -713,21 +714,35 @@ S.levels = {
     $('#sm-l-hint').textContent = CONFIG.levels[this.idx].soon ? '🌱 Coming soon – an diesem Level wird noch gebaut'
       : this.idx >= save.unlocked
       ? `🔒 Gesperrt – schafft erst Level ${this.idx}`
-      : '◀ ▶ wählen · Springen starten · Esc zurück';
+      : '◀ ▶ wählen · Springen starten · ▲ Umkleide · Esc zurück';
+    if (this.onColl) $('#sm-l-hint').textContent = 'Springen: Umkleide öffnen · ▼ zurück zu den Leveln';
   },
-  // Knopf „Sammlung“ (28-packages.js): ungeöffnete Packages und gesammelte Cosmetics
+  // Menüpunkt „Umkleide“ (28-packages.js): Cosmetics ansehen/anlegen (auch gesperrte), ungeöffnete Packages.
+  // Erreichbar mit ▲ (dann Springen), E / Num 1 / □ / △ oder Klick.
   paintColl() {
     const b = $('#sm-l-coll'); if (typeof cosmeticsSave === 'undefined') { b.style.display = 'none'; return; }
     const n = cosmeticsSave.pending.m + cosmeticsSave.pending.f;
-    b.innerHTML = `<span class="kk">E / □</span> Sammlung${n ? ` <span class="cnt">🎁 ${n}</span>` : ''}`;
+    const have = collectionCount('m') + collectionCount('f'), all = COSMETICS.length*2;
+    b.classList.toggle('sel', !!this.onColl);
+    b.innerHTML = `<span class="ic">👕</span><span class="tx"><b>Umkleide</b><small>${have} / ${all} Items gesammelt</small></span>` +
+      (n ? `<span class="cnt">🎁 ${n}</span>` : '') + `<span class="kk">${this.onColl ? 'Springen' : '▲ / E / □'}</span>`;
   },
+  openColl() { if (!S.collection) return; this.onColl = false; Snd.play('ok'); go('collection', { ret: ['levels', 'keep'] }); },
   select(i) {
     if (i === this.idx) return;
     this.idx = i; this.paint(); Snd.play('move');
   },
   act(type) {
     const n = CONFIG.levels.length;
-    if (type === 'left' || type === 'up') this.select(clamp(this.idx - 1, 0, n - 1));
+    if (this.onColl) {   // Menüpunkt „Umkleide“ ausgewählt
+      if (type === 'confirm' || type === 'swap') this.openColl();
+      else if (type === 'back') { Snd.play('back'); go('menu'); }
+      else if (type !== 'up') { this.onColl = false; this.paintColl(); this.paint(); Snd.play('move'); }
+      return;
+    }
+    if (type === 'up' && S.collection) { this.onColl = true; this.paintColl(); this.paint(); Snd.play('move'); }
+    else if (type === 'open') this.openColl();
+    else if (type === 'left') this.select(clamp(this.idx - 1, 0, n - 1));
     else if (type === 'right' || type === 'down') this.select(clamp(this.idx + 1, 0, n - 1));
     else if (type === 'confirm') {
       if (this.idx >= save.unlocked || CONFIG.levels[this.idx].soon) {
@@ -736,10 +751,10 @@ S.levels = {
       } else { Snd.play('ok'); go('select', { level: this.idx }); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
-    else if (type === 'swap' && S.collection) { Snd.play('ok'); go('collection', { ret: ['levels', 'keep'] }); }
+    else if (type === 'swap' && S.collection) this.act('open');
   }
 };
-$('#sm-l-coll').addEventListener('click', () => S.levels.act('swap'));
+$('#sm-l-coll').addEventListener('click', () => S.levels.act('open'));
 
 /* =====================================================================
    6) TSCHÜSS
