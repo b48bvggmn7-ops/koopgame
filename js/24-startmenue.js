@@ -85,6 +85,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
     <div class="cards" id="sm-cards"></div>
     <div class="lbar"><i id="sm-lbar-i"></i></div>
     <div class="hint" id="sm-l-hint"></div>
+    <button class="btn l-coll glass" id="sm-l-coll" type="button" tabindex="-1"></button>
   </section>
 
   <!-- 6) Tschüss -->
@@ -102,7 +103,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
     <div class="r-level" id="sm-r-level"></div>
     <div class="r-card glass" id="sm-r-m"></div>
     <div class="r-card glass" id="sm-r-f"></div>
-    <div class="foot"><button class="btn primary sel" id="sm-r-go" type="button" tabindex="-1">Weiter</button></div>
+    <div class="foot"><button class="btn pack" id="sm-r-pack" type="button" tabindex="-1"></button><button class="btn primary sel" id="sm-r-go" type="button" tabindex="-1">Weiter</button></div>
   </section>
 
   <div class="modal" id="sm-modal" role="dialog" aria-modal="true">
@@ -688,7 +689,7 @@ S.levels = {
     const done = save.completed.filter(x => x <= realCount()).length, n = realCount();
     $('#sm-l-count').innerHTML = `Fortschritt<br><b>${done} / ${n}</b>`;
     $('#sm-lbar-i').style.width = (done / n * 100) + '%';
-    this.paint(true);
+    this.paint(true); this.paintColl();
     if (unlock >= 0 && $$('#sm-cards .lc')[unlock]) { this.idx = unlock; this.paint(true); unlockAnimation($$('#sm-cards .lc')[unlock], unlock + 1); }
   },
   paint(instant) {
@@ -714,6 +715,12 @@ S.levels = {
       ? `🔒 Gesperrt – schafft erst Level ${this.idx}`
       : '◀ ▶ wählen · Springen starten · Esc zurück';
   },
+  // Knopf „Sammlung“ (28-packages.js): ungeöffnete Packages und gesammelte Cosmetics
+  paintColl() {
+    const b = $('#sm-l-coll'); if (typeof cosmeticsSave === 'undefined') { b.style.display = 'none'; return; }
+    const n = cosmeticsSave.pending.m + cosmeticsSave.pending.f;
+    b.innerHTML = `<span class="kk">E / □</span> Sammlung${n ? ` <span class="cnt">🎁 ${n}</span>` : ''}`;
+  },
   select(i) {
     if (i === this.idx) return;
     this.idx = i; this.paint(); Snd.play('move');
@@ -729,8 +736,10 @@ S.levels = {
       } else { Snd.play('ok'); go('select', { level: this.idx }); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
+    else if (type === 'swap' && S.collection) { Snd.play('ok'); go('collection', { ret: ['levels', 'keep'] }); }
   }
 };
+$('#sm-l-coll').addEventListener('click', () => S.levels.act('swap'));
 
 /* =====================================================================
    6) TSCHÜSS
@@ -757,6 +766,7 @@ S.results = {
     // Zahlen hochzählen
     const t0 = performance.now(), nums = $$('#sm-s-results b[data-to]');
     clearInterval(this.cnt);
+    this.sel = 1; this.paintBtns();   // „Weiter“ vorausgewählt – Packages öffnen ist freiwillig
     this.cnt = setInterval(() => {
       const k = Math.min(1, (performance.now() - t0 - 450) / 900);
       nums.forEach(b => { b.textContent = Math.round(Math.max(0, k) * Number(b.dataset.to)); });
@@ -764,16 +774,31 @@ S.results = {
     }, 30);
   },
   leave() { clearInterval(this.cnt); },
-  act(type) {
-    if (type === 'confirm' || type === 'back') this.next();
+  // Packages (28-packages.js): Knopf „Packages öffnen“ neben „Weiter“ – freiwillig, ungeöffnete bleiben im Inventar
+  packsPending() { return typeof cosmeticsSave === 'undefined' ? 0 : cosmeticsSave.pending.m + cosmeticsSave.pending.f; },
+  paintBtns() {
+    const n = this.packsPending(), pb = $('#sm-r-pack');
+    pb.style.display = n ? '' : 'none';
+    if (!n) this.sel = 1;
+    pb.innerHTML = `🎁 Packages öffnen <span class="cnt">${n}</span>`;
+    pb.classList.toggle('sel', this.sel === 0); $('#sm-r-go').classList.toggle('sel', this.sel === 1);
   },
+  act(type) {
+    if ((type === 'left' || type === 'right' || type === 'up' || type === 'down') && this.packsPending()) {
+      this.sel = 1 - this.sel; this.paintBtns(); Snd.play('move');
+    }
+    else if (type === 'confirm') { if (this.sel === 0 && this.packsPending()) this.packs(); else this.next(); }
+    else if (type === 'back') this.next();
+  },
+  ret() { const fresh = this.arg && this.arg.fresh; return fresh ? { unlock: fresh - 1 } : undefined; },
   next() {
     Snd.play('ok');
-    const fresh = this.arg && this.arg.fresh;
-    go('levels', fresh ? { unlock: fresh - 1 } : undefined);
-  }
+    go('levels', this.ret());
+  },
+  packs() { Snd.play('ok'); go('packs', { ret: ['levels', this.ret()] }); }
 };
 $('#sm-r-go').addEventListener('click', () => S.results.next());
+$('#sm-r-pack').addEventListener('click', () => S.results.packs());
 
 // goldenes Schloss auf der Karte des neu freigeschalteten Levels: wackelt, platzt in Splitter, Karte leuchtet auf
 function unlockAnimation(card, n) {
@@ -806,6 +831,7 @@ const KEYMAP = {
   KeyA: ['left', 'kbd1'], KeyD: ['right', 'kbd1'], KeyW: ['up', 'kbd1'], KeyS: ['down', 'kbd1'],
   Enter: ['confirm', 'kbd2'], NumpadEnter: ['confirm', 'kbd2'], Numpad0: ['confirm', 'kbd2'],
   Space: ['confirm', 'kbd1'], KeyG: ['confirm', 'kbd1'],
+  KeyE: ['swap', 'kbd1'], Numpad1: ['swap', 'kbd2'], Digit1: ['swap', 'kbd2'],   // Sammlung / Figur wechseln (28-packages.js)
   Escape: ['back', 'kbd'], Backspace: ['back', 'kbd']
 };
 const IGNORE = ['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'CapsLock', 'Tab'];
@@ -842,7 +868,8 @@ function poll(t) {
     }
     const btn = (i, type) => { const on = b(i); if (on && !st['b' + i]) { Snd.resume(); dispatch(type, src); } st['b' + i] = on; };
     btn(0, 'confirm'); btn(9, 'confirm'); btn(1, 'back'); btn(8, 'back');
-    [2, 3, 4, 5, 6, 7, 10, 11].forEach(i => btn(i, 'any'));
+    btn(2, 'swap'); btn(3, 'swap');   // □ / △: Sammlung öffnen, Figur wechseln (Titel: wie jede Taste)
+    [4, 5, 6, 7, 10, 11].forEach(i => btn(i, 'any'));
     slot++;
   }
   requestAnimationFrame(poll);
@@ -909,6 +936,8 @@ window.startMenuLevelWon = () => {
   const n = currentLevelNo; currentLevelNo = 0;
   const st = typeof levelStats === 'function' ? levelStats() : null;   // Münzen/Tode dieser Runde (25-duell.js)
   if (n && st) { save.stats = save.stats || {}; save.stats[n] = { m: st.m, f: st.f }; }   // für die Levelkarte merken
+  // Packages: 1 fürs Schaffen, +1 wenn alle Münzen gesammelt – für beide Figuren (26-kosmetik-daten.js)
+  if (n && typeof awardPackages === 'function') awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken));
   if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh }); }
   else showMenuScreen('menu');
 };
@@ -918,5 +947,9 @@ showMainMenu = () => showMenuScreen('menu');          // ersetzt die alten Menü
 showLevelSelect = () => showMenuScreen('levels');
 document.getElementById('loadLevelInput').addEventListener('change', () => { currentLevelNo = 0; hideMenu(); });
 window.GameMenu = { config: CONFIG, completeLevel, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
-                    show: showMenuScreen, levelsReady: () => CONFIG.levels.length > 0 };
+                    show: showMenuScreen, levelsReady: () => CONFIG.levels.length > 0,
+                    // für weitere Menü-Bildschirme (28-packages.js)
+                    ui: { S, go, toast, mk, $, $$, Snd, charSVG, config: CONFIG,
+                          whoOf: src => { const p = srcPlayer(src); return !p ? null : p === lastPlayers.monkey ? 'm' : 'f'; },
+                          playerOf: who => who === 'm' ? lastPlayers.monkey : lastPlayers.pig } };
 })();

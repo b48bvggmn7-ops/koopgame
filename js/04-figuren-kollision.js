@@ -31,6 +31,7 @@ function resetLevel(){
   for(const cp of checkpointDefs){ cp.reachedM = false; cp.reachedF = false; cp.raiseT = 0; }
   nudgeFree(p1); nudgeFree(p2);
   won = false;
+  if(typeof cosResetState === 'function') cosResetState();   // Cosmetics-Spuren/Begleiter neu (27)
   document.getElementById('toast').classList.remove('show');
 }
 

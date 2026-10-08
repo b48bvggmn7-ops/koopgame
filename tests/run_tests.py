@@ -1319,7 +1319,12 @@ async def seil_absprung_wie_schwung(g):
           if(was && !p1.hookAttached && window.__rv===null){ window.__rv=p1.vx; window.__rn=0; }
           else if(window.__rv!==null && ++window.__rn===10) window.__rv10=p1.vx; }; }""")
         if vx0 == 0: await g.p.keyboard.down('KeyD')
-        await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(300)
+        # Zustand setzen und sofort springen (im selben Aufruf) – sonst schwingt die Figur auf langsamen Rechnern
+        # vorher schon ein paar Schritte, und der Abflug-Schwung ist nicht mehr der gesetzte
+        await g.ev(f"""(()=>{{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+180+p1.h*0.6; p1.vx={vx0}; p1.vy=0; p1.grounded=false;
+          p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; p1._px=p1.x; p1._py=p1.y;
+          KEYS.Space = true; KEYS.Space_pressed = true; }})()""")
+        await g.p.wait_for_timeout(120); await g.ev("KEYS.Space = false"); await g.p.wait_for_timeout(200)
         rv, vx = await g.ev("window.__rv"), await g.ev("window.__rv10")   # vx 10 Schritte nach dem Loslassen
         if vx0 == 0:
             await g.p.keyboard.up('KeyD')
@@ -1503,6 +1508,163 @@ async def spieltempo_langsamer(g):
     n_ab_2 = sum(s for _, s in dts[1:])
     assert abs(n_ab_2 - erwartet) <= 3, f'Spieltempo passt nicht zu 0,9: {n_ab_2} Schritte statt {erwartet}'
     assert n > 30, f'Spiel läuft kaum: {n} Schritte in 2 s'
+
+# ---------------------------------------------------------------- Packages & Cosmetics (26/27/28)
+
+@test
+async def packages_wahrscheinlichkeiten(g):
+    """Seltenheiten: Leer 10 %, Gewöhnlich 42 %, Ungewöhnlich 25 %, Selten 13 %, Episch 7 %, Legendär 2,5 %, Prestige 0,5 %."""
+    r = await g.ev("""(() => { const n = 200000, c = {}; for (let i = 0; i < n; i++) { const k = rollRarity(); c[k] = (c[k]||0) + 1; }
+      return Object.fromEntries(Object.entries(c).map(([k, v]) => [k, v/n*100])); })()""")
+    soll = {'empty': 10, 'common': 42, 'uncommon': 25, 'rare': 13, 'epic': 7, 'legendary': 2.5, 'prestige': 0.5}
+    for k, v in soll.items():
+        assert abs(r.get(k, 0) - v) < max(0.35, v*0.06), f'{k}: {r.get(k, 0):.2f} % statt {v} %'
+
+@test
+async def packages_duplikate(g):
+    """Duplikat-Regeln: Legendär/Prestige nie doppelt, Episch/Selten nicht doppelt, solange noch welche fehlen;
+    Gewöhnlich/Ungewöhnlich dürfen doppelt sein. Jedes Package zieht genau 1 vom Inventar der Figur ab."""
+    r = await g.ev("""(() => { cosmeticsReset(); const orig = rollRarity, bad = [];
+      for (const rar of ['prestige', 'legendary', 'epic', 'rare']) {
+        const total = COSMETICS.filter(c => c.rarity === rar).length;
+        for (let i = 0; i < total; i++) { rollRarity = () => rar; cosmeticsSave.pending.m = 1;
+          const res = openPackage('m'); if (res.duplicate) bad.push(rar + ' doppelt bei ' + i); if (res.rarity !== rar) bad.push(rar + ' -> ' + res.rarity); }
+      }
+      // alle legendären/Prestige besessen -> wieder „legendär“ gezogen: kein Duplikat, sondern Ersatz aus fehlenden
+      rollRarity = () => 'legendary'; cosmeticsSave.pending.m = 1; const x = openPackage('m');
+      if (x.duplicate) bad.push('legendär doppelt, obwohl noch etwas fehlt');
+      if (cosmeticsSave.pending.m !== 0) bad.push('Package nicht abgezogen');
+      for (const it of COSMETICS) if ((it.rarity === 'legendary' || it.rarity === 'prestige') && ownedCount('m', it.id) > 1) bad.push(it.id + ' mehrfach');
+      rollRarity = orig; return bad; })()""")
+    assert not r, f'Duplikat-Regeln verletzt: {r}'
+    # komplette Sammlung: nie ein doppeltes Legendär/Prestige, alles irgendwann gefunden
+    r = await g.ev("""(() => { cosmeticsReset(); let n = 0; while (collectionCount('f') < COSMETICS.length && n < 5000) { cosmeticsSave.pending.f = 1; openPackage('f'); n++; }
+      const dup = COSMETICS.filter(c => (c.rarity === 'legendary' || c.rarity === 'prestige') && ownedCount('f', c.id) > 1).map(c => c.id);
+      return {n, voll: collectionCount('f'), dup, m: collectionCount('m')}; })()""")
+    assert r['voll'] == await g.ev('COSMETICS.length') and not r['dup'], f'Sammlung: {r}'
+    assert r['m'] == 0, 'Öffnen beim Schweinchen hat dem Affen etwas gegeben'
+
+@test
+async def packages_vergabe(g):
+    """Pro Level: 1 Package fürs Schaffen, +1 wenn alle Münzen gesammelt – je Figur (beide bekommen ihre eigenen).
+    Am Ende im Statistik-Bildschirm ein Knopf „Packages öffnen“ (freiwillig, „Weiter“ ist vorausgewählt)."""
+    r = await g.ev("""(() => { cosmeticsReset(); awardPackages(false); const a = {...cosmeticsSave.pending}; awardPackages(true);
+      return [a, {...cosmeticsSave.pending}]; })()""")
+    assert r[0] == {'m': 1, 'f': 1} and r[1] == {'m': 3, 'f': 3}, f'Vergabe: {r}'
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await g.ev("cosmeticsReset()")
+        await startmenue_bis_level(g)
+        await g.ev("for (const c of coins) c.taken = false; coins[0].taken = true; winFinish()"); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-results', 'kein Statistik-Bildschirm'
+        assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'nicht alle Münzen -> 1 Package je Figur erwartet'
+        k = await g.ev("({sicht: getComputedStyle(document.getElementById('sm-r-pack')).display !== 'none', text: document.getElementById('sm-r-pack').textContent, weiter: document.getElementById('sm-r-go').classList.contains('sel')})")
+        assert k['sicht'] and '2' in k['text'] and k['weiter'], f'Packages-Knopf: {k}'
+        await p.wait_for_timeout(300); await p.keyboard.press('KeyA'); await p.wait_for_timeout(200); await p.keyboard.press('Space')
+        await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-packs', 'Packages-Knopf öffnet den Öffnen-Bildschirm nicht'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-levels', 'Fertig führt nicht zur Levelauswahl'
+        assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'ungeöffnete Packages müssen im Inventar bleiben'
+    finally:
+        srv.shutdown()
+
+@test
+async def packages_oeffnen(g):
+    """Beide öffnen gleichzeitig: links Affe (Leertaste), rechts Schweinchen (Enter) – unabhängige Ergebnisse.
+    Ablauf: Wackeln mit Spannungston -> Platzen -> Item + Fanfare je Seltenheit -> Anlegen/Behalten. Leer: eigene Animation."""
+    p = g.p
+    await g.ev("""cosmeticsReset(); cosmeticsSave.pending.m = 2; cosmeticsSave.pending.f = 1;
+      window.__force = ['epic', 'empty', 'common']; const o = rollRarity; rollRarity = r => window.__force.length ? window.__force.shift() : o(r);
+      SFX_LOG.length = 0; GameMenu.show('packs', {ret: ['levels']})""")
+    await p.wait_for_timeout(500)
+    await p.keyboard.press('Space'); await p.wait_for_timeout(60); await p.keyboard.press('Enter')
+    ph = await g.ev("[PackagesUI.PK.sides.m.phase, PackagesUI.PK.sides.f.phase]")
+    assert ph == ['shake', 'shake'], f'beide Nüsse sollten gleichzeitig wackeln: {ph}'
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+    assert await sm_screen(g) == 'sm-s-packs', 'Esc während des Öffnens darf nicht abbrechen'
+    await p.wait_for_function("['choose'].includes(PackagesUI.PK.sides.m.phase) && PackagesUI.PK.sides.f.phase === 'emptyChoose'", timeout=12000)
+    log = await g.ev("SFX_LOG.slice()")
+    for s in ('packShake', 'packBurst', 'packFanfare_epic', 'packEmpty'):
+        assert s in log, f'Geräusch {s} fehlt: {log}'
+    info = await g.ev("[document.querySelector('.pk-m .pk-rar').textContent, document.querySelector('.pk-f .pk-name').textContent, PackagesUI.PK.sides.m.res.item.id]")
+    assert info[0] == 'Episch' and info[1] == 'Leer!', f'Anzeige: {info}'
+    await p.keyboard.press('Space'); await p.wait_for_timeout(200)   # Anlegen (vorausgewählt)
+    assert await g.ev(f"isEquipped('m', '{info[2]}')"), 'Anlegen hat das Item nicht angelegt'
+    await p.keyboard.press('Enter'); await p.wait_for_timeout(200)   # Leer: Weiter
+    k = await g.ev("[PackagesUI.PK.sides.m.phase, PackagesUI.PK.sides.f.phase, {...cosmeticsSave.pending}]")
+    assert k == ['idle', 'idle', {'m': 1, 'f': 0}], f'nach der Entscheidung: {k}'
+    # zweites Package Affe: Behalten -> nicht angelegt, aber im Besitz
+    await p.keyboard.press('Space')
+    await p.wait_for_function("PackagesUI.PK.sides.m.phase === 'choose'", timeout=12000)
+    it = await g.ev("PackagesUI.PK.sides.m.res.item.id")
+    await p.keyboard.press('KeyD'); await p.wait_for_timeout(100); await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+    assert await g.ev(f"ownedCount('m', '{it}') >= 1 && !isEquipped('m', '{it}')"), 'Behalten: Item muss im Besitz, aber nicht angelegt sein'
+    await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+    assert await g.ev("PackagesUI.PK.sides.m.phase") == 'idle', 'ohne Packages darf sich nichts öffnen'
+
+@test
+async def sammlung_ausruesten(g):
+    """Sammlung (Levelauswahl -> E): je Figur besessen / angelegt / fehlt mit Seltenheit; Springen legt an bzw. ab;
+    fehlende Items lassen sich nicht anlegen; E wechselt die Figur; alles bleibt nach Neuladen gespeichert."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await g.ev("cosmeticsReset(); cosmeticsSave.owned.m.trail_bubbles = 2; cosmeticsPersist(); GameMenu.show('levels')")
+        await p.wait_for_timeout(500)
+        assert 'Sammlung' in await p.text_content('#sm-l-coll'), 'kein Sammlung-Knopf in der Levelauswahl'
+        await p.keyboard.press('KeyE'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-collection', 'E öffnet die Sammlung nicht'
+        k = await g.ev("""({tiles: document.querySelectorAll('#sm-s-collection .co-tile').length, miss: document.querySelectorAll('#sm-s-collection .co-tile.miss').length,
+          count: document.querySelector('#sm-s-collection .co-count').textContent, names: [...document.querySelectorAll('#sm-s-collection .co-tile .nm')].map(e => e.textContent)})""")
+        assert k['tiles'] == await g.ev("COSMETICS.filter(c => c.slot === 'trail').length") and k['miss'] == k['tiles'] - 1, f'Kacheln: {k}'
+        assert '1' in k['count'] and '66' in k['count'] and 'Blubberblasen' in k['names'], f'Zähler/Namen: {k}'
+        await p.keyboard.press('Space'); await p.wait_for_timeout(200)   # erstes Item (Staubwölkchen) fehlt
+        assert not await g.ev("isEquipped('m', 'trail_dust')"), 'fehlendes Item wurde angelegt'
+        await p.keyboard.press('KeyD'); await p.wait_for_timeout(150); await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+        assert await g.ev("isEquipped('m', 'trail_bubbles')"), 'besessenes Item nicht angelegt'
+        assert await g.ev("document.querySelectorAll('#sm-s-collection .co-tile.eq').length") == 1, 'angelegt-Markierung fehlt'
+        await p.keyboard.press('KeyE'); await p.wait_for_timeout(300)
+        assert await g.ev("PackagesUI.CO.who") == 'f', 'E wechselt nicht zum Schweinchen'
+        await p.reload(); await p.wait_for_timeout(700)
+        assert await g.ev("isEquipped('m', 'trail_bubbles') && ownedCount('m', 'trail_bubbles') === 2"), 'nach Neuladen nicht mehr gespeichert'
+        assert await g.ev("equippedItem('m', 'trail').id") == 'trail_bubbles'
+    finally:
+        srv.shutdown()
+
+@test
+async def cosmetics_zeichnen_rollfest(g):
+    """Jedes Cosmetic wird an beiden Figuren in vielen Drehwinkeln (volle 360°), beim Laufen, Springen und Stehen
+    ohne Fehler gezeichnet; der Kugel-Skin dreht mit, Anhängsel bleiben oben."""
+    lvl = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
+    await g.load(lvl)
+    n = await g.ev("""(() => { let n = 0; for (const it of COSMETICS) { cosmeticsReset(); cosResetState();
+        for (const w of ['m', 'f']) { cosmeticsSave.owned[w][it.id] = 1; equipItem(w, it.id); }
+        for (let i = 0; i < 40; i++) { for (const P of [p1, p2]) { P.rollAngle = i*Math.PI/10; P.vx = Math.sin(i*0.4)*6; P.vy = i % 10 < 5 ? -5 : 3; P.grounded = i % 10 > 7; }
+          cosmeticsStep(); draw(); n++; } }
+      cosmeticsReset(); return n; })()""")
+    assert n == 40 * await g.ev('COSMETICS.length')
+
+@test
+async def cosmetics_kein_vorteil(g):
+    """Cosmetics sind rein optisch: mit allen Slots belegt (Prestige) laufen und springen die Figuren exakt gleich wie ohne."""
+    lvl = level([ground(0, 680, 3000), ground(700, 560, 200)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
+    await g.load(lvl)
+    lauf = """(() => { resetLevel(); for (const k in KEYS) KEYS[k] = false; const out = [];
+      for (let i = 0; i < 240; i++) { KEYS.KeyD = KEYS.ArrowRight = true;
+        if (i === 30 || i === 120) { KEYS.Space = KEYS.Space_pressed = true; KEYS.Numpad0 = KEYS.Numpad0_pressed = true; }
+        if (i === 45 || i === 135) { KEYS.Space = KEYS.Numpad0 = false; }
+        stepSim(performance.now()); out.push([p1.x, p1.y, p2.x, p2.y, p1.vx, p2.vy].map(v => Math.round(v*1000)/1000)); }
+      for (const k in KEYS) KEYS[k] = false; return out; })()"""
+    await g.ev("cosmeticsReset()")
+    ohne = await g.ev(lauf)
+    await g.ev("""for (const id of ['pres_galaxy', 'pres_saturn', 'pres_inferno', 'pres_rainbow', 'att_dragon', 'pet_robot'])
+                    for (const w of ['m', 'f']) { cosmeticsSave.owned[w][id] = 1; equipItem(w, id); }""")
+    mit = await g.ev(lauf)
+    await g.ev("cosmeticsReset()")
+    assert ohne[-1][0] > ohne[0][0] + 100, 'Figuren sind nicht gelaufen'
+    assert ohne == mit, 'Cosmetics verändern die Bewegung!'
 
 async def main(filter_):
     async with async_playwright() as pw:

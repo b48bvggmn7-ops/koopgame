@@ -390,6 +390,40 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Sprungpilz (bouncers {x,y} Fußpunkt): wer darauf landet oder drüberläuft, wird hochgeschleudert
         (BOUNCE_V -17,2 ≈ 5,8 Kästchen; Wandsprung danach wieder möglich), Pilz staucht sich, Quietsch-Ton.
     Tests neue_elemente, editor_neue_werkzeuge.
+  - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
+      Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
+      Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).
+        Affe und Schweinchen haben ihr eigenes Inventar. Gespeichert im Browser (monchichi_cosmetics_v1).
+      Öffnen: freiwillig – im Statistik-Bildschirm „Level geschafft“ Knopf „🎁 Packages öffnen (n)“ neben „Weiter“
+        („Weiter“ ist vorausgewählt), oder später über die Sammlung. Ungeöffnete bleiben im Inventar.
+        Bildschirm geteilt: links Affe, rechts Schweinchen, beide gleichzeitig mit ihrer eigenen Springen-Taste
+        (Spieler 1: Leertaste/✕, Spieler 2: Enter/✕), oder Klick auf die Hälfte. Esc/„Fertig“ zurück (nicht mitten im Öffnen).
+        Ablauf „Wundernuss“ (Nuss mit Schleife in Figurenfarbe): fällt herein → wackelt immer stärker (Klacker-Ticks,
+        steigender Spannungston) → Riss, Licht dringt heraus (zuletzt in der Farbe der Seltenheit) → platzt (Schalen,
+        Funken, Blitz) → Figur erscheint mit dem Item → Seltenheit + Name + „Neu!“/„Doppelt ×n“ → „Anlegen“ / „Behalten“.
+        Je seltener, desto größer: längeres Wackeln, mehr Funken, ab Selten drehende Lichtstrahlen und Sterne,
+        ab Episch Bildschirmwackeln und Akkord, ab Legendär Konfetti-Regen und großer Schriftzug, Prestige mit
+        Regenbogen-Strahlen und schwebendem Chor-Akkord. Leer: Rauchwolke, Deckel klappt nur müde auf, eine Fliege
+        summt heraus, trauriges „Wah-wah-wah-waaah“, kurzer trockener Spruch, Knopf „Weiter“.
+      Seltenheiten: Leer 10 %, Gewöhnlich 42 %, Ungewöhnlich 25 %, Selten 13 %, Episch 7 %, Legendär 2,5 %, Prestige 0,5 %
+        (Farben grau, weiß, grün, blau, lila, gold, pink/Regenbogen).
+      Duplikate: Gewöhnlich/Ungewöhnlich erlaubt (fehlende bevorzugt); Selten/Episch nur, wenn alles dieser Stufe
+        schon da ist (dann lieber ein fehlendes einer tieferen Stufe); Legendär/Prestige nie (dann ein fehlendes
+        Item der nächsttieferen Stufe).
+      66 Items in 6 Slots (je Slot eins angelegt): Roll-Spur (je schneller, desto mehr), Aura, Begleiter (folgt,
+        hüpft beim Springen mit, Leerlauf-Animation; Geist/Fledermaus/Roboter schweben), Kreisende Objekte (seltener =
+        mehr Objekte), Anhängsel (Antenne, Fähnchen, Hasenohren, Propeller, Schwanz, Flügel, Raketenantrieb,
+        Drachenschwanz – bleiben beim Rollen aufrecht oben/hinten), Kugel-Skins (Ei, Fußball, Tennisball, Käse,
+        Basketball, Melone, Wolle, Billard, Kürbis, Disco, Eiswürfel, Planet, Kristallkugel … – rollen komplett mit,
+        Gesicht bleibt drauf). Prestige: Saturn, Galaxie, Riesenblase, Inferno, Blitzkugel, Regenbogen (mit Funkeln).
+        Alles funktioniert bei voller 360°-Drehung (Test cosmetics_zeichnen_rollfest); Partikel/Begleiter laufen im
+        festen Takt (cosmeticsStep in stepSim).
+      Sammlung: Levelauswahl → Knopf „Sammlung“ bzw. E / Num 1 / □ / △. Je Figur (umschalten mit E / Num 1 / □):
+        Zähler „x / 66 gesammelt“, Balken je Seltenheit, Slot-Reiter mit x/y, Kacheln mit Bild (fehlende als „???“
+        mit Rahmen in der Seltenheitsfarbe), „✓ angelegt“, „×n“ bei Duplikaten; Springen legt an bzw. ab; fehlende
+        lassen sich nicht anlegen (Wackeln). Große Vorschau: die Figur rollt mit allen Cosmetics hin und her.
+        Knopf „🎁 Packages öffnen“ von hier aus.
+      Tests packages_wahrscheinlichkeiten, packages_duplikate, packages_vergabe, packages_oeffnen, sammlung_ausruesten.
 ```
 
 ## Level-Editor (editor/)

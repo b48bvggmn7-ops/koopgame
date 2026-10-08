@@ -27,6 +27,7 @@ function stepSim(ts){
   updateSpikes(p1);
   updateSpikes(p2);
   updateBirds();     // nur Deko (17-deko.js)
+  if(typeof cosmeticsStep === 'function') cosmeticsStep();   // Cosmetics-Partikel/Begleiter (27), rein optisch
   sfxObserve();      // Geräusche zu Sprung/Landung/… (18-sound.js), ändert nichts am Spiel
   if(!won && p1.atGoal && p2.atGoal && coinsCollected() >= coinsNeeded){
     won = true; winSteps = 0; winT0 = performance.now();

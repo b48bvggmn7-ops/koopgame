@@ -107,6 +107,9 @@ function drawCharacter(player, camX){
   const blinking = player.blink < 130;
   const img = player.male ? (blinking ? ASSETS.monkeyBlink : ASSETS.monkey)
                           : (blinking ? ASSETS.pigBlink : ASSETS.pig); // Spielerin 2 = pinkes Schweinchen
+  // Cosmetics hinter der Figur (Spur, Begleiter, Aura, kreisende Objekte, Anhängsel) – 27-kosmetik-zeichnen.js
+  const skin = typeof cosSkinOf === 'function' ? cosSkinOf(player) : null;
+  if(typeof cosmeticsDrawBack === 'function') cosmeticsDrawBack(player, camX);
 
   ctx.save();
   ctx.translate(px, py - player.h*0.5);
@@ -143,10 +146,17 @@ function drawCharacter(player, camX){
     const d = danceMove(player);
     ctx.translate(0, d.dy); ctx.rotate(d.rot); ctx.scale(d.sx, d.sy);
   }
-  ctx.rotate((deathState && player === deathState.other ? 0 : (lean || won ? 0 : player.rollAngle)) + wob + lean);
-
+  const rollA = (deathState && player === deathState.other ? 0 : (lean || won ? 0 : player.rollAngle)) + wob + lean;
   const size = Math.max(player.w, player.h)*1.55;
-  if(img && img.complete && img.naturalWidth){
+  if(skin){
+    // Kugel-Skin: um die Kugelmitte (4 px unter der Bildmitte) drehen, Gesicht klein darauf
+    const hgt = img && img.naturalWidth ? size * img.naturalHeight / img.naturalWidth : size*0.83;
+    ctx.translate(0, 4); ctx.rotate(rollA);
+    drawSkinBall(ctx, 21, skin, img, size, hgt, size/2 - hgt/2 - 4);
+  } else ctx.rotate(rollA);
+
+  if(skin){ /* schon gezeichnet */ }
+  else if(img && img.complete && img.naturalWidth){
     // im echten Seitenverhältnis des Bildes (308 × 257) – früher ins Quadrat gestreckt = 20 % zu hoch;
     // Unterkante bleibt, wo sie war (Figur sitzt weiter genau auf dem Boden)
     const hgt = size * img.naturalHeight / img.naturalWidth;
@@ -156,6 +166,7 @@ function drawCharacter(player, camX){
     ctx.beginPath(); ctx.arc(0,0,size*0.4,0,Math.PI*2); ctx.fill();
   }
   ctx.restore();
+  if(typeof cosmeticsDrawFront === 'function') cosmeticsDrawFront(player, camX);
 
   if(player.male && player.hookAttached){
     // gedehntes Seil: wird dünner, färbt sich orange-rot und zittert
