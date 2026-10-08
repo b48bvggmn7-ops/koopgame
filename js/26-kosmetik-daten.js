@@ -6,7 +6,7 @@
 // Rein kosmetisch: nichts hier verändert Tempo, Sprünge, Kollision, Münzen oder Levelmechanik.
 // Jede Figur (m = Affe, f = Schweinchen) hat eigene Packages, eigene Items und eigene Ausrüstung.
 // Alle Items sind für rollende Kugeln gedacht: Spuren hinter der Kugel, Auren um sie herum, Begleiter, kreisende
-// Objekte, Anhängsel (bleiben aufrecht, die Kugel rollt darunter weg) und Kugel-Skins (rollen komplett mit).
+// Objekte und Kugel-Skins (rollen komplett mit). (Anhängsel wurden auf Nutzerwunsch entfernt.)
 
 const RARITIES = [
   {id:'empty',     name:'Leer',      chance:0.10,  color:'#9aa3ab', glow:'rgba(180,190,200,.5)'},
@@ -23,12 +23,11 @@ const SLOTS = [
   {id:'aura',   name:'Aura'},
   {id:'pet',    name:'Begleiter'},
   {id:'orbit',  name:'Kreisende Objekte'},
-  {id:'attach', name:'Anhängsel'},
   {id:'skin',   name:'Kugel-Skin'},
 ];
 // Katalog: id, Name, Slot, Seltenheit, Darstellung (fx) – die Darstellung steckt in 27-kosmetik-zeichnen.js
 const COSMETICS = [
-  // ---- Gewöhnlich: einfache Spuren, sanfte Auren, einfache Skins, kleine Anhängsel ----
+  // ---- Gewöhnlich: einfache Spuren, sanfte Auren, einfache Skins ----
   {id:'trail_dust',     name:'Staubwölkchen',    slot:'trail',  rarity:'common',   fx:{kind:'puff',   cols:['#d8cbb5','#bfb39d']}},
   {id:'trail_bubbles',  name:'Blubberblasen',    slot:'trail',  rarity:'common',   fx:{kind:'bubble', cols:['#bfe9ff','#e6f7ff']}},
   {id:'trail_leaves',   name:'Blätterspur',      slot:'trail',  rarity:'common',   fx:{kind:'leaf',   cols:['#7cc36b','#a7d86d','#5aa04f']}},
@@ -38,11 +37,8 @@ const COSMETICS = [
   {id:'skin_football',  name:'Fußball',          slot:'skin',   rarity:'common',   fx:{kind:'football'}},
   {id:'skin_tennis',    name:'Tennisball',       slot:'skin',   rarity:'common',   fx:{kind:'tennis'}},
   {id:'skin_cheese',    name:'Käserad',          slot:'skin',   rarity:'common',   fx:{kind:'cheese'}},
-  {id:'att_antenna',    name:'Antenne',          slot:'attach', rarity:'common',   fx:{kind:'antenna'}},
-  {id:'att_flag',       name:'Fähnchen',         slot:'attach', rarity:'common',   fx:{kind:'flag'}},
-  {id:'att_bunny',      name:'Hasenohren',       slot:'attach', rarity:'common',   fx:{kind:'ears'}},
   {id:'orbit_leaf',     name:'Kreisendes Blatt', slot:'orbit',  rarity:'common',   fx:{kind:'leaf',   n:1}},
-  // ---- Ungewöhnlich: besondere Spuren, kleine Begleiter, besondere Anhängsel ----
+  // ---- Ungewöhnlich: besondere Spuren, kleine Begleiter ----
   {id:'trail_hearts',   name:'Herzchenspur',     slot:'trail',  rarity:'uncommon', fx:{kind:'heart',  cols:['#ff6f9f','#ff9fc0']}},
   {id:'trail_stars',    name:'Sternchenspur',    slot:'trail',  rarity:'uncommon', fx:{kind:'star',   cols:['#fff27a','#ffd23f']}},
   {id:'trail_slime',    name:'Schleimspur',      slot:'trail',  rarity:'uncommon', fx:{kind:'slime',  cols:['#8be36a','#5cc23f']}},
@@ -50,8 +46,6 @@ const COSMETICS = [
   {id:'pet_snail',      name:'Schnecke',         slot:'pet',    rarity:'uncommon', fx:{kind:'snail'}},
   {id:'pet_chick',      name:'Küken',            slot:'pet',    rarity:'uncommon', fx:{kind:'chick'}},
   {id:'pet_mouse',      name:'Maus',             slot:'pet',    rarity:'uncommon', fx:{kind:'mouse'}},
-  {id:'att_propeller',  name:'Propeller',        slot:'attach', rarity:'uncommon', fx:{kind:'propeller'}},
-  {id:'att_tail',       name:'Puschelschwanz',   slot:'attach', rarity:'uncommon', fx:{kind:'tail', col:'#f3e1c4'}},
   {id:'skin_basketball',name:'Basketball',       slot:'skin',   rarity:'uncommon', fx:{kind:'basketball'}},
   {id:'skin_melon',     name:'Wassermelone',     slot:'skin',   rarity:'uncommon', fx:{kind:'melon'}},
   {id:'skin_yarn',      name:'Wollknäuel',       slot:'skin',   rarity:'uncommon', fx:{kind:'yarn'}},
@@ -80,8 +74,6 @@ const COSMETICS = [
   {id:'pet_bat',        name:'Fledermaus',       slot:'pet',    rarity:'epic',     fx:{kind:'bat'}},
   {id:'orbit_crystals', name:'Kristallkranz',    slot:'orbit',  rarity:'epic',     fx:{kind:'crystal',n:4}},
   {id:'orbit_runes',    name:'Magische Runen',   slot:'orbit',  rarity:'epic',     fx:{kind:'rune',   n:4}},
-  {id:'att_wings',      name:'Flügelchen',       slot:'attach', rarity:'epic',     fx:{kind:'wings'}},
-  {id:'att_rocket',     name:'Raketenantrieb',   slot:'attach', rarity:'epic',     fx:{kind:'rocket'}},
   {id:'skin_disco',     name:'Discokugel',       slot:'skin',   rarity:'epic',     fx:{kind:'disco'}},
   {id:'skin_icecube',   name:'Eiswürfel',        slot:'skin',   rarity:'epic',     fx:{kind:'icecube'}},
   // ---- Legendär: sehr auffällige Formen, starke Effekte ----
@@ -90,7 +82,6 @@ const COSMETICS = [
   {id:'pet_robot',      name:'Mini-Roboter',     slot:'pet',    rarity:'legendary',fx:{kind:'robot'}},
   {id:'pet_mini',       name:'Mini-Ich',         slot:'pet',    rarity:'legendary',fx:{kind:'mini'}},
   {id:'orbit_planets',  name:'Mini-Planeten',    slot:'orbit',  rarity:'legendary',fx:{kind:'planet', n:3}},
-  {id:'att_dragon',     name:'Drachenschwanz',   slot:'attach', rarity:'legendary',fx:{kind:'dragon'}},
   {id:'skin_planet',    name:'Planet',           slot:'skin',   rarity:'legendary',fx:{kind:'planet'}},
   {id:'skin_crystalball',name:'Kristallkugel',   slot:'skin',   rarity:'legendary',fx:{kind:'crystalball'}},
   // ---- Prestige: eigene visuelle Identität ----

@@ -102,6 +102,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
   <section class="screen" id="sm-s-results" aria-label="Level geschafft">
     <div class="l-title display grad">Level geschafft</div>
     <div class="r-level" id="sm-r-level"></div>
+    <div class="r-conf" id="sm-r-conf"></div>
     <div class="r-card glass" id="sm-r-m"></div>
     <div class="r-card glass" id="sm-r-f"></div>
     <div class="foot"><button class="btn pack" id="sm-r-pack" type="button" tabindex="-1"></button><button class="btn primary sel" id="sm-r-go" type="button" tabindex="-1">Weiter</button></div>
@@ -212,6 +213,16 @@ function pigSVG() {
 </svg>`;
 }
 const charSVG = k => (k === 'monkey' ? monkeySVG() : pigSVG());
+// schlichte Linien-Icons (statt Emojis) für Packages / Umkleide
+const ICON = {
+  pack: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="12" rx="2"/><path d="M3.5 12.5h17M12 8.5v12"/><path d="M12 8.5C10.6 5.2 6.8 4.6 6.8 6.9S10.2 8.5 12 8.5zM12 8.5c1.4-3.3 5.2-3.9 5.2-1.6S13.8 8.5 12 8.5z"/></svg>',
+  hanger: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5.6a2 2 0 1 1 2 2v1.3"/><path d="M12 8.9 3.3 15.2a1.4 1.4 0 0 0 .8 2.5h15.8a1.4 1.4 0 0 0 .8-2.5L12 8.9z"/></svg>'
+};
+// die „Wundernuss“ als kleines Bild (Belohnung im Statistik-Bildschirm)
+const nutSVG = col => `<svg class="nut" viewBox="-80 -110 160 200" aria-hidden="true"><defs><radialGradient id="sm-gNut" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#c48a52"/><stop offset=".55" stop-color="#8a5528"/><stop offset="1" stop-color="#4a2a10"/></radialGradient></defs>
+  <ellipse cx="0" cy="0" rx="70" ry="82" fill="url(#sm-gNut)" stroke="#2a1404" stroke-width="4"/><rect x="-10" y="-82" width="20" height="164" fill="${col}"/>
+  <path d="M-96 0l16 8 16-8 16 8 16-8 16 8 16-8 16 8 16-8 16 8 16-8" transform="scale(.72)" fill="none" stroke="rgba(30,12,2,.55)" stroke-width="5"/>
+  <ellipse cx="-18" cy="-92" rx="20" ry="12" transform="rotate(-25 -18 -92)" fill="${col}"/><ellipse cx="18" cy="-92" rx="20" ry="12" transform="rotate(25 18 -92)" fill="${col}"/><circle cx="0" cy="-86" r="9" fill="${col}"/></svg>`;
 
 /* =====================================================================
    DSCHUNGEL-HINTERGRUND
@@ -689,7 +700,7 @@ S.levels = {
     });
     box.appendChild(mk(`<div class="pair nt" id="sm-pair">${monkeySVG()}${pigSVG()}</div>`));
     const done = save.completed.filter(x => x <= realCount()).length, n = realCount();
-    $('#sm-l-count').innerHTML = `Fortschritt<br><b>${done} / ${n}</b>`;
+    $('#sm-l-count').innerHTML = `Fortschritt<b>${done} / ${n}</b>`;
     $('#sm-lbar-i').style.width = (done / n * 100) + '%';
     this.paint(true); this.paintColl();
     if (unlock >= 0 && $$('#sm-cards .lc')[unlock]) { this.idx = unlock; this.paint(true); unlockAnimation($$('#sm-cards .lc')[unlock], unlock + 1); }
@@ -712,13 +723,13 @@ S.levels = {
     pair.style.left = (sel.offsetLeft + sel.offsetWidth / 2) + 'px';
     pair.style.top = sel.offsetTop + 'px';
     if (instant) requestAnimationFrame(() => requestAnimationFrame(() => pair.classList.remove('nt')));
-    $('#sm-l-hint').textContent = CONFIG.levels[this.idx].soon ? '🌱 Coming soon – an diesem Level wird noch gebaut'
+    $('#sm-l-hint').textContent = CONFIG.levels[this.idx].soon ? 'Coming soon – an diesem Level wird noch gebaut'
       : this.idx >= save.unlocked
-      ? `🔒 Gesperrt – schafft erst Level ${this.idx}`
-      : '◀ ▶ wählen · Springen starten · ▲ Packages & Umkleide · Esc zurück';
+      ? `Gesperrt – schafft erst Level ${this.idx}`
+      : '◀ ▶ wählen · Springen starten · ▲ Packages / Umkleide · Esc zurück';
     if (this.top) $('#sm-l-hint').textContent = `◀ ▶ wählen · Springen: ${this.top === 'pack' ? 'Packages öffnen' : 'Umkleide öffnen'} · ▼ zurück zu den Leveln`;
   },
-  // Menüpunkte oben rechts (28-packages.js): „🎁 X Packages öffnen“ und „👕 Umkleide“ (nur Ausrüsten, auch gesperrte zu sehen).
+  // Menüpunkte oben rechts (28-packages.js): „Packages öffnen“ und „Umkleide“ (nur Ausrüsten, auch gesperrte zu sehen).
   // ▲ springt in diese Reihe (zuerst Packages), ◀ ▶ wechselt, Springen öffnet, ▼ zurück zu den Levelkarten.
   // Direkt: E / Num 1 / □ / △ = Umkleide; Klick geht auch.
   paintColl() {
@@ -728,14 +739,14 @@ S.levels = {
     const have = collectionCount('m') + collectionCount('f'), all = COSMETICS.length*2;
     b.classList.toggle('sel', this.top === 'coll'); pb.classList.toggle('sel', this.top === 'pack');
     pb.classList.toggle('none', !n);
-    pb.innerHTML = `<span class="ic">🎁</span><span class="tx"><b>${n} Packages öffnen</b><small>Affe ${cosmeticsSave.pending.m} · Schweinchen ${cosmeticsSave.pending.f}</small></span>`;
-    b.innerHTML = `<span class="ic">👕</span><span class="tx"><b>Umkleide</b><small>${have} / ${all} Items gesammelt</small></span>`;
+    pb.innerHTML = `<span class="ic">${ICON.pack}${n ? `<i class="num">${n}</i>` : ''}</span><span class="tx"><b>Packages öffnen</b><small>Affe ${cosmeticsSave.pending.m} · Schweinchen ${cosmeticsSave.pending.f}</small></span>`;
+    b.innerHTML = `<span class="ic">${ICON.hanger}</span><span class="tx"><b>Umkleide</b><small>${have} / ${all} Items gesammelt</small></span>`;
   },
   openColl() { if (!S.collection) return; this.top = ''; Snd.play('ok'); go('collection', { ret: ['levels', 'keep'] }); },
   openPacks() {
     if (!S.packs) return;
     if (!(cosmeticsSave.pending.m + cosmeticsSave.pending.f)) {
-      Snd.play('locked'); toast('Keine Packages – schafft ein Level!');
+      Snd.play('locked'); toast('Keine Packages – schafft ein Level');
       const pb = $('#sm-l-pack'); pb.classList.remove('shake'); void pb.offsetWidth; pb.classList.add('shake'); return;
     }
     this.top = ''; Snd.play('ok'); go('packs', { ret: ['levels', 'keep'] });
@@ -788,14 +799,17 @@ S.results = {
     for (const w of ['m', 'f']) {
       const c = w === 'm' ? st.cm : st.cf, t = w === 'm' ? st.tm : st.tf, d = w === 'm' ? st.m : st.f;
       const badges = (moreCoins === w ? '<span class="rb coin">Mehr Münzen</span>' : '') + (moreDeaths === w ? '<span class="rb death">Mehr Tode</span>' : '');
-      // neu gewonnene Packages dieser Figur (1 fürs Ziel, +1 für alle Münzen)
-      const pk = this.arg.packs ? `<span class="rb pack" title="${this.arg.packs > 1 ? 'Ziel + alle Münzen' : 'Ziel geschafft'}">🎁 +${this.arg.packs} Package${this.arg.packs > 1 ? 's' : ''}</span>` : '';
       $('#sm-r-' + w).innerHTML = `<div class="r-face">${charSVG(w === 'm' ? 'monkey' : 'pig')}</div>
         <div class="r-name">${w === 'm' ? CONFIG.characters.monkey.name : CONFIG.characters.pig.name}</div>
-        <div class="r-badges">${pk}${badges}</div>
+        <div class="r-badges">${badges}</div>
         <div class="r-row"><span>Münzen</span><b class="coin" data-to="${c}">0</b>${t ? `<small>/ ${t}</small>` : ''}</div>
-        <div class="r-row"><span>Tode</span><b class="death" data-to="${d}">0</b></div>`;
+        <div class="r-row"><span>Tode</span><b class="death" data-to="${d}">0</b></div>
+        ${this.arg.packs ? `<div class="r-row r-pack"><span>Packages<em>${this.arg.packs > 1 ? 'Ziel + alle Münzen' : 'Ziel geschafft'}</em></span>
+          <span class="r-nutbox"><i class="rays"></i>${nutSVG(w === 'm' ? '#f6a93b' : '#ff86b4')}</span><b class="pack">0</b></div>` : ''}`;
     }
+    // Gewinner-Animation: nach dem Hochzählen fallen die Nüsse in die Karten, der Package-Zähler zählt einzeln hoch
+    this.el.classList.remove('win'); clearTimeout(this.winT); (this.popT || []).forEach(clearTimeout); this.popT = [];
+    if (this.arg.packs) this.winT = setTimeout(() => this.reward(this.arg.packs), 1500);
     // Zahlen hochzählen
     const t0 = performance.now(), nums = $$('#sm-s-results b[data-to]');
     clearInterval(this.cnt);
@@ -806,14 +820,26 @@ S.results = {
       if (k >= 1) clearInterval(this.cnt);
     }, 30);
   },
-  leave() { clearInterval(this.cnt); },
+  leave() { clearInterval(this.cnt); clearTimeout(this.winT); (this.popT || []).forEach(clearTimeout); this.el.classList.remove('win'); },
+  reward(n) {
+    const conf = $('#sm-r-conf');
+    conf.innerHTML = Array.from({ length: 46 }, (_, i) => `<i style="--x:${(i*37) % 100}cqw;--d:${1.6 + (i % 7)*0.18}s;--dl:${(i % 9)*0.06}s;--r:${(i*53) % 360}deg;--c:${['#ffb52e', '#ffe28a', '#c6ff3d', '#ff86b4', '#f6a93b', '#ffffff'][i % 6]}"></i>`).join('');
+    this.el.classList.add('win');
+    if (typeof sTone === 'function') { sTone(523, 0, 0.2, { type: 'triangle', vol: 0.06*VOL.sfx }); sTone(784, 0.08, 0.3, { type: 'triangle', vol: 0.06*VOL.sfx }); }
+    for (let i = 1; i <= n; i++) this.popT.push(setTimeout(() => {
+      $$('#sm-s-results .r-pack b.pack').forEach(b => { b.textContent = i; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
+      $$('#sm-s-results .r-nutbox').forEach(x => { x.classList.remove('hit'); void x.offsetWidth; x.classList.add('hit'); });
+      if (typeof sTone === 'function') { const f = 660*Math.pow(2, (i - 1)*4/12); sTone(f, 0, 0.25, { type: 'triangle', vol: 0.07*VOL.sfx }); sTone(f*2, 0.03, 0.2, { vol: 0.03*VOL.sfx }); }
+      if (typeof sfxLog === 'function') sfxLog('packCount');
+    }, 500 + (i - 1)*600));
+  },
   // Packages (28-packages.js): Knopf „Packages öffnen“ neben „Weiter“ – freiwillig, ungeöffnete bleiben im Inventar
   packsPending() { return typeof cosmeticsSave === 'undefined' ? 0 : cosmeticsSave.pending.m + cosmeticsSave.pending.f; },
   paintBtns() {
     const n = this.packsPending(), pb = $('#sm-r-pack');
     pb.style.display = n ? '' : 'none';
     if (!n) this.sel = 1;
-    pb.innerHTML = `🎁 Packages öffnen <span class="cnt">${n}</span>`;
+    pb.innerHTML = `${ICON.pack}Packages öffnen <span class="cnt">${n}</span>`;
     pb.classList.toggle('sel', this.sel === 0); $('#sm-r-go').classList.toggle('sel', this.sel === 1);
   },
   act(type) {
@@ -982,7 +1008,7 @@ document.getElementById('loadLevelInput').addEventListener('change', () => { cur
 window.GameMenu = { config: CONFIG, completeLevel, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
                     show: showMenuScreen, levelsReady: () => CONFIG.levels.length > 0,
                     // für weitere Menü-Bildschirme (28-packages.js)
-                    ui: { S, go, toast, mk, $, $$, Snd, charSVG, config: CONFIG,
+                    ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, nutSVG, config: CONFIG,
                           whoOf: src => { const p = srcPlayer(src); return !p ? null : p === lastPlayers.monkey ? 'm' : 'f'; },
                           playerOf: who => who === 'm' ? lastPlayers.monkey : lastPlayers.pig } };
 })();

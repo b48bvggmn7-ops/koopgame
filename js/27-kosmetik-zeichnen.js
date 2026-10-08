@@ -8,8 +8,8 @@
 // Begleiter. Er wird NUR im festen Takt (cosmeticsStep aus stepSim bzw. 60×/s in der Vorschau) verändert –
 // beim Zeichnen nichts, damit 120/144-Hz-Bildschirme nicht schneller sind.
 // Regel für jedes Item: es muss auch funktionieren, wenn sich die Kugel dauernd um 360° dreht. Deshalb:
-//   Spuren/Auren/Begleiter/kreisende Objekte drehen sich nicht mit; Anhängsel bleiben aufrecht oben/hinten an der
-//   Kugel (die Kugel rollt darunter weg, wie ein Hut auf einem Hamsterball); Skins rollen komplett mit.
+//   Spuren/Auren/Begleiter/kreisende Objekte drehen sich nicht mit;
+//   Skins rollen komplett mit.
 
 const COS_STATE = {m: cosNewState(), f: cosNewState()};
 function cosNewState(){ return {parts:[], hist:[], pet:null, tick:0, sparks:[]}; }
@@ -299,91 +299,6 @@ function drawSaturn(c, x, y, r, layer, t){
   c.restore();
 }
 
-// ===== Anhängsel (bleiben aufrecht; die Kugel rollt darunter) =====
-function drawAttach(c, rig, st, item, layer, ox){
-  if(!item) return;
-  const k = item.fx.kind, x = rig.x - (ox || 0), y = rig.y, r = rig.r, t = performance.now();
-  const sway = Math.max(-1, Math.min(1, -rig.vx/5)), dir = rig.vx ? -Math.sign(rig.vx) : -rig.facing;
-  c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
-  if(layer === 'front'){
-    if(k === 'antenna'){
-      const tipX = x + sway*7 + Math.sin(t*0.01)*1.5, tipY = y - r - 15;
-      c.strokeStyle = '#3a3f47'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(x, y - r + 2); c.quadraticCurveTo(x + sway*3, y - r - 8, tipX, tipY); c.stroke();
-      glowCircle(c, tipX, tipY, 0, 4.5, '#ff6b6b', '#c22a2a');
-    }
-    if(k === 'flag'){
-      const px0 = x + rig.facing*-4, top = y - r - 18;
-      c.strokeStyle = '#6b4a2a'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(px0, y - r + 3); c.lineTo(px0, top); c.stroke();
-      const w = Math.sin(t*0.012)*2;
-      c.fillStyle = '#ff5c6c'; c.beginPath(); c.moveTo(px0, top); c.quadraticCurveTo(px0 + dir*7, top + 2 + w, px0 + dir*13, top + 3 + w); c.lineTo(px0, top + 8); c.closePath(); c.fill();
-    }
-    if(k === 'ears'){
-      for(const s of [-1, 1]){
-        const bx = x + s*7, flop = sway*0.5 + s*0.15 + Math.sin(t*0.006 + s)*0.05;
-        c.save(); c.translate(bx, y - r + 4); c.rotate(flop);
-        c.fillStyle = '#fff4f6'; c.strokeStyle = '#d9b7c0'; c.lineWidth = 1;
-        c.beginPath(); c.ellipse(0, -10, 4.2, 11, 0, 0, Math.PI*2); c.fill(); c.stroke();
-        c.fillStyle = '#ffb7cc'; c.beginPath(); c.ellipse(0, -9.5, 2, 7.5, 0, 0, Math.PI*2); c.fill(); c.restore();
-      }
-    }
-    if(k === 'propeller'){
-      const spin = t*(0.02 + Math.min(1, Math.abs(rig.vx)/4)*0.04 + (rig.grounded ? 0 : 0.05));
-      c.fillStyle = '#4fa8ff'; c.beginPath(); c.ellipse(x, y - r + 1, 7, 3, 0, Math.PI, Math.PI*2); c.fill();
-      c.strokeStyle = '#555'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, y - r - 1); c.lineTo(x, y - r - 6); c.stroke();
-      const w = Math.cos(spin)*12;
-      c.fillStyle = '#ffd23f'; c.beginPath(); c.ellipse(x, y - r - 6, Math.abs(w) + 1, 2.2, 0, 0, Math.PI*2); c.fill();
-      c.fillStyle = '#ff5c6c'; c.beginPath(); c.arc(x, y - r - 6, 1.8, 0, Math.PI*2); c.fill();
-    }
-  } else {
-    if(k === 'tail'){
-      const bx = x + dir*r*0.85, by = y + r*0.2, wag = Math.sin(t*0.012)*0.4;
-      c.save(); c.translate(bx, by); c.rotate((dir > 0 ? -0.5 : Math.PI + 0.5) + wag*dir);
-      c.fillStyle = item.fx.col || '#f3e1c4'; c.beginPath(); c.ellipse(9, 0, 9, 5.5, 0, 0, Math.PI*2); c.fill();
-      c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.ellipse(12, -1.5, 4, 2, 0, 0, Math.PI*2); c.fill(); c.restore();
-    }
-    if(k === 'wings'){
-      const flap = Math.sin(t*(rig.grounded ? 0.01 : 0.035))*0.5;
-      for(const s of [-1, 1]){
-        c.save(); c.translate(x + s*r*0.8, y - r*0.2); c.rotate(s*(-0.3 - flap)); c.scale(s, 1);
-        const g = c.createLinearGradient(0, 0, 18, -10); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#d6ecff');
-        c.fillStyle = g; c.strokeStyle = '#9bbad6'; c.lineWidth = 1;
-        c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(10, -18, 22, -12); c.quadraticCurveTo(16, -6, 18, -2); c.quadraticCurveTo(10, 0, 12, 4); c.quadraticCurveTo(5, 4, 0, 0); c.fill(); c.stroke();
-        c.restore();
-      }
-    }
-    if(k === 'rocket'){
-      const bx = x + dir*r*0.95, by = y + 2, power = 0.4 + Math.min(1, Math.abs(rig.vx)/4)*0.6 + (rig.grounded ? 0 : 0.3);
-      c.fillStyle = '#9aa7b4'; c.strokeStyle = '#5b6773'; c.lineWidth = 1.2;
-      c.beginPath(); c.roundRect ? c.roundRect(bx - 5, by - 7, 10, 14, 3) : c.rect(bx - 5, by - 7, 10, 14); c.fill(); c.stroke();
-      c.fillStyle = '#ff5c6c'; c.fillRect(bx - 5, by - 2, 10, 3);
-      c.globalCompositeOperation = 'lighter';
-      const fl = power*(10 + Math.sin(t*0.05)*3);
-      const g = c.createLinearGradient(bx, by, bx + dir*fl*1.6, by);
-      g.addColorStop(0, '#fff3a8'); g.addColorStop(0.4, '#ff9a2a'); g.addColorStop(1, 'rgba(255,60,20,0)');
-      c.fillStyle = g; c.beginPath(); c.moveTo(bx + dir*5, by - 4); c.quadraticCurveTo(bx + dir*fl*1.8, by, bx + dir*5, by + 4); c.fill();
-    }
-    if(k === 'dragon'){
-      // langer Schwanz aus Segmenten entlang der zurückgelegten Bahn, mit Zacken
-      const h = st && st.hist && st.hist.length > 2 ? st.hist : null;
-      let pts = [];
-      for(let i = 0; i < 12; i++){
-        const s = i/11;
-        if(h && h[Math.min(h.length - 1, Math.round(s*14))] && Math.abs(rig.vx) > 0.5){
-          const q = h[Math.min(h.length - 1, Math.round(s*14))]; pts.push([q.x - (ox || 0) + dir*r*0.7, q.y + r*0.45 + Math.sin(t*0.008 + i*0.7)*2*s]);
-        } else pts.push([x + dir*(r*0.7 + s*30), y + r*0.45 - Math.sin(s*Math.PI)*6 + Math.sin(t*0.006 + i*0.6)*2*s]);
-      }
-      for(let i = pts.length - 1; i > 0; i--){
-        const w = 7*(1 - i/pts.length) + 1.5;
-        c.strokeStyle = '#3f9a5a'; c.lineWidth = w; c.beginPath(); c.moveTo(pts[i][0], pts[i][1]); c.lineTo(pts[i-1][0], pts[i-1][1]); c.stroke();
-        if(i % 2 === 0){ c.fillStyle = '#ffb52e'; c.beginPath(); c.moveTo(pts[i][0] - 2, pts[i][1] - w*0.4); c.lineTo(pts[i][0], pts[i][1] - w*0.4 - 5); c.lineTo(pts[i][0] + 2, pts[i][1] - w*0.4); c.fill(); }
-      }
-      const e = pts[pts.length - 1];
-      c.fillStyle = '#ffb52e'; c.beginPath(); c.moveTo(e[0], e[1] - 4); c.lineTo(e[0] + dir*8, e[1]); c.lineTo(e[0], e[1] + 4); c.closePath(); c.fill();
-    }
-  }
-  c.restore();
-}
-
 // ===== Kugel-Skins (rollen komplett mit; Gesicht bleibt darauf) =====
 // wird INNERHALB der gedrehten Kugel aufgerufen (Ursprung = Kugelmitte, Drehung = Rollwinkel)
 function drawSkinBall(c, r, item, faceImg, faceW, faceH, faceY){
@@ -553,7 +468,7 @@ function drawPrestigeSparkle(c, x, y, st){
 
 // ===== Einbindung ins Spiel =====
 const cosItemsOf = who => ({trail:equippedItem(who, 'trail'), aura:equippedItem(who, 'aura'), pet:equippedItem(who, 'pet'),
-                            orbit:equippedItem(who, 'orbit'), attach:equippedItem(who, 'attach'), skin:equippedItem(who, 'skin')});
+                            orbit:equippedItem(who, 'orbit'), skin:equippedItem(who, 'skin')});
 // im festen Takt aus stepSim (14-spielschleife.js)
 function cosmeticsStep(){
   if(!p1 || !p2) return;
@@ -569,12 +484,10 @@ function cosmeticsDrawBack(P, camX){
   drawPet(ctx, st, it.pet, camX, who);
   drawAura(ctx, x, rig.y, rig.r, it.aura, 'back');
   drawOrbit(ctx, x, rig.y, rig.r, it.orbit, 'back');
-  drawAttach(ctx, rig, st, it.attach, 'back', camX);
 }
 // vor der Figur
 function cosmeticsDrawFront(P, camX){
   const who = P === p1 ? 'm' : 'f', it = cosItemsOf(who), st = COS_STATE[who], rig = playerRig(P), x = rig.x - camX;
-  drawAttach(ctx, rig, st, it.attach, 'front', camX);
   drawAura(ctx, x, rig.y, rig.r, it.aura, 'front');
   drawOrbit(ctx, x, rig.y, rig.r, it.orbit, 'front');
   drawPrestigeSparkle(ctx, x, rig.y, st);

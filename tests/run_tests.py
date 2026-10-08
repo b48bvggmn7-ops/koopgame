@@ -1561,15 +1561,18 @@ async def packages_vergabe(g):
         assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'nicht alle Münzen -> 1 Package je Figur erwartet'
         k = await g.ev("({sicht: getComputedStyle(document.getElementById('sm-r-pack')).display !== 'none', text: document.getElementById('sm-r-pack').textContent, weiter: document.getElementById('sm-r-go').classList.contains('sel')})")
         assert k['sicht'] and '2' in k['text'] and k['weiter'], f'Packages-Knopf: {k}'
-        for w in ('m', 'f'):   # jede Figur zeigt ihr neues Package
-            assert '+1 Package' in await p.text_content(f'#sm-r-{w} .r-badges'), f'Statistik {w}: keine Anzeige der neuen Packages'
+        # Gewinner-Animation: je Figur ein eigener Package-Zähler, der hochzählt (hier bis 1), mit Ton
+        await p.wait_for_function("document.querySelector('#sm-s-results').classList.contains('win')", timeout=5000)
+        await p.wait_for_function("[...document.querySelectorAll('#sm-s-results .r-pack b.pack')].map(b => b.textContent).join() === '1,1'", timeout=5000)
+        assert 'packCount' in await g.ev("SFX_LOG.slice()"), 'kein Ton beim Hochzählen der Packages'
         await p.wait_for_timeout(300); await p.keyboard.press('KeyA'); await p.wait_for_timeout(200); await p.keyboard.press('Space')
         await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-packs', 'Packages-Knopf öffnet den Öffnen-Bildschirm nicht'
         await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-levels', 'Fertig führt nicht zur Levelauswahl'
         await p.wait_for_timeout(2600)   # Schloss-Animation
-        assert '2 Packages öffnen' in await p.text_content('#sm-l-pack'), 'Levelauswahl zeigt „2 Packages öffnen“ nicht'
+        k = await g.ev("({t: document.getElementById('sm-l-pack').textContent, n: (document.querySelector('#sm-l-pack .num') || {}).textContent})")
+        assert 'Packages öffnen' in k['t'] and k['n'] == '2', f'Levelauswahl zeigt „Packages öffnen“ mit Zahl 2 nicht: {k}'
         await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-packs', 'Menüpunkt „Packages öffnen“ öffnet den Öffnen-Bildschirm nicht'
         await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
@@ -1640,7 +1643,7 @@ async def sammlung_ausruesten(g):
         k = await g.ev("""({tiles: document.querySelectorAll('#sm-s-collection .co-tile').length, miss: document.querySelectorAll('#sm-s-collection .co-tile.miss').length,
           count: document.querySelector('#sm-s-collection .co-count').textContent, names: [...document.querySelectorAll('#sm-s-collection .co-tile .nm')].map(e => e.textContent)})""")
         assert k['tiles'] == await g.ev("COSMETICS.filter(c => c.slot === 'trail').length") and k['miss'] == k['tiles'] - 1, f'Kacheln: {k}'
-        assert '1' in k['count'] and '66' in k['count'] and 'Blubberblasen' in k['names'], f'Zähler/Namen: {k}'
+        assert '1' in k['count'] and str(await g.ev('COSMETICS.length')) in k['count'] and 'Blubberblasen' in k['names'], f'Zähler/Namen: {k}'
         await p.keyboard.press('Space'); await p.wait_for_timeout(200)   # erstes Item (Staubwölkchen) fehlt
         assert not await g.ev("isEquipped('m', 'trail_dust')"), 'fehlendes Item wurde angelegt'
         await p.keyboard.press('KeyD'); await p.wait_for_timeout(150); await p.keyboard.press('Space'); await p.wait_for_timeout(200)
@@ -1680,12 +1683,28 @@ async def cosmetics_kein_vorteil(g):
       for (const k in KEYS) KEYS[k] = false; return out; })()"""
     await g.ev("cosmeticsReset()")
     ohne = await g.ev(lauf)
-    await g.ev("""for (const id of ['pres_galaxy', 'pres_saturn', 'pres_inferno', 'pres_rainbow', 'att_dragon', 'pet_robot'])
+    await g.ev("""for (const id of ['pres_galaxy', 'pres_saturn', 'pres_inferno', 'pres_rainbow', 'trail_galaxy', 'pet_robot'])
                     for (const w of ['m', 'f']) { cosmeticsSave.owned[w][id] = 1; equipItem(w, id); }""")
     mit = await g.ev(lauf)
     await g.ev("cosmeticsReset()")
     assert ohne[-1][0] > ohne[0][0] + 100, 'Figuren sind nicht gelaufen'
     assert ohne == mit, 'Cosmetics verändern die Bewegung!'
+
+
+@test
+async def packages_menue_design(g):
+    """Keine Kategorie „Anhängsel“ mehr; Levelauswahl: „Packages öffnen“ und „Umkleide“ als eigene Menüpunkte ohne Emojis,
+    die sich nie mit den Figuren über der gewählten Levelkarte überschneiden (auch bei Level 5/6)."""
+    assert await g.ev("SLOTS.every(s => s.id !== 'attach') && COSMETICS.every(c => c.slot !== 'attach')"), 'Anhängsel noch vorhanden'
+    await g.ev("GameMenu.unlockAll(); GameMenu.show('levels')"); await g.p.wait_for_timeout(600)
+    for i in range(6):
+        await g.ev(f"document.querySelectorAll('#sm-cards .lc')[{i}].click()"); await g.p.wait_for_timeout(500)
+        r = await g.ev("""(() => { const R = s => document.querySelector(s).getBoundingClientRect(), a = R('#sm-pair'), o = [R('#sm-l-pack'), R('#sm-l-coll')];
+          return o.some(b => !(b.right <= a.left || b.left >= a.right || b.bottom <= a.top || b.top >= a.bottom)); })()""")
+        assert not r, f'Menüpunkt überschneidet die Figuren bei Level {i + 1}'
+    txt = await g.ev("document.getElementById('sm-l-pack').textContent + document.getElementById('sm-l-coll').textContent + document.getElementById('sm-l-hint').textContent")
+    import re
+    assert not re.search('[\U0001F300-\U0001FAFF]', txt), f'Emoji im Menü: {txt}'
 
 async def main(filter_):
     async with async_playwright() as pw:

@@ -113,8 +113,8 @@
 #sm .countdown{position:absolute;inset:0;z-index:9;display:grid;place-items:center;pointer-events:none;opacity:0;
   font:900 38cqh/1 "Big Shoulders Display",sans-serif;text-transform:uppercase;color:#f6ffe0;text-shadow:0 0 4cqw var(--lime),0 1cqh 0 rgba(0,0,0,.4)}
 #sm .countdown.on{animation:cdpop .75s both}
-#sm .l-count{position:absolute;right:6cqw;top:10cqh;font-size:1.8cqw;font-weight:700;color:var(--mute);text-align:right}
-#sm .l-count b{color:var(--lime);font-size:2.6cqw}
+#sm .l-count{position:absolute;right:5cqw;bottom:3.6cqh;font-size:1.4cqw;font-weight:700;color:var(--mute);text-align:right}
+#sm .l-count b{color:var(--lime);font-size:1.8cqw;margin-left:.5cqw}
 #sm .cards{position:absolute;left:5cqw;right:5cqw;top:36cqh;height:48cqh;display:flex;gap:1.5cqw;align-items:flex-end}
 #sm .lc{appearance:none;cursor:pointer;position:relative;flex:1;height:36cqh;padding:1.6cqh 1.2cqw;text-align:left;font:inherit;color:inherit;
   border-radius:1.2cqw;background:var(--glass);border:.12cqw solid var(--line);backdrop-filter:blur(.8cqw);
@@ -185,19 +185,19 @@
 
 /* 7) Level geschafft: Statistik (js/24-startmenue.js S.results) */
 #sm .r-level{position:absolute;left:6cqw;top:17.5cqh;font-size:2.2cqw;font-weight:800;color:var(--mute)}
-#sm .r-card{position:absolute;top:30cqh;width:34cqw;height:54cqh;padding:3cqh 2.4cqw;display:flex;flex-direction:column;align-items:center;
+#sm .r-card{position:absolute;top:29cqh;width:34cqw;height:57cqh;padding:3cqh 2.4cqw;display:flex;flex-direction:column;align-items:center;
   animation:pop .5s cubic-bezier(.3,1.5,.5,1) both}
 #sm #sm-r-m{left:12cqw;animation-delay:.1s} #sm #sm-r-f{right:12cqw;animation-delay:.25s}
 #sm .r-face{width:12cqw;margin-top:-10cqh}
 #sm .r-face .char{width:100%;height:auto;display:block;filter:drop-shadow(0 1cqh 1.2cqh rgba(0,0,0,.5));animation:bob 3.6s ease-in-out infinite}
 #sm .r-name{font-weight:800;font-size:2.6cqw;margin-top:.6cqh}
-#sm .r-badges{display:flex;gap:.6cqw;min-height:3.4cqh;margin:.8cqh 0 1.6cqh}
+#sm .r-badges{display:flex;gap:.6cqw;min-height:3.4cqh;margin:.6cqh 0 1cqh}
 #sm .rb{font-size:1.25cqw;font-weight:800;padding:.5cqh 1cqw;border-radius:5cqw;letter-spacing:.04em;text-transform:uppercase}
 #sm .rb.coin{background:var(--lime);color:#06210f}
 #sm .rb.death{background:#ff5c6c;color:#2a0508}
-#sm .r-row{width:100%;display:flex;align-items:baseline;gap:1cqw;padding:1.4cqh 0;border-top:.12cqw solid var(--line)}
+#sm .r-row{width:100%;display:flex;align-items:center;gap:1cqw;padding:.9cqh 0;border-top:.12cqw solid var(--line)}
 #sm .r-row span{flex:1;font-size:1.9cqw;font-weight:700;color:var(--mute)}
-#sm .r-row b{font:900 5.4cqw/1 "Big Shoulders Display",sans-serif;font-variant-numeric:tabular-nums}
+#sm .r-row b{font:900 4.2cqw/1 "Big Shoulders Display",sans-serif;font-variant-numeric:tabular-nums}
 #sm .r-row b.coin{color:var(--lime)} #sm .r-row b.death{color:#ff7a86}
 #sm .r-row small{font-size:1.7cqw;font-weight:700;color:var(--mute)}
 #sm #sm-s-results .foot{bottom:5cqh}

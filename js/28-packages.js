@@ -106,14 +106,12 @@ function drawPreview(c, cx, cy, sc, who, items, pv, ghost) {
   drawPet(c, pv.st, items.pet, 0, who);
   drawAura(c, rig.x, rig.y, 21, items.aura, 'back');
   drawOrbit(c, rig.x, rig.y, 21, items.orbit, 'back');
-  drawAttach(c, rig, pv.st, items.attach, 'back', 0);
   const size = 32.3*1.55, hgt = img && img.naturalWidth ? size*img.naturalHeight/img.naturalWidth : size*0.83;
   c.save(); c.translate(rig.x, rig.y); c.rotate(rig.roll);
   if (ghost) { c.globalAlpha = 0.25; }
   if (items.skin) drawSkinBall(c, 21, items.skin, img, size, hgt, size/2 - hgt/2 - 4);
   else if (img && img.naturalWidth) c.drawImage(img, -size/2, size/2 - hgt - 4, size, hgt);
   c.restore();
-  drawAttach(c, rig, pv.st, items.attach, 'front', 0);
   drawAura(c, rig.x, rig.y, 21, items.aura, 'front');
   drawOrbit(c, rig.x, rig.y, 21, items.orbit, 'front');
   drawPrestigeSparkle(c, rig.x, rig.y, pv.st);
@@ -284,7 +282,7 @@ const PK = {
   cx(who) { return who === 'm' ? 400 : 1200; },
   paintSide(who) {
     const s = this.sides[who], box = $('.pk-' + who, this.el), n = cosmeticsSave.pending[who];
-    $('.cnt', box).textContent = `🎁 × ${n}`;
+    $('.cnt', box).innerHTML = `${UI.ICON.pack}<b>${n}</b>`;
     const info = $('.pk-info', box), btns = $('.pk-btns', box), hint = $('.pk-hint', box);
     const showInfo = s.phase === 'reveal' || s.phase === 'choose' || s.phase === 'empty' || s.phase === 'emptyChoose';
     info.className = 'pk-info' + (showInfo ? ' on r-' + s.res.rarity + (s.res.empty ? '' : ' rk' + RARITY[s.res.rarity].rank) : '');
@@ -468,16 +466,23 @@ host.insertBefore(mk(`<section class="screen" id="sm-s-collection" aria-label="U
 const ITEMS_BY_SLOT = Object.fromEntries(SLOTS.map(sl => [sl.id, COSMETICS.filter(c => c.slot === sl.id)
   .sort((a, b) => RARITY[a.rarity].rank - RARITY[b.rarity].rank)]));
 const CO_COLS = 6;
+// kleines Schloss (gesperrtes Item) als Linienzeichnung
+function drawLock(c, x, y) {
+  c.save(); c.translate(x, y); c.strokeStyle = 'rgba(234,247,238,.85)'; c.fillStyle = 'rgba(4,20,15,.75)'; c.lineWidth = 2.2; c.lineCap = 'round';
+  c.beginPath(); c.arc(0, -3, 5.5, Math.PI, 0); c.lineTo(5.5, 2); c.moveTo(-5.5, 2); c.lineTo(-5.5, -3); c.stroke();
+  c.beginPath(); c.rect(-8.5, 1, 17, 12); c.fill(); c.stroke();
+  c.fillStyle = 'rgba(234,247,238,.85)'; c.beginPath(); c.arc(0, 6.5, 1.8, 0, Math.PI*2); c.fill(); c.restore();
+}
 // kleines Bild eines Items (einmal gezeichnet, keine Animation)
 function drawItemIcon(cv, item, who, owned) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
-  const pv = newPreview(), items = { trail: null, aura: null, pet: null, orbit: null, attach: null, skin: null };
+  const pv = newPreview(), items = { trail: null, aura: null, pet: null, orbit: null, skin: null };
   items[item.slot] = item;
   for (let i = 0; i < 40; i++) { pv.t = 0; pv.x = -40 + i*1.6; pv.vx = 1.6; pv.y = 0; pv.vy = 0; pv.grounded = true; pv.roll += 0.08; cosStep(previewRig(pv), pv.st, who, items); }
   if (!owned) c.filter = 'grayscale(1) brightness(.55)';   // gesperrt: grau und dunkel, aber erkennbar
   drawPreview(c, cv.width/2 - 6, cv.height - 18, 1.35, who, items, pv);
   c.filter = 'none';
-  if (!owned) { c.font = '28px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🔒', cv.width - 22, 22); }
+  if (!owned) drawLock(c, cv.width - 20, 20);
 }
 const CO = {
   el: $('#sm-s-collection'), who: 'm', slot: 0, area: 2, idx: 0, ci: 0, raf: 0, last: 0, acc: 0, pv: newPreview(), ret: null,
@@ -504,7 +509,7 @@ const CO = {
       const own = ownedCount(this.who, it.id), eq = isEquipped(this.who, it.id);
       const t = mk(`<button class="co-tile${own ? '' : ' miss'}${eq ? ' eq' : ''}" type="button" tabindex="-1" style="--rc:${RARITY[it.rarity].color}">
         <canvas width="150" height="100"></canvas><span class="nm">${it.name}</span>
-        ${eq ? '<span class="eqb">✓ angelegt</span>' : ''}${own > 1 ? `<span class="dup">×${own}</span>` : ''}</button>`);
+        ${eq ? '<span class="eqb">Angelegt</span>' : ''}${own > 1 ? `<span class="dup">×${own}</span>` : ''}</button>`);
       t.addEventListener('click', () => { if (this.area === 2 && this.idx === i) this.act('confirm'); else { this.area = 2; this.idx = i; this.paint(); Snd.play('move'); } });
       grid.appendChild(t);
       drawItemIcon($('canvas', t), it, this.who, own);   // erst im Dokument zeichnen (sonst wirkt der Grau-Filter nicht)
@@ -526,7 +531,7 @@ const CO = {
       const own = ownedCount(this.who, it.id), eq = isEquipped(this.who, it.id), r = RARITY[it.rarity];
       info.style.setProperty('--rc', r.color);
       info.innerHTML = `<span class="rar">${r.name}</span><b>${it.name}</b>
-        <span class="st">${eq ? '✓ Angelegt – Springen zum Ablegen' : own ? `Im Besitz${own > 1 ? ' (×' + own + ')' : ''} – Springen zum Anlegen` : '🔒 Gesperrt – vielleicht im nächsten Package!'}</span>`;
+        <span class="st">${eq ? 'Angelegt – Springen zum Ablegen' : own ? `Im Besitz${own > 1 ? ' (×' + own + ')' : ''} – Springen zum Anlegen` : 'Gesperrt – vielleicht im nächsten Package'}</span>`;
     }
     $('.co-hint', this.el).textContent = 'Pfeile wählen · Springen an-/ablegen · E / Num 1 / □ Figur wechseln · Esc zurück';
   },
