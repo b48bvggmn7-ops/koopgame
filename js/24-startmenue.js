@@ -459,7 +459,12 @@ function completeLevel(n, quiet) {
   if (!quiet) toast(save.unlocked > before ? `Level ${save.unlocked} freigeschaltet!` : `Level ${n} geschafft!`);
   return save.unlocked > before ? save.unlocked : 0;   // neu freigeschaltetes Level (0 = keins)
 }
-function resetSave() { save = { played: false, unlocked: 1, completed: [] }; persist(); }
+// Neues Spiel: ALLES von vorn – freigeschaltete Level, Statistik, Packages, Items/Skins (angelegt + besessen), Münz-Konto
+function resetSave() {
+  save = { played: false, unlocked: 1, completed: [] }; persist();
+  if (typeof cosmeticsReset === 'function') cosmeticsReset();      // 26-kosmetik-daten.js
+  if (typeof cosResetState === 'function') cosResetState();
+}
 
 /* =====================================================================
    1) TITEL
@@ -518,7 +523,7 @@ S.menu = {
       if (save.played) {
         showModal({
           title: 'Neues Spiel starten?',
-          text: 'Dein bisheriger Fortschritt wird dabei überschrieben.',
+          text: 'Dein kompletter Spielstand wird gelöscht: freigeschaltete Level, Packages, Items/Skins und Münzen. Ihr fangt ganz von vorne an.',
           buttons: [
             { label: 'Abbrechen', cancel: true, primary: true },
             { label: 'Neues Spiel', onClick: () => go('select', 'new') }

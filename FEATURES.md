@@ -225,8 +225,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Titelbild „Monchichi Koop“ mit Affe und Schweinchen („Beliebige Taste drücken“) → Hauptmenü „Spielen ·
     Fortfahren (erst nach dem ersten Spiel) · Optionen · Beenden“ → Spielerwahl „Wer spielt wen?“ (Spieler 1 =
     A/D/Leertaste + Controller 1, Spieler 2 = Pfeile/Num 0 + Controller 2; mit links/rechts die Seite = Figur
-    wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1 (Fortschritt neu,
-    vorher Rückfrage). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
+    wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1. Gab es schon einen
+    Spielstand, kommt vorher die Rückfrage „Neues Spiel starten?“; mit „Neues Spiel“ wird ALLES gelöscht (Nutzerwunsch):
+    freigeschaltete/geschaffte Level und Tode-Statistik, Packages, alle Items/Skins (besessen und angelegt) und das
+    Münz-Konto – man fängt komplett von vorn an (resetSave in 24 + cosmeticsReset in 26; Test neues_spiel_loescht_alles). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
     (Countdown startet dann dieses Level; Zurück führt wieder zur Levelauswahl, die Auswahl bleibt).
   - Levelstart aus dem Startmenü (Nutzerwahl): Vorhang aus EINZELNEN Blättern (~240 Blätter: schlanke Blätter,
     Herzblätter mit Schlitzen, Palmwedel; hinten dunkel, vorne hell) – jedes fliegt vom nächsten Bildrand an seinen

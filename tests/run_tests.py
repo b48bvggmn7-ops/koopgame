@@ -1859,6 +1859,38 @@ async def scheinwand_ohne_moos_verrat(g):
       frei = decoMoss.filter(m => !m.side && m.x >= 800 && m.x < 1000 && m.y === 440).length; return [unter, frei]; })()""")
     assert k[0] == 0 and k[1] == 5, f'Moos unter Scheinwand / auf freier Wand: {k}'
 
+@test
+async def neues_spiel_loescht_alles(g):
+    """Hauptmenü: beim ersten Start nur Spielen/Optionen/Beenden; nach dem Spielen kommt „Fortfahren“ dazu.
+    „Spielen“ mit vorhandenem Spielstand fragt nach und löscht dann ALLES: Level, Packages, Items/Skins, Münzen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Optionen', 'Beenden']
+        # Spielstand vorhanden: Level geschafft, Packages, Items, Münzen
+        await g.ev("""GameMenu.completeLevel(1, true); GameMenu.completeLevel(2, true);
+          cosmeticsSave.pending = {m: 2, f: 1}; cosmeticsSave.coins = {m: 340, f: 90};
+          cosmeticsSave.owned.m.trail_bubbles = 1; equipItem('m', 'trail_bubbles'); cosmeticsPersist();
+          (() => { const s = JSON.parse(localStorage.getItem('monchichi.save')); s.played = true; localStorage.setItem('monchichi.save', JSON.stringify(s)); })()""")
+        await p.reload(); await p.wait_for_timeout(700)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Fortfahren', 'Optionen', 'Beenden']
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(400)          # Spielen -> Rückfrage
+        assert await g.ev("document.getElementById('sm-modal').classList.contains('on')"), 'keine Rückfrage'
+        assert 'Münzen' in await g.ev("document.getElementById('sm-modal-text').textContent")
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(150); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        for _ in range(120):
+            if await g.ev("menuScreen === null"): break
+            await p.wait_for_timeout(100)
+        k = await g.ev("({sv: GameMenu.getSave(), c: JSON.parse(localStorage.getItem('monchichi_cosmetics_v1'))})")
+        assert k['sv']['unlocked'] == 1 and k['sv']['completed'] == [], f"Level nicht zurückgesetzt: {k['sv']}"
+        c = k['c']
+        assert c['pending'] == {'m': 0, 'f': 0} and c['coins'] == {'m': 0, 'f': 0} and not c['owned']['m'] and not c['equipped']['m'], f'Cosmetics nicht zurückgesetzt: {c}'
+    finally:
+        srv.shutdown()
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
