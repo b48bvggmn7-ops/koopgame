@@ -350,10 +350,17 @@ async function playLevel(i) {
   if (!lvl || lvl.soon) return;
   Snd.play('start');
   save.played = true; persist();
+  let data = null, why = '';
+  // Level-Datei holen: bis zu 3 Versuche (kurze Netz-Aussetzer), danach Fehler mit Grund anzeigen
+  for (let tryNo = 0; tryNo < 3 && !data; tryNo++) {
+    try {
+      const r = await fetch(PROJECT_LEVELS + encodeURIComponent(lvl.datei) + (tryNo ? '?t=' + Date.now() : ''), { cache: 'no-store' });
+      if (!r.ok) { why = 'Datei nicht erreichbar (HTTP ' + r.status + ')'; await wait(300); continue; }
+      data = JSON.parse(await r.text());
+    } catch (e) { why = (e && e.message) || String(e); await wait(300); }
+  }
+  if (!data) { levelLoadFailed(lvl, why); return; }
   try {
-    const r = await fetch(PROJECT_LEVELS + encodeURIComponent(lvl.datei), { cache: 'no-store' });
-    if (!r.ok) throw 0;
-    const data = await r.json();
     await curtainIntoLevel(i + 1, lvl.name, () => {
       setMonkeyPlayer(lastPlayers.monkey);
       currentLevelNo = i + 1;
@@ -362,9 +369,16 @@ async function playLevel(i) {
       menuScreen = 'curtain';                // Spiel steht still, bis die Blätter auf sind (Figuren stehen am Start)
     });
   } catch (e) {
-    menuScreen = 'start'; curtainEl.className = '';
-    toast('Level konnte nicht geladen werden'); go('levels');
+    levelLoadFailed(lvl, (e && e.message) || String(e));
   }
+}
+// Level ließ sich nicht starten: zurück zur Levelauswahl und den Grund anzeigen (statt still zurückzuspringen)
+function levelLoadFailed(lvl, why) {
+  console.error('Level konnte nicht geladen werden:', lvl && lvl.datei, why);
+  curtainEl.className = ''; currentLevelNo = 0;
+  showMenuScreen('levels', 'keep');
+  showModal({ title: 'Level konnte nicht starten', text: (lvl ? lvl.name + ': ' : '') + why + ' – bitte Seite neu laden (Strg + F5) und nochmal versuchen.',
+              buttons: [{ label: 'OK', primary: true, cancel: true }] });
 }
 /* ---- Blätter-Vorhang mit Titeltafel: Menü -> Level ---- */
 const wait = ms => new Promise(res => setTimeout(res, ms));
@@ -747,17 +761,13 @@ S.levels = {
     const n = cosmeticsSave.pending.m + cosmeticsSave.pending.f;
     const have = collectionCount('m') + collectionCount('f'), all = COSMETICS.length*2;
     b.classList.toggle('sel', this.top === 'coll'); pb.classList.toggle('sel', this.top === 'pack');
-    pb.classList.toggle('none', !n);
-    pb.innerHTML = `<span class="ic">${ICON.pack}${n ? `<i class="num">${n}</i>` : ''}</span><span class="tx"><b>Packages öffnen</b><small>Affe ${cosmeticsSave.pending.m} · Schweinchen ${cosmeticsSave.pending.f}</small></span>`;
+    pb.innerHTML = `<span class="ic">${ICON.pack}${n ? `<i class="num">${n}</i>` : ''}</span><span class="tx"><b>${n ? 'Packages öffnen' : 'Packages'}</b><small>${n
+      ? `Affe ${cosmeticsSave.pending.m} · Schweinchen ${cosmeticsSave.pending.f}` : `Kaufen für ${PACKAGE_PRICE} Münzen`}</small></span>`;
     b.innerHTML = `<span class="ic">${ICON.hanger}</span><span class="tx"><b>Umkleide</b><small>${have} / ${all} Items gesammelt</small></span>`;
   },
   openColl() { if (!S.collection) return; this.top = ''; Snd.play('ok'); go('collection', { ret: ['levels', 'keep'] }); },
-  openPacks() {
+  openPacks() {   // immer offen: ohne Packages kann man dort welche mit Münzen kaufen
     if (!S.packs) return;
-    if (!(cosmeticsSave.pending.m + cosmeticsSave.pending.f)) {
-      Snd.play('locked'); toast('Keine Packages – schafft ein Level');
-      const pb = $('#sm-l-pack'); pb.classList.remove('shake'); void pb.offsetWidth; pb.classList.add('shake'); return;
-    }
     this.top = ''; Snd.play('ok'); go('packs', { ret: ['levels', 'keep'] });
   },
   setTop(t) { this.top = t; this.paintColl(); this.paint(); Snd.play('move'); },
@@ -1006,6 +1016,7 @@ window.startMenuLevelWon = () => {
   if (n && st) { save.stats = save.stats || {}; save.stats[n] = { m: st.m, f: st.f }; }   // für die Levelkarte merken
   // Packages: 1 fürs Schaffen, +1 wenn alle Münzen gesammelt – für beide Figuren (26-kosmetik-daten.js)
   const packs = n && typeof awardPackages === 'function' ? awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken)) : 0;
+  if (n && st && typeof addCoins === 'function') addCoins(st.cm, st.cf);   // selbst gesammelte Münzen aufs Konto (Pakete kaufen)
   if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh, packs }); }
   else showMenuScreen('menu');
 };

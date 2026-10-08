@@ -93,7 +93,7 @@ const COSMETIC = Object.fromEntries(COSMETICS.map(c => [c.id, c]));
 
 // ---------- Spielstand der Sammlung (im Browser gespeichert) ----------
 const COSMETIC_KEY = 'monchichi_cosmetics_v1';
-function cosmeticsBlank(){ return {pending:{m:0, f:0}, owned:{m:{}, f:{}}, equipped:{m:{}, f:{}}, opened:{m:0, f:0}}; }
+function cosmeticsBlank(){ return {pending:{m:0, f:0}, owned:{m:{}, f:{}}, equipped:{m:{}, f:{}}, opened:{m:0, f:0}, coins:{m:0, f:0}}; }
 let cosmeticsSave = cosmeticsBlank();
 try{
   const raw = JSON.parse(localStorage.getItem(COSMETIC_KEY) || 'null');
@@ -108,6 +108,15 @@ const equippedItem = (who, slot) => { const id = cosmeticsSave.equipped[who][slo
 // Pro geschafftem Level bekommt jede Figur 1 Package, und 1 weiteres, wenn ALLE Münzen des Levels gesammelt wurden
 // (also höchstens 2 pro Figur und Level).
 function packagesForLevel(allCoins){ return allCoins ? 2 : 1; }
+// Münz-Konto je Figur: am Levelende kommen die selbst gesammelten Münzen dazu; für PACKAGE_PRICE gibt es ein Paket
+const PACKAGE_PRICE = 200;
+function addCoins(m, f){ cosmeticsSave.coins = cosmeticsSave.coins || {m:0, f:0}; cosmeticsSave.coins.m += m || 0; cosmeticsSave.coins.f += f || 0; cosmeticsPersist(); }
+function coinBalance(who){ return (cosmeticsSave.coins && cosmeticsSave.coins[who]) || 0; }
+function buyPackage(who){
+  if(coinBalance(who) < PACKAGE_PRICE) return false;
+  cosmeticsSave.coins[who] -= PACKAGE_PRICE; cosmeticsSave.pending[who]++; cosmeticsPersist();
+  return true;
+}
 function awardPackages(allCoins){
   const n = packagesForLevel(allCoins);
   cosmeticsSave.pending.m += n; cosmeticsSave.pending.f += n;

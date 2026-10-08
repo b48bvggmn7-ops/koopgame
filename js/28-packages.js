@@ -197,7 +197,7 @@ function giftShadow(c, k) {
 function drawGift(c, x, y, o) {
   const open = o.open || 0, fade = o.fade === undefined ? 1 : o.fade, sc = (o.sc || 1)*GIFT_SCALE, hop = o.hop || 0;
   c.save(); c.translate(x, y); c.scale(sc, sc);
-  c.globalAlpha = fade; giftShadow(c, Math.max(0.3, 1 - hop/80)); c.globalAlpha = 1;
+  const ga = c.globalAlpha; c.globalAlpha = ga*fade; giftShadow(c, Math.max(0.3, 1 - hop/80)); c.globalAlpha = ga;
   c.translate(0, -hop); c.translate(0, 80); c.rotate(o.rot || 0); c.translate(0, -80);   // kippt um die Unterkante
   if (open <= 0) {
     const lift = (o.crack || 0)*5;   // Deckel drückt schon etwas nach oben
@@ -217,7 +217,7 @@ function drawGift(c, x, y, o) {
     c.save(); c.translate(0, -lift); giftLid(c, false, o.crack || 0); c.restore();
   } else {
     // Band reißt, Deckel fliegt weg (bei „leer“ hebt er sich nur müde und kippt zur Seite)
-    c.globalAlpha = fade;
+    c.globalAlpha = ga*fade;
     const lz = o.lazy;
     giftBody(c, true, true);
     c.save();
@@ -236,6 +236,7 @@ const sideHTML = w => `<div class="pk-side pk-${w}">
     <div class="pk-head glass"><span class="mini">${charSVG(w === 'm' ? 'monkey' : 'pig')}</span><b>${WHO_NAME[w]}</b><span class="cnt"></span></div>
     <div class="pk-info"><div class="pk-rar"></div><div class="pk-name"></div><div class="pk-tag"></div></div>
     <div class="pk-btns"><button class="btn" data-a="0" type="button" tabindex="-1">Anlegen</button><button class="btn" data-a="1" type="button" tabindex="-1">Behalten</button></div>
+    <button class="btn pk-buy" type="button" tabindex="-1"></button>
     <div class="pk-hint"></div>
   </div>`;
 host.insertBefore(mk(`<section class="screen" id="sm-s-packs" aria-label="Packages öffnen">
@@ -268,12 +269,22 @@ const PK = {
   },
   sideAct(who, type) {
     const s = this.sides[who];
-    if (s.phase === 'idle') { if (type === 'confirm') this.start(s); }
+    if (s.phase === 'idle') { if (type === 'confirm') { if (cosmeticsSave.pending[who]) this.start(s); else this.buy(s); } }
     else if (s.phase === 'choose') {
       if (['left', 'right', 'up', 'down'].includes(type)) { s.sel = 1 - s.sel; this.paintSide(who); Snd.play('move'); }
       else if (type === 'confirm') this.decide(s, s.sel);
     }
     else if (s.phase === 'emptyChoose') { if (type === 'confirm') this.decide(s, 1); }
+  },
+  buy(s) {
+    const w = s.who, box = $('.pk-' + w, this.el);
+    if (!buyPackage(w)) {
+      Snd.play('locked'); const b = $('.pk-buy', box); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+      toast(`Noch ${PACKAGE_PRICE - coinBalance(w)} Münzen für ein Paket`); return;
+    }
+    sfxLog('packBuy'); PSFX.thud(); PSFX.keep();
+    s.enter = performance.now();   // neues Paket fällt herein
+    this.paintSide(w);
   },
   start(s) {
     if (!cosmeticsSave.pending[s.who]) { Snd.play('locked'); return; }
@@ -321,7 +332,11 @@ const PK = {
   cx(who) { return who === 'm' ? 400 : 1200; },
   paintSide(who) {
     const s = this.sides[who], box = $('.pk-' + who, this.el), n = cosmeticsSave.pending[who];
-    $('.cnt', box).innerHTML = `${UI.ICON.pack}<b>${n}</b>`;
+    $('.cnt', box).innerHTML = `${UI.ICON.pack}<b>${n}</b><span class="coinb ${who}"><i></i>${coinBalance(who)}</span>`;
+    // ohne Packages: eins für PACKAGE_PRICE Münzen kaufen
+    const buy = $('.pk-buy', box), canBuy = s.phase === 'idle' && !n, afford = coinBalance(who) >= PACKAGE_PRICE;
+    buy.className = 'btn pk-buy' + (canBuy ? ' on' : '') + (afford ? ' sel' : ' poor');
+    buy.innerHTML = afford ? `Paket kaufen · <b>${PACKAGE_PRICE}</b> Münzen` : `Paket: ${PACKAGE_PRICE} Münzen · noch ${PACKAGE_PRICE - coinBalance(who)}`;
     const info = $('.pk-info', box), btns = $('.pk-btns', box), hint = $('.pk-hint', box);
     const showInfo = s.phase === 'reveal' || s.phase === 'choose' || s.phase === 'empty' || s.phase === 'emptyChoose';
     info.className = 'pk-info' + (showInfo ? ' on r-' + s.res.rarity + (s.res.empty ? '' : ' rk' + RARITY[s.res.rarity].rank) : '');
@@ -339,7 +354,7 @@ const PK = {
     bb[0].style.display = s.phase === 'emptyChoose' ? 'none' : '';
     bb[1].textContent = s.phase === 'emptyChoose' ? 'Weiter' : 'Behalten';
     bb.forEach((b, i) => b.classList.toggle('sel', choose && (s.phase === 'emptyChoose' ? i === 1 : i === s.sel)));
-    hint.textContent = s.phase === 'idle' ? (n ? `${keyName(who)} – öffnen` : 'Keine Packages – schafft Level für neue!')
+    hint.textContent = s.phase === 'idle' ? (n ? `${keyName(who)} – öffnen` : afford ? `${keyName(who)} – kaufen` : 'Münzen sammeln für ein neues Paket')
       : s.phase === 'emptyChoose' ? `${keyName(who)} – weiter` : choose ? `◀ ▶ wählen · ${keyName(who)} bestätigen` : '';
   },
   frame(t) {
@@ -419,8 +434,8 @@ const PK = {
         const k = clamp01((t - s.enter)/420), dropY = (1 - easeOutBack(k))*-160;
         drawGift(c, cx, cy, { who: w, hop: Math.max(0, (1 + Math.sin(t*0.003))*4 - dropY), rot: Math.sin(t*0.002)*0.03 });
       } else {
-        c.strokeStyle = 'rgba(234,247,238,.25)'; c.setLineDash([10, 10]); c.lineWidth = 4;
-        c.strokeRect(cx - 96, cy - 66, 172, 172); c.setLineDash([]);
+        // keine Packages: blasses Paket als Platzhalter (Kaufen-Knopf darunter)
+        c.setLineDash([]); c.save(); c.globalAlpha = 0.22; drawGift(c, cx, cy, { who: w }); c.restore();   // blasses Paket: hier kann man eins kaufen
       }
     } else if (s.phase === 'shake') {
       const k = clamp01((t - s.t0)/s.dur), amp = 2 + k*k*16, freq = 0.05 + k*0.05;
@@ -481,6 +496,7 @@ $('.pk-cv', PK.el).addEventListener('click', e => {   // Klick auf eine Hälfte 
   PK.sideAct(w, 'confirm');
 });
 $('.pk-back', PK.el).addEventListener('click', () => { if (!PK.busy()) PK.exit(); });
+for (const w of ['m', 'f']) $('.pk-' + w + ' .pk-buy', PK.el).addEventListener('click', e => { e.stopPropagation(); if (PK.sides[w].phase === 'idle') PK.buy(PK.sides[w]); });
 
 /* =====================================================================
    BILDSCHIRM: SAMMLUNG (besessen / angelegt / fehlt, Seltenheit, Vorschau, Ausrüsten)

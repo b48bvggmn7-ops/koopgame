@@ -1627,8 +1627,10 @@ async def sammlung_ausruesten(g):
         assert 'Umkleide' in await p.text_content('#sm-l-coll'), 'kein Menüpunkt Umkleide in der Levelauswahl'
         await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200)
         assert await g.ev("document.getElementById('sm-l-pack').classList.contains('sel')"), '▲ wählt „Packages öffnen“ nicht aus'
-        await p.keyboard.press('Enter'); await p.wait_for_timeout(500)
-        assert await sm_screen(g) == 'sm-s-levels', 'ohne Packages darf sich der Öffnen-Bildschirm nicht öffnen'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-packs', 'Packages-Bereich muss auch ohne Packages aufgehen (dort kann man kaufen)'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200)
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(200)
         assert await g.ev("document.getElementById('sm-l-coll').classList.contains('sel')"), '▶ wählt die Umkleide nicht aus'
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
@@ -1741,6 +1743,53 @@ async def anzeigen_muenzen_tode(g):
     assert (k['m'], k['mt'], k['f'], k['ft']) == ('1', '/ 3', '1', '/ 2'), f'Münz-Anzeige: {k}'
     assert 32 < k['bar'] < 35 and '/ 10' not in k['txt'] and k['need'] == 0, f'Gold-Zählung/Pflicht noch da: {k}'
     assert k['h'] >= 50 and 'TODE' in k['tode'], f'Tode-Anzeige zu klein/ohne Beschriftung: {k}'
+
+@test
+async def paket_kaufen_und_muenzkonto(g):
+    """Münz-Konto je Figur: am Levelende kommen die selbst gesammelten Münzen dazu. Ohne Packages kann man im
+    Packages-Bereich für 200 Münzen eins kaufen (zu wenig Münzen: nichts passiert). Schleimspur nur am Boden."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await g.ev("cosmeticsReset()")
+        await startmenue_bis_level(g)
+        await g.ev("""(() => { let a = 0, b = 0; for (const c of coins) { if (c.color === 'blue' && a < 3) { c.taken = true; c.takenBy = 'm'; a++; }
+                      if (c.color === 'pink' && b < 2) { c.taken = true; c.takenBy = 'f'; b++; } } winFinish(); })()""")
+        await p.wait_for_timeout(700)
+        k = await g.ev("cosmeticsSave.coins")
+        assert k['m'] >= 3 and k['f'] >= 2, f'Münzen nicht aufs Konto: {k}'
+        await g.ev("cosmeticsSave.pending = {m: 0, f: 0}; cosmeticsSave.coins = {m: 230, f: 50}; GameMenu.show('packs', {ret: ['levels']})")
+        await p.wait_for_timeout(600)
+        assert await g.ev("document.querySelector('.pk-m .pk-buy').classList.contains('on')"), 'kein Kaufen-Knopf ohne Packages'
+        await p.keyboard.press('Space'); await p.wait_for_timeout(200); await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        k = await g.ev("[cosmeticsSave.coins, cosmeticsSave.pending]")
+        assert k == [{'m': 30, 'f': 50}, {'m': 1, 'f': 0}], f'Kaufen: {k}'
+        await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+        assert await g.ev("PackagesUI.PK.sides.m.phase") == 'shake', 'gekauftes Paket lässt sich nicht öffnen'
+    finally:
+        srv.shutdown()
+    # Schleimspur: am Boden ja, in der Luft keine neuen Tropfen
+    n = await g.ev("""(() => { const st = cosNewState(), it = COSMETIC.trail_slime, rig = g => ({x: 100, y: 100, r: 21, roll: 0, vx: 5, vy: g ? 0 : -6, grounded: g, facing: 1});
+      for (let i = 0; i < 30; i++) cosStep(rig(true), st, 'm', {trail: it}); const boden = st.parts.length; st.parts.length = 0;
+      for (let i = 0; i < 30; i++) cosStep(rig(false), st, 'm', {trail: it}); return [boden, st.parts.length]; })()""")
+    assert n[0] > 5 and n[1] == 0, f'Schleimspur: {n}'
+
+@test
+async def level_ladefehler_mit_grund(g):
+    """Lässt sich ein Level nicht laden, springt das Spiel nicht still zurück, sondern zeigt in der Levelauswahl den Grund."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await p.route('**/levels/level-3.json*', lambda r: r.fulfill(status=404, body='weg'))
+        await g.ev("GameMenu.unlockAll(); GameMenu.show('levels')"); await p.wait_for_timeout(600)
+        await g.ev("document.querySelectorAll('#sm-cards .lc')[2].click()"); await p.wait_for_timeout(400)
+        await g.ev("document.querySelectorAll('#sm-cards .lc')[2].click()"); await p.wait_for_timeout(700)
+        await g.ev("document.getElementById('sm-go-btn').click()")
+        await p.wait_for_function("document.getElementById('sm-modal').classList.contains('on')", timeout=15000)
+        t = await g.ev("document.getElementById('sm-modal-text').textContent")
+        assert '404' in t and await sm_screen(g) == 'sm-s-levels', f'Fehlermeldung: {t}'
+    finally:
+        srv.shutdown()
 
 async def main(filter_):
     async with async_playwright() as pw:

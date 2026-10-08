@@ -249,6 +249,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Münz-Zähler oben links). Wer mehr Tode hat: Zahl rot und das Gesicht wird mit jedem Tod Vorsprung größer (+12 % je
     Tod, höchstens +80 %); bei jedem Tod hüpft die Zahl. Zählt pro Level: Weitermachen und R lassen den Stand, ein neu
     geladenes Level beginnt bei 0 (deathCount in 01-level.js; Test tode_zaehler).
+  - Level starten aus der Levelauswahl: Level-Datei wird bis zu 3× versucht zu laden; klappt es nicht (oder bricht der
+    Aufbau ab), zeigt die Levelauswahl ein Fenster „Level konnte nicht starten“ mit dem Grund (z. B. HTTP 404) statt
+    still zurückzuspringen (Test level_ladefehler_mit_grund).
   - Beide im Ziel: während des Tanzes keine Einblendung; danach ein Statistik-Bildschirm im Stil von
     Hauptmenü/Levelauswahl („LEVEL GESCHAFFT“, Level-Nummer + Name): für Affe und Schweinchen je eine Glas-Karte mit
     Gesicht, Münzen (selbst gesammelt, / Münzen der eigenen Farbe) und Toden; Zahlen zählen hoch; Schilder
@@ -410,7 +413,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         einzeln hoch (0 → 1 → 2), jeder Schritt mit Aufploppen und aufsteigendem Glockenton.
       Öffnen: freiwillig – im Statistik-Bildschirm Knopf „Packages öffnen (n)“ neben „Weiter“ („Weiter“ ist
         vorausgewählt), oder später in der Levelauswahl über den eigenen Menüpunkt „Packages öffnen“.
-        Ungeöffnete bleiben im Inventar.
+        Ungeöffnete bleiben im Inventar. Der Packages-Bereich ist nie gesperrt (auch ohne Packages erreichbar).
+      Münz-Konto + Paket kaufen: am Levelende kommen die selbst gesammelten Münzen jeder Figur auf ihr Konto
+        (Affe blau, Schweinchen pink; gespeichert in cosmeticsSave.coins). Hat eine Figur keine Packages mehr, steht
+        auf ihrer Seite ein blasses Paket und der Knopf „Paket kaufen · 200 Münzen“ (PACKAGE_PRICE in 26); Springen
+        oder Klick kauft (Konto −200, Paket fällt herein). Zu wenig Münzen: Knopf zeigt „noch X“, Wackeln + Hinweis.
+        Kontostand steht oben in der Kopfzeile jeder Seite (Münze in Figurenfarbe).
         Bildschirm geteilt: links Affe, rechts Schweinchen, beide gleichzeitig mit ihrer eigenen Springen-Taste
         (Spieler 1: Leertaste/✕, Spieler 2: Enter/✕), oder Klick auf die Hälfte. Esc/„Fertig“ zurück (nicht mitten im Öffnen).
         Ablauf „Geschenkpaket“ (realistisch, leicht schräg von vorn mit Vorderseite, Seite und Deckel-Oberseite,
@@ -429,7 +437,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         schon da ist (dann lieber ein fehlendes einer tieferen Stufe); Legendär/Prestige nie (dann ein fehlendes
         Item der nächsttieferen Stufe).
       55 Items in 5 Slots (je Slot eins angelegt; auf Nutzerwunsch entfernt: Kategorie „Anhängsel“, Ei, Eiswürfel,
-        Schatten-Aura): Roll-Spur (je schneller, desto mehr), Aura, Begleiter (folgt,
+        Schatten-Aura): Roll-Spur (je schneller, desto mehr; die Schleimspur nur beim Rollen am Boden, nicht im Sprung), Aura, Begleiter (folgt,
         hüpft beim Springen mit, Leerlauf-Animation; Geist/Fledermaus/Roboter schweben), Kreisende Objekte (seltener =
         mehr Objekte), Kugel-Skins (Fußball, Tennisball, Käse,
         Basketball, Melone, Wolle, Billard, Kürbis, Disco, Planet, Kristallkugel … – rollen komplett mit,
@@ -438,7 +446,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         festen Takt (cosmeticsStep in stepSim).
       Levelauswahl: oben rechts neben dem Titel zwei eigene Menüpunkte im modernen Kachel-Stil ohne Emojis
         (Linien-Icons): „Packages öffnen“ (Geschenk-Icon mit Zahl, darunter „Affe x · Schweinchen y“; ohne Packages
-        blass, Drücken -> Hinweis) und „Umkleide“ (Kleiderbügel-Icon, „x / 110 Items gesammelt“). Sie liegen so hoch,
+        „Packages – Kaufen für 200 Münzen“, öffnet trotzdem) und „Umkleide“ (Kleiderbügel-Icon, „x / 110 Items gesammelt“). Sie liegen so hoch,
         dass sie sich nie mit den Figuren über der gewählten Levelkarte überschneiden. „Fortschritt x / 6“ steht
         jetzt unten rechts. ▲ wählt „Packages öffnen“, ◀ ▶ wechselt zur Umkleide, Springen öffnet, ▼ zurück zu den
         Levelkarten; E / Num 1 / □ / △ oder Klick öffnen die Umkleide direkt. Hinweise ohne Emojis.

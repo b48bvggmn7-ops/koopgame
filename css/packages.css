@@ -128,3 +128,14 @@
 #sm .co-back{left:auto;right:4cqw;bottom:auto;top:8cqh;font-size:1.5cqw;padding:.9cqh 1.8cqw}
 #sm #sm-s-results .r-row{padding:.6cqh 0}
 #sm #sm-s-results .r-row b{font-size:3.6cqw}
+/* Münz-Konto + Paket kaufen (Packages-Bildschirm) */
+#sm .pk-head .coinb{display:inline-flex;align-items:center;gap:.4cqw;margin-left:.8cqw;padding-left:.8cqw;border-left:.12cqw solid var(--line);color:var(--text)}
+#sm .pk-head .coinb i{width:1.2cqw;height:1.2cqw;border-radius:50%}
+#sm .pk-head .coinb.m i{background:radial-gradient(circle at 35% 30%,#e3f2ff 0 12%,#74c0fc 35%,#1c6fd1)}
+#sm .pk-head .coinb.f i{background:radial-gradient(circle at 35% 30%,#ffe3ef 0 12%,#faa2c1 35%,#d6336c)}
+#sm .pk-buy{position:absolute;left:50%;top:72cqh;translate:-50% 0;display:none;font-size:1.6cqw;pointer-events:auto;white-space:nowrap}
+#sm .pk-buy.on{display:block}
+#sm .pk-buy.sel{background:linear-gradient(90deg,#ffb547,#ff7a1a);color:#2a1004;border-color:transparent;box-shadow:0 0 2cqw rgba(255,140,40,.5)}
+#sm .pk-buy.poor{opacity:.75}
+#sm .pk-buy.shake{animation:shake .4s}
+#sm .pk-head{font-size:1.6cqw} #sm .pk-head>b{display:none}

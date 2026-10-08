@@ -27,7 +27,7 @@ function cosStep(rig, st, who, items){
   const speed = Math.hypot(rig.vx, rig.vy), move = Math.min(1, speed/5);
   st.hist.unshift({x:rig.x, y:rig.y, s:speed}); if(st.hist.length > 40) st.hist.length = 40;
   const trail = items.trail;
-  if(trail){
+  if(trail && !(trail.fx.kind === 'slime' && !rig.grounded)){   // Schleimspur nur beim Rollen am Boden, nicht im Sprung
     const fx = trail.fx, rate = trailRate(fx.kind)*(0.15 + move*1.1);
     let n = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
     while(n-- > 0) st.parts.push(newTrailPart(fx, rig, move));
