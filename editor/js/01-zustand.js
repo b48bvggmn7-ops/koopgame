@@ -23,7 +23,7 @@ const SOLID_TILES = ['ground','wall','platform','crumble'];   // nur diese könn
 const MAX_LINK = 60;          // höchste Verknüpfungs-Nummer (Ausbau 2: früher 20)
 
 let tiles = {}; // key "c,r" -> type
-let hooks = []; let switches = []; let doors = [];
+let hooks = [];   // Hebel (switches), Türen (doors), Druckplatten (plates): jetzt in elementPunkte (Register)
 let startM = null, startF = null, goal = null;
 let currentTool = 'ground';
 let painting = false;
@@ -33,7 +33,6 @@ let spikes = [];             // [{c,r,dir}]  dir: 0=Spitzen oben, 1=rechts, 2=un
 let clickNotDrag = false;
 let coins = [];              // [{c,r,color}]  color: 'blue' (Affe) | 'pink' (Schweinchen) | 'gold' (beide)
 let checkpoints = [];        // [{c,r}]
-let plates = [];             // [{c,r,link}] Druckplatte: Verknüpfung AN, solange jemand draufsteht
 // Punkt-Elemente aus dem Register (elemente/, z. B. Sprungpilz): je Element eine Liste [{c,r}] unter seinem Spiel-Feld
 const elementPunkte = {};
 const punktElemente = () => ELEMENTE.filter(E => E.editor && E.editor.art === 'punkt');
@@ -74,7 +73,7 @@ function editorBgKey(){ return meta.look || (meta.tageszeit==='nacht' ? 'nacht' 
 function maxUsedCol(){
   let m = -1;
   for(const k in tiles){ const c = +k.split(',')[0]; if(c>m) m=c; }
-  for(const p of [...hooks, ...switches, ...doors, ...spikes, ...coins, ...checkpoints, ...plates, ...Object.values(elementPunkte).flat(), startM, startF, goal]) if(p && p.c>m) m=p.c;
+  for(const p of [...hooks, ...spikes, ...coins, ...checkpoints, ...Object.values(elementPunkte).flat(), startM, startF, goal]) if(p && p.c>m) m=p.c;
   for(const mv of movers) if(mv.c+mv.dc>m) m=mv.c+mv.dc;
   for(const h of hooks) if(h.move && h.c+h.move.dc>m) m=h.c+h.move.dc;
   return m;
@@ -103,7 +102,9 @@ function snapshot(){
   return {
     cols: COLS,
     tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }),
-    hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, plates, ...elementPunkte,
+    // Reihenfolge der Felder wie früher (Hebel/Türen/Druckplatten stehen jetzt in elementPunkte)
+    hooks, switches: elementPunkte.switches, doors: elementPunkte.doors, spikes, coins, checkpoints, startM, startF, goal, movers,
+    plates: elementPunkte.plates, ...elementPunkte,
     theme: meta.look || undefined, welt: meta.welt, tageszeit: meta.tageszeit || undefined, wetter: meta.wetter,
     titel: meta.titel || undefined, position: meta.position || undefined,
     linkNames: Object.keys(linkNames).length ? {...linkNames} : undefined
@@ -114,14 +115,11 @@ function applySnapshot(d){
   if(Array.isArray(d.tiles)) for(const [c,r,t] of d.tiles) tiles[c+','+r]=t;
   else if(d.tiles) tiles = {...d.tiles};
   hooks = (d.hooks||(d.hook?[d.hook]:[])).map(x=>({...x}));
-  switches = (d.switches||[]).map(x=>({...x}));
-  doors = (d.doors||[]).map(x=>({...x}));
   startM=d.startM||null; startF=d.startF||null; goal=d.goal||null;
   movers = (d.movers||[]).map(x=>({...x}));
   spikes = (d.spikes||[]).map(x=>({...x}));
   coins = (d.coins||[]).map(x=>({...x}));
   checkpoints = (d.checkpoints||[]).map(x=>({...x}));
-  plates = (d.plates||[]).map(x=>({...x}));
   for(const E of punktElemente()) elementPunkte[E.feld] = (d[E.feld]||[]).map(x=>({...x}));
   const lk = d.look || d.theme;
   meta = {welt: d.welt || THEME_WELT[d.theme] || 'dschungel', position: Number(d.position) || 0, titel: d.titel || '',
@@ -134,7 +132,7 @@ function applySnapshot(d){
 // Level-Inhalt komplett leeren (für „Alles löschen“ und „Neues leeres Level“): ALLE Objekte, auch Druckplatten,
 // Register-Elemente (Sprungpilz …) und Namen der Verknüpfungen. Die Level-Info (Welt, Titel …) bleibt.
 function clearLevelContent(){
-  tiles={}; hooks=[]; switches=[]; doors=[]; plates=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
+  tiles={}; hooks=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
   for(const k in elementPunkte) elementPunkte[k] = [];
   linkNames = {}; showLinkName();
   if(typeof selRect !== 'undefined') selRect = null;
@@ -148,9 +146,7 @@ let dirty = false;
 function updateLinkMarks(){
   const uses = {};
   const add = (n, what)=>{ if(!n) return; (uses[n] = uses[n] || new Set()).add(what); };
-  for(const s of switches) add(s.link, 'Schalter');
-  for(const d of doors) add(d.link, 'Tür');
-  for(const p of plates) add(p.link, 'Druckplatte');
+  for(const E of punktElemente()) if(E.editor.mitNummer) for(const x of elementPunkte[E.feld]) add(x.link, E.editor.nummerName);   // Schalter, Tür, Druckplatte
   for(const mv of movers) add(mv.link, 'Bewegung');
   for(const h of hooks) if(h.move) add(h.move.link, 'Haken');
   for(const sel of [linkSelect, moveSwitchSelect]){

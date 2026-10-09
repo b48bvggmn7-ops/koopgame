@@ -20,6 +20,11 @@ function mergeRects(cells){
   return rects;
 }
 
+// Spiel-Format eines Register-Elements (elemente/): Punkte bzw. Kästchen -> exportieren()
+function elementExport(feld, byType){
+  const E = ELEMENTE.find(e => e.feld === feld);
+  return E.editor.exportieren(E.editor.art === 'kachel' ? byType[E.editor.werkzeug] : elementPunkte[feld], TILE, mergeRects);
+}
 function exportLevel(){
   const groups = moverGroups();
   const movingKeys = new Set();
@@ -57,12 +62,11 @@ function exportLevel(){
     checkpoints: checkpoints.slice().sort((a,b)=>a.c-b.c).map(cp=>({x:cp.c*TILE+TILE/2, y:cp.r*TILE+TILE})),
     coins: coins.map(co=>({x:co.c*TILE+TILE/2, y:co.r*TILE+TILE/2, color:co.color||'gold'})),
     spikes: spikes.map(sp=>({x:sp.c*TILE+TILE/2, y:sp.r*TILE+TILE, w:TILE, h:TILE, dir:sp.dir||0})),
-    switches: switches.map(s=>({x:s.c*TILE+TILE/2, y:s.r*TILE+TILE/2, link:s.link})),
-    doors: doors.map(d=>({x:d.c*TILE+TILE/2, y:d.r*TILE+TILE/2, link:d.link})),
+    switches: elementExport('switches', byType), doors: elementExport('doors', byType),   // Hebel/Türen (elemente/)
     startM: startM ? {x:startM.c*TILE+TILE/2, y:startM.r*TILE+TILE} : null,
     startF: startF ? {x:startF.c*TILE+TILE/2, y:startF.r*TILE+TILE} : null,
     goal: goal ? {x:goal.c*TILE+TILE/2, y:goal.r*TILE+TILE} : null,
-    plates: plates.map(p=>({x:p.c*TILE+TILE/2, y:p.r*TILE+TILE/2, link:p.link})),
+    plates: elementExport('plates', byType),
     ...Object.fromEntries(ELEMENTE.filter(E => E.editor).map(E => [E.feld,   // Sprungpilz, Aufwind … (elemente/)
       E.editor.exportieren(E.editor.art === 'kachel' ? byType[E.editor.werkzeug] : elementPunkte[E.feld], TILE, mergeRects)])),
     welt: meta.welt, ...(meta.tageszeit ? {tageszeit: meta.tageszeit} : {}), wetter: meta.wetter,

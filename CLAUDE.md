@@ -37,7 +37,9 @@
     14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 99 Start
 - `elemente/` – **Element-Register** (Ausbau 2): eine Datei pro Spiel-Element mit allem, was dazugehört (Daten-Feld,
   Editor-Werkzeug + Zeichnen + Export, Spiel-Laden + Zeichnen + Logik). Spiel UND Editor laden diese Dateien zuerst.
-  Bisher umgestellt: `sprungpilz.js` (Punkt-Element), `aufwind.js` (Kachel-Element); Aufbau in `00-register.js`.
+  Umgestellt: `hebel.js`, `tuer.js`, `druckplatte.js` (Punkt-Elemente mit Verknüpfungs-Nummer), `sprungpilz.js`
+  (Punkt-Element), `aufwind.js` (Kachel-Element); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `assets/` – Bilder (Figuren, Schild …); `assets/audio/` – eigene Aufnahmen des Nutzers (FL Studio).
 - `editor/` – Level-Editor: `editor/index.html` lädt `editor/js/*.js` in fester Reihenfolge (klassische Skripte,
   gemeinsamer Gültigkeitsbereich wie im Spiel): 01 Zustand/Autosave · 02 Werkzeuge (Maus, Radieren, Bewegungen) ·
@@ -75,8 +77,10 @@
 4. Laufende Spiel-Logik nur im festen Takt (`stepSim`), Zeichnen ohne Spielzustand zu ändern; Werte als Konstanten.
 5. Sound (18-sound.js), Test in `tests/run_tests.py`, Mini-Testlevel in `levels/test/`, FEATURES.md, und die Frage
    „Welche Rolle haben Affe und Schweinchen?“ (AUSBAU-REGELWERK Punkt 11).
-6. Was (noch) nicht übers Register geht: Elemente mit Verknüpfungs-Nummer (Hebel/Tür/Druckplatte) und Sonderfälle in
-   der Figuren-Physik – dort wie bisher direkt im Spiel-Code ergänzen und hier im Register vermerken.
+6. Element mit Verknüpfungs-Nummer: `editor.mitNummer: true` + `nummerName` (Muster `hebel.js`); was beim An/Aus der
+   Nummer passiert, gehört ins Verknüpfungs-System in `js/05-level-objekte.js`. Sonderfälle in der Figuren-Physik
+   (z. B. Aufwind beim Segeln) bleiben in `js/08-figur-physik-seil.js`, die Werte/Hilfsfunktionen in der Element-Datei.
+7. Zeichen-Hilfen, die Elemente brauchen (z. B. `linkColor`), müssen außerhalb von `draw()` stehen (12-welt-zeichnen.js).
 
 ## Steuerung (Kurzfassung)
 | | Affe (Spieler 1) | Schweinchen (Spielerin 2) | Controller |

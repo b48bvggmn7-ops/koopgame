@@ -81,9 +81,7 @@ function buildLevel(data){
   deathCount = {m: 0, f: 0};
   solids = (data.solids||[]).filter(s=>s.type!=='fake').map(s=>({...s}));
   fakeWalls = (data.solids||[]).filter(s=>s.type==='fake').map(s=>({...s}));
-  plates = (data.plates||[]).map(p=>({x:p.x, y:p.y, link:p.link, down:false}));
-  for(const E of ELEMENTE) if(E.spiel && E.spiel.laden) E.spiel.laden(data);   // Aufwind, Sprungpilz … (elemente/)
-  switchDefs = (data.switches||[]).map(s=>({...s}));
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.laden) E.spiel.laden(data);   // Hebel, Türen, Druckplatten, Pilze, Aufwind … (elemente/)
   hooks = (data.hooks||[]).map(h=>{
     const o = {...h};
     if(typeof h.targetX === 'number'){
@@ -100,11 +98,6 @@ function buildLevel(data){
                      .sort((a,b)=>a.x-b.x);
   coinsNeeded = 0;   // keine Mindest-Münzen fürs Ziel mehr (Nutzerwunsch: gemeinsame Gold-Zählung „x / 10“ entfernt)
   movingPlatforms = (data.movingPlatforms||[]).map(m=>({...m}));
-  for(const d of (data.doors||[])){
-    // Editor liefert den Mittelpunkt des Kästchens -> in obere linke Ecke umrechnen
-    const dw = d.w||40, dh = d.h||40;
-    solids.push({x:d.x-dw/2, y:d.y-dh/2, w:dw, h:dh, type:'door', link:d.link, open:false});
-  }
   for(const mp of movingPlatforms){
     solids.push({x:mp.x, y:mp.y, w:mp.w||40, h:mp.h||40, type:'moveplat', link:mp.link,
       look: mp.look==='crumble' ? 'ground' : mp.look, group: mp.group, speed: mp.speed,

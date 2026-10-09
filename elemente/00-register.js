@@ -19,6 +19,22 @@
 //             nachBewegung(figur, warAmBoden, fallVy) – nach dem Bewegen einer Figur (08-figur-physik-seil.js) }
 // Neue Elemente: Datei hier anlegen und in index.html + editor/index.html in die Lade-Liste eintragen
 // (Checkliste in CLAUDE.md).
+//   Elemente mit Verknüpfungs-Nummer (Hebel, Tür, Druckplatte): editor.mitNummer = true (Punkt bekommt link aus
+//   „Verknüpfung“), editor.nummerName = Wort für die ✓-Markierung. Die SCHALT-LOGIK (was passiert, wenn eine Nummer
+//   an/aus geht) steht gemeinsam im Verknüpfungs-System in js/05-level-objekte.js (setLink, updateDoorsAndSwitches),
+//   weil dort Hebel, Türen, Druckplatten, bewegte Teile und Haken über die Nummern zusammenspielen.
 const ELEMENTE = [];
 function elementRegistrieren(def){ ELEMENTE.push(def); return def; }
 const elementNachWerkzeug = werkzeug => ELEMENTE.find(E => E.editor && E.editor.werkzeug === werkzeug) || null;
+// (Editor) Kästchen mit Nummer zeichnen – für Hebel und Tür
+function elementNummerZeichnen(ctx, c, r, TILE, color, dark, link){
+  const cx = c*TILE+TILE/2, cy = r*TILE+TILE/2;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-TILE*0.36,cy-TILE*0.36,TILE*0.72,TILE*0.72,5) : ctx.rect(cx-TILE*0.36,cy-TILE*0.36,TILE*0.72,TILE*0.72);
+  ctx.fill();
+  ctx.strokeStyle = dark; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(link), cx, cy+1);
+}
+// (Editor + Spiel-Notlösung) Punkt mit Nummer ins Spiel-Format: Mitte des Kästchens
+const elementPunktMitte = (liste, TILE) => liste.map(p => ({x: p.c*TILE+TILE/2, y: p.r*TILE+TILE/2, link: p.link}));

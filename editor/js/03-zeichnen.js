@@ -83,16 +83,7 @@ function draw(){
     ctx.beginPath(); ctx.arc(h.c*TILE+TILE/2, h.r*TILE+TILE/2, TILE*0.3, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle='#8a6a1a'; ctx.lineWidth=2; ctx.stroke();
   }
-  for(const s of switches) drawLinked(s, '#ff9f43', '#8a4f14');
-  for(const d of doors) drawLinked(d, '#9b59b6', '#5a2d69');
-  for(const p of plates){   // Druckplatte: flache Platte unten im Kästchen mit Nummer
-    const X = p.c*TILE, Y = p.r*TILE;
-    ctx.fillStyle = '#c9a227'; ctx.fillRect(X+4, Y+TILE-12, TILE-8, 10);
-    ctx.strokeStyle = '#6b5410'; ctx.lineWidth = 2; ctx.strokeRect(X+4, Y+TILE-12, TILE-8, 10);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(p.link), X+TILE/2, Y+TILE/2-6);
-  }
-  for(const E of punktElemente()) for(const p of elementPunkte[E.feld]) E.editor.zeichnen(ctx, p.c, p.r, TILE);   // z. B. Sprungpilz
+  for(const E of punktElemente()) for(const p of elementPunkte[E.feld]) E.editor.zeichnen(ctx, p.c, p.r, TILE, p);   // Hebel, Tür, Druckplatte, Pilz … (elemente/)
 
   if(startM) drawMarker(startM,'#3a7bd5','♂');
   if(startF) drawMarker(startF,'#e0669e','♀');
@@ -187,10 +178,10 @@ function draw(){
     ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
     let txt = '⇄ '+lbl;
     if(mv.link){
-      const hasSw = switches.some(sw=>sw.link===mv.link);
+      const hasSw = elementPunkte.switches.some(sw=>sw.link===mv.link);
       txt += hasSw ? ` · Schalter ${mv.link}` : ` · Schalter ${mv.link} fehlt → fährt immer`;
     }
-    ctx.fillStyle = (mv.link && !switches.some(sw=>sw.link===mv.link)) ? '#ffb3a7' : '#e6f7ff';
+    ctx.fillStyle = (mv.link && !elementPunkte.switches.some(sw=>sw.link===mv.link)) ? '#ffb3a7' : '#e6f7ff';
     ctx.fillText(txt, (x1+x2)/2, (y1+y2)/2-6);
       }
 
@@ -200,15 +191,7 @@ function draw(){
     ctx.fillStyle='#fff'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(label, p.c*TILE+TILE/2, p.r*TILE+TILE/2+1);
   }
-  function drawLinked(p, color, dark){
-    const cx=p.c*TILE+TILE/2, cy=p.r*TILE+TILE/2;
-    ctx.fillStyle=color;
-    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx-TILE*0.36,cy-TILE*0.36,TILE*0.72,TILE*0.72,5) : ctx.rect(cx-TILE*0.36,cy-TILE*0.36,TILE*0.72,TILE*0.72);
-    ctx.fill();
-    ctx.strokeStyle=dark; ctx.lineWidth=2; ctx.stroke();
-    ctx.fillStyle='#fff'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(String(p.link), cx, cy+1);
-  }
+
 
   drawSelection();   // Rechteck-Auswahl (08-auswahl.js)
   ctx.restore();   // Verschiebung um die Himmel-Reihen

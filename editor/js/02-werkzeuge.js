@@ -8,8 +8,10 @@ for(const E of ELEMENTE){
   const ed = E.editor; if(!ed) continue;
   const box = document.querySelector(`.tgroup[data-group="${ed.gruppe}"] .tgb`) || document.getElementById('toolGroups');
   const b = document.createElement('div'); b.className = 'tool'; b.dataset.tool = ed.werkzeug; b.title = ed.titel || E.name;
-  const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = ed.farbe; b.append(sw, E.name);
-  box.insertBefore(b, ed.vor ? box.querySelector(`.tool[data-tool="${ed.vor}"]`) : null);
+  const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = ed.farbe; b.append(sw, ed.label || E.name);
+  // vor: Werkzeug-Name, oder '#id' = vor das Feld mit dieser id (z. B. „Verknüpfung“)
+  const vor = !ed.vor ? null : ed.vor[0] === '#' ? (box.querySelector(ed.vor) || {}).closest && box.querySelector(ed.vor).closest('label') : box.querySelector(`.tool[data-tool="${ed.vor}"]`);
+  box.insertBefore(b, vor || null);
 }
 document.querySelectorAll('.tool').forEach(el=>{
   el.addEventListener('click', ()=>{
@@ -87,10 +89,7 @@ function eraseAt(c,r){
   spikes = spikes.filter(h=>!(h.c===c&&h.r===r));
   coins = coins.filter(h=>!(h.c===c&&h.r===r));
   checkpoints = checkpoints.filter(h=>!(h.c===c&&h.r===r));
-  plates = plates.filter(h=>!(h.c===c&&h.r===r));
   for(const k in elementPunkte) elementPunkte[k] = elementPunkte[k].filter(h=>!(h.c===c&&h.r===r));
-  switches = switches.filter(s=>!(s.c===c&&s.r===r));
-  doors = doors.filter(d=>!(d.c===c&&d.r===r));
   if(startM && startM.c===c && startM.r===r) startM=null;
   if(startF && startF.c===c && startF.r===r) startF=null;
   if(goal && goal.c===c && goal.r===r) goal=null;
@@ -117,18 +116,9 @@ function applyTool(c,r,forceErase){
     const ex = spikes.find(h=>h.c===c&&h.r===r);
     if(ex){ if(clickNotDrag) ex.dir = ((ex.dir||0) + 1) % 4; }   // Klick auf vorhandene Stacheln = drehen
     else spikes.push({c, r, dir:Number(document.getElementById('spikeDir').value)});
-  } else if(tool==='switch'){
-    const link = Number(linkSelect.value);
-    if(!switches.some(s=>s.c===c&&s.r===r)) switches.push({c,r,link});
-  } else if(tool==='door'){
-    const link = Number(linkSelect.value);
-    if(!doors.some(d=>d.c===c&&d.r===r)) doors.push({c,r,link});
-  } else if(tool==='plate'){
-    const link = Number(linkSelect.value);
-    if(!plates.some(d=>d.c===c&&d.r===r)) plates.push({c,r,link});
-  } else if(elementNachWerkzeug(tool) && elementNachWerkzeug(tool).editor.art === 'punkt'){   // z. B. Sprungpilz (elemente/)
-    const L = elementPunkte[elementNachWerkzeug(tool).feld];
-    if(!L.some(d=>d.c===c&&d.r===r)) L.push({c,r});
+  } else if(elementNachWerkzeug(tool) && elementNachWerkzeug(tool).editor.art === 'punkt'){   // Hebel, Tür, Druckplatte, Sprungpilz … (elemente/)
+    const E = elementNachWerkzeug(tool), L = elementPunkte[E.feld];
+    if(!L.some(d=>d.c===c&&d.r===r)) L.push(E.editor.mitNummer ? {c, r, link: Number(linkSelect.value)} : {c,r});   // Hebel/Tür/Druckplatte: mit Nummer
   }
   else if(tool==='startM'){ startM = {c,r}; }
   else if(tool==='startF'){ startF = {c,r}; }

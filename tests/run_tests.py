@@ -2233,7 +2233,7 @@ async def editor_rueckgaengig_und_auswahl(g):
         assert await p.evaluate("Object.keys(tiles).length") == 7, 'Wiederholen geht nicht'
         # kleine Szene: Boden, Hebel 1, Tür 1, Haken mit Bewegung (Schalter 1), bewegtes Bodenstück (Schalter 1)
         await p.evaluate("""(() => { tiles['3,12'] = 'ground'; tiles['4,12'] = 'ground';
-          switches.push({c: 2, r: 9, link: 1}); doors.push({c: 6, r: 9, link: 1});
+          elementPunkte.switches.push({c: 2, r: 9, link: 1}); elementPunkte.doors.push({c: 6, r: 9, link: 1});
           hooks.push({c: 5, r: 6, radius: 4, move: {dc: 3, dr: 0, speed: 3, link: 1}});
           movers.push({c: 3, r: 12, dc: 0, dr: -2, speed: 2, link: 1}); save(); })()""")
         n0 = await p.evaluate("undoStack.length")
@@ -2243,29 +2243,29 @@ async def editor_rueckgaengig_und_auswahl(g):
         await p.keyboard.press('Control+c')
         x, y = await ed_zelle(p, 20, 6); await p.mouse.move(x, y)
         await p.keyboard.press('Control+v'); await p.wait_for_timeout(100)
-        k = await p.evaluate("""({sw: switches.map(s => [s.c, s.r, s.link]), dr: doors.map(d => [d.c, d.link]), hk: hooks.map(h => [h.c, h.r, h.move.link, h.move.dc]),
+        k = await p.evaluate("""({sw: elementPunkte.switches.map(s => [s.c, s.r, s.link]), dr: elementPunkte.doors.map(d => [d.c, d.link]), hk: hooks.map(h => [h.c, h.r, h.move.link, h.move.dc]),
                                mv: movers.map(m => [m.c, m.r, m.link, m.dr]), t: ['20,10', '26,10', '21,12', '22,12'].map(k => tiles[k] || null)})""")
         assert k['sw'] == [[2, 9, 1], [20, 9, 2]] and k['dr'] == [[6, 1], [24, 2]], f'Hebel/Tür nicht neu nummeriert: {k}'
         assert k['hk'] == [[5, 6, 1, 3], [23, 6, 2, 3]] and k['mv'] == [[3, 12, 1, -2], [21, 12, 2, -2]], f'Haken/Bewegung falsch: {k}'
         assert k['t'] == ['ground', 'ground', 'ground', 'ground'], f'Kästchen nicht kopiert: {k}'
         assert await p.evaluate("undoStack.length") == n0 + 1, 'Einfügen nicht als ein Schritt rückgängig machbar'
         await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
-        assert await p.evaluate("switches.length") == 1, 'Einfügen nicht rückgängig'
+        assert await p.evaluate("elementPunkte.switches.length") == 1, 'Einfügen nicht rückgängig'
         # ausschneiden + einfügen: Nummer bleibt (kein Konflikt mehr)
         await p.evaluate("selRect = {c0: 2, r0: 6, c1: 8, r1: 12}")
         await p.keyboard.press('Control+x'); await p.wait_for_timeout(100)
-        assert await p.evaluate("switches.length + doors.length + hooks.length + movers.length") == 0, 'Ausschneiden lässt etwas stehen'
+        assert await p.evaluate("elementPunkte.switches.length + elementPunkte.doors.length + hooks.length + movers.length") == 0, 'Ausschneiden lässt etwas stehen'
         x, y = await ed_zelle(p, 30, 6); await p.mouse.move(x, y)
         await p.keyboard.press('Control+v'); await p.wait_for_timeout(100)
-        assert await p.evaluate("[switches[0].c, switches[0].link, doors[0].link, hooks[0].move.link, movers[0].link]") == [30, 1, 1, 1, 1]
+        assert await p.evaluate("[elementPunkte.switches[0].c, elementPunkte.switches[0].link, elementPunkte.doors[0].link, hooks[0].move.link, movers[0].link]") == [30, 1, 1, 1, 1]
         # verschieben: in die Auswahl klicken und ziehen (Start ♂ darin wandert mit)
         await p.evaluate("startM = {c: 31, r: 11}; save()")
         await ed_ziehen(p, (32, 8), (35, 7)); await p.wait_for_timeout(100)
-        assert await p.evaluate("[switches[0].c, switches[0].r, startM.c, startM.r, tiles['34,11'], tiles['31,12'] || null]") == [33, 8, 34, 10, 'ground', None], \
+        assert await p.evaluate("[elementPunkte.switches[0].c, elementPunkte.switches[0].r, startM.c, startM.r, tiles['34,11'], tiles['31,12'] || null]") == [33, 8, 34, 10, 'ground', None], \
             await p.evaluate("JSON.stringify({sw: switches, s: startM})")
         # Entf löscht den Inhalt der Auswahl
         await p.keyboard.press('Delete'); await p.wait_for_timeout(100)
-        assert await p.evaluate("switches.length + doors.length + hooks.length + movers.length") == 0
+        assert await p.evaluate("elementPunkte.switches.length + elementPunkte.doors.length + hooks.length + movers.length") == 0
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
@@ -2304,7 +2304,8 @@ async def element_register(g):
         for d in dateien: assert f"'{d}'" in t, f'{d}.js fehlt in {html.name}'
         assert "elemente/' + " in t and ".js?v=' + " in t, f'{html}: Element-Dateien ohne ?v='
     k = await g.ev("ELEMENTE.map(E => [E.id, E.feld, !!E.editor, !!(E.spiel && E.spiel.laden && E.spiel.zeichnen)])")
-    assert k == [['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True]], k
+    assert k == [['hebel', 'switches', True, True], ['tuer', 'doors', True, False], ['druckplatte', 'plates', True, True],
+                 ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True]], k   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2318,6 +2319,15 @@ async def element_register(g):
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['hook', 'wind', 'bounce', 'move'], reihe
+        logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
+        assert logik == ['switch', 'door', 'plate', 'LABEL', 'INPUT'], logik
+        # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
+        await p.select_option('#linkSelect', '7')
+        for t, c in (('switch', 2), ('door', 3), ('plate', 5)):
+            await p.click(f'.tool[data-tool={t}]'); x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out2 = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert (out2['switches'], out2['doors'], out2['plates']) == ([{'x': 100, 'y': 660, 'link': 7}], [{'x': 140, 'y': 660, 'link': 7}], [{'x': 220, 'y': 660, 'link': 7}]), out2
+        assert '✓ Schalter, Tür, Druckplatte' in await p.evaluate("[...linkSelect.options].find(o => o.value === '7').textContent")
         await p.click('.tool[data-tool=bounce]'); x, y = await ed_zelle(p, 4, 16); await p.mouse.click(x, y)
         await p.click('.tool[data-tool=wind]'); await ed_ziehen(p, (8, 14), (8, 16))
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
@@ -2332,8 +2342,8 @@ async def editor_alles_loeschen_wirklich_alles(g):
     """„Alles löschen“ und „Neues leeres Level“ entfernen WIRKLICH alles – auch Druckplatten und Sprungpilze
     (Fehler bis Ausbau 2: die blieben stehen)."""
     srv = webserver(); p = g.p
-    fuellen = """(() => { tiles['3,10'] = 'ground'; tiles['5,8'] = 'wind'; plates.push({c: 4, r: 9, link: 2}); elementPunkte.bouncers.push({c: 6, r: 9});
-      switches.push({c: 7, r: 9, link: 2}); doors.push({c: 8, r: 9, link: 2}); coins.push({c: 9, r: 9, color: 'blue'}); linkNames[2] = 'Tor'; save(); })()"""
+    fuellen = """(() => { tiles['3,10'] = 'ground'; tiles['5,8'] = 'wind'; elementPunkte.plates.push({c: 4, r: 9, link: 2}); elementPunkte.bouncers.push({c: 6, r: 9});
+      elementPunkte.switches.push({c: 7, r: 9, link: 2}); elementPunkte.doors.push({c: 8, r: 9, link: 2}); coins.push({c: 9, r: 9, color: 'blue'}); linkNames[2] = 'Tor'; save(); })()"""
     leer = """(() => { const d = JSON.parse(exportLevel()); return ['solids', 'winds', 'plates', 'bouncers', 'switches', 'doors', 'coins']
       .filter(k => (d[k] || []).length).concat(Object.keys(linkNames).length ? ['linkNames'] : []); })()"""
     try:
@@ -2343,7 +2353,7 @@ async def editor_alles_loeschen_wirklich_alles(g):
         await p.click('#clearBtn'); await p.click('#clearBtn'); await p.wait_for_timeout(100)   # 2. Klick bestätigt
         assert await p.evaluate(leer) == [], f'„Alles löschen“ lässt stehen: {await p.evaluate(leer)}'
         await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
-        assert await p.evaluate("plates.length + elementPunkte.bouncers.length") == 2, 'Alles löschen nicht rückgängig machbar'
+        assert await p.evaluate("elementPunkte.plates.length + elementPunkte.bouncers.length") == 2, 'Alles löschen nicht rückgängig machbar'
         await p.evaluate("dirty = false")
         await p.click('#levelsBtn'); await p.click('#newLevelBtn'); await p.wait_for_timeout(100)
         assert await p.evaluate(leer) == [], f'„Neues leeres Level“ lässt stehen: {await p.evaluate(leer)}'

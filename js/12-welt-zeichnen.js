@@ -292,6 +292,13 @@ const SPIKE_SPRITE = (()=>{
   for(const rx of [5, 15, 25, 35]){ g.beginPath(); g.arc(rx, 36.4, 1.2, 0, Math.PI*2); g.fill(); }
   return c;
 })();
+// Farbe je Schalter-Nummer: Schalter und alles, was er steuert, tragen dieselbe Farbe + Nummer
+const LINK_COLORS = {1:'#ff922b', 2:'#339af0', 3:'#9775fa', 4:'#12b886', 5:'#f06595', 6:'#e0b000',
+  7:'#e8590c', 8:'#1c7ed6', 9:'#7048e8', 10:'#2b8a3e', 11:'#c2255c', 12:'#a07800', 13:'#0b7285', 14:'#d6336c',
+  15:'#5c940d', 16:'#862e9c', 17:'#e67700', 18:'#364fc7', 19:'#087f5b', 20:'#b02525'};
+// ab 21 (falls je nötig): automatisch verteilte Farbtöne
+const linkColor = n => LINK_COLORS[n] || `hsl(${(n*137.5)%360},60%,45%)`;
+// (steht außerhalb von draw(), damit auch die Elemente in elemente/ – Hebel, Druckplatte – sie benutzen können)
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_BACK_MIN..CAM_BACK_PUSH px,
   // Totzone gegen Wackeln, cameraTarget in 09-kamera.js), damit man möglichst viel von dem sieht,
@@ -518,12 +525,6 @@ function draw(){
 
   // Bewegte Stücke sehen aus wie normaler Boden/Wand. Die Textur ist am Stück selbst verankert
   // (nicht an der Welt), damit sie mitfährt statt unter dem Stück durchzurutschen.
-  // Farbe je Schalter-Nummer: Schalter und alles, was er steuert, tragen dieselbe Farbe + Nummer
-const LINK_COLORS = {1:'#ff922b', 2:'#339af0', 3:'#9775fa', 4:'#12b886', 5:'#f06595', 6:'#e0b000',
-  7:'#e8590c', 8:'#1c7ed6', 9:'#7048e8', 10:'#2b8a3e', 11:'#c2255c', 12:'#a07800', 13:'#0b7285', 14:'#d6336c',
-  15:'#5c940d', 16:'#862e9c', 17:'#e67700', 18:'#364fc7', 19:'#087f5b', 20:'#b02525'};
-// ab 21 (falls je nötig): automatisch verteilte Farbtöne
-const linkColor = n => LINK_COLORS[n] || `hsl(${(n*137.5)%360},60%,45%)`;
 // bewegter Boden je Gruppe zusammengefasst: Umriss jetzt, Umriss am Start, Verschiebung
 function moverGroupInfo(){
   const map = new Map();
@@ -675,60 +676,7 @@ function drawSolidLook(s, look, x){
     ctx.restore();
   }
 
-  for(const sw of switchDefs){
-    const x=sw.x-camX;
-    if(x<-30||x>VW+30) continue;
-    const anyOpen = !!linkOn[sw.link];   // Hebel steht rechts, solange er eingeschaltet ist
-    const col = linkColor(sw.link);
-    // Hebel: Sockel am Boden, Stange mit Kugel. Aus = nach links geneigt, an = nach rechts.
-    const target = anyOpen ? 1 : 0;
-    sw.anim = sw.anim===undefined ? target : sw.anim + (target - sw.anim) * 0.25;
-    let ang = -0.6 + sw.anim*1.2;
-    if(sw.pulledT){ const k = (performance.now()-sw.pulledT)/260; if(k < 1) ang += Math.sin(k*Math.PI)*0.15; } // kleiner Nachschwung
-    const baseY = sw.y + 20;                 // Kästchen-Unterkante = Boden
-    const xr = Math.round(x);
-    // Stange
-    ctx.save(); ctx.translate(xr, baseY-9); ctx.rotate(ang);
-    ctx.strokeStyle = '#6b5a4a'; ctx.lineWidth = 5; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-26); ctx.stroke();
-    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0,-28,7,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(-2.2,-30.5,2.3,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-    // Sockel mit Nummer
-    ctx.fillStyle = 'rgba(0,0,0,.15)'; roundRect(xr-17, baseY-12, 34, 13, 5); ctx.fill();
-    ctx.fillStyle = '#8c7b69'; roundRect(xr-16, baseY-14, 32, 13, 5); ctx.fill();
-    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xr, baseY-8, sw.link > 9 ? 7.5 : 6.5, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.font=(sw.link > 9 ? 'bold 8px' : 'bold 9px') + ' sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(String(sw.link), xr, baseY-7.5);
-    if(anyOpen){ ctx.strokeStyle = col; ctx.globalAlpha = 0.4 + 0.25*Math.sin(performance.now()*0.008); ctx.lineWidth = 2.5;
-      roundRect(xr-20, baseY-18, 40, 20, 8); ctx.stroke(); ctx.globalAlpha = 1; }
-    // Tasten-Hinweis, wenn jemand davor steht
-    const hints = [];
-    if(leverNear(p1, sw)) hints.push(padConnected[0] ? '○' : 'J');
-    if(leverNear(p2, sw)) hints.push(padConnected[1] ? '○' : 'Num 2');
-    if(hints.length){
-      const label = [...new Set(hints)].join(' / ');
-      ctx.font = 'bold 12px sans-serif';
-      const tw = ctx.measureText(label).width + 14, hy = baseY - 62 + Math.sin(performance.now()*0.006)*2;
-      ctx.fillStyle = 'rgba(20,28,38,.85)'; roundRect(xr - tw/2, hy, tw, 20, 6); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label, xr, hy+10.5);
-    }
-  }
-
-  // Druckplatten: Steinplatte mit Nummer, sinkt ein, solange jemand draufsteht
-  for(const pl of plates){
-    const x = Math.round(pl.x - camX);
-    if(x < -40 || x > VW + 40) continue;
-    const baseY = pl.y + 20, col = linkColor(pl.link), d = pl.down ? 4 : 0;
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; roundRect(x - 20, baseY - 6, 40, 6, 2); ctx.fill();
-    ctx.fillStyle = '#6b5410'; roundRect(x - 19, baseY - 11 + d, 38, 11 - d, 3); ctx.fill();
-    ctx.fillStyle = pl.down ? col : '#d9b44a'; roundRect(x - 17, baseY - 10 + d, 34, 8 - d*0.5, 3); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(x - 15, baseY - 10 + d, 30, 1.5);
-    ctx.fillStyle = pl.down ? '#fff' : col; ctx.beginPath(); ctx.arc(x, baseY - 4.5 + d/2, 5.5, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = pl.down ? col : '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(pl.link), x, baseY - 4 + d/2);
-  }
-  // Elemente aus dem Register (elemente/): Sprungpilze, Aufwind …
+  // Elemente aus dem Register (elemente/): Hebel, Druckplatten, Sprungpilze, Aufwind … (Türen: mit den Wänden oben)
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnen) E.spiel.zeichnen();
 
   // Plaketten an allem, was ein Schalter steuert (gleiche Farbe + Nummer wie der Hebel)

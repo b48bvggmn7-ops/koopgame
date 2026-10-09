@@ -50,11 +50,11 @@ let clipboard = null;          // kopierter Inhalt, Koordinaten relativ zur link
 let hoverCell = null;          // Kästchen unter der Maus (Ziel für Strg+V)
 // alle Objekt-Listen, die Kästchen-Punkte {c, r, …} enthalten (Getter, weil eraseAt die Listen neu zuweist)
 const POINT_LISTS = {
-  hooks: ()=>hooks, switches: ()=>switches, doors: ()=>doors, plates: ()=>plates,
+  hooks: ()=>hooks,
   spikes: ()=>spikes, coins: ()=>coins, checkpoints: ()=>checkpoints,
 };
 const SET_LIST = {
-  hooks: v=>hooks=v, switches: v=>switches=v, doors: v=>doors=v, plates: v=>plates=v,
+  hooks: v=>hooks=v,
   spikes: v=>spikes=v, coins: v=>coins=v, checkpoints: v=>checkpoints=v,
 };
 for(const k in elementPunkte){ POINT_LISTS[k] = ()=>elementPunkte[k]; SET_LIST[k] = v=>elementPunkte[k]=v; }   // Register-Elemente
@@ -85,7 +85,7 @@ function eraseRect(R, withMarkers){
 // Verknüpfungs-Nummern im Level (ohne die gerade eingefügten)
 function usedLinks(){
   const u = new Set();
-  for(const x of [...switches, ...doors, ...plates]) if(x.link) u.add(x.link);
+  for(const E of punktElemente()) if(E.editor.mitNummer) for(const x of elementPunkte[E.feld]) if(x.link) u.add(x.link);   // Hebel, Tür, Druckplatte
   for(const m of movers) if(m.link) u.add(m.link);
   for(const h of hooks) if(h.move && h.move.link) u.add(h.move.link);
   return u;
@@ -96,7 +96,7 @@ function pasteClip(clip, c0, r0, renumber){
   const map = {};
   if(renumber){
     const used = usedLinks(), want = new Set();
-    for(const x of [...clip.lists.switches, ...clip.lists.doors, ...clip.lists.plates]) if(x.link) want.add(x.link);
+    for(const E of punktElemente()) if(E.editor.mitNummer) for(const x of clip.lists[E.feld] || []) if(x.link) want.add(x.link);
     for(const m of clip.movers) if(m.link) want.add(m.link);
     for(const h of clip.lists.hooks) if(h.move && h.move.link) want.add(h.move.link);
     let next = 1;

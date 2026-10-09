@@ -434,6 +434,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         (einfach drüberlaufen tut nichts – Nutzerwunsch)
         (BOUNCE_V -17,2 ≈ 5,8 Kästchen; Wandsprung danach wieder möglich), Pilz staucht sich, Quietsch-Ton.
     Tests neue_elemente, editor_neue_werkzeuge.
+  - ELEMENT-REGISTER (Ausbau 2, elemente/): Hebel (hebel.js), Tür (tuer.js) und Druckplatte (druckplatte.js) stehen
+    ebenfalls im Register (Daten, Editor-Knopf in „Schalter & Logik“, Editor-Zeichnen, Export mit Nummer, ✓-Markierung,
+    Kopieren/Neu-Nummerieren, Spiel-Laden, Spiel-Zeichnen von Hebel und Platte; die Tür wird als Wand mit den Wänden
+    gezeichnet). Die Schalt-Logik der Nummern bleibt gemeinsam in js/05-level-objekte.js. Aussehen unverändert
+    (Bilder an den Hebel-/Tür-/Platten-Stellen aller Level verglichen: identisch).
   - ELEMENT-REGISTER (Ausbau 2, elemente/): Sprungpilz (elemente/sprungpilz.js) und Aufwind (elemente/aufwind.js) stehen
     je in EINER Datei mit Daten-Feld, Editor-Werkzeug (Knopf in der Gruppe Bewegung, Zeichnen, Export), Spiel-Laden,
     Spiel-Zeichnen und Spiel-Logik (Sprungpilz nach dem Bewegen, Aufwind beim Segeln). Spiel und Editor laden dieselben
