@@ -202,19 +202,69 @@
 #sm .r-row small{font-size:1.7cqw;font-weight:700;color:var(--mute)}
 #sm #sm-s-results .foot{bottom:5cqh}
 /* goldenes Schloss, das auf der neu freigeschalteten Levelkarte platzt */
-#sm .lc .ulock{position:absolute;inset:0;border-radius:1.2cqw;background:rgba(4,20,15,.82);display:grid;place-items:center;z-index:3;
+#sm .ulock{position:absolute;inset:0;border-radius:1.2cqw;background:rgba(4,20,15,.82);display:grid;place-items:center;z-index:3;
   transition:background .45s}
-#sm .lc .ulock .lock{width:6cqw;filter:drop-shadow(0 0 1.6cqw rgba(255,200,58,.75));transition:transform .35s cubic-bezier(.3,1.5,.5,1),opacity .35s}
-#sm .lc .ulock.shake .lock{animation:lockShake .5s ease-in-out 2}
-#sm .lc .ulock.shake .shackle{animation:shackleUp .9s ease-in-out both}
-#sm .lc .ulock.burst{background:rgba(4,20,15,0)}
-#sm .lc .ulock.burst .lock{transform:scale(1.9);opacity:0}
-#sm .lc .ulock .shards{position:absolute;left:50%;top:50%;width:0;height:0}
-#sm .lc .ulock .shards i{position:absolute;width:1.1cqw;height:1.1cqw;margin:-.55cqw;border-radius:.2cqw;opacity:0;
+#sm .ulock .lock{width:6cqw;filter:drop-shadow(0 0 1.6cqw rgba(255,200,58,.75));transition:transform .35s cubic-bezier(.3,1.5,.5,1),opacity .35s}
+#sm .ulock.shake .lock{animation:lockShake .5s ease-in-out 2}
+#sm .ulock.shake .shackle{animation:shackleUp .9s ease-in-out both}
+#sm .ulock.burst{background:rgba(4,20,15,0)}
+#sm .ulock.burst .lock{transform:scale(1.9);opacity:0}
+#sm .ulock .shards{position:absolute;left:50%;top:50%;width:0;height:0}
+#sm .ulock .shards i{position:absolute;width:1.1cqw;height:1.1cqw;margin:-.55cqw;border-radius:.2cqw;opacity:0;
   background:linear-gradient(135deg,#fff2a8,#ffc83a 60%,#c47a00);box-shadow:0 0 .8cqw rgba(255,200,58,.8)}
-#sm .lc .ulock.burst .shards i{animation:shard .8s cubic-bezier(.15,.7,.3,1) both}
+#sm .ulock.burst .shards i{animation:shard .8s cubic-bezier(.15,.7,.3,1) both}
 #sm .lc.flash{animation:cardFlash .9s ease-out}
 @keyframes lockShake{0%,100%{rotate:0deg}25%{rotate:-12deg}75%{rotate:12deg}}
 @keyframes shackleUp{0%,60%{translate:0 0}100%{translate:0 -5px}}
 @keyframes shard{0%{opacity:1;transform:rotate(var(--a)) translateX(0) rotate(0)}100%{opacity:0;transform:rotate(var(--a)) translateX(var(--d)) rotate(220deg)}}
 @keyframes cardFlash{0%{box-shadow:0 0 0 0 rgba(255,200,58,.9)}100%{box-shadow:0 0 0 2.5cqw rgba(255,200,58,0)}}
+
+/* ===== Ausbau 3: Welt-Seite (Titel = Welt) und Boss-Karte ===== */
+#sm .l-world{position:absolute;left:6.3cqw;top:20cqh;font-weight:800;font-size:1.7cqw;color:var(--mute);letter-spacing:.04em}
+#sm .lc.boss{background:linear-gradient(160deg,rgba(60,14,24,.72),rgba(5,28,20,.6));border-style:dashed;border-color:rgba(255,120,140,.45)}
+#sm .lc.boss .n .ico{width:5.6cqw;height:5.6cqw;color:#ff8fa0}
+#sm .lc.boss.sel{border-color:#ff8fa0;box-shadow:0 0 3cqw rgba(255,120,140,.4)}
+
+/* ===== Ausbau 3: Weltkarte – Pergament-Karte mit Inseln, Pfaden, Schlössern ===== */
+#sm .wm{position:absolute;left:5cqw;right:5cqw;top:19cqh;height:64cqh;border-radius:2.2cqw 3.4cqw 2.6cqw 3cqw;overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%,rgba(255,248,224,0) 55%,rgba(120,78,30,.45) 100%),
+    radial-gradient(40% 30% at 22% 30%,rgba(140,190,200,.28),transparent 70%),
+    radial-gradient(45% 35% at 75% 70%,rgba(140,190,200,.25),transparent 70%),
+    repeating-linear-gradient(115deg,rgba(120,80,30,.035) 0 .4cqw,transparent .4cqw 1.1cqw),
+    linear-gradient(170deg,#f4e4bb,#e6cd95 60%,#d8b97a);
+  border:.3cqw solid #8a5a26;box-shadow:0 2cqh 5cqh rgba(0,0,0,.55),inset 0 0 4cqw rgba(110,70,20,.35)}
+#sm .wm::before{content:'';position:absolute;inset:1cqw;border:.15cqw dashed rgba(110,70,25,.45);border-radius:1.6cqw;pointer-events:none}
+#sm .wm-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#sm .wm-path .road{fill:none;stroke:#7a4c1c;stroke-width:.6;stroke-dasharray:1.6 1.4;stroke-linecap:round;vector-effect:non-scaling-stroke;
+  stroke-width:.35cqw;opacity:.7}
+#sm .isl{appearance:none;position:absolute;width:17cqw;translate:-50% -50%;background:none;border:0;padding:0;cursor:pointer;
+  font:inherit;color:#3b2410;transition:transform .25s cubic-bezier(.3,1.5,.5,1),filter .3s;z-index:1}
+#sm .isl .isl-art svg{display:block;width:100%;height:auto;filter:drop-shadow(0 .8cqh .6cqh rgba(80,50,15,.35))}
+#sm .isl-lab{margin-top:-1.2cqh;display:flex;flex-direction:column;align-items:center;gap:.2cqh;text-align:center}
+#sm .isl-lab b{font:900 2.5cqw/1 "Big Shoulders Display",sans-serif;text-transform:uppercase;letter-spacing:.03em;color:#4a2c10;
+  text-shadow:0 .15cqw 0 rgba(255,245,215,.8)}
+#sm .isl-lab small{font-weight:800;font-size:1.25cqw;color:#6b4520;background:rgba(255,246,222,.75);border:.12cqw solid rgba(120,80,30,.35);
+  padding:.25cqh .7cqw;border-radius:2cqw}
+#sm .isl-lab .boss{display:flex;align-items:center;gap:.3cqw;font-weight:800;font-size:1cqw;color:#7a2a2a;opacity:.85}
+#sm .isl-lab .boss .ico{width:1.7cqw;height:1.7cqw}
+#sm .isl.sel{transform:scale(1.12);z-index:2}
+#sm .isl.sel .isl-art svg{filter:drop-shadow(0 0 1.4cqw rgba(255,215,90,.95)) drop-shadow(0 .8cqh .6cqh rgba(80,50,15,.35))}
+#sm .isl.sel .isl-lab small{background:#ffe48a;border-color:#a8741c}
+#sm .isl.done .isl-lab small::before{content:'✓ ';color:#2f7a32}
+/* gesperrt: verschleiert mit Schloss; „Bald“: ausgegraut mit Band */
+#sm .isl.lock .isl-art{filter:grayscale(.85) blur(.12cqw) brightness(.9);opacity:.7}
+#sm .isl.lock .isl-lab b{color:#7d6a55}
+#sm .isl .lk{position:absolute;left:50%;top:32%;translate:-50% -50%;width:4.2cqw;height:4.2cqw;border-radius:50%;display:grid;place-items:center;
+  background:rgba(60,38,16,.82);color:#ffd25a;box-shadow:0 0 1.2cqw rgba(0,0,0,.4)}
+#sm .isl .lk .ico{width:2.6cqw;height:2.6cqw}
+#sm .isl.soon .isl-lab small{background:rgba(120,90,60,.2);color:#7d6a55;font-style:italic}
+#sm .isl.pre .lk{display:none}
+#sm .isl.shake{animation:shake .4s}
+#sm .isl .ulock{border-radius:50%;background:rgba(60,38,16,.55)}
+#sm .isl .ulock.burst{background:rgba(60,38,16,0)}
+#sm .isl.flash .isl-art svg{animation:islFlash .9s ease-out}
+@keyframes islFlash{0%{filter:drop-shadow(0 0 0 rgba(255,200,58,1))}50%{filter:drop-shadow(0 0 3cqw rgba(255,200,58,1))}100%{filter:none}}
+#sm #sm-m-pair{width:8cqw;z-index:3}
+#sm #sm-s-levels .cards{justify-content:center}
+#sm #sm-s-levels .lc{max-width:24cqw}

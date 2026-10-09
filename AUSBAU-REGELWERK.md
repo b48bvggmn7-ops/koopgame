@@ -52,8 +52,8 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 |---|---|---|---|---|
 | 0 | Briefing und Regelwerk | Go erhalten | ausbau-0-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
 | 1 | Fundament (Welten-Datenmodell, Tageszeit/Wetter, Spielstand) | Go erhalten | ausbau-1-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
-| 2 | Editor ausbauen | fertig, wartet auf Test | ausbau-2-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
-| 3 | Weltkarte und Welt-Seite | offen | – | – |
+| 2 | Editor ausbauen | Go erhalten | ausbau-2-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
+| 3 | Weltkarte und Welt-Seite | fertig, wartet auf Test | ausbau-3-fertig | Boss-Karte nur Platzhalter (Ausbau 6); Tag nur lokal |
 | 4 | Neue Mechaniken (Wechselboden, Teleporter, einseitige Plattformen) | offen | – | – |
 | 5 | Wasser und Schwimmen | offen | – | – |
 | 6 | Story-Intro und Boss-Gerüst mit Boss 1 | offen | – | – |

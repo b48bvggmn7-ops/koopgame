@@ -228,7 +228,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     wählen, Springen = bereit, beide bereit → Countdown 3-2-1-Los) → „Spielen“ startet Level 1. Gab es schon einen
     Spielstand, kommt vorher die Rückfrage „Neues Spiel starten?“; mit „Neues Spiel“ wird ALLES gelöscht (Nutzerwunsch):
     freigeschaltete/geschaffte Level und Tode-Statistik, Packages, alle Items/Skins (besessen und angelegt) und das
-    Münz-Konto – man fängt komplett von vorn an (resetSave in 24 + cosmeticsReset in 26; Test neues_spiel_loescht_alles). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
+    Münz-Konto – man fängt komplett von vorn an (resetSave in 24 + cosmeticsReset in 26; Test neues_spiel_loescht_alles). „Fortfahren“ führt ERST zur Weltkarte (seit Ausbau 3; früher direkt zur Levelauswahl), dann zur Welt-Seite, nach der Wahl eines Levels kommt die Spielerwahl
     (Countdown startet dann dieses Level; Zurück führt wieder zur Levelauswahl, die Auswahl bleibt).
   - WELTEN (Ausbau 1, levels/worlds.json): Welten mit id, name, titel, reihenfolge, level (Level-Dateien in
     Spielreihenfolge) und boss (vorerst null): Dschungel = Level 1, 2 · Ruinen = Level 3, 4 · Höhle = Level 5 ·
@@ -282,10 +282,29 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Beide im Ziel: während des Tanzes keine Einblendung; danach ein Statistik-Bildschirm im Stil von
     Hauptmenü/Levelauswahl („LEVEL GESCHAFFT“, Level-Nummer + Name): für Affe und Schweinchen je eine Glas-Karte mit
     Gesicht, Münzen (selbst gesammelt, / Münzen der eigenen Farbe) und Toden; Zahlen zählen hoch; Schilder
-    „Mehr Münzen“ (grün) / „Mehr Tode“ (rot). „Weiter“ (Springen/Enter/✕) -> Levelauswahl.
+    „Mehr Münzen“ (grün) / „Mehr Tode“ (rot). „Weiter“ (Springen/Enter/✕) -> Welt-Seite dieses Levels (seit Ausbau 3;
+    nach dem letzten Level einer Welt -> Weltkarte mit Freischalt-Animation der neuen Welt).
   - Levelauswahl nach „Level geschafft“: auf der Karte des neu freigeschalteten Levels liegt ein goldenes Schloss,
     es wackelt, der Bügel springt auf und es platzt in goldene Splitter, die Karte leuchtet golden auf; danach
     „Level x freigeschaltet!“. War nichts neu freizuschalten (Level schon geschafft), geht es ohne Schloss weiter.
+  - WELTKARTE (Ausbau 3, S.map in 24-startmenue.js, Stil in css/startmenue.css): „Fortfahren“ öffnet eine Pergament-Karte
+    (Dschungel-Hintergrund des Startmenüs) mit je einer Insel pro Welt in der Reihenfolge aus worlds.json, im Zickzack
+    von links nach rechts, verbunden durch gestrichelte Pfade. Jede Insel: eigenes Bild je Welt (Palme, Säulen,
+    Kristalle, Wellen, Vulkan), Name, Fortschritt „x / y Level“ (✓ wenn alle geschafft) und Boss-Symbol (Totenkopf
+    mit Krone, „bald“ solange es keinen Boss gibt). Gesperrte Welten verschleiert (grau, unscharf) mit Schloss; Welten
+    ohne Level (z. B. Wasser) gesperrt mit „Bald“, nicht anwählbar. Affe und Schweinchen stehen auf der gewählten
+    Insel. ◀ ▶ (auch ▲ ▼, Stick/Steuerkreuz) wählen, Springen/✕/Enter öffnet, Esc/○ zurück ins Hauptmenü; gesperrt =
+    Wackeln + Hinweis „Gesperrt – schafft erst alle Level in …“. Unten rechts „Welten x / y“.
+  - WELT-SEITE (Ausbau 3): die bisherige Levelkarten-Seite, aber nur mit den Leveln der gewählten Welt (Titel = Name
+    der Welt, darunter „Welt n – Name“) plus einer Boss-Karte am Ende (Platzhalter „Boss – Bald verfügbar“, nicht
+    startbar, bis Ausbau 6). Alles andere wie vorher: Schloss-Animation, Statistik-Zeile unter geschafften Karten,
+    „Packages öffnen“, „Umkleide“, Fortschritt (jetzt x / y dieser Welt), Spielerwahl; Esc/○ zurück zur Weltkarte.
+    Ohne worlds.json (oder für Level ohne Welt) gibt es eine eigene Insel „Level“ bzw. „Weitere Level“.
+  - FREISCHALTUNG (Ausbau 3): Welt 1 ist immer offen; die nächste Welt öffnet, wenn alle Level (später auch der Boss)
+    der vorigen Welt mit Leveln geschafft sind – Welten ohne Level (Wasser) werden übersprungen, Level 6 (Vulkan)
+    öffnet also wie bisher nach Level 5. In einer Welt geht es Level für Level. Alte Spielstände passen: was schon
+    freigeschaltet war, bleibt offen; „Alle Level freischalten“ öffnet auch alle Welten. Das Spielen selbst ist
+    unverändert. Tests weltkarte_und_navigation, welten_freischaltung.
   - Unter jeder geschafften Levelkarte eine knappe Zeile: Totenkopf, Affe x, Schweinchen y (höhere Zahl rot); gemerkt
     wird die letzte geschaffte Runde (save.stats). Keine Totenkopf-Maske im Hauptmenü (Nutzerwunsch, wieder entfernt).
     (Tests duell_unter_levelkarte, startmenue_fortschritt_und_wahl)

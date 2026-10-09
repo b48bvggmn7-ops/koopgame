@@ -498,25 +498,22 @@ async def menue_projekt_levels(g):
         texte = await p.eval_on_selector_all('#sm-menu .mi', 'els => els.map(e => e.textContent)')
         assert texte == ['Spielen', 'Fortfahren', 'Optionen', 'Beenden'], f'Menü: {texte}'
         await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
-        assert await sm_screen(g) == 'sm-s-levels', 'Fortfahren führt nicht direkt zur Levelauswahl'
+        assert await sm_screen(g) == 'sm-s-map', 'Fortfahren führt nicht zur Weltkarte (Ausbau 3)'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)   # Dschungel (erste Welt) öffnen
+        assert await sm_screen(g) == 'sm-s-levels', 'Weltkarte öffnet die Welt-Seite nicht'
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
         echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
         assert echte[:4] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
-        assert namen == (echte + ['Coming soon']*6)[:max(6, len(echte))], f'Karten: {namen}'
+        assert namen == ['Dschungel', 'Baumkronen', 'Boss'], f'Karten der Welt Dschungel: {namen}'
         # Level 2 gesperrt
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await g.ev("menuScreen") == 'start', 'gesperrtes Level startet'
-        # Coming soon startet nie
-        await g.ev("GameMenu.unlockAll()")
-        await g.ev("startMenuShow('levels')"); await p.wait_for_timeout(700)
-        pos = len(echte) - 1                                     # Auswahl steht auf dem letzten echten Level
-        if len(echte) < 6:
-            await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); pos += 1   # erste „Coming soon“-Karte
-            await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
-            assert await g.ev("menuScreen") == 'start', 'Coming-soon-Level startet'
+        # Boss-Karte („bald“) startet nie
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
+        assert await g.ev("menuScreen") == 'start' and await sm_screen(g) == 'sm-s-levels', 'Boss-Karte startet etwas'
         # freigeschaltetes Level 2: erst Spielerwahl, dann startet es
-        for _ in range(pos - 1): await p.keyboard.press('ArrowLeft')
-        await p.wait_for_timeout(100)
+        await g.ev("GameMenu.unlockAll()")
+        await g.ev("startMenuShow('levels', {world: 'dschungel'})"); await p.wait_for_timeout(700)   # Auswahl: letztes offenes Level (2)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-select', 'nach der Levelwahl keine Spielerwahl'
         await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
@@ -1769,12 +1766,14 @@ async def packages_menue_design(g):
     die sich nie mit den Figuren über der gewählten Levelkarte überschneiden (auch bei Level 5/6)."""
     assert await g.ev("SLOTS.every(s => s.id !== 'attach') && COSMETICS.every(c => c.slot !== 'attach')"), 'Anhängsel noch vorhanden'
     assert await g.ev("['skin_egg', 'skin_icecube', 'aura_shadow'].every(id => !COSMETIC[id])"), 'Ei/Eiswürfel/Schatten-Aura noch vorhanden'
-    await g.ev("GameMenu.unlockAll(); GameMenu.show('levels')"); await g.p.wait_for_timeout(600)
-    for i in range(6):
-        await g.ev(f"document.querySelectorAll('#sm-cards .lc')[{i}].click()"); await g.p.wait_for_timeout(500)
-        r = await g.ev("""(() => { const R = s => document.querySelector(s).getBoundingClientRect(), a = R('#sm-pair'), o = [R('#sm-l-pack'), R('#sm-l-coll')];
-          return o.some(b => !(b.right <= a.left || b.left >= a.right || b.bottom <= a.top || b.top >= a.bottom)); })()""")
-        assert not r, f'Menüpunkt überschneidet die Figuren bei Level {i + 1}'
+    await g.ev("GameMenu.unlockAll()")
+    for w in await g.ev("GameMenu.mapWorlds().filter(w => w.idx.length).map(w => w.id)"):   # jede Welt-Seite (Ausbau 3)
+        await g.ev(f"GameMenu.show('levels', {{world: '{w}'}})"); await g.p.wait_for_timeout(600)
+        for i in range(await g.ev("document.querySelectorAll('#sm-cards .lc').length")):
+            await g.ev(f"document.querySelectorAll('#sm-cards .lc')[{i}].click()"); await g.p.wait_for_timeout(500)
+            r = await g.ev("""(() => { const R = s => document.querySelector(s).getBoundingClientRect(), a = R('#sm-pair'), o = [R('#sm-l-pack'), R('#sm-l-coll')];
+              return o.some(b => !(b.right <= a.left || b.left >= a.right || b.bottom <= a.top || b.top >= a.bottom)); })()""")
+            assert not r, f'Menüpunkt überschneidet die Figuren bei Welt {w}, Karte {i + 1}'
     txt = await g.ev("document.getElementById('sm-l-pack').textContent + document.getElementById('sm-l-coll').textContent + document.getElementById('sm-l-hint').textContent")
     import re
     assert not re.search('[\U0001F300-\U0001FAFF]', txt), f'Emoji im Menü: {txt}'
@@ -1858,9 +1857,9 @@ async def level_ladefehler_mit_grund(g):
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await p.route('**/levels/level-3.json*', lambda r: r.fulfill(status=404, body='weg'))
-        await g.ev("GameMenu.unlockAll(); GameMenu.show('levels')"); await p.wait_for_timeout(600)
-        await g.ev("document.querySelectorAll('#sm-cards .lc')[2].click()"); await p.wait_for_timeout(400)
-        await g.ev("document.querySelectorAll('#sm-cards .lc')[2].click()"); await p.wait_for_timeout(700)
+        await g.ev("GameMenu.unlockAll(); GameMenu.show('levels', {world: 'ruinen'})"); await p.wait_for_timeout(600)
+        await g.ev("document.querySelectorAll('#sm-cards .lc')[0].click()"); await p.wait_for_timeout(400)   # Level 3 wählen …
+        await g.ev("document.querySelectorAll('#sm-cards .lc')[0].click()"); await p.wait_for_timeout(700)   # … und starten
         await g.ev("document.getElementById('sm-go-btn').click()")
         await p.wait_for_function("document.getElementById('sm-modal').classList.contains('on')", timeout=15000)
         t = await g.ev("document.getElementById('sm-modal-text').textContent")
@@ -2010,10 +2009,9 @@ async def spielstand_migration(g):
         assert sv['completed'] == ['level-1.json', 'level-2.json', 'level-3.json'], sv
         assert sv['stats'] == {'level-1.json': {'m': 2, 'f': 3}, 'level-3.json': {'m': 0, 'f': 5}}, sv
         assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung fehlt/verändert'
-        # Levelkarten: 4 offen, 3 geschafft – wie vorher
-        await g.ev("GameMenu.show('levels')"); await p.wait_for_timeout(500)
-        cards = await g.ev("[...document.querySelectorAll('#sm-cards .lc')].map(b => [b.classList.contains('lock'), b.textContent.includes('Geschafft') || !!b.querySelector('.duel')])")
-        assert [c[0] for c in cards] == [False, False, False, False, True, True], cards
+        # Level: 4 offen, 3 geschafft – wie vorher (seit Ausbau 3 auf die Welten verteilt)
+        offen = await g.ev("[0, 1, 2, 3, 4, 5].map(i => GameMenu.levelUnlocked(i))")
+        assert offen == [True, True, True, True, False, False], offen
         # Weiterspielen: Level 4 schaffen schaltet Level 5 frei (Datei), Sicherung bleibt unverändert
         assert await g.ev("GameMenu.completeLevel(4, true)") == 5
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
@@ -2378,6 +2376,114 @@ async def editor_alles_loeschen_wirklich_alles(g):
         assert await p.evaluate(leer) == [], f'„Neues leeres Level“ lässt stehen: {await p.evaluate(leer)}'
     finally:
         await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+PAD_STUB_JS = PAD_STUB   # dieselbe Controller-Attrappe, zur Laufzeit eingesetzt (das Menü fragt jedes Bild ab)
+
+async def wk_inseln(g):
+    return await g.ev("""[...document.querySelectorAll('#sm-wm .isl')].map(b => ({name: b.querySelector('b').textContent,
+      lock: b.classList.contains('lock'), soon: b.classList.contains('soon'), sel: b.classList.contains('sel'),
+      info: b.querySelector('small').textContent, boss: !!b.querySelector('.boss .ico') }))""")
+
+@test
+async def weltkarte_und_navigation(g):
+    """Ausbau 3: „Fortfahren“ öffnet die Weltkarte (Inseln in der Reihenfolge aus worlds.json, Pfade, Fortschritt x/y Level,
+    Boss-Symbol); gesperrte Welten verschleiert mit Schloss, Wasser ohne Level = „Bald“ (nicht anwählbar). Tasten wie in
+    den anderen Menüs: ◀ ▶ wählen, Springen öffnet die Welt-Seite (Level der Welt + Boss-Karte), Esc zurück."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['level-1.json'], completed: [], stats: {}}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter')   # Fortfahren
+        await p.wait_for_function("document.querySelector('#sm-s-map.active')", timeout=8000); await p.wait_for_timeout(300)
+        isl = await wk_inseln(g)
+        assert [i['name'] for i in isl] == ['Dschungel', 'Ruinen', 'Höhle', 'Wasser', 'Vulkan'], isl
+        assert [i['lock'] for i in isl] == [False, True, True, True, True] and isl[3]['soon'] and isl[3]['info'] == 'Bald', isl
+        assert isl[0]['info'] == '0 / 2 Level' and isl[0]['sel'] and isl[0]['boss'], isl
+        assert await g.ev("document.querySelectorAll('#sm-wm-path path').length") == 1, 'keine Pfade'
+        # gesperrte Welt: Springen öffnet nichts
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(150)
+        assert (await wk_inseln(g))[1]['sel'] and 'Gesperrt' in await p.text_content('#sm-m-hint')
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(400)
+        assert await sm_screen(g) == 'sm-s-map', 'gesperrte Welt lässt sich öffnen'
+        # „Bald“-Welt ebenfalls nicht
+        for _ in range(2): await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(120)
+        assert (await wk_inseln(g))[3]['sel']; await p.keyboard.press('Enter'); await p.wait_for_timeout(400)
+        assert await sm_screen(g) == 'sm-s-map', '„Bald“-Welt lässt sich öffnen'
+        # Dschungel öffnen -> Welt-Seite mit 2 Leveln + Boss-Karte
+        for _ in range(3): await p.keyboard.press('ArrowLeft'); await p.wait_for_timeout(120)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
+        assert await sm_screen(g) == 'sm-s-levels'
+        k = await g.ev("({t: document.getElementById('sm-l-title').textContent, n: [...document.querySelectorAll('#sm-cards .lc')].map(b => b.classList.contains('boss')), c: document.getElementById('sm-l-count').textContent})")
+        assert k['t'] == 'Dschungel' and k['n'] == [False, False, True] and '0 / 2' in k['c'], k
+        assert await p.is_visible('#sm-l-pack') and await p.is_visible('#sm-l-coll'), 'Packages/Umkleide fehlen auf der Welt-Seite'
+        # Esc -> Weltkarte (Dschungel gewählt), Esc -> Hauptmenü
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
+        assert await sm_screen(g) == 'sm-s-map' and (await wk_inseln(g))[0]['sel']
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
+        assert await sm_screen(g) == 'sm-s-menu'
+        # Controller (simuliert): Steuerkreuz rechts + ✕ funktionieren auch auf der Karte (gleiche Eingabe wie die anderen Menüs)
+        await g.ev("GameMenu.unlockAll(); GameMenu.show('map', {sel: 'dschungel'})"); await p.wait_for_timeout(500)
+        await g.ev(PAD_STUB_JS)
+        for knopf in (15, 0):   # 15 = Steuerkreuz rechts, 0 = ✕
+            await g.ev(f"__pad.buttons[{knopf}].pressed = true"); await p.wait_for_timeout(200)
+            await g.ev(f"__pad.buttons[{knopf}].pressed = false"); await p.wait_for_timeout(350)
+        await p.wait_for_timeout(300)
+        assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Ruinen'
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def welten_freischaltung(g):
+    """Ausbau 3: Welt 1 ist immer offen; die nächste Welt öffnet, wenn alle Level der vorigen geschafft sind (Welten
+    ohne Level wie Wasser werden übersprungen); in der Welt geht es Level für Level. Nach „Level geschafft“ geht es
+    zurück zur Welt-Seite (Schloss auf dem neuen Level), nach dem letzten Level einer Welt zur Weltkarte mit
+    Freischalt-Animation auf der neuen Welt. Alte Spielstände passen weiter."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.resetSave()")
+        offen = "['dschungel', 'ruinen', 'hoehle', 'wasser', 'vulkan'].map(w => GameMenu.worldUnlocked(w))"
+        assert await g.ev(offen) == [True, False, False, False, False]
+        assert await g.ev("GameMenu.completeLevel(1, true)") == 2 and await g.ev("GameMenu.lastFreshWorld()") is None
+        assert await g.ev(offen) == [True, False, False, False, False]
+        assert await g.ev("GameMenu.completeLevel(2, true)") == 3 and await g.ev("GameMenu.lastFreshWorld()") == 'ruinen'
+        assert await g.ev(offen) == [True, True, False, False, False]
+        assert await g.ev("[2, 3].map(i => GameMenu.levelUnlocked(i))") == [True, False], 'in der Welt nicht Level für Level'
+        await g.ev("GameMenu.completeLevel(3, true); GameMenu.completeLevel(4, true)")
+        assert await g.ev("GameMenu.lastFreshWorld()") == 'hoehle' and await g.ev(offen) == [True, True, True, False, False]
+        assert await g.ev("GameMenu.completeLevel(5, true)") == 6 and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
+        assert await g.ev(offen) == [True, True, True, False, True]
+        # „Level geschafft“ -> Weiter: mitten in der Welt zur Welt-Seite mit Schloss auf dem neuen Level
+        await g.ev("GameMenu.resetSave(); GameMenu.completeLevel(1, true)")
+        await g.ev("GameMenu.show('results', {n: 1, fresh: 2, packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Dschungel'
+        assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
+        await p.wait_for_function("!document.querySelector('.ulock')", timeout=6000)
+        # letztes Level der Welt -> Weltkarte mit Freischalt-Animation auf „Ruinen“
+        await g.ev("GameMenu.completeLevel(2, true)")
+        await g.ev("GameMenu.show('results', {n: 2, fresh: 3, freshWorld: 'ruinen', packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        assert await sm_screen(g) == 'sm-s-map', 'nach der letzten Level einer Welt nicht zur Weltkarte'
+        k = await g.ev("(() => { const l = document.querySelector('#sm-wm .ulock'); return l ? [...document.querySelectorAll('#sm-wm .isl')].indexOf(l.parentNode) : -1; })()")
+        assert k == 1, f'keine Freischalt-Animation auf Ruinen: {k}'
+        await p.wait_for_function("document.querySelector('#sm-wm .ulock.burst')", timeout=5000)
+        await p.wait_for_function("!document.querySelector('#sm-wm .ulock')", timeout=6000)
+        isl = await wk_inseln(g)
+        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == '2 / 2 Level', isl
+        # alter Spielstand (Nummern): Level 1–3 geschafft, 4 offen -> Dschungel fertig, Ruinen offen, Höhle zu
+        await g.ev("localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({played: true, unlocked: 4, completed: [1, 2, 3]}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        assert await g.ev(offen) == [True, True, False, False, False]
+        await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
+        isl = await wk_inseln(g)
+        assert [i['info'] for i in isl] == ['2 / 2 Level', '1 / 2 Level', '0 / 1 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl
+    finally:
+        await g.ev("localStorage.clear()")
         srv.shutdown()
 
 async def main(filter_):

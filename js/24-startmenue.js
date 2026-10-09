@@ -78,9 +78,18 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
     <div class="countdown" id="sm-countdown"></div>
   </section>
 
-  <!-- 5) Level -->
+  <!-- 5a) Weltkarte (Ausbau 3): je Welt eine Insel, Pfade dazwischen -->
+  <section class="screen" id="sm-s-map" aria-label="Weltkarte">
+    <div class="l-title display">Weltkarte</div>
+    <div class="l-count" id="sm-m-count"></div>
+    <div class="wm" id="sm-wm"><svg class="wm-path" id="sm-wm-path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    <div class="hint" id="sm-m-hint"></div>
+  </section>
+
+  <!-- 5b) Welt-Seite: Level der gewählten Welt + Boss-Karte -->
   <section class="screen" id="sm-s-levels" aria-label="Levelauswahl">
-    <div class="l-title display">Level wählen</div>
+    <div class="l-title display" id="sm-l-title">Level wählen</div>
+    <div class="l-world" id="sm-l-world"></div>
     <div class="l-count" id="sm-l-count"></div>
     <div class="cards" id="sm-cards"></div>
     <div class="lbar"><i id="sm-lbar-i"></i></div>
@@ -198,9 +207,42 @@ const persist = () => store.set('save', save);
 persist();
 // Abfragen je Levelkarte (Index i in CONFIG.levels): das erste Level ist immer offen
 const fileOf = i => CONFIG.levels[i] && !CONFIG.levels[i].soon ? CONFIG.levels[i].datei : null;
-const isUnlocked = i => i === 0 || (!!fileOf(i) && save.unlocked.includes(fileOf(i)));
+const isUnlocked = i => {
+  if (!fileOf(i)) return false;
+  if (typeof mapWorlds !== 'function' || !CONFIG.levels.length) return i === 0 || save.unlocked.includes(fileOf(i));
+  const w = worldOfIndex(i);
+  if (!w || !worldUnlocked(w)) return false;
+  return i === w.idx[0] || save.unlocked.includes(fileOf(i));        // in der Welt: Level für Level
+};
 const isDone = i => !!fileOf(i) && save.completed.includes(fileOf(i));
 const lastUnlocked = () => { let k = 0; for (let i = 0; i < realCount(); i++) if (isUnlocked(i)) k = i; return k; };
+
+/* ===== Welten (Ausbau 3) =====
+   Die Weltkarte zeigt die Welten aus worlds.json in ihrer Reihenfolge; jede kennt ihre Level als Index in CONFIG.levels
+   (idx). Level ohne Welt (oder ganz ohne worlds.json) bilden am Ende eine eigene Gruppe „Weitere Level“.
+   Freischaltung: die erste Welt mit Leveln ist immer offen; die nächste öffnet, wenn alle Level (später auch der Boss)
+   der vorigen Welt mit Leveln geschafft sind. Welten ohne Level („Bald“, z. B. Wasser) sind nicht anwählbar und
+   werden übersprungen. Ein schon freigeschaltetes Level einer Welt (alter Spielstand, „Alle Level freischalten“)
+   öffnet sie ebenfalls. In der Welt geht es wie bisher Level für Level. */
+function mapWorlds() {
+  const ws = (CONFIG.worlds || []).filter(w => w && w.id).slice().sort((a, b) => (a.reihenfolge || 0) - (b.reihenfolge || 0))
+    .map(w => ({ id: w.id, name: w.name || w.id, titel: w.titel || w.name || w.id, boss: w.boss || null,
+                 idx: CONFIG.levels.map((l, i) => i).filter(i => !CONFIG.levels[i].soon && CONFIG.levels[i].welt === w.id) }));
+  const rest = CONFIG.levels.map((l, i) => i).filter(i => !CONFIG.levels[i].soon && !(CONFIG.levels[i].welt && ws.some(w => w.id === CONFIG.levels[i].welt)));
+  if (rest.length) ws.push({ id: '_rest', name: ws.length ? 'Weitere Level' : 'Level', titel: ws.length ? 'Weitere Level' : 'Level', boss: null, idx: rest });
+  return ws;
+}
+const worldById = id => mapWorlds().find(w => w.id === id) || null;
+const worldOfIndex = i => mapWorlds().find(w => w.idx.includes(i)) || null;
+const worldDone = w => w.idx.length > 0 && w.idx.every(isDone);   // + Boss, sobald es Bosse gibt (Ausbau 6)
+function worldUnlocked(w, ws) {
+  ws = ws || mapWorlds();
+  if (!w || !w.idx.length) return false;                              // „Bald“: noch keine Level
+  const k = ws.findIndex(x => x.id === w.id);
+  const prev = ws.slice(0, k).filter(x => x.idx.length).pop();
+  if (!prev) return true;                                             // erste Welt mit Leveln
+  return worldDone(prev) || w.idx.some(i => save.unlocked.includes(fileOf(i)));
+}
 let lastPlayers = { monkey: 1, pig: 2 };
 
 /* =====================================================================
@@ -247,7 +289,10 @@ const charSVG = k => (k === 'monkey' ? monkeySVG() : pigSVG());
 // schlichte Linien-Icons (statt Emojis) für Packages / Umkleide
 const ICON = {
   pack: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8.5" width="17" height="12" rx="2"/><path d="M3.5 12.5h17M12 8.5v12"/><path d="M12 8.5C10.6 5.2 6.8 4.6 6.8 6.9S10.2 8.5 12 8.5zM12 8.5c1.4-3.3 5.2-3.9 5.2-1.6S13.8 8.5 12 8.5z"/></svg>',
-  hanger: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5.6a2 2 0 1 1 2 2v1.3"/><path d="M12 8.9 3.3 15.2a1.4 1.4 0 0 0 .8 2.5h15.8a1.4 1.4 0 0 0 .8-2.5L12 8.9z"/></svg>'
+  hanger: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5.6a2 2 0 1 1 2 2v1.3"/><path d="M12 8.9 3.3 15.2a1.4 1.4 0 0 0 .8 2.5h15.8a1.4 1.4 0 0 0 .8-2.5L12 8.9z"/></svg>',
+  // Boss (Totenkopf mit Krone) und Schloss – für Weltkarte und Boss-Karte (Ausbau 3)
+  skull: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7.5 8.5 4.5 10.5 6.5 12 3.5 13.5 6.5 15.5 4.5 17 7.5"/><path d="M5.5 13a6.5 6 0 1 1 13 0c0 2-1 3-2.2 3.6V19a1 1 0 0 1-1 1H8.7a1 1 0 0 1-1-1v-2.4C6.5 16 5.5 15 5.5 13Z"/><circle cx="9.3" cy="12.6" r="1.4"/><circle cx="14.7" cy="12.6" r="1.4"/><path d="M11 20v-2M13 20v-2"/></svg>',
+  lock: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><path d="M12 14.5v2.5"/></svg>'
 };
 // das Geschenkpaket als kleines Bild (Belohnung im Statistik-Bildschirm): oranges Papier, braunes Satinband,
 // leicht schräg von vorn (wie im Packages-Bildschirm, 28-packages.js)
@@ -482,15 +527,31 @@ async function curtainIntoLevel(no, name, build) {
   curtainEl.className = '';
   menuScreen = null; menuClearPressed();           // jetzt läuft das Spiel (zuerst die Ankunft)
 }
-function completeLevel(n, quiet) {   // n = Nummer der Levelkarte (1 …)
-  const f = fileOf(n - 1);
+// Level n (Nummer der Levelkarte, 1 …) geschafft: merken und das nächste Level DIESER Welt freischalten.
+// Ist damit die ganze Welt geschafft, öffnet die nächste Welt mit Leveln (ihr erstes Level wird freigeschaltet);
+// deren id steht dann in lastFreshWorld (für die Freischalt-Animation auf der Weltkarte).
+let lastFreshWorld = null;
+function completeLevel(n, quiet) {
+  const i = n - 1, f = fileOf(i);
+  const ws = mapWorlds(), w = ws.find(x => x.idx.includes(i));
+  const wasOpen = ws.map(x => worldUnlocked(x, ws));
   if (f && !save.completed.includes(f)) save.completed.push(f);
   if (f && !save.unlocked.includes(f)) save.unlocked.push(f);
-  const next = n < realCount() ? fileOf(n) : null, fresh = !!next && !save.unlocked.includes(next);
-  if (fresh) save.unlocked.push(next);
+  lastFreshWorld = null;
+  let next = null;
+  if (w) {
+    const pos = w.idx.indexOf(i);
+    if (pos < w.idx.length - 1) next = w.idx[pos + 1];                 // nächstes Level der Welt
+    else {                                                            // letztes Level: nächste Welt mit Leveln
+      const k = ws.indexOf(w), nw = ws.slice(k + 1).find(x => x.idx.length);
+      if (nw && !wasOpen[ws.indexOf(nw)] && worldUnlocked(nw, ws)) { lastFreshWorld = nw.id; next = nw.idx[0]; }
+    }
+  } else if (n < realCount()) next = i + 1;
+  const fresh = next !== null && !!fileOf(next) && !save.unlocked.includes(fileOf(next));
+  if (fresh) save.unlocked.push(fileOf(next));
   persist();
-  if (!quiet) toast(fresh ? `Level ${n + 1} freigeschaltet!` : `Level ${n} geschafft!`);
-  return fresh ? n + 1 : 0;   // neu freigeschaltetes Level (0 = keins)
+  if (!quiet) toast(lastFreshWorld ? `Welt ${(worldById(lastFreshWorld) || {}).name} freigeschaltet!` : fresh ? `Level ${next + 1} freigeschaltet!` : `Level ${n} geschafft!`);
+  return fresh ? next + 1 : 0;   // neu freigeschaltetes Level (0 = keins)
 }
 // Neues Spiel: ALLES von vorn – freigeschaltete Level, Statistik, Packages, Items/Skins (angelegt + besessen), Münz-Konto
 function resetSave() {
@@ -564,7 +625,7 @@ S.menu = {
         });
       } else go('select', 'new');
     }
-    else if (id === 'continue') go('levels');           // Fortfahren: erst Level wählen, dann Spielerwahl
+    else if (id === 'continue') go('map');              // Fortfahren: Weltkarte -> Welt -> Level -> Spielerwahl
     else if (id === 'options') go('options');
     else if (id === 'quit') quitGame();
   }
@@ -749,32 +810,54 @@ $('#sm-go-btn').addEventListener('click', () => {
    5) LEVEL-AUSWAHL
    ===================================================================== */
 S.levels = {
-  el: $('#sm-s-levels'), idx: 0,
+  // Welt-Seite (Ausbau 3): die Level-Karten der gewählten Welt (this.list = Indizes in CONFIG.levels) + Boss-Karte.
+  // this.idx = gewählte Karte in dieser Seite (this.list.length = Boss-Karte).
+  el: $('#sm-s-levels'), idx: 0, world: null, list: [],
   enter(arg) {
-    if (arg !== 'keep') this.idx = lastUnlocked();   // zurück aus der Spielerwahl: Auswahl behalten
-    this.top = '';
     const unlock = arg && typeof arg === 'object' && arg.unlock >= 0 ? arg.unlock : -1;   // nach „Level geschafft“
+    if (arg && typeof arg === 'object' && arg.world) this.world = arg.world;
+    else if (unlock >= 0) this.world = (worldOfIndex(unlock) || {}).id;
+    else if (arg !== 'keep' || !worldById(this.world)) this.world = (worldOfIndex(lastUnlocked()) || mapWorlds()[0] || {}).id;
+    const w = worldById(this.world) || { id: null, name: 'Level', titel: 'Level', idx: [], boss: null };
+    this.list = w.idx.slice();
+    if (arg !== 'keep') {   // zurück aus der Spielerwahl: Auswahl behalten, sonst das letzte offene Level der Welt
+      let k = 0; this.list.forEach((i, j) => { if (isUnlocked(i)) k = j; }); this.idx = k;
+    }
+    this.idx = clamp(this.idx, 0, this.list.length);
+    this.top = '';
+    $('#sm-l-title').textContent = w.name;
+    $('#sm-l-world').textContent = w.titel && w.titel !== w.name ? w.titel : '';
     const box = $('#sm-cards'); box.innerHTML = '';
-    CONFIG.levels.forEach((l, i) => {
+    this.list.forEach((i, j) => {
       const b = mk('<button class="lc" type="button" tabindex="-1"></button>');
-      b.addEventListener('click', () => { if (this.idx === i) this.act('confirm'); else this.select(i); });
+      b.addEventListener('click', () => { if (this.idx === j) this.act('confirm'); else this.select(j); });
       box.appendChild(b);
     });
+    const bc = mk('<button class="lc boss" type="button" tabindex="-1"></button>');   // Boss (kommt mit Ausbau 6)
+    bc.addEventListener('click', () => { if (this.idx === this.list.length) this.act('confirm'); else this.select(this.list.length); });
+    box.appendChild(bc);
     box.appendChild(mk(`<div class="pair nt" id="sm-pair">${monkeySVG()}${pigSVG()}</div>`));
-    let done = 0; const n = realCount(); for (let i = 0; i < n; i++) if (isDone(i)) done++;
-    $('#sm-l-count').innerHTML = `Fortschritt<b>${done} / ${n}</b>`;
+    const done = this.list.filter(isDone).length, n = this.list.length || 1;
+    $('#sm-l-count').innerHTML = `Fortschritt<b>${done} / ${this.list.length}</b>`;
     $('#sm-lbar-i').style.width = (done / n * 100) + '%';
     this.paint(true); this.paintColl();
-    if (unlock >= 0 && $$('#sm-cards .lc')[unlock]) { this.idx = unlock; this.paint(true); unlockAnimation($$('#sm-cards .lc')[unlock], unlock + 1); }
+    const uj = this.list.indexOf(unlock);
+    if (uj >= 0 && $$('#sm-cards .lc')[uj]) { this.idx = uj; this.paint(true); unlockAnimation($$('#sm-cards .lc')[uj], `Level ${unlock + 1} freigeschaltet!`); }
   },
+  isBoss(j) { return j === this.list.length; },
   paint(instant) {
     const cards = $$('#sm-cards .lc');
-    cards.forEach((b, i) => {
-      const soon = !!CONFIG.levels[i].soon;
-      const locked = soon || !isUnlocked(i), done = isDone(i), sel = i === this.idx && !this.top;
-      b.className = 'lc' + (locked ? ' lock' : '') + (soon ? ' soon' : '') + (sel ? ' sel' : '');
-      const extra = soon ? '<span class="st">Bald verfügbar</span>'
-                  : sel ? (locked ? '<span class="st">Gesperrt</span>' : '<span class="go">Start</span>')
+    cards.forEach((b, j) => {
+      const sel = j === this.idx && !this.top;
+      if (this.isBoss(j)) {
+        b.className = 'lc boss lock' + (sel ? ' sel' : '');
+        b.innerHTML = `<div class="n">${ICON.skull}</div><div><span class="nm">Boss</span><span class="st">Bald verfügbar</span></div>`;
+        return;
+      }
+      const i = this.list[j];
+      const locked = !isUnlocked(i), done = isDone(i);
+      b.className = 'lc' + (locked ? ' lock' : '') + (sel ? ' sel' : '');
+      const extra = sel ? (locked ? '<span class="st">Gesperrt</span>' : '<span class="go">Start</span>')
                         : `<span class="st">${done ? '✓ Geschafft' : locked ? 'Gesperrt' : 'Bereit'}</span>`;
       const st = save.stats[fileOf(i)];
       const duel = done && st && typeof levelCardStatsHTML === 'function'
@@ -782,14 +865,16 @@ S.levels = {
       b.innerHTML = `<div class="n">${i + 1}</div><div><span class="nm">${CONFIG.levels[i].name}</span>${duel}${extra}</div>`;
     });
     const sel = cards[this.idx], pair = $('#sm-pair');
-    if (instant) pair.classList.add('nt');
-    pair.style.left = (sel.offsetLeft + sel.offsetWidth / 2) + 'px';
-    pair.style.top = sel.offsetTop + 'px';
-    if (instant) requestAnimationFrame(() => requestAnimationFrame(() => pair.classList.remove('nt')));
-    $('#sm-l-hint').textContent = CONFIG.levels[this.idx].soon ? 'Coming soon – an diesem Level wird noch gebaut'
-      : !isUnlocked(this.idx)
-      ? `Gesperrt – schafft erst Level ${this.idx}`
-      : '◀ ▶ wählen · Springen starten · ▲ Packages / Umkleide · Esc zurück';
+    if (sel && pair) {
+      if (instant) pair.classList.add('nt');
+      pair.style.left = (sel.offsetLeft + sel.offsetWidth / 2) + 'px';
+      pair.style.top = sel.offsetTop + 'px';
+      if (instant) requestAnimationFrame(() => requestAnimationFrame(() => pair.classList.remove('nt')));
+    }
+    const i = this.list[this.idx];
+    $('#sm-l-hint').textContent = this.isBoss(this.idx) ? 'Boss – kommt bald · Esc zurück zur Weltkarte'
+      : !isUnlocked(i) ? `Gesperrt – schafft erst Level ${this.list[this.idx - 1] + 1}`
+      : '◀ ▶ wählen · Springen starten · ▲ Packages/Umkleide · Esc Karte';
     if (this.top) $('#sm-l-hint').textContent = `◀ ▶ wählen · Springen: ${this.top === 'pack' ? 'Packages öffnen' : 'Umkleide öffnen'} · ▼ zurück zu den Leveln`;
   },
   // Menüpunkte oben rechts (28-packages.js): „Packages öffnen“ und „Umkleide“ (nur Ausrüsten, auch gesperrte zu sehen).
@@ -811,16 +896,17 @@ S.levels = {
     this.top = ''; Snd.play('ok'); go('packs', { ret: ['levels', 'keep'] });
   },
   setTop(t) { this.top = t; this.paintColl(); this.paint(); Snd.play('move'); },
-  select(i) {
-    if (i === this.idx) return;
-    this.idx = i; this.paint(); Snd.play('move');
+  select(j) {
+    if (j === this.idx) return;
+    this.idx = j; this.paint(); Snd.play('move');
   },
+  back() { Snd.play('back'); go('map', { sel: this.world }); },
   act(type) {
-    const n = CONFIG.levels.length;
+    const n = this.list.length + 1;   // + Boss-Karte
     if (this.top) {   // obere Reihe (Packages / Umkleide) ausgewählt
       if (type === 'confirm') { if (this.top === 'pack') this.openPacks(); else this.openColl(); }
       else if (type === 'swap') this.openColl();
-      else if (type === 'back') { Snd.play('back'); go('menu'); }
+      else if (type === 'back') this.back();
       else if (type === 'left' || type === 'right') this.setTop(this.top === 'pack' ? 'coll' : 'pack');
       else if (type === 'down') this.setTop('');
       return;
@@ -830,13 +916,120 @@ S.levels = {
     else if (type === 'left') this.select(clamp(this.idx - 1, 0, n - 1));
     else if (type === 'right' || type === 'down') this.select(clamp(this.idx + 1, 0, n - 1));
     else if (type === 'confirm') {
-      if (!isUnlocked(this.idx) || CONFIG.levels[this.idx].soon) {
+      const i = this.list[this.idx];
+      if (this.isBoss(this.idx) || !isUnlocked(i)) {
         Snd.play('locked');
         const b = $$('#sm-cards .lc')[this.idx]; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
-      } else { Snd.play('ok'); go('select', { level: this.idx }); }
+      } else { Snd.play('ok'); go('select', { level: i }); }
+    }
+    else if (type === 'back') this.back();
+    else if (type === 'swap' && S.collection) this.openColl();
+  }
+};
+
+/* =====================================================================
+   5a) WELTKARTE (Ausbau 3) – je Welt eine Insel in der Reihenfolge aus worlds.json, Pfade dazwischen
+   ===================================================================== */
+const WORLD_LOOK = {   // Farben + Zeichen je Welt (unbekannte Welten: Dschungel-Grün)
+  dschungel: { land: '#5fae4a', dark: '#2f6b2c', sand: '#e9d39a', icon: 'palm' },
+  ruinen:    { land: '#c9ad6e', dark: '#7d6435', sand: '#efdcab', icon: 'column' },
+  hoehle:    { land: '#7a6a9c', dark: '#3f3460', sand: '#d8cfe8', icon: 'crystal' },
+  wasser:    { land: '#4aa3c9', dark: '#1f5f80', sand: '#cfeaf2', icon: 'wave' },
+  vulkan:    { land: '#a8503a', dark: '#4e2018', sand: '#e7b48e', icon: 'volcano' },
+};
+function islandSVG(look) {
+  const ic = {
+    palm: `<path d="M50 62 Q49 44 52 30" stroke="#6b4423" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+           <path d="M52 30 Q40 22 30 30 M52 30 Q64 20 74 28 M52 30 Q46 18 38 16 M52 30 Q60 16 68 14" stroke="#2f7a32" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+    column: `<rect x="40" y="30" width="7" height="30" fill="#f3e6c2" stroke="#7d6435" stroke-width="1.5"/><rect x="55" y="36" width="7" height="24" fill="#f3e6c2" stroke="#7d6435" stroke-width="1.5"/>
+             <rect x="37" y="27" width="28" height="5" fill="#f3e6c2" stroke="#7d6435" stroke-width="1.5"/>`,
+    crystal: `<path d="M42 60 L46 36 L52 60 Z M50 60 L57 28 L63 60 Z" fill="#9fe8ff" stroke="#3f3460" stroke-width="1.5"/>`,
+    wave: `<path d="M32 46 Q38 40 44 46 T56 46 T68 46 M34 54 Q40 48 46 54 T58 54 T70 54" stroke="#e8fbff" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+    volcano: `<path d="M34 60 L46 32 L56 32 L68 60 Z" fill="#5a2a1e" stroke="#2e120e" stroke-width="1.5"/><path d="M46 32 Q51 22 56 32" fill="#ff8a2a"/>
+              <path d="M49 33 L47 46 M53 33 L56 44" stroke="#ffb03a" stroke-width="2"/>`,
+  }[look.icon] || '';
+  return `<svg viewBox="0 0 100 80" aria-hidden="true">
+    <ellipse cx="50" cy="62" rx="46" ry="14" fill="rgba(70,120,140,.25)"/>
+    <path d="M10 60 Q12 44 30 42 Q38 30 56 34 Q74 30 84 44 Q94 50 90 60 Q70 70 50 68 Q24 70 10 60 Z" fill="${look.sand}" stroke="${look.dark}" stroke-width="1.2"/>
+    <path d="M16 58 Q18 48 32 46 Q40 36 56 39 Q72 36 80 47 Q88 52 84 58 Q66 64 50 62 Q28 64 16 58 Z" fill="${look.land}"/>
+    ${ic}</svg>`;
+}
+S.map = {
+  el: $('#sm-s-map'), idx: 0, worlds: [],
+  enter(arg) {
+    this.worlds = mapWorlds();
+    const want = arg && typeof arg === 'object' ? (arg.unlockWorld || arg.sel) : null;
+    let k = this.worlds.findIndex(w => w.id === want);
+    if (k < 0) { k = 0; this.worlds.forEach((w, j) => { if (worldUnlocked(w, this.worlds)) k = j; }); }   // letzte offene Welt
+    this.idx = k;
+    const box = $('#sm-wm');
+    $$('.isl, .pair', box).forEach(e => e.remove());
+    const n = this.worlds.length, pts = [];
+    this.worlds.forEach((w, j) => {
+      // Inseln von links nach rechts im Zickzack verteilt (Werte in % der Karte)
+      const x = n > 1 ? 11 + 78 * j / (n - 1) : 50, y = j % 2 ? 66 : 38;
+      pts.push([x, y]);
+      const look = WORLD_LOOK[w.id] || WORLD_LOOK.dschungel;
+      const b = mk(`<button class="isl" type="button" tabindex="-1" style="left:${x}%;top:${y}%"></button>`);
+      b.innerHTML = `<div class="isl-art">${islandSVG(look)}</div><div class="isl-lab"><b></b><small></small><span class="boss"></span></div>`;
+      b.addEventListener('click', () => { if (this.idx === j) this.act('confirm'); else this.select(j); });
+      box.appendChild(b);
+    });
+    // gestrichelte Pfade zwischen den Inseln (geschwungen)
+    let d = '';
+    for (let j = 1; j < pts.length; j++) {
+      const [x0, y0] = pts[j - 1], [x1, y1] = pts[j], mx = (x0 + x1) / 2;
+      d += `M${x0} ${y0} C${mx} ${y0} ${mx} ${y1} ${x1} ${y1} `;
+    }
+    $('#sm-wm-path').innerHTML = `<path d="${d}" class="road"/>`;
+    box.appendChild(mk(`<div class="pair nt" id="sm-m-pair">${monkeySVG()}${pigSVG()}</div>`));
+    const open = this.worlds.filter(w => worldUnlocked(w, this.worlds)).length, all = this.worlds.filter(w => w.idx.length).length;
+    $('#sm-m-count').innerHTML = `Welten<b>${open} / ${all}</b>`;
+    this.paint(true);
+    if (arg && arg.unlockWorld) {
+      const isl = $$('#sm-wm .isl')[this.idx];
+      if (isl) { isl.classList.add('pre'); setTimeout(() => isl.classList.remove('pre'), 1250);
+                 unlockAnimation(isl, `Welt ${this.worlds[this.idx].name} freigeschaltet!`); }
+    }
+  },
+  paint(instant) {
+    const isl = $$('#sm-wm .isl');
+    isl.forEach((b, j) => {
+      const w = this.worlds[j], soon = !w.idx.length, open = worldUnlocked(w, this.worlds);
+      const done = w.idx.filter(isDone).length;
+      b.className = 'isl' + (soon ? ' soon lock' : open ? '' : ' lock') + (worldDone(w) ? ' done' : '') + (j === this.idx ? ' sel' : '') + (b.classList.contains('pre') ? ' pre' : '');
+      $('b', b).textContent = w.name;
+      $('small', b).textContent = soon ? 'Bald' : `${done} / ${w.idx.length} Level`;
+      $('.boss', b).innerHTML = soon ? '' : `${ICON.skull}<i>${w.boss ? (worldDone(w) ? '✓' : '') : 'bald'}</i>`;
+      $('.boss', b).title = w.boss ? 'Boss' : 'Boss – kommt bald';
+      if (!open && !$('.lk', b)) b.appendChild(mk(`<span class="lk">${ICON.lock}</span>`));
+      if (open) { const lk = $('.lk', b); if (lk) lk.remove(); }
+    });
+    const sel = isl[this.idx], pair = $('#sm-m-pair');
+    if (sel && pair) {
+      if (instant) pair.classList.add('nt');
+      pair.style.left = sel.style.left; pair.style.top = `calc(${sel.style.top} - 7cqh)`;
+      if (instant) requestAnimationFrame(() => requestAnimationFrame(() => pair.classList.remove('nt')));
+    }
+    const w = this.worlds[this.idx];
+    const prev = w ? this.worlds.slice(0, this.idx).filter(x => x.idx.length).pop() : null;
+    $('#sm-m-hint').textContent = !w ? '' : !w.idx.length ? `${w.name} – kommt bald`
+      : !worldUnlocked(w, this.worlds) ? `Gesperrt – schafft erst alle Level in ${prev ? prev.name : 'der Welt davor'}`
+      : '◀ ▶ Welt wählen · Springen öffnen · Esc zurück';
+  },
+  select(j) { if (j === this.idx) return; this.idx = j; this.paint(); Snd.play('move'); },
+  act(type) {
+    const n = this.worlds.length;
+    if (type === 'left' || type === 'up') this.select(clamp(this.idx - 1, 0, n - 1));
+    else if (type === 'right' || type === 'down') this.select(clamp(this.idx + 1, 0, n - 1));
+    else if (type === 'confirm') {
+      const w = this.worlds[this.idx];
+      if (!w || !worldUnlocked(w, this.worlds)) {
+        Snd.play('locked');
+        const b = $$('#sm-wm .isl')[this.idx]; if (b) { b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
+      } else { Snd.play('ok'); go('levels', { world: w.id }); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
-    else if (type === 'swap' && S.collection) this.openColl();
   }
 };
 $('#sm-l-coll').addEventListener('click', () => S.levels.openColl());
@@ -908,18 +1101,26 @@ S.results = {
     else if (type === 'confirm') { if (this.sel === 0 && this.packsPending()) this.packs(); else this.next(); }
     else if (type === 'back') this.next();
   },
-  ret() { const fresh = this.arg && this.arg.fresh; return fresh ? { unlock: fresh - 1 } : undefined; },
+  // wohin nach „Weiter“: neue Welt frei -> Weltkarte mit Freischalt-Animation, sonst Welt-Seite dieses Levels
+  // (neu freigeschaltetes Level mit Schloss-Animation)
+  ret() {
+    const a = this.arg || {};
+    if (a.freshWorld) return ['map', { unlockWorld: a.freshWorld }];
+    if (a.fresh) return ['levels', { unlock: a.fresh - 1 }];
+    const w = a.n ? worldOfIndex(a.n - 1) : null;
+    return ['levels', w ? { world: w.id } : undefined];
+  },
   next() {
     Snd.play('ok');
-    go('levels', this.ret());
+    go(...this.ret());
   },
-  packs() { Snd.play('ok'); go('packs', { ret: ['levels', this.ret()] }); }
+  packs() { Snd.play('ok'); go('packs', { ret: this.ret() }); }
 };
 $('#sm-r-go').addEventListener('click', () => S.results.next());
 $('#sm-r-pack').addEventListener('click', () => S.results.packs());
 
 // goldenes Schloss auf der Karte des neu freigeschalteten Levels: wackelt, platzt in Splitter, Karte leuchtet auf
-function unlockAnimation(card, n) {
+function unlockAnimation(card, msg) {
   const shards = Array.from({ length: 10 }, (_, i) => `<i style="--a:${i * 36 + 8}deg;--d:${9 + (i % 3) * 3}cqw"></i>`).join('');
   const ov = mk(`<div class="ulock"><svg class="lock" viewBox="0 0 64 76" aria-hidden="true">
       <defs><linearGradient id="sm-gGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".45" stop-color="#ffc83a"/><stop offset="1" stop-color="#c47a00"/></linearGradient></defs>
@@ -930,7 +1131,7 @@ function unlockAnimation(card, n) {
   card.appendChild(ov);
   setTimeout(() => ov.classList.add('shake'), 350);
   setTimeout(() => { ov.classList.add('burst'); card.classList.add('flash'); Snd.play('go'); }, 1250);
-  setTimeout(() => { ov.remove(); card.classList.remove('flash'); toast(`Level ${n} freigeschaltet!`); }, 2100);
+  setTimeout(() => { ov.remove(); card.classList.remove('flash'); toast(msg); }, 2100);
 }
 
 S.goodbye = {
@@ -1072,7 +1273,7 @@ window.startMenuLevelWon = () => {
   // Packages: 1 fürs Schaffen, +1 wenn alle Münzen gesammelt – für beide Figuren (26-kosmetik-daten.js)
   const packs = n && typeof awardPackages === 'function' ? awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken)) : 0;
   if (n && st && typeof addCoins === 'function') addCoins(st.cm, st.cf);   // selbst gesammelte Münzen aufs Konto (Pakete kaufen)
-  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh, packs }); }
+  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh, packs, freshWorld: lastFreshWorld }); }
   else showMenuScreen('menu');
 };
 window.showTitleScreen = () => showMenuScreen('title');
@@ -1081,7 +1282,8 @@ showMainMenu = () => showMenuScreen('menu');          // ersetzt die alten Menü
 showLevelSelect = () => showMenuScreen('levels');
 document.getElementById('loadLevelInput').addEventListener('change', () => { currentLevelNo = 0; hideMenu(); });
 window.GameMenu = { config: CONFIG, completeLevel, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
-                    migrateSave, buildLevelOrder,
+                    migrateSave, buildLevelOrder, mapWorlds, worldUnlocked: id => worldUnlocked(worldById(id)),
+                    levelUnlocked: i => isUnlocked(i), lastFreshWorld: () => lastFreshWorld,
                     show: showMenuScreen, levelsReady: () => CONFIG.levels.length > 0,
                     // für weitere Menü-Bildschirme (28-packages.js)
                     ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, giftSVG, config: CONFIG,
