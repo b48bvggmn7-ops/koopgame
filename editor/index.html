@@ -14,7 +14,18 @@
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
   #app{display:flex; flex-direction:column; height:100%;}
-  header{position:relative; padding:10px 64px 10px 14px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  header{position:relative; padding:8px 64px 8px 14px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:7px;}
+  .hrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  /* Werkzeug-Gruppen (Ausbau 2): einklappbar, Zustand im Browser gemerkt */
+  .tgroups{display:flex; flex-wrap:wrap; gap:6px; align-items:stretch;}
+  .tgroup{display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.035); border:1px solid var(--border); border-radius:10px; padding:3px 6px 3px 3px;}
+  .tgh{background:transparent; border:none; color:var(--accent); font-weight:700; font-size:11.5px; letter-spacing:.03em; text-transform:uppercase; cursor:pointer; padding:4px 6px; border-radius:7px; white-space:nowrap;}
+  .tgh::after{content:' ▾'; color:var(--sub);}
+  .tgroup.zu .tgh::after{content:' ▸';}
+  .tgh:hover{background:var(--panel2);}
+  .tgb{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+  .tgroup.zu .tgb{display:none;}
+  .tgroup.zu{padding-right:3px;}
   header h1{font-size:14px; margin:0; margin-right:12px; color:var(--accent); font-weight:700;}
   .tool{background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:8px; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:6px;}
   .tool.active{background:var(--accent); color:#3a2a00; border-color:var(--accent); font-weight:700;}
@@ -66,62 +77,10 @@
 <body>
 <div id="app">
   <header>
-    <h1>🐒 Level-Editor</h1>
-    <div class="tool active" data-tool="ground"><span class="swatch" style="background:#8a6a3a"></span>Boden</div>
-    <div class="tool" data-tool="wall"><span class="swatch" style="background:#7a8890"></span>Wand</div>
-    <div class="tool" data-tool="crumble"><span class="swatch" style="background:#c77b3f"></span>Bröckelboden</div>
-    <div class="tool" data-tool="fake" title="Scheinwand: sieht im Spiel aus wie eine Wand, man kann aber hindurchlaufen (versteckte Wege und Hebel)"><span class="swatch" style="background:#7a8890; outline:2px dashed #ffe066; outline-offset:-3px"></span>Scheinwand</div>
-    <div class="tool" data-tool="wind" title="Aufwind: trägt das Schweinchen mit offenem Schirm nach oben"><span class="swatch" style="background:#a0dcff"></span>Aufwind</div>
-    <div class="tool" data-tool="bounce" title="Sprungpilz: schleudert ca. 6 Kästchen hoch"><span class="swatch" style="background:#4fbf5a"></span>Sprungpilz</div>
-    <div class="tool" data-tool="checkpoint"><span class="swatch" style="background:#ff7a59"></span>Checkpoint ⚐</div>
-    <div class="tool" data-tool="coin"><span class="swatch" style="background:#ffc93c"></span>Münze</div>
-    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Wer die Münze einsammeln kann">
-      Farbe
-      <select id="coinColor" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="blue">🔵 Blau – Affe</option><option value="pink">🩷 Pink – Schweinchen</option><option value="gold">🟡 Gold – beide</option>
-      </select>
-    </label>
-    <div class="tool" data-tool="spike"><span class="swatch" style="background:#7f1d1d"></span>Stacheln</div>
-    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="In welche Richtung die Stacheln zeigen">
-      Spitzen
-      <select id="spikeDir" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="0">▲ oben</option><option value="1">▶ rechts</option><option value="2">▼ unten</option><option value="3">◀ links</option>
-      </select>
-    </label>
-    <div class="tool" data-tool="hook"><span class="swatch" style="background:#ffd166"></span>Haken</div>
-    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Reichweite des Hakens in Kästchen">
-      Radius
-      <input id="radiusInput" type="number" min="1" max="20" step="0.5" value="6.5" style="width:56px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-    </label>
-    <div class="tool" data-tool="switch"><span class="swatch" style="background:#ff9f43"></span>Schalter</div>
-    <div class="tool" data-tool="door"><span class="swatch" style="background:#9b59b6"></span>Tür</div>
-    <div class="tool" data-tool="plate" title="Druckplatte: Tür offen / Bewegung läuft nur, solange jemand draufsteht (Verknüpfung wie beim Schalter)"><span class="swatch" style="background:#c9a227"></span>Druckplatte</div>
-    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
-      Verknüpfung
-      <select id="linkSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
-      </select>
-    </label>
-    <div class="tool" data-tool="move"><span class="swatch" style="background:#4fc3f7"></span>Bewegung ➜</div>
-    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
-      Tempo
-      <select id="speedSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="2">Langsam</option><option value="3">Mittel</option><option value="4.5" selected>Schnell</option>
-      </select>
-    </label>
-    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Bewegter Boden: an Schalter koppeln">
-      per Schalter
-      <select id="moveSwitchSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="">– fährt immer –</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
-      </select>
-    </label>
-    <button class="action secondary" id="moveDelBtn" style="display:none; padding:5px 10px;" title="Ausgewählte Bewegung entfernen (Entf)">✕ Bewegung entfernen</button>
-    <div class="tool" data-tool="startM"><span class="swatch" style="background:#3a7bd5"></span>Start ♂</div>
-    <div class="tool" data-tool="startF"><span class="swatch" style="background:#e0669e"></span>Start ♀</div>
-    <div class="tool" data-tool="goal"><span class="swatch" style="background:#5fc98f"></span>Ziel</div>
-    <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
-    <div class="spacer"></div>
-    <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Aussehen des Levels im Spiel: Himmel, Hintergrund, Farben, Tiere">
+    <div class="hrow">
+      <h1>🐒 Level-Editor</h1>
+      <div class="spacer"></div>
+      <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Aussehen des Levels im Spiel: Himmel, Hintergrund, Farben, Tiere">
       Thema
       <select id="themeSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
         <option value="dschungel">🌿 Dschungel (Morgen)</option>
@@ -132,15 +91,101 @@
         <option value="vulkan">🌋 Feuerberg</option>
       </select>
     </label>
-    <span id="curName">Unbenanntes Level</span>
-    <button class="action secondary" id="extendBtn" title="Level um 20 Spalten nach rechts verlängern">+20 Spalten ➜</button>
-    <button class="action secondary" id="clearBtn">Alles löschen</button>
-    <button class="action secondary" id="levelsBtn">📂 Levels</button>
-    <button class="action" id="saveBtn">💾 Speichern</button>
-    <button class="action" id="testBtn" title="Das aktuelle Level sofort im Spiel ausprobieren (ohne Speichern/Hochladen)" style="background:#ffd166; color:#3a2a00;">▶ Testen</button>
-    <button class="action" id="exportBtn">Exportieren</button>
-    <button class="action" id="githubBtn" title="Das Level direkt ins Projekt auf GitHub speichern – ist nach 1–2 Minuten online im Spiel">☁ Auf GitHub speichern</button>
-    <button class="action secondary" id="closeEditorBtn" title="Editor schließen und zurück zum Spiel (der Arbeitsstand bleibt im Browser erhalten)" style="position:absolute; top:10px; right:14px; font-size:16px; line-height:1; padding:6px 11px;">✕</button>
+      <span id="curName">Unbenanntes Level</span>
+      <button class="action secondary" id="extendBtn" title="Level um 20 Spalten nach rechts verlängern">+20 Spalten ➜</button>
+      <button class="action secondary" id="clearBtn">Alles löschen</button>
+      <button class="action secondary" id="levelsBtn">📂 Levels</button>
+      <button class="action" id="saveBtn">💾 Speichern</button>
+      <button class="action" id="testBtn" title="Das aktuelle Level sofort im Spiel ausprobieren (ohne Speichern/Hochladen)" style="background:#ffd166; color:#3a2a00;">▶ Testen</button>
+      <button class="action" id="exportBtn">Exportieren</button>
+      <button class="action" id="githubBtn" title="Das Level direkt ins Projekt auf GitHub speichern – ist nach 1–2 Minuten online im Spiel">☁ Auf GitHub speichern</button>
+      <button class="action secondary" id="closeEditorBtn" title="Editor schließen und zurück zum Spiel (der Arbeitsstand bleibt im Browser erhalten)" style="position:absolute; top:10px; right:14px; font-size:16px; line-height:1; padding:6px 11px;">✕</button>
+    </div>
+    <div class="tgroups" id="toolGroups">
+    <div class="tgroup" data-group="gelaende">
+      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Gelände</button>
+      <div class="tgb">
+        <div class="tool active" data-tool="ground"><span class="swatch" style="background:#8a6a3a"></span>Boden</div>
+        <div class="tool" data-tool="wall"><span class="swatch" style="background:#7a8890"></span>Wand</div>
+        <div class="tool" data-tool="crumble"><span class="swatch" style="background:#c77b3f"></span>Bröckelboden</div>
+        <div class="tool" data-tool="fake" title="Scheinwand: sieht im Spiel aus wie eine Wand, man kann aber hindurchlaufen (versteckte Wege und Hebel)"><span class="swatch" style="background:#7a8890; outline:2px dashed #ffe066; outline-offset:-3px"></span>Scheinwand</div>
+      </div>
+    </div>
+    <div class="tgroup" data-group="gefahren">
+      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Gefahren</button>
+      <div class="tgb">
+        <div class="tool" data-tool="spike"><span class="swatch" style="background:#7f1d1d"></span>Stacheln</div>
+        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="In welche Richtung die Stacheln zeigen">
+      Spitzen
+      <select id="spikeDir" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="0">▲ oben</option><option value="1">▶ rechts</option><option value="2">▼ unten</option><option value="3">◀ links</option>
+      </select>
+    </label>
+      </div>
+    </div>
+    <div class="tgroup" data-group="logik">
+      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Schalter &amp; Logik</button>
+      <div class="tgb">
+        <div class="tool" data-tool="switch"><span class="swatch" style="background:#ff9f43"></span>Schalter</div>
+        <div class="tool" data-tool="door"><span class="swatch" style="background:#9b59b6"></span>Tür</div>
+        <div class="tool" data-tool="plate" title="Druckplatte: Tür offen / Bewegung läuft nur, solange jemand draufsteht (Verknüpfung wie beim Schalter)"><span class="swatch" style="background:#c9a227"></span>Druckplatte</div>
+        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
+      Verknüpfung
+      <select id="linkSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+      </select>
+    </label>
+      </div>
+    </div>
+    <div class="tgroup" data-group="bewegung">
+      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Bewegung</button>
+      <div class="tgb">
+        <div class="tool" data-tool="hook"><span class="swatch" style="background:#ffd166"></span>Haken</div>
+        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Reichweite des Hakens in Kästchen">
+      Radius
+      <input id="radiusInput" type="number" min="1" max="20" step="0.5" value="6.5" style="width:56px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+    </label>
+        <div class="tool" data-tool="wind" title="Aufwind: trägt das Schweinchen mit offenem Schirm nach oben"><span class="swatch" style="background:#a0dcff"></span>Aufwind</div>
+        <div class="tool" data-tool="bounce" title="Sprungpilz: schleudert ca. 6 Kästchen hoch"><span class="swatch" style="background:#4fbf5a"></span>Sprungpilz</div>
+        <div class="tool" data-tool="move"><span class="swatch" style="background:#4fc3f7"></span>Bewegung ➜</div>
+        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
+      Tempo
+      <select id="speedSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="2">Langsam</option><option value="3">Mittel</option><option value="4.5" selected>Schnell</option>
+      </select>
+    </label>
+        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Bewegter Boden: an Schalter koppeln">
+      per Schalter
+      <select id="moveSwitchSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="">– fährt immer –</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+      </select>
+    </label>
+        <button class="action secondary" id="moveDelBtn" style="display:none; padding:5px 10px;" title="Ausgewählte Bewegung entfernen (Entf)">✕ Bewegung entfernen</button>
+      </div>
+    </div>
+    <div class="tgroup" data-group="sammeln">
+      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Sammeln</button>
+      <div class="tgb">
+        <div class="tool" data-tool="coin"><span class="swatch" style="background:#ffc93c"></span>Münze</div>
+        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Wer die Münze einsammeln kann">
+      Farbe
+      <select id="coinColor" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+        <option value="blue">🔵 Blau – Affe</option><option value="pink">🩷 Pink – Schweinchen</option><option value="gold">🟡 Gold – beide</option>
+      </select>
+    </label>
+      </div>
+    </div>
+    <div class="tgroup" data-group="marken">
+      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Markierungen</button>
+      <div class="tgb">
+        <div class="tool" data-tool="checkpoint"><span class="swatch" style="background:#ff7a59"></span>Checkpoint ⚐</div>
+        <div class="tool" data-tool="startM"><span class="swatch" style="background:#3a7bd5"></span>Start ♂</div>
+        <div class="tool" data-tool="startF"><span class="swatch" style="background:#e0669e"></span>Start ♀</div>
+        <div class="tool" data-tool="goal"><span class="swatch" style="background:#5fc98f"></span>Ziel</div>
+      </div>
+    </div>
+    <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
+    </div>
   </header>
   <div id="main">
     <div id="canvasWrap">

@@ -2091,6 +2091,31 @@ async def editor_rundreise_alle_level(g):
     finally:
         srv.shutdown()
 
+@test
+async def editor_werkzeug_gruppen(g):
+    """Ausbau 2: Werkzeuge stehen in einklappbaren Gruppen (Gelände, Gefahren, Schalter & Logik, Bewegung, Sammeln,
+    Markierungen); Klick auf den Gruppennamen klappt ein/aus, der Zustand bleibt nach dem Neuladen; Werkzeuge gehen weiter."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        gr = await p.evaluate("""[...document.querySelectorAll('.tgroup')].map(g => [g.querySelector('.tgh').textContent.trim(),
+            [...g.querySelectorAll('.tool')].map(t => t.dataset.tool)])""")
+        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Schalter & Logik', 'Bewegung', 'Sammeln', 'Markierungen'], gr
+        alle = sum((x[1] for x in gr), [])
+        for t in ['ground', 'wall', 'crumble', 'fake', 'spike', 'switch', 'door', 'plate', 'hook', 'wind', 'bounce', 'move', 'coin', 'checkpoint', 'startM', 'startF', 'goal']:
+            assert alle.count(t) == 1, f'Werkzeug {t} nicht genau einmal in einer Gruppe: {gr}'
+        assert await p.is_visible('.tool[data-tool=erase]'), 'Radieren fehlt'
+        await p.click('.tgroup[data-group=gefahren] .tgh'); await p.wait_for_timeout(100)
+        assert not await p.is_visible('.tool[data-tool=spike]'), 'Gruppe klappt nicht ein'
+        await p.reload(); await p.wait_for_timeout(400)
+        assert not await p.is_visible('.tool[data-tool=spike]'), 'eingeklappte Gruppe nicht gemerkt'
+        await p.click('.tgroup[data-group=gefahren] .tgh'); await p.wait_for_timeout(100)
+        await p.click('.tool[data-tool=spike]')
+        assert await p.evaluate("currentTool") == 'spike', 'Werkzeug in der Gruppe lässt sich nicht wählen'
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

@@ -523,6 +523,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Schalter, Tür, Bewegung, Haken) – trotzdem weiter wählbar.
     Start ♂, Start ♀, Ziel, Radieren
   - Rechtsklick (auch ziehen) = Radierer, unabhängig vom Werkzeug
+  - Werkzeug-Gruppen (Ausbau 2): oben eine Zeile mit Thema/Name/Knöpfen, darunter die Werkzeuge in einklappbaren
+    Gruppen – Gelände (Boden, Wand, Bröckelboden, Scheinwand) · Gefahren (Stacheln + Spitzen) · Schalter & Logik
+    (Schalter, Tür, Druckplatte + Verknüpfung) · Bewegung (Haken + Radius, Aufwind, Sprungpilz, Bewegung ➜ + Tempo/per
+    Schalter) · Sammeln (Münze + Farbe) · Markierungen (Checkpoint, Start ♂/♀, Ziel); Radieren steht immer daneben.
+    Klick auf den Gruppennamen klappt sie ein/aus (▾/▸), gemerkt im Browser (monchichi_editor_groups). Test editor_werkzeug_gruppen.
   - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt
   - Level wächst nach rechts automatisch mit, „+20 Spalten“-Button, Mausrad scrollt seitlich
   - Bestätigungen (Löschen, Alles löschen, Neues Level, Laden/Überschreiben bei ungespeicherten Änderungen) per

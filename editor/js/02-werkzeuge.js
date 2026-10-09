@@ -12,6 +12,20 @@ document.querySelectorAll('.tool').forEach(el=>{
   });
 });
 
+// Werkzeug-Gruppen ein-/ausklappen (Ausbau 2): Klick auf den Gruppen-Namen; Zustand bleibt im Browser gemerkt
+const GROUPS_KEY = 'monchichi_editor_groups';
+let closedGroups = {};
+try{ closedGroups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '{}') || {}; }catch(e){}
+document.querySelectorAll('.tgroup').forEach(g=>{
+  g.classList.toggle('zu', !!closedGroups[g.dataset.group]);
+  g.querySelector('.tgh').addEventListener('click', ()=>{
+    const zu = !g.classList.contains('zu');
+    g.classList.toggle('zu', zu); closedGroups[g.dataset.group] = zu;
+    try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(closedGroups)); }catch(e){}
+    requestAnimationFrame(fitView);   // Kopfzeile ändert ihre Höhe -> Raster neu einpassen
+  });
+});
+
 function cellFromEvent(e){
   const rect = cvs.getBoundingClientRect();
   const px = (e.clientX - rect.left) * (cvs.width/rect.width);
