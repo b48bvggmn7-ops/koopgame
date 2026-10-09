@@ -131,6 +131,16 @@ function applySnapshot(d){
   fitCols(d.cols);
 }
 
+// Level-Inhalt komplett leeren (für „Alles löschen“ und „Neues leeres Level“): ALLE Objekte, auch Druckplatten,
+// Register-Elemente (Sprungpilz …) und Namen der Verknüpfungen. Die Level-Info (Welt, Titel …) bleibt.
+function clearLevelContent(){
+  tiles={}; hooks=[]; switches=[]; doors=[]; plates=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
+  for(const k in elementPunkte) elementPunkte[k] = [];
+  linkNames = {}; showLinkName();
+  if(typeof selRect !== 'undefined') selRect = null;
+  if(typeof selectMove === 'function') selectMove(null);
+}
+
 // Arbeitsstand (Entwurf) lokal im Browser
 const STORAGE_KEY = 'monchichi_level_editor_v2';
 let dirty = false;

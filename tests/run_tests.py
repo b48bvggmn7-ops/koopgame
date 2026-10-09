@@ -2327,6 +2327,30 @@ async def element_register(g):
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
+@test
+async def editor_alles_loeschen_wirklich_alles(g):
+    """„Alles löschen“ und „Neues leeres Level“ entfernen WIRKLICH alles – auch Druckplatten und Sprungpilze
+    (Fehler bis Ausbau 2: die blieben stehen)."""
+    srv = webserver(); p = g.p
+    fuellen = """(() => { tiles['3,10'] = 'ground'; tiles['5,8'] = 'wind'; plates.push({c: 4, r: 9, link: 2}); elementPunkte.bouncers.push({c: 6, r: 9});
+      switches.push({c: 7, r: 9, link: 2}); doors.push({c: 8, r: 9, link: 2}); coins.push({c: 9, r: 9, color: 'blue'}); linkNames[2] = 'Tor'; save(); })()"""
+    leer = """(() => { const d = JSON.parse(exportLevel()); return ['solids', 'winds', 'plates', 'bouncers', 'switches', 'doors', 'coins']
+      .filter(k => (d[k] || []).length).concat(Object.keys(linkNames).length ? ['linkNames'] : []); })()"""
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.evaluate(fuellen)
+        await p.click('#clearBtn'); await p.click('#clearBtn'); await p.wait_for_timeout(100)   # 2. Klick bestätigt
+        assert await p.evaluate(leer) == [], f'„Alles löschen“ lässt stehen: {await p.evaluate(leer)}'
+        await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
+        assert await p.evaluate("plates.length + elementPunkte.bouncers.length") == 2, 'Alles löschen nicht rückgängig machbar'
+        await p.evaluate("dirty = false")
+        await p.click('#levelsBtn'); await p.click('#newLevelBtn'); await p.wait_for_timeout(100)
+        assert await p.evaluate(leer) == [], f'„Neues leeres Level“ lässt stehen: {await p.evaluate(leer)}'
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

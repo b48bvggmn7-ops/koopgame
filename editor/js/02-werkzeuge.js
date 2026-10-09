@@ -254,7 +254,7 @@ function armConfirm(btn, label, action){
 }
 document.getElementById('clearBtn').addEventListener('click', e=>{
   armConfirm(e.currentTarget, 'Wirklich alles löschen?', ()=>{
-    tiles={}; hooks=[]; switches=[]; doors=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
+    clearLevelContent();   // wirklich alles, auch Druckplatten und Sprungpilze (früher blieben die stehen)
     setCols(MIN_COLS); save();
   });
 });

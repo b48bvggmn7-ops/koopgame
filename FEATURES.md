@@ -552,6 +552,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Klick auf den Gruppennamen klappt sie ein/aus (▾/▸), gemerkt im Browser (monchichi_editor_groups). Test editor_werkzeug_gruppen.
   - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt
   - Level wächst nach rechts automatisch mit, „+20 Spalten“-Button, Mausrad scrollt seitlich
+  - „Alles löschen“ und „Neues leeres Level“ entfernen wirklich alles (auch Druckplatten, Sprungpilze und Namen der
+    Verknüpfungen – bis Ausbau 2 blieben Druckplatten und Pilze stehen); „Alles löschen“ behält die Level-Info und ist
+    mit Strg+Z rückgängig machbar. Test editor_alles_loeschen_wirklich_alles.
   - Bestätigungen (Löschen, Alles löschen, Neues Level, Laden/Überschreiben bei ungespeicherten Änderungen) per
     2. Klick direkt am Button (armConfirm) bzw. 2. Speichern – KEIN confirm()/alert(): ist im Artifact blockiert!
   - Levels speichern/laden/löschen mit Namen (Artifact-Datenbank, Collection "levels"), Strg+S
