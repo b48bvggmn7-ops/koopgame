@@ -130,10 +130,9 @@
         <div class="tool" data-tool="plate" title="Druckplatte: Tür offen / Bewegung läuft nur, solange jemand draufsteht (Verknüpfung wie beim Schalter)"><span class="swatch" style="background:#c9a227"></span>Druckplatte</div>
         <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
       Verknüpfung
-      <select id="linkSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
-      </select>
+      <select id="linkSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;"></select>
     </label>
+        <input id="linkName" maxlength="24" placeholder="Name (optional)" title="Name für diese Verknüpfungs-Nummer, z. B. „Tor zum Turm“ – nur zur Übersicht im Editor" style="width:120px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
       </div>
     </div>
     <div class="tgroup" data-group="bewegung">
@@ -155,9 +154,7 @@
     </label>
         <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Bewegter Boden: an Schalter koppeln">
       per Schalter
-      <select id="moveSwitchSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="">– fährt immer –</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
-      </select>
+      <select id="moveSwitchSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;"><option value="">– fährt immer –</option></select>
     </label>
         <button class="action secondary" id="moveDelBtn" style="display:none; padding:5px 10px;" title="Ausgewählte Bewegung entfernen (Entf)">✕ Bewegung entfernen</button>
       </div>

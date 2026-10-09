@@ -104,6 +104,7 @@ function pasteClip(clip, c0, r0, renumber){
       while(used.has(next) && next <= MAX_LINK) next++;
       if(next > MAX_LINK){ flash('Keine freie Verknüpfungs-Nummer mehr (höchstens ' + MAX_LINK + ')'); break; }
       map[n] = next; used.add(next);
+      if(linkNames[n] && !linkNames[next]) linkNames[next] = linkNames[n];   // Name geht mit
     }
   }
   const L = n => map[n] || n;

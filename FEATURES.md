@@ -388,6 +388,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Startmenü: alle sechs Levelkarten sind jetzt echte Levels (Dschungel, Baumkronen, Ruinen, Mondnacht, Kristallhöhle,
     Feuerberg); kein „Coming soon“ mehr.
   - Alle Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen; Level 2/3 umnummeriert).
+    Seit Ausbau 2 kann der Editor 1–60; die Farben ab 21 erzeugt das Spiel automatisch (Test verknuepfungen_bis_60).
   - Alle neuen Levels (2/3) folgen denselben Regeln wie Level 1 (nur blaue/pinke Münzen, keine Münzen in Steinen,
     Haken-Radius ≤ 5, eindeutige Wege); jede Stelle wurde mit einem Test-Bot im echten Spiel durchgespielt.
   - Das frühere vom Nutzer hochgeladene „Level 3“ heißt jetzt „Level 3 (alter Entwurf)“
@@ -523,6 +524,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Schalter, Tür, Bewegung, Haken) – trotzdem weiter wählbar.
     Start ♂, Start ♀, Ziel, Radieren
   - Rechtsklick (auch ziehen) = Radierer, unabhängig vom Werkzeug
+  - Verknüpfungen 1–60 (Ausbau 2; früher 1–20) in „Verknüpfung“ und „per Schalter“; neben „Verknüpfung“ ein Feld
+    „Name (optional)“: gibt der gewählten Nummer einen Namen (z. B. „Tor zum Turm“), der in beiden Auswahlen hinter der
+    Nummer steht (vor den ✓-Markierungen), im Arbeitsstand/Editor-Format gemerkt wird (linkNames) und beim Kopieren
+    mit der neuen Nummer mitgeht. Nur zur Übersicht – ins Spiel geht nur die Nummer. Test editor_verknuepfungen_60_mit_namen.
   - Rückgängig / Wiederholen (Ausbau 2, editor/js/08-auswahl.js): Strg+Z / Strg+Y (auch Strg+Umschalt+Z) und Knöpfe
     ↶ ↷ oben; jede Änderung ist ein Schritt, ein gezogener Pinselstrich zählt als EIN Schritt; bis 200 Schritte.
     Laden eines Levels / Neues Level beginnt einen frischen Verlauf. Auch Level-Info-Änderungen sind rückgängig machbar.

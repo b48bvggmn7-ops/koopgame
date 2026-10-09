@@ -150,7 +150,7 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
 document.getElementById('newLevelBtn').addEventListener('click', e=>{
   const doNew = ()=>{
     tiles={}; hooks=[]; switches=[]; doors=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
-    meta = blankMeta(); updateMetaUI();
+    meta = blankMeta(); updateMetaUI(); linkNames = {}; showLinkName();
     currentLevelId=null; currentLevelName=null; currentProjectFile=null; setCols(MIN_COLS); save(); dirty=false; updateName(); histReset();
     wrap.scrollLeft=0; closeLevels();
   };

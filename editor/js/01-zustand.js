@@ -43,6 +43,18 @@ const moveSwitchSelect = document.getElementById('moveSwitchSelect');
 function curMoveLink(){ return moveSwitchSelect.value ? Number(moveSwitchSelect.value) : null; }
 
 const linkSelect = document.getElementById('linkSelect');
+// Verknüpfungs-Nummern 1 … MAX_LINK (Ausbau 2: 60 statt 20), optional mit Namen (nur zur Übersicht im Editor)
+let linkNames = {};          // {Nummer: 'Name'}
+for(const sel of [linkSelect, moveSwitchSelect])
+  for(let n = 1; n <= MAX_LINK; n++){ const o = document.createElement('option'); o.value = String(n); o.textContent = String(n); sel.appendChild(o); }
+const linkNameInput = document.getElementById('linkName');
+function showLinkName(){ linkNameInput.value = linkNames[linkSelect.value] || ''; }
+linkSelect.addEventListener('change', showLinkName);
+linkNameInput.addEventListener('input', ()=>{
+  const v = linkNameInput.value.trim();
+  if(v) linkNames[linkSelect.value] = v; else delete linkNames[linkSelect.value];
+  save();
+});
 // Level-Infos (Ausbau 2): Welt, Position in der Welt, Titel, Tageszeit, Wetter und optional ein look-Override
 // (= eines der alten Themen, z. B. „Mondnacht“ – dann sieht das Level im Spiel genau so aus, js/10a-themen.js).
 // Fenster „Level-Info“: 07-level-info.js. Alte Levels (nur „theme“) bekommen ihr Thema als look-Override.
@@ -88,7 +100,8 @@ function snapshot(){
     tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }),
     hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, plates, bouncers,
     theme: meta.look || undefined, welt: meta.welt, tageszeit: meta.tageszeit || undefined, wetter: meta.wetter,
-    titel: meta.titel || undefined, position: meta.position || undefined
+    titel: meta.titel || undefined, position: meta.position || undefined,
+    linkNames: Object.keys(linkNames).length ? {...linkNames} : undefined
   };
 }
 function applySnapshot(d){
@@ -109,6 +122,7 @@ function applySnapshot(d){
   meta = {welt: d.welt || THEME_WELT[d.theme] || 'dschungel', position: Number(d.position) || 0, titel: d.titel || '',
           tageszeit: d.tageszeit || '', wetter: d.wetter || 'wechselnd', look: THEME_BG[lk] ? lk : ''};
   if(typeof updateMetaUI === 'function') updateMetaUI();
+  linkNames = {...(d.linkNames || {})}; showLinkName();
   fitCols(d.cols);
 }
 
@@ -129,7 +143,7 @@ function updateLinkMarks(){
       const n = o.value || o.textContent.trim();
       if(!/^\d+$/.test(n)) continue;
       o.value = n;                                   // Wert bleibt die reine Nummer
-      o.textContent = uses[n] ? `${n}  ✓ ${[...uses[n]].join(', ')}` : n;
+      o.textContent = n + (linkNames[n] ? ` · ${linkNames[n]}` : '') + (uses[n] ? `  ✓ ${[...uses[n]].join(', ')}` : '');
     }
   }
 }

@@ -69,12 +69,15 @@ def webserver():
 async def startmenue_bis_level(g, tasten_vorher=()):
     """Startmenü bedienen: Titel -> Menü -> Spielen -> Spielerwahl (beide bereit) -> Countdown -> Level 1."""
     p = g.p
+    # jeweils warten, bis der nächste Bildschirm wirklich da ist (langsame Rechner: feste Zeiten reichen nicht)
     await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)   # Titel -> Hauptmenü (kleine Animation)
+    await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
     await p.keyboard.press('Enter'); await p.wait_for_timeout(700)    # Spielen -> Spielerwahl
+    await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000); await p.wait_for_timeout(300)
     for k in tasten_vorher:
         await p.keyboard.press(k); await p.wait_for_timeout(350)
     await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
-    for _ in range(120):   # Countdown und Blätter-Vorhang
+    for _ in range(200):   # Countdown und Blätter-Vorhang
         if await g.ev("menuScreen === null"): return
         await p.wait_for_timeout(100)
     raise AssertionError('Level startet nach der Spielerwahl nicht')
@@ -571,14 +574,14 @@ async def levelstart_vorhang(g):
         srv.shutdown()
 
 @test
-async def verknuepfungen_bis_20(g):
-    """Alle Projekt-Levels benutzen nur Verknüpfungen 1–20 (mehr kann der Editor nicht einstellen)."""
+async def verknuepfungen_bis_60(g):
+    """Alle Projekt-Levels benutzen nur Verknüpfungen 1–60 (mehr kann der Editor nicht einstellen; bis Ausbau 2: 20)."""
     for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
         d = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
         links = [s['link'] for s in d.get('switches', [])] + [x['link'] for x in d.get('doors', [])] + \
                 [m['link'] for m in d.get('movers', []) if m.get('link')] + \
                 [h['move']['link'] for h in d.get('hooks', []) if h.get('move') and h['move'].get('link')]
-        assert all(1 <= n <= 20 for n in links), f"{L['datei']}: Verknüpfungen über 20: {sorted(set(n for n in links if n > 20))}"
+        assert all(1 <= n <= 60 for n in links), f"{L['datei']}: Verknüpfungen über 60: {sorted(set(n for n in links if n > 60))}"
 
 @test
 async def vollbild_esc_bleibt(g):
@@ -986,6 +989,8 @@ async def editor_testen_knopf(g):
         await p.click('#c', position={'x': 5, 'y': 5}, button='right'); await p.wait_for_timeout(100)   # Fokus weg vom Feld
         await p.evaluate("document.activeElement && document.activeElement.blur()")
         await p.keyboard.press('Enter'); await p.wait_for_timeout(800)   # Enter = Testen
+        # langsame Rechner: warten, bis das Spiel fertig geladen und das Test-Level gestartet ist (sonst sieht man noch das Menü)
+        await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof coins !== 'undefined' && coins.length === 3", timeout=8000)
         assert 'index.html?test=1' in p.url and '/editor/' not in p.url, f'Enter startet den Test nicht: {p.url}'
         assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
         assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
@@ -1240,6 +1245,8 @@ async def regen_klang(g):
     await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')   # Ton freischalten (erster Tastendruck)
     await g.ev("weatherForce('rain')"); await g.p.wait_for_timeout(2500)
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
+        try: await g.p.wait_for_function("!!rainBufs", timeout=10000)   # Berechnung läuft im Hintergrund (langsame Rechner: länger)
+        except Exception: pass
         assert await g.ev("!!rainBufs"), 'Regen-Klang wurde nicht vorberechnet'
 
 @test
@@ -2260,6 +2267,30 @@ async def editor_rueckgaengig_und_auswahl(g):
         # Entf löscht den Inhalt der Auswahl
         await p.keyboard.press('Delete'); await p.wait_for_timeout(100)
         assert await p.evaluate("switches.length + doors.length + hooks.length + movers.length") == 0
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def editor_verknuepfungen_60_mit_namen(g):
+    """Ausbau 2: Verknüpfung und „per Schalter“ bieten 1–60; eine Nummer kann einen Namen bekommen (steht in der
+    Auswahl, wird gemerkt, geht beim Kopieren mit); die ✓-Markierungen bleiben; Nummern über 20 landen im Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        n = await p.evaluate("[[...linkSelect.options].map(o => o.value), [...moveSwitchSelect.options].map(o => o.value)]")
+        assert n[0] == [str(i) for i in range(1, 61)] and n[1] == [''] + [str(i) for i in range(1, 61)], n
+        await p.select_option('#linkSelect', '45'); await p.fill('#linkName', 'Tor zum Turm')
+        await p.click('.tool[data-tool=switch]')
+        x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y); await p.wait_for_timeout(100)
+        txt = await p.evaluate("[...linkSelect.options].find(o => o.value === '45').textContent")
+        assert 'Tor zum Turm' in txt and '✓ Schalter' in txt, txt
+        await p.reload(); await p.wait_for_timeout(400)
+        await p.select_option('#linkSelect', '45')
+        assert await p.input_value('#linkName') == 'Tor zum Turm', 'Name nicht gemerkt'
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['switches'] == [{'x': 220, 'y': 420, 'link': 45}], out['switches']
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
