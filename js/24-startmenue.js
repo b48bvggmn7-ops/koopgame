@@ -130,7 +130,8 @@ const CONFIG = {
     monkey: { name: 'Affe',        skill: 'Haken · Wandsprung' },
     pig:    { name: 'Schweinchen', skill: 'Schirm (segeln) · Wandsprung' }
   },
-  levels: [],                                // aus levels/levels.json (+ „Coming soon“ bis Level SLOTS)
+  levels: [],                                // Reihenfolge aus levels/worlds.json, Namen aus levels/levels.json (+ „Coming soon“ bis Level SLOTS)
+  worlds: [],                                // levels/worlds.json (Welten: id, name, titel, reihenfolge, level, boss)
   slots: 6,
   tip: 'Wandsprung: an der Wand springen und dabei von der Wand weg steuern. Im Spiel: Esc / Options = Pause, M = Ton aus/an.'
 };
@@ -167,9 +168,39 @@ const store = {
   set(k, v) { try { localStorage.setItem(CONFIG.storageKey + '.' + k, JSON.stringify(v)); } catch (e) { /* ignorieren */ } }
 };
 
-/* ===== Spielstand ===== */
-let save = store.get('save', null) || { played: false, unlocked: 1, completed: [] };
+/* ===== Spielstand =====
+   Ab Ausbau 1 merkt sich der Spielstand Level über ihren DATEINAMEN (z. B. "level-3.json") statt über die Nummer –
+   so bleibt alles richtig, wenn Level in Welten einsortiert oder umsortiert werden.
+   Format (v: 2): { v, played, unlocked: [Dateien], completed: [Dateien], stats: { Datei: {m, f} } }
+   Alter Spielstand (Nummern 1–6) wird beim ersten Start umgerechnet; das Original bleibt unverändert als
+   Sicherungskopie unter "monchichi.save_v1_backup" im Browser. */
+// Reihenfolge der Levelkarten zur Zeit des alten Spielstands (Nummer n = LEGACY_LEVEL_ORDER[n - 1])
+const LEGACY_LEVEL_ORDER = ['level-1.json', 'level-2.json', 'level-3.json', 'level-4.json', 'level-5.json', 'level-6.json'];
+const blankSave = () => ({ v: 2, played: false, unlocked: [], completed: [], stats: {} });
+function migrateSave(raw) {
+  if (!raw || typeof raw !== 'object') return blankSave();
+  if (raw.v === 2) return Object.assign(blankSave(), raw);
+  // alter Stand: erst unverändert sichern (nur einmal – eine vorhandene Sicherung wird nie überschrieben)
+  if (store.get('save_v1_backup', null) === null) store.set('save_v1_backup', raw);
+  const file = n => LEGACY_LEVEL_ORDER[n - 1];
+  const out = blankSave();
+  out.played = !!raw.played;
+  const u = Math.max(1, Math.min(LEGACY_LEVEL_ORDER.length, Number(raw.unlocked) || 1));
+  out.unlocked = LEGACY_LEVEL_ORDER.slice(0, u);
+  out.completed = (Array.isArray(raw.completed) ? raw.completed : []).map(Number).filter(n => file(n)).map(file);
+  out.completed = out.completed.filter((f, i) => out.completed.indexOf(f) === i);
+  for (const f of out.completed) if (!out.unlocked.includes(f)) out.unlocked.push(f);
+  for (const k in (raw.stats || {})) if (file(Number(k))) out.stats[file(Number(k))] = raw.stats[k];
+  return out;
+}
+let save = migrateSave(store.get('save', null));
 const persist = () => store.set('save', save);
+persist();
+// Abfragen je Levelkarte (Index i in CONFIG.levels): das erste Level ist immer offen
+const fileOf = i => CONFIG.levels[i] && !CONFIG.levels[i].soon ? CONFIG.levels[i].datei : null;
+const isUnlocked = i => i === 0 || (!!fileOf(i) && save.unlocked.includes(fileOf(i)));
+const isDone = i => !!fileOf(i) && save.completed.includes(fileOf(i));
+const lastUnlocked = () => { let k = 0; for (let i = 0; i < realCount(); i++) if (isUnlocked(i)) k = i; return k; };
 let lastPlayers = { monkey: 1, pig: 2 };
 
 /* =====================================================================
@@ -451,17 +482,19 @@ async function curtainIntoLevel(no, name, build) {
   curtainEl.className = '';
   menuScreen = null; menuClearPressed();           // jetzt läuft das Spiel (zuerst die Ankunft)
 }
-function completeLevel(n, quiet) {
-  if (!save.completed.includes(n)) save.completed.push(n);
-  const before = save.unlocked;
-  save.unlocked = Math.max(save.unlocked, Math.min(n + 1, realCount()));
+function completeLevel(n, quiet) {   // n = Nummer der Levelkarte (1 …)
+  const f = fileOf(n - 1);
+  if (f && !save.completed.includes(f)) save.completed.push(f);
+  if (f && !save.unlocked.includes(f)) save.unlocked.push(f);
+  const next = n < realCount() ? fileOf(n) : null, fresh = !!next && !save.unlocked.includes(next);
+  if (fresh) save.unlocked.push(next);
   persist();
-  if (!quiet) toast(save.unlocked > before ? `Level ${save.unlocked} freigeschaltet!` : `Level ${n} geschafft!`);
-  return save.unlocked > before ? save.unlocked : 0;   // neu freigeschaltetes Level (0 = keins)
+  if (!quiet) toast(fresh ? `Level ${n + 1} freigeschaltet!` : `Level ${n} geschafft!`);
+  return fresh ? n + 1 : 0;   // neu freigeschaltetes Level (0 = keins)
 }
 // Neues Spiel: ALLES von vorn – freigeschaltete Level, Statistik, Packages, Items/Skins (angelegt + besessen), Münz-Konto
 function resetSave() {
-  save = { played: false, unlocked: 1, completed: [] }; persist();
+  save = blankSave(); persist();
   if (typeof cosmeticsReset === 'function') cosmeticsReset();      // 26-kosmetik-daten.js
   if (typeof cosResetState === 'function') cosResetState();
 }
@@ -602,7 +635,8 @@ $$('#sm-opt-seg button').forEach(b => b.addEventListener('click', () => { S.opti
 $('#sm-opt-back').addEventListener('click', () => { Snd.play('back'); go('menu'); });
 // zum Testen: alle fertigen Level sofort spielbar
 function unlockAll() {
-  save.unlocked = realCount(); save.played = true; persist();
+  for (let i = 0; i < realCount(); i++) if (fileOf(i) && !save.unlocked.includes(fileOf(i))) save.unlocked.push(fileOf(i));
+  save.played = true; persist();
   Snd.play('ok'); toast('Alle Level freigeschaltet');
 }
 $('#sm-unlock').addEventListener('click', () => { S.options.idx = 5; S.options.paint(); unlockAll(); });
@@ -717,7 +751,7 @@ $('#sm-go-btn').addEventListener('click', () => {
 S.levels = {
   el: $('#sm-s-levels'), idx: 0,
   enter(arg) {
-    if (arg !== 'keep') this.idx = clamp(save.unlocked, 1, realCount()) - 1;   // zurück aus der Spielerwahl: Auswahl behalten
+    if (arg !== 'keep') this.idx = lastUnlocked();   // zurück aus der Spielerwahl: Auswahl behalten
     this.top = '';
     const unlock = arg && typeof arg === 'object' && arg.unlock >= 0 ? arg.unlock : -1;   // nach „Level geschafft“
     const box = $('#sm-cards'); box.innerHTML = '';
@@ -727,7 +761,7 @@ S.levels = {
       box.appendChild(b);
     });
     box.appendChild(mk(`<div class="pair nt" id="sm-pair">${monkeySVG()}${pigSVG()}</div>`));
-    const done = save.completed.filter(x => x <= realCount()).length, n = realCount();
+    let done = 0; const n = realCount(); for (let i = 0; i < n; i++) if (isDone(i)) done++;
     $('#sm-l-count').innerHTML = `Fortschritt<b>${done} / ${n}</b>`;
     $('#sm-lbar-i').style.width = (done / n * 100) + '%';
     this.paint(true); this.paintColl();
@@ -737,13 +771,14 @@ S.levels = {
     const cards = $$('#sm-cards .lc');
     cards.forEach((b, i) => {
       const soon = !!CONFIG.levels[i].soon;
-      const locked = soon || i >= save.unlocked, done = save.completed.includes(i + 1), sel = i === this.idx && !this.top;
+      const locked = soon || !isUnlocked(i), done = isDone(i), sel = i === this.idx && !this.top;
       b.className = 'lc' + (locked ? ' lock' : '') + (soon ? ' soon' : '') + (sel ? ' sel' : '');
       const extra = soon ? '<span class="st">Bald verfügbar</span>'
                   : sel ? (locked ? '<span class="st">Gesperrt</span>' : '<span class="go">Start</span>')
                         : `<span class="st">${done ? '✓ Geschafft' : locked ? 'Gesperrt' : 'Bereit'}</span>`;
-      const duel = done && save.stats && save.stats[i + 1] && typeof levelCardStatsHTML === 'function'
-        ? `<span class="duel">${levelCardStatsHTML(save.stats[i + 1])}</span>` : '';   // Tode der letzten geschafften Runde
+      const st = save.stats[fileOf(i)];
+      const duel = done && st && typeof levelCardStatsHTML === 'function'
+        ? `<span class="duel">${levelCardStatsHTML(st)}</span>` : '';   // Tode der letzten geschafften Runde
       b.innerHTML = `<div class="n">${i + 1}</div><div><span class="nm">${CONFIG.levels[i].name}</span>${duel}${extra}</div>`;
     });
     const sel = cards[this.idx], pair = $('#sm-pair');
@@ -752,7 +787,7 @@ S.levels = {
     pair.style.top = sel.offsetTop + 'px';
     if (instant) requestAnimationFrame(() => requestAnimationFrame(() => pair.classList.remove('nt')));
     $('#sm-l-hint').textContent = CONFIG.levels[this.idx].soon ? 'Coming soon – an diesem Level wird noch gebaut'
-      : this.idx >= save.unlocked
+      : !isUnlocked(this.idx)
       ? `Gesperrt – schafft erst Level ${this.idx}`
       : '◀ ▶ wählen · Springen starten · ▲ Packages / Umkleide · Esc zurück';
     if (this.top) $('#sm-l-hint').textContent = `◀ ▶ wählen · Springen: ${this.top === 'pack' ? 'Packages öffnen' : 'Umkleide öffnen'} · ▼ zurück zu den Leveln`;
@@ -795,7 +830,7 @@ S.levels = {
     else if (type === 'left') this.select(clamp(this.idx - 1, 0, n - 1));
     else if (type === 'right' || type === 'down') this.select(clamp(this.idx + 1, 0, n - 1));
     else if (type === 'confirm') {
-      if (this.idx >= save.unlocked || CONFIG.levels[this.idx].soon) {
+      if (!isUnlocked(this.idx) || CONFIG.levels[this.idx].soon) {
         Snd.play('locked');
         const b = $$('#sm-cards .lc')[this.idx]; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
       } else { Snd.play('ok'); go('select', { level: this.idx }); }
@@ -1002,14 +1037,29 @@ function showMenuScreen(name, arg) {
   go(name, arg);
 }
 function hideMenu() { smRoot.classList.remove('on'); if (cur && cur.leave) cur.leave(); }
+// Levelliste: Reihenfolge aus levels/worlds.json (Welten in ihrer Reihenfolge, darin die Level), Namen aus
+// levels/levels.json. Fehlt worlds.json oder ist sie kaputt, gilt wie früher die Reihenfolge aus levels.json.
+// Level aus levels.json, die in keiner Welt stehen (und nicht versteckt sind), kommen hinten dran – nichts geht verloren.
+async function fetchJSON(file) {
+  try { const r = await fetch(PROJECT_LEVELS + file, { cache: 'no-store' }); return r.ok ? await r.json() : null; }
+  catch (e) { return null; }
+}
+function buildLevelOrder(list, worlds) {
+  list = Array.isArray(list) ? list : [];
+  const byFile = {}; for (const l of list) if (l && l.datei) byFile[l.datei] = l;
+  const entry = (datei, welt) => { const l = byFile[datei] || {}; return { name: l.titel || l.name || datei, datei, welt: welt || null }; };
+  const ws = worlds && Array.isArray(worlds.welten) ? worlds.welten.filter(w => w && w.id && Array.isArray(w.level)) : null;
+  if (!ws) return list.filter(l => l && l.datei && !l.versteckt).map(l => entry(l.datei, null));
+  const out = [], seen = new Set();
+  for (const w of ws.slice().sort((a, b) => (a.reihenfolge || 0) - (b.reihenfolge || 0)))
+    for (const d of w.level) if (!seen.has(d)) { seen.add(d); out.push(entry(d, w.id)); }
+  for (const l of list) if (l && l.datei && !l.versteckt && !seen.has(l.datei)) { seen.add(l.datei); out.push(entry(l.datei, null)); }
+  return out;
+}
 async function loadLevelList() {
-  let list = [];
-  try {
-    const r = await fetch(PROJECT_LEVELS + 'levels.json', { cache: 'no-store' });
-    if (r.ok) list = await r.json();
-  } catch (e) { list = []; }
-  const lv = (Array.isArray(list) ? list : []).filter(l => !l.versteckt)
-    .map(l => ({ name: l.titel || l.name || l.datei, datei: l.datei }));
+  const [list, worlds] = await Promise.all([fetchJSON('levels.json'), fetchJSON('worlds.json')]);
+  CONFIG.worlds = worlds && Array.isArray(worlds.welten) ? worlds.welten : [];
+  const lv = buildLevelOrder(list, worlds);
   while (lv.length < CONFIG.slots) lv.push({ name: 'Coming soon', soon: true });
   CONFIG.levels = lv;
   if (cur === S.levels && active()) S.levels.enter();
@@ -1018,7 +1068,7 @@ async function loadLevelList() {
 window.startMenuLevelWon = () => {
   const n = currentLevelNo; currentLevelNo = 0;
   const st = typeof levelStats === 'function' ? levelStats() : null;   // Münzen/Tode dieser Runde (25-duell.js)
-  if (n && st) { save.stats = save.stats || {}; save.stats[n] = { m: st.m, f: st.f }; }   // für die Levelkarte merken
+  if (n && st && fileOf(n - 1)) { save.stats[fileOf(n - 1)] = { m: st.m, f: st.f }; }   // für die Levelkarte merken
   // Packages: 1 fürs Schaffen, +1 wenn alle Münzen gesammelt – für beide Figuren (26-kosmetik-daten.js)
   const packs = n && typeof awardPackages === 'function' ? awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken)) : 0;
   if (n && st && typeof addCoins === 'function') addCoins(st.cm, st.cf);   // selbst gesammelte Münzen aufs Konto (Pakete kaufen)
@@ -1031,6 +1081,7 @@ showMainMenu = () => showMenuScreen('menu');          // ersetzt die alten Menü
 showLevelSelect = () => showMenuScreen('levels');
 document.getElementById('loadLevelInput').addEventListener('change', () => { currentLevelNo = 0; hideMenu(); });
 window.GameMenu = { config: CONFIG, completeLevel, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
+                    migrateSave, buildLevelOrder,
                     show: showMenuScreen, levelsReady: () => CONFIG.levels.length > 0,
                     // für weitere Menü-Bildschirme (28-packages.js)
                     ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, giftSVG, config: CONFIG,

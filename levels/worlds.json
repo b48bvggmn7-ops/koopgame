@@ -1,0 +1,11 @@
+{
+ "version": 1,
+ "hinweis": "Welten des Spiels (Ausbau 1). Reihenfolge = Weltkarte. 'level' = Level-Dateien in levels/ in Spielreihenfolge. Namen der Level stehen in levels.json (bleibt als Rückfall lesbar).",
+ "welten": [
+  {"id": "dschungel", "name": "Dschungel", "titel": "Welt 1 – Dschungel", "reihenfolge": 1, "level": ["level-1.json", "level-2.json"], "boss": null},
+  {"id": "ruinen",    "name": "Ruinen",    "titel": "Welt 2 – Ruinen",    "reihenfolge": 2, "level": ["level-3.json", "level-4.json"], "boss": null},
+  {"id": "hoehle",    "name": "Höhle",     "titel": "Welt 3 – Höhle",     "reihenfolge": 3, "level": ["level-5.json"], "boss": null},
+  {"id": "wasser",    "name": "Wasser",    "titel": "Welt 4 – Wasser",    "reihenfolge": 4, "level": [], "boss": null},
+  {"id": "vulkan",    "name": "Vulkan",    "titel": "Welt 5 – Vulkan",    "reihenfolge": 5, "level": ["level-6.json"], "boss": null}
+ ]
+}

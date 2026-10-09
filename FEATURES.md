@@ -230,6 +230,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     freigeschaltete/geschaffte Level und Tode-Statistik, Packages, alle Items/Skins (besessen und angelegt) und das
     Münz-Konto – man fängt komplett von vorn an (resetSave in 24 + cosmeticsReset in 26; Test neues_spiel_loescht_alles). „Fortfahren“ führt ERST zur Levelauswahl, nach der Wahl eines Levels kommt die Spielerwahl
     (Countdown startet dann dieses Level; Zurück führt wieder zur Levelauswahl, die Auswahl bleibt).
+  - WELTEN (Ausbau 1, levels/worlds.json): Welten mit id, name, titel, reihenfolge, level (Level-Dateien in
+    Spielreihenfolge) und boss (vorerst null): Dschungel = Level 1, 2 · Ruinen = Level 3, 4 · Höhle = Level 5 ·
+    Wasser = noch leer · Vulkan = Level 6. Die Levelauswahl nimmt ihre Reihenfolge aus worlds.json (sieht damit
+    genau aus wie vorher), die Namen aus levels.json. levels.json bleibt als Rückfall: fehlt worlds.json, gilt ihre
+    Reihenfolge; Level aus levels.json, die in keiner Welt stehen (nicht versteckt), kommen hinten dran (Test welten_laden).
+  - SPIELSTAND nach Dateinamen (Ausbau 1): Freischaltungen, Geschafft-Liste und Levelkarten-Statistik merken sich
+    die Level-DATEI (z. B. level-3.json) statt der Nummer (Format v 2: unlocked, completed, stats). Ein alter
+    Spielstand (Nummern) wird beim ersten Start umgerechnet, nichts geht verloren; das Original bleibt unverändert
+    als Sicherung unter „monchichi.save_v1_backup“ im Browser (wird nie überschrieben). Test spielstand_migration.
   - Levelstart aus dem Startmenü (Nutzerwahl): Vorhang aus EINZELNEN Blättern (~240 Blätter: schlanke Blätter,
     Herzblätter mit Schlitzen, Palmwedel; hinten dunkel, vorne hell) – jedes fliegt vom nächsten Bildrand an seinen
     Platz (außen zuerst, zur Mitte später), bis alles voller Blätter ist; darauf die Titeltafel „Level N“ + Name

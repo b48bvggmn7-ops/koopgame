@@ -149,7 +149,7 @@ async def duell_unter_levelkarte(g):
         assert 'Münzen' in r['m'] and 'Tode' in r['m'] and '3' in r['m'] and '4' in r['f'], f'Statistik falsch: {r}'
         assert 'Mehr Münzen' in r['m'] and 'Mehr Tode' in r['f'], f'Hervorhebung falsch: {r}'
         st = await g.ev("GameMenu.getSave()")
-        assert st['stats']['1']['m'] == 1 and st['stats']['1']['f'] == 4 and st['unlocked'] >= 2, f'Stand nicht gemerkt: {st}'
+        assert st['stats']['level-1.json']['m'] == 1 and st['stats']['level-1.json']['f'] == 4 and 'level-2.json' in st['unlocked'], f'Stand nicht gemerkt: {st}'
         await p.keyboard.press('Enter')
         await p.wait_for_function("document.querySelector('#sm-s-levels.active')", timeout=5000)
         await p.wait_for_function("document.querySelector('#sm-cards .lc .ulock')", timeout=3000)   # Schloss auf Level 2
@@ -535,7 +535,7 @@ async def startmenue_fortschritt_und_wahl(g):
         await g.ev("winFinish()"); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-results', 'nach dem Ziel kein Statistik-Bildschirm'
         sv = await g.ev("GameMenu.getSave()")
-        assert 1 in sv['completed'] and sv['unlocked'] >= 2, f'Fortschritt nicht gemerkt: {sv}'
+        assert 'level-1.json' in sv['completed'] and 'level-2.json' in sv['unlocked'], f'Fortschritt nicht gemerkt: {sv}'
         await p.wait_for_timeout(400); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-levels', 'nach der Statistik keine Levelauswahl'
         await p.wait_for_function("document.getElementById('sm-toast').textContent.includes('freigeschaltet')", timeout=5000)
@@ -1212,7 +1212,8 @@ async def figuren_leben(g):
     await g.p.keyboard.down('Space')
     try: await g.p.wait_for_function("!!p1._jumpT", timeout=3000)   # langsame Rechner: auf den Absprung warten
     except Exception: pass
-    st = await g.ev("({j: !!p1._jumpT, sq: charSquash(p1), dust: dustFx.length})")
+    # Strecken zu einem festen Zeitpunkt kurz nach dem Absprung messen (langsame Rechner: sonst schon vorbei)
+    st = await g.ev("(() => { const j = !!p1._jumpT, d = dustFx.length; if (j) p1._jumpT = performance.now() - 60; return {j, sq: charSquash(p1), dust: d}; })()")
     await g.p.keyboard.up('Space')
     assert st['j'] and st['sq'][1] > 1.005 and st['dust'] > 0, f'kein Strecken/Staub beim Absprung: {st}'
     await g.p.wait_for_timeout(1300)
@@ -1923,10 +1924,71 @@ async def neues_spiel_loescht_alles(g):
             if await g.ev("menuScreen === null"): break
             await p.wait_for_timeout(100)
         k = await g.ev("({sv: GameMenu.getSave(), c: JSON.parse(localStorage.getItem('monchichi_cosmetics_v1'))})")
-        assert k['sv']['unlocked'] == 1 and k['sv']['completed'] == [], f"Level nicht zurückgesetzt: {k['sv']}"
+        assert k['sv']['unlocked'] == [] and k['sv']['completed'] == [] and k['sv']['stats'] == {}, f"Level nicht zurückgesetzt: {k['sv']}"
         c = k['c']
         assert c['pending'] == {'m': 0, 'f': 0} and c['coins'] == {'m': 0, 'f': 0} and not c['owned']['m'] and not c['equipped']['m'], f'Cosmetics nicht zurückgesetzt: {c}'
     finally:
+        srv.shutdown()
+
+@test
+async def welten_laden(g):
+    """Ausbau 1: levels/worlds.json lädt (Welten in Reihenfolge, Level darin); Levelkarten bleiben wie vorher
+    (gleiche Reihenfolge und Namen); ohne worlds.json gilt levels.json; Level außerhalb jeder Welt gehen nicht verloren."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    ids = [x['id'] for x in sorted(w['welten'], key=lambda x: x['reihenfolge'])]
+    assert ids == ['dschungel', 'ruinen', 'hoehle', 'wasser', 'vulkan'], ids
+    for x in w['welten']:
+        assert set(x) >= {'id', 'name', 'titel', 'reihenfolge', 'level', 'boss'} and x['boss'] is None, x
+        for d in x['level']: assert (ROOT / 'levels' / d).exists(), f'Level-Datei fehlt: {d}'
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html')
+        await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        k = await g.ev("({w: GameMenu.config.worlds.map(x => x.id), l: GameMenu.config.levels.map(l => [l.datei, l.name, l.welt])})")
+        assert k['w'] == ids, k
+        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in range(1, 7)], f'Reihenfolge geändert: {k}'
+        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht', 'Kristallhöhle', 'Feuerberg'], f'Namen geändert: {k}'
+        assert [x[2] for x in k['l']] == ['dschungel', 'dschungel', 'ruinen', 'ruinen', 'hoehle', 'vulkan'], k
+        # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
+        f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
+          return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
+                   mit: GameMenu.buildLevelOrder(list, {welten: [{id:'w2', reihenfolge:2, level:['a.json']}, {id:'w1', reihenfolge:1, level:['b.json']}]}).map(l => l.datei + ':' + l.welt) }; })()""")
+        assert f['ohne'] == ['a.json', 'b.json', 'c.json'], f
+        assert f['mit'] == ['b.json:w1', 'a.json:w2', 'c.json:null'], f
+    finally:
+        srv.shutdown()
+
+@test
+async def spielstand_migration(g):
+    """Ausbau 1: alter Spielstand (Level-Nummern) wird auf Dateinamen umgerechnet, nichts geht verloren; das Original
+    bleibt unverändert als Sicherung (monchichi.save_v1_backup) und wird nie überschrieben."""
+    srv = webserver(); p = g.p
+    alt = {'played': True, 'unlocked': 4, 'completed': [1, 2, 3], 'stats': {'1': {'m': 2, 'f': 3}, '3': {'m': 0, 'f': 5}}}
+    try:
+        await p.goto(srv.url + 'index.html')
+        await g.ev(f"localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({json.dumps(alt)}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        sv = await g.ev("GameMenu.getSave()")
+        assert sv['v'] == 2 and sv['played'] is True, sv
+        assert sv['unlocked'] == ['level-1.json', 'level-2.json', 'level-3.json', 'level-4.json'], sv
+        assert sv['completed'] == ['level-1.json', 'level-2.json', 'level-3.json'], sv
+        assert sv['stats'] == {'level-1.json': {'m': 2, 'f': 3}, 'level-3.json': {'m': 0, 'f': 5}}, sv
+        assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung fehlt/verändert'
+        # Levelkarten: 4 offen, 3 geschafft – wie vorher
+        await g.ev("GameMenu.show('levels')"); await p.wait_for_timeout(500)
+        cards = await g.ev("[...document.querySelectorAll('#sm-cards .lc')].map(b => [b.classList.contains('lock'), b.textContent.includes('Geschafft') || !!b.querySelector('.duel')])")
+        assert [c[0] for c in cards] == [False, False, False, False, True, True], cards
+        # Weiterspielen: Level 4 schaffen schaltet Level 5 frei (Datei), Sicherung bleibt unverändert
+        assert await g.ev("GameMenu.completeLevel(4, true)") == 5
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        sv = await g.ev("GameMenu.getSave()")
+        assert 'level-5.json' in sv['unlocked'] and 'level-4.json' in sv['completed'] and sv['stats']['level-1.json'] == {'m': 2, 'f': 3}, sv
+        assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung überschrieben'
+        # kaputte/zu große Werte: nichts stürzt ab
+        m = await g.ev("GameMenu.migrateSave({unlocked: 99, completed: [7, 'x', 2]})")
+        assert m['unlocked'] == [f'level-{i}.json' for i in range(1, 7)] and m['completed'] == ['level-2.json'], m
+    finally:
+        await g.ev("localStorage.clear()")
         srv.shutdown()
 
 async def main(filter_):
