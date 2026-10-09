@@ -52,7 +52,7 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 |---|---|---|---|---|
 | 0 | Briefing und Regelwerk | Go erhalten | ausbau-0-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
 | 1 | Fundament (Welten-Datenmodell, Tageszeit/Wetter, Spielstand) | Go erhalten | ausbau-1-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
-| 2 | Editor ausbauen | in Arbeit | – | – |
+| 2 | Editor ausbauen | fertig, wartet auf Test | ausbau-2-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
 | 3 | Weltkarte und Welt-Seite | offen | – | – |
 | 4 | Neue Mechaniken (Wechselboden, Teleporter, einseitige Plattformen) | offen | – | – |
 | 5 | Wasser und Schwimmen | offen | – | – |

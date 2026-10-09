@@ -554,7 +554,9 @@ async def levelstart_vorhang(g):
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         assert await g.ev("document.querySelectorAll('#leafCurtain .leaf').length") > 100, 'zu wenige Blätter'
         await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+        await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000); await p.wait_for_timeout(300)
         await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
         sah_titel = False
         for _ in range(200):
@@ -673,27 +675,22 @@ async def menue_knopf_und_editor_schliessen(g):
 
 @test
 async def projekt_levels_beide_formate_gleich(g):
-    """Jedes Level in levels.json: Spiel-Format und Editor-Format beschreiben dasselbe Level."""
-    def zellen(solids):
-        out = set()
-        for s in solids:
-            for x in range(s['x'], s['x'] + s['w'], 40):
-                for y in range(s['y'], s['y'] + s['h'], 40): out.add((x, y, s.get('look') or s.get('type')))
-        return out
+    """Jedes Level in levels.json: Spiel-Format und Editor-Format beschreiben dasselbe Level – ALLE Felder (Ausbau 2:
+    auch Druckplatten, Pilze, Aufwind, Level-Info). Die Spiel-Datei ist die, die ausgeliefert wird; der Editor schreibt
+    beide in einem Commit, dieser Test hält sie deckungsgleich."""
+    META = ('welt', 'tageszeit', 'wetter', 'look', 'theme')
     for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
         spiel = json.loads((ROOT / 'levels' / L['datei']).read_text())
         ed = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
         umg = await g.ev(f"convertEditorSnapshot({json.dumps(ed)})")
         assert ed.get('name') == L['name'], f"{L['datei']}: Name {ed.get('name')} statt {L['name']}"
-        assert zellen(umg['solids']) == zellen(spiel['solids']), f"{L['datei']}: Boden/Wände verschieden"
-        assert zellen(umg['movingPlatforms']) == zellen(spiel['movingPlatforms']), f"{L['datei']}: bewegte Teile verschieden"
-        for k in ('startM', 'startF', 'goal'):
-            assert umg[k] == spiel[k], f"{L['datei']}: {k} verschieden"
-        assert umg.get('theme') == spiel.get('theme'), f"{L['datei']}: Thema verschieden"
-        for k in ('coins', 'hooks', 'checkpoints', 'spikes', 'switches', 'doors'):
-            a = sorted(json.dumps(o, sort_keys=True) for o in umg[k])
-            b = sorted(json.dumps(o, sort_keys=True) for o in spiel[k])
-            assert a == b, f"{L['datei']}: {k} verschieden"
+        diff = [k for k in set(umg) | set(spiel) if not k.startswith('_') and k not in META + ('name',)   # name/_…: nur Beschriftung
+                and level_teil(k, umg.get(k)) != level_teil(k, spiel.get(k))]
+        assert not diff, f"{L['datei']}: Spiel- und Editor-Datei verschieden bei {diff}"
+        # Aussehen und Wetter: gleiche Wirkung im Spiel
+        a = await g.ev(f"[resolveLevelLook({json.dumps(umg)}), resolveLevelLook({json.dumps(spiel)})]")
+        assert a[0] == a[1], f"{L['datei']}: Aussehen verschieden {a}"
+        assert (umg.get('wetter') or 'wechselnd') == (spiel.get('wetter') or 'wechselnd'), f"{L['datei']}: Wetter verschieden"
 
 @test
 async def level1_bis_spalte_800(g):

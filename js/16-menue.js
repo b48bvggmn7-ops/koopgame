@@ -190,6 +190,8 @@ function convertEditorSnapshot(d){
     ...Object.fromEntries(ELEMENTE.filter(E => E.editor).map(E => [E.feld,   // Sprungpilz, Aufwind … (elemente/)
       E.editor.exportieren(E.editor.art === 'kachel' ? byType[E.editor.werkzeug] : (d[E.feld]||[]), T, mergeCellsToRects)])),
     theme: d.theme || undefined,
+    // Level-Info (Ausbau 2): im Editor-Format ist "theme" der look-Override
+    look: d.theme || undefined, welt: d.welt || undefined, tageszeit: d.tageszeit || undefined, wetter: d.wetter || undefined,
   };
 }
 

@@ -559,6 +559,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Plattform-Werkzeug bewusst entfernt (Nutzerwunsch, Boden reicht); alte Plattform-Kacheln in
     gespeicherten Levels werden weiter angezeigt/exportiert und lassen sich radieren
   - Export im Spiel-Format (Textfeld kopieren oder als .json-Datei speichern)
+  - Zwei Formate (Ausbau 2, Entscheidung): ausgeliefert wird weiter die Spiel-Datei (levels/<datei>); die Editor-Datei
+    (levels/editor-format/<datei>) ist der Bau-Stand. Das Spiel liest die Editor-Datei NICHT direkt (sonst würde ein
+    zweiter Umrechner bestimmen, wie die Level im Spiel aussehen) – „☁ Auf GitHub speichern“ schreibt beide im selben
+    Commit, und der Test projekt_levels_beide_formate_gleich prüft für jedes Level ALLE Felder (Kästchen, bewegte Teile,
+    Haken, Münzen, Hebel, Türen, Druckplatten, Pilze, Aufwind, Start/Ziel) und dass Aussehen und Wetter gleich wirken.
+    Die Notlösung „Level laden (JSON)“ mit einer Editor-Datei übernimmt jetzt auch Welt/Tageszeit/Wetter/Look.
   - Neue Werkzeuge: Scheinwand (Kachel, gestrichelt mit „?“; im Spiel durchlaufbar), Aufwind (Kachel, hellblau mit
     Pfeil; trägt das Schweinchen mit Schirm), Sprungpilz (Punkt), Druckplatte (Punkt mit Verknüpfungs-Nummer, wie
     Schalter; erscheint in den ✓-Markierungen als „Druckplatte“). Scheinwand und Aufwind lassen sich nicht bewegen.
