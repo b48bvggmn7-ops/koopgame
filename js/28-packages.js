@@ -43,6 +43,7 @@ const PSFX = {
   burst(rank) {
     sfxLog('packBurst');
     sNoise(0, 0.05, { filter: 'highpass', f: 3000, vol: sv(0.16) }); sTone(900, 0, 0.12, { type: 'triangle', to: 300, vol: sv(0.05) });   // Band reißt (Schnapp)
+    sNoise(0.02, 0.7, { f: 400, to: 4500, q: 0.9, vol: sv(0.09), attack: 0.08 });   // Wusch: Deckel schießt hoch
     sNoise(0, 0.55, { filter: 'lowpass', f: 3600, to: 180, vol: sv(0.22), q: 0.7 });
     sTone(95, 0, 0.4, { to: 38, vol: sv(0.22) });
     if (rank >= 4) sNoise(0.02, 1.2, { filter: 'highpass', f: 4000, to: 9000, vol: sv(0.05), attack: 0.02 });
@@ -80,6 +81,10 @@ const PSFX = {
   },
   equip() { sfxLog('packEquip'); [0, 7, 12].forEach((n, i) => sTone(semi(659, n), i*0.06, 0.18, { type: 'triangle', vol: sv(0.06) })); },
   keep() { sfxLog('packKeep'); sTone(587, 0, 0.12, { type: 'triangle', vol: sv(0.05) }); sTone(784, 0.07, 0.16, { type: 'triangle', vol: sv(0.05) }); },
+  rattle() {   // Paket hüpft: drei leise Klopfer
+    sfxLog('packRattle');
+    for (let i = 0; i < 3; i++) { const t = 0.16 + i*0.317; sNoise(t, 0.05, { filter: 'lowpass', f: 900, vol: sv(0.05) }); sTone(150 + i*12, t, 0.07, { type: 'triangle', vol: sv(0.03) }); }
+  },
   thud() { sNoise(0, 0.18, { filter: 'lowpass', f: 600, vol: sv(0.12) }); sTone(80, 0, 0.18, { to: 50, vol: sv(0.12) }); }
 };
 
@@ -121,70 +126,87 @@ function drawPreview(c, cx, cy, sc, who, items, pv, ghost) {
 const itemsWith = (who, item) => { const it = cosItemsOf(who); if (item) it[item.slot] = item; return it; };
 
 /* =====================================================================
-   DAS GESCHENKPAKET (realistisch, leicht schräg von vorn: Vorderseite, rechte Seite, Deckel mit Oberseite;
-   oranges Papier, dunkelbraunes Satinband mit Schleife; weicher Schatten nur unter dem Paket)
+   DAS GESCHENKPAKET (modern, glatt, glänzend: leicht schräg von vorn – Vorderseite, rechte Seite, Deckel mit
+   Oberseite; oranges Hochglanz-Papier mit Lichtreflex, braunes Satinband mit Schleife, oranges Leuchten drumherum,
+   weicher Schatten nur unter dem Paket)
    ===================================================================== */
 const GIFT_SCALE = 1.3;   // Grundgröße des Pakets
-const PAPER = { front: ['#ffa040', '#e8741a'], side: ['#c85a0c', '#a8480a'], top: '#ffb766', edge: '#8a3c08' };
-const GIFT = { m: { paper: [PAPER.front[0]] }, f: { paper: [PAPER.front[0]] } };   // (Fetzen-Farbe)
-const RIB = '#4a2c1c', RIB_HI = '#7a4c34', RIB_D = '#2a160c';
+const PAPER = { front: ['#ffb24f', '#ff8a1f', '#e8680a'], side: ['#de6510', '#b44a05'], top: ['#ffd795', '#ffb050'], edge: 'rgba(120,40,0,.35)' };
+const GIFT = { m: { paper: [PAPER.front[1]] }, f: { paper: [PAPER.front[1]] } };   // (Fetzen-Farbe)
+const RIB = '#4a2a18', RIB_HI = '#8a5a3c', RIB_D = '#24120a';
 function poly(c, pts) { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); }
 const DX = 22, DY = -10;   // Tiefe (Seite/Oberseite schräg nach hinten rechts)
+// Satinband senkrecht (Glanz in der Mitte)
+function ribbonV(c, x, y, w, h) {
+  const g = c.createLinearGradient(x, 0, x + w, 0);
+  g.addColorStop(0, RIB_D); g.addColorStop(0.35, RIB_HI); g.addColorStop(0.55, RIB); g.addColorStop(1, RIB_D);
+  c.fillStyle = g; c.fillRect(x, y, w, h);
+}
+function ribbonH(c, x, y, w, h) {
+  const g = c.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, RIB_HI); g.addColorStop(0.5, RIB); g.addColorStop(1, RIB_D);
+  c.fillStyle = g; c.fillRect(x, y, w, h);
+}
 // Karton: Vorderseite x -66…44, y -16…80; Seite nach rechts hinten
 function giftBody(c, cut, open) {
   const F = [[-66, -16], [44, -16], [44, 80], [-66, 80]], SIDE = [[44, -16], [44 + DX, -16 + DY], [44 + DX, 80 + DY], [44, 80]];
-  let g = c.createLinearGradient(0, -16, 0, 80); g.addColorStop(0, PAPER.front[0]); g.addColorStop(1, PAPER.front[1]);
+  let g = c.createLinearGradient(0, -16, 0, 80);
+  g.addColorStop(0, PAPER.front[0]); g.addColorStop(0.45, PAPER.front[1]); g.addColorStop(1, PAPER.front[2]);
   c.fillStyle = g; poly(c, F); c.fill();
   g = c.createLinearGradient(44, 0, 44 + DX, 0); g.addColorStop(0, PAPER.side[0]); g.addColorStop(1, PAPER.side[1]);
   c.fillStyle = g; poly(c, SIDE); c.fill();
-  // feine Papierstruktur (dezente Streifen) auf der Vorderseite
-  c.save(); poly(c, F); c.clip(); c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 6;
-  for (let x = -110; x < 60; x += 18) { c.beginPath(); c.moveTo(x, 80); c.lineTo(x + 96, -16); c.stroke(); } c.restore();
   // Band: senkrecht vorn, waagerecht vorn + an der Seite
   const top = cut ? -4 : -16;
-  c.fillStyle = RIB; c.fillRect(-22, top, 22, 80 - top); c.fillRect(-66, 24, 110, 16);
-  poly(c, [[44, 24], [44 + DX, 24 + DY], [44 + DX, 40 + DY], [44, 40]]); c.fill();
-  c.fillStyle = RIB_HI; c.fillRect(-20, top, 4, 80 - top); c.fillRect(-66, 26, 110, 3);
+  ribbonV(c, -22, top, 22, 80 - top); ribbonH(c, -66, 24, 110, 16);
+  c.fillStyle = RIB_D; poly(c, [[44, 24], [44 + DX, 24 + DY], [44 + DX, 40 + DY], [44, 40]]); c.fill();
   if (cut) { c.fillStyle = RIB; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-22 + i*5.5, -4); c.lineTo(-19 + i*5.5, -11 - (i % 2)*4); c.lineTo(-16.5 + i*5.5, -4); c.fill(); } }
-  // Licht von oben links: unten dunkler (nach dem Band, damit es auch das Band trifft)
+  // Hochglanz: schräger weicher Lichtreflex + unten etwas dunkler (liegt über Papier UND Band)
   c.save(); poly(c, F); c.clip();
-  g = c.createLinearGradient(0, -16, 0, 80); g.addColorStop(0, 'rgba(255,255,255,.10)'); g.addColorStop(0.6, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(60,20,0,.22)');
+  g = c.createLinearGradient(-66, -16, 10, 60); g.addColorStop(0, 'rgba(255,255,255,.34)'); g.addColorStop(0.35, 'rgba(255,255,255,.08)'); g.addColorStop(0.5, 'rgba(255,255,255,0)');
   c.fillStyle = g; c.fillRect(-70, -20, 120, 104);
-  if (!open) { c.fillStyle = 'rgba(60,20,0,.28)'; c.fillRect(-70, -16, 120, 6); }   // Schatten, den der Deckel wirft
+  g = c.createLinearGradient(0, 30, 0, 80); g.addColorStop(0, 'rgba(80,25,0,0)'); g.addColorStop(1, 'rgba(80,25,0,.22)');
+  c.fillStyle = g; c.fillRect(-70, 30, 120, 52);
+  if (!open) { g = c.createLinearGradient(0, -16, 0, -6); g.addColorStop(0, 'rgba(80,25,0,.35)'); g.addColorStop(1, 'rgba(80,25,0,0)'); c.fillStyle = g; c.fillRect(-70, -16, 120, 10); }   // Deckelschatten
   c.restore();
-  if (open) {   // offene Oberseite: dunkles Inneres
-    c.fillStyle = '#3a1c08'; poly(c, [[-66, -16], [-66 + DX, -16 + DY], [44 + DX, -16 + DY], [44, -16]]); c.fill();
-    c.fillStyle = 'rgba(255,190,120,.25)'; poly(c, [[-62, -16], [-62 + DX*0.7, -16 + DY*0.7], [44 + DX*0.7, -16 + DY*0.7], [40, -16]]); c.fill();
+  if (open) {   // offene Oberseite: leuchtendes Inneres
+    const ig = c.createLinearGradient(0, -26, 0, -16); ig.addColorStop(0, '#ffe2a8'); ig.addColorStop(1, '#ff9a2e');
+    c.fillStyle = ig; poly(c, [[-66, -16], [-66 + DX, -16 + DY], [44 + DX, -16 + DY], [44, -16]]); c.fill();
   }
-  c.strokeStyle = PAPER.edge; c.lineWidth = 2.5; c.lineJoin = 'round';
-  poly(c, F); c.stroke(); poly(c, SIDE); c.stroke();
+  // feine Kanten: dunkler Hauch + helle Lichtkante oben/links
+  c.lineJoin = 'round'; c.strokeStyle = PAPER.edge; c.lineWidth = 1.5; poly(c, F); c.stroke(); poly(c, SIDE); c.stroke();
+  c.strokeStyle = 'rgba(255,240,210,.6)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-65, 79); c.lineTo(-65, -15); c.lineTo(43, -15); c.stroke();
 }
 // Deckel: Vorderkante x -74…52, y -42…-14, Oberseite und Seite schräg; Band + Schleife
 function giftLid(c, cut, strain) {
   const F = [[-74, -42], [52, -42], [52, -14], [-74, -14]], SIDE = [[52, -42], [52 + DX, -42 + DY], [52 + DX, -14 + DY], [52, -14]];
   const TOP = [[-74, -42], [-74 + DX, -42 + DY], [52 + DX, -42 + DY], [52, -42]];
-  c.fillStyle = PAPER.top; poly(c, TOP); c.fill();
-  let g = c.createLinearGradient(0, -42, 0, -14); g.addColorStop(0, PAPER.front[0]); g.addColorStop(1, PAPER.front[1]);
+  let g = c.createLinearGradient(0, -52, 0, -42); g.addColorStop(0, PAPER.top[1]); g.addColorStop(1, PAPER.top[0]);
+  c.fillStyle = g; poly(c, TOP); c.fill();
+  g = c.createLinearGradient(0, -42, 0, -14); g.addColorStop(0, PAPER.front[0]); g.addColorStop(1, PAPER.front[2]);
   c.fillStyle = g; poly(c, F); c.fill();
-  c.fillStyle = PAPER.side[0]; poly(c, SIDE); c.fill();
+  g = c.createLinearGradient(52, 0, 52 + DX, 0); g.addColorStop(0, PAPER.side[0]); g.addColorStop(1, PAPER.side[1]);
+  c.fillStyle = g; poly(c, SIDE); c.fill();
   // Band über Oberseite und Vorderkante; unter Spannung dünner, mit hellen Spannungslinien
   const bw = 22*(1 - 0.5*(strain || 0)), bx = -11 - bw/2;
-  c.fillStyle = RIB;
-  poly(c, [[bx, -42], [bx + DX, -42 + DY], [bx + bw + DX, -42 + DY], [bx + bw, -42]]); c.fill();
-  c.fillRect(bx, -42, bw, cut ? 20 : 28);
+  c.fillStyle = RIB; poly(c, [[bx, -42], [bx + DX, -42 + DY], [bx + bw + DX, -42 + DY], [bx + bw, -42]]); c.fill();
+  ribbonV(c, bx, -42, bw, cut ? 20 : 28);
   if (strain > 0.4 && !cut) { c.strokeStyle = 'rgba(255,220,180,.7)'; c.lineWidth = 1.3; for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(-11 + i*bw*0.3, -22); c.lineTo(-11 + i*bw*0.36, -14); c.stroke(); } }
-  c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(-74, -42, 126, 3);
-  c.strokeStyle = PAPER.edge; c.lineWidth = 2.5; c.lineJoin = 'round'; poly(c, F); c.stroke(); poly(c, SIDE); c.stroke(); poly(c, TOP); c.stroke();
+  // Glanzkante + feine Kanten
+  c.save(); poly(c, F); c.clip(); g = c.createLinearGradient(0, -42, 0, -30); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = g; c.fillRect(-76, -42, 130, 12); c.restore();
+  c.lineJoin = 'round'; c.strokeStyle = PAPER.edge; c.lineWidth = 1.5; poly(c, F); c.stroke(); poly(c, SIDE); c.stroke(); poly(c, TOP); c.stroke();
+  c.strokeStyle = 'rgba(255,245,220,.75)'; c.beginPath(); c.moveTo(-73, -42); c.lineTo(51, -42); c.stroke();
   // Schleife (Satin, mit Glanz), sitzt auf der Mitte der Oberseite
   c.save(); c.translate(0, -47);
   for (const s of [-1, 1]) {
-    const lg = c.createLinearGradient(0, -30, 0, 4); lg.addColorStop(0, RIB_HI); lg.addColorStop(1, RIB_D);
-    c.fillStyle = lg; c.strokeStyle = RIB_D; c.lineWidth = 2;
+    const lg = c.createLinearGradient(0, -30, 0, 4); lg.addColorStop(0, RIB_HI); lg.addColorStop(0.6, RIB); lg.addColorStop(1, RIB_D);
+    c.fillStyle = lg; c.strokeStyle = 'rgba(20,8,2,.5)'; c.lineWidth = 1.5;
     c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(s*12, -28, s*44, -30, s*38, -6); c.bezierCurveTo(s*32, 4, s*12, 2, 0, 0); c.fill(); c.stroke();
     c.fillStyle = RIB; c.beginPath(); c.moveTo(s*4, 2); c.lineTo(s*20, 20); c.lineTo(s*12, 22); c.lineTo(s*2, 5); c.fill();   // Bandenden
-    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 2; c.beginPath(); c.moveTo(s*8, -10); c.quadraticCurveTo(s*22, -22, s*32, -14); c.stroke();
+    c.strokeStyle = 'rgba(255,230,200,.35)'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(s*8, -10); c.quadraticCurveTo(s*22, -24, s*33, -15); c.stroke();
   }
-  c.fillStyle = RIB; c.strokeStyle = RIB_D; c.lineWidth = 2; c.beginPath(); c.ellipse(0, -2, 8, 7, 0, 0, Math.PI*2); c.fill(); c.stroke();
+  const kg = c.createRadialGradient(-2, -5, 1, 0, -2, 9); kg.addColorStop(0, RIB_HI); kg.addColorStop(1, RIB_D);
+  c.fillStyle = kg; c.beginPath(); c.ellipse(0, -2, 8, 7, 0, 0, Math.PI*2); c.fill();
   c.restore();
 }
 // weicher Schatten auf dem Boden, nur unter dem Paket
@@ -193,36 +215,46 @@ function giftShadow(c, k) {
   g.addColorStop(0, `rgba(0,0,0,${0.6*k})`); g.addColorStop(0.6, `rgba(0,0,0,${0.28*k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
   c.save(); c.translate(-11 + DX*0.3, 82); c.scale(96, 14); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, Math.PI*2); c.fill(); c.restore();
 }
-// o = {crack (Band-Spannung), open, leak, leakCol, rot, sc, fade, lazy, lift (springt hoch: Schatten bleibt am Boden)}
+// oranges Leuchten um das Paket (k 0…1)
+function giftGlow(c, k, col) {
+  if (k <= 0) return;
+  c.save(); c.globalCompositeOperation = 'lighter';
+  const g = c.createRadialGradient(-4, 20, 20, -4, 20, 200);
+  g.addColorStop(0, hexA(col || '#ff9a2e', 0.5*k)); g.addColorStop(0.45, hexA(col || '#ff7a10', 0.22*k)); g.addColorStop(1, hexA(col || '#ff7a10', 0));
+  c.fillStyle = g; c.fillRect(-210, -190, 420, 420); c.restore();
+}
+// o = {crack (Band-Spannung), peek (Deckel lugt hoch: der Inhalt will raus), glow, open, leak, leakCol, rot, sc, fade, lazy, hop}
 function drawGift(c, x, y, o) {
   const open = o.open || 0, fade = o.fade === undefined ? 1 : o.fade, sc = (o.sc || 1)*GIFT_SCALE, hop = o.hop || 0;
   c.save(); c.translate(x, y); c.scale(sc, sc);
-  const ga = c.globalAlpha; c.globalAlpha = ga*fade; giftShadow(c, Math.max(0.3, 1 - hop/80)); c.globalAlpha = ga;
+  const ga = c.globalAlpha; c.globalAlpha = ga*fade; giftShadow(c, Math.max(0.3, 1 - hop/80));
+  giftGlow(c, o.glow || 0, o.glowCol); c.globalAlpha = ga;
   c.translate(0, -hop); c.translate(0, 80); c.rotate(o.rot || 0); c.translate(0, -80);   // kippt um die Unterkante
   if (open <= 0) {
-    const lift = (o.crack || 0)*5;   // Deckel drückt schon etwas nach oben
-    if (o.leak > 0) {                // Licht dringt aus dem Spalt unter dem Deckel
+    const peek = o.peek || 0, lift = (o.crack || 0)*5 + peek*12;   // Deckel drückt nach oben / lugt hoch
+    const leak = Math.max(o.leak || 0, peek*0.55), leakCol = o.leak > 0 ? o.leakCol : '#ffc070';
+    if (leak > 0) {                // Licht dringt aus dem Spalt unter dem Deckel
       c.save(); c.globalCompositeOperation = 'lighter';
       for (let i = 0; i < 9; i++) {
-        const px = -64 + i*15, a = -Math.PI/2 + (i - 4)*0.3 + Math.sin(performance.now()*0.004 + i)*0.05, len = 60 + o.leak*240;
+        const px = -64 + i*15, a = -Math.PI/2 + (i - 4)*0.3 + Math.sin(performance.now()*0.004 + i)*0.05, len = 60 + leak*240;
         const gg = c.createLinearGradient(px, -15, px + Math.cos(a)*len, -15 + Math.sin(a)*len);
-        gg.addColorStop(0, hexA(o.leakCol, 0.55*o.leak)); gg.addColorStop(1, hexA(o.leakCol, 0));
+        gg.addColorStop(0, hexA(leakCol, 0.55*leak)); gg.addColorStop(1, hexA(leakCol, 0));
         c.fillStyle = gg; c.beginPath(); c.moveTo(px - 4, -15); c.lineTo(px + Math.cos(a - 0.08)*len, -15 + Math.sin(a - 0.08)*len);
         c.lineTo(px + Math.cos(a + 0.08)*len, -15 + Math.sin(a + 0.08)*len); c.lineTo(px + 4, -15); c.fill();
       }
       c.restore();
     }
     giftBody(c, false, false);
-    if (o.leak > 0) { c.fillStyle = hexA(o.leakCol, 0.9*o.leak); c.fillRect(-66, -16 - lift, 110, lift + 1); }   // heller Spalt
-    c.save(); c.translate(0, -lift); giftLid(c, false, o.crack || 0); c.restore();
+    if (leak > 0) { c.fillStyle = hexA(leakCol, 0.9*leak); c.fillRect(-66, -16 - lift, 110, lift + 1); }   // heller Spalt
+    c.save(); c.translate(0, -lift); c.rotate(-peek*0.06); giftLid(c, false, o.crack || 0); c.restore();
   } else {
-    // Band reißt, Deckel fliegt weg (bei „leer“ hebt er sich nur müde und kippt zur Seite)
+    // Band reißt, Deckel schießt wirbelnd nach oben weg (bei „leer“ hebt er sich nur müde und kippt zur Seite)
     c.globalAlpha = ga*fade;
     const lz = o.lazy;
     giftBody(c, true, true);
     c.save();
     if (lz) { c.translate(34*open, -30*open); c.rotate(0.36*open + Math.sin(performance.now()*0.006)*0.04*open); }
-    else { c.translate(-50*open, -190*open); c.rotate(-1.1*open); }
+    else { c.translate(-70*open, -360*open); c.rotate(-2.8*open); c.scale(1 + open*0.25, 1 + open*0.25); }
     giftLid(c, true, 0); c.restore();
   }
   c.restore();
@@ -312,6 +344,10 @@ const PK = {
         const a = -Math.PI/2 + (Math.random() - 0.5)*2.6, v = 4 + Math.random()*5;
         s.parts.push({ k: 'chip', x: cx, y: cy, vx: Math.cos(a)*v, vy: Math.sin(a)*v, r: 3 + Math.random()*4, life: 80, max: 80, col: i % 2 ? RIB : GIFT[s.who].paper[0], rot: a, g: 0.25 });
       }
+      for (let i = 0; i < 40 + rank*12; i++) {   // Glitzer-Fontäne aus der Öffnung
+        const ox = cx + (-11 + DX*0.3)*GIFT_SCALE, oy = 430 - 20*GIFT_SCALE;
+        s.parts.push({ k: i % 3 ? 'spark' : 'star', x: ox + (Math.random() - 0.5)*80, y: oy, vx: (Math.random() - 0.5)*5, vy: -7 - Math.random()*9, r: 2 + Math.random()*3, life: 70 + Math.random()*40, max: 110, col: i % 2 ? col : '#ffd27a', rot: Math.random()*6 });
+      }
       if (rank >= 5) this.confetti(s, 70);
     }
     this.paintSide(s.who);
@@ -371,6 +407,10 @@ const PK = {
     const now = performance.now();
     for (const w of ['m', 'f']) {
       const s = this.sides[w];
+      if (s.phase === 'idle' && cosmeticsSave.pending[w]) {   // beim Tanzen leises Klappern (3 Hüpfer)
+        const ms = now - s.enter - 500, cyc = Math.floor(ms/2600);
+        if (ms >= 0 && cyc !== s.danceCyc) { s.danceCyc = cyc; PSFX.rattle(); }
+      }
       if (s.phase === 'shake') {
         const k = (now - s.t0)/s.dur;
         if (k > 0.35 && Math.random() < k*0.35) s.parts.push({ k: 'chip', x: this.cx(w) + (Math.random() - 0.5)*24, y: 430 - 16, vx: (Math.random() - 0.5)*3, vy: -1.5 - Math.random()*2, r: 1.2 + Math.random()*1.5, life: 40, max: 40, col: RIB, rot: 0, g: 0.25 });   // Bandfasern
@@ -432,7 +472,10 @@ const PK = {
         // weitere Nüsse klein dahinter (Stapel), vorne die nächste – fällt kurz herein
         for (let i = Math.min(n, 4) - 1; i >= 1; i--) drawGift(c, cx + (i % 2 ? 1 : -1)*(140 + i*18), 534 - 104*0.5, { who: w, sc: 0.5 });
         const k = clamp01((t - s.enter)/420), dropY = (1 - easeOutBack(k))*-160;
-        drawGift(c, cx, cy, { who: w, hop: Math.max(0, (1 + Math.sin(t*0.003))*4 - dropY), rot: Math.sin(t*0.002)*0.03 });
+        // Tanz: alle 2,6 s hüpft das Paket dreimal, kippelt hin und her, der Deckel lugt hoch – der Inhalt will raus
+        const d = giftDance(t - s.enter - 500);
+        drawGift(c, cx, cy, { who: w, hop: Math.max(0, (1 + Math.sin(t*0.003))*3 + d.hop - dropY), rot: d.rot + Math.sin(t*0.002)*0.02,
+                              peek: d.peek, glow: 0.65 + 0.2*Math.sin(t*0.004) + d.peek*0.35 });
       } else {
         // keine Packages: blasses Paket als Platzhalter (Kaufen-Knopf darunter)
         c.setLineDash([]); c.save(); c.globalAlpha = 0.22; drawGift(c, cx, cy, { who: w }); c.restore();   // blasses Paket: hier kann man eins kaufen
@@ -443,7 +486,7 @@ const PK = {
       const leakCol = s.res.empty ? mixHex('#fff2c0', '#9aa3ab', late) : mixHex('#fff2c0', rc, late);
       // leichtes Leuchten hinter dem Paket
       if (leak > 0) { const gg = c.createRadialGradient(cx, cy, 10, cx, cy, 260); gg.addColorStop(0, hexA(leakCol, 0.45*leak)); gg.addColorStop(1, hexA(leakCol, 0)); c.fillStyle = gg; c.fillRect(x0, 0, 800, 900); }
-      drawGift(c, cx + Math.sin(t*freq*3.1)*amp, cy, { who: w, hop: Math.max(0, Math.cos(t*freq*2.3))*amp*0.6, rot: Math.sin(t*freq*2)*0.06*(0.3 + k), sc: 1 + k*0.1 + Math.sin(t*0.03)*0.01*k, crack: clamp01((k - 0.25)/0.55), leak, leakCol });
+      drawGift(c, cx + Math.sin(t*freq*3.1)*amp, cy, { who: w, glow: 0.8 + k*0.6, glowCol: mixHex('#ff9a2e', s.res.empty ? '#9aa3ab' : rc, late), hop: Math.max(0, Math.cos(t*freq*2.3))*amp*0.6, rot: Math.sin(t*freq*2)*0.06*(0.3 + k), sc: 1 + k*0.1 + Math.sin(t*0.03)*0.01*k, crack: clamp01((k - 0.25)/0.55), leak, leakCol });
     } else if (s.res && s.res.empty) {
       const k = clamp01((t - s.tb)/600);
       drawGift(c, cx, cy, { who: w, open: easeOutBack(k)*0.8, lazy: true, fade: 1 });
@@ -455,8 +498,22 @@ const PK = {
       c.strokeStyle = 'rgba(234,247,238,.35)'; c.lineWidth = 2; c.setLineDash([3, 6]);
       c.beginPath(); for (let i = 1; i < 14; i++) { const tt = ft - i*0.05; if (tt < 0) break; const xx = cx + Math.sin(tt*3.1)*90*Math.min(1, tt), yy = cy - 40 - Math.min(tt, 1.2)*90 + Math.sin(tt*5.3)*24; if (i === 1) c.moveTo(xx, yy); else c.lineTo(xx, yy); } c.stroke(); c.setLineDash([]);
     } else if (revealed) {
-      const k = clamp01((t - s.tb)/520);
-      if (k < 1) drawGift(c, cx, cy, { who: w, open: k, fade: 1 - k });
+      // WOW beim Aufgehen: Deckel schießt wirbelnd hoch, Lichtsäule aus dem Paket, zwei Druckwellen, Glitzer-Fontäne
+      const k = clamp01((t - s.tb)/900), kb = clamp01((t - s.tb)/1300);
+      const ox = cx + (-11 + DX*0.3)*GIFT_SCALE, oy = cy - 20*GIFT_SCALE;   // Öffnung des Pakets
+      if (kb < 1) {   // Lichtsäule
+        c.save(); c.globalCompositeOperation = 'lighter';
+        const bw = (90 + rk*12)*(1 - kb*0.5)*Math.min(1, kb*6), a = (1 - kb)*0.85;
+        const bg = c.createLinearGradient(0, oy, 0, oy - 700); bg.addColorStop(0, hexA('#fff6dc', a)); bg.addColorStop(0.3, hexA(rc, a*0.7)); bg.addColorStop(1, hexA(rc, 0));
+        c.fillStyle = bg; c.beginPath(); c.moveTo(ox - bw*0.35, oy); c.lineTo(ox + bw*0.35, oy); c.lineTo(ox + bw, oy - 700); c.lineTo(ox - bw, oy - 700); c.closePath(); c.fill();
+        c.restore();
+      }
+      for (const [dl, colw] of [[0, '#fff2c8'], [140, rc]]) {   // Druckwellen
+        const kk = clamp01((t - s.tb - dl)/650); if (kk <= 0 || kk >= 1) continue;
+        c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = hexA(colw, (1 - kk)*0.8); c.lineWidth = 16*(1 - kk) + 2;
+        c.beginPath(); c.ellipse(ox, oy + 10, easeOutBack(kk)*420, easeOutBack(kk)*150, 0, 0, Math.PI*2); c.stroke(); c.restore();
+      }
+      if (k < 1) drawGift(c, cx, cy, { who: w, open: Math.min(1, k*1.15), fade: 1 - k*k, glow: 1.2*(1 - k), glowCol: rc });
       // Glanz hinter dem Item
       const gg = c.createRadialGradient(cx, cy, 10, cx, cy, 200); gg.addColorStop(0, hexA(rc, 0.55)); gg.addColorStop(1, hexA(rc, 0));
       c.fillStyle = gg; c.beginPath(); c.arc(cx, cy, 200, 0, Math.PI*2); c.fill();
@@ -476,6 +533,14 @@ const PK = {
     c.restore();
   }
 };
+// Tanz im Wartezustand (ms seit Beginn): 0…950 ms drei Hüpfer mit Kippeln, Deckel lugt hoch; danach Ruhe bis 2600 ms
+function giftDance(ms) {
+  if (ms < 0) return { hop: 0, rot: 0, peek: 0 };
+  const u = (ms % 2600)/950;
+  if (u >= 1) return { hop: 0, rot: 0, peek: 0 };
+  const w = Math.sin(u*Math.PI*3);
+  return { hop: Math.abs(w)*18*(1 - u*0.35), rot: w*0.1, peek: Math.sin(u*Math.PI)*Math.abs(w) };
+}
 function mixHex(a, b, k) {
   const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16), m = (s) => Math.round(((A >> s) & 255)*(1 - k) + ((B >> s) & 255)*k);
   return '#' + ((1 << 24) + (m(16) << 16) + (m(8) << 8) + m(0)).toString(16).slice(1);

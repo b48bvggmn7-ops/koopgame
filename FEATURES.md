@@ -426,6 +426,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Kontostand steht oben in der Kopfzeile jeder Seite (Münze in Figurenfarbe).
         Bildschirm geteilt: links Affe, rechts Schweinchen, beide gleichzeitig mit ihrer eigenen Springen-Taste
         (Spieler 1: Leertaste/✕, Spieler 2: Enter/✕), oder Klick auf die Hälfte. Esc/„Fertig“ zurück (nicht mitten im Öffnen).
+        Paket-Look (aktuell): modern und glatt – Hochglanz-Orange mit weichem Lichtreflex, feinen hellen Lichtkanten statt
+        dicker Umrisse, braunes Satinband mit Glanz; leuchtet orange (pulsiert). Wartet es auf das Öffnen, „tanzt“ es
+        alle 2,6 s: drei Hüpfer mit Kippeln, der Deckel lugt hoch und Licht blitzt heraus, leises Klopfen (der Inhalt
+        will raus). WOW beim Aufgehen: Wusch-Ton, Deckel schießt wirbelnd nach oben weg, Lichtsäule aus dem Paket in
+        der Seltenheitsfarbe, zwei Druckwellen-Ringe, Glitzer-Fontäne aus der Öffnung, leuchtendes Inneres.
         Ablauf „Geschenkpaket“ (realistisch, leicht schräg von vorn mit Vorderseite, Seite und Deckel-Oberseite,
         oranges Papier mit feiner Struktur, dunkelbraunes Satinband mit Schleife, Licht von oben; 1,3× groß; weicher
         Schatten nur unter dem Paket auf dem Boden – beim Hüpfen bleibt er unten; früher eine Nuss, dann bunte Pakete): fällt herein → wackelt immer stärker (Klacker-Ticks,

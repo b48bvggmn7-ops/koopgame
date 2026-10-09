@@ -1599,7 +1599,7 @@ async def packages_oeffnen(g):
     await g.ev("""cosmeticsReset(); cosmeticsSave.pending.m = 2; cosmeticsSave.pending.f = 1;
       window.__force = ['epic', 'empty', 'common']; const o = rollRarity; rollRarity = r => window.__force.length ? window.__force.shift() : o(r);
       SFX_LOG.length = 0; GameMenu.show('packs', {ret: ['levels']})""")
-    await p.wait_for_timeout(500)
+    await p.wait_for_function("SFX_LOG.includes('packRattle')", timeout=5000)   # Paket tanzt/klopft vor dem Öffnen
     await p.keyboard.press('Space'); await p.wait_for_timeout(60); await p.keyboard.press('Enter')
     ph = await g.ev("[PackagesUI.PK.sides.m.phase, PackagesUI.PK.sides.f.phase]")
     assert ph == ['shake', 'shake'], f'beide Nüsse sollten gleichzeitig wackeln: {ph}'
