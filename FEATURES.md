@@ -447,7 +447,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         schon da ist (dann lieber ein fehlendes einer tieferen Stufe); Legendär/Prestige nie (dann ein fehlendes
         Item der nächsttieferen Stufe).
       55 Items in 5 Slots (je Slot eins angelegt; auf Nutzerwunsch entfernt: Kategorie „Anhängsel“, Ei, Eiswürfel,
-        Schatten-Aura): Roll-Spur (je schneller, desto mehr; die Schleimspur nur beim Rollen am Boden, nicht im Sprung), Aura, Begleiter (folgt,
+        Schatten-Aura): Roll-Spur (je schneller, desto mehr; ALLE Spuren nur beim Rollen am Boden – nicht im Stehen, nicht im Sprung/Flug;
+        das Regenbogen-Band nur auf gerollten Strecken), Aura, Begleiter (folgt,
         hüpft beim Springen mit, Leerlauf-Animation; Geist/Fledermaus/Roboter schweben), Kreisende Objekte (seltener =
         mehr Objekte), Kugel-Skins (Fußball, Tennisball, Käse,
         Basketball, Melone, Wolle, Billard, Kürbis, Disco, Planet, Kristallkugel … – rollen komplett mit,

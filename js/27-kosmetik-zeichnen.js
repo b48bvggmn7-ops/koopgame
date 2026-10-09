@@ -25,9 +25,11 @@ function playerRig(P){
 function cosStep(rig, st, who, items){
   st.tick++;
   const speed = Math.hypot(rig.vx, rig.vy), move = Math.min(1, speed/5);
-  st.hist.unshift({x:rig.x, y:rig.y, s:speed}); if(st.hist.length > 40) st.hist.length = 40;
+  // Roll-Spur nur beim ROLLEN: am Boden und in Bewegung – nicht im Sprung/Flug und nicht im Stehen (Nutzerwunsch)
+  const rolling = rig.grounded && Math.abs(rig.vx) > 0.4;
+  st.hist.unshift({x:rig.x, y:rig.y, s:speed, roll:rolling}); if(st.hist.length > 40) st.hist.length = 40;
   const trail = items.trail;
-  if(trail && !(trail.fx.kind === 'slime' && !rig.grounded)){   // Schleimspur nur beim Rollen am Boden, nicht im Sprung
+  if(trail && rolling){
     const fx = trail.fx, rate = trailRate(fx.kind)*(0.15 + move*1.1);
     let n = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
     while(n-- > 0) st.parts.push(newTrailPart(fx, rig, move));
@@ -162,6 +164,7 @@ function drawRainbowRibbon(c, st, ox, r){
   cols.forEach((col, i) => {
     c.strokeStyle = col; c.lineCap = 'round';
     for(let j = 1; j < h.length; j++){
+      if(!h[j].roll || !h[j-1].roll) continue;   // Band nur auf Strecken, die gerollt wurden
       const a = 1 - j/h.length, w = Math.min(1, h[j].s/4)*4 + 1.2;
       const off = (i - 2.5)*w + Math.sin(t + j*0.4)*1.5;
       c.globalAlpha = a*0.8; c.lineWidth = w;

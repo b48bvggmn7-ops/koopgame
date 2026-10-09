@@ -1783,6 +1783,14 @@ async def paket_kaufen_und_muenzkonto(g):
       for (let i = 0; i < 30; i++) cosStep(rig(true), st, 'm', {trail: it}); const boden = st.parts.length; st.parts.length = 0;
       for (let i = 0; i < 30; i++) cosStep(rig(false), st, 'm', {trail: it}); return [boden, st.parts.length]; })()""")
     assert n[0] > 5 and n[1] == 0, f'Schleimspur: {n}'
+    # alle Roll-Spuren: nur beim Rollen (am Boden + in Bewegung), nicht im Stehen und nicht im Sprung
+    r = await g.ev("""COSMETICS.filter(c => c.slot === 'trail').map(it => { const out = [];
+      for (const [gr, vx] of [[true, 5], [true, 0], [false, 5]]) { const st = cosNewState();
+        for (let i = 0; i < 40; i++) cosStep({x: 100 + i*vx, y: 100, r: 21, roll: 0, vx, vy: gr ? 0 : -5, grounded: gr, facing: 1}, st, 'm', {trail: it});
+        out.push(st.parts.length + (it.fx.kind === 'rainbow' ? st.hist.filter(h => h.roll).length : 0)); }
+      return [it.id, ...out]; })""")
+    for it, rollen, stehen, luft in r:
+        assert rollen > 0 and stehen == 0 and luft == 0, f'Roll-Spur {it}: rollen {rollen}, stehen {stehen}, Sprung {luft}'
 
 @test
 async def level_ladefehler_mit_grund(g):
