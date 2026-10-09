@@ -115,6 +115,7 @@ async function refreshProjectList(){
         if(!r.ok) throw 0;
         const d = await r.json();
         applySnapshot(d); currentLevelId=null; currentLevelName=P.name||d.name||null; currentProjectFile=P.datei;
+        await applyProjectMeta(P.datei);   // Welt/Position aus worlds.json, Titel aus levels.json (07-level-info.js)
         save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels();
       }catch(e){ setStatus(`„${P.name||P.datei}“ konnte nicht geladen werden.`, true); }
     };
@@ -149,7 +150,7 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
 document.getElementById('newLevelBtn').addEventListener('click', e=>{
   const doNew = ()=>{
     tiles={}; hooks=[]; switches=[]; doors=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
-    theme='dschungel'; themeSelect.value=theme;
+    meta = blankMeta(); updateMetaUI();
     currentLevelId=null; currentLevelName=null; currentProjectFile=null; setCols(MIN_COLS); save(); dirty=false; updateName();
     wrap.scrollLeft=0; closeLevels();
   };

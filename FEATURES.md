@@ -540,8 +540,21 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Neue Werkzeuge: Scheinwand (Kachel, gestrichelt mit „?“; im Spiel durchlaufbar), Aufwind (Kachel, hellblau mit
     Pfeil; trägt das Schweinchen mit Schirm), Sprungpilz (Punkt), Druckplatte (Punkt mit Verknüpfungs-Nummer, wie
     Schalter; erscheint in den ✓-Markierungen als „Druckplatte“). Scheinwand und Aufwind lassen sich nicht bewegen.
-  - Auswahl „Thema“ (oben): Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,
-    Kristallhöhle, Feuerberg); gespeichert in snapshot/Export als "theme"; Editor-Fläche in der Grundfarbe
+  - (früher: Auswahl „Thema“ oben – Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,
+    Kristallhöhle, Feuerberg) als "theme"; auf Nutzerwunsch in Ausbau 2 ersetzt durch „Level-Info“, die Themen gibt
+    es dort weiter als „Look-Override“.)
+  - Level-Info (Ausbau 2, Knopf „🗺 …“ oben, editor/js/07-level-info.js): Welt (aus levels/worlds.json), Position in
+    der Welt (1., 2., … oder ans Ende), Titel (steht auf der Levelkarte), Tageszeit (Standard der Welt / Morgen /
+    Mittag / Abend / Nacht), Wetter (wechselnd / trocken / Regen) und Look-Override (eines der alten Themen – bestimmt
+    dann das ganze Aussehen, Tageszeit ist dann gesperrt). Alte Levels/Arbeitsstände mit „theme“ bekommen ihr Thema
+    als Look-Override (sehen also genau aus wie vorher). Ein aus „Levels im Projekt“ geladenes Level übernimmt Welt +
+    Position aus worlds.json und den Titel aus levels.json. Gespeichert im Arbeitsstand und Editor-Format (welt,
+    position, titel, tageszeit, wetter, theme = Look); Export ins Spiel: welt, tageszeit (nur wenn gewählt), wetter,
+    look + theme (nur mit Look-Override). Editor-Fläche in der Grundfarbe von Look bzw. Welt (abends/nachts dunkler).
+    „☁ Auf GitHub speichern“ setzt das Level im SELBEN Commit in worlds.json an die gewählte Welt/Position (aus anderen
+    Welten heraus) und trägt Titel bzw. ein neues Level in levels.json ein (nur wenn sich dort etwas ändert); neue
+    Auswahl „➕ Neues Level N (level-N.json)“ = nächste freie Nummer. Repo-Dateien werden dafür über die GitHub-API
+    im Stand genau dieses Commits gelesen. Test editor_level_info.
   - Taste Enter im Editor = „▶ Testen“ (nicht beim Tippen in ein Feld, nicht bei offenem Levels-/Export-Fenster)
   - Knopf „▶ Testen“ (gelb, oben): legt das aktuelle Level im Browser ab (localStorage monchichi_test_level,
     Spiel-Format) und öffnet sofort das Spiel damit (index.html?test=1, ohne Hauptmenü, ohne Speichern/Hochladen).

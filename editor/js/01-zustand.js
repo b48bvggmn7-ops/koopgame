@@ -42,11 +42,16 @@ const moveSwitchSelect = document.getElementById('moveSwitchSelect');
 function curMoveLink(){ return moveSwitchSelect.value ? Number(moveSwitchSelect.value) : null; }
 
 const linkSelect = document.getElementById('linkSelect');
-// Level-Thema (Aussehen im Spiel: Hintergrund, Farben, Tiere – js/10a-themen.js)
+// Level-Infos (Ausbau 2): Welt, Position in der Welt, Titel, Tageszeit, Wetter und optional ein look-Override
+// (= eines der alten Themen, z. B. „Mondnacht“ – dann sieht das Level im Spiel genau so aus, js/10a-themen.js).
+// Fenster „Level-Info“: 07-level-info.js. Alte Levels (nur „theme“) bekommen ihr Thema als look-Override.
 const THEME_BG = {dschungel:'#13261b', abend:'#2e1c30', ruinen:'#2e2818', nacht:'#0c1428', hoehle:'#191329', vulkan:'#2e120e'};
-let theme = 'dschungel';
-const themeSelect = document.getElementById('themeSelect');
-themeSelect.addEventListener('change', ()=>{ theme = themeSelect.value; save(); draw(); });
+const WELT_BG = {dschungel:'dschungel', ruinen:'ruinen', hoehle:'hoehle', wasser:'dschungel', vulkan:'vulkan'};
+const THEME_WELT = {dschungel:'dschungel', abend:'dschungel', ruinen:'ruinen', nacht:'ruinen', hoehle:'hoehle', vulkan:'vulkan'};
+function blankMeta(){ return {welt:'dschungel', position:0, titel:'', tageszeit:'', wetter:'wechselnd', look:''}; }
+let meta = blankMeta();
+// Grundfarbe der Editor-Fläche: look-Override, sonst Welt (abends/nachts dunkler)
+function editorBgKey(){ return meta.look || (meta.tageszeit==='nacht' ? 'nacht' : meta.tageszeit==='abend' ? 'abend' : WELT_BG[meta.welt] || 'dschungel'); }
 
 function maxUsedCol(){
   let m = -1;
@@ -80,7 +85,9 @@ function snapshot(){
   return {
     cols: COLS,
     tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }),
-    hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, theme, plates, bouncers
+    hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, plates, bouncers,
+    theme: meta.look || undefined, welt: meta.welt, tageszeit: meta.tageszeit || undefined, wetter: meta.wetter,
+    titel: meta.titel || undefined, position: meta.position || undefined
   };
 }
 function applySnapshot(d){
@@ -97,7 +104,10 @@ function applySnapshot(d){
   checkpoints = (d.checkpoints||[]).map(x=>({...x}));
   plates = (d.plates||[]).map(x=>({...x}));
   bouncers = (d.bouncers||[]).map(x=>({...x}));
-  theme = THEME_BG[d.theme] ? d.theme : 'dschungel'; themeSelect.value = theme;
+  const lk = d.look || d.theme;
+  meta = {welt: d.welt || THEME_WELT[d.theme] || 'dschungel', position: Number(d.position) || 0, titel: d.titel || '',
+          tageszeit: d.tageszeit || '', wetter: d.wetter || 'wechselnd', look: THEME_BG[lk] ? lk : ''};
+  if(typeof updateMetaUI === 'function') updateMetaUI();
   fitCols(d.cols);
 }
 

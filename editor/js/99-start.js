@@ -9,7 +9,7 @@ updateLinkMarks();
 
 window.addEventListener('keydown', e=>{
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); document.getElementById('saveBtn').click(); }
-  if(e.key==='Escape'){ closeLevels(); selectMove(null); }
+  if(e.key==='Escape'){ closeLevels(); closeMeta(); selectMove(null); }
   if((e.key==='Delete' || e.key==='Backspace') && selMove){
     const tag = document.activeElement ? document.activeElement.tagName : '';
     if(tag!=='INPUT' && tag!=='TEXTAREA'){ e.preventDefault(); deleteSelMove(); }
@@ -18,7 +18,7 @@ window.addEventListener('keydown', e=>{
   if((e.key==='Enter' || e.code==='NumpadEnter') && !e.repeat){
     const el = document.activeElement, tag = el ? el.tagName : '';
     const typing = tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT' || (el && el.isContentEditable);
-    const dialog = levelBox.classList.contains('show') || document.getElementById('exportBox').classList.contains('show');
+    const dialog = levelBox.classList.contains('show') || document.getElementById('exportBox').classList.contains('show') || metaBox.classList.contains('show');
     if(!typing && !dialog){ e.preventDefault(); document.getElementById('testBtn').click(); }
   }
 });

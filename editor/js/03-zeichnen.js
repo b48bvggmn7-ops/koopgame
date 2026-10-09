@@ -5,7 +5,7 @@
 
 function draw(){
   ctx.clearRect(0,0,cvs.width,cvs.height);
-  ctx.fillStyle = THEME_BG[theme] || THEME_BG.dschungel; ctx.fillRect(0, 0, cvs.width, cvs.height);
+  ctx.fillStyle = THEME_BG[editorBgKey()] || THEME_BG.dschungel; ctx.fillRect(0, 0, cvs.width, cvs.height);
   ctx.save(); ctx.translate(0, SKY*TILE);   // ab hier: Reihe 0 bei y = 0, Himmel-Reihen negativ
   // Grid
   ctx.lineWidth = 1; ctx.strokeStyle = '#25323f';

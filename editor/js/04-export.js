@@ -64,7 +64,8 @@ function exportLevel(){
     plates: plates.map(p=>({x:p.c*TILE+TILE/2, y:p.r*TILE+TILE/2, link:p.link})),
     bouncers: bouncers.map(b=>({x:b.c*TILE+TILE/2, y:b.r*TILE+TILE})),
     winds: mergeRects(byType.wind),
-    theme,
+    welt: meta.welt, ...(meta.tageszeit ? {tageszeit: meta.tageszeit} : {}), wetter: meta.wetter,
+    ...(meta.look ? {look: meta.look, theme: meta.look} : {}),   // theme: für ältere Spielstände/Werkzeuge
   };
   return JSON.stringify(out, null, 2);
 }

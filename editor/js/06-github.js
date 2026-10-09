@@ -19,11 +19,16 @@ async function ghOpen(){
   const sel = document.getElementById('ghTarget'); sel.innerHTML = '';
   try{
     const r = await fetch(PROJECT_DIR+'levels.json', {cache:'no-store'}); if(!r.ok) throw 0;
-    for(const P of (await r.json())){
+    const list = await r.json();
+    for(const P of list){
       if(P.versteckt) continue;
       const o = document.createElement('option'); o.value = P.datei; o.textContent = `${P.name}${P.titel ? ' – '+P.titel : ''} (${P.datei})`;
       o.dataset.name = P.name || ''; sel.appendChild(o);
     }
+    // Ausbau 2: als NEUES Level speichern (nächste freie Nummer), kommt in die gewählte Welt an die gewählte Position
+    const n = nextLevelNumber(list), o = document.createElement('option');
+    o.value = `level-${n}.json`; o.dataset.neu = '1'; o.dataset.name = `Level ${n}`; o.textContent = `➕ Neues Level ${n} (level-${n}.json)`;
+    sel.appendChild(o);
     if(currentProjectFile) sel.value = currentProjectFile;
   }catch(e){ ghSay('Levelliste nicht erreichbar – Editor bitte über die Webseite öffnen.', true); }
 }
@@ -38,11 +43,47 @@ async function ghApi(path, opt){
   }
   return r.json();
 }
+// nächste freie Nummer für „level-N.json“
+function nextLevelNumber(list){
+  let n = 0;
+  for(const P of list || []){ const m = /^level-(\d+)\.json$/.exec(P.datei || ''); if(m) n = Math.max(n, Number(m[1])); }
+  return n + 1;
+}
+// Datei aus dem Repo (Stand eines Commits) als Text holen (Base64 -> UTF-8)
+async function ghReadText(path, sha){
+  const d = await ghApi('/contents/' + path + '?ref=' + sha);
+  const bin = atob(String(d.content || '').replace(/\s/g, ''));
+  return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0)));
+}
+// worlds.json lesbar schreiben: jede Welt in einer Zeile (wie im Projekt)
+function formatWorlds(w){
+  const head = Object.keys(w).filter(k => k !== 'welten').map(k => ` ${JSON.stringify(k)}: ${JSON.stringify(w[k])}`);
+  const val = v => Array.isArray(v) ? '[' + v.map(x => JSON.stringify(x)).join(', ') + ']' : JSON.stringify(v);
+  const ws = (w.welten || []).map(x => '  {' + Object.keys(x).map(k => JSON.stringify(k) + ': ' + val(x[k])).join(', ') + '}');
+  return '{\n' + head.concat([' "welten": [\n' + ws.join(',\n') + '\n ]']).join(',\n') + '\n}\n';
+}
+// Level in die gewählte Welt an die gewählte Position setzen (aus allen anderen Welten heraus); Titel/neues Level in levels.json
+async function ghProjectFiles(sha, datei, name, neu){
+  const out = [];
+  const worlds = JSON.parse(await ghReadText('levels/worlds.json', sha));
+  const ziel = (worlds.welten || []).find(w => w.id === meta.welt);
+  if(!ziel) throw new Error('Welt „' + meta.welt + '“ gibt es in worlds.json nicht');
+  for(const w of worlds.welten) w.level = (w.level || []).filter(d => d !== datei);
+  const pos = meta.position > 0 ? Math.min(meta.position - 1, ziel.level.length) : ziel.level.length;
+  ziel.level.splice(pos, 0, datei);
+  out.push({path:'levels/worlds.json', content: formatWorlds(worlds)});
+  const list = JSON.parse(await ghReadText('levels/levels.json', sha));
+  let L = list.find(x => x.datei === datei), changed = false;
+  if(!L){ L = {datei, name}; list.push(L); changed = true; }
+  if(meta.titel && L.titel !== meta.titel){ L.titel = meta.titel; changed = true; }
+  if(changed) out.push({path:'levels/levels.json', content: JSON.stringify(list, null, 1)});
+  return out;
+}
 async function ghUpload(){
   const sel = document.getElementById('ghTarget'), datei = sel.value, opt = sel.selectedOptions[0];
   if(!datei){ ghSay('Bitte ein Level auswählen.', true); return; }
   if(!ghToken()){ ghShowKey(true); ghSay('Erst den Zugangsschlüssel einrichten.', true); return; }
-  const name = (opt && opt.dataset.name) || currentLevelName || datei;
+  const name = (opt && opt.dataset.name) || currentLevelName || datei, neu = !!(opt && opt.dataset.neu);
   const files = [
     {path:'levels/' + datei, content: exportLevel() + '\n'},
     {path:'levels/editor-format/' + datei, content: JSON.stringify({name, ...snapshot()})},
@@ -53,8 +94,12 @@ async function ghUpload(){
       try{
         const ref = await ghApi('/git/ref/heads/' + GH.branch);
         const head = await ghApi('/git/commits/' + ref.object.sha);
+        // Ausbau 2: worlds.json (Welt + Position) und ggf. levels.json (Titel, neues Level) im SELBEN Commit anpassen –
+        // dafür den aktuellen Stand genau dieses Commits holen
+        const extra = await ghProjectFiles(ref.object.sha, datei, name, neu);
+        const allFiles = files.concat(extra);
         const tree = await ghApi('/git/trees', {method:'POST', body: JSON.stringify({base_tree: head.tree.sha,
-          tree: files.map(f => ({path: f.path, mode:'100644', type:'blob', content: f.content}))})});
+          tree: allFiles.map(f => ({path: f.path, mode:'100644', type:'blob', content: f.content}))})});
         const commit = await ghApi('/git/commits', {method:'POST', body: JSON.stringify({
           message: `${name} im Editor bearbeitet (${datei})`, tree: tree.sha, parents: [ref.object.sha]})});
         await ghApi('/git/refs/heads/' + GH.branch, {method:'PATCH', body: JSON.stringify({sha: commit.sha})});

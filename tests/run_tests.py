@@ -1386,11 +1386,12 @@ async def level_themen(g):
     try:
         p = g.p
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
-        await p.select_option('#themeSelect', 'vulkan'); await p.wait_for_timeout(100)
+        # seit Ausbau 2: Thema = „Look-Override“ im Fenster Level-Info
+        await p.click('#metaBtn'); await p.select_option('#metaLook', 'vulkan'); await p.click('#metaClose'); await p.wait_for_timeout(100)
         roh = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2')).theme")
         assert roh == 'vulkan', f'Editor speichert das Thema nicht: {roh}'
         await p.reload(); await p.wait_for_timeout(300)
-        assert await p.eval_on_selector('#themeSelect', 'e => e.value') == 'vulkan', 'Thema nach Neuladen weg'
+        assert await p.eval_on_selector('#metaLook', 'e => e.value') == 'vulkan', 'Thema nach Neuladen weg'
         await p.click('#exportBtn'); await p.wait_for_timeout(200)
         exp = json.loads(await p.eval_on_selector('#exportText', 'e => e.value'))
         assert exp.get('theme') == 'vulkan', 'Export ohne Thema'
@@ -1852,6 +1853,10 @@ async def editor_github_speichern(g):
         calls.append((req.method, url, req.headers.get('authorization'), req.post_data))
         body = {'GET /git/ref/heads/main': {'object': {'sha': kopf['sha']}}, 'GET /git/commits/' + kopf['sha']: {'tree': {'sha': 't0'}},
                 'POST /git/trees': {'sha': 't1'}, 'POST /git/commits': {'sha': 'c1'}, 'PATCH /git/refs/heads/main': {'object': {'sha': 'c1'}}}
+        if url.startswith('/contents/'):
+            import base64
+            datei = url.split('?')[0][len('/contents/'):]
+            body[req.method + ' ' + url] = {'content': base64.b64encode((ROOT / datei).read_bytes()).decode(), 'encoding': 'base64'}
         await route.fulfill(status=200, content_type='application/json', headers={'Cache-Control': 'private, max-age=60'},
                             body=json.dumps(body.get(req.method + ' ' + url, {})))
     try:
@@ -1868,10 +1873,13 @@ async def editor_github_speichern(g):
         await p.click('#ghUpload')
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
         wege = [c[0] + ' ' + c[1] for c in calls]
-        assert wege == ['GET /git/ref/heads/main', 'GET /git/commits/c0', 'POST /git/trees', 'POST /git/commits', 'PATCH /git/refs/heads/main'], wege
+        assert wege == ['GET /git/ref/heads/main', 'GET /git/commits/c0', 'GET /contents/levels/worlds.json?ref=c0', 'GET /contents/levels/levels.json?ref=c0',
+                        'POST /git/trees', 'POST /git/commits', 'PATCH /git/refs/heads/main'], wege
+        calls[:] = [c for c in calls if '/contents/' not in c[1]]
         assert all(c[2] == 'Bearer github_pat_TEST123' for c in calls), 'Schlüssel nicht mitgeschickt'
         tree = json.loads(calls[2][3])['tree']
-        assert [t['path'] for t in tree] == ['levels/level-3.json', 'levels/editor-format/level-3.json'], tree
+        assert [t['path'] for t in tree] == ['levels/level-3.json', 'levels/editor-format/level-3.json', 'levels/worlds.json'], tree
+        assert tree[2]['content'] == (ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'), 'worlds.json unnötig verändert'
         spiel, ed = json.loads(tree[0]['content']), json.loads(tree[1]['content'])
         orig = json.loads((ROOT / 'levels' / 'editor-format' / 'level-3.json').read_text())
         assert 'solids' in spiel and ed['name'] == 'Level 3' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, orig['tiles'])), 'Inhalt falsch'
@@ -1883,6 +1891,7 @@ async def editor_github_speichern(g):
         await p.click('#githubBtn'); await p.wait_for_timeout(400)
         await p.click('#ghUpload')
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        calls[:] = [c for c in calls if '/contents/' not in c[1]]
         assert json.loads(calls[3][3])['parents'] == ['c1'], f'alter Stand von main benutzt: {calls[3][3]}'
         assert set(await g.ev("__ghCache")) == {'no-store'}, 'GitHub-Abfragen dürfen nicht zwischengespeichert werden'
     finally:
@@ -2086,8 +2095,12 @@ async def editor_rundreise_alle_level(g):
             out = json.loads(await p.input_value('#exportText'))
             await p.click('#closeExport')
             erwartet = json.loads((ROOT / 'levels' / L['datei']).read_text(encoding='utf-8'))
-            diff = [k for k in set(out) | set(erwartet) if not k.startswith('_') and level_teil(k, out.get(k)) != level_teil(k, erwartet.get(k))]
+            META = ('welt', 'tageszeit', 'wetter', 'look')   # Level-Info (Ausbau 2) – kommt im Export dazu
+            diff = [k for k in set(out) | set(erwartet) if not k.startswith('_') and k not in META and level_teil(k, out.get(k)) != level_teil(k, erwartet.get(k))]
             assert not diff, f"{L['datei']}: Export weicht ab bei {diff}"
+            welt = next(w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten'] if L['datei'] in w['level'])
+            assert out.get('look') == erwartet.get('theme') and out.get('welt') == welt and out.get('wetter') == 'wechselnd' and 'tageszeit' not in out, \
+                f"{L['datei']}: Level-Info falsch: {[out.get(k) for k in META]}"
     finally:
         srv.shutdown()
 
@@ -2112,6 +2125,78 @@ async def editor_werkzeug_gruppen(g):
         await p.click('.tgroup[data-group=gefahren] .tgh'); await p.wait_for_timeout(100)
         await p.click('.tool[data-tool=spike]')
         assert await p.evaluate("currentTool") == 'spike', 'Werkzeug in der Gruppe lässt sich nicht wählen'
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+def github_attrappe(calls):
+    """Simulierte GitHub-API für Editor-Tests: liefert Repo-Dateien (worlds.json, levels.json) aus dem Projektordner."""
+    import base64
+    async def api(route):
+        req = route.request; url = req.url.split('/repos/b48bvggmn7-ops/koopgame')[-1]
+        calls.append((req.method, url, req.post_data))
+        body = {'GET /git/ref/heads/main': {'object': {'sha': 'c0'}}, 'GET /git/commits/c0': {'tree': {'sha': 't0'}},
+                'POST /git/trees': {'sha': 't1'}, 'POST /git/commits': {'sha': 'c1'}, 'PATCH /git/refs/heads/main': {'object': {'sha': 'c1'}}}
+        if url.startswith('/contents/'):
+            body[req.method + ' ' + url] = {'content': base64.b64encode((ROOT / url.split('?')[0][len('/contents/'):]).read_bytes()).decode()}
+        await route.fulfill(status=200, content_type='application/json', body=json.dumps(body.get(req.method + ' ' + url, {})))
+    return api
+
+@test
+async def editor_level_info(g):
+    """Ausbau 2: Fenster „Level-Info“: Welt (aus worlds.json), Position, Titel, Tageszeit, Wetter, look-Override.
+    Projekt-Level übernehmen Welt/Position/Titel; Export und Autosave enthalten die Felder; „Auf GitHub speichern“
+    setzt das Level in worlds.json an die gewählte Stelle (auch als NEUES Level, dann auch levels.json) – ein Commit."""
+    srv = webserver(); p = g.p; calls = []
+    try:
+        await p.route('https://api.github.com/**', github_attrappe(calls))
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
+        await p.evaluate("localStorage.setItem('monchichi_github_token', 'github_pat_TEST')")
+        async def lade(datei):
+            await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+            rows = await p.eval_on_selector_all('#projectList .lvl .dt', 'els => els.map(e => e.textContent)')
+            await p.click(f'#projectList .lvl:nth-child({rows.index(datei) + 1}) button'); await p.wait_for_timeout(400)
+        await lade('level-4.json')
+        m = await p.evaluate("({...meta})")
+        assert m == {'welt': 'ruinen', 'position': 2, 'titel': 'Mondnacht', 'tageszeit': '', 'wetter': 'wechselnd', 'look': 'nacht'}, m
+        assert 'Ruinen' in await p.text_content('#metaBtn')
+        # Felder im Fenster ändern
+        await p.click('#metaBtn'); await p.wait_for_timeout(150)
+        await p.select_option('#metaWelt', 'wasser'); await p.fill('#metaTitel', 'Tiefsee')
+        await p.select_option('#metaLook', ''); await p.select_option('#metaZeit', 'nacht'); await p.select_option('#metaWetter', 'regen')
+        await p.click('#metaClose')
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert (out['welt'], out.get('tageszeit'), out['wetter'], 'look' in out, 'theme' in out) == ('wasser', 'nacht', 'regen', False, False), out
+        await p.reload(); await p.wait_for_timeout(500)
+        m = await p.evaluate("({...meta})")
+        assert (m['welt'], m['titel'], m['tageszeit'], m['wetter'], m['look']) == ('wasser', 'Tiefsee', 'nacht', 'regen', ''), f'nicht gemerkt: {m}'
+        # als NEUES Level in die Wasserwelt speichern
+        await p.click('#githubBtn'); await p.wait_for_timeout(500)
+        opts = await p.eval_on_selector_all('#ghTarget option', 'os => os.map(o => o.value)')
+        assert opts[-1] == 'level-7.json', opts   # nächste freie Nummer (level-1 … level-6 vorhanden)
+        await p.select_option('#ghTarget', 'level-7.json'); calls.clear()
+        await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
+        assert sorted(tree) == ['levels/editor-format/level-7.json', 'levels/level-7.json', 'levels/levels.json', 'levels/worlds.json'], sorted(tree)
+        w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
+        assert w['wasser'] == ['level-7.json'] and w['ruinen'] == ['level-3.json', 'level-4.json'], w
+        lv = json.loads(tree['levels/levels.json'])
+        assert lv[-1] == {'datei': 'level-7.json', 'name': 'Level 7', 'titel': 'Tiefsee'} and len(lv) == 8, lv[-2:]
+        assert json.loads(tree['levels/level-7.json'])['welt'] == 'wasser'
+        assert sum(1 for c in calls if c[1] == '/git/commits' and c[0] == 'POST') == 1, 'nicht in einem Commit'
+        # vorhandenes Level in eine andere Welt verschieben: Level 3 als 1. Level in den Vulkan
+        await p.wait_for_function("!document.getElementById('ghBox').classList.contains('show')", timeout=4000)
+        await lade('level-3.json')
+        await p.click('#metaBtn'); await p.select_option('#metaWelt', 'vulkan'); await p.select_option('#metaPos', '1'); await p.click('#metaClose')
+        await p.click('#githubBtn'); await p.wait_for_timeout(500)
+        assert await p.input_value('#ghTarget') == 'level-3.json'
+        calls.clear(); await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
+        w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
+        assert w['vulkan'] == ['level-3.json', 'level-6.json'] and w['ruinen'] == ['level-4.json'], w
+        assert 'levels/levels.json' not in tree, 'levels.json ohne Änderung mitgeschickt'
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
