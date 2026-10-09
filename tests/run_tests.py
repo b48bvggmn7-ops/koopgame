@@ -363,10 +363,16 @@ async def muenzen_nach_farbe(g):
              {'x': 420, 'y': 660, 'color': 'gold'}, {'x': 480, 'y': 660, 'color': 'blue'},
              {'x': 540, 'y': 660, 'color': 'pink'}]
     await g.load(level([ground(0, 680, 1400)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680}, coins=coins))
-    await g.hold(('KeyD',), 1100); await g.p.wait_for_timeout(500)
+    # Taste halten, bis die Figur an allen Münzen vorbei ist (langsame Rechner: feste Zeit reicht dort nicht)
+    async def lauf(key, fertig):
+        await g.p.keyboard.down(key)
+        try: await g.p.wait_for_function(fertig, timeout=4000)
+        except Exception: pass
+        await g.p.keyboard.up(key); await g.p.wait_for_timeout(300)
+    await lauf('KeyD', "p1.x > 600")
     taken = await g.ev("coins.map(c=>c.taken)")
     assert taken == [True, False, True, True, False], f'Affe: {taken}'
-    await g.hold(('ArrowRight',), 1100); await g.p.wait_for_timeout(500)
+    await lauf('ArrowRight', "p2.x > 600")
     assert await g.ev("coins.every(c=>c.taken)"), 'Schweinchen sammelt pink nicht'
 
 @test
@@ -1674,7 +1680,8 @@ async def sammlung_ausruesten(g):
 @test
 async def cosmetics_zeichnen_rollfest(g):
     """Jedes Cosmetic wird an beiden Figuren in vielen Drehwinkeln (volle 360°), beim Laufen, Springen und Stehen
-    ohne Fehler gezeichnet; der Kugel-Skin dreht mit; Sonnenbrillen und Tattoos sitzen auf dem Gesicht."""
+    ohne Fehler gezeichnet; Sonnenbrillen (groß) und Tattoos (Tribal über die ganze Figur) sitzen auf dem Gesicht;
+    die Kategorie Kugel-Skin gibt es nicht mehr."""
     lvl = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
     await g.load(lvl)
     n = await g.ev("""(() => { let n = 0; for (const it of COSMETICS) { cosmeticsReset(); cosResetState();
@@ -1692,6 +1699,19 @@ async def cosmetics_zeichnen_rollfest(g):
       return {slots: SLOTS.map(s => s.id), gl: n('glasses'), ta: n('tattoo'), drawnGl: gl, drawnTa: ta}; })()""")
     assert 'glasses' in k['slots'] and 'tattoo' in k['slots'] and k['gl'] >= 8 and k['ta'] >= 8, f'Brillen/Tattoos fehlen: {k}'
     assert k['drawnGl'] >= 1 and k['drawnTa'] >= 1, f'Brille/Tattoo wird im Spiel nicht gezeichnet: {k}'
+    assert 'skin' not in k['slots'] and await g.ev("COSMETICS.every(c => c.slot !== 'skin')"), 'Kugel-Skin noch vorhanden'
+    # Tattoo bedeckt die ganze Figur (nicht nur einen kleinen Fleck): Muster im Kopf-Kreis messen
+    t = await g.ev("""(() => { const out = {}; for (const it of COSMETICS.filter(c => c.slot === 'tattoo')) {
+        const cv = document.createElement('canvas'); cv.width = cv.height = 200; const c = cv.getContext('2d');
+        c.translate(100, 100); c.scale(100, 100); tattooPattern(c, it.fx.kind);
+        const d = c.getImageData(0, 0, 200, 200).data; let ink = 0, all = 0;
+        for (let y = 0; y < 200; y += 2) for (let x = 0; x < 200; x += 2) { if (Math.hypot(x - 100, y - 100) > 100) continue; all++; if (d[(y*200 + x)*4 + 3] > 40) ink++; }
+        out[it.id] = ink/all; } return out; })()""")
+    for tid, v in t.items():
+        assert v > 0.08, f'Tattoo {tid} bedeckt zu wenig von der Figur: {v:.2f}'
+    gw = await g.ev("""(() => { let w = 0; const og = drawGlasses; drawGlasses = (c, k, L, R, ww) => { w = ww; };
+      drawFaceWear(ctx, {x: 0, y: 0, w: 308, h: 257}, 'monkey', {glasses: COSMETIC.gl_classic}); drawGlasses = og; return w; })()""")
+    assert gw >= 28, f'Sonnenbrille zu klein: halbe Glasbreite {gw} von 308'
 
 @test
 async def cosmetics_kein_vorteil(g):
@@ -1706,7 +1726,7 @@ async def cosmetics_kein_vorteil(g):
       for (const k in KEYS) KEYS[k] = false; return out; })()"""
     await g.ev("cosmeticsReset()")
     ohne = await g.ev(lauf)
-    await g.ev("""for (const id of ['pres_galaxy', 'pres_saturn', 'pres_inferno', 'pres_rainbow', 'trail_galaxy', 'pet_robot'])
+    await g.ev("""for (const id of ['pres_saturn', 'pres_inferno', 'pres_rainbow', 'trail_galaxy', 'pet_robot', 'gl_bling', 'tat_rune'])
                     for (const w of ['m', 'f']) { cosmeticsSave.owned[w][id] = 1; equipItem(w, id); }""")
     mit = await g.ev(lauf)
     await g.ev("cosmeticsReset()")

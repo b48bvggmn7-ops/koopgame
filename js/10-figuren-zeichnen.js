@@ -119,8 +119,7 @@ function drawCharacter(player, camX){
   const blinking = player.blink < 130;
   const img = player.male ? (blinking ? ASSETS.monkeyBlink : ASSETS.monkey)
                           : (blinking ? ASSETS.pigBlink : ASSETS.pig); // Spielerin 2 = pinkes Schweinchen
-  // Cosmetics hinter der Figur (Spur, Begleiter, Aura, kreisende Objekte, Anhängsel) – 27-kosmetik-zeichnen.js
-  const skin = typeof cosSkinOf === 'function' ? cosSkinOf(player) : null;
+  // Cosmetics hinter der Figur (Spur, Begleiter, Aura, kreisende Objekte) – 27-kosmetik-zeichnen.js
   if(typeof cosmeticsDrawBack === 'function') cosmeticsDrawBack(player, camX);
 
   ctx.save();
@@ -171,8 +170,7 @@ function drawCharacter(player, camX){
   const hx = -size/2 + fx*size, hy = size/2 - hgt + fy*hgt;
   ctx.translate(hx, hy); ctx.rotate(rollA);
   const wear = typeof cosItemsOf === 'function' ? cosItemsOf(player.male ? 'm' : 'f') : null;   // Sonnenbrille/Tattoo (27)
-  if(skin){ drawSkinBall(ctx, 21, skin, img, size, hgt, (0.5 - fy)*hgt); drawFaceWear(ctx, cosFaceRect, player.male ? 'monkey' : 'pig', wear); }   // Kugel-Skin, Gesicht klein darauf
-  else if(img && img.complete && img.naturalWidth){
+  if(img && img.complete && img.naturalWidth){
     ctx.drawImage(img, -fx*size, -fy*hgt, size, hgt);
     if(wear) drawFaceWear(ctx, {x: -fx*size, y: -fy*hgt, w: size, h: hgt}, player.male ? 'monkey' : 'pig', wear);
   } else {

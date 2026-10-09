@@ -116,8 +116,7 @@ function drawPreview(c, cx, cy, sc, who, items, pv, ghost) {
   c.save(); c.translate(rig.x, rig.y); c.rotate(rig.roll);
   if (ghost) { c.globalAlpha = 0.25; }
   const face = who === 'm' ? 'monkey' : 'pig';
-  if (items.skin) { drawSkinBall(c, 21, items.skin, img, size, hgt, size/2 - hgt/2 - 4); drawFaceWear(c, cosFaceRect, face, items); }
-  else if (img && img.naturalWidth) { c.drawImage(img, -size/2, size/2 - hgt - 4, size, hgt); drawFaceWear(c, {x: -size/2, y: size/2 - hgt - 4, w: size, h: hgt}, face, items); }
+  if (img && img.naturalWidth) { c.drawImage(img, -size/2, size/2 - hgt - 4, size, hgt); drawFaceWear(c, {x: -size/2, y: size/2 - hgt - 4, w: size, h: hgt}, face, items); }
   c.restore();
   drawAura(c, rig.x, rig.y, 21, items.aura, 'front');
   drawOrbit(c, rig.x, rig.y, 21, items.orbit, 'front');
@@ -595,11 +594,12 @@ function drawLock(c, x, y) {
 // kleines Bild eines Items (einmal gezeichnet, keine Animation)
 function drawItemIcon(cv, item, who, owned) {
   const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
-  const pv = newPreview(), items = { trail: null, aura: null, pet: null, orbit: null, skin: null };
+  const pv = newPreview(), items = { trail: null, aura: null, pet: null, orbit: null, glasses: null, tattoo: null };
   items[item.slot] = item;
   for (let i = 0; i < 40; i++) { pv.t = 0; pv.x = -40 + i*1.6; pv.vx = 1.6; pv.y = 0; pv.vy = 0; pv.grounded = true; pv.roll += 0.08; cosStep(previewRig(pv), pv.st, who, items); }
   if (!owned) c.filter = 'grayscale(1) brightness(.55)';   // gesperrt: grau und dunkel, aber erkennbar
-  if (item.slot === 'glasses' || item.slot === 'tattoo') { pv.roll = 0; pv.x = 0; pv.st = cosNewState(); drawPreview(c, cv.width/2, cv.height + 14, 2.1, who, items, pv); }   // Gesicht groß zeigen
+  if (item.slot === 'glasses') { pv.roll = 0; pv.x = 0; pv.st = cosNewState(); drawPreview(c, cv.width/2, cv.height + 14, 2.1, who, items, pv); }   // Gesicht groß zeigen
+  else if (item.slot === 'tattoo') { pv.roll = 0; pv.x = 0; pv.st = cosNewState(); drawPreview(c, cv.width/2, cv.height - 4, 1.75, who, items, pv); }   // ganze Figur groß (Tattoo geht rundum)
   else drawPreview(c, cv.width/2 - 6, cv.height - 18, 1.35, who, items, pv);
   c.filter = 'none';
   if (!owned) drawLock(c, cv.width - 20, 20);

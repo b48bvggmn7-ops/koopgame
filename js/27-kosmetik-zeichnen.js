@@ -9,7 +9,7 @@
 // beim Zeichnen nichts, damit 120/144-Hz-Bildschirme nicht schneller sind.
 // Regel für jedes Item: es muss auch funktionieren, wenn sich die Kugel dauernd um 360° dreht. Deshalb:
 //   Spuren/Auren/Begleiter/kreisende Objekte drehen sich nicht mit;
-//   Skins rollen komplett mit.
+//   Sonnenbrillen und Tattoos rollen mit dem Gesicht mit.
 
 const COS_STATE = {m: cosNewState(), f: cosNewState()};
 function cosNewState(){ return {parts:[], hist:[], pet:null, tick:0, sparks:[]}; }
@@ -298,99 +298,6 @@ function drawSaturn(c, x, y, r, layer, t){
   c.restore();
 }
 
-// ===== Kugel-Skins (rollen komplett mit; Gesicht bleibt darauf) =====
-// wird INNERHALB der gedrehten Kugel aufgerufen (Ursprung = Kugelmitte, Drehung = Rollwinkel)
-function drawSkinBall(c, r, item, faceImg, faceW, faceH, faceY){
-  const k = item.fx.kind, t = performance.now();
-  const face = (scale) => { cosFaceRect = {x: -faceW*scale/2, y: faceY*scale - faceH*scale/2, w: faceW*scale, h: faceH*scale};
-    if(faceImg && faceImg.complete && faceImg.naturalWidth){ c.drawImage(faceImg, cosFaceRect.x, cosFaceRect.y, cosFaceRect.w, cosFaceRect.h); } };
-  c.save();
-  const circle = (rr) => { c.beginPath(); c.arc(0, 0, rr || r, 0, Math.PI*2); };
-  const shade = () => { const g = c.createRadialGradient(-r*0.35, -r*0.4, r*0.1, 0, 0, r); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(0.6, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.28)'); c.fillStyle = g; circle(); c.fill(); };
-  const outline = (col) => { c.strokeStyle = col || 'rgba(0,0,0,.45)'; c.lineWidth = 1.4; circle(); c.stroke(); };
-  switch(k){
-    case 'football':
-      c.fillStyle = '#ffffff'; circle(); c.fill();
-      c.fillStyle = '#20232a'; for(const [a, d] of [[0, 0], [0.6, 0.78], [1.86, 0.78], [3.12, 0.78], [4.38, 0.78], [5.64, 0.78]]){ const px = Math.cos(a)*r*d, py = Math.sin(a)*r*d; cosStar(c, px, py, d ? 5 : 6, a, 5); c.fill(); }
-      shade(); outline(); face(0.62); break;
-    case 'tennis':
-      c.fillStyle = '#d7f04a'; circle(); c.fill();
-      c.strokeStyle = '#fff'; c.lineWidth = 2.4; c.beginPath(); c.arc(-r*1.15, 0, r*0.85, -0.9, 0.9); c.stroke(); c.beginPath(); c.arc(r*1.15, 0, r*0.85, Math.PI - 0.9, Math.PI + 0.9); c.stroke();
-      shade(); outline('rgba(90,110,20,.6)'); face(0.62); break;
-    case 'cheese':
-      c.fillStyle = '#ffd34d'; circle(); c.fill();
-      c.fillStyle = '#e8b52a'; for(const [a, d, s] of [[0.5, 0.6, 3.5], [2.2, 0.55, 2.6], [3.9, 0.65, 3], [5.3, 0.4, 2.2], [1.3, 0.75, 2]]){ c.beginPath(); c.arc(Math.cos(a)*r*d, Math.sin(a)*r*d, s, 0, Math.PI*2); c.fill(); }
-      shade(); outline('rgba(160,110,10,.7)'); face(0.6); break;
-    case 'basketball':
-      c.fillStyle = '#ef7d22'; circle(); c.fill();
-      c.strokeStyle = '#3a1d08'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-r, 0); c.lineTo(r, 0); c.moveTo(0, -r); c.lineTo(0, r); c.stroke();
-      c.beginPath(); c.arc(-r*1.3, 0, r*0.95, -0.75, 0.75); c.stroke(); c.beginPath(); c.arc(r*1.3, 0, r*0.95, Math.PI - 0.75, Math.PI + 0.75); c.stroke();
-      shade(); outline('rgba(60,25,5,.7)'); face(0.6); break;
-    case 'melon':
-      c.fillStyle = '#4d9e3a'; circle(); c.fill();
-      c.strokeStyle = '#2d6b22'; c.lineWidth = 3; for(let i = -2; i <= 2; i++){ c.beginPath(); c.ellipse(i*r*0.38, 0, r*0.12, r*0.98, 0, 0, Math.PI*2); c.stroke(); }
-      shade(); outline('rgba(20,60,10,.7)'); face(0.6); break;
-    case 'yarn':
-      c.fillStyle = '#e46f8f'; circle(); c.fill();
-      c.strokeStyle = 'rgba(255,190,210,.8)'; c.lineWidth = 1.3; for(let i = 0; i < 7; i++){ c.beginPath(); c.ellipse(0, 0, r*0.95, r*(0.2 + i*0.11), i*0.45, 0, Math.PI*2); c.stroke(); }
-      shade(); outline('rgba(120,30,60,.6)'); face(0.6); break;
-    case 'billiard':
-      c.fillStyle = '#16181d'; circle(); c.fill();
-      c.fillStyle = '#ffffff'; c.beginPath(); c.arc(0, -r*0.55, r*0.33, 0, Math.PI*2); c.fill();
-      c.fillStyle = '#16181d'; c.font = `bold ${Math.round(r*0.45)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('8', 0, -r*0.53);
-      shade(); outline('rgba(255,255,255,.25)'); face(0.52); break;
-    case 'pumpkin':
-      c.fillStyle = '#f08a24'; circle(); c.fill();
-      c.strokeStyle = '#b8560e'; c.lineWidth = 1.6; for(let i = -2; i <= 2; i++){ c.beginPath(); c.ellipse(i*r*0.32, 0, r*0.28, r*0.98, 0, 0, Math.PI*2); c.stroke(); }
-      c.fillStyle = '#4f7a2a'; c.fillRect(-2, -r - 5, 4, 7);
-      shade(); outline('rgba(110,50,5,.7)'); face(0.6); break;
-    case 'disco': {
-      c.save(); circle(); c.clip(); c.fillStyle = '#9aa3b0'; c.fillRect(-r, -r, 2*r, 2*r);
-      const s = 5.2; for(let gx = -r; gx < r; gx += s) for(let gy = -r; gy < r; gy += s){
-        const v = Math.sin(gx*0.7 + gy*1.3 + t*0.006); c.fillStyle = v > 0.6 ? '#ffffff' : v > 0 ? '#cfd6e0' : v > -0.6 ? '#8d97a6' : '#6b7584';
-        c.fillRect(gx + 0.4, gy + 0.4, s - 0.8, s - 0.8); }
-      c.restore(); shade(); outline(); face(0.58);
-      c.fillStyle = 'rgba(255,255,255,.9)'; cosStar(c, Math.cos(t*0.003)*r*0.6, -r*0.5, 3, t*0.004, 4); c.fill(); break; }
-    case 'planet': {
-      c.save(); circle(); c.clip();
-      c.fillStyle = '#2e7fd6'; c.fillRect(-r, -r, 2*r, 2*r);
-      c.fillStyle = '#5cc25a'; for(const [a, d, s] of [[0.3, 0.4, 0.45], [2.4, 0.5, 0.38], [4.4, 0.35, 0.5], [3.4, 0.8, 0.25]]){ c.beginPath(); c.ellipse(Math.cos(a)*r*d, Math.sin(a)*r*d, r*s, r*s*0.7, a, 0, Math.PI*2); c.fill(); }
-      c.fillStyle = 'rgba(255,255,255,.55)'; for(let i = 0; i < 3; i++){ const a = t*0.0004 + i*2; c.beginPath(); c.ellipse(Math.cos(a)*r*0.5, Math.sin(a*1.3)*r*0.5, r*0.3, r*0.08, a, 0, Math.PI*2); c.fill(); }
-      c.restore(); shade(); glowCircle(c, 0, 0, r*0.95, r*1.25, 'rgba(120,190,255,.45)', 'rgba(120,190,255,0)'); face(0.56); break; }
-    case 'crystalball':
-      glowCircle(c, 0, 0, 0, r, 'rgba(210,180,255,.7)', 'rgba(120,80,220,.5)');
-      c.save(); circle(); c.clip(); c.strokeStyle = 'rgba(255,220,255,.6)'; c.lineWidth = 2;
-      for(let i = 0; i < 3; i++){ c.beginPath(); c.arc(0, 0, r*(0.3 + i*0.2), t*0.002 + i, t*0.002 + i + 2.2); c.stroke(); } c.restore();
-      face(0.6);
-      c.fillStyle = 'rgba(255,255,255,.12)'; circle(); c.fill(); c.strokeStyle = 'rgba(240,230,255,.9)'; c.lineWidth = 1.6; circle(); c.stroke();
-      c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.ellipse(-r*0.4, -r*0.45, r*0.22, r*0.1, -0.6, 0, Math.PI*2); c.fill(); break;
-    case 'galaxy': {
-      // Prestige: die ganze Kugel ist eine kleine Galaxie mit wandernden Sternen und Spiralarmen
-      c.save(); circle(); c.clip();
-      const g = c.createRadialGradient(0, 0, 0, 0, 0, r); g.addColorStop(0, '#5a3db8'); g.addColorStop(0.6, '#24124f'); g.addColorStop(1, '#0b0620');
-      c.fillStyle = g; c.fillRect(-r, -r, 2*r, 2*r);
-      c.globalCompositeOperation = 'lighter';
-      for(let arm = 0; arm < 2; arm++) for(let i = 0; i < 26; i++){
-        const s = i/26, a = arm*Math.PI + s*4.2 + t*0.0006, d = s*r*0.95;
-        c.fillStyle = `rgba(${200 + arm*40},${170 + i*2},255,${0.55*(1 - s) + 0.15})`;
-        c.beginPath(); c.arc(Math.cos(a)*d, Math.sin(a)*d, 1.6*(1 - s) + 0.6, 0, Math.PI*2); c.fill(); }
-      for(let i = 0; i < 14; i++){ const a = i*2.4, d = (i*0.37 % 1)*r, tw = 0.5 + 0.5*Math.sin(t*0.006 + i);
-        c.fillStyle = `rgba(255,255,255,${tw})`; c.fillRect(Math.cos(a)*d, Math.sin(a)*d, 1.2, 1.2); }
-      c.restore(); face(0.55);
-      glowCircle(c, 0, 0, r*0.9, r*1.3, 'rgba(160,120,255,.5)', 'rgba(160,120,255,0)'); break; }
-    case 'lightorb':
-      // Prestige: Elektrizität läuft dauernd über die Oberfläche
-      glowCircle(c, 0, 0, 0, r, '#bfe7ff', '#2b7fd6');
-      face(0.7);
-      c.strokeStyle = 'rgba(240,250,255,.95)'; c.lineWidth = 1.5; c.shadowColor = '#7fd0ff'; c.shadowBlur = 8;
-      { const seed = Math.floor(t/60); for(let i = 0; i < 4; i++){ const a0 = (seed*0.9 + i*1.6) % (Math.PI*2), a1 = a0 + 1.4 + (i % 2)*0.6;
-        cosBolt(c, Math.cos(a0)*r*0.95, Math.sin(a0)*r*0.95, Math.cos(a1)*r*0.95, Math.sin(a1)*r*0.95, 6, 3.5); } }
-      c.shadowBlur = 0; c.strokeStyle = 'rgba(200,235,255,.8)'; circle(); c.stroke(); break;
-    default: face(1);
-  }
-  c.restore();
-}
-
 // Begleiter zeichnen (Weltposition aus dem Zustand)
 function drawPet(c, st, item, ox, who){
   if(!item || !st || !st.pet) return;
@@ -458,19 +365,23 @@ function drawPrestigeSparkle(c, x, y, st){
 }
 
 // ===== Sonnenbrillen + Tattoos (sitzen auf dem Gesicht und rollen mit ihm) =====
-// Gemessen an assets/monkey.png / pig.png (308 × 257): Augenmitten, halbe Augengröße, Tattoo-Stelle (rechte Wange)
+// Gemessen an assets/monkey.png / pig.png (308 × 257): Augenmitten, halbe Augengröße, Kopf-Ellipse (ohne Ohren),
+// Mund-/Nasenbereich (bleibt bei Tattoos frei)
 const FACE_SPOTS = {
-  monkey: { eyes: [[119, 123], [187, 123]], ew: 17, eh: 21, tat: [222, 150] },
-  pig:    { eyes: [[107, 120], [199, 120]], ew: 16, eh: 18, tat: [232, 145] },
+  monkey: { eyes: [[119, 123], [187, 123]], ew: 17, eh: 21, head: [153.5, 132, 114, 114], mouth: [153.5, 172, 34, 24] },
+  pig:    { eyes: [[107, 120], [199, 120]], ew: 16, eh: 18, head: [153.5, 139.5, 126, 111], mouth: [153.5, 178, 52, 34] },
 };
-let cosFaceRect = null;   // wo das Gesicht zuletzt gezeichnet wurde (für Kugel-Skins, dort ist es kleiner)
 // rect = {x, y, w, h}: Lage des Gesichtsbilds in den aktuellen (gedrehten) Koordinaten
 function drawFaceWear(c, rect, face, items){
   if(!rect || !items || (!items.glasses && !items.tattoo)) return;
   const F = FACE_SPOTS[face], sx = rect.w/308, sy = rect.h/257, P = ([x, y]) => [rect.x + x*sx, rect.y + y*sy];
   c.save();
-  if(items.tattoo) drawTattoo(c, items.tattoo.fx.kind, P(F.tat), 32*sx);
-  if(items.glasses) drawGlasses(c, items.glasses.fx.kind, P(F.eyes[0]), P(F.eyes[1]), F.ew*sx*1.25, F.eh*sy*1.15);
+  if(items.tattoo) drawTattoo(c, items.tattoo.fx.kind, face, rect);
+  if(items.glasses){
+    // groß und gut sichtbar: Gläser fast so breit wie der halbe Augenabstand
+    const dist = (F.eyes[1][0] - F.eyes[0][0])/2;
+    drawGlasses(c, items.glasses.fx.kind, P(F.eyes[0]), P(F.eyes[1]), Math.min(F.ew*1.85, dist*0.9)*sx, F.eh*1.45*sy);
+  }
   c.restore();
 }
 function lensGlare(c, x, y, w, h){
@@ -478,7 +389,7 @@ function lensGlare(c, x, y, w, h){
   c.beginPath(); c.ellipse(x - w*0.35, y - h*0.35, w*0.28, h*0.16, -0.5, 0, Math.PI*2); c.fill();
 }
 function drawGlasses(c, k, L, R, w, h){
-  const t = performance.now(), lw = Math.max(0.6, w*0.16);
+  const t = performance.now(), lw = Math.max(0.8, w*0.2);   // kräftige Rahmen, damit man die Brille gut sieht
   const bridge = (col) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(L[0] + w*0.9, L[1] - h*0.25); c.quadraticCurveTo((L[0] + R[0])/2, L[1] - h*0.55, R[0] - w*0.9, R[1] - h*0.25); c.stroke(); };
   const arms = (col) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(L[0] - w, L[1] - h*0.3); c.lineTo(L[0] - w*1.9, L[1] - h*0.5); c.moveTo(R[0] + w, R[1] - h*0.3); c.lineTo(R[0] + w*1.9, R[1] - h*0.5); c.stroke(); };
   const rr = (x, y, ww, hh, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + ww, y, x + ww, y + hh, r); c.arcTo(x + ww, y + hh, x, y + hh, r); c.arcTo(x, y + hh, x, y, r); c.arcTo(x, y, x + ww, y, r); c.closePath(); };
@@ -536,51 +447,152 @@ function drawGlasses(c, k, L, R, w, h){
       break; }
   }
 }
-function drawTattoo(c, k, [x, y], s){
-  const t = performance.now();
-  c.save(); c.translate(x, y); c.globalAlpha = 0.9; c.lineJoin = 'round'; c.lineCap = 'round';
-  const ink = (col, lw) => { c.strokeStyle = col; c.lineWidth = Math.max(0.5, s*(lw || 0.12)); };
-  switch(k){
-    case 'heart': cosHeart(c, 0, 0, s*1.4); c.fillStyle = '#e03131'; c.fill(); ink('#7a0d0d', 0.08); c.stroke(); break;
-    case 'star': cosStar(c, 0, 0, s*0.7, -Math.PI/2, 5); c.fillStyle = '#1c7ed6'; c.fill(); ink('#0b3d70', 0.07); c.stroke(); break;
-    case 'anchor':
-      ink('#1d3557', 0.13);
-      c.beginPath(); c.moveTo(0, -s*0.55); c.lineTo(0, s*0.5); c.moveTo(-s*0.3, -s*0.3); c.lineTo(s*0.3, -s*0.3);
-      c.moveTo(-s*0.5, s*0.15); c.quadraticCurveTo(-s*0.4, s*0.6, 0, s*0.55); c.quadraticCurveTo(s*0.4, s*0.6, s*0.5, s*0.15); c.stroke();
-      c.beginPath(); c.arc(0, -s*0.65, s*0.12, 0, Math.PI*2); c.stroke(); break;
-    case 'lightning':
-      c.beginPath(); c.moveTo(s*0.15, -s*0.7); c.lineTo(-s*0.3, s*0.05); c.lineTo(0, s*0.05); c.lineTo(-s*0.15, s*0.7); c.lineTo(s*0.35, -s*0.1); c.lineTo(s*0.05, -s*0.1); c.closePath();
-      c.fillStyle = '#ffd43b'; c.fill(); ink('#1a1a1a', 0.08); c.stroke(); break;
-    case 'flame': {
-      const f = (sc, col) => { c.beginPath(); c.moveTo(0, s*0.6*sc); c.bezierCurveTo(-s*0.55*sc, s*0.3*sc, -s*0.3*sc, -s*0.2*sc, 0, -s*0.7*sc); c.bezierCurveTo(s*0.15*sc, -s*0.25*sc, s*0.55*sc, s*0.1*sc, 0, s*0.6*sc); c.fillStyle = col; c.fill(); };
-      f(1, '#e8590c'); f(0.6, '#ffd43b'); break; }
-    case 'tribal':
-      ink('#111', 0.14);
-      c.beginPath(); c.moveTo(-s*0.6, s*0.4); c.quadraticCurveTo(-s*0.1, s*0.2, -s*0.2, -s*0.2); c.quadraticCurveTo(-s*0.25, -s*0.6, s*0.2, -s*0.6);
-      c.moveTo(s*0.6, -s*0.4); c.quadraticCurveTo(s*0.1, -s*0.2, s*0.2, s*0.2); c.quadraticCurveTo(s*0.25, s*0.6, -s*0.2, s*0.6); c.stroke(); break;
-    case 'skull':
-      c.fillStyle = '#f1f3f5'; c.beginPath(); c.arc(0, -s*0.1, s*0.5, 0, Math.PI*2); c.fill(); c.fillRect(-s*0.28, s*0.2, s*0.56, s*0.35);
-      ink('#1a1a1a', 0.08); c.beginPath(); c.arc(0, -s*0.1, s*0.5, Math.PI*0.75, Math.PI*2.25); c.stroke();
-      c.fillStyle = '#1a1a1a'; c.beginPath(); c.arc(-s*0.2, -s*0.12, s*0.13, 0, Math.PI*2); c.arc(s*0.2, -s*0.12, s*0.13, 0, Math.PI*2); c.fill();
-      for(let i = -1; i <= 1; i++) c.fillRect(i*s*0.14 - s*0.02, s*0.25, s*0.04, s*0.25); break;
-    case 'rose':
-      c.strokeStyle = '#2b8a3e'; c.lineWidth = Math.max(0.5, s*0.08); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(s*0.1, s*0.4, -s*0.05, s*0.75); c.stroke();
-      c.fillStyle = '#2f9e44'; c.beginPath(); c.ellipse(s*0.18, s*0.4, s*0.16, s*0.08, -0.6, 0, Math.PI*2); c.fill();
-      c.fillStyle = '#c92a2a'; c.beginPath(); c.arc(0, -s*0.1, s*0.32, 0, Math.PI*2); c.fill();
-      ink('#7a0d0d', 0.06); c.beginPath(); c.arc(0, -s*0.1, s*0.18, 0.3, 5.6); c.stroke(); break;
-    case 'rune': {   // leuchtende, pulsierende Rune
-      const p = (Math.sin(t*0.004) + 1)/2;
-      c.shadowColor = '#4dd4ff'; c.shadowBlur = s*(0.4 + p*0.8); ink(`rgba(120,230,255,${0.7 + p*0.3})`, 0.12);
-      c.beginPath(); c.moveTo(0, -s*0.7); c.lineTo(0, s*0.7); c.moveTo(0, -s*0.3); c.lineTo(s*0.45, -s*0.65); c.moveTo(0, -s*0.05); c.lineTo(-s*0.45, -s*0.4);
-      c.moveTo(0, s*0.25); c.lineTo(s*0.4, s*0.55); c.stroke();
-      c.beginPath(); c.arc(0, 0, s*0.85, 0, Math.PI*2); c.lineWidth = Math.max(0.4, s*0.05); c.stroke(); c.shadowBlur = 0; break; }
-  }
+// ----- Tattoos: Tribal-Muster über die ganze Figur -----
+// Das Muster wird EINMAL je Figur + Tattoo in ein eigenes Bild gezeichnet (genau auf die Form der Figur zugeschnitten,
+// Augen und Mund/Nase bleiben frei) und danach nur noch über das Gesicht gelegt – schnell und dreht sauber mit.
+const TATTOO_LAYERS = {};
+const TAT_RES = 2;   // doppelte Auflösung, damit es auch in der großen Vorschau scharf bleibt
+function drawTattoo(c, k, face, rect){
+  const L = tattooLayer(face, k); if(!L) return;
+  c.save();
+  if(k === 'rune'){   // legendär: Runen glühen und pulsieren
+    const p = (Math.sin(performance.now()*0.004) + 1)/2;
+    c.globalAlpha = 0.75 + p*0.25; c.drawImage(L, rect.x, rect.y, rect.w, rect.h);
+    c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.25 + p*0.45; c.drawImage(L, rect.x, rect.y, rect.w, rect.h);
+  } else c.drawImage(L, rect.x, rect.y, rect.w, rect.h);
   c.restore();
+}
+function tattooLayer(face, k){
+  const key = face + '|' + k; if(TATTOO_LAYERS[key]) return TATTOO_LAYERS[key];
+  const img = ASSETS[face]; if(!img || !img.complete || !img.naturalWidth) return null;   // Bild noch nicht geladen
+  const cv = document.createElement('canvas'); cv.width = 308*TAT_RES; cv.height = 257*TAT_RES;
+  const c = cv.getContext('2d'), F = FACE_SPOTS[face], [hx, hy, rx, ry] = F.head;
+  // Muster im "Einheitskreis" des Kopfes zeichnen (Mitte 0/0, Rand = 1; Ohren liegen etwas außerhalb)
+  c.save(); c.scale(TAT_RES, TAT_RES); c.translate(hx, hy); c.scale(rx, ry);
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  tattooPattern(c, k);
+  c.restore();
+  // nur dort, wo die Figur ist (Form aus dem Figurenbild) …
+  c.globalCompositeOperation = 'destination-in'; c.drawImage(img, 0, 0, cv.width, cv.height);
+  // … und Augen + Mund/Nase frei lassen (weicher Rand)
+  c.globalCompositeOperation = 'destination-out'; c.scale(TAT_RES, TAT_RES);
+  const hole = (x, y, w, h) => { const g = c.createRadialGradient(0, 0, 0.7, 0, 0, 1); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.save(); c.translate(x, y); c.scale(w, h); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, Math.PI*2); c.fill(); c.restore(); };
+  for(const [ex, ey] of F.eyes) hole(ex, ey, F.ew*2.1, F.eh*1.9);
+  hole(F.mouth[0], F.mouth[1], F.mouth[2], F.mouth[3]);
+  TATTOO_LAYERS[key] = cv;
+  return cv;
+}
+// spitz zulaufende Tribal-Klinge entlang einer Bézier-Kurve (p0 → p1 über Kontrollpunkt q); w = größte halbe Breite.
+// mode 'tip': am Anfang dick, am Ende spitz; 'mid': in der Mitte dick, beide Enden spitz
+function tatBlade(c, p0, q, p1, w, mode){
+  const N = 24, L = [], R = [];
+  for(let i = 0; i <= N; i++){
+    const t = i/N, u = 1 - t;
+    const x = u*u*p0[0] + 2*u*t*q[0] + t*t*p1[0], y = u*u*p0[1] + 2*u*t*q[1] + t*t*p1[1];
+    let dx = 2*u*(q[0] - p0[0]) + 2*t*(p1[0] - q[0]), dy = 2*u*(q[1] - p0[1]) + 2*t*(p1[1] - q[1]);
+    const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+    const hw = w*(mode === 'mid' ? Math.sin(Math.PI*t) : Math.pow(1 - t, 0.85));
+    L.push([x - dy*hw, y + dx*hw]); R.push([x + dy*hw, y - dx*hw]);
+  }
+  c.beginPath(); c.moveTo(L[0][0], L[0][1]); for(const p of L) c.lineTo(p[0], p[1]);
+  for(let i = R.length - 1; i >= 0; i--) c.lineTo(R[i][0], R[i][1]); c.closePath();
+}
+// zeichnet etwas für beide Gesichtshälften (gespiegelt)
+function tatBoth(c, fn){ fn(); c.save(); c.scale(-1, 1); fn(); c.restore(); }
+function tatSpiral(c, x, y, r, turns, dir){
+  c.beginPath();
+  for(let i = 0; i <= 60; i++){ const t = i/60, a = dir*t*turns*Math.PI*2, rr = r*(1 - t*0.85); i ? c.lineTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr) : c.moveTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr); }
+  c.stroke();
+}
+function tattooPattern(c, k){
+  const ink = '#141018', TAU = Math.PI*2;
+  switch(k){
+    case 'stripes':    // Tiger-artige Tribal-Streifen von den Seiten hinein + Stirnspitze
+      c.fillStyle = ink;
+      tatBoth(c, () => {
+        tatBlade(c, [1.08, -0.55], [0.8, -0.5], [0.55, -0.62], 0.11, 'tip'); c.fill();
+        tatBlade(c, [1.1, 0.05], [0.82, 0.12], [0.62, 0.02], 0.12, 'tip'); c.fill();
+        tatBlade(c, [1.02, 0.55], [0.78, 0.5], [0.58, 0.62], 0.11, 'tip'); c.fill();
+        tatBlade(c, [0.5, 1.05], [0.42, 0.85], [0.28, 0.82], 0.09, 'tip'); c.fill();
+      });
+      tatBlade(c, [0, -1.12], [0.05, -0.85], [0, -0.55], 0.12, 'tip'); c.fill();
+      break;
+    case 'dots':       // Punkte-Kränze rund um den Kopf + Punkt-Dreieck auf der Stirn
+      c.fillStyle = '#16325c';
+      for(let i = 0; i < 30; i++){ const a = i/30*TAU; c.beginPath(); c.arc(Math.cos(a)*0.9, Math.sin(a)*0.9, 0.055, 0, TAU); c.fill(); }
+      for(let i = 0; i < 24; i++){ const a = (i + 0.5)/24*TAU; c.beginPath(); c.arc(Math.cos(a)*0.74, Math.sin(a)*0.74, 0.035, 0, TAU); c.fill(); }
+      for(let r = 0; r < 3; r++) for(let i = 0; i <= r; i++){ c.beginPath(); c.arc((i - r/2)*0.13, -0.6 + r*0.11 - 0.12, 0.04, 0, TAU); c.fill(); }
+      break;
+    case 'waves': {    // zwei kräftige Wellenbänder rund um den Kopf
+      c.strokeStyle = '#0b5560';
+      const ring = (r0, amp, n, ph, lw) => { c.lineWidth = lw; c.beginPath();
+        for(let i = 0; i <= 120; i++){ const a = i/120*TAU, r = r0 + amp*Math.sin(n*a + ph); i ? c.lineTo(Math.cos(a)*r, Math.sin(a)*r) : c.moveTo(Math.cos(a)*r, Math.sin(a)*r); } c.stroke(); };
+      ring(0.8, 0.07, 9, 0, 0.09); ring(1.0, 0.06, 9, Math.PI, 0.07); ring(0.66, 0.03, 18, 0, 0.035);
+      break; }
+    case 'zigzag': {   // Zahnkranz aus Dreiecken (schwarz) mit roter Innenlinie
+      c.fillStyle = ink; const n = 20;
+      for(let i = 0; i < n; i++){ const a = i/n*TAU, b = (i + 1)/n*TAU, m = (a + b)/2;
+        c.beginPath(); c.moveTo(Math.cos(a)*1.02, Math.sin(a)*1.02); c.lineTo(Math.cos(b)*1.02, Math.sin(b)*1.02); c.lineTo(Math.cos(m)*0.74, Math.sin(m)*0.74); c.closePath(); c.fill(); }
+      c.strokeStyle = '#d6222e'; c.lineWidth = 0.045; c.beginPath();
+      for(let i = 0; i <= n*2; i++){ const a = i/(n*2)*TAU, r = i % 2 ? 0.66 : 0.72; i ? c.lineTo(Math.cos(a)*r, Math.sin(a)*r) : c.moveTo(Math.cos(a)*r, Math.sin(a)*r); } c.stroke();
+      break; }
+    case 'flames': {   // Flammen züngeln von unten an beiden Seiten hoch
+      const g = c.createLinearGradient(0, 1.1, 0, -1); g.addColorStop(0, '#c41a0c'); g.addColorStop(0.5, '#ff7a1a'); g.addColorStop(1, '#ffd23f');
+      c.strokeStyle = ink; c.lineWidth = 0.035;
+      tatBoth(c, () => {
+        for(const [x0, q, x1, w] of [[[0.35, 1.1], [1.0, 0.7], [0.92, -0.75], 0.17], [[0.15, 1.1], [0.7, 0.55], [0.62, -0.2], 0.13], [[0.7, 0.95], [1.25, 0.1], [0.55, -1.05], 0.1]]){
+          tatBlade(c, x0, q, x1, w, 'tip'); c.fillStyle = g; c.fill(); c.stroke(); }
+      });
+      tatBlade(c, [0, -0.5], [-0.1, -0.8], [0.05, -1.12], 0.1, 'tip'); c.fillStyle = g; c.fill(); c.stroke();
+      break; }
+    case 'spirals':    // Maori-Spiralen auf Wangen und Stirn, verbunden mit Bögen
+      c.strokeStyle = ink; c.lineWidth = 0.055;
+      tatBoth(c, () => {
+        tatSpiral(c, 0.72, 0.3, 0.26, 1.6, 1); tatSpiral(c, 0.3, -0.72, 0.2, 1.4, -1);
+        c.beginPath(); c.arc(0, 0, 0.98, -1.35, 0.3); c.stroke();
+        c.beginPath(); c.moveTo(0.98, 0.3); c.quadraticCurveTo(0.9, 0.75, 0.45, 0.92); c.stroke();
+        c.beginPath(); c.moveTo(0.5, -0.86); c.quadraticCurveTo(0.85, -0.6, 0.95, -0.15); c.stroke();
+      });
+      break;
+    case 'dragon':     // große geschwungene Tribal-Klingen mit Widerhaken + roter Akzent
+      c.fillStyle = ink;
+      tatBoth(c, () => {
+        tatBlade(c, [0.02, -1.08], [1.32, -0.6], [0.32, 1.02], 0.17, 'mid'); c.fill();
+        for(const [p0, q, p1] of [[[0.86, -0.55], [0.7, -0.5], [0.55, -0.7]], [[0.98, -0.05], [0.8, 0.05], [0.62, -0.05]], [[0.84, 0.48], [0.7, 0.45], [0.52, 0.58]]]){ tatBlade(c, p0, q, p1, 0.07, 'tip'); c.fill(); }
+        c.strokeStyle = '#d6222e'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(0.1, -0.92); c.quadraticCurveTo(1.05, -0.5, 0.3, 0.85); c.stroke();
+      });
+      break;
+    case 'thorns': {   // Dornenranke rund um den Kopf mit drei Rosen
+      c.strokeStyle = '#1f5c2a'; c.lineWidth = 0.06; c.beginPath();
+      for(let i = 0; i <= 140; i++){ const a = i/140*TAU, r = 0.86 + 0.05*Math.sin(a*7); i ? c.lineTo(Math.cos(a)*r, Math.sin(a)*r) : c.moveTo(Math.cos(a)*r, Math.sin(a)*r); } c.stroke();
+      c.fillStyle = '#1f5c2a';
+      for(let i = 0; i < 22; i++){ const a = i/22*TAU, r = 0.86 + 0.05*Math.sin(a*7), out = i % 2 ? 1 : -1;
+        const x = Math.cos(a)*r, y = Math.sin(a)*r, nx = Math.cos(a)*out, ny = Math.sin(a)*out, tx = -Math.sin(a), ty = Math.cos(a);
+        c.beginPath(); c.moveTo(x + tx*0.05, y + ty*0.05); c.lineTo(x - tx*0.05, y - ty*0.05); c.lineTo(x + nx*0.13, y + ny*0.13); c.closePath(); c.fill(); }
+      for(const a of [-2.3, -0.5, 1.57]){ const x = Math.cos(a)*0.86, y = Math.sin(a)*0.86;
+        c.fillStyle = '#c4162a'; c.beginPath(); c.arc(x, y, 0.15, 0, TAU); c.fill();
+        c.strokeStyle = '#6e0a14'; c.lineWidth = 0.025; c.beginPath(); c.arc(x, y, 0.085, 0.3, 5.6); c.stroke(); c.beginPath(); c.arc(x, y, 0.13, 2, 4.5); c.stroke(); }
+      break; }
+    case 'rune': {     // glühende Runen-Linien (cyan) über den ganzen Kopf
+      c.strokeStyle = '#7fe8ff'; c.fillStyle = '#7fe8ff'; c.shadowColor = '#2fd0ff'; c.shadowBlur = 0.08*TAT_RES*114;
+      tatBoth(c, () => {
+        tatBlade(c, [1.05, -0.4], [0.75, -0.25], [0.6, -0.55], 0.09, 'tip'); c.fill();
+        tatBlade(c, [1.02, 0.4], [0.75, 0.3], [0.62, 0.55], 0.09, 'tip'); c.fill();
+        c.lineWidth = 0.045;
+        c.beginPath(); c.moveTo(0.82, -0.1); c.lineTo(0.82, 0.22); c.moveTo(0.82, -0.02); c.lineTo(0.95, 0.08); c.moveTo(0.82, 0.12); c.lineTo(0.7, 0.2); c.stroke();
+        c.beginPath(); c.moveTo(0.4, 0.82); c.lineTo(0.55, 0.62); c.lineTo(0.68, 0.8); c.stroke();
+      });
+      c.lineWidth = 0.05;
+      c.beginPath(); c.moveTo(0, -1.05); c.lineTo(0, -0.62); c.moveTo(0, -0.95); c.lineTo(0.14, -1.05); c.moveTo(0, -0.8); c.lineTo(-0.14, -0.9); c.moveTo(0, -0.7); c.lineTo(0.12, -0.62); c.stroke();
+      c.lineWidth = 0.03; c.beginPath(); c.arc(0, 0, 1.0, 0, TAU); c.stroke();
+      break; }
+  }
 }
 
 // ===== Einbindung ins Spiel =====
 const cosItemsOf = who => ({trail:equippedItem(who, 'trail'), aura:equippedItem(who, 'aura'), pet:equippedItem(who, 'pet'),
-                            orbit:equippedItem(who, 'orbit'), skin:equippedItem(who, 'skin'),
+                            orbit:equippedItem(who, 'orbit'),
                             glasses:equippedItem(who, 'glasses'), tattoo:equippedItem(who, 'tattoo')});
 // im festen Takt aus stepSim (14-spielschleife.js)
 function cosmeticsStep(){
@@ -605,4 +617,3 @@ function cosmeticsDrawFront(P, camX){
   drawOrbit(ctx, x, rig.y, rig.r, it.orbit, 'front');
   drawPrestigeSparkle(ctx, x, rig.y, st);
 }
-const cosSkinOf = P => equippedItem(P === p1 ? 'm' : 'f', 'skin');

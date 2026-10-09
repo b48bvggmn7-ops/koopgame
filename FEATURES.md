@@ -446,28 +446,28 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Duplikate: Gewöhnlich/Ungewöhnlich erlaubt (fehlende bevorzugt); Selten/Episch nur, wenn alles dieser Stufe
         schon da ist (dann lieber ein fehlendes einer tieferen Stufe); Legendär/Prestige nie (dann ein fehlendes
         Item der nächsttieferen Stufe).
-      73 Items in 7 Slots (je Slot eins angelegt; auf Nutzerwunsch entfernt: Kategorie „Anhängsel“, Ei, Eiswürfel,
-        Schatten-Aura): Roll-Spur (je schneller, desto mehr; ALLE Spuren nur beim Rollen am Boden – nicht im Stehen, nicht im Sprung/Flug;
+      60 Items in 6 Slots (je Slot eins angelegt; auf Nutzerwunsch entfernt: Kategorie „Anhängsel“, Kategorie „Kugel-Skin“
+        (samt Prestige Galaxie und Blitzkugel), Ei, Eiswürfel, Schatten-Aura): Roll-Spur (je schneller, desto mehr; ALLE Spuren nur beim Rollen am Boden – nicht im Stehen, nicht im Sprung/Flug;
         das Regenbogen-Band nur auf gerollten Strecken), Aura, Begleiter (folgt,
         hüpft beim Springen mit, Leerlauf-Animation; Geist/Fledermaus/Roboter schweben), Kreisende Objekte (seltener =
-        mehr Objekte), Kugel-Skins (Fußball, Tennisball, Käse,
-        Basketball, Melone, Wolle, Billard, Kürbis, Disco, Planet, Kristallkugel … – rollen komplett mit,
-        Gesicht bleibt drauf), Sonnenbrillen (auf den Augen: Coole Sonnenbrille, Retro, Piloten, Gitter, Herz, 3D, Stern,
-        Cyber-Visier mit Lauflicht, Gold-Bling mit Funkeln) und Tattoos (auf der rechten Wange: Herz, Stern, Anker, Blitz,
-        Flamme, Tribal, Totenkopf, Rose, leuchtende Rune) – beide sitzen fest im Gesicht und rollen mit (Augen-/Wangen-
-        Positionen gemessen an den Figurenbildern, FACE_SPOTS in 27; auch auf Kugel-Skins). Prestige: Saturn, Galaxie,
-        Riesenblase, Inferno, Blitzkugel, Regenbogen (mit Funkeln).
+        mehr Objekte), Sonnenbrillen (GROSS und auffällig auf den Augen, kräftige Rahmen: Coole Sonnenbrille, Retro, Piloten,
+        Gitter, Herz, 3D, Stern, Cyber-Visier mit Lauflicht, Gold-Bling mit Funkeln) und Tattoos (Tribal-Muster über die
+        GANZE Figur inkl. Ohren, Augen und Mund/Nase bleiben frei: Tribal-Streifen, Punkte-Tribal, Wellen-Tribal, Zacken-Tribal,
+        Flammen-Tribal, Maori-Spiralen, Drachen-Tribal, Dornenranke mit Rosen, Glühende Runen (pulsiert)) – beide sitzen fest
+        auf der Figur und rollen mit (Augen-/Kopf-Positionen gemessen an den Figurenbildern, FACE_SPOTS in 27; das Tattoo-Muster
+        wird einmal je Figur auf deren Form zugeschnitten und dann nur noch darübergelegt). Prestige: Saturn,
+        Riesenblase, Inferno, Regenbogen (mit Funkeln).
         Alles funktioniert bei voller 360°-Drehung (Test cosmetics_zeichnen_rollfest); Partikel/Begleiter laufen im
         festen Takt (cosmeticsStep in stepSim).
       Levelauswahl: oben rechts neben dem Titel zwei eigene Menüpunkte im modernen Kachel-Stil ohne Emojis
         (Linien-Icons): „Packages öffnen“ (Geschenk-Icon mit Zahl, darunter „Affe x · Schweinchen y“; ohne Packages
-        „Packages – Kaufen für 200 Münzen“, öffnet trotzdem) und „Umkleide“ (Kleiderbügel-Icon, „x / 146 Items gesammelt“). Sie liegen so hoch,
+        „Packages – Kaufen für 200 Münzen“, öffnet trotzdem) und „Umkleide“ (Kleiderbügel-Icon, „x / 120 Items gesammelt“). Sie liegen so hoch,
         dass sie sich nie mit den Figuren über der gewählten Levelkarte überschneiden. „Fortschritt x / 6“ steht
         jetzt unten rechts. ▲ wählt „Packages öffnen“, ◀ ▶ wechselt zur Umkleide, Springen öffnet, ▼ zurück zu den
         Levelkarten; E / Num 1 / □ / △ oder Klick öffnen die Umkleide direkt. Hinweise ohne Emojis.
       Umkleide (früher „Sammlung“, nur zum Ausrüsten):
         Je Figur (umschalten mit E / Num 1 / □):
-        Fortschritt modern und aufgeräumt: Ring mit Prozent + „Sammlung x / 73 Items gesammelt“, darunter je Seltenheit
+        Fortschritt modern und aufgeräumt: Ring mit Prozent + „Sammlung x / 60 Items gesammelt“, darunter je Seltenheit
         Farbpunkt, Name, Zahl und dünner leuchtender Balken (zwei Spalten), Slot-Reiter mit x/y, Kacheln mit Bild – auch alle GESPERRTEN
         Items mit Namen, grau und dunkel mit gezeichnetem Schloss und gestricheltem Rahmen in der Seltenheitsfarbe; „Angelegt“, „×n“ bei
         Duplikaten; Springen legt an bzw. ab; gesperrte lassen sich nicht anlegen (Wackeln).

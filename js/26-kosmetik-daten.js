@@ -6,7 +6,7 @@
 // Rein kosmetisch: nichts hier verändert Tempo, Sprünge, Kollision, Münzen oder Levelmechanik.
 // Jede Figur (m = Affe, f = Schweinchen) hat eigene Packages, eigene Items und eigene Ausrüstung.
 // Alle Items sind für rollende Kugeln gedacht: Spuren hinter der Kugel, Auren um sie herum, Begleiter, kreisende
-// Objekte und Kugel-Skins (rollen komplett mit). (Anhängsel wurden auf Nutzerwunsch entfernt.)
+// Objekte, Sonnenbrillen und Tattoos (rollen mit dem Gesicht). (Anhängsel und Kugel-Skins wurden auf Nutzerwunsch entfernt.)
 
 const RARITIES = [
   {id:'empty',     name:'Leer',      chance:0.10,  color:'#9aa3ab', glow:'rgba(180,190,200,.5)'},
@@ -23,21 +23,17 @@ const SLOTS = [
   {id:'aura',   name:'Aura'},
   {id:'pet',    name:'Begleiter'},
   {id:'orbit',  name:'Kreisende Objekte'},
-  {id:'skin',   name:'Kugel-Skin'},
   {id:'glasses',name:'Sonnenbrille'},
   {id:'tattoo', name:'Tattoo'},
 ];
 // Katalog: id, Name, Slot, Seltenheit, Darstellung (fx) – die Darstellung steckt in 27-kosmetik-zeichnen.js
 const COSMETICS = [
-  // ---- Gewöhnlich: einfache Spuren, sanfte Auren, einfache Skins ----
+  // ---- Gewöhnlich: einfache Spuren, sanfte Auren ----
   {id:'trail_dust',     name:'Staubwölkchen',    slot:'trail',  rarity:'common',   fx:{kind:'puff',   cols:['#d8cbb5','#bfb39d']}},
   {id:'trail_bubbles',  name:'Blubberblasen',    slot:'trail',  rarity:'common',   fx:{kind:'bubble', cols:['#bfe9ff','#e6f7ff']}},
   {id:'trail_leaves',   name:'Blätterspur',      slot:'trail',  rarity:'common',   fx:{kind:'leaf',   cols:['#7cc36b','#a7d86d','#5aa04f']}},
   {id:'aura_soft',      name:'Sanftes Leuchten', slot:'aura',   rarity:'common',   fx:{kind:'glow',   cols:['#fff6d8','#ffe9a8']}},
   {id:'aura_mint',      name:'Minzhauch',        slot:'aura',   rarity:'common',   fx:{kind:'glow',   cols:['#c9ffe9','#8ff0c8']}},
-  {id:'skin_football',  name:'Fußball',          slot:'skin',   rarity:'common',   fx:{kind:'football'}},
-  {id:'skin_tennis',    name:'Tennisball',       slot:'skin',   rarity:'common',   fx:{kind:'tennis'}},
-  {id:'skin_cheese',    name:'Käserad',          slot:'skin',   rarity:'common',   fx:{kind:'cheese'}},
   {id:'orbit_leaf',     name:'Kreisendes Blatt', slot:'orbit',  rarity:'common',   fx:{kind:'leaf',   n:1}},
   // ---- Ungewöhnlich: besondere Spuren, kleine Begleiter ----
   {id:'trail_hearts',   name:'Herzchenspur',     slot:'trail',  rarity:'uncommon', fx:{kind:'heart',  cols:['#ff6f9f','#ff9fc0']}},
@@ -47,9 +43,6 @@ const COSMETICS = [
   {id:'pet_snail',      name:'Schnecke',         slot:'pet',    rarity:'uncommon', fx:{kind:'snail'}},
   {id:'pet_chick',      name:'Küken',            slot:'pet',    rarity:'uncommon', fx:{kind:'chick'}},
   {id:'pet_mouse',      name:'Maus',             slot:'pet',    rarity:'uncommon', fx:{kind:'mouse'}},
-  {id:'skin_basketball',name:'Basketball',       slot:'skin',   rarity:'uncommon', fx:{kind:'basketball'}},
-  {id:'skin_melon',     name:'Wassermelone',     slot:'skin',   rarity:'uncommon', fx:{kind:'melon'}},
-  {id:'skin_yarn',      name:'Wollknäuel',       slot:'skin',   rarity:'uncommon', fx:{kind:'yarn'}},
   {id:'orbit_hearts',   name:'Herzenkreis',      slot:'orbit',  rarity:'uncommon', fx:{kind:'heart',  n:2}},
   // ---- Selten: besondere Begleiter, starke Partikel, besondere Auren ----
   {id:'trail_fire',     name:'Feuerspur',        slot:'trail',  rarity:'rare',     fx:{kind:'flame',  cols:['#ffd23f','#ff8a2a','#ff4b1f']}},
@@ -62,8 +55,6 @@ const COSMETICS = [
   {id:'pet_frog',       name:'Frosch',           slot:'pet',    rarity:'rare',     fx:{kind:'frog'}},
   {id:'pet_duck',       name:'Ente',             slot:'pet',    rarity:'rare',     fx:{kind:'duck'}},
   {id:'pet_rabbit',     name:'Kaninchen',        slot:'pet',    rarity:'rare',     fx:{kind:'rabbit'}},
-  {id:'skin_billiard',  name:'Billardkugel',     slot:'skin',   rarity:'rare',     fx:{kind:'billiard'}},
-  {id:'skin_pumpkin',   name:'Kürbis',           slot:'skin',   rarity:'rare',     fx:{kind:'pumpkin'}},
   {id:'orbit_stars',    name:'Sternenkreis',     slot:'orbit',  rarity:'rare',     fx:{kind:'star',   n:3}},
   // ---- Episch: mehrere kreisende Objekte, komplexere Animationen, besondere Formen ----
   {id:'trail_gold',     name:'Goldspur',         slot:'trail',  rarity:'epic',     fx:{kind:'gold',   cols:['#fff1a8','#ffd23f','#d99a00']}},
@@ -74,23 +65,18 @@ const COSMETICS = [
   {id:'pet_bat',        name:'Fledermaus',       slot:'pet',    rarity:'epic',     fx:{kind:'bat'}},
   {id:'orbit_crystals', name:'Kristallkranz',    slot:'orbit',  rarity:'epic',     fx:{kind:'crystal',n:4}},
   {id:'orbit_runes',    name:'Magische Runen',   slot:'orbit',  rarity:'epic',     fx:{kind:'rune',   n:4}},
-  {id:'skin_disco',     name:'Discokugel',       slot:'skin',   rarity:'epic',     fx:{kind:'disco'}},
   // ---- Legendär: sehr auffällige Formen, starke Effekte ----
   {id:'trail_galaxy',   name:'Sternenstaub',     slot:'trail',  rarity:'legendary',fx:{kind:'galaxy', cols:['#ffffff','#9fb4ff','#ff9cf2']}},
   {id:'aura_crystal',   name:'Kristall-Aura',    slot:'aura',   rarity:'legendary',fx:{kind:'shards', cols:['#e7d6ff','#7fd8ff']}},
   {id:'pet_robot',      name:'Mini-Roboter',     slot:'pet',    rarity:'legendary',fx:{kind:'robot'}},
   {id:'pet_mini',       name:'Mini-Ich',         slot:'pet',    rarity:'legendary',fx:{kind:'mini'}},
   {id:'orbit_planets',  name:'Mini-Planeten',    slot:'orbit',  rarity:'legendary',fx:{kind:'planet', n:3}},
-  {id:'skin_planet',    name:'Planet',           slot:'skin',   rarity:'legendary',fx:{kind:'planet'}},
-  {id:'skin_crystalball',name:'Kristallkugel',   slot:'skin',   rarity:'legendary',fx:{kind:'crystalball'}},
   // ---- Prestige: eigene visuelle Identität ----
   {id:'pres_saturn',    name:'Saturn',           slot:'orbit',  rarity:'prestige', fx:{kind:'saturn'}},
-  {id:'pres_galaxy',    name:'Galaxie',          slot:'skin',   rarity:'prestige', fx:{kind:'galaxy'}},
   {id:'pres_bubble',    name:'Riesenblase',      slot:'aura',   rarity:'prestige', fx:{kind:'bigbubble'}},
   {id:'pres_inferno',   name:'Inferno',          slot:'aura',   rarity:'prestige', fx:{kind:'inferno'}},
-  {id:'pres_lightning', name:'Blitzkugel',       slot:'skin',   rarity:'prestige', fx:{kind:'lightorb'}},
   {id:'pres_rainbow',   name:'Regenbogen',       slot:'trail',  rarity:'prestige', fx:{kind:'rainbow'}},
-  // ---- Sonnenbrillen (auf den Augen, rollen mit dem Gesicht) ----
+  // ---- Sonnenbrillen (groß auf den Augen, rollen mit dem Gesicht) ----
   {id:'gl_classic',     name:'Coole Sonnenbrille', slot:'glasses', rarity:'common',    fx:{kind:'classic'}},
   {id:'gl_round',       name:'Retro-Brille',       slot:'glasses', rarity:'common',    fx:{kind:'round'}},
   {id:'gl_aviator',     name:'Pilotenbrille',      slot:'glasses', rarity:'uncommon',  fx:{kind:'aviator'}},
@@ -100,16 +86,17 @@ const COSMETICS = [
   {id:'gl_star',        name:'Sternbrille',        slot:'glasses', rarity:'epic',      fx:{kind:'star'}},
   {id:'gl_cyber',       name:'Cyber-Visier',       slot:'glasses', rarity:'epic',      fx:{kind:'cyber'}},
   {id:'gl_bling',       name:'Gold-Bling-Brille',  slot:'glasses', rarity:'legendary', fx:{kind:'bling'}},
-  // ---- Tattoos (auf der Wange, rollen mit dem Gesicht) ----
-  {id:'tat_heart',      name:'Herz-Tattoo',        slot:'tattoo',  rarity:'common',    fx:{kind:'heart'}},
-  {id:'tat_star',       name:'Stern-Tattoo',       slot:'tattoo',  rarity:'common',    fx:{kind:'star'}},
-  {id:'tat_anchor',     name:'Anker-Tattoo',       slot:'tattoo',  rarity:'uncommon',  fx:{kind:'anchor'}},
-  {id:'tat_lightning',  name:'Blitz-Tattoo',       slot:'tattoo',  rarity:'uncommon',  fx:{kind:'lightning'}},
-  {id:'tat_flame',      name:'Flammen-Tattoo',     slot:'tattoo',  rarity:'rare',      fx:{kind:'flame'}},
-  {id:'tat_tribal',     name:'Tribal-Tattoo',      slot:'tattoo',  rarity:'rare',      fx:{kind:'tribal'}},
-  {id:'tat_skull',      name:'Totenkopf-Tattoo',   slot:'tattoo',  rarity:'epic',      fx:{kind:'skull'}},
-  {id:'tat_rose',       name:'Rosen-Tattoo',       slot:'tattoo',  rarity:'epic',      fx:{kind:'rose'}},
-  {id:'tat_rune',       name:'Leuchtende Rune',    slot:'tattoo',  rarity:'legendary', fx:{kind:'rune'}},
+  // ---- Tattoos: Tribal-Muster über die ganze Figur (Augen/Mund bleiben frei), rollen mit ----
+  // (ids von früher behalten, damit schon gesammelte Tattoos erhalten bleiben)
+  {id:'tat_heart',      name:'Tribal-Streifen',    slot:'tattoo',  rarity:'common',    fx:{kind:'stripes'}},
+  {id:'tat_star',       name:'Punkte-Tribal',      slot:'tattoo',  rarity:'common',    fx:{kind:'dots'}},
+  {id:'tat_anchor',     name:'Wellen-Tribal',      slot:'tattoo',  rarity:'uncommon',  fx:{kind:'waves'}},
+  {id:'tat_lightning',  name:'Zacken-Tribal',      slot:'tattoo',  rarity:'uncommon',  fx:{kind:'zigzag'}},
+  {id:'tat_flame',      name:'Flammen-Tribal',     slot:'tattoo',  rarity:'rare',      fx:{kind:'flames'}},
+  {id:'tat_tribal',     name:'Maori-Spiralen',     slot:'tattoo',  rarity:'rare',      fx:{kind:'spirals'}},
+  {id:'tat_skull',      name:'Drachen-Tribal',     slot:'tattoo',  rarity:'epic',      fx:{kind:'dragon'}},
+  {id:'tat_rose',       name:'Dornenranke',        slot:'tattoo',  rarity:'epic',      fx:{kind:'thorns'}},
+  {id:'tat_rune',       name:'Glühende Runen',     slot:'tattoo',  rarity:'legendary', fx:{kind:'rune'}},
 ];
 const COSMETIC = Object.fromEntries(COSMETICS.map(c => [c.id, c]));
 
