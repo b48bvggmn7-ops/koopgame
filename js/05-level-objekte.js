@@ -122,25 +122,7 @@ function updatePlates(players){
   }
   for(const link in want){ if(!!linkOn[link] !== want[link]) setLink(Number(link), want[link]); }
 }
-// Aufwind: Rechteck-Bereiche, die das Schweinchen mit offenem Schirm nach oben tragen
-const WIND_LIFT = 1.15, WIND_MAX_UP = 6.5;
-function inWind(player){
-  const box = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
-  return winds.some(w => rectsOverlap(box, w));
-}
-// Sprungpilz: nur wer von oben darauf springt/fällt, wird hochgeschleudert (ca. 6 Kästchen hoch);
-// einfach drüberlaufen tut nichts (Nutzerwunsch)
-const BOUNCE_V = -17.2;
-function checkBounce(player, wasGrounded, fallVy){
-  if(player.hookAttached || player.vy < 0 || wasGrounded || !(fallVy > 0)) return;
-  for(const b of bouncers){
-    if(Math.abs(player.x - b.x) < 14 + player.w/2 && player.y > b.y - 14 && player.y <= b.y + 1){
-      player.vy = BOUNCE_V; player.grounded = false; player.glideTimer = 0; player.lastWallJumpSide = 0;
-      b.squish = 1; SFX.mushroom(b.x);
-      return;
-    }
-  }
-}
+// Aufwind (inWind, WIND_LIFT) und Sprungpilz (checkBounce, BOUNCE_V): jetzt in elemente/aufwind.js bzw. elemente/sprungpilz.js
 function updateDoorsAndSwitches(dt, players){
   updatePlates(players);
   for(const player of players){

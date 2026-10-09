@@ -15,8 +15,10 @@ const wrap = document.getElementById('canvasWrap');
 
 const COLORS = {
   ground:'#8a6a3a', wall:'#7a8890', platform:'#8ea86a', crumble:'#c77b3f',
-  fake:'#7a8890', wind:'rgba(160,220,255,0.28)',   // Scheinwand (wie Wand, gestrichelt), Aufwind (durchsichtig)
+  fake:'#7a8890',   // Scheinwand (wie Wand, gestrichelt)
 };
+// Kachel-Elemente aus dem Register (elemente/, z. B. Aufwind): Farbe im Raster
+for(const E of ELEMENTE) if(E.editor && E.editor.art === 'kachel') COLORS[E.editor.werkzeug] = E.editor.kachelFarbe || E.editor.farbe;
 const SOLID_TILES = ['ground','wall','platform','crumble'];   // nur diese können sich bewegen
 const MAX_LINK = 60;          // höchste Verknüpfungs-Nummer (Ausbau 2: früher 20)
 
@@ -32,7 +34,10 @@ let clickNotDrag = false;
 let coins = [];              // [{c,r,color}]  color: 'blue' (Affe) | 'pink' (Schweinchen) | 'gold' (beide)
 let checkpoints = [];        // [{c,r}]
 let plates = [];             // [{c,r,link}] Druckplatte: Verknüpfung AN, solange jemand draufsteht
-let bouncers = [];           // [{c,r}] Sprungpilz
+// Punkt-Elemente aus dem Register (elemente/, z. B. Sprungpilz): je Element eine Liste [{c,r}] unter seinem Spiel-Feld
+const elementPunkte = {};
+const punktElemente = () => ELEMENTE.filter(E => E.editor && E.editor.art === 'punkt');
+for(const E of punktElemente()) elementPunkte[E.feld] = [];
 const radiusInput = document.getElementById('radiusInput');
 function curRadius(){ const v=Number(radiusInput.value); return v>0 ? v : 6.5; }
 let movers = [];             // [{c,r,dc,dr,speed}] Anker-Kästchen + Verschiebung
@@ -69,7 +74,7 @@ function editorBgKey(){ return meta.look || (meta.tageszeit==='nacht' ? 'nacht' 
 function maxUsedCol(){
   let m = -1;
   for(const k in tiles){ const c = +k.split(',')[0]; if(c>m) m=c; }
-  for(const p of [...hooks, ...switches, ...doors, ...spikes, ...coins, ...checkpoints, ...plates, ...bouncers, startM, startF, goal]) if(p && p.c>m) m=p.c;
+  for(const p of [...hooks, ...switches, ...doors, ...spikes, ...coins, ...checkpoints, ...plates, ...Object.values(elementPunkte).flat(), startM, startF, goal]) if(p && p.c>m) m=p.c;
   for(const mv of movers) if(mv.c+mv.dc>m) m=mv.c+mv.dc;
   for(const h of hooks) if(h.move && h.c+h.move.dc>m) m=h.c+h.move.dc;
   return m;
@@ -98,7 +103,7 @@ function snapshot(){
   return {
     cols: COLS,
     tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }),
-    hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, plates, bouncers,
+    hooks, switches, doors, spikes, coins, checkpoints, startM, startF, goal, movers, plates, ...elementPunkte,
     theme: meta.look || undefined, welt: meta.welt, tageszeit: meta.tageszeit || undefined, wetter: meta.wetter,
     titel: meta.titel || undefined, position: meta.position || undefined,
     linkNames: Object.keys(linkNames).length ? {...linkNames} : undefined
@@ -117,7 +122,7 @@ function applySnapshot(d){
   coins = (d.coins||[]).map(x=>({...x}));
   checkpoints = (d.checkpoints||[]).map(x=>({...x}));
   plates = (d.plates||[]).map(x=>({...x}));
-  bouncers = (d.bouncers||[]).map(x=>({...x}));
+  for(const E of punktElemente()) elementPunkte[E.feld] = (d[E.feld]||[]).map(x=>({...x}));
   const lk = d.look || d.theme;
   meta = {welt: d.welt || THEME_WELT[d.theme] || 'dschungel', position: Number(d.position) || 0, titel: d.titel || '',
           tageszeit: d.tageszeit || '', wetter: d.wetter || 'wechselnd', look: THEME_BG[lk] ? lk : ''};

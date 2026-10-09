@@ -3,6 +3,14 @@
 // und werden in editor/index.html in fester Reihenfolge geladen.
 // Werkzeuge: Klicks/Ziehen aufs Raster, Radieren, Bewegungen setzen und nachbearbeiten, Bestätigen am Knopf.
 
+// Werkzeug-Knöpfe der Elemente aus dem Register (elemente/) in ihre Gruppe einsortieren
+for(const E of ELEMENTE){
+  const ed = E.editor; if(!ed) continue;
+  const box = document.querySelector(`.tgroup[data-group="${ed.gruppe}"] .tgb`) || document.getElementById('toolGroups');
+  const b = document.createElement('div'); b.className = 'tool'; b.dataset.tool = ed.werkzeug; b.title = ed.titel || E.name;
+  const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = ed.farbe; b.append(sw, E.name);
+  box.insertBefore(b, ed.vor ? box.querySelector(`.tool[data-tool="${ed.vor}"]`) : null);
+}
 document.querySelectorAll('.tool').forEach(el=>{
   el.addEventListener('click', ()=>{
     document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));
@@ -80,7 +88,7 @@ function eraseAt(c,r){
   coins = coins.filter(h=>!(h.c===c&&h.r===r));
   checkpoints = checkpoints.filter(h=>!(h.c===c&&h.r===r));
   plates = plates.filter(h=>!(h.c===c&&h.r===r));
-  bouncers = bouncers.filter(h=>!(h.c===c&&h.r===r));
+  for(const k in elementPunkte) elementPunkte[k] = elementPunkte[k].filter(h=>!(h.c===c&&h.r===r));
   switches = switches.filter(s=>!(s.c===c&&s.r===r));
   doors = doors.filter(d=>!(d.c===c&&d.r===r));
   if(startM && startM.c===c && startM.r===r) startM=null;
@@ -118,8 +126,9 @@ function applyTool(c,r,forceErase){
   } else if(tool==='plate'){
     const link = Number(linkSelect.value);
     if(!plates.some(d=>d.c===c&&d.r===r)) plates.push({c,r,link});
-  } else if(tool==='bounce'){
-    if(!bouncers.some(d=>d.c===c&&d.r===r)) bouncers.push({c,r});
+  } else if(elementNachWerkzeug(tool) && elementNachWerkzeug(tool).editor.art === 'punkt'){   // z. B. Sprungpilz (elemente/)
+    const L = elementPunkte[elementNachWerkzeug(tool).feld];
+    if(!L.some(d=>d.c===c&&d.r===r)) L.push({c,r});
   }
   else if(tool==='startM'){ startM = {c,r}; }
   else if(tool==='startF'){ startF = {c,r}; }
@@ -128,7 +137,8 @@ function applyTool(c,r,forceErase){
   save();
 }
 
-const DRAG_TOOLS = ['ground','wall','platform','crumble','spike','coin','erase','fake','wind'];
+const DRAG_TOOLS = ['ground','wall','platform','crumble','spike','coin','erase','fake',
+  ...ELEMENTE.filter(E => E.editor && E.editor.ziehbar).map(E => E.editor.werkzeug)];   // + z. B. Aufwind
 cvs.addEventListener('contextmenu', e=> e.preventDefault());
 cvs.addEventListener('mousedown', e=>{
   if(e.button!==0 && e.button!==2) return;

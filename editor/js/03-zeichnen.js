@@ -25,10 +25,8 @@ function draw(){
       ctx.strokeRect(c*TILE+3, r*TILE+3, TILE-6, TILE-6); ctx.restore();
       ctx.fillStyle = 'rgba(255,224,102,.8)'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('?', c*TILE+TILE/2, r*TILE+TILE/2+1);
-    } else if(t === 'wind'){   // Aufwind: Pfeil nach oben
-      ctx.strokeStyle = 'rgba(200,240,255,.75)'; ctx.lineWidth = 2;
-      const X = c*TILE+TILE/2, Y = r*TILE;
-      ctx.beginPath(); ctx.moveTo(X, Y+TILE-8); ctx.lineTo(X, Y+8); ctx.moveTo(X-6, Y+14); ctx.lineTo(X, Y+8); ctx.lineTo(X+6, Y+14); ctx.stroke();
+    } else if(elementNachWerkzeug(t) && elementNachWerkzeug(t).editor.zeichnen){   // Kachel-Element (z. B. Aufwind)
+      elementNachWerkzeug(t).editor.zeichnen(ctx, c, r, TILE);
     }
   }
   for(const cp of checkpoints){
@@ -94,12 +92,8 @@ function draw(){
     ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(String(p.link), X+TILE/2, Y+TILE/2-6);
   }
-  for(const b of bouncers){   // Sprungpilz
-    const X = b.c*TILE+TILE/2, Y = b.r*TILE+TILE;
-    ctx.fillStyle = '#f3e7d3'; ctx.fillRect(X-4, Y-12, 8, 12);
-    ctx.fillStyle = '#4fbf5a'; ctx.beginPath(); ctx.ellipse(X, Y-12, 16, 11, 0, Math.PI, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#eaffd0'; ctx.beginPath(); ctx.arc(X-6, Y-16, 2.5, 0, Math.PI*2); ctx.arc(X+5, Y-18, 2, 0, Math.PI*2); ctx.fill();
-  }
+  for(const E of punktElemente()) for(const p of elementPunkte[E.feld]) E.editor.zeichnen(ctx, p.c, p.r, TILE);   // z. B. Sprungpilz
+
   if(startM) drawMarker(startM,'#3a7bd5','♂');
   if(startF) drawMarker(startF,'#e0669e','♀');
   if(goal) drawMarker(goal,'#5fc98f','⚑');

@@ -1025,6 +1025,8 @@ async def editor_testen_knopf(g):
         await p.wait_for_timeout(100)
         await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
         assert '/editor/' in p.url, f'Esc führt nicht zurück: {p.url}'
+        try: await p.wait_for_function("document.getElementById('canvasWrap') && document.getElementById('canvasWrap').scrollLeft > 0", timeout=8000)
+        except Exception: pass   # langsame Rechner: Editor erst fertig laden lassen
         back = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
         assert back[0] + 1 < 94 < back[1] - 1, f'Editor zeigt nicht die Figuren (Spalte 94): Ansicht {back}'
         # nochmal Enter -> Test startet wieder bei den Figuren
@@ -2291,6 +2293,39 @@ async def editor_verknuepfungen_60_mit_namen(g):
         assert await p.input_value('#linkName') == 'Tor zum Turm', 'Name nicht gemerkt'
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['switches'] == [{'x': 220, 'y': 420, 'link': 45}], out['switches']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def element_register(g):
+    """Ausbau 2: Element-Register (elemente/): Sprungpilz und Aufwind haben je EINEN Eintrag (Daten, Editor-Werkzeug,
+    Zeichnen, Spiel-Logik), den Spiel und Editor gemeinsam laden; jede Datei steht in beiden Lade-Listen (mit ?v=)."""
+    dateien = sorted(f.stem for f in (ROOT / 'elemente').glob('*.js'))
+    for html in (ROOT / 'index.html', ROOT / 'editor' / 'index.html'):
+        t = html.read_text(encoding='utf-8')
+        for d in dateien: assert f"'{d}'" in t, f'{d}.js fehlt in {html.name}'
+        assert "elemente/' + " in t and ".js?v=' + " in t, f'{html}: Element-Dateien ohne ?v='
+    k = await g.ev("ELEMENTE.map(E => [E.id, E.feld, !!E.editor, !!(E.spiel && E.spiel.laden && E.spiel.zeichnen)])")
+    assert k == [['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True]], k
+    # Spiel: Laden und Zeichnen laufen über das Register
+    await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
+    n = await g.ev("""(() => { let z = 0; const E = ELEMENTE.find(e => e.id === 'sprungpilz'), f = E.spiel.zeichnen;
+      E.spiel.zeichnen = () => { z++; f(); }; draw(); E.spiel.zeichnen = f; return [bouncers.length, winds.length, z]; })()""")
+    assert n == [1, 1, 1], n
+    # Editor: Knöpfe kommen aus dem Register (Gruppe Bewegung, alte Reihenfolge), Setzen + Export klappen
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['hook', 'wind', 'bounce', 'move'], reihe
+        await p.click('.tool[data-tool=bounce]'); x, y = await ed_zelle(p, 4, 16); await p.mouse.click(x, y)
+        await p.click('.tool[data-tool=wind]'); await ed_ziehen(p, (8, 14), (8, 16))
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['bouncers'] == [{'x': 180, 'y': 680}] and out['winds'] == [{'x': 320, 'y': 560, 'w': 40, 'h': 120}] or \
+               sorted(json.dumps(w) for w in out['winds']) == sorted(json.dumps({'x': 320, 'y': y0, 'w': 40, 'h': 40}) for y0 in (560, 600, 640)), out
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()

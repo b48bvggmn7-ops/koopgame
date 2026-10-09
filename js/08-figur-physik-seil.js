@@ -239,7 +239,7 @@ function updatePlayer(player, now){
   player.standingOn = null;
   player.x += player.vx; collideAxis(player,'x');
   player.y += player.vy; collideAxis(player,'y');
-  if(bouncers.length) checkBounce(player, wasGrounded, fallVy);   // Sprungpilz (05-level-objekte.js)
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.nachBewegung) E.spiel.nachBewegung(player, wasGrounded, fallVy);   // z. B. Sprungpilz (elemente/)
   if(player.male && player.hookAttached){
     // LANDET man am Seil auf etwas (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …) -> Seil lösen.
     // Vom Boden aus eingehakt bleibt es dran, damit man sich mit W / Hoch zum Haken hochziehen kann.

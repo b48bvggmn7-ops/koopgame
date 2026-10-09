@@ -434,6 +434,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         (einfach drüberlaufen tut nichts – Nutzerwunsch)
         (BOUNCE_V -17,2 ≈ 5,8 Kästchen; Wandsprung danach wieder möglich), Pilz staucht sich, Quietsch-Ton.
     Tests neue_elemente, editor_neue_werkzeuge.
+  - ELEMENT-REGISTER (Ausbau 2, elemente/): Sprungpilz (elemente/sprungpilz.js) und Aufwind (elemente/aufwind.js) stehen
+    je in EINER Datei mit Daten-Feld, Editor-Werkzeug (Knopf in der Gruppe Bewegung, Zeichnen, Export), Spiel-Laden,
+    Spiel-Zeichnen und Spiel-Logik (Sprungpilz nach dem Bewegen, Aufwind beim Segeln). Spiel und Editor laden dieselben
+    Dateien. Verhalten und Aussehen unverändert (Startbilder und Pilz-/Aufwind-Stellen der Levels per Screenshot
+    verglichen: identisch; Editor-Export aller Level Byte für Byte gleich). Test element_register; Checkliste
+    „Neues Element hinzufügen“ in CLAUDE.md.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).

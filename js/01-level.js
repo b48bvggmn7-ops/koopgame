@@ -82,8 +82,7 @@ function buildLevel(data){
   solids = (data.solids||[]).filter(s=>s.type!=='fake').map(s=>({...s}));
   fakeWalls = (data.solids||[]).filter(s=>s.type==='fake').map(s=>({...s}));
   plates = (data.plates||[]).map(p=>({x:p.x, y:p.y, link:p.link, down:false}));
-  winds = (data.winds||[]).map(w=>({...w}));
-  bouncers = (data.bouncers||[]).map(b=>({x:b.x, y:b.y, squish:0}));
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.laden) E.spiel.laden(data);   // Aufwind, Sprungpilz … (elemente/)
   switchDefs = (data.switches||[]).map(s=>({...s}));
   hooks = (data.hooks||[]).map(h=>{
     const o = {...h};

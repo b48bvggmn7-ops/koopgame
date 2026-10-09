@@ -24,7 +24,8 @@ function exportLevel(){
   const groups = moverGroups();
   const movingKeys = new Set();
   groups.forEach(x=>x.g.keys.forEach(k=>movingKeys.add(k)));
-  const byType = {ground:[], wall:[], platform:[], crumble:[], fake:[], wind:[]};
+  const byType = {ground:[], wall:[], platform:[], crumble:[], fake:[]};
+  for(const E of ELEMENTE) if(E.editor && E.editor.art === 'kachel') byType[E.editor.werkzeug] = [];   // z. B. Aufwind
   for(const key in tiles){
     if(movingKeys.has(key) || !byType[tiles[key]]) continue;
     const [c,r] = key.split(',').map(Number);
@@ -62,8 +63,8 @@ function exportLevel(){
     startF: startF ? {x:startF.c*TILE+TILE/2, y:startF.r*TILE+TILE} : null,
     goal: goal ? {x:goal.c*TILE+TILE/2, y:goal.r*TILE+TILE} : null,
     plates: plates.map(p=>({x:p.c*TILE+TILE/2, y:p.r*TILE+TILE/2, link:p.link})),
-    bouncers: bouncers.map(b=>({x:b.c*TILE+TILE/2, y:b.r*TILE+TILE})),
-    winds: mergeRects(byType.wind),
+    ...Object.fromEntries(ELEMENTE.filter(E => E.editor).map(E => [E.feld,   // Sprungpilz, Aufwind … (elemente/)
+      E.editor.exportieren(E.editor.art === 'kachel' ? byType[E.editor.werkzeug] : elementPunkte[E.feld], TILE, mergeRects)])),
     welt: meta.welt, ...(meta.tageszeit ? {tageszeit: meta.tageszeit} : {}), wetter: meta.wetter,
     ...(meta.look ? {look: meta.look, theme: meta.look} : {}),   // theme: für ältere Spielstände/Werkzeuge
   };

@@ -50,13 +50,14 @@ let clipboard = null;          // kopierter Inhalt, Koordinaten relativ zur link
 let hoverCell = null;          // Kästchen unter der Maus (Ziel für Strg+V)
 // alle Objekt-Listen, die Kästchen-Punkte {c, r, …} enthalten (Getter, weil eraseAt die Listen neu zuweist)
 const POINT_LISTS = {
-  hooks: ()=>hooks, switches: ()=>switches, doors: ()=>doors, plates: ()=>plates, bouncers: ()=>bouncers,
+  hooks: ()=>hooks, switches: ()=>switches, doors: ()=>doors, plates: ()=>plates,
   spikes: ()=>spikes, coins: ()=>coins, checkpoints: ()=>checkpoints,
 };
 const SET_LIST = {
-  hooks: v=>hooks=v, switches: v=>switches=v, doors: v=>doors=v, plates: v=>plates=v, bouncers: v=>bouncers=v,
+  hooks: v=>hooks=v, switches: v=>switches=v, doors: v=>doors=v, plates: v=>plates=v,
   spikes: v=>spikes=v, coins: v=>coins=v, checkpoints: v=>checkpoints=v,
 };
+for(const k in elementPunkte){ POINT_LISTS[k] = ()=>elementPunkte[k]; SET_LIST[k] = v=>elementPunkte[k]=v; }   // Register-Elemente
 const normRect = (c0, r0, c1, r1) => ({c0: Math.min(c0, c1), r0: Math.min(r0, r1), c1: Math.max(c0, c1), r1: Math.max(r0, r1)});
 const inRect = (R, c, r) => !!R && c >= R.c0 && c <= R.c1 && r >= R.r0 && r <= R.r1;
 const deep = o => JSON.parse(JSON.stringify(o));

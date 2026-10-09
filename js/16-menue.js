@@ -152,7 +152,8 @@ function convertEditorSnapshot(d){
     g.keys.forEach(k => used.add(k));
     groups.push({mv, g});
   }
-  const byType = {ground:[], wall:[], platform:[], crumble:[], fake:[], wind:[]};
+  const byType = {ground:[], wall:[], platform:[], crumble:[], fake:[]};
+  for(const E of ELEMENTE) if(E.editor && E.editor.art === 'kachel') byType[E.editor.werkzeug] = [];   // z. B. Aufwind
   for(const key in tiles){
     if(used.has(key) || !byType[tiles[key]]) continue;
     const [c, r] = key.split(',').map(Number);
@@ -161,7 +162,6 @@ function convertEditorSnapshot(d){
   const solids = [];
   for(const type of ['ground','wall','platform','crumble','fake'])
     for(const rect of mergeCellsToRects(byType[type])) solids.push({...rect, type});
-  const winds = mergeCellsToRects(byType.wind);
   const movingPlatforms = [];
   groups.forEach(({mv, g}, i)=>{
     for(const rect of mergeCellsToRects(g.cells.map(([c, r])=>({c, r})))){
@@ -187,8 +187,8 @@ function convertEditorSnapshot(d){
     doors: (d.doors||[]).map(dd=>({x:dd.c*T+T/2, y:dd.r*T+T/2, link:dd.link})),
     startM: foot(d.startM), startF: foot(d.startF), goal: foot(d.goal),
     plates: (d.plates||[]).map(p=>({x:p.c*T+T/2, y:p.r*T+T/2, link:p.link})),
-    bouncers: (d.bouncers||[]).map(foot),
-    winds,
+    ...Object.fromEntries(ELEMENTE.filter(E => E.editor).map(E => [E.feld,   // Sprungpilz, Aufwind … (elemente/)
+      E.editor.exportieren(E.editor.art === 'kachel' ? byType[E.editor.werkzeug] : (d[E.feld]||[]), T, mergeCellsToRects)])),
     theme: d.theme || undefined,
   };
 }
