@@ -216,6 +216,7 @@ function draw(){
     ctx.fillText(String(p.link), cx, cy+1);
   }
 
+  drawSelection();   // Rechteck-Auswahl (08-auswahl.js)
   ctx.restore();   // Verschiebung um die Himmel-Reihen
   requestAnimationFrame(draw);
 }

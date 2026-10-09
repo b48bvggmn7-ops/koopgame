@@ -32,7 +32,7 @@ function renderList(){
     const ld=document.createElement('button'); ld.className='mini'; ld.textContent='Laden';
     const doLoad = ()=>{
       applySnapshot(L.data||{}); currentLevelId=L.id; currentLevelName=L.name; currentProjectFile=null;
-      save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels();
+      save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels(); histReset();
     };
     ld.onclick=()=>{
       if(dirty && L.id!==currentLevelId) armConfirm(ld, 'Ungespeichertes geht verloren – laden?', doLoad);
@@ -116,7 +116,7 @@ async function refreshProjectList(){
         const d = await r.json();
         applySnapshot(d); currentLevelId=null; currentLevelName=P.name||d.name||null; currentProjectFile=P.datei;
         await applyProjectMeta(P.datei);   // Welt/Position aus worlds.json, Titel aus levels.json (07-level-info.js)
-        save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels();
+        save(); dirty=false; updateName(); wrap.scrollLeft=0; closeLevels(); histReset();
       }catch(e){ setStatus(`„${P.name||P.datei}“ konnte nicht geladen werden.`, true); }
     };
     ld.onclick=()=>{
@@ -151,7 +151,7 @@ document.getElementById('newLevelBtn').addEventListener('click', e=>{
   const doNew = ()=>{
     tiles={}; hooks=[]; switches=[]; doors=[]; startM=null; startF=null; goal=null; movers=[]; spikes=[]; coins=[]; checkpoints=[];
     meta = blankMeta(); updateMetaUI();
-    currentLevelId=null; currentLevelName=null; currentProjectFile=null; setCols(MIN_COLS); save(); dirty=false; updateName();
+    currentLevelId=null; currentLevelName=null; currentProjectFile=null; setCols(MIN_COLS); save(); dirty=false; updateName(); histReset();
     wrap.scrollLeft=0; closeLevels();
   };
   if(dirty) armConfirm(e.currentTarget, 'Ungespeichertes geht verloren – trotzdem?', doNew); else doNew();

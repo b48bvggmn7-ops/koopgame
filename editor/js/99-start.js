@@ -4,6 +4,7 @@
 // Start: gespeicherten Arbeitsstand laden, Tastenkürzel, Zeichnen starten.
 
 load();
+histReset();   // Rückgängig-Verlauf beginnt mit dem geladenen Stand (08-auswahl.js)
 updateName();
 updateLinkMarks();
 

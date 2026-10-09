@@ -136,6 +136,7 @@ cvs.addEventListener('mousedown', e=>{
   painting = true;
   eraseDrag = (e.button===2);
   const {c,r} = cellFromEvent(e);
+  if(!eraseDrag && currentTool==='select'){ painting=false; selMouseDown(c,r); return; }   // Rechteck-Auswahl (08-auswahl.js)
   if(!eraseDrag && currentTool==='move'){
     painting=false;
     const hk = hooks.find(h=>h.c===c&&h.r===r);
@@ -200,6 +201,7 @@ function flash(m){ flashMsg=m; flashT=performance.now(); document.getElementById
 cvs.addEventListener('mousemove', e=>{
   const {c,r} = cellFromEvent(e);
   if(moveDrag){ moveDrag.tc=Math.max(0,c); moveDrag.tr=Math.max(-SKY,Math.min(ROWS-1,r)); ensureRoom(moveDrag.tc); }
+  if(selDrag) selMouseMove(c,r);
   if(performance.now()-flashT > 2500)
     document.getElementById('coordLabel').textContent = moveDrag
       ? `Bewegung: ${moveDrag.tc-moveDrag.c} Kästchen seitlich, ${moveDrag.tr-moveDrag.r} Kästchen hoch/runter`

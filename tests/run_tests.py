@@ -2201,6 +2201,69 @@ async def editor_level_info(g):
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
+async def ed_zelle(p, c, r):
+    """Bildschirm-Punkt (Mitte) eines Editor-Kästchens (Spalte c, Reihe r)."""
+    return await p.evaluate(f"""(() => {{ const R = cvs.getBoundingClientRect(), k = R.width / cvs.width;
+      return [R.left + ({c}*TILE + TILE/2)*k, R.top + (({r} + SKY)*TILE + TILE/2)*k]; }})()""")
+
+async def ed_ziehen(p, a, b):
+    x0, y0 = await ed_zelle(p, *a); x1, y1 = await ed_zelle(p, *b)
+    await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x1, y1, steps=24); await p.mouse.up()
+
+@test
+async def editor_rueckgaengig_und_auswahl(g):
+    """Ausbau 2: Strg+Z/Strg+Y (ein Pinselstrich = ein Schritt) und Rechteck-Auswahl: kopieren/einfügen (Verknüpfungen
+    bei Konflikt neu nummeriert, Hebel/Tür/Haken-Bewegung/bewegtes Stück bleiben zusammen), ausschneiden, verschieben."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.click('.tool[data-tool=ground]')
+        await ed_ziehen(p, (2, 10), (8, 10)); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.keys(tiles).length") == 7
+        await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.keys(tiles).length") == 0, 'Pinselstrich nicht in einem Schritt rückgängig'
+        await p.keyboard.press('Control+y'); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.keys(tiles).length") == 7, 'Wiederholen geht nicht'
+        # kleine Szene: Boden, Hebel 1, Tür 1, Haken mit Bewegung (Schalter 1), bewegtes Bodenstück (Schalter 1)
+        await p.evaluate("""(() => { tiles['3,12'] = 'ground'; tiles['4,12'] = 'ground';
+          switches.push({c: 2, r: 9, link: 1}); doors.push({c: 6, r: 9, link: 1});
+          hooks.push({c: 5, r: 6, radius: 4, move: {dc: 3, dr: 0, speed: 3, link: 1}});
+          movers.push({c: 3, r: 12, dc: 0, dr: -2, speed: 2, link: 1}); save(); })()""")
+        n0 = await p.evaluate("undoStack.length")
+        await p.click('.tool[data-tool=select]')
+        await ed_ziehen(p, (2, 6), (8, 12)); await p.wait_for_timeout(100)
+        assert await p.evaluate("JSON.stringify(selRect)") == '{"c0":2,"r0":6,"c1":8,"r1":12}'
+        await p.keyboard.press('Control+c')
+        x, y = await ed_zelle(p, 20, 6); await p.mouse.move(x, y)
+        await p.keyboard.press('Control+v'); await p.wait_for_timeout(100)
+        k = await p.evaluate("""({sw: switches.map(s => [s.c, s.r, s.link]), dr: doors.map(d => [d.c, d.link]), hk: hooks.map(h => [h.c, h.r, h.move.link, h.move.dc]),
+                               mv: movers.map(m => [m.c, m.r, m.link, m.dr]), t: ['20,10', '26,10', '21,12', '22,12'].map(k => tiles[k] || null)})""")
+        assert k['sw'] == [[2, 9, 1], [20, 9, 2]] and k['dr'] == [[6, 1], [24, 2]], f'Hebel/Tür nicht neu nummeriert: {k}'
+        assert k['hk'] == [[5, 6, 1, 3], [23, 6, 2, 3]] and k['mv'] == [[3, 12, 1, -2], [21, 12, 2, -2]], f'Haken/Bewegung falsch: {k}'
+        assert k['t'] == ['ground', 'ground', 'ground', 'ground'], f'Kästchen nicht kopiert: {k}'
+        assert await p.evaluate("undoStack.length") == n0 + 1, 'Einfügen nicht als ein Schritt rückgängig machbar'
+        await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
+        assert await p.evaluate("switches.length") == 1, 'Einfügen nicht rückgängig'
+        # ausschneiden + einfügen: Nummer bleibt (kein Konflikt mehr)
+        await p.evaluate("selRect = {c0: 2, r0: 6, c1: 8, r1: 12}")
+        await p.keyboard.press('Control+x'); await p.wait_for_timeout(100)
+        assert await p.evaluate("switches.length + doors.length + hooks.length + movers.length") == 0, 'Ausschneiden lässt etwas stehen'
+        x, y = await ed_zelle(p, 30, 6); await p.mouse.move(x, y)
+        await p.keyboard.press('Control+v'); await p.wait_for_timeout(100)
+        assert await p.evaluate("[switches[0].c, switches[0].link, doors[0].link, hooks[0].move.link, movers[0].link]") == [30, 1, 1, 1, 1]
+        # verschieben: in die Auswahl klicken und ziehen (Start ♂ darin wandert mit)
+        await p.evaluate("startM = {c: 31, r: 11}; save()")
+        await ed_ziehen(p, (32, 8), (35, 7)); await p.wait_for_timeout(100)
+        assert await p.evaluate("[switches[0].c, switches[0].r, startM.c, startM.r, tiles['34,11'], tiles['31,12'] || null]") == [33, 8, 34, 10, 'ground', None], \
+            await p.evaluate("JSON.stringify({sw: switches, s: startM})")
+        # Entf löscht den Inhalt der Auswahl
+        await p.keyboard.press('Delete'); await p.wait_for_timeout(100)
+        assert await p.evaluate("switches.length + doors.length + hooks.length + movers.length") == 0
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

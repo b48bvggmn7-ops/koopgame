@@ -18,6 +18,7 @@ const COLORS = {
   fake:'#7a8890', wind:'rgba(160,220,255,0.28)',   // Scheinwand (wie Wand, gestrichelt), Aufwind (durchsichtig)
 };
 const SOLID_TILES = ['ground','wall','platform','crumble'];   // nur diese können sich bewegen
+const MAX_LINK = 60;          // höchste Verknüpfungs-Nummer (Ausbau 2: früher 20)
 
 let tiles = {}; // key "c,r" -> type
 let hooks = []; let switches = []; let doors = [];
@@ -140,6 +141,7 @@ function save(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify({...snapshot(), currentLevelId, currentLevelName, currentProjectFile}));
   }catch(e){}
   updateName();
+  if(typeof histNote === 'function') histNote();   // Rückgängig-Verlauf (08-auswahl.js)
 }
 function load(){
   try{

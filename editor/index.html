@@ -33,6 +33,7 @@
   .spacer{flex:1;}
   button.action{background:var(--accent2); color:#08331c; border:none; padding:7px 12px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer;}
   button.action.secondary{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+  button.action:disabled{opacity:.4; cursor:default;}
   #main{flex:1; display:flex; overflow:hidden;}
   #canvasWrap{flex:1; overflow:auto; position:relative; background:#16202b;}
   canvas{display:block; cursor:crosshair;}
@@ -88,6 +89,8 @@
       <div class="spacer"></div>
       <button class="action secondary" id="metaBtn" title="Level-Info: Welt, Position, Titel, Tageszeit, Wetter, Look">🗺 Dschungel</button>
       <span id="curName">Unbenanntes Level</span>
+      <button class="action secondary" id="undoBtn" title="Rückgängig (Strg+Z)" disabled>↶</button>
+      <button class="action secondary" id="redoBtn" title="Wiederholen (Strg+Y)" disabled>↷</button>
       <button class="action secondary" id="extendBtn" title="Level um 20 Spalten nach rechts verlängern">+20 Spalten ➜</button>
       <button class="action secondary" id="clearBtn">Alles löschen</button>
       <button class="action secondary" id="levelsBtn">📂 Levels</button>
@@ -181,6 +184,7 @@
       </div>
     </div>
     <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
+    <div class="tool" data-tool="select" title="Rechteck aufziehen · Strg+C kopieren · Strg+X ausschneiden · Strg+V an der Maus einfügen · darin ziehen = verschieben · Entf = löschen"><span class="swatch" style="background:transparent; outline:2px dashed #ffd23f; outline-offset:-2px"></span>Auswahl ⬚</div>
     </div>
   </header>
   <div id="main">
@@ -302,7 +306,7 @@
 <script>
 // Editor-Skripte in FESTER Reihenfolge (klassische Skripte ohne Build, gemeinsamer Gültigkeitsbereich).
 // ?v=<Zeit>: immer die neuesten Dateien laden (nie alte aus dem Zwischenspeicher)
-['01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '07-level-info', '99-start'].forEach(function(n){
+['01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '07-level-info', '08-auswahl', '99-start'].forEach(function(n){
   document.write('<script src="js/' + n + '.js?v=' + Date.now() + '"><\/script>');
 });
 </script>

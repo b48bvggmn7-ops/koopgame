@@ -39,6 +39,7 @@
 - `editor/` – Level-Editor: `editor/index.html` lädt `editor/js/*.js` in fester Reihenfolge (klassische Skripte,
   gemeinsamer Gültigkeitsbereich wie im Spiel): 01 Zustand/Autosave · 02 Werkzeuge (Maus, Radieren, Bewegungen) ·
   03 Zeichnen · 04 Export/Testen/Herunterladen · 05 Fenster „Levels“ (+ Projekt-Levels) · 06 „☁ Auf GitHub speichern“ ·
+  07 Fenster „Level-Info“ (Welt, Position, Titel, Tageszeit, Wetter, Look) · 08 Rückgängig/Wiederholen + Rechteck-Auswahl ·
   99 Start (früher alles in einer `editor.js`).
 - `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), `levels/levels.json` = Liste der Levels (Namen; Rückfall),
   `levels/worlds.json` = Welten mit ihren Leveln (Reihenfolge der Levelauswahl), `levels/test/` = Mini-Testlevel

@@ -523,6 +523,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Schalter, Tür, Bewegung, Haken) – trotzdem weiter wählbar.
     Start ♂, Start ♀, Ziel, Radieren
   - Rechtsklick (auch ziehen) = Radierer, unabhängig vom Werkzeug
+  - Rückgängig / Wiederholen (Ausbau 2, editor/js/08-auswahl.js): Strg+Z / Strg+Y (auch Strg+Umschalt+Z) und Knöpfe
+    ↶ ↷ oben; jede Änderung ist ein Schritt, ein gezogener Pinselstrich zählt als EIN Schritt; bis 200 Schritte.
+    Laden eines Levels / Neues Level beginnt einen frischen Verlauf. Auch Level-Info-Änderungen sind rückgängig machbar.
+  - Rechteck-Auswahl (Werkzeug „Auswahl ⬚“ neben Radieren): Rechteck aufziehen (gelb gestrichelt); Strg+C kopieren,
+    Strg+X ausschneiden, Strg+V fügt an der Maus ein (Mauskästchen = linke obere Ecke), darin ziehen = Inhalt
+    verschieben, Entf = Inhalt löschen, Esc = Auswahl aufheben. Mit allen Objekten: Kästchen (auch Scheinwand/Aufwind),
+    Haken (mit Bewegung), Hebel, Türen, Druckplatten, Pilze, Stacheln, Münzen, Checkpoints, bewegte Stücke (wenn ihr
+    Anker-Kästchen in der Auswahl liegt). Start ♂/♀ und Ziel gibt es nur einmal: beim Kopieren nicht dabei, beim
+    Verschieben wandern sie mit. Einfügen einer Kopie: Verknüpfungs-Nummern, die es im Level schon gibt, werden neu
+    vergeben (nächste freie Nummer); alle Teile mit derselben Nummer bekommen dieselbe neue (Hebel, Tür, Bewegung und
+    Haken bleiben zusammen). Ausschneiden + Einfügen und Verschieben behalten die Nummern. Test editor_rueckgaengig_und_auswahl.
   - Werkzeug-Gruppen (Ausbau 2): oben eine Zeile mit Thema/Name/Knöpfen, darunter die Werkzeuge in einklappbaren
     Gruppen – Gelände (Boden, Wand, Bröckelboden, Scheinwand) · Gefahren (Stacheln + Spitzen) · Schalter & Logik
     (Schalter, Tür, Druckplatte + Verknüpfung) · Bewegung (Haken + Radius, Aufwind, Sprungpilz, Bewegung ➜ + Tempo/per
