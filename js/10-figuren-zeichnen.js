@@ -170,9 +170,11 @@ function drawCharacter(player, camX){
   const [fx, fy] = HEAD_CENTER[player.male ? 'monkey' : 'pig'];
   const hx = -size/2 + fx*size, hy = size/2 - hgt + fy*hgt;
   ctx.translate(hx, hy); ctx.rotate(rollA);
-  if(skin) drawSkinBall(ctx, 21, skin, img, size, hgt, (0.5 - fy)*hgt);   // Kugel-Skin, Gesicht klein darauf
+  const wear = typeof cosItemsOf === 'function' ? cosItemsOf(player.male ? 'm' : 'f') : null;   // Sonnenbrille/Tattoo (27)
+  if(skin){ drawSkinBall(ctx, 21, skin, img, size, hgt, (0.5 - fy)*hgt); drawFaceWear(ctx, cosFaceRect, player.male ? 'monkey' : 'pig', wear); }   // Kugel-Skin, Gesicht klein darauf
   else if(img && img.complete && img.naturalWidth){
     ctx.drawImage(img, -fx*size, -fy*hgt, size, hgt);
+    if(wear) drawFaceWear(ctx, {x: -fx*size, y: -fy*hgt, w: size, h: hgt}, player.male ? 'monkey' : 'pig', wear);
   } else {
     ctx.fillStyle = player.male ? colorOf('--p1-accent') : colorOf('--p2-accent');
     ctx.beginPath(); ctx.arc(0,0,size*0.4,0,Math.PI*2); ctx.fill();

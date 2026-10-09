@@ -24,6 +24,8 @@ const SLOTS = [
   {id:'pet',    name:'Begleiter'},
   {id:'orbit',  name:'Kreisende Objekte'},
   {id:'skin',   name:'Kugel-Skin'},
+  {id:'glasses',name:'Sonnenbrille'},
+  {id:'tattoo', name:'Tattoo'},
 ];
 // Katalog: id, Name, Slot, Seltenheit, Darstellung (fx) – die Darstellung steckt in 27-kosmetik-zeichnen.js
 const COSMETICS = [
@@ -88,6 +90,26 @@ const COSMETICS = [
   {id:'pres_inferno',   name:'Inferno',          slot:'aura',   rarity:'prestige', fx:{kind:'inferno'}},
   {id:'pres_lightning', name:'Blitzkugel',       slot:'skin',   rarity:'prestige', fx:{kind:'lightorb'}},
   {id:'pres_rainbow',   name:'Regenbogen',       slot:'trail',  rarity:'prestige', fx:{kind:'rainbow'}},
+  // ---- Sonnenbrillen (auf den Augen, rollen mit dem Gesicht) ----
+  {id:'gl_classic',     name:'Coole Sonnenbrille', slot:'glasses', rarity:'common',    fx:{kind:'classic'}},
+  {id:'gl_round',       name:'Retro-Brille',       slot:'glasses', rarity:'common',    fx:{kind:'round'}},
+  {id:'gl_aviator',     name:'Pilotenbrille',      slot:'glasses', rarity:'uncommon',  fx:{kind:'aviator'}},
+  {id:'gl_shutter',     name:'Gitterbrille',       slot:'glasses', rarity:'uncommon',  fx:{kind:'shutter'}},
+  {id:'gl_heart',       name:'Herzbrille',         slot:'glasses', rarity:'rare',      fx:{kind:'heart'}},
+  {id:'gl_3d',          name:'3D-Brille',          slot:'glasses', rarity:'rare',      fx:{kind:'3d'}},
+  {id:'gl_star',        name:'Sternbrille',        slot:'glasses', rarity:'epic',      fx:{kind:'star'}},
+  {id:'gl_cyber',       name:'Cyber-Visier',       slot:'glasses', rarity:'epic',      fx:{kind:'cyber'}},
+  {id:'gl_bling',       name:'Gold-Bling-Brille',  slot:'glasses', rarity:'legendary', fx:{kind:'bling'}},
+  // ---- Tattoos (auf der Wange, rollen mit dem Gesicht) ----
+  {id:'tat_heart',      name:'Herz-Tattoo',        slot:'tattoo',  rarity:'common',    fx:{kind:'heart'}},
+  {id:'tat_star',       name:'Stern-Tattoo',       slot:'tattoo',  rarity:'common',    fx:{kind:'star'}},
+  {id:'tat_anchor',     name:'Anker-Tattoo',       slot:'tattoo',  rarity:'uncommon',  fx:{kind:'anchor'}},
+  {id:'tat_lightning',  name:'Blitz-Tattoo',       slot:'tattoo',  rarity:'uncommon',  fx:{kind:'lightning'}},
+  {id:'tat_flame',      name:'Flammen-Tattoo',     slot:'tattoo',  rarity:'rare',      fx:{kind:'flame'}},
+  {id:'tat_tribal',     name:'Tribal-Tattoo',      slot:'tattoo',  rarity:'rare',      fx:{kind:'tribal'}},
+  {id:'tat_skull',      name:'Totenkopf-Tattoo',   slot:'tattoo',  rarity:'epic',      fx:{kind:'skull'}},
+  {id:'tat_rose',       name:'Rosen-Tattoo',       slot:'tattoo',  rarity:'epic',      fx:{kind:'rose'}},
+  {id:'tat_rune',       name:'Leuchtende Rune',    slot:'tattoo',  rarity:'legendary', fx:{kind:'rune'}},
 ];
 const COSMETIC = Object.fromEntries(COSMETICS.map(c => [c.id, c]));
 

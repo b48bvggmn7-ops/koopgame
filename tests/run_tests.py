@@ -1149,7 +1149,8 @@ async def geraeusche(g):
     await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(150)
     assert 'hook' in await g.ev("SFX_LOG.slice()"), 'Haken ohne Ton'
     await g.ev("solids.find(s=>s.type==='crumble').triggered = true")
-    await g.p.wait_for_timeout(900)
+    try: await g.p.wait_for_function("SFX_LOG.includes('crumblewarn') && SFX_LOG.includes('crumble')", timeout=3000)
+    except Exception: pass
     log = await g.ev("SFX_LOG.slice()")
     assert 'crumblewarn' in log and 'crumble' in log, f'Bröckelboden ohne Ton: {log}'
     await g.p.keyboard.press('KeyM'); await g.p.wait_for_timeout(50)
@@ -1673,7 +1674,7 @@ async def sammlung_ausruesten(g):
 @test
 async def cosmetics_zeichnen_rollfest(g):
     """Jedes Cosmetic wird an beiden Figuren in vielen Drehwinkeln (volle 360°), beim Laufen, Springen und Stehen
-    ohne Fehler gezeichnet; der Kugel-Skin dreht mit, Anhängsel bleiben oben."""
+    ohne Fehler gezeichnet; der Kugel-Skin dreht mit; Sonnenbrillen und Tattoos sitzen auf dem Gesicht."""
     lvl = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
     await g.load(lvl)
     n = await g.ev("""(() => { let n = 0; for (const it of COSMETICS) { cosmeticsReset(); cosResetState();
@@ -1682,6 +1683,15 @@ async def cosmetics_zeichnen_rollfest(g):
           cosmeticsStep(); draw(); n++; } }
       cosmeticsReset(); return n; })()""")
     assert n == 40 * await g.ev('COSMETICS.length')
+    # Sonnenbrillen + Tattoos: eigene Kategorien, sitzen auf dem Gesicht (werden im gedrehten Gesicht gezeichnet)
+    k = await g.ev("""(() => { const n = sl => COSMETICS.filter(c => c.slot === sl).length; cosmeticsReset();
+      for (const id of ['gl_aviator', 'tat_flame']) { cosmeticsSave.owned.m[id] = 1; equipItem('m', id); }
+      let gl = 0, ta = 0; const og = drawGlasses, ot = drawTattoo;
+      drawGlasses = (...a) => { gl++; return og(...a); }; drawTattoo = (...a) => { ta++; return ot(...a); };
+      p1.rollAngle = 1.3; draw(); drawGlasses = og; drawTattoo = ot; cosmeticsReset();
+      return {slots: SLOTS.map(s => s.id), gl: n('glasses'), ta: n('tattoo'), drawnGl: gl, drawnTa: ta}; })()""")
+    assert 'glasses' in k['slots'] and 'tattoo' in k['slots'] and k['gl'] >= 8 and k['ta'] >= 8, f'Brillen/Tattoos fehlen: {k}'
+    assert k['drawnGl'] >= 1 and k['drawnTa'] >= 1, f'Brille/Tattoo wird im Spiel nicht gezeichnet: {k}'
 
 @test
 async def cosmetics_kein_vorteil(g):

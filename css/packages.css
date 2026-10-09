@@ -104,8 +104,8 @@
 #sm .co-bars .rr.full .nm{color:var(--text)}
 #sm .co-open{font-size:1.5cqw;padding:.9cqh 1.6cqw;margin-top:auto}
 #sm .co-slots{position:absolute;left:38cqw;right:4cqw;top:19cqh;display:flex;gap:.4cqw;flex-wrap:nowrap}
-#sm .co-slots .btn{font-size:1.12cqw;padding:.7cqh .8cqw;color:var(--mute);white-space:nowrap}
-#sm .co-slots .btn small{margin-left:.5cqw;font-size:1cqw;opacity:.8}
+#sm .co-slots .btn{font-size:.98cqw;padding:.7cqh .6cqw;color:var(--mute);white-space:nowrap}
+#sm .co-slots .btn small{margin-left:.35cqw;font-size:.85cqw;opacity:.8}
 #sm .co-slots .btn.on{color:var(--text);border-color:var(--lime);background:rgba(198,255,61,.16)}
 #sm .co-slots .btn.sel{background:var(--lime);color:#06210f}
 #sm .co-grid{position:absolute;left:38cqw;right:4cqw;top:27cqh;display:grid;grid-template-columns:repeat(6,1fr);gap:.7cqw}

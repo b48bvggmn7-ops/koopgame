@@ -302,7 +302,8 @@ function drawSaturn(c, x, y, r, layer, t){
 // wird INNERHALB der gedrehten Kugel aufgerufen (Ursprung = Kugelmitte, Drehung = Rollwinkel)
 function drawSkinBall(c, r, item, faceImg, faceW, faceH, faceY){
   const k = item.fx.kind, t = performance.now();
-  const face = (scale) => { if(faceImg && faceImg.complete && faceImg.naturalWidth){ c.drawImage(faceImg, -faceW*scale/2, faceY*scale - faceH*scale/2, faceW*scale, faceH*scale); } };
+  const face = (scale) => { cosFaceRect = {x: -faceW*scale/2, y: faceY*scale - faceH*scale/2, w: faceW*scale, h: faceH*scale};
+    if(faceImg && faceImg.complete && faceImg.naturalWidth){ c.drawImage(faceImg, cosFaceRect.x, cosFaceRect.y, cosFaceRect.w, cosFaceRect.h); } };
   c.save();
   const circle = (rr) => { c.beginPath(); c.arc(0, 0, rr || r, 0, Math.PI*2); };
   const shade = () => { const g = c.createRadialGradient(-r*0.35, -r*0.4, r*0.1, 0, 0, r); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(0.6, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.28)'); c.fillStyle = g; circle(); c.fill(); };
@@ -456,9 +457,131 @@ function drawPrestigeSparkle(c, x, y, st){
   c.restore();
 }
 
+// ===== Sonnenbrillen + Tattoos (sitzen auf dem Gesicht und rollen mit ihm) =====
+// Gemessen an assets/monkey.png / pig.png (308 × 257): Augenmitten, halbe Augengröße, Tattoo-Stelle (rechte Wange)
+const FACE_SPOTS = {
+  monkey: { eyes: [[119, 123], [187, 123]], ew: 17, eh: 21, tat: [222, 150] },
+  pig:    { eyes: [[107, 120], [199, 120]], ew: 16, eh: 18, tat: [232, 145] },
+};
+let cosFaceRect = null;   // wo das Gesicht zuletzt gezeichnet wurde (für Kugel-Skins, dort ist es kleiner)
+// rect = {x, y, w, h}: Lage des Gesichtsbilds in den aktuellen (gedrehten) Koordinaten
+function drawFaceWear(c, rect, face, items){
+  if(!rect || !items || (!items.glasses && !items.tattoo)) return;
+  const F = FACE_SPOTS[face], sx = rect.w/308, sy = rect.h/257, P = ([x, y]) => [rect.x + x*sx, rect.y + y*sy];
+  c.save();
+  if(items.tattoo) drawTattoo(c, items.tattoo.fx.kind, P(F.tat), 32*sx);
+  if(items.glasses) drawGlasses(c, items.glasses.fx.kind, P(F.eyes[0]), P(F.eyes[1]), F.ew*sx*1.25, F.eh*sy*1.15);
+  c.restore();
+}
+function lensGlare(c, x, y, w, h){
+  c.fillStyle = 'rgba(255,255,255,.55)';
+  c.beginPath(); c.ellipse(x - w*0.35, y - h*0.35, w*0.28, h*0.16, -0.5, 0, Math.PI*2); c.fill();
+}
+function drawGlasses(c, k, L, R, w, h){
+  const t = performance.now(), lw = Math.max(0.6, w*0.16);
+  const bridge = (col) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(L[0] + w*0.9, L[1] - h*0.25); c.quadraticCurveTo((L[0] + R[0])/2, L[1] - h*0.55, R[0] - w*0.9, R[1] - h*0.25); c.stroke(); };
+  const arms = (col) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(L[0] - w, L[1] - h*0.3); c.lineTo(L[0] - w*1.9, L[1] - h*0.5); c.moveTo(R[0] + w, R[1] - h*0.3); c.lineTo(R[0] + w*1.9, R[1] - h*0.5); c.stroke(); };
+  const rr = (x, y, ww, hh, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + ww, y, x + ww, y + hh, r); c.arcTo(x + ww, y + hh, x, y + hh, r); c.arcTo(x, y + hh, x, y, r); c.arcTo(x, y, x + ww, y, r); c.closePath(); };
+  switch(k){
+    case 'classic': {   // schwarze Wayfarer
+      arms('#111'); bridge('#111');
+      for(const [x, y] of [L, R]){ rr(x - w, y - h*0.8, w*2, h*1.55, w*0.35); c.fillStyle = '#14161a'; c.fill(); c.strokeStyle = '#000'; c.lineWidth = lw; c.stroke(); lensGlare(c, x, y, w, h); }
+      break; }
+    case 'round': {     // runde Retro-Brille, goldener Rahmen
+      arms('#c9a24a'); bridge('#c9a24a');
+      for(const [x, y] of [L, R]){ c.beginPath(); c.arc(x, y, w*1.02, 0, Math.PI*2); c.fillStyle = 'rgba(40,30,60,.85)'; c.fill(); c.strokeStyle = '#e0b85a'; c.lineWidth = lw; c.stroke(); lensGlare(c, x, y, w, h); }
+      break; }
+    case 'aviator': {   // Pilotenbrille: Tropfenform, Verlaufsglas
+      arms('#d8b660'); bridge('#d8b660');
+      for(const [x, y] of [L, R]){
+        const g = c.createLinearGradient(0, y - h, 0, y + h); g.addColorStop(0, '#3a2414'); g.addColorStop(1, '#d08a34');
+        c.beginPath(); c.moveTo(x - w*1.05, y - h*0.7); c.lineTo(x + w*1.05, y - h*0.7); c.quadraticCurveTo(x + w*1.1, y + h*1.1, x, y + h*1.0); c.quadraticCurveTo(x - w*1.2, y + h*0.9, x - w*1.05, y - h*0.7); c.closePath();
+        c.fillStyle = g; c.fill(); c.strokeStyle = '#f0d27a'; c.lineWidth = lw*0.8; c.stroke(); lensGlare(c, x, y, w, h);
+      }
+      break; }
+    case 'shutter': {   // Gitter-Brille
+      arms('#fff'); bridge('#fff');
+      for(const [x, y] of [L, R]){ rr(x - w, y - h*0.8, w*2, h*1.55, w*0.3); c.strokeStyle = '#ffffff'; c.lineWidth = lw; c.stroke();
+        c.lineWidth = lw*0.7; for(let i = 1; i < 5; i++){ const yy = y - h*0.8 + i*h*1.55/5; c.beginPath(); c.moveTo(x - w, yy); c.lineTo(x + w, yy); c.stroke(); } }
+      break; }
+    case 'heart': {     // Herzbrille
+      bridge('#d6336c'); arms('#d6336c');
+      for(const [x, y] of [L, R]){ cosHeart(c, x, y + h*0.15, w*2.2); c.fillStyle = 'rgba(255,90,150,.9)'; c.fill(); c.strokeStyle = '#a61e4d'; c.lineWidth = lw*0.8; c.stroke(); lensGlare(c, x, y, w, h); }
+      break; }
+    case '3d': {        // 3D-Kino-Brille
+      arms('#f3f3f3'); bridge('#f3f3f3');
+      [[L, 'rgba(230,40,50,.85)'], [R, 'rgba(40,140,240,.85)']].forEach(([[x, y], col]) => { rr(x - w, y - h*0.75, w*2, h*1.45, w*0.15); c.fillStyle = col; c.fill(); c.strokeStyle = '#f3f3f3'; c.lineWidth = lw*1.3; c.stroke(); });
+      break; }
+    case 'star': {      // Sternbrille
+      bridge('#f5b800'); arms('#f5b800');
+      for(const [x, y] of [L, R]){ cosStar(c, x, y, w*1.3, -Math.PI/2, 5); c.fillStyle = 'rgba(255,214,40,.92)'; c.fill(); c.strokeStyle = '#b07a00'; c.lineWidth = lw*0.8; c.stroke(); lensGlare(c, x, y, w*0.8, h*0.8); }
+      break; }
+    case 'cyber': {     // Cyber-Visier: durchgehendes Neon-Band mit Lauflicht
+      const x0 = L[0] - w*1.4, x1 = R[0] + w*1.4, y = (L[1] + R[1])/2;
+      rr(x0, y - h*0.65, x1 - x0, h*1.25, h*0.6);
+      const g = c.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, 'rgba(20,230,255,.85)'); g.addColorStop(1, 'rgba(160,80,255,.85)');
+      c.fillStyle = g; c.shadowColor = '#3cf'; c.shadowBlur = w*1.2; c.fill(); c.shadowBlur = 0;
+      const p = ((t*0.0012) % 1);
+      c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(x0 + (x1 - x0)*p, y - h*0.6, w*0.35, h*1.15);
+      c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = lw*0.5; for(let i = 0; i < 3; i++){ const yy = y - h*0.3 + i*h*0.3; c.beginPath(); c.moveTo(x0 + w*0.3, yy); c.lineTo(x1 - w*0.3, yy); c.stroke(); }
+      break; }
+    case 'bling': {     // Gold-Brille mit Diamanten (funkelt)
+      arms('#ffd23f'); bridge('#ffd23f');
+      for(const [x, y] of [L, R]){
+        rr(x - w*1.05, y - h*0.8, w*2.1, h*1.6, w*0.5); c.fillStyle = '#1a1206'; c.fill();
+        c.strokeStyle = '#ffd23f'; c.lineWidth = lw*1.4; c.shadowColor = '#ffcf3d'; c.shadowBlur = w*0.8; c.stroke(); c.shadowBlur = 0;
+        lensGlare(c, x, y, w, h);
+        for(let i = 0; i < 3; i++){ const a = t*0.003 + i*2.1, s = (Math.sin(a) + 1)/2; c.fillStyle = `rgba(255,255,255,${0.35 + s*0.65})`; cosStar(c, x - w + i*w, y - h*0.85, w*0.22*(0.6 + s), 0, 4); c.fill(); }
+      }
+      break; }
+  }
+}
+function drawTattoo(c, k, [x, y], s){
+  const t = performance.now();
+  c.save(); c.translate(x, y); c.globalAlpha = 0.9; c.lineJoin = 'round'; c.lineCap = 'round';
+  const ink = (col, lw) => { c.strokeStyle = col; c.lineWidth = Math.max(0.5, s*(lw || 0.12)); };
+  switch(k){
+    case 'heart': cosHeart(c, 0, 0, s*1.4); c.fillStyle = '#e03131'; c.fill(); ink('#7a0d0d', 0.08); c.stroke(); break;
+    case 'star': cosStar(c, 0, 0, s*0.7, -Math.PI/2, 5); c.fillStyle = '#1c7ed6'; c.fill(); ink('#0b3d70', 0.07); c.stroke(); break;
+    case 'anchor':
+      ink('#1d3557', 0.13);
+      c.beginPath(); c.moveTo(0, -s*0.55); c.lineTo(0, s*0.5); c.moveTo(-s*0.3, -s*0.3); c.lineTo(s*0.3, -s*0.3);
+      c.moveTo(-s*0.5, s*0.15); c.quadraticCurveTo(-s*0.4, s*0.6, 0, s*0.55); c.quadraticCurveTo(s*0.4, s*0.6, s*0.5, s*0.15); c.stroke();
+      c.beginPath(); c.arc(0, -s*0.65, s*0.12, 0, Math.PI*2); c.stroke(); break;
+    case 'lightning':
+      c.beginPath(); c.moveTo(s*0.15, -s*0.7); c.lineTo(-s*0.3, s*0.05); c.lineTo(0, s*0.05); c.lineTo(-s*0.15, s*0.7); c.lineTo(s*0.35, -s*0.1); c.lineTo(s*0.05, -s*0.1); c.closePath();
+      c.fillStyle = '#ffd43b'; c.fill(); ink('#1a1a1a', 0.08); c.stroke(); break;
+    case 'flame': {
+      const f = (sc, col) => { c.beginPath(); c.moveTo(0, s*0.6*sc); c.bezierCurveTo(-s*0.55*sc, s*0.3*sc, -s*0.3*sc, -s*0.2*sc, 0, -s*0.7*sc); c.bezierCurveTo(s*0.15*sc, -s*0.25*sc, s*0.55*sc, s*0.1*sc, 0, s*0.6*sc); c.fillStyle = col; c.fill(); };
+      f(1, '#e8590c'); f(0.6, '#ffd43b'); break; }
+    case 'tribal':
+      ink('#111', 0.14);
+      c.beginPath(); c.moveTo(-s*0.6, s*0.4); c.quadraticCurveTo(-s*0.1, s*0.2, -s*0.2, -s*0.2); c.quadraticCurveTo(-s*0.25, -s*0.6, s*0.2, -s*0.6);
+      c.moveTo(s*0.6, -s*0.4); c.quadraticCurveTo(s*0.1, -s*0.2, s*0.2, s*0.2); c.quadraticCurveTo(s*0.25, s*0.6, -s*0.2, s*0.6); c.stroke(); break;
+    case 'skull':
+      c.fillStyle = '#f1f3f5'; c.beginPath(); c.arc(0, -s*0.1, s*0.5, 0, Math.PI*2); c.fill(); c.fillRect(-s*0.28, s*0.2, s*0.56, s*0.35);
+      ink('#1a1a1a', 0.08); c.beginPath(); c.arc(0, -s*0.1, s*0.5, Math.PI*0.75, Math.PI*2.25); c.stroke();
+      c.fillStyle = '#1a1a1a'; c.beginPath(); c.arc(-s*0.2, -s*0.12, s*0.13, 0, Math.PI*2); c.arc(s*0.2, -s*0.12, s*0.13, 0, Math.PI*2); c.fill();
+      for(let i = -1; i <= 1; i++) c.fillRect(i*s*0.14 - s*0.02, s*0.25, s*0.04, s*0.25); break;
+    case 'rose':
+      c.strokeStyle = '#2b8a3e'; c.lineWidth = Math.max(0.5, s*0.08); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(s*0.1, s*0.4, -s*0.05, s*0.75); c.stroke();
+      c.fillStyle = '#2f9e44'; c.beginPath(); c.ellipse(s*0.18, s*0.4, s*0.16, s*0.08, -0.6, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#c92a2a'; c.beginPath(); c.arc(0, -s*0.1, s*0.32, 0, Math.PI*2); c.fill();
+      ink('#7a0d0d', 0.06); c.beginPath(); c.arc(0, -s*0.1, s*0.18, 0.3, 5.6); c.stroke(); break;
+    case 'rune': {   // leuchtende, pulsierende Rune
+      const p = (Math.sin(t*0.004) + 1)/2;
+      c.shadowColor = '#4dd4ff'; c.shadowBlur = s*(0.4 + p*0.8); ink(`rgba(120,230,255,${0.7 + p*0.3})`, 0.12);
+      c.beginPath(); c.moveTo(0, -s*0.7); c.lineTo(0, s*0.7); c.moveTo(0, -s*0.3); c.lineTo(s*0.45, -s*0.65); c.moveTo(0, -s*0.05); c.lineTo(-s*0.45, -s*0.4);
+      c.moveTo(0, s*0.25); c.lineTo(s*0.4, s*0.55); c.stroke();
+      c.beginPath(); c.arc(0, 0, s*0.85, 0, Math.PI*2); c.lineWidth = Math.max(0.4, s*0.05); c.stroke(); c.shadowBlur = 0; break; }
+  }
+  c.restore();
+}
+
 // ===== Einbindung ins Spiel =====
 const cosItemsOf = who => ({trail:equippedItem(who, 'trail'), aura:equippedItem(who, 'aura'), pet:equippedItem(who, 'pet'),
-                            orbit:equippedItem(who, 'orbit'), skin:equippedItem(who, 'skin')});
+                            orbit:equippedItem(who, 'orbit'), skin:equippedItem(who, 'skin'),
+                            glasses:equippedItem(who, 'glasses'), tattoo:equippedItem(who, 'tattoo')});
 // im festen Takt aus stepSim (14-spielschleife.js)
 function cosmeticsStep(){
   if(!p1 || !p2) return;
