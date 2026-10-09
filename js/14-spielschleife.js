@@ -11,7 +11,9 @@ const STEP = 1000/60;
 // Bröckelboden …). Sprunghöhen und -weiten bleiben gleich, die Levels bleiben also schaffbar. 1 = normal.
 const GAME_SPEED = 0.9;
 let simAcc = 0, lastFrameTs = 0, frameDt = STEP;
+let simSteps = 0;   // Zähler der Physik-Schritte (nur zum Messen, z. B. für die Tests – ändert nichts am Spiel)
 function stepSim(ts){
+  simSteps++;
   if(won && ++winSteps === WIN_DANCE_STEPS) winFinish();   // nach dem Tanz zurück ins Menü (21-figuren-leben.js)
   activateVisibleMovers();
   updatePlayer(p1, ts);

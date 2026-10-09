@@ -50,7 +50,10 @@
   `levels/worlds.json` = Welten mit ihren Leveln (Reihenfolge der Levelauswahl), `levels/test/` = Mini-Testlevel
   (öffnen mit `index.html?testlevel=<name>`),
   `levels/editor-format/` = dieselben Levels im Editor-Speicherformat (Kästchen-Raster).
-- `tests/run_tests.py` – automatische Tests (Playwright, Chromium).
+- `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
+  warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`
+  (zählt ebenfalls Schritte) oder `wait_for_function` auf das erwartete Ereignis – sonst sind Tests auf langsamen
+  Rechnern mal rot.
 
 ## Technische Eckdaten
 - Spielfeld 1280×720 (16:9), Kästchen = 40 px → 32×18 Kästchen sichtbar. Koordinaten in Pixeln, y wächst nach unten.

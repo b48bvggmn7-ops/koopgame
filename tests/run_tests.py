@@ -45,9 +45,19 @@ class Game:
         await self.p.wait_for_timeout(250)
         await self.p.keyboard.press('KeyR'); await self.p.wait_for_timeout(120)
     async def ev(self, js): return await self.p.evaluate(js)
+    async def steps(self, n, ms=None):
+        """Warten, bis das Spiel n Physik-Schritte gemacht hat (54 Schritte = 1 Sekunde bei voller Geschwindigkeit).
+        Auf langsamen Rechnern laufen weniger Schritte pro Sekunde – feste Millisekunden reichen dort nicht. Im Menü
+        (keine Schritte) wird einfach die entsprechende Zeit gewartet."""
+        start = await self.ev("typeof simSteps === 'number' && menuScreen === null && !deathState ? simSteps : -1")
+        if start < 0:
+            await self.p.wait_for_timeout(ms if ms is not None else int(n * 1000 / 54)); return
+        try: await self.p.wait_for_function(f"simSteps >= {start + n} || menuScreen !== null || !!deathState", timeout=max(4000, n * 90))
+        except Exception: pass
     async def hold(self, keys, ms):
+        # Taste so lange halten, wie ms im Spiel dauern (in Physik-Schritten gezählt, siehe steps)
         for k in keys: await self.p.keyboard.down(k)
-        await self.p.wait_for_timeout(ms)
+        await self.steps(max(1, round(ms * 0.054)), ms)
         for k in keys: await self.p.keyboard.up(k)
     async def start_trace(self):
         await self.ev("""window.__trace=[]; if(!window.__origStep){ window.__origStep=stepSim;
@@ -344,11 +354,11 @@ async def seil_runterlassen_bis_ring(g):
     await g.load(level([ground(0, 400, 260), ground(700, 680, 700)], {'x': 230, 'y': 400}, {'x': 100, 'y': 400},
                        hooks=[{'x': 330, 'y': 230, 'radius': 300}]))
     await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(100)
-    await g.hold(('KeyD',), 500); await g.p.wait_for_timeout(1200)
-    await g.hold(('KeyS',), 2500); await g.p.wait_for_timeout(800)
+    await g.hold(('KeyD',), 500); await g.steps(65)
+    await g.hold(('KeyS',), 2500); await g.steps(43)
     assert round(await g.ev('p1.ropeLen')) == 300, 'nicht bis zum Ring runtergelassen'
-    await g.hold(('KeyW',), 3000); await g.p.wait_for_timeout(300)
-    y1 = await g.ev('p1.y'); await g.p.wait_for_timeout(500); y2 = await g.ev('p1.y')
+    await g.hold(('KeyW',), 3000); await g.steps(16)
+    y1 = await g.ev('p1.y'); await g.steps(27); y2 = await g.ev('p1.y')
     assert abs(y2 - y1) < 3, f'hüpft oben ({y1} -> {y2})'
 
 @test
@@ -956,13 +966,14 @@ async def broeckelboden_animation(g):
                        {'x': 480, 'y': 600}, {'x': 60, 'y': 680}))
     await g.ev("solids.find(s=>s.type==='crumble').triggered=false")
     await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); s.triggered=true; s.timer=0; })()")
-    await g.p.wait_for_timeout(420)
+    await g.steps(23)   # ~0,42 s Spielzeit
     st = await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); return {gone:s.gone, t:s.timer}; })()")
     assert not st['gone'], f'bricht zu früh: {st}'
-    await g.p.wait_for_timeout(450)
+    await g.steps(24)   # weitere ~0,45 s
     st = await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); return {gone:s.gone, n:(s.fragments||[]).length, d:(s.dust||[]).length, poly:!!(s.fragments&&s.fragments[0].pts)}; })()")
     assert st['gone'] and st['n'] >= 12 and st['d'] > 0 and st['poly'], f'kein Zerspringen: {st}'
-    await g.p.wait_for_timeout(1000)
+    try: await g.p.wait_for_function("solids.find(s=>s.type==='crumble').fragments === null", timeout=6000)
+    except Exception: pass
     assert await g.ev("solids.find(s=>s.type==='crumble').fragments === null"), 'Brocken verschwinden nicht'
     # sieht anders aus als normaler Boden: eigene Zeichenfunktion mit Sandstein-Farben
     assert await g.ev("typeof drawCrumbleBlocks==='function' && CRUMBLE_PAL.light!==undefined"), 'kein eigenes Bröckelboden-Aussehen'
@@ -1259,6 +1270,8 @@ async def asmr_klangbibliothek(g):
     assert all(n in st['names'] for n in need) and not st['bad'] and st['steps'] >= 4 and st['ir'] and not st['vol'], f'Bibliothek: {st}'
     await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF'); await g.p.wait_for_timeout(1500)
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
+        try: await g.p.wait_for_function("!!sfxBank", timeout=10000)   # Klangbibliothek wird im Hintergrund gebaut
+        except Exception: pass
         assert await g.ev("!!sfxBank && sfxPlay('coin', {x: p1.x})"), 'Geräusch lässt sich nicht abspielen'
 
 @test
@@ -1321,10 +1334,12 @@ async def seil_abflug_mit_schwung(g):
     await g.ev("""(()=>{ const h=hooks[0]; p1.x=h.x-60; p1.y=h.y+170+p1.h*0.6; p1.vx=11; p1.vy=0; p1.grounded=false;
       p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; })()""")
     await g.p.wait_for_timeout(50)
-    await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(40)
+    await g.p.keyboard.press('Space')
+    try: await g.p.wait_for_function("!p1.hookAttached", timeout=3000)   # langsame Rechner: auf den nächsten Schritt warten
+    except Exception: pass
     st = await g.ev("({hook: p1.hookAttached, vx: p1.vx, x: p1.x})")
     assert not st['hook'], 'Springen löst das Seil nicht'
-    await g.p.wait_for_timeout(250)
+    await g.steps(14)   # ~0,25 s Spielzeit
     st2 = await g.ev("({vx: p1.vx, x: p1.x, g: p1.grounded})")
     assert st2['vx'] > 8 or st2['g'], f'Schwung nach dem Loslassen weg: {st} -> {st2}'
     assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
@@ -1413,7 +1428,11 @@ async def neue_elemente(g):
     await g.load(lv)
     tuer = "solids.filter(s=>s.type==='door').every(d=>d.gone)"
     assert not await g.ev(tuer), 'Tür ist am Anfang offen'
-    await g.hold(('KeyD',), 420); await g.p.wait_for_timeout(250)
+    # zur Platte laufen, bis der Affe dort ist (feste Zeiten passen nicht auf jeden Rechner)
+    await g.p.keyboard.down('KeyD')
+    try: await g.p.wait_for_function("p1.x >= 272", timeout=6000)
+    except Exception: pass
+    await g.p.keyboard.up('KeyD'); await g.steps(14)
     x = await g.ev('p1.x')
     assert abs(x - 300) < 40, f'Affe nicht auf der Platte: {x}'
     if abs(x - 300) >= 16: await g.ev('p1.x = 300; p1.vx = 0')
