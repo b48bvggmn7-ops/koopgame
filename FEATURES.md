@@ -504,6 +504,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE
+  - Aufbau (Ausbau 2): editor/index.html lädt editor/js/01-zustand, 02-werkzeuge, 03-zeichnen, 04-export,
+    05-levelliste, 06-github, 99-start (früher eine editor.js) – Verhalten unverändert: alle Projekt-Level laden und
+    wieder exportieren ergibt dieselben Level-Daten wie in levels/ (Test editor_rundreise_alle_level).
   - Werkzeuge: Boden, Wand, Bröckelboden, Stacheln, Haken (mit Radius in Kästchen),
     Checkpoint ⚐ (zählt, wenn beide vorbei sind; Export sortiert nach x, Fußpunkt wie Start),
     Stacheln in 4 Richtungen (Auswahl „Spitzen“ ▲▶▼◀; Klick auf vorhandene Stacheln dreht um 90°; Export dir 0-3),

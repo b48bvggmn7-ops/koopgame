@@ -1041,7 +1041,9 @@ async def dateien_immer_frisch(g):
     js = [x for x in srcs if '/js/' in x]
     assert len(js) >= 19 and all('?v=' in x for x in js), f'Skripte ohne ?v=: {[x for x in js if "?v=" not in x]}'
     html = (ROOT / 'editor' / 'index.html').read_text()
-    assert "editor.js?v=" in html, 'editor.js ohne ?v='
+    assert ".js?v=' + Date.now()" in html, 'Editor-Skripte ohne ?v='
+    for f in (ROOT / 'editor' / 'js').glob('*.js'):   # jede Editor-Datei steht in der Lade-Liste
+        assert f"'{f.stem}'" in html, f'editor/js/{f.name} wird nicht geladen'
 
 @test
 async def hebel_faehrt_mit_boden(g):
@@ -2048,6 +2050,44 @@ async def alte_levels_unveraendert(g):
             await p.keyboard.press('KeyZ'); await p.wait_for_timeout(120)
             modes.append(await g.ev("weatherMode"))
         assert modes == ['trocken', 'regen', 'wechselnd'], modes
+    finally:
+        srv.shutdown()
+
+def level_teil(k, v):
+    """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
+    zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""
+    if v in (None, []): return None
+    if k in ('solids', 'movingPlatforms', 'winds'):
+        out = set()
+        for o in v:
+            extra = json.dumps({kk: vv for kk, vv in o.items() if kk not in ('x', 'y', 'w', 'h', 'targetX', 'targetY', 'group')}, sort_keys=True)
+            dx, dy = o.get('targetX', o['x']) - o['x'], o.get('targetY', o['y']) - o['y']
+            for x in range(o['x'], o['x'] + o['w'], 40):
+                for y in range(o['y'], o['y'] + o['h'], 40): out.add((x, y, dx, dy, extra))
+        return out
+    if isinstance(v, list): return sorted(json.dumps(o, sort_keys=True) for o in v)
+    return v
+
+@test
+async def editor_rundreise_alle_level(g):
+    """Ausbau 2: Jedes Projekt-Level (1–6) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
+    die Spiel-Datei in levels/ (gleiche Daten) – Beweis, dass der Editor beim Umbau nichts verändert."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
+        assert len(liste) == 6, liste
+        for i, L in enumerate(liste):
+            await p.click('#levelsBtn'); await p.wait_for_timeout(250)
+            await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
+            rows = await p.eval_on_selector_all('#projectList .lvl .dt', 'els => els.map(e => e.textContent)')
+            await p.click(f'#projectList .lvl:nth-child({rows.index(L["datei"]) + 1}) button'); await p.wait_for_timeout(350)
+            await p.click('#exportBtn'); await p.wait_for_timeout(150)
+            out = json.loads(await p.input_value('#exportText'))
+            await p.click('#closeExport')
+            erwartet = json.loads((ROOT / 'levels' / L['datei']).read_text(encoding='utf-8'))
+            diff = [k for k in set(out) | set(erwartet) if not k.startswith('_') and level_teil(k, out.get(k)) != level_teil(k, erwartet.get(k))]
+            assert not diff, f"{L['datei']}: Export weicht ab bei {diff}"
     finally:
         srv.shutdown()
 

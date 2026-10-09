@@ -50,9 +50,9 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 ## Statusliste
 | Schritt | Inhalt | Status | Tag | Noch offen |
 |---|---|---|---|---|
-| 0 | Briefing und Regelwerk | fertig, wartet auf Test | ausbau-0-fertig | – |
-| 1 | Fundament (Welten-Datenmodell, Tageszeit/Wetter, Spielstand) | fertig, wartet auf Test | ausbau-1-fertig | Tag nur lokal, falls GitHub Tags weiter ablehnt (wie bei 0) |
-| 2 | Editor ausbauen | offen | – | – |
+| 0 | Briefing und Regelwerk | Go erhalten | ausbau-0-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
+| 1 | Fundament (Welten-Datenmodell, Tageszeit/Wetter, Spielstand) | Go erhalten | ausbau-1-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
+| 2 | Editor ausbauen | in Arbeit | – | – |
 | 3 | Weltkarte und Welt-Seite | offen | – | – |
 | 4 | Neue Mechaniken (Wechselboden, Teleporter, einseitige Plattformen) | offen | – | – |
 | 5 | Wasser und Schwimmen | offen | – | – |

@@ -244,8 +244,11 @@
 </div>
 
 <script>
-// ?v=<Zeit>: immer die neueste editor.js laden (nie eine alte aus dem Zwischenspeicher)
-document.write('<script src="editor.js?v=' + Date.now() + '"><\/script>');
+// Editor-Skripte in FESTER Reihenfolge (klassische Skripte ohne Build, gemeinsamer Gültigkeitsbereich).
+// ?v=<Zeit>: immer die neuesten Dateien laden (nie alte aus dem Zwischenspeicher)
+['01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '99-start'].forEach(function(n){
+  document.write('<script src="js/' + n + '.js?v=' + Date.now() + '"><\/script>');
+});
 </script>
 </body>
 
