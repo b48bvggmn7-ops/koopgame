@@ -8,6 +8,7 @@
 - **FEATURES.md** beschreibt alles, was Spiel und Editor können. Das ist die Wahrheit über das gewünschte Verhalten.
 
 ## Arbeitsregeln (wichtig!)
+0. **Ausbau-Schritte:** Vor jedem Ausbau-Schritt `AUSBAU-REGELWERK.md` und `AUSBAU-VISION.md` lesen und befolgen.
 1. **Vor und nach jeder Änderung die Tests laufen lassen:** `python tests/run_tests.py`
    (einmalig vorher: `pip install playwright && playwright install chromium`).
    Nur committen, wenn alle Tests grün sind. Für jede neue Funktion und jeden behobenen Fehler einen Test
