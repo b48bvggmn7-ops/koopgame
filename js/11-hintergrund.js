@@ -17,6 +17,7 @@ function bgCanvas(w, h){ const c = document.createElement('canvas'); c.width = w
 function makeLayer(par, draw, opt){
   const c = bgCanvas(BG_TW, H), g = c.getContext('2d');
   draw(g);
+  if(THEME.layerWash) bgHaze(g, THEME.layerWash.col, THEME.layerWash.a);   // Tageszeit-Schicht (10a-themen.js), nur neue Levels
   const L = {c, par, drift: (opt && opt.drift) || 0};
   BG_LAYERS.push(L);
   return L;

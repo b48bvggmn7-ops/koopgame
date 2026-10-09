@@ -20,10 +20,21 @@ function weatherForce(ph){
   if(ph === 'rain'){ weather.len = weatherRand(WEATHER_RAIN_S); weather.rain = 1; }
   else { weather.len = weatherRand(WEATHER_SUN_S); weather.rain = 0; }
 }
+// Wetter je Level (Ausbau 1, Feld "wetter"): wechselnd = Ablauf wie bisher, trocken = nie Regen, regen = dauernd Regen
+let weatherMode = 'wechselnd';
+function setWeatherMode(m){
+  const prev = weatherMode;
+  weatherMode = WEATHER_MODES.includes(m) ? m : 'wechselnd';
+  if(weatherMode === 'regen' && THEME.rain) weatherForce('rain');
+  else if(weatherMode === 'trocken') weatherForce('sun');
+  else if(prev !== 'wechselnd') weatherForce('sun');   // nach einem Dauerregen-Level wieder normal beginnen
+}
+const WEATHER_MODES = ['wechselnd', 'trocken', 'regen'];
 function weatherUpdate(dt){
   const w = weather;
   w.t += dt;
-  if(!THEME.rain && w.phase !== 'sun'){ w.phase = 'sun'; w.t = 0; w.len = weatherRand(WEATHER_SUN_S); }   // Höhle/Vulkan: kein Regen
+  if(weatherMode === 'regen' && THEME.rain){ if(w.phase !== 'rain'){ w.phase = 'rain'; w.t = 0; } w.len = Infinity; w.rainbow = 0; }
+  if((weatherMode === 'trocken' || !THEME.rain) && w.phase !== 'sun'){ w.phase = 'sun'; w.t = 0; w.len = weatherRand(WEATHER_SUN_S); }   // Höhle/Vulkan: kein Regen
   if(w.t >= w.len){
     w.t = 0;
     if(w.phase === 'sun'){ w.phase = 'cloud'; w.len = WEATHER_FADE_S; }

@@ -51,7 +51,7 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 | Schritt | Inhalt | Status | Tag | Noch offen |
 |---|---|---|---|---|
 | 0 | Briefing und Regelwerk | fertig, wartet auf Test | ausbau-0-fertig | – |
-| 1 | Fundament (Welten-Datenmodell, Tageszeit/Wetter, Spielstand) | offen | – | – |
+| 1 | Fundament (Welten-Datenmodell, Tageszeit/Wetter, Spielstand) | fertig, wartet auf Test | ausbau-1-fertig | Tag nur lokal, falls GitHub Tags weiter ablehnt (wie bei 0) |
 | 2 | Editor ausbauen | offen | – | – |
 | 3 | Weltkarte und Welt-Seite | offen | – | – |
 | 4 | Neue Mechaniken (Wechselboden, Teleporter, einseitige Plattformen) | offen | – | – |

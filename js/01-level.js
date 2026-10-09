@@ -141,10 +141,14 @@ function buildLevel(data){
   for(const h of hooks) maxX = Math.max(maxX, h.x, h.moving ? h.targetX : 0);
   LEVEL_W = maxX + 200;
   computeGroundNeighbors();
-  levelTheme = data.theme || 'dschungel';   // Aussehen des Levels (10a-themen.js)
+  // Aussehen des Levels (10a-themen.js): altes "theme"/"look" unverändert, sonst Welt + Tageszeit als Schichten
+  levelTheme = typeof resolveLevelLook === 'function' ? resolveLevelLook(data) : (data.theme || 'dschungel');
+  levelLayers = {welt: data.welt || null, tageszeit: data.tageszeit || null, wetter: data.wetter || 'wechselnd', vorschau: !!data.schichtenVorschau};
   if(typeof setTheme === 'function') setTheme(levelTheme);
+  if(typeof setWeatherMode === 'function') setWeatherMode(levelLayers.wetter);   // 19-wetter.js
 }
 let levelTheme = 'dschungel';
+let levelLayers = {welt: null, tageszeit: null, wetter: 'wechselnd', vorschau: false};   // Ausbau 1
 
 // Für schön gezeichneten Boden: welche Seiten eines Bodenstücks grenzen an ein gleichartiges Stück?
 // (dort keine runden Ecken und kein Gras, sondern nahtloser Übergang)

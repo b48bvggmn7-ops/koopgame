@@ -277,4 +277,35 @@ function startEditorTest(){
   return true;
 }
 
+// ---------- Testlevel direkt öffnen (Ausbau 1) ----------
+// index.html?testlevel=<name> lädt levels/test/<name>.json sofort (ohne Hauptmenü). Hat das Level
+// "schichtenVorschau": true, wechselt T die Tageszeit und Z das Wetter (Beweis: Welt + Tageszeit + Wetter als Schichten).
+function startTestLevelFromUrl(){
+  const m = /[?&]testlevel=([\w-]+)/.exec(location.search);
+  if(!m) return false;
+  fetch(PROJECT_LEVELS + 'test/' + m[1] + '.json', {cache:'no-store'})
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(data => { startLevel(data); if(levelLayers.vorschau) layerPreviewMsg(); })
+    .catch(e => { console.error('Testlevel lädt nicht:', e); showTitleScreen(); });
+  return true;
+}
+function layerPreviewMsg(){
+  testJumpMsg = 'Tageszeit: ' + (levelLayers.tageszeit || 'morgen') + ' (T)  ·  Wetter: ' + levelLayers.wetter + ' (Z)';
+  testJumpT = performance.now() + 2500;   // etwas länger sichtbar
+}
+window.addEventListener('keydown', e=>{
+  if(e.repeat || !levelLayers.vorschau || menuScreen) return;
+  if(e.code === 'KeyT'){
+    const i = TAGESZEITEN.indexOf(levelLayers.tageszeit || 'morgen');
+    levelLayers.tageszeit = TAGESZEITEN[(i + 1) % TAGESZEITEN.length];
+    levelTheme = composeLook(levelLayers.welt || 'dschungel', levelLayers.tageszeit); setTheme(levelTheme);
+    if(levelLayers.wetter === 'regen') weatherForce('rain');
+    layerPreviewMsg();
+  }
+  if(e.code === 'KeyZ' || e.code === 'KeyY'){   // Z (bei englischer Tastenbelegung Y)
+    levelLayers.wetter = WETTER_ARTEN[(WETTER_ARTEN.indexOf(levelLayers.wetter) + 1) % WETTER_ARTEN.length];
+    setWeatherMode(levelLayers.wetter); layerPreviewMsg();
+  }
+});
+
 // Start: Editor-Test oder Titelbild des Startmenüs – siehe 99-start.js

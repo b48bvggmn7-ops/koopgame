@@ -1991,6 +1991,66 @@ async def spielstand_migration(g):
         await g.ev("localStorage.clear()")
         srv.shutdown()
 
+@test
+async def schichten_tageszeit_wetter(g):
+    """Ausbau 1: Welt + Tageszeit + Wetter als Schichten. Alte Levels (theme) behalten genau ihren Look und den
+    Wetter-Wechsel; neue Levels: Tageszeit ändert Himmel/Sonne/Mond/Dunkelheit/Farbstich, Wetter trocken/regen wirkt."""
+    k = await g.ev("""(() => { const r = d => resolveLevelLook(d);
+      return { alt: ['dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'].map(t => r({theme: t})),
+               ohne: r({}), look: r({welt: 'ruinen', look: 'nacht'}), morgen: r({welt: 'dschungel'}), mittagR: r({welt: 'ruinen', tageszeit: 'mittag'}),
+               nacht: r({welt: 'dschungel', tageszeit: 'nacht'}), abend: r({welt: 'dschungel', tageszeit: 'abend'}),
+               mittag: r({welt: 'dschungel', tageszeit: 'mittag'}), hoehleTag: r({welt: 'hoehle', tageszeit: 'mittag'}),
+               hoehleNacht: r({welt: 'hoehle', tageszeit: 'nacht'}), unbekannt: r({welt: 'dschungel', tageszeit: 'quatsch'}) }; })()""")
+    assert k['alt'] == ['dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'] and k['ohne'] == 'dschungel', k
+    assert k['look'] == 'nacht' and k['morgen'] == 'dschungel' and k['mittagR'] == 'ruinen' and k['hoehleTag'] == 'hoehle', k
+    assert k['unbekannt'] == 'dschungel', k
+    t = await g.ev(f"""(() => {{ const T = n => THEMES[n]; const n = T({json.dumps(k['nacht'])}), a = T({json.dumps(k['abend'])}), m = T({json.dumps(k['mittag'])});
+      return {{ nMoon: !!n.moon, nSun: !!n.sun, nDark: n.dark, nWash: !!n.layerWash, nGround: n.ground === THEMES.dschungel.ground,
+               aSky: a.sky === THEMES.abend.sky, aWash: !!a.layerWash, mSky: m.sky === THEMES.ruinen.sky,
+               hD: T({json.dumps(k['hoehleNacht'])}).dark, hBase: THEMES.hoehle.dark, altWash: !!THEMES.dschungel.layerWash }}; }})()""")
+    assert t['nMoon'] and not t['nSun'] and t['nDark'] > 0.3 and t['nWash'] and t['nGround'], f'Nacht-Schicht falsch: {t}'
+    assert t['aSky'] and t['aWash'] and t['mSky'], f'Abend/Mittag-Schicht falsch: {t}'
+    assert t['hD'] > t['hBase'] and not t['altWash'], f'Höhle nachts / alte Looks verändert: {t}'
+    # Wetter: regen = dauernd Regen, trocken = nie Regen, wechselnd = wie bisher
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', tageszeit='nacht', wetter='regen'))
+    await g.p.wait_for_timeout(300)
+    w = await g.ev("(() => { weather.t = 99999; weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode, look: levelTheme, moon: !!THEME.moon}; })()")
+    assert w['ph'] == 'rain' and w['mode'] == 'regen' and w['moon'], f'Dauerregen/Nacht wirkt nicht: {w}'
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', wetter='trocken'))
+    await g.p.wait_for_timeout(300)
+    w = await g.ev("(() => { weatherForce('rain'); weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode}; })()")
+    assert w['ph'] == 'sun' and w['mode'] == 'trocken', f'trocken regnet: {w}'
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, theme='abend'))
+    await g.p.wait_for_timeout(300)
+    w = await g.ev("(() => { weather.phase = 'sun'; weather.t = 99999; weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode, look: levelTheme}; })()")
+    assert w['mode'] == 'wechselnd' and w['ph'] == 'cloud' and w['look'] == 'abend', f'altes Level: Wetter-Wechsel/Look anders: {w}'
+
+@test
+async def alte_levels_unveraendert(g):
+    """Ausbau 1: alle Level-Dateien (ohne welt/tageszeit/wetter) laden weiter mit ihrem bisherigen Look und
+    wechselndem Wetter; das Testlevel levels/test/schichten-dschungel.json lässt sich direkt öffnen, T/Z schalten durch."""
+    for d in json.loads((ROOT / 'levels' / 'levels.json').read_text(encoding='utf-8')):
+        data = json.loads((ROOT / 'levels' / d['datei']).read_text(encoding='utf-8'))
+        await g.load(str(ROOT / 'levels' / d['datei'])); await g.p.wait_for_timeout(150)
+        k = await g.ev("({look: levelTheme, mode: weatherMode, wash: !!THEME.layerWash})")
+        assert k == {'look': data.get('theme') or 'dschungel', 'mode': 'wechselnd', 'wash': False}, f"{d['datei']}: {k}"
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=schichten-dschungel')
+        await p.wait_for_function("typeof levelLayers !== 'undefined' && levelLayers.vorschau && menuScreen === null", timeout=8000)
+        seen = []
+        for _ in range(4):
+            await p.keyboard.press('KeyT'); await p.wait_for_timeout(120)
+            seen.append(await g.ev("[levelLayers.tageszeit, !!THEME.moon]"))
+        assert [x[0] for x in seen] == ['mittag', 'abend', 'nacht', 'morgen'] and seen[2][1] and not seen[3][1], seen
+        modes = []
+        for _ in range(3):
+            await p.keyboard.press('KeyZ'); await p.wait_for_timeout(120)
+            modes.append(await g.ev("weatherMode"))
+        assert modes == ['trocken', 'regen', 'wechselnd'], modes
+    finally:
+        srv.shutdown()
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

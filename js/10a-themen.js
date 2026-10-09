@@ -250,3 +250,59 @@ function drawThemeDarkness(){
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(darkCanvas, 0, 0);
 }
+
+// ---------- Welt + Tageszeit + Wetter (Ausbau 1) ----------
+// Neue Levels beschreiben ihr Aussehen mit drei getrennten Feldern:
+//   "welt"      – Gelände, Hintergrund, Tiere, Farben (dschungel, ruinen, hoehle, wasser, vulkan)
+//   "tageszeit" – morgen, mittag, abend, nacht: eine SCHICHT über dem Welt-Look (Himmel, Sonne/Mond/Sterne,
+//                 Farbstich der Hintergrund-Ebenen, Dunkelheit, Licht-Teilchen)
+//   "wetter"    – wechselnd (wie bisher: Sonne/Regen im Wechsel), trocken (nie Regen), regen (dauernd Regen) – 19-wetter.js
+// Alte Levels mit "theme" (oder neue mit "look") behalten genau ihr bisheriges Aussehen ("look-Override").
+// Die natürliche Tageszeit einer Welt ergibt exakt den bisherigen Welt-Look (z. B. Dschungel + morgen = Thema dschungel).
+const WORLD_LOOKS = {
+  dschungel: {base: 'dschungel', time: 'morgen', sky: true},
+  ruinen:    {base: 'ruinen',    time: 'mittag', sky: true},
+  hoehle:    {base: 'hoehle',    time: null,     sky: false},   // unter Tage: kein Himmel, Nacht macht es nur dunkler
+  vulkan:    {base: 'vulkan',    time: null,     sky: false},   // eigener Feuer-Himmel
+  wasser:    {base: 'dschungel', time: 'morgen', sky: true},    // eigener Wasser-Look kommt mit Ausbau 5
+};
+const TAGESZEITEN = ['morgen', 'mittag', 'abend', 'nacht'];
+const WETTER_ARTEN = ['wechselnd', 'trocken', 'regen'];
+// Himmel/Licht jeder Tageszeit kommen aus dem passenden bisherigen Thema; wash = Farbstich der Hintergrund-Ebenen
+const TIME_LAYERS = {
+  morgen: {from: 'dschungel', wash: null},
+  mittag: {from: 'ruinen',    wash: null},
+  abend:  {from: 'abend',     wash: {col: '#a8507a', a: 0.22}},
+  nacht:  {from: 'nacht',     wash: {col: '#142250', a: 0.55}},
+};
+// liefert den Namen eines (ggf. neu zusammengesetzten) Looks in THEMES
+function composeLook(welt, zeit){
+  const Wl = WORLD_LOOKS[welt] || WORLD_LOOKS.dschungel, base = THEMES[Wl.base];
+  if(!TAGESZEITEN.includes(zeit)) zeit = Wl.time || 'morgen';
+  if(zeit === Wl.time || (!Wl.sky && zeit !== 'nacht')) return Wl.base;   // natürliche Tageszeit = genau der Welt-Look
+  const key = Wl.base + '@' + zeit;
+  if(THEMES[key]) return key;
+  const T = Object.assign({}, base, {label: base.label + ' · ' + zeit});
+  if(Wl.sky){
+    const S = THEMES[TIME_LAYERS[zeit].from];
+    Object.assign(T, {sky: S.sky, sun: S.sun || null, moon: S.moon || null, stars: S.stars || 0, clouds: S.clouds,
+      mistCol: S.mistCol, ray: S.ray, sunRays: S.sunRays, rainbow: S.rainbow, tint: S.tint, dark: S.dark, darkCol: S.darkCol,
+      layerWash: TIME_LAYERS[zeit].wash});
+    if(zeit === 'abend' || zeit === 'nacht') T.particles = S.particles;   // Glühwürmchen statt Sonnenstäubchen
+    if(zeit === 'nacht'){
+      T.birds = S.birds;                                                   // Eulen statt Tagvögeln
+      T.critters = Object.assign({}, base.critters, {air: 'firefly', airCols: ['#d8ff6a'], mushGlow: true});
+    }
+  } else if(zeit === 'nacht'){
+    T.dark = Math.min(0.7, (base.dark || 0) + 0.18); T.darkCol = base.darkCol || '8,12,36';
+  }
+  THEMES[key] = T;
+  return key;
+}
+// welcher Look gehört zu diesen Level-Daten?
+function resolveLevelLook(data){
+  data = data || {};
+  if(data.look && THEMES[data.look]) return data.look;          // look-Override (bisheriges Aussehen behalten)
+  if(data.welt) return composeLook(data.welt, data.tageszeit);  // neu: Welt + Tageszeit
+  return THEMES[data.theme] ? data.theme : 'dschungel';         // alte Levels: Thema wie bisher
+}

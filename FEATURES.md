@@ -235,6 +235,22 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Wasser = noch leer · Vulkan = Level 6. Die Levelauswahl nimmt ihre Reihenfolge aus worlds.json (sieht damit
     genau aus wie vorher), die Namen aus levels.json. levels.json bleibt als Rückfall: fehlt worlds.json, gilt ihre
     Reihenfolge; Level aus levels.json, die in keiner Welt stehen (nicht versteckt), kommen hinten dran (Test welten_laden).
+  - WELT + TAGESZEIT + WETTER als Schichten (Ausbau 1, 10a-themen.js + 19-wetter.js): neue Level-Felder
+    "welt" (dschungel, ruinen, hoehle, wasser, vulkan), "tageszeit" (morgen, mittag, abend, nacht), "wetter"
+    (wechselnd = wie bisher Sonne/Regen im Wechsel, trocken = nie Regen, regen = dauernd Regen) und optional "look"
+    (= bisheriges Thema behalten, z. B. "nacht" für Mondnacht). Die Tageszeit legt sich als Schicht über den Welt-Look:
+    Himmel, Sonne bzw. Mond + Sterne, Licht-Teilchen (abends/nachts Glühwürmchen), Farbstich der Hintergrund-Ebenen,
+    Dunkelheit mit Licht um Figuren/Münzen (nachts), nachts Eulen und leuchtende Pilze. Die natürliche Tageszeit einer
+    Welt ergibt genau ihren bisherigen Look (Dschungel = morgen, Ruinen = mittag). Höhle und Vulkan haben keinen Himmel:
+    dort macht nur „nacht“ es dunkler; Regen gibt es dort weiterhin nicht (auch nicht bei „regen“). Wasser sieht
+    vorerst aus wie der Dschungel (eigener Look mit Ausbau 5).
+    Alte Level-Dateien ohne die neuen Felder laden weiter mit ihrem „theme“ – exakt wie vorher (Startbilder aller 6
+    Levels per Screenshot verglichen: identisch) und mit wechselndem Wetter (Tests schichten_tageszeit_wetter,
+    alte_levels_unveraendert).
+    Testlevel levels/test/schichten-dschungel.json: öffnen mit index.html?testlevel=schichten-dschungel (startet sofort,
+    ohne Hauptmenü); dort schaltet T die Tageszeit (morgen → mittag → abend → nacht) und Z (oder Y) das Wetter
+    (wechselnd → trocken → regen) durch, die Anzeige oben nennt beides. Allgemein: index.html?testlevel=<name> lädt
+    levels/test/<name>.json; T/Z nur in Leveln mit "schichtenVorschau": true.
   - SPIELSTAND nach Dateinamen (Ausbau 1): Freischaltungen, Geschafft-Liste und Levelkarten-Statistik merken sich
     die Level-DATEI (z. B. level-3.json) statt der Nummer (Format v 2: unlocked, completed, stats). Ein alter
     Spielstand (Nummern) wird beim ersten Start umgerechnet, nichts geht verloren; das Original bleibt unverändert
