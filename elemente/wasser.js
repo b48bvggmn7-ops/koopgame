@@ -56,7 +56,7 @@ function schwimmPhysik(pl, moveDir, jumpPressed, frozen){
   if(typeof stroemungen !== 'undefined' && stroemungen.length) stroemungAnwenden(pl);   // elemente/stroemung.js
   if(jumpPressed){
     if(!pl.headUnder || nahOben) pl.vy = SWIM_JUMP_OUT;     // an der Oberfläche: aus dem Wasser springen
-    else { pl.vy = Math.min(pl.vy, -SWIM_KICK); pl.schwimmStoss = 1; }
+    else { pl.vy = Math.min(pl.vy, -SWIM_KICK); pl.schwimmStoss = 1; if(SFX.schwimmzug) SFX.schwimmzug(pl.x); }
   }
   if(pl.schwimmStoss > 0) pl.schwimmStoss = Math.max(0, pl.schwimmStoss - 0.06);   // nur für die Arm-/Bein-Animation
 }
@@ -229,6 +229,69 @@ function luftAnzeigeZeichnen(){
     }
   }
 }
+// --- Optik unter Wasser: Lichtstrahlen, aufsteigende Bläschen, Atem-Bläschen der Figuren (nur Zeichnen) ---
+// Leistung: nur sichtbare Becken, je Rechteck höchstens WASSER_STRAHLEN Strahlen und WASSER_BLAESCHEN Bläschen.
+const WASSER_STRAHLEN = 3, WASSER_BLAESCHEN = 10;
+function wasserHash(a, b){ const s = Math.sin(a*12.9898 + b*78.233)*43758.5453; return s - Math.floor(s); }
+function wasserLichtUndBlasen(){
+  const t = performance.now()*0.001;
+  for(const b of wasserBecken){
+    if(b.maxX < camX - 20 || b.minX > camX + VW + 20 || b.surf >= b.bottom) continue;
+    for(const r of b.rects){
+      const oben = wasserOben(b, r), h = r.y + r.h - oben, x0 = r.x - camX;
+      if(h <= 4 || x0 + r.w < -20 || x0 > VW + 20) continue;
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, oben, r.w, h); ctx.clip();
+      // Lichtstrahlen von der Oberfläche schräg nach unten, sanft wandernd
+      const n = Math.min(WASSER_STRAHLEN, Math.max(1, Math.round(r.w/220)));
+      for(let i = 0; i < n; i++){
+        const sx = x0 + ((i + 0.5)/n)*r.w + Math.sin(t*0.4 + i*2.1 + r.x*0.01)*30, len = Math.min(h, 320);
+        const g = ctx.createLinearGradient(0, oben, 0, oben + len);
+        g.addColorStop(0, 'rgba(255,255,230,0.22)'); g.addColorStop(1, 'rgba(255,255,230,0)');
+        ctx.fillStyle = g; ctx.globalAlpha = 0.6 + 0.4*Math.sin(t*0.9 + i*1.7);
+        ctx.beginPath(); ctx.moveTo(sx - 14, oben); ctx.lineTo(sx + 14, oben); ctx.lineTo(sx + 14 + len*0.35, oben + len); ctx.lineTo(sx - 34 + len*0.35, oben + len); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // aufsteigende Bläschen (feste Startpunkte, steigen in einer Schleife)
+      const m = Math.min(WASSER_BLAESCHEN, Math.max(2, Math.round(r.w*h/16000)));
+      ctx.strokeStyle = 'rgba(235,252,255,0.7)'; ctx.lineWidth = 1;
+      for(let i = 0; i < m; i++){
+        const hx = wasserHash(r.x + i, r.y), sp = 0.08 + 0.12*wasserHash(i, r.x), ph = (t*sp + hx) % 1;
+        const bx = x0 + hx*r.w + Math.sin(t*2 + i)*3, by = r.y + r.h - ph*h, rad = 1.5 + 2*wasserHash(i, r.y);
+        ctx.globalAlpha = Math.min(1, (1 - ph)*3)*0.8;
+        ctx.beginPath(); ctx.arc(bx, by, rad, 0, Math.PI*2); ctx.stroke();
+      }
+      ctx.globalAlpha = 1; ctx.restore();
+    }
+  }
+  // Atem-Bläschen über dem Kopf von Figuren unter Wasser
+  for(const pl of [p1, p2]){
+    if(!pl || !pl.headUnder || (deathState && deathState.victim === pl)) continue;
+    for(let i = 0; i < 3; i++){
+      const ph = (t*0.9 + i/3 + (pl.male ? 0 : 0.5)) % 1, bx = pl.x - camX + pl.facing*6 + Math.sin(t*5 + i*2)*3;
+      const by = pl.y - pl.h*0.75 - ph*36;
+      if(!imWasser(bx + camX, by)) continue;
+      ctx.globalAlpha = (1 - ph)*0.85; ctx.strokeStyle = '#f0fbff'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(bx, by, 1.6 + i*0.7, 0, Math.PI*2); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+// --- Gedämpfter Ton unter Wasser: Tiefpass vor dem Lautsprecher (js/07 audioOut), je nach Zahl der Köpfe unter Wasser ---
+let wasserDaempfungZiel = 20000;   // Hz (für Tests lesbar)
+// Ton wieder klar (neues Level, Neustart, Startmenü)
+function wasserTonReset(){
+  wasserDaempfungZiel = 20000;
+  if(typeof unterwasserFilter !== 'undefined' && unterwasserFilter && audioCtx){ try{ unterwasserFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 0.05); }catch(e){} }
+}
+function wasserTonSchritt(){
+  const n = [p1, p2].filter(pl => pl && pl.headUnder && !(deathState && deathState.victim === pl)).length;
+  const ziel = n === 2 ? WASSER_TON_BEIDE : n === 1 ? WASSER_TON_EINER : 20000;
+  if(ziel === wasserDaempfungZiel) return;
+  wasserDaempfungZiel = ziel;
+  if(typeof unterwasserFilter !== 'undefined' && unterwasserFilter && audioCtx){
+    try{ unterwasserFilter.frequency.setTargetAtTime(ziel, audioCtx.currentTime, 0.12); }catch(e){}
+  }
+}
 // Rechtecke einer Spalte untereinander zusammenfassen (mergeRects fasst nur nebeneinander zusammen)
 function wasserSenkrechtZusammen(rects){
   const out = rects.map(r => ({...r})).sort((a, b) => a.x - b.x || a.w - b.w || a.y - b.y);
@@ -268,9 +331,9 @@ elementRegistrieren({
     exportieren: (zellen, TILE, mergeRects) => wasserSenkrechtZusammen(mergeRects(zellen)),
   },
   spiel: {
-    laden(daten){ wasserBecken = wasserBeckenBauen(daten.waters || []); },
-    schritt(){ luftblaseSchritt(); },
-    zuruecksetzen(){ for(const b of wasserBecken){ b.surf = b.top; b.ziel = b.top; } luftblase = null; },
-    zeichnenVorne(){ if(wasserBecken.length){ wasserZeichnen(); luftblaseZeichnen(); luftAnzeigeZeichnen(); } },
+    laden(daten){ wasserBecken = wasserBeckenBauen(daten.waters || []); wasserTonReset(); },
+    schritt(){ luftblaseSchritt(); wasserTonSchritt(); },
+    zuruecksetzen(){ for(const b of wasserBecken){ b.surf = b.top; b.ziel = b.top; } luftblase = null; wasserTonReset(); },
+    zeichnenVorne(){ if(wasserBecken.length){ wasserZeichnen(); wasserLichtUndBlasen(); luftblaseZeichnen(); luftAnzeigeZeichnen(); } },
   },
 });

@@ -1,7 +1,7 @@
 {
- "hinweis": "Testlevel Ausbau 5: Wasser. Öffnen: index.html?testlevel=wasser · 1) Becken: schwimmen (Links/Rechts, Hoch/Runter = W/S bzw. ↑/↓, Springen = Schwimmstoß, an der Oberfläche raus springen), Luft-Anzeige über dem Kopf · 2) langer Tauchgang: allein reicht die Luft nicht – zusammen schwimmen, beide Fähigkeitstaste (G / Num 1) = Luftblase · 3) Strömung · 4) Schleuse: Hebel lässt das Wasser steigen",
+ "hinweis": "Testlevel Ausbau 5: Wasser. Öffnen: index.html?testlevel=wasser · 1) Becken: schwimmen (Links/Rechts, Hoch/Runter = W/S bzw. ↑/↓, Springen = Schwimmstoß, an der Oberfläche raus springen), Luft-Anzeige über dem Kopf, kein Haken/Schirm unter Wasser · 2) Tauch-Tunnel mit Strömung gegen euch (mittel) und einer Strömung nach oben: allein reicht die Luft (12 s) nicht – zusammen schwimmen, beide Fähigkeitstaste (G / Num 1 / □) = Luftblase · 3) Schleuse: Hebel (J / Num 2) lässt das Wasser bis zur Linie steigen, dann aus dem Wasser auf den hohen Rand springen",
  "welt": "wasser",
- "tageszeit": "mittag",
+ "tageszeit": "morgen",
  "wetter": "trocken",
  "solids": [
   {
@@ -44,6 +44,13 @@
    "y": 400,
    "w": 40,
    "h": 320,
+   "type": "wall"
+  },
+  {
+   "x": 1900,
+   "y": 440,
+   "w": 1160,
+   "h": 40,
    "type": "wall"
   },
   {

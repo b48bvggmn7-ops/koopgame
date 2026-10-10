@@ -259,12 +259,26 @@ function drawThemeDarkness(){
 //   "wetter"    – wechselnd (wie bisher: Sonne/Regen im Wechsel), trocken (nie Regen), regen (dauernd Regen) – 19-wetter.js
 // Alte Levels mit "theme" (oder neue mit "look") behalten genau ihr bisheriges Aussehen ("look-Override").
 // Die natürliche Tageszeit einer Welt ergibt exakt den bisherigen Welt-Look (z. B. Dschungel + morgen = Thema dschungel).
+// Welt „Wasser“ (Ausbau 5): Lagune – Dschungel-Aufbau, aber türkiser Himmel, bläulicher Dunst, Sand statt Erde,
+// Seegras-grünes Moos, Möwen; ein zarter Türkis-Schleier über den Hintergrund-Ebenen
+THEMES.wasser = Object.assign({}, THEMES.dschungel, {
+  label: 'Lagune (Wasser)',
+  sky: [[0, '#5fbfe0'], [0.38, '#b4e6ef'], [0.62, '#f2f1d4'], [0.75, '#e6f2d8'], [1, '#c4ebe4']],
+  far: Object.assign({}, THEMES.dschungel.far, {ridge: '#97c6c8', top: '#77adb4', bottom: '#a9d5d4', haze: '#cdeef0'}),
+  ground: {grassTop:'#79dfa6', grass:'#43c48e', grassDark:'#2c9f74', dirt1:'#efd39b', dirt2:'#d8b475', stripe:'rgba(170,125,60,.25)', edge:'#bf975a'},
+  moss: {base: '#36a98b', light: '#68d2ad', vine: '#2a8770', leaf: '#46bd96'},
+  birds: [
+    {body:'#f4f7fa', belly:'#ffffff', wing:'#97a6b4', beak:'#ffb02e'},   // Möwe
+    {body:'#3fa7e0', belly:'#cdeeff', wing:'#2a7fb5', beak:'#ffb02e'},
+  ],
+  layerWash: {col: '#38b4c8', a: 0.1},
+});
 const WORLD_LOOKS = {
   dschungel: {base: 'dschungel', time: 'morgen', sky: true},
   ruinen:    {base: 'ruinen',    time: 'mittag', sky: true},
   hoehle:    {base: 'hoehle',    time: null,     sky: false},   // unter Tage: kein Himmel, Nacht macht es nur dunkler
   vulkan:    {base: 'vulkan',    time: null,     sky: false},   // eigener Feuer-Himmel
-  wasser:    {base: 'dschungel', time: 'morgen', sky: true},    // eigener Wasser-Look kommt mit Ausbau 5
+  wasser:    {base: 'wasser',    time: 'morgen', sky: true},    // Lagune (Ausbau 5)
 };
 const TAGESZEITEN = ['morgen', 'mittag', 'abend', 'nacht'];
 const WETTER_ARTEN = ['wechselnd', 'trocken', 'regen'];

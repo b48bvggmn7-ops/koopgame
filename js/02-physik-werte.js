@@ -66,3 +66,6 @@ const BLASE_RUF = 45;           // Schritte (0,75 s): so lange „wartet“ ein 
 const STROEMUNG_KRAFT = 0.15;
 const STROEMUNG_EXTRA = 4;      // so viel schneller als SWIM_MAX_SPEED darf eine Strömung jemanden tragen
 const WASSER_PEGEL_TEMPO = 1.0; // px pro Schritt: so schnell steigt/sinkt das Wasser per Hebel/Schleuse (1 Kästchen in 0,7 s)
+// Gedämpfter Ton unter Wasser (Tiefpass in Hz): ein Kopf unter Wasser etwas dumpfer, beide ganz dumpf
+const WASSER_TON_EINER = 2600;
+const WASSER_TON_BEIDE = 900;

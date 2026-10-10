@@ -5,7 +5,7 @@
   {"id": "dschungel", "name": "Dschungel", "titel": "Welt 1 – Dschungel", "reihenfolge": 1, "level": ["level-1.json", "level-2.json"], "boss": null},
   {"id": "ruinen", "name": "Ruinen", "titel": "Welt 2 – Ruinen", "reihenfolge": 2, "level": ["level-3.json", "level-4.json"], "boss": null},
   {"id": "hoehle", "name": "Höhle", "titel": "Welt 3 – Höhle", "reihenfolge": 3, "level": ["level-5.json"], "boss": null},
-  {"id": "wasser", "name": "Wasser", "titel": "Welt 4 – Wasser", "reihenfolge": 4, "level": [], "boss": null},
+  {"id": "wasser", "name": "Wasser", "titel": "Welt 4 – Wasser", "reihenfolge": 4, "level": [], "boss": null, "look": "wasser", "vorbereitet": "Ausbau 5: Schwimmen, Luft, Luftblase, Strömung, Schleusen fertig; Probe-Level: levels/test/wasser.json (noch keine echten Level)"},
   {"id": "vulkan", "name": "Vulkan", "titel": "Welt 5 – Vulkan", "reihenfolge": 5, "level": ["level-6.json"], "boss": null}
  ]
 }

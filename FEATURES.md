@@ -557,6 +557,18 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Rolle (Strömung/Schleuse): einer legt den Hebel um oder hält die Schleuse, der andere schwimmt hindurch; starke
         Strömungen trennen Wege oder tragen beide schnell weiter.
       Tests wasser_stroemung_pegel, editor_stroemung_pegel.
+      Optik unter Wasser (nur Zeichnen): je Wasser-Rechteck bis zu 3 schräge, sanft wandernde Lichtstrahlen von der
+        Oberfläche, bis zu 10 aufsteigende Bläschen, Atem-Bläschen über dem Kopf von Figuren unter Wasser.
+        Leistung gemessen: Wasser-Zeichnen kostet ca. 0,7 ms pro Bild (Testlevel, Tunnel mit Strömung im Bild).
+      Ton unter Wasser gedämpft: Tiefpass hinter allen Geräuschen und der Musik (js/07 audioOut) – ein Kopf unter Wasser
+        WASSER_TON_EINER 2600 Hz, beide WASSER_TON_BEIDE 900 Hz, sonst klar; weich überblendet; neues Level, Neustart und
+        Startmenü machen den Ton wieder klar. Schwimmstoß = leiser Wasser-Wusch.
+      Welt „Wasser“ vorbereitet: eigener Look „Lagune“ (THEMES.wasser: türkiser Himmel, bläulicher Dunst, Sand statt Erde,
+        Seegras-Moos, Möwen; Welt-Look in WORLD_LOOKS), in levels/worlds.json mit "look": "wasser" und Hinweis, noch ohne
+        Level (Weltkarte zeigt sie als „Bald“).
+      Testlevel levels/test/wasser.json (index.html?testlevel=wasser): Becken zum Üben, Tauch-Tunnel mit Strömung gegen
+        die Schwimmrichtung (allein reicht die Luft nicht – nur mit Luftblase), Strömung nach oben, Schleuse per Hebel bis
+        zur Linie, danach aus dem Wasser auf den hohen Rand springen. Test wasser_testlevel_ton_welt.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).

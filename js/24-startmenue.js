@@ -1231,7 +1231,8 @@ function updateEyes() {
    ===================================================================== */
 function active() { return typeof menuScreen !== 'undefined' && menuScreen === 'start'; }
 function showMenuScreen(name, arg) {
-  menuScreen = 'start';                       // Spiel steht still, Spiel-Tasten ruhen (16-menue.js)
+  menuScreen = 'start';
+  if (typeof wasserTonReset === 'function') wasserTonReset();   // Ton nicht mehr „unter Wasser“ (elemente/wasser.js)                       // Spiel steht still, Spiel-Tasten ruhen (16-menue.js)
   menuEl.classList.remove('show');            // altes Menü (nur noch für die Pause) ausblenden
   smRoot.classList.add('on');
   Snd.resume();

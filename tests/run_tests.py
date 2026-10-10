@@ -404,11 +404,10 @@ async def checkpoint_sprung_und_tod(g):
 async def schalter_umschalten(g):
     await g.load(level([ground(0, 680, 1400)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
                        switches=[{'x': 260, 'y': 660, 'link': 1}], doors=[{'x': 720, 'y': 660, 'link': 1}]))
-    # bis vor den Hebel laufen (nicht feste Zeit: auf langsamen Rechnern rutschte der Affe sonst an ihm vorbei)
-    await g.p.keyboard.down('KeyD')
-    try: await g.p.wait_for_function("p1.x >= 222", timeout=6000)
-    except Exception: pass
-    await g.p.keyboard.up('KeyD'); await g.steps(20)
+    # ein Stück laufen, dann direkt vor den Hebel stellen (beim Laufen rutschte der Affe auf langsamen Rechnern
+    # manchmal am Hebel vorbei – hier geht es nur ums Umschalten)
+    await g.hold(('KeyD',), 100); await g.steps(20)
+    await g.ev("p1.x = 240; p1.vx = 0; p1._px = p1.x"); await g.steps(3)
     assert await g.ev("leverNear(p1, switchDefs[0])"), f"Affe nicht am Hebel: {await g.ev('p1.x')}"
     await g.p.keyboard.press('KeyJ')
     try: await g.p.wait_for_function("solids.find(s=>s.type==='door').open", timeout=3000)
@@ -2878,6 +2877,36 @@ async def editor_stroemung_pegel(g):
         assert umg['currents'] == out['currents'] and umg['waterLevels'] == out['waterLevels'], umg
     finally:
         await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def wasser_testlevel_ton_welt(g):
+    """Ausbau 5: Testlevel levels/test/wasser.json enthält alle Wasser-Regeln (Becken, Tauch-Tunnel, Strömungen, Schleuse
+    mit Hebel) und lädt ohne Fehler; Ton unter Wasser gedämpft (ein Kopf etwas, beide stark), Schwimmstoß hörbar;
+    Welt „Wasser“ ist vorbereitet (eigener Lagunen-Look, noch ohne Level = „Bald“)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=wasser')
+        await p.wait_for_function("menuScreen === null && wasserBecken.length > 0", timeout=10000)
+        n = await g.ev("[wasserBecken.length, stroemungen.length, wasserBecken.reduce((a, b) => a + b.pegel.length, 0), switchDefs.length, levelTheme]")
+        assert n[0] >= 3 and n[1] >= 2 and n[2] >= 1 and n[3] >= 1 and n[4] == 'wasser', n
+        # Tauch-Tunnel: über dem Wasser liegt eine Decke -> dort kein Luftholen
+        assert await g.ev("solids.some(s => s.type === 'wall' && s.w >= 800 && wasserBecken.some(b => s.y <= b.top && s.y + s.h > b.top && s.x >= b.minX && s.x + s.w <= b.maxX))"), 'Tauch-Tunnel fehlt'
+        # gedämpfter Ton
+        await g.ev("p1.x = 1000; p2.x = 1040; p1.y = p2.y = 640; p1._px = p1.x; p2._px = p2.x; p1._py = p1.y; p2._py = p2.y"); await g.steps(3)
+        assert await g.ev("wasserDaempfungZiel === WASSER_TON_BEIDE"), await g.ev("wasserDaempfungZiel")
+        await g.ev("p2.x = 300; p2.y = 680; p2._px = p2.x; p2._py = p2.y"); await g.steps(3)
+        assert await g.ev("wasserDaempfungZiel === WASSER_TON_EINER"), await g.ev("wasserDaempfungZiel")
+        await g.ev("SFX_LOG.length = 0"); await g.p.keyboard.press('Space'); await g.steps(3)
+        assert 'schwimmzug' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+        await g.ev("p1.x = 200; p1.y = 680; p1._px = p1.x; p1._py = p1.y"); await g.steps(3)
+        assert await g.ev("wasserDaempfungZiel === 20000"), await g.ev("wasserDaempfungZiel")
+        # Welt Wasser vorbereitet
+        w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+        wa = next(x for x in w['welten'] if x['id'] == 'wasser')
+        assert wa['level'] == [] and wa.get('look') == 'wasser', wa
+        assert await g.ev("composeLook('wasser', 'morgen') === 'wasser' && THEMES.wasser.label.startsWith('Lagune')")
+    finally:
         srv.shutdown()
 
 async def main(filter_):

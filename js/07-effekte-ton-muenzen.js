@@ -21,9 +21,17 @@ function setVolume(k, v){
   if(masterGain) masterGain.gain.value = masterLevel();
 }
 let masterGain = null, soundMuted = false;
+let unterwasserFilter = null;   // Tiefpass hinter allem (Ausbau 5): unter Wasser klingt alles gedämpft (elemente/wasser.js)
 try{ soundMuted = localStorage.getItem('monchichi_mute') === '1'; }catch(e){}
 function audioOut(){
-  if(!masterGain){ masterGain = audioCtx.createGain(); masterGain.gain.value = masterLevel(); masterGain.connect(audioCtx.destination); }
+  if(!masterGain){
+    masterGain = audioCtx.createGain(); masterGain.gain.value = masterLevel();
+    try{
+      unterwasserFilter = audioCtx.createBiquadFilter(); unterwasserFilter.type = 'lowpass';
+      unterwasserFilter.frequency.value = 20000; unterwasserFilter.Q.value = 0.7;
+      masterGain.connect(unterwasserFilter); unterwasserFilter.connect(audioCtx.destination);
+    }catch(e){ masterGain.connect(audioCtx.destination); }
+  }
   return masterGain;
 }
 function coinPickupFx(c){
