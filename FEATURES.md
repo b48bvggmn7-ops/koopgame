@@ -1032,6 +1032,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       egal, wer welchen Weg nimmt; Steg-Hüpfer über die dunkle Stachelgrube zum Ziel.
     - Checkpoints höchstens ~60 Spalten auseinander (18 Stück).
     - Test level14_leuchtgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
+  - Level 15 „Förderwerk“ (levels/level-15.json, Höhle Level 5 der Welt, mittags, wechselndes Wetter): IN ARBEIT, bis die
+    Höhle fertig ist in levels.json versteckt. Kombi-Level: Förderband-Kaskaden, Eis + Band, Bänder über Kreuz, Kamine.
+    - Etappe 1 (Spalten 0–200): Band-Treppe (Stufen hinauf, langsames Band, über eine Grube auf ein Gegenband); Band-Kaskade
+      über der Stachelgrube (kurze Bänder abwechselnd mit und gegen den Lauf); Schleuder mit Aufwind-Hebel: das Schweinchen
+      segelt über die Grube, steigt im Aufwind auf den Sims und zieht Hebel 1 – das reißende Band dreht und schleudert den
+      Affen hinüber; Platten-Tunnel: ein niedriger Gang mit reißendem Gegenband, das nur andersherum läuft, solange jemand
+      auf einer der beiden Druckplatten 2 (vor/hinter dem Gang) steht.
+    - Test level15_foerderwerk (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```

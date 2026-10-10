@@ -83,5 +83,11 @@
   "name": "Level 14",
   "titel": "Leuchtgrotte",
   "versteckt": true
+ },
+ {
+  "datei": "level-15.json",
+  "name": "Level 15",
+  "titel": "Förderwerk",
+  "versteckt": true
  }
 ]
