@@ -764,6 +764,26 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       hinauf), Takt-Tempeltreppe (A/B-Steine steigen Stufe für Stufe an, 1,5 s; Haken helfen dem Affen) und Tor 7 zum
       Tempeltor (Ziel, Spalte 694). 700 Spalten, 14 Checkpoints, 110 Münzen (55 / 55). Test level8_gluehwald.
 
+  - FALLE (Ausbau 7, Welt Ruinen; elemente/falle.js, Spiel-Feld traps [{x, y, art: pfeil|flamme, richtung: r|l|o|u,
+    takt (s), versatz (0…¾), link?}]): Stein-Kopf in einem Kästchen (fest wie eine Wand) mit Gesicht zur Schussrichtung.
+    - Pfeil: zu Beginn jedes Takts fliegt ein Pfeil los (8 px pro Schritt), bis er auf Stein, eine Tür oder Wechselboden
+      trifft. Er bleibt kurz stecken; durch Stege und Scheinwände fliegt er hindurch. Trifft er eine Figur, stirbt sie.
+    - Flamme: brennt die ersten 40 % jedes Takts bis zu 3 Kästchen weit (Stein stoppt sie); wer hineingerät, stirbt.
+    - Vorwarnung 45 Schritte vorher: Der Pfeil-Schlitz glüht (erst gelb, dann rot), die Flammen-Düse raucht und glüht,
+      dazu ein leises Stein-Klicken.
+    - Versatz verschiebt den Takt nach hinten (Rhythmus aus mehreren Fallen).
+    - „per Nummer aus“: Solange die Verknüpfung an ist (Hebel oder Druckplatte), ist die Falle still und grau.
+    - Takt-Uhr fallenSchritte: Bei Levelstart, Neustart und Tod beginnt sie neu – immer erst die Warnung, dann der Schuss.
+      Werte FALLE_WARN, PFEIL_*, FLAMME_* in 02-physik-werte.js.
+    - Sound: Sehne/Holz-Tock + Zischen (Pfeil), dumpfes „Wuff“ (Flamme), Stein-Klicken (Warnung).
+    - Editor: Werkzeug „Falle“ (Gruppe Gefahren) mit Auswahl Art, Richtung, Takt (1,5–4 s), Versatz, an/aus. Klick auf
+      eine vorhandene Falle dreht die Richtung.
+    - Testlevel levels/test/falle.json; Tests falle_pfeil_flamme, editor_falle. hebel_haben_grund zählt „Falle aus“ als
+      Wirkung.
+    - Welche Rolle haben Affe und Schweinchen? Der Affe wartet am Seil hängend den Takt ab oder schwingt durch die
+      Lücke. Das Schweinchen segelt langsam und lässt Pfeile unter sich durch. Oft stellt einer per Hebel die Fallen für
+      den anderen ab.
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

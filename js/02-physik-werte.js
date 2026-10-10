@@ -70,6 +70,15 @@ const WASSER_PEGEL_TEMPO = 1.0; // px pro Schritt: so schnell steigt/sinkt das W
 const WASSER_TON_EINER = 2600;
 const WASSER_TON_BEIDE = 900;
 
+// ---------- Fallen (Ausbau 7, Welt Ruinen; elemente/falle.js) – Schritte = Physik-Schritte (60 = 1 Spielsekunde) ----------
+const FALLE_WARN = 45;          // so lange vorher glüht der Pfeil-Schlitz bzw. raucht die Flammen-Düse
+const PFEIL_TEMPO = 8;          // px pro Schritt
+const PFEIL_REICHWEITE = 1400;  // px, dann fällt der Pfeil weg (falls er nirgends stecken bleibt)
+const PFEIL_STECKT = 30;        // so lange bleibt ein Pfeil nach dem Einschlag sichtbar
+const FLAMME_LAENGE = 3;        // Kästchen weit speit die Flamme (Stein stoppt sie früher)
+const FLAMME_BREITE = 26;       // px
+const FLAMME_ANTEIL = 0.4;      // Anteil des Takts, in dem die Flamme brennt
+
 // ---------- Endgegner (Ausbau 6, elemente/boss.js) – Schritte = Physik-Schritte (60 = 1 Spielsekunde) ----------
 const BOSS_AUFTRITT = 90;        // so lange steht der Boss nach Phasenstart/Tod still (Zeit zum Orientieren)
 const BOSS_WECHSEL = 70;         // Sprung zum Platz der nächsten Phase

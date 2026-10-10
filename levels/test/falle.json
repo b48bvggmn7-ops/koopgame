@@ -1,0 +1,19 @@
+{
+ "hinweis": "Testlevel Ausbau 7: Fallen. Öffnen: index.html?testlevel=falle · 1) Pfeilfalle am Boden: Pfeile im 2-s-Takt, drüberspringen · 2) Flammenfalle an der Decke: brennt 40 % des Takts nach unten, vorher Rauch · 3) drei Flammen im Rhythmus (Versatz 0, ⅓, ⅔ – per ¼-Stufen) · 4) Pfeilfalle per Hebel 1 aus",
+ "welt": "ruinen", "tageszeit": "morgen", "wetter": "trocken",
+ "solids": [{"x": 0, "y": 680, "w": 4400, "h": 40, "type": "ground"}, {"x": 1360, "y": 0, "w": 120, "h": 480, "type": "wall"}],
+ "traps": [
+  {"x": 1080, "y": 640, "art": "pfeil", "richtung": "l", "takt": 2, "versatz": 0},
+  {"x": 1480, "y": 520, "art": "flamme", "richtung": "u", "takt": 3, "versatz": 0},
+  {"x": 1800, "y": 520, "art": "flamme", "richtung": "u", "takt": 3, "versatz": 0},
+  {"x": 2000, "y": 520, "art": "flamme", "richtung": "u", "takt": 3, "versatz": 0.25},
+  {"x": 2200, "y": 520, "art": "flamme", "richtung": "u", "takt": 3, "versatz": 0.5},
+  {"x": 3200, "y": 640, "art": "pfeil", "richtung": "l", "takt": 1.5, "versatz": 0, "link": 1}
+ ],
+ "switches": [{"x": 2620, "y": 660, "link": 1}],
+ "hooks": [{"x": 2000, "y": 300, "radius": 200}],
+ "doors": [], "plates": [], "spikes": [], "movingPlatforms": [],
+ "coins": [{"x": 700, "y": 600, "color": "blue"}, {"x": 740, "y": 600, "color": "pink"}],
+ "checkpoints": [{"x": 1240, "y": 680}, {"x": 2500, "y": 680}],
+ "startM": {"x": 140, "y": 680}, "startF": {"x": 100, "y": 680}, "goal": {"x": 4200, "y": 680}
+}

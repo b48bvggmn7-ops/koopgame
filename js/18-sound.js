@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -176,6 +176,10 @@ function* sfxBuild(a, out){
     // Teleporter (Ausbau 4): Luft-Sog hinein, weicher „Plopp“, Luft-Stoß heraus, feines Rieseln
     teleport:  ()=>{ const b = mk(0.65); swish(b, 0, 0.3, 450, 3000, 1.6, 0.9, -0.35, 0.7); thump(b, 0.17, 240, 480, 0.06, 0.45);
                      swish(b, 0.18, 0.32, 2800, 550, 1.3, 0.7, 0.35, 0.15); grains(b, 0.16, 0.35, 40, 2500, 7500, 0.0004, 0.0012, 0.2, 0.9, 'decay'); return b; },
+    // Fallen (Ausbau 7): Pfeil = Sehne/Holz-Tock + Luftzischen, Flamme = dumpfes „Wuff“ + Rauschen, Warnung = Stein-Klicken
+    pfeil:     ()=>{ const b = mk(0.5); modal(b, 0, 180, wood, 0.03, 0.7, 0, 0.6); swish(b, 0.01, 0.3, 3500, 1200, 1.4, 0.7, 0, 0.1); return b; },
+    flamme:    ()=>{ const b = mk(0.8); thump(b, 0, 110, 60, 0.2, 0.6); puff(b, 0, 0.7, 900, 0.8, 0, 0.1); swish(b, 0.02, 0.6, 1500, 600, 0.7, 0.4, 0, 0.2); return b; },
+    fallenWarn:()=>{ const b = mk(0.45); for(let i = 0; i < 2; i++) modal(b, i*0.16, 1300 - i*200, wood, 0.006, 0.5, 0, 0.8); return b; },
     // Steg (einseitige Plattform, Ausbau 4): kurzes Holz-Knarzen beim Landen
     steg:      ()=>{ const b = mk(0.35); creak(b, 0, 0.16, 70, 40, rnd(500, 620), 0.5, 0); modal(b, 0, 210, wood, 0.03, 0.6, 0, 0.5); return b; },
     // Wasser (Ausbau 5): Platschen beim Ein-/Auftauchen, „Blubb“ als Luft-Warnung, tiefes Luftholen an der Oberfläche
@@ -309,6 +313,9 @@ const SFX = {
   kokosKnack(x){ sfxLog('kokos'); sfxPlay('kokosKnack', {x}); },
   bossTreffer(x){ sfxLog('bosstreffer'); sfxPlay('bossTreffer', {x}); },
   bossBesiegt(x){ sfxLog('bossbesiegt'); sfxPlay('bossBesiegt', {x}); },
+  pfeil(x){ sfxLog('pfeil'); sfxPlay('pfeil', {x}); },   // Fallen (Ausbau 7)
+  flamme(x){ sfxLog('flamme'); sfxPlay('flamme', {x}); },
+  fallenWarn(x, flamme){ sfxLog('fallenwarn'); sfxPlay('fallenWarn', {x, rate: flamme ? 0.8 : 1}); },
   steg(x){ sfxLog('steg'); sfxPlay('steg', {x}); },   // Landen auf einem Steg
   teleport(x){ sfxLog('teleport'); sfxPlay('teleport', {x}); },   // Teleporter
   wechselWarn(x){ sfxLog('wechselwarn'); sfxPlay('wechselTick', {x}); },

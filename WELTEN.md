@@ -129,3 +129,78 @@ Wechselboden und Teleporter (die letzten beiden nur sanft, als erste Begegnung).
 - Haken-Radius höchstens 5 Kästchen.
 - Keine Zufallstode.
 - Jede Stelle ist als komfortabel, knapp oder Grenze eingestuft (Balance-Bericht am Ende von Ausbau 7).
+
+## Welt 2 – Ruinen
+
+**Thema:** Ein alter Sandstein-Tempel voller Fallen. Hier geht es um **Timing und Rhythmus**: Fallen schießen im Takt,
+ein Fels rollt hinterher, Licht muss gelenkt werden. Typisch 2–3 Versuche, die schwersten Stellen 5–6
+(Regelwerk Punkt 13).
+
+**Look:**
+- Himmel: Je nach Tageszeit des Levels; die natürliche Tageszeit ist Mittag (gleißendes Licht, Sonnenstrahlen).
+- Hintergrund: Tempelberge in der Ferne, Ruinen-Mauern mit Grün, Bäume und Blattwerk vorne.
+- Boden und Wände: sandiger, heller Boden mit gelblichem Gras; Sandstein-Wände mit Fugen; Moos olivgrün.
+- Tageszeiten: Abends und nachts werden Boden und Wände dunkler (wie im Dschungel). Nachts gibt es Glühwürmchen und
+  Fledermäuse.
+- Wetter: wechselnd, trocken oder Dauerregen – alle passen.
+
+**Tiere:** Eidechsen am Boden, Tauben und Spatzen, Schmetterlinge (nachts Glühwürmchen), Fledermäuse, Schnecken.
+
+**Deko:** Gräser, Knospen, Moos an Mauerkanten, Ranken; dazu die neuen Fallen-Köpfe aus Stein (Pfeil-Schlitze,
+Flammen-Düsen) und Lichtkristalle.
+
+**Musik und Ambiente:** dieselbe Klavier-Musik; weniger Vögel als im Dschungel (Tempel), Grillen leise schon am Tag, der
+Fluss nur leise in der Ferne.
+
+**Mechanik-Set:** Pressen, Stachelwände, Fallen, Druckplatten (schon vorhanden). Neu in Ausbau 7:
+- **Falle** mit Pfeil oder Flamme, im Takt; blinkt bzw. raucht vorher, ein Hebel kann sie abstellen.
+- **Rollender Fels:** vom Hebel gestartet, rollt hinterher und zerschellt an Wänden.
+- **Licht:** Lichtquelle, drehbare Spiegel und ein Kristall, der eine Nummer anschaltet, solange Licht auf ihn fällt.
+
+Dazu Wechselboden und Teleporter als Kern-Rätsel.
+
+### Plan pro Level
+
+| Nr. | Level | Tageszeit / Wetter | Rolle | Schwerpunkt | typisch / schwerste |
+|---|---|---|---|---|---|
+| 1 | Ruinen (vorhanden, level-3) | mittag / wechselnd | Kombi | Pressen, Stachelwand-Jagd, Hebel-Reihenfolge | 2 / 3–4 |
+| 2 | Mondnacht (vorhanden, level-4) | nacht | Kombi (sehr schwer) | Bröckel-Sprint, Schleuse, Stachelwände | 3 / 5 |
+| 3 | **Fallengang** (neu, level-9) | morgen / wechselnd | Lehr-Level | Pfeil- und Flammenfallen im Takt, Hebel stellt Fallen ab, Wechselboden im Rhythmus | 2 / 4 |
+| 4 | **Sonnentempel** (neu, level-10) | abend / regen | Kombi-Level | Licht-Rätsel (Spiegel nur per Haken bzw. nur segelnd erreichbar), Teleporter, Fallen | 2–3 / 5 |
+| 5 | **Felsenflucht** (neu, level-11) | mittag / regen | Meister-Level | Rollender Fels als Verfolgung, alles kombiniert | 3 / 6 |
+
+**Fallengang (level-9):**
+1. Pfeile im Takt lesen (beide).
+2. Flammen-Säulen, durch die das Schweinchen langsam hindurchsegelt, während der Affe am Seil abwartet.
+3. Einer legt den Hebel um, der die Fallen abstellt, und der andere läuft durch.
+4. Wechselboden und Fallen im selben Takt.
+
+**Sonnentempel (level-10):**
+1. Licht lernen: Spiegel drehen (J / Num 2), der Kristall öffnet die Tür.
+2. Spiegel, die nur der Affe (Haken) oder nur das Schweinchen (segeln) erreicht.
+3. Licht durch einen Teleporter-Gang, Fallen auf dem Weg.
+4. Meister-Stelle: zwei Lichtstrahlen, zwei Kristalle.
+
+**Felsenflucht (level-11):**
+1. Erste Felsflucht: Hebel, Tor auf, Fels rollt; nach vorne fliehen (Affe am Haken, Schweinchen segelt über Gruben).
+2. Fels und Fallen zusammen.
+3. Wechselboden und Teleporter auf der Flucht.
+4. Finale: lange Verfolgung mit Licht-Tor.
+
+### Rolle von Affe und Schweinchen je Mechanik (Ruinen)
+
+| Mechanik | Affe | Schweinchen |
+|---|---|---|
+| Pfeilfalle | wartet am Seil hängend den Takt ab, schwingt durch Lücken | segelt langsam und lässt Pfeile unter sich durch |
+| Flammenfalle | zieht sich am Seil über Flammen-Düsen | segelt sanft herab, wenn die Flamme gerade aus ist |
+| Fallen abstellen (Hebel) | erreicht hohe Hebel per Haken | erreicht ferne Hebel segelnd |
+| Rollender Fels | flieht nach oben an Haken, der Fels rollt darunter durch | segelt über Gruben, in die der Fels fällt |
+| Licht/Spiegel | dreht Spiegel, die nur per Haken erreichbar sind | dreht Spiegel auf fernen Simsen (segeln) |
+| Kristall (Nummer) | – öffnet Türen für beide, solange das Licht trifft – | |
+| Wechselboden/Teleporter | wie im Dschungel, hier im Takt der Fallen | wie im Dschungel |
+
+**Regeln, die in jedem Ruinen-Level gelten:**
+- Münzen nur blau und pink, gleich viele.
+- Checkpoints alle 40–60 Spalten und vor jeder harten Stelle.
+- Ein Hebel, der den Fels startet, öffnet auch ein Tor.
+- Keine Zufallstode: Fallen laufen im festen Takt und warnen vorher.

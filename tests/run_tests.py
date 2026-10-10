@@ -1080,7 +1080,8 @@ async def hebel_haben_grund(g):
             const hk = hooks.filter(h=>h.moving && h.switchLink===l).length;
             const wb = solids.filter(s=>s.type==='wechsel' && s.link===l).length;          // Wechselboden (Ausbau 4)
             const tp = (typeof teleporters !== 'undefined' ? teleporters : []).filter(t=>t.link===l).length;   // Teleporter (Ausbau 4)
-            if(!doors && !movers.length && !hk && !wb && !tp) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const fa = (typeof fallen !== 'undefined' ? fallen : []).filter(f=>f.link===l).length;   // Fallen aus (Ausbau 7)
+            if(!doors && !movers.length && !hk && !wb && !tp && !fa) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
             const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m));
             if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
           }
@@ -2665,7 +2666,8 @@ async def element_register(g):
                  ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True],
                  ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False],
                  ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False],
-                 ['boss', 'boss', True, True], ['bossArena', 'bossArena', True, False], ['bossPlatz', 'bossPlaetze', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['boss', 'boss', True, True], ['bossArena', 'bossArena', True, False], ['bossPlatz', 'bossPlaetze', True, False],
+                 ['falle', 'traps', True, True]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -3266,6 +3268,63 @@ async def wasser_testlevel_ton_welt(g):
         assert wa['level'] == [] and wa.get('look') == 'wasser', wa
         assert await g.ev("composeLook('wasser', 'morgen') === 'wasser' && THEMES.wasser.label.startsWith('Lagune')")
     finally:
+        srv.shutdown()
+
+@test
+async def falle_pfeil_flamme(g):
+    """Ausbau 7 (Ruinen): Element Falle – Stein-Kopf (fest), Pfeil im Takt fliegt bis zum Stein und tötet, Flamme brennt
+    40 % des Takts (vorher Warnung), Versatz verschiebt den Takt, „per Nummer aus“ stellt die Falle ab, Neustart setzt
+    die Takt-Uhr zurück (danach erst Warnung, dann Schuss); Testlevel levels/test/falle.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'falle.json')); await g.steps(2)
+    k = await g.ev("[fallen.length, solids.filter(s => s.type === 'falle').length, fallen.map(f => f.flammeLen)]")
+    assert k[0] == 6 and k[1] == 6 and k[2][1] == 116, k
+    # Pfeil: Affe steht in der Schusslinie (Kopf links, Pfeil fliegt nach links) -> getroffen
+    await g.ev("p1.x = 900; p1.y = 680; p2.x = 2700; p2.y = 680; camPos = camX = 600; deathState = null; fallenZuruecksetzen();")
+    await g.p.wait_for_function("!!deathState || simSteps < 0", timeout=8000)
+    assert await g.ev("deathState.victim === p1"), 'Pfeil trifft nicht'
+    await weiter_nach_tod(g)
+    # Flamme (Takt 3 s = 180 Schritte, brennt 72): außerhalb des Brennens sicher, beim Zünden tot; vorher Warnung
+    await g.ev("p1.x = 1820; p1.y = 680; p2.x = 2700; p2.y = 680; camPos = camX = 1500; deathState = null; fallenSchritte = 90 + FALLE_WARN;")
+    await g.steps(20)
+    w = await g.ev("[!!deathState, falleWarnung(fallen[2]) > 0, falleBrennt(fallen[2])]")
+    assert w == [False, False, False], w
+    await g.ev("fallenSchritte = 150 + FALLE_WARN;"); await g.steps(3)
+    assert await g.ev("falleWarnung(fallen[2]) > 0 && !deathState"), 'keine Warnung vor dem Zünden'
+    await g.p.wait_for_function("!!deathState", timeout=6000)
+    assert await g.ev("deathState.victim === p1 && fallenSchritte <= 190 + FALLE_WARN"), 'Flamme tötet nicht beim Zünden'
+    await weiter_nach_tod(g)
+    assert await g.ev("fallenSchritte") < 60, 'Takt-Uhr nach dem Tod nicht zurückgesetzt'
+    # Versatz: die drei Flammen brennen nacheinander
+    b = await g.ev("[0, 50, 100, 140].map(t => { fallenSchritte = t + FALLE_WARN; return [2, 3, 4].map(i => falleBrennt(fallen[i])); })")
+    assert b[0] == [True, False, False] and b[2][2] and not b[2][0], b
+    # per Nummer aus: Hebel 1 an -> keine neuen Pfeile
+    await g.ev("deathState = null; p1.x = 2620; p1.y = 680; p2.x = 2580; p2.y = 680; camPos = camX = 2300; fallenPfeile = [];")
+    await g.p.keyboard.press('KeyJ'); await g.steps(5)
+    assert await g.ev("!!linkOn[1] && !falleAktiv(fallen[5])")
+    await g.ev("fallenSchritte = 0;"); await g.steps(140)
+    assert await g.ev("fallenPfeile.every(a => a.x < 2700) && !deathState"), "abgestellte Falle schießt"
+
+@test
+async def editor_falle(g):
+    """Ausbau 7: Editor-Werkzeug Falle (Gruppe Gefahren) mit Art, Richtung, Takt, Versatz, „per Nummer aus“; Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.click('.tool[data-tool=falle]')
+        await p.select_option('#opt-falle-art', 'flamme'); await p.select_option('#opt-falle-richtung', 'u')
+        await p.select_option('#opt-falle-takt', '3'); await p.select_option('#opt-falle-versatz', '0.5')
+        x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y)
+        await p.select_option('#opt-falle-art', 'pfeil'); await p.select_option('#opt-falle-richtung', 'l')
+        await p.select_option('#opt-falle-schalter', 'nummer'); await p.select_option('#linkSelect', '4')
+        x, y = await ed_zelle(p, 9, 12); await p.mouse.click(x, y)
+        await p.mouse.click(x, y)   # Klick auf vorhandene Falle: Richtung drehen (l -> o)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert sorted(out['traps'], key=lambda t: t['x']) == [
+            {'x': 200, 'y': 400, 'art': 'flamme', 'richtung': 'u', 'takt': 3, 'versatz': 0.5},
+            {'x': 360, 'y': 480, 'art': 'pfeil', 'richtung': 'o', 'takt': 3, 'versatz': 0.5, 'link': 4}], out['traps']
+    finally:
+        await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
 @test
