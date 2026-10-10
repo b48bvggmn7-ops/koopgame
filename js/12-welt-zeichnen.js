@@ -567,6 +567,9 @@ function linkTargets(link){
   for(const h of hooks){
     if(h.moving && h.switchCtl && h.switchLink===link) pts.push({x:h.x+18, y:h.y-18, kind:'hook', active:h.tripActive});
   }
+  for(const b of wasserBecken) for(const pg of b.pegel){   // Wasserstand-Marke (elemente/stroemung.js)
+    if(pg.link===link) pts.push({x:pg.x, y:pg.y-12, kind:'pegel', active:!!linkOn[link]});
+  }
   for(const t of teleporters){   // Teleporter per Verknüpfung (elemente/teleporter.js): Plakette über dem Tor
     if(t.link===link) pts.push({x:t.x+20, y:t.y-46, kind:'tele', active:!!linkOn[link]});
   }

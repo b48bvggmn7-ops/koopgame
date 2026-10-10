@@ -42,7 +42,7 @@
   `optionen`, Logik pro Schritt `spiel.schritt`, Neustart `spiel.zuruecksetzen`), `teleporter.js` (Paare per 2. Klick:
   `editor.neu`, Linie `editor.zeichnenAlle`, Einfügen `editor.einfuegen`), `einseitig.js` (Steg, Kachel; Kollision
   type 'oneway' in `collideAxis`); Ausbau 5: `wasser.js` (Wasserflächen, Schwimmen `schwimmPhysik`, Luft `luftSchritt`,
-  vor den Figuren gezeichnet über `spiel.zeichnenVorne`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `assets/` – Bilder (Figuren, Schild …); `assets/audio/` – eigene Aufnahmen des Nutzers (FL Studio).
 - `editor/` – Level-Editor: `editor/index.html` lädt `editor/js/*.js` in fester Reihenfolge (klassische Skripte,

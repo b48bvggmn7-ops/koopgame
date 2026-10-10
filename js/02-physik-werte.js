@@ -61,3 +61,8 @@ const BLASE_ABSTAND = 80;       // px: so nah müssen beide sein, damit die Blas
 const BLASE_HALTEN = 130;       // px: weiter auseinander -> Blase platzt
 const BLASE_RADIUS = 46;        // px: kleinste Größe der Blase (wächst mit dem Abstand der beiden)
 const BLASE_RUF = 45;           // Schritte (0,75 s): so lange „wartet“ ein Tastendruck auf den des Partners
+// Strömung (elemente/stroemung.js): Schub pro Schritt je Stärke-Stufe (schwach 1 / mittel 2 / stark 3). Mit dem
+// Wasser-Widerstand ergibt das etwa: schwach -> man schwimmt gut gegenan, mittel -> nur knapp, stark -> gar nicht.
+const STROEMUNG_KRAFT = 0.15;
+const STROEMUNG_EXTRA = 4;      // so viel schneller als SWIM_MAX_SPEED darf eine Strömung jemanden tragen
+const WASSER_PEGEL_TEMPO = 1.0; // px pro Schritt: so schnell steigt/sinkt das Wasser per Hebel/Schleuse (1 Kästchen in 0,7 s)

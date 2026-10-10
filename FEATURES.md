@@ -544,6 +544,19 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Glitzer, aufsteigende Bläschen und Herzchen; beim Entstehen Herzchen-Funken und „Blubb-blubb-blubb“.
         Rolle: Luft reicht allein 12 s – lange Tauchgänge schafft man nur zusammen (beide müssen zusammen bleiben).
         Test wasser_luftblase.
+      STRÖMUNG (elemente/stroemung.js; Spiel-Feld currents [{x, y, w, h, dx, dy, staerke}]): schiebt Figuren, deren
+        Körpermitte im Wasser in der Strömung liegt, in ihre Richtung (→ ← ↑ ↓). Stärke 1/2/3 (STROEMUNG_KRAFT 0,15 pro
+        Stufe): gegen „schwach“ schwimmt man gut an, gegen „mittel“ nur knapp, gegen „stark“ gar nicht; ohne Taste treibt
+        man mit (höchstens SWIM_MAX_SPEED + STROEMUNG_EXTRA 4). Sichtbar als fließende helle Striche (nur im Wasser).
+      WASSERSTAND / SCHLEUSE (Spiel-Feld waterLevels [{x, y, link}]): Marke mit Verknüpfungs-Nummer über oder in einem
+        Becken. Ist die Nummer AN (Hebel = bleibt an; Druckplatte = Schleuse, nur solange jemand draufsteht), steigt
+        bzw. sinkt das Wasser des Beckens weich (WASSER_PEGEL_TEMPO 1 px pro Schritt, 1 Kästchen in ~0,7 s) bis zur
+        Oberkante der Marke; AUS = zurück auf den gemalten Stand. Beim Steigen wachsen die obersten Wasser-Rechtecke nach
+        oben. Zarte gestrichelte Linie in der Farbe der Nummer zeigt das Ziel, Plakette mit Nummer wie bei Türen,
+        tiefes Gurgeln beim Anlaufen. Neustart/Tod: Wasser wieder auf dem gemalten Stand.
+      Rolle (Strömung/Schleuse): einer legt den Hebel um oder hält die Schleuse, der andere schwimmt hindurch; starke
+        Strömungen trennen Wege oder tragen beide schnell weiter.
+      Tests wasser_stroemung_pegel, editor_stroemung_pegel.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).
@@ -686,6 +699,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     übernimmt die Einstellungen des ersten Tors. Eingefügte Paare (Strg+V) bekommen eine neue, freie Paar-Nummer.
   - Wasser (Ausbau 5, neue Gruppe „Wasser“, ziehbar wie Aufwind): halb durchsichtig blau mit kleiner Welle; Export fasst
     die Kästchen zu großen Rechtecken zusammen (nebeneinander UND untereinander).
+    Strömung (ziehbar): daneben „Richtung“ (→ ← ↑ ↓) und „Stärke“ (schwach/mittel/stark); im Raster Pfeil, je stärker
+    desto größer/dunkler; Klick auf ein vorhandenes Kästchen dreht die Richtung. Wasserstand: Kästchen mit gestrichelter
+    Oberkante, Pfeil und Nummer (Verknüpfung aus „Schalter & Logik“), ✓-Markierung „Wasserstand“.
   - Steg (einseitig) (Ausbau 4, Gruppe „Gelände“, ziehbar wie Boden): im Raster ein Brett oben im Kästchen mit Pfeil nach
     oben; Export als 12 px dicke Stege (benachbarte Kästchen einer Reihe zusammengefasst). Lässt sich nicht bewegen.
   - (früher: Auswahl „Thema“ oben – Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,

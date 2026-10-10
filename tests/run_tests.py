@@ -2331,7 +2331,8 @@ async def element_register(g):
     assert k == [['hebel', 'switches', True, True], ['tuer', 'doors', True, False], ['druckplatte', 'plates', True, True],
                  ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True],
                  ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True],
-                 ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False],
+                 ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2819,6 +2820,65 @@ async def wasser_luftblase(g):
     await g.steps(40)
     l1 = await g.ev("p1.luft"); await g.steps(20)
     assert await g.ev("p1.luft") < l1, 'Luft sinkt nach dem Platzen nicht mehr'
+
+@test
+async def wasser_stroemung_pegel(g):
+    """Ausbau 5: Strömung schiebt Schwimmende (gegen „stark“ kommt man nicht an, gegen „schwach“ schon); Wasserstand per
+    Verknüpfung: Nummer an -> Wasser steigt bzw. sinkt weich bis zur Marke, aus -> zurück (mit Ton)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 140, 'y': 680},
+                       waters=[{'x': 400, 'y': 300, 'w': 1200, 'h': 380}, {'x': 1800, 'y': 300, 'w': 400, 'h': 380}],
+                       currents=[{'x': 800, 'y': 300, 'w': 200, 'h': 380, 'dx': 1, 'dy': 0, 'staerke': 3},
+                                 {'x': 1200, 'y': 300, 'w': 200, 'h': 380, 'dx': -1, 'dy': 0, 'staerke': 1}],
+                       switches=[{'x': 300, 'y': 660, 'link': 2}],
+                       waterLevels=[{'x': 500, 'y': 200, 'link': 2}, {'x': 1900, 'y': 600, 'link': 2}]))
+    setz = lambda x, y: g.ev(f"p1.x = {x}; p1.y = {y}; p1.vx = p1.vy = 0; p1._px = p1.x; p1._py = p1.y; p2.x = {x} - 60; p2._px = p2.x")
+    # starke Strömung nach rechts: gegenan (links) schwimmen hilft nicht
+    await setz(860, 560); await g.p.keyboard.down('KeyA'); await g.steps(30); await g.p.keyboard.up('KeyA')
+    assert await g.ev("p1.x") > 870, f"starke Strömung schiebt nicht: {await g.ev('p1.x')}"
+    # schwache Strömung nach links: gegenan (rechts) kommt man voran
+    await setz(1260, 560); await g.p.keyboard.down('KeyD'); await g.steps(30); await g.p.keyboard.up('KeyD')
+    assert await g.ev("p1.x") > 1270, f"gegen schwache Strömung kein Vorankommen: {await g.ev('p1.x')}"
+    # ohne Taste treibt man mit der Strömung
+    await setz(1300, 560); await g.steps(30)
+    assert await g.ev("p1.x") < 1290, f"schwache Strömung treibt nicht: {await g.ev('p1.x')}"
+    # Wasserstand: Hebel an -> Becken 1 steigt auf 200, Becken 2 sinkt auf 600
+    assert await g.ev("!imWasser(500, 250) && imWasser(1900, 400)")
+    await g.ev("window.B = x => wasserBecken.find(b => b.minX === x); SFX_LOG.length = 0; setLink(2, true)")
+    await g.p.wait_for_function("B(400).surf === 200 && B(1800).surf === 600", timeout=10000)
+    assert await g.ev("imWasser(500, 250) && !imWasser(1900, 400) && imWasser(1900, 650)"), 'Wasserstand falsch'
+    assert 'pegel' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # aus -> zurück
+    await g.ev("setLink(2, false)")
+    await g.p.wait_for_function("B(400).surf === 300 && B(1800).surf === 300", timeout=10000)
+
+@test
+async def editor_stroemung_pegel(g):
+    """Ausbau 5: Editor-Werkzeuge Strömung (Richtung/Stärke wählen, ziehbar, Klick dreht) und Wasserstand (mit
+    Verknüpfungs-Nummer) in der Gruppe Wasser -> Export und Spiel-Umwandlung."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=wasser] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['water', 'current', 'waterlevel'], reihe
+        await p.click('.tool[data-tool=current]')
+        await p.select_option('#opt-current-richtung', 'l'); await p.select_option('#opt-current-staerke', '3')
+        await ed_ziehen(p, (4, 12), (6, 12))
+        x, y = await ed_zelle(p, 9, 12); await p.mouse.click(x, y); await p.mouse.click(x, y)   # 2. Klick dreht: links -> hoch
+        await p.select_option('#linkSelect', '5'); await p.click('.tool[data-tool=waterlevel]')
+        x, y = await ed_zelle(p, 12, 8); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['currents'] == [{'x': 160, 'y': 480, 'w': 120, 'h': 40, 'dx': -1, 'dy': 0, 'staerke': 3},
+                                   {'x': 360, 'y': 480, 'w': 40, 'h': 40, 'dx': 0, 'dy': -1, 'staerke': 3}], out['currents']
+        assert out['waterLevels'] == [{'x': 500, 'y': 320, 'link': 5}], out['waterLevels']
+        assert 'Wasserstand' in await p.evaluate("[...linkSelect.options].find(o => o.value === '5').textContent")
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['currents'] == out['currents'] and umg['waterLevels'] == out['waterLevels'], umg
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
 
 async def main(filter_):
     async with async_playwright() as pw:

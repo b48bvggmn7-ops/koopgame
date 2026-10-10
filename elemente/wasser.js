@@ -53,6 +53,7 @@ function schwimmPhysik(pl, moveDir, jumpPressed, frozen){
   pl.vx = Math.max(-SWIM_MAX_SPEED, Math.min(SWIM_MAX_SPEED, pl.vx));
   pl.vy = Math.max(-SWIM_MAX_SPEED, Math.min(SWIM_MAX_SPEED, pl.vy));
   if((!pl.headUnder || nahOben) && !runter && !hoch) pl.vy *= 0.75;   // an der Oberfläche ruhig treiben statt wippen
+  if(typeof stroemungen !== 'undefined' && stroemungen.length) stroemungAnwenden(pl);   // elemente/stroemung.js
   if(jumpPressed){
     if(!pl.headUnder || nahOben) pl.vy = SWIM_JUMP_OUT;     // an der Oberfläche: aus dem Wasser springen
     else { pl.vy = Math.min(pl.vy, -SWIM_KICK); pl.schwimmStoss = 1; }
