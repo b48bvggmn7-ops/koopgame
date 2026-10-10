@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -180,6 +180,12 @@ function* sfxBuild(a, out){
     pfeil:     ()=>{ const b = mk(0.5); modal(b, 0, 180, wood, 0.03, 0.7, 0, 0.6); swish(b, 0.01, 0.3, 3500, 1200, 1.4, 0.7, 0, 0.1); return b; },
     flamme:    ()=>{ const b = mk(0.8); thump(b, 0, 110, 60, 0.2, 0.6); puff(b, 0, 0.7, 900, 0.8, 0, 0.1); swish(b, 0.02, 0.6, 1500, 600, 0.7, 0.4, 0, 0.2); return b; },
     fallenWarn:()=>{ const b = mk(0.45); for(let i = 0; i < 2; i++) modal(b, i*0.16, 1300 - i*200, wood, 0.006, 0.5, 0, 0.8); return b; },
+    // Rollender Fels (Ausbau 7): Grollen beim Losrollen, dumpfes Rumpeln je Umdrehung, Aufprall, Zerschellen mit Geröll
+    felsStart: ()=>{ const b = mk(1.2); puff(b, 0, 1.1, 260, 1.0, 0, 0.2); thump(b, 0.05, 70, 45, 0.6, 0.7); grains(b, 0.1, 0.9, 50, 600, 2500, 0.002, 0.008, 0.3, 0.6); return b; },
+    felsRollen:()=>{ const b = mk(0.5); thump(b, 0, 80, 55, 0.3, 0.6); puff(b, 0, 0.4, 300, 0.5, 0, 0.1); return b; },
+    felsAufprall:()=>{ const b = mk(0.7); thump(b, 0, 95, 40, 0.4, 1.0); puff(b, 0, 0.5, 500, 0.7, 0, 0.02); grains(b, 0.02, 0.5, 40, 800, 3500, 0.002, 0.008, 0.35, 0.8, 'decay'); return b; },
+    felsBruch: ()=>{ const b = mk(1.2); thump(b, 0, 120, 45, 0.35, 1.0); puff(b, 0, 0.9, 700, 0.9, 0, 0.02);
+                     for(let i = 0; i < 26; i++) modal(b, 0.03 + R()*0.8, rnd(300, 1400), wood, rnd(0.01, 0.04), rnd(0.2, 0.6), (R()*2 - 1)*0.8, 0.5); return b; },
     // Steg (einseitige Plattform, Ausbau 4): kurzes Holz-Knarzen beim Landen
     steg:      ()=>{ const b = mk(0.35); creak(b, 0, 0.16, 70, 40, rnd(500, 620), 0.5, 0); modal(b, 0, 210, wood, 0.03, 0.6, 0, 0.5); return b; },
     // Wasser (Ausbau 5): Platschen beim Ein-/Auftauchen, „Blubb“ als Luft-Warnung, tiefes Luftholen an der Oberfläche
@@ -316,6 +322,10 @@ const SFX = {
   pfeil(x){ sfxLog('pfeil'); sfxPlay('pfeil', {x}); },   // Fallen (Ausbau 7)
   flamme(x){ sfxLog('flamme'); sfxPlay('flamme', {x}); },
   fallenWarn(x, flamme){ sfxLog('fallenwarn'); sfxPlay('fallenWarn', {x, rate: flamme ? 0.8 : 1}); },
+  felsStart(x){ sfxLog('felsstart'); sfxPlay('felsStart', {x}); },   // Rollender Fels (Ausbau 7)
+  felsRollen(x){ sfxPlay('felsRollen', {x}); },
+  felsAufprall(x){ sfxLog('felsaufprall'); sfxPlay('felsAufprall', {x}); },
+  felsBruch(x){ sfxLog('felsbruch'); sfxPlay('felsBruch', {x}); },
   steg(x){ sfxLog('steg'); sfxPlay('steg', {x}); },   // Landen auf einem Steg
   teleport(x){ sfxLog('teleport'); sfxPlay('teleport', {x}); },   // Teleporter
   wechselWarn(x){ sfxLog('wechselwarn'); sfxPlay('wechselTick', {x}); },

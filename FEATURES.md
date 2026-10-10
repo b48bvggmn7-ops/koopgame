@@ -784,6 +784,24 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Lücke. Das Schweinchen segelt langsam und lässt Pfeile unter sich durch. Oft stellt einer per Hebel die Fallen für
       den anderen ab.
 
+  - ROLLENDER FELS (Ausbau 7, Welt Ruinen; elemente/fels.js, Spiel-Feld boulders [{x (Mitte), y (Unterkante), link,
+    richtung: r|l, tempo}]): großer runder Sandstein (Durchmesser 2,5 Kästchen, mit Rissen und Moos).
+    - Start: Er wartet, bis seine Verknüpfung AN geht (Hebel oder Druckplatte), und rollt dann los, auch wenn die Nummer
+      wieder aus geht.
+    - Rollen: Er wird schneller bis zu seinem Tempo (langsam 3,6 / mittel 4,4 / schnell 5,4; FELS_* in 02-physik-werte.js)
+      und dreht sich dabei. Er fällt über Kanten, landet auch auf Stegen und nimmt Stufen bis 12 px mit. Bröckelboden
+      unter ihm bricht los.
+    - Ende: An einer Wand, einer geschlossenen Tür oder einer höheren Stufe zerschellt er (Geröll-Wolke). Fällt er aus
+      dem Level, ist er weg.
+    - Berührung bedeutet Tod. Nach Tod oder Neustart liegt er wieder am Start und wartet.
+    - Sound: Grollen beim Losrollen, Rumpeln je Umdrehung, Aufprall, Zerschellen.
+    - Editor: Werkzeug „Rollender Fels“ (Gruppe Gefahren, mit Verknüpfung) mit Richtung und Tempo. Klick auf einen
+      vorhandenen Fels dreht die Richtung.
+    - hebel_haben_grund: Ein Fels zählt als Gefahr; ein Hebel, der ihn startet, muss auch ein Tor öffnen.
+    - Testlevel levels/test/fels.json; Tests fels_rollt, editor_fels.
+    - Welche Rolle haben Affe und Schweinchen? Einer startet die Flucht, beide müssen weg: Der Affe flieht nach oben an
+      Haken, der Fels rollt darunter durch. Das Schweinchen segelt über Gruben, in die der Fels fällt.
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

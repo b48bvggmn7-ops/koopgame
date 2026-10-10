@@ -78,6 +78,10 @@ const PFEIL_STECKT = 30;        // so lange bleibt ein Pfeil nach dem Einschlag 
 const FLAMME_LAENGE = 3;        // Kästchen weit speit die Flamme (Stein stoppt sie früher)
 const FLAMME_BREITE = 26;       // px
 const FLAMME_ANTEIL = 0.4;      // Anteil des Takts, in dem die Flamme brennt
+// Rollender Fels (elemente/fels.js)
+const FELS_RADIUS = 50;         // px (Durchmesser 2,5 Kästchen)
+const FELS_BESCHL = 0.08;       // so schnell kommt er auf sein Tempo (Anteil pro Schritt)
+const FELS_STUFE = 12;          // so hohe Stufen nimmt er mit, höhere Kanten/Wände lassen ihn zerschellen
 
 // ---------- Endgegner (Ausbau 6, elemente/boss.js) – Schritte = Physik-Schritte (60 = 1 Spielsekunde) ----------
 const BOSS_AUFTRITT = 90;        // so lange steht der Boss nach Phasenstart/Tod still (Zeit zum Orientieren)

@@ -1081,8 +1081,9 @@ async def hebel_haben_grund(g):
             const wb = solids.filter(s=>s.type==='wechsel' && s.link===l).length;          // Wechselboden (Ausbau 4)
             const tp = (typeof teleporters !== 'undefined' ? teleporters : []).filter(t=>t.link===l).length;   // Teleporter (Ausbau 4)
             const fa = (typeof fallen !== 'undefined' ? fallen : []).filter(f=>f.link===l).length;   // Fallen aus (Ausbau 7)
-            if(!doors && !movers.length && !hk && !wb && !tp && !fa) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
-            const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m));
+            const fe = (typeof felsen !== 'undefined' ? felsen : []).filter(F=>F.link===l).length;   // Rollender Fels (Ausbau 7)
+            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m)) || fe > 0;
             if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
           }
           return out;
@@ -2667,7 +2668,7 @@ async def element_register(g):
                  ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False],
                  ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False],
                  ['boss', 'boss', True, True], ['bossArena', 'bossArena', True, False], ['bossPlatz', 'bossPlaetze', True, False],
-                 ['falle', 'traps', True, True]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['falle', 'traps', True, True], ['fels', 'boulders', True, True]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -3323,6 +3324,47 @@ async def editor_falle(g):
         assert sorted(out['traps'], key=lambda t: t['x']) == [
             {'x': 200, 'y': 400, 'art': 'flamme', 'richtung': 'u', 'takt': 3, 'versatz': 0.5},
             {'x': 360, 'y': 480, 'art': 'pfeil', 'richtung': 'o', 'takt': 3, 'versatz': 0.5, 'link': 4}], out['traps']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def fels_rollt(g):
+    """Ausbau 7 (Ruinen): Rollender Fels – wartet, bis seine Nummer an geht; rollt dann (Richtung/Tempo), fällt über die
+    Kante, rollt durch die offene Tür, zerschellt an der Wand; Berührung = tot; Neustart: zurück an den Start, wartet.
+    Testlevel levels/test/fels.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'fels.json')); await g.steps(2)
+    await g.ev("p1.x = 2400; p1.y = 680; p2.x = 2450; p2.y = 680; deathState = null;")
+    await g.steps(30)
+    assert await g.ev("felsen[0].aktiv === false && felsen[0].x === 120 && felsen[0].y === 510"), 'Fels rollt ohne Hebel'
+    await g.ev("setLink(1, true)")
+    await g.p.wait_for_function("felsen[0].x > 700", timeout=15000)
+    k = await g.ev("[felsen[0].y, felsen[0].vx, felsen[0].weg]")
+    assert k[0] == 630 and abs(k[1] - 4.4) < 0.01 and not k[2], f'Fels rollt nicht über die Stufe hinunter: {k}'
+    # Druckplatte 2 startet den schnellen Fels, der an der Wand zerschellt
+    await g.ev("p1.x = 1980; p1.y = 680; p2.x = 1940; p2.y = 680;")
+    await g.p.wait_for_function("felsen[1].weg", timeout=15000)
+    assert await g.ev("felsen[1].x > 2900 && felsen[1].x < 3040"), await g.ev("felsen[1].x")
+    # Berührung = tot
+    await g.ev("deathState = null; p1.x = 2400; p1.y = 680; felsZuruecksetzen(); felsen[1].aktiv = true;")
+    await g.p.wait_for_function("!!deathState", timeout=15000)
+    assert await g.ev("deathState.victim === p1"), 'Fels tötet nicht'
+    await weiter_nach_tod(g)
+    assert await g.ev("felsen.every(F => !F.aktiv && !F.weg && F.x === F.sx)"), 'Fels nach dem Tod nicht zurück'
+
+@test
+async def editor_fels(g):
+    """Ausbau 7: Editor-Werkzeug Rollender Fels (Gruppe Gefahren, mit Verknüpfung), Richtung/Tempo, Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.click('.tool[data-tool=fels]')
+        await p.select_option('#linkSelect', '3'); await p.select_option('#opt-fels-richtung', 'l'); await p.select_option('#opt-fels-tempo', '5.4')
+        x, y = await ed_zelle(p, 6, 14); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['boulders'] == [{'x': 260, 'y': 600, 'link': 3, 'richtung': 'l', 'tempo': 5.4}], out['boulders']
+        assert 'Fels' in await p.evaluate("[...linkSelect.options].find(o => o.value === '3').textContent")
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()

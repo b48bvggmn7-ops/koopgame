@@ -1,0 +1,134 @@
+{
+ "hinweis": "Testlevel Ausbau 7: Rollender Fels. Öffnen: index.html?testlevel=fels · Hebel 1 öffnet das Tor UND lässt den Fels oben links losrollen: er rollt die Stufe hinunter, über den Boden, fällt in die Grube … Flucht nach rechts: der Affe zieht sich am Haken hoch, das Schweinchen segelt über die zweite Grube · am Ende zerschellt der Fels an der Wand · Druckplatte 2 drüben startet einen schnellen Fels, der an der Wand rechts zerschellt",
+ "welt": "ruinen",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 1600,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 0,
+   "y": 560,
+   "w": 400,
+   "h": 120,
+   "type": "ground"
+  },
+  {
+   "x": 1920,
+   "y": 680,
+   "w": 1200,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 3080,
+   "y": 200,
+   "w": 40,
+   "h": 480,
+   "type": "wall"
+  },
+  {
+   "x": 1000,
+   "y": 0,
+   "w": 40,
+   "h": 520,
+   "type": "wall"
+  }
+ ],
+ "boulders": [
+  {
+   "x": 120,
+   "y": 560,
+   "link": 1,
+   "richtung": "r",
+   "tempo": 4.4
+  },
+  {
+   "x": 2100,
+   "y": 680,
+   "link": 2,
+   "richtung": "r",
+   "tempo": 5.4
+  }
+ ],
+ "switches": [
+  {
+   "x": 820,
+   "y": 660,
+   "link": 1
+  }
+ ],
+ "doors": [
+  {
+   "x": 1020,
+   "y": 540,
+   "link": 1
+  },
+  {
+   "x": 1020,
+   "y": 580,
+   "link": 1
+  },
+  {
+   "x": 1020,
+   "y": 620,
+   "link": 1
+  },
+  {
+   "x": 1020,
+   "y": 660,
+   "link": 1
+  }
+ ],
+ "hooks": [
+  {
+   "x": 1760,
+   "y": 420,
+   "radius": 200
+  }
+ ],
+ "plates": [
+  {
+   "x": 1980,
+   "y": 660,
+   "link": 2
+  }
+ ],
+ "spikes": [],
+ "movingPlatforms": [],
+ "coins": [
+  {
+   "x": 1760,
+   "y": 560,
+   "color": "blue"
+  },
+  {
+   "x": 1700,
+   "y": 600,
+   "color": "pink"
+  }
+ ],
+ "checkpoints": [
+  {
+   "x": 700,
+   "y": 680
+  }
+ ],
+ "startM": {
+  "x": 760,
+  "y": 680
+ },
+ "startF": {
+  "x": 720,
+  "y": 680
+ },
+ "goal": {
+  "x": 2900,
+  "y": 680
+ }
+}
