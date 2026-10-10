@@ -899,6 +899,18 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: die zwei Wege 401–474 sind ein einziges Rätsel).
     - Test level10_sonnentempel (Koop-Bot).
 
+  - Level 11 „Felsenflucht“ (levels/level-11.json, Ruinen Level 5 der Welt, mittags, Regen): IN ARBEIT, bis es fertig ist
+    in levels.json versteckt. Meister-Level: der rollende Fels jagt die beiden. Ruhende Felsen liegen auf kleinen Simsen
+    über dem Weg und rollen herunter, sobald ihr Hebel gezogen ist (jeder Fels-Hebel öffnet auch ein Tor).
+    - Etappe 1 (Spalten 0–200):
+      - Erste Flucht: Hebel 1 öffnet Tor 1 und lässt hinter den beiden einen langsamen Fels los; über die Stufe springen,
+        dort zerschellt er.
+      - Fels und Grube: Hebel 2 startet einen schnelleren Fels; über die Grube – das Schweinchen segelt, der Affe nimmt
+        den Haken; der Fels stürzt in die Grube.
+      - Flucht nach oben: Hebel 3 startet einen SCHNELLEN Fels (schneller als die Figuren) – rauf auf die Stege (von unten
+        durchspringen), der Fels rollt darunter durch und zerschellt an der Mauer.
+    - Test level11_felsenflucht (Koop-Bot).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

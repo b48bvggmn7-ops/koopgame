@@ -1388,6 +1388,40 @@ async def level10_sonnentempel(g):
     assert not fehler, fehler
 
 @test
+async def level11_felsenflucht(g):
+    """Ausbau 7, Ruinen Level 5 „Felsenflucht“ (levels/level-11.json, mittags, Regen): der rollende Fels jagt die beiden.
+    Etappe 1: erste Flucht (langsamer Fels, zerschellt an der Stufe), Fels und Grube (Affe Haken, Schweinchen segelt),
+    Flucht nach oben auf die Stege (schneller Fels rollt darunter durch)."""
+    await koop_level(g, 'level-11.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, h=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': h}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def info(r): return {k: r.get(k) for k in ('dead', 'pos')}
+    # --- Etappe 1 ---
+    pl = {'f': [k_lauf(12, 0)] + am(14) + [k_lauf(55, 0)] + sprung_zu(kx(61)) + [k_lauf(62)],
+          'm': [{'wait': '!!linkOn[1]'}, k_lauf(54, 0)] + sprung_zu(kx(60)) + [k_lauf(61), {'wait': 'felsen[0].weg'}]}
+    r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans=pl, maxFrames=2500)
+    soll(r.get('done') and await g.ev("felsen[0].weg"), 'erste Flucht, Fels zerschellt an der Stufe', info(r))
+    r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans={'f': [k_lauf(12, 0)] + am(14) + [{'frames': 200}]}, maxFrames=600)
+    soll(r.get('dead'), 'wer stehen bleibt, wird überrollt', info(r))
+    m = [k_lauf(72, 0)] + am(74) + [k_lauf(88, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(102)]
+    f = [{'wait': '!!linkOn[2]'}] + k_segeln(88, 4) + [k_lauf(101), {'wait': 'felsen[1].weg'}]
+    r = await koop(g, m=kat(68, 15), f=kat(70, 15), plans={'m': m, 'f': f}, maxFrames=2500)
+    soll(r.get('done') and await g.ev("felsen[1].weg"), 'Fels und Grube (Affe Haken, Schweinchen segelt)', info(r))
+    f = [k_lauf(108, 0)] + am(110) + [k_lauf(123, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, k_lauf(180)]
+    m = [{'wait': '!!linkOn[3]'}, k_lauf(124, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, k_lauf(181), {'wait': 'felsen[2].weg'}]
+    r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': m, 'f': f}, maxFrames=2500)
+    soll(r.get('done') and await g.ev("felsen[2].weg"), 'Flucht nach oben auf die Stege', info(r))
+    r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'f': [k_lauf(108, 0)] + am(110) + [k_lauf(168)]}, maxFrames=1200)
+    soll(r.get('dead'), 'unten bleiben = überrollt', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    assert not fehler, fehler
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil oder bewegter Haken),
     und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man
