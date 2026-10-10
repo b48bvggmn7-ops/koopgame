@@ -1004,7 +1004,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       man muss genau darauf stehen bleiben); vereister Sims: der Affe greift den Haken hinauf und zieht Hebel 3 im
       Vorbeirutschen (Tür 3), dann über die Grube (Haken / segeln); Eisbrücke unter Stalaktiten (rutschen statt springen);
       Eis-Treppe hinauf.
-    - Test level13_eisgrotte (Koop-Bot).
+    - Etappe 3 (Spalten 400–600): Aufwind-Leiter: das Schweinchen steigt zu Hebel 4 und über die Mauer, Tür 4 für den
+      Affen; Bremsen am Seil: auf der vereisten Plattform steht Hebel 5 ganz vorn an der Kante – der Affe hängt am
+      Haken darüber, Tür 5 öffnet unten; über die Grube (Haken / segeln); Eissäulen im Aufwind (Schweinchen) bzw. mit
+      Haken darüber (Affe).
+    - Etappe 4 (Spalten 600–800): Doppel-Rutsche: zwei vereiste Gänge übereinander, Hebel 6 unten öffnet Tür 6 oben,
+      Hebel 7 oben öffnet Tür 7 unten (im Vorbeirutschen ziehen); Aufwind (Schweinchen) und enger Kamin (Affe) nebeneinander
+      hinauf auf den Sims; Stege hinunter; Eisbahn zum Ziel.
+    - Checkpoints höchstens ~60 Spalten auseinander (17 Stück).
+    - Test level13_eisgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```

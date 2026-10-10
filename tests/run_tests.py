@@ -1819,22 +1819,22 @@ async def level13_eisgrotte(g):
             pl = [k_lauf(540, 0)] + gleit(kx(544) + 20, hold)
             for c0 in range(552, 585, 8): pl += [{'frames': 4}] + gleit(kx(c0) + 20, hold)
             pl += gleit(kx(593), hold) + [k_lauf(596)]
-            r = await koop(g, f=kat(530, 15), m=kat(560, 12), plans={'f': pl}, maxFrames=4000)
+            r = await koop(g, f=kat(530, 15), m=kat(568, 12), plans={'f': pl}, maxFrames=4000)
             if r.get('done'): ok.append(hold)
         soll(ok, 'E3 Eissäulen im Aufwind (Schwein)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         ok = []
         for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'):
-            m = [k_lauf(540, 0)] + sprung_zu(kx(544) + 20)
-            for c0 in range(552, 585, 8):
-                m += [{'frames': 6}, {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
-                      {'swing': True, 'pull': 0, 'release': rel, 'frames': 500},
-                      {'holdIf': {'right': f'P.x < {kx(c0) + 20} - 6', 'left': f'P.x > {kx(c0) + 20} + 6'}, 'until': 'P.grounded', 'frames': 200}]
-            m += [{'frames': 6}] + sprung_zu(kx(593)) + [k_lauf(596)]
-            r = await koop(g, m=kat(535, 15), f=kat(560, 12), plans={'m': m}, maxFrames=6000)
+            m = [k_lauf(540, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+            for k in range(6): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+            m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(596)]
+            r = await koop(g, m=kat(535, 15), f=kat(568, 12), plans={'m': m}, maxFrames=6000)
             if r.get('done'): ok.append(rel[:14])
         soll(ok, 'E3 Eissäulen (Affe an den Haken)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
     if True:
         def vorbei(c, link): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(c)}) < 30 && !linkOn[{link}] && f % 15 === 0'}, 'until': f'!!linkOn[{link}]', 'frames': 900}
         ok = None
