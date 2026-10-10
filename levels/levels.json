@@ -71,5 +71,11 @@
   "name": "Level 12",
   "titel": "Tropfsteingang",
   "versteckt": true
+ },
+ {
+  "datei": "level-13.json",
+  "name": "Level 13",
+  "titel": "Eisgrotte",
+  "versteckt": true
  }
 ]

@@ -995,6 +995,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander.
     - Test level12_tropfsteingang (Koop-Bot).
 
+  - Level 13 „Eisgrotte“ (levels/level-13.json, Höhle Level 3 der Welt, abends, Tropfwasser): IN ARBEIT, bis die Höhle
+    fertig ist in levels.json versteckt. Lehr-Level: Eis, Aufwind, Präzisionssprünge.
+    - Etappe 1 (Spalten 0–200): Eis lernen; Bremsweg bis an eine Stachelgrube (mit Schwung drüber); Eis-Säulen über der
+      Grube (das Schweinchen landet und lenkt gegen, der Affe schwingt an den Haken darüber); Aufwind-Schacht: das
+      Schweinchen steigt zum Sims, zieht Hebel 1 (Tür 1 unten für den Affen) und segelt über die Tür; Eisbahn.
+    - Test level13_eisgrotte (Koop-Bot).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE
