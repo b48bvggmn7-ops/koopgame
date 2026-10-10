@@ -1067,7 +1067,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       niedrigen Gang läuft ein reißendes Gegenband, das blaue Tor (nur Affe) führt vorbei, drüben zieht der Affe Hebel 6
       und das Band trägt das Schweinchen durch; Tor-Kette über die Stachelgrube (genau auf schmale Felssäulen springen,
       ins Tor laufen, weiterspringen).
-    - Test level16_tiefenschlund (Koop-Bot + Checkpoint-Abstände).
+    - Etappe 4 (Spalten 600–800): lange Steg-Passage im Dunkeln (schmale Stege auf wechselnder Höhe über der
+      Stachelgrube); Doppel-Schleuder im Dunkeln (Schweinchen segelt über Grube A und zieht Hebel 8 – das Band schleudert
+      den Affen; der Affe schwingt über Grube B und zieht Hebel 9 – das zweite Band schleudert das Schweinchen); letzte
+      Eissäulen (Schweinchen segelt von Säule zu Säule, Affe an fünf Haken) – dann zum Ziel.
+    - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
+    - Test level16_tiefenschlund (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```
