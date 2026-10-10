@@ -319,7 +319,14 @@ function weltAussehenUebernehmen(welten){
 function composeLook(welt, zeit){
   const Wl = WORLD_LOOKS[welt] || WORLD_LOOKS.dschungel, base = THEMES[Wl.base];
   if(!TAGESZEITEN.includes(zeit)) zeit = Wl.time || 'morgen';
-  if(zeit === Wl.time || (!Wl.sky && zeit !== 'nacht')) return Wl.base;   // natürliche Tageszeit = genau der Welt-Look
+  const wa = Wl.ambiente || null, eigenAmb = !!wa && ['voegel', 'grillen', 'fluss'].some(k => (wa[k] ?? 1) !== 1);
+  if(zeit === Wl.time || (!Wl.sky && zeit !== 'nacht')){
+    if(!eigenAmb) return Wl.base;   // natürliche Tageszeit = genau der Welt-Look
+    // eigenes Ambiente der Welt (Ausbau 7, z. B. Ruinen: weniger Vögel): Kopie des Welt-Looks mit diesem Ambiente
+    const key = Wl.base + '@' + zeit + '~amb';
+    if(!THEMES[key]) THEMES[key] = Object.assign({}, THEMES[Wl.base], {ambiente: {voegel: wa.voegel ?? 1, grillen: wa.grillen ?? 1, fluss: wa.fluss ?? 1}});
+    return key;
+  }
   const key = Wl.base + '@' + zeit;
   if(THEMES[key]) return key;
   const T = Object.assign({}, base, {label: base.label + ' · ' + zeit});

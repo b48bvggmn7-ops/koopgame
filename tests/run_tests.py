@@ -2392,6 +2392,28 @@ async def dschungel_welt_look(g):
             assert r['mode'] == wetter and r['ok'] and r['look'].startswith('dschungel'), (zeit, wetter, r)
 
 @test
+async def ruinen_welt_look(g):
+    """Ausbau 7: Ruinen-Look als Eintrag in worlds.json ("aussehen" mit eigenem Ambiente: weniger Vögel, Grillen leise
+    am Tag, Fluss leise); mit jeder Tageszeit und jedem Wetter ladbar; alte Level mit theme "ruinen" bleiben unverändert."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'ruinen').get('aussehen')
+    assert a and a['basis'] == 'ruinen' and a['zeit'] == 'mittag' and a['ambiente']['voegel'] < 1, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'ruinen', aussehen: {json.dumps(a)}}}]);
+      const L = z => resolveLevelLook({{welt: 'ruinen', tageszeit: z}});
+      return {{ namen: ['morgen', 'mittag', 'abend', 'nacht'].map(L), mittagAmb: THEMES[L('mittag')].ambiente, nachtAmb: THEMES[L('nacht')].ambiente,
+               mittagWand: THEMES[L('mittag')].wall === THEMES.ruinen.wall, alt: resolveLevelLook({{theme: 'ruinen'}}), altAmb: THEMES.ruinen.ambiente || null }}; }})()""")
+    assert k['namen'] == ['ruinen@morgen', 'ruinen@mittag~amb', 'ruinen@abend', 'ruinen@nacht'], k
+    assert k['mittagAmb'] == {'voegel': 0.6, 'grillen': 0.5, 'fluss': 0.4} and k['nachtAmb']['voegel'] == 0 and k['mittagWand'], k
+    assert k['alt'] == 'ruinen' and k['altAmb'] is None, k
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='ruinen', tageszeit=zeit, wetter=wetter,
+                               traps=[{'x': 600, 'y': 640, 'art': 'flamme', 'richtung': 'o', 'takt': 2, 'versatz': 0}]))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('ruinen'), (zeit, wetter, r)
+
+@test
 async def alte_levels_unveraendert(g):
     """Ausbau 1: alle Level-Dateien (ohne welt/tageszeit/wetter) laden weiter mit ihrem bisherigen Look und
     wechselndem Wetter; das Testlevel levels/test/schichten-dschungel.json lässt sich direkt öffnen, T/Z schalten durch."""

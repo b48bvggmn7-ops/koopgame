@@ -86,7 +86,9 @@ function fallenZuruecksetzen(){ fallenSchritte = 0; fallenPfeile = []; }
 function falleKopfZeichnen(c, x, y, f, warn, aus){
   // Sandstein-Block mit dunklem Rand
   const gr = c.createLinearGradient(0, y, 0, y + 40);
-  gr.addColorStop(0, aus ? '#9a917f' : '#d9c08a'); gr.addColorStop(1, aus ? '#7a7264' : '#b0935c');
+  // im Spiel: Farben der Wände des Levels (passt zu Tageszeit/Welt), im Editor Sandstein
+  const W = (typeof THEME !== 'undefined' && THEME && THEME.wall && typeof camX !== 'undefined') ? THEME.wall : {top: '#d9c08a', bottom: '#b0935c'};
+  gr.addColorStop(0, aus ? '#9a917f' : W.top); gr.addColorStop(1, aus ? '#7a7264' : W.bottom);
   c.fillStyle = gr; c.fillRect(x, y, 40, 40);
   c.strokeStyle = 'rgba(70,45,20,.6)'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, 38, 38);
   c.fillStyle = 'rgba(255,240,200,.35)'; c.fillRect(x + 3, y + 3, 34, 3);

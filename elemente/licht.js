@@ -72,7 +72,8 @@ function lichtZuruecksetzen(){ for(const s of spiegelListe){ s.stellung = s.star
 // --- Zeichnen (nur Anzeige) ---
 function lichtQuelleBild(c, x, y, dx, dy, an){
   const gr = c.createLinearGradient(0, y, 0, y + 40);
-  gr.addColorStop(0, '#dcc493'); gr.addColorStop(1, '#b3965e');
+  const W = (typeof THEME !== 'undefined' && THEME && THEME.wall && typeof camX !== 'undefined') ? THEME.wall : {top: '#dcc493', bottom: '#b3965e'};
+  gr.addColorStop(0, W.top); gr.addColorStop(1, W.bottom);
   c.fillStyle = gr; c.fillRect(x, y, 40, 40);
   c.strokeStyle = 'rgba(70,45,20,.6)'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, 38, 38);
   const cx = x + 20 + dx*6, cy = y + 20 + dy*6;

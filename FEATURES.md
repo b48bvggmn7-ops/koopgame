@@ -822,6 +822,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Welche Rolle haben Affe und Schweinchen? Spiegel stehen dort, wo nur der Affe (Haken) oder nur das Schweinchen
       (segelnd) hinkommt. Einer lenkt das Licht, der andere geht durch die Tür, die der Kristall öffnet.
 
+  - WELT RUINEN – Look (Ausbau 7; Design in WELTEN.md): levels/worlds.json, Welt „ruinen“ hat jetzt
+    "aussehen": {basis: ruinen, zeit: mittag, himmel, ambiente: Vögel 0,6 · Grillen 0,5 · Fluss 0,4} (Tempel: weniger
+    Vögel, leise Grillen auch am Tag, Fluss nur fern).
+    - Zur natürlichen Tageszeit (mittag) gibt es dafür eine Kopie des Ruinen-Looks mit diesem Ambiente
+      („ruinen@mittag~amb“); Welten ohne eigenes Ambiente bleiben genau beim Welt-Look.
+    - Die übrigen Tageszeiten wie im Dschungel: Boden und Wände abends/nachts dunkler, nachts Eulen und Glühwürmchen.
+    - Fallen-Köpfe und Lichtquellen nehmen im Spiel die Wandfarben des Levels an, nachts also auch dunkler.
+    - Alte Level mit theme „ruinen“ (Level 3) sind unverändert. Test ruinen_welt_look.
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE
