@@ -878,6 +878,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Wetter „regen“ in der Höhle: Tropfwasser – an festen Stellen fallen einzelne Tropfen von der Decke, ab und zu ein
       leises „Plipp“ (statt Regenschauer); trocken/wechselnd = stille Höhle.
     - Das alte Level 5 „Kristallhöhle“ (theme „hoehle“) ist unverändert. Test hoehle_welt_look.
+    - Welt Höhle hat 6 Level (worlds.json): Kristallhöhle (5), Tropfsteingang (12), Eisgrotte (13), Leuchtgrotte (14),
+      Förderwerk (15), Tiefenschlund (16). Erst wenn alle 6 geschafft sind, geht die nächste Welt auf (Test
+      welten_freischaltung); Hebel/Druckplatten dürfen auch Förderbänder drehen oder Leuchtkristalle anschalten (Test
+      hebel_haben_grund).
 
   - Level 9 „Fallengang“ (levels/level-9.json, Ruinen Level 3 der Welt, morgens, wechselndes Wetter, 806 Spalten).
     Lehr-Level für die Fallen.
@@ -978,8 +982,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander – außer in den Verfolgungen, die jeweils am Stück gespielt werden.
     - Test level11_felsenflucht (Koop-Bot).
 
-  - Level 12 „Tropfsteingang“ (levels/level-12.json, Höhle Level 2 der Welt, morgens, trocken, 800 Spalten): bis die
-    Höhle fertig ist in levels.json versteckt. Lehr-Level: Förderband, Stege, enge Kamine.
+  - Level 12 „Tropfsteingang“ (levels/level-12.json, Höhle Level 2 der Welt, morgens, trocken, 800 Spalten). Seit
+    Abschluss der Höhle sichtbar (Welt Höhle: Level 5, 12, 13, 14, 15, 16). Lehr-Level: Förderband, Stege, enge Kamine.
     - Etappe 1 (Spalten 0–200): Band mit dem Strom; gegen ein schnelles Band; Band-Schleuder (das Schweinchen segelt über
       die Stachelgrube und zieht drüben Hebel 1 – das reißende Band dreht sich und schleudert den Affen hinüber); enger
       Kamin hinauf, Stege hinunter; ein langsames Band trägt auf Stacheln zu – rechtzeitig auf den Steg springen.
@@ -995,8 +999,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander.
     - Test level12_tropfsteingang (Koop-Bot).
 
-  - Level 13 „Eisgrotte“ (levels/level-13.json, Höhle Level 3 der Welt, abends, Tropfwasser): IN ARBEIT, bis die Höhle
-    fertig ist in levels.json versteckt. Lehr-Level: Eis, Aufwind, Präzisionssprünge.
+  - Level 13 „Eisgrotte“ (levels/level-13.json, Höhle Level 3 der Welt, abends, Tropfwasser, 800 Spalten).
+    Lehr-Level: Eis, Aufwind, Präzisionssprünge.
     - Etappe 1 (Spalten 0–200): Eis lernen; Bremsweg bis an eine Stachelgrube (mit Schwung drüber); Eis-Säulen über der
       Grube (das Schweinchen landet und lenkt gegen, der Affe schwingt an den Haken darüber); Aufwind-Schacht: das
       Schweinchen steigt zum Sims, zieht Hebel 1 (Tür 1 unten für den Affen) und segelt über die Tür; Eisbahn.
@@ -1013,8 +1017,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       hinauf auf den Sims; Stege hinunter; Eisbahn zum Ziel.
     - Checkpoints höchstens ~60 Spalten auseinander (17 Stück).
     - Test level13_eisgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
-  - Level 14 „Leuchtgrotte“ (levels/level-14.json, Höhle Level 4 der Welt, nachts, trocken): IN ARBEIT, bis die Höhle
-    fertig ist in levels.json versteckt. Kombi-Level: Dunkelheit + Leuchtkristalle, Scheinwände, Teleporter.
+  - Level 14 „Leuchtgrotte“ (levels/level-14.json, Höhle Level 4 der Welt, nachts, trocken, 800 Spalten).
+    Kombi-Level: Dunkelheit + Leuchtkristalle, Scheinwände, Teleporter.
     - Etappe 1 (Spalten 0–200): Kristall anschlagen und im Licht über drei Stachelgruben; der Affe greift den Haken hinauf
       zum Kristall auf dem Sims – sein Licht zeigt dem Schweinchen die Gruben, über die es segelt und Hebel 1 zieht
       (Tür 1 für den Affen, der an den Haken hinüberschwingt); das Schweinchen hält Druckplatte 2, ein Kristall über der
@@ -1032,8 +1036,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       egal, wer welchen Weg nimmt; Steg-Hüpfer über die dunkle Stachelgrube zum Ziel.
     - Checkpoints höchstens ~60 Spalten auseinander (18 Stück).
     - Test level14_leuchtgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
-  - Level 15 „Förderwerk“ (levels/level-15.json, Höhle Level 5 der Welt, mittags, wechselndes Wetter): IN ARBEIT, bis die
-    Höhle fertig ist in levels.json versteckt. Kombi-Level: Förderband-Kaskaden, Eis + Band, Bänder über Kreuz, Kamine.
+  - Level 15 „Förderwerk“ (levels/level-15.json, Höhle Level 5 der Welt, mittags, wechselndes Wetter, 800
+    Spalten). Kombi-Level: Förderband-Kaskaden, Eis + Band, Bänder über Kreuz, Kamine.
     - Etappe 1 (Spalten 0–200): Band-Treppe (Stufen hinauf, langsames Band, über eine Grube auf ein Gegenband); Band-Kaskade
       über der Stachelgrube (kurze Bänder abwechselnd mit und gegen den Lauf); Schleuder mit Aufwind-Hebel: das Schweinchen
       segelt über die Grube, steigt im Aufwind auf den Sims und zieht Hebel 1 – das reißende Band dreht und schleudert den
@@ -1053,8 +1057,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       breit); Eisbahn, schnelles Band, letzter Sprung zum Ziel.
     - Checkpoints höchstens ~60 Spalten auseinander (16 Stück).
     - Test level15_foerderwerk (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
-  - Level 16 „Tiefenschlund“ (levels/level-16.json, Höhle Level 6 der Welt, nachts, Regen): IN ARBEIT, bis die Höhle
-    fertig ist in levels.json versteckt. Meister-Level: alles kombiniert, lange Präzisions-Passagen im Dunkeln.
+  - Level 16 „Tiefenschlund“ (levels/level-16.json, Höhle Level 6 der Welt, nachts, Regen, 800 Spalten).
+    Meister-Level: alles kombiniert, lange Präzisions-Passagen im Dunkeln.
     - Etappe 1 (Spalten 0–200): dunkler Abstieg vom Felsvorsprung über Steg, Eis-Sims und Steg (darunter Stacheln);
       Licht und Brücke: das Schweinchen hält Druckplatte 1 (Kristall über der Schlucht leuchtet), der Affe schwingt an
       vier Haken hinüber und zieht Hebel 2 (Brücke); Eissäulen ohne Aufwind (Schweinchen segelt von Säule zu Säule und

@@ -2383,7 +2383,8 @@ async def level16_tiefenschlund(g):
 
 @test
 async def hebel_haben_grund(g):
-    """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil oder bewegter Haken),
+    """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
+    Teleporter, Falle, Fels, Förderband oder Leuchtkristall),
     und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man
     keinen Grund, ihn zu ziehen (Nutzerwunsch: „es muss in sich schlüssig sein“)."""
     fehler = []
@@ -2402,7 +2403,9 @@ async def hebel_haben_grund(g):
             const tp = (typeof teleporters !== 'undefined' ? teleporters : []).filter(t=>t.link===l).length;   // Teleporter (Ausbau 4)
             const fa = (typeof fallen !== 'undefined' ? fallen : []).filter(f=>f.link===l).length;   // Fallen aus (Ausbau 7)
             const fe = (typeof felsen !== 'undefined' ? felsen : []).filter(F=>F.link===l).length;   // Rollender Fels (Ausbau 7)
-            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const ba = solids.filter(s=>s.type==='band' && s.link===l).length;                // Förderband dreht/hält (Ausbau 7)
+            const lk = (typeof leuchtKristalle !== 'undefined' ? leuchtKristalle : []).filter(k=>k.link===l).length;   // Licht im Dunkeln (Ausbau 7)
+            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
             const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m)) || fe > 0;
             if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
           }
@@ -3605,10 +3608,11 @@ async def welten_laden(g):
         k = await g.ev("({w: GameMenu.config.worlds.map(x => x.id), l: GameMenu.config.levels.map(l => [l.datei, l.name, l.welt])})")
         assert k['w'] == ids, k
         # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
-        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in (1, 2, 7, 8, 3, 4, 9, 10, 11, 5, 6)], f'Reihenfolge geändert: {k}'
+        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in (1, 2, 7, 8, 3, 4, 9, 10, 11, 5, 12, 13, 14, 15, 16, 6)], f'Reihenfolge geändert: {k}'
         assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Ruinen', 'Mondnacht', 'Fallengang',
-                                          'Sonnentempel', 'Felsenflucht', 'Kristallhöhle', 'Feuerberg'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen'] * 5 + ['hoehle', 'vulkan'], k
+                                          'Sonnentempel', 'Felsenflucht', 'Kristallhöhle', 'Tropfsteingang', 'Eisgrotte', 'Leuchtgrotte',
+                                          'Förderwerk', 'Tiefenschlund', 'Feuerberg'], f'Namen geändert: {k}'
+        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'], k   # Ausbau 7: Höhle 6 Level
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -3805,13 +3809,13 @@ def level_teil(k, v):
 
 @test
 async def editor_rundreise_alle_level(g):
-    """Ausbau 2: Jedes Projekt-Level (1–11) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
+    """Ausbau 2: Jedes Projekt-Level (1–16) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
     die Spiel-Datei in levels/ (gleiche Daten) – Beweis, dass der Editor beim Umbau nichts verändert."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 11, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen)
+        assert len(liste) == 16, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle)
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -4200,7 +4204,10 @@ async def welten_freischaltung(g):
         assert await g.ev(offen) == [True, True, False, False, False], 'Höhle offen, obwohl Level 11 fehlt'
         await fertig('level-11.json')
         assert await g.ev("GameMenu.lastFreshWorld()") == 'hoehle' and await g.ev(offen) == [True, True, True, False, False]
-        assert await fertig('level-5.json') == await nr('level-6.json') and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
+        for d in ('level-5.json', 'level-12.json', 'level-13.json', 'level-14.json'): await fertig(d)   # Ausbau 7: Höhle hat 6 Level
+        assert await g.ev(offen) == [True, True, True, False, False], 'Vulkan offen, obwohl Höhlen-Level fehlen'
+        await fertig('level-15.json')
+        assert await fertig('level-16.json') == await nr('level-6.json') and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
         assert await g.ev(offen) == [True, True, True, False, True]
         # „Level geschafft“ -> Weiter: mitten in der Welt zur Welt-Seite mit Schloss auf dem neuen Level
         await g.ev("GameMenu.resetSave(); GameMenu.completeLevel(1, true)")
@@ -4226,7 +4233,7 @@ async def welten_freischaltung(g):
         assert await g.ev(offen) == [True, True, False, False, False]
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
         isl = await wk_inseln(g)
-        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 5 Level', '0 / 1 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5 Level; Ruinen bleiben offen
+        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 5 Level', '0 / 6 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5, Höhle 6 Level; Ruinen bleiben offen
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()

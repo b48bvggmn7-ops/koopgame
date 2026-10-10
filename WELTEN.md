@@ -337,3 +337,77 @@ Teleportern. 4. Finale: lange Präzisions-Passage im Dunkeln.
 - Jeder Hebel hat einen Grund.
 - Im Dunkeln nie ein Sprung ins Unbekannte: Gefahren sind vor dem Sprung sichtbar (Leuchtkristall, Pilz, Moos).
 - Keine Zufallstode.
+
+### Umsetzung Höhle (Ausbau 7)
+
+- Neue Elemente: **Eis** (elemente/eis.js), **Förderband** (elemente/foerderband.js, Tempo langsam/schnell/reißend, per
+  Nummer umdrehen oder anhalten; Band-Schwung beim Absprung), **Leuchtkristall + Dunkelzone** (elemente/leuchtkristall.js).
+- Abweichungen vom Plan (begründet):
+  - Eisgrotte: die „Eis-Rampe mit Haken als Bremse“ ist als **Bremsen am Seil** (Hebel ganz vorn an der vereisten Kante)
+    und **Doppel-Rutsche** (Hebel im Vorbeirutschen ziehen) umgesetzt – im Spiel gibt es keine schrägen Böden.
+  - Leuchtgrotte: Scheinwände sind nicht nur „im Licht zu erkennen“ – sie werden durchsichtig, sobald man direkt davor
+    steht (so findet man sie auch ohne Kristall). Dunkelheit selbst ist ein Seh-, kein Spiel-Hindernis.
+  - Förderwerk: „Kamin-Aufstieg mit Bändern“ = Kamin mit Gegenband oben; dazu Bänder über Kreuz mit einer Druckplatte
+    (ein Hebel hätte beide Bänder dauerhaft gedreht – dann bräuchte man den Partner nicht).
+  - Tiefenschlund: „Eis-Kamine“ = Kamin mit vereistem Sims oben + Doppel-Rutsche im Dunkeln.
+- Abstandsgrenze (40 Spalten zwischen den Figuren) bestimmt die Länge der Passagen, die einer allein vorausgeht
+  (Gruben mit Haken, Tor-Ketten): höchstens ~38 Spalten.
+
+### Balance-Bericht Höhle (Ausbau 7, Koop-Bot-Messungen)
+
+Einstufungen wie bisher (komfortabel / knapp / Grenze). Zahlen = wie viele der vom Bot probierten Varianten
+(Absprung-Spalte, Sprung-Haltedauer, Loslass-Strategie am Seil) klappen.
+
+**Härteste Stellen Level 12 „Tropfsteingang“ (Ziel: typisch 2–3, schwerste 4):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 64–84 | Band-Schleuder: Affe über die Grube (Hebel 1 vom Schweinchen) | Absprung-Timing | knapp (2 von 6, nur ganz am Bandende) |
+| 600–640 | Schleuder-Kette: drei Bänder vor drei Gruben | Absprung-Timing | knapp (ohne Band-Schwung 0 von 3) |
+| 241–280 | Zickzack-Kamin (zwei versetzte Schächte) | Wandsprung | knapp |
+| 641–672 | Kamin hinter dem Gegenband | Band + Wandsprung | knapp |
+| 210–232 | Band-Schleuder 2 (Hebel 3) | Absprung-Timing | knapp |
+
+**Härteste Stellen Level 13 „Eisgrotte“ (Ziel: typisch 3, schwerste 5):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 604–680 | Doppel-Rutsche: Hebel 6/7 im Vorbeirutschen ziehen | Koordination + Eis | knapp (schwerste Stelle) |
+| 250–271 | vereister Sims: Hebel 3 im Vorbeirutschen (Affe) | Eis + Timing | knapp (2 von 6) |
+| 466–512 | Bremsen am Seil: Hebel 5 an der Eiskante, dann über die Grube | Seil + Eis | knapp |
+| 541–590 | Eissäulen: Affe an den Haken | Seil-Schwung | knapp (2 von 3 Strategien) |
+| 541–590 | Eissäulen im Aufwind (Schweinchen) | Segeln | komfortabel |
+
+**Härteste Stellen Level 14 „Leuchtgrotte“ (Ziel: typisch 3, schwerste 6):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 525–557 | dunkle Schlucht: Affe an vier Haken | Seil-Schwung | knapp bis Grenze (1 von 3 Strategien) |
+| 641–644 | getrennte Wege: Sprung über die Lücke oben | Absprung | knapp (nur von der letzten Spalte) |
+| 398–442 | Stachel-Tunnel (niedrige Decke, flache Hüpfer) | Präzision | knapp |
+| 128–160 | Schlucht mit Platten-Licht und Haken (Affe), Brücke per Hebel | Koordination | knapp |
+| 458–490 | Kammer-Kette (Tor, Hebel 6, Tor, Platte 7, Hebel 8) | Koordination | komfortabel (Reihenfolge finden) |
+
+**Härteste Stellen Level 15 „Förderwerk“ (Ziel: typisch 3–4, schwerste 7):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 645–664 | Schleuder A: Affe über Grube A | Absprung-Timing | knapp bis Grenze (2 von 8, nur von Spalte 657) |
+| 204–239 | Eis-Anlauf zum Band-Sprung | Absprung-Timing | knapp bis Grenze (1 von 3) |
+| 110–129 | Schleuder mit Aufwind-Hebel: Affe über die Grube | Absprung-Timing | knapp (2 von 6) |
+| 500–534 | über das reißende Band (Inseln / Haken) | Präzision | knapp (Haken 5 von 12) |
+| 262–296 | Platte auf dem Band (dagegen anlaufen) + Platte auf dem Eis | Koordination | knapp |
+| 673–695 | Schleuder B: Schweinchen segelt mit Schwung | Absprung + Segeln | komfortabel (4 von 6) |
+
+**Härteste Stellen Level 16 „Tiefenschlund“ (Ziel: typisch 4, schwerste 8, Meister-Level):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 607–645 | lange Steg-Passage im Dunkeln (2 Kästchen breite Stege, wechselnde Höhe) | Präzision | Grenze (schwerste Stelle) |
+| 665–684 | Doppel-Schleuder A im Dunkeln | Absprung-Timing | knapp bis Grenze (2 von 4, nur von Spalte 677) |
+| 534–568 | Tor-Kette über die Stachelgrube | Präzision | knapp |
+| 735–768 | letzte Eissäulen (Affe an fünf Haken) | Seil-Schwung | knapp (2 von 3 Strategien) |
+| 90–124 | Eissäulen ohne Aufwind (Schweinchen springt sofort weiter) | Eis + Segeln | knapp (Affe 2 von 3) |
+| 214–231 | Eis-Kamin: vereister Sims, Sprung über die dunkle Lücke | Eis + Timing | knapp |
+| 262–335 | Doppel-Rutsche im Dunkeln | Koordination + Eis | knapp |
+

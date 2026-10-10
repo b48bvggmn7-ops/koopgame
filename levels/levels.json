@@ -69,31 +69,26 @@
  {
   "datei": "level-12.json",
   "name": "Level 12",
-  "titel": "Tropfsteingang",
-  "versteckt": true
+  "titel": "Tropfsteingang"
  },
  {
   "datei": "level-13.json",
   "name": "Level 13",
-  "titel": "Eisgrotte",
-  "versteckt": true
+  "titel": "Eisgrotte"
  },
  {
   "datei": "level-14.json",
   "name": "Level 14",
-  "titel": "Leuchtgrotte",
-  "versteckt": true
+  "titel": "Leuchtgrotte"
  },
  {
   "datei": "level-15.json",
   "name": "Level 15",
-  "titel": "Förderwerk",
-  "versteckt": true
+  "titel": "Förderwerk"
  },
  {
   "datei": "level-16.json",
   "name": "Level 16",
-  "titel": "Tiefenschlund",
-  "versteckt": true
+  "titel": "Tiefenschlund"
  }
 ]
