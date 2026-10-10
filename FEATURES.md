@@ -840,6 +840,16 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         oben für den Affen.
       - Flammen-Welle: Neun Flammen zünden nacheinander; vor jeder warten (beide).
       - Takt-Steine (2 s).
+    - Etappe 2 (Spalten 200–400):
+      - Pfeil-Galerie: von einem hohen Turm (Stege) über die Stachelgrube; eine Falle in einem schwebenden Pfeiler
+        schießt quer. Das Schweinchen segelt, der Affe nimmt drei Haken – beide im Takt.
+      - Flammen-Schleuse: Vier Flammen aus dem Boden; Druckplatte 3 an jedem Ende stellt sie ab, solange jemand
+        draufsteht.
+      - Pfeil-Schacht: hinab, Pfeile schießen quer aus beiden Wänden. Das Schweinchen segelt langsam, der Affe passt den
+        Moment ab.
+      - Pfeil-Gang mit Hebeln über Kreuz: In den niedrigen Gang mit Pfeil-Vorhängen kommt nur das Schweinchen (Grube
+        davor). Hebel 4 oben auf der Decke (Affe) stellt die Pfeile ab und öffnet Tor 4 am Ende. Hebel 5 im Gang
+        (Schweinchen) öffnet Tür 5 oben für den Affen.
     - Test level9_fallengang (Koop-Bot).
 
 ## Level-Editor (editor/)
