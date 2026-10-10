@@ -283,12 +283,38 @@ const WORLD_LOOKS = {
 const TAGESZEITEN = ['morgen', 'mittag', 'abend', 'nacht'];
 const WETTER_ARTEN = ['wechselnd', 'trocken', 'regen'];
 // Himmel/Licht jeder Tageszeit kommen aus dem passenden bisherigen Thema; wash = Farbstich der Hintergrund-Ebenen
+// terrain = Boden/Wand/Moos/Bröckelboden um diesen Anteil zur Palette der Tageszeit hin mischen (Ausbau 7: vorher blieb
+// der Boden nachts taghell); amb = Ambiente (Vogel-Aufnahme und Grillen; 1 = wie bisher am Tag)
 const TIME_LAYERS = {
-  morgen: {from: 'dschungel', wash: null},
-  mittag: {from: 'ruinen',    wash: null},
-  abend:  {from: 'abend',     wash: {col: '#a8507a', a: 0.22}},
-  nacht:  {from: 'nacht',     wash: {col: '#142250', a: 0.55}},
+  morgen: {from: 'dschungel', wash: null, terrain: 0,    amb: {voegel: 1,   grillen: 0}},
+  mittag: {from: 'ruinen',    wash: null, terrain: 0,    amb: {voegel: 0.8, grillen: 0}},
+  abend:  {from: 'abend',     wash: {col: '#a8507a', a: 0.22}, terrain: 0.45, amb: {voegel: 0.4, grillen: 0.6}},
+  nacht:  {from: 'nacht',     wash: {col: '#142250', a: 0.55}, terrain: 0.6,  amb: {voegel: 0,   grillen: 1}},
 };
+// Farben mischen: '#rrggbb' anteilig, andere Angaben (rgba …) ab der Hälfte von der Ziel-Palette
+function farbeMischen(a, b, k){
+  if(typeof a !== 'string' || typeof b !== 'string') return k >= 0.5 ? b : a;
+  if(!/^#[0-9a-f]{6}$/i.test(a) || !/^#[0-9a-f]{6}$/i.test(b)) return k >= 0.5 ? b : a;
+  const h = (s, i) => parseInt(s.slice(i, i + 2), 16);
+  return '#' + [1, 3, 5].map(i => Math.round(h(a, i) + (h(b, i) - h(a, i))*k).toString(16).padStart(2, '0')).join('');
+}
+function paletteMischen(a, b, k){
+  if(!a || !b || !k) return a;
+  const out = {};
+  for(const key in a) out[key] = key in b ? farbeMischen(a[key], b[key], k) : a[key];
+  return out;
+}
+// Welt-Definition (Ausbau 7): worlds.json kann je Welt "aussehen": {basis, zeit, himmel, ambiente} angeben und ersetzt damit
+// den Eintrag in WORLD_LOOKS (fehlt er, gilt der Eintrag oben). ambiente = Grundlautstärke von Vögeln/Grillen/Fluss dieser Welt.
+function weltAussehenUebernehmen(welten){
+  for(const w of (welten || [])){
+    const a = w && w.aussehen;
+    if(!a || !THEMES[a.basis]) continue;
+    WORLD_LOOKS[w.id] = {base: a.basis, time: TAGESZEITEN.includes(a.zeit) ? a.zeit : null, sky: a.himmel !== false,
+                         ambiente: a.ambiente || null};
+    for(const k in THEMES) if(k.startsWith(a.basis + '@')) delete THEMES[k];   // neu zusammensetzen
+  }
+}
 // liefert den Namen eines (ggf. neu zusammengesetzten) Looks in THEMES
 function composeLook(welt, zeit){
   const Wl = WORLD_LOOKS[welt] || WORLD_LOOKS.dschungel, base = THEMES[Wl.base];
@@ -305,8 +331,18 @@ function composeLook(welt, zeit){
     if(zeit === 'abend' || zeit === 'nacht') T.particles = S.particles;   // Glühwürmchen statt Sonnenstäubchen
     if(zeit === 'nacht'){
       T.birds = S.birds;                                                   // Eulen statt Tagvögeln
-      T.critters = Object.assign({}, base.critters, {air: 'firefly', airCols: ['#d8ff6a'], mushGlow: true});
+      T.critters = Object.assign({}, base.critters, {air: 'firefly', airCols: ['#d8ff6a'], mushGlow: true, hanging: 'bat'});
     }
+    // Boden, Wände, Moos und Pflanzen passend zur Tageszeit abdunkeln/einfärben (Ausbau 7)
+    const k = TIME_LAYERS[zeit].terrain || 0;
+    if(k > 0){
+      T.ground = paletteMischen(base.ground, S.ground, k); T.wall = paletteMischen(base.wall, S.wall, k);
+      T.moss = paletteMischen(base.moss, S.moss, k);
+      if(S.crumble) T.crumble = paletteMischen(base.crumble || CRUMBLE_PAL_DEFAULT, S.crumble || base.crumble, k);
+      if(S.plantFilter) T.plantFilter = S.plantFilter;
+    }
+    const wa = Wl.ambiente || {}, ta = TIME_LAYERS[zeit].amb;
+    T.ambiente = {voegel: (wa.voegel ?? 1)*ta.voegel, grillen: (wa.grillen ?? 1)*ta.grillen, fluss: wa.fluss ?? 1};
   } else if(zeit === 'nacht'){
     T.dark = Math.min(0.7, (base.dark || 0) + 0.18); T.darkCol = base.darkCol || '8,12,36';
   }

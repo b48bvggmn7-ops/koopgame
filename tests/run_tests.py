@@ -2050,7 +2050,8 @@ async def schichten_tageszeit_wetter(g):
       return {{ nMoon: !!n.moon, nSun: !!n.sun, nDark: n.dark, nWash: !!n.layerWash, nGround: n.ground === THEMES.dschungel.ground,
                aSky: a.sky === THEMES.abend.sky, aWash: !!a.layerWash, mSky: m.sky === THEMES.ruinen.sky,
                hD: T({json.dumps(k['hoehleNacht'])}).dark, hBase: THEMES.hoehle.dark, altWash: !!THEMES.dschungel.layerWash }}; }})()""")
-    assert t['nMoon'] and not t['nSun'] and t['nDark'] > 0.3 and t['nWash'] and t['nGround'], f'Nacht-Schicht falsch: {t}'
+    # (Ausbau 7: nachts ist der Boden jetzt abgedunkelt – vorher blieb er taghell, also nGround früher True)
+    assert t['nMoon'] and not t['nSun'] and t['nDark'] > 0.3 and t['nWash'] and not t['nGround'], f'Nacht-Schicht falsch: {t}'
     assert t['aSky'] and t['aWash'] and t['mSky'], f'Abend/Mittag-Schicht falsch: {t}'
     assert t['hD'] > t['hBase'] and not t['altWash'], f'Höhle nachts / alte Looks verändert: {t}'
     # Wetter: regen = dauernd Regen, trocken = nie Regen, wechselnd = wie bisher
@@ -2066,6 +2067,33 @@ async def schichten_tageszeit_wetter(g):
     await g.p.wait_for_timeout(300)
     w = await g.ev("(() => { weather.phase = 'sun'; weather.t = 99999; weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode, look: levelTheme}; })()")
     assert w['mode'] == 'wechselnd' and w['ph'] == 'cloud' and w['look'] == 'abend', f'altes Level: Wetter-Wechsel/Look anders: {w}'
+
+@test
+async def dschungel_welt_look(g):
+    """Ausbau 7: Dschungel-Look als Eintrag in worlds.json ("aussehen"); mit jeder Tageszeit und jedem Wetter ladbar.
+    Abends/nachts sind Boden, Wände und Moos abgedunkelt (vorher taghell), nachts Eulen, Glühwürmchen, Fledermaus;
+    Ambiente: nachts keine Vogel-Aufnahme, dafür Grillen. Alte Levels (theme) bleiben unverändert."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'dschungel').get('aussehen')
+    assert a and a['basis'] == 'dschungel' and a['zeit'] == 'morgen' and a['himmel'] is True, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'dschungel', aussehen: {json.dumps(a)}}}]);
+      const hell = c => {{ const h = i => parseInt(c.slice(i, i + 2), 16); return h(1) + h(3) + h(5); }};
+      const L = z => THEMES[resolveLevelLook({{welt: 'dschungel', tageszeit: z}})];
+      const m = L('morgen'), mi = L('mittag'), ab = L('abend'), n = L('nacht');
+      return {{ morgenGleich: m === THEMES.dschungel, mittagBoden: mi.ground.dirt1 === m.ground.dirt1,
+               dunkler: [hell(ab.ground.dirt1) < hell(m.ground.dirt1), hell(n.ground.dirt1) < hell(ab.ground.dirt1), hell(n.wall.top) < hell(m.wall.top)],
+               nacht: [n.birds.every(b => b.owl), n.critters.air, n.critters.hanging], amb: [n.ambiente.voegel, n.ambiente.grillen, mi.ambiente.voegel],
+               alt: [THEMES.dschungel.ambiente, THEMES.abend.ground.dirt1, THEMES.nacht.ground.dirt1] }}; }})()""")
+    assert k['morgenGleich'] and k['mittagBoden'] and all(k['dunkler']), k
+    assert k['nacht'] == [True, 'firefly', 'bat'] and k['amb'] == [0, 1, 0.8], k
+    assert k['alt'] == [None, '#d98650', '#6a5a80'], f'alte Themen verändert: {k}'
+    # jede Tageszeit mit jedem Wetter: lädt ohne Fehler, Wetter wirkt
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', tageszeit=zeit, wetter=wetter))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('dschungel'), (zeit, wetter, r)
 
 @test
 async def alte_levels_unveraendert(g):
@@ -2445,6 +2473,24 @@ async def weltkarte_und_navigation(g):
             await g.ev(f"__pad.buttons[{knopf}].pressed = false"); await p.wait_for_timeout(350)
         await p.wait_for_timeout(300)
         assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Ruinen'
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def neues_level_in_welt_offen(g):
+    """Ausbau 7: Kommt in eine Welt ein neues Level hinzu, ist es in alten Spielständen offen, sobald das Level davor
+    geschafft ist (sonst müsste man das vorige Level nochmal spielen). Sonst bleibt es Level für Level."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        # Spielstand, in dem Level 1 geschafft, Level 2 aber nie freigeschaltet wurde (wie ein neu eingefügtes Level)
+        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['level-1.json'], completed: ['level-1.json'], stats: {}, bosse: []}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        assert await g.ev("[0, 1].map(i => GameMenu.levelUnlocked(i))") == [True, True], 'Level nach geschafftem Vorgänger gesperrt'
+        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['level-1.json'], completed: [], stats: {}, bosse: []}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        assert await g.ev("[0, 1].map(i => GameMenu.levelUnlocked(i))") == [True, False], 'Level für Level gilt nicht mehr'
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()

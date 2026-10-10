@@ -135,7 +135,9 @@ function fileAudioUpdate(){
   // Vögel: verstummen im Regen, kommen danach langsam zurück
   fileAudio.birdsBack = r > 0.3 ? 0 : Math.min(1, fileAudio.birdsBack + 0.0015);
   const L = fileAudio.loops;
-  if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.sfx*sun*sun*fileAudio.birdsBack, now, 1.2);
+  // Ausbau 7: Welt + Tageszeit regeln Vögel/Fluss mit (THEME.ambiente, 10a-themen.js) – z. B. nachts keine Vögel
+  const amb = (typeof THEME !== 'undefined' && THEME && THEME.ambiente) || {voegel: 1, fluss: 1};
+  if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.sfx*sun*sun*fileAudio.birdsBack*amb.voegel, now, 1.2);
   if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*VOL.sfx*r, now, 0.8);
   if(L.river){
     // Wasserfall im Bild? (Hintergrund-Ebene mit Wasserfall, gleiche Rechnung wie beim Zeichnen)
@@ -145,6 +147,6 @@ function fileAudioUpdate(){
       for(const base of [0, BG_TW]){ const x = wf.x - off + base; near = Math.max(near, 1 - Math.min(1, Math.abs(x - VW/2)/(VW*0.7))); }
     }
     const afterRain = weather.phase === 'clear' || (weather.phase === 'sun' && weather.t < 30) ? 0.3 : 0;
-    L.river.gain.setTargetAtTime(FILE_VOL.river*VOL.sfx*(0.45 + 0.35*near + 0.3*r + afterRain), now, 1.5);
+    L.river.gain.setTargetAtTime(FILE_VOL.river*VOL.sfx*(0.45 + 0.35*near + 0.3*r + afterRain)*amb.fluss, now, 1.5);
   }
 }

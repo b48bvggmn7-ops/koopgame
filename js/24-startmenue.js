@@ -212,7 +212,10 @@ const isUnlocked = i => {
   if (typeof mapWorlds !== 'function' || !CONFIG.levels.length) return i === 0 || save.unlocked.includes(fileOf(i));
   const w = worldOfIndex(i);
   if (!w || !worldUnlocked(w)) return false;
-  return i === w.idx[0] || save.unlocked.includes(fileOf(i));        // in der Welt: Level für Level
+  // in der Welt: Level für Level; ist das vorige Level geschafft, ist dieses offen – so öffnen auch neu hinzugekommene
+  // Level (Ausbau 7: Dschungel 3/4) in alten Spielständen, ohne das vorige Level nochmal spielen zu müssen
+  const k = w.idx.indexOf(i);
+  return k === 0 || save.unlocked.includes(fileOf(i)) || isDone(w.idx[k - 1]);
 };
 const isDone = i => !!fileOf(i) && save.completed.includes(fileOf(i));
 const lastUnlocked = () => { let k = 0; for (let i = 0; i < realCount(); i++) if (isUnlocked(i)) k = i; return k; };
@@ -1330,6 +1333,7 @@ function buildLevelOrder(list, worlds) {
 async function loadLevelList() {
   const [list, worlds] = await Promise.all([fetchJSON('levels.json'), fetchJSON('worlds.json')]);
   CONFIG.worlds = worlds && Array.isArray(worlds.welten) ? worlds.welten : [];
+  if (typeof weltAussehenUebernehmen === 'function') weltAussehenUebernehmen(CONFIG.worlds);   // Welt-Look aus worlds.json (Ausbau 7)
   const lv = buildLevelOrder(list, worlds);
   while (lv.length < CONFIG.slots) lv.push({ name: 'Coming soon', soon: true });
   CONFIG.levels = lv;

@@ -695,6 +695,31 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Story: Start-Szene „Boss: Bruno, der Kokos-Gorilla“ (Bruno, Affe, Schweinchen; das Schweinchen erklärt den Helm-Trick),
         Sieges-Szene „Zahnrad 1 von 5“ (Baron Krähwald schimpft mit Bruno und fliegt davon). Danach öffnen die Ruinen.
       Test boss1_bruno.
+  - WELT DSCHUNGEL (Ausbau 7; Design in WELTEN.md):
+    - Welt-Look als Eintrag in der Welt-Definition: levels/worlds.json, Welt „dschungel“ hat jetzt
+      "aussehen": {basis, zeit, himmel, ambiente}. Das Spiel übernimmt ihn beim Laden der Welten
+      (weltAussehenUebernehmen in js/10a-themen.js, ersetzt den Eintrag in WORLD_LOOKS).
+      - Ohne den Eintrag gilt wie bisher der feste Eintrag in WORLD_LOOKS.
+      - ambiente = Grundlautstärke von Vögeln, Grillen und Fluss dieser Welt (1 = wie bisher).
+    - Tageszeiten färben jetzt auch den Vordergrund (TIME_LAYERS.terrain). Vorher blieben Boden und Wände nachts
+      taghell.
+      - abend: Boden, Wände, Moos und Bröckelboden 45 % zur Abendrot-Palette hin, Pflanzen mit Abend-Filter.
+      - nacht: 60 % zur Mondnacht-Palette hin, Pflanzen mit Nacht-Filter; zusätzlich Fledermaus statt Faultier (zu
+        Eulen und Glühwürmchen).
+      - morgen und mittag bleiben wie bisher.
+      - Gilt für alle Welten mit Himmel, die über welt + tageszeit aussehen. Alte Levels mit "theme" sind unverändert.
+    - Ambiente je Tageszeit (THEME.ambiente; js/22 Grillen, js/23 Vogel- und Fluss-Aufnahme):
+      | Tageszeit | Vögel | Grillen |
+      |---|---|---|
+      | morgen | 1 | 0 |
+      | mittag | 0,8 | 0 |
+      | abend | 0,4 | 0,6 |
+      | nacht | 0 | 1 |
+      - Bei alten Levels (ohne welt/tageszeit) ändert sich nichts.
+    - Freischaltung: Ein Level einer Welt ist auch offen, wenn das Level davor geschafft ist. So öffnen neu
+      eingefügte Level in alten Spielständen, ohne dass man das vorige Level nochmal spielen muss.
+    - Tests: dschungel_welt_look (jede Tageszeit × jedes Wetter), neues_level_in_welt_offen, schichten_tageszeit_wetter
+      (Nacht-Boden jetzt abgedunkelt).
 
 ## Level-Editor (editor/)
 ```
