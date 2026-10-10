@@ -533,6 +533,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Welche Rolle haben Affe und Schweinchen? Beide schwimmen gleich gut; ihre Land-Fähigkeiten fallen unter Wasser
         weg, deshalb zählt dort die Zusammenarbeit (gemeinsame Luftblase, Hebel/Schleusen) – keine Figur ist überflüssig.
       Tests wasser_schwimmen_luft, editor_wasser.
+      GEMEINSAME LUFTBLASE (Nutzerwunsch: gemeinsame Fähigkeit statt Einzel-Fähigkeiten): Schwimmen beide dicht
+        zusammen (Mitte zu Mitte höchstens BLASE_ABSTAND 80 px = 2 Kästchen) und jeder drückt seine Fähigkeitstaste
+        (Affe G, Schweinchen Num 1, Controller □), entsteht um beide eine Luftblase. Nicht genau gleichzeitig nötig: ein
+        Druck „ruft“ 0,75 s lang (BLASE_RUF; kleines Bläschen mit Herz über dem Kopf, leises Blubb). In der Blase atmen
+        beide (Luft füllt sich wie an der Oberfläche, voll in 1 s). Sie wächst mit dem Abstand der beiden (mindestens
+        BLASE_RADIUS 46 px) und hält ohne Zeitlimit, bis sie weiter als BLASE_HALTEN 130 px auseinander schwimmen, einer
+        das Wasser verlässt oder stirbt – dann platzt sie (Ring + Tröpfchen, Plopp).
+        Animation: wächst mit kleinem Nachfedern, wabbelt weich, Regenbogen-Schimmer am Rand, Glanzpunkt, kreisende
+        Glitzer, aufsteigende Bläschen und Herzchen; beim Entstehen Herzchen-Funken und „Blubb-blubb-blubb“.
+        Rolle: Luft reicht allein 12 s – lange Tauchgänge schafft man nur zusammen (beide müssen zusammen bleiben).
+        Test wasser_luftblase.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).

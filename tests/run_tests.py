@@ -2786,6 +2786,40 @@ async def editor_wasser(g):
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
+@test
+async def wasser_luftblase(g):
+    """Ausbau 5: Gemeinsame Luftblase. Beide dicht zusammen unter Wasser und jeder drückt seine Fähigkeitstaste (Affe G,
+    Schweinchen Num 1) -> Blase entsteht (Ton), beide atmen darin (Luft füllt sich); allein oder zu weit weg: keine Blase;
+    schwimmen sie auseinander, platzt sie."""
+    await g.load(level([ground(0, 680, 2400)], {'x': 200, 'y': 680}, {'x': 140, 'y': 680},
+                       waters=[{'x': 400, 'y': 200, 'w': 1200, 'h': 480}]))
+    setz = lambda x1, x2, y: g.ev(f"p1.x = {x1}; p2.x = {x2}; p1.y = p2.y = {y}; p1.vx = p2.vx = p1.vy = p2.vy = 0;"
+                                  "p1._px = p1.x; p2._px = p2.x; p1._py = p1.y; p2._py = p2.y; p1.luft = p2.luft = 300")
+    # nur einer drückt -> keine Blase
+    await setz(800, 850, 600); await g.steps(3)
+    await g.p.keyboard.press('KeyG'); await g.steps(70)
+    assert not await g.ev("!!luftblase"), 'Blase entsteht, obwohl nur einer gedrückt hat'
+    # zu weit auseinander -> keine Blase
+    await setz(700, 900, 600); await g.steps(3)
+    await g.p.keyboard.press('KeyG'); await g.p.keyboard.press('Numpad1'); await g.steps(5)
+    assert not await g.ev("!!luftblase"), 'Blase entsteht trotz großem Abstand'
+    await g.steps(60)   # Ruf abwarten
+    # zusammen + beide drücken -> Blase, Luft füllt sich auf
+    await setz(800, 840, 600); await g.ev("SFX_LOG.length = 0"); await g.steps(50)
+    await g.p.keyboard.press('KeyG'); await g.steps(10); await g.p.keyboard.press('Numpad1'); await g.steps(3)
+    assert await g.ev("!!luftblase && luftblase.pop < 0"), 'keine Luftblase'
+    assert 'blaseauf' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    await g.ev("p1.luft = p2.luft = 300"); await g.steps(40)
+    assert await g.ev("p1.headUnder && p2.headUnder && p1.luft === LUFT_MAX && p2.luft === LUFT_MAX"), \
+        f"Luft füllt sich in der Blase nicht: {await g.ev('[p1.headUnder, p1.luft, p2.luft]')}"
+    # auseinander -> platzt
+    await g.ev("p2.x = 1100; p2._px = p2.x"); await g.steps(3)
+    assert await g.ev("!luftblase || luftblase.pop >= 0"), 'Blase platzt nicht beim Auseinanderschwimmen'
+    assert 'blaseplatzt' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    await g.steps(40)
+    l1 = await g.ev("p1.luft"); await g.steps(20)
+    assert await g.ev("p1.luft") < l1, 'Luft sinkt nach dem Platzen nicht mehr'
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

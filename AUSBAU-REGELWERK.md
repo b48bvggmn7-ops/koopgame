@@ -55,7 +55,7 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 | 2 | Editor ausbauen | Go erhalten | ausbau-2-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
 | 3 | Weltkarte und Welt-Seite | Go erhalten | ausbau-3-fertig | Boss-Karte nur Platzhalter (Ausbau 6); Tag nur lokal |
 | 4 | Neue Mechaniken (Wechselboden, Teleporter, einseitige Plattformen) | Go erhalten | ausbau-4-fertig | Tag nur lokal (GitHub lehnt Tags ab) |
-| 5 | Wasser und Schwimmen | in Arbeit | – | Luftblase, Strömung, Wasserstand, Optik/Sound, Testlevel |
+| 5 | Wasser und Schwimmen | in Arbeit | – | Strömung, Wasserstand, Optik/Sound, Testlevel |
 | 6 | Story-Intro und Boss-Gerüst mit Boss 1 | offen | – | – |
 | 7 | Neue Level für eine Welt (pro Welt) | offen | – | – |
 | 8 | Boss und Abschluss für eine Welt (pro Welt) | offen | – | – |

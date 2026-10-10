@@ -55,3 +55,9 @@ const SWIM_OBEN_ZONE = 16;      // px: so knapp unter der Oberfläche zieht es d
 const LUFT_MAX = 720;           // Schritte (12 s)
 const LUFT_WARN = 180;          // Schritte (3 s) Vorwarnzeit
 const LUFT_AUFFUELLEN = 12;     // Schritte Luft pro Schritt an der Oberfläche (leer -> voll in 1 s)
+// Gemeinsame Luftblase: beide höchstens 2 Kästchen auseinander (Mitte zu Mitte) + jeder drückt seine Fähigkeitstaste
+// (innerhalb von BLASE_RUF Schritten). Die Blase hält, bis sie weiter als BLASE_HALTEN auseinander schwimmen.
+const BLASE_ABSTAND = 80;       // px: so nah müssen beide sein, damit die Blase entsteht
+const BLASE_HALTEN = 130;       // px: weiter auseinander -> Blase platzt
+const BLASE_RADIUS = 46;        // px: kleinste Größe der Blase (wächst mit dem Abstand der beiden)
+const BLASE_RUF = 45;           // Schritte (0,75 s): so lange „wartet“ ein Tastendruck auf den des Partners

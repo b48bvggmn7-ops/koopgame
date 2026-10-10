@@ -7,7 +7,7 @@
 // in den letzten LUFT_WARN Schritten Warnung (Blasen-Anzeige blinkt rot, Ticken); leer = Tod (Checkpoint).
 // Werte in js/02-physik-werte.js (SWIM_*, LUFT_*). Spiel-Liste: wasserBecken (zusammenhängende Wasser-Rechtecke).
 // Rolle: beide schwimmen gleich (Einzel-Fähigkeiten unter Wasser gibt es auf Nutzerwunsch erst einmal nicht);
-// die Luft zwingt zu Zusammenarbeit – siehe gemeinsame Luftblase.
+// die Luft zwingt zu Zusammenarbeit – gemeinsame Luftblase (beide zusammen + Fähigkeitstaste, siehe unten).
 let wasserBecken = [];   // [{rects:[{x,y,w,h}], top, bottom, minX, maxX, surf}]
 // Liegt der Punkt (x, y) im Wasser? (Wasserstand surf eines Beckens kann über/unter dem gemalten Rand liegen)
 function imWasser(x, y){
@@ -30,6 +30,10 @@ function wasserPruefen(pl){
   // Luft holen: Nase knapp über der Kopf-Linie (4 px höher) – so atmet man auch, während man an der Oberfläche leicht wippt
   pl.kannAtmen = !pl.inWater || !imWasser(pl.x, pl.y - pl.h*0.85 - 4);
   if(pl.luft === undefined) pl.luft = LUFT_MAX;
+  // Fähigkeitstaste fürs Luftblasen-Rufen merken (auch ganz kurze Tastendrücke zwischen zwei Schritten)
+  const druck = (pl.male ? pl.keys.hook : pl.keys.glide) + '_pressed';
+  if(pl.inWater){ if(KEYS[druck]){ pl.blaseDruck = true; KEYS[druck] = false; } }
+  else if(!pl.male) KEYS[druck] = false;   // Schirm-Taste an Land: alten Druck vergessen
   if(pl.inWater !== vorher && Math.abs(pl.vy) > 2 && typeof SFX !== 'undefined' && SFX.platsch) SFX.platsch(pl.x, Math.abs(pl.vy));
   return pl.inWater;
 }
@@ -68,6 +72,112 @@ function luftSchritt(pl){
     if(pl.luft <= 0){ pl.luft = 0; die(pl); }
   }
   if(atmet && vorher < LUFT_MAX*0.6 && pl.luft >= LUFT_MAX*0.6 && SFX.luftHolen) SFX.luftHolen(pl.x);
+}
+// --- Gemeinsame Luftblase (Ausbau 5, Nutzerwunsch: gemeinsame Fähigkeit statt Einzel-Fähigkeiten) ---
+// Beide schwimmen dicht zusammen (Mitte zu Mitte höchstens BLASE_ABSTAND) und drücken ihre Fähigkeitstaste
+// (Affe G, Schweinchen Num 1, Controller □) – nicht genau gleichzeitig nötig: ein Druck „ruft“ BLASE_RUF Schritte lang
+// (kleine Blase über dem Kopf). Dann wächst um beide eine Luftblase, in der sie atmen (Luft füllt sich wie an der
+// Oberfläche). Sie hält, solange beide im Wasser und höchstens BLASE_HALTEN auseinander sind, sonst platzt sie.
+let luftblase = null;   // {x, y, r, t (Schritte seit Entstehen), pop (Schritte seit Platzen oder -1)}
+const figurMitte = pl => ({x: pl.x, y: pl.y - pl.h*0.5});
+function luftblaseAtmet(pl){
+  if(!luftblase || luftblase.pop >= 0 || luftblase.t < 8) return false;
+  const m = figurMitte(pl);
+  return Math.hypot(m.x - luftblase.x, m.y - luftblase.y) <= luftblase.r + 8;
+}
+function luftblaseSchritt(){
+  if(!wasserBecken.length){ luftblase = null; return; }
+  for(const pl of [p1, p2]){
+    const frisch = !!pl.blaseDruck; pl.blaseDruck = false;   // gesetzt in wasserPruefen
+    if(frisch && pl.inWater && !won){ pl.blasenRuf = BLASE_RUF; if(SFX.blaseRuf) SFX.blaseRuf(pl.x); }
+    else if(pl.blasenRuf > 0) pl.blasenRuf--;
+  }
+  const a = figurMitte(p1), b = figurMitte(p2), abstand = Math.hypot(a.x - b.x, a.y - b.y);
+  const mx = (a.x + b.x)/2, my = (a.y + b.y)/2;
+  if(luftblase && luftblase.pop >= 0){ if(++luftblase.pop > 24) luftblase = null; return; }
+  if(!luftblase){
+    if(p1.blasenRuf > 0 && p2.blasenRuf > 0 && p1.inWater && p2.inWater && abstand <= BLASE_ABSTAND && !deathState){
+      luftblase = {x: mx, y: my, r: 0, t: 0, pop: -1};
+      p1.blasenRuf = p2.blasenRuf = 0;
+      SFX.blaseAuf(mx);
+      for(let k = 0; k < 8; k++){   // Herzchen-Funken
+        const ang = -Math.PI/2 + (k/7 - 0.5)*2.4;
+        coinFx.push({type: 'spark', x: mx, y: my - 10, t0: performance.now(), vx: Math.cos(ang)*2.2, vy: Math.sin(ang)*2.2,
+                     size: 3 + (k % 3), star: k % 2 === 0, col: ['#ff9ec7', '#ffffff']});
+      }
+    }
+    return;
+  }
+  luftblase.t++;
+  luftblase.x += (mx - luftblase.x)*0.25; luftblase.y += (my - luftblase.y)*0.25;
+  const ziel = Math.max(BLASE_RADIUS, abstand/2 + 26);
+  luftblase.r += (ziel - luftblase.r)*0.18;
+  if(abstand > BLASE_HALTEN || !p1.inWater || !p2.inWater || deathState){
+    luftblase.pop = 0; SFX.blasePlatzt(luftblase.x);
+  }
+}
+function luftblaseZeichnen(){
+  const now = performance.now();
+  // „Ruf“-Bläschen über dem Kopf, solange eine Figur auf die andere wartet
+  for(const pl of [p1, p2]){
+    if(!(pl.blasenRuf > 0) || luftblase) continue;
+    const x = Math.round(pl.x - camX) + (pl.male ? -12 : 12), y = pl.y - pl.h - 30 + Math.sin(now*0.01)*2;
+    const s = 0.8 + 0.2*Math.sin(now*0.02);
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.fillStyle = 'rgba(210,245,255,0.55)'; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff7eb3'; ctx.beginPath();   // kleines Herz
+    ctx.moveTo(0, 3); ctx.bezierCurveTo(-5, -1, -3, -5, 0, -2.5); ctx.bezierCurveTo(3, -5, 5, -1, 0, 3); ctx.fill();
+    ctx.restore();
+  }
+  if(!luftblase) return;
+  const L = luftblase, x = L.x - camX;
+  if(L.pop >= 0){   // Platzen: Ring und Tröpfchen
+    const k = L.pop/24;
+    ctx.globalAlpha = 1 - k; ctx.strokeStyle = 'rgba(235,252,255,0.9)'; ctx.lineWidth = 3*(1 - k) + 0.5;
+    ctx.beginPath(); ctx.arc(x, L.y, L.r*(1 + k*0.5), 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = 'rgba(235,252,255,0.9)';
+    for(let i = 0; i < 12; i++){ const a = i/12*Math.PI*2; ctx.beginPath(); ctx.arc(x + Math.cos(a)*L.r*(1 + k), L.y + Math.sin(a)*L.r*(1 + k) + k*k*20, 2.4*(1 - k) + 0.5, 0, Math.PI*2); ctx.fill(); }
+    ctx.globalAlpha = 1; return;
+  }
+  // Wachsen mit kleinem Nachfedern, dann weiches Wabbeln
+  const g = Math.min(1, L.t/14), feder = g < 1 ? 1 - Math.pow(1 - g, 3) + Math.sin(g*Math.PI)*0.12 : 1;
+  const R = L.r*feder, tw = now*0.003;
+  ctx.save(); ctx.translate(x, L.y);
+  ctx.beginPath();
+  for(let i = 0; i <= 40; i++){
+    const a = i/40*Math.PI*2, rr = R*(1 + 0.035*Math.sin(a*3 + tw*2) + 0.025*Math.sin(a*5 - tw*3));
+    if(i === 0) ctx.moveTo(Math.cos(a)*rr, Math.sin(a)*rr); else ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
+  }
+  ctx.closePath();
+  const gr = ctx.createRadialGradient(-R*0.3, -R*0.35, R*0.1, 0, 0, R);
+  gr.addColorStop(0, 'rgba(255,255,255,0.42)'); gr.addColorStop(0.65, 'rgba(225,248,255,0.26)'); gr.addColorStop(1, 'rgba(180,235,255,0.55)');
+  ctx.fillStyle = gr; ctx.fill();
+  ctx.strokeStyle = 'rgba(200,240,255,0.35)'; ctx.lineWidth = 9; ctx.stroke();       // weicher Schein außen
+  ctx.strokeStyle = 'rgba(245,254,255,0.95)'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = `hsla(${(now*0.05) % 360},90%,80%,0.55)`; ctx.lineWidth = 1.4; ctx.stroke();   // Regenbogen-Schimmer
+  // Glanz oben links
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(0, 0, R*0.78, Math.PI*1.12, Math.PI*1.38); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(-R*0.5, -R*0.62, 2.6, 0, Math.PI*2); ctx.fill();
+  // kreisende Glitzer und aufsteigende Mini-Bläschen
+  for(let i = 0; i < 5; i++){
+    const a = tw*(i % 2 ? 0.8 : -0.6) + i*1.256, rr = R*(0.55 + 0.12*(i % 3));
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,0.9)' : 'rgba(255,170,215,0.85)';
+    ctx.beginPath(); ctx.arc(Math.cos(a)*rr, Math.sin(a)*rr, 1.6, 0, Math.PI*2); ctx.fill();
+  }
+  for(let i = 0; i < 3; i++){   // kleine Herzchen steigen aus der Blase
+    const ph = (now*0.0004 + i/3) % 1, hx = (i - 1)*R*0.35 + Math.sin(now*0.002 + i*2)*5, hy = -R*0.2 - ph*R*1.4, s = 0.6 + 0.5*Math.sin(ph*Math.PI);
+    ctx.globalAlpha = Math.sin(ph*Math.PI)*0.9; ctx.fillStyle = '#ff8ec4';
+    ctx.beginPath(); ctx.moveTo(hx, hy + 4*s); ctx.bezierCurveTo(hx - 6*s, hy - 1*s, hx - 3.5*s, hy - 6*s, hx, hy - 3*s);
+    ctx.bezierCurveTo(hx + 3.5*s, hy - 6*s, hx + 6*s, hy - 1*s, hx, hy + 4*s); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  for(let i = 0; i < 4; i++){
+    const ph = (now*0.0006 + i*0.25) % 1;
+    ctx.strokeStyle = `rgba(255,255,255,${0.6*Math.sin(ph*Math.PI)})`; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc((i - 1.5)*R*0.3 + Math.sin(now*0.003 + i)*3, R*0.6 - ph*R*1.3, 2 + i % 2, 0, Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
 }
 // --- Zeichnen ---
 // Wasserkörper VOR den Figuren (halb durchsichtig), Oberfläche mit Wellen; nur sichtbare Teile
@@ -158,7 +268,8 @@ elementRegistrieren({
   },
   spiel: {
     laden(daten){ wasserBecken = wasserBeckenBauen(daten.waters || []); },
-    zuruecksetzen(){ for(const b of wasserBecken){ b.surf = b.top; b.ziel = b.top; } },
-    zeichnenVorne(){ if(wasserBecken.length){ wasserZeichnen(); luftAnzeigeZeichnen(); } },
+    schritt(){ luftblaseSchritt(); },
+    zuruecksetzen(){ for(const b of wasserBecken){ b.surf = b.top; b.ziel = b.top; } luftblase = null; },
+    zeichnenVorne(){ if(wasserBecken.length){ wasserZeichnen(); luftblaseZeichnen(); luftAnzeigeZeichnen(); } },
   },
 });
