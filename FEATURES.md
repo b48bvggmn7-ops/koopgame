@@ -1000,6 +1000,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 1 (Spalten 0–200): Eis lernen; Bremsweg bis an eine Stachelgrube (mit Schwung drüber); Eis-Säulen über der
       Grube (das Schweinchen landet und lenkt gegen, der Affe schwingt an den Haken darüber); Aufwind-Schacht: das
       Schweinchen steigt zum Sims, zieht Hebel 1 (Tür 1 unten für den Affen) und segelt über die Tür; Eisbahn.
+    - Etappe 2 (Spalten 200–400): Platten-Schleuse auf Eis (Druckplatte 2 vorne und hinten – hinten liegt sie auf dem Eis,
+      man muss genau darauf stehen bleiben); vereister Sims: der Affe greift den Haken hinauf und zieht Hebel 3 im
+      Vorbeirutschen (Tür 3), dann über die Grube (Haken / segeln); Eisbrücke unter Stalaktiten (rutschen statt springen);
+      Eis-Treppe hinauf.
     - Test level13_eisgrotte (Koop-Bot).
 
 ## Level-Editor (editor/)
