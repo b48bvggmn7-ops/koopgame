@@ -87,7 +87,8 @@ const LICHT_REICHWEITE = 80;    // so viele Kästchen läuft ein Lichtstrahl hö
 // Eis (elemente/eis.js)
 const EIS_GRIFF = 0.16;         // Anteil der normalen Beschleunigung auf Eis (langsam anlaufen, langsam umdrehen)
 const EIS_REIBUNG = 0.975;      // Abbremsen ohne Taste auf Eis pro Schritt (Boden: FRICTION_GROUND) – langer Rutschweg
-// Förderband (elemente/foerderband.js) – Tempo kommt aus dem Level (langsam 1,6 / schnell 2,8 px pro Schritt)
+// Förderband (elemente/foerderband.js) – Tempo kommt aus dem Level (langsam 1,6 / schnell 2,8 / reißend 8 px pro Schritt)
+const BAND_NAH = 10;            // px: so knapp über dem Band nimmt es eine Figur auch in der Luft mit (Mini-Hüpfer im Tunnel)
 // Leuchtkristall und Dunkelzone (elemente/leuchtkristall.js)
 const LEUCHT_DAUER = 480;       // so viele Schritte (8 Spielsekunden) leuchtet ein angeschlagener Kristall
 const LEUCHT_WARN = 120;        // in den letzten 2 Sekunden flackert er (Warnung)

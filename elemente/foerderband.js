@@ -8,6 +8,18 @@
 // Spiel-Daten: baender [{x, y, w, h, richtung: 'r'|'l', tempo, link?, schalter: 'dreht'|'stopp'}]
 // Im Spiel: solids mit type 'band'.
 let bandSchritte = 0;   // nur für das Laufband-Muster (Anzeige)
+// Band unter der Figur: steht sie darauf – oder schwebt sie nur knapp darüber (BAND_NAH, z. B. Mini-Hüpfer in einem
+// niedrigen Tunnel), nimmt das Band sie trotzdem mit. Hohe Sprünge im Freien entkommen ihm.
+function bandUnter(player){
+  if(player.grounded) return player.standingOn && player.standingOn.type === 'band' ? player.standingOn : null;
+  if(player.hookAttached) return null;
+  for(const s of solids){
+    if(s.type !== 'band' || s.gone) continue;
+    const ab = s.y - player.y;   // Abstand Füße -> Band-Oberseite
+    if(ab >= -0.5 && ab <= BAND_NAH && player.x + player.w/2 > s.x && player.x - player.w/2 < s.x + s.w) return s;
+  }
+  return null;
+}
 function bandTempo(s){
   if(s.link && linkOn[s.link]){
     if(s.schalter === 'stopp') return 0;
@@ -63,7 +75,7 @@ elementRegistrieren({
            'umdrehen oder anhalten. Klick auf ein vorhandenes Kästchen = Richtung tauschen',
     optionen: [
       {key: 'richtung', label: 'Richtung', werte: [['r', '→ rechts'], ['l', '← links']]},
-      {key: 'tempo', label: 'Tempo', zahl: true, werte: [['1.6', 'langsam'], ['2.8', 'schnell'], ['5.5', 'reißend']]},
+      {key: 'tempo', label: 'Tempo', zahl: true, werte: [['1.6', 'langsam'], ['2.8', 'schnell'], ['8', 'reißend']]},
       {key: 'schalter', label: 'Nummer', titel: 'Immer gleich – oder solange die gewählte Verknüpfungs-Nummer an ist: andersherum bzw. still',
        werte: [['immer', 'ohne'], ['dreht', 'Nummer dreht um'], ['stopp', 'Nummer hält an']]},
     ],
@@ -92,8 +104,8 @@ elementRegistrieren({
     // nach dem Bewegen: wer auf einem Band steht, wird mitgenommen (Wände halten ihn auf)
     // Springt man ab, nimmt man den Schwung des Bands einmal mit (Band als Schleuder; Höchsttempo wie beim Sprint)
     nachBewegung(player){
-      const s = player.standingOn;
-      if(!player.grounded || !s || s.type !== 'band'){
+      const s = bandUnter(player);
+      if(!s){
         if(!player.grounded && player.bandSchwung) player.vx += player.bandSchwung;
         player.bandSchwung = 0;
         return;

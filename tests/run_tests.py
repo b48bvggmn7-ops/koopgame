@@ -3554,7 +3554,7 @@ async def editor_einseitige_plattform(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gelaende] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'fake'], reihe
+        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'dunkel', 'fake'], reihe   # + Eis, Dunkelzone (Ausbau 7, Höhle)
         await p.click('.tool[data-tool=oneway]'); await ed_ziehen(p, (4, 12), (7, 12))
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['oneways'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 12}], out['oneways']
@@ -3999,6 +3999,9 @@ async def foerderband_mitnehmen(g):
     await g.ev("setLink(1, false); p1.x = 2000; p1.y = 600; p1.vx = 0; p1.vy = -9; p1.grounded = false; p1.bandSchwung = 0; window.__x0 = p1.x")
     await g.steps(6)
     assert abs(await g.ev("p1.x - __x0")) < 1, 'nimmt in der Luft mit'
+    # knapp darüber (Mini-Hüpfer im Tunnel) nimmt es trotzdem mit
+    await g.ev("p1.x = 2000; p1.y = 675; p1.vx = 0; p1.vy = -0.5; p1.grounded = false; p1.bandSchwung = 0; window.__x0 = p1.x; window.__nah = bandUnter(p1)")
+    assert await g.ev("!!__nah"), 'knapp über dem Band zählt nicht'
     # Nummer 2 hält das obere Band an
     await g.ev("p1.x = 3000; p1.y = 560; p1.vx = 0; p2.x = 3100; p2.y = 560; window.__x0 = p1.x"); await g.steps(20)
     lauf = await g.ev("p1.x - __x0")
