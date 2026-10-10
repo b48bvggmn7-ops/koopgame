@@ -1013,6 +1013,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       hinauf auf den Sims; Stege hinunter; Eisbahn zum Ziel.
     - Checkpoints höchstens ~60 Spalten auseinander (17 Stück).
     - Test level13_eisgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
+  - Level 14 „Leuchtgrotte“ (levels/level-14.json, Höhle Level 4 der Welt, nachts, trocken): IN ARBEIT, bis die Höhle
+    fertig ist in levels.json versteckt. Kombi-Level: Dunkelheit + Leuchtkristalle, Scheinwände, Teleporter.
+    - Etappe 1 (Spalten 0–200): Kristall anschlagen und im Licht über drei Stachelgruben; der Affe greift den Haken hinauf
+      zum Kristall auf dem Sims – sein Licht zeigt dem Schweinchen die Gruben, über die es segelt und Hebel 1 zieht
+      (Tür 1 für den Affen, der an den Haken hinüberschwingt); das Schweinchen hält Druckplatte 2, ein Kristall über der
+      Schlucht leuchtet, der Affe schwingt hinüber und zieht Hebel 3 – eine Brücke erscheint für das Schweinchen.
+    - Etappe 2 (Spalten 200–390): Scheinwände (unten zum Durchlaufen; oben ein Fenster, über zwei Stege erreichbar);
+      getrennte Teleporter: das blaue Tor (nur Affe) bringt ihn an einem Fels vorbei, er zieht Hebel 4 und schaltet das
+      pinke Tor (nur Schweinchen) an; Schlucht: das Schweinchen segelt hinüber und schaltet mit Hebel 5 das weiße Tor für
+      den Affen an; versteckter Ausgang: eine dicke Wand ist unten nur Schein, dahinter ein Tor.
+    - Test level14_leuchtgrotte (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```

@@ -77,5 +77,11 @@
   "name": "Level 13",
   "titel": "Eisgrotte",
   "versteckt": true
+ },
+ {
+  "datei": "level-14.json",
+  "name": "Level 14",
+  "titel": "Leuchtgrotte",
+  "versteckt": true
  }
 ]

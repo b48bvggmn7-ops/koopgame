@@ -1872,6 +1872,100 @@ async def level13_eisgrotte(g):
     assert not fehler, fehler
 
 @test
+async def level14_leuchtgrotte(g):
+    """Ausbau 7, Höhle Level 4 „Leuchtgrotte“ (levels/level-14.json, nachts, trocken): Kombi-Level Dunkelheit, Leuchtkristalle, Scheinwände, Teleporter. Koop-Bot spielt jede Etappe: Kristall anschlagen, Kristall auf dem Sims (Affe am Haken), Stachelgruben im Licht (Schweinchen segelt), Platte lässt Kristall leuchten, Brücke per Hebel, Scheinwände, getrennte Teleporter, Schlucht mit Tor, versteckter Ausgang."""
+    await koop_level(g, 'level-14.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(12, 0)] + am(14) + [k_lauf(24, 0)] + sprung_zu(kx(31)) + [k_lauf(34, 0)] + sprung_zu(kx(41)) + [k_lauf(44, 0)] + sprung_zu(kx(51)) + [k_lauf(58)]
+            r = await koop(g, **{who: kat(6, 15), o: kat(4, 15)}, plans={who: pl, o: [{'frames': 60}] + pl[len(am(14)) + 1:]}, maxFrames=3000)
+            soll(r.get('done') and await g.ev('leuchtKristalle[0].t > 0'), f'E1 Kristall anschlagen, über die Gruben ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        ok = None
+        for jx in (60, 61, 62):
+            for pull in (30, 60):
+                r = await koop(g, m=kat(58, 15), f=kat(56, 15), plans={'m': haken(jx, 9, pull) + am(69)}, maxFrames=2000)
+                if r.get('pos', {}).get('m', [0, 0])[1] == 9 and await g.ev('leuchtKristalle[1].t > 0'): ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E1 Affe per Haken zum Kristall auf dem Sims', (ok, r.get('pos')))
+        ok = None
+        for hold in (4, 8, 12):
+            gl = lambda a, tx: [k_lauf(a, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 400}]
+            f = gl(73, 81) + gl(83, 91) + gl(93, 101) + am(104)
+            r = await koop(g, f=kat(60, 15), m=kat(69, 9), plans={'f': f}, maxFrames=3000)
+            if await g.ev('!!linkOn[1]'): ok = hold; break
+        soll(ok, 'E1 Schwein segelt über die Stachelgruben, Hebel 1', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(64, 15), f=kat(100, 15), plans={'m': kette(72, 3, rel) + [k_lauf(114)]}, links=[1], maxFrames=4000)
+            if r.get('done'): ok.append(rel[:14])
+        soll(ok, 'E1 Affe an den Haken über die Gruben, Tür 1', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(104, 15), f=kat(102, 15), plans={'m': [k_lauf(114)]}, maxFrames=600)
+        soll(r['pos']['m'][0] < 110, 'E1 Tür 1 zu ohne Hebel', r.get('pos'))
+        halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+        ok = []
+        for rel in RELS:
+            m = kette(126, 4, rel) + am(166)
+            f = [halten(124), {'wait': '!!linkOn[3]'}, {'frames': 20}, k_lauf(170)]
+            r = await koop(g, m=kat(122, 15), f=kat(120, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+            if r.get('done') and r['pos']['f'][0] >= 169: ok.append(rel[:14])
+        soll(ok, 'E1 Platte 2 (Licht), Affe an den Haken, Hebel 3, Brücke für das Schwein', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, f=kat(126, 15), m=kat(122, 15), plans={'f': [{'hold': ['right', 'glide'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 400}]}, maxFrames=500)
+        soll(r.get('dead') or r['pos']['f'][0] < 161, 'E1 ohne Brücke kommt das Schwein nicht hinüber', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(227, 0)] + sprung_zu(kx(229)) + sprung_zu(kx(234)) + [{'hold': ['right'], 'until': f'P.x >= {kx(240)}', 'frames': 300}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(246)]
+            r = await koop(g, **{who: kat(214, 15), o: kat(212, 15)}, plans={who: pl, o: [{'frames': 30}] + pl}, maxFrames=3000)
+            soll(r.get('done') and r['pos'][who][0] >= 245, f'E2 Scheinwände, Stege hinauf, Fenster ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(252, 15), f=kat(250, 15), plans={'m': [{'frames': 30}, k_lauf(258)] + [k_lauf(293, -10)] + am(295), 'f': [k_lauf(254), {'wait': '!!linkOn[4]'}, k_lauf(261), {'frames': 10}, k_lauf(295)]}, maxFrames=3000)
+        soll(r.get('done') and r['pos']['m'][0] > 289 and r['pos']['f'][0] > 289, 'E2 Affe durchs blaue Tor, Hebel 4, Schwein durchs pinke', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(250, 15), f=kat(252, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=400)
+        soll(r['pos']['f'][0] < 262, 'E2 ohne Hebel 4 kein Schwein durch', r.get('pos'))
+        ok = None
+        for hold in (4, 8, 12):
+            f = am(304) + glide_to(309, kx(324), hold) + am(328)
+            r = await koop(g, f=kat(300, 15), m=kat(297, 15), plans={'f': f, 'm': [{'wait': '!!linkOn[5]'}, k_lauf(301), {'frames': 10}, k_lauf(337)]}, maxFrames=3000)
+            if r.get('done') and r['pos']['m'][0] >= 336: ok = hold; break
+        soll(ok, 'E2 Schwein segelt über die Schlucht, Hebel 5, Affe durchs weiße Tor', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(301, 15), f=kat(298, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded && P.x > ' + str(kx(308))}, 'frames': 400}]}, maxFrames=500)
+        soll(r.get('dead') or r['pos']['m'][0] < 322, 'E2 ohne Hebel 5 kein Affe hinüber', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(334, 15), o: kat(332, 15)}, plans={who: [k_lauf(380)], o: [{'frames': 60}, k_lauf(378)]}, maxFrames=3000)
+            soll(r.get('done') and r['pos'][who][0] >= 379 and r['pos'][o][0] >= 377, f'E2 versteckter Ausgang (Scheinwand + Tor) ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    assert not fehler, fehler
+
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil oder bewegter Haken),
     und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man
