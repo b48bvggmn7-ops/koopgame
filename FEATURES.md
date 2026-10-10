@@ -500,6 +500,18 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Ausgang in der Luft ist für das Schweinchen ein Segel-Start, der Affe braucht dort einen Haken. Keine Figur
         wird überflüssig, weil Teleporter keine Fähigkeit ersetzen, nur Wege verbinden.
       Testlevel levels/test/teleporter.json (index.html?testlevel=teleporter). Tests teleporter, editor_teleporter.
+  - EINSEITIGE PLATTFORM / STEG (Ausbau 4, elemente/einseitig.js; Spiel-Feld oneways [{x, y, w, h=12}], im Spiel solids
+    type 'oneway'): Holzsteg mit Fugen und Stützen.
+      Von unten (und von der Seite) springt/läuft man hindurch; von oben landet und steht man darauf (fest ist nur die
+        Oberkante, und nur für Figuren, deren Füße vor dem Schritt darüber waren – collideAxis in 04-figuren-kollision.js).
+      Kein Wandsprung an seiner Seite (zählt nicht als Wand), keine Decke beim Hochspringen; die Seil-Sicht geht
+        hindurch (Haken über einem Steg bleiben erreichbar); bewegte Teile schieben nicht gegen ihn.
+      Kein „Runterfallen per Taste“: wer runter will, läuft über die Kante.
+      Ton: beim Landen auf dem Steg zusätzlich ein kurzes Holz-Knarzen.
+      Welche Rolle haben Affe und Schweinchen? Beide nutzen ihn gleich – er verkürzt Wege nach oben und gibt Landeplätze
+        für Segel- und Seilflüge. Er ersetzt keine Fähigkeit: an Stegen gibt es keinen Wandsprung, der Affe kommt durch
+        seine Seil-Sicht weiter an Haken darüber, das Schweinchen segelt auf ihn hinunter. Keine Figur wird überflüssig.
+      Testlevel levels/test/einseitig.json (index.html?testlevel=einseitig). Tests einseitige_plattform, editor_einseitige_plattform.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).
@@ -640,6 +652,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Klick ein neues Paar. Wird ein Tor radiert, wird das nächste neue Tor sein Partner. Daneben „für“ (beide / nur Affe /
     nur Schweinchen) und „an/aus“ (immer an / per Verknüpfung – nimmt die Nummer aus „Schalter & Logik“); der Partner
     übernimmt die Einstellungen des ersten Tors. Eingefügte Paare (Strg+V) bekommen eine neue, freie Paar-Nummer.
+  - Steg (einseitig) (Ausbau 4, Gruppe „Gelände“, ziehbar wie Boden): im Raster ein Brett oben im Kästchen mit Pfeil nach
+    oben; Export als 12 px dicke Stege (benachbarte Kästchen einer Reihe zusammengefasst). Lässt sich nicht bewegen.
   - (früher: Auswahl „Thema“ oben – Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,
     Kristallhöhle, Feuerberg) als "theme"; auf Nutzerwunsch in Ausbau 2 ersetzt durch „Level-Info“, die Themen gibt
     es dort weiter als „Look-Override“.)

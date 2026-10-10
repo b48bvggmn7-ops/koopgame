@@ -39,7 +39,7 @@ function resetLevel(){
 // Steht eine Figur an (x,y) (Füße) frei, ohne in Boden/Wand/Tür zu stecken?
 function spotFree(x, y, pl){
   const box = {x:x-pl.w/2, y:y-pl.h, w:pl.w, h:pl.h};
-  for(const s of solids){ if(!s.gone && rectsOverlap(box, s)) return false; }
+  for(const s of solids){ if(!s.gone && s.type !== 'oneway' && rectsOverlap(box, s)) return false; }   // im Steg stehen ist ok
   return true;
 }
 function safeSpawnOn(g, pl){
@@ -69,6 +69,11 @@ const COLLIDE_EPS = 0.01;
 function collideAxis(player, axis){
   for(const s of solids){
     if(s.gone) continue;
+    // Einseitige Plattform (elemente/einseitig.js): nur von oben landen, sonst hindurch (kein seitliches Anstoßen, keine Decke)
+    if(s.type === 'oneway'){
+      if(axis === 'y' && einseitigLandung(player, s)){ player.y = s.y; player.vy = 0; player.grounded = true; player.standingOn = s; }
+      continue;
+    }
     const box = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
     const ox = Math.min(box.x+box.w, s.x+s.w) - Math.max(box.x, s.x);
     const oy = Math.min(box.y+box.h, s.y+s.h) - Math.max(box.y, s.y);

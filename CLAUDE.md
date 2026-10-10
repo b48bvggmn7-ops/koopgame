@@ -40,7 +40,8 @@
   Umgestellt: `hebel.js`, `tuer.js`, `druckplatte.js` (Punkt-Elemente mit Verknüpfungs-Nummer), `sprungpilz.js`
   (Punkt-Element), `aufwind.js` (Kachel-Element); Ausbau 4: `wechselboden.js` (Punkt mit Nummer/Takt, eigene Auswahl-Felder
   `optionen`, Logik pro Schritt `spiel.schritt`, Neustart `spiel.zuruecksetzen`), `teleporter.js` (Paare per 2. Klick:
-  `editor.neu`, Linie `editor.zeichnenAlle`, Einfügen `editor.einfuegen`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  `editor.neu`, Linie `editor.zeichnenAlle`, Einfügen `editor.einfuegen`), `einseitig.js` (Steg, Kachel; Kollision
+  type 'oneway' in `collideAxis`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `assets/` – Bilder (Figuren, Schild …); `assets/audio/` – eigene Aufnahmen des Nutzers (FL Studio).
 - `editor/` – Level-Editor: `editor/index.html` lädt `editor/js/*.js` in fester Reihenfolge (klassische Skripte,
@@ -63,6 +64,7 @@
   Nichts darf pro gezeichnetem Bild Spielzustand ändern (sonst läuft es auf 120/144-Hz-Bildschirmen schneller).
 - **Kollision:** `collideAxis` ignoriert Überlappungen < `COLLIDE_EPS` (Rundungsfehler) und schiebt nie quer
   über weite Strecken – sonst „teleportieren“ Figuren beim Springen unter Decken (Test `decke_kein_teleport`).
+  Einseitige Stege (type 'oneway') zählen nur beim Landen von oben; Wandprüfung, Seil-Sicht, `spotFree` ignorieren sie.
 - Figurenhöhe 32,3 px (Kommazahl!) – bei Positionsberechnungen an Rundung denken.
 - Zoom 0,85 (15 % heraus, Nutzerwunsch; vorher 0,95, davor 0,9, früher kein Zoom) -> sichtbare Weltbreite `VW` statt `W` benutzen.
   Kamera mit Totzone gegen Wackeln (`cameraTarget`), folgt der vorderen Figur, wenn beide nicht ins Bild passen.

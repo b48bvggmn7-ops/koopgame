@@ -1,0 +1,125 @@
+{
+ "hinweis": "Testlevel Ausbau 4: Einseitige Plattformen (Holzstege). Öffnen: index.html?testlevel=einseitig · 1) Treppe aus Stegen: von unten durchspringen, oben landen · 2) Steg in Kopfhöhe: einfach hindurchlaufen · 3) Haken über einem Steg: Seil geht hindurch · 4) Schacht mit Stegen statt Wänden: kein Wandsprung an der Steg-Seite · Runter: einfach über die Kante laufen",
+ "welt": "dschungel",
+ "tageszeit": "morgen",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 2000,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 2000,
+   "y": 280,
+   "w": 40,
+   "h": 400,
+   "type": "wall"
+  },
+  {
+   "x": 2040,
+   "y": 680,
+   "w": 1360,
+   "h": 40,
+   "type": "ground"
+  }
+ ],
+ "oneways": [
+  {
+   "x": 400,
+   "y": 560,
+   "w": 160,
+   "h": 12
+  },
+  {
+   "x": 640,
+   "y": 440,
+   "w": 160,
+   "h": 12
+  },
+  {
+   "x": 880,
+   "y": 320,
+   "w": 160,
+   "h": 12
+  },
+  {
+   "x": 1200,
+   "y": 640,
+   "w": 200,
+   "h": 12
+  },
+  {
+   "x": 1500,
+   "y": 520,
+   "w": 240,
+   "h": 12
+  },
+  {
+   "x": 1860,
+   "y": 560,
+   "w": 80,
+   "h": 12
+  },
+  {
+   "x": 1860,
+   "y": 440,
+   "w": 80,
+   "h": 12
+  },
+  {
+   "x": 1860,
+   "y": 320,
+   "w": 80,
+   "h": 12
+  }
+ ],
+ "hooks": [
+  {
+   "x": 1620,
+   "y": 300,
+   "radius": 260
+  }
+ ],
+ "switches": [],
+ "doors": [],
+ "plates": [],
+ "spikes": [],
+ "movingPlatforms": [],
+ "coins": [
+  {
+   "x": 960,
+   "y": 260,
+   "color": "gold"
+  },
+  {
+   "x": 1620,
+   "y": 460,
+   "color": "blue"
+  }
+ ],
+ "checkpoints": [
+  {
+   "x": 1150,
+   "y": 680
+  },
+  {
+   "x": 2300,
+   "y": 680
+  }
+ ],
+ "startM": {
+  "x": 140,
+  "y": 680
+ },
+ "startF": {
+  "x": 100,
+  "y": 680
+ },
+ "goal": {
+  "x": 3200,
+  "y": 680
+ }
+}

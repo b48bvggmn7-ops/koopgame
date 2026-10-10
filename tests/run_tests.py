@@ -1294,7 +1294,7 @@ async def musik_und_ambiente(g):
     assert st['up'] > 8, f'Regenbogen-Musik nicht heller: {st}'
     await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
-        for _ in range(24):
+        for _ in range(60):   # Musik wird im Hintergrund berechnet – langsame Rechner brauchen länger (bis 30 s)
             if await g.ev("mus.ready && mus.log.length > 0"): break
             await g.p.wait_for_timeout(500)
         assert await g.ev("mus.ready && mus.log.length > 0"), 'Musik spielt nicht'
@@ -2330,7 +2330,8 @@ async def element_register(g):
     k = await g.ev("ELEMENTE.map(E => [E.id, E.feld, !!E.editor, !!(E.spiel && E.spiel.laden && E.spiel.zeichnen)])")
     assert k == [['hebel', 'switches', True, True], ['tuer', 'doors', True, False], ['druckplatte', 'plates', True, True],
                  ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True],
-                 ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True]], k   # Tür: gezeichnet mit den Wänden
+                 ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True],
+                 ['einseitig', 'oneways', True, True]], k   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2663,6 +2664,57 @@ async def editor_teleporter(g):
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
         umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
         assert len(umg['teleporters']) == 5 and {'x': 500, 'y': 520, 'paar': 1, 'fuer': 'affe'} in umg['teleporters'], umg['teleporters']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def einseitige_plattform(g):
+    """Ausbau 4: Einseitige Plattform (Steg). Von unten durchspringen und oben landen; seitlich hindurchlaufen; kein
+    Wandsprung an ihrer Seite; Seil-Sicht geht hindurch (Haken über dem Steg erreichbar); oben stehen bleibt stabil."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 500, 'y': 680}, {'x': 100, 'y': 680},
+                       oneways=[{'x': 400, 'y': 600, 'w': 200, 'h': 12}, {'x': 900, 'y': 640, 'w': 120, 'h': 12}],
+                       hooks=[{'x': 500, 'y': 380, 'radius': 320}]))
+    assert await g.ev("solids.filter(s => s.type === 'oneway').length") == 2
+    # Seil-Sicht durch den Steg
+    assert await g.ev("lineClear(500, 660, 500, 380)"), 'Steg blockiert die Seil-Sicht'
+    assert await g.ev("findHookTarget(p1) === hooks[0]"), 'Haken über dem Steg nicht erreichbar'
+    # von unten durchspringen und oben landen
+    await g.ev("window.__minY = 999; if(!window.__ow){ window.__ow = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minY = Math.min(window.__minY, p1.y); }; }")
+    await g.hold(('Space',), 250); await g.steps(70)
+    assert await g.ev("window.__minY") < 590, f"nicht durch den Steg gesprungen: {await g.ev('window.__minY')}"
+    assert abs(await g.ev("p1.y") - 600) < 0.5 and await g.ev("p1.grounded"), f"nicht oben gelandet: y={await g.ev('p1.y')}"
+    assert 'steg' in await g.ev("SFX_LOG"), f'kein Steg-Ton beim Landen: {await g.ev("SFX_LOG")}'
+    await g.steps(30)
+    assert abs(await g.ev("p1.y") - 600) < 0.5, 'steht nicht stabil auf dem Steg'
+    # runter: einfach über die Kante laufen
+    await g.hold(('KeyD',), 900); await g.steps(40)
+    assert await g.ev("p1.y") > 670, f"kommt nicht vom Steg herunter: {await g.ev('p1.y')}"
+    # seitlich durch den niedrigen Steg laufen (er steckt in Kopfhöhe)
+    await g.ev("p1.x = 840; p1.y = 680; p1._px = p1.x; p1._py = p1.y; p1.vx = 0"); await g.steps(2)
+    await g.hold(('KeyD',), 900)
+    assert await g.ev("p1.x") > 1040, f"seitlich blockiert: {await g.ev('p1.x')}"
+    # kein Wandsprung: Steg-Seite zählt nicht als Wand
+    await g.ev("p1.x = 400 - p1.w/2 - 1; p1.y = 630; p1.grounded = false")
+    assert not await g.ev("touchingWall(p1, 1)"), 'Steg-Seite zählt als Wand'
+
+@test
+async def editor_einseitige_plattform(g):
+    """Ausbau 4: Editor-Werkzeug „Steg (einseitig)“ (Gruppe Gelände, ziehbar) -> Export und Spiel-Umwandlung liefern oneways (12 px dick)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gelaende] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'fake'], reihe
+        await p.click('.tool[data-tool=oneway]'); await ed_ziehen(p, (4, 12), (7, 12))
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['oneways'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 12}], out['oneways']
+        assert not any(s['type'] == 'oneway' for s in out['solids'])
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['oneways'] == out['oneways'], umg['oneways']
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()

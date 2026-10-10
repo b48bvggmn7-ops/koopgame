@@ -38,7 +38,7 @@ function ropeFling(player){
 }
 function touchingWall(player, side){
   const probe = {x: side<0 ? player.x-player.w/2-4 : player.x+player.w/2, y:player.y-player.h+4, w:4, h:player.h-8};
-  for(const s of solids){ if(!s.gone && rectsOverlap(probe,s)) return true; }
+  for(const s of solids){ if(!s.gone && s.type !== 'oneway' && rectsOverlap(probe,s)) return true; }   // Steg = keine Wand
   return false;
 }
 
@@ -49,7 +49,7 @@ function lineClear(x1,y1,x2,y2){
     const t=i/steps;
     const px=x1+(x2-x1)*t, py=y1+(y2-y1)*t;
     for(const s of solids){
-      if(s.gone) continue;
+      if(s.gone || s.type === 'oneway') continue;   // Seil-Sicht geht durch einseitige Plattformen
       if(px>=s.x && px<=s.x+s.w && py>=s.y && py<=s.y+s.h) return false;
     }
   }

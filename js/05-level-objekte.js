@@ -183,7 +183,7 @@ function updateMovingPlatforms(dt, players){
 function playerBlocked(player, except){
   const b = {x:player.x-player.w/2, y:player.y-player.h, w:player.w, h:player.h};
   for(const o of solids){
-    if(o === except || o.gone) continue;
+    if(o === except || o.gone || o.type === 'oneway') continue;
     const ox = Math.min(b.x+b.w, o.x+o.w) - Math.max(b.x, o.x);
     const oy = Math.min(b.y+b.h, o.y+o.h) - Math.max(b.y, o.y);
     if(ox > COLLIDE_EPS && oy > COLLIDE_EPS) return true;
