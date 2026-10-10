@@ -899,8 +899,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: die zwei Wege 401–474 sind ein einziges Rätsel).
     - Test level10_sonnentempel (Koop-Bot).
 
-  - Level 11 „Felsenflucht“ (levels/level-11.json, Ruinen Level 5 der Welt, mittags, Regen): IN ARBEIT, bis es fertig ist
-    in levels.json versteckt. Meister-Level: der rollende Fels jagt die beiden. Ruhende Felsen liegen auf kleinen Simsen
+  - Level 11 „Felsenflucht“ (levels/level-11.json, Ruinen Level 5 der Welt, mittags, Regen, 800 Spalten): bis es fertig
+    ist in levels.json versteckt. Meister-Level: der rollende Fels jagt die beiden. Ruhende Felsen liegen auf kleinen Simsen
     über dem Weg und rollen herunter, sobald ihr Hebel gezogen ist (jeder Fels-Hebel öffnet auch ein Tor).
     - Etappe 1 (Spalten 0–200):
       - Erste Flucht: Hebel 1 öffnet Tor 1 und lässt hinter den beiden einen langsamen Fels los; über die Stufe springen,
@@ -922,6 +922,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       - Takt-Steine (1,5 s) mit Fels im Nacken: an der Kante nicht lange auf den Takt warten; der Fels stürzt in die Grube.
       - Wechsel-Schleuse auf der Flucht: Hebel 10 öffnet Tor 10, startet einen Fels und lässt den Boden vorne verschwinden;
         dafür erscheinen Trittsteine weiter oben – hinauf und hinüber, der Fels stürzt in die Grube.
+    - Etappe 4 (Spalten 600–800, Ziel bei 790):
+      - Finale (schwerste Stelle): Hebel 11 lässt den letzten Fels los (so schnell wie die Figuren). Über die Grube (Affe
+        Haken, Schweinchen segelt), im Laufen den Spiegel drehen – der Kristall öffnet das Licht-Tor 12 –, hinauf auf die
+        Stege; der Fels rollt darunter durch und zerschellt an der Mauer.
+      - Ausklang: drei Pfeil-Vorhänge ohne Fels, dann das Ziel.
+    - Checkpoints höchstens etwa 60 Spalten auseinander – außer in den Verfolgungen, die jeweils am Stück gespielt werden.
     - Test level11_felsenflucht (Koop-Bot).
 
 ## Level-Editor (editor/)

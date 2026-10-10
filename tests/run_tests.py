@@ -1393,7 +1393,8 @@ async def level11_felsenflucht(g):
     Etappe 1: erste Flucht (langsamer Fels, zerschellt an der Stufe), Fels und Grube (Affe Haken, Schweinchen segelt),
     Flucht nach oben auf die Stege (schneller Fels rollt darunter durch).
     Etappe 2: Pfeil-Flucht, Schleuse mit Fels (Platte halten, Hebel 6, Fels zerschellt an Tür 5), Flammen-Welle mit Fels.
-    Etappe 3: Teleporter-Flucht, Takt-Steine mit Fels im Nacken, Wechsel-Schleuse (Boden verschwindet, Trittsteine erscheinen)."""
+    Etappe 3: Teleporter-Flucht, Takt-Steine mit Fels im Nacken, Wechsel-Schleuse (Boden verschwindet, Trittsteine erscheinen).
+    Etappe 4: Finale – lange Verfolgung (Grube, Spiegel im Laufen drehen -> Licht-Tor, Stege), Ausklang mit Pfeilen."""
     await koop_level(g, 'level-11.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -1470,6 +1471,26 @@ async def level11_felsenflucht(g):
     r = await koop(g, m=kat(549, 15), f=kat(550, 15), plans=pl, maxFrames=3000)
     soll(r.get('done') and await g.ev("felsen[8].weg"), 'Wechsel-Schleuse auf der Flucht', info(r))
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 62 and a not in (100, 320, 402, 602)]   # Ausnahme: jede Verfolgung am Stück
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander (außer in Verfolgungen)', luecken)
+    steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    haken = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                        {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+    m = [k_lauf(610, 0)] + am(612) + haken(626) + steg(669) + [k_lauf(708), {'wait': 'felsen[9].weg'}]
+    f = [{'wait': '!!linkOn[11]'}] + k_segeln(627, 4) + [k_lauf(648, 0)] + am(650) + steg(670) + [k_lauf(709)]
+    r = await koop(g, m=kat(608, 15), f=kat(614, 15), plans={'m': m, 'f': f}, maxFrames=4000)
+    soll(r.get('done') and await g.ev("felsen[9].weg"), 'Finale: Verfolgung mit Licht-Tor', info(r))
+    r = await koop(g, m=kat(608, 15), f=kat(640, 15), plans={'m': [k_lauf(610, 0)] + am(612) + haken(626) + [k_lauf(668)]}, maxFrames=2000)
+    soll(r.get('dead') or r['pos']['m'][0] < 660, 'ohne Spiegel bleibt das Licht-Tor zu', info(r))
+    pl = []
+    for c in (722, 728, 734):
+        pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 2)]
+    r = await koop(g, f=kat(710, 15), m=kat(708, 15), plans={'f': pl + [k_lauf(746)]}, maxFrames=3000)
+    soll(r.get('done'), 'Ausklang: Pfeil-Vorhänge', r.get('pos'))
+    r = await koop(g, m=kat(752, 15), f=kat(750, 15), plans={'m': [k_lauf(791)], 'f': [k_lauf(789)]}, maxFrames=1500)
+    soll(r.get('done'), 'bis zum Ziel', r.get('pos'))
     assert not fehler, fehler
 
 @test
