@@ -136,7 +136,8 @@ function updateDoorsAndSwitches(dt, players){
       if(d < bd){ bd = d; best = sw; }
     }
     if(best) triggerSwitch(best, player);
-    else if(typeof spiegelBedienen === 'function') spiegelBedienen(player);   // sonst: Spiegel drehen (elemente/licht.js)
+    else if(typeof spiegelBedienen === 'function' && spiegelBedienen(player)){}   // sonst: Spiegel drehen (elemente/licht.js)
+    else if(typeof leuchtAnschlagen === 'function') leuchtAnschlagen(player);   // sonst: Leuchtkristall anschlagen (elemente/leuchtkristall.js)
   }
   // Tür schließen, sobald keine Figur mehr darin steht (niemand wird eingeklemmt)
   for(const d of solids){

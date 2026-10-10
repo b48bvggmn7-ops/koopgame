@@ -1,0 +1,98 @@
+{
+ "hinweis": "Testlevel Ausbau 7: Leuchtkristall und Dunkelzone. Öffnen: index.html?testlevel=leuchtkristall · ab der Mitte ist es stockdunkel; der erste Kristall leuchtet 8 s, wenn man ihn anschlägt (J / Num 2), der zweite leuchtet, solange Hebel 1 an ist; im Dunkeln eine Stachelreihe",
+ "welt": "hoehle",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 4000,
+   "h": 40,
+   "type": "ground"
+  }
+ ],
+ "switches": [
+  {
+   "x": 1700,
+   "y": 660,
+   "link": 1
+  }
+ ],
+ "doors": [],
+ "hooks": [],
+ "plates": [],
+ "spikes": [
+  {
+   "x": 1420,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 1460,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 1500,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  }
+ ],
+ "movingPlatforms": [],
+ "coins": [
+  {
+   "x": 1200,
+   "y": 640,
+   "color": "blue"
+  },
+  {
+   "x": 1300,
+   "y": 640,
+   "color": "pink"
+  }
+ ],
+ "checkpoints": [
+  {
+   "x": 600,
+   "y": 680
+  }
+ ],
+ "startM": {
+  "x": 300,
+  "y": 680
+ },
+ "startF": {
+  "x": 220,
+  "y": 680
+ },
+ "goal": {
+  "x": 3700,
+  "y": 680
+ },
+ "dunkelzonen": [
+  {
+   "x": 800,
+   "y": -120,
+   "w": 2000,
+   "h": 840
+  }
+ ],
+ "leuchtkristalle": [
+  {
+   "x": 1000,
+   "y": 660
+  },
+  {
+   "x": 2200,
+   "y": 660,
+   "link": 1
+  }
+ ]
+}

@@ -261,3 +261,79 @@ Rätsel: Doppelgang 604–680 bzw. zwei Wege 401–474). In der Felsenflucht wir
 Spalten ohne Checkpoint im Finale) – das macht sie zum Meister-Level.
 
 **Sonst:** Alle anderen Stellen sind komfortabel (Lehr-Teile, Spiegel am Boden, Tore, Schleusen).
+
+## Welt 3 – Höhle
+
+**Thema:** Kristallhöhlen tief unter dem Berg. Hier geht es um **Präzision und Koordination**: enge Kamine,
+schmale Stege, Förderbänder, rutschiges Eis und dunkle Gänge, in denen nur Leuchtkristalle den Weg zeigen.
+Typisch 3–4 Versuche, die schwersten Stellen ca. 8 – nie unmöglich (Regelwerk Punkt 13).
+
+**Look:**
+- Kein Himmel (unter Tage). Hintergrund: Höhlenwände mit leuchtenden Adern in der Ferne, Kristall-Felsen und
+  unterirdische Wasserfälle, Säulen mit leuchtenden Kappen, dunkle Felsen vorne.
+- Boden und Wände: violett-grauer Fels, türkis leuchtendes Moos und Gras; Kristalle in Cyan, Violett und Mint.
+- Dunkelheit: Die ganze Welt ist dämmrig, um Figuren, Hebel, Kristalle und Pilze leuchtet es.
+- Tageszeiten: Unter Tage gibt es keine Sonne – morgens/mittags/abends sehen gleich aus (Licht von oben durch Spalten),
+  **nachts** ist es deutlich dunkler: dann braucht man die Leuchtkristalle wirklich.
+- Wetter: trocken = stille Höhle; **Regen** = Tropfwasser von der Decke (Tropfen statt Regenschauer), Tropf-Geräusche.
+
+**Tiere:** Fledermäuse (hängen an der Decke, flattern auf), leuchtende Glühwürmchen, Schnecken, Höhlen-Pilze, die
+glimmen; kleine Kristalle am Boden funkeln, wenn man vorbeiläuft.
+
+**Deko:** Stalaktiten und Stalagmiten, leuchtendes Moos an Kanten, Kristall-Büschel, Pfützen; dazu die neuen Elemente
+(Förderband mit Rollen, Eisflächen mit Glanz, Leuchtkristalle).
+
+**Musik und Ambiente:** dieselbe Klavier-Musik, gedämpft; keine Vögel, kaum Grillen, dafür leises Wasserrauschen in
+der Ferne und Tropfen.
+
+**Mechanik-Set:** Aufwind, Scheinwände, Stege (einseitige Plattformen), Kamine (Wandsprung), Teleporter, Dunkelheit
+(schon vorhanden). Neu in Ausbau 7:
+- **Förderband:** Boden, der alles darauf mitnimmt (links oder rechts, langsam/schnell); per Nummer (Hebel/Platte)
+  umschaltbar oder anhaltbar.
+- **Eis:** rutschiger Boden – man beschleunigt und bremst langsam; Sprünge von Eis brauchen Gefühl.
+- **Leuchtkristall:** Kristall im Dunkeln; mit der Hebel-Taste angeschlagen leuchtet er einige Sekunden hell und
+  vertreibt die Dunkelheit weit um sich; per Nummer kann er auch dauerhaft leuchten.
+
+### Plan pro Level
+
+| Nr. | Level | Tageszeit / Wetter | Rolle | Schwerpunkt | typisch / schwerste |
+|---|---|---|---|---|---|
+| 1 | Kristallhöhle (vorhanden, level-5) | – (alter Look) | Kombi | Aufwind, Scheinwände, Kamine | 3 / 5 |
+| 2 | **Tropfsteingang** (neu, level-12) | morgen / trocken | Lehr-Level | Förderband, Stege, enge Kamine | 2–3 / 4 |
+| 3 | **Eisgrotte** (neu, level-13) | abend / regen (Tropfwasser) | Lehr-Level | Eis, Aufwind, Präzisionssprünge | 3 / 5 |
+| 4 | **Leuchtgrotte** (neu, level-14) | nacht / trocken | Kombi-Level | Dunkelheit + Leuchtkristalle, Scheinwände, Teleporter | 3 / 6 |
+| 5 | **Förderwerk** (neu, level-15) | mittag / wechselnd | Kombi-Level | Förderband + Eis + Hebel über Kreuz, Kamine | 3–4 / 7 |
+| 6 | **Tiefenschlund** (neu, level-16) | nacht / regen | Meister-Level | alles kombiniert, lange Präzisions-Passagen im Dunkeln | 4 / 8 |
+
+**Tropfsteingang (level-12):** 1. Förderband lernen (mit und gegen den Strom). 2. Stege von unten durchspringen,
+Kamine mit Wandsprung. 3. Hebel dreht das Band – einer schaltet, der andere fährt mit. 4. Bänder über Stachelgruben.
+
+**Eisgrotte (level-13):** 1. Eis lernen (Anlauf, Bremsweg). 2. Eis-Sprünge auf schmale Säulen. 3. Aufwind über
+Eisflächen (Schweinchen). 4. Eis-Rampe mit Haken als Bremse (Affe).
+
+**Leuchtgrotte (level-14):** 1. Leuchtkristall anschlagen, im Licht laufen. 2. Einer schlägt Kristalle an, der andere
+läuft im Dunkeln durch Stachelgänge. 3. Scheinwände, die man nur im Licht erkennt. 4. Kristalle per Nummer, Teleporter.
+
+**Förderwerk (level-15):** 1. Förderband-Kaskaden. 2. Eis + Förderband. 3. Bänder über Kreuz: jeder Hebel dreht das
+Band des anderen. 4. Kamin-Aufstieg mit Bändern.
+
+**Tiefenschlund (level-16):** 1. Dunkler Abstieg mit Leuchtkristallen. 2. Eis-Kamine. 3. Förderband-Labyrinth mit
+Teleportern. 4. Finale: lange Präzisions-Passage im Dunkeln.
+
+### Rolle von Affe und Schweinchen je Mechanik (Höhle)
+
+| Mechanik | Affe | Schweinchen |
+|---|---|---|
+| Förderband | hängt sich am Haken fest und hält gegen den Strom; schaltet hohe Band-Hebel | segelt über Bänder hinweg (Band wirkt nur am Boden) und landet genau |
+| Eis | bremst mit dem Seil: am Haken hängen stoppt jedes Rutschen | landet segelnd punktgenau auf schmalen Eissäulen |
+| Leuchtkristall | schlägt hohe Kristalle per Haken an | schlägt ferne Kristalle segelnd an; im Licht läuft der andere |
+| Kamine / Stege | Wandsprung + Seil als Sicherung | Wandsprung + Schirm bremst den Fall |
+| Aufwind | – (fällt durch) | steigt mit dem Schirm hoch, erreicht Hebel/Kristalle |
+| Dunkelheit | sieht nur, was in seinem Licht-Kreis ist | ebenso – wer vorne läuft, leuchtet dem anderen den Weg |
+
+**Regeln, die in jedem Höhlen-Level gelten:**
+- Münzen nur blau und pink, gleich viele.
+- Checkpoints alle 40–60 Spalten und vor jeder harten Stelle.
+- Jeder Hebel hat einen Grund.
+- Im Dunkeln nie ein Sprung ins Unbekannte: Gefahren sind vor dem Sprung sichtbar (Leuchtkristall, Pilz, Moos).
+- Keine Zufallstode.

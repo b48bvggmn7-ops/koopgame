@@ -84,6 +84,17 @@ const FELS_BESCHL = 0.08;       // so schnell kommt er auf sein Tempo (Anteil pr
 const FELS_STUFE = 12;          // so hohe Stufen nimmt er mit, höhere Kanten/Wände lassen ihn zerschellen
 // Licht (elemente/licht.js)
 const LICHT_REICHWEITE = 80;    // so viele Kästchen läuft ein Lichtstrahl höchstens
+// Eis (elemente/eis.js)
+const EIS_GRIFF = 0.16;         // Anteil der normalen Beschleunigung auf Eis (langsam anlaufen, langsam umdrehen)
+const EIS_REIBUNG = 0.975;      // Abbremsen ohne Taste auf Eis pro Schritt (Boden: FRICTION_GROUND) – langer Rutschweg
+// Förderband (elemente/foerderband.js) – Tempo kommt aus dem Level (langsam 1,6 / schnell 2,8 px pro Schritt)
+// Leuchtkristall und Dunkelzone (elemente/leuchtkristall.js)
+const LEUCHT_DAUER = 480;       // so viele Schritte (8 Spielsekunden) leuchtet ein angeschlagener Kristall
+const LEUCHT_WARN = 120;        // in den letzten 2 Sekunden flackert er (Warnung)
+const LEUCHT_RADIUS = 320;      // px Lichtkreis eines leuchtenden Kristalls
+const LEUCHT_REICHWEITE = 70;   // so nah (px) muss eine Figur sein, um ihn anzuschlagen
+const DUNKEL_STAERKE = 0.93;    // so dunkel ist eine Dunkelzone (0 … 1)
+const DUNKEL_FIGUR = 95;        // px Lichtkreis um eine Figur in der Dunkelzone (sonst 230)
 
 // ---------- Endgegner (Ausbau 6, elemente/boss.js) – Schritte = Physik-Schritte (60 = 1 Spielsekunde) ----------
 const BOSS_AUFTRITT = 90;        // so lange steht der Boss nach Phasenstart/Tod still (Zeit zum Orientieren)

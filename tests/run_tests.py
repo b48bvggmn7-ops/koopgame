@@ -3124,7 +3124,9 @@ async def element_register(g):
                  ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False],
                  ['boss', 'boss', True, True], ['bossArena', 'bossArena', True, False], ['bossPlatz', 'bossPlaetze', True, False],
                  ['falle', 'traps', True, True], ['fels', 'boulders', True, True],
-                 ['lichtquelle', 'lichtquellen', True, True], ['spiegel', 'spiegel', True, False], ['kristall', 'kristalle', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['lichtquelle', 'lichtquellen', True, True], ['spiegel', 'spiegel', True, False], ['kristall', 'kristalle', True, False],
+                 ['eis', 'eis', True, True], ['foerderband', 'baender', True, True], ['leuchtkristall', 'leuchtkristalle', True, True],
+                 ['dunkelzone', 'dunkelzonen', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -3137,9 +3139,9 @@ async def element_register(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['hook', 'wind', 'bounce', 'tele', 'move'], reihe   # + Teleporter (Ausbau 4)
+        assert reihe == ['hook', 'wind', 'bounce', 'tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'wechsel', 'LABEL', 'LABEL', 'lichtquelle', 'LABEL', 'spiegel', 'LABEL', 'kristall', 'LABEL', 'INPUT'], logik   # Wechselboden + Gruppe/Takt (Ausbau 4), Licht (Ausbau 7)
+        assert logik == ['switch', 'door', 'plate', 'wechsel', 'LABEL', 'LABEL', 'lichtquelle', 'LABEL', 'spiegel', 'LABEL', 'kristall', 'leucht', 'LABEL', 'LABEL', 'INPUT'], logik   # Wechselboden + Gruppe/Takt (Ausbau 4), Licht + Leuchtkristall (Ausbau 7)
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
         await p.select_option('#linkSelect', '7')
         for t, c in (('switch', 2), ('door', 3), ('plate', 5)):
@@ -3927,6 +3929,117 @@ async def boss_sprung(g, wer='p1'):
     await g.ev(f"{wer}.x = bossKampf.x; {wer}.y = bossKampf.y - bossKampf.T.h - 40; {wer}.vx = 0; {wer}.vy = 4; {wer}.grounded = false;"
                f"{wer}._px = {wer}.x; {wer}._py = {wer}.y")
     await g.steps(12)
+
+@test
+async def eis_rutschen(g):
+    """Ausbau 7 (Höhle): Eis – fester Boden, auf dem man langsam anläuft und ohne Taste lange rutscht; normaler Boden
+    bremst wie bisher. Testlevel levels/test/eis.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'eis.json')); await g.steps(2)
+    # ohne Taste mit vollem Tempo: Bremsweg auf Boden vs. Eis
+    await g.ev("p2.x = 3000; p2.y = 680; p1.x = 200; p1.y = 680; p1.vx = 4.4; window.__x0 = p1.x")
+    await g.steps(60)
+    boden = await g.ev("p1.x - __x0")
+    await g.ev("p1.x = 900; p1.y = 680; p1.vx = 4.4; p2.x = 1000; window.__x0 = p1.x")
+    await g.steps(90)
+    eis = await g.ev("p1.x - __x0")
+    assert boden < 30 and eis > 120, f'Bremsweg Boden {boden}, Eis {eis}'
+    assert await g.ev("aufEis(p1)"), 'steht nicht auf Eis'
+    # Anlaufen: nach 8 Schritten auf Eis deutlich langsamer als auf Boden
+    await g.ev("p1.x = 1200; p1.y = 680; p1.vx = 0")
+    await g.p.keyboard.down('KeyD'); await g.steps(8); v_eis = await g.ev("p1.vx"); await g.p.keyboard.up('KeyD')
+    await g.ev("p1.x = 400; p1.y = 680; p1.vx = 0"); await g.steps(3)
+    await g.p.keyboard.down('KeyD'); await g.steps(8); v_boden = await g.ev("p1.vx"); await g.p.keyboard.up('KeyD')
+    assert v_boden > 4 and v_eis < 3, f'Anlaufen Boden {v_boden}, Eis {v_eis}'
+    # Eis ist fest (man fällt nicht durch) und wird vom Element gezeichnet (nicht als normale Wand)
+    assert await g.ev("solids.filter(s => s.type === 'eis').length") == 32 and await g.ev("ELEMENT_SOLID_TYPEN.has('eis')")
+
+@test
+async def foerderband_mitnehmen(g):
+    """Ausbau 7 (Höhle): Förderband nimmt Figuren auf ihm mit (Richtung/Tempo); Nummer „dreht um“ bzw. „hält an“;
+    in der Luft nimmt es niemanden mit. Testlevel levels/test/foerderband.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'foerderband.json')); await g.steps(2)
+    await g.ev("p1.x = 1000; p1.y = 680; p1.vx = 0; p2.x = 1100; p2.y = 680; p2.vx = 0; window.__x0 = [p1.x, p2.x]")
+    await g.steps(54)
+    d = await g.ev("[p1.x - __x0[0], p2.x - __x0[1]]")
+    assert 60 < d[0] < 110 and 60 < d[1] < 110, f'langsames Band nach rechts: {d}'
+    await g.ev("p1.x = 2000; p1.y = 680; p1.vx = 0; p2.x = 2100; p2.y = 680; window.__x0 = p1.x")
+    await g.steps(30)
+    links = await g.ev("p1.x - __x0")
+    await g.ev("setLink(1, true); p1.x = 2000; p1.y = 680; p1.vx = 0; window.__x0 = p1.x")
+    await g.steps(30)
+    rechts = await g.ev("p1.x - __x0")
+    assert links < -50 and rechts > 50, f'Nummer 1 dreht das Band nicht um: {links} / {rechts}'
+    # in der Luft: kein Mitnehmen
+    await g.ev("setLink(1, false); p1.x = 2000; p1.y = 600; p1.vx = 0; p1.vy = -9; p1.grounded = false; window.__x0 = p1.x")
+    await g.steps(6)
+    assert abs(await g.ev("p1.x - __x0")) < 1, 'nimmt in der Luft mit'
+    # Nummer 2 hält das obere Band an
+    await g.ev("p1.x = 3000; p1.y = 560; p1.vx = 0; p2.x = 3100; p2.y = 560; window.__x0 = p1.x"); await g.steps(20)
+    lauf = await g.ev("p1.x - __x0")
+    await g.ev("setLink(2, true); p1.x = 3000; p1.y = 560; p1.vx = 0; window.__x0 = p1.x"); await g.steps(20)
+    still = await g.ev("p1.x - __x0")
+    assert lauf < -30 and abs(still) < 1, f'Nummer 2 hält nicht an: {lauf} / {still}'
+
+@test
+async def leuchtkristall_dunkelzone(g):
+    """Ausbau 7 (Höhle): Dunkelzone macht es fast stockdunkel (kleiner Lichtkreis um die Figuren); ein Leuchtkristall
+    leuchtet nach dem Anschlagen (Hebel-Taste) 8 s und flackert vorher; per Nummer leuchtet er dauerhaft; Neustart
+    löscht das Licht. Testlevel levels/test/leuchtkristall.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'leuchtkristall.json')); await g.steps(2)
+    await g.ev("p1.x = 600; p1.y = 680; p2.x = 560; p2.y = 680")
+    assert await g.ev("dunkelZonen.length") == 1 and await g.ev("leuchtKristalle.length") == 2
+    # Dunkelheit an einer Stelle = Deckkraft der Dunkel-Ebene (0 = hell, 255 = schwarz)
+    dunkel = lambda wx, wy: g.ev(f"(() => {{ camX = 300; draw(); if(!dunkelCanvas) return 0; const x = Math.round(({wx} - camX)*zoom), y = Math.round({wy}*zoom + H*(1 - zoom)); return dunkelCanvas.getContext('2d').getImageData(x, y, 1, 1).data[3]; }})()")
+    await g.ev("p1.x = 740; p2.x = 700; camPos = 300")
+    vorher = await dunkel(1150, 560)
+    aussen = await dunkel(500, 560)
+    assert vorher > 200 and aussen < 20, f'Dunkelzone nicht dunkel: drin {vorher}, draußen {aussen}'
+    # Kristall anschlagen (Schweinchen, Num 2)
+    await g.ev("p2.x = 1010; p2.y = 680"); await g.steps(2)
+    await g.p.keyboard.press('Numpad2'); await g.steps(3)
+    assert await g.ev("leuchtKristalle[0].t > 400"), 'Kristall leuchtet nach dem Anschlagen nicht'
+    await g.ev("p2.x = 740; camPos = 300")
+    nachher = await dunkel(1150, 560)
+    assert nachher < vorher - 80, f'Kristall-Licht hellt nicht auf: {vorher} -> {nachher}'
+    await g.ev("leuchtKristalle[0].t = 130"); await g.steps(20)
+    assert 0 < await g.ev("leuchtStaerke(leuchtKristalle[0])") < 1, 'flackert nicht vor dem Ausgehen'
+    await g.steps(130)
+    assert await g.ev("leuchtKristalle[0].t") == 0
+    # per Nummer: leuchtet, solange Hebel 1 an ist
+    assert await g.ev("leuchtStaerke(leuchtKristalle[1])") == 0
+    await g.ev("setLink(1, true)"); await g.steps(2)
+    assert await g.ev("leuchtStaerke(leuchtKristalle[1])") == 1
+    # Neustart löscht das Licht
+    await g.ev("leuchtKristalle[0].t = 300"); await g.p.keyboard.press('KeyR'); await g.steps(3)
+    assert await g.ev("leuchtKristalle[0].t") == 0, 'Neustart lässt den Kristall leuchten'
+
+@test
+async def editor_hoehlen_elemente(g):
+    """Ausbau 7: Editor-Werkzeuge Eis und Dunkelzone (Gelände, malbar), Förderband (Bewegung; Richtung/Tempo/Nummer),
+    Leuchtkristall (Schalter & Logik; anschlagen oder per Nummer); Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.click('.tool[data-tool=eis]'); await ed_ziehen(p, (2, 16), (4, 16))
+        await p.click('.tool[data-tool=dunkel]'); await ed_ziehen(p, (10, 10), (11, 10))
+        await p.click('.tool[data-tool=band]'); await p.select_option('#opt-band-richtung', 'l'); await p.select_option('#opt-band-tempo', '2.8')
+        await p.select_option('#opt-band-schalter', 'dreht'); await p.select_option('#linkSelect', '4')
+        x, y = await ed_zelle(p, 6, 16); await p.mouse.click(x, y)
+        await p.click('.tool[data-tool=leucht]'); await p.select_option('#opt-leucht-schalter', 'anschlagen')
+        x, y = await ed_zelle(p, 8, 15); await p.mouse.click(x, y)
+        await p.select_option('#opt-leucht-schalter', 'nummer'); await p.select_option('#linkSelect', '6')
+        x, y = await ed_zelle(p, 9, 15); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert sorted(e['x'] for e in out['eis']) == [80, 120, 160] and all(e['y'] == 640 for e in out['eis']), out['eis']
+        assert sorted(z['x'] for z in out['dunkelzonen']) == [400, 440], out['dunkelzonen']
+        assert out['baender'] == [{'x': 240, 'y': 640, 'w': 40, 'h': 40, 'richtung': 'l', 'tempo': 2.8, 'link': 4, 'schalter': 'dreht'}], out['baender']
+        assert out['leuchtkristalle'] == [{'x': 340, 'y': 620}, {'x': 380, 'y': 620, 'link': 6}], out['leuchtkristalle']
+        assert 'Leuchtkristall' in await p.evaluate("[...linkSelect.options].find(o => o.value === '6').textContent")
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
 
 async def weiter_nach_tod(g):
     for _ in range(40):

@@ -1,0 +1,735 @@
+{
+ "hinweis": "Testlevel Ausbau 7: Förderband. Öffnen: index.html?testlevel=foerderband · erst ein langsames Band nach rechts, dann ein schnelles nach links (Hebel 1 dreht es um), darüber ein Haken (Affe hält gegen den Strom), dann ein Band über Stacheln, das Hebel 2 anhält",
+ "welt": "hoehle",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 800,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 2400,
+   "y": 680,
+   "w": 200,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 3400,
+   "y": 680,
+   "w": 600,
+   "h": 40,
+   "type": "ground"
+  }
+ ],
+ "switches": [
+  {
+   "x": 700,
+   "y": 660,
+   "link": 1
+  },
+  {
+   "x": 2560,
+   "y": 660,
+   "link": 2
+  }
+ ],
+ "doors": [],
+ "hooks": [
+  {
+   "x": 2000,
+   "y": 440,
+   "radius": 180
+  }
+ ],
+ "plates": [],
+ "spikes": [
+  {
+   "x": 2620,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2660,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2700,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2740,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2780,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2820,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2860,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2900,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2940,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 2980,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3020,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3060,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3100,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3140,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3180,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3220,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3260,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3300,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3340,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  },
+  {
+   "x": 3380,
+   "y": 720,
+   "w": 40,
+   "h": 40,
+   "dir": 0
+  }
+ ],
+ "movingPlatforms": [],
+ "coins": [
+  {
+   "x": 1200,
+   "y": 640,
+   "color": "blue"
+  },
+  {
+   "x": 3000,
+   "y": 520,
+   "color": "pink"
+  }
+ ],
+ "checkpoints": [
+  {
+   "x": 600,
+   "y": 680
+  }
+ ],
+ "startM": {
+  "x": 300,
+  "y": 680
+ },
+ "startF": {
+  "x": 220,
+  "y": 680
+ },
+ "goal": {
+  "x": 3900,
+  "y": 680
+ },
+ "baender": [
+  {
+   "x": 800,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 840,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 880,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 920,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 960,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1000,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1040,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1080,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1120,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1160,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1200,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1240,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1280,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1320,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1360,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1400,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1440,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1480,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1520,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1560,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "r",
+   "tempo": 1.6
+  },
+  {
+   "x": 1600,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1640,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1680,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1720,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1760,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1800,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1840,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1880,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1920,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 1960,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2000,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2040,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2080,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2120,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2160,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2200,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2240,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2280,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2320,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2360,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 1,
+   "schalter": "dreht"
+  },
+  {
+   "x": 2720,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 2760,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 2800,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 2840,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 2880,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 2920,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 2960,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3000,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3040,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3080,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3120,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3160,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3200,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3240,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  },
+  {
+   "x": 3280,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "richtung": "l",
+   "tempo": 2.8,
+   "link": 2,
+   "schalter": "stopp"
+  }
+ ]
+}

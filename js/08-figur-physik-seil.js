@@ -146,7 +146,8 @@ function updatePlayer(player, now){
       ropeFling(player);
     }
   } else {
-    const control = player.grounded ? 1 : AIR_CONTROL;
+    const eisig = typeof aufEis === 'function' && aufEis(player);   // Eis (elemente/eis.js): langsam anlaufen, lang rutschen
+    const control = player.grounded ? (eisig ? EIS_GRIFF : 1) : AIR_CONTROL;
     if(player.grounded || player.onWall) player.ropeFling = false;   // Abflug endet beim Landen / an der Wand
     if(player.wjInputLock > 0){
       player.wjInputLock -= 16.6;
@@ -159,7 +160,7 @@ function updatePlayer(player, now){
         player.vx += moveDir * SPRINT_ACCEL;
       }
       if(moveDir === 0){
-        player.vx *= player.grounded ? FRICTION_GROUND : (player.ropeFling ? ROPE_FLING_DRAG : FRICTION_AIR);
+        player.vx *= player.grounded ? (eisig ? EIS_REIBUNG : FRICTION_GROUND) : (player.ropeFling ? ROPE_FLING_DRAG : FRICTION_AIR);
         if(Math.abs(player.vx) < 0.05) player.vx = 0;
       }
       // Abflug vom Seil: vorhandener Schwung (bis ROPE_FLING_MAX) bleibt, aber Taste halten beschleunigt

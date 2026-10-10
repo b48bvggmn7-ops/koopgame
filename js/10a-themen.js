@@ -229,12 +229,13 @@ function themeLights(){
   for(const h of hooks) L.push([h.x, h.y, 60]);
   for(const sw of switchDefs) if(!hidden(sw.x, sw.y)) L.push([sw.x, sw.y, 60]);   // versteckte Hebel nicht verraten
   for(const pl of plates) if(!hidden(pl.x, pl.y)) L.push([pl.x, pl.y + 10, 50]);
+  if(typeof leuchtLichter === 'function') leuchtLichter(L);   // Leuchtkristalle (elemente/leuchtkristall.js)
   if(typeof critters !== 'undefined') for(const c of critters) if(c.glow) L.push([c.x, c.y - (c.kind === 'crystal' ? 12 : 0), c.glow]);
   return L;
 }
 function drawThemeDarkness(){
   const a = THEME.dark;
-  if(!a) return;
+  if(!a){ if(typeof dunkelZeichnen === 'function') dunkelZeichnen(); return; }
   const g = darkCtx;
   g.globalCompositeOperation = 'source-over';
   g.clearRect(0, 0, W, H);
@@ -249,6 +250,7 @@ function drawThemeDarkness(){
   }
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(darkCanvas, 0, 0);
+  if(typeof dunkelZeichnen === 'function') dunkelZeichnen();   // Dunkelzonen (elemente/leuchtkristall.js)
 }
 
 // ---------- Welt + Tageszeit + Wetter (Ausbau 1) ----------

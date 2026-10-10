@@ -822,6 +822,41 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Welche Rolle haben Affe und Schweinchen? Spiegel stehen dort, wo nur der Affe (Haken) oder nur das Schweinchen
       (segelnd) hinkommt. Einer lenkt das Licht, der andere geht durch die Tür, die der Kristall öffnet.
 
+  - EIS (Ausbau 7, Welt Höhle; elemente/eis.js, Spiel-Feld eis [{x, y, w, h}]): fester, rutschiger Boden-Block.
+    - Wer darauf steht, läuft langsam an und dreht langsam um (EIS_GRIFF) und rutscht ohne Taste lange weiter
+      (EIS_REIBUNG, Werte in js/02-physik-werte.js). Springt man ab, behält man den Schwung. Landen mit Schwung: leises
+      Schaben.
+    - Editor: Werkzeug „Eis“ in der Gruppe Gelände, mit gedrückter Maus malbar.
+    - Testlevel levels/test/eis.json; Tests eis_rutschen, editor_hoehlen_elemente.
+    - Welche Rolle haben Affe und Schweinchen? Der Affe bremst mit dem Seil (am Haken hängen stoppt jedes Rutschen), das
+      Schweinchen landet segelnd punktgenau auf schmalen Eissäulen.
+
+  - FÖRDERBAND (Ausbau 7, Welt Höhle; elemente/foerderband.js, Spiel-Feld baender [{x, y, w, h, richtung, tempo, link?,
+    schalter}]): fester Boden-Block, der jede Figur, die darauf steht, mitnimmt (rechts oder links, langsam 1,6 oder
+    schnell 2,8 Pixel pro Schritt). Gegen das Band kommt man langsamer voran, mit ihm schneller; Wände halten auf.
+    - Wer springt, segelt oder am Seil hängt, wird nicht mitgenommen.
+    - Optional an einer Verknüpfungs-Nummer: „Nummer dreht um“ (solange an, läuft es andersherum) oder „Nummer hält an“.
+      Beim Umschalten klackt ein Zahnrad.
+    - Aussehen: dunkler Rahmen mit Rollen, auf dem Gurt wandern gelbe Pfeile in Laufrichtung (still = grau).
+    - Editor: Werkzeug „Förderband“ in der Gruppe Bewegung (Richtung, Tempo, Nummer), malbar; Klick tauscht die Richtung.
+    - Testlevel levels/test/foerderband.json; Tests foerderband_mitnehmen, editor_hoehlen_elemente.
+    - Welche Rolle haben Affe und Schweinchen? Der Affe hängt sich am Haken fest und hält gegen den Strom; das Schweinchen
+      segelt über Bänder hinweg und landet genau; oft schaltet einer per Hebel das Band, auf dem der andere fährt.
+
+  - LEUCHTKRISTALL und DUNKELZONE (Ausbau 7, Welt Höhle; elemente/leuchtkristall.js, Spiel-Felder
+    leuchtkristalle [{x, y, link?}], dunkelzonen [{x, y, w, h}]).
+    - Dunkelzone: dort ist es fast stockdunkel; um die Figuren leuchtet nur ein kleiner Kreis. Münzen, Haken, Hebel,
+      Checkpoints und das Ziel glimmen schwach, damit man nie blind springt. Weicher Übergang am Rand.
+    - Leuchtkristall: glimmt schwach. Mit der Hebel-Taste (J / Num 2 / Kreis) angeschlagen – wenn kein Hebel und kein
+      Spiegel näher ist – leuchtet er 8 Sekunden hell und weit; in den letzten 2 Sekunden flackert er (Knistern).
+      „per Nummer“: leuchtet dauerhaft, solange seine Verknüpfungs-Nummer an ist. Neustart/Tod: alle aus.
+    - Er hellt sowohl die normale Höhlen-/Nacht-Dunkelheit als auch Dunkelzonen auf.
+    - Editor: „Leuchtkristall“ (Gruppe Schalter & Logik; anschlagen oder per Nummer), „Dunkelzone“ (Gruppe Gelände,
+      malbar).
+    - Testlevel levels/test/leuchtkristall.json; Tests leuchtkristall_dunkelzone, editor_hoehlen_elemente.
+    - Welche Rolle haben Affe und Schweinchen? Einer schlägt Kristalle an (der Affe hohe per Haken, das Schweinchen
+      ferne segelnd), der andere läuft im Licht; wer vorne läuft, leuchtet dem anderen den Weg.
+
   - WELT RUINEN – Look (Ausbau 7; Design in WELTEN.md): levels/worlds.json, Welt „ruinen“ hat jetzt
     "aussehen": {basis: ruinen, zeit: mittag, himmel, ambiente: Vögel 0,6 · Grillen 0,5 · Fluss 0,4} (Tempel: weniger
     Vögel, leise Grillen auch am Tag, Fluss nur fern).
