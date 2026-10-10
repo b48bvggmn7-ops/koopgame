@@ -1063,6 +1063,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       rechtzeitig über die dunkle Lücke springen); Doppel-Rutsche im Dunkeln (Hebel 4 unten öffnet Tür 4 oben, Hebel 5
       oben öffnet Tür 5 unten, im Vorbeirutschen); Aufwind (Schweinchen) und Kamin (Affe) nebeneinander, oben Stege
       hinunter über Stacheln.
+    - Etappe 3 (Spalten 400–600): Band ins Tor (ein Band trägt beide in ein Tor hinter die Felswand); Band-Weiche: im
+      niedrigen Gang läuft ein reißendes Gegenband, das blaue Tor (nur Affe) führt vorbei, drüben zieht der Affe Hebel 6
+      und das Band trägt das Schweinchen durch; Tor-Kette über die Stachelgrube (genau auf schmale Felssäulen springen,
+      ins Tor laufen, weiterspringen).
     - Test level16_tiefenschlund (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
