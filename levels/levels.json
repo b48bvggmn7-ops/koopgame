@@ -40,5 +40,11 @@
   "titel": "Kokos-Gorilla",
   "versteckt": true,
   "boss": true
+ },
+ {
+  "datei": "level-7.json",
+  "name": "Level 7",
+  "titel": "Lianenschlucht",
+  "versteckt": true
  }
 ]

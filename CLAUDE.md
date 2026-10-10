@@ -56,6 +56,7 @@
   `levels/worlds.json` = Welten mit ihren Leveln (Reihenfolge der Levelauswahl), `levels/test/` = Mini-Testlevel
   (öffnen mit `index.html?testlevel=<name>`),
   `levels/editor-format/` = dieselben Levels im Editor-Speicherformat (Kästchen-Raster).
+- `tests/koop_bot.js` – Koop-Bot für Level-Tests (steuert beide Figuren nach Plänen, Helfer `koop()` in run_tests.py; Ausbau 7).
 - `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
   warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`
   (zählt ebenfalls Schritte) oder `wait_for_function` auf das erwartete Ereignis – sonst sind Tests auf langsamen

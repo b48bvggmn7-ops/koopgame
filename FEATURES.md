@@ -720,6 +720,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       eingefügte Level in alten Spielständen, ohne dass man das vorige Level nochmal spielen muss.
     - Tests: dschungel_welt_look (jede Tageszeit × jedes Wetter), neues_level_in_welt_offen, schichten_tageszeit_wetter
       (Nacht-Boden jetzt abgedunkelt).
+    - Level 7 „Lianenschlucht“ (levels/level-7.json, Dschungel Level 3, mittags, Dauerregen) – IN ARBEIT, bis es fertig
+      ist in levels.json versteckt (noch nicht auf der Weltkarte). Etappe 1 (Spalten 0–200): Steg-Treppe über die Mauer
+      (beide), Seil-Aufzug (Affe zieht sich am Haken auf den Sims, Hebel 1 öffnet Tür 1), Segel-Schlucht (nur das
+      Schweinchen segelt rüber zu Hebel 2, der fährt die Plattform mit dem Affen), Kamin (beide). Test level7_lianenschlucht
+      (Koop-Bot tests/koop_bot.js spielt die Stellen nach).
 
 ## Level-Editor (editor/)
 ```

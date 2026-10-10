@@ -100,6 +100,37 @@ async def menu_texte(p):
     return await p.eval_on_selector_all('#menuItems .mItem', 'els => els.map(e => e.textContent)')
 
 TESTS = []
+# ---------- Koop-Bot für Level-Tests (Ausbau 7, tests/koop_bot.js) ----------
+KOOP_BOT = (ROOT / 'tests' / 'koop_bot.js').read_text(encoding='utf-8')
+def kx(c): return c * 40 + 20          # Mitte von Spalte c (px)
+def ky(r): return (r + 1) * 40         # Füße, wenn man in Reihe r steht
+def kat(c, r): return [kx(c), ky(r)]
+def k_lauf(c, d=0): return {'hold': ['right'], 'until': f'P.x >= {kx(c) + d}'}
+def k_hop(xj, brake, glide=False):
+    """an x springen, `brake` Bilder nach rechts halten, danach abbremsen bis zur Landung"""
+    return [{'hold': ['right'], 'until': f'P.x >= {xj}'}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': brake},
+            {'hold': ['glide'] if glide else [], 'holdIf': {'left': 'P.vx > 0.8', 'right': 'P.vx < -0.8'}, 'until': 'P.grounded'}]
+def k_segeln(c_absprung, hold=10):
+    return [k_lauf(c_absprung), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+def k_haken(n, release, jump_at=None, d=0):
+    """(vom Boden) springen, n Haken nacheinander greifen; release = Loslass-Bedingung je Haken"""
+    st = ([k_lauf(jump_at, d)] if jump_at is not None else []) + [
+        {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120}]
+    for k in range(n):
+        st.append({'swing': True, 'pull': 0, 'release': release, 'frames': 500})
+        if k < n - 1: st.append({'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200})
+    st.append({'hold': ['right'], 'until': 'P.grounded', 'frames': 300})
+    return st
+async def koop(g, **o):
+    """Koop-Bot laufen lassen: m=/f= Startpunkte, plans={'m': [...], 'f': [...]}, links=[...] vorher an"""
+    if not await g.ev("typeof window.coopRun === 'function'"): await g.p.evaluate("() => {" + KOOP_BOT + "}")
+    return await g.p.evaluate("o => coopRun(o)", o)
+def k_pos(r, who): return r['pos'][who] if r.get('done') else None
+async def koop_level(g, datei):
+    await g.load(str(ROOT / 'levels' / datei))
+    await g.p.evaluate("() => {" + KOOP_BOT + "}")
+    await g.ev("closeMenu(); deathState = null; for(const k in KEYS) KEYS[k] = false;")
+
 def test(fn): TESTS.append(fn); return fn
 
 # ---------------------------------------------------------------- Tests
@@ -769,6 +800,40 @@ async def level2_und_3_regeln(g):
         if name not in ('level-2.json', 'level-3.json', 'level-4.json'):   # Level 2–4 vom Nutzer gestaltet: eigene Münzverteilung
             nb = sum(c['color'] == 'blue' for c in lv['coins'])
             assert nb * 2 == len(lv['coins']), f"{name}: Blau/Pink nicht ausgeglichen"
+
+@test
+async def level7_lianenschlucht(g):
+    """Ausbau 7, Dschungel Level 3 „Lianenschlucht“ (levels/level-7.json): Koop-Bot spielt die Stellen jeder Etappe nach.
+    Etappe 1: Steg-Treppe (beide), Seil-Aufzug (Affe zieht sich hoch, Hebel 1), Segel-Schlucht (nur Schweinchen,
+    Hebel 2 fährt die Plattform für den Affen), Kamin (beide)."""
+    await koop_level(g, 'level-7.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    # 1) Steg-Treppe: durch die Stege nach oben, über die Mauer
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = k_hop(kx(13) + 20, 24) + k_hop(kx(17) + 20, 24) + k_hop(kx(22) + 20, 24)
+        r = await koop(g, **{who: kat(3, 14), other: kat(1, 14)}, plans={who: plan}, maxFrames=2500)
+        soll(k_pos(r, who) and k_pos(r, who)[1] == 8, f'Steg-Treppe {who}', r.get('pos'))
+    # 2) Seil-Aufzug: Haken, ranziehen (W), auf den Sims; Hebel 1 öffnet Tür 1
+    plan = [k_lauf(46, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+            k_lauf(57, -10), {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(40, 14), f=kat(40, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[1]"), 'Seil-Aufzug + Hebel 1', r.get('pos'))
+    # 3) Segel-Schlucht: nur das Schweinchen kommt rüber; Hebel 2 fährt die Plattform mit dem Affen
+    r = await koop(g, f=kat(96, 8), m=kat(94, 8), plans={'f': k_segeln(99, 10)}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 113.5 and k_pos(r, 'f')[1] == 12, 'Schlucht Schweinchen', r.get('pos'))
+    r = await koop(g, m=kat(96, 8), f=kat(94, 8), plans={'m': k_hop(kx(99), 30)}, maxFrames=1500)
+    soll(r.get('dead') == 'm' or (k_pos(r, 'm') and k_pos(r, 'm')[0] < 100), 'Affe springt ohne Plattform nicht rüber', r.get('pos'))
+    r = await koop(g, m=kat(98, 8), f=kat(118, 12), plans={'m': [k_lauf(101), {'frames': 30}, {'wait': f'P.x >= {kx(109)}'}, k_lauf(116)], 'f': [{'use': True, 'frames': 5}]}, maxFrames=3000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 12, 'Plattform bringt den Affen', r.get('pos'))
+    # 4) Kamin für beide
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = [k_lauf(151, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(153)}', 'frames': 900}, k_lauf(165)]
+        r = await koop(g, **{who: kat(145, 12), other: kat(140, 12)}, plans={who: plan}, maxFrames=2500)
+        soll(r.get('done'), f'Kamin {who}', r.get('pos'))
+    assert not fehler, fehler
 
 @test
 async def hebel_haben_grund(g):
@@ -2102,6 +2167,7 @@ async def alte_levels_unveraendert(g):
     for d in json.loads((ROOT / 'levels' / 'levels.json').read_text(encoding='utf-8')):
         if d.get('boss'): continue   # Boss-Level (Ausbau 6) sind neu, mit eigener Welt/Tageszeit
         data = json.loads((ROOT / 'levels' / d['datei']).read_text(encoding='utf-8'))
+        if data.get('welt'): continue   # neue Level (Ausbau 7) beschreiben ihr Aussehen mit welt/tageszeit/wetter
         await g.load(str(ROOT / 'levels' / d['datei'])); await g.p.wait_for_timeout(150)
         k = await g.ev("({look: levelTheme, mode: weatherMode, wash: !!THEME.layerWash})")
         assert k == {'look': data.get('theme') or 'dschungel', 'mode': 'wechselnd', 'wash': False}, f"{d['datei']}: {k}"
@@ -2208,6 +2274,9 @@ async def editor_level_info(g):
     Projekt-Level übernehmen Welt/Position/Titel; Export und Autosave enthalten die Felder; „Auf GitHub speichern“
     setzt das Level in worlds.json an die gewählte Stelle (auch als NEUES Level, dann auch levels.json) – ein Commit."""
     srv = webserver(); p = g.p; calls = []
+    projekt = json.loads((ROOT / 'levels' / 'levels.json').read_text())
+    n_neu = max(int(x['datei'][6:-5]) for x in projekt if x['datei'][6:-5].isdigit() and x['datei'].startswith('level-')) + 1
+    NEU = f'level-{n_neu}.json'   # nächste freie Nummer (Ausbau 7 bringt neue Level, vorher fest Nummer 7)
     try:
         await p.route('https://api.github.com/**', github_attrappe(calls))
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
@@ -2233,17 +2302,17 @@ async def editor_level_info(g):
         # als NEUES Level in die Wasserwelt speichern
         await p.click('#githubBtn'); await p.wait_for_timeout(500)
         opts = await p.eval_on_selector_all('#ghTarget option', 'os => os.map(o => o.value)')
-        assert opts[-1] == 'level-7.json', opts   # nächste freie Nummer (level-1 … level-6 vorhanden)
-        await p.select_option('#ghTarget', 'level-7.json'); calls.clear()
+        assert opts[-1] == NEU, opts   # nächste freie Nummer
+        await p.select_option('#ghTarget', NEU); calls.clear()
         await p.click('#ghUpload')
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
         tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
-        assert sorted(tree) == ['levels/editor-format/level-7.json', 'levels/level-7.json', 'levels/levels.json', 'levels/worlds.json'], sorted(tree)
+        assert sorted(tree) == sorted([f'levels/editor-format/{NEU}', f'levels/{NEU}', 'levels/levels.json', 'levels/worlds.json']), sorted(tree)
         w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
-        assert w['wasser'] == ['level-7.json'] and w['ruinen'] == ['level-3.json', 'level-4.json'], w
+        assert w['wasser'] == [NEU] and w['ruinen'] == ['level-3.json', 'level-4.json'], w
         lv = json.loads(tree['levels/levels.json'])
-        assert lv[-1] == {'datei': 'level-7.json', 'name': 'Level 7', 'titel': 'Tiefsee'} and len(lv) == 9, lv[-2:]   # 6 Level + alter Entwurf + Boss 1 + neu
-        assert json.loads(tree['levels/level-7.json'])['welt'] == 'wasser'
+        assert lv[-1] == {'datei': NEU, 'name': f'Level {n_neu}', 'titel': 'Tiefsee'} and len(lv) == len(projekt) + 1, lv[-2:]
+        assert json.loads(tree[f'levels/{NEU}'])['welt'] == 'wasser'
         assert sum(1 for c in calls if c[1] == '/git/commits' and c[0] == 'POST') == 1, 'nicht in einem Commit'
         # vorhandenes Level in eine andere Welt verschieben: Level 3 als 1. Level in den Vulkan
         await p.wait_for_function("!document.getElementById('ghBox').classList.contains('show')", timeout=4000)
