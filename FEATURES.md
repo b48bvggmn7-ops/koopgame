@@ -916,6 +916,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         hinten rollt ein Fels los), rennt durch Tür 5, das Schweinchen geht direkt hinterher; Tür 5 schließt hinter beiden
         und der Fels zerschellt daran. Wer Hebel 6 vergisst, steht vor Tor 6 und muss neu anfangen.
       - Flammen-Welle mit Fels im Nacken: vor jeder Flamme kurz warten, der langsame Fels kommt näher.
+    - Etappe 3 (Spalten 400–600):
+      - Teleporter-Flucht: Hebel 8 startet einen schnellen Fels; der Affe nimmt das blaue, das Schweinchen das pinke Tor
+        hinauf auf den Sims, unten zerschellt der Fels an der Mauer.
+      - Takt-Steine (1,5 s) mit Fels im Nacken: an der Kante nicht lange auf den Takt warten; der Fels stürzt in die Grube.
+      - Wechsel-Schleuse auf der Flucht: Hebel 10 öffnet Tor 10, startet einen Fels und lässt den Boden vorne verschwinden;
+        dafür erscheinen Trittsteine weiter oben – hinauf und hinüber, der Fels stürzt in die Grube.
     - Test level11_felsenflucht (Koop-Bot).
 
 ## Level-Editor (editor/)

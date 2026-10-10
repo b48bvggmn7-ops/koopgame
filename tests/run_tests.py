@@ -1392,7 +1392,8 @@ async def level11_felsenflucht(g):
     """Ausbau 7, Ruinen Level 5 „Felsenflucht“ (levels/level-11.json, mittags, Regen): der rollende Fels jagt die beiden.
     Etappe 1: erste Flucht (langsamer Fels, zerschellt an der Stufe), Fels und Grube (Affe Haken, Schweinchen segelt),
     Flucht nach oben auf die Stege (schneller Fels rollt darunter durch).
-    Etappe 2: Pfeil-Flucht, Schleuse mit Fels (Platte halten, Hebel 6, Fels zerschellt an Tür 5), Flammen-Welle mit Fels."""
+    Etappe 2: Pfeil-Flucht, Schleuse mit Fels (Platte halten, Hebel 6, Fels zerschellt an Tür 5), Flammen-Welle mit Fels.
+    Etappe 3: Teleporter-Flucht, Takt-Steine mit Fels im Nacken, Wechsel-Schleuse (Boden verschwindet, Trittsteine erscheinen)."""
     await koop_level(g, 'level-11.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -1448,6 +1449,27 @@ async def level11_felsenflucht(g):
     r = await koop(g, m=kat(332, 15), f=kat(327, 15), plans=pl, maxFrames=5000)
     soll(r.get('done'), 'Flammen-Welle mit Fels im Nacken', info(r))
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    pl = {'m': [k_lauf(410, 0)] + am(412) + [k_lauf(432), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(470), {'until': 'P.grounded', 'frames': 200}],
+          'f': [{'wait': '!!linkOn[8]'}, k_lauf(435), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(471), {'until': 'P.grounded', 'frames': 200}, {'wait': 'felsen[6].weg'}]}
+    r = await koop(g, m=kat(414, 15), f=kat(415, 15), plans=pl, maxFrames=3000)
+    soll(r.get('done') and await g.ev("felsen[6].weg"), 'Teleporter-Flucht (blaues/pinkes Tor)', info(r))
+    r = await koop(g, m=kat(414, 15), f=kat(416, 15), plans={'f': [k_lauf(410, 0)] + am(412) + [k_lauf(460)]}, maxFrames=1200)
+    soll(r.get('dead'), 'ohne Tor = überrollt', info(r))
+    def takt_flucht():
+        T = 90
+        pl = [k_lauf(491, -6), {'wait': f'(Math.floor(wechselSchritte / {T}) % 2 === 0 && ({T} - wechselSchritte % {T}) > 50) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 160)'}] + sprung_zu(kx(494) + 20)
+        for c0 in range(497, 517, 3):
+            pl += [{'wait': f'({T} - wechselSchritte % {T}) <= 26 && ({T} - wechselSchritte % {T}) > 4'}] + sprung_zu(kx(c0) + 20)
+        return pl + [{'wait': f'({T} - wechselSchritte % {T}) <= 30'}] + sprung_zu(kx(522))
+    pl = {'f': [{'frames': 1}, k_lauf(478, 0)] + am(480) + takt_flucht() + [k_lauf(524)], 'm': [{'wait': '!!linkOn[9]'}] + takt_flucht() + [k_lauf(523)]}
+    r = await koop(g, m=kat(482, 15), f=kat(476, 15), plans=pl, maxFrames=4000)
+    soll(r.get('done') and k_pos(r, 'f')[0] >= 521 and k_pos(r, 'm')[0] >= 521, 'Takt-Steine mit Fels im Nacken', info(r))
+    hop = [k_lauf(555, -6)] + sprung_zu(kx(558) + 20, 10) + [k_lauf(559, 0)] + sprung_zu(kx(562) + 20, 6) + [k_lauf(563, 0)] + sprung_zu(kx(566) + 20, 6) + [k_lauf(567, 0)] + sprung_zu(kx(571), 6) + [k_lauf(574)]
+    pl = {'m': [k_lauf(546, 0)] + am(548) + hop, 'f': [{'wait': '!!linkOn[10]'}, {'frames': 30}] + hop + [{'wait': 'felsen[8].weg'}]}
+    r = await koop(g, m=kat(549, 15), f=kat(550, 15), plans=pl, maxFrames=3000)
+    soll(r.get('done') and await g.ev("felsen[8].weg"), 'Wechsel-Schleuse auf der Flucht', info(r))
+    if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
     assert not fehler, fehler
 
 @test
