@@ -1059,6 +1059,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Licht und Brücke: das Schweinchen hält Druckplatte 1 (Kristall über der Schlucht leuchtet), der Affe schwingt an
       vier Haken hinüber und zieht Hebel 2 (Brücke); Eissäulen ohne Aufwind (Schweinchen segelt von Säule zu Säule und
       springt sofort weiter, Affe an den Haken); Platten-Tunnel im Dunkeln.
+    - Etappe 2 (Spalten 200–400): Eis-Kamin (oben ist der Sims vereist – man rutscht sofort auf die Kante zu und muss
+      rechtzeitig über die dunkle Lücke springen); Doppel-Rutsche im Dunkeln (Hebel 4 unten öffnet Tür 4 oben, Hebel 5
+      oben öffnet Tür 5 unten, im Vorbeirutschen); Aufwind (Schweinchen) und Kamin (Affe) nebeneinander, oben Stege
+      hinunter über Stacheln.
     - Test level16_tiefenschlund (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)

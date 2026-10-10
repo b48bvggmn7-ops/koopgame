@@ -2203,7 +2203,7 @@ async def level15_foerderwerk(g):
 
 @test
 async def level16_tiefenschlund(g):
-    """Ausbau 7, Höhle Level 6 „Tiefenschlund“ (levels/level-16.json, nachts, Regen): Meister-Level, alles kombiniert, lange Präzisions-Passagen im Dunkeln. Koop-Bot spielt jede Etappe: dunkler Abstieg, Platte-Licht und Brücke, Eissäulen ohne Aufwind, Platten-Tunnel."""
+    """Ausbau 7, Höhle Level 6 „Tiefenschlund“ (levels/level-16.json, nachts, Regen): Meister-Level, alles kombiniert, lange Präzisions-Passagen im Dunkeln. Koop-Bot spielt jede Etappe: dunkler Abstieg, Platte-Licht und Brücke, Eissäulen ohne Aufwind, Platten-Tunnel, Eis-Kamin, Doppel-Rutsche, Aufwind und Kamin."""
     await koop_level(g, 'level-16.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2270,8 +2270,41 @@ async def level16_tiefenschlund(g):
             r = await koop(g, **{who: kat(144, 15), o: kat(142, 15)}, plans={o: [halten(147), {'holdIf': {'right': f'P.x < {kx(147)} - 3', 'left': f'P.x > {kx(147)} + 3'}, 'until': f'Q.x >= {kx(179)} - 3 && Q.grounded', 'frames': 3000}, {'frames': 30}, k_lauf(151, 0), {'hold': ['right'], 'until': f'P.x >= {kx(181)}', 'frames': 600}],
                                                                      who: [{'frames': 30}, k_lauf(150), {'hold': ['right'], 'until': f'P.x >= {kx(176)}', 'frames': 600}, halten(179), {'holdIf': {'right': f'P.x < {kx(179)} - 3', 'left': f'P.x > {kx(179)} + 3'}, 'until': f'Q.x >= {kx(180)}', 'frames': 3000}, k_lauf(183)]}, maxFrames=5000)
             soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 180, f'E1 Platten-Tunnel im Dunkeln ({who} zuerst)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for jx in (223, 224, 225):
+                pl = [k_lauf(209, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(214)}', 'frames': 900}, k_lauf(jx, 0)] + sprung_zu(kx(235)) + \
+                     [k_lauf(241), {'until': 'P.grounded', 'frames': 100}, k_lauf(247), {'until': 'P.grounded', 'frames': 100}, k_lauf(253), {'until': 'P.grounded', 'frames': 100}, k_lauf(256)]
+                r = await koop(g, **{who: kat(204, 15), o: kat(202, 15)}, plans={who: pl, o: [{'frames': 400}] + pl}, maxFrames=5000)
+                if r.get('done') and r['pos'][who][0] >= 255: ok.append(jx)
+            soll(ok, f'E2 Eis-Kamin, vereister Sims, Sprung über die Lücke ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        def vorbei(c, link): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(c)}) < 30 && !linkOn[{link}] && f % 15 === 0'}, 'until': f'!!linkOn[{link}]', 'frames': 900}
+        ok = None
+        for jx in (264, 265, 266):
+            for pull in (30, 60):
+                f = [k_lauf(286, 0), vorbei(292, 4), {'wait': '!!linkOn[5]'}, k_lauf(340), {'until': 'P.grounded', 'frames': 200}]
+                m = haken(jx, 10, pull) + [{'wait': '!!linkOn[4]'}, k_lauf(306, 0), vorbei(312, 5), k_lauf(339), {'until': 'P.grounded', 'frames': 300}]
+                r = await koop(g, m=kat(262, 15), f=kat(264, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+                if r.get('done') and r['pos']['m'][1] == 15 and r['pos']['f'][0] >= 338: ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E2 Doppel-Rutsche: Hebel 4 unten, Hebel 5 oben (im Vorbeirutschen)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, f=kat(310, 15), m=kat(305, 10), plans={'f': [k_lauf(324)]}, maxFrames=800)
+        soll(r['pos']['f'][0] < 320, 'E2 Tür 5 unten zu ohne Hebel 5', r.get('pos'))
+        r = await koop(g, m=kat(290, 10), f=kat(300, 15), plans={'m': [k_lauf(304)]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 300, 'E2 Tür 4 oben zu ohne Hebel 4', r.get('pos'))
+        runter = [k_lauf(386, -4), {'until': 'P.grounded', 'frames': 100}, k_lauf(387), {'until': 'P.grounded', 'frames': 100}, k_lauf(393), {'until': 'P.grounded', 'frames': 100}, k_lauf(400), {'until': 'P.grounded', 'frames': 100}]
+        f = [k_lauf(352, 0), {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(353)} - 6', 'left': f'P.x > {kx(353)} + 6'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(2)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(362)}', 'left': f'P.x > {kx(364)}'}, 'until': f'P.grounded && P.x > {kx(359)}', 'frames': 400}, k_lauf(368)]
+        r = await koop(g, f=kat(346, 15), m=kat(344, 15), plans={'f': f + runter, 'm': [{'frames': 600}, k_lauf(358, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(4)} + 2 && P.x > {kx(359)}', 'frames': 900}, k_lauf(366)]}, maxFrames=4000)
+        soll(r.get('done') and r['pos']['f'][0] >= 399, 'E2 Aufwind hinauf (Schwein), Stege hinunter', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        m = [k_lauf(358, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(4)} + 2 && P.x > {kx(359)}', 'frames': 900}, k_lauf(368)]
+        r = await koop(g, m=kat(346, 15), f=kat(344, 15), plans={'m': m + runter, 'f': [{'frames': 400}] + f}, maxFrames=4000)
+        soll(r.get('done') and r['pos']['m'][0] >= 399, 'E2 Kamin hinauf (Affe), Stege hinunter', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):
