@@ -512,6 +512,27 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         für Segel- und Seilflüge. Er ersetzt keine Fähigkeit: an Stegen gibt es keinen Wandsprung, der Affe kommt durch
         seine Seil-Sicht weiter an Haken darüber, das Schweinchen segelt auf ihn hinunter. Keine Figur wird überflüssig.
       Testlevel levels/test/einseitig.json (index.html?testlevel=einseitig). Tests einseitige_plattform, editor_einseitige_plattform.
+  - WASSER UND SCHWIMMEN (Ausbau 5, elemente/wasser.js; Spiel-Feld waters [{x, y, w, h}], im Spiel wasserBecken;
+    Werte in js/02-physik-werte.js SWIM_*, LUFT_*):
+      Schwimmen: steckt die Körpermitte im Wasser, schwimmt die Figur frei in alle Richtungen – Links/Rechts wie
+        Laufen, Hoch/Runter = Affe W/S, Schweinchen ↑/↓, Controller Stick/Steuerkreuz hoch/runter (dieselben Tasten wie
+        Seil ranziehen/geben). Springen = Schwimmstoß nach oben (SWIM_KICK 5,2); an der Oberfläche springt man damit aus
+        dem Wasser (SWIM_JUMP_OUT −11,4, reicht ca. 2 Kästchen hoch auf einen Rand). Ohne Taste treibt man langsam nach
+        oben (Auftrieb SWIM_AUFTRIEB 0,07), Wasser bremst (SWIM_DRAG 0,9), Höchsttempo SWIM_MAX_SPEED 3,6 (Laufen 4,4).
+        An der Oberfläche treibt man ruhig mit dem Kopf über Wasser (kräftiger Auftrieb in den obersten SWIM_OBEN_ZONE
+        16 px, gedämpftes Wippen). Am Grund kann man stehen und laufen.
+      Unter Wasser: KEIN Haken (G tut nichts, ein hängendes Seil löst sich beim Eintauchen) und KEIN Schirm (Num 1 tut
+        nichts), kein Wandsprung. Einzel-Fähigkeiten unter Wasser gibt es auf Nutzerwunsch erst einmal nicht.
+      Luft je Figur: 12 Spielsekunden (LUFT_MAX 720 Schritte). Sie sinkt, solange die Nase unter Wasser ist; an der
+        Oberfläche (Nase draußen) ist sie in 1 s wieder voll (LUFT_AUFFUELLEN). Anzeige: 6 kleine Blasen über dem Kopf,
+        sobald Luft fehlt; in den letzten 3 s (LUFT_WARN 180) blinken sie rot und es tickt jede Sekunde ein „Blubb“.
+        Luft leer = Tod (zurück zum Checkpoint, danach volle Luft).
+      Aussehen: Wasser liegt halb durchsichtig VOR den Figuren (hell oben, dunkler in der Tiefe), Oberfläche mit
+        weichen Wellen und heller Linie (registriert als zeichnenVorne).
+      Ton: Platschen beim Ein- und Auftauchen (lauter bei Tempo), „Blubb“-Warnung, tiefes Luftholen beim Auftauchen.
+      Welche Rolle haben Affe und Schweinchen? Beide schwimmen gleich gut; ihre Land-Fähigkeiten fallen unter Wasser
+        weg, deshalb zählt dort die Zusammenarbeit (gemeinsame Luftblase, Hebel/Schleusen) – keine Figur ist überflüssig.
+      Tests wasser_schwimmen_luft, editor_wasser.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).
@@ -652,6 +673,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Klick ein neues Paar. Wird ein Tor radiert, wird das nächste neue Tor sein Partner. Daneben „für“ (beide / nur Affe /
     nur Schweinchen) und „an/aus“ (immer an / per Verknüpfung – nimmt die Nummer aus „Schalter & Logik“); der Partner
     übernimmt die Einstellungen des ersten Tors. Eingefügte Paare (Strg+V) bekommen eine neue, freie Paar-Nummer.
+  - Wasser (Ausbau 5, neue Gruppe „Wasser“, ziehbar wie Aufwind): halb durchsichtig blau mit kleiner Welle; Export fasst
+    die Kästchen zu großen Rechtecken zusammen (nebeneinander UND untereinander).
   - Steg (einseitig) (Ausbau 4, Gruppe „Gelände“, ziehbar wie Boden): im Raster ein Brett oben im Kästchen mit Pfeil nach
     oben; Export als 12 px dicke Stege (benachbarte Kästchen einer Reihe zusammengefasst). Lässt sich nicht bewegen.
   - (früher: Auswahl „Thema“ oben – Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,

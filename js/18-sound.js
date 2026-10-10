@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -178,6 +178,11 @@ function* sfxBuild(a, out){
                      swish(b, 0.18, 0.32, 2800, 550, 1.3, 0.7, 0.35, 0.15); grains(b, 0.16, 0.35, 40, 2500, 7500, 0.0004, 0.0012, 0.2, 0.9, 'decay'); return b; },
     // Steg (einseitige Plattform, Ausbau 4): kurzes Holz-Knarzen beim Landen
     steg:      ()=>{ const b = mk(0.35); creak(b, 0, 0.16, 70, 40, rnd(500, 620), 0.5, 0); modal(b, 0, 210, wood, 0.03, 0.6, 0, 0.5); return b; },
+    // Wasser (Ausbau 5): Platschen beim Ein-/Auftauchen, „Blubb“ als Luft-Warnung, tiefes Luftholen an der Oberfläche
+    platsch:   ()=>{ const b = mk(0.7); puff(b, 0, 0.18, 900, 0.7, 0, 0.03); swish(b, 0, 0.35, 3200, 900, 0.8, 0.8, 0, 0.08);
+                     grains(b, 0.03, 0.5, 70, 1500, 6000, 0.0006, 0.003, 0.35, 0.8, 'decay'); thump(b, 0, 160, 70, 0.12, 0.4); return b; },
+    luftWarn:  ()=>{ const b = mk(0.3); thump(b, 0, 380, 760, 0.06, 0.7); thump(b, 0.08, 420, 900, 0.05, 0.5); return b; },
+    luftHolen: ()=>{ const b = mk(0.6); swish(b, 0, 0.45, 600, 1800, 0.9, 0.8, 0, 0.6); return b; },
     frog:      ()=>{ const b = mk(0.45); for(const t0 of [0, 0.16]){ for(let i = 0; i < 7; i++) modal(b, t0 + i*0.016, rnd(380, 430), [[1, 1], [2.8, 0.6], [4.2, 0.3]], 0.012, 0.6, 0, 0.3); } return b; },
     discover:  ()=>{ const b = mk(0.9); swish(b, 0, 0.5, 400, 1800, 1.0, 0.6, 0, 0.3);
                      grains(b, 0.05, 0.6, 50, 1200, 4500, 0.0004, 0.0015, 0.35, 0.5, 'decay'); modal(b, 0.05, 220, wood, 0.08, 0.5, 0, 0.4); return b; },
@@ -266,6 +271,9 @@ const SFX = {
   coin(combo, x){ sfxLog('coin'); return sfxPlay('coin', {x, rate: Math.pow(2, combo/12)}); },
   mushroom(x){ sfxLog('mushroom'); sfxPlay('mushroom', {x}); },
   wechsel(fest, x){ sfxLog(fest ? 'wechselan' : 'wechselweg'); sfxPlay(fest ? 'wechselAn' : 'wechselAus', {x}); },   // Wechselboden
+  platsch(x, tempo){ sfxLog('platsch'); sfxPlay('platsch', {x, vol: Math.min(1, 0.4 + (tempo || 0)/12)}); },   // Wasser
+  luftWarn(x, tick){ sfxLog('luftwarn'); sfxPlay('luftWarn', {x, rate: tick ? 1.15 : 1}); },
+  luftHolen(x){ sfxLog('luftholen'); sfxPlay('luftHolen', {x}); },
   steg(x){ sfxLog('steg'); sfxPlay('steg', {x}); },   // Landen auf einem Steg
   teleport(x){ sfxLog('teleport'); sfxPlay('teleport', {x}); },   // Teleporter
   wechselWarn(x){ sfxLog('wechselwarn'); sfxPlay('wechselTick', {x}); },

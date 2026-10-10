@@ -781,6 +781,7 @@ function drawSolidLook(s, look, x){
   drawCharacter(p1, camX);
   drawHearts();     // Herzchen, wenn beide nah beieinander stehen
   drawCoinFx(camX);
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenVorne) E.spiel.zeichnenVorne();   // vor den Figuren, z. B. Wasser (elemente/)
   if(deathState && deathState.phrase) drawDeathBubble();
 
   // Hinweis am Ziel, wenn noch Münzen fehlen

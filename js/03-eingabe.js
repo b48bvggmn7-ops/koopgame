@@ -35,8 +35,9 @@ const KEYSETS = {
 let monkeyPlayer = 1;        // welcher Spieler (1/2) den Affen steuert
 function keysFor(male){
   const s = KEYSETS[male ? monkeyPlayer : 3 - monkeyPlayer];
-  return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse}
-              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse};
+  // swimUp/swimDown: Hoch/Runter beim Schwimmen (Ausbau 5) – dieselben Tasten wie Seil ranziehen/geben
+  return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack}
+              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack};
 }
 function setMonkeyPlayer(n){
   monkeyPlayer = n === 2 ? 2 : 1;

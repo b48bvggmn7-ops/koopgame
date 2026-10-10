@@ -78,9 +78,11 @@ function updatePlayer(player, now){
   let moveDir = 0;
   if(left){ moveDir = -1; player.facing = -1; }
   if(right){ moveDir = 1; player.facing = 1; }
+  // Wasser (elemente/wasser.js): darin wird geschwommen – kein Haken, kein Schirm
+  const nass = wasserBecken.length ? wasserPruefen(player) : (player.inWater = player.headUnder = false);
 
   if(player.male){
-    const hookPressed = !frozen && KEYS[player.keys.hook+'_pressed']; KEYS[player.keys.hook+'_pressed']=false;
+    const hookPressed = !frozen && !nass && KEYS[player.keys.hook+'_pressed']; KEYS[player.keys.hook+'_pressed']=false;
     if(hookPressed){
       if(player.hookAttached){
         player.hookAttached = false;
@@ -102,7 +104,9 @@ function updatePlayer(player, now){
   const isPulling = player.male && !frozen && isDown(player.keys.pull);
   const isSlacking = player.male && !frozen && isDown(player.keys.slack);
 
-  if(player.male && player.hookAttached){
+  if(nass){
+    schwimmPhysik(player, moveDir, jumpPressed, frozen);   // elemente/wasser.js
+  } else if(player.male && player.hookAttached){
     player.vy += GRAVITY * 0.9;
     if(moveDir !== 0 && player.vx*moveDir > -0.3) player.vx += moveDir * SWING_PUSH;
     const lenBefore = player.ropeLen;
@@ -240,6 +244,7 @@ function updatePlayer(player, now){
   player.x += player.vx; collideAxis(player,'x');
   player.y += player.vy; collideAxis(player,'y');
   for(const E of ELEMENTE) if(E.spiel && E.spiel.nachBewegung) E.spiel.nachBewegung(player, wasGrounded, fallVy);   // z. B. Sprungpilz (elemente/)
+  if(wasserBecken.length && !frozen) luftSchritt(player);   // Luft unter Wasser (elemente/wasser.js)
   if(player.male && player.hookAttached){
     // LANDET man am Seil auf etwas (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …) -> Seil lösen.
     // Vom Boden aus eingehakt bleibt es dran, damit man sich mit W / Hoch zum Haken hochziehen kann.

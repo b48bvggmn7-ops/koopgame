@@ -39,3 +39,19 @@ const GLIDE_RAMP_MS = 2600;
 const GLIDE_START_GRAV = 0.10;
 const GLIDE_MAX_FALL_START = 2.0;
 const GLIDE_MAX_FALL_END = 8.5;
+
+// ---------- Wasser und Schwimmen (Ausbau 5, elemente/wasser.js) ----------
+// Alle Werte pro Physik-Schritt (60 Schritte = 1 Spielsekunde). Unter Wasser: kein Haken, kein Schirm.
+const SWIM_ACCEL = 0.42;        // Schwimmen links/rechts/hoch/runter: Beschleunigung pro Schritt
+const SWIM_MAX_SPEED = 3.6;     // höchstes Schwimmtempo (Laufen: 4,4)
+const SWIM_DRAG = 0.9;          // Wasser-Widerstand (Tempo wird pro Schritt mit diesem Wert malgenommen)
+const SWIM_AUFTRIEB = 0.07;     // ohne Taste treibt man langsam nach oben
+const SWIM_KICK = 5.2;          // Schwimmstoß (Springen-Taste unter Wasser) nach oben
+const SWIM_JUMP_OUT = -11.4;    // Springen an der Oberfläche: aus dem Wasser heraus (reicht auf einen Rand ~2 Kästchen höher)
+const SWIM_SURFACE_GRAV = 0.25; // Kopf über Wasser: man sinkt sanft zurück, bis der Kopf gerade herausschaut
+const SWIM_OBEN_ZONE = 16;      // px: so knapp unter der Oberfläche zieht es den Kopf kräftig nach oben (ruhiges Treiben)
+// Luft je Figur: 12 Spielsekunden unter Wasser, Warnung (Blinken + Ticken) in den letzten 3 s, Luft leer = Tod
+// (zurück zum Checkpoint). An der Oberfläche (Kopf über Wasser) ist die Luft in 1 s wieder voll.
+const LUFT_MAX = 720;           // Schritte (12 s)
+const LUFT_WARN = 180;          // Schritte (3 s) Vorwarnzeit
+const LUFT_AUFFUELLEN = 12;     // Schritte Luft pro Schritt an der Oberfläche (leer -> voll in 1 s)

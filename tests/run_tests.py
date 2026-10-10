@@ -2143,7 +2143,7 @@ async def editor_werkzeug_gruppen(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         gr = await p.evaluate("""[...document.querySelectorAll('.tgroup')].map(g => [g.querySelector('.tgh').textContent.trim(),
             [...g.querySelectorAll('.tool')].map(t => t.dataset.tool)])""")
-        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Schalter & Logik', 'Bewegung', 'Sammeln', 'Markierungen'], gr
+        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Schalter & Logik', 'Bewegung', 'Wasser', 'Sammeln', 'Markierungen'], gr
         alle = sum((x[1] for x in gr), [])
         for t in ['ground', 'wall', 'crumble', 'fake', 'spike', 'switch', 'door', 'plate', 'hook', 'wind', 'bounce', 'move', 'coin', 'checkpoint', 'startM', 'startF', 'goal']:
             assert alle.count(t) == 1, f'Werkzeug {t} nicht genau einmal in einer Gruppe: {gr}'
@@ -2331,7 +2331,7 @@ async def element_register(g):
     assert k == [['hebel', 'switches', True, True], ['tuer', 'doors', True, False], ['druckplatte', 'plates', True, True],
                  ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True],
                  ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True],
-                 ['einseitig', 'oneways', True, True]], k   # Tür: gezeichnet mit den Wänden
+                 ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2715,6 +2715,73 @@ async def editor_einseitige_plattform(g):
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
         umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
         assert umg['oneways'] == out['oneways'], umg['oneways']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def wasser_schwimmen_luft(g):
+    """Ausbau 5: Wasser. Darin schwimmen beide frei (Auftrieb, Widerstand, Höchsttempo), kein Haken (Seil löst sich) und
+    kein Schirm; Luft je Figur sinkt unter Wasser, füllt sich an der Oberfläche auf, Warnung kurz vor dem Ende, leer = Tod;
+    an der Oberfläche springt man aus dem Wasser; Platschen beim Eintauchen."""
+    await g.load(level([ground(0, 680, 2400)], {'x': 200, 'y': 680}, {'x': 140, 'y': 680},
+                       waters=[{'x': 400, 'y': 360, 'w': 800, 'h': 320}], hooks=[{'x': 300, 'y': 200, 'radius': 300}]))
+    assert await g.ev("wasserBecken.length") == 1
+    setz = lambda p, x, y: g.ev(f"{p}.x = {x}; {p}.y = {y}; {p}.vx = 0; {p}.vy = 0; {p}._px = {p}.x; {p}._py = {p}.y; {p}.grounded = false")
+    # Auftrieb: ohne Taste treibt der Affe nach oben, die Luft sinkt
+    await setz('p1', 800, 620); await g.ev("SFX_LOG.length = 0"); await g.steps(2)
+    assert await g.ev("p1.inWater && p1.headUnder"), 'Affe nicht im Wasser'
+    y0 = await g.ev("p1.y"); await g.steps(40)
+    assert await g.ev("p1.y") < y0 - 10, f"kein Auftrieb: {y0} -> {await g.ev('p1.y')}"
+    assert await g.ev("p1.luft") < await g.ev("LUFT_MAX"), 'Luft sinkt unter Wasser nicht'
+    # Schwimmen: Höchsttempo, kein Haken unter Wasser
+    await setz('p1', 600, 640); await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('KeyG'); await g.steps(30)
+    vx = await g.ev("p1.vx"); await g.p.keyboard.up('KeyD')
+    assert 2 < vx <= await g.ev("SWIM_MAX_SPEED") + 0.01, f'Schwimmtempo: {vx}'
+    assert not await g.ev("p1.hookAttached"), 'Haken geht unter Wasser'
+    # Seil löst sich beim Eintauchen
+    await setz('p1', 380, 300); await g.ev("p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 110; p1.ropeMax = 300; p1.ropeWasAirborne = true")
+    await setz('p1', 420, 500); await g.steps(2)
+    assert not await g.ev("p1.hookAttached"), 'Seil löst sich im Wasser nicht'
+    # Schweinchen: kein Schirm unter Wasser
+    await setz('p2', 900, 600); await g.p.keyboard.down('Numpad1'); await g.steps(20)
+    gl = await g.ev("p2.gliding || p2.umbrella > 0.1"); await g.p.keyboard.up('Numpad1')
+    assert not gl, 'Schirm geht unter Wasser'
+    # Oberfläche: Kopf draußen -> Luft füllt sich auf; Springen -> aus dem Wasser
+    await setz('p2', 1000, 380); await g.ev("p2.luft = 100"); await g.steps(90)
+    assert await g.ev("p2.kannAtmen && p2.luft === LUFT_MAX"), f"Luft füllt sich an der Oberfläche nicht: {await g.ev('[p2.y, p2.headUnder, p2.luft]')}"
+    await g.p.keyboard.press('Numpad0'); await g.steps(12)
+    assert await g.ev("p2.y") < 330, f"springt nicht aus dem Wasser: {await g.ev('p2.y')}"
+    # Platschen beim Eintauchen
+    assert 'platsch' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # Luft-Warnung und Tod bei leerer Luft; danach volle Luft
+    await setz('p1', 700, 660); await g.ev(f"p1.luft = LUFT_WARN + 3; SFX_LOG.length = 0")
+    await g.p.keyboard.down('KeyS'); await g.steps(8)
+    assert 'luftwarn' in await g.ev("SFX_LOG"), f'keine Luft-Warnung: {await g.ev("SFX_LOG")}'
+    await g.ev("p1.luft = 3"); await g.p.wait_for_function("!!deathState", timeout=4000); await g.p.keyboard.up('KeyS')
+    assert await g.ev("deathState.victim === p1"), 'kein Tod bei leerer Luft'
+    for _ in range(40):   # Weitermachen geht erst nach kurzer Pause
+        await g.p.keyboard.press('KeyK'); await g.p.wait_for_timeout(150)
+        if not await g.ev("!!deathState"): break
+    await g.steps(2)
+    assert await g.ev("p1.luft === LUFT_MAX"), 'Luft nach dem Tod nicht voll'
+
+@test
+async def editor_wasser(g):
+    """Ausbau 5: Editor-Werkzeug Wasser (Gruppe Wasser, ziehbar wie Aufwind) -> Export und Spiel-Umwandlung liefern waters
+    (Kästchen zu großen Rechtecken zusammengefasst, auch untereinander)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.query_selector('.tgroup[data-group=wasser] .tool[data-tool=water]'), 'Werkzeug Wasser fehlt'
+        await p.click('.tool[data-tool=water]'); await ed_ziehen(p, (4, 12), (7, 12)); await ed_ziehen(p, (4, 13), (7, 13))
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['waters'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 80}], out['waters']
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['waters'] == out['waters'], umg['waters']
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
