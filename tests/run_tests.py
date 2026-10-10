@@ -4804,7 +4804,12 @@ async def intro_szene(g):
         story = json.loads((ROOT / 'story' / 'story.json').read_text(encoding='utf-8'))
         assert story['intro']['schritte'] and all('text' in s for s in story['intro']['schritte'] if 'wer' in s)
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
-        await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
+        # Titel -> Menü: direkt nach dem Laden geht die erste Taste manchmal verloren (Testumgebung) – dann nochmal drücken
+        for _ in range(6):
+            await p.keyboard.press('Enter')
+            try: await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=1500); break
+            except Exception: pass
+        await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
         await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000); await p.wait_for_timeout(300)
         await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
         await p.wait_for_function("menuScreen === 'szene' && szene && szene.name === 'intro'", timeout=15000)
