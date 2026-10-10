@@ -727,7 +727,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Stacheln – der Affe lässt sich am Seil herunter, J, zieht sich hoch und schwingt weiter; Tür 3), Felsdecke (das
       Schweinchen segelt im Tunnel unter dem Felsen zu Hebel 4, der Affe zieht sich am Haken auf den Felsen, Tür 4 oben),
       Schleuse mit Graben (Druckplatte 5 auf beiden Seiten hält Tür 5 offen; über den Graben segelt das Schweinchen, der
-      Affe nimmt den Haken), Bröckel-Steine (beide). Test level7_lianenschlucht
+      Affe nimmt den Haken), Bröckel-Steine (beide). Etappe 3 (400–600): Pilz-Kreuzung (vor einer breiten
+      Stachelgrube: das Schweinchen prallt vom Pilz hoch und segelt zur unteren Landung mit Hebel 6 – öffnet Tür 6 oben;
+      der Affe prallt hoch und nimmt zwei Haken auf den oberen Sims mit Hebel 7 – öffnet Tür 7 unten), fahrende Haken
+      (Schweinchen steigt über Stege auf den Turm und segelt zu Hebel 8 am anderen Ufer; erst dann fahren die zwei Haken,
+      an denen der Affe rüberkommt – Zeitpunkt abpassen), Pilz-Treppe (drei Pilze auf Säulen, beide). Test level7_lianenschlucht
       (Koop-Bot tests/koop_bot.js spielt die Stellen nach).
 
 ## Level-Editor (editor/)
