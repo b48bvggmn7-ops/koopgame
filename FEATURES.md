@@ -750,7 +750,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Ausgang liegt hoch über der Stachelgrube – das Schweinchen segelt hinaus, der Affe greift sofort zwei Haken),
       Wechsel-Schleuse (Druckplatte 7 oben auf einem Haken-Sims und drüben am Boden: Brücke B erscheint, Wand A
       verschwindet – einer hält, der andere geht), Takt-Steine 1,5 s und eine letzte weite Lücke (segeln / Haken).
-      Test level8_gluehwald.
+      Etappe 4 (480–700, Meister-Stelle vor Bruno): Doppel-Gang-Staffel (der Affe nimmt das blaue Tor in den oberen Gang
+      auf der Steinplatte, das Schweinchen läuft unten; Wände A versperren beide Gänge, jeder Hebel öffnet die Wand im
+      ANDEREN Gang: unten 9 -> oben, oben 10 -> unten, unten 11, oben 12, unten 13; oben Stacheln mit Haken darüber, unten
+      Gruben zum Segeln; Checkpoint mitten im unteren Gang, ein zweites blaues Tor bringt den Affen nach einem Tod wieder
+      hinauf), Takt-Tempeltreppe (A/B-Steine steigen Stufe für Stufe an, 1,5 s; Haken helfen dem Affen) und Tor 7 zum
+      Tempeltor (Ziel, Spalte 694). 700 Spalten, 14 Checkpoints, 110 Münzen (55 / 55). Test level8_gluehwald.
 
 ## Level-Editor (editor/)
 ```
