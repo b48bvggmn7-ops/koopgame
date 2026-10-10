@@ -542,7 +542,7 @@ async def menue_projekt_levels(g):
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
         echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
         assert echte[:4] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
-        assert namen == ['Dschungel', 'Baumkronen', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6)
+        assert namen == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6), Level 7/8 (Ausbau 7)
         # Level 2 gesperrt
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await g.ev("menuScreen") == 'start', 'gesperrtes Level startet'
@@ -561,8 +561,8 @@ async def menue_projekt_levels(g):
         for _ in range(120):
             if await g.ev("menuScreen === null"): break
             await p.wait_for_timeout(100)
-        spiel2 = json.loads((ROOT / 'levels' / 'level-2.json').read_text())
-        assert await g.ev('coins.length') == len(spiel2['coins']), 'Level 2 nicht geladen'
+        spiel2 = json.loads((ROOT / 'levels' / 'level-8.json').read_text())   # letztes Dschungel-Level (Ausbau 7; vorher Level 2)
+        assert await g.ev('coins.length') == len(spiel2['coins']), 'letztes offenes Level nicht geladen'
     finally:
         srv.shutdown()
 
@@ -795,8 +795,8 @@ async def level2_und_3_regeln(g):
         for hk in lv['hooks']:
             assert hk['radius'] <= 5 * 40, f"{name}: Haken zu groß {hk}"
         assert lv['goal']['x'] > 400 * 40 and lv['startM']['x'] < 10 * 40, f"{name}: Start/Ziel falsch"
-        if name not in ('level-2.json', 'level-3.json'):
-            assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan'), f"{name}: Thema {lv.get('theme')}"
+        if name not in ('level-2.json', 'level-3.json'):   # eigenes Thema – oder (Ausbau 7) Welt + Tageszeit
+            assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan') or (lv.get('welt') and lv.get('tageszeit')), f"{name}: Thema {lv.get('theme')}"
         if name not in ('level-2.json', 'level-3.json', 'level-4.json'):   # Level 2–4 vom Nutzer gestaltet: eigene Münzverteilung
             nb = sum(c['color'] == 'blue' for c in lv['coins'])
             assert nb * 2 == len(lv['coins']), f"{name}: Blau/Pink nicht ausgeglichen"
@@ -1078,7 +1078,9 @@ async def hebel_haben_grund(g):
             const doors = solids.filter(d=>d.type==='door' && d.link===l).length;
             const movers = solids.filter(m=>m.type==='moveplat' && m.switchLink===l);
             const hk = hooks.filter(h=>h.moving && h.switchLink===l).length;
-            if(!doors && !movers.length && !hk) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const wb = solids.filter(s=>s.type==='wechsel' && s.link===l).length;          // Wechselboden (Ausbau 4)
+            const tp = (typeof teleporters !== 'undefined' ? teleporters : []).filter(t=>t.link===l).length;   // Teleporter (Ausbau 4)
+            if(!doors && !movers.length && !hk && !wb && !tp) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
             const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m));
             if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
           }
@@ -2280,9 +2282,10 @@ async def welten_laden(g):
         await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         k = await g.ev("({w: GameMenu.config.worlds.map(x => x.id), l: GameMenu.config.levels.map(l => [l.datei, l.name, l.welt])})")
         assert k['w'] == ids, k
-        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in range(1, 7)], f'Reihenfolge geändert: {k}'
-        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht', 'Kristallhöhle', 'Feuerberg'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel', 'dschungel', 'ruinen', 'ruinen', 'hoehle', 'vulkan'], k
+        # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), sonst unverändert
+        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in (1, 2, 7, 8, 3, 4, 5, 6)], f'Reihenfolge geändert: {k}'
+        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Ruinen', 'Mondnacht', 'Kristallhöhle', 'Feuerberg'], f'Namen geändert: {k}'
+        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen', 'ruinen', 'hoehle', 'vulkan'], k
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -2309,10 +2312,10 @@ async def spielstand_migration(g):
         assert sv['stats'] == {'level-1.json': {'m': 2, 'f': 3}, 'level-3.json': {'m': 0, 'f': 5}}, sv
         assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung fehlt/verändert'
         # Level: 4 offen, 3 geschafft – wie vorher (seit Ausbau 3 auf die Welten verteilt)
-        offen = await g.ev("[0, 1, 2, 3, 4, 5].map(i => GameMenu.levelUnlocked(i))")
+        offen = await g.ev("[1, 2, 3, 4, 5, 6].map(i => GameMenu.levelUnlocked(GameMenu.config.levels.findIndex(l => l.datei === `level-${i}.json`)))")
         assert offen == [True, True, True, True, False, False], offen
         # Weiterspielen: Level 4 schaffen schaltet Level 5 frei (Datei), Sicherung bleibt unverändert
-        assert await g.ev("GameMenu.completeLevel(4, true)") == 5
+        assert await g.ev("(() => { const nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1; return GameMenu.completeLevel(nr('level-4.json'), true) === nr('level-5.json'); })()")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         sv = await g.ev("GameMenu.getSave()")
         assert 'level-5.json' in sv['unlocked'] and 'level-4.json' in sv['completed'] and sv['stats']['level-1.json'] == {'m': 2, 'f': 3}, sv
@@ -2431,13 +2434,13 @@ def level_teil(k, v):
 
 @test
 async def editor_rundreise_alle_level(g):
-    """Ausbau 2: Jedes Projekt-Level (1–6) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
+    """Ausbau 2: Jedes Projekt-Level (1–8) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
     die Spiel-Datei in levels/ (gleiche Daten) – Beweis, dass der Editor beim Umbau nichts verändert."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 6, liste
+        assert len(liste) == 8, liste   # Ausbau 7: Level 7 und 8
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -2451,6 +2454,10 @@ async def editor_rundreise_alle_level(g):
             diff = [k for k in set(out) | set(erwartet) if not k.startswith('_') and k not in META and level_teil(k, out.get(k)) != level_teil(k, erwartet.get(k))]
             assert not diff, f"{L['datei']}: Export weicht ab bei {diff}"
             welt = next(w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten'] if L['datei'] in w['level'])
+            if erwartet.get('welt'):   # neue Level (Ausbau 7): Welt/Tageszeit/Wetter aus der Datei
+                assert [out.get(k) for k in ('welt', 'tageszeit', 'wetter')] == [erwartet.get(k) for k in ('welt', 'tageszeit', 'wetter')] and out.get('welt') == welt and not out.get('look'), \
+                    f"{L['datei']}: Level-Info falsch: {[out.get(k) for k in META]}"
+                continue
             assert out.get('look') == erwartet.get('theme') and out.get('welt') == welt and out.get('wetter') == 'wechselnd' and 'tageszeit' not in out, \
                 f"{L['datei']}: Level-Info falsch: {[out.get(k) for k in META]}"
     finally:
@@ -2737,7 +2744,7 @@ async def weltkarte_und_navigation(g):
         isl = await wk_inseln(g)
         assert [i['name'] for i in isl] == ['Dschungel', 'Ruinen', 'Höhle', 'Wasser', 'Vulkan'], isl
         assert [i['lock'] for i in isl] == [False, True, True, True, True] and isl[3]['soon'] and isl[3]['info'] == 'Bald', isl
-        assert isl[0]['info'] == '0 / 2 Level' and isl[0]['sel'] and isl[0]['boss'], isl
+        assert isl[0]['info'] == '0 / 4 Level' and isl[0]['sel'] and isl[0]['boss'], isl   # Ausbau 7: 4 Dschungel-Level
         assert await g.ev("document.querySelectorAll('#sm-wm-path path').length") == 1, 'keine Pfade'
         # gesperrte Welt: Springen öffnet nichts
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(150)
@@ -2753,7 +2760,7 @@ async def weltkarte_und_navigation(g):
         await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await sm_screen(g) == 'sm-s-levels'
         k = await g.ev("({t: document.getElementById('sm-l-title').textContent, n: [...document.querySelectorAll('#sm-cards .lc')].map(b => b.classList.contains('boss')), c: document.getElementById('sm-l-count').textContent})")
-        assert k['t'] == 'Dschungel' and k['n'] == [False, False, True] and '0 / 2' in k['c'], k
+        assert k['t'] == 'Dschungel' and k['n'] == [False] * 4 + [True] and '0 / 4' in k['c'], k
         assert await p.is_visible('#sm-l-pack') and await p.is_visible('#sm-l-coll'), 'Packages/Umkleide fehlen auf der Welt-Seite'
         # Esc -> Weltkarte (Dschungel gewählt), Esc -> Hauptmenü
         await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
@@ -2802,17 +2809,21 @@ async def welten_freischaltung(g):
         await g.ev("GameMenu.resetSave()")
         offen = "['dschungel', 'ruinen', 'hoehle', 'wasser', 'vulkan'].map(w => GameMenu.worldUnlocked(w))"
         assert await g.ev(offen) == [True, False, False, False, False]
-        assert await g.ev("GameMenu.completeLevel(1, true)") == 2 and await g.ev("GameMenu.lastFreshWorld()") is None
+        await g.ev("window.nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1")   # Nummer der Levelkarte (Ausbau 7: Dschungel hat 4 Level)
+        fertig = lambda d: g.ev(f"GameMenu.completeLevel(nr('{d}'), true)")
+        nr = lambda d: g.ev(f"nr('{d}')")
+        assert await fertig('level-1.json') == await nr('level-2.json') and await g.ev("GameMenu.lastFreshWorld()") is None
         assert await g.ev(offen) == [True, False, False, False, False]
-        # Ausbau 6: Dschungel hat einen Boss -> nach Level 2 erst der Boss, dann öffnen die Ruinen
-        assert await g.ev("GameMenu.completeLevel(2, true)") == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
+        assert await fertig('level-2.json') == await nr('level-7.json') and await fertig('level-7.json') == await nr('level-8.json')
+        # Ausbau 6: Dschungel hat einen Boss -> nach dem letzten Level erst der Boss, dann öffnen die Ruinen
+        assert await fertig('level-8.json') == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
         assert await g.ev(offen) == [True, False, False, False, False], 'Ruinen offen ohne besiegten Boss'
         assert await g.ev("GameMenu.completeBoss('dschungel')") == 'ruinen'
         assert await g.ev(offen) == [True, True, False, False, False]
-        assert await g.ev("[2, 3].map(i => GameMenu.levelUnlocked(i))") == [True, False], 'in der Welt nicht Level für Level'
-        await g.ev("GameMenu.completeLevel(3, true); GameMenu.completeLevel(4, true)")
+        assert await g.ev("['level-3.json', 'level-4.json'].map(f => GameMenu.levelUnlocked(nr(f) - 1))") == [True, False], 'in der Welt nicht Level für Level'
+        await fertig('level-3.json'); await fertig('level-4.json')
         assert await g.ev("GameMenu.lastFreshWorld()") == 'hoehle' and await g.ev(offen) == [True, True, True, False, False]
-        assert await g.ev("GameMenu.completeLevel(5, true)") == 6 and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
+        assert await fertig('level-5.json') == await nr('level-6.json') and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
         assert await g.ev(offen) == [True, True, True, False, True]
         # „Level geschafft“ -> Weiter: mitten in der Welt zur Welt-Seite mit Schloss auf dem neuen Level
         await g.ev("GameMenu.resetSave(); GameMenu.completeLevel(1, true)")
@@ -2822,7 +2833,7 @@ async def welten_freischaltung(g):
         assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
         await p.wait_for_function("!document.querySelector('.ulock')", timeout=6000)
         # letzter Sieg der Welt (Ausbau 6: der Boss) -> Weltkarte mit Freischalt-Animation auf „Ruinen“
-        await g.ev("GameMenu.completeLevel(2, true); GameMenu.completeBoss('dschungel')")
+        await g.ev("['level-2.json', 'level-7.json', 'level-8.json'].forEach(f => GameMenu.completeLevel(nr(f), true)); GameMenu.completeBoss('dschungel')")
         await g.ev("GameMenu.show('results', {n: 2, fresh: 3, freshWorld: 'ruinen', packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
         assert await sm_screen(g) == 'sm-s-map', 'nach der letzten Level einer Welt nicht zur Weltkarte'
@@ -2831,14 +2842,14 @@ async def welten_freischaltung(g):
         await p.wait_for_function("document.querySelector('#sm-wm .ulock.burst')", timeout=5000)
         await p.wait_for_function("!document.querySelector('#sm-wm .ulock')", timeout=6000)
         isl = await wk_inseln(g)
-        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == '2 / 2 Level', isl
+        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == '4 / 4 Level', isl
         # alter Spielstand (Nummern): Level 1–3 geschafft, 4 offen -> Dschungel fertig, Ruinen offen, Höhle zu
         await g.ev("localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({played: true, unlocked: 4, completed: [1, 2, 3]}))")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         assert await g.ev(offen) == [True, True, False, False, False]
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
         isl = await wk_inseln(g)
-        assert [i['info'] for i in isl] == ['2 / 2 Level', '1 / 2 Level', '0 / 1 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl
+        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 2 Level', '0 / 1 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel hat 4 Level, Ruinen bleiben offen
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()
@@ -3458,7 +3469,7 @@ async def boss1_bruno(g):
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         boss = "document.querySelector('#sm-cards .lc.boss')"
         assert await g.ev(f"{boss}.classList.contains('lock')"), 'Boss-Karte offen, obwohl Level 2 fehlt'
-        await g.ev("GameMenu.completeLevel(2, true)")
+        await g.ev("['level-2.json', 'level-7.json', 'level-8.json'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # alle Dschungel-Level (Ausbau 7: 4)
         assert await g.ev("GameMenu.worldUnlocked('ruinen')") is False, 'Ruinen offen ohne Boss'
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         assert not await g.ev(f"{boss}.classList.contains('lock')") and 'Bruno' in await g.ev(f"{boss}.textContent"), await g.ev(f"{boss}.outerHTML")

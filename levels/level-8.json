@@ -792,6 +792,7 @@
    "type": "wall"
   }
  ],
+ "movingPlatforms": [],
  "hooks": [
   {
    "x": 2020,
@@ -3271,6 +3272,8 @@
    "link": 7
   }
  ],
+ "bouncers": [],
+ "winds": [],
  "switchFloors": [
   {
    "x": 840,
@@ -4503,6 +4506,13 @@
    "fuer": "beide"
   }
  ],
+ "oneways": [],
+ "waters": [],
+ "currents": [],
+ "waterLevels": [],
+ "boss": [],
+ "bossArena": [],
+ "bossPlaetze": [],
  "welt": "dschungel",
  "tageszeit": "nacht",
  "wetter": "trocken"

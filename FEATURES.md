@@ -720,8 +720,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       eingefügte Level in alten Spielständen, ohne dass man das vorige Level nochmal spielen muss.
     - Tests: dschungel_welt_look (jede Tageszeit × jedes Wetter), neues_level_in_welt_offen, schichten_tageszeit_wetter
       (Nacht-Boden jetzt abgedunkelt).
-    - Level 7 „Lianenschlucht“ (levels/level-7.json, Dschungel Level 3, mittags, Dauerregen) – IN ARBEIT, bis es fertig
-      ist in levels.json versteckt (noch nicht auf der Weltkarte). Etappe 1 (Spalten 0–200): Steg-Treppe über die Mauer
+    - Welt Dschungel hat jetzt 4 Level + Bruno: Dschungel (Level 1), Baumkronen (2), Lianenschlucht (7), Glühwald (8).
+      Weltkarte zeigt „x / 4 Level“; Bruno öffnet erst, wenn alle 4 geschafft sind. Alte Spielstände: wer Level 2 schon
+      geschafft hat, für den ist Lianenschlucht sofort offen; schon offene Ruinen bleiben offen.
+      Angepasste Tests (Erwartungen von 2 auf 4 Dschungel-Level): welten_laden, welten_freischaltung,
+      weltkarte_und_navigation, menue_projekt_levels, spielstand_migration (Levelnummern jetzt über die Datei),
+      editor_rundreise_alle_level (8 Level), boss1_bruno, level2_und_3_regeln (Welt + Tageszeit statt Thema erlaubt),
+      hebel_haben_grund (Wechselboden und Teleporter zählen als Wirkung), editor_level_info (nächste freie Nummer).
+    - Level 7 „Lianenschlucht“ (levels/level-7.json, Dschungel Level 3, mittags, Dauerregen, 800 Spalten). Seit dem
+      Abschluss in worlds.json hinter Level 2 („Baumkronen“), vor Bruno. Etappe 1 (Spalten 0–200): Steg-Treppe über die Mauer
       (beide), Seil-Aufzug (Affe zieht sich am Haken auf den Sims, Hebel 1 öffnet Tür 1), Segel-Schlucht (nur das
       Schweinchen segelt rüber zu Hebel 2, der fährt die Plattform mit dem Affen), Kamin (beide). Etappe 2 (200–400): Brunnen (Hebel 3 hängt tief über den
       Stacheln – der Affe lässt sich am Seil herunter, J, zieht sich hoch und schwingt weiter; Tür 3), Felsdecke (das
@@ -738,8 +745,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       letzte Schlucht segelt das Schweinchen, der Affe nimmt zwei Haken; Ziel auf dem Gipfel, Spalte 795). 16 Checkpoints,
       142 Münzen (71 blau / 71 pink). Test level7_lianenschlucht
       (Koop-Bot tests/koop_bot.js spielt die Stellen nach).
-    - Level 8 „Glühwald“ (levels/level-8.json, Dschungel Level 4, nachts, trocken) – IN ARBEIT, bis es fertig ist
-      versteckt. Etappe 1 (Spalten 0–130, Wechselboden lernen): Segel-Brücke (das Schweinchen segelt vom Baumstumpf
+    - Level 8 „Glühwald“ (levels/level-8.json, Dschungel Level 4, nachts, trocken, 700 Spalten; Meister-Level vor Bruno).
+      In worlds.json hinter Level 7. Etappe 1 (Spalten 0–130, Wechselboden lernen): Segel-Brücke (das Schweinchen segelt vom Baumstumpf
       über die Grube zu Hebel 1 – die Brücke B erscheint für den Affen), Haken-Tor (der Affe zieht sich am Haken auf den
       Sims, Hebel 2 lässt die Wand A verschwinden), Takt-Steine (A/B wechseln alle 2 s; springen, wenn es blinkt).
       Etappe 2 (130–300, Teleporter lernen): Tor 1 für beide durch den Felsen; blaues und pinkes Tor (das pinke Tor bringt

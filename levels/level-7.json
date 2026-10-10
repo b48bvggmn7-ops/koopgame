@@ -3897,6 +3897,9 @@
    "y": 400
   }
  ],
+ "winds": [],
+ "switchFloors": [],
+ "teleporters": [],
  "oneways": [
   {
    "x": 19080,
@@ -3977,6 +3980,12 @@
    "h": 12
   }
  ],
+ "waters": [],
+ "currents": [],
+ "waterLevels": [],
+ "boss": [],
+ "bossArena": [],
+ "bossPlaetze": [],
  "welt": "dschungel",
  "tageszeit": "mittag",
  "wetter": "regen"

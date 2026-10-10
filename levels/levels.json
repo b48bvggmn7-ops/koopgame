@@ -44,13 +44,11 @@
  {
   "datei": "level-7.json",
   "name": "Level 7",
-  "titel": "Lianenschlucht",
-  "versteckt": true
+  "titel": "Lianenschlucht"
  },
  {
   "datei": "level-8.json",
   "name": "Level 8",
-  "titel": "Glühwald",
-  "versteckt": true
+  "titel": "Glühwald"
  }
 ]
