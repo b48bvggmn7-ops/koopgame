@@ -978,6 +978,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander – außer in den Verfolgungen, die jeweils am Stück gespielt werden.
     - Test level11_felsenflucht (Koop-Bot).
 
+  - Level 12 „Tropfsteingang“ (levels/level-12.json, Höhle Level 2 der Welt, morgens, trocken): IN ARBEIT, bis es fertig
+    ist in levels.json versteckt. Lehr-Level: Förderband, Stege, enge Kamine.
+    - Etappe 1 (Spalten 0–200): Band mit dem Strom; gegen ein schnelles Band; Band-Schleuder (das Schweinchen segelt über
+      die Stachelgrube und zieht drüben Hebel 1 – das reißende Band dreht sich und schleudert den Affen hinüber); enger
+      Kamin hinauf, Stege hinunter; ein langsames Band trägt auf Stacheln zu – rechtzeitig auf den Steg springen.
+    - Test level12_tropfsteingang (Koop-Bot).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

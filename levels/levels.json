@@ -65,5 +65,11 @@
   "datei": "level-11.json",
   "name": "Level 11",
   "titel": "Felsenflucht"
+ },
+ {
+  "datei": "level-12.json",
+  "name": "Level 12",
+  "titel": "Tropfsteingang",
+  "versteckt": true
  }
 ]
