@@ -983,6 +983,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 1 (Spalten 0–200): Band mit dem Strom; gegen ein schnelles Band; Band-Schleuder (das Schweinchen segelt über
       die Stachelgrube und zieht drüben Hebel 1 – das reißende Band dreht sich und schleudert den Affen hinüber); enger
       Kamin hinauf, Stege hinunter; ein langsames Band trägt auf Stacheln zu – rechtzeitig auf den Steg springen.
+    - Etappe 2 (Spalten 200–400): Tür und Schleuder (der Affe öffnet per Haken und Hebel 2 die Tür, das Schweinchen segelt
+      über die Grube und dreht mit Hebel 3 das Band für den Affen); Zickzack-Kamin (ein Tropfstein davor fängt
+      Fehlsprünge auf); Stege hinunter; Band-Inseln über der Stachelgrube (abwechselnd links/rechts laufend).
     - Test level12_tropfsteingang (Koop-Bot).
 
 ## Level-Editor (editor/)
