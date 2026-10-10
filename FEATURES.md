@@ -831,7 +831,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Fallen-Köpfe und Lichtquellen nehmen im Spiel die Wandfarben des Levels an, nachts also auch dunkler.
     - Alte Level mit theme „ruinen“ (Level 3) sind unverändert. Test ruinen_welt_look.
 
-  - Level 9 „Fallengang“ (levels/level-9.json, Ruinen Level 3 der Welt, morgens, wechselndes Wetter): IN ARBEIT, bis
+  - Level 9 „Fallengang“ (levels/level-9.json, Ruinen Level 3 der Welt, morgens, wechselndes Wetter, 806 Spalten): bis
     es fertig ist in levels.json versteckt.
     - Etappe 1 (Spalten 0–200):
       - Pfeil-Vorhänge: Fallen in der Decke schießen nach unten; warten, bis der Pfeil unten ist (beide).
@@ -857,6 +857,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       - Teleporter zwischen Flammen: Das pinke Tor bringt das Schweinchen zu Hebel 8 (Flammen aus, blaues Tor an),
         das blaue Tor bringt den Affen zu Hebel 9 (Tür 9).
       - Takt-Steine (1,5 s) unter Pfeil-Vorhängen (beide).
+    - Etappe 4 (Spalten 600–806, Ziel bei 795):
+      - Flammen-Doppelgang (schwerste Stelle): Der Affe geht durchs blaue Tor in den oberen Gang, das Schweinchen läuft
+        unten. Jeder Gang ist von Flammen-Paaren versperrt (Flammen von oben und unten im Wechsel, ohne Hebel kein
+        Durchkommen). Jeder Hebel stellt ein Paar im ANDEREN Gang ab (10 → oben, 11 → unten, 12 → oben, 13 → unten,
+        14 → oben). Oben Stacheln mit Haken (Affe), unten Gruben (Schweinchen segelt).
+      - Rhythmus-Lauf zum Ziel: Pfeil-Vorhänge, eine Flammen-Welle (vor jeder Flamme warten), Takt-Steine (1,5 s).
+    - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: der Doppelgang 604–680 ist ein einziges Rätsel).
     - Test level9_fallengang (Koop-Bot).
 
 ## Level-Editor (editor/)

@@ -1084,7 +1084,9 @@ async def level9_fallengang(g):
     Etappe 2: Pfeil-Galerie (segeln / drei Haken im Pfeil-Takt), Flammen-Schleuse (Platten 3), Pfeil-Schacht,
     Pfeil-Gang mit Hebeln 4/5 über Kreuz.
     Etappe 3: Deckung (Affe schaltet oben die Deckungen im Pfeil-Takt), Teleporter zwischen Flammen (Hebel 8/9),
-    Takt-Steine 1,5 s unter Pfeil-Vorhängen."""
+    Takt-Steine 1,5 s unter Pfeil-Vorhängen.
+    Etappe 4: Flammen-Doppelgang (Affe oben, Schweinchen unten, Hebel 10–14 über Kreuz; jedes Flammenpaar sperrt ohne
+    seinen Hebel), Rhythmus-Lauf (Pfeile + Flammen-Welle), Takt-Steine zum Ziel."""
     await koop_level(g, 'level-9.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -1206,6 +1208,41 @@ async def level9_fallengang(g):
                                 lambda r, who=who: bool(k_pos(r, who)) and k_pos(r, who)[0] >= 569, range(0, 180, 30),
                                 **{who: kat(537, 15), other: kat(535, 15)}, maxFrames=4000), f'Takt unter Pfeil-Vorhängen ({who})')
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61 and a != 604]   # Ausnahme: Flammen-Doppelgang 604–680 (ein Rätsel)
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(605, 15), f=kat(604, 15), plans={'m': [k_lauf(609), {'wait': f'P.y < {ky(11)}'}, {'frames': 20}]}, maxFrames=800)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] <= 10, 'Doppelgang: blaues Tor nach oben (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(605, 15), m=kat(613, 10), plans={'f': [k_lauf(612)] + am(616)}, maxFrames=800)
+    soll(await g.ev("!!linkOn[10]"), 'Hebel 10 (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(614, 10), f=kat(616, 15), plans={'m': [k_lauf(623)] + am(625)}, links=[10], maxFrames=1000)
+    soll(await g.ev("!!linkOn[11]"), 'oben durch Flammen 620 -> Hebel 11 (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(617, 15), m=kat(625, 10), plans={'f': k_segeln(632, 4) + am(640)}, links=[10, 11], maxFrames=1500)
+    soll(await g.ev("!!linkOn[12]"), 'unten Grube segeln -> Hebel 12 (Schweinchen)', r.get('pos'))
+    m = [k_lauf(639, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 0, 'release': f'P.x > {kx(645)} && P.vx > 0.5'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(650)] + am(652)
+    r = await koop(g, m=kat(630, 10), f=kat(640, 15), plans={'m': m}, links=[10, 11, 12], maxFrames=1500)
+    soll(await g.ev("!!linkOn[13]"), 'oben Haken über Stacheln -> Hebel 13 (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(641, 15), m=kat(652, 10), plans={'f': k_segeln(658, 4) + am(666)}, links=[10, 11, 12, 13], maxFrames=1500)
+    soll(await g.ev("!!linkOn[14]"), 'unten Grube segeln -> Hebel 14 (Schweinchen)', r.get('pos'))
+    for who, st, oth in (('m', (653, 10), (666, 15)), ('f', (667, 15), (668, 10))):
+        r = await koop(g, **{who: kat(*st), ('f' if who == 'm' else 'm'): kat(*oth)}, plans={who: [k_lauf(684), {'until': 'P.grounded', 'frames': 200}]}, links=[10, 11, 12, 13, 14], maxFrames=1500)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 680, f'Ausgang Doppelgang ({who})', r.get('pos'))
+    soll(not await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}, k_lauf(632)]}, lambda r: bool(r.get('done')), range(0, 120, 20),
+                                f=kat(626, 15), m=kat(625, 10), links=[10], maxFrames=600), 'Flammenpaar 630 sperrt ohne Hebel 11')
+    plan = []
+    for c in (688, 694, 700):
+        plan += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 2)]
+    for c in range(708, 731, 5):
+        fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+        plan += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && !falleWarnung({fi})'}, k_lauf(c + 2)]
+    r = await koop(g, m=kat(683, 15), f=kat(704, 15), plans={'m': plan + [k_lauf(734)]}, maxFrames=4000)
+    soll(r.get('done'), 'Rhythmus-Lauf mit Warten (Affe)', r.get('pos'))
+    soll(await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}] + k_takt(list(range(737, 758, 3)), kx(763), 734, 1.5)},
+                            lambda r: bool(k_pos(r, 'f')) and k_pos(r, 'f')[0] >= 761, range(0, 180, 30),
+                            f=kat(732, 15), m=kat(730, 15), maxFrames=4000), 'Takt-Steine zum Ziel (Schweinchen)')
     assert not fehler, fehler
 
 @test
