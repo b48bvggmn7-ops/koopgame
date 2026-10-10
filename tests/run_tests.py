@@ -1254,7 +1254,8 @@ async def level10_sonnentempel(g):
     Etappe 2: Zwei-Spiegel-Kette (Affe am Sims, Schweinchen über pinkes Tor auf der Insel), Licht-Takt mit Pfeil vor Tür 6,
     Flammen-Tunnel mit Kristall (Platte 7 -> Trittstein -> Haken -> Spiegel).
     Etappe 3: zwei Wege (oben Affe, unten Schweinchen; jeder öffnet per Spiegel die Tür des anderen), Spiegel-Kette unter
-    Pfeilen, Flammen-Gang (Schweinchen läuft der Welle nach, Affe nimmt das blaue Tor)."""
+    Pfeilen, Flammen-Gang (Schweinchen läuft der Welle nach, Affe nimmt das blaue Tor).
+    Etappe 4: Doppelstrahl-Tor (zwei Kristalle zugleich, Strahl 2 im Takt, Pfeil an der Tür), Licht-Brücken im Takt."""
     await koop_level(g, 'level-10.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -1357,6 +1358,33 @@ async def level10_sonnentempel(g):
     r = await koop(g, f=kat(535, 15), m=kat(577, 15), plans={'f': plan + [k_lauf(578)]}, maxFrames=5000)
     soll(r.get('done'), 'Schweinchen läuft der Flammen-Welle nach', r.get('pos'))
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61 and a != 401]   # Ausnahme: zwei Wege 401–474 (ein Rätsel)
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    r = await koop(g, m=kat(620, 15), f=kat(618, 15), plans={'m': haken(625, 9, 30) + am(631)}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[12]"), 'Affe per Haken zum Spiegel -> Kristall 12', r.get('pos'))
+    r = await koop(g, f=kat(642, 6), m=kat(632, 9), plans={'f': gleit(643, kx(654), 4) + [{'frames': 10}] + am(653)}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 10 and await g.ev("spiegelListe.find(s => s.c === 653).stellung") == '\\', 'Schweinchen segelt zur Insel, Spiegel 12', r.get('pos'))
+    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(670)]}, pre=dreh(630), maxFrames=800)
+    soll(r.get('done'), 'Affe über die Licht-Brücke', r.get('pos'))
+    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(670)]}, maxFrames=800)
+    soll(not r.get('done'), 'ohne Licht keine Brücke', r.get('pos'))
+    r = await koop(g, f=kat(654, 10), m=kat(672, 15), plans={'f': gleit(656, kx(674), 4)}, pre=dreh(630, 653), maxFrames=1200)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 670 and k_pos(r, 'f')[1] == 15, 'Schweinchen segelt von der Insel zum Tor', r.get('pos'))
+    pl = [k_lauf(686, 0), {'wait': f'kristalle.find(k => k.link === 13).an && (90 - wechselSchritte % 90) > 40 && fallenPfeile.some(a => a.steckt >= 0 && Math.abs(a.x - {kx(690)}) < 4)'}, k_lauf(698)]
+    r = await koop(g, m=kat(676, 15), f=kat(674, 15), plans={'m': pl}, pre=dreh(630, 653), maxFrames=3000)
+    soll(r.get('done'), 'Doppelstrahl-Tor', r.get('pos'))
+    r = await koop(g, m=kat(684, 15), f=kat(680, 15), plans={'m': [k_lauf(698)]}, pre=dreh(653), maxFrames=800)
+    soll(not r.get('done'), 'Tor zu ohne Strahl 1', r.get('pos'))
+    m = [k_lauf(710, 0), {'wait': 'kristalle.find(k => k.link === 14).an && (90 - wechselSchritte % 90) > 75'}, k_lauf(718, 0),
+         {'wait': 'kristalle.find(k => k.link === 14).an && (90 - wechselSchritte % 90) > 75'}, k_lauf(730)]
+    r = await koop(g, m=kat(702, 15), f=kat(700, 15), plans={'m': m}, maxFrames=3000)
+    soll(r.get('done'), 'Affe über die Takt-Brücken', r.get('pos'))
+    r = await koop(g, f=kat(708, 15), m=kat(702, 15), plans={'f': gleit(711, kx(718) + 20, 4) + gleit(719, kx(728), 4) + [k_lauf(730)]}, maxFrames=1500)
+    soll(r.get('done'), 'Schweinchen segelt über die Gruben', r.get('pos'))
+    r = await koop(g, m=kat(735, 15), f=kat(733, 15), plans={'m': [k_lauf(791)], 'f': [k_lauf(789)]}, maxFrames=1500)
+    soll(r.get('done'), 'bis zum Ziel', r.get('pos'))
     assert not fehler, fehler
 
 @test

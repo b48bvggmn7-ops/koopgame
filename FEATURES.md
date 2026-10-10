@@ -866,8 +866,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: der Doppelgang 604–680 ist ein einziges Rätsel).
     - Test level9_fallengang (Koop-Bot).
 
-  - Level 10 „Sonnentempel“ (levels/level-10.json, Ruinen Level 4 der Welt, abends, Regen): IN ARBEIT, bis es fertig ist
-    in levels.json versteckt. Schwerpunkt Licht: Spiegel, die nur einer erreicht.
+  - Level 10 „Sonnentempel“ (levels/level-10.json, Ruinen Level 4 der Welt, abends, Regen, 800 Spalten): bis es fertig
+    ist in levels.json versteckt. Schwerpunkt Licht: Spiegel, die nur einer erreicht.
     - Etappe 1 (Spalten 0–200):
       - Erster Spiegel: Der Strahl läuft über den Köpfen, der Spiegel lenkt ihn hinauf zum Kristall → Tür 1 (beide).
       - Affen-Spiegel: hoch auf einem Sims, nur per Haken erreichbar; der Kristall im Boden öffnet Tür 2 für das
@@ -889,6 +889,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       - Spiegel-Kette unter Pfeilen: drei Boden-Spiegel müssen richtig stehen (zwei feste Spiegel oben lenken den Strahl
         im Zickzack); über jedem hängt eine Pfeilfalle – drehen und schnell weg (beide).
       - Flammen-Gang: Flammen aus dem Boden als Welle – das Schweinchen läuft der Welle nach, der Affe nimmt das blaue Tor.
+    - Etappe 4 (Spalten 600–800, Ziel bei 790):
+      - Doppelstrahl-Tor (schwerste Stelle): Tür 12 und Tür 13 stehen direkt hintereinander, beide Kristalle müssen
+        zugleich leuchten. Strahl 1: Der Affe dreht den Spiegel auf dem Sims (Haken) → Kristall 12 öffnet Tür 12 und lässt
+        die Brücke über die Grube erscheinen. Strahl 2: Das Schweinchen (pinkes Tor, segeln) dreht den Spiegel auf der
+        Insel → Kristall 13; ein Takt-Stein (1,5 s) unterbricht diesen Strahl, und in der ersten Tür fällt ein Pfeil im Takt.
+      - Licht-Brücken im Takt: Ein Takt-Stein unterbricht den Strahl, die Brücken über zwei Gruben sind nur jede zweite
+        Phase da. Das Schweinchen kann segeln, der Affe muss im Takt laufen (Pfeiler in der Mitte = sicher).
+    - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: die zwei Wege 401–474 sind ein einziges Rätsel).
     - Test level10_sonnentempel (Koop-Bot).
 
 ## Level-Editor (editor/)
