@@ -745,7 +745,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Etappe 2 (130–300, Teleporter lernen): Tor 1 für beide durch den Felsen; blaues und pinkes Tor (das pinke Tor bringt
       das Schweinchen über Mauer 1 auf einen Sims mit Hebel 3 = Tür 3 für den Affen, das blaue Tor den Affen über Mauer 2
       zu Hebel 4 = Tür 4 für das Schweinchen); Teleporter-Schleuse (Tor 4 über die breite Grube geht nur, solange jemand
-      auf einer Druckplatte 5 steht – je eine an jedem Ufer). Test level8_gluehwald.
+      auf einer Druckplatte 5 steht – je eine an jedem Ufer).
+      Etappe 3 (300–480, Kombi): Luft-Tor (der Affe zieht sich am Haken auf den Sims, Hebel 6 schaltet Tor 5 an; dessen
+      Ausgang liegt hoch über der Stachelgrube – das Schweinchen segelt hinaus, der Affe greift sofort zwei Haken),
+      Wechsel-Schleuse (Druckplatte 7 oben auf einem Haken-Sims und drüben am Boden: Brücke B erscheint, Wand A
+      verschwindet – einer hält, der andere geht), Takt-Steine 1,5 s und eine letzte weite Lücke (segeln / Haken).
+      Test level8_gluehwald.
 
 ## Level-Editor (editor/)
 ```

@@ -1033,9 +1033,9 @@ async def level8_gluehwald(g):
     for who, other in (('m', 'f'), ('f', 'm')):
         r = await koop(g, **{who: kat(406, 14), other: kat(404, 14)}, plans={who: takt(10, list(range(412, 440, 3)), kx(442) + 20, 409, 1.5)}, maxFrames=4000)
         soll(k_pos(r, who) and k_pos(r, who)[0] >= 441.5 and k_pos(r, who)[1] == 14, f'Takt-Steine 1,5 s ({who})', r.get('pos'))
-    r = await koop(g, f=kat(443, 14), m=kat(441, 14), plans={'f': k_segeln(443, 6)}, maxFrames=1500)
+    r = await koop(g, f=kat(443, 14), m=kat(442, 14), plans={'f': k_segeln(443, 6)}, maxFrames=1500)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 453, 'letzte Lücke (Schweinchen)', r.get('pos'))
-    r = await koop(g, m=kat(442, 14), f=kat(440, 14), plans={'m': k_haken(1, 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 443, 0)}, maxFrames=1500)
+    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_haken(1, 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 443, 0)}, maxFrames=1500)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 453, 'letzte Lücke (Affe am Haken)', r.get('pos'))
     if await g.ev("goal.x") < 690 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
