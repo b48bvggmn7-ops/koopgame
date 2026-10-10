@@ -299,7 +299,7 @@
 // Editor-Skripte in FESTER Reihenfolge (klassische Skripte ohne Build, gemeinsamer Gültigkeitsbereich).
 // ?v=<Zeit>: immer die neuesten Dateien laden (nie alte aus dem Zwischenspeicher)
 // zuerst das Element-Register (../elemente/, geteilt mit dem Spiel), dann der Editor
-['00-register', 'hebel', 'tuer', 'druckplatte', 'sprungpilz', 'aufwind', 'wechselboden'].forEach(function(n){
+['00-register', 'hebel', 'tuer', 'druckplatte', 'sprungpilz', 'aufwind', 'wechselboden', 'teleporter'].forEach(function(n){
   document.write('<script src="../elemente/' + n + '.js?v=' + Date.now() + '"><\/script>');
 });
 ['01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '07-level-info', '08-auswahl', '99-start'].forEach(function(n){

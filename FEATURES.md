@@ -482,6 +482,24 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Schweinchen „wartet“ mit offenem Schirm in der Luft, bis die nächsten Steine erscheinen; der Affe wartet am Haken
         hängend oder überbrückt mit dem Seil. Keine Figur wird überflüssig.
       Testlevel levels/test/wechselboden.json (index.html?testlevel=wechselboden). Tests wechselboden, editor_wechselboden.
+  - TELEPORTER (Ausbau 4, elemente/teleporter.js; Spiel-Feld teleporters [{x, y (Fußpunkt), paar, fuer, link?}]):
+      Immer zwei Tore gehören zusammen (Paar-Nummer + Farbe, Nummer unten am Tor). Wer hineinläuft/-springt/-fällt
+        (deutlich im Tor-Kästchen), kommt sofort beim Partner heraus – automatisch, ohne Taste.
+      Regeln (festgelegt in Ausbau 4): Schwung bleibt erhalten (Tempo und Richtung gleich) · hängt der Affe am Seil,
+        LÖST sich das Seil (der Haken bleibt zurück), der Schwung fliegt mit · der Schirm bleibt offen, das Schweinchen
+        segelt drüben weiter · Abklingzeit 1 Spielsekunde je Figur UND erst wieder, nachdem man das Tor einmal verlassen
+        hat (kein Hin-und-her) · ist der Ausgang zu (Wand/Tür/Wechselboden darin) oder wäre man zu weit vom Partner weg
+        (Abstandsgrenze der Kamera), passiert nichts.
+      Optional „nur Affe“ (blaues Inneres + „A“) oder „nur Schweinchen“ (pink + „S“), sonst für beide (weiß).
+      Optional per Verknüpfung (Hebel/Druckplatte): an, solange die Nummer an ist; aus = graues Tor ohne Wirbel;
+        Plakette mit der Nummer über dem Tor wie bei Türen.
+      Effekt: Funken-Ring und Sterne an beiden Toren, Tor blitzt auf; Ton „Luft-Sog – Plopp – Luft-Stoß“ (kein Klingeln).
+        Die Kamera springt nicht hart, sie gleitet wie immer weich zum neuen Ziel (09-kamera.js).
+      Welche Rolle haben Affe und Schweinchen? „nur Affe“/„nur Schweinchen“ trennt die Wege (jeder hat seinen eigenen
+        Durchgang und muss drüben oft dem anderen helfen); per Hebel muss einer das Tor für den anderen anschalten. Ein
+        Ausgang in der Luft ist für das Schweinchen ein Segel-Start, der Affe braucht dort einen Haken. Keine Figur
+        wird überflüssig, weil Teleporter keine Fähigkeit ersetzen, nur Wege verbinden.
+      Testlevel levels/test/teleporter.json (index.html?testlevel=teleporter). Tests teleporter, editor_teleporter.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).
@@ -617,6 +635,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     und „Takt“ (per Nummer oder alle 1,5–6 s). Neue Kästchen bekommen Gruppe, Takt und die gewählte Verknüpfung;
     Klick auf ein vorhandenes Kästchen tauscht A/B. Im Raster mit Muster, Buchstabe und Nummer bzw. „⏱ Sekunden“;
     ✓-Markierung „Wechselboden“ (nur für Kästchen per Nummer). Kopieren/Einfügen und Rückgängig wie bei allen Punkten.
+  - Teleporter (Ausbau 4, Gruppe „Bewegung“): 1. Klick setzt ein Tor, der 2. Klick seinen Partner (gleiche Paar-Nummer und
+    Farbe); eine gestrichelte Bogen-Linie verbindet die beiden, ein Tor ohne Partner zeigt „?“. Danach beginnt der nächste
+    Klick ein neues Paar. Wird ein Tor radiert, wird das nächste neue Tor sein Partner. Daneben „für“ (beide / nur Affe /
+    nur Schweinchen) und „an/aus“ (immer an / per Verknüpfung – nimmt die Nummer aus „Schalter & Logik“); der Partner
+    übernimmt die Einstellungen des ersten Tors. Eingefügte Paare (Strg+V) bekommen eine neue, freie Paar-Nummer.
   - (früher: Auswahl „Thema“ oben – Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,
     Kristallhöhle, Feuerberg) als "theme"; auf Nutzerwunsch in Ausbau 2 ersetzt durch „Level-Info“, die Themen gibt
     es dort weiter als „Look-Override“.)

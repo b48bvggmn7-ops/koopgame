@@ -2330,7 +2330,7 @@ async def element_register(g):
     k = await g.ev("ELEMENTE.map(E => [E.id, E.feld, !!E.editor, !!(E.spiel && E.spiel.laden && E.spiel.zeichnen)])")
     assert k == [['hebel', 'switches', True, True], ['tuer', 'doors', True, False], ['druckplatte', 'plates', True, True],
                  ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True],
-                 ['wechselboden', 'switchFloors', True, True]], k   # Tür: gezeichnet mit den Wänden
+                 ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True]], k   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2343,7 +2343,7 @@ async def element_register(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['hook', 'wind', 'bounce', 'move'], reihe
+        assert reihe == ['hook', 'wind', 'bounce', 'tele', 'move'], reihe   # + Teleporter (Ausbau 4)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
         assert logik == ['switch', 'door', 'plate', 'wechsel', 'LABEL', 'LABEL', 'LABEL', 'INPUT'], logik   # Wechselboden + Gruppe/Takt (Ausbau 4)
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
@@ -2564,6 +2564,105 @@ async def editor_wechselboden(g):
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
         umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
         assert sorted(umg['switchFloors'], key=lambda f: f['x']) == sf, umg['switchFloors']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def teleporter(g):
+    """Ausbau 4: Teleporter. Hineinlaufen -> beim Partner heraus (Schwung bleibt, Ton + Funken); kein Hin-und-her
+    (erst raus, dann ca. 1 s Abklingzeit); Seil löst sich, Schirm bleibt offen; „nur Affe“ lässt das Schweinchen nicht
+    durch; per Verknüpfung erst an, wenn die Nummer an ist; zugestellter Ausgang -> nichts passiert."""
+    tele = [{'x': 300, 'y': 680, 'paar': 1, 'fuer': 'beide'}, {'x': 900, 'y': 680, 'paar': 1, 'fuer': 'beide'},
+            {'x': 1300, 'y': 680, 'paar': 2, 'fuer': 'affe'}, {'x': 1700, 'y': 680, 'paar': 2, 'fuer': 'affe'},
+            {'x': 2100, 'y': 680, 'paar': 3, 'fuer': 'beide', 'link': 4}, {'x': 2500, 'y': 680, 'paar': 3, 'fuer': 'beide', 'link': 4},
+            {'x': 2800, 'y': 680, 'paar': 4, 'fuer': 'beide'}, {'x': 2950, 'y': 400, 'paar': 4, 'fuer': 'beide'}]
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, teleporters=tele,
+                       hooks=[{'x': 260, 'y': 500, 'radius': 260}]))
+    assert await g.ev("teleporters.length === 8 && teleporters.every(t => t.partner && t.partner.paar === t.paar)"), 'Paare nicht verbunden'
+    await g.ev("SFX_LOG.length = 0")
+    await g.p.keyboard.down('KeyD')
+    try: await g.p.wait_for_function("p1.x > 800", timeout=6000)
+    except Exception: pass
+    vx = await g.ev("p1.vx")
+    await g.p.keyboard.up('KeyD')
+    assert await g.ev("p1.x") > 850, f"Affe nicht teleportiert: {await g.ev('p1.x')}"
+    assert vx > 2, f'Schwung nicht erhalten: vx={vx}'
+    assert 'teleport' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # stehen bleiben im Ausgang: kein Zurück-Teleportieren
+    await g.steps(70)
+    await g.ev("p1.x = 300; p1.vx = 0; p1._px = p1.x"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 900) < 5, f"Teleporter aus dem Stand geht nicht: {await g.ev('p1.x')}"
+    await g.steps(90)
+    assert abs(await g.ev("p1.x") - 900) < 5, f"springt hin und her: {await g.ev('p1.x')}"
+    # raus und nach der Abklingzeit wieder rein -> zurück
+    await g.ev("p1.x = 980; p1._px = p1.x"); await g.steps(70)
+    await g.ev("p1.x = 905; p1._px = p1.x"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 300) < 30, f"Rückweg geht nicht: {await g.ev('p1.x')}"
+    # Seil löst sich
+    await g.ev("p1.x = 120; p1.y = 600; p1._px = p1.x; p1._py = p1.y; p1.teleCool = 0; p1.teleFrei = true; p1.vx = 0; p1.vy = 0;"
+               "p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 230; p1.ropeMax = 260; p1.ropeWasAirborne = true")
+    await g.steps(1)
+    await g.ev("p1.x = 300; p1.y = 670; p1._px = p1.x; p1._py = p1.y; p1.vx = 3"); await g.steps(2)
+    assert await g.ev("p1.x") > 850 and not await g.ev("p1.hookAttached"), f"Seil: x={await g.ev('p1.x')} haken={await g.ev('p1.hookAttached')}"
+    # nur Affe: Schweinchen geht nicht durch, Affe schon
+    await g.ev("p2.x = 1300; p2.y = 680; p2._px = p2.x; p2._py = p2.y; p2.teleCool = 0; p2.teleFrei = true"); await g.steps(5)
+    assert abs(await g.ev("p2.x") - 1300) < 10, 'Schweinchen benutzt „nur Affe“-Teleporter'
+    await g.ev("p1.x = 1300; p1.y = 680; p1._px = p1.x; p1._py = p1.y; p1.teleCool = 0; p1.teleFrei = true"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 1700) < 10, f"Affe kommt nicht durch „nur Affe“: {await g.ev('p1.x')}"
+    # per Verknüpfung: aus -> nichts, an -> geht
+    await g.ev("p2.x = 2000; p2._px = p2.x; p1.x = 2100; p1._px = p1.x; p1.teleCool = 0; p1.teleFrei = true"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 2100) < 10, 'Teleporter wirkt, obwohl seine Nummer aus ist'
+    await g.ev("setLink(4, true); p1.x = 2060; p1._px = p1.x"); await g.steps(3)
+    await g.ev("p1.x = 2100; p1._px = p1.x"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 2500) < 10, f"Teleporter geht nach dem Anschalten nicht: {await g.ev('p1.x')}"
+    # Schirm bleibt offen: Schweinchen segelt in das Tor
+    await g.ev("p2.x = 2800; p2.y = 560; p2.vx = 0; p2.vy = 1; p2._px = p2.x; p2._py = p2.y; p2.grounded = false")
+    await g.p.keyboard.down('Numpad1')
+    try: await g.p.wait_for_function("p2.x > 2900", timeout=6000)
+    except Exception: pass
+    await g.steps(3)
+    segelt = await g.ev("p2.gliding && p2.y < 600"); x2 = await g.ev("p2.x")
+    await g.p.keyboard.up('Numpad1')
+    assert x2 > 2900, f'Schweinchen nicht teleportiert: {x2}'
+    assert segelt, 'Schirm nach dem Teleport zu'
+    # Ausgang zugestellt -> bleibt
+    await g.ev("solids.push({x: 880, y: 640, w: 40, h: 40, type: 'wall'}); p2.x = 400; p2._px = p2.x; p1.x = 300; p1.y = 680; p1._px = p1.x; p1._py = p1.y; p1.teleCool = 0; p1.teleFrei = true")
+    await g.steps(3)
+    assert abs(await g.ev("p1.x") - 300) < 10, 'teleportiert in eine Wand'
+
+@test
+async def editor_teleporter(g):
+    """Ausbau 4: Editor-Werkzeug Teleporter (Gruppe Bewegung): 1. Klick = Tor, 2. Klick = Partner (gleiche Paar-Nummer,
+    Verbindungslinie); das nächste Tor beginnt ein neues Paar. „für“ und „an/aus per Verknüpfung“ gehen mit; Export/Umwandlung."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.click('.tool[data-tool=tele]')
+        await p.select_option('#opt-tele-fuer', 'affe')
+        for c in (3, 10): x, y = await ed_zelle(p, c, 12); await p.mouse.click(x, y)
+        await p.select_option('#opt-tele-fuer', 'beide'); await p.select_option('#opt-tele-schalter', 'nummer'); await p.select_option('#linkSelect', '6')
+        for c in (14, 20): x, y = await ed_zelle(p, c, 12); await p.mouse.click(x, y)
+        x, y = await ed_zelle(p, 25, 12); await p.mouse.click(x, y)   # drittes Paar, noch ohne Partner
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert sorted(out['teleporters'], key=lambda t: t['x']) == [
+            {'x': 140, 'y': 520, 'paar': 1, 'fuer': 'affe'}, {'x': 420, 'y': 520, 'paar': 1, 'fuer': 'affe'},
+            {'x': 580, 'y': 520, 'paar': 2, 'fuer': 'beide', 'link': 6}, {'x': 820, 'y': 520, 'paar': 2, 'fuer': 'beide', 'link': 6},
+            {'x': 1020, 'y': 520, 'paar': 3, 'fuer': 'beide', 'link': 6}], out['teleporters']
+        assert 'Teleporter' in await p.evaluate("[...linkSelect.options].find(o => o.value === '6').textContent")
+        # Radieren eines Tors: das nächste neue Tor wird sein Partner
+        x, y = await ed_zelle(p, 10, 12); await p.mouse.click(x, y, button='right')
+        x, y = await ed_zelle(p, 12, 12); await p.click('.tool[data-tool=tele]'); await p.mouse.click(x, y)
+        paare = await p.evaluate("elementPunkte.teleporters.map(t => t.c + ':' + t.paar).sort()")
+        assert sorted(paare) == sorted(['3:1', '14:2', '20:2', '25:3', '12:1']), paare
+        snap = await p.evaluate("snapshot()")
+        # Kopieren + Einfügen eines Paars: bekommt eine neue, freie Paar-Nummer (beide Tore dieselbe)
+        n = await p.evaluate("(() => { const clip = copyRect({c0: 14, r0: 12, c1: 20, r1: 12}, false); pasteClip(clip, 30, 5, true); return elementPunkte.teleporters.filter(t => t.r === 5).map(t => t.paar); })()")
+        assert len(n) == 2 and n[0] == n[1] and n[0] not in (1, 2, 3), n
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert len(umg['teleporters']) == 5 and {'x': 500, 'y': 520, 'paar': 1, 'fuer': 'affe'} in umg['teleporters'], umg['teleporters']
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()

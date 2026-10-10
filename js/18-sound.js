@@ -173,6 +173,9 @@ function* sfxBuild(a, out){
     wechselAn: ()=>{ const b = mk(0.4); thump(b, 0, 170, 110, 0.09, 0.6); modal(b, 0.005, rnd(520, 600), wood, 0.02, 0.8, 0, 0.6); puff(b, 0, 0.12, 1400, 0.35, 0, 0.05); return b; },
     wechselAus:()=>{ const b = mk(0.45); swish(b, 0, 0.32, 2200, 450, 1.2, 0.8, 0, 0.15); grains(b, 0.02, 0.3, 40, 2500, 7000, 0.0003, 0.001, 0.3, 0.7, 'decay'); return b; },
     wechselTick:()=>{ const b = mk(0.55); for(let i = 0; i < 3; i++) modal(b, i*0.17, 1900, wood, 0.004, 0.55 + i*0.15, 0, 0.7); return b; },
+    // Teleporter (Ausbau 4): Luft-Sog hinein, weicher „Plopp“, Luft-Stoß heraus, feines Rieseln
+    teleport:  ()=>{ const b = mk(0.65); swish(b, 0, 0.3, 450, 3000, 1.6, 0.9, -0.35, 0.7); thump(b, 0.17, 240, 480, 0.06, 0.45);
+                     swish(b, 0.18, 0.32, 2800, 550, 1.3, 0.7, 0.35, 0.15); grains(b, 0.16, 0.35, 40, 2500, 7500, 0.0004, 0.0012, 0.2, 0.9, 'decay'); return b; },
     frog:      ()=>{ const b = mk(0.45); for(const t0 of [0, 0.16]){ for(let i = 0; i < 7; i++) modal(b, t0 + i*0.016, rnd(380, 430), [[1, 1], [2.8, 0.6], [4.2, 0.3]], 0.012, 0.6, 0, 0.3); } return b; },
     discover:  ()=>{ const b = mk(0.9); swish(b, 0, 0.5, 400, 1800, 1.0, 0.6, 0, 0.3);
                      grains(b, 0.05, 0.6, 50, 1200, 4500, 0.0004, 0.0015, 0.35, 0.5, 'decay'); modal(b, 0.05, 220, wood, 0.08, 0.5, 0, 0.4); return b; },
@@ -261,6 +264,7 @@ const SFX = {
   coin(combo, x){ sfxLog('coin'); return sfxPlay('coin', {x, rate: Math.pow(2, combo/12)}); },
   mushroom(x){ sfxLog('mushroom'); sfxPlay('mushroom', {x}); },
   wechsel(fest, x){ sfxLog(fest ? 'wechselan' : 'wechselweg'); sfxPlay(fest ? 'wechselAn' : 'wechselAus', {x}); },   // Wechselboden
+  teleport(x){ sfxLog('teleport'); sfxPlay('teleport', {x}); },   // Teleporter
   wechselWarn(x){ sfxLog('wechselwarn'); sfxPlay('wechselTick', {x}); },
   frog(x){ sfxLog('frog'); sfxPlay('frog', {x}); },
   discover(x){ sfxLog('discover'); sfxPlay('discover', {x}); },

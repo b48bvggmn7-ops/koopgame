@@ -567,6 +567,9 @@ function linkTargets(link){
   for(const h of hooks){
     if(h.moving && h.switchCtl && h.switchLink===link) pts.push({x:h.x+18, y:h.y-18, kind:'hook', active:h.tripActive});
   }
+  for(const t of teleporters){   // Teleporter per Verknüpfung (elemente/teleporter.js): Plakette über dem Tor
+    if(t.link===link) pts.push({x:t.x+20, y:t.y-46, kind:'tele', active:!!linkOn[link]});
+  }
   for(const s of solids){   // Wechselboden (elemente/wechselboden.js): eine Plakette je Reihe (Säule: nur oben), mitten darauf
     if(s.type==='wechsel' && s.link===link && !(s.takt > 0) && s.reiheStart &&
        !solids.some(o=>o.type==='wechsel' && o.link===link && o.gruppe===s.gruppe && Math.abs(o.x-s.x)<1 && Math.abs(o.y+o.h-s.y)<1)) pts.push({x:s.x+s.reiheBreite/2, y:s.y+s.h/2+3, kind:'wechsel', active:!s.gone});

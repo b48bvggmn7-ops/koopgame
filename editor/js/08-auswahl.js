@@ -115,7 +115,9 @@ function pasteClip(clip, c0, r0, renumber){
     const c = c0 + dc, r = r0 + dr; if(!ok(c, r)) continue;
     tiles[c + ',' + r] = t; spikes = spikes.filter(s => !(s.c === c && s.r === r));
   }
+  const eingefuegt = {};
   for(const name in clip.lists){
+    eingefuegt[name] = [];
     for(const p of clip.lists[name]){
       const c = c0 + p.c, r = r0 + p.r; if(!ok(c, r)) continue;
       const q = {...deep(p), c, r};
@@ -123,9 +125,10 @@ function pasteClip(clip, c0, r0, renumber){
       if(q.move && q.move.link) q.move.link = L(q.move.link);
       if(name === 'spikes') delete tiles[c + ',' + r];
       SET_LIST[name](POINT_LISTS[name]().filter(x => !(x.c === c && x.r === r)));   // an derselben Stelle ersetzen
-      POINT_LISTS[name]().push(q);
+      POINT_LISTS[name]().push(q); eingefuegt[name].push(q);
     }
   }
+  for(const E of punktElemente()) if(E.editor.einfuegen && (eingefuegt[E.feld] || []).length) E.editor.einfuegen(eingefuegt[E.feld], elementPunkte[E.feld]);   // z. B. Teleporter: neue Paar-Nummern
   for(const m of clip.movers){
     const c = c0 + m.c, r = r0 + m.r; if(!ok(c, r)) continue;
     movers.push({...deep(m), c, r, link: m.link ? L(m.link) : m.link});

@@ -1,0 +1,181 @@
+{
+ "hinweis": "Testlevel Ausbau 4: Teleporter. Öffnen: index.html?testlevel=teleporter · 1) Paar 1 für beide über die Grube · 2) Paar 2 nur Affe (blau), Paar 3 nur Schweinchen (pink) – getrennte Wege · 3) Paar 4 erst nach dem Hebel an · 4) Paar 5: Ausgang in der Luft – Schweinchen segelt mit offenem Schirm weiter, Affe nimmt den Haken (Seil löst sich beim Teleport)",
+ "welt": "hoehle",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 800,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1200,
+   "y": 680,
+   "w": 400,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1800,
+   "y": 520,
+   "w": 200,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1800,
+   "y": 680,
+   "w": 700,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 2900,
+   "y": 680,
+   "w": 500,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 3800,
+   "y": 680,
+   "w": 600,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1760,
+   "y": 360,
+   "w": 40,
+   "h": 320,
+   "type": "wall"
+  }
+ ],
+ "teleporters": [
+  {
+   "x": 700,
+   "y": 680,
+   "paar": 1,
+   "fuer": "beide"
+  },
+  {
+   "x": 1260,
+   "y": 680,
+   "paar": 1,
+   "fuer": "beide"
+  },
+  {
+   "x": 1420,
+   "y": 680,
+   "paar": 2,
+   "fuer": "affe"
+  },
+  {
+   "x": 1880,
+   "y": 520,
+   "paar": 2,
+   "fuer": "affe"
+  },
+  {
+   "x": 1520,
+   "y": 680,
+   "paar": 3,
+   "fuer": "schwein"
+  },
+  {
+   "x": 2060,
+   "y": 680,
+   "paar": 3,
+   "fuer": "schwein"
+  },
+  {
+   "x": 2400,
+   "y": 680,
+   "paar": 4,
+   "fuer": "beide",
+   "link": 1
+  },
+  {
+   "x": 2960,
+   "y": 680,
+   "paar": 4,
+   "fuer": "beide",
+   "link": 1
+  },
+  {
+   "x": 3300,
+   "y": 680,
+   "paar": 5,
+   "fuer": "beide"
+  },
+  {
+   "x": 3480,
+   "y": 360,
+   "paar": 5,
+   "fuer": "beide"
+  }
+ ],
+ "switches": [
+  {
+   "x": 2300,
+   "y": 660,
+   "link": 1
+  }
+ ],
+ "hooks": [
+  {
+   "x": 3640,
+   "y": 260,
+   "radius": 260
+  }
+ ],
+ "doors": [],
+ "plates": [],
+ "spikes": [],
+ "movingPlatforms": [],
+ "coins": [
+  {
+   "x": 1900,
+   "y": 460,
+   "color": "blue"
+  },
+  {
+   "x": 2120,
+   "y": 620,
+   "color": "pink"
+  }
+ ],
+ "checkpoints": [
+  {
+   "x": 1300,
+   "y": 680
+  },
+  {
+   "x": 2200,
+   "y": 680
+  },
+  {
+   "x": 3000,
+   "y": 680
+  },
+  {
+   "x": 3880,
+   "y": 680
+  }
+ ],
+ "startM": {
+  "x": 140,
+  "y": 680
+ },
+ "startF": {
+  "x": 100,
+  "y": 680
+ },
+ "goal": {
+  "x": 4300,
+  "y": 680
+ }
+}
