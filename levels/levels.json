@@ -46,5 +46,11 @@
   "name": "Level 7",
   "titel": "Lianenschlucht",
   "versteckt": true
+ },
+ {
+  "datei": "level-8.json",
+  "name": "Level 8",
+  "titel": "Glühwald",
+  "versteckt": true
  }
 ]

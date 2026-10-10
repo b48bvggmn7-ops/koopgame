@@ -738,6 +738,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       letzte Schlucht segelt das Schweinchen, der Affe nimmt zwei Haken; Ziel auf dem Gipfel, Spalte 795). 16 Checkpoints,
       142 Münzen (71 blau / 71 pink). Test level7_lianenschlucht
       (Koop-Bot tests/koop_bot.js spielt die Stellen nach).
+    - Level 8 „Glühwald“ (levels/level-8.json, Dschungel Level 4, nachts, trocken) – IN ARBEIT, bis es fertig ist
+      versteckt. Etappe 1 (Spalten 0–130, Wechselboden lernen): Segel-Brücke (das Schweinchen segelt vom Baumstumpf
+      über die Grube zu Hebel 1 – die Brücke B erscheint für den Affen), Haken-Tor (der Affe zieht sich am Haken auf den
+      Sims, Hebel 2 lässt die Wand A verschwinden), Takt-Steine (A/B wechseln alle 2 s; springen, wenn es blinkt).
+      Test level8_gluehwald.
 
 ## Level-Editor (editor/)
 ```
