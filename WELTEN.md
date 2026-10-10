@@ -204,3 +204,60 @@ Dazu Wechselboden und Teleporter als Kern-Rätsel.
 - Checkpoints alle 40–60 Spalten und vor jeder harten Stelle.
 - Ein Hebel, der den Fels startet, öffnet auch ein Tor.
 - Keine Zufallstode: Fallen laufen im festen Takt und warnen vorher.
+
+### Umsetzung (Abweichungen vom Plan)
+- **Fallengang:** wie geplant; dazu am Ende ein Flammen-Doppelgang (Affe oben, Schweinchen unten, Hebel über Kreuz) als
+  schwerste Stelle. Flammen-Sperren ohne Hebel sind Flammen von oben UND unten im Wechsel – sonst könnte man mit gutem
+  Timing durchschlüpfen und die Hebel-Staffel umgehen.
+- **Sonnentempel:** Licht geht nicht durch Teleporter. Darum sind Etappe 2/3 „Spiegel, die nur einer erreicht“: der
+  Affe per Haken, das Schweinchen übers pinke Tor und segelnd; zwei getrennte Wege, auf denen jeder die Tür des anderen
+  per Spiegel öffnet; dazu Licht im Takt (ein Takt-Stein unterbricht den Strahl).
+- **Felsenflucht:** Ruhende Felsen liegen auf kleinen Simsen über dem Weg (sonst liefe man durch sie hindurch) und
+  rollen herunter, sobald ihr Hebel gezogen ist. Jeder Fels-Hebel öffnet auch ein Tor.
+
+### Balance-Bericht Ruinen (Ausbau 7, Koop-Bot-Messungen)
+
+Einstufungen wie im Dschungel (komfortabel / knapp / Grenze). „stur“ = Bot läuft ohne zu warten einfach durch (verschiedene
+Startzeiten); „Spielraum“ = so lange darf man nach dem Hebel zögern (Physik-Schritte, 54 pro Sekunde).
+
+**Härteste Stellen Level 9 „Fallengang“ (Ziel: typisch 2, schwerste 4):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 606–690 | Flammen-Doppelgang: Hebel 10–14 über Kreuz, oben Haken über Stacheln, unten Gruben segeln | Koordination | knapp (schwerste Stelle; ohne Hebel 0 von 8 durch) |
+| 688–728 | Rhythmus-Lauf: Pfeile + Flammen-Welle | Timing | knapp (stur 1 von 10) |
+| 412–456 | Deckung: Affe schaltet oben, Schweinchen läuft im Pfeil-Takt | Koordination | knapp |
+| 100–140 | Flammen-Welle | Timing | knapp (stur 1 von 25) |
+| 542–564 / 737–757 | Takt-Steine 1,5 s (unter Pfeilen / zum Ziel) | Timing | knapp |
+| 301–311 | Einstieg Pfeil-Gang (Schweinchen segelt) | Segeln | knapp (3 von 6) |
+
+**Härteste Stellen Level 10 „Sonnentempel“ (Ziel: typisch 2–3, schwerste 5):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 629–691 | Doppelstrahl-Tor: beide Kristalle zugleich, Strahl 2 im Takt, Pfeil in der Tür | Koordination + Timing | Grenze (schwerste Stelle; stur 5 von 9 erst NACH beiden Spiegeln) |
+| 712–725 | Licht-Brücken im Takt (Affe läuft, Schweinchen segelt) | Timing | knapp bis Grenze (stur 1 von 9) |
+| 276–289 | Licht-Takt mit Pfeil vor Tür 6 | Timing | knapp (stur 5 von 9) |
+| 540–568 | Flammen-Gang (Schweinchen läuft der Welle nach) | Timing | knapp (stur 0 von 10, mit Warten sicher) |
+| 228–256 | Affe an zwei Haken über die Grube | Seil-Schwung | knapp (11 von 16 Varianten) |
+| 427–466 | oberer Weg: Haken über Stacheln (Affe) | Seil-Schwung | knapp |
+| 486–518 | Spiegel-Kette unter Pfeilen | Timing | knapp |
+
+**Härteste Stellen Level 11 „Felsenflucht“ (Ziel: typisch 3, schwerste 6, Meister-Level):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 612–704 | Finale: Fels so schnell wie die Figuren; Grube, Spiegel im Laufen, Stege | Verfolgung | Grenze (schwerste Stelle; Spielraum 42 Schritte ≈ 0,8 s) |
+| 110–170 | Flucht nach oben: schneller Fels, rauf auf die Stege | Verfolgung | Grenze (Spielraum 30 Schritte ≈ 0,55 s) |
+| 480–518 | Takt-Steine mit Fels im Nacken | Timing unter Druck | knapp bis Grenze (an der Kante kaum warten) |
+| 210–258 | Pfeil-Flucht | Timing unter Druck | knapp (stur 0 von 10) |
+| 287–300 | Schleuse: Platte halten, Hebel 6, gemeinsam durch Tür 5 | Koordination | knapp |
+| 330–388 | Flammen-Welle mit Fels im Nacken | Timing unter Druck | knapp |
+| 74–96 | Fels und Grube (Haken / segeln) | Verfolgung | knapp (Spielraum 72 Schritte ≈ 1,3 s) |
+| 412–445 | Teleporter-Flucht | Verfolgung | knapp |
+
+**Checkpoints:** Fallengang und Sonnentempel höchstens etwa 60 Spalten auseinander (Ausnahme je ein zusammenhängendes
+Rätsel: Doppelgang 604–680 bzw. zwei Wege 401–474). In der Felsenflucht wird jede Verfolgung am Stück gespielt (bis 106
+Spalten ohne Checkpoint im Finale) – das macht sie zum Meister-Level.
+
+**Sonst:** Alle anderen Stellen sind komfortabel (Lehr-Teile, Spiegel am Boden, Tore, Schleusen).

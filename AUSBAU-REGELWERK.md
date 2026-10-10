@@ -58,4 +58,5 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 | 5 | Wasser und Schwimmen | Go erhalten | ausbau-5-fertig | Einzel-Fähigkeiten unter Wasser bewusst weggelassen (Nutzerwunsch); Tag nur lokal |
 | 6 | Story-Intro und Boss-Gerüst mit Boss 1 | Go erhalten | ausbau-6-fertig | Schwierigkeit von Bruno nach Probespielen justieren; Tag nur lokal |
 | 7 | Neue Level für eine Welt (pro Welt) – Dschungel | fertig, wartet auf Test | ausbau-7-dschungel-fertig | Dschungel: Level 7 „Lianenschlucht“ + Level 8 „Glühwald“ (700 Spalten) neu, Balance in WELTEN.md; Schwierigkeit nach Probespielen justieren; weitere Welten offen; Tag nur lokal |
+| 7 | Neue Level für eine Welt (pro Welt) – Ruinen | fertig, wartet auf Test | ausbau-7-ruinen-fertig | Ruinen: neue Elemente Falle (Pfeil/Flamme), Rollender Fels, Licht (Quelle/Spiegel/Kristall); Level 9 „Fallengang“, 10 „Sonnentempel“, 11 „Felsenflucht“ (je ~800 Spalten) neu, Balance in WELTEN.md; Schwierigkeit nach Probespielen justieren; Höhle/Wasser/Vulkan offen; Tag nur lokal |
 | 8 | Boss und Abschluss für eine Welt (pro Welt) | offen | – | – |

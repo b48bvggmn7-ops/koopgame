@@ -54,19 +54,16 @@
  {
   "datei": "level-9.json",
   "name": "Level 9",
-  "titel": "Fallengang",
-  "versteckt": true
+  "titel": "Fallengang"
  },
  {
   "datei": "level-10.json",
   "name": "Level 10",
-  "titel": "Sonnentempel",
-  "versteckt": true
+  "titel": "Sonnentempel"
  },
  {
   "datei": "level-11.json",
   "name": "Level 11",
-  "titel": "Felsenflucht",
-  "versteckt": true
+  "titel": "Felsenflucht"
  }
 ]

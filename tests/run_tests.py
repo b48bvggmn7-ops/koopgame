@@ -2716,10 +2716,11 @@ async def welten_laden(g):
         await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         k = await g.ev("({w: GameMenu.config.worlds.map(x => x.id), l: GameMenu.config.levels.map(l => [l.datei, l.name, l.welt])})")
         assert k['w'] == ids, k
-        # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), sonst unverändert
-        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in (1, 2, 7, 8, 3, 4, 5, 6)], f'Reihenfolge geändert: {k}'
-        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Ruinen', 'Mondnacht', 'Kristallhöhle', 'Feuerberg'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen', 'ruinen', 'hoehle', 'vulkan'], k
+        # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
+        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in (1, 2, 7, 8, 3, 4, 9, 10, 11, 5, 6)], f'Reihenfolge geändert: {k}'
+        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Ruinen', 'Mondnacht', 'Fallengang',
+                                          'Sonnentempel', 'Felsenflucht', 'Kristallhöhle', 'Feuerberg'], f'Namen geändert: {k}'
+        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen'] * 5 + ['hoehle', 'vulkan'], k
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -2748,11 +2749,11 @@ async def spielstand_migration(g):
         # Level: 4 offen, 3 geschafft – wie vorher (seit Ausbau 3 auf die Welten verteilt)
         offen = await g.ev("[1, 2, 3, 4, 5, 6].map(i => GameMenu.levelUnlocked(GameMenu.config.levels.findIndex(l => l.datei === `level-${i}.json`)))")
         assert offen == [True, True, True, True, False, False], offen
-        # Weiterspielen: Level 4 schaffen schaltet Level 5 frei (Datei), Sicherung bleibt unverändert
-        assert await g.ev("(() => { const nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1; return GameMenu.completeLevel(nr('level-4.json'), true) === nr('level-5.json'); })()")
+        # Weiterspielen: Level 4 schaffen schaltet das nächste Ruinen-Level frei (Ausbau 7: Level 9), Sicherung bleibt unverändert
+        assert await g.ev("(() => { const nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1; return GameMenu.completeLevel(nr('level-4.json'), true) === nr('level-9.json'); })()")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         sv = await g.ev("GameMenu.getSave()")
-        assert 'level-5.json' in sv['unlocked'] and 'level-4.json' in sv['completed'] and sv['stats']['level-1.json'] == {'m': 2, 'f': 3}, sv
+        assert 'level-9.json' in sv['unlocked'] and 'level-4.json' in sv['completed'] and sv['stats']['level-1.json'] == {'m': 2, 'f': 3}, sv
         assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung überschrieben'
         # kaputte/zu große Werte: nichts stürzt ab
         m = await g.ev("GameMenu.migrateSave({unlocked: 99, completed: [7, 'x', 2]})")
@@ -2890,13 +2891,13 @@ def level_teil(k, v):
 
 @test
 async def editor_rundreise_alle_level(g):
-    """Ausbau 2: Jedes Projekt-Level (1–8) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
+    """Ausbau 2: Jedes Projekt-Level (1–11) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
     die Spiel-Datei in levels/ (gleiche Daten) – Beweis, dass der Editor beim Umbau nichts verändert."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 8, liste   # Ausbau 7: Level 7 und 8
+        assert len(liste) == 11, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen)
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -2998,7 +2999,7 @@ async def editor_level_info(g):
         tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
         assert sorted(tree) == sorted([f'levels/editor-format/{NEU}', f'levels/{NEU}', 'levels/levels.json', 'levels/worlds.json']), sorted(tree)
         w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
-        assert w['wasser'] == [NEU] and w['ruinen'] == ['level-3.json', 'level-4.json'], w
+        assert w['wasser'] == [NEU] and w['ruinen'] == ['level-3.json', 'level-4.json', 'level-9.json', 'level-10.json', 'level-11.json'], w
         lv = json.loads(tree['levels/levels.json'])
         assert lv[-1] == {'datei': NEU, 'name': f'Level {n_neu}', 'titel': 'Tiefsee'} and len(lv) == len(projekt) + 1, lv[-2:]
         assert json.loads(tree[f'levels/{NEU}'])['welt'] == 'wasser'
@@ -3013,7 +3014,7 @@ async def editor_level_info(g):
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
         tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
         w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
-        assert w['vulkan'] == ['level-3.json', 'level-6.json'] and w['ruinen'] == ['level-4.json'], w
+        assert w['vulkan'] == ['level-3.json', 'level-6.json'] and w['ruinen'] == ['level-4.json', 'level-9.json', 'level-10.json', 'level-11.json'], w
         assert 'levels/levels.json' not in tree, 'levels.json ohne Änderung mitgeschickt'
     finally:
         await p.evaluate("localStorage.clear()")
@@ -3279,7 +3280,9 @@ async def welten_freischaltung(g):
         assert await g.ev("GameMenu.completeBoss('dschungel')") == 'ruinen'
         assert await g.ev(offen) == [True, True, False, False, False]
         assert await g.ev("['level-3.json', 'level-4.json'].map(f => GameMenu.levelUnlocked(nr(f) - 1))") == [True, False], 'in der Welt nicht Level für Level'
-        await fertig('level-3.json'); await fertig('level-4.json')
+        for d in ('level-3.json', 'level-4.json', 'level-9.json', 'level-10.json'): await fertig(d)   # Ausbau 7: Ruinen haben 5 Level
+        assert await g.ev(offen) == [True, True, False, False, False], 'Höhle offen, obwohl Level 11 fehlt'
+        await fertig('level-11.json')
         assert await g.ev("GameMenu.lastFreshWorld()") == 'hoehle' and await g.ev(offen) == [True, True, True, False, False]
         assert await fertig('level-5.json') == await nr('level-6.json') and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
         assert await g.ev(offen) == [True, True, True, False, True]
@@ -3307,7 +3310,7 @@ async def welten_freischaltung(g):
         assert await g.ev(offen) == [True, True, False, False, False]
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
         isl = await wk_inseln(g)
-        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 2 Level', '0 / 1 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel hat 4 Level, Ruinen bleiben offen
+        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 5 Level', '0 / 1 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5 Level; Ruinen bleiben offen
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()
@@ -4118,7 +4121,7 @@ async def editor_boss_github(g):
             return Object.fromEntries(files.map(f => [f.path, JSON.parse(f.content)]));
         }""", [worlds, lv])
         w = {x['id']: x for x in out['levels/worlds.json']['welten']}
-        assert w['ruinen']['boss'] == 'boss-2.json' and w['ruinen']['level'] == ['level-3.json', 'level-4.json'], w['ruinen']
+        assert w['ruinen']['boss'] == 'boss-2.json' and w['ruinen']['level'] == ['level-3.json', 'level-4.json', 'level-9.json', 'level-10.json', 'level-11.json'], w['ruinen']
         assert w['dschungel']['boss'] == 'boss-1.json'
         e = out['levels/levels.json'][-1]
         assert e['datei'] == 'boss-2.json' and e['versteckt'] and e['boss'], e

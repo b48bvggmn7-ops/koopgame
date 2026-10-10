@@ -831,8 +831,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Fallen-Köpfe und Lichtquellen nehmen im Spiel die Wandfarben des Levels an, nachts also auch dunkler.
     - Alte Level mit theme „ruinen“ (Level 3) sind unverändert. Test ruinen_welt_look.
 
-  - Level 9 „Fallengang“ (levels/level-9.json, Ruinen Level 3 der Welt, morgens, wechselndes Wetter, 806 Spalten): bis
-    es fertig ist in levels.json versteckt.
+  - Level 9 „Fallengang“ (levels/level-9.json, Ruinen Level 3 der Welt, morgens, wechselndes Wetter, 806 Spalten).
+    Lehr-Level für die Fallen.
     - Etappe 1 (Spalten 0–200):
       - Pfeil-Vorhänge: Fallen in der Decke schießen nach unten; warten, bis der Pfeil unten ist (beide).
       - Flammen-Tunnel: Das Schweinchen segelt unter dem Felsen durch zwei Flammen-Vorhänge. Hebel 1 oben auf dem Felsen
@@ -866,8 +866,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: der Doppelgang 604–680 ist ein einziges Rätsel).
     - Test level9_fallengang (Koop-Bot).
 
-  - Level 10 „Sonnentempel“ (levels/level-10.json, Ruinen Level 4 der Welt, abends, Regen, 800 Spalten): bis es fertig
-    ist in levels.json versteckt. Schwerpunkt Licht: Spiegel, die nur einer erreicht.
+  - Level 10 „Sonnentempel“ (levels/level-10.json, Ruinen Level 4 der Welt, abends, Regen, 800 Spalten).
+    Kombi-Level, Schwerpunkt Licht: Spiegel, die nur einer erreicht.
     - Etappe 1 (Spalten 0–200):
       - Erster Spiegel: Der Strahl läuft über den Köpfen, der Spiegel lenkt ihn hinauf zum Kristall → Tür 1 (beide).
       - Affen-Spiegel: hoch auf einem Sims, nur per Haken erreichbar; der Kristall im Boden öffnet Tür 2 für das
@@ -899,8 +899,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: die zwei Wege 401–474 sind ein einziges Rätsel).
     - Test level10_sonnentempel (Koop-Bot).
 
-  - Level 11 „Felsenflucht“ (levels/level-11.json, Ruinen Level 5 der Welt, mittags, Regen, 800 Spalten): bis es fertig
-    ist in levels.json versteckt. Meister-Level: der rollende Fels jagt die beiden. Ruhende Felsen liegen auf kleinen Simsen
+  - Level 11 „Felsenflucht“ (levels/level-11.json, Ruinen Level 5 der Welt, mittags, Regen, 800 Spalten).
+    Meister-Level: der rollende Fels jagt die beiden. Ruhende Felsen liegen auf kleinen Simsen
     über dem Weg und rollen herunter, sobald ihr Hebel gezogen ist (jeder Fels-Hebel öffnet auch ein Tor).
     - Etappe 1 (Spalten 0–200):
       - Erste Flucht: Hebel 1 öffnet Tor 1 und lässt hinter den beiden einen langsamen Fels los; über die Stufe springen,
