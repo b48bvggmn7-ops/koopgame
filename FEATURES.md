@@ -731,7 +731,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Stachelgrube: das Schweinchen prallt vom Pilz hoch und segelt zur unteren Landung mit Hebel 6 – öffnet Tür 6 oben;
       der Affe prallt hoch und nimmt zwei Haken auf den oberen Sims mit Hebel 7 – öffnet Tür 7 unten), fahrende Haken
       (Schweinchen steigt über Stege auf den Turm und segelt zu Hebel 8 am anderen Ufer; erst dann fahren die zwei Haken,
-      an denen der Affe rüberkommt – Zeitpunkt abpassen), Pilz-Treppe (drei Pilze auf Säulen, beide). Test level7_lianenschlucht
+      an denen der Affe rüberkommt – Zeitpunkt abpassen), Pilz-Treppe (drei Pilze auf Säulen, beide). Etappe 4 (600–800): Lianen-Staffel
+      (Meister-Stelle: das Schweinchen steigt über Stege aufs Blätterdach und segelt über zwei Lücken, der Affe hangelt
+      unten an Haken über die Stachelgrube zu zwei Säulen; Hebel 9/11 auf dem Dach öffnen die Türen des Affen, Hebel 10/12
+      auf den Säulen die Türen des Schweinchens – nur abwechselnd geht es weiter), Finale (zwei Pilze auf die Äste, die
+      letzte Schlucht segelt das Schweinchen, der Affe nimmt zwei Haken; Ziel auf dem Gipfel, Spalte 795). 16 Checkpoints,
+      142 Münzen (71 blau / 71 pink). Test level7_lianenschlucht
       (Koop-Bot tests/koop_bot.js spielt die Stellen nach).
 
 ## Level-Editor (editor/)

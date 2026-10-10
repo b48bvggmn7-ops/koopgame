@@ -808,7 +808,8 @@ async def level7_lianenschlucht(g):
     Hebel 2 fährt die Plattform für den Affen), Kamin (beide). Etappe 2: Brunnen (Affe am Seil an Hebel 3; das Schweinchen
     kommt im Flug nicht an den Hebel), Felsdecke (Schweinchen segelt durch den Tunnel, Affe per Haken auf den Felsen),
     Schleuse mit Graben (Druckplatte 5), Bröckel-Steine (beide). Etappe 3: Pilz-Kreuzung (Schweinchen Pilz + Segeln,
-    Affe Pilz + zwei Haken), fahrende Haken (nur mit Hebel 8 vom Schweinchen), Pilz-Treppe (beide)."""
+    Affe Pilz + zwei Haken), fahrende Haken (nur mit Hebel 8 vom Schweinchen), Pilz-Treppe (beide). Etappe 4:
+    Lianen-Staffel (Hebel 9–12 über Kreuz, Dach-Lücken segeln, Haken zu den Säulen), Finale (Pilze, Schlucht)."""
     await koop_level(g, 'level-7.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -902,6 +903,42 @@ async def level7_lianenschlucht(g):
         plan = [k_lauf(536), {'aim': [kx(t) for t in (546, 553, 560, 567)], 'jumps': [kx(540)], 'until': f'P.grounded && P.y <= {ky(7)} + 2', 'frames': 900}]
         r = await koop(g, **{who: kat(536, 14), other: kat(530, 14)}, plans={who: plan}, maxFrames=1500)
         soll(r.get('done'), f'Pilz-Treppe {who}', r.get('pos'))
+    if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    # 12) Lianen-Staffel: Schweinchen oben (Hebel 9/11, Lücken segeln), Affe unten an Haken (Hebel 10/12 auf Säulen)
+    plan = sum([k_hop(kx(e) + 20, b) for e, b in ((587, 16), (590, 12), (593, 16), (596, 12), (599, 8), (602, 24))], [])
+    r = await koop(g, f=kat(584, 14), m=kat(582, 14), plans={'f': plan + [k_lauf(615, -10), {'use': True, 'frames': 5}]}, maxFrames=3000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 2 and await g.ev("!!linkOn[9]"), 'Stege aufs Dach + Hebel 9 (Schweinchen)', r.get('pos'))
+    for x0, kante, ziel, links in ((620, 626, (637, 650), [10]), (645, 650, (661, 676), [10, 12])):
+        r = await koop(g, f=kat(x0, 2), m=kat(kante - 6, 2), plans={'f': k_segeln(kante, 10)}, links=links, maxFrames=1500)
+        soll(k_pos(r, 'f') and ziel[0] <= k_pos(r, 'f')[0] <= ziel[1] and k_pos(r, 'f')[1] == 2, f'Dach-Lücke bis {ziel[0]} (Schweinchen)', r.get('pos'))
+    async def affe(start, links, ziel, n, rels):
+        for rel in rels:
+            for d in (0, -10, 10):
+                plan = k_haken(n, rel, start[0] + 1, d)
+                plan[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(ziel[1])} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
+                r = await koop(g, m=kat(*start), f=kat(start[0] + 2, 2), plans={'m': plan}, links=links, maxFrames=2500)
+                if k_pos(r, 'm') and ziel[0] - 0.6 <= k_pos(r, 'm')[0] <= ziel[1] + 0.6 and k_pos(r, 'm')[1] == ziel[2]: return True
+        return False
+    R1, R2 = 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'
+    R3, R4 = 'P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 2'
+    soll(await affe((610, 14), [], (620, 621, 9), 1, (R1, R2, R3, R4)), 'Rand -> Haken -> Säule A (Affe)')
+    soll(await affe((620, 9), [9], (638, 640, 9), 2, (R1, R2, R3, R4)), 'Säule A -> Säule B mit Tür 9 offen (Affe)')
+    soll(not await affe((620, 9), [], (638, 640, 9), 2, (R1, R2, R3, R4)), 'ohne Tür 9 kommt der Affe nicht zur Säule B')
+    soll(await affe((638, 9), [9, 11], (663, 680, 14), 2, (R1, R2)), 'Säule B -> Ufer mit Tür 11 offen (Affe)')
+    # 13) Finale: zwei Pilze auf die Äste (beide), letzte Schlucht: Schweinchen segelt, Affe zwei Haken
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = [k_lauf(689), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(692)} - 6'}, 'until': 'P.vy < -14', 'frames': 100},
+                {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(699), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6},
+                {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(702)} - 6'}, 'until': 'P.vy < -14', 'frames': 100}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+        r = await koop(g, **{who: kat(684, 14), other: kat(680, 14)}, plans={who: plan}, maxFrames=2000)
+        soll(k_pos(r, who) and k_pos(r, who)[1] == 4, f'Pilze auf die Äste {who}', r.get('pos'))
+    ok = False
+    for hold in (1, 6, 12):
+        r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': k_segeln(713, hold)}, maxFrames=1500)
+        ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 727 and k_pos(r, 'f')[1] == 8)
+    soll(ok, 'letzte Schlucht (Schweinchen)')
+    soll(await affe((711, 4), [], (727, 745, 8), 2, (R1, R2)), 'letzte Schlucht mit zwei Haken (Affe)')
     assert not fehler, fehler
 
 @test
