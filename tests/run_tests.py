@@ -1391,7 +1391,8 @@ async def level10_sonnentempel(g):
 async def level11_felsenflucht(g):
     """Ausbau 7, Ruinen Level 5 „Felsenflucht“ (levels/level-11.json, mittags, Regen): der rollende Fels jagt die beiden.
     Etappe 1: erste Flucht (langsamer Fels, zerschellt an der Stufe), Fels und Grube (Affe Haken, Schweinchen segelt),
-    Flucht nach oben auf die Stege (schneller Fels rollt darunter durch)."""
+    Flucht nach oben auf die Stege (schneller Fels rollt darunter durch).
+    Etappe 2: Pfeil-Flucht, Schleuse mit Fels (Platte halten, Hebel 6, Fels zerschellt an Tür 5), Flammen-Welle mit Fels."""
     await koop_level(g, 'level-11.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -1419,6 +1420,34 @@ async def level11_felsenflucht(g):
     r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'f': [k_lauf(108, 0)] + am(110) + [k_lauf(168)]}, maxFrames=1200)
     soll(r.get('dead'), 'unten bleiben = überrollt', info(r))
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    def pfeile(cs):   # vor jedem Pfeil-Vorhang warten, bis der Pfeil steckt – oder weiter, wenn der Fels zu nahe ist
+        pl = []
+        for c in cs:
+            pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 150)'}, k_lauf(c + 2)]
+        return pl
+    pl = {'m': [k_lauf(208, 0)] + am(210) + pfeile((230, 238, 246)) + [k_lauf(255, 0)] + sprung_zu(kx(261)) + [k_lauf(262)],
+          'f': [{'wait': '!!linkOn[4]'}] + pfeile((230, 238, 246)) + [k_lauf(254, 0)] + sprung_zu(kx(260)) + [k_lauf(261), {'wait': 'felsen[3].weg'}]}
+    r = await koop(g, m=kat(212, 15), f=kat(214, 15), plans=pl, maxFrames=4000)
+    soll(r.get('done') and await g.ev("felsen[3].weg"), 'Pfeil-Flucht', info(r))
+    halten = {'holdIf': {'right': f'P.x < {kx(299)} - 3', 'left': f'P.x > {kx(299)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(299)}) <= 3', 'frames': 200}
+    m = [k_lauf(285, 0)] + am(287) + [k_lauf(318), {'wait': 'felsen[4].weg'}]
+    r = await koop(g, m=kat(280, 15), f=kat(290, 15), plans={'m': m, 'f': [halten, {'wait': f'Q.x > {kx(301)}'}, k_lauf(318)]}, maxFrames=3000)
+    soll(r.get('done') and await g.ev("felsen[4].weg"), 'Schleuse: Platte halten, Hebel 6, durch – Fels zerschellt an Tür 5', info(r))
+    m = [k_lauf(298, 0), {'wait': '!!linkOn[5]'}, k_lauf(312)]
+    r = await koop(g, m=kat(292, 15), f=kat(290, 15), plans={'m': m, 'f': [halten, {'wait': f'Q.x > {kx(301)}'}, k_lauf(318)]}, maxFrames=1500)
+    soll(r['pos']['f'][0] < 316, 'ohne Hebel 6 kein Weiterkommen', r.get('pos'))
+    def welle():
+        pl = []
+        for c in range(346, 379, 4):
+            fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+            pl += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 30'}, k_lauf(c + 1)]
+        return pl
+    pl = {'f': [k_lauf(328, 0)] + am(330) + welle() + [k_lauf(385, 0)] + sprung_zu(kx(391)) + [k_lauf(392), {'wait': 'felsen[5].weg'}],
+          'm': [{'wait': '!!linkOn[7]'}] + welle() + [k_lauf(384, 0)] + sprung_zu(kx(390)) + [k_lauf(391)]}
+    r = await koop(g, m=kat(332, 15), f=kat(327, 15), plans=pl, maxFrames=5000)
+    soll(r.get('done'), 'Flammen-Welle mit Fels im Nacken', info(r))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     assert not fehler, fehler
 
 @test

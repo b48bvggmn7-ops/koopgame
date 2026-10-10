@@ -909,6 +909,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         den Haken; der Fels stürzt in die Grube.
       - Flucht nach oben: Hebel 3 startet einen SCHNELLEN Fels (schneller als die Figuren) – rauf auf die Stege (von unten
         durchspringen), der Fels rollt darunter durch und zerschellt an der Mauer.
+    - Etappe 2 (Spalten 200–400):
+      - Pfeil-Flucht: Hebel 4 startet einen langsamen Fels; vorne fallen Pfeile im Takt – nur kurz warten, sonst holt der
+        Fels auf.
+      - Schleuse mit Fels: Das Schweinchen hält Druckplatte 5 (Tür 5 offen). Der Affe zieht Hebel 6 (Tor 6 vorne auf,
+        hinten rollt ein Fels los), rennt durch Tür 5, das Schweinchen geht direkt hinterher; Tür 5 schließt hinter beiden
+        und der Fels zerschellt daran. Wer Hebel 6 vergisst, steht vor Tor 6 und muss neu anfangen.
+      - Flammen-Welle mit Fels im Nacken: vor jeder Flamme kurz warten, der langsame Fels kommt näher.
     - Test level11_felsenflucht (Koop-Bot).
 
 ## Level-Editor (editor/)
