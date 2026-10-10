@@ -805,7 +805,9 @@ async def level2_und_3_regeln(g):
 async def level7_lianenschlucht(g):
     """Ausbau 7, Dschungel Level 3 „Lianenschlucht“ (levels/level-7.json): Koop-Bot spielt die Stellen jeder Etappe nach.
     Etappe 1: Steg-Treppe (beide), Seil-Aufzug (Affe zieht sich hoch, Hebel 1), Segel-Schlucht (nur Schweinchen,
-    Hebel 2 fährt die Plattform für den Affen), Kamin (beide)."""
+    Hebel 2 fährt die Plattform für den Affen), Kamin (beide). Etappe 2: Brunnen (Affe am Seil an Hebel 3; das Schweinchen
+    kommt im Flug nicht an den Hebel), Felsdecke (Schweinchen segelt durch den Tunnel, Affe per Haken auf den Felsen),
+    Schleuse mit Graben (Druckplatte 5), Bröckel-Steine (beide)."""
     await koop_level(g, 'level-7.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -833,6 +835,42 @@ async def level7_lianenschlucht(g):
         plan = [k_lauf(151, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(153)}', 'frames': 900}, k_lauf(165)]
         r = await koop(g, **{who: kat(145, 12), other: kat(140, 12)}, plans={who: plan}, maxFrames=2500)
         soll(r.get('done'), f'Kamin {who}', r.get('pos'))
+    if await g.ev("goal.x") < 380 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    # 5) Brunnen: Affe hängt am Seil (S), legt Hebel 3 um (J), zieht sich hoch (W), schwingt rüber
+    plan = [k_lauf(225, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'hold': ['slack'], 'until': f'P.y > {ky(12)} + 10', 'frames': 120}, {'frames': 60, 'pressIf': {'use': 'f % 10 === 0'}, 'until': '!!linkOn[3]'},
+            {'hold': ['pull'], 'until': f'P.y < {ky(12)}', 'frames': 120}, {'swing': True, 'pull': 0, 'release': f'P.x > {kx(230)} + 20 && P.vy < 0 && P.vx > 2'},
+            {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+            {'swing': True, 'pull': 0, 'release': f'P.x > {kx(235)} + 20 && P.vy < 0 && P.vx > 1'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(239)]
+    r = await koop(g, m=kat(220, 14), f=kat(214, 14), plans={'m': plan}, maxFrames=3000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 238 and k_pos(r, 'm')[1] == 14, 'Brunnen (Affe am Seil, Hebel 3)', r.get('pos'))
+    plan = [k_lauf(225, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'pressIf': {'use': 'f % 2 === 0'}, 'until': 'P.grounded', 'frames': 300}]
+    r = await koop(g, f=kat(220, 14), m=kat(214, 14), plans={'f': plan}, maxFrames=1500)
+    soll(not await g.ev("!!linkOn[3]"), 'Schweinchen legt Hebel 3 nicht im Flug um')
+    # 6) Felsdecke: Schweinchen segelt durch den Tunnel, Affe zieht sich auf den Felsen
+    ok = False
+    for hold in (4, 10, 16):
+        r = await koop(g, f=kat(249, 11), m=kat(247, 11), plans={'f': k_segeln(252, hold)}, maxFrames=1500)
+        ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 267.5 and k_pos(r, 'f')[1] == 15)
+    soll(ok, 'Tunnel (Schweinchen)')
+    plan = [k_lauf(247, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(246, 11), f=kat(243, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5, 'Affe auf den Felsen', r.get('pos'))
+    # 7) Schleuse: Affe hält Platte 5, Schweinchen durch Tür 5 und über den Graben; dann Affe per Haken
+    m = [k_lauf(282, -10), {'frames': 20}, {'wait': f'Q.x >= {kx(304)}'}]
+    f = [{'wait': '!!linkOn[5]'}] + k_hop(kx(289) - 10, 8) + [k_lauf(293, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
+         {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300}, k_lauf(307, -10), {'frames': 10}]
+    r = await koop(g, m=kat(279, 15), f=kat(286, 15), plans={'m': m, 'f': f}, maxFrames=3000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 304, 'Schleuse (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_haken(1, f'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 292, -10)}, links=[5], maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 304 and k_pos(r, 'm')[1] == 15, 'Graben (Affe am Haken)', r.get('pos'))
+    # 8) Bröckel-Steine (beide)
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = sum([k_hop(kx(e) + 20, b) for e, b in ((330, 16), (334, 20), (339, 20), (344, 20), (349, 24))], [])
+        r = await koop(g, **{who: kat(327, 15), other: kat(325, 15)}, plans={who: plan}, maxFrames=2500)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 352.5, f'Bröckel-Steine {who}', r.get('pos'))
     assert not fehler, fehler
 
 @test

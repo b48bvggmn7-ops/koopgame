@@ -723,7 +723,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Level 7 „Lianenschlucht“ (levels/level-7.json, Dschungel Level 3, mittags, Dauerregen) – IN ARBEIT, bis es fertig
       ist in levels.json versteckt (noch nicht auf der Weltkarte). Etappe 1 (Spalten 0–200): Steg-Treppe über die Mauer
       (beide), Seil-Aufzug (Affe zieht sich am Haken auf den Sims, Hebel 1 öffnet Tür 1), Segel-Schlucht (nur das
-      Schweinchen segelt rüber zu Hebel 2, der fährt die Plattform mit dem Affen), Kamin (beide). Test level7_lianenschlucht
+      Schweinchen segelt rüber zu Hebel 2, der fährt die Plattform mit dem Affen), Kamin (beide). Etappe 2 (200–400): Brunnen (Hebel 3 hängt tief über den
+      Stacheln – der Affe lässt sich am Seil herunter, J, zieht sich hoch und schwingt weiter; Tür 3), Felsdecke (das
+      Schweinchen segelt im Tunnel unter dem Felsen zu Hebel 4, der Affe zieht sich am Haken auf den Felsen, Tür 4 oben),
+      Schleuse mit Graben (Druckplatte 5 auf beiden Seiten hält Tür 5 offen; über den Graben segelt das Schweinchen, der
+      Affe nimmt den Haken), Bröckel-Steine (beide). Test level7_lianenschlucht
       (Koop-Bot tests/koop_bot.js spielt die Stellen nach).
 
 ## Level-Editor (editor/)
