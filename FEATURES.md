@@ -875,6 +875,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       - Schweinchen-Spiegel: Das Schweinchen segelt von der Treppe auf eine Insel und dreht den Spiegel; der Kristall lässt
         eine Brücke (Wechselboden) für den Affen erscheinen.
       - Spiegel zwischen zwei Pfeil-Vorhängen → Tür 4 (beide).
+    - Etappe 2 (Spalten 200–400):
+      - Zwei-Spiegel-Kette: Das Licht fällt von oben auf den Affen-Spiegel (Sims per Haken) und muss weiter zum
+        Schweinchen-Spiegel auf einer Insel (nur übers pinke Tor und segelnd erreichbar) → Kristall → Tür 5. Der Affe
+        schwingt an zwei Haken über die Grube, das Schweinchen segelt.
+      - Licht-Takt: Ein Takt-Stein (1,5 s) unterbricht den Strahl, Tür 6 ist nur jede zweite Phase offen; direkt vor
+        der Tür fällt ein Pfeil im Takt (nicht an der Tür warten!).
+      - Flammen-Tunnel mit Kristall: Das Schweinchen hält Druckplatte 7 (ein Trittstein erscheint), der Affe springt
+        darauf, greift den Haken und dreht oben den Spiegel → der Kristall stellt die Flammen im Tunnel ab.
     - Test level10_sonnentempel (Koop-Bot).
 
 ## Level-Editor (editor/)
