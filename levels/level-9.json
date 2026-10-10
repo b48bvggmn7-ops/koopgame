@@ -970,6 +970,10 @@
    "y": 640
   },
   {
+   "x": 11940,
+   "y": 640
+  },
+  {
    "x": 14020,
    "y": 640
   },
@@ -3936,6 +3940,10 @@
  "lichtquellen": [],
  "spiegel": [],
  "kristalle": [],
+ "eis": [],
+ "baender": [],
+ "leuchtkristalle": [],
+ "dunkelzonen": [],
  "welt": "ruinen",
  "tageszeit": "morgen",
  "wetter": "wechselnd"

@@ -1209,7 +1209,7 @@ async def level9_fallengang(g):
                                 **{who: kat(537, 15), other: kat(535, 15)}, maxFrames=4000), f'Takt unter Pfeil-Vorhängen ({who})')
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
-    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
     luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61 and a != 604]   # Ausnahme: Flammen-Doppelgang 604–680 (ein Rätsel)
     soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
     def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
@@ -1359,7 +1359,7 @@ async def level10_sonnentempel(g):
     soll(r.get('done'), 'Schweinchen läuft der Flammen-Welle nach', r.get('pos'))
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
-    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
     luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61 and a != 401]   # Ausnahme: zwei Wege 401–474 (ein Rätsel)
     soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
     r = await koop(g, m=kat(620, 15), f=kat(618, 15), plans={'m': haken(625, 9, 30) + am(631)}, maxFrames=1500)
@@ -1472,7 +1472,7 @@ async def level11_felsenflucht(g):
     soll(r.get('done') and await g.ev("felsen[8].weg"), 'Wechsel-Schleuse auf der Flucht', info(r))
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
-    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
     luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 62 and a not in (100, 320, 402, 602)]   # Ausnahme: jede Verfolgung am Stück
     soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander (außer in Verfolgungen)', luecken)
     steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
@@ -1660,7 +1660,7 @@ async def level12_tropfsteingang(g):
         soll(r['pos']['f'][0] < 727, 'E4 ohne Platte 10 kein Durchkommen im Tunnel', r.get('pos'))
         r = await koop(g, m=kat(746, 15), f=kat(744, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=1500)
         soll(r.get('done'), 'E4 Ziel', r.get('pos'))
-    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
     soll(all(b - a <= 62 for a, b in zip(cps, cps[1:])), 'Checkpoints höchstens ~60 Spalten auseinander', cps)
     assert not fehler, fehler
 
