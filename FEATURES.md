@@ -742,7 +742,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       versteckt. Etappe 1 (Spalten 0–130, Wechselboden lernen): Segel-Brücke (das Schweinchen segelt vom Baumstumpf
       über die Grube zu Hebel 1 – die Brücke B erscheint für den Affen), Haken-Tor (der Affe zieht sich am Haken auf den
       Sims, Hebel 2 lässt die Wand A verschwinden), Takt-Steine (A/B wechseln alle 2 s; springen, wenn es blinkt).
-      Test level8_gluehwald.
+      Etappe 2 (130–300, Teleporter lernen): Tor 1 für beide durch den Felsen; blaues und pinkes Tor (das pinke Tor bringt
+      das Schweinchen über Mauer 1 auf einen Sims mit Hebel 3 = Tür 3 für den Affen, das blaue Tor den Affen über Mauer 2
+      zu Hebel 4 = Tür 4 für das Schweinchen); Teleporter-Schleuse (Tor 4 über die breite Grube geht nur, solange jemand
+      auf einer Druckplatte 5 steht – je eine an jedem Ufer). Test level8_gluehwald.
 
 ## Level-Editor (editor/)
 ```
