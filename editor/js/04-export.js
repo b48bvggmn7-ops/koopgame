@@ -102,8 +102,11 @@ function testSpot(){
   return null;
 }
 // Rückkehr aus dem Test (index.html -> editor/index.html?from=test): dorthin scrollen, wo die Figuren zuletzt
-// standen (so, dass „Testen“ wieder genau dort startet: Figuren bei 1/3 der Ansicht); sonst an die alte Stelle
-if(/[?&]from=test\b/.test(location.search)){
+// standen (so, dass „Testen“ wieder genau dort startet: Figuren bei 1/3 der Ansicht); sonst an die alte Stelle.
+// Erst NACH dem Laden des Levels (99-start.js) – vorher ist das Raster noch nicht breit genug (sonst blieb die
+// Ansicht manchmal ganz links stehen).
+function scrollNachTest(){
+  if(!/[?&]from=test\b/.test(location.search)) return;
   let px = NaN, focus = NaN;
   try{ px = Number(localStorage.getItem('monchichi_editor_scroll')); }catch(e){}
   try{ focus = Number(localStorage.getItem('monchichi_editor_focus') ?? NaN); localStorage.removeItem('monchichi_editor_focus'); }catch(e){}

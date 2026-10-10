@@ -567,6 +567,10 @@ function linkTargets(link){
   for(const h of hooks){
     if(h.moving && h.switchCtl && h.switchLink===link) pts.push({x:h.x+18, y:h.y-18, kind:'hook', active:h.tripActive});
   }
+  for(const s of solids){   // Wechselboden (elemente/wechselboden.js): eine Plakette je Reihe (Säule: nur oben), mitten darauf
+    if(s.type==='wechsel' && s.link===link && !(s.takt > 0) && s.reiheStart &&
+       !solids.some(o=>o.type==='wechsel' && o.link===link && o.gruppe===s.gruppe && Math.abs(o.x-s.x)<1 && Math.abs(o.y+o.h-s.y)<1)) pts.push({x:s.x+s.reiheBreite/2, y:s.y+s.h/2+3, kind:'wechsel', active:!s.gone});
+  }
   return pts;
 }
 
@@ -588,6 +592,7 @@ function drawSolidLook(s, look, x){
   }
   // (Fahrweg-Linien/Umrisse bewegter Böden auf Nutzerwunsch entfernt)
   for(const s of solids){
+    if(ELEMENT_SOLID_TYPEN.has(s.type)) continue;   // zeichnet sich selbst (elemente/, z. B. Wechselboden)
     if(s.gone){
       if(s.type==='crumble' && s.fragments) drawCrumbleBreak(s);
       if(s.type==='door'){ const dx = s.x-camX; if(dx+s.w >= -20 && dx <= VW+20) drawDoor(s, dx, linkColor(s.link)); }

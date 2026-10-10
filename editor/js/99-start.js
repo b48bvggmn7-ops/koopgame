@@ -4,6 +4,7 @@
 // Start: gespeicherten Arbeitsstand laden, Tastenkürzel, Zeichnen starten.
 
 load();
+scrollNachTest();   // zurück aus dem Test: zu den Figuren scrollen (04-export.js)
 histReset();   // Rückgängig-Verlauf beginnt mit dem geladenen Stand (08-auswahl.js)
 updateName();
 updateLinkMarks();
@@ -25,3 +26,4 @@ window.addEventListener('keydown', e=>{
 });
 
 draw();
+window.editorBereit = true;   // Editor fertig geladen (Tests warten darauf)

@@ -42,6 +42,7 @@ function continueAfterDeath(){
   for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; } }
   linkOn = {};   // alle Hebel wieder aus
   resetMovers();
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.zuruecksetzen) E.spiel.zuruecksetzen();   // z. B. Wechselboden (elemente/)
   nudgeFree(p1); nudgeFree(p2);
   // die Taste zum Weitermachen soll nicht gleich springen/Haken schießen
   for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false;

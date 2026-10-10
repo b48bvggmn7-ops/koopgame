@@ -464,6 +464,24 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Dateien. Verhalten und Aussehen unverändert (Startbilder und Pilz-/Aufwind-Stellen der Levels per Screenshot
     verglichen: identisch; Editor-Export aller Level Byte für Byte gleich). Test element_register; Checkliste
     „Neues Element hinzufügen“ in CLAUDE.md.
+  - WECHSELBODEN (Ausbau 4, elemente/wechselboden.js; Spiel-Feld switchFloors [{x, y, w, h, gruppe 'A'|'B', link | takt}],
+    im Spiel solids type 'wechsel'): Boden-Kästchen in zwei gegenläufigen Gruppen.
+      Per Nummer (Hebel oder Druckplatte): Gruppe A ist fest, solange die Nummer AUS ist, Gruppe B, solange sie AN ist –
+        ein Hebelzug tauscht also A und B. Plakette mit Nummer (eine je Reihe, bei Säulen oben) wie bei Türen.
+      Takt-Variante: wechselt von selbst alle X Sekunden (1,5 / 2 / 3 / 4 / 6), A und B abwechselnd; 1 Spielsekunde vorher
+        blinkt der Boden (immer schneller) und drei leise Holz-Ticks warnen; kleine Uhr am Anfang jeder Reihe.
+      Aussehen: A türkis mit schrägen STREIFEN, B orange mit PUNKTEN (unterscheidbar auch ohne Farbe); nicht fester Boden
+        ist ein gestrichelter „Geist“ mit zartem Muster (man sieht, wo er wieder erscheint); kurzes Aufleuchten beim Wechsel.
+      Sicherheit (Entscheidung Ausbau 4): Steht eine Figur dort, wo Boden gerade fest werden soll, wartet GENAU dieses
+        Kästchen (pulsierender Umriss), bis sie weg ist – wie eine Tür, die erst schließt, wenn niemand darin steht.
+        Niemand wird eingeklemmt oder durch den Boden geschoben. Verschwinden geht sofort (dann fällt man, wie beim
+        Bröckelboden). Gilt auch beim Neustart/Checkpoint (Takt-Uhr beginnt dort wieder bei 0, Hebel aus).
+      Ton: erscheinen = weicher Holz-Klack, verschwinden = Wusch nach unten (nur wenn im Bild).
+      Welche Rolle haben Affe und Schweinchen? Per Hebel/Druckplatte: einer schaltet bzw. hält die Platte, der andere läuft
+        über den Boden, der gerade da ist – keiner kommt allein durch, wenn A und B klug verteilt sind. Im Takt: das
+        Schweinchen „wartet“ mit offenem Schirm in der Luft, bis die nächsten Steine erscheinen; der Affe wartet am Haken
+        hängend oder überbrückt mit dem Seil. Keine Figur wird überflüssig.
+      Testlevel levels/test/wechselboden.json (index.html?testlevel=wechselboden). Tests wechselboden, editor_wechselboden.
   - PACKAGES & COSMETICS (js/26-kosmetik-daten.js, 27-kosmetik-zeichnen.js, 28-packages.js, css/packages.css):
       Rein optisch – KEIN Spielvorteil (Tempo, Sprung, Kollision, Münzen, Level unverändert; Test cosmetics_kein_vorteil).
       Vergabe: pro geschafftem Level je Figur 1 Package, +1 wenn ALLE Münzen des Levels gesammelt (max. 2).
@@ -595,6 +613,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Neue Werkzeuge: Scheinwand (Kachel, gestrichelt mit „?“; im Spiel durchlaufbar), Aufwind (Kachel, hellblau mit
     Pfeil; trägt das Schweinchen mit Schirm), Sprungpilz (Punkt), Druckplatte (Punkt mit Verknüpfungs-Nummer, wie
     Schalter; erscheint in den ✓-Markierungen als „Druckplatte“). Scheinwand und Aufwind lassen sich nicht bewegen.
+  - Wechselboden (Ausbau 4, Gruppe „Schalter & Logik“, ziehbar): daneben die Auswahl „Gruppe“ (A ▨ türkis / B ⠿ orange)
+    und „Takt“ (per Nummer oder alle 1,5–6 s). Neue Kästchen bekommen Gruppe, Takt und die gewählte Verknüpfung;
+    Klick auf ein vorhandenes Kästchen tauscht A/B. Im Raster mit Muster, Buchstabe und Nummer bzw. „⏱ Sekunden“;
+    ✓-Markierung „Wechselboden“ (nur für Kästchen per Nummer). Kopieren/Einfügen und Rückgängig wie bei allen Punkten.
   - (früher: Auswahl „Thema“ oben – Aussehen des Levels im Spiel (Dschungel, Abendrot, Tempelruinen, Mondnacht,
     Kristallhöhle, Feuerberg) als "theme"; auf Nutzerwunsch in Ausbau 2 ersetzt durch „Level-Info“, die Themen gibt
     es dort weiter als „Look-Override“.)
@@ -619,7 +641,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Esc beendet den Test sofort (ohne Pausenmenü, auch auf dem Tod-Bildschirm) und führt zurück in den Editor –
     an die Stelle, an der die Figuren gerade stehen (hintere Figur bei ~1/3 der Ansicht, Nutzerwunsch: testen und
     gleich dort anpassen; erneut Enter startet wieder dort). Fallback: Stelle, an der „Testen“ geklickt wurde
-    (editor/index.html?from=test, localStorage monchichi_editor_focus bzw. monchichi_editor_scroll). Options/☰ öffnen im Test das Pausenmenü mit „✏️ Zurück zum Editor (Esc)“. Fürs schnelle Ausprobieren;
+    (editor/index.html?from=test, localStorage monchichi_editor_focus bzw. monchichi_editor_scroll); das Scrollen passiert erst, wenn das Level im Editor fertig geladen ist – vorher blieb die Ansicht auf langsamen Rechnern manchmal ganz links stehen, Ausbau 4). Options/☰ öffnen im Test das Pausenmenü mit „✏️ Zurück zum Editor (Esc)“. Fürs schnelle Ausprobieren;
     für alle sichtbar wird ein Level weiterhin erst über das Projekt (levels/).
   - ✕ oben rechts schließt den Editor und führt zurück zum Spiel (Hauptmenü); Arbeitsstand bleibt im Browser
   - Fenster „Levels“ zeigt zusätzlich „Levels im Projekt“ (aus levels/levels.json) und lädt sie per „Laden“

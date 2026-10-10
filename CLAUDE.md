@@ -38,7 +38,8 @@
 - `elemente/` – **Element-Register** (Ausbau 2): eine Datei pro Spiel-Element mit allem, was dazugehört (Daten-Feld,
   Editor-Werkzeug + Zeichnen + Export, Spiel-Laden + Zeichnen + Logik). Spiel UND Editor laden diese Dateien zuerst.
   Umgestellt: `hebel.js`, `tuer.js`, `druckplatte.js` (Punkt-Elemente mit Verknüpfungs-Nummer), `sprungpilz.js`
-  (Punkt-Element), `aufwind.js` (Kachel-Element); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  (Punkt-Element), `aufwind.js` (Kachel-Element); Ausbau 4: `wechselboden.js` (Punkt mit Nummer/Takt, eigene Auswahl-Felder
+  `optionen`, Logik pro Schritt `spiel.schritt`, Neustart `spiel.zuruecksetzen`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `assets/` – Bilder (Figuren, Schild …); `assets/audio/` – eigene Aufnahmen des Nutzers (FL Studio).
 - `editor/` – Level-Editor: `editor/index.html` lädt `editor/js/*.js` in fester Reihenfolge (klassische Skripte,
@@ -83,7 +84,9 @@
 6. Element mit Verknüpfungs-Nummer: `editor.mitNummer: true` + `nummerName` (Muster `hebel.js`); was beim An/Aus der
    Nummer passiert, gehört ins Verknüpfungs-System in `js/05-level-objekte.js`. Sonderfälle in der Figuren-Physik
    (z. B. Aufwind beim Segeln) bleiben in `js/08-figur-physik-seil.js`, die Werte/Hilfsfunktionen in der Element-Datei.
-7. Zeichen-Hilfen, die Elemente brauchen (z. B. `linkColor`), müssen außerhalb von `draw()` stehen (12-welt-zeichnen.js).
+7. Eigene Auswahl-Felder im Editor: `editor.optionen`; eigene solids-Sorte, die das Element selbst zeichnet:
+   `ELEMENT_SOLID_TYPEN.add('<type>')` (Muster `wechselboden.js`).
+8. Zeichen-Hilfen, die Elemente brauchen (z. B. `linkColor`), müssen außerhalb von `draw()` stehen (12-welt-zeichnen.js).
 
 ## Steuerung (Kurzfassung)
 | | Affe (Spieler 1) | Schweinchen (Spielerin 2) | Controller |

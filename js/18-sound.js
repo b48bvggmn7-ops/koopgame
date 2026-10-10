@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -168,6 +168,11 @@ function* sfxBuild(a, out){
                      for(let i = 0; i < len; i++){ const k = i/len, f = 260 + 300*Math.sin(Math.PI*Math.min(1, k*1.6))*Math.exp(-k*2) + Math.sin(i/SR*2*Math.PI*28)*25;
                        ph += 2*Math.PI*f/SR; const v = Math.sin(ph)*Math.exp(-k*4)*Math.min(1, i/200)*0.8; b.L[st + i] += v*0.7; b.R[st + i] += v*0.7; }
                      grains(b, 0, 0.05, 10, 1500, 4000, 0.0006, 0.002, 0.3, 0.2); return b; },
+    // Wechselboden (Ausbau 4): erscheint = weicher Holz-Klack mit Luftpolster, verschwindet = Wusch nach unten mit
+    // Rieseln, Vorwarnung = drei leise Holz-Ticks (kein Klingeln)
+    wechselAn: ()=>{ const b = mk(0.4); thump(b, 0, 170, 110, 0.09, 0.6); modal(b, 0.005, rnd(520, 600), wood, 0.02, 0.8, 0, 0.6); puff(b, 0, 0.12, 1400, 0.35, 0, 0.05); return b; },
+    wechselAus:()=>{ const b = mk(0.45); swish(b, 0, 0.32, 2200, 450, 1.2, 0.8, 0, 0.15); grains(b, 0.02, 0.3, 40, 2500, 7000, 0.0003, 0.001, 0.3, 0.7, 'decay'); return b; },
+    wechselTick:()=>{ const b = mk(0.55); for(let i = 0; i < 3; i++) modal(b, i*0.17, 1900, wood, 0.004, 0.55 + i*0.15, 0, 0.7); return b; },
     frog:      ()=>{ const b = mk(0.45); for(const t0 of [0, 0.16]){ for(let i = 0; i < 7; i++) modal(b, t0 + i*0.016, rnd(380, 430), [[1, 1], [2.8, 0.6], [4.2, 0.3]], 0.012, 0.6, 0, 0.3); } return b; },
     discover:  ()=>{ const b = mk(0.9); swish(b, 0, 0.5, 400, 1800, 1.0, 0.6, 0, 0.3);
                      grains(b, 0.05, 0.6, 50, 1200, 4500, 0.0004, 0.0015, 0.35, 0.5, 'decay'); modal(b, 0.05, 220, wood, 0.08, 0.5, 0, 0.4); return b; },
@@ -255,6 +260,8 @@ const SFX = {
   checkpoint(x){ sfxLog('checkpoint'); sfxPlay('checkpoint', {x}); },
   coin(combo, x){ sfxLog('coin'); return sfxPlay('coin', {x, rate: Math.pow(2, combo/12)}); },
   mushroom(x){ sfxLog('mushroom'); sfxPlay('mushroom', {x}); },
+  wechsel(fest, x){ sfxLog(fest ? 'wechselan' : 'wechselweg'); sfxPlay(fest ? 'wechselAn' : 'wechselAus', {x}); },   // Wechselboden
+  wechselWarn(x){ sfxLog('wechselwarn'); sfxPlay('wechselTick', {x}); },
   frog(x){ sfxLog('frog'); sfxPlay('frog', {x}); },
   discover(x){ sfxLog('discover'); sfxPlay('discover', {x}); },
   bud(x){ sfxLog('bud'); sfxPlay('bud', {x}); },

@@ -12,6 +12,21 @@ for(const E of ELEMENTE){
   // vor: Werkzeug-Name, oder '#id' = vor das Feld mit dieser id (z. B. „Verknüpfung“)
   const vor = !ed.vor ? null : ed.vor[0] === '#' ? (box.querySelector(ed.vor) || {}).closest && box.querySelector(ed.vor).closest('label') : box.querySelector(`.tool[data-tool="${ed.vor}"]`);
   box.insertBefore(b, vor || null);
+  // eigene Einstellungen des Elements (Ausbau 4, z. B. Wechselboden: Gruppe A/B und Takt) direkt hinter dem Knopf
+  for(const o of (ed.optionen || [])){
+    const lab = document.createElement('label'); lab.title = o.titel || '';
+    lab.style.cssText = 'font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;';
+    const sel = document.createElement('select'); sel.id = `opt-${ed.werkzeug}-${o.key}`;
+    sel.style.cssText = 'background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;';
+    for(const [wert, text] of o.werte){ const op = document.createElement('option'); op.value = wert; op.textContent = text; sel.appendChild(op); }
+    lab.append(o.label, sel); box.insertBefore(lab, vor || null);
+  }
+}
+// aktuell gewählte Einstellungen eines Elements (siehe optionen im Register)
+function elementOptionen(E){
+  const out = {};
+  for(const o of (E.editor.optionen || [])){ const v = document.getElementById(`opt-${E.editor.werkzeug}-${o.key}`).value; out[o.key] = o.zahl ? Number(v) : v; }
+  return out;
 }
 document.querySelectorAll('.tool').forEach(el=>{
   el.addEventListener('click', ()=>{
@@ -117,8 +132,14 @@ function applyTool(c,r,forceErase){
     if(ex){ if(clickNotDrag) ex.dir = ((ex.dir||0) + 1) % 4; }   // Klick auf vorhandene Stacheln = drehen
     else spikes.push({c, r, dir:Number(document.getElementById('spikeDir').value)});
   } else if(elementNachWerkzeug(tool) && elementNachWerkzeug(tool).editor.art === 'punkt'){   // Hebel, Tür, Druckplatte, Sprungpilz … (elemente/)
-    const E = elementNachWerkzeug(tool), L = elementPunkte[E.feld];
-    if(!L.some(d=>d.c===c&&d.r===r)) L.push(E.editor.mitNummer ? {c, r, link: Number(linkSelect.value)} : {c,r});   // Hebel/Tür/Druckplatte: mit Nummer
+    const E = elementNachWerkzeug(tool), L = elementPunkte[E.feld], ex = L.find(d=>d.c===c&&d.r===r);
+    if(ex){ if(clickNotDrag && E.editor.klick) E.editor.klick(ex); }   // Klick auf vorhandenen Punkt (z. B. Wechselboden A/B tauschen)
+    else {
+      let p = E.editor.mitNummer ? {c, r, link: Number(linkSelect.value)} : {c,r};   // Hebel/Tür/Druckplatte: mit Nummer
+      Object.assign(p, elementOptionen(E));
+      if(E.editor.neu) p = E.editor.neu(p, L);   // z. B. Teleporter: Paar-Nummer
+      L.push(p);
+    }
   }
   else if(tool==='startM'){ startM = {c,r}; }
   else if(tool==='startF'){ startF = {c,r}; }

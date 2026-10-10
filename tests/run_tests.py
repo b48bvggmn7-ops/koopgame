@@ -404,8 +404,15 @@ async def checkpoint_sprung_und_tod(g):
 async def schalter_umschalten(g):
     await g.load(level([ground(0, 680, 1400)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
                        switches=[{'x': 260, 'y': 660, 'link': 1}], doors=[{'x': 720, 'y': 660, 'link': 1}]))
-    await g.hold(('KeyD',), 200); await g.p.wait_for_timeout(300)
-    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(150)
+    # bis vor den Hebel laufen (nicht feste Zeit: auf langsamen Rechnern rutschte der Affe sonst an ihm vorbei)
+    await g.p.keyboard.down('KeyD')
+    try: await g.p.wait_for_function("p1.x >= 222", timeout=6000)
+    except Exception: pass
+    await g.p.keyboard.up('KeyD'); await g.steps(20)
+    assert await g.ev("leverNear(p1, switchDefs[0])"), f"Affe nicht am Hebel: {await g.ev('p1.x')}"
+    await g.p.keyboard.press('KeyJ')
+    try: await g.p.wait_for_function("solids.find(s=>s.type==='door').open", timeout=3000)
+    except Exception: pass
     assert await g.ev("solids.find(s=>s.type==='door').open"), 'Tür geht nicht auf'
 
 @test
@@ -986,7 +993,7 @@ async def editor_testen_knopf(g):
                  'startM': {'c': 3, 'r': 16}, 'startF': {'c': 2, 'r': 16}, 'goal': {'c': 35, 'r': 16},
                  'hooks': [], 'switches': [], 'doors': [], 'spikes': [], 'checkpoints': [], 'movers': []}
         await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
-        await p.reload(); await p.wait_for_timeout(300)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.wait_for_timeout(300)
         # Enter im Namensfeld (Levels-Fenster) startet KEINEN Test
         await p.click('#levelsBtn'); await p.fill('#levelName', 'x'); await p.keyboard.press('Escape')
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
@@ -1012,7 +1019,7 @@ async def editor_testen_knopf(g):
         draft['tiles'] = [[c, 17, 'ground'] for c in range(120) if not 60 <= c <= 62] + [[c, 12, 'crumble'] for c in range(70, 74)]
         draft['spikes'] = [{'c': c, 'r': 16, 'dir': 0} for c in range(66, 70)]
         await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
-        await p.reload(); await p.wait_for_timeout(300)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.wait_for_timeout(300)
         await p.evaluate("const w=document.getElementById('canvasWrap'); w.scrollLeft = 50*40 / (document.getElementById('c').width / document.getElementById('c').getBoundingClientRect().width)")
         await p.wait_for_timeout(100)
         vis = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
@@ -2322,7 +2329,8 @@ async def element_register(g):
         assert "elemente/' + " in t and ".js?v=' + " in t, f'{html}: Element-Dateien ohne ?v='
     k = await g.ev("ELEMENTE.map(E => [E.id, E.feld, !!E.editor, !!(E.spiel && E.spiel.laden && E.spiel.zeichnen)])")
     assert k == [['hebel', 'switches', True, True], ['tuer', 'doors', True, False], ['druckplatte', 'plates', True, True],
-                 ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True]], k   # Tür: gezeichnet mit den Wänden
+                 ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True],
+                 ['wechselboden', 'switchFloors', True, True]], k   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2337,7 +2345,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['hook', 'wind', 'bounce', 'move'], reihe
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'LABEL', 'INPUT'], logik
+        assert logik == ['switch', 'door', 'plate', 'wechsel', 'LABEL', 'LABEL', 'LABEL', 'INPUT'], logik   # Wechselboden + Gruppe/Takt (Ausbau 4)
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
         await p.select_option('#linkSelect', '7')
         for t, c in (('switch', 2), ('door', 3), ('plate', 5)):
@@ -2484,6 +2492,80 @@ async def welten_freischaltung(g):
         assert [i['info'] for i in isl] == ['2 / 2 Level', '1 / 2 Level', '0 / 1 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl
     finally:
         await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def wechselboden(g):
+    """Ausbau 4: Wechselboden. Gruppe A fest, solange die Nummer aus ist, B fest, solange sie an ist (Hebel); steht eine
+    Figur dort, wo Boden fest werden soll, wartet dieses Kästchen, bis sie weg ist. Takt-Variante wechselt von selbst
+    (mit Vorwarn-Blinken und Ton); Neustart setzt alles zurück."""
+    wand = [{'x': 1000, 'y': y, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 5} for y in (560, 600, 640)]
+    steg = [{'x': x, 'y': 520, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 5} for x in (400, 440)]
+    await g.load(level([ground(0, 680, 2000)], {'x': 230, 'y': 680}, {'x': 1020, 'y': 680},
+                       switches=[{'x': 260, 'y': 660, 'link': 5}], switchFloors=wand + steg))
+    zust = "solids.filter(s => s.type === 'wechsel').map(s => s.gruppe + (s.gone ? '-' : '+'))"
+    # Start: Schweinchen steht dort, wo die A-Wand ist -> das unterste Wand-Kästchen wartet, bis es frei ist
+    await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'A+', 'A-', 'B-', 'B-'], await g.ev(zust)
+    assert await g.ev("solids.filter(s => s.type === 'wechsel')[2].wartet"), 'Kästchen mit Figur darin wartet nicht'
+    await g.ev("p2.x = 1300; p2._px = p2.x"); await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'A+', 'A+', 'B-', 'B-'], f'Wand wird nach dem Weggehen nicht fest: {await g.ev(zust)}'
+    # Hebel: A weg, B fest (gegenläufig), mit Ton
+    await g.ev("SFX_LOG.length = 0")
+    await g.p.keyboard.press('KeyJ')
+    await g.p.wait_for_function("linkOn[5] === true", timeout=4000); await g.steps(2)
+    assert await g.ev(zust) == ['A-', 'A-', 'A-', 'B+', 'B+'], f'Hebel schaltet nicht gegenläufig: {await g.ev(zust)}'
+    assert 'wechselan' in await g.ev("SFX_LOG") and 'wechselweg' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # Affe läuft durch die Stelle, wo die Wand war
+    await g.ev("p1.x = 960; p1._px = p1.x"); await g.hold(('KeyD',), 500)
+    assert await g.ev("p1.x") > 1045, f"Affe kommt nicht durch die verschwundene Wand: {await g.ev('p1.x')}"
+    # B ist fest: man kann darauf stehen
+    await g.ev("p2.x = 420; p2.y = 480; p2.vy = 0; p2._px = p2.x; p2._py = p2.y"); await g.steps(20)
+    assert abs(await g.ev("p2.y") - 520) < 1 and await g.ev("p2.grounded"), f"Kann nicht auf B stehen: {await g.ev('p2.y')}"
+    # Neustart: Hebel aus, A fest, B weg
+    await g.p.keyboard.press('KeyR'); await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'A+', 'A-', 'B-', 'B-'] or await g.ev(zust) == ['A+', 'A+', 'A+', 'B-', 'B-'], await g.ev(zust)
+
+    # Takt: alle 2 s, A und B abwechselnd; 1 s vorher Warnung (Blinken + Ton)
+    takt = [{'x': 400, 'y': 600, 'w': 40, 'h': 40, 'gruppe': 'A', 'takt': 2}, {'x': 480, 'y': 600, 'w': 40, 'h': 40, 'gruppe': 'B', 'takt': 2}]
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, switchFloors=takt))
+    await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'B-'], await g.ev(zust)
+    assert await g.ev("wechselWarnung(solids.find(s => s.type === 'wechsel'))") == 0, 'Warnung zu früh'
+    await g.ev("SFX_LOG.length = 0; wechselSchritte = 50"); await g.steps(15)
+    assert await g.ev("wechselWarnung(solids.find(s => s.type === 'wechsel'))") > 0, 'keine Vorwarnung vor dem Wechsel'
+    assert 'wechselwarn' in await g.ev("SFX_LOG"), f'kein Warn-Ton: {await g.ev("SFX_LOG")}'
+    await g.p.wait_for_function("wechselSchritte > 122", timeout=6000); await g.steps(1)
+    assert await g.ev(zust) == ['A-', 'B+'], f'Takt wechselt nicht: {await g.ev(zust)}'
+    await g.p.wait_for_function("wechselSchritte > 242", timeout=8000); await g.steps(1)
+    assert await g.ev(zust) == ['A+', 'B-'], f'Takt wechselt nicht zurück: {await g.ev(zust)}'
+
+@test
+async def editor_wechselboden(g):
+    """Ausbau 4: Editor-Werkzeug Wechselboden (Gruppe Schalter & Logik): Gruppe A/B und Takt wählen, ziehen malt mehrere
+    Kästchen, Klick auf ein vorhandenes tauscht A/B; Export und Spiel-Umwandlung liefern switchFloors."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.click('.tool[data-tool=wechsel]')
+        await p.select_option('#linkSelect', '4'); await p.select_option('#opt-wechsel-gruppe', 'B')
+        await ed_ziehen(p, (3, 12), (5, 12))
+        x, y = await ed_zelle(p, 3, 12); await p.mouse.click(x, y)            # Klick auf vorhandenes: B -> A
+        await p.select_option('#opt-wechsel-takt', '3'); x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        sf = sorted(out['switchFloors'], key=lambda f: f['x'])
+        assert sf == [{'x': 120, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 4},
+                      {'x': 160, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 4},
+                      {'x': 200, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 4},
+                      {'x': 320, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'B', 'takt': 3}], sf
+        assert 'Wechselboden' in await p.evaluate("[...linkSelect.options].find(o => o.value === '4').textContent")
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert sorted(umg['switchFloors'], key=lambda f: f['x']) == sf, umg['switchFloors']
+    finally:
+        await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
 async def main(filter_):

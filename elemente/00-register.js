@@ -16,7 +16,15 @@
 //             exportieren(liste, TILE, mergeRects) – Punkte bzw. Kästchen [{c,r}] -> Spiel-Format }
 //   spiel:  { laden(daten)                         – Level-Daten übernehmen (setzt die Spiel-Liste)
 //             zeichnen()                           – in der Welt zeichnen (12-welt-zeichnen.js)
-//             nachBewegung(figur, warAmBoden, fallVy) – nach dem Bewegen einer Figur (08-figur-physik-seil.js) }
+//             nachBewegung(figur, warAmBoden, fallVy) – nach dem Bewegen einer Figur (08-figur-physik-seil.js)
+//             schritt(figuren)                     – einmal pro Physik-Schritt (14-spielschleife.js, nach Hebeln/Türen)
+//             zuruecksetzen()                      – Neustart/Tod, nachdem die Figuren neu aufgestellt sind }
+//   Editor-Extras (Ausbau 4): optionen [{key, label, titel, werte:[[wert, text]], zahl}] = eigene Auswahl-Felder neben dem
+//   Knopf (neue Punkte bekommen die gewählten Werte); klick(punkt) = Klick auf einen vorhandenen Punkt;
+//   neu(punkt, liste) = neuen Punkt anpassen (z. B. Teleporter-Paar); nummerAktiv(punkt) = zählt seine Nummer für die
+//   ✓-Markierung?; zeichnenAlle(ctx, liste, TILE) = zusätzlich über alle Punkte zeichnen (z. B. Verbindungslinien).
+//   Spiel-Teile, die sich selbst zeichnen (solids mit eigenem type), überspringt die Wand-/Boden-Zeichnung in
+//   12-welt-zeichnen.js über ELEMENT_SOLID_TYPEN.
 // Neue Elemente: Datei hier anlegen und in index.html + editor/index.html in die Lade-Liste eintragen
 // (Checkliste in CLAUDE.md).
 //   Elemente mit Verknüpfungs-Nummer (Hebel, Tür, Druckplatte): editor.mitNummer = true (Punkt bekommt link aus
@@ -25,6 +33,7 @@
 //   weil dort Hebel, Türen, Druckplatten, bewegte Teile und Haken über die Nummern zusammenspielen.
 const ELEMENTE = [];
 function elementRegistrieren(def){ ELEMENTE.push(def); return def; }
+const ELEMENT_SOLID_TYPEN = new Set();   // solids-Sorten, die ein Element selbst zeichnet (z. B. 'wechsel')
 const elementNachWerkzeug = werkzeug => ELEMENTE.find(E => E.editor && E.editor.werkzeug === werkzeug) || null;
 // (Editor) Kästchen mit Nummer zeichnen – für Hebel und Tür
 function elementNummerZeichnen(ctx, c, r, TILE, color, dark, link){

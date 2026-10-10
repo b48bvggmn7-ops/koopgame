@@ -24,6 +24,7 @@ function stepSim(ts){
   updateCheckpoints();
   updateCrumbles(16.6);
   updateDoorsAndSwitches(16.6, [p1, p2]);
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.schritt) E.spiel.schritt([p1, p2]);   // z. B. Wechselboden (elemente/)
   updateMovingPlatforms(16.6, [p1, p2]);
   syncSwitchCarriers();   // Hebel auf bewegtem Boden fahren mit
   updateSpikes(p1);

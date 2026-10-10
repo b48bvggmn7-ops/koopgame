@@ -146,7 +146,8 @@ let dirty = false;
 function updateLinkMarks(){
   const uses = {};
   const add = (n, what)=>{ if(!n) return; (uses[n] = uses[n] || new Set()).add(what); };
-  for(const E of punktElemente()) if(E.editor.mitNummer) for(const x of elementPunkte[E.feld]) add(x.link, E.editor.nummerName);   // Schalter, Tür, Druckplatte
+  for(const E of punktElemente()) if(E.editor.mitNummer || E.editor.nummerAktiv)   // Schalter, Tür, Druckplatte, Wechselboden …
+    for(const x of elementPunkte[E.feld]) if(!E.editor.nummerAktiv || E.editor.nummerAktiv(x)) add(x.link, E.editor.nummerName);
   for(const mv of movers) add(mv.link, 'Bewegung');
   for(const h of hooks) if(h.move) add(h.move.link, 'Haken');
   for(const sel of [linkSelect, moveSwitchSelect]){

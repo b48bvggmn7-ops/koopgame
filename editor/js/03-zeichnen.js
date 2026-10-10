@@ -84,6 +84,7 @@ function draw(){
     ctx.strokeStyle='#8a6a1a'; ctx.lineWidth=2; ctx.stroke();
   }
   for(const E of punktElemente()) for(const p of elementPunkte[E.feld]) E.editor.zeichnen(ctx, p.c, p.r, TILE, p);   // Hebel, Tür, Druckplatte, Pilz … (elemente/)
+  for(const E of punktElemente()) if(E.editor.zeichnenAlle) E.editor.zeichnenAlle(ctx, elementPunkte[E.feld], TILE);   // z. B. Teleporter-Verbindungen
 
   if(startM) drawMarker(startM,'#3a7bd5','♂');
   if(startF) drawMarker(startF,'#e0669e','♀');
