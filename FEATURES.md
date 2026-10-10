@@ -978,8 +978,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander – außer in den Verfolgungen, die jeweils am Stück gespielt werden.
     - Test level11_felsenflucht (Koop-Bot).
 
-  - Level 12 „Tropfsteingang“ (levels/level-12.json, Höhle Level 2 der Welt, morgens, trocken): IN ARBEIT, bis es fertig
-    ist in levels.json versteckt. Lehr-Level: Förderband, Stege, enge Kamine.
+  - Level 12 „Tropfsteingang“ (levels/level-12.json, Höhle Level 2 der Welt, morgens, trocken, 800 Spalten): bis die
+    Höhle fertig ist in levels.json versteckt. Lehr-Level: Förderband, Stege, enge Kamine.
     - Etappe 1 (Spalten 0–200): Band mit dem Strom; gegen ein schnelles Band; Band-Schleuder (das Schweinchen segelt über
       die Stachelgrube und zieht drüben Hebel 1 – das reißende Band dreht sich und schleudert den Affen hinüber); enger
       Kamin hinauf, Stege hinunter; ein langsames Band trägt auf Stacheln zu – rechtzeitig auf den Steg springen.
@@ -989,6 +989,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 3 (Spalten 400–600): Platten-Tunnel (im eine Reihe hohen Tunnel läuft ein reißendes Band; einer hält
       Druckplatte 4, der andere geht durch und zieht Hebel 5 – Tür 5 auf dem Tunneldach geht für den ersten auf);
       Band-Treppe aufwärts gegen den Strom; Steg-Turm zu Hebel 6, der das reißende Band im niedrigen Gang umdreht.
+    - Etappe 4 (Spalten 600–800, Ziel bei 792): Schleuder-Kette (drei Bänder vor drei Gruben, ohne Band-Schwung schafft es
+      der Affe nicht); Kamin hinter einem Gegenband; Platten-Staffel (der Affe hält per Haken oben Druckplatte 10, das
+      Schweinchen geht durch den Band-Tunnel und öffnet mit Hebel 11 die Tür auf dem Tunneldach); Ziel.
+    - Checkpoints höchstens etwa 60 Spalten auseinander.
     - Test level12_tropfsteingang (Koop-Bot).
 
 ## Level-Editor (editor/)

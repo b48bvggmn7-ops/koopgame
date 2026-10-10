@@ -1660,6 +1660,8 @@ async def level12_tropfsteingang(g):
         soll(r['pos']['f'][0] < 727, 'E4 ohne Platte 10 kein Durchkommen im Tunnel', r.get('pos'))
         r = await koop(g, m=kat(746, 15), f=kat(744, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=1500)
         soll(r.get('done'), 'E4 Ziel', r.get('pos'))
+    cps = sorted(await g.ev("checkpoints.map(c => Math.round(c.x / 40))"))
+    soll(all(b - a <= 62 for a, b in zip(cps, cps[1:])), 'Checkpoints höchstens ~60 Spalten auseinander', cps)
     assert not fehler, fehler
 
 
