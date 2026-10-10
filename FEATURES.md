@@ -650,6 +650,30 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         neues Spiel zeigt sie nicht wieder); jederzeit über den Hauptmenü-Punkt „Geschichte“ (danach zurück ins Menü).
       story/story.json: Namen der Figuren, je Szene Titel, Welt/Tageszeit, Startplätze und Schritte (wer + text, geh,
         dauer, aktion, ton, von) – Texte lassen sich dort ändern, ohne Code. Test intro_szene.
+  - ENDGEGNER-GERÜST (Ausbau 6, elemente/boss.js; Spiel-Felder boss [{x, y, typ, name, treffer, tempo, siegSzene,
+    startSzene, phasen: [{treffer, angriffe, pause, schildDauer}]}], bossPlaetze [{x, y, phase, link}], bossArena [{x}];
+    Werte BOSS_* in js/02-physik-werte.js):
+      Boss-Level: feste Kamera an der linken Arena-Grenze (kameraFest), kein Ziel – gewonnen wird durch den Sieg.
+      Zustandsautomat aus den Level-Daten: je Phase Platz, Treffer, Angriffe (Reihenfolge), Pause zwischen Angriffen,
+        Schild-Nummer; Zustände Auftritt (1,5 s still) → Warten ↔ Angriff → Wechsel (Sprung zum Platz der nächsten Phase,
+        unverwundbar) → Besiegt. Angriffe: „kokos“ (3 Kokosnüsse auf die Figuren, vorher Warn-Schatten am Boden und ▼ oben),
+        „kokosregen“ (6, breiter gestreut), „stampf“ (ausholen, Sprung, Druckwelle läuft am Boden nach links und rechts –
+        drüberspringen; endet an Wänden/Podesten). Kokosnüsse fallen durch Stege (einseitige Plattformen).
+      Treffer NUR zusammen: Der Boss trägt einen Helm (Bruno: Kokos-Schale). Solange die Schild-Nummer der Phase AN ist
+        (Druckplatte/Hebel mit dieser Nummer), schwebt der Helm (mit der Nummer) über ihm – dann zählt ein Sprung auf den
+        Kopf (Treffer-Boing, Sterne, kurz unverwundbar). Mit Helm prallt man nur ab (hohles „Tock“). schildDauer > 0: ein
+        Hebel klappt nach so vielen Sekunden von selbst zurück (Helm wieder drauf).
+      Berührung des Boss-Körpers, Kokosnuss oder Druckwelle = Tod. Checkpoint pro Phase: nach dem Tod startet die AKTUELLE
+        Phase von vorn (Boss an seinem Platz, volle Treffer, Schilde aus); Phasenwechsel zeigt „Checkpoint · Phase n von m“.
+        R / Neustart = Kampf von Phase 1.
+      Lebensbalken oben in der Mitte: Name, Untertitel, Treffer der aktuellen Phase als Segmente (Phase 3 rot), Phasen-Punkte.
+      Sieg: Boss taumelt mit Sternchen und lässt sein Zahnrad fallen; wer es berührt, startet die Sieges-Szene in der
+        Arena (story/story.json, z. B. boss1_sieg), danach „Level geschafft“. Start-Szene (startSzene) nach dem Vorhang.
+      Menü: Welten haben in worlds.json "boss": "<datei>". Die Boss-Karte der Welt-Seite ist gesperrt, bis alle Level der
+        Welt geschafft sind („Boss freigeschaltet!“ mit Schloss-Animation), dann „Bereit“ → Spielerwahl → Vorhang „Boss“;
+        besiegt = „✓ Besiegt“ (nochmal spielbar). Eine Welt mit Boss gilt erst mit besiegtem Boss als geschafft – erst dann
+        öffnet die nächste Welt (Weltkarte mit Freischalt-Animation). Spielstand: save.bosse (Welt-ids).
+      Tests boss_geruest, boss_angriffe, editor_boss; Testlevel levels/test/boss.json.
 
 ## Level-Editor (editor/)
 ```
@@ -723,6 +747,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Klick ein neues Paar. Wird ein Tor radiert, wird das nächste neue Tor sein Partner. Daneben „für“ (beide / nur Affe /
     nur Schweinchen) und „an/aus“ (immer an / per Verknüpfung – nimmt die Nummer aus „Schalter & Logik“); der Partner
     übernimmt die Einstellungen des ersten Tors. Eingefügte Paare (Strg+V) bekommen eine neue, freie Paar-Nummer.
+  - Boss (Ausbau 6, neue Gruppe „Boss“): „Boss“ (Startplatz, nur einer pro Level; daneben Boss-Art, Treffer je Phase,
+    Tempo), „Arena-Grenze“ (zwei Marken links/rechts, gestrichelte Linie über die ganze Höhe), „Boss-Platz“ (Platz in
+    Phase 1/2/3 + Verknüpfungs-Nummer = Helm-Schalter dieser Phase; Klick wechselt die Phase; ✓-Markierung „Boss-Helm“).
+    Der Export schreibt die Phasen mit ihren Angriffen in die Level-Daten. „☁ Auf GitHub speichern“ trägt ein Level mit
+    Boss als Boss der gewählten Welt in worlds.json ein (nicht als Levelkarte; in levels.json versteckt).
   - Wasser (Ausbau 5, neue Gruppe „Wasser“, ziehbar wie Aufwind): halb durchsichtig blau mit kleiner Welle; Export fasst
     die Kästchen zu großen Rechtecken zusammen (nebeneinander UND untereinander).
     Strömung (ziehbar): daneben „Richtung“ (→ ← ↑ ↓) und „Stärke“ (schwach/mittel/stark); im Raster Pfeil, je stärker

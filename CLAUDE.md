@@ -42,7 +42,7 @@
   `optionen`, Logik pro Schritt `spiel.schritt`, Neustart `spiel.zuruecksetzen`), `teleporter.js` (Paare per 2. Klick:
   `editor.neu`, Linie `editor.zeichnenAlle`, Einfügen `editor.einfuegen`), `einseitig.js` (Steg, Kachel; Kollision
   type 'oneway' in `collideAxis`); Ausbau 5: `wasser.js` (Wasserflächen, Schwimmen `schwimmPhysik`, Luft `luftSchritt`,
-  vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Ausbau 6: `boss.js` (Endgegner-Gerüst: Boss/Arena/Boss-Platz, Zustandsautomat, Lebensbalken über `spiel.zeichnenOben`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `story/story.json` – alle Texte und Abläufe der Spielszenen (Intro, Boss-Siege); vom Nutzer direkt änderbar.
 - `assets/` – Bilder (Figuren, Schild …); `assets/audio/` – eigene Aufnahmen des Nutzers (FL Studio).

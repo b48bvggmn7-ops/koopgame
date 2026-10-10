@@ -1,0 +1,109 @@
+{
+ "hinweis": "Testlevel Ausbau 6: Boss-Gerüst (kurz, 2 Phasen à 2 Treffer). Öffnen: index.html?testlevel=boss · Schweinchen auf die Druckplatte links (Helm ab), Affe springt Bruno auf den Kopf. Phase 2: Bruno springt nach rechts.",
+ "welt": "dschungel",
+ "tageszeit": "abend",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 1480,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 0,
+   "y": -120,
+   "w": 40,
+   "h": 800,
+   "type": "wall"
+  },
+  {
+   "x": 1440,
+   "y": -120,
+   "w": 40,
+   "h": 800,
+   "type": "wall"
+  },
+  {
+   "x": 80,
+   "y": 560,
+   "w": 240,
+   "h": 120,
+   "type": "ground"
+  }
+ ],
+ "startM": {
+  "x": 400,
+  "y": 680
+ },
+ "startF": {
+  "x": 110,
+  "y": 560
+ },
+ "plates": [
+  {
+   "x": 200,
+   "y": 540,
+   "link": 1
+  }
+ ],
+ "boss": [
+  {
+   "x": 900,
+   "y": 680,
+   "typ": "bruno",
+   "name": "Bruno",
+   "treffer": 2,
+   "tempo": 1,
+   "siegSzene": "boss1_sieg",
+   "phasen": [
+    {
+     "treffer": 2,
+     "angriffe": [
+      "kokos",
+      "stampf"
+     ],
+     "pause": 2.4
+    },
+    {
+     "treffer": 2,
+     "angriffe": [
+      "stampf",
+      "kokos"
+     ],
+     "pause": 2.0
+    }
+   ]
+  }
+ ],
+ "bossPlaetze": [
+  {
+   "x": 900,
+   "y": 680,
+   "phase": 1,
+   "link": 1
+  },
+  {
+   "x": 1100,
+   "y": 680,
+   "phase": 2,
+   "link": 1
+  }
+ ],
+ "bossArena": [
+  {
+   "x": 20
+  },
+  {
+   "x": 1460
+  }
+ ],
+ "hooks": [],
+ "switches": [],
+ "doors": [],
+ "spikes": [],
+ "coins": [],
+ "movingPlatforms": [],
+ "checkpoints": []
+}

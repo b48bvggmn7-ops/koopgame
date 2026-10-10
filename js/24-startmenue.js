@@ -185,7 +185,7 @@ const store = {
    Sicherungskopie unter "monchichi.save_v1_backup" im Browser. */
 // Reihenfolge der Levelkarten zur Zeit des alten Spielstands (Nummer n = LEGACY_LEVEL_ORDER[n - 1])
 const LEGACY_LEVEL_ORDER = ['level-1.json', 'level-2.json', 'level-3.json', 'level-4.json', 'level-5.json', 'level-6.json'];
-const blankSave = () => ({ v: 2, played: false, unlocked: [], completed: [], stats: {} });
+const blankSave = () => ({ v: 2, played: false, unlocked: [], completed: [], stats: {}, bosse: [] });   // bosse: Welt-ids mit besiegtem Boss (Ausbau 6)
 function migrateSave(raw) {
   if (!raw || typeof raw !== 'object') return blankSave();
   if (raw.v === 2) return Object.assign(blankSave(), raw);
@@ -226,7 +226,7 @@ const lastUnlocked = () => { let k = 0; for (let i = 0; i < realCount(); i++) if
    öffnet sie ebenfalls. In der Welt geht es wie bisher Level für Level. */
 function mapWorlds() {
   const ws = (CONFIG.worlds || []).filter(w => w && w.id).slice().sort((a, b) => (a.reihenfolge || 0) - (b.reihenfolge || 0))
-    .map(w => ({ id: w.id, name: w.name || w.id, titel: w.titel || w.name || w.id, boss: w.boss || null,
+    .map(w => ({ id: w.id, name: w.name || w.id, titel: w.titel || w.name || w.id, boss: w.boss || null, bossName: w.bossName || null,
                  idx: CONFIG.levels.map((l, i) => i).filter(i => !CONFIG.levels[i].soon && CONFIG.levels[i].welt === w.id) }));
   const rest = CONFIG.levels.map((l, i) => i).filter(i => !CONFIG.levels[i].soon && !(CONFIG.levels[i].welt && ws.some(w => w.id === CONFIG.levels[i].welt)));
   if (rest.length) ws.push({ id: '_rest', name: ws.length ? 'Weitere Level' : 'Level', titel: ws.length ? 'Weitere Level' : 'Level', boss: null, idx: rest });
@@ -234,7 +234,10 @@ function mapWorlds() {
 }
 const worldById = id => mapWorlds().find(w => w.id === id) || null;
 const worldOfIndex = i => mapWorlds().find(w => w.idx.includes(i)) || null;
-const worldDone = w => w.idx.length > 0 && w.idx.every(isDone);   // + Boss, sobald es Bosse gibt (Ausbau 6)
+// Welt geschafft = alle Level UND (falls die Welt einen Boss hat) der Boss besiegt (Ausbau 6)
+const bossDone = w => !!w && (save.bosse || []).includes(w.id);
+const bossOpen = w => !!w && !!w.boss && w.idx.length > 0 && w.idx.every(isDone);
+const worldDone = w => w.idx.length > 0 && w.idx.every(isDone) && (!w.boss || bossDone(w));
 function worldUnlocked(w, ws) {
   ws = ws || mapWorlds();
   if (!w || !w.idx.length) return false;                              // „Bald“: noch keine Level
@@ -448,6 +451,34 @@ async function playLevel(i) {
     levelLoadFailed(lvl, (e && e.message) || String(e));
   }
 }
+// Boss einer Welt spielen (Ausbau 6): Datei aus worlds.json ("boss"), Vorhang „Boss“, dann ggf. kurze Start-Szene
+let currentBossWorld = null;
+async function playBoss(worldId) {
+  await levelsReady;
+  const w = worldById(worldId); if (!w || !w.boss) return;
+  Snd.play('start'); save.played = true; persist();
+  let data = null, why = '';
+  for (let tryNo = 0; tryNo < 3 && !data; tryNo++) {
+    try {
+      const r = await fetch(PROJECT_LEVELS + encodeURIComponent(w.boss) + (tryNo ? '?t=' + Date.now() : ''), { cache: 'no-store' });
+      if (!r.ok) { why = 'Datei nicht erreichbar (HTTP ' + r.status + ')'; await wait(300); continue; }
+      data = JSON.parse(await r.text());
+    } catch (e) { why = (e && e.message) || String(e); await wait(300); }
+  }
+  if (!data) { levelLoadFailed({ name: 'Boss', datei: w.boss }, why); return; }
+  const bossName = ((data.boss || [])[0] || {}).name || 'Boss';
+  try {
+    await curtainIntoLevel('Boss', bossName, () => {
+      setMonkeyPlayer(lastPlayers.monkey);
+      currentLevelNo = 0; currentBossWorld = w.id;
+      hideMenu();
+      startLevel(data);
+      menuScreen = 'curtain';
+    }, true);
+    const sz = typeof bossKampf !== 'undefined' && bossKampf && bossKampf.startSzene;
+    if (sz && typeof szeneSpielen === 'function') szeneSpielen(sz, null, { buehne: false });
+  } catch (e) { levelLoadFailed({ name: 'Boss', datei: w.boss }, (e && e.message) || String(e)); }
+}
 // Level ließ sich nicht starten: zurück zur Levelauswahl und den Grund anzeigen (statt still zurückzuspringen)
 function levelLoadFailed(lvl, why) {
   console.error('Level konnte nicht geladen werden:', lvl && lvl.datei, why);
@@ -510,9 +541,9 @@ const curtainEl = document.createElement('div');
 curtainEl.id = 'leafCurtain';
 curtainEl.innerHTML = '<div class="cbg"></div>' + curtainLeaves() + `<div class="lt"><div><b class="lt-n"></b><span class="lt-name"></span></div></div>`;
 document.body.appendChild(curtainEl);
-async function curtainIntoLevel(no, name, build) {
+async function curtainIntoLevel(no, name, build, roh) {
   menuScreen = 'curtain';
-  curtainEl.querySelector('.lt-n').textContent = 'Level ' + no;
+  curtainEl.querySelector('.lt-n').textContent = roh ? no : 'Level ' + no;   // roh: Text wie „Boss“
   curtainEl.querySelector('.lt-name').textContent = name;
   curtainEl.className = 'on'; void curtainEl.offsetWidth;
   curtainEl.className = 'on closed';               // Blätter fliegen zusammen
@@ -530,18 +561,36 @@ async function curtainIntoLevel(no, name, build) {
 // Level n (Nummer der Levelkarte, 1 …) geschafft: merken und das nächste Level DIESER Welt freischalten.
 // Ist damit die ganze Welt geschafft, öffnet die nächste Welt mit Leveln (ihr erstes Level wird freigeschaltet);
 // deren id steht dann in lastFreshWorld (für die Freischalt-Animation auf der Weltkarte).
-let lastFreshWorld = null;
+let lastFreshWorld = null, lastBossOpen = null;
+// Boss einer Welt besiegt (Ausbau 6): merken; ist damit die Welt geschafft, öffnet die nächste Welt mit Leveln
+function completeBoss(worldId) {
+  const ws = mapWorlds(), w = ws.find(x => x.id === worldId);
+  const wasOpen = ws.map(x => worldUnlocked(x, ws));
+  save.bosse = save.bosse || [];
+  if (!save.bosse.includes(worldId)) save.bosse.push(worldId);
+  lastFreshWorld = null;
+  if (w) {
+    const k = ws.indexOf(w), nw = ws.slice(k + 1).find(x => x.idx.length);
+    if (nw && !wasOpen[ws.indexOf(nw)] && worldUnlocked(nw, ws)) {
+      lastFreshWorld = nw.id;
+      const f = fileOf(nw.idx[0]); if (f && !save.unlocked.includes(f)) save.unlocked.push(f);
+    }
+  }
+  persist();
+  return lastFreshWorld;
+}
 function completeLevel(n, quiet) {
   const i = n - 1, f = fileOf(i);
   const ws = mapWorlds(), w = ws.find(x => x.idx.includes(i));
   const wasOpen = ws.map(x => worldUnlocked(x, ws));
   if (f && !save.completed.includes(f)) save.completed.push(f);
   if (f && !save.unlocked.includes(f)) save.unlocked.push(f);
-  lastFreshWorld = null;
+  lastFreshWorld = null; lastBossOpen = null;
   let next = null;
   if (w) {
     const pos = w.idx.indexOf(i);
     if (pos < w.idx.length - 1) next = w.idx[pos + 1];                 // nächstes Level der Welt
+    else if (w.boss && !bossDone(w)) { lastBossOpen = w.id; }          // letztes Level: erst der Boss (Ausbau 6)
     else {                                                            // letztes Level: nächste Welt mit Leveln
       const k = ws.indexOf(w), nw = ws.slice(k + 1).find(x => x.idx.length);
       if (nw && !wasOpen[ws.indexOf(nw)] && worldUnlocked(nw, ws)) { lastFreshWorld = nw.id; next = nw.idx[0]; }
@@ -550,7 +599,7 @@ function completeLevel(n, quiet) {
   const fresh = next !== null && !!fileOf(next) && !save.unlocked.includes(fileOf(next));
   if (fresh) save.unlocked.push(fileOf(next));
   persist();
-  if (!quiet) toast(lastFreshWorld ? `Welt ${(worldById(lastFreshWorld) || {}).name} freigeschaltet!` : fresh ? `Level ${next + 1} freigeschaltet!` : `Level ${n} geschafft!`);
+  if (!quiet) toast(lastBossOpen ? 'Boss freigeschaltet!' : lastFreshWorld ? `Welt ${(worldById(lastFreshWorld) || {}).name} freigeschaltet!` : fresh ? `Level ${next + 1} freigeschaltet!` : `Level ${n} geschafft!`);
   return fresh ? next + 1 : 0;   // neu freigeschaltetes Level (0 = keins)
 }
 // Neues Spiel: ALLES von vorn – freigeschaltete Level, Statistik, Packages, Items/Skins (angelegt + besessen), Münz-Konto
@@ -805,6 +854,7 @@ S.select = {
         szeneSpielen('intro', () => { menuScreen = 'curtain'; playLevel(0); });   // gleich weiter zum Vorhang (Spiel bleibt still)
       } else playLevel(0);
     }
+    else if (this.mode.boss) playBoss(this.mode.boss);   // Boss-Karte (Ausbau 6)
     else playLevel(this.mode.level);
   }
 };
@@ -850,6 +900,9 @@ S.levels = {
     $('#sm-l-count').innerHTML = `Fortschritt<b>${done} / ${this.list.length}</b>`;
     $('#sm-lbar-i').style.width = (done / n * 100) + '%';
     this.paint(true); this.paintColl();
+    if (arg && arg.unlockBoss && $$('#sm-cards .lc')[this.list.length]) {   // letztes Level geschafft: Boss-Karte geht auf
+      this.idx = this.list.length; this.paint(true); unlockAnimation($$('#sm-cards .lc')[this.list.length], 'Boss freigeschaltet!');
+    }
     const uj = this.list.indexOf(unlock);
     if (uj >= 0 && $$('#sm-cards .lc')[uj]) { this.idx = uj; this.paint(true); unlockAnimation($$('#sm-cards .lc')[uj], `Level ${unlock + 1} freigeschaltet!`); }
   },
@@ -858,9 +911,11 @@ S.levels = {
     const cards = $$('#sm-cards .lc');
     cards.forEach((b, j) => {
       const sel = j === this.idx && !this.top;
-      if (this.isBoss(j)) {
-        b.className = 'lc boss lock' + (sel ? ' sel' : '');
-        b.innerHTML = `<div class="n">${ICON.skull}</div><div><span class="nm">Boss</span><span class="st">Bald verfügbar</span></div>`;
+      if (this.isBoss(j)) {   // Boss-Karte (Ausbau 6): Bald / Gesperrt / Bereit / Besiegt
+        const w = worldById(this.world), has = w && w.boss, open = bossOpen(w), done = bossDone(w);
+        b.className = 'lc boss' + (!has || !open ? ' lock' : '') + (done ? ' done' : '') + (sel ? ' sel' : '');
+        const st = !has ? 'Bald verfügbar' : done ? (sel ? '<span class="go">Nochmal</span>' : '✓ Besiegt') : open ? (sel ? '<span class="go">Start</span>' : 'Bereit') : 'Gesperrt';
+        b.innerHTML = `<div class="n">${ICON.skull}</div><div><span class="nm">${has ? (w.bossName || 'Boss') : 'Boss'}</span><span class="st">${st}</span></div>`;
         return;
       }
       const i = this.list[j];
@@ -881,7 +936,9 @@ S.levels = {
       if (instant) requestAnimationFrame(() => requestAnimationFrame(() => pair.classList.remove('nt')));
     }
     const i = this.list[this.idx];
-    $('#sm-l-hint').textContent = this.isBoss(this.idx) ? 'Boss – kommt bald · Esc zurück zur Weltkarte'
+    const bw = worldById(this.world);
+    $('#sm-l-hint').textContent = this.isBoss(this.idx) ? (!bw || !bw.boss ? 'Boss – kommt bald · Esc zurück zur Weltkarte'
+        : bossOpen(bw) ? 'Boss · Springen starten · Esc Karte' : 'Gesperrt – schafft erst alle Level dieser Welt')
       : !isUnlocked(i) ? `Gesperrt – schafft erst Level ${this.list[this.idx - 1] + 1}`
       : '◀ ▶ wählen · Springen starten · ▲ Packages/Umkleide · Esc Karte';
     if (this.top) $('#sm-l-hint').textContent = `◀ ▶ wählen · Springen: ${this.top === 'pack' ? 'Packages öffnen' : 'Umkleide öffnen'} · ▼ zurück zu den Leveln`;
@@ -926,7 +983,8 @@ S.levels = {
     else if (type === 'right' || type === 'down') this.select(clamp(this.idx + 1, 0, n - 1));
     else if (type === 'confirm') {
       const i = this.list[this.idx];
-      if (this.isBoss(this.idx) || !isUnlocked(i)) {
+      if (this.isBoss(this.idx) && bossOpen(worldById(this.world))) { Snd.play('ok'); go('select', { boss: this.world }); }
+      else if (this.isBoss(this.idx) || !isUnlocked(i)) {
         Snd.play('locked');
         const b = $$('#sm-cards .lc')[this.idx]; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
       } else { Snd.play('ok'); go('select', { level: i }); }
@@ -1055,7 +1113,7 @@ S.results = {
   enter(arg) {
     this.arg = arg || {};
     const st = this.arg.st || { m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0 }, lv = CONFIG.levels[(this.arg.n || 1) - 1];
-    $('#sm-r-level').textContent = lv ? `Level ${this.arg.n} · ${lv.name}` : '';
+    $('#sm-r-level').textContent = this.arg.boss ? `Boss besiegt · ${this.arg.bossName || ''}` : lv ? `Level ${this.arg.n} · ${lv.name}` : '';
     const moreDeaths = st.m > st.f ? 'm' : st.f > st.m ? 'f' : '', moreCoins = st.cm > st.cf ? 'm' : st.cf > st.cm ? 'f' : '';
     for (const w of ['m', 'f']) {
       const c = w === 'm' ? st.cm : st.cf, t = w === 'm' ? st.tm : st.tf, d = w === 'm' ? st.m : st.f;
@@ -1115,6 +1173,8 @@ S.results = {
   ret() {
     const a = this.arg || {};
     if (a.freshWorld) return ['map', { unlockWorld: a.freshWorld }];
+    if (a.boss) return ['levels', { world: a.boss }];
+    if (a.bossOpen) return ['levels', { world: a.bossOpen, unlockBoss: true }];
     if (a.fresh) return ['levels', { unlock: a.fresh - 1 }];
     const w = a.n ? worldOfIndex(a.n - 1) : null;
     return ['levels', w ? { world: w.id } : undefined];
@@ -1277,13 +1337,21 @@ async function loadLevelList() {
 }
 // Level geschafft (nach dem Tanz, 21-figuren-leben.js): Fortschritt merken, zurück zur Levelauswahl
 window.startMenuLevelWon = () => {
+  if (currentBossWorld) {   // Boss besiegt (Ausbau 6): Statistik, Packages, nächste Welt frei
+    const wid = currentBossWorld; currentBossWorld = null;
+    const st = typeof levelStats === 'function' ? levelStats() : null;
+    const packs = typeof awardPackages === 'function' ? awardPackages(false) : 0;
+    const fresh = completeBoss(wid), name = typeof bossKampf !== 'undefined' && bossKampf ? bossKampf.name : 'Boss';
+    showMenuScreen('results', { boss: wid, bossName: name, st, packs, freshWorld: fresh });
+    return;
+  }
   const n = currentLevelNo; currentLevelNo = 0;
   const st = typeof levelStats === 'function' ? levelStats() : null;   // Münzen/Tode dieser Runde (25-duell.js)
   if (n && st && fileOf(n - 1)) { save.stats[fileOf(n - 1)] = { m: st.m, f: st.f }; }   // für die Levelkarte merken
   // Packages: 1 fürs Schaffen, +1 wenn alle Münzen gesammelt – für beide Figuren (26-kosmetik-daten.js)
   const packs = n && typeof awardPackages === 'function' ? awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken)) : 0;
   if (n && st && typeof addCoins === 'function') addCoins(st.cm, st.cf);   // selbst gesammelte Münzen aufs Konto (Pakete kaufen)
-  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh, packs, freshWorld: lastFreshWorld }); }
+  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh, packs, freshWorld: lastFreshWorld, bossOpen: lastBossOpen }); }
   else showMenuScreen('menu');
 };
 window.showTitleScreen = () => showMenuScreen('title');
@@ -1291,7 +1359,7 @@ window.startMenuShow = showMenuScreen;
 showMainMenu = () => showMenuScreen('menu');          // ersetzt die alten Menüs aus 16-menue.js
 showLevelSelect = () => showMenuScreen('levels');
 document.getElementById('loadLevelInput').addEventListener('change', () => { currentLevelNo = 0; hideMenu(); });
-window.GameMenu = { config: CONFIG, completeLevel, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
+window.GameMenu = { config: CONFIG, completeLevel, completeBoss, playBoss, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
                     migrateSave, buildLevelOrder, mapWorlds, worldUnlocked: id => worldUnlocked(worldById(id)),
                     levelUnlocked: i => isUnlocked(i), lastFreshWorld: () => lastFreshWorld,
                     show: showMenuScreen, hide: hideMenu, levelsReady: () => CONFIG.levels.length > 0,

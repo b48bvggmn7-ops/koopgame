@@ -801,6 +801,7 @@ function drawSolidLook(s, look, x){
   if(THEME.tint){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
   drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
   drawFakeGlints();      // dezentes Glitzern an Scheinwänden (auch im Dunkeln sichtbar)
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenOben) E.spiel.zeichnenOben();   // Bildschirm-Anzeigen, z. B. Boss-Lebensbalken (elemente/)
   weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
   drawOffscreenArrows();
   drawContinuePrompt();

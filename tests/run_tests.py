@@ -2144,7 +2144,7 @@ async def editor_werkzeug_gruppen(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         gr = await p.evaluate("""[...document.querySelectorAll('.tgroup')].map(g => [g.querySelector('.tgh').textContent.trim(),
             [...g.querySelectorAll('.tool')].map(t => t.dataset.tool)])""")
-        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Schalter & Logik', 'Bewegung', 'Wasser', 'Sammeln', 'Markierungen'], gr
+        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Schalter & Logik', 'Bewegung', 'Wasser', 'Boss', 'Sammeln', 'Markierungen'], gr
         alle = sum((x[1] for x in gr), [])
         for t in ['ground', 'wall', 'crumble', 'fake', 'spike', 'switch', 'door', 'plate', 'hook', 'wind', 'bounce', 'move', 'coin', 'checkpoint', 'startM', 'startF', 'goal']:
             assert alle.count(t) == 1, f'Werkzeug {t} nicht genau einmal in einer Gruppe: {gr}'
@@ -2333,7 +2333,8 @@ async def element_register(g):
                  ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True],
                  ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True],
                  ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False],
-                 ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False],
+                 ['boss', 'boss', True, True], ['bossArena', 'bossArena', True, False], ['bossPlatz', 'bossPlaetze', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2951,6 +2952,136 @@ async def intro_szene(g):
         await p.wait_for_timeout(400); await p.keyboard.press('Escape')
         await p.wait_for_function("document.querySelector('#sm-s-menu.active') && document.getElementById('sm').classList.contains('on')", timeout=8000)
     finally:
+        srv.shutdown()
+
+def boss_level(pause1=30, pause2=30, treffer=2, angriffe1=('kokos',), angriffe2=('stampf',)):
+    return level([ground(0, 680, 1480), ground(0, -120, 40, 800, 'wall'), ground(1440, -120, 40, 800, 'wall'), ground(80, 560, 240, 120)],
+                 {'x': 400, 'y': 680}, {'x': 110, 'y': 560},
+                 plates=[{'x': 200, 'y': 540, 'link': 1}],
+                 boss=[{'x': 900, 'y': 680, 'typ': 'bruno', 'treffer': treffer, 'tempo': 1, 'name': 'Bruno',
+                        'phasen': [{'angriffe': list(angriffe1), 'pause': pause1}, {'angriffe': list(angriffe2), 'pause': pause2}]}],
+                 bossPlaetze=[{'x': 900, 'y': 680, 'phase': 1, 'link': 1}, {'x': 1100, 'y': 680, 'phase': 2, 'link': 1}],
+                 bossArena=[{'x': 20}, {'x': 1460}])
+
+async def boss_sprung(g, wer='p1'):
+    """Figur von oben auf den Boss-Kopf fallen lassen."""
+    await g.ev(f"{wer}.x = bossKampf.x; {wer}.y = bossKampf.y - bossKampf.T.h - 40; {wer}.vx = 0; {wer}.vy = 4; {wer}.grounded = false;"
+               f"{wer}._px = {wer}.x; {wer}._py = {wer}.y")
+    await g.steps(12)
+
+async def weiter_nach_tod(g):
+    for _ in range(40):
+        await g.p.keyboard.press('KeyK'); await g.p.wait_for_timeout(150)
+        if not await g.ev("!!deathState"): break
+    await g.steps(2)
+
+@test
+async def boss_geruest(g):
+    """Ausbau 6: Boss-Gerüst. Boss-Level = feste Kamera an der Arena, kein Ziel, Lebensbalken. Treffer nur zusammen:
+    mit Helm prallt man ab; steht die andere Figur auf der Druckplatte (Schild-Nummer), ist der Helm ab und ein Sprung auf
+    den Kopf trifft. Treffer leer -> nächste Phase (Checkpoint, Boss springt an seinen neuen Platz). Tod -> aktuelle Phase
+    von vorn (volle Treffer), R -> Phase 1. Berührung = Tod. Sieg -> Zahnrad -> Sieges-Szene -> „geschafft“."""
+    srv = webserver()   # Szenen-Texte (story/story.json) per fetch
+    await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(600)
+    await g.load(boss_level())
+    st = await g.ev("[!!bossKampf, kameraFest, goal.x < 0, bossKampf.phase, bossKampf.hp, bossKampf.phasen.length]")
+    assert st == [True, 0, True, 0, 2, 2], st
+    await g.ev("draw()")   # Lebensbalken zeichnet ohne Fehler
+    await g.p.wait_for_function("bossKampf.zustand === 'warten'", timeout=8000)
+    # mit Helm: abprallen, kein Treffer
+    await g.ev("SFX_LOG.length = 0"); await boss_sprung(g)
+    assert await g.ev("bossKampf.hp") == 2 and 'helmabprall' in await g.ev("SFX_LOG"), await g.ev("[bossKampf.hp, SFX_LOG]")
+    # Schweinchen auf die Platte -> Helm ab -> Treffer
+    await g.ev("p2.x = 200; p2.y = 560; p2._px = p2.x; p2._py = p2.y"); await g.steps(4)
+    assert await g.ev("linkOn[1] === true && bossHelmAb(bossKampf)"), 'Platte nimmt den Helm nicht ab'
+    await boss_sprung(g)
+    assert await g.ev("bossKampf.hp") == 1 and 'bosstreffer' in await g.ev("SFX_LOG"), await g.ev("[bossKampf.hp, SFX_LOG]")
+    await g.steps(80); await boss_sprung(g)
+    assert await g.ev("bossKampf.phase === 1 && bossKampf.zustand === 'wechsel'"), await g.ev("[bossKampf.phase, bossKampf.zustand]")
+    assert 'Phase 2' in await g.ev("testJumpMsg"), await g.ev("testJumpMsg")
+    await g.p.wait_for_function("bossKampf.zustand !== 'wechsel'", timeout=8000)
+    assert abs(await g.ev("bossKampf.x") - 1100) < 1, 'Boss springt nicht an den Platz der Phase 2'
+    # Treffer in Phase 2, dann Tod -> Phase 2 wieder mit vollen Treffern (Checkpoint pro Phase)
+    await g.p.wait_for_function("bossKampf.zustand === 'warten'", timeout=8000)
+    await boss_sprung(g)
+    assert await g.ev("bossKampf.hp") == 1
+    await g.ev("p1.x = 1100; p1.y = 680; p1.vx = 0; p1.vy = 0; p1._px = p1.x; p1._py = p1.y"); await g.steps(3)   # Körper berühren
+    assert await g.ev("!!deathState && deathState.victim === p1"), 'Berührung des Bosses tötet nicht'
+    await weiter_nach_tod(g)
+    assert await g.ev("[bossKampf.phase, bossKampf.hp, bossKampf.x, linkOn[1] || false, kameraFest]") == [1, 2, 1100, False, 0], \
+        await g.ev("[bossKampf.phase, bossKampf.hp, bossKampf.x, linkOn[1], kameraFest]")
+    # R -> Kampf von vorn
+    await g.p.keyboard.press('KeyR'); await g.steps(3)
+    assert await g.ev("[bossKampf.phase, bossKampf.hp, bossKampf.x]") == [0, 2, 900]
+    # ganz besiegen -> Zahnrad -> Sieges-Szene -> Esc -> „geschafft“ (hier ohne Weltkarte: zurück ins Menü)
+    await g.ev("bossKampf.phase = 1; bossKampf.hp = 1; bossKampf.x = 1100; bossKampf.zustand = 'warten'; bossKampf.t = 0;"
+               "p2.x = 200; p2.y = 560; p2._px = p2.x; p2._py = p2.y"); await g.steps(4)
+    await boss_sprung(g)
+    assert await g.ev("bossKampf.zustand") == 'besiegt', await g.ev("bossKampf.zustand")
+    assert 'bossbesiegt' in await g.ev("SFX_LOG")
+    await g.steps(50)
+    await g.ev("p1.x = bossKampf.zahnrad.x; p1.y = bossKampf.zahnrad.y + 20; p1._px = p1.x; p1._py = p1.y")
+    await g.p.wait_for_function("menuScreen === 'szene' && szene.name === 'boss1_sieg'", timeout=8000)
+    assert await g.ev("kameraFest") == 0, 'Sieges-Szene verschiebt die Kamera'
+    await g.p.keyboard.press('Escape')
+    await g.p.wait_for_function("menuScreen === 'start'", timeout=8000)
+    srv.shutdown()
+
+@test
+async def boss_angriffe(g):
+    """Ausbau 6: Angriffe aus den Level-Daten. Kokosnüsse: erst Warn-Schatten, dann fallen sie und treffen (Tod);
+    Stampfen: Druckwelle läuft am Boden, wer drüberspringt, überlebt, wer am Boden steht, nicht."""
+    await g.load(boss_level(pause1=0.3, angriffe1=('kokos',)))
+    await g.ev("p2.x = 120; p2.y = 680; p2._px = p2.x")
+    await g.p.wait_for_function("bossKampf.geschosse.length >= 3", timeout=8000)
+    assert await g.ev("bossKampf.geschosse.every(k => k.warte > 0)"), 'Kokosnüsse fallen ohne Warnung'
+    await g.p.wait_for_function("!!deathState", timeout=10000)
+    # Stampfen: Welle
+    await g.load(boss_level(pause1=0.3, angriffe1=('stampf',)))
+    await g.ev("p1.x = 560; p2.x = 520; p1._px = p1.x; p2._px = p2.x")
+    await g.p.wait_for_function("bossKampf.wellen.length > 0", timeout=8000)
+    await g.p.wait_for_function("!!deathState", timeout=8000)
+    assert 'stampf' in await g.ev("SFX_LOG")
+    # drüberspringen: Figuren werden über der Welle gehalten -> kein Tod
+    await g.load(boss_level(pause1=0.3, angriffe1=('stampf',)))
+    await g.ev("window.__hoch = true; if(!window.__bw){ window.__bw = 1; const o = stepSim; stepSim = function(ts){ if(window.__hoch){ for(const pl of [p1, p2]){ pl.y = 600; pl.vy = 0; pl._py = pl.y; } } o(ts); }; }")
+    await g.ev("p1.x = 560; p2.x = 520; p1._px = p1.x; p2._px = p2.x")
+    await g.p.wait_for_function("bossKampf.wellen.length > 0", timeout=8000)
+    await g.steps(150)   # mehrere Wellen laufen unter den Figuren durch
+    assert not await g.ev("!!deathState"), 'Welle trifft auch über ihr'
+    await g.ev("window.__hoch = false")
+
+@test
+async def editor_boss(g):
+    """Ausbau 6: Editor-Gruppe „Boss“: Boss (nur einer, Treffer/Tempo), Arena-Grenze (2 Marken), Boss-Platz (Phase + Helm-Nummer)
+    -> Export enthält boss (mit Phasen und Angriffen), bossArena, bossPlaetze; Spiel-Umwandlung gleich."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=boss] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['boss', 'arena', 'bossplatz'], reihe
+        await p.click('.tool[data-tool=boss]'); await p.select_option('#opt-boss-treffer', '4')
+        for c in (10, 15): x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)   # zweiter Boss ersetzt den ersten
+        await p.click('.tool[data-tool=arena]')
+        for c in (1, 30): x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)
+        await p.click('.tool[data-tool=bossplatz]'); await p.select_option('#linkSelect', '2')
+        x, y = await ed_zelle(p, 15, 16); await p.mouse.click(x, y)
+        await p.select_option('#opt-bossplatz-phase', '2'); await p.select_option('#linkSelect', '3')
+        x, y = await ed_zelle(p, 15, 8); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        b = out['boss']
+        assert len(b) == 1 and b[0]['x'] == 620 and b[0]['y'] == 680 and b[0]['treffer'] == 4 and b[0]['name'] == 'Bruno', b
+        assert len(b[0]['phasen']) == 3 and all(ph['angriffe'] and ph['treffer'] == 4 for ph in b[0]['phasen']), b[0]['phasen']
+        assert out['bossArena'] == [{'x': 60}, {'x': 1220}], out['bossArena']
+        assert out['bossPlaetze'] == [{'x': 620, 'y': 680, 'phase': 1, 'link': 2}, {'x': 620, 'y': 360, 'phase': 2, 'link': 3}], out['bossPlaetze']
+        assert 'Boss-Helm' in await p.evaluate("[...linkSelect.options].find(o => o.value === '3').textContent")
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['boss'] == b and umg['bossPlaetze'] == out['bossPlaetze'] and umg['bossArena'] == out['bossArena']
+    finally:
+        await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
 async def main(filter_):

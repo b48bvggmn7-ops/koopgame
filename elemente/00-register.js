@@ -19,7 +19,8 @@
 //             nachBewegung(figur, warAmBoden, fallVy) – nach dem Bewegen einer Figur (08-figur-physik-seil.js)
 //             schritt(figuren)                     – einmal pro Physik-Schritt (14-spielschleife.js, nach Hebeln/Türen)
 //             zuruecksetzen()                      – Neustart/Tod, nachdem die Figuren neu aufgestellt sind
-//             zeichnenVorne()                      – VOR den Figuren zeichnen (z. B. Wasser, Ausbau 5) }
+//             zeichnenVorne()                      – VOR den Figuren zeichnen (z. B. Wasser, Ausbau 5)
+//             zeichnenOben()                       – in Bildschirm-Koordinaten über allem (z. B. Boss-Lebensbalken, Ausbau 6) }
 //   Editor-Extras (Ausbau 4): optionen [{key, label, titel, werte:[[wert, text]], zahl}] = eigene Auswahl-Felder neben dem
 //   Knopf (neue Punkte bekommen die gewählten Werte); klick(punkt) = Klick auf einen vorhandenen Punkt;
 //   neu(punkt, liste) = neuen Punkt anpassen (z. B. Teleporter-Paar); nummerAktiv(punkt) = zählt seine Nummer für die

@@ -69,3 +69,14 @@ const WASSER_PEGEL_TEMPO = 1.0; // px pro Schritt: so schnell steigt/sinkt das W
 // Gedämpfter Ton unter Wasser (Tiefpass in Hz): ein Kopf unter Wasser etwas dumpfer, beide ganz dumpf
 const WASSER_TON_EINER = 2600;
 const WASSER_TON_BEIDE = 900;
+
+// ---------- Endgegner (Ausbau 6, elemente/boss.js) – Schritte = Physik-Schritte (60 = 1 Spielsekunde) ----------
+const BOSS_AUFTRITT = 90;        // so lange steht der Boss nach Phasenstart/Tod still (Zeit zum Orientieren)
+const BOSS_WECHSEL = 70;         // Sprung zum Platz der nächsten Phase
+const BOSS_KOKOS = 3;            // Kokosnüsse pro Wurf
+const BOSS_KOKOS_REGEN = 6;      // … beim Kokos-Regen
+const BOSS_KOKOS_WARNUNG = 50;   // so lange warnt Schatten + Pfeil, bevor eine Kokosnuss fällt
+const BOSS_WELLE_TEMPO = 5;      // Druckwelle am Boden (px pro Schritt) – drüberspringen
+const BOSS_WELLE_HOEHE = 22;     // so hoch muss man über der Welle sein
+const BOSS_ABPRALL = -10;        // Sprung auf den Kopf: so hoch prallt man ab
+const BOSS_UNVERWUNDBAR = 70;    // nach einem Treffer

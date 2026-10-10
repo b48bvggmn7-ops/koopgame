@@ -25,5 +25,30 @@
    {"wer": "affe", "text": "Kekse einpacken. Los.", "dauer": 1.6},
    {"geh": {"affe": [1650, 640], "schwein": [1610, 640]}, "dauer": 2.2}
   ]
+ },
+ "boss1_start": {
+  "titel": "Boss: Bruno, der Kokos-Gorilla",
+  "relativ": true,
+  "start": {},
+  "schritte": [
+   {"wer": "bruno", "text": "Halt! Das Zahnrad bleibt bei mir. Der Baron zahlt in Bananen.", "dauer": 3.0},
+   {"wer": "affe", "text": "Wir zahlen in Kopfnüssen.", "dauer": 2.0},
+   {"wer": "schwein", "text": "Sein Kokos-Helm! Solange einer auf der Platte steht, ist er ab – dann ab auf seinen Kopf.", "dauer": 3.6}
+  ]
+ },
+ "boss1_sieg": {
+  "titel": "Zahnrad 1 von 5",
+  "relativ": true,
+  "start": {"kraehe": [1650, 60]},
+  "schritte": [
+   {"wer": "bruno", "text": "Uff. Okay, okay. Nehmt das Ding.", "dauer": 2.4},
+   {"geh": {"kraehe": [900, 150]}, "dauer": 1.4, "ton": "kraehe"},
+   {"wer": "kraehe", "text": "Bruno! Ich bezahle dich nicht fürs Rumliegen.", "dauer": 2.8},
+   {"wer": "bruno", "text": "Du bezahlst mich gar nicht.", "dauer": 2.2},
+   {"wer": "kraehe", "text": "… Touché. Ihr zwei: Das war nur Zahnrad Nummer eins.", "dauer": 3.0},
+   {"geh": {"kraehe": [1750, 30]}, "dauer": 1.6},
+   {"wer": "schwein", "text": "Eins von fünf. Läuft.", "dauer": 2.0},
+   {"wer": "affe", "text": "Und der Professor wartet. Weiter!", "dauer": 2.0}
+  ]
  }
 }

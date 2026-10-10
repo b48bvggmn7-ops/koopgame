@@ -24,35 +24,41 @@ async function storyLaden(){
   return storyDaten;
 }
 const szeneAktiv = () => !!szene && menuScreen === 'szene';
-// Szene abspielen; fertig() wird am Ende (auch beim Überspringen) genau einmal aufgerufen
-async function szeneSpielen(name, fertig){
+// Szene abspielen; fertig() wird am Ende (auch beim Überspringen) genau einmal aufgerufen.
+// opt.buehne === false: KEINE eigene Bühne – die Szene spielt im laufenden Level (z. B. Boss-Arena), Affe und
+// Schweinchen bleiben, wo sie sind. Bei "relativ": true in story.json zählen x-Werte ab der linken Bildkante.
+async function szeneSpielen(name, fertig, opt){
+  opt = opt || {};
   const d = await storyLaden(), def = d[name];
   if(!def || !Array.isArray(def.schritte)){ if(fertig) fertig(); return false; }
-  const st = def.start || {};
-  const pos = k => st[k] ? {x: st[k][0], y: st[k][1]} : null;
-  const m = pos('affe') || {x: 400, y: SZENE_BODEN}, f = pos('schwein') || {x: 450, y: SZENE_BODEN};
-  buildLevel({solids: [{x: -400, y: SZENE_BODEN, w: 3000, h: 120, type: 'ground'}], startM: m, startF: f,
-              goal: {x: 5000, y: SZENE_BODEN}, welt: def.welt || 'dschungel', tageszeit: def.tageszeit, wetter: 'trocken'});
-  resetLevel();
-  if(typeof cosResetState === 'function') cosResetState();
+  const st = def.start || {}, buehne = opt.buehne !== false, kameraVorher = kameraFest;
+  if(buehne){
+    const pos = k => st[k] ? {x: st[k][0], y: st[k][1]} : null;
+    const m = pos('affe') || {x: 400, y: SZENE_BODEN}, f = pos('schwein') || {x: 450, y: SZENE_BODEN};
+    buildLevel({solids: [{x: -400, y: SZENE_BODEN, w: 3000, h: 120, type: 'ground'}], startM: m, startF: f,
+                goal: {x: 5000, y: SZENE_BODEN}, welt: def.welt || 'dschungel', tageszeit: def.tageszeit, wetter: 'trocken'});
+    resetLevel();
+    if(typeof cosResetState === 'function') cosResetState();
+    kameraFest = 0; camPos = 0;
+  }
+  const dx = def.relativ ? (kameraFest !== null ? kameraFest : Math.round(camPos)) : 0;
   const akteure = {};
-  for(const k in st) if(k !== 'affe' && k !== 'schwein') akteure[k] = {x: st[k][0], y: st[k][1], dir: -1, traegt: null, hatZahnraeder: false};
+  for(const k in st) if(k !== 'affe' && k !== 'schwein') akteure[k] = {x: st[k][0] + dx, y: st[k][1], dir: -1, traegt: null, hatZahnraeder: false};
   if(akteure.fernrohr) akteure.fernrohr.zahnraeder = true;
-  kameraFest = 0; camPos = 0;
-  szene = {def, name, i: -1, t0: 0, von: {}, nach: {}, akteure, fertig, start: performance.now()};
+  szene = {def, name, i: -1, t0: 0, von: {}, nach: {}, akteure, fertig, start: performance.now(), dx, buehne, kameraVorher};
   if(window.GameMenu && GameMenu.hide) GameMenu.hide();   // Startmenü ausblenden
   menuScreen = 'szene';
   document.body.classList.add('szene');
   szeneSchritt(0);
   return true;
 }
-const szeneFigur = k => k === 'affe' ? p1 : k === 'schwein' ? p2 : szene.akteure[k];
+const szeneFigur = k => k === 'affe' ? p1 : k === 'schwein' ? p2 : szene.akteure[k] || (k === 'bruno' && typeof bossKampf !== 'undefined' && bossKampf ? bossKampf : null);
 function szeneSchritt(i){
   if(!szene) return;
   if(i >= szene.def.schritte.length){ szeneEnde(); return; }
   szene.i = i; szene.t0 = performance.now(); szene.von = {}; szene.nach = {};
   const s = szene.def.schritte[i];
-  if(s.geh) for(const k in s.geh){ const a = szeneFigur(k); if(a){ szene.von[k] = {x: a.x, y: a.y}; szene.nach[k] = {x: s.geh[k][0], y: s.geh[k][1]}; } }
+  if(s.geh) for(const k in s.geh){ const a = szeneFigur(k); if(a){ szene.von[k] = {x: a.x, y: a.y}; szene.nach[k] = {x: s.geh[k][0] + szene.dx, y: s.geh[k][1]}; } }
   if(s.ton && typeof SFX !== 'undefined'){
     if(s.ton === 'kraehe' && SFX.kraehe) SFX.kraehe(); else if(s.ton === 'klau' && SFX.klau) SFX.klau();
   }
@@ -79,7 +85,8 @@ function szeneWeiter(){
 function szeneEnde(){
   if(!szene) return;
   const fertig = szene.fertig;
-  szene = null; kameraFest = null;
+  const zurueck = szene.buehne ? null : szene.kameraVorher;
+  szene = null; kameraFest = zurueck;
   document.body.classList.remove('szene');
   if(menuScreen === 'szene') menuScreen = null;
   for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false;
@@ -121,7 +128,7 @@ function szeneBewegen(){
 // Blickrichtung: Affe und Schweinchen schauen den Sprecher an
 function szeneBlicke(){
   const s = szene && szene.def.schritte[szene.i]; if(!s || !s.wer) return;
-  const sp = s.von ? {x: s.von[0]} : szeneFigur(s.wer);
+  const sp = s.von ? {x: s.von[0] + szene.dx} : szeneFigur(s.wer);
   if(!sp) return;
   for(const pl of [p1, p2]) if(pl !== sp && Math.abs(sp.x - pl.x) > 4) pl.facing = Math.sign(sp.x - pl.x);
 }
@@ -230,9 +237,9 @@ function szeneZeichnen(){
   if(A.kraehe && A.kraehe.traegt === 'professor' && A.professor){ SZENE_ZEICHNER.kraehe(ctx, A.kraehe); SZENE_ZEICHNER.professor(ctx, A.professor); }
   const s = szene.def.schritte[szene.i];
   if(s && s.wer && s.text){
-    const sp = s.von ? {x: s.von[0], y: s.von[1]} : szeneFigur(s.wer);
+    const sp = s.von ? {x: s.von[0] + szene.dx, y: s.von[1]} : szeneFigur(s.wer);
     if(sp){
-      const kopf = sp === p1 || sp === p2 ? sp.y - sp.h - 6 : s.wer === 'kraehe' ? sp.y - 50 : sp.y - 64;
+      const kopf = sp === p1 || sp === p2 ? sp.y - sp.h - 6 : s.wer === 'kraehe' ? sp.y - 50 : s.wer === 'bruno' ? sp.y - 112 : sp.y - 64;
       szeneBlase(s.wer, s.text, sp.x, s.von ? sp.y : kopf);
     }
   }

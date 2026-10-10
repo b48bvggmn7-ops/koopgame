@@ -118,6 +118,7 @@ function buildLevel(data){
     goal = best ? {x:best.x+best.w/2, y:best.y} : {x:200, y:640};
   }
 
+  if(typeof bossKampf !== 'undefined' && bossKampf) goal = {x: -1e6, y: -1e6};   // Boss-Level: kein Ziel, Sieg = Boss besiegt (elemente/boss.js)
   levelStartM = data.startM ? {x:data.startM.x, y:data.startM.y} : {x:60, y:640};
   levelStartF = data.startF ? {x:data.startF.x, y:data.startF.y} : {x:levelStartM.x+44, y:levelStartM.y};
 
