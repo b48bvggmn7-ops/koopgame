@@ -3996,7 +3996,7 @@ async def foerderband_mitnehmen(g):
     rechts = await g.ev("p1.x - __x0")
     assert links < -50 and rechts > 50, f'Nummer 1 dreht das Band nicht um: {links} / {rechts}'
     # in der Luft: kein Mitnehmen
-    await g.ev("setLink(1, false); p1.x = 2000; p1.y = 600; p1.vx = 0; p1.vy = -9; p1.grounded = false; window.__x0 = p1.x")
+    await g.ev("setLink(1, false); p1.x = 2000; p1.y = 600; p1.vx = 0; p1.vy = -9; p1.grounded = false; p1.bandSchwung = 0; window.__x0 = p1.x")
     await g.steps(6)
     assert abs(await g.ev("p1.x - __x0")) < 1, 'nimmt in der Luft mit'
     # Nummer 2 hält das obere Band an
@@ -4005,6 +4005,10 @@ async def foerderband_mitnehmen(g):
     await g.ev("setLink(2, true); p1.x = 3000; p1.y = 560; p1.vx = 0; window.__x0 = p1.x"); await g.steps(20)
     still = await g.ev("p1.x - __x0")
     assert lauf < -30 and abs(still) < 1, f'Nummer 2 hält nicht an: {lauf} / {still}'
+    # Absprung vom Band: Schwung des Bands kommt dazu (Schleuder)
+    await g.ev("setLink(1, true); p1.x = 1700; p1.y = 680; p1.vx = 0; p1.vy = 0"); await g.steps(3)
+    await g.p.keyboard.press('Space'); await g.steps(1); await g.ev("window.__x0 = p1.x"); await g.steps(12)
+    assert await g.ev("!p1.grounded || p1.x - __x0 > 15") and await g.ev("p1.x - __x0") > 15, f'kein Band-Schwung beim Absprung: {await g.ev("p1.x - __x0")}'
 
 @test
 async def leuchtkristall_dunkelzone(g):

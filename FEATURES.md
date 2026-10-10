@@ -832,9 +832,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Schweinchen landet segelnd punktgenau auf schmalen Eissäulen.
 
   - FÖRDERBAND (Ausbau 7, Welt Höhle; elemente/foerderband.js, Spiel-Feld baender [{x, y, w, h, richtung, tempo, link?,
-    schalter}]): fester Boden-Block, der jede Figur, die darauf steht, mitnimmt (rechts oder links, langsam 1,6 oder
-    schnell 2,8 Pixel pro Schritt). Gegen das Band kommt man langsamer voran, mit ihm schneller; Wände halten auf.
+    schalter}]): fester Boden-Block, der jede Figur, die darauf steht, mitnimmt (rechts oder links, Tempo siehe unten).
+    Gegen das Band kommt man langsamer voran, mit ihm schneller; Wände halten auf.
     - Wer springt, segelt oder am Seil hängt, wird nicht mitgenommen.
+    - Springt man vom Band ab, nimmt man dessen Schwung einmal mit (Band als Schleuder; höchstens Sprint-Tempo).
+      Tempo-Stufen: langsam 1,6 · schnell 2,8 · reißend 5,5 (schneller als Laufen – dagegen kommt man nur hüpfend voran).
     - Optional an einer Verknüpfungs-Nummer: „Nummer dreht um“ (solange an, läuft es andersherum) oder „Nummer hält an“.
       Beim Umschalten klackt ein Zahnrad.
     - Aussehen: dunkler Rahmen mit Rollen, auf dem Gurt wandern gelbe Pfeile in Laufrichtung (still = grau).

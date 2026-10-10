@@ -1,6 +1,6 @@
 // elemente/foerderband.js – Element „Förderband“ (Ausbau 7, Welt Höhle; Punkt-Element, mit der Maus malbar).
 // Fester Boden-Block, der alles, was darauf steht, mitnimmt (nach rechts oder links, langsam oder schnell). Läuft man
-// gegen das Band, kommt man langsamer voran; mit dem Band schneller. Optional an einer Verknüpfungs-Nummer:
+// gegen das Band, kommt man langsamer voran; mit dem Band schneller. Springt man ab, nimmt man den Band-Schwung mit. Optional an einer Verknüpfungs-Nummer:
 // „Nummer dreht um“ (solange die Nummer an ist, läuft es andersherum) oder „Nummer hält an“.
 // Wer springt, segelt oder am Seil hängt, wird NICHT mitgenommen (das Band wirkt nur auf dem Boden).
 // Rolle: der Affe hängt sich am Haken fest und hält gegen den Strom; das Schweinchen segelt über Bänder hinweg und
@@ -63,7 +63,7 @@ elementRegistrieren({
            'umdrehen oder anhalten. Klick auf ein vorhandenes Kästchen = Richtung tauschen',
     optionen: [
       {key: 'richtung', label: 'Richtung', werte: [['r', '→ rechts'], ['l', '← links']]},
-      {key: 'tempo', label: 'Tempo', zahl: true, werte: [['1.6', 'langsam'], ['2.8', 'schnell']]},
+      {key: 'tempo', label: 'Tempo', zahl: true, werte: [['1.6', 'langsam'], ['2.8', 'schnell'], ['5.5', 'reißend']]},
       {key: 'schalter', label: 'Nummer', titel: 'Immer gleich – oder solange die gewählte Verknüpfungs-Nummer an ist: andersherum bzw. still',
        werte: [['immer', 'ohne'], ['dreht', 'Nummer dreht um'], ['stopp', 'Nummer hält an']]},
     ],
@@ -90,10 +90,16 @@ elementRegistrieren({
       bandSchritte = 0;
     },
     // nach dem Bewegen: wer auf einem Band steht, wird mitgenommen (Wände halten ihn auf)
+    // Springt man ab, nimmt man den Schwung des Bands einmal mit (Band als Schleuder; Höchsttempo wie beim Sprint)
     nachBewegung(player){
       const s = player.standingOn;
-      if(!player.grounded || !s || s.type !== 'band') return;
+      if(!player.grounded || !s || s.type !== 'band'){
+        if(!player.grounded && player.bandSchwung) player.vx += player.bandSchwung;
+        player.bandSchwung = 0;
+        return;
+      }
       const d = bandTempo(s);
+      player.bandSchwung = d;
       if(!d) return;
       const v0 = player.vx;
       player.vx = d; player.x += d; collideAxis(player, 'x');
