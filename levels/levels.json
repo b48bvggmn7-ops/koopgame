@@ -89,5 +89,11 @@
   "name": "Level 15",
   "titel": "Förderwerk",
   "versteckt": true
+ },
+ {
+  "datei": "level-16.json",
+  "name": "Level 16",
+  "titel": "Tiefenschlund",
+  "versteckt": true
  }
 ]

@@ -1053,6 +1053,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       breit); Eisbahn, schnelles Band, letzter Sprung zum Ziel.
     - Checkpoints höchstens ~60 Spalten auseinander (16 Stück).
     - Test level15_foerderwerk (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
+  - Level 16 „Tiefenschlund“ (levels/level-16.json, Höhle Level 6 der Welt, nachts, Regen): IN ARBEIT, bis die Höhle
+    fertig ist in levels.json versteckt. Meister-Level: alles kombiniert, lange Präzisions-Passagen im Dunkeln.
+    - Etappe 1 (Spalten 0–200): dunkler Abstieg vom Felsvorsprung über Steg, Eis-Sims und Steg (darunter Stacheln);
+      Licht und Brücke: das Schweinchen hält Druckplatte 1 (Kristall über der Schlucht leuchtet), der Affe schwingt an
+      vier Haken hinüber und zieht Hebel 2 (Brücke); Eissäulen ohne Aufwind (Schweinchen segelt von Säule zu Säule und
+      springt sofort weiter, Affe an den Haken); Platten-Tunnel im Dunkeln.
+    - Test level16_tiefenschlund (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```
