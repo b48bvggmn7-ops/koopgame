@@ -2825,6 +2825,32 @@ async def dschungel_welt_look(g):
             assert r['mode'] == wetter and r['ok'] and r['look'].startswith('dschungel'), (zeit, wetter, r)
 
 @test
+async def hoehle_welt_look(g):
+    """Ausbau 7: Höhlen-Look als Eintrag in worlds.json ("aussehen": kein Himmel, eigenes Ambiente: keine Vögel, kaum
+    Grillen, Wasser in der Ferne). Unter Tage sehen morgens/mittags/abends gleich aus, nachts ist es dunkler (Ambiente
+    bleibt); Wetter „regen“ = Tropfwasser von der Decke statt Regen. Alle Tageszeiten und Wetter ladbar; das alte Level 5
+    (theme "hoehle") bleibt unverändert."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'hoehle').get('aussehen')
+    assert a and a['basis'] == 'hoehle' and a['himmel'] is False and a['ambiente']['voegel'] == 0, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'hoehle', aussehen: {json.dumps(a)}}}]);
+      const L = z => resolveLevelLook({{welt: 'hoehle', tageszeit: z}});
+      return {{ namen: ['morgen', 'mittag', 'abend', 'nacht'].map(L), amb: ['mittag', 'nacht'].map(z => THEMES[L(z)].ambiente),
+               dunkel: ['mittag', 'nacht'].map(z => THEMES[L(z)].dark), alt: resolveLevelLook({{theme: 'hoehle'}}), altAmb: THEMES.hoehle.ambiente || null }}; }})()""")
+    assert k['namen'] == ['hoehle@morgen~amb', 'hoehle@mittag~amb', 'hoehle@abend~amb', 'hoehle@nacht'], k
+    assert all(x == {'voegel': 0, 'grillen': 0.15, 'fluss': 0.7} for x in k['amb']) and k['dunkel'][1] > k['dunkel'][0], k
+    assert k['alt'] == 'hoehle' and k['altAmb'] is None, k
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='hoehle', tageszeit=zeit, wetter=wetter,
+                               eis=[{'x': 600, 'y': 680, 'w': 40, 'h': 40}], leuchtkristalle=[{'x': 800, 'y': 660}]))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground, regen: weather.rain, drips: !!THEME.drips})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('hoehle') and r['regen'] < 0.05 and r['drips'], (zeit, wetter, r)
+    # Tropfwasser zeichnet ohne Fehler (nur Anzeige)
+    await g.ev("draw()")
+
+@test
 async def ruinen_welt_look(g):
     """Ausbau 7: Ruinen-Look als Eintrag in worlds.json ("aussehen" mit eigenem Ambiente: weniger Vögel, Grillen leise
     am Tag, Fluss leise); mit jeder Tageszeit und jedem Wetter ladbar; alte Level mit theme "ruinen" bleiben unverändert."""

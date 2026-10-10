@@ -97,6 +97,29 @@ function weatherTops(){
   }
   return tops;
 }
+// Höhle bei Regen (Ausbau 7): an festen Stellen der Decke (alle 160 px, gewürfelt nach Spalte) fallen einzelne Tropfen,
+// mit kleinem Spritzer unten; ab und zu ein leises „Plipp“. Nur Anzeige und Ton, kein Spielzustand.
+const TROPF_ABSTAND = 160;
+function tropfStelle(i){ const h = Math.sin(i*127.1 + 3.7)*43758.5453; return h - Math.floor(h); }
+function tropfwasser(t, dtS){
+  ctx.save(); applyWorldZoom();
+  const i0 = Math.floor((camX - 40)/TROPF_ABSTAND), i1 = Math.ceil((camX + VW + 40)/TROPF_ABSTAND);
+  const top = -SKY_ROOM, boden = LEVEL_H, sicht = [];
+  for(let i = i0; i <= i1; i++){
+    const z = tropfStelle(i);
+    if(z > 0.45) continue;                                   // nicht jede Stelle tropft
+    const x = i*TROPF_ABSTAND + z*120 - camX, dauer = 1400 + z*2600;
+    const k = ((t + z*9000) % dauer)/dauer, y = top + (boden - top)*k*k;   // fällt beschleunigt
+    sicht.push(x + camX);
+    ctx.fillStyle = 'rgba(170,225,255,0.75)';
+    ctx.beginPath(); ctx.ellipse(x, y, 2.2, 4.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(170,225,255,0.25)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, y - 4 - 30*k); ctx.stroke();
+    ctx.fillStyle = 'rgba(170,225,255,0.5)'; ctx.beginPath(); ctx.ellipse(x, top + 6, 3, 2, 0, 0, Math.PI*2); ctx.fill();   // hängender Tropfen
+  }
+  ctx.restore();
+  if(sicht.length && Math.random() < dtS*1.4 && typeof SFX !== 'undefined' && SFX.tropfen) SFX.tropfen(sicht[Math.floor(Math.random()*sicht.length)]);
+}
 function weatherFront(){
   const dtS = Math.min(0.1, frameDt/1000);
   weatherUpdate(dtS);
@@ -122,6 +145,7 @@ function weatherFront(){
       }
     }
   }
+  if(THEME.drips && weatherMode === 'regen') tropfwasser(t, dtS);   // Höhle: Tropfwasser von der Decke (statt Regen)
   if(THEME.ash){   // Vulkan: feine Asche rieselt langsam (statt Regen)
     ctx.save(); ctx.fillStyle = 'rgba(200,190,185,0.55)';
     for(let i = 0; i < 70; i++){

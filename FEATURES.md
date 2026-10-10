@@ -866,6 +866,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Fallen-Köpfe und Lichtquellen nehmen im Spiel die Wandfarben des Levels an, nachts also auch dunkler.
     - Alte Level mit theme „ruinen“ (Level 3) sind unverändert. Test ruinen_welt_look.
 
+  - WELT HÖHLE – Look (Ausbau 7; Design in WELTEN.md): levels/worlds.json, Welt „hoehle“ hat jetzt
+    "aussehen": {basis: hoehle, himmel: false, ambiente: Vögel 0 · Grillen 0,15 · Fluss 0,7} (unter Tage: keine Vögel,
+    kaum Grillen, Wasser in der Ferne).
+    - Unter Tage sehen morgens, mittags und abends gleich aus (Höhlen-Look mit diesem Ambiente, „hoehle@…~amb“); nachts ist
+      es deutlich dunkler, das Ambiente bleibt.
+    - Wetter „regen“ in der Höhle: Tropfwasser – an festen Stellen fallen einzelne Tropfen von der Decke, ab und zu ein
+      leises „Plipp“ (statt Regenschauer); trocken/wechselnd = stille Höhle.
+    - Das alte Level 5 „Kristallhöhle“ (theme „hoehle“) ist unverändert. Test hoehle_welt_look.
+
   - Level 9 „Fallengang“ (levels/level-9.json, Ruinen Level 3 der Welt, morgens, wechselndes Wetter, 806 Spalten).
     Lehr-Level für die Fallen.
     - Etappe 1 (Spalten 0–200):

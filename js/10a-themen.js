@@ -139,7 +139,7 @@ const THEMES = {
                airCols: ['#7af0ff'], hanging: 'bat', mushGlow: true},
     particles: {mode: 'float', col: '140,240,255', n: 28},
     ray: null, rain: false, rainbow: false, sunRays: false,
-    dark: 0.48, darkCol: '10,6,24', tint: null,
+    dark: 0.48, darkCol: '10,6,24', tint: null, drips: true,   // drips: bei Wetter „regen“ Tropfwasser statt Regen (19-wetter.js)
     crumble: {light:'#8a7ca6', mid:'#6e6290', dark:'#544872', edge:'#30284a', gap:'rgba(15,10,30,.75)', moss:'#3cb7a8', mossLight:'#8af0e0', speck:'rgba(30,20,60,.55)'},
   },
 
@@ -354,6 +354,7 @@ function composeLook(welt, zeit){
     T.ambiente = {voegel: (wa.voegel ?? 1)*ta.voegel, grillen: (wa.grillen ?? 1)*ta.grillen, fluss: wa.fluss ?? 1};
   } else if(zeit === 'nacht'){
     T.dark = Math.min(0.7, (base.dark || 0) + 0.18); T.darkCol = base.darkCol || '8,12,36';
+    if(eigenAmb) T.ambiente = {voegel: wa.voegel ?? 1, grillen: wa.grillen ?? 1, fluss: wa.fluss ?? 1};   // Höhle nachts: eigenes Ambiente behalten
   }
   THEMES[key] = T;
   return key;
