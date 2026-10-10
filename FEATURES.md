@@ -1039,7 +1039,20 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       segelt über die Grube, steigt im Aufwind auf den Sims und zieht Hebel 1 – das reißende Band dreht und schleudert den
       Affen hinüber; Platten-Tunnel: ein niedriger Gang mit reißendem Gegenband, das nur andersherum läuft, solange jemand
       auf einer der beiden Druckplatten 2 (vor/hinter dem Gang) steht.
-    - Test level15_foerderwerk (Koop-Bot + Checkpoint-Abstände).
+    - Etappe 2 (Spalten 200–400): Eis-Anlauf zum Band-Sprung (auf dem Eis Schwung holen, das Band gibt dazu, weit über
+      die Grube); zwei rutschige Druckplatten 3: eine auf einem Band, das zur Stachelgrube läuft (dagegen anlaufen), eine
+      hinter Tür 3 auf Eis (genau stehen bleiben) – einer hält, der andere geht durch und hält drüben; Eis-Treppe abwärts
+      (Stege hinauf, über Eis-Simse und ein Gegenband hinunter über die Stachelgrube).
+    - Etappe 3 (Spalten 400–600): Bänder über Kreuz: zwei niedrige Gänge übereinander mit reißendem Gegenband – wer oben auf
+      Druckplatte 6 steht, dreht das untere Band; der andere fährt unten durch und zieht Hebel 5, der das obere Band dreht;
+      Gegenband mit Stachel-Höckern (im Takt springen); über das reißende Band: Steg-Inseln (Schweinchen segelt, Affe hüpft)
+      oder Haken (Affe).
+    - Etappe 4 (Spalten 600–800): Kamin mit Gegenband oben, Stege hinunter; Doppel-Schleuder: das Schweinchen segelt über
+      Grube A und zieht Hebel 8 (das Band schleudert den Affen hinüber), der Affe schwingt an den Haken über Grube B und
+      zieht Hebel 9 – das zweite Band schleudert das Schweinchen, das mit Schwung weit hinübersegelt (ohne Schwung zu
+      breit); Eisbahn, schnelles Band, letzter Sprung zum Ziel.
+    - Checkpoints höchstens ~60 Spalten auseinander (16 Stück).
+    - Test level15_foerderwerk (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```
