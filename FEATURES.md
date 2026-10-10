@@ -1023,7 +1023,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       getrennte Teleporter: das blaue Tor (nur Affe) bringt ihn an einem Fels vorbei, er zieht Hebel 4 und schaltet das
       pinke Tor (nur Schweinchen) an; Schlucht: das Schweinchen segelt hinüber und schaltet mit Hebel 5 das weiße Tor für
       den Affen an; versteckter Ausgang: eine dicke Wand ist unten nur Schein, dahinter ein Tor.
-    - Test level14_leuchtgrotte (Koop-Bot + Checkpoint-Abstände).
+    - Etappe 3 (Spalten 390–590): Stachel-Tunnel im Dunkeln (niedrige Decke, schmale Gruben, flache Hüpfer); Kammer-Kette:
+      der Affe springt durch sein blaues Tor auf einen Sims und zieht Hebel 6, das pinke Tor bringt das Schweinchen in die
+      Kammer darunter; es hält Druckplatte 7 (Tür 7 oben), der Affe läuft hinaus und zieht Hebel 8 (Tür 8 unten); Kamin
+      hinauf über eine Felswand, Stege hinunter, dunkle Schlucht (Affe an vier Haken, Schweinchen mit zwei Aufwinden).
+    - Etappe 4 (Spalten 590–800): Steg-Turm im Zickzack hinauf; getrennte Wege: einer bleibt oben auf dem Sims und zieht
+      Hebel 10 (Tür 10 unten), der andere lässt sich durch die Lücke fallen und hält Druckplatte 11 (Tür 11 oben) –
+      egal, wer welchen Weg nimmt; Steg-Hüpfer über die dunkle Stachelgrube zum Ziel.
+    - Checkpoints höchstens ~60 Spalten auseinander (18 Stück).
+    - Test level14_leuchtgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```
