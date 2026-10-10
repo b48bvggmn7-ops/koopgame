@@ -50,5 +50,11 @@
   "datei": "level-8.json",
   "name": "Level 8",
   "titel": "Glühwald"
+ },
+ {
+  "datei": "level-9.json",
+  "name": "Level 9",
+  "titel": "Fallengang",
+  "versteckt": true
  }
 ]

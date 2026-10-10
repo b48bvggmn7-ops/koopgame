@@ -1061,6 +1061,65 @@ async def level8_gluehwald(g):
         soll(r.get('done'), f'Takt-Tempeltreppe + Tor 7 ({who})', r.get('pos'))
     assert not fehler, fehler
 
+def k_takt(steine, ende, start_c, tempo, phase0=True):
+    """Takt-Steine: springen, wenn es blinkt (kurz vor dem Wechsel) – in der Luft aufs Ziel lenken"""
+    T = round(tempo * 60)
+    sp = lambda tx, h=4: [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': h}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {T}) % 2 === 0 && ({T} - wechselSchritte % {T}) > {T} - 40'}] + sp(kx(steine[0]) + 20)
+    for c0 in steine[1:]:
+        pl += [{'wait': f'({T} - wechselSchritte % {T}) <= 26 && ({T} - wechselSchritte % {T}) > 4'}] + sp(kx(c0) + 20)
+    return pl + [{'wait': f'({T} - wechselSchritte % {T}) <= 30'}] + sp(ende)
+async def k_irgendwann(g, plan_fn, ok_fn, waits, **kw):
+    """Plan mit verschiedenen Startzeiten probieren (Fallen-Takt): True, sobald einer klappt"""
+    for w in waits:
+        r = await koop(g, plans=plan_fn(w), **kw)
+        if ok_fn(r): return True
+    return False
+
+@test
+async def level9_fallengang(g):
+    """Ausbau 7, Ruinen Level 3 „Fallengang“ (levels/level-9.json, morgens): Koop-Bot spielt die Stellen jeder Etappe nach.
+    Etappe 1: Pfeil-Vorhänge (warten, bis der Pfeil unten ist), Flammen-Tunnel (Hebel 1 auf dem Felsen stellt die Flammen
+    ab und öffnet Tür 1; Hebel 2 unten öffnet Tür 2 oben), Flammen-Welle (vor jeder Flamme warten), Takt-Steine.
+    Etappe 2: Pfeil-Galerie (segeln / drei Haken im Pfeil-Takt), Flammen-Schleuse (Platten 3), Pfeil-Schacht,
+    Pfeil-Gang mit Hebeln 4/5 über Kreuz."""
+    await koop_level(g, 'level-9.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    # --- Etappe 1 ---
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = []
+        for c in (24, 30, 36):
+            plan += [k_lauf(c - 2), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 2)]
+        r = await koop(g, **{who: kat(8, 14), other: kat(6, 14)}, plans={who: plan + [k_lauf(42)]}, maxFrames=3000)
+        soll(r.get('done'), f'Pfeil-Vorhänge ({who})', r.get('pos'))
+    ok = False
+    for hold in (4, 10, 16):
+        r = await koop(g, f=kat(49, 11), m=kat(47, 11), plans={'f': k_segeln(52, hold)}, links=[1], maxFrames=1500)
+        ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 67.5 and k_pos(r, 'f')[1] == 15)
+    soll(ok, 'Tunnel segeln (Flammen aus)')
+    r = await koop(g, f=kat(70, 15), m=kat(66, 15), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
+    soll(r['pos']['f'][0] < 76, 'Tür 1 hält ohne Hebel 1', r.get('pos'))
+    plan = [k_lauf(47, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+            {'holdIf': {'right': f'P.x < {kx(60)} - 4', 'left': f'P.x > {kx(60)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(46, 11), f=kat(43, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5 and await g.ev("!!linkOn[1]"), 'Affe auf den Felsen + Hebel 1', r.get('pos'))
+    def welle(w):
+        pl = [{'frames': w + 1}]
+        for c in range(100, 141, 5):
+            fi = f'fallen.find(f => f.x === {c*40} && f.y === {12*40})'
+            pl += [{'holdIf': {'right': f'P.x < {kx(c - 2)} + 6', 'left': f'P.x > {kx(c - 2)} + 14'}, 'frames': 40},
+                   {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 40'}, k_lauf(c + 1)]
+        return {'m': pl + [k_lauf(142)]}
+    soll(await k_irgendwann(g, welle, lambda r: bool(r.get('done')), (0, 30, 60), m=kat(92, 15), f=kat(144, 15), maxFrames=4000), 'Flammen-Welle')
+    for who, other in (('m', 'f'), ('f', 'm')):
+        r = await koop(g, **{who: kat(147, 15), other: kat(145, 15)}, plans={who: k_takt(list(range(152, 177, 3)), kx(181), 149, 2)}, maxFrames=4000)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 179, f'Takt-Steine ({who})', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    assert not fehler, fehler
+
 @test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil oder bewegter Haken),

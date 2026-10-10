@@ -831,6 +831,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Fallen-Köpfe und Lichtquellen nehmen im Spiel die Wandfarben des Levels an, nachts also auch dunkler.
     - Alte Level mit theme „ruinen“ (Level 3) sind unverändert. Test ruinen_welt_look.
 
+  - Level 9 „Fallengang“ (levels/level-9.json, Ruinen Level 3 der Welt, morgens, wechselndes Wetter): IN ARBEIT, bis
+    es fertig ist in levels.json versteckt.
+    - Etappe 1 (Spalten 0–200):
+      - Pfeil-Vorhänge: Fallen in der Decke schießen nach unten; warten, bis der Pfeil unten ist (beide).
+      - Flammen-Tunnel: Das Schweinchen segelt unter dem Felsen durch zwei Flammen-Vorhänge. Hebel 1 oben auf dem Felsen
+        (Affe, per Haken) stellt die Flammen ab und öffnet Tür 1 am Ausgang. Hebel 2 unten (Schweinchen) öffnet Tür 2
+        oben für den Affen.
+      - Flammen-Welle: Neun Flammen zünden nacheinander; vor jeder warten (beide).
+      - Takt-Steine (2 s).
+    - Test level9_fallengang (Koop-Bot).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE
