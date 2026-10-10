@@ -1,0 +1,15 @@
+{
+ "hinweis": "Testlevel Ausbau 7: Licht. Öffnen: index.html?testlevel=licht · Die Sonnen-Scheibe links schickt Licht nach rechts. Spiegel 1 (unten) mit J / Num 2 drehen -> Licht geht nach oben zu Spiegel 2 (oben auf dem Sims, nur per Haken bzw. segelnd) -> richtig gedreht trifft es den Kristall -> Tür 1 geht auf, solange das Licht darauf fällt",
+ "welt": "ruinen", "tageszeit": "abend", "wetter": "trocken",
+ "solids": [{"x": 0, "y": 680, "w": 3000, "h": 40, "type": "ground"}, {"x": 840, "y": 400, "w": 200, "h": 40, "type": "ground"},
+            {"x": 1400, "y": 0, "w": 40, "h": 520, "type": "wall"}],
+ "lichtquellen": [{"x": 200, "y": 600, "richtung": "r"}],
+ "spiegel": [{"x": 800, "y": 600, "stellung": "\\"}, {"x": 800, "y": 320, "stellung": "\\"}],
+ "kristalle": [{"x": 1320, "y": 320, "link": 1}],
+ "doors": [{"x": 1420, "y": 540, "link": 1}, {"x": 1420, "y": 580, "link": 1}, {"x": 1420, "y": 620, "link": 1}, {"x": 1420, "y": 660, "link": 1}],
+ "hooks": [{"x": 700, "y": 260, "radius": 200}],
+ "switches": [], "plates": [], "spikes": [], "movingPlatforms": [],
+ "coins": [{"x": 900, "y": 360, "color": "blue"}, {"x": 940, "y": 360, "color": "pink"}],
+ "checkpoints": [{"x": 500, "y": 680}],
+ "startM": {"x": 400, "y": 680}, "startF": {"x": 360, "y": 680}, "goal": {"x": 2800, "y": 680}
+}

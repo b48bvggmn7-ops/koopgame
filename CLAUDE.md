@@ -42,7 +42,7 @@
   `optionen`, Logik pro Schritt `spiel.schritt`, Neustart `spiel.zuruecksetzen`), `teleporter.js` (Paare per 2. Klick:
   `editor.neu`, Linie `editor.zeichnenAlle`, Einfügen `editor.einfuegen`), `einseitig.js` (Steg, Kachel; Kollision
   type 'oneway' in `collideAxis`); Ausbau 5: `wasser.js` (Wasserflächen, Schwimmen `schwimmPhysik`, Luft `luftSchritt`,
-  vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Ausbau 6: `boss.js` (Endgegner-Gerüst: Boss/Arena/Boss-Platz, Zustandsautomat, Lebensbalken über `spiel.zeichnenOben`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Ausbau 6: `boss.js` (Endgegner-Gerüst: Boss/Arena/Boss-Platz, Zustandsautomat, Lebensbalken über `spiel.zeichnenOben`); Ausbau 7: `falle.js` (Pfeil/Flamme im Takt, Takt-Uhr `fallenSchritte`), `fels.js` (rollender Fels, startet per Nummer), `licht.js` (Lichtquelle/Spiegel/Kristall; Kristall wirkt in `updatePlates` über `lichtWunsch`, Spiegel drehen über `spiegelBedienen`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `WELTEN.md` – Design je Welt (Thema, Look, Tiere, Musik, Mechaniken je Level, Rollen von Affe und Schweinchen; Ausbau 7/8).
 - `story/story.json` – alle Texte und Abläufe der Spielszenen (Intro, Boss-Siege); vom Nutzer direkt änderbar.

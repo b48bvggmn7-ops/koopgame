@@ -2668,7 +2668,8 @@ async def element_register(g):
                  ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False],
                  ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False],
                  ['boss', 'boss', True, True], ['bossArena', 'bossArena', True, False], ['bossPlatz', 'bossPlaetze', True, False],
-                 ['falle', 'traps', True, True], ['fels', 'boulders', True, True]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['falle', 'traps', True, True], ['fels', 'boulders', True, True],
+                 ['lichtquelle', 'lichtquellen', True, True], ['spiegel', 'spiegel', True, False], ['kristall', 'kristalle', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -2683,7 +2684,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['hook', 'wind', 'bounce', 'tele', 'move'], reihe   # + Teleporter (Ausbau 4)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'wechsel', 'LABEL', 'LABEL', 'LABEL', 'INPUT'], logik   # Wechselboden + Gruppe/Takt (Ausbau 4)
+        assert logik == ['switch', 'door', 'plate', 'wechsel', 'LABEL', 'LABEL', 'lichtquelle', 'LABEL', 'spiegel', 'LABEL', 'kristall', 'LABEL', 'INPUT'], logik   # Wechselboden + Gruppe/Takt (Ausbau 4), Licht (Ausbau 7)
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
         await p.select_option('#linkSelect', '7')
         for t, c in (('switch', 2), ('door', 3), ('plate', 5)):
@@ -3365,6 +3366,50 @@ async def editor_fels(g):
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['boulders'] == [{'x': 260, 'y': 600, 'link': 3, 'richtung': 'l', 'tempo': 5.4}], out['boulders']
         assert 'Fels' in await p.evaluate("[...linkSelect.options].find(o => o.value === '3').textContent")
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def licht_spiegel_kristall(g):
+    """Ausbau 7 (Ruinen): Licht – die Quelle schickt einen Strahl, Stein stoppt ihn, Spiegel lenken um 90° um und lassen
+    sich mit der Hebel-Taste drehen (beide Figuren), der Kristall schaltet seine Nummer an, solange Licht darauf fällt
+    (Tür auf); Neustart stellt die Spiegel zurück. Testlevel levels/test/licht.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'licht.json')); await g.steps(3)
+    assert await g.ev("JSON.stringify(lichtWege)") == '[[[5,15],[20,15],[20,16.5]]]', await g.ev("JSON.stringify(lichtWege)")
+    await g.ev("p1.x = 820; p1.y = 680; p2.x = 900; p2.y = 680;"); await g.steps(3)
+    await g.p.keyboard.press('KeyJ'); await g.steps(5)
+    k = await g.ev("[spiegelListe.map(s => s.stellung).join(''), kristalle[0].an, !!linkOn[1]]")
+    assert k == ['/\\', False, False], k
+    await g.ev("p2.x = 860; p2.y = 400;"); await g.steps(3)
+    await g.p.keyboard.press('Numpad2'); await g.steps(5)
+    k = await g.ev("[JSON.stringify(lichtWege), kristalle[0].an, !!linkOn[1], solids.filter(d => d.type === 'door').every(d => d.open)]")
+    assert k == ['[[[5,15],[20,15],[20,8],[33,8]]]', True, True, True], k
+    # Spiegel zurückdrehen -> Licht weg -> Nummer aus
+    await g.p.keyboard.press('Numpad2'); await g.steps(5)
+    assert await g.ev("!kristalle[0].an && !linkOn[1]"), 'Kristall bleibt an ohne Licht'
+    await g.ev("resetLevel()"); await g.steps(3)
+    assert await g.ev("spiegelListe.map(s => s.stellung).join('')") == '\\\\', 'Spiegel nach Neustart nicht zurück'
+
+@test
+async def editor_licht(g):
+    """Ausbau 7: Editor-Werkzeuge Lichtquelle, Spiegel, Lichtkristall (Gruppe Schalter & Logik) mit Strahl-Vorschau; Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.click('.tool[data-tool=lichtquelle]'); await p.select_option('#opt-lichtquelle-richtung', 'r')
+        x, y = await ed_zelle(p, 2, 12); await p.mouse.click(x, y)
+        await p.click('.tool[data-tool=spiegel]'); await p.select_option('#opt-spiegel-stellung', '/')
+        x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)
+        x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)   # Klick auf vorhandenen Spiegel: Stellung wechseln
+        await p.click('.tool[data-tool=kristall]'); await p.select_option('#linkSelect', '5')
+        x, y = await ed_zelle(p, 8, 16); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['lichtquellen'] == [{'x': 80, 'y': 480, 'richtung': 'r'}], out['lichtquellen']
+        assert out['spiegel'] == [{'x': 320, 'y': 480, 'stellung': '\\'}], out['spiegel']
+        assert out['kristalle'] == [{'x': 320, 'y': 640, 'link': 5}], out['kristalle']
+        assert 'Lichtkristall' in await p.evaluate("[...linkSelect.options].find(o => o.value === '5').textContent")
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()

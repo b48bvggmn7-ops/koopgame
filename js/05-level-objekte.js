@@ -120,6 +120,7 @@ function updatePlates(players){
     pl.down = down;
     want[pl.link] = want[pl.link] || down;
   }
+  if(typeof lichtWunsch === 'function') lichtWunsch(want);   // Lichtkristall im Licht = wie gedrückte Platte (elemente/licht.js)
   for(const link in want){ if(!!linkOn[link] !== want[link]) setLink(Number(link), want[link]); }
 }
 // Aufwind (inWind, WIND_LIFT) und Sprungpilz (checkBounce, BOUNCE_V): jetzt in elemente/aufwind.js bzw. elemente/sprungpilz.js
@@ -135,6 +136,7 @@ function updateDoorsAndSwitches(dt, players){
       if(d < bd){ bd = d; best = sw; }
     }
     if(best) triggerSwitch(best, player);
+    else if(typeof spiegelBedienen === 'function') spiegelBedienen(player);   // sonst: Spiegel drehen (elemente/licht.js)
   }
   // Tür schließen, sobald keine Figur mehr darin steht (niemand wird eingeklemmt)
   for(const d of solids){

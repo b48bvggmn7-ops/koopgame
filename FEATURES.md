@@ -802,6 +802,26 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Welche Rolle haben Affe und Schweinchen? Einer startet die Flucht, beide müssen weg: Der Affe flieht nach oben an
       Haken, der Fels rollt darunter durch. Das Schweinchen segelt über Gruben, in die der Fels fällt.
 
+  - LICHT (Ausbau 7, Welt Ruinen; elemente/licht.js). Spiel-Felder: lichtquellen [{x, y, richtung}],
+    spiegel [{x, y, stellung: / oder \}], kristalle [{x, y, link}].
+    - Lichtquelle: eine Sonnen-Scheibe im Stein, fest wie eine Wand. Sie schickt einen Strahl Kästchen für Kästchen in
+      ihre Richtung (bis 80 Kästchen weit).
+    - Was den Strahl stoppt: Stein, geschlossene Türen, Wechselboden und Fallen. Stege, Scheinwände und Figuren lässt er
+      durch.
+    - Spiegel (/ oder \): lenkt den Strahl um 90° um. Beide Figuren drehen ihn mit der Hebel-Taste (J / Num 2 / Kreis),
+      wenn kein Hebel näher ist. Er dreht sich sichtbar, dazu ein Stein-Schaben.
+    - Lichtkristall: Solange der Strahl darauf fällt, ist seine Nummer AN, wie eine gedrückte Druckplatte (Türen auf,
+      Bewegung fährt …). Er leuchtet, Ton: warmes Aufrauschen bzw. Verwehen (kein Klingeln).
+    - Strahl: goldene, leicht pulsierende Linie mit Funkeln.
+    - Neustart und Tod: Die Spiegel stehen wieder wie im Editor gesetzt.
+    - Einbau ins Verknüpfungs-System (js/05): Der Kristall wirkt in updatePlates über lichtWunsch; die Hebel-Taste ohne
+      Hebel in Reichweite dreht einen Spiegel (spiegelBedienen).
+    - Editor: Werkzeuge „Lichtquelle“ (Richtung), „Spiegel“ (Stellung; Klick wechselt sie) und „Lichtkristall“ (mit
+      Verknüpfung) in der Gruppe Schalter & Logik. Eine gestrichelte gelbe Linie zeigt den Strahl schon im Editor.
+    - Testlevel levels/test/licht.json; Tests licht_spiegel_kristall, editor_licht.
+    - Welche Rolle haben Affe und Schweinchen? Spiegel stehen dort, wo nur der Affe (Haken) oder nur das Schweinchen
+      (segelnd) hinkommt. Einer lenkt das Licht, der andere geht durch die Tür, die der Kristall öffnet.
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

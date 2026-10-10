@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, spiegel: 0.18, kristallAn: 0.16, kristallAus: 0.12, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -186,6 +186,10 @@ function* sfxBuild(a, out){
     felsAufprall:()=>{ const b = mk(0.7); thump(b, 0, 95, 40, 0.4, 1.0); puff(b, 0, 0.5, 500, 0.7, 0, 0.02); grains(b, 0.02, 0.5, 40, 800, 3500, 0.002, 0.008, 0.35, 0.8, 'decay'); return b; },
     felsBruch: ()=>{ const b = mk(1.2); thump(b, 0, 120, 45, 0.35, 1.0); puff(b, 0, 0.9, 700, 0.9, 0, 0.02);
                      for(let i = 0; i < 26; i++) modal(b, 0.03 + R()*0.8, rnd(300, 1400), wood, rnd(0.01, 0.04), rnd(0.2, 0.6), (R()*2 - 1)*0.8, 0.5); return b; },
+    // Licht (Ausbau 7): Spiegel drehen = Stein schabt + Klack; Kristall an = warmes Aufrauschen (kein Klingeln), aus = leises Verwehen
+    spiegel:   ()=>{ const b = mk(0.5); creak(b, 0, 0.25, 90, 50, rnd(300, 380), 0.45, 0); modal(b, 0.24, 260, wood, 0.03, 0.7, 0, 0.6); return b; },
+    kristallAn:()=>{ const b = mk(1.0); swish(b, 0, 0.9, 500, 2600, 1.2, 0.7, 0, 0.5); thump(b, 0.02, 220, 330, 0.3, 0.3); return b; },
+    kristallAus:()=>{ const b = mk(0.7); swish(b, 0, 0.6, 2200, 500, 1.2, 0.5, 0, 0.1); return b; },
     // Steg (einseitige Plattform, Ausbau 4): kurzes Holz-Knarzen beim Landen
     steg:      ()=>{ const b = mk(0.35); creak(b, 0, 0.16, 70, 40, rnd(500, 620), 0.5, 0); modal(b, 0, 210, wood, 0.03, 0.6, 0, 0.5); return b; },
     // Wasser (Ausbau 5): Platschen beim Ein-/Auftauchen, „Blubb“ als Luft-Warnung, tiefes Luftholen an der Oberfläche
@@ -326,6 +330,8 @@ const SFX = {
   felsRollen(x){ sfxPlay('felsRollen', {x}); },
   felsAufprall(x){ sfxLog('felsaufprall'); sfxPlay('felsAufprall', {x}); },
   felsBruch(x){ sfxLog('felsbruch'); sfxPlay('felsBruch', {x}); },
+  spiegel(x){ sfxLog('spiegel'); sfxPlay('spiegel', {x}); },   // Licht (Ausbau 7)
+  kristall(x, an){ sfxLog(an ? 'kristallan' : 'kristallaus'); sfxPlay(an ? 'kristallAn' : 'kristallAus', {x}); },
   steg(x){ sfxLog('steg'); sfxPlay('steg', {x}); },   // Landen auf einem Steg
   teleport(x){ sfxLog('teleport'); sfxPlay('teleport', {x}); },   // Teleporter
   wechselWarn(x){ sfxLog('wechselwarn'); sfxPlay('wechselTick', {x}); },
