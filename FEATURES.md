@@ -883,6 +883,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         der Tür fällt ein Pfeil im Takt (nicht an der Tür warten!).
       - Flammen-Tunnel mit Kristall: Das Schweinchen hält Druckplatte 7 (ein Trittstein erscheint), der Affe springt
         darauf, greift den Haken und dreht oben den Spiegel → der Kristall stellt die Flammen im Tunnel ab.
+    - Etappe 3 (Spalten 400–600):
+      - Zwei Wege: oben (Haken, Stacheln) der Affe, unten (Grube) das Schweinchen. Das Schweinchen öffnet über das pinke
+        Tor und Spiegel 8 die obere Tür 9 für den Affen; der Affe dreht am Ende des oberen Wegs Spiegel 9 → untere Tür 10.
+      - Spiegel-Kette unter Pfeilen: drei Boden-Spiegel müssen richtig stehen (zwei feste Spiegel oben lenken den Strahl
+        im Zickzack); über jedem hängt eine Pfeilfalle – drehen und schnell weg (beide).
+      - Flammen-Gang: Flammen aus dem Boden als Welle – das Schweinchen läuft der Welle nach, der Affe nimmt das blaue Tor.
     - Test level10_sonnentempel (Koop-Bot).
 
 ## Level-Editor (editor/)

@@ -1252,7 +1252,9 @@ async def level10_sonnentempel(g):
     Schweinchen-Spiegel auf der Insel (segeln; Kristall lässt die Brücke für den Affen erscheinen), Spiegel zwischen
     Pfeil-Vorhängen (Tür 4).
     Etappe 2: Zwei-Spiegel-Kette (Affe am Sims, Schweinchen über pinkes Tor auf der Insel), Licht-Takt mit Pfeil vor Tür 6,
-    Flammen-Tunnel mit Kristall (Platte 7 -> Trittstein -> Haken -> Spiegel)."""
+    Flammen-Tunnel mit Kristall (Platte 7 -> Trittstein -> Haken -> Spiegel).
+    Etappe 3: zwei Wege (oben Affe, unten Schweinchen; jeder öffnet per Spiegel die Tür des anderen), Spiegel-Kette unter
+    Pfeilen, Flammen-Gang (Schweinchen läuft der Welle nach, Affe nimmt das blaue Tor)."""
     await koop_level(g, 'level-10.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -1324,6 +1326,37 @@ async def level10_sonnentempel(g):
     soll(not await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}, k_lauf(372)]}, lambda r: bool(r.get('done')), range(0, 120, 30),
                                 f=kat(356, 15), m=kat(354, 15), maxFrames=600), 'Tunnel ohne Licht gesperrt')
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    r = await koop(g, f=kat(401, 15), m=kat(400, 15), plans={'f': [k_lauf(404), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}] + am(408)}, maxFrames=1000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 6 and await g.ev("!!linkOn[9]"), 'pinkes Tor -> Spiegel 8 -> Tür 9', r.get('pos'))
+    r = await koop(g, m=kat(406, 15), f=kat(407, 6), plans={'m': haken(411, 9, 30) + [k_lauf(428)]}, pre=dreh(409), maxFrames=1500)
+    soll(r.get('done') and k_pos(r, 'm')[1] == 9, 'Affe per Haken auf den oberen Weg, durch Tür 9', r.get('pos'))
+    r = await koop(g, m=kat(420, 9), f=kat(407, 6), plans={'m': [k_lauf(428)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 424, 'Tür 9 zu ohne Licht', r.get('pos'))
+    m = [k_lauf(427, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(465)] + am(466)
+    r = await koop(g, m=kat(426, 9), f=kat(436, 15), plans={'m': m}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[10]"), 'Affe am Haken über die Stacheln -> Spiegel 9 -> Tür 10', r.get('pos'))
+    r = await koop(g, f=kat(418, 15), m=kat(410, 15), plans={'f': [k_lauf(426)]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 422, 'Tür 10 zu ohne Licht', r.get('pos'))
+    r = await koop(g, f=kat(430, 15), m=kat(466, 9), plans={'f': gleit(439, kx(453), 4) + [k_lauf(476)]}, pre=dreh(466), maxFrames=1500)
+    soll(r.get('done'), 'Schweinchen unten über die Grube, Ausgang', r.get('pos'))
+    pl = []
+    for c, nach in ((492, 496), (500, 504), (508, 512)):
+        pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}] + am(c) + [k_lauf(nach, 0)]
+    r = await koop(g, f=kat(486, 15), m=kat(496, 15), plans={'f': pl + [k_lauf(524)]}, maxFrames=4000)
+    soll(r.get('done') and await g.ev("!!linkOn[11]"), 'Spiegel-Kette unter Pfeilen -> Tür 11', r.get('pos'))
+    r = await koop(g, f=kat(512, 15), m=kat(510, 15), plans={'f': [k_lauf(524)]}, pre=dreh(492, 500), maxFrames=600)
+    soll(r['pos']['f'][0] < 518, 'zwei von drei Spiegeln reichen nicht', r.get('pos'))
+    r = await koop(g, m=kat(528, 15), f=kat(536, 15), plans={'m': [k_lauf(533), {'wait': f'P.x > {kx(570)}'}, {'frames': 20}]}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 572, 'Affe durchs blaue Tor über den Flammen-Gang', r.get('pos'))
+    plan = []
+    for c in range(540, 569, 4):
+        fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+        plan += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 40'}, k_lauf(c + 1)]
+    r = await koop(g, f=kat(535, 15), m=kat(577, 15), plans={'f': plan + [k_lauf(578)]}, maxFrames=5000)
+    soll(r.get('done'), 'Schweinchen läuft der Flammen-Welle nach', r.get('pos'))
+    if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
     assert not fehler, fehler
 
 @test
