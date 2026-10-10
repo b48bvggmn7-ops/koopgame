@@ -1082,7 +1082,9 @@ async def level9_fallengang(g):
     Etappe 1: Pfeil-Vorhänge (warten, bis der Pfeil unten ist), Flammen-Tunnel (Hebel 1 auf dem Felsen stellt die Flammen
     ab und öffnet Tür 1; Hebel 2 unten öffnet Tür 2 oben), Flammen-Welle (vor jeder Flamme warten), Takt-Steine.
     Etappe 2: Pfeil-Galerie (segeln / drei Haken im Pfeil-Takt), Flammen-Schleuse (Platten 3), Pfeil-Schacht,
-    Pfeil-Gang mit Hebeln 4/5 über Kreuz."""
+    Pfeil-Gang mit Hebeln 4/5 über Kreuz.
+    Etappe 3: Deckung (Affe schaltet oben die Deckungen im Pfeil-Takt), Teleporter zwischen Flammen (Hebel 8/9),
+    Takt-Steine 1,5 s unter Pfeil-Vorhängen."""
     await koop_level(g, 'level-9.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -1165,6 +1167,45 @@ async def level9_fallengang(g):
     r = await koop(g, m=kat(320, 10), f=kat(338, 15), plans={'m': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)
     soll(r['pos']['m'][0] < 326, 'Tür 5 hält den Affen ohne Hebel 5', r.get('pos'))
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    ok = False
+    for jx in (406, 407, 408):
+        m = [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+             {'swing': True, 'pull': 60, 'release': f'P.y < {ky(12)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+        r = await koop(g, m=kat(403, 15), f=kat(404, 15), plans={'m': m}, maxFrames=1500)
+        if k_pos(r, 'm') and k_pos(r, 'm')[1] == 12: ok = True; break
+    soll(ok, 'Deckung: Affe auf die Decke (Haken)')
+    m = [{'holdIf': {'right': f'P.x < {kx(416)} - 4', 'left': f'P.x > {kx(416)} + 4'}, 'frames': 60}]
+    f = [k_lauf(418, -14)]
+    for k, deckung in enumerate((428, 437, 446, 455)):   # Affe schaltet die Deckung um, sobald ein Pfeil steckt
+        f += [{'wait': f'fallenPfeile.some(a => a.steckt >= 0 && a.steckt < 3 && a.x > {kx(415)} && a.x < {kx(460)}) && Q.x > {kx(410)}'},
+              {'wait': f'window.__schalte{k} = true'}, {'wait': f'!!window.__geschaltet{k}'}, k_lauf(deckung, -14)]
+        m += [{'wait': f'!!window.__schalte{k}'}, {'use': True, 'frames': 2}, {'wait': f'window.__geschaltet{k} = true'}]
+    f += [{'holdIf': {'right': f'P.x < {kx(454)} - 4', 'left': f'P.x > {kx(454)} + 4'}, 'frames': 40}, {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(414, 12), f=kat(414, 15), plans={'m': m, 'f': f}, maxFrames=5000,
+                   pre='for(let k = 0; k < 4; k++){ window["__schalte" + k] = false; window["__geschaltet" + k] = false; }')
+    soll(r.get('done') and await g.ev("!!linkOn[7]"), 'Deckungs-Staffel bis Hebel 7', r.get('pos'))
+    r = await koop(g, f=kat(418, 15), m=kat(416, 12), plans={'f': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 420, 'Deckung A sperrt ohne Umschalten', r.get('pos'))
+    for who, st in (('m', (452, 12)), ('f', (457, 15))):
+        pl = [k_lauf(456 if who == 'm' else 458, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(461)}', 'frames': 300}]
+        r = await koop(g, **{who: kat(*st), ('f' if who == 'm' else 'm'): kat(454, 12)}, plans={who: pl}, links=[6, 7], maxFrames=1500)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 461, f'durch Tür 7 ({who})', r.get('pos'))
+    f = [k_lauf(475), {'wait': f'P.y < {ky(7)}'}, {'holdIf': {'right': f'P.x < {kx(488)} - 4', 'left': f'P.x > {kx(488)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}, k_lauf(491), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, f=kat(472, 15), m=kat(470, 15), plans={'f': f}, maxFrames=2000)
+    soll(r.get('done') and await g.ev("!!linkOn[8]"), 'pinkes Tor -> Hebel 8 (Schweinchen)', r.get('pos'))
+    m = [k_lauf(479), {'wait': f'P.y < {ky(7)}'}, {'holdIf': {'right': f'P.x < {kx(508)} - 4', 'left': f'P.x > {kx(508)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}, k_lauf(511), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(476, 15), f=kat(490, 15), plans={'m': m}, links=[8], maxFrames=2000)
+    soll(r.get('done') and await g.ev("!!linkOn[9]"), 'blaues Tor (mit Hebel 8) -> Hebel 9 (Affe)', r.get('pos'))
+    r = await koop(g, m=kat(476, 15), f=kat(490, 15), plans={'m': [k_lauf(481)]}, maxFrames=600)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 15, 'blaues Tor ohne Hebel 8 aus', r.get('pos'))
+    r = await koop(g, f=kat(490, 15), m=kat(510, 15), plans={'f': [k_lauf(515)]}, links=[8, 9], maxFrames=1500)
+    soll(r.get('done'), 'Schweinchen durch die Flammen (aus) und Tür 9', r.get('pos'))
+    for who, other in (('m', 'f'), ('f', 'm')):
+        soll(await k_irgendwann(g, lambda w, who=who: {who: [{'frames': w + 1}] + k_takt(list(range(542, 566, 3)), kx(571), 539, 1.5)},
+                                lambda r, who=who: bool(k_pos(r, who)) and k_pos(r, who)[0] >= 569, range(0, 180, 30),
+                                **{who: kat(537, 15), other: kat(535, 15)}, maxFrames=4000), f'Takt unter Pfeil-Vorhängen ({who})')
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     assert not fehler, fehler
 
 @test

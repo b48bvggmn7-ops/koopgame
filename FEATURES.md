@@ -850,6 +850,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       - Pfeil-Gang mit Hebeln über Kreuz: In den niedrigen Gang mit Pfeil-Vorhängen kommt nur das Schweinchen (Grube
         davor). Hebel 4 oben auf der Decke (Affe) stellt die Pfeile ab und öffnet Tor 4 am Ende. Hebel 5 im Gang
         (Schweinchen) öffnet Tür 5 oben für den Affen.
+    - Etappe 3 (Spalten 400–600):
+      - Deckung: Unten schießt eine Falle quer durch den Gang. Der Affe steht oben auf der Decke und schaltet mit
+        Hebel 6 die Deckungen A/B um (Wechselboden-Wände), das Schweinchen läuft von Deckung zu Deckung zu Hebel 7
+        (stellt die Falle ab, öffnet Tür 7).
+      - Teleporter zwischen Flammen: Das pinke Tor bringt das Schweinchen zu Hebel 8 (Flammen aus, blaues Tor an),
+        das blaue Tor bringt den Affen zu Hebel 9 (Tür 9).
+      - Takt-Steine (1,5 s) unter Pfeil-Vorhängen (beide).
     - Test level9_fallengang (Koop-Bot).
 
 ## Level-Editor (editor/)
