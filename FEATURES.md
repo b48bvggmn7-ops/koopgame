@@ -636,6 +636,20 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Tests packages_wahrscheinlichkeiten, packages_duplikate, packages_vergabe, packages_oeffnen, sammlung_ausruesten,
         packages_menue_design.
 ```
+  - GESCHICHTE / SPIELSZENEN (Ausbau 6, js/29-story.js, Texte in story/story.json):
+      Entführer: Baron Krähwald – eine eitle Krähe mit Sonnenbrille und rotem Schal (Krähen lieben Glänzendes: er klaut
+        die Zahnräder vom Wolken-Fernrohr des Professors; als Vogel kann er den Professor einfach wegtragen; passt zu
+        „süß und cool“). Professor Uhu: kleine Eule mit Brille und Laborkittel. Jeder Boss ist ein Handlanger des Barons
+        und bewacht ein Zahnrad (5 Zahnräder, 5 Welten).
+      Intro „Die Nacht der Sternschnuppe“: Bühne mit Dschungel am Abend, Kino-Balken oben/unten, Titel, Sprechblasen mit
+        Namen (Farbe je Figur), Figuren bewegen sich (Krähe fliegt herein, klaut die Zahnräder, packt den Professor,
+        fliegt davon; Affe und Schweinchen gehen los), Geräusche (Krähe, Klau-Glitzern). Springen (Leertaste, Num 0,
+        Enter, Controller ✕) blättert weiter, Esc / Options / ○ überspringt alles. Spiel steht still (menuScreen 'szene'),
+        Anzeigen oben sind ausgeblendet, Kamera steht fest (kameraFest in 09-kamera.js).
+      Läuft beim allerersten „Spielen“ (nach der Spielerwahl, vor Level 1; gemerkt in monchichi.introGesehen – auch ein
+        neues Spiel zeigt sie nicht wieder); jederzeit über den Hauptmenü-Punkt „Geschichte“ (danach zurück ins Menü).
+      story/story.json: Namen der Figuren, je Szene Titel, Welt/Tageszeit, Startplätze und Schritte (wer + text, geh,
+        dauer, aktion, ton, von) – Texte lassen sich dort ändern, ohne Code. Test intro_szene.
 
 ## Level-Editor (editor/)
 ```

@@ -1,0 +1,29 @@
+{
+ "hinweis": "Alle Texte der Spielszenen (Ausbau 6). Hier kannst du Sätze ändern: 'text' bei den Schritten. 'wer' ist affe, schwein, professor, kraehe oder bruno. 'dauer' = Sekunden, wie lange ein Schritt mindestens steht (Springen-Taste blättert weiter, Esc überspringt alles). 'geh' bewegt Figuren (x/y in Pixeln, die Bühne ist ca. 1500 breit, Boden bei y 640).",
+ "figuren": {"affe": "Affe", "schwein": "Schweinchen", "professor": "Professor Uhu", "kraehe": "Baron Krähwald", "bruno": "Bruno"},
+ "intro": {
+  "titel": "Die Nacht der Sternschnuppe",
+  "welt": "dschungel",
+  "tageszeit": "abend",
+  "start": {"affe": [430, 640], "schwein": [480, 640], "professor": [700, 640], "kraehe": [1700, 120], "fernrohr": [800, 640]},
+  "schritte": [
+   {"wer": "professor", "text": "Gleich ist es so weit. Mein Wolken-Fernrohr zeigt uns heute die Sternschnuppe des Jahrhunderts.", "dauer": 3.4},
+   {"wer": "affe", "text": "Wir haben Kekse dabei.", "dauer": 1.8},
+   {"wer": "schwein", "text": "Und Decken. Für die Romantik.", "dauer": 2.0},
+   {"geh": {"kraehe": [1000, 330]}, "dauer": 1.6, "ton": "kraehe"},
+   {"wer": "kraehe", "text": "Sternschnuppe? Ich sehe nur eins: glänzende Zahnräder.", "dauer": 2.8},
+   {"wer": "professor", "text": "Baron Krähwald! Finger weg von meinem Fernrohr!", "dauer": 2.4},
+   {"wer": "kraehe", "text": "Flügel, Professor. Und: nein.", "dauer": 2.0},
+   {"geh": {"kraehe": [810, 540]}, "dauer": 0.9, "aktion": "zahnraeder", "ton": "klau"},
+   {"geh": {"kraehe": [705, 560]}, "dauer": 0.8, "aktion": "schnapp"},
+   {"wer": "kraehe", "text": "Sie kommen gleich mit. Jemand muss die Dinger ja wieder zusammenbauen.", "dauer": 3.0},
+   {"geh": {"kraehe": [1750, 60]}, "dauer": 2.2},
+   {"wer": "professor", "text": "Hiiilfe! … Und bringt die Kekse mit!", "dauer": 2.4, "von": [1500, 120]},
+   {"wer": "kraehe", "text": "Meine Jungs passen auf die fünf Zahnräder auf. Viel Glück, ihr Knuddel!", "dauer": 3.2, "von": [1450, 90]},
+   {"wer": "affe", "text": "… Knuddel?!", "dauer": 1.6},
+   {"wer": "schwein", "text": "Fünf Zahnräder, fünf Welten. Den holen wir uns.", "dauer": 2.6},
+   {"wer": "affe", "text": "Kekse einpacken. Los.", "dauer": 1.6},
+   {"geh": {"affe": [1650, 640], "schwein": [1610, 640]}, "dauer": 2.2}
+  ]
+ }
+}

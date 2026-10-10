@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, schwimmzug: 0.12, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -193,6 +193,9 @@ function* sfxBuild(a, out){
     pegel:     ()=>{ const b = mk(1.4); puff(b, 0, 1.3, 350, 0.9, 0, 0.25); for(let i = 0; i < 9; i++) thump(b, 0.1 + i*0.12 + R()*0.05, rnd(120, 200), rnd(220, 380), 0.08, 0.35);
                      swish(b, 0.05, 1.2, 500, 900, 0.7, 0.4, 0, 0.3); return b; },
     schwimmzug:()=>{ const b = mk(0.35); swish(b, 0, 0.28, 400, 1200, 0.8, 0.8, 0, 0.3); thump(b, 0.02, 120, 90, 0.08, 0.25); return b; },   // Schwimmstoß
+    // Spielszenen (Ausbau 6): zweimal „Kraah“ der Krähe (gefiltertes Rauschen mit Tonhöhen-Ruck), Klau-Glitzern
+    kraehe:    ()=>{ const b = mk(0.8); for(const t0 of [0, 0.3]){ swish(b, t0, 0.22, 900, 600, 4, 1.0, 0, 0.1); thump(b, t0, 520, 380, 0.18, 0.35); } return b; },
+    klau:      ()=>{ const b = mk(0.6); swish(b, 0, 0.25, 800, 3000, 1.2, 0.6, 0, 0.3); grains(b, 0.05, 0.45, 25, 4000, 9000, 0.001, 0.004, 0.25, 0.9, 'decay'); return b; },
     frog:      ()=>{ const b = mk(0.45); for(const t0 of [0, 0.16]){ for(let i = 0; i < 7; i++) modal(b, t0 + i*0.016, rnd(380, 430), [[1, 1], [2.8, 0.6], [4.2, 0.3]], 0.012, 0.6, 0, 0.3); } return b; },
     discover:  ()=>{ const b = mk(0.9); swish(b, 0, 0.5, 400, 1800, 1.0, 0.6, 0, 0.3);
                      grains(b, 0.05, 0.6, 50, 1200, 4500, 0.0004, 0.0015, 0.35, 0.5, 'decay'); modal(b, 0.05, 220, wood, 0.08, 0.5, 0, 0.4); return b; },
@@ -289,6 +292,8 @@ const SFX = {
   blaseRuf(x){ sfxLog('blaseruf'); sfxPlay('blaseRuf', {x}); },
   pegel(x, steigt){ sfxLog('pegel'); sfxPlay('pegel', {x, rate: steigt ? 1.05 : 0.9}); },   // Wasserstand
   schwimmzug(x){ sfxLog('schwimmzug'); sfxPlay('schwimmzug', {x}); },
+  kraehe(x){ sfxLog('kraehe'); sfxPlay('kraehe', {x}); },   // Spielszene
+  klau(x){ sfxLog('klau'); sfxPlay('klau', {x}); },
   steg(x){ sfxLog('steg'); sfxPlay('steg', {x}); },   // Landen auf einem Steg
   teleport(x){ sfxLog('teleport'); sfxPlay('teleport', {x}); },   // Teleporter
   wechselWarn(x){ sfxLog('wechselwarn'); sfxPlay('wechselTick', {x}); },

@@ -785,6 +785,7 @@ function drawSolidLook(s, look, x){
   drawHearts();     // Herzchen, wenn beide nah beieinander stehen
   drawCoinFx(camX);
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenVorne) E.spiel.zeichnenVorne();   // vor den Figuren, z. B. Wasser (elemente/)
+  if(typeof szeneZeichnen === 'function') szeneZeichnen();   // Spielszene: Figuren + Sprechblasen (29-story.js)
   if(deathState && deathState.phrase) drawDeathBubble();
 
   // Hinweis am Ziel, wenn noch Münzen fehlen
@@ -803,6 +804,7 @@ function drawSolidLook(s, look, x){
   weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
   drawOffscreenArrows();
   drawContinuePrompt();
+  if(typeof szeneRahmen === 'function') szeneRahmen();       // Spielszene: Kino-Balken, Titel, Hinweis (29-story.js)
   if(testJumpMsg && performance.now() - testJumpT < 1800){
     ctx.font = 'bold 16px sans-serif';
     const tw = ctx.measureText(testJumpMsg).width + 28;

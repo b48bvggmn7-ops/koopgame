@@ -87,7 +87,8 @@ async def startmenue_bis_level(g, tasten_vorher=()):
     for k in tasten_vorher:
         await p.keyboard.press(k); await p.wait_for_timeout(350)
     await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
-    for _ in range(200):   # Countdown und Blätter-Vorhang
+    for _ in range(200):   # Countdown, beim ersten Spielen die Intro-Szene (Esc überspringt), Blätter-Vorhang
+        if await g.ev("menuScreen === 'szene'"): await p.keyboard.press('Escape')
         if await g.ev("menuScreen === null"): return
         await p.wait_for_timeout(100)
     raise AssertionError('Level startet nach der Spielerwahl nicht')
@@ -476,7 +477,7 @@ async def menue_beim_start(g):
     await p.keyboard.press('KeyX'); await p.wait_for_timeout(1100)
     assert await sm_screen(g) == 'sm-s-menu', 'Taste führt nicht ins Hauptmenü'
     texte = await p.eval_on_selector_all('#sm-menu .mi', 'els => els.map(e => e.textContent)')
-    assert texte == ['Spielen', 'Optionen', 'Beenden'], f'Menü: {texte}'
+    assert texte == ['Spielen', 'Optionen', 'Geschichte', 'Beenden'], f'Menü: {texte}'
     await p.keyboard.press('ArrowDown'); await p.wait_for_timeout(100)
     assert await p.text_content('#sm-menu .mi.sel') == 'Optionen', 'Pfeil runter wählt nicht'
     await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
@@ -502,7 +503,7 @@ async def menue_projekt_levels(g):
         await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-menu', 'Zurück zum Menü geht nicht'
         texte = await p.eval_on_selector_all('#sm-menu .mi', 'els => els.map(e => e.textContent)')
-        assert texte == ['Spielen', 'Fortfahren', 'Optionen', 'Beenden'], f'Menü: {texte}'
+        assert texte == ['Spielen', 'Fortfahren', 'Optionen', 'Geschichte', 'Beenden'], f'Menü: {texte}'
         await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-map', 'Fortfahren führt nicht zur Weltkarte (Ausbau 3)'
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)   # Dschungel (erste Welt) öffnen
@@ -566,6 +567,7 @@ async def levelstart_vorhang(g):
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         assert await g.ev("document.querySelectorAll('#leafCurtain .leaf').length") > 100, 'zu wenige Blätter'
+        await g.ev("localStorage.setItem('monchichi.introGesehen', 'true')")   # hier geht es nur um den Vorhang (Intro: Test intro_szene)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
         await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
@@ -1947,7 +1949,7 @@ async def neues_spiel_loescht_alles(g):
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
-        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Optionen', 'Beenden']
+        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Optionen', 'Geschichte', 'Beenden']
         # Spielstand vorhanden: Level geschafft, Packages, Items, Münzen
         await g.ev("""GameMenu.completeLevel(1, true); GameMenu.completeLevel(2, true);
           cosmeticsSave.pending = {m: 2, f: 1}; cosmeticsSave.coins = {m: 340, f: 90};
@@ -1955,7 +1957,7 @@ async def neues_spiel_loescht_alles(g):
           (() => { const s = JSON.parse(localStorage.getItem('monchichi.save')); s.played = true; localStorage.setItem('monchichi.save', JSON.stringify(s)); })()""")
         await p.reload(); await p.wait_for_timeout(700)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
-        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Fortfahren', 'Optionen', 'Beenden']
+        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Fortfahren', 'Optionen', 'Geschichte', 'Beenden']
         await p.keyboard.press('Enter'); await p.wait_for_timeout(400)          # Spielen -> Rückfrage
         assert await g.ev("document.getElementById('sm-modal').classList.contains('on')"), 'keine Rückfrage'
         assert 'Münzen' in await g.ev("document.getElementById('sm-modal-text').textContent")
@@ -2906,6 +2908,48 @@ async def wasser_testlevel_ton_welt(g):
         wa = next(x for x in w['welten'] if x['id'] == 'wasser')
         assert wa['level'] == [] and wa.get('look') == 'wasser', wa
         assert await g.ev("composeLook('wasser', 'morgen') === 'wasser' && THEMES.wasser.label.startsWith('Lagune')")
+    finally:
+        srv.shutdown()
+
+@test
+async def intro_szene(g):
+    """Ausbau 6: Intro-Szene (Texte in story/story.json). Läuft beim allerersten „Spielen“ nach der Spielerwahl:
+    Kino-Balken, Sprechblasen, Springen blättert weiter, Esc überspringt -> Level 1 startet. Beim nächsten neuen
+    Spiel kommt sie nicht wieder, nur über den Menüpunkt „Geschichte“ (danach zurück ins Hauptmenü)."""
+    srv = webserver(); p = g.p
+    try:
+        story = json.loads((ROOT / 'story' / 'story.json').read_text(encoding='utf-8'))
+        assert story['intro']['schritte'] and all('text' in s for s in story['intro']['schritte'] if 'wer' in s)
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        await p.wait_for_function("menuScreen === 'szene' && szene && szene.name === 'intro'", timeout=15000)
+        assert await g.ev("document.body.classList.contains('szene') && kameraFest === 0 && !document.getElementById('sm').classList.contains('on')")
+        await p.wait_for_timeout(400)
+        i0 = await g.ev("szene.i"); await p.keyboard.press('Space'); await p.wait_for_timeout(300)
+        assert await g.ev("szene.i") > i0, 'Springen blättert nicht weiter'
+        x0 = await g.ev("p1.x"); await p.keyboard.press('KeyD'); await p.wait_for_timeout(200)
+        assert await g.ev("p1.x") == x0, 'Figuren lassen sich in der Szene steuern'
+        await p.keyboard.press('Escape')
+        await p.wait_for_function("menuScreen === null", timeout=15000)
+        spiel = json.loads((ROOT / 'levels' / 'level-1.json').read_text())
+        assert await g.ev("!szene && kameraFest === null && coins.length") == len(spiel['coins']), 'Level 1 startet nach der Szene nicht'
+        assert await g.ev("localStorage.getItem('monchichi.introGesehen')") == 'true'
+        # zweites neues Spiel: keine Szene
+        await g.ev("GameMenu.show('select', 'new')"); await p.wait_for_timeout(500)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        await p.wait_for_function("menuScreen === 'curtain' || menuScreen === 'szene'", timeout=15000)
+        assert await g.ev("menuScreen") == 'curtain', 'Intro läuft beim zweiten Mal wieder'
+        await p.wait_for_function("menuScreen === null", timeout=15000)
+        # Menüpunkt „Geschichte“ spielt sie und führt zurück ins Hauptmenü
+        await g.ev("GameMenu.show('menu')"); await p.wait_for_timeout(500)
+        idx = await g.ev("[...document.querySelectorAll('#sm-menu .mi')].findIndex(b => b.textContent === 'Geschichte')")
+        for _ in range(idx): await p.keyboard.press('ArrowDown'); await p.wait_for_timeout(80)
+        await p.keyboard.press('Enter')
+        await p.wait_for_function("menuScreen === 'szene'", timeout=15000)
+        await p.wait_for_timeout(400); await p.keyboard.press('Escape')
+        await p.wait_for_function("document.querySelector('#sm-s-menu.active') && document.getElementById('sm').classList.contains('on')", timeout=8000)
     finally:
         srv.shutdown()
 

@@ -134,6 +134,7 @@
   .mItem.small{ font-size:13px; padding:7px 12px; color:var(--panel-sub); }
   .mHint{ font-size:12.5px; color:var(--panel-sub); padding:2px 4px; }
   #menuFoot{ margin-top:6px; font-size:11.5px; color:var(--panel-sub); text-align:center; }
+  body.szene #duelCard, body.szene #coinCard{ display:none !important; }   /* Spielszene: keine Anzeigen (29-story.js) */
 </style>
 </head>
 <body>
@@ -190,7 +191,7 @@
   // Element-Register (Ausbau 2): ein Eintrag pro Element, geteilt mit dem Editor
   for(const f of ['00-register', 'hebel', 'tuer', 'druckplatte', 'sprungpilz', 'aufwind', 'wechselboden', 'teleporter', 'einseitig', 'wasser', 'stroemung'])
     document.write('<script src="elemente/' + f + '.js?v=' + v + '"><\/script>');
-  for(const f of ['00-setup', '01-level', '02-physik-werte', '03-eingabe', '04-figuren-kollision', '05-level-objekte', '06-tod-checkpoints', '07-effekte-ton-muenzen', '08-figur-physik-seil', '09-kamera', '10-figuren-zeichnen', '10a-themen', '11-hintergrund', '12-welt-zeichnen', '13-anzeige-leistung', '14-spielschleife', '15-level-laden', '16-menue', '17-deko', '18-sound', '19-wetter', '20-tiere', '21-figuren-leben', '22-musik-ambiente', '23-audio-dateien', '24-startmenue', '25-duell', '26-kosmetik-daten', '27-kosmetik-zeichnen', '28-packages', '99-start'])
+  for(const f of ['00-setup', '01-level', '02-physik-werte', '03-eingabe', '04-figuren-kollision', '05-level-objekte', '06-tod-checkpoints', '07-effekte-ton-muenzen', '08-figur-physik-seil', '09-kamera', '10-figuren-zeichnen', '10a-themen', '11-hintergrund', '12-welt-zeichnen', '13-anzeige-leistung', '14-spielschleife', '15-level-laden', '16-menue', '17-deko', '18-sound', '19-wetter', '20-tiere', '21-figuren-leben', '22-musik-ambiente', '23-audio-dateien', '24-startmenue', '25-duell', '26-kosmetik-daten', '27-kosmetik-zeichnen', '28-packages', '29-story', '99-start'])
     document.write('<script src="js/' + f + '.js?v=' + v + '"><\/script>');
 })();
 </script>

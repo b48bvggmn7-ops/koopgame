@@ -590,6 +590,7 @@ S.menu = {
       { id: 'play', label: 'Spielen' },
       save.played && { id: 'continue', label: 'Fortfahren' },
       { id: 'options', label: 'Optionen' },
+      { id: 'story', label: 'Geschichte' },   // Intro-Szene nochmal ansehen (Ausbau 6)
       { id: 'quit', label: 'Beenden' }
     ].filter(Boolean);
     this.idx = clamp(this.idx, 0, this.items.length - 1);
@@ -627,6 +628,7 @@ S.menu = {
     }
     else if (id === 'continue') go('map');              // Fortfahren: Weltkarte -> Welt -> Level -> Spielerwahl
     else if (id === 'options') go('options');
+    else if (id === 'story') { hideMenu(); szeneSpielen('intro', () => showMenuScreen('menu')); }   // Intro nochmal ansehen (29-story.js)
     else if (id === 'quit') quitGame();
   }
 };
@@ -795,7 +797,14 @@ S.select = {
   finish() {
     lastPlayers = { monkey: this.playerOn('L'), pig: this.playerOn('R') };
     this.busy = false;
-    if (this.mode === 'new') { resetSave(); playLevel(0); }
+    if (this.mode === 'new') {
+      resetSave();
+      // beim allerersten „Spielen“ zuerst die Intro-Szene (Ausbau 6, 29-story.js); später nur über „Geschichte“
+      if (!store.get('introGesehen', false) && typeof szeneSpielen === 'function') {
+        store.set('introGesehen', true); hideMenu();
+        szeneSpielen('intro', () => { menuScreen = 'curtain'; playLevel(0); });   // gleich weiter zum Vorhang (Spiel bleibt still)
+      } else playLevel(0);
+    }
     else playLevel(this.mode.level);
   }
 };
@@ -1285,7 +1294,7 @@ document.getElementById('loadLevelInput').addEventListener('change', () => { cur
 window.GameMenu = { config: CONFIG, completeLevel, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
                     migrateSave, buildLevelOrder, mapWorlds, worldUnlocked: id => worldUnlocked(worldById(id)),
                     levelUnlocked: i => isUnlocked(i), lastFreshWorld: () => lastFreshWorld,
-                    show: showMenuScreen, levelsReady: () => CONFIG.levels.length > 0,
+                    show: showMenuScreen, hide: hideMenu, levelsReady: () => CONFIG.levels.length > 0,
                     // für weitere Menü-Bildschirme (28-packages.js)
                     ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, giftSVG, config: CONFIG,
                           whoOf: src => { const p = srcPlayer(src); return !p ? null : p === lastPlayers.monkey ? 'm' : 'f'; },

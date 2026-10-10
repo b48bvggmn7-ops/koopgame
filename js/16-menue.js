@@ -199,6 +199,7 @@ document.addEventListener('keydown', e=>{
   // Startmenü (24-startmenue.js) bedient sich selbst
   if(menuScreen === 'start'){ e.stopPropagation(); if(typeof smKeyDown === 'function') smKeyDown(e); return; }
   if(menuScreen === 'curtain'){ e.preventDefault(); e.stopPropagation(); return; }   // Blätter-Vorhang beim Levelstart
+  if(menuScreen === 'szene'){ e.preventDefault(); e.stopPropagation(); szeneTaste(e); return; }   // Spielszene (29-story.js)
   if(!menuActive()){
     // Testmodus aus dem Editor: Esc beendet den Test sofort (auch auf dem Tod-Bildschirm) -> zurück zum Editor
     if(e.code === 'Escape' && editorTestMode){ e.preventDefault(); e.stopPropagation(); backToEditor(); return; }
@@ -228,6 +229,7 @@ document.getElementById('loadLevelInput').addEventListener('change', ()=>{ if(me
 const menuPadPrev = [{}, {}];
 function pollMenuPads(){
   if(menuScreen === 'start' || menuScreen === 'curtain'){ menuClearPressed(); return; }   // Startmenü liest die Controller selbst
+  if(menuScreen === 'szene'){ szenePads(); return; }   // Spielszene: ✕ weiter, Options/○ überspringen (29-story.js)
   let pads = [];
   try{ pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; }catch(e){ pads = []; }
   for(let i = 0; i < 2; i++){

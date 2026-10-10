@@ -21,7 +21,10 @@ const VW = W / zoom;   // sichtbare Weltbreite   // (CAM_LEFT war 150 -> zu eng)
 const CAM_BACK_MIN = 180, CAM_BACK_PUSH = 420;
 const CAM_FOLLOW = 0.08;   // wie schnell die Kamera ihrem Ziel folgt (pro Rechenschritt; vorher 0,12)
 // Kamera-Ziel: so wenig wie möglich bewegen, aber beide Figuren gut im Bild halten
+// Feste Kamera (Ausbau 6): Spielszenen und Boss-Arenen setzen hier die linke Bildkante (null = normale Kamera)
+let kameraFest = null;
 function cameraTarget(cur){
+  if(kameraFest !== null) return Math.max(0, kameraFest);
   const back = Math.min(p1.x, p2.x), front = Math.max(p1.x, p2.x);
   const lo = Math.max(back - CAM_BACK_PUSH, front - FRONT_MAX * VW), hi = back - CAM_BACK_MIN;
   const t = lo > hi ? lo : Math.max(lo, Math.min(hi, cur));   // zu weit auseinander: der vorderen folgen
