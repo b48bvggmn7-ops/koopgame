@@ -674,6 +674,27 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         besiegt = „✓ Besiegt“ (nochmal spielbar). Eine Welt mit Boss gilt erst mit besiegtem Boss als geschafft – erst dann
         öffnet die nächste Welt (Weltkarte mit Freischalt-Animation). Spielstand: save.bosse (Welt-ids).
       Tests boss_geruest, boss_angriffe, editor_boss; Testlevel levels/test/boss.json.
+  - BOSS 1: BRUNO, DER KOKOS-GORILLA (Dschungel; levels/boss-1.json + editor-format, in worlds.json "boss" der Welt
+    Dschungel, in levels.json versteckt): Arena 37 Kästchen breit, Dschungel am Abend, Wände links/rechts bis in den Himmel.
+      Aufbau: Podest links mit Druckplatte 1, Podest rechts mit Druckplatte 2, Ast (Steg) in der Mitte hoch oben
+        (Reihe 8), zwei Haken links/rechts über dem Ast (Radius 10,5 Kästchen – vom Boden erreichbar), Aufwind rechts vom Ast
+        bis in den Himmel, daneben ein hoher Sims mit Hebel 3.
+      Phase 1 (3 Treffer): Bruno steht in der Mitte am Boden, wirft Kokosnüsse und stampft (Druckwellen). Helm ab, solange
+        jemand auf Platte 1 (links) steht – die andere Figur springt ihm auf den Kopf.
+      Phase 2 (3 Treffer): Bruno springt auf den Ast; Kokosnüsse + Stampfen (Wellen laufen unten am Boden). Helm ab mit
+        Platte 2 (rechts). Auf den Ast kommt der Affe nur per Haken-Schwung, das Schweinchen nur per Aufwind + Segeln.
+      Phase 3 (3 Treffer, wütend: rote Augen, roter Balken): Kokos-Regen (6) + Stampfen, kürzere Pausen. Helm ab mit Hebel 3
+        auf dem hohen Sims (am besten per Aufwind) – der Hebel klappt nach 5 s von selbst zurück, also muss der Treffer
+        schnell kommen.
+      Welche Rolle haben Affe und Schweinchen? Immer einer am Schalter, einer am Kopf: Phase 1 beliebig verteilt, Phase 2
+        Platte rechts + Aufstieg per Seil ODER Aufwind, Phase 3 meist Schweinchen am Hebel (Aufwind), Affe am Kopf (Seil).
+        Allein ist Bruno nicht zu schaffen (Platte/Hebel und Kopf sind weit auseinander).
+      Schwierigkeit (Ziel 5–10 Versuche): 9 Treffer in 3 Phasen, Checkpoint pro Phase; Warnzeit der Kokosnüsse 0,9 s,
+        Wellen mit Sprung leicht zu meiden; kniffligster Teil ist Phase 3 (5-Sekunden-Fenster). Nach Feedback justierbar
+        (Treffer/Tempo im Editor am Boss-Marker, Pausen/Angriffe in BOSS_TYPEN bzw. den Level-Daten).
+      Story: Start-Szene „Boss: Bruno, der Kokos-Gorilla“ (Bruno, Affe, Schweinchen; das Schweinchen erklärt den Helm-Trick),
+        Sieges-Szene „Zahnrad 1 von 5“ (Baron Krähwald schimpft mit Bruno und fliegt davon). Danach öffnen die Ruinen.
+      Test boss1_bruno.
 
 ## Level-Editor (editor/)
 ```

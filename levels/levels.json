@@ -33,5 +33,12 @@
   "datei": "level-3-alter-entwurf.json",
   "name": "Level 3 (alter Entwurf)",
   "versteckt": true
+ },
+ {
+  "datei": "boss-1.json",
+  "name": "Boss 1: Bruno",
+  "titel": "Kokos-Gorilla",
+  "versteckt": true,
+  "boss": true
  }
 ]
