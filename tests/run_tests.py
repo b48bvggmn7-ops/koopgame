@@ -1246,6 +1246,51 @@ async def level9_fallengang(g):
     assert not fehler, fehler
 
 @test
+async def level10_sonnentempel(g):
+    """Ausbau 7, Ruinen Level 4 „Sonnentempel“ (levels/level-10.json, abends, Regen): Licht lenken.
+    Etappe 1: erster Spiegel (Tür 1), Affen-Spiegel auf dem Sims per Haken (Tür 2; das Schweinchen kommt nicht hin),
+    Schweinchen-Spiegel auf der Insel (segeln; Kristall lässt die Brücke für den Affen erscheinen), Spiegel zwischen
+    Pfeil-Vorhängen (Tür 4)."""
+    await koop_level(g, 'level-10.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def dreh(*cs):   # Spiegel vorab drehen (wie von der anderen Figur gedreht)
+        return ' '.join(f'{{ const s = spiegelListe.find(s => s.c === {c}); s.stellung = s.stellung === "/" ? "\\\\" : "/"; }}' for c in cs)
+    def gleit(kante, ziel_x, halten):
+        return [k_lauf(kante, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': halten},
+                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {ziel_x} - 6', 'left': f'P.x > {ziel_x} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    def haken(jx, land_r, pull):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    # --- Etappe 1 ---
+    r = await koop(g, f=kat(4, 15), m=kat(2, 15), plans={'f': [k_lauf(20)] + am(22) + [k_lauf(40)]}, maxFrames=1500)
+    soll(r.get('done') and await g.ev("!!linkOn[1]"), 'Spiegel 1 -> Tür 1', r.get('pos'))
+    r = await koop(g, f=kat(30, 15), m=kat(28, 15), plans={'f': [k_lauf(40)]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 34, 'Tür 1 zu ohne Licht', r.get('pos'))
+    r = await koop(g, m=kat(50, 15), f=kat(48, 15), plans={'m': haken(55, 9, 30) + am(61)}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[2]"), 'Affe per Haken zum Spiegel 2', r.get('pos'))
+    r = await koop(g, f=kat(58, 15), m=kat(50, 15), plans={'f': [k_lauf(60), {'press': ['jump'], 'hold': ['jump'], 'frames': 14}, {'use': True, 'frames': 20}]}, maxFrames=600)
+    soll(not await g.ev("!!linkOn[2]"), 'Schweinchen erreicht Spiegel 2 nicht', r.get('pos'))
+    r = await koop(g, f=kat(70, 15), m=kat(62, 9), plans={'f': [k_lauf(80)]}, pre=dreh(60), maxFrames=600)
+    soll(r.get('done'), 'Tür 2 offen (Licht an)', r.get('pos'))
+    r = await koop(g, f=kat(89, 11), m=kat(85, 13), plans={'f': gleit(91, kx(105), 4) + [{'frames': 10}] + am(106)}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 13 and await g.ev("!!linkOn[3]"), 'Schweinchen segelt zur Insel, Spiegel 3 -> Brücke', r.get('pos'))
+    r = await koop(g, m=kat(88, 11), f=kat(86, 13), plans={'m': [k_lauf(90, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=800)
+    soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] > 100 and k_pos(r, 'm')[1] <= 13), 'Affe ohne Brücke nicht zur Insel', r.get('pos'))
+    r = await koop(g, m=kat(89, 11), f=kat(106, 13), plans={'m': [k_lauf(128), {'until': 'P.grounded', 'frames': 200}]}, pre=dreh(106), maxFrames=1500)
+    soll(r.get('done') and k_pos(r, 'm')[1] == 15, 'Affe über die Brücke', r.get('pos'))
+    pl = [k_lauf(146, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(148)}) < 4 && a.steckt >= 0)'}, k_lauf(150, 0)] + am(150) + \
+         [{'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(152)}) < 4 && a.steckt >= 0)'}, k_lauf(170)]
+    r = await koop(g, f=kat(130, 15), m=kat(140, 15), plans={'f': pl}, maxFrames=3000)
+    soll(r.get('done') and await g.ev("!!linkOn[4]"), 'Spiegel zwischen Pfeilen -> Tür 4', r.get('pos'))
+    r = await koop(g, f=kat(160, 15), m=kat(150, 15), plans={'f': [k_lauf(170)]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 164, 'Tür 4 zu ohne Licht', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    assert not fehler, fehler
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil oder bewegter Haken),
     und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man

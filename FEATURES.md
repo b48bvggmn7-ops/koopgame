@@ -866,6 +866,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: der Doppelgang 604–680 ist ein einziges Rätsel).
     - Test level9_fallengang (Koop-Bot).
 
+  - Level 10 „Sonnentempel“ (levels/level-10.json, Ruinen Level 4 der Welt, abends, Regen): IN ARBEIT, bis es fertig ist
+    in levels.json versteckt. Schwerpunkt Licht: Spiegel, die nur einer erreicht.
+    - Etappe 1 (Spalten 0–200):
+      - Erster Spiegel: Der Strahl läuft über den Köpfen, der Spiegel lenkt ihn hinauf zum Kristall → Tür 1 (beide).
+      - Affen-Spiegel: hoch auf einem Sims, nur per Haken erreichbar; der Kristall im Boden öffnet Tür 2 für das
+        Schweinchen.
+      - Schweinchen-Spiegel: Das Schweinchen segelt von der Treppe auf eine Insel und dreht den Spiegel; der Kristall lässt
+        eine Brücke (Wechselboden) für den Affen erscheinen.
+      - Spiegel zwischen zwei Pfeil-Vorhängen → Tür 4 (beide).
+    - Test level10_sonnentempel (Koop-Bot).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE
