@@ -35,6 +35,28 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
     Münzregeln und „jeder Hebel hat einen Grund“ aus FEATURES.md gelten weiter. Jede Stelle wird als
     komfortabel / knapp / Grenze eingestuft. Keine Zufallstode, Checkpoints alle ca. 40–60 Spalten und vor jeder
     harten Stelle, kurze Wege zurück.
+    **Bild-Regel** (gilt für jedes neue und jedes geänderte Level, auch Schritt 7/8 und Wasser; vor jedem Level-Commit
+    `python3 tests/bildregel_pruefen.py --level <welt>/<datei>` – der Test `bildregel_pruefung` prüft alle Level):
+    - **Bild**: Bei jedem Rätsel, jeder Schalter-Stelle und jeder Zusammenarbeit müssen beide Figuren und alles, was sie
+      dafür brauchen, gleichzeitig im Bild sein können. Auslöser (Hebel, Druckplatte, Licht-Kristall bzw. sein Spiegel)
+      und Ziel (Tür, Wechselboden, Plattform-Start, Falle, Fels, Tor, Band, Lava, Presse, fahrender Haken …) liegen
+      höchstens `BILD_MAX_SPALTEN` = **20 Spalten** auseinander (js/09-kamera.js). Herleitung: sichtbar sind
+      VW ≈ 37,6 Spalten; die Kamera hält beide sicher im Bild bis 0,75·VW − 180 px ≈ 23,7 Spalten (darüber folgt sie der
+      vorderen Figur), 20 lässt Luft für Laufen und Springen. Die Höhe ist immer ganz im Bild. Kein Checkpoint zwischen
+      Auslöser und Ziel, wenn man danach mehr als 5 Spalten zurück müsste (nach einem Tod ist alles wieder aus).
+    - **Plattform**: Bewegte Plattformen, fahrende Haken, Bänder und Ein-Figur-Tore bringen niemanden weiter als 20 Spalten
+      vom Partner weg – auch mitten in der Fahrt (Partner am Einstieg bzw. am Hebel). Abhilfe: Strecke kürzen, Hebel in
+      die Mitte, Strecke in Etappen teilen, Ausgang so legen, dass man nebeneinander weiterläuft.
+    - **Haken** (Richtwerte aus Koop-Bot-Messungen, Reichweite 4,5 Kästchen): Abstand in einer Reihe **5–6 Spalten**
+      (4–8 erlaubt; ab 8 klappt nur noch jeder 2., ab 9 jeder 3. Versuch; unter 4 greift man oft den alten Haken wieder,
+      weil das Spiel immer den nächsten Haken nimmt). Höhe **6–7 Reihen** über dem Absprung-Boden (4–8 erlaubt).
+      Freier Bogen: in den 3 Reihen unter einem Schwung-Haken kein Stein (±2 Spalten). Landung: mindestens 3 Stehplätze
+      2–10 Spalten hinter dem letzten Haken. Größere Reichweite erlaubt etwas mehr Abstand (1,8 × Reichweite).
+    - **Checkpoints** nur nach einer Leistung und vor dem nächsten schweren Stück: mindestens **25 Spalten** Abstand
+      (≈ ⅔ Bildbreite bzw. 4 s Laufen – näher liegende Checkpoints sparen nichts), höchstens **70** (≈ 12 s Laufen plus
+      1–2 Stellen); zwischen zwei Checkpoints mindestens eine Stelle (Rätsel, Hebel, Falle, Gegner, Grube, Haken,
+      Kletterwand …). Ausnahmen: Verfolgungen und Rätsel mit zwei getrennten Wegen laufen am Stück.
+    - Begründete Ausnahmen stehen in `tests/bildregel_ausnahmen.json` (Level, Regel, Spalte, Begründung).
 13. **Schwierigkeitskurve** (Startwerte; „Versuche“ = wie oft zwei geübte Spieler an einer Stelle scheitern, bis es
     klappt):
     - Dschungel: Einstieg mild (1–2), steigt bis zum Boss deutlich, schwerste Stellen 3–4.
@@ -64,3 +86,4 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 | 7 | Level-Erweiterung: 6 Level je Welt (Nutzerwunsch, Wasser ausgenommen) | fertig, wartet auf Test | ausbau-6er-welten-fertig | Dschungel 5 „Dornenpfad“ + 6 „Wipfelsturm“, Ruinen 6 „Tempelherz“ (je 800 Spalten) neu; Ruinen/Höhle nach Schwierigkeit umsortiert; Balance in WELTEN.md; Schwierigkeit nach Probespielen justieren; Tag nur lokal |
 | 8 | Boss und Abschluss für eine Welt (pro Welt) | offen | – | – |
 | – | Editor-Umbau (Werkzeugleiste als Reiter, Level-Ordner nach Welten, Werkzeug-Prüfung) | fertig, wartet auf Test | ausbau-editor-umbau-fertig | Teil A–H (Werkzeugleiste), I (Level-Ordner nach Welten) und J (Werkzeug-Prüfung) fertig; Tag nur lokal |
+| – | Bild-Regel + Leveldesign-Regeln (Haken-Abstände, Checkpoints) in allen Leveln | in Arbeit | ausbau-bildregel-fertig | Prüfwerkzeug tests/bildregel_pruefen.py + Test; Level Welt für Welt umbauen; offene Stellen siehe tests/bildregel_ausnahmen.json („BRAUCHT ENTSCHEIDUNG“) |

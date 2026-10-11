@@ -109,6 +109,14 @@
    Speichern/Laden, Kopieren/Einfügen). Wird das Element im Editor größer als sein Kästchen gezeichnet, `editor.bereich(p)`
    angeben (Liste der sichtbar belegten Kästchen, Muster `fels.js`) – sonst trifft der Rechtsklick es nicht.
 
+## Neues oder geändertes Level (Checkliste)
+1. Bild-Regel und Leveldesign-Regeln (AUSBAU-REGELWERK Punkt 12): Auslöser und Ziel höchstens `BILD_MAX_SPALTEN` (20)
+   auseinander, Fahrten/Tore nie weiter vom Partner weg, Haken-Richtwerte (Abstand 5–6, Höhe 6–7 Reihen), Checkpoints
+   25–70 Spalten auseinander mit einer Stelle dazwischen und nie zwischen Hebel und Tür.
+2. Vor dem Commit `python3 tests/bildregel_pruefen.py --level <welt>/<datei>` (ohne `--level`: alle Level; `--alle` zeigt
+   die ganzen Tabellen). Bleibt ein Befund bewusst, kommt er mit Begründung in `tests/bildregel_ausnahmen.json`.
+3. Koop-Bot-Test des Levels grün; Münzen/Checkpoints nach Spalten-Verschiebungen neu prüfen.
+
 ## Steuerung (Kurzfassung)
 | | Affe (Spieler 1) | Schweinchen (Spielerin 2) | Controller |
 |---|---|---|---|
