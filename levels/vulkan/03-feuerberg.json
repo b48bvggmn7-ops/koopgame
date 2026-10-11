@@ -1372,10 +1372,6 @@
       "y": 600
     },
     {
-      "x": 6180,
-      "y": 600
-    },
-    {
       "x": 8340,
       "y": 600
     },
@@ -1384,23 +1380,11 @@
       "y": 600
     },
     {
-      "x": 11580,
-      "y": 600
-    },
-    {
       "x": 12740,
       "y": 600
     },
     {
-      "x": 13060,
-      "y": 600
-    },
-    {
       "x": 14780,
-      "y": 600
-    },
-    {
-      "x": 15020,
       "y": 600
     }
   ],
@@ -3004,6 +2988,18 @@
       "dir": 0
     }
   ],
+  "startM": {
+    "x": 100,
+    "y": 600
+  },
+  "startF": {
+    "x": 180,
+    "y": 600
+  },
+  "goal": {
+    "x": 17300,
+    "y": 160
+  },
   "switches": [
     {
       "x": 2820,
@@ -3283,18 +3279,6 @@
       "link": 7
     }
   ],
-  "startM": {
-    "x": 100,
-    "y": 600
-  },
-  "startF": {
-    "x": 180,
-    "y": 600
-  },
-  "goal": {
-    "x": 17300,
-    "y": 160
-  },
   "plates": [
     {
       "x": 6980,
@@ -3631,5 +3615,27 @@
       "h": 40
     }
   ],
-  "theme": "vulkan"
+  "switchFloors": [],
+  "teleporters": [],
+  "oneways": [],
+  "waters": [],
+  "currents": [],
+  "waterLevels": [],
+  "boss": [],
+  "bossArena": [],
+  "bossPlaetze": [],
+  "traps": [],
+  "boulders": [],
+  "lichtquellen": [],
+  "spiegel": [],
+  "kristalle": [],
+  "eis": [],
+  "baender": [],
+  "leuchtkristalle": [],
+  "dunkelzonen": [],
+  "lava": [],
+  "lavaPegel": [],
+  "pressen": [],
+  "theme": "vulkan",
+  "look": "vulkan"
 }
