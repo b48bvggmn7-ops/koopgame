@@ -1176,6 +1176,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 1 (Spalten 0–200): schnelles Band unter einer Pressen-Welle (nur wer gegenläuft, kann warten);
       Gegenband-Tunnel mit drei breiten Pressen; Band zum Pilz – der Pilz schleudert über eine Presse hinweg auf einen
       hohen Sims, von dort über die Lava-Grube.
+    - Etappe 2 (Spalten 200–400): Hebel über Kreuz (zwei Gänge voller Pressen: Hebel 4 unten hält die Pressen oben an –
+      das Schweinchen läuft oben durch und zieht am Ende Hebel 5, der die Pressen unten anhält); Schleuder über die Lava
+      mit Presse über dem Band (Schweinchen segelt hinüber, Hebel 6 dreht das reißende Band für den Affen); Pilz unter
+      der Presse (nur wenn sie oben ist, schleudert er auf den Sims; dort zwei weitere Pressen).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)

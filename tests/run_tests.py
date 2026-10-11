@@ -2714,7 +2714,7 @@ async def level19_magmakammer(g):
 
 @test
 async def level20_schlackewerk(g):
-    """Ausbau 7, Vulkan Level 5 „Schlackewerk“ (levels/level-20.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder unter Pressen, Hebel über Kreuz, Flammenfallen über Bändern, großes Werk. Koop-Bot spielt jede Etappe: Band unter der Pressen-Welle, Gegenband-Tunnel, Band zum Pilz über die Presse."""
+    """Ausbau 7, Vulkan Level 5 „Schlackewerk“ (levels/level-20.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder unter Pressen, Hebel über Kreuz, Flammenfallen über Bändern, großes Werk. Koop-Bot spielt jede Etappe: Band unter der Pressen-Welle, Gegenband-Tunnel, Band zum Pilz über die Presse, Hebel über Kreuz, Schleuder mit Presse, Pilz unter der Presse."""
     await koop_level(g, 'level-20.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2740,8 +2740,9 @@ async def level20_schlackewerk(g):
         return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
     hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
     halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
-    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16) || pressen.every(Q => {
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16 && P.y >= Q.y0 && P.y - P.h <= Q.y0 + Q.hub + 52) || pressen.every(Q => {
       if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      if(P.y < Q.y0 || P.y - P.h > Q.y0 + Q.hub + 52) return true;   // andere Höhe (z. B. oberer/unterer Gang)
       const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
       if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
       const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
@@ -2764,8 +2765,32 @@ async def level20_schlackewerk(g):
         pl = lambda w: [k_lauf(109, 0), {'holdIf': {'left': f'P.x > {kx(109)}'}, 'until': '(window.__need = 90, durchOK(P, 1000))', 'frames': 2000},
                         {'aim': [kx(127), kx(137)], 'jumps': [kx(123)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, k_lauf(142, 0)] + sprung_zu(kx(155)) + [k_lauf(158)]
         await beide('E1 Band zum Pilz, über die Presse auf den Sims, über die Grube', 107, pl, 157, delay=60)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        m = am(211) + [{'wait': '!!linkOn[5]'}, durch(256)]
+        f = [halten(206), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(206)} + 10', 'left': f'P.x > {kx(207)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(213)} - 6', 'left': f'P.x > {kx(213)} + 6'}, 'until': 'P.grounded', 'frames': 400}, {'wait': '!!linkOn[4]'}, durch(245)] + am(246) + [k_lauf(248), {'until': 'P.grounded', 'frames': 200}, k_lauf(258)]
+        r = await koop(g, m=kat(209, 15), f=kat(204, 15), plans={'m': m, 'f': f}, maxFrames=8000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 255, 'E2 Hebel über Kreuz: Hebel 4 (unten) hält die oberen Pressen an, Hebel 5 (oben) die unteren', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        ok = None
+        for hold in (4, 8, 12, 16):
+            f = [{'holdIf': {'left': f'P.x > {kx(262)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
+                 {'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.x > {kx(275 + hold // 4)} && !P.grounded', 'frames': 600}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}] + am(290)
+            r = await koop(g, f=kat(262, 15), m=kat(260, 15), plans={'f': f}, maxFrames=3000, pre=PRE)
+            if await g.ev('!!linkOn[6]'): ok = hold; break
+        soll(ok, 'E2 Schwein über Band und Grube, Hebel 6', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for jx in (277, 278, 279):
+            for hold in (10, 16):
+                m = [{'holdIf': {'left': f'P.x > {kx(263)}'}, 'until': '(window.__need = 40, durchOK(P, 1000))', 'frames': 2000}, k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+                r = await koop(g, m=kat(263, 15), f=kat(291, 15), plans={'m': m}, links=[6], maxFrames=2500, pre=PRE)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 286 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E2 Schleuder: Affe über die Grube (Hebel 6 an)', ok)
+        pl = lambda w: [{'holdIf': {'left': f'P.x > {kx(304)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
+                        {'aim': [kx(310), kx(316)], 'jumps': [kx(307)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, durch(331), k_lauf(332), {'until': 'P.grounded', 'frames': 100}, k_lauf(336), {'until': 'P.grounded', 'frames': 100}, k_lauf(340)]
+        await beide('E2 Pilz unter der Presse, Pressen auf dem Sims', 299, pl, 339, delay=60)
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):
