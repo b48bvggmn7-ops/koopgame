@@ -2849,7 +2849,7 @@ async def level20_schlackewerk(g):
 
 @test
 async def level21_feuerschlund(g):
-    """Ausbau 7, Vulkan Level 6 „Feuerschlund“ (levels/level-21.json, nachts, trocken): Kombi-/Meister-Level dunkle Lavagänge mit Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht. Koop-Bot spielt jede Etappe: Kristall + Lava-Gruben, Affe zum Kristall / Schwein segelt / Tür 1, Teleporter-Kammer mit steigender Lava."""
+    """Ausbau 7, Vulkan Level 6 „Feuerschlund“ (levels/level-21.json, nachts, trocken): Kombi-/Meister-Level dunkle Lavagänge mit Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht. Koop-Bot spielt jede Etappe: Kristall + Lava-Gruben, Affe zum Kristall / Schwein segelt / Tür 1, Teleporter-Kammer mit steigender Lava, Wechselboden im Takt, zwei Brücken mit Druckplatten, der Schlund."""
     await koop_level(g, 'level-21.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2938,8 +2938,23 @@ async def level21_feuerschlund(g):
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 189, 'E1 Kammer: Lava steigt, Affe teleportiert hinaus, Hebel 2 schaltet den Teleporter des Schweins an', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         r = await koop(g, m=kat(140, 13), f=kat(142, 13), plans={'m': [{'frames': 500}]}, maxFrames=600)
         soll(r.get('dead'), 'E1 die Lava füllt die Kammer', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        def takt(w):
+            m = [k_lauf(204, 0), {'wait': 'Math.floor(wechselSchritte/120) % 2 === 0 && wechselSchritte % 120 < 30'}] + sprung_zu(kx(210))
+            for c in range(214, 248, 6): m += [{'wait': 'wechselSchritte % 120 >= 100'}] + sprung_zu(kx(c + 2))
+            return m + sprung_zu(kx(253)) + [k_lauf(255)]
+        await beide('E2 Wechselboden im Takt über der Lava', 202, takt, 254, delay=240)
+        f = [halten(262), {'wait': f'Q.x > {kx(298)} && !!linkOn[4]'}, {'holdIf': {'left': f'P.x > {kx(258)}'}, 'until': f'P.x <= {kx(258)}', 'frames': 300}] + sprung_zu(kx(259)) + sprung_zu(kx(268)) + [k_lauf(297), {'until': 'P.grounded', 'frames': 200}, k_lauf(303)]
+        m = [{'wait': '!!linkOn[3]'}, k_lauf(297, 0), halten(299), {'wait': f'Q.x > {kx(297)} && Q.grounded'}, k_lauf(304)]
+        r = await koop(g, m=kat(258, 15), f=kat(256, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 302, 'E2 zwei Brücken: Platte 3 (Schwein) für den Affen, Platte 4 (Affe) für das Schwein', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(262, 15), f=kat(258, 15), plans={'m': [k_lauf(290)]}, maxFrames=400)
+        soll(r.get('dead') == 'm', 'E2 ohne Platte 3 keine Brücke', r.get('pos'))
+        sl = lambda w: [k_lauf(328, 0)] + sprung_zu(kx(334)) + sprung_zu(kx(340)) + sprung_zu(kx(346)) + sprung_zu(kx(352)) + sprung_zu(kx(358)) + sprung_zu(kx(365)) + [k_lauf(382), {'until': 'P.grounded', 'frames': 200}, k_lauf(392)]
+        await beide('E2 der Schlund: Stege treppauf, der See steigt', 310, sl, 391, delay=60)
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):

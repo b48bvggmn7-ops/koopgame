@@ -1198,6 +1198,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       zieht Hebel 1 für Tür 1, der Affe kommt an den Haken nach); Teleporter-Kammer (hinunter in die Kammer, kein Weg
       zurück – sobald beide unten sind, steigt die Lava; der Teleporter des Affen bringt ihn auf den Sims draußen, dort
       schaltet Hebel 2 den Teleporter des Schweinchens an).
+    - Etappe 2 (Spalten 200–400): Wechselboden im Takt über der Lava (türkise und orange Platten wechseln alle
+      2 Sekunden – man springt genau beim Wechsel); zwei Brücken im Dunkeln (das Schweinchen hält Druckplatte 3 = untere
+      Brücke für den Affen, der Affe hält drüben Druckplatte 4 = obere Brücke für das Schweinchen); der Schlund (Stege
+      treppauf über einem Lavasee, der schnell steigt, sobald beide am Ufer sind).
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
