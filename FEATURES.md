@@ -1170,6 +1170,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens ~60 Spalten auseinander (23 Stück).
     - Test level19_magmakammer (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
+  - Level 20 „Schlackewerk“ (levels/level-20.json, Vulkan Level 5 der Welt, mittags, wechselndes Wetter, 800 Spalten):
+    IN ARBEIT, bis der Vulkan fertig ist in levels.json versteckt. Kombi-Level: Förderbänder unter Pressen, Hebel über
+    Kreuz, Flammenfallen über Bändern, großes Werk.
+    - Etappe 1 (Spalten 0–200): schnelles Band unter einer Pressen-Welle (nur wer gegenläuft, kann warten);
+      Gegenband-Tunnel mit drei breiten Pressen; Band zum Pilz – der Pilz schleudert über eine Presse hinweg auf einen
+      hohen Sims, von dort über die Lava-Grube.
+    - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

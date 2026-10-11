@@ -108,5 +108,11 @@
   "name": "Level 19",
   "titel": "Magmakammer",
   "versteckt": true
+ },
+ {
+  "datei": "level-20.json",
+  "name": "Level 20",
+  "titel": "Schlackewerk",
+  "versteckt": true
  }
 ]
