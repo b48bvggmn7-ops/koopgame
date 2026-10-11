@@ -8,6 +8,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Immer neueste Dateien: index.html lädt alle js/-Dateien mit ?v=<Zeit>, der Editor seine editor.js ebenso
     (kein Strg+F5 mehr nötig, nachdem eine Änderung online ist)
   MONCHICHI KOOP – SPIEL – FUNKTIONSLISTE
+  - VARIABLE SPRUNGHÖHE (normaler Sprung vom Boden, Affe und Schweinchen gleich, Tastatur und Controller gleich):
+    wer die Sprungtaste/den Sprungknopf während des Aufstiegs loslässt, wird sanft gebremst (JUMP_CUT_VY in
+    02-physik-werte.js, Bremsen über 2–3 Schritte). Antippen ≈ 1,2 Kästchen, 55 ms ≈ 2, 130 ms ≈ 3, ab ≈ 0,19 s
+    (JUMP_FULL_STEPS = 10 Schritte) genau die bisherige Höchsthöhe 134 px (≈ 3,4 Kästchen) – länger halten bringt nichts
+    mehr, höher als früher geht nie (es wird nur gebremst). Erneutes Drücken in der Luft ändert nichts. Wandsprung,
+    Seil-Abflug, Sprungpilz, Aufwind/Schirm und Schwimmen sind ausgenommen und unverändert. Test variable_sprunghoehe.
   - Figuren: süßer Affe (eigene Zeichnung, ersetzt Kenney-Affe) und pinkes Schweinchen, beide mit Zwinker-Bild
     (monkeyBlink/pigBlink, alle ~3-5 s kurz). Bild immer im echten Seitenverhältnis (nicht verzerrt); gedreht wird
     genau um die Mitte des runden Kopfes (HEAD_CENTER, Ohren zählen nicht), damit die Kugel rund rollt statt zu eiern.

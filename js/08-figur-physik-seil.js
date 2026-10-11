@@ -104,6 +104,7 @@ function updatePlayer(player, now){
   const isPulling = player.male && !frozen && isDown(player.keys.pull);
   const isSlacking = player.male && !frozen && isDown(player.keys.slack);
 
+  if(nass || (player.male && player.hookAttached)) player.sprungKurzMoeglich = false;   // Schwimmen/Seil: kein Sprung-Abbruch
   if(nass){
     schwimmPhysik(player, moveDir, jumpPressed, frozen);   // elemente/wasser.js
   } else if(player.male && player.hookAttached){
@@ -217,6 +218,8 @@ function updatePlayer(player, now){
         player.vy = JUMP_V;
         player.grounded = false;
         player.glideTimer = 0;
+        player.sprungKurzMoeglich = true;   // variable Sprunghöhe: dieser Sprung darf durch Loslassen gebremst werden
+        player.sprungLosgelassen = false;
       } else if(now - player.lastWallTouch <= ((padJump || pendingWJ) ? WALL_JUMP_BUFFER_PAD : WALL_JUMP_BUFFER)){
         let side = player.onWall || (touchingWall(player,-1) ? -1 : touchingWall(player,1) ? 1 : 0);
         // Controller: hat man sich durchs Stick-Umlenken schon von der Wand gelöst, zählt die zuletzt
@@ -234,7 +237,18 @@ function updatePlayer(player, now){
           player.wjPendingUntil = 0;
           player.glideTimer = 0;
           player.wjInputLock = 260;
+          player.sprungKurzMoeglich = false;   // Wandsprünge bleiben immer gleich hoch
         }
+      }
+    }
+    // Variable Sprunghöhe (02-physik-werte.js: JUMP_CUT_VY): Sprungtaste/-knopf während des Aufstiegs losgelassen ->
+    // Aufwärts-Tempo sanft auf JUMP_CUT_VY bremsen. Endet, sobald der Aufstieg vorbei ist, der Schirm aufgeht oder
+    // etwas anderes die Figur bewegt (Seil, Wasser). Erneutes Drücken in der Luft hebt das Bremsen nicht auf.
+    if(player.sprungKurzMoeglich){
+      if(player.vy >= 0 || gliding || player.hookAttached) player.sprungKurzMoeglich = false;
+      else {
+        if(!jumpHeld) player.sprungLosgelassen = true;
+        if(player.sprungLosgelassen && player.vy < JUMP_CUT_VY) player.vy = JUMP_CUT_VY + (player.vy - JUMP_CUT_VY) * JUMP_CUT_SMOOTH;
       }
     }
   }

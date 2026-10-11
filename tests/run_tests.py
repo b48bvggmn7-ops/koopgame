@@ -460,6 +460,41 @@ async def bildrate_unabhaengig(g):
     assert abs(x60 - x144) < 60, f'60 Hz: {x60:.0f}, 144 Hz: {x144:.0f}'
 
 @test
+async def variable_sprunghoehe(g):
+    """Variable Sprunghöhe: kurzes Antippen = kleiner Sprung, länger halten = höher, ab JUMP_FULL_STEPS (≈ 0,19 s) genau
+    die bisherige Höchsthöhe – nie höher; Tastatur und Controller verhalten sich gleich; für Affe und Schweinchen gleich;
+    erneutes Drücken in der Luft bringt keinen Extra-Sprung (Wandsprung/Seil/Wasser: eigene Tests, unverändert)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 400, 'y': 680}))
+    hoehe = """([wer, halten, pad, nochmal]) => {
+      resetLevel(); menuScreen = 'pause'; deathState = null; for(const k in KEYS) KEYS[k] = false; for(const k in PAD) PAD[k] = false;
+      const P = wer === 'f' ? p2 : p1, Q = wer === 'f' ? p1 : p2; P.x = 600; P.y = 680; P.vx = P.vy = 0; Q.x = 300; Q.y = 680;
+      let ts = -3e7; for(let i = 0; i < 5; i++) stepSim(ts += 16.6);
+      const y0 = P.y, taste = P.keys.jump; let minY = y0;
+      const druck = an => { if(pad) setPad(taste, an); else { if(an && !KEYS[taste]) KEYS[taste + '_pressed'] = true; KEYS[taste] = an; } };
+      for(let s = 0; s < 90; s++){
+        if(s === 0) druck(true);
+        if(s === halten) druck(false);
+        if(nochmal && s === halten + 2) druck(true);   // schnell nochmal drücken (in der Luft)
+        stepSim(ts += 16.6);
+        minY = Math.min(minY, P.y);
+        if(s > 3 && P.grounded) break;
+      }
+      druck(false);
+      return y0 - minY; }"""
+    # bisherige Höchsthöhe: Absprung mit JUMP_V (im Absprung-Schritt schon bewegt), danach nur Schwerkraft
+    alt_max = await g.ev("(() => { let v = JUMP_V, y = v, m = y; for(let s = 0; s < 60; s++){ v += GRAVITY; y += v; m = Math.min(m, y); } return -m; })()")
+    for wer in ('m', 'f'):
+        tast = [await g.p.evaluate(hoehe, [wer, h, False, False]) for h in (0, 2, 5, 8, 10, 15, 40)]
+        pad = [await g.p.evaluate(hoehe, [wer, h, True, False]) for h in (0, 2, 5, 8, 10, 15, 40)]
+        assert all(abs(a - b) < 0.01 for a, b in zip(tast, pad)), f'Tastatur {tast} und Controller {pad} verschieden'
+        assert all(a < b for a, b in zip(tast[:5], tast[1:5])), f'nicht stufenlos steigend: {tast}'
+        assert tast[0] < 0.4 * tast[-1], f'Antippen nicht klein genug: {tast}'
+        assert abs(tast[4] - tast[6]) < 0.01 and abs(tast[5] - tast[6]) < 0.01, f'ab 10 Schritten nicht die volle Höhe: {tast}'
+        assert max(tast + pad) <= alt_max + 0.01 and tast[-1] >= alt_max - 0.01, f'Höchsthöhe {max(tast)} statt {alt_max}'
+        nochmal = await g.p.evaluate(hoehe, [wer, 2, False, True])
+        assert abs(nochmal - tast[1]) < 0.01, f'erneutes Drücken in der Luft ändert den Sprung: {nochmal} statt {tast[1]}'
+
+@test
 async def wandsprung_controller(g):
     await g.p.add_init_script(PAD_STUB); await g.p.reload(); await g.p.wait_for_timeout(500)
     await g.load(level([ground(0, 680, 800), ground(400, 360, 40, 320, 'wall')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))

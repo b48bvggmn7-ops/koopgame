@@ -11,6 +11,13 @@ const AIR_CONTROL = 0.85;
 const FRICTION_GROUND = 0.78;
 const FRICTION_AIR = 0.94;
 const JUMP_V = -12.6;
+// Variable Sprunghöhe (nur der normale Sprung vom Boden): lässt man die Sprungtaste während des Aufstiegs los, wird die
+// Aufwärts-Geschwindigkeit sanft auf JUMP_CUT_VY gebremst – nie beschleunigt, die bisherige Höchsthöhe bleibt die Grenze.
+// JUMP_CUT_VY = die Geschwindigkeit, die ein Sprung nach JUMP_FULL_STEPS Schritten ohnehin hat: wer so lange hält
+// (10 Schritte ≈ 0,19 s), springt genau so hoch wie früher; kürzer = stufenlos kleiner (Antippen ≈ 1 Kästchen).
+const JUMP_FULL_STEPS = 10;
+const JUMP_CUT_VY = JUMP_V + GRAVITY * JUMP_FULL_STEPS;   // -6,4
+const JUMP_CUT_SMOOTH = 0.3;   // je Schritt bleibt die Hälfte des Überschusses -> Bremsen über 2–3 Schritte statt Ruck
 const WALL_JUMP_VX_MIN = 6.96, WALL_JUMP_VX_MAX = 12.8;
 const MIN_WALLJUMP_SPEED = 1.3; // unterhalb davon: kein Wandsprung mehr (kein "aus dem Stand")
 const WALL_JUMP_VY_MIN = -14.4, WALL_JUMP_VY_MAX = -16.06;
