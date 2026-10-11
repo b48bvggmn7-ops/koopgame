@@ -1162,7 +1162,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 3 (Spalten 400–600): Pilz-Turm (vier Pilz-Säulen treppauf, jede höher – sobald beide im Becken sind, steigt
       die Lava); Kamin mit Presse am Ausgang (im Kamin steigt die Lava, oben stampft eine Presse über dem Sims); Pressen
       über dem Lavasteg.
-    - Test level19_magmakammer (Koop-Bot + Checkpoint-Abstände).
+    - Etappe 4 (Spalten 600–800): Doppel-Schacht – jeder rettet den anderen (links ein enger Kamin für den Affen, rechts
+      ein Aufwind-Schacht für das Schweinchen, sobald beide drin sind steigt die Lava; im Kamin sperrt eine Klappe
+      (Wechselboden 10), die nur offen ist, solange das Schweinchen im Nachbarschacht auf Druckplatte 10 steht; oben läuft
+      der Affe über die Klappe 11 und zieht Hebel 11 – die Klappe über dem Aufwind öffnet, das Schweinchen fliegt
+      hinaus); Finale (Pilz über die Lava-Grube, Presse, eine Grube, die steigt, sobald beide da sind).
+    - Checkpoints höchstens ~60 Spalten auseinander (23 Stück).
+    - Test level19_magmakammer (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```

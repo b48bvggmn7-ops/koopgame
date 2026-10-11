@@ -2584,7 +2584,7 @@ async def level18_aschefeld(g):
 
 @test
 async def level19_magmakammer(g):
-    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/level-19.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder, Lavasee mit Haken und Aufwinden, Hebel des Schweinchens, zweiter See, Pilz-Turm, Kamin mit Presse, Pressen über dem Lavasteg."""
+    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/level-19.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder, Lavasee mit Haken und Aufwinden, Hebel des Schweinchens, zweiter See, Pilz-Turm, Kamin mit Presse, Pressen über dem Lavasteg, Doppel-Schacht, Finale."""
     await koop_level(g, 'level-19.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2690,6 +2690,26 @@ async def level19_magmakammer(g):
                          k_lauf(498), {'until': 'P.grounded', 'frames': 100}, k_lauf(503), {'until': 'P.grounded', 'frames': 100}, k_lauf(508), {'until': 'P.grounded', 'frames': 100}, k_lauf(512)]
         await beide('E3 Kamin mit Presse am Ausgang', 469, lambda w: kamin(), 511, delay=60)
         await beide('E3 Pressen über dem Lavasteg', 513, lambda w: [k_lauf(518, 0)] + sprung_zu(kx(521)) + [durch(548), {'until': 'P.grounded', 'frames': 100}, k_lauf(552)], 551)
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
+        runter = [k_lauf(641), {'until': 'P.grounded', 'frames': 100}, k_lauf(646), {'until': 'P.grounded', 'frames': 100}, k_lauf(651), {'until': 'P.grounded', 'frames': 100}, k_lauf(656), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
+        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},
+             {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(613)}', 'frames': 900}, k_lauf(625, -10)] + am(626) + \
+            [{'wait': f'Q.grounded && Q.x >= {kx(622)} && Q.y <= {ky(0)} + 2'}] + runter
+        f = [{'frames': 40}, k_lauf(609, 0)] + sprung_zu(kx(613)) + [k_lauf(615, 0), halten(617), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(620)} - 4', 'left': f'P.x > {kx(620)} + 4'}, 'until': 'P.grounded', 'frames': 300},
+             hp(620, f'Q.y < {ky(6)}'), {'wait': '!!linkOn[11]'},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(-1)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(628)} - 6', 'left': f'P.x > {kx(628)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + runter
+        r = await koop(g, m=kat(606, 15), f=kat(608, 15), plans={'m': m, 'f': f}, maxFrames=9000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 663, 'E4 Doppel-Schacht: Platte 10 öffnet den Kamin, Hebel 11 die Klappe über dem Aufwind', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(612, 13), f=kat(616, 13), plans={'m': [{'frames': 2600}]}, maxFrames=2700)
+        soll(r.get('dead'), 'E4 die Lava steigt in beiden Schächten', r.get('pos'))
+        fin = lambda: [k_lauf(669, 0)] + [{'aim': [kx(675), kx(683)], 'jumps': [kx(670)], 'until': f'P.grounded && P.x > {kx(681)}', 'frames': 600}, durch(700), k_lauf(703, 0)] + sprung_zu(kx(711)) + [k_lauf(722)]
+        await beide('E4 Finale: Pilz, Presse, steigende Grube', 665, lambda w: fin(), 721, delay=60)
     assert not fehler, fehler
 
 @test
