@@ -3005,7 +3005,7 @@ async def level21_feuerschlund(g):
 
 @test
 async def level22_kraterherz(g):
-    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/level-22.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee, Flucht über Eis und Band, Eis unter Pressen (gegensteuern), Haken/Aufwinde über den steigenden See, Hebel-Kette mit Brücken und Tor, Platten-Staffel unter den Pressen, Gruben und Presse."""
+    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/level-22.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee, Flucht über Eis und Band, Eis unter Pressen (gegensteuern), Haken/Aufwinde über den steigenden See, Hebel-Kette mit Brücken und Tor, Platten-Staffel unter den Pressen, Gruben und Presse, Kessel-Flucht, Kraterschlucht, Gipfel."""
     await koop_level(g, 'level-22.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3113,6 +3113,25 @@ async def level22_kraterherz(g):
         r = await koop(g, m=kat(503, 15), f=kat(501, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 540, 'E3 Platten-Staffel unter den Pressen', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         await beide('E3 Gruben und Presse', 545, lambda w: [k_lauf(548, 0)] + sprung_zu(kx(554)) + [k_lauf(558, 0)] + sprung_zu(kx(564)) + [durch(574), k_lauf(579)], 578)
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        ks = lambda w: [k_lauf(603, 0)] + sprung_zu(kx(608)) + [{'aim': [kx(617), kx(621)], 'jumps': [kx(614)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(625)) + sprung_zu(kx(632)) + [k_lauf(641)]
+        await beide('E4 Kessel: Band, Pilz, Stege hinauf, die Lava steigt schnell', 600, ks, 640, delay=60)
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(649, 4), f=kat(653, 4), plans={'m': kette(652, 4, rel) + [k_lauf(689)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 688: ok.append(rel[:14])
+        soll(ok, 'E4 Kraterschlucht: Affe an vier Haken', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(649, 4), m=kat(690, 4), plans={'f': glide_to(654, kx(691), hold) + [k_lauf(692)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 690: ok = hold; break
+        soll(ok, 'E4 Kraterschlucht: Schwein segelt mit zwei Aufwinden', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(696, 4), o: kat(694, 4)}, plans={who: [durch(736), k_lauf(742)], o: [{'frames': 90}, durch(736), k_lauf(742)]}, maxFrames=5000, pre=PRE)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 741, f'E4 Gipfel: zwei Pressen auf dem Kraterrand ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     assert not fehler, fehler
 
 @test

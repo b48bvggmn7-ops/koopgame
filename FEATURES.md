@@ -1212,8 +1212,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       = Klappe im Kamin offen, der Affe zieht oben Hebel 11 = Klappe über dem Aufwind auf); Klappen im Takt über dem
       Glutsee (alle 1,5 Sekunden); Finale „der Schlund läuft voll“ (Pilz auf den Steg, über zwei Stege hinauf zum Ziel,
       die Lava steigt schnell).
-  - Level 22 „Kraterherz“ (levels/level-22.json, Vulkan Level 7 der Welt, nachts, Regen, 800 Spalten): IN ARBEIT,
-    bis der Vulkan fertig ist in levels.json versteckt. Meister-Level, alles kombiniert: Pressen + Pilze, Lava-Flucht mit
+  - Level 22 „Kraterherz“ (levels/level-22.json, Vulkan Level 7 der Welt, nachts, Regen, 800 Spalten): bis der
+    Vulkan fertig ist in levels.json versteckt. Meister-Level, alles kombiniert: Pressen + Pilze, Lava-Flucht mit
     Bändern und Eis, Hebel-Ketten über der Lava, Finale „der Krater läuft voll“.
     - Etappe 1 (Spalten 0–200, Pressen + Pilze): Pilz unter der Presse (nur wenn sie oben ist, schleudert er auf den
       Sims; dort zwei Pressen); Pilz-Turm vor der Lava (vier Pilz-Säulen treppauf, die Lava steigt, sobald beide im
@@ -1228,6 +1228,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Tor, lässt aber die Lava im See und unter dem Gang dahinter steigen – zügig über die Stege nach oben); Platten-
       Staffel unter zwei schnellen Pressen (vor und hinter jeder Presse eine Druckplatte, die sie anhält: einer hält,
       der andere läuft durch und hält drüben, dann tauschen); zwei Lava-Gruben und eine breite Presse.
+    - Etappe 4 (Spalten 600–800, Finale „der Krater läuft voll“): Kessel (sobald beide drin sind, steigt die Lava
+      schnell – Band zum Pilz, Pilz auf den Steg, über zwei Stege auf den Kraterrand); Kraterschlucht (tief unten steigt
+      die Lava; der Affe schwingt an vier Haken, das Schweinchen segelt mit zwei Aufwinden); Gipfel (zwei Pressen auf dem
+      Kraterrand, dann das Ziel).
     - Test level22_kraterherz (Koop-Bot + Checkpoint-Abstände).
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
