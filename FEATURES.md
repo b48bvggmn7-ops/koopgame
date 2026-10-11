@@ -1142,7 +1142,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       oben auf dem Dach öffnet für das Schweinchen); Hebel 7 öffnet Tür 7 hinter der Lava-Brücke, wirft aber die drei
       Pressen über der Brücke an (laufen nur bei Hebel an) – im Takt hinüber; Pressen-Treppe (Stufen hinauf, über jeder
       Stufe eine kleine Presse).
-    - Test level18_aschefeld (Koop-Bot + Checkpoint-Abstände).
+    - Etappe 4 (Spalten 600–800): großer Pressen-Rhythmus (niedriger Gang, sechs Pressen im Wechsel-Takt, dazwischen
+      kurze Gegenbänder); Pressen über Kreuz (zwei Wege übereinander: steht der Affe unten auf Druckplatte 8, stehen die
+      Pressen oben still – das Schweinchen, das per Aufwind nach oben kommt, läuft durch und stellt sich am Ende auf
+      Druckplatte 9: die Pressen unten stehen still, der Affe kommt nach); letzte breite Presse, Grube, Ziel.
+    - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
+    - Test level18_aschefeld (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```
