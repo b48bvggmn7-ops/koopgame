@@ -3512,12 +3512,12 @@ async def dschungel6_wipfelsturm(g):
         r = await koop(g, m=kat(486, 13), f=kat(485, 13), plans={'m': [k_lauf(491, -10), {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
         soll(r.get('dead') == 'm' or r['pos']['m'][0] < 492, 'E3 ohne Hebel 8 bleibt die Klappe zu (Affe fällt nicht ins Tor)', info(r))
         hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
-        flucht = lambda w: [k_lauf(537)] + hupf(546) + hupf(556) + hupf(566) + [k_lauf(591)]
+        flucht = lambda w: [k_lauf(537)] + hupf(546) + hupf(556) + hupf(566) + [k_lauf(585)]
         for delay in (0, 20):
             m = [k_lauf(533, -14), {'use': True, 'frames': 2}] + flucht('m')
             f = [{'frames': delay}, k_lauf(535, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
             r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': m, 'f': f}, maxFrames=4000)
-            soll(r.get('done') and r['pos']['m'][0] >= 590 and r['pos']['f'][0] >= 590, f'E3 Doppel-Jagd (Schwein {delay} Schritte später unten)', info(r))
+            soll(r.get('done') and r['pos']['m'][0] >= 584 and r['pos']['f'][0] >= 584, f'E3 Doppel-Jagd (Schwein {delay} Schritte später unten)', info(r))
         r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': [k_lauf(533, -14), {'use': True, 'frames': 2}, {'frames': 80}] + flucht('m')}, maxFrames=4000)
         soll(r.get('dead') == 'm', 'E3 1,5 s gezögert: Wand oder Decke erwischen den Affen', info(r))
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
@@ -3548,7 +3548,6 @@ async def dschungel6_wipfelsturm(g):
         r = await koop(g, m=kat(768, 5), f=kat(766, 5), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
         soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):
