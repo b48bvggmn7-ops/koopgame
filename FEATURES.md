@@ -300,6 +300,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     startbar, bis Ausbau 6). Alles andere wie vorher: Schloss-Animation, Statistik-Zeile unter geschafften Karten,
     „Packages öffnen“, „Umkleide“, Fortschritt (jetzt x / y dieser Welt), Spielerwahl; Esc/○ zurück zur Weltkarte.
     Ohne worlds.json (oder für Level ohne Welt) gibt es eine eigene Insel „Level“ bzw. „Weitere Level“.
+    Level-NUMMERN zählen in jeder Welt ab 1 (Nutzerwunsch, z. B. Höhle 1–6, Vulkan 1–7 statt durchgehend bis 22):
+    auf den Karten, im Blätter-Vorhang („Level 3“), im Statistik-Bildschirm („Level 3 · Feuerberg“), in den Meldungen
+    „Level n freigeschaltet/geschafft“ und im Hinweis „schafft erst Level n“ (nrInWelt in 24; Test level_nummern_je_welt).
   - FREISCHALTUNG (Ausbau 3): Welt 1 ist immer offen; die nächste Welt öffnet, wenn alle Level (später auch der Boss)
     der vorigen Welt mit Leveln geschafft sind – Welten ohne Level (Wasser) werden übersprungen, Level 6 (Vulkan)
     öffnet also wie bisher nach Level 5. In einer Welt geht es Level für Level. Alte Spielstände passen: was schon

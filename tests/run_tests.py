@@ -5030,6 +5030,29 @@ async def welten_freischaltung(g):
         srv.shutdown()
 
 @test
+async def level_nummern_je_welt(g):
+    """Welt-Seite: jede Welt zeigt nur ihre eigenen Level, nummeriert ab 1 (Nutzerwunsch: kein „Level 15“ in der Höhle).
+    Auch Vorhang, Statistik-Bildschirm und Meldungen zählen in der Welt."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.unlockAll()")
+        w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+        titel = dict(await g.ev("GameMenu.config.levels.map(l => [l.datei, l.name])"))
+        for x in w['welten']:
+            if not x['level']: continue
+            await g.ev(f"startMenuShow('levels', {{world: '{x['id']}'}})"); await p.wait_for_timeout(500)
+            karten = await p.eval_on_selector_all('#sm-cards .lc:not(.boss)', 'els => els.map(e => [e.querySelector(".n").textContent, e.querySelector(".nm").textContent])')
+            assert karten == [[str(k + 1), titel[d]] for k, d in enumerate(x['level'])], (x['id'], karten)
+        # Statistik nach Feuerberg (3. Level im Vulkan)
+        n = await g.ev("GameMenu.config.levels.findIndex(l => l.datei === 'level-6.json') + 1")
+        await g.ev(f"GameMenu.show('results', {{n: {n}, fresh: 0, packs: 0, st: {{m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}}}})"); await p.wait_for_timeout(300)
+        assert await g.ev("document.getElementById('sm-r-level').textContent") == 'Level 3 · Feuerberg'
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
 async def wechselboden(g):
     """Ausbau 4: Wechselboden. Gruppe A fest, solange die Nummer aus ist, B fest, solange sie an ist (Hebel); steht eine
     Figur dort, wo Boden fest werden soll, wartet dieses Kästchen, bis sie weg ist. Takt-Variante wechselt von selbst

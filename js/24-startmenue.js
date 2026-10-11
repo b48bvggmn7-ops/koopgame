@@ -237,6 +237,8 @@ function mapWorlds() {
 }
 const worldById = id => mapWorlds().find(w => w.id === id) || null;
 const worldOfIndex = i => mapWorlds().find(w => w.idx.includes(i)) || null;
+// angezeigte Level-Nummer: in jeder Welt ab 1 gezählt (Nutzerwunsch); Level außerhalb jeder Welt: fortlaufende Nummer
+const nrInWelt = i => { const w = worldOfIndex(i); return w ? w.idx.indexOf(i) + 1 : i + 1; };
 // Welt geschafft = alle Level UND (falls die Welt einen Boss hat) der Boss besiegt (Ausbau 6)
 const bossDone = w => !!w && (save.bosse || []).includes(w.id);
 const bossOpen = w => !!w && !!w.boss && w.idx.length > 0 && w.idx.every(isDone);
@@ -443,7 +445,7 @@ async function playLevel(i) {
   }
   if (!data) { levelLoadFailed(lvl, why); return; }
   try {
-    await curtainIntoLevel(i + 1, lvl.name, () => {
+    await curtainIntoLevel(nrInWelt(i), lvl.name, () => {
       setMonkeyPlayer(lastPlayers.monkey);
       currentLevelNo = i + 1;
       hideMenu();
@@ -602,7 +604,7 @@ function completeLevel(n, quiet) {
   const fresh = next !== null && !!fileOf(next) && !save.unlocked.includes(fileOf(next));
   if (fresh) save.unlocked.push(fileOf(next));
   persist();
-  if (!quiet) toast(lastBossOpen ? 'Boss freigeschaltet!' : lastFreshWorld ? `Welt ${(worldById(lastFreshWorld) || {}).name} freigeschaltet!` : fresh ? `Level ${next + 1} freigeschaltet!` : `Level ${n} geschafft!`);
+  if (!quiet) toast(lastBossOpen ? 'Boss freigeschaltet!' : lastFreshWorld ? `Welt ${(worldById(lastFreshWorld) || {}).name} freigeschaltet!` : fresh ? `Level ${nrInWelt(next)} freigeschaltet!` : `Level ${nrInWelt(n - 1)} geschafft!`);
   return fresh ? next + 1 : 0;   // neu freigeschaltetes Level (0 = keins)
 }
 // Neues Spiel: ALLES von vorn – freigeschaltete Level, Statistik, Packages, Items/Skins (angelegt + besessen), Münz-Konto
@@ -907,7 +909,7 @@ S.levels = {
       this.idx = this.list.length; this.paint(true); unlockAnimation($$('#sm-cards .lc')[this.list.length], 'Boss freigeschaltet!');
     }
     const uj = this.list.indexOf(unlock);
-    if (uj >= 0 && $$('#sm-cards .lc')[uj]) { this.idx = uj; this.paint(true); unlockAnimation($$('#sm-cards .lc')[uj], `Level ${unlock + 1} freigeschaltet!`); }
+    if (uj >= 0 && $$('#sm-cards .lc')[uj]) { this.idx = uj; this.paint(true); unlockAnimation($$('#sm-cards .lc')[uj], `Level ${nrInWelt(unlock)} freigeschaltet!`); }
   },
   isBoss(j) { return j === this.list.length; },
   paint(instant) {
@@ -929,7 +931,7 @@ S.levels = {
       const st = save.stats[fileOf(i)];
       const duel = done && st && typeof levelCardStatsHTML === 'function'
         ? `<span class="duel">${levelCardStatsHTML(st)}</span>` : '';   // Tode der letzten geschafften Runde
-      b.innerHTML = `<div class="n">${i + 1}</div><div><span class="nm">${CONFIG.levels[i].name}</span>${duel}${extra}</div>`;
+      b.innerHTML = `<div class="n">${j + 1}</div><div><span class="nm">${CONFIG.levels[i].name}</span>${duel}${extra}</div>`;
     });
     const sel = cards[this.idx], pair = $('#sm-pair');
     if (sel && pair) {
@@ -942,7 +944,7 @@ S.levels = {
     const bw = worldById(this.world);
     $('#sm-l-hint').textContent = this.isBoss(this.idx) ? (!bw || !bw.boss ? 'Boss – kommt bald · Esc zurück zur Weltkarte'
         : bossOpen(bw) ? 'Boss · Springen starten · Esc Karte' : 'Gesperrt – schafft erst alle Level dieser Welt')
-      : !isUnlocked(i) ? `Gesperrt – schafft erst Level ${this.list[this.idx - 1] + 1}`
+      : !isUnlocked(i) ? `Gesperrt – schafft erst Level ${this.idx}`
       : '◀ ▶ wählen · Springen starten · ▲ Packages/Umkleide · Esc Karte';
     if (this.top) $('#sm-l-hint').textContent = `◀ ▶ wählen · Springen: ${this.top === 'pack' ? 'Packages öffnen' : 'Umkleide öffnen'} · ▼ zurück zu den Leveln`;
   },
@@ -1116,7 +1118,7 @@ S.results = {
   enter(arg) {
     this.arg = arg || {};
     const st = this.arg.st || { m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0 }, lv = CONFIG.levels[(this.arg.n || 1) - 1];
-    $('#sm-r-level').textContent = this.arg.boss ? `Boss besiegt · ${this.arg.bossName || ''}` : lv ? `Level ${this.arg.n} · ${lv.name}` : '';
+    $('#sm-r-level').textContent = this.arg.boss ? `Boss besiegt · ${this.arg.bossName || ''}` : lv ? `Level ${nrInWelt(this.arg.n - 1)} · ${lv.name}` : '';
     const moreDeaths = st.m > st.f ? 'm' : st.f > st.m ? 'f' : '', moreCoins = st.cm > st.cf ? 'm' : st.cf > st.cm ? 'f' : '';
     for (const w of ['m', 'f']) {
       const c = w === 'm' ? st.cm : st.cf, t = w === 'm' ? st.tm : st.tf, d = w === 'm' ? st.m : st.f;
