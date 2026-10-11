@@ -68,6 +68,41 @@
    "spalte": 670,
    "nummer": 15,
    "begruendung": "661 = nach der Wipfel-Staffel, 670 = vor dem Sturm-Finale; ohne ihn wäre die Lücke > 60 (Test)"
+  },
+  {
+   "level": "ruinen/01-ruinen.json",
+   "regel": "Bild",
+   "spalte": 199,
+   "nummer": 8,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG (vom Nutzer gestaltetes Level 3): Hebel 6/7/8 stehen auf der Fähre (197); Hebel 8 öffnet Tür 225 oben – 26 Spalten. Vorschlag: Tür 225 nach 217 oder Hebel 8 vor die Fähre"
+  },
+  {
+   "level": "ruinen/01-ruinen.json",
+   "regel": "Bild",
+   "spalte": 118,
+   "nummer": 3,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG (vom Nutzer gestaltetes Level 3): Hebel 3 holt die Plattform von 80 (36 Spalten). Vorschlag: Fahrt 80->115 auf 20 kürzen (Plattform startet bei 95, oberer Sims länger) oder Hebel 3 auf die Säule in der Mitte"
+  },
+  {
+   "level": "ruinen/01-ruinen.json",
+   "regel": "Plattform",
+   "spalte": 80,
+   "nummer": 3,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG: wie Hebel 3 – Fahrt 35 Spalten, der Partner am Hebel ist bis 38 Spalten weg"
+  },
+  {
+   "level": "ruinen/01-ruinen.json",
+   "regel": "Plattform",
+   "spalte": 197,
+   "nummer": 6,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG: Fähre 197->236 (39 Spalten); fahren beide mit, ist es kein Problem – bleibt einer oben (Tür 225), ist er bis 39 Spalten weg. Vorschlag: Fahrt in zwei Etappen mit Halt-Insel bei ~216"
+  },
+  {
+   "level": "ruinen/01-ruinen.json",
+   "regel": "Checkpoint",
+   "spalte": 518,
+   "nummer": 9,
+   "begruendung": "Verfolgung durch die Stachelwand (Spalte 420–511) läuft am Stück – mitten in der Flucht kein Checkpoint"
   }
  ]
 }

@@ -246,7 +246,9 @@ def haken_pruefen(d):
             if s_ > weit_max: z['warnungen'].append(f'zu weit ({a[0]}→{b[0]}: {s_} Spalten)')
         hilft = any(abs(x - c0) <= 8 for x in hilfe)   # Pilz/Aufwind im Anlauf-Bereich: die Höhe kommt von dort
         # Höhe nur für Schwung-Reihen (ab 2 Haken); ein einzelner Haken ist meist eine Kletterhilfe an einer Kante
-        if len(rh) > 1 and hoehe is not None and not hilft and not (HAKEN_HOEHE_MIN <= hoehe <= HAKEN_HOEHE_MAX):
+        # kommt man von einem fahrenden Haken, ist der Boden darunter nicht der Absprung
+        vorher = any(0 < c0 - spalte(min(h['x'], h['targetX'])) <= HAKEN_REIHE_LUECKE for h in d.get('hooks', []) if 'targetX' in h)
+        if len(rh) > 1 and hoehe is not None and not hilft and not vorher and not (HAKEN_HOEHE_MIN <= hoehe <= HAKEN_HOEHE_MAX):
             z['warnungen'].append(f'Höhe {hoehe} Reihen über dem Absprung ({abspr[1]})')
         breit = 2 if len(rh) > 1 else 1
         for i, (c, r, h) in enumerate(rh):
