@@ -26,28 +26,27 @@ elementRegistrieren({
         if(sw.pulledT){ const k = (performance.now()-sw.pulledT)/260; if(k < 1) ang += Math.sin(k*Math.PI)*0.15; } // kleiner Nachschwung
         const baseY = sw.y + 20;                 // Kästchen-Unterkante = Boden
         const xr = Math.round(x);
-        // Auffälliger (Nutzerwunsch): größer, Lichtschein in der Hebel-Farbe; solange er noch aus ist, ein hüpfender Pfeil
-        if(!anyOpen) elementLeuchten(xr, baseY - 26, 58, col);
-        // Stange
-        ctx.save(); ctx.translate(xr, baseY-11); ctx.rotate(ang);
-        ctx.strokeStyle = 'rgba(20,28,38,.7)'; ctx.lineWidth = 9; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-34); ctx.stroke();
-        ctx.strokeStyle = '#c9b08a'; ctx.lineWidth = 6;
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-34); ctx.stroke();
-        ctx.fillStyle = 'rgba(20,28,38,.8)'; ctx.beginPath(); ctx.arc(0,-37,11.5,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0,-37,10,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(-3,-40.5,3,0,Math.PI*2); ctx.fill();
+        // Auffälliger (Nutzerwunsch: gleiche Größe wie früher, aber prominenter – kein Leuchten): dunkle Kontur um Stange und
+        // Kugel, Sockel mit Rand in der Hebel-Farbe; solange er aus ist, hüpft ein Hinweis-Pfeil darüber
+        ctx.save(); ctx.translate(xr, baseY-9); ctx.rotate(ang);
+        ctx.strokeStyle = 'rgba(20,28,38,.85)'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-26); ctx.stroke();
+        ctx.strokeStyle = '#d8c09a'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-26); ctx.stroke();
+        ctx.fillStyle = 'rgba(20,28,38,.9)'; ctx.beginPath(); ctx.arc(0,-28,9,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0,-28,7,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(-2.2,-30.5,2.3,0,Math.PI*2); ctx.fill();
         ctx.restore();
         // Sockel mit Nummer
-        ctx.fillStyle = 'rgba(0,0,0,.2)'; roundRect(xr-21, baseY-14, 42, 15, 6); ctx.fill();
-        ctx.fillStyle = '#8c7b69'; roundRect(xr-20, baseY-16, 40, 15, 6); ctx.fill();
-        ctx.strokeStyle = col; ctx.lineWidth = 2; roundRect(xr-20, baseY-16, 40, 15, 6); ctx.stroke();
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xr, baseY-9, sw.link > 9 ? 8 : 7, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle='#fff'; ctx.font=(sw.link > 9 ? 'bold 9px' : 'bold 10px') + ' sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(String(sw.link), xr, baseY-8.5);
+        ctx.fillStyle = 'rgba(0,0,0,.2)'; roundRect(xr-17, baseY-12, 34, 13, 5); ctx.fill();
+        ctx.fillStyle = '#8c7b69'; roundRect(xr-16, baseY-14, 32, 13, 5); ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = 2; roundRect(xr-16, baseY-14, 32, 13, 5); ctx.stroke();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xr, baseY-8, sw.link > 9 ? 7.5 : 6.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fff'; ctx.font=(sw.link > 9 ? 'bold 8px' : 'bold 9px') + ' sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(String(sw.link), xr, baseY-7.5);
         if(anyOpen){ ctx.strokeStyle = col; ctx.globalAlpha = 0.4 + 0.25*Math.sin(performance.now()*0.008); ctx.lineWidth = 2.5;
-          roundRect(xr-24, baseY-20, 48, 22, 8); ctx.stroke(); ctx.globalAlpha = 1; }
-        else hinweisPfeil(xr, baseY - 72, col);
+          roundRect(xr-20, baseY-18, 40, 20, 8); ctx.stroke(); ctx.globalAlpha = 1; }
+        else hinweisPfeil(xr, baseY - 56, col);
         // Tasten-Hinweis, wenn jemand davor steht
         const hints = [];
         if(leverNear(p1, sw)) hints.push(padConnected[0] ? '○' : 'J');
@@ -55,7 +54,7 @@ elementRegistrieren({
         if(hints.length){
           const label = [...new Set(hints)].join(' / ');
           ctx.font = 'bold 12px sans-serif';
-          const tw = ctx.measureText(label).width + 14, hy = baseY - 104 + Math.sin(performance.now()*0.006)*2;
+          const tw = ctx.measureText(label).width + 14, hy = baseY - 90 + Math.sin(performance.now()*0.006)*2;
           ctx.fillStyle = 'rgba(20,28,38,.85)'; roundRect(xr - tw/2, hy, tw, 20, 6); ctx.fill();
           ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label, xr, hy+10.5);
         }

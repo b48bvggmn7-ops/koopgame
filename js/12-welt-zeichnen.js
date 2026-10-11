@@ -299,16 +299,9 @@ const LINK_COLORS = {1:'#ff922b', 2:'#339af0', 3:'#9775fa', 4:'#12b886', 5:'#f06
 // ab 21 (falls je nötig): automatisch verteilte Farbtöne
 const linkColor = n => LINK_COLORS[n] || `hsl(${(n*137.5)%360},60%,45%)`;
 // (steht außerhalb von draw(), damit auch die Elemente in elemente/ – Hebel, Druckplatte – sie benutzen können)
-// Auffälligkeit (Nutzerwunsch: Hebel, Pilze, Druckplatten wurden übersehen): weicher, pulsierender Lichtschein und ein
-// hüpfender Hinweis-Pfeil über allem, was man noch benutzen muss. Nur Zeichnen (performance.now), kein Spielzustand.
+// Auffälligkeit (Nutzerwunsch: Hebel, Pilze, Druckplatten wurden übersehen): hüpfender Hinweis-Pfeil über allem, was
+// man noch benutzen muss (ohne Leuchten – Nutzerwunsch). Nur Zeichnen (performance.now), kein Spielzustand.
 let hinweisPfeile = 0;   // Zähler je Bild (für Tests)
-function elementLeuchten(x, y, radius, col, staerke = 1){
-  const puls = 0.6 + 0.4*Math.sin(performance.now()*0.005);
-  const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
-  g.addColorStop(0, col); g.addColorStop(0.45, col); g.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.save(); ctx.globalAlpha = 0.6*puls*staerke; ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.fill(); ctx.restore();
-}
 function hinweisPfeil(x, y, col, nachOben = false){
   hinweisPfeile++;
   const hop = Math.sin(performance.now()*0.007)*6;

@@ -21,13 +21,13 @@ function buildCritters(){
   const keep = [];
   for(const c of coins) keep.push([c.x, c.y]);
   for(const sp of spikes) keep.push([sp.x, sp.y - 20]);
-  for(const sw of switchDefs) keep.push([sw.x, sw.y]);
-  for(const b of bouncers) keep.push([b.x, b.y - 20]);   // Sprungpilze und Druckplatten frei lassen (sollen auffallen)
-  for(const pl of plates) keep.push([pl.x, pl.y]);
+  // Hebel, Sprungpilze, Druckplatten: weiter Bereich ganz ohne Pflanzen/Tiere (Nutzerwunsch: nichts lenkt davon ab)
+  const frei = [...switchDefs.map(sw => [sw.x, sw.y]), ...bouncers.map(b => [b.x, b.y - 20]), ...plates.map(pl => [pl.x, pl.y])];
   for(const cp of checkpointDefs) keep.push([cp.x, cp.y - 20]);
   if(goal) keep.push([goal.x, goal.y - 20]);
   for(const s of solids) if(s.type === 'door' || s.type === 'crumble' || s.type === 'moveplat') keep.push([s.x + s.w/2, s.y]);
-  const blocked = (x, top)=> keep.some(([kx, ky])=> Math.abs(kx - x) < 44 && ky > top - 90 && ky < top + 30);
+  const blocked = (x, top)=> keep.some(([kx, ky])=> Math.abs(kx - x) < 44 && ky > top - 90 && ky < top + 30) ||
+    frei.some(([kx, ky])=> Math.abs(kx - x) < DEKO_FREI_ABSTAND && ky > top - 120 && ky < top + 40);
   const nearStart = x => Math.abs(x - levelStartM.x) < 200;
   let goldDone = false, slothCount = 0, lastKind = {};
   const grounds = solids.filter(s => s.type === 'ground').sort((a, b)=> a.x - b.x || a.y - b.y);
@@ -80,6 +80,16 @@ function buildCritters(){
         slothCount++;
       }
     }
+  }
+  // Laufende/hüpfende Tiere (Frosch, Schnecke, Eidechse) nie in die freie Zone um Hebel/Pilze/Druckplatten
+  for(const c of critters){
+    if(c.minX === undefined) continue;
+    for(const [kx, ky] of frei){
+      if(ky < c.y - 120 || ky > c.y + 40) continue;
+      if(kx >= c.x) c.maxX = Math.min(c.maxX, kx - DEKO_FREI_ABSTAND);
+      else c.minX = Math.max(c.minX, kx + DEKO_FREI_ABSTAND);
+    }
+    if(c.minX > c.maxX) c.minX = c.maxX = c.x;
   }
 }
 

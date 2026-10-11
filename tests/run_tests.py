@@ -3969,8 +3969,8 @@ async def deko_frei_von_spielobjekten(g):
 
 @test
 async def auffaellige_elemente(g):
-    """Nutzerwunsch: Hebel, Sprungpilze und Druckplatten fallen auf – Lichtschein und ein hüpfender Hinweis-Pfeil,
-    solange man sie noch benutzen muss (Hebel aus, Platte frei; Pilz immer); keine Deko-Pflanzen/-Tiere darauf."""
+    """Nutzerwunsch: Hebel, Sprungpilze und Druckplatten fallen auf – hüpfender Hinweis-Pfeil (kein Leuchten), solange
+    man sie noch benutzen muss (Hebel aus, Platte frei; Pilz immer); im weiten Umkreis keine Deko-Pflanzen/-Tiere."""
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        switches=[{'x': 300, 'y': 660, 'link': 1}], plates=[{'x': 420, 'y': 660, 'link': 2}],
                        bouncers=[{'x': 540, 'y': 680}]))
@@ -3979,10 +3979,14 @@ async def auffaellige_elemente(g):
     assert await g.ev(zaehlen) == 3, 'Hinweis-Pfeile fehlen (Hebel, Platte, Pilz)'
     n = await g.ev(f"(() => {{ setLink(1, true); p2.x = 420; p2.y = 680; p2.grounded = true; updatePlates([p1, p2]); return {zaehlen}; }})()")
     assert n == 1, f'Pfeil bleibt an benutztem Hebel / gedrückter Platte: {n}'
-    bad = await g.ev("""(() => { const pts = [...bouncers.map(b => b.x), ...plates.map(p => p.x)];
-      const deko = [...decoPlants.map(p => p.x), ...birds.map(b => b.homeX), ...(typeof critters !== 'undefined' ? critters.map(c => c.x) : [])];
-      return deko.filter(x => pts.some(px => Math.abs(px - x) < 24)); })()""")
-    assert not bad, f'Deko auf Pilz/Platte bei x={bad}'
+    bad = await g.ev("""(() => { const pts = [...bouncers.map(b => b.x), ...plates.map(p => p.x), ...switchDefs.map(s => s.x)];
+      const deko = [...decoPlants.map(p => p.x), ...birds.map(b => b.homeX), ...critters.map(c => c.homeX ?? c.x)];
+      return deko.filter(x => pts.some(px => Math.abs(px - x) < 100)); })()""")
+    assert not bad, f'Deko nahe Hebel/Pilz/Platte bei x={bad}'
+    weg = await g.ev("""(() => { const pts = [...bouncers.map(b => b.x), ...plates.map(p => p.x), ...switchDefs.map(s => s.x)];
+      return critters.filter(c => c.minX !== undefined).filter(c => pts.some(px => px > c.minX - 100 && px < c.maxX + 100)).map(c => c.kind); })()""")
+    assert not weg, f'Tiere laufen/hüpfen bis an Hebel/Pilz/Platte: {weg}'
+    assert not await g.ev("typeof elementLeuchten !== 'undefined'"), 'Leuchten soll weg sein (Nutzerwunsch)'
 
 @test
 async def muenzen_groesser_3d(g):

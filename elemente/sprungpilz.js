@@ -37,20 +37,20 @@ elementRegistrieren({
         if(x < -40 || x > VW + 40) continue;
         b.squish = Math.max(0, b.squish - frameDt*0.004);
         const sq = Math.sin(b.squish*Math.PI)*0.35;
-        // Auffälliger (Nutzerwunsch): so breit wie der Bereich, der wirklich federt, kräftig violett mit weißen Punkten
-        // (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze), Lichtschein und ein hüpfender Pfeil nach oben
-        elementLeuchten(x, b.y - 20, 66, '#c77dff');
-        ctx.save(); ctx.translate(x, b.y); ctx.scale((1 + sq)*1.2, (1 - sq)*1.15);
-        ctx.fillStyle = 'rgba(20,28,38,.6)'; roundRect(-10, -20, 20, 20, 5); ctx.fill();
-        ctx.fillStyle = '#fff3df'; roundRect(-8.5, -19, 17, 19, 4); ctx.fill();
-        const g = ctx.createRadialGradient(-8, -30, 2, 0, -20, 30);
+        // Auffälliger (Nutzerwunsch: dicker, kein Leuchten): so breit wie der Bereich, der wirklich federt, dicker Hut und
+        // Stiel, kräftig violett mit weißen Punkten (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze), dunkle
+        // Kontur; ein hüpfender Pfeil nach oben
+        ctx.save(); ctx.translate(x, b.y); ctx.scale(1 + sq, 1 - sq);
+        ctx.fillStyle = 'rgba(20,28,38,.75)'; roundRect(-12, -22, 24, 22, 6); ctx.fill();
+        ctx.fillStyle = '#fff3df'; roundRect(-10, -21, 20, 21, 5); ctx.fill();
+        const g = ctx.createRadialGradient(-8, -34, 2, 0, -22, 32);
         g.addColorStop(0, '#e2b6ff'); g.addColorStop(1, '#7b2fd6');
-        ctx.fillStyle = 'rgba(20,28,38,.8)'; ctx.beginPath(); ctx.ellipse(0, -17, 30, 20, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -18, 28, 18, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(20,28,38,.85)'; ctx.beginPath(); ctx.ellipse(0, -18, 30.5, 24, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -19, 28, 22, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#ffffff';
-        for(const [dx, dy, r] of [[-14, -24, 3.8], [0, -31, 4.2], [13, -23, 3.4], [-4, -22, 2.4]]){ ctx.beginPath(); ctx.arc(dx, dy, r, 0, Math.PI*2); ctx.fill(); }
+        for(const [dx, dy, r] of [[-14, -27, 4], [0, -35, 4.5], [13, -26, 3.6], [-4, -24, 2.6]]){ ctx.beginPath(); ctx.arc(dx, dy, r, 0, Math.PI*2); ctx.fill(); }
         ctx.restore();
-        hinweisPfeil(x, b.y - 68, '#c77dff', true);
+        hinweisPfeil(x, b.y - 66, '#c77dff', true);
         ctx.restore();
       }
     },
