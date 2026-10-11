@@ -103,6 +103,19 @@
    "spalte": 518,
    "nummer": 9,
    "begruendung": "Verfolgung durch die Stachelwand (Spalte 420–511) läuft am Stück – mitten in der Flucht kein Checkpoint"
+  },
+  {
+   "level": "ruinen/02-mondnacht.json",
+   "regel": "Haken",
+   "spalte": 192,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG (vom Nutzer gestaltetes Level 4): Hakenreihe 181–212 mit Abständen 10–11 bei Reichweite 3,5 Kästchen (Richtwert: höchstens 8). Einstieg von oben (Haken unter dem Sims); der Bot spielt diese Einstiegsart nicht – bitte selbst anspielen. Vorschlag: 5 Haken im Abstand 8 (181–213)"
+  },
+  {
+   "level": "ruinen/02-mondnacht.json",
+   "regel": "Checkpoint",
+   "spalte": 238,
+   "nummer": 5,
+   "begruendung": "223 und 238 rahmen die Hakenreihe ein; ohne einen von beiden wäre die Lücke > 70 (157→238 bzw. 223→308)"
   }
  ]
 }
