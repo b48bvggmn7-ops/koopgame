@@ -254,7 +254,8 @@ def haken_pruefen(d):
             rechts = c if (len(rh) > 1 and i == len(rh) - 1) else c + breit
             block = [(cc, rr) for cc in range(c - breit, rechts + 1) for rr in range(r + 1, r + 4) if (cc, rr) in fest]
             if block: z['warnungen'].append(f'Bogen blockiert bei Haken {c} (Stein bei {block[0][0]},{block[0][1]})')
-        if len(rh) > 1:
+        weiter = any(0 < spalte(h['x']) - rh[-1][0] <= HAKEN_REIHE_LUECKE for h in d.get('hooks', []) if 'targetX' in h)
+        if len(rh) > 1 and not weiter:   # geht es an einem fahrenden Haken weiter, ist dort noch keine Landung
             # Landung einer Schwungreihe: Stehplätze 2–10 Spalten hinter dem letzten Haken (unterhalb der Hakenreihe)
             cl, rl = rh[-1][0], rh[-1][1]
             n = [c for c in range(cl + 2, cl + 11) if steh_reihe(steh, c, rl) is not None]

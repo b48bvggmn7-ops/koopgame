@@ -40,6 +40,34 @@
    "spalte": 341,
    "nummer": 6,
    "begruendung": "Dornendecke ist eine Verfolgung: Hebel 6 startet die Decke (direkt daneben sichtbar), die Tür am Ende der Flucht (393) öffnet zugleich – man läuft auf sie zu"
+  },
+  {
+   "level": "dschungel/06-wipfelsturm.json",
+   "regel": "Bild",
+   "spalte": 533,
+   "nummer": 9,
+   "begruendung": "Doppel-Jagd ist eine Verfolgung: Hebel 9 startet die Dornendecke (direkt daneben sichtbar), die Tür am Ende der Flucht (580) öffnet zugleich"
+  },
+  {
+   "level": "dschungel/06-wipfelsturm.json",
+   "regel": "Checkpoint",
+   "spalte": 205,
+   "nummer": 4,
+   "begruendung": "nach dem Pilz-Turm nur Laufstrecke bis zur nächsten Stelle; ohne ihn wäre die Lücke > 60 (Test dschungel6_wipfelsturm)"
+  },
+  {
+   "level": "dschungel/06-wipfelsturm.json",
+   "regel": "Checkpoint",
+   "spalte": 600,
+   "nummer": 13,
+   "begruendung": "584 = nach der Doppel-Jagd, 600 = direkt vor der Wipfel-Staffel (ein Rätsel bis 661); zusammengelegt wäre die Lücke danach > 60 (Test)"
+  },
+  {
+   "level": "dschungel/06-wipfelsturm.json",
+   "regel": "Checkpoint",
+   "spalte": 670,
+   "nummer": 15,
+   "begruendung": "661 = nach der Wipfel-Staffel, 670 = vor dem Sturm-Finale; ohne ihn wäre die Lücke > 60 (Test)"
   }
  ]
 }

@@ -3512,7 +3512,7 @@ async def dschungel6_wipfelsturm(g):
                 if r.get('done') and r['pos'][who][0] >= 482: n += 1
             soll(n > 0, f'E3 Takt-Steine 1 s ({who})', (f'{n}/6', info(r)))
         m = [k_lauf(483, -4)] + sprung_zu(kx(487)) + [k_lauf(489, -24), {'frames': 10}, {'wait': '!!linkOn[8]', 'frames': 3000}, {'hold': ['right'], 'until': f'P.x > {kx(511)}', 'frames': 200}, k_lauf(518)]
-        f = [k_lauf(483, -4)] + sprung_zu(kx(486)) + [{'wait': '!!linkOn[7]', 'frames': 1000}, {'frames': 10}, k_lauf(510, -14), {'use': True, 'frames': 2}, {'wait': f'Q.x > {kx(511)}', 'frames': 2000}, k_lauf(519)]
+        f = [k_lauf(483, -4)] + sprung_zu(kx(486)) + [{'wait': '!!linkOn[7]', 'frames': 1000}, {'frames': 10}, k_lauf(508, -14), {'use': True, 'frames': 2}, {'wait': f'Q.x > {kx(511)}', 'frames': 2000}, k_lauf(519)]
         r = await koop(g, m=kat(481, 15), f=kat(480, 15), plans={'m': m, 'f': f}, maxFrames=5000)
         soll(r.get('done') and r['pos']['m'][0] >= 517 and r['pos']['f'][0] >= 518 and r['pos']['m'][1] == 13, 'E3 Wechsel-Schleuse (Platte 7, Hebel 8, Klappe + blaues Tor)', info(r))
         r = await koop(g, m=kat(486, 13), f=kat(485, 13), plans={'m': [k_lauf(491, -10), {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
