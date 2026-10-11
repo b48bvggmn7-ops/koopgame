@@ -1384,12 +1384,12 @@ async def level10_sonnentempel(g):
     r = await koop(g, m=kat(420, 9), f=kat(407, 6), plans={'m': [k_lauf(428)]}, maxFrames=600)
     soll(r['pos']['m'][0] < 424, 'Tür 9 zu ohne Licht', r.get('pos'))
     m = [k_lauf(427, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
-         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(465)] + am(466)
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(441)] + am(442)   # Bild-Regel: Spiegel 9 bei 442 statt 466
     r = await koop(g, m=kat(426, 9), f=kat(436, 15), plans={'m': m}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[10]"), 'Affe am Haken über die Stacheln -> Spiegel 9 -> Tür 10', r.get('pos'))
     r = await koop(g, f=kat(418, 15), m=kat(410, 15), plans={'f': [k_lauf(426)]}, maxFrames=600)
     soll(r['pos']['f'][0] < 422, 'Tür 10 zu ohne Licht', r.get('pos'))
-    r = await koop(g, f=kat(430, 15), m=kat(466, 9), plans={'f': gleit(439, kx(453), 4) + [k_lauf(476)]}, pre=dreh(466), maxFrames=1500)
+    r = await koop(g, f=kat(430, 15), m=kat(442, 9), plans={'f': gleit(439, kx(453), 4) + [k_lauf(476)]}, pre=dreh(442), maxFrames=1500)
     soll(r.get('done'), 'Schweinchen unten über die Grube, Ausgang', r.get('pos'))
     pl = []
     for c, nach in ((492, 496), (500, 504), (508, 512)):
@@ -1398,8 +1398,9 @@ async def level10_sonnentempel(g):
     soll(r.get('done') and await g.ev("!!linkOn[11]"), 'Spiegel-Kette unter Pfeilen -> Tür 11', r.get('pos'))
     r = await koop(g, f=kat(512, 15), m=kat(510, 15), plans={'f': [k_lauf(524)]}, pre=dreh(492, 500), maxFrames=600)
     soll(r['pos']['f'][0] < 518, 'zwei von drei Spiegeln reichen nicht', r.get('pos'))
-    r = await koop(g, m=kat(528, 15), f=kat(536, 15), plans={'m': [k_lauf(533), {'wait': f'P.x > {kx(570)}'}, {'frames': 20}]}, maxFrames=1500)
-    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 572, 'Affe durchs blaue Tor über den Flammen-Gang', r.get('pos'))
+    # Bild-Regel: das blaue Tor bringt den Affen aufs Dach über dem Gang (552); er läuft oben mit und springt am Ende hinunter
+    r = await koop(g, m=kat(528, 15), f=kat(536, 15), plans={'m': [k_lauf(533), {'wait': f'P.y < {ky(10)}'}, k_lauf(574), {'until': 'P.grounded', 'frames': 300}]}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 572 and k_pos(r, 'm')[1] == 15, 'Affe durchs blaue Tor aufs Dach über dem Flammen-Gang', r.get('pos'))
     plan = []
     for c in range(540, 569, 4):
         fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'

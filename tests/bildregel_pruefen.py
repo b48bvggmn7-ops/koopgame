@@ -58,7 +58,13 @@ def ausloeser(d):
     a = []
     for s in d.get('switches', []): a.append(('Hebel', s['link'], spalte(s['x']), reihe(s['y'])))
     for s in d.get('plates', []): a.append(('Platte', s['link'], spalte(s['x']), reihe(s['y'])))
+    kr = [(s['link'], spalte(s['x'])) for s in d.get('kristalle', [])]
     for s in d.get('kristalle', []): a.append(('Kristall', s['link'], spalte(s['x']), reihe(s['y'])))
+    # bedient wird beim Licht der Spiegel: jeder Spiegel zählt als Auslöser für den nächsten Kristall (Näherung, kein Strahl-Verlauf)
+    for s in d.get('spiegel', []):
+        c = spalte(s['x'])
+        nah = min(kr, key=lambda k: abs(k[1] - c)) if kr else None
+        if nah and abs(nah[1] - c) <= 30: a.append(('Spiegel', nah[0], c, reihe(s['y'])))
     return a
 
 def plattform_gruppen(d):

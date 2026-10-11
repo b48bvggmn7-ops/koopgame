@@ -150,6 +150,47 @@
    "spalte": 680,
    "nummer": 13,
    "begruendung": "Flammen-Doppelgang 604–680 ist ein Rätsel am Stück (zwei getrennte Wege) – Checkpoint erst danach (wie im Test level9_fallengang)"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Bild",
+   "spalte": 630,
+   "nummer": 12,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG: Doppelstrahl-Tor – Spiegel 630/653 und Tür 690/691 liegen 38–60 Spalten auseinander (die Spiegel bleiben gestellt, man läuft danach zum Tor). Vorschlag: Tor samt Pfeil nach ~672 vorziehen und Spiegel 12 näher. Rückweg nach Tod vom Checkpoint 636 zum Spiegel 630: 6 Spalten"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Bild",
+   "spalte": 653,
+   "nummer": 13,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG: wie Spalte 630 (Strahl 2 des Doppelstrahl-Tors)"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Haken",
+   "spalte": 238,
+   "begruendung": "Hochzieh-Haken links und rechts am Spiegel-Sims (241–245): der Sims ist das Ziel, kein Hindernis; Bot-Test level10_sonnentempel spielt sie"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Checkpoint",
+   "spalte": 205,
+   "nummer": 5,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor dem nächsten Licht-Rätsel; ohne ihn wäre die Lücke > 60 (Test level10_sonnentempel)"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Checkpoint",
+   "spalte": 401,
+   "nummer": 10,
+   "begruendung": "401 = direkt vor den „zwei Wegen“ (ein Rätsel bis 474), 378 = nach dem Flammen-Tunnel; zusammen > 60 sonst"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Checkpoint",
+   "spalte": 474,
+   "nummer": 11,
+   "begruendung": "„Zwei Wege“ 401–474 ist ein Rätsel am Stück (getrennte Wege) – wie im Test level10_sonnentempel"
   }
  ]
 }
