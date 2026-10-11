@@ -22,6 +22,8 @@ function buildCritters(){
   for(const c of coins) keep.push([c.x, c.y]);
   for(const sp of spikes) keep.push([sp.x, sp.y - 20]);
   for(const sw of switchDefs) keep.push([sw.x, sw.y]);
+  for(const b of bouncers) keep.push([b.x, b.y - 20]);   // Sprungpilze und Druckplatten frei lassen (sollen auffallen)
+  for(const pl of plates) keep.push([pl.x, pl.y]);
   for(const cp of checkpointDefs) keep.push([cp.x, cp.y - 20]);
   if(goal) keep.push([goal.x, goal.y - 20]);
   for(const s of solids) if(s.type === 'door' || s.type === 'crumble' || s.type === 'moveplat') keep.push([s.x + s.w/2, s.y]);

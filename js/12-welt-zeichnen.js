@@ -299,6 +299,26 @@ const LINK_COLORS = {1:'#ff922b', 2:'#339af0', 3:'#9775fa', 4:'#12b886', 5:'#f06
 // ab 21 (falls je nötig): automatisch verteilte Farbtöne
 const linkColor = n => LINK_COLORS[n] || `hsl(${(n*137.5)%360},60%,45%)`;
 // (steht außerhalb von draw(), damit auch die Elemente in elemente/ – Hebel, Druckplatte – sie benutzen können)
+// Auffälligkeit (Nutzerwunsch: Hebel, Pilze, Druckplatten wurden übersehen): weicher, pulsierender Lichtschein und ein
+// hüpfender Hinweis-Pfeil über allem, was man noch benutzen muss. Nur Zeichnen (performance.now), kein Spielzustand.
+let hinweisPfeile = 0;   // Zähler je Bild (für Tests)
+function elementLeuchten(x, y, radius, col, staerke = 1){
+  const puls = 0.6 + 0.4*Math.sin(performance.now()*0.005);
+  const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  g.addColorStop(0, col); g.addColorStop(0.45, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.save(); ctx.globalAlpha = 0.6*puls*staerke; ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.fill(); ctx.restore();
+}
+function hinweisPfeil(x, y, col, nachOben = false){
+  hinweisPfeile++;
+  const hop = Math.sin(performance.now()*0.007)*6;
+  ctx.save(); ctx.translate(x, y + hop); if(nachOben) ctx.scale(1, -1);
+  ctx.beginPath(); ctx.moveTo(-15, -12); ctx.lineTo(15, -12); ctx.lineTo(0, 8); ctx.closePath();
+  ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(20,28,38,.9)'; ctx.stroke();
+  ctx.fillStyle = col; ctx.fill();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.restore();
+}
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_BACK_MIN..CAM_BACK_PUSH px,
   // Totzone gegen Wackeln, cameraTarget in 09-kamera.js), damit man möglichst viel von dem sieht,
@@ -310,6 +330,7 @@ function draw(){
   ctx.setTransform(RS, 0, 0, RS, 0, 0);   // volle Bildschirmauflösung (00-setup.js)
   ctx.clearRect(0,0,W,H);
   tNowCp = performance.now();
+  hinweisPfeile = 0;
   drawBackground();
   ctx.save();
   ctx.translate(0, CEILING_MARGIN);

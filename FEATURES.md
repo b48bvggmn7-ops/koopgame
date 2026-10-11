@@ -14,6 +14,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (JUMP_FULL_STEPS = 10 Schritte) genau die bisherige Höchsthöhe 134 px (≈ 3,4 Kästchen) – länger halten bringt nichts
     mehr, höher als früher geht nie (es wird nur gebremst). Erneutes Drücken in der Luft ändert nichts. Wandsprung,
     Seil-Abflug, Sprungpilz, Aufwind/Schirm und Schwimmen sind ausgenommen und unverändert. Test variable_sprunghoehe.
+  - AUFFÄLLIGE SPIELELEMENTE (Nutzerwunsch: Hebel, Sprungpilze und Druckplatten wurden übersehen, gerade wenn man
+    schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert): Hebel größer (dicke Stange, große Kugel,
+    Sockel mit Rand in der Hebel-Farbe), Druckplatte so breit wie der Bereich, der wirklich drückt, mit Farbrand;
+    Sprungpilz so breit wie der Bereich, der wirklich federt, kräftig violett mit weißen Punkten (grün ging im Gras
+    unter, rot sähe aus wie die Deko-Pilze). Alle drei haben einen pulsierenden Lichtschein und einen hüpfenden
+    Hinweis-Pfeil – Hebel, solange er aus ist; Druckplatte, solange niemand draufsteht; Pilz immer (Pfeil nach oben).
+    Deko-Pflanzen und -Tiere stehen nie auf Pilzen und Druckplatten. Hilfen elementLeuchten/hinweisPfeil in
+    12-welt-zeichnen.js. Test auffaellige_elemente.
   - Figuren: süßer Affe (eigene Zeichnung, ersetzt Kenney-Affe) und pinkes Schweinchen, beide mit Zwinker-Bild
     (monkeyBlink/pigBlink, alle ~3-5 s kurz). Bild immer im echten Seitenverhältnis (nicht verzerrt); gedreht wird
     genau um die Mitte des runden Kopfes (HEAD_CENTER, Ohren zählen nicht), damit die Kugel rund rollt statt zu eiern.

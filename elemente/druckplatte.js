@@ -24,13 +24,18 @@ elementRegistrieren({
         const x = Math.round(pl.x - camX);
         if(x < -40 || x > VW + 40) continue;
         const baseY = pl.y + 20, col = linkColor(pl.link), d = pl.down ? 4 : 0;
-        ctx.fillStyle = 'rgba(0,0,0,.3)'; roundRect(x - 20, baseY - 6, 40, 6, 2); ctx.fill();
-        ctx.fillStyle = '#6b5410'; roundRect(x - 19, baseY - 11 + d, 38, 11 - d, 3); ctx.fill();
-        ctx.fillStyle = pl.down ? col : '#d9b44a'; roundRect(x - 17, baseY - 10 + d, 34, 8 - d*0.5, 3); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(x - 15, baseY - 10 + d, 30, 1.5);
-        ctx.fillStyle = pl.down ? '#fff' : col; ctx.beginPath(); ctx.arc(x, baseY - 4.5 + d/2, 5.5, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = pl.down ? col : '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(String(pl.link), x, baseY - 4 + d/2);
+        // Auffälliger (Nutzerwunsch): so breit wie der Bereich, der wirklich drückt, höher, Rand in der Verknüpfungs-Farbe, Lichtschein; solange niemand
+        // draufsteht, zeigt ein hüpfender Pfeil auf die Platte
+        elementLeuchten(x, baseY - 10, 52, col, pl.down ? 0.6 : 1);
+        ctx.fillStyle = 'rgba(0,0,0,.3)'; roundRect(x - 29, baseY - 7, 58, 7, 2); ctx.fill();
+        ctx.fillStyle = '#4a3a0c'; roundRect(x - 28, baseY - 15 + d, 56, 15 - d, 4); ctx.fill();
+        ctx.fillStyle = pl.down ? col : '#ffd75e'; roundRect(x - 26, baseY - 14 + d, 52, 11 - d*0.5, 4); ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5; roundRect(x - 28, baseY - 15 + d, 56, 15 - d, 4); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x - 23, baseY - 13 + d, 46, 2);
+        ctx.fillStyle = pl.down ? '#fff' : col; ctx.beginPath(); ctx.arc(x, baseY - 7 + d/2, 7.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = pl.down ? col : '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(pl.link), x, baseY - 6.5 + d/2);
+        if(!pl.down) hinweisPfeil(x, baseY - 48, col);
       }
     },
   },
