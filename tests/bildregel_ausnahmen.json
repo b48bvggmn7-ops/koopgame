@@ -219,6 +219,26 @@
    "spalte": 708,
    "nummer": 11,
    "begruendung": "letzte Fels-Jagd 602–708 läuft am Stück"
+  },
+  {
+   "level": "ruinen/06-tempelherz.json",
+   "regel": "Haken",
+   "spalte": 620,
+   "begruendung": "flache Hangel-Leiste (2 Reihen über dem Sims) zum Licht-Takt-Tor; Bot-Test ruinen6_tempelherz spielt sie – tief, aber spielbar"
+  },
+  {
+   "level": "ruinen/06-tempelherz.json",
+   "regel": "Checkpoint",
+   "spalte": 580,
+   "nummer": 14,
+   "begruendung": "zusammengelegt aus 576/599 (Etappen-Übergang, Laufstrecke); ohne ihn wäre die Lücke 537→641 über 100"
+  },
+  {
+   "level": "ruinen/06-tempelherz.json",
+   "regel": "Checkpoint",
+   "spalte": 744,
+   "nummer": 17,
+   "begruendung": "vor der letzten Felsflucht; ohne ihn wäre das Schlussstück 700→Ziel über 90"
   }
  ]
 }

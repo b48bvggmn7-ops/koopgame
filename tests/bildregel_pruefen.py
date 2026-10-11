@@ -260,7 +260,9 @@ def haken_pruefen(d):
         for i, (c, r, h) in enumerate(rh):
             # beim letzten Haken einer Reihe ist Stein rechts davon meist die Landekante (Hochziehen) -> nur links/mittig prüfen
             rechts = c if (len(rh) > 1 and i == len(rh) - 1) else c + breit
-            block = [(cc, rr) for cc in range(c - breit, rechts + 1) for rr in range(r + 1, r + 4) if (cc, rr) in fest]
+            # einzelner Haken: meist Hochziehen auf einen Sims darunter/daneben -> nur direkt unter dem Haken prüfen
+            tief = r + 4 if len(rh) > 1 else r + 2
+            block = [(cc, rr) for cc in range(c - breit, rechts + 1) for rr in range(r + 1, tief) if (cc, rr) in fest]
             if block: z['warnungen'].append(f'Bogen blockiert bei Haken {c} (Stein bei {block[0][0]},{block[0][1]})')
         weiter = any(0 < spalte(h['x']) - rh[-1][0] <= HAKEN_REIHE_LUECKE for h in d.get('hooks', []) if 'targetX' in h)
         if len(rh) > 1 and not weiter:   # geht es an einem fahrenden Haken weiter, ist dort noch keine Landung
