@@ -1,0 +1,6 @@
+{
+ "hinweis": "Begründete Ausnahmen zur Bild-Regel und den Leveldesign-Regeln (AUSBAU-REGELWERK.md Punkt 12). Je Eintrag: level, regel (Bild/Plattform/Haken/Checkpoint), spalte (wie im Prüfwerkzeug angezeigt), nummer (Verknüpfung oder Checkpoint, nur zur Info), begruendung. Der Test bildregel_pruefung schlägt bei jedem Befund fehl, der hier nicht steht.",
+ "ausnahmen": [
+  {"level": "dschungel/02-baumkronen.json", "regel": "Checkpoint", "spalte": 590, "nummer": 11, "begruendung": "Verfolgung durch die Stachelwand (Hebel 14, Spalte 490–578) läuft am Stück – mitten in der Flucht kein Checkpoint"}
+ ]
+}
