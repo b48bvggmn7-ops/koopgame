@@ -1180,6 +1180,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       das Schweinchen läuft oben durch und zieht am Ende Hebel 5, der die Pressen unten anhält); Schleuder über die Lava
       mit Presse über dem Band (Schweinchen segelt hinüber, Hebel 6 dreht das reißende Band für den Affen); Pilz unter
       der Presse (nur wenn sie oben ist, schleudert er auf den Sims; dort zwei weitere Pressen).
+    - Etappe 3 (Spalten 400–600): Flammen-Decke über dem Band (von der Decke stoßen Flammen im Wellen-Takt herab, das
+      Band trägt nach rechts – wer gegenläuft, wartet vor der Flamme); Flammen durch die Stege (unter jedem Steg über
+      der Lava eine Düse, die durch den Steg nach oben brennt – man springt der Flammen-Welle hinterher); Flammen-Vorhang
+      (drei schnelle Düsen im Gang: der Affe schwingt am Haken auf den Sims und zieht Hebel 7 = Vorhang aus, das
+      Schweinchen segelt im Aufwind aufs Dach und zieht Hebel 8 = Tür am Gang-Ende auf).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)

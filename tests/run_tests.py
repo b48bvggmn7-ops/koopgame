@@ -2714,7 +2714,7 @@ async def level19_magmakammer(g):
 
 @test
 async def level20_schlackewerk(g):
-    """Ausbau 7, Vulkan Level 5 „Schlackewerk“ (levels/level-20.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder unter Pressen, Hebel über Kreuz, Flammenfallen über Bändern, großes Werk. Koop-Bot spielt jede Etappe: Band unter der Pressen-Welle, Gegenband-Tunnel, Band zum Pilz über die Presse, Hebel über Kreuz, Schleuder mit Presse, Pilz unter der Presse."""
+    """Ausbau 7, Vulkan Level 5 „Schlackewerk“ (levels/level-20.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder unter Pressen, Hebel über Kreuz, Flammenfallen über Bändern, großes Werk. Koop-Bot spielt jede Etappe: Band unter der Pressen-Welle, Gegenband-Tunnel, Band zum Pilz über die Presse, Hebel über Kreuz, Schleuder mit Presse, Pilz unter der Presse, Flammen-Decke über dem Band, Flammen durch die Stege, Flammen-Vorhang mit zwei Hebeln."""
     await koop_level(g, 'level-20.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2746,7 +2746,17 @@ async def level20_schlackewerk(g):
       const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
       if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
       const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
-      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });'''
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });
+    window.flammeOK = (P, weit, v) => {
+      const hoch = b => b.y < P.y && b.y + b.h > P.y - P.h;
+      if(fallen.some(f => { const b = falleFlammeBox(f); return f.art === 'flamme' && hoch(b) && b.x < P.x + 16 && b.x + b.w > P.x - 16; })) return true;
+      return fallen.every(f => { if(f.art !== 'flamme' || !falleAktiv(f)) return true; const b = falleFlammeBox(f);
+        if(!hoch(b) || b.x + b.w <= P.x - 16 || b.x >= P.x + (weit || 80)) return true;
+        const n = falleTaktSchritte(f), t = falleZeit(f);
+        if(t < n*FLAMME_ANTEIL) return false;
+        return n - t > (b.x + b.w + 16 - P.x)/(v || 4) + 4; }); };
+    window.flFrei = (c, a, b) => { const f = fallen.find(q => Math.round(q.x/40) === c); const n = falleTaktSchritte(f), t = falleZeit(f);
+      for(let s = a; s <= b; s++) if((t + s) % n < n*FLAMME_ANTEIL) return false; return true; };'''
     durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
     durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
     async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
@@ -2790,6 +2800,30 @@ async def level20_schlackewerk(g):
         pl = lambda w: [{'holdIf': {'left': f'P.x > {kx(304)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
                         {'aim': [kx(310), kx(316)], 'jumps': [kx(307)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, durch(331), k_lauf(332), {'until': 'P.grounded', 'frames': 100}, k_lauf(336), {'until': 'P.grounded', 'frames': 100}, k_lauf(340)]
         await beide('E2 Pilz unter der Presse, Pressen auf dem Sims', 299, pl, 339, delay=60)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        pl = lambda w: [{'holdIf': {'right': 'flammeOK(P, 120, 6)', 'left': '!flammeOK(P, 50, 6)'}, 'until': f'P.x >= {kx(456)}', 'frames': 3000}]
+        await beide('E3 Flammen-Decke über dem Band', 404, pl, 455, delay=120)
+        def stege(w):
+            m = [k_lauf(458, 0)]
+            for c in (465, 471, 477, 483, 489):
+                m += [{'wait': f'flFrei({c}, 8, 55)'}] + sprung_zu(kx(c))
+            return m + [{'wait': 'flFrei(489, 0, 1)'}] + sprung_zu(kx(497)) + [k_lauf(498)]
+        await beide('E3 Flammen durch die Stege über der Lava', 457, stege, 497, delay=150)
+        res = None
+        for jx in (499, 500, 501):
+            for pull in (30, 60):
+                m = haken(jx, 9, pull) + am(508) + [k_lauf(512), {'until': 'P.grounded', 'frames': 200}, k_lauf(555), {'wait': '!!linkOn[8]'}, k_lauf(566)]
+                f = [{'wait': '!!linkOn[7]'}, halten(540), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4},
+                     {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(542)} + 10', 'left': f'P.x > {kx(543)} - 10'}, 'until': f'P.y < {ky(1)}', 'frames': 600},
+                     {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(552)} - 6', 'left': f'P.x > {kx(552)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + am(552) + [k_lauf(560), {'until': 'P.grounded', 'frames': 200}, k_lauf(568)]
+                r = await koop(g, m=kat(497, 15), f=kat(495, 15), plans={'m': m, 'f': f}, maxFrames=6000, pre=PRE)
+                if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 565: res = (jx, pull); break
+            if res: break
+        soll(res, 'E3 Vorhang: Affe (Haken, Hebel 7) und Schwein (Aufwind, Hebel 8) öffnen sich gegenseitig den Weg', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(514, 15), f=kat(512, 15), plans={'m': [k_lauf(526)]}, maxFrames=600, pre=PRE)
+        soll(r.get('dead'), 'E3 ohne Hebel 7 kommt niemand durch den Vorhang', r.get('dead'))
     assert not fehler, fehler
 
 @test
