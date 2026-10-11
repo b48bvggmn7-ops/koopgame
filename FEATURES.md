@@ -309,6 +309,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Level-NUMMERN zählen in jeder Welt ab 1 (Nutzerwunsch, z. B. Höhle 1–6, Vulkan 1–7 statt durchgehend bis 22):
     auf den Karten, im Blätter-Vorhang („Level 3“), im Statistik-Bildschirm („Level 3 · Feuerberg“), in den Meldungen
     „Level n freigeschaltet/geschafft“ und im Hinweis „schafft erst Level n“ (nrInWelt in 24; Test level_nummern_je_welt).
+    In jeder Welt sind die Level nach Schwierigkeit sortiert (6er-Welten, Reihenfolge in worlds.json, Dateinamen bleiben):
+    Ruinen = Ruinen, Fallengang, Sonnentempel, Mondnacht, Felsenflucht; Höhle = Tropfsteingang, Eisgrotte,
+    Kristallhöhle, Leuchtgrotte, Förderwerk, Tiefenschlund (Test welten_laden).
   - FREISCHALTUNG (Ausbau 3): Welt 1 ist immer offen; die nächste Welt öffnet, wenn alle Level (später auch der Boss)
     der vorigen Welt mit Leveln geschafft sind – Welten ohne Level (Wasser) werden übersprungen, Level 6 (Vulkan)
     öffnet also wie bisher nach Level 5. In einer Welt geht es Level für Level. Alte Spielstände passen: was schon

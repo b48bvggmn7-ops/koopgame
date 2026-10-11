@@ -164,10 +164,14 @@ Dazu Wechselboden und Teleporter als Kern-Rätsel.
 | Nr. | Level | Tageszeit / Wetter | Rolle | Schwerpunkt | typisch / schwerste |
 |---|---|---|---|---|---|
 | 1 | Ruinen (vorhanden, level-3) | mittag / wechselnd | Kombi | Pressen, Stachelwand-Jagd, Hebel-Reihenfolge | 2 / 3–4 |
-| 2 | Mondnacht (vorhanden, level-4) | nacht | Kombi (sehr schwer) | Bröckel-Sprint, Schleuse, Stachelwände | 3 / 5 |
-| 3 | **Fallengang** (neu, level-9) | morgen / wechselnd | Lehr-Level | Pfeil- und Flammenfallen im Takt, Hebel stellt Fallen ab, Wechselboden im Rhythmus | 2 / 4 |
-| 4 | **Sonnentempel** (neu, level-10) | abend / regen | Kombi-Level | Licht-Rätsel (Spiegel nur per Haken bzw. nur segelnd erreichbar), Teleporter, Fallen | 2–3 / 5 |
+| 2 | **Fallengang** (neu, level-9) | morgen / wechselnd | Lehr-Level | Pfeil- und Flammenfallen im Takt, Hebel stellt Fallen ab, Wechselboden im Rhythmus | 2 / 4 |
+| 3 | **Sonnentempel** (neu, level-10) | abend / regen | Kombi-Level | Licht-Rätsel (Spiegel nur per Haken bzw. nur segelnd erreichbar), Teleporter, Fallen | 2–3 / 5 |
+| 4 | Mondnacht (vorhanden, level-4) | nacht | Kombi (sehr schwer) | Bröckel-Sprint, Schleuse, Stachelwände | 3 / 5 |
 | 5 | **Felsenflucht** (neu, level-11) | mittag / regen | Meister-Level | Rollender Fels als Verfolgung, alles kombiniert | 3 / 6 |
+| 6 | **Tempelherz** (neu, ruinen/06-tempelherz) | nacht / regen | Meister-Level (schwerstes) | Fels + Fallen + Licht + Wechselboden + Teleporter gleichzeitig, lange Stellen ohne Pause | 3–4 / 7 |
+
+**Reihenfolge (6er-Welten):** Die Level sind nach Schwierigkeit sortiert (typisch / schwerste steigt). Darum steht
+Mondnacht (3 / 5) jetzt hinter dem Sonnentempel; die Dateinamen bleiben gleich.
 
 **Fallengang (level-9):**
 1. Pfeile im Takt lesen (beide).
@@ -298,12 +302,15 @@ der Ferne und Tropfen.
 
 | Nr. | Level | Tageszeit / Wetter | Rolle | Schwerpunkt | typisch / schwerste |
 |---|---|---|---|---|---|
-| 1 | Kristallhöhle (vorhanden, level-5) | – (alter Look) | Kombi | Aufwind, Scheinwände, Kamine | 3 / 5 |
-| 2 | **Tropfsteingang** (neu, level-12) | morgen / trocken | Lehr-Level | Förderband, Stege, enge Kamine | 2–3 / 4 |
-| 3 | **Eisgrotte** (neu, level-13) | abend / regen (Tropfwasser) | Lehr-Level | Eis, Aufwind, Präzisionssprünge | 3 / 5 |
+| 1 | **Tropfsteingang** (neu, level-12) | morgen / trocken | Lehr-Level | Förderband, Stege, enge Kamine | 2–3 / 4 |
+| 2 | **Eisgrotte** (neu, level-13) | abend / regen (Tropfwasser) | Lehr-Level | Eis, Aufwind, Präzisionssprünge | 3 / 5 |
+| 3 | Kristallhöhle (vorhanden, level-5) | – (alter Look) | Kombi | Aufwind, Scheinwände, Kamine | 3 / 5 |
 | 4 | **Leuchtgrotte** (neu, level-14) | nacht / trocken | Kombi-Level | Dunkelheit + Leuchtkristalle, Scheinwände, Teleporter | 3 / 6 |
 | 5 | **Förderwerk** (neu, level-15) | mittag / wechselnd | Kombi-Level | Förderband + Eis + Hebel über Kreuz, Kamine | 3–4 / 7 |
 | 6 | **Tiefenschlund** (neu, level-16) | nacht / regen | Meister-Level | alles kombiniert, lange Präzisions-Passagen im Dunkeln | 4 / 8 |
+
+**Reihenfolge (6er-Welten):** nach Schwierigkeit sortiert – die beiden Lehr-Level zuerst, die Kristallhöhle (3 / 5)
+an Platz 3; die Dateinamen bleiben gleich.
 
 **Tropfsteingang (level-12):** 1. Förderband lernen (mit und gegen den Strom). 2. Stege von unten durchspringen,
 Kamine mit Wandsprung. 3. Hebel dreht das Band – einer schaltet, der andere fährt mit. 4. Bänder über Stachelgruben.
