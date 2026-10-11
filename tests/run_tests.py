@@ -2481,6 +2481,76 @@ async def level17_glutpfad(g):
     assert not fehler, fehler
 
 @test
+async def level18_aschefeld(g):
+    """Ausbau 7, Vulkan Level 2 „Aschefeld“ (levels/level-18.json, mittags, heißer Regen): Lehr-Level Stachelpressen und Förderband. Koop-Bot spielt jede Etappe (wartet den Takt der Pressen ab): eine Presse, Pressen-Welle, Grube und Presse, Pressen-Gang, Doppel-Presse, Pressen über dem Förderband, Gegenband, Schlacke-Fließband."""
+    await koop_level(g, 'level-18.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        await beide('E1 eine Presse', 7, lambda w: [durch(26)], 25)
+        await beide('E1 Pressen-Welle', 26, lambda w: [durch(54)], 53)
+        await beide('E1 Grube und Presse', 55, lambda w: [k_lauf(61, -6)] + sprung_zu(kx(66) - 30) + [durch(76)], 75)
+        await beide('E1 Pressen-Gang (Takt 2 s)', 77, lambda w: [durch(128)], 127, delay=100)
+        await beide('E1 Doppel-Presse', 129, lambda w: [durch(162)], 161)
+        r = await koop(g, m=kat(20, 15), f=kat(15, 15), plans={'m': [{'frames': 400}]}, maxFrames=500)
+        soll(r.get('dead') == 'm', 'E1 wer unter der Presse stehen bleibt, stirbt', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        await beide('E2 Pressen über dem Förderband', 203, lambda w: [durchBand(244)], 243, delay=150)
+        await beide('E2 Gegenband unter Pressen', 245, lambda w: [durchBand(288, 70)], 287, delay=150)
+        ok = []
+        for jx in (329, 330):
+            for who in ('m', 'f'):
+                o = 'f' if who == 'm' else 'm'
+                r = await koop(g, **{who: kat(299, 15), o: kat(297, 15)}, plans={who: [durchBand(jx)] + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(336)]}, maxFrames=4000, pre=PRE)
+                if r.get('done') and r['pos'][who][0] >= 335: ok.append((jx, who))
+                else: print('  ', jx, who, {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        soll(len(ok) >= 2, 'E2 Schlacke-Fließband: unter der Presse durch, über die Grube', ok)
+    assert not fehler, fehler
+
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
     Teleporter, Falle, Fels, Förderband oder Leuchtkristall),

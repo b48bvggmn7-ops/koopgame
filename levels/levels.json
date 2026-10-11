@@ -96,5 +96,11 @@
   "name": "Level 17",
   "titel": "Glutpfad",
   "versteckt": true
+ },
+ {
+  "datei": "level-18.json",
+  "name": "Level 18",
+  "titel": "Aschefeld",
+  "versteckt": true
  }
 ]

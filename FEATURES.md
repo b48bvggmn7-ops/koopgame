@@ -1129,6 +1129,16 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens ~60 Spalten auseinander (20 Stück).
     - Test level17_glutpfad (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
+  - Level 18 „Aschefeld“ (levels/level-18.json, Vulkan Level 2 der Welt, mittags, heißer Regen, 800 Spalten): IN ARBEIT,
+    bis der Vulkan fertig ist in levels.json versteckt. Lehr-Level: Stachelpressen im Takt, Förderband.
+    - Etappe 1 (Spalten 0–200): eine Presse (warten, dann drunter durch); Pressen-Welle (drei Pressen mit Versatz);
+      Lava-Grube mit Presse direkt dahinter; Pressen-Gang (niedriger Gang, vier Pressen im 2-s-Takt, kein Segeln);
+      Doppel-Presse (3 Kästchen breit, langsamer Takt).
+    - Etappe 2 (Spalten 200–400): Pressen über einem Förderband (wer warten will, muss dagegen laufen); Gegenband unter
+      Pressen (langsam voran, große Lücken abwarten); Schlacke-Fließband (schnelles Band unter einer breiten Presse durch
+      bis an eine Lava-Grube, am Ende mit Band-Schwung springen).
+    - Test level18_aschefeld (Koop-Bot + Checkpoint-Abstände).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE
