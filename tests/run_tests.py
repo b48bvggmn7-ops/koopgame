@@ -3570,6 +3570,7 @@ async def ruinen6_tempelherz(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
+    def spiegel(*cs): return ' '.join(f'spiegelListe.find(s => s.c === {c}).stellung = spiegelListe.find(s => s.c === {c}).stellung === "/" ? "\\\\" : "/";' for c in cs)
     RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
@@ -3608,11 +3609,6 @@ async def ruinen6_tempelherz(g):
                   other: [{'wait': '!!linkOn[1]'}] + pfeil_plan((31, 37, 43, 49)) + [k_lauf(54, 0)] + sprung_zu(kx(60)) + [k_lauf(61), {'wait': 'felsen[0].weg'}]}
             r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans=pl, maxFrames=4000)
             soll(r.get('done') and await g.ev('felsen[0].weg'), f'E1 Fels unter dem Pfeilregen (zieht: {puller})', info(r))
-        n = 0
-        for w in range(0, 120, 12):
-            r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans={'f': [{'frames': w + 1}, k_lauf(12, 0)] + am(14) + [k_lauf(55, 0)] + sprung_zu(kx(61))}, maxFrames=2000)
-            if r.get('done'): n += 1
-        soll(True, 'E1 Pfeilregen stur durchlaufen (Info)', f'{n}/10')
         ok = None
         for hold in (4, 8, 12):
             f = [k_lauf(70, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(79)} - 4', 'left': f'P.x > {kx(79)} + 4'}, 'until': 'P.grounded', 'frames': 400}, {'use': True, 'frames': 5}, {'frames': 20}] + glide_to(82, kx(92), 8) + [k_lauf(96)]
@@ -3659,20 +3655,15 @@ async def ruinen6_tempelherz(g):
             for w in range(0, 144, 24):
                 pl = {puller: [{'frames': w + 1}, k_lauf(201, 0)] + am(203) + takt_fels() + [k_lauf(241)], other: [{'wait': '!!linkOn[7]'}] + takt_fels() + [k_lauf(240)]}
                 r = await koop(g, **{puller: kat(199, 15), other: kat(205, 15)}, plans=pl, maxFrames=4000)
-                if r.get('done') and r['pos']['m'][0] >= 239 and r['pos']['f'][0] >= 239: n += 1
+                if r.get('done') and r['pos']['m'][0] >= 239 and r['pos']['f'][0] >= 239: n += 1; break
             soll(n > 0, f'E2 Takt-Steine mit Fels im Nacken (zieht: {puller})', (f'{n}/6', info(r)))
         for who in ('m', 'f'):
             n = 0
             for w in range(0, 144, 24):
                 pl = [{'frames': w + 1}, k_lauf(250, 0), {'wait': 'kristalle.find(k => k.link === 8).an && (72 - wechselSchritte % 72) > 50 && !solids.some(s => s.type === "door" && s.link === 8 && !s.gone && !s.open)'}, k_lauf(272)]
                 r = await koop(g, **{who: kat(244, 15), ('f' if who == 'm' else 'm'): kat(242, 15)}, plans={who: pl}, maxFrames=3000)
-                if r.get('done'): n += 1
+                if r.get('done'): n += 1; break
             soll(n > 0, f'E2 Licht-Takt-Tor ({who})', (f'{n}/6', info(r)))
-        n = 0
-        for w in range(0, 144, 12):
-            r = await koop(g, m=kat(244, 15), f=kat(242, 15), plans={'m': [{'frames': w + 1}, k_lauf(272)]}, maxFrames=1500)
-            if r.get('done'): n += 1
-        soll(True, 'E2 Licht-Takt-Tor stur (Info)', f'{n}/12')
         def pfeil_brücke(cs):
             pl = []
             for c in cs:
@@ -3698,7 +3689,7 @@ async def ruinen6_tempelherz(g):
                 pl = {puller: [{'frames': w + 1}, k_lauf(311, 0)] + am(313) + welle() + [k_lauf(365, 0)] + sprung_zu(kx(371)) + [k_lauf(372), {'wait': 'felsen[3].weg'}],
                       other: [{'wait': '!!linkOn[11]'}] + welle() + [k_lauf(364, 0)] + sprung_zu(kx(370)) + [k_lauf(371)]}
                 r = await koop(g, **{puller: kat(310, 15), other: kat(315, 15)}, plans=pl, maxFrames=5000)
-                if r.get('done'): ok += 1
+                if r.get('done'): ok += 1; break
             soll(ok > 0, f'E2 Flammen-Welle mit Fels im Nacken (zieht: {puller})', (f'{ok}/3', info(r)))
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
@@ -3710,20 +3701,15 @@ async def ruinen6_tempelherz(g):
             for w in (0, 20, 40):
                 pl = {puller: [{'frames': w + 1}, k_lauf(386, 0)] + am(388) + hop, other: [{'wait': '!!linkOn[12]'}, {'frames': 30}] + hop + [{'wait': 'felsen[4].weg'}]}
                 r = await koop(g, **{puller: kat(385, 15), other: kat(390, 15)}, plans=pl, maxFrames=3000)
-                if r.get('done') and await g.ev('felsen[4].weg'): n += 1
+                if r.get('done') and await g.ev('felsen[4].weg'): n += 1; break
             soll(n > 0, f'E3 Wechsel-Flucht unter Pfeilen (zieht: {puller})', (f'{n}/3', info(r)))
         for who in ('m', 'f'):
             n = 0
             for w in range(0, 180, 30):
                 pl = [{'frames': w + 1}, k_lauf(430, 0), {'wait': 'kristalle.find(k => k.link === 13).an && (90 - wechselSchritte % 90) > 60'}, k_lauf(449)]
                 r = await koop(g, **{who: kat(426, 15), ('f' if who == 'm' else 'm'): kat(424, 15)}, plans={who: pl}, maxFrames=3000)
-                if r.get('done'): n += 1
+                if r.get('done'): n += 1; break
             soll(n > 0, f'E3 Licht-Brücke ({who})', (f'{n}/6', info(r)))
-        n = 0
-        for w in range(0, 180, 15):
-            r = await koop(g, m=kat(426, 15), f=kat(424, 15), plans={'m': [{'frames': w + 1}, k_lauf(449)]}, maxFrames=1500)
-            if r.get('done'): n += 1
-        soll(True, 'E3 Licht-Brücke stur (Info)', f'{n}/12')
         def flammen_oben():
             pl = []
             for c in (470, 474, 478):
@@ -3785,12 +3771,12 @@ async def ruinen6_tempelherz(g):
                     pl = {puller: [k_lauf(649, 0)] + am(651) + weg[puller] + pfeile((681, 687)) + flamme + steg(704) + [k_lauf(744), {'wait': 'felsen[6].weg', 'frames': 600}],
                           other: [{'wait': '!!linkOn[20]'}] + weg[other] + pfeile((681, 687)) + flamme + steg(705) + [k_lauf(745)]}
                     r = await koop(g, **{puller: kat(647, 15), other: kat(653, 15)}, plans=pl, maxFrames=5000)
-                    if r.get('done') and await g.ev('felsen[6].weg'): n.append((hold, jx))
+                    if r.get('done') and await g.ev('felsen[6].weg'): n.append((hold, jx)); break
+                if n: break
             soll(n, f'E4 Finale: letzte Felsflucht (zieht: {puller})', (n, info(r)))
         r = await koop(g, m=kat(747, 15), f=kat(745, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=2000)
         soll(r.get('done') and r['pos']['m'][0] >= 792, 'E4 Ziel', info(r))
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):
