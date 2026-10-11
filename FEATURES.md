@@ -1223,6 +1223,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Kessel, kein Weg zurück – sobald beide unten sind, steigt die Lava; übers Eis, aufs Band, über drei Stege auf den
       Fels); Eis unter Pressen (auf dem Eis muss man früh gegensteuern, um vor einer Presse zu warten); über den Lavasee
       (der Affe schwingt an vier Haken, das Schweinchen segelt mit zwei Aufwinden, der See steigt langsam).
+    - Etappe 3 (Spalten 400–600, Hebel-Ketten über der Lava): Hebel-Kette über den Lavasee (der Affe schwingt am Haken
+      auf den Sims, Hebel 1 = Brücke 1; das Schweinchen zieht auf der Insel Hebel 2 = Brücke 2; drüben öffnet Hebel 3 das
+      Tor, lässt aber die Lava im See und unter dem Gang dahinter steigen – zügig über die Stege nach oben); Platten-
+      Staffel unter zwei schnellen Pressen (vor und hinter jeder Presse eine Druckplatte, die sie anhält: einer hält,
+      der andere läuft durch und hält drüben, dann tauschen); zwei Lava-Gruben und eine breite Presse.
     - Test level22_kraterherz (Koop-Bot + Checkpoint-Abstände).
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).

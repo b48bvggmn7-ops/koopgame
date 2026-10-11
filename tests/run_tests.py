@@ -3005,7 +3005,7 @@ async def level21_feuerschlund(g):
 
 @test
 async def level22_kraterherz(g):
-    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/level-22.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee, Flucht über Eis und Band, Eis unter Pressen (gegensteuern), Haken/Aufwinde über den steigenden See."""
+    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/level-22.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee, Flucht über Eis und Band, Eis unter Pressen (gegensteuern), Haken/Aufwinde über den steigenden See, Hebel-Kette mit Brücken und Tor, Platten-Staffel unter den Pressen, Gruben und Presse."""
     await koop_level(g, 'level-22.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3091,6 +3091,28 @@ async def level22_kraterherz(g):
             r = await koop(g, m=kat(337, 15), f=kat(377, 15), plans={'m': kette(338, 4, rel) + [k_lauf(376)]}, maxFrames=4000)
             if r.get('done') and r['pos']['m'][0] >= 375: ok.append(rel[:14])
         soll(ok, 'E2 Affe hinterher, während der See steigt', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        raus = lambda: [k_lauf(456, 0)] + sprung_zu(kx(460)) + [k_lauf(474, 0)] + sprung_zu(kx(477)) + sprung_zu(kx(481)) + sprung_zu(kx(486)) + [k_lauf(490)]
+        res = None
+        for jx in (402, 403, 404):
+            for pull in (30, 60):
+                m = haken(jx, 9, pull) + am(410) + [k_lauf(412), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[2]'}, k_lauf(451, 0), {'wait': f'Q.x >= {kx(450)}'}] + am(453) + raus()
+                f = [{'wait': '!!linkOn[1]'}, k_lauf(431, 0), halten(433)] + am(433) + [k_lauf(450, 0), {'wait': '!!linkOn[3]'}] + raus()
+                r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': m, 'f': f}, maxFrames=6000, pre=PRE)
+                if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 489: res = (jx, pull); break
+            if res: break
+        soll(res, 'E3 Hebel-Kette: Hebel 1 (Affe) Brücke 1, Hebel 2 (Schwein) Brücke 2, Hebel 3 Tor + Lava – zügig nach oben', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(440, 15), f=kat(434, 15), plans={'m': [{'frames': 400}]}, links=[1, 2, 3], maxFrames=500)
+        soll(r.get('dead') == 'm', 'E3 Hebel 3: wer noch auf der Brücke steht, verbrennt', r.get('pos'))
+        an = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 600}
+        da = lambda c: f'Q.grounded && Math.abs(Q.x - {kx(c)}) < 8'
+        m = [an(508), {'wait': da(516)}, an(520), {'wait': da(528)}, k_lauf(541)]
+        f = [{'wait': '!!linkOn[5]'}, an(516), {'wait': da(520)}, {'wait': '!!linkOn[6]'}, an(528), {'wait': f'Q.x > {kx(533)}'}, k_lauf(541)]
+        r = await koop(g, m=kat(503, 15), f=kat(501, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 540, 'E3 Platten-Staffel unter den Pressen', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        await beide('E3 Gruben und Presse', 545, lambda w: [k_lauf(548, 0)] + sprung_zu(kx(554)) + [k_lauf(558, 0)] + sprung_zu(kx(564)) + [durch(574), k_lauf(579)], 578)
     assert not fehler, fehler
 
 @test
