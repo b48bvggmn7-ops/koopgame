@@ -11,7 +11,7 @@ function inWind(player){
 elementRegistrieren({
   id: 'aufwind', name: 'Aufwind', feld: 'winds',
   editor: {
-    werkzeug: 'wind', gruppe: 'bewegung', vor: 'bounce', art: 'kachel', ziehbar: true,
+    werkzeug: 'wind', gruppe: 'haken', vor: 'bounce', art: 'kachel', ziehbar: true,
     titel: 'Aufwind: trägt das Schweinchen mit offenem Schirm nach oben', farbe: '#a0dcff',
     kachelFarbe: 'rgba(160,220,255,0.28)',   // durchsichtig im Raster
     zeichnen(ctx, c, r, TILE){   // Pfeil nach oben

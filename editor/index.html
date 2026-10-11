@@ -14,7 +14,7 @@
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);}
   #app{display:flex; flex-direction:column; height:100%;}
-  header{position:relative; padding:8px 64px 8px 14px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:7px;}
+  header{position:relative; padding:6px 64px 6px 14px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:4px;}
   .hrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
   /* Werkzeug-Gruppen (Ausbau 2): einklappbar, Zustand im Browser gemerkt */
   .tgroups{display:flex; flex-wrap:wrap; gap:6px; align-items:stretch;}
@@ -26,12 +26,38 @@
   .tgb{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
   .tgroup.zu .tgb{display:none;}
   .tgroup.zu{padding-right:3px;}
+  /* Werkzeugleiste (Editor-Umbau): feste Zeilenhöhen, nichts bricht um (lieber seitlich scrollen) -> Leiste springt nie */
+  .trow{display:flex; flex-wrap:nowrap; gap:6px; align-items:center; min-height:30px; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin;}
+  .trow > *{flex-shrink:0;}
+  .tabs{display:flex; gap:3px;}
+  .tab{background:transparent; border:1px solid var(--border); color:var(--sub); font-weight:700; font-size:12px; padding:4px 10px; border-radius:8px 8px 0 0; cursor:pointer; white-space:nowrap;}
+  .tab:hover{color:var(--text);}
+  .tab.on{background:var(--panel2); color:var(--accent); border-color:var(--accent);}
+  .tab.hatAktiv::after{content:' •'; color:var(--accent);}
+  .tgroups{display:flex; gap:5px; align-items:center;}
+  .tgroup{display:none;}
+  .tgroup.on{display:flex;}
+  .tgb{display:flex; gap:5px; align-items:center;}
+  .tool.aus{display:none;}
+  .aktiv{font-size:12px; color:var(--sub); white-space:nowrap;}
+  .aktiv b{color:var(--accent);}
+  .alle{font-size:12px; color:var(--sub); display:flex; align-items:center; gap:4px; white-space:nowrap; cursor:pointer;}
+  .recent{display:flex; gap:4px; align-items:center;}
+  .recent .rl{font-size:11px; color:var(--sub);}
+  .rtool{background:transparent; border:1px solid var(--border); color:var(--text); padding:3px 8px; border-radius:7px; font-size:11.5px; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+  .rtool.active{border-color:var(--accent); color:var(--accent);}
+  #propRow{background:rgba(255,255,255,.035); border:1px solid var(--border); border-radius:8px; padding:2px 8px;}
+  #propRow .prop{display:none;}
+  #propRow label.prop.zeig{display:flex;} #propRow .prop.zeig:not(label){display:inline-block;}
+  #propRow label{font-size:12.5px; color:var(--sub); align-items:center; gap:5px; white-space:nowrap;}
+  .pname{font-size:12px; font-weight:700; color:var(--accent); margin-right:4px; white-space:nowrap;}
+  .pleer{font-size:11.5px; color:var(--sub); font-style:italic;}
   header h1{font-size:14px; margin:0; margin-right:12px; color:var(--accent); font-weight:700;}
-  .tool{background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:8px; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .tool{background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px 9px; border-radius:8px; font-size:12.5px; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;}
   .tool.active{background:var(--accent); color:#3a2a00; border-color:var(--accent); font-weight:700;}
   .swatch{width:12px; height:12px; border-radius:3px; display:inline-block;}
   .spacer{flex:1;}
-  button.action{background:var(--accent2); color:#08331c; border:none; padding:7px 12px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer;}
+  button.action{background:var(--accent2); color:#08331c; border:none; padding:5px 10px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer;}
   button.action.secondary{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
   button.action:disabled{opacity:.4; cursor:default;}
   #main{flex:1; display:flex; overflow:hidden;}
@@ -100,91 +126,72 @@
       <button class="action" id="githubBtn" title="Das Level direkt ins Projekt auf GitHub speichern – ist nach 1–2 Minuten online im Spiel">☁ Auf GitHub speichern</button>
       <button class="action secondary" id="closeEditorBtn" title="Editor schließen und zurück zum Spiel (der Arbeitsstand bleibt im Browser erhalten)" style="position:absolute; top:10px; right:14px; font-size:16px; line-height:1; padding:6px 11px;">✕</button>
     </div>
+    <!-- Werkzeugleiste (Editor-Umbau): Reiter = Gruppen, eine Zeile Werkzeuge der gewählten Gruppe (+ „Zuletzt“),
+         eine Zeile Eigenschaften NUR des aktiven Werkzeugs (editor/js/09-werkzeugleiste.js) -->
+    <div class="trow" id="tabRow">
+      <div class="tabs" id="toolTabs"></div>
+      <div class="spacer"></div>
+      <span class="aktiv" id="aktivTool" title="Das gerade gewählte Werkzeug (bleibt aktiv, auch wenn du die Gruppe wechselst)">Aktiv: Boden</span>
+      <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
+      <div class="tool" data-tool="select" title="Rechteck aufziehen · Strg+C kopieren · Strg+X ausschneiden · Strg+V an der Maus einfügen · darin ziehen = verschieben · Entf = löschen"><span class="swatch" style="background:transparent; outline:2px dashed #ffd23f; outline-offset:-2px"></span>Auswahl ⬚</div>
+      <label class="alle" title="Alle Werkzeuge zeigen – sonst nur die Grundwerkzeuge, die für die Welt des Levels empfohlenen und die, die im Level schon vorkommen"><input type="checkbox" id="alleWerkzeuge"> Alle Werkzeuge</label>
+    </div>
+    <div class="trow" id="toolRow">
     <div class="tgroups" id="toolGroups">
-    <div class="tgroup" data-group="gelaende">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Gelände</button>
-      <div class="tgb">
+    <div class="tgroup" data-group="gelaende" data-name="Gelände"><div class="tgb">
         <div class="tool active" data-tool="ground"><span class="swatch" style="background:#8a6a3a"></span>Boden</div>
         <div class="tool" data-tool="wall"><span class="swatch" style="background:#7a8890"></span>Wand</div>
         <div class="tool" data-tool="crumble"><span class="swatch" style="background:#c77b3f"></span>Bröckelboden</div>
         <div class="tool" data-tool="fake" title="Scheinwand: sieht im Spiel aus wie eine Wand, man kann aber hindurchlaufen (versteckte Wege und Hebel)"><span class="swatch" style="background:#7a8890; outline:2px dashed #ffe066; outline-offset:-3px"></span>Scheinwand</div>
-      </div>
-    </div>
-    <div class="tgroup" data-group="gefahren">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Gefahren</button>
-      <div class="tgb">
+    </div></div>
+    <div class="tgroup" data-group="gefahren" data-name="Gefahren"><div class="tgb">
         <div class="tool" data-tool="spike"><span class="swatch" style="background:#7f1d1d"></span>Stacheln</div>
-        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="In welche Richtung die Stacheln zeigen">
-      Spitzen
-      <select id="spikeDir" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="0">▲ oben</option><option value="1">▶ rechts</option><option value="2">▼ unten</option><option value="3">◀ links</option>
-      </select>
-    </label>
-      </div>
-    </div>
-    <div class="tgroup" data-group="logik">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Schalter &amp; Logik</button>
-      <div class="tgb">
-        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
-      Verknüpfung
-      <select id="linkSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;"></select>
-    </label>
-        <input id="linkName" maxlength="24" placeholder="Name (optional)" title="Name für diese Verknüpfungs-Nummer, z. B. „Tor zum Turm“ – nur zur Übersicht im Editor" style="width:120px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-      </div>
-    </div>
-    <div class="tgroup" data-group="bewegung">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Bewegung</button>
-      <div class="tgb">
+    </div></div>
+    <div class="tgroup" data-group="licht" data-name="Licht"><div class="tgb"></div></div>
+    <div class="tgroup" data-group="logik" data-name="Schalter &amp; Logik"><div class="tgb"></div></div>
+    <div class="tgroup" data-group="haken" data-name="Haken &amp; Sprung"><div class="tgb">
         <div class="tool" data-tool="hook"><span class="swatch" style="background:#ffd166"></span>Haken</div>
-        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Reichweite des Hakens in Kästchen">
-      Radius
-      <input id="radiusInput" type="number" min="1" max="20" step="0.5" value="6.5" style="width:56px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-    </label>
+    </div></div>
+    <div class="tgroup" data-group="bewegung" data-name="Bewegung"><div class="tgb">
         <div class="tool" data-tool="move"><span class="swatch" style="background:#4fc3f7"></span>Bewegung ➜</div>
-        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;">
-      Tempo
-      <select id="speedSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="2">Langsam</option><option value="3">Mittel</option><option value="4.5" selected>Schnell</option>
-      </select>
-    </label>
-        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Bewegter Boden: an Schalter koppeln">
-      per Schalter
-      <select id="moveSwitchSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;"><option value="">– fährt immer –</option></select>
-    </label>
-        <button class="action secondary" id="moveDelBtn" style="display:none; padding:5px 10px;" title="Ausgewählte Bewegung entfernen (Entf)">✕ Bewegung entfernen</button>
-      </div>
-    </div>
-    <div class="tgroup" data-group="wasser">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Wasser</button>
-      <div class="tgb"></div>
-    </div>
-    <div class="tgroup" data-group="boss">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Boss</button>
-      <div class="tgb"></div>
-    </div>
-    <div class="tgroup" data-group="sammeln">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Sammeln</button>
-      <div class="tgb">
+    </div></div>
+    <div class="tgroup" data-group="wasser" data-name="Wasser"><div class="tgb"></div></div>
+    <div class="tgroup" data-group="boss" data-name="Boss"><div class="tgb"></div></div>
+    <div class="tgroup" data-group="marken" data-name="Münzen &amp; Marken"><div class="tgb">
         <div class="tool" data-tool="coin"><span class="swatch" style="background:#ffc93c"></span>Münze</div>
-        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;" title="Wer die Münze einsammeln kann">
-      Farbe
-      <select id="coinColor" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
-        <option value="blue">🔵 Blau – Affe</option><option value="pink">🩷 Pink – Schweinchen</option><option value="gold">🟡 Gold – beide</option>
-      </select>
-    </label>
-      </div>
-    </div>
-    <div class="tgroup" data-group="marken">
-      <button class="tgh" type="button" title="Gruppe ein-/ausklappen">Markierungen</button>
-      <div class="tgb">
         <div class="tool" data-tool="checkpoint"><span class="swatch" style="background:#ff7a59"></span>Checkpoint ⚐</div>
         <div class="tool" data-tool="startM"><span class="swatch" style="background:#3a7bd5"></span>Start ♂</div>
         <div class="tool" data-tool="startF"><span class="swatch" style="background:#e0669e"></span>Start ♀</div>
         <div class="tool" data-tool="goal"><span class="swatch" style="background:#5fc98f"></span>Ziel</div>
-      </div>
+    </div></div>
     </div>
-    <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
-    <div class="tool" data-tool="select" title="Rechteck aufziehen · Strg+C kopieren · Strg+X ausschneiden · Strg+V an der Maus einfügen · darin ziehen = verschieben · Entf = löschen"><span class="swatch" style="background:transparent; outline:2px dashed #ffd23f; outline-offset:-2px"></span>Auswahl ⬚</div>
+    <div class="spacer"></div>
+    <div class="recent" id="recentRow" title="Zuletzt benutzte Werkzeuge – ein Klick wählt sie, ohne die Gruppe zu wechseln"><span class="rl">Zuletzt:</span></div>
+    </div>
+    <div class="trow" id="propRow">
+      <span class="pname" id="propName">Boden</span>
+      <label class="prop" data-for="spike" title="In welche Richtung die Stacheln zeigen">Spitzen
+        <select id="spikeDir" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+          <option value="0">▲ oben</option><option value="1">▶ rechts</option><option value="2">▼ unten</option><option value="3">◀ links</option>
+        </select></label>
+      <label class="prop" data-for="hook" title="Reichweite des Hakens in Kästchen">Radius
+        <input id="radiusInput" type="number" min="1" max="20" step="0.5" value="6.5" style="width:56px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;"></label>
+      <label class="prop" data-for="move">Tempo
+        <select id="speedSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+          <option value="2">Langsam</option><option value="3">Mittel</option><option value="4.5" selected>Schnell</option>
+        </select></label>
+      <label class="prop" data-for="move" title="Bewegter Boden: an Schalter koppeln">per Schalter
+        <select id="moveSwitchSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;"><option value="">– fährt immer –</option></select></label>
+      <button class="action secondary prop" data-for="move" id="moveDelBtn" style="display:none; padding:4px 10px;" title="Ausgewählte Bewegung entfernen (Entf)">✕ Bewegung entfernen</button>
+      <label class="prop" data-for="coin" title="Wer die Münze einsammeln kann">Farbe
+        <select id="coinColor" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+          <option value="blue">🔵 Blau – Affe</option><option value="pink">🩷 Pink – Schweinchen</option><option value="gold">🟡 Gold – beide</option>
+        </select></label>
+      <span id="elementOpts" style="display:contents"></span>
+      <label class="prop" data-for="@nummer">Nummer
+        <select id="linkSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;"></select></label>
+      <input class="prop" data-for="@nummer" id="linkName" maxlength="24" placeholder="Name (optional)" title="Name für diese Verknüpfungs-Nummer, z. B. „Tor zum Turm“ – nur zur Übersicht im Editor" style="width:130px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;">
+      <span class="pleer" id="propLeer">keine Einstellungen</span>
     </div>
   </header>
   <div id="main">
@@ -195,37 +202,38 @@
     <div id="side">
       <h2>Raster</h2>
       <div class="ref-row"><span>1 Kästchen</span><b>40 px</b></div>
-      <div class="hint">Jedes Kästchen = eine feste Einheit. Boden/Wand: klicken/ziehen zum Malen, nochmal klicken zum Entfernen. Haken/Schalter/Tür: jeder Klick setzt einen NEUEN Punkt (beliebig viele möglich). Start/Ziel gibt's je nur einmal.</div>
-      <div class="hint"><b style="color:var(--text)">Rechtsklick</b> (auch gedrückt ziehen) = Radierer, egal welches Werkzeug aktiv ist.</div>
-      <div class="hint">Das Level wächst nach rechts automatisch mit, sobald du nah am Rand malst – oder per „+20 Spalten“. Mausrad scrollt seitlich.</div>
-      <div class="hint"><b style="color:var(--text)">Bewegung ➜:</b> Erst ganz normal Boden (oder Wand) malen. Dann mit „Bewegung“ auf ein Kästchen davon klicken und zum Zielpunkt ziehen. Das ganze zusammenhängende Stück (gleiche Sorte) fährt dann immer hin und zurück. Später nochmal ändern: ohne Ziehen draufklicken = auswählen (gelb) – dann Tempo/„per Schalter“ oben ändern, neu ziehen = neues Ziel, „✕ Bewegung entfernen“ oder Entf = löschen. Funktioniert genauso mit einem Haken: vom Haken aus ziehen → der Haken pendelt (auch per Schalter). „per Schalter“ vor dem Ziehen wählen: dann steht das Stück still, bis jemand den Schalter (Hebel) mit dieser Nummer betätigt, und fährt ab da dauerhaft hin und her. Ohne Schalter fährt es von Anfang an. Stirbt jemand, springen alle bewegten Teile zurück an den Start (mit Schalter warten sie dann wieder). Tipp: bewegtes Stück darf nicht direkt an gleichartigen festen Boden grenzen, sonst gehört der mit dazu.</div>
       <div class="ref-row"><span>Aktuelle Länge</span><b id="lenLabel">60 Spalten</b></div>
-
-      <h2>Bewegungs-Referenz</h2>
-      <div class="ref-row"><span>Normaler Sprung</span><b>~4 breit, 3 hoch</b></div>
-      <div class="ref-row"><span>Wandsprung-Reichweite</span><b>~6 breit, 5 hoch</b></div>
-      <div class="ref-row"><span>Sicherer Wandsprung-Spalt</span><b>~2 breit</b></div>
-      <div class="ref-row"><span>Haken max. Reichweite</span><b>~6–7 Kästchen</b></div>
-      <div class="ref-row"><span>Segelflug (grob)</span><b>~19 breit pro 7–8 tief</b></div>
-      <div class="hint">Richtwerte zum Grobplanen. Ich prüfe dein Level danach trotzdem per Simulation, bevor ich es einbaue – das hier ersetzt nicht die Kontrolle, spart aber Rateraten.</div>
-
-      <h2>Legende</h2>
-      <div class="ref-row"><span>Boden</span><b>durchgehend, blockiert</b></div>
-      <div class="ref-row"><span>Wand</span><b>für Wandsprung/Haken</b></div>
-      <div class="ref-row"><span>Bröckelboden</span><b>bricht 3 Sek. nach Betreten weg</b></div>
-      <div class="ref-row"><span>Haken</span><b>Ankerpunkt (nur ♂)</b></div>
-      <div class="hint">Haken-Radius (in Kästchen) vor dem Setzen oben einstellen. Mit dem Haken-Werkzeug auf einen vorhandenen Haken klicken übernimmt den eingestellten Radius.</div>
-      <div class="ref-row"><span>Stacheln</span><b>Berührung = zurück zum Checkpoint</b></div>
-      <div class="hint">Richtung der Spitzen oben bei „Spitzen“ wählen (z. B. ▼ unter eine Decke, ◀/▶ an Wände). Mit dem Stacheln-Werkzeug auf vorhandene Stacheln klicken dreht sie um 90°.</div>
-      <div class="hint"><b style="color:var(--text)">Schalter</b> sind im Spiel kleine Hebel in der Farbe ihrer Nummer. Man betätigt sie mit einer Taste (Affe J, Schweinchen Num 2, Controller Kreis). Den Schalter auf das Kästchen direkt über dem Boden setzen.</div>
       <div class="ref-row"><span>Checkpoints</span><b id="cpCount">0 gesetzt</b></div>
-      <div class="hint">Checkpoint auf das Kästchen direkt ÜBER dem Boden setzen (wie Start/Ziel). Er zählt erst, wenn BEIDE vorbei sind – dann geht die Fahne hoch. Stirbt jemand, starten beide am letzten erreichten Checkpoint (sonst am Start).</div>
       <div class="ref-row"><span>Münzen</span><b id="coinCount">0 gesetzt</b></div>
       <div id="coinBalance" style="margin:4px 0 6px; padding:8px 10px; border-radius:8px; background:var(--panel2); font-size:12.5px; line-height:1.6;"></div>
-      <div class="hint">Blaue Münzen kann nur der Affe einsammeln, pinke nur das Schweinchen, goldene beide. Farbe oben bei „Farbe“ wählen; mit dem Münz-Werkzeug auf eine vorhandene Münze klicken wechselt ihre Farbe. Das Ziel zählt erst mit 10 Münzen (hat das Level weniger als 10, müssen alle gesammelt werden).</div>
-      <div class="ref-row"><span>Schalter/Tür</span><b>gleiche Zahl = verknüpft</b></div>
-      <div class="hint">Der Hebel ist ein Ein/Aus-Schalter: 1× betätigen = Tür auf / Bewegung fährt, nochmal = Tür zu / Bewegung bleibt stehen. Türen bleiben offen, bis der Hebel nochmal betätigt wird.</div>
-      <div class="hint">Vor dem Setzen von Schalter/Tür oben die Verknüpfungs-Nummer wählen – Schalter und Tür mit derselben Nummer gehören zusammen. Eine Nummer kann auch mehrfach vorkommen (z. B. 2 Schalter, 1 Tür).</div>
+      <button class="action secondary" id="hilfeBtn" type="button" style="margin-top:10px; width:100%;" title="Erklärungen zu Werkzeugen, Sprungweiten und Legende ein-/ausklappen">Hilfe ▸</button>
+      <div id="hilfe" style="display:none">
+        <div class="hint">Jedes Kästchen = eine feste Einheit. Boden/Wand: klicken/ziehen zum Malen, nochmal klicken zum Entfernen. Haken/Schalter/Tür: jeder Klick setzt einen NEUEN Punkt (beliebig viele möglich). Start/Ziel gibt's je nur einmal.</div>
+        <div class="hint"><b style="color:var(--text)">Rechtsklick</b> (auch gedrückt ziehen) = Radierer, egal welches Werkzeug aktiv ist.</div>
+        <div class="hint">Das Level wächst nach rechts automatisch mit, sobald du nah am Rand malst – oder per „+20 Spalten“. Mausrad scrollt seitlich.</div>
+        <div class="hint"><b style="color:var(--text)">Bewegung ➜:</b> Erst ganz normal Boden (oder Wand) malen. Dann mit „Bewegung“ auf ein Kästchen davon klicken und zum Zielpunkt ziehen. Das ganze zusammenhängende Stück (gleiche Sorte) fährt dann immer hin und zurück. Später nochmal ändern: ohne Ziehen draufklicken = auswählen (gelb) – dann Tempo/„per Schalter“ oben ändern, neu ziehen = neues Ziel, „✕ Bewegung entfernen“ oder Entf = löschen. Funktioniert genauso mit einem Haken: vom Haken aus ziehen → der Haken pendelt (auch per Schalter). „per Schalter“ vor dem Ziehen wählen: dann steht das Stück still, bis jemand den Schalter (Hebel) mit dieser Nummer betätigt, und fährt ab da dauerhaft hin und her. Ohne Schalter fährt es von Anfang an. Stirbt jemand, springen alle bewegten Teile zurück an den Start (mit Schalter warten sie dann wieder). Tipp: bewegtes Stück darf nicht direkt an gleichartigen festen Boden grenzen, sonst gehört der mit dazu.</div>
+        <h2>Bewegungs-Referenz</h2>
+        <div class="ref-row"><span>Normaler Sprung</span><b>~4 breit, 3 hoch</b></div>
+        <div class="ref-row"><span>Wandsprung-Reichweite</span><b>~6 breit, 5 hoch</b></div>
+        <div class="ref-row"><span>Sicherer Wandsprung-Spalt</span><b>~2 breit</b></div>
+        <div class="ref-row"><span>Haken max. Reichweite</span><b>~6–7 Kästchen</b></div>
+        <div class="ref-row"><span>Segelflug (grob)</span><b>~19 breit pro 7–8 tief</b></div>
+        <div class="hint">Richtwerte zum Grobplanen. Ich prüfe dein Level danach trotzdem per Simulation, bevor ich es einbaue – das hier ersetzt nicht die Kontrolle, spart aber Rateraten.</div>
+        <h2>Legende</h2>
+        <div class="ref-row"><span>Boden</span><b>durchgehend, blockiert</b></div>
+        <div class="ref-row"><span>Wand</span><b>für Wandsprung/Haken</b></div>
+        <div class="ref-row"><span>Bröckelboden</span><b>bricht 3 Sek. nach Betreten weg</b></div>
+        <div class="ref-row"><span>Haken</span><b>Ankerpunkt (nur ♂)</b></div>
+        <div class="hint">Haken-Radius (in Kästchen) vor dem Setzen oben einstellen. Mit dem Haken-Werkzeug auf einen vorhandenen Haken klicken übernimmt den eingestellten Radius.</div>
+        <div class="ref-row"><span>Stacheln</span><b>Berührung = zurück zum Checkpoint</b></div>
+        <div class="hint">Richtung der Spitzen oben bei „Spitzen“ wählen (z. B. ▼ unter eine Decke, ◀/▶ an Wände). Mit dem Stacheln-Werkzeug auf vorhandene Stacheln klicken dreht sie um 90°.</div>
+        <div class="hint"><b style="color:var(--text)">Schalter</b> sind im Spiel kleine Hebel in der Farbe ihrer Nummer. Man betätigt sie mit einer Taste (Affe J, Schweinchen Num 2, Controller Kreis). Den Schalter auf das Kästchen direkt über dem Boden setzen.</div>
+        <div class="hint">Checkpoint auf das Kästchen direkt ÜBER dem Boden setzen (wie Start/Ziel). Er zählt erst, wenn BEIDE vorbei sind – dann geht die Fahne hoch. Stirbt jemand, starten beide am letzten erreichten Checkpoint (sonst am Start).</div>
+        <div class="hint">Blaue Münzen kann nur der Affe einsammeln, pinke nur das Schweinchen, goldene beide. Farbe oben bei „Farbe“ wählen; mit dem Münz-Werkzeug auf eine vorhandene Münze klicken wechselt ihre Farbe. Das Ziel zählt erst mit 10 Münzen (hat das Level weniger als 10, müssen alle gesammelt werden).</div>
+        <div class="ref-row"><span>Schalter/Tür</span><b>gleiche Zahl = verknüpft</b></div>
+        <div class="hint">Der Hebel ist ein Ein/Aus-Schalter: 1× betätigen = Tür auf / Bewegung fährt, nochmal = Tür zu / Bewegung bleibt stehen. Türen bleiben offen, bis der Hebel nochmal betätigt wird.</div>
+        <div class="hint">Vor dem Setzen von Schalter/Tür oben die Verknüpfungs-Nummer wählen – Schalter und Tür mit derselben Nummer gehören zusammen. Eine Nummer kann auch mehrfach vorkommen (z. B. 2 Schalter, 1 Tür).</div>
+      </div>
     </div>
   </div>
 </div>
@@ -310,7 +318,7 @@
 ['00-register', 'hebel', 'tuer', 'druckplatte', 'sprungpilz', 'aufwind', 'wechselboden', 'teleporter', 'einseitig', 'wasser', 'stroemung', 'boss', 'falle', 'fels', 'licht', 'eis', 'foerderband', 'leuchtkristall', 'lava', 'presse'].forEach(function(n){
   document.write('<script src="../elemente/' + n + '.js?v=' + Date.now() + '"><\/script>');
 });
-['01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '07-level-info', '08-auswahl', '99-start'].forEach(function(n){
+['00-welt-werkzeuge', '01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '07-level-info', '08-auswahl', '09-werkzeugleiste', '99-start'].forEach(function(n){
   document.write('<script src="js/' + n + '.js?v=' + Date.now() + '"><\/script>');
 });
 </script>

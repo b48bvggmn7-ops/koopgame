@@ -1281,11 +1281,33 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Verschieben wandern sie mit. Einfügen einer Kopie: Verknüpfungs-Nummern, die es im Level schon gibt, werden neu
     vergeben (nächste freie Nummer); alle Teile mit derselben Nummer bekommen dieselbe neue (Hebel, Tür, Bewegung und
     Haken bleiben zusammen). Ausschneiden + Einfügen und Verschieben behalten die Nummern. Test editor_rueckgaengig_und_auswahl.
-  - Werkzeug-Gruppen (Ausbau 2): oben eine Zeile mit Thema/Name/Knöpfen, darunter die Werkzeuge in einklappbaren
-    Gruppen – Gelände (Boden, Wand, Bröckelboden, Scheinwand) · Gefahren (Stacheln + Spitzen) · Schalter & Logik
-    (Schalter, Tür, Druckplatte + Verknüpfung) · Bewegung (Haken + Radius, Aufwind, Sprungpilz, Bewegung ➜ + Tempo/per
-    Schalter) · Sammeln (Münze + Farbe) · Markierungen (Checkpoint, Start ♂/♀, Ziel); Radieren steht immer daneben.
-    Klick auf den Gruppennamen klappt sie ein/aus (▾/▸), gemerkt im Browser (monchichi_editor_groups). Test editor_werkzeug_gruppen.
+  - Werkzeug-Gruppen (Ausbau 2, seit dem Editor-Umbau als REITER): oben eine Zeile mit Level-Info/Name/Knöpfen; darunter
+    - Reiter-Zeile: Gelände (Boden, Wand, Bröckelboden, Steg, Eis, Scheinwand) · Gefahren (Stacheln, Falle, Rollender
+      Fels, Lava, Lava-Marke, Stachelpresse) · Licht (Lichtquelle, Spiegel, Lichtkristall, Leuchtkristall, Dunkelzone) ·
+      Schalter & Logik (Schalter, Tür, Druckplatte, Wechselboden) · Haken & Sprung (Haken, Aufwind, Sprungpilz) ·
+      Bewegung (Teleporter, Förderband, Bewegung ➜) · Wasser (Wasser, Strömung, Wasserstand) · Boss (Boss, Arena,
+      Boss-Platz) · Münzen & Marken (Münze, Checkpoint, Start ♂/♀, Ziel). Rechts daneben immer: „Aktiv: <Werkzeug>“,
+      Radieren, Auswahl ⬚ und der Schalter „Alle Werkzeuge“. Der gewählte Reiter wird gemerkt (monchichi_editor_tab);
+      ein Punkt • am Reiter zeigt, wo das aktive Werkzeug liegt. Tests editor_werkzeug_gruppen, editor_werkzeugleiste.
+    - Werkzeug-Zeile: nur die Werkzeuge des gewählten Reiters; rechts „Zuletzt:“ mit den letzten 5 benutzten Werkzeugen
+      (ein Klick wählt, ohne den Reiter zu wechseln; gemerkt in monchichi_editor_zuletzt).
+    - Eigenschaften-Zeile: nur die Optionen des AKTIVEN Werkzeugs (Stacheln: Spitzen · Haken: Radius · Bewegung: Tempo,
+      per Schalter, Entfernen · Münze: Farbe · Element-Optionen aus dem Register, z. B. Falle: Art, Richtung, Takt,
+      Versatz, an/aus) und die Verknüpfungs-Nummer + Name bei allen Werkzeugen, die eine Nummer brauchen oder per Nummer
+      schalten können. Ohne Optionen steht dort „keine Einstellungen“ – die Leiste springt nie in der Höhe (feste
+      Zeilen; ist eine Zeile zu lang, scrollt sie seitlich statt umzubrechen).
+    - Werkzeuge je Welt (Voreinstellung, keine Sperre; Tabelle editor/js/00-welt-werkzeuge.js): Grundwerkzeuge (Boden,
+      Wand, Scheinwand, Stacheln, Münze, Checkpoint, Start/Ziel, Haken, Schalter, Tür, Druckplatte, Bewegung, Radieren,
+      Auswahl) sind immer da; dazu die Empfehlung der Welt aus der Level-Info – Dschungel: Bröckelboden, Steg, Aufwind,
+      Sprungpilz, Teleporter, Wechselboden · Ruinen: Falle, Rollender Fels, Lichtquelle, Spiegel, Lichtkristall · Höhle:
+      Eis, Förderband, Dunkelzone, Leuchtkristall · Wasser: Wasser, Strömung, Wasserstand · Vulkan: Lava, Lava-Marke,
+      Stachelpresse; Boss-Werkzeuge nur in Leveln mit Boss/Arena. Werkzeuge, die im Level schon vorkommen, sind immer
+      sichtbar. „Alle Werkzeuge“ zeigt alles und wird gemerkt (monchichi_editor_alle). Reiter ohne sichtbares Werkzeug
+      verschwinden. Test werkzeug_welten (jedes Werkzeug steht in der Tabelle).
+    - Ergebnis (gemessen): Leiste bei 1920x1080 144 px statt 392 px, Kästchen 40 statt 32 px; bei 1366x768 144 statt
+      473 px, Kästchen 29 statt 13 px.
+  - Seitenleiste: Raster-Infos (Kästchengröße, Länge) und Zähler (Checkpoints, Münzen, Blau/Pink-Bilanz) bleiben sichtbar;
+    die langen Erklärungen (Hilfe, Bewegungs-Referenz, Legende) sind eingeklappt – Knopf „Hilfe ▸“.
   - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt
   - Level wächst nach rechts automatisch mit, „+20 Spalten“-Button, Mausrad scrollt seitlich
   - „Alles löschen“ und „Neues leeres Level“ entfernen wirklich alles (auch Druckplatten, Sprungpilze und Namen der

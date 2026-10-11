@@ -6,20 +6,20 @@
 // Werkzeug-Knöpfe der Elemente aus dem Register (elemente/) in ihre Gruppe einsortieren
 for(const E of ELEMENTE){
   const ed = E.editor; if(!ed) continue;
-  const box = document.querySelector(`.tgroup[data-group="${ed.gruppe}"] .tgb`) || document.getElementById('toolGroups');
+  const box = document.querySelector(`.tgroup[data-group="${ed.gruppe}"] .tgb`) || document.querySelector('.tgroup .tgb');
   const b = document.createElement('div'); b.className = 'tool'; b.dataset.tool = ed.werkzeug; b.title = ed.titel || E.name;
   const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = ed.farbe; b.append(sw, ed.label || E.name);
-  // vor: Werkzeug-Name, oder '#id' = vor das Feld mit dieser id (z. B. „Verknüpfung“)
-  const vor = !ed.vor ? null : ed.vor[0] === '#' ? (box.querySelector(ed.vor) || {}).closest && box.querySelector(ed.vor).closest('label') : box.querySelector(`.tool[data-tool="${ed.vor}"]`);
+  // vor: Werkzeug-Name, vor dessen Knopf dieser kommt (Reihenfolge in der Gruppe); '#id' = alte Angabe, gilt als „hinten“
+  const vor = !ed.vor || ed.vor[0] === '#' ? null : box.querySelector(`.tool[data-tool="${ed.vor}"]`);
   box.insertBefore(b, vor || null);
-  // eigene Einstellungen des Elements (Ausbau 4, z. B. Wechselboden: Gruppe A/B und Takt) direkt hinter dem Knopf
+  // eigene Einstellungen des Elements (z. B. Wechselboden: Gruppe A/B und Takt): in der Eigenschaften-Zeile, sichtbar
+  // nur, solange dieses Werkzeug aktiv ist (Editor-Umbau, 09-werkzeugleiste.js)
   for(const o of (ed.optionen || [])){
-    const lab = document.createElement('label'); lab.title = o.titel || '';
-    lab.style.cssText = 'font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px;';
+    const lab = document.createElement('label'); lab.title = o.titel || ''; lab.className = 'prop'; lab.dataset.for = ed.werkzeug;
     const sel = document.createElement('select'); sel.id = `opt-${ed.werkzeug}-${o.key}`;
     sel.style.cssText = 'background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12.5px;';
     for(const [wert, text] of o.werte){ const op = document.createElement('option'); op.value = wert; op.textContent = text; sel.appendChild(op); }
-    lab.append(o.label, sel); box.insertBefore(lab, vor || null);
+    lab.append(o.label, sel); document.getElementById('elementOpts').appendChild(lab);
   }
 }
 // aktuell gewählte Einstellungen eines Elements (siehe optionen im Register)
@@ -34,20 +34,6 @@ document.querySelectorAll('.tool').forEach(el=>{
     el.classList.add('active');
     currentTool = el.dataset.tool;
     if(currentTool !== 'move') selectMove(null);
-  });
-});
-
-// Werkzeug-Gruppen ein-/ausklappen (Ausbau 2): Klick auf den Gruppen-Namen; Zustand bleibt im Browser gemerkt
-const GROUPS_KEY = 'monchichi_editor_groups';
-let closedGroups = {};
-try{ closedGroups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '{}') || {}; }catch(e){}
-document.querySelectorAll('.tgroup').forEach(g=>{
-  g.classList.toggle('zu', !!closedGroups[g.dataset.group]);
-  g.querySelector('.tgh').addEventListener('click', ()=>{
-    const zu = !g.classList.contains('zu');
-    g.classList.toggle('zu', zu); closedGroups[g.dataset.group] = zu;
-    try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(closedGroups)); }catch(e){}
-    requestAnimationFrame(fitView);   // Kopfzeile ändert ihre Höhe -> Raster neu einpassen
   });
 });
 

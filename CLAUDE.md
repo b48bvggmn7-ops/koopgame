@@ -54,7 +54,8 @@
   gemeinsamer Gültigkeitsbereich wie im Spiel): 01 Zustand/Autosave · 02 Werkzeuge (Maus, Radieren, Bewegungen) ·
   03 Zeichnen · 04 Export/Testen/Herunterladen · 05 Fenster „Levels“ (+ Projekt-Levels) · 06 „☁ Auf GitHub speichern“ ·
   07 Fenster „Level-Info“ (Welt, Position, Titel, Tageszeit, Wetter, Look) · 08 Rückgängig/Wiederholen + Rechteck-Auswahl ·
-  99 Start (früher alles in einer `editor.js`).
+  09 Werkzeugleiste (Reiter, „Zuletzt“, Eigenschaften-Zeile nur fürs aktive Werkzeug, Welt-Voreinstellung, Hilfe) ·
+  99 Start (früher alles in einer `editor.js`); davor `00-welt-werkzeuge.js` = Tabelle, welche Werkzeuge je Welt empfohlen sind.
 - `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), `levels/levels.json` = Liste der Levels (Namen; Rückfall),
   `levels/worlds.json` = Welten mit ihren Leveln (Reihenfolge der Levelauswahl), `levels/test/` = Mini-Testlevel
   (öffnen mit `index.html?testlevel=<name>`),
@@ -97,6 +98,9 @@
 7. Eigene Auswahl-Felder im Editor: `editor.optionen`; eigene solids-Sorte, die das Element selbst zeichnet:
    `ELEMENT_SOLID_TYPEN.add('<type>')` (Muster `wechselboden.js`).
 8. Zeichen-Hilfen, die Elemente brauchen (z. B. `linkColor`), müssen außerhalb von `draw()` stehen (12-welt-zeichnen.js).
+9. Editor-Reiter: `editor.gruppe` = gelaende, gefahren, licht, logik, haken, bewegung, wasser, boss oder marken;
+   Werkzeug-Namen in `editor/js/00-welt-werkzeuge.js` bei der passenden Welt (oder GRUND_WERKZEUGE) eintragen
+   (Test `werkzeug_welten`); seine Optionen erscheinen automatisch in der Eigenschaften-Zeile.
 
 ## Steuerung (Kurzfassung)
 | | Affe (Spieler 1) | Schweinchen (Spielerin 2) | Controller |

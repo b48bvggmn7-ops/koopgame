@@ -122,7 +122,7 @@ function leuchtZeichnen(){
 elementRegistrieren({
   id: 'leuchtkristall', name: 'Leuchtkristall', feld: 'leuchtkristalle',
   editor: {
-    werkzeug: 'leucht', gruppe: 'logik', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#8fe8f0',
+    werkzeug: 'leucht', gruppe: 'licht', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#8fe8f0',
     titel: 'Leuchtkristall: glimmt im Dunkeln; mit der Hebel-Taste angeschlagen leuchtet er 8 s hell und weit (flackert ' +
            'vorher). „per Nummer“: leuchtet, solange die Verknüpfung an ist',
     optionen: [
@@ -153,7 +153,7 @@ elementRegistrieren({
 elementRegistrieren({
   id: 'dunkelzone', name: 'Dunkelzone', feld: 'dunkelzonen',
   editor: {
-    werkzeug: 'dunkel', gruppe: 'gelaende', vor: 'fake', art: 'punkt', ziehbar: true, farbe: '#14101f',
+    werkzeug: 'dunkel', gruppe: 'licht', art: 'punkt', ziehbar: true, farbe: '#14101f',
     titel: 'Dunkelzone: hier ist es fast stockdunkel, nur ein kleiner Lichtkreis um die Figuren – Leuchtkristalle helfen. ' +
            'Mit gedrückter Maus malen',
     zeichnen(ctx, c, r, TILE){

@@ -17,7 +17,7 @@ function checkBounce(player, wasGrounded, fallVy){
 elementRegistrieren({
   id: 'sprungpilz', name: 'Sprungpilz', feld: 'bouncers',
   editor: {
-    werkzeug: 'bounce', gruppe: 'bewegung', vor: 'move', art: 'punkt', ziehbar: false,
+    werkzeug: 'bounce', gruppe: 'haken', vor: 'move', art: 'punkt', ziehbar: false,
     titel: 'Sprungpilz: schleudert ca. 6 Kästchen hoch', farbe: '#4fbf5a',
     zeichnen(ctx, c, r, TILE){
       const X = c*TILE+TILE/2, Y = r*TILE+TILE;

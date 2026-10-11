@@ -268,7 +268,7 @@ async def himmel_ohne_unsichtbare_decke(g):
     try:
         await g.p.goto(srv.url + 'editor/index.html'); await g.p.wait_for_timeout(300)
         await g.p.evaluate("localStorage.removeItem('monchichi_level_editor_v2')"); await g.p.reload(); await g.p.wait_for_timeout(400)
-        await g.p.click('[data-tool="wall"]')
+        await ed_werkzeug(g.p, 'wall')
         box = await g.ev("(() => { const c = document.getElementById('c'), r = c.getBoundingClientRect(), w = document.getElementById('canvasWrap');"
                          " return {x: r.left, y: r.top, s: r.height / c.height, rows: c.height / 40, scrollt: w.scrollHeight > w.clientHeight + 1}; })()")
         assert box['rows'] == 21 and not box['scrollt'], f'Editor: Höhe/Scrollen falsch: {box}'
@@ -3477,7 +3477,7 @@ async def editor_bewegung_nachbearbeiten(g):
         async def click_cell(c, r):
             box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
             await p.mouse.click(box['x'] + (c*40 + 20)*k, box['y'] + ((r + 3)*40 + 20)*k)   # 3 Himmel-Reihen über Reihe 0
-        await p.click('.tool[data-tool="move"]')
+        await ed_werkzeug(p, 'move')
         await click_cell(10, 12); await p.wait_for_timeout(100)
         assert await p.is_visible('#moveDelBtn'), 'Bewegung nicht ausgewählt'
         assert await p.input_value('#speedSelect') == '2', 'Tempo der Auswahl nicht angezeigt'
@@ -4627,26 +4627,108 @@ async def editor_rundreise_alle_level(g):
 
 @test
 async def editor_werkzeug_gruppen(g):
-    """Ausbau 2: Werkzeuge stehen in einklappbaren Gruppen (Gelände, Gefahren, Schalter & Logik, Bewegung, Sammeln,
-    Markierungen); Klick auf den Gruppennamen klappt ein/aus, der Zustand bleibt nach dem Neuladen; Werkzeuge gehen weiter."""
+    """Ausbau 2 / Editor-Umbau: Werkzeuge stehen in Gruppen, jetzt als Reiter (Gelände, Gefahren, Licht, Schalter & Logik,
+    Haken & Sprung, Bewegung, Wasser, Boss, Münzen & Marken – höchstens 9); jedes Werkzeug in genau einer Gruppe; ein
+    Reiter zeigt nur seine Gruppe, die Wahl bleibt nach dem Neuladen; Werkzeuge gehen weiter."""
     srv = webserver(); p = g.p
     try:
-        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
-        gr = await p.evaluate("""[...document.querySelectorAll('.tgroup')].map(g => [g.querySelector('.tgh').textContent.trim(),
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        gr = await p.evaluate("""[...document.querySelectorAll('.tgroup')].map(g => [g.dataset.name,
             [...g.querySelectorAll('.tool')].map(t => t.dataset.tool)])""")
-        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Schalter & Logik', 'Bewegung', 'Wasser', 'Boss', 'Sammeln', 'Markierungen'], gr
+        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Licht', 'Schalter & Logik', 'Haken & Sprung', 'Bewegung', 'Wasser', 'Boss', 'Münzen & Marken'], gr
         alle = sum((x[1] for x in gr), [])
         for t in ['ground', 'wall', 'crumble', 'fake', 'spike', 'switch', 'door', 'plate', 'hook', 'wind', 'bounce', 'move', 'coin', 'checkpoint', 'startM', 'startF', 'goal']:
             assert alle.count(t) == 1, f'Werkzeug {t} nicht genau einmal in einer Gruppe: {gr}'
-        assert await p.is_visible('.tool[data-tool=erase]'), 'Radieren fehlt'
-        await p.click('.tgroup[data-group=gefahren] .tgh'); await p.wait_for_timeout(100)
-        assert not await p.is_visible('.tool[data-tool=spike]'), 'Gruppe klappt nicht ein'
-        await p.reload(); await p.wait_for_timeout(400)
-        assert not await p.is_visible('.tool[data-tool=spike]'), 'eingeklappte Gruppe nicht gemerkt'
-        await p.click('.tgroup[data-group=gefahren] .tgh'); await p.wait_for_timeout(100)
+        assert await p.is_visible('.tool[data-tool=erase]') and await p.is_visible('.tool[data-tool=select]'), 'Radieren/Auswahl fehlt'
+        await p.click('[data-tab=gefahren]'); await p.wait_for_timeout(100)
+        assert await p.is_visible('.tool[data-tool=spike]') and not await p.is_visible('.tool[data-tool=ground]'), 'Reiter zeigt nicht nur seine Gruppe'
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.is_visible('.tool[data-tool=spike]') and not await p.is_visible('.tool[data-tool=ground]'), 'gewählter Reiter nicht gemerkt'
         await p.click('.tool[data-tool=spike]')
         assert await p.evaluate("currentTool") == 'spike', 'Werkzeug in der Gruppe lässt sich nicht wählen'
     finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def werkzeug_welten(g):
+    """Editor-Umbau: jedes Werkzeug steht in der Empfehlungs-Tabelle (editor/js/00-welt-werkzeuge.js) – als Grundwerkzeug,
+    bei einer Welt oder als Boss-Werkzeug; sonst sähe man ein neues Element nur mit „Alle Werkzeuge“."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        fehlt = await p.evaluate("""(() => { const bekannt = new Set([...GRUND_WERKZEUGE, ...BOSS_WERKZEUGE, ...Object.values(WELT_WERKZEUGE).flat()]);
+            return [...document.querySelectorAll('#app .tool')].map(t => t.dataset.tool).filter(t => !bekannt.has(t)); })()""")
+        assert not fehlt, f'Werkzeuge ohne Eintrag in WELT_WERKZEUGE/GRUND_WERKZEUGE: {fehlt}'
+        welten = [w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']]
+        assert set(await p.evaluate("Object.keys(WELT_WERKZEUGE)")) == set(welten), 'Welt ohne Werkzeug-Empfehlung'
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_werkzeugleiste(g):
+    """Editor-Umbau: Reiterwechsel zeigt nur die Werkzeuge der Gruppe; die Eigenschaften-Zeile zeigt nur die Optionen
+    des aktiven Werkzeugs (und springt dabei nicht in der Höhe); „Aktiv: …“ bleibt beim Reiterwechsel; Welt-Voreinstellung
+    und „Alle Werkzeuge“ (gemerkt); ein Werkzeug, das im Level vorkommt, bleibt sichtbar; „Zuletzt“ (5 Werkzeuge);
+    die Leiste ist bei 1920x1080 höchstens 20 %, bei 1366x768 höchstens 25 % der Fensterhöhe hoch."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.evaluate("localStorage.clear()")
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        aus = lambda t: p.evaluate(f"document.querySelector('.tool[data-tool={t}]').classList.contains('aus')")
+        # Welt-Voreinstellung (neues Level = Dschungel): Dschungel-Werkzeuge da, Vulkan/Ruinen-Werkzeuge ausgeblendet
+        assert not await aus('crumble') and not await aus('bounce') and await aus('lava') and await aus('falle'), 'Dschungel-Voreinstellung'
+        await p.click('#metaBtn'); await p.select_option('#metaWelt', 'vulkan'); await p.click('#metaClose'); await p.wait_for_timeout(100)
+        assert not await aus('lava') and not await aus('presse') and await aus('falle') and await aus('crumble'), 'Vulkan-Voreinstellung'
+        assert not await aus('ground') and not await aus('coin') and not await aus('switch'), 'Grundwerkzeuge fehlen'
+        assert await aus('boss'), 'Boss-Werkzeug außerhalb eines Boss-Levels'
+        # Reiterwechsel: nur Werkzeuge dieser Gruppe sichtbar
+        await p.click('#alleWerkzeuge'); await p.wait_for_timeout(50)
+        for tab in await p.evaluate("[...document.querySelectorAll('#toolTabs .tab')].map(t => t.dataset.tab)"):
+            await p.click(f'[data-tab={tab}]')
+            sicht = await p.evaluate("[...document.querySelectorAll('#toolGroups .tool')].filter(t => t.offsetParent).map(t => t.closest('.tgroup').dataset.group)")
+            assert sicht and set(sicht) == {tab}, (tab, sicht)
+        # „Alle Werkzeuge“ wird gemerkt
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.is_checked('#alleWerkzeuge') and not await aus('falle') and not await aus('boss'), '„Alle Werkzeuge“ nicht gemerkt'
+        await p.click('#alleWerkzeuge'); await p.wait_for_timeout(50)
+        assert await aus('falle'), '„Alle Werkzeuge“ aus wirkt nicht'
+        # Eigenschaften: Falle zeigt Art/Richtung/Takt/Versatz/an-aus + Nummer, Boden zeigt nichts; Höhe springt nicht
+        h0 = await p.evaluate("document.querySelector('header').getBoundingClientRect().height")
+        await ed_werkzeug(p, 'falle')
+        zeig = await p.evaluate("[...document.querySelectorAll('#propRow .prop')].filter(e => e.offsetParent).map(e => (e.querySelector('select,input') || e).id)")
+        assert zeig == ['opt-falle-art', 'opt-falle-richtung', 'opt-falle-takt', 'opt-falle-versatz', 'opt-falle-schalter', 'linkSelect', 'linkName'], zeig
+        await p.click('[data-tab=marken]')   # anderer Reiter: das aktive Werkzeug bleibt (Anzeige + Optionen)
+        assert await p.evaluate("currentTool") == 'falle' and 'Falle' in await p.text_content('#aktivTool'), 'aktives Werkzeug beim Reiterwechsel verloren'
+        assert await p.is_visible('#opt-falle-art'), 'Optionen verschwinden beim Reiterwechsel'
+        await ed_werkzeug(p, 'ground')
+        zeig = await p.evaluate("[...document.querySelectorAll('#propRow .prop')].filter(e => e.offsetParent).length")
+        assert zeig == 0 and await p.is_visible('#propLeer'), 'Boden zeigt Optionen'
+        await ed_werkzeug(p, 'hook'); assert await p.is_visible('#radiusInput') and not await p.is_visible('#spikeDir')
+        await ed_werkzeug(p, 'coin'); assert await p.is_visible('#coinColor') and not await p.is_visible('#radiusInput')
+        h1 = await p.evaluate("document.querySelector('header').getBoundingClientRect().height")
+        assert abs(h1 - h0) < 1, f'Leiste springt: {h0} -> {h1}'
+        # „Zuletzt“: die letzten Werkzeuge, neuestes vorn; Klick wählt, ohne den Reiter zu wechseln
+        z = await p.evaluate("[...document.querySelectorAll('#recentRow .rtool')].map(b => b.dataset.recent)")
+        assert z[:4] == ['coin', 'hook', 'ground', 'falle'], z
+        for t in ('wall', 'spike', 'checkpoint'): await ed_werkzeug(p, t)
+        z = await p.evaluate("[...document.querySelectorAll('#recentRow .rtool')].map(b => b.dataset.recent)")
+        assert z == ['checkpoint', 'spike', 'wall', 'coin', 'hook'], z
+        tab = await p.evaluate("aktiverReiter")
+        await p.click('.rtool[data-recent=hook]')
+        assert await p.evaluate("currentTool") == 'hook' and await p.evaluate("aktiverReiter") == tab, '„Zuletzt“ wählt nicht oder wechselt den Reiter'
+        # Werkzeug, das im geladenen Level vorkommt, bleibt sichtbar (Vulkan-Level mit einer Falle)
+        await p.evaluate("""localStorage.setItem('monchichi_level_editor_v2', JSON.stringify({cols: 60, tiles: [[1, 17, 'ground']], welt: 'vulkan',
+            traps: [{c: 5, r: 10, art: 'pfeil', richtung: 'r', takt: 2, versatz: 0, schalter: 'immer'}]}))""")
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert not await p.is_checked('#alleWerkzeuge') and not await aus('falle') and await aus('fels'), 'Werkzeug aus dem Level ausgeblendet'
+        # Höhe der Leiste
+        for w, h, anteil in ((1920, 1080, 0.20), (1366, 768, 0.25)):
+            await p.set_viewport_size({'width': w, 'height': h}); await p.wait_for_timeout(200)
+            hh = await p.evaluate("document.querySelector('header').getBoundingClientRect().height")
+            assert hh <= h * anteil, f'Leiste bei {w}x{h}: {hh} px'
+    finally:
+        await p.set_viewport_size({'width': 1400, 'height': 840})
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
@@ -4725,6 +4807,12 @@ async def editor_level_info(g):
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
+async def ed_werkzeug(p, tool):
+    """Editor-Umbau: Werkzeug wählen – erst seinen Reiter öffnen (ist es für die Welt ausgeblendet, „Alle Werkzeuge“
+    an), dann den Knopf wirklich anklicken."""
+    await p.evaluate("t => werkzeugZeigen(t)", tool)
+    await p.click(f'.tool[data-tool="{tool}"]')
+
 async def ed_zelle(p, c, r):
     """Bildschirm-Punkt (Mitte) eines Editor-Kästchens (Spalte c, Reihe r)."""
     return await p.evaluate(f"""(() => {{ const R = cvs.getBoundingClientRect(), k = R.width / cvs.width;
@@ -4742,7 +4830,7 @@ async def editor_rueckgaengig_und_auswahl(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
-        await p.click('.tool[data-tool=ground]')
+        await ed_werkzeug(p, 'ground')
         await ed_ziehen(p, (2, 10), (8, 10)); await p.wait_for_timeout(100)
         assert await p.evaluate("Object.keys(tiles).length") == 7
         await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
@@ -4755,7 +4843,7 @@ async def editor_rueckgaengig_und_auswahl(g):
           hooks.push({c: 5, r: 6, radius: 4, move: {dc: 3, dr: 0, speed: 3, link: 1}});
           movers.push({c: 3, r: 12, dc: 0, dr: -2, speed: 2, link: 1}); save(); })()""")
         n0 = await p.evaluate("undoStack.length")
-        await p.click('.tool[data-tool=select]')
+        await ed_werkzeug(p, 'select')
         await ed_ziehen(p, (2, 6), (8, 12)); await p.wait_for_timeout(100)
         assert await p.evaluate("JSON.stringify(selRect)") == '{"c0":2,"r0":6,"c1":8,"r1":12}'
         await p.keyboard.press('Control+c')
@@ -4798,13 +4886,13 @@ async def editor_verknuepfungen_60_mit_namen(g):
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         n = await p.evaluate("[[...linkSelect.options].map(o => o.value), [...moveSwitchSelect.options].map(o => o.value)]")
         assert n[0] == [str(i) for i in range(1, 61)] and n[1] == [''] + [str(i) for i in range(1, 61)], n
+        await ed_werkzeug(p, 'switch')   # Editor-Umbau: Nummer/Name stehen in der Eigenschaften-Zeile des Werkzeugs
         await p.select_option('#linkSelect', '45'); await p.fill('#linkName', 'Tor zum Turm')
-        await p.click('.tool[data-tool=switch]')
         x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y); await p.wait_for_timeout(100)
         txt = await p.evaluate("[...linkSelect.options].find(o => o.value === '45').textContent")
         assert 'Tor zum Turm' in txt and '✓ Schalter' in txt, txt
         await p.reload(); await p.wait_for_timeout(400)
-        await p.select_option('#linkSelect', '45')
+        await ed_werkzeug(p, 'switch'); await p.select_option('#linkSelect', '45')
         assert await p.input_value('#linkName') == 'Tor zum Turm', 'Name nicht gemerkt'
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['switches'] == [{'x': 220, 'y': 420, 'link': 45}], out['switches']
@@ -4844,19 +4932,24 @@ async def element_register(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        # Editor-Umbau: Haken/Aufwind/Sprungpilz im Reiter „Haken & Sprung“, Teleporter/Förderband/Bewegung in „Bewegung“,
+        # Licht-Werkzeuge im eigenen Reiter „Licht“; Optionen nicht mehr in der Gruppe, sondern in der Eigenschaften-Zeile
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['hook', 'wind', 'bounce'], reihe
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['hook', 'wind', 'bounce', 'tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
+        assert reihe == ['tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'wechsel', 'LABEL', 'LABEL', 'lichtquelle', 'LABEL', 'spiegel', 'LABEL', 'kristall', 'leucht', 'LABEL', 'LABEL', 'INPUT'], logik   # Wechselboden + Gruppe/Takt (Ausbau 4), Licht + Leuchtkristall (Ausbau 7)
+        assert logik == ['switch', 'door', 'plate', 'wechsel'], logik
+        licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
+        assert licht == ['lichtquelle', 'spiegel', 'kristall', 'leucht', 'dunkel'], licht
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
-        await p.select_option('#linkSelect', '7')
         for t, c in (('switch', 2), ('door', 3), ('plate', 5)):
-            await p.click(f'.tool[data-tool={t}]'); x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)
+            await ed_werkzeug(p, f'{t}'); await p.select_option('#linkSelect', '7'); x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)
         await p.click('#exportBtn'); out2 = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert (out2['switches'], out2['doors'], out2['plates']) == ([{'x': 100, 'y': 660, 'link': 7}], [{'x': 140, 'y': 660, 'link': 7}], [{'x': 220, 'y': 660, 'link': 7}]), out2
         assert '✓ Schalter, Tür, Druckplatte' in await p.evaluate("[...linkSelect.options].find(o => o.value === '7').textContent")
-        await p.click('.tool[data-tool=bounce]'); x, y = await ed_zelle(p, 4, 16); await p.mouse.click(x, y)
-        await p.click('.tool[data-tool=wind]'); await ed_ziehen(p, (8, 14), (8, 16))
+        await ed_werkzeug(p, 'bounce'); x, y = await ed_zelle(p, 4, 16); await p.mouse.click(x, y)
+        await ed_werkzeug(p, 'wind'); await ed_ziehen(p, (8, 14), (8, 16))
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['bouncers'] == [{'x': 180, 'y': 680}] and out['winds'] == [{'x': 320, 'y': 560, 'w': 40, 'h': 120}] or \
                sorted(json.dumps(w) for w in out['winds']) == sorted(json.dumps({'x': 320, 'y': y0, 'w': 40, 'h': 40}) for y0 in (560, 600, 640)), out
@@ -5106,7 +5199,7 @@ async def editor_wechselboden(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
-        await p.click('.tool[data-tool=wechsel]')
+        await ed_werkzeug(p, 'wechsel')
         await p.select_option('#linkSelect', '4'); await p.select_option('#opt-wechsel-gruppe', 'B')
         await ed_ziehen(p, (3, 12), (5, 12))
         x, y = await ed_zelle(p, 3, 12); await p.mouse.click(x, y)            # Klick auf vorhandenes: B -> A
@@ -5197,7 +5290,7 @@ async def editor_teleporter(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
-        await p.click('.tool[data-tool=tele]')
+        await ed_werkzeug(p, 'tele')
         await p.select_option('#opt-tele-fuer', 'affe')
         for c in (3, 10): x, y = await ed_zelle(p, c, 12); await p.mouse.click(x, y)
         await p.select_option('#opt-tele-fuer', 'beide'); await p.select_option('#opt-tele-schalter', 'nummer'); await p.select_option('#linkSelect', '6')
@@ -5211,7 +5304,7 @@ async def editor_teleporter(g):
         assert 'Teleporter' in await p.evaluate("[...linkSelect.options].find(o => o.value === '6').textContent")
         # Radieren eines Tors: das nächste neue Tor wird sein Partner
         x, y = await ed_zelle(p, 10, 12); await p.mouse.click(x, y, button='right')
-        x, y = await ed_zelle(p, 12, 12); await p.click('.tool[data-tool=tele]'); await p.mouse.click(x, y)
+        x, y = await ed_zelle(p, 12, 12); await ed_werkzeug(p, 'tele'); await p.mouse.click(x, y)
         paare = await p.evaluate("elementPunkte.teleporters.map(t => t.c + ':' + t.paar).sort()")
         assert sorted(paare) == sorted(['3:1', '14:2', '20:2', '25:3', '12:1']), paare
         snap = await p.evaluate("snapshot()")
@@ -5263,8 +5356,8 @@ async def editor_einseitige_plattform(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gelaende] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'dunkel', 'fake'], reihe   # + Eis, Dunkelzone (Ausbau 7, Höhle)
-        await p.click('.tool[data-tool=oneway]'); await ed_ziehen(p, (4, 12), (7, 12))
+        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'fake'], reihe   # + Eis (Ausbau 7, Höhle); Dunkelzone steht seit dem Editor-Umbau im Reiter „Licht“
+        await ed_werkzeug(p, 'oneway'); await ed_ziehen(p, (4, 12), (7, 12))
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['oneways'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 12}], out['oneways']
         assert not any(s['type'] == 'oneway' for s in out['solids'])
@@ -5339,7 +5432,7 @@ async def editor_wasser(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
         assert await p.query_selector('.tgroup[data-group=wasser] .tool[data-tool=water]'), 'Werkzeug Wasser fehlt'
-        await p.click('.tool[data-tool=water]'); await ed_ziehen(p, (4, 12), (7, 12)); await ed_ziehen(p, (4, 13), (7, 13))
+        await ed_werkzeug(p, 'water'); await ed_ziehen(p, (4, 12), (7, 12)); await ed_ziehen(p, (4, 13), (7, 13))
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['waters'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 80}], out['waters']
         snap = await p.evaluate("snapshot()")
@@ -5424,11 +5517,11 @@ async def editor_stroemung_pegel(g):
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=wasser] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['water', 'current', 'waterlevel'], reihe
-        await p.click('.tool[data-tool=current]')
+        await ed_werkzeug(p, 'current')
         await p.select_option('#opt-current-richtung', 'l'); await p.select_option('#opt-current-staerke', '3')
         await ed_ziehen(p, (4, 12), (6, 12))
         x, y = await ed_zelle(p, 9, 12); await p.mouse.click(x, y); await p.mouse.click(x, y)   # 2. Klick dreht: links -> hoch
-        await p.select_option('#linkSelect', '5'); await p.click('.tool[data-tool=waterlevel]')
+        await ed_werkzeug(p, 'waterlevel'); await p.select_option('#linkSelect', '5')
         x, y = await ed_zelle(p, 12, 8); await p.mouse.click(x, y)
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['currents'] == [{'x': 160, 'y': 480, 'w': 120, 'h': 40, 'dx': -1, 'dy': 0, 'staerke': 3},
@@ -5514,7 +5607,7 @@ async def editor_falle(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
-        await p.click('.tool[data-tool=falle]')
+        await ed_werkzeug(p, 'falle')
         await p.select_option('#opt-falle-art', 'flamme'); await p.select_option('#opt-falle-richtung', 'u')
         await p.select_option('#opt-falle-takt', '3'); await p.select_option('#opt-falle-versatz', '0.5')
         x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y)
@@ -5561,7 +5654,7 @@ async def editor_fels(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
-        await p.click('.tool[data-tool=fels]')
+        await ed_werkzeug(p, 'fels')
         await p.select_option('#linkSelect', '3'); await p.select_option('#opt-fels-richtung', 'l'); await p.select_option('#opt-fels-tempo', '5.4')
         x, y = await ed_zelle(p, 6, 14); await p.mouse.click(x, y)
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
@@ -5599,12 +5692,12 @@ async def editor_licht(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
-        await p.click('.tool[data-tool=lichtquelle]'); await p.select_option('#opt-lichtquelle-richtung', 'r')
+        await ed_werkzeug(p, 'lichtquelle'); await p.select_option('#opt-lichtquelle-richtung', 'r')
         x, y = await ed_zelle(p, 2, 12); await p.mouse.click(x, y)
-        await p.click('.tool[data-tool=spiegel]'); await p.select_option('#opt-spiegel-stellung', '/')
+        await ed_werkzeug(p, 'spiegel'); await p.select_option('#opt-spiegel-stellung', '/')
         x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)
         x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)   # Klick auf vorhandenen Spiegel: Stellung wechseln
-        await p.click('.tool[data-tool=kristall]'); await p.select_option('#linkSelect', '5')
+        await ed_werkzeug(p, 'kristall'); await p.select_option('#linkSelect', '5')
         x, y = await ed_zelle(p, 8, 16); await p.mouse.click(x, y)
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['lichtquellen'] == [{'x': 80, 'y': 480, 'richtung': 'r'}], out['lichtquellen']
@@ -5789,12 +5882,12 @@ async def editor_hoehlen_elemente(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
-        await p.click('.tool[data-tool=eis]'); await ed_ziehen(p, (2, 16), (4, 16))
-        await p.click('.tool[data-tool=dunkel]'); await ed_ziehen(p, (10, 10), (11, 10))
-        await p.click('.tool[data-tool=band]'); await p.select_option('#opt-band-richtung', 'l'); await p.select_option('#opt-band-tempo', '2.8')
+        await ed_werkzeug(p, 'eis'); await ed_ziehen(p, (2, 16), (4, 16))
+        await ed_werkzeug(p, 'dunkel'); await ed_ziehen(p, (10, 10), (11, 10))
+        await ed_werkzeug(p, 'band'); await p.select_option('#opt-band-richtung', 'l'); await p.select_option('#opt-band-tempo', '2.8')
         await p.select_option('#opt-band-schalter', 'dreht'); await p.select_option('#linkSelect', '4')
         x, y = await ed_zelle(p, 6, 16); await p.mouse.click(x, y)
-        await p.click('.tool[data-tool=leucht]'); await p.select_option('#opt-leucht-schalter', 'anschlagen')
+        await ed_werkzeug(p, 'leucht'); await p.select_option('#opt-leucht-schalter', 'anschlagen')
         x, y = await ed_zelle(p, 8, 15); await p.mouse.click(x, y)
         await p.select_option('#opt-leucht-schalter', 'nummer'); await p.select_option('#linkSelect', '6')
         x, y = await ed_zelle(p, 9, 15); await p.mouse.click(x, y)
@@ -5897,12 +5990,12 @@ async def editor_vulkan_elemente(g):
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         gef = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gefahren] .tool')].map(t => t.dataset.tool)")
         assert 'lava' in gef and 'lavapegel' in gef and 'presse' in gef, gef
-        await p.click('.tool[data-tool=lava]'); await ed_ziehen(p, (2, 16), (4, 16))
-        await p.click('.tool[data-tool=lavapegel]'); await p.select_option('#opt-lavapegel-start', 'nummer'); await p.select_option('#opt-lavapegel-tempo', 'langsam')
+        await ed_werkzeug(p, 'lava'); await ed_ziehen(p, (2, 16), (4, 16))
+        await ed_werkzeug(p, 'lavapegel'); await p.select_option('#opt-lavapegel-start', 'nummer'); await p.select_option('#opt-lavapegel-tempo', 'langsam')
         await p.select_option('#linkSelect', '3'); x, y = await ed_zelle(p, 3, 13); await p.mouse.click(x, y)
         await p.select_option('#opt-lavapegel-start', 'naehe'); await p.select_option('#opt-lavapegel-tempo', 'schnell')
         x, y = await ed_zelle(p, 4, 12); await p.mouse.click(x, y)
-        await p.click('.tool[data-tool=presse]'); await p.select_option('#opt-presse-breite', '2'); await p.select_option('#opt-presse-takt', '2.5')
+        await ed_werkzeug(p, 'presse'); await p.select_option('#opt-presse-breite', '2'); await p.select_option('#opt-presse-takt', '2.5')
         await p.select_option('#opt-presse-versatz', '0.25'); await p.select_option('#opt-presse-schalter', 'stopp'); await p.select_option('#linkSelect', '5')
         x, y = await ed_zelle(p, 8, 10); await p.mouse.click(x, y)
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
@@ -6009,11 +6102,11 @@ async def editor_boss(g):
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=boss] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['boss', 'arena', 'bossplatz'], reihe
-        await p.click('.tool[data-tool=boss]'); await p.select_option('#opt-boss-treffer', '4')
+        await ed_werkzeug(p, 'boss'); await p.select_option('#opt-boss-treffer', '4')
         for c in (10, 15): x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)   # zweiter Boss ersetzt den ersten
-        await p.click('.tool[data-tool=arena]')
+        await ed_werkzeug(p, 'arena')
         for c in (1, 30): x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)
-        await p.click('.tool[data-tool=bossplatz]'); await p.select_option('#linkSelect', '2')
+        await ed_werkzeug(p, 'bossplatz'); await p.select_option('#linkSelect', '2')
         x, y = await ed_zelle(p, 15, 16); await p.mouse.click(x, y)
         await p.select_option('#opt-bossplatz-phase', '2'); await p.select_option('#linkSelect', '3')
         x, y = await ed_zelle(p, 15, 8); await p.mouse.click(x, y)
@@ -6123,7 +6216,7 @@ async def main(filter_):
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
         ok = fail = 0
         for fn in TESTS:
-            if filter_ and filter_ not in fn.__name__: continue
+            if filter_ and not any(f in fn.__name__ for f in filter_.split(',')): continue   # Kurztest: mehrere Filter mit Komma
             ctx = await browser.new_context(viewport={'width': 1400, 'height': 840})
             page = await ctx.new_page(); errors = []
             page.on('pageerror', lambda e: errors.append(str(e)))

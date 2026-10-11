@@ -8,7 +8,7 @@
 // Aufbau eines Eintrags (Beispiele: sprungpilz.js = Punkt-Element, aufwind.js = Kachel-Element):
 //   id, name, feld          – Name im Spiel-Format (z. B. 'bouncers')
 //   editor: { werkzeug      – data-tool des Knopfs
-//             gruppe, vor   – Werkzeug-Gruppe (gelaende, gefahren, logik, bewegung, sammeln, marken), Knopf davor einsortieren
+//             gruppe, vor   – Werkzeug-Gruppe = Reiter im Editor (gelaende, gefahren, licht, logik, haken, bewegung, wasser, boss, marken), vor = Werkzeug, vor dessen Knopf er steht
 //             titel, farbe  – Tooltip und Farbfeld des Knopfs
 //             art           – 'punkt' (Liste {c,r} pro Kästchen) oder 'kachel' (Kästchen-Sorte im Raster)
 //             ziehbar       – mit gedrückter Maus malbar

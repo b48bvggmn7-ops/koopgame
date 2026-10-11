@@ -156,7 +156,7 @@ function lichtEditorVorschau(ctx, liste, TILE){
 elementRegistrieren({
   id: 'lichtquelle', name: 'Lichtquelle', feld: 'lichtquellen',
   editor: {
-    werkzeug: 'lichtquelle', gruppe: 'logik', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#ffd24a',
+    werkzeug: 'lichtquelle', gruppe: 'licht', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#ffd24a',
     titel: 'Lichtquelle (Sonnen-Stein, fest): schickt einen Lichtstrahl in die gewählte Richtung. Spiegel lenken ihn um, ' +
            'ein Lichtkristall schaltet seine Nummer an, solange Licht darauf fällt. Gelbe Linie = Strahl. Klick = Richtung drehen',
     optionen: [{key: 'richtung', label: 'Richtung', werte: [['r', '→ rechts'], ['l', '← links'], ['o', '↑ hoch'], ['u', '↓ runter']]}],
@@ -182,7 +182,7 @@ elementRegistrieren({
 elementRegistrieren({
   id: 'spiegel', name: 'Spiegel', feld: 'spiegel',
   editor: {
-    werkzeug: 'spiegel', gruppe: 'logik', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#bfe0f0',
+    werkzeug: 'spiegel', gruppe: 'licht', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#bfe0f0',
     titel: 'Spiegel: lenkt den Lichtstrahl um 90° ( / oder \\ ). Im Spiel drehen ihn beide Figuren mit der Hebel-Taste. ' +
            'Klick auf einen vorhandenen Spiegel = Stellung wechseln',
     optionen: [{key: 'stellung', label: 'Stellung', werte: [['/', '/'], ['\\', '\\']]}],
@@ -200,7 +200,7 @@ elementRegistrieren({
 elementRegistrieren({
   id: 'kristall', name: 'Lichtkristall', feld: 'kristalle',
   editor: {
-    werkzeug: 'kristall', gruppe: 'logik', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#8fd0e0',
+    werkzeug: 'kristall', gruppe: 'licht', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#8fd0e0',
     mitNummer: true, nummerName: 'Lichtkristall',
     titel: 'Lichtkristall: solange ein Lichtstrahl darauf fällt, ist seine Verknüpfung AN (wie eine gedrückte Druckplatte)',
     zeichnen(ctx, c, r, TILE, p){
