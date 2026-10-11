@@ -2584,7 +2584,7 @@ async def level18_aschefeld(g):
 
 @test
 async def level19_magmakammer(g):
-    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/level-19.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder."""
+    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/level-19.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder, Lavasee mit Haken und Aufwinden, Hebel des Schweinchens, zweiter See."""
     await koop_level(g, 'level-19.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2642,8 +2642,45 @@ async def level19_magmakammer(g):
         r = await koop(g, f=kat(84, 15), m=kat(82, 15), plans={'f': f + runter, 'm': m + runter}, maxFrames=5000)
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 135, 'E1 Aufwind (Schwein) und Kamin (Affe) vor der Lava', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         await beide('E1 Glutfelder', 137, lambda w: [k_lauf(143, -6)] + sprung_zu(kx(149)) + [{'aim': [kx(157), kx(165)], 'jumps': [kx(152)], 'until': f'P.grounded && P.x > {kx(163)}', 'frames': 600}, k_lauf(169, -6)] + sprung_zu(kx(175)) + [k_lauf(180)], 179)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(207, 15), f=kat(205, 15), plans={'m': kette(208, 4, rel) + [k_lauf(244)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 244: ok.append(rel[:14])
+        soll(ok, 'E2 Affe an vier Haken über den Lavasee', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(207, 15), m=kat(246, 15), plans={'f': glide_to(210, kx(247), hold) + [k_lauf(248)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 246: ok = hold; break
+        soll(ok, 'E2 Schwein segelt mit zwei Aufwinden über den steigenden See', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(207, 15), f=kat(247, 15), plans={'m': kette(208, 4, rel) + [k_lauf(246)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 245: ok.append(rel[:14])
+        soll(ok, 'E2 Affe hinterher, während der See steigt', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            f = [halten(258), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(258)} + 10', 'left': f'P.x > {kx(259)} - 10'}, 'until': f'P.y < {ky(2)}', 'frames': 400},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(263)} - 6', 'left': f'P.x > {kx(263)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + am(266) + glide_to(268, kx(294), hold) + [k_lauf(303)]
+            m = [k_lauf(270, -10), {'wait': '!!linkOn[3]'}, k_lauf(271, 0)] + sprung_zu(kx(273)) + [halten(274)] + sprung_zu(kx(278)) + [k_lauf(291), {'until': 'P.grounded', 'frames': 100}, k_lauf(303)]
+            r = await koop(g, f=kat(254, 15), m=kat(252, 15), plans={'f': f, 'm': m}, maxFrames=6000)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 302: ok = hold; break
+        soll(ok, 'E2 Schwein zieht Hebel 3 oben, Affe läuft vor der Lava über den Steinweg', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(285, 12), f=kat(254, 15), plans={'m': [{'frames': 500}]}, links=[3], maxFrames=600)
+        soll(r.get('dead') == 'm', 'E2 Hebel 3: die Lava steigt über den Steinweg', r.get('pos'))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(310, 15), f=kat(308, 15), plans={'m': kette(314, 4, rel) + [k_lauf(346)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 345: ok.append(rel[:14])
+        soll(ok, 'E2 zweiter See: Affe an drei Haken', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(310, 15), m=kat(346, 15), plans={'f': glide_to(315, kx(347), hold) + [k_lauf(348)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 346: ok = hold; break
+        soll(ok, 'E2 zweiter See: Schwein mit Aufwind (See steigt schneller)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):

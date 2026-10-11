@@ -1155,6 +1155,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 1 (Spalten 0–200): Zickzack-Kamin mit Lava (sobald beide unten sind, steigt die Lava schnell – per
       Wandsprung durch zwei versetzte Schächte hinauf); Aufwind (Schweinchen) und Kamin (Affe) nebeneinander, die Lava
       steigt mit; Glutfelder (drei Lava-Gruben, die mittlere mit Pilz-Säule).
+    - Etappe 2 (Spalten 200–400): über den Lavasee (Affe an vier Haken, Schweinchen mit zwei Aufwinden; sobald beide am
+      Ufer sind, steigt der See langsam); der Hebel des Schweinchens (im Aufwind auf den Sims, Hebel 3 öffnet Tür 3 für
+      den Affen – lässt aber die Lava über seinem Steinweg steigen: sofort los); zweiter, schnellerer See (Haken /
+      Aufwinde).
     - Test level19_magmakammer (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
