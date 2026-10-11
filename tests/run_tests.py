@@ -3176,7 +3176,7 @@ async def level22_kraterherz(g):
 
 @test
 async def dschungel5_dornenpfad(g):
-    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden …); Checkpoints höchstens ~60 Spalten auseinander."""
+    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagd, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke …); Checkpoints höchstens ~60 Spalten auseinander."""
     await koop_level(g, 'dschungel/05-dornenpfad.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3249,8 +3249,46 @@ async def dschungel5_dornenpfad(g):
             soll(r.get('done') and r['pos']['m'][0] >= 198 and r['pos']['f'][0] >= 198, f'E1 Stachelwand-Jagd (Schwein {delay} Schritte später unten)', info(r))
         r = await koop(g, m=kat(133, 11), f=kat(134, 11), plans={'m': [k_lauf(142, -14), {'use': True, 'frames': 2}, {'frames': 60}] + flucht('m')}, maxFrames=4000)
         soll(r.get('dead') == 'm', 'E1 1 s gezögert: die Wand holt den Affen ein', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        plat = lambda c: f"solids.find(s => s.type === 'moveplat' && Math.round(s.startX / 40) === {c})"
+        gleich = lambda a, b: f"Math.abs({plat(a)}.y - {plat(b)}.y) < 24"
+        def insel(w):
+            pl = [k_lauf(206, -4), {'wait': f"{plat(208)}.y > {ky(15)} - 10"}] + sprung_zu(kx(209))
+            for a, b_ in ((208, 215), (215, 222), (222, 229)):
+                pl += [{'holdIf': {'right': f'P.x < {kx(a + 1)} - 4', 'left': f'P.x > {kx(a + 1)} + 4'}, 'wait': gleich(a, b_), 'frames': 900}] + sprung_zu(kx(b_ + 1))
+            return pl + [{'wait': f"{plat(229)}.y > {ky(15)} - 30", 'frames': 900}] + sprung_zu(kx(237)) + [k_lauf(241)]
+        await beide('E2 Inseln im Wechsel', 203, insel, 240, delay=150, maxFrames=6000)
+        # Seilbahn: Schwein am Hebel 4, Affe hängt am fahrenden Haken
+        ok = []
+        for rel in (f'P.anchor.x > {kx(279)} && P.vx > 1', f'P.anchor.x > {kx(279)} && P.x > {kx(276)} && P.vx > 0.5', f'P.anchor.x > {kx(280)} && P.vx > 2'):
+            m = [k_lauf(249, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 3000}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}] + am(285)
+            f = [k_lauf(249, -14), {'wait': 'p1.hookAttached'}, {'use': True, 'frames': 2}, {'holdIf': {'right': f'P.x < {kx(252)} - 4', 'left': f'P.x > {kx(252)} + 4'}, 'wait': '!!linkOn[5]', 'frames': 3000}, {'until': f'P.x > {kx(278)}', 'frames': 2000}, k_lauf(290)]
+            r = await koop(g, m=kat(244, 15), f=kat(243, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+            if r.get('done') and r['pos']['m'][0] >= 281 and r['pos']['f'][0] >= 289: ok.append(rel[-12:])
+        soll(ok, 'E2 Seilbahn (Hebel 4) und Fähre (Hebel 5)', (ok, info(r)))
+        r = await koop(g, m=kat(244, 15), f=kat(243, 15), plans={'m': [k_lauf(249, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80}, {'swing': True, 'pull': 0, 'release': 'f > 200', 'frames': 400}, {'hold': ['right'], 'frames': 200}]}, maxFrames=3000)
+        soll(r.get('dead') == 'm', 'E2 ohne Hebel 4 fährt der Haken nicht', info(r))
+        r = await koop(g, f=kat(244, 15), m=kat(243, 15), plans={'f': [k_lauf(250, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]}, maxFrames=3000)
+        soll(r.get('dead') == 'f', 'E2 Schwein kommt ohne Fähre nicht hinüber', info(r))
+        # Dornen-Kamin
+        kamin = lambda w: [k_lauf(310, 0), {'climb': True, 'until': f'P.grounded && P.y <= {ky(2)} + 2', 'frames': 900, 'dir': 1}, k_lauf(325)]
+        await beide('E2 Hoher Kamin', 305, kamin, 324, delay=120)
+        # Dornendecke: Hebel 6, dann kurze Sprünge über die Stufen
+        hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        flucht = lambda w: hupf(352) + hupf(362) + hupf(372) + [k_lauf(399)]
+        for delay in (0, 20):
+            m = [k_lauf(341, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}] + flucht('f')
+            r = await koop(g, m=kat(338, 15), f=kat(339, 15), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 398 and r['pos']['f'][0] >= 398, f'E2 Dornendecke (Schwein {delay} Schritte später)', info(r))
+        r = await koop(g, m=kat(338, 15), f=kat(336, 15), plans={'m': [k_lauf(341, -14), {'use': True, 'frames': 2}, {'frames': 100}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E2 2 s gezögert: die Decke erwischt den Affen', info(r))
+        r = await koop(g, m=kat(338, 15), f=kat(336, 15), plans={'m': [k_lauf(341, -14), {'use': True, 'frames': 2}] + hupf(352) + hupf(362) + [k_lauf(370, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]}, maxFrames=2000)
+        soll(r.get('dead') == 'm', 'E2 voller Sprung an der letzten Stufe stößt in die Dornen', info(r))
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):
