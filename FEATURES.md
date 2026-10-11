@@ -1109,6 +1109,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
     - Test level16_tiefenschlund (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
+  - Level 17 „Glutpfad“ (levels/level-17.json, Vulkan Level 1 der Welt, morgens, trocken, 800 Spalten): IN ARBEIT, bis
+    der Vulkan fertig ist in levels.json versteckt. Lehr-Level: Lava-Becken, steigende Lava, Sprungpilze.
+    - Etappe 1 (Spalten 0–200): zwei Lava-Gruben; Pilz mitten im Lavasee (auf die Säule springen, der Pilz schleudert
+      weiter); Pilz-Stufe auf einen hohen Fels, oben über die Lava-Grube; Trittsteine im Lavasee; Pilz-Kette über den
+      Lavasee (vier Pilz-Säulen).
+    - Test level17_glutpfad (Koop-Bot + Checkpoint-Abstände).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

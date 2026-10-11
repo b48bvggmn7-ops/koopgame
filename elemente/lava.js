@@ -1,8 +1,8 @@
 // elemente/lava.js – Elemente „Lava“ und „Lava-Marke“ (Ausbau 7, Welt Vulkan; Punkt-Elemente, siehe 00-register.js).
 // Lava: glühende Kästchen (mit der Maus malbar). Zusammenhängende Kästchen bilden ein Becken; wer hineinfällt, ist tot.
 //   Lava ist flüssig: die Oberfläche ist überall im Becken gleich hoch, Steine davor verdecken sie.
-// Lava-Marke: über oder in ein Becken setzen. Ist sie aktiv, steigt die Lava in den Spalten des Beckens weich bis zur
-//   Oberkante der Marke (Tempo langsam / mittel / schnell, LAVA_TEMPO in 02-physik-werte.js):
+// Lava-Marke: über oder in ein Becken setzen. Ist sie aktiv, steigt (bzw. sinkt, wenn die Marke tiefer liegt) die Lava
+//   in den Spalten des Beckens weich bis zur Oberkante der Marke (Tempo langsam / mittel / schnell, LAVA_TEMPO in 02-physik-werte.js):
 //   - „per Nummer“: solange die Verknüpfung AN ist (Hebel = bleibt, Druckplatte = nur solange jemand draufsteht);
 //     AUS = die Lava sinkt zurück auf den gemalten Stand.
 //   - „sobald jemand kommt“: sobald eine Figur über dem Becken ist, steigt die Lava (Lava-Flucht) und sinkt erst nach
@@ -48,13 +48,15 @@ function inLava(x, y){
 }
 function lavaSchritt(players){
   for(const b of lavaBecken){
-    let ziel = b.top;
+    // aktive Marken: die höchste gilt; eine Marke UNTER dem gemalten Stand lässt die Lava sinken (z. B. Druckplatte)
+    let ziel = Infinity;
     for(const m of b.marken){
       if(m.start === 'naehe'){
         if(!m.ausgeloest) for(const pl of players) if(pl && pl.x >= b.minX && pl.x < b.maxX && pl.y < b.top + 4) m.ausgeloest = true;
         if(m.ausgeloest) ziel = Math.min(ziel, m.y);
       } else if(m.link && linkOn[m.link]) ziel = Math.min(ziel, m.y);
     }
+    if(ziel === Infinity) ziel = b.top;
     const marke = b.marken.find(m => m.y === ziel);
     const tempo = marke ? (LAVA_TEMPO[marke.tempo] || LAVA_TEMPO.mittel) : LAVA_TEMPO.mittel;
     b.ziel = ziel;

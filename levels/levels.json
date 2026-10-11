@@ -90,5 +90,11 @@
   "datei": "level-16.json",
   "name": "Level 16",
   "titel": "Tiefenschlund"
+ },
+ {
+  "datei": "level-17.json",
+  "name": "Level 17",
+  "titel": "Glutpfad",
+  "versteckt": true
  }
 ]
