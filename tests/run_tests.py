@@ -3176,7 +3176,7 @@ async def level22_kraterherz(g):
 
 @test
 async def dschungel5_dornenpfad(g):
-    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagd, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke …); Checkpoints höchstens ~60 Spalten auseinander."""
+    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht …); Checkpoints höchstens ~60 Spalten auseinander."""
     await koop_level(g, 'dschungel/05-dornenpfad.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3288,6 +3288,56 @@ async def dschungel5_dornenpfad(g):
         soll(r.get('dead') == 'm', 'E2 2 s gezögert: die Decke erwischt den Affen', info(r))
         r = await koop(g, m=kat(338, 15), f=kat(336, 15), plans={'m': [k_lauf(341, -14), {'use': True, 'frames': 2}] + hupf(352) + hupf(362) + [k_lauf(370, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]}, maxFrames=2000)
         soll(r.get('dead') == 'm', 'E2 voller Sprung an der letzten Stufe stößt in die Dornen', info(r))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        PRE = """window.pendelOK = P => solids.every(s => { if(s.type !== 'moveplat' || s.startY !== 360 || s.switchCtl) return true;
+          if(!(s.x + s.w > P.x - 16 && s.x < P.x + 130)) return true;
+          if(s.x < P.x + 16 && s.x + s.w > P.x - 16) return true;
+          const off = s.y - s.startY; return off < 20 || (s.moveDir === -1 && off < 110); });"""
+        def takt(w):
+            pl = [k_lauf(406, -6), {'wait': 'Math.floor(wechselSchritte / 72) % 2 === 0 && (72 - wechselSchritte % 72) > 58'}] + sprung_zu(kx(409) + 20)
+            for c0 in range(412, 436, 3):
+                pl += [{'wait': '(72 - wechselSchritte % 72) <= 22 && (72 - wechselSchritte % 72) > 4'}] + sprung_zu(kx(c0) + 20)
+            return pl + [{'wait': '(72 - wechselSchritte % 72) <= 26'}] + sprung_zu(kx(440)) + [k_lauf(443)]
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 144, 24):
+                r = await koop(g, **{who: kat(402, 15), ('f' if who == 'm' else 'm'): kat(441, 15)}, plans={who: [{'frames': wait + 1}] + takt(who)}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 442: n += 1
+            soll(n > 0, f'E3 Takt-Steine 1,2 s ({who})', (f'{n}/6', info(r)))
+        pend = lambda w: [{'holdIf': {'right': 'pendelOK(P)'}, 'until': f'P.x >= {kx(473)}', 'frames': 3000}, k_lauf(475)]
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 200, 25):
+                r = await koop(g, **{who: kat(444, 15), ('f' if who == 'm' else 'm'): kat(442, 15)}, plans={who: [{'frames': wait + 1}] + pend(who)}, maxFrames=4000, pre=PRE)
+                if r.get('done') and r['pos'][who][0] >= 474: n += 1
+            soll(n >= 6, f'E3 Stachel-Pendel mit Abwarten ({who})', f'{n}/8')
+        n = 0
+        for wait in range(0, 200, 20):
+            r = await koop(g, m=kat(444, 15), f=kat(442, 15), plans={'m': [{'frames': wait + 1}, k_lauf(475)]}, maxFrames=2000)
+            if r.get('done'): n += 1
+        soll(n <= 4, 'E3 Stachel-Pendel stur durchlaufen klappt selten', f'{n}/10')
+        # Schleuse
+        ok = []
+        for rel in RELS:
+            m = [{'wait': '!!linkOn[7]'}] + kette(482, 2, rel) + am(502) + [{'wait': f'Q.x >= {kx(504)}'}, k_lauf(504), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
+            f = [k_lauf(477, -6), {'frames': 10}, {'wait': '!!linkOn[8]'}, k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}, k_lauf(509)]
+            r = await koop(g, m=kat(476, 15), f=kat(474, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+            if r.get('done') and r['pos']['m'][0] >= 510 and r['pos']['f'][0] >= 508: ok.append(rel[:14])
+        soll(ok, 'E3 Druckplatten-Schleuse: Affe über Haken zu Hebel 8, Schwein im Aufwind hinterher', (ok, info(r)))
+        r = await koop(g, m=kat(480, 15), f=kat(470, 15), plans={'m': [{'hold': ['right'], 'frames': 150}]}, maxFrames=1000)
+        soll(r['pos']['m'][0] < 482, 'E3 ohne Platte 7 hält Tür 7', info(r))
+        r = await koop(g, f=kat(476, 15), m=kat(470, 15), plans={'f': [k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=3000)
+        soll(r.get('pos', {}).get('f', [999])[0] < 482, 'E3 ohne Hebel 8 bleibt der Schacht zu', info(r))
+        # Pilz-Flucht
+        flucht = lambda w: [k_lauf(528, 0)] + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(531)} - 6', 'left': f'P.x > {kx(531)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+                   {'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 200}] + sprung_zu(kx(546)) + sprung_zu(kx(551)) + sprung_zu(kx(559)) + [k_lauf(597)]
+        for delay in (0, 20):
+            m = [k_lauf(524, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(526, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
+            r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 596 and r['pos']['f'][0] >= 596, f'E3 Pilz-Flucht (Schwein {delay} Schritte später unten)', info(r))
     assert not fehler, fehler
 
 @test
