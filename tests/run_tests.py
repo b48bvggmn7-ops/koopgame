@@ -2849,7 +2849,7 @@ async def level20_schlackewerk(g):
 
 @test
 async def level21_feuerschlund(g):
-    """Ausbau 7, Vulkan Level 6 „Feuerschlund“ (levels/level-21.json, nachts, trocken): Kombi-/Meister-Level dunkle Lavagänge mit Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht. Koop-Bot spielt jede Etappe: Kristall + Lava-Gruben, Affe zum Kristall / Schwein segelt / Tür 1, Teleporter-Kammer mit steigender Lava, Wechselboden im Takt, zwei Brücken mit Druckplatten, der Schlund."""
+    """Ausbau 7, Vulkan Level 6 „Feuerschlund“ (levels/level-21.json, nachts, trocken): Kombi-/Meister-Level dunkle Lavagänge mit Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht. Koop-Bot spielt jede Etappe: Kristall + Lava-Gruben, Affe zum Kristall / Schwein segelt / Tür 1, Teleporter-Kammer mit steigender Lava, Wechselboden im Takt, zwei Brücken mit Druckplatten, der Schlund, Licht halten + Pilze + Teleporter, zweite Teleporter-Kammer, Klappen im Lavagang."""
     await koop_level(g, 'level-21.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2954,6 +2954,28 @@ async def level21_feuerschlund(g):
         soll(r.get('dead') == 'm', 'E2 ohne Platte 3 keine Brücke', r.get('pos'))
         sl = lambda w: [k_lauf(328, 0)] + sprung_zu(kx(334)) + sprung_zu(kx(340)) + sprung_zu(kx(346)) + sprung_zu(kx(352)) + sprung_zu(kx(358)) + sprung_zu(kx(365)) + [k_lauf(382), {'until': 'P.grounded', 'frames': 200}, k_lauf(392)]
         await beide('E2 der Schlund: Stege treppauf, der See steigt', 310, sl, 391, delay=60)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        m = [{'wait': '!!linkOn[5]'}, {'aim': [kx(416), kx(423), kx(430), kx(437), kx(447)], 'jumps': [kx(410)], 'until': f'P.grounded && P.x > {kx(444)}', 'frames': 1200}] + am(446) + [{'wait': f'Q.x > {kx(448)}'}, k_lauf(458)]
+        f = [halten(409), {'wait': '!!linkOn[6]'}, {'holdIf': {'right': f'P.x < {kx(411)}'}, 'until': f'P.x > {kx(440)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, k_lauf(457)]
+        r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 456, 'E3 Schwein hält das Licht (Platte 5), Affe springt über die Pilze, Hebel 6 holt das Schwein per Teleporter', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        hoch = [k_lauf(457, 0)] + sprung_zu(kx(460)) + sprung_zu(kx(463)) + sprung_zu(kx(466)) + sprung_zu(kx(470)) + [k_lauf(473), {'until': 'P.grounded', 'frames': 200}]
+        m = hoch + [halten(481), {'wait': f'Q.y < {ky(8)}'}, {'wait': '!!linkOn[8]'}, {'holdIf': {'left': f'P.x > {kx(477)}'}, 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, k_lauf(503)]
+        f = [{'frames': 30}] + hoch + [{'wait': '!!linkOn[7]'}, {'holdIf': {'right': f'P.x < {kx(475)} - 3', 'left': f'P.x > {kx(475)} + 3'}, 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, halten(496), {'wait': f'Q.y < {ky(8)} && Q.grounded'}, k_lauf(504)]
+        r = await koop(g, m=kat(458, 15), f=kat(456, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 502, 'E3 Kammer: Platte 7 (Affe) schaltet den Teleporter des Schweins, Platte 8 (Schwein) den des Affen', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        m = [k_lauf(510, -10), {'wait': f'Q.grounded && Math.abs(Q.x - {kx(530)}) < 10 && Q.y < {ky(10)}'}, k_lauf(521, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+             k_lauf(533, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(556)]
+        f = [halten(506), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(506)} + 10', 'left': f'P.x > {kx(507)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(512)} - 6', 'left': f'P.x > {kx(512)} + 6'}, 'until': 'P.grounded', 'frames': 400}, halten(530),
+             {'pressIf': {'use': f'!linkOn[9] && Q.x > {kx(522)} && !Q.grounded'}, 'until': '!!linkOn[9]', 'frames': 2000},
+             {'pressIf': {'use': f'linkOn[9] && Q.x > {kx(534)} && !Q.grounded'}, 'until': '!linkOn[9]', 'frames': 2000}, k_lauf(551), {'until': 'P.grounded', 'frames': 200}, k_lauf(557)]
+        r = await koop(g, m=kat(503, 15), f=kat(501, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 555, 'E3 Klappen im Lavagang: das Schwein schaltet Hebel 9, während der Affe springt', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(510, 15), f=kat(501, 15), plans={'m': [k_lauf(530)]}, maxFrames=600)
+        soll(r.get('dead') == 'm', 'E3 ohne Umschalten fällt der Affe in die Lava', r.get('pos'))
     assert not fehler, fehler
 
 @test

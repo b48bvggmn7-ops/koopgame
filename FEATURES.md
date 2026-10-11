@@ -1202,6 +1202,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       2 Sekunden – man springt genau beim Wechsel); zwei Brücken im Dunkeln (das Schweinchen hält Druckplatte 3 = untere
       Brücke für den Affen, der Affe hält drüben Druckplatte 4 = obere Brücke für das Schweinchen); der Schlund (Stege
       treppauf über einem Lavasee, der schnell steigt, sobald beide am Ufer sind).
+    - Etappe 3 (Spalten 400–600): Licht halten, Pilze springen (das Schweinchen hält Druckplatte 5 – der Kristall über
+      dem dunklen Lavasee leuchtet, der Affe springt über die Pilz-Säulen und zieht Hebel 6: der Teleporter holt das
+      Schweinchen nach); zweite Teleporter-Kammer (die Lava steigt; der Affe hält Platte 7 = Teleporter des Schweinchens
+      an, draußen hält das Schweinchen Platte 8 = Teleporter des Affen an); Klappen im Lavagang (das Schweinchen steigt
+      im Aufwind auf den Sims und schaltet Hebel 9 genau dann um, wenn der Affe von Klappe zu Klappe springt).
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
