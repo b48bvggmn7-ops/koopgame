@@ -1207,7 +1207,10 @@ async def level9_fallengang(g):
     soll(ok, 'Schweinchen segelt in den Pfeil-Gang, Hebel 5')
     plan = [k_lauf(296, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
             {'swing': True, 'pull': 60, 'release': f'P.y < {ky(10)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
-            {'holdIf': {'right': f'P.x < {kx(306)} - 4', 'left': f'P.x > {kx(306)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+            # Bild-Regel: Hebel 4 steht jetzt bei 322 zwischen den Pfeilen 318/324 – warten, bis der Pfeil von 318 steckt
+            {'holdIf': {'right': f'P.x < {kx(314)} - 4', 'left': f'P.x > {kx(314)} + 4'}, 'frames': 60},
+            {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(318)}) < 4 && a.steckt >= 0)', 'frames': 400},
+            {'holdIf': {'right': f'P.x < {kx(322)} - 4', 'left': f'P.x > {kx(322)} + 4'}, 'frames': 40}, {'use': True, 'frames': 5}]
     r = await koop(g, m=kat(292, 15), f=kat(294, 15), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 10 and await g.ev("!!linkOn[4]"), 'Affe auf die Decke + Hebel 4', r.get('pos'))
     r = await koop(g, f=kat(338, 15), m=kat(320, 10), plans={'f': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)

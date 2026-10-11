@@ -116,6 +116,40 @@
    "spalte": 238,
    "nummer": 5,
    "begruendung": "223 und 238 rahmen die Hakenreihe ein; ohne einen von beiden wäre die Lücke > 70 (157→238 bzw. 223→308)"
+  },
+  {
+   "level": "ruinen/03-fallengang.json",
+   "regel": "Plattform",
+   "spalte": 478,
+   "nummer": 3,
+   "begruendung": "Blaues Tor nur für den Affen (478→506): das Schweinchen nimmt gleichzeitig sein pinkes Tor nach oben und steht am Hebel 8 (488) – beim Ankommen sind beide höchstens 18 Spalten auseinander"
+  },
+  {
+   "level": "ruinen/03-fallengang.json",
+   "regel": "Haken",
+   "spalte": 216,
+   "begruendung": "Pfeil-Galerie: flache Hangel-Leiste 2 Reihen über dem Steg (gewollt unter den Pfeilen); Bot-Test level9_fallengang spielt sie – tief, aber spielbar"
+  },
+  {
+   "level": "ruinen/03-fallengang.json",
+   "regel": "Checkpoint",
+   "spalte": 408,
+   "nummer": 8,
+   "begruendung": "Etappen-Übergang (Gang ohne Rätsel) direkt vor der Deckungs-Staffel; ohne ihn wäre die Lücke > 60 (Test level9_fallengang)"
+  },
+  {
+   "level": "ruinen/03-fallengang.json",
+   "regel": "Checkpoint",
+   "spalte": 604,
+   "nummer": 12,
+   "begruendung": "direkt vor dem Flammen-Doppelgang (ein Rätsel bis 680); ohne ihn wäre die Lücke > 60 (Test)"
+  },
+  {
+   "level": "ruinen/03-fallengang.json",
+   "regel": "Checkpoint",
+   "spalte": 680,
+   "nummer": 13,
+   "begruendung": "Flammen-Doppelgang 604–680 ist ein Rätsel am Stück (zwei getrennte Wege) – Checkpoint erst danach (wie im Test level9_fallengang)"
   }
  ]
 }
