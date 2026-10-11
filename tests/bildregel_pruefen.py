@@ -228,8 +228,15 @@ def haken_pruefen(d):
     hs = sorted([(spalte(h['x']), reihe(h['y']), h) for h in d.get('hooks', []) if 'targetX' not in h], key=lambda t: t[0])
     hilfe = [spalte(b['x']) for b in d.get('bouncers', [])] + [c for w in d.get('winds', []) for c, r in felder_zellen(w)]
     reihen, akt = [], []
+    stacheln = {(spalte(o['x']), reihe(o['y'])) for o in d.get('spikes', [])}
+    def zwischenhalt(a, b):
+        """steht zwischen zwei Haken ein Pfeiler/Sims (2–8 Reihen unter dem Haken), schwingt man nicht durch, sondern landet"""
+        def ok(c):
+            sr = steh_reihe(steh, c, a[1])
+            return sr is not None and a[1] + 2 <= sr <= a[1] + 8 and (c, sr - 1) not in stacheln and (c, sr) not in stacheln
+        return sum(1 for c in range(a[0] + 1, b[0]) if ok(c)) >= LANDUNG_MIN
     for h in hs:
-        if akt and (h[0] - akt[-1][0] > HAKEN_REIHE_LUECKE or abs(h[1] - akt[-1][1]) > 3): reihen.append(akt); akt = []
+        if akt and (h[0] - akt[-1][0] > HAKEN_REIHE_LUECKE or abs(h[1] - akt[-1][1]) > 3 or zwischenhalt(akt[-1], h)): reihen.append(akt); akt = []
         akt.append(h)
     if akt: reihen.append(akt)
     warn, zeilen = [], []

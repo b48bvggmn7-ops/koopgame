@@ -222,12 +222,6 @@
   },
   {
    "level": "ruinen/06-tempelherz.json",
-   "regel": "Haken",
-   "spalte": 620,
-   "begruendung": "flache Hangel-Leiste (2 Reihen über dem Sims) zum Licht-Takt-Tor; Bot-Test ruinen6_tempelherz spielt sie – tief, aber spielbar"
-  },
-  {
-   "level": "ruinen/06-tempelherz.json",
    "regel": "Checkpoint",
    "spalte": 580,
    "nummer": 14,
@@ -274,6 +268,20 @@
    "spalte": 592,
    "nummer": 14,
    "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/03-eisgrotte.json",
+   "regel": "Checkpoint",
+   "spalte": 603,
+   "nummer": 12,
+   "begruendung": "595 nach dem Kamin, 603 vor der Doppel-Rutsche; zusammengelegt ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/03-eisgrotte.json",
+   "regel": "Checkpoint",
+   "spalte": 681,
+   "nummer": 14,
+   "begruendung": "664 nach der Doppel-Rutsche, 681 vor dem Aufwind-Kamin; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
   }
  ]
 }
