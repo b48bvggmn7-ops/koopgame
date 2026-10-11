@@ -1219,6 +1219,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Sims; dort zwei Pressen); Pilz-Turm vor der Lava (vier Pilz-Säulen treppauf, die Lava steigt, sobald beide im
       Becken sind; oben stampft eine breite Presse über dem Sims); Pilz-Kette über den Lavasee (der Affe springt von
       Pilz zu Pilz, das Schweinchen segelt; am Ufer eine Presse).
+    - Etappe 2 (Spalten 200–400, Lava-Flucht mit Bändern und Eis): Flucht über Eis und Band (vom Block hinunter in den
+      Kessel, kein Weg zurück – sobald beide unten sind, steigt die Lava; übers Eis, aufs Band, über drei Stege auf den
+      Fels); Eis unter Pressen (auf dem Eis muss man früh gegensteuern, um vor einer Presse zu warten); über den Lavasee
+      (der Affe schwingt an vier Haken, das Schweinchen segelt mit zwei Aufwinden, der See steigt langsam).
     - Test level22_kraterherz (Koop-Bot + Checkpoint-Abstände).
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).

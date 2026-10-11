@@ -3005,7 +3005,7 @@ async def level21_feuerschlund(g):
 
 @test
 async def level22_kraterherz(g):
-    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/level-22.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee."""
+    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/level-22.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee, Flucht über Eis und Band, Eis unter Pressen (gegensteuern), Haken/Aufwinde über den steigenden See."""
     await koop_level(g, 'level-22.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3067,10 +3067,31 @@ async def level22_kraterherz(g):
         turm = lambda w: [{'aim': [kx(62), kx(68), kx(74), kx(80), kx(89)], 'jumps': [kx(59)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
                           durch(101), k_lauf(103), {'until': 'P.grounded', 'frames': 100}, k_lauf(108), {'until': 'P.grounded', 'frames': 100}, k_lauf(112), {'until': 'P.grounded', 'frames': 100}, k_lauf(119)]
         await beide('E1 Pilz-Turm vor der Lava, Presse auf dem Sims', 54, turm, 118, delay=40)
-        kette = lambda w: [{'aim': [kx(140), kx(147), kx(154), kx(161), kx(167)], 'jumps': [kx(133)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(164)}', 'frames': 900}, durch(176), k_lauf(179)]
-        await beide('E1 Pilz-Kette über den Lavasee, Presse am Ufer', 126, kette, 178)
+        pkette = lambda w: [{'aim': [kx(140), kx(147), kx(154), kx(161), kx(167)], 'jumps': [kx(133)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(164)}', 'frames': 900}, durch(176), k_lauf(179)]
+        await beide('E1 Pilz-Kette über den Lavasee, Presse am Ufer', 126, pkette, 178)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        fl = lambda w: [k_lauf(202, 0)] + sprung_zu(kx(204)) + sprung_zu(kx(207)) + sprung_zu(kx(211)) + [k_lauf(215), {'until': 'P.grounded', 'frames': 200}, k_lauf(244, 0)] + sprung_zu(kx(247)) + sprung_zu(kx(251)) + sprung_zu(kx(255)) + sprung_zu(kx(259)) + [k_lauf(276), {'until': 'P.grounded', 'frames': 200}, k_lauf(281)]
+        await beide('E2 Flucht über Eis und Band, Stege hinauf', 202, fl, 280, delay=60)
+        for need in (60,):
+            await beide(f'E2 Eis unter Pressen (Zeitfenster {need})', 282, lambda w: [{'holdIf': {'right': f'(window.__need = {need}, durchOK(P, 160))', 'left': f'(window.__need = {need}, !durchOK(P, 160))'}, 'until': f'P.x >= {kx(318)}', 'frames': 3000}, k_lauf(320)], 319, delay=120)
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(337, 15), f=kat(335, 15), plans={'m': kette(338, 4, rel) + [k_lauf(374)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 374: ok.append(rel[:14])
+        soll(ok, 'E2 Affe an vier Haken über den Lavasee', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(337, 15), m=kat(376, 15), plans={'f': glide_to(340, kx(377), hold) + [k_lauf(378)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 376: ok = hold; break
+        soll(ok, 'E2 Schwein segelt mit zwei Aufwinden über den steigenden See', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(337, 15), f=kat(377, 15), plans={'m': kette(338, 4, rel) + [k_lauf(376)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 375: ok.append(rel[:14])
+        soll(ok, 'E2 Affe hinterher, während der See steigt', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):
