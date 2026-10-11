@@ -3004,6 +3004,75 @@ async def level21_feuerschlund(g):
     assert not fehler, fehler
 
 @test
+async def level22_kraterherz(g):
+    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/level-22.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee."""
+    await koop_level(g, 'level-22.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16 && P.y >= Q.y0 && P.y - P.h <= Q.y0 + Q.hub + 52) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      if(P.y < Q.y0 || P.y - P.h > Q.y0 + Q.hub + 52) return true;   // andere Höhe (z. B. oberer/unterer Gang)
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });
+    window.flammeOK = (P, weit, v) => {
+      const hoch = b => b.y < P.y && b.y + b.h > P.y - P.h;
+      if(fallen.some(f => { const b = falleFlammeBox(f); return f.art === 'flamme' && hoch(b) && b.x < P.x + 16 && b.x + b.w > P.x - 16; })) return true;
+      return fallen.every(f => { if(f.art !== 'flamme' || !falleAktiv(f)) return true; const b = falleFlammeBox(f);
+        if(!hoch(b) || b.x + b.w <= P.x - 16 || b.x >= P.x + (weit || 80)) return true;
+        const n = falleTaktSchritte(f), t = falleZeit(f);
+        if(t < n*FLAMME_ANTEIL) return false;
+        return n - t > (b.x + b.w + 16 - P.x)/(v || 4) + 4; }); };
+    window.flFrei = (c, a, b) => { const f = fallen.find(q => Math.round(q.x/40) === c); const n = falleTaktSchritte(f), t = falleZeit(f);
+      for(let s = a; s <= b; s++) if((t + s) % n < n*FLAMME_ANTEIL) return false; return true; };'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        pl = lambda w: [{'holdIf': {'left': f'P.x > {kx(14)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
+                        {'aim': [kx(20), kx(26)], 'jumps': [kx(17)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, durch(41), k_lauf(42), {'until': 'P.grounded', 'frames': 100}, k_lauf(46), {'until': 'P.grounded', 'frames': 100}, k_lauf(52)]
+        await beide('E1 Pilz unter der Presse, Pressen auf dem Sims', 9, pl, 51, delay=60)
+        turm = lambda w: [{'aim': [kx(62), kx(68), kx(74), kx(80), kx(89)], 'jumps': [kx(59)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
+                          durch(101), k_lauf(103), {'until': 'P.grounded', 'frames': 100}, k_lauf(108), {'until': 'P.grounded', 'frames': 100}, k_lauf(112), {'until': 'P.grounded', 'frames': 100}, k_lauf(119)]
+        await beide('E1 Pilz-Turm vor der Lava, Presse auf dem Sims', 54, turm, 118, delay=40)
+        kette = lambda w: [{'aim': [kx(140), kx(147), kx(154), kx(161), kx(167)], 'jumps': [kx(133)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(164)}', 'frames': 900}, durch(176), k_lauf(179)]
+        await beide('E1 Pilz-Kette über den Lavasee, Presse am Ufer', 126, kette, 178)
+    assert not fehler, fehler
+
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
     Teleporter, Falle, Fels, Förderband oder Leuchtkristall),

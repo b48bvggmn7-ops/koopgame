@@ -120,5 +120,11 @@
   "name": "Level 21",
   "titel": "Feuerschlund",
   "versteckt": true
+ },
+ {
+  "datei": "level-22.json",
+  "name": "Level 22",
+  "titel": "Kraterherz",
+  "versteckt": true
  }
 ]
