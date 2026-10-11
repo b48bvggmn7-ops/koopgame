@@ -853,6 +853,7 @@ function drawSolidLook(s, look, x){
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenOben) E.spiel.zeichnenOben();   // Bildschirm-Anzeigen, z. B. Boss-Lebensbalken (elemente/)
   weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
   drawOffscreenArrows();
+  drawZielHinweise();   // kurzer Pfeil am Bildrand zum Ziel eines eben geschalteten Hebels (07-effekte-ton-muenzen.js)
   drawContinuePrompt();
   if(typeof szeneRahmen === 'function') szeneRahmen();       // Spielszene: Kino-Balken, Titel, Hinweis (29-story.js)
   if(testJumpMsg && performance.now() - testJumpT < 1800){

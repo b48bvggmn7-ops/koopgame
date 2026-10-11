@@ -99,10 +99,37 @@ function setLink(link, on){
     if(h.moving && h.switchCtl && h.switchLink===link) h.tripActive = on;
   }
 }
+// Ziel-Hinweis (Bild-Regel, AUSBAU-REGELWERK Punkt 12): schaltet ein Hebel/eine Druckplatte etwas, das gerade außerhalb
+// des Bildes liegt, zeigt ein kurzer Pfeil in der Farbe der Nummer am Bildrand dorthin (ZIEL_HINWEIS_SCHRITTE ≈ 1 s).
+// Gemerkt wird im festen Takt (simSteps), gezeichnet nur (drawZielHinweise in 07-effekte-ton-muenzen.js). Keine neue Kamera-Logik.
+const ZIEL_HINWEIS_SCHRITTE = 54;   // 54 Physik-Schritte = 1 s
+let zielHinweise = [];              // {link, x, y, bis}
+function zielPunkte(link){   // Weltpunkte der Ziele einer Nummer (Tür, bewegtes Teil, fahrender Haken, Tor, Presse, Wechselboden, Lava-Marke)
+  const pts = [];
+  for(const s of solids){
+    if(s.type === 'door' && s.link === link) pts.push({x: s.x + s.w/2, y: s.y});
+    if(s.type === 'moveplat' && s.switchLink === link) pts.push({x: s.x + s.w/2, y: s.y});
+    if(s.type === 'wechsel' && s.link === link) pts.push({x: s.x + s.w/2, y: s.y});
+  }
+  for(const h of hooks) if(h.moving && h.switchLink === link) pts.push({x: h.x, y: h.y});
+  if(typeof teleporters !== 'undefined') for(const t of teleporters) if(t.link === link) pts.push({x: t.x + 20, y: t.y - 40});
+  if(typeof pressen !== 'undefined') for(const P of pressen) if(P.link === link) pts.push({x: P.x + P.w/2, y: P.y + 20});
+  if(typeof lavaBecken !== 'undefined') for(const b of lavaBecken) for(const m of b.marken) if(m.link === link) pts.push({x: m.x, y: m.y});
+  return pts;
+}
+function zielHinweisMerken(link){
+  if(typeof camX === 'undefined') return;
+  for(const t of zielPunkte(link)){
+    if(t.x >= camX && t.x <= camX + VW) continue;   // im Bild: kein Pfeil
+    zielHinweise = zielHinweise.filter(h => !(h.link === link && Math.abs(h.x - t.x) < 1));
+    zielHinweise.push({link, x: t.x, y: t.y, bis: simSteps + ZIEL_HINWEIS_SCHRITTE});
+  }
+}
 function triggerSwitch(sw, player){
   const now = performance.now();
   const on = !linkOn[sw.link];
   setLink(sw.link, on);
+  zielHinweisMerken(sw.link);
   player.leverAnim = {t0: now, dir: Math.sign(sw.x - player.x) || player.facing || 1};
   sw.pulledT = now;
   SFX.lever(on, sw.x);   // Holz-Klack (18-sound.js)
@@ -116,7 +143,7 @@ function updatePlates(players){
   const want = {};
   for(const pl of plates){
     const down = players.some(p => onPlate(p, pl));
-    if(down && !pl.down) SFX.lever(true, pl.x);
+    if(down && !pl.down){ SFX.lever(true, pl.x); zielHinweisMerken(pl.link); }
     pl.down = down;
     want[pl.link] = want[pl.link] || down;
   }

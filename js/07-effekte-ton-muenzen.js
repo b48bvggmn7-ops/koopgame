@@ -159,6 +159,38 @@ function drawOffscreenArrows(){
     ctx.restore();
   }
 }
+// Ziel-Hinweis nach Hebel/Druckplatte (zielHinweise aus 05-level-objekte.js): Pfeil in der Farbe der Nummer am Bildrand,
+// auf der Höhe des Ziels, mit der Nummer – nur solange das Ziel außerhalb des Bildes liegt, blendet am Ende aus
+let zielHinweisPfeile = 0;   // Zähler je Bild (für Tests)
+function drawZielHinweise(){
+  zielHinweisPfeile = 0;
+  if(!zielHinweise.length) return;
+  for(const h of zielHinweise){
+    const rest = h.bis - simSteps;
+    if(rest <= 0) continue;
+    const sx = (h.x - camX) * zoom;
+    let side = 0;
+    if(sx < -6) side = -1; else if(sx > W + 6) side = 1;
+    if(!side) continue;
+    zielHinweisPfeile++;
+    const sy = Math.max(70, Math.min(H - 60, h.y * zoom + H*(1-zoom)));
+    const x = side < 0 ? 34 : W - 34;
+    const col = typeof linkColor === 'function' ? linkColor(h.link) : '#ffd23f';
+    const bob = Math.sin(performance.now()*0.012) * 4 * side;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, rest / 12);
+    ctx.translate(x + bob, sy);
+    ctx.fillStyle = 'rgba(20,28,38,.8)';
+    ctx.beginPath(); ctx.moveTo(side*30, 0); ctx.lineTo(side*6, -19); ctx.lineTo(side*6, 19); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(side*25, 0); ctx.lineTo(side*9, -13); ctx.lineTo(side*9, 13); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.arc(-side*8, 0, 11, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(-side*8, 0, 8.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = (h.link > 9 ? 'bold 9.5px' : 'bold 11px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(h.link), -side*8, 0.5);
+    ctx.restore();
+  }
+}
 function drawContinuePrompt(){
   if(!deathState || performance.now() < deathState.canContinueAt) return;
   const a = 0.75 + 0.25*Math.sin(performance.now()*0.006);

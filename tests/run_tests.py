@@ -2718,7 +2718,7 @@ async def level19_magmakammer(g):
         ok = None
         for hold in (4, 8, 12):
             f = [halten(258), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(258)} + 10', 'left': f'P.x > {kx(259)} - 10'}, 'until': f'P.y < {ky(2)}', 'frames': 400},
-                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(263)} - 6', 'left': f'P.x > {kx(263)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + am(266) + glide_to(268, kx(294), hold) + [k_lauf(303)]
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(263)} - 6', 'left': f'P.x > {kx(263)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + [k_lauf(275)] + am(278) + glide_to(279, kx(294), hold) + [k_lauf(303)]   # Bild-Regel: Sims bis 279, Hebel 3 bei 278
             m = [k_lauf(270, -10), {'wait': '!!linkOn[3]'}, k_lauf(271, 0)] + sprung_zu(kx(273)) + [halten(274)] + sprung_zu(kx(278)) + [k_lauf(291), {'until': 'P.grounded', 'frames': 100}, k_lauf(303)]
             r = await koop(g, f=kat(254, 15), m=kat(252, 15), plans={'f': f, 'm': m}, maxFrames=6000)
             if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 302: ok = hold; break
@@ -2891,7 +2891,7 @@ async def level20_schlackewerk(g):
         soll(res, 'E4 Affe an vier Haken, Hebel 9 – Brücke fürs Schwein', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         res = None
         for hold in (4, 8, 12):
-            f = glide_to(658, kx(694), hold) + am(696) + [k_lauf(702)]
+            f = glide_to(658, kx(694), hold) + am(691) + [k_lauf(702)]   # Bild-Regel: Hebel 10 bei 691 statt 696
             m = [{'wait': '!!linkOn[10]'}, {'holdIf': {'left': f'P.x > {kx(662)}'}, 'until': '(window.__need = 40, durchOK(P, 1000))', 'frames': 2000}, durch(700)]
             r = await koop(g, m=kat(657, 15), f=kat(653, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
             if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 699: res = hold; break
@@ -2987,7 +2987,7 @@ async def level21_feuerschlund(g):
         r = await koop(g, m=kat(104, 15), f=kat(102, 15), plans={'m': [k_lauf(114)]}, maxFrames=600)
         soll(r['pos']['m'][0] < 110, 'E1 Tür 1 zu ohne Hebel', r.get('pos'))
         hoch = [k_lauf(121, 0)] + sprung_zu(kx(124)) + sprung_zu(kx(127)) + sprung_zu(kx(130)) + sprung_zu(kx(134)) + [k_lauf(137), {'until': 'P.grounded', 'frames': 200}]
-        m = hoch + [k_lauf(148, -4), {'until': f'P.y < {ky(8)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 100}] + am(160) + [{'wait': f'Q.y < {ky(8)}'}, k_lauf(172), {'until': 'P.grounded', 'frames': 200}, k_lauf(190)]
+        m = hoch + [k_lauf(148, -4), {'until': f'P.y < {ky(8)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 100}] + am(158) + [{'wait': f'Q.y < {ky(8)}'}, k_lauf(172), {'until': 'P.grounded', 'frames': 200}, k_lauf(190)]
         f = [{'frames': 30}] + hoch + [{'holdIf': {'right': f'P.x < {kx(138)} - 3', 'left': f'P.x > {kx(138)} + 3'}, 'until': f'P.y < {ky(8)}', 'frames': 2000}, {'until': 'P.grounded', 'frames': 100}, k_lauf(172), {'until': 'P.grounded', 'frames': 200}, k_lauf(191)]
         r = await koop(g, m=kat(116, 15), f=kat(114, 15), plans={'m': m, 'f': f}, maxFrames=5000)
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 189, 'E1 Kammer: Lava steigt, Affe teleportiert hinaus, Hebel 2 schaltet den Teleporter des Schweins an', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
@@ -7175,6 +7175,26 @@ async def haken_richtwerte_bot(g):
         bericht.append(f"{name}: {ok}/8, {sum(zeit) / len(zeit):.1f} s, Schwung bis Reihe {min(top)}, Landung {min(land):.0f}–{max(land):.0f} Spalten hinter der Kante" if ok else f'{name}: 0/8')
         assert ok >= 4, f'{datei} {name}: nur {ok}/8 Loslass-Arten klappen'
     print('    Haken-Stellen: ' + ' | '.join(bericht))
+
+@test
+async def ziel_hinweis_pfeil(g):
+    """Bild-Regel, Teil E: schaltet ein Hebel eine Tür außerhalb des Bildes, zeigt ein Pfeil in der Farbe der Nummer
+    kurz (≈ 1 s) am Bildrand dorthin; liegt das Ziel im Bild, gibt es keinen Pfeil. Die Kamera ändert sich dabei nicht."""
+    door_far = {'x': 60 * 40, 'y': 520, 'w': 40, 'h': 160, 'link': 1}
+    door_near = {'x': 12 * 40, 'y': 520, 'w': 40, 'h': 160, 'link': 2}
+    await g.load(level([ground(0, 680, 4000)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680},
+                       switches=[{'x': 4 * 40 + 20, 'y': 680, 'link': 1}, {'x': 6 * 40 + 20, 'y': 680, 'link': 2}], doors=[door_far, door_near]))
+    await g.ev("p1.x = 6*40+20; p1.vx = 0;"); await g.steps(5)
+    cam = await g.ev("camX")
+    await g.p.keyboard.press('KeyJ'); await g.steps(3)   # Hebel 2: Tür 12 liegt im Bild
+    assert await g.ev("!!linkOn[2]") and await g.ev("zielHinweise.length") == 0, 'Pfeil, obwohl das Ziel im Bild ist'
+    await g.ev("p1.x = 4*40+20; p1.vx = 0;"); await g.steps(3)
+    await g.p.keyboard.press('KeyJ'); await g.steps(4)   # Hebel 1: Tür 60 liegt rechts außerhalb
+    assert await g.ev("!!linkOn[1]") and await g.ev("zielHinweise.length") == 1, await g.ev("JSON.stringify(zielHinweise)")
+    await g.p.wait_for_function("zielHinweisPfeile === 1", timeout=3000)
+    assert abs(await g.ev("camX") - cam) < 41, 'Kamera hat sich bewegt'
+    await g.steps(60)
+    await g.p.wait_for_function("zielHinweisPfeile === 0", timeout=3000)
 
 @test
 async def hoehle1_faehre_im_bild(g):
