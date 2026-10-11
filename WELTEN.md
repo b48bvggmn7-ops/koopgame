@@ -4,6 +4,31 @@ Pro Welt ein Eintrag: Thema, Look, Tiere, Deko, Musik/Ambiente, Mechaniken (Plan
 und Schweinchen in jeder Mechanik. Technisch steht der Look in `levels/worlds.json` (Feld `aussehen` der Welt) und in
 `js/10a-themen.js` (Farben/Ebenen); Tageszeit und Wetter wählt jedes Level selbst.
 
+## Leveldesign für alle Welten (Bild-Regel, AUSBAU-REGELWERK Punkt 12)
+- **Bild-Regel**: Hebel/Platte/Spiegel und das, was sie schalten, höchstens 20 Spalten auseinander; Fahrten und Tore
+  bringen niemanden weiter als 20 Spalten vom Partner weg. Verfolgungen (Stachelwand, Dornendecke, Fels, Lava) dürfen
+  das Ziel am Ende der Flucht öffnen – man sieht beim Ziehen, was losgeht, und läuft auf das Ziel zu.
+- **Haken** (Koop-Bot, 3 Haken über einer Dornengrube, Reichweite 4,5 Kästchen, 8 Loslass-Arten):
+
+  | Abstand | Haken 6 Reihen über dem Boden | 7 Reihen | 8 Reihen |
+  |---|---|---|---|
+  | 4 | 6/8 | 6/8 | 6/8 |
+  | 5 | 7/8 | 7/8 | 7/8 |
+  | 6 | 7/8 | 8/8 (3,9 s) | 6/8 |
+  | 7 | 4/8 | 6/8 | 5/8 |
+  | 8 | 4/8 | 3/8 | 5/8 |
+  | 9–10 | 2–3/8 | 4/8 | 2/8 |
+
+  Richtwerte daraus: Abstand 5–6 (höchstens 8), Haken 6–7 Reihen über dem Absprung, unter Schwung-Haken 3 Reihen frei,
+  hinter der Reihe mindestens 3 Stehplätze (gelandet wird 0–11 Spalten hinter dem letzten Haken). Unter 4 Spalten
+  greift der Affe oft den alten Haken wieder (das Spiel nimmt immer den nächsten in Reichweite).
+  Umgebaute Stellen (vorher -> nachher, Bot): Dschungel 1 Dornengrube 2/8 -> 4/8, Dschungel 1 Hebel-Sims 1/8 -> 7/8
+  (4,0 s, Landung 2–8 Spalten hinter der Kante), Dschungel 2 hoher Sims 3/8 -> 8/8 (3,8 s) – je 3 Haken im Abstand 7
+  statt 2 im Abstand 9.
+- **Checkpoints**: 25–70 Spalten auseinander, nach einer Leistung und vor dem nächsten schweren Stück; nie zwischen
+  einem Hebel/Spiegel und seinem Ziel (nach einem Tod ist alles wieder aus). Verfolgungen und Rätsel mit zwei
+  getrennten Wegen laufen am Stück ohne Checkpoint.
+
 ## Welt 1 – Dschungel
 
 **Thema:** Grüner, lebendiger Regenwald – der Einstieg. Hier lernen beide, dass sie nur zusammen weiterkommen.

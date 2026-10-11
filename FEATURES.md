@@ -14,6 +14,26 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (JUMP_FULL_STEPS = 10 Schritte) genau die bisherige Höchsthöhe 134 px (≈ 3,4 Kästchen) – länger halten bringt nichts
     mehr, höher als früher geht nie (es wird nur gebremst). Erneutes Drücken in der Luft ändert nichts. Wandsprung,
     Seil-Abflug, Sprungpilz, Aufwind/Schirm und Schwimmen sind ausgenommen und unverändert. Test variable_sprunghoehe.
+  - BILD-REGEL (Leveldesign, AUSBAU-REGELWERK Punkt 12): bei jedem Rätsel, jeder Schalter-Stelle und jeder Zusammenarbeit
+    können beide Figuren und alles, was sie brauchen, gleichzeitig im Bild sein. Auslöser (Hebel, Druckplatte,
+    Licht-Kristall/Spiegel) und Ziel liegen höchstens BILD_MAX_SPALTEN = 20 Spalten auseinander (js/09-kamera.js; die
+    Kamera hält beide sicher bis ≈ 23,7 Spalten im Bild). Fahrten (bewegte Plattformen, fahrende Haken, Ein-Figur-Tore,
+    Tore mit Platte/Hebel) bringen niemanden weiter als 20 Spalten vom Partner weg. Alle Level sind danach umgebaut
+    (Hebel näher an ihre Tür, kürzere Fahrten/Gruben/Tunnel, Tor-Ausgänge so, dass man nebeneinander weiterläuft).
+    - Ziel-Hinweis: schaltet ein Hebel oder eine Druckplatte etwas außerhalb des Bildes, zeigt ≈ 1 s lang ein kleiner
+      Pfeil in der Farbe der Nummer (mit Nummer) am Bildrand dorthin. Die Kamera ändert sich dabei nicht. Test
+      ziel_hinweis_pfeil.
+    - Haken-Richtwerte (Koop-Bot-Messung): Abstand in einer Hakenreihe 5–6 Spalten (4–8 erlaubt), Höhe 6–7 Reihen über
+      dem Absprung, freier Bogen, mindestens 3 Stehplätze zum Landen. Die zu weiten Reihen in Dschungel 1 und 2 haben
+      jetzt 3 Haken im Abstand 7. Test haken_richtwerte_bot (spielt 3 Hangel-Stellen, mindestens 4 von 8 Loslass-Arten).
+    - Checkpoints nur nach einer Leistung und vor dem nächsten schweren Stück: 25–70 Spalten Abstand mit einer Stelle
+      dazwischen, nie zwischen Hebel und Tür. Überzählige Checkpoints sind entfernt oder zusammengelegt (insgesamt
+      432 -> 356); die Spielstände merken sich keine Checkpoint-Nummern (Test spielstand_ohne_checkpoints).
+      Zwei Checkpoints, nach denen man bei einem Tod nicht mehr zurück zum (zurückgestellten) Spiegel gekommen wäre,
+      sind versetzt bzw. entfernt (Ruinen 4 Spalte 678, Ruinen 6 Spalte 91 -> 97).
+    - Prüfwerkzeug `python3 tests/bildregel_pruefen.py` (alle Level, Tabellen mit `--alle`); begründete Ausnahmen in
+      tests/bildregel_ausnahmen.json (dort auch alle Stellen mit „BRAUCHT ENTSCHEIDUNG“). Test bildregel_pruefung
+      schlägt bei jedem neuen Befund fehl.
   - AUFFÄLLIGE SPIELELEMENTE (Nutzerwunsch: Hebel, Sprungpilze und Druckplatten wurden übersehen, gerade wenn man
     schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; Design passend zur Spielwelt wie die Türen:
     Holz, Eisen, Edelstein in der Verknüpfungs-Farbe):

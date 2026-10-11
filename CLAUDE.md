@@ -65,6 +65,8 @@
   (`level-6.json` …) -> neue: Tabelle `js/01a-level-umzug.js` (Spiel + Editor laden sie; Spielstände werden beim Laden
   umgeschrieben). Level-Dateien NIE von Hand umbenennen.
 - `tests/koop_bot.js` – Koop-Bot für Level-Tests (steuert beide Figuren nach Plänen, Helfer `koop()` in run_tests.py; Ausbau 7).
+- `tests/bildregel_pruefen.py` – Prüfwerkzeug Bild-Regel/Plattform/Haken/Checkpoints (Grenze `BILD_MAX_SPALTEN` in js/09-kamera.js),
+  begründete Ausnahmen in `tests/bildregel_ausnahmen.json`; Ziel-Hinweis-Pfeil am Bildrand: `zielHinweisMerken` (05) / `drawZielHinweise` (07).
 - `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
   warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`
   (zählt ebenfalls Schritte) oder `wait_for_function` auf das erwartete Ereignis – sonst sind Tests auf langsamen
