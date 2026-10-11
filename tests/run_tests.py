@@ -3176,7 +3176,7 @@ async def level22_kraterherz(g):
 
 @test
 async def dschungel5_dornenpfad(g):
-    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht …); Checkpoints höchstens ~60 Spalten auseinander."""
+    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht, Zwei-Gänge-Staffel, Finale) bis zum Ziel; Checkpoints höchstens ~60 Spalten auseinander."""
     await koop_level(g, 'dschungel/05-dornenpfad.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3338,6 +3338,38 @@ async def dschungel5_dornenpfad(g):
             f = [{'frames': delay}, k_lauf(526, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
             r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans={'m': m, 'f': f}, maxFrames=4000)
             soll(r.get('done') and r['pos']['m'][0] >= 596 and r['pos']['f'][0] >= 596, f'E3 Pilz-Flucht (Schwein {delay} Schritte später unten)', info(r))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        m = [k_lauf(606, 0), {'until': f'P.x > {kx(613)}', 'frames': 200}] + am(617) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}, k_lauf(632, -10)] + sprung_zu(kx(635)) + sprung_zu(kx(639)) + sprung_zu(kx(641)) + am(642) + \
+            [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(657, -10)] + sprung_zu(kx(661)) + sprung_zu(kx(665)) + [k_lauf(667)]
+        f = [k_lauf(609, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(610, 611, 3) + [{'hold': ['right'], 'until': f'P.x >= {kx(614)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 300},
+             {'wait': '!!linkOn[10]', 'frames': 3000}, {'frames': 20}] + glide_to(620, kx(629)) + am(629) + [{'wait': '!!linkOn[12]', 'frames': 3000}, {'frames': 20}] + glide_to(645, kx(654)) + am(654) + [k_lauf(666)]
+        r = await koop(g, m=kat(604, 15), f=kat(602, 15), plans={'m': m, 'f': f}, maxFrames=8000)
+        soll(r.get('done') and r['pos']['m'][0] >= 665 and r['pos']['f'][0] >= 665, 'E4 Zwei-Gänge-Staffel (beide zusammen)', info(r))
+        r = await koop(g, f=kat(603, 15), m=kat(601, 15), plans={'f': [k_lauf(616)]}, maxFrames=800)
+        soll(r['pos']['f'][0] < 612, 'E4 Schwein kommt nicht in den unteren Gang', info(r))
+        r = await koop(g, m=kat(603, 15), f=kat(601, 15), plans={'m': [k_lauf(609, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'frames': 200}]}, maxFrames=800)
+        soll(r['pos']['m'][1] > 10, 'E4 Affe kommt nicht in den oberen Gang', info(r))
+        r = await koop(g, m=kat(616, 15), f=kat(616, 7), plans={'m': [{'hold': ['right'], 'frames': 300}]}, links=[10], maxFrames=1000)
+        soll(r['pos']['m'][0] < 631, 'E4 ohne Hebel 11 hält Tür 11', info(r))
+        r = await koop(g, f=kat(615, 7), m=kat(616, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['f'][0] < 619, 'E4 ohne Hebel 10 hält Tür 10', info(r))
+        # Finale
+        def lauf(bis, kanten):
+            cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+            return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+        flucht = lambda w: [lauf(700, [688])] + [{'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(703)} - 6', 'left': f'P.x > {kx(703)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+             {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, lauf(773, [724, 734])]
+        for delay in (0, 20):
+            m = [k_lauf(680, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(682, -4), {'wait': '!!linkOn[14]'}] + flucht('f')
+            r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 772 and r['pos']['f'][0] >= 772, f'E4 Finale: schnellste Stachelwand (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': [k_lauf(680, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E4 1 s gezögert: die schnellste Wand holt den Affen ein', info(r))
+        r = await koop(g, m=kat(774, 15), f=kat(772, 15), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
+        soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
     assert not fehler, fehler
 
 @test

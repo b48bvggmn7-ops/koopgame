@@ -40,7 +40,23 @@ Wechselboden und Teleporter (die letzten beiden nur sanft, als erste Begegnung).
 | 2 | Baumkronen (vorhanden) | abend / wechselnd | Kombi-Level | fahrende Plattformen, Fahrstuhl anhalten, Stachelwand-Jagd, Pressen | 1–2 / 3 |
 | 3 | **Lianenschlucht** (neu, level-7) | mittag / regen | Lehr- und Kombi-Level | Seil-Rätsel (ranziehen, runterlassen, Schwung), Segel-Rätsel, einseitige Stege, Sprungpilz | 2 / 3 |
 | 4 | **Glühwald** (neu, level-8) | nacht / trocken | Meister-Level | Wechselboden (Hebel, Druckplatte, Takt) und Teleporter, sanft eingeführt, dann mit Seil und Segeln kombiniert | 2–3 / 4 |
+| 5 | **Dornenpfad** (neu, dschungel/05-dornenpfad) | abend / regen | Meister-Level | Dornen überall: Bröckel-Steine zu zweit, Stachelwand-Jagden, sinkende Dornendecke (flach springen!), Stachel-Pendel, Takt 1,2 s, Hebel über Kreuz | 3 / 5 |
+| 6 | **Wipfelsturm** (neu, dschungel/06-wipfelsturm) | nacht / wechselnd | Meister-Level (schwerstes) | alles kombiniert: Wechselboden + Teleporter + Seil + Segeln + Jagden, lange Stellen am Stück | 3–4 / 6 |
 | Boss | Bruno, der Kokos-Gorilla (vorhanden) | abend / trocken | Boss | Helm-Trick nur zusammen | 5–10 |
+
+**Dornenpfad (dschungel/05-dornenpfad.json, 800 Spalten, 4 Etappen, wie gebaut):**
+1. Etappe 1 (0–200): Bröckel-Steine über Dornen (beide dicht hintereinander – wer trödelt, findet keine Steine mehr);
+   Dornenfeld: Affe an vier Haken, Schweinchen per Pilz + Aufwind; Hebel über Kreuz (Hebel 1 nur per Aufwind,
+   Hebel 2 nur per Haken); Stachelwand-Jagd über Bröckel-Steine (die Wand steckt im Absatz, von dem man hinunterspringt).
+2. Etappe 2 (200–400): Inseln im Wechsel (vier Plattformen, zwei steigen, zwei sinken); Seilbahn + Fähre (Schweinchen
+   lässt den Haken mit dem Affen fahren, der Affe holt mit Hebel 5 die Fähre); hoher Kamin (13 Kästchen Wandsprung);
+   Dornendecke: Hebel 6 öffnet die Tür am Tunnelende UND lässt die Stacheldecke sinken – nur flach springen.
+3. Etappe 3 (400–600): Takt-Steine 1,2 s über Dornen; Stachel-Pendel (vier Stachelblöcke im eigenen Takt);
+   Druckplatten-Schleuse (Schweinchen hält Platte 7, Affe über zwei Haken zu Hebel 8, der den Deckel über dem
+   Aufwind-Schacht öffnet); Pilz-Flucht vor der schnellen Stachelwand.
+4. Etappe 4 (600–800): Zwei-Gänge-Staffel (Affe nur durchs blaue Tor in den unteren Gang, Schweinchen nur per Aufwind
+   in den oberen; Hebel 10–13 öffnen jeweils die Tür des anderen); Finale: schnellste Stachelwand (5,2) – Grube, Pilz
+   über die breite Grube, unter der Dornendecke flach landen, Ziel.
 
 **Lianenschlucht (levels/level-7.json, ca. 800 Spalten, 4 Etappen, wie gebaut):**
 1. Etappe 1 (Spalten 0–200), Lehr-Teil:
