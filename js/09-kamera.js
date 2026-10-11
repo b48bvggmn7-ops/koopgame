@@ -19,6 +19,12 @@ const VW = W / zoom;   // sichtbare Weltbreite   // (CAM_LEFT war 150 -> zu eng)
 // CAM_BACK_MIN und CAM_BACK_PUSH px vom linken Rand steht, bleibt das Bild stehen (Zappeln, Springen,
 // Schaukeln am Seil bewegen nichts). Erst darüber schiebt sie das Bild nach vorn, darunter zieht sie es zurück.
 const CAM_BACK_MIN = 180, CAM_BACK_PUSH = 420;
+// Bild-Regel (Leveldesign, AUSBAU-REGELWERK Punkt 12): Beide Figuren sind GARANTIERT gut im Bild, solange sie höchstens
+// FRONT_MAX·VW − CAM_BACK_MIN = 0,75·1505,9 − 180 ≈ 949 px ≈ 23,7 Spalten auseinander sind (die hintere bleibt dann
+// mindestens CAM_BACK_MIN vom linken Rand, die vordere höchstens bei 75 %). Mit Sicherheitsrand gilt für alles, was zu
+// einer Zusammenarbeit gehört (Hebel/Platte, ihr Ziel, Plattform-Strecken, Partner-Ort): höchstens so viele Spalten.
+// Die Höhe ist immer ganz im Bild (die Kamera scrollt nur waagerecht). Geprüft von tests/bildregel_pruefen.py.
+const BILD_MAX_SPALTEN = 20;
 const CAM_FOLLOW = 0.08;   // wie schnell die Kamera ihrem Ziel folgt (pro Rechenschritt; vorher 0,12)
 // Kamera-Ziel: so wenig wie möglich bewegen, aber beide Figuren gut im Bild halten
 // Feste Kamera (Ausbau 6): Spielszenen und Boss-Arenen setzen hier die linke Bildkante (null = normale Kamera)
