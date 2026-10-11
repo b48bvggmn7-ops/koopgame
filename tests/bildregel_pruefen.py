@@ -182,6 +182,15 @@ def plattform_pruefen(d):
     paare = {}
     for t in d.get('teleporters', []): paare.setdefault(t['paar'], []).append(t)
     for p, ts in paare.items():
+        # Tor mit Nummer (Platte/Hebel hält es offen): wer durch ist, steht so weit vom Partner am Auslöser weg
+        if len(ts) == 2 and ts[0].get('fuer', 'beide') == 'beide' and ts[0].get('link'):
+            n = ts[0]['link']; sx, ex = spalte(ts[0]['x']), spalte(ts[1]['x'])
+            tr = [x[2] for x in trig if x[1] == n]
+            if tr:
+                weit = min(max(abs(a - sx), abs(a - ex)) for a in tr)
+                out.append({'art': 'Tor (mit Auslöser)', 'nummer': p, 'von': sx, 'bis': ex, 'reihe': reihe(ts[1]['y']), 'strecke': abs(ex - sx), 'abstand': weit})
+                if weit > BILD_MAX_SPALTEN:
+                    verst.append({'regel': 'Plattform', 'nummer': p, 'spalte': sx, 'text': f"Tor {p} ({sx}↔{ex}) mit Nummer {n}: bis {weit} Spalten vom Partner am Auslöser"})
         if len(ts) == 2 and ts[0].get('fuer', 'beide') != 'beide':
             sx, ex = spalte(ts[0]['x']), spalte(ts[1]['x'])
             strecke = abs(ex - sx)
@@ -219,9 +228,13 @@ def haken_pruefen(d):
     for rh in reihen:
         c0, r0 = rh[0][0], rh[0][1]
         # Absprung: der höchste Stehplatz links vor dem ersten Haken (bis 8 Spalten davor, unterhalb des Hakens)
-        kand = [(steh_reihe(steh, c, r0), -c) for c in range(c0 - 8, c0)]
-        kand = [(sr, -c) for sr, c in kand if sr is not None]
-        abspr = min(kand) if kand else None
+        kand = [(steh_reihe(steh, c, r0), -c) for c in range(c0 - 8, c0)]   # -c: bei gleicher Höhe der nächste
+        kand = [(sr, nc) for sr, nc in kand if sr is not None]
+        # Ausgang eines Teleporters (z. B. „Luft-Tor“) ist auch ein Absprung
+        tore = [(reihe(t['y'] - 1) + 1, -spalte(t['x'])) for t in d.get('teleporters', []) if c0 - 8 <= spalte(t['x']) < c0 and reihe(t['y'] - 1) + 1 > r0]
+        abspr = min(kand + tore) if kand + tore else None
+        if abspr in tore: abspr = None   # Start im Flug aus dem Tor: Höhe hier nicht sinnvoll
+        if abspr: abspr = (abspr[0], -abspr[1])
         hoehe = (abspr[0] - r0) if abspr else None
         abst = [b[0] - a[0] for a, b in zip(rh, rh[1:])]
         z = {'von': c0, 'bis': rh[-1][0], 'anzahl': len(rh), 'reihe': r0, 'abstaende': abst, 'hoehe': hoehe, 'warnungen': []}

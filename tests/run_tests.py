@@ -1033,10 +1033,16 @@ async def level8_gluehwald(g):
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 14 and await g.ev("!!linkOn[4]"), 'Tür 3 offen, blaues Tor -> Hebel 4 (Affe)', r.get('pos'))
     r = await koop(g, f=kat(214, 14), m=kat(230, 14), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
     soll(r['pos']['f'][0] < 220, 'Tür 4 hält das Schweinchen ohne Hebel 4', r.get('pos'))
-    m = [k_lauf(241, -14), {'frames': 20}, {'wait': f'Q.x >= {kx(279)} - 20'}, k_lauf(245)]
-    f = [{'wait': '!!linkOn[5]'}, k_lauf(244), {'wait': f'P.x >= {kx(270)}'}, k_lauf(279, -14), {'frames': 10}, {'wait': f'Q.x >= {kx(270)}'}]
+    # Bild-Regel: Schleuse enger (Grube 247–261, Platten innen an den Kanten 246/262, Tore dahinter 243/265)
+    m = [k_lauf(246, -14), {'frames': 20}, {'wait': f'Q.x >= {kx(258)} && Q.x <= {kx(262)} + 14 && Q.grounded'},
+         {'hold': ['left'], 'until': f'P.x >= {kx(262)}', 'frames': 300}]
+    f = [{'wait': '!!linkOn[5]'}, k_lauf(244), {'wait': f'P.x >= {kx(262)}'}, {'frames': 20},
+         {'hold': ['left'], 'until': f'P.x <= {kx(262)} + 10', 'frames': 200}, {'frames': 10}, {'wait': f'Q.x >= {kx(262)}'}]
     r = await koop(g, m=kat(238, 14), f=kat(236, 14), plans={'m': m, 'f': f}, maxFrames=3000)
-    soll(r.get('done') and r['pos']['m'][0] >= 270 and r['pos']['f'][0] >= 270, 'Teleporter-Schleuse (Platten 5)', r.get('pos'))
+    soll(r.get('done') and r['pos']['m'][0] >= 260 and r['pos']['f'][0] >= 260, 'Teleporter-Schleuse (Platten 5)', r.get('pos'))
+    for hold in (6, 10, 14, 18):
+        r = await koop(g, f=kat(238, 14), m=kat(236, 14), plans={'f': k_segeln(246, hold)}, maxFrames=1500)
+        soll(not (k_pos(r, 'f') and k_pos(r, 'f')[0] >= 262), f'Grube der Schleuse ist ohne Tor zu breit (Schweinchen segelt, {hold})', r.get('pos'))
     if await g.ev("goal.x") < 470 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
     ok = False
