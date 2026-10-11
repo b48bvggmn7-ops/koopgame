@@ -1996,14 +1996,15 @@ async def level14_leuchtgrotte(g):
             pl = [k_lauf(227, 0)] + sprung_zu(kx(229)) + sprung_zu(kx(234)) + [{'hold': ['right'], 'until': f'P.x >= {kx(240)}', 'frames': 300}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(246)]
             r = await koop(g, **{who: kat(214, 15), o: kat(212, 15)}, plans={who: pl, o: [{'frames': 30}] + pl}, maxFrames=3000)
             soll(r.get('done') and r['pos'][who][0] >= 245, f'E2 Scheinwände, Stege hinauf, Fenster ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
-        r = await koop(g, m=kat(252, 15), f=kat(250, 15), plans={'m': [{'frames': 30}, k_lauf(258)] + [k_lauf(293, -10)] + am(295), 'f': [k_lauf(254), {'wait': '!!linkOn[4]'}, k_lauf(261), {'frames': 10}, k_lauf(295)]}, maxFrames=3000)
-        soll(r.get('done') and r['pos']['m'][0] > 289 and r['pos']['f'][0] > 289, 'E2 Affe durchs blaue Tor, Hebel 4, Schwein durchs pinke', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        # Bild-Regel: Fels 262–272 statt 262–286, Ausgänge 276/279, Hebel 4 bei 277
+        r = await koop(g, m=kat(252, 15), f=kat(250, 15), plans={'m': [{'frames': 30}, k_lauf(258), {'wait': f'P.x > {kx(270)}'}] + am(277), 'f': [k_lauf(254), {'wait': '!!linkOn[4]'}, k_lauf(261), {'frames': 10}, k_lauf(295)]}, maxFrames=3000)
+        soll(r.get('done') and r['pos']['m'][0] > 275 and r['pos']['f'][0] > 289, 'E2 Affe durchs blaue Tor, Hebel 4, Schwein durchs pinke', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         r = await koop(g, m=kat(250, 15), f=kat(252, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=400)
         soll(r['pos']['f'][0] < 262, 'E2 ohne Hebel 4 kein Schwein durch', r.get('pos'))
         ok = None
         for hold in (4, 8, 12):
             f = am(304) + glide_to(309, kx(324), hold) + am(328)
-            r = await koop(g, f=kat(300, 15), m=kat(297, 15), plans={'f': f, 'm': [{'wait': '!!linkOn[5]'}, k_lauf(301), {'frames': 10}, k_lauf(337)]}, maxFrames=3000)
+            r = await koop(g, f=kat(300, 15), m=kat(297, 15), plans={'f': f, 'm': [{'wait': '!!linkOn[5]'}, k_lauf(307), {'frames': 10}, k_lauf(337)]}, maxFrames=3000)   # weißes Tor bei 308 (Bild-Regel)
             if r.get('done') and r['pos']['m'][0] >= 336: ok = hold; break
         soll(ok, 'E2 Schwein segelt über die Schlucht, Hebel 5, Affe durchs weiße Tor', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         r = await koop(g, m=kat(301, 15), f=kat(298, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded && P.x > ' + str(kx(308))}, 'frames': 400}]}, maxFrames=500)
@@ -2362,12 +2363,13 @@ async def level16_tiefenschlund(g):
             pl = [k_lauf(411), {'hold': ['right'], 'until': f'P.x > {kx(432)}', 'frames': 600}, {'until': 'P.grounded', 'frames': 100}, k_lauf(446), {'until': 'P.grounded', 'frames': 100}, k_lauf(450)]
             r = await koop(g, **{who: kat(405, 15), o: kat(403, 15)}, plans={who: pl, o: [{'frames': 200}] + pl}, maxFrames=4000)
             soll(r.get('done') and r['pos'][who][0] >= 449, f'E3 Band ins Tor hinter die Felswand ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
-        m = [k_lauf(452), {'hold': ['right'], 'until': f'P.x > {kx(480)}', 'frames': 300}, k_lauf(496, -10)] + am(498) + [{'wait': f'Q.x >= {kx(493)}'}, k_lauf(502)]
-        f = [k_lauf(457, -10), {'wait': '!!linkOn[6]'}, {'hold': ['right'], 'until': f'P.x >= {kx(493)}', 'frames': 600}, k_lauf(500)]
+        # Bild-Regel: Tunnel 460–475 statt 460–490, blaues Tor 457 -> 477, Hebel 6 bei 479
+        m = [k_lauf(452), {'hold': ['right'], 'until': f'P.x > {kx(470)}', 'frames': 300}] + am(479) + [{'wait': f'Q.x >= {kx(476)}'}, k_lauf(502)]
+        f = [k_lauf(457, -10), {'wait': '!!linkOn[6]'}, {'hold': ['right'], 'until': f'P.x >= {kx(476)}', 'frames': 600}, k_lauf(500)]
         r = await koop(g, m=kat(450, 15), f=kat(457, 15), plans={'m': [{'frames': 30}] + m, 'f': f}, maxFrames=4000)
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 499, 'E3 Band-Weiche: Affe durchs Tor, Hebel 6, Schwein fährt durch', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         r = await koop(g, f=kat(456, 15), m=kat(450, 15), plans={'f': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 500}]}, maxFrames=600)
-        soll(r['pos']['f'][0] < 491, 'E3 ohne Hebel 6 kein Schwein durch den Gang', r.get('pos'))
+        soll(r['pos']['f'][0] < 476, 'E3 ohne Hebel 6 kein Schwein durch den Gang', r.get('pos'))
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
             ok = []
@@ -2481,7 +2483,9 @@ async def level17_glutpfad(g):
         stufen = lambda: sprung_zu(kx(208)) + sprung_zu(kx(214)) + sprung_zu(kx(220)) + sprung_zu(kx(226)) + sprung_zu(kx(232)) + [k_lauf(245), {'until': 'P.grounded', 'frames': 200}, k_lauf(249)]
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            r = await koop(g, **{who: kat(202, 15), o: kat(200, 15)}, plans={who: am(204) + [k_lauf(205, -10)] + stufen(), o: [{'wait': '!!linkOn[1]'}, {'frames': 40}, k_lauf(205, -10)] + stufen()}, maxFrames=4000)
+            # Bild-Regel: Hebel 1 steht jetzt auf dem ersten Steg (210), 20 Spalten unter der Tür
+            zieht = [k_lauf(205, -10)] + sprung_zu(kx(209)) + am(210) + stufen()[2:]
+            r = await koop(g, **{who: kat(202, 15), o: kat(200, 15)}, plans={who: zieht, o: [{'wait': '!!linkOn[1]'}, {'frames': 40}, k_lauf(205, -10)] + stufen()}, maxFrames=4000)
             soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 247, f'E2 Lava-Raum: Hebel 1, Stege hinauf vor der Lava ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         r = await koop(g, m=kat(202, 15), f=kat(200, 15), plans={'m': [k_lauf(205, -10)] + stufen()}, maxFrames=1500)
         soll(not r.get('done') or r['pos']['m'][0] < 231, 'E2 Tür 1 zu ohne Hebel', r.get('pos'))
@@ -2515,7 +2519,8 @@ async def level17_glutpfad(g):
         hoch = lambda: sprung_zu(kx(501)) + sprung_zu(kx(507)) + [{'aim': [kx(511), kx(517)], 'jumps': [kx(506)], 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 600}] + sprung_zu(kx(524)) + [k_lauf(534), {'until': 'P.grounded', 'frames': 200}, k_lauf(539)]
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: am(494) + [k_lauf(497, 0)] + hoch(), o: [{'wait': '!!linkOn[4]'}, {'frames': 40}, k_lauf(497, 0)] + hoch()}, maxFrames=4000)
+            zieht = [k_lauf(497, 0)] + sprung_zu(kx(501)) + am(502) + [{'holdIf': {'left': f'P.x > {kx(501)}'}, 'frames': 20}] + hoch()[2:]   # Bild-Regel: Hebel 4 auf dem ersten Steg (502)
+            r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: zieht, o: [{'wait': '!!linkOn[4]'}, {'frames': 40}, k_lauf(497, 0)] + hoch()}, maxFrames=4000)
             soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 537, f'E3 Lava-Raum 2: Hebel 4, Stege und Pilz hinauf ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---

@@ -282,6 +282,125 @@
    "spalte": 681,
    "nummer": 14,
    "begruendung": "664 nach der Doppel-Rutsche, 681 vor dem Aufwind-Kamin; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/04-leuchtgrotte.json",
+   "regel": "Checkpoint",
+   "spalte": 600,
+   "nummer": 12,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/06-tiefenschlund.json",
+   "regel": "Checkpoint",
+   "spalte": 204,
+   "nummer": 5,
+   "begruendung": "184 nach dem Platten-Tunnel, 204 vor dem nächsten Rätsel; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/06-tiefenschlund.json",
+   "regel": "Checkpoint",
+   "spalte": 530,
+   "nummer": 12,
+   "begruendung": "Etappen-Übergang (Laufstrecke); ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/06-tiefenschlund.json",
+   "regel": "Checkpoint",
+   "spalte": 603,
+   "nummer": 14,
+   "begruendung": "590 nach dem Rätsel, 603 vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/05-foerderwerk.json",
+   "regel": "Checkpoint",
+   "spalte": 402,
+   "nummer": 8,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/05-foerderwerk.json",
+   "regel": "Checkpoint",
+   "spalte": 600,
+   "nummer": 12,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "vulkan/01-glutpfad.json",
+   "regel": "Checkpoint",
+   "spalte": 203,
+   "nummer": 5,
+   "begruendung": "Etappen-Übergang direkt vor dem Lava-Raum (Hebel 1, steigende Lava); ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "vulkan/01-glutpfad.json",
+   "regel": "Checkpoint",
+   "spalte": 591,
+   "nummer": 13,
+   "begruendung": "zusammengelegt aus 590/603: Etappen-Übergang vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "vulkan/01-glutpfad.json",
+   "regel": "Checkpoint",
+   "spalte": 720,
+   "nummer": 16,
+   "begruendung": "vor dem Finale nach Laufstrecke; ohne ihn wäre das Schlussstück > 60"
+  },
+  {
+   "level": "vulkan/02-aschefeld.json",
+   "regel": "Bild",
+   "spalte": 476,
+   "nummer": 7,
+   "begruendung": "Takt-Brücke: Hebel 7 schaltet die Pressen AN und öffnet das Tor am Ende (513) – die ersten Pressen sieht man sofort, das Tor ist das Ziel der Überquerung (wie eine Verfolgung)"
+  },
+  {
+   "level": "vulkan/02-aschefeld.json",
+   "regel": "Bild",
+   "spalte": 675,
+   "nummer": 8,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG: Pressen-Doppelgang – Platte 675 (unten) hält die oberen Pressen 680–700 an, Platte 708 (oben) die unteren; die fernste Presse ist 25–28 Spalten weg. Vorschlag: je Gang nur zwei Pressen (680/690) und die obere Platte nach 698 (macht es leichter)"
+  },
+  {
+   "level": "vulkan/02-aschefeld.json",
+   "regel": "Bild",
+   "spalte": 708,
+   "nummer": 9,
+   "begruendung": "BRAUCHT ENTSCHEIDUNG: wie Spalte 675 (Gegenstück)"
+  },
+  {
+   "level": "vulkan/02-aschefeld.json",
+   "regel": "Checkpoint",
+   "spalte": 76,
+   "nummer": 2,
+   "begruendung": "54 nach dem Einstieg, 76 direkt vor der ersten Lava-Stelle; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "vulkan/02-aschefeld.json",
+   "regel": "Checkpoint",
+   "spalte": 385,
+   "nummer": 8,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "vulkan/02-aschefeld.json",
+   "regel": "Checkpoint",
+   "spalte": 603,
+   "nummer": 13,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "vulkan/03-feuerberg.json",
+   "regel": "Bild",
+   "spalte": 70,
+   "nummer": 2,
+   "begruendung": "Verfolgung: Hebel 2 startet die Stachelwand (direkt daneben sichtbar), die Tür am Ende der Flucht (138) öffnet zugleich"
+  },
+  {
+   "level": "vulkan/03-feuerberg.json",
+   "regel": "Checkpoint",
+   "spalte": 142,
+   "nummer": 2,
+   "begruendung": "Stachelwand-Verfolgung 70–133 läuft am Stück – mitten in der Flucht kein Checkpoint"
   }
  ]
 }
