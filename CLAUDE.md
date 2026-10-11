@@ -9,10 +9,13 @@
 
 ## Arbeitsregeln (wichtig!)
 0. **Ausbau-Schritte:** Vor jedem Ausbau-Schritt `AUSBAU-REGELWERK.md` und `AUSBAU-VISION.md` lesen und befolgen.
-1. **Vor und nach jeder Änderung die Tests laufen lassen:** `python tests/run_tests.py`
-   (einmalig vorher: `pip install playwright && playwright install chromium`).
-   Nur committen, wenn alle Tests grün sind. Für jede neue Funktion und jeden behobenen Fehler einen Test
-   in `tests/run_tests.py` ergänzen.
+1. **Tests in zwei Stufen** (Nutzerwunsch: nicht nach jeder Kleinigkeit den vollen Lauf von ~45 Minuten):
+   - **Kurztest nach jeder Anpassung** (wenige Minuten): nur die Tests, die zur Änderung passen, plus der neue Test,
+     z. B. `python tests/run_tests.py editor` (Filter = Teil des Testnamens). Grün -> lokal committen, noch NICHT pushen.
+   - **Großer Lauf** `python tests/run_tests.py` (einmalig vorher: `pip install playwright && playwright install chromium`):
+     wenn der Nutzer „jetzt testen und hochladen“ sagt, nach etwa 3–5 gesammelten Anpassungen und immer am Ende eines
+     Ausbau-Schritts. Ist er rot: die schuldige Änderung finden und beheben, bevor etwas nach `main` geht.
+   Für jede neue Funktion und jeden behobenen Fehler einen Test in `tests/run_tests.py` ergänzen.
 2. **Nur das ändern, was der Nutzer verlangt.** Kein „Aufräumen nebenbei“, keine stillen Verhaltensänderungen.
    Wenn eine Anfrage mehrdeutig ist oder eine bestehende Funktion beeinflusst, kurz nachfragen.
 3. **FEATURES.md pflegen:** Jede Verhaltensänderung dort eintragen. Nichts entfernen, ohne den Nutzer zu fragen.
@@ -20,8 +23,8 @@
 5. Wenn der Nutzer mit etwas unzufrieden ist: lieber auf den letzten guten Stand zurück (git) als lange herumprobieren.
 6. **Vor dem Arbeiten `main` holen** (`git fetch origin main` + auf den neuesten Stand bringen): Der Nutzer speichert
    Levels auch direkt aus dem Editor auf GitHub („☁ Auf GitHub speichern“ = eigene Commits auf `main`).
-7. **Direkt in `main` übernehmen:** Sind alle Tests grün, die Änderung immer sofort committen und nach `main` pushen
-   (vom Nutzer ausdrücklich so gewünscht), damit sie automatisch online geht. Bei roten Tests nichts nach `main`.
+7. **Nach `main` übernehmen:** Nach jedem grünen großen Lauf alle gesammelten Commits nach `main` pushen (vom Nutzer
+   ausdrücklich so gewünscht), damit sie automatisch online gehen. Bei roten Tests nichts nach `main`.
 
 ## Aufbau
 - `index.html` – Spielseite (HTML/CSS) und lädt die Skripte in `js/` **in fester Reihenfolge**.
