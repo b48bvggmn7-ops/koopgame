@@ -2849,7 +2849,7 @@ async def level20_schlackewerk(g):
 
 @test
 async def level21_feuerschlund(g):
-    """Ausbau 7, Vulkan Level 6 „Feuerschlund“ (levels/level-21.json, nachts, trocken): Kombi-/Meister-Level dunkle Lavagänge mit Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht. Koop-Bot spielt jede Etappe: Kristall + Lava-Gruben, Affe zum Kristall / Schwein segelt / Tür 1, Teleporter-Kammer mit steigender Lava, Wechselboden im Takt, zwei Brücken mit Druckplatten, der Schlund, Licht halten + Pilze + Teleporter, zweite Teleporter-Kammer, Klappen im Lavagang."""
+    """Ausbau 7, Vulkan Level 6 „Feuerschlund“ (levels/level-21.json, nachts, trocken): Kombi-/Meister-Level dunkle Lavagänge mit Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht. Koop-Bot spielt jede Etappe: Kristall + Lava-Gruben, Affe zum Kristall / Schwein segelt / Tür 1, Teleporter-Kammer mit steigender Lava, Wechselboden im Takt, zwei Brücken mit Druckplatten, der Schlund, Licht halten + Pilze + Teleporter, zweite Teleporter-Kammer, Klappen im Lavagang, Doppel-Flucht mit zwei Lavaständen, schnelle Takt-Klappen, Finale."""
     await koop_level(g, 'level-21.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2976,6 +2976,31 @@ async def level21_feuerschlund(g):
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 555, 'E3 Klappen im Lavagang: das Schwein schaltet Hebel 9, während der Affe springt', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         r = await koop(g, m=kat(510, 15), f=kat(501, 15), plans={'m': [k_lauf(530)]}, maxFrames=600)
         soll(r.get('dead') == 'm', 'E3 ohne Umschalten fällt der Affe in die Lava', r.get('pos'))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
+        runter = [k_lauf(641), {'until': 'P.grounded', 'frames': 100}, k_lauf(646), {'until': 'P.grounded', 'frames': 100}, k_lauf(651), {'until': 'P.grounded', 'frames': 100}, k_lauf(656), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
+        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},
+             {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(613)}', 'frames': 900}, k_lauf(625, -10)] + am(626) + \
+            [{'wait': f'Q.grounded && Q.x >= {kx(622)} && Q.y <= {ky(0)} + 2'}] + runter
+        f = [{'frames': 40}, k_lauf(609, 0)] + sprung_zu(kx(613)) + [k_lauf(615, 0), halten(617), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(620)} - 4', 'left': f'P.x > {kx(620)} + 4'}, 'until': 'P.grounded', 'frames': 300},
+             hp(620, f'Q.y < {ky(6)}'), {'wait': '!!linkOn[11]'},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(-1)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(628)} - 6', 'left': f'P.x > {kx(628)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + runter
+        r = await koop(g, m=kat(606, 15), f=kat(608, 15), plans={'m': m, 'f': f}, maxFrames=9000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 663, 'E4 Doppel-Schacht: Platte 10 öffnet den Kamin, Hebel 11 die Klappe über dem Aufwind', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(612, 13), f=kat(616, 13), plans={'m': [{'frames': 2600}]}, maxFrames=2700)
+        soll(r.get('dead'), 'E4 die Lava steigt in beiden Schächten', r.get('pos'))
+        def takt(w):
+            m = [k_lauf(666, 0), {'wait': 'Math.floor(wechselSchritte/90) % 2 === 0 && wechselSchritte % 90 < 20'}] + sprung_zu(kx(672))
+            for c in range(676, 704, 6): m += [{'wait': 'wechselSchritte % 90 >= 72'}] + sprung_zu(kx(c + 2))
+            return m + sprung_zu(kx(708)) + [k_lauf(714)]
+        await beide('E4 Klappen im Takt über dem Glutsee (1,5 s)', 665, takt, 713, delay=180)
+        pl = lambda w: [k_lauf(736, 0)] + sprung_zu(kx(741)) + [{'aim': [kx(750), kx(754)], 'jumps': [kx(747)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(758)) + sprung_zu(kx(765)) + [k_lauf(792)]
+        await beide('E4 Finale: der Schlund läuft voll – Pilz, Stege hinauf', 718, pl, 790, delay=60)
     assert not fehler, fehler
 
 @test

@@ -1191,7 +1191,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       darüber an, die der Affe abpassen muss); Finale „das Werk läuft voll“ (sobald beide im Kessel sind, steigt die Lava
       schnell: Band zum Pilz, Pilz auf den Steg, über zwei Stege hinauf auf die Rampe zum Ziel).
   - Level 21 „Feuerschlund“ (levels/level-21.json, Vulkan Level 6 der Welt, nachts, trocken, 800 Spalten):
-    IN ARBEIT, bis der Vulkan fertig ist in levels.json versteckt. Kombi-/Meister-Level: dunkle Lavagänge mit
+    bis der Vulkan fertig ist in levels.json versteckt. Kombi-/Meister-Level: dunkle Lavagänge mit
     Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht.
     - Etappe 1 (Spalten 0–200): dunkler Lavagang (Kristall anschlagen, im Licht über drei Lava-Gruben); oben schlägt an,
       unten läuft (der Affe schwingt zum Kristall auf dem Sims, das Schweinchen segelt im Licht über die Lava-Gruben und
@@ -1207,6 +1207,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Schweinchen nach); zweite Teleporter-Kammer (die Lava steigt; der Affe hält Platte 7 = Teleporter des Schweinchens
       an, draußen hält das Schweinchen Platte 8 = Teleporter des Affen an); Klappen im Lavagang (das Schweinchen steigt
       im Aufwind auf den Sims und schaltet Hebel 9 genau dann um, wenn der Affe von Klappe zu Klappe springt).
+    - Etappe 4 (Spalten 600–800): Doppel-Flucht – zwei Schächte, zwei Lavastände (Kamin für den Affen, Aufwind-Schacht
+      für das Schweinchen, jeder mit eigener Lava, im Aufwind-Schacht steigt sie schneller; das Schweinchen hält Platte 10
+      = Klappe im Kamin offen, der Affe zieht oben Hebel 11 = Klappe über dem Aufwind auf); Klappen im Takt über dem
+      Glutsee (alle 1,5 Sekunden); Finale „der Schlund läuft voll“ (Pilz auf den Steg, über zwei Stege hinauf zum Ziel,
+      die Lava steigt schnell).
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
