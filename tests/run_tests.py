@@ -4728,7 +4728,8 @@ async def editor_rundreise_alle_level(g):
             assert not diff, f"{L['datei']}: Export weicht ab bei {diff}"
             welt = next(w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten'] if L['datei'] in w['level'])
             if erwartet.get('welt'):   # neue Level (Ausbau 7): Welt/Tageszeit/Wetter aus der Datei
-                assert [out.get(k) for k in ('welt', 'tageszeit', 'wetter')] == [erwartet.get(k) for k in ('welt', 'tageszeit', 'wetter')] and out.get('welt') == welt and not out.get('look'), \
+                # alle vier Angaben wie in der Datei (auch ein Look, z. B. Level 1 nach dem Speichern aus dem Editor)
+                assert [out.get(k) for k in META] == [erwartet.get(k) for k in META] and out.get('welt') == welt, \
                     f"{L['datei']}: Level-Info falsch: {[out.get(k) for k in META]}"
                 continue
             assert out.get('look') == erwartet.get('theme') and out.get('welt') == welt and out.get('wetter') == 'wechselnd' and 'tageszeit' not in out, \
