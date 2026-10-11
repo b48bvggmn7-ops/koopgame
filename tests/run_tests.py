@@ -5470,7 +5470,8 @@ async def weltkarte_und_navigation(g):
         isl = await wk_inseln(g)
         assert [i['name'] for i in isl] == ['Dschungel', 'Ruinen', 'Höhle', 'Wasser', 'Vulkan'], isl
         assert [i['lock'] for i in isl] == [False, True, True, True, True] and isl[3]['soon'] and isl[3]['info'] == 'Bald', isl
-        assert isl[0]['info'] == '0 / 4 Level' and isl[0]['sel'] and isl[0]['boss'], isl   # Ausbau 7: 4 Dschungel-Level
+        nl = {w['id']: len(w['level']) for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']}   # 6er-Welten: Anzahl aus worlds.json
+        assert isl[0]['info'] == f"0 / {nl['dschungel']} Level" and isl[0]['sel'] and isl[0]['boss'], isl
         assert await g.ev("document.querySelectorAll('#sm-wm-path path').length") == 1, 'keine Pfade'
         # gesperrte Welt: Springen öffnet nichts
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(150)
@@ -5486,7 +5487,7 @@ async def weltkarte_und_navigation(g):
         await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await sm_screen(g) == 'sm-s-levels'
         k = await g.ev("({t: document.getElementById('sm-l-title').textContent, n: [...document.querySelectorAll('#sm-cards .lc')].map(b => b.classList.contains('boss')), c: document.getElementById('sm-l-count').textContent})")
-        assert k['t'] == 'Dschungel' and k['n'] == [False] * 4 + [True] and '0 / 4' in k['c'], k
+        assert k['t'] == 'Dschungel' and k['n'] == [False] * nl['dschungel'] + [True] and f"0 / {nl['dschungel']}" in k['c'], k
         assert await p.is_visible('#sm-l-pack') and await p.is_visible('#sm-l-coll'), 'Packages/Umkleide fehlen auf der Welt-Seite'
         # Esc -> Weltkarte (Dschungel gewählt), Esc -> Hauptmenü
         await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
@@ -5577,14 +5578,15 @@ async def welten_freischaltung(g):
         await p.wait_for_function("document.querySelector('#sm-wm .ulock.burst')", timeout=5000)
         await p.wait_for_function("!document.querySelector('#sm-wm .ulock')", timeout=6000)
         isl = await wk_inseln(g)
-        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == '5 / 5 Level', isl
+        nl = {w['id']: len(w['level']) for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']}   # 6er-Welten: Anzahl aus worlds.json
+        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == f"{nl['dschungel']} / {nl['dschungel']} Level", isl
         # alter Spielstand (Nummern): Level 1–3 geschafft, 4 offen -> Dschungel fertig, Ruinen offen, Höhle zu
         await g.ev("localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({played: true, unlocked: 4, completed: [1, 2, 3]}))")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         assert await g.ev(offen) == [True, True, False, False, False]
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
         isl = await wk_inseln(g)
-        assert [i['info'] for i in isl] == ['2 / 5 Level', '1 / 5 Level', '0 / 6 Level', 'Bald', '0 / 7 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5, Höhle 6, Vulkan 7 Level; Ruinen bleiben offen
+        assert [i['info'] for i in isl] == [f"2 / {nl['dschungel']} Level", f"1 / {nl['ruinen']} Level", f"0 / {nl['hoehle']} Level", 'Bald', f"0 / {nl['vulkan']} Level"] and isl[1]['sel'], isl   # Ruinen bleiben offen
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()
