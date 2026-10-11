@@ -117,7 +117,7 @@ def ziele(d):
     return z
 
 PASSAGE_RUECKWEG = 5     # bis zu so vielen Spalten zurück zum Hebel sind nach einem Tod in Ordnung
-NAH_ZIELE = ('Band', 'Wechselboden', 'Lava', 'Stachelwand')
+NAH_ZIELE = ('Band', 'Wechselboden', 'Lava', 'Stachelwand', 'Plattform')
 def bild_pruefen(d):
     """je Ziel-Gruppe: Abstand zum NÄCHSTEN Auslöser derselben Nummer (bis zum fernsten Kästchen des Ziels);
     außerdem jedes Paar Auslöser–Ziel für die Tabelle"""
@@ -276,6 +276,10 @@ def checkpoints_pruefen(d):
                 for (c, r) in felder_zellen(o) if 'w' in o else [(spalte(o['x']), 0)]: stellen.add(c)
     for s in d.get('solids', []):
         if s.get('type') in ('crumble', 'fake'): stellen.update(c for c, r in felder_zellen(s))
+    # bewegte Teile (z. B. Stachelwand-Jagd): die ganze Fahrstrecke ist die Stelle
+    for o in d.get('movingPlatforms', []) + [h for h in d.get('hooks', []) if 'targetX' in h]:
+        a, b = sorted((spalte(o['x']), spalte(o['targetX'])))
+        stellen.update(range(a, b + 1))
     # Gruben (Spalten ohne Boden) zählen auch als Stelle (Sprung)
     fest = feste_kaestchen(d)
     breite = spalte(max([s['x'] + s.get('w', T) for s in d.get('solids', [])] + [0]))

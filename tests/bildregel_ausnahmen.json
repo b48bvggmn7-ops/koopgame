@@ -33,6 +33,13 @@
    "spalte": 668,
    "nummer": 13,
    "begruendung": "Lianen-Staffel (Spalte 610–668, zwei getrennte Wege) ist ein Rätsel am Stück – Checkpoint erst danach"
+  },
+  {
+   "level": "dschungel/05-dornenpfad.json",
+   "regel": "Bild",
+   "spalte": 341,
+   "nummer": 6,
+   "begruendung": "Dornendecke ist eine Verfolgung: Hebel 6 startet die Decke (direkt daneben sichtbar), die Tür am Ende der Flucht (393) öffnet zugleich – man läuft auf sie zu"
   }
  ]
 }

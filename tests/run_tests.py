@@ -3266,14 +3266,14 @@ async def dschungel5_dornenpfad(g):
                 pl += [{'holdIf': {'right': f'P.x < {kx(a + 1)} - 4', 'left': f'P.x > {kx(a + 1)} + 4'}, 'wait': gleich(a, b_), 'frames': 900}] + sprung_zu(kx(b_ + 1))
             return pl + [{'wait': f"{plat(229)}.y > {ky(15)} - 30", 'frames': 900}] + sprung_zu(kx(237)) + [k_lauf(241)]
         await beide('E2 Inseln im Wechsel', 203, insel, 240, delay=150, maxFrames=6000)
-        # Seilbahn: Schwein am Hebel 4, Affe hängt am fahrenden Haken
+        # Seilbahn: Schwein am Hebel 4, Affe hängt am fahrenden Haken (Bild-Regel: Grube 251–268, Fahrten 15 Spalten, Hebel 5 bei 271)
         ok = []
-        for rel in (f'P.anchor.x > {kx(279)} && P.vx > 1', f'P.anchor.x > {kx(279)} && P.x > {kx(276)} && P.vx > 0.5', f'P.anchor.x > {kx(280)} && P.vx > 2'):
+        for rel in (f'P.anchor.x > {kx(266)} && P.vx > 1', f'P.anchor.x > {kx(266)} && P.x > {kx(263)} && P.vx > 0.5', f'P.anchor.x > {kx(267)} && P.vx > 2'):
             m = [k_lauf(249, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 3000}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}] + am(285)
-            f = [k_lauf(249, -14), {'wait': 'p1.hookAttached'}, {'use': True, 'frames': 2}, {'holdIf': {'right': f'P.x < {kx(252)} - 4', 'left': f'P.x > {kx(252)} + 4'}, 'wait': '!!linkOn[5]', 'frames': 3000}, {'until': f'P.x > {kx(278)}', 'frames': 2000}, k_lauf(290)]
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 3000}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}] + am(271)
+            f = [k_lauf(249, -14), {'wait': 'p1.hookAttached'}, {'use': True, 'frames': 2}, {'holdIf': {'right': f'P.x < {kx(252)} - 4', 'left': f'P.x > {kx(252)} + 4'}, 'wait': '!!linkOn[5]', 'frames': 3000}, {'until': "solids.some(s => s.type === 'moveplat' && s.switchLink === 5 && Math.abs(s.x - s.targetX) < 6)", 'frames': 2000}, k_lauf(290)]
             r = await koop(g, m=kat(244, 15), f=kat(243, 15), plans={'m': m, 'f': f}, maxFrames=6000)
-            if r.get('done') and r['pos']['m'][0] >= 281 and r['pos']['f'][0] >= 289: ok.append(rel[-12:])
+            if r.get('done') and r['pos']['m'][0] >= 268 and r['pos']['f'][0] >= 289: ok.append(rel[-12:])
         soll(ok, 'E2 Seilbahn (Hebel 4) und Fähre (Hebel 5)', (ok, info(r)))
         r = await koop(g, m=kat(244, 15), f=kat(243, 15), plans={'m': [k_lauf(249, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80}, {'swing': True, 'pull': 0, 'release': 'f > 200', 'frames': 400}, {'hold': ['right'], 'frames': 200}]}, maxFrames=3000)
         soll(r.get('dead') == 'm', 'E2 ohne Hebel 4 fährt der Haken nicht', info(r))
@@ -3327,7 +3327,7 @@ async def dschungel5_dornenpfad(g):
         # Schleuse
         ok = []
         for rel in RELS:
-            m = [{'wait': '!!linkOn[7]'}] + kette(482, 2, rel) + am(502) + [{'wait': f'Q.x >= {kx(504)}'}, k_lauf(504), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
+            m = [{'wait': '!!linkOn[7]'}] + kette(482, 2, rel) + am(498) + [{'wait': f'Q.x >= {kx(504)}'}, k_lauf(504), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
             f = [k_lauf(477, -6), {'frames': 10}, {'wait': '!!linkOn[8]'}, k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}, k_lauf(509)]
             r = await koop(g, m=kat(476, 15), f=kat(474, 15), plans={'m': m, 'f': f}, maxFrames=6000)
             if r.get('done') and r['pos']['m'][0] >= 510 and r['pos']['f'][0] >= 508: ok.append(rel[:14])
