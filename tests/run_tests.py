@@ -2583,6 +2583,69 @@ async def level18_aschefeld(g):
     assert not fehler, fehler
 
 @test
+async def level19_magmakammer(g):
+    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/level-19.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder."""
+    await koop_level(g, 'level-19.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        zz = lambda: [k_lauf(32, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(6)} + 2 && P.x > {kx(33)}', 'frames': 900},
+                      k_lauf(37, 0), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(39)}', 'frames': 900},
+                      k_lauf(61), {'until': 'P.grounded', 'frames': 100}, k_lauf(66), {'until': 'P.grounded', 'frames': 100}, k_lauf(71), {'until': 'P.grounded', 'frames': 100}, k_lauf(76), {'until': 'P.grounded', 'frames': 100}, k_lauf(80)]
+        await beide('E1 Zickzack-Kamin mit Lava', 24, lambda w: zz(), 79, delay=40)
+        r = await koop(g, m=kat(31, 15), f=kat(32, 15), plans={'m': [{'frames': 200}]}, maxFrames=300)
+        soll(r.get('dead'), 'E1 Lava steigt im Kamin, sobald beide unten sind', r.get('pos'))
+        f = [k_lauf(89, 0), {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(91)} - 6', 'left': f'P.x > {kx(91)} + 6'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(2)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(100)}', 'left': f'P.x > {kx(102)}'}, 'until': f'P.grounded && P.x > {kx(97)}', 'frames': 400}, k_lauf(106)]
+        m = [k_lauf(95, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(4)} + 2 && P.x > {kx(97)}', 'frames': 900}, k_lauf(108)]
+        runter = [k_lauf(119), {'until': 'P.grounded', 'frames': 100}, k_lauf(125), {'until': 'P.grounded', 'frames': 100}, k_lauf(131), {'until': 'P.grounded', 'frames': 100}, k_lauf(136)]
+        r = await koop(g, f=kat(84, 15), m=kat(82, 15), plans={'f': f + runter, 'm': m + runter}, maxFrames=5000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 135, 'E1 Aufwind (Schwein) und Kamin (Affe) vor der Lava', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        await beide('E1 Glutfelder', 137, lambda w: [k_lauf(143, -6)] + sprung_zu(kx(149)) + [{'aim': [kx(157), kx(165)], 'jumps': [kx(152)], 'until': f'P.grounded && P.x > {kx(163)}', 'frames': 600}, k_lauf(169, -6)] + sprung_zu(kx(175)) + [k_lauf(180)], 179)
+    assert not fehler, fehler
+
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
     Teleporter, Falle, Fels, Förderband oder Leuchtkristall),

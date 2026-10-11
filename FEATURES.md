@@ -1149,6 +1149,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
     - Test level18_aschefeld (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
+  - Level 19 „Magmakammer“ (levels/level-19.json, Vulkan Level 4 der Welt, abends, trocken, 800 Spalten): IN ARBEIT, bis
+    der Vulkan fertig ist in levels.json versteckt. Kombi-Level: Lava-Flucht durch Kamine, Haken/Aufwind über der Lava,
+    Pilz-Turm, Doppel-Schacht.
+    - Etappe 1 (Spalten 0–200): Zickzack-Kamin mit Lava (sobald beide unten sind, steigt die Lava schnell – per
+      Wandsprung durch zwei versetzte Schächte hinauf); Aufwind (Schweinchen) und Kamin (Affe) nebeneinander, die Lava
+      steigt mit; Glutfelder (drei Lava-Gruben, die mittlere mit Pilz-Säule).
+    - Test level19_magmakammer (Koop-Bot + Checkpoint-Abstände).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

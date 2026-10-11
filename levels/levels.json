@@ -102,5 +102,11 @@
   "name": "Level 18",
   "titel": "Aschefeld",
   "versteckt": true
+ },
+ {
+  "datei": "level-19.json",
+  "name": "Level 19",
+  "titel": "Magmakammer",
+  "versteckt": true
  }
 ]
