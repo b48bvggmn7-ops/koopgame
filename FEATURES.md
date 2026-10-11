@@ -1190,6 +1190,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       an – das Schweinchen segelt über zwei Aufwinde und zieht Hebel 10: das Band steht still, dafür laufen zwei Pressen
       darüber an, die der Affe abpassen muss); Finale „das Werk läuft voll“ (sobald beide im Kessel sind, steigt die Lava
       schnell: Band zum Pilz, Pilz auf den Steg, über zwei Stege hinauf auf die Rampe zum Ziel).
+  - Level 21 „Feuerschlund“ (levels/level-21.json, Vulkan Level 6 der Welt, nachts, trocken, 800 Spalten):
+    IN ARBEIT, bis der Vulkan fertig ist in levels.json versteckt. Kombi-/Meister-Level: dunkle Lavagänge mit
+    Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht.
+    - Etappe 1 (Spalten 0–200): dunkler Lavagang (Kristall anschlagen, im Licht über drei Lava-Gruben); oben schlägt an,
+      unten läuft (der Affe schwingt zum Kristall auf dem Sims, das Schweinchen segelt im Licht über die Lava-Gruben und
+      zieht Hebel 1 für Tür 1, der Affe kommt an den Haken nach); Teleporter-Kammer (hinunter in die Kammer, kein Weg
+      zurück – sobald beide unten sind, steigt die Lava; der Teleporter des Affen bringt ihn auf den Sims draußen, dort
+      schaltet Hebel 2 den Teleporter des Schweinchens an).
+    - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)

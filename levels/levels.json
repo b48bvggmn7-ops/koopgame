@@ -114,5 +114,11 @@
   "name": "Level 20",
   "titel": "Schlackewerk",
   "versteckt": true
+ },
+ {
+  "datei": "level-21.json",
+  "name": "Level 21",
+  "titel": "Feuerschlund",
+  "versteckt": true
  }
 ]
