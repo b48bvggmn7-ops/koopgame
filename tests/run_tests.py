@@ -4726,6 +4726,162 @@ async def editor_werkzeug_gruppen(g):
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
+WERKZEUG_PRUEF_JS = """
+window.__daten = t => {
+  const E = elementNachWerkzeug(t);
+  if(E && E.editor.art === 'punkt') return (elementPunkte[E.feld] || []).map(p => ({...p}));
+  if((E && E.editor.art === 'kachel') || ['ground', 'wall', 'crumble', 'fake'].includes(t))
+    return Object.keys(tiles).filter(k => tiles[k] === t).map(k => { const [c, r] = k.split(',').map(Number); return {c, r}; });
+  if(t === 'hook') return hooks.map(h => ({...h}));
+  if(t === 'spike') return spikes.map(h => ({...h}));
+  if(t === 'coin') return coins.map(h => ({...h}));
+  if(t === 'checkpoint') return checkpoints.map(h => ({...h}));
+  if(t === 'move') return movers.map(m => ({...m}));
+  const v = {startM, startF, goal}[t];
+  return v ? [{...v}] : [];
+};
+// Wo wird ein Punkt-Element im Editor sichtbar gezeichnet? Mitte der Zeichnung (Zeichen-Befehle mitschreiben) -> Kästchen
+window.__sichtZelle = (t, p) => {
+  const E = elementNachWerkzeug(t);
+  if(!E || E.editor.art !== 'punkt' || !E.editor.zeichnen) return [p.c, p.r];
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, tx = 0, ty = 0; const st = [];
+  const add = (x, y) => { x += tx; y += ty; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  const f = new Proxy({}, {get(o, k){
+    if(k === 'save') return () => st.push([tx, ty]);
+    if(k === 'restore') return () => { const s = st.pop(); if(s){ tx = s[0]; ty = s[1]; } };
+    if(k === 'translate') return (a, b) => { tx += a; ty += b; };
+    if(['fillRect', 'strokeRect', 'rect', 'roundRect'].includes(k)) return (x, y, w, h) => { add(x, y); add(x + w, y + h); };
+    if(k === 'arc') return (x, y, r) => { add(x - r, y - r); add(x + r, y + r); };
+    if(k === 'ellipse') return (x, y, a, b) => { add(x - a, y - b); add(x + a, y + b); };
+    if(['moveTo', 'lineTo', 'quadraticCurveTo', 'bezierCurveTo'].includes(k)) return (...a) => { for(let i = 0; i + 1 < a.length; i += 2) add(a[i], a[i + 1]); };
+    if(k === 'drawImage') return (img, ...a) => { if(a.length >= 4){ add(a[0], a[1]); add(a[0] + a[2], a[1] + a[3]); } else add(a[0], a[1]); };
+    if(k === 'measureText') return s => ({width: String(s).length * 7});
+    if(['createLinearGradient', 'createRadialGradient', 'createPattern'].includes(k)) return () => ({addColorStop(){}});
+    if(typeof CanvasRenderingContext2D.prototype[k] === 'function') return () => {};   // Text, Füllen, Drehen … ändern die Lage nicht
+    return o[k];
+  }, set(o, k, v){ o[k] = v; return true; }});
+  try{ E.editor.zeichnen(f, p.c, p.r, TILE, p); }catch(e){ return [p.c, p.r]; }
+  if(x0 > x1) return [p.c, p.r];
+  return [Math.floor((x0 + x1) / 2 / TILE), Math.floor((y0 + y1) / 2 / TILE)];
+};
+"""
+PRUEFPUNKTE = ['setzen', 'optionen', 'rechtsklick', 'radierer', 'undo_redo', 'speichern_laden', 'kopieren_einfuegen']
+
+async def werkzeug_pruefen(p, t):
+    """Ein Werkzeug durch alle 7 Prüfpunkte schicken; Ergebnis {Prüfpunkt: True/False/Text}."""
+    C, R = 12, 10
+    res = {}
+    async def daten(): return await p.evaluate("t => __daten(t)", t)
+    async def bei(c, r): return [e for e in await daten() if e.get('c') == c and e.get('r') == r]
+    async def taste(k):
+        await p.evaluate("document.activeElement && document.activeElement.blur()"); await p.keyboard.press(k); await p.wait_for_timeout(60)
+    async def klick(c, r, button='left'):
+        x, y = await ed_zelle(p, c, r); await p.mouse.click(x, y, button=button); await p.wait_for_timeout(40)
+    await p.evaluate("clearLevelContent(); setCols(MIN_COLS); save(); histReset(); selRect = null; clipboard = null")
+    # 1 + 2: Optionen wählen (je Auswahl-Feld den letzten Wert, nicht den ersten), dann setzen
+    erwartet = {}
+    if t == 'move':
+        await ed_werkzeug(p, 'ground'); await klick(C, R)
+    await ed_werkzeug(p, t)
+    for sel in await p.evaluate("t => [...document.querySelectorAll('#propRow .prop.zeig select')].map(s => [s.id, [...s.options].map(o => o.value)])", t):
+        sid, werte = sel
+        if not werte or sid in ('moveSwitchSelect',): continue
+        wert = werte[-1] if sid != 'linkSelect' else '7'
+        await p.select_option('#' + sid, wert)
+        key = {'spikeDir': 'dir', 'coinColor': 'color', 'speedSelect': 'speed', 'linkSelect': 'link'}.get(sid) or sid.split('-', 2)[2]
+        erwartet[key] = wert
+    if t == 'hook':
+        await p.fill('#radiusInput', '4'); erwartet['radius'] = '4'
+    if t == 'move':
+        a = await ed_zelle(p, C, R); b = await ed_zelle(p, C + 3, R)
+        await p.mouse.move(*a); await p.mouse.down(); await p.mouse.move(*b, steps=4); await p.mouse.up(); await p.wait_for_timeout(60)
+    else:
+        await klick(C, R)
+        if t == 'tele': await klick(C + 3, R)   # Teleporter kommen paarweise
+    e = await bei(C, R)
+    res['setzen'] = bool(e)
+    if not e: return {k: 'nicht gesetzt' for k in PRUEFPUNKTE}
+    e = e[0]
+    if 'link' in erwartet and 'link' not in e: erwartet.pop('link')   # Nummer nur, wenn das Element sie benutzt (an/aus „per Nummer“)
+    falsch = {k: (e.get(k), v) for k, v in erwartet.items() if str(e.get(k)) != v and not (isinstance(e.get(k), (int, float)) and float(v) == float(e.get(k)))}
+    res['optionen'] = not falsch or f'gespeichert anders: {falsch}'
+    # 5: Rückgängig / Wiederholen
+    schritte = 2 if t == 'tele' else 1   # Teleporter-Paar = zwei Klicks = zwei Schritte
+    for _ in range(schritte): await taste('Control+z')
+    weg = not await bei(C, R)
+    for _ in range(schritte): await taste('Control+y')
+    da = bool(await bei(C, R))
+    res['undo_redo'] = (weg and da) or f'Strg+Z entfernt: {weg}, Strg+Y bringt zurück: {da}'
+    # 6: Speichern (Arbeitsstand im Browser) und wieder laden; Export enthält es
+    await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.evaluate("() => {" + WERKZEUG_PRUEF_JS + "}")
+    geladen = bool(await bei(C, R))
+    exp = await p.evaluate("t => { const E = elementNachWerkzeug(t), o = JSON.parse(exportLevel()); return E ? (o[E.feld] || []).length : -1; }", t)
+    res['speichern_laden'] = (geladen and exp != 0) or f'nach Neuladen da: {geladen}, im Export: {exp}'
+    if not geladen: return {**res, 'rechtsklick': 'nicht geladen', 'radierer': 'nicht geladen', 'kopieren_einfuegen': 'nicht geladen'}
+    # 3: Rechtsklick dort, wo das Element zu sehen ist (und gespeichert ist)
+    vis = await p.evaluate("([t, p]) => __sichtZelle(t, p)", [t, (await bei(C, R))[0]])
+    await klick(vis[0], vis[1], 'right')
+    rk = not await bei(C, R)
+    if not rk:
+        await klick(C, R, 'right'); rk2 = not await bei(C, R)
+        res['rechtsklick'] = f'Rechtsklick auf das sichtbare Kästchen {tuple(vis)} entfernt nicht (gespeichert in {(C, R)}; dort: {rk2})'
+    else: res['rechtsklick'] = True
+    # 4: Radierer (Werkzeug „Radieren“, Linksklick) – erst zurückholen
+    await taste('Control+z')
+    if not await bei(C, R): res['radierer'] = 'Strg+Z nach Rechtsklick bringt es nicht zurück'
+    else:
+        await ed_werkzeug(p, 'erase'); await klick(vis[0], vis[1])
+        res['radierer'] = (not await bei(C, R)) or f'Radierer auf {tuple(vis)} entfernt nicht'
+        await taste('Control+z')
+    # 7: Kopieren und Einfügen (Start/Ziel gibt es nur einmal: die werden mit der Auswahl verschoben)
+    if not await bei(C, R): res['kopieren_einfuegen'] = 'nicht wiederhergestellt'; return res
+    vorher = len(await daten())
+    await ed_werkzeug(p, 'select')
+    a = await ed_zelle(p, C - 1, R - 1); b = await ed_zelle(p, C + (4 if t == 'tele' else 1), R + 1)
+    await p.mouse.move(*a); await p.mouse.down(); await p.mouse.move(*b, steps=4); await p.mouse.up(); await p.wait_for_timeout(60)
+    if t in ('startM', 'startF', 'goal'):
+        x0, y0 = await ed_zelle(p, C, R); x1, y1 = await ed_zelle(p, C + 8, R)
+        await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x1, y1, steps=5); await p.mouse.up(); await p.wait_for_timeout(60)
+        res['kopieren_einfuegen'] = bool(await bei(C + 8, R)) or 'Verschieben mit der Auswahl klappt nicht'
+    else:
+        await taste('Control+c')
+        x, y = await ed_zelle(p, C + 15, R - 1); await p.mouse.move(x, y); await p.wait_for_timeout(40)
+        await taste('Control+v')
+        nachher = await daten()
+        neu = [d for d in nachher if d.get('c', 0) >= C + 14]
+        res['kopieren_einfuegen'] = (len(nachher) > vorher and bool(neu)) or f'vorher {vorher}, nachher {len(nachher)}'
+    return res
+
+@test
+async def editor_werkzeug_pruefung(g):
+    """Editor-Umbau (Teil J): JEDES Werkzeug (alle Elemente aus dem Register mit Editor-Werkzeug, Boden/Wand/Bröckelboden/
+    Scheinwand, Haken, Stacheln, Münze, Checkpoint, Bewegung, Start ♂/♀, Ziel) besteht 7 Prüfpunkte: setzen,
+    Optionen ändern (werden gespeichert), Rechtsklick entfernt – und zwar dort, wo es SICHTBAR gezeichnet ist –,
+    Radierer entfernt, Rückgängig/Wiederholen, Speichern + Laden (+ Export), Kopieren + Einfügen. Neue Elemente
+    werden automatisch mitgeprüft."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.evaluate("localStorage.clear()")
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("() => {" + WERKZEUG_PRUEF_JS + "}")
+        werkzeuge = await p.evaluate("[...document.querySelectorAll('#toolGroups .tool')].map(t => t.dataset.tool)")
+        for t in ['hook', 'spike', 'coin', 'checkpoint', 'move', 'startM', 'startF', 'goal', 'switch', 'lava', 'fels', 'presse', 'boss']:
+            assert t in werkzeuge, f'Werkzeug {t} fehlt in der Prüfung'
+        tabelle, fehler = {}, []
+        for t in werkzeuge:
+            try: r = await werkzeug_pruefen(p, t)
+            except Exception as ex:   # ein Werkzeug, das hängt/abstürzt, ist ein Befund – die anderen trotzdem prüfen
+                r = {'setzen': f'Abbruch: {str(ex)[:160]}'}
+                await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000); await p.evaluate("() => {" + WERKZEUG_PRUEF_JS + "}")
+            tabelle[t] = r
+            for k in PRUEFPUNKTE:
+                if r.get(k) is not True: fehler.append(f'{t}/{k}: {r.get(k)}')
+        print('    Werkzeug-Prüfung: ' + json.dumps({t: ''.join('✓' if r.get(k) is True else '✗' for k in PRUEFPUNKTE) for t, r in tabelle.items()}, ensure_ascii=False))
+        assert not fehler, fehler
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
 @test
 async def werkzeug_welten(g):
     """Editor-Umbau: jedes Werkzeug steht in der Empfehlungs-Tabelle (editor/js/00-welt-werkzeuge.js) – als Grundwerkzeug,

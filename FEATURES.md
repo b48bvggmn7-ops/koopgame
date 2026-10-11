@@ -1317,6 +1317,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     angezeigte Nummer ist immer die Position in der Welt. Spielstände und der Editor-Arbeitsstand mit alten Namen
     (level-6.json …) werden beim Laden auf die neuen Pfade umgeschrieben (Tabelle js/01a-level-umzug.js, nichts geht
     verloren). Tests level_ordner_nach_welten, spielstand_umzug_welt_ordner.
+  - WERKZEUG-PRÜFUNG (Editor-Umbau, Teil J): Rechtsklick und Radierer entfernen ein Element überall dort, wo es im
+    Editor SICHTBAR ist – auch wenn es größer gezeichnet wird als sein Kästchen (Rollender Fels 3×3, Stachelpresse so
+    breit wie eingestellt, Boss 3×3, Arena-Grenze die ganze Spalte; Angabe editor.bereich im Register). Vorher traf
+    ein Rechtsklick auf den sichtbaren Fels/Boss/die Arena-Linie/den rechten Teil einer breiten Presse ins Leere.
+    Dauertest editor_werkzeug_pruefung: JEDES Werkzeug (Register + Boden/Wand/Bröckelboden/Scheinwand, Haken,
+    Stacheln, Münze, Checkpoint, Bewegung, Start ♂/♀, Ziel) wird gesetzt, mit geänderten Optionen gespeichert, per
+    Rechtsklick (auf die sichtbare Mitte) und per Radierer entfernt, mit Strg+Z/Strg+Y zurückgeholt, nach Neuladen
+    geprüft (auch im Export) und kopiert/eingefügt (Start/Ziel: mit der Auswahl verschoben, weil es sie nur einmal
+    gibt). Neue Elemente prüft er automatisch mit.
   - Seitenleiste: Raster-Infos (Kästchengröße, Länge) und Zähler (Checkpoints, Münzen, Blau/Pink-Bilanz) bleiben sichtbar;
     die langen Erklärungen (Hilfe, Bewegungs-Referenz, Legende) sind eingeklappt – Knopf „Hilfe ▸“.
   - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt

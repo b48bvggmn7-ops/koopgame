@@ -115,6 +115,8 @@ elementRegistrieren({
       {key: 'tempo', label: 'Tempo', zahl: true, werte: [['3.6', 'langsam'], ['4.4', 'mittel'], ['5.4', 'schnell']]},
     ],
     klick(p){ p.richtung = p.richtung === 'l' ? 'r' : 'l'; },
+    // sichtbar: Fels mit Radius 1,25 Kästchen, unten auf dem gesetzten Kästchen -> 3 breit, 3 hoch
+    bereich: p => [-1, 0, 1].flatMap(dc => [-2, -1, 0].map(dr => [p.c + dc, p.r + dr])),
     zeichnen(ctx, c, r, TILE, p){
       const R = TILE*1.25;
       felsBild(ctx, c*TILE + TILE/2, (r + 1)*TILE - R, R, 0, true);

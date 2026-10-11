@@ -120,6 +120,8 @@ elementRegistrieren({
     },
     nummerAktiv: p => p.schalter !== 'immer' && !!p.link,
     mitNummer: false, nummerName: 'Presse',
+    // sichtbar: so breit wie die Presse (1–3 Kästchen)
+    bereich: p => Array.from({length: Math.max(1, Math.min(3, Number(p.breite) || 1))}, (_, k) => [p.c + k, p.r]),
     zeichnen(ctx, c, r, TILE, p){
       const b = Math.max(1, Math.min(3, Number(p && p.breite) || 1));
       ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40);

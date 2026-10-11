@@ -326,6 +326,8 @@ elementRegistrieren({
       {key: 'tempo', label: 'Tempo', zahl: true, werte: [['1', 'normal'], ['0.8', 'ruhig'], ['1.25', 'wild']]},
     ],
     neu(p, alle){ alle.splice(0); return p; },   // nur ein Boss pro Level
+    // sichtbar: Bruno (verkleinert) steht auf dem gesetzten Kästchen -> 3 breit, 3 hoch
+    bereich: p => [-1, 0, 1].flatMap(dc => [-2, -1, 0].map(dr => [p.c + dc, p.r + dr])),
     zeichnen(ctx, c, r, TILE, p){
       const X = c*TILE + TILE/2, Y = r*TILE + TILE;
       if(typeof zeichneBruno === 'function'){ ctx.save(); ctx.translate(X, Y); ctx.scale(0.42, 0.42); zeichneBruno(ctx, 0, 0, null, {}); ctx.restore(); }
@@ -353,6 +355,8 @@ elementRegistrieren({
     werkzeug: 'arena', gruppe: 'boss', art: 'punkt', ziehbar: false, farbe: '#8e44ad',
     titel: 'Arena-Grenze: zwei Marken setzen (links und rechts). Die Kamera steht im Boss-Level fest an der linken Grenze; ' +
            'Angriffe bleiben zwischen den Grenzen',
+    // sichtbar: gestrichelte Linie über die ganze Höhe der Spalte (nur die Spalte zählt im Spiel)
+    bereich: p => Array.from({length: 21}, (_, k) => [p.c, k - 3]),
     zeichnen(ctx, c, r, TILE){
       const X = c*TILE + TILE/2;
       ctx.strokeStyle = '#b07cff'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]);

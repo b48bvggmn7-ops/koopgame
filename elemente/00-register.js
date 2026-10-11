@@ -10,6 +10,8 @@
 //   editor: { werkzeug      – data-tool des Knopfs
 //             gruppe, vor   – Werkzeug-Gruppe = Reiter im Editor (gelaende, gefahren, licht, logik, haken, bewegung, wasser, boss, marken), vor = Werkzeug, vor dessen Knopf er steht
 //             titel, farbe  – Tooltip und Farbfeld des Knopfs
+//             bereich(p)    – (optional) Kästchen, die der Punkt im Editor SICHTBAR belegt (größer gezeichnet als sein
+//                             Kästchen, z. B. Fels, Presse): Rechtsklick/Radierer wirken dort (Test editor_werkzeug_pruefung)
 //             art           – 'punkt' (Liste {c,r} pro Kästchen) oder 'kachel' (Kästchen-Sorte im Raster)
 //             ziehbar       – mit gedrückter Maus malbar
 //             zeichnen(ctx, c, r, TILE)            – Editor-Bild eines Kästchens/Punkts

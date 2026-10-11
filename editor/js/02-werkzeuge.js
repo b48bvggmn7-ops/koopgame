@@ -75,6 +75,11 @@ function moverForCell(c,r){
   return null;
 }
 
+// Belegt ein Punkt-Element (Register) das Kästchen c,r? editor.bereich(p) = Liste der sichtbar belegten Kästchen
+function punktBelegt(E, p, c, r){
+  if(E.editor.bereich) return E.editor.bereich(p).some(([x, y]) => x === c && y === r);
+  return p.c === c && p.r === r;
+}
 function eraseAt(c,r){
   // Ist das Kästchen der Anker eines Pfeils, Anker auf ein anderes Kästchen des Stücks verlegen
   for(const mv of movers){
@@ -90,7 +95,9 @@ function eraseAt(c,r){
   spikes = spikes.filter(h=>!(h.c===c&&h.r===r));
   coins = coins.filter(h=>!(h.c===c&&h.r===r));
   checkpoints = checkpoints.filter(h=>!(h.c===c&&h.r===r));
-  for(const k in elementPunkte) elementPunkte[k] = elementPunkte[k].filter(h=>!(h.c===c&&h.r===r));
+  // Punkt-Elemente: weg, wenn das Kästchen in ihrem SICHTBAREN Bereich liegt (editor.bereich, z. B. Fels, Presse, Boss,
+  // Arena-Linie) – nicht nur im gespeicherten Kästchen (Editor-Umbau, Teil J: sonst traf der Rechtsklick den Fels nicht)
+  for(const E of punktElemente()) elementPunkte[E.feld] = elementPunkte[E.feld].filter(h => !punktBelegt(E, h, c, r));
   if(startM && startM.c===c && startM.r===r) startM=null;
   if(startF && startF.c===c && startF.r===r) startF=null;
   if(goal && goal.c===c && goal.r===r) goal=null;

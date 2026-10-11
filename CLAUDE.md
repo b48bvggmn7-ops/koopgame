@@ -105,6 +105,9 @@
 9. Editor-Reiter: `editor.gruppe` = gelaende, gefahren, licht, logik, haken, bewegung, wasser, boss oder marken;
    Werkzeug-Namen in `editor/js/00-welt-werkzeuge.js` bei der passenden Welt (oder GRUND_WERKZEUGE) eintragen
    (Test `werkzeug_welten`); seine Optionen erscheinen automatisch in der Eigenschaften-Zeile.
+10. Muss den Werkzeug-Test `editor_werkzeug_pruefung` bestehen (setzen, Optionen, Rechtsklick, Radierer, Undo/Redo,
+   Speichern/Laden, Kopieren/Einfügen). Wird das Element im Editor größer als sein Kästchen gezeichnet, `editor.bereich(p)`
+   angeben (Liste der sichtbar belegten Kästchen, Muster `fels.js`) – sonst trifft der Rechtsklick es nicht.
 
 ## Steuerung (Kurzfassung)
 | | Affe (Spieler 1) | Schweinchen (Spielerin 2) | Controller |
