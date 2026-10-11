@@ -22,6 +22,7 @@ HAKEN_HOEHE_MIN, HAKEN_HOEHE_MAX = 4, 8            # Reihen zwischen Absprung-Bo
 HAKEN_REIHE_LUECKE = 10                            # weiter auseinander = neue Reihe
 LANDUNG_MIN = 3                                    # so viele Stehplätze braucht die Landung (2–10 Spalten hinter dem letzten Haken)
 CP_MIN, CP_MAX = 25, 70                            # Checkpoint-Abstände (Spalten)
+KLETTER_REIHEN = 4                                 # so hoch (Reihen) muss eine Wand sein, damit Hochklettern als „Stelle“ zählt
 
 def spalte(x): return int(math.floor(x / T))
 def reihe(y): return int(math.floor(y / T))
@@ -230,13 +231,15 @@ def haken_pruefen(d):
             weit_max = max(HAKEN_ABSTAND_MAX, int(1.8 * min(a[2].get('radius', 260), b[2].get('radius', 260)) / T))
             if s_ < HAKEN_ABSTAND_MIN: z['warnungen'].append(f'zu eng ({a[0]}→{b[0]}: {s_} Spalten)')
             if s_ > weit_max: z['warnungen'].append(f'zu weit ({a[0]}→{b[0]}: {s_} Spalten)')
-        hilft = any(abs(x - c0) <= 6 for x in hilfe)
+        hilft = any(abs(x - c0) <= 8 for x in hilfe)   # Pilz/Aufwind im Anlauf-Bereich: die Höhe kommt von dort
         # Höhe nur für Schwung-Reihen (ab 2 Haken); ein einzelner Haken ist meist eine Kletterhilfe an einer Kante
         if len(rh) > 1 and hoehe is not None and not hilft and not (HAKEN_HOEHE_MIN <= hoehe <= HAKEN_HOEHE_MAX):
             z['warnungen'].append(f'Höhe {hoehe} Reihen über dem Absprung ({abspr[1]})')
         breit = 2 if len(rh) > 1 else 1
-        for (c, r, h) in rh:
-            block = [(cc, rr) for cc in range(c - breit, c + breit + 1) for rr in range(r + 1, r + 4) if (cc, rr) in fest]
+        for i, (c, r, h) in enumerate(rh):
+            # beim letzten Haken einer Reihe ist Stein rechts davon meist die Landekante (Hochziehen) -> nur links/mittig prüfen
+            rechts = c if (len(rh) > 1 and i == len(rh) - 1) else c + breit
+            block = [(cc, rr) for cc in range(c - breit, rechts + 1) for rr in range(r + 1, r + 4) if (cc, rr) in fest]
             if block: z['warnungen'].append(f'Bogen blockiert bei Haken {c} (Stein bei {block[0][0]},{block[0][1]})')
         if len(rh) > 1:
             # Landung einer Schwungreihe: Stehplätze 2–10 Spalten hinter dem letzten Haken (unterhalb der Hakenreihe)
@@ -265,6 +268,10 @@ def checkpoints_pruefen(d):
     breite = spalte(max([s['x'] + s.get('w', T) for s in d.get('solids', [])] + [0]))
     for c in range(breite):
         if not any((c, r) in fest for r in range(0, 18)): stellen.add(c)
+    # Kletterstelle (Kamin/Wandsprung): die oberste Stein-Kante steigt um mindestens 4 Reihen
+    oben = {c: min([r for r in range(-3, 18) if (c, r) in fest] or [99]) for c in range(breite + 1)}
+    for c in range(breite):
+        if oben[c] - oben[c + 1] >= KLETTER_REIHEN and oben[c] != 99: stellen.add(c + 1)
     zeilen, warn = [], []
     vor = start
     for i, c in enumerate(cps):

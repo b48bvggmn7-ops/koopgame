@@ -1,6 +1,38 @@
 {
  "hinweis": "Begründete Ausnahmen zur Bild-Regel und den Leveldesign-Regeln (AUSBAU-REGELWERK.md Punkt 12). Je Eintrag: level, regel (Bild/Plattform/Haken/Checkpoint), spalte (wie im Prüfwerkzeug angezeigt), nummer (Verknüpfung oder Checkpoint, nur zur Info), begruendung. Der Test bildregel_pruefung schlägt bei jedem Befund fehl, der hier nicht steht.",
  "ausnahmen": [
-  {"level": "dschungel/02-baumkronen.json", "regel": "Checkpoint", "spalte": 590, "nummer": 11, "begruendung": "Verfolgung durch die Stachelwand (Hebel 14, Spalte 490–578) läuft am Stück – mitten in der Flucht kein Checkpoint"}
+  {
+   "level": "dschungel/02-baumkronen.json",
+   "regel": "Checkpoint",
+   "spalte": 590,
+   "nummer": 11,
+   "begruendung": "Verfolgung durch die Stachelwand (Hebel 14, Spalte 490–578) läuft am Stück – mitten in der Flucht kein Checkpoint"
+  },
+  {
+   "level": "dschungel/03-lianenschlucht.json",
+   "regel": "Haken",
+   "spalte": 627,
+   "begruendung": "Lianen-Staffel: tiefe Haken (3 Reihen über der Säule) zwischen Säulen sind gewollte Präzision; Bot-Test level7_lianenschlucht spielt sie – braucht Entscheidung, ob höher hängen"
+  },
+  {
+   "level": "dschungel/03-lianenschlucht.json",
+   "regel": "Haken",
+   "spalte": 646,
+   "begruendung": "wie Spalte 627 (zweite Säule der Lianen-Staffel) – braucht Entscheidung"
+  },
+  {
+   "level": "dschungel/03-lianenschlucht.json",
+   "regel": "Checkpoint",
+   "spalte": 208,
+   "nummer": 5,
+   "begruendung": "nach dem Kamin nur Laufstrecke; ohne diesen Checkpoint wäre die Lücke 83 Spalten (> 70)"
+  },
+  {
+   "level": "dschungel/03-lianenschlucht.json",
+   "regel": "Checkpoint",
+   "spalte": 668,
+   "nummer": 13,
+   "begruendung": "Lianen-Staffel (Spalte 610–668, zwei getrennte Wege) ist ein Rätsel am Stück – Checkpoint erst danach"
+  }
  ]
 }
