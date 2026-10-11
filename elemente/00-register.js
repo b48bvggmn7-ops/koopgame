@@ -20,6 +20,7 @@
 //             schritt(figuren)                     – einmal pro Physik-Schritt (14-spielschleife.js, nach Hebeln/Türen)
 //             zuruecksetzen()                      – Neustart/Tod, nachdem die Figuren neu aufgestellt sind
 //             zeichnenVorne()                      – VOR den Figuren zeichnen (z. B. Wasser, Ausbau 5)
+//             zeichnenHinten()                     – HINTER Boden und Wänden zeichnen (z. B. Lava, Ausbau 7)
 //             zeichnenOben()                       – in Bildschirm-Koordinaten über allem (z. B. Boss-Lebensbalken, Ausbau 6) }
 //   Editor-Extras (Ausbau 4): optionen [{key, label, titel, werte:[[wert, text]], zahl}] = eigene Auswahl-Felder neben dem
 //   Knopf (neue Punkte bekommen die gewählten Werte); klick(punkt) = Klick auf einen vorhandenen Punkt;

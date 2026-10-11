@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, spiegel: 0.18, kristallAn: 0.16, kristallAus: 0.12, bandUm: 0.18, tropfen: 0.07, eisRutsch: 0.1, leuchtAn: 0.18, leuchtFlacker: 0.08, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, spiegel: 0.18, kristallAn: 0.16, kristallAus: 0.12, bandUm: 0.18, tropfen: 0.07, eisRutsch: 0.1, leuchtAn: 0.18, leuchtFlacker: 0.08, lavaBlubb: 0.12, lavaSteigt: 0.3, lavaZisch: 0.24, presseStampf: 0.3, presseKette: 0.14, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -195,6 +195,13 @@ function* sfxBuild(a, out){
     bandUm:    ()=>{ const b = mk(0.6); for(let i = 0; i < 4; i++) modal(b, i*0.09, 700 - i*60, wood, 0.01, 0.55, 0, 0.6); thump(b, 0, 90, 60, 0.15, 0.5); return b; },
     eisRutsch: ()=>{ const b = mk(0.4); grains(b, 0, 0.35, 90, 3000, 9000, 0.0003, 0.001, 0.25, 0.5, 'decay'); swish(b, 0, 0.3, 4000, 2500, 0.8, 0.4, 0, 0.2); return b; },
     leuchtAn:  ()=>{ const b = mk(1.1); modal(b, 0, 320, wood, 0.03, 0.6, 0, 0.5); swish(b, 0.01, 1.0, 600, 3200, 1.1, 0.8, 0, 0.6); grains(b, 0.05, 0.8, 30, 4000, 9000, 0.002, 0.006, 0.2, 0.6, 'decay'); return b; },
+    // Vulkan (Ausbau 7): Lava blubbert (dicke, tiefe Blasen), grollt beim Steigen, zischt beim Verbrennen;
+    // Presse = schwerer Eisen-Schlag mit Metall-Nachklang, Kette = kurzes Rasseln vor dem Fall
+    lavaBlubb: ()=>{ const b = mk(0.5); for(let i = 0; i < 2; i++) thump(b, i*rnd(0.08, 0.18), rnd(70, 110), rnd(160, 240), 0.12, 0.5); puff(b, 0, 0.3, 300, 0.25, 0, 0.1); return b; },
+    lavaSteigt:()=>{ const b = mk(1.8); puff(b, 0, 1.7, 160, 1.0, 0, 0.35); thump(b, 0.05, 55, 35, 1.2, 0.6); grains(b, 0.2, 1.4, 20, 400, 1800, 0.003, 0.01, 0.2, 0.5); return b; },
+    lavaZisch: ()=>{ const b = mk(0.7); swish(b, 0, 0.65, 5000, 2500, 0.9, 0.9, 0, 0.05); thump(b, 0, 90, 50, 0.2, 0.4); return b; },
+    presseStampf:()=>{ const b = mk(0.9); thump(b, 0, 70, 35, 0.5, 1.0); modal(b, 0, 190, metal, 0.02, 0.35, 0, 0.9); puff(b, 0, 0.4, 600, 0.6, 0, 0.02); return b; },
+    presseKette:()=>{ const b = mk(0.5); for(let i = 0; i < 6; i++) modal(b, i*0.05 + R()*0.02, rnd(1600, 2400), metal, 0.004, 0.25, 0, 0.6); return b; },
     tropfen:   ()=>{ const b = mk(0.35); thump(b, 0, rnd(700, 1100), rnd(1500, 2200), 0.025, 0.5); puff(b, 0.01, 0.08, 2500, 0.2, 0, 0.02); return b; },
     leuchtFlacker:()=>{ const b = mk(0.4); grains(b, 0, 0.35, 25, 2500, 6000, 0.002, 0.006, 0.25, 0.7); return b; },
     // Steg (einseitige Plattform, Ausbau 4): kurzes Holz-Knarzen beim Landen
@@ -342,6 +349,11 @@ const SFX = {
   bandUm(x){ sfxLog('bandum'); sfxPlay('bandUm', {x}); },   // Höhle (Ausbau 7)
   eisRutsch(x){ sfxLog('eisrutsch'); sfxPlay('eisRutsch', {x}); },
   leuchtAn(x){ sfxLog('leuchtan'); sfxPlay('leuchtAn', {x}); },
+  lavaBlubb(x){ sfxLog('lavablubb'); sfxPlay('lavaBlubb', {x}); },
+  lavaSteigt(x){ sfxLog('lavasteigt'); sfxPlay('lavaSteigt', {x}); },
+  lavaZisch(x){ sfxLog('lavazisch'); sfxPlay('lavaZisch', {x}); },
+  presseStampf(x){ sfxLog('pressestampf'); sfxPlay('presseStampf', {x}); },
+  presseKette(x){ sfxLog('pressekette'); sfxPlay('presseKette', {x}); },
   tropfen(x){ sfxPlay('tropfen', {x}); },
   leuchtFlacker(x){ sfxLog('leuchtflacker'); sfxPlay('leuchtFlacker', {x}); },
   steg(x){ sfxLog('steg'); sfxPlay('steg', {x}); },   // Landen auf einem Steg

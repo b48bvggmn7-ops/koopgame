@@ -76,6 +76,7 @@ function dunkelZeichnen(){
   const L = [];
   for(const p of [p1, p2]) if(p) L.push([p.x, p.y - p.h*0.5, DUNKEL_FIGUR]);
   leuchtLichter(L);
+  if(typeof lavaLichter === 'function') lavaLichter(L);   // Lava leuchtet (elemente/lava.js)
   for(const c of coins) if(!c.taken) L.push([c.x, c.y, 34]);
   for(const h of hooks) L.push([h.x, h.y, 46]);
   for(const sw of switchDefs) L.push([sw.x, sw.y, 50]);

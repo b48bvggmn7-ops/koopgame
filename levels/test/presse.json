@@ -1,0 +1,100 @@
+{
+ "hinweis": "Testlevel Ausbau 7: Stachelpresse. Öffnen: index.html?testlevel=presse · eine einzelne Presse (Takt 3 s), dann eine Welle aus drei Pressen (Versatz 0, ¼, ½), dann zwei Pressen, die Druckplatte 2 anhält, solange jemand draufsteht",
+ "welt": "vulkan",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 3600,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 0,
+   "y": 280,
+   "w": 3600,
+   "h": 40,
+   "type": "wall"
+  }
+ ],
+ "pressen": [
+  {
+   "x": 600,
+   "y": 320,
+   "breite": 2,
+   "takt": 3,
+   "versatz": 0,
+   "schalter": "immer"
+  },
+  {
+   "x": 1200,
+   "y": 320,
+   "breite": 1,
+   "takt": 3,
+   "versatz": 0,
+   "schalter": "immer"
+  },
+  {
+   "x": 1360,
+   "y": 320,
+   "breite": 1,
+   "takt": 3,
+   "versatz": 0.25,
+   "schalter": "immer"
+  },
+  {
+   "x": 1520,
+   "y": 320,
+   "breite": 1,
+   "takt": 3,
+   "versatz": 0.5,
+   "schalter": "immer"
+  },
+  {
+   "x": 2200,
+   "y": 320,
+   "breite": 2,
+   "takt": 2,
+   "versatz": 0,
+   "schalter": "stopp",
+   "link": 2
+  },
+  {
+   "x": 2400,
+   "y": 320,
+   "breite": 2,
+   "takt": 2,
+   "versatz": 0.5,
+   "schalter": "stopp",
+   "link": 2
+  }
+ ],
+ "plates": [
+  {
+   "x": 2020,
+   "y": 660,
+   "link": 2
+  }
+ ],
+ "switches": [],
+ "doors": [],
+ "hooks": [],
+ "spikes": [],
+ "coins": [],
+ "movingPlatforms": [],
+ "checkpoints": [],
+ "startM": {
+  "x": 100,
+  "y": 680
+ },
+ "startF": {
+  "x": 160,
+  "y": 680
+ },
+ "goal": {
+  "x": 3400,
+  "y": 680
+ }
+}

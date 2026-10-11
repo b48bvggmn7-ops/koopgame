@@ -96,6 +96,12 @@ const LEUCHT_RADIUS = 320;      // px Lichtkreis eines leuchtenden Kristalls
 const LEUCHT_REICHWEITE = 70;   // so nah (px) muss eine Figur sein, um ihn anzuschlagen
 const DUNKEL_STAERKE = 0.93;    // so dunkel ist eine Dunkelzone (0 … 1)
 const DUNKEL_FIGUR = 95;        // px Lichtkreis um eine Figur in der Dunkelzone (sonst 230)
+// Vulkan (Ausbau 7): steigende Lava (elemente/lava.js) und Stachelpresse (elemente/presse.js)
+const LAVA_TEMPO = {langsam: 0.35, mittel: 0.6, schnell: 1.0};   // px pro Schritt, so schnell steigt/sinkt die Lava
+const LAVA_GNADE = 6;           // so tief (px) muss eine Figur in der Lava stecken, bis sie verbrennt
+const PRESSE_FALL = 14;         // px pro Schritt beim Herunterkrachen
+const PRESSE_LIEGEN = 10;       // so viele Schritte bleibt die Presse unten liegen
+const PRESSE_WARN = 30;         // so viele Schritte vor dem Fall zittert die Kette (Vorwarnung)
 
 // ---------- Endgegner (Ausbau 6, elemente/boss.js) – Schritte = Physik-Schritte (60 = 1 Spielsekunde) ----------
 const BOSS_AUFTRITT = 90;        // so lange steht der Boss nach Phasenstart/Tod still (Zeit zum Orientieren)

@@ -570,6 +570,12 @@ function linkTargets(link){
   for(const b of wasserBecken) for(const pg of b.pegel){   // Wasserstand-Marke (elemente/stroemung.js)
     if(pg.link===link) pts.push({x:pg.x, y:pg.y-12, kind:'pegel', active:!!linkOn[link]});
   }
+  for(const b of lavaBecken) for(const m of b.marken){   // Lava-Marke (elemente/lava.js)
+    if(m.link===link) pts.push({x:m.x, y:m.y-12, kind:'pegel', active:!!linkOn[link]});
+  }
+  for(const P of pressen){   // Stachelpresse per Nummer (elemente/presse.js): Plakette auf dem Block
+    if(P.link===link) pts.push({x:P.x+P.w/2, y:P.y+20, kind:'plat', active:!!linkOn[link]});
+  }
   for(const t of teleporters){   // Teleporter per Verknüpfung (elemente/teleporter.js): Plakette über dem Tor
     if(t.link===link) pts.push({x:t.x+20, y:t.y-46, kind:'tele', active:!!linkOn[link]});
   }
@@ -597,6 +603,7 @@ function drawSolidLook(s, look, x){
     }
   }
   // (Fahrweg-Linien/Umrisse bewegter Böden auf Nutzerwunsch entfernt)
+  for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenHinten) E.spiel.zeichnenHinten();   // HINTER Boden/Wänden, z. B. Lava (elemente/)
   for(const s of solids){
     if(ELEMENT_SOLID_TYPEN.has(s.type)) continue;   // zeichnet sich selbst (elemente/, z. B. Wechselboden)
     if(s.gone){

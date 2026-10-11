@@ -230,6 +230,7 @@ function themeLights(){
   for(const sw of switchDefs) if(!hidden(sw.x, sw.y)) L.push([sw.x, sw.y, 60]);   // versteckte Hebel nicht verraten
   for(const pl of plates) if(!hidden(pl.x, pl.y)) L.push([pl.x, pl.y + 10, 50]);
   if(typeof leuchtLichter === 'function') leuchtLichter(L);   // Leuchtkristalle (elemente/leuchtkristall.js)
+  if(typeof lavaLichter === 'function') lavaLichter(L);       // Lava leuchtet (elemente/lava.js)
   if(typeof critters !== 'undefined') for(const c of critters) if(c.glow) L.push([c.x, c.y - (c.kind === 'crystal' ? 12 : 0), c.glow]);
   return L;
 }

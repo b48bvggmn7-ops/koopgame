@@ -1,0 +1,135 @@
+{
+ "hinweis": "Testlevel Ausbau 7: Lava. Öffnen: index.html?testlevel=lava · links ein Lava-Becken zum Drüberspringen, in der Mitte ein Becken zwischen zwei Mauern: Hebel 1 lässt die Lava bis zur Mauerkante steigen (Hebel nochmal = sinkt), rechts ein Becken mit Lava-Marke „sobald jemand kommt“: wer darüber ist, löst sie aus (Affe am Haken, Schweinchen segelt)",
+ "welt": "vulkan",
+ "tageszeit": "abend",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 760,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 960,
+   "y": 680,
+   "w": 400,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1360,
+   "y": 560,
+   "w": 40,
+   "h": 160,
+   "type": "wall"
+  },
+  {
+   "x": 1600,
+   "y": 560,
+   "w": 40,
+   "h": 160,
+   "type": "wall"
+  },
+  {
+   "x": 1640,
+   "y": 680,
+   "w": 560,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 2200,
+   "y": 480,
+   "w": 40,
+   "h": 240,
+   "type": "wall"
+  },
+  {
+   "x": 2440,
+   "y": 480,
+   "w": 40,
+   "h": 240,
+   "type": "wall"
+  },
+  {
+   "x": 2480,
+   "y": 680,
+   "w": 800,
+   "h": 40,
+   "type": "ground"
+  }
+ ],
+ "lava": [
+  {
+   "x": 760,
+   "y": 680,
+   "w": 200,
+   "h": 40
+  },
+  {
+   "x": 1400,
+   "y": 640,
+   "w": 200,
+   "h": 80
+  },
+  {
+   "x": 2240,
+   "y": 640,
+   "w": 200,
+   "h": 80
+  }
+ ],
+ "lavaPegel": [
+  {
+   "x": 1500,
+   "y": 560,
+   "tempo": "mittel",
+   "start": "nummer",
+   "link": 1
+  },
+  {
+   "x": 2340,
+   "y": 520,
+   "tempo": "schnell",
+   "start": "naehe"
+  }
+ ],
+ "switches": [
+  {
+   "x": 1300,
+   "y": 660,
+   "link": 1
+  }
+ ],
+ "doors": [],
+ "hooks": [
+  {
+   "x": 2340,
+   "y": 320,
+   "radius": 180
+  }
+ ],
+ "spikes": [],
+ "coins": [],
+ "movingPlatforms": [],
+ "checkpoints": [
+  {
+   "x": 1720,
+   "y": 680
+  }
+ ],
+ "startM": {
+  "x": 100,
+  "y": 680
+ },
+ "startF": {
+  "x": 160,
+  "y": 680
+ },
+ "goal": {
+  "x": 3150,
+  "y": 680
+ }
+}

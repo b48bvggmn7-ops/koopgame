@@ -870,6 +870,29 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Fallen-Köpfe und Lichtquellen nehmen im Spiel die Wandfarben des Levels an, nachts also auch dunkler.
     - Alte Level mit theme „ruinen“ (Level 3) sind unverändert. Test ruinen_welt_look.
 
+  - LAVA und LAVA-MARKE (Ausbau 7, Welt Vulkan; elemente/lava.js, Spiel-Felder lava [{x, y, w, h}] und
+    lavaPegel [{x, y, tempo, start, link?}]): glühende Lava-Kästchen (im Editor malbar, Gruppe Gefahren); zusammenhängende
+    Kästchen bilden ein Becken. Wer mit den Füßen hineingerät (LAVA_GNADE px tief), verbrennt (Zischen). Lava ist flüssig:
+    die Oberfläche ist im ganzen Becken gleich hoch; sie wird HINTER Boden und Wänden gezeichnet (neuer Register-Haken
+    spiel.zeichnenHinten), mit Glut-Schein, treibender Schlacke und Blasen, leuchtet in dunklen Leveln und blubbert leise.
+    - Lava-Marke über/in einem Becken: ist sie aktiv, steigt die Lava in den Spalten des Beckens bis zur Oberkante der
+      Marke (Tempo langsam 0,35 / mittel 0,6 / schnell 1,0 px pro Schritt, LAVA_TEMPO). „per Nummer“: solange die
+      Verknüpfung an ist (Hebel bleibt an, Druckplatte nur solange jemand draufsteht), aus = sinkt zurück; „sobald jemand
+      kommt“: startet, sobald eine Figur über dem Becken ist (Lava-Flucht). Gestrichelte Glut-Linie zeigt die Zielhöhe,
+      beim Steigen grollt es. Tod/Neustart: Lava wieder unten.
+    - Rolle: Affe klettert voraus (Wandsprung/Seil) und zieht oben den Hebel; Schweinchen steigt im Aufwind und hält
+      Druckplatten. Test lava_steigen, Testlevel levels/test/lava.json.
+  - STACHELPRESSE (Ausbau 7, Welt Vulkan; elemente/presse.js, Spiel-Feld pressen [{x, y, breite, takt, versatz, schalter,
+    link?}]): Eisenblock (1–3 Kästchen breit) mit Stacheln unten an einer Kette, im Editor an die OBERE Stelle gesetzt.
+    Im Takt (2 / 2,5 / 3 / 4 s, Versatz ¼-Schritte für Wellen): oben warten – Vorwarnung (Kette zittert, Staub rieselt,
+    Rasseln; PRESSE_WARN) – kracht schnell bis auf den ersten festen Boden darunter (PRESSE_FALL), bleibt kurz liegen
+    (PRESSE_LIEGEN, Stampfen), wird langsam hochgezogen. Berührung = Tod. Per Nummer: „hält bei Nummer an“ (fährt erst
+    ganz hoch, dann steht sie) oder „läuft nur bei Nummer“. Jede Presse hat ihre eigene Takt-Uhr ab Start/Neustart/Tod.
+    - Rolle: Affe wartet am Haken über der Presse den Takt ab und zieht Hebel, die Pressen anhalten; Schweinchen gleitet
+      zwischen zwei Schlägen hindurch und hält Platten. Test presse_takt, Testlevel levels/test/presse.json.
+  - Editor (Ausbau 7): Werkzeuge Lava, Lava-Marke und Stachelpresse in der Gruppe Gefahren (Test editor_vulkan_elemente);
+    Hebel/Platten dürfen auch Lava steigen lassen oder Pressen schalten (Test hebel_haben_grund; ein Hebel, der Lava
+    steigen lässt, muss auch ein Tor öffnen).
   - WELT HÖHLE – Look (Ausbau 7; Design in WELTEN.md): levels/worlds.json, Welt „hoehle“ hat jetzt
     "aussehen": {basis: hoehle, himmel: false, ambiente: Vögel 0 · Grillen 0,15 · Fluss 0,7} (unter Tage: keine Vögel,
     kaum Grillen, Wasser in der Ferne).

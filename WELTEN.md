@@ -411,3 +411,89 @@ Einstufungen wie bisher (komfortabel / knapp / Grenze). Zahlen = wie viele der v
 | 214–231 | Eis-Kamin: vereister Sims, Sprung über die dunkle Lücke | Eis + Timing | knapp |
 | 262–335 | Doppel-Rutsche im Dunkeln | Koordination + Eis | knapp |
 
+
+## Welt 5 – Vulkan
+
+**Thema:** Der Feuerberg – die **härteste Welt**. Fast alle bisherigen Mechaniken kommen zusammen, dazu das, was den
+Vulkan ausmacht: **steigende Lava** (Flucht nach oben, Zeitdruck), **Stachelpressen** im Takt, **Sprungpilze**
+(hohe Sprünge über Lava) und **Förderbänder** (Schlacke-Werk). Typisch 4–5 Versuche, die schwersten Stellen 10+ –
+aber immer fair: jede Gefahr ist vorher sichtbar, es gibt keine Zufallstode, Lava steigt nie schneller, als man
+klettern kann (Regelwerk Punkt 13).
+
+**Look:**
+- Eigener Feuer-Himmel (rot-orange, Asche, Glut-Funken), Vulkan mit Lavaströmen und Rauch in der Ferne,
+  Lavafälle, verkohlte Bäume, Basalt-Felsen vorne.
+- Boden und Wände: dunkler Basalt mit glühenden Fugen, Schlacke, verbranntes Gras; Glut-Kristalle.
+- Tageszeiten (Ausbau 7): der Feuer-Himmel bleibt, wird aber eingefärbt – **morgens** goldener Dunst, **mittags**
+  grell und klar, **abends** tief violett-rot, **nachts** dunkel, nur Lava und Glut leuchten.
+- Wetter: trocken = Ascheflocken und Glut; **Regen** = heißer Regen, über der Lava zischt Dampf auf;
+  wechselnd = mal so, mal so.
+
+**Tiere:** Feuersalamander (Eidechsen), Raben, Fledermäuse in Höhlen-Abschnitten, Glut-Falter statt Glühwürmchen.
+
+**Deko:** Glut-Kristalle, Schlackebrocken, verkohlte Stämme, Dampf-Spalten; dazu die neuen Elemente (glühende Lava mit
+Blasen, eiserne Stachelpressen mit Ketten).
+
+**Musik und Ambiente:** dieselbe Klavier-Musik; keine Vögel, kaum Grillen; dafür tiefes Grollen und Brodeln der Lava
+(eigenes Lava-Geräusch, lauter, je näher man ist), Stampfen der Pressen.
+
+**Mechanik-Set:** Sprungpilze, Förderband, Aufwind, Haken, Bröckelboden, Wechselboden, Teleporter, Fallen (Pfeil/Flamme),
+Eis (Obsidian-Glas) – alles vorhanden. Neu in Ausbau 7:
+- **Lava (neues Element):** glühende Lava-Becken – wer hineinfällt, ist tot. Mit einer **Lava-Marke** steigt die Lava:
+  per Nummer (Hebel = steigt bis zur Marke und bleibt, Druckplatte = nur solange jemand draufsteht) oder
+  **„sobald jemand kommt“** (Lava-Flucht). Tempo langsam / mittel / schnell; nach dem Tod wieder unten.
+- **Stachelpresse (neues Element):** schwerer Eisenblock mit Stacheln unten, der im festen Takt herunterkracht, kurz
+  liegen bleibt und langsam wieder hochgezogen wird (Takt 2/3/4 s, Versatz für Wellen). Per Nummer anhaltbar oder nur
+  bei Nummer an laufend. Vorher sichtbar: Kette zittert und Staub rieselt kurz vor dem Fall.
+
+### Plan pro Level
+
+| # | Level | Tageszeit / Wetter | Rolle | Mechaniken | Versuche (typisch / schwerste) |
+|---|---|---|---|---|---|
+| 1 | **Glutpfad** (neu, level-17) | morgen / trocken | Lehr-Level | Lava-Becken, steigende Lava (langsam), Sprungpilze | 3 / 5 |
+| 2 | **Aschefeld** (neu, level-18) | mittag / regen | Lehr-Level | Stachelpressen im Takt, Förderband | 3 / 6 |
+| 3 | Feuerberg (vorhanden, level-6) | – (alter Look) | Kombi-Level | Pilze, Wind, Stachelwand, Pressen, Lava-Schlot | 4 / 8 |
+| 4 | **Magmakammer** (neu, level-19) | abend / trocken | Kombi-Level | Lava-Flucht nach oben (Kamine), Pilze, Aufwind | 4 / 8 |
+| 5 | **Schlackewerk** (neu, level-20) | mittag / wechselnd | Kombi-Level | Pressen über Förderbändern, Hebel über Kreuz, Fallen | 4 / 9 |
+| 6 | **Feuerschlund** (neu, level-21) | nacht / trocken | Kombi-/Meister-Level | steigende Lava + Teleporter + Dunkelheit, Wechselboden | 5 / 10 |
+| 7 | **Kraterherz** (neu, level-22) | nacht / regen | Meister-Level | alles kombiniert: Lava-Flucht, Pressen, Bänder, Pilze, Haken, Eis | 5 / 10+ |
+
+Reihenfolge in der Welt: Glutpfad, Aschefeld, Feuerberg, Magmakammer, Schlackewerk, Feuerschlund, Kraterherz
+(der alte Feuerberg rückt an Platz 3, damit die Welt mit zwei Lehr-Leveln beginnt).
+
+**Glutpfad (level-17):** 1. Lava-Becken lernen (springen, Pilze über Lava). 2. Hebel lässt Lava steigen – und
+öffnet das Tor: zügig nach oben. 3. Druckplatte hält die Lava unten (einer hält, einer läuft). 4. Pilz-Kette über
+einen Lavasee.
+
+**Aschefeld (level-18):** 1. Eine Presse, dann eine Pressen-Welle (Takt lesen). 2. Pressen über einem Förderband.
+3. Hebel hält die Pressen für den anderen an. 4. Pressen-Gang mit Bröckelboden.
+
+**Magmakammer (level-19):** 1. Lava-Flucht durch Kamine (Wandsprung) – Lava steigt, sobald man kommt. 2. Affe Haken /
+Schweinchen Aufwind über die Lava. 3. Pilz-Turm mit steigender Lava. 4. Doppel-Schacht: jeder rettet den anderen.
+
+**Schlackewerk (level-20):** 1. Bänder tragen unter Pressen hindurch. 2. Hebel über Kreuz: jeder stoppt die Pressen
+des anderen. 3. Flammenfallen + Bänder. 4. Großes Werk: Band, Presse, Pilz, Haken.
+
+**Feuerschlund (level-21):** 1. Dunkle Lavagänge mit Leuchtkristallen. 2. Teleporter vor steigender Lava.
+3. Wechselboden über Lava. 4. Doppel-Flucht: zwei Schächte, zwei Lavastände.
+
+**Kraterherz (level-22):** 1. Pressen + Pilze. 2. Lava-Flucht mit Bändern und Eis. 3. Hebel-Ketten über der Lava.
+4. Finale: der Krater läuft voll – Flucht zum Gipfel.
+
+### Rolle von Affe und Schweinchen je Mechanik (Vulkan)
+
+| Mechanik | Affe | Schweinchen |
+|---|---|---|
+| Lava-Becken | Haken über die Lava; Seil hält ihn über der Glut | segelt über breite Becken |
+| Steigende Lava | klettert per Wandsprung / Seil voraus und zieht oben den Hebel, der das Tor öffnet | steigt im Aufwind schnell hoch; hält Druckplatten, die die Lava bremsen |
+| Stachelpresse | hängt am Haken über der Presse und wartet den Takt ab; zieht Hebel, die Pressen anhalten | gleitet zwischen zwei Schlägen hindurch; hält Platten, die Pressen stoppen |
+| Sprungpilz | Pilz -> hoher Haken | Pilz -> Segelflug |
+| Förderband | hält gegen das Band am Seil | segelt über Bänder hinweg |
+
+**Regeln, die in jedem Vulkan-Level gelten:**
+- Münzen nur blau und pink, gleich viele.
+- Checkpoints alle 40–60 Spalten und vor jeder harten Stelle (vor jeder Lava-Flucht ein Checkpoint).
+- Jeder Hebel hat einen Grund; ein Hebel, der Lava steigen lässt, öffnet immer auch ein Tor.
+- Lava steigt höchstens so schnell, dass zwei geübte Spieler ohne Fehler sicher oben ankommen.
+- Pressen fallen nie ohne Vorwarnung (Kette zittert, Staub rieselt).
+- Keine Zufallstode.

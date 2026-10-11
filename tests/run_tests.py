@@ -2405,8 +2405,10 @@ async def hebel_haben_grund(g):
             const fe = (typeof felsen !== 'undefined' ? felsen : []).filter(F=>F.link===l).length;   // Rollender Fels (Ausbau 7)
             const ba = solids.filter(s=>s.type==='band' && s.link===l).length;                // Förderband dreht/hält (Ausbau 7)
             const lk = (typeof leuchtKristalle !== 'undefined' ? leuchtKristalle : []).filter(k=>k.link===l).length;   // Licht im Dunkeln (Ausbau 7)
-            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
-            const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m)) || fe > 0;
+            const lv = (typeof lavaBecken !== 'undefined' ? lavaBecken : []).reduce((n, b) => n + b.marken.filter(m=>m.link===l).length, 0);   // Lava steigt (Ausbau 7)
+            const pr = (typeof pressen !== 'undefined' ? pressen : []).filter(P=>P.link===l).length;   // Pressen anhalten/anwerfen (Ausbau 7)
+            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk && !lv && !pr) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m)) || fe > 0 || lv > 0;   // auch: Hebel lässt Lava steigen
             if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
           }
           return out;
@@ -4044,7 +4046,8 @@ async def element_register(g):
                  ['falle', 'traps', True, True], ['fels', 'boulders', True, True],
                  ['lichtquelle', 'lichtquellen', True, True], ['spiegel', 'spiegel', True, False], ['kristall', 'kristalle', True, False],
                  ['eis', 'eis', True, True], ['foerderband', 'baender', True, True], ['leuchtkristall', 'leuchtkristalle', True, True],
-                 ['dunkelzone', 'dunkelzonen', True, False]], k   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
+                 ['presse', 'pressen', True, True]], k   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -4969,6 +4972,113 @@ async def editor_hoehlen_elemente(g):
         assert out['baender'] == [{'x': 240, 'y': 640, 'w': 40, 'h': 40, 'richtung': 'l', 'tempo': 2.8, 'link': 4, 'schalter': 'dreht'}], out['baender']
         assert out['leuchtkristalle'] == [{'x': 340, 'y': 620}, {'x': 380, 'y': 620, 'link': 6}], out['leuchtkristalle']
         assert 'Leuchtkristall' in await p.evaluate("[...linkSelect.options].find(o => o.value === '6').textContent")
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+
+@test
+async def lava_steigen(g):
+    """Ausbau 7 (Vulkan): Lava-Becken töten; Lava-Marke „per Nummer“ lässt die Lava bis zur Marke steigen (Hebel aus =
+    sinkt zurück); Marke „sobald jemand kommt“ startet, wenn eine Figur über dem Becken ist; Tod/Neustart = Lava unten.
+    Lava wird hinter Boden/Wänden gezeichnet und leuchtet im Dunkeln. Testlevel levels/test/lava.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'lava.json')); await g.steps(2)
+    assert await g.ev("lavaBecken.length") == 3 and await g.ev("lavaBecken.map(b => b.marken.length)") == [0, 1, 1]
+    # Becken A: hineinfallen = Tod (Zischen)
+    await g.ev("SFX_LOG.length = 0; p1.x = 860; p1.y = 600; p1.vx = 0; p2.x = 700; p2.y = 680")
+    await g.steps(40)
+    assert await g.ev("!!deathState && deathState.victim === p1"), 'Lava tötet nicht'
+    assert 'lavazisch' in await g.ev("SFX_LOG")
+    await weiter_nach_tod(g)
+    # Becken B: Hebel 1 -> steigt bis zur Marke (560), mittel = 0,6 px pro Schritt; aus -> sinkt zurück
+    b = "lavaBecken[1]"
+    assert await g.ev(f"{b}.surf") == 640
+    await g.ev("p1.x = 1700; p1.y = 680; p2.x = 1750; p2.y = 680; SFX_LOG.length = 0; setLink(1, true)")
+    await g.steps(60)
+    s1 = await g.ev(f"{b}.surf")
+    assert 590 < s1 < 612, f'Lava steigt nicht im Tempo: {s1}'
+    assert 'lavasteigt' in await g.ev("SFX_LOG")
+    await g.steps(100)
+    assert await g.ev(f"{b}.surf") == 560
+    assert await g.ev("inLava(1500, 570) && !inLava(1500, 550) && !inLava(1700, 670)"), 'Lava-Bereich falsch'
+    await g.ev("setLink(1, false)"); await g.steps(140)
+    assert await g.ev(f"{b}.surf") == 640, 'Lava sinkt nicht zurück'
+    # Becken C: „sobald jemand kommt“ (schnell = 1 px pro Schritt)
+    c = "lavaBecken[2]"
+    await g.ev("p1.x = 2100; p1.y = 680; p2.x = 2060; p2.y = 680"); await g.steps(30)
+    assert await g.ev(f"{c}.surf") == 640, 'Lava steigt, obwohl niemand da ist'
+    await g.ev("p1.x = 2340; p1.y = 300; p1.vy = 0; p1.hookAttached = false; p2.x = 2100"); await g.steps(1)
+    await g.ev("p1.x = 2100; p1.y = 680"); await g.steps(60)
+    s2 = await g.ev(f"{c}.surf")
+    assert 540 < s2 < 600, f'Lava-Flucht startet nicht: {s2}'
+    # Tod -> Lava wieder unten
+    await g.ev("die(p2)"); await weiter_nach_tod(g)
+    assert await g.ev("lavaBecken.map(b => b.surf)") == [680, 640, 640], 'Lava nach dem Tod nicht zurückgesetzt'
+    # Zeichnen: hinter den Wänden, Lichter im Dunkeln
+    n = await g.ev("""(() => { let z = 0; const E = ELEMENTE.find(e => e.id === 'lava'), f = E.spiel.zeichnenHinten;
+      E.spiel.zeichnenHinten = () => { z++; f(); }; camPos = 1200; draw(); E.spiel.zeichnenHinten = f; const L = []; lavaLichter(L); return [z, L.length > 0]; })()""")
+    assert n == [1, True], n
+
+@test
+async def presse_takt(g):
+    """Ausbau 7 (Vulkan): Stachelpresse kracht im Takt bis auf den Boden, bleibt kurz liegen, wird hochgezogen; vorher
+    Vorwarnung (Kette); Versatz verschiebt den Takt; „hält bei Nummer an“ (Druckplatte) – fährt erst hoch, dann steht sie;
+    Berührung = Tod; Neustart = gleicher Rhythmus. Testlevel levels/test/presse.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'presse.json')); await g.steps(1)
+    assert await g.ev("pressen.length") == 6
+    assert await g.ev("pressen.map(P => P.hub)") == [308] * 6, await g.ev("pressen.map(P => P.hub)")   # Decke 320 -> Boden 680
+    await g.ev("p1.x = 300; p2.x = 260; SFX_LOG.length = 0")
+    # Takt 3 s = 180 Schritte: oben warten, Warnung, Fall, liegen, hoch
+    await g.p.wait_for_function("presseWarnung(pressen[0]) > 0.2", timeout=8000)
+    assert await g.ev("pressen[0].y") == 320, 'Presse fällt schon während der Vorwarnung'
+    assert 'pressekette' in await g.ev("SFX_LOG"), 'keine Vorwarnung (Kette)'
+    await g.p.wait_for_function("pressen[0].unten", timeout=8000)
+    assert await g.ev("pressen[0].y") == 628 and 'pressestampf' in await g.ev("SFX_LOG"), await g.ev("pressen[0].y")
+    await g.p.wait_for_function("!pressen[0].unten", timeout=8000); await g.steps(20)
+    y = await g.ev("pressen[0].y")
+    assert 320 < y < 628, f'Presse wird nicht hochgezogen: {y}'
+    # Versatz: die Welle fällt nacheinander
+    lagen = await g.ev("[1, 2, 3].map(i => presseZeit(pressen[i]))")
+    assert lagen[0] != lagen[1] != lagen[2], lagen
+    # Berührung = Tod
+    await g.ev("p1.x = 620; p1.y = 680"); 
+    for _ in range(40):
+        await g.steps(5)
+        if await g.ev("!!deathState"): break
+    assert await g.ev("!!deathState && deathState.victim === p1"), 'Presse tötet nicht'
+    await weiter_nach_tod(g)
+    assert await g.ev("pressen.every(P => P.t < 60) && pressen[0].y === pressen[0].y0"), 'Neustart setzt die Pressen nicht zurück'
+    # Druckplatte 2 hält die beiden Pressen an (erst hoch, dann stehen)
+    await g.ev("p2.x = 2020; p2.y = 680; p1.x = 1950; p1.y = 680"); await g.steps(250)
+    assert await g.ev("!!linkOn[2]") and await g.ev("pressen[4].y === pressen[4].y0 && pressen[5].y === pressen[5].y0"), await g.ev("[pressen[4].y, pressen[5].y]")
+    await g.ev("p2.x = 1900"); await g.steps(200)
+    assert await g.ev("pressen[4].y > pressen[4].y0 || pressen[5].y > pressen[5].y0"), 'Pressen laufen nach der Platte nicht weiter'
+
+@test
+async def editor_vulkan_elemente(g):
+    """Ausbau 7: Editor-Werkzeuge Lava (malbar, wird zu Rechtecken zusammengefasst), Lava-Marke (per Nummer / sobald
+    jemand kommt, Tempo) und Stachelpresse (Breite, Takt, Versatz, Nummer) in der Gruppe Gefahren; Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        gef = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gefahren] .tool')].map(t => t.dataset.tool)")
+        assert 'lava' in gef and 'lavapegel' in gef and 'presse' in gef, gef
+        await p.click('.tool[data-tool=lava]'); await ed_ziehen(p, (2, 16), (4, 16))
+        await p.click('.tool[data-tool=lavapegel]'); await p.select_option('#opt-lavapegel-start', 'nummer'); await p.select_option('#opt-lavapegel-tempo', 'langsam')
+        await p.select_option('#linkSelect', '3'); x, y = await ed_zelle(p, 3, 13); await p.mouse.click(x, y)
+        await p.select_option('#opt-lavapegel-start', 'naehe'); await p.select_option('#opt-lavapegel-tempo', 'schnell')
+        x, y = await ed_zelle(p, 4, 12); await p.mouse.click(x, y)
+        await p.click('.tool[data-tool=presse]'); await p.select_option('#opt-presse-breite', '2'); await p.select_option('#opt-presse-takt', '2.5')
+        await p.select_option('#opt-presse-versatz', '0.25'); await p.select_option('#opt-presse-schalter', 'stopp'); await p.select_option('#linkSelect', '5')
+        x, y = await ed_zelle(p, 8, 10); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['lava'] == [{'x': 80, 'y': 640, 'w': 120, 'h': 40}], out['lava']
+        assert out['lavaPegel'] == [{'x': 140, 'y': 520, 'tempo': 'langsam', 'start': 'nummer', 'link': 3},
+                                    {'x': 180, 'y': 480, 'tempo': 'schnell', 'start': 'naehe'}], out['lavaPegel']
+        assert out['pressen'] == [{'x': 320, 'y': 400, 'breite': 2, 'takt': 2.5, 'versatz': 0.25, 'schalter': 'stopp', 'link': 5}], out['pressen']
+        assert 'Lava steigt' in await p.evaluate("[...linkSelect.options].find(o => o.value === '3').textContent")
+        assert 'Presse' in await p.evaluate("[...linkSelect.options].find(o => o.value === '5').textContent")
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
