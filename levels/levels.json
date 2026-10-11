@@ -125,5 +125,10 @@
   "datei": "dschungel/05-dornenpfad.json",
   "name": "Dschungel 5",
   "titel": "Dornenpfad"
+ },
+ {
+  "datei": "dschungel/06-wipfelsturm.json",
+  "name": "Dschungel 6",
+  "titel": "Wipfelsturm"
  }
 ]

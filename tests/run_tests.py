@@ -581,7 +581,7 @@ async def menue_projekt_levels(g):
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
         echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
         assert echte[:4] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
-        assert namen == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6), Level 7/8 (Ausbau 7)
+        assert namen == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Wipfelsturm', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6), Level 7/8 (Ausbau 7)
         # Level 2 gesperrt
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await g.ev("menuScreen") == 'start', 'gesperrtes Level startet'
@@ -3373,6 +3373,184 @@ async def dschungel5_dornenpfad(g):
     assert not fehler, fehler
 
 @test
+async def dschungel6_wipfelsturm(g):
+    """Dschungel 6 „Wipfelsturm“ (6er-Welten, schwerstes Dschungel-Level): Koop-Bot spielt jede Stelle (Luft-Tore über Dornen, Brücke per Platte, Takt-Treppe 1 s, Jagd durchs Tor, wippende Haken/Aufwinde, Tor-Staffel, Pilz-Turm, Bröckel-Abstieg, Wechsel-Schleuse mit Klappe, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale) bis zum Ziel; Checkpoints höchstens ~60 Spalten auseinander."""
+    await koop_level(g, 'dschungel/06-wipfelsturm.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def wind_hoch(c0, c1, bis_r):
+        return [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c0)}', 'left': f'P.x > {kx(c1)}'}, 'until': f'P.y < {ky(bis_r)}', 'frames': 900}]
+    def info(r): return r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    def lauf(bis, kanten):
+        cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+        return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+    def takt_plan(start_c, stufen, ziel_x, n):
+        pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
+        for c0 in stufen[1:]:
+            pl += [{'wait': f'({n} - wechselSchritte % {n}) <= 20 && ({n} - wechselSchritte % {n}) > 3'}] + sprung_zu(kx(c0) + 20)
+        return pl + [{'wait': f'({n} - wechselSchritte % {n}) <= 24'}] + sprung_zu(ziel_x)
+    async def beide(name, start, pl, ziel, delay=200, ok=None, r0=15, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, r0), o: kat(start - 2, r0)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), links=kw.get('links', []))
+            good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who} vorn)', info(r))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            if who == 'm':
+                ok = []
+                for rel in RELS:
+                    pl = [k_lauf(14, 0), {'until': f'P.x > {kx(22)}', 'frames': 200}, {'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 60}]
+                    for k in range(3): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+                    pl += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(54)]
+                    r = await koop(g, m=kat(10, 15), f=kat(52, 15), plans={'m': pl}, maxFrames=3000)
+                    if r.get('done') and r['pos']['m'][0] >= 53: ok.append(rel[:14])
+                soll(ok, 'E1 Luft-Tor: Affe greift die Haken über den Dornen', (ok, info(r)))
+            else:
+                r = await koop(g, f=kat(10, 15), m=kat(52, 15), plans={'f': [k_lauf(14, 0), {'until': f'P.x > {kx(22)}', 'frames': 200}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}, k_lauf(54)]}, maxFrames=3000)
+                soll(r.get('done') and r['pos']['f'][0] >= 53, 'E1 Luft-Tor: Schwein segelt über die Dornen', info(r))
+        r = await koop(g, m=kat(10, 15), f=kat(52, 15), plans={'m': [k_lauf(14, 0), {'until': f'P.x > {kx(22)}', 'frames': 200}, {'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r.get('dead') == 'm', 'E1 Luft-Tor ohne Haken: Affe fällt in die Dornen', info(r))
+        ok = []
+        for rel in RELS:
+            m = [k_lauf(57, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(76)}', 'frames': 3000}] + kette(58, 2, rel) + [k_lauf(84)]
+            f = [{'wait': '!!linkOn[2]', 'frames': 1000}, {'frames': 10}, k_lauf(77, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[3]'}, k_lauf(85)]
+            r = await koop(g, m=kat(54, 15), f=kat(55, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 83 and r['pos']['f'][0] >= 84: ok.append(rel[:14])
+        soll(ok, 'E1 Brücke für die Partnerin (Platte 2, Hebel 3, Affe an zwei Haken)', (ok, info(r)))
+        r = await koop(g, f=kat(55, 15), m=kat(53, 15), plans={'f': glide_to(58, kx(77), 10)}, maxFrames=2000)
+        soll(r.get('dead') == 'f', 'E1 ohne Brücke kommt das Schwein nicht hinüber', info(r))
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 120, 20):
+                r = await koop(g, **{who: kat(82, 15), ('f' if who == 'm' else 'm'): kat(108, 9)}, plans={who: [{'frames': wait + 1}] + takt_plan(85, [87, 90, 93, 96, 99, 102], kx(106), 60) + [k_lauf(109)]}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 108: n += 1
+            soll(n > 0, f'E1 Takt-Treppe 1 s ({who})', (f'{n}/6', info(r)))
+        flucht = lambda w: [lauf(147, [132]), {'until': f'P.x > {kx(150)}', 'frames': 100}, k_lauf(163)]
+        for delay in (0, 20):
+            m = [k_lauf(124, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(126, -4), {'wait': '!!linkOn[4]'}] + flucht('f')
+            r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 162 and r['pos']['f'][0] >= 162, f'E1 Jagd durchs Tor (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': [k_lauf(124, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E1 1 s gezögert: die Wand holt den Affen ein', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            for warte in (0, 40, 80):
+                pl = [{'frames': warte + 1}] + kette(208, 4, rel) + [k_lauf(243)]
+                r = await koop(g, m=kat(206, 15), f=kat(204, 15), plans={'m': pl}, maxFrames=4000)
+                if r.get('done') and r['pos']['m'][0] >= 242: ok.append((rel[:14], warte))
+        soll(ok, 'E2 Affe an wippenden Haken', (ok, info(r)))
+        ok = None
+        for hold in (6, 10, 14):
+            r = await koop(g, f=kat(206, 15), m=kat(244, 15), plans={'f': glide_to(209, kx(243), hold) + [k_lauf(244)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 243: ok = hold; break
+        soll(ok, 'E2 Schwein segelt von Aufwind zu Aufwind', (ok, info(r)))
+        m = [{'wait': '!!linkOn[5]', 'frames': 3000}, {'frames': 20}, k_lauf(281, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, k_lauf(298, -14), {'use': True, 'frames': 2}, k_lauf(301), {'until': 'P.grounded', 'frames': 200}, {'wait': f'Q.x >= {kx(299)}', 'frames': 2000}, k_lauf(305)]
+        f = [k_lauf(256, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, k_lauf(276, -14), {'use': True, 'frames': 2}, k_lauf(278), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[6]', 'frames': 3000}, {'frames': 20}, k_lauf(300)]
+        r = await koop(g, m=kat(253, 15), f=kat(252, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+        soll(r.get('done') and r['pos']['m'][0] >= 304 and r['pos']['f'][0] >= 299, 'E2 Tor-Staffel (pinkes Tor -> Hebel 5, blaues Tor -> Hebel 6)', info(r))
+        r = await koop(g, m=kat(253, 15), f=kat(250, 15), plans={'m': [k_lauf(267)]}, maxFrames=600)
+        soll(r['pos']['m'][1] == 15 and r['pos']['m'][0] < 268, 'E2 Affe nimmt nicht das pinke Tor, Tür 5 hält', info(r))
+        turm = lambda w: [{'aim': [kx(308), kx(313), kx(318), kx(323), kx(330)], 'jumps': [kx(305)], 'until': f'P.grounded && P.y <= {ky(3)} + 2', 'frames': 1200}, k_lauf(332)]
+        await beide('E2 Pilz-Turm über die Dornen', 300, turm, 331, delay=40)
+        ab = lambda w: [k_lauf(344, -4)] + sprung_zu(kx(347) + 20) + sprung_zu(kx(351) + 20) + sprung_zu(kx(355) + 20) + sprung_zu(kx(359) + 20) + sprung_zu(kx(363) + 20) + sprung_zu(kx(370)) + [k_lauf(375)]
+        for delay in (5, 15):
+            r = await koop(g, m=kat(340, 3), f=kat(338, 3), plans={'m': ab('m'), 'f': [{'frames': delay}] + ab('f')}, maxFrames=3000)
+            soll(r.get('done') and r['pos']['m'][0] >= 374 and r['pos']['f'][0] >= 374, f'E2 Bröckel-Abstieg (Schwein {delay} Schritte später)', info(r))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            pl = [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200}, {'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 60}]
+            for k in range(3): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+            pl += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(446)]
+            r = await koop(g, m=kat(407, 15), f=kat(446, 15), plans={'m': pl}, maxFrames=3000)
+            if r.get('done') and r['pos']['m'][0] >= 445: ok.append(rel[:14])
+        soll(ok, 'E3 Hohes Luft-Tor: Affe an drei Haken', (ok, info(r)))
+        r = await koop(g, f=kat(407, 15), m=kat(446, 15), plans={'f': [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(447)}'}, 'until': 'P.grounded', 'frames': 900}, k_lauf(446)]}, maxFrames=3000)
+        soll(r.get('done') and r['pos']['f'][0] >= 445, 'E3 Hohes Luft-Tor: Schwein segelt mit Aufwind', info(r))
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 120, 20):
+                r = await koop(g, **{who: kat(448, 15), ('f' if who == 'm' else 'm'): kat(482, 15)}, plans={who: [{'frames': wait + 1}] + takt_plan(451, list(range(453, 477, 3)), kx(480), 60) + [k_lauf(483)]}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 482: n += 1
+            soll(n > 0, f'E3 Takt-Steine 1 s ({who})', (f'{n}/6', info(r)))
+        m = [k_lauf(483, -4)] + sprung_zu(kx(487)) + [k_lauf(489, -24), {'frames': 10}, {'wait': '!!linkOn[8]', 'frames': 3000}, {'hold': ['right'], 'until': f'P.x > {kx(511)}', 'frames': 200}, k_lauf(518)]
+        f = [k_lauf(483, -4)] + sprung_zu(kx(486)) + [{'wait': '!!linkOn[7]', 'frames': 1000}, {'frames': 10}, k_lauf(510, -14), {'use': True, 'frames': 2}, {'wait': f'Q.x > {kx(511)}', 'frames': 2000}, k_lauf(519)]
+        r = await koop(g, m=kat(481, 15), f=kat(480, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+        soll(r.get('done') and r['pos']['m'][0] >= 517 and r['pos']['f'][0] >= 518 and r['pos']['m'][1] == 13, 'E3 Wechsel-Schleuse (Platte 7, Hebel 8, Klappe + blaues Tor)', info(r))
+        r = await koop(g, m=kat(486, 13), f=kat(485, 13), plans={'m': [k_lauf(491, -10), {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
+        soll(r.get('dead') == 'm' or r['pos']['m'][0] < 492, 'E3 ohne Hebel 8 bleibt die Klappe zu (Affe fällt nicht ins Tor)', info(r))
+        hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        flucht = lambda w: [k_lauf(537)] + hupf(546) + hupf(556) + hupf(566) + [k_lauf(591)]
+        for delay in (0, 20):
+            m = [k_lauf(533, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(535, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
+            r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 590 and r['pos']['f'][0] >= 590, f'E3 Doppel-Jagd (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': [k_lauf(533, -14), {'use': True, 'frames': 2}, {'frames': 80}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E3 1,5 s gezögert: Wand oder Decke erwischen den Affen', info(r))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            m = [k_lauf(602, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, {'frames': 5}, {'wait': '!!linkOn[10]', 'frames': 3000}, {'frames': 20}] + kette(616, 1, rel) + am(624) + \
+                [{'wait': '!!linkOn[12]', 'frames': 3000}, {'frames': 20}] + kette(642, 2, rel) + am(653) + [k_lauf(662)]
+            f = [k_lauf(604, 0), {'until': f'P.x > {kx(609)}', 'frames': 200}, {'frames': 5}] + am(613) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}] + \
+                takt_plan(627, [629, 632, 635], kx(638), 72) + am(639) + [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(663)]
+            r = await koop(g, m=kat(600, 15), f=kat(599, 15), plans={'m': m, 'f': f}, maxFrames=9000)
+            if r.get('done') and r['pos']['m'][0] >= 661 and r['pos']['f'][0] >= 662: ok.append(rel[:14])
+        soll(ok, 'E4 Wipfel-Staffel (beide zusammen)', (ok, info(r)))
+        r = await koop(g, f=kat(611, 15), m=kat(611, 7), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['f'][0] < 626, 'E4 ohne Hebel 11 hält Tür 11', info(r))
+        r = await koop(g, m=kat(611, 7), f=kat(611, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['m'][0] < 615, 'E4 ohne Hebel 10 hält Tür 10', info(r))
+        flucht = lambda w: [lauf(697, [686]), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(699)} - 6', 'left': f'P.x > {kx(699)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+                            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(742, -4)] + sprung_zu(kx(745)) + sprung_zu(kx(751)) + sprung_zu(kx(757)) + sprung_zu(kx(764)) + [k_lauf(767)]
+        for delay in (0, 20):
+            m = [k_lauf(679, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + flucht('f')
+            r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 766 and r['pos']['f'][0] >= 766, f'E4 Finale: Sturm-Jagd und Stege (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': [k_lauf(679, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E4 1 s gezögert: die Wand holt den Affen ein', info(r))
+        r = await koop(g, m=kat(768, 5), f=kat(766, 5), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
+        soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
+    assert not fehler, fehler
+
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
     Teleporter, Falle, Fels, Förderband oder Leuchtkristall),
@@ -4602,17 +4780,17 @@ async def welten_laden(g):
         assert k['w'] == ids, k
         # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
         assert [x[0] for x in k['l']] == [d for x in w['welten'] for d in x['level']] == [   # Editor-Umbau: Welt-Ordner
-            'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json',
+            'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json',
             'ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json',
             'hoehle/02-tropfsteingang.json', 'hoehle/03-eisgrotte.json', 'hoehle/01-kristallhoehle.json', 'hoehle/04-leuchtgrotte.json',
             'hoehle/05-foerderwerk.json', 'hoehle/06-tiefenschlund.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json',
             'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json',
             'vulkan/07-kraterherz.json'], f'Reihenfolge geändert: {k}'
-        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Ruinen', 'Fallengang', 'Sonnentempel',
+        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Wipfelsturm', 'Ruinen', 'Fallengang', 'Sonnentempel',
                                           'Mondnacht', 'Felsenflucht', 'Tropfsteingang', 'Eisgrotte', 'Kristallhöhle', 'Leuchtgrotte',
                                           'Förderwerk', 'Tiefenschlund', 'Glutpfad', 'Aschefeld', 'Feuerberg', 'Magmakammer',
                                           'Schlackewerk', 'Feuerschlund', 'Kraterherz'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel'] * 5 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
+        assert [x[2] for x in k['l']] == ['dschungel'] * 6 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -4912,7 +5090,7 @@ async def editor_rundreise_alle_level(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 23, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
+        assert len(liste) == 24, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -5544,7 +5722,8 @@ async def welten_freischaltung(g):
         assert await fertig('dschungel/02-baumkronen.json') == await nr('dschungel/03-lianenschlucht.json') and await fertig('dschungel/03-lianenschlucht.json') == await nr('dschungel/04-gluehwald.json')
         # Ausbau 6: Dschungel hat einen Boss -> nach dem letzten Level erst der Boss, dann öffnen die Ruinen
         assert await fertig('dschungel/04-gluehwald.json') == await nr('dschungel/05-dornenpfad.json')   # 6er-Welten: Dschungel 5
-        assert await fertig('dschungel/05-dornenpfad.json') == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
+        assert await fertig('dschungel/05-dornenpfad.json') == await nr('dschungel/06-wipfelsturm.json')
+        assert await fertig('dschungel/06-wipfelsturm.json') == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
         assert await g.ev(offen) == [True, False, False, False, False], 'Ruinen offen ohne besiegten Boss'
         assert await g.ev("GameMenu.completeBoss('dschungel')") == 'ruinen'
         assert await g.ev(offen) == [True, True, False, False, False]
@@ -5569,7 +5748,7 @@ async def welten_freischaltung(g):
         assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
         await p.wait_for_function("!document.querySelector('.ulock')", timeout=6000)
         # letzter Sieg der Welt (Ausbau 6: der Boss) -> Weltkarte mit Freischalt-Animation auf „Ruinen“
-        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json'].forEach(f => GameMenu.completeLevel(nr(f), true)); GameMenu.completeBoss('dschungel')")
+        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json'].forEach(f => GameMenu.completeLevel(nr(f), true)); GameMenu.completeBoss('dschungel')")
         await g.ev("GameMenu.show('results', {n: 2, fresh: 3, freshWorld: 'ruinen', packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
         assert await sm_screen(g) == 'sm-s-map', 'nach der letzten Level einer Welt nicht zur Weltkarte'
@@ -6623,7 +6802,7 @@ async def boss1_bruno(g):
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         boss = "document.querySelector('#sm-cards .lc.boss')"
         assert await g.ev(f"{boss}.classList.contains('lock')"), 'Boss-Karte offen, obwohl Level 2 fehlt'
-        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # alle Dschungel-Level (Ausbau 7: 4)
+        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # alle Dschungel-Level (Ausbau 7: 4)
         assert await g.ev("GameMenu.worldUnlocked('ruinen')") is False, 'Ruinen offen ohne Boss'
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         assert not await g.ev(f"{boss}.classList.contains('lock')") and 'Bruno' in await g.ev(f"{boss}.textContent"), await g.ev(f"{boss}.outerHTML")
