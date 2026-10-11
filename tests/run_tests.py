@@ -2584,7 +2584,7 @@ async def level18_aschefeld(g):
 
 @test
 async def level19_magmakammer(g):
-    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/level-19.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder, Lavasee mit Haken und Aufwinden, Hebel des Schweinchens, zweiter See."""
+    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/level-19.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder, Lavasee mit Haken und Aufwinden, Hebel des Schweinchens, zweiter See, Pilz-Turm, Kamin mit Presse, Pressen über dem Lavasteg."""
     await koop_level(g, 'level-19.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2680,6 +2680,16 @@ async def level19_magmakammer(g):
             r = await koop(g, f=kat(310, 15), m=kat(346, 15), plans={'f': glide_to(315, kx(347), hold) + [k_lauf(348)]}, maxFrames=4000)
             if r.get('done') and r['pos']['f'][0] >= 346: ok = hold; break
         soll(ok, 'E2 zweiter See: Schwein mit Aufwind (See steigt schneller)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        turm = lambda: [{'aim': [kx(412), kx(418), kx(424), kx(430), kx(439)], 'jumps': [kx(409)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
+                        k_lauf(453), {'until': 'P.grounded', 'frames': 100}, k_lauf(458), {'until': 'P.grounded', 'frames': 100}, k_lauf(462), {'until': 'P.grounded', 'frames': 100}, k_lauf(468)]
+        await beide('E3 Pilz-Turm vor der Lava', 404, lambda w: turm(), 467, delay=40)
+        kamin = lambda: [k_lauf(472, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(477)}', 'frames': 900}, durch(497),
+                         k_lauf(498), {'until': 'P.grounded', 'frames': 100}, k_lauf(503), {'until': 'P.grounded', 'frames': 100}, k_lauf(508), {'until': 'P.grounded', 'frames': 100}, k_lauf(512)]
+        await beide('E3 Kamin mit Presse am Ausgang', 469, lambda w: kamin(), 511, delay=60)
+        await beide('E3 Pressen über dem Lavasteg', 513, lambda w: [k_lauf(518, 0)] + sprung_zu(kx(521)) + [durch(548), {'until': 'P.grounded', 'frames': 100}, k_lauf(552)], 551)
     assert not fehler, fehler
 
 @test

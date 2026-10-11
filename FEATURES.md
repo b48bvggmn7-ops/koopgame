@@ -1159,6 +1159,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Ufer sind, steigt der See langsam); der Hebel des Schweinchens (im Aufwind auf den Sims, Hebel 3 öffnet Tür 3 für
       den Affen – lässt aber die Lava über seinem Steinweg steigen: sofort los); zweiter, schnellerer See (Haken /
       Aufwinde).
+    - Etappe 3 (Spalten 400–600): Pilz-Turm (vier Pilz-Säulen treppauf, jede höher – sobald beide im Becken sind, steigt
+      die Lava); Kamin mit Presse am Ausgang (im Kamin steigt die Lava, oben stampft eine Presse über dem Sims); Pressen
+      über dem Lavasteg.
     - Test level19_magmakammer (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
