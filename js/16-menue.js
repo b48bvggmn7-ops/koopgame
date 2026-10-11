@@ -104,7 +104,7 @@ async function showLevelSelect(){
     b.className = 'mItem'; b.textContent = P.name || P.datei; b.tabIndex = -1;
     const action = async ()=>{
       try{
-        const r = await fetch(PROJECT_LEVELS + encodeURIComponent(P.datei), {cache:'no-store'});
+        const r = await fetch(PROJECT_LEVELS + levelPfadUrl(P.datei), {cache:'no-store'});
         if(!r.ok) throw 0;
         startLevel(await r.json());
       }catch(e){ b.textContent = (P.name || P.datei) + ' – konnte nicht geladen werden'; }

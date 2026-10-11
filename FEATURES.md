@@ -1306,6 +1306,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       verschwinden. Test werkzeug_welten (jedes Werkzeug steht in der Tabelle).
     - Ergebnis (gemessen): Leiste bei 1920x1080 144 px statt 392 px, Kästchen 40 statt 32 px; bei 1366x768 144 statt
       473 px, Kästchen 29 statt 13 px.
+  - LEVEL-ORDNER NACH WELTEN (Editor-Umbau, Teil I): levels/<welt>/<nr>-<titel>.json, Bosse <welt>/boss-<name>.json,
+    alter Entwurf in levels/archiv/, Testlevel weiter in levels/test/; editor-format/ mit denselben Unterordnern;
+    levels/README.md erklärt die Struktur. worlds.json/levels.json nennen die neuen Pfade. Spiel, Weltkarte und Editor
+    laden daraus („Levels im Projekt“, Laden, „☁ Auf GitHub speichern“). Im Editor steht bei jedem Projekt-Level Welt
+    und Nummer („Vulkan 3 · Feuerberg“ in der Liste, in der GitHub-Auswahl und oben neben der Level-Info). Ein NEUES
+    Level speichert „Auf GitHub speichern“ im Ordner der Welt aus der Level-Info mit der nächsten freien Nummer dieser
+    Welt und dem Titel im Namen (z. B. wasser/01-tiefsee.json); Bosse als <welt>/boss-<titel>.json. Die Nummer im
+    Dateinamen bleibt beim Umsortieren (Nutzerentscheidung) – die Reihenfolge im Spiel kommt aus worlds.json, die
+    angezeigte Nummer ist immer die Position in der Welt. Spielstände und der Editor-Arbeitsstand mit alten Namen
+    (level-6.json …) werden beim Laden auf die neuen Pfade umgeschrieben (Tabelle js/01a-level-umzug.js, nichts geht
+    verloren). Tests level_ordner_nach_welten, spielstand_umzug_welt_ordner.
   - Seitenleiste: Raster-Infos (Kästchengröße, Länge) und Zähler (Checkpoints, Münzen, Blau/Pink-Bilanz) bleiben sichtbar;
     die langen Erklärungen (Hilfe, Bewegungs-Referenz, Legende) sind eingeklappt – Knopf „Hilfe ▸“.
   - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt

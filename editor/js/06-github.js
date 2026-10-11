@@ -22,12 +22,13 @@ async function ghOpen(){
     const list = await r.json();
     for(const P of list){
       if(P.versteckt) continue;
-      const o = document.createElement('option'); o.value = P.datei; o.textContent = `${P.name}${P.titel ? ' – '+P.titel : ''} (${P.datei})`;
+      const o = document.createElement('option'); o.value = P.datei; o.textContent = `${levelAnzeige(P.datei) || P.name}${P.titel ? ' – '+P.titel : ''} (${P.datei})`;
       o.dataset.name = P.name || ''; sel.appendChild(o);
     }
-    // Ausbau 2: als NEUES Level speichern (nächste freie Nummer), kommt in die gewählte Welt an die gewählte Position
-    const n = nextLevelNumber(list), o = document.createElement('option');
-    o.value = `level-${n}.json`; o.dataset.neu = '1'; o.dataset.name = `Level ${n}`; o.textContent = `➕ Neues Level ${n} (level-${n}.json)`;
+    // als NEUES Level speichern: Datei im Ordner der Welt aus der Level-Info, nächste freie Nummer dieser Welt
+    // (Editor-Umbau: levels/<welt>/<nr>-<titel>.json; die Nummer bleibt, die Position in der Welt kommt aus worlds.json)
+    const datei = neueLevelDatei(list), anz = levelAnzeige(datei) || datei, o = document.createElement('option');
+    o.value = datei; o.dataset.neu = '1'; o.dataset.name = anz; o.textContent = `➕ Neues Level ${anz} (${datei})`;
     sel.appendChild(o);
     if(currentProjectFile) sel.value = currentProjectFile;
   }catch(e){ ghSay('Levelliste nicht erreichbar – Editor bitte über die Webseite öffnen.', true); }
@@ -43,11 +44,22 @@ async function ghApi(path, opt){
   }
   return r.json();
 }
-// nächste freie Nummer für „level-N.json“
-function nextLevelNumber(list){
+// Dateiname für ein neues Level: <welt>/<nr>-<titel>.json (nächste freie Nummer dieser Welt) bzw. <welt>/boss-<titel>.json
+function dateiTeil(t){
+  return String(t || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+function neueLevelDatei(list){
+  const welt = meta.welt || 'dschungel', name = dateiTeil(meta.titel) || 'neues-level';
+  const vorhanden = new Set((list || []).map(P => P.datei));
+  if(elementPunkte.boss && elementPunkte.boss.length){   // Boss-Level (Ausbau 6)
+    let d = `${welt}/boss-${name}.json`, k = 2;
+    while(vorhanden.has(d)) d = `${welt}/boss-${name}-${k++}.json`;
+    return d;
+  }
   let n = 0;
-  for(const P of list || []){ const m = /^level-(\d+)\.json$/.exec(P.datei || ''); if(m) n = Math.max(n, Number(m[1])); }
-  return n + 1;
+  for(const P of list || []){ const m = /^([a-z0-9-]+)\/(\d+)-/.exec(P.datei || ''); if(m && m[1] === welt) n = Math.max(n, Number(m[2])); }
+  return `${welt}/${String(n + 1).padStart(2, '0')}-${name}.json`;
 }
 // Datei aus dem Repo (Stand eines Commits) als Text holen (Base64 -> UTF-8)
 async function ghReadText(path, sha){

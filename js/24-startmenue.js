@@ -178,7 +178,7 @@ const store = {
 };
 
 /* ===== Spielstand =====
-   Ab Ausbau 1 merkt sich der Spielstand Level über ihren DATEINAMEN (z. B. "level-3.json") statt über die Nummer –
+   Ab Ausbau 1 merkt sich der Spielstand Level über ihren DATEINAMEN (z. B. "ruinen/01-ruinen.json", früher "level-3.json") statt über die Nummer –
    so bleibt alles richtig, wenn Level in Welten einsortiert oder umsortiert werden.
    Format (v: 2): { v, played, unlocked: [Dateien], completed: [Dateien], stats: { Datei: {m, f} } }
    Alter Spielstand (Nummern 1–6) wird beim ersten Start umgerechnet; das Original bleibt unverändert als
@@ -186,9 +186,19 @@ const store = {
 // Reihenfolge der Levelkarten zur Zeit des alten Spielstands (Nummer n = LEGACY_LEVEL_ORDER[n - 1])
 const LEGACY_LEVEL_ORDER = ['level-1.json', 'level-2.json', 'level-3.json', 'level-4.json', 'level-5.json', 'level-6.json'];
 const blankSave = () => ({ v: 2, played: false, unlocked: [], completed: [], stats: {}, bosse: [] });   // bosse: Welt-ids mit besiegtem Boss (Ausbau 6)
+// Editor-Umbau (Teil I): Level liegen jetzt in Welt-Ordnern (levels/<welt>/<nr>-<titel>.json) – alte Dateinamen im
+// Spielstand auf die neuen umschreiben (Tabelle LEVEL_UMZUG in js/01a-level-umzug.js); verlustfrei und beliebig oft
+function saveUmbenennen(s) {
+  const neu = f => (typeof levelNeuerName === 'function' ? levelNeuerName(f) : f);
+  const einmal = a => a.filter((f, i) => a.indexOf(f) === i);
+  s.unlocked = einmal((s.unlocked || []).map(neu));
+  s.completed = einmal((s.completed || []).map(neu));
+  const st = {}; for (const k in (s.stats || {})) st[neu(k)] = s.stats[k]; s.stats = st;
+  return s;
+}
 function migrateSave(raw) {
   if (!raw || typeof raw !== 'object') return blankSave();
-  if (raw.v === 2) return Object.assign(blankSave(), raw);
+  if (raw.v === 2) return saveUmbenennen(Object.assign(blankSave(), raw));
   // alter Stand: erst unverändert sichern (nur einmal – eine vorhandene Sicherung wird nie überschrieben)
   if (store.get('save_v1_backup', null) === null) store.set('save_v1_backup', raw);
   const file = n => LEGACY_LEVEL_ORDER[n - 1];
@@ -200,7 +210,7 @@ function migrateSave(raw) {
   out.completed = out.completed.filter((f, i) => out.completed.indexOf(f) === i);
   for (const f of out.completed) if (!out.unlocked.includes(f)) out.unlocked.push(f);
   for (const k in (raw.stats || {})) if (file(Number(k))) out.stats[file(Number(k))] = raw.stats[k];
-  return out;
+  return saveUmbenennen(out);
 }
 let save = migrateSave(store.get('save', null));
 const persist = () => store.set('save', save);
@@ -438,7 +448,7 @@ async function playLevel(i) {
   // Level-Datei holen: bis zu 3 Versuche (kurze Netz-Aussetzer), danach Fehler mit Grund anzeigen
   for (let tryNo = 0; tryNo < 3 && !data; tryNo++) {
     try {
-      const r = await fetch(PROJECT_LEVELS + encodeURIComponent(lvl.datei) + (tryNo ? '?t=' + Date.now() : ''), { cache: 'no-store' });
+      const r = await fetch(PROJECT_LEVELS + levelPfadUrl(lvl.datei) + (tryNo ? '?t=' + Date.now() : ''), { cache: 'no-store' });
       if (!r.ok) { why = 'Datei nicht erreichbar (HTTP ' + r.status + ')'; await wait(300); continue; }
       data = JSON.parse(await r.text());
     } catch (e) { why = (e && e.message) || String(e); await wait(300); }
@@ -465,7 +475,7 @@ async function playBoss(worldId) {
   let data = null, why = '';
   for (let tryNo = 0; tryNo < 3 && !data; tryNo++) {
     try {
-      const r = await fetch(PROJECT_LEVELS + encodeURIComponent(w.boss) + (tryNo ? '?t=' + Date.now() : ''), { cache: 'no-store' });
+      const r = await fetch(PROJECT_LEVELS + levelPfadUrl(w.boss) + (tryNo ? '?t=' + Date.now() : ''), { cache: 'no-store' });
       if (!r.ok) { why = 'Datei nicht erreichbar (HTTP ' + r.status + ')'; await wait(300); continue; }
       data = JSON.parse(await r.text());
     } catch (e) { why = (e && e.message) || String(e); await wait(300); }
@@ -1367,7 +1377,7 @@ showLevelSelect = () => showMenuScreen('levels');
 document.getElementById('loadLevelInput').addEventListener('change', () => { currentLevelNo = 0; hideMenu(); });
 window.GameMenu = { config: CONFIG, completeLevel, completeBoss, playBoss, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
                     migrateSave, buildLevelOrder, mapWorlds, worldUnlocked: id => worldUnlocked(worldById(id)),
-                    levelUnlocked: i => isUnlocked(i), lastFreshWorld: () => lastFreshWorld,
+                    levelUnlocked: i => isUnlocked(i), levelDone: i => isDone(i), lastFreshWorld: () => lastFreshWorld,
                     show: showMenuScreen, hide: hideMenu, levelsReady: () => CONFIG.levels.length > 0,
                     // für weitere Menü-Bildschirme (28-packages.js)
                     ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, giftSVG, config: CONFIG,

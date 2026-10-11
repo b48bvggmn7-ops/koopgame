@@ -95,6 +95,15 @@ function projectHint(t){
   projectList.innerHTML = '';
   const d=document.createElement('div'); d.className='hint'; d.textContent=t; projectList.appendChild(d);
 }
+// Editor-Umbau (Teil I): Level liegen in Welt-Ordnern (levels/<welt>/<nr>-<titel>.json) -> im Editor sichtbar als
+// „Welt Nummer“, z. B. „Vulkan 3“ (Boss: „Dschungel Boss“); null für Dateien außerhalb der Welt-Ordner
+const WELT_ANZEIGE = {dschungel:'Dschungel', ruinen:'Ruinen', hoehle:'Höhle', wasser:'Wasser', vulkan:'Vulkan', archiv:'Archiv'};
+function levelAnzeige(datei){
+  const m = /^([a-z0-9-]+)\/(?:(\d+)|boss)-/.exec(datei || '');
+  if(!m) return null;
+  const wn = WELT_ANZEIGE[m[1]] || m[1];
+  return m[2] ? `${wn} ${Number(m[2])}` : `${wn} Boss`;
+}
 async function refreshProjectList(){
   let list;
   try{
@@ -106,12 +115,12 @@ async function refreshProjectList(){
   projectList.innerHTML = '';
   for(const P of list){
     const row=document.createElement('div'); row.className='lvl';
-    const nm=document.createElement('span'); nm.className='nm'; nm.textContent=P.name||P.datei;
+    const nm=document.createElement('span'); nm.className='nm'; const anz = levelAnzeige(P.datei); nm.textContent = anz ? `${anz} · ${P.titel || P.name || ''}` : (P.name||P.datei);
     const dt=document.createElement('span'); dt.className='dt'; dt.textContent=P.datei;
     const ld=document.createElement('button'); ld.className='mini'; ld.textContent='Laden';
     const doLoad = async ()=>{
       try{
-        const r = await fetch(PROJECT_DIR+'editor-format/'+encodeURIComponent(P.datei), {cache:'no-store'});
+        const r = await fetch(PROJECT_DIR+'editor-format/'+levelPfadUrl(P.datei), {cache:'no-store'});
         if(!r.ok) throw 0;
         const d = await r.json();
         applySnapshot(d); currentLevelId=null; currentLevelName=P.name||d.name||null; currentProjectFile=P.datei;

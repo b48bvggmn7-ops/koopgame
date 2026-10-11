@@ -34,7 +34,7 @@
   an der passenden Stelle eintragen. Keine globalen Namen verwenden, die es im
   Browser schon gibt (z. B. `top`, `name`, `status`, `parent`).
   - 00 Canvas/Bilder · 01 Level-Aufbau · 02 Physik-Werte · 03 Eingabe (Tastatur/Controller) ·
-    04 Figuren/Kollision · 05 Level-Objekte (Bröckelboden, Hebel, Türen, bewegte Teile/Haken) ·
+    01a Level-Umzug (alte Dateinamen -> Welt-Ordner) · 04 Figuren/Kollision · 05 Level-Objekte (Bröckelboden, Hebel, Türen, bewegte Teile/Haken) ·
     06 Tod/Checkpoints (+ Test-Sprung C/X) · 07 Effekte/Ton/Münzen · 08 Figuren-Physik/Seil ·
     09 Kamera · 10 Figuren zeichnen · 10a Level-Themen (Aussehen je Level: Himmel, Farben, Tiere, Dunkelheit) · 11 Hintergrund (je Thema) · 12 Welt zeichnen · 13 Anzeige/Leistung ·
     14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Weltkarte + Welt-Seite mit Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 29 Spielszenen (Intro/Zwischensequenzen aus `story/story.json`, Sprechblasen, Kino-Balken) · 99 Start
@@ -56,10 +56,14 @@
   07 Fenster „Level-Info“ (Welt, Position, Titel, Tageszeit, Wetter, Look) · 08 Rückgängig/Wiederholen + Rechteck-Auswahl ·
   09 Werkzeugleiste (Reiter, „Zuletzt“, Eigenschaften-Zeile nur fürs aktive Werkzeug, Welt-Voreinstellung, Hilfe) ·
   99 Start (früher alles in einer `editor.js`); davor `00-welt-werkzeuge.js` = Tabelle, welche Werkzeuge je Welt empfohlen sind.
-- `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), `levels/levels.json` = Liste der Levels (Namen; Rückfall),
-  `levels/worlds.json` = Welten mit ihren Leveln (Reihenfolge der Levelauswahl), `levels/test/` = Mini-Testlevel
-  (öffnen mit `index.html?testlevel=<name>`),
-  `levels/editor-format/` = dieselben Levels im Editor-Speicherformat (Kästchen-Raster).
+- `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), seit dem Editor-Umbau **nach Welten in Ordnern**:
+  `levels/<welt>/<nr>-<titel>.json` (z. B. `vulkan/03-feuerberg.json`), Bosse `<welt>/boss-<name>.json`, alte Entwürfe in
+  `archiv/`; die Nummer im Namen bleibt beim Umsortieren (Reihenfolge = `worlds.json`). `levels/levels.json` = Liste der
+  Levels (Namen; Rückfall), `levels/worlds.json` = Welten mit ihren Leveln (Pfade ab `levels/`), `levels/test/` =
+  Mini-Testlevel (öffnen mit `index.html?testlevel=<name>`), `levels/editor-format/` = dieselben Levels im
+  Editor-Speicherformat (gleiche Unterordner). `levels/README.md` erklärt das in 10 Zeilen. Alte Dateinamen
+  (`level-6.json` …) -> neue: Tabelle `js/01a-level-umzug.js` (Spiel + Editor laden sie; Spielstände werden beim Laden
+  umgeschrieben). Level-Dateien NIE von Hand umbenennen.
 - `tests/koop_bot.js` – Koop-Bot für Level-Tests (steuert beide Figuren nach Plänen, Helfer `koop()` in run_tests.py; Ausbau 7).
 - `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
   warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`

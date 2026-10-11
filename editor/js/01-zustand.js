@@ -159,7 +159,7 @@ function updateLinkMarks(){
     }
   }
 }
-let currentProjectFile = null;   // aus „Levels im Projekt“ geladen? dann z. B. 'level-3.json' (für „Auf GitHub speichern“)
+let currentProjectFile = null;   // aus „Levels im Projekt“ geladen? dann z. B. 'ruinen/01-ruinen.json' (für „Auf GitHub speichern“)
 function save(){
   updateLinkMarks();
   dirty = true;
@@ -176,7 +176,7 @@ function load(){
       const d = JSON.parse(raw);
       applySnapshot(d);
       currentLevelId = d.currentLevelId||null; currentLevelName = d.currentLevelName||null;
-      currentProjectFile = d.currentProjectFile||null;
+      currentProjectFile = d.currentProjectFile ? levelNeuerName(d.currentProjectFile) : null;   // alter Name (level-3.json) -> Welt-Ordner (js/01a-level-umzug.js)
       return;
     }
   }catch(e){}
@@ -184,6 +184,7 @@ function load(){
 }
 
 function updateName(){
-  document.getElementById('curName').textContent =
-    (currentLevelName || 'Unbenanntes Level') + (dirty && currentLevelName ? ' •' : '');
+  const anz = currentProjectFile && typeof levelAnzeige === 'function' ? levelAnzeige(currentProjectFile) : null;   // „Vulkan 3“
+  document.getElementById('curName').textContent = (anz ? anz + ' · ' + (meta.titel || currentLevelName || '') : (currentLevelName || 'Unbenanntes Level'))
+    + (dirty && currentLevelName ? ' •' : '');
 }

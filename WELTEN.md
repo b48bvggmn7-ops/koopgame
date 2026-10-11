@@ -584,3 +584,36 @@ davor einen Checkpoint; nach einem Tod ist die Lava wieder unten.
 | 200–281 | Flucht über Eis und Band, drei Stege hinauf | Tempo + Eis | knapp |
 | 600–641 | Kessel: Band, Pilz, Stege (Lava schnell) | Tempo | knapp |
 | 649–689 | Kraterschlucht: Affe an vier Haken / Schwein mit zwei Aufwinden | Seil / Segeln | knapp (Haken 2 von 3) |
+
+## Level-Dateien nach Welten (Editor-Umbau)
+
+Seit dem Editor-Umbau liegen die Level in `levels/<welt>/<nr>-<titel>.json` (Editor-Format gespiegelt in
+`levels/editor-format/`). Die Nummer im Dateinamen wird beim Anlegen vergeben und bleibt; die Reihenfolge im Spiel
+steht in `levels/worlds.json`. Alte Spielstände werden beim Laden automatisch umgeschrieben (`js/01a-level-umzug.js`).
+
+| alt | neu |
+|---|---|
+| `levels/level-1.json` | `levels/dschungel/01-dschungel.json` |
+| `levels/level-2.json` | `levels/dschungel/02-baumkronen.json` |
+| `levels/level-7.json` | `levels/dschungel/03-lianenschlucht.json` |
+| `levels/level-8.json` | `levels/dschungel/04-gluehwald.json` |
+| `levels/boss-1.json` | `levels/dschungel/boss-bruno.json` |
+| `levels/level-3.json` | `levels/ruinen/01-ruinen.json` |
+| `levels/level-4.json` | `levels/ruinen/02-mondnacht.json` |
+| `levels/level-9.json` | `levels/ruinen/03-fallengang.json` |
+| `levels/level-10.json` | `levels/ruinen/04-sonnentempel.json` |
+| `levels/level-11.json` | `levels/ruinen/05-felsenflucht.json` |
+| `levels/level-5.json` | `levels/hoehle/01-kristallhoehle.json` |
+| `levels/level-12.json` | `levels/hoehle/02-tropfsteingang.json` |
+| `levels/level-13.json` | `levels/hoehle/03-eisgrotte.json` |
+| `levels/level-14.json` | `levels/hoehle/04-leuchtgrotte.json` |
+| `levels/level-15.json` | `levels/hoehle/05-foerderwerk.json` |
+| `levels/level-16.json` | `levels/hoehle/06-tiefenschlund.json` |
+| `levels/level-17.json` | `levels/vulkan/01-glutpfad.json` |
+| `levels/level-18.json` | `levels/vulkan/02-aschefeld.json` |
+| `levels/level-6.json` | `levels/vulkan/03-feuerberg.json` |
+| `levels/level-19.json` | `levels/vulkan/04-magmakammer.json` |
+| `levels/level-20.json` | `levels/vulkan/05-schlackewerk.json` |
+| `levels/level-21.json` | `levels/vulkan/06-feuerschlund.json` |
+| `levels/level-22.json` | `levels/vulkan/07-kraterherz.json` |
+| `levels/level-3-alter-entwurf.json` | `levels/archiv/level-3-alter-entwurf.json` |
