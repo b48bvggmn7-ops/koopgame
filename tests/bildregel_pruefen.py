@@ -210,6 +210,8 @@ def feste_kaestchen(d, stege=False):
     for s in d.get('solids', []):
         if s.get('type') in ('ground', 'wall', 'crumble', 'platform'):
             fest.update(felder_zellen(s))
+    for f in ('eis', 'baender'):   # Eis und Förderband sind fester Boden mit Sonderregel
+        for o in d.get(f, []): fest.update(felder_zellen(o))
     if stege:
         for o in d.get('oneways', []): fest.update(felder_zellen(o))
     return fest

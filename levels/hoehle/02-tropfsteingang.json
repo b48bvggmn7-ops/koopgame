@@ -1215,10 +1215,6 @@
    "y": 640
   },
   {
-   "x": 19860,
-   "y": 320
-  },
-  {
    "x": 20260,
    "y": 320
   },
@@ -1233,10 +1229,6 @@
   {
    "x": 25500,
    "y": 640
-  },
-  {
-   "x": 26500,
-   "y": 320
   },
   {
    "x": 27540,
@@ -5078,6 +5070,9 @@
  ],
  "leuchtkristalle": [],
  "dunkelzonen": [],
+ "lava": [],
+ "lavaPegel": [],
+ "pressen": [],
  "welt": "hoehle",
  "tageszeit": "morgen",
  "wetter": "trocken"

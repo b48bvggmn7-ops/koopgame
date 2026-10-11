@@ -239,6 +239,41 @@
    "spalte": 744,
    "nummer": 17,
    "begruendung": "vor der letzten Felsflucht; ohne ihn wäre das Schlussstück 700→Ziel über 90"
+  },
+  {
+   "level": "hoehle/02-tropfsteingang.json",
+   "regel": "Checkpoint",
+   "spalte": 163,
+   "nummer": 4,
+   "begruendung": "nach der Kletterwand (126) nur Stege abwärts, dann Förderbänder; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/02-tropfsteingang.json",
+   "regel": "Checkpoint",
+   "spalte": 262,
+   "nummer": 7,
+   "begruendung": "244 nach dem Band-Rätsel, 262 direkt vor dem nächsten; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/02-tropfsteingang.json",
+   "regel": "Checkpoint",
+   "spalte": 316,
+   "nummer": 8,
+   "begruendung": "Etappen-Übergang (Laufstrecke); ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/02-tropfsteingang.json",
+   "regel": "Checkpoint",
+   "spalte": 401,
+   "nummer": 10,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+  },
+  {
+   "level": "hoehle/02-tropfsteingang.json",
+   "regel": "Checkpoint",
+   "spalte": 592,
+   "nummer": 14,
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
   }
  ]
 }
