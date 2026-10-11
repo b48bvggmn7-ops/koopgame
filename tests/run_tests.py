@@ -3550,6 +3550,249 @@ async def dschungel6_wipfelsturm(g):
     assert not fehler, fehler
 
 @test
+async def ruinen6_tempelherz(g):
+    """Ruinen 6 „Tempelherz“ (6er-Welten, schwerstes Ruinen-Level): Koop-Bot spielt jede Stelle (Fels unter dem Pfeilregen, Insel-/Sims-Spiegel, Fels-Flucht durch die Tore, Takt-Steine mit Fels, Licht-Takt-Tor, Pfeilgang mit Brücke, Flammen-Welle mit Fels, Wechsel-Flucht, Licht-Brücke, Flammen-Kreuz, Fels und Licht-Tor, Doppelstrahl-Tor, letzte Felsflucht) bis zum Ziel; Checkpoints höchstens ~60 Spalten auseinander."""
+    await koop_level(g, 'ruinen/06-tempelherz.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def wind_hoch(c0, c1, bis_r):
+        return [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c0)}', 'left': f'P.x > {kx(c1)}'}, 'until': f'P.y < {ky(bis_r)}', 'frames': 900}]
+    def info(r): return r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    def lauf(bis, kanten):
+        cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+        return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+    def takt_plan(start_c, stufen, ziel_x, n):
+        pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
+        for c0 in stufen[1:]:
+            pl += [{'wait': f'({n} - wechselSchritte % {n}) <= 20 && ({n} - wechselSchritte % {n}) > 3'}] + sprung_zu(kx(c0) + 20)
+        return pl + [{'wait': f'({n} - wechselSchritte % {n}) <= 24'}] + sprung_zu(ziel_x)
+    async def beide(name, start, pl, ziel, delay=200, ok=None, r0=15, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, r0), o: kat(start - 2, r0)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), links=kw.get('links', []))
+            good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who} vorn)', info(r))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        def pfeil_plan(cs):
+            pl = []
+            for c in cs:
+                pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 130)'}, k_lauf(c + 2)]
+            return pl
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            pl = {puller: [k_lauf(12, 0)] + am(14) + pfeil_plan((31, 37, 43, 49)) + [k_lauf(55, 0)] + sprung_zu(kx(61)) + [k_lauf(62)],
+                  other: [{'wait': '!!linkOn[1]'}] + pfeil_plan((31, 37, 43, 49)) + [k_lauf(54, 0)] + sprung_zu(kx(60)) + [k_lauf(61), {'wait': 'felsen[0].weg'}]}
+            r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans=pl, maxFrames=4000)
+            soll(r.get('done') and await g.ev('felsen[0].weg'), f'E1 Fels unter dem Pfeilregen (zieht: {puller})', info(r))
+        n = 0
+        for w in range(0, 120, 12):
+            r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans={'f': [{'frames': w + 1}, k_lauf(12, 0)] + am(14) + [k_lauf(55, 0)] + sprung_zu(kx(61))}, maxFrames=2000)
+            if r.get('done'): n += 1
+        soll(True, 'E1 Pfeilregen stur durchlaufen (Info)', f'{n}/10')
+        ok = None
+        for hold in (4, 8, 12):
+            f = [k_lauf(70, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(79)} - 4', 'left': f'P.x > {kx(79)} + 4'}, 'until': 'P.grounded', 'frames': 400}, {'use': True, 'frames': 5}, {'frames': 20}] + glide_to(82, kx(92), 8) + [k_lauf(96)]
+            r = await koop(g, f=kat(67, 15), m=kat(91, 15), plans={'f': [k_lauf(68, 0)] + sprung_zu(kx(70) + 20) + f[0:]}, maxFrames=3000)
+            if r.get('done') and r['pos']['f'][0] >= 95: ok = hold; break
+        soll(ok, 'E1 Schwein: Insel-Spiegel drehen, Licht öffnet Tür 2', (ok, info(r)))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(67, 15), f=kat(95, 15), plans={'m': [k_lauf(68, 0)] + sprung_zu(kx(71)) + kette(71, 2, rel) + [k_lauf(92)]}, maxFrames=3000)
+            if r.get('done') and r['pos']['m'][0] >= 91: ok.append(rel[:14])
+        soll(ok, 'E1 Affe an zwei Haken über die Grube', (ok, info(r)))
+        r = await koop(g, m=kat(91, 15), f=kat(90, 15), plans={'m': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 94, 'E1 ohne Spiegel hält Tür 2', info(r))
+        ok = None
+        for jx in (102, 103, 104):
+            for pull in (40, 80):
+                r = await koop(g, m=kat(99, 15), f=kat(97, 15), plans={'m': haken(jx, 10, pull) + am(110) + [k_lauf(112), {'until': 'P.grounded', 'frames': 200}, k_lauf(122)]}, maxFrames=3000)
+                if r.get('done') and r['pos']['m'][0] >= 121: ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E1 Affe: Haken -> Sims-Spiegel, Licht öffnet Tür 3', (ok, info(r)))
+        r = await koop(g, f=kat(114, 15), m=kat(112, 15), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
+        soll(r['pos']['f'][0] < 118, 'E1 ohne Spiegel hält Tür 3', info(r))
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            tc = {'m': 152, 'f': 155}
+            pl = {puller: [k_lauf(130, 0)] + am(132) + [k_lauf(tc[puller]), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(189), {'until': 'P.grounded', 'frames': 200}],
+                  other: [{'wait': '!!linkOn[4]'}, k_lauf(tc[other]), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(190), {'until': 'P.grounded', 'frames': 200}, {'wait': 'felsen[1].weg'}]}
+            r = await koop(g, m=kat(134, 15), f=kat(135, 15), plans=pl, maxFrames=3000)
+            soll(r.get('done') and await g.ev('felsen[1].weg'), f'E1 Fels-Flucht durch die Tore (zieht: {puller})', info(r))
+        r = await koop(g, m=kat(134, 15), f=kat(136, 15), plans={'f': [k_lauf(130, 0)] + am(132) + [k_lauf(180)]}, maxFrames=1200)
+        soll(r.get('dead'), 'E1 ohne Tor = überrollt', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        def takt_fels():
+            stones = list(range(213, 235, 3))
+            pl = [k_lauf(210, -6), {'wait': '(Math.floor(wechselSchritte / 72) % 2 === 0 && wechselSchritte % 72 < 16) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 140)'}] + sprung_zu(kx(213) + 20)
+            for c0 in stones[1:]:
+                pl += [{'wait': '(72 - wechselSchritte % 72) <= 20 && (72 - wechselSchritte % 72) > 3'}] + sprung_zu(kx(c0) + 20)
+            return pl + [{'wait': '(72 - wechselSchritte % 72) <= 24'}] + sprung_zu(kx(238))
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            n = 0
+            for w in range(0, 144, 24):
+                pl = {puller: [{'frames': w + 1}, k_lauf(201, 0)] + am(203) + takt_fels() + [k_lauf(241)], other: [{'wait': '!!linkOn[7]'}] + takt_fels() + [k_lauf(240)]}
+                r = await koop(g, **{puller: kat(199, 15), other: kat(205, 15)}, plans=pl, maxFrames=4000)
+                if r.get('done') and r['pos']['m'][0] >= 239 and r['pos']['f'][0] >= 239: n += 1
+            soll(n > 0, f'E2 Takt-Steine mit Fels im Nacken (zieht: {puller})', (f'{n}/6', info(r)))
+        for who in ('m', 'f'):
+            n = 0
+            for w in range(0, 144, 24):
+                pl = [{'frames': w + 1}, k_lauf(250, 0), {'wait': 'kristalle.find(k => k.link === 8).an && (72 - wechselSchritte % 72) > 50 && !solids.some(s => s.type === "door" && s.link === 8 && !s.gone && !s.open)'}, k_lauf(272)]
+                r = await koop(g, **{who: kat(244, 15), ('f' if who == 'm' else 'm'): kat(242, 15)}, plans={who: pl}, maxFrames=3000)
+                if r.get('done'): n += 1
+            soll(n > 0, f'E2 Licht-Takt-Tor ({who})', (f'{n}/6', info(r)))
+        n = 0
+        for w in range(0, 144, 12):
+            r = await koop(g, m=kat(244, 15), f=kat(242, 15), plans={'m': [{'frames': w + 1}, k_lauf(272)]}, maxFrames=1500)
+            if r.get('done'): n += 1
+        soll(True, 'E2 Licht-Takt-Tor stur (Info)', f'{n}/12')
+        def pfeil_brücke(cs):
+            pl = []
+            for c in cs:
+                pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)', 'frames': 400}, k_lauf(c + 2)]
+            return pl
+        ok = []
+        for rel in RELS:
+            m = [k_lauf(276, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(296)}', 'frames': 3000}] + kette(277, 2, rel) + [k_lauf(304)]
+            f = [{'wait': '!!linkOn[9]', 'frames': 1000}, {'frames': 10}] + pfeil_brücke((283, 287, 291)) + [k_lauf(297, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[10]'}, k_lauf(305)]
+            r = await koop(g, m=kat(273, 15), f=kat(274, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 303 and r['pos']['f'][0] >= 304: ok.append(rel[:14])
+        soll(ok, 'E2 Pfeilgang mit Brücke (Platte 9, Hebel 10, Affe an zwei Haken)', (ok, info(r)))
+        def welle():
+            pl = []
+            for c in range(327, 360, 4):
+                fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+                pl += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 26'}, k_lauf(c + 1)]
+            return pl
+        for puller in ('f', 'm'):
+            other = 'm' if puller == 'f' else 'f'
+            ok = 0
+            for w in (0, 20, 40):
+                pl = {puller: [{'frames': w + 1}, k_lauf(311, 0)] + am(313) + welle() + [k_lauf(365, 0)] + sprung_zu(kx(371)) + [k_lauf(372), {'wait': 'felsen[3].weg'}],
+                      other: [{'wait': '!!linkOn[11]'}] + welle() + [k_lauf(364, 0)] + sprung_zu(kx(370)) + [k_lauf(371)]}
+                r = await koop(g, **{puller: kat(310, 15), other: kat(315, 15)}, plans=pl, maxFrames=5000)
+                if r.get('done'): ok += 1
+            soll(ok > 0, f'E2 Flammen-Welle mit Fels im Nacken (zieht: {puller})', (f'{ok}/3', info(r)))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            hop = [k_lauf(394, -6)] + sprung_zu(kx(398) + 20, 10) + [k_lauf(399, 0)] + sprung_zu(kx(402) + 20, 6) + [k_lauf(403, 0)] + sprung_zu(kx(406) + 20, 6) + [k_lauf(407, 0)] + sprung_zu(kx(412), 6) + [k_lauf(418)]
+            n = 0
+            for w in (0, 20, 40):
+                pl = {puller: [{'frames': w + 1}, k_lauf(386, 0)] + am(388) + hop, other: [{'wait': '!!linkOn[12]'}, {'frames': 30}] + hop + [{'wait': 'felsen[4].weg'}]}
+                r = await koop(g, **{puller: kat(385, 15), other: kat(390, 15)}, plans=pl, maxFrames=3000)
+                if r.get('done') and await g.ev('felsen[4].weg'): n += 1
+            soll(n > 0, f'E3 Wechsel-Flucht unter Pfeilen (zieht: {puller})', (f'{n}/3', info(r)))
+        for who in ('m', 'f'):
+            n = 0
+            for w in range(0, 180, 30):
+                pl = [{'frames': w + 1}, k_lauf(430, 0), {'wait': 'kristalle.find(k => k.link === 13).an && (90 - wechselSchritte % 90) > 60'}, k_lauf(449)]
+                r = await koop(g, **{who: kat(426, 15), ('f' if who == 'm' else 'm'): kat(424, 15)}, plans={who: pl}, maxFrames=3000)
+                if r.get('done'): n += 1
+            soll(n > 0, f'E3 Licht-Brücke ({who})', (f'{n}/6', info(r)))
+        n = 0
+        for w in range(0, 180, 15):
+            r = await koop(g, m=kat(426, 15), f=kat(424, 15), plans={'m': [{'frames': w + 1}, k_lauf(449)]}, maxFrames=1500)
+            if r.get('done'): n += 1
+        soll(True, 'E3 Licht-Brücke stur (Info)', f'{n}/12')
+        def flammen_oben():
+            pl = []
+            for c in (470, 474, 478):
+                fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+                pl += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 24', 'frames': 400}, k_lauf(c + 1)]
+            return pl
+        ok = None
+        for jx in (450, 451, 452):
+            for pull in (40, 80):
+                m = haken(jx, 10, pull) + [{'wait': '!!linkOn[14]', 'frames': 3000}, {'frames': 20}] + flammen_oben() + [k_lauf(483, -14), {'use': True, 'frames': 2}, k_lauf(496), {'until': 'P.grounded', 'frames': 200}, {'wait': f'Q.x >= {kx(487)}', 'frames': 2000}, k_lauf(499)]
+                f = [{'frames': 60}, k_lauf(450, 0), {'until': f'P.x > {kx(456)}', 'frames': 200}, {'frames': 5}] + am(462) + [{'wait': '!!linkOn[15]', 'frames': 3000}, {'frames': 20}, k_lauf(468, -6)] + sprung_zu(kx(474)) + [k_lauf(476, -6)] + sprung_zu(kx(482)) + [k_lauf(500)]
+                r = await koop(g, m=kat(446, 15), f=kat(445, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+                if r.get('done') and r['pos']['m'][0] >= 498 and r['pos']['f'][0] >= 499: ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E3 Flammen-Kreuz (Affe oben per Haken, Schwein unten per pinkem Tor)', (ok, info(r)))
+        r = await koop(g, m=kat(446, 15), f=kat(444, 15), plans={'m': [k_lauf(462)]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 456, 'E3 Affe kommt nicht in den unteren Gang', info(r))
+        steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            pl = {puller: [k_lauf(506, 0)] + am(508) + [k_lauf(524, 0)] + am(526) + steg(538) + [k_lauf(576), {'wait': 'felsen[5].weg'}],
+                  other: [{'wait': '!!linkOn[16]'}, k_lauf(531, 0), {'wait': '!!linkOn[17]', 'frames': 300}] + steg(539) + [k_lauf(577)]}
+            r = await koop(g, **{puller: kat(504, 15), other: kat(510, 15)}, plans=pl, maxFrames=4000)
+            soll(r.get('done') and await g.ev('felsen[5].weg'), f'E3 Fels und Licht-Tor (zieht und dreht: {puller})', info(r))
+        r = await koop(g, m=kat(504, 15), f=kat(530, 15), plans={'m': [k_lauf(506, 0)] + am(508) + [k_lauf(540)]}, maxFrames=2000)
+        soll(r.get('dead') or r['pos']['m'][0] < 534, 'E3 ohne Spiegel bleibt das Licht-Tor zu', info(r))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        fenster = "kristalle.find(k => k.link === 18).an && kristalle.find(k => k.link === 19).an && (90 - wechselSchritte % 90) > 45"
+        ok = []
+        for jx in (605, 606, 607):
+            for pull in (40, 80):
+                for rel in RELS:
+                    m = haken(jx, 10, pull) + am(613) + [{'holdIf': {'right': f'P.x < {kx(615)} - 3', 'left': f'P.x > {kx(615)} + 3'}, 'until': f'P.grounded && P.y > {ky(14)} && Math.abs(P.x - {kx(615)}) <= 3', 'frames': 300}] + kette(616, 2, rel) + [k_lauf(629), {'wait': fenster, 'frames': 2000}, k_lauf(642)]
+                    f = [k_lauf(614, 0)] + sprung_zu(kx(622)) + [{'frames': 5}, {'use': True, 'frames': 5}, {'frames': 10}] + glide_to(623, kx(629), 6) + [{'wait': f'Q.x >= {kx(627)}', 'frames': 3000}, {'wait': fenster, 'frames': 2000}, k_lauf(643)]
+                    r = await koop(g, m=kat(602, 15), f=kat(601, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+                    if r.get('done') and r['pos']['m'][0] >= 641 and r['pos']['f'][0] >= 642: ok.append((jx, pull, rel[:12]))
+                if ok: break
+            if ok: break
+        soll(ok, 'E4 Doppelstrahl-Tor (Affe-Spiegel per Haken, Schwein-Spiegel per Insel, Takt-Fenster)', (ok, info(r)))
+        r = await koop(g, m=kat(628, 15), f=kat(627, 15), plans={'m': [k_lauf(642)]}, pre=spiegel(614), maxFrames=800)
+        soll(r['pos']['m'][0] < 635, 'E4 nur ein Spiegel gedreht: Tür 19 bleibt zu', info(r))
+        def pfeile(cs):
+            pl = []
+            for c in cs:
+                pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 120)'}, k_lauf(c + 2)]
+            return pl
+        flamme = [k_lauf(696, 0), {'wait': '(() => { const t = fallen.find(t => t.x === ' + str(698*40) + ' && t.art === "flamme"); return (!falleBrennt(t) && (falleTaktSchritte(t) - falleZeit(t)) > 20) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 100); })()'}, k_lauf(700)]
+        steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        hakensprung = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                                  {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            n = []
+            for hold in (4, 8):
+                for jx in (661, 662):
+                    weg = {'m': hakensprung(jx), 'f': glide_to(662, kx(672), hold)}
+                    pl = {puller: [k_lauf(649, 0)] + am(651) + weg[puller] + pfeile((681, 687)) + flamme + steg(704) + [k_lauf(744), {'wait': 'felsen[6].weg', 'frames': 600}],
+                          other: [{'wait': '!!linkOn[20]'}] + weg[other] + pfeile((681, 687)) + flamme + steg(705) + [k_lauf(745)]}
+                    r = await koop(g, **{puller: kat(647, 15), other: kat(653, 15)}, plans=pl, maxFrames=5000)
+                    if r.get('done') and await g.ev('felsen[6].weg'): n.append((hold, jx))
+            soll(n, f'E4 Finale: letzte Felsflucht (zieht: {puller})', (n, info(r)))
+        r = await koop(g, m=kat(747, 15), f=kat(745, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=2000)
+        soll(r.get('done') and r['pos']['m'][0] >= 792, 'E4 Ziel', info(r))
+    assert not fehler, fehler
+
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
     Teleporter, Falle, Fels, Förderband oder Leuchtkristall),
@@ -4780,16 +5023,16 @@ async def welten_laden(g):
         # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
         assert [x[0] for x in k['l']] == [d for x in w['welten'] for d in x['level']] == [   # Editor-Umbau: Welt-Ordner
             'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json',
-            'ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json',
+            'ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json',
             'hoehle/02-tropfsteingang.json', 'hoehle/03-eisgrotte.json', 'hoehle/01-kristallhoehle.json', 'hoehle/04-leuchtgrotte.json',
             'hoehle/05-foerderwerk.json', 'hoehle/06-tiefenschlund.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json',
             'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json',
             'vulkan/07-kraterherz.json'], f'Reihenfolge geändert: {k}'
         assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Wipfelsturm', 'Ruinen', 'Fallengang', 'Sonnentempel',
-                                          'Mondnacht', 'Felsenflucht', 'Tropfsteingang', 'Eisgrotte', 'Kristallhöhle', 'Leuchtgrotte',
+                                          'Mondnacht', 'Felsenflucht', 'Tempelherz', 'Tropfsteingang', 'Eisgrotte', 'Kristallhöhle', 'Leuchtgrotte',
                                           'Förderwerk', 'Tiefenschlund', 'Glutpfad', 'Aschefeld', 'Feuerberg', 'Magmakammer',
                                           'Schlackewerk', 'Feuerschlund', 'Kraterherz'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel'] * 6 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
+        assert [x[2] for x in k['l']] == ['dschungel'] * 6 + ['ruinen'] * 6 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -5089,7 +5332,7 @@ async def editor_rundreise_alle_level(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 24, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
+        assert len(liste) == 25, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -5429,7 +5672,7 @@ async def editor_level_info(g):
         tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
         assert sorted(tree) == sorted([f'levels/editor-format/{NEU}', f'levels/{NEU}', 'levels/levels.json', 'levels/worlds.json']), sorted(tree)
         w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
-        assert w['wasser'] == [NEU] and w['ruinen'] == ['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json'], w
+        assert w['wasser'] == [NEU] and w['ruinen'] == ['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json'], w
         lv = json.loads(tree['levels/levels.json'])
         assert lv[-1] == {'datei': NEU, 'name': 'Wasser 1', 'titel': 'Tiefsee'} and len(lv) == len(projekt) + 1, lv[-2:]
         assert json.loads(tree[f'levels/{NEU}'])['welt'] == 'wasser'
@@ -5444,7 +5687,7 @@ async def editor_level_info(g):
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
         tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
         w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
-        assert w['vulkan'] == ['ruinen/01-ruinen.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json', 'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json', 'vulkan/07-kraterherz.json'] and w['ruinen'] == ['ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json'], w
+        assert w['vulkan'] == ['ruinen/01-ruinen.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json', 'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json', 'vulkan/07-kraterherz.json'] and w['ruinen'] == ['ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json'], w
         assert 'levels/levels.json' not in tree, 'levels.json ohne Änderung mitgeschickt'
     finally:
         await p.evaluate("localStorage.clear()")
@@ -5730,6 +5973,8 @@ async def welten_freischaltung(g):
         for d in ('ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json'): await fertig(d)   # Ausbau 7: Ruinen haben 5 Level
         assert await g.ev(offen) == [True, True, False, False, False], 'Höhle offen, obwohl Level 11 fehlt'
         await fertig('ruinen/05-felsenflucht.json')
+        assert await g.ev(offen) == [True, True, False, False, False], 'Höhle offen, obwohl Ruinen 6 fehlt'   # 6er-Welten
+        await fertig('ruinen/06-tempelherz.json')
         assert await g.ev("GameMenu.lastFreshWorld()") == 'hoehle' and await g.ev(offen) == [True, True, True, False, False]
         for d in ('hoehle/02-tropfsteingang.json', 'hoehle/03-eisgrotte.json', 'hoehle/01-kristallhoehle.json', 'hoehle/04-leuchtgrotte.json'): await fertig(d)   # Ausbau 7: Höhle hat 6 Level
         assert await g.ev(offen) == [True, True, True, False, False], 'Vulkan offen, obwohl Höhlen-Level fehlen'
@@ -6850,7 +7095,7 @@ async def editor_boss_github(g):
             return Object.fromEntries(files.map(f => [f.path, JSON.parse(f.content)]));
         }""", [worlds, lv])
         w = {x['id']: x for x in out['levels/worlds.json']['welten']}
-        assert w['ruinen']['boss'] == 'boss-2.json' and w['ruinen']['level'] == ['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json'], w['ruinen']
+        assert w['ruinen']['boss'] == 'boss-2.json' and w['ruinen']['level'] == ['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json'], w['ruinen']
         assert w['dschungel']['boss'] == 'dschungel/boss-bruno.json'
         e = out['levels/levels.json'][-1]
         assert e['datei'] == 'boss-2.json' and e['versteckt'] and e['boss'], e

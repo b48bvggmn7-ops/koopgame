@@ -130,5 +130,10 @@
   "datei": "dschungel/06-wipfelsturm.json",
   "name": "Dschungel 6",
   "titel": "Wipfelsturm"
+ },
+ {
+  "datei": "ruinen/06-tempelherz.json",
+  "name": "Ruinen 6",
+  "titel": "Tempelherz"
  }
 ]
