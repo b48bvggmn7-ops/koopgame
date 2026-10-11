@@ -164,6 +164,7 @@ const THEMES = {
                airCols: ['#ffa040'], hanging: 'bat', crystalCols: ['#ff7a2a', '#ffcc4a'], lizardCol: '#e2492a'},
     particles: {mode: 'ember', col: '255,140,50', n: 34},
     ray: 'rgba(255,120,60,.18)', rain: false, ash: true, rainbow: false, sunRays: false,
+    heissRegen: true,   // Wetter „regen“ (nur wenn ausdrücklich gewählt): heißer Regen, über der Lava Dampf (19-wetter.js, elemente/lava.js)
     dark: 0.18, darkCol: '30,6,6', tint: 'rgba(255,80,30,0.06)',
     crumble: {light:'#8a5a48', mid:'#6e4436', dark:'#4e2e24', edge:'#2a1814', gap:'rgba(255,90,30,.6)', moss:'#6f7a3a', mossLight:'#a89a50', speck:'rgba(40,20,10,.55)'},
   },
@@ -284,6 +285,18 @@ const WORLD_LOOKS = {
   wasser:    {base: 'wasser',    time: 'morgen', sky: true},    // Lagune (Ausbau 5)
 };
 const TAGESZEITEN = ['morgen', 'mittag', 'abend', 'nacht'];
+// Farbsätze je Tageszeit für Welten mit eigenem Himmel (worlds.json: aussehen.zeitFarben, Ausbau 7).
+// mittag fehlt = genau der Welt-Look.
+const ZEIT_FARBEN_SAETZE = {
+  feuer: {   // Vulkan: der Feuer-Himmel bleibt, wird aber eingefärbt
+    morgen: {sky: [[0, '#3a1a2a'], [0.35, '#8a3a3a'], [0.65, '#e08a4a'], [0.82, '#f4b060'], [1, '#7a3a24']],
+             layerWash: {col: '#ffb070', a: 0.14}, tint: 'rgba(255,190,110,0.05)', clouds: 'rgba(120,80,70,0.5)'},
+    abend:  {sky: [[0, '#1a0a22'], [0.38, '#4a1440'], [0.66, '#a02c3a'], [0.82, '#d8502a'], [1, '#4a1820']],
+             layerWash: {col: '#6a2060', a: 0.28}, tint: 'rgba(110,30,90,0.08)', dark: 0.28, darkCol: '30,6,24'},
+    nacht:  {sky: [[0, '#08040a'], [0.4, '#1e0a10'], [0.7, '#4a1410'], [0.85, '#7a2410'], [1, '#200a08']],
+             layerWash: {col: '#140818', a: 0.5}, tint: null, dark: 0.5, darkCol: '16,4,6', ray: null, clouds: 'rgba(40,20,20,0.6)'},
+  },
+};
 const WETTER_ARTEN = ['wechselnd', 'trocken', 'regen'];
 // Himmel/Licht jeder Tageszeit kommen aus dem passenden bisherigen Thema; wash = Farbstich der Hintergrund-Ebenen
 // terrain = Boden/Wand/Moos/Bröckelboden um diesen Anteil zur Palette der Tageszeit hin mischen (Ausbau 7: vorher blieb
@@ -314,7 +327,7 @@ function weltAussehenUebernehmen(welten){
     const a = w && w.aussehen;
     if(!a || !THEMES[a.basis]) continue;
     WORLD_LOOKS[w.id] = {base: a.basis, time: TAGESZEITEN.includes(a.zeit) ? a.zeit : null, sky: a.himmel !== false,
-                         ambiente: a.ambiente || null};
+                         ambiente: a.ambiente || null, zeitFarben: ZEIT_FARBEN_SAETZE[a.zeitFarben] ? a.zeitFarben : null};
     for(const k in THEMES) if(k.startsWith(a.basis + '@')) delete THEMES[k];   // neu zusammensetzen
   }
 }
@@ -323,6 +336,17 @@ function composeLook(welt, zeit){
   const Wl = WORLD_LOOKS[welt] || WORLD_LOOKS.dschungel, base = THEMES[Wl.base];
   if(!TAGESZEITEN.includes(zeit)) zeit = Wl.time || 'morgen';
   const wa = Wl.ambiente || null, eigenAmb = !!wa && ['voegel', 'grillen', 'fluss'].some(k => (wa[k] ?? 1) !== 1);
+  // eigener Himmel ohne echte Tageszeiten (Vulkan, Ausbau 7): Farbsatz je Tageszeit (Himmel, Dunst, Dunkelheit)
+  const ZF = Wl.zeitFarben && ZEIT_FARBEN_SAETZE[Wl.zeitFarben][zeit];
+  if(!Wl.sky && ZF){
+    const key = Wl.base + '@' + zeit + (eigenAmb ? '~amb' : '');
+    if(THEMES[key]) return key;
+    const T = Object.assign({}, base, {label: base.label + ' · ' + zeit});
+    for(const k of ['sky', 'layerWash', 'tint', 'dark', 'darkCol', 'clouds', 'ray']) if(ZF[k] !== undefined) T[k] = ZF[k];
+    if(eigenAmb) T.ambiente = {voegel: wa.voegel ?? 1, grillen: wa.grillen ?? 1, fluss: wa.fluss ?? 1};
+    THEMES[key] = T;
+    return key;
+  }
   if(zeit === Wl.time || (!Wl.sky && zeit !== 'nacht')){
     if(!eigenAmb) return Wl.base;   // natürliche Tageszeit = genau der Welt-Look
     // eigenes Ambiente der Welt (Ausbau 7, z. B. Ruinen: weniger Vögel): Kopie des Welt-Looks mit diesem Ambiente

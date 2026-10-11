@@ -25,7 +25,7 @@ let weatherMode = 'wechselnd';
 function setWeatherMode(m){
   const prev = weatherMode;
   weatherMode = WEATHER_MODES.includes(m) ? m : 'wechselnd';
-  if(weatherMode === 'regen' && THEME.rain) weatherForce('rain');
+  if(weatherMode === 'regen' && (THEME.rain || THEME.heissRegen)) weatherForce('rain');
   else if(weatherMode === 'trocken') weatherForce('sun');
   else if(prev !== 'wechselnd') weatherForce('sun');   // nach einem Dauerregen-Level wieder normal beginnen
 }
@@ -33,8 +33,9 @@ const WEATHER_MODES = ['wechselnd', 'trocken', 'regen'];
 function weatherUpdate(dt){
   const w = weather;
   w.t += dt;
-  if(weatherMode === 'regen' && THEME.rain){ if(w.phase !== 'rain'){ w.phase = 'rain'; w.t = 0; } w.len = Infinity; w.rainbow = 0; }
-  if((weatherMode === 'trocken' || !THEME.rain) && w.phase !== 'sun'){ w.phase = 'sun'; w.t = 0; w.len = weatherRand(WEATHER_SUN_S); }   // Höhle/Vulkan: kein Regen
+  const regenArt = THEME.rain || (THEME.heissRegen && weatherMode === 'regen');   // Vulkan: nur bei ausdrücklich „regen“ (heißer Regen)
+  if(weatherMode === 'regen' && regenArt){ if(w.phase !== 'rain'){ w.phase = 'rain'; w.t = 0; } w.len = Infinity; w.rainbow = 0; }
+  if((weatherMode === 'trocken' || !regenArt) && w.phase !== 'sun'){ w.phase = 'sun'; w.t = 0; w.len = weatherRand(WEATHER_SUN_S); }   // Höhle/Vulkan: kein Regen
   if(w.t >= w.len){
     w.t = 0;
     if(w.phase === 'sun'){ w.phase = 'cloud'; w.len = WEATHER_FADE_S; }

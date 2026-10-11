@@ -120,6 +120,14 @@ function lavaZeichnen(){
     sg.addColorStop(0, 'rgba(255,120,40,0)'); sg.addColorStop(1, 'rgba(255,120,40,0.28)');
     ctx.fillStyle = sg; ctx.fillRect(b.minX - camX, b.surf - 70, b.maxX - b.minX, 70);
     for(const [x, unten] of b.spalten) lavaSpalteZeichnen(ctx, x - camX, b.surf, 40, unten - b.surf, t, true);
+    // heißer Regen (Vulkan, Wetter „regen“): Dampf steigt von der Lava auf (nur Bild)
+    if(typeof weather !== 'undefined' && weather.rain > 0.05){
+      for(const [x] of b.spalten){
+        const ph = (t*0.5 + x*0.0071) % 1;
+        ctx.fillStyle = 'rgba(235,230,225,' + (0.32*weather.rain*(1 - ph)) + ')';
+        ctx.beginPath(); ctx.arc(x - camX + 20 + Math.sin(t + x)*6, b.surf - 6 - ph*70, 8 + ph*14, 0, Math.PI*2); ctx.fill();
+      }
+    }
   }
 }
 // gestrichelte Glut-Linie: bis hierhin steigt die Lava (Farbe der Nummer bzw. orange bei „sobald jemand kommt“)

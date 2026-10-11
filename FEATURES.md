@@ -893,6 +893,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Editor (Ausbau 7): Werkzeuge Lava, Lava-Marke und Stachelpresse in der Gruppe Gefahren (Test editor_vulkan_elemente);
     Hebel/Platten dürfen auch Lava steigen lassen oder Pressen schalten (Test hebel_haben_grund; ein Hebel, der Lava
     steigen lässt, muss auch ein Tor öffnen).
+  - WELT VULKAN – Look (Ausbau 7; Design in WELTEN.md): levels/worlds.json, Welt „vulkan“ hat jetzt
+    "aussehen": {basis: vulkan, himmel: false, zeitFarben: "feuer", ambiente: Vögel 0 · Grillen 0,2 · Fluss 0}.
+    - Der eigene Feuer-Himmel bleibt, aber je Tageszeit eingefärbt (Farbsatz ZEIT_FARBEN_SAETZE.feuer in 10a-themen.js):
+      morgens goldener Dunst, mittags der Welt-Look, abends violett-rot und etwas dunkler, nachts dunkel – nur Lava und
+      Glut leuchten.
+    - Wetter „regen“ (nur wenn im Level ausdrücklich gewählt): heißer Regen, über der Lava steigt Dampf auf; trocken /
+      wechselnd = Asche und Glut wie bisher. Das alte Level 6 „Feuerberg“ (theme „vulkan“) bekommt nie Regen und sieht
+      unverändert aus. Test vulkan_welt_look.
   - WELT HÖHLE – Look (Ausbau 7; Design in WELTEN.md): levels/worlds.json, Welt „hoehle“ hat jetzt
     "aussehen": {basis: hoehle, himmel: false, ambiente: Vögel 0 · Grillen 0,15 · Fluss 0,7} (unter Tage: keine Vögel,
     kaum Grillen, Wasser in der Ferne).

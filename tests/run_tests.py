@@ -3745,6 +3745,37 @@ async def hoehle_welt_look(g):
     await g.ev("draw()")
 
 @test
+async def vulkan_welt_look(g):
+    """Ausbau 7: Vulkan-Look als Eintrag in worlds.json ("aussehen": eigener Feuer-Himmel, Farbsatz „feuer“ je Tageszeit,
+    keine Vögel, wenig Grillen). Morgens goldener, abends violett-rot, nachts dunkel (Lava leuchtet), mittags = der
+    Welt-Look. Wetter „regen“ = heißer Regen (Dampf über der Lava), sonst kein Regen. Alle Tageszeiten und Wetter
+    ladbar; das alte Level 6 (theme "vulkan") bleibt unverändert und bekommt nie Regen."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'vulkan').get('aussehen')
+    assert a and a['basis'] == 'vulkan' and a['himmel'] is False and a['zeitFarben'] == 'feuer' and a['ambiente']['voegel'] == 0, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'vulkan', aussehen: {json.dumps(a)}}}]);
+      const L = z => resolveLevelLook({{welt: 'vulkan', tageszeit: z}});
+      const n = ['morgen', 'mittag', 'abend', 'nacht'].map(L);
+      return {{ namen: n, himmel: n.map(x => THEMES[x].sky[0][1]), dunkel: n.map(x => THEMES[x].dark), amb: THEMES[n[3]].ambiente,
+               alt: resolveLevelLook({{theme: 'vulkan'}}), altHimmel: THEMES.vulkan.sky[0][1] }}; }})()""")
+    assert k['namen'] == ['vulkan@morgen~amb', 'vulkan@mittag~amb', 'vulkan@abend~amb', 'vulkan@nacht~amb'], k
+    assert len(set(k['himmel'][i] for i in (0, 2, 3))) == 3 and k['himmel'][1] == k['altHimmel'], k
+    assert k['dunkel'][3] > k['dunkel'][2] > k['dunkel'][1], k
+    assert k['amb'] == {'voegel': 0, 'grillen': 0.2, 'fluss': 0} and k['alt'] == 'vulkan', k
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='vulkan', tageszeit=zeit, wetter=wetter,
+                               lava=[{'x': 600, 'y': 680, 'w': 80, 'h': 40}], pressen=[{'x': 900, 'y': 400, 'breite': 1, 'takt': 3, 'versatz': 0}]))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground, regen: weather.rain})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('vulkan'), (zeit, wetter, r)
+            assert (r['regen'] > 0.5) == (wetter == 'regen'), (zeit, wetter, r)
+            await g.ev("camPos = 400; draw()")   # Dampf/Lava/Presse zeichnen ohne Fehler
+    # altes Level 6 (wechselndes Wetter, theme vulkan): nie Regen
+    await g.load(str(ROOT / 'levels' / 'level-6.json')); await g.ev("weatherForce('rain')"); await g.steps(5)
+    assert await g.ev("weather.phase") == 'sun' and await g.ev("levelTheme") == 'vulkan'
+
+@test
 async def ruinen_welt_look(g):
     """Ausbau 7: Ruinen-Look als Eintrag in worlds.json ("aussehen" mit eigenem Ambiente: weniger Vögel, Grillen leise
     am Tag, Fluss leise); mit jeder Tageszeit und jedem Wetter ladbar; alte Level mit theme "ruinen" bleiben unverändert."""
