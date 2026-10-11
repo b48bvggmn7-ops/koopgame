@@ -37,22 +37,27 @@ elementRegistrieren({
         if(x < -40 || x > VW + 40) continue;
         b.squish = Math.max(0, b.squish - frameDt*0.004);
         const sq = Math.sin(b.squish*Math.PI)*0.35;
-        // Auffälliger (Nutzerwunsch: dicker, dezentes Leuchten): so breit wie der Bereich, der wirklich federt, dicker Hut und
-        // Stiel, kräftig violett mit weißen Punkten (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze), dunkle
-        // Kontur; ein schwebender Hinweis nach oben
-        elementLeuchten(x, b.y - 20, 48, '#c77dff');
+        // Auffälliger und passend zur Spielwelt (Nutzerwunsch): breiter, dicker Sprungpilz in warmem Gold-Orange (hebt sich
+        // vom Gras ab, sieht aber nicht aus wie die kleinen roten Deko-Pilze), cremefarbene Tupfen, weicher brauner Rand,
+        // federnder Stiel; leichter Schein und Glühwürmchen darüber
+        elementLeuchten(x, b.y - 20, 50, '#ffcf6b');
         ctx.save(); ctx.translate(x, b.y); ctx.scale(1 + sq, 1 - sq);
-        ctx.fillStyle = 'rgba(20,28,38,.75)'; roundRect(-12, -22, 24, 22, 6); ctx.fill();
-        ctx.fillStyle = '#fff3df'; roundRect(-10, -21, 20, 21, 5); ctx.fill();
-        const g = ctx.createRadialGradient(-8, -34, 2, 0, -22, 32);
-        g.addColorStop(0, '#e2b6ff'); g.addColorStop(1, '#7b2fd6');
-        ctx.fillStyle = 'rgba(20,28,38,.85)'; ctx.beginPath(); ctx.ellipse(0, -18, 30.5, 24, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -19, 28, 22, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        for(const [dx, dy, r] of [[-14, -27, 4], [0, -35, 4.5], [13, -26, 3.6], [-4, -24, 2.6]]){ ctx.beginPath(); ctx.arc(dx, dy, r, 0, Math.PI*2); ctx.fill(); }
+        ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(0, -1, 18, 3.5, 0, 0, Math.PI*2); ctx.fill();
+        const stiel = ctx.createLinearGradient(-10, 0, 10, 0);
+        stiel.addColorStop(0, '#e8d6b8'); stiel.addColorStop(0.5, '#fff6e6'); stiel.addColorStop(1, '#d9c3a0');
+        ctx.fillStyle = '#5a3a1e'; roundRect(-11.5, -21, 23, 21, 6); ctx.fill();
+        ctx.fillStyle = stiel; roundRect(-10, -20, 20, 19.5, 5); ctx.fill();
+        ctx.strokeStyle = 'rgba(120,80,40,.35)'; ctx.lineWidth = 1;
+        for(const yy of [-15, -9]){ ctx.beginPath(); ctx.moveTo(-8, yy); ctx.quadraticCurveTo(0, yy + 2, 8, yy); ctx.stroke(); }
+        ctx.fillStyle = '#5a3a1e'; ctx.beginPath(); ctx.ellipse(0, -18, 30, 23, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
+        const hut = ctx.createRadialGradient(-9, -34, 3, 0, -20, 32);
+        hut.addColorStop(0, '#ffe39a'); hut.addColorStop(0.55, '#ffad3b'); hut.addColorStop(1, '#e0761f');
+        ctx.fillStyle = hut; ctx.beginPath(); ctx.ellipse(0, -19, 28, 21, 0, Math.PI, Math.PI*2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(120,60,10,.35)'; ctx.fillRect(-27, -21, 54, 2.5);   // Hutkante
+        ctx.fillStyle = '#fff3d6';
+        for(const [dx, dy, r] of [[-15, -26, 4], [0, -34, 4.6], [14, -25, 3.6], [-5, -24, 2.6], [8, -31, 2.2]]){ ctx.beginPath(); ctx.ellipse(dx, dy, r, r*0.85, 0, 0, Math.PI*2); ctx.fill(); }
         ctx.restore();
-        hinweisPfeil(x, b.y - 66, '#c77dff', true);
-        ctx.restore();
+        hinweisPfeil(x, b.y - 58, '#ffcf6b');
       }
     },
   },

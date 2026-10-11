@@ -26,27 +26,35 @@ elementRegistrieren({
         if(sw.pulledT){ const k = (performance.now()-sw.pulledT)/260; if(k < 1) ang += Math.sin(k*Math.PI)*0.15; } // kleiner Nachschwung
         const baseY = sw.y + 20;                 // Kästchen-Unterkante = Boden
         const xr = Math.round(x);
-        // Auffälliger (Nutzerwunsch: gleiche Größe wie früher, aber prominenter – dezentes Leuchten): dunkle Kontur um Stange und
-        // Kugel, Sockel mit Rand in der Hebel-Farbe; solange er aus ist, schwebt ein Hinweis darüber
-        if(!anyOpen) elementLeuchten(xr, baseY - 22, 42, col);
-        ctx.save(); ctx.translate(xr, baseY-9); ctx.rotate(ang);
-        ctx.strokeStyle = 'rgba(20,28,38,.85)'; ctx.lineWidth = 8; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-26); ctx.stroke();
-        ctx.strokeStyle = '#d8c09a'; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-26); ctx.stroke();
-        ctx.fillStyle = 'rgba(20,28,38,.9)'; ctx.beginPath(); ctx.arc(0,-28,9,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0,-28,7,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(-2.2,-30.5,2.3,0,Math.PI*2); ctx.fill();
+        // Auffälliger und passend zur Spielwelt (Nutzerwunsch): Holzstange mit Eisenmanschette und einem Edelstein-Knauf
+        // in der Hebel-Farbe (wie die Edelsteine auf den Türen), Steinsockel mit Eisenband; solange er aus ist, leichter
+        // Schein und Glühwürmchen darüber
+        if(!anyOpen) elementLeuchten(xr, baseY - 26, 44, col);
+        ctx.save(); ctx.translate(xr, baseY-10); ctx.rotate(ang);
+        ctx.strokeStyle = '#3b2412'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-25); ctx.stroke();
+        const holz = ctx.createLinearGradient(-3, 0, 3, 0);
+        holz.addColorStop(0, '#7a4b22'); holz.addColorStop(0.5, '#b47a40'); holz.addColorStop(1, '#6b4019');
+        ctx.strokeStyle = holz; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-25); ctx.stroke();
+        ctx.fillStyle = '#4a4f57'; ctx.fillRect(-4, -19, 8, 4); ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(-4, -19, 8, 1.2);
+        ctx.fillStyle = '#3b2412'; ctx.beginPath(); ctx.moveTo(0, -38); ctx.lineTo(8.5, -29); ctx.lineTo(0, -21); ctx.lineTo(-8.5, -29); ctx.closePath(); ctx.fill();
+        elementEdelstein(0, -29.5, 7.5, col);
         ctx.restore();
-        // Sockel mit Nummer
-        ctx.fillStyle = 'rgba(0,0,0,.2)'; roundRect(xr-17, baseY-12, 34, 13, 5); ctx.fill();
-        ctx.fillStyle = '#8c7b69'; roundRect(xr-16, baseY-14, 32, 13, 5); ctx.fill();
-        ctx.strokeStyle = col; ctx.lineWidth = 2; roundRect(xr-16, baseY-14, 32, 13, 5); ctx.stroke();
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xr, baseY-8, sw.link > 9 ? 7.5 : 6.5, 0, Math.PI*2); ctx.fill();
+        // Steinsockel mit Eisenband, Nummer auf einer Plakette in der Hebel-Farbe
+        ctx.fillStyle = 'rgba(0,0,0,.22)'; roundRect(xr-18, baseY-11, 36, 12, 4); ctx.fill();
+        const stein = ctx.createLinearGradient(0, baseY-16, 0, baseY);
+        stein.addColorStop(0, '#a89c8c'); stein.addColorStop(1, '#6f655a');
+        ctx.fillStyle = stein; roundRect(xr-17, baseY-16, 34, 15, 4); ctx.fill();
+        ctx.strokeStyle = '#3b2f25'; ctx.lineWidth = 1.5; roundRect(xr-17, baseY-16, 34, 15, 4); ctx.stroke();
+        ctx.fillStyle = '#4a4f57'; ctx.fillRect(xr-17, baseY-10, 34, 4);
+        ctx.fillStyle = '#9aa3ad'; for(const rx of [xr-13, xr+13]){ ctx.beginPath(); ctx.arc(rx, baseY-8, 1.4, 0, Math.PI*2); ctx.fill(); }
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xr, baseY-8, sw.link > 9 ? 7 : 6.2, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = 'rgba(40,22,8,.7)'; ctx.lineWidth = 1.2; ctx.stroke();
         ctx.fillStyle='#fff'; ctx.font=(sw.link > 9 ? 'bold 8px' : 'bold 9px') + ' sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(String(sw.link), xr, baseY-7.5);
         if(anyOpen){ ctx.strokeStyle = col; ctx.globalAlpha = 0.4 + 0.25*Math.sin(performance.now()*0.008); ctx.lineWidth = 2.5;
-          roundRect(xr-20, baseY-18, 40, 20, 8); ctx.stroke(); ctx.globalAlpha = 1; }
+          roundRect(xr-21, baseY-20, 42, 22, 8); ctx.stroke(); ctx.globalAlpha = 1; }
         else hinweisPfeil(xr, baseY - 56, col);
         // Tasten-Hinweis, wenn jemand davor steht
         const hints = [];

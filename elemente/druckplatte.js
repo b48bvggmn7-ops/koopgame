@@ -24,18 +24,21 @@ elementRegistrieren({
         const x = Math.round(pl.x - camX);
         if(x < -40 || x > VW + 40) continue;
         const baseY = pl.y + 20, col = linkColor(pl.link), d = pl.down ? 4 : 0;
-        // Auffälliger (Nutzerwunsch, dezentes Leuchten): so breit wie der Bereich, der wirklich drückt, höher, Rand in der Verknüpfungs-Farbe; solange niemand
-        // draufsteht, zeigt ein schwebender Hinweis auf die Platte
-        elementLeuchten(x, baseY - 10, 42, col, pl.down ? 0.5 : 1);
-        ctx.fillStyle = 'rgba(0,0,0,.3)'; roundRect(x - 29, baseY - 7, 58, 7, 2); ctx.fill();
-        ctx.fillStyle = '#4a3a0c'; roundRect(x - 28, baseY - 15 + d, 56, 15 - d, 4); ctx.fill();
-        ctx.fillStyle = pl.down ? col : '#ffd75e'; roundRect(x - 26, baseY - 14 + d, 52, 11 - d*0.5, 4); ctx.fill();
-        ctx.strokeStyle = col; ctx.lineWidth = 2.5; roundRect(x - 28, baseY - 15 + d, 56, 15 - d, 4); ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x - 23, baseY - 13 + d, 46, 2);
-        ctx.fillStyle = pl.down ? '#fff' : col; ctx.beginPath(); ctx.arc(x, baseY - 7 + d/2, 7.5, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = pl.down ? col : '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(String(pl.link), x, baseY - 6.5 + d/2);
-        if(!pl.down) hinweisPfeil(x, baseY - 48, col);
+        // Auffälliger und passend zur Spielwelt (Nutzerwunsch): breite Messingplatte im Eisenrahmen mit Nieten und einem
+        // Edelstein in der Verknüpfungs-Farbe (wie auf den Türen); leichter Schein, solange niemand draufsteht Glühwürmchen
+        elementLeuchten(x, baseY - 8, 44, col, pl.down ? 0.5 : 1);
+        ctx.fillStyle = 'rgba(0,0,0,.28)'; roundRect(x - 29, baseY - 6, 58, 6, 2); ctx.fill();
+        ctx.fillStyle = '#4a4f57'; roundRect(x - 28, baseY - 14 + d, 56, 14 - d, 3); ctx.fill();
+        ctx.strokeStyle = '#2b2f35'; ctx.lineWidth = 1.5; roundRect(x - 28, baseY - 14 + d, 56, 14 - d, 3); ctx.stroke();
+        const platte = ctx.createLinearGradient(0, baseY - 12 + d, 0, baseY - 3);
+        platte.addColorStop(0, pl.down ? '#b08a3a' : '#ffe08a'); platte.addColorStop(1, pl.down ? '#7a5c1e' : '#d9a43a');
+        ctx.fillStyle = platte; roundRect(x - 24, baseY - 12 + d, 48, 9 - d*0.5, 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x - 22, baseY - 12 + d, 44, 1.5);
+        ctx.fillStyle = '#9aa3ad'; for(const rx of [x - 26, x + 26]){ ctx.beginPath(); ctx.arc(rx, baseY - 7 + d/2, 1.5, 0, Math.PI*2); ctx.fill(); }
+        elementEdelstein(x - 12, baseY - 7.5 + d/2, 4.5, col); elementEdelstein(x + 12, baseY - 7.5 + d/2, 4.5, col);
+        ctx.fillStyle = '#3b2f25'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(pl.link), x, baseY - 7 + d/2);
+        if(!pl.down) hinweisPfeil(x, baseY - 40, col);
       }
     },
   },

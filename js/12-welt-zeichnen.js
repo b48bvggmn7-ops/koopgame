@@ -299,31 +299,46 @@ const LINK_COLORS = {1:'#ff922b', 2:'#339af0', 3:'#9775fa', 4:'#12b886', 5:'#f06
 // ab 21 (falls je nötig): automatisch verteilte Farbtöne
 const linkColor = n => LINK_COLORS[n] || `hsl(${(n*137.5)%360},60%,45%)`;
 // (steht außerhalb von draw(), damit auch die Elemente in elemente/ – Hebel, Druckplatte – sie benutzen können)
-// Auffälligkeit (Nutzerwunsch: Hebel, Pilze, Druckplatten wurden übersehen): dezenter, pulsierender Lichtschein und
-// ein Hinweis aus zwei Winkeln, die nacheinander aufleuchten und sanft schweben (statt eines Dreieck-Pfeils –
-// Nutzerwunsch), über allem, was man noch benutzen muss. Nur Zeichnen (performance.now), kein Spielzustand.
+// Auffälligkeit (Nutzerwunsch: Hebel, Pilze, Druckplatten wurden übersehen): leichter, pulsierender Schein und – statt
+// Pfeilen, die nicht zur Spielwelt passten – drei Glühwürmchen in der Farbe des Elements, die langsam darüber kreisen,
+// solange man es noch benutzen muss. Nur Zeichnen (performance.now), kein Spielzustand.
 let hinweisPfeile = 0;   // Zähler je Bild (für Tests)
+// Farbe mit Deckkraft (für Verläufe ins Durchsichtige – 'rgba(0,0,0,0)' würde zum Rand hin abdunkeln)
+function farbeMitAlpha(col, a){
+  if(col[0] === '#'){
+    const h = col.length === 4 ? col.slice(1).split('').map(c => c + c).join('') : col.slice(1, 7);
+    return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+  }
+  if(col.startsWith('hsl(')) return col.replace('hsl(', 'hsla(').replace(')', `,${a})`);
+  return col;
+}
 function elementLeuchten(x, y, radius, col, staerke = 1){
-  const puls = 0.65 + 0.35*Math.sin(performance.now()*0.004);
+  const puls = 0.7 + 0.3*Math.sin(performance.now()*0.004);
   const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
-  g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.save(); ctx.globalAlpha = 0.42*puls*staerke; ctx.fillStyle = g;
+  g.addColorStop(0, farbeMitAlpha(col, 0.9)); g.addColorStop(0.4, farbeMitAlpha(col, 0.45)); g.addColorStop(1, farbeMitAlpha(col, 0));
+  ctx.save(); ctx.globalAlpha = 0.5*puls*staerke; ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.fill(); ctx.restore();
 }
-function hinweisPfeil(x, y, col, nachOben = false){
+function hinweisPfeil(x, y, col){
   hinweisPfeile++;
-  const t = performance.now(), schweb = Math.sin(t*0.004)*3;
-  ctx.save(); ctx.translate(x, y + schweb); if(nachOben) ctx.scale(1, -1);
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  for(let i = 0; i < 2; i++){
-    const a = 0.35 + 0.65*Math.max(0, Math.sin(t*0.005 - i*1.1));   // oberer Winkel zuerst, dann der untere
-    const yy = -6 + i*9;
-    ctx.globalAlpha = a;
-    ctx.beginPath(); ctx.moveTo(-9, yy - 5); ctx.lineTo(0, yy + 2); ctx.lineTo(9, yy - 5);
-    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(20,28,38,.75)'; ctx.stroke();
-    ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.stroke();
+  const t = performance.now()*0.0016;
+  ctx.save();
+  for(let i = 0; i < 3; i++){
+    const a = t + i*Math.PI*2/3;
+    const fx = x + Math.cos(a)*16, fy = y + Math.sin(a*2)*5 + Math.sin(a)*4;
+    const blink = 0.55 + 0.45*Math.sin(performance.now()*0.006 + i*2.1);
+    const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, 12);
+    g.addColorStop(0, farbeMitAlpha(col, 1)); g.addColorStop(1, farbeMitAlpha(col, 0));
+    ctx.globalAlpha = 0.7*blink; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, 12, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = blink; ctx.fillStyle = '#fffbe8'; ctx.beginPath(); ctx.arc(fx, fy, 2.8, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
+}
+// Edelstein (Raute) in der Verknüpfungs-Farbe – wie auf den Türen, damit man sieht, was zusammengehört
+function elementEdelstein(x, y, r, col){
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r*0.9, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r*0.9, y); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,22,8,.7)'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x - r*0.35, y - r*0.6, r*0.3, r*0.4);
 }
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_BACK_MIN..CAM_BACK_PUSH px,

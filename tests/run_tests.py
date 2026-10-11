@@ -3969,7 +3969,7 @@ async def deko_frei_von_spielobjekten(g):
 
 @test
 async def auffaellige_elemente(g):
-    """Nutzerwunsch: Hebel, Sprungpilze und Druckplatten fallen auf – dezentes Leuchten und schwebender Hinweis (zwei Winkel), solange
+    """Nutzerwunsch: Hebel, Sprungpilze und Druckplatten fallen auf – leichter Schein und kreisende Glühwürmchen als Hinweis, solange
     man sie noch benutzen muss (Hebel aus, Platte frei; Pilz immer); im weiten Umkreis keine Deko-Pflanzen/-Tiere."""
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        switches=[{'x': 300, 'y': 660, 'link': 1}], plates=[{'x': 420, 'y': 660, 'link': 2}],

@@ -15,15 +15,19 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     mehr, höher als früher geht nie (es wird nur gebremst). Erneutes Drücken in der Luft ändert nichts. Wandsprung,
     Seil-Abflug, Sprungpilz, Aufwind/Schirm und Schwimmen sind ausgenommen und unverändert. Test variable_sprunghoehe.
   - AUFFÄLLIGE SPIELELEMENTE (Nutzerwunsch: Hebel, Sprungpilze und Druckplatten wurden übersehen, gerade wenn man
-    schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; nach Rückmeldung nur dezentes Leuchten):
-    Hebel in der alten Größe, aber prominenter (dunkle Kontur um Stange und Kugel, Sockel mit Rand in der Hebel-Farbe);
-    Druckplatte etwas breiter (so breit wie der Bereich, der wirklich drückt), höher, mit Farbrand; Sprungpilz dicker
-    (Hut und Stiel), so breit wie der Bereich, der wirklich federt, kräftig violett mit weißen Punkten und dunkler
-    Kontur (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze). Alle drei haben einen dezenten, pulsierenden
-    Lichtschein; ein Hinweis aus zwei Winkeln, die nacheinander aufleuchten und sanft schweben, zeigt darauf – beim
-    Hebel, solange er aus ist; bei der Druckplatte, solange niemand draufsteht; beim Pilz immer (Winkel nach oben).
-    Im Umkreis von 4 Kästchen (DEKO_FREI_ABSTAND 160 px) stehen keine Deko-Pflanzen und keine Tiere (17-deko.js,
-    20-tiere.js), damit nichts ablenkt. Hilfen elementLeuchten/hinweisPfeil in 12-welt-zeichnen.js. Test auffaellige_elemente.
+    schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; Design passend zur Spielwelt wie die Türen:
+    Holz, Eisen, Edelstein in der Verknüpfungs-Farbe):
+    - Hebel (alte Größe): Holzstange mit Eisenmanschette, Edelstein-Knauf in der Hebel-Farbe, Steinsockel mit Eisenband
+      und Nummern-Plakette.
+    - Druckplatte (etwas breiter, so breit wie der Bereich, der wirklich drückt): Messingplatte im Eisenrahmen mit
+      Nieten, zwei Edelsteine in der Verknüpfungs-Farbe und Nummer; gedrückt dunkler und abgesenkt.
+    - Sprungpilz (dicker, so breit wie der Bereich, der wirklich federt): warmes Gold-Orange mit cremefarbenen Tupfen,
+      brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze).
+    - Leichter, pulsierender Schein und drei Glühwürmchen in der Farbe des Elements, die langsam darüber kreisen (statt
+      Pfeilen) – beim Hebel, solange er aus ist; bei der Druckplatte, solange niemand draufsteht; beim Pilz immer.
+    - Im Umkreis von 4 Kästchen (DEKO_FREI_ABSTAND 160 px) stehen keine Deko-Pflanzen und keine Tiere; Frosch, Schnecke
+      und Eidechse laufen/hüpfen nicht hinein (17-deko.js, 20-tiere.js). Hilfen elementLeuchten, hinweisPfeil
+      (Glühwürmchen), elementEdelstein in 12-welt-zeichnen.js. Test auffaellige_elemente.
   - Figuren: süßer Affe (eigene Zeichnung, ersetzt Kenney-Affe) und pinkes Schweinchen, beide mit Zwinker-Bild
     (monkeyBlink/pigBlink, alle ~3-5 s kurz). Bild immer im echten Seitenverhältnis (nicht verzerrt); gedreht wird
     genau um die Mitte des runden Kopfes (HEAD_CENTER, Ohren zählen nicht), damit die Kugel rund rollt statt zu eiern.
