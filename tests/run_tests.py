@@ -7121,6 +7121,101 @@ async def editor_boss_github(g):
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
 
+@test
+async def bildregel_pruefung(g):
+    """Bild-Regel + Leveldesign-Regeln (AUSBAU-REGELWERK Punkt 12, Prüfwerkzeug tests/bildregel_pruefen.py) für ALLE Level der
+    Welten: kein Befund (Bild, Plattform, Haken, Checkpoint) außer den begründeten in tests/bildregel_ausnahmen.json;
+    jede Ausnahme muss noch zu einem Befund passen (sonst ist sie veraltet und wird entfernt)."""
+    sys.path.insert(0, str(ROOT / 'tests'))
+    import importlib, bildregel_pruefen as BR
+    importlib.reload(BR)
+    js = (ROOT / 'js' / '09-kamera.js').read_text(encoding='utf-8')
+    assert 'const BILD_MAX_SPALTEN = 20;' in js and BR.BILD_MAX_SPALTEN == 20, 'Grenzwert BILD_MAX_SPALTEN fehlt in js/09-kamera.js'
+    assert await g.ev("typeof BILD_MAX_SPALTEN") == 'number' and await g.ev("BILD_MAX_SPALTEN * 40 <= FRONT_MAX * VW - CAM_BACK_MIN"), \
+        'BILD_MAX_SPALTEN passt nicht mehr zur Kamera (beide sicher im Bild bis FRONT_MAX·VW − CAM_BACK_MIN)'
+    res = BR.pruefe_alle()
+    assert len(res) >= 26, f'zu wenige Level geprüft: {len(res)}'
+    neu = [f"{r['level']} [{v['regel']}] Spalte {v['spalte']}: {v['text']}" for r in res for v in r['befunde'] if not v['ausnahme']]
+    assert not neu, 'neue Verstöße (beheben oder begründet in tests/bildregel_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
+    alle = [(r['level'], v['regel'], v['spalte']) for r in res for v in r['befunde']]
+    veraltet = [a for a in BR.ausnahmen() if (a['level'], a['regel'], a.get('spalte')) not in alle]
+    assert not veraltet, f'veraltete Ausnahmen (Befund gibt es nicht mehr): {veraltet}'
+    assert all(a.get('begruendung') for a in BR.ausnahmen()), 'jede Ausnahme braucht eine Begründung'
+    # das Werkzeug erkennt einen Verstoß: Hebel 21 Spalten vor seiner Tür, Checkpoint 10 Spalten nach dem vorigen
+    d = {'switches': [{'x': 100 * 40 + 20, 'y': 600, 'link': 1}], 'doors': [{'x': 121 * 40, 'y': 400, 'w': 40, 'h': 200, 'link': 1}],
+         'checkpoints': [{'x': 60 * 40 + 20, 'y': 600}, {'x': 70 * 40 + 20, 'y': 600}], 'solids': [], 'startM': {'x': 20, 'y': 600}, 'startF': {'x': 60, 'y': 600}}
+    _, bv = BR.bild_pruefen(d); _, cv = BR.checkpoints_pruefen(d)
+    assert bv and 'Tür' in bv[0]['text'] and any('nur 10 Spalten' in v['text'] for v in cv), (bv, cv)
+
+@test
+async def haken_richtwerte_bot(g):
+    """Haken-Richtwerte (AUSBAU-REGELWERK Punkt 12): der Koop-Bot hangelt an drei typischen Stellen (Dschungel 1 Dornengrube,
+    Dschungel 1 Hebel-Sims, Dschungel 2 hoher Sims – alle mit 3 Haken im Abstand 7) mit 8 Loslass-Arten; jede Stelle muss in
+    mindestens 4 von 8 Arten klappen. Ausgabe: Erfolge, Zeit, Schwunghöhe (höchste Reihe), Landung (Spalten hinter der Kante)."""
+    rels = [f'P.x > P.anchor.x + {k} && P.vx > 1' for k in (0, 20, 40, 60, 80)] + [f'P.y < P.anchor.y + {d} && P.vx > 1 && P.vy < 0' for d in (40, 60, 90)]
+    stellen = (('dschungel/01-dschungel.json', 'Dornengrube', (560, 14), 565, 3, (588, 14)),
+               ('dschungel/01-dschungel.json', 'Hebel-Sims', (607, 8), 613, 3, (636, 8)),
+               ('dschungel/02-baumkronen.json', 'hoher Sims', (117, 7), 125, 3, (146, 7)))
+    bericht = []
+    for datei, name, start, anlauf, n, ziel in stellen:
+        await koop_level(g, datei)
+        ok, zeit, top, land = 0, [], [], []
+        for rel in rels:
+            pl = [k_lauf(anlauf, -30), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+            for k in range(n): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+            pl += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+            r = await koop(g, m=kat(*start), f=kat(start[0] - 3, start[1]), plans={'m': pl}, maxFrames=3000)
+            if r.get('done') and r['pos']['m'][0] >= ziel[0] - 0.5 and r['pos']['m'][1] == ziel[1]:
+                ok += 1; zeit.append(r['f'] / 54); top.append(r['top']['m']); land.append(r['pos']['m'][0] - ziel[0])
+        bericht.append(f"{name}: {ok}/8, {sum(zeit) / len(zeit):.1f} s, Schwung bis Reihe {min(top)}, Landung {min(land):.0f}–{max(land):.0f} Spalten hinter der Kante" if ok else f'{name}: 0/8')
+        assert ok >= 4, f'{datei} {name}: nur {ok}/8 Loslass-Arten klappen'
+    print('    Haken-Stellen: ' + ' | '.join(bericht))
+
+@test
+async def hoehle1_faehre_im_bild(g):
+    """Bild-Regel, Höhle 1 „Kristallhöhle“: die Fähre unter den Stachelpressen fährt nur noch 15 statt 30 Spalten (Platten
+    an den Kanten 248 / 268). Das Schweinchen hält die Platte, der Affe fährt hinüber; währenddessen sind beide nie mehr als
+    20 Spalten auseinander. Danach holt der Affe auf der rechten Platte die Fähre für das Schweinchen zurück."""
+    await koop_level(g, 'hoehle/01-kristallhoehle.json')
+    da = "solids.some(s => s.type === 'moveplat' && s.switchLink === 6 && Math.abs(s.x - s.targetX) < 6)"
+    zurueck = "solids.some(s => s.type === 'moveplat' && s.switchLink === 6 && Math.abs(s.x - s.startX) < 6)"
+    mess = "(window.__maxAb = Math.max(window.__maxAb || 0, Math.abs(P.x - Q.x)), false)"
+    ok = None
+    for w in range(0, 360, 20):
+        f = [{'frames': w + 1}, {'holdIf': {'right': f'P.x < {kx(248)} - 3', 'left': f'P.x > {kx(248)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(248)}) <= 3', 'frames': 200},
+             {'wait': f'{mess} || Q.x >= {kx(268)}', 'frames': 1500}]
+        m = [{'wait': '!!linkOn[6]', 'frames': 900}, {'wait': f'{mess} || {da}', 'frames': 1500}, k_lauf(270)]
+        r = await koop(g, m=kat(251, 12), f=kat(244, 14), plans={'m': m, 'f': f}, maxFrames=3000, pre='window.__maxAb = 0')
+        if r.get('done'): ok = await g.ev('window.__maxAb'); break
+    assert ok is not None, 'Affe kommt mit der Fähre nicht hinüber'
+    assert ok <= 20.5 * 40, f'beim Fahren {ok / 40:.1f} Spalten auseinander'
+    # Rückweg: Affe hält die rechte Platte, die Fähre pendelt zurück, das Schweinchen fährt hinüber
+    for w in range(0, 360, 20):
+        m = [{'holdIf': {'right': f'P.x < {kx(268)} - 3', 'left': f'P.x > {kx(268)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(268)}) <= 3', 'frames': 200},
+             {'wait': f'Q.x >= {kx(268)}', 'frames': 2500}]
+        fp = "solids.find(s => s.type === 'moveplat' && s.switchLink === 6)"
+        f = [{'frames': w + 1}, {'wait': zurueck, 'frames': 900}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
+             {'holdIf': {'right': f'P.x < {fp}.x + 60', 'left': f'P.x > {fp}.x + 80'}, 'until': 'P.grounded', 'frames': 120}, {'wait': da, 'frames': 1500}, k_lauf(270)]
+        r = await koop(g, m=kat(271, 14), f=kat(249, 14), plans={'m': m, 'f': f}, maxFrames=4000)
+        if r.get('done'): break
+    assert r.get('done'), f'Schweinchen kommt mit der Fähre nicht zurück hinüber: {r.get("pos")}'
+
+@test
+async def spielstand_ohne_checkpoints(g):
+    """Checkpoints wurden für die Bild-Regel verschoben/entfernt: der Spielstand merkt sich keine Checkpoint-Nummern
+    (nur Level-Dateien, Statistik, Bosse), alte Spielstände laden daher unverändert; jedes Level startet am Start."""
+    await g.p.evaluate("""() => { localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true,
+        unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], completed: ['dschungel/01-dschungel.json'],
+        stats: {'dschungel/01-dschungel.json': {m: 3, f: 4}}, bosse: []})); }""")
+    await g.p.reload(); await g.p.wait_for_timeout(400)
+    raw = await g.ev("localStorage.getItem('monchichi.save')")
+    s = json.loads(raw)
+    assert s['completed'] == ['dschungel/01-dschungel.json'] and 'dschungel/02-baumkronen.json' in s['unlocked'], s
+    assert 'checkpoint' not in raw.lower() and 'activecp' not in raw.lower(), raw
+    await g.load(str(ROOT / 'levels' / 'dschungel/02-baumkronen.json'))
+    assert await g.ev("activeCp") == -1 and await g.ev("checkpointDefs.length") == 13
+    await g.p.evaluate("localStorage.removeItem('monchichi.save')")
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
