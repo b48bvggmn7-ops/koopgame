@@ -120,5 +120,10 @@
   "datei": "vulkan/07-kraterherz.json",
   "name": "Level 22",
   "titel": "Kraterherz"
+ },
+ {
+  "datei": "dschungel/05-dornenpfad.json",
+  "name": "Dschungel 5",
+  "titel": "Dornenpfad"
  }
 ]

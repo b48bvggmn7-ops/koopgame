@@ -581,7 +581,7 @@ async def menue_projekt_levels(g):
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
         echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
         assert echte[:4] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
-        assert namen == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6), Level 7/8 (Ausbau 7)
+        assert namen == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6), Level 7/8 (Ausbau 7)
         # Level 2 gesperrt
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await g.ev("menuScreen") == 'start', 'gesperrtes Level startet'
@@ -600,7 +600,8 @@ async def menue_projekt_levels(g):
         for _ in range(120):
             if await g.ev("menuScreen === null"): break
             await p.wait_for_timeout(100)
-        spiel2 = json.loads((ROOT / 'levels' / 'dschungel/04-gluehwald.json').read_text())   # letztes Dschungel-Level (Ausbau 7; vorher Level 2)
+        letzt = json.loads((ROOT / 'levels' / 'worlds.json').read_text())['welten'][0]['level'][-1]   # letztes Dschungel-Level (6er-Welten: aus worlds.json)
+        spiel2 = json.loads((ROOT / 'levels' / letzt).read_text())
         assert await g.ev('coins.length') == len(spiel2['coins']), 'letztes offenes Level nicht geladen'
     finally:
         srv.shutdown()
@@ -3174,6 +3175,84 @@ async def level22_kraterherz(g):
     assert not fehler, fehler
 
 @test
+async def dschungel5_dornenpfad(g):
+    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden …); Checkpoints höchstens ~60 Spalten auseinander."""
+    await koop_level(g, 'dschungel/05-dornenpfad.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def wind_hoch(c0, c1, bis_r):
+        return [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c0)}', 'left': f'P.x > {kx(c1)}'}, 'until': f'P.y < {ky(bis_r)}', 'frames': 900}]
+    def info(r): return r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, r0=15, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, r0), o: kat(start - 2, r0)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), links=kw.get('links', []))
+            good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who} vorn)', info(r))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
+    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        steine = lambda w: [k_lauf(13, -4)] + sprung_zu(kx(16)) + sprung_zu(kx(20)) + sprung_zu(kx(24)) + sprung_zu(kx(28)) + sprung_zu(kx(32)) + sprung_zu(kx(37)) + [k_lauf(39)]
+        await beide('E1 Bröckel-Steine dicht hintereinander', 9, steine, 38, delay=12)
+        r = await koop(g, m=kat(9, 15), f=kat(7, 15), plans={'m': steine('m'), 'f': [{'frames': 80}] + steine('f')}, maxFrames=3000)
+        soll(r.get('dead') == 'f', 'E1 zu spät hinterher: die Steine sind weg', info(r))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(56, 15), f=kat(54, 15), plans={'m': kette(60, 4, rel) + [k_lauf(93)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 92: ok.append(rel[:14])
+        soll(ok, 'E1 Affe an vier Haken über das Dornenfeld', (ok, info(r)))
+        pilzflug = [k_lauf(57, 0), {'frames': 12}, {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(61)} - 6', 'left': f'P.x > {kx(61)} + 6'}, 'until': 'P.vy < -14', 'frames': 100}, {'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}, k_lauf(93)]
+        r = await koop(g, f=kat(54, 15), m=kat(92, 15), plans={'f': pilzflug}, maxFrames=4000)
+        soll(r.get('done') and r['pos']['f'][0] >= 92, 'E1 Schwein: Pilz, Aufwind, über das Dornenfeld', info(r))
+        r = await koop(g, f=kat(93, 15), m=kat(91, 15), plans={'f': [k_lauf(96, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(97, 98, 5) + [{'hold': ['right'], 'until': f'P.x >= {kx(100)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 300}] + am(102)}, maxFrames=4000)
+        soll(r.get('done') and await g.ev('!!linkOn[1]'), 'E1 Schwein: Aufwind -> Sims -> Hebel 1', info(r))
+        r = await koop(g, m=kat(93, 15), f=kat(91, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['m'][0] < 110, 'E1 ohne Hebel 1 hält Tür 1', info(r))
+        ok = None
+        for jx in (112, 113, 114, 115):
+            r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': haken(jx, 10) + am(121)}, links=[1], maxFrames=3000)
+            if r.get('done') and r['pos']['m'][1] == 10 and await g.ev('!!linkOn[2]'): ok = jx; break
+        soll(ok, 'E1 Affe: Haken -> Sims -> Hebel 2', (ok, info(r)))
+        stufe = lambda w: [k_lauf(128, -4)] + sprung_zu(kx(131)) + sprung_zu(kx(134)) + [{'frames': 10}]
+        r = await koop(g, m=kat(124, 15), f=kat(122, 15), plans={'m': stufe('m'), 'f': [{'frames': 30}] + stufe('f')}, links=[1, 2], maxFrames=3000)
+        soll(r.get('done') and r['pos']['m'][1] == 11 and r['pos']['f'][1] == 11, 'E1 Tür 2 offen, beide auf den Absatz', info(r))
+        r = await koop(g, m=kat(126, 15), f=kat(124, 15), plans={'m': [{'hold': ['right'], 'frames': 200}]}, links=[1], maxFrames=1000)
+        soll(r['pos']['m'][0] < 128, 'E1 ohne Hebel 2 hält Tür 2', info(r))
+        # Jagd: Affe zieht Hebel 3, beide fliehen
+        flucht = lambda w: [k_lauf(149, -10)] + sprung_zu(kx(152)) + sprung_zu(kx(157)) + sprung_zu(kx(162)) + sprung_zu(kx(167)) + sprung_zu(kx(172)) + sprung_zu(kx(176)) + [k_lauf(199)]
+        for delay in (0, 20):
+            m = [k_lauf(142, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(144, -4), {'wait': '!!linkOn[3]'}] + flucht('f')
+            r = await koop(g, m=kat(133, 11), f=kat(134, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 198 and r['pos']['f'][0] >= 198, f'E1 Stachelwand-Jagd (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(133, 11), f=kat(134, 11), plans={'m': [k_lauf(142, -14), {'use': True, 'frames': 2}, {'frames': 60}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E1 1 s gezögert: die Wand holt den Affen ein', info(r))
+    assert not fehler, fehler
+
+
+@test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
     Teleporter, Falle, Fels, Förderband oder Leuchtkristall),
@@ -4403,17 +4482,17 @@ async def welten_laden(g):
         assert k['w'] == ids, k
         # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
         assert [x[0] for x in k['l']] == [d for x in w['welten'] for d in x['level']] == [   # Editor-Umbau: Welt-Ordner
-            'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json',
+            'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json',
             'ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json',
             'hoehle/02-tropfsteingang.json', 'hoehle/03-eisgrotte.json', 'hoehle/01-kristallhoehle.json', 'hoehle/04-leuchtgrotte.json',
             'hoehle/05-foerderwerk.json', 'hoehle/06-tiefenschlund.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json',
             'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json',
             'vulkan/07-kraterherz.json'], f'Reihenfolge geändert: {k}'
-        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Ruinen', 'Fallengang', 'Sonnentempel',
+        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Ruinen', 'Fallengang', 'Sonnentempel',
                                           'Mondnacht', 'Felsenflucht', 'Tropfsteingang', 'Eisgrotte', 'Kristallhöhle', 'Leuchtgrotte',
                                           'Förderwerk', 'Tiefenschlund', 'Glutpfad', 'Aschefeld', 'Feuerberg', 'Magmakammer',
                                           'Schlackewerk', 'Feuerschlund', 'Kraterherz'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
+        assert [x[2] for x in k['l']] == ['dschungel'] * 5 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -4713,7 +4792,7 @@ async def editor_rundreise_alle_level(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 22, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
+        assert len(liste) == 23, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -5343,7 +5422,8 @@ async def welten_freischaltung(g):
         assert await g.ev(offen) == [True, False, False, False, False]
         assert await fertig('dschungel/02-baumkronen.json') == await nr('dschungel/03-lianenschlucht.json') and await fertig('dschungel/03-lianenschlucht.json') == await nr('dschungel/04-gluehwald.json')
         # Ausbau 6: Dschungel hat einen Boss -> nach dem letzten Level erst der Boss, dann öffnen die Ruinen
-        assert await fertig('dschungel/04-gluehwald.json') == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
+        assert await fertig('dschungel/04-gluehwald.json') == await nr('dschungel/05-dornenpfad.json')   # 6er-Welten: Dschungel 5
+        assert await fertig('dschungel/05-dornenpfad.json') == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
         assert await g.ev(offen) == [True, False, False, False, False], 'Ruinen offen ohne besiegten Boss'
         assert await g.ev("GameMenu.completeBoss('dschungel')") == 'ruinen'
         assert await g.ev(offen) == [True, True, False, False, False]
@@ -5368,7 +5448,7 @@ async def welten_freischaltung(g):
         assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
         await p.wait_for_function("!document.querySelector('.ulock')", timeout=6000)
         # letzter Sieg der Welt (Ausbau 6: der Boss) -> Weltkarte mit Freischalt-Animation auf „Ruinen“
-        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json'].forEach(f => GameMenu.completeLevel(nr(f), true)); GameMenu.completeBoss('dschungel')")
+        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json'].forEach(f => GameMenu.completeLevel(nr(f), true)); GameMenu.completeBoss('dschungel')")
         await g.ev("GameMenu.show('results', {n: 2, fresh: 3, freshWorld: 'ruinen', packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
         assert await sm_screen(g) == 'sm-s-map', 'nach der letzten Level einer Welt nicht zur Weltkarte'
@@ -5377,14 +5457,14 @@ async def welten_freischaltung(g):
         await p.wait_for_function("document.querySelector('#sm-wm .ulock.burst')", timeout=5000)
         await p.wait_for_function("!document.querySelector('#sm-wm .ulock')", timeout=6000)
         isl = await wk_inseln(g)
-        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == '4 / 4 Level', isl
+        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == '5 / 5 Level', isl
         # alter Spielstand (Nummern): Level 1–3 geschafft, 4 offen -> Dschungel fertig, Ruinen offen, Höhle zu
         await g.ev("localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({played: true, unlocked: 4, completed: [1, 2, 3]}))")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         assert await g.ev(offen) == [True, True, False, False, False]
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
         isl = await wk_inseln(g)
-        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 5 Level', '0 / 6 Level', 'Bald', '0 / 7 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5, Höhle 6, Vulkan 7 Level; Ruinen bleiben offen
+        assert [i['info'] for i in isl] == ['2 / 5 Level', '1 / 5 Level', '0 / 6 Level', 'Bald', '0 / 7 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5, Höhle 6, Vulkan 7 Level; Ruinen bleiben offen
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()
@@ -6421,7 +6501,7 @@ async def boss1_bruno(g):
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         boss = "document.querySelector('#sm-cards .lc.boss')"
         assert await g.ev(f"{boss}.classList.contains('lock')"), 'Boss-Karte offen, obwohl Level 2 fehlt'
-        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # alle Dschungel-Level (Ausbau 7: 4)
+        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # alle Dschungel-Level (Ausbau 7: 4)
         assert await g.ev("GameMenu.worldUnlocked('ruinen')") is False, 'Ruinen offen ohne Boss'
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         assert not await g.ev(f"{boss}.classList.contains('lock')") and 'Bruno' in await g.ev(f"{boss}.textContent"), await g.ev(f"{boss}.outerHTML")
