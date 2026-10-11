@@ -4013,7 +4013,9 @@ async def editor_testen_knopf(g):
         await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
         await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.wait_for_timeout(300)
         # Enter im Namensfeld (Levels-Fenster) startet KEINEN Test
-        await p.click('#levelsBtn'); await p.fill('#levelName', 'x'); await p.keyboard.press('Escape')
+        await p.click('#levelsBtn')
+        await p.wait_for_selector('#projectList .lvl', timeout=8000)   # Projekt-Liste fertig geladen (sonst kann das spätere Neuzeichnen den Fokus nehmen)
+        await p.fill('#levelName', 'x'); await p.keyboard.press('Escape')
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
         assert '/editor/' in p.url, 'Enter im Textfeld hat den Test gestartet'
         await p.click('#c', position={'x': 5, 'y': 5}, button='right'); await p.wait_for_timeout(100)   # Fokus weg vom Feld
