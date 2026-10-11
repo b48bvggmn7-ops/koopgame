@@ -24,12 +24,16 @@ window.coopRun = function(o){
     for(const k in KEYS) if(!k.endsWith('_pressed')) KEYS[k] = false;
     for(const who of ['m', 'f']){
       const P = who === 'm' ? p1 : p2, Q = who === 'm' ? p2 : p1, S = st[who];
+      // Variable Sprunghöhe: ein Sprung vom Boden wird wie ein normaler Tastendruck mindestens JUMP_FULL_STEPS Schritte
+      // gehalten (volle Höhe) – so springt der Bot wie ein Spieler, der hoch springen will (Plan-Schritt kurzerSprung: nur antippen)
+      if(f < (S.sprungBis || 0)) KEYS[SEM(P, 'jump')] = true;
       const step = plans[who][S.i];
       if(!step) continue;
       const ev = s => Function('P', 'Q', 'f', 'S', 'return (' + s + ')')(P, Q, f - S.t0, S);
       if(S.ph === 0){ S.t0 = f; S.ph = 1; S.att = 0; if(step.dir) S.dir = step.dir; }
       const hold = n => { KEYS[SEM(P, n)] = true; };
-      const press = n => { KEYS[SEM(P, n)] = true; KEYS[SEM(P, n) + '_pressed'] = true; };
+      const press = n => { KEYS[SEM(P, n)] = true; KEYS[SEM(P, n) + '_pressed'] = true;
+        if(n === 'jump' && P.grounded && !step.kurzerSprung && typeof JUMP_FULL_STEPS === 'number') S.sprungBis = f + JUMP_FULL_STEPS; };
       let done = false;
       if(step.climb){
         // Kamin/Wandsprung: am Boden springen, an der Wand weg-drücken + springen, in der Luft Richtung halten
