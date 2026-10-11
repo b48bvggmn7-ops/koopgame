@@ -7,7 +7,8 @@ und Schweinchen in jeder Mechanik. Technisch steht der Look in `levels/worlds.js
 ## Welt 1 – Dschungel
 
 **Thema:** Grüner, lebendiger Regenwald – der Einstieg. Hier lernen beide, dass sie nur zusammen weiterkommen.
-Es fängt mild an (1–2 Versuche) und steigt bis zu Bruno deutlich an (schwerste Stellen 3–4 Versuche).
+Es fängt mild an (1–2 Versuche) und steigt bis zu Bruno deutlich an (6er-Welten: Dornenpfad und Wipfelsturm typisch
+3–4, schwerste Stellen bis 6 Versuche).
 
 **Look:**
 - Himmel und Licht: Je nach Tageszeit des Levels. Morgen = goldener Dunst, Mittag = klares Licht, Abend = Abendrot
@@ -57,6 +58,19 @@ Wechselboden und Teleporter (die letzten beiden nur sanft, als erste Begegnung).
 4. Etappe 4 (600–800): Zwei-Gänge-Staffel (Affe nur durchs blaue Tor in den unteren Gang, Schweinchen nur per Aufwind
    in den oberen; Hebel 10–13 öffnen jeweils die Tür des anderen); Finale: schnellste Stachelwand (5,2) – Grube, Pilz
    über die breite Grube, unter der Dornendecke flach landen, Ziel.
+
+**Wipfelsturm (dschungel/06-wipfelsturm.json, 800 Spalten, 4 Etappen, wie gebaut):**
+1. Etappe 1 (0–200): Luft-Tor über Dornen (Tor 1 setzt beide hoch über der Grube ab: Affe greift sofort den Haken,
+   Schweinchen segelt); Brücke für die Partnerin (Affe auf Platte 2 = Brücke B, Schweinchen zu Hebel 3 = Tür 3, Affe
+   an zwei Haken nach); Takt-Treppe im 1-s-Takt; Jagd durchs Tor (Stachelwand in der Stufe, am Gangende Tor 2).
+2. Etappe 2 (200–400): wippende Haken (zwei fahren hin und her) / Aufwinde; Tor-Staffel (pinkes Tor -> Hebel 5 = Tür 5
+   für den Affen, blaues Tor -> Hebel 6 = Tür 6 für das Schweinchen); Pilz-Turm über Dornen; Bröckel-Abstieg.
+3. Etappe 3 (400–600): hohes Luft-Tor (drei Haken, der letzte fährt / Aufwind); Takt-Steine 1 s; Wechsel-Schleuse
+   (Platte 7 = Brücke B + Wand A weg; Hebel 8 öffnet eine Klappe im Boden, darunter das blaue Tor für den Affen);
+   Doppel-Jagd (Hebel 9 = Tür 9 + Stachelwand + sinkende Dornendecke).
+4. Etappe 4 (600–800): Wipfel-Staffel (blaues Tor auf den oberen Ast: Haken über Dornengruben; pinkes Tor in den Gang:
+   Takt-Steine 1,2 s; Hebel 10–13 über Kreuz); Sturm-Finale (Stachelwand 5,4 – Grube, Pilz über die breite Grube,
+   die Stege hinauf, bevor die Wand unten durchfährt; Ziel oben auf dem Wipfel).
 
 **Lianenschlucht (levels/level-7.json, ca. 800 Spalten, 4 Etappen, wie gebaut):**
 1. Etappe 1 (Spalten 0–200), Lehr-Teil:
@@ -124,6 +138,39 @@ Wechselboden und Teleporter (die letzten beiden nur sanft, als erste Begegnung).
 | 78–106 | Takt-Steine 2 s (erste Begegnung) | Timing | knapp |
 | 364–369 | Haken auf den Sims mit Druckplatte 7 (Affe) | Seil | knapp-komfortabel |
 
+**Härteste Stellen Dschungel 5 „Dornenpfad“ (Ziel: typisch 3, schwerste 5):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 670–760 | Finale: schnellste Stachelwand (5,2), Pilz über die breite Grube, unter der Dornendecke flach landen | Verfolgung | Grenze (1 s gezögert = eingeholt) |
+| 337–398 | Dornendecke: nur flach über die Stufen springen | Verfolgung + Sprunghöhe | Grenze (2 s gezögert oder voller Sprung an der letzten Stufe = Dornen) |
+| 476–503 | Druckplatten-Schleuse: Affe an zwei Haken auf den Sims | Seil-Schwung | Grenze (2 von 3 Loslass-Varianten) |
+| 512–597 | Pilz-Flucht (Wand 5,0) | Verfolgung | knapp bis Grenze |
+| 604–665 | Zwei-Gänge-Staffel (Bröckel-Steine unten, Segeln oben, Hebel über Kreuz) | Koordination | knapp |
+| 408–440 | Takt-Steine 1,2 s über Dornen | Timing | knapp (früh losspringen) |
+| 446–473 | Stachel-Pendel | Timing | knapp (stur 1 von 10) |
+| 131–200 | Stachelwand-Jagd über Bröckel-Steine | Verfolgung | knapp (1 s gezögert = eingeholt) |
+| 14–38 | Bröckel-Steine zu zweit | Koordination | knapp (1,5 s Abstand = Steine weg) |
+| 60–92 | Dornenfeld (Affe vier Haken, Schweinchen Pilz + Aufwind) | Seil/Segeln | knapp |
+
+**Härteste Stellen Dschungel 6 „Wipfelsturm“ (Ziel: typisch 3–4, schwerste 6, Meister-Level vor Bruno):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 670–766 | Sturm-Finale: Stachelwand 5,4, Pilz, Stege hinauf, bevor die Wand unten durchfährt | Verfolgung | Grenze (schwerste Stelle) |
+| 600–661 | Wipfel-Staffel: Haken über Dornen oben, Takt-Steine 1,2 s unten, Hebel über Kreuz | Koordination + Timing | Grenze |
+| 524–584 | Doppel-Jagd (Stachelwand + sinkende Dornendecke, nur flach springen) | Verfolgung | Grenze (1,5 s gezögert = tot) |
+| 82–108 | Takt-Treppe 1 s (aufwärts) | Timing | Grenze (ein voller Sprung braucht fast den halben Takt) |
+| 449–483 | Takt-Steine 1 s | Timing | Grenze |
+| 405–448 | Hohes Luft-Tor (drei Haken, der letzte fährt / Schweinchen landet knapp) | Seil/Segeln | knapp |
+| 14–43 | Luft-Tor über Dornen (Haken sofort greifen) | Reaktion | knapp |
+| 208–240 | wippende Haken / Aufwinde | Seil-Schwung | knapp |
+| 115–162 | Jagd durchs Tor | Verfolgung | knapp |
+| 345–374 | Bröckel-Abstieg (zu zweit) | Koordination | knapp (0,5 s Abstand = Stufen weg) |
+
+**Reihenfolge Dschungel (6er-Welten):** Dschungel, Baumkronen, Lianenschlucht, Glühwald, Dornenpfad, Wipfelsturm –
+typisch/schwerste steigt von 1/2 bis 3–4/6, danach Bruno.
+
 **Sonst:** Alle anderen Stellen sind komfortabel (Lehr-Teile, Tore, Schleusen).
 
 ### Rolle von Affe und Schweinchen je Mechanik
@@ -149,7 +196,7 @@ Wechselboden und Teleporter (die letzten beiden nur sanft, als erste Begegnung).
 ## Welt 2 – Ruinen
 
 **Thema:** Ein alter Sandstein-Tempel voller Fallen. Hier geht es um **Timing und Rhythmus**: Fallen schießen im Takt,
-ein Fels rollt hinterher, Licht muss gelenkt werden. Typisch 2–3 Versuche, die schwersten Stellen 5–6
+ein Fels rollt hinterher, Licht muss gelenkt werden. Typisch 2–3 Versuche, die schwersten Stellen 5–7
 (Regelwerk Punkt 13).
 
 **Look:**
@@ -281,6 +328,36 @@ Rätsel: Doppelgang 604–680 bzw. zwei Wege 401–474). In der Felsenflucht wir
 Spalten ohne Checkpoint im Finale) – das macht sie zum Meister-Level.
 
 **Sonst:** Alle anderen Stellen sind komfortabel (Lehr-Teile, Spiegel am Boden, Tore, Schleusen).
+
+**Tempelherz (ruinen/06-tempelherz.json, 800 Spalten, 4 Etappen, wie gebaut):**
+1. Etappe 1 (0–200): Fels unter dem Pfeilregen (vier Pfeil-Fallen im 1,2-s-Takt); Schweinchen-Spiegel auf der Insel
+   (nur segelnd) -> Kristall -> Tür 2, Affe an zwei Haken; Affen-Spiegel am Sims (nur per Haken) -> Kristall im Boden
+   -> Tür 3; Fels-Flucht durch die Tore (blau/pink hinauf).
+2. Etappe 2 (200–400): Takt-Steine 1,2 s mit Fels im Nacken; Licht-Takt-Tor (Takt-Stein unterbricht den Strahl, Pfeil
+   im Tor); Pfeilgang mit Brücke (Platte 9 / Hebel 10 / zwei Haken); Flammen-Welle mit Fels im Nacken.
+3. Etappe 3 (400–600): Wechsel-Flucht unter Pfeilen; Licht-Brücke im 1,5-s-Takt; Flammen-Kreuz (Affe oben per Haken
+   über Flammen-Düsen, Schweinchen unten per pinkem Tor, Hebel 14/15 über Kreuz); Fels und Licht-Tor.
+4. Etappe 4 (600–800): Doppelstrahl-Tor (zwei Spiegel, die nur je einer erreicht; Strahl 2 im Takt unterbrochen);
+   letzte Felsflucht (Grube, zwei Pfeil-Fallen, Flammen-Düse, Stege) zum Tempelherz.
+
+**Härteste Stellen Ruinen 6 „Tempelherz“ (Ziel: typisch 3–4, schwerste 7, schwerstes Ruinen-Level):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 643–744 | letzte Felsflucht (Grube, Pfeile, Flamme, Stege) | Verfolgung + Timing | Grenze (schwerste Stelle) |
+| 599–641 | Doppelstrahl-Tor (Haken zum Sims, Insel, Takt-Fenster für beide Türen) | Koordination + Timing | Grenze |
+| 3–62 | Fels unter dem Pfeilregen | Verfolgung + Timing | Grenze (stur 0 von 10) |
+| 196–240 | Takt-Steine 1,2 s mit Fels im Nacken | Timing unter Druck | Grenze (5 von 6 Startzeiten) |
+| 305–373 | Flammen-Welle mit Fels | Timing unter Druck | knapp |
+| 380–418 | Wechsel-Flucht unter Pfeilen | Verfolgung | knapp |
+| 446–498 | Flammen-Kreuz | Koordination + Timing | knapp |
+| 425–448 | Licht-Brücke im Takt | Timing | knapp (stur 2 von 12) |
+| 273–304 | Pfeilgang mit Brücke | Koordination + Timing | knapp |
+| 500–576 | Fels und Licht-Tor | Verfolgung | knapp |
+| 246–272 | Licht-Takt-Tor | Timing | komfortabel bis knapp (stur 10 von 12) |
+
+**Reihenfolge Ruinen (6er-Welten):** Ruinen, Fallengang, Sonnentempel, Mondnacht, Felsenflucht, Tempelherz – typisch/
+schwerste steigt von 2/3–4 bis 3–4/7.
 
 ## Welt 3 – Höhle
 

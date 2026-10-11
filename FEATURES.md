@@ -310,7 +310,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     auf den Karten, im Blätter-Vorhang („Level 3“), im Statistik-Bildschirm („Level 3 · Feuerberg“), in den Meldungen
     „Level n freigeschaltet/geschafft“ und im Hinweis „schafft erst Level n“ (nrInWelt in 24; Test level_nummern_je_welt).
     In jeder Welt sind die Level nach Schwierigkeit sortiert (6er-Welten, Reihenfolge in worlds.json, Dateinamen bleiben):
-    Ruinen = Ruinen, Fallengang, Sonnentempel, Mondnacht, Felsenflucht; Höhle = Tropfsteingang, Eisgrotte,
+    Dschungel = Dschungel, Baumkronen, Lianenschlucht, Glühwald, Dornenpfad, Wipfelsturm (dann Bruno);
+    Ruinen = Ruinen, Fallengang, Sonnentempel, Mondnacht, Felsenflucht, Tempelherz; Höhle = Tropfsteingang, Eisgrotte,
     Kristallhöhle, Leuchtgrotte, Förderwerk, Tiefenschlund (Test welten_laden).
   - FREISCHALTUNG (Ausbau 3): Welt 1 ist immer offen; die nächste Welt öffnet, wenn alle Level (später auch der Boss)
     der vorigen Welt mit Leveln geschafft sind – Welten ohne Level (Wasser) werden übersprungen, Level 6 (Vulkan)
@@ -1250,6 +1251,56 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       die Lava; der Affe schwingt an vier Haken, das Schweinchen segelt mit zwei Aufwinden); Gipfel (zwei Pressen auf dem
       Kraterrand, dann das Ziel).
     - Test level22_kraterherz (Koop-Bot + Checkpoint-Abstände).
+
+  - 6er-WELTEN (Nutzerwunsch: in jeder Welt 6 Level, schwer und immer schwerer; Wasser vorerst ausgenommen, Boss zählt
+    nicht): Dschungel bekommt Level 5 „Dornenpfad“ und Level 6 „Wipfelsturm“ (vor Bruno), Ruinen bekommen Level 6
+    „Tempelherz“. Höhle (6) und Vulkan (7) bleiben. Neue Dateien heißen wie im Editor <welt>/<nr>-<titel>.json, Namen in
+    levels.json „Dschungel 5“ usw. Alle drei Level ~800 Spalten in 4 Etappen, jede Stelle braucht beide, Münzen nur
+    blau/pink (gleich viele), Checkpoints höchstens ~61 Spalten auseinander (nie in getrennten Gängen oder hinter
+    Türen, die nur der Hebel davor öffnet). Einstufung jeder Stelle im Balance-Bericht in WELTEN.md.
+  - Level „Dornenpfad“ (levels/dschungel/05-dornenpfad.json, Dschungel Level 5, abends, Regen, 800 Spalten):
+    - Etappe 1: Bröckel-Steine über Dornen (beide dicht hintereinander – wer trödelt, findet keine Steine mehr);
+      Dornenfeld (Affe an vier Haken, Schweinchen per Pilz + Aufwind); Hebel über Kreuz (Hebel 1 nur per Aufwind,
+      Hebel 2 nur per Haken); Stachelwand-Jagd (die Wand steckt in der Stufe, von der man in den Gang springt; Hebel 3
+      öffnet Tür 3 UND lässt sie los).
+    - Etappe 2: Inseln im Wechsel (vier Plattformen, zwei steigen, zwei sinken); Seilbahn + Fähre (Schweinchen lässt
+      den Haken mit dem Affen fahren, Affe holt mit Hebel 5 die Fähre); hoher Kamin; Dornendecke (Hebel 6 öffnet die Tür
+      am Tunnelende UND lässt die Stacheldecke sinken – über die Stufen nur flach springen, voller Sprung = Dornen).
+    - Etappe 3: Takt-Steine 1,2 s; Stachel-Pendel (vier Stachelblöcke im eigenen Takt); Druckplatten-Schleuse (Platte 7
+      = Tür 7, Affe über zwei Haken zu Hebel 8 = Deckel über dem Aufwind-Schacht); Pilz-Flucht vor der Stachelwand.
+    - Etappe 4: Zwei-Gänge-Staffel (Affe nur durchs blaue Tor in den unteren Gang, Schweinchen nur per Aufwind in den
+      oberen; Hebel 10–13 öffnen die Tür des anderen); Finale mit der schnellsten Stachelwand (Grube, Pilz über die breite
+      Grube, unter der Dornendecke flach landen).
+    - Test dschungel5_dornenpfad (Koop-Bot + Checkpoint-Abstände).
+  - Level „Wipfelsturm“ (levels/dschungel/06-wipfelsturm.json, Dschungel Level 6, nachts, wechselnd, 800 Spalten):
+    schwerstes Dschungel-Level vor Bruno.
+    - Etappe 1: Luft-Tor über Dornen (Tor 1 setzt beide hoch über der Grube ab – Affe greift sofort den Haken,
+      Schweinchen segelt); Brücke für die Partnerin (Affe auf Platte 2 = Brücke B, Schweinchen zu Hebel 3, Affe an zwei
+      Haken nach); Takt-Treppe im 1-s-Takt; Jagd durchs Tor (am Gangende bringt Tor 2 beide durch die Felswand).
+    - Etappe 2: Wippende Haken (zwei fahren hin und her) und Aufwinde; Tor-Staffel (pinkes Tor -> Hebel 5 = Tür 5 für den
+      Affen, blaues Tor -> Hebel 6 = Tür 6 für das Schweinchen); Pilz-Turm über Dornen; Bröckel-Abstieg.
+    - Etappe 3: Hohes Luft-Tor (drei Haken, der letzte fährt / Aufwind); Takt-Steine 1 s; Wechsel-Schleuse (Platte 7 =
+      Brücke B + Wand A weg, Hebel 8 öffnet eine Klappe im Boden, darunter bringt das blaue Tor den Affen nach);
+      Doppel-Jagd (Hebel 9 = Tür 9 + Stachelwand + sinkende Dornendecke).
+    - Etappe 4: Wipfel-Staffel (blaues Tor auf den oberen Ast mit Haken über Dornengruben, pinkes Tor in den Gang mit
+      Takt-Steinen 1,2 s; Hebel 10–13 über Kreuz); Sturm-Finale (schnellste Stachelwand 5,4; Pilz über die breite Grube,
+      dann die Stege hinauf, bevor die Wand unten durchfährt; Ziel oben).
+    - Test dschungel6_wipfelsturm.
+  - Level „Tempelherz“ (levels/ruinen/06-tempelherz.json, Ruinen Level 6, nachts, Regen, 800 Spalten): schwerstes
+    Ruinen-Level – Fels, Fallen, Licht, Teleporter und Wechselboden gleichzeitig.
+    - Etappe 1: Fels unter dem Pfeilregen (Hebel 1 = Tor 1 + Fels; vier Pfeil-Fallen im 1,2-s-Takt); Schweinchen-Spiegel
+      auf der Insel (nur segelnd, Licht -> Kristall -> Tür 2), Affe an zwei Haken; Affen-Spiegel am Sims (nur per Haken,
+      Licht -> Kristall im Boden -> Tür 3); Fels-Flucht durch die Tore (blau/pink hinauf auf den Sims).
+    - Etappe 2: Takt-Steine 1,2 s mit Fels im Nacken; Licht-Takt-Tor (ein Takt-Stein unterbricht den Strahl, Tor 8 nur
+      offen, solange der Kristall leuchtet, Pfeil im Tor); Pfeilgang mit Brücke (Platte 9 = Brücke B, Hebel 10, Affe an
+      zwei Haken); Flammen-Welle mit Fels im Nacken.
+    - Etappe 3: Wechsel-Flucht unter Pfeilen (Hebel 12 = Tor + Fels + Boden weg, Trittsteine erscheinen); Licht-Brücke
+      (Brücke steht nur, solange der Kristall leuchtet, Takt 1,5 s); Flammen-Kreuz (Affe oben per Haken über Flammen-
+      Düsen, Schweinchen unten per pinkem Tor; Hebel 14/15 über Kreuz); Fels und Licht-Tor (Spiegel im Laufen drehen).
+    - Etappe 4: Doppelstrahl-Tor (Affen-Spiegel per Haken -> Tür 18, Schweinchen-Spiegel auf der Insel -> Tür 19, ein
+      Takt-Stein unterbricht Strahl 2 – im Fenster durch beide Türen); letzte Felsflucht (Grube, zwei Pfeil-Fallen,
+      Flammen-Düse, Stege) zum Tempelherz.
+    - Test ruinen6_tempelherz.
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
