@@ -2383,7 +2383,7 @@ async def level16_tiefenschlund(g):
 
 @test
 async def level17_glutpfad(g):
-    """Ausbau 7, Vulkan Level 1 „Glutpfad“ (levels/level-17.json, morgens, trocken): Lehr-Level Lava, steigende Lava, Sprungpilze. Koop-Bot spielt jede Etappe: Lava-Gruben, Pilz im Lavasee, Pilz-Stufe, Trittsteine, Pilz-Kette, Lava-Raum mit Hebel, Lava-Kamin, Pilz-Flucht."""
+    """Ausbau 7, Vulkan Level 1 „Glutpfad“ (levels/level-17.json, morgens, trocken): Lehr-Level Lava, steigende Lava, Sprungpilze. Koop-Bot spielt jede Etappe: Lava-Gruben, Pilz im Lavasee, Pilz-Stufe, Trittsteine, Pilz-Kette, Lava-Raum mit Hebel, Lava-Kamin, Pilz-Flucht, Lava-Graben mit Platten, Schweinchen-Platte, Lava-Raum 2."""
     await koop_level(g, 'level-17.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2442,6 +2442,31 @@ async def level17_glutpfad(g):
         r = await koop(g, m=kat(262, 15), f=kat(263, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
         soll(r.get('dead'), 'E2 Lava im Kamin steigt, sobald beide unten sind', r.get('pos'))
         await beide('E2 Pilz-Flucht', 297, lambda w: [{'aim': [kx(303), kx(309), kx(315), kx(323)], 'jumps': [kx(298)], 'glide': w == 'f', 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 900}, k_lauf(335), {'until': 'P.grounded', 'frames': 200}, k_lauf(341)], 340, delay=60)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 4000}
+        leer = lambda c0: f'lavaBecken.find(b => b.minX === {c0*40}).surf >= 559'
+        for halt, lauf in (('m', 'f'), ('f', 'm')):
+            weg = [{'wait': leer(410)}, k_lauf(410), {'until': 'P.grounded', 'frames': 100}, k_lauf(439, 0)] + sprung_zu(kx(443))
+            pl_l = weg + [halten(445), hp(445, f'Q.x >= {kx(442)} && Q.grounded && Q.y <= {ky(11)} + 2')]
+            pl_h = [halten(406), hp(406, f'Q.x >= {kx(444)} && Q.grounded && Q.y <= {ky(11)} + 2')] + weg + [k_lauf(450)]
+            r = await koop(g, **{halt: kat(404, 11), lauf: kat(402, 11)}, plans={halt: pl_h, lauf: [{'frames': 30}] + pl_l}, maxFrames=6000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 442, f'E3 Lava-Graben: Platte 2 hält die Lava unten ({halt} hält zuerst)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(404, 11), f=kat(402, 11), plans={'m': [k_lauf(410), {'frames': 200}]}, maxFrames=400)
+        soll(r.get('dead') == 'm', 'E3 ohne Platte: Lava im Graben', r.get('pos'))
+        ok = None
+        for hold in (4, 8, 12):
+            f = [k_lauf(452)] + sprung_zu(kx(458)) + glide_to(462, kx(480), hold) + [halten(480), hp(480, f'Q.x >= {kx(480)} && Q.grounded && Q.y <= {ky(11)} + 2')]
+            m = [k_lauf(452)] + sprung_zu(kx(458)) + [{'wait': leer(463)}, k_lauf(463), {'until': 'P.grounded', 'frames': 100}, k_lauf(476, 0)] + sprung_zu(kx(478))
+            r = await koop(g, f=kat(450, 11), m=kat(448, 11), plans={'f': f, 'm': [{'frames': 60}] + m}, maxFrames=6000)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 477: ok = hold; break
+        soll(ok, 'E3 Schwein segelt, Platte 3, Affe läuft durch den Graben', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        hoch = lambda: sprung_zu(kx(501)) + sprung_zu(kx(507)) + [{'aim': [kx(511), kx(517)], 'jumps': [kx(506)], 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 600}] + sprung_zu(kx(524)) + [k_lauf(534), {'until': 'P.grounded', 'frames': 200}, k_lauf(539)]
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: am(494) + [k_lauf(497, 0)] + hoch(), o: [{'wait': '!!linkOn[4]'}, {'frames': 40}, k_lauf(497, 0)] + hoch()}, maxFrames=4000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 537, f'E3 Lava-Raum 2: Hebel 4, Stege und Pilz hinauf ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     assert not fehler, fehler
 
 @test

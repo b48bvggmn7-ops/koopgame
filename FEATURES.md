@@ -1119,6 +1119,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       über vier Stege zügig hinauf; wer unten bleibt, verbrennt); Lava-Kamin (die Lava steigt, sobald beide unten im
       Kamin sind – per Wandsprung hinauf); Pilz-Flucht (sobald beide am Becken sind, steigt die Lava – über drei
       Pilz-Säulen treppauf zum Sims).
+    - Etappe 3 (Spalten 400–600): Lava-Graben (die Lava steht über dem Steinweg; solange jemand auf einer der beiden
+      Druckplatten 2 steht, fließt sie ab – einer hält, der andere läuft und hält drüben); nur das Schweinchen kommt über
+      den zweiten Graben (segelt) und stellt sich auf Druckplatte 3 – die Lava fließt ab, der Affe läuft unten durch;
+      Lava-Raum 2 (Hebel 4: Tor oben auf, Lava steigt schneller – schmale Stege und ein Pilz hinauf).
     - Test level17_glutpfad (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
