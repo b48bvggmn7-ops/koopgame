@@ -191,6 +191,34 @@
    "spalte": 474,
    "nummer": 11,
    "begruendung": "„Zwei Wege“ 401–474 ist ein Rätsel am Stück (getrennte Wege) – wie im Test level10_sonnentempel"
+  },
+  {
+   "level": "ruinen/05-felsenflucht.json",
+   "regel": "Checkpoint",
+   "spalte": 202,
+   "nummer": 3,
+   "begruendung": "Fels-Jagd ab 100 läuft am Stück (wie im Test level11_felsenflucht); der Checkpoint direkt nach der Jagd (176) ist entfernt, weil 202 nur 26 Spalten später ohne Stelle dazwischen kommt"
+  },
+  {
+   "level": "ruinen/05-felsenflucht.json",
+   "regel": "Checkpoint",
+   "spalte": 402,
+   "nummer": 6,
+   "begruendung": "Jagd ab 320 läuft am Stück; Checkpoint 393 (9 Spalten davor) entfernt"
+  },
+  {
+   "level": "ruinen/05-felsenflucht.json",
+   "regel": "Checkpoint",
+   "spalte": 602,
+   "nummer": 10,
+   "begruendung": "Start der letzten Jagd (602–708) direkt nach dem Etappen-Übergang; ohne ihn wäre die Lücke vor der Jagd > 60 (Test)"
+  },
+  {
+   "level": "ruinen/05-felsenflucht.json",
+   "regel": "Checkpoint",
+   "spalte": 708,
+   "nummer": 11,
+   "begruendung": "letzte Fels-Jagd 602–708 läuft am Stück"
   }
  ]
 }

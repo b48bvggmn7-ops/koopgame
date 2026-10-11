@@ -1483,7 +1483,7 @@ async def level11_felsenflucht(g):
     r = await koop(g, m=kat(212, 15), f=kat(214, 15), plans=pl, maxFrames=4000)
     soll(r.get('done') and await g.ev("felsen[3].weg"), 'Pfeil-Flucht', info(r))
     halten = {'holdIf': {'right': f'P.x < {kx(299)} - 3', 'left': f'P.x > {kx(299)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(299)}) <= 3', 'frames': 200}
-    m = [k_lauf(285, 0)] + am(287) + [k_lauf(318), {'wait': 'felsen[4].weg'}]
+    m = [k_lauf(285, 0)] + am(297) + [k_lauf(318), {'wait': 'felsen[4].weg'}]   # Bild-Regel: Hebel 6 bei 297 statt 287
     r = await koop(g, m=kat(280, 15), f=kat(290, 15), plans={'m': m, 'f': [halten, {'wait': f'Q.x > {kx(301)}'}, k_lauf(318)]}, maxFrames=3000)
     soll(r.get('done') and await g.ev("felsen[4].weg"), 'Schleuse: Platte halten, Hebel 6, durch – Fels zerschellt an Tür 5', info(r))
     m = [k_lauf(298, 0), {'wait': '!!linkOn[5]'}, k_lauf(312)]
