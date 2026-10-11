@@ -2383,7 +2383,7 @@ async def level16_tiefenschlund(g):
 
 @test
 async def level17_glutpfad(g):
-    """Ausbau 7, Vulkan Level 1 „Glutpfad“ (levels/level-17.json, morgens, trocken): Lehr-Level Lava, steigende Lava, Sprungpilze. Koop-Bot spielt jede Etappe: Lava-Gruben, Pilz im Lavasee, Pilz-Stufe, Trittsteine, Pilz-Kette."""
+    """Ausbau 7, Vulkan Level 1 „Glutpfad“ (levels/level-17.json, morgens, trocken): Lehr-Level Lava, steigende Lava, Sprungpilze. Koop-Bot spielt jede Etappe: Lava-Gruben, Pilz im Lavasee, Pilz-Stufe, Trittsteine, Pilz-Kette, Lava-Raum mit Hebel, Lava-Kamin, Pilz-Flucht."""
     await koop_level(g, 'level-17.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2425,8 +2425,24 @@ async def level17_glutpfad(g):
         await beide('E1 Pilz-Stufe, über die Grube', 60, lambda w: [{'aim': [kx(66), kx(71)], 'jumps': [kx(63)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, k_lauf(72, 0)] + sprung_zu(kx(86)) + [k_lauf(88)], 87)
         await beide('E1 Trittsteine', 88, lambda w: [k_lauf(91, 0)] + sprung_zu(kx(96)) + sprung_zu(kx(101)) + sprung_zu(kx(106)) + sprung_zu(kx(111)) + sprung_zu(kx(116)) + sprung_zu(kx(123)) + [k_lauf(124)], 123)
         await beide('E1 Pilz-Kette über den Lavasee', 126, lambda w: [{'aim': [kx(140), kx(147), kx(154), kx(161), kx(167)], 'jumps': [kx(133)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(164)}', 'frames': 900}, k_lauf(175)], 174)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        stufen = lambda: sprung_zu(kx(208)) + sprung_zu(kx(214)) + sprung_zu(kx(220)) + sprung_zu(kx(226)) + sprung_zu(kx(232)) + [k_lauf(245), {'until': 'P.grounded', 'frames': 200}, k_lauf(249)]
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(202, 15), o: kat(200, 15)}, plans={who: am(204) + [k_lauf(205, -10)] + stufen(), o: [{'wait': '!!linkOn[1]'}, {'frames': 40}, k_lauf(205, -10)] + stufen()}, maxFrames=4000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 247, f'E2 Lava-Raum: Hebel 1, Stege hinauf vor der Lava ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(202, 15), f=kat(200, 15), plans={'m': [k_lauf(205, -10)] + stufen()}, maxFrames=1500)
+        soll(not r.get('done') or r['pos']['m'][0] < 231, 'E2 Tür 1 zu ohne Hebel', r.get('pos'))
+        r = await koop(g, m=kat(208, 13), f=kat(200, 15), plans={'m': [{'frames': 1400}]}, links=[1], maxFrames=1500)
+        soll(r.get('dead') == 'm', 'E2 wer unten bleibt, verbrennt (Lava steigt)', r.get('pos'))
+        kamin = lambda: [k_lauf(259, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(264)}', 'frames': 900}, k_lauf(285), {'until': 'P.grounded', 'frames': 100}, k_lauf(290), {'until': 'P.grounded', 'frames': 100}, k_lauf(295), {'until': 'P.grounded', 'frames': 100}, k_lauf(297)]
+        await beide('E2 Lava-Kamin', 252, lambda w: kamin(), 296, delay=100)
+        r = await koop(g, m=kat(262, 15), f=kat(263, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
+        soll(r.get('dead'), 'E2 Lava im Kamin steigt, sobald beide unten sind', r.get('pos'))
+        await beide('E2 Pilz-Flucht', 297, lambda w: [{'aim': [kx(303), kx(309), kx(315), kx(323)], 'jumps': [kx(298)], 'glide': w == 'f', 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 900}, k_lauf(335), {'until': 'P.grounded', 'frames': 200}, k_lauf(341)], 340, delay=60)
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):
@@ -5058,7 +5074,7 @@ async def editor_hoehlen_elemente(g):
 @test
 async def lava_steigen(g):
     """Ausbau 7 (Vulkan): Lava-Becken töten; Lava-Marke „per Nummer“ lässt die Lava bis zur Marke steigen (Hebel aus =
-    sinkt zurück); Marke „sobald jemand kommt“ startet, wenn eine Figur über dem Becken ist; Tod/Neustart = Lava unten.
+    sinkt zurück); Marke „sobald beide da sind“ startet erst, wenn beide Figuren das Becken erreicht haben; Tod/Neustart = Lava unten.
     Lava wird hinter Boden/Wänden gezeichnet und leuchtet im Dunkeln. Testlevel levels/test/lava.json."""
     await g.load(str(ROOT / 'levels' / 'test' / 'lava.json')); await g.steps(2)
     assert await g.ev("lavaBecken.length") == 3 and await g.ev("lavaBecken.map(b => b.marken.length)") == [0, 1, 1]
@@ -5081,14 +5097,15 @@ async def lava_steigen(g):
     assert await g.ev("inLava(1500, 570) && !inLava(1500, 550) && !inLava(1700, 670)"), 'Lava-Bereich falsch'
     await g.ev("setLink(1, false)"); await g.steps(140)
     assert await g.ev(f"{b}.surf") == 640, 'Lava sinkt nicht zurück'
-    # Becken C: „sobald jemand kommt“ (schnell = 1 px pro Schritt)
+    # Becken C: „sobald beide da sind“ (schnell = 1 px pro Schritt)
     c = "lavaBecken[2]"
     await g.ev("p1.x = 2100; p1.y = 680; p2.x = 2060; p2.y = 680"); await g.steps(30)
     assert await g.ev(f"{c}.surf") == 640, 'Lava steigt, obwohl niemand da ist'
-    await g.ev("p1.x = 2340; p1.y = 300; p1.vy = 0; p1.hookAttached = false; p2.x = 2100"); await g.steps(1)
-    await g.ev("p1.x = 2100; p1.y = 680"); await g.steps(60)
+    await g.ev("p1.x = 2460; p1.y = 480; p1.vy = 0; p2.x = 2100; p2.y = 680"); await g.steps(20)   # Affe drüben auf der Mauer
+    assert await g.ev(f"{c}.surf") == 640, 'Lava steigt schon, obwohl erst eine Figur da ist'
+    await g.ev("p2.x = 2470; p2.y = 480; p2.vy = 0"); await g.steps(60)
     s2 = await g.ev(f"{c}.surf")
-    assert 540 < s2 < 600, f'Lava-Flucht startet nicht: {s2}'
+    assert 540 < s2 < 600, f'Lava-Flucht startet nicht: {s2} ' + str(await g.ev("[!!deathState, simSteps, menuScreen, p1.x, p2.x]"))
     # Tod -> Lava wieder unten
     await g.ev("die(p2)"); await weiter_nach_tod(g)
     assert await g.ev("lavaBecken.map(b => b.surf)") == [680, 640, 640], 'Lava nach dem Tod nicht zurückgesetzt'

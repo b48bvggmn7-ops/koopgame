@@ -1,5 +1,5 @@
 {
- "hinweis": "Testlevel Ausbau 7: Lava. Öffnen: index.html?testlevel=lava · links ein Lava-Becken zum Drüberspringen, in der Mitte ein Becken zwischen zwei Mauern: Hebel 1 lässt die Lava bis zur Mauerkante steigen (Hebel nochmal = sinkt), rechts ein Becken mit Lava-Marke „sobald jemand kommt“: wer darüber ist, löst sie aus (Affe am Haken, Schweinchen segelt)",
+ "hinweis": "Testlevel Ausbau 7: Lava. Öffnen: index.html?testlevel=lava · links ein Lava-Becken zum Drüberspringen, in der Mitte ein Becken zwischen zwei Mauern: Hebel 1 lässt die Lava bis zur Mauerkante steigen (Hebel nochmal = sinkt), rechts ein Becken mit Lava-Marke „sobald beide da sind“: erst wenn beide Figuren das Becken erreicht haben, steigt die Lava (Affe am Haken, Schweinchen segelt)",
  "welt": "vulkan",
  "tageszeit": "abend",
  "wetter": "trocken",

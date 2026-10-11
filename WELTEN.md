@@ -441,7 +441,7 @@ Blasen, eiserne Stachelpressen mit Ketten).
 Eis (Obsidian-Glas) – alles vorhanden. Neu in Ausbau 7:
 - **Lava (neues Element):** glühende Lava-Becken – wer hineinfällt, ist tot. Mit einer **Lava-Marke** steigt die Lava:
   per Nummer (Hebel = steigt bis zur Marke und bleibt, Druckplatte = nur solange jemand draufsteht) oder
-  **„sobald jemand kommt“** (Lava-Flucht). Tempo langsam / mittel / schnell; nach dem Tod wieder unten.
+  **„sobald beide da sind“** (Lava-Flucht – erst wenn beide Figuren das Becken erreicht haben). Tempo langsam / mittel / schnell; nach dem Tod wieder unten.
 - **Stachelpresse (neues Element):** schwerer Eisenblock mit Stacheln unten, der im festen Takt herunterkracht, kurz
   liegen bleibt und langsam wieder hochgezogen wird (Takt 2/3/4 s, Versatz für Wellen). Per Nummer anhaltbar oder nur
   bei Nummer an laufend. Vorher sichtbar: Kette zittert und Staub rieselt kurz vor dem Fall.

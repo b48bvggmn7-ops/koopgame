@@ -5,8 +5,9 @@
 //   in den Spalten des Beckens weich bis zur Oberkante der Marke (Tempo langsam / mittel / schnell, LAVA_TEMPO in 02-physik-werte.js):
 //   - „per Nummer“: solange die Verknüpfung AN ist (Hebel = bleibt, Druckplatte = nur solange jemand draufsteht);
 //     AUS = die Lava sinkt zurück auf den gemalten Stand.
-//   - „sobald jemand kommt“: sobald eine Figur über dem Becken ist, steigt die Lava (Lava-Flucht) und sinkt erst nach
-//     dem Tod / Neustart wieder.
+//   - „sobald beide da sind“: sobald BEIDE Figuren das Becken erreicht haben (linker Rand), steigt die Lava (Lava-Flucht)
+//     und sinkt erst nach dem Tod / Neustart wieder. (Nur eine Figur genügt nicht – sonst sperrt die Lava den
+//     Nachzügler aus.)
 //   Vorher sichtbar: gestrichelte Glut-Linie in Markenhöhe; beim Losgehen grollt es.
 // Rolle: der Affe klettert per Wandsprung/Seil voraus und zieht oben den Hebel, das Schweinchen steigt im Aufwind und
 // hält Druckplatten, die die Lava unten halten.
@@ -52,7 +53,8 @@ function lavaSchritt(players){
     let ziel = Infinity;
     for(const m of b.marken){
       if(m.start === 'naehe'){
-        if(!m.ausgeloest) for(const pl of players) if(pl && pl.x >= b.minX && pl.x < b.maxX && pl.y < b.top + 4) m.ausgeloest = true;
+        // erst, wenn BEIDE Figuren das Becken erreicht haben (sonst sperrt die Lava den Nachzügler aus)
+        if(!m.ausgeloest && players.every(pl => !pl || pl.x >= b.minX - 4)) m.ausgeloest = true;
         if(m.ausgeloest) ziel = Math.min(ziel, m.y);
       } else if(m.link && linkOn[m.link]) ziel = Math.min(ziel, m.y);
     }
@@ -132,7 +134,7 @@ function lavaZeichnen(){
     }
   }
 }
-// gestrichelte Glut-Linie: bis hierhin steigt die Lava (Farbe der Nummer bzw. orange bei „sobald jemand kommt“)
+// gestrichelte Glut-Linie: bis hierhin steigt die Lava (Farbe der Nummer bzw. orange bei „sobald beide da sind“)
 function lavaMarkenZeichnen(){
   for(const b of lavaBecken) for(const m of b.marken){
     if(b.maxX < camX || b.minX > camX + VW || Math.abs(b.surf - m.y) < 1) continue;
@@ -163,9 +165,9 @@ elementRegistrieren({
     werkzeug: 'lavapegel', gruppe: 'gefahren', art: 'punkt', ziehbar: false, farbe: '#ffb03a',
     titel: 'Lava-Marke: über/in ein Lava-Becken setzen. Ist sie aktiv, steigt die Lava bis zur Oberkante dieses Kästchens. ' +
            '„per Nummer“: solange die Verknüpfung an ist (Hebel bleibt, Druckplatte nur solange jemand draufsteht); ' +
-           '„sobald jemand kommt“: steigt, sobald eine Figur über dem Becken ist (Lava-Flucht)',
+           '„sobald beide da sind“: steigt, sobald beide Figuren das Becken erreicht haben (Lava-Flucht)',
     optionen: [
-      {key: 'start', label: 'Start', werte: [['nummer', 'per Nummer'], ['naehe', 'sobald jemand kommt']]},
+      {key: 'start', label: 'Start', werte: [['nummer', 'per Nummer'], ['naehe', 'sobald beide da sind']]},
       {key: 'tempo', label: 'Tempo', werte: [['langsam', 'langsam'], ['mittel', 'mittel'], ['schnell', 'schnell']]},
     ],
     neu(p){

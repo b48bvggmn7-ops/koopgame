@@ -877,8 +877,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     spiel.zeichnenHinten), mit Glut-Schein, treibender Schlacke und Blasen, leuchtet in dunklen Leveln und blubbert leise.
     - Lava-Marke über/in einem Becken: ist sie aktiv, steigt die Lava in den Spalten des Beckens bis zur Oberkante der
       Marke (Tempo langsam 0,35 / mittel 0,6 / schnell 1,0 px pro Schritt, LAVA_TEMPO). „per Nummer“: solange die
-      Verknüpfung an ist (Hebel bleibt an, Druckplatte nur solange jemand draufsteht), aus = sinkt zurück; „sobald jemand
-      kommt“: startet, sobald eine Figur über dem Becken ist (Lava-Flucht). Gestrichelte Glut-Linie zeigt die Zielhöhe,
+      Verknüpfung an ist (Hebel bleibt an, Druckplatte nur solange jemand draufsteht), aus = sinkt zurück; „sobald beide da
+      sind“: startet, sobald BEIDE Figuren das Becken erreicht haben (Lava-Flucht; eine allein genügt nicht, sonst
+      sperrt die Lava den Nachzügler aus). Gestrichelte Glut-Linie zeigt die Zielhöhe,
       beim Steigen grollt es. Tod/Neustart: Lava wieder unten.
     - Rolle: Affe klettert voraus (Wandsprung/Seil) und zieht oben den Hebel; Schweinchen steigt im Aufwind und hält
       Druckplatten. Test lava_steigen, Testlevel levels/test/lava.json.
@@ -1114,6 +1115,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 1 (Spalten 0–200): zwei Lava-Gruben; Pilz mitten im Lavasee (auf die Säule springen, der Pilz schleudert
       weiter); Pilz-Stufe auf einen hohen Fels, oben über die Lava-Grube; Trittsteine im Lavasee; Pilz-Kette über den
       Lavasee (vier Pilz-Säulen).
+    - Etappe 2 (Spalten 200–400): Lava-Raum (Hebel 1 öffnet oben das Tor und lässt die Lava im Raum langsam steigen –
+      über vier Stege zügig hinauf; wer unten bleibt, verbrennt); Lava-Kamin (die Lava steigt, sobald beide unten im
+      Kamin sind – per Wandsprung hinauf); Pilz-Flucht (sobald beide am Becken sind, steigt die Lava – über drei
+      Pilz-Säulen treppauf zum Sims).
     - Test level17_glutpfad (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
