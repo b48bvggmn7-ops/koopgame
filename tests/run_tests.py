@@ -2482,7 +2482,7 @@ async def level17_glutpfad(g):
 
 @test
 async def level18_aschefeld(g):
-    """Ausbau 7, Vulkan Level 2 „Aschefeld“ (levels/level-18.json, mittags, heißer Regen): Lehr-Level Stachelpressen und Förderband. Koop-Bot spielt jede Etappe (wartet den Takt der Pressen ab): eine Presse, Pressen-Welle, Grube und Presse, Pressen-Gang, Doppel-Presse, Pressen über dem Förderband, Gegenband, Schlacke-Fließband."""
+    """Ausbau 7, Vulkan Level 2 „Aschefeld“ (levels/level-18.json, mittags, heißer Regen): Lehr-Level Stachelpressen und Förderband. Koop-Bot spielt jede Etappe (wartet den Takt der Pressen ab): eine Presse, Pressen-Welle, Grube und Presse, Pressen-Gang, Doppel-Presse, Pressen über dem Förderband, Gegenband, Schlacke-Fließband, Platte hält die Pressen an, Hebel wirft Pressen an, Pressen-Treppe."""
     await koop_level(g, 'level-18.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2547,8 +2547,28 @@ async def level18_aschefeld(g):
                 if r.get('done') and r['pos'][who][0] >= 335: ok.append((jx, who))
                 else: print('  ', jx, who, {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         soll(len(ok) >= 2, 'E2 Schlacke-Fließband: unter der Presse durch, über die Grube', ok)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 5000}
+        f = [halten(412), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(412)} + 10', 'left': f'P.x > {kx(413)} - 10'}, 'until': f'P.y < {ky(4)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(430)} - 6', 'left': f'P.x > {kx(430)} + 6'}, 'until': 'P.grounded', 'frames': 400}, halten(430), hp(430, '!!linkOn[6]'), k_lauf(462), {'until': 'P.grounded', 'frames': 200}, k_lauf(470)]
+        m = [{'wait': '!!linkOn[5]'}, durch(464)] + am(466) + [{'wait': f'Q.x >= {kx(463)} && Q.grounded'}, k_lauf(469)]
+        r = await koop(g, f=kat(405, 15), m=kat(403, 15), plans={'f': f, 'm': m}, maxFrames=6000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 468, 'E3 Schwein aufs Dach, Platte 5 hält die Pressen an, Affe durch, Hebel 6', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        bruecke = lambda: [k_lauf(478, 0)] + sprung_zu(kx(481)) + [durch(517)]
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(472, 15), o: kat(470, 15)}, plans={who: am(476) + bruecke(), o: [{'wait': '!!linkOn[7]'}, {'frames': 60}] + bruecke()}, maxFrames=6000, pre=PRE)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 516, f'E3 Hebel 7: Tor auf, Pressen an, über die Brücke ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(486, 14), f=kat(470, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
+        soll(not r.get('dead'), 'E3 ohne Hebel 7 stehen die Pressen still', r.get('pos'))
+        def treppe():
+            pl = [k_lauf(522, 0)]
+            for c0 in (524, 530, 536, 542): pl += sprung_zu(kx(c0)) + [durch(c0 + 4)]
+            return pl + sprung_zu(kx(549)) + [k_lauf(560), {'until': 'P.grounded', 'frames': 200}, k_lauf(566), {'until': 'P.grounded', 'frames': 200}, k_lauf(571), {'until': 'P.grounded', 'frames': 200}, k_lauf(580)]
+        await beide('E3 Pressen-Treppe', 519, lambda w: treppe(), 579, delay=150)
     assert not fehler, fehler
-
 
 @test
 async def hebel_haben_grund(g):

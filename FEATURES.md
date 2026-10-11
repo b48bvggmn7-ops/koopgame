@@ -1137,6 +1137,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 2 (Spalten 200–400): Pressen über einem Förderband (wer warten will, muss dagegen laufen); Gegenband unter
       Pressen (langsam voran, große Lücken abwarten); Schlacke-Fließband (schnelles Band unter einer breiten Presse durch
       bis an eine Lava-Grube, am Ende mit Band-Schwung springen).
+    - Etappe 3 (Spalten 400–600): Platte hält die Pressen an (das Schweinchen steigt im Aufwind aufs Dach und stellt sich
+      auf Druckplatte 5 – die vier Pressen im Gang darunter stehen still, der Affe läuft durch und zieht Hebel 6: Tür 6
+      oben auf dem Dach öffnet für das Schweinchen); Hebel 7 öffnet Tür 7 hinter der Lava-Brücke, wirft aber die drei
+      Pressen über der Brücke an (laufen nur bei Hebel an) – im Takt hinüber; Pressen-Treppe (Stufen hinauf, über jeder
+      Stufe eine kleine Presse).
     - Test level18_aschefeld (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
