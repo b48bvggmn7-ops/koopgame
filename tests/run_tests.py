@@ -2714,7 +2714,7 @@ async def level19_magmakammer(g):
 
 @test
 async def level20_schlackewerk(g):
-    """Ausbau 7, Vulkan Level 5 „Schlackewerk“ (levels/level-20.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder unter Pressen, Hebel über Kreuz, Flammenfallen über Bändern, großes Werk. Koop-Bot spielt jede Etappe: Band unter der Pressen-Welle, Gegenband-Tunnel, Band zum Pilz über die Presse, Hebel über Kreuz, Schleuder mit Presse, Pilz unter der Presse, Flammen-Decke über dem Band, Flammen durch die Stege, Flammen-Vorhang mit zwei Hebeln."""
+    """Ausbau 7, Vulkan Level 5 „Schlackewerk“ (levels/level-20.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder unter Pressen, Hebel über Kreuz, Flammenfallen über Bändern, großes Werk. Koop-Bot spielt jede Etappe: Band unter der Pressen-Welle, Gegenband-Tunnel, Band zum Pilz über die Presse, Hebel über Kreuz, Schleuder mit Presse, Pilz unter der Presse, Flammen-Decke über dem Band, Flammen durch die Stege, Flammen-Vorhang mit zwei Hebeln, Haken + Brücke, Segeln übers Gegenband, Finale mit steigender Lava."""
     await koop_level(g, 'level-20.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2824,6 +2824,27 @@ async def level20_schlackewerk(g):
         soll(res, 'E3 Vorhang: Affe (Haken, Hebel 7) und Schwein (Aufwind, Hebel 8) öffnen sich gegenseitig den Weg', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         r = await koop(g, m=kat(514, 15), f=kat(512, 15), plans={'m': [k_lauf(526)]}, maxFrames=600, pre=PRE)
         soll(r.get('dead'), 'E3 ohne Hebel 7 kommt niemand durch den Vorhang', r.get('dead'))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        res = []
+        for rel in RELS:
+            m = kette(604, 4, rel) + am(645) + [k_lauf(650)]
+            f = [k_lauf(604, 0), {'wait': '!!linkOn[9]'}, k_lauf(649)]
+            r = await koop(g, m=kat(603, 15), f=kat(601, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 648: res.append(rel[:14])
+        soll(res, 'E4 Affe an vier Haken, Hebel 9 – Brücke fürs Schwein', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        res = None
+        for hold in (4, 8, 12):
+            f = glide_to(658, kx(694), hold) + am(696) + [k_lauf(702)]
+            m = [{'wait': '!!linkOn[10]'}, {'holdIf': {'left': f'P.x > {kx(662)}'}, 'until': '(window.__need = 40, durchOK(P, 1000))', 'frames': 2000}, durch(700)]
+            r = await koop(g, m=kat(657, 15), f=kat(653, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 699: res = hold; break
+        soll(res, 'E4 Schwein segelt übers Gegenband, Hebel 10 hält es an, Affe passt die Pressen ab', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(651, 15), f=kat(649, 15), plans={'m': [k_lauf(700)]}, maxFrames=600, pre=PRE)
+        soll(r.get('pos', {}).get('m', [999])[0] < 664, 'E4 gegen das reißende Band kommt niemand an', r.get('pos'))
+        pl = lambda w: [k_lauf(718, 0)] + sprung_zu(kx(723)) + [{'aim': [kx(732), kx(736)], 'jumps': [kx(729)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(740)) + sprung_zu(kx(747)) + [k_lauf(792)]
+        await beide('E4 Finale: das Werk läuft voll – Band, Pilz, Stege hinauf', 705, pl, 790, delay=60)
     assert not fehler, fehler
 
 @test

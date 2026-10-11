@@ -1171,7 +1171,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level19_magmakammer (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
   - Level 20 „Schlackewerk“ (levels/level-20.json, Vulkan Level 5 der Welt, mittags, wechselndes Wetter, 800 Spalten):
-    IN ARBEIT, bis der Vulkan fertig ist in levels.json versteckt. Kombi-Level: Förderbänder unter Pressen, Hebel über
+    bis der Vulkan fertig ist in levels.json versteckt. Kombi-Level: Förderbänder unter Pressen, Hebel über
     Kreuz, Flammenfallen über Bändern, großes Werk.
     - Etappe 1 (Spalten 0–200): schnelles Band unter einer Pressen-Welle (nur wer gegenläuft, kann warten);
       Gegenband-Tunnel mit drei breiten Pressen; Band zum Pilz – der Pilz schleudert über eine Presse hinweg auf einen
@@ -1185,6 +1185,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       der Lava eine Düse, die durch den Steg nach oben brennt – man springt der Flammen-Welle hinterher); Flammen-Vorhang
       (drei schnelle Düsen im Gang: der Affe schwingt am Haken auf den Sims und zieht Hebel 7 = Vorhang aus, das
       Schweinchen segelt im Aufwind aufs Dach und zieht Hebel 8 = Tür am Gang-Ende auf).
+    - Etappe 4 (Spalten 600–800, das große Werk): Brücke über die Grube (der Affe schwingt an vier Haken über die Lava,
+      Hebel 9 lässt die Wechselboden-Brücke für das Schweinchen erscheinen); reißendes Gegenband (niemand läuft dagegen
+      an – das Schweinchen segelt über zwei Aufwinde und zieht Hebel 10: das Band steht still, dafür laufen zwei Pressen
+      darüber an, die der Affe abpassen muss); Finale „das Werk läuft voll“ (sobald beide im Kessel sind, steigt die Lava
+      schnell: Band zum Pilz, Pilz auf den Steg, über zwei Stege hinauf auf die Rampe zum Ziel).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
