@@ -24,8 +24,9 @@ elementRegistrieren({
         const x = Math.round(pl.x - camX);
         if(x < -40 || x > VW + 40) continue;
         const baseY = pl.y + 20, col = linkColor(pl.link), d = pl.down ? 4 : 0;
-        // Auffälliger (Nutzerwunsch, kein Leuchten): so breit wie der Bereich, der wirklich drückt, höher, Rand in der Verknüpfungs-Farbe; solange niemand
-        // draufsteht, zeigt ein hüpfender Pfeil auf die Platte
+        // Auffälliger (Nutzerwunsch, dezentes Leuchten): so breit wie der Bereich, der wirklich drückt, höher, Rand in der Verknüpfungs-Farbe; solange niemand
+        // draufsteht, zeigt ein schwebender Hinweis auf die Platte
+        elementLeuchten(x, baseY - 10, 42, col, pl.down ? 0.5 : 1);
         ctx.fillStyle = 'rgba(0,0,0,.3)'; roundRect(x - 29, baseY - 7, 58, 7, 2); ctx.fill();
         ctx.fillStyle = '#4a3a0c'; roundRect(x - 28, baseY - 15 + d, 56, 15 - d, 4); ctx.fill();
         ctx.fillStyle = pl.down ? col : '#ffd75e'; roundRect(x - 26, baseY - 14 + d, 52, 11 - d*0.5, 4); ctx.fill();

@@ -3969,7 +3969,7 @@ async def deko_frei_von_spielobjekten(g):
 
 @test
 async def auffaellige_elemente(g):
-    """Nutzerwunsch: Hebel, Sprungpilze und Druckplatten fallen auf – hüpfender Hinweis-Pfeil (kein Leuchten), solange
+    """Nutzerwunsch: Hebel, Sprungpilze und Druckplatten fallen auf – dezentes Leuchten und schwebender Hinweis (zwei Winkel), solange
     man sie noch benutzen muss (Hebel aus, Platte frei; Pilz immer); im weiten Umkreis keine Deko-Pflanzen/-Tiere."""
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        switches=[{'x': 300, 'y': 660, 'link': 1}], plates=[{'x': 420, 'y': 660, 'link': 2}],
@@ -3986,7 +3986,6 @@ async def auffaellige_elemente(g):
     weg = await g.ev("""(() => { const pts = [...bouncers.map(b => b.x), ...plates.map(p => p.x), ...switchDefs.map(s => s.x)];
       return critters.filter(c => c.minX !== undefined).filter(c => pts.some(px => px > c.minX - 100 && px < c.maxX + 100)).map(c => c.kind); })()""")
     assert not weg, f'Tiere laufen/hüpfen bis an Hebel/Pilz/Platte: {weg}'
-    assert not await g.ev("typeof elementLeuchten !== 'undefined'"), 'Leuchten soll weg sein (Nutzerwunsch)'
 
 @test
 async def muenzen_groesser_3d(g):

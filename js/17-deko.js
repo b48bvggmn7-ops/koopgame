@@ -97,7 +97,7 @@ function decoSolidAt(x, y){
   for(const s of fakeWalls) if(x >= s.x && x < s.x + s.w && y >= s.y && y < s.y + s.h) return true;
   return false;
 }
-const DEKO_FREI_ABSTAND = 120;   // px links/rechts von Hebeln, Sprungpilzen und Druckplatten bleiben frei (auch für Tiere, 20-tiere.js)
+const DEKO_FREI_ABSTAND = 160;   // px links/rechts von Hebeln, Sprungpilzen und Druckplatten bleiben frei (auch für Tiere, 20-tiere.js)
 function buildDeco(){
   decoFor = solids; decoPlants = []; decoMoss = []; birds = [];
   // Spielwichtige Punkte, an denen keine Pflanze/kein Vogel stehen soll

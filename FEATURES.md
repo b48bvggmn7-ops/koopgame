@@ -15,14 +15,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     mehr, höher als früher geht nie (es wird nur gebremst). Erneutes Drücken in der Luft ändert nichts. Wandsprung,
     Seil-Abflug, Sprungpilz, Aufwind/Schirm und Schwimmen sind ausgenommen und unverändert. Test variable_sprunghoehe.
   - AUFFÄLLIGE SPIELELEMENTE (Nutzerwunsch: Hebel, Sprungpilze und Druckplatten wurden übersehen, gerade wenn man
-    schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; nach Rückmeldung OHNE Leuchten):
+    schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; nach Rückmeldung nur dezentes Leuchten):
     Hebel in der alten Größe, aber prominenter (dunkle Kontur um Stange und Kugel, Sockel mit Rand in der Hebel-Farbe);
     Druckplatte etwas breiter (so breit wie der Bereich, der wirklich drückt), höher, mit Farbrand; Sprungpilz dicker
     (Hut und Stiel), so breit wie der Bereich, der wirklich federt, kräftig violett mit weißen Punkten und dunkler
-    Kontur (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze). Ein hüpfender Hinweis-Pfeil zeigt darauf – beim
-    Hebel, solange er aus ist; bei der Druckplatte, solange niemand draufsteht; beim Pilz immer (Pfeil nach oben).
-    Im Umkreis von 3 Kästchen (DEKO_FREI_ABSTAND 120 px) stehen keine Deko-Pflanzen und keine Tiere (17-deko.js,
-    20-tiere.js), damit nichts ablenkt. Hilfe hinweisPfeil in 12-welt-zeichnen.js. Test auffaellige_elemente.
+    Kontur (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze). Alle drei haben einen dezenten, pulsierenden
+    Lichtschein; ein Hinweis aus zwei Winkeln, die nacheinander aufleuchten und sanft schweben, zeigt darauf – beim
+    Hebel, solange er aus ist; bei der Druckplatte, solange niemand draufsteht; beim Pilz immer (Winkel nach oben).
+    Im Umkreis von 4 Kästchen (DEKO_FREI_ABSTAND 160 px) stehen keine Deko-Pflanzen und keine Tiere (17-deko.js,
+    20-tiere.js), damit nichts ablenkt. Hilfen elementLeuchten/hinweisPfeil in 12-welt-zeichnen.js. Test auffaellige_elemente.
   - Figuren: süßer Affe (eigene Zeichnung, ersetzt Kenney-Affe) und pinkes Schweinchen, beide mit Zwinker-Bild
     (monkeyBlink/pigBlink, alle ~3-5 s kurz). Bild immer im echten Seitenverhältnis (nicht verzerrt); gedreht wird
     genau um die Mitte des runden Kopfes (HEAD_CENTER, Ohren zählen nicht), damit die Kugel rund rollt statt zu eiern.

@@ -26,8 +26,9 @@ elementRegistrieren({
         if(sw.pulledT){ const k = (performance.now()-sw.pulledT)/260; if(k < 1) ang += Math.sin(k*Math.PI)*0.15; } // kleiner Nachschwung
         const baseY = sw.y + 20;                 // Kästchen-Unterkante = Boden
         const xr = Math.round(x);
-        // Auffälliger (Nutzerwunsch: gleiche Größe wie früher, aber prominenter – kein Leuchten): dunkle Kontur um Stange und
-        // Kugel, Sockel mit Rand in der Hebel-Farbe; solange er aus ist, hüpft ein Hinweis-Pfeil darüber
+        // Auffälliger (Nutzerwunsch: gleiche Größe wie früher, aber prominenter – dezentes Leuchten): dunkle Kontur um Stange und
+        // Kugel, Sockel mit Rand in der Hebel-Farbe; solange er aus ist, schwebt ein Hinweis darüber
+        if(!anyOpen) elementLeuchten(xr, baseY - 22, 42, col);
         ctx.save(); ctx.translate(xr, baseY-9); ctx.rotate(ang);
         ctx.strokeStyle = 'rgba(20,28,38,.85)'; ctx.lineWidth = 8; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-26); ctx.stroke();

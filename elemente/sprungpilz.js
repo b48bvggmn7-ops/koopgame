@@ -37,9 +37,10 @@ elementRegistrieren({
         if(x < -40 || x > VW + 40) continue;
         b.squish = Math.max(0, b.squish - frameDt*0.004);
         const sq = Math.sin(b.squish*Math.PI)*0.35;
-        // Auffälliger (Nutzerwunsch: dicker, kein Leuchten): so breit wie der Bereich, der wirklich federt, dicker Hut und
+        // Auffälliger (Nutzerwunsch: dicker, dezentes Leuchten): so breit wie der Bereich, der wirklich federt, dicker Hut und
         // Stiel, kräftig violett mit weißen Punkten (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze), dunkle
-        // Kontur; ein hüpfender Pfeil nach oben
+        // Kontur; ein schwebender Hinweis nach oben
+        elementLeuchten(x, b.y - 20, 48, '#c77dff');
         ctx.save(); ctx.translate(x, b.y); ctx.scale(1 + sq, 1 - sq);
         ctx.fillStyle = 'rgba(20,28,38,.75)'; roundRect(-12, -22, 24, 22, 6); ctx.fill();
         ctx.fillStyle = '#fff3df'; roundRect(-10, -21, 20, 21, 5); ctx.fill();

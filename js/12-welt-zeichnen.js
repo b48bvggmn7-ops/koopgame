@@ -299,17 +299,30 @@ const LINK_COLORS = {1:'#ff922b', 2:'#339af0', 3:'#9775fa', 4:'#12b886', 5:'#f06
 // ab 21 (falls je nötig): automatisch verteilte Farbtöne
 const linkColor = n => LINK_COLORS[n] || `hsl(${(n*137.5)%360},60%,45%)`;
 // (steht außerhalb von draw(), damit auch die Elemente in elemente/ – Hebel, Druckplatte – sie benutzen können)
-// Auffälligkeit (Nutzerwunsch: Hebel, Pilze, Druckplatten wurden übersehen): hüpfender Hinweis-Pfeil über allem, was
-// man noch benutzen muss (ohne Leuchten – Nutzerwunsch). Nur Zeichnen (performance.now), kein Spielzustand.
+// Auffälligkeit (Nutzerwunsch: Hebel, Pilze, Druckplatten wurden übersehen): dezenter, pulsierender Lichtschein und
+// ein Hinweis aus zwei Winkeln, die nacheinander aufleuchten und sanft schweben (statt eines Dreieck-Pfeils –
+// Nutzerwunsch), über allem, was man noch benutzen muss. Nur Zeichnen (performance.now), kein Spielzustand.
 let hinweisPfeile = 0;   // Zähler je Bild (für Tests)
+function elementLeuchten(x, y, radius, col, staerke = 1){
+  const puls = 0.65 + 0.35*Math.sin(performance.now()*0.004);
+  const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.save(); ctx.globalAlpha = 0.42*puls*staerke; ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.fill(); ctx.restore();
+}
 function hinweisPfeil(x, y, col, nachOben = false){
   hinweisPfeile++;
-  const hop = Math.sin(performance.now()*0.007)*6;
-  ctx.save(); ctx.translate(x, y + hop); if(nachOben) ctx.scale(1, -1);
-  ctx.beginPath(); ctx.moveTo(-15, -12); ctx.lineTo(15, -12); ctx.lineTo(0, 8); ctx.closePath();
-  ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(20,28,38,.9)'; ctx.stroke();
-  ctx.fillStyle = col; ctx.fill();
-  ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+  const t = performance.now(), schweb = Math.sin(t*0.004)*3;
+  ctx.save(); ctx.translate(x, y + schweb); if(nachOben) ctx.scale(1, -1);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for(let i = 0; i < 2; i++){
+    const a = 0.35 + 0.65*Math.max(0, Math.sin(t*0.005 - i*1.1));   // oberer Winkel zuerst, dann der untere
+    const yy = -6 + i*9;
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.moveTo(-9, yy - 5); ctx.lineTo(0, yy + 2); ctx.lineTo(9, yy - 5);
+    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(20,28,38,.75)'; ctx.stroke();
+    ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.stroke();
+  }
   ctx.restore();
 }
 function draw(){
