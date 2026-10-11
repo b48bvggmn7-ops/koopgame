@@ -108,7 +108,7 @@ function lavaSpalteZeichnen(c, x, y, w, h, t, oben){
   c.beginPath(); c.moveTo(x, y + 3);
   for(let k = 0; k <= 4; k++) c.lineTo(x + w*k/4, y + 1.5 + Math.sin(t*3 + (x + w*k/4)*0.05)*2);
   c.lineTo(x + w, y + 5); c.lineTo(x, y + 5); c.fill();
-  const ph = (t*0.7 + x*0.013) % 1;
+  const ph = (((t*0.7 + x*0.013) % 1) + 1) % 1;   // auch links vom Bildrand (x < 0) nie negativ
   if(ph < 0.6){
     const r = 2 + ph*6;
     c.strokeStyle = 'rgba(255,240,170,' + (0.8 - ph) + ')'; c.lineWidth = 1.5;

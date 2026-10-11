@@ -1123,7 +1123,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Druckplatten 2 steht, fließt sie ab – einer hält, der andere läuft und hält drüben); nur das Schweinchen kommt über
       den zweiten Graben (segelt) und stellt sich auf Druckplatte 3 – die Lava fließt ab, der Affe läuft unten durch;
       Lava-Raum 2 (Hebel 4: Tor oben auf, Lava steigt schneller – schmale Stege und ein Pilz hinauf).
-    - Test level17_glutpfad (Koop-Bot + Checkpoint-Abstände).
+    - Etappe 4 (Spalten 600–800): Pilz-Kette über den steigenden Lavasee (sobald beide am Ufer sind, steigt der See
+      langsam über die Säulen); Steg-Turm vor der Lava (im Schacht steigt die Lava durch den Boden, sobald beide drin
+      sind – Stege im Zickzack hinauf); letzte Gruben und ein Pilz zum Ziel.
+    - Checkpoints höchstens ~60 Spalten auseinander (20 Stück).
+    - Test level17_glutpfad (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
 ## Level-Editor (editor/)
 ```

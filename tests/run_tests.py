@@ -2383,7 +2383,7 @@ async def level16_tiefenschlund(g):
 
 @test
 async def level17_glutpfad(g):
-    """Ausbau 7, Vulkan Level 1 „Glutpfad“ (levels/level-17.json, morgens, trocken): Lehr-Level Lava, steigende Lava, Sprungpilze. Koop-Bot spielt jede Etappe: Lava-Gruben, Pilz im Lavasee, Pilz-Stufe, Trittsteine, Pilz-Kette, Lava-Raum mit Hebel, Lava-Kamin, Pilz-Flucht, Lava-Graben mit Platten, Schweinchen-Platte, Lava-Raum 2."""
+    """Ausbau 7, Vulkan Level 1 „Glutpfad“ (levels/level-17.json, morgens, trocken): Lehr-Level Lava, steigende Lava, Sprungpilze. Koop-Bot spielt jede Etappe: Lava-Gruben, Pilz im Lavasee, Pilz-Stufe, Trittsteine, Pilz-Kette, Lava-Raum mit Hebel, Lava-Kamin, Pilz-Flucht, Lava-Graben mit Platten, Schweinchen-Platte, Lava-Raum 2, Pilz-Kette über den steigenden See, Steg-Turm vor der Lava, letzte Gruben."""
     await koop_level(g, 'level-17.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -2467,6 +2467,17 @@ async def level17_glutpfad(g):
             o = 'f' if who == 'm' else 'm'
             r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: am(494) + [k_lauf(497, 0)] + hoch(), o: [{'wait': '!!linkOn[4]'}, {'frames': 40}, k_lauf(497, 0)] + hoch()}, maxFrames=4000)
             soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 537, f'E3 Lava-Raum 2: Hebel 4, Stege und Pilz hinauf ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hop = lambda tx: [{'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+        await beide('E4 Pilz-Kette über den steigenden Lavasee', 605, lambda w: [{'aim': [kx(616), kx(623), kx(630), kx(637), kx(647)], 'jumps': [kx(610)], 'until': f'P.grounded && P.x > {kx(644)}', 'frames': 1200}, k_lauf(652)], 651, delay=40)
+        r = await koop(g, m=kat(616, 13), f=kat(623, 13), plans={'m': [{'frames': 900}]}, maxFrames=1000)
+        soll(r.get('dead'), 'E4 der Lavasee steigt über die Säulen', r.get('pos'))
+        turm = lambda: [k_lauf(670), {'until': 'P.grounded', 'frames': 60}, halten(675)] + hop(678) + hop(672) + hop(678) + hop(672) + hop(679) + [halten(680)] + sprung_zu(kx(687), 12) + \
+                       [k_lauf(700), {'until': 'P.grounded', 'frames': 100}, k_lauf(706), {'until': 'P.grounded', 'frames': 100}, k_lauf(711), {'until': 'P.grounded', 'frames': 100}, k_lauf(716), {'until': 'P.grounded', 'frames': 100}, k_lauf(720)]
+        await beide('E4 Steg-Turm vor der Lava', 662, lambda w: turm(), 719, delay=60)
+        await beide('E4 letzte Gruben zum Ziel', 721, lambda w: [k_lauf(725, -6)] + sprung_zu(kx(731)) + [k_lauf(735, -6)] + sprung_zu(kx(742)) + [{'aim': [kx(748), kx(760)], 'jumps': [kx(745)], 'until': f'P.grounded && P.x > {kx(759)}', 'frames': 600}, k_lauf(765)], 764)
     assert not fehler, fehler
 
 @test
