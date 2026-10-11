@@ -902,6 +902,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Wetter „regen“ (nur wenn im Level ausdrücklich gewählt): heißer Regen, über der Lava steigt Dampf auf; trocken /
       wechselnd = Asche und Glut wie bisher. Das alte Level 6 „Feuerberg“ (theme „vulkan“) bekommt nie Regen und sieht
       unverändert aus. Test vulkan_welt_look.
+    - Level der Welt (Reihenfolge in worlds.json): Glutpfad (17), Aschefeld (18), Feuerberg (6), Magmakammer (19),
+      Schlackewerk (20), Feuerschlund (21), Kraterherz (22) – 7 Level, Freischaltung Level für Level (Tests welten_laden,
+      welten_freischaltung; Weltkarte zeigt „0 / 7 Level“). Der Vulkan öffnet nach dem letzten Höhlen-Level.
   - WELT HÖHLE – Look (Ausbau 7; Design in WELTEN.md): levels/worlds.json, Welt „hoehle“ hat jetzt
     "aussehen": {basis: hoehle, himmel: false, ambiente: Vögel 0 · Grillen 0,15 · Fluss 0,7} (unter Tage: keine Vögel,
     kaum Grillen, Wasser in der Ferne).
@@ -1110,8 +1113,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
     - Test level16_tiefenschlund (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
-  - Level 17 „Glutpfad“ (levels/level-17.json, Vulkan Level 1 der Welt, morgens, trocken, 800 Spalten): IN ARBEIT, bis
-    der Vulkan fertig ist in levels.json versteckt. Lehr-Level: Lava-Becken, steigende Lava, Sprungpilze.
+  - Level 17 „Glutpfad“ (levels/level-17.json, Vulkan Level 1 der Welt, morgens, trocken, 800 Spalten): in der
+    Welt Vulkan an Platz 1. Lehr-Level: Lava-Becken, steigende Lava, Sprungpilze.
     - Etappe 1 (Spalten 0–200): zwei Lava-Gruben; Pilz mitten im Lavasee (auf die Säule springen, der Pilz schleudert
       weiter); Pilz-Stufe auf einen hohen Fels, oben über die Lava-Grube; Trittsteine im Lavasee; Pilz-Kette über den
       Lavasee (vier Pilz-Säulen).
@@ -1129,8 +1132,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens ~60 Spalten auseinander (20 Stück).
     - Test level17_glutpfad (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
-  - Level 18 „Aschefeld“ (levels/level-18.json, Vulkan Level 2 der Welt, mittags, heißer Regen, 800 Spalten): IN ARBEIT,
-    bis der Vulkan fertig ist in levels.json versteckt. Lehr-Level: Stachelpressen im Takt, Förderband.
+  - Level 18 „Aschefeld“ (levels/level-18.json, Vulkan Level 2 der Welt, mittags, heißer Regen, 800 Spalten): in der
+    Welt Vulkan an Platz 2. Lehr-Level: Stachelpressen im Takt, Förderband.
     - Etappe 1 (Spalten 0–200): eine Presse (warten, dann drunter durch); Pressen-Welle (drei Pressen mit Versatz);
       Lava-Grube mit Presse direkt dahinter; Pressen-Gang (niedriger Gang, vier Pressen im 2-s-Takt, kein Segeln);
       Doppel-Presse (3 Kästchen breit, langsamer Takt).
@@ -1149,8 +1152,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
     - Test level18_aschefeld (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
-  - Level 19 „Magmakammer“ (levels/level-19.json, Vulkan Level 4 der Welt, abends, trocken, 800 Spalten): IN ARBEIT, bis
-    der Vulkan fertig ist in levels.json versteckt. Kombi-Level: Lava-Flucht durch Kamine, Haken/Aufwind über der Lava,
+  - Level 19 „Magmakammer“ (levels/level-19.json, Vulkan Level 4 der Welt, abends, trocken, 800 Spalten): in der Welt
+    Vulkan an Platz 4 (hinter dem alten Feuerberg). Kombi-Level: Lava-Flucht durch Kamine, Haken/Aufwind über der Lava,
     Pilz-Turm, Doppel-Schacht.
     - Etappe 1 (Spalten 0–200): Zickzack-Kamin mit Lava (sobald beide unten sind, steigt die Lava schnell – per
       Wandsprung durch zwei versetzte Schächte hinauf); Aufwind (Schweinchen) und Kamin (Affe) nebeneinander, die Lava
@@ -1171,7 +1174,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level19_magmakammer (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
   - Level 20 „Schlackewerk“ (levels/level-20.json, Vulkan Level 5 der Welt, mittags, wechselndes Wetter, 800 Spalten):
-    bis der Vulkan fertig ist in levels.json versteckt. Kombi-Level: Förderbänder unter Pressen, Hebel über
+    in der Welt Vulkan an Platz 5. Kombi-Level: Förderbänder unter Pressen, Hebel über
     Kreuz, Flammenfallen über Bändern, großes Werk.
     - Etappe 1 (Spalten 0–200): schnelles Band unter einer Pressen-Welle (nur wer gegenläuft, kann warten);
       Gegenband-Tunnel mit drei breiten Pressen; Band zum Pilz – der Pilz schleudert über eine Presse hinweg auf einen
@@ -1190,8 +1193,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       an – das Schweinchen segelt über zwei Aufwinde und zieht Hebel 10: das Band steht still, dafür laufen zwei Pressen
       darüber an, die der Affe abpassen muss); Finale „das Werk läuft voll“ (sobald beide im Kessel sind, steigt die Lava
       schnell: Band zum Pilz, Pilz auf den Steg, über zwei Stege hinauf auf die Rampe zum Ziel).
+
   - Level 21 „Feuerschlund“ (levels/level-21.json, Vulkan Level 6 der Welt, nachts, trocken, 800 Spalten):
-    bis der Vulkan fertig ist in levels.json versteckt. Kombi-/Meister-Level: dunkle Lavagänge mit
+    in der Welt Vulkan an Platz 6. Kombi-/Meister-Level: dunkle Lavagänge mit
     Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht.
     - Etappe 1 (Spalten 0–200): dunkler Lavagang (Kristall anschlagen, im Licht über drei Lava-Gruben); oben schlägt an,
       unten läuft (der Affe schwingt zum Kristall auf dem Sims, das Schweinchen segelt im Licht über die Lava-Gruben und
@@ -1212,8 +1216,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       = Klappe im Kamin offen, der Affe zieht oben Hebel 11 = Klappe über dem Aufwind auf); Klappen im Takt über dem
       Glutsee (alle 1,5 Sekunden); Finale „der Schlund läuft voll“ (Pilz auf den Steg, über zwei Stege hinauf zum Ziel,
       die Lava steigt schnell).
-  - Level 22 „Kraterherz“ (levels/level-22.json, Vulkan Level 7 der Welt, nachts, Regen, 800 Spalten): bis der
-    Vulkan fertig ist in levels.json versteckt. Meister-Level, alles kombiniert: Pressen + Pilze, Lava-Flucht mit
+
+  - Level 22 „Kraterherz“ (levels/level-22.json, Vulkan Level 7 der Welt, nachts, Regen, 800 Spalten): in der
+    Welt Vulkan an Platz 7 (letztes Level). Meister-Level, alles kombiniert: Pressen + Pilze, Lava-Flucht mit
     Bändern und Eis, Hebel-Ketten über der Lava, Finale „der Krater läuft voll“.
     - Etappe 1 (Spalten 0–200, Pressen + Pilze): Pilz unter der Presse (nur wenn sie oben ist, schleudert er auf den
       Sims; dort zwei Pressen); Pilz-Turm vor der Lava (vier Pilz-Säulen treppauf, die Lava steigt, sobald beide im

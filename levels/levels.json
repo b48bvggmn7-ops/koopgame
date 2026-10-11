@@ -94,37 +94,31 @@
  {
   "datei": "level-17.json",
   "name": "Level 17",
-  "titel": "Glutpfad",
-  "versteckt": true
+  "titel": "Glutpfad"
  },
  {
   "datei": "level-18.json",
   "name": "Level 18",
-  "titel": "Aschefeld",
-  "versteckt": true
+  "titel": "Aschefeld"
  },
  {
   "datei": "level-19.json",
   "name": "Level 19",
-  "titel": "Magmakammer",
-  "versteckt": true
+  "titel": "Magmakammer"
  },
  {
   "datei": "level-20.json",
   "name": "Level 20",
-  "titel": "Schlackewerk",
-  "versteckt": true
+  "titel": "Schlackewerk"
  },
  {
   "datei": "level-21.json",
   "name": "Level 21",
-  "titel": "Feuerschlund",
-  "versteckt": true
+  "titel": "Feuerschlund"
  },
  {
   "datei": "level-22.json",
   "name": "Level 22",
-  "titel": "Kraterherz",
-  "versteckt": true
+  "titel": "Kraterherz"
  }
 ]

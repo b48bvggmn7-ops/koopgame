@@ -497,3 +497,90 @@ des anderen. 3. Flammenfallen + Bänder. 4. Großes Werk: Band, Presse, Pilz, Ha
 - Lava steigt höchstens so schnell, dass zwei geübte Spieler ohne Fehler sicher oben ankommen.
 - Pressen fallen nie ohne Vorwarnung (Kette zittert, Staub rieselt).
 - Keine Zufallstode.
+
+### Umsetzung Vulkan (Ausbau 7)
+
+- Neue Elemente: **Lava + Lava-Marke** (elemente/lava.js; Becken, steigt per Nummer oder „sobald beide da sind“, Tempo
+  langsam/mittel/schnell, hinter Boden und Wänden gezeichnet, Dampf bei Regen) und **Stachelpresse** (elemente/presse.js;
+  eigener Takt je Presse, Vorwarnung durch zitternde Kette und Staub, per Nummer anhalten oder nur bei Nummer an laufend).
+- Welt-Look: eigener Feuer-Himmel mit Tageszeit-Farben (`zeitFarben: 'feuer'`), heißer Regen nur bei Wetter „Regen“;
+  der alte Feuerberg (level-6) behält seinen Look und bleibt trocken.
+- Abweichungen vom Plan (begründet):
+  - Lava-Flucht „sobald jemand kommt“ wurde zu **„sobald beide da sind“** – sonst sperrt die Lava den nachkommenden
+    Partner aus, ohne dass er etwas falsch gemacht hat.
+  - Lava-Kammern mit Flucht nach oben haben einen **Einstieg von oben** (Sprung hinunter, kein Weg zurück): wer vor der
+    steigenden Lava zurückweicht, säße sonst fest.
+  - Lava, die unter dem Boden steigt, liegt mindestens 2 Reihen tiefer als der Boden – sonst bleibt keine Reaktionszeit.
+  - Schlackewerk „Flammenfallen + Bänder“: Flammen von der Decke über dem Band, Flammen **durch Stege** von unten
+    (die Düse sitzt in der Lava) und ein Flammen-Vorhang, der nur per Hebel ausgeht.
+  - Feuerschlund „Wechselboden über Lava“: einmal im Takt (2 s, im Finale 1,5 s) und einmal per Hebel, den das
+    Schweinchen genau dann umlegt, wenn der Affe springt.
+  - Kraterherz „Hebel-Ketten“: Hebel 1 → Brücke 1, Hebel 2 → Brücke 2, Hebel 3 → Tor **und** Lava (Regel: ein Hebel,
+    der Lava steigen lässt, öffnet immer auch ein Tor) + eine Druckplatten-Staffel unter zwei schnellen Pressen.
+- Abstandsgrenze (40 Spalten zwischen den Figuren) bestimmt, wie weit Hebel/Teleporter vom wartenden Partner liegen
+  dürfen (z. B. Feuerschlund Etappe 3: Druckplatte, Teleporter und Hebel liegen höchstens 38 Spalten auseinander).
+
+### Balance-Bericht Vulkan (Ausbau 7, Koop-Bot-Messungen)
+
+Einstufungen wie bisher (komfortabel / knapp / Grenze). Zahlen = wie viele der vom Bot probierten Varianten
+(Absprung-Spalte, Sprung-Haltedauer, Loslass-Strategie am Seil, Zeitfenster) klappen. Jede Lava-Flucht hat direkt
+davor einen Checkpoint; nach einem Tod ist die Lava wieder unten.
+
+**Härteste Stellen Level 17 „Glutpfad“ (Lehr-Level, Ziel: typisch 3, schwerste 5):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 605–652 | Pilz-Kette über den steigenden Lavasee | Pilz-Timing | knapp (das Schweinchen schafft sie auch ohne Segeln) |
+| 463–500 | Lava-Raum 2: Hebel 4 öffnet das Tor, die Lava steigt schneller | Tempo | knapp |
+| 255–280 | Lava-Kamin (Wandsprung, Lava steigt) | Wandsprung | knapp |
+| 410–440 | Lava-Graben mit Druckplatte 2 | Koordination | komfortabel |
+
+**Härteste Stellen Level 18 „Aschefeld“ (Lehr-Level, Ziel: typisch 3, schwerste 6):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| Etappe 2 | Gegenband unter Pressen (große Lücken abwarten) | Takt lesen | knapp (Bot braucht ein Zeitfenster von 70 Schritten) |
+| Etappe 4 | Großer Pressen-Rhythmus (sechs Pressen, kurze Bänder) | Takt | knapp |
+| Etappe 3 | Hebel 7: Tür auf, Pressen über der Lava-Brücke laufen an | Koordination + Takt | knapp |
+| Etappe 1 | Pressen-Gang (niedrig, kein Segeln) | Takt | komfortabel |
+
+**Härteste Stellen Level 19 „Magmakammer“ (Kombi, Ziel: typisch 4, schwerste 8):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 207–246 | Affe hinterher an vier Haken, während der See steigt | Seil-Schwung | knapp (1 von 3 Strategien) |
+| 258–303 | Hebel 3 (Schweinchen oben): Tür auf, Lava über dem Steinweg – der Affe muss sofort los | Koordination + Tempo | knapp |
+| 600–664 | Doppel-Schacht: Platte 10 (Schwein) öffnet den Kamin, Hebel 11 (Affe) die Klappe | Koordination | knapp |
+| 24–80 | Zickzack-Kamin mit schneller Lava | Wandsprung + Tempo | knapp |
+
+**Härteste Stellen Level 20 „Schlackewerk“ (Kombi, Ziel: typisch 4, schwerste 9):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 266–290 | Schleuder: das gedrehte Band wirft den Affen über die Grube | Absprung-Timing | knapp (4 von 6, nur von Spalte 278/279) |
+| 62–106 | Gegenband-Tunnel mit drei breiten Pressen | Takt + Band | knapp (Zeitfenster 70 Schritte) |
+| 659–700 | reißendes Gegenband: Schwein segelt über zwei Aufwinde, Affe passt danach zwei Pressen ab | Segeln + Takt | knapp (Segeln 7 von 7, die Landung liegt aber direkt hinter dem Band) |
+| 458–498 | Flammen durch die Stege (der Flammen-Welle hinterherspringen) | Timing | komfortabel bis knapp (5 von 5 Zeitfenstern) |
+| 721–799 | Finale: Kessel läuft voll (schnell) | Tempo | knapp |
+
+**Härteste Stellen Level 21 „Feuerschlund“ (Kombi/Meister, Ziel: typisch 5, schwerste 10):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 600–664 | Doppel-Flucht: zwei Schächte, zwei Lavastände (im Aufwind-Schacht schneller) | Koordination + Tempo | Grenze (mit schnellerer Lava im Kamin schafft es der Bot nicht mehr – deshalb dort langsam) |
+| 505–556 | Klappen im Lavagang: Hebel 9 genau beim Sprung umlegen | Koordination | Grenze (Absprache nötig) |
+| 136–170 / 472–505 | Teleporter-Kammern: die Lava steigt, der Partner muss rechtzeitig schalten | Koordination + Tempo | knapp |
+| 206–255 / 668–705 | Wechselboden im Takt über der Lava (2 s / 1,5 s) | Rhythmus | knapp (Absprung-Fenster ~0,6 s) |
+| 326–370 | der Schlund: Stege treppauf, der See steigt schnell | Tempo | knapp |
+
+**Härteste Stellen Level 22 „Kraterherz“ (Meister, Ziel: typisch 5, schwerste 10+):**
+
+| Spalte | Stelle | Typ | Einstufung |
+|---|---|---|---|
+| 286–318 | Eis unter Pressen: früh gegensteuern, um vor einer Presse zu warten | Eis + Takt | Grenze (ohne Gegensteuern 0 von 3, mit 3 von 3) |
+| 337–376 | Affe hinterher an vier Haken, während der See steigt | Seil-Schwung | knapp bis Grenze (1 von 3 Strategien) |
+| 401–490 | Hebel-Kette: Brücke 1, Brücke 2, Hebel 3 = Tor + Lava, zügig nach oben | Koordination + Tempo | knapp (Haken 1 von 6 Varianten zuerst erfolgreich) |
+| 501–541 | Platten-Staffel unter zwei schnellen Pressen | Koordination | knapp |
+| 200–281 | Flucht über Eis und Band, drei Stege hinauf | Tempo + Eis | knapp |
+| 600–641 | Kessel: Band, Pilz, Stege (Lava schnell) | Tempo | knapp |
+| 649–689 | Kraterschlucht: Affe an vier Haken / Schwein mit zwei Aufwinden | Seil / Segeln | knapp (Haken 2 von 3) |

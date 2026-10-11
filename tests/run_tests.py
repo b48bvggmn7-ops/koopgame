@@ -3389,7 +3389,7 @@ async def editor_testen_knopf(g):
         await p.keyboard.press('Escape'); await p.wait_for_timeout(600)   # beendet den Test
         assert '/editor/' in p.url, f'Esc führt nicht zurück in den Editor: {p.url}'
         # Editor weiter rechts gescrollt -> Figuren starten dort (auf dem Boden, nicht im Loch/auf Stacheln)
-        draft['cols'] = 120
+        draft['cols'] = 200   # breit genug, dass die Ansicht nicht am Levelende anstößt (mehr Werkzeuge = niedrigere Ansicht = mehr Spalten sichtbar)
         draft['tiles'] = [[c, 17, 'ground'] for c in range(120) if not 60 <= c <= 62] + [[c, 12, 'crumble'] for c in range(70, 74)]
         draft['spikes'] = [{'c': c, 'r': 16, 'dir': 0} for c in range(66, 70)]
         await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
@@ -4363,11 +4363,12 @@ async def welten_laden(g):
         k = await g.ev("({w: GameMenu.config.worlds.map(x => x.id), l: GameMenu.config.levels.map(l => [l.datei, l.name, l.welt])})")
         assert k['w'] == ids, k
         # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
-        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in (1, 2, 7, 8, 3, 4, 9, 10, 11, 5, 12, 13, 14, 15, 16, 6)], f'Reihenfolge geändert: {k}'
+        assert [x[0] for x in k['l']] == [f'level-{i}.json' for i in (1, 2, 7, 8, 3, 4, 9, 10, 11, 5, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21, 22)], f'Reihenfolge geändert: {k}'
         assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Ruinen', 'Mondnacht', 'Fallengang',
                                           'Sonnentempel', 'Felsenflucht', 'Kristallhöhle', 'Tropfsteingang', 'Eisgrotte', 'Leuchtgrotte',
-                                          'Förderwerk', 'Tiefenschlund', 'Feuerberg'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'], k   # Ausbau 7: Höhle 6 Level
+                                          'Förderwerk', 'Tiefenschlund', 'Glutpfad', 'Aschefeld', 'Feuerberg', 'Magmakammer',
+                                          'Schlackewerk', 'Feuerschlund', 'Kraterherz'], f'Namen geändert: {k}'
+        assert [x[2] for x in k['l']] == ['dschungel'] * 4 + ['ruinen'] * 5 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -4595,13 +4596,13 @@ def level_teil(k, v):
 
 @test
 async def editor_rundreise_alle_level(g):
-    """Ausbau 2: Jedes Projekt-Level (1–16) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
+    """Ausbau 2: Jedes Projekt-Level (1–22) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
     die Spiel-Datei in levels/ (gleiche Daten) – Beweis, dass der Editor beim Umbau nichts verändert."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 16, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle)
+        assert len(liste) == 22, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -4718,7 +4719,7 @@ async def editor_level_info(g):
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
         tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
         w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
-        assert w['vulkan'] == ['level-3.json', 'level-6.json'] and w['ruinen'] == ['level-4.json', 'level-9.json', 'level-10.json', 'level-11.json'], w
+        assert w['vulkan'] == ['level-3.json', 'level-17.json', 'level-18.json', 'level-6.json', 'level-19.json', 'level-20.json', 'level-21.json', 'level-22.json'] and w['ruinen'] == ['level-4.json', 'level-9.json', 'level-10.json', 'level-11.json'], w
         assert 'levels/levels.json' not in tree, 'levels.json ohne Änderung mitgeschickt'
     finally:
         await p.evaluate("localStorage.clear()")
@@ -4994,8 +4995,11 @@ async def welten_freischaltung(g):
         for d in ('level-5.json', 'level-12.json', 'level-13.json', 'level-14.json'): await fertig(d)   # Ausbau 7: Höhle hat 6 Level
         assert await g.ev(offen) == [True, True, True, False, False], 'Vulkan offen, obwohl Höhlen-Level fehlen'
         await fertig('level-15.json')
-        assert await fertig('level-16.json') == await nr('level-6.json') and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
+        assert await fertig('level-16.json') == await nr('level-17.json') and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
         assert await g.ev(offen) == [True, True, True, False, True]
+        # Ausbau 7: Vulkan hat 7 Level (Glutpfad, Aschefeld, Feuerberg, …) – auch hier Level für Level
+        assert await g.ev("['level-17.json', 'level-18.json'].map(f => GameMenu.levelUnlocked(nr(f) - 1))") == [True, False], 'Vulkan nicht Level für Level'
+        assert await fertig('level-17.json') == await nr('level-18.json') and await fertig('level-18.json') == await nr('level-6.json')
         # „Level geschafft“ -> Weiter: mitten in der Welt zur Welt-Seite mit Schloss auf dem neuen Level
         await g.ev("GameMenu.resetSave(); GameMenu.completeLevel(1, true)")
         await g.ev("GameMenu.show('results', {n: 1, fresh: 2, packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
@@ -5020,7 +5024,7 @@ async def welten_freischaltung(g):
         assert await g.ev(offen) == [True, True, False, False, False]
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
         isl = await wk_inseln(g)
-        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 5 Level', '0 / 6 Level', 'Bald', '0 / 1 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5, Höhle 6 Level; Ruinen bleiben offen
+        assert [i['info'] for i in isl] == ['2 / 4 Level', '1 / 5 Level', '0 / 6 Level', 'Bald', '0 / 7 Level'] and isl[1]['sel'], isl   # Ausbau 7: Dschungel 4, Ruinen 5, Höhle 6, Vulkan 7 Level; Ruinen bleiben offen
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()
@@ -5280,8 +5284,15 @@ async def wasser_schwimmen_luft(g):
     # Oberfläche: Kopf draußen -> Luft füllt sich auf; Springen -> aus dem Wasser
     await setz('p2', 1000, 380); await g.ev("p2.luft = 100"); await g.steps(90)
     assert await g.ev("p2.kannAtmen && p2.luft === LUFT_MAX"), f"Luft füllt sich an der Oberfläche nicht: {await g.ev('[p2.y, p2.headUnder, p2.luft]')}"
-    await g.p.keyboard.press('Numpad0'); await g.steps(12)
-    assert await g.ev("p2.y") < 330, f"springt nicht aus dem Wasser: {await g.ev('p2.y')}"
+    # Sprungtaste halten (ein kurzer Druck geht auf langsamen Rechnern zwischen zwei Schritten verloren); höchste Stelle
+    # wird im Spiel je Schritt mitgeschrieben
+    await g.ev("window.__minY = p2.y; window.__yStep = stepSim; stepSim = function(ts){ const r = __yStep(ts); __minY = Math.min(__minY, p2.y); return r; }")
+    try:
+        await g.p.keyboard.down('Numpad0'); await g.steps(12); await g.p.keyboard.up('Numpad0')
+        hoch = await g.ev("__minY")
+    finally:
+        await g.ev("stepSim = __yStep")
+    assert hoch < 330, f"springt nicht aus dem Wasser: {hoch}"
     # Platschen beim Eintauchen
     assert 'platsch' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
     # Luft-Warnung und Tod bei leerer Luft; danach volle Luft
@@ -5657,11 +5668,18 @@ async def eis_rutschen(g):
     eis = await g.ev("p1.x - __x0")
     assert boden < 30 and eis > 120, f'Bremsweg Boden {boden}, Eis {eis}'
     assert await g.ev("aufEis(p1)"), 'steht nicht auf Eis'
-    # Anlaufen: nach 8 Schritten auf Eis deutlich langsamer als auf Boden
-    await g.ev("p1.x = 1200; p1.y = 680; p1.vx = 0")
-    await g.p.keyboard.down('KeyD'); await g.steps(8); v_eis = await g.ev("p1.vx"); await g.p.keyboard.up('KeyD')
-    await g.ev("p1.x = 400; p1.y = 680; p1.vx = 0"); await g.steps(3)
-    await g.p.keyboard.down('KeyD'); await g.steps(8); v_boden = await g.ev("p1.vx"); await g.p.keyboard.up('KeyD')
+    # Anlaufen: nach 8 Schritten auf Eis deutlich langsamer als auf Boden. Tempo wird im Spiel je Schritt mitgeschrieben
+    # (ab dem ersten Schritt mit gedrückter Taste) – sonst zählen auf langsamen Rechnern Extra-Schritte mit
+    await g.ev("window.__vx = []; window.__vxStep = stepSim; stepSim = function(ts){ const r = __vxStep(ts); __vx.push(p1.vx); return r; }")
+    async def anlauf(x):
+        await g.ev(f"p1.x = {x}; p1.y = 680; p1.vx = 0"); await g.steps(3); await g.ev("__vx = []")
+        await g.p.keyboard.down('KeyD'); await g.steps(12); await g.p.keyboard.up('KeyD')
+        return await g.ev("(() => { const i = __vx.findIndex(v => v > 0); return i < 0 ? 0 : __vx[Math.min(i + 7, __vx.length - 1)]; })()")
+    try:
+        v_eis = await anlauf(1200)
+        v_boden = await anlauf(400)
+    finally:
+        await g.ev("stepSim = __vxStep")
     assert v_boden > 4 and v_eis < 3, f'Anlaufen Boden {v_boden}, Eis {v_eis}'
     # Eis ist fest (man fällt nicht durch) und wird vom Element gezeichnet (nicht als normale Wand)
     assert await g.ev("solids.filter(s => s.type === 'eis').length") == 32 and await g.ev("ELEMENT_SOLID_TYPEN.has('eis')")
@@ -5697,8 +5715,15 @@ async def foerderband_mitnehmen(g):
     assert lauf < -30 and abs(still) < 1, f'Nummer 2 hält nicht an: {lauf} / {still}'
     # Absprung vom Band: Schwung des Bands kommt dazu (Schleuder)
     await g.ev("setLink(1, true); p1.x = 1700; p1.y = 680; p1.vx = 0; p1.vy = 0"); await g.steps(3)
-    await g.p.keyboard.press('Space'); await g.steps(1); await g.ev("window.__x0 = p1.x"); await g.steps(12)
-    assert await g.ev("!p1.grounded || p1.x - __x0 > 15") and await g.ev("p1.x - __x0") > 15, f'kein Band-Schwung beim Absprung: {await g.ev("p1.x - __x0")}'
+    # Weg in den 12 Schritten nach dem Absprung – im Spiel je Schritt mitgeschrieben (auf langsamen Rechnern laufen
+    # zwischen zwei Abfragen sonst Extra-Schritte)
+    await g.ev("window.__xs = []; window.__xsStep = stepSim; stepSim = function(ts){ const r = __xsStep(ts); __xs.push([p1.x, p1.grounded]); return r; }")
+    try:
+        await g.p.keyboard.down('Space'); await g.steps(3); await g.p.keyboard.up('Space'); await g.steps(14)
+        weg = await g.ev("(() => { const i = __xs.findIndex(s => !s[1]); return i < 0 || i + 12 >= __xs.length ? 0 : __xs[i + 12][0] - __xs[i][0]; })()")
+    finally:
+        await g.ev("stepSim = __xsStep")
+    assert weg > 15, f'kein Band-Schwung beim Absprung: {weg}'
 
 @test
 async def leuchtkristall_dunkelzone(g):
