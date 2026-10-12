@@ -910,6 +910,20 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Editor: Werkzeuge „Lichtquelle“ (Richtung), „Spiegel“ (Stellung; Klick wechselt sie) und „Lichtkristall“ (mit
       Verknüpfung) in der Gruppe Schalter & Logik. Eine gestrichelte gelbe Linie zeigt den Strahl schon im Editor.
     - Testlevel levels/test/licht.json; Tests licht_spiegel_kristall, editor_licht.
+    - Licht-Überarbeitung (Nutzerwunsch „moderner, cooler, mit Glow“): Sonnenstein = dunkler Basaltblock mit Goldeinlage,
+      glühender Sonnenscheibe, drehendem Strahlenkranz und Linse; Strahl mit echtem Glow (mehrere Schichten, Licht addiert
+      sich), wandernden hellen Wellen, Funken und Aufblitzen an Spiegeln/Ende; nachts leuchten Sonnensteine und Strahlen die
+      Dunkelheit aus. Spiegel und Kristalle hängen nicht mehr in der Luft: Sockel, Ständer bis zum Boden, Kette zur Decke
+      oder Wandarm (aus dem Gelände bestimmt). Spiegel im Kardanring mit Drehpfeil; Kristall auf Basaltsockel.
+    - Neue Optionen (alte Level unverändert): Sonnenstein „nur per Nummer“ (leuchtet nur, solange seine Nummer an ist –
+      Plakette mit Nummer; Feld link) und Lichtkristall „bleibt an“ (einmal getroffen bleibt seine Nummer an bis Tod/Neustart
+      – Goldring am Sockel; Feld bleibt). Test licht_optionen.
+    - Licht-Rätsel in allen Ruinen-Leveln (jeweils mit Rollen: Affe per Haken, Schweinchen per Aufwind oder Segeln;
+      Türen/Tore im Strahl, Platten, die jemand halten muss): Ruinen 1 „Sonnenkammer“ (786–826), Mondnacht „Mondspiegel“
+      (neue Strecke 451–500), Fallengang „Lichtweiche“ (772–818, Brücken A/B am Licht), Felsenflucht „Felsbrecher-Licht“
+      (752–800, der Fels bricht die Wand auf), Tempelherz „Sonnenkrone“ (750–798, drei Kristalle, Pfeile auf der Platte);
+      Sonnentempel war schon ein Licht-Level. Tests ruinen1_sonnenkammer, mondnacht_mondspiegel, fallengang_lichtweiche,
+      felsenflucht_felsbrecher_licht, tempelherz_sonnenkrone.
     - Welche Rolle haben Affe und Schweinchen? Spiegel stehen dort, wo nur der Affe (Haken) oder nur das Schweinchen
       (segelnd) hinkommt. Einer lenkt das Licht, der andere geht durch die Tür, die der Kristall öffnet.
 

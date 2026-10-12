@@ -7769,6 +7769,44 @@ async def mondnacht_mondspiegel(g):
     soll(r.get('done') and r['top']['f'] > 8, 'das Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
     assert not fehler, fehler
 
+@test
+async def tempelherz_sonnenkrone(g):
+    """Tempelherz, Licht-Rätsel „Sonnenkrone“ (Spalte 750–798, vor dem Ziel; schwerste Licht-Stelle): Der Sonnenstein
+    leuchtet nur, solange jemand auf Platte 60 steht – darauf schießt im Takt eine Pfeilfalle (ausweichen, zurück).
+    Drei Kristalle („bleiben an“): 1) Schweinchen auf der Platte, Affe (Haken-Sims) stellt Spiegel 1 nach unten -> Tor 1.
+    2) Tausch: Affe stellt Spiegel 1 nach oben (Licht über zwei feste Spiegel zum Bodenspiegel jenseits der Grube) und
+    hält die Platte; das Schweinchen segelt über die breite Grube und dreht den Bodenspiegel: rechts -> Kristall 2 (Tor 2),
+    links zurück über die Grube -> Kristall 3 (Brücke für den Affen)."""
+    await koop_level(g, 'ruinen/06-tempelherz.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    px = kx(753)
+    warn = f'(falleWarnung(fallen.find(f => f.x === {753*40})) > 0.2 || fallenPfeile.some(a => Math.abs(a.x - {px}) < 30 && a.steckt < 0 && a.y < 600))'
+    def platte(bis):   # auf der Platte stehen, bei Pfeil-Warnung kurz nach links ausweichen
+        return {'holdIf': {'left': f'{warn} && P.x > {px} - 40', 'right': f'!{warn} && P.x < {px} - 3'},
+                'until': bis, 'frames': 9000}
+    def affe(jx=761):
+        return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(10)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
+                {'holdIf': {'left': f'P.x > {kx(760)}', 'right': f'P.x < {kx(759)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(759)), {'wait': '!!linkOn[60]', 'frames': 6000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[61]', 'frames': 300},
+                {'use': True, 'frames': 8}, {'hold': ['left'], 'until': f'P.x < {kx(758)} + 10', 'frames': 200}, {'until': 'P.grounded', 'frames': 200},
+                {'hold': ['left'], 'until': f'P.x < {px} + 40', 'frames': 300}, platte('!!linkOn[62] && !!linkOn[63]'), k_lauf(794)]
+    schwein = [k_lauf(752), platte(f'!!linkOn[61] && spiegelListe.find(s => s.c === 758 && s.r === 10).stellung === "/" && Q.grounded && Math.abs(Q.x - {px}) < 50'),
+               k_lauf(766, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
+               wb_halt(kx(779)), {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[62]', 'frames': 300},
+               {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[63]', 'frames': 300}, k_lauf(794)]
+    ok = []
+    for jx in (761, 761.4):
+        r = await koop(g, m=kat(746, 15), f=kat(745, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=16000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 793: ok.append(jx); break
+    soll(ok, 'Sonnenkrone gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    r = await koop(g, m=kat(752, 15), f=kat(745, 15), plans={'m': [wb_halt(px), {'frames': 200}]}, maxFrames=400)
+    soll(r.get('dead') == 'm', 'wer stur auf der Platte stehen bleibt, wird vom Pfeil getroffen', info(r))
+    assert not fehler, fehler
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

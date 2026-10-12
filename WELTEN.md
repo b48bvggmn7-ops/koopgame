@@ -384,6 +384,15 @@ Spalten ohne Checkpoint im Finale) – das macht sie zum Meister-Level.
 | 500–576 | Fels und Licht-Tor | Verfolgung | knapp |
 | 246–272 | Licht-Takt-Tor | Timing | komfortabel bis knapp (stur 10 von 12) |
 
+### Licht-Rätsel in allen Ruinen-Leveln (Licht-Überarbeitung)
+| Level | Stelle | Wer macht was | Einstufung |
+|---|---|---|---|
+| Ruinen 1 | 786–826 „Sonnenkammer“: Licht-Tor (Platte), Spiegel auf dem Aufwind-Sims, Tür im Fallweg (Hebel auf dem Haken-Sims), Kristall öffnet den Ausgang | Affe: Haken -> Hebel -> Platte · Schweinchen: Aufwind -> Spiegel | knapp (3–4 Versuche: Reihenfolge herausfinden) |
+| Mondnacht | 451–500 „Mondspiegel“: zwei Kristalle nacheinander, Licht-Tor an der Platte, Rollentausch | erst Schweinchen auf der Platte, Affe stellt Spiegel A; dann Affe auf der Platte, Schweinchen segelt über die breite Grube zu Spiegel B | knapp (3–4) |
+| Fallengang | 772–818 „Lichtweiche“: Brücken A/B über der Grube hängen am Licht, drei Spiegel | Schweinchen wartet auf der Naht, Affe (Haken) stellt die Weiche, Schweinchen (Aufwind) schaltet Ausgang und Brücke für den Affen | Grenze (4–5: zweimal Naht + Umlegen im richtigen Moment) |
+| Felsenflucht | 752–800 „Felsbrecher-Licht“: Fels bricht die Wand (Strahl frei), Sonnenstein nur mit Platte, Licht-Tür per Hebel im Aufwind-Schacht | einer startet den Fels (alle hinten bleiben), Schweinchen Schacht-Hebel, Affe Haken-Spiegel, zuletzt Affe auf der Platte, Schweinchen dreht den Bodenspiegel | Grenze (4–5) |
+| Tempelherz | 750–798 „Sonnenkrone“: drei Kristalle, Pfeilfalle über der Sonnenstein-Platte, breite Grube | Schweinchen hält die Platte (Pfeilen ausweichen), Affe stellt Spiegel 1; Tausch; Schweinchen segelt hinüber und lenkt das Licht erst auf Tor 2, dann auf die Brücke | Grenze (5–6, schwerste Licht-Stelle) |
+
 ### Ruinen-Überarbeitung (vor der Wasserwelt)
 - **Pfeile:** größer (52 px), dunkler Umriss, helles Holz, rote Federn, Bewegungsspur; nachts leuchten sie; Vorwarnung
   zeigt die Spitze schon im Schlitz; Einschlag mit Staub, Funken, Riss. Trefferfläche unverändert (10 × 10 px um die
