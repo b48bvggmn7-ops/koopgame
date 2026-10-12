@@ -1304,22 +1304,22 @@
    "color": "blue"
   },
   {
-   "x": 27780,
+   "x": 27820,
    "y": 300,
    "color": "pink"
   },
   {
-   "x": 27780,
+   "x": 27820,
    "y": 620,
    "color": "blue"
   },
   {
-   "x": 28180,
+   "x": 28060,
    "y": 300,
    "color": "pink"
   },
   {
-   "x": 28180,
+   "x": 28060,
    "y": 620,
    "color": "blue"
   },
@@ -1471,6 +1471,16 @@
    "x": 28340,
    "y": 300,
    "link": 9
+  },
+  {
+   "x": 27660,
+   "y": 300,
+   "link": 10
+  },
+  {
+   "x": 27740,
+   "y": 620,
+   "link": 11
   }
  ],
  "bouncers": [],
@@ -2878,66 +2888,84 @@
    "schalter": "immer"
   },
   {
-   "x": 27200,
-   "y": 160,
-   "breite": 1,
-   "takt": 2,
-   "versatz": 0,
-   "schalter": "stopp",
-   "link": 8
-  },
-  {
-   "x": 27600,
-   "y": 160,
-   "breite": 1,
-   "takt": 2,
-   "versatz": 0.5,
-   "schalter": "stopp",
-   "link": 8
-  },
-  {
-   "x": 28000,
-   "y": 160,
-   "breite": 1,
-   "takt": 2,
-   "versatz": 0,
-   "schalter": "stopp",
-   "link": 8
-  },
-  {
-   "x": 27200,
-   "y": 480,
-   "breite": 1,
-   "takt": 2,
-   "versatz": 0.5,
-   "schalter": "stopp",
-   "link": 9
-  },
-  {
-   "x": 27600,
-   "y": 480,
-   "breite": 1,
-   "takt": 2,
-   "versatz": 0,
-   "schalter": "stopp",
-   "link": 9
-  },
-  {
-   "x": 28000,
-   "y": 480,
-   "breite": 1,
-   "takt": 2,
-   "versatz": 0.5,
-   "schalter": "stopp",
-   "link": 9
-  },
-  {
    "x": 29600,
    "y": 320,
    "breite": 3,
    "takt": 4,
    "versatz": 0,
    "schalter": "immer"
+  },
+  {
+   "x": 27200,
+   "y": 160,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0,
+   "schalter": "stopp",
+   "link": 8
+  },
+  {
+   "x": 27440,
+   "y": 160,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0.5,
+   "schalter": "stopp",
+   "link": 8
+  },
+  {
+   "x": 27200,
+   "y": 480,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0.5,
+   "schalter": "stopp",
+   "link": 10
+  },
+  {
+   "x": 27440,
+   "y": 480,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0,
+   "schalter": "stopp",
+   "link": 10
+  },
+  {
+   "x": 27920,
+   "y": 160,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0,
+   "schalter": "stopp",
+   "link": 11
+  },
+  {
+   "x": 28160,
+   "y": 160,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0.5,
+   "schalter": "stopp",
+   "link": 11
+  },
+  {
+   "x": 27920,
+   "y": 480,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0.5,
+   "schalter": "stopp",
+   "link": 9
+  },
+  {
+   "x": 28160,
+   "y": 480,
+   "breite": 1,
+   "takt": 2,
+   "versatz": 0,
+   "schalter": "stopp",
+   "link": 9
   }
  ],
  "welt": "vulkan",

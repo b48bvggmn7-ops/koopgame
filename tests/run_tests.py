@@ -1416,17 +1416,20 @@ async def level10_sonnentempel(g):
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[12]"), 'Affe per Haken zum Spiegel -> Kristall 12', r.get('pos'))
     r = await koop(g, f=kat(642, 6), m=kat(632, 9), plans={'f': gleit(643, kx(654), 4) + [{'frames': 10}] + am(653)}, maxFrames=1500)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 10 and await g.ev("spiegelListe.find(s => s.c === 653).stellung") == '\\', 'Schweinchen segelt zur Insel, Spiegel 12', r.get('pos'))
-    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(670)]}, pre=dreh(630), maxFrames=800)
-    soll(r.get('done'), 'Affe über die Licht-Brücke', r.get('pos'))
-    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(670)]}, maxFrames=800)
-    soll(not r.get('done'), 'ohne Licht keine Brücke', r.get('pos'))
-    r = await koop(g, f=kat(654, 10), m=kat(672, 15), plans={'f': gleit(656, kx(674), 4)}, pre=dreh(630, 653), maxFrames=1200)
-    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 670 and k_pos(r, 'f')[1] == 15, 'Schweinchen segelt von der Insel zum Tor', r.get('pos'))
-    pl = [k_lauf(686, 0), {'wait': f'kristalle.find(k => k.link === 13).an && (90 - wechselSchritte % 90) > 40 && fallenPfeile.some(a => a.steckt >= 0 && Math.abs(a.x - {kx(690)}) < 4)'}, k_lauf(698)]
-    r = await koop(g, m=kat(676, 15), f=kat(674, 15), plans={'m': pl}, pre=dreh(630, 653), maxFrames=3000)
-    soll(r.get('done'), 'Doppelstrahl-Tor', r.get('pos'))
-    r = await koop(g, m=kat(684, 15), f=kat(680, 15), plans={'m': [k_lauf(698)]}, pre=dreh(653), maxFrames=800)
-    soll(not r.get('done'), 'Tor zu ohne Strahl 1', r.get('pos'))
+    # Bild-Regel: Doppelstrahl-Tor aufgeteilt – Tür 12 (Strahl 1) am Anfang der Brücke (645), Tür 13 (Strahl 2) mit Pfeil
+    # direkt hinter der Brücke (670): dort treffen sich beide und gehen im Takt gemeinsam durch
+    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(668)]}, pre=dreh(630), maxFrames=800)
+    soll(r.get('done'), 'Affe durch Tür 12 über die Licht-Brücke', r.get('pos'))
+    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(668)]}, pre=dreh(653), maxFrames=800)
+    soll(not r.get('done') and r['pos']['m'][0] < 645, 'ohne Strahl 1 zu (Tür 12) und keine Brücke', r.get('pos'))
+    r = await koop(g, f=kat(654, 10), m=kat(675, 15), plans={'f': gleit(656, kx(667), 4)}, pre=dreh(630, 653), maxFrames=1200)
+    soll(k_pos(r, 'f') and 664 <= k_pos(r, 'f')[0] < 670 and k_pos(r, 'f')[1] == 15, 'Schweinchen segelt von der Insel zum Tor', r.get('pos'))
+    pl = [k_lauf(668, 0), {'wait': f'kristalle.find(k => k.link === 13).an && (90 - wechselSchritte % 90) > 40 && fallenPfeile.some(a => a.steckt >= 0 && Math.abs(a.x - {kx(670)}) < 4)'}, k_lauf(678)]
+    for who, o in (('m', 'f'), ('f', 'm')):
+        r = await koop(g, **{who: kat(642, 15), o: kat(640, 15)}, plans={who: [k_lauf(666, 0)] + pl, o: [k_lauf(664, 0), {'wait': f'Q.x > {kx(672)}'}] + pl}, pre=dreh(630, 653), maxFrames=4000)
+        soll(r.get('done'), f'Doppelstrahl-Tor gemeinsam ({who} zuerst)', r.get('pos'))
+    r = await koop(g, m=kat(642, 15), f=kat(640, 15), plans={'m': [k_lauf(678)]}, pre=dreh(630), maxFrames=800)
+    soll(not r.get('done') and 660 <= r['pos']['m'][0] < 670 and r['pos']['m'][1] == 15, 'Tor 13 zu ohne Strahl 2', r.get('pos'))
     m = [k_lauf(710, 0), {'wait': 'kristalle.find(k => k.link === 14).an && (90 - wechselSchritte % 90) > 75'}, k_lauf(718, 0),
          {'wait': 'kristalle.find(k => k.link === 14).an && (90 - wechselSchritte % 90) > 75'}, k_lauf(730)]
     r = await koop(g, m=kat(702, 15), f=kat(700, 15), plans={'m': m}, maxFrames=3000)
@@ -2630,10 +2633,16 @@ async def level18_aschefeld(g):
         hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
         f = [halten(670), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(670)} + 10', 'left': f'P.x > {kx(671)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
              {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(675)} - 6', 'left': f'P.x > {kx(675)} + 6'}, 'until': 'P.grounded', 'frames': 400},
-             {'wait': '!!linkOn[8]'}, durch(707), halten(708), hp(708, f'Q.x >= {kx(711)}'), k_lauf(711), {'until': 'P.grounded', 'frames': 200}, k_lauf(720)]
-        m = [halten(675), hp(675, f'Q.grounded && Math.abs(Q.x - {kx(708)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[9]'}, durch(716)]
-        r = await koop(g, f=kat(668, 15), m=kat(666, 15), plans={'f': f, 'm': m}, maxFrames=8000, pre=PRE)
-        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 715, 'E4 Pressen über Kreuz: Platte 8 unten, Platte 9 oben', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+             {'wait': '!!linkOn[8]'}, durch(690), halten(691), hp(691, f'Q.grounded && Math.abs(Q.x - {kx(693)}) < 10 && Q.y > {ky(12)}'),
+             {'wait': '!!linkOn[11]'}, durch(707), halten(708), hp(708, f'Q.x >= {kx(711)}'), k_lauf(711), {'until': 'P.grounded', 'frames': 200}, k_lauf(720)]
+        m = [halten(675), hp(675, f'Q.grounded && Math.abs(Q.x - {kx(691)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[10]'}, durch(692), halten(693),
+             hp(693, f'Q.grounded && Math.abs(Q.x - {kx(708)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[9]'}, durch(716)]
+        # Bild-Regel: Doppelgang in zwei Hälften – Treffpunkt in der Mitte (Platte 10 oben 691 / Platte 11 unten 693), keiner läuft aus dem Bild
+        r = await koop(g, f=kat(668, 15), m=kat(666, 15), plans={'f': f, 'm': m}, maxFrames=9000, pre=PRE, trace=True)
+        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(676)] or [99])
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 715, 'E4 Pressen über Kreuz in zwei Hälften: Platten 8/10, dann 11/9', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        soll(abst <= 20.5, 'E4 beide bleiben im Bild (höchstens 20 Spalten auseinander)', abst)
+        soll(await g.ev("pressen.filter(p => p.link === 8 || p.link === 10 || p.link === 11 || p.link === 9).length") == 8, 'E4 je Gang vier Pressen (zwei je Hälfte)')
         await beide('E4 letzte Presse, Grube, Ziel', 723, lambda w: [durch(748), k_lauf(749, 0)] + sprung_zu(kx(756)) + [k_lauf(765)], 764)
     assert not fehler, fehler
 
@@ -2833,11 +2842,14 @@ async def level20_schlackewerk(g):
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
     if True:
-        m = am(211) + [{'wait': '!!linkOn[5]'}, durch(256)]
+        # Bild-Regel: Doppelgang in zwei Hälften – Treffpunkt in der Mitte (Hebel 11 oben 228 / Hebel 12 unten 230)
+        m = am(211) + [{'wait': '!!linkOn[11]'}, durch(229)] + am(230) + [{'wait': '!!linkOn[5]'}, durch(256)]
         f = [halten(206), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(206)} + 10', 'left': f'P.x > {kx(207)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
-             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(213)} - 6', 'left': f'P.x > {kx(213)} + 6'}, 'until': 'P.grounded', 'frames': 400}, {'wait': '!!linkOn[4]'}, durch(245)] + am(246) + [k_lauf(248), {'until': 'P.grounded', 'frames': 200}, k_lauf(258)]
-        r = await koop(g, m=kat(209, 15), f=kat(204, 15), plans={'m': m, 'f': f}, maxFrames=8000, pre=PRE)
-        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 255, 'E2 Hebel über Kreuz: Hebel 4 (unten) hält die oberen Pressen an, Hebel 5 (oben) die unteren', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(213)} - 6', 'left': f'P.x > {kx(213)} + 6'}, 'until': 'P.grounded', 'frames': 400}, {'wait': '!!linkOn[4]'}, durch(227)] + am(228) + [{'wait': '!!linkOn[12]'}, durch(245)] + am(246) + [k_lauf(248), {'until': 'P.grounded', 'frames': 200}, k_lauf(258)]
+        r = await koop(g, m=kat(209, 15), f=kat(204, 15), plans={'m': m, 'f': f}, maxFrames=9000, pre=PRE, trace=True)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 255, 'E2 Hebel über Kreuz in zwei Hälften: Hebel 4/11, dann 12/5', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(212)] or [99])
+        soll(abst <= 20.5, 'E2 beide bleiben im Bild (höchstens 20 Spalten auseinander)', abst)
         ok = None
         for hold in (4, 8, 12, 16):
             f = [{'holdIf': {'left': f'P.x > {kx(262)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
