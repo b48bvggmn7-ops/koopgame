@@ -7555,6 +7555,36 @@ async def wechselboden_geisteranzeige(g):
     await g.ev("linkOn[1] = false; menuScreen = null; performance.now = window.__pn;")
     print('     Geist:', r, 'Hebel:', r2)
 
+@test
+async def aktions_hinweis(g):
+    """Alles, was die Hebel-Taste braucht, zeigt die Tasten-Blase (J / Num 2 bzw. ○), sobald eine Figur davor steht: Hebel
+    (wie bisher), Spiegel (Licht umlenken) und Leuchtkristall (anschlagen). Die Blase erscheint dort, wo die Taste gerade
+    wirkt (Hebel vor Spiegel vor Leuchtkristall); steht niemand davor, keine Blase. Drücken dreht den Spiegel wirklich."""
+    log = "window.__ah = []; if(!window.__ahw){ window.__ahw = 1; const o = aktionsHinweis; aktionsHinweis = function(x, y, a, b){ window.__ah.push([Math.round(x + camX), a, b]); return o.apply(this, arguments); }; }"
+    async def blasen(js):
+        return await g.ev(f"(() => {{ {js}; {log}; drawInterpolated(1); return window.__ah; }})()")
+    # Spiegel (levels/test/licht.json: Spiegel bei x 800–840, y 600)
+    await g.load(str(ROOT / 'levels/test/licht.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__ahw = 0;")
+    b = await blasen("p1.x = 820; p1.y = 680; p2.x = 200; p2.y = 680; camPos = camX = 300;")
+    assert any(abs(x - 820) < 5 and m and not f for x, m, f in b), f'keine Blase am Spiegel: {b}'
+    b = await blasen("p1.x = 400; p1.y = 680;")
+    assert not b, f'Blase ohne Figur davor: {b}'
+    b = await blasen("p2.x = 820; p2.y = 680;")
+    assert any(abs(x - 820) < 5 and f for x, m, f in b), f'keine Blase für das Schweinchen: {b}'
+    st = await g.ev("spiegelListe[0].stellung")
+    await g.ev("p1.x = 820; p1.y = 680; menuScreen = null;"); await g.steps(3)
+    await g.p.keyboard.press(await g.ev("p1.keys.use")); await g.steps(3)
+    assert await g.ev("spiegelListe[0].stellung") != st, 'Spiegel dreht sich nicht mit der Hebel-Taste'
+    # Leuchtkristall (levels/test/leuchtkristall.json: x 1000, y 660) und Hebel (x 1700) – Hebel weiter mit Blase
+    await g.load(str(ROOT / 'levels/test/leuchtkristall.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__ahw = 0;")
+    b = await blasen("p1.x = 1000; p1.y = 680; p2.x = 200; p2.y = 680; camPos = camX = 600;")
+    assert any(abs(x - 1000) < 5 and m for x, m, f in b), f'keine Blase am Leuchtkristall: {b}'
+    b = await blasen("p1.x = 1700; p1.y = 680; camPos = camX = 1300;")
+    assert any(abs(x - 1700) < 5 and m for x, m, f in b), f'keine Blase am Hebel: {b}'
+    await g.ev("menuScreen = null;")
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

@@ -56,12 +56,17 @@ function lichtSchritt(){
 // (05-level-objekte.js, updatePlates) Kristall im Licht = Nummer an, wie eine gedrückte Druckplatte
 function lichtWunsch(want){ for(const k of kristalle) if(k.link) want[k.link] = want[k.link] || !!k.an; }
 // (05-level-objekte.js) Hebel-Taste ohne Hebel in Reichweite: nächsten Spiegel drehen
-function spiegelBedienen(player){
+// nächster Spiegel in Reichweite der Hebel-Taste (oder null)
+function spiegelInReichweite(player){
   let best = null, bd = Infinity;
   for(const s of spiegelListe){
     if(Math.abs(player.x - (s.x + 20)) >= LEVER_RANGE_X || Math.abs((player.y - player.h*0.5) - (s.y + 20)) >= LEVER_RANGE_Y) continue;
     const d = Math.abs(player.x - (s.x + 20)); if(d < bd){ bd = d; best = s; }
   }
+  return best;
+}
+function spiegelBedienen(player){
+  const best = spiegelInReichweite(player);
   if(!best) return false;
   best.stellung = best.stellung === '/' ? '\\' : '/'; best.drehT = 12;
   player.leverAnim = {t0: performance.now(), dir: Math.sign(best.x + 20 - player.x) || player.facing || 1};
@@ -176,7 +181,14 @@ elementRegistrieren({
     },
     schritt: lichtSchritt,
     zuruecksetzen: lichtZuruecksetzen,
-    zeichnen(){ if(lichtquellen.length || spiegelListe.length || kristalle.length) lichtZeichnen(); },
+    zeichnen(){
+      if(lichtquellen.length || spiegelListe.length || kristalle.length) lichtZeichnen();
+      // Tasten-Blase über dem Spiegel, den die Hebel-Taste gerade drehen würde (Hebel haben Vorrang)
+      for(const s of spiegelListe){
+        const nah = P => !!P && !hebelInReichweite(P) && spiegelInReichweite(P) === s;
+        if(nah(p1) || nah(p2)) aktionsHinweis(Math.round(s.x + 20 - camX), s.y - 34, nah(p1), nah(p2));
+      }
+    },
   },
 });
 elementRegistrieren({

@@ -2,6 +2,21 @@
 // Ein/Aus-Schalter je Nummer: 1× betätigen = an (Türen auf, Bewegungen fahren), nochmal = aus. Betätigt mit Taste
 // (Affe J, Schweinchen Num 2, Controller ○). Rolle: wer gerade am Hebel steht, öffnet dem anderen den Weg.
 // Logik: Verknüpfungs-System in js/05-level-objekte.js (toggleSwitch/updateDoorsAndSwitches, leverNear).
+// Tasten-Blase über allem, was die Hebel-Taste braucht (Hebel, Spiegel, Leuchtkristall): zeigt die Taste der Figur(en),
+// die gerade davor stehen (J / Num 2 bzw. ○ am Controller). Nur Anzeige.
+function aktionsHinweis(xr, y, nah1, nah2){
+  const hints = [];
+  if(nah1) hints.push(padConnected[0] ? '○' : 'J');
+  if(nah2) hints.push(padConnected[1] ? '○' : 'Num 2');
+  if(!hints.length) return;
+  const label = [...new Set(hints)].join(' / ');
+  ctx.font = 'bold 12px sans-serif';
+  const tw = ctx.measureText(label).width + 14, hy = y + Math.sin(performance.now()*0.006)*2;
+  ctx.fillStyle = 'rgba(20,28,38,.85)'; roundRect(xr - tw/2, hy, tw, 20, 6); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, xr, hy + 10.5);
+}
+// Würde die Hebel-Taste dieser Figur gerade einen Hebel treffen? (Vorrang wie in updateDoorsAndSwitches)
+function hebelInReichweite(player){ return switchDefs.some(sw => leverNear(player, sw)); }
 elementRegistrieren({
   id: 'hebel', name: 'Hebel', feld: 'switches',
   editor: {
@@ -58,16 +73,7 @@ elementRegistrieren({
           roundRect(xr-21, baseY-20, 42, 22, 8); ctx.stroke(); ctx.globalAlpha = 1; }
         else hinweisPfeil(xr, baseY - 56, col);
         // Tasten-Hinweis, wenn jemand davor steht
-        const hints = [];
-        if(leverNear(p1, sw)) hints.push(padConnected[0] ? '○' : 'J');
-        if(leverNear(p2, sw)) hints.push(padConnected[1] ? '○' : 'Num 2');
-        if(hints.length){
-          const label = [...new Set(hints)].join(' / ');
-          ctx.font = 'bold 12px sans-serif';
-          const tw = ctx.measureText(label).width + 14, hy = baseY - 90 + Math.sin(performance.now()*0.006)*2;
-          ctx.fillStyle = 'rgba(20,28,38,.85)'; roundRect(xr - tw/2, hy, tw, 20, 6); ctx.fill();
-          ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label, xr, hy+10.5);
-        }
+        aktionsHinweis(xr, baseY - 90, leverNear(p1, sw), leverNear(p2, sw));
       }
     },
   },

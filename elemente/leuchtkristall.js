@@ -25,13 +25,18 @@ function leuchtSchritt(){
   }
 }
 // (05-level-objekte.js) Hebel-Taste ohne Hebel/Spiegel: nächsten Kristall in Reichweite anschlagen
-function leuchtAnschlagen(player){
+// nächster Leuchtkristall in Reichweite der Hebel-Taste (oder null)
+function leuchtInReichweite(player){
   let best = null, bd = Infinity;
   for(const k of leuchtKristalle){
     const dx = Math.abs(player.x - k.x), dy = Math.abs((player.y - player.h*0.5) - k.y);
     if(dx >= LEUCHT_REICHWEITE || dy >= LEUCHT_REICHWEITE) continue;
     if(dx < bd){ bd = dx; best = k; }
   }
+  return best;
+}
+function leuchtAnschlagen(player){
+  const best = leuchtInReichweite(player);
   if(!best) return false;
   best.t = LEUCHT_DAUER; best.schlagT = 14;
   player.leverAnim = {t0: performance.now(), dir: Math.sign(best.x - player.x) || player.facing || 1};
@@ -117,6 +122,9 @@ function leuchtZeichnen(){
     const x = k.x - camX;
     if(x < -60 || x > VW + 60) continue;
     leuchtBild(ctx, x, k.y, Math.max(0.15, leuchtStaerke(k)), k.schlagT);
+    // Tasten-Blase, wenn die Hebel-Taste gerade diesen Kristall anschlagen würde (Hebel und Spiegel haben Vorrang)
+    const nah = P => !!P && !hebelInReichweite(P) && !(typeof spiegelInReichweite === 'function' && spiegelInReichweite(P)) && leuchtInReichweite(P) === k;
+    if(nah(p1) || nah(p2)) aktionsHinweis(Math.round(x), k.y - 60, nah(p1), nah(p2));
   }
 }
 elementRegistrieren({
