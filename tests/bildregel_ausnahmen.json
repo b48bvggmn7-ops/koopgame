@@ -73,13 +73,6 @@
   {
    "level": "ruinen/03-fallengang.json",
    "regel": "Checkpoint",
-   "spalte": 408,
-   "nummer": 8,
-   "begruendung": "Etappen-Übergang (Gang ohne Rätsel) direkt vor der Deckungs-Staffel; ohne ihn wäre die Lücke > 70 (Test level9_fallengang)"
-  },
-  {
-   "level": "ruinen/03-fallengang.json",
-   "regel": "Checkpoint",
    "spalte": 604,
    "nummer": 12,
    "begruendung": "direkt vor dem Flammen-Doppelgang (ein Rätsel bis 680); ohne ihn wäre die Lücke > 70 (Test)"

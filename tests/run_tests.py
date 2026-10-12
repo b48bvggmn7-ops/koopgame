@@ -1224,6 +1224,18 @@ async def level9_fallengang(g):
     soll(r['pos']['f'][0] < 342, 'Tor 4 hält ohne Hebel 4', r.get('pos'))
     r = await koop(g, m=kat(320, 10), f=kat(338, 15), plans={'m': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)
     soll(r['pos']['m'][0] < 326, 'Tür 5 hält den Affen ohne Hebel 5', r.get('pos'))
+    # Ruinen-Überarbeitung: Schalter und Läufer (366–398) – Affe per Haken auf die Galerie an Hebel 15, Schweinchen im niedrigen
+    # Gang über Wechselboden A – Insel – B – Naht – A; der Affe legt um, wenn es auf der Insel bzw. genau auf der Naht steht
+    halt = [kx(382) + 20, 390*40]
+    ok = []
+    for jx in (371, 372):
+        r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'m': wb_haken(jx, 9) + wb_schalter(386, halt, 400), 'f': wb_laeufer(386, halt, 15, 402)}, maxFrames=6000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 399: ok.append(jx)
+    soll(ok, 'Schalter/Läufer: Affe schaltet Hebel 15, Schweinchen läuft über den Wechselboden', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'f': [k_lauf(392)]}, maxFrames=1500)
+    soll(r.get('dead') == 'f', 'Schalter/Läufer: ohne Hebel fällt das Schweinchen', r.get('pos'))
+    r = await koop(g, m=kat(368, 15), f=kat(370, 15), plans={'f': [k_lauf(372, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 10, 'Schalter/Läufer: das Schweinchen kommt nicht auf die Galerie', r.get('top'))
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
     ok = False
@@ -7440,7 +7452,8 @@ async def fels_verhalten(g):
 
 def wb_halt(x):
     """genau bei x stehen bleiben (Insel bzw. Naht zwischen zwei Wechselboden-Gruppen)"""
-    return {'holdIf': {'right': f'P.x < {x} - 3', 'left': f'P.x > {x} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {x}) <= 3 && Math.abs(P.vx) < 0.6', 'frames': 600}
+    return {'holdIf': {'right': f'P.x < {x} - 3 && (P.x < {x} - 60 || P.vx < 1.5)', 'left': f'P.x > {x} + 3 && (P.x > {x} + 60 || P.vx > -1.5)'},
+            'until': f'P.grounded && Math.abs(P.x - {x}) <= 3 && Math.abs(P.vx) < 0.6', 'frames': 600}
 def wb_haken(jx, land_r, pull=60):
     return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
             {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
