@@ -67,6 +67,8 @@
 - `tests/koop_bot.js` – Koop-Bot für Level-Tests (steuert beide Figuren nach Plänen, Helfer `koop()` in run_tests.py; Ausbau 7).
 - `tests/bildregel_pruefen.py` – Prüfwerkzeug Bild-Regel/Plattform/Haken/Checkpoints (Grenze `BILD_MAX_SPALTEN` in js/09-kamera.js),
   begründete Ausnahmen in `tests/bildregel_ausnahmen.json`; Ziel-Hinweis-Pfeil am Bildrand: `zielHinweisMerken` (05) / `drawZielHinweise` (07).
+- `tests/kombi_pruefen.py` – Prüfwerkzeug Wandsprung (Kamine: Breite/Höhe/Einstufung) und Kombi-Stellen je Level/Etappe,
+  Ausnahmen in `tests/kombi_ausnahmen.json`, Testlevel `levels/test/kombis.json` (Kombi-Nachschärfen).
 - `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
   warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`
   (zählt ebenfalls Schritte) oder `wait_for_function` auf das erwartete Ereignis – sonst sind Tests auf langsamen
@@ -123,6 +125,13 @@
 2. Vor dem Commit `python3 tests/bildregel_pruefen.py --level <welt>/<datei>` (ohne `--level`: alle Level; `--alle` zeigt
    die ganzen Tabellen). Bleibt ein Befund bewusst, kommt er mit Begründung in `tests/bildregel_ausnahmen.json`.
 3. Koop-Bot-Test des Levels grün; Münzen/Checkpoints nach Spalten-Verschiebungen neu prüfen.
+4. Wandsprung-Richtwerte (gemessen, Konstanten `KAMIN_*`, `EINZELWAND_WEITE`, `WANDSPRUNG_*` in js/02-physik-werte.js):
+   Kamin bequem 3–5 Kästchen breit (nie 1–2, höchstens 8), Wand ≥ 4 Reihen. Kombi-Regel (Regelwerk 12): Mindestzahl
+   Kombi-Stellen je Welt/Etappe; vor dem Commit `python3 tests/kombi_pruefen.py --level <welt>/<datei>`. Jede neue
+   Kombi-Stelle bekommt einen Eintrag in `KOMBI_STELLEN_BOT` (mit Gegenprobe ohne Kombi), dicht hintereinander liegende
+   Stellen eine Abkürzungs-Probe in `KOMBI_ABKUERZUNG`; Ausnahmen/Ketten/„Kombi-offen“ in `tests/kombi_ausnahmen.json`.
+   Bausteine Pilz-Grube/Kamin-Grube: WELTEN.md (Leveldesign). Vorher prüfen, dass keine Jagd/kein Rätsel dort liegt
+   (Level-Test der Welt laufen lassen) – Gruben in Verfolgungen oder auf Rätsel-Wegen machen sie kaputt.
 
 ## Steuerung (Kurzfassung)
 | | Affe (Spieler 1) | Schweinchen (Spielerin 2) | Controller |

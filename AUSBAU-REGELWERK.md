@@ -57,6 +57,41 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
       1–2 Stellen); zwischen zwei Checkpoints mindestens eine Stelle (Rätsel, Hebel, Falle, Gegner, Grube, Haken,
       Kletterwand …). Ausnahmen: Verfolgungen und Rätsel mit zwei getrennten Wegen laufen am Stück.
     - Begründete Ausnahmen stehen in `tests/bildregel_ausnahmen.json` (Level, Regel, Spalte, Begründung).
+    **Wandsprung-Richtwerte** (GEMESSEN mit der echten Spiel-Physik, Konstanten in `js/02-physik-werte.js`; Breite =
+    freie Kästchen zwischen den Wänden):
+    | Bauform | zu eng | bequem | knapp | Grenze | zu weit |
+    |---|---|---|---|---|---|
+    | Kamin (Zickzack zwischen zwei Wänden) | 1–2 (`KAMIN_ZU_ENG`; 2 = bricht bei > 0,1 s Reaktion) | **3–5** (4–5 Reihen je Sprung, verträgt 0,37 s) | 6–7 (nur mit ≤ 0,17 s Reaktion) | 8 (`KAMIN_MAX`) | ab 9 |
+    | Einzelwand -> Plattform (weiteste Landung je Höhe über dem Absprung) | – | ≤ 75 % davon | – | +3 Reihen: 8,1 · +2: 8,8 · +1: 9,6 · gleich hoch: 9,9 Kästchen | darüber |
+    | Wandsprung -> Segeln (Schweinchen) | – | – | – | gleich hoch 17,1 · +3 Reihen 12,1 Kästchen | darüber |
+    | Wandsprung -> Haken (Affe) | Haken < 3 Kästchen von der Wand | Haken **3–8** Kästchen von der Wand, **6–8** Reihen über dem Absprung (Fangfenster ≥ 0,5 s) | – | – | – |
+    Mindesthöhe einer Wand zum Klettern **4 Reihen** (`WAND_MIN_HOEHE`), ein Wandsprung bringt bequem ca. 4,5 Reihen
+    (`WANDSPRUNG_HOEHE_JE_SPRUNG`); normaler Sprung ≈ 3,2 Reihen, Pilz ≈ 5,8 Reihen. Wandspitzen über Gruben, auf denen man
+    sonst stehen bleiben könnte, bröckeln (Pause = Boden) – aber nur, wo die zweite Figur danach trotzdem durchkommt
+    (Bot „beide nacheinander“); sonst lieber Dornen oder keine Spitze.
+    **Kombi-Regel** (Kombi-Nachschärfen): Eine **Kombi-Stelle** = zwei verschiedene Fähigkeiten hintereinander, ohne
+    dazwischen auf sicherem Boden zu stehen (Wandsprung -> Haken, Wandsprung -> Segeln, Haken -> Wandsprung); ein
+    Schwung-Element zählt wie eine Fähigkeit (Pilz -> Segeln, Pilz -> Haken, Aufwind -> Wandsprung); gleichzeitige
+    Kombis beider Figuren zählen auch. Jede Stelle zählt einmal (Kandidaten näher als `KOMBI_ABSTAND` = 8 Spalten sind
+    eine Stelle). Eine Stelle, die man vom (erhöhten) Landeplatz der Stelle davor ohne neue Kombi schafft, ist keine
+    eigene Stelle, sondern eine **Kette** (zählt mit der vorigen). Mindestzahlen (Level von 800 Spalten; kürzere anteilig):
+    | Welt | Level 1 | Level 2 | Level 3–6/7 | je Etappe (~200 Spalten) | Boss | Besonderheit |
+    |---|---|---|---|---|---|---|
+    | Dschungel | 6 | 8 | 10 | 1 (Level 1), sonst 2 | 3 (eine im Kampf) | mild, Einstieg ohne Kombi |
+    | Ruinen | 12 | 12 | 12 | 3 | – | ⅓ mit Timing (Falle/Fels/Wechselboden in der Nähe) |
+    | Höhle | 12 | 12 | 12 | 3 | – | ⅓ mit Timing |
+    | Vulkan | 15 | 15 | 15 | 3 | – | viele Dreifach-Kombis |
+    Gleichmäßig verteilt, steigend schwer, beide Figuren gleich oft gefordert; lieber bestehende Stellen aufwerten als
+    neue Strecken anhängen (Länge, Etappen und Münzen bleiben). Vor jedem Level-Commit
+    `python3 tests/kombi_pruefen.py --level <welt>/<datei>` (Tabelle Level, Spalte, Breite, Höhe, Einstufung + Kombi-
+    Stellen; Test `kombi_pruefung`); jede eingebaute Stelle bekommt einen Bot-Lauf mit Gegenprobe ohne Kombi
+    (`KOMBI_STELLEN_BOT`, Abkürzungs-Probe `KOMBI_ABKUERZUNG` in tests/run_tests.py). Begründete Ausnahmen, Ketten und
+    noch nicht nachgeschärfte Welten („Kombi-offen“) stehen in `tests/kombi_ausnahmen.json`, von Hand erkannte Stellen
+    in `tests/kombi_stellen.json`. **Grenzen des Werkzeugs** (ehrlich): es erkennt Kamine nur zwischen zwei Wänden mit
+    Boden darunter (keine Einzelwand-Sprünge), Kombis nur aus der Lage von Pilz/Haken/Aufwind/Gruben/Kaminen (nicht, ob
+    die Stelle wirklich erzwungen ist – das zeigt erst der Bot mit Gegenprobe), keine Kombis mit Teleportern,
+    Wechselboden, Bändern oder Wasser, und es hält die Lücke neben einem 4 Reihen hohen Landeplatz manchmal für einen
+    Kamin (Scheinkamin -> als Kette eintragen).
 13. **Schwierigkeitskurve** (Startwerte; „Versuche“ = wie oft zwei geübte Spieler an einer Stelle scheitern, bis es
     klappt):
     - Dschungel: Einstieg mild (1–2), steigt bis zum Boss deutlich, schwerste Stellen 3–4.
@@ -90,3 +125,4 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
 | – | Ruinen-Überarbeitung (Fallen-Pfeile, Rollender Fels, Wechselboden Schalter/Läufer) | fertig, wartet auf Test | ausbau-ruinen-ueberarbeitung-fertig | „Fels als Brücke“ (2. Fels-Idee) nur vorgeschlagen; Schwierigkeit der Fallengang-Stelle nach Probespielen justieren; Tag nur lokal |
 | – | Licht-Überarbeitung Ruinen (Sonnenstein/Strahl/Spiegel neu, Halterungen, Optionen „per Nummer“/„bleibt an“, Licht-Rätsel in allen Ruinen-Leveln) | fertig, wartet auf Test | ausbau-ruinen-licht-fertig | Schwierigkeit der neuen Rätsel nach Probespielen justieren; Tag nur lokal |
 | – | Schaltbare Spiegel und Licht-Labyrinthe (Spiegel mit Nummer: Platte betreten / Hebel dreht einmal; Sackgassen-Funken, Strahl-Randzeichen; Labyrinthe in allen 6 Ruinen-Leveln, Löser-Test) | fertig, wartet auf Test | ausbau-schaltbare-spiegel-fertig | Schwierigkeit der Labyrinthe nach Probespielen justieren; Tag nur lokal |
+| – | Kombi-Nachschärfen (Wandsprung gemessen + Richtwerte, Prüfwerkzeug `kombi_pruefen.py`, 18 zu enge Kamine auf Breite 3, Kombi-Regel, Testlevel `kombis.json`; Kombi-Stellen Welt für Welt) | Dschungel fertig, wartet auf Test; Ruinen/Höhle/Vulkan offen | ausbau-kombi-fertig | Dschungel: D2 8/8, D3 10/10; D1 4/6, D4 4/9, D5 6/10, D6 5/10, Boss 0/3 begründet (dichte Rätsel/Jagden, Boss-Absprache) -> „braucht Entscheidung“; **Ruinen, Höhle, Vulkan noch nicht nachgeschärft** (in `tests/kombi_ausnahmen.json` als „Kombi-offen“, nächster Schritt „Ruinen nachschärfen“); Tag nur lokal |

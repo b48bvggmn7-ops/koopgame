@@ -28,6 +28,22 @@ und Schweinchen in jeder Mechanik. Technisch steht der Look in `levels/worlds.js
 - **Checkpoints**: 25–70 Spalten auseinander, nach einer Leistung und vor dem nächsten schweren Stück; nie zwischen
   einem Hebel/Spiegel und seinem Ziel (nach einem Tod ist alles wieder aus). Verfolgungen und Rätsel mit zwei
   getrennten Wegen laufen am Stück ohne Checkpoint.
+- **Wandsprung** (gemessen, Kombi-Nachschärfen; Breite = freie Kästchen): Kamin bequem 3–5 (4–5 Reihen je Sprung),
+  knapp 6–7, Grenze 8, zu eng 1–2, zu weit ab 9; Wand mindestens 4 Reihen hoch. Einzelwand -> Plattform höchstens
+  9,9 Kästchen (gleich hoch) bzw. 8,1 (3 Reihen höher), bequem ¾ davon. Wandsprung -> Segeln bis 17,1 Kästchen (gleich
+  hoch) bzw. 12,1 (3 Reihen höher); Wandsprung -> Haken: Haken 3–8 Kästchen von der Wand, 6–8 Reihen über dem Absprung.
+  Alle 18 Kamine der Breite 2 sind jetzt Breite 3.
+- **Kombi-Stellen** (Regelwerk Punkt 12, Kombi-Regel): zwei Fähigkeiten ohne Boden dazwischen (Pilz/Aufwind zählen
+  mit). Dschungel L1 ≥ 6, L2 ≥ 8, L3–L6 ≥ 10, je Etappe 2 (L1: 1), Boss ≥ 3; Ruinen/Höhle ≥ 12 (⅓ mit Timing), Vulkan
+  ≥ 15, je Etappe 3. Prüfwerkzeug `python3 tests/kombi_pruefen.py`, Bot-Gegenprobe je Stelle.
+  Baustein **Pilz-Grube** (Dschungel): Pilz -> Stachel- oder Todesgrube (6–8 breit) mit hohem Haken -> Landeplatz 4 Reihen
+  über dem Boden; der Affe braucht Pilz + Haken, das Schweinchen Pilz + Segeln, ohne Pilz kommt keiner hinauf. Baustein
+  **Kamin-Grube**: Kamin (Breite 4) endet über einer Grube mit Haken -> erhöhter Landeplatz (Wandsprung + Haken /
+  Wandsprung + Segeln). Zwei Gruben direkt hintereinander nur, wenn man die zweite NICHT vom Landeplatz der ersten aus
+  ohne Pilz schafft (sonst „Kette“, zählt einmal).
+  Stand Dschungel (vorher -> nachher, eigenständige Stellen): L1 0 -> 4, L2 1 -> 8, L3 2 -> 10, L4 0 -> 4, L5 6 -> 6
+  (Hoher Kamin jetzt für beide echt), L6 2 -> 5, Boss 0 -> 0. Unter dem Soll bleiben die rätseldichten Level (Teleporter
+  in L4, Jagden in L5/L6) und der Boss – Umbau braucht eine Entscheidung (siehe Bericht).
 
 ## Welt 1 – Dschungel
 

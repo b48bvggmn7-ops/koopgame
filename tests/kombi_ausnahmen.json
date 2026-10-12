@@ -82,5 +82,26 @@
   "regel": "Kombi-Etappe",
   "spalte": 600,
   "begruendung": "Etappe 4 hat 1 Kombi-Stelle (Pilz 699 in der Sturm-Jagd). Wipfelsturm (schwerstes Dschungel-Level) ist ab Spalte 400 durchgehend Jagd/Staffel/Finale (Wechsel-Schleuse 413, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale 700–797). Probe-Gruben bei 372 (Bröckel-Abstieg), 712 (Sturm-Jagd) und 772 (Ziel-Weg) haben die Stellen zerstört und wurden zurückgenommen. Mehr nur mit Umbau der Jagden -> „braucht Entscheidung“."
+ },
+ {
+  "level": "dschungel/boss-bruno.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "0 statt 3: Der Kampf ist mit dem Nutzer so abgesprochen, dass der Ast nur per Seil (Haken mit großem Radius, vom Boden aus erreichbar – Test boss1_bruno prüft das) oder per Aufwind erreichbar ist. Erzwungene Kombis (z. B. Pilz -> Haken zum Ast, Aufwind -> Wandsprung zum Hebel-Sims) würden diese Absprache ändern -> „braucht Entscheidung“ (Vorschlag im Bericht)."
+ },
+ {
+  "welt": "ruinen",
+  "regel": "Kombi-offen",
+  "begruendung": "Welt ruinen ist im Schritt „Kombi-Nachschärfen“ noch nicht nachgeschärft (Regelwerk Punkt 6: Schritt nach der fertigen, grünen Welt Dschungel beendet). Kombi-Befunde werden angezeigt (noch offen), aber erst im nächsten Schritt behoben; Kamin-Befunde gelten weiter."
+ },
+ {
+  "welt": "hoehle",
+  "regel": "Kombi-offen",
+  "begruendung": "Welt hoehle ist im Schritt „Kombi-Nachschärfen“ noch nicht nachgeschärft (Regelwerk Punkt 6: Schritt nach der fertigen, grünen Welt Dschungel beendet). Kombi-Befunde werden angezeigt (noch offen), aber erst im nächsten Schritt behoben; Kamin-Befunde gelten weiter."
+ },
+ {
+  "welt": "vulkan",
+  "regel": "Kombi-offen",
+  "begruendung": "Welt vulkan ist im Schritt „Kombi-Nachschärfen“ noch nicht nachgeschärft (Regelwerk Punkt 6: Schritt nach der fertigen, grünen Welt Dschungel beendet). Kombi-Befunde werden angezeigt (noch offen), aber erst im nächsten Schritt behoben; Kamin-Befunde gelten weiter."
  }
 ]

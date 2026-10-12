@@ -7220,7 +7220,12 @@ async def kombi_pruefung(g):
     neu = [f"{r['level']} [{b['regel']}] {b['spalte']}: {b['text']}" for r in res for b in r['befunde'] if not b['ausnahme']]
     assert not neu, 'neue Befunde (beheben oder begründet in tests/kombi_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
     alle = [(r['level'], b['regel'], b['spalte']) for r in res for b in r['befunde']]
-    veraltet = [a for a in KP.ausnahmen() if (a['level'], a['regel'], a.get('spalte')) not in alle]
+    stellen = {(r['level'], s['von']) for r in res for s in r['stellen']} | {(r['level'], s2) for r in res for s in r['stellen'] if s.get('kette') for s2 in range(s['von'], s['bis'] + 1)}
+    welten_offen = {KP.welt_von(r['level']) for r in res for b in r['befunde'] if b['ausnahme'] == 'offen'}
+    veraltet = [a for a in KP.ausnahmen() if not (
+        (a['regel'] == 'Kombi-offen' and a.get('welt') in welten_offen) or
+        (a['regel'] == 'Kette' and (a.get('level'), a.get('spalte')) in stellen) or
+        (a.get('level'), a['regel'], a.get('spalte')) in alle)]
     assert not veraltet, f'veraltete Ausnahmen: {veraltet}'
     assert all(a.get('begruendung') for a in KP.ausnahmen()), 'jede Ausnahme braucht eine Begründung'
     hand = KP.kombi_stellen_hand()

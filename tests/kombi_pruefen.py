@@ -177,7 +177,7 @@ def stellen(datei, d):
             out.append({'von': k['spalte'], 'bis': k['spalte'], 'arten': {k['art']}, 'wer': {k['wer']}, 'hand': bool(k.get('hand'))})
     # Ketten (tests/kombi_ausnahmen.json, regel "Kette"): eine Stelle, die man vom erhöhten Landeplatz der Stelle davor ohne
     # neue Kombi erreicht, ist nicht eigenständig -> wird mit der vorigen Stelle zusammengezählt
-    ketten = {a['spalte'] for a in ausnahmen() if a['level'] == datei and a['regel'] == 'Kette'}
+    ketten = {a['spalte'] for a in ausnahmen() if a.get('level') == datei and a['regel'] == 'Kette'}
     zus = []
     for o in out:
         if zus and o['von'] in ketten:
@@ -232,7 +232,10 @@ def pruefe_level(datei):
         befunde.append({'regel': 'Kombi-Timing', 'spalte': None, 'text': f"nur {sum(1 for s in st if s['timing'])} von {len(st)} Kombi-Stellen mit Timing/Tempo (mindestens {math.ceil(len(st) * anteil - 1e-9)})"})
     aus = ausnahmen()
     for b in befunde:
-        b['ausnahme'] = any(a['level'] == datei and a['regel'] == b['regel'] and a.get('spalte') == b['spalte'] for a in aus)
+        b['ausnahme'] = any(a.get('level') == datei and a['regel'] == b['regel'] and a.get('spalte') == b['spalte'] for a in aus)
+        # Welt noch nicht nachgeschärft (Eintrag {"welt", "regel": "Kombi-offen"}): Kombi-Befunde gelten als offen, Kamin-Befunde nicht
+        if not b['ausnahme'] and b['regel'].startswith('Kombi-') and any(a.get('welt') == welt_von(datei) and a['regel'] == 'Kombi-offen' for a in aus):
+            b['ausnahme'] = 'offen'
     return {'level': datei, 'kamine': ks, 'stellen': st, 'etappen': etappen, 'pro_etappe': pro_etappe, 'mindest': m_lvl, 'mindest_etappe': m_et, 'befunde': befunde}
 
 def pruefe_alle(dateien=None):
@@ -242,13 +245,13 @@ def main():
     args = sys.argv[1:]
     dateien = [args[args.index('--level') + 1]] if '--level' in args else None
     res = pruefe_alle(dateien)
-    print('| Level | Kamine (eng/bequem/knapp/Grenze/weit) | Kombi-Stellen (mind.) | je Etappe | Timing | Befunde |')
-    print('|---|---|---|---|---|---|')
+    print('| Level | Kamine (eng/bequem/knapp/Grenze/weit) | Kombi-Stellen (mind.) | je Etappe | Timing | Befunde | noch offen |')
+    print('|---|---|---|---|---|---|---|')
     for r in res:
         z = {a: sum(1 for k in r['kamine'] if k['art'] == a) for a in ('zu eng', 'bequem', 'knapp', 'Grenze', 'zu weit')}
         print(f"| {r['level']} | {z['zu eng']}/{z['bequem']}/{z['knapp']}/{z['Grenze']}/{z['zu weit']} | {len(r['stellen'])} ({r['mindest']}) | "
               f"{' '.join(map(str, r['pro_etappe']))} (mind. {r['mindest_etappe']}) | {sum(1 for s in r['stellen'] if s['timing'])} | "
-              f"{sum(1 for b in r['befunde'] if not b['ausnahme'])} |")
+              f"{sum(1 for b in r['befunde'] if not b['ausnahme'])} | {sum(1 for b in r['befunde'] if b['ausnahme'] == 'offen')} |")
     if '--alle' in args or dateien:
         for r in res:
             print(f"\n## {r['level']}")
@@ -256,7 +259,7 @@ def main():
             for k in r['kamine']: print(f"| {k['c']}–{k['c2']} | {k['breite']} | {k['hoehe']} | {k['r0']}–{k['r1']} | {k['art']} |")
             print('| Kombi-Stelle | Arten | wer | Timing | von Hand |'); print('|---|---|---|---|---|')
             for s in r['stellen']: print(f"| {s['von']}–{s['bis']} | {', '.join(sorted(s['arten']))} | {'/'.join(sorted(s['wer']))} | {'ja' if s['timing'] else ''} | {'ja' if s['hand'] else ''} |")
-            for b in r['befunde']: print(f"- [{b['regel']}] {b['spalte']}: {b['text']}{' (Ausnahme)' if b['ausnahme'] else ''}")
+            for b in r['befunde']: print(f"- [{b['regel']}] {b['spalte']}: {b['text']}{' (noch offen)' if b['ausnahme'] == 'offen' else ' (Ausnahme)' if b['ausnahme'] else ''}")
 
 if __name__ == '__main__':
     main()

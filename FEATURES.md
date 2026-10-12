@@ -45,6 +45,23 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Prüfwerkzeug `python3 tests/bildregel_pruefen.py` (alle Level, Tabellen mit `--alle`); begründete Ausnahmen in
       tests/bildregel_ausnahmen.json (die früheren Stellen „BRAUCHT ENTSCHEIDUNG“ sind alle umgebaut). Test bildregel_pruefung
       schlägt bei jedem neuen Befund fehl.
+  - KOMBI-NACHSCHÄRFEN (Wandsprung gemessen, Fähigkeiten-Kombis):
+    - Wandsprung-Richtwerte mit der echten Spiel-Physik gemessen und als Konstanten in js/02-physik-werte.js
+      (`KAMIN_ZU_ENG` 2, `KAMIN_BEQUEM_MIN/MAX` 3/5, `KAMIN_KNAPP_MAX` 7, `KAMIN_MAX` 8, `WAND_MIN_HOEHE` 4,
+      `EINZELWAND_WEITE`, `WANDSPRUNG_SEGELN_WEITE`, `WANDSPRUNG_HAKEN_*`, `KOMBI_ABSTAND` 8); Tabelle im Regelwerk Punkt 12.
+    - Alle 18 zu engen Kamine (Breite 2) in Dschungel 3, Ruinen 1, Höhle 2/3/4/5/6, Vulkan 1/4/6 sind jetzt Breite 3
+      (Säule eine Spalte nach außen); Magmakammer/Feuerschlund bekamen dafür einen Wechselboden-Stein (611, Reihe 8).
+    - Prüfwerkzeug `python3 tests/kombi_pruefen.py` (Tabelle Level | Spalte | Breite | Höhe | Einstufung, dazu Kombi-
+      Stellen je Level und Etappe, Timing-Anteil); Test kombi_pruefung (Ausnahmen, Ketten und „Kombi-offen“ in
+      tests/kombi_ausnahmen.json).
+    - Kombi-Stellen in der Welt Dschungel (Pilz-Gruben: Pilz + Haken / Pilz + Segeln; Kamin-Grube und Hoher Kamin:
+      Wandsprung + Haken / Wandsprung + Segeln): Dschungel 1 (88, 233, 408, 746+773), Dschungel 2 (23, 209, 386, 443, 572,
+      778, 797), Dschungel 3 (70, 130, 180, 360, 390, 740, 760, 780), Dschungel 4 (125, 164, 473, 668+681; Checkpoint
+      168 -> 177, Teleporter-Ausgang 668 -> 665), Dschungel 5 (Hoher Kamin 311 endet über Stacheln, Haken 317, Wandspitzen
+      bröckeln), Dschungel 6 (170, 190, 392). Jede Stelle mit Koop-Bot-Lauf und Gegenprobe ohne Kombi
+      (kombi_stellen_dschungel), Abkürzungs-Proben für Gruben direkt hintereinander.
+    - Testlevel levels/test/kombis.json (Wandsprung + Haken, Wandsprung + Segeln; Test kombi_testlevel).
+    - Ruinen, Höhle und Vulkan sind noch nicht nachgeschärft (Statusliste).
   - AUFFÄLLIGE SPIELELEMENTE (Nutzerwunsch: Hebel, Sprungpilze und Druckplatten wurden übersehen, gerade wenn man
     schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; Design passend zur Spielwelt wie die Türen:
     Holz, Eisen, Edelstein in der Verknüpfungs-Farbe):
