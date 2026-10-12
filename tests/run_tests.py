@@ -7612,6 +7612,48 @@ async def licht_optionen(g):
     assert not k7, 'nach Neustart muss Kristall 7 wieder aus sein'
     await g.ev("menuScreen = null;")
 
+@test
+async def ruinen1_sonnenkammer(g):
+    """Ruinen 1, Licht-Rätsel „Sonnenkammer“ (Spalte 786–826, vor dem Ziel): Der Sonnenstein strahlt nach rechts, aber
+    Licht-Tor 1 versperrt den Strahl – offen nur, solange jemand auf Druckplatte 22 steht. Der Spiegel steht auf einem
+    Sims, das nur das Schweinchen per Aufwind erreicht; unter dem Spiegel versperrt Tür 2 den Weg zum Kristall – ihr
+    Hebel 21 liegt auf einem Sims, das nur der Affe per Haken erreicht. Erst wenn alles stimmt, trifft der Strahl den
+    Kristall („bleibt an“) und das Ausgangstor öffnet sich. Koop-Bot: Affe Haken -> Hebel 21 -> runter auf die Platte;
+    Schweinchen Aufwind -> Sims -> Spiegel drehen; dazu: ohne Platte / ohne Hebel bleibt der Ausgang zu, das Schweinchen
+    kommt nicht aufs Affen-Sims, der Affe nicht aufs Spiegel-Sims."""
+    await koop_level(g, 'ruinen/01-ruinen.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    def affe(ohne_platte=False, jx=788.5):
+        # unter dem Haken stehen bleiben, gerade hochspringen (mit Anlauf verdeckt das Sims die Sicht), Haken, ranziehen, aufs Sims
+        hoch = [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(7)} + 4 && P.vx > 0.3 && f > 10'},
+                {'holdIf': {'right': f'P.x < {kx(790)}', 'left': f'P.x > {kx(791)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200}]
+        pl = hoch + [wb_halt(kx(791)), {'use': True, 'frames': 8}, {'wait': f'Q.grounded && Q.x > {kx(804)} && Q.y < {ky(11)}', 'frames': 4000},
+              k_lauf(794), {'until': 'P.grounded', 'frames': 200}]
+        if not ohne_platte: pl += [wb_halt(kx(791)), {'wait': '!!linkOn[23]', 'frames': 3000}]
+        return pl + [k_lauf(818)]
+    def schwein(ohne_hebel=False):
+        pl = [] if ohne_hebel else [{'wait': '!!linkOn[21]', 'frames': 4000}]
+        return pl + wb_aufwind(797, 7, 806) + [{'wait': '!!linkOn[22]', 'frames': 3000}, wb_halt(kx(806)), {'use': True, 'frames': 8},
+                                               {'wait': '!!linkOn[23]', 'frames': 300}, k_lauf(819)]
+    ok = []
+    for jx in (788.5, 789):
+        r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(jx=jx), 'f': schwein()}, maxFrames=9000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 817: ok.append(jx); break
+    soll(ok, 'Sonnenkammer gemeinsam gelöst', (info(r), r.get('log')))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(ohne_platte=True), 'f': schwein()}, maxFrames=6000)
+    soll(not await g.ev("!!linkOn[23]"), 'ohne Platte (Licht-Tor 1 zu) kein Licht am Kristall', info(r))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'f': schwein(ohne_hebel=True)}, maxFrames=4000)
+    soll(not await g.ev("!!linkOn[23]"), 'ohne Hebel 21 (Tür 2 zu) kein Licht am Kristall', info(r))
+    r = await koop(g, m=kat(784, 14), f=kat(788, 14), plans={'f': [k_lauf(789, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 7, 'Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
+    r = await koop(g, m=kat(797, 14), f=kat(784, 14), plans={'m': [k_lauf(797, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'frames': 120}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['m'] > 9.5, 'Affe kommt nicht aufs Spiegel-Sims', r.get('top'))
+    assert not fehler, fehler
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
