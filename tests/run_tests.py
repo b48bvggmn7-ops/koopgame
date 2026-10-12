@@ -1729,7 +1729,8 @@ async def level12_tropfsteingang(g):
         soll(ok, 'E4 Platten-Staffel: Affe hält Platte 10, Schwein durch den Tunnel, Hebel 11, Affe übers Dach', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         r = await koop(g, f=kat(700, 15), m=kat(690, 15), plans={'f': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 600}]}, maxFrames=700)
         soll(r['pos']['f'][0] < 727, 'E4 ohne Platte 10 kein Durchkommen im Tunnel', r.get('pos'))
-        # Der Weg ab Spalte 746 zum Ziel führt jetzt durch das Licht-Rätsel „Sonnenkrone“: Test tempelherz_sonnenkrone
+        r = await koop(g, m=kat(746, 15), f=kat(744, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=1500)
+        soll(r.get('done'), 'E4 Ziel', r.get('pos'))
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
     soll(all(b - a <= 70 for a, b in zip(cps, cps[1:])), 'Checkpoints höchstens 70 Spalten auseinander', cps)
     assert not fehler, fehler
@@ -3825,8 +3826,7 @@ async def ruinen6_tempelherz(g):
                     if r.get('done') and await g.ev('felsen[6].weg'): n.append((hold, jx)); break
                 if n: break
             soll(n, f'E4 Finale: letzte Felsflucht (zieht: {puller})', (n, info(r)))
-        r = await koop(g, m=kat(747, 15), f=kat(745, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=2000)
-        soll(r.get('done') and r['pos']['m'][0] >= 792, 'E4 Ziel', info(r))
+        # Der Weg ab Spalte 747 zum Ziel führt jetzt durch das Licht-Rätsel „Sonnenkrone“: Test tempelherz_sonnenkrone
     assert not fehler, fehler
 
 @test
