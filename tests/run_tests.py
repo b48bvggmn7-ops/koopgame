@@ -15,7 +15,7 @@ Ausführen (im Projektordner):
 Die Spiel-Dateien sind klassische <script>-Dateien mit gemeinsamem Gültigkeitsbereich. Deshalb können
 die Tests Spielzustände direkt lesen (z. B. p1.x, solids, coins) – im Spiel selbst ist dafür nichts nötig.
 """
-import asyncio, functools, http.server, json, os, sys, tempfile, threading
+import asyncio, functools, http.server, json, os, re, sys, tempfile, threading
 from pathlib import Path
 from playwright.async_api import async_playwright
 
@@ -874,7 +874,9 @@ async def level7_lianenschlucht(g):
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 12, 'Plattform bringt den Affen', r.get('pos'))
     # 4) Kamin für beide
     for who, other in (('m', 'f'), ('f', 'm')):
-        plan = [k_lauf(151, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(153)}', 'frames': 900}, k_lauf(165)]
+        # Kamin auf Breite 3 verbreitert (Kombi-Nachschärfen): man steigt höher je Sprung – oben nach rechts aussteigen
+        plan = [k_lauf(151, -8), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(2)} && P.vy < 0', 'frames': 900},
+                {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(153)}', 'frames': 300}, k_lauf(165)]
         r = await koop(g, **{who: kat(145, 12), other: kat(140, 12)}, plans={who: plan}, maxFrames=2500)
         soll(r.get('done'), f'Kamin {who}', r.get('pos'))
     if await g.ev("goal.x") < 380 * 40: assert not fehler, fehler; return
@@ -1661,7 +1663,9 @@ async def level12_tropfsteingang(g):
         soll(n == 0, 'E2 ohne Hebel 3 kein Affe hinüber', n)
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            pl = [k_lauf(252, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(6)} + 2 && P.x > {kx(253)}', 'frames': 900},
+            # erster Schacht auf Breite 3 verbreitert (Kombi-Nachschärfen): oben nach rechts aufs Sims aussteigen
+            pl = [k_lauf(252, -8), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(7)} && P.vy < 0', 'frames': 900},
+                  {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(253)}', 'frames': 300},
                   k_lauf(257, 0), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(259)}', 'frames': 900}, k_lauf(266)]
             r = await koop(g, **{who: kat(244, 15), o: kat(242, 15)}, plans={who: pl}, maxFrames=2500)
             soll(r.get('done'), f'E2 Zickzack-Kamin ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
@@ -2720,7 +2724,9 @@ async def level19_magmakammer(g):
     soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
-        zz = lambda: [k_lauf(32, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(6)} + 2 && P.x > {kx(33)}', 'frames': 900},
+        # erster Schacht auf Breite 3 verbreitert (Kombi-Nachschärfen): oben nach rechts aufs Sims aussteigen
+        zz = lambda: [k_lauf(32, -8), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(7)} && P.vy < 0', 'frames': 900},
+                      {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(33)}', 'frames': 300},
                       k_lauf(37, 0), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(39)}', 'frames': 900},
                       k_lauf(61), {'until': 'P.grounded', 'frames': 100}, k_lauf(66), {'until': 'P.grounded', 'frames': 100}, k_lauf(71), {'until': 'P.grounded', 'frames': 100}, k_lauf(76), {'until': 'P.grounded', 'frames': 100}, k_lauf(80)]
         await beide('E1 Zickzack-Kamin mit Lava', 24, lambda w: zz(), 79, delay=40)
@@ -7186,6 +7192,58 @@ async def editor_boss_github(g):
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
+
+@test
+async def kombi_pruefung(g):
+    """Kombi-Nachschärfen (Prüfwerkzeug tests/kombi_pruefen.py, Richtwerte gemessen in js/02-physik-werte.js): kein Kamin zu
+    eng oder zu weit, jedes Level erreicht die Mindestzahl an Kombi-Stellen seiner Welt, jede Etappe ihre Mindestzahl, in
+    Ruinen/Höhle mindestens ein Drittel mit Timing/Tempo – außer den begründeten Ausnahmen in tests/kombi_ausnahmen.json
+    (jede noch gültig und begründet). Dazu: das Werkzeug erkennt einen zu engen Kamin (Breite 2) und zählt eine Kombi."""
+    sys.path.insert(0, str(ROOT / 'tests'))
+    import importlib, kombi_pruefen as KP
+    importlib.reload(KP)
+    phys = (ROOT / 'js' / '02-physik-werte.js').read_text(encoding='utf-8')
+    for n in ('KAMIN_ZU_ENG', 'KAMIN_BEQUEM_MIN', 'KAMIN_BEQUEM_MAX', 'KAMIN_KNAPP_MAX', 'KAMIN_MAX', 'WAND_MIN_HOEHE', 'KOMBI_ABSTAND'):
+        assert re.search(r'\b' + n + r'\s*=', phys), f'Richtwert {n} fehlt in js/02-physik-werte.js'
+    assert await g.ev("KAMIN_BEQUEM_MIN === 3 && KAMIN_BEQUEM_MAX === 5 && KAMIN_MAX === 8"), 'Richtwerte im Spiel geladen'
+    res = KP.pruefe_alle()
+    assert len(res) >= 26, f'zu wenige Level geprüft: {len(res)}'
+    neu = [f"{r['level']} [{b['regel']}] {b['spalte']}: {b['text']}" for r in res for b in r['befunde'] if not b['ausnahme']]
+    assert not neu, 'neue Befunde (beheben oder begründet in tests/kombi_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
+    alle = [(r['level'], b['regel'], b['spalte']) for r in res for b in r['befunde']]
+    veraltet = [a for a in KP.ausnahmen() if (a['level'], a['regel'], a.get('spalte')) not in alle]
+    assert not veraltet, f'veraltete Ausnahmen: {veraltet}'
+    assert all(a.get('begruendung') for a in KP.ausnahmen()), 'jede Ausnahme braucht eine Begründung'
+    hand = KP.kombi_stellen_hand()
+    assert all(h.get('beschreibung') and h.get('art') and h.get('wer') in ('m', 'f', 'beide') for h in hand), 'von Hand eingetragene Kombi-Stellen brauchen Art, wer und Beschreibung'
+    # das Werkzeug erkennt einen zu engen Kamin und eine Kombi (Kamin + Haken)
+    d = {'solids': [{'x': 0, 'y': 680, 'w': 1600, 'h': 40, 'type': 'ground'}, {'x': 400, 'y': 200, 'w': 40, 'h': 360, 'type': 'wall'},
+                    {'x': 520, 'y': 400, 'w': 40, 'h': 280, 'type': 'wall'}], 'hooks': [{'x': 740, 'y': 180, 'radius': 200}]}
+    ks = KP.kamine(d)
+    assert ks and ks[0]['breite'] == 2 and ks[0]['art'] == 'zu eng', ks
+    d['solids'][2]['x'] = 600
+    assert KP.kamine(d)[0]['art'] == 'bequem' and any(k['art'] == 'Wandsprung + Haken' for k in KP.kombis_auto(d)), (KP.kamine(d), KP.kombis_auto(d))
+
+@test
+async def kombi_testlevel(g):
+    """Testlevel levels/test/kombis.json: Affe klettert den Kamin (Breite 4) per Wandsprung hinauf und greift oben den
+    Haken über der Stachelgrube (Wandsprung + Haken); Schweinchen klettert den zweiten Kamin hinauf und segelt über die
+    breite Grube (Wandsprung + Segeln). Ohne Haken bzw. ohne Schirm landet man in den Stacheln."""
+    await koop_level(g, 'test/kombis.json')
+    affe = [k_lauf(12, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(9)} && P.vy < 0', 'frames': 900},
+            {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
+            {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
+            {'holdIf': {'right': f'P.x < {kx(28)}', 'left': f'P.x > {kx(31)}'}, 'until': 'P.grounded', 'frames': 300}]
+    r = await koop(g, m=kat(3, 16), f=kat(37, 16), plans={'m': affe}, maxFrames=3000)
+    assert r.get('done') and r['pos']['m'][1] == 10 and 26 <= r['pos']['m'][0] <= 34, ('Wandsprung + Haken', r.get('pos'), r.get('log'))
+    r = await koop(g, m=kat(3, 16), f=kat(37, 16), plans={'m': affe[:2] + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=1500)
+    assert r.get('dead') == 'm', ('ohne Haken in die Stacheln', r.get('pos'))
+    schwein = [k_lauf(42, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(9)} && P.vy < 0', 'frames': 900},
+               {'hold': ['right'], 'until': f'P.x > {kx(46)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+    r = await koop(g, m=kat(36, 16), f=kat(37, 16), plans={'f': schwein}, maxFrames=3000)
+    assert r.get('done') and r['pos']['f'][1] == 11 and r['pos']['f'][0] >= 56, ('Wandsprung + Segeln', r.get('pos'), r.get('log'))
+    r = await koop(g, m=kat(36, 16), f=kat(37, 16), plans={'f': schwein[:3] + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=1500)
+    assert r.get('dead') == 'f', ('ohne Schirm in die Stacheln', r.get('pos'))
 
 @test
 async def bildregel_pruefung(g):

@@ -26,6 +26,24 @@ const WALL_JUMP_BUFFER_PAD = 250; // dasselbe, wenn der Sprung vom Controller ko
 const WALL_SLIDE_MAX_FALL = 2.4;
 const MAX_FALL = 15;
 
+// ---------- Leveldesign-Richtwerte Wandsprung (GEMESSEN, Kombi-Nachschärfen) ----------
+// Gemessen mit einer Simulation der echten Spiel-Physik (Kamine 1–10 Kästchen breit, Reaktionszeit 0–20 Schritte, Affe und
+// Schweinchen gleich). Das Prüfwerkzeug tests/kombi_pruefen.py liest diese Werte HIER (nicht doppelt pflegen).
+// Kamin = zwei gegenüberliegende Wände; Breite = freie Kästchen dazwischen.
+const KAMIN_ZU_ENG = 2;                          // ≤ 2 zu eng: 1 = nur 1,5 Reihen je Sprung (hektisch), 2 = reißt ab, wer > 0,1 s zögert
+const KAMIN_BEQUEM_MIN = 3, KAMIN_BEQUEM_MAX = 5; // bequem: 4–5 Reihen je Sprung, verzeiht bis 0,37 s Reaktionszeit
+const KAMIN_KNAPP_MAX = 7;                       // 6–7 knapp: Kette hält nur bei schneller Reaktion (≤ 0,17 s)
+const KAMIN_MAX = 8;                             // 8 Grenze; ab 9 zu weit (Kette reißt ab, man fällt)
+const WANDSPRUNG_HOEHE_JE_SPRUNG = 4.5;          // Reihen Steigung je Wandsprung im bequemen Kamin (= Höhenabstand Wand zu Wand)
+const WAND_MIN_HOEHE = 4;                        // Reihen: niedriger springt man normal hinauf (Sprung 3,2 Reihen) -> kein Wandsprung nötig
+// Einzelwand (Abstoßen in die Gegenrichtung): Scheitel 5 Reihen über dem Absprung, 5,6 Kästchen vor der Wand
+const EINZELWAND_WEITE = {3: 8.1, 2: 8.8, 1: 9.6, 0: 9.9};   // weiteste Landung (Kästchen ab Wand) je Höhe über dem Absprung (Reihen)
+const EINZELWAND_BEQUEM = 0.75;                  // bequem = bis 75 % dieser Weite
+const WANDSPRUNG_SEGELN_WEITE = {3: 12.1, 0: 17.1};          // Schweinchen: Wandsprung + Schirm
+// Wandsprung zum Haken (Fangfenster ≥ 0,5 s): 3–8 Kästchen vor der Wand, 6–8 Reihen über dem Absprung
+const WANDSPRUNG_HAKEN_ABSTAND_MIN = 3, WANDSPRUNG_HAKEN_ABSTAND_MAX = 8, WANDSPRUNG_HAKEN_HOEHE_MIN = 6, WANDSPRUNG_HAKEN_HOEHE_MAX = 8;
+const KOMBI_ABSTAND = 8;                         // Spalten: so nah müssen zwei Fähigkeiten liegen, damit es eine Kombi-Stelle ist
+
 const HOOK_MAX_RANGE = 260; // Standard, falls ein Haken keinen eigenen Radius hat
 function hookRange(h){ return (h && h.radius > 0) ? h.radius : HOOK_MAX_RANGE; }
 const ROPE_ADJUST_SPEED = 4.2;   // Seil geben (runterlassen)
