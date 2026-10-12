@@ -946,7 +946,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         sie als Ziel; „jeder Hebel hat einen Grund“ zählt sie mit.
       - Editor: Werkzeug „Spiegel“ mit „drehen: von Hand / per Nummer“ + Verknüpfung (Name in der Nummern-Liste
         „Spiegel dreht“); Speichern, Laden, Rückgängig, Kopieren und Rechtsklick-Entfernen wie bei allen Punkt-Elementen.
-      - Testlevel levels/test/spiegel-schaltbar.json; Tests spiegel_schaltbar, editor_licht.
+      - Testlevel levels/test/licht-schalter.json; Tests spiegel_schaltbar, editor_licht.
       - Rollen: Wer auf die Platte tritt oder am Hebel steht, ist oft nicht der, der den Strahl sieht – einer bedient,
         der andere liest den Strahl und sagt an.
     - SACKGASSE (Licht-Labyrinth): Endet der Strahl an Stein, einer geschlossenen Tür, einem Wechselboden oder einer

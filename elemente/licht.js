@@ -63,6 +63,7 @@ function lichtSchritt(){
   });
   kristalle.forEach((k, i) => {
     if(k.an !== vorher[i] && k.x > camX - 80 && k.x < camX + VW + 80) SFX.kristall(k.x, k.an);
+    if(k.an && !vorher[i] && k.link && typeof zielHinweisMerken === 'function') zielHinweisMerken(k.link);   // Ziel außer Bild: Pfeil am Rand
     if(k.an || k.gemerkt) k.leuchtT = Math.min(1, (k.leuchtT || 0) + 0.08); else k.leuchtT = Math.max(0, (k.leuchtT || 0) - 0.05);
   });
   for(const s of spiegelListe) if(s.drehT > 0) s.drehT--;
@@ -288,6 +289,39 @@ function lichtSackgasse(p, E, t){
   }
   ctx.restore();
 }
+// Strahl läuft aus dem Bild: am Bildrand ein leuchtender Pfeil in Laufrichtung und ein Zeichen, was ihn draußen erwartet –
+// Kristall (er trifft ihn und schaltet) oder Funken-Stern (Sackgasse). So schaltet niemand blind (Sichtbarkeits-Regel).
+function lichtRandListe(weg){   // [{x, y, d (-1 links / 1 rechts), art ('kristall'|'wand'|'weit'|null = Ende im Bild)}]
+  const E = weg.ende, sx = p => p[0]*40 + 20 - camX, out = [];
+  const ende = weg[weg.length - 1], draussen = sx(ende) < 0 || sx(ende) > VW;
+  for(let i = 0; i < weg.length - 1; i++){
+    const ax = sx(weg[i]), bx = sx(weg[i + 1]);
+    const kante = ax >= 0 && bx < 0 ? 0 : ax <= VW && bx > VW ? VW : null;
+    if(kante !== null) out.push({x: kante, y: weg[i][1]*40 + 20, d: kante === 0 ? -1 : 1, art: draussen && E ? E.art : null});
+  }
+  return out;
+}
+function lichtRandZeichen(weg, t){
+  for(const R of lichtRandListe(weg)){
+    const y = R.y, d = R.d, x = R.x - d*22, puls = 0.75 + 0.25*Math.sin(t*6);
+    lichtFleck(x, y, 26*puls, 0.6);
+    ctx.fillStyle = `rgba(255,248,210,${0.85*puls + 0.15})`;
+    for(const o of [0, 9]){ ctx.beginPath(); ctx.moveTo(x + d*(6 + o), y); ctx.lineTo(x + d*(o - 2), y - 7); ctx.lineTo(x + d*(o - 2), y + 7); ctx.closePath(); ctx.fill(); }
+    if(!R.art || R.art === 'dreh') continue;   // Zeichen, was ihn draußen erwartet
+    const ix = x - d*20, iy = y - 22;
+    ctx.save(); ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(25,16,8,.7)'; ctx.beginPath(); ctx.arc(ix, iy, 11, 0, Math.PI*2); ctx.fill();
+    if(R.art === 'kristall'){
+      ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.moveTo(ix, iy - 8); ctx.lineTo(ix + 5, iy - 2); ctx.lineTo(ix + 3, iy + 7); ctx.lineTo(ix - 3, iy + 7); ctx.lineTo(ix - 5, iy - 2); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#a8681a'; ctx.lineWidth = 1.2; ctx.stroke();
+    } else {
+      ctx.strokeStyle = '#ffb04a'; ctx.lineWidth = 2;
+      for(let k = 0; k < 8; k++){ const a = k*Math.PI/4, r = k % 2 ? 3.5 : 8; ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix + Math.cos(a)*r, iy + Math.sin(a)*r); ctx.stroke(); }
+      ctx.fillStyle = '#fff2c0'; ctx.beginPath(); ctx.arc(ix, iy, 2.5, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
 function lichtZeichnen(){
   const t = performance.now()*0.001;
   ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = 'lighter';
@@ -326,6 +360,7 @@ function lichtZeichnen(){
     }
     if(E && (E.art === 'wand' || E.art === 'weit')) lichtSackgasse(weg[weg.length - 1], E, t);
   }
+  for(const weg of lichtWege) if(weg.length > 1) lichtRandZeichen(weg, t);
   ctx.restore();
   for(const q of lichtquellen){ const x = q.x - camX; if(x > -60 && x < VW + 60) lichtQuelleBild(ctx, x, q.y, q.dx, q.dy, lichtQuelleAn(q), q.link); }
   for(const s of spiegelListe){

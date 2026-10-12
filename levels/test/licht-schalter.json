@@ -1,5 +1,5 @@
 {
- "hinweis": "Testlevel schaltbarer Spiegel. Öffnen: index.html?testlevel=spiegel-schaltbar · Beide Spiegel stehen falsch und lassen sich NICHT von Hand drehen (Plakette + Kettenglied). Druckplatte 1 betreten = oberer Spiegel dreht einmal; Hebel 2 = unterer Spiegel dreht einmal. Falsche Stellungen enden an Decke bzw. Säule (Aufprall-Funken). Richtig: Licht trifft den Kristall -> Tür 3 auf.",
+ "hinweis": "Testlevel schaltbarer Spiegel. Öffnen: index.html?testlevel=licht-schalter · Beide Spiegel stehen falsch und lassen sich NICHT von Hand drehen (Plakette + Kettenglied). Druckplatte 1 betreten = oberer Spiegel dreht einmal; Hebel 2 = unterer Spiegel dreht einmal. Falsche Stellungen enden an Decke bzw. Säule (Aufprall-Funken). Richtig: Licht trifft den Kristall -> Tür 3 auf.",
  "welt": "ruinen",
  "tageszeit": "abend",
  "wetter": "trocken",
