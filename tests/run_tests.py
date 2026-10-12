@@ -7665,6 +7665,8 @@ async def licht_loesen(g, cfg):
 # (z. B. gehaltene Platte), erlaubte Zahl an Lösungen, Mindestzahl falscher Pfade (verschiedene Sackgassen)
 LICHT_RAETSEL = [
     {'level': 'ruinen/01-ruinen.json', 'name': 'Ruinen 1 „Zwei Spiegel in Reihe“', 'spalten': [786, 812], 'links': [22, 21], 'ziel': [23], 'loesungen': 1, 'sackgassen': 2},
+    {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Brücke', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [33], 'loesungen': 1, 'sackgassen': 1},
+    {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Ausgang', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [34], 'loesungen': 1, 'sackgassen': 1},
 ]
 @test
 async def licht_raetsel_loeser(g):
@@ -7819,12 +7821,13 @@ async def ruinen1_sonnenkammer(g):
 
 @test
 async def fallengang_lichtweiche(g):
-    """Fallengang, Licht-Rätsel „Lichtweiche“ (Spalte 772–818, vor dem Ziel): Über der Grube liegen Wechselboden-Brücken
-    A (links) und B (rechts) – B ist da, solange Licht auf den Weichen-Kristall 33 fällt. Spiegel 1 (Weiche, nur der Affe per
-    Haken) schickt das Licht nach oben zu Spiegel 2 (fest) und hinüber zu Spiegel 3 (nur das Schweinchen per Aufwind):
-    „\\“ = hinunter auf Kristall 33 (Brücke B), „/“ = hinauf auf Kristall 34 („bleibt an“, Ausgang). Ablauf: Schweinchen auf
-    die Naht, Affe dreht Spiegel 1 (B kommt), Schweinchen hinüber und per Aufwind an Spiegel 3, dreht ihn auf „/“
-    (Ausgang offen, B weg, A wieder da), Affe auf die Naht, Schweinchen dreht zurück (B), Affe hinüber."""
+    """Fallengang, Licht-Rätsel „Lichtweiche“ (Spalte 772–818, vor dem Ziel; schaltbare Spiegel): Über der Grube liegen
+    Wechselboden-Brücken A (links) und B (rechts) – B ist da, solange Licht auf den Weichen-Kristall 33 fällt. Druckplatte 35
+    auf dem Affen-Sims (nur per Haken) dreht Spiegel 1 UND 2 zugleich (eine Platte, zwei Spiegel); Hebel 36 auf dem
+    Schweinchen-Sims (nur per Aufwind) dreht Spiegel 3, die Weiche: „\\“ = hinunter auf Kristall 33 (Brücke B), „/“ = hinauf
+    auf Kristall 34 („bleibt an“, Ausgang). Falsch: Spiegel 1 „\\“ = Strahl in den Boden. Ablauf: Schweinchen auf die Naht,
+    Affe betritt die Platte (B kommt), Schweinchen hinüber und per Aufwind an den Hebel (Ausgang offen, B weg, A wieder da),
+    Affe auf die Naht, Schweinchen legt den Hebel zurück (B), Affe hinüber."""
     await koop_level(g, 'ruinen/03-fallengang.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -7834,8 +7837,8 @@ async def fallengang_lichtweiche(g):
     def affe(jx=777.5):
         return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                 {'swing': True, 'pull': 60, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'},
-                {'holdIf': {'right': f'P.x < {kx(779)}', 'left': f'P.x > {kx(781)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
-                wb_halt(kx(781)), {'wait': f'Q.grounded && Math.abs(Q.x - {naht}) <= 4', 'frames': 4000}, {'use': True, 'frames': 8},
+                {'holdIf': {'right': f'P.x < {kx(780)}', 'left': f'P.x > {kx(781)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(781)), {'wait': f'Q.grounded && Math.abs(Q.x - {naht}) <= 4', 'frames': 4000}, wb_halt(kx(779)), {'frames': 10}, wb_halt(kx(781)),
                 {'wait': '!!linkOn[34] && !linkOn[33]', 'frames': 4000}, k_lauf(783), {'until': 'P.grounded', 'frames': 200},
                 wb_halt(naht), {'wait': '!!linkOn[33]', 'frames': 4000}, k_lauf(811)]
     schwein = [{'wait': f'Q.grounded && Q.y < {ky(10)} && Q.x > {kx(779)}', 'frames': 4000}, wb_halt(naht), {'wait': '!!linkOn[33]', 'frames': 4000},
