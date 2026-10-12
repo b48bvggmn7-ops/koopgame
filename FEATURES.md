@@ -31,8 +31,19 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       432 -> 356); die Spielstände merken sich keine Checkpoint-Nummern (Test spielstand_ohne_checkpoints).
       Zwei Checkpoints, nach denen man bei einem Tod nicht mehr zurück zum (zurückgestellten) Spiegel gekommen wäre,
       sind versetzt bzw. entfernt (Ruinen 4 Spalte 678, Ruinen 6 Spalte 91 -> 97).
+      Auch die Level-Tests prüfen jetzt „höchstens 70 Spalten“ (vorher ~60); dadurch sind in 11 Leveln weitere
+      doppelte Checkpoints weggefallen (Dschungel 6, Ruinen 4, Höhle 2/3/4/6, Vulkan 1/2/4/5/7).
+    - Zwischenstationen statt „einer läuft aus dem Bild“ (die früheren 8 Stellen „BRAUCHT ENTSCHEIDUNG“; nicht leichter,
+      nur in Abschnitte geteilt, nach jedem treffen sich beide wieder):
+      - Ruinen 1: Insel in zwei Etappen; der Hebel steht auf der Plattform bzw. Fähre und fährt mit.
+        Plattformen/Fähren mit eigenem mitfahrendem Hebel zählen im Prüfwerkzeug als „Plattform (Hebel fährt mit)“.
+      - Ruinen 2: Hakenreihe mit 5 Haken im Abstand 8 statt 4 Haken im Abstand 10–11.
+      - Ruinen 4: Doppelstrahl-Tor geteilt (Tür 12 vor der Brücke, Tor mit Pfeil dahinter = Treffpunkt).
+      - Vulkan 2 / Vulkan 5: Pressen-Doppelgang in zwei Hälften mit Treffpunkt in der Mitte, je Gang 4 statt 3 Pressen.
+      - Vulkan 6: Lavafeld mit Zwischen-Insel (2 Pilze – Insel – 2 Pilze), zweites Licht und zweiter Teleporter.
+      - Dschungel 3: Lianen-Haken eine Reihe höher (Reihe 6); gleiche Trefferquote im Bot-Test, kein Weg aufs Dach.
     - Prüfwerkzeug `python3 tests/bildregel_pruefen.py` (alle Level, Tabellen mit `--alle`); begründete Ausnahmen in
-      tests/bildregel_ausnahmen.json (dort auch alle Stellen mit „BRAUCHT ENTSCHEIDUNG“). Test bildregel_pruefung
+      tests/bildregel_ausnahmen.json (die früheren Stellen „BRAUCHT ENTSCHEIDUNG“ sind alle umgebaut). Test bildregel_pruefung
       schlägt bei jedem neuen Befund fehl.
   - AUFFÄLLIGE SPIELELEMENTE (Nutzerwunsch: Hebel, Sprungpilze und Druckplatten wurden übersehen, gerade wenn man
     schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; Design passend zur Spielwelt wie die Türen:
@@ -787,7 +798,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       (Schweinchen steigt über Stege auf den Turm und segelt zu Hebel 8 am anderen Ufer; erst dann fahren die zwei Haken,
       an denen der Affe rüberkommt – Zeitpunkt abpassen), Pilz-Treppe (drei Pilze auf Säulen, beide). Etappe 4 (600–800): Lianen-Staffel
       (Meister-Stelle: das Schweinchen steigt über Stege aufs Blätterdach und segelt über zwei Lücken, der Affe hangelt
-      unten an Haken über die Stachelgrube zu zwei Säulen; Hebel 9/11 auf dem Dach öffnen die Türen des Affen, Hebel 10/12
+      unten an Haken (Reihe 6, 4 Reihen über den Säulen) über die Stachelgrube zu zwei Säulen; Hebel 9/11 auf dem Dach öffnen die Türen des Affen, Hebel 10/12
       auf den Säulen die Türen des Schweinchens – nur abwechselnd geht es weiter), Finale (zwei Pilze auf die Äste, die
       letzte Schlucht segelt das Schweinchen, der Affe nimmt zwei Haken; Ziel auf dem Gipfel, Spalte 795). 16 Checkpoints,
       142 Münzen (71 blau / 71 pink). Test level7_lianenschlucht
@@ -997,7 +1008,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Durchkommen). Jeder Hebel stellt ein Paar im ANDEREN Gang ab (10 → oben, 11 → unten, 12 → oben, 13 → unten,
         14 → oben). Oben Stacheln mit Haken (Affe), unten Gruben (Schweinchen segelt).
       - Rhythmus-Lauf zum Ziel: Pfeil-Vorhänge, eine Flammen-Welle (vor jeder Flamme warten), Takt-Steine (1,5 s).
-    - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: der Doppelgang 604–680 ist ein einziges Rätsel).
+    - Checkpoints höchstens 70 Spalten auseinander (Ausnahme: der Doppelgang 604–680 ist ein einziges Rätsel).
     - Test level9_fallengang (Koop-Bot).
 
   - Level 10 „Sonnentempel“ (levels/level-10.json, Ruinen Level 4 der Welt, abends, Regen, 800 Spalten).
@@ -1024,13 +1035,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         im Zickzack); über jedem hängt eine Pfeilfalle – drehen und schnell weg (beide).
       - Flammen-Gang: Flammen aus dem Boden als Welle – das Schweinchen läuft der Welle nach, der Affe nimmt das blaue Tor.
     - Etappe 4 (Spalten 600–800, Ziel bei 790):
-      - Doppelstrahl-Tor (schwerste Stelle): Tür 12 und Tür 13 stehen direkt hintereinander, beide Kristalle müssen
-        zugleich leuchten. Strahl 1: Der Affe dreht den Spiegel auf dem Sims (Haken) → Kristall 12 öffnet Tür 12 und lässt
-        die Brücke über die Grube erscheinen. Strahl 2: Das Schweinchen (pinkes Tor, segeln) dreht den Spiegel auf der
-        Insel → Kristall 13; ein Takt-Stein (1,5 s) unterbricht diesen Strahl, und in der ersten Tür fällt ein Pfeil im Takt.
+      - Doppelstrahl-Tor (schwerste Stelle, in zwei Abschnitten): Strahl 1: Der Affe dreht den Spiegel auf dem Sims
+        (Haken) → Kristall 12 öffnet Tür 12 am Anfang der Brücke (Spalte 645) und lässt die Brücke über die Grube
+        erscheinen. Strahl 2: Das Schweinchen (pinkes Tor, segeln) dreht den Spiegel auf der Insel → Kristall 13 öffnet
+        das Tor direkt hinter der Brücke (Spalte 670) – dort treffen sich beide; ein Takt-Stein (1,5 s) unterbricht
+        Strahl 2, und im Tor fällt ein Pfeil im Takt.
       - Licht-Brücken im Takt: Ein Takt-Stein unterbricht den Strahl, die Brücken über zwei Gruben sind nur jede zweite
         Phase da. Das Schweinchen kann segeln, der Affe muss im Takt laufen (Pfeiler in der Mitte = sicher).
-    - Checkpoints höchstens etwa 60 Spalten auseinander (Ausnahme: die zwei Wege 401–474 sind ein einziges Rätsel).
+    - Checkpoints höchstens 70 Spalten auseinander (Ausnahme: die zwei Wege 401–474 sind ein einziges Rätsel).
     - Test level10_sonnentempel (Koop-Bot).
 
   - Level 11 „Felsenflucht“ (levels/level-11.json, Ruinen Level 5 der Welt, mittags, Regen, 800 Spalten).
@@ -1061,7 +1073,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Haken, Schweinchen segelt), im Laufen den Spiegel drehen – der Kristall öffnet das Licht-Tor 12 –, hinauf auf die
         Stege; der Fels rollt darunter durch und zerschellt an der Mauer.
       - Ausklang: drei Pfeil-Vorhänge ohne Fels, dann das Ziel.
-    - Checkpoints höchstens etwa 60 Spalten auseinander – außer in den Verfolgungen, die jeweils am Stück gespielt werden.
+    - Checkpoints höchstens 70 Spalten auseinander – außer in den Verfolgungen, die jeweils am Stück gespielt werden.
     - Test level11_felsenflucht (Koop-Bot).
 
   - Level 12 „Tropfsteingang“ (levels/level-12.json, Höhle Level 2 der Welt, morgens, trocken, 800 Spalten). Seit
@@ -1078,7 +1090,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 4 (Spalten 600–800, Ziel bei 792): Schleuder-Kette (drei Bänder vor drei Gruben, ohne Band-Schwung schafft es
       der Affe nicht); Kamin hinter einem Gegenband; Platten-Staffel (der Affe hält per Haken oben Druckplatte 10, das
       Schweinchen geht durch den Band-Tunnel und öffnet mit Hebel 11 die Tür auf dem Tunneldach); Ziel.
-    - Checkpoints höchstens etwa 60 Spalten auseinander.
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level12_tropfsteingang (Koop-Bot).
 
   - Level 13 „Eisgrotte“ (levels/level-13.json, Höhle Level 3 der Welt, abends, Tropfwasser, 800 Spalten).
@@ -1097,7 +1109,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 4 (Spalten 600–800): Doppel-Rutsche: zwei vereiste Gänge übereinander, Hebel 6 unten öffnet Tür 6 oben,
       Hebel 7 oben öffnet Tür 7 unten (im Vorbeirutschen ziehen); Aufwind (Schweinchen) und enger Kamin (Affe) nebeneinander
       hinauf auf den Sims; Stege hinunter; Eisbahn zum Ziel.
-    - Checkpoints höchstens ~60 Spalten auseinander (17 Stück).
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level13_eisgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
   - Level 14 „Leuchtgrotte“ (levels/level-14.json, Höhle Level 4 der Welt, nachts, trocken, 800 Spalten).
     Kombi-Level: Dunkelheit + Leuchtkristalle, Scheinwände, Teleporter.
@@ -1116,7 +1128,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 4 (Spalten 590–800): Steg-Turm im Zickzack hinauf; getrennte Wege: einer bleibt oben auf dem Sims und zieht
       Hebel 10 (Tür 10 unten), der andere lässt sich durch die Lücke fallen und hält Druckplatte 11 (Tür 11 oben) –
       egal, wer welchen Weg nimmt; Steg-Hüpfer über die dunkle Stachelgrube zum Ziel.
-    - Checkpoints höchstens ~60 Spalten auseinander (18 Stück).
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level14_leuchtgrotte (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
   - Level 15 „Förderwerk“ (levels/level-15.json, Höhle Level 5 der Welt, mittags, wechselndes Wetter, 800
     Spalten). Kombi-Level: Förderband-Kaskaden, Eis + Band, Bänder über Kreuz, Kamine.
@@ -1137,7 +1149,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Grube A und zieht Hebel 8 (das Band schleudert den Affen hinüber), der Affe schwingt an den Haken über Grube B und
       zieht Hebel 9 – das zweite Band schleudert das Schweinchen, das mit Schwung weit hinübersegelt (ohne Schwung zu
       breit); Eisbahn, schnelles Band, letzter Sprung zum Ziel.
-    - Checkpoints höchstens ~60 Spalten auseinander (16 Stück).
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level15_foerderwerk (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
   - Level 16 „Tiefenschlund“ (levels/level-16.json, Höhle Level 6 der Welt, nachts, Regen, 800 Spalten).
     Meister-Level: alles kombiniert, lange Präzisions-Passagen im Dunkeln.
@@ -1157,7 +1169,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Stachelgrube); Doppel-Schleuder im Dunkeln (Schweinchen segelt über Grube A und zieht Hebel 8 – das Band schleudert
       den Affen; der Affe schwingt über Grube B und zieht Hebel 9 – das zweite Band schleudert das Schweinchen); letzte
       Eissäulen (Schweinchen segelt von Säule zu Säule, Affe an fünf Haken) – dann zum Ziel.
-    - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level16_tiefenschlund (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
   - Level 17 „Glutpfad“ (levels/level-17.json, Vulkan Level 1 der Welt, morgens, trocken, 800 Spalten): in der
@@ -1176,7 +1188,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 4 (Spalten 600–800): Pilz-Kette über den steigenden Lavasee (sobald beide am Ufer sind, steigt der See
       langsam über die Säulen); Steg-Turm vor der Lava (im Schacht steigt die Lava durch den Boden, sobald beide drin
       sind – Stege im Zickzack hinauf); letzte Gruben und ein Pilz zum Ziel.
-    - Checkpoints höchstens ~60 Spalten auseinander (20 Stück).
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level17_glutpfad (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
   - Level 18 „Aschefeld“ (levels/level-18.json, Vulkan Level 2 der Welt, mittags, heißer Regen, 800 Spalten): in der
@@ -1193,10 +1205,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Pressen über der Brücke an (laufen nur bei Hebel an) – im Takt hinüber; Pressen-Treppe (Stufen hinauf, über jeder
       Stufe eine kleine Presse).
     - Etappe 4 (Spalten 600–800): großer Pressen-Rhythmus (niedriger Gang, sechs Pressen im Wechsel-Takt, dazwischen
-      kurze Gegenbänder); Pressen über Kreuz (zwei Wege übereinander: steht der Affe unten auf Druckplatte 8, stehen die
-      Pressen oben still – das Schweinchen, das per Aufwind nach oben kommt, läuft durch und stellt sich am Ende auf
-      Druckplatte 9: die Pressen unten stehen still, der Affe kommt nach); letzte breite Presse, Grube, Ziel.
-    - Checkpoints höchstens ~60 Spalten auseinander (19 Stück).
+      kurze Gegenbänder); Pressen über Kreuz (zwei Wege übereinander, in zwei Hälften: steht der Affe unten auf Druckplatte 8,
+      stehen die ersten Pressen oben still – das Schweinchen, das per Aufwind nach oben kommt, läuft zur Mitte auf
+      Druckplatte 10: die ersten Pressen unten stehen still, der Affe kommt nach auf Platte 11 (Treffpunkt, beide
+      übereinander) – dann dasselbe für die zweite Hälfte bis Platte 9; je Gang 4 Pressen); letzte breite Presse, Grube, Ziel.
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level18_aschefeld (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
   - Level 19 „Magmakammer“ (levels/level-19.json, Vulkan Level 4 der Welt, abends, trocken, 800 Spalten): in der Welt
@@ -1217,7 +1230,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       (Wechselboden 10), die nur offen ist, solange das Schweinchen im Nachbarschacht auf Druckplatte 10 steht; oben läuft
       der Affe über die Klappe 11 und zieht Hebel 11 – die Klappe über dem Aufwind öffnet, das Schweinchen fliegt
       hinaus); Finale (Pilz über die Lava-Grube, Presse, eine Grube, die steigt, sobald beide da sind).
-    - Checkpoints höchstens ~60 Spalten auseinander (23 Stück).
+    - Checkpoints höchstens 70 Spalten auseinander.
     - Test level19_magmakammer (Koop-Bot, alle vier Etappen + Checkpoint-Abstände).
 
   - Level 20 „Schlackewerk“ (levels/level-20.json, Vulkan Level 5 der Welt, mittags, wechselndes Wetter, 800 Spalten):
@@ -1226,8 +1239,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Etappe 1 (Spalten 0–200): schnelles Band unter einer Pressen-Welle (nur wer gegenläuft, kann warten);
       Gegenband-Tunnel mit drei breiten Pressen; Band zum Pilz – der Pilz schleudert über eine Presse hinweg auf einen
       hohen Sims, von dort über die Lava-Grube.
-    - Etappe 2 (Spalten 200–400): Hebel über Kreuz (zwei Gänge voller Pressen: Hebel 4 unten hält die Pressen oben an –
-      das Schweinchen läuft oben durch und zieht am Ende Hebel 5, der die Pressen unten anhält); Schleuder über die Lava
+    - Etappe 2 (Spalten 200–400): Hebel über Kreuz (zwei Gänge voller Pressen, in zwei Hälften: Hebel 4 unten hält die ersten
+      Pressen oben an – das Schweinchen läuft zur Mitte und zieht Hebel 11 (erste Pressen unten), der Affe kommt nach und
+      zieht unten Hebel 12 (zweite Pressen oben), das Schweinchen zieht am Ende Hebel 5 (zweite Pressen unten)); Schleuder über die Lava
       mit Presse über dem Band (Schweinchen segelt hinüber, Hebel 6 dreht das reißende Band für den Affen); Pilz unter
       der Presse (nur wenn sie oben ist, schleudert er auf den Sims; dort zwei weitere Pressen).
     - Etappe 3 (Spalten 400–600): Flammen-Decke über dem Band (von der Decke stoßen Flammen im Wellen-Takt herab, das
@@ -1253,9 +1267,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       2 Sekunden – man springt genau beim Wechsel); zwei Brücken im Dunkeln (das Schweinchen hält Druckplatte 3 = untere
       Brücke für den Affen, der Affe hält drüben Druckplatte 4 = obere Brücke für das Schweinchen); der Schlund (Stege
       treppauf über einem Lavasee, der schnell steigt, sobald beide am Ufer sind).
-    - Etappe 3 (Spalten 400–600): Licht halten, Pilze springen (das Schweinchen hält Druckplatte 5 – der Kristall über
-      dem dunklen Lavasee leuchtet, der Affe springt über die Pilz-Säulen und zieht Hebel 6: der Teleporter holt das
-      Schweinchen nach); zweite Teleporter-Kammer (die Lava steigt; der Affe hält Platte 7 = Teleporter des Schweinchens
+    - Etappe 3 (Spalten 400–600): Licht halten, Pilze springen (in zwei Abschnitten mit Insel in der Mitte: das Schweinchen
+      hält Druckplatte 5 – der erste Kristall über dem dunklen Lavasee leuchtet, der Affe springt über zwei Pilze auf die
+      Insel und zieht Hebel 12: der Teleporter holt das Schweinchen auf die Insel; dort hält es Platte 13 = zweiter
+      Kristall, der Affe springt über zwei weitere Pilze und zieht Hebel 6: der zweite Teleporter holt es nach); zweite Teleporter-Kammer (die Lava steigt; der Affe hält Platte 7 = Teleporter des Schweinchens
       an, draußen hält das Schweinchen Platte 8 = Teleporter des Affen an); Klappen im Lavagang (das Schweinchen steigt
       im Aufwind auf den Sims und schaltet Hebel 9 genau dann um, wenn der Affe von Klappe zu Klappe springt).
     - Etappe 4 (Spalten 600–800): Doppel-Flucht – zwei Schächte, zwei Lavastände (Kamin für den Affen, Aufwind-Schacht

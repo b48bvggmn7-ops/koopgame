@@ -144,7 +144,7 @@ Wechselboden und Teleporter (die letzten beiden nur sanft, als erste Begegnung).
 
 | Spalte | Stelle | Typ | Einstufung |
 |---|---|---|---|
-| 612–640 | Lianen-Staffel: Säule A → zwei Haken → Säule B (Affe) | Seil-Schwung auf schmale Säule | Grenze (2 von 12 Varianten) |
+| 612–640 | Lianen-Staffel: Säule A → zwei Haken (Reihe 6) → Säule B (Affe) | Seil-Schwung auf schmale Säule | Grenze (2 von 12 Varianten) |
 | 610–621 | Lianen-Staffel: Rand → Haken → Säule A (Affe) | Seil-Schwung | knapp (3/12) |
 | 482–508 | fahrende Haken (Affe) | Timing | knapp (Zeitpunkt abpassen) |
 | 483–508 | Turm → Ufer, 25 Kästchen Segelflug (Schweinchen) | Segeln | knapp (3/6) |
@@ -327,7 +327,7 @@ Startzeiten); „Spielraum“ = so lange darf man nach dem Hebel zögern (Physik
 
 | Spalte | Stelle | Typ | Einstufung |
 |---|---|---|---|
-| 629–691 | Doppelstrahl-Tor: beide Kristalle zugleich, Strahl 2 im Takt, Pfeil in der Tür | Koordination + Timing | Grenze (schwerste Stelle; stur 5 von 9 erst NACH beiden Spiegeln) |
+| 629–678 | Doppelstrahl-Tor in zwei Abschnitten: Strahl 1 öffnet Tür 12 vor der Brücke, Strahl 2 (im Takt) das Tor mit Pfeil dahinter = Treffpunkt | Koordination + Timing | Grenze (schwerste Stelle; stur 5 von 9 erst NACH beiden Spiegeln) |
 | 712–725 | Licht-Brücken im Takt (Affe läuft, Schweinchen segelt) | Timing | knapp bis Grenze (stur 1 von 9) |
 | 276–289 | Licht-Takt mit Pfeil vor Tür 6 | Timing | knapp (stur 5 von 9) |
 | 540–568 | Flammen-Gang (Schweinchen läuft der Welle nach) | Timing | knapp (stur 0 von 10, mit Warten sicher) |
@@ -348,7 +348,7 @@ Startzeiten); „Spielraum“ = so lange darf man nach dem Hebel zögern (Physik
 | 74–96 | Fels und Grube (Haken / segeln) | Verfolgung | knapp (Spielraum 72 Schritte ≈ 1,3 s) |
 | 412–445 | Teleporter-Flucht | Verfolgung | knapp |
 
-**Checkpoints:** Fallengang und Sonnentempel höchstens etwa 60 Spalten auseinander (Ausnahme je ein zusammenhängendes
+**Checkpoints:** Fallengang und Sonnentempel höchstens 70 Spalten auseinander (Ausnahme je ein zusammenhängendes
 Rätsel: Doppelgang 604–680 bzw. zwei Wege 401–474). In der Felsenflucht wird jede Verfolgung am Stück gespielt (bis 106
 Spalten ohne Checkpoint im Finale) – das macht sie zum Meister-Level.
 
@@ -597,7 +597,7 @@ einen Lavasee.
 Schweinchen Aufwind über die Lava. 3. Pilz-Turm mit steigender Lava. 4. Doppel-Schacht: jeder rettet den anderen.
 
 **Schlackewerk (level-20):** 1. Bänder tragen unter Pressen hindurch. 2. Hebel über Kreuz: jeder stoppt die Pressen
-des anderen. 3. Flammenfallen + Bänder. 4. Großes Werk: Band, Presse, Pilz, Haken.
+des anderen (in zwei Hälften mit Treffpunkt in der Mitte, Hebel 4/11, dann 12/5). 3. Flammenfallen + Bänder. 4. Großes Werk: Band, Presse, Pilz, Haken.
 
 **Feuerschlund (level-21):** 1. Dunkle Lavagänge mit Leuchtkristallen. 2. Teleporter vor steigender Lava.
 3. Wechselboden über Lava. 4. Doppel-Flucht: zwei Schächte, zwei Lavastände.
@@ -694,7 +694,7 @@ davor einen Checkpoint; nach einem Tod ist die Lava wieder unten.
 |---|---|---|---|
 | 600–664 | Doppel-Flucht: zwei Schächte, zwei Lavastände (im Aufwind-Schacht schneller) | Koordination + Tempo | Grenze (mit schnellerer Lava im Kamin schafft es der Bot nicht mehr – deshalb dort langsam) |
 | 505–556 | Klappen im Lavagang: Hebel 9 genau beim Sprung umlegen | Koordination | Grenze (Absprache nötig) |
-| 136–170 / 472–505 | Teleporter-Kammern: die Lava steigt, der Partner muss rechtzeitig schalten | Koordination + Tempo | knapp |
+| 136–170 / 472–505 | Teleporter-Kammern (Lavafeld 408–443 davor jetzt mit Zwischen-Insel: 2 Pilze – Insel – 2 Pilze): die Lava steigt, der Partner muss rechtzeitig schalten | Koordination + Tempo | knapp |
 | 206–255 / 668–705 | Wechselboden im Takt über der Lava (2 s / 1,5 s) | Rhythmus | knapp (Absprung-Fenster ~0,6 s) |
 | 326–370 | der Schlund: Stege treppauf, der See steigt schnell | Tempo | knapp |
 
