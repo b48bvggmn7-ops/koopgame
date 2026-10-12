@@ -393,6 +393,24 @@ Spalten ohne Checkpoint im Finale) – das macht sie zum Meister-Level.
 | Felsenflucht | 752–800 „Felsbrecher-Licht“: Fels bricht die Wand (Strahl frei), Sonnenstein nur mit Platte, Licht-Tür per Hebel im Aufwind-Schacht | einer startet den Fels (alle hinten bleiben), Schweinchen Schacht-Hebel, Affe Haken-Spiegel, zuletzt Affe auf der Platte, Schweinchen dreht den Bodenspiegel | Grenze (4–5) |
 | Tempelherz | 750–798 „Sonnenkrone“: drei Kristalle, Pfeilfalle über der Sonnenstein-Platte, breite Grube | Schweinchen hält die Platte (Pfeilen ausweichen), Affe stellt Spiegel 1; Tausch; Schweinchen segelt hinüber und lenkt das Licht erst auf Tor 2, dann auf die Brücke | Grenze (5–6, schwerste Licht-Stelle) |
 
+### Schaltbare Spiegel und Licht-Labyrinthe (Spiegel mit Nummer)
+Spiegel mit Verknüpfungs-Nummer drehen sich NUR, wenn jemand eine Platte betritt oder einen Hebel umlegt (nie von selbst).
+Die Licht-Rätsel oben wurden zu Labyrinthen mit falschen Pfaden umgebaut (Schwierigkeit steigt in Welt-Reihenfolge; der
+Löser-Test `licht_raetsel_loeser` probiert alle Stellungen durch: genau eine Lösung, jeder Strahl endet sichtbar).
+Labyrinthe sind Kopf-Rätsel: mehr Zeit zum Überlegen, kaum mehr Fehlversuche.
+| Level (Welt-Reihenfolge) | Spalte | Rätsel | Wer macht was | Stellungen / Lösungen / falsche Pfade | Einstufung |
+|---|---|---|---|---|---|
+| Ruinen 1 | 786–812 | „Zwei Spiegel in Reihe“: Spiegel A (Platte 22) über Spiegel B (Hebel 21) | Schweinchen (Aufwind-Sims) betritt die Platte, Affe (Haken-Sims) legt den Hebel um | 4 / 1 / 2 (Decke, Ausgangstor) | komfortabel–knapp (2) |
+| Fallengang | 772–805 | „Lichtweiche“: eine Platte, zwei Spiegel (35) + Weichen-Hebel 36; Licht plus Wechselboden | Affe (Haken-Sims) Platte, Schweinchen (Aufwind-Sims) Weiche; Brücke kommt nur per Licht | 4 / je Phase 1 / 1 (Boden) + falsche Weichen-Stellung | knapp (2–3) |
+| Sonnentempel | 482–518 | „Licht plus Fallen“: Platte 15 lässt die Pfeile schweigen, dreht aber den richtig stehenden Spiegel 1; Platten 16/17 unter den Pfeilen | einer hält Platte 15, der andere tritt auf 16 und 17; dann ab- und wieder aufsteigen; zurück durch die Pfeile im Takt | 8 / 1 / 2 | knapp (3) |
+| Mondnacht | 451–500 | „Strahl-Labyrinth“ in zwei Abschnitten: Platte 52 hält das Licht-Tor UND dreht Spiegel B bei jedem Betreten; Hebel 53 (Affen-Sims); jenseits der Grube Platte 55 (E+G) und Hebel 56 (F) | Übergabe auf der Platte ohne dass sie frei wird; Schweinchen segelt hinüber und löst Abschnitt 2 | 16 / 1 / 3 (Wand am Turm, Decke über E, Affen-Sims) | knapp–Grenze (3–4, Denkzeit) |
+| Felsenflucht | 752–790 | „Felsbrecher-Licht“: Fels bricht die Wand, Sonnenstein nur mit Platte 44, Hebel 45 (Spiegel 1), Platte 46 auf dem Affen-Sims (Spiegel 2), Licht-Tür 41 im Schacht | Rollentausch: einer hält Platte 44, Affe Sims-Platte, Schweinchen Schacht-Hebel + Hebel 45 | 4 / 1 / 3 (Boden, Wand, Tür) | Grenze (4–5) |
+| Tempelherz | 750–798 | „Geteilter Strahl“: Hebel 60 unter der Pfeilfalle (Sonnenstein 1), Hebel 23 (Spiegel 1), Hebel 24 dreht Spiegel 3 UND 5, Hebel 25 (Spiegel 4); zweiter Sonnenstein; Doppeltor nur offen, solange BEIDE Kristalle leuchten | Schweinchen: Pfeil-Hebel, segelt hinüber, Hebel 24/25; Affe: Haken-Sims, Hebel 23 zweimal; Brücke, dann Doppeltor | 8 / je Phase 1 / 2 (Decken über 3 und 5) + falsche Richtung von Spiegel 4 | Grenze (5–6, schwerste Licht-Stelle) |
+Strahl über den Bildrand: Mondnacht (B -> E, 15–23 Spalten) und Tempelherz (Spiegel 2 -> 3, 22 Spalten). Am Bildrand
+leuchtet dann ein Doppelpfeil in Laufrichtung, daneben ein Kristall-Zeichen (trifft draußen einen Kristall) oder ein
+Funken-Stern (endet draußen in einer Sackgasse); schaltet ein Kristall außerhalb des Bildes, zeigt zusätzlich der
+Ziel-Hinweis-Pfeil zur Tür.
+
 ### Ruinen-Überarbeitung (vor der Wasserwelt)
 - **Pfeile:** größer (52 px), dunkler Umriss, helles Holz, rote Federn, Bewegungsspur; nachts leuchten sie; Vorwarnung
   zeigt die Spitze schon im Schlitz; Einschlag mit Staub, Funken, Riss. Trefferfläche unverändert (10 × 10 px um die

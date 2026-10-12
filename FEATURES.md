@@ -924,6 +924,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       (752–800, der Fels bricht die Wand auf), Tempelherz „Sonnenkrone“ (750–798, drei Kristalle, Pfeile auf der Platte);
       Sonnentempel war schon ein Licht-Level. Tests ruinen1_sonnenkammer, mondnacht_mondspiegel, fallengang_lichtweiche,
       felsenflucht_felsbrecher_licht, tempelherz_sonnenkrone.
+      Umgebaut mit schaltbaren Spiegeln (siehe unten „Licht-Labyrinthe“): die Spiegel dieser Rätsel drehen jetzt nur noch
+      Platten und Hebel; Tempelherz heißt „Geteilter Strahl“ (Hebel 60 statt Platte 60 unter der Pfeilfalle).
     - Welche Rolle haben Affe und Schweinchen? Spiegel stehen dort, wo nur der Affe (Haken) oder nur das Schweinchen
       (segelnd) hinkommt. Einer lenkt das Licht, der andere geht durch die Tür, die der Kristall öffnet.
     - SCHALTBARER SPIEGEL (Option „drehen: per Nummer“, Feld link am Spiegel; ohne Nummer alles wie bisher, alte Level
@@ -953,6 +955,26 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Falle, glüht dort ein Brandfleck und ein Funkenregen sprüht zurück (lichtSackgasse; nur Anzeige). So sieht man
       sofort, dass dieser Weg falsch ist. Strahl-Sperren nutzen die vorhandenen Elemente (Tür/Tor, Wechselboden, Stein,
       Falle); ein Kreis aus Spiegeln endet sicher (Besucht-Liste). Test spiegel_schaltbar.
+    - STRAHL AM BILDRAND (Sichtbarkeit): Läuft ein Strahl aus dem Bild, leuchtet am Rand ein Doppelpfeil in Laufrichtung;
+      liegt sein Ende draußen, zeigt ein Zeichen daneben, was ihn erwartet: Kristall (er trifft einen Kristall) oder
+      Funken-Stern (Sackgasse). Schaltet ein Kristall ein Ziel außerhalb des Bildes, erscheint der Ziel-Hinweis-Pfeil
+      (wie bei Hebel/Platte). Nur Anzeige (lichtRandListe / lichtRandZeichen).
+    - LICHT-LABYRINTHE in den Ruinen (schaltbare Spiegel, falsche Pfade; Tabelle mit Einstufung in WELTEN.md):
+      - Ruinen 1 (786–812) „Zwei Spiegel in Reihe“: Platte 22 auf dem Aufwind-Sims (Schweinchen) dreht Spiegel A, Hebel 21
+        auf dem Haken-Sims (Affe) dreht Spiegel B; falsch: Decke bzw. Ausgangstor; richtig: Kristall 23 -> Ausgang.
+      - Fallengang (772–805) „Lichtweiche“: Platte 35 (Affen-Sims) dreht Spiegel 1 und 2 zugleich, Hebel 36 (Schweinchen-
+        Sims) stellt die Weiche: Brücke B über der Grube oder Ausgang.
+      - Sonnentempel (482–518) „Licht plus Fallen“ (siehe Etappe 3).
+      - Mondnacht (451–500) „Strahl-Labyrinth“, zwei Abschnitte: Platte 52 hält das Licht-Tor und dreht bei jedem
+        Betreten Spiegel B (Übergabe, ohne dass die Platte frei wird!); Hebel 53 (Affen-Sims) dreht Spiegel A; jenseits der
+        Grube dreht Platte 55 die Spiegel E und G, Hebel 56 Spiegel F; drei Sackgassen; Kristall 51 -> Brücke.
+      - Felsenflucht (752–790) „Felsbrecher-Licht“: Hebel 45 (Boden) dreht Spiegel 1, Platte 46 (Affen-Sims) Spiegel 2.
+      - Tempelherz (750–798) „Geteilter Strahl“: Hebel 60 unter der Pfeilfalle schaltet Sonnenstein 1, Hebel 23
+        (Affen-Sims) Spiegel 1, Hebel 24 dreht Spiegel 3 UND 5, Hebel 25 Spiegel 4 (Brücke oder Tor); zweiter Sonnenstein;
+        Doppeltor am Ausgang (Tor 2a Kristall 6, Tor 2b Kristall 26) nur offen, solange beide Kristalle Licht haben.
+      - Löser-Test licht_raetsel_loeser: probiert jede Stellung aller schaltbaren Spiegel jedes Rätsels durch – genau eine
+        Lösung, Mindestzahl Sackgassen, jeder Strahl endet sichtbar, jede Nummer hat Platte/Hebel. Koop-Bot-Pläne je
+        Rätsel in den Level-Tests.
 
   - EIS (Ausbau 7, Welt Höhle; elemente/eis.js, Spiel-Feld eis [{x, y, w, h}]): fester, rutschiger Boden-Block.
     - Wer darauf steht, läuft langsam an und dreht langsam um (EIS_GRIFF) und rutscht ohne Taste lange weiter
@@ -1107,7 +1129,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       - Zwei Wege: oben (Haken, Stacheln) der Affe, unten (Grube) das Schweinchen. Das Schweinchen öffnet über das pinke
         Tor und Spiegel 8 die obere Tür 9 für den Affen; der Affe dreht am Ende des oberen Wegs Spiegel 9 → untere Tür 10.
       - Spiegel-Kette unter Pfeilen: drei Boden-Spiegel müssen richtig stehen (zwei feste Spiegel oben lenken den Strahl
-        im Zickzack); über jedem hängt eine Pfeilfalle – drehen und schnell weg (beide).
+        im Zickzack). Seit „Schaltbare Spiegel“ = „Licht plus Fallen“: Platte 15 lässt die drei Pfeilfallen schweigen,
+        solange jemand draufsteht, dreht aber bei jedem Betreten Spiegel 1 (steht anfangs richtig); Platten 16/17 unter den
+        Pfeilen drehen Spiegel 2/3. Kristall 11 „bleibt an“ (der Rückweg führt über die Platten). Zurück durch die Pfeile im
+        Takt.
       - Flammen-Gang: Flammen aus dem Boden als Welle – das Schweinchen läuft der Welle nach, der Affe nimmt das blaue Tor.
     - Etappe 4 (Spalten 600–800, Ziel bei 790):
       - Doppelstrahl-Tor (schwerste Stelle, in zwei Abschnitten): Strahl 1: Der Affe dreht den Spiegel auf dem Sims
