@@ -25,6 +25,15 @@ const CAM_BACK_MIN = 180, CAM_BACK_PUSH = 420;
 // einer Zusammenarbeit gehört (Hebel/Platte, ihr Ziel, Plattform-Strecken, Partner-Ort): höchstens so viele Spalten.
 // Die Höhe ist immer ganz im Bild (die Kamera scrollt nur waagerecht). Geprüft von tests/bildregel_pruefen.py.
 const BILD_MAX_SPALTEN = 20;
+// Kamera-Wackeln (Ruinen-Überarbeitung, z. B. Fels-Aufprall): Stärke in px, im festen Takt gesetzt und abgeklungen;
+// das Bild wird nur beim Zeichnen verschoben (kameraWackelVersatz), Spielzustand und Kamera-Ziel bleiben gleich
+let kameraWackeln = 0;
+function kameraStoss(staerke){ kameraWackeln = Math.max(kameraWackeln, staerke); }
+function kameraWackelnSchritt(){ kameraWackeln = kameraWackeln < 0.2 ? 0 : kameraWackeln*KAMERA_WACKELN_ABKLINGEN; }
+function kameraWackelVersatz(){
+  if(!kameraWackeln) return {x: 0, y: 0};
+  return {x: Math.round(Math.sin(simSteps*1.9)*kameraWackeln), y: Math.round(Math.cos(simSteps*2.7)*kameraWackeln*0.7)};
+}
 const CAM_FOLLOW = 0.08;   // wie schnell die Kamera ihrem Ziel folgt (pro Rechenschritt; vorher 0,12)
 // Kamera-Ziel: so wenig wie möglich bewegen, aber beide Figuren gut im Bild halten
 // Feste Kamera (Ausbau 6): Spielszenen und Boss-Arenen setzen hier die linke Bildkante (null = normale Kamera)

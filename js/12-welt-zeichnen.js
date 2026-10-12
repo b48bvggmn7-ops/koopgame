@@ -347,6 +347,7 @@ function draw(){
   const targetCam = cameraTarget(camPos);
   camPos += (targetCam-camPos) * (1 - Math.pow(1-CAM_FOLLOW, frameDt/STEP));   // gleich schnell bei jeder Bildrate
   camX = Math.round(camPos);
+  const wackel = kameraWackelVersatz(); camX += wackel.x;   // Kamera-Wackeln (09-kamera.js), nur fürs Bild
 
   ctx.setTransform(RS, 0, 0, RS, 0, 0);   // volle Bildschirmauflösung (00-setup.js)
   ctx.clearRect(0,0,W,H);
@@ -354,7 +355,7 @@ function draw(){
   hinweisPfeile = 0;
   drawBackground();
   ctx.save();
-  ctx.translate(0, CEILING_MARGIN);
+  ctx.translate(0, CEILING_MARGIN + wackel.y);
   // Zoom: Spielwelt verkleinern, unten bündig (Boden bleibt unten, oben wird mehr Himmel sichtbar)
   applyWorldZoom();
 

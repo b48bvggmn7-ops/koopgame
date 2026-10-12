@@ -1,0 +1,103 @@
+{
+ "hinweis": "Testlevel Ruinen-Überarbeitung: Fels räumt den Weg frei. Öffnen: index.html?testlevel=fels-wand · Eine Bröckel-Wand versperrt den Gang. Erst Hebel 2 ziehen (öffnet das Tor 2 vor dem Fels), dann Hebel 1: der Fels wackelt ½ s und rollt los, rollt durchs offene Tor, bricht durch die Bröckel-Wand und zerschellt hinten an der Wand · Zieht man Hebel 1 zuerst, zerschellt der Fels am geschlossenen Tor 2 – dann R (Neustart)",
+ "welt": "ruinen",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 2400,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1200,
+   "y": 440,
+   "w": 80,
+   "h": 240,
+   "type": "crumble"
+  },
+  {
+   "x": 1200,
+   "y": 0,
+   "w": 80,
+   "h": 440,
+   "type": "wall"
+  },
+  {
+   "x": 1800,
+   "y": 160,
+   "w": 40,
+   "h": 520,
+   "type": "wall"
+  }
+ ],
+ "boulders": [
+  {
+   "x": 260,
+   "y": 680,
+   "link": 1,
+   "richtung": "r",
+   "tempo": 4.4
+  }
+ ],
+ "switches": [
+  {
+   "x": 140,
+   "y": 660,
+   "link": 1
+  },
+  {
+   "x": 60,
+   "y": 660,
+   "link": 2
+  }
+ ],
+ "doors": [
+  {
+   "x": 660,
+   "y": 580,
+   "link": 2
+  },
+  {
+   "x": 660,
+   "y": 620,
+   "link": 2
+  },
+  {
+   "x": 660,
+   "y": 660,
+   "link": 2
+  }
+ ],
+ "hooks": [],
+ "plates": [],
+ "spikes": [],
+ "movingPlatforms": [],
+ "coins": [
+  {
+   "x": 1500,
+   "y": 640,
+   "color": "blue"
+  },
+  {
+   "x": 1560,
+   "y": 640,
+   "color": "pink"
+  }
+ ],
+ "checkpoints": [],
+ "startM": {
+  "x": 180,
+  "y": 680
+ },
+ "startF": {
+  "x": 100,
+  "y": 680
+ },
+ "goal": {
+  "x": 1700,
+  "y": 680
+ }
+}

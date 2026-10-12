@@ -95,6 +95,12 @@ const PFEIL_LICHT = 70;         // px Lichtkreis um einen fliegenden Pfeil in du
 const FELS_RADIUS = 50;         // px (Durchmesser 2,5 Kästchen)
 const FELS_BESCHL = 0.08;       // so schnell kommt er auf sein Tempo (Anteil pro Schritt)
 const FELS_STUFE = 12;          // so hohe Stufen nimmt er mit, höhere Kanten/Wände lassen ihn zerschellen
+const FELS_WARN = 30;           // Ruinen-Überarbeitung: so viele Schritte (½ s) wackelt er vor dem Losrollen (fairer Start)
+const FELS_ANKUENDIGUNG = 1.2;  // rollt er außerhalb des Bildes auf einen zu: Rumpeln/Staub am Bildrand ab diesem Abstand (× Bildbreite)
+const FELS_PRALL = 0.25;        // Landet er aus großer Höhe (vy > 8), hüpft er mit diesem Anteil kurz zurück
+const FELS_BROECKEL_BREMSE = 0.6;   // Bricht er durch eine Bröckel-Wand, behält er so viel Tempo
+// Kamera-Wackeln (09-kamera.js): Stärke in px, klingt pro Schritt ab
+const KAMERA_WACKELN_ABKLINGEN = 0.86;
 // Licht (elemente/licht.js)
 const LICHT_REICHWEITE = 80;    // so viele Kästchen läuft ein Lichtstrahl höchstens
 // Eis (elemente/eis.js)

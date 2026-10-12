@@ -7387,6 +7387,57 @@ async def pfeil_lesbarkeit(g):
     print('     Pfeil-Lesbarkeit (Tageszeit, Wetter, Richtung, Länge, starke Bildpunkte, Kontrast 90 %):', tabelle)
     assert not fehler, f'schlecht lesbar: {fehler}'
 
+@test
+async def fels_verhalten(g):
+    """Ruinen-Überarbeitung 2: Rollender Fels (levels/test/fels-wand.json) – Start: wackelt erst FELS_WARN Schritte (½ s,
+    Warn-Signal), dann rollt er; Schatten liegt auf dem Boden; Ankündigung: rollt er außerhalb des Bildes auf einen zu,
+    steigt die Anzeige am Bildrand (ankuendigung > 0); Bröckel-Wand: er bricht durch und rollt langsamer weiter (räumt den
+    Weg frei); Zerschellen an der Wand mit Bruchstücken und Kamera-Wackeln; geschlossenes Tor 2: er zerschellt davor;
+    Tod/Neustart: Fels, Bröckel-Wand und Wackeln wieder wie am Anfang."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'fels-wand.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+    lauf = lambda n: g.ev(f"(() => {{ for(let i = 0; i < {n}; i++) stepSim(0); return [felsen[0].x, felsen[0].aktiv, felsen[0].warn, felsen[0].weg]; }})()")
+    await lauf(20)
+    assert await g.ev("!felsen[0].aktiv && felsen[0].x === 260"), 'Fels rollt ohne Hebel'
+    # Tor 2 auf, Hebel 1: erst wackeln, dann rollen
+    await g.ev("setLink(2, true); setLink(1, true);")
+    x, aktiv, warn, weg = await lauf(1)
+    assert not aktiv and warn == await g.ev("FELS_WARN") and x == 260, ('kein Warn-Signal', x, aktiv, warn)
+    x, aktiv, warn, weg = await lauf(await g.ev("FELS_WARN") - 1)
+    assert not aktiv and x == 260, 'rollt schon während der Warnung'
+    x, aktiv, warn, weg = await lauf(10)
+    assert aktiv and x > 260, ('rollt nach der Warnung nicht los', x)
+    await g.ev("camPos = camX = 0;")
+    await lauf(4)
+    assert await g.ev("felsen[0].boden") == 680, await g.ev("felsen[0].boden")
+    # Ankündigung: Kamera steht weiter rechts, der Fels rollt von links ins Bild
+    ank = await g.ev("(() => { camPos = camX = 900; stepSim(0); return felsen[0].ankuendigung; })()")
+    assert ank > 0, f'keine Ankündigung am Bildrand: {ank}'
+    await g.ev("camPos = camX = 0;")
+    # Bröckel-Wand bei Spalte 30–31: durchbrochen, rollt weiter; zerschellt an der Wand (Spalte 45) mit Bruchstücken
+    for _ in range(80):
+        x, aktiv, warn, weg = await lauf(10)
+        await g.ev("camPos = camX = Math.max(0, felsen[0].x - 600)")
+        if weg: break
+    assert weg and 1700 < x < 1800, ('zerschellt nicht an der Wand', x, weg)
+    assert await g.ev("felsen[0].durchbrochen === 1 && solids.find(s => s.type === 'crumble').gone"), 'Bröckel-Wand nicht durchbrochen'
+    assert await g.ev("felsen[0].brocken && felsen[0].brocken.length >= 8"), 'keine Bruchstücke'
+    assert await g.ev("kameraWackeln > 0"), 'Kamera wackelt nicht'
+    # Neustart: alles wie am Anfang
+    await g.ev("resetLevel(); deathState = null; menuScreen = 'pause';")
+    assert await g.ev("felsen[0].x === 260 && !felsen[0].aktiv && !felsen[0].weg && !felsen[0].warn && !solids.find(s => s.type === 'crumble').gone && kameraWackeln === 0"), 'Neustart unsauber'
+    # Tor 2 zu: der Fels zerschellt am Tor, die Bröckel-Wand bleibt
+    await g.ev("setLink(1, true);")
+    for _ in range(40):
+        x, aktiv, warn, weg = await lauf(10)
+        if weg: break
+    assert weg and x < 660, ('zerschellt nicht am geschlossenen Tor', x)
+    assert await g.ev("!solids.find(s => s.type === 'crumble').gone"), 'Wand trotz geschlossenem Tor kaputt'
+    # nach einem Tod startet er sauber neu (Spiel läuft wieder)
+    await g.ev("menuScreen = null; deathState = null;")
+    await g.ev("die(p1)"); await weiter_nach_tod(g)
+    assert await g.ev("felsen.every(F => !F.aktiv && !F.weg && F.x === F.sx && !F.warn) && !solids.find(s => s.type === 'crumble').gone"), 'nach dem Tod nicht zurückgesetzt'
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
