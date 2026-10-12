@@ -43,18 +43,21 @@ function lichtSchritt(){
   const vorher = kristalle.map(k => k.an);
   for(const k of kristalle) k.an = false;
   lichtWege = lichtquellen.map(q => {
+    if(!lichtQuelleAn(q)) return [];   // Sonnenstein „per Nummer“: aus, solange seine Nummer aus ist
     const v = lichtVerfolgen(q.c, q.r, q.dx, q.dy, lichtFestImSpiel, (c, r) => spIdx.get(c + ',' + r), (c, r) => kIdx.get(c + ',' + r));
-    for(const k of v.getroffen) k.an = true;
+    for(const k of v.getroffen){ k.an = true; if(k.bleibt) k.gemerkt = true; }
     return v.weg;
   });
   kristalle.forEach((k, i) => {
     if(k.an !== vorher[i] && k.x > camX - 80 && k.x < camX + VW + 80) SFX.kristall(k.x, k.an);
-    if(k.an) k.leuchtT = Math.min(1, (k.leuchtT || 0) + 0.08); else k.leuchtT = Math.max(0, (k.leuchtT || 0) - 0.05);
+    if(k.an || k.gemerkt) k.leuchtT = Math.min(1, (k.leuchtT || 0) + 0.08); else k.leuchtT = Math.max(0, (k.leuchtT || 0) - 0.05);
   });
   for(const s of spiegelListe) if(s.drehT > 0) s.drehT--;
 }
 // (05-level-objekte.js, updatePlates) Kristall im Licht = Nummer an, wie eine gedrückte Druckplatte
-function lichtWunsch(want){ for(const k of kristalle) if(k.link) want[k.link] = want[k.link] || !!k.an; }
+function lichtWunsch(want){ for(const k of kristalle) if(k.link) want[k.link] = want[k.link] || !!k.an || !!k.gemerkt; }
+// Sonnenstein an? (Standard: immer; „per Nummer“: nur solange seine Verknüpfung an ist)
+function lichtQuelleAn(q){ return !q.link || !!linkOn[q.link]; }
 // (05-level-objekte.js) Hebel-Taste ohne Hebel in Reichweite: nächsten Spiegel drehen
 // nächster Spiegel in Reichweite der Hebel-Taste (oder null)
 function spiegelInReichweite(player){
@@ -73,9 +76,9 @@ function spiegelBedienen(player){
   SFX.spiegel(best.x);
   return true;
 }
-function lichtZuruecksetzen(){ for(const s of spiegelListe){ s.stellung = s.start; s.drehT = 0; } for(const k of kristalle){ k.an = false; k.leuchtT = 0; } }
+function lichtZuruecksetzen(){ for(const s of spiegelListe){ s.stellung = s.start; s.drehT = 0; } for(const k of kristalle){ k.an = false; k.gemerkt = false; k.leuchtT = 0; } }
 // --- Zeichnen (nur Anzeige) ---
-function lichtQuelleBild(c, x, y, dx, dy, an){
+function lichtQuelleBild(c, x, y, dx, dy, an, link){
   // Sonnenstein (Ruinen-Überarbeitung): dunkler Basaltblock mit Goldeinlage, glühende Sonnenscheibe mit drehendem
   // Strahlenkranz und Schein, Linse auf der Seite, aus der das Licht kommt
   const t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0, cx = x + 20, cy = y + 20;
@@ -103,6 +106,11 @@ function lichtQuelleBild(c, x, y, dx, dy, an){
   const lx = cx + dx*16, ly = cy + dy*16;
   c.fillStyle = '#c9963a'; c.beginPath(); c.arc(lx, ly, 4.5, 0, Math.PI*2); c.fill();
   c.fillStyle = an ? '#fffbe6' : '#d8c08a'; c.beginPath(); c.arc(lx, ly, 2.8, 0, Math.PI*2); c.fill();
+  if(link && typeof linkColor === 'function'){   // „per Nummer“: Plakette in der Farbe der Nummer
+    c.fillStyle = linkColor(link); c.beginPath(); c.arc(x + 33, y + 7, 6, 0, Math.PI*2); c.fill();
+    c.strokeStyle = 'rgba(40,22,8,.8)'; c.lineWidth = 1.2; c.stroke();
+    c.fillStyle = '#fff'; c.font = 'bold 8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(link), x + 33, y + 7.5);
+  }
 }
 function roundRectPfad(c, x, y, w, h, r){
   c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
@@ -171,7 +179,7 @@ function spiegelBild(c, x, y, stellung, dreh, halt){
     c.lineTo(fx, fy + r); c.lineTo(fx - r*0.25, fy + r*0.25); c.lineTo(fx - r, fy); c.lineTo(fx - r*0.25, fy - r*0.25); c.closePath(); c.fill();
   }
 }
-function kristallBild(c, x, y, leucht, halt){
+function kristallBild(c, x, y, leucht, halt, bleibt, gemerkt){
   // Lichtkristall auf Steinsockel; leuchtet er, glüht er warm mit großem Schein. Halterung wie beim Spiegel
   // (Ständer bis zum Boden oder Kette zur Decke), damit er nicht in der Luft hängt
   const t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0;
@@ -204,6 +212,10 @@ function kristallBild(c, x, y, leucht, halt){
   c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x + 20, y + 1); c.lineTo(x + 20, y + 32); c.moveTo(x + 9, y + 15); c.lineTo(x + 31, y + 15); c.stroke();
   c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.moveTo(x + 20, y + 3); c.lineTo(x + 25, y + 14); c.lineTo(x + 20, y + 14); c.closePath(); c.fill();
   if(leucht <= 0.5){ c.globalAlpha = 0.5 + 0.5*Math.sin(t*2); c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 15, y + 12, 1.4, 0, Math.PI*2); c.fill(); c.globalAlpha = 1; }
+  if(bleibt){   // „bleibt an“: Goldring um den Sockel, eingerastet = Ring leuchtet
+    c.strokeStyle = gemerkt ? '#ffe58a' : '#9a7a3a'; c.lineWidth = gemerkt ? 2.6 : 1.8;
+    c.beginPath(); c.ellipse(x + 20, y + 33, 15, 4, 0, 0, Math.PI*2); c.stroke();
+  }
 }
 // Strahl mit echtem Glow: mehrere Schichten im Modus „lighter“ (Licht addiert sich), wandernde helle Wellen, Funken,
 // Aufblitzen an Spiegeln, am Kristall und dort, wo der Strahl auf Stein trifft
@@ -243,7 +255,7 @@ function lichtZeichnen(){
     }
   }
   ctx.restore();
-  for(const q of lichtquellen){ const x = q.x - camX; if(x > -60 && x < VW + 60) lichtQuelleBild(ctx, x, q.y, q.dx, q.dy, true); }
+  for(const q of lichtquellen){ const x = q.x - camX; if(x > -60 && x < VW + 60) lichtQuelleBild(ctx, x, q.y, q.dx, q.dy, lichtQuelleAn(q), q.link); }
   for(const s of spiegelListe){
     const x = s.x - camX; if(x < -60 || x > VW + 60) continue;
     if(!s.halt) s.halt = spiegelHalt(s);   // nur Anzeige (Gelände ändert sich dafür nicht)
@@ -253,17 +265,17 @@ function lichtZeichnen(){
   for(const k of kristalle){
     const x = k.x - camX; if(x < -60 || x > VW + 60) continue;
     if(!k.halt) k.halt = spiegelHalt(k, true);   // nur Anzeige
-    kristallBild(ctx, x, k.y, k.leuchtT || 0, k.halt);
+    kristallBild(ctx, x, k.y, k.leuchtT || 0, k.halt, k.bleibt, k.gemerkt);
   }
 }
 // Lichter in dunklen Leveln (10a drawThemeDarkness): Sonnensteine und Strahl leuchten die Dunkelheit aus
 function lichtLichter(L){
-  for(const q of lichtquellen) L.push([q.x + 20, q.y + 20, 90]);
+  for(const q of lichtquellen) if(lichtQuelleAn(q)) L.push([q.x + 20, q.y + 20, 90]);
   for(const weg of lichtWege) for(let i = 0; i < weg.length - 1; i++){
     const [ax, ay] = weg[i], [bx, by] = weg[i + 1], n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay)/2));
     for(let k = 0; k <= n; k++) L.push([(ax + (bx - ax)*k/n)*40 + 20, (ay + (by - ay)*k/n)*40 + 20, 70]);
   }
-  for(const k of kristalle) if(k.an) L.push([k.x + 20, k.y + 18, 110]);
+  for(const k of kristalle) if(k.an || k.gemerkt) L.push([k.x + 20, k.y + 18, 110]);
 }
 ELEMENT_SOLID_TYPEN.add('lichtquelle');
 // (Editor) Strahl-Vorschau über dem Raster: blockiert von festen Kästchen (nicht Steg/Schein/Aufwind), Spiegel/Kristalle
@@ -289,18 +301,24 @@ elementRegistrieren({
     werkzeug: 'lichtquelle', gruppe: 'licht', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#ffd24a',
     titel: 'Lichtquelle (Sonnen-Stein, fest): schickt einen Lichtstrahl in die gewählte Richtung. Spiegel lenken ihn um, ' +
            'ein Lichtkristall schaltet seine Nummer an, solange Licht darauf fällt. Gelbe Linie = Strahl. Klick = Richtung drehen',
-    optionen: [{key: 'richtung', label: 'Richtung', werte: [['r', '→ rechts'], ['l', '← links'], ['o', '↑ hoch'], ['u', '↓ runter']]}],
+    optionen: [{key: 'richtung', label: 'Richtung', werte: [['r', '→ rechts'], ['l', '← links'], ['o', '↑ hoch'], ['u', '↓ runter']]},
+               {key: 'schalter', label: 'an/aus', titel: 'Immer an – oder nur, solange die gewählte Verknüpfungs-Nummer an ist (Hebel/Druckplatte)',
+                werte: [['immer', 'immer an'], ['nummer', 'nur per Nummer']]}],
+    neu(p){ const o = {c: p.c, r: p.r, richtung: p.richtung, schalter: p.schalter}; if(p.schalter === 'nummer') o.link = Number(linkSelect.value); return o; },
+    nummerAktiv: p => p.schalter === 'nummer' && !!p.link,
+    mitNummer: false, nummerName: 'Sonnenstein an',
     klick(p){ const o = ['r', 'u', 'l', 'o']; p.richtung = o[(o.indexOf(p.richtung || 'r') + 1) % 4]; },
-    zeichnen(ctx, c, r, TILE, p){ const [dx, dy] = LICHT_RICHTUNG[p.richtung] || [1, 0]; ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); lichtQuelleBild(ctx, 0, 0, dx, dy, true); ctx.restore(); },
+    zeichnen(ctx, c, r, TILE, p){ const [dx, dy] = LICHT_RICHTUNG[p.richtung] || [1, 0]; ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); lichtQuelleBild(ctx, 0, 0, dx, dy, true, p.schalter === 'nummer' ? p.link : null); ctx.restore(); },
     zeichnenAlle: lichtEditorVorschau,
-    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, richtung: p.richtung || 'r'})),
+    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, richtung: p.richtung || 'r',
+      ...(p.schalter === 'nummer' && p.link ? {link: p.link} : {})})),
   },
   spiel: {
     laden(daten){
       lichtquellen = (daten.lichtquellen || []).map(q => {
         const [dx, dy] = LICHT_RICHTUNG[q.richtung] || [1, 0];
         solids.push({x: q.x, y: q.y, w: 40, h: 40, type: 'lichtquelle'});
-        return {x: q.x, y: q.y, c: Math.round(q.x/40), r: Math.round(q.y/40), dx, dy};
+        return {x: q.x, y: q.y, c: Math.round(q.x/40), r: Math.round(q.y/40), dx, dy, link: q.link || null};
       });
       lichtWege = [];
     },
@@ -339,15 +357,18 @@ elementRegistrieren({
   editor: {
     werkzeug: 'kristall', gruppe: 'licht', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#8fd0e0',
     mitNummer: true, nummerName: 'Lichtkristall',
-    titel: 'Lichtkristall: solange ein Lichtstrahl darauf fällt, ist seine Verknüpfung AN (wie eine gedrückte Druckplatte)',
+    titel: 'Lichtkristall: solange ein Lichtstrahl darauf fällt, ist seine Verknüpfung AN (wie eine gedrückte Druckplatte). ' +
+           '„bleibt an“: einmal getroffen, bleibt er an (bis zum Neustart/Tod)',
+    optionen: [{key: 'art', label: 'Kristall', titel: 'solange Licht darauf fällt – oder: einmal getroffen, bleibt er an',
+                werte: [['solange', 'solange Licht'], ['bleibt', 'bleibt an']]}],
     zeichnen(ctx, c, r, TILE, p){
-      ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); kristallBild(ctx, 0, 0, 0); ctx.restore();
+      ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); kristallBild(ctx, 0, 0, 0, null, p.art === 'bleibt', false); ctx.restore();
       ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.strokeText(String(p.link), c*TILE + TILE - 8, r*TILE + 9); ctx.fillText(String(p.link), c*TILE + TILE - 8, r*TILE + 9);
     },
-    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, link: p.link})),
+    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, link: p.link, ...(p.art === 'bleibt' ? {bleibt: true} : {})})),
   },
   spiel: {
-    laden(daten){ kristalle = (daten.kristalle || []).map(k => ({x: k.x, y: k.y, c: Math.round(k.x/40), r: Math.round(k.y/40), link: k.link, an: false, leuchtT: 0})); },
+    laden(daten){ kristalle = (daten.kristalle || []).map(k => ({x: k.x, y: k.y, c: Math.round(k.x/40), r: Math.round(k.y/40), link: k.link, bleibt: !!k.bleibt, an: false, gemerkt: false, leuchtT: 0})); },
   },
 });

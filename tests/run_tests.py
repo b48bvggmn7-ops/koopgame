@@ -7585,6 +7585,33 @@ async def aktions_hinweis(g):
     assert any(abs(x - 1700) < 5 and m for x, m, f in b), f'keine Blase am Hebel: {b}'
     await g.ev("menuScreen = null;")
 
+@test
+async def licht_optionen(g):
+    """Ruinen-Licht: Sonnenstein „nur per Nummer“ (leuchtet nur, solange seine Nummer an ist) und Lichtkristall „bleibt an“
+    (einmal getroffen, bleibt seine Nummer an – bis Tod/Neustart). Alte Level ohne diese Felder: wie bisher."""
+    d = level([ground(0, 680, 2400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+              lichtquellen=[{'x': 400, 'y': 600, 'richtung': 'r', 'link': 5}],
+              spiegel=[{'x': 800, 'y': 600, 'stellung': '/'}],
+              kristalle=[{'x': 800, 'y': 640, 'link': 6}, {'x': 800, 'y': 200, 'link': 7, 'bleibt': True}])
+    await g.load(d)
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+    lauf = lambda: g.ev("(() => { for(let i = 0; i < 4; i++) stepSim(0); return [lichtWege[0].length, !!linkOn[6], !!linkOn[7]]; })()")
+    w, k6, k7 = await lauf()
+    assert w == 0 and not k6 and not k7, ('Sonnenstein leuchtet ohne Nummer', w, k6, k7)
+    await g.ev("setLink(5, true)")
+    w, k6, k7 = await lauf()
+    assert w > 0 and k7 and not k6, ('Strahl über den Spiegel nach oben auf Kristall 7 erwartet', w, k6, k7)
+    await g.ev("spiegelListe[0].stellung = '\\\\'")
+    w, k6, k7 = await lauf()
+    assert k6 and k7, ('Kristall 7 („bleibt an“) muss an bleiben, Kristall 6 jetzt im Licht', k6, k7)
+    await g.ev("setLink(5, false)")
+    w, k6, k7 = await lauf()
+    assert w == 0 and not k6 and k7, ('Sonnenstein aus: Kristall 6 aus, Kristall 7 bleibt', w, k6, k7)
+    await g.ev("resetLevel(); deathState = null; menuScreen = 'pause';")
+    w, k6, k7 = await lauf()
+    assert not k7, 'nach Neustart muss Kristall 7 wieder aus sein'
+    await g.ev("menuScreen = null;")
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
