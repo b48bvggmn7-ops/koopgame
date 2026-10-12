@@ -7645,6 +7645,7 @@ LICHT_LOESER_JS = """(cfg) => {
       s.stellung = (m >> i) & 1 ? (s.start === '/' ? '\\\\' : '/') : s.start; s.drehS = 0; s.wartet = false; }
     linkOn = {}; for(const d of solids) if(d.type === 'door'){ d.open = false; d.gone = false; d.closing = false; }
     for(const l of cfg.offen || []) setLink(l, true);
+    if(cfg.pre) (new Function(cfg.pre))();
     const sp = new Map(spiegelListe.map(s => [s.c + ',' + s.r, s])), kr = new Map(kristalle.map(k => [k.c + ',' + k.r, k]));
     const hits = [], enden = [];
     for(const q of lichtquellen){ if(!imBereich(q) || !lichtQuelleAn(q)) continue;
@@ -7677,6 +7678,8 @@ LICHT_RAETSEL = [
     {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Brücke', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [33], 'loesungen': 1, 'sackgassen': 1},
     {'level': 'ruinen/02-mondnacht.json', 'name': 'Mondnacht Abschnitt 1 (Tor)', 'spalten': [450, 500], 'links': [53], 'ziel': [50], 'offen': [52], 'loesungen': 1, 'sackgassen': 0},
     {'level': 'ruinen/02-mondnacht.json', 'name': 'Mondnacht „Strahl-Labyrinth“', 'spalten': [450, 500], 'links': [52, 53, 55, 56], 'ziel': [51], 'offen': [52], 'loesungen': 1, 'sackgassen': 3},
+    {'level': 'ruinen/05-felsenflucht.json', 'name': 'Felsenflucht „Felsbrecher-Licht“', 'spalten': [750, 790], 'links': [45, 46], 'ziel': [42], 'offen': [40, 41, 44], 'loesungen': 1, 'sackgassen': 2,
+     'pre': "for(const s of solids) if(s.type === 'crumble' && s.x === 765*40) s.gone = true;"},   # der Fels hat die Bröckel-Wand aufgebrochen
     {'level': 'ruinen/04-sonnentempel.json', 'name': 'Sonnentempel „Licht plus Fallen“', 'spalten': [482, 518], 'links': [15, 16, 17], 'ziel': [11], 'loesungen': 1, 'sackgassen': 2},
     {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Ausgang', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [34], 'loesungen': 1, 'sackgassen': 1},
 ]
@@ -7874,16 +7877,18 @@ async def fallengang_lichtweiche(g):
 async def felsenflucht_felsbrecher_licht(g):
     """Felsenflucht, Licht-Rätsel „Felsbrecher-Licht“ (Spalte 752–800, vor dem Ziel): Hebel 40 lässt den Fels rollen und
     öffnet Tor 40; der Fels bricht die Bröckel-Wand auf (Gang und Strahl frei) und fällt in die Grube. Der Sonnenstein
-    leuchtet nur, solange jemand auf Platte 44 steht. Spiegel 1 am Boden (jeder), Spiegel 2 auf dem Affen-Sims (Haken),
-    Licht-Tür 41 im Strahl – ihr Hebel liegt oben im Aufwind-Schacht (nur das Schweinchen). Kristall 42 („bleibt an“)
-    öffnet den Ausgang. Koop-Bot: Affe Hebel 40, über die Grube, Haken, Spiegel 2, zurück auf die Platte; Schweinchen
-    Schacht -> Hebel 41, runter, dreht Spiegel 1. Dazu: ohne Fels bleibt die Bröckel-Wand zu; ohne Platte kein Licht."""
+    leuchtet nur, solange jemand auf Platte 44 steht. Schaltbare Spiegel: Spiegel 1 am Boden dreht Hebel 45 (jeder),
+    Spiegel 2 dreht Platte 46 auf dem Affen-Sims (Haken); Licht-Tür 41 im Strahl – ihr Hebel liegt oben im Aufwind-Schacht
+    (nur das Schweinchen). Sackgassen: Spiegel 1 „\\“ = Boden, Spiegel 2 „\\“ = Wand links, Tür 41 zu. Kristall 42
+    („bleibt an“) öffnet den Ausgang. Koop-Bot: Affe Hebel 40, über die Grube, Haken, Platte 46 (liest Spiegel 2), zurück
+    auf Platte 44; Schweinchen Schacht -> Hebel 41, runter, Hebel 45. Dazu: ohne Fels bleibt die Bröckel-Wand zu."""
     await koop_level(g, 'ruinen/05-felsenflucht.json')
     fehler = []
     def soll(ok, name, info=''):
         if not ok: fehler.append(f'{name}: {str(info)[:300]}')
     info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
     fels_weg = {'wait': 'felsen.find(F => F.link === 40).weg', 'frames': 1500}
+    m2 = 'spiegelListe.find(s => s.c === 774 && s.r === 9).stellung'
     ueber_stein = [{'holdIf': {'right': f'P.x < {kx(753)} - 6'}, 'until': f'P.x >= {kx(753)} - 6 || P.x > {kx(755)}', 'frames': 300},
                    {'pressIf': {'jump': f'P.grounded && P.x < {kx(755)}'}, 'hold': ['right', 'jump'], 'until': f'P.x > {kx(755)} && P.grounded', 'frames': 200}]
     rechts = ueber_stein + [k_lauf(766, -8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
@@ -7894,11 +7899,12 @@ async def felsenflucht_felsbrecher_licht(g):
                 {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                 {'swing': True, 'pull': 60, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'},
                 {'holdIf': {'right': f'P.x < {kx(772)}', 'left': f'P.x > {kx(773)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
-                wb_halt(kx(773)), {'use': True, 'frames': 8}, {'hold': ['right'], 'until': f'P.x > {kx(774)} + 10', 'frames': 200},
+                wb_halt(kx(773)), {'holdIf': {'left': f'{m2} === "\\\\" && P.x > {kx(772)}'}, 'until': f'({m2} === "/" && P.x > {kx(772)} + 25) || P.x <= {kx(772)} + 2', 'frames': 200},
+                {'wait': f'{m2} === "/"', 'frames': 100}, {'hold': ['right'], 'until': f'P.x > {kx(774)} + 10', 'frames': 200},
                 {'until': 'P.grounded', 'frames': 200}] + links + [wb_halt(kx(756)), {'wait': '!!linkOn[42]', 'frames': 5000}] + rechts + [k_lauf(795)]
     schwein = [fels_weg] + rechts + [k_lauf(782)] + wb_aufwind(783, 2, 782) + [{'use': True, 'frames': 8},
                {'hold': ['right'], 'until': f'P.x > {kx(783)}', 'frames': 100}, {'until': 'P.grounded', 'frames': 300},
-               {'hold': ['left'], 'until': f'P.x < {kx(777)}', 'frames': 300}, wb_halt(kx(775)),
+               {'hold': ['left'], 'until': f'P.x < {kx(778)}', 'frames': 300}, wb_halt(kx(776)),
                {'wait': f'Q.grounded && Math.abs(Q.x - {kx(756)}) < 8 && spiegelListe.find(s => s.c === 774 && s.r === 9).stellung === "/"', 'frames': 5000},
                {'use': True, 'frames': 8}, {'wait': '!!linkOn[42]', 'frames': 300}, k_lauf(795)]
     ok = []
