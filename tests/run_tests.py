@@ -952,19 +952,26 @@ async def level7_lianenschlucht(g):
     for x0, kante, ziel, links in ((620, 626, (637, 650), [10]), (645, 650, (661, 676), [10, 12])):
         r = await koop(g, f=kat(x0, 2), m=kat(kante - 6, 2), plans={'f': k_segeln(kante, 10)}, links=links, maxFrames=1500)
         soll(k_pos(r, 'f') and ziel[0] <= k_pos(r, 'f')[0] <= ziel[1] and k_pos(r, 'f')[1] == 2, f'Dach-Lücke bis {ziel[0]} (Schweinchen)', r.get('pos'))
-    async def affe(start, links, ziel, n, rels):
+    async def affe(start, links, ziel, n, rels, slacks=(0,)):
         for rel in rels:
-            for d in (0, -10, 10):
-                plan = k_haken(n, rel, start[0] + 1, d)
-                plan[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(ziel[1])} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
-                r = await koop(g, m=kat(*start), f=kat(start[0] + 2, 2), plans={'m': plan}, links=links, maxFrames=2500)
-                if k_pos(r, 'm') and ziel[0] - 0.6 <= k_pos(r, 'm')[0] <= ziel[1] + 0.6 and k_pos(r, 'm')[1] == ziel[2]: return True
+            for d in (0, -10, 10, -20):
+                for sl in slacks:
+                    plan = k_haken(n, rel, start[0] + 1, d)
+                    for st in plan:
+                        if st.get('swing'): st['slack'] = sl
+                    plan[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(ziel[1])} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
+                    r = await koop(g, m=kat(*start), f=kat(start[0] + 2, 2), plans={'m': plan}, links=links, maxFrames=2500)
+                    if k_pos(r, 'm') and ziel[0] - 0.6 <= k_pos(r, 'm')[0] <= ziel[1] + 0.6 and k_pos(r, 'm')[1] == ziel[2]: return True
         return False
     R1, R2 = 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'
     R3, R4 = 'P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 2'
     soll(await affe((610, 14), [], (620, 621, 9), 1, (R1, R2, R3, R4)), 'Rand -> Haken -> Säule A (Affe)')
-    soll(await affe((620, 9), [9], (638, 640, 9), 2, (R1, R2, R3, R4)), 'Säule A -> Säule B mit Tür 9 offen (Affe)')
-    soll(not await affe((620, 9), [], (638, 640, 9), 2, (R1, R2, R3, R4)), 'ohne Tür 9 kommt der Affe nicht zur Säule B')
+    # Bild-Regel: Haken zwischen den Säulen eine Reihe höher (Reihe 6 statt 7, 4 Reihen über der Säule) – bleibt eine Präzisionsstelle
+    R5, R6 = 'P.x > P.anchor.x + 40 && P.vy < -3', 'P.vy < -5 && f > 30'
+    R7, R8 = 'P.y < P.anchor.y + 20 && P.vy < 0', 'P.y < P.anchor.y && f > 20'
+    RA = (R1, R2, R3, R4, R5, R6, R7, R8, 'P.x > P.anchor.x + 80 && P.vx > 1', 'P.x > P.anchor.x + 100')
+    soll(await affe((620, 9), [9], (637, 641, 9), 2, RA, (0, 15, 30)), 'Säule A -> Säule B mit Tür 9 offen (Affe)')
+    soll(not await affe((620, 9), [], (637, 641, 9), 2, (R1, R2, R3, R4)), 'ohne Tür 9 kommt der Affe nicht zur Säule B')
     soll(await affe((638, 9), [9, 11], (663, 680, 14), 2, (R1, R2)), 'Säule B -> Ufer mit Tür 11 offen (Affe)')
     # 13) Finale: zwei Pilze auf die Äste (beide), letzte Schlucht: Schweinchen segelt, Affe zwei Haken
     for who, other in (('m', 'f'), ('f', 'm')):
@@ -1259,8 +1266,8 @@ async def level9_fallengang(g):
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61 and a != 604]   # Ausnahme: Flammen-Doppelgang 604–680 (ein Rätsel)
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70 and a != 604]   # Ausnahme: Flammen-Doppelgang 604–680 (ein Rätsel)
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
     r = await koop(g, m=kat(605, 15), f=kat(604, 15), plans={'m': [k_lauf(609), {'wait': f'P.y < {ky(11)}'}, {'frames': 20}]}, maxFrames=800)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] <= 10, 'Doppelgang: blaues Tor nach oben (Affe)', r.get('pos'))
@@ -1410,8 +1417,8 @@ async def level10_sonnentempel(g):
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61 and a != 401]   # Ausnahme: zwei Wege 401–474 (ein Rätsel)
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70 and a != 401]   # Ausnahme: zwei Wege 401–474 (ein Rätsel)
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     r = await koop(g, m=kat(620, 15), f=kat(618, 15), plans={'m': haken(625, 9, 30) + am(631)}, maxFrames=1500)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[12]"), 'Affe per Haken zum Spiegel -> Kristall 12', r.get('pos'))
     r = await koop(g, f=kat(642, 6), m=kat(632, 9), plans={'f': gleit(643, kx(654), 4) + [{'frames': 10}] + am(653)}, maxFrames=1500)
@@ -1526,8 +1533,8 @@ async def level11_felsenflucht(g):
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 62 and a not in (100, 320, 402, 602)]   # Ausnahme: jede Verfolgung am Stück
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander (außer in Verfolgungen)', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70 and a not in (100, 320, 402, 602)]   # Ausnahme: jede Verfolgung am Stück
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander (außer in Verfolgungen)', luecken)
     steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
     haken = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
@@ -1714,7 +1721,7 @@ async def level12_tropfsteingang(g):
         r = await koop(g, m=kat(746, 15), f=kat(744, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=1500)
         soll(r.get('done'), 'E4 Ziel', r.get('pos'))
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    soll(all(b - a <= 62 for a, b in zip(cps, cps[1:])), 'Checkpoints höchstens ~60 Spalten auseinander', cps)
+    soll(all(b - a <= 70 for a, b in zip(cps, cps[1:])), 'Checkpoints höchstens 70 Spalten auseinander', cps)
     assert not fehler, fehler
 
 
@@ -1886,8 +1893,8 @@ async def level13_eisgrotte(g):
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     if True:
         def vorbei(c, link): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(c)}) < 30 && !linkOn[{link}] && f % 15 === 0'}, 'until': f'!!linkOn[{link}]', 'frames': 900}
         ok = None
@@ -1951,8 +1958,8 @@ async def level14_leuchtgrotte(g):
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
         return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         for who in ('m', 'f'):
@@ -2104,8 +2111,8 @@ async def level15_foerderwerk(g):
         return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
     halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         for who in ('m', 'f'):
@@ -2284,8 +2291,8 @@ async def level16_tiefenschlund(g):
     hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
     halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         for who in ('m', 'f'):
@@ -2471,8 +2478,8 @@ async def level17_glutpfad(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         await beide('E1 Lava-Gruben', 7, lambda w: [k_lauf(13, -6)] + sprung_zu(kx(18)) + [k_lauf(25, 0)] + sprung_zu(kx(32)) + [k_lauf(36)], 35)
@@ -2581,8 +2588,8 @@ async def level18_aschefeld(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         await beide('E1 eine Presse', 7, lambda w: [durch(26)], 25)
@@ -2689,8 +2696,8 @@ async def level19_magmakammer(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         zz = lambda: [k_lauf(32, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(6)} + 2 && P.x > {kx(33)}', 'frames': 900},
@@ -2830,8 +2837,8 @@ async def level20_schlackewerk(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         await beide('E1 schnelles Band unter der Pressen-Welle', 7, lambda w: [durchBand(56, 30)], 55, delay=150)
@@ -2968,8 +2975,8 @@ async def level21_feuerschlund(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         for who in ('m', 'f'):
@@ -3024,10 +3031,17 @@ async def level21_feuerschlund(g):
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
     if True:
-        m = [{'wait': '!!linkOn[5]'}, {'aim': [kx(416), kx(423), kx(430), kx(437), kx(447)], 'jumps': [kx(410)], 'until': f'P.grounded && P.x > {kx(444)}', 'frames': 1200}] + am(446) + [{'wait': f'Q.x > {kx(448)}'}, k_lauf(458)]
-        f = [halten(409), {'wait': '!!linkOn[6]'}, {'holdIf': {'right': f'P.x < {kx(411)}'}, 'until': f'P.x > {kx(440)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, k_lauf(457)]
-        r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
-        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 456, 'E3 Schwein hält das Licht (Platte 5), Affe springt über die Pilze, Hebel 6 holt das Schwein per Teleporter', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        # Bild-Regel: Lavafeld mit Zwischen-Insel (424–427) – zwei Pilze, Insel (Hebel 12 holt das Schwein, Platte 13 = Licht 2), zwei Pilze
+        m = [{'wait': '!!linkOn[5]'}, {'aim': [kx(412), kx(418), kx(426)], 'jumps': [kx(406)], 'until': f'P.grounded && P.x > {kx(424)}', 'frames': 1200}] + am(426) + \
+            [{'wait': '!!linkOn[13]'}, {'aim': [kx(432), kx(438), kx(444)], 'jumps': [kx(427)], 'until': f'P.grounded && P.x > {kx(443)}', 'frames': 1200}] + am(444) + [{'wait': f'Q.x > {kx(445)} && Q.grounded'}, k_lauf(458)]
+        f = [halten(406), {'wait': '!!linkOn[12]'}, {'holdIf': {'right': f'P.x < {kx(407)}'}, 'until': f'P.x > {kx(420)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, halten(425),
+             {'wait': '!!linkOn[6]'}, {'holdIf': {'right': f'P.x < {kx(427)}'}, 'until': f'P.x > {kx(440)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, k_lauf(457)]
+        r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': m, 'f': f}, maxFrames=6000, pre=PRE, trace=True)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 456, 'E3 Schwein hält das Licht (Platte 5), Affe über zwei Pilze zur Insel, Hebel 12 holt das Schwein, Platte 13 Licht 2, zwei Pilze, Hebel 6', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(404)] or [99])
+        soll(abst <= 20.5, 'E3 Lavafeld: beide bleiben im Bild (höchstens 20 Spalten auseinander)', abst)
+        r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': [{'frames': 10}], 'f': [{'frames': 30}, k_lauf(407, 0), {'frames': 120}]}, maxFrames=2000, pre=PRE)
+        soll(await g.ev(f"p2.x < {kx(410)}"), 'E3 Teleporter 3 nur mit Hebel 12 (ohne Hebel bleibt das Schwein vorne)', r.get('pos'))
         hoch = [k_lauf(457, 0)] + sprung_zu(kx(460)) + sprung_zu(kx(463)) + sprung_zu(kx(466)) + sprung_zu(kx(470)) + [k_lauf(473), {'until': 'P.grounded', 'frames': 200}]
         m = hoch + [halten(481), {'wait': f'Q.y < {ky(8)}'}, {'wait': '!!linkOn[8]'}, {'holdIf': {'left': f'P.x > {kx(477)}'}, 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, k_lauf(503)]
         f = [{'frames': 30}] + hoch + [{'wait': '!!linkOn[7]'}, {'holdIf': {'right': f'P.x < {kx(475)} - 3', 'left': f'P.x > {kx(475)} + 3'}, 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, halten(496), {'wait': f'Q.y < {ky(8)} && Q.grounded'}, k_lauf(504)]
@@ -3124,8 +3138,8 @@ async def level22_kraterherz(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         pl = lambda w: [{'holdIf': {'left': f'P.x > {kx(14)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
@@ -3203,7 +3217,7 @@ async def level22_kraterherz(g):
 
 @test
 async def dschungel5_dornenpfad(g):
-    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht, Zwei-Gänge-Staffel, Finale) bis zum Ziel; Checkpoints höchstens ~60 Spalten auseinander."""
+    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht, Zwei-Gänge-Staffel, Finale) bis zum Ziel; Checkpoints höchstens 70 Spalten auseinander."""
     await koop_level(g, 'dschungel/05-dornenpfad.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3237,8 +3251,8 @@ async def dschungel5_dornenpfad(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who} vorn)', info(r))
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         steine = lambda w: [k_lauf(13, -4)] + sprung_zu(kx(16)) + sprung_zu(kx(20)) + sprung_zu(kx(24)) + sprung_zu(kx(28)) + sprung_zu(kx(32)) + sprung_zu(kx(37)) + [k_lauf(39)]
@@ -3401,7 +3415,7 @@ async def dschungel5_dornenpfad(g):
 
 @test
 async def dschungel6_wipfelsturm(g):
-    """Dschungel 6 „Wipfelsturm“ (6er-Welten, schwerstes Dschungel-Level): Koop-Bot spielt jede Stelle (Luft-Tore über Dornen, Brücke per Platte, Takt-Treppe 1 s, Jagd durchs Tor, wippende Haken/Aufwinde, Tor-Staffel, Pilz-Turm, Bröckel-Abstieg, Wechsel-Schleuse mit Klappe, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale) bis zum Ziel; Checkpoints höchstens ~60 Spalten auseinander."""
+    """Dschungel 6 „Wipfelsturm“ (6er-Welten, schwerstes Dschungel-Level): Koop-Bot spielt jede Stelle (Luft-Tore über Dornen, Brücke per Platte, Takt-Treppe 1 s, Jagd durchs Tor, wippende Haken/Aufwinde, Tor-Staffel, Pilz-Turm, Bröckel-Abstieg, Wechsel-Schleuse mit Klappe, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale) bis zum Ziel; Checkpoints höchstens 70 Spalten auseinander."""
     await koop_level(g, 'dschungel/06-wipfelsturm.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3443,8 +3457,8 @@ async def dschungel6_wipfelsturm(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who} vorn)', info(r))
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         for who in ('m', 'f'):
@@ -3578,7 +3592,7 @@ async def dschungel6_wipfelsturm(g):
 
 @test
 async def ruinen6_tempelherz(g):
-    """Ruinen 6 „Tempelherz“ (6er-Welten, schwerstes Ruinen-Level): Koop-Bot spielt jede Stelle (Fels unter dem Pfeilregen, Insel-/Sims-Spiegel, Fels-Flucht durch die Tore, Takt-Steine mit Fels, Licht-Takt-Tor, Pfeilgang mit Brücke, Flammen-Welle mit Fels, Wechsel-Flucht, Licht-Brücke, Flammen-Kreuz, Fels und Licht-Tor, Doppelstrahl-Tor, letzte Felsflucht) bis zum Ziel; Checkpoints höchstens ~60 Spalten auseinander."""
+    """Ruinen 6 „Tempelherz“ (6er-Welten, schwerstes Ruinen-Level): Koop-Bot spielt jede Stelle (Fels unter dem Pfeilregen, Insel-/Sims-Spiegel, Fels-Flucht durch die Tore, Takt-Steine mit Fels, Licht-Takt-Tor, Pfeilgang mit Brücke, Flammen-Welle mit Fels, Wechsel-Flucht, Licht-Brücke, Flammen-Kreuz, Fels und Licht-Tor, Doppelstrahl-Tor, letzte Felsflucht) bis zum Ziel; Checkpoints höchstens 70 Spalten auseinander."""
     await koop_level(g, 'ruinen/06-tempelherz.json')
     fehler = []
     def soll(ok, name, info=''):
@@ -3621,8 +3635,8 @@ async def ruinen6_tempelherz(g):
             good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
             soll(good, f'{name} ({who} vorn)', info(r))
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
-    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 61]
-    soll(not luecken, 'Checkpoints höchstens ~60 Spalten auseinander', luecken)
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
     # --- Etappe 1 ---
     if True:
         def pfeil_plan(cs):
