@@ -1033,9 +1033,9 @@ async def level8_gluehwald(g):
     r = await koop(g, m=kat(140, 14), f=kat(138, 14), plans={'m': [k_lauf(165)], 'f': [{'frames': 60}, k_lauf(163)]}, maxFrames=2000)
     soll(r.get('done'), 'Tor 1 durch den Felsen (beide)', r.get('pos'))
     f = [k_lauf(179), {'wait': f'P.y < {ky(7)}'}, k_lauf(197, -10), {'use': True, 'frames': 5}, k_lauf(201), {'until': 'P.grounded', 'frames': 200}]
-    r = await koop(g, f=kat(174, 14), m=kat(172, 14), plans={'f': f}, maxFrames=2000)
+    r = await koop(g, f=kat(176, 14), m=kat(174, 10), plans={'f': f}, maxFrames=2000)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 14 and await g.ev("!!linkOn[3]"), 'pinkes Tor -> Hebel 3 (Schweinchen)', r.get('pos'))
-    r = await koop(g, m=kat(174, 14), f=kat(172, 14), plans={'m': [k_lauf(186)]}, maxFrames=800)
+    r = await koop(g, m=kat(176, 14), f=kat(174, 10), plans={'m': [k_lauf(186)]}, maxFrames=800)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 14, 'Affe geht nicht durchs pinke Tor', r.get('pos'))
     m = [k_lauf(209), {'wait': f'P.y < {ky(7)}'}, k_lauf(227, -10), {'use': True, 'frames': 5}, k_lauf(231), {'until': 'P.grounded', 'frames': 200}]
     r = await koop(g, m=kat(194, 14), f=kat(200, 14), plans={'m': m}, links=[3], maxFrames=2000)
@@ -1103,9 +1103,9 @@ async def level8_gluehwald(g):
          k_lauf(553, -6)] + ueber_haken(kx(566)) + [{'wait': '!!linkOn[13]'}, k_lauf(592), {'until': 'P.grounded', 'frames': 200}, k_lauf(596)]
     f = [k_lauf(508, -14), {'use': True, 'frames': 5}, {'wait': '!!linkOn[10]'}, k_lauf(526, -2)] + sprung_zu(kx(536), 6) + [k_lauf(537, -14), {'use': True, 'frames': 5},
          {'wait': '!!linkOn[12]'}, k_lauf(556, -2)] + sprung_zu(kx(566), 6) + [k_lauf(567, -14), {'use': True, 'frames': 5}, {'wait': f'Q.x >= {kx(590)}'}, k_lauf(596)]
-    r = await koop(g, m=kat(486, 14), f=kat(484, 14), plans={'m': m, 'f': f}, maxFrames=6000)
+    r = await koop(g, m=kat(487, 14), f=kat(484, 10), plans={'m': m, 'f': f}, maxFrames=6000)
     soll(r.get('done'), 'Doppel-Gang-Staffel (Hebel 9–13)', r.get('pos'))
-    r = await koop(g, m=kat(486, 14), f=kat(484, 14), plans={'m': [k_lauf(489), {'wait': f'P.y < {ky(8)}'}, {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
+    r = await koop(g, m=kat(487, 14), f=kat(484, 10), plans={'m': [k_lauf(489), {'wait': f'P.y < {ky(8)}'}, {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
     soll(r['pos']['m'][0] < 512, 'Wand 9 hält den Affen ohne Hebel 9', r.get('pos'))
     # nach einem Tod am Checkpoint (unten im Gang) kommt der Affe durchs blaue Tor 8 wieder hinauf
     r = await koop(g, m=kat(539, 14), f=kat(541, 14), plans={'m': [{'hold': ['left'], 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 200}]}, maxFrames=800)
@@ -7291,6 +7291,11 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (740)', kat(735, 8), kat(734, 8), lambda: kombi_pilz_grube(740, 750), {'m': (750, 4), 'f': (750, 4)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (760)', kat(755, 8), kat(754, 8), lambda: kombi_pilz_grube(760, 770), {'m': (770, 4), 'f': (770, 4)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (780)', kat(775, 8), kat(774, 8), lambda: kombi_pilz_grube(780, 790), {'m': (790, 4), 'f': (790, 4)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (125)', kat(120, 14), kat(119, 14), lambda: kombi_pilz_grube(125, 135), {'m': (135, 10), 'f': (135, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (164)', kat(162, 14), kat(161, 14), lambda: kombi_pilz_grube(164, 172), {'m': (172, 10), 'f': (172, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (473)', kat(468, 14), kat(467, 14), lambda: kombi_pilz_grube(473, 483), {'m': (483, 10), 'f': (483, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (668)', kat(666, 6), kat(664, 6), lambda: kombi_pilz_grube(668, 676), {'m': (676, 2), 'f': (676, 2)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (681)', kat(678, 2), kat(677, 2), lambda: kombi_pilz_grube(681, 689), {'m': (689, 2), 'f': (689, 2)}),
 ]
 async def kombi_stellen_pruefen(g, welt):
     """Bot-Lauf über jede eingebaute Kombi-Stelle der Welt: mit Kombi kommen beide an (mindestens bis Spalte/Reihe des

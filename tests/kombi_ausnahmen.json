@@ -4,5 +4,23 @@
   "regel": "Kombi-Level",
   "spalte": null,
   "begruendung": "5 statt 6 Kombi-Stellen: Level 1 ist der Einstieg und vom Nutzer gestaltet; Etappe 2/3 bestehen aus engen Hebel-/Plattform-Abschnitten (Hebel 2–8, fahrende Plattformen über der 30er-Grube), in die keine Fähigkeiten-Kombi passt, ohne sie umzubauen; der Start bleibt bewusst ohne Kombi-Grube. Jede Etappe hat mindestens eine Kombi-Stelle."
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "5 statt 9 Kombi-Stellen (die Grube 681 schließt an den Landeplatz von 668 an = Kette). Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 2 ohne Kombi-Stelle: Teleporter-Räume und Luft-Tor. Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 3 nur 1 Kombi-Stelle (473): Wechselboden-Feld und Doppel-Gang-Staffel. Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
  }
 ]
