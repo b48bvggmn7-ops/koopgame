@@ -7790,13 +7790,13 @@ async def tempelherz_sonnenkrone(g):
         return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                 {'swing': True, 'pull': 60, 'release': f'P.y < {ky(10)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
                 {'holdIf': {'left': f'P.x > {kx(760)}', 'right': f'P.x < {kx(759)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200},
-                wb_halt(kx(759)), {'wait': '!!linkOn[60]', 'frames': 6000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[61]', 'frames': 300},
+                wb_halt(kx(759)), {'wait': '!!linkOn[60]', 'frames': 6000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[5]', 'frames': 300},
                 {'use': True, 'frames': 8}, {'hold': ['left'], 'until': f'P.x < {kx(758)} + 10', 'frames': 200}, {'until': 'P.grounded', 'frames': 200},
-                {'hold': ['left'], 'until': f'P.x < {px} + 40', 'frames': 300}, platte('!!linkOn[62] && !!linkOn[63]'), k_lauf(794)]
-    schwein = [k_lauf(752), platte(f'!!linkOn[61] && spiegelListe.find(s => s.c === 758 && s.r === 10).stellung === "/" && Q.grounded && Math.abs(Q.x - {px}) < 50'),
+                {'hold': ['left'], 'until': f'P.x < {px} + 40', 'frames': 300}, platte('!!linkOn[6] && !!linkOn[21]'), k_lauf(794)]
+    schwein = [k_lauf(752), platte(f'!!linkOn[5] && spiegelListe.find(s => s.c === 758 && s.r === 10).stellung === "/" && Q.grounded && Math.abs(Q.x - {px}) < 50'),
                k_lauf(766, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
-               wb_halt(kx(779)), {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[62]', 'frames': 300},
-               {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[63]', 'frames': 300}, k_lauf(794)]
+               wb_halt(kx(779)), {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[6]', 'frames': 300},
+               {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[21]', 'frames': 300}, k_lauf(794)]
     ok = []
     for jx in (761, 761.4):
         r = await koop(g, m=kat(746, 15), f=kat(745, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=16000)
