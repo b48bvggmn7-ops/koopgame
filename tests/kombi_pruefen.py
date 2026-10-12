@@ -215,7 +215,8 @@ def pruefe_level(datei):
         e1 = min(cols, e0 + ETAPPE) - 1
         if e1 - e0 < ETAPPE // 2 and etappen: etappen[-1][1] = e1; continue   # kurzer Rest gehört zur vorigen Etappe
         etappen.append([e0, e1])
-    pro_etappe = [sum(1 for s in st if e0 <= (s['von'] + s['bis']) // 2 <= e1) for e0, e1 in etappen]
+    lage = lambda s: s['von'] if s.get('kette') else (s['von'] + s['bis']) // 2     # eine Kette zählt dort, wo sie beginnt
+    pro_etappe = [sum(1 for s in st if e0 <= lage(s) <= e1) for e0, e1 in etappen]
     befunde = []
     for k in ks:
         if k['art'] in ('zu eng', 'zu weit'):

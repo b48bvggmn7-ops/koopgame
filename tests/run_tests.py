@@ -7305,6 +7305,9 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (473)', kat(468, 14), kat(467, 14), lambda: kombi_pilz_grube(473, 483), {'m': (483, 10), 'f': (483, 10)}),
     ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (668)', kat(666, 6), kat(664, 6), lambda: kombi_pilz_grube(668, 676), {'m': (676, 2), 'f': (676, 2)}),
     ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (681)', kat(678, 2), kat(677, 2), lambda: kombi_pilz_grube(681, 689), {'m': (689, 2), 'f': (689, 2)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (170)', kat(165, 15), kat(164, 15), lambda: kombi_pilz_grube(170, 180), {'m': (180, 11), 'f': (180, 11)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_grube(190, 200), {'m': (200, 11), 'f': (200, 11)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (392)', kat(387, 15), kat(386, 15), lambda: kombi_pilz_grube(392, 402), {'m': (402, 11), 'f': (402, 11)}),
 ]
 # Abkürzungs-Proben: liegen zwei Kombi-Stellen dicht hintereinander, darf man die zweite NICHT vom erhöhten Landeplatz der
 # ersten aus ohne neue Kombi schaffen (sonst ist sie keine eigene Stelle, sondern „Kette“ in tests/kombi_ausnahmen.json).
@@ -7313,6 +7316,7 @@ KOMBI_ABKUERZUNG = [
     ('dschungel/02-baumkronen.json', '778 -> 797', (789, 10), 791, 807, 10),
     ('dschungel/03-lianenschlucht.json', '740 -> 760', (751, 4), 753, 770, 4),
     ('dschungel/03-lianenschlucht.json', '760 -> 780', (771, 4), 773, 790, 4),
+    ('dschungel/06-wipfelsturm.json', '170 -> 190', (182, 11), 183, 200, 11),
 ]
 
 def kombi_abkuerzung_plaene(kante):
