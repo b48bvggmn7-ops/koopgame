@@ -926,6 +926,29 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       felsenflucht_felsbrecher_licht, tempelherz_sonnenkrone.
     - Welche Rolle haben Affe und Schweinchen? Spiegel stehen dort, wo nur der Affe (Haken) oder nur das Schweinchen
       (segelnd) hinkommt. Einer lenkt das Licht, der andere geht durch die Tür, die der Kristall öffnet.
+    - SCHALTBARER SPIEGEL (Option „drehen: per Nummer“, Feld link am Spiegel; ohne Nummer alles wie bisher, alte Level
+      unverändert): Der Spiegel dreht sich NUR, wenn jemand etwas bedient – nie von selbst, kein Takt, kein Timer.
+      - Druckplatte seiner Nummer: jedes BETRETEN dreht ihn genau einmal zwischen / und \. Verlassen und Stehenbleiben
+        lösen nichts aus; erst wenn die Platte frei war und wieder jemand draufsteigt, dreht er wieder. Treten beide
+        gleichzeitig drauf, zählt das als ein Betreten.
+      - Hebel seiner Nummer: jede Betätigung dreht ihn genau einmal; der Hebel selbst verhält sich wie immer.
+      - Drehung sichtbar animiert (≈ 0,3 s, SPIEGEL_DREH_SCHRITTE), der umgelenkte Strahl schwenkt mit, leiser heller
+        Spiegel-Ton. Während der Drehung endet der Strahl am Spiegel.
+      - Auslöser während einer Drehung: einer wird gemerkt und danach abgearbeitet, zwei weitere heben sich auf (hin und
+        zurück). So passt die Endstellung immer zur Zahl der Auslöser, und nichts stapelt sich oder bleibt hängen.
+      - Von Hand gesperrt (keine Tasten-Blase, Hebel-Taste wirkt nicht), damit niemand das Rätsel umgeht. Erkennbar an
+        Plakette mit Nummer und Ring in der Farbe der Nummer (wie Tür/Hebel) und einem kleinen Kettenglied; kein Drehpfeil.
+      - Mehrere Spiegel mit derselben Nummer drehen sich zusammen. Lichtkristalle drehen keine Spiegel (sonst könnten sich
+        Licht und Spiegel endlos gegenseitig weiterschalten).
+      - Neustart und Tod: Spiegel in Anfangsstellung (wie Hebel/Türen: alles wieder aus), gemerkte Auslöser verworfen,
+        Druckplatten gelten wieder als frei. Ein Spiegel ist kein Hindernis, er schiebt nie eine Figur.
+      - Der Ziel-Hinweis-Pfeil am Bildrand zeigt auch auf schaltbare Spiegel außerhalb des Bildes; die Bild-Regel prüft
+        sie als Ziel; „jeder Hebel hat einen Grund“ zählt sie mit.
+      - Editor: Werkzeug „Spiegel“ mit „drehen: von Hand / per Nummer“ + Verknüpfung (Name in der Nummern-Liste
+        „Spiegel dreht“); Speichern, Laden, Rückgängig, Kopieren und Rechtsklick-Entfernen wie bei allen Punkt-Elementen.
+      - Testlevel levels/test/spiegel-schaltbar.json; Tests spiegel_schaltbar, editor_licht.
+      - Rollen: Wer auf die Platte tritt oder am Hebel steht, ist oft nicht der, der den Strahl sieht – einer bedient,
+        der andere liest den Strahl und sagt an.
 
   - EIS (Ausbau 7, Welt Höhle; elemente/eis.js, Spiel-Feld eis [{x, y, w, h}]): fester, rutschiger Boden-Block.
     - Wer darauf steht, läuft langsam an und dreht langsam um (EIS_GRIFF) und rutscht ohne Taste lange weiter

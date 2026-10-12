@@ -344,7 +344,8 @@ const SFX = {
   felsRollen(x){ sfxPlay('felsRollen', {x}); },
   felsAufprall(x){ sfxLog('felsaufprall'); sfxPlay('felsAufprall', {x}); },
   felsBruch(x){ sfxLog('felsbruch'); sfxPlay('felsBruch', {x}); },
-  spiegel(x){ sfxLog('spiegel'); sfxPlay('spiegel', {x}); },   // Licht (Ausbau 7)
+  spiegel(x){ sfxLog('spiegel'); sfxPlay('spiegel', {x}); },
+  spiegelSchalt(x){ sfxLog('spiegelSchalt'); sfxPlay('spiegel', {x, vol: 0.55, rate: 1.2}); },   // schaltbarer Spiegel (leiser, heller)   // Licht (Ausbau 7)
   kristall(x, an){ sfxLog(an ? 'kristallan' : 'kristallaus'); sfxPlay(an ? 'kristallAn' : 'kristallAus', {x}); },
   bandUm(x){ sfxLog('bandum'); sfxPlay('bandUm', {x}); },   // Höhle (Ausbau 7)
   eisRutsch(x){ sfxLog('eisrutsch'); sfxPlay('eisRutsch', {x}); },

@@ -18,6 +18,8 @@ elementRegistrieren({
   },
   spiel: {
     laden(daten){ plates = (daten.plates||[]).map(p=>({x:p.x, y:p.y, link:p.link, down:false})); },
+    // Neustart/Tod: Platte gilt als frei – „Betreten“ (schaltbarer Spiegel) zählt danach wieder ab dem ersten Draufsteigen
+    zuruecksetzen(){ for(const pl of plates) pl.down = false; },
     // Steinplatte mit Nummer, sinkt ein, solange jemand draufsteht
     zeichnen(){
       for(const pl of plates){

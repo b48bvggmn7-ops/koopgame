@@ -6,7 +6,13 @@
 // dessen Verknüpfungs-Nummer AN, solange das Licht darauf fällt (wie eine Druckplatte: Türen auf, Bewegung fährt …).
 // Rolle: Spiegel stehen oft dort, wo nur der Affe (per Haken) oder nur das Schweinchen (segelnd) hinkommt – einer lenkt
 // das Licht, der andere geht durch die Tür, die der Kristall öffnet.
-// Spiel-Daten: lichtquellen [{x, y (linke obere Ecke), richtung}], spiegel [{x, y, stellung: '/'|'\\'}], kristalle [{x, y, link}]
+// SCHALTBARER SPIEGEL (optional „per Nummer“): dreht sich NUR, wenn jemand etwas bedient – jedes Betreten einer Druckplatte
+// (nicht das Verlassen, nicht das Stehenbleiben) bzw. jede Betätigung eines Hebels seiner Nummer dreht ihn genau einmal
+// (animiert, SPIEGEL_DREH_SCHRITTE ≈ 0,3 s). Kein Takt, kein Timer. Von Hand ist er dann gesperrt (Plakette + Kettenzeichen).
+// Auslöser während einer Drehung werden gemerkt: einer wartet und dreht danach weiter, zwei weitere heben sich auf
+// (hin und zurück) – die Endstellung passt also immer zur Zahl der Auslöser, und nichts stapelt sich auf.
+// Lichtkristalle drehen keine Spiegel (sonst könnte sich Licht und Spiegel endlos gegenseitig weiterschalten).
+// Spiel-Daten: lichtquellen [{x, y (linke obere Ecke), richtung}], spiegel [{x, y, stellung: '/'|'\\', link?}], kristalle [{x, y, link}]
 let lichtquellen = [], spiegelListe = [], kristalle = [];
 let lichtWege = [];   // je Quelle: [[x, y], …] Punkte des Strahls (Welt-Koordinaten, Kästchen-Mitten)
 const LICHT_RICHTUNG = {r: [1, 0], l: [-1, 0], o: [0, -1], u: [0, 1]};
@@ -16,19 +22,21 @@ function lichtUmlenken(st, dx, dy){ return st === '/' ? [-dy, -dx] : [dy, dx]; }
 // Strahl verfolgen (gemeinsam für Spiel und Editor): fest(c, r) = blockiert?, spiegelBei(c, r), kristallBei(c, r)
 function lichtVerfolgen(c, r, dx, dy, fest, spiegelBei, kristallBei){
   const weg = [[c, r]], getroffen = [], besucht = new Set();
+  let ende = null;   // wo der Strahl endet: {art: 'wand'|'kristall'|'dreh'|'weit', dx, dy, sp?}
   const MAX = typeof LICHT_REICHWEITE !== "undefined" ? LICHT_REICHWEITE : 80;   // Editor lädt 02-physik-werte.js nicht
   for(let i = 0; i < MAX; i++){
     c += dx; r += dy;
     const key = c + ',' + r + ',' + dx + ',' + dy;
-    if(besucht.has(key)) break; besucht.add(key);
+    if(besucht.has(key)) break; besucht.add(key);   // Kreis aus Spiegeln: nie endlos
     const k = kristallBei(c, r);
-    if(k){ weg.push([c, r]); getroffen.push(k); break; }
+    if(k){ weg.push([c, r]); getroffen.push(k); ende = {art: 'kristall', dx, dy}; break; }
     const sp = spiegelBei(c, r);
+    if(sp && sp.drehS > 0){ weg.push([c, r]); ende = {art: 'dreh', dx, dy, sp}; break; }   // dreht gerade: Strahl endet am Spiegel
     if(sp){ weg.push([c, r]); [dx, dy] = lichtUmlenken(sp.stellung, dx, dy); continue; }
-    if(fest(c, r)){ weg.push([c - dx*0.5, r - dy*0.5]); break; }
-    if(i === MAX - 1) weg.push([c, r]);
+    if(fest(c, r)){ weg.push([c - dx*0.5, r - dy*0.5]); ende = {art: 'wand', dx, dy}; break; }
+    if(i === MAX - 1){ weg.push([c, r]); ende = {art: 'weit', dx, dy}; }
   }
-  return {weg, getroffen};
+  return {weg, getroffen, ende};
 }
 function lichtFestImSpiel(c, r){
   const px = c*40 + 20, py = r*40 + 20;
@@ -41,11 +49,16 @@ function lichtFestImSpiel(c, r){
 function lichtSchritt(){
   const spIdx = new Map(spiegelListe.map(s => [s.c + ',' + s.r, s])), kIdx = new Map(kristalle.map(k => [k.c + ',' + k.r, k]));
   const vorher = kristalle.map(k => k.an);
+  for(const s of spiegelListe) if(s.drehS > 0 && --s.drehS === 0){   // schaltbarer Spiegel: Drehung fertig
+    s.stellung = s.stellung === '/' ? '\\' : '/';
+    if(s.wartet){ s.wartet = false; spiegelDrehStart(s); }
+  }
   for(const k of kristalle) k.an = false;
   lichtWege = lichtquellen.map(q => {
     if(!lichtQuelleAn(q)) return [];   // Sonnenstein „per Nummer“: aus, solange seine Nummer aus ist
     const v = lichtVerfolgen(q.c, q.r, q.dx, q.dy, lichtFestImSpiel, (c, r) => spIdx.get(c + ',' + r), (c, r) => kIdx.get(c + ',' + r));
     for(const k of v.getroffen){ k.an = true; if(k.bleibt) k.gemerkt = true; }
+    v.weg.ende = v.ende;   // fürs Zeichnen (Aufprall am Ende, mitziehender Strahl beim Drehen)
     return v.weg;
   });
   kristalle.forEach((k, i) => {
@@ -63,6 +76,7 @@ function lichtQuelleAn(q){ return !q.link || !!linkOn[q.link]; }
 function spiegelInReichweite(player){
   let best = null, bd = Infinity;
   for(const s of spiegelListe){
+    if(s.link) continue;   // schaltbarer Spiegel: nur per Platte/Hebel
     if(Math.abs(player.x - (s.x + 20)) >= LEVER_RANGE_X || Math.abs((player.y - player.h*0.5) - (s.y + 20)) >= LEVER_RANGE_Y) continue;
     const d = Math.abs(player.x - (s.x + 20)); if(d < bd){ bd = d; best = s; }
   }
@@ -76,7 +90,18 @@ function spiegelBedienen(player){
   SFX.spiegel(best.x);
   return true;
 }
-function lichtZuruecksetzen(){ for(const s of spiegelListe){ s.stellung = s.start; s.drehT = 0; } for(const k of kristalle){ k.an = false; k.gemerkt = false; k.leuchtT = 0; } }
+// schaltbarer Spiegel: Platte betreten / Hebel betätigt (05-level-objekte.js) -> alle Spiegel dieser Nummer drehen einmal
+function spiegelDrehStart(s){ s.drehS = typeof SPIEGEL_DREH_SCHRITTE !== 'undefined' ? SPIEGEL_DREH_SCHRITTE : 18; }
+function spiegelAusloesen(link){
+  let x = null;
+  for(const s of spiegelListe){
+    if(!s.link || s.link !== link) continue;
+    if(s.drehS > 0) s.wartet = !s.wartet;   // dreht noch: merken (zwei weitere heben sich auf)
+    else { spiegelDrehStart(s); if(x === null) x = s.x; }
+  }
+  if(x !== null) SFX.spiegelSchalt(x);
+}
+function lichtZuruecksetzen(){ for(const s of spiegelListe){ s.stellung = s.start; s.drehT = 0; s.drehS = 0; s.wartet = false; } for(const k of kristalle){ k.an = false; k.gemerkt = false; k.leuchtT = 0; } }
 // --- Zeichnen (nur Anzeige) ---
 function lichtQuelleBild(c, x, y, dx, dy, an, link){
   // Sonnenstein (Ruinen-Überarbeitung): dunkler Basaltblock mit Goldeinlage, glühende Sonnenscheibe mit drehendem
@@ -150,15 +175,15 @@ function spiegelHalterungBild(c, x, y, h){
     c.fillStyle = '#6b4a1e'; c.fillRect(wx - (h.seite < 0 ? 0 : 5), cy - 7, 5, 14);
   }
 }
-function spiegelBild(c, x, y, stellung, dreh, halt){
+function spiegelBild(c, x, y, stellung, dreh, halt, link){
   // Spiegel (Ruinen-Überarbeitung): Halterung (Sockel/Ständer/Kette/Wandarm), Kardanring aus Bronze mit Achse, ovaler
   // Spiegel im Goldrahmen mit hellem Glas, Glanzstreifen und Funkeln; die Schräge zeigt / bzw. \ (Lichtweg)
   const cx = x + 20, cy = y + 20, t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0;
   spiegelHalterungBild(c, x, y, halt);
   c.strokeStyle = '#4a3214'; c.lineWidth = 4.5; c.beginPath(); c.arc(cx, cy, 18, 0, Math.PI*2); c.stroke();
   c.strokeStyle = '#d4a23c'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, 18, 0, Math.PI*2); c.stroke();
-  // kleiner Drehpfeil am Ring (man kann ihn drehen)
-  c.strokeStyle = '#fff3c8'; c.lineWidth = 1.6; c.beginPath(); c.arc(cx, cy, 18, -Math.PI*0.95, -Math.PI*0.6); c.stroke();
+  // kleiner Drehpfeil am Ring (man kann ihn drehen) – nicht beim schaltbaren Spiegel (der dreht nur per Platte/Hebel)
+  if(!link){ c.strokeStyle = '#fff3c8'; c.lineWidth = 1.6; c.beginPath(); c.arc(cx, cy, 18, -Math.PI*0.95, -Math.PI*0.6); c.stroke(); }
   c.save(); c.translate(cx, cy);
   c.rotate((stellung === '/' ? -Math.PI/4 : Math.PI/4) + (dreh || 0));
   c.fillStyle = '#3a2610'; c.beginPath(); c.ellipse(0, 0, 17, 8, 0, 0, Math.PI*2); c.fill();
@@ -178,6 +203,21 @@ function spiegelBild(c, x, y, stellung, dreh, halt){
     c.moveTo(fx, fy - r); c.lineTo(fx + r*0.25, fy - r*0.25); c.lineTo(fx + r, fy); c.lineTo(fx + r*0.25, fy + r*0.25);
     c.lineTo(fx, fy + r); c.lineTo(fx - r*0.25, fy + r*0.25); c.lineTo(fx - r, fy); c.lineTo(fx - r*0.25, fy - r*0.25); c.closePath(); c.fill();
   }
+  if(link) spiegelNummerBild(c, x, y, link);
+}
+// schaltbarer Spiegel: Plakette in der Farbe seiner Nummer (wie Tür/Hebel) und ein kleines Kettenglied = „hängt an Platte/Hebel“
+function spiegelNummerBild(c, x, y, link){
+  const col = typeof linkColor === 'function' ? linkColor(link) : '#d08a2a';
+  c.strokeStyle = col; c.lineWidth = 2.2; c.beginPath(); c.arc(x + 20, y + 20, 21, 0, Math.PI*2); c.stroke();   // Ring in der Nummer-Farbe
+  c.fillStyle = col; c.beginPath(); c.arc(x + 35, y + 5, 7.5, 0, Math.PI*2); c.fill();
+  c.strokeStyle = 'rgba(30,18,6,.85)'; c.lineWidth = 1.4; c.stroke();
+  c.fillStyle = '#fff'; c.font = 'bold 9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(link), x + 35, y + 5.5);
+  c.save(); c.translate(x + 5, y + 35); c.rotate(-Math.PI/4);   // Kettenglied (zwei verschränkte Ösen)
+  c.strokeStyle = 'rgba(30,18,6,.9)'; c.lineWidth = 3.4;
+  c.beginPath(); c.ellipse(-3, 0, 4, 2.4, 0, 0, Math.PI*2); c.stroke(); c.beginPath(); c.ellipse(3, 0, 4, 2.4, 0, 0, Math.PI*2); c.stroke();
+  c.strokeStyle = col; c.lineWidth = 1.6;
+  c.beginPath(); c.ellipse(-3, 0, 4, 2.4, 0, 0, Math.PI*2); c.stroke(); c.beginPath(); c.ellipse(3, 0, 4, 2.4, 0, 0, Math.PI*2); c.stroke();
+  c.restore();
 }
 function kristallBild(c, x, y, leucht, halt, bleibt, gemerkt){
   // Lichtkristall auf Steinsockel; leuchtet er, glüht er warm mit großem Schein. Halterung wie beim Spiegel
@@ -247,6 +287,17 @@ function lichtZeichnen(){
       ctx.globalAlpha = Math.sin(ph*Math.PI)*0.9; ctx.fillStyle = '#fff6c8';
       ctx.beginPath(); ctx.arc(px + (ay === by ? 0 : wob), py + (ax === bx ? 0 : wob), 2, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
     }
+    // schaltbarer Spiegel dreht gerade: der umgelenkte Strahl schwenkt mit (Spiegel dreht 90°, der Strahl 180°)
+    const E = weg.ende;
+    if(E && E.art === 'dreh'){
+      const sp = E.sp, p = 1 - sp.drehS/SPIEGEL_DREH_SCHRITTE, [ox, oy] = lichtUmlenken(sp.stellung, E.dx, E.dy);
+      const a = Math.atan2(oy, ox) + (sp.stellung === '/' ? 1 : -1)*p*Math.PI, L = 100;
+      const x0 = sp.x + 20 - camX, y0 = sp.y + 20, x1 = x0 + Math.cos(a)*L, y1 = y0 + Math.sin(a)*L;
+      for(const [breit, farbe] of [[24, 'rgba(255,190,70,.12)'], [10, 'rgba(255,215,110,.3)'], [4, 'rgba(255,240,180,.6)'], [1.8, 'rgba(255,255,245,.9)']]){
+        const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, farbe); g.addColorStop(1, 'rgba(255,200,90,0)');
+        ctx.strokeStyle = g; ctx.lineWidth = breit; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      }
+    }
     // Aufblitzen an den Knickstellen (Spiegel) und am Ende (Stein oder Kristall)
     for(let i = 1; i < weg.length; i++){
       const x = weg[i][0]*40 + 20 - camX, y = weg[i][1]*40 + 20;
@@ -259,8 +310,9 @@ function lichtZeichnen(){
   for(const s of spiegelListe){
     const x = s.x - camX; if(x < -60 || x > VW + 60) continue;
     if(!s.halt) s.halt = spiegelHalt(s);   // nur Anzeige (Gelände ändert sich dafür nicht)
-    const dreh = s.drehT > 0 ? (s.stellung === '/' ? 1 : -1)*(s.drehT/12)*Math.PI/2 : 0;
-    spiegelBild(ctx, x, s.y, s.stellung, dreh, s.halt);
+    const dreh = s.drehS > 0 ? (s.stellung === '/' ? 1 : -1)*(1 - s.drehS/SPIEGEL_DREH_SCHRITTE)*Math.PI/2   // per Platte/Hebel
+               : s.drehT > 0 ? (s.stellung === '/' ? 1 : -1)*(s.drehT/12)*Math.PI/2 : 0;                     // von Hand
+    spiegelBild(ctx, x, s.y, s.stellung, dreh, s.halt, s.link);
   }
   for(const k of kristalle){
     const x = k.x - camX; if(x < -60 || x > VW + 60) continue;
@@ -339,16 +391,24 @@ elementRegistrieren({
   editor: {
     werkzeug: 'spiegel', gruppe: 'licht', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#bfe0f0',
     titel: 'Spiegel: lenkt den Lichtstrahl um 90° ( / oder \\ ). Im Spiel drehen ihn beide Figuren mit der Hebel-Taste. ' +
+           '„per Nummer“: dreht sich nur, wenn jemand eine Druckplatte dieser Nummer betritt oder ihren Hebel umlegt (von Hand gesperrt). ' +
            'Klick auf einen vorhandenen Spiegel = Stellung wechseln',
-    optionen: [{key: 'stellung', label: 'Stellung', werte: [['/', '/'], ['\\', '\\']]}],
+    optionen: [{key: 'stellung', label: 'Stellung', werte: [['/', '/'], ['\\', '\\']]},
+               {key: 'schalter', label: 'drehen', titel: 'Von Hand (Hebel-Taste daneben) – oder nur per Druckplatte/Hebel der gewählten Verknüpfungs-Nummer',
+                werte: [['hand', 'von Hand'], ['nummer', 'per Nummer']]}],
+    neu(p){ const o = {c: p.c, r: p.r, stellung: p.stellung, schalter: p.schalter}; if(p.schalter === 'nummer') o.link = Number(linkSelect.value); return o; },
+    nummerAktiv: p => p.schalter === 'nummer' && !!p.link,
+    mitNummer: false, nummerName: 'Spiegel dreht',
     klick(p){ p.stellung = p.stellung === '/' ? '\\' : '/'; },
-    zeichnen(ctx, c, r, TILE, p){ ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); spiegelBild(ctx, 0, 0, p.stellung || '/', 0); ctx.restore(); },
-    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, stellung: p.stellung === '\\' ? '\\' : '/'})),
+    zeichnen(ctx, c, r, TILE, p){ ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); spiegelBild(ctx, 0, 0, p.stellung || '/', 0, null, p.schalter === 'nummer' ? p.link : null); ctx.restore(); },
+    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, stellung: p.stellung === '\\' ? '\\' : '/',
+      ...(p.schalter === 'nummer' && p.link ? {link: p.link} : {})})),
   },
   spiel: {
     laden(daten){
       spiegelListe = (daten.spiegel || []).map(s => ({x: s.x, y: s.y, c: Math.round(s.x/40), r: Math.round(s.y/40),
-        stellung: s.stellung === '\\' ? '\\' : '/', start: s.stellung === '\\' ? '\\' : '/', drehT: 0}));
+        stellung: s.stellung === '\\' ? '\\' : '/', start: s.stellung === '\\' ? '\\' : '/', drehT: 0, drehS: 0, wartet: false,
+        link: s.link || null}));
     },
   },
 });

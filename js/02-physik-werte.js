@@ -103,6 +103,7 @@ const FELS_BROECKEL_BREMSE = 0.6;   // Bricht er durch eine Bröckel-Wand, behä
 const KAMERA_WACKELN_ABKLINGEN = 0.86;
 // Licht (elemente/licht.js)
 const LICHT_REICHWEITE = 80;    // so viele Kästchen läuft ein Lichtstrahl höchstens
+const SPIEGEL_DREH_SCHRITTE = 18; // schaltbarer Spiegel: so lange (Physik-Schritte ≈ 0,3 s) dauert eine Drehung per Platte/Hebel
 // Eis (elemente/eis.js)
 const EIS_GRIFF = 0.16;         // Anteil der normalen Beschleunigung auf Eis (langsam anlaufen, langsam umdrehen)
 const EIS_REIBUNG = 0.975;      // Abbremsen ohne Taste auf Eis pro Schritt (Boden: FRICTION_GROUND) – langer Rutschweg

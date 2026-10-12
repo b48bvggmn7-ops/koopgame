@@ -117,6 +117,8 @@ def ziele(d):
         if o.get('link'): z.append(('Leuchtkristall', o['link'], spalte(o['x']), spalte(o['x']), reihe(o['y'])))
     for o in d.get('lavaPegel', []):
         if o.get('link'): z.append(('Lava', o['link'], spalte(o['x']), spalte(o['x']), reihe(o['y'])))
+    for o in d.get('spiegel', []):   # schaltbarer Spiegel: dreht per Platte/Hebel seiner Nummer
+        if o.get('link'): z.append(('Spiegel', o['link'], spalte(o['x']), spalte(o['x']), reihe(o['y'])))
     for o in d.get('pressen', []):
         if o.get('link'): z.append(('Presse', o['link'], spalte(o['x']), spalte(o['x']) + o.get('breite', 1) - 1, reihe(o['y'])))
     # bewegte Plattformen (Gruppe = ein Teil), fahrende Haken, Stachelwände/-pressen: der Startplatz (die Fahrt prüft plattform_pruefen)

@@ -115,6 +115,7 @@ function zielPunkte(link){   // Weltpunkte der Ziele einer Nummer (Tür, bewegte
   if(typeof teleporters !== 'undefined') for(const t of teleporters) if(t.link === link) pts.push({x: t.x + 20, y: t.y - 40});
   if(typeof pressen !== 'undefined') for(const P of pressen) if(P.link === link) pts.push({x: P.x + P.w/2, y: P.y + 20});
   if(typeof lavaBecken !== 'undefined') for(const b of lavaBecken) for(const m of b.marken) if(m.link === link) pts.push({x: m.x, y: m.y});
+  if(typeof spiegelListe !== 'undefined') for(const s of spiegelListe) if(s.link === link) pts.push({x: s.x + 20, y: s.y + 20});
   return pts;
 }
 function zielHinweisMerken(link){
@@ -129,6 +130,7 @@ function triggerSwitch(sw, player){
   const now = performance.now();
   const on = !linkOn[sw.link];
   setLink(sw.link, on);
+  if(typeof spiegelAusloesen === 'function') spiegelAusloesen(sw.link);   // schaltbare Spiegel drehen bei JEDER Betätigung einmal
   zielHinweisMerken(sw.link);
   player.leverAnim = {t0: now, dir: Math.sign(sw.x - player.x) || player.facing || 1};
   sw.pulledT = now;
@@ -143,7 +145,10 @@ function updatePlates(players){
   const want = {};
   for(const pl of plates){
     const down = players.some(p => onPlate(p, pl));
-    if(down && !pl.down){ SFX.lever(true, pl.x); zielHinweisMerken(pl.link); }
+    if(down && !pl.down){   // Platte wird BETRETEN (war frei, jetzt steht jemand drauf; beide zugleich = einmal)
+      SFX.lever(true, pl.x); zielHinweisMerken(pl.link);
+      if(typeof spiegelAusloesen === 'function') spiegelAusloesen(pl.link);   // schaltbare Spiegel drehen einmal (elemente/licht.js)
+    }
     pl.down = down;
     want[pl.link] = want[pl.link] || down;
   }

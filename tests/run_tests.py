@@ -3832,7 +3832,7 @@ async def ruinen6_tempelherz(g):
 @test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
-    Teleporter, Falle, Fels, Förderband, Leuchtkristall oder Sonnenstein „per Nummer“),
+    Teleporter, Falle, Fels, Förderband, Leuchtkristall, Sonnenstein „per Nummer“ oder schaltbarer Spiegel),
     und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man
     keinen Grund, ihn zu ziehen (Nutzerwunsch: „es muss in sich schlüssig sein“)."""
     fehler = []
@@ -3856,7 +3856,8 @@ async def hebel_haben_grund(g):
             const lv = (typeof lavaBecken !== 'undefined' ? lavaBecken : []).reduce((n, b) => n + b.marken.filter(m=>m.link===l).length, 0);   // Lava steigt (Ausbau 7)
             const pr = (typeof pressen !== 'undefined' ? pressen : []).filter(P=>P.link===l).length;   // Pressen anhalten/anwerfen (Ausbau 7)
             const sq = (typeof lichtquellen !== 'undefined' ? lichtquellen : []).filter(q=>q.link===l).length;   // Sonnenstein „per Nummer“ (Ruinen-Licht)
-            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk && !lv && !pr && !sq) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const sp = (typeof spiegelListe !== 'undefined' ? spiegelListe : []).filter(s=>s.link===l).length;   // schaltbarer Spiegel
+            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk && !lv && !pr && !sq && !sp) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
             const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m)) || fe > 0 || lv > 0;   // auch: Hebel lässt Lava steigen
             if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
           }
@@ -6656,6 +6657,15 @@ async def editor_licht(g):
         assert out['spiegel'] == [{'x': 320, 'y': 480, 'stellung': '\\'}], out['spiegel']
         assert out['kristalle'] == [{'x': 320, 'y': 640, 'link': 5}], out['kristalle']
         assert 'Lichtkristall' in await p.evaluate("[...linkSelect.options].find(o => o.value === '5').textContent")
+        # schaltbarer Spiegel: „per Nummer“ + Verknüpfung 9 -> Export mit link, Name in der Nummern-Liste, Rückgängig
+        await ed_werkzeug(p, 'spiegel'); await p.select_option('#opt-spiegel-schalter', 'nummer'); await p.select_option('#linkSelect', '9')
+        x, y = await ed_zelle(p, 12, 12); await p.mouse.click(x, y)
+        await p.select_option('#opt-spiegel-schalter', 'hand')
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['spiegel'] == [{'x': 320, 'y': 480, 'stellung': '\\'}, {'x': 480, 'y': 480, 'stellung': '/', 'link': 9}], out['spiegel']
+        assert 'Spiegel dreht' in await p.evaluate("[...linkSelect.options].find(o => o.value === '9').textContent")
+        await p.keyboard.press('Control+z')
+        assert await p.evaluate("elementPunkte.spiegel.length") == 1, 'Rückgängig entfernt den schaltbaren Spiegel'
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
@@ -7609,6 +7619,88 @@ async def licht_optionen(g):
     await g.ev("resetLevel(); deathState = null; menuScreen = 'pause';")
     w, k6, k7 = await lauf()
     assert not k7, 'nach Neustart muss Kristall 7 wieder aus sein'
+    await g.ev("menuScreen = null;")
+
+@test
+async def spiegel_schaltbar(g):
+    """Schaltbarer Spiegel („per Nummer“): jedes BETRETEN einer Druckplatte seiner Nummer dreht ihn genau einmal (Verlassen
+    und Stehenbleiben nicht; beide zugleich = einmal), jede Hebel-Betätigung genau einmal; Drehung ≈ 0,3 s animiert, der
+    Strahl endet währenddessen am Spiegel; weitere Auslöser während der Drehung: einer wartet, zwei heben sich auf
+    (Endstellung = Zahl der Auslöser, nichts hängt); von Hand gesperrt; gleiche Nummer = drehen zusammen; Neustart und
+    Tod: Anfangsstellung; nie von selbst (ohne Auslöser keine Drehung). Spiegel ohne Nummer: wie bisher von Hand."""
+    d = level([ground(0, 680, 2400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+              lichtquellen=[{'x': 400, 'y': 600, 'richtung': 'r'}],
+              spiegel=[{'x': 800, 'y': 600, 'stellung': '/', 'link': 5}, {'x': 1600, 'y': 600, 'stellung': '/', 'link': 5},
+                       {'x': 2000, 'y': 600, 'stellung': '/'}],
+              kristalle=[{'x': 800, 'y': 200, 'link': 6}, {'x': 800, 'y': 640, 'link': 7}],
+              plates=[{'x': 1220, 'y': 660, 'link': 5}], switches=[{'x': 1820, 'y': 660, 'link': 5}])
+    await g.load(d)
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+    st = lambda: g.ev("[spiegelListe.map(s => s.stellung).join(''), spiegelListe[0].drehS, !!linkOn[6], !!linkOn[7]]")
+    schritte = lambda n: g.ev(f"(() => {{ for(let i = 0; i < {n}; i++) stepSim(0); }})()")
+    park = "p1.x = 100; p1.y = 680; p2.x = 60; p2.y = 680; p1.vx = p2.vx = p1.vy = p2.vy = 0;"
+    await g.ev(park); await schritte(30)
+    s0 = await st()
+    assert s0[0] == '///' and s0[2] and not s0[3], ('Start: Licht über Spiegel / nach oben auf Kristall 6', s0)
+    await schritte(200)
+    assert (await st())[0] == '///', 'Spiegel darf sich nie von selbst drehen'
+    # Hand-Drehung: gesperrt beim schaltbaren Spiegel, frei beim normalen
+    gesperrt = await g.ev("(() => { p1.x = 820; p1.y = 680; return spiegelBedienen(p1); })()")
+    frei = await g.ev("(() => { p1.x = 2020; p1.y = 680; const ok = spiegelBedienen(p1); return [ok, spiegelListe[2].stellung]; })()")
+    assert not gesperrt and frei[0] and frei[1] == '\\', ('von Hand: verknüpft gesperrt, normal drehbar', gesperrt, frei)
+    await g.ev(park + "spiegelListe[2].stellung = '/';"); await schritte(5)
+    # Platte betreten: genau eine Drehung (beide Spiegel der Nummer), animiert, Strahl endet währenddessen am Spiegel
+    await g.ev("p1.x = 1220; p1.y = 680;"); await schritte(3)
+    a = await g.ev("[spiegelListe[0].drehS > 0, spiegelListe[1].drehS > 0, lichtWege[0].ende && lichtWege[0].ende.art, spiegelListe[0].stellung]")
+    assert a[0] and a[1] and a[2] == 'dreh' and a[3] == '/', ('Drehung läuft (beide Spiegel), Strahl endet am Spiegel', a)
+    await schritte(25)
+    b = await st()
+    assert b[0] == '\\\\/' and b[1] == 0 and b[3] and not b[2], ('nach 0,3 s: beide gedreht, Licht jetzt auf Kristall 7', b)
+    await schritte(120)
+    assert (await st())[0] == '\\\\/', 'Stehenbleiben dreht nicht weiter'
+    await g.ev(park); await schritte(40)
+    assert (await st())[0] == '\\\\/', 'Verlassen dreht nicht'
+    await g.ev("p1.x = 1215; p1.y = 680; p2.x = 1225; p2.y = 680;"); await schritte(40)
+    assert (await st())[0] == '///', 'beide zugleich betreten = eine Drehung'
+    await g.ev(park); await schritte(10)
+    # Hebel: jede Betätigung eine Drehung; schnell hintereinander: einer wartet, zwei heben sich auf
+    await g.ev("triggerSwitch(switchDefs[0], p1)"); await schritte(30)
+    assert (await st())[0] == '\\\\/', 'Hebel einmal = eine Drehung'
+    await g.ev("triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1);"); await schritte(60)
+    c = await st()
+    assert c[0] == '\\\\/' and c[1] == 0, ('2 schnelle Auslöser = hin und zurück (Endstellung wie vorher)', c)
+    await g.ev("triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1);")
+    n = await g.ev("(() => { let n = 0; while(spiegelListe.some(s => s.drehS > 0) && n < 500){ stepSim(0); n++; } return n; })()")
+    c = await st()
+    assert c[0] == '///' and n <= 40, ('3 schnelle Auslöser = eine Drehung netto, nach höchstens 2 Drehungen fertig', c, n)
+    # Neustart und Tod: Anfangsstellung, Drehung/Warten gelöscht, Platte wieder frei
+    await g.ev("triggerSwitch(switchDefs[0], p1)"); await schritte(30)
+    await g.ev("triggerSwitch(switchDefs[0], p1); resetLevel(); deathState = null; menuScreen = 'pause';")
+    r = await g.ev("[spiegelListe.map(s => s.stellung + s.drehS + s.wartet).join(','), plates.every(p => !p.down)]")
+    assert r == ['/0false,/0false,/0false', True], ('Neustart: Anfangsstellung', r)
+    await g.ev("triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1); continueAfterDeath(); menuScreen = 'pause';")
+    await g.ev(park); await schritte(40)
+    assert (await st())[0] == '///', 'nach Tod: Anfangsstellung, gemerkte Auslöser verworfen'
+    # Spiegel ist kein festes Hindernis: eine Figur an der Stelle wird beim Drehen nicht verschoben
+    await g.ev("p1.x = 820; p1.y = 680;"); await schritte(2)
+    x0 = await g.ev("p1.x")
+    await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
+    assert abs(await g.ev("p1.x") - x0) < 0.01 and not await g.ev("solids.some(s => s.x <= 820 && s.x + s.w > 820 && s.y <= 620 && s.y + s.h > 620)"), 'Spiegel schiebt keine Figur'
+    # Kreis aus Spiegeln: Strahl endet (Besucht-Liste), kein Hängen
+    k = await g.ev("""(() => { const sp = new Map([['3,0', {stellung: '/'}], ['3,-3', {stellung: '\\\\'}], ['0,-3', {stellung: '/'}], ['0,0', {stellung: '\\\\'}]]);
+        const v = lichtVerfolgen(1, 0, 1, 0, () => false, (c, r) => sp.get(c + ',' + r), () => null); return v.weg.length; })()""")
+    assert k < 40, ('Strahl im Spiegel-Kreis muss enden', k)
+    # Mini-Testlevel: falsch -> Sackgasse, Platte 1 + Hebel 2 je einmal -> Kristall 3 -> Tür 3 auf
+    await g.load(str(ROOT / 'levels' / 'test' / 'spiegel-schaltbar.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';"); await schritte(5)
+    assert not await g.ev("!!linkOn[3]"), 'Testlevel: am Anfang Sackgasse'
+    await g.ev("p1.x = 300; p1.y = 680;"); await schritte(30)
+    await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
+    assert await g.ev("!!linkOn[3] && solids.filter(s => s.type === 'door').every(s => s.open)"), 'Testlevel: Platte + Hebel öffnen Tür 3'
+    # alte Level ohne Nummer: Spiegel von Hand wie bisher
+    await g.load(str(ROOT / 'levels' / 'test' / 'licht.json'))
+    alt = await g.ev("spiegelListe.map(s => s.link)")
+    assert alt and all(x is None for x in alt), ('alte Spiegel ohne Nummer', alt)
     await g.ev("menuScreen = null;")
 
 @test
