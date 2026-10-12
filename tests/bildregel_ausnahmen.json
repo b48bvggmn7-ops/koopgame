@@ -41,21 +41,7 @@
    "regel": "Checkpoint",
    "spalte": 205,
    "nummer": 4,
-   "begruendung": "nach dem Pilz-Turm nur Laufstrecke bis zur nächsten Stelle; ohne ihn wäre die Lücke > 60 (Test dschungel6_wipfelsturm)"
-  },
-  {
-   "level": "dschungel/06-wipfelsturm.json",
-   "regel": "Checkpoint",
-   "spalte": 600,
-   "nummer": 13,
-   "begruendung": "584 = nach der Doppel-Jagd, 600 = direkt vor der Wipfel-Staffel (ein Rätsel bis 661); zusammengelegt wäre die Lücke danach > 60 (Test)"
-  },
-  {
-   "level": "dschungel/06-wipfelsturm.json",
-   "regel": "Checkpoint",
-   "spalte": 670,
-   "nummer": 15,
-   "begruendung": "661 = nach der Wipfel-Staffel, 670 = vor dem Sturm-Finale; ohne ihn wäre die Lücke > 60 (Test)"
+   "begruendung": "nach dem Pilz-Turm nur Laufstrecke bis zur nächsten Stelle; ohne ihn wäre die Lücke > 70 (Test dschungel6_wipfelsturm)"
   },
   {
    "level": "ruinen/01-ruinen.json",
@@ -89,14 +75,14 @@
    "regel": "Checkpoint",
    "spalte": 408,
    "nummer": 8,
-   "begruendung": "Etappen-Übergang (Gang ohne Rätsel) direkt vor der Deckungs-Staffel; ohne ihn wäre die Lücke > 60 (Test level9_fallengang)"
+   "begruendung": "Etappen-Übergang (Gang ohne Rätsel) direkt vor der Deckungs-Staffel; ohne ihn wäre die Lücke > 70 (Test level9_fallengang)"
   },
   {
    "level": "ruinen/03-fallengang.json",
    "regel": "Checkpoint",
    "spalte": 604,
    "nummer": 12,
-   "begruendung": "direkt vor dem Flammen-Doppelgang (ein Rätsel bis 680); ohne ihn wäre die Lücke > 60 (Test)"
+   "begruendung": "direkt vor dem Flammen-Doppelgang (ein Rätsel bis 680); ohne ihn wäre die Lücke > 70 (Test)"
   },
   {
    "level": "ruinen/03-fallengang.json",
@@ -110,20 +96,6 @@
    "regel": "Haken",
    "spalte": 238,
    "begruendung": "Hochzieh-Haken links und rechts am Spiegel-Sims (241–245): der Sims ist das Ziel, kein Hindernis; Bot-Test level10_sonnentempel spielt sie"
-  },
-  {
-   "level": "ruinen/04-sonnentempel.json",
-   "regel": "Checkpoint",
-   "spalte": 205,
-   "nummer": 5,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor dem nächsten Licht-Rätsel; ohne ihn wäre die Lücke > 60 (Test level10_sonnentempel)"
-  },
-  {
-   "level": "ruinen/04-sonnentempel.json",
-   "regel": "Checkpoint",
-   "spalte": 401,
-   "nummer": 10,
-   "begruendung": "401 = direkt vor den „zwei Wegen“ (ein Rätsel bis 474), 378 = nach dem Flammen-Tunnel; zusammen > 60 sonst"
   },
   {
    "level": "ruinen/04-sonnentempel.json",
@@ -151,7 +123,7 @@
    "regel": "Checkpoint",
    "spalte": 602,
    "nummer": 10,
-   "begruendung": "Start der letzten Jagd (602–708) direkt nach dem Etappen-Übergang; ohne ihn wäre die Lücke vor der Jagd > 60 (Test)"
+   "begruendung": "Start der letzten Jagd (602–708) direkt nach dem Etappen-Übergang; ohne ihn wäre die Lücke vor der Jagd > 70 (Test)"
   },
   {
    "level": "ruinen/05-felsenflucht.json",
@@ -177,114 +149,44 @@
   {
    "level": "hoehle/02-tropfsteingang.json",
    "regel": "Checkpoint",
-   "spalte": 163,
-   "nummer": 4,
-   "begruendung": "nach der Kletterwand (126) nur Stege abwärts, dann Förderbänder; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/02-tropfsteingang.json",
-   "regel": "Checkpoint",
-   "spalte": 262,
-   "nummer": 7,
-   "begruendung": "244 nach dem Band-Rätsel, 262 direkt vor dem nächsten; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/02-tropfsteingang.json",
-   "regel": "Checkpoint",
    "spalte": 316,
    "nummer": 8,
-   "begruendung": "Etappen-Übergang (Laufstrecke); ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke); ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "hoehle/02-tropfsteingang.json",
    "regel": "Checkpoint",
    "spalte": 401,
    "nummer": 10,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/02-tropfsteingang.json",
-   "regel": "Checkpoint",
-   "spalte": 592,
-   "nummer": 14,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/03-eisgrotte.json",
-   "regel": "Checkpoint",
-   "spalte": 603,
-   "nummer": 12,
-   "begruendung": "595 nach dem Kamin, 603 vor der Doppel-Rutsche; zusammengelegt ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "hoehle/03-eisgrotte.json",
    "regel": "Checkpoint",
    "spalte": 681,
    "nummer": 14,
-   "begruendung": "664 nach der Doppel-Rutsche, 681 vor dem Aufwind-Kamin; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/04-leuchtgrotte.json",
-   "regel": "Checkpoint",
-   "spalte": 600,
-   "nummer": 12,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/06-tiefenschlund.json",
-   "regel": "Checkpoint",
-   "spalte": 204,
-   "nummer": 5,
-   "begruendung": "184 nach dem Platten-Tunnel, 204 vor dem nächsten Rätsel; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/06-tiefenschlund.json",
-   "regel": "Checkpoint",
-   "spalte": 530,
-   "nummer": 12,
-   "begruendung": "Etappen-Übergang (Laufstrecke); ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "hoehle/06-tiefenschlund.json",
-   "regel": "Checkpoint",
-   "spalte": 603,
-   "nummer": 14,
-   "begruendung": "590 nach dem Rätsel, 603 vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "664 nach der Doppel-Rutsche, 681 vor dem Aufwind-Kamin; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "hoehle/05-foerderwerk.json",
    "regel": "Checkpoint",
    "spalte": 402,
    "nummer": 8,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "hoehle/05-foerderwerk.json",
    "regel": "Checkpoint",
    "spalte": 600,
    "nummer": 12,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "vulkan/01-glutpfad.json",
-   "regel": "Checkpoint",
-   "spalte": 203,
-   "nummer": 5,
-   "begruendung": "Etappen-Übergang direkt vor dem Lava-Raum (Hebel 1, steigende Lava); ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/01-glutpfad.json",
    "regel": "Checkpoint",
    "spalte": 591,
    "nummer": 13,
-   "begruendung": "zusammengelegt aus 590/603: Etappen-Übergang vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "vulkan/01-glutpfad.json",
-   "regel": "Checkpoint",
-   "spalte": 720,
-   "nummer": 16,
-   "begruendung": "vor dem Finale nach Laufstrecke; ohne ihn wäre das Schlussstück > 60"
+   "begruendung": "zusammengelegt aus 590/603: Etappen-Übergang vor Etappe 4; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/02-aschefeld.json",
@@ -298,21 +200,14 @@
    "regel": "Checkpoint",
    "spalte": 76,
    "nummer": 2,
-   "begruendung": "54 nach dem Einstieg, 76 direkt vor der ersten Lava-Stelle; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "vulkan/02-aschefeld.json",
-   "regel": "Checkpoint",
-   "spalte": 385,
-   "nummer": 8,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "54 nach dem Einstieg, 76 direkt vor der ersten Lava-Stelle; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/02-aschefeld.json",
    "regel": "Checkpoint",
    "spalte": 603,
    "nummer": 13,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/03-feuerberg.json",
@@ -331,58 +226,44 @@
   {
    "level": "vulkan/04-magmakammer.json",
    "regel": "Checkpoint",
-   "spalte": 390,
-   "nummer": 8,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "vulkan/04-magmakammer.json",
-   "regel": "Checkpoint",
    "spalte": 603,
    "nummer": 12,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/05-schlackewerk.json",
    "regel": "Checkpoint",
    "spalte": 203,
    "nummer": 4,
-   "begruendung": "Etappen-Übergang (Laufstrecke) direkt vor dem Pressen-Doppelgang; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) direkt vor dem Pressen-Doppelgang; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/05-schlackewerk.json",
    "regel": "Checkpoint",
    "spalte": 395,
    "nummer": 8,
-   "begruendung": "zusammengelegt aus 385/403: Etappen-Übergang; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
-  },
-  {
-   "level": "vulkan/05-schlackewerk.json",
-   "regel": "Checkpoint",
-   "spalte": 603,
-   "nummer": 13,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "zusammengelegt aus 385/403: Etappen-Übergang; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/06-feuerschlund.json",
    "regel": "Checkpoint",
    "spalte": 203,
    "nummer": 4,
-   "begruendung": "Etappen-Übergang (Laufstrecke); ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke); ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/06-feuerschlund.json",
    "regel": "Checkpoint",
    "spalte": 401,
    "nummer": 8,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 3; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/06-feuerschlund.json",
    "regel": "Checkpoint",
    "spalte": 603,
    "nummer": 12,
-   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
+   "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },
   {
    "level": "vulkan/07-kraterherz.json",
@@ -390,13 +271,6 @@
    "spalte": 453,
    "nummer": 3,
    "begruendung": "Lava-Flucht: Hebel 3 lässt die Lava in den Becken hinter und neben einem steigen (Marke 420 liegt 33 Spalten zurück) und öffnet die Tür 460 – man flieht nach rechts, die Marke selbst muss man nicht sehen"
-  },
-  {
-   "level": "vulkan/07-kraterherz.json",
-   "regel": "Checkpoint",
-   "spalte": 120,
-   "nummer": 3,
-   "begruendung": "98 nach dem Einstieg, 120 direkt vor dem ersten Lava-Raum; ohne ihn wäre die Lücke größer als 60 (alter Test „Checkpoints höchstens ~60 Spalten auseinander“)"
   },
   {
    "level": "ruinen/04-sonnentempel.json",
