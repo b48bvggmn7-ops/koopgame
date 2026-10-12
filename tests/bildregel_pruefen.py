@@ -54,9 +54,20 @@ def gruppen(zellen):
         out.append(sorted(g))
     return out
 
+def traeger(d, sw):
+    """bewegte Plattform, auf deren Startplatz der Hebel steht (fährt mit, wie syncSwitchCarriers im Spiel), sonst None"""
+    for p in d.get('movingPlatforms', []):
+        if abs(p['y'] - (sw['y'] + 20)) < 2 and p['x'] <= sw['x'] < p['x'] + p['w']: return p
+    return None
+
 def ausloeser(d):
     a = []
-    for s in d.get('switches', []): a.append(('Hebel', s['link'], spalte(s['x']), reihe(s['y'])))
+    for s in d.get('switches', []):
+        a.append(('Hebel', s['link'], spalte(s['x']), reihe(s['y'])))
+        p = traeger(d, s)
+        if p:   # mitfahrender Hebel: man kann ihn an jeder Stelle der Fahrt ziehen
+            for x in range(min(p['x'], p['targetX']), max(p['x'], p['targetX']) + 1, T):
+                a.append(('Hebel (fährt mit)', s['link'], spalte(x + s['x'] - p['x']), reihe(s['y'])))
     for s in d.get('plates', []): a.append(('Platte', s['link'], spalte(s['x']), reihe(s['y'])))
     kr = [(s['link'], spalte(s['x'])) for s in d.get('kristalle', [])]
     for s in d.get('kristalle', []): a.append(('Kristall', s['link'], spalte(s['x']), reihe(s['y'])))
@@ -179,6 +190,10 @@ def plattform_pruefen(d):
             verst.append({'regel': 'Plattform', 'nummer': n, 'spalte': sx, 'text': f'{art} ({sx}→{ex}, Reihe {r}): bis {weit} Spalten vom Partner weg'})
     for (gid, n), teile in plattform_gruppen(d).items():
         if mit_stacheln(d, teile): continue   # Stachelwand/-presse trägt niemanden
+        # fährt der eigene Hebel mit, steuert der Fahrer selbst – der Partner fährt mit oder geht nebenher
+        if n and any(s['link'] == n and traeger(d, s) in teile for s in d.get('switches', [])):
+            out.append({'art': 'Plattform (Hebel fährt mit)', 'nummer': n, 'von': spalte(teile[0]['x']), 'bis': spalte(teile[0]['targetX']), 'reihe': reihe(teile[0]['y']), 'strecke': abs(spalte(teile[0]['targetX']) - spalte(teile[0]['x'])), 'abstand': 0})
+            continue
         sx = spalte(min(p['x'] for p in teile)); ex = spalte(min(p['targetX'] for p in teile))
         if sx == ex: continue   # fährt nur senkrecht
         bewertung('Plattform', n, sx, ex, reihe(min(p['y'] for p in teile)))

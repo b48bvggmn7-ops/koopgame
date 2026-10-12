@@ -7176,6 +7176,45 @@ async def haken_richtwerte_bot(g):
         assert ok >= 4, f'{datei} {name}: nur {ok}/8 Loslass-Arten klappen'
     print('    Haken-Stellen: ' + ' | '.join(bericht))
 
+def k_ankunft(link):
+    return f"solids.some(s => s.type === 'moveplat' && s.switchLink === {link} && Math.hypot(s.x - s.targetX, s.y - s.targetY) < 6)"
+K_MESS = "(window.__maxAb = Math.max(window.__maxAb || 0, Math.abs(P.x - Q.x)), false)"
+
+@test
+async def ruinen1_etappen_im_bild(g):
+    """Bild-Regel, Ruinen 1 (Nutzer-Level 3): die lange Plattform-Fahrt (früher 80 -> 115, 35 Spalten) ist in zwei Etappen
+    geteilt – Insel 95–97 in der Mitte, wo beide wieder zusammenkommen (Schweinchen segelt hin, Hebel 3 holt den Affen,
+    dann segelt es weiter zu Hebel 20, Plattform B bringt den Affen ans Ufer). Fähre 197 -> 236: die Hebel 6/7/8 fahren
+    mit, der Affe öffnet unterwegs die Türen 210/225 für das Schweinchen oben. Beide bleiben dabei höchstens 20 Spalten
+    auseinander; ohne Hebel bewegt sich nichts."""
+    await koop_level(g, 'ruinen/01-ruinen.json')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 90}, {'use': True, 'frames': 5}]
+    def gleit(edge, tx, hold):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold},
+                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    ok = None
+    for hold in (4, 8, 12):
+        f = [{'wait': K_MESS + ' || true'}] + gleit(76, kx(96), hold) + am(97) + [{'wait': f'{K_MESS} || (Q.grounded && Q.x > {kx(95)} && Q.y < {ky(11)})', 'frames': 2500}] \
+            + gleit(97, kx(118), hold) + am(118) + [{'wait': f'{K_MESS} || (Q.x >= {kx(113)} && Q.grounded)', 'frames': 2500}]
+        m = [{'wait': f'{K_MESS} || !!linkOn[3]', 'frames': 2500}, {'wait': f'{K_MESS} || {k_ankunft(3)}', 'frames': 1500}, k_lauf(96), {'until': 'P.grounded', 'frames': 200},
+             {'holdIf': {'right': f'P.x < {kx(99)} - 4', 'left': f'P.x > {kx(99)} + 4'}, 'frames': 40}, {'wait': f'{K_MESS} || !!linkOn[20]', 'frames': 2500},
+             {'wait': f'{K_MESS} || {k_ankunft(20)}', 'frames': 1500}, k_lauf(116), {'until': 'P.grounded', 'frames': 200}]
+        r = await koop(g, f=kat(73, 2), m=kat(81, 6), plans={'f': f, 'm': m}, maxFrames=7000, pre='window.__maxAb = 0')
+        if r.get('done'): ok = await g.ev('window.__maxAb'); break
+    assert ok is not None, f'zwei Etappen über die Grube klappen nicht: {r.get("pos")}'
+    assert ok <= 20.5 * 40, f'Etappen: {ok / 40:.1f} Spalten auseinander'
+    r = await koop(g, m=kat(81, 6), f=kat(96, 10), plans={'m': [{'frames': 300}]}, maxFrames=400)
+    assert await g.ev(f"solids.find(s => s.type === 'moveplat' && s.switchLink === 3).x") == 80 * 40, 'Plattform A fährt ohne Hebel'
+    fp = "solids.find(s => s.type === 'moveplat' && s.switchLink === 6)"
+    def zu(e): return {'holdIf': {'right': f'P.x < {e} - 4', 'left': f'P.x > {e} + 4'}, 'until': f'Math.abs(P.x - ({e})) <= 4', 'frames': 120}
+    m = [zu(f'{fp}.x + 20'), {'use': True, 'frames': 3}, {'wait': f'{K_MESS} || {fp}.x + 60 >= {kx(210)}', 'frames': 3000}, zu(f'{fp}.x + 60'), {'use': True, 'frames': 3},
+         {'wait': f'{K_MESS} || {fp}.x + 100 >= {kx(225)}', 'frames': 3000}, zu(f'{fp}.x + 100'), {'use': True, 'frames': 3},
+         {'wait': f'{K_MESS} || Math.abs({fp}.x - {fp}.targetX) < 6', 'frames': 3000}, k_lauf(240), {'until': 'P.grounded', 'frames': 200}]
+    f = [k_lauf(207, -10), {'wait': f'{K_MESS} || !!linkOn[7]', 'frames': 3000}, k_lauf(222, -10), {'wait': f'{K_MESS} || !!linkOn[8]', 'frames': 3000}, k_lauf(240), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(198, 14), f=kat(195, 9), plans={'m': m, 'f': f}, maxFrames=6000, pre='window.__maxAb = 0')
+    assert r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 239, f'Fähre mit mitfahrenden Hebeln: {r.get("pos")}'
+    assert await g.ev('window.__maxAb') <= 20.5 * 40, f'Fähre: {await g.ev("window.__maxAb") / 40:.1f} Spalten auseinander'
+
 @test
 async def ziel_hinweis_pfeil(g):
     """Bild-Regel, Teil E: schaltet ein Hebel eine Tür außerhalb des Bildes, zeigt ein Pfeil in der Farbe der Nummer
