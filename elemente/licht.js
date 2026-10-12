@@ -268,6 +268,26 @@ function lichtFleck(x, y, r, a){
   g.addColorStop(0, `rgba(255,250,220,${a})`); g.addColorStop(0.35, `rgba(255,210,100,${a*0.5})`); g.addColorStop(1, 'rgba(255,180,60,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
 }
+// Sackgasse: Endet der Strahl an Stein, einer Tür, einem Wechselboden oder einer Falle, sprüht dort ein Funkenregen
+// zurück und ein Glutfleck glimmt an der Wand – man sieht sofort „hier geht's nicht weiter“ (nur Anzeige, aus der Zeit
+// berechnet, kein Spielzustand)
+function lichtSackgasse(p, E, t){
+  const x = p[0]*40 + 20 - camX + E.dx*2, y = p[1]*40 + 20 + E.dy*2;
+  ctx.save(); ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(70,24,0,.35)'; ctx.beginPath(); ctx.ellipse(x, y, E.dx ? 5 : 13, E.dy ? 5 : 13, 0, 0, Math.PI*2); ctx.fill();   // Brandfleck
+  const g = ctx.createRadialGradient(x, y, 0, x, y, 18);
+  g.addColorStop(0, 'rgba(255,255,230,.95)'); g.addColorStop(0.35, 'rgba(255,140,40,.7)'); g.addColorStop(1, 'rgba(255,80,20,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, E.dx ? 8 : 18, E.dy ? 8 : 18, 0, 0, Math.PI*2); ctx.fill();
+  const zur = Math.atan2(-E.dy, -E.dx);   // Funken fliegen zurück, gefächert, mit etwas Schwerkraft
+  for(let i = 0; i < 14; i++){
+    const ph = (t*1.7 + i*0.137) % 1, a = zur + (((i*0.618) % 1) - 0.5)*2.4, v = 30 + (i % 3)*12;
+    const fx = x + Math.cos(a)*v*ph, fy = y + Math.sin(a)*v*ph + 26*ph*ph, r = 2.6*(1 - ph) + 0.8;
+    ctx.globalAlpha = 1 - ph*0.8;
+    ctx.fillStyle = '#c2410c'; ctx.beginPath(); ctx.arc(fx, fy, r + 1, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = i % 2 ? '#fff6c0' : '#ffc04a'; ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
 function lichtZeichnen(){
   const t = performance.now()*0.001;
   ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = 'lighter';
@@ -304,6 +324,7 @@ function lichtZeichnen(){
       if(i === weg.length - 1) lichtFleck(x, y, 30*puls, 0.75);
       else lichtFleck(x, y, 24*puls, 0.55);
     }
+    if(E && (E.art === 'wand' || E.art === 'weit')) lichtSackgasse(weg[weg.length - 1], E, t);
   }
   ctx.restore();
   for(const q of lichtquellen){ const x = q.x - camX; if(x > -60 && x < VW + 60) lichtQuelleBild(ctx, x, q.y, q.dx, q.dy, lichtQuelleAn(q), q.link); }

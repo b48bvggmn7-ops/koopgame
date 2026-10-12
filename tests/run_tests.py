@@ -7694,6 +7694,8 @@ async def spiegel_schaltbar(g):
     await g.load(str(ROOT / 'levels' / 'test' / 'spiegel-schaltbar.json'))
     await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';"); await schritte(5)
     assert not await g.ev("!!linkOn[3]"), 'Testlevel: am Anfang Sackgasse'
+    se = await g.ev("(() => { const e = lichtWege[0].ende; draw(); return e && e.art; })()")
+    assert se == 'wand', ('Sackgasse: Strahl endet an der Wand (Funken-Aufprall wird gezeichnet)', se)
     await g.ev("p1.x = 300; p1.y = 680;"); await schritte(30)
     await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
     assert await g.ev("!!linkOn[3] && solids.filter(s => s.type === 'door').every(s => s.open)"), 'Testlevel: Platte + Hebel öffnen Tür 3'

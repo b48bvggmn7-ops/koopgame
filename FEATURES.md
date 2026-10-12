@@ -949,6 +949,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       - Testlevel levels/test/spiegel-schaltbar.json; Tests spiegel_schaltbar, editor_licht.
       - Rollen: Wer auf die Platte tritt oder am Hebel steht, ist oft nicht der, der den Strahl sieht – einer bedient,
         der andere liest den Strahl und sagt an.
+    - SACKGASSE (Licht-Labyrinth): Endet der Strahl an Stein, einer geschlossenen Tür, einem Wechselboden oder einer
+      Falle, glüht dort ein Brandfleck und ein Funkenregen sprüht zurück (lichtSackgasse; nur Anzeige). So sieht man
+      sofort, dass dieser Weg falsch ist. Strahl-Sperren nutzen die vorhandenen Elemente (Tür/Tor, Wechselboden, Stein,
+      Falle); ein Kreis aus Spiegeln endet sicher (Besucht-Liste). Test spiegel_schaltbar.
 
   - EIS (Ausbau 7, Welt Höhle; elemente/eis.js, Spiel-Feld eis [{x, y, w, h}]): fester, rutschiger Boden-Block.
     - Wer darauf steht, läuft langsam an und dreht langsam um (EIS_GRIFF) und rutscht ohne Taste lange weiter
