@@ -85,6 +85,12 @@ const PFEIL_STECKT = 30;        // so lange bleibt ein Pfeil nach dem Einschlag 
 const FLAMME_LAENGE = 3;        // Kästchen weit speit die Flamme (Stein stoppt sie früher)
 const FLAMME_BREITE = 26;       // px
 const FLAMME_ANTEIL = 0.4;      // Anteil des Takts, in dem die Flamme brennt
+// Pfeil-Aussehen (Ruinen-Überarbeitung; nur Anzeige – die Trefferfläche bleibt PFEIL_TREFFER × PFEIL_TREFFER um die Spitze)
+const PFEIL_TREFFER = 10;       // px Kantenlänge der tödlichen Fläche um die Pfeilspitze (unverändert seit Ausbau 7)
+const PFEIL_BILD_LAENGE = 52;   // px gezeichnete Länge (Spitze bis Federn), vorher 35
+const PFEIL_BILD_DICKE = 5;     // px Schaft (vorher 3), dazu 2 px dunkler Umriss
+const PFEIL_SCHWEIF = 46;       // px Bewegungsspur hinter einem fliegenden Pfeil
+const PFEIL_LICHT = 70;         // px Lichtkreis um einen fliegenden Pfeil in dunklen Leveln (nachts lesbar)
 // Rollender Fels (elemente/fels.js)
 const FELS_RADIUS = 50;         // px (Durchmesser 2,5 Kästchen)
 const FELS_BESCHL = 0.08;       // so schnell kommt er auf sein Tempo (Anteil pro Schritt)

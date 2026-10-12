@@ -7326,6 +7326,67 @@ async def spielstand_ohne_checkpoints(g):
     assert await g.ev("activeCp") == -1 and await g.ev("checkpointDefs.length") == 13
     await g.p.evaluate("localStorage.removeItem('monchichi.save')")
 
+# ---------------------------------------------------------------- Ruinen-Überarbeitung
+PFEIL_MIN_LAENGE = 60      # Bildpunkte (Spielfeld 1280×720): so lang muss ein fliegender Pfeil samt Spur mindestens sein
+PFEIL_MIN_STARK = 100      # so viele Bildpunkte des Pfeils müssen mindestens Kontrast 3:1 zum Hintergrund dahinter haben
+PIXEL_VERGLEICH_JS = """async ([A, B, C]) => {
+  // drei Bildschirmfotos (ohne Pfeil, mit Pfeil, wieder ohne): Pfeil-Bildpunkte = anders als vorher UND nachher gleich
+  const lade = async u => { const im = new Image(); im.src = 'data:image/png;base64,' + u; await im.decode();
+    const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const c = cv.getContext('2d');
+    c.drawImage(im, 0, 0); return {w: im.width, h: im.height, d: c.getImageData(0, 0, im.width, im.height).data}; };
+  const a = await lade(A), b = await lade(B), a2 = await lade(C);
+  const lum = (r, g, b) => { const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v + 0.055)/1.055, 2.4); };
+    return 0.2126*f(r) + 0.7152*f(g) + 0.0722*f(b); };
+  const D = (u, v, i) => Math.abs(u[i] - v[i]) + Math.abs(u[i+1] - v[i+1]) + Math.abs(u[i+2] - v[i+2]);
+  let n = 0, stark = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1; const ks = [];
+  for(let i = 0; i < a.d.length; i += 4){
+    if(D(a.d, a2.d, i) >= 30 || D(a.d, b.d, i) < 30) continue;   // bewegte Deko/Regen nicht mitzählen
+    const k = i/4, x = k % a.w, y = Math.floor(k/a.w), la = lum(a.d[i], a.d[i+1], a.d[i+2]), lb = lum(b.d[i], b.d[i+1], b.d[i+2]);
+    const kr = (Math.max(la, lb) + 0.05)/(Math.min(la, lb) + 0.05);
+    n++; ks.push(kr); if(kr >= 3) stark++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  }
+  ks.sort((p, q) => p - q);
+  return {pixel: n, stark, laenge: n ? Math.max(x1 - x0, y1 - y0) + 1 : 0, kontrast90: n ? +ks[Math.floor(ks.length*0.9)].toFixed(2) : 0};
+}"""
+async def pfeil_messen(g, x, y, dx, dy):
+    """Pfeil an (x, y) zeichnen lassen (Spiel steht, Zeit eingefroren) und gegen den Hintergrund dahinter messen"""
+    import base64
+    sx, sy = await g.ev(f"[Math.round(({x} - camX)*zoom), Math.round(({y} + SKY_ROOM)*zoom)]")
+    clip = {'x': max(0, sx - 70), 'y': max(0, sy - 70), 'width': 140, 'height': 140}
+    async def foto():
+        await g.p.wait_for_timeout(60); return base64.b64encode(await g.p.screenshot(clip=clip)).decode()
+    await g.ev("fallenPfeile = []"); A = await foto()
+    await g.ev(f"fallenPfeile = [{{x: {x}, y: {y}, dx: {dx}, dy: {dy}, steckt: -1, weg: 120}}]"); B = await foto()
+    await g.ev("fallenPfeile = []"); C = await foto()
+    return await g.p.evaluate(PIXEL_VERGLEICH_JS, [A, B, C])
+
+@test
+async def pfeil_lesbarkeit(g):
+    """Ruinen-Überarbeitung 1: Fallen-Pfeile sind auf einen Blick erkennbar – vor jedem Ruinen-Hintergrund (morgens, mittags,
+    abends, nachts, Regen) misst der Test am echten Bild: Länge des fliegenden Pfeils samt Spur ≥ PFEIL_MIN_LAENGE Bildpunkte
+    und mindestens PFEIL_MIN_STARK Bildpunkte mit Kontrast ≥ 3:1 zum Hintergrund (dunkler Umriss + helles Holz + rote Federn
+    + Stahlspitze). Vorher (3 px brauner Strich): Länge ≈ 29, 0–86 starke Bildpunkte. Die Trefferfläche bleibt 10×10 px um die
+    Spitze (PFEIL_TREFFER), die sichtbare Spitze ist 14 px lang und 14 px breit; der Schaft war und ist ungefährlich."""
+    await g.p.set_viewport_size({'width': 1280, 'height': 720}); await g.p.wait_for_timeout(200)
+    assert await g.ev("PFEIL_TREFFER") == 10, 'Trefferfläche darf sich nicht ändern'
+    proben = [(24*40 + 20, 14*40, 0, 1), (30*40 + 20, 13*40 + 10, 0, 1), (26*40, 15*40 + 10, 1, 0), (33*40, 14*40, -1, 0)]
+    fehler = []; tabelle = []
+    for tz, we in (('morgen', 'trocken'), ('mittag', 'trocken'), ('abend', 'trocken'), ('nacht', 'trocken'), ('mittag', 'regen')):
+        d = json.loads((ROOT / 'levels/ruinen/03-fallengang.json').read_text(encoding='utf-8')); d['tageszeit'] = tz; d['wetter'] = we
+        f = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False); json.dump(d, f); f.close()
+        await g.load(f.name)
+        await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__pn = window.__pn || performance.now.bind(performance);"
+                   "const T0 = window.__pn(); performance.now = () => T0;"
+                   "for(const P of [p1, p2]){ P.x = 18*40 + 20 + (P === p2 ? -60 : 0); P.y = 16*40; P.vx = P.vy = 0; }"
+                   "camPos = Math.max(0, p2.x - CAM_LEFT); camX = Math.round(camPos);")
+        for x, y, dx, dy in proben:
+            r = await pfeil_messen(g, x, y, dx, dy)
+            tabelle.append((tz, we, 'quer' if dx else 'runter', r['laenge'], r['stark'], r['kontrast90']))
+            if r['laenge'] < PFEIL_MIN_LAENGE or r['stark'] < PFEIL_MIN_STARK: fehler.append(tabelle[-1])
+        await g.ev("menuScreen = null; performance.now = window.__pn;")
+    print('     Pfeil-Lesbarkeit (Tageszeit, Wetter, Richtung, Länge, starke Bildpunkte, Kontrast 90 %):', tabelle)
+    assert not fehler, f'schlecht lesbar: {fehler}'
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
