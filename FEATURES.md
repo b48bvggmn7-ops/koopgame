@@ -898,6 +898,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Spiegel (/ oder \): lenkt den Strahl um 90° um. Beide Figuren drehen ihn mit der Hebel-Taste (J / Num 2 / Kreis),
       wenn kein Hebel näher ist. Er dreht sich sichtbar, dazu ein Stein-Schaben. Steht eine Figur davor, zeigt eine
       Tasten-Blase (J / Num 2 bzw. ○) wie beim Hebel, dass man hier drücken kann (Test aktions_hinweis).
+      Aussehen (besser als Spiegel erkennbar): Standspiegel – ovaler, glänzender Spiegel (helles Glas, Glanzstreifen,
+      Funkeln) in einem Goldrahmen, gehalten von einer Bronze-Gabel auf einem Steinsockel mit kleinem Drehpfeil; die
+      Schräge zeigt weiter / bzw. \ und damit, wohin das Licht geht.
     - Lichtkristall: Solange der Strahl darauf fällt, ist seine Nummer AN, wie eine gedrückte Druckplatte (Türen auf,
       Bewegung fährt …). Er leuchtet, Ton: warmes Aufrauschen bzw. Verwehen (kein Klingeln).
     - Strahl: goldene, leicht pulsierende Linie mit Funkeln.

@@ -88,16 +88,44 @@ function lichtQuelleBild(c, x, y, dx, dy, an){
   for(let i = 0; i < 8; i++){ const a = i/8*Math.PI*2; c.beginPath(); c.moveTo(cx + Math.cos(a)*11, cy + Math.sin(a)*11); c.lineTo(cx + Math.cos(a)*15, cy + Math.sin(a)*15); c.stroke(); }
 }
 function spiegelBild(c, x, y, stellung, dreh){
-  // Sockel + drehbarer Spiegel in Bronze-Fassung
-  c.fillStyle = '#9a7c50'; c.fillRect(x + 12, y + 30, 16, 10);
-  c.fillStyle = '#b8955e'; c.fillRect(x + 8, y + 36, 24, 4);
-  c.save(); c.translate(x + 20, y + 20);
-  const winkel = (stellung === '/' ? -Math.PI/4 : Math.PI/4) + (dreh || 0);
-  c.rotate(winkel);
-  c.fillStyle = '#7a5a2a'; c.fillRect(-17, -4, 34, 8);
-  const g = c.createLinearGradient(0, -3, 0, 3); g.addColorStop(0, '#f4fbff'); g.addColorStop(1, '#9fc6dc');
-  c.fillStyle = g; c.fillRect(-15, -2.5, 30, 5);
+  // Standspiegel (Ruinen-Überarbeitung, besser als Spiegel erkennbar): Steinsockel mit Drehpfeil, Bronze-Gabel mit Achse,
+  // ovaler Spiegel in Goldrahmen mit hellem Glas, Glanzstreifen und Funkeln; die Schräge zeigt / bzw. \ (Lichtweg)
+  const cx = x + 20, cy = y + 19, t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0;
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(cx, y + 39, 14, 2.5, 0, 0, Math.PI*2); c.fill();
+  const st = c.createLinearGradient(0, y + 31, 0, y + 40); st.addColorStop(0, '#b9a98c'); st.addColorStop(1, '#7d6c55');
+  c.fillStyle = st; c.beginPath(); c.moveTo(x + 9, y + 40); c.lineTo(x + 12, y + 31); c.lineTo(x + 28, y + 31); c.lineTo(x + 31, y + 40); c.closePath(); c.fill();
+  c.strokeStyle = '#4a3b2a'; c.lineWidth = 1.2; c.stroke();
+  // kleiner Drehpfeil auf dem Sockel (man kann ihn drehen)
+  c.strokeStyle = '#fff3c8'; c.lineWidth = 1.4; c.beginPath(); c.arc(cx, y + 35.5, 3.2, Math.PI*0.15, Math.PI*1.55); c.stroke();
+  c.fillStyle = '#fff3c8'; c.beginPath(); c.moveTo(cx + 3.6, y + 33); c.lineTo(cx + 5.4, y + 36.4); c.lineTo(cx + 1.6, y + 36); c.closePath(); c.fill();
+  // Gabel mit Achse
+  c.strokeStyle = '#6b4a1e'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(cx, y + 31); c.lineTo(cx, y + 27); c.moveTo(cx - 12, cy); c.lineTo(cx - 12, y + 27); c.lineTo(cx + 12, y + 27); c.lineTo(cx + 12, cy); c.stroke();
+  c.strokeStyle = '#d8a94a'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(cx - 12, cy); c.lineTo(cx - 12, y + 27); c.lineTo(cx + 12, y + 27); c.lineTo(cx + 12, cy); c.stroke();
+  c.save(); c.translate(cx, cy);
+  c.rotate((stellung === '/' ? -Math.PI/4 : Math.PI/4) + (dreh || 0));
+  // Rahmen (Gold) mit dunklem Umriss
+  c.fillStyle = '#3a2610'; c.beginPath(); c.ellipse(0, 0, 19, 8.5, 0, 0, Math.PI*2); c.fill();
+  const rg = c.createLinearGradient(0, -8, 0, 8); rg.addColorStop(0, '#ffe08a'); rg.addColorStop(0.5, '#d4a23c'); rg.addColorStop(1, '#8a6020');
+  c.fillStyle = rg; c.beginPath(); c.ellipse(0, 0, 17.5, 7, 0, 0, Math.PI*2); c.fill();
+  // Glas: hell, bläulich, mit Glanzstreifen
+  const gg = c.createLinearGradient(-14, -5, 14, 5); gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.45, '#cfe9f7'); gg.addColorStop(1, '#7fb3d0');
+  c.fillStyle = gg; c.beginPath(); c.ellipse(0, 0, 14, 4.6, 0, 0, Math.PI*2); c.fill();
+  c.save(); c.beginPath(); c.ellipse(0, 0, 14, 4.6, 0, 0, Math.PI*2); c.clip();
+  c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(-9, -6, 3, 12); c.fillRect(-4, -6, 1.5, 12);
   c.restore();
+  // Achs-Knöpfe
+  c.fillStyle = '#6b4a1e'; for(const ax of [-17, 17]){ c.beginPath(); c.arc(ax, 0, 2.2, 0, Math.PI*2); c.fill(); }
+  c.restore();
+  // Funkeln (Spiegel glänzt)
+  const fk = 0.5 + 0.5*Math.sin(t*2.4 + x*0.05);
+  if(fk > 0.6){
+    const fx = cx + (stellung === '/' ? 6 : -6), fy = cy - 5, r = 4.5*(fk - 0.6)/0.4 + 1.5;
+    c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath();
+    c.moveTo(fx, fy - r); c.lineTo(fx + r*0.25, fy - r*0.25); c.lineTo(fx + r, fy); c.lineTo(fx + r*0.25, fy + r*0.25);
+    c.lineTo(fx, fy + r); c.lineTo(fx - r*0.25, fy + r*0.25); c.lineTo(fx - r, fy); c.lineTo(fx - r*0.25, fy - r*0.25); c.closePath(); c.fill();
+  }
 }
 function kristallBild(c, x, y, leucht){
   c.fillStyle = '#9a7c50'; c.fillRect(x + 8, y + 32, 24, 8);
