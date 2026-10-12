@@ -73,6 +73,7 @@ const SWIM_DRAG = 0.9;          // Wasser-Widerstand (Tempo wird pro Schritt mit
 const SWIM_AUFTRIEB = 0.07;     // ohne Taste treibt man langsam nach oben
 const SWIM_KICK = 5.2;          // Schwimmstoß (Springen-Taste unter Wasser) nach oben
 const SWIM_JUMP_OUT = -11.4;    // Springen an der Oberfläche: aus dem Wasser heraus (reicht auf einen Rand ~2 Kästchen höher)
+const SWIM_RAUS_SCHRITTE = 6;   // so viele Schritte nach dem Aus-dem-Wasser-Springen bremst das Wasser nicht (sonst verpufft der Sprung)
 const SWIM_SURFACE_GRAV = 0.25; // Kopf über Wasser: man sinkt sanft zurück, bis der Kopf gerade herausschaut
 const SWIM_OBEN_ZONE = 16;      // px: so knapp unter der Oberfläche zieht es den Kopf kräftig nach oben (ruhiges Treiben)
 // Luft je Figur: 12 Spielsekunden unter Wasser, Warnung (Blinken + Ticken) in den letzten 3 s, Luft leer = Tod

@@ -6381,11 +6381,21 @@ async def wasser_schwimmen_luft(g):
     # wird im Spiel je Schritt mitgeschrieben
     await g.ev("window.__minY = p2.y; window.__yStep = stepSim; stepSim = function(ts){ const r = __yStep(ts); __minY = Math.min(__minY, p2.y); return r; }")
     try:
+        # erst warten, bis der Tastendruck im Spiel angekommen ist (Sprung beginnt), dann 12 Schritte weiter halten
         await g.p.keyboard.down('Numpad0'); await g.steps(12); await g.p.keyboard.up('Numpad0')
         hoch = await g.ev("__minY")
     finally:
         await g.ev("stepSim = __yStep")
     assert hoch < 330, f"springt nicht aus dem Wasser: {hoch}"
+    for _ in range(3):   # Kopf knapp unter Wasser (wippt): der Sprung darf nicht vom Wasser geschluckt werden
+        await setz('p2', 1000, 392); await g.steps(3)
+        await g.ev("window.__minY = p2.y; window.__yStep = stepSim; stepSim = function(ts){ const r = __yStep(ts); __minY = Math.min(__minY, p2.y); return r; }")
+        try:
+            await g.ev("KEYS[p2.keys.jump + '_pressed'] = true"); await g.steps(14)
+            hoch = await g.ev("__minY")
+        finally:
+            await g.ev("stepSim = __yStep")
+        assert hoch < 330, f"Sprung aus dem Wasser verpufft (Kopf knapp unter Wasser): {hoch}"
     # Platschen beim Eintauchen
     assert 'platsch' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
     # Luft-Warnung und Tod bei leerer Luft; danach volle Luft

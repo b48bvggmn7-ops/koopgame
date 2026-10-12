@@ -11,13 +11,6 @@
   {
    "level": "dschungel/03-lianenschlucht.json",
    "regel": "Checkpoint",
-   "spalte": 208,
-   "nummer": 5,
-   "begruendung": "nach dem Kamin nur Laufstrecke; ohne diesen Checkpoint wäre die Lücke 83 Spalten (> 70)"
-  },
-  {
-   "level": "dschungel/03-lianenschlucht.json",
-   "regel": "Checkpoint",
    "spalte": 668,
    "nummer": 13,
    "begruendung": "Lianen-Staffel (Spalte 610–668, zwei getrennte Wege) ist ein Rätsel am Stück – Checkpoint erst danach"
@@ -35,13 +28,6 @@
    "spalte": 533,
    "nummer": 9,
    "begruendung": "Doppel-Jagd ist eine Verfolgung: Hebel 9 startet die Dornendecke (direkt daneben sichtbar), die Tür am Ende der Flucht (580) öffnet zugleich"
-  },
-  {
-   "level": "dschungel/06-wipfelsturm.json",
-   "regel": "Checkpoint",
-   "spalte": 205,
-   "nummer": 4,
-   "begruendung": "nach dem Pilz-Turm nur Laufstrecke bis zur nächsten Stelle; ohne ihn wäre die Lücke > 70 (Test dschungel6_wipfelsturm)"
   },
   {
    "level": "ruinen/01-ruinen.json",

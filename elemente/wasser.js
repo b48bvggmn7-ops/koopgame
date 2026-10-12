@@ -41,6 +41,10 @@ function wasserPruefen(pl){
 function schwimmPhysik(pl, moveDir, jumpPressed, frozen){
   pl.hookAttached = false; pl.gliding = false; pl.glideTimer = 0; pl.ropeFling = false;
   pl.onWall = 0; pl.wjInputLock = 0; pl.lastWallJumpSide = 0;
+  // gerade aus dem Wasser gesprungen: ein paar Schritte nicht bremsen (sonst schluckt der Widerstand den Sprung, wenn der
+  // Kopf beim Absprung noch knapp unter Wasser war)
+  if(pl.rausSprung > 0 && pl.vy < 0){ pl.rausSprung--; pl.vy += GRAVITY; return; }
+  pl.rausSprung = 0;
   const hoch = !frozen && isDown(pl.keys.swimUp), runter = !frozen && isDown(pl.keys.swimDown);
   // knapp unter der Oberfläche (Kopf weniger als SWIM_OBEN_ZONE tief): kräftiger nach oben, damit man ruhig mit dem
   // Kopf über Wasser treibt statt zu wippen; Kopf draußen: sanft zurück, bis er gerade herausschaut
@@ -55,7 +59,7 @@ function schwimmPhysik(pl, moveDir, jumpPressed, frozen){
   if((!pl.headUnder || nahOben) && !runter && !hoch) pl.vy *= 0.75;   // an der Oberfläche ruhig treiben statt wippen
   if(typeof stroemungen !== 'undefined' && stroemungen.length) stroemungAnwenden(pl);   // elemente/stroemung.js
   if(jumpPressed){
-    if(!pl.headUnder || nahOben) pl.vy = SWIM_JUMP_OUT;     // an der Oberfläche: aus dem Wasser springen
+    if(!pl.headUnder || nahOben){ pl.vy = SWIM_JUMP_OUT; pl.rausSprung = SWIM_RAUS_SCHRITTE; }   // an der Oberfläche: aus dem Wasser springen
     else { pl.vy = Math.min(pl.vy, -SWIM_KICK); pl.schwimmStoss = 1; if(SFX.schwimmzug) SFX.schwimmzug(pl.x); }
   }
   if(pl.schwimmStoss > 0) pl.schwimmStoss = Math.max(0, pl.schwimmStoss - 0.06);   // nur für die Arm-/Bein-Animation

@@ -601,7 +601,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Schwimmen: steckt die Körpermitte im Wasser, schwimmt die Figur frei in alle Richtungen – Links/Rechts wie
         Laufen, Hoch/Runter = Affe W/S, Schweinchen ↑/↓, Controller Stick/Steuerkreuz hoch/runter (dieselben Tasten wie
         Seil ranziehen/geben). Springen = Schwimmstoß nach oben (SWIM_KICK 5,2); an der Oberfläche springt man damit aus
-        dem Wasser (SWIM_JUMP_OUT −11,4, reicht ca. 2 Kästchen hoch auf einen Rand). Ohne Taste treibt man langsam nach
+        dem Wasser (SWIM_JUMP_OUT −11,4, reicht ca. 2 Kästchen hoch auf einen Rand; danach bremst das Wasser SWIM_RAUS_SCHRITTE = 6 Schritte lang nicht – behoben: war der Kopf beim Absprung knapp unter Wasser, verpuffte der Sprung früher etwa jedes zweite Mal). Ohne Taste treibt man langsam nach
         oben (Auftrieb SWIM_AUFTRIEB 0,07), Wasser bremst (SWIM_DRAG 0,9), Höchsttempo SWIM_MAX_SPEED 3,6 (Laufen 4,4).
         An der Oberfläche treibt man ruhig mit dem Kopf über Wasser (kräftiger Auftrieb in den obersten SWIM_OBEN_ZONE
         16 px, gedämpftes Wippen). Am Grund kann man stehen und laufen.
