@@ -540,6 +540,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Schweinchen „wartet“ mit offenem Schirm in der Luft, bis die nächsten Steine erscheinen; der Affe wartet am Haken
         hängend oder überbrückt mit dem Seil. Keine Figur wird überflüssig.
       Testlevel levels/test/wechselboden.json (index.html?testlevel=wechselboden). Tests wechselboden, editor_wechselboden.
+      Ruinen-Überarbeitung – Schalter und Läufer: Am Hebel zeigen zwei kleine Kacheln A ▨ / B ⠿, welche Gruppe gerade fest ist
+        (die feste kräftig mit weißem Rand, die andere gestrichelt). Die Geisteranzeige ist deutlicher (blasse Fläche,
+        kräftiger Umriss, Buchstabe der Gruppe am Anfang jeder Reihe). Bauweise „Schalter/Läufer“: der Läufer geht durch einen
+        nur 1 Kästchen hohen Gang (kein Springen, kein Segeln) über Wechselboden mit Abgrund darunter, der Schalter steht oben
+        auf einer Galerie am Hebel, die der Läufer nicht erreicht (nur per Haken = Affe oder per Aufwind = Schweinchen),
+        höchstens 20 Spalten vom Boden weg. Haltestellen: Inseln (A – Insel – B) oder genau die Naht zwischen zwei Gruppen
+        (A-B-A ohne Insel: zu früh umgelegt = der Läufer fällt). Testlevel levels/test/wechselboden-hebel.json mit 3 Rätseln
+        (Affe schaltet, Schweinchen schaltet, A-B-A auf der Naht); eingebaut im Fallengang (Spalte 366–398). Tests
+        wechselboden_schalter_laeufer, wechselboden_geisteranzeige.
   - TELEPORTER (Ausbau 4, elemente/teleporter.js; Spiel-Feld teleporters [{x, y (Fußpunkt), paar, fuer, link?}]):
       Immer zwei Tore gehören zusammen (Paar-Nummer + Farbe, Nummer unten am Tor). Wer hineinläuft/-springt/-fällt
         (deutlich im Tor-Kästchen), kommt sofort beim Partner heraus – automatisch, ohne Taste.
@@ -838,6 +847,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       eine vorhandene Falle dreht die Richtung.
     - Testlevel levels/test/falle.json; Tests falle_pfeil_flamme, editor_falle. hebel_haben_grund zählt „Falle aus“ als
       Wirkung.
+    - Ruinen-Überarbeitung (Lesbarkeit): Der Pfeil ist 52 px lang (vorher 35), Schaft 5 px mit 2 px dunklem Umriss, helles
+      Holz, rote Federn, Stahlspitze, dazu eine helle Bewegungsspur (46 px). Nachts leuchten fliegende Pfeile, glühende
+      Köpfe und Flammen ein wenig (Lichtkreis). Vorwarnung: Schein um den Schlitz und die Pfeilspitze schaut schon heraus
+      (zeigt die Richtung); Flammen-Düse mit Schein und Zündflamme. Einschlag: Staub, Funken, Riss im Stein, der Pfeil
+      zittert nach. Die Flamme ist sichtbar so breit wie ihre Trefferfläche (26 px; vorher lief sie zur Spitze dünn aus).
+      Die Trefferfläche des Pfeils ist UNVERÄNDERT 10 × 10 px um die Spitze (PFEIL_TREFFER); die sichtbare Spitze ist 14 px
+      lang und 14 px breit, der Schaft ist (wie bisher) ungefährlich. Test pfeil_lesbarkeit misst am echten Bild vor jedem
+      Ruinen-Hintergrund (morgens, mittags, abends, nachts, Regen): Länge mit Spur ≥ 60 Bildpunkte und ≥ 100 Bildpunkte mit
+      Kontrast ≥ 3 : 1 zum Hintergrund (vorher: Länge ≈ 29, 0–86).
     - Welche Rolle haben Affe und Schweinchen? Der Affe wartet am Seil hängend den Takt ab oder schwingt durch die
       Lücke. Das Schweinchen segelt langsam und lässt Pfeile unter sich durch. Oft stellt einer per Hebel die Fallen für
       den anderen ab.
@@ -857,6 +875,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       vorhandenen Fels dreht die Richtung.
     - hebel_haben_grund: Ein Fels zählt als Gefahr; ein Hebel, der ihn startet, muss auch ein Tor öffnen.
     - Testlevel levels/test/fels.json; Tests fels_rollt, editor_fels.
+    - Ruinen-Überarbeitung: dunkler, schwerer Granit mit dickem Umriss und Steinband (man sieht die Drehung), Schatten liegt
+      auf dem Boden darunter (kleiner, je höher er ist), Staub und hüpfende Kiesel beim Rollen, beim Zerschellen fliegen
+      Bruchstücke; Aufprall und Bruch lassen die Kamera kurz wackeln (kameraStoss in 09-kamera.js, nur fürs Bild).
+      Fairer Start: Geht seine Nummer an, wackelt er erst ½ s (FELS_WARN) mit Staub, rieselnden Kieseln und Grollen.
+      Ankündigung: Rollt er außerhalb des Bildes auf die Figuren zu, rumpelt es und am Bildrand steigt Staub mit einem
+      pulsierenden Warnzeichen auf (ab 1,2 Bildbreiten Abstand, je näher, desto stärker).
+      Rätsel: Er bricht durch Bröckel-Wände (Bröckelboden-Kästchen in seinem Weg) und rollt langsamer weiter – so räumt er
+      einen Weg frei. Aus großer Höhe hüpft er kurz. (Keiner der vorhandenen Felsen trifft eine Bröckel-Wand – bestehende
+      Level verhalten sich gleich.) Testlevel levels/test/fels-wand.json (erst Hebel 2 = Tor auf, dann Hebel 1 = Fels).
+      Test fels_verhalten (Start mit Warnung, Ankündigung, Schatten, Durchbruch, Zerschellen mit Bruchstücken und Wackeln,
+      Tor zu = zerschellt davor, Neustart).
     - Welche Rolle haben Affe und Schweinchen? Einer startet die Flucht, beide müssen weg: Der Affe flieht nach oben an
       Haken, der Fels rollt darunter durch. Das Schweinchen segelt über Gruben, in die der Fels fällt.
 

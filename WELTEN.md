@@ -287,6 +287,8 @@ Mondnacht (3 / 5) jetzt hinter dem Sonnentempel; die Dateinamen bleiben gleich.
 | Flammenfalle | zieht sich am Seil über Flammen-Düsen | segelt sanft herab, wenn die Flamme gerade aus ist |
 | Fallen abstellen (Hebel) | erreicht hohe Hebel per Haken | erreicht ferne Hebel segelnd |
 | Rollender Fels | flieht nach oben an Haken, der Fels rollt darunter durch | segelt über Gruben, in die der Fels fällt |
+| Fels räumt den Weg (Bröckel-Wand) | startet den Fels oder öffnet das Tor davor – Reihenfolge zählt | das jeweils andere |
+| Wechselboden Schalter/Läufer | Schalter auf der Haken-Galerie ODER Läufer im niedrigen Gang | Schalter auf der Aufwind-Galerie ODER Läuferin |
 | Licht/Spiegel | dreht Spiegel, die nur per Haken erreichbar sind | dreht Spiegel auf fernen Simsen (segeln) |
 | Kristall (Nummer) | – öffnet Türen für beide, solange das Licht trifft – | |
 | Wechselboden/Teleporter | wie im Dschungel, hier im Takt der Fallen | wie im Dschungel |
@@ -319,6 +321,7 @@ Startzeiten); „Spielraum“ = so lange darf man nach dem Hebel zögern (Physik
 | 606–690 | Flammen-Doppelgang: Hebel 10–14 über Kreuz, oben Haken über Stacheln, unten Gruben segeln | Koordination | knapp (schwerste Stelle; ohne Hebel 0 von 8 durch) |
 | 688–728 | Rhythmus-Lauf: Pfeile + Flammen-Welle | Timing | knapp (stur 1 von 10) |
 | 412–456 | Deckung: Affe schaltet oben, Schweinchen läuft im Pfeil-Takt | Koordination | knapp |
+| 366–398 | Schalter/Läufer (Ruinen-Überarbeitung): Affe am Hebel 15 auf der Galerie, Schweinchen im niedrigen Gang über Wechselboden A – Insel – B – Naht – A | Koordination | knapp (2–3 Versuche: anhalten genau auf der Naht, Umlegen erst wenn es steht) |
 | 100–140 | Flammen-Welle | Timing | knapp (stur 1 von 25) |
 | 542–564 / 737–757 | Takt-Steine 1,5 s (unter Pfeilen / zum Ziel) | Timing | knapp |
 | 301–311 | Einstieg Pfeil-Gang (Schweinchen segelt) | Segeln | knapp (3 von 6) |
@@ -380,6 +383,17 @@ Spalten ohne Checkpoint im Finale) – das macht sie zum Meister-Level.
 | 273–304 | Pfeilgang mit Brücke | Koordination + Timing | knapp |
 | 500–576 | Fels und Licht-Tor | Verfolgung | knapp |
 | 246–272 | Licht-Takt-Tor | Timing | komfortabel bis knapp (stur 10 von 12) |
+
+### Ruinen-Überarbeitung (vor der Wasserwelt)
+- **Pfeile:** größer (52 px), dunkler Umriss, helles Holz, rote Federn, Bewegungsspur; nachts leuchten sie; Vorwarnung
+  zeigt die Spitze schon im Schlitz; Einschlag mit Staub, Funken, Riss. Trefferfläche unverändert (10 × 10 px um die
+  Spitze). Flamme sichtbar so breit wie ihre Trefferfläche.
+- **Rollender Fels:** schwer und dunkel, Drehung gut sichtbar, Schatten am Boden, Kiesel/Staub, Kamera-Wackeln,
+  Bruchstücke. Wackelt ½ s vor dem Losrollen; außerhalb des Bildes kündigt er sich am Bildrand an. Neu als Rätsel: er
+  bricht durch Bröckel-Wände und räumt so einen Weg frei (levels/test/fels-wand.json). Zweite Idee (noch nicht gebaut):
+  „Fels als Brücke“ – fällt er in eine Grube, die genau so breit ist wie er, bleibt er liegen und man kann über ihn gehen.
+- **Wechselboden Schalter/Läufer:** Anzeige am Hebel (A/B), deutlichere Geisteranzeige; Bauweise mit Galerie (nur per
+  Haken oder Aufwind) und niedrigem Gang; Testlevel levels/test/wechselboden-hebel.json; im Fallengang Spalte 366–398.
 
 **Reihenfolge Ruinen (6er-Welten):** Ruinen, Fallengang, Sonnentempel, Mondnacht, Felsenflucht, Tempelherz – typisch/
 schwerste steigt von 2/3–4 bis 3–4/7.
