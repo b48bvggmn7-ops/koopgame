@@ -1561,8 +1561,7 @@ async def level11_felsenflucht(g):
         pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 2)]
     r = await koop(g, f=kat(710, 15), m=kat(708, 15), plans={'f': pl + [k_lauf(746)]}, maxFrames=3000)
     soll(r.get('done'), 'Ausklang: Pfeil-Vorhänge', r.get('pos'))
-    r = await koop(g, m=kat(752, 15), f=kat(750, 15), plans={'m': [k_lauf(791)], 'f': [k_lauf(789)]}, maxFrames=1500)
-    soll(r.get('done'), 'bis zum Ziel', r.get('pos'))
+    # danach bis zum Ziel: Licht-Rätsel „Felsbrecher-Licht“ (eigener Test felsenflucht_felsbrecher_licht)
     assert not fehler, fehler
 
 @test
@@ -3834,7 +3833,7 @@ async def ruinen6_tempelherz(g):
 @test
 async def hebel_haben_grund(g):
     """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
-    Teleporter, Falle, Fels, Förderband oder Leuchtkristall),
+    Teleporter, Falle, Fels, Förderband, Leuchtkristall oder Sonnenstein „per Nummer“),
     und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man
     keinen Grund, ihn zu ziehen (Nutzerwunsch: „es muss in sich schlüssig sein“)."""
     fehler = []
@@ -3857,7 +3856,8 @@ async def hebel_haben_grund(g):
             const lk = (typeof leuchtKristalle !== 'undefined' ? leuchtKristalle : []).filter(k=>k.link===l).length;   // Licht im Dunkeln (Ausbau 7)
             const lv = (typeof lavaBecken !== 'undefined' ? lavaBecken : []).reduce((n, b) => n + b.marken.filter(m=>m.link===l).length, 0);   // Lava steigt (Ausbau 7)
             const pr = (typeof pressen !== 'undefined' ? pressen : []).filter(P=>P.link===l).length;   // Pressen anhalten/anwerfen (Ausbau 7)
-            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk && !lv && !pr) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const sq = (typeof lichtquellen !== 'undefined' ? lichtquellen : []).filter(q=>q.link===l).length;   // Sonnenstein „per Nummer“ (Ruinen-Licht)
+            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk && !lv && !pr && !sq) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
             const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m)) || fe > 0 || lv > 0;   // auch: Hebel lässt Lava steigen
             if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
           }
@@ -7652,6 +7652,121 @@ async def ruinen1_sonnenkammer(g):
     soll(r.get('done') and r['top']['f'] > 7, 'Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
     r = await koop(g, m=kat(797, 14), f=kat(784, 14), plans={'m': [k_lauf(797, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'frames': 120}]}, maxFrames=400)
     soll(r.get('done') and r['top']['m'] > 9.5, 'Affe kommt nicht aufs Spiegel-Sims', r.get('top'))
+    assert not fehler, fehler
+
+@test
+async def fallengang_lichtweiche(g):
+    """Fallengang, Licht-Rätsel „Lichtweiche“ (Spalte 772–818, vor dem Ziel): Über der Grube liegen Wechselboden-Brücken
+    A (links) und B (rechts) – B ist da, solange Licht auf den Weichen-Kristall 33 fällt. Spiegel 1 (Weiche, nur der Affe per
+    Haken) schickt das Licht nach oben zu Spiegel 2 (fest) und hinüber zu Spiegel 3 (nur das Schweinchen per Aufwind):
+    „\\“ = hinunter auf Kristall 33 (Brücke B), „/“ = hinauf auf Kristall 34 („bleibt an“, Ausgang). Ablauf: Schweinchen auf
+    die Naht, Affe dreht Spiegel 1 (B kommt), Schweinchen hinüber und per Aufwind an Spiegel 3, dreht ihn auf „/“
+    (Ausgang offen, B weg, A wieder da), Affe auf die Naht, Schweinchen dreht zurück (B), Affe hinüber."""
+    await koop_level(g, 'ruinen/03-fallengang.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    naht = 790*40
+    def affe(jx=777.5):
+        return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'},
+                {'holdIf': {'right': f'P.x < {kx(779)}', 'left': f'P.x > {kx(781)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(781)), {'wait': f'Q.grounded && Math.abs(Q.x - {naht}) <= 4', 'frames': 4000}, {'use': True, 'frames': 8},
+                {'wait': '!!linkOn[34] && !linkOn[33]', 'frames': 4000}, k_lauf(783), {'until': 'P.grounded', 'frames': 200},
+                wb_halt(naht), {'wait': '!!linkOn[33]', 'frames': 4000}, k_lauf(811)]
+    schwein = [{'wait': f'Q.grounded && Q.y < {ky(10)} && Q.x > {kx(779)}', 'frames': 4000}, wb_halt(naht), {'wait': '!!linkOn[33]', 'frames': 4000},
+               k_lauf(797)] + wb_aufwind(800, 3, 798) + [wb_halt(kx(798)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[34]', 'frames': 300},
+               {'wait': f'Q.grounded && Math.abs(Q.x - {naht}) <= 4', 'frames': 4000}, {'use': True, 'frames': 8},
+               {'wait': f'Q.x > {kx(797)} && Q.grounded', 'frames': 4000}, k_lauf(811)]
+    ok = []
+    for jx in (777.5, 778):
+        r = await koop(g, m=kat(768, 15), f=kat(766, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=12000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 810.5: ok.append(jx); break
+    soll(ok, 'Lichtweiche gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    r = await koop(g, m=kat(768, 15), f=kat(766, 15), plans={'f': [k_lauf(792)]}, maxFrames=1500)
+    soll(r.get('dead') == 'f', 'ohne Weiche fällt das Schweinchen in die Grube', info(r))
+    r = await koop(g, m=kat(768, 15), f=kat(779, 15), plans={'f': [{'press': ['jump'], 'hold': ['jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 9, 'Schweinchen kommt nicht aufs Affen-Sims', (r.get('top'), info(r)))
+    r = await koop(g, m=kat(799, 15), f=kat(768, 15), links=[33], plans={'m': [{'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'true', 'frames': 120}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['m'] > 4, 'Affe kommt nicht aufs Schweinchen-Sims', r.get('top'))
+    assert not fehler, fehler
+
+@test
+async def felsenflucht_felsbrecher_licht(g):
+    """Felsenflucht, Licht-Rätsel „Felsbrecher-Licht“ (Spalte 752–800, vor dem Ziel): Hebel 40 lässt den Fels rollen und
+    öffnet Tor 40; der Fels bricht die Bröckel-Wand auf (Gang und Strahl frei) und fällt in die Grube. Der Sonnenstein
+    leuchtet nur, solange jemand auf Platte 44 steht. Spiegel 1 am Boden (jeder), Spiegel 2 auf dem Affen-Sims (Haken),
+    Licht-Tür 41 im Strahl – ihr Hebel liegt oben im Aufwind-Schacht (nur das Schweinchen). Kristall 42 („bleibt an“)
+    öffnet den Ausgang. Koop-Bot: Affe Hebel 40, über die Grube, Haken, Spiegel 2, zurück auf die Platte; Schweinchen
+    Schacht -> Hebel 41, runter, dreht Spiegel 1. Dazu: ohne Fels bleibt die Bröckel-Wand zu; ohne Platte kein Licht."""
+    await koop_level(g, 'ruinen/05-felsenflucht.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    fels_weg = {'wait': 'felsen.find(F => F.link === 40).weg', 'frames': 1500}
+    ueber_stein = [{'holdIf': {'right': f'P.x < {kx(753)} - 6'}, 'until': f'P.x >= {kx(753)} - 6 || P.x > {kx(755)}', 'frames': 300},
+                   {'pressIf': {'jump': f'P.grounded && P.x < {kx(755)}'}, 'hold': ['right', 'jump'], 'until': f'P.x > {kx(755)} && P.grounded', 'frames': 200}]
+    rechts = ueber_stein + [k_lauf(766, -8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    links = [{'hold': ['left'], 'until': f'P.x <= {kx(771)} + 8', 'frames': 300}, {'press': ['jump'], 'hold': ['left', 'jump'], 'frames': 12},
+             {'hold': ['left'], 'until': 'P.grounded', 'frames': 200}]
+    def affe(jx=771):
+        return [wb_halt(kx(752)), {'use': True, 'frames': 8}, fels_weg] + rechts + [wb_halt(int(jx*40) + 20),
+                {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'},
+                {'holdIf': {'right': f'P.x < {kx(772)}', 'left': f'P.x > {kx(773)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(773)), {'use': True, 'frames': 8}, {'hold': ['right'], 'until': f'P.x > {kx(774)} + 10', 'frames': 200},
+                {'until': 'P.grounded', 'frames': 200}] + links + [wb_halt(kx(756)), {'wait': '!!linkOn[42]', 'frames': 5000}] + rechts + [k_lauf(795)]
+    schwein = [fels_weg] + rechts + [k_lauf(782)] + wb_aufwind(783, 2, 782) + [{'use': True, 'frames': 8},
+               {'hold': ['right'], 'until': f'P.x > {kx(783)}', 'frames': 100}, {'until': 'P.grounded', 'frames': 300},
+               {'hold': ['left'], 'until': f'P.x < {kx(777)}', 'frames': 300}, wb_halt(kx(775)),
+               {'wait': f'Q.grounded && Math.abs(Q.x - {kx(756)}) < 8 && spiegelListe.find(s => s.c === 774 && s.r === 9).stellung === "/"', 'frames': 5000},
+               {'use': True, 'frames': 8}, {'wait': '!!linkOn[42]', 'frames': 300}, k_lauf(795)]
+    ok = []
+    for jx in (771, 770.6):
+        r = await koop(g, m=kat(750, 15), f=kat(749, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=14000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 794: ok.append(jx); break
+    soll(ok, 'Felsbrecher-Licht gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    r = await koop(g, m=kat(750, 15), f=kat(749, 15), plans={'m': [k_lauf(764)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 762, 'ohne Fels-Hebel ist Tor 40 zu', r.get('pos'))
+    r = await koop(g, m=kat(763, 15), f=kat(749, 15), links=[40], plans={'m': [k_lauf(767)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 765, 'ohne Fels bleibt die Bröckel-Wand zu', r.get('pos'))
+    assert not fehler, fehler
+
+@test
+async def mondnacht_mondspiegel(g):
+    """Mondnacht, neue Strecke „Mondspiegel“ hinter dem Turm (Spalte 451–500, nachts): Der Strahl muss nacheinander zwei
+    Kristalle („bleiben an“) treffen. Licht-Tor 52 im Strahl ist nur offen, solange jemand auf der Platte steht. Erst hält
+    das Schweinchen die Platte und der Affe (Haken-Sims) stellt Spiegel A nach unten -> Kristall 50 öffnet Tor 50 vor der
+    Grube. Dann tauschen sie: der Affe stellt Spiegel A nach oben (Licht über zwei feste Spiegel hinüber) und hält die
+    Platte, das Schweinchen segelt mit Anlauf über die breite Grube (der Affe schafft das nicht) und dreht Spiegel B ->
+    Kristall 51: Brücke über die Grube für den Affen."""
+    await koop_level(g, 'ruinen/02-mondnacht.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    platte = lambda wer: f'{wer}.grounded && Math.abs({wer}.x - {kx(458)}) < 8'
+    def affe(jx=469):
+        return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(8)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
+                {'holdIf': {'left': f'P.x > {kx(468)}', 'right': f'P.x < {kx(467)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(467)), {'wait': platte('Q'), 'frames': 4000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[50]', 'frames': 300},
+                {'use': True, 'frames': 8}, {'hold': ['left'], 'until': f'P.x < {kx(466)} + 10', 'frames': 200}, {'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(458)), {'wait': '!!linkOn[51]', 'frames': 5000}, k_lauf(495)]
+    schwein = [wb_halt(kx(458)), {'wait': f'!!linkOn[50] && spiegelListe.find(s => s.c === 466 && s.r === 8).stellung === "/" && {platte("Q")}', 'frames': 5000},
+               k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
+               wb_halt(kx(489)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[51]', 'frames': 300}, k_lauf(495)]
+    ok = []
+    for jx in (469, 469.4):
+        r = await koop(g, m=kat(455, 14), f=kat(453, 14), plans={'m': affe(jx), 'f': schwein}, maxFrames=12000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 494: ok.append(jx); break
+    soll(ok, 'Mondspiegel gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    r = await koop(g, m=kat(470, 14), f=kat(453, 14), pre="kristalle.find(k => k.link === 50).gemerkt = true; setLink(50, true);", plans={'m': [k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=800)
+    soll(r.get('dead') == 'm', 'der Affe schafft die breite Grube nicht', info(r))
+    r = await koop(g, m=kat(453, 14), f=kat(468, 14), plans={'f': [{'press': ['jump'], 'hold': ['jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 8, 'das Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
     assert not fehler, fehler
 
 async def main(filter_):
