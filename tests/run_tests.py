@@ -7675,6 +7675,8 @@ async def licht_loesen(g, cfg):
 LICHT_RAETSEL = [
     {'level': 'ruinen/01-ruinen.json', 'name': 'Ruinen 1 „Zwei Spiegel in Reihe“', 'spalten': [786, 812], 'links': [22, 21], 'ziel': [23], 'loesungen': 1, 'sackgassen': 2},
     {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Brücke', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [33], 'loesungen': 1, 'sackgassen': 1},
+    {'level': 'ruinen/02-mondnacht.json', 'name': 'Mondnacht Abschnitt 1 (Tor)', 'spalten': [450, 500], 'links': [53], 'ziel': [50], 'offen': [52], 'loesungen': 1, 'sackgassen': 0},
+    {'level': 'ruinen/02-mondnacht.json', 'name': 'Mondnacht „Strahl-Labyrinth“', 'spalten': [450, 500], 'links': [52, 53, 55, 56], 'ziel': [51], 'offen': [52], 'loesungen': 1, 'sackgassen': 3},
     {'level': 'ruinen/04-sonnentempel.json', 'name': 'Sonnentempel „Licht plus Fallen“', 'spalten': [482, 518], 'links': [15, 16, 17], 'ziel': [11], 'loesungen': 1, 'sackgassen': 2},
     {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Ausgang', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [34], 'loesungen': 1, 'sackgassen': 1},
 ]
@@ -7912,33 +7914,44 @@ async def felsenflucht_felsbrecher_licht(g):
 
 @test
 async def mondnacht_mondspiegel(g):
-    """Mondnacht, neue Strecke „Mondspiegel“ hinter dem Turm (Spalte 451–500, nachts): Der Strahl muss nacheinander zwei
-    Kristalle („bleiben an“) treffen. Licht-Tor 52 im Strahl ist nur offen, solange jemand auf der Platte steht. Erst hält
-    das Schweinchen die Platte und der Affe (Haken-Sims) stellt Spiegel A nach unten -> Kristall 50 öffnet Tor 50 vor der
-    Grube. Dann tauschen sie: der Affe stellt Spiegel A nach oben (Licht über zwei feste Spiegel hinüber) und hält die
-    Platte, das Schweinchen segelt mit Anlauf über die breite Grube (der Affe schafft das nicht) und dreht Spiegel B ->
-    Kristall 51: Brücke über die Grube für den Affen."""
+    """Mondnacht, Strahl-Labyrinth „Mondspiegel“ hinter dem Turm (Spalte 451–500, nachts; schaltbare Spiegel, zwei
+    Abschnitte). Abschnitt 1: Licht-Tor 52 im Strahl ist nur offen, solange jemand auf Platte 52 steht – jedes BETRETEN der
+    Platte dreht aber Spiegel B (oben). Spiegel A dreht Hebel 53 auf dem Affen-Sims (Haken). Erst hält das Schweinchen die
+    Platte (B dreht nach „/“), der Affe stellt A nach unten -> Kristall 50 („bleibt an“) öffnet Tor 50. Dann Übergabe: der
+    Affe stellt A nach oben und tritt auf die Platte, BEVOR das Schweinchen absteigt (sonst dreht B falsch, Strahl an die
+    Wand – dann ab- und wieder aufsteigen). Abschnitt 2 jenseits der breiten Grube (nur das Schweinchen segelt hinüber):
+    Platte 55 dreht E und G zugleich, Hebel 56 dreht F. Sackgassen: Decke über E, Affen-Sims (F nach links), Wand neben
+    dem Turm (B falsch). Richtig: E, F, G „\\“ -> Kristall 51 -> Brücke für den Affen."""
     await koop_level(g, 'ruinen/02-mondnacht.json')
     fehler = []
     def soll(ok, name, info=''):
         if not ok: fehler.append(f'{name}: {str(info)[:300]}')
     info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
     platte = lambda wer: f'{wer}.grounded && Math.abs({wer}.x - {kx(458)}) < 8'
-    def affe(jx=469):
-        return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+    B = 'spiegelListe.find(s => s.c === 466 && s.r === 2).stellung'
+    hoch = lambda jx: [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                 {'swing': True, 'pull': 60, 'release': f'P.y < {ky(8)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
-                {'holdIf': {'left': f'P.x > {kx(468)}', 'right': f'P.x < {kx(467)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200},
-                wb_halt(kx(467)), {'wait': platte('Q'), 'frames': 4000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[50]', 'frames': 300},
+                {'holdIf': {'left': f'P.x > {kx(468)}', 'right': f'P.x < {kx(467)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200}]
+    def affe(jx=469):
+        return hoch(jx) + [wb_halt(kx(467)), {'wait': platte('Q'), 'frames': 4000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[50]', 'frames': 300},
                 {'use': True, 'frames': 8}, {'hold': ['left'], 'until': f'P.x < {kx(466)} + 10', 'frames': 200}, {'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(458)), {'wait': f'!{platte("Q")}', 'frames': 3000},
+                # B lesen: zeigt der Strahl an die Wand („\\“), ab- und wieder aufsteigen (jedes Betreten dreht B einmal)
+                {'holdIf': {'left': f'{B} === "\\\\" && P.x > {kx(455)}'}, 'until': f'{B} === "/" || P.x <= {kx(455)} + 2', 'frames': 300},
                 wb_halt(kx(458)), {'wait': '!!linkOn[51]', 'frames': 5000}, k_lauf(495)]
     schwein = [wb_halt(kx(458)), {'wait': f'!!linkOn[50] && spiegelListe.find(s => s.c === 466 && s.r === 8).stellung === "/" && {platte("Q")}', 'frames': 5000},
                k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
-               wb_halt(kx(489)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[51]', 'frames': 300}, k_lauf(495)]
+               {'wait': f'{B} === "/" && !!linkOn[52]', 'frames': 3000}, wb_halt(kx(491)), {'frames': 20}, wb_halt(kx(494)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[51]', 'frames': 300}, k_lauf(495)]
     ok = []
     for jx in (469, 469.4):
         r = await koop(g, m=kat(455, 14), f=kat(453, 14), plans={'m': affe(jx), 'f': schwein}, maxFrames=12000)
         if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 494: ok.append(jx); break
     soll(ok, 'Mondspiegel gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    # ohne Übergabe: das Schweinchen steigt ab, bevor der Affe draufsteht -> sein Betreten dreht B falsch (Strahl an die Wand)
+    r = await koop(g, m=kat(462, 14), f=kat(458, 14), pre="spiegelListe.find(s => s.c === 466 && s.r === 8).stellung = '/';",
+                   plans={'f': [{'frames': 20}, k_lauf(463)], 'm': [{'frames': 60}, {'hold': ['left'], 'until': f'P.x < {kx(459)}', 'frames': 200}, wb_halt(kx(458)), {'frames': 40}]}, maxFrames=600)
+    e = await g.ev("[spiegelListe.find(s => s.c === 466 && s.r === 2).stellung, lichtWege[0].ende && lichtWege[0].ende.art, Math.round(lichtWege[0][lichtWege[0].length - 1][0])]")
+    soll(e[0] == '\\' and e[1] == 'wand' and e[2] <= 462, 'Platte frei und neu betreten: B falsch, Strahl endet an der Wand', e)
     r = await koop(g, m=kat(470, 14), f=kat(453, 14), pre="kristalle.find(k => k.link === 50).gemerkt = true; setLink(50, true);", plans={'m': [k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=800)
     soll(r.get('dead') == 'm', 'der Affe schafft die breite Grube nicht', info(r))
     r = await koop(g, m=kat(453, 14), f=kat(468, 14), plans={'f': [{'press': ['jump'], 'hold': ['jump', 'glide'], 'frames': 90}]}, maxFrames=400)
