@@ -3,13 +3,13 @@
   "level": "dschungel/01-dschungel.json",
   "regel": "Kombi-Level",
   "spalte": null,
-  "begruendung": "5 statt 6 Kombi-Stellen: Level 1 ist der Einstieg und vom Nutzer gestaltet; Etappe 2/3 bestehen aus engen Hebel-/Plattform-Abschnitten (Hebel 2–8, fahrende Plattformen über der 30er-Grube), in die keine Fähigkeiten-Kombi passt, ohne sie umzubauen; der Start bleibt bewusst ohne Kombi-Grube. Jede Etappe hat mindestens eine Kombi-Stelle."
+  "begruendung": "4 statt 6 eigenständige Kombi-Stellen (die Pilz-Grube 773 zählt als Kette mit der Kamin-Grube 746): Level 1 ist der Einstieg und vom Nutzer gestaltet; Etappe 2/3 bestehen aus engen Hebel-/Plattform-Abschnitten (Hebel 2–8, fahrende Plattformen über der 30er-Grube), in die keine Fähigkeiten-Kombi passt, ohne sie umzubauen; der Start bleibt bewusst ohne Kombi-Grube. Jede Etappe hat mindestens eine Kombi-Stelle."
  },
  {
   "level": "dschungel/04-gluehwald.json",
   "regel": "Kombi-Level",
   "spalte": null,
-  "begruendung": "5 statt 9 Kombi-Stellen (die Grube 681 schließt an den Landeplatz von 668 an = Kette). Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
+  "begruendung": "4 statt 9 eigenständige Kombi-Stellen (die Grube 681 schließt an den Landeplatz von 668 an = Kette). Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
  },
  {
   "level": "dschungel/04-gluehwald.json",
@@ -22,5 +22,23 @@
   "regel": "Kombi-Etappe",
   "spalte": 400,
   "begruendung": "Etappe 3 nur 1 Kombi-Stelle (473): Wechselboden-Feld und Doppel-Gang-Staffel. Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
+ },
+ {
+  "level": "dschungel/01-dschungel.json",
+  "regel": "Kette",
+  "spalte": 773,
+  "begruendung": "Vom Landeplatz der Kamin-Grube 746 (Reihe 9) erreichen Affe (Haken 779) und Schweinchen (Segeln) den Landeplatz 783 auch ohne Pilz (Bot geprüft) -> Teil der Kette Kamin -> Haken/Segeln -> Pilz -> Haken/Segeln, keine eigene Stelle."
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "regel": "Kette",
+  "spalte": 681,
+  "begruendung": "Vom Landeplatz der Grube 668 (Reihe 3) erreichen Affe (Haken 686) und Schweinchen (Segeln) den Landeplatz 689 auch ohne Pilz (Bot geprüft) -> Kette mit 668."
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 4 (nur 101 Spalten: Takt-Tempeltreppe 603–628, Teleporter 638/665, Ziel 694) hat die Kette 668 -> 681 als eine Stelle; für eine zweite eigenständige Grube fehlt Platz vor dem Ziel."
  }
 ]

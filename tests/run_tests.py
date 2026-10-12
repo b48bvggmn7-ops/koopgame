@@ -7297,6 +7297,20 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (668)', kat(666, 6), kat(664, 6), lambda: kombi_pilz_grube(668, 676), {'m': (676, 2), 'f': (676, 2)}),
     ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (681)', kat(678, 2), kat(677, 2), lambda: kombi_pilz_grube(681, 689), {'m': (689, 2), 'f': (689, 2)}),
 ]
+# Abkürzungs-Proben: liegen zwei Kombi-Stellen dicht hintereinander, darf man die zweite NICHT vom erhöhten Landeplatz der
+# ersten aus ohne neue Kombi schaffen (sonst ist sie keine eigene Stelle, sondern „Kette“ in tests/kombi_ausnahmen.json).
+# (Level, Name, Start auf dem vorigen Landeplatz (c, r), Absprung-Spalte, Ziel-Landeplatz Spalte, Ziel-Reihe)
+KOMBI_ABKUERZUNG = [
+    ('dschungel/02-baumkronen.json', '778 -> 797', (789, 10), 791, 807, 10),
+    ('dschungel/03-lianenschlucht.json', '740 -> 760', (751, 4), 753, 770, 4),
+    ('dschungel/03-lianenschlucht.json', '760 -> 780', (771, 4), 773, 790, 4),
+]
+
+def kombi_abkuerzung_plaene(kante):
+    return {'f': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}],
+            'm': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.hookAttached || (P.grounded && f > 10)', 'frames': 200},
+                  {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}
+
 async def kombi_stellen_pruefen(g, welt):
     """Bot-Lauf über jede eingebaute Kombi-Stelle der Welt: mit Kombi kommen beide an (mindestens bis Spalte/Reihe des
     Ziels), ohne Kombi (Plan *_ohne) scheitert die Figur."""
@@ -7315,6 +7329,14 @@ async def kombi_stellen_pruefen(g, welt):
                 r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer + '_ohne']}, maxFrames=2500)
                 geschafft = r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
                 if geschafft: fehler.append(f"{lv} {name} ({wer}) ohne Kombi trotzdem geschafft: {r.get('pos')}")
+    for lv, name, (sc, sr), kante, zc, zr in KOMBI_ABKUERZUNG:
+        if not lv.startswith(welt + '/'): continue
+        if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        for wer, pl in kombi_abkuerzung_plaene(kante).items():
+            andere = 'f' if wer == 'm' else 'm'
+            r = await koop(g, **{wer: kat(sc, sr), andere: kat(sc - 1, sr)}, plans={wer: pl}, maxFrames=2000)
+            if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1:
+                fehler.append(f"{lv} Abkürzung {name} ({wer}) ohne Kombi möglich: {r.get('pos')}")
     assert not fehler, fehler
 
 @test

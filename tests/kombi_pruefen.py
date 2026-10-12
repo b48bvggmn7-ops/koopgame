@@ -175,6 +175,15 @@ def stellen(datei, d):
             o = out[-1]; o['bis'] = max(o['bis'], k['spalte']); o['arten'].add(k['art']); o['wer'].add(k['wer']); o['hand'] |= bool(k.get('hand'))
         else:
             out.append({'von': k['spalte'], 'bis': k['spalte'], 'arten': {k['art']}, 'wer': {k['wer']}, 'hand': bool(k.get('hand'))})
+    # Ketten (tests/kombi_ausnahmen.json, regel "Kette"): eine Stelle, die man vom erhöhten Landeplatz der Stelle davor ohne
+    # neue Kombi erreicht, ist nicht eigenständig -> wird mit der vorigen Stelle zusammengezählt
+    ketten = {a['spalte'] for a in ausnahmen() if a['level'] == datei and a['regel'] == 'Kette'}
+    zus = []
+    for o in out:
+        if zus and o['von'] in ketten:
+            v = zus[-1]; v['bis'] = o['bis']; v['arten'] |= o['arten']; v['wer'] |= o['wer']; v['hand'] |= o['hand']; v['kette'] = True
+        else: zus.append(o)
+    out = zus
     for o in out:
         o['timing'] = timing_naehe(d, (o['von'] + o['bis']) // 2)
     return out
