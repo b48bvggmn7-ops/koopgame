@@ -3341,8 +3341,17 @@ async def dschungel5_dornenpfad(g):
         r = await koop(g, f=kat(244, 15), m=kat(243, 15), plans={'f': [k_lauf(250, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]}, maxFrames=3000)
         soll(r.get('dead') == 'f', 'E2 Schwein kommt ohne Fähre nicht hinüber', info(r))
         # Dornen-Kamin
-        kamin = lambda w: [k_lauf(310, 0), {'climb': True, 'until': f'P.grounded && P.y <= {ky(2)} + 2', 'frames': 900, 'dir': 1}, k_lauf(325)]
-        await beide('E2 Hoher Kamin', 305, kamin, 324, delay=120)
+        # Kombi-Nachschärfen: oben geht es direkt über Stacheln (316–325) weiter – Affe Wandsprung + Haken 317, Schweinchen
+        # Wandsprung + Segeln; die Wandspitzen (311/315) bröckeln, die zweite Figur schafft es trotzdem (beide nacheinander)
+        hoch = [k_lauf(310, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(0)} && P.vy < 0 && P.vx > 2', 'frames': 900}]
+        lande = {'holdIf': {'right': f'P.x < {kx(327)}', 'left': f'P.x > {kx(330)}'}, 'until': 'P.grounded', 'frames': 400}
+        kamin = lambda w: hoch + ([{'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 120},
+                                   {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400}, lande] if w == 'm'
+                                  else [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])]) + [k_lauf(331)]
+        await beide('E2 Hoher Kamin', 305, kamin, 330, delay=120)
+        for w in ('m', 'f'):
+            r = await koop(g, **{w: kat(305, 15), ('f' if w == 'm' else 'm'): kat(303, 15)}, plans={w: hoch + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=2000)
+            soll(r.get('dead') == w, f'E2 Hoher Kamin ohne Haken/Schirm in die Stacheln ({w})', info(r))
         # Dornendecke: Hebel 6, dann kurze Sprünge über die Stufen
         hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
         flucht = lambda w: hupf(352) + hupf(362) + hupf(372) + [k_lauf(399)]
