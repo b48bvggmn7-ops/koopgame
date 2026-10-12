@@ -86,7 +86,8 @@ def gruben(d):
     fest = fest_kaestchen(d) | {z for o in d.get('oneways', []) for z in B.felder_zellen(o)}
     cols = max([c for c, r in fest] + [0]) + 1
     stacheln = {(B.spalte(o['x']), B.reihe(o['y'])) for o in d.get('spikes', [])}
-    fest = {(c, r) for c, r in fest if (c, r - 1) not in stacheln and (c, r) not in stacheln}   # Stachelboden ist kein Stehplatz
+    # Stehplatz = festes Kästchen mit freiem Platz darüber (keine Stacheln); verschüttete Kästchen darunter zählen nicht
+    fest = {(c, r) for c, r in fest if (c, r - 1) not in fest and (c, r - 1) not in stacheln and (c, r) not in stacheln}
     leer = [c for c in range(cols) if not any((c, r) in fest for r in range(8, 18))]
     out, start = [], None
     for c in range(cols + 1):
@@ -156,7 +157,7 @@ def kombis_auto(d):
             out.append({'spalte': pc, 'art': 'Pilz + Segeln', 'wer': 'f'})
         if any(abs(c - pc) <= 4 and r1 - r0 >= 4 for (c, s, r0, r1) in flaechen):
             out.append({'spalte': pc, 'art': 'Pilz + Wandsprung', 'wer': 'beide'})
-        if any(abs(hc - pc) <= 7 and 3 <= pr - hr <= 10 for hc, hr in hooks):
+        if any(abs(hc - pc) <= 7 and 3 <= pr - hr <= 11 for hc, hr in hooks):
             out.append({'spalte': pc, 'art': 'Pilz + Haken', 'wer': 'm'})
     return out
 

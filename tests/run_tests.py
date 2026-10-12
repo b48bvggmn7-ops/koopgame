@@ -7283,6 +7283,14 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (572)', kat(567, 14), kat(566, 14), lambda: kombi_pilz_grube(572, 582), {'m': (582, 10), 'f': (582, 10)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (778)', kat(776, 14), kat(775, 14), lambda: kombi_pilz_grube(778, 788), {'m': (788, 10), 'f': (788, 10)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (797)', kat(792, 14), kat(790, 10), lambda: kombi_pilz_grube(797, 807), {'m': (807, 10), 'f': (807, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (70)', kat(65, 14), kat(64, 14), lambda: kombi_pilz_grube(70, 80), {'m': (80, 10), 'f': (80, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (130)', kat(125, 12), kat(124, 12), lambda: kombi_pilz_grube(130, 140), {'m': (140, 8), 'f': (140, 8)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (180)', kat(175, 14), kat(174, 14), lambda: kombi_pilz_grube(180, 190), {'m': (190, 10), 'f': (190, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (360)', kat(355, 14), kat(354, 14), lambda: kombi_pilz_grube(360, 370), {'m': (370, 10), 'f': (370, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (390)', kat(385, 14), kat(384, 14), lambda: kombi_pilz_grube(390, 400), {'m': (400, 10), 'f': (400, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (740)', kat(735, 8), kat(734, 8), lambda: kombi_pilz_grube(740, 750), {'m': (750, 4), 'f': (750, 4)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (760)', kat(755, 8), kat(754, 8), lambda: kombi_pilz_grube(760, 770), {'m': (770, 4), 'f': (770, 4)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (780)', kat(775, 8), kat(774, 8), lambda: kombi_pilz_grube(780, 790), {'m': (790, 4), 'f': (790, 4)}),
 ]
 async def kombi_stellen_pruefen(g, welt):
     """Bot-Lauf über jede eingebaute Kombi-Stelle der Welt: mit Kombi kommen beide an (mindestens bis Spalte/Reihe des
