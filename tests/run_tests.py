@@ -7438,6 +7438,110 @@ async def fels_verhalten(g):
     await g.ev("die(p1)"); await weiter_nach_tod(g)
     assert await g.ev("felsen.every(F => !F.aktiv && !F.weg && F.x === F.sx && !F.warn) && !solids.find(s => s.type === 'crumble').gone"), 'nach dem Tod nicht zurückgesetzt'
 
+def wb_halt(x):
+    """genau bei x stehen bleiben (Insel bzw. Naht zwischen zwei Wechselboden-Gruppen)"""
+    return {'holdIf': {'right': f'P.x < {x} - 3', 'left': f'P.x > {x} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {x}) <= 3 && Math.abs(P.vx) < 0.6', 'frames': 600}
+def wb_haken(jx, land_r, pull=60):
+    return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+def wb_aufwind(c, r_hoch, ziel):
+    """Schweinchen: im Aufwind (Spalte c/c+1) nach oben segeln, dann zur Galerie"""
+    return [wb_halt(kx(c) + 20), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
+            {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c)} + 10', 'left': f'P.x > {kx(c + 1)} - 10'}, 'until': f'P.y < {ky(r_hoch)}', 'frames': 400},
+            {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(ziel)} - 6', 'left': f'P.x > {kx(ziel)} + 6'}, 'until': 'P.grounded', 'frames': 400}]
+def wb_schalter(hebel, haltestellen, aus):
+    """Schalter: an den Hebel, dann bei jeder Haltestelle des Läufers (Q) umlegen, danach nach rechts hinunter"""
+    pl = [wb_halt(kx(hebel))]
+    for x in haltestellen: pl += [{'wait': f'Q.grounded && Math.abs(Q.x - {x}) <= 4 && Math.abs(Q.vx) < 0.6', 'frames': 3000}, {'use': True, 'frames': 8}]
+    return pl + [k_lauf(aus), {'until': 'P.grounded', 'frames': 300}]
+def wb_laeufer(hebel, haltestellen, link, aus):
+    pl = [{'wait': f'Q.grounded && Math.abs(Q.x - {kx(hebel)}) <= 6', 'frames': 3000}]
+    an = True
+    for x in haltestellen: pl += [wb_halt(x), {'wait': f'{"" if an else "!"}linkOn[{link}]', 'frames': 3000}]; an = not an
+    return pl + [k_lauf(aus)]
+
+@test
+async def wechselboden_schalter_laeufer(g):
+    """Ruinen-Überarbeitung 3: Wechselboden mit Schalter und Läufer (levels/test/wechselboden-hebel.json). Der Läufer geht durch
+    einen 1 Kästchen hohen Gang (kein Springen, kein Segeln) über Wechselboden; der Schalter steht oben auf der Galerie am Hebel,
+    die der Läufer nicht erreicht, und legt um, sobald der Läufer an der Haltestelle steht. Koop-Bot spielt alle 3 Rätsel:
+    1) Affe schaltet (Haken), Schweinchen läuft A – Insel – B – Insel – A; 2) Schweinchen schaltet (Aufwind), Affe läuft;
+    3) A-B-A ohne Inseln: Läufer bleibt auf der Naht stehen. Dazu: allein kommt der Läufer nicht durch, die jeweils andere Figur
+    kommt nicht auf die Galerie, zu frühes Umlegen lässt den Läufer fallen, Abstand Hebel–Boden ≤ 20 Spalten."""
+    await koop_level(g, 'test/wechselboden-hebel.json')
+    d = json.loads((ROOT / 'levels/test/wechselboden-hebel.json').read_text(encoding='utf-8'))
+    for sw in d['switches']:
+        weit = max(abs(f['x'] // 40 - sw['x'] // 40) for f in d['switchFloors'] if f['link'] == sw['link'])
+        assert weit <= 20, f'Hebel {sw["link"]}: Wechselboden {weit} Spalten weg (Bild-Regel)'
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    insel = lambda c: kx(c) + 20
+    # 1) Affe schaltet, Schweinchen läuft
+    r = await koop(g, m=kat(3, 16), f=kat(1, 16), plans={'m': wb_haken(5, 10) + wb_schalter(20, [insel(16), insel(24)], 34),
+                                                         'f': wb_laeufer(20, [insel(16), insel(24)], 1, 35)}, maxFrames=6000)
+    soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 33, '1) Affe schaltet, Schweinchen läuft', info(r))
+    r = await koop(g, m=kat(3, 16), f=kat(1, 16), plans={'f': [k_lauf(30)]}, maxFrames=1500)
+    soll(r.get('dead') == 'f', '1) ohne Schalter fällt das Schweinchen', info(r))
+    r = await koop(g, m=kat(3, 16), f=kat(5, 16), plans={'f': [k_lauf(6, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 11, '1) Schweinchen kommt nicht auf die Galerie', r.get('top'))
+    # 2) Schweinchen schaltet (Aufwind), Affe läuft
+    r = await koop(g, m=kat(38, 16), f=kat(36, 16), plans={'f': wb_aufwind(45, 8, 50) + wb_schalter(60, [insel(56), insel(64)], 74),
+                                                           'm': wb_laeufer(60, [insel(56), insel(64)], 2, 75)}, maxFrames=6000)
+    soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 73, '2) Schweinchen schaltet, Affe läuft', info(r))
+    r = await koop(g, m=kat(43, 16), f=kat(36, 16), plans={'m': [k_lauf(45, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['m'] > 11, '2) Affe kommt nicht auf die Galerie', r.get('top'))
+    # 3) A-B-A ohne Inseln: Läufer auf der Naht, Schalter legt dann um
+    naht = [97*40, 104*40]
+    r = await koop(g, m=kat(83, 16), f=kat(81, 16), plans={'m': wb_haken(85, 10) + wb_schalter(100, naht, 114),
+                                                           'f': wb_laeufer(100, naht, 3, 115)}, maxFrames=6000)
+    soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 113, '3) A-B-A auf der Naht', info(r))
+    r = await koop(g, m=kat(83, 16), f=kat(81, 16), plans={'m': wb_haken(85, 10) + wb_schalter(100, [kx(94)], 114),
+                                                           'f': wb_laeufer(100, [kx(94)], 3, 115)}, maxFrames=4000)
+    soll(r.get('dead') == 'f', '3) zu früh umgelegt (Läufer noch ganz auf A): er fällt', info(r))
+    assert not fehler, fehler
+
+async def bild_vergleich(g, clip, ohne_js, mit_js):
+    """Bildschirmfoto-Vergleich eines Ausschnitts: ohne / mit / wieder ohne (bewegte Deko zählt nicht)"""
+    import base64
+    async def foto():
+        await g.p.wait_for_timeout(60); return base64.b64encode(await g.p.screenshot(clip=clip)).decode()
+    await g.ev(ohne_js); A = await foto()
+    await g.ev(mit_js); B = await foto()
+    await g.ev(ohne_js); C = await foto()
+    return await g.p.evaluate(PIXEL_VERGLEICH_JS, [A, B, C])
+
+@test
+async def wechselboden_geisteranzeige(g):
+    """Ruinen-Überarbeitung 3: Der gerade nicht feste Wechselboden ist als blasser Umriss mit Muster und Buchstaben sichtbar
+    (Geisteranzeige: der Läufer sieht, was kommt), und am Hebel zeigen zwei kleine Kacheln A ▨ / B ⠿, welche Gruppe gerade fest
+    ist. Gemessen am echten Bild (levels/test/wechselboden-hebel.json, Rätsel 1)."""
+    await g.p.set_viewport_size({'width': 1280, 'height': 720}); await g.p.wait_for_timeout(200)
+    await g.load(str(ROOT / 'levels/test/wechselboden-hebel.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__pn = window.__pn || performance.now.bind(performance);"
+               "const T0 = window.__pn(); performance.now = () => T0; p1.x = 3*40 + 20; p1.y = 680; p2.x = 60; p2.y = 680;"
+               "camPos = camX = 0; wechselSchritte = 500;")
+    assert await g.ev("wechselAktiveGruppe(1)") == 'A' and await g.ev("wechselAktiveGruppe(99)") is None
+    # Geist: B-Kacheln (Spalte 18–23) sind weg -> blasser Umriss; zum Vergleich ganz ausgeblendet
+    sx, sy = await g.ev("[Math.round((18*40 - camX)*zoom), Math.round((17*40 + SKY_ROOM)*zoom)]")
+    w = await g.ev("Math.round(6*40*zoom)"); h = await g.ev("Math.round(40*zoom)")
+    clip = {'x': sx, 'y': sy, 'width': w, 'height': min(h, 720 - sy)}
+    weg = "solids.filter(s => s.type === 'wechsel' && s.gruppe === 'B' && s.link === 1).forEach(s => s.type = 'versteckt');"
+    da = "solids.filter(s => s.type === 'versteckt').forEach(s => s.type = 'wechsel');"
+    r = await bild_vergleich(g, clip, weg, da)
+    flaeche = clip['width']*clip['height']
+    assert await g.ev("solids.some(s => s.type === 'wechsel' && s.gruppe === 'B' && s.gone)"), 'B müsste weg sein'
+    assert r['pixel'] >= flaeche*0.3 and r['kontrast90'] >= 1.5, f'Geisteranzeige zu schwach: {r} von {flaeche} Bildpunkten'
+    # Hebel-Anzeige: A aktiv vs. B aktiv sieht verschieden aus
+    # nur die Kachel „B“ rechts neben dem Hebel (Welt x +27…+38, y 404…420 – dort schwenkt die Hebelstange nicht hin)
+    hx, hy = await g.ev("[Math.round((20*40 + 20 + 27 - camX)*zoom), Math.round((404 + SKY_ROOM)*zoom)]")
+    clip = {'x': hx, 'y': hy, 'width': await g.ev("Math.round(11*zoom)"), 'height': await g.ev("Math.round(16*zoom)")}
+    r2 = await bild_vergleich(g, clip, "linkOn[1] = false;", "linkOn[1] = true;")
+    assert r2['pixel'] >= clip['width']*clip['height']*0.4, f'Hebel zeigt die aktive Gruppe nicht: {r2}'
+    await g.ev("linkOn[1] = false; menuScreen = null; performance.now = window.__pn;")
+    print('     Geist:', r, 'Hebel:', r2)
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

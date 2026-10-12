@@ -16,6 +16,30 @@ const WECHSEL_LOOK = {
   B: {hell: '#ffb066', mitte: '#e07b2c', dunkel: '#86400f'},   // orange, Punkte
 };
 let wechselSchritte = 0;   // Takt-Uhr (Physik-Schritte seit Levelstart / Neustart / Checkpoint)
+let wechselNummern = {};   // Ruinen-Überarbeitung: Nummer -> {A, B} – welche Gruppen hängen an dieser Nummer (für die Hebel-Anzeige)
+// Welche Gruppe ist bei dieser Nummer gerade fest? 'A' / 'B' / null (keine Wechselböden an der Nummer)
+function wechselAktiveGruppe(link){ return wechselNummern[link] ? (linkOn[link] ? 'B' : 'A') : null; }
+// Anzeige am Hebel (elemente/hebel.js): zwei kleine Kacheln A ▨ und B ⠿ neben dem Sockel; die gerade feste Gruppe ist
+// kräftig und groß, die andere nur ein blasser gestrichelter Umriss (wie die Geisteranzeige am Boden)
+function wechselHebelAnzeige(xr, baseY, link){
+  const aktiv = wechselAktiveGruppe(link); if(!aktiv) return;
+  const hat = wechselNummern[link];
+  for(const [gr, dx] of [['A', -30], ['B', 30]]){
+    if(!hat[gr]) continue;
+    const L = WECHSEL_LOOK[gr], an = gr === aktiv, g = an ? 16 : 12, x = xr + dx - g/2, y = baseY - 20 - g;
+    if(an){
+      ctx.fillStyle = L.mitte; roundRect(x, y, g, g, 3); ctx.fill();
+      wechselMuster(ctx, x, y, g, g, gr, 'rgba(255,255,255,.45)');
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; roundRect(x, y, g, g, 3); ctx.stroke();
+      ctx.strokeStyle = L.dunkel; ctx.lineWidth = 1; roundRect(x - 1.5, y - 1.5, g + 3, g + 3, 4); ctx.stroke();
+    } else {
+      ctx.save(); ctx.globalAlpha = 0.75; ctx.setLineDash([3, 2]); ctx.strokeStyle = L.dunkel; ctx.lineWidth = 2;
+      roundRect(x, y, g, g, 3); ctx.stroke(); ctx.restore();
+    }
+    ctx.fillStyle = an ? '#fff' : L.dunkel; ctx.font = 'bold ' + (an ? 10 : 8) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(gr, x + g/2, y + g/2 + 0.5);
+  }
+}
 function wechselTaktSchritte(s){ return Math.max(30, Math.round(s.takt*60)); }
 // Soll dieses Kästchen gerade fest sein?
 function wechselSoll(s){
@@ -99,13 +123,18 @@ function wechselZeichnen(){
       ctx.globalAlpha = 1;
     } else {
       // weg: nur ein gestrichelter Umriss mit zartem Muster („Geist“) – man sieht, wo der Boden wieder erscheint
-      const a = s.wartet ? 0.6 + 0.35*Math.sin(wechselSchritte*0.5) : (blink ? 0.95 : 0.55);
-      ctx.globalAlpha = a*0.5;
+      const a = s.wartet ? 0.6 + 0.35*Math.sin(wechselSchritte*0.5) : (blink ? 0.95 : 0.7);
+      ctx.globalAlpha = a*0.3; ctx.fillStyle = L.hell; roundRect(x + 2, s.y + 2, s.w - 4, s.h - 4, 5); ctx.fill();   // blasse Fläche
+      ctx.globalAlpha = a*0.6;
       wechselMuster(ctx, x + 3, s.y + 3, s.w - 6, s.h - 6, s.gruppe, L.hell);
       ctx.globalAlpha = a;
       ctx.save(); ctx.setLineDash([5, 4]); ctx.lineWidth = 2.5;
       ctx.strokeStyle = L.dunkel; roundRect(x + 2, s.y + 2, s.w - 4, s.h - 4, 5); ctx.stroke();
       ctx.lineDashOffset = 4.5; ctx.strokeStyle = L.hell; roundRect(x + 2, s.y + 2, s.w - 4, s.h - 4, 5); ctx.stroke(); ctx.restore();
+      if(s.reiheStart && !(s.takt > 0)){   // Buchstabe der Gruppe am Anfang der Reihe: der Läufer weiß, was kommt
+        ctx.globalAlpha = a; ctx.fillStyle = L.dunkel; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(s.gruppe, x + s.w/2, s.y + s.h/2 + 1);
+      }
       if(frisch > 0){   // gerade verschwunden: kleiner Funken-Ring
         ctx.globalAlpha = frisch*0.6; ctx.strokeStyle = L.hell; ctx.lineWidth = 3;
         roundRect(x - 3*(1 - frisch), s.y - 3*(1 - frisch), s.w + 6*(1 - frisch), s.h + 6*(1 - frisch), 6); ctx.stroke();
@@ -165,6 +194,8 @@ elementRegistrieren({
         solids.push(s);
       }
       wechselSchritte = 0;
+      wechselNummern = {};
+      for(const s of liste) if(!(s.takt > 0) && s.link){ (wechselNummern[s.link] = wechselNummern[s.link] || {})[s.gruppe] = true; }
     },
     schritt: wechselSchritt,
     zuruecksetzen: wechselZuruecksetzen,

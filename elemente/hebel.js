@@ -53,6 +53,7 @@ elementRegistrieren({
         ctx.strokeStyle = 'rgba(40,22,8,.7)'; ctx.lineWidth = 1.2; ctx.stroke();
         ctx.fillStyle='#fff'; ctx.font=(sw.link > 9 ? 'bold 8px' : 'bold 9px') + ' sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(String(sw.link), xr, baseY-7.5);
+        if(typeof wechselHebelAnzeige === 'function') wechselHebelAnzeige(xr, baseY, sw.link);   // Wechselboden: welche Gruppe fest ist
         if(anyOpen){ ctx.strokeStyle = col; ctx.globalAlpha = 0.4 + 0.25*Math.sin(performance.now()*0.008); ctx.lineWidth = 2.5;
           roundRect(xr-21, baseY-20, 42, 22, 8); ctx.stroke(); ctx.globalAlpha = 1; }
         else hinweisPfeil(xr, baseY - 56, col);
