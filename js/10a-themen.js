@@ -233,6 +233,7 @@ function themeLights(){
   if(typeof leuchtLichter === 'function') leuchtLichter(L);   // Leuchtkristalle (elemente/leuchtkristall.js)
   if(typeof lavaLichter === 'function') lavaLichter(L);       // Lava leuchtet (elemente/lava.js)
   if(typeof fallenLichter === 'function') fallenLichter(L);   // Pfeile/Flammen leuchten (elemente/falle.js)
+  if(typeof lichtLichter === 'function') lichtLichter(L);     // Sonnensteine und Lichtstrahlen leuchten (elemente/licht.js)
   if(typeof critters !== 'undefined') for(const c of critters) if(c.glow) L.push([c.x, c.y - (c.kind === 'crystal' ? 12 : 0), c.glow]);
   return L;
 }

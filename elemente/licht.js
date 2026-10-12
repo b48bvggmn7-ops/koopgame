@@ -76,97 +76,194 @@ function spiegelBedienen(player){
 function lichtZuruecksetzen(){ for(const s of spiegelListe){ s.stellung = s.start; s.drehT = 0; } for(const k of kristalle){ k.an = false; k.leuchtT = 0; } }
 // --- Zeichnen (nur Anzeige) ---
 function lichtQuelleBild(c, x, y, dx, dy, an){
-  const gr = c.createLinearGradient(0, y, 0, y + 40);
-  const W = (typeof THEME !== 'undefined' && THEME && THEME.wall && typeof camX !== 'undefined') ? THEME.wall : {top: '#dcc493', bottom: '#b3965e'};
-  gr.addColorStop(0, W.top); gr.addColorStop(1, W.bottom);
-  c.fillStyle = gr; c.fillRect(x, y, 40, 40);
-  c.strokeStyle = 'rgba(70,45,20,.6)'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, 38, 38);
-  const cx = x + 20 + dx*6, cy = y + 20 + dy*6;
-  c.fillStyle = an ? '#ffd24a' : '#c9a24a';
-  c.beginPath(); c.arc(cx, cy, 9, 0, Math.PI*2); c.fill();
-  c.strokeStyle = an ? '#fff2b0' : '#8a6a2a'; c.lineWidth = 2;
-  for(let i = 0; i < 8; i++){ const a = i/8*Math.PI*2; c.beginPath(); c.moveTo(cx + Math.cos(a)*11, cy + Math.sin(a)*11); c.lineTo(cx + Math.cos(a)*15, cy + Math.sin(a)*15); c.stroke(); }
+  // Sonnenstein (Ruinen-Überarbeitung): dunkler Basaltblock mit Goldeinlage, glühende Sonnenscheibe mit drehendem
+  // Strahlenkranz und Schein, Linse auf der Seite, aus der das Licht kommt
+  const t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0, cx = x + 20, cy = y + 20;
+  const gr = c.createLinearGradient(x, y, x + 40, y + 40); gr.addColorStop(0, '#4a3f36'); gr.addColorStop(1, '#231c17');
+  c.fillStyle = gr; roundRectPfad(c, x + 1, y + 1, 38, 38, 6); c.fill();
+  c.strokeStyle = '#c9963a'; c.lineWidth = 2; roundRectPfad(c, x + 3, y + 3, 34, 34, 5); c.stroke();
+  c.strokeStyle = 'rgba(255,214,120,.35)'; c.lineWidth = 1; roundRectPfad(c, x + 6, y + 6, 28, 28, 4); c.stroke();
+  for(const [u, v] of [[7, 7], [33, 7], [7, 33], [33, 33]]){ c.fillStyle = '#e0b04a'; c.beginPath(); c.arc(x + u, y + v, 1.6, 0, Math.PI*2); c.fill(); }
+  // Schein hinter der Scheibe
+  const puls = an ? 0.85 + 0.15*Math.sin(t*3) : 0.4;
+  const sch = c.createRadialGradient(cx, cy, 2, cx, cy, 20);
+  sch.addColorStop(0, `rgba(255,240,170,${0.9*puls})`); sch.addColorStop(0.5, `rgba(255,190,60,${0.45*puls})`); sch.addColorStop(1, 'rgba(255,160,40,0)');
+  c.fillStyle = sch; c.beginPath(); c.arc(cx, cy, 20, 0, Math.PI*2); c.fill();
+  // Strahlenkranz (dreht sich langsam)
+  c.save(); c.translate(cx, cy); c.rotate(t*0.6);
+  c.strokeStyle = an ? '#ffd76a' : '#a8843a'; c.lineWidth = 2; c.lineCap = 'round';
+  for(let i = 0; i < 12; i++){ const a = i/12*Math.PI*2, r1 = 10.5, r2 = i % 2 ? 14 : 16; c.beginPath(); c.moveTo(Math.cos(a)*r1, Math.sin(a)*r1); c.lineTo(Math.cos(a)*r2, Math.sin(a)*r2); c.stroke(); }
+  c.restore();
+  // Scheibe
+  const sd = c.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 9);
+  sd.addColorStop(0, '#ffffff'); sd.addColorStop(0.4, an ? '#fff1a8' : '#e8d08a'); sd.addColorStop(1, an ? '#ffb02e' : '#b8862e');
+  c.fillStyle = sd; c.beginPath(); c.arc(cx, cy, 8.5, 0, Math.PI*2); c.fill();
+  c.strokeStyle = '#8a5a14'; c.lineWidth = 1.2; c.stroke();
+  // Linse in Strahlrichtung
+  const lx = cx + dx*16, ly = cy + dy*16;
+  c.fillStyle = '#c9963a'; c.beginPath(); c.arc(lx, ly, 4.5, 0, Math.PI*2); c.fill();
+  c.fillStyle = an ? '#fffbe6' : '#d8c08a'; c.beginPath(); c.arc(lx, ly, 2.8, 0, Math.PI*2); c.fill();
 }
-function spiegelBild(c, x, y, stellung, dreh){
-  // Standspiegel (Ruinen-Überarbeitung, besser als Spiegel erkennbar): Steinsockel mit Drehpfeil, Bronze-Gabel mit Achse,
-  // ovaler Spiegel in Goldrahmen mit hellem Glas, Glanzstreifen und Funkeln; die Schräge zeigt / bzw. \ (Lichtweg)
-  const cx = x + 20, cy = y + 19, t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0;
-  c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(cx, y + 39, 14, 2.5, 0, 0, Math.PI*2); c.fill();
-  const st = c.createLinearGradient(0, y + 31, 0, y + 40); st.addColorStop(0, '#b9a98c'); st.addColorStop(1, '#7d6c55');
-  c.fillStyle = st; c.beginPath(); c.moveTo(x + 9, y + 40); c.lineTo(x + 12, y + 31); c.lineTo(x + 28, y + 31); c.lineTo(x + 31, y + 40); c.closePath(); c.fill();
-  c.strokeStyle = '#4a3b2a'; c.lineWidth = 1.2; c.stroke();
-  // kleiner Drehpfeil auf dem Sockel (man kann ihn drehen)
-  c.strokeStyle = '#fff3c8'; c.lineWidth = 1.4; c.beginPath(); c.arc(cx, y + 35.5, 3.2, Math.PI*0.15, Math.PI*1.55); c.stroke();
-  c.fillStyle = '#fff3c8'; c.beginPath(); c.moveTo(cx + 3.6, y + 33); c.lineTo(cx + 5.4, y + 36.4); c.lineTo(cx + 1.6, y + 36); c.closePath(); c.fill();
-  // Gabel mit Achse
-  c.strokeStyle = '#6b4a1e'; c.lineWidth = 3; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(cx, y + 31); c.lineTo(cx, y + 27); c.moveTo(cx - 12, cy); c.lineTo(cx - 12, y + 27); c.lineTo(cx + 12, y + 27); c.lineTo(cx + 12, cy); c.stroke();
-  c.strokeStyle = '#d8a94a'; c.lineWidth = 1.2;
-  c.beginPath(); c.moveTo(cx - 12, cy); c.lineTo(cx - 12, y + 27); c.lineTo(cx + 12, y + 27); c.lineTo(cx + 12, cy); c.stroke();
+function roundRectPfad(c, x, y, w, h, r){
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+// Halterung eines Spiegels (damit er nicht in der Luft hängt): einmal beim ersten Zeichnen aus dem Gelände bestimmt –
+// Boden direkt darunter: Sockel · Boden 1–3 Kästchen tiefer: Ständer · Decke bis 8 Kästchen höher: Kette ·
+// Wand daneben: Wandarm · sonst ein Ständer bis zum nächsten Boden bzw. eine Kette bis zum oberen Rand
+function spiegelHalt(s, ohneWand){
+  const fest = (c, r) => { const px = c*40 + 20, py = r*40 + 20;
+    return solids.some(o => !o.gone && o.type !== 'fake' && o.type !== 'wechsel' && px >= o.x && px < o.x + o.w && py >= o.y && py < o.y + o.h); };
+  for(let k = 1; k <= 4; k++) if(fest(s.c, s.r + k)) return {art: k === 1 ? 'sockel' : 'staender', n: k - 1};
+  for(let k = 1; k <= 10; k++) if(fest(s.c, s.r - k)) return {art: 'kette', n: k - 1};
+  if(!ohneWand && fest(s.c - 1, s.r)) return {art: 'wand', seite: -1};
+  if(!ohneWand && fest(s.c + 1, s.r)) return {art: 'wand', seite: 1};
+  for(let k = 5; k <= 18; k++) if(fest(s.c, s.r + k)) return {art: 'staender', n: k - 1};
+  return {art: 'kette', n: s.r + 4};
+}
+function spiegelHalterungBild(c, x, y, h){
+  const cx = x + 20, cy = y + 20;
+  if(!h || h.art === 'sockel' || h.art === 'staender'){
+    const unten = y + 40 + (h ? h.n : 0)*40;
+    c.strokeStyle = '#4a3214'; c.lineWidth = 5; c.beginPath(); c.moveTo(cx, cy + 18); c.lineTo(cx, unten - 6); c.stroke();
+    c.strokeStyle = '#c9963a'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(cx, cy + 18); c.lineTo(cx, unten - 6); c.stroke();
+    const st = c.createLinearGradient(0, unten - 9, 0, unten); st.addColorStop(0, '#b9a98c'); st.addColorStop(1, '#6d5c46');
+    c.fillStyle = st; c.beginPath(); c.moveTo(cx - 12, unten); c.lineTo(cx - 8, unten - 9); c.lineTo(cx + 8, unten - 9); c.lineTo(cx + 12, unten); c.closePath(); c.fill();
+    c.strokeStyle = '#3a2c1c'; c.lineWidth = 1.2; c.stroke();
+  } else if(h.art === 'kette'){
+    const oben = y - h.n*40;
+    c.strokeStyle = '#3a2c1c'; c.lineWidth = 1.6;
+    for(let yy = cy - 18; yy > oben; yy -= 7){ c.beginPath(); c.ellipse(cx, yy - 3, 2.4, 3.8, 0, 0, Math.PI*2); c.stroke(); }
+    c.fillStyle = '#6b4a1e'; c.fillRect(cx - 6, oben, 12, 4);
+  } else if(h.art === 'wand'){
+    const wx = h.seite < 0 ? x : x + 40;
+    c.strokeStyle = '#4a3214'; c.lineWidth = 5; c.beginPath(); c.moveTo(wx, cy); c.lineTo(cx + h.seite*18, cy); c.stroke();
+    c.strokeStyle = '#c9963a'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(wx, cy); c.lineTo(cx + h.seite*18, cy); c.stroke();
+    c.fillStyle = '#6b4a1e'; c.fillRect(wx - (h.seite < 0 ? 0 : 5), cy - 7, 5, 14);
+  }
+}
+function spiegelBild(c, x, y, stellung, dreh, halt){
+  // Spiegel (Ruinen-Überarbeitung): Halterung (Sockel/Ständer/Kette/Wandarm), Kardanring aus Bronze mit Achse, ovaler
+  // Spiegel im Goldrahmen mit hellem Glas, Glanzstreifen und Funkeln; die Schräge zeigt / bzw. \ (Lichtweg)
+  const cx = x + 20, cy = y + 20, t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0;
+  spiegelHalterungBild(c, x, y, halt);
+  c.strokeStyle = '#4a3214'; c.lineWidth = 4.5; c.beginPath(); c.arc(cx, cy, 18, 0, Math.PI*2); c.stroke();
+  c.strokeStyle = '#d4a23c'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, 18, 0, Math.PI*2); c.stroke();
+  // kleiner Drehpfeil am Ring (man kann ihn drehen)
+  c.strokeStyle = '#fff3c8'; c.lineWidth = 1.6; c.beginPath(); c.arc(cx, cy, 18, -Math.PI*0.95, -Math.PI*0.6); c.stroke();
   c.save(); c.translate(cx, cy);
   c.rotate((stellung === '/' ? -Math.PI/4 : Math.PI/4) + (dreh || 0));
-  // Rahmen (Gold) mit dunklem Umriss
-  c.fillStyle = '#3a2610'; c.beginPath(); c.ellipse(0, 0, 19, 8.5, 0, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#3a2610'; c.beginPath(); c.ellipse(0, 0, 17, 8, 0, 0, Math.PI*2); c.fill();
   const rg = c.createLinearGradient(0, -8, 0, 8); rg.addColorStop(0, '#ffe08a'); rg.addColorStop(0.5, '#d4a23c'); rg.addColorStop(1, '#8a6020');
-  c.fillStyle = rg; c.beginPath(); c.ellipse(0, 0, 17.5, 7, 0, 0, Math.PI*2); c.fill();
-  // Glas: hell, bläulich, mit Glanzstreifen
-  const gg = c.createLinearGradient(-14, -5, 14, 5); gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.45, '#cfe9f7'); gg.addColorStop(1, '#7fb3d0');
-  c.fillStyle = gg; c.beginPath(); c.ellipse(0, 0, 14, 4.6, 0, 0, Math.PI*2); c.fill();
-  c.save(); c.beginPath(); c.ellipse(0, 0, 14, 4.6, 0, 0, Math.PI*2); c.clip();
-  c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(-9, -6, 3, 12); c.fillRect(-4, -6, 1.5, 12);
+  c.fillStyle = rg; c.beginPath(); c.ellipse(0, 0, 15.5, 6.6, 0, 0, Math.PI*2); c.fill();
+  const gg = c.createLinearGradient(-12, -5, 12, 5); gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.45, '#cfe9f7'); gg.addColorStop(1, '#7fb3d0');
+  c.fillStyle = gg; c.beginPath(); c.ellipse(0, 0, 12.5, 4.4, 0, 0, Math.PI*2); c.fill();
+  c.save(); c.beginPath(); c.ellipse(0, 0, 12.5, 4.4, 0, 0, Math.PI*2); c.clip();
+  c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(-8, -6, 3, 12); c.fillRect(-3.5, -6, 1.5, 12);
   c.restore();
-  // Achs-Knöpfe
-  c.fillStyle = '#6b4a1e'; for(const ax of [-17, 17]){ c.beginPath(); c.arc(ax, 0, 2.2, 0, Math.PI*2); c.fill(); }
+  c.fillStyle = '#6b4a1e'; for(const ax of [-18, 18]){ c.beginPath(); c.arc(ax, 0, 2.6, 0, Math.PI*2); c.fill(); }
   c.restore();
-  // Funkeln (Spiegel glänzt)
   const fk = 0.5 + 0.5*Math.sin(t*2.4 + x*0.05);
   if(fk > 0.6){
-    const fx = cx + (stellung === '/' ? 6 : -6), fy = cy - 5, r = 4.5*(fk - 0.6)/0.4 + 1.5;
+    const fx = cx + (stellung === '/' ? 5 : -5), fy = cy - 5, r = 4.5*(fk - 0.6)/0.4 + 1.5;
     c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath();
     c.moveTo(fx, fy - r); c.lineTo(fx + r*0.25, fy - r*0.25); c.lineTo(fx + r, fy); c.lineTo(fx + r*0.25, fy + r*0.25);
     c.lineTo(fx, fy + r); c.lineTo(fx - r*0.25, fy + r*0.25); c.lineTo(fx - r, fy); c.lineTo(fx - r*0.25, fy - r*0.25); c.closePath(); c.fill();
   }
 }
-function kristallBild(c, x, y, leucht){
-  c.fillStyle = '#9a7c50'; c.fillRect(x + 8, y + 32, 24, 8);
-  if(leucht > 0){
-    const g = c.createRadialGradient(x + 20, y + 18, 2, x + 20, y + 18, 34);
-    g.addColorStop(0, `rgba(255,236,140,${0.6*leucht})`); g.addColorStop(1, 'rgba(255,236,140,0)');
-    c.fillStyle = g; c.beginPath(); c.arc(x + 20, y + 18, 34, 0, Math.PI*2); c.fill();
+function kristallBild(c, x, y, leucht, halt){
+  // Lichtkristall auf Steinsockel; leuchtet er, glüht er warm mit großem Schein. Halterung wie beim Spiegel
+  // (Ständer bis zum Boden oder Kette zur Decke), damit er nicht in der Luft hängt
+  const t = typeof performance !== 'undefined' ? performance.now()*0.001 : 0;
+  if(halt && halt.art === 'staender'){
+    const unten = y + 40 + halt.n*40;
+    c.strokeStyle = '#4a3214'; c.lineWidth = 5; c.beginPath(); c.moveTo(x + 20, y + 40); c.lineTo(x + 20, unten - 6); c.stroke();
+    c.strokeStyle = '#c9963a'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(x + 20, y + 40); c.lineTo(x + 20, unten - 6); c.stroke();
+    c.fillStyle = '#6d5c46'; c.beginPath(); c.moveTo(x + 8, unten); c.lineTo(x + 12, unten - 7); c.lineTo(x + 28, unten - 7); c.lineTo(x + 32, unten); c.closePath(); c.fill();
+  } else if(halt && halt.art === 'kette'){
+    const oben = y - halt.n*40;
+    c.strokeStyle = '#3a2c1c'; c.lineWidth = 1.6;
+    for(let yy = y + 2; yy > oben; yy -= 7){ c.beginPath(); c.ellipse(x + 20, yy - 3, 2.4, 3.8, 0, 0, Math.PI*2); c.stroke(); }
+    c.fillStyle = '#6b4a1e'; c.fillRect(x + 14, oben, 12, 4);
+    c.strokeStyle = '#c9963a'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 9, y + 15); c.lineTo(x + 20, y + 1); c.lineTo(x + 31, y + 15); c.stroke();
   }
-  c.fillStyle = leucht > 0.5 ? '#fff3b0' : '#8fd0e0';
-  c.beginPath(); c.moveTo(x + 20, y + 2); c.lineTo(x + 31, y + 16); c.lineTo(x + 26, y + 33); c.lineTo(x + 14, y + 33); c.lineTo(x + 9, y + 16); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(40,70,90,.6)'; c.lineWidth = 1.5; c.stroke();
-  c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.moveTo(x + 20, y + 4); c.lineTo(x + 25, y + 15); c.lineTo(x + 20, y + 20); c.closePath(); c.fill();
+  const st = c.createLinearGradient(0, y + 30, 0, y + 40); st.addColorStop(0, '#4a3f36'); st.addColorStop(1, '#231c17');
+  c.fillStyle = st; c.beginPath(); c.moveTo(x + 7, y + 40); c.lineTo(x + 10, y + 31); c.lineTo(x + 30, y + 31); c.lineTo(x + 33, y + 40); c.closePath(); c.fill();
+  c.strokeStyle = '#c9963a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x + 10, y + 33); c.lineTo(x + 30, y + 33); c.stroke();
+  if(leucht > 0){
+    const g = c.createRadialGradient(x + 20, y + 17, 2, x + 20, y + 17, 40);
+    g.addColorStop(0, `rgba(255,245,190,${0.85*leucht})`); g.addColorStop(0.4, `rgba(255,200,80,${0.35*leucht})`); g.addColorStop(1, 'rgba(255,190,70,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x + 20, y + 17, 40, 0, Math.PI*2); c.fill();
+  }
+  const kg = c.createLinearGradient(x + 9, y + 2, x + 31, y + 33);
+  if(leucht > 0.5){ kg.addColorStop(0, '#ffffff'); kg.addColorStop(0.5, '#ffe98a'); kg.addColorStop(1, '#ffae2e'); }
+  else { kg.addColorStop(0, '#d8f4fb'); kg.addColorStop(0.5, '#7cc6dc'); kg.addColorStop(1, '#3a7f98'); }
+  c.fillStyle = kg;
+  c.beginPath(); c.moveTo(x + 20, y + 1); c.lineTo(x + 31, y + 15); c.lineTo(x + 26, y + 32); c.lineTo(x + 14, y + 32); c.lineTo(x + 9, y + 15); c.closePath(); c.fill();
+  c.strokeStyle = leucht > 0.5 ? '#a8681a' : '#20495a'; c.lineWidth = 1.8; c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x + 20, y + 1); c.lineTo(x + 20, y + 32); c.moveTo(x + 9, y + 15); c.lineTo(x + 31, y + 15); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.moveTo(x + 20, y + 3); c.lineTo(x + 25, y + 14); c.lineTo(x + 20, y + 14); c.closePath(); c.fill();
+  if(leucht <= 0.5){ c.globalAlpha = 0.5 + 0.5*Math.sin(t*2); c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 15, y + 12, 1.4, 0, Math.PI*2); c.fill(); c.globalAlpha = 1; }
+}
+// Strahl mit echtem Glow: mehrere Schichten im Modus „lighter“ (Licht addiert sich), wandernde helle Wellen, Funken,
+// Aufblitzen an Spiegeln, am Kristall und dort, wo der Strahl auf Stein trifft
+function lichtStrahlPfad(weg){
+  ctx.beginPath(); ctx.moveTo(weg[0][0]*40 + 20 - camX, weg[0][1]*40 + 20);
+  for(let i = 1; i < weg.length; i++) ctx.lineTo(weg[i][0]*40 + 20 - camX, weg[i][1]*40 + 20);
+}
+function lichtFleck(x, y, r, a){
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(255,250,220,${a})`); g.addColorStop(0.35, `rgba(255,210,100,${a*0.5})`); g.addColorStop(1, 'rgba(255,180,60,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
 }
 function lichtZeichnen(){
   const t = performance.now()*0.001;
-  // Strahlen (unter allem anderen dieses Elements)
-  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = 'lighter';
+  const puls = 1 + 0.08*Math.sin(t*5);
   for(const weg of lichtWege){
     if(weg.length < 2) continue;
-    for(const [breit, farbe] of [[16, 'rgba(255,220,110,.18)'], [8, 'rgba(255,230,140,.45)'], [3, 'rgba(255,252,220,.95)']]){
-      ctx.strokeStyle = farbe; ctx.lineWidth = breit + (breit > 10 ? Math.sin(t*4)*2 : 0);
-      ctx.beginPath(); ctx.moveTo(weg[0][0]*40 + 20 - camX, weg[0][1]*40 + 20);
-      for(let i = 1; i < weg.length; i++) ctx.lineTo(weg[i][0]*40 + 20 - camX, weg[i][1]*40 + 20);
-      ctx.stroke();
+    for(const [breit, farbe] of [[38, 'rgba(255,170,50,.07)'], [24, 'rgba(255,190,70,.12)'], [13, 'rgba(255,215,110,.28)'], [6, 'rgba(255,240,180,.6)'], [2.4, 'rgba(255,255,245,1)']]){
+      ctx.strokeStyle = farbe; ctx.lineWidth = breit*(breit > 10 ? puls : 1); lichtStrahlPfad(weg); ctx.stroke();
     }
-    // Funkeln entlang des Strahls
+    // wandernde helle Wellen entlang des Strahls (zeigen die Richtung)
+    ctx.setLineDash([10, 46]); ctx.lineDashOffset = -t*90; ctx.strokeStyle = 'rgba(255,255,230,.55)'; ctx.lineWidth = 7;
+    lichtStrahlPfad(weg); ctx.stroke(); ctx.setLineDash([]);
+    // Funken
     for(let i = 0; i < weg.length - 1; i++){
       const ph = (t*0.8 + i*0.37) % 1, ax = weg[i][0], ay = weg[i][1], bx = weg[i + 1][0], by = weg[i + 1][1];
-      const px = (ax + (bx - ax)*ph)*40 + 20 - camX, py = (ay + (by - ay)*ph)*40 + 20;
-      ctx.globalAlpha = Math.sin(ph*Math.PI)*0.9; ctx.fillStyle = '#fffbe0';
-      ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+      const px = (ax + (bx - ax)*ph)*40 + 20 - camX, py = (ay + (by - ay)*ph)*40 + 20, wob = Math.sin(t*7 + i)*4;
+      ctx.globalAlpha = Math.sin(ph*Math.PI)*0.9; ctx.fillStyle = '#fff6c8';
+      ctx.beginPath(); ctx.arc(px + (ay === by ? 0 : wob), py + (ax === bx ? 0 : wob), 2, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+    }
+    // Aufblitzen an den Knickstellen (Spiegel) und am Ende (Stein oder Kristall)
+    for(let i = 1; i < weg.length; i++){
+      const x = weg[i][0]*40 + 20 - camX, y = weg[i][1]*40 + 20;
+      if(i === weg.length - 1) lichtFleck(x, y, 30*puls, 0.75);
+      else lichtFleck(x, y, 24*puls, 0.55);
     }
   }
   ctx.restore();
   for(const q of lichtquellen){ const x = q.x - camX; if(x > -60 && x < VW + 60) lichtQuelleBild(ctx, x, q.y, q.dx, q.dy, true); }
   for(const s of spiegelListe){
     const x = s.x - camX; if(x < -60 || x > VW + 60) continue;
+    if(!s.halt) s.halt = spiegelHalt(s);   // nur Anzeige (Gelände ändert sich dafür nicht)
     const dreh = s.drehT > 0 ? (s.stellung === '/' ? 1 : -1)*(s.drehT/12)*Math.PI/2 : 0;
-    spiegelBild(ctx, x, s.y, s.stellung, dreh);
+    spiegelBild(ctx, x, s.y, s.stellung, dreh, s.halt);
   }
-  for(const k of kristalle){ const x = k.x - camX; if(x > -60 && x < VW + 60) kristallBild(ctx, x, k.y, k.leuchtT || 0); }
+  for(const k of kristalle){
+    const x = k.x - camX; if(x < -60 || x > VW + 60) continue;
+    if(!k.halt) k.halt = spiegelHalt(k, true);   // nur Anzeige
+    kristallBild(ctx, x, k.y, k.leuchtT || 0, k.halt);
+  }
+}
+// Lichter in dunklen Leveln (10a drawThemeDarkness): Sonnensteine und Strahl leuchten die Dunkelheit aus
+function lichtLichter(L){
+  for(const q of lichtquellen) L.push([q.x + 20, q.y + 20, 90]);
+  for(const weg of lichtWege) for(let i = 0; i < weg.length - 1; i++){
+    const [ax, ay] = weg[i], [bx, by] = weg[i + 1], n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay)/2));
+    for(let k = 0; k <= n; k++) L.push([(ax + (bx - ax)*k/n)*40 + 20, (ay + (by - ay)*k/n)*40 + 20, 70]);
+  }
+  for(const k of kristalle) if(k.an) L.push([k.x + 20, k.y + 18, 110]);
 }
 ELEMENT_SOLID_TYPEN.add('lichtquelle');
 // (Editor) Strahl-Vorschau über dem Raster: blockiert von festen Kästchen (nicht Steg/Schein/Aufwind), Spiegel/Kristalle
