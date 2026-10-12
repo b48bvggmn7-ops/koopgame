@@ -7680,6 +7680,9 @@ LICHT_RAETSEL = [
     {'level': 'ruinen/02-mondnacht.json', 'name': 'Mondnacht „Strahl-Labyrinth“', 'spalten': [450, 500], 'links': [52, 53, 55, 56], 'ziel': [51], 'offen': [52], 'loesungen': 1, 'sackgassen': 3},
     {'level': 'ruinen/05-felsenflucht.json', 'name': 'Felsenflucht „Felsbrecher-Licht“', 'spalten': [750, 790], 'links': [45, 46], 'ziel': [42], 'offen': [40, 41, 44], 'loesungen': 1, 'sackgassen': 2,
      'pre': "for(const s of solids) if(s.type === 'crumble' && s.x === 765*40) s.gone = true;"},   # der Fels hat die Bröckel-Wand aufgebrochen
+    {'level': 'ruinen/06-tempelherz.json', 'name': 'Tempelherz Teil 1 (Tor 1)', 'spalten': [748, 790], 'links': [23], 'ziel': [5], 'offen': [60], 'loesungen': 1, 'sackgassen': 0},
+    {'level': 'ruinen/06-tempelherz.json', 'name': 'Tempelherz Teil 2 (Brücke)', 'spalten': [748, 790], 'links': [23, 24, 25], 'ziel': [21], 'offen': [60, 5], 'loesungen': 1, 'sackgassen': 2},
+    {'level': 'ruinen/06-tempelherz.json', 'name': 'Tempelherz „Geteilter Strahl“ (Doppeltor)', 'spalten': [748, 790], 'links': [23, 24, 25], 'ziel': [6, 26], 'offen': [60, 5], 'loesungen': 1, 'sackgassen': 2},
     {'level': 'ruinen/04-sonnentempel.json', 'name': 'Sonnentempel „Licht plus Fallen“', 'spalten': [482, 518], 'links': [15, 16, 17], 'ziel': [11], 'loesungen': 1, 'sackgassen': 2},
     {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Ausgang', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [34], 'loesungen': 1, 'sackgassen': 1},
 ]
@@ -7966,40 +7969,44 @@ async def mondnacht_mondspiegel(g):
 
 @test
 async def tempelherz_sonnenkrone(g):
-    """Tempelherz, Licht-Rätsel „Sonnenkrone“ (Spalte 750–798, vor dem Ziel; schwerste Licht-Stelle): Der Sonnenstein
-    leuchtet nur, solange jemand auf Platte 60 steht – darauf schießt im Takt eine Pfeilfalle (ausweichen, zurück).
-    Drei Kristalle („bleiben an“): 1) Schweinchen auf der Platte, Affe (Haken-Sims) stellt Spiegel 1 nach unten -> Tor 1.
-    2) Tausch: Affe stellt Spiegel 1 nach oben (Licht über zwei feste Spiegel zum Bodenspiegel jenseits der Grube) und
-    hält die Platte; das Schweinchen segelt über die breite Grube und dreht den Bodenspiegel: rechts -> Kristall 2 (Tor 2),
-    links zurück über die Grube -> Kristall 3 (Brücke für den Affen)."""
+    """Tempelherz, Licht-Rätsel „Geteilter Strahl“ (Spalte 750–798, vor dem Ziel; schwerste Licht-Stelle, schaltbare
+    Spiegel, zwei Sonnensteine). Hebel 60 unter der Pfeilfalle schaltet Sonnenstein 1 an (ausweichen!). 1) Affe (Haken-Sims)
+    legt Hebel 23 um: Spiegel 1 nach unten -> Kristall 5 (Tor 1). 2) Hebel 23 zurück (Licht hoch über Spiegel 2 zu Spiegel
+    3); das Schweinchen segelt über die breite Grube: Hebel 24 dreht Spiegel 3 UND Spiegel 5 (zweiter Strahl), Hebel 25
+    dreht Spiegel 4: „/“ = zurück über die Grube auf Kristall 21 (Brücke für den Affen), „\\“ = Kristall 6. 3) Doppeltor
+    am Ausgang: Tor 2a (Kristall 6) und Tor 2b (Kristall 26, zweiter Sonnenstein über Spiegel 5) sind nur offen, solange
+    BEIDE Kristalle gleichzeitig Licht haben. Sackgassen: Decke über Spiegel 3 und 5, Spiegel 4 in die falsche Richtung."""
     await koop_level(g, 'ruinen/06-tempelherz.json')
     fehler = []
     def soll(ok, name, info=''):
         if not ok: fehler.append(f'{name}: {str(info)[:300]}')
     info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
     px = kx(753)
-    warn = f'(falleWarnung(fallen.find(f => f.x === {753*40})) > 0.2 || fallenPfeile.some(a => Math.abs(a.x - {px}) < 30 && a.steckt < 0 && a.y < 600))'
-    def platte(bis):   # auf der Platte stehen, bei Pfeil-Warnung kurz nach links ausweichen
-        return {'holdIf': {'left': f'{warn} && P.x > {px} - 40', 'right': f'!{warn} && P.x < {px} - 3'},
-                'until': bis, 'frames': 9000}
+    def sonne_an():   # Pfeil einschlagen lassen, dann an den Hebel unter der Falle, umlegen, zurück
+        return [k_lauf(751, -10), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {px}) < 4 && a.steckt >= 0)', 'frames': 400},
+                wb_halt(px), {'use': True, 'frames': 6}, {'hold': ['left'], 'until': f'P.x < {kx(751)}', 'frames': 200}]
     def affe(jx=761):
         return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                 {'swing': True, 'pull': 60, 'release': f'P.y < {ky(10)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
                 {'holdIf': {'left': f'P.x > {kx(760)}', 'right': f'P.x < {kx(759)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200},
-                wb_halt(kx(759)), {'wait': '!!linkOn[60]', 'frames': 6000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[5]', 'frames': 300},
+                wb_halt(kx(760)), {'wait': '!!linkOn[60]', 'frames': 6000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[5]', 'frames': 300},
                 {'use': True, 'frames': 8}, {'hold': ['left'], 'until': f'P.x < {kx(758)} + 10', 'frames': 200}, {'until': 'P.grounded', 'frames': 200},
-                {'hold': ['left'], 'until': f'P.x < {px} + 40', 'frames': 300}, platte('!!linkOn[6] && !!linkOn[21]'), k_lauf(794)]
-    schwein = [k_lauf(752), platte(f'!!linkOn[5] && spiegelListe.find(s => s.c === 758 && s.r === 10).stellung === "/" && Q.grounded && Math.abs(Q.x - {px}) < 50'),
+                {'wait': '!!linkOn[21]', 'frames': 6000}, k_lauf(779), {'wait': '!!linkOn[6] && !!linkOn[26]', 'frames': 3000}, k_lauf(794)]
+    schwein = [k_lauf(749)] + sonne_an() + [{'wait': '!!linkOn[5]', 'frames': 6000},
                k_lauf(766, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
-               wb_halt(kx(779)), {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[6]', 'frames': 300},
-               {'wait': '!!linkOn[60]', 'frames': 3000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[21]', 'frames': 300}, k_lauf(794)]
+               wb_halt(kx(785)), {'use': True, 'frames': 8}, {'frames': 30}, wb_halt(kx(778)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[21]', 'frames': 300},
+               {'wait': f'Q.x > {kx(777)} && Q.grounded', 'frames': 4000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[6] && !!linkOn[26]', 'frames': 300}, k_lauf(793)]
     ok = []
     for jx in (761, 761.4):
         r = await koop(g, m=kat(746, 15), f=kat(745, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=16000)
-        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 793: ok.append(jx); break
-    soll(ok, 'Sonnenkrone gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 792: ok.append(jx); break
+    soll(ok, 'Geteilter Strahl gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    # nur ein Kristall am Doppeltor reicht nicht: Spiegel 4 auf die Brücke (Kristall 6 aus) -> Tor 2a zu
+    r = await koop(g, m=kat(786, 15), f=kat(783, 15), links=[60, 5, 21], pre="for(const s of spiegelListe){ if(s.link === 24 || s.link === 25) s.stellung = s.stellung === '/' ? '\\\\' : '/'; }",
+                   plans={'m': [k_lauf(794)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 788, 'Doppeltor: nur Kristall 26 an (Spiegel 4 zur Brücke) – Tor 2a bleibt zu', info(r))
     r = await koop(g, m=kat(752, 15), f=kat(745, 15), plans={'m': [wb_halt(px), {'frames': 200}]}, maxFrames=400)
-    soll(r.get('dead') == 'm', 'wer stur auf der Platte stehen bleibt, wird vom Pfeil getroffen', info(r))
+    soll(r.get('dead') == 'm', 'wer stur am Hebel unter der Falle stehen bleibt, wird vom Pfeil getroffen', info(r))
     assert not fehler, fehler
 
 async def main(filter_):
