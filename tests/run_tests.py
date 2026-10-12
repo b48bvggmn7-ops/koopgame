@@ -7224,6 +7224,86 @@ async def kombi_pruefung(g):
     d['solids'][2]['x'] = 600
     assert KP.kamine(d)[0]['art'] == 'bequem' and any(k['art'] == 'Wandsprung + Haken' for k in KP.kombis_auto(d)), (KP.kamine(d), KP.kombis_auto(d))
 
+# --- Kombi-Nachschärfen: Bot-Pläne für die eingebauten Kombi-Stellen (Bausteine aus levels/test/kombis.json) ---
+def kombi_pilz(x0):   # auf den Pilz bei Spalte x0 springen (Pilz-Schwung)
+    return [k_lauf(x0 - 3, 0), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {x0}*40+14', 'left': f'P.x > {x0}*40+26'}, 'until': 'P.vy < -15', 'frames': 200}]
+def kombi_pilz_grube(x0, l0):
+    """Baustein Pilz -> Grube mit hohem Haken -> erhöhter Landeplatz (l0 = erste Spalte des Landeplatzes)"""
+    lande = {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 2)}'}, 'until': 'P.grounded', 'frames': 400}
+    return {'f': kombi_pilz(x0) + [{'hold': ['right'], 'until': 'P.vy > -1', 'frames': 100}, dict(lande, hold=['glide'])],
+            'm': kombi_pilz(x0) + [{'hold': ['right'], 'hookWhen': 'P.vy > -8', 'until': 'P.hookAttached', 'frames': 120},
+                                   {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, lande],
+            'f_ohne': [k_lauf(x0 + 1, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}],
+            'm_ohne': [k_lauf(x0 + 1, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.hookAttached || (P.grounded && f > 10)', 'frames': 200},
+                       {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}
+def kombi_kamin_grube(x0, s):
+    """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
+    rw = x0 + 5
+    kamin = [k_lauf(x0 + 2, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(s - 8)} && P.vy < 0', 'frames': 900}]
+    lande = {'holdIf': {'right': f'P.x < {kx(rw + 13)}', 'left': f'P.x > {kx(rw + 16)}'}, 'until': 'P.grounded', 'frames': 300}
+    return {'m': kamin + [{'hold': ['right'], 'hookWhen': f'P.vy > -3 && P.x > {rw + 1}*40', 'until': 'P.hookAttached', 'frames': 120},
+                          {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
+            'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(rw + 1)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}],
+            'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
+
+# je Stelle: (Level, Name, Start Affe, Start Schweinchen, Pläne {wer: Plan}, Pläne ohne Kombi {wer: Plan} -> müssen scheitern)
+def _d1_haken_pilz():
+    greif = lambda bed='true': {'hold': ['right'], 'hookWhen': f'({bed})', 'until': 'P.hookAttached', 'frames': 300}
+    m = [k_lauf(68, 14), {'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 200},
+         {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, {'holdIf': {'right': 'P.x < 77*40'}, 'until': 'P.grounded', 'frames': 200},
+         wb_halt(kx(76)), {'hold': ['right'], 'until': f'P.x >= {kx(78)} + 8', 'frames': 100},
+         {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -6 && P.x > 79*40', 'until': 'P.hookAttached', 'frames': 120},
+         {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400},
+         {'holdIf': {'right': 'P.x < 89*40-4', 'left': 'P.x > 89*40+4'}, 'until': 'P.vy < -10', 'frames': 300},
+         greif('P.x > 91*40 && P.vy > -3'), {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+    f = [k_lauf(68, 14), {'hold': ['glide'], 'holdIf': {'right': 'P.x < 77*40'}, 'until': 'P.grounded', 'frames': 400},
+         wb_halt(kx(76)), {'hold': ['right'], 'until': f'P.x >= {kx(78)} + 8', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+         {'hold': ['glide'], 'holdIf': {'right': 'P.x < 89*40-4', 'left': 'P.x > 89*40+4'}, 'until': 'P.vy < -10 || P.grounded', 'frames': 400},
+         {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+    return {'m': m, 'f': f}
+def _d1_kamin_haken():
+    kamin = [k_lauf(410, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(-2)} && P.vy < 0', 'frames': 900}]
+    return {'m': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(413)} + 6', 'frames': 100},
+                          {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -2', 'until': 'P.hookAttached', 'frames': 200},
+                          {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vy < -1 && P.vx > 1', 'frames': 400},
+                          {'holdIf': {'right': f'P.x < {kx(427)}', 'left': f'P.x > {kx(429)}'}, 'until': 'P.grounded', 'frames': 300}],
+            'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(413)} + 6', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+                          {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(427)}', 'left': f'P.x > {kx(429)}'}, 'until': 'P.grounded', 'frames': 400}],
+            'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.grounded && f > 5', 'frames': 300}]}
+KOMBI_STELLEN_BOT = [
+    ('dschungel/01-dschungel.json', 'Pilz in der Hakengrube (88)', kat(66, 3), kat(64, 3), _d1_haken_pilz, {'m': (102, 15), 'f': (102, 15)}),
+    ('dschungel/01-dschungel.json', 'Pilz-Grube auf dem Sims (233)', kat(229, 11), kat(228, 11), lambda: kombi_pilz_grube(233, 243), {'m': (243, 7), 'f': (243, 7)}),
+    ('dschungel/01-dschungel.json', 'Kamin -> Haken/Segeln (408)', kat(410, 16), kat(411, 16), _d1_kamin_haken, {'m': (426, 7), 'f': (426, 7)}),
+    ('dschungel/01-dschungel.json', 'Kamin-Grube vor dem Ziel (746)', kat(742, 14), kat(741, 14), lambda: kombi_kamin_grube(746, 15), {'m': (762, 8), 'f': (762, 8)}),
+    ('dschungel/01-dschungel.json', 'Pilz-Grube vor dem Ziel (773)', kat(768, 8), kat(769, 8), lambda: kombi_pilz_grube(773, 783), {'m': (783, 10), 'f': (783, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (443)', kat(438, 14), kat(439, 14), lambda: kombi_pilz_grube(443, 453), {'m': (453, 10), 'f': (453, 10)}),
+]
+async def kombi_stellen_pruefen(g, welt):
+    """Bot-Lauf über jede eingebaute Kombi-Stelle der Welt: mit Kombi kommen beide an (mindestens bis Spalte/Reihe des
+    Ziels), ohne Kombi (Plan *_ohne) scheitert die Figur."""
+    fehler, aktuell = [], None
+    for lv, name, ms, fs, plaene, ziel in KOMBI_STELLEN_BOT:
+        if not lv.startswith(welt + '/'): continue
+        if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        pl = plaene()
+        for wer in ('m', 'f'):
+            if wer not in pl: continue
+            r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer]}, maxFrames=4000)
+            zc, zr = ziel[wer]
+            ok = r.get('done') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
+            if not ok: fehler.append(f"{lv} {name} ({wer}): {r.get('pos')} {r.get('dead')} {(r.get('log') or [])[-3:]}")
+            if wer + '_ohne' in pl:
+                r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer + '_ohne']}, maxFrames=2500)
+                geschafft = r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
+                if geschafft: fehler.append(f"{lv} {name} ({wer}) ohne Kombi trotzdem geschafft: {r.get('pos')}")
+    assert not fehler, fehler
+
+@test
+async def kombi_stellen_dschungel(g):
+    """Kombi-Nachschärfen, Welt Dschungel: jede eingebaute Kombi-Stelle (KOMBI_STELLEN_BOT) mit dem Koop-Bot – mit Kombi
+    geschafft, ohne Kombi gescheitert."""
+    await kombi_stellen_pruefen(g, 'dschungel')
+
 @test
 async def kombi_testlevel(g):
     """Testlevel levels/test/kombis.json: Affe klettert den Kamin (Breite 4) per Wandsprung hinauf und greift oben den

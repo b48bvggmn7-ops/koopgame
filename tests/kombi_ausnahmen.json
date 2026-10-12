@@ -1,1 +1,8 @@
-[]
+[
+ {
+  "level": "dschungel/01-dschungel.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "5 statt 6 Kombi-Stellen: Level 1 ist der Einstieg und vom Nutzer gestaltet; Etappe 2/3 bestehen aus engen Hebel-/Plattform-Abschnitten (Hebel 2–8, fahrende Plattformen über der 30er-Grube), in die keine Fähigkeiten-Kombi passt, ohne sie umzubauen; der Start bleibt bewusst ohne Kombi-Grube. Jede Etappe hat mindestens eine Kombi-Stelle."
+ }
+]

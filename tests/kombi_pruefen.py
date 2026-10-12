@@ -138,10 +138,10 @@ def kombis_auto(d):
         # Wandsprung -> Segeln: Lücke neben dem Kamin
         if any(k['c'] - KOMBI_ABSTAND <= g1 and g0 <= k['c2'] + KOMBI_ABSTAND for g0, g1 in gr):
             out.append({'spalte': mitte, 'art': 'Wandsprung + Segeln', 'wer': 'f'})
-    # Haken -> Wand: Haken, von dem man in eine hohe Wandfläche schwingt (Wandsprung danach)
+    # Haken -> Kamin: Haken, von dem man in einen Kamin schwingt und dort per Wandsprung weiterklettert
     for hc, hr in hooks:
-        for (c, seite, r0, r1) in flaechen:
-            if 2 <= abs(c - hc) <= 6 and r0 <= hr + 6 and r1 >= hr + 2 and (c - hc) * seite < 0:
+        for k in ks:
+            if k['c'] - 6 <= hc <= k['c'] and k['r0'] - 2 <= hr + 4 and hr <= k['r1']:   # Haken VOR dem Kamin (Laufrichtung rechts)
                 out.append({'spalte': hc, 'art': 'Haken + Wandsprung', 'wer': 'm'}); break
     # Aufwind -> Wandsprung (Schweinchen): Aufwind direkt an einer hohen Wand
     wcols = sorted({c for c, r in winds})
@@ -154,6 +154,8 @@ def kombis_auto(d):
             out.append({'spalte': pc, 'art': 'Pilz + Segeln', 'wer': 'f'})
         if any(abs(c - pc) <= 4 and r1 - r0 >= 4 for (c, s, r0, r1) in flaechen):
             out.append({'spalte': pc, 'art': 'Pilz + Wandsprung', 'wer': 'beide'})
+        if any(abs(hc - pc) <= 7 and 3 <= pr - hr <= 10 for hc, hr in hooks):
+            out.append({'spalte': pc, 'art': 'Pilz + Haken', 'wer': 'm'})
     return out
 
 def kombi_stellen_hand():
@@ -161,12 +163,12 @@ def kombi_stellen_hand():
     return json.loads(p.read_text(encoding='utf-8')) if p.exists() else []
 
 def stellen(datei, d):
-    """eigenständige Kombi-Stellen (auto + von Hand), zusammengefasst: Kandidaten näher als KOMBI_ABSTAND/2 = eine Stelle"""
+    """eigenständige Kombi-Stellen (auto + von Hand), zusammengefasst: Kandidaten näher als KOMBI_ABSTAND = eine Stelle"""
     kand = kombis_auto(d) + [dict(h, hand=True) for h in kombi_stellen_hand() if h['level'] == datei]
     kand.sort(key=lambda k: k['spalte'])
     out = []
     for k in kand:
-        if out and k['spalte'] - out[-1]['bis'] <= KOMBI_ABSTAND // 2:
+        if out and k['spalte'] - out[-1]['bis'] <= KOMBI_ABSTAND:   # näher als KOMBI_ABSTAND = dieselbe Stelle (eine Kette zählt einmal)
             o = out[-1]; o['bis'] = max(o['bis'], k['spalte']); o['arten'].add(k['art']); o['wer'].add(k['wer']); o['hand'] |= bool(k.get('hand'))
         else:
             out.append({'von': k['spalte'], 'bis': k['spalte'], 'arten': {k['art']}, 'wer': {k['wer']}, 'hand': bool(k.get('hand'))})
