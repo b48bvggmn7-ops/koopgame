@@ -1410,13 +1410,22 @@ async def level10_sonnentempel(g):
     soll(r['pos']['f'][0] < 422, 'Tür 10 zu ohne Licht', r.get('pos'))
     r = await koop(g, f=kat(430, 15), m=kat(442, 9), plans={'f': gleit(439, kx(453), 4) + [k_lauf(476)]}, pre=dreh(442), maxFrames=1500)
     soll(r.get('done'), 'Schweinchen unten über die Grube, Ausgang', r.get('pos'))
-    pl = []
-    for c, nach in ((492, 496), (500, 504), (508, 512)):
-        pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}] + am(c) + [k_lauf(nach, 0)]
-    r = await koop(g, f=kat(486, 15), m=kat(496, 15), plans={'f': pl + [k_lauf(524)]}, maxFrames=4000)
-    soll(r.get('done') and await g.ev("!!linkOn[11]"), 'Spiegel-Kette unter Pfeilen -> Tür 11', r.get('pos'))
-    r = await koop(g, f=kat(512, 15), m=kat(510, 15), plans={'f': [k_lauf(524)]}, pre=dreh(492, 500), maxFrames=600)
-    soll(r['pos']['f'][0] < 518, 'zwei von drei Spiegeln reichen nicht', r.get('pos'))
+    # Spiegel-Kette unter Pfeilen = „Licht plus Fallen“ (schaltbare Spiegel): Platte 15 lässt die Pfeile schweigen, solange
+    # jemand draufsteht – jedes Betreten dreht aber Spiegel 1, der anfangs RICHTIG steht. Platten 16/17 unter den Pfeilen
+    # drehen Spiegel 2/3. Lösung: Affe betritt Platte 15 (Pfeile still, Spiegel 1 falsch), Schweinchen tritt auf 16 und 17
+    # und geht aus der Pfeil-Gasse, Affe steigt ab und wieder auf (Spiegel 1 wieder richtig) -> Kristall 11 -> Tür 11.
+    sp = lambda c: f'spiegelListe.find(s => s.c === {c} && s.r === 14).stellung'
+    m = [wb_halt(kx(488)), {'wait': f'{sp(500)} === "\\\\" && {sp(508)} === "/" && Q.x > {kx(510)}', 'frames': 3000},
+         wb_halt(kx(485)), {'frames': 20}, wb_halt(kx(488)), {'wait': '!!linkOn[11]', 'frames': 300}]
+    for c in (495, 499, 507):   # zurück durch die (wieder laufenden) Pfeile: Einschlag abwarten, dann durch
+        m += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 1, 0)]
+    m += [k_lauf(523)]
+    f = [{'wait': '!!linkOn[15]', 'frames': 600}, wb_halt(kx(499)), {'frames': 20}, wb_halt(kx(507)), {'frames': 20}, k_lauf(511),
+         {'wait': '!!linkOn[11]', 'frames': 2000}, k_lauf(524)]
+    r = await koop(g, m=kat(484, 15), f=kat(482, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+    soll(r.get('done') and await g.ev("!!linkOn[11]"), 'Licht plus Fallen: Platte 15 halten, 16+17, zweimal 15 -> Tür 11', r.get('pos'))
+    r = await koop(g, m=kat(484, 15), f=kat(482, 15), plans={'m': m[:2], 'f': f[:6] + [k_lauf(516)]}, maxFrames=3000)
+    soll(r['pos']['f'][0] < 518 and not await g.ev("!!linkOn[11]"), 'Platte 15 nur einmal betreten: Spiegel 1 falsch, Tür 11 zu', r.get('pos'))
     # Bild-Regel: das blaue Tor bringt den Affen aufs Dach über dem Gang (552); er läuft oben mit und springt am Ende hinunter
     r = await koop(g, m=kat(528, 15), f=kat(536, 15), plans={'m': [k_lauf(533), {'wait': f'P.y < {ky(10)}'}, k_lauf(574), {'until': 'P.grounded', 'frames': 300}]}, maxFrames=1500)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 572 and k_pos(r, 'm')[1] == 15, 'Affe durchs blaue Tor aufs Dach über dem Flammen-Gang', r.get('pos'))
@@ -7666,6 +7675,7 @@ async def licht_loesen(g, cfg):
 LICHT_RAETSEL = [
     {'level': 'ruinen/01-ruinen.json', 'name': 'Ruinen 1 „Zwei Spiegel in Reihe“', 'spalten': [786, 812], 'links': [22, 21], 'ziel': [23], 'loesungen': 1, 'sackgassen': 2},
     {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Brücke', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [33], 'loesungen': 1, 'sackgassen': 1},
+    {'level': 'ruinen/04-sonnentempel.json', 'name': 'Sonnentempel „Licht plus Fallen“', 'spalten': [482, 518], 'links': [15, 16, 17], 'ziel': [11], 'loesungen': 1, 'sackgassen': 2},
     {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Ausgang', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [34], 'loesungen': 1, 'sackgassen': 1},
 ]
 @test
