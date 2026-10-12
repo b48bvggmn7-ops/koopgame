@@ -6666,6 +6666,11 @@ async def editor_licht(g):
         assert 'Spiegel dreht' in await p.evaluate("[...linkSelect.options].find(o => o.value === '9').textContent")
         await p.keyboard.press('Control+z')
         assert await p.evaluate("elementPunkte.spiegel.length") == 1, 'Rückgängig entfernt den schaltbaren Spiegel'
+        await p.keyboard.press('Control+y')
+        assert await p.evaluate("elementPunkte.spiegel.length") == 2, 'Wiederholen holt ihn zurück'
+        await p.wait_for_timeout(300); await p.reload(); await p.wait_for_timeout(500)   # Speichern/Laden (Arbeitsstand)
+        sp = await p.evaluate("elementPunkte.spiegel.map(s => [s.c, s.r, s.stellung, s.schalter || 'hand', s.link || 0])")
+        assert [12, 12, '/', 'nummer', 9] in sp, ('schaltbarer Spiegel nach Neuladen', sp)
     finally:
         await p.evaluate("localStorage.clear()")
         srv.shutdown()
@@ -7621,6 +7626,65 @@ async def licht_optionen(g):
     assert not k7, 'nach Neustart muss Kristall 7 wieder aus sein'
     await g.ev("menuScreen = null;")
 
+# Licht-Löser (Teil E „Schaltbare Spiegel“): probiert für ein Licht-Rätsel ALLE Stellungen der schaltbaren Spiegel durch
+# (jede Nummer = ein Bit, Spiegel gleicher Nummer drehen zusammen) und verfolgt den Strahl mit der Spiel-Logik.
+LICHT_LOESER_JS = """(cfg) => {
+  const [c0, c1] = cfg.spalten, imBereich = o => o.c >= c0 && o.c <= c1;
+  const res = [];
+  for(let m = 0; m < (1 << cfg.links.length); m++){
+    for(const s of spiegelListe){ const i = cfg.links.indexOf(s.link); if(i < 0) continue;
+      s.stellung = (m >> i) & 1 ? (s.start === '/' ? '\\\\' : '/') : s.start; s.drehS = 0; s.wartet = false; }
+    linkOn = {}; for(const d of solids) if(d.type === 'door'){ d.open = false; d.gone = false; d.closing = false; }
+    for(const l of cfg.offen || []) setLink(l, true);
+    const sp = new Map(spiegelListe.map(s => [s.c + ',' + s.r, s])), kr = new Map(kristalle.map(k => [k.c + ',' + k.r, k]));
+    const hits = [], enden = [];
+    for(const q of lichtquellen){ if(!imBereich(q) || !lichtQuelleAn(q)) continue;
+      const v = lichtVerfolgen(q.c, q.r, q.dx, q.dy, lichtFestImSpiel, (c, r) => sp.get(c + ',' + r), (c, r) => kr.get(c + ',' + r));
+      for(const k of v.getroffen) hits.push(k.link);
+      const e = v.weg[v.weg.length - 1]; enden.push([v.ende ? v.ende.art : 'weit', Math.round(e[0]*2)/2, Math.round(e[1]*2)/2]); }
+    res.push({m, stellung: spiegelListe.filter(s => cfg.links.includes(s.link)).map(s => s.stellung).join(''), hits, enden});
+  }
+  for(const s of spiegelListe){ s.stellung = s.start; s.drehS = 0; s.wartet = false; }
+  linkOn = {}; for(const d of solids) if(d.type === 'door'){ d.open = false; d.gone = false; d.closing = false; }
+  const ausloeser = cfg.links.map(l => switchDefs.filter(s => s.link === l).length + plates.filter(p => p.link === l).length);
+  return {res, ausloeser};
+}"""
+async def licht_loesen(g, cfg):
+    """-> (Lösungen [Stellungen], falsche Pfade [verschiedene Sackgassen-Enden], Fehlerliste)"""
+    out = await g.p.evaluate(LICHT_LOESER_JS, cfg)
+    fehler, loes, sack = [], [], set()
+    for x in out['res']:
+        if all(z in x['hits'] for z in cfg['ziel']): loes.append(x['stellung'])
+        for e in x['enden']:
+            if e[0] == 'weit': fehler.append(f"{cfg['name']}: Stellung {x['stellung']} – Strahl endet nirgends sichtbar")
+            if e[0] == 'wand': sack.add((e[1], e[2]))
+    if any(n == 0 for n in out['ausloeser']): fehler.append(f"{cfg['name']}: Nummer ohne Platte/Hebel {cfg['links']} {out['ausloeser']}")
+    return loes, sorted(sack), fehler
+
+# Alle Licht-Rätsel mit schaltbaren Spiegeln: Spaltenbereich, Nummern der Spiegel, Ziel-Kristall(e), vorher offene Nummern
+# (z. B. gehaltene Platte), erlaubte Zahl an Lösungen, Mindestzahl falscher Pfade (verschiedene Sackgassen)
+LICHT_RAETSEL = [
+    {'level': 'ruinen/01-ruinen.json', 'name': 'Ruinen 1 „Zwei Spiegel in Reihe“', 'spalten': [786, 812], 'links': [22, 21], 'ziel': [23], 'loesungen': 1, 'sackgassen': 2},
+]
+@test
+async def licht_raetsel_loeser(g):
+    """Löser für jedes Licht-Rätsel: alle Spiegel-Stellungen durchprobieren -> genau die erlaubte Zahl an Lösungen (meist
+    eine), mindestens so viele verschiedene Sackgassen wie geplant, jeder Strahl endet sichtbar (Wand/Tür/Kristall, nie
+    „ins Leere“), jede Spiegel-Nummer hat eine Platte oder einen Hebel. Da jeder Auslöser einen Spiegel nur um eine Stellung
+    dreht und man ihn beliebig oft auslösen kann, ist jede Stellung von jeder aus erreichbar (kein Zustand ohne Ausweg)."""
+    fehler, bericht = [], []
+    for cfg in LICHT_RAETSEL:
+        await g.load(str(ROOT / 'levels' / cfg['level']))
+        await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+        loes, sack, f = await licht_loesen(g, cfg)
+        fehler += f
+        if not (1 <= len(loes) <= cfg['loesungen']): fehler.append(f"{cfg['name']}: {len(loes)} Lösungen {loes}")
+        if len(sack) < cfg['sackgassen']: fehler.append(f"{cfg['name']}: nur {len(sack)} Sackgassen {sack}")
+        bericht.append(f"{cfg['name']}: {2 ** len(cfg['links'])} Stellungen, Lösung {loes}, {len(sack)} Sackgassen")
+    await g.ev("menuScreen = null;")
+    print('    ' + '\n    '.join(bericht))
+    assert not fehler, fehler
+
 @test
 async def spiegel_schaltbar(g):
     """Schaltbarer Spiegel („per Nummer“): jedes BETRETEN einer Druckplatte seiner Nummer dreht ihn genau einmal (Verlassen
@@ -7642,8 +7706,8 @@ async def spiegel_schaltbar(g):
     await g.ev(park); await schritte(30)
     s0 = await st()
     assert s0[0] == '///' and s0[2] and not s0[3], ('Start: Licht über Spiegel / nach oben auf Kristall 6', s0)
-    await schritte(200)
-    assert (await st())[0] == '///', 'Spiegel darf sich nie von selbst drehen'
+    await schritte(330)
+    assert (await st())[0] == '///', 'Spiegel darf sich nie von selbst drehen (6 s ohne Eingabe)'
     # Hand-Drehung: gesperrt beim schaltbaren Spiegel, frei beim normalen
     gesperrt = await g.ev("(() => { p1.x = 820; p1.y = 680; return spiegelBedienen(p1); })()")
     frei = await g.ev("(() => { p1.x = 2020; p1.y = 680; const ok = spiegelBedienen(p1); return [ok, spiegelListe[2].stellung]; })()")
@@ -7691,7 +7755,7 @@ async def spiegel_schaltbar(g):
         const v = lichtVerfolgen(1, 0, 1, 0, () => false, (c, r) => sp.get(c + ',' + r), () => null); return v.weg.length; })()""")
     assert k < 40, ('Strahl im Spiegel-Kreis muss enden', k)
     # Mini-Testlevel: falsch -> Sackgasse, Platte 1 + Hebel 2 je einmal -> Kristall 3 -> Tür 3 auf
-    await g.load(str(ROOT / 'levels' / 'test' / 'spiegel-schaltbar.json'))
+    await g.load(str(ROOT / 'levels' / 'test' / 'licht-schalter.json'))
     await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';"); await schritte(5)
     assert not await g.ev("!!linkOn[3]"), 'Testlevel: am Anfang Sackgasse'
     se = await g.ev("(() => { const e = lichtWege[0].ende; draw(); return e && e.art; })()")
@@ -7699,6 +7763,12 @@ async def spiegel_schaltbar(g):
     await g.ev("p1.x = 300; p1.y = 680;"); await schritte(30)
     await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
     assert await g.ev("!!linkOn[3] && solids.filter(s => s.type === 'door').every(s => s.open)"), 'Testlevel: Platte + Hebel öffnen Tür 3'
+    # Strahl läuft aus dem Bild: Randzeichen mit dem, was ihn draußen erwartet (Kristall bzw. Sackgasse)
+    rand = await g.ev("(() => { const alt = camX; camX = 600 - VW; const r = lichtRandListe(lichtWege[0]); draw(); camX = alt; return r.map(x => [x.d, x.art]); })()")
+    assert rand == [[1, 'kristall']], ('Randzeichen rechts: Kristall', rand)
+    await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
+    rand = await g.ev("(() => { const alt = camX; camX = 300; const r = lichtRandListe(lichtWege[0]); camX = alt; return r.map(x => [x.d, x.art]); })()")
+    assert rand == [[-1, 'wand']], ('Randzeichen links: Sackgasse (Strahl endet draußen an der Säule)', rand)
     # alte Level ohne Nummer: Spiegel von Hand wie bisher
     await g.load(str(ROOT / 'levels' / 'test' / 'licht.json'))
     alt = await g.ev("spiegelListe.map(s => s.link)")
@@ -7707,40 +7777,40 @@ async def spiegel_schaltbar(g):
 
 @test
 async def ruinen1_sonnenkammer(g):
-    """Ruinen 1, Licht-Rätsel „Sonnenkammer“ (Spalte 786–826, vor dem Ziel): Der Sonnenstein strahlt nach rechts, aber
-    Licht-Tor 1 versperrt den Strahl – offen nur, solange jemand auf Druckplatte 22 steht. Der Spiegel steht auf einem
-    Sims, das nur das Schweinchen per Aufwind erreicht; unter dem Spiegel versperrt Tür 2 den Weg zum Kristall – ihr
-    Hebel 21 liegt auf einem Sims, das nur der Affe per Haken erreicht. Erst wenn alles stimmt, trifft der Strahl den
-    Kristall („bleibt an“) und das Ausgangstor öffnet sich. Koop-Bot: Affe Haken -> Hebel 21 -> runter auf die Platte;
-    Schweinchen Aufwind -> Sims -> Spiegel drehen; dazu: ohne Platte / ohne Hebel bleibt der Ausgang zu, das Schweinchen
-    kommt nicht aufs Affen-Sims, der Affe nicht aufs Spiegel-Sims."""
+    """Ruinen 1, Licht-Rätsel „Zwei Spiegel in Reihe“ (Spalte 786–826, vor dem Ziel; schaltbare Spiegel): Der Sonnenstein
+    strahlt nach rechts auf Spiegel A, unter ihm hängt Spiegel B. Spiegel A dreht Druckplatte 22 auf dem Sims, das nur das
+    Schweinchen per Aufwind erreicht; Spiegel B dreht Hebel 21 auf dem Sims, das nur der Affe per Haken erreicht. Falsch:
+    A „/“ = Strahl in die Decke, B „\\“ = Strahl ans Ausgangstor (Sackgassen). Richtig (A „\\“, B „/“): Kristall 23
+    („bleibt an“) -> Ausgang offen. Koop-Bot: Affe Haken -> Hebel einmal; Schweinchen Aufwind -> Platte einmal betreten.
+    Dazu: nur Platte / nur Hebel bleibt der Ausgang zu, zweimal Hebel wieder falsch, keiner kommt aufs Sims des anderen."""
     await koop_level(g, 'ruinen/01-ruinen.json')
     fehler = []
     def soll(ok, name, info=''):
         if not ok: fehler.append(f'{name}: {str(info)[:300]}')
     info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
-    def affe(ohne_platte=False, jx=788.5):
+    def affe(n_hebel=1, jx=788.5):
         # unter dem Haken stehen bleiben, gerade hochspringen (mit Anlauf verdeckt das Sims die Sicht), Haken, ranziehen, aufs Sims
         hoch = [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                 {'swing': True, 'pull': 60, 'release': f'P.y < {ky(7)} + 4 && P.vx > 0.3 && f > 10'},
                 {'holdIf': {'right': f'P.x < {kx(790)}', 'left': f'P.x > {kx(791)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200}]
-        pl = hoch + [wb_halt(kx(791)), {'use': True, 'frames': 8}, {'wait': f'Q.grounded && Q.x > {kx(804)} && Q.y < {ky(11)}', 'frames': 4000},
-              k_lauf(794), {'until': 'P.grounded', 'frames': 200}]
-        if not ohne_platte: pl += [wb_halt(kx(791)), {'wait': '!!linkOn[23]', 'frames': 3000}]
-        return pl + [k_lauf(818)]
-    def schwein(ohne_hebel=False):
-        pl = [] if ohne_hebel else [{'wait': '!!linkOn[21]', 'frames': 4000}]
-        return pl + wb_aufwind(797, 7, 806) + [{'wait': '!!linkOn[22]', 'frames': 3000}, wb_halt(kx(806)), {'use': True, 'frames': 8},
-                                               {'wait': '!!linkOn[23]', 'frames': 300}, k_lauf(819)]
+        pl = hoch + [wb_halt(kx(791))]
+        for _ in range(n_hebel): pl += [{'use': True, 'frames': 8}, {'frames': 30}]
+        return pl + [k_lauf(794), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[23]', 'frames': 3000}, k_lauf(818)]
+    def schwein(platte=True):
+        pl = wb_aufwind(797, 7, 804) + [wb_halt(kx(804))]
+        if platte: pl += [wb_halt(kx(806)), {'frames': 30}, wb_halt(kx(804))]
+        return pl + [{'wait': '!!linkOn[23]', 'frames': 3000}, k_lauf(817)]
     ok = []
     for jx in (788.5, 789):
         r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(jx=jx), 'f': schwein()}, maxFrames=9000)
         if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 817: ok.append(jx); break
-    soll(ok, 'Sonnenkammer gemeinsam gelöst', (info(r), r.get('log')))
-    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(ohne_platte=True), 'f': schwein()}, maxFrames=6000)
-    soll(not await g.ev("!!linkOn[23]"), 'ohne Platte (Licht-Tor 1 zu) kein Licht am Kristall', info(r))
-    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'f': schwein(ohne_hebel=True)}, maxFrames=4000)
-    soll(not await g.ev("!!linkOn[23]"), 'ohne Hebel 21 (Tür 2 zu) kein Licht am Kristall', info(r))
+    soll(ok, 'Zwei Spiegel in Reihe gemeinsam gelöst', (info(r), r.get('log')))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(n_hebel=0), 'f': schwein()}, maxFrames=5000)
+    soll(not await g.ev("!!linkOn[23]") and await g.ev("lichtWege.some(w => w.ende && w.ende.art === 'wand')"), 'nur Platte: Sackgasse, Ausgang zu', info(r))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(), 'f': schwein(platte=False)}, maxFrames=5000)
+    soll(not await g.ev("!!linkOn[23]"), 'nur Hebel: Strahl in die Decke, Ausgang zu', info(r))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(n_hebel=2), 'f': schwein()}, maxFrames=5000)
+    soll(not await g.ev("!!linkOn[23]"), 'Hebel zweimal: B wieder falsch, Ausgang zu', info(r))
     r = await koop(g, m=kat(784, 14), f=kat(788, 14), plans={'f': [k_lauf(789, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 90}]}, maxFrames=400)
     soll(r.get('done') and r['top']['f'] > 7, 'Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
     r = await koop(g, m=kat(797, 14), f=kat(784, 14), plans={'m': [k_lauf(797, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'frames': 120}]}, maxFrames=400)
