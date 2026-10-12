@@ -78,12 +78,6 @@
   },
   {
    "level": "ruinen/02-mondnacht.json",
-   "regel": "Haken",
-   "spalte": 192,
-   "begruendung": "BRAUCHT ENTSCHEIDUNG (vom Nutzer gestaltetes Level 4): Hakenreihe 181–212 mit Abständen 10–11 bei Reichweite 3,5 Kästchen (Richtwert: höchstens 8). Einstieg von oben (Haken unter dem Sims); der Bot spielt diese Einstiegsart nicht – bitte selbst anspielen. Vorschlag: 5 Haken im Abstand 8 (181–213)"
-  },
-  {
-   "level": "ruinen/02-mondnacht.json",
    "regel": "Checkpoint",
    "spalte": 238,
    "nummer": 5,

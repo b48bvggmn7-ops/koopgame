@@ -7216,6 +7216,26 @@ async def ruinen1_etappen_im_bild(g):
     assert await g.ev('window.__maxAb') <= 20.5 * 40, f'Fähre: {await g.ev("window.__maxAb") / 40:.1f} Spalten auseinander'
 
 @test
+async def ruinen2_hakenreihe(g):
+    """Bild-/Haken-Regel, Ruinen 2 (Nutzer-Level 4): die Hakenreihe unter dem Sims hat 5 Haken im Abstand 8 (vorher 4 im
+    Abstand 10–11), Reichweite unverändert 3,5 Kästchen. Der Koop-Bot fällt vom Sims an den ersten Haken und schwingt bis
+    zum letzten (213, unter dem Zwischen-Block 196–201 wartet das Schweinchen)."""
+    lv = json.loads((ROOT / 'levels' / 'ruinen/02-mondnacht.json').read_text())
+    hs = sorted(h['x'] // 40 for h in lv['hooks'] if 175 < h['x'] / 40 < 220)
+    assert hs == [181, 189, 197, 205, 213] and all(h['radius'] == 140 for h in lv['hooks'] if 175 < h['x'] / 40 < 220), hs
+    await koop_level(g, 'ruinen/02-mondnacht.json')
+    ok = False
+    for t in (150, 200, 250):
+        rel = f'f > {t} && P.y < P.anchor.y + 60 && P.vx > 1.5 && P.vy < 0'
+        pl = [k_lauf(182, -10), {'holdIf': {'left': 'P.vx > 0.3'}, 'frames': 20}, {'hold': ['right'], 'until': f'P.x > {182 * 40 + 56}', 'frames': 40},
+              {'hold': [], 'holdIf': {'left': 'P.vx > 0.8'}, 'hookWhen': 'P.y > 340', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(4): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 900}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        pl += [{'wait': f'P.hookAttached && P.anchor.x === {kx(213)}'}]
+        r = await koop(g, m=kat(178, 6), f=kat(174, 6), plans={'m': pl}, maxFrames=12000)
+        if r.get('done'): ok = True; break
+    assert ok, f'Bot kommt nicht bis zum letzten Haken: {r.get("pos")}'
+
+@test
 async def ziel_hinweis_pfeil(g):
     """Bild-Regel, Teil E: schaltet ein Hebel eine Tür außerhalb des Bildes, zeigt ein Pfeil in der Farbe der Nummer
     kurz (≈ 1 s) am Bildrand dorthin; liegt das Ziel im Bild, gibt es keinen Pfeil. Die Kamera ändert sich dabei nicht."""
