@@ -7276,7 +7276,13 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/01-dschungel.json', 'Kamin -> Haken/Segeln (408)', kat(410, 16), kat(411, 16), _d1_kamin_haken, {'m': (426, 7), 'f': (426, 7)}),
     ('dschungel/01-dschungel.json', 'Kamin-Grube vor dem Ziel (746)', kat(742, 14), kat(741, 14), lambda: kombi_kamin_grube(746, 15), {'m': (762, 8), 'f': (762, 8)}),
     ('dschungel/01-dschungel.json', 'Pilz-Grube vor dem Ziel (773)', kat(768, 8), kat(769, 8), lambda: kombi_pilz_grube(773, 783), {'m': (783, 10), 'f': (783, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube am Start (23)', kat(21, 14), kat(20, 14), lambda: kombi_pilz_grube(23, 33), {'m': (33, 10), 'f': (33, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (209)', kat(204, 13), kat(203, 13), lambda: kombi_pilz_grube(209, 219), {'m': (219, 9), 'f': (219, 9)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (386)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_grube(386, 396), {'m': (396, 10), 'f': (396, 10)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (443)', kat(438, 14), kat(439, 14), lambda: kombi_pilz_grube(443, 453), {'m': (453, 10), 'f': (453, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (572)', kat(567, 14), kat(566, 14), lambda: kombi_pilz_grube(572, 582), {'m': (582, 10), 'f': (582, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (778)', kat(776, 14), kat(775, 14), lambda: kombi_pilz_grube(778, 788), {'m': (788, 10), 'f': (788, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (797)', kat(792, 14), kat(790, 10), lambda: kombi_pilz_grube(797, 807), {'m': (807, 10), 'f': (807, 10)}),
 ]
 async def kombi_stellen_pruefen(g, welt):
     """Bot-Lauf über jede eingebaute Kombi-Stelle der Welt: mit Kombi kommen beide an (mindestens bis Spalte/Reihe des

@@ -82,9 +82,11 @@ def kamine(d):
     return sorted(out, key=lambda k: (k['c'], k['r0']))
 
 def gruben(d):
-    """Lücken ohne Stehplatz (Spalten-Bereiche ≥ GRUBE_MIN), gemessen in der unteren Hälfte (Reihen 8–17)"""
+    """Lücken ohne Stehplatz (Spalten-Bereiche ≥ GRUBE_MIN; Stachelboden zählt nicht), gemessen in der unteren Hälfte (Reihen 8–17)"""
     fest = fest_kaestchen(d) | {z for o in d.get('oneways', []) for z in B.felder_zellen(o)}
     cols = max([c for c, r in fest] + [0]) + 1
+    stacheln = {(B.spalte(o['x']), B.reihe(o['y'])) for o in d.get('spikes', [])}
+    fest = {(c, r) for c, r in fest if (c, r - 1) not in stacheln and (c, r) not in stacheln}   # Stachelboden ist kein Stehplatz
     leer = [c for c in range(cols) if not any((c, r) in fest for r in range(8, 18))]
     out, start = [], None
     for c in range(cols + 1):
