@@ -7306,7 +7306,7 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (443)', kat(438, 14), kat(439, 14), lambda: kombi_pilz_grube(443, 453), {'m': (453, 10), 'f': (453, 10)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (572)', kat(567, 14), kat(566, 14), lambda: kombi_pilz_grube(572, 582), {'m': (582, 10), 'f': (582, 10)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (778)', kat(776, 14), kat(775, 14), lambda: kombi_pilz_grube(778, 788), {'m': (788, 10), 'f': (788, 10)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Grube (797)', kat(792, 14), kat(790, 10), lambda: kombi_pilz_grube(797, 807), {'m': (807, 10), 'f': (807, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (797)', kat(793, 14), kat(792, 14), lambda: kombi_pilz_grube(797, 807), {'m': (807, 10), 'f': (807, 10)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (70)', kat(65, 14), kat(64, 14), lambda: kombi_pilz_grube(70, 80), {'m': (80, 10), 'f': (80, 10)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (130)', kat(125, 12), kat(124, 12), lambda: kombi_pilz_grube(130, 140), {'m': (140, 8), 'f': (140, 8)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (180)', kat(175, 14), kat(174, 14), lambda: kombi_pilz_grube(180, 190), {'m': (190, 10), 'f': (190, 10)}),
@@ -7357,6 +7357,10 @@ async def kombi_stellen_pruefen(g, welt):
                 r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer + '_ohne']}, maxFrames=2500)
                 geschafft = r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
                 if geschafft: fehler.append(f"{lv} {name} ({wer}) ohne Kombi trotzdem geschafft: {r.get('pos')}")
+        if 'm' in pl and 'f' in pl:   # beide nacheinander (Affe vorn, Schweinchen 2,5 s später): bröckelnde Kanten o. Ä. dürfen den zweiten nicht aufhalten
+            r = await koop(g, m=ms, f=fs, plans={'m': pl['m'], 'f': [{'frames': 150}] + pl['f']}, maxFrames=5000)
+            ok = r.get('done') and all(r['pos'][w][0] >= ziel[w][0] - 0.5 and r['pos'][w][1] <= ziel[w][1] + 0.1 for w in ('m', 'f'))
+            if not ok: fehler.append(f"{lv} {name} (beide nacheinander): {r.get('pos')} {r.get('dead')}")
     for lv, name, (sc, sr), kante, zc, zr in KOMBI_ABKUERZUNG:
         if not lv.startswith(welt + '/'): continue
         if lv != aktuell: await koop_level(g, lv); aktuell = lv
