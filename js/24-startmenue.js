@@ -908,6 +908,7 @@ S.levels = {
     $('#sm-l-title').textContent = w.name;
     $('#sm-l-world').textContent = w.titel && w.titel !== w.name ? w.titel : '';
     const box = $('#sm-cards'); box.innerHTML = '';
+    box.style.setProperty('--n', this.list.length + 1);   // Kartenzahl (+ Boss) -> gleiche Spaltenbreite (Design-Politur F)
     this.list.forEach((i, j) => {
       const b = mk('<button class="lc" type="button" tabindex="-1"></button>');
       b.addEventListener('click', () => { if (this.idx === j) this.act('confirm'); else this.select(j); });
@@ -948,7 +949,9 @@ S.levels = {
       const duel = done && st && typeof levelCardStatsHTML === 'function'
         ? `<span class="duel">${levelCardStatsHTML(st)}</span>` : '';   // Tode der letzten geschafften Runde
       b.innerHTML = `<div class="n">${j + 1}</div><div><span class="nm">${CONFIG.levels[i].name}</span>${duel}${extra}</div>`;
+      b.title = CONFIG.levels[i].name;
     });
+    titelEinpassen(cards);
     const sel = cards[this.idx], pair = $('#sm-pair');
     if (sel && pair) {
       if (instant) pair.classList.add('nt');
@@ -1210,6 +1213,40 @@ $('#sm-r-go').addEventListener('click', () => S.results.next());
 $('#sm-r-pack').addEventListener('click', () => S.results.packs());
 
 // goldenes Schloss auf der Karte des neu freigeschalteten Levels: wackelt, platzt in Splitter, Karte leuchtet auf
+// Lange Level-Titel (Design-Politur F): Schrift aller Karten gemeinsam etwas kleiner (bis 85 %), damit die Titel gleich
+// groß bleiben; passt ein Titel dann noch nicht, bricht er an einer Silbe in zwei Zeilen um (<wbr>: der Name selbst
+// bleibt unverändert), erst danach kürzt CSS mit „…“. 1.7cqw = Schriftgröße von .lc .nm
+const SILBEN_ANFANG = /^(schl|schm|schn|schr|schw|sch|str|spr|ch|ck|st|sp|bl|br|dr|fl|fr|gl|gr|kl|kn|kr|pf|pl|pr|tr|zw|[b-df-hj-np-tv-zß])$/i;
+function silbenTrennen(wort) {
+  const V = /[aeiouäöüy]/i, teile = [];
+  let i = 0;
+  while (i < wort.length) {   // Vokal-Gruppe, dann Konsonanten bis zum nächsten Vokal
+    let j = i; while (j < wort.length && !V.test(wort[j])) j++;
+    let k = j; while (k < wort.length && V.test(wort[k])) k++;
+    let m = k; while (m < wort.length && !V.test(wort[m])) m++;
+    if (m >= wort.length || k === m) { teile.push(wort.slice(i)); break; }
+    let cut = m - 1;   // längster erlaubter Silbenanfang vor dem nächsten Vokal
+    for (let a = k; a < m; a++) if (SILBEN_ANFANG.test(wort.slice(a, m))) { cut = a; break; }
+    if (cut <= i + 1 || m - cut > 4) cut = m - 1;
+    teile.push(wort.slice(i, cut)); i = cut;
+  }
+  return teile.filter(Boolean);
+}
+function titelEinpassen(karten) {
+  const nms = karten.map(b => b.querySelector('.nm')).filter(Boolean);
+  const zuBreit = nm => nm.scrollWidth > nm.clientWidth + 1;
+  nms.forEach(nm => { nm.style.fontSize = ''; nm.classList.remove('zwei'); });
+  for (let k = 0.95; k >= 0.85 && nms.some(zuBreit); k -= 0.05) nms.forEach(nm => nm.style.fontSize = `calc(1.7cqw * ${k.toFixed(2)})`);
+  for (const nm of nms) if (zuBreit(nm)) {
+    const worte = nm.textContent.split(' ');
+    nm.textContent = '';
+    worte.forEach((wort, k) => {
+      if (k) nm.append(' ');
+      silbenTrennen(wort).forEach((teil, j) => { if (j) nm.append(document.createElement('wbr')); nm.append(teil); });
+    });
+    nm.classList.add('zwei');
+  }
+}
 function unlockAnimation(card, msg) {
   const shards = Array.from({ length: 10 }, (_, i) => `<i style="--a:${i * 36 + 8}deg;--d:${9 + (i % 3) * 3}cqw"></i>`).join('');
   const ov = mk(`<div class="ulock"><svg class="lock" viewBox="0 0 64 76" aria-hidden="true">

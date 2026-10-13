@@ -266,5 +266,16 @@
 #sm .isl.flash .isl-art svg{animation:islFlash .9s ease-out}
 @keyframes islFlash{0%{filter:drop-shadow(0 0 0 rgba(255,200,58,1))}50%{filter:drop-shadow(0 0 3cqw rgba(255,200,58,1))}100%{filter:none}}
 #sm #sm-m-pair{width:8cqw;z-index:3}
-#sm #sm-s-levels .cards{justify-content:center}
-#sm #sm-s-levels .lc{max-width:24cqw}
+/* Design-Politur F: alle Levelkarten gleich breit und hoch (festes Raster, Breite aus der Kartenzahl --n);
+   lange Titel werden kleiner (paint in 24-startmenue.js) und zur Not mit „…“ gekürzt; die gewählte Karte hebt sich an */
+#sm #sm-s-levels .cards{display:grid;--lcw:min(18cqw,calc((90cqw - (var(--n,7) - 1)*1.5cqw)/var(--n,7)));
+  grid-template-columns:repeat(var(--n,7),var(--lcw));grid-auto-flow:column;justify-content:center;align-items:end}
+#sm #sm-s-levels .lc{width:var(--lcw);min-width:0;max-width:none;height:40cqh;overflow:hidden;padding:1.6cqh .9cqw;
+  transition:margin-bottom .25s cubic-bezier(.3,1.4,.5,1),box-shadow .25s,border-color .25s}
+#sm #sm-s-levels .lc.sel{height:40cqh;margin-bottom:4cqh}
+#sm #sm-s-levels .lc > div{min-width:0}
+#sm #sm-s-levels .lc .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sm #sm-s-levels .lc .nm.zwei{white-space:normal;hyphens:manual;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+#sm #sm-s-levels .lc .st,#sm #sm-s-levels .lc .duel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sm #sm-s-levels .lc .st{font-size:min(1.5cqw,calc(var(--lcw)*.12))}
+#sm #sm-s-levels .lc.boss .st{white-space:normal}

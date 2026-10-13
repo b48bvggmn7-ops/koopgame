@@ -4420,6 +4420,72 @@ async def menue_ton_dezent(g):
     assert n == 1, f'5 schnelle Cursor-Schritte -> {n} Klänge'
 
 @test
+async def levelkarten_gleich_breit(g):
+    """Design-Politur F: auf der Welt-Seite sind alle Levelkarten (auch die Boss-Karte, mit und ohne Statistik-Zeile)
+    gleich breit und gleich hoch, liegen ganz im Bild und kein Titel ragt aus seiner Karte – bei 1920×1080 und 1366×768,
+    mit 6, 5 und 4 Leveln in der Welt. Lange Titel werden kleiner bzw. an einer Silbe umgebrochen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("""localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json'],
+            completed: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], stats: {'dschungel/01-dschungel.json': {m: 2, f: 3}}, bosse: []})); localStorage.setItem('monchichi.introGesehen', 'true')""")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        alle = await g.ev("GameMenu.config.levels.map((l, i) => i).filter(i => GameMenu.config.levels[i].welt === 'dschungel')")
+        assert len(alle) >= 6, alle
+        for w, h in ((1920, 1080), (1366, 768)):
+            await p.set_viewport_size({'width': w, 'height': h}); await p.wait_for_timeout(200)
+            for n in (6, 5, 4):
+                await g.ev(f"{alle}.forEach((i, k) => GameMenu.config.levels[i].welt = k < {n} ? 'dschungel' : '_weg')")
+                for welt in ('dschungel', 'ruinen'):
+                    await g.ev(f"GameMenu.show('levels', {{world: '{welt}'}})"); await p.wait_for_timeout(450)
+                    k = await g.ev("""[...document.querySelectorAll('#sm-cards .lc')].map(b => { const r = b.getBoundingClientRect(), nm = b.querySelector('.nm');
+                        return {w: r.width, h: r.height, l: r.left, r: r.right, boss: b.classList.contains('boss'), duel: !!b.querySelector('.duel'),
+                                t: nm.textContent, rausW: nm.scrollWidth - nm.clientWidth, rausH: nm.scrollHeight - nm.clientHeight, nmR: nm.getBoundingClientRect().right}; })""")
+                    wo = f'{w}x{h}, {welt}, {n} Level'
+                    if welt == 'dschungel': assert len(k) == n + 1 and k[-1]['boss'] and k[0]['duel'], f'{wo}: {k}'
+                    assert max(c['w'] for c in k) - min(c['w'] for c in k) < 1, f'{wo}: Breiten {[round(c["w"], 1) for c in k]}'
+                    assert max(c['h'] for c in k) - min(c['h'] for c in k) < 1, f'{wo}: Höhen {[round(c["h"], 1) for c in k]}'
+                    assert min(c['l'] for c in k) >= 0 and max(c['r'] for c in k) <= w, f'{wo}: Karten ragen aus dem Bild'
+                    for c in k:
+                        assert c['rausW'] <= 1 and c['rausH'] <= 2 and c['nmR'] <= c['r'], f'{wo}: Titel ragt heraus: {c}'
+            await g.ev(f"{alle}.forEach(i => GameMenu.config.levels[i].welt = 'dschungel')")
+    finally:
+        await p.set_viewport_size({'width': 1280, 'height': 720})
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+# Design-Politur A: Obergrenze für die Zeichenzeit eines Bildes (ms) bei doppelter Pixeldichte – großzügig über den
+# Messwerten (2–4 ms im Testbrowser), fängt aber Ausreißer wie die frühere Dunkel-Schicht (80–90 ms) sicher ab
+ZEICHNEN_MS_GRENZE = 20
+LEISTUNG_STELLEN = [('dschungel', 'dschungel/03-lianenschlucht.json', 360), ('ruinen', 'ruinen/04-sonnentempel.json', 300),
+                    ('hoehle', 'hoehle/02-tropfsteingang.json', 300), ('vulkan', 'vulkan/01-glutpfad.json', 340)]
+
+@test
+async def leinwand_scharf_und_schnell(g):
+    """Design-Politur A: bei doppelter Pixeldichte (DPR 2) hat die Leinwand echte 2560×1440 Pixel (RS = 2, scharf statt
+    hochskaliert), bei 4K-Dichte bis LEINWAND_MAX_BREITE; ein Bild zu zeichnen dauert in jeder Welt am Tag und in der
+    Nacht höchstens ZEICHNEN_MS_GRENZE ms (früher kostete die Dunkel-Schicht bei DPR 2 rund 90 ms)."""
+    srv = webserver(); seite = await g.p.context.browser.new_page(viewport={'width': 1280, 'height': 720}, device_scale_factor=2)
+    try:
+        await seite.goto(srv.url + 'index.html'); await seite.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        g2 = Game(seite); await startmenue_bis_level(g2)
+        r = await g2.ev("(() => { fitCanvasRes(); return {w: cvs.width, h: cvs.height, rs: RS, max: LEINWAND_MAX_BREITE}; })()")
+        assert r['w'] == 2560 and r['h'] == 1440 and r['rs'] == 2 and r['max'] >= 3840, f'Leinwand bei DPR 2: {r}'
+        zeiten = {}
+        for welt, datei, spalte in LEISTUNG_STELLEN:
+            await koop_level(g2, datei)
+            for zeit in ('mittag', 'nacht'):
+                await g2.ev(f"""(() => {{ menuScreen = null; p1.x = {spalte}*40 + 60; p2.x = {spalte}*40 + 20; p1.y = p2.y = 100;
+                    camPos = camX = {spalte}*40 - 200; setTheme(composeLook('{welt}', '{zeit}')); }})()""")
+                await g2.steps(20); await g2.ev("menuScreen = 'pause'")
+                zeiten[f'{welt}-{zeit}'] = await g2.ev("(() => { draw(); draw(); const t0 = performance.now(); for (let i = 0; i < 10; i++) draw(); return (performance.now() - t0)/10; })()")
+                await g2.ev("menuScreen = null")
+        langsam = {k: round(v, 1) for k, v in zeiten.items() if v > ZEICHNEN_MS_GRENZE}
+        assert not langsam, f'Zeichnen zu langsam (Grenze {ZEICHNEN_MS_GRENZE} ms): {langsam}; alle: {zeiten}'
+    finally:
+        await seite.close(); srv.shutdown()
+
+@test
 async def musik_und_ambiente(g):
     """Klaviermusik: Takte in F-Dur, beim Regenbogen heller (höher); Klavier/Wind/Grillen/Bach werden vorberechnet."""
     st = await g.ev("""(()=>{ const out={}; const it=musicBuild(new OfflineAudioContext(2,44100,44100), out); while(!it.next().done){}
@@ -4938,12 +5004,12 @@ async def figuren_rollen_rund(g):
       for (const a of [0, 1.1, 2.2, 3.3, 4.4]) { p1.rollAngle = a; ctx.setTransform(1, 0, 0, 1, 0, 0); rec = true; drawCharacter(p1, camX); rec = false; }
       delete ctx.rotate; delete ctx.drawImage;
       const size = Math.max(p1.w, p1.h)*1.55, hgt = size*257/308, hy = size/2 - hgt + HEAD_CENTER.monkey[1]*hgt;
-      return {piv, sz, headY: Math.round(p1.y) - p1.h*0.5 + hy, cw: cvs.width, rect: cvs.getBoundingClientRect().width, rs: RS}; })()""")
+      return {piv, sz, headY: Math.round(p1.y) - p1.h*0.5 + hy, cw: cvs.width, rect: cvs.getBoundingClientRect().width, rs: RS, max: LEINWAND_MAX_BREITE}; })()""")
     xs = {round(p[0], 2) for p in r['piv']}; ys = {round(p[1], 2) for p in r['piv']}
     assert len(xs) == 1 and len(ys) == 1, f'Drehpunkt wandert beim Rollen: {r["piv"]}'
     assert abs(list(ys)[0] - r['headY']) < 1.5, f'Drehpunkt nicht in der Kopfmitte: {r}'
     assert r['sz'] and abs(r['sz'][1]/r['sz'][0] - 257/308) < 0.002, f'Figur verzerrt: {r}'
-    assert abs(r['cw'] - min(2560, max(1280, round(r['rect'])))) <= 2 and abs(r['rs'] - r['cw']/1280) < 1e-6, f'Leinwand nicht in Bildschirmauflösung: {r}'
+    assert abs(r['cw'] - min(r['max'], max(1280, round(r['rect'])))) <= 2 and abs(r['rs'] - r['cw']/1280) < 1e-6, f'Leinwand nicht in Bildschirmauflösung: {r}'
 
 @test
 async def anzeigen_muenzen_tode(g):
@@ -6875,7 +6941,7 @@ async def leuchtkristall_dunkelzone(g):
     await g.ev("p1.x = 600; p1.y = 680; p2.x = 560; p2.y = 680")
     assert await g.ev("dunkelZonen.length") == 1 and await g.ev("leuchtKristalle.length") == 2
     # Dunkelheit an einer Stelle = Deckkraft der Dunkel-Ebene (0 = hell, 255 = schwarz)
-    dunkel = lambda wx, wy: g.ev(f"(() => {{ camX = 300; draw(); if(!dunkelCanvas) return 0; const x = Math.round(({wx} - camX)*zoom), y = Math.round({wy}*zoom + H*(1 - zoom)); return dunkelCanvas.getContext('2d').getImageData(x, y, 1, 1).data[3]; }})()")
+    dunkel = lambda wx, wy: g.ev(f"(() => {{ camX = 300; draw(); if(!dunkelCanvas) return 0; const k = dunkelCanvas.width/W, x = Math.round(({wx} - camX)*zoom*k), y = Math.round(({wy}*zoom + H*(1 - zoom))*k); return dunkelCanvas.getContext('2d').getImageData(x, y, 1, 1).data[3]; }})()")
     await g.ev("p1.x = 740; p2.x = 700; camPos = 300")
     vorher = await dunkel(1150, 560)
     aussen = await dunkel(500, 560)
