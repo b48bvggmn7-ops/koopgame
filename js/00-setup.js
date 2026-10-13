@@ -5,12 +5,14 @@
 const cvs = document.getElementById('c');
 const ctx = cvs.getContext('2d');
 const W = 1280, H = 720;   // Spielfeld in Spiel-Pixeln (alles wird in diesen Koordinaten gezeichnet)
-// Scharfes Bild: die Leinwand hat so viele echte Pixel wie auf dem Bildschirm (× Pixeldichte, höchstens 2560 breit)
+// Scharfes Bild: die Leinwand hat so viele echte Pixel wie auf dem Bildschirm (× Pixeldichte, höchstens
+// LEINWAND_MAX_BREITE breit = 4K; Design-Politur: vorher 2560)
 // statt 1280×720 hochzuskalieren. draw() setzt dazu am Anfang die Skalierung RS (Spiel-Pixel -> Leinwand-Pixel).
+const LEINWAND_MAX_BREITE = 3840;
 let RS = 1;
 function fitCanvasRes(){
   const r = cvs.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-  const want = Math.max(W, Math.min(2560, Math.round((r.width || W)*dpr)));
+  const want = Math.max(W, Math.min(LEINWAND_MAX_BREITE, Math.round((r.width || W)*dpr)));
   if(cvs.width !== want){ cvs.width = want; cvs.height = Math.round(want*H/W); }
   RS = cvs.width / W;
 }

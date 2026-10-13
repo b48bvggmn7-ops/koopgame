@@ -60,8 +60,10 @@ function dunkelZeichnen(){
   const sx = wx => (wx - camX)*zoom, sy = wy => wy*zoom + H*(1 - zoom);
   const sicht = dunkelZonen.filter(z => sx(z.x + z.w) > -80 && sx(z.x) < W + 80);
   if(!sicht.length) return;
-  if(!dunkelCanvas){ dunkelCanvas = document.createElement('canvas'); dunkelCanvas.width = W; dunkelCanvas.height = H; }
+  const k = typeof DUNKEL_AUFLOESUNG === 'number' ? DUNKEL_AUFLOESUNG : 1;   // halbe Auflösung wie die Nacht (10a)
+  if(!dunkelCanvas){ dunkelCanvas = document.createElement('canvas'); dunkelCanvas.width = Math.round(W*k); dunkelCanvas.height = Math.round(H*k); }
   const g = dunkelCanvas.getContext('2d'), F = 50*zoom;   // weicher Rand
+  g.setTransform(k, 0, 0, k, 0, 0);
   g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, W, H);
   const col = (a) => `rgba(3,2,10,${a})`;
   for(const z of sicht){
@@ -96,7 +98,7 @@ function dunkelZeichnen(){
     g.fillStyle = gr; g.beginPath(); g.arc(x, y, rr, 0, Math.PI*2); g.fill();
   }
   g.globalCompositeOperation = 'source-over';
-  ctx.drawImage(dunkelCanvas, 0, 0);
+  ctx.drawImage(dunkelCanvas, 0, 0, W, H);
 }
 // Bild eines Kristalls (Spiel und Editor): violett-türkise Spitzen auf Stein, s = Leuchtstärke 0 … 1
 function leuchtBild(c, x, y, s, schlag){
