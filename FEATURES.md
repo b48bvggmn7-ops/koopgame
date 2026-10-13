@@ -1481,6 +1481,37 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
+### Design-Politur (nur Aussehen und ein Menü-Klang – Spielablauf, Trefferflächen, Physik und Level-Format unverändert)
+- **Schärfe und Tempo:** Die Leinwand hat bis zur 4K-Breite echte Bildschirm-Pixel (`LEINWAND_MAX_BREITE` 3840, vorher
+  2560). Die Dunkel-Schicht (Nacht, Höhle, Dunkelzonen) wird in halber Auflösung gezeichnet (`DUNKEL_AUFLOESUNG`) – bei
+  doppelter Pixeldichte 2–4 ms statt bis 90 ms je Bild. Test leinwand_scharf_und_schnell (DPR 2, Grenze
+  `ZEICHNEN_MS_GRENZE` 20 ms je Bild in allen Welten, Mittag und Nacht).
+- **Zentrale Look-Tabelle** `DESIGN_LOOK` (js/10b-design-look.js) je Welt, Tageszeit und Welt+Tageszeit: dunkle Kontur
+  an den freien Rändern von Boden, Wand und Holz-Plattform („klar, aber weich“), Randlicht oben, Tiefe (Schatten unter
+  der Graskante, Erde nach unten dunkler), weicher Schatten unter schwebenden Stücken, Luftperspektive des Hintergrunds
+  (Dunst nach Tiefe, Sättigung/Helligkeit je Welt). Nachts dunkler, aber lesbar; Tageszeiten bleiben unterscheidbar.
+  Test kontrast_mindestwerte (Mindest-Kontrast Bodenkante/Hintergrund je Welt und Tageszeit: `KONTRAST_MIN`).
+- **Glanz-Muster für alle Elemente** (gemeinsam: `glanzSchatten`, `glanzFunkeln`, `glanzBand`): Stacheln aus dunklem
+  Stahl mit roten Spitzen und warmem Gefahren-Schein (bleiben besonders lesbar), Metallglanz am Haken, Checkpoint mit
+  rundem Mast und glänzendem Knauf, Münzen und Edelsteine funkeln ab und zu, Kontaktschatten unter Hebel, Druckplatte,
+  Sprungpilz, Checkpoint und Ziel, Glanzstreifen über Tür, Messingplatte und Presse, feuchter Glanz auf dem Pilzhut.
+- **Details je Welt** (js/11a-welt-details.js, in die mittlere Hintergrund-Ebene gemalt): Dschungel Lianen mit
+  Orchideen, Moos und Tau, Wasserfall mit Nebel, Sprühregen und (tagsüber) Regenbogen; Ruinen Säulenreste mit
+  Hieroglyphen und Rissen, flackernde Fackeln, Sandstaub; Höhle Tropfsteine mit fallenden Tropfen, Leuchtpilze; Vulkan
+  Felsen mit glühenden Rissen, Rauch, fallende Asche und Funken. Unscharfer Vordergrund (Farne/Felsen) **nur am unteren
+  Bildrand** und nur über Boden/Wand – nie über Lava, Gruben, Münzen, Hebeln, Checkpoints oder Türen. Test
+  welt_details_und_vordergrund.
+- **Weltkarte neu:** gemaltes Meer im Holzrahmen mit Seil-Ecken, Kompass, Wolken, Brücken und Fußspuren auf den Pfaden;
+  jede Insel mit Stimmungsfarbe, Klippe, Schaumring, Wetter (Regenwolke, Sonne, Nebel, Rauch) und Tier, sanft wippend;
+  gesperrte Welten liegen im Nebel mit Schloss (nicht grau); Affe und Schweinchen wippen auf der gewählten Insel. Alle
+  Funktionen wie bisher. Test weltkarte_gemalt_ohne_fehler.
+- **Levelkarten gleich groß:** festes Raster, alle Karten einer Welt (auch Boss-Karte, mit/ohne Statistik) gleich breit
+  und hoch; lange Titel etwas kleiner bzw. an einer Silbe in zwei Zeilen umgebrochen. Test levelkarten_gleich_breit
+  (1920×1080 und 1366×768, 4–6 Level).
+- **Menü-Klang:** kurzes, tiefes Holz-„Tock“ statt Spieluhr-Klingeln (menuTick 40 ms, menuOk 65 ms, menuStart 110 ms
+  beim Level-Start), ohne Nachhall; schnelle Cursor-Schritte klappern nicht (`MENU_TICK_ABSTAND`). Spielgeräusche
+  unverändert. Test menue_ton_dezent.
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

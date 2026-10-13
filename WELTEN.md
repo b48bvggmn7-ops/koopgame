@@ -777,6 +777,27 @@ davor einen Checkpoint; nach einem Tod ist die Lava wieder unten.
 | 600–641 | Kessel: Band, Pilz, Stege (Lava schnell) | Tempo | knapp |
 | 649–689 | Kraterschlucht: Affe an vier Haken / Schwein mit zwei Aufwinden | Seil / Segeln | knapp (Haken 2 von 3) |
 
+## Look je Welt (Design-Politur)
+
+Richtung (Nutzer-Referenzbilder): gemütlich, schön, echt, magisch, weich, verträumt, lebendig. Das Spielfeld hat den
+klarsten Kontrast und die schärfsten Kanten, der Hintergrund ist weicher, in der Ferne heller, blauer und unschärfer.
+Alle Werte stehen in `DESIGN_LOOK` (js/10b-design-look.js), die Details in js/11a-welt-details.js.
+
+| Welt | Dunst/Farbe | Details im Hintergrund | bewegt | Vordergrund unten |
+|---|---|---|---|---|
+| Dschungel | hell-grüner Dunst, satt | Lianen mit Blättern, Orchideen (violett/gelb/rosa), Moospolster, Tautropfen | Wasserfall-Nebel, Sprühregen, Regenbogen (tagsüber), Lichtstrahlen, Schmetterlinge | dunkle Farne/Blätter |
+| Ruinen | warmer Sanddunst | Säulenreste mit Hieroglyphen, Risse, Moos | Fackeln flackern, Sandstaub treibt, Eidechsen | dunkle Farne/Blätter |
+| Höhle | dunkelvioletter Nebel | Tropfsteine von oben, Leuchtpilz-Gruppen, Kristalle | Tropfen fallen, Fledermäuse (nachts) | dunkle Felsen |
+| Vulkan | rauchig-roter Dunst | Felsen mit glühenden Rissen, Rauchfahnen | Asche fällt, Funken steigen | dunkle Felsen |
+
+Tageszeiten: Abend mit violettem Dunst, Nacht mit dunkelblauem Dunst und kräftigerer Kontur; Mindest-Kontrast je Welt
+und Tageszeit prüft der Test kontrast_mindestwerte.
+
+**Notizen für Welt 4 – Wasser (noch nicht gebaut):** türkiser, heller Dunst (`DESIGN_LOOK.welt.wasser` steht schon);
+Details: Seegras und Korallen statt Lianen, Lichtflecken (Kaustik) auf dem Grund, aufsteigende Luftblasen,
+Fischschwärme in der Ferne; Vordergrund unten: dunkles Seegras. Wasserflächen selbst (elemente/wasser.js) bleiben
+klar lesbar; Strömungen sichtbar machen (feine Linien), Luft-Anzeige nie verdecken.
+
 ## Level-Dateien nach Welten (Editor-Umbau)
 
 Seit dem Editor-Umbau liegen die Level in `levels/<welt>/<nr>-<titel>.json` (Editor-Format gespiegelt in
