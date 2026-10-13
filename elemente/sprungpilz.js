@@ -42,7 +42,7 @@ elementRegistrieren({
         // federnder Stiel; leichter Schein und Glühwürmchen darüber
         elementLeuchten(x, b.y - 20, 50, '#ffcf6b');
         ctx.save(); ctx.translate(x, b.y); ctx.scale(1 + sq, 1 - sq);
-        ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(0, -1, 18, 3.5, 0, 0, Math.PI*2); ctx.fill();
+        glanzSchatten(0, -1, 24, 4.5);   // Design-Politur C: weicher Kontaktschatten statt harter Ellipse
         const stiel = ctx.createLinearGradient(-10, 0, 10, 0);
         stiel.addColorStop(0, '#e8d6b8'); stiel.addColorStop(0.5, '#fff6e6'); stiel.addColorStop(1, '#d9c3a0');
         ctx.fillStyle = '#5a3a1e'; roundRect(-11.5, -21, 23, 21, 6); ctx.fill();
@@ -56,6 +56,11 @@ elementRegistrieren({
         ctx.fillStyle = 'rgba(120,60,10,.35)'; ctx.fillRect(-27, -21, 54, 2.5);   // Hutkante
         ctx.fillStyle = '#fff3d6';
         for(const [dx, dy, r] of [[-15, -26, 4], [0, -34, 4.6], [14, -25, 3.6], [-5, -24, 2.6], [8, -31, 2.2]]){ ctx.beginPath(); ctx.ellipse(dx, dy, r, r*0.85, 0, 0, Math.PI*2); ctx.fill(); }
+        // Design-Politur C: feuchter Glanz auf dem Hut + Funkeln
+        const glanz = ctx.createRadialGradient(-10, -33, 0, -10, -33, 12);
+        glanz.addColorStop(0, 'rgba(255,255,255,.55)'); glanz.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = glanz; ctx.beginPath(); ctx.ellipse(-10, -33, 12, 6, -0.35, 0, Math.PI*2); ctx.fill();
+        glanzFunkeln(-12, -35, 6, b.x*0.04 + b.y);
         ctx.restore();
         hinweisPfeil(x, b.y - 58, '#ffcf6b');
       }

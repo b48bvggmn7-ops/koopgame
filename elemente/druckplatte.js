@@ -29,6 +29,7 @@ elementRegistrieren({
         // Auffälliger und passend zur Spielwelt (Nutzerwunsch): breite Messingplatte im Eisenrahmen mit Nieten und einem
         // Edelstein in der Verknüpfungs-Farbe (wie auf den Türen); leichter Schein, solange niemand draufsteht Glühwürmchen
         elementLeuchten(x, baseY - 8, 44, col, pl.down ? 0.5 : 1);
+        glanzSchatten(x, baseY, 34, 4);   // Design-Politur C: Kontaktschatten
         ctx.fillStyle = 'rgba(0,0,0,.28)'; roundRect(x - 29, baseY - 6, 58, 6, 2); ctx.fill();
         ctx.fillStyle = '#4a4f57'; roundRect(x - 28, baseY - 14 + d, 56, 14 - d, 3); ctx.fill();
         ctx.strokeStyle = '#2b2f35'; ctx.lineWidth = 1.5; roundRect(x - 28, baseY - 14 + d, 56, 14 - d, 3); ctx.stroke();
@@ -36,6 +37,7 @@ elementRegistrieren({
         platte.addColorStop(0, pl.down ? '#b08a3a' : '#ffe08a'); platte.addColorStop(1, pl.down ? '#7a5c1e' : '#d9a43a');
         ctx.fillStyle = platte; roundRect(x - 24, baseY - 12 + d, 48, 9 - d*0.5, 2); ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x - 22, baseY - 12 + d, 44, 1.5);
+        if(!pl.down){ ctx.save(); roundRect(x - 24, baseY - 12 + d, 48, 9 - d*0.5, 2); ctx.clip(); glanzBand(x - 24, baseY - 12 + d, 48, 9, pl.x*0.02); ctx.restore(); }   // Messing glänzt
         ctx.fillStyle = '#9aa3ad'; for(const rx of [x - 26, x + 26]){ ctx.beginPath(); ctx.arc(rx, baseY - 7 + d/2, 1.5, 0, Math.PI*2); ctx.fill(); }
         elementEdelstein(x - 12, baseY - 7.5 + d/2, 4.5, col); elementEdelstein(x + 12, baseY - 7.5 + d/2, 4.5, col);
         ctx.fillStyle = '#3b2f25'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

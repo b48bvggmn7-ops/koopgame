@@ -45,6 +45,7 @@ elementRegistrieren({
         // in der Hebel-Farbe (wie die Edelsteine auf den Türen), Steinsockel mit Eisenband; solange er aus ist, leichter
         // Schein und Glühwürmchen darüber
         if(!anyOpen) elementLeuchten(xr, baseY - 26, 44, col);
+        glanzSchatten(xr, baseY, 22, 4);   // Design-Politur C: Kontaktschatten
         ctx.save(); ctx.translate(xr, baseY-10); ctx.rotate(ang);
         ctx.strokeStyle = '#3b2412'; ctx.lineWidth = 8; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-25); ctx.stroke();
@@ -55,12 +56,14 @@ elementRegistrieren({
         ctx.fillStyle = '#4a4f57'; ctx.fillRect(-4, -19, 8, 4); ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(-4, -19, 8, 1.2);
         ctx.fillStyle = '#3b2412'; ctx.beginPath(); ctx.moveTo(0, -38); ctx.lineTo(8.5, -29); ctx.lineTo(0, -21); ctx.lineTo(-8.5, -29); ctx.closePath(); ctx.fill();
         elementEdelstein(0, -29.5, 7.5, col);
+        glanzFunkeln(-2.5, -32, 6, sw.x*0.05 + sw.y);   // Design-Politur C: Funkeln am Edelstein-Knauf
         ctx.restore();
         // Steinsockel mit Eisenband, Nummer auf einer Plakette in der Hebel-Farbe
         ctx.fillStyle = 'rgba(0,0,0,.22)'; roundRect(xr-18, baseY-11, 36, 12, 4); ctx.fill();
         const stein = ctx.createLinearGradient(0, baseY-16, 0, baseY);
         stein.addColorStop(0, '#a89c8c'); stein.addColorStop(1, '#6f655a');
         ctx.fillStyle = stein; roundRect(xr-17, baseY-16, 34, 15, 4); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(xr-14, baseY-15.5, 28, 1.3);   // Randlicht oben
         ctx.strokeStyle = '#3b2f25'; ctx.lineWidth = 1.5; roundRect(xr-17, baseY-16, 34, 15, 4); ctx.stroke();
         ctx.fillStyle = '#4a4f57'; ctx.fillRect(xr-17, baseY-10, 34, 4);
         ctx.fillStyle = '#9aa3ad'; for(const rx of [xr-13, xr+13]){ ctx.beginPath(); ctx.arc(rx, baseY-8, 1.4, 0, Math.PI*2); ctx.fill(); }

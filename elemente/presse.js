@@ -92,6 +92,9 @@ function pressenZeichnen(){
     if(x + P.w < -40 || x > VW + 40) continue;
     const warn = presseWarnung(P);
     presseBild(ctx, x, P.y, P.w, P.kette, warn, t);
+    // Design-Politur C: Glanzstreifen über den Eisenblock, Funkeln an den Stacheln (gemeinsames Muster, 10b-design-look.js)
+    ctx.save(); ctx.beginPath(); ctx.rect(x, P.y, P.w, PRESSE_HOEHE); ctx.clip(); glanzBand(x, P.y, P.w, PRESSE_HOEHE, P.x*0.01); ctx.restore();
+    glanzFunkeln(x + 7, P.y + PRESSE_HOEHE + 3, 5, P.x*0.3);
     // Staub rieselt vor dem Fall (nur Bild)
     if(warn > 0){
       ctx.fillStyle = 'rgba(200,180,160,' + (0.6*warn) + ')';

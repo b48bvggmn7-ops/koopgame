@@ -243,11 +243,15 @@ function drawDoor(s, x, col){
       ctx.fillStyle = '#9aa3ad';
       for(const rx of [x + 7, x + w/2, x + w - 7]){ ctx.beginPath(); ctx.arc(rx, by, 1.6, 0, Math.PI*2); ctx.fill(); }
     }
+    // Design-Politur C: dunkle Kontur um das Tor, Glanzstreifen wandert über die Bretter
+    ctx.strokeStyle = 'rgba(30,16,6,.6)'; ctx.lineWidth = 2; ctx.strokeRect(x + 4, y + off + 1, w - 8, h - 2);
+    glanzBand(x + 3, y + off, w - 6, h, s.x*0.01 + s.y*0.03);
     // Edelstein in Hebel-Farbe
     const gy = y + off + h*0.47;
     ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + w/2, gy - 5); ctx.lineTo(x + w/2 + 4.5, gy); ctx.lineTo(x + w/2, gy + 5); ctx.lineTo(x + w/2 - 4.5, gy); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1; ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x + w/2 - 1.5, gy - 3, 1.5, 2);
+    glanzFunkeln(x + w/2 - 1.5, gy - 2.5, 5, s.x*0.03 + s.y);
     // Unterkante (Spitzen des Tors)
     ctx.fillStyle = '#4a4f57';
     for(let i = 0; i < 3; i++){
@@ -272,15 +276,15 @@ const SPIKE_SPRITE = (()=>{
   for(let i = 0; i < n; i++){
     const cx = bw*(i + 0.5), tip = 5 + (i % 2)*2, base = 34, hw = bw*0.48;
     const L = g.createLinearGradient(cx - hw, 0, cx, 0);
-    L.addColorStop(0, '#f4f7fa'); L.addColorStop(1, '#a9b2bd');
+    L.addColorStop(0, '#e9eef3'); L.addColorStop(1, '#8e98a4');   // Design-Politur C: dunkler, satter Stahl
     g.fillStyle = L; g.beginPath(); g.moveTo(cx, tip); g.lineTo(cx - hw, base); g.lineTo(cx, base); g.closePath(); g.fill();
     const R = g.createLinearGradient(cx, 0, cx + hw, 0);
-    R.addColorStop(0, '#7f8995'); R.addColorStop(1, '#454c56');
+    R.addColorStop(0, '#5f6874'); R.addColorStop(1, '#2c3139');
     g.fillStyle = R; g.beginPath(); g.moveTo(cx, tip); g.lineTo(cx, base); g.lineTo(cx + hw, base); g.closePath(); g.fill();
-    g.strokeStyle = '#262a30'; g.lineWidth = 1.1; g.lineJoin = 'round';
+    g.strokeStyle = '#121418'; g.lineWidth = 1.5; g.lineJoin = 'round';
     g.beginPath(); g.moveTo(cx - hw, base); g.lineTo(cx, tip); g.lineTo(cx + hw, base); g.stroke();
     g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.arc(cx - 0.6, tip + 3, 0.9, 0, Math.PI*2); g.fill();   // Glanz an der Spitze
-    g.fillStyle = 'rgba(160,30,30,.55)'; g.beginPath(); g.moveTo(cx, tip); g.lineTo(cx - 1.4, tip + 3.2); g.lineTo(cx + 1.4, tip + 3.2); g.closePath(); g.fill(); // rötliche Spitze = gefährlich
+    g.fillStyle = 'rgba(190,30,25,.75)'; g.beginPath(); g.moveTo(cx, tip); g.lineTo(cx - 2.2, tip + 5); g.lineTo(cx + 2.2, tip + 5); g.closePath(); g.fill(); // rote Spitze = gefährlich
   }
   // Eisenleiste mit Nieten
   const B = g.createLinearGradient(0, 33, 0, 40);
@@ -803,6 +807,12 @@ function drawSolidLook(s, look, x){
     ctx.beginPath(); ctx.arc(x,h.y,12,0,Math.PI*2); ctx.stroke();
     ctx.fillStyle = colorOf('--hook-core');
     ctx.beginPath(); ctx.arc(x,h.y,4.5,0,Math.PI*2); ctx.fill();
+    // Design-Politur C: Metallglanz am Ring (oben links hell, unten rechts dunkel) + Funkeln
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(x, h.y, 12, Math.PI*1.05, Math.PI*1.6); ctx.stroke();
+    ctx.strokeStyle = 'rgba(10,20,40,.35)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(x, h.y, 13, Math.PI*0.1, Math.PI*0.65); ctx.stroke();
+    glanzFunkeln(x - 7, h.y - 7, 6, h.x*0.11 + h.y);
   }
 
   for(const sp of spikes){
@@ -812,7 +822,12 @@ function drawSolidLook(s, look, x){
     ctx.save();
     ctx.translate(Math.round(x), sp.y - sp.h/2);
     ctx.rotate((sp.dir||0) * Math.PI/2);
+    // Design-Politur C: Gefahr bleibt besonders lesbar – dunkler, warm-roter Schein hinter den Spitzen
+    const gw = ctx.createLinearGradient(0, -sp.h/2, 0, sp.h/2);
+    gw.addColorStop(0, 'rgba(120,20,10,0)'); gw.addColorStop(0.55, 'rgba(120,20,10,.22)'); gw.addColorStop(1, 'rgba(60,10,5,.3)');
+    ctx.fillStyle = gw; ctx.fillRect(-sp.w/2 + 1, -sp.h/2 + 6, sp.w - 2, sp.h - 8);
     ctx.drawImage(SPIKE_SPRITE, -sp.w/2, -sp.h/2, sp.w, sp.h);
+    glanzFunkeln(-sp.w/2 + 5 + ((sp.x/40)%4)*10, -sp.h/2 + 9, 5, sp.x*0.37 + sp.y);
     ctx.restore();
   }
 
@@ -836,10 +851,16 @@ function drawSolidLook(s, look, x){
     const x = Math.round(cp.x - camX), base = cp.y;
     if(x < -40 || x > VW+60) continue;
     const poleH = 66;
-    // Mast + Fuß
+    // Mast + Fuß (Design-Politur C: Kontaktschatten, runder Mast, glänzender Knauf)
+    glanzSchatten(x, base, 15, 3.5);
     ctx.fillStyle = '#8a7a66'; roundRect(x-7, base-5, 14, 5, 2); ctx.fill();
-    ctx.fillStyle = '#efe6d6'; ctx.fillRect(x-2, base-poleH, 4, poleH);
-    ctx.fillStyle = '#ffcf4d'; ctx.beginPath(); ctx.arc(x, base-poleH-2, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(x-6, base-5, 12, 1.2);
+    const mast = ctx.createLinearGradient(x-2, 0, x+2, 0); mast.addColorStop(0, '#fffaf0'); mast.addColorStop(1, '#b9ad98');
+    ctx.fillStyle = mast; ctx.fillRect(x-2, base-poleH, 4, poleH);
+    const knauf = ctx.createRadialGradient(x-1.5, base-poleH-3.5, 0.5, x, base-poleH-2, 4.5);
+    knauf.addColorStop(0, '#fff6c8'); knauf.addColorStop(0.5, '#ffcf4d'); knauf.addColorStop(1, '#c48a12');
+    ctx.fillStyle = knauf; ctx.beginPath(); ctx.arc(x, base-poleH-2, 4, 0, Math.PI*2); ctx.fill();
+    glanzFunkeln(x - 1.5, base-poleH-3.5, 5, cp.x*0.07);
     // Fahne: unten grau, geht hoch, sobald beide vorbei sind
     const raised = i <= activeCp && cp.raiseT;
     let k = raised ? Math.min(1, (tNowCp - cp.raiseT)/700) : 0;
@@ -882,10 +903,12 @@ function drawSolidLook(s, look, x){
       ang = tNow*0.004 + c.x*0.013;
     }
     drawCoin3D(x, c.y - lift, COIN_DRAW_R*scale, ang, pal, alpha, !c.taken);
+    if(!c.taken) glanzFunkeln(x - 4, c.y - lift - 5, 6, c.x*0.13 + c.y*0.07);   // Design-Politur C
   }
 
   const gx = goal.x-camX;
   const signImg = ASSETS.signExit;
+  glanzSchatten(gx, goal.y, 26, 5);   // Design-Politur C: Kontaktschatten unter dem Ziel-Schild
   if(signImg.complete && signImg.naturalWidth){
     const sw=56, sh=56;
     ctx.drawImage(signImg, gx-sw/2, goal.y-sh, sw, sh);
