@@ -4517,6 +4517,36 @@ async def kontrast_mindestwerte(g):
         await kx.close(); srv.shutdown()
 
 @test
+async def welt_details_und_vordergrund(g):
+    """Design-Politur D: jede Welt bekommt ihre Details (Ruinen: Fackeln, Höhle: Tropfsteine mit Tropfen, Dschungel:
+    Wasserfall mit Regenbogen, Vulkan: Asche/Funken) und einen Vordergrund am unteren Bildrand. Der Vordergrund liegt
+    nur unterhalb von VORDERGRUND_H über Boden/Wand – nie auf Münzen, Hebeln, Checkpoints, Türen, Stacheln oder Lava."""
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(800)
+        await startmenue_bis_level(g)
+        for welt, datei, spalte in LEISTUNG_STELLEN:
+            await koop_level(g, datei)
+            r = await g.ev(f"""(() => {{ setTheme(composeLook('{welt}', 'mittag')); return {{welt: detailWelt, fackeln: BG_FACKELN.length, tropfen: BG_TROPFEN.length,
+                vorne: !!vordergrundBild, ebene: BG_LAYERS.includes(detailEbene), wf: BG_WATERFALLS.length}}; }})()""")
+            assert r['welt'] == welt and r['vorne'] and r['ebene'], f'{welt}: Details fehlen {r}'
+            if welt == 'ruinen': assert r['fackeln'] > 0, r
+            if welt == 'hoehle': assert r['tropfen'] > 0, r
+            # Vordergrund: höchste Stelle = H - VORDERGRUND_H; alle Spiel-Elemente im Bild liegen darüber
+            for sp in range(0, 900, 60):
+                tief = await g.ev(f"""(() => {{ camX = {sp}*40; const zy = wy => wy*zoom + H*(1 - zoom) + CEILING_MARGIN, grenze = H - VORDERGRUND_H, out = [];
+                    const im = x => (x - camX)*zoom > -20 && (x - camX)*zoom < W + 20;
+                    for(const c of coins) if(im(c.x) && zy(c.y + 12) > grenze) out.push(['Münze', c.x, c.y]);
+                    for(const s of switchDefs) if(im(s.x) && zy(s.y) > grenze) out.push(['Hebel', s.x, s.y]);
+                    for(const c of checkpointDefs) if(im(c.x) && zy(c.y - 20) > grenze) out.push(['Checkpoint', c.x, c.y]);
+                    for(const d of solids) if(d.type === 'door' && im(d.x) && zy(d.y) > grenze) out.push(['Tür', d.x, d.y]);
+                    for(const k of spikes) if(im(k.x) && zy(k.y - k.h) > grenze) out.push(['Stachel', k.x, k.y]);
+                    return out; }})()""")
+                assert not tief, f'{welt}: Element liegt im Vordergrund-Streifen: {tief[:3]}'
+    finally:
+        await kx.close(); srv.shutdown()
+
+@test
 async def leinwand_scharf_und_schnell(g):
     """Design-Politur A: bei doppelter Pixeldichte (DPR 2) hat die Leinwand echte 2560×1440 Pixel (RS = 2, scharf statt
     hochskaliert), bei 4K-Dichte bis LEINWAND_MAX_BREITE; ein Bild zu zeichnen dauert in jeder Welt am Tag und in der

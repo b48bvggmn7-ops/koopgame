@@ -143,7 +143,9 @@ function buildBackground(){
   makeLayer(0.07, g=> bgFar(g, T.far));
   const backLayer = makeLayer(0.14, g=> bgBack(g, T.back));
   for(const wf of BG_WATERFALLS) wf.layer = backLayer;
-  makeLayer(0.27, g=> bgMid(g, T.mid));
+  const welt = typeof designLook === 'function' ? designLook().welt : 'dschungel';
+  const midLayer = makeLayer(0.27, g=>{ bgMid(g, T.mid); if(typeof bgDetail === 'function') bgDetail(g, welt); });   // + Details je Welt (11a)
+  if(typeof detailEbeneSetzen === 'function') detailEbeneSetzen(midLayer, welt);
   makeLayer(0.45, g=> bgNear(g, T.near));
 }
 let bgMistCol = '240,248,238';
@@ -504,6 +506,7 @@ function drawWaterfallFlow(off, t){
         ctx.beginPath(); ctx.ellipse(x + (i - 1.5)*14, wf.bottom - 8 - ph*16, 10 + ph*14, 5 + ph*6, 0, 0, Math.PI*2); ctx.fill();
       }
       ctx.globalAlpha = 1;
+      if(typeof wasserfallExtras === 'function') wasserfallExtras(x, wf, t);   // Nebel, Sprühregen, Regenbogen (11a)
     }
   }
 }
@@ -518,6 +521,8 @@ function drawBackground(){
     if(BG_TW - off < W) ctx.drawImage(L.c, BG_TW - off, 0);
     if(L.par === 0.03 && !THEME.dark) drawSkyFlock(t);
     if(BG_WATERFALLS.length && BG_WATERFALLS[0].layer === L) drawWaterfallFlow(off, t);
+    if(typeof detailEbene !== 'undefined' && detailEbene === L) detailBewegt(off, t);   // Fackeln, Tropfen (11a)
   }
+  if(typeof detailTeilchen === 'function') detailTeilchen(t);   // Sandstaub, Asche, Funken (11a)
   if(typeof weatherBgTint === 'function') weatherBgTint();   // Regen: Hintergrund dunkler
 }

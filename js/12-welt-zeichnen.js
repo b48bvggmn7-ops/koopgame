@@ -950,6 +950,7 @@ function drawSolidLook(s, look, x){
     ctx.fillStyle = '#ffd23f'; ctx.fillText(msg, gx, goal.y-79);
   }
   ctx.restore();
+  if(typeof vordergrundZeichnen === 'function') vordergrundZeichnen();   // Design-Politur D: Vordergrund nur am unteren Bildrand (11a)
   if(THEME.tint){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
   drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
   drawFakeGlints();      // dezentes Glitzern an Scheinwänden (auch im Dunkeln sichtbar)
