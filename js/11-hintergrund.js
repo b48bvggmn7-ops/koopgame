@@ -18,9 +18,22 @@ function makeLayer(par, draw, opt){
   const c = bgCanvas(BG_TW, H), g = c.getContext('2d');
   draw(g);
   if(THEME.layerWash) bgHaze(g, THEME.layerWash.col, THEME.layerWash.a);   // Tageszeit-Schicht (10a-themen.js), nur neue Levels
+  designEbene(c, g, par);   // Design-Politur B: Luftperspektive je Welt/Tageszeit (10b-design-look.js)
   const L = {c, par, drift: (opt && opt.drift) || 0};
   BG_LAYERS.push(L);
   return L;
+}
+// Luftperspektive (Design-Politur B): Sättigung/Helligkeit der Ebene und Dunst nach Tiefe – einmal beim Aufbau,
+// kostet pro Bild nichts. Weit weg = mehr Dunst, so steht das Spielfeld klar davor.
+function designEbene(c, g, par){
+  if(typeof designLook !== 'function') return;
+  const D = designLook();
+  if((D.hgSatt !== 1 || D.hgHell !== 1) && 'filter' in g){
+    const tmp = bgCanvas(c.width, c.height); tmp.getContext('2d').drawImage(c, 0, 0);
+    g.clearRect(0, 0, c.width, c.height);
+    g.save(); g.filter = `saturate(${D.hgSatt}) brightness(${D.hgHell})`; g.drawImage(tmp, 0, 0); g.restore();
+  }
+  if(D.dunst && D.dunst.a > 0) bgHaze(g, D.dunst.col, D.dunst.a*designTiefe(par));
 }
 // Ebene einfärben (nur wo schon etwas gezeichnet ist) -> Luftperspektive / Dunst
 function bgHaze(g, color, alpha){

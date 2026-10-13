@@ -4460,6 +4460,62 @@ ZEICHNEN_MS_GRENZE = 20
 LEISTUNG_STELLEN = [('dschungel', 'dschungel/03-lianenschlucht.json', 360), ('ruinen', 'ruinen/04-sonnentempel.json', 300),
                     ('hoehle', 'hoehle/02-tropfsteingang.json', 300), ('vulkan', 'vulkan/01-glutpfad.json', 340)]
 
+# Design-Politur B: Mindest-Kontrast (WCAG-Kontrastverhältnis, Median) zwischen Bodenoberkante und dem Hintergrund
+# 16 px darüber, je Welt und Tageszeit (gemessen nach der Politur, mit etwas Abstand gegen Zufall von Tieren/Teilchen)
+KONTRAST_MIN = {'mittag': 1.15, 'abend': 1.25, 'nacht': 1.4}
+KONTRAST_MIN_WELT = {'hoehle': 1.4, 'vulkan': 1.7}   # eigene Untergrenze für dunkle Welten (gilt zu jeder Tageszeit)
+KONTRAST_JS = r"""() => {
+  const L = (r, g, b) => { const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }; return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b); };
+  const img = ctx.getImageData(0, 0, cvs.width, cvs.height).data, Wc = cvs.width, Hc = cvs.height;
+  const lumAt = (sx, sy, r) => { let s = 0, n = 0; for(let dy = -r; dy <= r; dy++) for(let dx = -r; dx <= r; dx++){ const x = Math.round(sx)+dx, y = Math.round(sy)+dy;
+    if(x < 0 || y < 0 || x >= Wc || y >= Hc) continue; const i = (y*Wc+x)*4; s += L(img[i], img[i+1], img[i+2]); n++; } return n ? s/n : null; };
+  const scr = (wx, wy) => [((wx - camX)*zoom)*RS, (wy*zoom + H*(1-zoom) + CEILING_MARGIN)*RS];
+  const cr = (a, b) => (Math.max(a, b) + 0.05)/(Math.min(a, b) + 0.05), out = [];
+  const sichtbar = (x, y) => x > 8 && y > 8 && x < Wc - 8 && y < Hc - 8;
+  for(const so of solids){
+    if(so.type === 'oneway' || so.gone || so.w < 40) continue;
+    for(let px = so.x + 20; px < so.x + so.w - 10; px += 80){
+      const [ix, iy] = scr(px, so.y + 5), [ox, oy] = scr(px, so.y - 16);
+      if(!sichtbar(ix, iy) || !sichtbar(ox, oy)) continue;
+      if(solids.some(o => o !== so && px >= o.x && px < o.x + o.w && so.y - 16 >= o.y && so.y - 16 < o.y + o.h)) continue;
+      const a = lumAt(ix, iy, 2*RS), b = lumAt(ox, oy, 2*RS); if(a != null && b != null) out.push(cr(a, b));
+    }
+  }
+  return out; }"""
+
+@test
+async def kontrast_mindestwerte(g):
+    """Design-Politur B: in jeder Welt (Dschungel, Ruinen, Höhle, Vulkan) zu Mittag, Abend und Nacht hebt sich die
+    Bodenoberkante deutlich vom Hintergrund ab – Median des Kontrastverhältnisses mindestens KONTRAST_MIN (Tageszeit)
+    bzw. KONTRAST_MIN_WELT; die Tageszeiten bleiben unterscheidbar (mittlere Helligkeit Mittag > Abend > Nacht)."""
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(800)
+        await startmenue_bis_level(g)
+        zu_wenig, werte = {}, {}
+        for welt, datei, spalte in LEISTUNG_STELLEN:
+            await koop_level(g, datei)
+            hell = {}
+            for zeit in ('mittag', 'abend', 'nacht'):
+                pool = []; hs = []
+                for sp in (spalte, spalte + 200):
+                    await g.ev(f"""(() => {{ menuScreen = null; deathState = null; p1.x = {sp}*40 + 60; p2.x = {sp}*40 + 20; p1.y = p2.y = 100;
+                        camPos = camX = Math.max(0, {sp}*40 - 200); setTheme(composeLook('{welt}', '{zeit}')); weatherForce('sun'); }})()""")
+                    await g.steps(25); await g.ev(f"menuScreen = 'pause'; camPos = Math.max(0, {sp}*40 - 200)"); await g.ev("draw()")
+                    pool += await p.evaluate(KONTRAST_JS)
+                    hs.append(await g.ev("(() => { const d = ctx.getImageData(0, 0, cvs.width, cvs.height).data; let s = 0; for(let i = 0; i < d.length; i += 400) s += d[i] + d[i+1] + d[i+2]; return s/(d.length/400)/765; })()"))
+                    await g.ev("menuScreen = null")
+                med = sorted(pool)[len(pool)//2] if pool else 0
+                grenze = KONTRAST_MIN_WELT.get(welt, KONTRAST_MIN[zeit])
+                werte[f'{welt}-{zeit}'] = round(med, 2); hell[zeit] = sum(hs)/len(hs)
+                if len(pool) < 5 or med < grenze: zu_wenig[f'{welt}-{zeit}'] = (round(med, 2), grenze, len(pool))
+            if welt in ('dschungel', 'ruinen'):
+                assert hell['mittag'] > hell['abend'] > hell['nacht'], f'{welt}: Tageszeiten nicht unterscheidbar {hell}'
+        print('    Kontrast:', werte)
+        assert not zu_wenig, f'Kontrast zu gering (Wert, Grenze, Messpunkte): {zu_wenig}'
+    finally:
+        await kx.close(); srv.shutdown()
+
 @test
 async def leinwand_scharf_und_schnell(g):
     """Design-Politur A: bei doppelter Pixeldichte (DPR 2) hat die Leinwand echte 2560×1440 Pixel (RS = 2, scharf statt
@@ -4467,7 +4523,7 @@ async def leinwand_scharf_und_schnell(g):
     Nacht höchstens ZEICHNEN_MS_GRENZE ms (früher kostete die Dunkel-Schicht bei DPR 2 rund 90 ms)."""
     srv = webserver(); seite = await g.p.context.browser.new_page(viewport={'width': 1280, 'height': 720}, device_scale_factor=2)
     try:
-        await seite.goto(srv.url + 'index.html'); await seite.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await seite.goto(srv.url + 'index.html'); await seite.wait_for_function("GameMenu.levelsReady()", timeout=8000); await seite.wait_for_timeout(800)
         g2 = Game(seite); await startmenue_bis_level(g2)
         r = await g2.ev("(() => { fitCanvasRes(); return {w: cvs.width, h: cvs.height, rs: RS, max: LEINWAND_MAX_BREITE}; })()")
         assert r['w'] == 2560 and r['h'] == 1440 and r['rs'] == 2 and r['max'] >= 3840, f'Leinwand bei DPR 2: {r}'

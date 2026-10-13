@@ -340,6 +340,62 @@ function elementEdelstein(x, y, r, col){
   ctx.strokeStyle = 'rgba(40,22,8,.7)'; ctx.lineWidth = 1.2; ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x - r*0.35, y - r*0.6, r*0.3, r*0.4);
 }
+// ---------- Design-Politur B: Kontur, Randlicht und Tiefe an Boden, Wand und Plattform ----------
+// Werte je Welt/Tageszeit: DESIGN_LOOK (10b-design-look.js). Nur an freien Rändern (nicht dort, wo ein Nachbarstück
+// anschließt), damit zusammengesetzte Flächen nahtlos bleiben.
+function freieSpannen(list, w){
+  const out = []; let st = null;
+  for(let px = 0; px <= w; px += 4){
+    const free = !list.some(([a, b]) => Math.min(w - 0.5, Math.max(0.5, px)) >= a - 0.5 && Math.min(w - 0.5, Math.max(0.5, px)) <= b + 0.5);
+    if(free && st === null) st = px;
+    if((!free || px >= w) && st !== null){ out.push([st, free ? w : px]); st = null; }
+  }
+  return out;
+}
+function rundPfad(x, y, w, h, r){
+  const {tl = 0, tr = 0, bl = 0, br = 0} = r;
+  ctx.beginPath();
+  ctx.moveTo(x + tl, y);
+  ctx.lineTo(x + w - tr, y); if(tr) ctx.arcTo(x + w, y, x + w, y + tr, tr);
+  ctx.lineTo(x + w, y + h - br); if(br) ctx.arcTo(x + w, y + h, x + w - br, y + h, br);
+  ctx.lineTo(x + bl, y + h); if(bl) ctx.arcTo(x, y + h, x, y + h - bl, bl);
+  ctx.lineTo(x, y + tl); if(tl) ctx.arcTo(x, y, x + tl, y, tl);
+  ctx.closePath();
+}
+// dunkle Kontur an den freien Rändern; oben = freie Spannen der Oberseite, unten frei = !nb.b
+function designKontur(x, y, w, h, r, nb, oben){
+  const D = designLook(); if(!D.kante) return;
+  const lw = D.kanteBreite, i = lw/2;
+  // Linie: an Seiten mit Nachbar nach außen geschoben (fällt dann aus dem Ausschnitt), oben nur über freien Spannen
+  const x0 = nb.l ? x - lw - 3 : x + i, x1 = nb.r ? x + w + lw + 3 : x + w - i, y1 = nb.b ? y + h + lw + 3 : y + h - i;
+  const Lc = nb.l ? x : x - 4, Rc = nb.r ? x + w : x + w + 4, Bc = nb.b ? y + h : y + h + 4;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(Lc, y + lw + 1, Rc - Lc, Bc - y - lw - 1);
+  for(const [a, b] of oben){ const l = a === 0 ? Lc : x + a, rr = b === w ? Rc : x + b; if(rr > l) ctx.rect(l, y - 4, rr - l, lw + 6); }
+  ctx.clip();
+  const k = v => Math.max(0, (v || 0) - i);
+  rundPfad(x0, y + i, x1 - x0, y1 - y - i, {tl: nb.l ? 0 : k(r.tl), tr: nb.r ? 0 : k(r.tr), bl: nb.l || nb.b ? 0 : k(r.bl), br: nb.r || nb.b ? 0 : k(r.br)});
+  ctx.strokeStyle = `rgba(${D.kanteFarbe},${D.kante})`; ctx.lineWidth = lw; ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+// Holz-Plattform: Randlicht oben + dunkle Kontur rundum
+function designPlattform(x, y, w, h){
+  const D = designLook();
+  if(D.licht > 0){ ctx.fillStyle = `rgba(255,240,210,${D.licht*0.8})`; ctx.fillRect(x + 3, y + 1, w - 6, 1.5); }
+  if(D.kante > 0){ ctx.strokeStyle = `rgba(${D.kanteFarbe},${D.kante*0.85})`; ctx.lineWidth = 2; roundRect(x + 1, y + 1, w - 2, h - 2, 4); ctx.stroke(); }
+}
+// weicher Schatten unter einem schwebenden Stück (fällt auf den Hintergrund)
+function designSchattenUnten(x, yUnten, w, r){
+  const D = designLook(); if(!D.bodenSchatten || yUnten >= LEVEL_H - 2) return;
+  const hh = D.bodenSchattenHoehe, g = ctx.createLinearGradient(0, yUnten, 0, yUnten + hh);
+  g.addColorStop(0, `rgba(${D.kanteFarbe},${D.bodenSchatten})`); g.addColorStop(1, `rgba(${D.kanteFarbe},0)`);
+  ctx.fillStyle = g;
+  const e = Math.min(w/3, (r || 0) + 4);
+  ctx.beginPath(); ctx.moveTo(x + e, yUnten); ctx.lineTo(x + w - e, yUnten); ctx.lineTo(x + w - e*1.6, yUnten + hh); ctx.lineTo(x + e*1.6, yUnten + hh); ctx.closePath(); ctx.fill();
+}
+
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_BACK_MIN..CAM_BACK_PUSH px,
   // Totzone gegen Wackeln, cameraTarget in 09-kamera.js), damit man möglichst viel von dem sieht,
@@ -446,6 +502,21 @@ function draw(){
     ctx.lineTo(x+bl, y+h); if(bl) ctx.arcTo(x, y+h, x, y+h-bl, bl);
     ctx.lineTo(x, y+tl); if(tl) ctx.arcTo(x, y, x+tl, y, tl);
     ctx.closePath(); ctx.fill();
+    // Tiefe (Design-Politur B): Schatten unter der Graskante, Erde nach unten dunkler
+    const DL = designLook();
+    if(DL.innenSchatten > 0 && h >= 24){
+      ctx.save(); ctx.clip();
+      const sg = ctx.createLinearGradient(0, y + GRASS_H, 0, y + GRASS_H + 14);
+      sg.addColorStop(0, `rgba(${DL.kanteFarbe},${DL.innenSchatten})`); sg.addColorStop(1, `rgba(${DL.kanteFarbe},0)`);
+      ctx.fillStyle = sg;
+      for(const [a, b] of freieSpannen(nb.above, w)) ctx.fillRect(x + a, y + GRASS_H, b - a, 14);   // nur unter echtem Gras
+      if(!nb.b && h >= 60){
+        const bg = ctx.createLinearGradient(0, y + h - 40, 0, y + h);
+        bg.addColorStop(0, `rgba(${DL.kanteFarbe},0)`); bg.addColorStop(1, `rgba(${DL.kanteFarbe},${DL.innenSchatten*0.8})`);
+        ctx.fillStyle = bg; ctx.fillRect(x, y + h - 40, w, 40);
+      }
+      ctx.restore();
+    }
     // weiche Wellenstreifen in der Erde
     if(h >= 30){
       ctx.strokeStyle = pal.stripe; ctx.lineWidth = 3;
@@ -490,6 +561,8 @@ function draw(){
       ctx.fillStyle = pal.grassTop;
       ctx.fillRect(x+a+Math.max(capL,2), y+2, Math.max(0, (b-a)-Math.max(capL,2)-Math.max(capR,2)), 3);
     }
+    designKontur(x, y, w, h, {tl, tr, bl, br}, nb, spans);   // Design-Politur B
+    if(!nb.b) designSchattenUnten(x, y + h, w, Math.max(bl, br));
     // Risse beim Bröckelboden (fest an der Welt verankert, damit sie nicht flackern)
     if(cracked){
       ctx.strokeStyle = 'rgba(80,40,15,.75)'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
@@ -564,6 +637,11 @@ function draw(){
     ctx.fillStyle = WALL.side;
     if(!nb.l) ctx.fillRect(x, y+tl, 2, h-tl-bl);
     if(!nb.r) ctx.fillRect(x+w-3, y+tr, 3, h-tr-br);
+    // Design-Politur B: Randlicht oben, dunkle Kontur an freien Rändern, weicher Schatten darunter
+    const DL = designLook(), oben = spans(nb.above);
+    if(DL.licht > 0){ ctx.fillStyle = `rgba(255,255,255,${DL.licht})`; for(const [a,b] of oben){ const l = a===0 ? tl : 0, r = b===w ? tr : 0; ctx.fillRect(x+a+l, y+1.5, Math.max(0, (b-a)-l-r), 1.5); } }
+    designKontur(x, y, w, h, {tl, tr, bl, br}, {l: nb.l, r: nb.r, b: !spans(nb.below).length ? true : nb.b}, oben);
+    for(const [a,b] of spans(nb.below)) designSchattenUnten(x + a, y + h, b - a, 0);
   }
 
   // Bewegte Stücke sehen aus wie normaler Boden/Wand. Die Textur ist am Stück selbst verankert
@@ -695,6 +773,7 @@ function drawSolidLook(s, look, x){
         ctx.fillStyle = colorOf(s.type==='platform' ? '--platform' : '--ground');
         ctx.fillRect(x,s.y,s.w,s.h);
       }
+      if(s.type==='platform') designPlattform(x, s.y, s.w, s.h);   // Design-Politur B
     }
   }
 
