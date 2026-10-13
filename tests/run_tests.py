@@ -7347,6 +7347,25 @@ KOMBI_STELLEN_BOT = [
     ('hoehle/01-kristallhoehle.json', 'Pilz-Grube (359)', kat(357, 14), kat(356, 14), lambda: kombi_pilz_grube(359, 367), {'m': (367, 10), 'f': (367, 10)}),
     ('hoehle/02-tropfsteingang.json', 'Pilz-Grube (266)', kat(264, 15), kat(263, 15), lambda: kombi_pilz_grube(266, 274), {'m': (274, 11), 'f': (274, 11)}),
     ('hoehle/02-tropfsteingang.json', 'Pilz-Grube (445)', kat(443, 15), kat(442, 15), lambda: kombi_pilz_grube(445, 453), {'m': (453, 11), 'f': (453, 11)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Pilz-Grube (185)', kat(183, 15), kat(182, 15), lambda: kombi_pilz_grube(185, 193), {'m': (193, 11), 'f': (193, 11)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False), {'m': (360, 9), 'f': (360, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (370)', kat(368, 15), kat(367, 15), lambda: kombi_flammen_kamin(370, 16, flamme=False), {'m': (384, 9), 'f': (384, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False), {'m': (560, 9), 'f': (560, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False), {'m': (584, 9), 'f': (584, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False), {'m': (782, 9), 'f': (782, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Pilz-Grube (188)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_grube(188, 196), {'m': (196, 11), 'f': (196, 11)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False), {'m': (366, 9), 'f': (366, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (376)', kat(374, 15), kat(373, 15), lambda: kombi_flammen_kamin(376, 16, flamme=False), {'m': (390, 9), 'f': (390, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (766)', kat(764, 15), kat(763, 15), lambda: kombi_flammen_kamin(766, 16, flamme=False), {'m': (780, 9), 'f': (780, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Pilz-Grube (44)', kat(42, 15), kat(41, 15), lambda: kombi_pilz_grube(44, 52), {'m': (52, 11), 'f': (52, 11)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Pilz-Grube (194)', kat(192, 15), kat(191, 15), lambda: kombi_pilz_grube(194, 202), {'m': (202, 11), 'f': (202, 11)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (349)', kat(347, 15), kat(346, 15), lambda: kombi_flammen_kamin(349, 16, flamme=False), {'m': (363, 9), 'f': (363, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False), {'m': (392, 9), 'f': (392, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (558)', kat(556, 15), kat(555, 15), lambda: kombi_flammen_kamin(558, 16, flamme=False), {'m': (572, 9), 'f': (572, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, flamme=False), {'m': (594, 9), 'f': (594, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (728)', kat(726, 15), kat(725, 15), lambda: kombi_flammen_kamin(728, 16, flamme=False), {'m': (742, 9), 'f': (742, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (752)', kat(750, 15), kat(749, 15), lambda: kombi_flammen_kamin(752, 16, flamme=False), {'m': (766, 9), 'f': (766, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False), {'m': (194, 9), 'f': (194, 9)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False), {'m': (582, 9), 'f': (582, 9)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False), {'m': (774, 9), 'f': (774, 9)}),
@@ -7421,6 +7440,12 @@ async def kombi_stellen_hoehle(g):
     """Kombi-Nachschärfen, Welt Höhle: Kamin-Gruben (Wandsprung + Haken / Wandsprung + Segeln) und Leuchtpilz-Gruben
     (Pilz + Haken / Pilz + Segeln) mit dem Koop-Bot – mit Kombi geschafft (auch beide nacheinander), ohne gescheitert."""
     await kombi_stellen_pruefen(g, 'hoehle')
+
+@test
+async def kombi_stellen_vulkan(g):
+    """Kombi-Nachschärfen, Welt Vulkan: Lava-Kamine (Wandsprung + Haken / Wandsprung + Segeln) und Lava-Pilz-Gruben
+    (Pilz + Haken / Pilz + Segeln) mit dem Koop-Bot – mit Kombi geschafft (auch beide nacheinander), ohne in der Lava."""
+    await kombi_stellen_pruefen(g, 'vulkan')
 
 @test
 async def kombi_testlevel(g):
