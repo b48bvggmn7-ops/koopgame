@@ -7336,6 +7336,9 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (170)', kat(165, 15), kat(164, 15), lambda: kombi_pilz_grube(170, 180), {'m': (180, 11), 'f': (180, 11)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_grube(190, 200), {'m': (200, 11), 'f': (200, 11)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (392)', kat(387, 15), kat(386, 15), lambda: kombi_pilz_grube(392, 402), {'m': (402, 11), 'f': (402, 11)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16), {'m': (182, 9), 'f': (182, 9)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (303)', kat(301, 15), kat(300, 15), lambda: kombi_flammen_kamin(303, 16), {'m': (317, 9), 'f': (317, 9)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16), {'m': (598, 9), 'f': (598, 9)}),
 ]
 # Abkürzungs-Proben: liegen zwei Kombi-Stellen dicht hintereinander, darf man die zweite NICHT vom erhöhten Landeplatz der
 # ersten aus ohne neue Kombi schaffen (sonst ist sie keine eigene Stelle, sondern „Kette“ in tests/kombi_ausnahmen.json).
@@ -7389,6 +7392,12 @@ async def kombi_stellen_dschungel(g):
     """Kombi-Nachschärfen, Welt Dschungel: jede eingebaute Kombi-Stelle (KOMBI_STELLEN_BOT) mit dem Koop-Bot – mit Kombi
     geschafft, ohne Kombi gescheitert."""
     await kombi_stellen_pruefen(g, 'dschungel')
+
+@test
+async def kombi_stellen_ruinen(g):
+    """Kombi-Nachschärfen, Welt Ruinen: Flammen-Kamine (Wandsprung + Haken / Wandsprung + Segeln, Flamme im Takt) mit dem
+    Koop-Bot – mit Kombi und Timing geschafft (auch beide nacheinander), ohne Haken/Schirm gescheitert."""
+    await kombi_stellen_pruefen(g, 'ruinen')
 
 @test
 async def kombi_testlevel(g):
