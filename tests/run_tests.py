@@ -7270,6 +7270,19 @@ def kombi_kamin_grube(x0, s):
             'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(rw + 1)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}],
             'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
 
+def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True):
+    """Kompakter Kamin (linke Säule x0, Breite 3) -> Stachelgrube (9) mit Haken -> Landeplatz 6 Reihen hoch; über der Grube
+    eine Flamme im Takt (Timing: losklettern 20 Schritte nach dem Zünden). s = Bodenreihe."""
+    rw = x0 + breite + 1; l0 = rw + 1 + grube; fx = (rw + 4) * 40
+    warte = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': 20}] if flamme else []
+    kamin = [k_lauf(x0 + 2, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(s - 8)} && P.vy < 0 && P.vx > 1', 'frames': 900}]
+    lande = {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'until': 'P.grounded', 'frames': 300}
+    return {'m': warte + kamin + [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
+                                  {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
+            'f': warte + kamin + [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])],
+            'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
+            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
+
 # je Stelle: (Level, Name, Start Affe, Start Schweinchen, Pläne {wer: Plan}, Pläne ohne Kombi {wer: Plan} -> müssen scheitern)
 def _d1_haken_pilz():
     greif = lambda bed='true': {'hold': ['right'], 'hookWhen': f'({bed})', 'until': 'P.hookAttached', 'frames': 300}
