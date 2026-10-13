@@ -1021,29 +1021,83 @@ S.levels = {
 /* =====================================================================
    5a) WELTKARTE (Ausbau 3) – je Welt eine Insel in der Reihenfolge aus worlds.json, Pfade dazwischen
    ===================================================================== */
-const WORLD_LOOK = {   // Farben + Zeichen je Welt (unbekannte Welten: Dschungel-Grün)
-  dschungel: { land: '#5fae4a', dark: '#2f6b2c', sand: '#e9d39a', icon: 'palm' },
-  ruinen:    { land: '#c9ad6e', dark: '#7d6435', sand: '#efdcab', icon: 'column' },
-  hoehle:    { land: '#7a6a9c', dark: '#3f3460', sand: '#d8cfe8', icon: 'crystal' },
-  wasser:    { land: '#4aa3c9', dark: '#1f5f80', sand: '#cfeaf2', icon: 'wave' },
-  vulkan:    { land: '#a8503a', dark: '#4e2018', sand: '#e7b48e', icon: 'volcano' },
+const WORLD_LOOK = {   // Farben + Zeichen je Welt (unbekannte Welten: Dschungel-Grün); mood = Stimmungsfarbe der Insel (Design-Politur E)
+  dschungel: { land: '#5fae4a', dark: '#2f6b2c', sand: '#e9d39a', icon: 'palm',    mood: '#8dff9e', wetter: 'regen', tier: 'vogel' },
+  ruinen:    { land: '#c9ad6e', dark: '#7d6435', sand: '#efdcab', icon: 'column',  mood: '#ffd27a', wetter: 'sonne', tier: 'vogel' },
+  hoehle:    { land: '#7a6a9c', dark: '#3f3460', sand: '#d8cfe8', icon: 'crystal', mood: '#c3a2ff', wetter: 'nebel', tier: 'fledermaus' },
+  wasser:    { land: '#4aa3c9', dark: '#1f5f80', sand: '#cfeaf2', icon: 'wave',    mood: '#86e6ff', wetter: 'wellen', tier: 'fisch' },
+  vulkan:    { land: '#a8503a', dark: '#4e2018', sand: '#e7b48e', icon: 'volcano', mood: '#ff9a5a', wetter: 'rauch', tier: 'funken' },
 };
-function islandSVG(look) {
+// Insel als gemaltes SVG (Design-Politur E): Schatten im Wasser, Schaumring (bewegt), Klippe, Sandsaum, Land mit
+// Licht von links oben, Bewuchs, Zeichen der Welt, kleines Wetter und ein Tier (sanft animiert über CSS)
+function islandSVG(look, key) {
+  const id = 'isl-' + (key || look.icon);
   const ic = {
-    palm: `<path d="M50 62 Q49 44 52 30" stroke="#6b4423" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-           <path d="M52 30 Q40 22 30 30 M52 30 Q64 20 74 28 M52 30 Q46 18 38 16 M52 30 Q60 16 68 14" stroke="#2f7a32" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+    palm: `<path d="M50 60 Q49 44 52 30" stroke="#6b4423" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+           <path d="M52 30 Q40 22 30 30 M52 30 Q64 20 74 28 M52 30 Q46 18 38 16 M52 30 Q60 16 68 14" stroke="#2f7a32" stroke-width="5" fill="none" stroke-linecap="round"/>
+           <path d="M52 30 Q40 23 31 30 M52 30 Q63 21 73 28" stroke="#58b04a" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <circle cx="30" cy="52" r="6" fill="#3f8a38"/><circle cx="72" cy="52" r="5" fill="#3f8a38"/><circle cx="29" cy="50" r="2.5" fill="#6fc35a"/>
+           <circle cx="36" cy="54" r="1.6" fill="#c46ad8"/><circle cx="68" cy="55" r="1.4" fill="#ffd84a"/>`,
     column: `<rect x="40" y="30" width="7" height="30" fill="#f3e6c2" stroke="#7d6435" stroke-width="1.5"/><rect x="55" y="36" width="7" height="24" fill="#f3e6c2" stroke="#7d6435" stroke-width="1.5"/>
-             <rect x="37" y="27" width="28" height="5" fill="#f3e6c2" stroke="#7d6435" stroke-width="1.5"/>`,
-    crystal: `<path d="M42 60 L46 36 L52 60 Z M50 60 L57 28 L63 60 Z" fill="#9fe8ff" stroke="#3f3460" stroke-width="1.5"/>`,
+             <rect x="37" y="27" width="28" height="5" fill="#f3e6c2" stroke="#7d6435" stroke-width="1.5"/><path d="M43 34 v4 M43 42 h2 M58 40 v3" stroke="#a88a55" stroke-width="1"/>
+             <circle cx="30" cy="54" r="4" fill="#6f8a3a"/><circle cx="74" cy="55" r="3.5" fill="#6f8a3a"/>`,
+    crystal: `<path d="M42 60 L46 36 L52 60 Z M50 60 L57 28 L63 60 Z" fill="#9fe8ff" stroke="#3f3460" stroke-width="1.5"/>
+              <path d="M57 28 L59 60 L63 60 Z M46 36 L48 60 L52 60 Z" fill="#5fb8e0" opacity=".7"/><path d="M33 60 L36 48 L39 60 Z" fill="#d4a2ff" stroke="#3f3460"/>`,
     wave: `<path d="M32 46 Q38 40 44 46 T56 46 T68 46 M34 54 Q40 48 46 54 T58 54 T70 54" stroke="#e8fbff" stroke-width="3" fill="none" stroke-linecap="round"/>`,
     volcano: `<path d="M34 60 L46 32 L56 32 L68 60 Z" fill="#5a2a1e" stroke="#2e120e" stroke-width="1.5"/><path d="M46 32 Q51 22 56 32" fill="#ff8a2a"/>
-              <path d="M49 33 L47 46 M53 33 L56 44" stroke="#ffb03a" stroke-width="2"/>`,
+              <path d="M49 33 L47 46 M53 33 L56 44" stroke="#ffb03a" stroke-width="2"/><path d="M38 60 L46 40 L48 60 Z" fill="#7a3a28" opacity=".6"/>`,
   }[look.icon] || '';
+  const wetter = {
+    regen: `<g class="w-wolke"><ellipse cx="74" cy="12" rx="11" ry="5" fill="#f4fbff" opacity=".9"/><ellipse cx="68" cy="13" rx="7" ry="4" fill="#e2eef6"/>
+            <path d="M68 19 l-1 4 M73 19 l-1 4 M78 19 l-1 4" stroke="#9fd2ff" stroke-width="1.2" stroke-linecap="round" class="w-regen"/></g>`,
+    sonne: `<g class="w-sonne"><circle cx="80" cy="20" r="3" fill="#ffe27a"/><path d="M80 14 v-2 M80 26 v2 M74 20 h-2 M86 20 h2 M76 16 l-1.4 -1.4 M84 24 l1.4 1.4 M84 16 l1.4 -1.4 M76 24 l-1.4 1.4" stroke="#ffe27a" stroke-width="1" stroke-linecap="round"/></g>`,
+    nebel: `<g class="w-nebel"><ellipse cx="34" cy="40" rx="18" ry="4" fill="#efe6ff" opacity=".35"/><ellipse cx="66" cy="34" rx="14" ry="3" fill="#efe6ff" opacity=".3"/></g>`,
+    wellen: `<g class="w-wolke"><ellipse cx="22" cy="14" rx="9" ry="4" fill="#ffffff" opacity=".85"/></g>`,
+    rauch: `<g class="w-rauch"><circle cx="52" cy="24" r="4" fill="#8a7a7a" opacity=".55"/><circle cx="55" cy="16" r="5.5" fill="#9a8a88" opacity=".4"/><circle cx="58" cy="7" r="7" fill="#aa9a98" opacity=".28"/></g>`,
+  }[look.wetter] || '';
+  const tier = {
+    vogel: `<path class="t-vogel" d="M20 22 q3 -3 6 0 q3 -3 6 0" stroke="#3b2a1a" stroke-width="1.2" fill="none" stroke-linecap="round"/>`,
+    fledermaus: `<path class="t-vogel" d="M22 24 q2 -3 4 -1 q2 -2 4 0 q2 -2 4 1" stroke="#2a2036" stroke-width="1.4" fill="none"/>`,
+    fisch: `<path class="t-fisch" d="M84 66 q4 -3 8 0 q-4 3 -8 0 z M84 66 l-3 -2 v4 z" fill="#ffb25a"/>`,
+    funken: `<g class="t-funken"><circle cx="48" cy="26" r="1" fill="#ffcf5a"/><circle cx="55" cy="22" r=".9" fill="#ff8a3a"/><circle cx="51" cy="18" r=".8" fill="#ffd27a"/></g>`,
+  }[look.tier] || '';
   return `<svg viewBox="0 0 100 80" aria-hidden="true">
-    <ellipse cx="50" cy="62" rx="46" ry="14" fill="rgba(70,120,140,.25)"/>
+    <defs>
+      <radialGradient id="${id}-l" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity=".35"/><stop offset=".45" stop-color="${look.land}"/><stop offset="1" stop-color="${look.dark}"/></radialGradient>
+      <linearGradient id="${id}-k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${look.dark}"/><stop offset="1" stop-color="#1c2a2e"/></linearGradient>
+    </defs>
+    <ellipse cx="50" cy="66" rx="47" ry="12" fill="rgba(10,40,60,.35)"/>
+    <ellipse class="schaum" cx="50" cy="63" rx="44" ry="11" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.3" stroke-dasharray="7 5"/>
+    <path d="M12 60 Q16 70 34 70 Q50 74 66 70 Q86 70 90 60 Z" fill="url(#${id}-k)"/>
     <path d="M10 60 Q12 44 30 42 Q38 30 56 34 Q74 30 84 44 Q94 50 90 60 Q70 70 50 68 Q24 70 10 60 Z" fill="${look.sand}" stroke="${look.dark}" stroke-width="1.2"/>
-    <path d="M16 58 Q18 48 32 46 Q40 36 56 39 Q72 36 80 47 Q88 52 84 58 Q66 64 50 62 Q28 64 16 58 Z" fill="${look.land}"/>
-    ${ic}</svg>`;
+    <path d="M16 58 Q18 48 32 46 Q40 36 56 39 Q72 36 80 47 Q88 52 84 58 Q66 64 50 62 Q28 64 16 58 Z" fill="url(#${id}-l)"/>
+    <path d="M20 52 Q26 46 34 46" stroke="rgba(255,255,255,.45)" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    ${ic}${wetter}${tier}</svg>`;
+}
+// Dekoration der Karte (Seil-Ecken, Kompass, Wolken, Fußspuren, Brücken) – eigenes SVG, getrennt vom Pfad
+function karteDeko(pts) {
+  const spuren = [], bruecken = [];
+  for (let j = 1; j < pts.length; j++) {
+    const [x0, y0] = pts[j - 1], [x1, y1] = pts[j], mx = (x0 + x1) / 2;
+    const bez = t => { const u = 1 - t; return [u*u*u*x0 + 3*u*u*t*mx + 3*u*t*t*mx + t*t*t*x1, u*u*u*y0 + 3*u*u*t*y0 + 3*u*t*t*y1 + t*t*t*y1]; };
+    for (let k = 1; k < 9; k++) {
+      if (k === 4 || k === 5) continue;   // Mitte: Brücke
+      const t = 0.12 + k*0.085, [x, y] = bez(t), [xa, ya] = bez(t + 0.01), a = Math.atan2(ya - y, xa - x)*180/Math.PI, s = k % 2 ? 1 : -1;
+      spuren.push(`<ellipse cx="${(x + s*0.35*Math.sin(a*Math.PI/180)).toFixed(2)}" cy="${(y - s*0.6*Math.cos(a*Math.PI/180)).toFixed(2)}" rx=".55" ry=".9" transform="rotate(${(a + 90).toFixed(0)} ${x.toFixed(2)} ${y.toFixed(2)})"/>`);
+    }
+    const [bx, by] = bez(0.5), [bx2, by2] = bez(0.52), ba = Math.atan2((by2 - by)*0.56, bx2 - bx)*180/Math.PI;
+    bruecken.push(`<g transform="translate(${bx.toFixed(2)} ${by.toFixed(2)}) rotate(${ba.toFixed(0)}) scale(.6 1.5)">
+      <rect x="-3.4" y="-.9" width="6.8" height="1.8" fill="#8a5a2a" rx=".3"/><path d="M-2.4 -.9 v1.8 M-.8 -.9 v1.8 M.8 -.9 v1.8 M2.4 -.9 v1.8" stroke="#4a2c10" stroke-width=".3"/>
+      <path d="M-3.4 -1.1 Q0 -.4 3.4 -1.1 M-3.4 1.1 Q0 1.8 3.4 1.1" stroke="#d9b77a" stroke-width=".35" fill="none"/></g>`);
+  }
+  const ecke = (x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r})"><path d="M0 0 h7 M0 0 v12" stroke="#d9b77a" stroke-width="1.1" stroke-linecap="round"/>
+    <circle r="1.6" fill="#b88a4a" stroke="#6b4220" stroke-width=".4"/><path d="M-.9 -.9 l1.8 1.8 M.9 -.9 l-1.8 1.8" stroke="#6b4220" stroke-width=".3"/></g>`;
+  return `<svg class="wm-deko" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <g class="wm-wolken"><ellipse cx="18" cy="12" rx="9" ry="3" fill="rgba(255,255,255,.22)"/><ellipse cx="62" cy="9" rx="12" ry="3.4" fill="rgba(255,255,255,.18)"/><ellipse cx="88" cy="90" rx="10" ry="3" fill="rgba(255,255,255,.14)"/></g>
+    <g class="wm-spuren" fill="rgba(255,236,190,.55)">${spuren.join('')}</g>${bruecken.join('')}
+    <g transform="translate(6 86) scale(.55 1)" class="wm-kompass"><circle r="5" fill="rgba(255,240,200,.25)" stroke="#d9b77a" stroke-width=".4"/>
+      <path d="M0 -4.5 L1 0 L0 4.5 L-1 0 Z" fill="#d9b77a"/><path d="M-4.5 0 L0 1 L4.5 0 L0 -1 Z" fill="#a8844a"/><path d="M0 -4.5 L1 0 L-1 0 Z" fill="#ff8a6a"/></g>
+    ${ecke(1.5, 2.5, 0)}${ecke(98.5, 2.5, 90)}${ecke(98.5, 97.5, 180)}${ecke(1.5, 97.5, 270)}</svg>`;
 }
 S.map = {
   el: $('#sm-s-map'), idx: 0, worlds: [],
@@ -1054,15 +1108,15 @@ S.map = {
     if (k < 0) { k = 0; this.worlds.forEach((w, j) => { if (worldUnlocked(w, this.worlds)) k = j; }); }   // letzte offene Welt
     this.idx = k;
     const box = $('#sm-wm');
-    $$('.isl, .pair', box).forEach(e => e.remove());
+    $$('.isl, .pair', box).forEach(e => e.remove());   // (Deko wird unten neu aufgebaut)
     const n = this.worlds.length, pts = [];
     this.worlds.forEach((w, j) => {
       // Inseln von links nach rechts im Zickzack verteilt (Werte in % der Karte)
       const x = n > 1 ? 11 + 78 * j / (n - 1) : 50, y = j % 2 ? 66 : 38;
       pts.push([x, y]);
       const look = WORLD_LOOK[w.id] || WORLD_LOOK.dschungel;
-      const b = mk(`<button class="isl" type="button" tabindex="-1" style="left:${x}%;top:${y}%"></button>`);
-      b.innerHTML = `<div class="isl-art">${islandSVG(look)}</div><div class="isl-lab"><b></b><small></small><span class="boss"></span></div>`;
+      const b = mk(`<button class="isl" type="button" tabindex="-1" style="left:${x}%;top:${y}%;--mood:${look.mood};--bob:${(j*0.7).toFixed(1)}s"></button>`);
+      b.innerHTML = `<div class="isl-art">${islandSVG(look, w.id)}<i class="isl-nebel"></i></div><div class="isl-lab"><b></b><small></small><span class="boss"></span></div>`;
       b.addEventListener('click', () => { if (this.idx === j) this.act('confirm'); else this.select(j); });
       box.appendChild(b);
     });
@@ -1073,6 +1127,8 @@ S.map = {
       d += `M${x0} ${y0} C${mx} ${y0} ${mx} ${y1} ${x1} ${y1} `;
     }
     $('#sm-wm-path').innerHTML = `<path d="${d}" class="road"/>`;
+    $$('.wm-deko', box).forEach(e => e.remove());
+    box.insertBefore(mk(karteDeko(pts)), $('#sm-wm-path').nextSibling);   // Seil-Ecken, Kompass, Fußspuren, Brücken (Design-Politur E)
     box.appendChild(mk(`<div class="pair nt" id="sm-m-pair">${monkeySVG()}${pigSVG()}</div>`));
     const open = this.worlds.filter(w => worldUnlocked(w, this.worlds)).length, all = this.worlds.filter(w => w.idx.length).length;
     $('#sm-m-count').innerHTML = `Welten<b>${open} / ${all}</b>`;

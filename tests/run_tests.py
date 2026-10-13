@@ -6136,6 +6136,37 @@ async def wk_inseln(g):
       info: b.querySelector('small').textContent, boss: !!b.querySelector('.boss .ico') }))""")
 
 @test
+async def weltkarte_gemalt_ohne_fehler(g):
+    """Design-Politur E: die Weltkarte lädt ohne JavaScript-Fehler; gemaltes Meer mit Seil-Ecken, Kompass, Brücken und
+    Fußspuren; jede Insel hat ihre Stimmungsfarbe (--mood), ein eigenes Wetter und ein Tier; gesperrte Welten liegen im
+    Nebel (nicht grau); Affe und Schweinchen wippen auf der gewählten Insel."""
+    srv = webserver(); p = g.p; fehler = []
+    p.on('pageerror', lambda e: fehler.append(str(e)))
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: [], stats: {}}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(700)
+        r = await g.ev("""(() => { const box = document.querySelector('#sm-wm'), isl = [...box.querySelectorAll('.isl')];
+          const deko = box.querySelector('.wm-deko');
+          return {deko: !!deko, ecken: deko ? deko.querySelectorAll('g[transform^="translate"] circle').length : 0, bruecken: deko ? deko.querySelectorAll('rect').length : 0,
+            spuren: deko ? deko.querySelectorAll('.wm-spuren ellipse').length : 0, pfade: document.querySelectorAll('#sm-wm-path path').length,
+            mood: isl.map(b => getComputedStyle(b).getPropertyValue('--mood').trim()),
+            wetter: isl.map(b => !!b.querySelector('[class^="w-"]')), tier: isl.map(b => !!b.querySelector('[class^="t-"]')),
+            nebel: isl.map(b => b.classList.contains('lock') ? getComputedStyle(b.querySelector('.isl-nebel')).opacity : null),
+            grau: isl.filter(b => b.classList.contains('lock')).map(b => getComputedStyle(b.querySelector('.isl-art svg')).filter),
+            wippen: getComputedStyle(document.querySelector('#sm-m-pair > *')).animationName}; })()""")
+        assert r['deko'] and r['ecken'] >= 4 and r['bruecken'] == len(r['mood']) - 1 and r['spuren'] > 0 and r['pfade'] == 1, r
+        assert all(r['mood']) and len(set(r['mood'])) == len(r['mood']), f'Stimmungsfarben: {r["mood"]}'
+        assert all(r['wetter']) and all(r['tier']), r
+        assert all(n == '1' for n in r['nebel'] if n is not None), f'gesperrte Welten ohne Nebel: {r["nebel"]}'
+        assert all('grayscale' not in f for f in r['grau']), f'gesperrte Welten grau: {r["grau"]}'
+        assert r['wippen'] == 'paarWippen', r
+        assert not fehler, fehler
+    finally:
+        srv.shutdown()
+
+@test
 async def weltkarte_und_navigation(g):
     """Ausbau 3: „Fortfahren“ öffnet die Weltkarte (Inseln in der Reihenfolge aus worlds.json, Pfade, Fortschritt x/y Level,
     Boss-Symbol); gesperrte Welten verschleiert mit Schloss, Wasser ohne Level = „Bald“ (nicht anwählbar). Tasten wie in
