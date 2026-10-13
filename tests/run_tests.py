@@ -7343,6 +7343,9 @@ KOMBI_STELLEN_BOT = [
     ('ruinen/02-mondnacht.json', 'Flammen-Kamin (89)', kat(87, 14), kat(86, 14), lambda: kombi_flammen_kamin(89, 15), {'m': (103, 8), 'f': (103, 8)}),
     ('ruinen/03-fallengang.json', 'Flammen-Kamin (579)', kat(577, 15), kat(576, 15), lambda: kombi_flammen_kamin(579, 16), {'m': (593, 9), 'f': (593, 9)}),
     ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16), {'m': (594, 9), 'f': (594, 9)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False), {'m': (194, 9), 'f': (194, 9)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False), {'m': (582, 9), 'f': (582, 9)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False), {'m': (774, 9), 'f': (774, 9)}),
 ]
 # Abkürzungs-Proben: liegen zwei Kombi-Stellen dicht hintereinander, darf man die zweite NICHT vom erhöhten Landeplatz der
 # ersten aus ohne neue Kombi schaffen (sonst ist sie keine eigene Stelle, sondern „Kette“ in tests/kombi_ausnahmen.json).
@@ -7402,6 +7405,12 @@ async def kombi_stellen_ruinen(g):
     """Kombi-Nachschärfen, Welt Ruinen: Flammen-Kamine (Wandsprung + Haken / Wandsprung + Segeln, Flamme im Takt) mit dem
     Koop-Bot – mit Kombi und Timing geschafft (auch beide nacheinander), ohne Haken/Schirm gescheitert."""
     await kombi_stellen_pruefen(g, 'ruinen')
+
+@test
+async def kombi_stellen_hoehle(g):
+    """Kombi-Nachschärfen, Welt Höhle: Kamin-Gruben (Wandsprung + Haken / Wandsprung + Segeln) und Leuchtpilz-Gruben
+    (Pilz + Haken / Pilz + Segeln) mit dem Koop-Bot – mit Kombi geschafft (auch beide nacheinander), ohne gescheitert."""
+    await kombi_stellen_pruefen(g, 'hoehle')
 
 @test
 async def kombi_testlevel(g):
