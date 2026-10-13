@@ -7343,6 +7343,8 @@ KOMBI_STELLEN_BOT = [
     ('ruinen/02-mondnacht.json', 'Flammen-Kamin (89)', kat(87, 14), kat(86, 14), lambda: kombi_flammen_kamin(89, 15), {'m': (103, 8), 'f': (103, 8)}),
     ('ruinen/03-fallengang.json', 'Flammen-Kamin (579)', kat(577, 15), kat(576, 15), lambda: kombi_flammen_kamin(579, 16), {'m': (593, 9), 'f': (593, 9)}),
     ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16), {'m': (594, 9), 'f': (594, 9)}),
+    ('hoehle/01-kristallhoehle.json', 'Pilz-Grube (273)', kat(271, 14), kat(270, 14), lambda: kombi_pilz_grube(273, 281), {'m': (281, 10), 'f': (281, 10)}),
+    ('hoehle/01-kristallhoehle.json', 'Pilz-Grube (359)', kat(357, 14), kat(356, 14), lambda: kombi_pilz_grube(359, 367), {'m': (367, 10), 'f': (367, 10)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False), {'m': (194, 9), 'f': (194, 9)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False), {'m': (582, 9), 'f': (582, 9)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False), {'m': (774, 9), 'f': (774, 9)}),
