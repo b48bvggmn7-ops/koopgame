@@ -28,11 +28,10 @@ function makeLayer(par, draw, opt){
 function designEbene(c, g, par){
   if(typeof designLook !== 'function') return;
   const D = designLook();
-  if((D.hgSatt !== 1 || D.hgHell !== 1) && 'filter' in g){
-    const tmp = bgCanvas(c.width, c.height); tmp.getContext('2d').drawImage(c, 0, 0);
-    g.clearRect(0, 0, c.width, c.height);
-    g.save(); g.filter = `saturate(${D.hgSatt}) brightness(${D.hgHell})`; g.drawImage(tmp, 0, 0); g.restore();
-  }
+  // Helligkeit/Sättigung als billige Schleier (statt Filter-Kopie der ganzen Ebene – die verdoppelte die Aufbauzeit)
+  if(D.hgSatt < 1) bgHaze(g, '#8a8a8a', Math.min(0.5, (1 - D.hgSatt)*0.8));
+  if(D.hgHell > 1) bgHaze(g, '#ffffff', Math.min(0.4, (D.hgHell - 1)*1.5));
+  else if(D.hgHell < 1) bgHaze(g, '#000000', Math.min(0.5, (1 - D.hgHell)*1.2));
   if(D.dunst && D.dunst.a > 0) bgHaze(g, D.dunst.col, D.dunst.a*designTiefe(par));
 }
 // Ebene einfärben (nur wo schon etwas gezeichnet ist) -> Luftperspektive / Dunst
@@ -467,7 +466,7 @@ function bgNear(g, N){
   }
   bgHaze(g, N.haze, 0.18);
 }
-buildBackground();
+// (erster Aufbau am Ende von 11a-welt-details.js, damit die Welt-Details gleich dabei sind – nur einmal beim Start)
 
 // ferner Vogelschwarm, der ab und zu durch den Himmel zieht (nur Deko)
 function drawSkyFlock(t){

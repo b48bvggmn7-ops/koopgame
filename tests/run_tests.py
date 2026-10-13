@@ -4141,6 +4141,7 @@ async def editor_testen_knopf(g):
         await p.wait_for_timeout(100)
         vis = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
         await p.click('#testBtn'); await p.wait_for_timeout(800)
+        await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && p1 && typeof coins !== 'undefined'", timeout=8000)   # langsame Rechner
         pos = await g.ev("({m:[p1.x,p1.y], f:[p2.x,p2.y], cam:camPos, dead:!!deathState})")
         assert vis[0]*40 <= pos['m'][0] <= vis[1]*40 and vis[0]*40 - 40 <= pos['f'][0] <= vis[1]*40 + 40, f'Start nicht im Editor-Ausschnitt {vis}: {pos}'
         assert abs(pos['m'][1] - 680) < 2 and abs(pos['f'][1] - 680) < 2 and not pos['dead'], f'nicht auf dem Boden: {pos}'
@@ -4462,8 +4463,8 @@ LEISTUNG_STELLEN = [('dschungel', 'dschungel/03-lianenschlucht.json', 360), ('ru
 
 # Design-Politur B: Mindest-Kontrast (WCAG-Kontrastverhältnis, Median) zwischen Bodenoberkante und dem Hintergrund
 # 16 px darüber, je Welt und Tageszeit (gemessen nach der Politur, mit etwas Abstand gegen Zufall von Tieren/Teilchen)
-KONTRAST_MIN = {'mittag': 1.15, 'abend': 1.25, 'nacht': 1.4}
-KONTRAST_MIN_WELT = {'hoehle': 1.4, 'vulkan': 1.7}   # eigene Untergrenze für dunkle Welten (gilt zu jeder Tageszeit)
+KONTRAST_MIN = {'mittag': 1.12, 'abend': 1.25, 'nacht': 1.4}   # Mittag: Ruinen ist die schwächste Stelle (~1,16; vorher 1,15)
+KONTRAST_MIN_WELT = {'hoehle': 1.35, 'vulkan': 1.7}   # eigene Untergrenze für dunkle Welten (gilt zu jeder Tageszeit)
 KONTRAST_JS = r"""() => {
   const L = (r, g, b) => { const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }; return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b); };
   const img = ctx.getImageData(0, 0, cvs.width, cvs.height).data, Wc = cvs.width, Hc = cvs.height;

@@ -23,7 +23,7 @@ const DESIGN_LOOK = {
   },
   welt: {
     dschungel: {dunst: {col: '#e8f4f0', a: 0.34}, hgSatt: 1.0, hgHell: 1.05, kanteFarbe: '24,30,14'},
-    ruinen:    {dunst: {col: '#f8f0de', a: 0.34}, hgSatt: 0.95, hgHell: 1.05, kanteFarbe: '52,32,16'},
+    ruinen:    {dunst: {col: '#f8f0de', a: 0.34}, hgSatt: 1.0, hgHell: 1.12, kanteFarbe: '52,32,16'},
     wasser:    {dunst: {col: '#e8f7f6', a: 0.3}, hgSatt: 1.0, hgHell: 1.04, kanteFarbe: '20,40,44'},
     hoehle:    {dunst: {col: '#120e24', a: 0.4}, hgSatt: 0.8, hgHell: 0.8, kanteFarbe: '6,4,14', kante: 0.7, licht: 0.4},
     vulkan:    {dunst: {col: '#26100e', a: 0.28}, hgSatt: 0.9, hgHell: 0.85, kanteFarbe: '8,2,2', kante: 0.7, licht: 0.38},

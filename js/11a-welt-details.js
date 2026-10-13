@@ -250,4 +250,4 @@ function vordergrundZeichnen(){
   if(BG_TW - off < W) ctx.drawImage(vordergrundBild, 0, 80 - VORDERGRUND_H, BG_TW, VORDERGRUND_H, BG_TW - off, y, BG_TW, VORDERGRUND_H);
   ctx.restore();
 }
-buildBackground();   // erster Aufbau mit Details (11-hintergrund.js hat ihn vor dieser Datei schon einmal ohne gemacht)
+buildBackground();   // erster Aufbau des Hintergrunds (mit Details) – einmal beim Start
