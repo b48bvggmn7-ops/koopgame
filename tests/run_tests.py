@@ -4695,7 +4695,8 @@ async def level_themen(g):
     # dunkles Thema: Bild um die Figur heller als weit weg
     await g.ev("setTheme('hoehle')"); await g.p.wait_for_timeout(400)
     hell = await g.ev("""(()=>{ const sx=Math.round((p1.x-camX)*zoom), sy=Math.round((p1.y-p1.h*0.5)*zoom+H*(1-zoom));
-        const a = darkCtx.getImageData(sx, sy, 1, 1).data[3], b = darkCtx.getImageData(Math.min(W-2, sx+600), 60, 1, 1).data[3]; return [a, b]; })()""")
+        const k = darkCanvas.width/W;   // Dunkel-Schicht in halber Auflösung (Design-Politur)
+        const a = darkCtx.getImageData(Math.round(sx*k), Math.round(sy*k), 1, 1).data[3], b = darkCtx.getImageData(Math.round(Math.min(W-2, sx+600)*k), Math.round(60*k), 1, 1).data[3]; return [a, b]; })()""")
     assert hell[0] < hell[1], f'kein Licht um die Figur: {hell}'
     # ohne Thema: Dschungel
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 260, 'y': 680}))
