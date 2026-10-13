@@ -71,7 +71,7 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, spiegel: 0.18, kristallAn: 0.16, kristallAus: 0.12, bandUm: 0.18, tropfen: 0.07, eisRutsch: 0.1, leuchtAn: 0.18, leuchtFlacker: 0.08, lavaBlubb: 0.12, lavaSteigt: 0.3, lavaZisch: 0.24, presseStampf: 0.3, presseKette: 0.14, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.12, menuOk: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, spiegel: 0.18, kristallAn: 0.16, kristallAus: 0.12, bandUm: 0.18, tropfen: 0.07, eisRutsch: 0.1, leuchtAn: 0.18, leuchtFlacker: 0.08, lavaBlubb: 0.12, lavaSteigt: 0.3, lavaZisch: 0.24, presseStampf: 0.3, presseKette: 0.14, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.07, menuOk: 0.11, menuStart: 0.14};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -240,8 +240,11 @@ function* sfxBuild(a, out){
                      grains(b, 0.02, 0.25, 40, 1500, 5000, 0.0004, 0.0015, 0.3, 0.4, 'decay'); return b; },
     heart:     ()=>{ const b = mk(0.35); puff(b, 0, 0.15, 900, 0.5, 0, 0.05); thump(b, 0, 220, 330, 0.06, 0.4); return b; },
     birdFlap:  ()=>{ const b = mk(0.5); for(let i = 0; i < 9; i++) swish(b, i*0.045, 0.04, 900, 1800, 1.0, 0.5*(1 - i/10), rnd(-0.3, 0.3), 0.3); return b; },
-    menuTick:  ()=>{ const b = mk(0.08); modal(b, 0, 2600, wood, 0.003, 0.6, 0, 0.8); return b; },
-    menuOk:    ()=>{ const b = mk(0.5); thump(b, 0, 300, 520, 0.05, 0.5); modal(b, 0.02, NOTE(88), musicbox, 0.3, 0.35, 0, 0.05); return b; },
+    // Menü-Klänge (Design-Politur): kurz, weich, tief – gedämpftes Holz statt Spieluhr-Klingeln (Länge MENU_TON_MS)
+    menuTick:  ()=>{ const b = mk(MENU_TON_MS.tick/1000); thump(b, 0, 360, 260, 0.03, 0.32); modal(b, 0, 640, wood, 0.0035, 0.16, 0, 0.12); return b; },
+    menuOk:    ()=>{ const b = mk(MENU_TON_MS.ok/1000); thump(b, 0, 240, 165, 0.055, 0.62); modal(b, 0, 410, wood, 0.006, 0.26, 0, 0.18); return b; },
+    menuStart: ()=>{ const b = mk(MENU_TON_MS.start/1000); thump(b, 0, 230, 150, 0.07, 0.7); thump(b, 0.045, 300, 210, 0.05, 0.42);
+                     modal(b, 0, 380, wood, 0.008, 0.3, 0, 0.2); modal(b, 0.045, 520, wood, 0.006, 0.18, 0, 0.1); return b; },
   };
   const bank = {};
   for(const name in recipes){
@@ -297,7 +300,7 @@ function sfxPlay(name, o){
     let outNode = g;
     if(a.createStereoPanner){ const p = a.createStereoPanner(); p.pan.value = sfxPan(o.x); g.connect(p); outNode = p; }
     outNode.connect(audioOut());
-    if(sfxRev) outNode.connect(sfxRev);
+    if(sfxRev && !name.startsWith('menu')) outNode.connect(sfxRev);   // Menü-Klänge trocken (kein Nachklingen)
     src.start();
     return true;
   }catch(e){ return false; }
@@ -367,6 +370,7 @@ const SFX = {
   birdFlap(x){ sfxLog('bird'); sfxPlay('birdFlap', {x}); },
   menuTick(){ sfxPlay('menuTick'); },
   menuOk(){ sfxPlay('menuOk'); },
+  menuStart(){ sfxPlay('menuStart'); },
 };
 
 // ---------- Beobachter: erkennt Ereignisse an Zustandsänderungen (ändert selbst nichts) ----------

@@ -152,3 +152,6 @@ const BOSS_WELLE_TEMPO = 5;      // Druckwelle am Boden (px pro Schritt) – dr�
 const BOSS_WELLE_HOEHE = 22;     // so hoch muss man über der Welle sein
 const BOSS_ABPRALL = -10;        // Sprung auf den Kopf: so hoch prallt man ab
 const BOSS_UNVERWUNDBAR = 70;    // nach einem Treffer
+// ---------- Menü-Klänge (Design-Politur): Länge in ms; Cursor-Schritte höchstens alle MENU_TICK_ABSTAND ms ----------
+const MENU_TON_MS = {tick: 40, ok: 65, start: 110};
+const MENU_TICK_ABSTAND = 70;

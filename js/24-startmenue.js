@@ -377,10 +377,16 @@ const Snd = (() => {
   // Menü-Klänge kommen aus dem Spiel (18-sound.js), die Musik läuft wie im Spiel weiter;
   // die Regler steuern die Lautstärke des Spiels (VOL in 07-effekte-ton-muenzen.js)
   const vol = { get master() { return VOL.master; }, get music() { return VOL.music; }, get sfx() { return VOL.sfx; } };
-  const soft = ['move', 'back', 'tick', 'locked', 'swap'];
+  // Design-Politur: Cursor/Wechsel/Zurück = leises Holz-Tap (bei schnellem Weiterschalten nicht jeder Schritt),
+  // Bestätigen = weiches Tock, Start (Level/Countdown/bereit) = etwas deutlicheres Doppel-Tock – nichts klingelt
+  const soft = ['move', 'back', 'tick', 'locked', 'swap'], deutlich = ['start', 'go', 'ready'];
+  let lastSoft = 0;
   function play(name) {
     if (typeof SFX === 'undefined') return;
-    if (soft.includes(name)) SFX.menuTick(); else SFX.menuOk();
+    if (soft.includes(name)) {
+      const t = performance.now(); if (t - lastSoft < MENU_TICK_ABSTAND) return; lastSoft = t;
+      SFX.menuTick();
+    } else if (deutlich.includes(name)) SFX.menuStart(); else SFX.menuOk();
   }
   function resume() { if (typeof sfxPrepare === 'function') sfxPrepare(); }
   function setVol(k, v) { setVolume(k, v / 100); }
@@ -1375,7 +1381,7 @@ window.startMenuShow = showMenuScreen;
 showMainMenu = () => showMenuScreen('menu');          // ersetzt die alten Menüs aus 16-menue.js
 showLevelSelect = () => showMenuScreen('levels');
 document.getElementById('loadLevelInput').addEventListener('change', () => { currentLevelNo = 0; hideMenu(); });
-window.GameMenu = { config: CONFIG, completeLevel, completeBoss, playBoss, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
+window.GameMenu = { config: CONFIG, snd: Snd, completeLevel, completeBoss, playBoss, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
                     migrateSave, buildLevelOrder, mapWorlds, worldUnlocked: id => worldUnlocked(worldById(id)),
                     levelUnlocked: i => isUnlocked(i), levelDone: i => isDone(i), lastFreshWorld: () => lastFreshWorld,
                     show: showMenuScreen, hide: hideMenu, levelsReady: () => CONFIG.levels.length > 0,

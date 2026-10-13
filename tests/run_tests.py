@@ -4387,13 +4387,37 @@ async def asmr_klangbibliothek(g):
       const names = Object.keys(out.bank); const bad = names.filter(k => !out.bank[k].length || out.bank[k][0].numberOfChannels !== 2);
       return {names, bad, steps: out.bank.step.length, ir: !!out.ir, vol: names.filter(k => !(k in SFX_VOL))}; })()""")
     need = ['step', 'land', 'jump', 'wall', 'coin', 'hookAttach', 'rope', 'umbrella', 'lever', 'doorOpen', 'doorClose',
-            'crumbleWarn', 'crumbleBreak', 'death', 'checkpoint', 'mushroom', 'frog', 'discover', 'bud', 'heart', 'birdFlap', 'menuTick', 'menuOk']
+            'crumbleWarn', 'crumbleBreak', 'death', 'checkpoint', 'mushroom', 'frog', 'discover', 'bud', 'heart', 'birdFlap', 'menuTick', 'menuOk', 'menuStart']
     assert all(n in st['names'] for n in need) and not st['bad'] and st['steps'] >= 4 and st['ir'] and not st['vol'], f'Bibliothek: {st}'
     await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF'); await g.p.wait_for_timeout(1500)
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
         try: await g.p.wait_for_function("!!sfxBank", timeout=10000)   # Klangbibliothek wird im Hintergrund gebaut
         except Exception: pass
         assert await g.ev("!!sfxBank && sfxPlay('coin', {x: p1.x})"), 'Geräusch lässt sich nicht abspielen'
+
+@test
+async def menue_ton_dezent(g):
+    """Design-Politur G: Menü-Klänge sind kurz und tief statt klingelnd – menuTick (Cursor/Zurück) ≤ 50 ms, menuOk
+    (Bestätigen) ≤ 80 ms, menuStart (Level-Start) ≤ 120 ms, ohne hohe Spieluhr-Anteile (Energie über 2 kHz klein),
+    am Ende verklungen; schnelle Cursor-Schritte klappern nicht (höchstens einer je MENU_TICK_ABSTAND ms)."""
+    st = await g.ev("""(()=>{ const out={}; const it=sfxBuild(new OfflineAudioContext(2,44100,44100), out); while(!it.next().done){}
+      const r = {};
+      for(const n of ['menuTick', 'menuOk', 'menuStart']){
+        const buf = out.bank[n][0], d = buf.getChannelData(0), N = d.length;
+        let e = 0, hi = 0, tail = 0, prev = 0;
+        for(let i = 0; i < N; i++){ e += d[i]*d[i]; const h = d[i] - prev; hi += h*h; prev = d[i]; if(i > N*0.8) tail += d[i]*d[i]; }
+        r[n] = {ms: Math.round(buf.duration*1000), hoch: +(hi/(e || 1)).toFixed(3), ende: +(tail/(e || 1)).toFixed(4)};
+      }
+      return r; })()""")
+    grenze = {'menuTick': 50, 'menuOk': 80, 'menuStart': 120}
+    for n, v in st.items():
+        assert v['ms'] <= grenze[n], f'{n} zu lang: {v}'
+        assert v['hoch'] < 0.15, f'{n} zu hell/klingelnd (Anteil hoher Frequenzen): {v}'
+        assert v['ende'] < 0.05, f'{n} klingt am Ende noch nach: {v}'
+    # schnelle Cursor-Schritte: nur ein Tap je MENU_TICK_ABSTAND
+    n = await g.ev("""(()=>{ let c = 0; const alt = SFX.menuTick; SFX.menuTick = () => c++;
+      for(let i = 0; i < 5; i++) GameMenu.snd.play('move'); SFX.menuTick = alt; return c; })()""")
+    assert n == 1, f'5 schnelle Cursor-Schritte -> {n} Klänge'
 
 @test
 async def musik_und_ambiente(g):
