@@ -44,6 +44,16 @@ und Schweinchen in jeder Mechanik. Technisch steht der Look in `levels/worlds.js
   Stand Dschungel (vorher -> nachher, eigenständige Stellen): L1 0 -> 4, L2 1 -> 8, L3 2 -> 10, L4 0 -> 4, L5 6 -> 6
   (Hoher Kamin jetzt für beide echt), L6 2 -> 5, Boss 0 -> 0. Unter dem Soll bleiben die rätseldichten Level (Teleporter
   in L4, Jagden in L5/L6) und der Boss – Umbau braucht eine Entscheidung (siehe Bericht).
+  **Ruinen, Höhle, Vulkan** (Fortsetzung): Ruinen ohne Sprungpilze (Nutzerentscheidung) – Baustein **Flammen-Kamin**:
+  kompakter Kamin (Breite 3) über einer Stachelgrube (9) mit Haken, über der Grube eine Flamme im Takt (Timing: kurz nach
+  dem Zünden losklettern), Landeplatz 6 Reihen hoch; Höhle mit **Leuchtpilz-Gruben** und **Kamin-Gruben**; Vulkan mit
+  **Lava-Kaminen** und **Lava-Pilz-Gruben** (Lava statt Stacheln). Alle Wandspitzen der Kamine bröckeln (kein sicherer
+  Halt). Nur auf freien, flachen Strecken ohne Stege darüber; jede Probe wurde mit dem Level-Test der Welt geprüft und bei
+  Störung zurückgenommen. Stand (vorher -> nachher): Ruinen 1 3->4, Mondnacht 1->2, Fallengang 0->1, Sonnentempel 1->4,
+  Felsenflucht 1->2, Tempelherz 0->0; Kristallhöhle 2->4, Tropfsteingang 0->2, Eisgrotte 1->1, Leuchtgrotte 1->4,
+  Förderwerk 1->5, Tiefenschlund 2->4; Glutpfad 7->13, Aschefeld 1->5, Feuerberg 12 (schon über dem Soll), Magmakammer
+  3->12, Schlackewerk 3->6, Feuerschlund 0->1, Kraterherz 3->5. Die Mindestzahlen (12 bzw. 15) erreicht nur der Feuerberg;
+  der Rest braucht Umbauten bestehender Rätsel (Entscheidungs-Liste im Bericht).
 
 ## Welt 1 – Dschungel
 

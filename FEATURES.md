@@ -61,7 +61,18 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       bröckeln), Dschungel 6 (170, 190, 392). Jede Stelle mit Koop-Bot-Lauf und Gegenprobe ohne Kombi
       (kombi_stellen_dschungel), Abkürzungs-Proben für Gruben direkt hintereinander.
     - Testlevel levels/test/kombis.json (Wandsprung + Haken, Wandsprung + Segeln; Test kombi_testlevel).
-    - Ruinen, Höhle und Vulkan sind noch nicht nachgeschärft (Statusliste).
+    - Ruinen, Höhle und Vulkan (Fortsetzung): Ruinen ohne Sprungpilze (Nutzerentscheidung), dafür FLAMMEN-KAMIN: kompakter
+      Kamin (Breite 3, Wandspitzen bröckeln) über einer Stachelgrube (9 breit) mit Haken, über der Grube eine Flamme im Takt
+      (kurz nach dem Zünden losklettern), Landeplatz 6 Reihen hoch – Ruinen 1 (522), Mondnacht (89), Fallengang (579),
+      Sonnentempel (168, 303, 584), Felsenflucht (580). Höhle: Leuchtpilz-Gruben und Kamin-Gruben – Kristallhöhle (273,
+      359), Tropfsteingang (266, 445), Leuchtgrotte (180, 568, 760), Förderwerk (366, 546, 570, 772), Tiefenschlund (572,
+      776). Vulkan: Lava-Kamine und Lava-Pilz-Gruben (Lava statt Stacheln) – Glutpfad (185, 346, 370, 546, 570, 768),
+      Aschefeld (188, 352, 376, 766), Magmakammer (44, 194, 349, 378, 558, 580, 728, 752, 776), Schlackewerk (164, 346,
+      370), Feuerschlund (560), Kraterherz (182, 324). Bot-Tests kombi_stellen_ruinen / _hoehle / _vulkan (mit Kombi
+      geschafft, beide nacheinander, ohne gescheitert). Wo das Soll nicht erreicht ist, steht die Begründung in
+      tests/kombi_ausnahmen.json.
+    - Wandspitzen aller Kamin-Gruben bröckeln (auch Dschungel 1, Spalte 746, und Testlevel kombis): kein sicherer Halt
+      zwischen Wandsprung und Haken/Segeln; die zweite Figur kommt trotzdem hinauf (Bot-Probe „beide nacheinander“).
   - AUFFÄLLIGE SPIELELEMENTE (Nutzerwunsch: Hebel, Sprungpilze und Druckplatten wurden übersehen, gerade wenn man
     schnell sein muss; nur Aussehen, Wirkung und Trefferbereiche unverändert; Design passend zur Spielwelt wie die Türen:
     Holz, Eisen, Edelstein in der Verknüpfungs-Farbe):

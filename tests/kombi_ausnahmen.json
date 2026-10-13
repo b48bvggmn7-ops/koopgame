@@ -90,18 +90,501 @@
   "begruendung": "0 statt 3: Der Kampf ist mit dem Nutzer so abgesprochen, dass der Ast nur per Seil (Haken mit großem Radius, vom Boden aus erreichbar – Test boss1_bruno prüft das) oder per Aufwind erreichbar ist. Erzwungene Kombis (z. B. Pilz -> Haken zum Ast, Aufwind -> Wandsprung zum Hebel-Sims) würden diese Absprache ändern -> „braucht Entscheidung“ (Vorschlag im Bericht)."
  },
  {
-  "welt": "ruinen",
-  "regel": "Kombi-offen",
-  "begruendung": "Welt ruinen ist im Schritt „Kombi-Nachschärfen“ noch nicht nachgeschärft (Regelwerk Punkt 6: Schritt nach der fertigen, grünen Welt Dschungel beendet). Kombi-Befunde werden angezeigt (noch offen), aber erst im nächsten Schritt behoben; Kamin-Befunde gelten weiter."
+  "level": "ruinen/01-ruinen.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 4 Kombi-Stellen, Mindestzahl 12. Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 522 (einziger freier Platz); der Rest sind Licht-Rätsel, Insel-Fahrten und Mauerwerk. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
  },
  {
-  "welt": "hoehle",
-  "regel": "Kombi-offen",
-  "begruendung": "Welt hoehle ist im Schritt „Kombi-Nachschärfen“ noch nicht nachgeschärft (Regelwerk Punkt 6: Schritt nach der fertigen, grünen Welt Dschungel beendet). Kombi-Befunde werden angezeigt (noch offen), aber erst im nächsten Schritt behoben; Kamin-Befunde gelten weiter."
+  "level": "ruinen/01-ruinen.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 522 (einziger freier Platz); der Rest sind Licht-Rätsel, Insel-Fahrten und Mauerwerk. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
  },
  {
-  "welt": "vulkan",
-  "regel": "Kombi-offen",
-  "begruendung": "Welt vulkan ist im Schritt „Kombi-Nachschärfen“ noch nicht nachgeschärft (Regelwerk Punkt 6: Schritt nach der fertigen, grünen Welt Dschungel beendet). Kombi-Befunde werden angezeigt (noch offen), aber erst im nächsten Schritt behoben; Kamin-Befunde gelten weiter."
+  "level": "ruinen/01-ruinen.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 522 (einziger freier Platz); der Rest sind Licht-Rätsel, Insel-Fahrten und Mauerwerk. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/01-ruinen.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 522 (einziger freier Platz); der Rest sind Licht-Rätsel, Insel-Fahrten und Mauerwerk. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/01-ruinen.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–826: nur 2 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 522 (einziger freier Platz); der Rest sind Licht-Rätsel, Insel-Fahrten und Mauerwerk. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/01-ruinen.json",
+  "regel": "Kombi-Timing",
+  "spalte": null,
+  "begruendung": "nur 1 von 4 Kombi-Stellen mit Timing/Tempo (mindestens 2). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 522 (einziger freier Platz); der Rest sind Licht-Rätsel, Insel-Fahrten und Mauerwerk. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 1 Kombi-Stellen, Mindestzahl 12. Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 579 (einziger freier Platz); der Fallengang ist durchgehend Fallen-Strecke. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 579 (einziger freier Platz); der Fallengang ist durchgehend Fallen-Strecke. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 579 (einziger freier Platz); der Fallengang ist durchgehend Fallen-Strecke. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 579 (einziger freier Platz); der Fallengang ist durchgehend Fallen-Strecke. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–820: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 579 (einziger freier Platz); der Fallengang ist durchgehend Fallen-Strecke. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/04-sonnentempel.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 4 Kombi-Stellen, Mindestzahl 12. Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamine 168, 303, 584. Probe-Einbauten bei 194, 371, 674, 736, 760 zerstörten Spiegel-Haken 5a, Licht-Tunnel, Doppelstrahl-Tor und den Weg zum Ziel. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/04-sonnentempel.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamine 168, 303, 584. Probe-Einbauten bei 194, 371, 674, 736, 760 zerstörten Spiegel-Haken 5a, Licht-Tunnel, Doppelstrahl-Tor und den Weg zum Ziel. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/04-sonnentempel.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamine 168, 303, 584. Probe-Einbauten bei 194, 371, 674, 736, 760 zerstörten Spiegel-Haken 5a, Licht-Tunnel, Doppelstrahl-Tor und den Weg zum Ziel. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/04-sonnentempel.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamine 168, 303, 584. Probe-Einbauten bei 194, 371, 674, 736, 760 zerstörten Spiegel-Haken 5a, Licht-Tunnel, Doppelstrahl-Tor und den Weg zum Ziel. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/04-sonnentempel.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–800: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamine 168, 303, 584. Probe-Einbauten bei 194, 371, 674, 736, 760 zerstörten Spiegel-Haken 5a, Licht-Tunnel, Doppelstrahl-Tor und den Weg zum Ziel. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/02-mondnacht.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 2 Kombi-Stellen, Mindestzahl 8. Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 89 (einziger freier Platz); Mondspiegel-Rätsel und Hakenreihe belegen den Rest. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/02-mondnacht.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 89 (einziger freier Platz); Mondspiegel-Rätsel und Hakenreihe belegen den Rest. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/02-mondnacht.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 89 (einziger freier Platz); Mondspiegel-Rätsel und Hakenreihe belegen den Rest. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/02-mondnacht.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–500: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 89 (einziger freier Platz); Mondspiegel-Rätsel und Hakenreihe belegen den Rest. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/05-felsenflucht.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 2 Kombi-Stellen, Mindestzahl 12. Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 580. Probe-Einbauten bei 28, 127, 151, 175, 675 lagen in den Fels-Verfolgungen bzw. auf Stegen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/05-felsenflucht.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 580. Probe-Einbauten bei 28, 127, 151, 175, 675 lagen in den Fels-Verfolgungen bzw. auf Stegen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/05-felsenflucht.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 580. Probe-Einbauten bei 28, 127, 151, 175, 675 lagen in den Fels-Verfolgungen bzw. auf Stegen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/05-felsenflucht.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 580. Probe-Einbauten bei 28, 127, 151, 175, 675 lagen in den Fels-Verfolgungen bzw. auf Stegen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/05-felsenflucht.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–802: nur 1 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Neu: Flammen-Kamin 580. Probe-Einbauten bei 28, 127, 151, 175, 675 lagen in den Fels-Verfolgungen bzw. auf Stegen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 0 Kombi-Stellen, Mindestzahl 12. Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Kein freier flacher Platz (nur Stege über Gruben); Tempelherz besteht aus Licht-Labyrinth und Fallen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Kein freier flacher Platz (nur Stege über Gruben); Tempelherz besteht aus Licht-Labyrinth und Fallen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Kein freier flacher Platz (nur Stege über Gruben); Tempelherz besteht aus Licht-Labyrinth und Fallen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Kein freier flacher Platz (nur Stege über Gruben); Tempelherz besteht aus Licht-Labyrinth und Fallen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–799: nur 0 Kombi-Stellen (mindestens 3). Ruinen ohne Sprungpilze (Nutzerentscheidung); Baustein ist der kompakte Flammen-Kamin (24 Spalten flacher Boden mit 14 Reihen Luft). Kein freier flacher Platz (nur Stege über Gruben); Tempelherz besteht aus Licht-Labyrinth und Fallen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/02-tropfsteingang.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 2 Kombi-Stellen, Mindestzahl 12. Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 266, 445. Proben bei 101 (Kamin-Start), 147/285 (Stege von oben führen vorbei), 748/772 (Weg zum Ziel) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/02-tropfsteingang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 266, 445. Proben bei 101 (Kamin-Start), 147/285 (Stege von oben führen vorbei), 748/772 (Weg zum Ziel) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/02-tropfsteingang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 266, 445. Proben bei 101 (Kamin-Start), 147/285 (Stege von oben führen vorbei), 748/772 (Weg zum Ziel) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/02-tropfsteingang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 266, 445. Proben bei 101 (Kamin-Start), 147/285 (Stege von oben führen vorbei), 748/772 (Weg zum Ziel) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/02-tropfsteingang.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–800: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 266, 445. Proben bei 101 (Kamin-Start), 147/285 (Stege von oben führen vorbei), 748/772 (Weg zum Ziel) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/02-tropfsteingang.json",
+  "regel": "Kombi-Timing",
+  "spalte": null,
+  "begruendung": "nur 0 von 2 Kombi-Stellen mit Timing/Tempo (mindestens 1). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 266, 445. Proben bei 101 (Kamin-Start), 147/285 (Stege von oben führen vorbei), 748/772 (Weg zum Ziel) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 1 Kombi-Stellen, Mindestzahl 12. Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Proben bei 193, 523, 725 zerstörten Platten-Schleuse auf Eis, Haken/Segel-Grube vor Tür 5 und Stege hinunter – zurückgenommen; sonst kein freier Platz. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Proben bei 193, 523, 725 zerstörten Platten-Schleuse auf Eis, Haken/Segel-Grube vor Tür 5 und Stege hinunter – zurückgenommen; sonst kein freier Platz. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Proben bei 193, 523, 725 zerstörten Platten-Schleuse auf Eis, Haken/Segel-Grube vor Tür 5 und Stege hinunter – zurückgenommen; sonst kein freier Platz. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Proben bei 193, 523, 725 zerstörten Platten-Schleuse auf Eis, Haken/Segel-Grube vor Tür 5 und Stege hinunter – zurückgenommen; sonst kein freier Platz. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–800: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Proben bei 193, 523, 725 zerstörten Platten-Schleuse auf Eis, Haken/Segel-Grube vor Tür 5 und Stege hinunter – zurückgenommen; sonst kein freier Platz. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "regel": "Kombi-Timing",
+  "spalte": null,
+  "begruendung": "nur 0 von 1 Kombi-Stellen mit Timing/Tempo (mindestens 1). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Proben bei 193, 523, 725 zerstörten Platten-Schleuse auf Eis, Haken/Segel-Grube vor Tür 5 und Stege hinunter – zurückgenommen; sonst kein freier Platz. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/01-kristallhoehle.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 4 Kombi-Stellen, Mindestzahl 7. Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 273, 359 (Level hat nur 480 Spalten, Fähren-Abschnitt bleibt frei). Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/01-kristallhoehle.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 273, 359 (Level hat nur 480 Spalten, Fähren-Abschnitt bleibt frei). Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/01-kristallhoehle.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–415: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 273, 359 (Level hat nur 480 Spalten, Fähren-Abschnitt bleibt frei). Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/01-kristallhoehle.json",
+  "regel": "Kombi-Timing",
+  "spalte": null,
+  "begruendung": "nur 0 von 4 Kombi-Stellen mit Timing/Tempo (mindestens 2). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 273, 359 (Level hat nur 480 Spalten, Fähren-Abschnitt bleibt frei). Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/04-leuchtgrotte.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 4 Kombi-Stellen, Mindestzahl 12. Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 180, 568, 760. Proben bei 285, 366, 510, 697 zerstörten Tor-Rätsel, versteckten Ausgang, Schlucht und Steg-Hüpfer. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/04-leuchtgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 180, 568, 760. Proben bei 285, 366, 510, 697 zerstörten Tor-Rätsel, versteckten Ausgang, Schlucht und Steg-Hüpfer. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/04-leuchtgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 180, 568, 760. Proben bei 285, 366, 510, 697 zerstörten Tor-Rätsel, versteckten Ausgang, Schlucht und Steg-Hüpfer. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/04-leuchtgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 180, 568, 760. Proben bei 285, 366, 510, 697 zerstörten Tor-Rätsel, versteckten Ausgang, Schlucht und Steg-Hüpfer. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/04-leuchtgrotte.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–800: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 180, 568, 760. Proben bei 285, 366, 510, 697 zerstörten Tor-Rätsel, versteckten Ausgang, Schlucht und Steg-Hüpfer. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/05-foerderwerk.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 5 Kombi-Stellen, Mindestzahl 12. Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 366, 546, 570, 772. Proben bei 246/305 (Rätselanfänge) und 625 (Stege von oben) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/05-foerderwerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 366, 546, 570, 772. Proben bei 246/305 (Rätselanfänge) und 625 (Stege von oben) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/05-foerderwerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 366, 546, 570, 772. Proben bei 246/305 (Rätselanfänge) und 625 (Stege von oben) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/05-foerderwerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 366, 546, 570, 772. Proben bei 246/305 (Rätselanfänge) und 625 (Stege von oben) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/05-foerderwerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–800: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 366, 546, 570, 772. Proben bei 246/305 (Rätselanfänge) und 625 (Stege von oben) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/06-tiefenschlund.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 4 Kombi-Stellen, Mindestzahl 12. Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Grube 572, Kamin-Grube 776. Proben bei 133, 485, 593 zerstörten Platten-Tunnel, Band-Weiche und Steg-Passage; 243 hatte Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/06-tiefenschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Grube 572, Kamin-Grube 776. Proben bei 133, 485, 593 zerstörten Platten-Tunnel, Band-Weiche und Steg-Passage; 243 hatte Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/06-tiefenschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Grube 572, Kamin-Grube 776. Proben bei 133, 485, 593 zerstörten Platten-Tunnel, Band-Weiche und Steg-Passage; 243 hatte Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/06-tiefenschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Grube 572, Kamin-Grube 776. Proben bei 133, 485, 593 zerstörten Platten-Tunnel, Band-Weiche und Steg-Passage; 243 hatte Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/06-tiefenschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–800: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Grube 572, Kamin-Grube 776. Proben bei 133, 485, 593 zerstörten Platten-Tunnel, Band-Weiche und Steg-Passage; 243 hatte Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/06-tiefenschlund.json",
+  "regel": "Kombi-Timing",
+  "spalte": null,
+  "begruendung": "nur 1 von 4 Kombi-Stellen mit Timing/Tempo (mindestens 2). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Grube 572, Kamin-Grube 776. Proben bei 133, 485, 593 zerstörten Platten-Tunnel, Band-Weiche und Steg-Passage; 243 hatte Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/01-glutpfad.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 13 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 6 Stellen (185, 346, 370, 546, 570, 768). Proben bei 596 (Pilz-Kette über den Lavasee) und 705 (Stege darüber) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/02-aschefeld.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 5 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 4 Stellen (188, 352, 376, 766). Proben bei 156, 400, 575, 726 zerstörten Doppel-Presse, Dach-Weg, Pressen-Treppe und letzte Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/02-aschefeld.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 1 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 4 Stellen (188, 352, 376, 766). Proben bei 156, 400, 575, 726 zerstörten Doppel-Presse, Dach-Weg, Pressen-Treppe und letzte Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/02-aschefeld.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 2 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 4 Stellen (188, 352, 376, 766). Proben bei 156, 400, 575, 726 zerstörten Doppel-Presse, Dach-Weg, Pressen-Treppe und letzte Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/02-aschefeld.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 4 Stellen (188, 352, 376, 766). Proben bei 156, 400, 575, 726 zerstörten Doppel-Presse, Dach-Weg, Pressen-Treppe und letzte Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/02-aschefeld.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–800: nur 2 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 4 Stellen (188, 352, 376, 766). Proben bei 156, 400, 575, 726 zerstörten Doppel-Presse, Dach-Weg, Pressen-Treppe und letzte Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/04-magmakammer.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 12 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 9 Stellen (44, 194, 349, 378, 558, 580, 728, 752, 776); weitere Plätze haben Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/04-magmakammer.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 2 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 9 Stellen (44, 194, 349, 378, 558, 580, 728, 752, 776); weitere Plätze haben Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/05-schlackewerk.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 6 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamine 164, 346, 370. Proben bei 562, 584 (Hakenreihe wäre zu leicht), 698 zerstörten Vorhang-Rätsel und Finale. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/05-schlackewerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 1 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamine 164, 346, 370. Proben bei 562, 584 (Hakenreihe wäre zu leicht), 698 zerstörten Vorhang-Rätsel und Finale. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/05-schlackewerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamine 164, 346, 370. Proben bei 562, 584 (Hakenreihe wäre zu leicht), 698 zerstörten Vorhang-Rätsel und Finale. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/05-schlackewerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–799: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamine 164, 346, 370. Proben bei 562, 584 (Hakenreihe wäre zu leicht), 698 zerstörten Vorhang-Rätsel und Finale. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/06-feuerschlund.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 1 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 560. Proben bei 175, 313, 385 lagen in Lava-Kammer und steigendem Schlund. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/06-feuerschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 0,
+  "begruendung": "Etappe 0–199: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 560. Proben bei 175, 313, 385 lagen in Lava-Kammer und steigendem Schlund. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/06-feuerschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 560. Proben bei 175, 313, 385 lagen in Lava-Kammer und steigendem Schlund. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/06-feuerschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 1 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 560. Proben bei 175, 313, 385 lagen in Lava-Kammer und steigendem Schlund. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/06-feuerschlund.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–799: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 560. Proben bei 175, 313, 385 lagen in Lava-Kammer und steigendem Schlund. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/07-kraterherz.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "nur 5 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 182, Lava-Pilz-Grube 324. Proben bei 384, 575 zerstörten Hebel-Kette und Gruben/Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/07-kraterherz.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 1 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 182, Lava-Pilz-Grube 324. Proben bei 384, 575 zerstörten Hebel-Kette und Gruben/Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/07-kraterherz.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 182, Lava-Pilz-Grube 324. Proben bei 384, 575 zerstörten Hebel-Kette und Gruben/Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/07-kraterherz.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Etappe 600–799: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 182, Lava-Pilz-Grube 324. Proben bei 384, 575 zerstörten Hebel-Kette und Gruben/Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
  }
 ]
