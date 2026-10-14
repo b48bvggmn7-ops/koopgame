@@ -450,13 +450,19 @@ async def schalter_umschalten(g):
 async def bildrate_unabhaengig(g):
     """Gleiche Eingabe -> gleiche Position bei 60 und 144 Bildern pro Sekunde."""
     lvl = level([ground(0, 680, 3000)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680})
-    await g.load(lvl); await g.hold(('KeyD',), 1000); await g.p.wait_for_timeout(500)
-    x60 = await g.ev('p1.x')
+    # Taste genau 54 Spielschritte halten und IM SPIEL loslassen (vorher: feste Millisekunden über Playwright – das
+    # Loslassen kam bei langsamem Zeichnen ein paar Schritte zu spät an, der Test war dann zufällig rot)
+    halten = """(() => { const ziel = simSteps + 54; window.__ende = ziel + 40; KEYS.KeyD = true; const alt = stepSim;
+      stepSim = function(...a){ const r = alt.apply(this, a); if(simSteps >= ziel && KEYS.KeyD){ KEYS.KeyD = false; } return r; }; })()"""
+    async def lauf(gg):
+        await gg.ev("closeMenu(); deathState = null; for(const k in KEYS) KEYS[k] = false;"); await gg.steps(10)
+        await gg.ev(halten); await gg.p.wait_for_function("simSteps >= window.__ende", timeout=20000)
+        return await gg.ev('p1.x')
+    await g.load(lvl); x60 = await lauf(g)
     p2 = await g.p.context.new_page()
     await p2.add_init_script("window.requestAnimationFrame = cb => setTimeout(()=>cb(performance.now()), 1000/144);")
     await p2.goto(GAME); await p2.wait_for_timeout(500)
-    g2 = Game(p2); await g2.load(lvl); await g2.hold(('KeyD',), 1000); await p2.wait_for_timeout(500)
-    x144 = await g2.ev('p1.x'); await p2.close()
+    g2 = Game(p2); await g2.load(lvl); x144 = await lauf(g2); await p2.close()
     assert abs(x60 - x144) < 60, f'60 Hz: {x60:.0f}, 144 Hz: {x144:.0f}'
 
 @test
