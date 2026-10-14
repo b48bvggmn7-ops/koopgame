@@ -1,0 +1,93 @@
+{
+ "level": "ruinen/02-mondnacht.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-1",
+   "zone": [
+    45,
+    65
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 1,
+   "probe": {
+    "figur": "m",
+    "start": [
+     46,
+     14
+    ],
+    "links": [],
+    "schritte": 444
+   }
+  },
+  {
+   "id": "nummer-3",
+   "zone": [
+    116,
+    151
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 3,
+   "probe": {
+    "figur": "m",
+    "start": [
+     112,
+     14
+    ],
+    "links": [],
+    "schritte": 1114
+   }
+  },
+  {
+   "id": "nummer-6",
+   "zone": [
+    301,
+    323
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 6,
+   "probe": {
+    "figur": "m",
+    "start": [
+     308,
+     14
+    ],
+    "links": [],
+    "schritte": 378
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 2,
+   "spalte": 76,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 7,
+   "spalte": 331,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 9,
+   "spalte": 269,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 10,
+   "spalte": 286,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 52,
+   "grund": "Licht-Rätsel (dreht Spiegel) – das löst du selbst"
+  },
+  {
+   "nummer": 53,
+   "grund": "Licht-Rätsel (dreht Spiegel) – das löst du selbst"
+  }
+ ]
+}

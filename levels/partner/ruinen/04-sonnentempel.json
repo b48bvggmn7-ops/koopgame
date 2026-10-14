@@ -1,0 +1,39 @@
+{
+ "level": "ruinen/04-sonnentempel.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-7",
+   "zone": [
+    326,
+    349
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 7,
+   "probe": {
+    "figur": "m",
+    "start": [
+     333,
+     15
+    ],
+    "links": [],
+    "schritte": 378
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 15,
+   "grund": "Licht-Rätsel (dreht Spiegel) – das löst du selbst"
+  },
+  {
+   "nummer": 16,
+   "grund": "Licht-Rätsel (dreht Spiegel) – das löst du selbst"
+  },
+  {
+   "nummer": 17,
+   "grund": "Licht-Rätsel (dreht Spiegel) – das löst du selbst"
+  }
+ ]
+}

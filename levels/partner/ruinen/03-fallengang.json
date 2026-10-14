@@ -1,0 +1,269 @@
+{
+ "level": "ruinen/03-fallengang.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-2",
+   "zone": [
+    58,
+    76
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 2,
+   "probe": {
+    "figur": "m",
+    "start": [
+     95,
+     15
+    ],
+    "links": [
+     1
+    ],
+    "schritte": 560
+   }
+  },
+  {
+   "id": "nummer-3",
+   "zone": [
+    236,
+    251
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 3,
+   "probe": {
+    "figur": "m",
+    "start": [
+     235,
+     8
+    ],
+    "links": [],
+    "schritte": 466
+   }
+  },
+  {
+   "id": "nummer-4",
+   "zone": [
+    310,
+    345
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 4,
+   "probe": {
+    "figur": "m",
+    "start": [
+     289,
+     15
+    ],
+    "links": [],
+    "schritte": 1090
+   }
+  },
+  {
+   "id": "nummer-5",
+   "zone": [
+    314,
+    342
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     350,
+     15
+    ],
+    "links": [
+     1,
+     2,
+     4,
+     3
+    ],
+    "schritte": 438
+   }
+  },
+  {
+   "id": "nummer-6",
+   "zone": [
+    404,
+    459
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 6,
+   "probe": {
+    "figur": "m",
+    "start": [
+     408,
+     15
+    ],
+    "links": [],
+    "schritte": 428
+   }
+  },
+  {
+   "id": "nummer-8",
+   "zone": [
+    476,
+    491
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 8,
+   "probe": {
+    "figur": "f",
+    "start": [
+     466,
+     15
+    ],
+    "links": [],
+    "schritte": 452
+   }
+  },
+  {
+   "id": "nummer-10",
+   "zone": [
+    604,
+    619
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 10,
+   "probe": {
+    "figur": "m",
+    "start": [
+     604,
+     15
+    ],
+    "links": [],
+    "schritte": 572
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    613,
+    628
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     604,
+     15
+    ],
+    "links": [
+     1,
+     2,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     15,
+     3
+    ],
+    "schritte": 508
+   }
+  },
+  {
+   "id": "nummer-12",
+   "zone": [
+    628,
+    643
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 12,
+   "probe": {
+    "figur": "f",
+    "start": [
+     604,
+     15
+    ],
+    "links": [
+     1,
+     2,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     15,
+     3
+    ],
+    "schritte": 758
+   }
+  },
+  {
+   "id": "nummer-14",
+   "zone": [
+    654,
+    669
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 14,
+   "probe": {
+    "figur": "m",
+    "start": [
+     680,
+     15
+    ],
+    "links": [],
+    "schritte": 472
+   }
+  },
+  {
+   "id": "nummer-15",
+   "zone": [
+    364,
+    400
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 15,
+   "probe": {
+    "figur": "m",
+    "start": [
+     350,
+     15
+    ],
+    "links": [],
+    "schritte": 1052
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 1,
+   "spalte": 60,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 7,
+   "spalte": 454,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 9,
+   "spalte": 508,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 13,
+   "spalte": 652,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  }
+ ]
+}

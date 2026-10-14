@@ -1,0 +1,263 @@
+{
+ "level": "ruinen/01-ruinen.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-3",
+   "zone": [
+    68,
+    100
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 3,
+   "wann": {
+    "ich_in": [
+     80,
+     82
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 3 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "f",
+    "start": [
+     64,
+     2
+    ],
+    "links": [],
+    "schritte": 796
+   }
+  },
+  {
+   "id": "nummer-4",
+   "zone": [
+    115,
+    134
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 4,
+   "wann": {
+    "ich_in": [
+     131,
+     132
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 4 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     121,
+     14
+    ],
+    "links": [],
+    "schritte": 394
+   }
+  },
+  {
+   "id": "nummer-5",
+   "zone": [
+    121,
+    143
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     121,
+     14
+    ],
+    "links": [],
+    "schritte": 670
+   }
+  },
+  {
+   "id": "nummer-7",
+   "zone": [
+    186,
+    213
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 7,
+   "probe": {
+    "figur": "m",
+    "start": [
+     182,
+     14
+    ],
+    "links": [],
+    "schritte": 504
+   }
+  },
+  {
+   "id": "nummer-8",
+   "zone": [
+    187,
+    228
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 8,
+   "probe": {
+    "figur": "m",
+    "start": [
+     182,
+     14
+    ],
+    "links": [],
+    "schritte": 516
+   }
+  },
+  {
+   "id": "nummer-9",
+   "zone": [
+    302,
+    320
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 9,
+   "probe": {
+    "figur": "m",
+    "start": [
+     288,
+     14
+    ],
+    "links": [],
+    "schritte": 674
+   }
+  },
+  {
+   "id": "nummer-10",
+   "zone": [
+    311,
+    329
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 10,
+   "probe": {
+    "figur": "m",
+    "start": [
+     288,
+     14
+    ],
+    "links": [
+     20,
+     4,
+     5,
+     7,
+     8,
+     9,
+     3
+    ],
+    "schritte": 1384
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    317,
+    334
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     288,
+     14
+    ],
+    "links": [
+     20,
+     4,
+     5,
+     7,
+     8,
+     9,
+     10,
+     3
+    ],
+    "schritte": 928
+   }
+  },
+  {
+   "id": "nummer-12",
+   "zone": [
+    325,
+    343
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 12,
+   "probe": {
+    "figur": "m",
+    "start": [
+     348,
+     14
+    ],
+    "links": [],
+    "schritte": 438
+   }
+  },
+  {
+   "id": "nummer-20",
+   "zone": [
+    86,
+    121
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 20,
+   "wann": {
+    "ich_in": [
+     98,
+     100
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 20 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     121,
+     14
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 14,
+   "spalte": 463,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 16,
+   "spalte": 559,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 17,
+   "spalte": 642,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 18,
+   "spalte": 632,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 22,
+   "grund": "Licht-Rätsel (dreht Spiegel) – das löst du selbst"
+  }
+ ]
+}

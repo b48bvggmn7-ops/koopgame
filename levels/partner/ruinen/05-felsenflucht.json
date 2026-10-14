@@ -1,0 +1,51 @@
+{
+ "level": "ruinen/05-felsenflucht.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-5",
+   "zone": [
+    287,
+    303
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     264,
+     15
+    ],
+    "links": [],
+    "schritte": 710
+   }
+  },
+  {
+   "id": "nummer-44",
+   "zone": [
+    744,
+    759
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 44,
+   "probe": {
+    "figur": "m",
+    "start": [
+     750,
+     15
+    ],
+    "links": [],
+    "schritte": 402
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 41,
+   "spalte": 782,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  }
+ ]
+}

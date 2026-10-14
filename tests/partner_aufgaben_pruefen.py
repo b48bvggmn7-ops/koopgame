@@ -39,7 +39,8 @@ def nummern(d):
         if mp.get('switchLink') is None: continue
         for sp in d.get('spikes', []):
             if mp['x'] - 40 <= sp['x'] <= mp['x'] + mp['w'] + 40 and mp['y'] - 40 <= sp['y'] <= mp['y'] + mp['h'] + 40: gefaehrlich.add(mp['switchLink'])
-    return {k: v for k, v in L.items() if k is not None and v['ausloeser'] and k not in gefaehrlich}
+    licht = {sp.get('link') for sp in d.get('spiegel', []) if sp.get('link')}   # schaltbare Spiegel: Licht-Rätsel löst der Mensch
+    return {k: v for k, v in L.items() if k is not None and v['ausloeser'] and k not in gefaehrlich and k not in licht}
 
 async def probe(p, aufgabe, ich_xy, er_xy, partner_figur, links, n):
     await p.evaluate(f"(() => {{ partner.ich = '{'f' if partner_figur == 'm' else 'm'}'; partnerTastenNeu(); return 1; }})()")

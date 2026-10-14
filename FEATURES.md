@@ -1481,6 +1481,40 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
+### Computer-Partner (nur Testmodus – das normale Zwei-Spieler-Spiel bleibt unverändert)
+- Im Editor-Test („▶ Testen“) steuert auf Wunsch der Computer die zweite Figur (Auswahl `#partnerWahl` neben „Testen“:
+  „Partner aus“ / „Ich bin der Affe“ / „Ich bin das Schweinchen“; gemerkt in localStorage `monchichi_partner` {an, ich}).
+  Im normalen Spiel ist er nie aktiv (Schalter `PARTNER_IM_HAUPTSPIEL` = false in js/02-physik-werte.js).
+- Ich steuere meine Figur mit ALLEN Tasten (Affe- und Schweinchen-Tasten und beide Controller). Der Partner drückt
+  dieselben Tasten wie ein Spieler (eigene „virtuelle Tasten“ im Eingabe-System, js/03) – keine Sonder-Physik.
+- Folgen (js/30-partner.js): gemütlich hinter mir (ca. 2 Kästchen, auf seiner Seite), läuft nicht voraus, bleibt im
+  Bild, holt auf, wenn er zurückfällt. Er rechnet seine Sprünge mit der echten Physik voraus (Laufen, Springen,
+  Wandsprung/Kamin, Haken und Seil, Schirm/Segeln, Aufwind, Pilze, Stege, bewegte Böden, Bröckelboden) und plant
+  Wege über mehrere Etappen (Umwege, Kamine). Reaktionszeit 9–15 Spielschritte (wie ein Mensch).
+- Gefahren: Stacheln (auch mitfahrende), Lava, Wasser (meidet er), Flammen im Takt, Pfeile, Pressen, Felsen,
+  Herunterfallen. Weicht der Sprung von der Vorausrechnung ab, bremst er sofort (Notbremse). Vor Stachelwänden
+  (Jagd) flieht er sofort nach vorn. Er bringt MICH nie absichtlich in Gefahr: Nummern, die Felsen, steigende Lava
+  oder Stachelwände auslösen, betätigt er nie; einen Wechselboden, auf dem ich stehe, schaltet er nicht weg.
+- Begleiter-Aufgaben (js/31-partner-aufgaben.js): an Rätseln erledigt er seinen Teil laut Begleitdatei
+  `levels/partner/<welt>/<datei>.json` (das Level-Format bleibt unverändert): Hebel, Platte halten (bis ich durch die
+  Tür bin), Spiegel, Wechselboden, Tür, Haken, Segeln, „Ablauf“ (Schritte wie der Koop-Bot). Felder: zone, rolle
+  (m/f/beide – passt sie nicht, ist es MEINE Aufgabe und er folgt), wann, bis, zeit, ziel, stand, stellung, text.
+  Ohne Eintrag hilft er bei einfachen Fällen selbst (Auto-Aufgabe): geschlossene Tür vor mir, Hebel/Platte dazu in
+  der Nähe -> er geht hin.
+- Steuerung im Test: Q = „Warte hier“ / „Komm her“ · E = „Mach deine Aufgabe jetzt“ · V = Rollen tauschen (ich
+  übernehme die andere Figur) · P = Partner an/aus. Controller: L1 = warten/komm, R1 = Aufgabe jetzt, Share = tauschen.
+- Anzeige über dem Partner: 🤖 folgt · ✋ wartet · 🔧 Aufgabe (mit Text) · ⚠ „hängt fest – ruf mich (Q)“. Kommt er
+  ca. 10 s nicht weiter, drückt er keine Tasten mehr, bis ich ihn rufe oder zu ihm komme.
+- Werkzeug `tests/partner_aufgaben_pruefen.py --level <welt>/<datei> [--schreiben]` (oder `--welt <welt>`): probiert
+  jede Hebel-/Platten-Nummer mit beiden Figuren aus und schreibt die Begleitdatei (mit Probe für den Test); was er
+  nicht schafft, steht dort unter „offen“. Von Hand ergänzte Aufgaben („von_hand“: true) bleiben erhalten.
+- Grenzen (ehrlich): Licht-/Spiegel-Labyrinthe löst der Mensch; Jagden startet er nie; manche Kamine und
+  Reihenfolge-Stellen (Liste „offen“ je Level); Bosse ohne Aufgaben; Wasser meidet er; pendelnde Haken kennt seine
+  Vorausrechnung nicht; Höhle/Vulkan/Wasser noch ohne Begleitdateien (dort nur Folgen + Auto-Aufgaben).
+- Tests: partner_geruest, partner_nicht_im_normalen_spiel, editor_partner_wahl, partner_folgt_gemuetlich,
+  partner_gefahren, partner_aufgaben_mechaniken, partner_auto_aufgaben, partner_steuerung,
+  partner_aufgaben_dschungel, partner_aufgaben_ruinen, partner_koop_dschungel.
+
 ### Design-Politur (nur Aussehen und ein Menü-Klang – Spielablauf, Trefferflächen, Physik und Level-Format unverändert)
 - **Schärfe und Tempo:** Die Leinwand hat bis zur 4K-Breite echte Bildschirm-Pixel (`LEINWAND_MAX_BREITE` 3840, vorher
   2560). Die Dunkel-Schicht (Nacht, Höhle, Dunkelzonen) wird in halber Auflösung gezeichnet (`DUNKEL_AUFLOESUNG`) – bei
@@ -1680,6 +1714,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Welten heraus) und trägt Titel bzw. ein neues Level in levels.json ein (nur wenn sich dort etwas ändert); neue
     Auswahl „➕ Neues Level N (level-N.json)“ = nächste freie Nummer. Repo-Dateien werden dafür über die GitHub-API
     im Stand genau dieses Commits gelesen. Test editor_level_info.
+  - Auswahl neben „▶ Testen“ (`#partnerWahl`): Computer-Partner aus / ich bin der Affe / ich bin das Schweinchen –
+    im Test steuert dann der Computer die andere Figur (siehe Abschnitt „Computer-Partner“ oben).
   - Taste Enter im Editor = „▶ Testen“ (nicht beim Tippen in ein Feld, nicht bei offenem Levels-/Export-Fenster)
   - Knopf „▶ Testen“ (gelb, oben): legt das aktuelle Level im Browser ab (localStorage monchichi_test_level,
     Spiel-Format) und öffnet sofort das Spiel damit (index.html?test=1, ohne Hauptmenü, ohne Speichern/Hochladen).

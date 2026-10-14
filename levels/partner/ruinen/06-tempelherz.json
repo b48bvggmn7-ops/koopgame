@@ -1,0 +1,83 @@
+{
+ "level": "ruinen/06-tempelherz.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-9",
+   "zone": [
+    264,
+    297
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 9,
+   "probe": {
+    "figur": "m",
+    "start": [
+     272,
+     15
+    ],
+    "links": [],
+    "schritte": 366
+   }
+  },
+  {
+   "id": "nummer-15",
+   "zone": [
+    471,
+    489
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 15,
+   "probe": {
+    "figur": "m",
+    "start": [
+     448,
+     15
+    ],
+    "links": [
+     10,
+     14,
+     9
+    ],
+    "schritte": 1068
+   }
+  },
+  {
+   "id": "nummer-60",
+   "zone": [
+    741,
+    756
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 60,
+   "probe": {
+    "figur": "m",
+    "start": [
+     744,
+     15
+    ],
+    "links": [],
+    "schritte": 572
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 10,
+   "spalte": 297,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 14,
+   "spalte": 462,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 23,
+   "grund": "Licht-Rätsel (dreht Spiegel) – das löst du selbst"
+  }
+ ]
+}

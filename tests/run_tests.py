@@ -9010,6 +9010,14 @@ async def partner_aufgaben_dschungel(g):
     assert n >= 40, f'zu wenige Aufgaben geprüft: {n}'
     assert not fehler, f'{len(fehler)} von {n} Aufgaben klappen nicht: {fehler[:4]}'
 
+@test
+async def partner_aufgaben_ruinen(g):
+    """Computer-Partner Teilschritt 5 (Ruinen): wie partner_aufgaben_dschungel für levels/partner/ruinen/… – Licht-/
+    Spiegel-Rätsel stehen dort bewusst unter „offen“ (löst der Mensch)."""
+    n, fehler = await partner_aufgaben_welt(g, 'ruinen')
+    assert n >= 15, f'zu wenige Aufgaben geprüft: {n}'
+    assert not fehler, f'{len(fehler)} von {n} Aufgaben klappen nicht: {fehler[:4]}'
+
 async def partner_projekt_start(g, datei, ich):
     """Projekt-Level im Testmodus wie aus dem Editor (mit projektDatei -> Begleitdatei wird geladen)"""
     d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))

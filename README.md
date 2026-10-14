@@ -20,6 +20,10 @@
 
 R = Neustart · F = Leistungsanzeige · C / X = zum nächsten / vorherigen Checkpoint springen (Test)
 
+**Computer-Partner (nur beim Testen aus dem Editor):** neben „▶ Testen“ wählen, welche Figur du spielst – der
+Computer steuert die andere. Du steuerst mit allen Tasten. Q = „Warte hier“ / „Komm her“ · E = „Mach deine Aufgabe
+jetzt“ · V = Rollen tauschen · P = Partner an/aus (Controller: L1 / R1 / Share).
+
 ## Für die Entwicklung
 - `CLAUDE.md` – Regeln und Aufbau (liest Claude Code automatisch)
 - `FEATURES.md` – vollständige Funktionsliste

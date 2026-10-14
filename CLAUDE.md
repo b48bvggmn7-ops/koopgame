@@ -40,7 +40,7 @@
     `DESIGN_LOOK` je Welt/Tageszeit: Kontur, Randlicht, Tiefe, Dunst; Glanz-Muster `glanzSchatten/glanzFunkeln/glanzBand`
     für alle Elemente) · 11 Hintergrund (je Thema) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
     Asche) · 12 Welt zeichnen (Boden/Wand als durchgehende Blöcke mit EINER gemeinsamen Kontur `designKontur`, gesammelt und nach der Deko gezeichnet; Boden↔Wand-Grenze über `nb.fremd` aus 01, Moos/Lianen an hohen Flächen `hoheFlaechen`) · 13 Anzeige/Leistung ·
-    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Weltkarte + Welt-Seite mit Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 29 Spielszenen (Intro/Zwischensequenzen aus `story/story.json`, Sprechblasen, Kino-Balken) · 99 Start
+    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Weltkarte + Welt-Seite mit Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 29 Spielszenen (Intro/Zwischensequenzen aus `story/story.json`, Sprechblasen, Kino-Balken) · 30 Computer-Partner (nur Testmodus: Folgen, Vorausrechnung mit echter Physik, Wegsuche, Gefahren, Steuerung Q/E/V/P; Konstanten `PARTNER_*` in 02) · 31 Begleiter-Aufgaben (Begleitdatei `levels/partner/<welt>/<datei>.json`, Auto-Aufgaben) · 99 Start
 - `elemente/` – **Element-Register** (Ausbau 2): eine Datei pro Spiel-Element mit allem, was dazugehört (Daten-Feld,
   Editor-Werkzeug + Zeichnen + Export, Spiel-Laden + Zeichnen + Logik). Spiel UND Editor laden diese Dateien zuerst.
   Umgestellt: `hebel.js`, `tuer.js`, `druckplatte.js` (Punkt-Elemente mit Verknüpfungs-Nummer), `sprungpilz.js`
@@ -70,6 +70,8 @@
 - `tests/koop_bot.js` – Koop-Bot für Level-Tests (steuert beide Figuren nach Plänen, Helfer `koop()` in run_tests.py; Ausbau 7).
 - `tests/bildregel_pruefen.py` – Prüfwerkzeug Bild-Regel/Plattform/Haken/Checkpoints (Grenze `BILD_MAX_SPALTEN` in js/09-kamera.js),
   begründete Ausnahmen in `tests/bildregel_ausnahmen.json`; Ziel-Hinweis-Pfeil am Bildrand: `zielHinweisMerken` (05) / `drawZielHinweise` (07).
+- `tests/partner_aufgaben_pruefen.py` – probiert je Hebel-/Platten-Nummer aus, ob der Computer-Partner sie schafft, und
+  schreibt mit `--schreiben` die Begleitdatei `levels/partner/<welt>/<datei>.json` (nicht Geschafftes unter „offen“).
 - `tests/kombi_pruefen.py` – Prüfwerkzeug Wandsprung (Kamine: Breite/Höhe/Einstufung) und Kombi-Stellen je Level/Etappe,
   Ausnahmen in `tests/kombi_ausnahmen.json`, Testlevel `levels/test/kombis.json` (Kombi-Nachschärfen).
 - `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
@@ -142,6 +144,9 @@
    Stellen eine Abkürzungs-Probe in `KOMBI_ABKUERZUNG`; Ausnahmen/Ketten/„Kombi-offen“ in `tests/kombi_ausnahmen.json`.
    Bausteine Pilz-Grube/Kamin-Grube: WELTEN.md (Leveldesign). Vorher prüfen, dass keine Jagd/kein Rätsel dort liegt
    (Level-Test der Welt laufen lassen) – Gruben in Verfolgungen oder auf Rätsel-Wegen machen sie kaputt.
+5. Begleiter-Aufgabe je Rätsel für den Computer-Partner: `python3 tests/partner_aufgaben_pruefen.py --level <welt>/<datei>
+   --schreiben` (schreibt `levels/partner/<welt>/<datei>.json`; Offenes steht dort unter „offen“, schwierige Stellen von
+   Hand als „ablauf“ mit `"von_hand": true`); danach Test `partner_aufgaben_<welt>` (falls vorhanden) grün.
 
 ## Steuerung (Kurzfassung)
 | | Affe (Spieler 1) | Schweinchen (Spielerin 2) | Controller |
