@@ -7,6 +7,7 @@
 5. `editor-format/` = dieselben Level im Speicherformat des Editors, mit genau denselben Unterordnern und Namen.
 6. `test/` = kleine Testlevel für einzelne Elemente (öffnen mit `index.html?testlevel=<name>`), gehören zu keiner Welt.
 7. `archiv/` = alte Entwürfe, die nicht im Spiel vorkommen (z. B. der alte Entwurf von Ruinen 1).
+7a. `partner/` = Begleitdateien für den Computer-Partner (Testmodus), gleiche Unterordner wie die Level.
 8. „☁ Auf GitHub speichern“ im Editor legt neue Level automatisch im Ordner ihrer Welt an (Welt aus der Level-Info).
 9. Früher lagen alle Level flach hier (`level-1.json` …); die Liste alt -> neu steht in `js/01a-level-umzug.js`
    und in `WELTEN.md`. Alte Spielstände werden beim Laden automatisch auf die neuen Namen umgeschrieben.

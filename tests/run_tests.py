@@ -5390,7 +5390,7 @@ async def welten_laden(g):
 async def level_ordner_nach_welten(g):
     """Editor-Umbau (Teil I): Level liegen in levels/<welt>/<nr>-<titel>.json (Bosse <welt>/boss-<name>.json); jede Datei
     aus worlds.json existiert; jede Level-Datei in levels/ steht in genau einer Welt (Level oder Boss) – außer test/
-    (Testlevel) und archiv/ (alte Entwürfe, in levels.json versteckt); editor-format/ spiegelt genau dieselben Dateien;
+    (Testlevel), partner/ (Begleitdateien des Computer-Partners) und archiv/ (alte Entwürfe, in levels.json versteckt); editor-format/ spiegelt genau dieselben Dateien;
     levels.json kennt jede Datei; levels/README.md erklärt die Struktur."""
     import re
     lv = ROOT / 'levels'
@@ -5405,7 +5405,7 @@ async def level_ordner_nach_welten(g):
             eingetragen.append(d)
     assert len(eingetragen) == len(set(eingetragen)), 'Datei in mehreren Welten'
     dateien = sorted(str(f.relative_to(lv)).replace('\\', '/') for f in lv.rglob('*.json')
-                     if f.parent != lv and f.parts[len(lv.parts)] not in ('editor-format', 'test'))
+                     if f.parent != lv and f.parts[len(lv.parts)] not in ('editor-format', 'test', 'partner'))
     archiv = [d for d in dateien if d.startswith('archiv/')]
     assert sorted(set(dateien) - set(archiv)) == sorted(eingetragen), f'Datei ohne Welt / Welt ohne Datei: {sorted(set(dateien) ^ set(eingetragen))}'
     versteckt = {L['datei'] for L in liste if L.get('versteckt')}
