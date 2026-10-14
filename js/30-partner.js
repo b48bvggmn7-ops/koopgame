@@ -91,6 +91,7 @@ function partnerVorSchritt(){
     if(q !== !!partnerQuelle[a]){ KEYS[s] = q; partnerQuelle[a] = q; }
     if(KEYS[c1 + '_pressed'] || KEYS[c2 + '_pressed']){ KEYS[s + '_pressed'] = true; KEYS[c1 + '_pressed'] = false; KEYS[c2 + '_pressed'] = false; }
   }
+  partnerPads();
   const P = partnerFigur(), M = meineFigur();
   if(!P || !M) return;
   partnerHirn.schritt++;
@@ -109,14 +110,17 @@ function partnerZeichnen(){
   if(!partnerAktiv() || !p1 || !p2) return;
   const P = partnerFigur();
   const sx = (P.x - camX) * zoom, sy = (P.y - P.h - 14) * zoom + H*(1 - zoom) + CEILING_MARGIN;
-  const txt = '🤖 ' + (partner.text || 'Partner');
+  const fest = partner.modus === 'fest', warten = partner.modus === 'warten', aufgabe = partner.modus === 'aufgabe';
+  const txt = (fest ? '⚠ ' : warten ? '✋ ' : aufgabe ? '🔧 ' : '🤖 ') + (partner.text || 'Partner');
   ctx.save();
-  ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = (fest ? 'bold 13px' : 'bold 12px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const tw = ctx.measureText(txt).width + 14;
-  ctx.globalAlpha = 0.82;
-  ctx.fillStyle = 'rgba(20,28,38,.75)'; roundRect(sx - tw/2, sy - 20, tw, 18, 8); ctx.fill();
+  const x = Math.max(tw/2 + 4, Math.min(W - tw/2 - 4, sx));   // nie aus dem Bild
+  ctx.globalAlpha = fest ? 0.95 : 0.8;
+  ctx.fillStyle = fest ? 'rgba(150,60,10,.9)' : aufgabe ? 'rgba(25,60,40,.8)' : 'rgba(20,28,38,.72)';
+  roundRect(x - tw/2, sy - 20, tw, 18, 8); ctx.fill();
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#e8f1ff'; ctx.fillText(txt, sx, sy - 11);
+  ctx.fillStyle = fest ? '#fff3d6' : '#e8f1ff'; ctx.fillText(txt, x, sy - 11);
   ctx.restore();
 }
 
@@ -128,7 +132,44 @@ window.addEventListener('keydown', e => {
   if(e.code === 'KeyP'){ partnerSetzen(!partner.an); return; }
   if(!partnerAktiv()) return;
   if(e.code === 'KeyV') partnerTauschen();
+  if(e.code === 'KeyQ') partnerWarteOderKomm();
+  if(e.code === 'KeyE') partnerAufgabeJetzt();
 });
+
+// ---------- Befehle an den Partner (Tasten Q/E, Controller L1/R1, Share = Rollen tauschen) ----------
+// Q / L1: „Warte hier“ <-> „Komm her“. Warten: er bleibt stehen und übernimmt keine Aufgaben. Komm: er folgt wieder
+// (auch wenn er festhing oder eine Aufgabe nicht klappte).
+function partnerWarteOderKomm(){
+  if(!partnerAktiv() || !partnerHirn) return;
+  const H = partnerHirn, P = partnerFigur();
+  if(partner.modus === 'warten' || partner.modus === 'fest'){ partner.modus = 'folgen'; H.gerufen = true; }
+  else {
+    partner.modus = 'warten'; H.warteX = P.x; H.warteY = P.y; H.plan = null; H.suche = null;
+    if(H.aufgabe) H.aufgabe = null;
+  }
+  if(partner.modus === 'folgen'){ H.gescheitert = new Set(); H.aufgabeFehler = null; H.festSeit = H.schritt; H.bestAbst = undefined; }
+}
+// E / R1: „Mach deine Aufgabe jetzt“ – nächste Aufgabe in der Nähe sofort beginnen (auch ohne Zone)
+function partnerAufgabeJetzt(){
+  if(!partnerAktiv() || !partnerHirn) return;
+  const H = partnerHirn;
+  partner.modus = 'folgen'; H.gerufen = true; H.sofort = true; H.gescheitert = new Set(); H.aufgabeFehler = null;
+  H.festSeit = H.schritt; H.bestAbst = undefined;
+}
+const partnerPadVor = [{}, {}];
+function partnerPads(){
+  let pads = [];
+  try{ pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; }catch(err){ pads = []; }
+  for(let i = 0; i < 2; i++){
+    const gp = pads[i]; if(!gp){ partnerPadVor[i] = {}; continue; }
+    const b = n => !!(gp.buttons[n] && (gp.buttons[n].pressed || gp.buttons[n].value > 0.4));
+    const jetzt = {warte: b(4), aufgabe: b(5), tausch: b(8)}, vor = partnerPadVor[i];
+    if(jetzt.warte && !vor.warte) partnerWarteOderKomm();
+    if(jetzt.aufgabe && !vor.aufgabe) partnerAufgabeJetzt();
+    if(jetzt.tausch && !vor.tausch) partnerTauschen();
+    partnerPadVor[i] = jetzt;
+  }
+}
 
 partnerEinstellungLaden();
 
@@ -563,6 +604,15 @@ function partnerFestText(){
   const f = partnerHirn.aufgabeFehler;
   return f ? '„' + f + '“ klappt nicht – ruf mich (Q) oder tausch (V)' : 'hänge fest – ruf mich (Q) oder tausch (V)';
 }
+// „Warte hier“: an der Stelle bleiben (weicht nur aus, wenn es dort gefährlich wird)
+function partnerWarten(P){
+  const H = partnerHirn;
+  const Z = {x: H.warteX, y: H.warteY, id: 'warten', nah: Math.abs(P.x - H.warteX) < 40 && Math.abs(P.y - H.warteY) < 40};
+  const e = partnerNavi(P, Z, 'wartet hier (Q = komm)');
+  if(partner.modus === 'fest') partner.modus = 'warten';
+  partner.text = 'wartet hier (Q = komm)';
+  return e;
+}
 function partnerFolgen(P, M){
   if(partner.modus === 'aufgabe') partner.modus = 'folgen';
   const Z = partnerFolgeZiel(P, M); Z.id = 'folgen';
@@ -584,6 +634,7 @@ function partnerTastenAus(P, e){
 }
 function partnerDenken(P, M){
   if(typeof deathState !== 'undefined' && deathState) return {halten: {}, druecken: []};
+  if(partner.modus === 'warten') return partnerTastenAus(P, partnerWarten(P));
   // Aufgaben (31-partner-aufgaben.js) haben Vorrang; sonst folgen
   const e = (typeof partnerAufgabeSchritt === 'function' && partnerAufgabeSchritt(P, M)) || partnerFolgen(P, M);
   return partnerTastenAus(P, e);

@@ -8883,6 +8883,78 @@ async def partner_auto_aufgaben(g):
                                     {'x': 1140, 'y': 680}, {'x': 400, 'y': 680}, 'm', {'n': 500, 'bis': '!!linkOn[1]'})
     assert not r['ok'], 'Partner löst einen Felsen aus'
 
+PARTNER_SCHRITTE_JS = r"""o => {   // n Spielschritte rechnen; ich laufe optional nach rechts bis ich_ziel; Partner-Tasten mitschreiben
+  menuScreen = 'pause'; deathState = null;
+  let ts = window.__pts || 0, gedrueckt = 0;
+  for(let f = 0; f < o.n; f++){
+    ts += 16.6;
+    const M = meineFigur();
+    KEYS.Solo_right = o.ich_ziel !== undefined && M.x < o.ich_ziel;
+    stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    if(['left', 'right', 'jump', 'ability', 'use'].some(a => KEYS['Partner_' + a])) gedrueckt++;
+  }
+  window.__pts = ts; menuScreen = null;   // Tasten (Q/E/V) wirken nur, wenn kein Menü offen ist
+  const P = partnerFigur(), M = meineFigur();
+  return {P: [Math.round(P.x), Math.round(P.y)], M: [Math.round(M.x), Math.round(M.y)], modus: partner.modus, text: partner.text, gedrueckt,
+          an: !!linkOn[1], tod: !!deathState};
+}"""
+
+@test
+async def partner_steuerung(g):
+    """Computer-Partner Teilschritt 4: Q = „Warte hier“ (er bleibt stehen, auch wenn ich weggehe) / nochmal Q = „Komm her“
+    (er folgt wieder); E = „Mach deine Aufgabe jetzt“ (Aufgabe außerhalb ihrer Zone sofort); hängt er fest (ich bin
+    unerreichbar auf einem hohen Sims), meldet er das nach ~10 s sichtbar und drückt keine Tasten mehr, bis ich ihn rufe;
+    Controller: L1 = warten/komm, R1 = Aufgabe jetzt, Share = Rollen tauschen."""
+    p = g.p
+    # Warte / Komm
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 4000)], {'x': 700, 'y': 680}, {'x': 600, 'y': 680}), ich='m')
+    try:
+        await g.ev('(() => { window.__ps = ' + PARTNER_SCHRITTE_JS + '; return 1; })()')
+        r = await g.ev("__ps({n: 60})")
+        await p.keyboard.press('q')
+        r0 = await g.ev("__ps({n: 5})")
+        assert r0['modus'] == 'warten', r0
+        r = await g.ev("__ps({n: 400, ich_ziel: 1600})")
+        assert abs(r['P'][0] - r0['P'][0]) < 30 and r['M'][0] > 1500 and 'wartet' in r['text'], f'wartet nicht: {r0} -> {r}'
+        await p.keyboard.press('q')
+        r = await g.ev("__ps({n: 500})")
+        assert r['modus'] == 'folgen' and abs(r['P'][0] - r['M'][0]) <= 140, f'kommt nicht: {r}'
+    finally:
+        srv.shutdown()
+    # E: Aufgabe jetzt (Zone weit weg)
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 4000)], {'x': 400, 'y': 680}, {'x': 300, 'y': 680},
+                                                 switches=[{'x': 1100, 'y': 660, 'link': 1}]), ich='m')
+    try:
+        await g.ev('(() => { window.__ps = ' + PARTNER_SCHRITTE_JS + '; return 1; })()')
+        await g.ev("partnerAufgabenSetzen([{id: 'h', zone: [30, 36], aktion: 'hebel', nummer: 1}], 'test')")
+        r = await g.ev("__ps({n: 300})")
+        assert not r['an'], f'Aufgabe ohne Zone begonnen: {r}'
+        await p.keyboard.press('e')
+        r = await g.ev("__ps({n: 600})")
+        assert r['an'], f'E startet die Aufgabe nicht: {r}'
+    finally:
+        srv.shutdown()
+    # festhängen: ich oben auf einem hohen Sims (für ihn unerreichbar)
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 4000), ground(1000, 280, 400, 400, 'wall')], {'x': 1200, 'y': 280}, {'x': 600, 'y': 680}), ich='m')
+    try:
+        await g.ev('(() => { window.__ps = ' + PARTNER_SCHRITTE_JS + '; return 1; })()')
+        r = await g.ev("__ps({n: 700})")
+        assert r['modus'] == 'fest' and 'hänge fest' in r['text'] and not r['tod'], f'meldet Festhängen nicht: {r}'
+        r = await g.ev("__ps({n: 120})")
+        assert r['gedrueckt'] == 0, f'hämmert weiter auf die Tasten: {r}'
+        await p.keyboard.press('q')
+        r = await g.ev("__ps({n: 3})")
+        assert r['modus'] == 'folgen', f'Rufen löst das Festhängen nicht: {r}'
+        # Controller: L1 = warten, R1 = Aufgabe jetzt, Share = Rollen tauschen
+        await g.ev(PAD_STUB)
+        await g.ev("__pad.buttons[4].pressed = true"); await g.ev("__ps({n: 2})"); await g.ev("__pad.buttons[4].pressed = false"); r = await g.ev("__ps({n: 2})")
+        assert r['modus'] == 'warten', f'L1: {r}'
+        await g.ev("__pad.buttons[8].pressed = true"); await g.ev("__ps({n: 2})"); await g.ev("__pad.buttons[8].pressed = false"); await g.ev("__ps({n: 2})")
+        assert await g.ev("partner.ich") == 'f', 'Share tauscht nicht'
+    finally:
+        srv.shutdown()
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
