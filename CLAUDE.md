@@ -39,7 +39,7 @@
     09 Kamera (+ Kamera-Wackeln kameraStoss) · 10 Figuren zeichnen · 10a Level-Themen (Aussehen je Level: Himmel, Farben, Tiere, Dunkelheit) · 10b Design-Look (zentrale Tabelle
     `DESIGN_LOOK` je Welt/Tageszeit: Kontur, Randlicht, Tiefe, Dunst; Glanz-Muster `glanzSchatten/glanzFunkeln/glanzBand`
     für alle Elemente) · 11 Hintergrund (je Thema) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
-    Asche, Vordergrund nur am unteren Bildrand über Boden) · 12 Welt zeichnen · 13 Anzeige/Leistung ·
+    Asche) · 12 Welt zeichnen (Boden/Wand als durchgehende Blöcke mit Kontur, Moos/Lianen an hohen Flächen `hoheFlaechen`) · 13 Anzeige/Leistung ·
     14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Weltkarte + Welt-Seite mit Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 29 Spielszenen (Intro/Zwischensequenzen aus `story/story.json`, Sprechblasen, Kino-Balken) · 99 Start
 - `elemente/` – **Element-Register** (Ausbau 2): eine Datei pro Spiel-Element mit allem, was dazugehört (Daten-Feld,
   Editor-Werkzeug + Zeichnen + Export, Spiel-Laden + Zeichnen + Logik). Spiel UND Editor laden diese Dateien zuerst.
@@ -94,6 +94,9 @@
   pro Bild zeichnen (Hintergrund-Ebene, Dunkel-Schicht …): ab einer gewissen Zahl zeichnet der Browser sie sehr langsam
   (gemessen 8–80 ms je Bild). Details lieber in vorhandene Ebenen malen, weiche Schichten in halber Auflösung
   (`DUNKEL_AUFLOESUNG`). Test leinwand_scharf_und_schnell wacht darüber.
+- Pro Spielschritt nie „für jedes Kästchen alle solids durchlaufen“ (Licht, Flammen …): Raster-Verzeichnis nutzen
+  (Muster `lichtGitterHolen` in elemente/licht.js, `falleGitterHolen` in elemente/falle.js). Test spielschritt_schnell.
+- Regen ist aus dem Spiel (`REGEN_AUS` in 19-wetter.js, Nutzerwunsch).
 - Spieltempo `GAME_SPEED` 0,9 (14-spielschleife.js): 60 Schritte pro *Spielsekunde*, real also 54/s.
 - Spielstand-Werte (Sprung, Tempo, Wandsprung-Zeitfenster …) stehen in `js/02-physik-werte.js` bzw. am Anfang
   der jeweiligen Datei als Konstanten in GROSSBUCHSTABEN.

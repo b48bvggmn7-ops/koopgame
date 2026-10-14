@@ -1498,9 +1498,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 - **Details je Welt** (js/11a-welt-details.js, in die mittlere Hintergrund-Ebene gemalt): Dschungel Lianen mit
   Orchideen, Moos und Tau, Wasserfall mit Nebel, Sprühregen und (tagsüber) Regenbogen; Ruinen Säulenreste mit
   Hieroglyphen und Rissen, flackernde Fackeln, Sandstaub; Höhle Tropfsteine mit fallenden Tropfen, Leuchtpilze; Vulkan
-  Felsen mit glühenden Rissen, Rauch, fallende Asche und Funken. Unscharfer Vordergrund (Farne/Felsen) **nur am unteren
-  Bildrand** und nur über Boden/Wand – nie über Lava, Gruben, Münzen, Hebeln, Checkpoints oder Türen. Test
-  welt_details_und_vordergrund.
+  Felsen mit glühenden Rissen, Rauch, fallende Asche und Funken. Test welt_details_und_vordergrund. (Ein dunkler
+  Vordergrund am unteren Bildrand war kurz drin und ist auf Nutzerwunsch wieder entfernt.)
 - **Weltkarte neu:** gemaltes Meer im Holzrahmen mit Seil-Ecken, Kompass, Wolken, Brücken und Fußspuren auf den Pfaden;
   jede Insel mit Stimmungsfarbe, Klippe, Schaumring, Wetter (Regenwolke, Sonne, Nebel, Rauch) und Tier, sanft wippend;
   gesperrte Welten liegen im Nebel mit Schloss (nicht grau); Affe und Schweinchen wippen auf der gewählten Insel. Alle
@@ -1508,6 +1507,23 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 - **Levelkarten gleich groß:** festes Raster, alle Karten einer Welt (auch Boss-Karte, mit/ohne Statistik) gleich breit
   und hoch; lange Titel etwas kleiner bzw. an einer Silbe in zwei Zeilen umgebrochen. Test levelkarten_gleich_breit
   (1920×1080 und 1366×768, 4–6 Level).
+- **Design-Politur 2 (Rückmeldung des Nutzers):**
+  - Boden und Wand lassen sich in alle Richtungen und mehrfach übereinander bauen und sehen wie EIN Block aus: Erde in
+    einer durchgehenden Farbe mit an der Welt ausgerichteten Erdschichten (keine Streifen je Reihe mehr), kräftige
+    dunkle Kontur an allen freien Rändern ohne Lücken an Reihengrenzen. An freien Seitenflächen ab 3 Reihen Höhe
+    (`FLAECHE_MIN_H`) wachsen Moospolster und ein bis zwei leicht schwingende Lianen (nur auf der Fläche, nie im Laufweg).
+  - **Kein Regen mehr** (`REGEN_AUS`): es bleibt immer Sonne, kein Regen-Rauschen, keine Spritzer; das Level-Feld
+    „wetter“ bleibt in den Daten, wirkt aber nicht mehr (Editor zeigt das an).
+  - **Gemütlich und warm:** goldener Himmel zum Horizont, warmes Gegenlicht hinter den Bäumen, cremiger Nebel, sanft
+    schwankende warme Lichtstrahlen, leuchtende Pollen, ein Hauch Gold über dem Hintergrund, nahe Hintergrund-Ebenen
+    satter und dunkler (Tiefe), warme Vignette; abends orange-violett, nachts blau mit warmen Glühwürmchen. Höhle und
+    Vulkan behalten ihren eigenen Himmel. Werte in `DESIGN_LOOK` (gegenlicht, strahlen, pollen, waerme, goldHauch,
+    nahTiefe, nebel, vignette).
+  - **Weltkarte unverzerrt:** die Deko (Kompass, Brücken, Fußspuren, Seil-Ecken) wird mit dem echten Seitenverhältnis
+    gezeichnet; Tests prüfen Karte und Spielbild auf Verzerrung.
+  - **Ruckeln behoben:** Lichtstrahl und Flammen prüfen feste Teile über ein Raster-Verzeichnis statt jedes Teil des
+    Levels (vorher 15–26 ms je Spielschritt in Licht-/Fallen-Leveln, jetzt 1–4 ms; Verhalten identisch). Test
+    spielschritt_schnell.
 - **Menü-Klang:** kurzes, tiefes Holz-„Tock“ statt Spieluhr-Klingeln (menuTick 40 ms, menuOk 65 ms, menuStart 110 ms
   beim Level-Start), ohne Nachhall; schnelle Cursor-Schritte klappern nicht (`MENU_TICK_ABSTAND`). Spielgeräusche
   unverändert. Test menue_ton_dezent.

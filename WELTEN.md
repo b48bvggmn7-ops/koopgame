@@ -783,7 +783,10 @@ Richtung (Nutzer-Referenzbilder): gemütlich, schön, echt, magisch, weich, vert
 klarsten Kontrast und die schärfsten Kanten, der Hintergrund ist weicher, in der Ferne heller, blauer und unschärfer.
 Alle Werte stehen in `DESIGN_LOOK` (js/10b-design-look.js), die Details in js/11a-welt-details.js.
 
-| Welt | Dunst/Farbe | Details im Hintergrund | bewegt | Vordergrund unten |
+Design-Politur 2: kein Vordergrund mehr am unteren Rand, kein Regen; Tag warm-golden (Gegenlicht, Lichtstrahlen, Pollen,
+goldener Nebel), Abend orange-violett, Nacht blau mit warmen Glühwürmchen.
+
+| Welt | Dunst/Farbe | Details im Hintergrund | bewegt | (früher: Vordergrund unten, entfernt) |
 |---|---|---|---|---|
 | Dschungel | hell-grüner Dunst, satt | Lianen mit Blättern, Orchideen (violett/gelb/rosa), Moospolster, Tautropfen | Wasserfall-Nebel, Sprühregen, Regenbogen (tagsüber), Lichtstrahlen, Schmetterlinge | dunkle Farne/Blätter |
 | Ruinen | warmer Sanddunst | Säulenreste mit Hieroglyphen, Risse, Moos | Fackeln flackern, Sandstaub treibt, Eidechsen | dunkle Farne/Blätter |
