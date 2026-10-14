@@ -126,6 +126,15 @@ async def koop(g, **o):
     if not await g.ev("typeof window.coopRun === 'function'"): await g.p.evaluate("() => {" + KOOP_BOT + "}")
     return await g.p.evaluate("o => coopRun(o)", o)
 def k_pos(r, who): return r['pos'][who] if r.get('done') else None
+async def halte_schritte(g, keys, n):
+    """Tasten genau n Spielschritte halten und IM SPIEL loslassen (unabhängig davon, wie schnell der Rechner zeichnet –
+    feste Millisekunden über Playwright kommen unter Last ein paar Schritte zu spät an)."""
+    await g.ev(f"""(() => {{ const ziel = simSteps + {n}, ks = {json.dumps(list(keys))}; window.__halteEnde = ziel;
+      for(const k of ks){{ if(!KEYS[k]) KEYS[k + '_pressed'] = true; KEYS[k] = true; }}
+      const alt = stepSim; stepSim = function(...a){{ const r = alt.apply(this, a);
+        if(simSteps >= ziel){{ for(const k of ks) KEYS[k] = false; stepSim = alt; }} return r; }}; }})()""")
+    await g.p.wait_for_function("simSteps >= window.__halteEnde", timeout=20000)
+
 async def koop_level(g, datei):
     await g.load(str(ROOT / 'levels' / datei))
     await g.p.evaluate("() => {" + KOOP_BOT + "}")
@@ -4827,9 +4836,9 @@ async def kamera_ruhig_bei_zwei(g):
         c = await g.ev('camPos')
         if abs(c - cam0) < 0.3: break
         cam0 = c
-    for _ in range(3):   # Affe (hinten) zappelt hin und her und springt
-        await g.hold(('KeyD', 'Space'), 150); await g.hold(('KeyA',), 150)
-    await g.p.wait_for_timeout(300)
+    for _ in range(3):   # Affe (hinten) zappelt hin und her und springt (je ~150 ms, genau gezählt in Spielschritten)
+        await halte_schritte(g, ('KeyD', 'Space'), 8); await halte_schritte(g, ('KeyA',), 8)
+    await g.steps(16)
     cam1 = await g.ev('camPos')
     assert abs(cam1 - cam0) < 3, f'Kamera wackelt mit: {cam0:.0f} -> {cam1:.0f}'
     await g.hold(('KeyD', 'ArrowRight'), 1500); await g.p.wait_for_timeout(600)
