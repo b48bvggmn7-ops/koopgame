@@ -10,22 +10,19 @@
 //    Vulkan: Felsen mit glühenden Rissen, Rauchfahnen
 // 2) bewegte Kleinigkeiten pro Bild (nur Zeichnen, Zeit aus performance.now): Wasserfall-Regenbogen und Nebel,
 //    Fackel-Flackern, fallende Tropfen, Sandstaub, Ascheflocken und Funken
-// 3) Vordergrund NUR am unteren Bildrand (Nutzerwunsch): dunkle, weiche Farn-/Fels-Silhouetten unterhalb der
-//    Bodenoberkante – liegen nie auf Münzen, Hebeln, Checkpoints oder Türen.
+// (Ein Vordergrund am unteren Bildrand war kurz drin – auf Nutzerwunsch wieder entfernt.)
 // Alles im Hintergrund bleibt weich und dunstig (das Spielfeld hat den klarsten Kontrast).
-const VORDERGRUND_PAR = 1.25;     // Vordergrund bewegt sich schneller als die Welt (wirkt näher)
-const VORDERGRUND_H = 30;         // höchstens so hoch (Bildschirm-Pixel) – unterhalb der Bodenoberkante
 const BG_FACKELN = [];            // {x, y} in Ebenen-Koordinaten der Detail-Ebene
 const BG_TROPFEN = [];            // {x, y} Tropfstein-Spitzen (Höhle)
-let detailEbene = null, vordergrundBild = null, detailWelt = null;
+let detailEbene = null, detailWelt = null;
 
 function detailFarben(welt){
   return {
-    dschungel: {liane: '#3f6b3a', blatt: ['#4f8a45', '#6aa556'], moos: ['#5d9a4a', '#7cb860'], bluete: ['#b46ad8', '#ffd84a', '#e889c9'], tau: 'rgba(255,255,255,.75)', vorne: '#1e3a22'},
-    wasser:    {liane: '#3a6f5e', blatt: ['#4f9a7a', '#6fbf96'], moos: ['#4fa88a', '#78c9a6'], bluete: ['#c27ae0', '#ffe066', '#ff9fc8'], tau: 'rgba(255,255,255,.75)', vorne: '#1d3d38'},
-    ruinen:    {stein: ['#c9b48a', '#a8916a', '#8a7552'], ritz: 'rgba(80,58,30,.55)', moos: ['#7a9a4a', '#98b85e'], vorne: '#3a2e1c'},
-    hoehle:    {zapfen: ['#3e3456', '#2c2440', '#4c4268'], pilz: ['#7ef0e0', '#c49aff'], vorne: '#0f0c1a'},
-    vulkan:    {fels: ['#2e2226', '#22181a'], glut: ['#ff7a2a', '#ffc04a'], rauch: 'rgba(70,56,56,.35)', vorne: '#140a0a'},
+    dschungel: {liane: '#3f6b3a', blatt: ['#4f8a45', '#6aa556'], moos: ['#5d9a4a', '#7cb860'], bluete: ['#b46ad8', '#ffd84a', '#e889c9'], tau: 'rgba(255,255,255,.75)'},
+    wasser:    {liane: '#3a6f5e', blatt: ['#4f9a7a', '#6fbf96'], moos: ['#4fa88a', '#78c9a6'], bluete: ['#c27ae0', '#ffe066', '#ff9fc8'], tau: 'rgba(255,255,255,.75)'},
+    ruinen:    {stein: ['#c9b48a', '#a8916a', '#8a7552'], ritz: 'rgba(80,58,30,.55)', moos: ['#7a9a4a', '#98b85e']},
+    hoehle:    {zapfen: ['#3e3456', '#2c2440', '#4c4268'], pilz: ['#7ef0e0', '#c49aff']},
+    vulkan:    {fels: ['#2e2226', '#22181a'], glut: ['#ff7a2a', '#ffc04a'], rauch: 'rgba(70,56,56,.35)'},
   }[welt] || null;
 }
 
@@ -141,7 +138,6 @@ function bgDetail(g, welt){
 // im Browser spürbar langsamer); buildBackground (11-hintergrund.js) meldet die Ebene hier an
 function detailEbeneSetzen(L, welt){
   detailEbene = L; detailWelt = welt;
-  vordergrundBild = vordergrundBauen(welt);
 }
 // --- bewegte Kleinigkeiten (pro Bild, nur Zeichnen) ---
 function detailBewegt(off, t){
@@ -208,46 +204,4 @@ function detailTeilchen(t){
   }
 }
 
-// --- Vordergrund am unteren Bildrand (einmal gezeichnet, kachelbar) ---
-function vordergrundBauen(welt){
-  const F = detailFarben(welt); if(!F) return null;
-  const c = bgCanvas(BG_TW, 80), g = c.getContext('2d'), rnd = bgRand(313);
-  g.fillStyle = F.vorne;
-  for(let i = 0; i < 26; i++){
-    const x = i*62 + rnd()*30, h = 30 + rnd()*40, art = rnd();
-    bgWrap(x, X => {
-      if(welt === 'hoehle' || welt === 'vulkan'){
-        g.beginPath(); g.moveTo(X - h*0.8, 80); g.quadraticCurveTo(X - h*0.4, 80 - h, X, 80 - h*0.9); g.quadraticCurveTo(X + h*0.5, 80 - h*0.8, X + h*0.9, 80); g.closePath(); g.fill();
-      } else if(art < 0.5){   // Farn
-        g.strokeStyle = F.vorne; g.lineWidth = 3; g.lineCap = 'round';
-        for(let k = 0; k < 5; k++){ const a = -Math.PI/2 + (k - 2)*0.4; g.beginPath(); g.moveTo(X, 82); g.quadraticCurveTo(X + Math.cos(a)*h*0.6, 82 + Math.sin(a)*h*0.6 - 10, X + Math.cos(a)*h, 82 + Math.sin(a)*h*0.8); g.stroke(); }
-      } else {   // Blatt
-        const a = -Math.PI/2 + (rnd() - 0.5)*1.2, ex = X + Math.cos(a)*h*1.3, ey = 80 + Math.sin(a)*h*1.1;
-        g.beginPath(); g.moveTo(X, 82); g.quadraticCurveTo((X + ex)/2 + 14, (80 + ey)/2, ex, ey); g.quadraticCurveTo((X + ex)/2 - 14, (80 + ey)/2, X, 82); g.fill();
-      }
-    });
-  }
-  bgBlur(g, 2.2);   // unscharf: liegt „vor der Kamera“
-  return c;
-}
-// zeichnet den Vordergrund ganz unten (Bildschirm-Koordinaten); nur unterhalb der Bodenoberkante (VORDERGRUND_H)
-// und nur über Boden-/Wandstücken
-function vordergrundZeichnen(){
-  if(!vordergrundBild) return;
-  const off = ((Math.round(camX*VORDERGRUND_PAR) % BG_TW) + BG_TW) % BG_TW, y = H - VORDERGRUND_H;
-  // nur über festem Boden/Wand (nie über Lava, Wasser, Gruben oder Gefahren): Ausschnitt aus deren Bildschirm-Lage
-  const zoomY = wy => wy*zoom + H*(1 - zoom) + CEILING_MARGIN;
-  ctx.save(); ctx.beginPath(); let n = 0;
-  for(const so of solids){
-    if((so.type !== 'ground' && so.type !== 'wall') || so.gone) continue;
-    const x0 = (so.x - camX)*zoom, x1 = (so.x + so.w - camX)*zoom;
-    if(x1 < 0 || x0 > W || zoomY(so.y) > H - 4 || zoomY(so.y + so.h) < y) continue;
-    ctx.rect(x0, Math.max(y, zoomY(so.y) + 6), x1 - x0, H - Math.max(y, zoomY(so.y) + 6)); n++;
-  }
-  if(!n){ ctx.restore(); return; }
-  ctx.clip(); ctx.globalAlpha = 0.85;
-  ctx.drawImage(vordergrundBild, 0, 80 - VORDERGRUND_H, BG_TW, VORDERGRUND_H, -off, y, BG_TW, VORDERGRUND_H);
-  if(BG_TW - off < W) ctx.drawImage(vordergrundBild, 0, 80 - VORDERGRUND_H, BG_TW, VORDERGRUND_H, BG_TW - off, y, BG_TW, VORDERGRUND_H);
-  ctx.restore();
-}
 buildBackground();   // erster Aufbau des Hintergrunds (mit Details) – einmal beim Start
