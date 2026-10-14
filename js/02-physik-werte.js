@@ -155,3 +155,15 @@ const BOSS_UNVERWUNDBAR = 70;    // nach einem Treffer
 // ---------- Menü-Klänge (Design-Politur): Länge in ms; Cursor-Schritte höchstens alle MENU_TICK_ABSTAND ms ----------
 const MENU_TON_MS = {tick: 40, ok: 65, start: 110};
 const MENU_TICK_ABSTAND = 70;
+
+// ---------- Computer-Partner (js/30-partner.js) – nur im Testmodus aus dem Editor; Schritte = Physik-Schritte ----------
+const PARTNER_IM_HAUPTSPIEL = false;   // später: auch im Hauptspiel als Einzelspieler wählbar (Schalter, bewusst noch aus)
+const PARTNER_REAKTION = [9, 15];      // Schritte (≈ 150–250 ms): so lange braucht er, bis er auf etwas Neues reagiert
+const PARTNER_ABSTAND = 90;            // px: gemütlicher Abstand hinter mir (in Laufrichtung)
+const PARTNER_ABSTAND_LOCKER = 40;     // px: innerhalb dieser Spanne um den Wunschplatz steht er einfach
+const PARTNER_AUFHOLEN = 360;          // px: weiter weg -> zügig aufholen (normales Lauftempo), sonst gemütlich
+const PARTNER_GEMUETLICH = 0.6;        // Anteil der Schritte mit gedrückter Lauftaste beim gemütlichen Folgen
+const PARTNER_VORAUS = 64;             // Schritte, die er beim Springen vorausrechnet (Landeplatz sicher?)
+const PARTNER_FEST = 540;              // Schritte (10 s) ohne Fortschritt -> „hänge fest“, wartet auf mich
+const PARTNER_AUFGABE_ZEIT = 1800;     // Schritte (30 s) Standard-Zeitlimit einer Aufgabe
+const PARTNER_AUTO_WEITE = 20 * 40;    // px: Auto-Aufgabe nur, wenn Hebel/Platte und Tür höchstens so weit auseinander (Bild-Regel)

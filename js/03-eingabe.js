@@ -34,6 +34,9 @@ const KEYSETS = {
 };
 let monkeyPlayer = 1;        // welcher Spieler (1/2) den Affen steuert
 function keysFor(male){
+  // Computer-Partner (js/30-partner.js, nur Testmodus): eine Figur hört auf „meine“ Tasten (beide Tastaturhälften und
+  // beide Controller), die andere auf die Partner-Tasten, die der Partner selbst drückt
+  if(typeof partnerTasten === 'function'){ const t = partnerTasten(male); if(t) return t; }
   const s = KEYSETS[male ? monkeyPlayer : 3 - monkeyPlayer];
   // swimUp/swimDown: Hoch/Runter beim Schwimmen (Ausbau 5) – dieselben Tasten wie Seil ranziehen/geben
   return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack}
@@ -53,6 +56,7 @@ function updateHudKeys(){
   const rope = {1: ' · W ranziehen · S Seil geben', 2: ' · ↑ ranziehen · ↓ Seil geben'};
   const mP = monkeyPlayer, fP = 3 - monkeyPlayer;
   const set = (id, html)=>{ const el = document.getElementById(id); if(el) el.innerHTML = html; };
+  if(typeof partnerHud === 'function' && partnerHud(set)) return;   // Computer-Partner an (30-partner.js)
   set('hudMHead', '<b>Spieler ' + mP + '</b> <span class="p1">● Affe, Haken</span>');
   set('hudMKeys', txt[mP].replace('{ab}', 'Haken schießen/lösen') + rope[mP]);
   set('hudFHead', '<b>Spieler ' + fP + '</b> <span class="p2">● Schweinchen, Schirm</span>');

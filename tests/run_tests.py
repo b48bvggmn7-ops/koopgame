@@ -4147,7 +4147,7 @@ async def editor_testen_knopf(g):
         await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.wait_for_timeout(300)
         # Enter im Namensfeld (Levels-Fenster) startet KEINEN Test
         await p.click('#levelsBtn')
-        await p.wait_for_selector('#projectList .lvl', timeout=8000)   # Projekt-Liste fertig geladen (sonst kann das spätere Neuzeichnen den Fokus nehmen)
+        await p.wait_for_selector('#projectList .lvl', state='attached', timeout=8000)   # Projekt-Liste fertig geladen (sonst kann das spätere Neuzeichnen den Fokus nehmen)
         await p.fill('#levelName', 'x'); await p.keyboard.press('Escape')
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
         assert '/editor/' in p.url, 'Enter im Textfeld hat den Test gestartet'
@@ -8595,6 +8595,114 @@ async def tempelherz_sonnenkrone(g):
     r = await koop(g, m=kat(752, 15), f=kat(745, 15), plans={'m': [wb_halt(px), {'frames': 200}]}, maxFrames=400)
     soll(r.get('dead') == 'm', 'wer stur am Hebel unter der Falle stehen bleibt, wird vom Pfeil getroffen', info(r))
     assert not fehler, fehler
+
+# ---------- Computer-Partner (js/30-partner.js) ----------
+def level_daten(solids, start_m, start_f, **extra):
+    d = {'solids': solids, 'hooks': [], 'switches': [], 'doors': [], 'spikes': [], 'coins': [],
+         'movingPlatforms': [], 'checkpoints': [], 'startM': start_m, 'startF': start_f, 'goal': {'x': 4000, 'y': 680}}
+    d.update(extra)
+    return d
+
+async def partner_test_start(g, daten, ich='m', an=True, extra_js=''):
+    """Spiel im Testmodus (wie Editor-Knopf „▶ Testen“) mit dem Level daten starten; Computer-Partner an/aus, ich = Figur."""
+    srv = webserver(); p = g.p
+    await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(200)
+    await p.evaluate("([d, w]) => { localStorage.setItem('monchichi_test_level', d); localStorage.setItem('monchichi_partner', w);"
+                     " localStorage.setItem('monchichi.introGesehen', 'true'); }", [json.dumps(daten), json.dumps({'an': an, 'ich': ich})])
+    await p.goto(srv.url + 'index.html?test=1')
+    await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && !!p1", timeout=8000)
+    await p.wait_for_timeout(150)
+    if extra_js: await g.ev(extra_js)
+    return srv
+
+@test
+async def partner_geruest(g):
+    """Computer-Partner Teilschritt 1: im Testmodus mit „allein als Affe“ hört der Affe auf BEIDE Tastaturhälften, das
+    Schweinchen auf die Partner-Tasten (es steht still, solange er nichts tut); V tauscht die Rollen, P schaltet den Partner
+    aus (dann wieder zwei Spieler mit den normalen Tasten); die Wahl wird im Browser gemerkt; Anzeige oben nennt den Partner."""
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}), ich='m')
+    p = g.p
+    try:
+        k = await g.ev("({an: partnerAktiv(), m: p1.keys.left, f: p2.keys.left, mj: p1.keys.jump, fg: p2.keys.glide})")
+        assert k == {'an': True, 'm': 'Solo_left', 'f': 'Partner_left', 'mj': 'Solo_jump', 'fg': 'Partner_ability'}, k
+        assert 'Computer-Partner' in await p.text_content('.hud'), 'Anzeige nennt den Partner nicht'
+        x0 = await g.ev("[p1.x, p2.x]")
+        await halte_schritte(g, ['ArrowRight'], 40)   # rechte Tastaturhälfte steuert jetzt MEINE Figur (Affe)
+        x1 = await g.ev("[p1.x, p2.x]")
+        assert x1[0] - x0[0] > 60 and abs(x1[1] - x0[1]) < 2, f'Pfeiltaste bewegt nicht den Affen / Partner bewegt sich: {x0} -> {x1}'
+        await halte_schritte(g, ['KeyA'], 40)          # linke Hälfte ebenso
+        x2 = await g.ev("[p1.x, p2.x]")
+        assert x1[0] - x2[0] > 60, f'A bewegt den Affen nicht: {x1} -> {x2}'
+        await g.ev("window.__minY = 1e9; window.__altSim = stepSim; stepSim = function(...a){ const r = __altSim.apply(this, a); __minY = Math.min(__minY, p1.y); return r; }")
+        await halte_schritte(g, ['Space'], 2); await g.steps(40)
+        assert await g.ev("(() => { stepSim = __altSim; return __minY < 650; })()"), 'Leertaste springt nicht'
+        # V: Rollen tauschen -> ich bin das Schweinchen
+        await p.keyboard.press('v'); await g.steps(2)
+        k = await g.ev("({ich: partner.ich, m: p1.keys.left, f: p2.keys.left, gemerkt: JSON.parse(localStorage.getItem('monchichi_partner')).ich})")
+        assert k == {'ich': 'f', 'm': 'Partner_left', 'f': 'Solo_left', 'gemerkt': 'f'}, k
+        x3 = await g.ev("[p1.x, p2.x]")
+        await halte_schritte(g, ['KeyD'], 40)
+        x4 = await g.ev("[p1.x, p2.x]")
+        assert x4[1] - x3[1] > 60 and abs(x4[0] - x3[0]) < 2, f'nach dem Tausch steuere ich nicht das Schweinchen: {x3} -> {x4}'
+        # P: Partner aus -> zwei Spieler wie immer
+        await p.keyboard.press('p'); await g.steps(2)
+        k = await g.ev("({an: partnerAktiv(), m: p1.keys.left, f: p2.keys.left, gemerkt: JSON.parse(localStorage.getItem('monchichi_partner')).an})")
+        assert k == {'an': False, 'm': 'KeyA', 'f': 'ArrowLeft', 'gemerkt': False}, k
+        assert 'Computer-Partner' not in await p.text_content('.hud')
+    finally:
+        srv.shutdown()
+
+@test
+async def partner_nicht_im_normalen_spiel(g):
+    """Computer-Partner: auch wenn „allein testen“ gemerkt ist, gibt es im normalen Spiel (ohne Editor-Test) keinen Partner
+    und kein neues Verhalten: normale Tasten, P/V tun nichts; im Editor-Test mit „zu zweit“ ebenso."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(200)
+        await g.ev("localStorage.setItem('monchichi_partner', JSON.stringify({an: true, ich: 'f'}))")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("typeof partner !== 'undefined'", timeout=8000)
+        await g.load(level([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}))
+        k = await g.ev("({an: partnerAktiv(), gemerkt: partner.an, m: p1.keys.left, f: p2.keys.left})")
+        assert k == {'an': False, 'gemerkt': True, 'm': 'KeyA', 'f': 'ArrowLeft'}, k
+        await p.keyboard.press('v'); await p.keyboard.press('p'); await g.steps(3)
+        k = await g.ev("({an: partner.an, ich: partner.ich, m: p1.keys.left})")
+        assert k == {'an': True, 'ich': 'f', 'm': 'KeyA'}, f'P/V wirken im normalen Spiel: {k}'
+        x0 = await g.ev("[p1.x, p2.x]")
+        await halte_schritte(g, ['ArrowRight'], 30)
+        x1 = await g.ev("[p1.x, p2.x]")
+        assert abs(x1[0] - x0[0]) < 2 and x1[1] - x0[1] > 40, f'Pfeiltaste steuert nicht wie immer das Schweinchen: {x0} -> {x1}'
+    finally:
+        srv.shutdown()
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}), an=False)
+    try:
+        k = await g.ev("({an: partnerAktiv(), m: p1.keys.left, f: p2.keys.left})")
+        assert k == {'an': False, 'm': 'KeyA', 'f': 'ArrowLeft'}, k
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_partner_wahl(g):
+    """Editor: Auswahl „👥 zu zweit / 🐵 allein als Affe / 🐷 allein als Schweinchen“ neben „▶ Testen“ wird gemerkt;
+    „Testen“ gibt die Projekt-Datei mit (für die Begleiter-Aufgaben)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
+        assert await p.input_value('#partnerWahl') == 'aus'
+        await p.select_option('#partnerWahl', 'f')
+        assert json.loads(await g.ev("localStorage.getItem('monchichi_partner')")) == {'an': True, 'ich': 'f'}
+        await p.reload(); await p.wait_for_timeout(400)
+        assert await p.input_value('#partnerWahl') == 'f', 'Auswahl nicht gemerkt'
+        await p.click('#levelsBtn'); await p.wait_for_timeout(500)
+        await projekt_laden(p, 'dschungel/01-dschungel.json')
+        await p.click('#testBtn'); await p.wait_for_url('**/index.html?test=1', timeout=8000)
+        await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && !!p1", timeout=8000)
+        k = await g.ev("({an: partnerAktiv(), ich: partner.ich, datei: JSON.parse(localStorage.getItem('monchichi_test_level')).projektDatei, f: p1.keys.left})")
+        assert k == {'an': True, 'ich': 'f', 'datei': 'dschungel/01-dschungel.json', 'f': 'Partner_left'}, k
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
+        await p.select_option('#partnerWahl', 'aus')
+        assert json.loads(await g.ev("localStorage.getItem('monchichi_partner')")) == {'an': False, 'ich': 'f'}
+    finally:
+        srv.shutdown()
 
 async def main(filter_):
     async with async_playwright() as pw:

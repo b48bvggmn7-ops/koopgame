@@ -14,6 +14,7 @@ let simAcc = 0, lastFrameTs = 0, frameDt = STEP;
 let simSteps = 0;   // Zähler der Physik-Schritte (nur zum Messen, z. B. für die Tests – ändert nichts am Spiel)
 function stepSim(ts){
   simSteps++;
+  if(typeof partnerVorSchritt === 'function') partnerVorSchritt();   // Computer-Partner drückt seine Tasten (30-partner.js, nur Testmodus)
   if(won && ++winSteps === WIN_DANCE_STEPS) winFinish();   // nach dem Tanz zurück ins Menü (21-figuren-leben.js)
   activateVisibleMovers();
   updatePlayer(p1, ts);

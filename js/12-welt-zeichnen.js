@@ -1020,6 +1020,7 @@ function drawSolidLook(s, look, x){
   drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
   drawFakeGlints();      // dezentes Glitzern an Scheinwänden (auch im Dunkeln sichtbar)
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenOben) E.spiel.zeichnenOben();   // Bildschirm-Anzeigen, z. B. Boss-Lebensbalken (elemente/)
+  if(typeof partnerZeichnen === 'function') partnerZeichnen();   // Computer-Partner: Symbol über seiner Figur (30-partner.js, nur Testmodus)
   weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
   drawOffscreenArrows();
   drawZielHinweise();   // kurzer Pfeil am Bildrand zum Ziel eines eben geschalteten Hebels (07-effekte-ton-muenzen.js)

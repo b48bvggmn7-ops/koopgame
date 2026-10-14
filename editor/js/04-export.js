@@ -127,9 +127,19 @@ document.getElementById('testBtn').addEventListener('click', ()=>{
   }
   // Stelle merken (in Editor-Pixeln, unabhängig von der Fenstergröße), damit es nach dem Test dort weitergeht
   try{ localStorage.setItem('monchichi_editor_scroll', String(wrap.scrollLeft * cvs.width / cvs.getBoundingClientRect().width)); }catch(e){}
+  if(currentProjectFile) data.projektDatei = currentProjectFile;   // Computer-Partner: Begleiter-Aufgaben des Levels (levels/partner/)
   try{ localStorage.setItem('monchichi_test_level', JSON.stringify(data)); }
   catch(e){ flash('Testen geht nicht: Browser-Speicher voll/gesperrt'); return; }
   location.href = '../index.html?test=1';
+});
+// „Allein testen“ (Computer-Partner, js/30-partner.js): Auswahl wird im Browser gemerkt (dieselbe Einstellung wie im Spiel)
+const partnerWahl = document.getElementById('partnerWahl');
+try{ const d = JSON.parse(localStorage.getItem('monchichi_partner') || 'null'); if(d && d.an) partnerWahl.value = d.ich === 'f' ? 'f' : 'm'; }catch(e){}
+partnerWahl.addEventListener('change', ()=>{
+  const v = partnerWahl.value;
+  let alt = {}; try{ alt = JSON.parse(localStorage.getItem('monchichi_partner') || '{}') || {}; }catch(e){}
+  try{ localStorage.setItem('monchichi_partner', JSON.stringify({an: v !== 'aus', ich: v === 'aus' ? (alt.ich || 'm') : v})); }catch(e){}
+  partnerWahl.blur();
 });
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   document.getElementById('exportText').value = exportLevel();
