@@ -1075,29 +1075,35 @@ function islandSVG(look, key) {
     ${ic}${wetter}${tier}</svg>`;
 }
 // Dekoration der Karte (Seil-Ecken, Kompass, Wolken, Fußspuren, Brücken) – eigenes SVG, getrennt vom Pfad
-function karteDeko(pts) {
+// A = Seitenverhältnis der Karte (Breite/Höhe): x-Werte werden damit gestreckt, damit im SVG nichts verzerrt
+// (Nutzerwunsch „achte darauf, dass nichts verzerrt ist“ – vorher wurde alles in die Breite gezogen)
+function karteDeko(pts, A) {
+  A = A || 2.5;
+  const X = x => +(x*A).toFixed(2);
   const spuren = [], bruecken = [];
+  pts = pts.map(([x, y]) => [X(x), y]);
   for (let j = 1; j < pts.length; j++) {
     const [x0, y0] = pts[j - 1], [x1, y1] = pts[j], mx = (x0 + x1) / 2;
     const bez = t => { const u = 1 - t; return [u*u*u*x0 + 3*u*u*t*mx + 3*u*t*t*mx + t*t*t*x1, u*u*u*y0 + 3*u*u*t*y0 + 3*u*t*t*y1 + t*t*t*y1]; };
     for (let k = 1; k < 9; k++) {
       if (k === 4 || k === 5) continue;   // Mitte: Brücke
       const t = 0.12 + k*0.085, [x, y] = bez(t), [xa, ya] = bez(t + 0.01), a = Math.atan2(ya - y, xa - x)*180/Math.PI, s = k % 2 ? 1 : -1;
-      spuren.push(`<ellipse cx="${(x + s*0.35*Math.sin(a*Math.PI/180)).toFixed(2)}" cy="${(y - s*0.6*Math.cos(a*Math.PI/180)).toFixed(2)}" rx=".55" ry=".9" transform="rotate(${(a + 90).toFixed(0)} ${x.toFixed(2)} ${y.toFixed(2)})"/>`);
+      const fx = x + s*1.1*Math.sin(a*Math.PI/180), fy = y - s*1.1*Math.cos(a*Math.PI/180);
+      spuren.push(`<ellipse cx="${fx.toFixed(2)}" cy="${fy.toFixed(2)}" rx=".8" ry="1.3" transform="rotate(${(a + 90).toFixed(0)} ${fx.toFixed(2)} ${fy.toFixed(2)})"/>`);
     }
-    const [bx, by] = bez(0.5), [bx2, by2] = bez(0.52), ba = Math.atan2((by2 - by)*0.56, bx2 - bx)*180/Math.PI;
-    bruecken.push(`<g transform="translate(${bx.toFixed(2)} ${by.toFixed(2)}) rotate(${ba.toFixed(0)}) scale(.6 1.5)">
+    const [bx, by] = bez(0.5), [bx2, by2] = bez(0.52), ba = Math.atan2(by2 - by, bx2 - bx)*180/Math.PI;
+    bruecken.push(`<g transform="translate(${bx.toFixed(2)} ${by.toFixed(2)}) rotate(${ba.toFixed(0)}) scale(1.3)">
       <rect x="-3.4" y="-.9" width="6.8" height="1.8" fill="#8a5a2a" rx=".3"/><path d="M-2.4 -.9 v1.8 M-.8 -.9 v1.8 M.8 -.9 v1.8 M2.4 -.9 v1.8" stroke="#4a2c10" stroke-width=".3"/>
       <path d="M-3.4 -1.1 Q0 -.4 3.4 -1.1 M-3.4 1.1 Q0 1.8 3.4 1.1" stroke="#d9b77a" stroke-width=".35" fill="none"/></g>`);
   }
   const ecke = (x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r})"><path d="M0 0 h7 M0 0 v12" stroke="#d9b77a" stroke-width="1.1" stroke-linecap="round"/>
     <circle r="1.6" fill="#b88a4a" stroke="#6b4220" stroke-width=".4"/><path d="M-.9 -.9 l1.8 1.8 M.9 -.9 l-1.8 1.8" stroke="#6b4220" stroke-width=".3"/></g>`;
-  return `<svg class="wm-deko" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-    <g class="wm-wolken"><ellipse cx="18" cy="12" rx="9" ry="3" fill="rgba(255,255,255,.22)"/><ellipse cx="62" cy="9" rx="12" ry="3.4" fill="rgba(255,255,255,.18)"/><ellipse cx="88" cy="90" rx="10" ry="3" fill="rgba(255,255,255,.14)"/></g>
+  return `<svg class="wm-deko" viewBox="0 0 ${X(100)} 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <g class="wm-wolken"><ellipse cx="${X(18)}" cy="12" rx="20" ry="3.4" fill="rgba(255,255,255,.22)"/><ellipse cx="${X(62)}" cy="9" rx="26" ry="3.8" fill="rgba(255,255,255,.18)"/><ellipse cx="${X(88)}" cy="90" rx="22" ry="3.2" fill="rgba(255,255,255,.14)"/></g>
     <g class="wm-spuren" fill="rgba(255,236,190,.55)">${spuren.join('')}</g>${bruecken.join('')}
-    <g transform="translate(6 86) scale(.55 1)" class="wm-kompass"><circle r="5" fill="rgba(255,240,200,.25)" stroke="#d9b77a" stroke-width=".4"/>
+    <g transform="translate(${X(5)} 86)" class="wm-kompass"><circle r="5" fill="rgba(255,240,200,.25)" stroke="#d9b77a" stroke-width=".4"/>
       <path d="M0 -4.5 L1 0 L0 4.5 L-1 0 Z" fill="#d9b77a"/><path d="M-4.5 0 L0 1 L4.5 0 L0 -1 Z" fill="#a8844a"/><path d="M0 -4.5 L1 0 L-1 0 Z" fill="#ff8a6a"/></g>
-    ${ecke(1.5, 2.5, 0)}${ecke(98.5, 2.5, 90)}${ecke(98.5, 97.5, 180)}${ecke(1.5, 97.5, 270)}</svg>`;
+    ${ecke(2.5, 2.5, 0)}${ecke(X(100) - 2.5, 2.5, 90)}${ecke(X(100) - 2.5, 97.5, 180)}${ecke(2.5, 97.5, 270)}</svg>`;
 }
 S.map = {
   el: $('#sm-s-map'), idx: 0, worlds: [],
@@ -1128,7 +1134,8 @@ S.map = {
     }
     $('#sm-wm-path').innerHTML = `<path d="${d}" class="road"/>`;
     $$('.wm-deko', box).forEach(e => e.remove());
-    box.insertBefore(mk(karteDeko(pts)), $('#sm-wm-path').nextSibling);   // Seil-Ecken, Kompass, Fußspuren, Brücken (Design-Politur E)
+    const kr = box.getBoundingClientRect();
+    box.insertBefore(mk(karteDeko(pts, kr.width && kr.height ? kr.width/kr.height : 2.5)), $('#sm-wm-path').nextSibling);   // Seil-Ecken, Kompass, Fußspuren, Brücken (Design-Politur E)
     box.appendChild(mk(`<div class="pair nt" id="sm-m-pair">${monkeySVG()}${pigSVG()}</div>`));
     const open = this.worlds.filter(w => worldUnlocked(w, this.worlds)).length, all = this.worlds.filter(w => w.idx.length).length;
     $('#sm-m-count').innerHTML = `Welten<b>${open} / ${all}</b>`;

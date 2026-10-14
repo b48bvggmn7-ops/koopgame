@@ -4538,6 +4538,8 @@ async def leinwand_scharf_und_schnell(g):
         g2 = Game(seite); await startmenue_bis_level(g2)
         r = await g2.ev("(() => { fitCanvasRes(); return {w: cvs.width, h: cvs.height, rs: RS, max: LEINWAND_MAX_BREITE}; })()")
         assert r['w'] == 2560 and r['h'] == 1440 and r['rs'] == 2 and r['max'] >= 3840, f'Leinwand bei DPR 2: {r}'
+        v = await g2.ev("(() => { const b = cvs.getBoundingClientRect(); return Math.abs((cvs.width/cvs.height)/(b.width/b.height) - 1); })()")
+        assert v < 0.01, f'Spielbild verzerrt (Seitenverhältnis weicht um {v:.2%} ab)'
         zeiten = {}
         for welt, datei, spalte in LEISTUNG_STELLEN:
             await koop_level(g2, datei)
@@ -6137,7 +6139,9 @@ async def weltkarte_gemalt_ohne_fehler(g):
             wetter: isl.map(b => !!b.querySelector('[class^="w-"]')), tier: isl.map(b => !!b.querySelector('[class^="t-"]')),
             nebel: isl.map(b => b.classList.contains('lock') ? getComputedStyle(b.querySelector('.isl-nebel')).opacity : null),
             grau: isl.filter(b => b.classList.contains('lock')).map(b => getComputedStyle(b.querySelector('.isl-art svg')).filter),
-            wippen: getComputedStyle(document.querySelector('#sm-m-pair > *')).animationName}; })()""")
+            wippen: getComputedStyle(document.querySelector('#sm-m-pair > *')).animationName,
+            verzerrt: (() => { const r = box.getBoundingClientRect(), vb = deko.viewBox.baseVal; return Math.abs((vb.width/vb.height)/(r.width/r.height) - 1); })()}; })()""")
+        assert r['verzerrt'] < 0.02, f'Karten-Deko verzerrt (Seitenverhältnis weicht um {r["verzerrt"]:.2%} ab)'
         assert r['deko'] and r['ecken'] >= 4 and r['bruecken'] == len(r['mood']) - 1 and r['spuren'] > 0 and r['pfade'] == 1, r
         assert all(r['mood']) and len(set(r['mood'])) == len(r['mood']), f'Stimmungsfarben: {r["mood"]}'
         assert all(r['wetter']) and all(r['tier']), r
