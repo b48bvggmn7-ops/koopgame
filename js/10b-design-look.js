@@ -55,7 +55,7 @@ const DESIGN_LOOK = {
              goldHauch: {col: '#ff8a40', a: 0.1}, nebel: '255,190,150', nahTiefe: {col: '#2e1430', a: 0.75}},
     nacht:  {dunst: {col: '#141c40', a: 0.3}, hgHell: 0.85, kante: 0.9, licht: 0.22,
              gegenlicht: {x: 0.75, y: 0.2, r: 0.55, col: '200,215,255', a: 0.14}, strahlen: null, pollen: '255,220,130',
-             waerme: {col: '255,190,120', a: 0.035}, vignette: '10,8,30', nebel: '50,60,100', goldHauch: null, nahTiefe: {col: '#060a18', a: 0.35}},
+             waerme: {col: '255,190,120', a: 0.035}, vignette: '10,8,30', nebel: '50,60,100', goldHauch: null, nahTiefe: {col: '#0a1024', a: 0.15}},
   },
   paar: {
     'hoehle@nacht': {dunst: {col: '#0a0818', a: 0.34}},

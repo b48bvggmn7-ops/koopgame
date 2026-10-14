@@ -109,7 +109,7 @@ const PFEIL_TREFFER = 10;       // px Kantenlänge der tödlichen Fläche um die
 const PFEIL_BILD_LAENGE = 52;   // px gezeichnete Länge (Spitze bis Federn), vorher 35
 const PFEIL_BILD_DICKE = 5;     // px Schaft (vorher 3), dazu 2 px dunkler Umriss
 const PFEIL_SCHWEIF = 46;       // px Bewegungsspur hinter einem fliegenden Pfeil
-const PFEIL_LICHT = 70;         // px Lichtkreis um einen fliegenden Pfeil in dunklen Leveln (nachts lesbar)
+const PFEIL_LICHT = 95;         // px Lichtkreis um einen fliegenden Pfeil in dunklen Leveln (nachts lesbar; Design-Politur 2: vorher 70)
 // Rollender Fels (elemente/fels.js)
 const FELS_RADIUS = 50;         // px (Durchmesser 2,5 Kästchen)
 const FELS_BESCHL = 0.08;       // so schnell kommt er auf sein Tempo (Anteil pro Schritt)
