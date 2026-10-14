@@ -4509,6 +4509,50 @@ KONTRAST_JS = r"""() => {
   return out; }"""
 
 @test
+async def kontur_wand_boden_einheitlich(g):
+    """Nutzerwunsch: Wand und Boden haben immer dieselbe Outline – gleiche Breite an allen freien Seiten (oben, unten,
+    links, rechts), auch über Moos/Pflanzen; wo Boden an Wand grenzt (daneben, darauf, darunter) genau EINE Linie in
+    derselben Breite (früher doppelt bzw. mit eigenem Wand-Rand). Gemessen mit deckender Prüf-Farbe."""
+    G = ground
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(500)
+        await startmenue_bis_level(g)
+        await kontur_messen(g, G)
+    finally:
+        await kx.close(); srv.shutdown()
+
+async def kontur_messen(g, G):
+    await g.load(level([G(0, 680, 1600), G(80, 400, 160, 120), G(360, 400, 160, 120, 'wall'),
+                        G(640, 400, 80, 120), G(720, 400, 80, 120, 'wall'),          # Boden neben Wand
+                        G(900, 320, 120, 80, 'wall'), G(900, 400, 120, 80),           # Wand auf Boden
+                        G(1100, 320, 120, 80), G(1100, 400, 120, 80, 'wall')],        # Boden auf Wand
+                       {'x': 60, 'y': 680}, {'x': 30, 'y': 680}, welt='dschungel'))
+    await g.steps(5); await g.ev("menuScreen = 'pause'")
+    r = await g.ev("""(() => { const alt = designLook; designLook = () => ({...alt(), kante: 1, kanteFarbe: '255,0,255'});
+      camPos = camX = 0; draw(); designLook = alt;
+      const img = ctx.getImageData(0, 0, cvs.width, cvs.height).data, Wc = cvs.width;
+      const scr = (wx, wy) => [Math.round(((wx - camX)*zoom)*RS), Math.round((wy*zoom + H*(1-zoom) + CEILING_MARGIN)*RS)];
+      const mag = (x, y) => { const i = (y*Wc + x)*4; return img[i] > 170 && img[i+1] < 90 && img[i+2] > 140; };   // Prüf-Farbe (auch unter leichtem Dunst)
+      // Prüf-Farbe auf einer Linie durch den Rand zählen (±12 Welt-px um die Kante)
+      const quer = (wx, wy, dx, dy) => { const [a0, b0] = scr(wx - dx*12, wy - dy*12), [a1, b1] = scr(wx + dx*12, wy + dy*12);
+        let n = 0; const st = Math.max(Math.abs(a1 - a0), Math.abs(b1 - b0));
+        for(let k = 0; k <= st; k++){ if(mag(Math.round(a0 + (a1 - a0)*k/st), Math.round(b0 + (b1 - b0)*k/st))) n++; } return n; };
+      // je Seite drei Stellen, die breiteste zählt (Tiere/Blätter davor sollen das Messen nicht stören)
+      const drei = f => Math.max(f(0.3), f(0.5), f(0.7));
+      const seiten = (x, y, w, h) => ({oben: drei(t => quer(x + w*t, y, 0, 1)), unten: drei(t => quer(x + w*t, y + h, 0, 1)),
+        links: drei(t => quer(x, y + h*t, 1, 0)), rechts: drei(t => quer(x + w, y + h*t, 1, 0))});
+      return {boden: seiten(80, 400, 160, 120), wand: seiten(360, 400, 160, 120), rs: RS, zoom,
+        nebeneinander: drei(t => quer(720, 400 + 120*t, 1, 0)), wandAufBoden: drei(t => quer(900 + 120*t, 400, 0, 1)),
+        bodenAufWand: drei(t => quer(1100 + 120*t, 400, 0, 1))}; })()""")
+    soll = 3 * r['zoom'] * r['rs']   # DESIGN_LOOK kanteBreite 3 Welt-px
+    werte = {**{f'boden_{k}': v for k, v in r['boden'].items()}, **{f'wand_{k}': v for k, v in r['wand'].items()},
+             'nebeneinander': r['nebeneinander'], 'wandAufBoden': r['wandAufBoden'], 'bodenAufWand': r['bodenAufWand']}
+    falsch = {k: v for k, v in werte.items() if abs(v - soll) > 1.6}
+    assert not falsch, f'Outline nicht einheitlich (soll ≈ {soll:.1f} Bild-px): {falsch}; alle: {werte}'
+    assert max(werte.values()) - min(werte.values()) <= 2, f'Outline-Breiten unterschiedlich: {werte}'
+
+@test
 async def kontrast_mindestwerte(g):
     """Design-Politur B: in jeder Welt (Dschungel, Ruinen, Höhle, Vulkan) zu Mittag, Abend und Nacht hebt sich die
     Bodenoberkante deutlich vom Hintergrund ab – Median des Kontrastverhältnisses mindestens KONTRAST_MIN (Tageszeit)

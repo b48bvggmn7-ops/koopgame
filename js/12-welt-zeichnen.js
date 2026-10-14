@@ -347,13 +347,13 @@ function elementEdelstein(x, y, r, col){
 // ---------- Design-Politur B: Kontur, Randlicht und Tiefe an Boden, Wand und Plattform ----------
 // Werte je Welt/Tageszeit: DESIGN_LOOK (10b-design-look.js). Nur an freien Rändern (nicht dort, wo ein Nachbarstück
 // anschließt), damit zusammengesetzte Flächen nahtlos bleiben.
+// freie Abschnitte [a, b] von 0..w, die keine der Strecken in list bedeckt – genau an den Nachbar-Kanten (früher in
+// 4-px-Schritten -> neben aufliegenden Stücken blieb ein Streifen ohne Gras/Kontur)
 function freieSpannen(list, w){
-  const out = []; let st = null;
-  for(let px = 0; px <= w; px += 4){
-    const free = !list.some(([a, b]) => Math.min(w - 0.5, Math.max(0.5, px)) >= a - 0.5 && Math.min(w - 0.5, Math.max(0.5, px)) <= b + 0.5);
-    if(free && st === null) st = px;
-    if((!free || px >= w) && st !== null){ out.push([st, free ? w : px]); st = null; }
-  }
+  const bel = list.map(([a, b]) => [Math.max(0, a), Math.min(w, b)]).filter(([a, b]) => b > a).sort((p, q) => p[0] - q[0]);
+  const out = []; let pos = 0;
+  for(const [a, b] of bel){ if(a - pos > 1) out.push([pos, a]); pos = Math.max(pos, b); }
+  if(w - pos > 1) out.push([pos, w]);
   return out;
 }
 function rundPfad(x, y, w, h, r){
@@ -366,22 +366,27 @@ function rundPfad(x, y, w, h, r){
   ctx.lineTo(x, y + tl); if(tl) ctx.arcTo(x, y, x + tl, y, tl);
   ctx.closePath();
 }
-// dunkle Kontur an den freien Rändern; oben = freie Spannen der Oberseite, unten frei = !nb.b
-function designKontur(x, y, w, h, r, nb, oben){
+// dunkle Kontur an den freien Rändern; oben/unten = Spannen der Ober-/Unterseite mit Kontur (unten fehlt: ganz, wenn !nb.b).
+// Einheitlich für Boden und Wand (gleiche Farbe, Breite, Deckkraft, Ecken). Während der Boden/Wand-Schleife in draw()
+// werden die Konturen nur gesammelt und NACH Moos/Pflanzen/Lianen gezeichnet -> nichts deckt sie ab.
+let konturSammeln = null;
+function designKontur(x, y, w, h, r, nb, oben, unten){
+  if(konturSammeln){ konturSammeln.push([x, y, w, h, r, nb, oben, unten]); return; }
   const D = designLook(); if(!D.kante) return;
+  if(!unten) unten = nb.b ? [] : [[0, w]];
   const lw = D.kanteBreite, i = lw/2, aus = lw + 3;
   // Linie: an Seiten mit Nachbar (und oben, wenn ganz bedeckt) nach außen geschoben -> fällt aus dem Ausschnitt.
   // Ausschnitt = nur die Randstreifen der freien Seiten (über die ganze Höhe – keine Lücken an Reihengrenzen)
-  const x0 = nb.l ? x - aus : x + i, x1 = nb.r ? x + w + aus : x + w - i, y1 = nb.b ? y + h + aus : y + h - i, yo = oben.length ? y + i : y - aus;
+  const x0 = nb.l ? x - aus : x + i, x1 = nb.r ? x + w + aus : x + w - i, y1 = unten.length ? y + h - i : y + h + aus, yo = oben.length ? y + i : y - aus;
   ctx.save();
   ctx.beginPath();
   if(!nb.l) ctx.rect(x - 4, y - 4, lw + 5, h + 8);
   if(!nb.r) ctx.rect(x + w - lw - 1, y - 4, lw + 5, h + 8);
-  if(!nb.b) ctx.rect(x - 4, y + h - lw - 1, w + 8, lw + 5);
+  for(const [a, b] of unten){ const l = a === 0 ? x - 4 : x + a, rr = b === w ? x + w + 4 : x + b; if(rr > l) ctx.rect(l, y + h - lw - 1, rr - l, lw + 5); }
   for(const [a, b] of oben){ const l = a === 0 ? x - 4 : x + a, rr = b === w ? x + w + 4 : x + b; if(rr > l) ctx.rect(l, y - 4, rr - l, lw + 5); }
   ctx.clip();
   const k = v => Math.max(0, (v || 0) - i);
-  rundPfad(x0, yo, x1 - x0, y1 - yo, {tl: nb.l || !oben.length ? 0 : k(r.tl), tr: nb.r || !oben.length ? 0 : k(r.tr), bl: nb.l || nb.b ? 0 : k(r.bl), br: nb.r || nb.b ? 0 : k(r.br)});
+  rundPfad(x0, yo, x1 - x0, y1 - yo, {tl: nb.l || !oben.length ? 0 : k(r.tl), tr: nb.r || !oben.length ? 0 : k(r.tr), bl: nb.l || !unten.length ? 0 : k(r.bl), br: nb.r || !unten.length ? 0 : k(r.br)});
   ctx.strokeStyle = `rgba(${D.kanteFarbe},${D.kante})`; ctx.lineWidth = lw; ctx.lineJoin = 'round';
   ctx.stroke();
   ctx.restore();
@@ -550,11 +555,13 @@ function draw(){
   const R_CORNER = 9, GRASS_H = 12, ERDSCHICHT = 22;   // ERDSCHICHT: Abstand der Erdschicht-Linien (Welt-px)
   function waveY(wx){ return Math.sin(wx*0.055)*2.4 + Math.sin(wx*0.137+1.3)*1.2; }
   function drawGroundPiece(s, x, y, off, pal, cracked){
-    const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[]};
+    const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[],below:[]};
     const coveredAt = px => nb.above.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
+    const coveredUnten = px => nb.below.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
     const topFreeL = !coveredAt(1), topFreeR = !coveredAt(w-1);
     const tl = (!nb.l && topFreeL) ? R_CORNER : 0, tr = (!nb.r && topFreeR) ? R_CORNER : 0;
-    const bl = (!nb.l && !nb.b) ? R_CORNER : 0, br = (!nb.r && !nb.b) ? R_CORNER : 0;
+    const unten = freieSpannen(nb.below, w);   // freie Abschnitte der Unterseite (Kontur nur dort)
+    const bl = (!nb.l && !coveredUnten(1)) ? R_CORNER : 0, br = (!nb.r && !coveredUnten(w-1)) ? R_CORNER : 0;
     // Erde (Design-Politur, Nutzerwunsch „Boden nach oben bauen sieht komisch aus“): EINE durchgehende Erdfarbe und an der
     // Welt ausgerichtete Erdschichten – übereinander/nebeneinander gebaute Stücke verschmelzen zu einem Block (vorher hatte
     // jede Reihe ihren eigenen Hell-Dunkel-Verlauf -> sichtbare Streifen). Tiefe nur an echten Rändern: Schatten unter
@@ -595,17 +602,11 @@ function draw(){
       }
       ctx.fillStyle = s._tiefe.sg;
       for(const [a, b] of oben) ctx.fillRect(x + a, y + GRASS_H, b - a, 14);   // nur unter echtem Gras
-      if(!nb.b){ ctx.fillStyle = s._tiefe.bg; ctx.fillRect(x, y + h - 30, w, 30); }
+      ctx.fillStyle = s._tiefe.bg; for(const [a, b] of unten) ctx.fillRect(x + a, y + h - 30, b - a, 30);
     }
     ctx.restore();
-    if(!nb.b){ ctx.fillStyle = pal.edge; ctx.globalAlpha = 0.35; ctx.fillRect(x+bl, y+h-3, w-bl-br, 3); ctx.globalAlpha = 1; }
     // Gras nur auf freien Abschnitten der Oberseite
-    const spans = []; let start = null;
-    for(let px = 0; px <= w; px += 4){
-      const free = !coveredAt(Math.min(w-0.5, Math.max(0.5, px)));
-      if(free && start===null) start = px;
-      if((!free || px>=w) && start!==null){ spans.push([start, free ? w : px]); start = null; }
-    }
+    const spans = freieSpannen(nb.above, w);
     for(const [a, b] of spans){
       const capL = (a===0) ? tl : 0, capR = (b===w) ? tr : 0;
       ctx.beginPath();
@@ -630,8 +631,8 @@ function draw(){
       ctx.fillStyle = pal.grassTop;
       ctx.fillRect(x+a+Math.max(capL,2), y+2, Math.max(0, (b-a)-Math.max(capL,2)-Math.max(capR,2)), 3);
     }
-    designKontur(x, y, w, h, {tl, tr, bl, br}, nb, spans);   // Design-Politur B
-    if(!nb.b) designSchattenUnten(x, y + h, w, Math.max(bl, br));
+    designKontur(x, y, w, h, {tl, tr, bl, br}, nb, spans, unten);   // Design-Politur B (einheitlich mit der Wand)
+    for(const [a, b] of unten) designSchattenUnten(x + a, y + h, b - a, a === 0 || b === w ? Math.max(bl, br) : 0);
     // Risse beim Bröckelboden (fest an der Welt verankert, damit sie nicht flackern)
     if(cracked){
       ctx.strokeStyle = 'rgba(80,40,15,.75)'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
@@ -657,10 +658,13 @@ function draw(){
     const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[],below:[]};
     const cov = (list, px) => list.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
     const topFreeL = !cov(nb.above, 1), topFreeR = !cov(nb.above, w-1);
-    const botFreeL = !cov(nb.below, 1), botFreeR = !cov(nb.below, w-1);
-    const R = 5;
-    const tl = (!nb.l && topFreeL) ? R : 0, tr = (!nb.r && topFreeR) ? R : 0;
-    const bl = (!nb.l && botFreeL) ? R : 0, br = (!nb.r && botFreeR) ? R : 0;
+    const fr = nb.fremd || {l:false, r:false, above:[], below:[]};   // angrenzender Boden (01-level.js)
+    const obenAlle = nb.above.concat(fr.above), untenAlle = nb.below.concat(fr.below);
+    const botFreeL = !cov(untenAlle, 1), botFreeR = !cov(untenAlle, w-1);
+    const R = R_CORNER;   // gleiche Ecken wie Boden (einheitliche Kontur)
+    const eL = nb.l || fr.l, eR = nb.r || fr.r;
+    const tl = (!eL && topFreeL && !cov(fr.above, 1)) ? R : 0, tr = (!eR && topFreeR && !cov(fr.above, w-1)) ? R : 0;
+    const bl = (!eL && botFreeL) ? R : 0, br = (!eR && botFreeR) ? R : 0;
     // Grundfläche (leichter Verlauf, an der Welt ausgerichtet, damit Stapel nicht streifig wirken)
     const wy0 = y - offY;
     const g = ctx.createLinearGradient(0, y - (((wy0 % 80)+80)%80), 0, y - (((wy0 % 80)+80)%80) + 80);
@@ -697,20 +701,14 @@ function draw(){
         if(bx > x + 0.5 && bx < x + w - 0.5){ ctx.fillStyle = WALL.mortar; ctx.fillRect(bx - 1, top, 2, bot - top); }
       }
     }
-    // Kanten: oben heller Rand, unten Schatten, Seiten dunkler – nur wo die Wand endet
-    ctx.fillStyle = WALL.hi;
-    const spans = (list) => { const out=[]; let st=null; for(let px=0; px<=w; px+=4){ const free=!cov(list, Math.min(w-0.5, Math.max(0.5,px))); if(free && st===null) st=px; if((!free || px>=w) && st!==null){ out.push([st, free?w:px]); st=null; } } return out; };
-    for(const [a,b] of spans(nb.above)){ const l = a===0 ? tl : 0, r = b===w ? tr : 0; ctx.fillRect(x+a+l, y, (b-a)-l-r, 3); }
-    ctx.fillStyle = WALL.shade;
-    for(const [a,b] of spans(nb.below)){ const l = a===0 ? bl : 0, r = b===w ? br : 0; ctx.fillRect(x+a+l, y+h-3, (b-a)-l-r, 3); }
-    ctx.fillStyle = WALL.side;
-    if(!nb.l) ctx.fillRect(x, y+tl, 2, h-tl-bl);
-    if(!nb.r) ctx.fillRect(x+w-3, y+tr, 3, h-tr-br);
+    // Kanten: nur noch die gemeinsame Kontur (früher zusätzlich heller Rand oben, Schatten unten, dunkle Seiten –
+    // dadurch sah der Wand-Rand anders aus als der Boden-Rand; Nutzerwunsch: einheitliche Outline)
+    const spans = list => freieSpannen(list, w);
     // Design-Politur B: Randlicht oben, dunkle Kontur an freien Rändern, weicher Schatten darunter
-    const DL = designLook(), oben = spans(nb.above);
-    if(DL.licht > 0){ ctx.fillStyle = `rgba(255,255,255,${DL.licht})`; for(const [a,b] of oben){ const l = a===0 ? tl : 0, r = b===w ? tr : 0; ctx.fillRect(x+a+l, y+1.5, Math.max(0, (b-a)-l-r), 1.5); } }
-    designKontur(x, y, w, h, {tl, tr, bl, br}, {l: nb.l, r: nb.r, b: !spans(nb.below).length ? true : nb.b}, oben);
-    for(const [a,b] of spans(nb.below)) designSchattenUnten(x + a, y + h, b - a, 0);
+    const DL = designLook(), oben = spans(nb.above);   // Kontur auch dort, wo Boden aufliegt (nur die Wand zeichnet sie)
+    if(DL.licht > 0){ ctx.fillStyle = `rgba(255,255,255,${DL.licht})`; for(const [a,b] of spans(obenAlle)){ const l = a===0 ? tl : 0, r = b===w ? tr : 0; ctx.fillRect(x+a+l, y+1.5, Math.max(0, (b-a)-l-r), 1.5); } }
+    designKontur(x, y, w, h, {tl, tr, bl, br}, {l: nb.l, r: nb.r, b: nb.b}, oben, spans(nb.below));
+    for(const [a,b] of spans(untenAlle)) designSchattenUnten(x + a, y + h, b - a, 0);
   }
 
   // Bewegte Stücke sehen aus wie normaler Boden/Wand. Die Textur ist am Stück selbst verankert
@@ -794,6 +792,7 @@ function drawSolidLook(s, look, x){
   }
   // (Fahrweg-Linien/Umrisse bewegter Böden auf Nutzerwunsch entfernt)
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenHinten) E.spiel.zeichnenHinten();   // HINTER Boden/Wänden, z. B. Lava (elemente/)
+  konturSammeln = [];   // Konturen von Boden/Wand erst nach Moos/Pflanzen zeichnen (designKontur)
   for(const s of solids){
     if(ELEMENT_SOLID_TYPEN.has(s.type)) continue;   // zeichnet sich selbst (elemente/, z. B. Wechselboden)
     if(s.gone){
@@ -848,6 +847,7 @@ function drawSolidLook(s, look, x){
 
   hoheFlaechenZeichnen();   // Moos und Lianen an hohen Seitenflächen (Design-Politur)
   drawGroundDeco();   // Dschungel-Pflanzen und Moos (17-deko.js)
+  { const L = konturSammeln; konturSammeln = null; for(const a of L) designKontur(...a); }   // einheitliche Outline obenauf
 
   // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
   for(const h of hooks){

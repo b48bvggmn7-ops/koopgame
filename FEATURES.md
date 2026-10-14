@@ -1524,6 +1524,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - **Ruckeln behoben:** Lichtstrahl und Flammen prüfen feste Teile über ein Raster-Verzeichnis statt jedes Teil des
     Levels (vorher 15–26 ms je Spielschritt in Licht-/Fallen-Leveln, jetzt 1–4 ms; Verhalten identisch). Test
     spielschritt_schnell.
+- **Feinschliff nach Design-Politur 2 (Nutzerwunsch):**
+  - **Einheitliche Outline für Wand und Boden:** beide haben an jedem freien Rand dieselbe Kontur (gleiche Farbe,
+    Breite, Deckkraft und runde Ecken); die Wand hat keinen eigenen hellen/dunklen Rand mehr, der Boden keine extra
+    Linie unten. Die Kontur wird nach Moos, Pflanzen und Lianen gezeichnet, nichts deckt sie ab. Wo Boden an Wand grenzt
+    (daneben, darauf, darunter) gibt es genau EINE Linie in derselben Breite (die Wand zeichnet sie; unter einer Wand
+    wächst kein Gras). Gras/Kontur enden genau an der Kante eines aufliegenden Stücks. Test kontur_wand_boden_einheitlich.
+  - **Weltkarte:** die Seil-Linien an den Nägeln sind weg; die vier Nägel sitzen genau auf den Ecken des gestrichelten
+    Seils (in denselben Einheiten wie das Seil, passt bei jeder Bildschirmgröße). Test weltkarte_gemalt_ohne_fehler.
+  - **Editor – Levels nach Welten:** „Levels im Projekt“ zeigt je Welt einen aufklappbaren Ordner („📁 Dschungel (8)“,
+    Reihenfolge Dschungel, Ruinen, Höhle, Wasser, Vulkan, dann Archiv), darin die Level nach Nummer, Boss zuletzt; der
+    Ordner des gerade geladenen Levels ist offen. Test editor_projekt_levels.
 - **Menü-Klang:** kurzes, tiefes Holz-„Tock“ statt Spieluhr-Klingeln (menuTick 40 ms, menuOk 65 ms, menuStart 110 ms
   beim Level-Start), ohne Nachhall; schnelle Cursor-Schritte klappern nicht (`MENU_TICK_ABSTAND`). Spielgeräusche
   unverändert. Test menue_ton_dezent.
@@ -1681,7 +1692,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (editor/index.html?from=test, localStorage monchichi_editor_focus bzw. monchichi_editor_scroll); das Scrollen passiert erst, wenn das Level im Editor fertig geladen ist – vorher blieb die Ansicht auf langsamen Rechnern manchmal ganz links stehen, Ausbau 4). Options/☰ öffnen im Test das Pausenmenü mit „✏️ Zurück zum Editor (Esc)“. Fürs schnelle Ausprobieren;
     für alle sichtbar wird ein Level weiterhin erst über das Projekt (levels/).
   - ✕ oben rechts schließt den Editor und führt zurück zum Spiel (Hauptmenü); Arbeitsstand bleibt im Browser
-  - Fenster „Levels“ zeigt zusätzlich „Levels im Projekt“ (aus levels/levels.json) und lädt sie per „Laden“
+  - Fenster „Levels“ zeigt zusätzlich „Levels im Projekt“ (aus levels/levels.json, nach Welt-Ordnern gruppiert) und lädt sie per „Laden“
     aus levels/editor-format/ (nur wenn der Editor über die Webseite geöffnet ist, nicht als lokale Datei)
   - Button „☁ Auf GitHub speichern“ (Werkzeugleiste): speichert das aktuelle Level direkt ins Projekt – Spiel-Datei
     (levels/<datei>) und Editor-Datei (levels/editor-format/<datei>) in EINEM Commit nach main; GitHub Pages baut die

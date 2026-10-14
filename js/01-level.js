@@ -159,8 +159,22 @@ function computeGroundNeighbors(){
     const fam = groundFamily(s);
     const sx = s.type==='moveplat' ? s.startX : s.x, sy = s.type==='moveplat' ? s.startY : s.y;
     const nb = {l:false, r:false, b:false, above:[], below:[]};
+    // Boden grenzt an Wand (oder umgekehrt): eigene Liste „fremd“ – dort zeichnet nur die Wand EINE Kontur (einheitlich
+    // breit statt doppelt), der Boden behandelt die Wand wie einen Nachbarn (keine Kontur, kein Gras, keine runde Ecke)
+    const fremd = {l:false, r:false, b:false, above:[], below:[]};
+    const andere = fam==='g' ? 'w' : fam==='w' ? 'g' : null;
     for(const o of list){
-      if(o===s || groundFamily(o)!==fam) continue;
+      if(o===s) continue;
+      const of = groundFamily(o);
+      if(of!==fam){
+        if(!andere || of!==andere) continue;
+        const vOver = o.y < sy+s.h && o.y+o.h > sy, hOver = o.x < sx+s.w && o.x+o.w > sx;
+        if(vOver && Math.abs(o.x+o.w - sx) < 1) fremd.l = true;
+        if(vOver && Math.abs(sx+s.w - o.x) < 1) fremd.r = true;
+        if(hOver && Math.abs(sy+s.h - o.y) < 1){ fremd.b = true; fremd.below.push([Math.max(o.x,sx)-sx, Math.min(o.x+o.w,sx+s.w)-sx]); }
+        if(hOver && Math.abs(o.y+o.h - sy) < 1) fremd.above.push([Math.max(o.x,sx)-sx, Math.min(o.x+o.w,sx+s.w)-sx]);
+        continue;
+      }
       const ox = o.type==='moveplat' ? o.startX : o.x, oy = o.type==='moveplat' ? o.startY : o.y;
       const vOver = oy < sy+s.h && oy+o.h > sy, hOver = ox < sx+s.w && ox+o.w > sx;
       if(vOver && Math.abs(ox+o.w - sx) < 1) nb.l = true;
@@ -168,6 +182,11 @@ function computeGroundNeighbors(){
       if(hOver && Math.abs(sy+s.h - oy) < 1) nb.b = true;
       if(hOver && Math.abs(oy+o.h - sy) < 1) nb.above.push([Math.max(ox,sx)-sx, Math.min(ox+o.w,sx+s.w)-sx]);
       if(hOver && Math.abs(sy+s.h - oy) < 1) nb.below.push([Math.max(ox,sx)-sx, Math.min(ox+o.w,sx+s.w)-sx]);
+    }
+    nb.fremd = fremd;
+    if(fam==='g'){   // Boden: Wand-Nachbarn zählen wie eigene Nachbarn
+      nb.l = nb.l || fremd.l; nb.r = nb.r || fremd.r; nb.b = nb.b || fremd.b;
+      nb.above = nb.above.concat(fremd.above); nb.below = nb.below.concat(fremd.below);
     }
     s.nb = nb;
   }
