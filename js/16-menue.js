@@ -273,6 +273,7 @@ function startEditorTest(){
   if(!data || !Array.isArray(data.solids)) return false;
   editorTestMode = true;
   startLevel(data);
+  if(typeof partnerAufgabenLaden === 'function') partnerAufgabenLaden(data.projektDatei);   // Begleiter-Aufgaben (31-partner-aufgaben.js)
   // Kamera gleich an die Startstelle setzen (sonst fährt sie erst vom Levelanfang dorthin)
   camPos = Math.max(0, Math.min(LEVEL_W - VW, Math.min(p1.x, p2.x) - CAM_LEFT));
   return true;

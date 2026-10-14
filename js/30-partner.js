@@ -282,6 +282,8 @@ function partnerSimSchritt(U, b, e){
   if(b.hook){
     b.vy += GRAVITY*0.9;
     if(dir !== 0 && b.vx*dir > -0.3) b.vx += dir*SWING_PUSH;
+    const lenVor = b.hook.len;
+    if(e.pull) b.hook.len = Math.max(HOOK_MIN_LEN, b.hook.len - ROPE_PULL_SPEED);
     const A = b.hook.anchor;
     let nx = b.x + b.vx, ny = (b.y - b.h*0.6) + b.vy;
     const dx = nx - A.x, dy = ny - A.y, dist = Math.hypot(dx, dy) || 1;
@@ -292,6 +294,7 @@ function partnerSimSchritt(U, b, e){
     }
     b.vx = nx - b.x; b.vy = ny + b.h*0.6 - b.y;
     const sp = Math.hypot(b.vx, b.vy); if(sp > ROPE_MAX_STEP){ b.vx *= ROPE_MAX_STEP/sp; b.vy *= ROPE_MAX_STEP/sp; }
+    b.gezogen = b.hook.len < lenVor;
     if(e.loslassen){ b.lastAnchor = b.hook.anchor; b.hook = null; b.vy += HOOK_RELEASE_BOOST; b.fling = true; }
   } else {
     const control = b.grounded ? 1 : AIR_CONTROL;
@@ -326,6 +329,10 @@ function partnerSimSchritt(U, b, e){
     for(const p of bouncers) if(Math.abs(b.x - p.x) < 14 + b.w/2 && b.y > p.y - 14 && b.y <= p.y + 1){ b.vy = BOUNCE_V; b.grounded = false; b.glideTimer = 0; break; }
   }
   if(b.hook){ if(b.grounded && b.luft) b.hook = null; else if(!b.grounded) b.luft = true; }
+  if(b.hook && b.gezogen){   // beim Ranziehen kein Schwung Richtung Haken (wie im Spiel)
+    const hx = b.x - b.hook.anchor.x, hy = (b.y - b.h*0.6) - b.hook.anchor.y, dd = Math.hypot(hx, hy) || 1, ux = hx/dd, uy = hy/dd;
+    const innen = -(b.vx*ux + b.vy*uy); if(innen > 0){ b.vx += ux*innen; b.vy += uy*innen; }
+  }
   if(b.grounded){ b.glideTimer = 0; }
   const decke = -CEILING_MARGIN - SKY_ROOM;
   if(b.y - b.h < decke){ b.y = b.h + decke; if(b.vy < 0) b.vy = 0; }
@@ -360,16 +367,23 @@ function planStehen(n){
 function planLauf(d, zielX, gemuetlich){
   return {art: 'lauf', d, zielX,
     eingabe(k, b){
-      const weiter = (b.x - zielX)*d < -6;
+      const weiter = (b.x - zielX)*d < -(4 + Math.abs(b.vx)*FRICTION_GROUND/(1 - FRICTION_GROUND));   // rechtzeitig loslassen (Ausrollen)
       const puls = !gemuetlich || (k % 25) < 25*PARTNER_GEMUETLICH;   // kurz lupfen: kein Sprint-Tempo
       return {dir: weiter && puls ? d : 0};
     },
-    fertig: (k, b) => ((b.x - zielX)*d >= -6 && Math.abs(b.vx) < 0.6 && b.grounded) || k > 240};
+    fertig: (k, b) => ((b.x - zielX)*d >= -(6 + Math.abs(b.vx)*4) && Math.abs(b.vx) < 0.6 && b.grounded) || k > 240};
 }
 // springen bei x = jx (Richtung d), Sprungtaste halt Schritte halten, in der Luft bis stopX lenken, Schweinchen: segeln
-function planSprung(d, jx, halt, stopX, gleit){
+// zurueckX (optional): erst bis dorthin zurücklaufen (Anlauf), dann vorwärts
+function planAnlauf(d, zurueckX, b, st){
+  if(zurueckX === undefined || st.anlauf) return null;
+  if((b.x - zurueckX)*d > 4) return {dir: -d};
+  st.anlauf = true; return null;
+}
+function planSprung(d, jx, halt, stopX, gleit, zurueckX){
   return {art: gleit ? 'segeln' : 'sprung', d,
     eingabe(k, b, st){
+      const a = planAnlauf(d, zurueckX, b, st); if(a) return a;
       if(!st.ab){
         if(b.grounded && (b.x - jx)*d >= 0){ st.ab = true; st.k0 = k; return {dir: d, springen: true, sprungHalten: true}; }
         return {dir: (b.x - jx)*d < 0 ? d : 0};
@@ -380,22 +394,25 @@ function planSprung(d, jx, halt, stopX, gleit){
     fertig: (k, b, st) => (st.ab && k - st.k0 > 3 && b.grounded) || k > 400 || (!st.ab && k > 200)};
 }
 // Affe: springen bei jx, Haken greifen, schwingen, loslassen hinter dem Haken; weitere Haken möglich
-function planHaken(d, jx, stopX){
+function planHaken(d, jx, stopX, ziehen, zurueckX){
   return {art: 'haken', d,
     eingabe(k, b, st){
+      const a = planAnlauf(d, zurueckX, b, st); if(a) return a;
       if(!st.ab){
         if(b.grounded && (b.x - jx)*d >= 0){ st.ab = true; st.k0 = k; return {dir: d, springen: true, sprungHalten: true}; }
         return {dir: (b.x - jx)*d < 0 ? d : 0};
       }
       const A = partnerAnker(b);
       if(A){
-        if((b.x - A.x)*d > 20 && b.vy < 0 && b.vx*d > 1){ st.letzter = A; return {dir: d, loslassen: true}; }
-        return {dir: d};
+        if(st.anK === undefined || st.anAnker !== A){ st.anK = k; st.anAnker = A; }
+        const zieht = k - st.anK < (ziehen || 0);   // erst ein Stück ranziehen (hohe Simse)
+        if(!zieht && (b.x - A.x)*d > 20 && b.vy < 0 && b.vx*d > 1){ st.letzter = A; return {dir: d, loslassen: true}; }
+        return {dir: d, pull: zieht};
       }
       const e = {dir: (b.x - stopX)*d < 0 ? d : 0, sprungHalten: k - st.k0 < 10};
       if(b.vy > -4 && !b.grounded && (!st.gegriffenK || k - st.gegriffenK > 6)){
         const t = partnerHakenZiel(b);
-        if(t && t !== st.letzter && (t.x - b.x)*d > -10){ e.haken = true; st.gegriffenK = k; }
+        if(t && t !== st.letzter && (t.x - b.x)*d > -120){ e.haken = true; st.gegriffenK = k; }
       }
       return e;
     },
@@ -420,44 +437,60 @@ function partnerFolgeZiel(P, M){
 const partnerAbstand = (x, y, Z) => Math.abs(x - Z.x) + 1.6*Math.max(0, y - Z.y) + 0.6*Math.max(0, Z.y - y);
 
 // ---------- Entscheiden: alle sinnvollen Pläne vorausrechnen, den sichersten mit dem meisten Fortschritt nehmen ----------
-function partnerEntscheiden(P, Z){
-  const U = partnerUmgebung(P.x), H = partnerHirn;
+// Als Generator: rechnet je Spielschritt höchstens PARTNER_BUDGET Vorausschritte und macht im nächsten Schritt weiter
+// (er „überlegt“ dann ein paar Schritte lang – wie ein Mensch); insgesamt höchstens PARTNER_BUDGET_GESAMT.
+function* partnerSuche(P, Z){
+  const H = partnerHirn;
+  let U = partnerUmgebung(P.x);
   const jetzt = partnerAbstand(P.x, P.y, Z), d = Math.sign(Z.x - P.x) || 1;
   const gemuetlich = Math.abs(Z.x - P.x) < PARTNER_AUFHOLEN;
   const kandidaten = [], gruende = new Set();
-  partnerSimZaehler = 0;
-  const pruefe = (plan, n, extra) => {
-    if(partnerSimZaehler > PARTNER_BUDGET) return;   // genug gerechnet (bleibt flüssig); das Beste bisher zählt
+  let gesamt = 0;
+  // ein Plan wird geprüft; ist das Schritt-Budget aufgebraucht, geht es im nächsten Spielschritt weiter
+  function* pruefe(plan, n, extra){
+    if(gesamt + partnerSimZaehler > PARTNER_BUDGET_GESAMT) return;
+    if(partnerSimZaehler > PARTNER_BUDGET){ gesamt += partnerSimZaehler; yield; partnerSimZaehler = 0; U = partnerUmgebung(P.x); }
     const r = partnerSim(U, P, plan, n);
     if(r.tod){ gruende.add(r.tod); return; }
     if(!r.boden) return;
     kandidaten.push({plan, wert: partnerAbstand(r.x, r.y, Z) + (extra || 0)});
-  };
+  }
+  const gut = () => kandidaten.some(c => c.wert < PARTNER_ABSTAND_LOCKER + 30);
   if(P.grounded || P.inWater){
     // laufen: bis zum Ziel oder ein Stück (bis vor eine Kante)
     for(const zx of [Z.x, P.x + d*40, P.x + d*80, P.x + d*130, P.x + d*200]){
       if((zx - P.x)*d <= 0 || (zx - Z.x)*d > 0) continue;
-      pruefe(planLauf(d, zx, gemuetlich), 240);
+      yield* pruefe(planLauf(d, zx, gemuetlich), 240);
     }
     const bestLauf = kandidaten.reduce((m, c) => Math.min(m, c.wert), Infinity);
-    // springen / segeln / Haken nur, wenn Laufen nicht (fast) bis zum Ziel bringt
-    // (Stufenweise, damit es schnell bleibt: erst normale Sprünge, nur wenn die nicht reichen Segeln bzw. Haken)
-    const gut = () => kandidaten.some(c => c.wert < PARTNER_ABSTAND_LOCKER + 30);
+    // springen / segeln / Haken nur, wenn Laufen nicht (fast) bis zum Ziel bringt – stufenweise, damit es schnell bleibt
     if(bestLauf > PARTNER_ABSTAND_LOCKER + 10){
-      pruefe(planSprung(d, P.x, 10, P.x + d*20, false), 200, 15);   // Stufe direkt vor mir
+      yield* pruefe(planSprung(d, P.x, 10, P.x + d*20, false), 200, 15);   // Stufe direkt vor mir
       for(let i = 0; i <= 8; i++) for(const halt of [10, 4]) for(const stopX of [d*Infinity, Z.x])
-        pruefe(planSprung(d, P.x + d*i*16, halt, stopX, false), 200, 15);
+        yield* pruefe(planSprung(d, P.x + d*i*16, halt, stopX, false), 200, 15);
       if(!gut() && !P.male) for(let i = 0; i <= 8; i++) for(const stopX of [d*Infinity, Z.x])
-        pruefe(planSprung(d, P.x + d*i*16, 10, stopX, true), 360, 25);
-      if(!gut() && P.male && hooks.some(h => Math.abs(h.x - P.x) < 700)) for(let i = 0; i <= 8; i += 2) for(const stopX of [d*Infinity, Z.x])
-        pruefe(planHaken(d, P.x + d*i*16, stopX), 420, 40);
+        yield* pruefe(planSprung(d, P.x + d*i*16, 10, stopX, true), 360, 25);
+      const hakenNah = P.male && hooks.some(h => Math.abs(h.x - P.x) < 700);
+      if(!gut() && hakenNah) for(const ziehen of [0, 30]) for(let i = 0; i <= 8; i += 2) for(const stopX of [d*Infinity, Z.x])
+        yield* pruefe(planHaken(d, P.x + d*i*16, stopX, ziehen), 420, 40);
+      // mit Anlauf (z. B. direkt vor einer Wand stehend)
+      for(const z of [100, 200]){
+        if(gut()) break;
+        const zx = P.x - d*z;
+        for(let i = 2; i <= z/16 + 2; i += 2){
+          const jx = zx + d*i*16;
+          if(hakenNah) for(const ziehen of [30, 0]) yield* pruefe(planHaken(d, jx, d*Infinity, ziehen, zx), 460, 45);
+          yield* pruefe(planSprung(d, jx, 10, d*Infinity, false, zx), 260, 20);
+          if(!P.male) yield* pruefe(planSprung(d, jx, 10, d*Infinity, true, zx), 400, 30);
+        }
+      }
     }
   } else {
-    for(const dir of [d, 0, -d]) for(const gl of (P.male ? [false] : [false, true])) pruefe(planLuft(dir, gl), 300, dir === d ? 0 : 5);
+    for(const dir of [d, 0, -d]) for(const gl of (P.male ? [false] : [false, true])) yield* pruefe(planLuft(dir, gl), 300, dir === d ? 0 : 5);
   }
   // Stehen bleiben ist immer eine Möglichkeit (wenn es sicher ist)
   const stehen = partnerSim(U, P, planStehen(30), 30);
-  H.maxSim = Math.max(H.maxSim || 0, partnerSimZaehler);
+  H.maxSim = Math.max(H.maxSim || 0, gesamt + partnerSimZaehler);
   kandidaten.sort((a, b) => a.wert - b.wert);
   const best = kandidaten[0];
   H.wartetAufLuecke = [...gruende].some(g => g === 'flamme' || g === 'pfeil' || g === 'presse' || g === 'fels');
@@ -473,35 +506,49 @@ function partnerEntscheiden(P, Z){
 }
 
 // ---------- Jeder Schritt: Plan ausführen, nach der Reaktionszeit neu entscheiden ----------
-function partnerFolgen(P, M){
-  const H = partnerHirn, Z = partnerFolgeZiel(P, M);
+// Zu einem Ziel Z = {x, y, nah, id} kommen (Folgen oder Aufgabe). Liefert die Eingaben dieses Schritts; merkt, wenn er
+// PARTNER_FEST Schritte lang nicht näher kommt (dann „hänge fest“ und warten).
+function partnerNavi(P, Z, folgeText){
+  const H = partnerHirn;
   // weit weg gesprungen (Tod/Checkpoint/Teleporter): sofort neu überlegen
   if(H.letztX !== undefined && Math.hypot(P.x - H.letztX, P.y - H.letztY) > 60){ H.plan = null; H.naechste = H.schritt; }
   H.letztX = P.x; H.letztY = P.y;
+  // neues Ziel (z. B. Aufgabe beginnt/endet): sobald der laufende Sprung vorbei ist, neu entscheiden
+  if(H.zielId !== Z.id){ H.zielId = Z.id; H.naechste = Math.min(H.naechste, H.schritt + partnerReaktion()); H.bestAbst = undefined; }
   // Fortschritt messen (hängt er fest?)
   const abst = partnerAbstand(P.x, P.y, Z);
-  if(Z.nah || abst < H.bestAbst - 20 || H.bestAbst === undefined){ H.bestAbst = Z.nah ? Infinity : abst; H.festSeit = H.schritt; }
-  if(H.bestAbst === Infinity) H.bestAbst = abst;
+  if(Z.nah || H.bestAbst === undefined || abst < H.bestAbst - 20){ H.bestAbst = abst; H.festSeit = H.schritt; }
   if(partner.modus === 'fest'){
-    if(Z.nah || Math.abs(Z.x - H.festZielX) > 200 || Math.abs(Z.y - H.festZielY) > 80){ partner.modus = 'folgen'; H.festSeit = H.schritt; H.bestAbst = abst; }
-    else { partner.text = 'hänge fest – ruf mich (Q) oder tausch (V)'; return {}; }
+    // wartet, bis ich ihn rufe (Q), tausche (V) oder selbst zu ihm komme
+    if(Z.nah && Z.id === 'folgen' || H.gerufen){ partner.modus = 'folgen'; H.festSeit = H.schritt; H.bestAbst = abst; H.aufgabeFehler = null; H.gerufen = false; }
+    else { partner.text = partnerFestText(); return {}; }
   }
-  if(!Z.nah && H.schritt - H.festSeit > PARTNER_FEST && P.grounded){
+  if(!Z.nah && H.schritt - H.festSeit > PARTNER_FEST && (P.grounded || P.inWater)){
     partner.modus = 'fest'; H.festZielX = Z.x; H.festZielY = Z.y; H.plan = null;
-    partner.text = 'hänge fest – ruf mich (Q) oder tausch (V)'; return {};
+    if(typeof partnerAufgabeAbbrechen === 'function') partnerAufgabeAbbrechen();
+    partner.text = partnerFestText(); return {};
   }
   // laufender Plan: Sprünge/Haken werden nicht unterbrochen, Laufen/Stehen nach der Reaktionszeit neu bewertet
   const p = H.plan;
   const unterbrechbar = !p || p.art === 'lauf' || p.art === 'stehen';
-  if(H.schritt >= H.naechste && unterbrechbar){
+  if(H.schritt >= H.naechste && unterbrechbar && !H.suche){
     H.naechste = H.schritt + partnerReaktion();
-    const tE = performance.now();
-    const neu = Z.nah ? null : partnerEntscheiden(P, Z);
-    H.maxMs = Math.max(H.maxMs || 0, performance.now() - tE);
-    H.plan = neu; H.planK = 0; H.planSt = {};
+    if(Z.nah){ H.plan = null; }
+    else { H.suche = partnerSuche(P, Z); H.sucheZiel = Z.id; }
+  }
+  if(H.suche){
+    if(H.sucheZiel !== Z.id){ H.suche = null; }   // Ziel gewechselt: Überlegung verwerfen
+    else {
+      const tE = performance.now();
+      partnerSimZaehler = 0;
+      const r = H.suche.next();
+      H.maxMs = Math.max(H.maxMs || 0, performance.now() - tE);
+      if(r.done){ H.suche = null; H.plan = r.value; H.planK = 0; H.planSt = {}; }
+      else if(!H.plan){ partner.text = 'überlegt …'; return {}; }   // ein laufender Plan geht derweil weiter
+    }
   }
   if(!H.plan){
-    partner.text = Z.nah ? 'folgt dir' : (H.wartetAufLuecke ? 'wartet auf eine Lücke' : 'überlegt …');
+    partner.text = Z.nah ? folgeText : (H.wartetAufLuecke ? 'wartet auf eine Lücke' : 'überlegt …');
     return {};
   }
   H.planK++;
@@ -509,8 +556,17 @@ function partnerFolgen(P, M){
   if(H.plan.fertig && H.plan.fertig(H.planK, P, H.planSt)){ H.plan = null; if(H.naechste > H.schritt + 3) H.naechste = H.schritt + partnerReaktion(); }
   const art = H.plan ? H.plan.art : 'stehen';
   partner.text = art === 'haken' ? 'Haken' : art === 'segeln' ? 'segelt' : art === 'sprung' ? 'springt' :
-                 Math.abs(Z.x - P.x) >= PARTNER_AUFHOLEN ? 'holt auf' : 'folgt dir';
+                 Z.id === 'folgen' && Math.abs(Z.x - P.x) >= PARTNER_AUFHOLEN ? 'holt auf' : folgeText;
   return e;
+}
+function partnerFestText(){
+  const f = partnerHirn.aufgabeFehler;
+  return f ? '„' + f + '“ klappt nicht – ruf mich (Q) oder tausch (V)' : 'hänge fest – ruf mich (Q) oder tausch (V)';
+}
+function partnerFolgen(P, M){
+  if(partner.modus === 'aufgabe') partner.modus = 'folgen';
+  const Z = partnerFolgeZiel(P, M); Z.id = 'folgen';
+  return partnerNavi(P, Z, 'folgt dir');
 }
 
 // Plan-Eingaben -> echte Tasten
@@ -528,5 +584,7 @@ function partnerTastenAus(P, e){
 }
 function partnerDenken(P, M){
   if(typeof deathState !== 'undefined' && deathState) return {halten: {}, druecken: []};
-  return partnerTastenAus(P, partnerFolgen(P, M));
+  // Aufgaben (31-partner-aufgaben.js) haben Vorrang; sonst folgen
+  const e = (typeof partnerAufgabeSchritt === 'function' && partnerAufgabeSchritt(P, M)) || partnerFolgen(P, M);
+  return partnerTastenAus(P, e);
 }

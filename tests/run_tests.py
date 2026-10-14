@@ -8788,6 +8788,101 @@ async def partner_gefahren(g):
                 srv.shutdown()
     assert not fehler, f'Partner scheitert an Gefahren: {fehler}'
 
+def tuer_kacheln(c, r0, r1, link): return [{'x': c*40, 'y': r*40, 'link': link} for r in range(r0, r1 + 1)]
+
+PARTNER_AUFGABE_JS = r"""o => {   // Begleiter-Aufgabe ausprobieren: ich stehe/laufe per Skript, der Partner erledigt seine Hälfte
+  menuScreen = 'pause'; deathState = null;
+  if(o.aufgaben) partnerAufgabenSetzen(o.aufgaben, 'test');
+  let ts = 0, tod = null; const texte = new Set(), merk = [];
+  for(let f = 0; f < o.n; f++){
+    ts += 16.6;
+    const M = meineFigur();
+    if(o.ich_ziel !== undefined){ const los = o.ich_wenn ? Function('return (' + o.ich_wenn + ')')() : true; KEYS.Solo_right = los && M.x < o.ich_ziel; }
+    stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    texte.add(partner.text);
+    if(o.merk) merk.push(Function('return (' + o.merk + ')')());
+    if(deathState){ tod = deathState.victim === partnerFigur() ? 'partner' : 'ich'; break; }
+    if(o.bis && Function('return (' + o.bis + ')')()) return {f, tod, ok: true, texte: [...texte], merk};
+  }
+  return {f: o.n, tod, ok: false, texte: [...texte], merk, P: [partnerFigur().x, partnerFigur().y], M: [meineFigur().x, meineFigur().y]};
+}"""
+
+async def partner_aufgabe_probe(g, lvl, ich_pos, sein_pos, ich, o):
+    d = level_daten(lvl['solids'], ich_pos if ich == 'm' else sein_pos, sein_pos if ich == 'm' else ich_pos,
+                    **{k: v for k, v in lvl.items() if k != 'solids'})
+    srv = await partner_test_start(g, d, ich=ich)
+    try:
+        return await g.p.evaluate(PARTNER_AUFGABE_JS, o)
+    finally:
+        srv.shutdown()
+
+@test
+async def partner_aufgaben_mechaniken(g):
+    """Computer-Partner Teilschritt 3: je Mechanik eine Begleiter-Aufgabe (Format wie in levels/partner/…): Hebel umlegen,
+    Platte halten bis ich durch die Tür bin, Spiegel in die richtige Stellung drehen (Kristall -> Tür), Wechselboden-Hebel
+    erst, wenn ich an der Grube stehe („wann“), Affe per Haken auf den hohen Sims, Schweinchen segelt über die breite
+    Grube. Alles mit echten Tasten; die Anzeige über dem Partner nennt die Aufgabe."""
+    G = ground
+    tuer = tuer_kacheln(30, 13, 16, 1)
+    faelle = {
+        'hebel': (dict(solids=[G(0, 680, 3000)], doors=tuer, switches=[{'x': 900, 'y': 660, 'link': 1}]), 'm',
+                  {'aufgaben': [{'id': 'h1', 'zone': [20, 35], 'aktion': 'hebel', 'nummer': 1}], 'n': 900, 'bis': '!!linkOn[1]'}),
+        'platte': (dict(solids=[G(0, 680, 3000)], doors=tuer, plates=[{'x': 900, 'y': 660, 'link': 1}]), 'm',
+                   {'aufgaben': [{'id': 'p1', 'zone': [20, 35], 'aktion': 'platte', 'nummer': 1}], 'n': 1500, 'ich_ziel': 1500,
+                    'ich_wenn': '(window.__los = window.__los || !!linkOn[1])', 'bis': 'meineFigur().x > 1450',
+                    'merk': '[!!linkOn[1], Math.round(partnerFigur().x), Math.round(meineFigur().x)]'}),
+        'spiegel': (dict(solids=[G(0, 680, 3000)], doors=tuer, lichtquellen=[{'x': 200, 'y': 640, 'richtung': 'r'}],
+                         spiegel=[{'x': 800, 'y': 640, 'stellung': '\\'}], kristalle=[{'x': 800, 'y': 440, 'link': 1}]), 'm',
+                    {'aufgaben': [{'id': 's1', 'zone': [0, 35], 'aktion': 'spiegel', 'ziel': {'c': 20, 'r': 16}, 'stellung': '/'}], 'n': 1200,
+                     'bis': "!!linkOn[1] && spiegelListe[0].stellung === '/'"}),
+        'wechselboden': (dict(solids=[G(0, 680, 1000), G(1240, 680, 2000)], switches=[{'x': 700, 'y': 660, 'link': 1}],
+                              switchFloors=[{'x': 1000 + 40*i, 'y': 680, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 1} for i in range(6)]), 'm',
+                         {'aufgaben': [{'id': 'w1', 'zone': [0, 40], 'aktion': 'wechsel', 'nummer': 1, 'wann': {'ich_in': [23, 25], 'ich_steht': True}}],
+                          'n': 1500, 'ich_ziel': 1600, 'ich_wenn': '!!linkOn[1]', 'bis': 'meineFigur().x > 1550 && meineFigur().grounded',
+                          'merk': '[!!linkOn[1], Math.floor(meineFigur().x/40)]'}),
+        'haken': (dict(solids=[G(0, 680, 3000), G(1120, 480, 240, 200, 'wall')], hooks=[{'x': 1020, 'y': 400}]), 'f',
+                  {'aufgaben': [{'id': 'k1', 'aktion': 'haken', 'ziel': {'c': 30, 'r': 11}}], 'n': 1500,
+                   'bis': 'partnerFigur().grounded && partnerFigur().y < 490', 'merk': 'partnerFigur().hookAttached'}),
+        'segeln': (dict(solids=[G(0, 680, 900), G(1300, 680, 2000)]), 'm',
+                   {'aufgaben': [{'id': 'g1', 'aktion': 'segeln', 'ziel': {'c': 35, 'r': 16}}], 'n': 1200,
+                    'bis': 'partnerFigur().grounded && partnerFigur().x > 1300', 'merk': 'partnerFigur().gliding'}),
+    }
+    fehler = {}
+    for name, (lvl, ich, o) in faelle.items():
+        ich_pos = {'x': 960 if name == 'wechselboden' else 1140 if name in ('hebel', 'platte', 'spiegel') else 1500, 'y': 680}
+        r = await partner_aufgabe_probe(g, lvl, ich_pos, {'x': 400 if name not in ('haken', 'segeln', 'wechselboden') else 500 if name != 'wechselboden' else 300, 'y': 680}, ich, o)
+        if not r['ok'] or r['tod']: fehler[name] = r; continue
+        if not any(t.startswith('Aufgabe') for t in r['texte']): fehler[name] = ('keine Anzeige', r['texte'])
+        if name == 'platte':   # Tür blieb offen, solange ich davor/darin war (Partner auf der Platte)
+            zu = [m for m in r['merk'] if not m[0] and 1150 < m[2] < 1250]
+            if zu: fehler[name] = ('Platte losgelassen, während ich in der Tür war', zu[:3])
+        if name == 'wechselboden':   # Hebel erst, als ich an der Grube stand
+            vorher = [m for m in r['merk'] if m[0] and m[1] < 23]
+            if vorher: fehler[name] = ('zu früh geschaltet', vorher[:3])
+        if name == 'haken' and not any(r['merk']): fehler[name] = 'ohne Haken hinauf?'
+        if name == 'segeln' and not any(r['merk']): fehler[name] = 'ohne Schirm hinüber?'
+    assert not fehler, f'Aufgaben: {fehler}'
+
+@test
+async def partner_auto_aufgaben(g):
+    """Computer-Partner: ohne Begleitdatei hilft er bei einfachen Fällen selbst – geschlossene Tür vor mir, der Hebel bzw.
+    die Platte dazu in Reichweite -> er legt den Hebel um bzw. hält die Platte. Löst die Nummer auch einen rollenden Felsen
+    aus, rührt er den Hebel NICHT an (er soll mich nie in Gefahr bringen)."""
+    G = ground
+    tuer = tuer_kacheln(30, 13, 16, 1)
+    r = await partner_aufgabe_probe(g, dict(solids=[G(0, 680, 3000)], doors=tuer, switches=[{'x': 900, 'y': 660, 'link': 1}]),
+                                    {'x': 1140, 'y': 680}, {'x': 400, 'y': 680}, 'f', {'n': 900, 'bis': '!!linkOn[1]'})
+    assert r['ok'] and not r['tod'] and 'Aufgabe: Hebel 1' in r['texte'], f'Auto-Hebel: {r}'
+    r = await partner_aufgabe_probe(g, dict(solids=[G(0, 680, 3000)], doors=tuer, plates=[{'x': 900, 'y': 660, 'link': 1}]),
+                                    {'x': 1140, 'y': 680}, {'x': 400, 'y': 680}, 'm',
+                                    {'n': 1500, 'ich_ziel': 1500, 'ich_wenn': '(window.__los = window.__los || !!linkOn[1])', 'bis': 'meineFigur().x > 1450'})
+    assert r['ok'] and not r['tod'] and 'Aufgabe: Platte 1 halten' in r['texte'], f'Auto-Platte: {r}'
+    r = await partner_aufgabe_probe(g, dict(solids=[G(0, 680, 3000)], doors=tuer, switches=[{'x': 900, 'y': 660, 'link': 1}],
+                                            boulders=[{'x': 2600, 'y': 680, 'link': 1, 'richtung': 'l', 'tempo': 4.4}]),
+                                    {'x': 1140, 'y': 680}, {'x': 400, 'y': 680}, 'm', {'n': 500, 'bis': '!!linkOn[1]'})
+    assert not r['ok'], 'Partner löst einen Felsen aus'
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

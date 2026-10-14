@@ -167,4 +167,5 @@ const PARTNER_VORAUS = 64;             // Schritte, die er beim Springen vorausr
 const PARTNER_FEST = 540;              // Schritte (10 s) ohne Fortschritt -> „hänge fest“, wartet auf mich
 const PARTNER_AUFGABE_ZEIT = 1800;     // Schritte (30 s) Standard-Zeitlimit einer Aufgabe
 const PARTNER_AUTO_WEITE = 20 * 40;    // px: Auto-Aufgabe nur, wenn Hebel/Platte und Tür höchstens so weit auseinander (Bild-Regel)
-const PARTNER_BUDGET = 2400;           // höchstens so viele vorausgerechnete Schritte je Entscheidung (≈ 5 ms, bleibt flüssig)
+const PARTNER_BUDGET = 1600;           // höchstens so viele vorausgerechnete Schritte je Spielschritt (≈ 4 ms, bleibt flüssig)
+const PARTNER_BUDGET_GESAMT = 24000;   // … und je Überlegung insgesamt (verteilt auf mehrere Spielschritte: er „überlegt“ kurz)
