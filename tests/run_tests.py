@@ -6174,7 +6174,7 @@ async def wk_inseln(g):
 
 @test
 async def weltkarte_gemalt_ohne_fehler(g):
-    """Design-Politur E: die Weltkarte lädt ohne JavaScript-Fehler; gemaltes Meer mit Seil-Ecken, Kompass, Brücken und
+    """Design-Politur E: die Weltkarte lädt ohne JavaScript-Fehler; gemaltes Meer mit Nägeln auf den Seil-Ecken (ohne Seil-Linien), Kompass, Brücken und
     Fußspuren; jede Insel hat ihre Stimmungsfarbe (--mood), ein eigenes Wetter und ein Tier; gesperrte Welten liegen im
     Nebel (nicht grau); Affe und Schweinchen wippen auf der gewählten Insel."""
     srv = webserver(); p = g.p; fehler = []
@@ -6186,7 +6186,16 @@ async def weltkarte_gemalt_ohne_fehler(g):
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(700)
         r = await g.ev("""(() => { const box = document.querySelector('#sm-wm'), isl = [...box.querySelectorAll('.isl')];
           const deko = box.querySelector('.wm-deko');
-          return {deko: !!deko, ecken: deko ? deko.querySelectorAll('g[transform^="translate"] circle').length : 0, bruecken: deko ? deko.querySelectorAll('rect').length : 0,
+          // Nägel ohne Seil-Linien, Mitte genau auf der gestrichelten Seil-Linie (Eckbogen-Mitte)
+          const st = getComputedStyle(box, '::before'), ins = parseFloat(st.top), bw = parseFloat(st.borderTopWidth),
+            rad = parseFloat(st.borderTopLeftRadius), br = box.getBoundingClientRect(), ab = ins + rad - (rad - bw / 2) * Math.SQRT1_2;
+          const sk = br.width / box.offsetWidth, rb = parseFloat(getComputedStyle(box).borderLeftWidth);   // Karte kann leicht skaliert sein
+          const cw = box.offsetWidth - 2 * rb, ch = box.offsetHeight - 2 * rb;   // innen (ohne Rahmen), ungerundet genug
+          const soll = [[ab, ab], [cw - ab, ab], [cw - ab, ch - ab], [ab, ch - ab]];
+          const naegel = [...box.querySelectorAll('.wm-nagel')].map((n, i) => { const q = n.getBoundingClientRect();
+            return Math.hypot((q.left + q.width / 2 - br.left) / sk - rb - soll[i][0], (q.top + q.height / 2 - br.top) / sk - rb - soll[i][1]); });
+          return {deko: !!deko, ecken: naegel.length, nagelAbweichung: Math.max(...naegel),
+            seil: deko ? [...deko.querySelectorAll('path')].filter(e => /h7|v12/.test(e.getAttribute('d'))).length : 0, bruecken: deko ? deko.querySelectorAll('rect').length : 0,
             spuren: deko ? deko.querySelectorAll('.wm-spuren ellipse').length : 0, pfade: document.querySelectorAll('#sm-wm-path path').length,
             mood: isl.map(b => getComputedStyle(b).getPropertyValue('--mood').trim()),
             wetter: isl.map(b => !!b.querySelector('[class^="w-"]')), tier: isl.map(b => !!b.querySelector('[class^="t-"]')),
@@ -6195,7 +6204,8 @@ async def weltkarte_gemalt_ohne_fehler(g):
             wippen: getComputedStyle(document.querySelector('#sm-m-pair > *')).animationName,
             verzerrt: (() => { const r = box.getBoundingClientRect(), vb = deko.viewBox.baseVal; return Math.abs((vb.width/vb.height)/(r.width/r.height) - 1); })()}; })()""")
         assert r['verzerrt'] < 0.02, f'Karten-Deko verzerrt (Seitenverhältnis weicht um {r["verzerrt"]:.2%} ab)'
-        assert r['deko'] and r['ecken'] >= 4 and r['bruecken'] == len(r['mood']) - 1 and r['spuren'] > 0 and r['pfade'] == 1, r
+        assert r['ecken'] == 4 and r['nagelAbweichung'] < 1.5 and r['seil'] == 0, f"Nägel nicht auf den Seil-Ecken: {r}"
+        assert r['deko'] and r['bruecken'] == len(r['mood']) - 1 and r['spuren'] > 0 and r['pfade'] == 1, r
         assert all(r['mood']) and len(set(r['mood'])) == len(r['mood']), f'Stimmungsfarben: {r["mood"]}'
         assert all(r['wetter']) and all(r['tier']), r
         assert all(n == '1' for n in r['nebel'] if n is not None), f'gesperrte Welten ohne Nebel: {r["nebel"]}'

@@ -1096,14 +1096,11 @@ function karteDeko(pts, A) {
       <rect x="-3.4" y="-.9" width="6.8" height="1.8" fill="#8a5a2a" rx=".3"/><path d="M-2.4 -.9 v1.8 M-.8 -.9 v1.8 M.8 -.9 v1.8 M2.4 -.9 v1.8" stroke="#4a2c10" stroke-width=".3"/>
       <path d="M-3.4 -1.1 Q0 -.4 3.4 -1.1 M-3.4 1.1 Q0 1.8 3.4 1.1" stroke="#d9b77a" stroke-width=".35" fill="none"/></g>`);
   }
-  const ecke = (x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r})"><path d="M0 0 h7 M0 0 v12" stroke="#d9b77a" stroke-width="1.1" stroke-linecap="round"/>
-    <circle r="1.6" fill="#b88a4a" stroke="#6b4220" stroke-width=".4"/><path d="M-.9 -.9 l1.8 1.8 M.9 -.9 l-1.8 1.8" stroke="#6b4220" stroke-width=".3"/></g>`;
   return `<svg class="wm-deko" viewBox="0 0 ${X(100)} 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
     <g class="wm-wolken"><ellipse cx="${X(18)}" cy="12" rx="20" ry="3.4" fill="rgba(255,255,255,.22)"/><ellipse cx="${X(62)}" cy="9" rx="26" ry="3.8" fill="rgba(255,255,255,.18)"/><ellipse cx="${X(88)}" cy="90" rx="22" ry="3.2" fill="rgba(255,255,255,.14)"/></g>
     <g class="wm-spuren" fill="rgba(255,236,190,.55)">${spuren.join('')}</g>${bruecken.join('')}
     <g transform="translate(${X(5)} 86)" class="wm-kompass"><circle r="5" fill="rgba(255,240,200,.25)" stroke="#d9b77a" stroke-width=".4"/>
-      <path d="M0 -4.5 L1 0 L0 4.5 L-1 0 Z" fill="#d9b77a"/><path d="M-4.5 0 L0 1 L4.5 0 L0 -1 Z" fill="#a8844a"/><path d="M0 -4.5 L1 0 L-1 0 Z" fill="#ff8a6a"/></g>
-    ${ecke(2.5, 2.5, 0)}${ecke(X(100) - 2.5, 2.5, 90)}${ecke(X(100) - 2.5, 97.5, 180)}${ecke(2.5, 97.5, 270)}</svg>`;
+      <path d="M0 -4.5 L1 0 L0 4.5 L-1 0 Z" fill="#d9b77a"/><path d="M-4.5 0 L0 1 L4.5 0 L0 -1 Z" fill="#a8844a"/><path d="M0 -4.5 L1 0 L-1 0 Z" fill="#ff8a6a"/></g></svg>`;
 }
 S.map = {
   el: $('#sm-s-map'), idx: 0, worlds: [],
@@ -1135,7 +1132,11 @@ S.map = {
     $('#sm-wm-path').innerHTML = `<path d="${d}" class="road"/>`;
     $$('.wm-deko', box).forEach(e => e.remove());
     const kr = box.getBoundingClientRect();
-    box.insertBefore(mk(karteDeko(pts, kr.width && kr.height ? kr.width/kr.height : 2.5)), $('#sm-wm-path').nextSibling);   // Seil-Ecken, Kompass, Fußspuren, Brücken (Design-Politur E)
+    box.insertBefore(mk(karteDeko(pts, kr.width && kr.height ? kr.width/kr.height : 2.5)), $('#sm-wm-path').nextSibling);   // Kompass, Fußspuren, Brücken (Design-Politur E)
+    // Nägel genau auf den Ecken des gestrichelten Seils (ohne Seil-Linien; Lage per CSS in denselben Einheiten wie das Seil)
+    const nagel = '<svg viewBox="-2 -2 4 4"><circle r="1.6" fill="#b88a4a" stroke="#6b4220" stroke-width=".4"/><path d="M-.9 -.9 l1.8 1.8 M.9 -.9 l-1.8 1.8" stroke="#6b4220" stroke-width=".3"/></svg>';
+    $$('.wm-nagel', box).forEach(e => e.remove());
+    ['lo', 'ro', 'ru', 'lu'].forEach(k => box.appendChild(mk(`<i class="wm-nagel ${k}" aria-hidden="true">${nagel}</i>`)));
     box.appendChild(mk(`<div class="pair nt" id="sm-m-pair">${monkeySVG()}${pigSVG()}</div>`));
     const open = this.worlds.filter(w => worldUnlocked(w, this.worlds)).length, all = this.worlds.filter(w => w.idx.length).length;
     $('#sm-m-count').innerHTML = `Welten<b>${open} / ${all}</b>`;
