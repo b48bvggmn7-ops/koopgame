@@ -1,0 +1,251 @@
+{
+ "level": "dschungel/02-baumkronen.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-2",
+   "zone": [
+    56,
+    91
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 2,
+   "wann": {
+    "ich_in": [
+     68,
+     70
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 2 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     96,
+     13
+    ],
+    "links": [],
+    "schritte": 424
+   }
+  },
+  {
+   "id": "nummer-3",
+   "zone": [
+    95,
+    114
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 3,
+   "wann": {
+    "ich_in": [
+     111,
+     112
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 3 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     96,
+     13
+    ],
+    "links": [],
+    "schritte": 448
+   }
+  },
+  {
+   "id": "nummer-4",
+   "zone": [
+    101,
+    121
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 4,
+   "probe": {
+    "figur": "m",
+    "start": [
+     96,
+     13
+    ],
+    "links": [
+     2,
+     3
+    ],
+    "schritte": 952
+   }
+  },
+  {
+   "id": "nummer-5",
+   "zone": [
+    138,
+    160
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     165,
+     13
+    ],
+    "links": [],
+    "schritte": 482
+   }
+  },
+  {
+   "id": "nummer-6",
+   "zone": [
+    168,
+    184
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 6,
+   "wann": {
+    "ich_in": [
+     180,
+     182
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 6 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     165,
+     13
+    ],
+    "links": [],
+    "schritte": 504
+   }
+  },
+  {
+   "id": "nummer-7",
+   "zone": [
+    267,
+    282
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 7,
+   "probe": {
+    "figur": "m",
+    "start": [
+     284,
+     14
+    ],
+    "links": [],
+    "schritte": 372
+   }
+  },
+  {
+   "id": "nummer-9",
+   "zone": [
+    310,
+    328
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 9,
+   "probe": {
+    "figur": "m",
+    "start": [
+     284,
+     14
+    ],
+    "links": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ],
+    "schritte": 1426
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    324,
+    342
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     348,
+     14
+    ],
+    "links": [],
+    "schritte": 548
+   }
+  },
+  {
+   "id": "nummer-13",
+   "zone": [
+    635,
+    650
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 13,
+   "probe": {
+    "figur": "m",
+    "start": [
+     655,
+     14
+    ],
+    "links": [],
+    "schritte": 404
+   }
+  },
+  {
+   "id": "nummer-15",
+   "zone": [
+    597,
+    623
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 15,
+   "probe": {
+    "figur": "m",
+    "start": [
+     590,
+     14
+    ],
+    "links": [],
+    "schritte": 554
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 10,
+   "spalte": 336,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 12,
+   "spalte": 476,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 8,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 14,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  }
+ ]
+}

@@ -1,0 +1,253 @@
+{
+ "level": "dschungel/01-dschungel.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-1",
+   "zone": [
+    123,
+    140
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 1,
+   "wann": {
+    "ich_in": [
+     135,
+     139
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 1 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     132,
+     15
+    ],
+    "links": [],
+    "schritte": 382
+   }
+  },
+  {
+   "id": "nummer-2",
+   "zone": [
+    212,
+    227
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 2,
+   "probe": {
+    "figur": "m",
+    "start": [
+     232,
+     11
+    ],
+    "links": [],
+    "schritte": 404
+   }
+  },
+  {
+   "id": "nummer-3",
+   "zone": [
+    260,
+    294
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 3,
+   "wann": {
+    "ich_in": [
+     272,
+     274
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 3 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     296,
+     13
+    ],
+    "links": [],
+    "schritte": 372
+   }
+  },
+  {
+   "id": "nummer-4",
+   "zone": [
+    289,
+    317
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 4,
+   "wann": {
+    "ich_in": [
+     301,
+     303
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 4 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     296,
+     13
+    ],
+    "links": [],
+    "schritte": 582
+   }
+  },
+  {
+   "id": "nummer-5",
+   "zone": [
+    350,
+    373
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     323,
+     13
+    ],
+    "links": [],
+    "schritte": 776
+   }
+  },
+  {
+   "id": "nummer-7",
+   "zone": [
+    420,
+    454
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 7,
+   "wann": {
+    "ich_in": [
+     432,
+     434
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 7 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     454,
+     15
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  },
+  {
+   "id": "nummer-8",
+   "zone": [
+    458,
+    481
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 8,
+   "probe": {
+    "figur": "m",
+    "start": [
+     454,
+     15
+    ],
+    "links": [],
+    "schritte": 1998
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    624,
+    643
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     655,
+     14
+    ],
+    "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     5,
+     7,
+     8,
+     12
+    ],
+    "schritte": 1122
+   }
+  },
+  {
+   "id": "nummer-12",
+   "zone": [
+    616,
+    648
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 12,
+   "probe": {
+    "figur": "m",
+    "start": [
+     596,
+     14
+    ],
+    "links": [],
+    "schritte": 682
+   }
+  },
+  {
+   "id": "nummer-14",
+   "zone": [
+    657,
+    690
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 14,
+   "wann": {
+    "ich_in": [
+     669,
+     671
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 14 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     690,
+     14
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 6,
+   "spalte": 360,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  }
+ ]
+}

@@ -8955,6 +8955,105 @@ async def partner_steuerung(g):
     finally:
         srv.shutdown()
 
+PARTNER_PROBE_JS = r"""o => {
+  menuScreen = 'pause';
+  resetLevel(); deathState = null;
+  for(const l of (o.links || [])) setLink(l, true);
+  const M = meineFigur(), P = partnerFigur();
+  M.x = o.ich[0]; M.y = o.ich[1]; P.x = o.er[0]; P.y = o.er[1]; M.vx = M.vy = P.vx = P.vy = 0;
+  partnerHirnNeu();
+  partnerAufgabenSetzen([o.aufgabe], 'probe');
+  partnerHirn.sofort = true;
+  camPos = Math.max(0, Math.min(LEVEL_W - VW, Math.min(p1.x, p2.x) - CAM_LEFT)); camX = Math.round(camPos);
+  let ts = 0, an = false, tod = null, f;
+  for(f = 0; f < o.n; f++){
+    ts += 16.6; stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    if(linkOn[o.aufgabe.nummer]){ an = true; break; }
+    if(deathState){ tod = deathState.victim === P ? 'partner' : 'ich'; break; }
+  }
+  return {an, tod, f, P: [Math.round(P.x/40), Math.round(P.y/40)], text: partner.text};
+}"""   # eine Begleiter-Aufgabe ab ihrem Startplatz ausprobieren (auch tests/partner_aufgaben_pruefen.py)
+
+async def partner_aufgaben_welt(g, welt):
+    """alle Begleiter-Aufgaben (levels/partner/<welt>/…) einer Welt ab ihrem Probe-Startplatz durchspielen"""
+    fehler, gezaehlt = [], 0
+    for f in sorted((ROOT / 'levels' / 'partner' / welt).glob('*.json')):
+        datei = f'{welt}/{f.name}'
+        bd = json.loads(f.read_text(encoding='utf-8'))
+        assert bd.get('level') == datei, f'{f}: falsches Level {bd.get("level")}'
+        d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+        srv = await partner_test_start(g, d, ich='m')
+        try:
+            await g.ev('(() => { window.__probe = ' + PARTNER_PROBE_JS + '; return 1; })()')
+            for a in bd['aufgaben']:
+                pr = a.get('probe')
+                if not pr: continue
+                fig = pr['figur']
+                await g.ev(f"(() => {{ partner.ich = '{'f' if fig == 'm' else 'm'}'; partnerTastenNeu(); return 1; }})()")
+                c, r = pr['start']
+                o = {'ich': [kx(c) + 20, ky(r)], 'er': [kx(c) - 20, ky(r)], 'n': pr['schritte'], 'links': pr.get('links', []),   # wie im Prüfwerkzeug
+                     'aufgabe': {k: v for k, v in a.items() if k not in ('probe', 'zone', 'wann')}}   # Probe = „Mach jetzt“ (E)
+                res = await g.p.evaluate('o => __probe(o)', o)
+                gezaehlt += 1
+                if not res['an'] or res['tod']: fehler.append((datei, a['id'], fig, res))
+        finally:
+            srv.shutdown()
+    return gezaehlt, fehler
+
+@test
+async def partner_aufgaben_dschungel(g):
+    """Computer-Partner Teilschritt 5: jede Begleiter-Aufgabe der Dschungel-Level (levels/partner/dschungel/…) wird ab
+    ihrem Startplatz mit der echten Physik durchgespielt – der Partner geht hin (auch über Umwege, Kamine, Haken,
+    Segeln) und legt den Hebel um bzw. hält die Platte, ohne zu sterben."""
+    n, fehler = await partner_aufgaben_welt(g, 'dschungel')
+    assert n >= 40, f'zu wenige Aufgaben geprüft: {n}'
+    assert not fehler, f'{len(fehler)} von {n} Aufgaben klappen nicht: {fehler[:4]}'
+
+async def partner_projekt_start(g, datei, ich):
+    """Projekt-Level im Testmodus wie aus dem Editor (mit projektDatei -> Begleitdatei wird geladen)"""
+    d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+    d['projektDatei'] = datei
+    srv = await partner_test_start(g, d, ich=ich)
+    await g.p.wait_for_function("partnerAufgaben.length > 0 && partnerAufgabenDatei !== null", timeout=8000)
+    return srv
+
+@test
+async def partner_koop_dschungel(g):
+    """Computer-Partner, Dschungel: ein Skript (Koop-Bot) steuert MEINE Figur, der Partner macht seine Hälfte mit der
+    echten Begleitdatei (aus levels/partner/, geladen wie beim Editor-Test).
+    1) Dornenpfad-Finale bis zum Ziel: ich lege Hebel 14 um, sobald er bei mir ist; die Stachelwand jagt uns – er flieht
+       mit (nicht gemütlich, auch nicht hinter mir her in die Wand) und kommt mit ins Ziel (als Affe und als Schweinchen).
+    2) Lianenschlucht-Schleuse: er hält Platte 5, bis ich durch die Tür bin; danach halte ich die hintere Platte, und er
+       kommt per Haken über den Graben nach."""
+    fehler = []
+    def lauf(bis, kanten):
+        cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+        return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+    flucht = [lauf(700, [688]), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(703)} - 6', 'left': f'P.x > {kx(703)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+              {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, lauf(773, [724, 734])]
+    for ich in ('m', 'f'):
+        srv = await partner_projekt_start(g, 'dschungel/05-dornenpfad.json', ich)
+        try:
+            plan = [k_lauf(680, -14), {'wait': f'Q.x > {kx(675)} && Q.grounded', 'frames': 1200}, {'use': True, 'frames': 2}] + flucht + \
+                   [k_lauf(797), {'wait': f'Q.x > {kx(790)}', 'frames': 1500}]
+            r = await koop(g, **{ich: kat(671, 11), ('f' if ich == 'm' else 'm'): kat(672, 11)}, plans={ich: plan}, pre='partnerHirnNeu()', maxFrames=5000)
+            if not (r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 790): fehler.append(('Jagd bis zum Ziel', ich, r.get('dead'), r.get('pos')))
+        finally:
+            srv.shutdown()
+    srv = await partner_projekt_start(g, 'dschungel/03-lianenschlucht.json', 'f')
+    try:
+        f = [{'wait': '!!linkOn[5]', 'frames': 1500}] + k_hop(kx(289) - 10, 8) + [k_lauf(293, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
+             {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300},
+             {'holdIf': {'right': f'P.x < {kx(307)} - 4', 'left': f'P.x > {kx(307)} + 4'}, 'until': f'Q.x >= {kx(304)} && Q.grounded', 'frames': 3000}, {'frames': 30}]
+        mess = "if(f % 5) return; return [!!linkOn[5], partnerFigur().x, partner.text]"
+        r = await koop(g, m=kat(276, 15), f=kat(286, 15), plans={'f': f}, jeBild=mess, pre='partnerHirnNeu()', maxFrames=4000)
+        if not (r.get('done') and r['pos']['m'][0] >= 304 and r['pos']['f'][0] >= 306): fehler.append(('Schleuse', r.get('dead'), r.get('pos')))
+        if not any(x[2] == 'Aufgabe: Platte 5 halten' and x[0] and x[1] < kx(284) for x in r['mess']): fehler.append(('Schleuse: Partner hält Platte 5 nicht', r['mess'][:10]))
+    finally:
+        srv.shutdown()
+    assert not fehler, fehler
+
 async def main(filter_):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)

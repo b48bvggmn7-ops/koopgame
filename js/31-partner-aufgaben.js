@@ -90,7 +90,12 @@ function partnerAufgabeFertig(A, P, M){
   if(art === 'hebel') return !!linkOn[A.nummer] === (A.soll !== false);
   if(art === 'spiegel'){ const s = partnerSpiegelVon(A); return !s || (s.stellung === A.stellung && !(s.drehT > 0)); }
   if(art === 'platte'){ const pl = partnerPlatteVon(A, P); return !pl || partnerIchVorbei(A, M, pl); }
-  if(art === 'gehe' || art === 'haken' || art === 'segeln' || art === 'ablauf'){
+  if(art === 'ablauf'){   // fertig, wenn alle Schritte durch sind (bzw. die Nummer schon an ist, falls angegeben)
+    const H = partnerHirn, lauf = H && H.aufgabe && H.aufgabe.def === A ? H.aufgabe.st : null;
+    if(lauf) return lauf.los && lauf.i >= (A.schritte || []).length;
+    return A.nummer !== undefined ? !!linkOn[A.nummer] : false;
+  }
+  if(art === 'gehe' || art === 'haken' || art === 'segeln'){
     if(!A.ziel) return true;
     return Math.abs(P.x - pSpalteX(A.ziel.c)) < 30 && Math.abs(P.y - pReiheFuss(A.ziel.r)) < 24 && P.grounded;
   }
@@ -121,6 +126,7 @@ function partnerAutoAufgabe(P, M){
     const link = d.link;
     if(typeof felsen !== 'undefined' && felsen.some(F => F.link === link)) continue;   // nie Felsen auslösen
     if(typeof lavaBecken !== 'undefined' && lavaBecken.some(b => b.marken.some(m => m.link === link))) continue;   // nie Lava steigen lassen
+    if(spikes.some(sp => sp.carrier && sp.carrier.switchLink === link)) continue;   // nie eine Stachelwand (Jagd) starten
     const sw = switchDefs.filter(s => s.link === link && Math.hypot(s.x - d.x, s.y - d.y) < PARTNER_AUTO_WEITE && Math.abs(s.x - P.x) < 700);
     const pl = plates.filter(q => q.link === link && Math.hypot(q.x - d.x, q.y - d.y) < PARTNER_AUTO_WEITE && Math.abs(q.x - P.x) < 700);
     if(sw.length) return {id: 'auto-hebel-' + link, aktion: 'hebel', nummer: link, rolle: 'beide', zeit: 20, auto: true};
@@ -177,6 +183,7 @@ function partnerAufgabeSchritt(P, M){
     const {Z, e} = geh(sw.x, sw.y + 20, 22, 40);
     if(Z.nah && leverNear(P, sw)){
       partner.text = text;
+      if(!partnerHebelSicher(sw.link, M)){ partner.text = text + ' – wartet, bis du sicher stehst'; return {}; }
       if(!st.gedrueckt || H.schritt - st.gedrueckt > 24){ st.gedrueckt = H.schritt; return {use: true}; }
       return {};
     }
@@ -229,7 +236,7 @@ function partnerAblauf(P, M, A, st, text, geh){
   const ev = c => { try{ return !!Function('P', 'Q', 'f', 'return (' + c + ')')(P, M, f); }catch(err){ return true; } };
   const e = {dir: 0};
   const halte = n => { if(n === 'right') e.dir = 1; else if(n === 'left') e.dir = -1; else if(n === 'jump') e.sprungHalten = true;
-    else if(n === 'glide') e.gleiten = true; else if(n === 'pull') e.pull = true; };
+    else if(n === 'glide') e.gleiten = true; else if(n === 'pull') e.pull = true; else if(n === 'slack') e.slack = true; };
   const druecke = n => { if(n === 'jump') e.springen = true; else if(n === 'hook') e.haken = true; else if(n === 'use') e.use = true; else halte(n); };
   let fertig = false;
   if(S.swing){
@@ -243,6 +250,7 @@ function partnerAblauf(P, M, A, st, text, geh){
     for(const n of (S.hold || [])) halte(n);
     if(S.holdIf) for(const n in S.holdIf) if(ev(S.holdIf[n])) halte(n);
     if(f === 0) for(const n of (S.press || [])) druecke(n);
+    if(S.pressIf) for(const n in S.pressIf) if(ev(S.pressIf[n])) druecke(n);
     if(S.use && f === 0) e.use = true;
     if(S.hookWhen && !partnerAnker(P) && ev(S.hookWhen) && (!st.hakenK || H.schritt - st.hakenK > 6)){ e.haken = true; st.hakenK = H.schritt; }
     if(S.frames !== undefined && f >= S.frames) fertig = true;
@@ -259,4 +267,16 @@ function partnerAufgabeAbbrechen(){
   if(!H || !H.aufgabe) return;
   if(!H.gescheitert) H.gescheitert = new Set();
   H.gescheitert.add(H.aufgabe.def.id); H.aufgabeFehler = partnerAufgabeText(H.aufgabe.def); H.aufgabe = null;
+}
+
+// Nie unfair: schaltet der Hebel einen Wechselboden, auf (oder knapp über) dem ich gerade stehe und der dadurch
+// verschwindet, wartet er lieber (ich soll nicht durch seinen Hebel abstürzen)
+function partnerHebelSicher(link, M){
+  if(typeof wechselNummern === 'undefined' || !wechselNummern[link]) return true;
+  const box = {x: M.x - M.w/2 - 6, y: M.y - 4, w: M.w + 12, h: 90};   // unter meinen Füßen
+  for(const s of solids){
+    if(s.type !== 'wechsel' || s.link !== link || s.gone) continue;   // nur Boden, der jetzt da ist (und gleich verschwindet)
+    if(rectsOverlap(box, s)) return false;
+  }
+  return true;
 }

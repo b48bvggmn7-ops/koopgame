@@ -1,0 +1,178 @@
+{
+ "level": "dschungel/06-wipfelsturm.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-2",
+   "zone": [
+    45,
+    77
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 2,
+   "probe": {
+    "figur": "m",
+    "start": [
+     53,
+     15
+    ],
+    "links": [],
+    "schritte": 366
+   }
+  },
+  {
+   "id": "nummer-3",
+   "zone": [
+    65,
+    83
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 3,
+   "probe": {
+    "figur": "m",
+    "start": [
+     53,
+     15
+    ],
+    "links": [],
+    "schritte": 924
+   }
+  },
+  {
+   "id": "nummer-5",
+   "zone": [
+    256,
+    279
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 5,
+   "probe": {
+    "figur": "f",
+    "start": [
+     251,
+     15
+    ],
+    "links": [],
+    "schritte": 426
+   }
+  },
+  {
+   "id": "nummer-7",
+   "zone": [
+    477,
+    510
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 7,
+   "probe": {
+    "figur": "m",
+    "start": [
+     483,
+     15
+    ],
+    "links": [],
+    "schritte": 470
+   }
+  },
+  {
+   "id": "nummer-8",
+   "zone": [
+    478,
+    511
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 8,
+   "probe": {
+    "figur": "f",
+    "start": [
+     524,
+     11
+    ],
+    "links": [],
+    "schritte": 494
+   }
+  },
+  {
+   "id": "nummer-10",
+   "zone": [
+    601,
+    618
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 10,
+   "probe": {
+    "figur": "f",
+    "start": [
+     591,
+     15
+    ],
+    "links": [],
+    "schritte": 528
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    612,
+    629
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     591,
+     15
+    ],
+    "links": [
+     3,
+     4,
+     5,
+     6,
+     8,
+     9,
+     10,
+     2,
+     7
+    ],
+    "schritte": 598
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 6,
+   "spalte": 298,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 12,
+   "spalte": 639,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 13,
+   "spalte": 653,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 4,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 9,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 14,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  }
+ ]
+}

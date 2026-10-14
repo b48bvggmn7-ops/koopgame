@@ -1,0 +1,220 @@
+{
+ "level": "dschungel/04-gluehwald.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-1",
+   "zone": [
+    9,
+    40
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 1,
+   "probe": {
+    "figur": "m",
+    "start": [
+     42,
+     14
+    ],
+    "links": [],
+    "schritte": 372
+   }
+  },
+  {
+   "id": "nummer-2",
+   "zone": [
+    44,
+    67
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 2,
+   "probe": {
+    "figur": "m",
+    "start": [
+     42,
+     14
+    ],
+    "links": [],
+    "schritte": 734
+   }
+  },
+  {
+   "id": "nummer-3",
+   "zone": [
+    178,
+    200
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 3,
+   "probe": {
+    "figur": "f",
+    "start": [
+     177,
+     14
+    ],
+    "links": [],
+    "schritte": 388
+   }
+  },
+  {
+   "id": "nummer-4",
+   "zone": [
+    208,
+    230
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 4,
+   "probe": {
+    "figur": "m",
+    "start": [
+     202,
+     14
+    ],
+    "links": [],
+    "schritte": 434
+   }
+  },
+  {
+   "id": "nummer-5",
+   "zone": [
+    234,
+    249
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     233,
+     14
+    ],
+    "links": [],
+    "schritte": 466
+   }
+  },
+  {
+   "id": "nummer-6",
+   "zone": [
+    298,
+    313
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 6,
+   "probe": {
+    "figur": "m",
+    "start": [
+     299,
+     14
+    ],
+    "links": [],
+    "schritte": 698
+   }
+  },
+  {
+   "id": "nummer-7",
+   "zone": [
+    356,
+    399
+   ],
+   "rolle": "m",
+   "aktion": "platte",
+   "nummer": 7,
+   "probe": {
+    "figur": "m",
+    "start": [
+     356,
+     14
+    ],
+    "links": [],
+    "schritte": 706
+   }
+  },
+  {
+   "id": "nummer-9",
+   "zone": [
+    496,
+    515
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 9,
+   "probe": {
+    "figur": "m",
+    "start": [
+     470,
+     14
+    ],
+    "links": [],
+    "schritte": 906
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    525,
+    544
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     540,
+     14
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  },
+  {
+   "id": "nummer-13",
+   "zone": [
+    555,
+    574
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 13,
+   "probe": {
+    "figur": "m",
+    "start": [
+     540,
+     14
+    ],
+    "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     5,
+     7
+    ],
+    "schritte": 642
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 10,
+   "spalte": 520,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 12,
+   "spalte": 549,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  }
+ ]
+}

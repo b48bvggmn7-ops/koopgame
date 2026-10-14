@@ -94,7 +94,7 @@ function partnerVorSchritt(){
   partnerPads();
   const P = partnerFigur(), M = meineFigur();
   if(!P || !M) return;
-  partnerHirn.schritt++;
+  partnerHirn.schritt++; partnerHirn.mx = M.x;
   const w = partnerDenken(P, M);
   const vorher = partnerHirn.tasten || (partnerHirn.tasten = {});
   for(const a of PARTNER_AKTIONEN){
@@ -203,11 +203,26 @@ function partnerReaktion(){ const [a, b] = PARTNER_REAKTION; return a + Math.flo
 function partnerUmgebung(x){
   const x0 = x - 750, x1 = x + 750, nah = o => o.x < x1 && o.x + (o.w || 40) > x0;
   const U = {feste: [], stege: [], stacheln: [], flammen: [], pfeilFallen: [], pressenNah: [], felsenNah: []};
+  U.mover = []; U.broeckel = []; U.stachelnMit = [];
+  const moverVon = new Map();
   for(const s of solids){
     if(s.gone || !nah(s)) continue;
-    if(s.type === 'oneway') U.stege.push(s); else U.feste.push(s);
+    if(s.type === 'oneway') U.stege.push(s);
+    else if(s.type === 'moveplat'){   // bewegter Boden: als Stellvertreter, der in der Vorausrechnung mitfährt
+      const v = {x: s.x, y: s.y, w: s.w, h: s.h, type: 'moveplat', orig: s};
+      U.mover.push(v); U.feste.push(v); moverVon.set(s, v);
+    }
+    else if(s.type === 'crumble'){   // Bröckelboden: hält nach dem Betreten nur CRUMBLE_TRIGGER_MS (Stellvertreter mit Bruch-Zeitpunkt)
+      const v = {x: s.x, y: s.y, w: s.w, h: s.h, type: 'crumble', orig: s, broeckel: true};
+      U.broeckel.push(v); U.feste.push(v);
+    }
+    else U.feste.push(s);
   }
-  for(const sp of spikes) if(Math.abs(sp.x - x) < 1100) U.stacheln.push({x: sp.x - sp.w/2, y: sp.y - sp.h, w: sp.w, h: sp.h});
+  for(const sp of spikes){
+    // mitfahrende Stacheln (z. B. Stachelwand einer Jagd): fahren in der Vorausrechnung mit ihrem Boden mit
+    if(sp.carrier && moverVon.has(sp.carrier)){ U.stachelnMit.push({v: moverVon.get(sp.carrier), dx: sp.x - sp.w/2 - sp.carrier.x, dy: sp.y - sp.h - sp.carrier.y, w: sp.w, h: sp.h}); continue; }
+    if(Math.abs(sp.x - x) < 1100) U.stacheln.push({x: sp.x - sp.w/2, y: sp.y - sp.h, w: sp.w, h: sp.h});
+  }
   if(typeof fallen !== 'undefined') for(const f of fallen){
     if(Math.abs(f.x - x) > 1500 || !falleAktiv(f)) continue;
     if(f.art === 'flamme') U.flammen.push(f);
@@ -228,6 +243,7 @@ function partnerGefahr(U, b, k){
   if(b.y - b.h > LEVEL_H + 10) return 'grube';
   const box = {x: b.x - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
   for(const sp of U.stacheln) if(partnerUeberlappt(box, sp, 5)) return 'stacheln';
+  for(const m of U.stachelnMit) if(partnerUeberlappt(box, {x: m.v.x + m.dx, y: m.v.y + m.dy, w: m.w, h: m.h}, 10)) return 'stacheln';
   if(typeof lavaBecken !== 'undefined' && lavaBecken.length){
     for(const dx of [-b.w*0.45, 0, b.w*0.45]) if(inLava(b.x + dx, b.y - LAVA_GNADE + 6)) return 'lava';
   }
@@ -272,6 +288,8 @@ function partnerGefahr(U, b, k){
 // ---------- Vorausrechnen eines Körpers (gleiche Werte wie updatePlayer in 08-figur-physik-seil.js) ----------
 function partnerKoerper(P){
   return {x: P.x, y: P.y, vx: P.vx, vy: P.vy, w: P.w, h: P.h, male: P.male, grounded: P.grounded, glideTimer: P.glideTimer || 0,
+          onWall: P.onWall || 0, wallEntrySpeed: P.wallEntrySpeed || 0, lastWallJumpSide: P.lastWallJumpSide || 0, wjLock: P.wjInputLock || 0,
+          t: 0, lastWallTouch: P.lastWallTouch !== undefined && P.lastWallTouch > -9000 ? -1e9 : -1e9,
           kurz: !!P.sprungKurzMoeglich, los: !!P.sprungLosgelassen, fling: !!P.ropeFling, standingOn: P.standingOn,
           hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen} : null, lastAnchor: null, inWater: !!P.inWater};
 }
@@ -301,6 +319,11 @@ function partnerKollision(U, b, achse){
     }
   }
   void box;
+}
+function partnerWandBeruehrt(U, b, side){
+  const px = side < 0 ? b.x - b.w/2 - 4 : b.x + b.w/2, py = b.y - b.h + 4, ph = b.h - 8;
+  for(const s of U.feste) if(!s.gone && px < s.x + s.w && px + 4 > s.x && py < s.y + s.h && py + ph > s.y) return true;
+  return false;
 }
 function partnerHakenZiel(b){
   const ox = b.x, oy = b.y - b.h*0.6; let best = null, bd = Infinity;
@@ -339,13 +362,16 @@ function partnerSimSchritt(U, b, e){
     if(e.loslassen){ b.lastAnchor = b.hook.anchor; b.hook = null; b.vy += HOOK_RELEASE_BOOST; b.fling = true; }
   } else {
     const control = b.grounded ? 1 : AIR_CONTROL;
-    if(b.grounded) b.fling = false;
-    const vxVor = b.vx;
-    b.vx += dir*MOVE_SPEED*0.35*control;
-    if(b.grounded && dir !== 0 && Math.abs(b.vx) >= MOVE_SPEED*0.9 && Math.sign(b.vx) === dir) b.vx += dir*SPRINT_ACCEL;
-    if(dir === 0){ b.vx *= b.grounded ? FRICTION_GROUND : (b.fling ? ROPE_FLING_DRAG : FRICTION_AIR); if(Math.abs(b.vx) < 0.05) b.vx = 0; }
-    const vmax = b.fling ? Math.min(ROPE_FLING_MAX, Math.max(SPRINT_MAX_SPEED, Math.abs(vxVor))) : SPRINT_MAX_SPEED;
-    b.vx = Math.max(-vmax, Math.min(vmax, b.vx));
+    if(b.grounded || b.onWall) b.fling = false;
+    if(b.wjLock > 0){ b.wjLock -= 16.6; b.vx *= FRICTION_AIR; }   // nach dem Wandsprung kurz keine Lenkung (wie im Spiel)
+    else {
+      const vxVor = b.vx;
+      b.vx += dir*MOVE_SPEED*0.35*control;
+      if(b.grounded && dir !== 0 && Math.abs(b.vx) >= MOVE_SPEED*0.9 && Math.sign(b.vx) === dir) b.vx += dir*SPRINT_ACCEL;
+      if(dir === 0){ b.vx *= b.grounded ? FRICTION_GROUND : (b.fling ? ROPE_FLING_DRAG : FRICTION_AIR); if(Math.abs(b.vx) < 0.05) b.vx = 0; }
+      const vmax = b.fling ? Math.min(ROPE_FLING_MAX, Math.max(SPRINT_MAX_SPEED, Math.abs(vxVor))) : SPRINT_MAX_SPEED;
+      b.vx = Math.max(-vmax, Math.min(vmax, b.vx));
+    }
     const windig = !b.male && winds.length && inWind(b);
     const gleitet = !b.male && e.gleiten && !b.grounded && (b.vy > -1 || windig);
     if(gleitet){
@@ -356,34 +382,87 @@ function partnerSimSchritt(U, b, e){
       if(windig){ b.glideTimer = 0; b.vy = Math.max(-WIND_MAX_UP, b.vy - WIND_LIFT); }
     } else b.vy += GRAVITY;
     if(b.vy > MAX_FALL) b.vy = MAX_FALL;
+    // Wand berühren / Wandsprung (gleiche Regeln wie updatePlayer)
+    b.t = (b.t || 0) + 16.6;
+    const wl = !b.grounded && partnerWandBeruehrt(U, b, -1), wr = !b.grounded && partnerWandBeruehrt(U, b, 1);
+    if(wl || wr){ const side = wl ? -1 : 1; if(!b.onWall) b.wallEntrySpeed = Math.abs(b.vx); b.onWall = side; b.lastWallTouch = b.t; }
+    else b.onWall = 0;
+    if(e.springen && !b.grounded && b.t - (b.lastWallTouch === undefined ? -1e9 : b.lastWallTouch) <= WALL_JUMP_BUFFER){
+      const side = b.onWall || (partnerWandBeruehrt(U, b, -1) ? -1 : partnerWandBeruehrt(U, b, 1) ? 1 : 0);
+      if(side !== 0 && dir === -side && side !== b.lastWallJumpSide && (b.wallEntrySpeed || 0) > MIN_WALLJUMP_SPEED){
+        const mom = Math.min(1, (b.wallEntrySpeed || 0)/SPRINT_MAX_SPEED);
+        b.vy = WALL_JUMP_VY_MIN + (WALL_JUMP_VY_MAX - WALL_JUMP_VY_MIN)*mom;
+        b.vx = (WALL_JUMP_VX_MIN + (WALL_JUMP_VX_MAX - WALL_JUMP_VX_MIN)*mom)*dir;
+        b.lastWallJumpSide = side; b.lastWallTouch = -1e9; b.glideTimer = 0; b.wjLock = 260; b.kurz = false;
+      }
+    }
     if(e.springen && b.grounded){ b.vy = JUMP_V; b.grounded = false; b.glideTimer = 0; b.kurz = true; b.los = false; }
     if(b.kurz){
       if(b.vy >= 0 || gleitet) b.kurz = false;
       else { if(!e.sprungHalten) b.los = true; if(b.los && b.vy < JUMP_CUT_VY) b.vy = JUMP_CUT_VY + (b.vy - JUMP_CUT_VY)*JUMP_CUT_SMOOTH; }
     }
   }
+  if(U.mover.length) partnerMoverSchritt(U, b);   // (im Spiel fahren die Böden nach der Figur – Unterschied ≤ 1 Schritt)
+  U.simK = (U.simK || 0) + 1;
+  for(const v of U.broeckel) if(!v.gone && v.bricht <= U.simK) v.gone = true;
+
   const warBoden = b.grounded, fallVy = b.vy;
   b.grounded = false; b.standingOn = null; b.wand = false;
   b.x += b.vx; partnerKollision(U, b, 'x');
   b.y += b.vy; partnerKollision(U, b, 'y');
+  if(b.standingOn && b.standingOn.broeckel && b.standingOn.bricht === Infinity) b.standingOn.bricht = U.simK + CRUMBLE_TRIGGER_MS/16.6;
   if(!b.hook && !warBoden && fallVy > 0 && b.vy >= 0){   // Sprungpilz (elemente/sprungpilz.js)
     for(const p of bouncers) if(Math.abs(b.x - p.x) < 14 + b.w/2 && b.y > p.y - 14 && b.y <= p.y + 1){ b.vy = BOUNCE_V; b.grounded = false; b.glideTimer = 0; break; }
   }
   if(b.hook){ if(b.grounded && b.luft) b.hook = null; else if(!b.grounded) b.luft = true; }
+  if(b.hook && !b.grounded){   // Seilspannung wie updateRopeTension (Gummi-Zug, gibt bei starker Dehnung nach)
+    const A = b.hook.anchor, dx = b.x - A.x, dy = (b.y - b.h*0.6) - A.y, dist = Math.hypot(dx, dy) || 1, over = dist - b.hook.len;
+    if(over > 3){ b.vx -= dx/dist*over*0.05; b.vy -= dy/dist*over*0.05; }
+    if(over > ROPE_SNAP_STRETCH) b.hook.len = dist - ROPE_SNAP_STRETCH;
+  }
   if(b.hook && b.gezogen){   // beim Ranziehen kein Schwung Richtung Haken (wie im Spiel)
     const hx = b.x - b.hook.anchor.x, hy = (b.y - b.h*0.6) - b.hook.anchor.y, dd = Math.hypot(hx, hy) || 1, ux = hx/dd, uy = hy/dd;
     const innen = -(b.vx*ux + b.vy*uy); if(innen > 0){ b.vx += ux*innen; b.vy += uy*innen; }
   }
-  if(b.grounded){ b.glideTimer = 0; }
+  if(b.grounded){ b.glideTimer = 0; b.wjLock = 0; b.lastWallJumpSide = 0; }
+  // „gemeinsamer Bildschirm“ (keepTogether in 09-kamera.js): höchstens MAX_SEPARATION von mir weg (ich stehe still gedacht)
+  if(partnerHirn && partnerHirn.mx !== undefined){
+    const mx = partnerHirn.mx;
+    if(b.x > mx + MAX_SEPARATION){ b.x = mx + MAX_SEPARATION; if(b.vx > 0) b.vx = 0; }
+    if(b.x < mx - MAX_SEPARATION){ b.x = mx - MAX_SEPARATION; if(b.vx < 0) b.vx = 0; }
+  }
   const decke = -CEILING_MARGIN - SKY_ROOM;
   if(b.y - b.h < decke){ b.y = b.h + decke; if(b.vy < 0) b.vy = 0; }
 }
 
 // Plan k Schritte vorausrechnen. plan(k, b) liefert die Eingaben, plan.fertig(k, b) beendet ihn.
 // Ergebnis: {tod (Grund), k, b (Endzustand), boden (steht am Ende), weg (Punkte)}
-function partnerSim(U, P, plan, n){
-  const b = partnerKoerper(P), st = {};
-  for(let k = 1; k <= n; k++){
+// bewegte Böden für eine Vorausrechnung auf ihren jetzigen Stand setzen (und ggf. vorspulen)
+function partnerMoverStart(U, vor){
+  for(const v of U.mover){ const s = v.orig; v.x = s.x; v.y = s.y; v.dir = s.moveDir; v.aktiv = !!s.tripActive; }
+  for(const v of U.broeckel){ const s = v.orig; v.bricht = s.triggered ? (CRUMBLE_TRIGGER_MS - s.timer)/16.6 - (vor || 0) : Infinity; v.gone = v.bricht <= 0; }
+  U.simK = 0;
+  for(let i = 0; i < (vor || 0); i++) partnerMoverSchritt(U, null);
+}
+// ein Schritt wie updateMovingPlatforms; nimmt den Körper b mit, wenn er darauf steht
+function partnerMoverSchritt(U, b){
+  for(const v of U.mover){
+    if(!v.aktiv) continue;
+    const s = v.orig, sp = s.speed || MOVE_PLAT_SPEED;
+    const tx = v.dir === 1 ? s.targetX : s.startX, ty = v.dir === 1 ? s.targetY : s.startY;
+    const dx = tx - v.x, dy = ty - v.y, dist = Math.hypot(dx, dy);
+    let sx, sy;
+    if(dist <= sp){ sx = dx; sy = dy; v.dir *= -1; } else { sx = dx/dist*sp; sy = dy/dist*sp; }
+    const drauf = b && b.grounded && b.standingOn === v;
+    v.x += sx; v.y += sy;
+    if(drauf){ b.x += sx; b.y += sy; }
+  }
+}
+function partnerSim(U, P, plan, n, kStart, stStart, vor){
+  const b = partnerKoerper(P), st = stStart ? Object.assign({}, stStart) : {};
+  partnerMoverStart(U, vor);
+  if(P.onWall) b.lastWallTouch = 0;
+  for(let k = (kStart || 0) + 1; k <= n; k++){
     const e = plan.eingabe(k, b, st);
     partnerSimSchritt(U, b, e);
     const g = partnerGefahr(U, b, k);
@@ -459,6 +538,41 @@ function planHaken(d, jx, stopX, ziehen, zurueckX){
     },
     fertig: (k, b, st) => (st.ab && k - st.k0 > 3 && b.grounded && !partnerAnker(b)) || k > 500 || (!st.ab && k > 200)};
 }
+// Kamin / Wand hinauf: abspringen, an der Wand jeweils weg-drücken + springen (wie der Koop-Bot), nach `kicks`
+// Wandsprüngen in Richtung `aus` aussteigen (Schweinchen segelt beim Fallen)
+function planKamin(d0, kicks, aus){
+  return {art: 'kamin', d: aus,
+    eingabe(k, b, st){
+      if(st.n === undefined){ st.n = 0; st.dir = d0; }
+      if(!st.ab){
+        if(b.grounded && k > 1){ st.ab = true; st.k0 = k; return {dir: st.dir, springen: true, sprungHalten: true}; }
+        return {dir: st.dir};
+      }
+      if(st.n >= kicks) return {dir: aus, gleiten: !b.male && b.vy > 0};
+      if(b.onWall){
+        st.dir = -b.onWall;
+        if(!st.kick || k - st.kick > 3){ st.kick = k; st.n++; return {dir: st.dir, springen: true, sprungHalten: true}; }
+      }
+      return {dir: st.dir, sprungHalten: true};
+    },
+    fertig: (k, b, st) => (st.ab && k - st.k0 > 5 && b.grounded) || k > 600};
+}
+// Affe in der Luft: nächsten Haken greifen, (ranziehen,) schwingen, in Richtung dir loslassen
+function planLuftHaken(dir, ziehen){
+  return {art: 'haken', d: dir,
+    eingabe(k, b, st){
+      const A = partnerAnker(b);
+      if(A){
+        if(st.anK === undefined){ st.anK = k; }
+        const zieht = k - st.anK < (ziehen || 0);
+        if(!zieht && (b.x - A.x)*dir > 20 && b.vy < 0 && b.vx*dir > 1){ st.los = true; return {dir, loslassen: true}; }
+        return {dir, pull: zieht};
+      }
+      if(!st.gegriffen && !b.grounded && partnerHakenZiel(b)){ st.gegriffen = true; return {dir, haken: true}; }
+      return {dir};
+    },
+    fertig: (k, b, st) => (b.grounded && !partnerAnker(b) && k > 2) || k > 500};
+}
 // in der Luft ohne Plan (z. B. nach einem Stoß): nur lenken und ggf. segeln
 function planLuft(dir, gleit){
   return {art: 'luft', eingabe: (k, b) => ({dir, gleiten: gleit && b.vy > 0}), fertig: (k, b) => b.grounded || k > 300};
@@ -475,7 +589,7 @@ function partnerFolgeZiel(P, M){
   const nah = Math.abs(P.y - f.y) < 60 && Math.abs(P.x - f.x) <= PARTNER_ABSTAND + PARTNER_ABSTAND_LOCKER;
   return {x, y: f.y, nah};
 }
-const partnerAbstand = (x, y, Z) => Math.abs(x - Z.x) + 1.6*Math.max(0, y - Z.y) + 0.6*Math.max(0, Z.y - y);
+const partnerAbstand = (x, y, Z) => Z.id === 'flucht' ? Math.abs(x - Z.x) : Math.abs(x - Z.x) + 1.6*Math.max(0, y - Z.y) + 0.6*Math.max(0, Z.y - y);
 
 // ---------- Entscheiden: alle sinnvollen Pläne vorausrechnen, den sichersten mit dem meisten Fortschritt nehmen ----------
 // Als Generator: rechnet je Spielschritt höchstens PARTNER_BUDGET Vorausschritte und macht im nächsten Schritt weiter
@@ -537,13 +651,102 @@ function* partnerSuche(P, Z){
   H.wartetAufLuecke = [...gruende].some(g => g === 'flamme' || g === 'pfeil' || g === 'presse' || g === 'fels');
   if(stehen.tod && best) return best.plan;   // hier stehen bleiben wäre gefährlich -> irgendein sicherer Plan
   if(best && best.wert < jetzt - 12) return best.plan;
-  if(stehen.tod){   // hier ist es gleich gefährlich: zurückweichen
-    for(const dd of [-d, d]) for(const w of [60, 120, 180]){
+  if(stehen.tod){   // hier ist es gleich gefährlich: ausweichen bzw. fliehen (auch an mir vorbei, z. B. vor einer Stachelwand)
+    for(const w of [60, 120, 180, 320, 560]) for(const dd of [-d, d]){
       const r = partnerSim(U, P, planLauf(dd, P.x + dd*w, false), 240);
       if(!r.tod && r.boden) return planLauf(dd, P.x + dd*w, false);
     }
+    for(const dd of [d, -d]) for(let i = 0; i <= 8; i += 2) for(const gl of (P.male ? [false] : [false, true])){
+      const plan = planSprung(dd, P.x + dd*i*20, 10, dd*Infinity, gl);
+      const r = partnerSim(U, P, plan, 300);
+      if(!r.tod && r.boden) return plan;
+    }
   }
   return null;
+}
+
+// ---------- Wegsuche über mehrere Etappen (Umwege, Kamine, erst zurück und dann hinauf) ----------
+// Bestensuche über Standplätze: von jedem Platz aus werden Pläne in BEIDE Richtungen vorausgerechnet (laufen, springen,
+// segeln, Haken, Kamin); jeder sichere Landeplatz ist ein neuer Platz. Gefahren im Takt zählen mit der Zeit, zu der er
+// dort wäre. Ergebnis: Liste von Plänen, die nacheinander ausgeführt werden. Wie partnerSuche über mehrere Spielschritte.
+function partnerPlatz(x, y, P, t){ return {x, y, vx: 0, vy: 0, w: P.w, h: P.h, male: P.male, grounded: true, glideTimer: 0, t}; }
+function partnerMakroPlaene(platz, U){
+  const L = [], x = platz.x;
+  for(const d of [1, -1]){
+    for(const w of [60, 140, 260, 420]) L.push([planLauf(d, x + d*w, false), 260]);
+    for(let i = 0; i <= 6; i++) for(const halt of [10, 4]) L.push([planSprung(d, x + d*i*20, halt, d*Infinity, false), 200]);
+    L.push([planSprung(d, x, 10, x + d*30, false), 200]);
+    if(!platz.male) for(let i = 0; i <= 6; i += 2) L.push([planSprung(d, x + d*i*20, 10, d*Infinity, true), 380]);
+    if(platz.male && hooks.some(h => Math.abs(h.x - x) < 500)) for(let i = 0; i <= 6; i += 2) for(const z of [0, 30]) L.push([planHaken(d, x + d*i*20, d*Infinity, z), 460]);
+    // Kamin/Wand: nur wenn in dieser Richtung eine Wand nah ist
+    const probe = {x: x + d*60, y: platz.y - 40, w: 4, h: 4};
+    if(U.feste.some(s => !s.gone && probe.x < s.x + s.w + 80 && probe.x + 4 > s.x - 80 && s.y < platz.y - 40 && s.y + s.h > platz.y - 120))
+      for(const kicks of [1, 2, 3, 4, 6]) for(const aus of [d, -d]) L.push([planKamin(d, kicks, aus), 520]);
+  }
+  return L;
+}
+function* partnerWegSuche(P, Z){
+  const H = partnerHirn;
+  const start = partnerPlatz(P.x, P.y, P, 0);
+  const schluessel = (x, y) => Math.round(x/24) + ',' + Math.round(y/20);
+  const gesehen = new Set([schluessel(start.x, start.y)]);
+  const offen = [{platz: start, kosten: 0, plaene: []}];
+  const ziel = (x, y) => Math.abs(x - Z.x) <= Math.max(24, Z.tol || 0) && Math.abs(y - Z.y) <= 30;
+  const schaetz = (x, y) => (Math.abs(x - Z.x) + 2*Math.abs(y - Z.y))/MOVE_SPEED;
+  let gesamt = 0, expandiert = 0, bestes = null;
+  while(offen.length && expandiert < PARTNER_WEG_KNOTEN && gesamt + partnerSimZaehler < PARTNER_WEG_BUDGET){
+    offen.sort((a, b) => (a.kosten + schaetz(a.platz.x, a.platz.y)) - (b.kosten + schaetz(b.platz.x, b.platz.y)));
+    const n = offen.shift(); expandiert++;
+    if(ziel(n.platz.x, n.platz.y)){ bestes = n; break; }
+    const U = partnerUmgebung(n.platz.x);
+    for(const [plan, steps] of partnerMakroPlaene(n.platz, U)){
+      if(partnerSimZaehler > PARTNER_BUDGET){ gesamt += partnerSimZaehler; yield; partnerSimZaehler = 0; }
+      const r = partnerSimZeit(U, n.platz, plan, steps, n.platz.t);
+      if(r.tod || !r.boden) continue;
+      const kx = r.x, ky = r.y, key = schluessel(kx, ky);
+      if(gesehen.has(key)) continue;
+      gesehen.add(key);
+      const kind = {platz: partnerPlatz(kx, ky, P, n.platz.t + r.k), kosten: n.kosten + r.k + 20, plaene: n.plaene.concat([{plan, x: kx, y: ky}])};
+      if(ziel(kx, ky)){ bestes = kind; offen.length = 0; break; }
+      offen.push(kind);
+    }
+  }
+  H.wegStat = {expandiert, gesamt: gesamt + partnerSimZaehler, gefunden: !!bestes};
+  return bestes ? bestes.plaene : null;
+}
+// Vorausrechnen ab einem Platz, Gefahren-Zeit ab t0 Schritten in der Zukunft
+function partnerSimZeit(U, platz, plan, n, t0){
+  if(!t0) return partnerSim(U, platz, plan, n);
+  const alt = partnerGefahr;
+  partnerGefahr = (U2, b, k) => alt(U2, b, k + t0);
+  try{ return partnerSim(U, platz, plan, n, 0, null, t0); } finally { partnerGefahr = alt; }
+}
+
+// beim Überlegen stehen bleiben – aber nur, wenn die Stelle sicher bleibt (Bröckelboden, Falle, Presse …)
+function partnerStehSicher(P, Z){
+  const H = partnerHirn;
+  if(H.schritt % 4) return {};
+  const U = partnerUmgebung(P.x);
+  if(!partnerSim(U, P, planStehen(45), 45).tod) return {};
+  const n = partnerNotfall(U, P, Z);
+  H.suche = null; H.wegSuche = null; H.weg = null;
+  if(n){ H.plan = n; H.planK = 0; H.planSt = {}; }
+  return {};
+}
+// sicherer Ausweich-Plan, wenn der laufende Plan gefährlich wird (in der Luft: lenken/segeln/Haken; am Boden: stehen)
+function partnerNotfall(U, P, Z){
+  const d = Math.sign(Z.x - P.x) || 1, liste = [];
+  if(P.grounded) liste.push(planStehen(20), planLauf(-d, P.x - d*60, false), planLauf(d, P.x + d*40, false));
+  for(const dir of [d, 0, -d]){ liste.push(planLuft(dir, false)); if(!P.male) liste.push(planLuft(dir, true)); }
+  if(P.male && !P.grounded) for(const dir of [d, -d]) for(const z of [0, 30]) liste.push(planLuftHaken(dir, z));
+  let best = null, bw = Infinity;
+  for(const plan of liste){
+    const r = partnerSim(U, P, plan, 300);
+    if(r.tod || !r.boden) continue;
+    const w = partnerAbstand(r.x, r.y, Z);
+    if(w < bw){ bw = w; best = plan; }
+  }
+  return best;
 }
 
 // ---------- Jeder Schritt: Plan ausführen, nach der Reaktionszeit neu entscheiden ----------
@@ -569,9 +772,31 @@ function partnerNavi(P, Z, folgeText){
     if(typeof partnerAufgabeAbbrechen === 'function') partnerAufgabeAbbrechen();
     partner.text = partnerFestText(); return {};
   }
+  // Weg über mehrere Etappen (partnerWegSuche): Etappe für Etappe ausführen; ist er vom Kurs ab, neu überlegen
+  if(H.weg && (Z.nah || H.weg.zielId !== Z.id || Math.hypot(Z.x - H.weg.zx, Z.y - H.weg.zy) > 120)) H.weg = null;
+  if(H.weg && !H.plan){
+    const seg = H.weg.plaene[H.weg.i - 1];
+    if(seg && (Math.abs(P.x - seg.x) > 40 || Math.abs(P.y - seg.y) > 30)) H.weg = null;
+    else if(H.weg.i >= H.weg.plaene.length) H.weg = null;
+    else { H.plan = H.weg.plaene[H.weg.i++].plan; H.planK = 0; H.planSt = {}; H.festSeit = H.schritt; }
+  }
+  if(H.wegSuche){
+    if(H.wegSuche.zielId !== Z.id || Z.nah){ H.wegSuche = null; }
+    else {
+      const tE = performance.now();
+      partnerSimZaehler = 0;
+      const r = H.wegSuche.gen.next();
+      H.maxMs = Math.max(H.maxMs || 0, performance.now() - tE);
+      if(r.done){
+        const zs = H.wegSuche; H.wegSuche = null;
+        if(r.value && r.value.length){ H.weg = {plaene: r.value, i: 0, zielId: Z.id, zx: Z.x, zy: Z.y}; H.festSeit = H.schritt; return {}; }
+        H.wegFehl = {x: zs.zx, y: zs.zy, t: H.schritt};
+      } else { partner.text = 'sucht einen Weg …'; return partnerStehSicher(P, Z); }
+    }
+  }
   // laufender Plan: Sprünge/Haken werden nicht unterbrochen, Laufen/Stehen nach der Reaktionszeit neu bewertet
   const p = H.plan;
-  const unterbrechbar = !p || p.art === 'lauf' || p.art === 'stehen';
+  const unterbrechbar = !H.weg && (!p || p.art === 'lauf' || p.art === 'stehen');
   if(H.schritt >= H.naechste && unterbrechbar && !H.suche){
     H.naechste = H.schritt + partnerReaktion();
     if(Z.nah){ H.plan = null; }
@@ -584,19 +809,39 @@ function partnerNavi(P, Z, folgeText){
       partnerSimZaehler = 0;
       const r = H.suche.next();
       H.maxMs = Math.max(H.maxMs || 0, performance.now() - tE);
-      if(r.done){ H.suche = null; H.plan = r.value; H.planK = 0; H.planSt = {}; }
-      else if(!H.plan){ partner.text = 'überlegt …'; return {}; }   // ein laufender Plan geht derweil weiter
+      if(r.done){
+        H.suche = null; H.plan = r.value; H.planK = 0; H.planSt = {};
+        // vor Ort geht nichts voran: Wegsuche über mehrere Etappen (nicht ständig dasselbe vergeblich versuchen)
+        const neulich = H.wegFehl && Math.abs(H.wegFehl.x - Z.x) < 80 && Math.abs(H.wegFehl.y - Z.y) < 60 && H.schritt - H.wegFehl.t < PARTNER_WEG_PAUSE;
+        if(!r.value && !Z.nah && (P.grounded || P.inWater) && !neulich){
+          H.wegSuche = {gen: partnerWegSuche(P, Z), zielId: Z.id, zx: Z.x, zy: Z.y};
+          partner.text = 'sucht einen Weg …'; return {};
+        }
+      }
+      else if(!H.plan){ partner.text = 'überlegt …'; return partnerStehSicher(P, Z); }   // ein laufender Plan geht derweil weiter
     }
   }
   if(!H.plan){
     partner.text = Z.nah ? folgeText : (H.wartetAufLuecke ? 'wartet auf eine Lücke' : 'überlegt …');
     return {};
   }
+  // Notbremse: weicht das echte Spiel von der Vorausrechnung ab (Bröckelboden, bewegte Teile …), alle paar Schritte den
+  // Rest des Plans neu durchrechnen; droht Gefahr, Plan abbrechen und sicher ausweichen
+  if(H.plan.art !== 'stehen' && H.schritt % (P.grounded ? 5 : 2) === 0){
+    const U = partnerUmgebung(P.x);
+    const r = partnerSim(U, P, H.plan, H.planK + 160, H.planK, H.planSt);
+    if(r.tod){
+      const notfall = partnerNotfall(U, P, Z);
+      H.plan = notfall; H.planK = 0; H.planSt = {}; H.weg = null;
+      if(!notfall){ partner.text = 'bremst'; return {}; }
+    }
+  }
   H.planK++;
   const e = H.plan.eingabe(H.planK, P, H.planSt);
   if(H.plan.fertig && H.plan.fertig(H.planK, P, H.planSt)){ H.plan = null; if(H.naechste > H.schritt + 3) H.naechste = H.schritt + partnerReaktion(); }
   const art = H.plan ? H.plan.art : 'stehen';
-  partner.text = art === 'haken' ? 'Haken' : art === 'segeln' ? 'segelt' : art === 'sprung' ? 'springt' :
+  partner.text = art === 'haken' ? 'Haken' : art === 'segeln' ? 'segelt' : art === 'sprung' ? 'springt' : art === 'kamin' ? 'klettert' :
+                 H.weg ? 'nimmt einen Umweg' :
                  Z.id === 'folgen' && Math.abs(Z.x - P.x) >= PARTNER_AUFHOLEN ? 'holt auf' : folgeText;
   return e;
 }
@@ -613,8 +858,32 @@ function partnerWarten(P){
   partner.text = 'wartet hier (Q = komm)';
   return e;
 }
+// Jagd: rollt eine Stachelwand (Stacheln auf einem fahrenden Boden) hinter ihm her, rennt er bis hinter ihr Fahrtende
+function partnerFluchtZiel(P){
+  let ziel = null;
+  for(const sp of spikes){
+    const m = sp.carrier;
+    if(!m || !m.tripActive) continue;
+    const ende = m.moveDir === 1 ? m.targetX : m.startX, dir = Math.sign(ende - m.x);
+    if(!dir) continue;
+    const hinten = (P.x - (m.x + m.w/2))*dir;   // > 0: Figur liegt in Fahrtrichtung vor der Wand
+    if(hinten < -20 || hinten > 900) continue;
+    const x = dir > 0 ? ende + m.w + 120 : ende - 120;
+    if(!ziel || (x - ziel.x)*dir > 0) ziel = {x, dir};
+  }
+  return ziel;
+}
 function partnerFolgen(P, M){
   if(partner.modus === 'aufgabe') partner.modus = 'folgen';
+  const F = partnerFluchtZiel(P);
+  if(F && (F.x - P.x)*F.dir > 0){
+    const H = partnerHirn;
+    if(H.zielId !== 'flucht'){ H.suche = null; H.wegSuche = null; H.weg = null; H.naechste = H.schritt; if(P.grounded) H.plan = null; }   // Schreck: sofort los
+    const Z = {x: F.x, y: P.y, id: 'flucht', tol: 40, nah: false};
+    const e = partnerNavi(P, Z, 'flieht!');
+    if(partner.modus !== 'fest') partner.text = 'flieht!';
+    return e;
+  }
   const Z = partnerFolgeZiel(P, M); Z.id = 'folgen';
   return partnerNavi(P, Z, 'folgt dir');
 }
@@ -630,6 +899,7 @@ function partnerTastenAus(P, e){
   if(P.male && e.haken) druecken.push('ability');
   if(e.use) druecken.push('use');
   if(e.pull) halten.pull = true;
+  if(e.slack) halten.slack = true;
   return {halten, druecken};
 }
 function partnerDenken(P, M){

@@ -169,3 +169,6 @@ const PARTNER_AUFGABE_ZEIT = 1800;     // Schritte (30 s) Standard-Zeitlimit ein
 const PARTNER_AUTO_WEITE = 20 * 40;    // px: Auto-Aufgabe nur, wenn Hebel/Platte und Tür höchstens so weit auseinander (Bild-Regel)
 const PARTNER_BUDGET = 1600;           // höchstens so viele vorausgerechnete Schritte je Spielschritt (≈ 4 ms, bleibt flüssig)
 const PARTNER_BUDGET_GESAMT = 24000;   // … und je Überlegung insgesamt (verteilt auf mehrere Spielschritte: er „überlegt“ kurz)
+const PARTNER_WEG_KNOTEN = 140;         // Wegsuche (Umwege, Kamine): höchstens so viele Standplätze ausprobieren …
+const PARTNER_WEG_BUDGET = 120000;      // … und so viele Vorausschritte (≈ 1–2 s „überlegen“, verteilt auf viele Spielschritte)
+const PARTNER_WEG_PAUSE = 300;          // Schritte: so lange keine neue Wegsuche zum selben Ziel, wenn keine gefunden wurde

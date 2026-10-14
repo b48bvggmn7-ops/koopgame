@@ -1,0 +1,184 @@
+{
+ "level": "dschungel/05-dornenpfad.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "nummer-1",
+   "zone": [
+    90,
+    113
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 1,
+   "probe": {
+    "figur": "m",
+    "start": [
+     93,
+     15
+    ],
+    "links": [],
+    "schritte": 1412
+   }
+  },
+  {
+   "id": "nummer-2",
+   "zone": [
+    109,
+    131
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 2,
+   "probe": {
+    "figur": "m",
+    "start": [
+     93,
+     15
+    ],
+    "links": [
+     1
+    ],
+    "schritte": 844
+   }
+  },
+  {
+   "id": "nummer-4",
+   "zone": [
+    237,
+    252
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 4,
+   "probe": {
+    "figur": "m",
+    "start": [
+     241,
+     15
+    ],
+    "links": [],
+    "schritte": 416
+   }
+  },
+  {
+   "id": "nummer-7",
+   "zone": [
+    465,
+    485
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 7,
+   "probe": {
+    "figur": "m",
+    "start": [
+     474,
+     15
+    ],
+    "links": [],
+    "schritte": 356
+   }
+  },
+  {
+   "id": "nummer-8",
+   "zone": [
+    467,
+    501
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 8,
+   "probe": {
+    "figur": "m",
+    "start": [
+     509,
+     15
+    ],
+    "links": [],
+    "schritte": 606
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    617,
+    634
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     604,
+     15
+    ],
+    "links": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     8,
+     9,
+     10,
+     7
+    ],
+    "schritte": 1250
+   }
+  },
+  {
+   "id": "nummer-13",
+   "zone": [
+    642,
+    659
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 13,
+   "probe": {
+    "figur": "m",
+    "start": [
+     665,
+     15
+    ],
+    "links": [],
+    "schritte": 756
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 10,
+   "spalte": 617,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 12,
+   "spalte": 642,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 3,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 5,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 6,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 9,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 14,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  }
+ ]
+}
