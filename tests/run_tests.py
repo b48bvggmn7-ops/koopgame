@@ -4527,6 +4527,27 @@ async def welt_details_und_vordergrund(g):
     finally:
         await kx.close(); srv.shutdown()
 
+# Ruckeln (Design-Politur 2): Obergrenze für einen Spielschritt (ms) in den teuersten Leveln. Vorher kostete die
+# Licht- und Fallen-Berechnung im Sonnentempel/Fallengang 15–26 ms je Schritt (54 Schritte je Sekunde -> Ruckeln).
+SPIELSCHRITT_MS_GRENZE = 6
+@test
+async def spielschritt_schnell(g):
+    """Ruckeln behoben (Design-Politur 2): Lichtstrahl und Flammen prüfen feste Teile über ein Raster-Verzeichnis statt
+    jedes Teil des Levels – ein Spielschritt dauert auch in den Licht-/Fallen-Leveln höchstens SPIELSCHRITT_MS_GRENZE ms;
+    der Lichtweg ist derselbe wie mit der alten Prüfung (jedes Kästchen verglichen)."""
+    for datei in ('ruinen/04-sonnentempel.json', 'ruinen/03-fallengang.json', 'vulkan/05-schlackewerk.json'):
+        await koop_level(g, datei)
+        ms = await g.ev("(() => { for(let i = 0; i < 5; i++) stepSim(performance.now()); const t0 = performance.now(); for(let i = 0; i < 60; i++) stepSim(performance.now()); return (performance.now() - t0)/60; })()")
+        assert ms <= SPIELSCHRITT_MS_GRENZE, f'{datei}: Spielschritt {ms:.1f} ms (Grenze {SPIELSCHRITT_MS_GRENZE})'
+        gleich = await g.ev("""(() => { const alt = (c, r) => { const px = c*40 + 20, py = r*40 + 20;
+            return solids.some(s => !s.gone && s.type !== 'oneway' && s.type !== 'fake' && s.type !== 'lichtquelle' && px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h); };
+          const altF = (px, py) => solids.some(s => !s.gone && s.type !== 'oneway' && s.type !== 'fake' && px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h);
+          let n = 0, falsch = 0; const cmax = Math.ceil(LEVEL_W/40);
+          for(let c = -1; c <= cmax; c++) for(let r = -4; r <= 18; r++){ n++; if(alt(c, r) !== lichtFestImSpiel(c, r)) falsch++;
+            const px = c*40 + 7, py = r*40 + 29; if(altF(px, py) !== falleFestBei(px, py)) falsch++; }
+          return {n, falsch}; })()""")
+        assert gleich['falsch'] == 0, f'{datei}: Raster-Prüfung weicht ab: {gleich}'
+
 @test
 async def leinwand_scharf_und_schnell(g):
     """Design-Politur A: bei doppelter Pixeldichte (DPR 2) hat die Leinwand echte 2560×1440 Pixel (RS = 2, scharf statt

@@ -25,9 +25,33 @@ function falleWarnung(f){
 }
 function falleBrennt(f){ return f.art === 'flamme' && falleAktiv(f) && falleZeit(f) < falleTaktSchritte(f)*FLAMME_ANTEIL; }
 // fest für Pfeile/Flammen: Stein, Wand, geschlossene Tür, Wechselboden (nicht: Stege, Scheinwände, Aufwind)
-function falleFestBei(px, py, ausser){
+// Raster-Verzeichnis (Ruckeln behoben): je 40er-Kästchen die feststehenden Teile, die es berühren – vorher wurde bei
+// jedem 4-px-Schritt einer Flamme JEDES Teil des Levels geprüft (in Fallen-Leveln über 10 ms je Spielschritt).
+// Bewegliche Sorten (bewegte Böden, Element-Sorten) werden weiter einzeln geprüft. Gleiches Ergebnis.
+const FALLE_FESTE_TYPEN = new Set(['ground', 'wall', 'crumble', 'door', 'platform']);
+let falleGitter = {src: null, n: -1, map: null, beweglich: []};
+function falleGitterHolen(){
+  if(falleGitter.src === solids && falleGitter.n === solids.length) return falleGitter;
+  const map = new Map(), beweglich = [];
   for(const s of solids){
-    if(s === ausser || s.gone || s.type === 'oneway' || s.type === 'fake') continue;
+    if(s.type === 'oneway' || s.type === 'fake') continue;
+    if(!FALLE_FESTE_TYPEN.has(s.type)){ beweglich.push(s); continue; }
+    for(let c = Math.floor(s.x/40); c <= Math.floor((s.x + s.w - 0.001)/40); c++)
+      for(let r = Math.floor(s.y/40); r <= Math.floor((s.y + s.h - 0.001)/40); r++){
+        const k = c + ',' + r; let l = map.get(k); if(!l) map.set(k, l = []); l.push(s);
+      }
+  }
+  return falleGitter = {src: solids, n: solids.length, map, beweglich};
+}
+function falleFestBei(px, py, ausser){
+  const G = falleGitter.src === solids && falleGitter.n === solids.length ? falleGitter : falleGitterHolen();
+  const l = G.map.get(Math.floor(px/40) + ',' + Math.floor(py/40));
+  if(l) for(const s of l){
+    if(s === ausser || s.gone) continue;
+    if(px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h) return true;
+  }
+  for(const s of G.beweglich){
+    if(s === ausser || s.gone) continue;
     if(px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h) return true;
   }
   return false;

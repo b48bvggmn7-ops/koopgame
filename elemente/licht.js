@@ -38,10 +38,31 @@ function lichtVerfolgen(c, r, dx, dy, fest, spiegelBei, kristallBei){
   }
   return {weg, getroffen, ende};
 }
-function lichtFestImSpiel(c, r){
-  const px = c*40 + 20, py = r*40 + 20;
+// Ist das Kästchen (c, r) für das Licht fest? Feststehende Teile stehen in einem Raster-Verzeichnis (je Kästchen die
+// Teile, deren Mitte es abdecken) – vorher wurde für jedes Kästchen des Strahls JEDES Teil des Levels geprüft
+// (~400 Teile × 80 Kästchen × Quellen pro Spielschritt: in Licht-Leveln über 20 ms je Schritt -> Ruckeln).
+// Teile, die sich bewegen können (bewegte Böden, eigene Element-Sorten), werden weiter einzeln geprüft. Gleiches Ergebnis.
+const LICHT_FESTE_TYPEN = new Set(['ground', 'wall', 'crumble', 'door', 'platform']);
+let lichtGitter = {src: null, n: -1, map: null, beweglich: []};
+function lichtGitterHolen(){
+  if(lichtGitter.src === solids && lichtGitter.n === solids.length) return lichtGitter;
+  const map = new Map(), beweglich = [];
   for(const s of solids){
-    if(s.gone || s.type === 'oneway' || s.type === 'fake' || s.type === 'lichtquelle') continue;
+    if(s.type === 'oneway' || s.type === 'fake' || s.type === 'lichtquelle') continue;
+    if(!LICHT_FESTE_TYPEN.has(s.type)){ beweglich.push(s); continue; }
+    const c0 = Math.ceil((s.x - 20)/40), c1 = Math.ceil((s.x + s.w - 20)/40), r0 = Math.ceil((s.y - 20)/40), r1 = Math.ceil((s.y + s.h - 20)/40);
+    for(let c = c0; c < c1; c++) for(let r = r0; r < r1; r++){
+      const k = c + ',' + r; let l = map.get(k); if(!l) map.set(k, l = []); l.push(s);
+    }
+  }
+  return lichtGitter = {src: solids, n: solids.length, map, beweglich};
+}
+function lichtFestImSpiel(c, r){
+  const px = c*40 + 20, py = r*40 + 20, G = lichtGitterHolen();
+  const l = G.map.get(c + ',' + r);
+  if(l) for(const s of l) if(!s.gone && px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h) return true;
+  for(const s of G.beweglich){
+    if(s.gone) continue;
     if(px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h) return true;
   }
   return false;
