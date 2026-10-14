@@ -9,7 +9,8 @@ const WELT_FALLBACK = [
   {id:'wasser', name:'Wasser', level:[]}, {id:'vulkan', name:'Vulkan', level:[]},
 ];
 const TAGESZEIT_NAMEN = {'':'Standard der Welt', morgen:'Morgen', mittag:'Mittag', abend:'Abend', nacht:'Nacht'};
-const WETTER_NAMEN = {wechselnd:'Wechselnd (Sonne/Regen)', trocken:'Trocken (nie Regen)', regen:'Regen (dauernd)'};
+// Regen ist auf Nutzerwunsch aus dem Spiel genommen (Design-Politur 2) – das Feld bleibt in den Daten, wirkt aber nicht mehr
+const WETTER_NAMEN = {wechselnd:'Wechselnd (ohne Wirkung – Regen ist aus)', trocken:'Trocken', regen:'Regen (ohne Wirkung – Regen ist aus)'};
 const LOOK_NAMEN = {'':'– keiner (Welt + Tageszeit) –', dschungel:'🌿 Dschungel (Morgen)', abend:'🌅 Abendrot', ruinen:'🏛️ Tempelruinen',
                     nacht:'🌙 Mondnacht', hoehle:'💎 Kristallhöhle', vulkan:'🌋 Feuerberg'};
 let projectWorlds = null, projectLevelList = null;   // levels/worlds.json und levels/levels.json (falls erreichbar)

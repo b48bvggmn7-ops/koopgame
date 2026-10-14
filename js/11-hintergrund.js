@@ -33,6 +33,9 @@ function designEbene(c, g, par){
   if(D.hgHell > 1) bgHaze(g, '#ffffff', Math.min(0.4, (D.hgHell - 1)*1.5));
   else if(D.hgHell < 1) bgHaze(g, '#000000', Math.min(0.5, (1 - D.hgHell)*1.2));
   if(D.dunst && D.dunst.a > 0) bgHaze(g, D.dunst.col, D.dunst.a*designTiefe(par));
+  // Gemütlichkeit (Design-Politur 2): ein Hauch Gold über allem, nahe Ebenen satt und dunkler (Tiefe: nah dunkel, fern hell)
+  if(D.goldHauch) bgHaze(g, D.goldHauch.col, D.goldHauch.a);
+  if(D.nahTiefe && par >= 0.2) bgHaze(g, D.nahTiefe.col, D.nahTiefe.a*Math.min(1, (par - 0.1)/0.35));
 }
 // Ebene einfärben (nur wo schon etwas gezeichnet ist) -> Luftperspektive / Dunst
 function bgHaze(g, color, alpha){
@@ -93,6 +96,7 @@ function buildBackground(){
   const T = THEME;
   BG_LAYERS.length = 0; BG_WATERFALLS.length = 0;
   bgMistCol = T.mistCol || (T.dark ? '60,70,110' : '240,248,238');
+  if(typeof designLook === 'function' && designLook().nebel) bgMistCol = designLook().nebel;   // warmer Nebel (Design-Politur 2)
   // Himmel (fest, ganz weit weg): Verlauf + Sonne bzw. Mond und Sterne
   BG_SKY = bgCanvas(W, H);
   {
@@ -124,6 +128,7 @@ function buildBackground(){
     }
   }
 
+  if(typeof gemuetlichHimmel === 'function') gemuetlichHimmel(BG_SKY.getContext('2d'));   // goldener Himmel (Design-Politur 2)
   // Wolken (weich, ziehen langsam) – in der Höhle keine
   if(T.clouds) makeLayer(0.03, g=>{
     const rnd = bgRand(7);
@@ -522,6 +527,7 @@ function drawBackground(){
     if(BG_WATERFALLS.length && BG_WATERFALLS[0].layer === L) drawWaterfallFlow(off, t);
     if(typeof detailEbene !== 'undefined' && detailEbene === L) detailBewegt(off, t);   // Fackeln, Tropfen (11a)
   }
+  if(typeof gemuetlichGegenlicht === 'function') gemuetlichGegenlicht();   // warmes Gegenlicht hinter den Bäumen (10b)
   if(typeof detailTeilchen === 'function') detailTeilchen(t);   // Sandstaub, Asche, Funken (11a)
   if(typeof weatherBgTint === 'function') weatherBgTint();   // Regen: Hintergrund dunkler
 }

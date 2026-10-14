@@ -369,20 +369,79 @@ function rundPfad(x, y, w, h, r){
 // dunkle Kontur an den freien Rändern; oben = freie Spannen der Oberseite, unten frei = !nb.b
 function designKontur(x, y, w, h, r, nb, oben){
   const D = designLook(); if(!D.kante) return;
-  const lw = D.kanteBreite, i = lw/2;
-  // Linie: an Seiten mit Nachbar nach außen geschoben (fällt dann aus dem Ausschnitt), oben nur über freien Spannen
-  const x0 = nb.l ? x - lw - 3 : x + i, x1 = nb.r ? x + w + lw + 3 : x + w - i, y1 = nb.b ? y + h + lw + 3 : y + h - i;
-  const Lc = nb.l ? x : x - 4, Rc = nb.r ? x + w : x + w + 4, Bc = nb.b ? y + h : y + h + 4;
+  const lw = D.kanteBreite, i = lw/2, aus = lw + 3;
+  // Linie: an Seiten mit Nachbar (und oben, wenn ganz bedeckt) nach außen geschoben -> fällt aus dem Ausschnitt.
+  // Ausschnitt = nur die Randstreifen der freien Seiten (über die ganze Höhe – keine Lücken an Reihengrenzen)
+  const x0 = nb.l ? x - aus : x + i, x1 = nb.r ? x + w + aus : x + w - i, y1 = nb.b ? y + h + aus : y + h - i, yo = oben.length ? y + i : y - aus;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(Lc, y + lw + 1, Rc - Lc, Bc - y - lw - 1);
-  for(const [a, b] of oben){ const l = a === 0 ? Lc : x + a, rr = b === w ? Rc : x + b; if(rr > l) ctx.rect(l, y - 4, rr - l, lw + 6); }
+  if(!nb.l) ctx.rect(x - 4, y - 4, lw + 5, h + 8);
+  if(!nb.r) ctx.rect(x + w - lw - 1, y - 4, lw + 5, h + 8);
+  if(!nb.b) ctx.rect(x - 4, y + h - lw - 1, w + 8, lw + 5);
+  for(const [a, b] of oben){ const l = a === 0 ? x - 4 : x + a, rr = b === w ? x + w + 4 : x + b; if(rr > l) ctx.rect(l, y - 4, rr - l, lw + 5); }
   ctx.clip();
   const k = v => Math.max(0, (v || 0) - i);
-  rundPfad(x0, y + i, x1 - x0, y1 - y - i, {tl: nb.l ? 0 : k(r.tl), tr: nb.r ? 0 : k(r.tr), bl: nb.l || nb.b ? 0 : k(r.bl), br: nb.r || nb.b ? 0 : k(r.br)});
+  rundPfad(x0, yo, x1 - x0, y1 - yo, {tl: nb.l || !oben.length ? 0 : k(r.tl), tr: nb.r || !oben.length ? 0 : k(r.tr), bl: nb.l || nb.b ? 0 : k(r.bl), br: nb.r || nb.b ? 0 : k(r.br)});
   ctx.strokeStyle = `rgba(${D.kanteFarbe},${D.kante})`; ctx.lineWidth = lw; ctx.lineJoin = 'round';
   ctx.stroke();
   ctx.restore();
+}
+// ---------- Moos und Lianen an hohen freien Seitenflächen (Nutzerwunsch: ab 3 Reihen) ----------
+// Senkrechte freie Kanten von Boden/Wand werden über Stückgrenzen hinweg zusammengefasst; ist eine Fläche mindestens
+// FLAECHE_MIN_H hoch, wachsen Moospolster und ein bis zwei Lianen an ihr – nur innerhalb der Fläche (nie in den
+// Laufweg), Lage aus der Weltposition (fest, flackert nicht). Nur Zeichnen.
+const FLAECHE_MIN_H = 120;
+let flaechenCache = {src: null, n: -1, list: []};
+function hoheFlaechen(){
+  if(flaechenCache.src === solids && flaechenCache.n === solids.length) return flaechenCache.list;
+  const kanten = [];
+  for(const s of solids){
+    if((s.type !== 'ground' && s.type !== 'wall') || !s.nb) continue;
+    if(!s.nb.l) kanten.push({x: s.x, y0: s.y, y1: s.y + s.h, seite: -1});
+    if(!s.nb.r) kanten.push({x: s.x + s.w, y0: s.y, y1: s.y + s.h, seite: 1});
+  }
+  kanten.sort((a, b) => a.seite - b.seite || a.x - b.x || a.y0 - b.y0);
+  const zus = [];
+  for(const k of kanten){
+    const v = zus[zus.length - 1];
+    if(v && v.seite === k.seite && Math.abs(v.x - k.x) < 1 && k.y0 <= v.y1 + 1) v.y1 = Math.max(v.y1, k.y1);
+    else zus.push({...k});
+  }
+  const list = [];
+  for(const f of zus){
+    const hoch = f.y1 - f.y0; if(hoch < FLAECHE_MIN_H) continue;
+    const rnd = bgRand(Math.round(f.x*7 + f.y0*13) + 5), moos = [], lianen = [];
+    for(let y = f.y0 + 18; y < f.y1 - 10; y += 30) if(rnd() < 0.65) moos.push({y, r: 5 + rnd()*5, t: rnd()});
+    const nl = hoch >= 200 ? 2 : 1;
+    for(let k = 0; k < nl; k++) lianen.push({d: 6 + k*12 + rnd()*4, len: hoch*(0.35 + rnd()*0.4), ph: rnd()*6});
+    list.push({...f, moos, lianen});
+  }
+  flaechenCache = {src: solids, n: solids.length, list};
+  return list;
+}
+function hoheFlaechenZeichnen(){
+  const M = THEME.moss || {base: '#5d9a4a', light: '#7cb860', vine: '#3f6b3a', leaf: '#4f8a45'};
+  const t = performance.now()*0.001;
+  for(const f of hoheFlaechen()){
+    const x = f.x - camX; if(x < -60 || x > VW + 60) continue;
+    const innen = -f.seite;   // in die Fläche hinein
+    for(const l of f.lianen){   // Liane hängt von oben an der Fläche herab, schwingt ganz leicht
+      const lx = x + innen*l.d, sw = Math.sin(t*0.8 + l.ph)*2;
+      ctx.strokeStyle = M.vine; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(lx, f.y0 + 2);
+      ctx.bezierCurveTo(lx + 4 + sw*0.3, f.y0 + l.len*0.35, lx - 4 + sw*0.6, f.y0 + l.len*0.7, lx + sw, f.y0 + l.len); ctx.stroke();
+      ctx.fillStyle = M.leaf;
+      for(let q = 0.15; q < 1; q += 0.17){
+        const ly = f.y0 + l.len*q, side = (Math.round(q*10) % 2) ? 1 : -1;
+        ctx.beginPath(); ctx.ellipse(lx + sw*q + side*4, ly, 4.2, 2, side*0.6, 0, Math.PI*2); ctx.fill();
+      }
+    }
+    for(const m of f.moos){   // Moospolster an der Kante, innen
+      const mx = x + innen*(m.r*0.5);
+      ctx.fillStyle = M.base; ctx.beginPath(); ctx.ellipse(mx, m.y, m.r*0.75, m.r, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = M.light; ctx.beginPath(); ctx.ellipse(mx - innen*1.5, m.y - m.r*0.3, m.r*0.4, m.r*0.5, 0, 0, Math.PI*2); ctx.fill();
+    }
+  }
 }
 // Holz-Plattform: Randlicht oben + dunkle Kontur rundum
 function designPlattform(x, y, w, h){
@@ -419,9 +478,10 @@ function draw(){
   // Zoom: Spielwelt verkleinern, unten bündig (Boden bleibt unten, oben wird mehr Himmel sichtbar)
   applyWorldZoom();
 
-  // weiche Lichtstrahlen von oben
+  // weiche Lichtstrahlen von oben (Design-Politur 2: warme, sanft schwankende Strahlen aus DESIGN_LOOK, sonst wie bisher)
+  if(designLook().strahlen) gemuetlichStrahlen();
   ctx.save();
-  for(let i=0;i<(THEME.ray ? 2 : 0);i++){
+  for(let i=0;i<(THEME.ray && !designLook().strahlen ? 2 : 0);i++){
     const rx = ((i*420 - camX*0.5) % (VW+500)) - 100;
     const rg = ctx.createLinearGradient(rx,0,rx+160,H);
     rg.addColorStop(0, THEME.ray);
@@ -434,7 +494,7 @@ function draw(){
   ctx.restore();
 
   // treibende Lichtpartikel
-  const PM = THEME.particles;
+  const PM = THEME.particles, pCol = designLook().pollen || PM.col;   // warme Pollen (Design-Politur 2)
   for(const pt of particles){
     const k = frameDt/STEP;
     pt.phase += 0.02 * k;
@@ -449,10 +509,10 @@ function draw(){
     if(sx<-10||sx>VW+10) continue;
     const flick = PM.mode === 'firefly' ? Math.max(0, Math.sin(pt.phase*1.6)) : 0.5 + Math.sin(pt.phase)*0.5;
     if(PM.mode !== 'float'){
-      ctx.fillStyle = `rgba(${PM.col},${(0.12*flick).toFixed(3)})`;
+      ctx.fillStyle = `rgba(${pCol},${(0.12*flick).toFixed(3)})`;
       ctx.beginPath(); ctx.arc(sx, pt.y, pt.r*4, 0, Math.PI*2); ctx.fill();
     }
-    ctx.fillStyle = `rgba(${PM.col},${(0.15+flick*0.6).toFixed(2)})`;
+    ctx.fillStyle = `rgba(${pCol},${(0.15+flick*0.6).toFixed(2)})`;
     ctx.beginPath(); ctx.arc(sx, pt.y, pt.r, 0, Math.PI*2); ctx.fill();
   }
 
@@ -487,7 +547,7 @@ function draw(){
   // Erde mit Verlauf, runde Ecken nur an echten Enden, nahtlos zu angrenzenden Stücken.
   // off = Verschiebung der Wellen (bei bewegten Stücken fährt das Muster mit)
   const GROUND_PAL = {g: THEME.ground};   // Farben je Level-Thema (10a-themen.js)
-  const R_CORNER = 9, GRASS_H = 12;
+  const R_CORNER = 9, GRASS_H = 12, ERDSCHICHT = 22;   // ERDSCHICHT: Abstand der Erdschicht-Linien (Welt-px)
   function waveY(wx){ return Math.sin(wx*0.055)*2.4 + Math.sin(wx*0.137+1.3)*1.2; }
   function drawGroundPiece(s, x, y, off, pal, cracked){
     const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[]};
@@ -495,10 +555,12 @@ function draw(){
     const topFreeL = !coveredAt(1), topFreeR = !coveredAt(w-1);
     const tl = (!nb.l && topFreeL) ? R_CORNER : 0, tr = (!nb.r && topFreeR) ? R_CORNER : 0;
     const bl = (!nb.l && !nb.b) ? R_CORNER : 0, br = (!nb.r && !nb.b) ? R_CORNER : 0;
-    // Erde
-    const g = ctx.createLinearGradient(0, y, 0, y+h);
-    g.addColorStop(0, pal.dirt1); g.addColorStop(1, pal.dirt2);
-    ctx.fillStyle = g;
+    // Erde (Design-Politur, Nutzerwunsch „Boden nach oben bauen sieht komisch aus“): EINE durchgehende Erdfarbe und an der
+    // Welt ausgerichtete Erdschichten – übereinander/nebeneinander gebaute Stücke verschmelzen zu einem Block (vorher hatte
+    // jede Reihe ihren eigenen Hell-Dunkel-Verlauf -> sichtbare Streifen). Tiefe nur an echten Rändern: Schatten unter
+    // freiem Gras, dunkler an einer freien Unterkante. Verläufe hängen nur von y ab -> je Stück zwischengespeichert.
+    if(!pal.dirtMitte) pal.dirtMitte = farbeMischen(pal.dirt1, pal.dirt2, 0.4);
+    ctx.fillStyle = pal.dirtMitte;
     ctx.beginPath();
     ctx.moveTo(x+tl, y);
     ctx.lineTo(x+w-tr, y); if(tr) ctx.arcTo(x+w, y, x+w, y+tr, tr);
@@ -506,33 +568,36 @@ function draw(){
     ctx.lineTo(x+bl, y+h); if(bl) ctx.arcTo(x, y+h, x, y+h-bl, bl);
     ctx.lineTo(x, y+tl); if(tl) ctx.arcTo(x, y, x+tl, y, tl);
     ctx.closePath(); ctx.fill();
-    // Tiefe (Design-Politur B): Schatten unter der Graskante, Erde nach unten dunkler
-    const DL = designLook();
-    if(DL.innenSchatten > 0 && h >= 24){
-      ctx.save(); ctx.clip();
-      const sg = ctx.createLinearGradient(0, y + GRASS_H, 0, y + GRASS_H + 14);
-      sg.addColorStop(0, `rgba(${DL.kanteFarbe},${DL.innenSchatten})`); sg.addColorStop(1, `rgba(${DL.kanteFarbe},0)`);
-      ctx.fillStyle = sg;
-      for(const [a, b] of freieSpannen(nb.above, w)) ctx.fillRect(x + a, y + GRASS_H, b - a, 14);   // nur unter echtem Gras
-      if(!nb.b && h >= 60){
-        const bg = ctx.createLinearGradient(0, y + h - 40, 0, y + h);
-        bg.addColorStop(0, `rgba(${DL.kanteFarbe},0)`); bg.addColorStop(1, `rgba(${DL.kanteFarbe},${DL.innenSchatten*0.8})`);
-        ctx.fillStyle = bg; ctx.fillRect(x, y + h - 40, w, 40);
+    const DL = designLook(), oben = freieSpannen(nb.above, w);
+    const bewegt = s.type === 'moveplat', ankerY = bewegt ? y - (s.y - s.startY) : y;   // Weltlage (bewegte Stücke: Startlage)
+    ctx.save(); ctx.clip();
+    // Erdschichten: alle ERDSCHICHT px eine weiche Wellenlinie, Lage aus Welt-x/-y -> laufen über Stückgrenzen durch
+    ctx.strokeStyle = pal.stripe; ctx.lineWidth = 3;
+    const y0 = ankerY + (oben.length ? GRASS_H + 4 : 0);
+    for(let k = Math.ceil((y0 - ankerY + ankerY - 11)/ERDSCHICHT); k*ERDSCHICHT + 11 < ankerY + h + 3; k++){
+      const wy = k*ERDSCHICHT + 11; if(wy < y0) continue;
+      const sy = y + (wy - ankerY);
+      ctx.beginPath();
+      for(let px = -2; px <= w + 2; px += 6){
+        const yy = sy + Math.sin((x+camX+px-off)*0.045 + k*1.7)*2.2;
+        if(px === -2) ctx.moveTo(x+px, yy); else ctx.lineTo(x+px, yy);
       }
-      ctx.restore();
+      ctx.stroke();
     }
-    // weiche Wellenstreifen in der Erde
-    if(h >= 30){
-      ctx.strokeStyle = pal.stripe; ctx.lineWidth = 3;
-      for(const [fy, ph] of [[0.55, 0.7], [0.82, 2.1]]){
-        ctx.beginPath();
-        for(let px = 3; px <= w-3; px += 6){
-          const yy = y + h*fy + Math.sin((x+camX+px-off)*0.045+ph)*2.2;
-          if(px===3) ctx.moveTo(x+px, yy); else ctx.lineTo(x+px, yy);
-        }
-        ctx.stroke();
+    if(DL.innenSchatten > 0){
+      const key = themeName + ':' + y + ':' + h;
+      if(!s._tiefe || s._tiefe.key !== key || bewegt){
+        const sg = ctx.createLinearGradient(0, y + GRASS_H, 0, y + GRASS_H + 14);
+        sg.addColorStop(0, `rgba(${DL.kanteFarbe},${DL.innenSchatten})`); sg.addColorStop(1, `rgba(${DL.kanteFarbe},0)`);
+        const bg = ctx.createLinearGradient(0, y + h - 30, 0, y + h);
+        bg.addColorStop(0, `rgba(${DL.kanteFarbe},0)`); bg.addColorStop(1, `rgba(${DL.kanteFarbe},${DL.innenSchatten*0.9})`);
+        s._tiefe = {key, sg, bg};
       }
+      ctx.fillStyle = s._tiefe.sg;
+      for(const [a, b] of oben) ctx.fillRect(x + a, y + GRASS_H, b - a, 14);   // nur unter echtem Gras
+      if(!nb.b){ ctx.fillStyle = s._tiefe.bg; ctx.fillRect(x, y + h - 30, w, 30); }
     }
+    ctx.restore();
     if(!nb.b){ ctx.fillStyle = pal.edge; ctx.globalAlpha = 0.35; ctx.fillRect(x+bl, y+h-3, w-bl-br, 3); ctx.globalAlpha = 1; }
     // Gras nur auf freien Abschnitten der Oberseite
     const spans = []; let start = null;
@@ -781,6 +846,7 @@ function drawSolidLook(s, look, x){
     }
   }
 
+  hoheFlaechenZeichnen();   // Moos und Lianen an hohen Seitenflächen (Design-Politur)
   drawGroundDeco();   // Dschungel-Pflanzen und Moos (17-deko.js)
 
   // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
@@ -950,7 +1016,6 @@ function drawSolidLook(s, look, x){
     ctx.fillStyle = '#ffd23f'; ctx.fillText(msg, gx, goal.y-79);
   }
   ctx.restore();
-  if(typeof vordergrundZeichnen === 'function') vordergrundZeichnen();   // Design-Politur D: Vordergrund nur am unteren Bildrand (11a)
   if(THEME.tint){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
   drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
   drawFakeGlints();      // dezentes Glitzern an Scheinwänden (auch im Dunkeln sichtbar)

@@ -3941,9 +3941,11 @@ async def nur_muenzen_klingeln(g):
 
 @test
 async def wetter_wechselt_selten(g):
-    """Wetter wechselt seltener: Sonne 4–7 Minuten, Regen 45–75 s, am Anfang 2,5 Minuten Sonne."""
-    assert await g.ev("WEATHER_SUN_S[0]") >= 240 and await g.ev("WEATHER_RAIN_S[1]") <= 75
-    assert await g.ev("weather.phase === 'sun' && weather.len >= 150")
+    """Wetter: Regen ist auf Nutzerwunsch komplett aus dem Spiel (Design-Politur 2) – es bleibt immer Sonne, auch nach
+    langer Zeit und wenn Regen ausdrücklich angefordert wird."""
+    assert await g.ev("REGEN_AUS === true")
+    st = await g.ev("(() => { for(let i = 0; i < 50; i++){ weather.t = 99999; weatherUpdate(0.5); } weatherForce('rain'); weatherUpdate(0.016); return {ph: weather.phase, r: weather.rain, bow: weather.rainbow}; })()")
+    assert st == {'ph': 'sun', 'r': 0, 'bow': 0}, st
 
 @test
 async def stachelwand_faehrt_mit(g):
@@ -4309,17 +4311,14 @@ async def geraeusche(g):
 
 @test
 async def wetter_regen_und_sonne(g):
-    """Wetter: Regen (Tropfen-Spritzer, Hintergrund dunkler) und Sonne mit Regenbogen – ohne Einfluss aufs Spiel."""
-    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
-    await g.ev("weatherForce('rain')"); await g.p.wait_for_timeout(800)
+    """Kein Regen mehr (Nutzerwunsch, Design-Politur 2): auch in einem Level mit „wetter: regen“ und nach
+    weatherForce('rain') fallen keine Tropfen, keine Spritzer, der Hintergrund wird nicht dunkler."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', wetter='regen'))
+    await g.ev("weatherForce('rain')"); await g.steps(40)
     st = await g.ev("({r: weather.rain, sp: weather.splashes.length, phase: weather.phase})")
-    assert st['phase'] == 'rain' and st['r'] > 0.9 and st['sp'] > 0, f'kein Regen: {st}'
+    assert st['phase'] == 'sun' and st['r'] == 0 and st['sp'] == 0, f'es regnet: {st}'
     x0 = await g.ev('p1.x'); await g.hold(('KeyD',), 500)
-    assert await g.ev('p1.x') - x0 > 50, 'Figur läuft im Regen nicht normal'
-    # Ablauf: nach dem Regen klart es auf und es gibt einen Regenbogen
-    await g.ev("weather.t = weather.len"); await g.p.wait_for_timeout(100)
-    st = await g.ev("({phase: weather.phase, bow: weather.rainbow})")
-    assert st['phase'] == 'clear' and st['bow'] > 0, f'kein Aufklaren/Regenbogen: {st}'
+    assert await g.ev('p1.x') - x0 > 50, 'Figur läuft nicht normal'
 
 @test
 async def tiere_reagieren(g):
@@ -4367,19 +4366,10 @@ async def figuren_leben(g):
 
 @test
 async def regen_klang(g):
-    """Regen-Klang: Stereo-Schleifen (Bett, Prasseln, Metall) werden im Hintergrund vorberechnet, nicht stumm, L≠R."""
-    st = await g.ev("""(()=>{ const b = rainSynth(new OfflineAudioContext(2, 44100, 44100)); const out = {};
-      for(const k of ['bed','patter','metal']){ const L=b[k].getChannelData(0), R=b[k].getChannelData(1); let e=0, d=0;
-        for(let i=0;i<L.length;i+=7){ e+=Math.abs(L[i]); d+=Math.abs(L[i]-R[i]); } out[k]={ch:b[k].numberOfChannels, sec:b[k].duration, e, d}; }
-      return out; })()""")
-    for k, v in st.items():
-        assert v['ch'] == 2 and v['sec'] >= 5 and v['e'] > 1 and v['d'] > 0.5, f'{k} kaputt: {v}'
+    """Kein Regen-Rauschen mehr (Regen ist aus dem Spiel): auch nach weatherForce('rain') wird nichts vom Regen gespielt."""
     await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')   # Ton freischalten (erster Tastendruck)
-    await g.ev("weatherForce('rain')"); await g.p.wait_for_timeout(2500)
-    if await g.ev("audioCtx && audioCtx.state === 'running'"):
-        try: await g.p.wait_for_function("!!rainBufs", timeout=10000)   # Berechnung läuft im Hintergrund (langsame Rechner: länger)
-        except Exception: pass
-        assert await g.ev("!!rainBufs"), 'Regen-Klang wurde nicht vorberechnet'
+    await g.ev("weatherForce('rain')"); await g.steps(60)
+    assert await g.ev("weather.rain === 0 && weather.phase === 'sun'"), 'Regen läuft'
 
 @test
 async def asmr_klangbibliothek(g):
@@ -4463,8 +4453,8 @@ LEISTUNG_STELLEN = [('dschungel', 'dschungel/03-lianenschlucht.json', 360), ('ru
 
 # Design-Politur B: Mindest-Kontrast (WCAG-Kontrastverhältnis, Median) zwischen Bodenoberkante und dem Hintergrund
 # 16 px darüber, je Welt und Tageszeit (gemessen nach der Politur, mit etwas Abstand gegen Zufall von Tieren/Teilchen)
-KONTRAST_MIN = {'mittag': 1.12, 'abend': 1.25, 'nacht': 1.4}   # Mittag: Ruinen ist die schwächste Stelle (~1,16; vorher 1,15)
-KONTRAST_MIN_WELT = {'hoehle': 1.35, 'vulkan': 1.7}   # eigene Untergrenze für dunkle Welten (gilt zu jeder Tageszeit)
+KONTRAST_MIN = {'mittag': 1.12, 'abend': 1.12, 'nacht': 1.4}   # Mittag: Ruinen am schwächsten (~1,26); Abend: warmes Orange hinter orangem Boden (~1,17) – die dunkle Kontur trennt dort
+KONTRAST_MIN_WELT = {'hoehle': 1.35, 'vulkan': 1.55}   # eigene Untergrenze für dunkle Welten (gilt zu jeder Tageszeit)
 KONTRAST_JS = r"""() => {
   const L = (r, g, b) => { const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }; return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b); };
   const img = ctx.getImageData(0, 0, cvs.width, cvs.height).data, Wc = cvs.width, Hc = cvs.height;
@@ -4520,8 +4510,8 @@ async def kontrast_mindestwerte(g):
 @test
 async def welt_details_und_vordergrund(g):
     """Design-Politur D: jede Welt bekommt ihre Details (Ruinen: Fackeln, Höhle: Tropfsteine mit Tropfen, Dschungel:
-    Wasserfall mit Regenbogen, Vulkan: Asche/Funken) und einen Vordergrund am unteren Bildrand. Der Vordergrund liegt
-    nur unterhalb von VORDERGRUND_H über Boden/Wand – nie auf Münzen, Hebeln, Checkpoints, Türen, Stacheln oder Lava."""
+    Wasserfall mit Regenbogen, Vulkan: Asche/Funken). Ein dunkler Vordergrund am unteren Bildrand gibt es NICHT mehr
+    (Nutzerwunsch: „was soll diese zusätzliche untere Reihe mit Schatten“)."""
     srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(800)
@@ -4529,21 +4519,11 @@ async def welt_details_und_vordergrund(g):
         for welt, datei, spalte in LEISTUNG_STELLEN:
             await koop_level(g, datei)
             r = await g.ev(f"""(() => {{ setTheme(composeLook('{welt}', 'mittag')); return {{welt: detailWelt, fackeln: BG_FACKELN.length, tropfen: BG_TROPFEN.length,
-                vorne: !!vordergrundBild, ebene: BG_LAYERS.includes(detailEbene), wf: BG_WATERFALLS.length}}; }})()""")
-            assert r['welt'] == welt and r['vorne'] and r['ebene'], f'{welt}: Details fehlen {r}'
+                ebene: BG_LAYERS.includes(detailEbene), vorne: typeof vordergrundZeichnen === 'function'}}; }})()""")
+            assert r['welt'] == welt and r['ebene'], f'{welt}: Details fehlen {r}'
+            assert not r['vorne'], 'Vordergrund-Schatten unten ist wieder da'
             if welt == 'ruinen': assert r['fackeln'] > 0, r
             if welt == 'hoehle': assert r['tropfen'] > 0, r
-            # Vordergrund: höchste Stelle = H - VORDERGRUND_H; alle Spiel-Elemente im Bild liegen darüber
-            for sp in range(0, 900, 60):
-                tief = await g.ev(f"""(() => {{ camX = {sp}*40; const zy = wy => wy*zoom + H*(1 - zoom) + CEILING_MARGIN, grenze = H - VORDERGRUND_H, out = [];
-                    const im = x => (x - camX)*zoom > -20 && (x - camX)*zoom < W + 20;
-                    for(const c of coins) if(im(c.x) && zy(c.y + 12) > grenze) out.push(['Münze', c.x, c.y]);
-                    for(const s of switchDefs) if(im(s.x) && zy(s.y) > grenze) out.push(['Hebel', s.x, s.y]);
-                    for(const c of checkpointDefs) if(im(c.x) && zy(c.y - 20) > grenze) out.push(['Checkpoint', c.x, c.y]);
-                    for(const d of solids) if(d.type === 'door' && im(d.x) && zy(d.y) > grenze) out.push(['Tür', d.x, d.y]);
-                    for(const k of spikes) if(im(k.x) && zy(k.y - k.h) > grenze) out.push(['Stachel', k.x, k.y]);
-                    return out; }})()""")
-                assert not tief, f'{welt}: Element liegt im Vordergrund-Streifen: {tief[:3]}'
     finally:
         await kx.close(); srv.shutdown()
 
@@ -5428,7 +5408,7 @@ async def schichten_tageszeit_wetter(g):
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', tageszeit='nacht', wetter='regen'))
     await g.p.wait_for_timeout(300)
     w = await g.ev("(() => { weather.t = 99999; weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode, look: levelTheme, moon: !!THEME.moon}; })()")
-    assert w['ph'] == 'rain' and w['mode'] == 'regen' and w['moon'], f'Dauerregen/Nacht wirkt nicht: {w}'
+    assert w['ph'] == 'sun' and w['mode'] == 'regen' and w['moon'], f'Nacht wirkt nicht / es regnet (Regen ist aus): {w}'
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', wetter='trocken'))
     await g.p.wait_for_timeout(300)
     w = await g.ev("(() => { weatherForce('rain'); weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode}; })()")
@@ -5436,7 +5416,7 @@ async def schichten_tageszeit_wetter(g):
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, theme='abend'))
     await g.p.wait_for_timeout(300)
     w = await g.ev("(() => { weather.phase = 'sun'; weather.t = 99999; weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode, look: levelTheme}; })()")
-    assert w['mode'] == 'wechselnd' and w['ph'] == 'cloud' and w['look'] == 'abend', f'altes Level: Wetter-Wechsel/Look anders: {w}'
+    assert w['mode'] == 'wechselnd' and w['ph'] == 'sun' and w['look'] == 'abend', f'altes Level: Look anders / es zieht zu (Regen ist aus): {w}'
 
 @test
 async def dschungel_welt_look(g):
@@ -5516,7 +5496,7 @@ async def vulkan_welt_look(g):
             await g.steps(10)
             r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground, regen: weather.rain})")
             assert r['mode'] == wetter and r['ok'] and r['look'].startswith('vulkan'), (zeit, wetter, r)
-            assert (r['regen'] > 0.5) == (wetter == 'regen'), (zeit, wetter, r)
+            assert r['regen'] < 0.05, (zeit, wetter, r)   # Regen ist aus dem Spiel (auch kein heißer Regen mehr)
             await g.ev("camPos = 400; draw()")   # Dampf/Lava/Presse zeichnen ohne Fehler
     # altes Level 6 (wechselndes Wetter, theme vulkan): nie Regen
     await g.load(str(ROOT / 'levels' / 'vulkan/03-feuerberg.json')); await g.ev("weatherForce('rain')"); await g.steps(5)

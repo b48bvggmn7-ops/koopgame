@@ -12,10 +12,14 @@ const WEATHER_RAIN_S = [45, 75];     // Sekunden Regen (früher 30–45)
 const WEATHER_FADE_S = 7;            // Übergang zu/auf
 const RAINBOW_S = 22;                // so lange bleibt der Regenbogen nach dem Regen
 
+// Nutzerwunsch (Design-Politur 2): Regen komplett aus dem Spiel – es bleibt immer Sonne (kein Regen, keine Wolken-
+// Phase, kein Regen-Rauschen, kein Regenbogen danach). Das Level-Feld „wetter“ bleibt in den Daten, wirkt aber nicht mehr.
+const REGEN_AUS = true;
 const weather = {phase: 'sun', t: 0, len: 150, rain: 0, rainbow: 0, splashes: [], nextChirp: 6};
 function weatherRand(a){ return a[0] + Math.random()*(a[1] - a[0]); }
 // zum Ausprobieren/Testen: weatherForce('rain') oder weatherForce('sun')
 function weatherForce(ph){
+  if(REGEN_AUS) ph = 'sun';
   weather.phase = ph; weather.t = 0;
   if(ph === 'rain'){ weather.len = weatherRand(WEATHER_RAIN_S); weather.rain = 1; }
   else { weather.len = weatherRand(WEATHER_SUN_S); weather.rain = 0; }
@@ -33,6 +37,7 @@ const WEATHER_MODES = ['wechselnd', 'trocken', 'regen'];
 function weatherUpdate(dt){
   const w = weather;
   w.t += dt;
+  if(REGEN_AUS){ w.phase = 'sun'; w.rain = 0; w.rainbow = 0; w.splashes.length = 0; weatherAudio(dt); return; }
   const regenArt = THEME.rain || (THEME.heissRegen && weatherMode === 'regen');   // Vulkan: nur bei ausdrücklich „regen“ (heißer Regen)
   if(weatherMode === 'regen' && regenArt){ if(w.phase !== 'rain'){ w.phase = 'rain'; w.t = 0; } w.len = Infinity; w.rainbow = 0; }
   if((weatherMode === 'trocken' || !regenArt) && w.phase !== 'sun'){ w.phase = 'sun'; w.t = 0; w.len = weatherRand(WEATHER_SUN_S); }   // Höhle/Vulkan: kein Regen
@@ -81,13 +86,17 @@ function weatherBgTint(){
 }
 
 // --- Vorne: Regen, Spritzer, warmer Schimmer, Vignette ---
-const VIGNETTE = (()=>{
-  const c = document.createElement('canvas'); c.width = W; c.height = H;
-  const g = c.getContext('2d'), r = g.createRadialGradient(W/2, H*0.45, H*0.35, W/2, H*0.45, H*1.05);
-  r.addColorStop(0, 'rgba(60,30,10,0)'); r.addColorStop(1, 'rgba(60,30,10,0.28)');
-  g.fillStyle = r; g.fillRect(0, 0, W, H);
-  return c;
-})();
+const VIGNETTE = document.createElement('canvas'); VIGNETTE.width = W; VIGNETTE.height = H;
+let vignetteFarbe = null;
+// weiche Vignette (helle Mitte, warme Ränder); Farbe je Look aus DESIGN_LOOK.vignette – nur neu gemalt, wenn sie wechselt
+function vignetteSetzen(col){
+  if(col === vignetteFarbe) return;
+  vignetteFarbe = col;
+  const g = VIGNETTE.getContext('2d'), r = g.createRadialGradient(W/2, H*0.45, H*0.35, W/2, H*0.45, H*1.05);
+  r.addColorStop(0, `rgba(${col},0)`); r.addColorStop(1, `rgba(${col},0.3)`);
+  g.clearRect(0, 0, W, H); g.fillStyle = r; g.fillRect(0, 0, W, H);
+}
+vignetteSetzen('60,30,10');
 function weatherTops(){
   // sichtbare Oberseiten (für Spritzer): Boden, Wand, Bröckelboden, Plattform
   const tops = [];
@@ -169,9 +178,11 @@ function weatherFront(){
     ctx.restore();
   }
   // warmer Schimmer (bei Regen kühler) + weiche Vignette
-  ctx.fillStyle = r > 0.5 ? `rgba(120,150,190,${(0.06*r).toFixed(3)})` : `rgba(255,190,110,${(0.06*(1 - r)).toFixed(3)})`;
+  const DW = typeof designLook === 'function' ? designLook() : null, wm = DW && DW.waerme;   // warmer Schimmer je Look (10b)
+  ctx.fillStyle = r > 0.5 ? `rgba(120,150,190,${(0.06*r).toFixed(3)})` : wm ? `rgba(${wm.col},${(wm.a*(1 - r)).toFixed(3)})` : `rgba(255,190,110,${(0.06*(1 - r)).toFixed(3)})`;
   ctx.fillRect(0, 0, W, H);
-  ctx.drawImage(VIGNETTE, 0, 0);
+  if(DW && DW.vignette) vignetteSetzen(DW.vignette);
+  ctx.drawImage(VIGNETTE, 0, 0, W, H);
 }
 
 // ---------- Wetter-Geräusche ----------
