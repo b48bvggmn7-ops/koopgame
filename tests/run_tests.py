@@ -135,6 +135,13 @@ async def halte_schritte(g, keys, n):
         if(simSteps >= ziel){{ for(const k of ks) KEYS[k] = false; stepSim = alt; }} return r; }}; }})()""")
     await g.p.wait_for_function("simSteps >= window.__halteEnde", timeout=20000)
 
+async def projekt_laden(p, datei, warten=400):
+    """Editor, Fenster „Levels“: Level aus dem Projekt laden (Welt-Ordner aufklappen, dann „Laden“ in seiner Zeile)."""
+    sel = f'#projectList .lvl[data-datei="{datei}"]'
+    await p.wait_for_selector(sel, state='attached', timeout=5000)
+    await p.evaluate("s => { const d = document.querySelector(s).closest('details'); if (d) d.open = true; }", sel)
+    await p.click(sel + ' button'); await p.wait_for_timeout(warten)
+
 async def koop_level(g, datei):
     await g.load(str(ROOT / 'levels' / datei))
     await g.p.evaluate("() => {" + KOOP_BOT + "}")
@@ -534,11 +541,23 @@ async def editor_projekt_levels(g):
         def anzeige(L):   # Editor-Umbau: Welt + Nummer aus dem Pfad (levels/<welt>/<nr>-<titel>.json)
             w, f = L['datei'].split('/')
             return f"{welt[w]} {int(f[:2])}" if f[:2].isdigit() else f"{welt[w]} Boss" if f.startswith('boss-') else None
-        assert namen == [f"{anzeige(L)} · {L.get('titel') or L['name']}" if anzeige(L) else L['name'] for L in liste], f'Projekt-Liste falsch: {namen}'
-        await p.click('#projectList .lvl:nth-child(1) button'); await p.wait_for_timeout(400)
+        assert sorted(namen) == sorted(f"{anzeige(L)} · {L.get('titel') or L['name']}" if anzeige(L) else L['name'] for L in liste), f'Projekt-Liste falsch: {namen}'
+        # Welt-Ordner (Nutzerwunsch): je Welt ein aufklappbarer Ordner in Spiel-Reihenfolge, darin nach Nummer, Boss zuletzt
+        ordner = await p.eval_on_selector_all('#projectList > details.welt-ordner', '''els => els.map(d => ({w: d.dataset.welt,
+            s: d.querySelector('summary').textContent, offen: d.open, z: [...d.querySelectorAll('.lvl .dt')].map(e => e.textContent)}))''')
+        assert [o['w'] for o in ordner] == ['dschungel', 'ruinen', 'hoehle', 'vulkan', 'archiv'], ordner
+        for o in ordner:
+            assert all(z.startswith(o['w'] + '/') for z in o['z']), o
+            assert o['s'] == f"📁 {welt[o['w']]} ({len(o['z'])})", o
+            assert o['z'] == sorted(o['z'], key=lambda z: (z.split('/')[1].startswith('boss-'), z)), o
+            assert not o['offen'], 'ohne geladenes Projekt-Level sind alle Ordner zu'
+        assert [z for o in ordner if o['w'] == 'dschungel' for z in o['z']][-1] == 'dschungel/boss-bruno.json'
+        await projekt_laden(p, liste[0]['datei'])
         erwartet = json.loads((ROOT / 'levels' / 'editor-format' / liste[0]['datei']).read_text())
         assert (await p.text_content('#curName')).startswith('Dschungel 1 · Dschungel'), f"Welt/Nummer/Titel nicht übernommen: {await p.text_content('#curName')}"
         await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+        offen = await p.eval_on_selector_all('#projectList > details[open]', 'els => els.map(d => d.dataset.welt)')
+        assert offen == ['dschungel'], f'Ordner des geladenen Levels sollte offen sein: {offen}'
         dateien = []
         p.on('download', lambda d: dateien.append(d))
         await p.click('#projectBtn'); await p.wait_for_timeout(800)
@@ -5209,7 +5228,7 @@ async def editor_github_speichern(g):
         # merken, ob die GitHub-Abfragen am Browser-Zwischenspeicher vorbei gehen (sonst alter Stand -> HTTP 422)
         await g.ev("window.__ghCache = []; const f0 = window.fetch; window.fetch = (u, o) => { if (String(u).includes('api.github.com')) __ghCache.push((o||{}).cache); return f0(u, o); }")
         await p.click('#levelsBtn'); await p.wait_for_timeout(500)
-        await p.click('#projectList .lvl:nth-child(3) button'); await p.wait_for_timeout(400)   # Level 3 laden
+        await projekt_laden(p, json.loads((ROOT / 'levels' / 'levels.json').read_text())[2]['datei'])   # Level 3 laden
         await p.click('#githubBtn'); await p.wait_for_timeout(500)
         assert await g.ev("getComputedStyle(document.getElementById('ghKeySect')).display !== 'none'"), 'ohne Schlüssel keine Anleitung'
         await p.fill('#ghToken', 'github_pat_TEST123'); await p.click('#ghKeySave'); await p.wait_for_timeout(200)
@@ -5617,8 +5636,7 @@ async def editor_rundreise_alle_level(g):
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
-            rows = await p.eval_on_selector_all('#projectList .lvl .dt', 'els => els.map(e => e.textContent)')
-            await p.click(f'#projectList .lvl:nth-child({rows.index(L["datei"]) + 1}) button'); await p.wait_for_timeout(350)
+            await projekt_laden(p, L['datei'], 350)
             await p.click('#exportBtn'); await p.wait_for_timeout(150)
             out = json.loads(await p.input_value('#exportText'))
             await p.click('#closeExport')
@@ -5927,8 +5945,7 @@ async def editor_level_info(g):
         await p.evaluate("localStorage.setItem('monchichi_github_token', 'github_pat_TEST')")
         async def lade(datei):
             await p.click('#levelsBtn'); await p.wait_for_timeout(300)
-            rows = await p.eval_on_selector_all('#projectList .lvl .dt', 'els => els.map(e => e.textContent)')
-            await p.click(f'#projectList .lvl:nth-child({rows.index(datei) + 1}) button'); await p.wait_for_timeout(400)
+            await projekt_laden(p, datei)
         await lade('ruinen/02-mondnacht.json')
         m = await p.evaluate("({...meta})")
         assert m == {'welt': 'ruinen', 'position': 4, 'titel': 'Mondnacht', 'tageszeit': '', 'wetter': 'wechselnd', 'look': 'nacht'}, m

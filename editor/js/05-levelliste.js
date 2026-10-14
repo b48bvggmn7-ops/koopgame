@@ -113,8 +113,36 @@ async function refreshProjectList(){
   }catch(e){ projectHint('Projekt-Levels hier nicht erreichbar (nur wenn der Editor über die Webseite geöffnet ist).'); return; }
   if(!Array.isArray(list) || !list.length){ projectHint('Keine Levels im Projekt.'); return; }
   projectList.innerHTML = '';
+  // Level nach Welt-Ordnern gruppiert (aufklappbar), innerhalb eines Ordners nach Dateiname (Nummer, Boss zuletzt)
+  const ordner = new Map();
   for(const P of list){
-    const row=document.createElement('div'); row.className='lvl';
+    const w = /^([a-z0-9-]+)\//.exec(P.datei || '');
+    const key = w ? w[1] : '';
+    if(!ordner.has(key)) ordner.set(key, []);
+    ordner.get(key).push(P);
+  }
+  const reihe = Object.keys(WELT_ANZEIGE);
+  const keys = [...ordner.keys()].sort((a,b)=>{
+    const ia = reihe.indexOf(a), ib = reihe.indexOf(b);
+    return (ia<0 ? 99 : ia) - (ib<0 ? 99 : ib) || a.localeCompare(b);
+  });
+  const offenWelt = (/^([a-z0-9-]+)\//.exec(currentProjectFile || '') || [])[1];
+  for(const key of keys){
+    const box=document.createElement('details'); box.className='welt-ordner'; box.dataset.welt=key;
+    const lv = ordner.get(key).sort((a,b)=>{
+      const fa=(a.datei||'').split('/').pop(), fb=(b.datei||'').split('/').pop();
+      return (fa.startsWith('boss-')?1:0)-(fb.startsWith('boss-')?1:0) || fa.localeCompare(fb);
+    });
+    if(key===offenWelt || keys.length===1) box.open = true;
+    const sm=document.createElement('summary');
+    sm.textContent = `📁 ${key ? (WELT_ANZEIGE[key] || key) : 'Sonstige'} (${lv.length})`;
+    box.appendChild(sm);
+    for(const P of lv) box.appendChild(projektZeile(P));
+    projectList.appendChild(box);
+  }
+}
+function projektZeile(P){
+    const row=document.createElement('div'); row.className='lvl'+(P.datei===currentProjectFile?' cur':''); row.dataset.datei=P.datei;
     const nm=document.createElement('span'); nm.className='nm'; const anz = levelAnzeige(P.datei); nm.textContent = anz ? `${anz} · ${P.titel || P.name || ''}` : (P.name||P.datei);
     const dt=document.createElement('span'); dt.className='dt'; dt.textContent=P.datei;
     const ld=document.createElement('button'); ld.className='mini'; ld.textContent='Laden';
@@ -132,8 +160,8 @@ async function refreshProjectList(){
       if(dirty) armConfirm(ld, 'Ungespeichertes geht verloren – laden?', doLoad);
       else doLoad();
     };
-    row.append(nm, dt, ld); projectList.appendChild(row);
-  }
+    row.append(nm, dt, ld);
+    return row;
 }
 function openLevels(){
   nameInput.value = currentLevelName || '';
