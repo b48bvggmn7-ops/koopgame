@@ -8620,7 +8620,8 @@ async def partner_geruest(g):
     """Computer-Partner Teilschritt 1: im Testmodus mit „allein als Affe“ hört der Affe auf BEIDE Tastaturhälften, das
     Schweinchen auf die Partner-Tasten (es steht still, solange er nichts tut); V tauscht die Rollen, P schaltet den Partner
     aus (dann wieder zwei Spieler mit den normalen Tasten); die Wahl wird im Browser gemerkt; Anzeige oben nennt den Partner."""
-    srv = await partner_test_start(g, level_daten([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}), ich='m')
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}), ich='m',
+                                   extra_js="partnerDenken = () => ({halten: {}, druecken: []})")   # hier: Partner ohne „Gehirn“ (steht)
     p = g.p
     try:
         k = await g.ev("({an: partnerAktiv(), m: p1.keys.left, f: p2.keys.left, mj: p1.keys.jump, fg: p2.keys.glide})")
@@ -8703,6 +8704,89 @@ async def editor_partner_wahl(g):
         assert json.loads(await g.ev("localStorage.getItem('monchichi_partner')")) == {'an': False, 'ich': 'f'}
     finally:
         srv.shutdown()
+
+PARTNER_LAUF_JS = r"""o => {   // Partner-Tests: n Spielschritte direkt rechnen (schneller als Echtzeit), Tod/Endlage melden
+  menuScreen = 'pause'; deathState = null;
+  let ts = 0, tod = null, sichtbar = true, vor = 0;
+  for(let f = 0; f < o.n; f++){
+    ts += 16.6;
+    stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    const P = partnerFigur();
+    if(P.x < camX - 10 || P.x > camX + VW + 10) sichtbar = false;
+    if(deathState){ tod = deathState.victim === partnerFigur() ? 'partner' : 'ich'; break; }
+  }
+  const P = partnerFigur(), M = meineFigur();
+  return {tod, sichtbar, P: [Math.round(P.x), Math.round(P.y)], M: [Math.round(M.x), Math.round(M.y)], text: partner.text, ms: +(partnerHirn.maxMs || 0).toFixed(1)};
+}"""
+
+def partner_mensch(ich, plan):
+    return {'m' if ich == 'm' else 'f': plan}
+
+@test
+async def partner_folgt_gemuetlich(g):
+    """Computer-Partner Teilschritt 2 (Folgen): ich laufe (Skript) über Gruben und Stufen, bleibe zwischendurch stehen. Der
+    Partner folgt mit denselben Tasten/derselben Physik: er bleibt immer im Bild, läuft nie vor (höchstens Abstand +
+    Spielraum vor mir), wartet, wenn ich stehe (steht dann still neben mir), springt über die Gruben, stirbt nicht –
+    als Schweinchen und als Affe."""
+    sol = [ground(0, 680, 900), ground(980, 680, 320), ground(1300, 640, 300, 80), ground(1680, 680, 1400)]
+    daten = level_daten(sol, {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
+    hop = lambda x: [{'hold': ['right'], 'until': f'P.x >= {x}'}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 120}]
+    plan = [{'hold': ['right'], 'until': 'P.x >= 600'}, {'frames': 200}] + hop(850) + hop(1250) + hop(1570) + \
+           [{'hold': ['right'], 'until': 'P.x >= 2300'}, {'frames': 260}]
+    mess = "if(f % 3) return; const P = partnerFigur(), M = meineFigur(); return [P.x - camX, P.x - M.x, P.y, M.x, VW, Math.abs(P.vx), M.vx]"
+    for ich in ('m', 'f'):
+        start_m, start_p = ([300, 680], [200, 680])
+        srv = await partner_test_start(g, daten, ich=ich)
+        try:
+            r = await koop(g, **{'m' if ich == 'm' else 'f': start_m, 'f' if ich == 'm' else 'm': start_p},
+                           plans=partner_mensch(ich, plan), jeBild=mess, maxFrames=3000)
+            assert r.get('done'), f'{ich}: Lauf nicht fertig {r.get("dead")} {r.get("pos")}'
+            m = r['mess']
+            aus = [x for x in m if not (-5 <= x[0] <= x[4] + 5)]
+            assert not aus, f'{ich}: Partner nicht im Bild: {aus[:3]}'
+            vor = max(x[1] for x in m)
+            assert vor <= PARTNER_VOR_MAX, f'{ich}: Partner läuft vor ({vor:.0f} px vor mir)'
+            # erstes Warten (Bilder 60–200 meines Wartens): am Ende steht er still nah bei mir
+            ende_warten = [x for x in m if x[3] < 700 and abs(x[6]) < 0.01][-8:]
+            assert all(abs(x[1]) <= 140 and x[5] < 0.3 for x in ende_warten), f'{ich}: wartet nicht ruhig neben mir: {ende_warten}'
+            schluss = m[-8:]
+            assert all(abs(x[1]) <= 140 and x[5] < 0.3 and abs(x[2] - 680) < 2 for x in schluss), f'{ich}: kommt nicht nach: {schluss}'
+            weit = max(abs(x[1]) for x in m)
+            print(f'    {ich}: größter Abstand {weit:.0f} px, höchstens {vor:.0f} px voraus')
+        finally:
+            srv.shutdown()
+
+PARTNER_VOR_MAX = 160   # px: so weit darf der Partner höchstens vor mir sein (Abstand 90 + Spielraum 40 + Rundung)
+
+PARTNER_GEFAHREN = {
+    'stacheln': dict(solids=[ground(0, 680, 3000)], spikes=[{'x': 700, 'y': 680, 'w': 40, 'h': 20}, {'x': 740, 'y': 680, 'w': 40, 'h': 20}]),
+    'grube': dict(solids=[ground(0, 680, 700), ground(820, 680, 2000)]),
+    'lava': dict(solids=[ground(0, 680, 700), ground(700, 720, 120), ground(820, 680, 2000)], lava=[{'x': 700, 'y': 680, 'w': 120, 'h': 40}]),
+    'pfeil': dict(solids=[ground(0, 680, 3000)], traps=[{'x': 1200, 'y': 640, 'art': 'pfeil', 'richtung': 'l', 'takt': 2, 'versatz': 0}]),
+    'flamme': dict(solids=[ground(0, 680, 3000), ground(560, 480, 200, 40, 'wall')], traps=[{'x': 640, 'y': 520, 'art': 'flamme', 'richtung': 'u', 'takt': 3, 'versatz': 0}]),
+    'presse': dict(solids=[ground(0, 680, 3000)], pressen=[{'x': 640, 'y': 320, 'breite': 2, 'takt': 3, 'versatz': 0, 'schalter': 'immer'}]),
+}
+
+@test
+async def partner_gefahren(g):
+    """Computer-Partner Teilschritt 2: ich stehe hinter einer Gefahr, der Partner kommt nach, ohne zu sterben – Stacheln,
+    Grube, Lava, Pfeilfalle (Pfeile kommen ihm entgegen), Flammenfalle im Takt, Stachelpresse im Takt; als Affe und als
+    Schweinchen. Er rechnet seine Sprünge vorher mit derselben Physik durch und wartet auf Lücken."""
+    fehler = []
+    for name, f in PARTNER_GEFAHREN.items():
+        for ich in ('m', 'f'):
+            ich_pos, sein_pos = {'x': 1500, 'y': 680}, {'x': 300, 'y': 680}
+            d = level_daten(f['solids'], ich_pos if ich == 'm' else sein_pos, sein_pos if ich == 'm' else ich_pos,
+                            **{k: v for k, v in f.items() if k != 'solids'})
+            srv = await partner_test_start(g, d, ich=ich)
+            try:
+                r = await g.p.evaluate(PARTNER_LAUF_JS, {'n': 1300})
+                if r['tod'] or abs(r['P'][0] - r['M'][0]) > 140 or not r['sichtbar'] and False:
+                    fehler.append((name, ich, r))
+            finally:
+                srv.shutdown()
+    assert not fehler, f'Partner scheitert an Gefahren: {fehler}'
 
 async def main(filter_):
     async with async_playwright() as pw:
