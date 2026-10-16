@@ -1,6 +1,6 @@
 # Nacht-Ausbau Phase 3: Münz-Klassen (Pfad / Geschick / Meister) – Anzahl, Reihenfolge und Identität der Münzen bleiben.
 #   pfad     – Münze höchstens 2 Reihen über einer Stehfläche (man nimmt sie im Vorbeigehen / mit einem normalen Sprung)
-#   geschick – alle anderen (in der Luft, über Gruben, an Haken-Bögen, auf Umwegen)
+#   geschick – alle anderen (in der Luft, über Gruben, an Haken-Bögen, auf Umwegen) und Münzen in Verstecken/Nischen
 #   meister  – von Hand: an den schwersten Stellen (neue Bausteine, Grenz-Stellen); dafür wird eine nahe Geschick-/Pfad-
 #              Münze an die Meister-Stelle VERSCHOBEN (gleiche Stelle in der Liste = gleiche Münze)
 # Aufruf: python3 tests/bausteine/muenzen.py --einstufen   (alle Level: pfad/geschick neu einstufen, meister bleibt)
@@ -13,10 +13,13 @@ def einstufen(lv):
     """lv: level_bau.Level – setzt klasse für alle Münzen ohne 'meister'"""
     fest = set((c, r) for (c, r), t in lv.t.items() if t not in ('wind', 'haft'))   # Aufwind ist kein Boden
     fest |= set((p['c'], p['r']) for p in lv.ed.get('bruchWaende', []))
+    bruch = set((p['c'], p['r']) for p in lv.ed.get('bruchWaende', []))
     n = {'pfad': 0, 'geschick': 0, 'meister': 0}
     for m in lv.ed.get('coins', []):
         if m.get('klasse') == 'meister': n['meister'] += 1; continue
         c, r = m['c'], m['r']
+        if any(z in bruch for z in ((c, r - 1), (c - 1, r), (c + 1, r))):   # Versteck/Nische hinter Durchbruch-Wand
+            m['klasse'] = 'geschick'; n['geschick'] += 1; continue
         boden = any((c, r + k) in fest and (c, r + k - 1) not in fest for k in (1, 2, 3))
         if boden: m.pop('klasse', None); n['pfad'] += 1
         else: m['klasse'] = 'geschick'; n['geschick'] += 1

@@ -2829,7 +2829,8 @@
     {
       "x": 2020,
       "y": 420,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 2300,
@@ -2839,27 +2840,32 @@
     {
       "x": 2340,
       "y": 180,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 3540,
       "y": 260,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 3860,
       "y": 260,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 4180,
       "y": 260,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 4500,
       "y": 260,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 3860,
@@ -2925,17 +2931,20 @@
     {
       "x": 8220,
       "y": 540,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 8740,
       "y": 540,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 9300,
       "y": 540,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 7860,
@@ -3129,7 +3138,8 @@
     {
       "x": 27140,
       "y": 460,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 27420,
@@ -3164,7 +3174,8 @@
     {
       "x": 29140,
       "y": 420,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 29300,
@@ -3249,27 +3260,32 @@
     {
       "x": 3140,
       "y": 20,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 3260,
       "y": 20,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 3380,
       "y": 60,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 3500,
       "y": 140,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 3620,
       "y": 220,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 3980,
@@ -3279,97 +3295,116 @@
     {
       "x": 4340,
       "y": 340,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 4460,
       "y": 420,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 6100,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 6220,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 6340,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 6460,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 6580,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 6700,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 6820,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 6940,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 7060,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 10380,
       "y": 260,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 10500,
       "y": 220,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 10820,
       "y": 380,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 10940,
       "y": 340,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 11060,
       "y": 340,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 11180,
       "y": 380,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 10420,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 10540,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 10660,
@@ -3379,27 +3414,32 @@
     {
       "x": 10780,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 10900,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 11020,
       "y": 340,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 11140,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 11260,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 12100,
@@ -3409,57 +3449,68 @@
     {
       "x": 12220,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 12340,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 29340,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 29460,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 29580,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 29700,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 29820,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 29940,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 30060,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 30180,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 30300,
       "y": 460,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 31620,

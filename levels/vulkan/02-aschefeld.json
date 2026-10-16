@@ -1520,12 +1520,14 @@
     {
       "x": 2540,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 2540,
       "y": 460,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 2700,
@@ -1615,12 +1617,14 @@
     {
       "x": 7620,
       "y": 380,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 7780,
       "y": 380,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 7940,
@@ -1720,7 +1724,8 @@
     {
       "x": 13300,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 13740,
@@ -1736,17 +1741,20 @@
     {
       "x": 14220,
       "y": 260,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 14420,
       "y": 260,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 14620,
       "y": 260,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 14820,
@@ -1766,7 +1774,8 @@
     {
       "x": 15420,
       "y": 260,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 16060,
@@ -1782,12 +1791,14 @@
     {
       "x": 16500,
       "y": 260,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 16540,
       "y": 260,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 16980,
@@ -1974,7 +1985,8 @@
     {
       "x": 26820,
       "y": 300,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 26980,
@@ -2005,27 +2017,32 @@
     {
       "x": 30060,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 30100,
       "y": 500,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 30740,
       "y": 260,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 30900,
       "y": 260,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 31060,
       "y": 260,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 31220,

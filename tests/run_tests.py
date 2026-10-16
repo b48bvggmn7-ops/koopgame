@@ -5909,6 +5909,27 @@ async def muenz_klassen(g):
     assert await g.ev("coins[0].klasse") == 'meister' and await g.ev("coins[1].klasse") == 'pfad'
     await g.steps(20)
 
+@test
+async def muenz_klassen_level(g):
+    """Nacht-Ausbau: alle Welt-Level sind eingestuft (tests/bausteine/muenzen.py --einstufen): nur Klassen pfad/geschick/
+    meister, ab Dschungel 3 mindestens 2 Meister-Münzen je Level, Münzen in Verstecken/Nischen sind Geschick; die
+    Einstufung ist aktuell (erneutes Einstufen ändert nichts)."""
+    import bildregel_pruefen as BR
+    sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
+    import muenzen as MZ, level_bau as LB
+    fehler = []
+    for datei in BR.welten_level():
+        if 'boss' in datei: continue
+        lv = LB.Level(datei)
+        alt = json.dumps(lv.ed['coins'], sort_keys=True)
+        MZ.einstufen(lv)
+        if json.dumps(lv.ed['coins'], sort_keys=True) != alt: fehler.append(f'{datei}: Einstufung nicht aktuell')
+        kl = [m.get('klasse', 'pfad') for m in lv.ed['coins']]
+        if set(kl) - {'pfad', 'geschick', 'meister'}: fehler.append(f'{datei}: fremde Klasse {set(kl)}')
+        if datei not in ('dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json') and kl.count('meister') < 2:
+            fehler.append(f'{datei}: nur {kl.count("meister")} Meister-Münzen')
+    assert not fehler, fehler
+
 sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
 import plaene as NB   # Bot-Pläne der Nacht-Bausteine (tests/bausteine/plaene.py)
 
