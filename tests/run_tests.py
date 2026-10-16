@@ -5996,6 +5996,24 @@ async def nacht_stellen_vulkan(g):
     fehler = await nacht_stellen_pruefen(g, 'vulkan')
     assert not fehler, fehler
 
+@test
+async def checkpoints_sicher(g):
+    """Nacht-Ausbau: an JEDEM Checkpoint aller Welt-Level (Test-Sprung wie Taste C) stehen beide Figuren nach 1 s sicher
+    auf dem Boden (nicht tot, nicht gefallen) – auch an den in der Nacht ergänzten Checkpoints."""
+    import bildregel_pruefen as BR
+    fehler = []
+    for datei in BR.welten_level():
+        if 'boss' in datei: continue
+        await koop_level(g, datei)
+        n = await g.ev("checkpointDefs.length")
+        for i in range(n):
+            await g.ev(f"activeCp = {i - 1}; testJump(+1); deathState = null; for(const k in KEYS) KEYS[k] = false;")
+            await g.steps(54)
+            r = await g.ev("({tot: !!deathState, m: p1.grounded, f: p2.grounded, my: p1.y, fy: p2.y, cy: checkpointDefs[activeCp].y, cx: checkpointDefs[activeCp].x})")
+            if r['tot'] or not r['m'] or not r['f'] or abs(r['my'] - r['cy']) > 45 or abs(r['fy'] - r['cy']) > 45:
+                fehler.append(f"{datei} Checkpoint {i + 1} (Spalte {int(r['cx'] // 40)}): {r}")
+    assert not fehler, fehler
+
 def level_teil(k, v):
     """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
     zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""
