@@ -4,7 +4,7 @@
 const fig = {
   x: 0, y: 0, vx: 0, vy: 0, px: 0, py: 0,
   amBoden: false, coyote: 0, puffer: 0,
-  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0, dashWand: 0, nachDashZeit: 0, dashSprungMerk: 0, wandAlter: 99, wandWarten: 0, losgelassen: false, sprungZahl: 0,
+  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0, wandHaltRest: 0, dashWand: 0, nachDashZeit: 0, dashSprungMerk: 0, wandAlter: 99, wandWarten: 0, losgelassen: false, sprungZahl: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
   haengt: null, ball: null, rollWinkel: 0, laufWinkel: 0, laufWinkelVor: 0,
   hakenPuffer: 0, kette: 0,
@@ -19,7 +19,7 @@ const luftDashMax = () => V.dashLuft >= 4 ? Infinity : V.dashLuft;
 function figurAufPunkt(p){
   fig.x = p.c * K + K / 2 - FIG_B / 2; fig.y = p.r * K - FIG_H;
   fig.vx = fig.vy = 0; fig.px = fig.x; fig.py = fig.y;
-  fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = fig.wandWarten = fig.dashWand = fig.nachDashZeit = fig.dashSprungMerk = 0; fig.wandAlter = 99; fig.sprint = 0; fig.sprungAktiv = false;
+  fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = fig.wandWarten = fig.dashWand = fig.nachDashZeit = fig.dashSprungMerk = fig.wandHaltRest = 0; fig.wandAlter = 99; fig.sprint = 0; fig.sprungAktiv = false;
   fig.dash = null; fig.luftDashes = luftDashMax(); fig.ladung = 0; fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
   fig.wandSprungSeite = 0; fig.seil = null; fig.fehlschuss = null; fig.rutsch = 0;
   fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
@@ -382,6 +382,8 @@ function figurSchritt(){
     }
     // an der Wand langsam rutschen (Variante A immer; „Wie im Spiel“ nur mit Schalter – im Spiel gibt es kein Rutschen)
     if(fig.wand && (MECHANIKEN.wand.aktiv !== 1 || V.wandRutschenAn) && fig.vy > V.wandRutschen) fig.vy = V.wandRutschen;
+    // kurz an der Wand halten: nach dem Anspringen erst fallen, wenn die Haltezeit um ist (der Aufstieg läuft normal aus)
+    if(fig.wand && fig.wandHaltRest > 0 && fig.vy >= 0 && fig.sprungZahl === sprungZahlVor){ fig.vy = 0; fig.wandHaltRest--; }
     if(amSeil) seilNachSchwerkraft();   // am Boden mit Seil: Seil hält trotzdem
   }
   if(fig.puffer > 0) fig.puffer--;
@@ -415,7 +417,7 @@ function figurSchritt(){
     if(wandNeben(fig, 1, reichweite)) fig.wand = 1; else if(wandNeben(fig, -1, reichweite)) fig.wand = -1;
     if(fig.wand){
       fig.letzteWand = fig.wand;
-      if(!wandVorher){ fig.wandEintritt = Math.abs(vxVor); if(!fig.dash) dashAufladen(); }   // NEUE Wandberührung lädt auf
+      if(!wandVorher){ fig.wandEintritt = Math.abs(vxVor); if(!fig.dash) dashAufladen(); fig.wandHaltRest = V.wandHalt ? V.wandHaltZeit : 0; }   // NEUE Wandberührung lädt auf
       // per Dash an die Wand (kaputte Wand = kein Kontakt): Fenster zählt ab dem Aufprall, einmal pro Dash
       if(fig.dash || fig.nachDashZeit > 0){ fig.dashWand = V.dashWandFenster + 1; fig.nachDashZeit = 0; if(fig.dash) fig.dash.anWand = true; }
     }
