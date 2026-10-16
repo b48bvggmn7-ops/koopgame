@@ -4,7 +4,7 @@
 const fig = {
   x: 0, y: 0, vx: 0, vy: 0, px: 0, py: 0,
   amBoden: false, coyote: 0, puffer: 0,
-  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0, wandAlter: 99, wandWarten: 0, losgelassen: false, sprungZahl: 0,
+  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0, dashWand: 0, nachDashZeit: 0, dashSprungMerk: 0, wandAlter: 99, wandWarten: 0, losgelassen: false, sprungZahl: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
   haengt: null, ball: null, rollWinkel: 0, laufWinkel: 0, laufWinkelVor: 0,
   hakenPuffer: 0, kette: 0,
@@ -19,7 +19,7 @@ const luftDashMax = () => V.dashLuft >= 4 ? Infinity : V.dashLuft;
 function figurAufPunkt(p){
   fig.x = p.c * K + K / 2 - FIG_B / 2; fig.y = p.r * K - FIG_H;
   fig.vx = fig.vy = 0; fig.px = fig.x; fig.py = fig.y;
-  fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = fig.wandWarten = 0; fig.wandAlter = 99; fig.sprint = 0; fig.sprungAktiv = false;
+  fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = fig.wandWarten = fig.dashWand = fig.nachDashZeit = fig.dashSprungMerk = 0; fig.wandAlter = 99; fig.sprint = 0; fig.sprungAktiv = false;
   fig.dash = null; fig.luftDashes = luftDashMax(); fig.ladung = 0; fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
   fig.wandSprungSeite = 0; fig.seil = null; fig.fehlschuss = null; fig.rutsch = 0;
   fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
@@ -132,6 +132,8 @@ function springen(){
 }
 function wandSprungMoeglich(rx){
   if(!V.wandsprung) return false;
+  // nach einem Dash gegen die Wand: Wandsprung immer (Richtung egal, auch dieselbe Wandseite nochmal)
+  if(V.dashWandsprung && fig.dashWand > 0 && fig.wand){ fig.letzteWand = fig.wand; return true; }
   if(MECHANIKEN.wand.aktiv === 1){
     // genau wie im Spiel (js/08-figur-physik-seil.js): Tastatur nur, solange die Wand berührt wird; Controller darf die
     // Wand bis 250 ms (14 Schritte) vorher berührt haben. Taste von der Wand weg, je Seite einmal, nicht aus dem Stand.
@@ -154,7 +156,7 @@ function wandSpringen(){
   } else { fig.vx = -s * V.wandSprungX; fig.vy = -V.wandSprungY; }
   const spiel = MECHANIKEN.wand.aktiv === 1;
   fig.blick = -s; fig.sperre = spiel ? V.wandSpielSperre : V.wandSperre; fig.wandZeit = 0; fig.puffer = 0; fig.wandWarten = 0;
-  fig.wandAlter = 99; fig.sprungAktiv = !spiel; fig.losgelassen = false; fig.sprungZahl++;
+  fig.wandAlter = 99; fig.dashWand = 0; fig.dashSprungMerk = 0; fig.sprungAktiv = !spiel; fig.losgelassen = false; fig.sprungZahl++;
   dehnen(fig, 0.75, 1.28); staubWolke(s > 0 ? fig.x + FIG_B : fig.x, fig.y + FIG_H / 2, 6, -s);
   trefferStopp(1); wackeln(0.12); ton('wand');
 }
@@ -198,7 +200,7 @@ function dashStarten(){
 }
 function dashBeenden(abgebrochen){
   const d = fig.dash; if(!d) return;
-  fig.dash = null; fig.nachDash = d;
+  fig.dash = null; fig.nachDash = d; fig.nachDashZeit = 10;   // Schwung trägt noch kurz bis an eine Wand
   const variante = MECHANIKEN.dash.aktiv;
   if(variante === 1){ fig.gleit = V.dashGleitZeit; }   // B: Schwung bleibt ganz
   else {
@@ -260,6 +262,10 @@ function figurSchritt(){
   const spielSprung = V.sprungWieSpiel;
   if(E.springen) fig.puffer = (spielSprung ? 0 : V.sprungPuffer) + 1;   // wie im Spiel: kein Puffer, nur genau dieser Schritt
   if(E.dash) fig.dashPuffer = V.dashPuffer + 1;
+  // Wandsprung nach dem Dash: Springen während des Dashs (A/B) merken, bis er an der Wand endet
+  if(E.springen && (fig.dash || fig.nachDashZeit > 0) && MECHANIKEN.dash.aktiv < 2) fig.dashSprungMerk = V.dashSprungMerken + 1;
+  if(fig.dashWand > 0 && !(fig.dash && fig.dash.anWand)) fig.dashWand--;
+  if(fig.nachDashZeit > 0) fig.nachDashZeit--;
   fig.coyote = fig.amBoden ? (spielSprung ? 0 : V.coyote) + 1 : fig.coyote - 1;   // wie im Spiel: keine Coyote-Time
   fig.wandAlter = fig.wand ? 0 : fig.wandAlter + 1;
   // Controller wie im Spiel: ✕ in der Luft gedrückt -> Wandsprung wartet kurz auf das Stick-Umlenken
@@ -340,6 +346,7 @@ function figurSchritt(){
 
     // Springen: Puffer (früh gedrückt) + Coyote-Time (kurz nach der Kante) + Wandsprung; C: Dash-Sprung im Fenster danach
     const sprungZahlVor = fig.sprungZahl;
+    if(V.dashWandsprung && fig.dashSprungMerk > 0 && fig.dashWand > 0 && fig.wand){ fig.puffer = 1; fig.dashSprungMerk = 0; }
     if(fig.puffer <= 0 && fig.wandWarten > 0 && !sprungVerbraucht && !fig.amBoden && MECHANIKEN.wand.aktiv === 1 && wandSprungMoeglich(rxs)) wandSpringen();
     if(fig.puffer > 0 && !sprungVerbraucht){
       if(fig.hyperFenster > 0 && fig.nachDash && (fig.coyote > 0 || fig.wandZeit > 0)) dashSprung(fig.nachDash);
@@ -373,12 +380,13 @@ function figurSchritt(){
       }
       fig.vy = Math.min(fig.vy + g, V.maxFall);
     }
-    // an der Wand langsam rutschen (Variante A); im Spiel (B) gibt es kein Rutschen
-    if(fig.wand && MECHANIKEN.wand.aktiv !== 1 && fig.vy > V.wandRutschen) fig.vy = V.wandRutschen;
+    // an der Wand langsam rutschen (Variante A immer; „Wie im Spiel“ nur mit Schalter – im Spiel gibt es kein Rutschen)
+    if(fig.wand && (MECHANIKEN.wand.aktiv !== 1 || V.wandRutschenAn) && fig.vy > V.wandRutschen) fig.vy = V.wandRutschen;
     if(amSeil) seilNachSchwerkraft();   // am Boden mit Seil: Seil hält trotzdem
   }
   if(fig.puffer > 0) fig.puffer--;
   if(fig.wandWarten > 0) fig.wandWarten--;
+  if(fig.dashSprungMerk > 0) fig.dashSprungMerk--;
 
   // bewegen + Kollision
   const warBoden = fig.amBoden, fallTempo = fig.vy, vxVor = fig.vx, vyVor = fig.vy;
@@ -408,6 +416,8 @@ function figurSchritt(){
     if(fig.wand){
       fig.letzteWand = fig.wand;
       if(!wandVorher){ fig.wandEintritt = Math.abs(vxVor); if(!fig.dash) dashAufladen(); }   // NEUE Wandberührung lädt auf
+      // per Dash an die Wand (kaputte Wand = kein Kontakt): Fenster zählt ab dem Aufprall, einmal pro Dash
+      if(fig.dash || fig.nachDashZeit > 0){ fig.dashWand = V.dashWandFenster + 1; fig.nachDashZeit = 0; if(fig.dash) fig.dash.anWand = true; }
     }
   }
 

@@ -93,8 +93,13 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
   klein. Gemessen: gleiche Höhen wie im Spiel. Aus = mit Coyote-Time und Puffer (Spielwiese bisher).
 - Wandsprung: Standard ist jetzt Variante B „Wie im Spiel“ – Taste muss von der Wand weg zeigen, je Wandseite einmal
   (bis Boden oder andere Wand), mehr Anlauf = stärkerer Wandsprung, zu langsam an die Wand = kein Wandsprung, Wand zählt
-  schon 4 px vorher, kein langsames Rutschen, danach ca. 0,3 s nicht lenkbar. Am Controller darf ✕ kurz vor dem
+  schon 4 px vorher, danach ca. 0,3 s nicht lenkbar. Am Controller darf ✕ kurz vor dem
   Stick-Umlenken kommen (wie im Spiel). Variante A (einfach) bleibt mit Taste 1 wählbar.
+- An der Wand rutscht man wieder langsam herunter (Schalter „An der Wand langsam runterrutschen“, Gruppe „Wand“;
+  im echten Spiel gibt es das nicht).
+- Wandsprung nach dem Dash (Schalter, Gruppe „Wand“): Dash gegen eine Wand -> bis 12 Schritte nach dem Aufprall geht der
+  Wandsprung immer, egal welche Richtung man hält (springt von der Wand weg, auch an derselben Wandseite nochmal).
+  Springen kurz vor dem Aufprall (im Dash) wird gemerkt. Zerbricht der Dash die Wand (Risse), gibt es keinen Wandsprung.
 - Nachbilder (durchsichtige Spur) erst ab Tempo 11: beim Laufen keine Spur mehr, nur bei Dash, Seil-Abwurf, Ringen.
 
 ## Aussehen und Dash-Aufladen
