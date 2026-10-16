@@ -166,7 +166,7 @@ schalter(G_HAKEN, 'seilKnick', 'Liane knickt an Ecken', false, 'an: die Liane wi
 schalter(G_HAFT, 'rollUmlenken', 'B: Schwung auch an normalen Wänden umlenken', false, 'wie in einer Halfpipe: an Wänden hochrollen, oben fällt man wieder ab');
 
 schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
-schalter(G_DASH, 'dashBalken', 'Dash-Anzeige als Balken', true, 'an: Balken über dem Kopf, füllt sich beim Aufladen · aus: Punkte mit Tortenstück');
+schalter(G_DASH, 'dashBalken', 'Dash-Anzeige als Balken', false, 'an: Balken über dem Kopf, füllt sich beim Aufladen · aus: Punkte mit Tortenstück');
 
 // ---------- Schweinchen (2. Figur) und „Fliegender Anker“ ----------
 const G_SCHWEIN = 'Schweinchen';
@@ -263,7 +263,7 @@ let figurAussehen = 'affe';
 function einstellungenObjekt(){
   const werte = {}; for(const w of WERTE_LISTE) werte[w.key] = V[w.key];
   const varianten = {}; for(const id in MECHANIKEN) varianten[id] = MECHANIKEN[id].aktiv;
-  return {spielwiese: 3, figur: figurAussehen, werte, varianten};
+  return {spielwiese: 4, figur: figurAussehen, werte, varianten};
 }
 function einstellungenAnwenden(o){
   if(!o || typeof o !== 'object') return false;
@@ -272,6 +272,7 @@ function einstellungenAnwenden(o){
   for(const w of WERTE_LISTE){
     if(!o.werte || !(w.key in o.werte)) continue;
     if(alt && w.key === 'nachbildTempo') continue;
+    if((o.spielwiese || 1) < 4 && w.key === 'dashBalken') continue;   // Standard wieder Punkte
     const v = o.werte[w.key];
     if(w.art === 'schalter') V[w.key] = !!v;
     else if(typeof v === 'number' && isFinite(v)) V[w.key] = klemmen(v, w.min, w.max);

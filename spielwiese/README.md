@@ -107,8 +107,7 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
   Erdschichten und dunkler Kontur, Stacheln und Haken-Punkte wie im Spiel, Schatten unter der Figur. Nachgezeichnet,
   kein geladener Code aus `../js/`. Die Figur rollt beim Laufen wie im Spiel (Schalter „Figur rollt“).
 - Dash lädt langsam auf (Panel „Dash“, Standard an): jeder Dash kostet einen Punkt, der sich in ca. 0,9 s wieder
-  füllt (Balken über dem Kopf: ein Feld je Dash, das ladende Feld füllt sich, kurzes Aufleuchten wenn voll;
-  Schalter „Dash-Anzeige als Balken“ aus = Punkte mit Tortenstück). Kristalle füllen sofort. Aus = alter Modus (Landung/Wand/Haken füllen sofort).
+  füllt (Punkt über dem Kopf, das Tortenstück zeigt das Aufladen; Schalter „Dash-Anzeige als Balken“ = dünner Balken). Kristalle füllen sofort. Aus = alter Modus (Landung/Wand/Haken füllen sofort).
 - Haken ohne Ziel: keine Liane mehr (Schalter „Ohne Ziel: Liane kurz ins Leere“ holt sie zurück).
 
 ## Mini-Editor (Taste B)
