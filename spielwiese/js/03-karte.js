@@ -2,7 +2,7 @@
 // Zeichen je Kästchen: '.' frei · '#' Boden/Wand · '^' Stacheln (später: Anker, Haftflächen, brechbare Wände).
 // Boden-Oberkante = Reihe 18 (Füße bei y = 18 · 40). Sichtbar sind ca. 21 Reihen.
 
-let KARTE_B = 540;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
+let KARTE_B = 600;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
 const KARTE_H = 21, BODEN_R = 18;
 let karte = [];   // karte[r][c]
 
@@ -34,6 +34,7 @@ const STATIONEN = [
   {nr: 7, name: 'Freie Fläche', von: 290, bis: 399, start: {c: 292, r: BODEN_R}, mech: null},
   {nr: 8, name: 'Spaß-Level', von: 400, bis: 479, start: {c: 402, r: BODEN_R}, mech: null},
   {nr: 9, name: 'Anker-Spielplatz', von: 480, bis: 539, start: {c: 482, r: BODEN_R}, mech: 'haken'},
+  {nr: 10, name: 'Anker-Parcours', von: 540, bis: 599, start: {c: 542, r: BODEN_R}, mech: 'haken'},
 ];
 // Schilder: Text im Bild (Spalte, Reihe der Füße des Pfostens, Zeilen)
 let SCHILDER = [];
@@ -195,6 +196,22 @@ function arenaBauen(){
   for(const c of [490, 515, 529]) setze(c, 13, c, 13, 'q');   // Schwung-Ringe im Tiefpunkt der Schwünge (gemessen)
   ZWISCHENPUNKTE.push({c: 535, r: BODEN_R});
   SCHILDER.push({c: 536, r: BODEN_R, zeilen: ['Geschafft!']});
+
+  // ----- Station 10: Anker-Parcours – alle Anker-Sorten gemischt, Insel zum Durchatmen -----
+  setze(539, 17, 539, 17, '#');
+  SCHILDER.push({c: 541, r: BODEN_R, zeilen: ['Station 10: Anker-Parcours', 'nicht trödeln: orange reißt!', 'golden = loslassen']});
+  grube(545, 593);
+  setze(549, 7, 549, 7, 's');                        // Teil 1: schwankend -> zwei Einmal-Anker hintereinander
+  setze(555, 6, 555, 6, 'e');
+  setze(561, 7, 561, 7, 'e');
+  setze(567, 6, 567, 6, 's');
+  setze(573, 5, 573, 5, 'o');
+  for(const [c, r] of [[550, 14], [568, 11], [590, 11]]) setze(c, r, c, r, 'q');   // Schwung-Ringe auf gemessener Flughöhe
+  setze(577, 12, 580, 17, '#');                      // Insel
+  ZWISCHENPUNKTE.push({c: 578, r: 12});
+  setze(584, 6, 584, 6, 'e');                        // Teil 2: von der Insel weg
+  setze(589, 7, 589, 7, 's');
+  SCHILDER.push({c: 596, r: BODEN_R, zeilen: ['Ziel!', 'Anker-Profi :)']});
 }
 arenaBauen();
 

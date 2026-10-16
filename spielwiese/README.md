@@ -53,6 +53,8 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 
 9. Anker-Spielplatz – schwankende Anker, Einmal-Anker (orange, reißen), Schwung-Ringe (gold, beschleunigen) über
    einer langen Stachelgrube.
+10. Anker-Parcours – alle Anker-Sorten gemischt (schwankend, zwei Einmal-Anker hintereinander, Ringe), Insel mit
+   Zwischenpunkt, danach weiter bis ins Ziel.
 
 ## Liane und Haken (Panel „Haken“)
 - Die Liane ist eine grüne Ranke mit Blättern, hängt locker durch und schlängelt sich im Flug.
@@ -68,6 +70,11 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 3. „Liane knickt an Ecken“ (Gruppe Haken): die Liane wickelt sich um Ecken und wieder ab, statt durchzuschneiden.
 4. „Schwung auch an normalen Wänden umlenken“ (Gruppe Unterseite, Rollen B): Halfpipe – an Wänden hochrollen,
    wer oben langsam wird, fällt ab.
+
+## Laufen
+- „Laufen wie im Spiel“ (Panel „Laufen & Springen“, Standard an): wie im echten Spiel – kräftiger Schub je Schritt,
+  nach ca. 0,1 s volles Tempo (7,2), ohne Taste bremst der Boden. Aus = weiches Anlaufen mit langsamem Sprint.
+- Nachbilder (durchsichtige Spur) erst ab Tempo 11: beim Laufen keine Spur mehr, nur bei Dash, Seil-Abwurf, Ringen.
 
 ## Aussehen und Dash-Aufladen
 - Spiel-Look (Panel „Aussehen“): Dschungel wie im Spiel – Himmel mit Sonne, Hügel und Bäume, Boden mit Gras,

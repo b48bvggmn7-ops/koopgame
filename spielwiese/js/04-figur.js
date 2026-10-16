@@ -287,7 +287,23 @@ function figurSchritt(){
     fig.vy = Math.min(fig.vy + V.schwerkraft, V.maxFall * 1.5);
     seilNachSchwerkraft();
   } else if(!fig.dash){
-    // Laufen (mit Anlauf-Sprint wie im Spiel)
+    // Laufen wie im Spiel (Schalter): fester Schub je Schritt, Sprint-Zuwachs, ohne Taste Reibung, gedeckelt auf das
+    // Sprint-Tempo – mehr Schwung (Dash, Seil, Ring) bleibt in der Luft erhalten und klingt am Boden ab
+    if(V.laufWieSpiel && fig.gleit <= 0){
+      const vor = fig.vx, kontrolle = fig.amBoden ? 1 : V.luftKontrolle;
+      if(fig.sperre > 0){ fig.sperre--; fig.vx *= V.luftReibung; }
+      else {
+        fig.vx += rx * V.laufTempo * V.laufSchub * kontrolle;
+        if(fig.amBoden && rx && Math.abs(fig.vx) >= V.laufTempo * 0.9 && Math.sign(fig.vx) === rxs) fig.vx += rxs * V.spielSprint;
+        if(!rx){ fig.vx *= fig.amBoden ? V.bodenReibung : V.luftReibung; if(Math.abs(fig.vx) < 0.05) fig.vx = 0; }
+        const grenze = Math.max(V.sprintTempo, Math.abs(vor) * (fig.amBoden ? 0.9 : 0.995));
+        fig.vx = klemmen(fig.vx, -grenze, grenze);
+      }
+      fig.sprint = klemmen((Math.abs(fig.vx) - V.laufTempo) / Math.max(0.1, V.sprintTempo - V.laufTempo), 0, 1);
+      if(fig.amBoden && rx && rxs !== Math.sign(vor) && Math.abs(vor) > 3 && Math.random() < 0.5)
+        staubWolke(fig.x + FIG_B / 2, fig.y + FIG_H, 1, Math.sign(vor));
+    } else {
+    // Laufen (weich, mit langsamem Anlauf-Sprint – Spielwiese bisher)
     const gleicheRichtung = rx && rxs === Math.sign(fig.vx);
     if(V.sprint && gleicheRichtung && Math.abs(fig.vx) > V.laufTempo * 0.9) fig.sprint = Math.min(1, fig.sprint + V.sprintZuwachs);
     else if(fig.amBoden && !gleicheRichtung) fig.sprint = Math.max(0, fig.sprint - 0.08);
@@ -302,6 +318,7 @@ function figurSchritt(){
     fig.vx += (ziel - fig.vx) * griff;
     if(fig.amBoden && rx && rxs !== Math.sign(vorher) && Math.abs(vorher) > 3 && Math.random() < 0.5)
       staubWolke(fig.x + FIG_B / 2, fig.y + FIG_H, 1, Math.sign(vorher));   // Bremsstaub beim Umdrehen
+    }
 
     // Springen: Puffer (früh gedrückt) + Coyote-Time (kurz nach der Kante) + Wandsprung; C: Dash-Sprung im Fenster danach
     if(fig.puffer > 0 && !sprungVerbraucht){

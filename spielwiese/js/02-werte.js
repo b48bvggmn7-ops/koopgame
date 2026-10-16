@@ -15,6 +15,12 @@ wert('Allgemein', 'spieltempo', 'Spieltempo', 0.9, 0.3, 1.5, 0.05, 'wie im Spiel
 
 // ---------- Laufen & Springen (Startwerte = echtes Spiel) ----------
 const G_LAUF = 'Laufen & Springen';
+schalter(G_LAUF, 'laufWieSpiel', 'Laufen wie im Spiel', true, 'an: kräftiger Schub je Schritt, nach ~0,1 s volles Tempo (7,2), ohne Taste bremst der Boden · aus: weiches Anlaufen mit langsamem Sprint (Spielwiese bisher)');
+wert(G_LAUF, 'laufSchub', 'Wie im Spiel: Schub je Schritt (× Lauftempo)', 0.35, 0.05, 1, 0.01);
+wert(G_LAUF, 'spielSprint', 'Wie im Spiel: Sprint-Zuwachs', 0.045, 0, 0.3, 0.005);
+wert(G_LAUF, 'bodenReibung', 'Wie im Spiel: Bremsen am Boden (je Schritt bleibt)', 0.78, 0.3, 0.99, 0.01);
+wert(G_LAUF, 'luftReibung', 'Wie im Spiel: Bremsen in der Luft (je Schritt bleibt)', 0.94, 0.5, 1, 0.005);
+wert(G_LAUF, 'luftKontrolle', 'Wie im Spiel: Lenken in der Luft (Anteil)', 0.85, 0.1, 1, 0.05);
 wert(G_LAUF, 'laufTempo', 'Lauftempo', 4.4, 1, 10, 0.1, 'px pro Schritt');
 schalter(G_LAUF, 'sprint', 'Anlauf-Sprint (wie im Spiel)', true, 'wer lange in eine Richtung läuft, wird schneller');
 wert(G_LAUF, 'sprintTempo', 'Sprint-Höchsttempo', 7.2, 4, 14, 0.1);
@@ -170,7 +176,7 @@ wert(G_GEF, 'stoppFaktor', 'Trefferstopp: Länge', 1, 0, 4, 0.1);
 schalter(G_GEF, 'fxStaub', 'Staub und Partikel', true);
 wert(G_GEF, 'staubMenge', 'Staub: Menge', 1, 0, 3, 0.1);
 schalter(G_GEF, 'fxNachbilder', 'Nachbilder (Tempo-Spur)', true);
-wert(G_GEF, 'nachbildTempo', 'Nachbilder ab Tempo', 7, 2, 20, 0.5, 'darunter keine Spur');
+wert(G_GEF, 'nachbildTempo', 'Nachbilder ab Tempo', 11, 2, 25, 0.5, 'darunter keine Spur (Laufen erreicht 7,2 – darüber nur Dash, Seil, Ringe)');
 schalter(G_GEF, 'fxDehnen', 'Dehnen und Stauchen', true);
 wert(G_GEF, 'dehnStaerke', 'Dehnen: Stärke', 1, 0, 2.5, 0.05);
 wert(G_GEF, 'hartLandung', 'Harte Landung ab Falltempo', 13, 6, 30, 0.5, 'dann Wackeln + kurzer Stopp');
@@ -235,13 +241,15 @@ let figurAussehen = 'affe';
 function einstellungenObjekt(){
   const werte = {}; for(const w of WERTE_LISTE) werte[w.key] = V[w.key];
   const varianten = {}; for(const id in MECHANIKEN) varianten[id] = MECHANIKEN[id].aktiv;
-  return {spielwiese: 1, figur: figurAussehen, werte, varianten};
+  return {spielwiese: 2, figur: figurAussehen, werte, varianten};
 }
 function einstellungenAnwenden(o){
   if(!o || typeof o !== 'object') return false;
   if(o.figur === 'affe' || o.figur === 'schwein') figurAussehen = o.figur;
+  const alt = (o.spielwiese || 1) < 2;   // ältere Speicherstände: geänderte Standardwerte nicht überschreiben
   for(const w of WERTE_LISTE){
     if(!o.werte || !(w.key in o.werte)) continue;
+    if(alt && w.key === 'nachbildTempo') continue;
     const v = o.werte[w.key];
     if(w.art === 'schalter') V[w.key] = !!v;
     else if(typeof v === 'number' && isFinite(v)) V[w.key] = klemmen(v, w.min, w.max);
