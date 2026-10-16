@@ -174,13 +174,18 @@ def kombis_neu(d, ks, hooks, gr, winds, pilze, flaechen):
     def nah_wind(c0, c1): return any(c0 - A <= wc <= c1 + A for wc, wr in winds)
     def nah_grube(c0, c1, weite=A): return any(c0 - weite <= g1 and g0 <= c1 + weite for g0, g1 in gr)
     # optionale Extras zählen NICHT als Kombi: S1-Versteck (2 Durchbruch-Kästchen als Boden, darunter die Mulde) und
-    # S2-Haft-Arm (eine Reihe Haftfläche, Meister-Münze unter dem Arm-Ende)
+    # S2-Haft-Arm / S3-Haft-Insel (eine Reihe Haftfläche, Meister-Münze am Ende), S4-Nische
     fest = B.feste_kaestchen(d)
     meister = {(B.spalte(m['x']), int(m['y'] // 40)) for m in d.get('coins', []) if m.get('klasse') == 'meister'}
-    def s1(g): return len(g) == 2 and g[0][1] == g[1][1] and all((c, r + 1) not in fest for c, r in g)
-    def s2(g):
+    def s1(g):
+        if len(g) == 2 and g[0][1] == g[1][1] and all((c, r + 1) not in fest for c, r in g): return True
+        if len(g) == 1:   # S4-Nische: ein Kästchen, daneben eine geschlossene Mulde
+            c, r = g[0]
+            return any((c + d, r) not in fest and (c + d, r - 1) in fest and (c + d, r + 1) in fest for d in (-1, 1))
+        return False
+    def s2(g):   # S2-Arm (Meister-Münze unter dem Ende) bzw. S3-Insel (Meister-Münze oben auf dem Ende)
         rs = {r for c, r in g}; cs = [c for c, r in g]
-        return len(rs) == 1 and ((min(cs), min(rs) + 1) in meister or (max(cs), min(rs) + 1) in meister)
+        return len(rs) == 1 and any((x, min(rs) + d) in meister for x in (min(cs), max(cs)) for d in (1, -1))
     bruch = [g for g in B.gruppen({z for o in d.get('bruchWaende', []) for z in B.felder_zellen(o)}) if not s1(g)]
     for g in bruch:
         c0, c1 = g[0][0], g[-1][0]; m = (c0 + c1) // 2

@@ -2887,9 +2887,10 @@
       "color": "blue"
     },
     {
-      "x": 6140,
-      "y": 300,
-      "color": "pink"
+      "x": 6300,
+      "y": 20,
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 6300,
@@ -3084,9 +3085,10 @@
       "color": "blue"
     },
     {
-      "x": 19940,
-      "y": 580,
-      "color": "pink"
+      "x": 20300,
+      "y": 420,
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 22140,
@@ -6341,7 +6343,20 @@
       "h": 40
     }
   ],
-  "haftflaechen": [],
+  "haftflaechen": [
+    {
+      "x": 6120,
+      "y": 40,
+      "w": 200,
+      "h": 40
+    },
+    {
+      "x": 20120,
+      "y": 440,
+      "w": 200,
+      "h": 40
+    }
+  ],
   "look": "ruinen",
   "theme": "ruinen",
   "_mitfahrendeStacheln": 33

@@ -2161,9 +2161,10 @@
       "color": "blue"
     },
     {
-      "x": 5340,
-      "y": 580,
-      "color": "pink"
+      "x": 5660,
+      "y": 420,
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 5180,
@@ -2409,9 +2410,10 @@
       "color": "blue"
     },
     {
-      "x": 16260,
+      "x": 16740,
       "y": 420,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 18740,
@@ -4622,7 +4624,20 @@
       "h": 40
     }
   ],
-  "haftflaechen": [],
+  "haftflaechen": [
+    {
+      "x": 5480,
+      "y": 440,
+      "w": 200,
+      "h": 40
+    },
+    {
+      "x": 16560,
+      "y": 440,
+      "w": 200,
+      "h": 40
+    }
+  ],
   "look": "nacht",
   "theme": "nacht",
   "_mitfahrendeStacheln": 15

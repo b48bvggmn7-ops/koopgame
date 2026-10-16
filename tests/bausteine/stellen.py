@@ -113,3 +113,40 @@ for _lvl, _liste in _HAFTARME_LINKS.items():
         stelle(level=_lvl, name=f'Haft-Arm nach links über dem Abgrund an Kante {_c} (S2, optional, Meister-Münze)', wer=_w, start=(_c + 1, _r - 1), partner=(_c + 2, _r - 1),
                plan=nb_haftarm_links(_c, _r), ziel=_c, ziel_reihe=_r - 1, baustein='S2', muenze=(_c - 7, _r - 3),
                gegen=[{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'left'], 'frames': 14}, {'until': 'P.grounded', 'frames': 200}], gegen_muenze=True)
+
+# ---------------- Haft-Inseln (S3): optional, Meister-Münze oben drauf (Oberseite 4 Reihen hoch, nur über die Haftfläche) ----------------
+_HAFTINSELN = {
+    'ruinen/01-ruinen.json': [(153, 5, 'pink'), (503, 15, 'pink')],
+    'ruinen/02-mondnacht.json': [(137, 15, 'pink'), (414, 15, 'pink')],
+    'hoehle/01-kristallhoehle.json': [(108, 15, 'blue')],
+    'hoehle/02-tropfsteingang.json': [(308, 16, 'blue'), (574, 8, 'pink')],
+    'hoehle/05-foerderwerk.json': [(308, 16, 'pink')],
+    'hoehle/06-tiefenschlund.json': [(366, 5, 'blue')],
+    'vulkan/02-aschefeld.json': [(339, 16, 'pink')],
+    'vulkan/03-feuerberg.json': [(202, 15, 'pink')],
+    'vulkan/05-schlackewerk.json': [(294, 16, 'pink'), (696, 16, 'blue')],
+    'vulkan/07-kraterherz.json': [(540, 16, 'pink')],
+}
+for _lvl, _liste in _HAFTINSELN.items():
+    for (_a, _g, _farbe) in _liste:
+        _w = 'm' if _farbe == 'blue' else 'f'
+        stelle(level=_lvl, name=f'Haft-Insel {_a} (S3, optional, Meister-Münze oben)', wer=_w, start=(_a - 2, _g - 1), partner=(_a - 3, _g - 1),
+               plan=nb_haftinsel(_a, _g), ziel=_a + 5, ziel_reihe=_g - 1, baustein='S3', muenze=(_a + 4, _g - 5),
+               gegen=[{'hold': ['right'], 'until': f'P.x >= {kx(_a + 2)}'}, {'press': ['jump'], 'hold': ['jump', 'right'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}],
+               gegen_muenze=True)
+
+# ---------------- Durchbruch-Nischen (S4): optional, Münze hinter einem Durchbruch-Kästchen in der Wand ----------------
+_NISCHEN = {   # (w, g, Farbe, Richtung): Richtung 1 = Wand zeigt nach links (von links her), -1 = nach rechts
+    'hoehle/04-leuchtgrotte.json': [(198, 16, 'pink', -1), (356, 16, 'blue', -1), (586, 16, 'pink', -1)],
+    'hoehle/05-foerderwerk.json': [(564, 16, 'blue', -1), (620, 16, 'pink', -1)],
+    'hoehle/06-tiefenschlund.json': [(240, 16, 'blue', -1), (583, 16, 'pink', -1)],
+    'vulkan/05-schlackewerk.json': [(744, 14, 'pink', 1)],
+    'vulkan/06-feuerschlund.json': [(611, 16, 'blue', 1)],
+}
+for _lvl, _liste in _NISCHEN.items():
+    for (_w0, _g, _farbe, _R) in _liste:
+        _w = 'm' if _farbe == 'blue' else 'f'
+        _richtung = 'right' if _R > 0 else 'left'
+        stelle(level=_lvl, name=f'Durchbruch-Nische {_w0} (S4, optional, Münze in der Wand)', wer=_w, start=(_w0 - 3 * _R, _g - 1), partner=(_w0 - 4 * _R, _g - 1),
+               plan=nb_bruchnische(_w0) if _R > 0 else nb_bruchnische_links(_w0), ziel=_w0 - 3 if _R > 0 else _w0 + 2, ziel_reihe=_g - 1,
+               baustein='S4', muenze=(_w0 + _R, _g - 1), gegen=[{'hold': [_richtung], 'frames': 90}], gegen_muenze=True)

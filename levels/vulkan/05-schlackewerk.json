@@ -232,9 +232,9 @@
       "type": "ground"
     },
     {
-      "x": 29760,
+      "x": 29840,
       "y": 520,
-      "w": 2240,
+      "w": 2160,
       "h": 40,
       "type": "ground"
     },
@@ -1695,9 +1695,10 @@
       "color": "blue"
     },
     {
-      "x": 11380,
-      "y": 500,
-      "color": "pink"
+      "x": 11940,
+      "y": 460,
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 12420,
@@ -1956,9 +1957,10 @@
       "color": "blue"
     },
     {
-      "x": 27460,
-      "y": 620,
-      "color": "blue"
+      "x": 28020,
+      "y": 460,
+      "color": "blue",
+      "klasse": "meister"
     },
     {
       "x": 29060,
@@ -1971,9 +1973,10 @@
       "color": "blue"
     },
     {
-      "x": 29620,
-      "y": 260,
-      "color": "pink"
+      "x": 29820,
+      "y": 540,
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 29860,
@@ -4813,9 +4816,28 @@
       "y": 160,
       "w": 40,
       "h": 40
+    },
+    {
+      "x": 29760,
+      "y": 520,
+      "w": 40,
+      "h": 40
     }
   ],
-  "haftflaechen": [],
+  "haftflaechen": [
+    {
+      "x": 11760,
+      "y": 480,
+      "w": 200,
+      "h": 40
+    },
+    {
+      "x": 27840,
+      "y": 480,
+      "w": 200,
+      "h": 40
+    }
+  ],
   "welt": "vulkan",
   "tageszeit": "mittag",
   "wetter": "wechselnd"

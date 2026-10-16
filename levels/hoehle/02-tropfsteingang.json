@@ -1600,9 +1600,10 @@
       "color": "pink"
     },
     {
-      "x": 12940,
-      "y": 500,
-      "color": "blue"
+      "x": 12500,
+      "y": 460,
+      "color": "blue",
+      "klasse": "meister"
     },
     {
       "x": 13180,
@@ -1736,9 +1737,10 @@
       "color": "blue"
     },
     {
-      "x": 22660,
-      "y": 300,
-      "color": "pink"
+      "x": 23140,
+      "y": 140,
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 23620,
@@ -5345,7 +5347,20 @@
       "h": 40
     }
   ],
-  "haftflaechen": [],
+  "haftflaechen": [
+    {
+      "x": 22960,
+      "y": 160,
+      "w": 200,
+      "h": 40
+    },
+    {
+      "x": 12320,
+      "y": 480,
+      "w": 200,
+      "h": 40
+    }
+  ],
   "welt": "hoehle",
   "tageszeit": "morgen",
   "wetter": "trocken"

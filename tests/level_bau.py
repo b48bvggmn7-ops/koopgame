@@ -352,3 +352,54 @@ def s2_haftarm(lv, c, r, laenge=7, muenze=None, richtung=1):
         ce = c + laenge * R
         lv.muenze_verschieben(muenze[0], muenze[1], ce, r - 3); lv.muenze_klasse(ce, r - 3, 'meister')
     return lv
+
+FEST = ('ground', 'wall')
+
+def haftinsel_plaetze(lv, laenge=5, abstand=25):
+    """S3-Plätze: flacher Boden (Oberkante Reihe g) über laenge+6 Spalten, darüber 7 Reihen frei; dort schwebt eine Insel
+    aus Haftfläche in Reihe g-4 (Spalten a..a+laenge-1): Oberseite 4 Reihen hoch (Sprung schafft 3) -> [(a, g)]"""
+    el = _elemente_zellen(lv.alt_spiel); bot = bot_zellen(lv.datei)
+    out = []
+    for (c, g), t in sorted(lv.t.items()):
+        a = c + 3
+        if t not in FEST or g < 5 or g > 17: continue
+        spalten = range(a - 3, a + laenge + 3)
+        if any(lv.typ(cc, g) not in FEST for cc in spalten): continue
+        if any(lv.typ(cc, rr) is not None or (cc, rr) in el for cc in spalten for rr in range(g - 8, g)): continue
+        if any((cc, rr) in bot for cc in range(a - 1, a + laenge + 1) for rr in range(g - 6, g - 2)): continue
+        if out and a - out[-1][0] < abstand: continue
+        out.append((a, g))
+    return out
+
+def s3_haftinsel(lv, a, g, laenge=5, muenze=None):
+    """S3 bauen: Haftfläche Reihe g-4, Spalten a..a+laenge-1; Münze (verschoben, Meister) oben auf dem rechten Ende"""
+    for cc in range(a, a + laenge): lv.haft(cc, g - 4)
+    if muenze:
+        ce = a + laenge - 1
+        lv.muenze_verschieben(muenze[0], muenze[1], ce, g - 5); lv.muenze_klasse(ce, g - 5, 'meister')
+    return lv
+
+def bruchnische_plaetze(lv, abstand=25, richtung=1):
+    """S4-Plätze: Wandfläche (Kästchen w, Reihe g-1 fest, davor frei mit Boden; richtung 1 = Fläche zeigt nach links, man
+    kommt von links), dahinter Fels (w+R und w oben/unten, w+2R hinten) -> [(w, g)]; dort wird (w, g-1) Durchbruch und
+    (w+R, g-1) eine Mulde mit Münze"""
+    el = _elemente_zellen(lv.alt_spiel); R = richtung
+    out = []
+    for (w, r), t in sorted(lv.t.items()):
+        g = r + 1
+        if t not in FEST or g > 17 or g < 1: continue
+        if lv.typ(w - R, g - 1) is not None or lv.typ(w - R, g - 2) is not None or lv.typ(w - R, g) not in FEST: continue
+        if lv.typ(w - 2 * R, g - 1) is not None or lv.typ(w - 2 * R, g) not in FEST: continue
+        if any(lv.typ(*z) not in FEST for z in ((w, g - 2), (w, g), (w + R, g - 2), (w + R, g - 1), (w + R, g), (w + 2 * R, g - 1))): continue
+        if any((w + dc * R, rr) in el for dc in range(-3, 3) for rr in range(g - 3, g + 1)): continue
+        if out and abs(w - out[-1][0]) < abstand: continue
+        out.append((w, g))
+    return out
+
+def s4_bruchnische(lv, w, g, muenze=None, richtung=1):
+    """S4 bauen: (w, g-1) Durchbruch, (w+R, g-1) leer; Münze (verschoben, Geschick) in die Nische"""
+    R = richtung
+    lv.bruch(w, g - 1); lv.leer(w + R, g - 1)
+    if muenze:
+        lv.muenze_verschieben(muenze[0], muenze[1], w + R, g - 1); lv.muenze_klasse(w + R, g - 1, 'geschick')
+    return lv
