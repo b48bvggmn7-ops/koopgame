@@ -14,7 +14,7 @@ solids, spikes, bruch, haft, hooks = [], [], [], [], []
 def rect(c0, r0, c1, r1, typ='ground'): solids.append({'x': c0*T, 'y': r0*T, 'w': (c1-c0+1)*T, 'h': (r1-r0+1)*T, 'type': typ})
 def grube(c0, c1):
     rect(c0, 17, c1, 17)
-    for c in range(c0, c1 + 1): spikes.append({'x': c*T, 'y': 16*T, 'dir': 0, 'w': T, 'h': T})
+    for c in range(c0, c1 + 1): spikes.append({'x': c*T + T//2, 'y': 17*T, 'dir': 0, 'w': T, 'h': T})   # Spiel-Format: x = Mitte, y = Unterkante
 # B1
 rect(0, 15, 19, 17); grube(20, 29); rect(30, 15, 38, 17)
 # B2: Gang (dicke Decke bis Reihe 12) mit Durchbruch-Wand Spalte 38, direkt dahinter Grube 39–47
@@ -27,8 +27,8 @@ rect(96, 6, 96, 13, 'wall'); rect(101, 6, 101, 14, 'wall'); rect(96, 15, 101, 17
 bruch += [{'x': c*T, 'y': 5*T, 'w': T, 'h': T} for c in range(97, 101)]
 rect(96, 5, 96, 5, 'wall'); rect(101, 5, 112, 5); rect(113, 5, 113, 14, 'wall')   # oben: Sims 101–112, rechts Wand runter
 rect(102, 15, 125, 17)
-# B5: Grube 126–137 mit Haken (131, 9), Durchbruch-Wand 138 direkt an der Grube (Reihen 11–14) unter fester Wand (4–10)
-grube(126, 137); hooks.append({'x': 131*T + 20, 'y': 9*T + 20, 'radius': 200})
+# B5: Grube 126–137 mit Haken (132, 9), Durchbruch-Wand 138 direkt an der Grube (Reihen 11–14) unter fester Wand (4–10)
+grube(126, 137); hooks.append({'x': 132*T + 20, 'y': 9*T + 20, 'radius': 200})
 rect(138, 15, 150, 17); rect(138, 4, 138, 10, 'wall'); bruch += [{'x': 138*T, 'y': r*T, 'w': T, 'h': T} for r in range(11, 15)]
 # B6: Grube 151–168, Haftdecke Reihe 11 über 150–160, Landung ab 169
 grube(151, 166); rect(144, 5, 160, 10, 'wall'); haft.append({'x': 150*T, 'y': 11*T, 'w': 11*T, 'h': T}); rect(167, 15, 185, 17)

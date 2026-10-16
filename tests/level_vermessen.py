@@ -85,7 +85,7 @@ def vermessen(datei):
     for s in d.get('solids', []):
         if s.get('type') == 'door': fest.update(B.felder_zellen(s))
     gefahr = set()
-    for sp in d.get('spikes', []): gefahr.add((B.spalte(sp['x']), B.reihe(sp['y'])))
+    for sp in d.get('spikes', []): gefahr.add((B.spalte(sp['x']), B.reihe(sp['y'] - 1)))   # y = Unterkante
     gefahr |= zellen_von(d, 'lava')
     hilfe = set()   # Kästchen mit Hilfe (Haken-Umkreis grob, Pilz, Aufwind, bewegte Plattform, Teleporter, Wechselboden)
     for h in d.get('hooks', []):

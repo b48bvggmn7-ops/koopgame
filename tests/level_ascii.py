@@ -25,7 +25,7 @@ def bild(datei, c0, c1, r0=-3, r1=17):
                   ('checkpoints', 'C'), ('teleporters', 'T'), ('traps', 't'), ('pressen', 'X'), ('boulders', 'O')):
         for o in d.get(f, []):
             z = pkt(o)
-            if f == 'checkpoints': z = (z[0], z[1] - 1)
+            if f in ('checkpoints', 'spikes'): z = (B.spalte(o['x']), B.reihe(o['y'] - 1))   # Fußpunkt / Unterkante
             g[z] = ch
     for k, ch in (('startM', 'M'), ('startF', 'F'), ('goal', 'G')):
         if d.get(k): g[(B.spalte(d[k]['x']), B.reihe(d[k]['y']) - 1)] = ch

@@ -9,7 +9,7 @@ def nb_dashgrube(kante, hoch=False):
             {'hold': ['right'], 'until': 'P.vy > -3', 'frames': 60},
             {'press': ['dash'], 'hold': ['right'] + (['swimUp'] if hoch else []), 'frames': 2}, LANDEN]
 
-def nb_bruchtor(wand, vorlauf=3):
+def nb_bruchtor(wand, vorlauf=1):
     """B2: vorlauf Kästchen vor der Durchbruch-Wand Dash nach vorn, im Bruch-Fenster springen"""
     return [{'hold': ['right'], 'until': f'P.x >= {kx(wand - vorlauf)}'},
             {'press': ['dash'], 'hold': ['right'], 'until': 'P.bruchFenster > 0', 'frames': 40},
@@ -37,7 +37,7 @@ def nb_haken_bruch(absprung, wand):
     """B5 Affe: springen, Haken greifen, schwingen, loslassen, vor der Wand Dash nach vorn"""
     return [{'hold': ['right'], 'until': f'P.x >= {kx(absprung)}'},
             {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
-            {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 500},
+            {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 70 && P.vx > 1', 'frames': 500},
             {'press': ['dash'], 'hold': ['right'], 'frames': 2}, LANDEN]
 
 def nb_segel_dash(absprung, dash_bei, hoch=False):

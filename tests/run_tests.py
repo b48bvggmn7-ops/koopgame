@@ -5909,6 +5909,42 @@ async def muenz_klassen(g):
     assert await g.ev("coins[0].klasse") == 'meister' and await g.ev("coins[1].klasse") == 'pfad'
     await g.steps(20)
 
+sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
+import plaene as NB   # Bot-Pläne der Nacht-Bausteine (tests/bausteine/plaene.py)
+
+@test
+async def bausteine_nacht(g):
+    """Nacht-Ausbau: Bausteine B1–B7 (levels/test/bausteine-nacht.json, tests/bausteine/testlevel_bauen.py) – jeder mit
+    beiden Figuren (B7 nur Schweinchen) per Bot geschafft, und jede Gegenprobe ohne die neue Mechanik scheitert:
+    B1 Dash-Grube · B2 Durchbruch-Tor + Grube (Bruch-Fenster) · B3 Haftfläche über Grube · B4 Kamin mit Durchbruch-Deckel
+    · B5 Haken -> Durchbruch (Schweinchen: Segeln + Dash) · B6 Haftfläche + Dash · B7 Segeln + Dash (Rolle Schweinchen)."""
+    await koop_level(g, 'test/bausteine-nacht.json')
+    faelle = [
+        ('B1', 'm', 17, NB.nb_dashgrube(19), 30, [k_lauf(19, -8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, NB.LANDEN]),
+        ('B1', 'f', 17, k_segeln(19), 30, None),
+        ('B2', 'm', 33, NB.nb_bruchtor(38), 48, [{'hold': ['right'], 'frames': 200}]),
+        ('B2', 'f', 33, NB.nb_bruchtor(38), 48, None),
+        ('B3', 'm', 58, NB.nb_haft(64, 79), 79, [k_lauf(64), {'press': ['jump'], 'hold': ['jump', 'right'], 'frames': 40}, NB.LANDEN]),
+        ('B3', 'f', 58, NB.nb_haft(64, 79), 79, None),
+        ('B4', 'm', 90, NB.nb_bruchkamin(98, 5, 104), 104, [k_lauf(98), {'climb': True, 'dir': 1, 'until': f'P.x >= {kx(104)} && P.grounded', 'frames': 600}]),
+        ('B4', 'f', 90, NB.nb_bruchkamin(98, 5, 104), 104, None),
+        ('B5', 'm', 119, NB.nb_haken_bruch(124, 138), 139, NB.nb_haken_bruch(124, 138)[:3] + [NB.LANDEN]),
+        ('B5', 'f', 119, NB.nb_segel_dash(125, 134), 139, k_segeln(125)),
+        ('B6', 'm', 143, NB.nb_haft_dash(150, 160), 167, NB.nb_haft(150, 160)),
+        ('B6', 'f', 143, NB.nb_haft_dash(150, 160), 167, None),
+        ('B7', 'f', 180, NB.nb_segel_dash(185, 195), 203, k_segeln(185)),
+    ]
+    fehler = []
+    for name, wer, c, plan, ziel, gegen in faelle:
+        anders = 'f' if wer == 'm' else 'm'
+        r = await koop(g, **{wer: kat(c, 14), anders: kat(c - 2, 14)}, plans={wer: plan}, maxFrames=3000)
+        if not (r.get('done') and r['pos'][wer][0] >= ziel): fehler.append(f"{name} {wer}: {r.get('pos')} {r.get('dead')}")
+        if gegen:
+            r = await koop(g, **{wer: kat(c, 14), anders: kat(c - 2, 14)}, plans={wer: gegen}, maxFrames=1500)
+            if r.get('done') and r['pos'][wer][0] >= ziel and r['pos'][wer][1] >= (4 if name == 'B4' else 14):
+                fehler.append(f"{name} {wer}: Gegenprobe ohne neue Mechanik geht auch: {r.get('pos')}")
+    assert not fehler, fehler
+
 def level_teil(k, v):
     """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
     zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""
