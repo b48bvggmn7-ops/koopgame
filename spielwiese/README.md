@@ -15,7 +15,7 @@ um Aussehen. Alles lässt sich live verstellen (Taste **Tab**), und jede Mechani
 | Laufen | A / D (oder Pfeile) | Stick / Steuerkreuz |
 | Springen (an der Wand: Wandsprung) | Leertaste | ✕ |
 | Dash (ab Teil 2) | J | □ |
-| Haken (ab Teil 3) | K | R1 |
+| Haken (halten) | K oder linke Maustaste | R1 |
 | Greifen (ab Teil 4) | L | L1 |
 | Seil ranziehen/geben, zielen | W / S | hoch / runter |
 | Variante der Mechanik wechseln | 1 – 4 | R2 (weiter) |
@@ -28,7 +28,12 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 1. Grundlagen – Stufen, Stachelgruben, Coyote-Lücke, Kamin (Varianten: Sprung)
 2. Dash – Lücke nur mit Sprung + Dash, Slalom (Wand berühren lädt den Dash auf), Wand hoch mit Dash nach oben
    (Varianten: A fester Dash, B gleitender Dash, C Dash-Sprung, D Dash mit Abbruch)
-3. Haken · 4. Unterseite · 5. Durchbruch · 6. Kombi – folgen · 7. Freie Fläche
+3. Haken – Anker-Reihe in verschiedenen Abständen, hohe Decke, großer Bogen über Stacheln
+   (Varianten: A automatisch zum besten Anker, B Decken überall, C Anker mit Magnet, D freies Zielen mit Maus/rechtem
+   Stick). K halten = festhalten, loslassen = Abwurf mit Schwung; W/S Seil ran/geben (S halten = rutschen);
+   Leertaste am Seil = loslassen mit Hüpfer, an der Wand Wandsprung; J am Seil = Dash aus dem Schwung.
+   Im Panel: „Taste halten“ aus = drücken zum An/Los, nochmal drücken hangelt direkt zum nächsten Anker.
+4. Unterseite · 5. Durchbruch · 6. Kombi – folgen · 7. Freie Fläche
 
 Im Panel außerdem: Wandsprung-Varianten (A einfach, B wie im Spiel) und die Kantenhilfe (Kopf rutscht an Ecken
 vorbei, Dash hüpft auf knappe Stufen).

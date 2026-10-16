@@ -39,6 +39,7 @@ function zeichnen(alpha){
   ctx.translate(Math.round(-kx + ox), Math.round(-kam.y + oy));
   kaestchenZeichnen(kx);
   for(const sch of SCHILDER) schildZeichnen(sch);
+  hakenZeichnen(alpha);
   for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true);
   if(!fig.tot){
     const fx_ = mischen(fig.px, fig.x, alpha), fy_ = mischen(fig.py, fig.y, alpha);
@@ -148,13 +149,14 @@ function anzeigeZeichnen(){
   if(V.zahlen){
     const z = ['Tempo x ' + fig.vx.toFixed(1) + '  y ' + fig.vy.toFixed(1), 'Boden ' + (fig.amBoden ? 'ja' : 'nein') + '  Wand ' + fig.wand,
       'Coyote ' + Math.max(0, fig.coyote) + '  Puffer ' + Math.max(0, fig.puffer) + '  Sprint ' + Math.round(fig.sprint * 100) + ' %',
+      'Seil ' + (fig.seil ? (fig.seil.zustand === 'fest' ? Math.round(fig.seil.len) + ' px' : 'fliegt') : '–') + '  Ziel ' + (fig.hakenZiel ? (fig.hakenZiel.anker ? 'Anker' : 'Fläche') : '–'),
       'Dash ' + (fig.dash ? 'läuft (' + fig.dash.zeit + ')' : 'bereit') + '  Luft-Dashes ' + (fig.luftDashes === Infinity ? '∞' : fig.luftDashes)];
     z.forEach((t, i) => textMitRand(t, BILD_B - 16, 40 + i * 20, 14, '#bfe3ff', 'right'));
   }
 }
 const LEGENDE = [
-  ['A / D', 'laufen'], ['Leertaste', 'springen (an der Wand: Wandsprung)'], ['J', 'Dash (mit Richtung: 8 Richtungen)'], ['K', 'Haken (Teil 3)'],
-  ['L', 'Greifen (Teil 4)'], ['W / S', 'Seil / zielen'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'],
+  ['A / D', 'laufen'], ['Leertaste', 'springen (an der Wand: Wandsprung)'], ['J', 'Dash (mit Richtung: 8 Richtungen)'], ['K / Maus', 'Haken (halten = festhalten)'],
+  ['L', 'Greifen (Teil 4)'], ['W / S', 'Seil ran / geben (S halten = rutschen)'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'],
   ['Tab', 'Einstellungen, Teleport'],
 ];
 const LEGENDE_PAD = 'Controller: Stick laufen · ✕ springen · □ Dash · R1 Haken · L1 Greifen · R2 Variante · Share zurück · Options Einstellungen';

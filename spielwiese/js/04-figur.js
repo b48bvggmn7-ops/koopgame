@@ -6,6 +6,7 @@ const fig = {
   amBoden: false, coyote: 0, puffer: 0,
   wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
+  seil: null, hakenZiel: null, zielStrahl: null, fehlschuss: null, rutsch: 0,
   dash: null, luftDashes: 1, dashPuffer: 0, dashPause: 0, gleit: 0, hyperFenster: 0, nachDash: null, blitz: 0,
   sx: 1, sy: 1, svx: 0, svy: 0,          // Dehnen/Stauchen (nur Anzeige, im Takt gerechnet)
   tot: 0, station: STATIONEN[0], rueck: STATIONEN[0].start,
@@ -17,7 +18,7 @@ function figurAufPunkt(p){
   fig.vx = fig.vy = 0; fig.px = fig.x; fig.py = fig.y;
   fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = 0; fig.sprint = 0; fig.sprungAktiv = false;
   fig.dash = null; fig.luftDashes = luftDashMax(); fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
-  fig.wandSprungSeite = 0;
+  fig.wandSprungSeite = 0; fig.seil = null; fig.fehlschuss = null; fig.rutsch = 0;
   fig.sx = fig.sy = 1; fig.svx = fig.svy = 0;
 }
 function zurueckSetzen(){ figurAufPunkt(fig.rueck); fig.tot = 0; ton('teleport'); kameraSpringen(); }
@@ -138,6 +139,10 @@ function wandSpringen(){
 function dashRichtung(){
   const r = richtungLesen();
   let dx = Math.abs(r.x) > 0.35 ? Math.sign(r.x) : 0, dy = Math.abs(r.y) > 0.35 ? Math.sign(r.y) : 0;
+  if(!dx && !dy && seilFest() && Math.hypot(fig.vx, fig.vy) > 3){   // aus dem Schwung: in Flugrichtung (8 Richtungen)
+    const w = Math.round(Math.atan2(fig.vy, fig.vx) / (Math.PI / 4)) * Math.PI / 4;
+    dx = Math.round(Math.cos(w)); dy = Math.round(Math.sin(w));
+  }
   if(!dx && !dy) dx = fig.blick;
   if(fig.amBoden && dy > 0 && !dx) dx = fig.blick;   // am Boden nach unten: flach in Blickrichtung
   const l = Math.hypot(dx, dy);
@@ -149,6 +154,7 @@ function dashKannStarten(){
 }
 function dashStarten(){
   const {dx, dy} = dashRichtung();
+  if(fig.seil) seilLoesen(false);   // Dash aus dem Schwung: Seil los
   if(!fig.amBoden) fig.luftDashes--;
   fig.dash = {zeit: V.dashDauer, dx, dy, startBoden: fig.amBoden};
   fig.dashPuffer = 0; fig.sprungAktiv = false; fig.gleit = 0; fig.hyperFenster = 0; fig.sperre = 0;
@@ -194,7 +200,7 @@ function dashAufladen(){
 
 function sterben(){
   if(fig.tot) return;
-  fig.tot = 36; fig.dash = null; wackeln(0.55); trefferStopp(6); ton('tod');
+  fig.tot = 36; fig.dash = null; fig.seil = null; wackeln(0.55); trefferStopp(6); ton('tod');
   teilchenBurst(fig.x + FIG_B / 2, fig.y + FIG_H / 2, 22, figurAussehen === 'affe' ? '#8a5a35' : '#ff8fc0');
 }
 
@@ -215,6 +221,10 @@ function figurSchritt(){
   if(E.dash) fig.dashPuffer = V.dashPuffer + 1;
   fig.coyote = fig.amBoden ? V.coyote + 1 : fig.coyote - 1;
   fig.wandZeit = fig.wand ? V.wandFenster + 1 : fig.wandZeit - 1;
+
+  const sprungVerbraucht = hakenEingabe(E, rxs);   // Haken (04a-haken.js): schießen, loslassen, Sprung am Seil
+  seilFlugSchritt();
+  const amSeil = seilFest();
 
   const variante = MECHANIKEN.dash.aktiv;
   // Dash starten (mit Puffer: auch knapp vor der Landung gedrückt)
@@ -242,7 +252,11 @@ function figurSchritt(){
     }
   }
 
-  if(!fig.dash){
+  if(!fig.dash && amSeil && !fig.amBoden){
+    seilSchwungEingabe(rx);
+    fig.vy = Math.min(fig.vy + V.schwerkraft, V.maxFall * 1.5);
+    seilNachSchwerkraft();
+  } else if(!fig.dash){
     // Laufen (mit Anlauf-Sprint wie im Spiel)
     const gleicheRichtung = rx && rxs === Math.sign(fig.vx);
     if(V.sprint && gleicheRichtung && Math.abs(fig.vx) > V.laufTempo * 0.9) fig.sprint = Math.min(1, fig.sprint + V.sprintZuwachs);
@@ -260,7 +274,7 @@ function figurSchritt(){
       staubWolke(fig.x + FIG_B / 2, fig.y + FIG_H, 1, Math.sign(vorher));   // Bremsstaub beim Umdrehen
 
     // Springen: Puffer (früh gedrückt) + Coyote-Time (kurz nach der Kante) + Wandsprung; C: Dash-Sprung im Fenster danach
-    if(fig.puffer > 0){
+    if(fig.puffer > 0 && !sprungVerbraucht){
       if(fig.hyperFenster > 0 && fig.nachDash && (fig.coyote > 0 || fig.wandZeit > 0)) dashSprung(fig.nachDash);
       else if(fig.coyote > 0) springen();
       else if(wandSprungMoeglich(rxs)) wandSpringen();
@@ -279,6 +293,7 @@ function figurSchritt(){
     }
     fig.vy = Math.min(fig.vy + g, V.maxFall);
     if(fig.wand && fig.vy > V.wandRutschen) fig.vy = V.wandRutschen;   // an der Wand langsam rutschen
+    if(amSeil) seilNachSchwerkraft();   // am Boden mit Seil: Seil hält trotzdem
   }
   if(fig.puffer > 0) fig.puffer--;
 

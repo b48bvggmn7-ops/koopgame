@@ -87,5 +87,9 @@ function ton(art, staerke){
   else if(art === 'abbruch') piep(500, 340, 0.06, 0.08);
   else if(art === 'bonk'){ rauschen(0.07, 0.14, 500); piep(180, 120, 0.06, 0.08, 'square'); }
   else if(art === 'aufladen'){ piep(880, 1320, 0.07, 0.06, 'sine'); }
+  else if(art === 'schuss') rauschen(0.07, 0.07, 2600);
+  else if(art === 'greifen'){ piep(520, 390, 0.05, 0.09, 'square'); rauschen(0.04, 0.08, 900); }
+  else if(art === 'abwurf'){ rauschen(0.14, 0.1, 1600); piep(420, 700, 0.08, 0.05); }
+  else if(art === 'fehlschuss') piep(300, 220, 0.06, 0.04, 'sine');
   else if(art === 'klick') piep(900, 700, 0.035, 0.06, 'sine');
 }

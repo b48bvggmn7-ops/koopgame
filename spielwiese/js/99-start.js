@@ -34,6 +34,7 @@ function schleife(zeit){
   requestAnimationFrame(schleife);
 }
 
+ankerSammeln();
 figurAufPunkt(fig.rueck);
 kameraSpringen();
 hinweis('Willkommen auf der Spielwiese!');

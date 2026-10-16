@@ -71,6 +71,32 @@ wert(G_DASH, 'hyperY', 'C: Dash-Sprung hoch (× Sprung)', 1.1, 0.5, 2, 0.05, 'Va
 wert(G_DASH, 'hyperFenster', 'C: Fenster nach dem Dash (Schritte)', 6, 0, 20, 1, 'so lange nach dem Dash zählt der Sprung noch');
 wert(G_DASH, 'abbruchBehalten', 'D: Tempo beim Abbrechen', 0.7, 0, 1, 0.05, 'Variante D');
 wert(G_DASH, 'abbruchHop', 'D: kleiner Hüpfer in der Luft', 5, 0, 12, 0.5, 'Variante D: Abbruch in der Luft');
+// ---------- Haken (Teil 3) ----------
+const G_HAKEN = 'Haken';
+schalter(G_HAKEN, 'hakenHalten', 'Taste halten (aus = drücken zum An/Los)', true, 'halten: loslassen = Seil los · drücken: nochmal drücken = los bzw. zum nächsten Anker');
+wert(G_HAKEN, 'hakenReichweite', 'Reichweite (px)', 600, 200, 1000, 10, 'wird nicht als Kreis gezeigt');
+wert(G_HAKEN, 'hakenFlug', 'Flugzeit der Liane (Schritte)', 6, 1, 15, 1);
+wert(G_HAKEN, 'zielRichtung', 'Ziel: Gewicht Blick-/Stickrichtung', 1, 0, 3, 0.05, 'wie stark die gedrückte Richtung zählt');
+wert(G_HAKEN, 'zielOben', 'Ziel: Gewicht „nach oben“', 0.6, 0, 3, 0.05);
+wert(G_HAKEN, 'zielNaehe', 'Ziel: Gewicht „nah“', 0.5, 0, 3, 0.05);
+schalter(G_HAKEN, 'zielRing', 'Zielanker vorher zeigen (Ring)', true);
+wert(G_HAKEN, 'seilStartMax', 'Straffen auf höchstens (px)', 260, 80, 700, 10, 'nach dem Greifen zieht sich die Liane auf diese Länge zusammen');
+wert(G_HAKEN, 'straffTempo', 'Straffen: Tempo (px pro Schritt)', 9, 1, 30, 0.5);
+wert(G_HAKEN, 'schwungKraft', 'Schwung holen (links/rechts)', 0.22, 0, 1, 0.01);
+wert(G_HAKEN, 'seilDaempfung', 'Dämpfung (1 = keine)', 0.995, 0.95, 1, 0.001, 'je Schritt bleibt so viel vom Tempo');
+wert(G_HAKEN, 'seilRan', 'Seil ranziehen (W)', 3, 0.5, 10, 0.1);
+wert(G_HAKEN, 'seilGeben', 'Seil geben (S)', 4, 0.5, 10, 0.1);
+wert(G_HAKEN, 'rutschMax', 'Rutschen: Höchsttempo (S halten)', 12, 4, 25, 0.5, 'wer S hält, rutscht immer schneller hinunter');
+wert(G_HAKEN, 'rutschBeschl', 'Rutschen: Beschleunigung', 0.35, 0, 2, 0.05);
+wert(G_HAKEN, 'seilMin', 'Kürzestes Seil (px)', 50, 20, 200, 5);
+wert(G_HAKEN, 'abwurfBoost', 'Abwurf-Boost (× Tempo)', 1.15, 1, 2, 0.01, 'beim Loslassen');
+wert(G_HAKEN, 'abwurfHoch', 'Abwurf: Extra nach oben', 3, 0, 10, 0.1);
+wert(G_HAKEN, 'abwurfMax', 'Abwurf: Höchsttempo', 17, 8, 30, 0.5);
+wert(G_HAKEN, 'seilSprung', 'Springen am Seil: Hüpfer', 7, 0, 16, 0.5, 'Leertaste am Seil = loslassen + Hüpfer (an der Wand: Wandsprung)');
+wert(G_HAKEN, 'magnetZug', 'C: Magnet zieht (px pro Schritt)', 5, 0.5, 15, 0.5, 'Variante C');
+wert(G_HAKEN, 'magnetAnteil', 'C: Magnet bis Anteil der Länge', 0.5, 0.1, 1, 0.05, 'Variante C: so weit zieht er');
+wert(G_HAKEN, 'ankerBonus', 'B: Vorrang für echte Anker', 0.3, 0, 2, 0.05, 'Variante B: Anker vor beliebigen Flächen');
+
 schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
 
 // ---------- Kamera ----------
@@ -117,6 +143,12 @@ mechanik('dash', 'Dash', [
   {name: 'B – Gleitender Dash', hilfe: 'lenkbar, danach bleibt der Schwung eine Weile'},
   {name: 'C – Dash-Sprung', hilfe: 'Springen während/kurz nach dem Dash (am Boden oder an der Wand) = weiter, höherer Sprung'},
   {name: 'D – Dash mit Abbruch', hilfe: 'Springen bricht den Dash ab (in der Luft mit kleinem Hüpfer)'},
+]);
+mechanik('haken', 'Haken', [
+  {name: 'A – Automatisch (Anker)', hilfe: 'greift den besten Anker in Blick-/Stickrichtung, bevorzugt nach oben'},
+  {name: 'B – Decken überall', hilfe: 'haftet an jeder festen Fläche über oder neben dir (Anker haben Vorrang)'},
+  {name: 'C – Anker mit Magnet', hilfe: 'wie A, aber der Anker zieht dich ein Stück heran'},
+  {name: 'D – Freies Zielen', hilfe: 'zielen mit Maus oder rechtem Stick, trifft Anker und Flächen; Maustaste = Haken'},
 ]);
 let aktiveMechanik = 'sprung';
 function varianteSetzen(id, i){

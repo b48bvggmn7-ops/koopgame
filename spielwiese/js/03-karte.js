@@ -25,7 +25,7 @@ const fest = (c, r) => zelle(c, r) === '#';
 const STATIONEN = [
   {nr: 1, name: 'Grundlagen', von: 0, bis: 51, start: {c: 4, r: BODEN_R}, mech: 'sprung'},
   {nr: 2, name: 'Dash', von: 52, bis: 99, start: {c: 55, r: BODEN_R}, mech: 'dash'},
-  {nr: 3, name: 'Haken', von: 100, bis: 149, start: {c: 103, r: BODEN_R}, mech: null},
+  {nr: 3, name: 'Haken', von: 100, bis: 149, start: {c: 102, r: BODEN_R}, mech: 'haken'},
   {nr: 4, name: 'Unterseite', von: 150, bis: 189, start: {c: 153, r: BODEN_R}, mech: null},
   {nr: 5, name: 'Durchbruch', von: 190, bis: 224, start: {c: 193, r: BODEN_R}, mech: null},
   {nr: 6, name: 'Kombi', von: 225, bis: 254, start: {c: 228, r: BODEN_R}, mech: null},
@@ -71,8 +71,21 @@ function arenaBauen(){
   setze(95, 11, 98, 17, '#');                        // Wand 7 Reihen: Sprung (3) + Dash nach oben (4)
   SCHILDER.push({c: 97, r: 11, zeilen: ['Oben!']});
 
-  // ----- Stationen 3–6: Platzhalter, werden in Teil 2–6 gebaut -----
-  const platzhalter = [[3, 101, 'Haken', 'Teil 3'], [4, 151, 'Unterseite', 'Teil 4'],
+  // ----- Station 3: Haken -----
+  setze(99, 17, 99, 17, '#');                        // Grenzstein
+  SCHILDER.push({c: 101, r: BODEN_R, zeilen: ['Station 3: Haken (K halten)', 'von Anker zu Anker · W/S Seil', 'Tasten 1–4: Haken-Varianten']});
+  grube(106, 125);                                   // Anker-Reihe über Stacheln, verschiedene Abstände
+  for(const c of [108, 113, 119, 123]) setze(c, 9, c, 9, 'o');
+  SCHILDER.push({c: 127, r: BODEN_R, zeilen: ['Hohe Decke:', 'Variante B greift überall']});
+  setze(129, 0, 139, 3, '#');                        // hohe Decke
+  grube(130, 138);
+  setze(134, 4, 134, 4, 'o');                        // ein Anker unter der Decke (damit A auch geht)
+  SCHILDER.push({c: 140, r: BODEN_R, zeilen: ['Der große Bogen']});
+  grube(141, 147);                                   // ein Anker hoch über einer langen Grube
+  setze(144, 5, 144, 5, 'o');
+
+  // ----- Stationen 4–6: Platzhalter, werden in Teil 2–6 gebaut -----
+  const platzhalter = [[4, 151, 'Unterseite', 'Teil 4'],
                        [5, 191, 'Durchbruch', 'Teil 5'], [6, 226, 'Kombi', 'Teil 6']];
   for(const [nr, c, n, teil] of platzhalter){
     SCHILDER.push({c, r: BODEN_R, zeilen: ['Station ' + nr + ': ' + n, 'wird in ' + teil + ' gebaut']});

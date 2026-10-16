@@ -21,7 +21,18 @@ const PAD_TOTZONE = 0.28;
 const ein = {
   gedrueckt: {},     // Aktionen, die seit dem letzten Physik-Schritt NEU gedrückt wurden (gilt genau einen Schritt)
   stick: {x: 0, y: 0}, stickR: {x: 0, y: 0}, padDa: false,
+  maus: {x: 0, y: 0, da: false, taste: false, zeit: 0},   // Maus über dem Bild (in Bild-Pixeln 0…1280 / 0…720)
 };
+// Maus: Position fürs freie Zielen (Haken-Variante D), linke Taste = Haken
+function mausPos(e){
+  const r = leinwand.getBoundingClientRect();
+  ein.maus.x = (e.clientX - r.left) / r.width * BILD_B; ein.maus.y = (e.clientY - r.top) / r.height * BILD_H;
+  ein.maus.da = true; ein.maus.zeit = performance.now();
+}
+leinwand.addEventListener('pointermove', mausPos);
+leinwand.addEventListener('pointerdown', e => { mausPos(e); if(e.button === 0){ ein.maus.taste = true; aktionAusloesen('haken'); } });
+window.addEventListener('pointerup', e => { if(e.button === 0) ein.maus.taste = false; });
+leinwand.addEventListener('contextmenu', e => e.preventDefault());
 const gehaltenCodes = new Set();
 let flanken = {};              // gesammelt zwischen zwei Physik-Schritten
 let padVorher = {};
@@ -66,6 +77,7 @@ function padLesen(){
 
 function gehalten(a){
   if(TASTEN[a] && TASTEN[a].some(c => gehaltenCodes.has(c))) return true;
+  if(a === 'haken' && ein.maus.taste) return true;
   return !!padVorher[a];
 }
 // Richtung (x, y je -1 … 1): Tasten, Steuerkreuz oder linker Stick; y < 0 = hoch
