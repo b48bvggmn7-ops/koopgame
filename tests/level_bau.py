@@ -188,3 +188,41 @@ def flache_strecken(datei, abdeckung=None, laenge=20, frei_hoehe=10):
                 if c - c0 >= laenge: out.append((c0, c - 1, r))
             c += 1
     return out
+
+def s1_versteck(lv, c, r, muenze=None):
+    """S1: Versteck unter einem Durchbruch-Boden. Boden-Oberkante Reihe r, Spalten c, c+1 werden Durchbruch; darunter eine
+    Mulde (c..c+1, r+1), Wände (c-1, r+1), (c+2, r+1) und Grund (c-1..c+2, r+2) – fehlende Kästchen werden ergänzt.
+    muenze=(c0, r0): diese Münze (Liste/Identität bleibt) in die Mulde verschieben, Klasse Geschick."""
+    for cc in (c, c + 1): lv.bruch(cc, r)
+    for cc in (c, c + 1): lv.leer(cc, r + 1)
+    for z in ((c - 1, r + 1), (c + 2, r + 1)) + tuple((cc, r + 2) for cc in range(c - 1, c + 3)):
+        if lv.typ(*z) is None: lv.kachel(z[0], z[1], 'ground')
+    if muenze:
+        lv.muenze_verschieben(muenze[0], muenze[1], c, r + 1); lv.muenze_klasse(c, r + 1, 'geschick')
+    return lv
+
+def versteck_plaetze(lv, abstand=10):
+    """mögliche S1-Plätze: zwei Bodenkästchen (Reihe r, frei darüber 2 Reihen), darunter die 2x2 bzw. 4x2 Kästchen frei oder
+    fest (kein Element), nicht an Elementen/Türen/Hebeln -> [(c, r)]"""
+    import bildregel_pruefen as B
+    d = lv.alt_spiel
+    el = set()
+    for f in ('hooks', 'switches', 'doors', 'plates', 'bouncers', 'checkpoints', 'teleporters', 'traps', 'pressen', 'boulders',
+              'lichtquellen', 'spiegel', 'kristalle', 'leuchtkristalle', 'spikes', 'coins'):
+        for o in d.get(f, []):
+            el.add((B.spalte(o['x']), B.reihe(o['y'])))
+    for f in ('winds', 'movingPlatforms', 'switchFloors', 'lava', 'baender', 'eis', 'oneways', 'dunkelzonen', 'bruchWaende', 'haftflaechen'):
+        for o in d.get(f, []):
+            for z in B.felder_zellen(o) if 'w' in o else [(B.spalte(o['x']), B.reihe(o['y']))]: el.add(z)
+    out = []
+    for (c, r), t in sorted(lv.t.items()):
+        if t not in ('ground', 'wall') or not (0 <= r <= 15): continue
+        if lv.typ(c + 1, r) not in ('ground', 'wall') or lv.typ(c - 1, r) is None or lv.typ(c + 2, r) is None: continue
+        if any(lv.typ(cc, rr) for cc in (c, c + 1) for rr in (r - 1, r - 2)): continue
+        if any((cc, rr) in el for cc in range(c - 2, c + 4) for rr in range(r - 3, r + 4)): continue
+        unten = [(cc, rr) for cc in range(c - 1, c + 3) for rr in (r + 1, r + 2)]
+        if any(lv.typ(*z) not in (None, 'ground', 'wall') for z in unten): continue
+        if r + 2 > 17: continue
+        if out and c - out[-1][0] < abstand and out[-1][1] == r: continue
+        out.append((c, r))
+    return out

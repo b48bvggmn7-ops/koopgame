@@ -53,3 +53,12 @@ def nb_segel_dash(absprung, dash_bei, hoch=False):
             {'hold': ['right', 'glide'], 'until': f'P.x >= {kx(dash_bei)}', 'frames': 400},
             {'press': ['dash'], 'hold': ['right'] + (['swimUp'] if hoch else []), 'frames': 2},
             {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+
+def nb_versteck(c, r, kurz=False):
+    """S1: auf dem Durchbruch-Boden (Spalten c, c+1, Oberkante r) stehen (Start dort), Dash nach unten, in der Mulde
+    landen, wieder hinausspringen (nach rechts)"""
+    return [{'frames': 8},
+            {'press': ['dash'], 'hold': ['swimDown'], 'until': f'P.grounded && P.y > {(r + 1) * 40}', 'frames': 60},
+            {'frames': 10},
+            {'press': ['jump'], 'hold': ['jump', 'right'], 'frames': 14 if not kurz else 9},
+            {'hold': [] if kurz else ['right'], 'holdIf': {'left': f'P.x > {kx(c + 2) + 8}'} if kurz else {}, 'until': f'P.grounded && P.x >= {kx(c + 2) if kurz else kx(c + 3)} - 10', 'frames': 200}]

@@ -39,3 +39,16 @@ for _w in 'mf':
 for _w in 'mf':
     stelle(level='dschungel/01-dschungel.json', name='Durchbruch-Wand unter dem Münz-Sims 715 (sanfte Probe; oben herum per Lift geht auch)', wer=_w,
            start=(710, 14), partner=(708, 14), plan=nb_bruch_durch(715), ziel=717, ziel_reihe=14, baustein='B2', gegen=_laufen)
+
+# ---------------- Verstecke (S1) in den vom Nutzer gestalteten Leveln: nur zusätzlich, optional ----------------
+_VERSTECKE = {
+    'dschungel/02-baumkronen.json': [(220, 10, 'blue'), (410, 15, 'blue'), (616, 15, 'pink')],
+    'ruinen/01-ruinen.json': [(196, 10, 'blue'), (406, 15, 'pink'), (623, 15, 'pink')],
+    'ruinen/02-mondnacht.json': [(118, 15, 'blue'), (243, 6, 'pink'), (368, 9, 'blue')],
+}
+for _lvl, _liste in _VERSTECKE.items():
+    for (_c, _r, _farbe) in _liste:
+        _w = 'm' if _farbe == 'blue' else 'f'
+        stelle(level=_lvl, name=f'Versteck unter Durchbruch-Boden {_c} (S1, optional, Münze)', wer=_w, start=(_c, _r - 1), partner=(_c, _r - 1),
+               plan=nb_versteck(_c, _r, kurz=(_c, _r) == (220, 10)), ziel=_c + 1, ziel_reihe=_r - 1, baustein='S1', muenze=(_c, _r + 1),
+               gegen=[{'hold': ['right'], 'until': f'P.x >= {kx(_c + 3)}', 'frames': 200}, {'frames': 20}], gegen_muenze=True)

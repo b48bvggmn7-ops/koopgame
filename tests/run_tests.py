@@ -5960,9 +5960,14 @@ async def nacht_stellen_pruefen(g, welt):
             return c >= st['ziel'] and (st.get('ziel_reihe') is None or abs(rr - st['ziel_reihe']) < 0.6)
         r = await koop(g, **{wer: kat(*st['start']), anders: kat(*st['partner'])}, plans={wer: st['plan']}, links=st['links'], maxFrames=st.get('frames', 3000))
         if not ok(r): fehler.append(f"{st['level']} {st['name']} ({wer}): {r.get('pos')} tot={r.get('dead')} schritte={r.get('steps')}")
+        elif st.get('muenze') and not await g.ev(f"coins.some(c => Math.abs(c.x - {kx(st['muenze'][0])}) < 2 && Math.abs(c.y - {st['muenze'][1] * 40 + 20}) < 2 && c.taken)"):
+            fehler.append(f"{st['level']} {st['name']} ({wer}): Münze {st['muenze']} nicht eingesammelt")
         if st['gegen']:
             r = await koop(g, **{wer: kat(*st['start']), anders: kat(*st['partner'])}, plans={wer: st['gegen']}, links=st['links'], maxFrames=st.get('frames', 3000))
-            if ok(r): fehler.append(f"{st['level']} {st['name']} ({wer}): Gegenprobe ohne neue Mechanik kommt auch durch {r.get('pos')}")
+            if st.get('gegen_muenze'):   # Versteck: drüberlaufen darf die Münze nicht holen
+                if await g.ev(f"coins.some(c => Math.abs(c.x - {kx(st['muenze'][0])}) < 2 && Math.abs(c.y - {st['muenze'][1] * 40 + 20}) < 2 && c.taken)"):
+                    fehler.append(f"{st['level']} {st['name']} ({wer}): Gegenprobe holt die Münze ohne Dash")
+            elif ok(r): fehler.append(f"{st['level']} {st['name']} ({wer}): Gegenprobe ohne neue Mechanik kommt auch durch {r.get('pos')}")
     return fehler
 
 @test
@@ -5970,6 +5975,13 @@ async def nacht_stellen_dschungel(g):
     """Nacht-Ausbau Phase 3: neue Stellen in der Welt Dschungel (tests/bausteine/stellen.py) – je Stelle beide Figuren
     (wo vorgesehen) per Bot, Gegenprobe ohne neue Mechanik scheitert."""
     fehler = await nacht_stellen_pruefen(g, 'dschungel')
+    assert not fehler, fehler
+
+@test
+async def nacht_stellen_ruinen(g):
+    """Nacht-Ausbau Phase 3: neue Stellen in der Welt Ruinen (tests/bausteine/stellen.py) – je Stelle per Bot, Gegenprobe
+    ohne neue Mechanik scheitert (bei Verstecken: drüberlaufen holt die Münze nicht)."""
+    fehler = await nacht_stellen_pruefen(g, 'ruinen')
     assert not fehler, fehler
 
 def level_teil(k, v):
