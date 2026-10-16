@@ -60,10 +60,9 @@ function zeichnen(alpha){
   if(!fig.tot){
     const fx_ = mischen(fig.px, fig.x, alpha), fy_ = mischen(fig.py, fig.y, alpha);
     if(V.figurSchatten && !fig.haengt && !fig.ball) lookSchatten(fx_, fy_);
-    // Rutsch-Haltung: an die Wand gedrückt (schmaler, etwas länger), oben zur Wand geneigt (aufrecht: siehe figurSchrittEnde)
+    // Rutsch-Haltung: an die Wand gedrückt (schmaler, etwas länger); Drehung und Blickrichtung bleiben wie sie sind
     const ru = mischen(fig.rutschBildVor, fig.rutschBild, alpha), rs = fig.rutschSeite;
-    figurBild(fx_ + rs * 2.5 * ru, fy_, fig.sx * (1 - 0.12 * ru), fig.sy * (1 + 0.07 * ru), fig.blick, 1, false,
-      figurWinkel(alpha) + rs * 0.22 * ru);
+    figurBild(fx_ + rs * 2.5 * ru, fy_, fig.sx * (1 - 0.12 * ru), fig.sy * (1 + 0.07 * ru), fig.blick, 1, false, figurWinkel(alpha));
     if(ru > 0.3){   // Kratzspur: zwei kurze Striche an der Kontaktstelle
       const wx = rs > 0 ? fx_ + FIG_B + 1 : fx_ - 1, wy = fy_ + FIG_H * 0.25;
       ctx.strokeStyle = 'rgba(255,240,210,' + (0.55 * ru) + ')'; ctx.lineWidth = 2; ctx.lineCap = 'round';
