@@ -15,7 +15,7 @@ um Aussehen. Alles lässt sich live verstellen (Taste **Tab**), und jede Mechani
 | Laufen | A / D (oder Pfeile) | Stick / Steuerkreuz |
 | Springen (an der Wand: Wandsprung) | Leertaste | ✕ |
 | Dash (ab Teil 2) | J | □ |
-| Haken (halten) | K oder linke Maustaste | R1 |
+| Haken (halten) | K, G oder linke Maustaste | R1 |
 | Greifen (ab Teil 4) | L | L1 |
 | Seil ranziehen/geben, zielen | W / S | hoch / runter |
 | Variante der Mechanik wechseln | 1 – 4 | R2 (weiter) |
@@ -55,6 +55,20 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
    einer langen Stachelgrube.
 10. Anker-Parcours – alle Anker-Sorten gemischt (schwankend, zwei Einmal-Anker hintereinander, Ringe), Insel mit
    Zwischenpunkt, danach weiter bis ins Ziel.
+11. Schirm-Anker – lange Stachelgrube ohne Anker: das Schweinchen steigt die Treppe hoch und segelt mit dem Schirm,
+   der Affe hängt seinen Haken an den Schirm und fliegt mit. Teil 2: vom Schirm auf einen echten Anker umgreifen.
+   Ohne zweiten Spieler fliegt das Schweinchen hier von allein vor dem Affen (Solo-Test).
+
+## Schweinchen und „Fliegender Anker“ (Panel „Schweinchen“)
+- „Schweinchen spielt mit“: zweite Figur für einen zweiten Spieler – Pfeiltasten laufen, Num 0 springen, Num 1 halten =
+  Schirm (oder ein zweiter Controller: Stick, ✕ springen, □ Schirm). Laufen, Sprung, Wandsprung und Schirm wie im Spiel
+  (abgeschrieben, Werte im Panel). Solange es mitspielt, gehören Pfeiltasten und Num 0/1 dem Schweinchen; der Affe
+  läuft mit A/D, Haken auch mit G. Die Kamera hält beide im Bild (passen sie nicht, folgt sie der vorderen Figur).
+- Fliegender Anker: solange der Schirm offen ist, greift der Haken des Affen den Schirm. Das Schweinchen sinkt dann
+  etwas schneller (einstellbar). Schirm zu oder Landung = die Liane löst sich mit Abwurf-Schwung.
+- „Solo-Test“: ohne zweiten Spieler schwebt das Schweinchen mit offenem Schirm vor dem Affen her (in Station 11 immer);
+  hängt der Affe dran, segelt es geradeaus weiter und sinkt langsam.
+- Das Schweinchen sieht immer anders aus als die gewählte Figur (Affe gewählt -> Schweinchen und umgekehrt).
 
 ## Liane und Haken (Panel „Haken“)
 - Die Liane ist eine grüne Ranke mit Blättern, hängt locker durch und schlängelt sich im Flug.
@@ -109,7 +123,8 @@ abgeschrieben (kopiert, nicht geladen).
 
 ## Aufbau
 `index.html` lädt `js/*.js` in fester Reihenfolge (klassische Skripte, kein Build): 00 Grundwerte · 01 Eingabe ·
-02 Werte/Varianten/Speichern · 03 Karte/Stationen · 04 Figur/Physik · 05 Spielgefühl/Töne · 06 Kamera/Zeichnen ·
+02 Werte/Varianten/Speichern · 03 Karte/Stationen · 04 Figur/Physik (04a Haken, 04b Haften/Rollen, 04c Durchbruch,
+04d Kristalle, 04e Schweinchen) · 05 Spielgefühl/Töne · 06 Kamera/Zeichnen ·
 07 Einstellungs-Panel · 99 Start. Fester Takt: 60 Physik-Schritte pro Spielsekunde (Spieltempo 0,9 wie im Spiel),
 Kästchen 40 px, Bild 1280×720, Zoom 0,85, Figurengröße wie im Spiel.
 

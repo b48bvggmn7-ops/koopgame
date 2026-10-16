@@ -25,7 +25,7 @@ function figurAufPunkt(p){
   fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
   fig.sx = fig.sy = 1; fig.svx = fig.svy = 0;
 }
-function zurueckSetzen(){ bruchAlleHeilen(); kristallAlleZurueck(); fig.durchbruch = 0; figurAufPunkt(fig.rueck); fig.tot = 0; ton('teleport'); kameraSpringen(); }
+function zurueckSetzen(){ bruchAlleHeilen(); kristallAlleZurueck(); fig.durchbruch = 0; figurAufPunkt(fig.rueck); fig.tot = 0; schwein.da = false; ton('teleport'); kameraSpringen(); }
 function zuStation(st){
   fig.station = st; fig.rueck = st.start; if(st.mech) aktiveMechanik = st.mech;
   zurueckSetzen(); hinweis('Station ' + st.nr + ': ' + st.name);

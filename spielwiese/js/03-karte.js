@@ -2,7 +2,7 @@
 // Zeichen je Kästchen: '.' frei · '#' Boden/Wand · '^' Stacheln (später: Anker, Haftflächen, brechbare Wände).
 // Boden-Oberkante = Reihe 18 (Füße bei y = 18 · 40). Sichtbar sind ca. 21 Reihen.
 
-let KARTE_B = 600;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
+let KARTE_B = 680;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
 const KARTE_H = 21, BODEN_R = 18;
 let karte = [];   // karte[r][c]
 
@@ -35,6 +35,7 @@ const STATIONEN = [
   {nr: 8, name: 'Spaß-Level', von: 400, bis: 479, start: {c: 402, r: BODEN_R}, mech: null},
   {nr: 9, name: 'Anker-Spielplatz', von: 480, bis: 539, start: {c: 482, r: BODEN_R}, mech: 'haken'},
   {nr: 10, name: 'Anker-Parcours', von: 540, bis: 599, start: {c: 542, r: BODEN_R}, mech: 'haken'},
+  {nr: 11, name: 'Schirm-Anker', von: 600, bis: 679, start: {c: 602, r: BODEN_R}, mech: 'haken', schwein: true},
 ];
 // Schilder: Text im Bild (Spalte, Reihe der Füße des Pfostens, Zeilen)
 let SCHILDER = [];
@@ -212,6 +213,17 @@ function arenaBauen(){
   setze(584, 6, 584, 6, 'e');                        // Teil 2: von der Insel weg
   setze(589, 7, 589, 7, 's');
   SCHILDER.push({c: 596, r: BODEN_R, zeilen: ['Ziel!', 'Anker-Profi :)']});
+
+  // ----- Station 11: Schirm-Anker – keine Anker über der Grube: der Affe hängt sich an den Schirm des Schweinchens -----
+  setze(599, 17, 599, 17, '#');
+  SCHILDER.push({c: 603, r: BODEN_R, zeilen: ['Station 11: Schirm-Anker', 'Schweinchen: hoch, Schirm auf (Num 1)', 'Affe: Haken an den Schirm (K/G)']});
+  setze(606, 15, 607, 17, '#'); setze(609, 12, 610, 17, '#'); setze(612, 9, 614, 17, '#');   // Treppe für das Schweinchen
+  grube(615, 632);                                   // 18 breit, kein Anker: nur mit Schirm (gemessen: sie gleitet ~25, mit Affe dran ~22)
+  ZWISCHENPUNKTE.push({c: 637, r: BODEN_R});
+  setze(640, 15, 640, 17, '#'); setze(642, 12, 643, 17, '#');
+  grube(644, 662);                                   // Teil 2: Schirm, dann umgreifen auf den Anker
+  setze(654, 6, 654, 6, 'o');
+  SCHILDER.push({c: 672, r: BODEN_R, zeilen: ['Ziel!', 'Team-Flug :)']});
 }
 arenaBauen();
 

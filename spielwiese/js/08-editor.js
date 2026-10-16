@@ -68,7 +68,7 @@ function karteAnwenden(o){
   kaputt = []; ankerSammeln(); zurueckSetzen();
   return true;
 }
-function karteOriginal(){ KARTE_B = 600; arenaBauen(); kaputt = []; ankerSammeln(); zurueckSetzen(); }
+function karteOriginal(){ KARTE_B = 680; arenaBauen(); kaputt = []; ankerSammeln(); zurueckSetzen(); }
 
 function karteBereichBauen(p){
   p.appendChild(el('h3', {text: 'Karte (Mini-Editor)'}));

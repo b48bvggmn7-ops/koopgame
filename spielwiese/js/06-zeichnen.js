@@ -3,7 +3,13 @@
 // ---------- Kamera: waagerecht, glatt folgend, mit Blick nach vorn ----------
 const kam = { x: 0, px: 0, voraus: 0, y: KARTE_H * K - SICHT_H };
 function kameraZiel(){
-  const ziel = fig.x + FIG_B / 2 - SICHT_B * V.kameraPos + kam.voraus;
+  let mitte = fig.x + FIG_B / 2;
+  // spielt das Schweinchen mit: zwischen beiden; passen sie nicht ins Bild, folgt die Kamera der vorderen Figur
+  if(V.schweinAn && schwein.da && !schwein.tot){
+    const sm = schwein.x + FIG_B / 2;
+    mitte = Math.abs(sm - mitte) < SICHT_B * 0.6 ? (sm + mitte) / 2 : Math.max(sm, mitte);
+  }
+  const ziel = mitte - SICHT_B * V.kameraPos + kam.voraus;
   return klemmen(ziel, 0, KARTE_B * K - SICHT_B);
 }
 function kameraSchritt(){
@@ -49,6 +55,7 @@ function zeichnen(alpha){
     ctx.beginPath(); ctx.moveTo(x + 2, y - 36); ctx.lineTo(x + 22, y - 29); ctx.lineTo(x + 2, y - 22); ctx.fill();
   }
   hakenZeichnen(alpha);
+  schweinZeichnen(alpha);   // 04e-schwein.js
   for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true, n.winkel || 0);
   if(!fig.tot){
     const fx_ = mischen(fig.px, fig.x, alpha), fy_ = mischen(fig.py, fig.y, alpha);
@@ -141,8 +148,9 @@ function figurWinkel(alpha){
   if(fig.haengt) return Math.PI;
   return V.figurRollt ? mischen(fig.laufWinkelVor, fig.laufWinkel, alpha) : 0;
 }
-function figurBild(x, y, sx, sy, blick, deckkraft, schatten, winkel){
-  const img = BILDER[figurAussehen], [kx, ky] = KOPF_MITTE[figurAussehen];
+function figurBild(x, y, sx, sy, blick, deckkraft, schatten, winkel, aussehen){
+  aussehen = aussehen || figurAussehen;
+  const img = BILDER[aussehen], [kx, ky] = KOPF_MITTE[aussehen];
   const groesse = Math.max(FIG_B, FIG_H) * 1.55;
   const hoehe = img.naturalWidth ? groesse * img.naturalHeight / img.naturalWidth : groesse * 0.83;
   ctx.save();
@@ -154,7 +162,7 @@ function figurBild(x, y, sx, sy, blick, deckkraft, schatten, winkel){
   const mitteY = 0;
   if(schatten) ctx.filter = 'brightness(1.6) saturate(0.4)';
   if(img.complete && img.naturalWidth) ctx.drawImage(img, -kx * groesse, mitteY - ky * hoehe, groesse, hoehe);
-  else { ctx.fillStyle = figurAussehen === 'affe' ? '#8a5a35' : '#ff8fc0'; ctx.beginPath(); ctx.arc(0, mitteY, 17, 0, Math.PI * 2); ctx.fill(); }
+  else { ctx.fillStyle = aussehen === 'affe' ? '#8a5a35' : '#ff8fc0'; ctx.beginPath(); ctx.arc(0, mitteY, 17, 0, Math.PI * 2); ctx.fill(); }
   ctx.restore();
 }
 
@@ -199,13 +207,15 @@ function anzeigeZeichnen(){
     z.forEach((t, i) => textMitRand(t, BILD_B - 16, 40 + i * 20, 14, '#bfe3ff', 'right'));
   }
 }
-const LEGENDE = [
+const LEGENDE_BASIS = [
   ['A / D', 'laufen'], ['Leertaste', 'springen (an der Wand: Wandsprung)'], ['J', 'Dash (mit Richtung: 8 Richtungen)'], ['K / Maus', 'Haken (halten = festhalten)'],
   ['L', 'Greifen: Decke halten / rollen'], ['W / S', 'Seil ran / geben (S halten = rutschen)'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'], ['B', 'selbst bauen (Mini-Editor)'],
   ['Tab', 'Einstellungen, Teleport'],
 ];
+const LEGENDE_SCHWEIN = [['← / →', 'Schweinchen laufen'], ['Num 0', 'Schweinchen springen'], ['Num 1', 'halten = Schirm (Affe: Haken dran!)'], ['G', 'Haken (wie K)']];
 const LEGENDE_PAD = 'Controller: Stick laufen · ✕ springen · □ Dash · R1 Haken · L1 Greifen · R2 Variante · Share zurück · Options Einstellungen';
 function legendeZeichnen(){
+  const LEGENDE = V.schweinAn ? LEGENDE_BASIS.concat(LEGENDE_SCHWEIN) : LEGENDE_BASIS;
   const x = 16, zeile = 17, h = LEGENDE.length * zeile + 30, y = 44;   // oben links im Himmel (unten steht die Welt)
   ctx.fillStyle = 'rgba(15,20,30,0.55)'; ctx.fillRect(x - 6, y - 6, 356, h);
   ctx.textBaseline = 'top';

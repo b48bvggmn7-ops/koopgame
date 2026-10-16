@@ -18,9 +18,11 @@ function bedienAktionen(){
 function physikSchritt(){
   schrittZaehler++;
   // Trefferstopp: alles hält kurz an – Tastendrücke bleiben gesammelt und zählen im nächsten echten Schritt
-  if(fx.stopp > 0){ fx.stopp--; kam.px = kam.x; fig.px = fig.x; fig.py = fig.y; return; }
+  if(fx.stopp > 0){ fx.stopp--; kam.px = kam.x; fig.px = fig.x; fig.py = fig.y; schwein.px = schwein.x; schwein.py = schwein.y;
+    schwein.schirmVor = schwein.schirm; schwein.laufWinkelVor = schwein.laufWinkel; schirmAnker.px = schirmAnker.x; schirmAnker.py = schirmAnker.y; return; }
   eingabeSchritt();
   ankerSchritt();
+  schweinSchritt();   // vor dem Affen: der Schirm-Anker steht dann schon an der neuen Stelle
   figurSchritt();
   bruchSchritt();
   kristallSchritt();

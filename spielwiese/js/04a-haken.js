@@ -287,6 +287,7 @@ function seilNachSchwerkraft(){
 
 // ---------- Zeichnen ----------
 function ankerZeichnen(a){
+  if(a.art === 'p') return;   // Schirm-Anker: das Schweinchen zeichnet seinen Schirm selbst (04e-schwein.js)
   if(!ankerDa(a)){   // gerissener Einmal-Anker: nur ein gestrichelter Umriss, bis er wieder da ist
     ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(255,140,60,0.55)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(a.x, a.y, 11, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); return;
@@ -335,14 +336,17 @@ function hakenZeichnen(alpha){
   }
   const s = fig.seil;
   if(s && !fig.tot){
-    let tx = s.x, ty = s.y;
+    // bewegter Anker mit gemerkter Position (Schirm): weich dazwischen zeichnen
+    const weich = s.anker && s.anker.px !== undefined;
+    const sx_ = weich ? mischen(s.anker.px, s.anker.x, alpha) : s.x, sy_ = weich ? mischen(s.anker.py, s.anker.y, alpha) : s.y;
+    let tx = sx_, ty = sy_;
     const gold = perfektFenster(), dehnung = s.dehnung || 0;
     if(s.zustand === 'flug'){
-      const t = Math.min(1, (s.t + alpha) / s.n); tx = mischen(fx_, s.x, t); ty = mischen(fy_, s.y, t);
+      const t = Math.min(1, (s.t + alpha) / s.n); tx = mischen(fx_, sx_, t); ty = mischen(fy_, sy_, t);
       lianeZeichnen(fx_, fy_, tx, ty, {flug: 1 - t});
     } else {
       // Durchhang: hat die Liane mehr Länge als Abstand (z. B. kurz nach dem Greifen), hängt sie durch
-      let a = s;
+      let a = {x: sx_, y: sy_};
       const stuecke = [];
       for(const q of (s.knicke || [])){ stuecke.push([a.x, a.y, q.x, q.y]); a = q; }
       stuecke.push([a.x, a.y, fx_, fy_]);

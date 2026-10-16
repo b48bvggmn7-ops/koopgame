@@ -163,6 +163,21 @@ schalter(G_HAFT, 'rollUmlenken', 'B: Schwung auch an normalen Wänden umlenken',
 
 schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
 
+// ---------- Schweinchen (2. Figur) und „Fliegender Anker“ ----------
+const G_SCHWEIN = 'Schweinchen';
+schalter(G_SCHWEIN, 'schweinAn', 'Schweinchen spielt mit (2. Spieler)', false, 'Pfeiltasten laufen, Num 0 springen, Num 1 halten = Schirm (oder zweiter Controller: ✕ / □). Die Pfeiltasten steuern dann nicht mehr den Affen, Haken auch mit G');
+schalter(G_SCHWEIN, 'schweinAllein', 'Solo-Test: Schweinchen fliegt allein vor dir', false, 'ohne zweiten Spieler: das Schweinchen schwebt mit offenem Schirm vor dem Affen (in Station 11 immer)');
+schalter(G_SCHWEIN, 'schirmAnker', 'Fliegender Anker: Haken greift den Schirm', true, 'solange der Schirm offen ist, kann der Affe sich daran hängen; Schirm zu oder Landung = Liane löst sich mit Schwung');
+wert(G_SCHWEIN, 'schirmLast', 'Affe hängt dran: Schirm sinkt mehr', 0.08, 0, 0.6, 0.01, 'zusätzliche Schwerkraft fürs Schweinchen, solange der Affe am Schirm hängt');
+wert(G_SCHWEIN, 'schirmRampe', 'Schirm: wird schwerer nach (Schritte)', 157, 20, 600, 1, 'wie im Spiel 2,6 s – danach fällt sie fast normal');
+wert(G_SCHWEIN, 'schirmStartSchwer', 'Schirm: Schwerkraft am Anfang', 0.10, 0, 0.62, 0.01, 'wie im Spiel');
+wert(G_SCHWEIN, 'schirmFallStart', 'Schirm: Fall-Tempo am Anfang', 2.0, 0.5, 10, 0.1, 'wie im Spiel');
+wert(G_SCHWEIN, 'schirmFallEnde', 'Schirm: Fall-Tempo am Ende', 8.5, 0.5, 15, 0.1, 'wie im Spiel');
+wert(G_SCHWEIN, 'soloVor', 'Solo: Abstand vor dem Affen (Kästchen)', 4, 0, 12, 0.5);
+wert(G_SCHWEIN, 'soloHoch', 'Solo: Höhe über dem Affen (Kästchen)', 3.5, 1, 10, 0.5);
+wert(G_SCHWEIN, 'soloTempo', 'Solo: Flugtempo mit Affe dran', 7.2, 2, 15, 0.1, 'wie schnell sie weitersegelt, während der Affe hängt (Spiel: höchstens 7,2)');
+wert(G_SCHWEIN, 'soloSinken', 'Solo: Sinken mit Affe dran', 1.2, 0, 6, 0.1);
+
 // ---------- Kamera ----------
 const G_KAM = 'Kamera';
 wert(G_KAM, 'kameraWeich', 'Kamera folgt (weich ↔ hart)', 0.12, 0.02, 1, 0.01);
