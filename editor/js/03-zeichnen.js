@@ -42,6 +42,11 @@ function draw(){
     ctx.fillStyle=col[0]; ctx.beginPath(); ctx.arc(X,Y,TILE*0.3,0,Math.PI*2); ctx.fill();
     ctx.fillStyle=col[1]; ctx.beginPath(); ctx.arc(X,Y,TILE*0.23,0,Math.PI*2); ctx.fill();
     ctx.fillStyle=col[2]; ctx.fillRect(X-2, Y-TILE*0.13, 4, TILE*0.26);
+    if(co.klasse && co.klasse !== 'pfad'){   // Nacht-Ausbau: Münz-Klasse G (Geschick) / M (Meister)
+      ctx.fillStyle = co.klasse === 'meister' ? '#ff4d6d' : '#2b8a3e'; ctx.beginPath(); ctx.arc(X + TILE*0.27, Y - TILE*0.27, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(co.klasse === 'meister' ? 'M' : 'G', X + TILE*0.27, Y - TILE*0.27 + 1);
+    }
   }
   { const el=document.getElementById('coinCount');
     const nB = coins.filter(c=>c.color==='blue').length, nP = coins.filter(c=>c.color==='pink').length;

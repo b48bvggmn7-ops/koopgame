@@ -181,7 +181,7 @@ function convertEditorSnapshot(d){
       return o;
     }),
     checkpoints: (d.checkpoints||[]).slice().sort((a, b)=> a.c-b.c).map(foot),
-    coins: (d.coins||[]).map(co=>({x:co.c*T+T/2, y:co.r*T+T/2, color:co.color||'gold'})),
+    coins: (d.coins||[]).map(co=>({x:co.c*T+T/2, y:co.r*T+T/2, color:co.color||'gold', ...(co.klasse ? {klasse: co.klasse} : {})})),
     spikes: (d.spikes||[]).map(sp=>({x:sp.c*T+T/2, y:sp.r*T+T, w:T, h:T, dir:sp.dir||0})),
     startM: foot(d.startM), startF: foot(d.startF), goal: foot(d.goal),
     ...Object.fromEntries(ELEMENTE.filter(E => E.editor).map(E => [E.feld,   // Sprungpilz, Aufwind … (elemente/)

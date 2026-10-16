@@ -56,28 +56,40 @@ window.STELLE = {
     }
     return false;
   },
-  // Mittel: 'alt' (Sprung, Schweinchen + Segeln) oder 'neu' (+ Dash). Rückgabe: beste Kombination + Fenster
+  // Fenster eines Rasters ok[j][t]: längster Lauf entlang j (Absprung) und t (Dash) durch die beste Zelle
+  fenster(ok, mitT){
+    let w = 0, n = 0;
+    for(let a = 0; a < ok.length; a++) for(let q = 0; q < ok[a].length; q++){
+      if(!ok[a][q]) continue; n++;
+      let lj = 1; for(let x = a - 1; x >= 0 && ok[x][q]; x--) lj++; for(let x = a + 1; x < ok.length && ok[x][q]; x++) lj++;
+      let lt = 1; for(let x = q - 1; x >= 0 && ok[a][x]; x--) lt++; for(let x = q + 1; x < ok[a].length && ok[a][x]; x++) lt++;
+      w = Math.max(w, mitT ? Math.min(lj, lt) : lj);
+    }
+    return {w, n};
+  },
+  // Mittel: 'alt' (Sprung, Schweinchen + Segeln) oder 'neu' (+ Dash). Erst grobes Raster (jeder 2. Absprung-, jeder 3.
+  // Dash-Schritt) über alle Varianten, dann für die drei besten Varianten das feine Raster -> Fenster in Schritten.
   pruefen(o){
     this.vorbereiten(o.links);
-    const varianten = [];
     const dashs = o.mittel === 'neu' ? [null, 'vor', 'vor+hoch', 'hoch', 'vor+runter'] : [null];
     const segelns = o.wer === 'f' ? [false, true] : [false];
-    const anlauf = o.anlauf || [0, 2, 4, 6];
-    const js = []; for(let j = 0; j <= (o.jmax || 30); j++) js.push(j);
-    const ts = []; for(let t = 0; t <= 40; t++) ts.push(t);
-    let best = null;
+    const anlauf = o.anlauf || [0, 3, 6];
+    const jmax = o.jmax || 30;
+    const reihe = (von, bis, sch) => { const a = []; for(let x = von; x <= bis; x += sch) a.push(x); return a; };
+    const grob = [];
     for(const d of dashs) for(const sg of segelns) for(const b of anlauf){
-      const tl = d ? ts : [0];
-      const ok = js.map(j => tl.map(t => this.versuch(o, b, j, t, d, sg)));
-      // Fenster: längster Lauf entlang j (Absprung) und entlang t (Dash) durch die beste Zelle
-      let w = 0, n = 0;
-      for(let a = 0; a < js.length; a++) for(let q = 0; q < tl.length; q++){
-        if(!ok[a][q]) continue; n++;
-        let lj = 1; for(let x = a - 1; x >= 0 && ok[x][q]; x--) lj++; for(let x = a + 1; x < js.length && ok[x][q]; x++) lj++;
-        let lt = 1; for(let x = q - 1; x >= 0 && ok[a][x]; x--) lt++; for(let x = q + 1; x < tl.length && ok[a][x]; x++) lt++;
-        w = Math.max(w, d ? Math.min(lj, lt) : lj);
-      }
-      if(n && (!best || w > best.fenster)) best = {dash: d, segeln: sg, anlauf: b, fenster: w, treffer: n};
+      const js = reihe(0, jmax, 2), ts = d ? reihe(0, 39, 3) : [0];
+      const ok = js.map(j => ts.map(t => this.versuch(o, b, j, t, d, sg)));
+      const f = this.fenster(ok, !!d);
+      if(f.n) grob.push({d, sg, b, n: f.n});
+    }
+    grob.sort((x, y) => y.n - x.n);
+    let best = null;
+    for(const v of grob.slice(0, 3)){
+      const js = reihe(0, jmax, 1), ts = v.d ? reihe(0, 40, 1) : [0];
+      const ok = js.map(j => ts.map(t => this.versuch(o, v.b, j, t, v.d, v.sg)));
+      const f = this.fenster(ok, !!v.d);
+      if(f.n && (!best || f.w > best.fenster)) best = {dash: v.d, segeln: v.sg, anlauf: v.b, fenster: f.w, treffer: f.n};
     }
     return best;
   },

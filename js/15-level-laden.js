@@ -49,7 +49,7 @@ function convertEditorSaveFormat(d){
   });
   return {
     solids, hooks, switches, doors, spikes, movingPlatforms,
-    coins: (d.coins||[]).map(c=>({x:c.c*LOAD_TILE+LOAD_TILE/2, y:c.r*LOAD_TILE+LOAD_TILE/2, color:c.color||'gold'})),
+    coins: (d.coins||[]).map(c=>({x:c.c*LOAD_TILE+LOAD_TILE/2, y:c.r*LOAD_TILE+LOAD_TILE/2, color:c.color||'gold', ...(c.klasse ? {klasse: c.klasse} : {})})),
     checkpoints: (d.checkpoints||[]).map(c=>({x:c.c*LOAD_TILE+LOAD_TILE/2, y:c.r*LOAD_TILE+LOAD_TILE})),
     startM: d.startM ? {x:d.startM.c*LOAD_TILE+LOAD_TILE/2, y:d.startM.r*LOAD_TILE+LOAD_TILE} : null,
     startF: d.startF ? {x:d.startF.c*LOAD_TILE+LOAD_TILE/2, y:d.startF.r*LOAD_TILE+LOAD_TILE} : null,

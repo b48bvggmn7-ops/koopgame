@@ -133,6 +133,8 @@ def vermessen(datei):
             e['alt_' + wer] = bewerten(ALT[wer], g, dy)
             e['neu_' + wer] = bewerten(NEU[wer], g, dy)
         e['abkuerzung'] = mit_hilfe and any(e['alt_' + w] is None and e['neu_' + w] is not None for w in 'mf')
+        # Rollen-Abkürzung: früher schaffte nur EINE Figur die Lücke (Koop-Absicht), jetzt mit Dash auch die andere
+        e['rolle'] = [w for w, o in (('m', 'f'), ('f', 'm')) if e['alt_' + w] is None and e['alt_' + o] is not None and e['neu_' + w] is not None]
         gruben.append(e)
     # Sperren: Kletterhöhe an Wänden/Türen (Lauf in Reihe r stößt rechts an eine Wand; frei erst h Reihen höher)
     sperren = []
@@ -157,6 +159,21 @@ def vermessen(datei):
             e['neu_' + wer] = h <= klettern_max(NEU[wer])
         e['neu_ueberwindbar'] = any(not e['alt_' + w] and e['neu_' + w] for w in 'mf') and not kamin
         sperren.append(e)
+    # Türen: über die geschlossene Tür hinweg? (Tür-Spalten samt Wand darüber bis zur ersten Lücke)
+    tuer_check = []
+    for grp in B.gruppen(tueren):
+        cs = sorted(set(c for c, r in grp)); rs = sorted(set(r for c, r in grp))
+        unten = max(rs)
+        boden = unten + 1 if any((c, unten + 1) in fest for c in cs) else None
+        frei = None
+        for r in range(min(rs) - 1, -4, -1):
+            if all((c, r) not in fest for c in cs): frei = r; break
+        if frei is None: tuer_check.append({'spalte': cs[0], 'reihe': unten, 'zu': True}); continue
+        h = (boden if boden is not None else unten + 1) - frei - 1   # so hoch muss man (Reihen über dem Boden)
+        e = {'spalte': cs[0], 'reihe': unten, 'zu': False, 'hoehe': h}
+        for wer in 'mf':
+            e['alt_' + wer] = h <= klettern_max(ALT[wer]); e['neu_' + wer] = h <= klettern_max(NEU[wer])
+        tuer_check.append(e)
     # neue Elemente und Checkpoints
     bruch = len(d.get('bruchWaende', []))
     haft = len(B.gruppen(zellen_von(d, 'haftflaechen')))
@@ -169,7 +186,7 @@ def vermessen(datei):
                for i, a in enumerate(abst) if (a < CP_NACHT[0] and i > 0 and i < len(cps)) or a > CP_NACHT[1]]
     muenzen = {}
     for m in d.get('coins', []): muenzen[m.get('klasse', '—')] = muenzen.get(m.get('klasse', '—'), 0) + 1
-    return {'datei': datei, 'welt': welt(d, datei), 'breite': breite, 'gruben': gruben, 'sperren': sperren,
+    return {'datei': datei, 'welt': welt(d, datei), 'breite': breite, 'gruben': gruben, 'sperren': sperren, 'tueren': tuer_check,
             'bruch_kaestchen': bruch, 'bruch_gruppen': len(B.gruppen(zellen_von(d, 'bruchWaende'))), 'haft_gruppen': haft,
             'checkpoints': cps, 'cp_abstaende': abst, 'cp_warn': cp_warn, 'muenzen': muenzen}
 
@@ -195,6 +212,15 @@ def drucken(e, gruben=False):
     print(f'  Sperren jetzt überwindbar (Wand/Tür, Sprung+Dash): {len(sp)}  (davon Türen: {sum(1 for s in sp if s["tuer"])})')
     for s in sp:
         print(f"    Spalte {s['spalte']} Reihe {s['reihe']} Höhe {s['hoehe']}{' TÜR' if s['tuer'] else ''}")
+    ro = [g for g in e['gruben'] if g['rolle']]
+    print(f'  Rollen-Abkürzungen (früher nur eine Figur, jetzt mit Dash beide): {len(ro)}')
+    for g in ro:
+        print(f"    Spalte {g['von']}→{g['nach']} Reihe {g['reihe']} dy {g['dy']:+d} Breite {g['breite']}: jetzt auch "
+              + ', '.join('Affe ' + kurz(g['neu_m']) if w == 'm' else 'Schwein ' + kurz(g['neu_f']) for w in g['rolle']))
+    tu = [t for t in e['tueren'] if not t['zu']]
+    print(f"  Türen: {len(e['tueren'])}, oben offen: {len(tu)}" + ''.join(
+        f"\n    Tür Spalte {t['spalte']} Reihe {t['reihe']}: drüber {t['hoehe']} Reihen – alt {'JA' if t['alt_m'] or t['alt_f'] else 'nein'}, "
+        f"neu {'JA (Exploit!)' if (t['neu_m'] or t['neu_f']) and not (t['alt_m'] or t['alt_f']) else ('ja' if t['neu_m'] or t['neu_f'] else 'nein')}" for t in tu))
     print(f"  Durchbruch: {e['bruch_kaestchen']} Kästchen in {e['bruch_gruppen']} Stellen · Haftflächen: {e['haft_gruppen']}")
     print(f"  Checkpoints: {e['checkpoints']} Abstände {e['cp_abstaende']} {('⚠ ' + '; '.join(e['cp_warn'])) if e['cp_warn'] else 'ok'}")
     print(f"  Münzen nach Klasse: {e['muenzen']}")

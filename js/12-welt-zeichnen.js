@@ -19,6 +19,18 @@ initParticles();
 // geprägter Innenring, Glanzlicht; dunkler Umriss + weicher Schein und Schatten -> hebt sich vom
 // Dschungel-Hintergrund ab. Nur Zeichnung – der Einsammel-Bereich (updateCoins) ist unabhängig davon.
 const COIN_DRAW_R = 12.5;   // vorher 11
+// Nacht-Ausbau: Meister-Münze (klasse 'meister', an den schwersten Stellen) – zwei kleine Sterne kreisen um sie (nur Aussehen)
+function muenzeMeisterZeichnen(x, y, t, s){
+  ctx.save();
+  for(let k = 0; k < 2; k++){
+    const a = t*0.004 + s*0.01 + k*Math.PI, px = x + Math.cos(a)*15, py = y + Math.sin(a)*7;
+    ctx.globalAlpha = 0.85; ctx.fillStyle = '#fff6c2';
+    ctx.beginPath();
+    for(let i = 0; i < 8; i++){ const rr = i % 2 ? 1.3 : 3.4, w = i*Math.PI/4; ctx.lineTo(px + Math.cos(w)*rr, py + Math.sin(w)*rr); }
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
 function drawCoin3D(x, y, r, ang, pal, alpha, glow, g){
   if(r < 1) return;
   const c = g || ctx;   // g: andere Zeichenfläche (für Tests)
@@ -970,6 +982,7 @@ function drawSolidLook(s, look, x){
     }
     drawCoin3D(x, c.y - lift, COIN_DRAW_R*scale, ang, pal, alpha, !c.taken);
     if(!c.taken) glanzFunkeln(x - 4, c.y - lift - 5, 6, c.x*0.13 + c.y*0.07);   // Design-Politur C
+    if(!c.taken && c.klasse === 'meister') muenzeMeisterZeichnen(x, c.y - lift, tNow, c.x);   // Nacht-Ausbau: Meister-Münze funkelt
   }
 
   const gx = goal.x-camX;

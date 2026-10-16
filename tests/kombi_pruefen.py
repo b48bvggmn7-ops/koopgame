@@ -159,6 +159,36 @@ def kombis_auto(d):
             out.append({'spalte': pc, 'art': 'Pilz + Wandsprung', 'wer': 'beide'})
         if any(abs(hc - pc) <= 7 and 3 <= pr - hr <= 11 for hc, hr in hooks):
             out.append({'spalte': pc, 'art': 'Pilz + Haken', 'wer': 'm'})
+    out += kombis_neu(d, ks, hooks, gr, winds, pilze, flaechen)
+    return out
+
+def kombis_neu(d, ks, hooks, gr, winds, pilze, flaechen):
+    """Nacht-Ausbau: Kombis mit den neuen Mechaniken (Dash, Durchbruch-Wand, Haftfläche), automatisch erkannt:
+    Durchbruch (Gruppe) mit Haken / Kamin / Pilz / Aufwind / Grube davor oder dahinter in KOMBI_ABSTAND -> „X + Dash“;
+    Haftfläche (Gruppe) mit Haken / Kamin / Pilz / Aufwind davor -> „X + Haftfläche“, mit Grube am Ende -> „Haftfläche + Dash“."""
+    out = []
+    A = KOMBI_ABSTAND
+    def nah_kamin(c0, c1): return any(k['c'] - A <= c1 and c0 <= k['c2'] + A for k in ks)
+    def nah_haken(c0, c1): return any(c0 - A <= hc <= c1 + A for hc, hr in hooks)
+    def nah_pilz(c0, c1): return any(c0 - A <= pc <= c1 + A for pc, pr in pilze)
+    def nah_wind(c0, c1): return any(c0 - A <= wc <= c1 + A for wc, wr in winds)
+    def nah_grube(c0, c1, weite=A): return any(c0 - weite <= g1 and g0 <= c1 + weite for g0, g1 in gr)
+    bruch = B.gruppen({z for o in d.get('bruchWaende', []) for z in B.felder_zellen(o)})
+    for g in bruch:
+        c0, c1 = g[0][0], g[-1][0]; m = (c0 + c1) // 2
+        if nah_haken(c0, c1): out.append({'spalte': m, 'art': 'Haken + Dash (Durchbruch)', 'wer': 'm'})
+        if nah_kamin(c0, c1): out.append({'spalte': m, 'art': 'Wandsprung + Dash (Durchbruch)', 'wer': 'beide'})
+        if nah_pilz(c0, c1): out.append({'spalte': m, 'art': 'Pilz + Dash (Durchbruch)', 'wer': 'beide'})
+        if nah_wind(c0, c1): out.append({'spalte': m, 'art': 'Aufwind + Dash (Durchbruch)', 'wer': 'f'})
+        if nah_grube(c0, c1, 4): out.append({'spalte': m, 'art': 'Dash (Durchbruch) + Segeln/Sprung', 'wer': 'beide'})
+    haft = B.gruppen({z for o in d.get('haftflaechen', []) for z in B.felder_zellen(o)})
+    for g in haft:
+        c0, c1 = min(c for c, r in g), max(c for c, r in g); m = (c0 + c1) // 2
+        if nah_haken(c0, c1): out.append({'spalte': m, 'art': 'Haken + Haftfläche', 'wer': 'm'})
+        if nah_kamin(c0, c1): out.append({'spalte': m, 'art': 'Wandsprung + Haftfläche', 'wer': 'beide'})
+        if nah_pilz(c0, c1): out.append({'spalte': m, 'art': 'Pilz + Haftfläche', 'wer': 'beide'})
+        if nah_wind(c0, c1): out.append({'spalte': m, 'art': 'Aufwind + Haftfläche', 'wer': 'f'})
+        if any(c1 - 2 <= g0 <= c1 + 6 and g1 - g0 >= 4 for g0, g1 in gr): out.append({'spalte': c1, 'art': 'Haftfläche + Dash', 'wer': 'beide'})
     return out
 
 def kombi_stellen_hand():

@@ -117,8 +117,10 @@ function applyTool(c,r,forceErase){
   } else if(tool==='coin'){
     const ex = coins.find(h=>h.c===c&&h.r===r);
     const order = ['blue','pink','gold'];
-    if(ex){ if(clickNotDrag) ex.color = order[(order.indexOf(ex.color||'gold')+1) % 3]; }   // Klick = Farbe wechseln
-    else coins.push({c, r, color: document.getElementById('coinColor').value});
+    const kl = document.getElementById('opt-coin-klasse').value;
+    if(ex && clickNotDrag && (ex.klasse || 'pfad') !== kl){ if(kl === 'pfad') delete ex.klasse; else ex.klasse = kl; }   // andere Klasse gewählt: Klick setzt die Klasse
+    else if(ex){ if(clickNotDrag) ex.color = order[(order.indexOf(ex.color||'gold')+1) % 3]; }   // Klick = Farbe wechseln
+    else { coins.push({c, r, color: document.getElementById('coinColor').value, ...(kl !== 'pfad' ? {klasse: kl} : {})}); }
   } else if(tool==='spike'){
     delete tiles[key];
     const ex = spikes.find(h=>h.c===c&&h.r===r);

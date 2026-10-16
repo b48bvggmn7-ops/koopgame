@@ -60,7 +60,7 @@ function exportLevel(){
       return o;
     }),
     checkpoints: checkpoints.slice().sort((a,b)=>a.c-b.c).map(cp=>({x:cp.c*TILE+TILE/2, y:cp.r*TILE+TILE})),
-    coins: coins.map(co=>({x:co.c*TILE+TILE/2, y:co.r*TILE+TILE/2, color:co.color||'gold'})),
+    coins: coins.map(co=>({x:co.c*TILE+TILE/2, y:co.r*TILE+TILE/2, color:co.color||'gold', ...(co.klasse ? {klasse: co.klasse} : {})})),   // klasse: Nacht-Ausbau (pfad/geschick/meister)
     spikes: spikes.map(sp=>({x:sp.c*TILE+TILE/2, y:sp.r*TILE+TILE, w:TILE, h:TILE, dir:sp.dir||0})),
     switches: elementExport('switches', byType), doors: elementExport('doors', byType),   // Hebel/Türen (elemente/)
     startM: startM ? {x:startM.c*TILE+TILE/2, y:startM.r*TILE+TILE} : null,

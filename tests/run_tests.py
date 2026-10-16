@@ -5882,6 +5882,33 @@ async def tasten_alter_spielstand(g):
     finally:
         srv.shutdown()
 
+@test
+async def muenz_klassen(g):
+    """Nacht-Ausbau: Münz-Klasse (Pfad / Geschick / Meister) – im Editor wählbar (Feld „Klasse“ beim Münz-Werkzeug,
+    Klick mit anderer Klasse ändert die Klasse, sonst wie bisher die Farbe), wird exportiert (nur wenn nicht Pfad, alte
+    Level bleiben gleich) und im Spiel geladen; Meister-Münzen funkeln (zeichnen ohne Fehler)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(500)
+        await p.evaluate("clearLevelContent(); coins.push({c: 5, r: 10, color: 'gold'}, {c: 6, r: 10, color: 'blue', klasse: 'meister'}, {c: 7, r: 10, color: 'pink', klasse: 'geschick'})")
+        ex = await p.evaluate("JSON.parse(exportLevel()).coins")
+        assert 'klasse' not in ex[0] and ex[1]['klasse'] == 'meister' and ex[2]['klasse'] == 'geschick', ex
+        await ed_werkzeug(p, 'coin'); assert await p.is_visible('#opt-coin-klasse')
+        await p.select_option('#opt-coin-klasse', 'meister')
+        x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y); await p.wait_for_timeout(80)
+        c0 = await p.evaluate("coins.find(c => c.c === 5 && c.r === 10)")
+        assert c0['klasse'] == 'meister' and c0['color'] == 'gold', c0
+        await p.mouse.click(x, y); await p.wait_for_timeout(80)
+        c0 = await p.evaluate("coins.find(c => c.c === 5 && c.r === 10)")
+        assert c0['klasse'] == 'meister' and c0['color'] == 'blue', c0   # gleiche Klasse: Klick wechselt wie bisher die Farbe
+    finally:
+        srv.shutdown()
+    await p.goto(GAME); await p.wait_for_timeout(400)
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
+                       coins=[{'x': 420, 'y': 600, 'color': 'gold', 'klasse': 'meister'}, {'x': 500, 'y': 600, 'color': 'gold'}]))
+    assert await g.ev("coins[0].klasse") == 'meister' and await g.ev("coins[1].klasse") == 'pfad'
+    await g.steps(20)
+
 def level_teil(k, v):
     """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
     zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""

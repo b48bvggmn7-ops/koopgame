@@ -93,7 +93,7 @@ function buildLevel(data){
     return o;
   });
   spikes = (data.spikes||[]).map(s=>({...s}));
-  coins = (data.coins||[]).map(c=>({x:c.x, y:c.y, color: c.color||'gold', taken:false, pop:0}));
+  coins = (data.coins||[]).map(c=>({x:c.x, y:c.y, color: c.color||'gold', klasse: c.klasse || 'pfad', taken:false, pop:0}));   // klasse: Nacht-Ausbau (pfad/geschick/meister)
   checkpointDefs = (data.checkpoints||[]).map(c=>({x:c.x, y:c.y, reachedM:false, reachedF:false, raiseT:0}))
                      .sort((a,b)=>a.x-b.x);
   coinsNeeded = 0;   // keine Mindest-Münzen fürs Ziel mehr (Nutzerwunsch: gemeinsame Gold-Zählung „x / 10“ entfernt)
