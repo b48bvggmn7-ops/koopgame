@@ -95,3 +95,8 @@ Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis · 3 Landeplätze ·
 ## Geänderte Tests
 - `element_register`: erwartete Element-Liste um `durchbruch` und `haftflaeche` ergänzt (neue Elemente; alle bisherigen
   Prüfungen unverändert).
+- `level19_magmakammer` und `level21_feuerschlund`, Etappe 4 „Doppel-Schacht“: der Bot-Affe wartet jetzt unten, bis
+  Platte 10 den Kamin öffnet (`{'wait': '!!linkOn[10]'}` vor dem Klettern). Grund: vorher hüpfte er im noch
+  geschlossenen Kamin auf und ab; mit dem (gewollten) Wand-Rutschen fällt er dabei langsamer, landet unten und hüpfte in
+  den Nachbarschacht. Geprüft wird dasselbe wie vorher (Platte 10 öffnet den Kamin, Hebel 11 die Klappe, beide kommen
+  durch); Level und Spiel für Menschen unverändert. Ohne Wand-Rutschen war der alte Plan grün (gegengeprüft).

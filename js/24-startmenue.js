@@ -728,8 +728,8 @@ function quitGame() {
 S.options = {
   el: $('#sm-s-options'), idx: 0, view: 'keyboard', rows: [],
   enter(arg) {
-    this.rows = [$('#sm-opt-seg'), $('#sm-row-keys'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-opt-back')];
-    this.idx = arg === 'tasten' ? 1 : 0; this.drawControls(); this.syncVol(); this.paint();
+    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-row-keys'), $('#sm-opt-back')];   // „Tasten belegen“ hinten: alte Reihenfolge bleibt
+    this.idx = arg === 'tasten' ? 6 : 0; this.drawControls(); this.syncVol(); this.paint();
   },
   paint() { this.rows.forEach((r, i) => r.classList.toggle('sel', i === this.idx)); },
   syncVol() {
@@ -755,17 +755,17 @@ S.options = {
     else if (type === 'down') { this.idx = (this.idx + 1) % n; this.paint(); Snd.play('move'); }
     else if (type === 'left' || type === 'right') {
       if (this.idx === 0) this.toggleView();
-      else if (this.idx >= 2 && this.idx <= 4) {
-        const k = ['master', 'music', 'sfx'][this.idx - 2], r = $('#sm-r-' + k);
+      else if (this.idx <= 3) {
+        const k = ['master', 'music', 'sfx'][this.idx - 1], r = $('#sm-r-' + k);
         r.value = clamp(+r.value + (type === 'left' ? -10 : 10), 0, 100);
         r.dispatchEvent(new Event('input'));
       }
     }
     else if (type === 'confirm') {
       if (this.idx === 0) this.toggleView();
-      else if (this.idx === 1) { Snd.play('ok'); go('tasten'); }
-      else if (this.idx === 5) toggleFullscreen();
-      else if (this.idx === 6) unlockAll();
+      else if (this.idx === 4) toggleFullscreen();
+      else if (this.idx === 5) unlockAll();
+      else if (this.idx === 6) { Snd.play('ok'); go('tasten'); }
       else if (this.idx === 7) { Snd.play('back'); go('menu'); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
@@ -779,7 +779,7 @@ $$('#sm-opt-seg button').forEach(b => b.addEventListener('click', () => { S.opti
     r.style.setProperty('--p', r.value + '%'); $('#sm-v-' + k).textContent = r.value + ' %';
     if (k !== 'music') Snd.play('move');
   });
-  $('#sm-row-' + k).addEventListener('pointerdown', () => { S.options.idx = i + 2; S.options.paint(); });
+  $('#sm-row-' + k).addEventListener('pointerdown', () => { S.options.idx = i + 1; S.options.paint(); });
 });
 $('#sm-opt-back').addEventListener('click', () => { Snd.play('back'); go('menu'); });
 // zum Testen: alle fertigen Level sofort spielbar
@@ -788,8 +788,8 @@ function unlockAll() {
   save.played = true; persist();
   Snd.play('ok'); toast('Alle Level freigeschaltet');
 }
-$('#sm-unlock').addEventListener('click', () => { S.options.idx = 6; S.options.paint(); unlockAll(); });
-$('#sm-fs').addEventListener('click', () => { S.options.idx = 5; S.options.paint(); toggleFullscreen(); });
+$('#sm-unlock').addEventListener('click', () => { S.options.idx = 5; S.options.paint(); unlockAll(); });
+$('#sm-fs').addEventListener('click', () => { S.options.idx = 4; S.options.paint(); toggleFullscreen(); });
 /* =====================================================================
    3b) TASTEN BELEGEN (Nacht-Ausbau)
    Spieler 1 und 2 getrennt, Tastatur und Controller (je Controller-Typ PlayStation / Xbox / andere).
@@ -943,7 +943,7 @@ $$('#sm-tb-seg button').forEach(b => b.addEventListener('click', () => {
 }));
 $('#sm-tb-typ').addEventListener('click', () => { if (!tbFang && S.tasten.art === 'pad') S.tasten.wechselArt(1); });
 $('#sm-tb-back').addEventListener('click', () => { if (!tbFang) S.tasten.verlassen(); });
-$('#sm-keys').addEventListener('click', () => { S.options.idx = 1; S.options.paint(); Snd.play('ok'); go('tasten'); });
+$('#sm-keys').addEventListener('click', () => { S.options.idx = 6; S.options.paint(); Snd.play('ok'); go('tasten'); });
 // Vollbild: geht nur nach einem Tastendruck/Klick (Browser-Regel) – deshalb beim ersten Tastendruck im Titelbild
 function goFullscreen() {
   const el = document.documentElement;

@@ -2826,7 +2826,7 @@ async def level19_magmakammer(g):
     if True:
         hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
         runter = [k_lauf(641), {'until': 'P.grounded', 'frames': 100}, k_lauf(646), {'until': 'P.grounded', 'frames': 100}, k_lauf(651), {'until': 'P.grounded', 'frames': 100}, k_lauf(656), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
-        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},
+        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'wait': '!!linkOn[10]'}, {'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},   # Nacht-Ausbau: unten warten (mit Wand-Rutschen fiel der hüpfende Bot sonst in den Nachbarschacht)
              {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(613)}', 'frames': 900}, k_lauf(625, -10)] + am(626) + \
             [{'wait': f'Q.grounded && Q.x >= {kx(622)} && Q.y <= {ky(0)} + 2'}] + runter
         f = [{'frames': 40}, k_lauf(609, 0)] + sprung_zu(kx(613)) + [k_lauf(615, 0), halten(617), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
@@ -3122,7 +3122,7 @@ async def level21_feuerschlund(g):
     if True:
         hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
         runter = [k_lauf(641), {'until': 'P.grounded', 'frames': 100}, k_lauf(646), {'until': 'P.grounded', 'frames': 100}, k_lauf(651), {'until': 'P.grounded', 'frames': 100}, k_lauf(656), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
-        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},
+        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'wait': '!!linkOn[10]'}, {'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},   # Nacht-Ausbau: unten warten (mit Wand-Rutschen fiel der hüpfende Bot sonst in den Nachbarschacht)
              {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(613)}', 'frames': 900}, k_lauf(625, -10)] + am(626) + \
             [{'wait': f'Q.grounded && Q.x >= {kx(622)} && Q.y <= {ky(0)} + 2'}] + runter
         f = [{'frames': 40}, k_lauf(609, 0)] + sprung_zu(kx(613)) + [k_lauf(615, 0), halten(617), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
@@ -5826,23 +5826,24 @@ async def tasten_controller_je_typ(g):
         await p.click('#sm-tb-seg button[data-art="pad"]'); await p.wait_for_timeout(300)
         assert 'Xbox' in await g2.ev("document.getElementById('sm-tb-typ').textContent")
         # Dash von Spieler 1 auf RB (Knopf 5)
+        async def druck(knopf, bis, wert="{pressed: true, value: 1}"):
+            # gedrückt halten, bis das Menü reagiert hat (langsame Rechner: nicht feste Zeiten), dann loslassen
+            await g2.ev(f"__pad.buttons[{knopf}] = {wert}")
+            await p.wait_for_function(bis, timeout=8000)
+            await g2.ev(f"__pad.buttons[{knopf}] = {{pressed: false, value: 0}}"); await p.wait_for_timeout(300)
         await tb_knopf(g2, 1, 'dash')
-        await g2.ev("__pad.buttons[5] = {pressed: true, value: 1}"); await p.wait_for_timeout(150)
-        await g2.ev("__pad.buttons[5] = {pressed: false, value: 0}"); await p.wait_for_timeout(300)
+        await druck(5, "PADSETS[1].xbox.dash === 5")
         assert await g2.ev("PADSETS[1].xbox.dash") == 5
         assert await g2.ev("PADSETS[1].playstation.dash") == 3 and await g2.ev("PADSETS[2].xbox.dash") == 3
         # Trigger (analog, nur value) auf Fähigkeit
         await tb_knopf(g2, 1, 'ability')
-        await g2.ev("__pad.buttons[7] = {pressed: false, value: 0.9}"); await p.wait_for_timeout(150)
-        await g2.ev("__pad.buttons[7] = {pressed: false, value: 0}"); await p.wait_for_timeout(300)
+        await druck(7, "PADSETS[1].xbox.ability === 7", "{pressed: false, value: 0.9}")
         assert await g2.ev("PADSETS[1].xbox.ability") == 7
         # Share (8) gesperrt, Options (9) bricht ab
         await tb_knopf(g2, 1, 'use')
-        await g2.ev("__pad.buttons[8] = {pressed: true, value: 1}"); await p.wait_for_timeout(150)
-        await g2.ev("__pad.buttons[8] = {pressed: false, value: 0}"); await p.wait_for_timeout(200)
+        await druck(8, "document.getElementById('sm-toast').textContent.includes('gesperrt')")
         assert await g2.ev("PADSETS[1].xbox.use") == 1 and await g2.ev("!!document.querySelector('.tb-k.fang')")
-        await g2.ev("__pad.buttons[9] = {pressed: true, value: 1}"); await p.wait_for_timeout(150)
-        await g2.ev("__pad.buttons[9] = {pressed: false, value: 0}"); await p.wait_for_timeout(300)
+        await druck(9, "!document.querySelector('.tb-k.fang')")
         assert await g2.ev("!document.querySelector('.tb-k.fang')") and await g2.ev("PADSETS[1].xbox.use") == 1
         await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
         gesp = await g2.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")

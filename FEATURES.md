@@ -1524,8 +1524,8 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
 - **Dash** (beide Figuren; Affe K, Schweinchen Num 3, Controller △ / Y – frei belegbar): kurzer, schneller Stoß in
   8 Richtungen (Richtung = gedrückte Richtungs-/Hoch-/Runter-Tasten; nichts gedrückt = Blickrichtung; am Seil ohne
   Richtung = Schwung-Richtung). Am Boden und in der Luft. Strecke ≈ 4,5 Kästchen gerade, ≈ 3,4 / 3,3 schräg
-  (DASH_TEMPO 16 × DASH_DAUER 10 Schritte). Danach bleibt die Hälfte des Tempos (DASH_BEHALTEN), nach oben mindestens
-  ein normaler Sprung-Schwung. Ein Dash in der Luft (DASH_LUFT 1); Aufladen nur mit Halt: am Boden, an einer Wand,
+  (DASH_TEMPO 16 × DASH_DAUER 10 Schritte). Danach bleibt die Hälfte des Tempos (DASH_BEHALTEN), nach oben
+  höchstens so viel Aufwärts-Schwung wie ein normaler Sprung. Ein Dash in der Luft (DASH_LUFT 1); Aufladen nur mit Halt: am Boden, an einer Wand,
   am Haken, an einer Haftfläche – dauert DASH_LADEZEIT 54 Schritte (≈ 1 s), voll = kurzes „Pling“. Anzeige: kleiner Punkt
   über der Figur, nur solange der Dash fehlt/lädt bzw. kurz nach dem Aufladen. Tastendruck wird 5 Schritte gemerkt
   (DASH_PUFFER). Kurzer Trefferstopp (2 Schritte, ganzes Spiel), leichtes Kamera-Wackeln, Nachbilder, Staub, Ton.
