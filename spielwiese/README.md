@@ -19,7 +19,8 @@ um Aussehen. Alles lässt sich live verstellen (Taste **Tab**), und jede Mechani
 | Greifen (ab Teil 4) | L | L1 |
 | Seil ranziehen/geben, zielen | W / S | hoch / runter |
 | Variante der Mechanik wechseln | 1 – 4 | R2 (weiter) |
-| Zurück zum Rücksetzpunkt | R | Share |
+| Zurück zum Rücksetzpunkt (heilt auch Zerbrochenes) | R | Share |
+| Mini-Editor an/aus | B | – |
 | Einstellungen, Teleport zu den Stationen | Tab | Options |
 
 Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
@@ -37,7 +38,17 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
    Boden, Wand hoch, unter der Decke zurück, außen herum, Schanze über Stacheln
    (Varianten: A Unterseiten-Haften = L halten an lila Flächen, S/Loslassen = fallen, Leertaste = Absprung;
    B Rollen = L halten, Kugel mit Schwung, klebt an lila Flächen auch um Ecken; C Haften an jeder Decke)
-5. Durchbruch · 6. Kombi – folgen · 7. Freie Fläche
+5. Durchbruch – Kästchen mit Rissen zerbrechen nur mit Dash (ohne Dash prallt man ab): Raum mit Wänden und Decke,
+   Boden von oben, Kette aus fünf Wänden (nach jedem Bruch kurzes Fenster für den nächsten Dash/Sprung), hohe Wand mit
+   Anker dahinter: durch die Wand dashen, dann Haken (Varianten: A bleibt kaputt bis R, B wächst nach, C nur mit
+   viel Tempo = Dash plus Schwung)
+6. Kombi – folgt · 7. Freie Fläche (zum Herumtoben und Selbstbauen)
+
+## Mini-Editor (Taste B)
+- B schaltet Bauen an/aus, das Spiel läuft dabei weiter (gleich ausprobieren).
+- Linke Maustaste (auch gedrückt ziehen) setzt, rechte löscht. Ziffern 1–8 oder Mausrad wählen:
+  1 Boden/Wand · 2 Haftfläche · 3 Brechbar · 4 Anker · 5 Stacheln · 6 Rampe ↗ · 7 Rampe ↖ · 8 Radierer.
+- Im Panel (Tab) unter „Karte“: speichern (`spielwiese-karte`), gespeicherte laden, Original-Arena, Export/Import als JSON.
 
 Im Panel außerdem: Wandsprung-Varianten (A einfach, B wie im Spiel) und die Kantenhilfe (Kopf rutscht an Ecken
 vorbei, Dash hüpft auf knappe Stufen).
@@ -57,6 +68,6 @@ Kästchen 40 px, Bild 1280×720, Zoom 0,85, Figurengröße wie im Spiel.
 ## Regel: getrennt vom Spiel
 - Die Spielwiese benutzt **keinen** Code aus `../js/` und teilt keinen Zustand mit dem Spiel.
 - Sie liest nur die Bilder `../assets/monkey.png` und `../assets/pig.png`.
-- Sie speichert nur unter eigenen Schlüsseln (`spielwiese-einstellungen`, `spielwiese-voreinstellungen`, später
+- Sie speichert nur unter eigenen Schlüsseln (`spielwiese-einstellungen`, `spielwiese-voreinstellungen`,
   `spielwiese-karte`), nie unter denen des Spiels.
 - Sie ist nirgends im Spiel verlinkt. Alles liegt nur im Ordner `spielwiese/`; am Spiel wird nichts geändert.

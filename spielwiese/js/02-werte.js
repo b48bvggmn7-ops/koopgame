@@ -75,6 +75,7 @@ wert(G_DASH, 'abbruchHop', 'D: kleiner Hüpfer in der Luft', 5, 0, 12, 0.5, 'Var
 const G_HAKEN = 'Haken';
 schalter(G_HAKEN, 'hakenHalten', 'Taste halten (aus = drücken zum An/Los)', true, 'halten: loslassen = Seil los · drücken: nochmal drücken = los bzw. zum nächsten Anker');
 wert(G_HAKEN, 'hakenReichweite', 'Reichweite (px)', 600, 200, 1000, 10, 'wird nicht als Kreis gezeigt');
+wert(G_HAKEN, 'hakenPuffer', 'Puffer (Schritte)', 10, 0, 30, 1, 'K zu früh gedrückt (Anker noch verdeckt): greift, sobald einer auftaucht');
 wert(G_HAKEN, 'hakenFlug', 'Flugzeit der Liane (Schritte)', 6, 1, 15, 1);
 wert(G_HAKEN, 'zielRichtung', 'Ziel: Gewicht Blick-/Stickrichtung', 1, 0, 3, 0.05, 'wie stark die gedrückte Richtung zählt');
 wert(G_HAKEN, 'zielOben', 'Ziel: Gewicht „nach oben“', 0.6, 0, 3, 0.05);
@@ -113,6 +114,17 @@ wert(G_HAFT, 'rollSchwer', 'B: Schwerkraft beim Rollen (× normal)', 1, 0, 2, 0.
 wert(G_HAFT, 'rollKlebSchwer', 'B: Schwerkraft auf Haftflächen (× normal)', 0.25, 0, 1, 0.05, 'klein = Wände hochrollen geht auch langsam');
 wert(G_HAFT, 'rollFang', 'B: Haftflächen fangen ab (px)', 6, 0, 20, 1, 'so weit darf die Kugel abheben und bleibt trotzdem kleben');
 wert(G_HAFT, 'rollSprung', 'B: Absprung von der Fläche', 9, 2, 18, 0.5, 'Leertaste beim Rollen: weg von der Fläche');
+
+// ---------- Durchbruch (Teil 5) ----------
+const G_BRUCH = 'Durchbruch';
+wert(G_BRUCH, 'bruchBehalten', 'Tempo nach dem Bruch behalten', 0.8, 0.2, 1, 0.05, 'je zerbrochener Wand');
+wert(G_BRUCH, 'bruchStopp', 'Trefferstopp beim Bruch (Schritte)', 3, 0, 10, 1);
+wert(G_BRUCH, 'bruchWackeln', 'Wackeln beim Bruch', 0.35, 0, 1, 0.05);
+wert(G_BRUCH, 'bruchFenster', 'Durchbruch-Fenster (Schritte)', 14, 0, 40, 1, 'so lange danach geht noch ein Dash oder Sprung (auch ohne Dash-Punkt)');
+wert(G_BRUCH, 'bruchStuecke', 'Bruchstücke je Kästchen', 7, 0, 20, 1);
+wert(G_BRUCH, 'abprall', 'Abprallen ohne Dash', 0.5, 0, 1.2, 0.05, 'wer nur läuft oder springt, prallt so stark zurück');
+wert(G_BRUCH, 'nachwachsZeit', 'B: wächst nach (Sekunden)', 3, 0.5, 15, 0.5, 'Variante B');
+wert(G_BRUCH, 'bruchTempo', 'C: nötiges Tempo', 21, 10, 40, 0.5, 'Variante C: Dash-Tempo + Schwung davor (z. B. aus dem Seil) muss so hoch sein');
 
 schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
 
@@ -171,6 +183,11 @@ mechanik('haft', 'Unterseite', [
   {name: 'A – Unterseiten-Haften', hilfe: 'an Haftflächen (lila) von unten festhalten (L), entlanglaufen, abspringen, dashen'},
   {name: 'B – Rollen', hilfe: 'L halten = Kugel: rollt mit Schwung, klebt an Haftflächen (auch um Ecken), Rampen geben Tempo'},
   {name: 'C – Haften überall', hilfe: 'wie A, aber jede Decke ist klebrig (zum Testen)'},
+]);
+mechanik('bruch', 'Durchbruch', [
+  {name: 'A – Bleibt kaputt', hilfe: 'zerbrochen bis R (zurück zum Rücksetzpunkt)'},
+  {name: 'B – Wächst nach', hilfe: 'nach ein paar Sekunden ist die Wand wieder da'},
+  {name: 'C – Nur bei hohem Tempo', hilfe: 'Dash allein reicht nicht: Schwung mitbringen (Seil, Dash-Sprung, Fall)'},
 ]);
 let aktiveMechanik = 'sprung';
 function varianteSetzen(id, i){

@@ -98,6 +98,7 @@ function panelBauen(){
       try{ if(einstellungenAnwenden(JSON.parse(feld.value))){ einstellungenMerken(); panelAktualisieren(); meldung('Importiert'); } }
       catch(err){ meldung('Das ist kein gültiger JSON-Text'); }
     }})));
+  karteBereichBauen(panel);   // Mini-Editor (08-editor.js)
   meldungFeld = el('div', {class: 'meldung'});
   panel.appendChild(meldungFeld);
   voreinstellungenListe();
@@ -130,4 +131,3 @@ panel.addEventListener('change', e => { if(e.target.type !== 'text' && e.target.
 panel.addEventListener('click', e => { if(e.target.tagName === 'BUTTON' || e.target.type === 'radio' || e.target.type === 'checkbox') e.target.blur(); });
 panel.addEventListener('pointerup', e => { if(e.target.type === 'range') e.target.blur(); });
 
-panelBauen();

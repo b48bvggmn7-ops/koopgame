@@ -77,7 +77,7 @@ function vieleckNaechster(px, py, pts){
 }
 function kastenForm(c, r){
   const z = zelle(c, r), x = c * K, y = r * K;
-  if(z === '#' || z === '=') return [[x, y], [x + K, y], [x + K, y + K], [x, y + K]];
+  if(z === '#' || z === '=' || z === 'x') return [[x, y], [x + K, y], [x + K, y + K], [x, y + K]];
   if(z === RAMPE_HOCH_RECHTS) return [[x, y + K], [x + K, y], [x + K, y + K]];
   if(z === RAMPE_HOCH_LINKS) return [[x, y], [x + K, y + K], [x, y + K]];
   return null;

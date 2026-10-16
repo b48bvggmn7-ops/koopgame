@@ -1,7 +1,7 @@
 // 05-gefuehl.js – Spielwiese: Spielgefühl-Hilfen, jede einzeln abschaltbar (Panel „Spielgefühl“).
 // Wackeln, Trefferstopp, Staub/Partikel, Nachbilder, Dehnen/Stauchen, Töne. Alles wird im festen Takt gerechnet.
 
-const fx = { trauma: 0, stopp: 0, teilchen: [], nachbilder: [] };
+const fx = { trauma: 0, stopp: 0, teilchen: [], nachbilder: [], brocken: [] };
 
 function wackeln(t){ if(V.fxWackeln) fx.trauma = Math.min(1, fx.trauma + t * V.wackelStaerke); }
 function trefferStopp(n){ if(V.fxStopp) fx.stopp = Math.max(fx.stopp, Math.round(n * V.stoppFaktor)); }
@@ -32,6 +32,15 @@ function teilchenBurst(x, y, n, farbe){
       r: 3 + Math.random() * 3, farbe});
   }
 }
+function bruchstuecke(x, y, dx, dy, n){   // fliegen in Dash-Richtung weg, drehen sich, fallen
+  if(!V.fxStaub) return;
+  for(let i = 0; i < n; i++){
+    const g = 2 + Math.random() * 6;
+    fx.brocken.push({x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 30,
+      vx: dx * g + (Math.random() - 0.5) * 5, vy: dy * g + (Math.random() - 0.5) * 5 - 2.5,
+      w: Math.random() * Math.PI, vw: (Math.random() - 0.5) * 0.5, s: 5 + Math.random() * 8, leben: 50 + Math.random() * 30});
+  }
+}
 function nachbild(f){
   fx.nachbilder.push({x: f.x, y: f.y, sx: f.sx, sy: f.sy, blick: f.blick, leben: 12, max: 12});
 }
@@ -40,6 +49,8 @@ function gefuehlSchritt(){
   for(const t of fx.teilchen){ t.x += t.vx; t.y += t.vy; t.vy += t.schwer; t.vx *= 0.94; t.leben--; }
   fx.teilchen = fx.teilchen.filter(t => t.leben > 0);
   if(fx.teilchen.length > 400) fx.teilchen.splice(0, fx.teilchen.length - 400);
+  for(const b of fx.brocken){ b.x += b.vx; b.y += b.vy; b.vy += 0.45; b.vx *= 0.98; b.w += b.vw; b.leben--; }
+  fx.brocken = fx.brocken.filter(b => b.leben > 0 && b.y < KARTE_H * K + 100);
   for(const n of fx.nachbilder) n.leben--;
   fx.nachbilder = fx.nachbilder.filter(n => n.leben > 0);
 }
@@ -93,5 +104,8 @@ function ton(art, staerke){
   else if(art === 'fehlschuss') piep(300, 220, 0.06, 0.04, 'sine');
   else if(art === 'kleben'){ piep(200, 150, 0.07, 0.1, 'sine'); rauschen(0.05, 0.06, 500); }
   else if(art === 'rollen') piep(240, 320, 0.06, 0.06, 'sine');
+  else if(art === 'bruch'){ rauschen(0.25, 0.22, 900); piep(160, 70, 0.18, 0.12, 'square'); }
+  else if(art === 'tock'){ piep(330, 260, 0.05, 0.08, 'square'); rauschen(0.04, 0.06, 700); }
+  else if(art === 'wachsen') piep(300, 450, 0.08, 0.04, 'sine');
   else if(art === 'klick') piep(900, 700, 0.035, 0.06, 'sine');
 }

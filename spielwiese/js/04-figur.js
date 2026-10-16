@@ -7,7 +7,9 @@ const fig = {
   wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
   haengt: null, ball: null, rollWinkel: 0,
+  hakenPuffer: 0,
   seil: null, hakenZiel: null, zielStrahl: null, fehlschuss: null, rutsch: 0,
+  durchbruch: 0,
   dash: null, luftDashes: 1, dashPuffer: 0, dashPause: 0, gleit: 0, hyperFenster: 0, nachDash: null, blitz: 0,
   sx: 1, sy: 1, svx: 0, svy: 0,          // Dehnen/Stauchen (nur Anzeige, im Takt gerechnet)
   tot: 0, station: STATIONEN[0], rueck: STATIONEN[0].start,
@@ -23,7 +25,7 @@ function figurAufPunkt(p){
   fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
   fig.sx = fig.sy = 1; fig.svx = fig.svy = 0;
 }
-function zurueckSetzen(){ figurAufPunkt(fig.rueck); fig.tot = 0; ton('teleport'); kameraSpringen(); }
+function zurueckSetzen(){ bruchAlleHeilen(); fig.durchbruch = 0; figurAufPunkt(fig.rueck); fig.tot = 0; ton('teleport'); kameraSpringen(); }
 function zuStation(st){
   fig.station = st; fig.rueck = st.start; if(st.mech) aktiveMechanik = st.mech;
   zurueckSetzen(); hinweis('Station ' + st.nr + ': ' + st.name);
@@ -146,21 +148,24 @@ function dashRichtung(){
     dx = Math.round(Math.cos(w)); dy = Math.round(Math.sin(w));
   }
   if(!dx && !dy) dx = fig.blick;
-  if(fig.amBoden && dy > 0 && !dx) dx = fig.blick;   // am Boden nach unten: flach in Blickrichtung
+  const risseUnten = zelle(Math.floor((fig.x + FIG_B / 2) / K), Math.floor((fig.y + FIG_H + 1) / K)) === 'x';
+  if(fig.amBoden && dy > 0 && !dx && !risseUnten) dx = fig.blick;   // am Boden nach unten: flach (außer auf Rissen)
   const l = Math.hypot(dx, dy);
   return {dx: dx / l, dy: dy / l};
 }
 function dashKannStarten(){
   if(fig.dash || fig.dashPause > 0) return false;
-  return fig.amBoden || fig.luftDashes > 0;
+  return fig.amBoden || fig.luftDashes > 0 || fig.durchbruch > 0;
 }
 function dashStarten(){
   if(fig.ball && !rollenBeenden()) return;   // aus dem Rollen: erst aufstehen
   fig.haengt = null;
   const {dx, dy} = dashRichtung();
   if(fig.seil) seilLoesen(false);   // Dash aus dem Schwung: Seil los
-  if(!fig.amBoden) fig.luftDashes--;
-  fig.dash = {zeit: V.dashDauer, dx, dy, startBoden: fig.amBoden};
+  if(fig.durchbruch > 0) fig.durchbruch = 0;   // Anschluss-Dash im Durchbruch-Fenster: kostet nichts
+  else if(!fig.amBoden) fig.luftDashes--;
+  const extra = Math.max(0, fig.vx * dx + fig.vy * dy);   // Schwung davor in Dash-Richtung (für Durchbruch C)
+  fig.dash = {zeit: V.dashDauer, dx, dy, startBoden: fig.amBoden, extra, faktor: 1};
   fig.dashPuffer = 0; fig.sprungAktiv = false; fig.gleit = 0; fig.hyperFenster = 0; fig.sperre = 0;
   if(dx) fig.blick = Math.sign(dx);
   fig.vx = dx * V.dashTempo; fig.vy = dy * V.dashTempo;
@@ -254,8 +259,8 @@ function figurSchritt(){
           const n = Math.hypot(d.dx, d.dy) || 1; d.dx /= n; d.dy /= n;
         }
       }
-      fig.vx = d.dx * V.dashTempo; fig.vy = d.dy * V.dashTempo;
-      if(fig.amBoden && d.dy > 0){ fig.vy = 0; }
+      fig.vx = d.dx * V.dashTempo * d.faktor; fig.vy = d.dy * V.dashTempo * d.faktor;
+      if(fig.amBoden && d.dy > 0 && !(zelle(Math.floor((fig.x + FIG_B / 2) / K), Math.floor((fig.y + FIG_H + 1) / K)) === 'x')){ fig.vy = 0; }
     }
   }
 
@@ -284,6 +289,7 @@ function figurSchritt(){
     if(fig.puffer > 0 && !sprungVerbraucht){
       if(fig.hyperFenster > 0 && fig.nachDash && (fig.coyote > 0 || fig.wandZeit > 0)) dashSprung(fig.nachDash);
       else if(fig.coyote > 0) springen();
+      else if(fig.durchbruch > 0){ fig.durchbruch = 0; springen(); }   // Sprung im Durchbruch-Fenster
       else if(wandSprungMoeglich(rxs)) wandSpringen();
     }
     if(fig.hyperFenster > 0) fig.hyperFenster--;
@@ -305,9 +311,11 @@ function figurSchritt(){
   if(fig.puffer > 0) fig.puffer--;
 
   // bewegen + Kollision
-  const warBoden = fig.amBoden, fallTempo = fig.vy, vxVor = fig.vx;
+  const warBoden = fig.amBoden, fallTempo = fig.vy, vxVor = fig.vx, vyVor = fig.vy;
+  if(fig.dash) bruchVorDash();   // Durchbruch (04c-bruch.js)
   const stoss = bewegen(fig);
   if(stoss.stossX) fig.vx = 0;
+  bruchAbprallen(stoss, vxVor, vyVor);
   if(stoss.stossY < 0 && fig.vy < 0) fig.vy = 0;
   if(fig.dash){
     const d = fig.dash;

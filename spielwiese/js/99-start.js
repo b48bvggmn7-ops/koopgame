@@ -6,6 +6,9 @@ function bedienAktionen(){
   while(sofortAktionen.length){
     const a = sofortAktionen.shift();
     if(a === 'panel') panelUmschalten();
+    else if(a === 'bauen') bauenUmschalten();
+    else if(bau.an && (a.startsWith('variante') || a.startsWith('ziffer')) && a !== 'varianteWeiter') werkzeugWaehlen(+a.replace(/\D/g, '') - 1);
+    else if(a.startsWith('ziffer')){}
     else if(a === 'neustart') zurueckSetzen();
     else if(a.startsWith('variante') && a !== 'varianteWeiter') varianteSetzen(aktiveMechanik, +a.slice(8) - 1);
     else if(a === 'varianteWeiter'){ const m = MECHANIKEN[aktiveMechanik]; varianteSetzen(aktiveMechanik, (m.aktiv + 1) % m.varianten.length); }
@@ -14,9 +17,11 @@ function bedienAktionen(){
 
 function physikSchritt(){
   schrittZaehler++;
+  // Trefferstopp: alles hält kurz an – Tastendrücke bleiben gesammelt und zählen im nächsten echten Schritt
+  if(fx.stopp > 0){ fx.stopp--; kam.px = kam.x; fig.px = fig.x; fig.py = fig.y; return; }
   eingabeSchritt();
-  if(fx.stopp > 0){ fx.stopp--; kam.px = kam.x; fig.px = fig.x; fig.py = fig.y; return; }   // Trefferstopp: alles hält kurz an
   figurSchritt();
+  bruchSchritt();
   kameraSchritt();
   gefuehlSchritt();
 }
@@ -35,6 +40,7 @@ function schleife(zeit){
 }
 
 ankerSammeln();
+panelBauen();
 figurAufPunkt(fig.rueck);
 kameraSpringen();
 hinweis('Willkommen auf der Spielwiese!');

@@ -2,7 +2,8 @@
 // Zeichen je Kästchen: '.' frei · '#' Boden/Wand · '^' Stacheln (später: Anker, Haftflächen, brechbare Wände).
 // Boden-Oberkante = Reihe 18 (Füße bei y = 18 · 40). Sichtbar sind ca. 21 Reihen.
 
-const KARTE_B = 300, KARTE_H = 21, BODEN_R = 18;
+let KARTE_B = 360;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
+const KARTE_H = 21, BODEN_R = 18;
 let karte = [];   // karte[r][c]
 
 function karteLeer(){
@@ -19,7 +20,7 @@ function zelle(c, r){
   if(r < 0 || r >= KARTE_H) return '.';
   return karte[r][c];
 }
-const fest = (c, r) => { const z = zelle(c, r); return z === '#' || z === '='; };   // '=' = Haftfläche (fest, Unterseite klebt)
+const fest = (c, r) => { const z = zelle(c, r); return z === '#' || z === '=' || z === 'x'; };   // '=' Haftfläche, 'x' brechbar
 const RAMPE_HOCH_RECHTS = '/', RAMPE_HOCH_LINKS = '\\';   // Rampen: nur ihre schräge Fläche zählt (Laufen + Rollen)
 
 // Stationen: von/bis = Spalten; start = Rücksetzpunkt (Füße auf Reihe r); mech = welche Mechanik die Tasten 1–4 umschalten
@@ -28,9 +29,9 @@ const STATIONEN = [
   {nr: 2, name: 'Dash', von: 52, bis: 99, start: {c: 55, r: BODEN_R}, mech: 'dash'},
   {nr: 3, name: 'Haken', von: 100, bis: 149, start: {c: 102, r: BODEN_R}, mech: 'haken'},
   {nr: 4, name: 'Unterseite', von: 150, bis: 189, start: {c: 152, r: BODEN_R}, mech: 'haft'},
-  {nr: 5, name: 'Durchbruch', von: 190, bis: 224, start: {c: 193, r: BODEN_R}, mech: null},
-  {nr: 6, name: 'Kombi', von: 225, bis: 254, start: {c: 228, r: BODEN_R}, mech: null},
-  {nr: 7, name: 'Freie Fläche', von: 255, bis: 299, start: {c: 258, r: BODEN_R}, mech: null},
+  {nr: 5, name: 'Durchbruch', von: 190, bis: 239, start: {c: 192, r: BODEN_R}, mech: 'bruch'},
+  {nr: 6, name: 'Kombi', von: 240, bis: 289, start: {c: 242, r: BODEN_R}, mech: null},
+  {nr: 7, name: 'Freie Fläche', von: 290, bis: 359, start: {c: 292, r: BODEN_R}, mech: null},
 ];
 // Schilder: Text im Bild (Spalte, Reihe der Füße des Pfostens, Zeilen)
 let SCHILDER = [];
@@ -100,23 +101,46 @@ function arenaBauen(){
   grube(184, 186);                                   // Absprung am Ende
   setze(183, 17, 183, 17, RAMPE_HOCH_RECHTS);        // kleine Schanze
 
-  // ----- Stationen 5–6: Platzhalter, werden in Teil 5–6 gebaut -----
-  const platzhalter = [[5, 191, 'Durchbruch', 'Teil 5'], [6, 226, 'Kombi', 'Teil 6']];
+  // ----- Station 5: Durchbruch (brechbare Wände 'x' nur mit Dash) -----
+  setze(189, 17, 189, 17, '#');                      // Grenzstein
+  SCHILDER.push({c: 191, r: BODEN_R, zeilen: ['Station 5: Durchbruch', 'Risse = nur mit Dash (J)', 'Tasten 1–3: Varianten']});
+  setze(195, 14, 206, 14, '#');                      // Raum: Decke
+  setze(195, 15, 195, 17, 'x');                      // linke Wand (seitlich durch)
+  setze(199, 14, 202, 14, 'x');                      // Decke (Dash nach oben)
+  setze(206, 15, 206, 17, 'x');                      // rechte Wand
+  SCHILDER.push({c: 198, r: BODEN_R, zeilen: ['Raum: rein, raus,', 'oder nach oben']});
+  setze(209, 18, 211, 18, 'x');                      // Boden von oben (Dash nach unten)
+  setze(209, 19, 211, 19, '.');
+  SCHILDER.push({c: 208, r: BODEN_R, zeilen: ['Dash nach unten']});
+  setze(214, 13, 226, 13, '#');                      // Kette: Decke drüber, damit man nicht drüberspringt
+  for(const c of [216, 218, 220, 222, 224]) setze(c, 14, c, 17, 'x');
+  SCHILDER.push({c: 213, r: BODEN_R, zeilen: ['Kette: nach dem Bruch', 'gleich nochmal dashen']});
+  setze(229, 9, 229, 17, 'x');                       // hohe Wand, dahinter Grube mit Anker: Dash durch, dann Haken
+  grube(230, 236);
+  setze(233, 8, 233, 8, 'o');
+  SCHILDER.push({c: 227, r: BODEN_R, zeilen: ['Durch die Wand', 'in den Haken (K)']});
+
+  // ----- Station 6: Platzhalter, wird in Teil 6 gebaut -----
+  const platzhalter = [[6, 241, 'Kombi', 'Teil 6']];
   for(const [nr, c, n, teil] of platzhalter){
     SCHILDER.push({c, r: BODEN_R, zeilen: ['Station ' + nr + ': ' + n, 'wird in ' + teil + ' gebaut']});
     setze(c - 2, 17, c - 2, 17, '#');   // kleiner Grenzstein
   }
 
   // ----- Station 7: freie Spielfläche -----
-  SCHILDER.push({c: 256, r: BODEN_R, zeilen: ['Station 7: Freie Fläche', 'einfach herumtoben']});
-  setze(262, 14, 265, 14, '#');
-  setze(268, 11, 270, 11, '#');
-  setze(274, 8, 277, 8, '#');
-  setze(281, 12, 283, 12, '#');
-  setze(286, 8, 286, 15, '#');                       // zweiter Kamin (4 breit)
-  setze(291, 4, 291, 17, '#');
-  setze(291, 4, 294, 4, '#');
-  setze(295, 17, 296, 17, '^');
+  const F = 290;   // Anfang der freien Fläche
+  setze(F - 1, 17, F - 1, 17, '#');
+  SCHILDER.push({c: F + 1, r: BODEN_R, zeilen: ['Station 7: Freie Fläche', 'herumtoben · B = selbst bauen']});
+  setze(F + 6, 14, F + 9, 14, '#');
+  setze(F + 12, 11, F + 14, 11, '#');
+  setze(F + 18, 8, F + 21, 8, '#');
+  setze(F + 25, 12, F + 27, 12, '#');
+  setze(F + 30, 8, F + 30, 15, '#');                 // zweiter Kamin (4 breit)
+  setze(F + 35, 4, F + 35, 17, '#');
+  setze(F + 35, 4, F + 38, 4, '#');
+  setze(F + 39, 17, F + 40, 17, '^');
+  for(const c of [F + 46, F + 52, F + 58]) setze(c, 7, c, 7, 'o');   // ein paar Anker zum Schwingen
+  setze(F + 44, 13, F + 47, 13, '=');
 }
 arenaBauen();
 

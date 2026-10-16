@@ -111,6 +111,7 @@ const seilFest = () => fig.seil && fig.seil.zustand === 'fest';
 
 // Eingabe für den Haken – am Anfang jedes Schritts (nach den Puffern). Gibt true zurück, wenn der Sprung verbraucht wurde.
 function hakenEingabe(E, rx){
+  if(bau.an && !fig.seil){ fig.hakenZiel = null; return false; }   // beim Bauen ist die Maus zum Bauen da
   const halten = V.hakenHalten, gedrueckt = E.haken, gehaltenJetzt = gehalten('haken');
   if(!fig.seil || seilFest()) fig.hakenZiel = hakenZielSuchen(fig.seil ? fig.seil.anker : null);
   if(fig.fehlschuss && ++fig.fehlschuss.t > 10) fig.fehlschuss = null;
@@ -132,13 +133,16 @@ function hakenEingabe(E, rx){
     }
     return false;
   }
-  if(gedrueckt){
+  if(gedrueckt) fig.hakenPuffer = V.hakenPuffer + 1;
+  if(fig.hakenPuffer > 0 && halten && !gehaltenJetzt) fig.hakenPuffer = 0;   // halten-Modus: losgelassen = nicht mehr greifen
+  if(fig.hakenPuffer > 0){
     const z = fig.hakenZiel;
-    if(z){ if(fig.dash) dashBeenden(false); hakenSchiessen(z); }
-    else {   // nichts in Reichweite: Liane fliegt kurz ins Leere und kommt zurück
+    if(z){ fig.hakenPuffer = 0; if(fig.dash) dashBeenden(false); hakenSchiessen(z); }
+    else if(gedrueckt){   // nichts in Reichweite: Liane fliegt kurz ins Leere und kommt zurück
       const a = fig.zielStrahl || zielRichtungLesen();
       fig.fehlschuss = {x: a.x, y: a.y, t: 0}; ton('fehlschuss');
     }
+    if(fig.hakenPuffer > 0) fig.hakenPuffer--;
   }
   return false;
 }

@@ -38,6 +38,7 @@ function zeichnen(alpha){
   ctx.scale(ZOOM, ZOOM);
   ctx.translate(Math.round(-kx + ox), Math.round(-kam.y + oy));
   kaestchenZeichnen(kx);
+  bauZeichnenWelt(kx);
   for(const sch of SCHILDER) schildZeichnen(sch);
   hakenZeichnen(alpha);
   for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true);
@@ -53,6 +54,12 @@ function zeichnen(alpha){
   for(const t of fx.teilchen){
     ctx.globalAlpha = Math.max(0, t.leben / t.max) * 0.85; ctx.fillStyle = t.farbe;
     ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for(const b of fx.brocken){
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.w); ctx.globalAlpha = Math.min(1, b.leben / 20);
+    ctx.fillStyle = '#a08a74'; ctx.fillRect(-b.s / 2, -b.s / 2, b.s, b.s);
+    ctx.strokeStyle = '#4b3a2b'; ctx.lineWidth = 1.5; ctx.strokeRect(-b.s / 2, -b.s / 2, b.s, b.s); ctx.restore();
   }
   ctx.globalAlpha = 1;
   ctx.restore();
@@ -74,6 +81,7 @@ function kaestchenZeichnen(kx){
   for(let r = 0; r < KARTE_H; r++) for(let c = c0; c <= c1; c++){
     const z = karte[r][c], x = c * K, y = r * K;
     if(istRampe(z)){ rampeZeichnen(c, r, z); continue; }
+    if(z === 'x'){ risseZeichnen(c, r); continue; }
     if(z === '#' || z === '='){
       ctx.fillStyle = FARBE.erde; ctx.fillRect(x, y, K + 0.6, K + 0.6);   // etwas größer: keine hellen Fugen beim Zoom
       ctx.fillStyle = FARBE.erdeDunkel;
@@ -149,7 +157,8 @@ function anzeigeZeichnen(){
     const a = Math.min(1, (hinweisBis - performance.now()) / 400);
     ctx.globalAlpha = a; textMitRand(hinweisText, BILD_B / 2, 44, 26, '#fff', 'center'); ctx.globalAlpha = 1;
   }
-  if(V.legende) legendeZeichnen();
+  if(V.legende && !bau.an) legendeZeichnen();
+  bauZeichnenAnzeige();
   if(V.zahlen){
     const z = ['Tempo x ' + fig.vx.toFixed(1) + '  y ' + fig.vy.toFixed(1), 'Boden ' + (fig.amBoden ? 'ja' : 'nein') + '  Wand ' + fig.wand,
       'Coyote ' + Math.max(0, fig.coyote) + '  Puffer ' + Math.max(0, fig.puffer) + '  Sprint ' + Math.round(fig.sprint * 100) + ' %',
@@ -160,7 +169,7 @@ function anzeigeZeichnen(){
 }
 const LEGENDE = [
   ['A / D', 'laufen'], ['Leertaste', 'springen (an der Wand: Wandsprung)'], ['J', 'Dash (mit Richtung: 8 Richtungen)'], ['K / Maus', 'Haken (halten = festhalten)'],
-  ['L', 'Greifen: Decke halten / rollen'], ['W / S', 'Seil ran / geben (S halten = rutschen)'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'],
+  ['L', 'Greifen: Decke halten / rollen'], ['W / S', 'Seil ran / geben (S halten = rutschen)'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'], ['B', 'selbst bauen (Mini-Editor)'],
   ['Tab', 'Einstellungen, Teleport'],
 ];
 const LEGENDE_PAD = 'Controller: Stick laufen · ✕ springen · □ Dash · R1 Haken · L1 Greifen · R2 Variante · Share zurück · Options Einstellungen';
