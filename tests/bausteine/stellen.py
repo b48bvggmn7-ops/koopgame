@@ -34,3 +34,8 @@ for _w in 'mf':
            plan=nb_bruchtor(570), ziel=578, ziel_reihe=14, baustein='B2', gegen=_lauf_sprung(569))
     stelle(level='dschungel/03-lianenschlucht.json', name='Durchbruch-Säule 676 (B2)', wer=_w, start=(670, 14), partner=(668, 14),
            plan=nb_bruch_durch(676), ziel=678, ziel_reihe=14, baustein='B2', gegen=_laufen)
+
+# ---------------- Dschungel 1 (sanfte Probe) ----------------
+for _w in 'mf':
+    stelle(level='dschungel/01-dschungel.json', name='Durchbruch-Wand unter dem Münz-Sims 715 (sanfte Probe; oben herum per Lift geht auch)', wer=_w,
+           start=(710, 14), partner=(708, 14), plan=nb_bruch_durch(715), ziel=717, ziel_reihe=14, baustein='B2', gegen=_laufen)
