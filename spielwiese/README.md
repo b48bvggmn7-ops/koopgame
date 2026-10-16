@@ -98,7 +98,8 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 - Rutsch-Animation (Schalter, Gruppe „Wand“, Standard an): fällt man an einer Wand entlang, drückt sich die Figur an
   die Wand (schmaler, zur Wand geneigt, leichtes Ruckeln), schaut von der Wand weg, Staub und Kratzspuren an der
   Kontaktstelle, leises Schaben. Nur Aussehen – die Physik bleibt gleich.
-- Als Schalter (Standard aus): kurz an der Wand halten (ca. 0,2 s) und langsames Runterrutschen.
+- An der Wand rutscht man gebremst herunter (höchstens Tempo 4,5 statt frei fallen bis 15; Schalter und Tempo in der
+  Gruppe „Wand“). Als Schalter (Standard aus): kurz an der Wand halten (ca. 0,2 s).
 - Wandsprung nach dem Dash (Schalter, Gruppe „Wand“): Dash gegen eine Wand -> bis 12 Schritte nach dem Aufprall geht der
   Wandsprung immer, egal welche Richtung man hält (springt von der Wand weg, auch an derselben Wandseite nochmal).
   Springen kurz vor dem Aufprall (im Dash) wird gemerkt. Zerbricht der Dash die Wand (Risse), gibt es keinen Wandsprung.

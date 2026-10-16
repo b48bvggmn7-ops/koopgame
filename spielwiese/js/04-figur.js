@@ -428,7 +428,7 @@ function figurSchritt(){
 function figurSchrittEnde(){
   // Rutsch-Animation: fällt die Figur an einer Wand entlang, blendet die Rutsch-Haltung weich ein (nur Aussehen)
   fig.rutschBildVor = fig.rutschBild;
-  const rutscht = V.wandRutschBild && fig.wand && !fig.amBoden && fig.vy > 1 && !fig.seil && !fig.ball && !fig.haengt && !fig.dash && !fig.tot;
+  const rutscht = V.wandRutschBild && fig.wand && !fig.amBoden && fig.vy > 0.5 && !fig.seil && !fig.ball && !fig.haengt && !fig.dash && !fig.tot;
   if(rutscht) fig.rutschSeite = fig.wand;
   fig.rutschBild += ((rutscht ? 1 : 0) - fig.rutschBild) * (rutscht ? 0.35 : 0.25);
   if(fig.rutschBild < 0.01) fig.rutschBild = 0;

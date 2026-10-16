@@ -53,8 +53,8 @@ wert(G_WAND, 'wandSperre', 'Lenk-Sperre danach (Schritte)', 9, 0, 30, 1, 'kurz n
 schalter(G_WAND, 'wandRutschBild', 'Rutsch-Animation an der Wand', true, 'fällt man an einer Wand entlang: an die Wand gedrückt, Blick von der Wand weg, Staub kratzt ab (nur Aussehen, gleiche Physik)');
 schalter(G_WAND, 'wandHalt', 'Kurz an der Wand halten', false, 'springt man gegen eine Wand, bleibt man einen Augenblick hängen (fällt nicht), dann geht es normal weiter');
 wert(G_WAND, 'wandHaltZeit', 'Halten an der Wand (Schritte)', 12, 1, 60, 1, 'wie lange man sich hält (12 ≈ 0,2 s)');
-schalter(G_WAND, 'wandRutschenAn', 'An der Wand langsam runterrutschen', false, 'auch bei „Wie im Spiel“ (im Spiel selbst gibt es kein Rutschen)');
-wert(G_WAND, 'wandRutschen', 'Rutschen an der Wand (Tempo)', 2.4, 0.5, 15, 0.1);
+schalter(G_WAND, 'wandRutschenAn', 'An der Wand langsam runterrutschen', true, 'auch bei „Wie im Spiel“ (im Spiel selbst gibt es kein Rutschen)');
+wert(G_WAND, 'wandRutschen', 'Rutschen an der Wand (Tempo)', 4.5, 0.5, 15, 0.1, 'höchstes Tempo beim Rutschen (frei fallen: bis 15; früher 2,4)');
 schalter(G_WAND, 'dashWandsprung', 'Wandsprung nach dem Dash', true, 'Dash gegen eine Wand: kurz danach geht der Wandsprung immer (Richtung egal, springt von der Wand weg); Springen während des Dashs wird gemerkt. Bricht die Wand, gibt es keinen Wandsprung');
 wert(G_WAND, 'dashWandFenster', 'Wandsprung nach Dash: Zeitfenster (Schritte)', 12, 1, 40, 1, 'so lange nach dem Dash-Aufprall an der Wand');
 wert(G_WAND, 'dashSprungMerken', 'Springen im Dash merken (Schritte)', 8, 0, 20, 1, 'so früh vor dem Aufprall darf Springen gedrückt werden');
@@ -266,7 +266,7 @@ let figurAussehen = 'affe';
 function einstellungenObjekt(){
   const werte = {}; for(const w of WERTE_LISTE) werte[w.key] = V[w.key];
   const varianten = {}; for(const id in MECHANIKEN) varianten[id] = MECHANIKEN[id].aktiv;
-  return {spielwiese: 6, figur: figurAussehen, werte, varianten};
+  return {spielwiese: 7, figur: figurAussehen, werte, varianten};
 }
 function einstellungenAnwenden(o){
   if(!o || typeof o !== 'object') return false;
@@ -278,6 +278,7 @@ function einstellungenAnwenden(o){
     if((o.spielwiese || 1) < 4 && w.key === 'dashBalken') continue;   // Standard wieder Punkte
     if((o.spielwiese || 1) < 5 && w.key === 'wandRutschenAn') continue;   // Standard wieder ohne Rutschen
     if((o.spielwiese || 1) < 6 && w.key === 'wandHalt') continue;   // Halten an der Wand wieder aus
+    if((o.spielwiese || 1) < 7 && (w.key === 'wandRutschenAn' || w.key === 'wandRutschen')) continue;   // Rutschen wieder an, Tempo 4,5
     const v = o.werte[w.key];
     if(w.art === 'schalter') V[w.key] = !!v;
     else if(typeof v === 'number' && isFinite(v)) V[w.key] = klemmen(v, w.min, w.max);
