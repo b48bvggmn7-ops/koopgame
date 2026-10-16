@@ -40,6 +40,12 @@ function zeichnen(alpha){
   kaestchenZeichnen(kx);
   bauZeichnenWelt(kx);
   for(const sch of SCHILDER) schildZeichnen(sch);
+  for(const z of ZWISCHENPUNKTE){   // Fähnchen (gelb = aktiv)
+    const x = z.c * K + K / 2, y = z.r * K;
+    ctx.fillStyle = '#5a4026'; ctx.fillRect(x - 2, y - 36, 4, 36);
+    ctx.fillStyle = fig.rueck === z ? '#ffd24a' : '#e9eef5';
+    ctx.beginPath(); ctx.moveTo(x + 2, y - 36); ctx.lineTo(x + 22, y - 29); ctx.lineTo(x + 2, y - 22); ctx.fill();
+  }
   hakenZeichnen(alpha);
   for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true);
   if(!fig.tot){

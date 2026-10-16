@@ -42,7 +42,9 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
    Boden von oben, Kette aus fünf Wänden (nach jedem Bruch kurzes Fenster für den nächsten Dash/Sprung), hohe Wand mit
    Anker dahinter: durch die Wand dashen, dann Haken (Varianten: A bleibt kaputt bis R, B wächst nach, C nur mit
    viel Tempo = Dash plus Schwung)
-6. Kombi – folgt · 7. Freie Fläche (zum Herumtoben und Selbstbauen)
+6. Kombi – alles hintereinander: Kamin (Wandsprung) → Haftdecke über der Grube (L) → vom Hängen per Dash durch die
+   Risswand → zwei Haken-Schwünge → Landeplatz → Sprung + Dash nach oben ins Ziel. Zwei Fähnchen = Zwischenpunkte.
+7. Freie Fläche (zum Herumtoben und Selbstbauen)
 
 ## Mini-Editor (Taste B)
 - B schaltet Bauen an/aus, das Spiel läuft dabei weiter (gleich ausprobieren).

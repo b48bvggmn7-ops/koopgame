@@ -346,6 +346,12 @@ function figurSchrittEnde(){
   // Gefahren
   if(stachelTreffer(fig) || fig.y > KARTE_H * K + 120) sterben();
 
+  // Zwischenpunkte (Kombi): darauf stehen = neuer Rücksetzpunkt
+  if(fig.amBoden) for(const z of ZWISCHENPUNKTE){
+    if(Math.abs(fig.x + FIG_B / 2 - (z.c * K + K / 2)) < K && Math.abs(fig.y + FIG_H - z.r * K) < 2 && fig.rueck !== z){
+      fig.rueck = z; hinweis('Zwischenpunkt'); ton('aufladen');
+    }
+  }
   // Station / Rücksetzpunkt (gilt, sobald man in einer Station steht)
   const st = stationBei(fig.x + FIG_B / 2);
   if(st !== fig.station && fig.amBoden){

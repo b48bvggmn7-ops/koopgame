@@ -35,10 +35,12 @@ const STATIONEN = [
 ];
 // Schilder: Text im Bild (Spalte, Reihe der Füße des Pfostens, Zeilen)
 let SCHILDER = [];
+// Zwischenpunkte (Fähnchen): wer darauf steht, startet nach dem Sterben dort (Kombi-Station)
+let ZWISCHENPUNKTE = [];
 
 function arenaBauen(){
   karteLeer();
-  SCHILDER = [];
+  SCHILDER = []; ZWISCHENPUNKTE = [];
   setze(0, 0, 0, KARTE_H - 1, '#');                 // linker Rand
   setze(KARTE_B - 1, 0, KARTE_B - 1, KARTE_H - 1, '#');   // rechter Rand
 
@@ -120,12 +122,21 @@ function arenaBauen(){
   setze(233, 8, 233, 8, 'o');
   SCHILDER.push({c: 227, r: BODEN_R, zeilen: ['Durch die Wand', 'in den Haken (K)']});
 
-  // ----- Station 6: Platzhalter, wird in Teil 6 gebaut -----
-  const platzhalter = [[6, 241, 'Kombi', 'Teil 6']];
-  for(const [nr, c, n, teil] of platzhalter){
-    SCHILDER.push({c, r: BODEN_R, zeilen: ['Station ' + nr + ': ' + n, 'wird in ' + teil + ' gebaut']});
-    setze(c - 2, 17, c - 2, 17, '#');   // kleiner Grenzstein
-  }
+  // ----- Station 6: Kombi – alles hintereinander -----
+  setze(239, 17, 239, 17, '#');                      // Grenzstein
+  SCHILDER.push({c: 241, r: BODEN_R, zeilen: ['Station 6: Kombi', 'Kamin · Decke · Durchbruch', 'Haken · Dash ins Ziel']});
+  setze(244, 8, 244, 15, '#');                       // 1) Kamin (3 breit): unten offen zum Hineinlaufen
+  setze(248, 8, 251, 17, '#');                       //    rechts: Wand + Podest oben
+  ZWISCHENPUNKTE.push({c: 249, r: 8});
+  setze(249, 4, 258, 4, '=');                        // 2) Haftdecke über der Grube (beginnt über dem Podest)
+  grube(252, 259);
+  setze(260, 0, 260, 2, '#'); setze(260, 3, 260, 17, 'x');   // 3) Risswand: vom Hängen aus durchdashen
+  grube(261, 276);                                   // 4) Haken-Schwünge über Stacheln
+  setze(265, 3, 265, 3, 'o'); setze(271, 3, 271, 3, 'o');
+  setze(277, 12, 283, 17, '#');                      // Landeplatz bis an die Zielwand (der Schwung trägt weit)
+  ZWISCHENPUNKTE.push({c: 279, r: 12});
+  setze(284, 6, 288, 17, '#');                       // 5) Zielwand: Sprung + Dash nach oben (oder Dash an die Wand, Wand lädt, Dash hoch)
+  SCHILDER.push({c: 286, r: 6, zeilen: ['Ziel!', 'Kombi geschafft']});
 
   // ----- Station 7: freie Spielfläche -----
   const F = 290;   // Anfang der freien Fläche
