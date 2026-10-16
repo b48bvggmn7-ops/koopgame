@@ -1564,6 +1564,39 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
   `levels/test/bahnen.json`. Tests: bahnen_alte_mechaniken, dash_richtungen_und_laden, durchbruch_wand, wand_rutschen,
   haftflaeche, tasten_belegen_menue, tasten_controller_je_typ, tasten_alter_spielstand, element_register.
 
+### Nacht-Ausbau Phase 3: neue Mechaniken in den Leveln (Dschungel, Ruinen, Höhle, Vulkan)
+Wasserwelt, Boss-Level und Spielwiese sind unverändert. Pflicht-Stellen (auf dem Hauptweg) nur dort, wo kein alter
+Level-Test läuft; alles andere sind **optionale** Stellen mit einer Münze als Belohnung (Weg und Rätsel bleiben gleich).
+- **Pflicht-Stellen:** Dschungel 3 (Lianenschlucht): zwei Haftdecken über Stachelgruben (196–207, 520–528), drei
+  Durchbruch-Säulen (322, 570 mit Grube dahinter = Bruch-Fenster-Sprung, 676). Dschungel 4 (Glühwald): Haftdecke über der
+  Dornengrube 272–285. Dschungel 1: sanfte Probe – Durchbruch-Wand 715 unter dem Münz-Sims (oben herum per Lift geht auch).
+- **Optionale Bausteine** (jede Stelle per Bot geprüft, mit Gegenprobe ohne die neue Mechanik; Liste und Pläne in
+  `tests/bausteine/stellen.py`, Tests `nacht_stellen_<welt>`):
+  - **S1 Versteck:** zwei Durchbruch-Kästchen im Boden, darunter eine Mulde mit einer Münze (Dash nach unten öffnet sie,
+    hinausspringen). Je 3 in fast allen Leveln (Förderwerk 1, Schlackewerk/Feuerschlund 2; keine in Dschungel 1/3,
+    Leuchtgrotte, Tiefenschlund – dort ist kein Platz unter dem Boden). Übersicht je Level: NACHT-BERICHT.md.
+  - **S2 Haft-Arm:** ein Felsarm mit Haftfläche ragt über einen Abgrund; die Meister-Münze hängt unter dem Arm-Ende – nur
+    hängend erreichbar (hin- und zurückrollen). Auch gespiegelt (Arm nach links).
+  - **S3 Haft-Insel:** schwebende Haftfläche 4 Reihen über flachem Boden (ein Sprung schafft nur 3): darunter festhalten,
+    um die Ecke hinauf rollen, oben liegt die Meister-Münze.
+  - **S4 Durchbruch-Nische:** ein Durchbruch-Kästchen in einer Wandfläche, dahinter eine Münze (Dash hinein).
+  - Ab Dschungel 3 hat jedes Level mindestens 2 Haftflächen, ab Dschungel 2 mindestens 3 Durchbruch-Wände (Ausnahme
+    Tiefenschlund: 2 – mehr freie Wandflächen gibt es dort nicht).
+  - Optionale Bausteine zählen NICHT als Kombi-Stelle (`tests/kombi_pruefen.py` nimmt S1–S4 aus).
+- **Münz-Klassen in allen Welt-Leveln** (`tests/bausteine/muenzen.py --einstufen`): Pfad (höchstens 2 Reihen über einer
+  Stehfläche), Geschick (alle anderen, auch Münzen in Verstecken/Nischen), Meister (Haft-Arme, Haft-Inseln, Haftdecken
+  in Dschungel 3/4 – je Level ab Dschungel 3 mindestens 2). Anzahl, Reihenfolge, Farbe und Lage der Münzen sind gleich
+  geblieben (verschobene Münzen behalten ihren Platz in der Liste). Test muenz_klassen_level.
+- **Checkpoints:** 11 neue Checkpoints in Lücken über 60 Spalten (Lianenschlucht 483, Sonnentempel 367, Tropfsteingang
+  231/432, Eisgrotte 40, Leuchtgrotte 597, Glutpfad 371, Aschefeld 379, Magmakammer 404/755, Kraterherz 90) – nur auf
+  Wegen, die die alten Bot-Tests gehen, nie in Jagden (Fels, steigende Lava, Fahrten), nie in Zwei-Wege-Staffeln, nie
+  zwischen Hebel und Tür, nie in bewusst langen Rätsel-Abschnitten. Drei alte Checkpoints standen ungünstig und sind um
+  1–2 Spalten verschoben: Dschungel 1 (232 -> 230, Schweinchen landete auf dem Pilz), Glühwald (177 -> 175, Teleporter),
+  Tempelherz (340 -> 341, Flammenstrahl). Neuer Test checkpoints_sicher: an jedem Checkpoint jedes Welt-Levels stehen
+  beide Figuren nach dem Wiedereinstieg 1 s lang sicher.
+- Vom Nutzer gestaltete Level (Dschungel 2, Ruinen 1, Mondnacht) haben nur optionale Ergänzungen bekommen (Verstecke,
+  Haft-Inseln, Münz-Klassen) – Checkpoints und Wege dort sind unverändert.
+
 ### Design-Politur (nur Aussehen und ein Menü-Klang – Spielablauf, Trefferflächen, Physik und Level-Format unverändert)
 - **Schärfe und Tempo:** Die Leinwand hat bis zur 4K-Breite echte Bildschirm-Pixel (`LEINWAND_MAX_BREITE` 3840, vorher
   2560). Die Dunkel-Schicht (Nacht, Höhle, Dunkelzonen) wird in halber Auflösung gezeichnet (`DUNKEL_AUFLOESUNG`) – bei

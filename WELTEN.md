@@ -777,6 +777,30 @@ davor einen Checkpoint; nach einem Tod ist die Lava wieder unten.
 | 600–641 | Kessel: Band, Pilz, Stege (Lava schnell) | Tempo | knapp |
 | 649–689 | Kraterschlucht: Affe an vier Haken / Schwein mit zwei Aufwinden | Seil / Segeln | knapp (Haken 2 von 3) |
 
+## Neue Mechaniken in allen Welten (Nacht-Ausbau)
+Dash, Durchbruch-Wand, Wand-Rutschen und Haftfläche können BEIDE Figuren (FEATURES.md, „Nacht-Ausbau“). Eingeführt
+werden sie so: Dschungel 1 nur eine sanfte Probe (Durchbruch-Wand 715, oben herum geht es auch), ab Dschungel 2
+Durchbruch-Wände, ab Dschungel 3 Haftflächen (Pflicht-Stellen in Dschungel 3 und 4). In allen anderen Leveln kommen die
+Mechaniken als **optionale Stellen mit Münze** vor (Verstecke S1, Haft-Arme S2, Haft-Inseln S3, Durchbruch-Nischen S4),
+weil Wege und Rätsel dort von den alten Level-Tests abgesichert sind und nicht umgebaut wurden.
+
+**Rolle von Affe und Schweinchen:** Die neuen Mechaniken sind keine Rollen-Fähigkeit – beide können sie. Die Rolle
+entsteht über die Münzfarbe: eine blaue Belohnung holt der Affe, eine pinke das Schweinchen (die Bot-Prüfung spielt die
+Stelle mit genau dieser Figur). Das Schweinchen kann an Haftflächen nicht segeln (Schirm zu, solange es hängt); der Affe
+verliert die Haftfläche, wenn er einen Haken greift – Haken + Haftfläche ist also ein Entweder-oder.
+
+| Welt | Pflicht-Stellen | optionale Stellen | Meister-Münzen |
+|---|---|---|---|
+| Dschungel | D1 Probe-Wand 715; D3 Haftdecken 196/520, Durchbruch-Säulen 322/570/676; D4 Haftdecke 272 | Verstecke D2/D4/D5/D6, Haft-Arme D4/D5/D6 | ab D3 je ≥2 |
+| Ruinen | – | Verstecke in allen 6, Haft-Arme Fallengang, Sonnentempel, Felsenflucht, Tempelherz, Haft-Inseln Ruinen 1 + Mondnacht | je ≥2 |
+| Höhle | – | Verstecke Kristallhöhle/Tropfsteingang/Eisgrotte/Förderwerk, Haft-Arme, Haft-Inseln, Nischen Leuchtgrotte/Förderwerk/Tiefenschlund | je ≥2 |
+| Vulkan | – | Verstecke in allen 7, Haft-Arme, Haft-Inseln, Nischen Schlackewerk/Feuerschlund | je ≥2 |
+
+**Offen (braucht Entscheidung des Nutzers):** Die Kombi-Mindestzahlen des Nacht-Auftrags (Ruinen/Höhle 12, Vulkan 15 je
+Level, ≥3 je Etappe) sind ohne Umbau bestehender Rätsel/Jagden nicht erreichbar – es gibt fast keine freien flachen
+Strecken mehr, die nicht zu einem Rätsel gehören (Vulkan: keine einzige). Optionale Stellen zählen bewusst nicht als
+Kombi. Stand je Level: NACHT-BERICHT.md.
+
 ## Look je Welt (Design-Politur)
 
 Richtung (Nutzer-Referenzbilder): gemütlich, schön, echt, magisch, weich, verträumt, lebendig. Das Spielfeld hat den

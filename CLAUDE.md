@@ -77,6 +77,14 @@
 - `tests/bahnen.js` + `tests/bahnen_referenz.json` – Bahnen-Test der alten Mechaniken (Nacht-Ausbau, harte Regel):
   feste Tasten je Schritt, Vergleich exakt; Referenz NIE neu aufzeichnen/anpassen (`tests/bahnen_aufzeichnen.py`
   überschreibt nie). `tests/neue_mechaniken.js` – Prüf-Szenarien Dash/Durchbruch/Rutschen/Haftfläche.
+- Nacht-Ausbau Werkzeuge: `tests/reichweite_messen.py` (Reichweiten/Erfolgsfenster -> `tests/reichweiten.json`),
+  `tests/level_vermessen.py` (Gruben, Sperren, Exploit-Kandidaten), `tests/stelle_pruefen.py` (eine Stelle mit echter
+  Physik), `tests/level_ascii.py <datei> <von> <bis>` (Text-Bild eines Level-Stücks), `tests/level_bau.py` (Level per
+  Skript ändern, speichert über den Editor in beide Formate; Bausteine B1–B7, S1 Versteck, S2 Haft-Arm, S3 Haft-Insel,
+  S4 Durchbruch-Nische). `tests/bausteine/`: `stellen.py` (alle neuen Level-Stellen mit Bot-Plan + Gegenprobe, Tests
+  `nacht_stellen_<welt>`), `plaene.py` (Bot-Pläne), Setz-Skripte (`verstecke_setzen.py`, `haftarme_setzen.py`,
+  `extras_setzen.py`, `checkpoints_setzen.py`), `muenzen.py --einstufen` (Münz-Klassen), `abdeckung*.json` (wo alte
+  Bot-Tests laufen – dort keine Pflicht-Änderungen).
 - `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
   warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`
   (zählt ebenfalls Schritte) oder `wait_for_function` auf das erwartete Ereignis – sonst sind Tests auf langsamen

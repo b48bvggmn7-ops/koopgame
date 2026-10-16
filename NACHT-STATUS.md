@@ -16,42 +16,46 @@ Sicherung: Tag `vor-nacht-ausbau` (lokal) **und** Branch `vor-nacht-ausbau` auf 
 | P0.2 | Bahnen-Test alte Mechaniken (7 Szenarien, 2 Figuren, ~2400 Schritte) aufgezeichnet | fertig |
 | P0.3 | Ausgangs-Testlauf (voll): 200 bestanden, 0 fehlgeschlagen | fertig |
 | P0.4 | Level-Liste (Abnahme-Liste) | fertig |
-| P1 | Dash, Durchbruch-Wand, Wand-Rutschen, Haftfläche, Tastenbelegung (+ Editor, Tests, Doku) | fertig (Kurztests grün, großer Lauf folgt) |
+| P1 | Dash, Durchbruch-Wand, Wand-Rutschen, Haftfläche, Tastenbelegung (+ Editor, Tests, Doku) | fertig (großer Lauf grün) |
 | P2 | Messwerkzeuge (Reichweite + Erfolgsfenster, Einstufung, Level-Vermesser, Exploit-Suche, Bild-Regel, Checkpoints, Münzen) | fertig (reichweite_messen, level_vermessen, stelle_pruefen, level_ascii, level_bau; Kombi-Zählung erweitert) |
-| P3 | Alle 25 Level vermessen und anpassen | offen |
+| P3 | Alle 25 Level vermessen und anpassen | fertig bis auf Kombi-Mindestzahlen (braucht Entscheidung, siehe unten) |
 | P4 | Zweiter Durchgang, Gesamtprüfung, Bericht | offen |
 
 ## Abnahme-Liste (25 Level)
-Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis · 3 Landeplätze · 4 Zusammenarbeit · 5 Kamine · 6 Haken ·
-7 Münzen · 8 Checkpoints · 9 Bild-Regel · 10 Fairness · 11 Bot-Plan · 12 Doku.
+Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis (Ist, Mindestzahl laut `tests/kombi_pruefen.py`; optionale
+Bausteine zählen nicht) · 3 Landeplätze (Plattform-Regel) · 4 Zusammenarbeit · 5 Kamine (mit Wand-Rutschen nachgemessen,
+Entscheidung 13) · 6 Haken (Haken-Regel) · 7 Münzen Pfad/Geschick/Meister · 8 Checkpoints (Anzahl, größte Lücke inkl.
+Start/Ziel; über 70 nur mit begründeter Ausnahme in `tests/bildregel_ausnahmen.json`) · 9 Bild-Regel · 10 Fairness (jede
+neue Stelle per Bot geschafft, Gegenprobe ohne neue Mechanik scheitert) · 11 Bot-Plan (neue Stellen je Baustein,
+`tests/bausteine/stellen.py`) · 12 Doku · neue Elemente im Level (Gruppen).
 
-| Welt | Nr | Datei | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Dschungel | 1 | dschungel/01-dschungel.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Dschungel | 2 | dschungel/02-baumkronen.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Dschungel | 3 | dschungel/03-lianenschlucht.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Dschungel | 4 | dschungel/04-gluehwald.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Dschungel | 5 | dschungel/05-dornenpfad.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Dschungel | 6 | dschungel/06-wipfelsturm.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Ruinen | 1 | ruinen/01-ruinen.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Ruinen | 2 | ruinen/03-fallengang.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Ruinen | 3 | ruinen/04-sonnentempel.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Ruinen | 4 | ruinen/02-mondnacht.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Ruinen | 5 | ruinen/05-felsenflucht.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Ruinen | 6 | ruinen/06-tempelherz.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Höhle | 1 | hoehle/02-tropfsteingang.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Höhle | 2 | hoehle/03-eisgrotte.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Höhle | 3 | hoehle/01-kristallhoehle.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Höhle | 4 | hoehle/04-leuchtgrotte.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Höhle | 5 | hoehle/05-foerderwerk.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Höhle | 6 | hoehle/06-tiefenschlund.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Vulkan | 1 | vulkan/01-glutpfad.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Vulkan | 2 | vulkan/02-aschefeld.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Vulkan | 3 | vulkan/03-feuerberg.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Vulkan | 4 | vulkan/04-magmakammer.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Vulkan | 5 | vulkan/05-schlackewerk.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Vulkan | 6 | vulkan/06-feuerschlund.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
-| Vulkan | 7 | vulkan/07-kraterherz.json | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen | offen |
+| Welt | Nr | Datei | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | neu |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Dschungel | 1 | dschungel/01-dschungel.json | fertig | 4 (mind. 6) **offen** | geprüft | unverändert | nachgemessen | geprüft | 147/99/0 | 16, max. Lücke 66 | geprüft | Bot | B2×1 | fertig | Haft 0 · Bruch 1 |
+| Dschungel | 2 | dschungel/02-baumkronen.json | fertig | 8 (mind. 8) | geprüft | unverändert | nachgemessen | geprüft | 63/62/0 | 13, max. Lücke 101 (bewusst) | geprüft | Bot | S1×3 | fertig | Haft 0 · Bruch 3 |
+| Dschungel | 3 | dschungel/03-lianenschlucht.json | fertig | 10 (mind. 10) | geprüft | unverändert | nachgemessen | geprüft | 76/64/2 | 15, max. Lücke 82 (bewusst) | geprüft | Bot | B2×3, B3×2 | fertig | Haft 2 · Bruch 3 |
+| Dschungel | 4 | dschungel/04-gluehwald.json | fertig | 4 (mind. 9) **offen** | geprüft | unverändert | nachgemessen | geprüft | 55/53/2 | 13, max. Lücke 70 | geprüft | Bot | B3×1, S1×3, S2×1 | fertig | Haft 2 · Bruch 3 |
+| Dschungel | 5 | dschungel/05-dornenpfad.json | fertig | 6 (mind. 10) **offen** | geprüft | unverändert | nachgemessen | geprüft | 53/43/2 | 16, max. Lücke 61 | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Dschungel | 6 | dschungel/06-wipfelsturm.json | fertig | 5 (mind. 10) **offen** | geprüft | unverändert | nachgemessen | geprüft | 35/55/2 | 15, max. Lücke 70 | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Ruinen | 1 | ruinen/01-ruinen.json | fertig | 4 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 79/54/2 | 14, max. Lücke 100 (bewusst) | geprüft | Bot | S1×3, S3×2 | fertig | Haft 2 · Bruch 3 |
+| Ruinen | 2 | ruinen/03-fallengang.json | fertig | 1 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 85/39/2 | 15, max. Lücke 76 (bewusst) | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Ruinen | 3 | ruinen/04-sonnentempel.json | fertig | 4 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 72/20/2 | 15, max. Lücke 73 (bewusst) | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Ruinen | 4 | ruinen/02-mondnacht.json | fertig | 2 (mind. 8) **offen** | geprüft | unverändert | nachgemessen | geprüft | 37/26/2 | 9, max. Lücke 70 | geprüft | Bot | S1×3, S3×2 | fertig | Haft 2 · Bruch 3 |
+| Ruinen | 5 | ruinen/05-felsenflucht.json | fertig | 2 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 69/19/2 | 12, max. Lücke 106 (bewusst) | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Ruinen | 6 | ruinen/06-tempelherz.json | fertig | 0 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 67/29/2 | 17, max. Lücke 61 | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Höhle | 1 | hoehle/02-tropfsteingang.json | fertig | 2 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 58/36/2 | 16, max. Lücke 70 | geprüft | Bot | S1×3, S3×2 | fertig | Haft 2 · Bruch 3 |
+| Höhle | 2 | hoehle/03-eisgrotte.json | fertig | 1 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 43/39/2 | 15, max. Lücke 69 | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Höhle | 3 | hoehle/01-kristallhoehle.json | fertig | 4 (mind. 7) **offen** | geprüft | unverändert | nachgemessen | geprüft | 26/48/2 | 6, max. Lücke 70 | geprüft | Bot | S1×3, S2×1, S3×1 | fertig | Haft 2 · Bruch 3 |
+| Höhle | 4 | hoehle/04-leuchtgrotte.json | fertig | 4 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 81/41/2 | 15, max. Lücke 61 | geprüft | Bot | S2×2, S4×3 | fertig | Haft 2 · Bruch 3 |
+| Höhle | 5 | hoehle/05-foerderwerk.json | fertig | 5 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 75/49/2 | 16, max. Lücke 60 | geprüft | Bot | S1×1, S2×1, S3×1, S4×2 | fertig | Haft 2 · Bruch 3 |
+| Höhle | 6 | hoehle/06-tiefenschlund.json | fertig | 4 (mind. 12) **offen** | geprüft | unverändert | nachgemessen | geprüft | 63/45/2 | 15, max. Lücke 70 | geprüft | Bot | S2×1, S3×1, S4×2 | fertig | Haft 2 · Bruch 2 |
+| Vulkan | 1 | vulkan/01-glutpfad.json | fertig | 13 (mind. 15) **offen** | geprüft | unverändert | nachgemessen | geprüft | 62/52/2 | 16, max. Lücke 70 | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Vulkan | 2 | vulkan/02-aschefeld.json | fertig | 5 (mind. 15) **offen** | geprüft | unverändert | nachgemessen | geprüft | 88/20/2 | 16, max. Lücke 61 | geprüft | Bot | S1×3, S2×1, S3×1 | fertig | Haft 2 · Bruch 3 |
+| Vulkan | 3 | vulkan/03-feuerberg.json | fertig | 12 (mind. 9) | geprüft | unverändert | nachgemessen | geprüft | 27/41/2 | 6, max. Lücke 86 (bewusst) | geprüft | Bot | S1×3, S2×1, S3×1 | fertig | Haft 2 · Bruch 3 |
+| Vulkan | 4 | vulkan/04-magmakammer.json | fertig | 12 (mind. 15) **offen** | geprüft | unverändert | nachgemessen | geprüft | 58/72/2 | 15, max. Lücke 66 | geprüft | Bot | S1×3, S2×2 | fertig | Haft 2 · Bruch 3 |
+| Vulkan | 5 | vulkan/05-schlackewerk.json | fertig | 6 (mind. 15) **offen** | geprüft | unverändert | nachgemessen | geprüft | 85/29/2 | 15, max. Lücke 70 | geprüft | Bot | S1×2, S3×2, S4×1 | fertig | Haft 2 · Bruch 3 |
+| Vulkan | 6 | vulkan/06-feuerschlund.json | fertig | 1 (mind. 15) **offen** | geprüft | unverändert | nachgemessen | geprüft | 70/40/2 | 15, max. Lücke 61 | geprüft | Bot | S1×2, S2×2, S4×1 | fertig | Haft 2 · Bruch 3 |
+| Vulkan | 7 | vulkan/07-kraterherz.json | fertig | 5 (mind. 15) **offen** | geprüft | unverändert | nachgemessen | geprüft | 62/40/2 | 15, max. Lücke 60 | geprüft | Bot | S1×3, S2×1, S3×1 | fertig | Haft 2 · Bruch 3 |
 
 **Nicht in der Liste (mit Grund):**
 - `dschungel/boss-bruno.json` – Boss-Level (bewusst nicht angefasst).
@@ -108,6 +112,28 @@ Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis · 3 Landeplätze ·
     weiter wie bisher ein (eher zu streng als zu lasch).
 14. **Spiel-Format Stacheln:** x = Mitte, y = Unterkante (wie der Editor exportiert) – im Vermesser/Text-Bild berücksichtigt.
 
+15. **Pflicht nur, wo kein alter Test läuft:** Die alten Level-Tests (Bot-Pläne) gehen fast alle Wege der Level ab
+    (`tests/bausteine/abdeckung*.json`). Pflicht-Stellen auf diesen Wegen hätten die alten Tests gebrochen („nichts
+    Bestehendes verlieren“, „Grün oder gar nicht“). Deshalb: Pflicht-Stellen nur in Dschungel 1/3/4 (freie Strecken),
+    sonst **optionale** Stellen mit Münze – Weg und Rätsel bleiben, wer will, holt die Münze mit der neuen Mechanik.
+16. **Optionale Bausteine S1–S4** (Versteck, Haft-Arm, Haft-Insel, Durchbruch-Nische): aus dem Hauptweg heraus
+    erreichbar, nie auf einem Bot-Weg, nie an Elementen; die Münze dafür ist die nächste freie Münze (Anzahl,
+    Reihenfolge und Farbe aller Münzen bleiben gleich). Jede Stelle hat Bot-Plan + Gegenprobe („ohne neue Mechanik
+    kommt man nicht an die Münze“). Sie zählen NICHT als Kombi-Stelle (ehrliche Zählung).
+17. **Kombi-Mindestzahlen nicht erzwungen:** Ruinen/Höhle/Vulkan haben fast keine freien flachen Strecken mehr (Vulkan:
+    keine), jede neue Pflicht-Kombi müsste ein Rätsel oder eine Jagd umbauen – das ist eine Design-Entscheidung des
+    Nutzers. Stand und Fehlmengen in der Abnahme-Liste (Spalte 2).
+18. **Checkpoints nur ergänzt, nie entfernt:** neue nur in Lücken über 60 Spalten, auf Bot-Wegen mit festem Boden, nicht in
+    Jagden (Fels, steigende Lava, Fahrten), nicht in Zwei-Wege-Staffeln, nicht zwischen Hebel und Tür, nicht in
+    Lücken, die bereits als „Rätsel am Stück“ begründet sind. Abstände unter 40 bleiben (stehen vor schweren Stellen).
+    In den vom Nutzer gestalteten Leveln (Dschungel 2, Ruinen 1, Mondnacht) keine Checkpoint-Änderung.
+19. **Drei alte Checkpoints verschoben** (gefunden vom neuen Test `checkpoints_sicher`): Dschungel 1 232→230 (das
+    Schweinchen stand nach dem Wiedereinstieg auf dem Pilz), Glühwald 177→175 (stand auf dem Teleporter), Tempelherz
+    340→341 (Affe stand im Flammenstrahl). Je 1–2 Spalten, sonst nichts geändert.
+20. **Münz-Klassen automatisch** (`tests/bausteine/muenzen.py --einstufen`): Pfad = höchstens 2 Reihen über einer
+    Stehfläche, sonst Geschick, Münzen in Verstecken/Nischen Geschick; Meister von Hand (Haft-Arme/-Inseln, Haftdecken).
+    Dschungel 1 und 2 ohne Meister-Münze (Einführung bzw. vom Nutzer gestaltet).
+
 ## Geänderte Tests
 - `element_register`: erwartete Element-Liste um `durchbruch` und `haftflaeche` ergänzt (neue Elemente; alle bisherigen
   Prüfungen unverändert).
@@ -118,3 +144,16 @@ Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis · 3 Landeplätze ·
   durch); Level und Spiel für Menschen unverändert. Ohne Wand-Rutschen war der alte Plan grün (gegengeprüft).
 - `editor_einseitige_plattform`: erwartete Reihenfolge im Reiter „Gelände“ um die neuen Werkzeuge `bruch` und `haft`
   ergänzt (neue Elemente stehen dort; alle anderen Prüfungen unverändert).
+- `tests/kombi_pruefen.py` (Werkzeug, kein Test, aber Grundlage von `kombi_pruefung`): optionale Bausteine S1–S4 zählen
+  nicht als Kombi-Stelle; die Ausnahmen in `tests/kombi_ausnahmen.json` sind dadurch unverändert gültig.
+
+## Neue Tests (Phase 3)
+`nacht_stellen_dschungel/ruinen/hoehle/vulkan` (alle neuen Stellen per Bot + Gegenprobe), `checkpoints_sicher` (an jedem
+Checkpoint stehen beide nach dem Wiedereinstieg sicher), `muenz_klassen_level` (Einstufung aktuell, ≥2 Meister ab D3),
+`bausteine_nacht` (B1–B7 im Testlevel), `muenz_klassen` (Editor/Spiel).
+
+## Offene Punkte (brauchen eine Entscheidung)
+- Kombi-Mindestzahlen (siehe Entscheidung 17 und Spalte 2): Fehlmengen je Level in der Abnahme-Liste.
+- Tiefenschlund hat 2 statt 3 Durchbruch-Stellen (keine weitere freie Wandfläche ohne Rätsel).
+- Checkpoint-Lücken über 60 in Leveln, wo nur Jagd/Staffel/Rätsel liegt (z. B. Felsenflucht, Feuerberg) – dort wäre ein
+  Checkpoint mitten in der Jagd unfair; bleibt wie vom Level-Design vorgesehen.
