@@ -167,6 +167,7 @@ function figurBild(x, y, sx, sy, blick, deckkraft, schatten, winkel, aussehen){
 }
 
 function dashPunkteZeichnen(x, y){
+  if(V.dashBalken){ dashBalkenZeichnen(x, y); return; }
   const max = luftDashMax();
   const n = max === Infinity ? 1 : max, voll = max === Infinity ? 1 : fig.luftDashes;
   for(let i = 0; i < n; i++){
@@ -179,6 +180,29 @@ function dashPunkteZeichnen(x, y){
       ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
     }
     ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(15,20,30,0.6)'; ctx.stroke();
+  }
+}
+
+// Dash-Balken: ein Feld je Dash, das gerade ladende Feld füllt sich langsam; voll = kräftig, leer = dunkel
+function dashBalkenZeichnen(x, y){
+  const max = luftDashMax(), unendlich = max === Infinity;
+  const n = unendlich ? 1 : Math.max(1, max), voll = unendlich ? 1 : fig.luftDashes;
+  const breite = 40 + (n - 1) * 10, hoehe = 8, lx = x + FIG_B / 2 - breite / 2, ly = fig.haengt ? y + FIG_H + 10 : y - 24;
+  const feld = (breite - (n - 1) * 2) / n;
+  ctx.fillStyle = 'rgba(15,20,30,0.6)';
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(lx - 2, ly - 2, breite + 4, hoehe + 4, 4) : ctx.rect(lx - 2, ly - 2, breite + 4, hoehe + 4); ctx.fill();
+  for(let i = 0; i < n; i++){
+    const fx0 = lx + i * (feld + 2);
+    ctx.fillStyle = 'rgba(70,85,110,0.7)'; ctx.fillRect(fx0, ly, feld, hoehe);
+    let anteil = i < voll ? 1 : (i === voll ? fig.ladung : 0);
+    if(anteil <= 0) continue;
+    ctx.fillStyle = unendlich ? '#b48cff' : (anteil >= 1 ? '#4fd2ff' : 'rgba(79,210,255,0.55)');
+    ctx.fillRect(fx0, ly, feld * anteil, hoehe);
+    if(anteil >= 1){ ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(fx0, ly, feld, 2); }   // Glanzkante
+  }
+  if(fig.blitz > 0){   // gerade voll geworden: Balken leuchtet kurz auf
+    ctx.strokeStyle = 'rgba(255,255,255,' + (fig.blitz / 10) + ')'; ctx.lineWidth = 2;
+    ctx.strokeRect(lx - 2, ly - 2, breite + 4, hoehe + 4);
   }
 }
 

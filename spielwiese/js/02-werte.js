@@ -162,6 +162,7 @@ schalter(G_HAKEN, 'seilKnick', 'Liane knickt an Ecken', false, 'an: die Liane wi
 schalter(G_HAFT, 'rollUmlenken', 'B: Schwung auch an normalen Wänden umlenken', false, 'wie in einer Halfpipe: an Wänden hochrollen, oben fällt man wieder ab');
 
 schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
+schalter(G_DASH, 'dashBalken', 'Dash-Anzeige als Balken', true, 'an: Balken über dem Kopf, füllt sich beim Aufladen · aus: Punkte mit Tortenstück');
 
 // ---------- Schweinchen (2. Figur) und „Fliegender Anker“ ----------
 const G_SCHWEIN = 'Schweinchen';
