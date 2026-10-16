@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monchichi Koop – Spielwiese</title>
+<link rel="icon" href="data:,">
+<!-- Spielwiese: eigenständiger Prototyp für Bewegungs-Mechaniken. Nutzt NICHTS aus ../js/ (nur die Bilder in ../assets/). -->
+<style>
+  html, body { margin: 0; height: 100%; background: #10141c; overflow: hidden; font-family: system-ui, sans-serif; }
+  #buehne { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #leinwand { display: block; background: #9fd4f0; }
+  #panel { position: fixed; top: 0; right: 0; width: 380px; max-width: 100vw; height: 100vh; overflow-y: auto;
+    background: rgba(18, 22, 32, 0.94); color: #eef2f7; font-size: 13px; box-sizing: border-box; padding: 10px 12px 40px;
+    display: none; border-left: 2px solid #3b4a63; }
+  #panel.offen { display: block; }
+  #panel h2 { font-size: 16px; margin: 4px 0 8px; }
+  #panel h3 { font-size: 14px; margin: 14px 0 6px; padding-top: 8px; border-top: 1px solid #34405a; display: flex;
+    justify-content: space-between; align-items: center; color: #ffd36a; }
+  #panel .zeile { display: grid; grid-template-columns: 1fr 120px 48px; gap: 6px; align-items: center; margin: 3px 0; }
+  #panel .zeile label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #panel .zeile input[type=range] { width: 120px; }
+  #panel .zeile .zahl { text-align: right; font-variant-numeric: tabular-nums; color: #9fd0ff; }
+  #panel .schalter { display: flex; gap: 8px; align-items: center; margin: 3px 0; }
+  #panel .hilfe { color: #93a0b8; font-size: 11px; margin: -1px 0 4px; }
+  #panel button { background: #2e3a52; color: #eef2f7; border: 1px solid #4a5a7a; border-radius: 5px; padding: 3px 8px;
+    cursor: pointer; font-size: 12px; margin: 2px 2px 2px 0; }
+  #panel button:hover { background: #3c4b6a; }
+  #panel button.klein { font-size: 11px; padding: 1px 6px; }
+  #panel select, #panel input[type=text], #panel textarea { background: #222a3b; color: #eef2f7; border: 1px solid #4a5a7a;
+    border-radius: 4px; font-size: 12px; }
+  #panel textarea { width: 100%; height: 90px; box-sizing: border-box; font-family: monospace; font-size: 11px; }
+  #panel .knopfreihe { display: flex; flex-wrap: wrap; gap: 2px; }
+  #panel .voreinst { display: flex; justify-content: space-between; align-items: center; margin: 2px 0; }
+  #panel .meldung { color: #8ef0a0; min-height: 16px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="buehne"><canvas id="leinwand" width="1280" height="720"></canvas></div>
+<div id="panel"></div>
+<script>
+  // Lade-Liste (feste Reihenfolge, klassische Skripte ohne Module, gemeinsamer Gültigkeitsbereich NUR innerhalb der Spielwiese)
+  ['00-grund', '01-eingabe', '02-werte', '03-karte', '04-figur', '05-gefuehl', '06-zeichnen', '07-panel', '99-start']
+    .forEach(n => document.write('<script src="js/' + n + '.js?v=' + Date.now() + '"><\/script>'));
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+# Spielwiese – Bewegungs-Mechaniken ausprobieren
+
+Die Spielwiese ist ein **eigenständiger Prototyp** für Monchichi Koop. Hier werden neue Bewegungs-Mechaniken gebaut und
+erfühlt: Dash, Haken wie bei Spider-Man, an der Unterseite haften/rollen, Durchbrechen. Es geht ums Spielgefühl, nicht
+um Aussehen. Alles lässt sich live verstellen (Taste **Tab**), und jede Mechanik hat Varianten zum Vergleichen.
+
+## Öffnen
+- **Online:** `…/spielwiese/index.html` (dieselbe GitHub-Pages-Adresse wie das Spiel, nur mit `/spielwiese/` dahinter).
+- **Lokal:** über einen kleinen Webserver im Projektordner, z. B. `python3 -m http.server`, dann
+  `http://localhost:8000/spielwiese/index.html` (direkt als Datei geöffnet fehlen evtl. die Figuren-Bilder).
+
+## Tasten
+| Was | Tastatur | Controller |
+|---|---|---|
+| Laufen | A / D (oder Pfeile) | Stick / Steuerkreuz |
+| Springen (an der Wand: Wandsprung) | Leertaste | ✕ |
+| Dash (ab Teil 2) | J | □ |
+| Haken (ab Teil 3) | K | R1 |
+| Greifen (ab Teil 4) | L | L1 |
+| Seil ranziehen/geben, zielen | W / S | hoch / runter |
+| Variante der Mechanik wechseln | 1 – 4 | R2 (weiter) |
+| Zurück zum Rücksetzpunkt | R | Share |
+| Einstellungen, Teleport zu den Stationen | Tab | Options |
+
+Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
+
+## Einstellungen (Tab)
+- Schieberegler und Schalter für alle Werte, nach Mechanik gruppiert, je Gruppe „Standard“.
+- Varianten je Mechanik (auch mit 1–4; sie gelten für die Mechanik der Station, in der man steht).
+- Spielgefühl-Hilfen einzeln an/aus: Wackeln, Trefferstopp, Staub, Nachbilder, Dehnen/Stauchen, Töne.
+- Voreinstellungen speichern/laden, Export/Import als JSON-Text, Figur (Affe/Schweinchen, nur Aussehen).
+
+## Aufbau
+`index.html` lädt `js/*.js` in fester Reihenfolge (klassische Skripte, kein Build): 00 Grundwerte · 01 Eingabe ·
+02 Werte/Varianten/Speichern · 03 Karte/Stationen · 04 Figur/Physik · 05 Spielgefühl/Töne · 06 Kamera/Zeichnen ·
+07 Einstellungs-Panel · 99 Start. Fester Takt: 60 Physik-Schritte pro Spielsekunde (Spieltempo 0,9 wie im Spiel),
+Kästchen 40 px, Bild 1280×720, Zoom 0,85, Figurengröße wie im Spiel.
+
+## Regel: getrennt vom Spiel
+- Die Spielwiese benutzt **keinen** Code aus `../js/` und teilt keinen Zustand mit dem Spiel.
+- Sie liest nur die Bilder `../assets/monkey.png` und `../assets/pig.png`.
+- Sie speichert nur unter eigenen Schlüsseln (`spielwiese-einstellungen`, `spielwiese-voreinstellungen`, später
+  `spielwiese-karte`), nie unter denen des Spiels.
+- Sie ist nirgends im Spiel verlinkt. Alles liegt nur im Ordner `spielwiese/`; am Spiel wird nichts geändert.
