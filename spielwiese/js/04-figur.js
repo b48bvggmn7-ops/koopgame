@@ -433,6 +433,9 @@ function figurSchrittEnde(){
   fig.rutschBild += ((rutscht ? 1 : 0) - fig.rutschBild) * (rutscht ? 0.35 : 0.25);
   if(fig.rutschBild < 0.01) fig.rutschBild = 0;
   if(rutscht){
+    // Roll-Winkel weich auf aufrecht bringen (kürzester Weg; vorheriger Wert mitverschoben -> kein Drehen beim Zeichnen)
+    const kurz = Math.atan2(Math.sin(fig.laufWinkel), Math.cos(fig.laufWinkel)), versatz = fig.laufWinkel - kurz;
+    fig.laufWinkelVor -= versatz; fig.laufWinkel = kurz * 0.82;
     fig.blick = -fig.wand;   // Blick von der Wand weg: bereit zum Wandsprung
     if(schrittZaehler % 3 === 0){   // Staub kratzt an der Wand ab (je schneller, desto mehr)
       const wx = fig.wand > 0 ? fig.x + FIG_B : fig.x;
