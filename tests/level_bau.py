@@ -201,6 +201,12 @@ def s1_versteck(lv, c, r, muenze=None):
         lv.muenze_verschieben(muenze[0], muenze[1], c, r + 1); lv.muenze_klasse(c, r + 1, 'geschick')
     return lv
 
+def bot_zellen(datei):
+    """Kästchen, durch die die alten Bot-Tests laufen (tests/bausteine/abdeckung_zellen.json)"""
+    p = ROOT / 'tests' / 'bausteine' / 'abdeckung_zellen.json'
+    if not p.exists(): return set()
+    return set(map(tuple, json.loads(p.read_text(encoding='utf-8')).get(datei, [])))
+
 def versteck_plaetze(lv, abstand=10):
     """mögliche S1-Plätze: zwei Bodenkästchen (Reihe r, frei darüber 2 Reihen), darunter die 2x2 bzw. 4x2 Kästchen frei oder
     fest (kein Element), nicht an Elementen/Türen/Hebeln -> [(c, r)]"""
@@ -215,6 +221,7 @@ def versteck_plaetze(lv, abstand=10):
         for o in d.get(f, []):
             for z in B.felder_zellen(o) if 'w' in o else [(B.spalte(o['x']), B.reihe(o['y']))]: el.add(z)
     out = []
+    bot = bot_zellen(lv.datei)
     for (c, r), t in sorted(lv.t.items()):
         if t not in ('ground', 'wall') or not (0 <= r <= 15): continue
         if lv.typ(c + 1, r) not in ('ground', 'wall') or lv.typ(c - 1, r) is None or lv.typ(c + 2, r) is None: continue
@@ -223,6 +230,7 @@ def versteck_plaetze(lv, abstand=10):
         unten = [(cc, rr) for cc in range(c - 1, c + 3) for rr in (r + 1, r + 2)]
         if any(lv.typ(*z) not in (None, 'ground', 'wall') for z in unten): continue
         if r + 2 > 17: continue
+        if any(z in bot for z in unten if lv.typ(*z) is None): continue   # darunter läuft ein alter Bot-Weg
         if out and c - out[-1][0] < abstand and out[-1][1] == r: continue
         out.append((c, r))
     return out

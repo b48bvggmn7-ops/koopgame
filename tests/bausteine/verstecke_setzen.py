@@ -25,5 +25,5 @@ def setzen(datei, ziele=(0.25, 0.5, 0.75), nur_zeigen=False):
     return gewaehlt
 
 if __name__ == '__main__':
-    for f in sys.argv[1:]:
+    for f in [a for a in sys.argv[1:] if not a.startswith("--")]:
         print(f, setzen(f, nur_zeigen='--zeigen' in sys.argv))

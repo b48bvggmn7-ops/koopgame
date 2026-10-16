@@ -5984,6 +5984,18 @@ async def nacht_stellen_ruinen(g):
     fehler = await nacht_stellen_pruefen(g, 'ruinen')
     assert not fehler, fehler
 
+@test
+async def nacht_stellen_hoehle(g):
+    """Nacht-Ausbau Phase 3: neue Stellen in der Welt Höhle (tests/bausteine/stellen.py), je Stelle per Bot + Gegenprobe."""
+    fehler = await nacht_stellen_pruefen(g, 'hoehle')
+    assert not fehler, fehler
+
+@test
+async def nacht_stellen_vulkan(g):
+    """Nacht-Ausbau Phase 3: neue Stellen in der Welt Vulkan (tests/bausteine/stellen.py), je Stelle per Bot + Gegenprobe."""
+    fehler = await nacht_stellen_pruefen(g, 'vulkan')
+    assert not fehler, fehler
+
 def level_teil(k, v):
     """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
     zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""
