@@ -2270,9 +2270,10 @@
       "color": "pink"
     },
     {
-      "x": 8500,
-      "y": 580,
-      "color": "blue"
+      "x": 8060,
+      "y": 500,
+      "color": "blue",
+      "klasse": "meister"
     },
     {
       "x": 8620,
@@ -2565,9 +2566,10 @@
       "color": "blue"
     },
     {
-      "x": 20260,
+      "x": 20980,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "meister"
     },
     {
       "x": 21940,

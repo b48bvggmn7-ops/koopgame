@@ -1400,9 +1400,10 @@
       "color": "blue"
     },
     {
-      "x": 10620,
+      "x": 11140,
       "y": 500,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 11620,
