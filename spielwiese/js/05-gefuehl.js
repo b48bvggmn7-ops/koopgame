@@ -82,5 +82,10 @@ function ton(art, staerke){
   else if(art === 'land'){ if(s > 0.15) rauschen(0.06 + 0.06 * s, 0.08 + 0.18 * Math.min(1, s), 380 + 300 * s); }
   else if(art === 'tod'){ piep(420, 110, 0.28, 0.14, 'sine'); rauschen(0.18, 0.15, 600); }
   else if(art === 'teleport') piep(480, 820, 0.12, 0.08, 'sine');
+  else if(art === 'dash'){ rauschen(0.16, 0.16, 1400); piep(260, 620, 0.1, 0.07, 'sawtooth'); }
+  else if(art === 'hyper'){ rauschen(0.2, 0.15, 1800); piep(330, 880, 0.14, 0.1); }
+  else if(art === 'abbruch') piep(500, 340, 0.06, 0.08);
+  else if(art === 'bonk'){ rauschen(0.07, 0.14, 500); piep(180, 120, 0.06, 0.08, 'square'); }
+  else if(art === 'aufladen'){ piep(880, 1320, 0.07, 0.06, 'sine'); }
   else if(art === 'klick') piep(900, 700, 0.035, 0.06, 'sine');
 }

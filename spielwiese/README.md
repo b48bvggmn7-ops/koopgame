@@ -24,6 +24,15 @@ um Aussehen. Alles lässt sich live verstellen (Taste **Tab**), und jede Mechani
 
 Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 
+## Stationen
+1. Grundlagen – Stufen, Stachelgruben, Coyote-Lücke, Kamin (Varianten: Sprung)
+2. Dash – Lücke nur mit Sprung + Dash, Slalom (Wand berühren lädt den Dash auf), Wand hoch mit Dash nach oben
+   (Varianten: A fester Dash, B gleitender Dash, C Dash-Sprung, D Dash mit Abbruch)
+3. Haken · 4. Unterseite · 5. Durchbruch · 6. Kombi – folgen · 7. Freie Fläche
+
+Im Panel außerdem: Wandsprung-Varianten (A einfach, B wie im Spiel) und die Kantenhilfe (Kopf rutscht an Ecken
+vorbei, Dash hüpft auf knappe Stufen).
+
 ## Einstellungen (Tab)
 - Schieberegler und Schalter für alle Werte, nach Mechanik gruppiert, je Gruppe „Standard“.
 - Varianten je Mechanik (auch mit 1–4; sie gelten für die Mechanik der Station, in der man steht).

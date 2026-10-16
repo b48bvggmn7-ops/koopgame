@@ -40,7 +40,15 @@ function zeichnen(alpha){
   kaestchenZeichnen(kx);
   for(const sch of SCHILDER) schildZeichnen(sch);
   for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true);
-  if(!fig.tot) figurBild(mischen(fig.px, fig.x, alpha), mischen(fig.py, fig.y, alpha), fig.sx, fig.sy, fig.blick, 1, false);
+  if(!fig.tot){
+    const fx_ = mischen(fig.px, fig.x, alpha), fy_ = mischen(fig.py, fig.y, alpha);
+    figurBild(fx_, fy_, fig.sx, fig.sy, fig.blick, 1, false);
+    if(fig.blitz > 0){   // Dash wieder voll: kurzer heller Ring
+      ctx.strokeStyle = 'rgba(255,255,255,' + (fig.blitz / 10) + ')'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(fx_ + FIG_B / 2, fy_ + FIG_H / 2, 26 + (10 - fig.blitz) * 2.5, 0, Math.PI * 2); ctx.stroke();
+    }
+    if(V.dashPunkte) dashPunkteZeichnen(fx_, fy_);
+  }
   for(const t of fx.teilchen){
     ctx.globalAlpha = Math.max(0, t.leben / t.max) * 0.85; ctx.fillStyle = t.farbe;
     ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2); ctx.fill();
@@ -110,6 +118,17 @@ function figurBild(x, y, sx, sy, blick, deckkraft, schatten){
   ctx.restore();
 }
 
+function dashPunkteZeichnen(x, y){
+  const max = luftDashMax();
+  const n = max === Infinity ? 1 : max, voll = max === Infinity ? 1 : fig.luftDashes;
+  for(let i = 0; i < n; i++){
+    const px = x + FIG_B / 2 + (i - (n - 1) / 2) * 11, py = y - 20;
+    ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
+    ctx.fillStyle = i < voll ? (max === Infinity ? '#b48cff' : '#4fd2ff') : 'rgba(40,50,70,0.35)'; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(15,20,30,0.6)'; ctx.stroke();
+  }
+}
+
 // ---------- Anzeige (Station, Variante, Legende, Messwerte) ----------
 function textMitRand(t, x, y, groesse, farbe, ausr){
   ctx.font = 'bold ' + groesse + 'px system-ui, sans-serif'; ctx.textAlign = ausr || 'left'; ctx.textBaseline = 'top';
@@ -128,12 +147,13 @@ function anzeigeZeichnen(){
   if(V.legende) legendeZeichnen();
   if(V.zahlen){
     const z = ['Tempo x ' + fig.vx.toFixed(1) + '  y ' + fig.vy.toFixed(1), 'Boden ' + (fig.amBoden ? 'ja' : 'nein') + '  Wand ' + fig.wand,
-      'Coyote ' + Math.max(0, fig.coyote) + '  Puffer ' + Math.max(0, fig.puffer) + '  Sprint ' + Math.round(fig.sprint * 100) + ' %'];
+      'Coyote ' + Math.max(0, fig.coyote) + '  Puffer ' + Math.max(0, fig.puffer) + '  Sprint ' + Math.round(fig.sprint * 100) + ' %',
+      'Dash ' + (fig.dash ? 'läuft (' + fig.dash.zeit + ')' : 'bereit') + '  Luft-Dashes ' + (fig.luftDashes === Infinity ? '∞' : fig.luftDashes)];
     z.forEach((t, i) => textMitRand(t, BILD_B - 16, 40 + i * 20, 14, '#bfe3ff', 'right'));
   }
 }
 const LEGENDE = [
-  ['A / D', 'laufen'], ['Leertaste', 'springen (an der Wand: Wandsprung)'], ['J', 'Dash (Teil 2)'], ['K', 'Haken (Teil 3)'],
+  ['A / D', 'laufen'], ['Leertaste', 'springen (an der Wand: Wandsprung)'], ['J', 'Dash (mit Richtung: 8 Richtungen)'], ['K', 'Haken (Teil 3)'],
   ['L', 'Greifen (Teil 4)'], ['W / S', 'Seil / zielen'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'],
   ['Tab', 'Einstellungen, Teleport'],
 ];

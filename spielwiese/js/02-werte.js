@@ -44,6 +44,34 @@ wert(G_WAND, 'wandSprungY', 'Wandsprung: nach oben', 12.8, 4, 20, 0.1);
 wert(G_WAND, 'wandFenster', 'Wandsprung-Fenster (Schritte)', 10, 0, 30, 1, 'so lange nach dem Wandkontakt klappt er noch');
 wert(G_WAND, 'wandSperre', 'Lenk-Sperre danach (Schritte)', 9, 0, 30, 1, 'kurz nicht zurücklenken -> sauberer Kamin');
 wert(G_WAND, 'wandRutschen', 'Rutschen an der Wand (Tempo)', 2.4, 0.5, 15, 0.1);
+wert(G_WAND, 'wandSpielXmin', 'Wie im Spiel: weg ohne Schwung', 6.96, 2, 16, 0.1, 'Variante B: Wandsprung ohne Anlauf');
+wert(G_WAND, 'wandSpielXmax', 'Wie im Spiel: weg mit vollem Schwung', 12.8, 2, 20, 0.1, 'Variante B: mit vollem Sprint an die Wand');
+wert(G_WAND, 'wandSpielYmin', 'Wie im Spiel: hoch ohne Schwung', 14.4, 4, 22, 0.1);
+wert(G_WAND, 'wandSpielYmax', 'Wie im Spiel: hoch mit vollem Schwung', 16.06, 4, 24, 0.1);
+
+// ---------- Kantenhilfe (Vorschlag aus Teil 1) ----------
+const G_KANTE = 'Kantenhilfe';
+schalter(G_KANTE, 'kantenhilfe', 'Kantenhilfe an', true, 'Kopf knapp an einer Ecke: man rutscht vorbei statt hängen zu bleiben');
+wert(G_KANTE, 'kantenPx', 'Kantenhilfe: bis zu (px)', 12, 1, 24, 1, 'so weit wird die Figur höchstens seitlich geschoben');
+wert(G_KANTE, 'kantenStufe', 'Stufenhilfe beim Dash (px)', 14, 0, 30, 1, 'Dash knapp gegen eine Kante: Figur hüpft hinauf');
+
+// ---------- Dash (Teil 2) ----------
+const G_DASH = 'Dash';
+wert(G_DASH, 'dashDauer', 'Dauer (Schritte)', 10, 4, 24, 1);
+wert(G_DASH, 'dashTempo', 'Tempo (px pro Schritt)', 16, 6, 30, 0.5);
+wert(G_DASH, 'dashBehalten', 'Tempo danach behalten', 0.5, 0, 1, 0.05, '0,5 = die Hälfte; nach oben höchstens Sprungkraft');
+wert(G_DASH, 'dashLuft', 'Luft-Dashes (4 = unbegrenzt)', 1, 1, 4, 1, 'wieder voll: Landung, neue Wandberührung (später Haken)');
+wert(G_DASH, 'dashPuffer', 'Puffer (Schritte)', 5, 0, 15, 1, 'zu früh gedrückt (z. B. kurz vor der Landung): klappt trotzdem');
+wert(G_DASH, 'dashPause', 'Pause danach am Boden (Schritte)', 6, 0, 30, 1, 'gegen Dauer-Dashen am Boden');
+wert(G_DASH, 'dashStopp', 'Kurzer Stopp beim Start (Schritte)', 2, 0, 6, 1, 'Trefferstopp-Gefühl beim Losdashen');
+wert(G_DASH, 'dashGleitZeit', 'B: Gleitzeit danach (Schritte)', 30, 0, 90, 1, 'Variante B: so lange bleibt der Schwung');
+wert(G_DASH, 'dashLenken', 'B: Lenken während des Dashs', 0.12, 0, 0.5, 0.01, 'Variante B');
+wert(G_DASH, 'hyperX', 'C: Dash-Sprung weit', 13, 6, 24, 0.5, 'Variante C: Tempo nach vorn');
+wert(G_DASH, 'hyperY', 'C: Dash-Sprung hoch (× Sprung)', 1.1, 0.5, 2, 0.05, 'Variante C');
+wert(G_DASH, 'hyperFenster', 'C: Fenster nach dem Dash (Schritte)', 6, 0, 20, 1, 'so lange nach dem Dash zählt der Sprung noch');
+wert(G_DASH, 'abbruchBehalten', 'D: Tempo beim Abbrechen', 0.7, 0, 1, 0.05, 'Variante D');
+wert(G_DASH, 'abbruchHop', 'D: kleiner Hüpfer in der Luft', 5, 0, 12, 0.5, 'Variante D: Abbruch in der Luft');
+schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
 
 // ---------- Kamera ----------
 const G_KAM = 'Kamera';
@@ -79,6 +107,16 @@ mechanik('sprung', 'Sprung', [
   {name: 'B – Schwebe-Gipfel', hilfe: 'Taste halten: am höchsten Punkt kurz schweben (mehr Zeit zum Zielen)'},
   {name: 'C – Schwer fallen', hilfe: 'hoch wie immer, runter schneller -> knackiger'},
   {name: 'D – Mondsprung', hilfe: 'leicht und weit, viel Zeit in der Luft'},
+]);
+mechanik('wand', 'Wandsprung', [
+  {name: 'A – Einfach', hilfe: 'immer gleich stark, Richtung egal'},
+  {name: 'B – Wie im Spiel', hilfe: 'stärker mit mehr Schwung beim Anprall, Taste muss von der Wand weg zeigen, je Wandseite einmal'},
+]);
+mechanik('dash', 'Dash', [
+  {name: 'A – Fester Dash', hilfe: 'gerade Strecke, kein Eingriff'},
+  {name: 'B – Gleitender Dash', hilfe: 'lenkbar, danach bleibt der Schwung eine Weile'},
+  {name: 'C – Dash-Sprung', hilfe: 'Springen während/kurz nach dem Dash (am Boden oder an der Wand) = weiter, höherer Sprung'},
+  {name: 'D – Dash mit Abbruch', hilfe: 'Springen bricht den Dash ab (in der Luft mit kleinem Hüpfer)'},
 ]);
 let aktiveMechanik = 'sprung';
 function varianteSetzen(id, i){

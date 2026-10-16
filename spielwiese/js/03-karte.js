@@ -24,7 +24,7 @@ const fest = (c, r) => zelle(c, r) === '#';
 // Stationen: von/bis = Spalten; start = Rücksetzpunkt (Füße auf Reihe r); mech = welche Mechanik die Tasten 1–4 umschalten
 const STATIONEN = [
   {nr: 1, name: 'Grundlagen', von: 0, bis: 51, start: {c: 4, r: BODEN_R}, mech: 'sprung'},
-  {nr: 2, name: 'Dash', von: 52, bis: 99, start: {c: 55, r: BODEN_R}, mech: null},
+  {nr: 2, name: 'Dash', von: 52, bis: 99, start: {c: 55, r: BODEN_R}, mech: 'dash'},
   {nr: 3, name: 'Haken', von: 100, bis: 149, start: {c: 103, r: BODEN_R}, mech: null},
   {nr: 4, name: 'Unterseite', von: 150, bis: 189, start: {c: 153, r: BODEN_R}, mech: null},
   {nr: 5, name: 'Durchbruch', von: 190, bis: 224, start: {c: 193, r: BODEN_R}, mech: null},
@@ -56,8 +56,23 @@ function arenaBauen(){
   setze(46, 6, 49, 6, '#');
   SCHILDER.push({c: 47, r: 6, zeilen: ['Geschafft!']});
 
-  // ----- Stationen 2–6: Platzhalter, werden in Teil 2–6 gebaut -----
-  const platzhalter = [[2, 53, 'Dash', 'Teil 2'], [3, 101, 'Haken', 'Teil 3'], [4, 151, 'Unterseite', 'Teil 4'],
+  // ----- Station 2: Dash -----
+  setze(51, 17, 51, 17, '#');                        // Grenzstein
+  SCHILDER.push({c: 53, r: BODEN_R, zeilen: ['Station 2: Dash (J)', 'Richtung + J · 8 Richtungen', 'Tasten 1–4: Dash-Varianten']});
+  grube(60, 67);                                     // 8 Kästchen: mit Sprung allein (bei diesem Anlauf ~4,5) nicht zu schaffen
+  SCHILDER.push({c: 58, r: BODEN_R, zeilen: ['Springen + Dash']});
+  SCHILDER.push({c: 70, r: BODEN_R, zeilen: ['Slalom: Wand berühren', '= Dash wieder voll']});
+  grube(73, 88);                                     // Slalom über Stacheln
+  setze(76, 12, 76, 19, '#');                        // Säule von unten (drüber)
+  setze(80, 0, 80, 14, '#');                         // Säule von oben (drunter durch)
+  setze(84, 11, 84, 19, '#');                        // Säule von unten (drüber)
+  setze(89, 17, 90, 17, '#');                        // kleine Stufe nach dem Slalom
+  SCHILDER.push({c: 92, r: BODEN_R, zeilen: ['An der Wand hoch:', 'springen, dann Dash nach oben']});
+  setze(95, 11, 98, 17, '#');                        // Wand 7 Reihen: Sprung (3) + Dash nach oben (4)
+  SCHILDER.push({c: 97, r: 11, zeilen: ['Oben!']});
+
+  // ----- Stationen 3–6: Platzhalter, werden in Teil 2–6 gebaut -----
+  const platzhalter = [[3, 101, 'Haken', 'Teil 3'], [4, 151, 'Unterseite', 'Teil 4'],
                        [5, 191, 'Durchbruch', 'Teil 5'], [6, 226, 'Kombi', 'Teil 6']];
   for(const [nr, c, n, teil] of platzhalter){
     SCHILDER.push({c, r: BODEN_R, zeilen: ['Station ' + nr + ': ' + n, 'wird in ' + teil + ' gebaut']});
