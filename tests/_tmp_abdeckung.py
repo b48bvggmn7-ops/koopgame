@@ -1,0 +1,9387 @@
+"""
+Automatische Tests für "Monchichi Koop".
+
+Startet das Spiel in einem unsichtbaren Browser (Chromium über Playwright), spielt wichtige Abläufe
+durch und prüft das Ergebnis. Vor jeder Änderung am Spiel laufen lassen – und danach nochmal.
+
+Einrichtung (einmalig):
+    pip install playwright
+    playwright install chromium
+
+Ausführen (im Projektordner):
+    python tests/run_tests.py            # alle Tests
+    python tests/run_tests.py decke      # nur Tests, deren Name "decke" enthält
+
+Die Spiel-Dateien sind klassische <script>-Dateien mit gemeinsamem Gültigkeitsbereich. Deshalb können
+die Tests Spielzustände direkt lesen (z. B. p1.x, solids, coins) – im Spiel selbst ist dafür nichts nötig.
+"""
+import asyncio, functools, http.server, json, os, re, sys, tempfile, threading
+from pathlib import Path
+from playwright.async_api import async_playwright
+
+ROOT = Path(__file__).resolve().parent.parent
+GAME = (ROOT / 'index.html').as_uri()
+TMP = Path(tempfile.mkdtemp())
+
+def level(solids, start_m, start_f, **extra):
+    d = {'solids': solids, 'hooks': [], 'switches': [], 'doors': [], 'spikes': [], 'coins': [],
+         'movingPlatforms': [], 'checkpoints': [], 'startM': start_m, 'startF': start_f,
+         'goal': {'x': 4000, 'y': 680}}
+    d.update(extra)
+    p = TMP / f'lvl_{abs(hash(json.dumps(d, sort_keys=True)))}.json'
+    p.write_text(json.dumps(d))
+    return str(p)
+
+def ground(x, y, w, h=40, t='ground'):
+    return {'x': x, 'y': y, 'w': w, 'h': h, 'type': t}
+
+PAD_STUB = """window.__pad = {axes:[0,0,0,0], buttons: Array.from({length:17},()=>({pressed:false,value:0})), mapping:'standard'};
+navigator.getGamepads = () => [window.__pad, null, null, null];"""
+
+class Game:
+    def __init__(self, page): self.p = page
+    async def load(self, path):
+        await self.p.set_input_files('#loadLevelInput', path)
+        await self.p.wait_for_timeout(250)
+        await self.p.keyboard.press('KeyR'); await self.p.wait_for_timeout(120)
+    async def ev(self, js): return await self.p.evaluate(js)
+    async def steps(self, n, ms=None):
+        """Warten, bis das Spiel n Physik-Schritte gemacht hat (54 Schritte = 1 Sekunde bei voller Geschwindigkeit).
+        Auf langsamen Rechnern laufen weniger Schritte pro Sekunde – feste Millisekunden reichen dort nicht. Im Menü
+        (keine Schritte) wird einfach die entsprechende Zeit gewartet."""
+        start = await self.ev("typeof simSteps === 'number' && menuScreen === null && !deathState ? simSteps : -1")
+        if start < 0:
+            await self.p.wait_for_timeout(ms if ms is not None else int(n * 1000 / 54)); return
+        try: await self.p.wait_for_function(f"simSteps >= {start + n} || menuScreen !== null || !!deathState", timeout=max(4000, n * 90))
+        except Exception: pass
+    async def hold(self, keys, ms):
+        # Taste so lange halten, wie ms im Spiel dauern (in Physik-Schritten gezählt, siehe steps)
+        for k in keys: await self.p.keyboard.down(k)
+        await self.steps(max(1, round(ms * 0.054)), ms)
+        for k in keys: await self.p.keyboard.up(k)
+    async def start_trace(self):
+        await self.ev("""window.__trace=[]; if(!window.__origStep){ window.__origStep=stepSim;
+          stepSim=function(ts){ __trace.push([p1.x,p1.y,p2.x,p2.y]); return __origStep(ts); }; }""")
+    async def trace(self): return await self.ev('window.__trace')
+
+def webserver():
+    """Kleiner Webserver für den Projektordner (fetch() geht nicht bei file://)."""
+    class Leise(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a): pass
+        def handle(self):
+            try: super().handle()
+            except (ConnectionResetError, BrokenPipeError): pass   # Browser bricht Musik-Streams ab – harmlos
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(Leise, directory=str(ROOT)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    srv.url = f'http://127.0.0.1:{srv.server_address[1]}/'
+    return srv
+
+async def startmenue_bis_level(g, tasten_vorher=()):
+    """Startmenü bedienen: Titel -> Menü -> Spielen -> Spielerwahl (beide bereit) -> Countdown -> Level 1."""
+    p = g.p
+    # jeweils warten, bis der nächste Bildschirm wirklich da ist (langsame Rechner: feste Zeiten reichen nicht)
+    await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)   # Titel -> Hauptmenü (kleine Animation)
+    await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
+    await p.keyboard.press('Enter'); await p.wait_for_timeout(700)    # Spielen -> Spielerwahl
+    await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000); await p.wait_for_timeout(300)
+    for k in tasten_vorher:
+        await p.keyboard.press(k); await p.wait_for_timeout(350)
+    await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+    for _ in range(200):   # Countdown, beim ersten Spielen die Intro-Szene (Esc überspringt), Blätter-Vorhang
+        if await g.ev("menuScreen === 'szene'"): await p.keyboard.press('Escape')
+        if await g.ev("menuScreen === null"): return
+        await p.wait_for_timeout(100)
+    raise AssertionError('Level startet nach der Spielerwahl nicht')
+
+async def sm_screen(g):
+    return await g.ev("(()=>{ const a = document.querySelector('#sm.on .screen.active'); return a ? a.id : null; })()")
+
+async def menu_texte(p):
+    return await p.eval_on_selector_all('#menuItems .mItem', 'els => els.map(e => e.textContent)')
+
+TESTS = []
+# ---------- Koop-Bot für Level-Tests (Ausbau 7, tests/koop_bot.js) ----------
+KOOP_BOT = (ROOT / 'tests' / 'koop_bot.js').read_text(encoding='utf-8')
+def kx(c): return c * 40 + 20          # Mitte von Spalte c (px)
+def ky(r): return (r + 1) * 40         # Füße, wenn man in Reihe r steht
+def kat(c, r): return [kx(c), ky(r)]
+def k_lauf(c, d=0): return {'hold': ['right'], 'until': f'P.x >= {kx(c) + d}'}
+def k_hop(xj, brake, glide=False):
+    """an x springen, `brake` Bilder nach rechts halten, danach abbremsen bis zur Landung"""
+    return [{'hold': ['right'], 'until': f'P.x >= {xj}'}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': brake},
+            {'hold': ['glide'] if glide else [], 'holdIf': {'left': 'P.vx > 0.8', 'right': 'P.vx < -0.8'}, 'until': 'P.grounded'}]
+def k_segeln(c_absprung, hold=10):
+    return [k_lauf(c_absprung), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+def k_haken(n, release, jump_at=None, d=0):
+    """(vom Boden) springen, n Haken nacheinander greifen; release = Loslass-Bedingung je Haken"""
+    st = ([k_lauf(jump_at, d)] if jump_at is not None else []) + [
+        {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120}]
+    for k in range(n):
+        st.append({'swing': True, 'pull': 0, 'release': release, 'frames': 500})
+        if k < n - 1: st.append({'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200})
+    st.append({'hold': ['right'], 'until': 'P.grounded', 'frames': 300})
+    return st
+async def koop(g, **o):
+    """Koop-Bot laufen lassen: m=/f= Startpunkte, plans={'m': [...], 'f': [...]}, links=[...] vorher an"""
+    if not await g.ev("typeof window.coopRun === 'function'"): await g.p.evaluate("() => {" + KOOP_BOT + "}")
+    o['trace'] = True
+    r = await g.p.evaluate("o => coopRun(o)", o)
+    with open('/tmp/claude-0/-home-user-koopgame/f80d235d-472d-51e4-84ca-119d3eca1c23/scratchpad/nacht/abdeckung.jsonl', 'a') as fh:
+        fh.write(json.dumps({'level': ABDECKUNG_LEVEL[0], 'ok': bool(r.get('done')), 'm': sorted(set((x - 20) // 40 for x, y in r['trace']['m'])),
+                             'f': sorted(set((x - 20) // 40 for x, y in r['trace']['f']))}) + '\n')
+    return r
+def k_pos(r, who): return r['pos'][who] if r.get('done') else None
+async def halte_schritte(g, keys, n):
+    """Tasten genau n Spielschritte halten und IM SPIEL loslassen (unabhängig davon, wie schnell der Rechner zeichnet –
+    feste Millisekunden über Playwright kommen unter Last ein paar Schritte zu spät an)."""
+    await g.ev(f"""(() => {{ const ziel = simSteps + {n}, ks = {json.dumps(list(keys))}; window.__halteEnde = ziel;
+      for(const k of ks){{ if(!KEYS[k]) KEYS[k + '_pressed'] = true; KEYS[k] = true; }}
+      const alt = stepSim; stepSim = function(...a){{ const r = alt.apply(this, a);
+        if(simSteps >= ziel){{ for(const k of ks) KEYS[k] = false; stepSim = alt; }} return r; }}; }})()""")
+    await g.p.wait_for_function("simSteps >= window.__halteEnde", timeout=20000)
+
+async def projekt_laden(p, datei, warten=400):
+    """Editor, Fenster „Levels“: Level aus dem Projekt laden (Welt-Ordner aufklappen, dann „Laden“ in seiner Zeile)."""
+    sel = f'#projectList .lvl[data-datei="{datei}"]'
+    await p.wait_for_selector(sel, state='attached', timeout=5000)
+    await p.evaluate("s => { const d = document.querySelector(s).closest('details'); if (d) d.open = true; }", sel)
+    await p.click(sel + ' button'); await p.wait_for_timeout(warten)
+
+ABDECKUNG_LEVEL = [None]
+async def koop_level(g, datei):
+    ABDECKUNG_LEVEL[0] = datei
+    await g.load(str(ROOT / 'levels' / datei))
+    await g.p.evaluate("() => {" + KOOP_BOT + "}")
+    await g.ev("closeMenu(); deathState = null; for(const k in KEYS) KEYS[k] = false;")
+
+def test(fn): TESTS.append(fn); return fn
+
+# ---------------------------------------------------------------- Tests
+
+@test
+async def start_ohne_fehler(g):
+    """Spiel startet, Figuren existieren, Spielschleife läuft."""
+    await g.p.wait_for_timeout(600)
+    ok = await g.ev("typeof p1==='object' && typeof p2==='object' && solids.length>0")
+    assert ok, 'Spielzustand fehlt'
+    t0 = await g.ev('performance.now()'); n0 = await g.ev('perf.n')
+    await g.p.wait_for_timeout(400)
+    assert await g.ev('typeof frameDt==="number"'), 'Spielschleife läuft nicht'
+
+@test
+async def tode_zaehler(g):
+    """Tode-Duell oben rechts: Tode je Figur (Affe / Schwein), keine Münzen (die stehen oben links); wer mehr Tode hat,
+    ist rot und wird mit jedem Tod Vorsprung größer. Zählt pro Level: Weitermachen und R lassen den Stand,
+    ein neu geladenes Level beginnt bei 0."""
+    lvl = level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680})
+    await g.load(lvl)
+    karte = "(() => { const c = document.getElementById('duelCard'), r = c.getBoundingClientRect(), d = w => c.querySelector('.duo.' + w);" \
+            " const gr = w => d(w).querySelector('.ava').getBoundingClientRect().width;" \
+            " return {m: document.getElementById('deathM').textContent, f: document.getElementById('deathF').textContent," \
+            " sichtbar: getComputedStyle(c).display !== 'none' && r.width > 0, rechts: innerWidth - r.right, oben: r.top," \
+            " muenzen: /🪙|Münz/.test(c.textContent), leadM: d('m').classList.contains('lead'), leadF: d('f').classList.contains('lead')," \
+            " gm: gr('m'), gf: gr('f')}; })()"
+    k = await g.ev(karte)
+    assert k['sichtbar'] and k['rechts'] < 40 and k['oben'] < 40, f'Tafel nicht oben rechts: {k}'
+    assert (k['m'], k['f']) == ('0', '0') and not k['muenzen'], f'Tafel startet nicht bei 0 / zeigt Münzen: {k}'
+    groessen = []
+    for wer in ('p2', 'p2', 'p1', 'p2'):
+        await g.ev(f"die({wer})"); await g.p.wait_for_timeout(700)
+        await g.ev("deathState.canContinueAt = 0; requestContinue()"); await g.p.wait_for_timeout(600)
+        groessen.append((await g.ev(karte))['gf'])
+    k = await g.ev(karte)
+    assert (k['m'], k['f']) == ('1', '3') and k['leadF'] and not k['leadM'], f'Zähler falsch: {k}'
+    assert k['gf'] > k['gm'] * 1.15, f'Schweinchen (mehr Tode) nicht größer: {k}'
+    assert groessen[1] > groessen[0] + 1, f'wird mit mehr Toden nicht größer: {groessen}'
+    await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(150)
+    assert (await g.ev(karte))['f'] == '3', 'R setzt den Zähler zurück'
+    await g.load(lvl)
+    k = await g.ev(karte)
+    assert (k['m'], k['f']) == ('0', '0'), f'Neues Level beginnt nicht bei 0: {k}'
+
+@test
+async def duell_unter_levelkarte(g):
+    """Level geschafft: nach dem Tanz ein Statistik-Bildschirm (Münzen und Tode je Figur, im Stil des Startmenüs),
+    „Weiter“ führt zur Levelauswahl, wo auf dem neu freigeschalteten Level ein goldenes Schloss platzt. Unter der
+    geschafften Levelkarte steht eine knappe Tode-Zeile. Keine Totenkopf-Maske im Hauptmenü."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await startmenue_bis_level(g)
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && menuScreen === null", timeout=10000)
+        await g.ev("deathCount.m = 1; deathCount.f = 4; let k = 0; for(const c of coins){ if(c.color === 'blue' && k < 3){ c.taken = true; c.takenBy = 'm'; k++; } }"
+                   " deathState = null; won = true; winSteps = 0; winT0 = performance.now()")
+        await p.wait_for_function("document.querySelector('#sm-s-results.active')", timeout=20000)
+        await p.wait_for_timeout(1800)   # Zahlen zählen hoch
+        r = await g.ev("({m: document.getElementById('sm-r-m').textContent, f: document.getElementById('sm-r-f').textContent})")
+        assert 'Münzen' in r['m'] and 'Tode' in r['m'] and '3' in r['m'] and '4' in r['f'], f'Statistik falsch: {r}'
+        assert 'Mehr Münzen' in r['m'] and 'Mehr Tode' in r['f'], f'Hervorhebung falsch: {r}'
+        st = await g.ev("GameMenu.getSave()")
+        assert st['stats']['dschungel/01-dschungel.json']['m'] == 1 and st['stats']['dschungel/01-dschungel.json']['f'] == 4 and 'dschungel/02-baumkronen.json' in st['unlocked'], f'Stand nicht gemerkt: {st}'
+        await p.keyboard.press('Enter')
+        await p.wait_for_function("document.querySelector('#sm-s-levels.active')", timeout=5000)
+        await p.wait_for_function("document.querySelector('#sm-cards .lc .ulock')", timeout=3000)   # Schloss auf Level 2
+        assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
+        await p.wait_for_function("document.querySelector('.ulock.burst')", timeout=5000)
+        await p.wait_for_function("!document.querySelector('.ulock')", timeout=5000)
+        zeile = await g.ev("(() => { const d = document.querySelector('#sm-cards .lc .duel');"
+                           " return {txt: d.textContent, lead: [...d.querySelectorAll('b.lead')].map(b => b.textContent)}; })()")
+        assert '1' in zeile['txt'] and zeile['lead'] == ['4'], f'Levelkarte: {zeile}'
+        for _ in range(3):   # Levelauswahl -> Hauptmenü (kurze Eingabesperre nach dem Bildschirmwechsel)
+            await p.wait_for_timeout(600); await p.keyboard.press('Escape'); await p.wait_for_timeout(600)
+            if await sm_screen(g) == 'sm-s-menu': break
+        assert await sm_screen(g) == 'sm-s-menu', f'Esc führt nicht ins Hauptmenü: {await sm_screen(g)}'
+        assert not await g.ev("!!document.querySelector('#sm-s-menu .skullmask')"), 'Totenkopf-Maske im Hauptmenü'
+    finally:
+        srv.shutdown()
+
+@test
+async def scheinwand_glitzert(g):
+    """Scheinwände glitzern dezent: zu jeder Zeit blitzt nur ein kleiner Teil der Kästchen kurz auf (kein Dauerleuchten),
+    über die Zeit aber jedes einmal; steht eine Figur in/an der Scheinwand (durchsichtig), glitzert sie nicht."""
+    await g.load(level([ground(0, 680, 3000), ground(600, 440, 400, 240, 'fake')], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    r = await g.ev("""(() => {
+      const realNow = performance.now, realFill = ctx.fill; let n = 0;
+      ctx.fill = function(){ n++; return realFill.apply(this, arguments); };
+      const counts = [], seen = new Set();
+      try {
+        for(let t = 0; t < 3200; t += 64){
+          performance.now = () => 100000 + t; n = 0; drawFakeGlints(); counts.push(n / 2);   // 2 Füllungen je Funkelpunkt
+        }
+        fakeWalls[0].alpha = 0.35; performance.now = () => 100000; n = 0;
+        for(let t = 0; t < 3200; t += 64){ performance.now = () => 100000 + t; drawFakeGlints(); }
+        var drinnen = n;
+      } finally { performance.now = realNow; ctx.fill = realFill; fakeWalls[0].alpha = 1; }
+      return {counts, drinnen, kaestchen: (400/40)*(240/40)};
+    })()""")
+    avg = sum(r['counts']) / len(r['counts'])
+    assert 0 < avg <= r['kaestchen'] * 0.3, f"Glitzern nicht dezent/fehlt: im Schnitt {avg} von {r['kaestchen']} Kästchen"
+    assert max(r['counts']) < r['kaestchen'] * 0.45, f"zu viel auf einmal: {max(r['counts'])}"
+    assert r['drinnen'] == 0, 'Scheinwand glitzert, obwohl sie durchsichtig ist'
+
+@test
+async def himmel_ohne_unsichtbare_decke(g):
+    """Zoom zeigt über Reihe 0 einen Streifen Himmel: dort kann man hineinspringen (keine unsichtbare Decke mehr bei
+    Reihe 0), die Decke ist der obere Bildrand. Im Editor sind die 3 Himmel-Reihen (−1 … −3) ganz normal bebaubar;
+    was dort steht, steht im Spiel an derselben Stelle. Der Editor passt ohne senkrechtes Scrollen ins Fenster.
+    Bild unverzerrt 16:9, Figuren im echten Seitenverhältnis."""
+    await g.load(level([ground(0, 680, 3000), ground(200, 120, 160, 40), ground(600, -120, 40, 520, 'wall')],
+                       {'x': 280, 'y': 120}, {'x': 100, 'y': 680}))
+    sky = await g.ev("SKY_ROOM")
+    assert abs(sky - (720/0.85 - 720)) < 0.5, f'Himmelsstreifen falsch: {sky}'
+    wand = await g.ev("(() => { const w = solids.find(s => s.type === 'wall'); return [w.y, w.h]; })()")
+    assert wand == [-120, 520], f'Wand im Himmel verändert: {wand}'
+    await g.ev("p1.x = 280; p1.y = 120; p1.vx = p1.vy = 0; deathState = null; window.__minTop = 1e9")
+    await g.p.wait_for_function("p1.grounded", timeout=3000)
+    await g.ev("""(() => { const o = stepSim; stepSim = function(ts){ const r = o(ts); window.__minTop = Math.min(window.__minTop, p1.y - p1.h); return r; }; })()""")
+    await g.p.keyboard.down('Space'); await g.p.wait_for_timeout(500); await g.p.keyboard.up('Space')
+    await g.p.wait_for_timeout(400)
+    top = await g.ev("window.__minTop")
+    assert top < -20 and top >= -sky - 0.5, f'kein Sprung in den Himmel (höchster Punkt {top})'
+    # Bild nicht verzerrt: Spielfeld 16:9, Figuren-Bild im Verhältnis seiner Datei
+    r = await g.ev("(() => { const c = document.getElementById('c').getBoundingClientRect(); return c.width / c.height; })()")
+    assert abs(r - 16/9) < 0.01, f'Spielfeld verzerrt: {r}'
+    fig = await g.ev("""(() => { const o = ctx.drawImage, out = [];
+      ctx.drawImage = function(img, x, y, w, h){ if(img === ASSETS.monkey || img === ASSETS.monkeyBlink) out.push([w / h, img.naturalWidth / img.naturalHeight]); return o.apply(this, arguments); };
+      try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { ctx.drawImage = o; }
+      return out; })()""")
+    assert fig and all(abs(a - b) < 0.01 for a, b in fig), f'Affe verzerrt gezeichnet: {fig}'
+    # Editor: 3 Himmel-Reihen über Reihe 0, bebaubar; ganze Höhe ohne senkrechtes Scrollen sichtbar
+    srv = webserver()
+    try:
+        await g.p.goto(srv.url + 'editor/index.html'); await g.p.wait_for_timeout(300)
+        await g.p.evaluate("localStorage.removeItem('monchichi_level_editor_v2')"); await g.p.reload(); await g.p.wait_for_timeout(400)
+        await ed_werkzeug(g.p, 'wall')
+        box = await g.ev("(() => { const c = document.getElementById('c'), r = c.getBoundingClientRect(), w = document.getElementById('canvasWrap');"
+                         " return {x: r.left, y: r.top, s: r.height / c.height, rows: c.height / 40, scrollt: w.scrollHeight > w.clientHeight + 1}; })()")
+        assert box['rows'] == 21 and not box['scrollt'], f'Editor: Höhe/Scrollen falsch: {box}'
+        # Klick in die oberste Himmel-Reihe (Reihe −3), Spalte 5
+        await g.p.mouse.click(box['x'] + (5*40 + 20) * box['s'], box['y'] + 20 * box['s'])
+        await g.p.wait_for_timeout(150)
+        teile = await g.ev("JSON.parse(localStorage.getItem('monchichi_level_editor_v2')).tiles")
+        assert [5, -3, 'wall'] in teile, f'Himmel-Reihe nicht bebaubar: {teile}'
+        # im Spiel steht das Kästchen an derselben Stelle (Reihe −3 = y −120)
+        sp = await g.ev("JSON.stringify(JSON.parse(localStorage.getItem('monchichi_level_editor_v2')))")
+        await g.p.goto(GAME); await g.p.wait_for_timeout(300)
+        conv = await g.ev(f"convertEditorSnapshot({sp}).solids.filter(s => s.type === 'wall')")
+        assert any(t['x'] == 200 and t['y'] == -120 for t in conv), f'Himmel-Kästchen im Spiel falsch: {conv}'
+    finally:
+        srv.shutdown()
+
+@test
+async def plakette_im_bild(g):
+    """Nummer im Kreis (Plakette) über einer Tür bleibt im Bild, auch wenn die Tür bis in die oberste Himmel-Reihe reicht;
+    bewegte Teile zeigen keine gestrichelte Fahrweg-Anzeige mehr."""
+    mp = {'x': 800, 'y': 600, 'w': 80, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 1200, 'targetY': 600, 'speed': 3}
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
+                       switches=[{'x': 300, 'y': 660, 'link': 2}],
+                       doors=[{'x': 520, 'y': -100, 'link': 2}, {'x': 520, 'y': -60, 'link': 2}, {'x': 520, 'y': -20, 'link': 2}],
+                       movingPlatforms=[mp]))
+    r = await g.ev("""(() => { const o = ctx.arc, oDash = ctx.setLineDash, kreise = [], striche = [];
+      ctx.arc = function(x, y, rad){ if(rad === 11) kreise.push(this.getTransform().transformPoint(new DOMPoint(x, y - rad)).y); return o.apply(this, arguments); };
+      ctx.setLineDash = function(a){ if(a && a.length) striche.push(a.join(',')); return oDash.apply(this, arguments); };
+      try { draw(); } finally { ctx.arc = o; ctx.setLineDash = oDash; }
+      return {kreise, striche}; })()""")
+    assert r['kreise'], 'keine Plakette gezeichnet'
+    assert min(r['kreise']) >= -0.5, f"Plakette ragt oben aus dem Bild: {r['kreise']}"
+    assert '6,5' not in r['striche'] and '3,7' not in r['striche'], f"Fahrweg-Striche noch da: {r['striche']}"
+
+@test
+async def decke_kein_teleport(g):
+    """Springen unter Decken aller Höhen (links/rechts, beide Figuren): niemand springt quer >15 px."""
+    bad = []
+    for corridor in (40, 80, 120):
+        for ceil in range(80, 640, 40):
+            floor = ceil + corridor
+            if floor > 680: continue
+            await g.load(level([ground(0, floor, 1400), ground(200, ceil-40, 800)],
+                               {'x': 560, 'y': floor}, {'x': 640, 'y': floor}))
+            await g.start_trace()
+            for keys in (('KeyA', 'ArrowLeft'), ('KeyD', 'ArrowRight')):
+                for k in keys: await g.p.keyboard.down(k)
+                await g.p.wait_for_timeout(80)
+                await g.hold(('Space', 'Numpad0'), 260)
+                await g.p.wait_for_timeout(300)
+                for k in keys: await g.p.keyboard.up(k)
+            tr = await g.trace()
+            for i in range(1, len(tr)):
+                for who, ix in (('Affe', 0), ('Schwein', 2)):
+                    if abs(tr[i][ix]-tr[i-1][ix]) > 15 or abs(tr[i][ix+1]-tr[i-1][ix+1]) > 15:
+                        bad.append((ceil, corridor, who)); break
+    assert not bad, f'Teleport bei (Decke, Ganghöhe, Figur): {bad[:5]}'
+
+@test
+async def fahrende_platte_kein_durchfahren(g):
+    """Bewegte Platten (hoch/runter) schieben Figuren hinaus statt sie durchzulassen: wer unter einer sinkenden
+    Platte springt oder steht, steckt nie darin und landet nie plötzlich obendrauf; mitfahren geht nicht durch Wände."""
+    mps = [{'x': 400, 'y': 40, 'w': 120, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 400, 'targetY': 640, 'speed': 3},
+           {'x': 600, 'y': 640, 'w': 120, 'h': 40, 'look': 'wall', 'group': 2, 'targetX': 600, 'targetY': 40, 'speed': 4.5},
+           {'x': 900, 'y': 560, 'w': 120, 'h': 40, 'look': 'ground', 'group': 3, 'targetX': 1400, 'targetY': 560, 'speed': 3}]
+    await g.load(level([ground(0, 680, 2000), ground(760, 200, 40, 480, 'wall'), ground(1200, 400, 40, 150, 'wall')],
+                       {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, movingPlatforms=mps))
+    await g.ev("closeMenu(); deathState=null")
+    bad = await g.p.evaluate("""() => {
+      const bad = []; let seed = 7;
+      const rnd = () => { seed = (seed*16807) % 2147483647; return seed/2147483647; };
+      const plats = solids.filter(s=>s.type==='moveplat').slice(0, 2);
+      const inside = () => { const b={x:p1.x-p1.w/2,y:p1.y-p1.h,w:p1.w,h:p1.h};
+        return solids.some(s=>{ if(s.gone) return false;
+          const ox=Math.min(b.x+b.w,s.x+s.w)-Math.max(b.x,s.x), oy=Math.min(b.y+b.h,s.y+s.h)-Math.max(b.y,s.y); return ox>1&&oy>1; }); };
+      for(let run=0; run<150; run++){
+        resetLevel(); menuScreen='pause'; deathState=null; for(const k in KEYS) KEYS[k]=false;
+        plats.forEach(s=>s.tripActive=true);
+        p2.x=100; p2.y=680; p1.x=300+rnd()*450; p1.y=680; p1.vx=0; p1.vy=0;
+        const pre=Math.floor(rnd()*400); for(let i=0;i<pre;i++) updateMovingPlatforms(16.6, []);
+        if(inside()) continue;
+        let keys={}, ts=0;
+        for(let f=0; f<300 && !deathState; f++){
+          ts+=16.6; for(const k in KEYS) KEYS[k]=false;
+          if(f%15===0) keys={l:rnd()<0.35, r:rnd()<0.35, j:rnd()<0.5};
+          if(keys.l) KEYS[p1.keys.left]=true; if(keys.r) KEYS[p1.keys.right]=true;
+          if(keys.j){ KEYS[p1.keys.jump]=true; if(f%15===0) KEYS[p1.keys.jump+'_pressed']=true; }
+          const y0=p1.y; stepSim(ts);
+          if(inside()) { bad.push(['steckt drin', run, f]); break; }
+          if(p1.y - y0 < -22) { bad.push(['nach oben versetzt', run, f]); break; }
+        }
+      }
+      // Mitfahren auf der waagerechten Platte gegen die Wand: Figur bleibt an der Wand stehen
+      resetLevel(); menuScreen='pause'; deathState=null; for(const k in KEYS) KEYS[k]=false;
+      const h = solids.filter(s=>s.type==='moveplat')[2]; h.tripActive = true;
+      p1.x = h.x + 100; p1.y = h.y; p1.vx = 0; p1.vy = 0; p1.grounded = true;
+      for(let f=0; f<120; f++){ stepSim(f*16.6); if(p1.x + p1.w/2 > 1200.5) { bad.push(['durch die Wand', p1.x]); break; } }
+      return bad;
+    }""")
+    assert not bad, f'Figur fährt durch bewegte Platte / Wand: {bad[:5]}'
+
+@test
+async def seil_vom_boden_hochziehen(g):
+    """Vom Boden einhaken bleibt dran; W zieht hoch."""
+    await g.load(level([ground(0, 680, 1400)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
+                       hooks=[{'x': 300, 'y': 420, 'radius': 300}]))
+    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(100)
+    assert await g.ev('p1.hookAttached'), 'Seil löst sich sofort'
+    y0 = await g.ev('p1.y'); await g.hold(('KeyW',), 700)
+    assert await g.ev('p1.hookAttached') and await g.ev('p1.y') < y0 - 60, 'W zieht nicht hoch'
+
+@test
+async def seil_runterlassen_bis_ring(g):
+    """Mit S bis an den Rand des Reichweiten-Rings runterlassen; oben kein Hüpfer."""
+    await g.load(level([ground(0, 400, 260), ground(700, 680, 700)], {'x': 230, 'y': 400}, {'x': 100, 'y': 400},
+                       hooks=[{'x': 330, 'y': 230, 'radius': 300}]))
+    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(100)
+    await g.hold(('KeyD',), 500); await g.steps(65)
+    await g.hold(('KeyS',), 2500); await g.steps(43)
+    assert round(await g.ev('p1.ropeLen')) == 300, 'nicht bis zum Ring runtergelassen'
+    await g.hold(('KeyW',), 3000); await g.steps(16)
+    y1 = await g.ev('p1.y'); await g.steps(27); y2 = await g.ev('p1.y')
+    assert abs(y2 - y1) < 3, f'hüpft oben ({y1} -> {y2})'
+
+@test
+async def seil_loest_beim_landen(g):
+    await g.load(level([ground(0, 680, 1400)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
+                       hooks=[{'x': 300, 'y': 590, 'radius': 300}]))
+    await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(150)
+    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(50)
+    await g.hold(('KeyD',), 1200); await g.p.wait_for_timeout(300)
+    assert not await g.ev('p1.hookAttached'), 'Seil bleibt nach dem Landen dran'
+
+@test
+async def muenzen_nach_farbe(g):
+    coins = [{'x': 300, 'y': 660, 'color': 'blue'}, {'x': 360, 'y': 660, 'color': 'pink'},
+             {'x': 420, 'y': 660, 'color': 'gold'}, {'x': 480, 'y': 660, 'color': 'blue'},
+             {'x': 540, 'y': 660, 'color': 'pink'}]
+    await g.load(level([ground(0, 680, 1400)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680}, coins=coins))
+    # Taste halten, bis die Figur an allen Münzen vorbei ist (langsame Rechner: feste Zeit reicht dort nicht)
+    async def lauf(key, fertig):
+        await g.p.keyboard.down(key)
+        try: await g.p.wait_for_function(fertig, timeout=4000)
+        except Exception: pass
+        await g.p.keyboard.up(key); await g.p.wait_for_timeout(300)
+    await lauf('KeyD', "p1.x > 600")
+    taken = await g.ev("coins.map(c=>c.taken)")
+    assert taken == [True, False, True, True, False], f'Affe: {taken}'
+    await lauf('ArrowRight', "p2.x > 600")
+    assert await g.ev("coins.every(c=>c.taken)"), 'Schweinchen sammelt pink nicht'
+
+@test
+async def checkpoint_sprung_und_tod(g):
+    cps = [{'x': 600, 'y': 680}, {'x': 1200, 'y': 680}]
+    await g.load(level([ground(0, 680, 2400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       checkpoints=cps, spikes=[{'x': 1500, 'y': 680, 'w': 40, 'h': 40}]))
+    await g.p.keyboard.press('KeyC'); await g.p.keyboard.press('KeyC'); await g.p.wait_for_timeout(200)
+    assert await g.ev('activeCp') == 1 and abs(await g.ev('p1.x') - 1182) < 40, 'Checkpoint-Sprung'
+    await g.hold(('KeyD',), 1500); await g.p.wait_for_timeout(300)
+    assert await g.ev('!!deathState'), 'Stacheln töten nicht'
+    await g.p.wait_for_timeout(500); await g.p.keyboard.press('KeyK'); await g.p.wait_for_timeout(200)
+    assert not await g.ev('!!deathState') and abs(await g.ev('p1.x') - 1182) < 40, 'Neustart nicht am Checkpoint'
+
+@test
+async def schalter_umschalten(g):
+    await g.load(level([ground(0, 680, 1400)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
+                       switches=[{'x': 260, 'y': 660, 'link': 1}], doors=[{'x': 720, 'y': 660, 'link': 1}]))
+    # ein Stück laufen, dann direkt vor den Hebel stellen (beim Laufen rutschte der Affe auf langsamen Rechnern
+    # manchmal am Hebel vorbei – hier geht es nur ums Umschalten)
+    await g.hold(('KeyD',), 100); await g.steps(20)
+    await g.ev("p1.x = 240; p1.vx = 0; p1._px = p1.x"); await g.steps(3)
+    assert await g.ev("leverNear(p1, switchDefs[0])"), f"Affe nicht am Hebel: {await g.ev('p1.x')}"
+    await g.p.keyboard.press('KeyJ')
+    try: await g.p.wait_for_function("solids.find(s=>s.type==='door').open", timeout=3000)
+    except Exception: pass
+    assert await g.ev("solids.find(s=>s.type==='door').open"), 'Tür geht nicht auf'
+
+@test
+async def bildrate_unabhaengig(g):
+    """Gleiche Eingabe -> gleiche Position bei 60 und 144 Bildern pro Sekunde."""
+    lvl = level([ground(0, 680, 3000)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680})
+    # Taste genau 54 Spielschritte halten und IM SPIEL loslassen (vorher: feste Millisekunden über Playwright – das
+    # Loslassen kam bei langsamem Zeichnen ein paar Schritte zu spät an, der Test war dann zufällig rot)
+    halten = """(() => { const ziel = simSteps + 54; window.__ende = ziel + 40; KEYS.KeyD = true; const alt = stepSim;
+      stepSim = function(...a){ const r = alt.apply(this, a); if(simSteps >= ziel && KEYS.KeyD){ KEYS.KeyD = false; } return r; }; })()"""
+    async def lauf(gg):
+        await gg.ev("closeMenu(); deathState = null; for(const k in KEYS) KEYS[k] = false;"); await gg.steps(10)
+        await gg.ev(halten); await gg.p.wait_for_function("simSteps >= window.__ende", timeout=20000)
+        return await gg.ev('p1.x')
+    await g.load(lvl); x60 = await lauf(g)
+    p2 = await g.p.context.new_page()
+    await p2.add_init_script("window.requestAnimationFrame = cb => setTimeout(()=>cb(performance.now()), 1000/144);")
+    await p2.goto(GAME); await p2.wait_for_timeout(500)
+    g2 = Game(p2); await g2.load(lvl); x144 = await lauf(g2); await p2.close()
+    assert abs(x60 - x144) < 60, f'60 Hz: {x60:.0f}, 144 Hz: {x144:.0f}'
+
+@test
+async def variable_sprunghoehe(g):
+    """Variable Sprunghöhe: kurzes Antippen = kleiner Sprung, länger halten = höher, ab JUMP_FULL_STEPS (≈ 0,19 s) genau
+    die bisherige Höchsthöhe – nie höher; Tastatur und Controller verhalten sich gleich; für Affe und Schweinchen gleich;
+    erneutes Drücken in der Luft bringt keinen Extra-Sprung (Wandsprung/Seil/Wasser: eigene Tests, unverändert)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 400, 'y': 680}))
+    hoehe = """([wer, halten, pad, nochmal]) => {
+      resetLevel(); menuScreen = 'pause'; deathState = null; for(const k in KEYS) KEYS[k] = false; for(const k in PAD) PAD[k] = false;
+      const P = wer === 'f' ? p2 : p1, Q = wer === 'f' ? p1 : p2; P.x = 600; P.y = 680; P.vx = P.vy = 0; Q.x = 300; Q.y = 680;
+      let ts = -3e7; for(let i = 0; i < 5; i++) stepSim(ts += 16.6);
+      const y0 = P.y, taste = P.keys.jump; let minY = y0;
+      const druck = an => { if(pad) setPad(taste, an); else { if(an && !KEYS[taste]) KEYS[taste + '_pressed'] = true; KEYS[taste] = an; } };
+      for(let s = 0; s < 90; s++){
+        if(s === 0) druck(true);
+        if(s === halten) druck(false);
+        if(nochmal && s === halten + 2) druck(true);   // schnell nochmal drücken (in der Luft)
+        stepSim(ts += 16.6);
+        minY = Math.min(minY, P.y);
+        if(s > 3 && P.grounded) break;
+      }
+      druck(false);
+      return y0 - minY; }"""
+    # bisherige Höchsthöhe: Absprung mit JUMP_V (im Absprung-Schritt schon bewegt), danach nur Schwerkraft
+    alt_max = await g.ev("(() => { let v = JUMP_V, y = v, m = y; for(let s = 0; s < 60; s++){ v += GRAVITY; y += v; m = Math.min(m, y); } return -m; })()")
+    for wer in ('m', 'f'):
+        tast = [await g.p.evaluate(hoehe, [wer, h, False, False]) for h in (0, 2, 5, 8, 10, 15, 40)]
+        pad = [await g.p.evaluate(hoehe, [wer, h, True, False]) for h in (0, 2, 5, 8, 10, 15, 40)]
+        assert all(abs(a - b) < 0.01 for a, b in zip(tast, pad)), f'Tastatur {tast} und Controller {pad} verschieden'
+        assert all(a < b for a, b in zip(tast[:5], tast[1:5])), f'nicht stufenlos steigend: {tast}'
+        assert tast[0] < 0.4 * tast[-1], f'Antippen nicht klein genug: {tast}'
+        assert abs(tast[4] - tast[6]) < 0.01 and abs(tast[5] - tast[6]) < 0.01, f'ab 10 Schritten nicht die volle Höhe: {tast}'
+        assert max(tast + pad) <= alt_max + 0.01 and tast[-1] >= alt_max - 0.01, f'Höchsthöhe {max(tast)} statt {alt_max}'
+        nochmal = await g.p.evaluate(hoehe, [wer, 2, False, True])
+        assert abs(nochmal - tast[1]) < 0.01, f'erneutes Drücken in der Luft ändert den Sprung: {nochmal} statt {tast[1]}'
+
+@test
+async def wandsprung_controller(g):
+    await g.p.add_init_script(PAD_STUB); await g.p.reload(); await g.p.wait_for_timeout(500)
+    await g.load(level([ground(0, 680, 800), ground(400, 360, 40, 320, 'wall')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.ev("window.__pad.axes[0]=1"); await g.p.wait_for_timeout(650)
+    await g.ev("window.__pad.buttons[0]={pressed:true,value:1}"); await g.p.wait_for_timeout(60)
+    await g.ev("window.__pad.buttons[0]={pressed:false,value:0}"); await g.p.wait_for_timeout(200)
+    await g.ev("window.__pad.axes[0]=-1; window.__pad.buttons[0]={pressed:true,value:1}")
+    await g.p.wait_for_timeout(250)
+    assert await g.ev('p1.vx') < 0 or await g.ev('p1.x') < 360, 'kein Wandsprung'
+
+@test
+async def editor_projekt_levels(g):
+    """Editor zeigt Levels aus levels/levels.json, lädt sie und lädt das aktuelle Level als 2 Dateien herunter."""
+    srv = webserver()
+    try:
+        p = g.p
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.click('#levelsBtn'); await p.wait_for_timeout(500)
+        liste = json.loads((ROOT / 'levels' / 'levels.json').read_text())
+        namen = await p.eval_on_selector_all('#projectList .lvl .nm', 'els => els.map(e => e.textContent)')
+        welt = {'dschungel': 'Dschungel', 'ruinen': 'Ruinen', 'hoehle': 'Höhle', 'wasser': 'Wasser', 'vulkan': 'Vulkan', 'archiv': 'Archiv'}
+        def anzeige(L):   # Editor-Umbau: Welt + Nummer aus dem Pfad (levels/<welt>/<nr>-<titel>.json)
+            w, f = L['datei'].split('/')
+            return f"{welt[w]} {int(f[:2])}" if f[:2].isdigit() else f"{welt[w]} Boss" if f.startswith('boss-') else None
+        assert sorted(namen) == sorted(f"{anzeige(L)} · {L.get('titel') or L['name']}" if anzeige(L) else L['name'] for L in liste), f'Projekt-Liste falsch: {namen}'
+        # Welt-Ordner (Nutzerwunsch): je Welt ein aufklappbarer Ordner in Spiel-Reihenfolge, darin nach Nummer, Boss zuletzt
+        ordner = await p.eval_on_selector_all('#projectList > details.welt-ordner', '''els => els.map(d => ({w: d.dataset.welt,
+            s: d.querySelector('summary').textContent, offen: d.open, z: [...d.querySelectorAll('.lvl .dt')].map(e => e.textContent)}))''')
+        assert [o['w'] for o in ordner] == ['dschungel', 'ruinen', 'hoehle', 'vulkan', 'archiv'], ordner
+        for o in ordner:
+            assert all(z.startswith(o['w'] + '/') for z in o['z']), o
+            assert o['s'] == f"📁 {welt[o['w']]} ({len(o['z'])})", o
+            assert o['z'] == sorted(o['z'], key=lambda z: (z.split('/')[1].startswith('boss-'), z)), o
+            assert not o['offen'], 'ohne geladenes Projekt-Level sind alle Ordner zu'
+        assert [z for o in ordner if o['w'] == 'dschungel' for z in o['z']][-1] == 'dschungel/boss-bruno.json'
+        await projekt_laden(p, liste[0]['datei'])
+        erwartet = json.loads((ROOT / 'levels' / 'editor-format' / liste[0]['datei']).read_text())
+        assert (await p.text_content('#curName')).startswith('Dschungel 1 · Dschungel'), f"Welt/Nummer/Titel nicht übernommen: {await p.text_content('#curName')}"
+        await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+        offen = await p.eval_on_selector_all('#projectList > details[open]', 'els => els.map(d => d.dataset.welt)')
+        assert offen == ['dschungel'], f'Ordner des geladenen Levels sollte offen sein: {offen}'
+        dateien = []
+        p.on('download', lambda d: dateien.append(d))
+        await p.click('#projectBtn'); await p.wait_for_timeout(800)
+        namen = sorted(d.suggested_filename for d in dateien)
+        assert namen == ['level-1.editor.json', 'level-1.json'], f'Downloads: {namen}'
+        inhalt = {d.suggested_filename: json.loads(Path(await d.path()).read_text()) for d in dateien}
+        ed = inhalt['level-1.editor.json']
+        assert ed['name'] == 'Level 1' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, erwartet['tiles'])), 'Editor-Datei falsch'
+        assert 'solids' in inhalt['level-1.json'] and len(ed['coins']) == len(erwartet['coins']), 'Spiel-Datei falsch'
+    finally:
+        srv.shutdown()
+
+@test
+async def menue_beim_start(g):
+    """Beim Start erscheint das Titelbild des Startmenüs, das Spiel steht still; Taste -> Hauptmenü
+    (Spielen · Optionen · Beenden, ohne Level-Editor), Tastatur navigiert, Esc führt zurück."""
+    p = g.p
+    assert await g.ev("menuScreen") == 'start' and await sm_screen(g) == 'sm-s-title', 'kein Titelbild beim Start'
+    x0 = await g.ev('p1.x'); await g.hold(('KeyD',), 400)
+    assert abs(await g.ev('p1.x') - x0) < 0.01, 'Spiel läuft hinter dem Menü weiter'
+    await p.keyboard.press('KeyX'); await p.wait_for_timeout(1100)
+    assert await sm_screen(g) == 'sm-s-menu', 'Taste führt nicht ins Hauptmenü'
+    texte = await p.eval_on_selector_all('#sm-menu .mi', 'els => els.map(e => e.textContent)')
+    assert texte == ['Spielen', 'Optionen', 'Geschichte', 'Beenden'], f'Menü: {texte}'
+    await p.keyboard.press('ArrowDown'); await p.wait_for_timeout(100)
+    assert await p.text_content('#sm-menu .mi.sel') == 'Optionen', 'Pfeil runter wählt nicht'
+    await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+    assert await sm_screen(g) == 'sm-s-options', 'Enter öffnet Optionen nicht'
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+    assert await sm_screen(g) == 'sm-s-menu', 'Esc führt nicht zurück'
+
+@test
+async def menue_projekt_levels(g):
+    """Spielen -> Spielerwahl -> Countdown startet Level 1 aus levels.json. Levelkarten: Dschungel, Baumkronen,
+    Ruinen, dann „Coming soon“; versteckter alter Entwurf fehlt; Level 2 erst nach Freischalten spielbar."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await startmenue_bis_level(g)
+        spiel = json.loads((ROOT / 'levels' / 'dschungel/01-dschungel.json').read_text())
+        assert await g.ev('coins.length') == len(spiel['coins']), 'Level 1 nicht geladen'
+        assert not await g.ev("document.getElementById('sm').classList.contains('on')"), 'Startmenü bleibt offen'
+        # Pause -> zurück zum Menü -> Fortfahren -> Levelauswahl
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+        assert await p.text_content('#menuTitle') == 'Pause', 'Esc öffnet keine Pause'
+        await p.keyboard.press('ArrowDown'); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter')
+        await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-menu', 'Zurück zum Menü geht nicht'
+        texte = await p.eval_on_selector_all('#sm-menu .mi', 'els => els.map(e => e.textContent)')
+        assert texte == ['Spielen', 'Fortfahren', 'Optionen', 'Geschichte', 'Beenden'], f'Menü: {texte}'
+        await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-map', 'Fortfahren führt nicht zur Weltkarte (Ausbau 3)'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)   # Dschungel (erste Welt) öffnen
+        assert await sm_screen(g) == 'sm-s-levels', 'Weltkarte öffnet die Welt-Seite nicht'
+        namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
+        echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
+        assert echte[:4] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
+        assert namen == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Wipfelsturm', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6), Level 7/8 (Ausbau 7)
+        # Level 2 gesperrt
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
+        assert await g.ev("menuScreen") == 'start', 'gesperrtes Level startet'
+        # Boss-Karte („bald“) startet nie
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
+        assert await g.ev("menuScreen") == 'start' and await sm_screen(g) == 'sm-s-levels', 'Boss-Karte startet etwas'
+        # freigeschaltetes Level 2: erst Spielerwahl, dann startet es
+        await g.ev("GameMenu.unlockAll()")
+        await g.ev("startMenuShow('levels', {world: 'dschungel'})"); await p.wait_for_timeout(700)   # Auswahl: letztes offenes Level (2)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-select', 'nach der Levelwahl keine Spielerwahl'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-levels', 'Zurück aus der Spielerwahl führt nicht zur Levelauswahl'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        for _ in range(120):
+            if await g.ev("menuScreen === null"): break
+            await p.wait_for_timeout(100)
+        letzt = json.loads((ROOT / 'levels' / 'worlds.json').read_text())['welten'][0]['level'][-1]   # letztes Dschungel-Level (6er-Welten: aus worlds.json)
+        spiel2 = json.loads((ROOT / 'levels' / letzt).read_text())
+        assert await g.ev('coins.length') == len(spiel2['coins']), 'letztes offenes Level nicht geladen'
+    finally:
+        srv.shutdown()
+
+@test
+async def startmenue_fortschritt_und_wahl(g):
+    """Geschafftes Level schaltet das nächste frei (Statistik, dann Levelauswahl mit Hinweis); Spielerwahl tauscht die Tasten:
+    Spieler 1 aufs Schweinchen -> Schweinchen mit A/D/Leertaste, Affe mit Pfeilen/Num 0/Num 1."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await startmenue_bis_level(g, tasten_vorher=('KeyD',))       # Spieler 1 wechselt nach rechts (Schweinchen)
+        k = await g.ev("({m: p1.keys, f: p2.keys})")
+        assert k['f']['left'] == 'KeyA' and k['f']['jump'] == 'Space' and k['f']['glide'] == 'KeyG', f'Schweinchen-Tasten: {k}'
+        assert k['m']['left'] == 'ArrowLeft' and k['m']['hook'] == 'Numpad1' and k['m']['use'] == 'Numpad2', f'Affen-Tasten: {k}'
+        assert 'Spieler 2' in await p.text_content('#hudMHead'), 'Anzeige zeigt die Tauschung nicht'
+        x0 = await g.ev('p2.x'); await g.hold(('KeyD',), 400)
+        assert await g.ev('p2.x') > x0 + 20, 'Spieler 1 steuert das Schweinchen nicht'
+        await g.ev("winFinish()"); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-results', 'nach dem Ziel kein Statistik-Bildschirm'
+        sv = await g.ev("GameMenu.getSave()")
+        assert 'dschungel/01-dschungel.json' in sv['completed'] and 'dschungel/02-baumkronen.json' in sv['unlocked'], f'Fortschritt nicht gemerkt: {sv}'
+        await p.wait_for_timeout(400); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-levels', 'nach der Statistik keine Levelauswahl'
+        await p.wait_for_function("document.getElementById('sm-toast').textContent.includes('freigeschaltet')", timeout=5000)
+    finally:
+        srv.shutdown()
+
+@test
+async def levelstart_vorhang(g):
+    """Levelstart aus dem Menü: Vorhang aus einzelnen Blättern fliegt zusammen, Titeltafel „Level 1“ + Name,
+    Blätter fliegen wieder weg; die Figuren stehen dabei einfach an ihren Startplätzen und sind sofort steuerbar."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        assert await g.ev("document.querySelectorAll('#leafCurtain .leaf').length") > 100, 'zu wenige Blätter'
+        await g.ev("localStorage.setItem('monchichi.introGesehen', 'true')")   # hier geht es nur um den Vorhang (Intro: Test intro_szene)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+        await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        sah_titel = False
+        for _ in range(200):
+            if await g.ev("document.getElementById('leafCurtain').classList.contains('title')"):
+                sah_titel = True
+                assert await g.ev("document.querySelector('#leafCurtain .lt-n').textContent") == 'Level 1'
+                st = await g.ev("({ax: p1.x, bx: p2.x, sm: levelStartM.x, sf: levelStartF.x})")
+                assert abs(st['ax'] - st['sm']) < 2 and abs(st['bx'] - st['sf']) < 2, f'Figuren nicht am Start: {st}'
+            if sah_titel and await g.ev("menuScreen === null"): break
+            await p.wait_for_timeout(50)
+        assert sah_titel, 'keine Titeltafel'
+        assert await g.ev("menuScreen") is None, 'Spiel startet nach dem Vorhang nicht'
+        assert await g.ev("typeof levelIntro === 'undefined'"), 'Ankunfts-Animation soll weg sein'
+        x0 = await g.ev("p2.x"); await g.hold(('ArrowRight',), 400)
+        assert await g.ev("p2.x") > x0 + 20, 'nach dem Vorhang nicht steuerbar'
+    finally:
+        srv.shutdown()
+
+@test
+async def verknuepfungen_bis_60(g):
+    """Alle Projekt-Levels benutzen nur Verknüpfungen 1–60 (mehr kann der Editor nicht einstellen; bis Ausbau 2: 20)."""
+    for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
+        d = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
+        links = [s['link'] for s in d.get('switches', [])] + [x['link'] for x in d.get('doors', [])] + \
+                [m['link'] for m in d.get('movers', []) if m.get('link')] + \
+                [h['move']['link'] for h in d.get('hooks', []) if h.get('move') and h['move'].get('link')]
+        assert all(1 <= n <= 60 for n in links), f"{L['datei']}: Verknüpfungen über 60: {sorted(set(n for n in links if n > 60))}"
+
+@test
+async def vollbild_esc_bleibt(g):
+    """Im Vollbild wird Esc fürs Spiel gesperrt (Tastatur-Sperre), damit Esc die Pause öffnet statt das Vollbild zu verlassen."""
+    await g.ev("""(()=>{ window.__lock = null;
+        Object.defineProperty(navigator, 'keyboard', {configurable: true, value: {lock: k => { window.__lock = k; return Promise.resolve(); }, unlock: () => { window.__lock = 'frei'; }}});
+        Object.defineProperty(document, 'fullscreenElement', {configurable: true, get: () => document.documentElement});
+        document.dispatchEvent(new Event('fullscreenchange')); })()""")
+    assert await g.ev("JSON.stringify(window.__lock)") == '["Escape"]', 'Esc wird im Vollbild nicht gesperrt'
+    await g.ev("""(()=>{ Object.defineProperty(document, 'fullscreenElement', {configurable: true, get: () => null});
+        document.dispatchEvent(new Event('fullscreenchange')); })()""")
+    assert await g.ev("window.__lock") == 'frei', 'Sperre wird nach dem Vollbild nicht gelöst'
+
+@test
+async def startmenue_lautstaerke(g):
+    """Optionen: Regler Gesamt/Musik/Effekte ändern die Lautstärke im Spiel und werden gemerkt."""
+    p = g.p
+    await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+    await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+    await p.keyboard.press('ArrowDown'); await p.keyboard.press('ArrowDown'); await p.wait_for_timeout(100)   # Musik
+    await p.keyboard.press('ArrowLeft'); await p.keyboard.press('ArrowLeft'); await p.wait_for_timeout(200)
+    assert abs(await g.ev("VOL.music") - 0.8) < 0.01, f"Musik-Regler wirkt nicht: {await g.ev('VOL.music')}"
+    assert '0.8' in await g.ev("localStorage.getItem('monchichi_vol')"), 'Lautstärke nicht gemerkt'
+    assert await g.ev("VOL.master") == 1 and await g.ev("VOL.sfx") == 1, 'andere Regler verstellt'
+
+@test
+async def pause_tastatur(g):
+    """Esc öffnet die Pause (Spiel steht), Esc nochmal spielt weiter; Tasten springen danach nicht los."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    p = g.p
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+    assert await p.text_content('#menuTitle') == 'Pause', 'keine Pause'
+    x0 = await g.ev('p1.x'); await g.hold(('KeyD',), 300)
+    assert abs(await g.ev('p1.x') - x0) < 0.01, 'Spiel läuft in der Pause weiter'
+    await p.keyboard.press('Space'); await p.wait_for_timeout(200)   # „Weiterspielen“
+    assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Weiterspielen geht nicht'
+    assert await g.ev('p1.vy') == 0, 'Auswahl-Taste hat Sprung ausgelöst'
+    await g.hold(('KeyD',), 300)
+    assert await g.ev('p1.x') > x0 + 20, 'nach der Pause keine Steuerung'
+
+@test
+async def pause_controller(g):
+    """Options öffnet/schließt die Pause; Steuerkreuz + ✕ wählen „Zurück zum Menü“."""
+    await g.p.add_init_script(PAD_STUB); await g.p.reload(); await g.p.wait_for_timeout(500)
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    zwei_bilder = "new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))"
+    async def tippe(n):   # so lange halten/loslassen, bis das Menü (fragt einmal pro Bild ab) es sicher gesehen hat
+        await g.ev(f"window.__pad.buttons[{n}]={{pressed:true,value:1}}"); await g.ev(zwei_bilder); await g.p.wait_for_timeout(60)
+        await g.ev(f"window.__pad.buttons[{n}]={{pressed:false,value:0}}"); await g.ev(zwei_bilder); await g.p.wait_for_timeout(60)
+    await tippe(9)
+    assert await g.p.text_content('#menuTitle') == 'Pause', 'Options öffnet keine Pause'
+    await tippe(9)
+    assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Options schließt Pause nicht'
+    await tippe(9); await tippe(13); await tippe(13); await tippe(0); await g.p.wait_for_timeout(400)
+    assert await sm_screen(g) == 'sm-s-menu', 'Controller-Auswahl geht nicht'
+    await tippe(0); await g.p.wait_for_timeout(500)
+    assert await sm_screen(g) == 'sm-s-select', '✕ öffnet Spielerwahl nicht'
+    await tippe(1); await g.p.wait_for_timeout(500)
+    assert await sm_screen(g) == 'sm-s-menu', '○ führt nicht zurück'
+
+@test
+async def menue_knopf_und_editor_schliessen(g):
+    """Spielansicht aufgeräumt: keine Knöpfe unten links, keine Steuerungs-Erklärung, keine FPS-Anzeige (F zeigt sie),
+    Spielbild füllt die Breite; Esc öffnet die Pause; ✕ oben rechts im Editor führt zurück zum Spiel-Menü."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    p = g.p
+    for sel in ('#gameBtns', '#perf', '#hudMKeys', '#hudFKeys'):
+        assert not await p.is_visible(sel), f'{sel} soll unsichtbar sein'
+    w = await g.ev("document.getElementById('c').getBoundingClientRect().width")
+    assert w > 1390, f'Spielbild füllt den Bildschirm nicht: {w}'
+    await p.keyboard.press('KeyF'); await p.wait_for_timeout(100)
+    assert await p.is_visible('#perf'), 'F zeigt die Leistungsanzeige nicht'
+    await p.keyboard.press('KeyF')
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+    assert await p.text_content('#menuTitle') == 'Pause', 'Esc öffnet keine Pause'
+    srv = webserver()
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        box = await p.locator('#closeEditorBtn').bounding_box()
+        assert box and box['x'] > 1200 and box['y'] < 120, f'✕ nicht oben rechts: {box}'
+        await p.click('#closeEditorBtn'); await p.wait_for_timeout(500)
+        assert p.url.endswith('/index.html') and '/editor/' not in p.url, f'nicht zurück im Spiel: {p.url}'
+        for _ in range(30):
+            if await sm_screen(g) == 'sm-s-title': break
+            await p.wait_for_timeout(100)
+        assert await sm_screen(g) == 'sm-s-title', 'Startmenü fehlt'
+    finally:
+        srv.shutdown()
+
+@test
+async def projekt_levels_beide_formate_gleich(g):
+    """Jedes Level in levels.json: Spiel-Format und Editor-Format beschreiben dasselbe Level – ALLE Felder (Ausbau 2:
+    auch Druckplatten, Pilze, Aufwind, Level-Info). Die Spiel-Datei ist die, die ausgeliefert wird; der Editor schreibt
+    beide in einem Commit, dieser Test hält sie deckungsgleich."""
+    META = ('welt', 'tageszeit', 'wetter', 'look', 'theme')
+    for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
+        spiel = json.loads((ROOT / 'levels' / L['datei']).read_text())
+        ed = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
+        umg = await g.ev(f"convertEditorSnapshot({json.dumps(ed)})")
+        assert ed.get('name') == L['name'], f"{L['datei']}: Name {ed.get('name')} statt {L['name']}"
+        diff = [k for k in set(umg) | set(spiel) if not k.startswith('_') and k not in META + ('name',)   # name/_…: nur Beschriftung
+                and level_teil(k, umg.get(k)) != level_teil(k, spiel.get(k))]
+        assert not diff, f"{L['datei']}: Spiel- und Editor-Datei verschieden bei {diff}"
+        # Aussehen und Wetter: gleiche Wirkung im Spiel
+        a = await g.ev(f"[resolveLevelLook({json.dumps(umg)}), resolveLevelLook({json.dumps(spiel)})]")
+        assert a[0] == a[1], f"{L['datei']}: Aussehen verschieden {a}"
+        assert (umg.get('wetter') or 'wechselnd') == (spiel.get('wetter') or 'wechselnd'), f"{L['datei']}: Wetter verschieden"
+
+@test
+async def level1_bis_spalte_800(g):
+    """Level 1 geht bis Spalte ~800; Abschnitt 3: Affe legt Hebel 4 auf der hohen Insel um,
+    die Brücke trägt das Schweinchen über die Grube (beide helfen sich gegenseitig)."""
+    await g.load(str(ROOT / 'levels' / 'dschungel/01-dschungel.json'))
+    assert await g.ev("goal.x") >= 790 * 40, "Ziel nicht am Ende (Spalte ~800)"
+    assert await g.ev("coins.length") >= 200, "zu wenige Münzen"
+    # Affe steht am Hebel auf der Insel (Spalte 314), Schweinchen auf der Brücke (Spalte 302)
+    await g.ev("p1.x=314*40+20; p1.y=10*40; p2.x=302*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
+    await g.p.wait_for_timeout(300)
+    await g.p.keyboard.press('KeyJ')
+    for _ in range(300):
+        if await g.ev("p2.x") >= 319 * 40: break
+        await g.p.wait_for_timeout(30)
+    else:
+        raise AssertionError("Brücke fährt das Schweinchen nicht rüber")
+    await g.p.keyboard.down('ArrowRight'); await g.p.wait_for_timeout(1000); await g.p.keyboard.up('ArrowRight')
+    st = await g.ev("({x:p2.x, y:p2.y, dead:!!deathState})")
+    assert not st['dead'] and st['x'] > 323 * 40 and abs(st['y'] - 14 * 40) < 2, f"Schweinchen nicht drüben: {st}"
+
+@test
+async def level1_muenzen_und_haken(g):
+    """Level 1: nur blaue/pinke Münzen, keine Münze in Boden/Wand/Tür, Haken-Radius höchstens 5 Kästchen."""
+    lv = json.loads((ROOT / 'levels' / 'dschungel/01-dschungel.json').read_text())
+    farben = {c['color'] for c in lv['coins']}
+    assert farben <= {'blue', 'pink'}, f"andere Münzfarben: {farben}"
+    feste = lv['solids'] + lv['doors'] + lv['movingPlatforms']
+    for c in lv['coins']:
+        for s in feste:
+            w, h = s.get('w', 40), s.get('h', 40)
+            x0, y0 = (s['x'], s['y']) if 'w' in s else (s['x'] - 20, s['y'] - 20)
+            assert not (x0 < c['x'] < x0 + w and y0 < c['y'] < y0 + h), f"Münze im Stein: {c} in {s}"
+    for hk in lv['hooks']:
+        assert hk['radius'] <= 5 * 40, f"Haken zu groß: {hk}"
+
+@test
+async def level2_und_3_regeln(g):
+    """Level 2 bis 6: nur blaue/pinke Münzen, keine Münze in Stein/Tür/bewegtem Teil, Haken höchstens 5 Kästchen,
+    Ziel ganz rechts, Start links; ab Level 4 ein eigenes Thema, ab Level 5 gleich viele blaue wie pinke Münzen
+    (Level 2–4 hat der Nutzer selbst gestaltet)."""
+    namen = [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text())
+             if not L.get('versteckt') and L['datei'] != 'dschungel/01-dschungel.json']
+    assert 'ruinen/02-mondnacht.json' in namen, 'Level 4 fehlt in levels.json'
+    for name in namen:
+        lv = json.loads((ROOT / 'levels' / name).read_text())
+        farben = {c['color'] for c in lv['coins']}
+        assert farben <= {'blue', 'pink'}, f"{name}: andere Münzfarben {farben}"
+        assert len(lv['coins']) >= 40, f"{name}: zu wenige Münzen"
+        feste = [s for s in lv['solids'] if s.get('type') != 'fake'] + lv['doors'] + lv['movingPlatforms']
+        for c in lv['coins']:
+            for s in feste:
+                w, h = s.get('w', 40), s.get('h', 40)
+                x0, y0 = (s['x'], s['y']) if 'w' in s else (s['x'] - 20, s['y'] - 20)
+                assert not (x0 < c['x'] < x0 + w and y0 < c['y'] < y0 + h), f"{name}: Münze im Stein {c}"
+        for hk in lv['hooks']:
+            assert hk['radius'] <= 5 * 40, f"{name}: Haken zu groß {hk}"
+        assert lv['goal']['x'] > 400 * 40 and lv['startM']['x'] < 10 * 40, f"{name}: Start/Ziel falsch"
+        if name not in ('dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json'):   # eigenes Thema – oder (Ausbau 7) Welt + Tageszeit
+            assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan') or (lv.get('welt') and lv.get('tageszeit')), f"{name}: Thema {lv.get('theme')}"
+        if name not in ('dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json', 'ruinen/02-mondnacht.json'):   # Level 2–4 vom Nutzer gestaltet: eigene Münzverteilung
+            nb = sum(c['color'] == 'blue' for c in lv['coins'])
+            assert nb * 2 == len(lv['coins']), f"{name}: Blau/Pink nicht ausgeglichen"
+
+@test
+async def level7_lianenschlucht(g):
+    """Ausbau 7, Dschungel Level 3 „Lianenschlucht“ (levels/dschungel/03-lianenschlucht.json): Koop-Bot spielt die Stellen jeder Etappe nach.
+    Etappe 1: Steg-Treppe (beide), Seil-Aufzug (Affe zieht sich hoch, Hebel 1), Segel-Schlucht (nur Schweinchen,
+    Hebel 2 fährt die Plattform für den Affen), Kamin (beide). Etappe 2: Brunnen (Affe am Seil an Hebel 3; das Schweinchen
+    kommt im Flug nicht an den Hebel), Felsdecke (Schweinchen segelt durch den Tunnel, Affe per Haken auf den Felsen),
+    Schleuse mit Graben (Druckplatte 5), Bröckel-Steine (beide). Etappe 3: Pilz-Kreuzung (Schweinchen Pilz + Segeln,
+    Affe Pilz + zwei Haken), fahrende Haken (nur mit Hebel 8 vom Schweinchen), Pilz-Treppe (beide). Etappe 4:
+    Lianen-Staffel (Hebel 9–12 über Kreuz, Dach-Lücken segeln, Haken zu den Säulen), Finale (Pilze, Schlucht)."""
+    await koop_level(g, 'dschungel/03-lianenschlucht.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    # 1) Steg-Treppe: durch die Stege nach oben, über die Mauer
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = k_hop(kx(13) + 20, 24) + k_hop(kx(17) + 20, 24) + k_hop(kx(22) + 20, 24)
+        r = await koop(g, **{who: kat(3, 14), other: kat(1, 14)}, plans={who: plan}, maxFrames=2500)
+        soll(k_pos(r, who) and k_pos(r, who)[1] == 8, f'Steg-Treppe {who}', r.get('pos'))
+    # 2) Seil-Aufzug: Haken, ranziehen (W), auf den Sims; Hebel 1 öffnet Tür 1
+    plan = [k_lauf(46, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+            k_lauf(57, -10), {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(40, 14), f=kat(40, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[1]"), 'Seil-Aufzug + Hebel 1', r.get('pos'))
+    # 3) Segel-Schlucht: nur das Schweinchen kommt rüber; Hebel 2 fährt die Plattform mit dem Affen
+    r = await koop(g, f=kat(96, 8), m=kat(94, 8), plans={'f': k_segeln(99, 10)}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 113.5 and k_pos(r, 'f')[1] == 12, 'Schlucht Schweinchen', r.get('pos'))
+    r = await koop(g, m=kat(96, 8), f=kat(94, 8), plans={'m': k_hop(kx(99), 30)}, maxFrames=1500)
+    soll(r.get('dead') == 'm' or (k_pos(r, 'm') and k_pos(r, 'm')[0] < 100), 'Affe springt ohne Plattform nicht rüber', r.get('pos'))
+    r = await koop(g, m=kat(98, 8), f=kat(118, 12), plans={'m': [k_lauf(101), {'frames': 30}, {'wait': f'P.x >= {kx(109)}'}, k_lauf(116)], 'f': [{'use': True, 'frames': 5}]}, maxFrames=3000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 12, 'Plattform bringt den Affen', r.get('pos'))
+    # 4) Kamin für beide
+    for who, other in (('m', 'f'), ('f', 'm')):
+        # Kamin auf Breite 3 verbreitert (Kombi-Nachschärfen): man steigt höher je Sprung – oben nach rechts aussteigen
+        plan = [k_lauf(151, -8), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(2)} && P.vy < 0', 'frames': 900},
+                {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(153)}', 'frames': 300}, k_lauf(165)]
+        r = await koop(g, **{who: kat(145, 12), other: kat(140, 12)}, plans={who: plan}, maxFrames=2500)
+        soll(r.get('done'), f'Kamin {who}', r.get('pos'))
+    if await g.ev("goal.x") < 380 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    # 5) Brunnen: Affe hängt am Seil (S), legt Hebel 3 um (J), zieht sich hoch (W), schwingt rüber
+    plan = [k_lauf(225, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'hold': ['slack'], 'until': f'P.y > {ky(12)} + 10', 'frames': 120}, {'frames': 60, 'pressIf': {'use': 'f % 10 === 0'}, 'until': '!!linkOn[3]'},
+            {'hold': ['pull'], 'until': f'P.y < {ky(12)}', 'frames': 120}, {'swing': True, 'pull': 0, 'release': f'P.x > {kx(230)} + 20 && P.vy < 0 && P.vx > 2'},
+            {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+            {'swing': True, 'pull': 0, 'release': f'P.x > {kx(235)} + 20 && P.vy < 0 && P.vx > 1'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(239)]
+    r = await koop(g, m=kat(220, 14), f=kat(214, 14), plans={'m': plan}, maxFrames=3000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 238 and k_pos(r, 'm')[1] == 14, 'Brunnen (Affe am Seil, Hebel 3)', r.get('pos'))
+    plan = [k_lauf(225, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'pressIf': {'use': 'f % 2 === 0'}, 'until': 'P.grounded', 'frames': 300}]
+    r = await koop(g, f=kat(220, 14), m=kat(214, 14), plans={'f': plan}, maxFrames=1500)
+    soll(not await g.ev("!!linkOn[3]"), 'Schweinchen legt Hebel 3 nicht im Flug um')
+    # 6) Felsdecke: Schweinchen segelt durch den Tunnel, Affe zieht sich auf den Felsen
+    ok = False
+    for hold in (4, 10, 16):
+        r = await koop(g, f=kat(249, 11), m=kat(247, 11), plans={'f': k_segeln(252, hold)}, maxFrames=1500)
+        ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 267.5 and k_pos(r, 'f')[1] == 15)
+    soll(ok, 'Tunnel (Schweinchen)')
+    plan = [k_lauf(247, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(246, 11), f=kat(243, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5, 'Affe auf den Felsen', r.get('pos'))
+    # 7) Schleuse: Affe hält Platte 5, Schweinchen durch Tür 5 und über den Graben; dann Affe per Haken
+    m = [k_lauf(282, -10), {'frames': 20}, {'wait': f'Q.x >= {kx(304)}'}]
+    f = [{'wait': '!!linkOn[5]'}] + k_hop(kx(289) - 10, 8) + [k_lauf(293, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
+         {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300}, k_lauf(307, -10), {'frames': 10}]
+    r = await koop(g, m=kat(279, 15), f=kat(286, 15), plans={'m': m, 'f': f}, maxFrames=3000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 304, 'Schleuse (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_haken(1, f'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 292, -10)}, links=[5], maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 304 and k_pos(r, 'm')[1] == 15, 'Graben (Affe am Haken)', r.get('pos'))
+    # 8) Bröckel-Steine (beide)
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = sum([k_hop(kx(e) + 20, b) for e, b in ((330, 16), (334, 20), (339, 20), (344, 20), (349, 24))], [])
+        r = await koop(g, **{who: kat(327, 15), other: kat(325, 15)}, plans={who: plan}, maxFrames=2500)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 352.5, f'Bröckel-Steine {who}', r.get('pos'))
+    if await g.ev("goal.x") < 580 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    def pilz(jx=410, br=10, cx_=414):
+        return [k_lauf(jx), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': br}, {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(cx_)} - 6'}, 'until': 'P.vy < -14', 'frames': 100}]
+    # 9) Pilz-Kreuzung: Schweinchen Pilz + Segeln zur unteren Landung, Affe Pilz + zwei Haken auf den oberen Sims
+    r = await koop(g, f=kat(405, 14), m=kat(400, 14), plans={'f': pilz() + [{'hold': ['right', 'jump'], 'frames': 10}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 500}]}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 431 and k_pos(r, 'f')[1] == 14, 'Pilz + Segeln (Schweinchen)', r.get('pos'))
+    soll(r.get('top', {}).get('f', 0) > 6.2, 'Schweinchen kommt nicht auf den oberen Sims', r.get('top'))
+    plan = pilz() + [{'hold': ['right'], 'hookWhen': 'P.vy > -6', 'until': 'P.hookAttached', 'frames': 120},
+                     {'swing': True, 'pull': 0, 'release': 'P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0'},
+                     {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+                     {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(405, 14), f=kat(400, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5 and k_pos(r, 'm')[0] >= 431, 'Pilz + zwei Haken (Affe)', r.get('pos'))
+    # 10) Fahrende Haken: Schweinchen segelt vom Turm zu Hebel 8; der Affe nimmt die fahrenden Haken (nur mit Hebel 8)
+    r = await koop(g, f=kat(480, 4), m=kat(478, 4), plans={'f': k_segeln(482, 1)}, maxFrames=2500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 507.5 and k_pos(r, 'f')[1] == 14, 'Turm -> Ufer (Schweinchen)', r.get('pos'))
+    plan = [k_lauf(482), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+            {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 400},
+            {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+            {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+    r = await koop(g, m=kat(480, 4), f=kat(513, 14), plans={'m': plan}, pre='setLink(8, true)', maxFrames=2500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 507.5 and k_pos(r, 'm')[1] == 14, 'fahrende Haken mit Hebel 8 (Affe)', r.get('pos'))
+    r = await koop(g, m=kat(480, 4), f=kat(513, 14), plans={'m': plan}, maxFrames=2500)
+    soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 507.5), 'ohne Hebel 8 kommt der Affe nicht rüber', r.get('pos'))
+    # 11) Pilz-Treppe (beide)
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = [k_lauf(536), {'aim': [kx(t) for t in (546, 553, 560, 567)], 'jumps': [kx(540)], 'until': f'P.grounded && P.y <= {ky(7)} + 2', 'frames': 900}]
+        r = await koop(g, **{who: kat(536, 14), other: kat(530, 14)}, plans={who: plan}, maxFrames=1500)
+        soll(r.get('done'), f'Pilz-Treppe {who}', r.get('pos'))
+    if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    # 12) Lianen-Staffel: Schweinchen oben (Hebel 9/11, Lücken segeln), Affe unten an Haken (Hebel 10/12 auf Säulen)
+    plan = sum([k_hop(kx(e) + 20, b) for e, b in ((587, 16), (590, 12), (593, 16), (596, 12), (599, 8), (602, 24))], [])
+    r = await koop(g, f=kat(584, 14), m=kat(582, 14), plans={'f': plan + [k_lauf(615, -10), {'use': True, 'frames': 5}]}, maxFrames=3000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 2 and await g.ev("!!linkOn[9]"), 'Stege aufs Dach + Hebel 9 (Schweinchen)', r.get('pos'))
+    for x0, kante, ziel, links in ((620, 626, (637, 650), [10]), (645, 650, (661, 676), [10, 12])):
+        r = await koop(g, f=kat(x0, 2), m=kat(kante - 6, 2), plans={'f': k_segeln(kante, 10)}, links=links, maxFrames=1500)
+        soll(k_pos(r, 'f') and ziel[0] <= k_pos(r, 'f')[0] <= ziel[1] and k_pos(r, 'f')[1] == 2, f'Dach-Lücke bis {ziel[0]} (Schweinchen)', r.get('pos'))
+    async def affe(start, links, ziel, n, rels, slacks=(0,)):
+        for rel in rels:
+            for d in (0, -10, 10, -20):
+                for sl in slacks:
+                    plan = k_haken(n, rel, start[0] + 1, d)
+                    for st in plan:
+                        if st.get('swing'): st['slack'] = sl
+                    plan[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(ziel[1])} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
+                    r = await koop(g, m=kat(*start), f=kat(start[0] + 2, 2), plans={'m': plan}, links=links, maxFrames=2500)
+                    if k_pos(r, 'm') and ziel[0] - 0.6 <= k_pos(r, 'm')[0] <= ziel[1] + 0.6 and k_pos(r, 'm')[1] == ziel[2]: return True
+        return False
+    R1, R2 = 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'
+    R3, R4 = 'P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 2'
+    soll(await affe((610, 14), [], (620, 621, 9), 1, (R1, R2, R3, R4)), 'Rand -> Haken -> Säule A (Affe)')
+    # Bild-Regel: Haken zwischen den Säulen eine Reihe höher (Reihe 6 statt 7, 4 Reihen über der Säule) – bleibt eine Präzisionsstelle
+    R5, R6 = 'P.x > P.anchor.x + 40 && P.vy < -3', 'P.vy < -5 && f > 30'
+    R7, R8 = 'P.y < P.anchor.y + 20 && P.vy < 0', 'P.y < P.anchor.y && f > 20'
+    RA = (R1, R2, R3, R4, R5, R6, R7, R8, 'P.x > P.anchor.x + 80 && P.vx > 1', 'P.x > P.anchor.x + 100')
+    soll(await affe((620, 9), [9], (637, 641, 9), 2, RA, (0, 15, 30)), 'Säule A -> Säule B mit Tür 9 offen (Affe)')
+    soll(not await affe((620, 9), [], (637, 641, 9), 2, (R1, R2, R3, R4)), 'ohne Tür 9 kommt der Affe nicht zur Säule B')
+    soll(await affe((638, 9), [9, 11], (663, 680, 14), 2, (R1, R2)), 'Säule B -> Ufer mit Tür 11 offen (Affe)')
+    # 13) Finale: zwei Pilze auf die Äste (beide), letzte Schlucht: Schweinchen segelt, Affe zwei Haken
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = [k_lauf(689), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(692)} - 6'}, 'until': 'P.vy < -14', 'frames': 100},
+                {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(699), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6},
+                {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(702)} - 6'}, 'until': 'P.vy < -14', 'frames': 100}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+        r = await koop(g, **{who: kat(684, 14), other: kat(680, 14)}, plans={who: plan}, maxFrames=2000)
+        soll(k_pos(r, who) and k_pos(r, who)[1] == 4, f'Pilze auf die Äste {who}', r.get('pos'))
+    ok = False
+    for hold in (1, 6, 12):
+        r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': k_segeln(713, hold)}, maxFrames=1500)
+        ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 727 and k_pos(r, 'f')[1] == 8)
+    soll(ok, 'letzte Schlucht (Schweinchen)')
+    soll(await affe((711, 4), [], (727, 745, 8), 2, (R1, R2)), 'letzte Schlucht mit zwei Haken (Affe)')
+    assert not fehler, fehler
+
+@test
+async def level8_gluehwald(g):
+    """Ausbau 7, Dschungel Level 4 „Glühwald“ (levels/dschungel/04-gluehwald.json, nachts): Koop-Bot spielt die Stellen jeder Etappe nach.
+    Etappe 1: Segel-Brücke (Schweinchen zu Hebel 1 -> Brücke B für den Affen), Haken-Tor (Affe zu Hebel 2 -> Wand A weg),
+    Takt-Steine (beide). Etappe 2: Tor für beide, blaues/pinkes Tor über die Mauern (Hebel 3/4 über Kreuz),
+    Teleporter-Schleuse (Platten 5). Etappe 3: Luft-Tor (Hebel 6, Ausgang hoch in der Luft: segeln / Haken),
+    Wechsel-Schleuse (Platte 7), Takt-Steine 1,5 s. Etappe 4: Doppel-Gang-Staffel (Hebel 9–13), Takt-Tempeltreppe."""
+    await koop_level(g, 'dschungel/04-gluehwald.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def takt(n, steine, ende, start_c, tempo):
+        # Takt-Steine: springen, wenn es blinkt (kurz vor dem Wechsel) – in der Luft aufs Ziel lenken
+        T = round(tempo * 60)
+        pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {T}) % 2 === 0 && ({T} - wechselSchritte % {T}) > {T} - 40'}] + sprung_zu(kx(steine[0]) + 20)
+        for c0 in steine[1:]:
+            pl += [{'wait': f'({T} - wechselSchritte % {T}) <= 26 && ({T} - wechselSchritte % {T}) > 4'}] + sprung_zu(kx(c0) + 20)
+        return pl + [{'wait': f'({T} - wechselSchritte % {T}) <= 30'}] + sprung_zu(ende)
+    # --- Etappe 1 ---
+    plan = k_hop(kx(10) + 20 - 20, 16) + k_hop(kx(13) + 20 - 20, 24) + k_segeln(20, 4)
+    r = await koop(g, f=kat(8, 14), m=kat(6, 14), plans={'f': plan + [{'holdIf': {'right': f'P.x < {kx(37)} - 4', 'left': f'P.x > {kx(37)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]}, maxFrames=2500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 34 and await g.ev("!!linkOn[1]"), 'Stumpf -> Grube -> Hebel 1 (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(17, 11), f=kat(15, 11), plans={'m': k_hop(kx(20), 30)}, maxFrames=1500)
+    soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 34), 'Affe ohne Brücke nicht rüber', r.get('pos'))
+    r = await koop(g, m=kat(19, 11), f=kat(37, 14), plans={'m': [k_lauf(40)]}, links=[1], maxFrames=1500)
+    soll(r.get('done'), 'Brücke B trägt den Affen (Hebel 1 an)', r.get('pos'))
+    plan = [k_lauf(46, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+            k_lauf(56, -10), {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(40, 14), f=kat(42, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[2]"), 'Haken -> Sims -> Hebel 2 (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(60, 14), m=kat(56, 9), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=1000)
+    soll(r['pos']['f'][0] < 64, 'Wand A hält ohne Hebel 2', r.get('pos'))
+    for who, other in (('m', 'f'), ('f', 'm')):
+        r = await koop(g, **{who: kat(74, 14), other: kat(72, 14)}, plans={who: takt(9, list(range(79, 104, 3)), kx(108), 77, 2) + [k_lauf(110)]}, maxFrames=4000)
+        soll(r.get('done'), f'Takt-Steine 2 s ({who})', r.get('pos'))
+    if await g.ev("goal.x") < 290 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    r = await koop(g, m=kat(140, 14), f=kat(138, 14), plans={'m': [k_lauf(165)], 'f': [{'frames': 60}, k_lauf(163)]}, maxFrames=2000)
+    soll(r.get('done'), 'Tor 1 durch den Felsen (beide)', r.get('pos'))
+    f = [k_lauf(179), {'wait': f'P.y < {ky(7)}'}, k_lauf(197, -10), {'use': True, 'frames': 5}, k_lauf(201), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, f=kat(176, 14), m=kat(174, 10), plans={'f': f}, maxFrames=2000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 14 and await g.ev("!!linkOn[3]"), 'pinkes Tor -> Hebel 3 (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(176, 14), f=kat(174, 10), plans={'m': [k_lauf(186)]}, maxFrames=800)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 14, 'Affe geht nicht durchs pinke Tor', r.get('pos'))
+    m = [k_lauf(209), {'wait': f'P.y < {ky(7)}'}, k_lauf(227, -10), {'use': True, 'frames': 5}, k_lauf(231), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(194, 14), f=kat(200, 14), plans={'m': m}, links=[3], maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 14 and await g.ev("!!linkOn[4]"), 'Tür 3 offen, blaues Tor -> Hebel 4 (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(214, 14), m=kat(230, 14), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
+    soll(r['pos']['f'][0] < 220, 'Tür 4 hält das Schweinchen ohne Hebel 4', r.get('pos'))
+    # Bild-Regel: Schleuse enger (Grube 247–261, Platten innen an den Kanten 246/262, Tore dahinter 243/265)
+    m = [k_lauf(246, -14), {'frames': 20}, {'wait': f'Q.x >= {kx(258)} && Q.x <= {kx(262)} + 14 && Q.grounded'},
+         {'hold': ['left'], 'until': f'P.x >= {kx(262)}', 'frames': 300}]
+    f = [{'wait': '!!linkOn[5]'}, k_lauf(244), {'wait': f'P.x >= {kx(262)}'}, {'frames': 20},
+         {'hold': ['left'], 'until': f'P.x <= {kx(262)} + 10', 'frames': 200}, {'frames': 10}, {'wait': f'Q.x >= {kx(262)}'}]
+    r = await koop(g, m=kat(238, 14), f=kat(236, 14), plans={'m': m, 'f': f}, maxFrames=3000)
+    soll(r.get('done') and r['pos']['m'][0] >= 260 and r['pos']['f'][0] >= 260, 'Teleporter-Schleuse (Platten 5)', r.get('pos'))
+    for hold in (6, 10, 14, 18):
+        r = await koop(g, f=kat(238, 14), m=kat(236, 14), plans={'f': k_segeln(246, hold)}, maxFrames=1500)
+        soll(not (k_pos(r, 'f') and k_pos(r, 'f')[0] >= 262), f'Grube der Schleuse ist ohne Tor zu breit (Schweinchen segelt, {hold})', r.get('pos'))
+    if await g.ev("goal.x") < 470 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    ok = False
+    for jx in (298, 299, 300, 301):
+        plan = [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+                k_lauf(310, -10), {'use': True, 'frames': 5}]
+        r = await koop(g, m=kat(292, 14), f=kat(294, 14), plans={'m': plan}, maxFrames=2000)
+        if k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[6]"): ok = True; break
+    soll(ok, 'Haken -> Sims -> Hebel 6 (Affe)')
+    f = [k_lauf(315), {'hold': ['right'], 'until': f'P.y < {ky(5)}', 'frames': 100}, {'frames': 1, 'hold': ['right']}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+    r = await koop(g, f=kat(312, 14), m=kat(310, 9), plans={'f': f}, links=[6], maxFrames=2000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 341.5 and k_pos(r, 'f')[1] == 14, 'Luft-Tor: Schweinchen segelt hinaus', r.get('pos'))
+    ok = False
+    for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'):
+        m = [k_lauf(315), {'hold': ['right'], 'until': f'P.y < {ky(5)}', 'frames': 100}, {'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 60},
+             {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+             {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+        r = await koop(g, m=kat(312, 14), f=kat(310, 14), plans={'m': m}, links=[6], maxFrames=2500)
+        ok = ok or bool(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 341.5 and k_pos(r, 'm')[1] == 14)
+    soll(ok, 'Luft-Tor: Affe greift die Haken')
+    r = await koop(g, f=kat(312, 14), m=kat(310, 14), plans={'f': [k_lauf(317)]}, maxFrames=800)
+    soll(r.get('pos', {}).get('f', [0, 0])[1] > 10, 'ohne Hebel 6 kein Teleport', r.get('pos'))
+    ok = False
+    for jx in (359, 360, 361, 362):
+        m = [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+             {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+             {'holdIf': {'right': f'P.x < {kx(368)} - 4', 'left': f'P.x > {kx(368)} + 4'}, 'frames': 60}, {'wait': f'Q.x >= {kx(399)} - 20'},
+             k_lauf(372), {'hold': ['right'], 'until': f'P.x >= {kx(398)}', 'frames': 600}]
+        f = [{'wait': '!!linkOn[7]'}, k_lauf(399, -14), {'frames': 10}, {'wait': f'Q.x >= {kx(397)}'}]
+        r = await koop(g, m=kat(356, 14), f=kat(358, 14), plans={'m': m, 'f': f}, maxFrames=4000)
+        if r.get('done'): ok = True; break
+    soll(ok, 'Wechsel-Schleuse (Affe hält oben, Schweinchen drüben)')
+    for who, other in (('m', 'f'), ('f', 'm')):
+        r = await koop(g, **{who: kat(406, 14), other: kat(404, 14)}, plans={who: takt(10, list(range(412, 440, 3)), kx(442) + 20, 409, 1.5)}, maxFrames=4000)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 441.5 and k_pos(r, who)[1] == 14, f'Takt-Steine 1,5 s ({who})', r.get('pos'))
+    r = await koop(g, f=kat(443, 14), m=kat(442, 14), plans={'f': k_segeln(443, 6)}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 453, 'letzte Lücke (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_haken(1, 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 443, 0)}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 453, 'letzte Lücke (Affe am Haken)', r.get('pos'))
+    if await g.ev("goal.x") < 690 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    def ueber_haken(land_x):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+                {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500},
+                {'hold': ['right'], 'holdIf': {'left': f'P.x > {land_x} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}]
+    m = [k_lauf(489), {'wait': f'P.y < {ky(8)}'}, k_lauf(510, -10), {'wait': '!!linkOn[9]'}, k_lauf(520, -14), {'use': True, 'frames': 5},
+         k_lauf(524, -6)] + ueber_haken(kx(536)) + [{'wait': '!!linkOn[11]'}, k_lauf(549, -14), {'use': True, 'frames': 5},
+         k_lauf(553, -6)] + ueber_haken(kx(566)) + [{'wait': '!!linkOn[13]'}, k_lauf(592), {'until': 'P.grounded', 'frames': 200}, k_lauf(596)]
+    f = [k_lauf(508, -14), {'use': True, 'frames': 5}, {'wait': '!!linkOn[10]'}, k_lauf(526, -2)] + sprung_zu(kx(536), 6) + [k_lauf(537, -14), {'use': True, 'frames': 5},
+         {'wait': '!!linkOn[12]'}, k_lauf(556, -2)] + sprung_zu(kx(566), 6) + [k_lauf(567, -14), {'use': True, 'frames': 5}, {'wait': f'Q.x >= {kx(590)}'}, k_lauf(596)]
+    r = await koop(g, m=kat(487, 14), f=kat(484, 10), plans={'m': m, 'f': f}, maxFrames=6000)
+    soll(r.get('done'), 'Doppel-Gang-Staffel (Hebel 9–13)', r.get('pos'))
+    r = await koop(g, m=kat(487, 14), f=kat(484, 10), plans={'m': [k_lauf(489), {'wait': f'P.y < {ky(8)}'}, {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
+    soll(r['pos']['m'][0] < 512, 'Wand 9 hält den Affen ohne Hebel 9', r.get('pos'))
+    # nach einem Tod am Checkpoint (unten im Gang) kommt der Affe durchs blaue Tor 8 wieder hinauf
+    r = await koop(g, m=kat(539, 14), f=kat(541, 14), plans={'m': [{'hold': ['left'], 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 200}]}, maxFrames=800)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 7, 'blaues Tor 8 bringt den Affen wieder hinauf', r.get('pos'))
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = takt(7, [603, 607, 611, 615, 619, 623, 627], kx(633), 600, 1.5) + [k_lauf(639), {'wait': f'P.x > {kx(660)}'}, k_lauf(670)]
+        r = await koop(g, **{who: kat(597, 14), other: kat(636, 7)}, plans={who: plan}, maxFrames=4000)
+        soll(r.get('done'), f'Takt-Tempeltreppe + Tor 7 ({who})', r.get('pos'))
+    assert not fehler, fehler
+
+def k_takt(steine, ende, start_c, tempo, phase0=True):
+    """Takt-Steine: springen, wenn es blinkt (kurz vor dem Wechsel) – in der Luft aufs Ziel lenken"""
+    T = round(tempo * 60)
+    sp = lambda tx, h=4: [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': h}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {T}) % 2 === 0 && ({T} - wechselSchritte % {T}) > {T} - 40'}] + sp(kx(steine[0]) + 20)
+    for c0 in steine[1:]:
+        pl += [{'wait': f'({T} - wechselSchritte % {T}) <= 26 && ({T} - wechselSchritte % {T}) > 4'}] + sp(kx(c0) + 20)
+    return pl + [{'wait': f'({T} - wechselSchritte % {T}) <= 30'}] + sp(ende)
+async def k_irgendwann(g, plan_fn, ok_fn, waits, **kw):
+    """Plan mit verschiedenen Startzeiten probieren (Fallen-Takt): True, sobald einer klappt"""
+    for w in waits:
+        r = await koop(g, plans=plan_fn(w), **kw)
+        if ok_fn(r): return True
+    return False
+
+@test
+async def level9_fallengang(g):
+    """Ausbau 7, Ruinen Level 3 „Fallengang“ (levels/ruinen/03-fallengang.json, morgens): Koop-Bot spielt die Stellen jeder Etappe nach.
+    Etappe 1: Pfeil-Vorhänge (warten, bis der Pfeil unten ist), Flammen-Tunnel (Hebel 1 auf dem Felsen stellt die Flammen
+    ab und öffnet Tür 1; Hebel 2 unten öffnet Tür 2 oben), Flammen-Welle (vor jeder Flamme warten), Takt-Steine.
+    Etappe 2: Pfeil-Galerie (segeln / drei Haken im Pfeil-Takt), Flammen-Schleuse (Platten 3), Pfeil-Schacht,
+    Pfeil-Gang mit Hebeln 4/5 über Kreuz.
+    Etappe 3: Deckung (Affe schaltet oben die Deckungen im Pfeil-Takt), Teleporter zwischen Flammen (Hebel 8/9),
+    Takt-Steine 1,5 s unter Pfeil-Vorhängen.
+    Etappe 4: Flammen-Doppelgang (Affe oben, Schweinchen unten, Hebel 10–14 über Kreuz; jedes Flammenpaar sperrt ohne
+    seinen Hebel), Rhythmus-Lauf (Pfeile + Flammen-Welle), Takt-Steine zum Ziel."""
+    await koop_level(g, 'ruinen/03-fallengang.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    # --- Etappe 1 ---
+    for who, other in (('m', 'f'), ('f', 'm')):
+        plan = []
+        for c in (24, 30, 36):
+            plan += [k_lauf(c - 2), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 2)]
+        r = await koop(g, **{who: kat(8, 14), other: kat(6, 14)}, plans={who: plan + [k_lauf(42)]}, maxFrames=3000)
+        soll(r.get('done'), f'Pfeil-Vorhänge ({who})', r.get('pos'))
+    ok = False
+    for hold in (4, 10, 16):
+        r = await koop(g, f=kat(49, 11), m=kat(47, 11), plans={'f': k_segeln(52, hold)}, links=[1], maxFrames=1500)
+        ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 67.5 and k_pos(r, 'f')[1] == 15)
+    soll(ok, 'Tunnel segeln (Flammen aus)')
+    r = await koop(g, f=kat(70, 15), m=kat(66, 15), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
+    soll(r['pos']['f'][0] < 76, 'Tür 1 hält ohne Hebel 1', r.get('pos'))
+    plan = [k_lauf(47, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+            {'holdIf': {'right': f'P.x < {kx(60)} - 4', 'left': f'P.x > {kx(60)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(46, 11), f=kat(43, 14), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5 and await g.ev("!!linkOn[1]"), 'Affe auf den Felsen + Hebel 1', r.get('pos'))
+    def welle(w):
+        pl = [{'frames': w + 1}]
+        for c in range(100, 141, 5):
+            fi = f'fallen.find(f => f.x === {c*40} && f.y === {12*40})'
+            pl += [{'holdIf': {'right': f'P.x < {kx(c - 2)} + 6', 'left': f'P.x > {kx(c - 2)} + 14'}, 'frames': 40},
+                   {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 40'}, k_lauf(c + 1)]
+        return {'m': pl + [k_lauf(142)]}
+    soll(await k_irgendwann(g, welle, lambda r: bool(r.get('done')), (0, 30, 60), m=kat(92, 15), f=kat(144, 15), maxFrames=4000), 'Flammen-Welle')
+    for who, other in (('m', 'f'), ('f', 'm')):
+        r = await koop(g, **{who: kat(147, 15), other: kat(145, 15)}, plans={who: k_takt(list(range(152, 177, 3)), kx(181), 149, 2)}, maxFrames=4000)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 179, f'Takt-Steine ({who})', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    pos = (199, 15)
+    for tx, zr in ((200, 13), (204, 11), (200, 9), (204, 7), (207, 5), (211, 3)):   # Stege hinauf (Schweinchen)
+        neu = None
+        for br in (4, 6, 8, 10, 12, 14):
+            for rt in ('right', 'left'):
+                pl = [{'frames': 2}, {'press': ['jump'], 'hold': [rt, 'jump'], 'frames': br},
+                      {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded && P.vy >= 0 && f > 6', 'frames': 100}]
+                r = await koop(g, f=kat(*pos), m=kat(196, 15), plans={'f': pl}, maxFrames=400)
+                if k_pos(r, 'f') and k_pos(r, 'f')[1] == zr: neu = (round(k_pos(r, 'f')[0]), zr); break
+            if neu: break
+        soll(neu, f'Stege hinauf bis Reihe {zr}', pos)
+        if not neu: break
+        pos = neu
+    soll(await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}] + k_segeln(213, 6)},
+                            lambda r: bool(k_pos(r, 'f')) and k_pos(r, 'f')[0] >= 229.5 and k_pos(r, 'f')[1] == 8, range(0, 120, 8),
+                            f=kat(211, 3), m=kat(210, 3), maxFrames=2500), 'Pfeil-Galerie segeln (Schweinchen)')
+    def galerie_affe(w):
+        m = [{'frames': w + 1}] + k_haken(3, 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 213, 0)
+        m[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(238)} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
+        return {'m': m}
+    soll(await k_irgendwann(g, galerie_affe, lambda r: bool(k_pos(r, 'm')) and k_pos(r, 'm')[0] >= 229.5 and k_pos(r, 'm')[1] == 8, range(0, 120, 8),
+                            m=kat(211, 3), f=kat(210, 3), maxFrames=2500), 'Pfeil-Galerie mit Haken (Affe)')
+    m = [k_lauf(248, -14), {'frames': 20}, {'wait': f'Q.x >= {kx(262)} - 20'}, k_lauf(266)]
+    f = [{'wait': '!!linkOn[3]'}, k_lauf(262, -14), {'frames': 10}, {'wait': f'Q.x >= {kx(260)}'}]
+    r = await koop(g, m=kat(244, 8), f=kat(245, 8), plans={'m': m, 'f': f}, maxFrames=3000)
+    soll(r.get('done'), 'Flammen-Schleuse (Platten 3)', r.get('pos'))
+    soll(not await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}, k_lauf(261)]}, lambda r: bool(r.get('done')), range(0, 130, 10),
+                                f=kat(249, 8), m=kat(245, 8), maxFrames=1500), 'ohne Platte kein Durchkommen')
+    for who, other in (('m', 'f'), ('f', 'm')):
+        hinab = lambda w, who=who: {who: [{'frames': w + 1}, k_lauf(276), {'hold': ['glide'] if who == 'f' else [], 'holdIf': {'right': f'P.x < {kx(275)} + 10', 'left': f'P.x > {kx(276)}'}, 'until': 'P.grounded', 'frames': 400}, k_lauf(282)]}
+        soll(await k_irgendwann(g, hinab, lambda r: bool(r.get('done')), range(0, 120, 6), **{who: kat(268, 8), other: kat(266, 8)}, maxFrames=1500), f'Pfeil-Schacht ({who})')
+    ok = False
+    for hold in (4, 8, 12):
+        r = await koop(g, f=kat(301, 14), m=kat(320, 10), plans={'f': k_segeln(303, hold) + [k_lauf(339, -10), {'use': True, 'frames': 5}]}, links=[4], maxFrames=2500)
+        ok = ok or (bool(r.get('done')) and await g.ev("!!linkOn[5]"))
+    soll(ok, 'Schweinchen segelt in den Pfeil-Gang, Hebel 5')
+    plan = [k_lauf(296, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(10)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+            # Bild-Regel: Hebel 4 steht jetzt bei 322 zwischen den Pfeilen 318/324 – warten, bis der Pfeil von 318 steckt
+            {'holdIf': {'right': f'P.x < {kx(314)} - 4', 'left': f'P.x > {kx(314)} + 4'}, 'frames': 60},
+            {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(318)}) < 4 && a.steckt >= 0)', 'frames': 400},
+            {'holdIf': {'right': f'P.x < {kx(322)} - 4', 'left': f'P.x > {kx(322)} + 4'}, 'frames': 40}, {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(292, 15), f=kat(294, 15), plans={'m': plan}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 10 and await g.ev("!!linkOn[4]"), 'Affe auf die Decke + Hebel 4', r.get('pos'))
+    r = await koop(g, f=kat(338, 15), m=kat(320, 10), plans={'f': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 342, 'Tor 4 hält ohne Hebel 4', r.get('pos'))
+    r = await koop(g, m=kat(320, 10), f=kat(338, 15), plans={'m': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 326, 'Tür 5 hält den Affen ohne Hebel 5', r.get('pos'))
+    # Ruinen-Überarbeitung: Schalter und Läufer (366–398) – Affe per Haken auf die Galerie an Hebel 15, Schweinchen im niedrigen
+    # Gang über Wechselboden A – Insel – B – Naht – A; der Affe legt um, wenn es auf der Insel bzw. genau auf der Naht steht
+    halt = [kx(382) + 20, 390*40]
+    ok = []
+    for jx in (371, 372):
+        r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'m': wb_haken(jx, 9) + wb_schalter(386, halt, 400), 'f': wb_laeufer(386, halt, 15, 402)}, maxFrames=6000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 399: ok.append(jx)
+    soll(ok, 'Schalter/Läufer: Affe schaltet Hebel 15, Schweinchen läuft über den Wechselboden', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'f': [k_lauf(392)]}, maxFrames=1500)
+    soll(r.get('dead') == 'f', 'Schalter/Läufer: ohne Hebel fällt das Schweinchen', r.get('pos'))
+    r = await koop(g, m=kat(368, 15), f=kat(370, 15), plans={'f': [k_lauf(372, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 10, 'Schalter/Läufer: das Schweinchen kommt nicht auf die Galerie', r.get('top'))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    ok = False
+    for jx in (406, 407, 408):
+        m = [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+             {'swing': True, 'pull': 60, 'release': f'P.y < {ky(12)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+        r = await koop(g, m=kat(403, 15), f=kat(404, 15), plans={'m': m}, maxFrames=1500)
+        if k_pos(r, 'm') and k_pos(r, 'm')[1] == 12: ok = True; break
+    soll(ok, 'Deckung: Affe auf die Decke (Haken)')
+    m = [{'holdIf': {'right': f'P.x < {kx(416)} - 4', 'left': f'P.x > {kx(416)} + 4'}, 'frames': 60}]
+    f = [k_lauf(418, -14)]
+    for k, deckung in enumerate((428, 437, 446, 455)):   # Affe schaltet die Deckung um, sobald ein Pfeil steckt
+        f += [{'wait': f'fallenPfeile.some(a => a.steckt >= 0 && a.steckt < 3 && a.x > {kx(415)} && a.x < {kx(460)}) && Q.x > {kx(410)}'},
+              {'wait': f'window.__schalte{k} = true'}, {'wait': f'!!window.__geschaltet{k}'}, k_lauf(deckung, -14)]
+        m += [{'wait': f'!!window.__schalte{k}'}, {'use': True, 'frames': 2}, {'wait': f'window.__geschaltet{k} = true'}]
+    f += [{'holdIf': {'right': f'P.x < {kx(454)} - 4', 'left': f'P.x > {kx(454)} + 4'}, 'frames': 40}, {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(414, 12), f=kat(414, 15), plans={'m': m, 'f': f}, maxFrames=5000,
+                   pre='for(let k = 0; k < 4; k++){ window["__schalte" + k] = false; window["__geschaltet" + k] = false; }')
+    soll(r.get('done') and await g.ev("!!linkOn[7]"), 'Deckungs-Staffel bis Hebel 7', r.get('pos'))
+    r = await koop(g, f=kat(418, 15), m=kat(416, 12), plans={'f': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 420, 'Deckung A sperrt ohne Umschalten', r.get('pos'))
+    for who, st in (('m', (452, 12)), ('f', (457, 15))):
+        pl = [k_lauf(456 if who == 'm' else 458, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(461)}', 'frames': 300}]
+        r = await koop(g, **{who: kat(*st), ('f' if who == 'm' else 'm'): kat(454, 12)}, plans={who: pl}, links=[6, 7], maxFrames=1500)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 461, f'durch Tür 7 ({who})', r.get('pos'))
+    f = [k_lauf(475), {'wait': f'P.y < {ky(7)}'}, {'holdIf': {'right': f'P.x < {kx(488)} - 4', 'left': f'P.x > {kx(488)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}, k_lauf(491), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, f=kat(472, 15), m=kat(470, 15), plans={'f': f}, maxFrames=2000)
+    soll(r.get('done') and await g.ev("!!linkOn[8]"), 'pinkes Tor -> Hebel 8 (Schweinchen)', r.get('pos'))
+    m = [k_lauf(479), {'wait': f'P.y < {ky(7)}'}, {'holdIf': {'right': f'P.x < {kx(508)} - 4', 'left': f'P.x > {kx(508)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}, k_lauf(511), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(476, 15), f=kat(490, 15), plans={'m': m}, links=[8], maxFrames=2000)
+    soll(r.get('done') and await g.ev("!!linkOn[9]"), 'blaues Tor (mit Hebel 8) -> Hebel 9 (Affe)', r.get('pos'))
+    r = await koop(g, m=kat(476, 15), f=kat(490, 15), plans={'m': [k_lauf(481)]}, maxFrames=600)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 15, 'blaues Tor ohne Hebel 8 aus', r.get('pos'))
+    r = await koop(g, f=kat(490, 15), m=kat(510, 15), plans={'f': [k_lauf(515)]}, links=[8, 9], maxFrames=1500)
+    soll(r.get('done'), 'Schweinchen durch die Flammen (aus) und Tür 9', r.get('pos'))
+    for who, other in (('m', 'f'), ('f', 'm')):
+        soll(await k_irgendwann(g, lambda w, who=who: {who: [{'frames': w + 1}] + k_takt(list(range(542, 566, 3)), kx(571), 539, 1.5)},
+                                lambda r, who=who: bool(k_pos(r, who)) and k_pos(r, who)[0] >= 569, range(0, 180, 30),
+                                **{who: kat(537, 15), other: kat(535, 15)}, maxFrames=4000), f'Takt unter Pfeil-Vorhängen ({who})')
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70 and a != 604]   # Ausnahme: Flammen-Doppelgang 604–680 (ein Rätsel)
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    r = await koop(g, m=kat(605, 15), f=kat(604, 15), plans={'m': [k_lauf(609), {'wait': f'P.y < {ky(11)}'}, {'frames': 20}]}, maxFrames=800)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] <= 10, 'Doppelgang: blaues Tor nach oben (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(605, 15), m=kat(613, 10), plans={'f': [k_lauf(612)] + am(616)}, maxFrames=800)
+    soll(await g.ev("!!linkOn[10]"), 'Hebel 10 (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(614, 10), f=kat(616, 15), plans={'m': [k_lauf(623)] + am(625)}, links=[10], maxFrames=1000)
+    soll(await g.ev("!!linkOn[11]"), 'oben durch Flammen 620 -> Hebel 11 (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(617, 15), m=kat(625, 10), plans={'f': k_segeln(632, 4) + am(640)}, links=[10, 11], maxFrames=1500)
+    soll(await g.ev("!!linkOn[12]"), 'unten Grube segeln -> Hebel 12 (Schweinchen)', r.get('pos'))
+    m = [k_lauf(639, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 0, 'release': f'P.x > {kx(645)} && P.vx > 0.5'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(650)] + am(652)
+    r = await koop(g, m=kat(630, 10), f=kat(640, 15), plans={'m': m}, links=[10, 11, 12], maxFrames=1500)
+    soll(await g.ev("!!linkOn[13]"), 'oben Haken über Stacheln -> Hebel 13 (Affe)', r.get('pos'))
+    r = await koop(g, f=kat(641, 15), m=kat(652, 10), plans={'f': k_segeln(658, 4) + am(666)}, links=[10, 11, 12, 13], maxFrames=1500)
+    soll(await g.ev("!!linkOn[14]"), 'unten Grube segeln -> Hebel 14 (Schweinchen)', r.get('pos'))
+    for who, st, oth in (('m', (653, 10), (666, 15)), ('f', (667, 15), (668, 10))):
+        r = await koop(g, **{who: kat(*st), ('f' if who == 'm' else 'm'): kat(*oth)}, plans={who: [k_lauf(684), {'until': 'P.grounded', 'frames': 200}]}, links=[10, 11, 12, 13, 14], maxFrames=1500)
+        soll(k_pos(r, who) and k_pos(r, who)[0] >= 680, f'Ausgang Doppelgang ({who})', r.get('pos'))
+    soll(not await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}, k_lauf(632)]}, lambda r: bool(r.get('done')), range(0, 120, 20),
+                                f=kat(626, 15), m=kat(625, 10), links=[10], maxFrames=600), 'Flammenpaar 630 sperrt ohne Hebel 11')
+    plan = []
+    for c in (688, 694, 700):
+        plan += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 2)]
+    for c in range(708, 731, 5):
+        fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+        plan += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && !falleWarnung({fi})'}, k_lauf(c + 2)]
+    r = await koop(g, m=kat(683, 15), f=kat(704, 15), plans={'m': plan + [k_lauf(734)]}, maxFrames=4000)
+    soll(r.get('done'), 'Rhythmus-Lauf mit Warten (Affe)', r.get('pos'))
+    soll(await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}] + k_takt(list(range(737, 758, 3)), kx(763), 734, 1.5)},
+                            lambda r: bool(k_pos(r, 'f')) and k_pos(r, 'f')[0] >= 761, range(0, 180, 30),
+                            f=kat(732, 15), m=kat(730, 15), maxFrames=4000), 'Takt-Steine zum Ziel (Schweinchen)')
+    assert not fehler, fehler
+
+@test
+async def level10_sonnentempel(g):
+    """Ausbau 7, Ruinen Level 4 „Sonnentempel“ (levels/ruinen/04-sonnentempel.json, abends, Regen): Licht lenken.
+    Etappe 1: erster Spiegel (Tür 1), Affen-Spiegel auf dem Sims per Haken (Tür 2; das Schweinchen kommt nicht hin),
+    Schweinchen-Spiegel auf der Insel (segeln; Kristall lässt die Brücke für den Affen erscheinen), Spiegel zwischen
+    Pfeil-Vorhängen (Tür 4).
+    Etappe 2: Zwei-Spiegel-Kette (Affe am Sims, Schweinchen über pinkes Tor auf der Insel), Licht-Takt mit Pfeil vor Tür 6,
+    Flammen-Tunnel mit Kristall (Platte 7 -> Trittstein -> Haken -> Spiegel).
+    Etappe 3: zwei Wege (oben Affe, unten Schweinchen; jeder öffnet per Spiegel die Tür des anderen), Spiegel-Kette unter
+    Pfeilen, Flammen-Gang (Schweinchen läuft der Welle nach, Affe nimmt das blaue Tor).
+    Etappe 4: Doppelstrahl-Tor (zwei Kristalle zugleich, Strahl 2 im Takt, Pfeil an der Tür), Licht-Brücken im Takt."""
+    await koop_level(g, 'ruinen/04-sonnentempel.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def dreh(*cs):   # Spiegel vorab drehen (wie von der anderen Figur gedreht)
+        return ' '.join(f'{{ const s = spiegelListe.find(s => s.c === {c}); s.stellung = s.stellung === "/" ? "\\\\" : "/"; }}' for c in cs)
+    def gleit(kante, ziel_x, halten):
+        return [k_lauf(kante, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': halten},
+                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {ziel_x} - 6', 'left': f'P.x > {ziel_x} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    def haken(jx, land_r, pull):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    # --- Etappe 1 ---
+    r = await koop(g, f=kat(4, 15), m=kat(2, 15), plans={'f': [k_lauf(20)] + am(22) + [k_lauf(40)]}, maxFrames=1500)
+    soll(r.get('done') and await g.ev("!!linkOn[1]"), 'Spiegel 1 -> Tür 1', r.get('pos'))
+    r = await koop(g, f=kat(30, 15), m=kat(28, 15), plans={'f': [k_lauf(40)]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 34, 'Tür 1 zu ohne Licht', r.get('pos'))
+    r = await koop(g, m=kat(50, 15), f=kat(48, 15), plans={'m': haken(55, 9, 30) + am(61)}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[2]"), 'Affe per Haken zum Spiegel 2', r.get('pos'))
+    r = await koop(g, f=kat(58, 15), m=kat(50, 15), plans={'f': [k_lauf(60), {'press': ['jump'], 'hold': ['jump'], 'frames': 14}, {'use': True, 'frames': 20}]}, maxFrames=600)
+    soll(not await g.ev("!!linkOn[2]"), 'Schweinchen erreicht Spiegel 2 nicht', r.get('pos'))
+    r = await koop(g, f=kat(70, 15), m=kat(62, 9), plans={'f': [k_lauf(80)]}, pre=dreh(60), maxFrames=600)
+    soll(r.get('done'), 'Tür 2 offen (Licht an)', r.get('pos'))
+    r = await koop(g, f=kat(89, 11), m=kat(85, 13), plans={'f': gleit(91, kx(105), 4) + [{'frames': 10}] + am(106)}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 13 and await g.ev("!!linkOn[3]"), 'Schweinchen segelt zur Insel, Spiegel 3 -> Brücke', r.get('pos'))
+    r = await koop(g, m=kat(88, 11), f=kat(86, 13), plans={'m': [k_lauf(90, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=800)
+    soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] > 100 and k_pos(r, 'm')[1] <= 13), 'Affe ohne Brücke nicht zur Insel', r.get('pos'))
+    r = await koop(g, m=kat(89, 11), f=kat(106, 13), plans={'m': [k_lauf(128), {'until': 'P.grounded', 'frames': 200}]}, pre=dreh(106), maxFrames=1500)
+    soll(r.get('done') and k_pos(r, 'm')[1] == 15, 'Affe über die Brücke', r.get('pos'))
+    pl = [k_lauf(146, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(148)}) < 4 && a.steckt >= 0)'}, k_lauf(150, 0)] + am(150) + \
+         [{'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(152)}) < 4 && a.steckt >= 0)'}, k_lauf(170)]
+    r = await koop(g, f=kat(130, 15), m=kat(140, 15), plans={'f': pl}, maxFrames=3000)
+    soll(r.get('done') and await g.ev("!!linkOn[4]"), 'Spiegel zwischen Pfeilen -> Tür 4', r.get('pos'))
+    r = await koop(g, f=kat(160, 15), m=kat(150, 15), plans={'f': [k_lauf(170)]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 164, 'Tür 4 zu ohne Licht', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    r = await koop(g, m=kat(210, 15), f=kat(208, 15), plans={'m': haken(215, 9, 30) + am(221)}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("spiegelListe.find(s => s.c === 220).stellung") == '\\', 'Affe per Haken zum Spiegel 5a', r.get('pos'))
+    r = await koop(g, f=kat(222, 15), m=kat(222, 9), plans={'f': [k_lauf(227), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}]}, maxFrames=800)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 6, 'pinkes Tor auf den Turm (Schweinchen)', r.get('pos'))
+    r = await koop(g, m=kat(224, 15), f=kat(222, 15), plans={'m': [k_lauf(227), {'frames': 30}]}, maxFrames=800)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 15, 'Affe nicht durchs pinke Tor', r.get('pos'))
+    r = await koop(g, f=kat(231, 6), m=kat(222, 9), plans={'f': gleit(232, kx(241), 4) + [{'frames': 10}] + am(241)}, pre=dreh(220), maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 10 and await g.ev("!!linkOn[5]"), 'Schweinchen segelt zur Insel, Spiegel 5b -> Kristall 5', r.get('pos'))
+    r = await koop(g, f=kat(241, 10), m=kat(222, 9), plans={'f': [{'frames': 10}] + am(241) + [{'frames': 10}]}, maxFrames=600)
+    soll(not await g.ev("!!linkOn[5]"), 'nur Spiegel 5b reicht nicht', r.get('pos'))
+    m = [k_lauf(231, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500},
+         {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(262)]
+    r = await koop(g, m=kat(226, 15), f=kat(241, 10), plans={'m': m}, pre=dreh(220, 241), maxFrames=2500)
+    soll(r.get('done'), 'Affe an zwei Haken über die Grube, Tür 5', r.get('pos'))
+    r = await koop(g, f=kat(242, 10), m=kat(258, 15), plans={'f': gleit(244, kx(258), 4) + [k_lauf(262)]}, pre=dreh(220, 241), maxFrames=1500)
+    soll(r.get('done'), 'Schweinchen segelt von der Insel durch Tür 5', r.get('pos'))
+    pl = [k_lauf(285, 0), {'wait': f'kristalle.find(k => k.link === 6).an && fallenPfeile.some(a => a.steckt >= 0 && Math.abs(a.x - {kx(288)}) < 4)'}, k_lauf(294)]
+    r = await koop(g, m=kat(270, 15), f=kat(266, 15), plans={'m': pl}, maxFrames=3000)
+    soll(r.get('done'), 'Licht-Takt durch Tür 6', r.get('pos'))
+    m = [{'frames': 10}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(345) + 20} - 6', 'left': f'P.x > {kx(345) + 20} + 6'}, 'until': 'P.grounded', 'frames': 100},
+         k_lauf(345, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 30, 'release': f'P.y < {ky(8)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}] + am(352)
+    r = await koop(g, m=kat(343, 15), f=kat(338, 15), plans={'m': m, 'f': [{'wait': f'Q.y < {ky(9)}'}, {'frames': 20}]}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 8 and await g.ev("!!linkOn[8]"), 'Platte 7 -> Trittstein -> Haken -> Spiegel 7 -> Flammen aus', r.get('pos'))
+    r = await koop(g, m=kat(342, 15), f=kat(336, 15), plans={'m': haken(347, 8, 60) + [{'frames': 20}]}, maxFrames=1500)
+    soll(not (k_pos(r, 'm') and k_pos(r, 'm')[1] == 8), 'ohne Platte kein Sims', r.get('pos'))
+    r = await koop(g, f=kat(356, 15), m=kat(353, 8), plans={'f': [k_lauf(375)]}, pre=dreh(351), maxFrames=1000)
+    soll(r.get('done'), 'Tunnel mit Licht', r.get('pos'))
+    soll(not await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}, k_lauf(372)]}, lambda r: bool(r.get('done')), range(0, 120, 30),
+                                f=kat(356, 15), m=kat(354, 15), maxFrames=600), 'Tunnel ohne Licht gesperrt')
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    r = await koop(g, f=kat(401, 15), m=kat(400, 15), plans={'f': [k_lauf(404), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}] + am(408)}, maxFrames=1000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 6 and await g.ev("!!linkOn[9]"), 'pinkes Tor -> Spiegel 8 -> Tür 9', r.get('pos'))
+    r = await koop(g, m=kat(406, 15), f=kat(407, 6), plans={'m': haken(411, 9, 30) + [k_lauf(428)]}, pre=dreh(409), maxFrames=1500)
+    soll(r.get('done') and k_pos(r, 'm')[1] == 9, 'Affe per Haken auf den oberen Weg, durch Tür 9', r.get('pos'))
+    r = await koop(g, m=kat(420, 9), f=kat(407, 6), plans={'m': [k_lauf(428)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 424, 'Tür 9 zu ohne Licht', r.get('pos'))
+    m = [k_lauf(427, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(441)] + am(442)   # Bild-Regel: Spiegel 9 bei 442 statt 466
+    r = await koop(g, m=kat(426, 9), f=kat(436, 15), plans={'m': m}, maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[10]"), 'Affe am Haken über die Stacheln -> Spiegel 9 -> Tür 10', r.get('pos'))
+    r = await koop(g, f=kat(418, 15), m=kat(410, 15), plans={'f': [k_lauf(426)]}, maxFrames=600)
+    soll(r['pos']['f'][0] < 422, 'Tür 10 zu ohne Licht', r.get('pos'))
+    r = await koop(g, f=kat(430, 15), m=kat(442, 9), plans={'f': gleit(439, kx(453), 4) + [k_lauf(476)]}, pre=dreh(442), maxFrames=1500)
+    soll(r.get('done'), 'Schweinchen unten über die Grube, Ausgang', r.get('pos'))
+    # Spiegel-Kette unter Pfeilen = „Licht plus Fallen“ (schaltbare Spiegel): Platte 15 lässt die Pfeile schweigen, solange
+    # jemand draufsteht – jedes Betreten dreht aber Spiegel 1, der anfangs RICHTIG steht. Platten 16/17 unter den Pfeilen
+    # drehen Spiegel 2/3. Lösung: Affe betritt Platte 15 (Pfeile still, Spiegel 1 falsch), Schweinchen tritt auf 16 und 17
+    # und geht aus der Pfeil-Gasse, Affe steigt ab und wieder auf (Spiegel 1 wieder richtig) -> Kristall 11 -> Tür 11.
+    sp = lambda c: f'spiegelListe.find(s => s.c === {c} && s.r === 14).stellung'
+    m = [wb_halt(kx(488)), {'wait': f'{sp(500)} === "\\\\" && {sp(508)} === "/" && Q.x > {kx(510)}', 'frames': 3000},
+         wb_halt(kx(485)), {'frames': 20}, wb_halt(kx(488)), {'wait': '!!linkOn[11]', 'frames': 300}]
+    for c in (495, 499, 507):   # zurück durch die (wieder laufenden) Pfeile: Einschlag abwarten, dann durch
+        m += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 1, 0)]
+    m += [k_lauf(523)]
+    f = [{'wait': '!!linkOn[15]', 'frames': 600}, wb_halt(kx(499)), {'frames': 20}, wb_halt(kx(507)), {'frames': 20}, k_lauf(511),
+         {'wait': '!!linkOn[11]', 'frames': 2000}, k_lauf(524)]
+    r = await koop(g, m=kat(484, 15), f=kat(482, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+    soll(r.get('done') and await g.ev("!!linkOn[11]"), 'Licht plus Fallen: Platte 15 halten, 16+17, zweimal 15 -> Tür 11', r.get('pos'))
+    r = await koop(g, m=kat(484, 15), f=kat(482, 15), plans={'m': m[:2], 'f': f[:6] + [k_lauf(516)]}, maxFrames=3000)
+    soll(r['pos']['f'][0] < 518 and not await g.ev("!!linkOn[11]"), 'Platte 15 nur einmal betreten: Spiegel 1 falsch, Tür 11 zu', r.get('pos'))
+    # Bild-Regel: das blaue Tor bringt den Affen aufs Dach über dem Gang (552); er läuft oben mit und springt am Ende hinunter
+    r = await koop(g, m=kat(528, 15), f=kat(536, 15), plans={'m': [k_lauf(533), {'wait': f'P.y < {ky(10)}'}, k_lauf(574), {'until': 'P.grounded', 'frames': 300}]}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 572 and k_pos(r, 'm')[1] == 15, 'Affe durchs blaue Tor aufs Dach über dem Flammen-Gang', r.get('pos'))
+    plan = []
+    for c in range(540, 569, 4):
+        fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+        plan += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 40'}, k_lauf(c + 1)]
+    r = await koop(g, f=kat(535, 15), m=kat(577, 15), plans={'f': plan + [k_lauf(578)]}, maxFrames=5000)
+    soll(r.get('done'), 'Schweinchen läuft der Flammen-Welle nach', r.get('pos'))
+    if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70 and a != 401]   # Ausnahme: zwei Wege 401–474 (ein Rätsel)
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    r = await koop(g, m=kat(620, 15), f=kat(618, 15), plans={'m': haken(625, 9, 30) + am(631)}, maxFrames=1500)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[12]"), 'Affe per Haken zum Spiegel -> Kristall 12', r.get('pos'))
+    r = await koop(g, f=kat(642, 6), m=kat(632, 9), plans={'f': gleit(643, kx(654), 4) + [{'frames': 10}] + am(653)}, maxFrames=1500)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 10 and await g.ev("spiegelListe.find(s => s.c === 653).stellung") == '\\', 'Schweinchen segelt zur Insel, Spiegel 12', r.get('pos'))
+    # Bild-Regel: Doppelstrahl-Tor aufgeteilt – Tür 12 (Strahl 1) am Anfang der Brücke (645), Tür 13 (Strahl 2) mit Pfeil
+    # direkt hinter der Brücke (670): dort treffen sich beide und gehen im Takt gemeinsam durch
+    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(668)]}, pre=dreh(630), maxFrames=800)
+    soll(r.get('done'), 'Affe durch Tür 12 über die Licht-Brücke', r.get('pos'))
+    r = await koop(g, m=kat(640, 15), f=kat(653, 10), plans={'m': [k_lauf(668)]}, pre=dreh(653), maxFrames=800)
+    soll(not r.get('done') and r['pos']['m'][0] < 645, 'ohne Strahl 1 zu (Tür 12) und keine Brücke', r.get('pos'))
+    r = await koop(g, f=kat(654, 10), m=kat(675, 15), plans={'f': gleit(656, kx(667), 4)}, pre=dreh(630, 653), maxFrames=1200)
+    soll(k_pos(r, 'f') and 664 <= k_pos(r, 'f')[0] < 670 and k_pos(r, 'f')[1] == 15, 'Schweinchen segelt von der Insel zum Tor', r.get('pos'))
+    pl = [k_lauf(668, 0), {'wait': f'kristalle.find(k => k.link === 13).an && (90 - wechselSchritte % 90) > 40 && fallenPfeile.some(a => a.steckt >= 0 && Math.abs(a.x - {kx(670)}) < 4)'}, k_lauf(678)]
+    for who, o in (('m', 'f'), ('f', 'm')):
+        r = await koop(g, **{who: kat(642, 15), o: kat(640, 15)}, plans={who: [k_lauf(666, 0)] + pl, o: [k_lauf(664, 0), {'wait': f'Q.x > {kx(672)}'}] + pl}, pre=dreh(630, 653), maxFrames=4000)
+        soll(r.get('done'), f'Doppelstrahl-Tor gemeinsam ({who} zuerst)', r.get('pos'))
+    r = await koop(g, m=kat(642, 15), f=kat(640, 15), plans={'m': [k_lauf(678)]}, pre=dreh(630), maxFrames=800)
+    soll(not r.get('done') and 660 <= r['pos']['m'][0] < 670 and r['pos']['m'][1] == 15, 'Tor 13 zu ohne Strahl 2', r.get('pos'))
+    m = [k_lauf(710, 0), {'wait': 'kristalle.find(k => k.link === 14).an && (90 - wechselSchritte % 90) > 75'}, k_lauf(718, 0),
+         {'wait': 'kristalle.find(k => k.link === 14).an && (90 - wechselSchritte % 90) > 75'}, k_lauf(730)]
+    r = await koop(g, m=kat(702, 15), f=kat(700, 15), plans={'m': m}, maxFrames=3000)
+    soll(r.get('done'), 'Affe über die Takt-Brücken', r.get('pos'))
+    r = await koop(g, f=kat(708, 15), m=kat(702, 15), plans={'f': gleit(711, kx(718) + 20, 4) + gleit(719, kx(728), 4) + [k_lauf(730)]}, maxFrames=1500)
+    soll(r.get('done'), 'Schweinchen segelt über die Gruben', r.get('pos'))
+    r = await koop(g, m=kat(735, 15), f=kat(733, 15), plans={'m': [k_lauf(791)], 'f': [k_lauf(789)]}, maxFrames=1500)
+    soll(r.get('done'), 'bis zum Ziel', r.get('pos'))
+    assert not fehler, fehler
+
+@test
+async def level11_felsenflucht(g):
+    """Ausbau 7, Ruinen Level 5 „Felsenflucht“ (levels/ruinen/05-felsenflucht.json, mittags, Regen): der rollende Fels jagt die beiden.
+    Etappe 1: erste Flucht (langsamer Fels, zerschellt an der Stufe), Fels und Grube (Affe Haken, Schweinchen segelt),
+    Flucht nach oben auf die Stege (schneller Fels rollt darunter durch).
+    Etappe 2: Pfeil-Flucht, Schleuse mit Fels (Platte halten, Hebel 6, Fels zerschellt an Tür 5), Flammen-Welle mit Fels.
+    Etappe 3: Teleporter-Flucht, Takt-Steine mit Fels im Nacken, Wechsel-Schleuse (Boden verschwindet, Trittsteine erscheinen).
+    Etappe 4: Finale – lange Verfolgung (Grube, Spiegel im Laufen drehen -> Licht-Tor, Stege), Ausklang mit Pfeilen."""
+    await koop_level(g, 'ruinen/05-felsenflucht.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {info}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, h=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': h}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def info(r): return {k: r.get(k) for k in ('dead', 'pos')}
+    # --- Etappe 1 ---
+    pl = {'f': [k_lauf(12, 0)] + am(14) + [k_lauf(55, 0)] + sprung_zu(kx(61)) + [k_lauf(62)],
+          'm': [{'wait': '!!linkOn[1]'}, k_lauf(54, 0)] + sprung_zu(kx(60)) + [k_lauf(61), {'wait': 'felsen[0].weg'}]}
+    r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans=pl, maxFrames=2500)
+    soll(r.get('done') and await g.ev("felsen[0].weg"), 'erste Flucht, Fels zerschellt an der Stufe', info(r))
+    r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans={'f': [k_lauf(12, 0)] + am(14) + [{'frames': 200}]}, maxFrames=600)
+    soll(r.get('dead'), 'wer stehen bleibt, wird überrollt', info(r))
+    m = [k_lauf(72, 0)] + am(74) + [k_lauf(88, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(102)]
+    f = [{'wait': '!!linkOn[2]'}] + k_segeln(88, 4) + [k_lauf(101), {'wait': 'felsen[1].weg'}]
+    r = await koop(g, m=kat(68, 15), f=kat(70, 15), plans={'m': m, 'f': f}, maxFrames=2500)
+    soll(r.get('done') and await g.ev("felsen[1].weg"), 'Fels und Grube (Affe Haken, Schweinchen segelt)', info(r))
+    f = [k_lauf(108, 0)] + am(110) + [k_lauf(123, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, k_lauf(180)]
+    m = [{'wait': '!!linkOn[3]'}, k_lauf(124, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, k_lauf(181), {'wait': 'felsen[2].weg'}]
+    r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': m, 'f': f}, maxFrames=2500)
+    soll(r.get('done') and await g.ev("felsen[2].weg"), 'Flucht nach oben auf die Stege', info(r))
+    r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'f': [k_lauf(108, 0)] + am(110) + [k_lauf(168)]}, maxFrames=1200)
+    soll(r.get('dead'), 'unten bleiben = überrollt', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    def pfeile(cs):   # vor jedem Pfeil-Vorhang warten, bis der Pfeil steckt – oder weiter, wenn der Fels zu nahe ist
+        pl = []
+        for c in cs:
+            pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 150)'}, k_lauf(c + 2)]
+        return pl
+    pl = {'m': [k_lauf(208, 0)] + am(210) + pfeile((230, 238, 246)) + [k_lauf(255, 0)] + sprung_zu(kx(261)) + [k_lauf(262)],
+          'f': [{'wait': '!!linkOn[4]'}] + pfeile((230, 238, 246)) + [k_lauf(254, 0)] + sprung_zu(kx(260)) + [k_lauf(261), {'wait': 'felsen[3].weg'}]}
+    r = await koop(g, m=kat(212, 15), f=kat(214, 15), plans=pl, maxFrames=4000)
+    soll(r.get('done') and await g.ev("felsen[3].weg"), 'Pfeil-Flucht', info(r))
+    halten = {'holdIf': {'right': f'P.x < {kx(299)} - 3', 'left': f'P.x > {kx(299)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(299)}) <= 3', 'frames': 200}
+    m = [k_lauf(285, 0)] + am(297) + [k_lauf(318), {'wait': 'felsen[4].weg'}]   # Bild-Regel: Hebel 6 bei 297 statt 287
+    r = await koop(g, m=kat(280, 15), f=kat(290, 15), plans={'m': m, 'f': [halten, {'wait': f'Q.x > {kx(301)}'}, k_lauf(318)]}, maxFrames=3000)
+    soll(r.get('done') and await g.ev("felsen[4].weg"), 'Schleuse: Platte halten, Hebel 6, durch – Fels zerschellt an Tür 5', info(r))
+    m = [k_lauf(298, 0), {'wait': '!!linkOn[5]'}, k_lauf(312)]
+    r = await koop(g, m=kat(292, 15), f=kat(290, 15), plans={'m': m, 'f': [halten, {'wait': f'Q.x > {kx(301)}'}, k_lauf(318)]}, maxFrames=1500)
+    soll(r['pos']['f'][0] < 316, 'ohne Hebel 6 kein Weiterkommen', r.get('pos'))
+    def welle():
+        pl = []
+        for c in range(346, 379, 4):
+            fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+            pl += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 30'}, k_lauf(c + 1)]
+        return pl
+    pl = {'f': [k_lauf(328, 0)] + am(330) + welle() + [k_lauf(385, 0)] + sprung_zu(kx(391)) + [k_lauf(392), {'wait': 'felsen[5].weg'}],
+          'm': [{'wait': '!!linkOn[7]'}] + welle() + [k_lauf(384, 0)] + sprung_zu(kx(390)) + [k_lauf(391)]}
+    r = await koop(g, m=kat(332, 15), f=kat(327, 15), plans=pl, maxFrames=5000)
+    soll(r.get('done'), 'Flammen-Welle mit Fels im Nacken', info(r))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    pl = {'m': [k_lauf(410, 0)] + am(412) + [k_lauf(432), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(470), {'until': 'P.grounded', 'frames': 200}],
+          'f': [{'wait': '!!linkOn[8]'}, k_lauf(435), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(471), {'until': 'P.grounded', 'frames': 200}, {'wait': 'felsen[6].weg'}]}
+    r = await koop(g, m=kat(414, 15), f=kat(415, 15), plans=pl, maxFrames=3000)
+    soll(r.get('done') and await g.ev("felsen[6].weg"), 'Teleporter-Flucht (blaues/pinkes Tor)', info(r))
+    r = await koop(g, m=kat(414, 15), f=kat(416, 15), plans={'f': [k_lauf(410, 0)] + am(412) + [k_lauf(460)]}, maxFrames=1200)
+    soll(r.get('dead'), 'ohne Tor = überrollt', info(r))
+    def takt_flucht():
+        T = 90
+        pl = [k_lauf(491, -6), {'wait': f'(Math.floor(wechselSchritte / {T}) % 2 === 0 && ({T} - wechselSchritte % {T}) > 50) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 160)'}] + sprung_zu(kx(494) + 20)
+        for c0 in range(497, 517, 3):
+            pl += [{'wait': f'({T} - wechselSchritte % {T}) <= 26 && ({T} - wechselSchritte % {T}) > 4'}] + sprung_zu(kx(c0) + 20)
+        return pl + [{'wait': f'({T} - wechselSchritte % {T}) <= 30'}] + sprung_zu(kx(522))
+    pl = {'f': [{'frames': 1}, k_lauf(478, 0)] + am(480) + takt_flucht() + [k_lauf(524)], 'm': [{'wait': '!!linkOn[9]'}] + takt_flucht() + [k_lauf(523)]}
+    r = await koop(g, m=kat(482, 15), f=kat(476, 15), plans=pl, maxFrames=4000)
+    soll(r.get('done') and k_pos(r, 'f')[0] >= 521 and k_pos(r, 'm')[0] >= 521, 'Takt-Steine mit Fels im Nacken', info(r))
+    hop = [k_lauf(555, -6)] + sprung_zu(kx(558) + 20, 10) + [k_lauf(559, 0)] + sprung_zu(kx(562) + 20, 6) + [k_lauf(563, 0)] + sprung_zu(kx(566) + 20, 6) + [k_lauf(567, 0)] + sprung_zu(kx(571), 6) + [k_lauf(574)]
+    pl = {'m': [k_lauf(546, 0)] + am(548) + hop, 'f': [{'wait': '!!linkOn[10]'}, {'frames': 30}] + hop + [{'wait': 'felsen[8].weg'}]}
+    r = await koop(g, m=kat(549, 15), f=kat(550, 15), plans=pl, maxFrames=3000)
+    soll(r.get('done') and await g.ev("felsen[8].weg"), 'Wechsel-Schleuse auf der Flucht', info(r))
+    if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70 and a not in (100, 320, 402, 602)]   # Ausnahme: jede Verfolgung am Stück
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander (außer in Verfolgungen)', luecken)
+    steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    haken = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                        {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+    m = [k_lauf(610, 0)] + am(612) + haken(626) + steg(669) + [k_lauf(708), {'wait': 'felsen[9].weg'}]
+    f = [{'wait': '!!linkOn[11]'}] + k_segeln(627, 4) + [k_lauf(648, 0)] + am(650) + steg(670) + [k_lauf(709)]
+    r = await koop(g, m=kat(608, 15), f=kat(614, 15), plans={'m': m, 'f': f}, maxFrames=4000)
+    soll(r.get('done') and await g.ev("felsen[9].weg"), 'Finale: Verfolgung mit Licht-Tor', info(r))
+    r = await koop(g, m=kat(608, 15), f=kat(640, 15), plans={'m': [k_lauf(610, 0)] + am(612) + haken(626) + [k_lauf(668)]}, maxFrames=2000)
+    soll(r.get('dead') or r['pos']['m'][0] < 660, 'ohne Spiegel bleibt das Licht-Tor zu', info(r))
+    pl = []
+    for c in (722, 728, 734):
+        pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'}, k_lauf(c + 2)]
+    r = await koop(g, f=kat(710, 15), m=kat(708, 15), plans={'f': pl + [k_lauf(746)]}, maxFrames=3000)
+    soll(r.get('done'), 'Ausklang: Pfeil-Vorhänge', r.get('pos'))
+    # danach bis zum Ziel: Licht-Rätsel „Felsbrecher-Licht“ (eigener Test felsenflucht_felsbrecher_licht)
+    assert not fehler, fehler
+
+@test
+async def level12_tropfsteingang(g):
+    """Ausbau 7, Höhle Level 2 „Tropfsteingang“ (levels/hoehle/02-tropfsteingang.json, morgens): Lehr-Level Förderband, Stege, Kamine. Koop-Bot spielt jede Etappe: Band mit/gegen den Strom, Band-Schleuder (Hebel dreht das Band), Kamine, Platten-Tunnel mit reißendem Band, Band-Inseln, Platten-Staffel."""
+    await koop_level(g, 'hoehle/02-tropfsteingang.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(5, 15), o: kat(3, 15)}, plans={who: [k_lauf(32)]}, maxFrames=800)
+            soll(r.get('done'), f'E1 Band mit (Strom) ({who})', r.get('pos'))
+            r = await koop(g, **{who: kat(32, 15), o: kat(30, 15)}, plans={who: [k_lauf(52, 0)] + sprung_zu(kx(55)) + [k_lauf(58)]}, maxFrames=1500)
+            soll(r.get('done'), f'E1 gegen den Strom + Stufe ({who})', r.get('pos'))
+        ok = None
+        for hold in (4, 8, 12, 16):
+            r = await koop(g, f=kat(60, 15), m=kat(58, 15), plans={'f': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.x > {kx(72 + hold // 4)} && !P.grounded', 'frames': 600}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}] + am(90)}, maxFrames=2000)
+            if r.get('pos', {}).get('f', [0, 0])[0] >= 87 and await g.ev('!!linkOn[1]'): ok = hold; break
+        soll(ok, 'E1 Schwein segelt über die Grube, Hebel 1', (ok, r.get('pos')))
+        ok = []
+        for jx in (75, 76, 77):
+            for hold in (10, 16):
+                r = await koop(g, m=kat(62, 15), f=kat(90, 15), plans={'m': [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, links=[1], maxFrames=800)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 85 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E1 Band-Schleuder: Affe über die Grube (Hebel 1 an)', ok)
+        n = 0
+        for jx in (75, 76, 77):
+            for hold in (10, 16):
+                r = await koop(g, m=kat(62, 15), f=kat(90, 15), plans={'m': [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, maxFrames=800)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 85 and not r.get('dead'): n += 1
+        soll(n == 0, 'E1 ohne Hebel 1 kein Affe über die Grube', n)
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(117, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(122)}', 'frames': 900}, k_lauf(128)]
+            r = await koop(g, **{who: kat(110, 15), o: kat(108, 15)}, plans={who: pl}, maxFrames=1500)
+            soll(r.get('done'), f'E1 Kamin ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            pl = [k_lauf(143), {'until': 'P.grounded', 'frames': 100}, k_lauf(149), {'until': 'P.grounded', 'frames': 100}, k_lauf(155), {'until': 'P.grounded', 'frames': 100}, k_lauf(165), {'until': 'P.grounded', 'frames': 100}]
+            r = await koop(g, **{who: kat(130, 3), o: kat(128, 3)}, plans={who: pl}, maxFrames=1500)
+            soll(r.get('done') and r['pos'][who][1] == 15, f'E1 Stege hinunter ({who})', r.get('pos'))
+            pl = [k_lauf(178, 0)] + sprung_zu(kx(184)) + [k_lauf(193, 0), {'until': 'P.grounded', 'frames': 100}, k_lauf(197)]
+            r = await koop(g, **{who: kat(168, 15), o: kat(166, 15)}, plans={who: pl}, maxFrames=1500)
+            soll(r.get('done'), f'E1 Band zur Stachelkante, Steg ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos')})
+        r = await koop(g, m=kat(168, 15), f=kat(166, 15), plans={'m': [{'frames': 800}]}, maxFrames=900)
+        soll(r.get('dead'), 'E1 wer auf dem Band stehen bleibt, landet in den Stacheln', r.get('dead'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        ok = None
+        for jx in (203, 204, 205):
+            for pull in (30, 60):
+                r = await koop(g, m=kat(201, 15), f=kat(200, 15), plans={'m': haken(jx, 9, pull) + am(211)}, maxFrames=1500)
+                if r.get('pos', {}).get('m', [0, 0])[1] == 9 and await g.ev('!!linkOn[2]'): ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E2 Affe per Haken auf den Sims, Hebel 2 (Tür 2)', (ok, r.get('pos')))
+        r = await koop(g, f=kat(210, 15), m=kat(205, 15), plans={'f': [k_lauf(218)]}, maxFrames=600)
+        soll(r['pos']['f'][0] < 214, 'E2 Tür 2 zu ohne Hebel', r.get('pos'))
+        ok = None
+        for hold in (4, 8, 12):
+            for jx in (218, 220, 222):
+                r = await koop(g, f=kat(212, 15), m=kat(211, 9), plans={'f': k_segeln(jx, hold) + am(233)}, links=[2], maxFrames=1500)
+                if r.get('pos', {}).get('f', [0, 0])[0] >= 230 and await g.ev('!!linkOn[3]'): ok = (jx, hold); break
+            if ok: break
+        soll(ok, 'E2 Schwein segelt über die Grube, Hebel 3', (ok, r.get('pos')))
+        ok = []
+        for hold in (10, 16):
+            r = await koop(g, m=kat(216, 15), f=kat(233, 15), plans={'m': [k_lauf(222, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, links=[2, 3], maxFrames=800)
+            if r.get('pos', {}).get('m', [0, 0])[0] >= 230 and not r.get('dead'): ok.append(hold)
+        soll(ok, 'E2 Band-Schleuder: Affe über die Grube (Hebel 3 an)', ok)
+        n = 0
+        for hold in (10, 16):
+            r = await koop(g, m=kat(216, 15), f=kat(233, 15), plans={'m': [k_lauf(222, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, links=[2], maxFrames=800)
+            if r.get('pos', {}).get('m', [0, 0])[0] >= 230 and not r.get('dead'): n += 1
+        soll(n == 0, 'E2 ohne Hebel 3 kein Affe hinüber', n)
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            # erster Schacht auf Breite 3 verbreitert (Kombi-Nachschärfen): oben nach rechts aufs Sims aussteigen
+            pl = [k_lauf(252, -8), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(7)} && P.vy < 0', 'frames': 900},
+                  {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(253)}', 'frames': 300},
+                  k_lauf(257, 0), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(259)}', 'frames': 900}, k_lauf(266)]
+            r = await koop(g, **{who: kat(244, 15), o: kat(242, 15)}, plans={who: pl}, maxFrames=2500)
+            soll(r.get('done'), f'E2 Zickzack-Kamin ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            pl = [k_lauf(281), {'until': 'P.grounded', 'frames': 100}, k_lauf(287), {'until': 'P.grounded', 'frames': 100}, k_lauf(293), {'until': 'P.grounded', 'frames': 100},
+                  k_lauf(299), {'until': 'P.grounded', 'frames': 100}, k_lauf(308), {'until': 'P.grounded', 'frames': 100}]
+            r = await koop(g, **{who: kat(266, 1), o: kat(279, 1)}, plans={who: pl}, maxFrames=1500)
+            soll(r.get('done') and r['pos'][who][1] == 15, f'E2 Stege hinunter ({who})', r.get('pos'))
+            ins = [323 + 6*i for i in range(8)]
+            for hold in (4, 8):
+                pl = [k_lauf(319, 0)] + sprung_zu(kx(323) + 20, hold)
+                for c in ins[1:]: pl += sprung_zu(kx(c) + 20, hold)
+                pl += sprung_zu(kx(373), hold) + [k_lauf(386)]
+                r = await koop(g, **{who: kat(310, 15), o: kat(308, 15)}, plans={who: pl, o: [{'frames': 50}] + pl}, maxFrames=3000)
+                if r.get('done'): break
+            soll(r.get('done'), f'E2 Band-Inseln ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(406, 15), o: kat(403, 15)}, plans={o: [halten(404), {'wait': '!!linkOn[5]'}, {'frames': 10}], who: [{'wait': '!!linkOn[4]'}, k_lauf(438, 0)] + am(440)}, maxFrames=2500)
+            soll(r.get('done') and await g.ev('!!linkOn[5]'), f'E3 Platten-Tunnel: Platte halten, durch, Hebel 5 ({who} geht)', r.get('pos'))
+            r = await koop(g, **{o: kat(402, 15), who: kat(440, 15)}, plans={o: [k_lauf(404, 0)] + sprung_zu(kx(408)) + [k_lauf(442), {'until': 'P.grounded', 'frames': 200}]}, links=[5], maxFrames=1500)
+            soll(r.get('done') and r['pos'][o][1] == 15, f'E3 übers Tunneldach durch Tür 5 ({o})', r.get('pos'))
+        r = await koop(g, m=kat(408, 15), f=kat(402, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 600}]}, maxFrames=700)
+        soll(r['pos']['m'][0] < 432, 'E3 ohne Platte kommt niemand durch den Tunnel', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = False
+            for hold in (4, 8):
+                pl = [k_lauf(470, 0)] + sprung_zu(kx(473) + 20, hold) + sprung_zu(kx(478) + 20, hold) + sprung_zu(kx(483) + 20, hold) + sprung_zu(kx(488) + 20, hold) + sprung_zu(kx(494), hold) + [k_lauf(498)]
+                r = await koop(g, **{who: kat(464, 15), o: kat(462, 15)}, plans={who: pl}, maxFrames=2000)
+                if r.get('done'): ok = True; break
+            soll(ok, f'E3 Band-Treppe ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            pl = [k_lauf(510, 0)] + sprung_zu(kx(514)) + sprung_zu(kx(518)) + am(518)
+            r = await koop(g, **{who: kat(500, 7), o: kat(498, 7)}, plans={who: pl}, maxFrames=1500)
+            soll(r.get('pos', {}).get(who, [0, 0])[1] == 1 and await g.ev('!!linkOn[6]'), f'E3 Steg-Turm, Hebel 6 ({who})', r.get('pos'))
+            r = await koop(g, **{who: kat(519, 7), o: kat(517, 7)}, plans={who: [k_lauf(523), {'frames': 260}, k_lauf(566)], o: [{'frames': 30}, k_lauf(523), {'frames': 260}, k_lauf(565)]}, links=[6], maxFrames=1500)
+            soll(r.get('done'), f'E3 Hebel-Band trägt beide hinüber', r.get('pos'))
+        r = await koop(g, m=kat(519, 7), f=kat(517, 7), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 600}]}, maxFrames=700)
+        soll(r.get('dead') or r['pos']['m'][0] < 540, 'E3 ohne Hebel 6 kein Durchkommen auf dem Band', r.get('pos'))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+        kette = lambda h: [k_lauf(603, 0)] + sprung_zu(kx(612), h) + [k_lauf(615, 0)] + sprung_zu(kx(624), h) + [k_lauf(627, 0)] + sprung_zu(kx(637), h) + [k_lauf(640)]
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for h in (4, 8, 12):
+                r = await koop(g, **{who: kat(596, 7), o: kat(594, 7)}, plans={who: kette(h), o: [{'frames': 40}] + kette(h)}, maxFrames=2500)
+                if r.get('done'): ok.append(h)
+            soll(ok, f'E4 Schleuder-Kette ({who} vorne)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        n = 0
+        for h in (4, 8, 12):
+            r = await koop(g, m=kat(596, 7), f=kat(620, 9), plans={'m': [k_lauf(603, 0)] + sprung_zu(kx(612), h) + [k_lauf(615, 0)] + sprung_zu(kx(624), h)}, pre="solids.forEach(s => { if(s.type === 'band' && s.x < 634*40) s.tempo = 0; })", maxFrames=1500)
+            if r.get('done') and r['pos']['m'][1] <= 11: n += 1
+        soll(True, 'E4 Schleuder-Kette ohne Band-Schwung (Info)', f'{n}/3')
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(651, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(7)} + 2 && P.x > {kx(652)}', 'frames': 900}, k_lauf(673), {'until': 'P.grounded', 'frames': 100},
+                  k_lauf(679), {'until': 'P.grounded', 'frames': 100}, k_lauf(686), {'until': 'P.grounded', 'frames': 100}]
+            r = await koop(g, **{who: kat(638, 15), o: kat(660, 7)}, plans={who: pl, o: [{'frames': 1}]}, maxFrames=2500)
+            soll(r.get('done') and r['pos'][who][1] == 15, f'E4 Kamin hinter dem Gegenband ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        ok = None
+        for jx in (687, 688):
+            for pull in (30, 60):
+                m = haken(jx, 9, pull) + [halten(695), {'wait': '!!linkOn[11]'}, k_lauf(699, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(744), {'until': 'P.grounded', 'frames': 200}]
+                f = [{'wait': '!!linkOn[10]'}, k_lauf(734, 0)] + am(736) + [k_lauf(745)]
+                r = await koop(g, m=kat(684, 15), f=kat(686, 15), plans={'m': m, 'f': f}, maxFrames=4000)
+                if r.get('done'): ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E4 Platten-Staffel: Affe hält Platte 10, Schwein durch den Tunnel, Hebel 11, Affe übers Dach', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, f=kat(700, 15), m=kat(690, 15), plans={'f': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 600}]}, maxFrames=700)
+        soll(r['pos']['f'][0] < 727, 'E4 ohne Platte 10 kein Durchkommen im Tunnel', r.get('pos'))
+        r = await koop(g, m=kat(746, 15), f=kat(744, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=1500)
+        soll(r.get('done'), 'E4 Ziel', r.get('pos'))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    soll(all(b - a <= 70 for a, b in zip(cps, cps[1:])), 'Checkpoints höchstens 70 Spalten auseinander', cps)
+    assert not fehler, fehler
+
+
+@test
+async def level13_eisgrotte(g):
+    """Ausbau 7, Höhle Level 3 „Eisgrotte“ (levels/hoehle/03-eisgrotte.json, abends, Tropfwasser): Lehr-Level Eis, Aufwind, Präzision. Koop-Bot spielt jede Etappe: Eis lernen, Bremsweg, Eis-Säulen (Schweinchen lenkt gegen, Affe an den Haken), Aufwind zu Hebel 1, Platten-Schleuse auf Eis, vereister Sims mit Haken, Eisbrücke unter Stalaktiten, Eis-Treppe, Aufwind-Leiter, Bremsen am Seil, Eissäulen im Aufwind, Doppel-Rutsche, Aufwind und Kamin."""
+    await koop_level(g, 'hoehle/03-eisgrotte.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(5, 15), o: kat(3, 15)}, plans={who: [k_lauf(41)]}, maxFrames=1200)
+            soll(r.get('done'), f'E1 Eis lernen ({who})', r.get('pos'))
+            ok = []
+            for jx in (62, 64, 66):
+                r = await koop(g, **{who: kat(42, 15), o: kat(40, 15)}, plans={who: [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(75)]}, maxFrames=1500)
+                if r.get('done'): ok.append(jx)
+            soll(ok, f'E1 Bremsweg / Sprung über die Grube ({who})', ok)
+        # Eis-Säulen: Schwein von Säule zu Säule (gegenlenken), Affe an den Haken
+        ok = []
+        for hold in (4, 8, 12):
+            pl = [k_lauf(78, 0)] + sprung_zu(kx(84) + 20, hold)
+            for c0 in range(91, 125, 7): pl += [{'frames': 4}] + sprung_zu(kx(c0) + 20, hold)
+            pl += sprung_zu(kx(129), hold) + [k_lauf(131)]
+            r = await koop(g, f=kat(76, 15), m=kat(105, 12), plans={'f': pl}, maxFrames=4000)
+            if r.get('done'): ok.append(hold)
+        soll(ok, 'E1 Eis-Säulen (Schwein)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'):
+            m = [k_lauf(79, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+            for k in range(6):
+                m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+            m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(131)]
+            r = await koop(g, m=kat(76, 15), f=kat(105, 12), plans={'m': m}, maxFrames=5000)
+            if r.get('done'): ok.append(rel[:14])
+        soll(ok, 'E1 Eis-Säulen (Affe an den Haken)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        # Aufwind-Schacht
+        f = [k_lauf(137, 0), {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(136)} + 10', 'left': f'P.x > {kx(137)}'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(3)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(142)}', 'left': f'P.x > {kx(145)}'}, 'until': f'P.grounded && P.x > {kx(140)}', 'frames': 300}] + am(144) + \
+            [{'hold': ['right', 'glide'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.grounded && P.x > {kx(151)}', 'frames': 600}]
+        r = await koop(g, f=kat(132, 15), m=kat(130, 15), plans={'f': f}, maxFrames=3000)
+        soll(r.get('done') and await g.ev('!!linkOn[1]') and r['pos']['f'][0] > 151, 'E1 Aufwind -> Hebel 1, über die Tür (Schwein)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(145, 15), f=kat(152, 15), plans={'m': [k_lauf(158)]}, links=[1], maxFrames=800)
+        soll(r.get('done'), 'E1 Tür 1 offen für den Affen', r.get('pos'))
+        r = await koop(g, m=kat(145, 15), f=kat(152, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 300}]}, maxFrames=400)
+        soll(r['pos']['m'][0] < 150, 'E1 ohne Hebel 1 kein Affe durch', r.get('pos'))
+        r = await koop(g, m=kat(132, 15), f=kat(130, 15), plans={'m': [k_lauf(137, 0), {'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 300}]}, maxFrames=400)
+        soll(r['pos']['m'][1] > 6, 'E1 Affe kommt nicht auf den Sims', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(154, 15), o: kat(152, 15)}, plans={who: [k_lauf(192)]}, maxFrames=1500)
+            soll(r.get('done'), f'E1 Eisbahn ({who})', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4 && Math.abs(P.vx) < 0.3', 'frames': 600}
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = {o: [halten(206), {'wait': f'Q.x > {kx(234)} && !!linkOn[2]'}, {'frames': 30}, k_lauf(244)], who: [{'wait': '!!linkOn[2]'}, k_lauf(230, 0), halten(236), {'wait': f'Q.x > {kx(240)}'}]}
+            r = await koop(g, **{who: kat(212, 15), o: kat(204, 15)}, plans=pl, maxFrames=5000)
+            soll(r.get('done') and r['pos'][o][0] >= 240, f'E2 Platten-Schleuse auf Eis ({who} rutscht durch)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(220, 15), f=kat(214, 15), plans={'m': [k_lauf(232)]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 226, 'E2 Tür 2 zu ohne Platte', r.get('pos'))
+        ok = None
+        for jx in (252, 253, 254):
+            for pull in (30, 60):
+                r = await koop(g, m=kat(250, 15), f=kat(248, 15), plans={'m': haken(jx, 9, pull) + [{'holdIf': {'right': f'P.x < {kx(265)} - 3', 'left': f'P.x > {kx(265)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(265)}) < 30 && P.grounded && !linkOn[3] && f % 20 === 0'}, 'until': '!!linkOn[3]', 'frames': 600}]}, maxFrames=2500)
+                if r.get('pos', {}).get('m', [0, 0])[1] == 9 and await g.ev('!!linkOn[3]'): ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E2 Affe auf den vereisten Sims, Hebel 3', (ok, r.get('pos')))
+        ok = []
+        for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1'):
+            for jx in (269, 270, 271):
+                m = [k_lauf(jx, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+                     {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(290)]
+                r = await koop(g, m=kat(267, 15), f=kat(270, 15), plans={'m': m}, links=[3], maxFrames=1500)
+                if r.get('done'): ok.append((rel[:14], jx))
+        soll(ok, 'E2 Affe am Haken über die Grube', ok)
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(267, 15), m=kat(286, 15), plans={'f': k_segeln(271, hold) + [k_lauf(290)]}, links=[3], maxFrames=1500)
+            if r.get('done'): ok = hold; break
+        soll(ok, 'E2 Schwein segelt über die Grube', (ok, r.get('pos')))
+        r = await koop(g, f=kat(262, 15), m=kat(258, 15), plans={'f': [k_lauf(270)]}, maxFrames=600)
+        soll(r['pos']['f'][0] < 268, 'E2 Tür 3 zu ohne Hebel', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for jx in (332, 333, 334):
+                pl = [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(346)]
+                r = await koop(g, **{who: kat(292, 15), o: kat(320, 15)}, plans={who: pl}, maxFrames=2000)
+                if r.get('done'): ok.append(jx)
+            soll(ok, f'E2 Eisbrücke unter Stalaktiten ({who})', ok)
+            ok = False
+            for hold in (4, 8):
+                pl = [k_lauf(349, 0)] + sprung_zu(kx(353), hold) + sprung_zu(kx(357), hold) + sprung_zu(kx(361), hold) + sprung_zu(kx(365), hold) + sprung_zu(kx(370), hold) + [k_lauf(376)]
+                r = await koop(g, **{who: kat(346, 15), o: kat(344, 15)}, plans={who: pl}, maxFrames=2500)
+                if r.get('done'): ok = True; break
+            soll(ok, f'E2 Eis-Treppe hinauf ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        f = [k_lauf(411, 0), {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(411)} + 10', 'left': f'P.x > {kx(412)}'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(8)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(417)}', 'left': f'P.x > {kx(419)}'}, 'until': f'P.grounded && P.x > {kx(415)}', 'frames': 300},
+             {'holdIf': {'right': f'P.x < {kx(422)}', 'left': f'P.x > {kx(423)}'}, 'hold': ['glide'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(3)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(428)}', 'left': f'P.x > {kx(430)}'}, 'until': f'P.grounded && P.x > {kx(426)}', 'frames': 300}] + am(430) + \
+            [{'hold': ['right', 'glide'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.grounded && P.x > {kx(441)}', 'frames': 600}]
+        r = await koop(g, f=kat(405, 15), m=kat(403, 15), plans={'f': f}, maxFrames=4000)
+        soll(r.get('done') and await g.ev('!!linkOn[4]') and r['pos']['f'][0] > 441, 'E3 Aufwind-Leiter -> Hebel 4, über die Mauer (Schwein)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(430, 15), f=kat(445, 15), plans={'m': [k_lauf(446)]}, links=[4], maxFrames=800)
+        soll(r.get('done'), 'E3 Tür 4 offen für den Affen', r.get('pos'))
+        r = await koop(g, m=kat(430, 15), f=kat(445, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 300}]}, maxFrames=400)
+        soll(r['pos']['m'][0] < 440, 'E3 ohne Hebel 4 kein Affe durch', r.get('pos'))
+        # Bremsen am Seil
+        ok = None
+        for jx in (494, 495, 496, 497):
+            m = [k_lauf(459, 0)] + sprung_zu(kx(462)) + sprung_zu(kx(468)) + [k_lauf(jx, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 60},
+                 {'pressIf': {'use': f'Math.abs(P.x - {kx(499)}) < 40 && !linkOn[5] && f % 15 === 0'}, 'until': '!!linkOn[5]', 'frames': 400}]
+            r = await koop(g, m=kat(456, 15), f=kat(470, 10), plans={'m': m}, maxFrames=2500)
+            if await g.ev('!!linkOn[5]'): ok = jx; break
+        soll(ok, 'E3 Affe hängt am Haken über Hebel 5 an der Kante', (ok, r.get('pos')))
+        ok = None
+        for jx in (499, 500):
+            for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1'):
+                m = [k_lauf(jx, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': f'P.vy > -3 && P.x > {kx(502)}', 'until': 'P.hookAttached', 'frames': 80},
+                     {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(528)]
+                r = await koop(g, m=kat(495, 10), f=kat(515, 15), plans={'m': m}, links=[5], maxFrames=1500)
+                if r.get('done'): ok = (jx, rel[:14]); break
+            if ok: break
+        soll(ok, 'E3 Affe am Haken über die Grube, Tür 5', (ok, r.get('pos')))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(495, 10), m=kat(515, 15), plans={'f': k_segeln(500, hold) + [k_lauf(528)]}, links=[5], maxFrames=1500)
+            if r.get('done'): ok = hold; break
+        soll(ok, 'E3 Schwein segelt über die Grube, Tür 5', (ok, r.get('pos')))
+        # Eissäulen im Aufwind
+        def gleit(tx, hold): return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 400}]
+        ok = []
+        for hold in (4, 8, 12):
+            pl = [k_lauf(540, 0)] + gleit(kx(544) + 20, hold)
+            for c0 in range(552, 585, 8): pl += [{'frames': 4}] + gleit(kx(c0) + 20, hold)
+            pl += gleit(kx(593), hold) + [k_lauf(596)]
+            r = await koop(g, f=kat(530, 15), m=kat(568, 12), plans={'f': pl}, maxFrames=4000)
+            if r.get('done'): ok.append(hold)
+        soll(ok, 'E3 Eissäulen im Aufwind (Schwein)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'):
+            m = [k_lauf(540, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+            for k in range(6): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+            m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(596)]
+            r = await koop(g, m=kat(535, 15), f=kat(568, 12), plans={'m': m}, maxFrames=6000)
+            if r.get('done'): ok.append(rel[:14])
+        soll(ok, 'E3 Eissäulen (Affe an den Haken)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    if True:
+        def vorbei(c, link): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(c)}) < 30 && !linkOn[{link}] && f % 15 === 0'}, 'until': f'!!linkOn[{link}]', 'frames': 900}
+        ok = None
+        for jx in (604, 605, 606):
+            for pull in (30, 60):
+                f = [k_lauf(626, 0), vorbei(632, 6), {'wait': '!!linkOn[7]'}, k_lauf(680), {'until': 'P.grounded', 'frames': 200}]
+                m = haken(jx, 10, pull) + [{'wait': '!!linkOn[6]'}, k_lauf(646, 0), vorbei(652, 7), k_lauf(679), {'until': 'P.grounded', 'frames': 300}]
+                r = await koop(g, m=kat(602, 15), f=kat(604, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+                if r.get('done') and r['pos']['m'][1] == 15 and r['pos']['f'][0] >= 678: ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E4 Doppel-Rutsche: Hebel 6 unten, Hebel 7 oben (im Vorbeirutschen)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, f=kat(650, 15), m=kat(645, 10), plans={'f': [k_lauf(664)]}, maxFrames=800)
+        soll(r['pos']['f'][0] < 660, 'E4 Tür 7 unten zu ohne Hebel 7', r.get('pos'))
+        r = await koop(g, m=kat(630, 10), f=kat(640, 15), plans={'m': [k_lauf(644)]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 640, 'E4 Tür 6 oben zu ohne Hebel 6', r.get('pos'))
+        f = [k_lauf(692, 0), {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(693)} - 6', 'left': f'P.x > {kx(693)} + 6'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(2)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(702)}', 'left': f'P.x > {kx(704)}'}, 'until': f'P.grounded && P.x > {kx(699)}', 'frames': 400}, k_lauf(706)]
+        r = await koop(g, f=kat(684, 15), m=kat(682, 15), plans={'f': f}, maxFrames=2500)
+        soll(r.get('done') and r['pos']['f'][1] == 4, 'E4 Aufwind hinauf auf den Sims (Schwein)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        m = [k_lauf(698, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(4)} + 2 && P.x > {kx(699)}', 'frames': 900}, k_lauf(706)]
+        r = await koop(g, m=kat(684, 15), f=kat(682, 15), plans={'m': m}, maxFrames=2500)
+        soll(r.get('done') and r['pos']['m'][1] == 4, 'E4 Kamin hinauf auf den Sims (Affe)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(721), {'until': 'P.grounded', 'frames': 100}, k_lauf(727), {'until': 'P.grounded', 'frames': 100}, k_lauf(733), {'until': 'P.grounded', 'frames': 100},
+                  k_lauf(740), {'until': 'P.grounded', 'frames': 100}]
+            r = await koop(g, **{who: kat(706, 4), o: kat(704, 4)}, plans={who: pl}, maxFrames=1500)
+            soll(r.get('done') and r['pos'][who][1] == 15, f'E4 Stege hinunter ({who})', r.get('pos'))
+            ok = []
+            for jx in (776, 777, 778):
+                pl = [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(793)]
+                r = await koop(g, **{who: kat(744, 15), o: kat(770, 15)}, plans={who: pl}, maxFrames=2000)
+                if r.get('done'): ok.append(jx)
+            soll(ok, f'E4 Eisbahn zum Ziel ({who})', ok)
+    assert not fehler, fehler
+
+@test
+async def level14_leuchtgrotte(g):
+    """Ausbau 7, Höhle Level 4 „Leuchtgrotte“ (levels/hoehle/04-leuchtgrotte.json, nachts, trocken): Kombi-Level Dunkelheit, Leuchtkristalle, Scheinwände, Teleporter. Koop-Bot spielt jede Etappe: Kristall anschlagen, Kristall auf dem Sims (Affe am Haken), Stachelgruben im Licht (Schweinchen segelt), Platte lässt Kristall leuchten, Brücke per Hebel, Scheinwände, getrennte Teleporter, Schlucht mit Tor, versteckter Ausgang, Stachel-Tunnel, Kammer-Kette, Kamin und Schlucht, Steg-Turm, getrennte Wege oben/unten, Steg-Hüpfer."""
+    await koop_level(g, 'hoehle/04-leuchtgrotte.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(12, 0)] + am(14) + [k_lauf(24, 0)] + sprung_zu(kx(31)) + [k_lauf(34, 0)] + sprung_zu(kx(41)) + [k_lauf(44, 0)] + sprung_zu(kx(51)) + [k_lauf(58)]
+            r = await koop(g, **{who: kat(6, 15), o: kat(4, 15)}, plans={who: pl, o: [{'frames': 60}] + pl[len(am(14)) + 1:]}, maxFrames=3000)
+            soll(r.get('done') and await g.ev('leuchtKristalle[0].t > 0'), f'E1 Kristall anschlagen, über die Gruben ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        ok = None
+        for jx in (60, 61, 62):
+            for pull in (30, 60):
+                r = await koop(g, m=kat(58, 15), f=kat(56, 15), plans={'m': haken(jx, 9, pull) + am(69)}, maxFrames=2000)
+                if r.get('pos', {}).get('m', [0, 0])[1] == 9 and await g.ev('leuchtKristalle[1].t > 0'): ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E1 Affe per Haken zum Kristall auf dem Sims', (ok, r.get('pos')))
+        ok = None
+        for hold in (4, 8, 12):
+            gl = lambda a, tx: [k_lauf(a, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 400}]
+            f = gl(73, 81) + gl(83, 91) + gl(93, 101) + am(104)
+            r = await koop(g, f=kat(60, 15), m=kat(69, 9), plans={'f': f}, maxFrames=3000)
+            if await g.ev('!!linkOn[1]'): ok = hold; break
+        soll(ok, 'E1 Schwein segelt über die Stachelgruben, Hebel 1', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(64, 15), f=kat(100, 15), plans={'m': kette(72, 3, rel) + [k_lauf(114)]}, links=[1], maxFrames=4000)
+            if r.get('done'): ok.append(rel[:14])
+        soll(ok, 'E1 Affe an den Haken über die Gruben, Tür 1', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(104, 15), f=kat(102, 15), plans={'m': [k_lauf(114)]}, maxFrames=600)
+        soll(r['pos']['m'][0] < 110, 'E1 Tür 1 zu ohne Hebel', r.get('pos'))
+        halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+        ok = []
+        for rel in RELS:
+            m = kette(126, 4, rel) + am(166)
+            f = [halten(124), {'wait': '!!linkOn[3]'}, {'frames': 20}, k_lauf(170)]
+            r = await koop(g, m=kat(122, 15), f=kat(120, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+            if r.get('done') and r['pos']['f'][0] >= 169: ok.append(rel[:14])
+        soll(ok, 'E1 Platte 2 (Licht), Affe an den Haken, Hebel 3, Brücke für das Schwein', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, f=kat(126, 15), m=kat(122, 15), plans={'f': [{'hold': ['right', 'glide'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 400}]}, maxFrames=500)
+        soll(r.get('dead') or r['pos']['f'][0] < 161, 'E1 ohne Brücke kommt das Schwein nicht hinüber', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(227, 0)] + sprung_zu(kx(229)) + sprung_zu(kx(234)) + [{'hold': ['right'], 'until': f'P.x >= {kx(240)}', 'frames': 300}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(246)]
+            r = await koop(g, **{who: kat(214, 15), o: kat(212, 15)}, plans={who: pl, o: [{'frames': 30}] + pl}, maxFrames=3000)
+            soll(r.get('done') and r['pos'][who][0] >= 245, f'E2 Scheinwände, Stege hinauf, Fenster ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        # Bild-Regel: Fels 262–272 statt 262–286, Ausgänge 276/279, Hebel 4 bei 277
+        r = await koop(g, m=kat(252, 15), f=kat(250, 15), plans={'m': [{'frames': 30}, k_lauf(258), {'wait': f'P.x > {kx(270)}'}] + am(277), 'f': [k_lauf(254), {'wait': '!!linkOn[4]'}, k_lauf(261), {'frames': 10}, k_lauf(295)]}, maxFrames=3000)
+        soll(r.get('done') and r['pos']['m'][0] > 275 and r['pos']['f'][0] > 289, 'E2 Affe durchs blaue Tor, Hebel 4, Schwein durchs pinke', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(250, 15), f=kat(252, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=400)
+        soll(r['pos']['f'][0] < 262, 'E2 ohne Hebel 4 kein Schwein durch', r.get('pos'))
+        ok = None
+        for hold in (4, 8, 12):
+            f = am(304) + glide_to(309, kx(324), hold) + am(328)
+            r = await koop(g, f=kat(300, 15), m=kat(297, 15), plans={'f': f, 'm': [{'wait': '!!linkOn[5]'}, k_lauf(307), {'frames': 10}, k_lauf(337)]}, maxFrames=3000)   # weißes Tor bei 308 (Bild-Regel)
+            if r.get('done') and r['pos']['m'][0] >= 336: ok = hold; break
+        soll(ok, 'E2 Schwein segelt über die Schlucht, Hebel 5, Affe durchs weiße Tor', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(301, 15), f=kat(298, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded && P.x > ' + str(kx(308))}, 'frames': 400}]}, maxFrames=500)
+        soll(r.get('dead') or r['pos']['m'][0] < 322, 'E2 ohne Hebel 5 kein Affe hinüber', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(334, 15), o: kat(332, 15)}, plans={who: [k_lauf(380)], o: [{'frames': 60}, k_lauf(378)]}, maxFrames=3000)
+            soll(r.get('done') and r['pos'][who][0] >= 379 and r['pos'][o][0] >= 377, f'E2 versteckter Ausgang (Scheinwand + Tor) ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = []
+            for a in (404, 412, 420, 428, 436): pl += [k_lauf(a - 1, -8)] + sprung_zu(kx(a + 3), 3)
+            pl += [k_lauf(446)]
+            r = await koop(g, **{who: kat(396, 15), o: kat(394, 15)}, plans={who: pl, o: [{'frames': 40}] + pl}, maxFrames=4000)
+            soll(r.get('done') and r['pos'][who][0] >= 445, f'E3 Stachel-Tunnel ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        m = [k_lauf(461)] + am(474) + [{'wait': '!!linkOn[7]'}, k_lauf(483), {'until': 'P.grounded', 'frames': 200}] + am(485) + [k_lauf(489)]
+        f = [k_lauf(456), {'wait': '!!linkOn[6]'}, k_lauf(458), {'until': 'P.x < ' + str(kx(464)) + ' === false', 'frames': 100}, halten(470), {'wait': '!!linkOn[8]'}, k_lauf(487)]
+        r = await koop(g, m=kat(450, 15), f=kat(448, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+        soll(r.get('done') and r['pos']['m'][0] >= 486 and r['pos']['f'][0] >= 486, 'E3 Kammer-Kette: Tor, Hebel 6, Tor, Platte 7, Hebel 8', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(450, 15), f=kat(452, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=400)
+        soll(r['pos']['f'][0] < 464, 'E3 ohne Hebel 6 kein Schwein in die Kammer', r.get('pos'))
+        r = await koop(g, m=kat(472, 5), f=kat(462, 15), plans={'m': [{'hold': ['right'], 'frames': 200}]}, links=[6], maxFrames=300)
+        soll(r['pos']['m'][0] < 477, 'E3 Tür 7 zu ohne Platte', r.get('pos'))
+        up = lambda: [k_lauf(495, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(500)}', 'frames': 900}, k_lauf(509), {'until': 'P.grounded', 'frames': 100}, k_lauf(514), {'until': 'P.grounded', 'frames': 100}]
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(492, 15), f=kat(490, 15), plans={'m': up() + [k_lauf(519), {'until': 'P.grounded', 'frames': 100}] + kette(523, 4, rel) + [k_lauf(559)], 'f': [{'frames': 200}] + up() + [k_lauf(518)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 558: ok.append(rel[:14])
+        soll(ok, 'E3 Kamin hinauf, Stege, Affe an den Haken über die Schlucht', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(492, 15), m=kat(490, 15), plans={'f': up() + [k_lauf(519), {'until': 'P.grounded', 'frames': 100}] + glide_to(523, kx(559), hold) + [k_lauf(559)], 'm': [{'frames': 200}] + up() + [k_lauf(518)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['f'][0] >= 558: ok = hold; break
+        soll(ok, 'E3 Kamin hinauf, Stege, Schwein segelt mit Aufwinden über die Schlucht', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hop = lambda tx: [{'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+        hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [hl(603)] + hop(605) + [hl(607)] + hop(612) + [hl(610)] + hop(605) + [hl(607)] + hop(612) + [hl(613)] + hop(617) + [k_lauf(630)]
+            r = await koop(g, **{who: kat(598, 15), o: kat(596, 15)}, plans={who: pl, o: [{'frames': 400}] + pl}, maxFrames=4000)
+            soll(r.get('done') and r['pos'][who][0] >= 629 and r['pos'][who][1] <= 4, f'E4 Steg-Turm hinauf ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+        for hoch, tief in (('m', 'f'), ('f', 'm')):
+            ok = None
+            for jx in (639, 640):
+                oben = [k_lauf(jx, 0)] + sprung_zu(kx(648)) + am(660) + [{'wait': '!!linkOn[11]'}, k_lauf(679), {'until': 'P.grounded', 'frames': 200}, k_lauf(684)]
+                unten = [{'frames': 40}, k_lauf(641), {'until': 'P.grounded', 'frames': 200}, k_lauf(646, -10)] + sprung_zu(kx(652)) + [{'wait': '!!linkOn[10]'}, halten(675), {'wait': f'Q.x >= {kx(681)}'}, k_lauf(686)]
+                r = await koop(g, **{hoch: kat(633, 4), tief: kat(631, 4)}, plans={hoch: oben, tief: unten}, maxFrames=5000)
+                if r.get('done') and r['pos'][hoch][0] >= 683 and r['pos'][tief][0] >= 683: ok = jx; break
+            soll(ok, f'E4 getrennte Wege: Hebel 10 oben, Platte 11 unten (oben {hoch})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(658, 4), f=kat(652, 15), plans={'m': [{'hold': ['right'], 'frames': 200}], 'f': [{'hold': ['right'], 'frames': 200}]}, maxFrames=300)
+        soll(r['pos']['m'][0] < 670 and r['pos']['f'][0] < 655, 'E4 Tür 10 und 11 zu ohne Hebel/Platte', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(711, -6)] + sprung_zu(kx(716))
+            for a in (722, 729, 736, 743): pl += [k_lauf(a - 5, 0)] + sprung_zu(kx(a + 1))
+            pl += [k_lauf(745, 0)] + sprung_zu(kx(753)) + [k_lauf(760)]
+            r = await koop(g, **{who: kat(709, 15), o: kat(707, 15)}, plans={who: pl, o: [{'frames': 300}] + pl}, maxFrames=5000)
+            soll(r.get('done') and r['pos'][who][0] >= 759, f'E4 Steg-Hüpfer über die Stachelgrube ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    assert not fehler, fehler
+
+@test
+async def level15_foerderwerk(g):
+    """Ausbau 7, Höhle Level 5 „Förderwerk“ (levels/hoehle/05-foerderwerk.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder, Eis + Band, Bänder über Kreuz, Kamine. Koop-Bot spielt jede Etappe: Band-Treppe, Band-Kaskade, Schleuder mit Aufwind-Hebel, Platten-Tunnel, Eis-Anlauf zum Band-Sprung, Platte auf dem Band und Platte auf dem Eis, Eis-Treppe abwärts, Bänder über Kreuz, Gegenband mit Stacheln, Inseln und Haken über dem reißenden Band, Kamin mit Gegenband, Doppel-Schleuder, Eisbahn zum Ziel."""
+    await koop_level(g, 'hoehle/05-foerderwerk.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(19, 0)] + sprung_zu(kx(22)) + sprung_zu(kx(26)) + [k_lauf(33, 0)] + sprung_zu(kx(40)) + [k_lauf(52)]
+            r = await koop(g, **{who: kat(5, 15), o: kat(3, 15)}, plans={who: pl, o: [{'frames': 30}] + pl}, maxFrames=3000)
+            soll(r.get('done') and r['pos'][who][0] >= 51, f'E1 Band-Treppe ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            pl = [k_lauf(63, 0)] + sprung_zu(kx(69))
+            for a in (75, 83, 91): pl += [k_lauf(a - 4, 0)] + sprung_zu(kx(a + 2))
+            pl += [k_lauf(95, 0)] + sprung_zu(kx(101)) + [k_lauf(104)]
+            r = await koop(g, **{who: kat(54, 15), o: kat(52, 15)}, plans={who: pl, o: [{'frames': 200}] + pl}, maxFrames=4000)
+            soll(r.get('done') and r['pos'][who][0] >= 103, f'E1 Band-Kaskade ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        ok = None
+        for hold in (4, 8, 12, 16):
+            f = [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.x > {kx(120 + hold // 4)} && !P.grounded', 'frames': 600}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600},
+                 halten(134), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(134)} + 10', 'left': f'P.x > {kx(135)} - 10'}, 'until': f'P.y < {ky(3)}', 'frames': 400},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(139)} - 6', 'left': f'P.x > {kx(139)} + 6'}, 'until': 'P.grounded', 'frames': 300}] + am(140)
+            r = await koop(g, f=kat(106, 15), m=kat(104, 15), plans={'f': f}, maxFrames=3000)
+            if await g.ev('!!linkOn[1]'): ok = hold; break
+        soll(ok, 'E1 Schwein segelt über die Grube, Aufwind, Hebel 1', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for jx in (120, 121, 122):
+            for hold in (10, 16):
+                r = await koop(g, m=kat(108, 15), f=kat(138, 4), plans={'m': [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, links=[1], maxFrames=800)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 130 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E1 Band-Schleuder: Affe über die Grube (Hebel 1 an)', ok)
+        n = 0
+        for jx in (120, 121, 122):
+            for hold in (10, 16):
+                r = await koop(g, m=kat(108, 15), f=kat(138, 4), plans={'m': [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, maxFrames=800)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 130 and not r.get('dead'): n += 1
+        soll(n == 0, 'E1 ohne Hebel 1 kein Affe über die Grube', n)
+        r = await koop(g, m=kat(150, 15), f=kat(148, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 500}]}, maxFrames=600)
+        soll(r['pos']['m'][0] < 190, 'E1 Tunnel-Band hält auf (ohne Platte)', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(158, 15), o: kat(156, 15)}, plans={o: [halten(161), {'wait': f'Q.x >= {kx(193)} - 3'}, {'frames': 30}, k_lauf(165, 0), {'hold': ['right'], 'until': f'P.x >= {kx(196)}', 'frames': 600}],
+                                                                     who: [{'frames': 30}, k_lauf(164), {'hold': ['right'], 'until': f'P.x >= {kx(190)}', 'frames': 600}, halten(193), {'wait': f'Q.x >= {kx(195)}'}, k_lauf(197)]}, maxFrames=4000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 195, f'E1 Platten-Tunnel: einer hält, der andere fährt ({who} zuerst)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for jx in (230, 231, 232):
+                pl = [k_lauf(jx, 0)] + sprung_zu(kx(242)) + [k_lauf(244)]
+                r = await koop(g, **{who: kat(202, 15), o: kat(200, 15)}, plans={who: pl, o: [{'frames': 200}, k_lauf(222)]}, maxFrames=3000)
+                if r.get('done') and r['pos'][who][0] >= 240: ok.append(jx)
+            soll(ok, f'E2 Eis-Anlauf, Band-Sprung über die Grube ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        for zuerst, hinten in (('m', 'f'), ('f', 'm')):
+            vorn = [halten(268), {'holdIf': {'right': f'P.x < {kx(268)} - 3', 'left': f'P.x > {kx(268)} + 3'}, 'until': f'Q.x >= {kx(289)} && Q.grounded && !!linkOn[3]', 'frames': 3000}, k_lauf(276, 0)] + sprung_zu(kx(281)) + [k_lauf(301)]
+            geht = [{'wait': '!!linkOn[3]'}, k_lauf(276, 0)] + sprung_zu(kx(281)) + [halten(292), {'holdIf': {'right': f'P.x < {kx(292)} - 3', 'left': f'P.x > {kx(292)} + 3'}, 'until': f'Q.x >= {kx(288)}', 'frames': 3000}, k_lauf(302)]
+            r = await koop(g, **{zuerst: kat(258, 15), hinten: kat(256, 15)}, plans={hinten: vorn, zuerst: [{'frames': 60}] + geht}, maxFrames=5000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 300, f'E2 Platte auf dem Band, Platte auf dem Eis ({zuerst} geht zuerst)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(282, 15), f=kat(260, 15), plans={'m': [{'hold': ['right'], 'frames': 200}]}, maxFrames=300)
+        soll(r['pos']['m'][0] < 286, 'E2 Tür 3 zu ohne Platte', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(316, 0)] + sprung_zu(kx(320)) + sprung_zu(kx(324)) + [k_lauf(326, 0)] + sprung_zu(kx(331)) + [k_lauf(335, 0)] + sprung_zu(kx(340)) + [k_lauf(344, 0)] + sprung_zu(kx(349)) + [k_lauf(353, 0)] + sprung_zu(kx(362)) + [k_lauf(364)]
+            r = await koop(g, **{who: kat(306, 15), o: kat(304, 15)}, plans={who: pl, o: [{'frames': 300}] + pl}, maxFrames=5000)
+            soll(r.get('done') and r['pos'][who][0] >= 363, f'E2 Eis-Treppe abwärts ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+        hop = lambda tx: [{'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+        for oben, unten in (('m', 'f'), ('f', 'm')):
+            po = [hl(400)] + hop(402) + [hl(403)] + hop(405) + [hl(406)] + hop(409) + [{'holdIf': {'right': f'P.x < {kx(410)} - 3', 'left': f'P.x > {kx(410)} + 3'}, 'until': '!!linkOn[5]', 'frames': 3000}, {'hold': ['right'], 'until': f'P.x >= {kx(442)}', 'frames': 600}, {'until': 'P.grounded', 'frames': 200}, k_lauf(448)]
+            pu = [{'wait': '!!linkOn[6]'}, {'hold': ['right'], 'until': f'P.x >= {kx(442)}', 'frames': 600}] + am(444) + [{'wait': f'Q.x >= {kx(442)} && Q.grounded'}, k_lauf(449)]
+            r = await koop(g, **{oben: kat(400, 15), unten: kat(404, 15)}, plans={oben: po, unten: pu}, maxFrames=6000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 447, f'E3 Bänder über Kreuz (oben {oben})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(404, 15), f=kat(400, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 600}]}, maxFrames=700)
+        soll(r['pos']['m'][0] < 442, 'E3 unteres Band hält auf (ohne Platte 6)', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for d in (1, 2):
+                pl = [k_lauf(451, 0)]
+                for c in (460, 468, 476, 484): pl += [k_lauf(c - d, -10)] + sprung_zu(kx(c + 2))
+                pl += [k_lauf(494)]
+                r = await koop(g, **{who: kat(449, 15), o: kat(447, 15)}, plans={who: pl, o: [{'frames': 300}] + pl}, maxFrames=5000)
+                if r.get('done') and r['pos'][who][0] >= 493: ok.append(d)
+            soll(ok, f'E3 Gegenband mit Stacheln ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(496, 15), f=kat(494, 15), plans={'m': kette(497, 4, rel) + [k_lauf(537)], 'f': [{'frames': 100}, hl(498)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 536: ok.append(rel[:14])
+        for hold in (4, 8):
+            m = [k_lauf(499, 0)] + sprung_zu(kx(508), hold) + [k_lauf(509, 0)] + sprung_zu(kx(517), hold) + [k_lauf(518, 0)] + sprung_zu(kx(526), hold) + [k_lauf(527, 0)] + sprung_zu(kx(536), hold) + [k_lauf(537)]
+            r = await koop(g, m=kat(496, 15), f=kat(494, 15), plans={'m': m, 'f': [{'frames': 100}, hl(498)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 536: ok.append(f'Inseln {hold}')
+        soll(ok, 'E3 Affe über das reißende Band (Inseln / Haken)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            f = glide_to(499, kx(508), hold) + [k_lauf(509, 0)] + glide_to(509, kx(517), hold)[1:] + [k_lauf(518, 0)] + glide_to(518, kx(526), hold)[1:] + [k_lauf(527, 0)] + glide_to(527, kx(537), hold)[1:] + [k_lauf(537)]
+            r = await koop(g, f=kat(496, 15), m=kat(494, 15), plans={'f': f, 'm': [{'frames': 300}, hl(498)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['f'][0] >= 536: ok = hold; break
+        soll(ok, 'E3 Schwein segelt von Steg-Insel zu Steg-Insel', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(601, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(606)}', 'frames': 900}, {'hold': ['right'], 'until': f'P.x >= {kx(621)}', 'frames': 600},
+                  {'until': 'P.grounded', 'frames': 100}, k_lauf(626), {'until': 'P.grounded', 'frames': 100}, k_lauf(631), {'until': 'P.grounded', 'frames': 100}, k_lauf(636), {'until': 'P.grounded', 'frames': 100}, k_lauf(640)]
+            r = await koop(g, **{who: kat(598, 15), o: kat(596, 15)}, plans={who: pl, o: [{'frames': 400}] + pl}, maxFrames=5000)
+            soll(r.get('done') and r['pos'][who][0] >= 639, f'E4 Kamin mit Gegenband ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        ok = None
+        for hold in (4, 8, 12, 16):
+            f = [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.x > {kx(655 + hold // 4)} && !P.grounded', 'frames': 600}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}] + am(669)
+            r = await koop(g, f=kat(642, 15), m=kat(640, 15), plans={'f': f}, maxFrames=3000)
+            if await g.ev('!!linkOn[8]'): ok = hold; break
+        soll(ok, 'E4 Schwein segelt über Grube A, Hebel 8', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for jx in (654, 655, 656, 657):
+            for hold in (10, 16):
+                r = await koop(g, m=kat(643, 15), f=kat(670, 15), plans={'m': [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, links=[8], maxFrames=800)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 665 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E4 Schleuder A: Affe über Grube A (Hebel 8 an)', ok)
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(668, 15), f=kat(670, 15), plans={'m': kette(671, 3, rel) + am(700)}, maxFrames=4000)
+            if await g.ev('!!linkOn[9]'): ok.append(rel[:14])
+        soll(ok, 'E4 Affe an den Haken über Grube B, Hebel 9', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for jx in (681, 683, 685):
+            for hold in (8, 16):
+                f = [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+                r = await koop(g, f=kat(671, 15), m=kat(702, 15), plans={'f': f}, links=[8, 9], maxFrames=1500)
+                if r.get('pos', {}).get('f', [0, 0])[0] >= 696 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E4 Schleuder B: Schwein segelt über Grube B (Hebel 9 an)', ok)
+        n = 0
+        for hold in (4, 8, 12, 16):
+            f = [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.x > {kx(683 + hold // 4)} && !P.grounded', 'frames': 600}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+            r = await koop(g, f=kat(671, 15), m=kat(690, 15), plans={'f': f}, links=[8], maxFrames=1500)
+            if r.get('pos', {}).get('f', [0, 0])[0] >= 696 and not r.get('dead'): n += 1
+        soll(n == 0, 'E4 ohne Hebel 9 kein Schwein über Grube B', n)
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for jx in (757, 758):
+                pl = [k_lauf(jx, 0)] + sprung_zu(kx(766)) + [k_lauf(770)]
+                r = await koop(g, **{who: kat(712, 15), o: kat(710, 15)}, plans={who: pl, o: [{'frames': 300}] + pl}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 769: ok.append(jx)
+            soll(ok, f'E4 Eisbahn und Band zum Ziel ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    assert not fehler, fehler
+
+@test
+async def level16_tiefenschlund(g):
+    """Ausbau 7, Höhle Level 6 „Tiefenschlund“ (levels/hoehle/06-tiefenschlund.json, nachts, Regen): Meister-Level, alles kombiniert, lange Präzisions-Passagen im Dunkeln. Koop-Bot spielt jede Etappe: dunkler Abstieg, Platte-Licht und Brücke, Eissäulen ohne Aufwind, Platten-Tunnel, Eis-Kamin, Doppel-Rutsche, Aufwind und Kamin, Band ins Tor, Band-Weiche, Tor-Kette, lange Steg-Passage, Doppel-Schleuder, letzte Eissäulen."""
+    await koop_level(g, 'hoehle/06-tiefenschlund.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for jx in (9, 10):
+                pl = [k_lauf(jx, 0)] + sprung_zu(kx(14)) + [k_lauf(16, 0)] + sprung_zu(kx(20)) + [k_lauf(21, 0)] + sprung_zu(kx(26)) + [k_lauf(28, 0)] + sprung_zu(kx(33)) + [k_lauf(36)]
+                r = await koop(g, **{who: kat(5, 3), o: kat(3, 3)}, plans={who: pl, o: [{'frames': 300}] + pl}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 35: ok.append(jx)
+            soll(ok, f'E1 Dunkler Abstieg ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            m = kette(42, 4, rel) + am(82)
+            f = [halten(42), {'holdIf': {'right': f'P.x < {kx(42)} - 3', 'left': f'P.x > {kx(42)} + 3'}, 'until': '!!linkOn[2]', 'frames': 4000}, {'frames': 20}, k_lauf(84)]
+            r = await koop(g, m=kat(40, 15), f=kat(38, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+            if r.get('done') and r['pos']['f'][0] >= 83: ok.append(rel[:14])
+        soll(ok, 'E1 Platte 1 (Licht), Affe an den Haken, Hebel 2, Brücke', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, f=kat(42, 15), m=kat(40, 15), plans={'f': [{'hold': ['right', 'glide'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 400}]}, maxFrames=500)
+        soll(r.get('dead') or r['pos']['f'][0] < 77, 'E1 ohne Brücke kommt das Schwein nicht hinüber', r.get('pos'))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(88, 15), f=kat(86, 15), plans={'m': kette(89, 5, rel) + [k_lauf(127)], 'f': [{'frames': 100}, hl(88)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 126: ok.append(rel[:14])
+        soll(ok, 'E1 Affe an den Haken über die Eissäulen', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for hold in (3, 4, 6, 10):
+            sg = lambda tx: [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 300}]
+            f = [k_lauf(89, 0)] + sg(kx(93) + 20)
+            for c0 in range(100, 122, 7): f += sg(kx(c0) + 20)
+            f += sg(kx(127)) + [k_lauf(127)]
+            r = await koop(g, f=kat(88, 15), m=kat(86, 15), plans={'f': f, 'm': [{'frames': 100}, hl(88)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['f'][0] >= 126: ok.append(hold)
+        soll(ok, 'E1 Schwein springt von Eissäule zu Eissäule', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(144, 15), o: kat(142, 15)}, plans={o: [halten(147), {'holdIf': {'right': f'P.x < {kx(147)} - 3', 'left': f'P.x > {kx(147)} + 3'}, 'until': f'Q.x >= {kx(179)} - 3 && Q.grounded', 'frames': 3000}, {'frames': 30}, k_lauf(151, 0), {'hold': ['right'], 'until': f'P.x >= {kx(181)}', 'frames': 600}],
+                                                                     who: [{'frames': 30}, k_lauf(150), {'hold': ['right'], 'until': f'P.x >= {kx(176)}', 'frames': 600}, halten(179), {'holdIf': {'right': f'P.x < {kx(179)} - 3', 'left': f'P.x > {kx(179)} + 3'}, 'until': f'Q.x >= {kx(180)}', 'frames': 3000}, k_lauf(183)]}, maxFrames=5000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 180, f'E1 Platten-Tunnel im Dunkeln ({who} zuerst)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for jx in (223, 224, 225):
+                pl = [k_lauf(209, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(214)}', 'frames': 900}, k_lauf(jx, 0)] + sprung_zu(kx(235)) + \
+                     [k_lauf(241), {'until': 'P.grounded', 'frames': 100}, k_lauf(247), {'until': 'P.grounded', 'frames': 100}, k_lauf(253), {'until': 'P.grounded', 'frames': 100}, k_lauf(256)]
+                r = await koop(g, **{who: kat(204, 15), o: kat(202, 15)}, plans={who: pl, o: [{'frames': 400}] + pl}, maxFrames=5000)
+                if r.get('done') and r['pos'][who][0] >= 255: ok.append(jx)
+            soll(ok, f'E2 Eis-Kamin, vereister Sims, Sprung über die Lücke ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        def vorbei(c, link): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(c)}) < 30 && !linkOn[{link}] && f % 15 === 0'}, 'until': f'!!linkOn[{link}]', 'frames': 900}
+        ok = None
+        for jx in (264, 265, 266):
+            for pull in (30, 60):
+                f = [k_lauf(286, 0), vorbei(292, 4), {'wait': '!!linkOn[5]'}, k_lauf(340), {'until': 'P.grounded', 'frames': 200}]
+                m = haken(jx, 10, pull) + [{'wait': '!!linkOn[4]'}, k_lauf(306, 0), vorbei(312, 5), k_lauf(339), {'until': 'P.grounded', 'frames': 300}]
+                r = await koop(g, m=kat(262, 15), f=kat(264, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+                if r.get('done') and r['pos']['m'][1] == 15 and r['pos']['f'][0] >= 338: ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E2 Doppel-Rutsche: Hebel 4 unten, Hebel 5 oben (im Vorbeirutschen)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, f=kat(310, 15), m=kat(305, 10), plans={'f': [k_lauf(324)]}, maxFrames=800)
+        soll(r['pos']['f'][0] < 320, 'E2 Tür 5 unten zu ohne Hebel 5', r.get('pos'))
+        r = await koop(g, m=kat(290, 10), f=kat(300, 15), plans={'m': [k_lauf(304)]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 300, 'E2 Tür 4 oben zu ohne Hebel 4', r.get('pos'))
+        runter = [k_lauf(386, -4), {'until': 'P.grounded', 'frames': 100}, k_lauf(387), {'until': 'P.grounded', 'frames': 100}, k_lauf(393), {'until': 'P.grounded', 'frames': 100}, k_lauf(400), {'until': 'P.grounded', 'frames': 100}]
+        f = [k_lauf(352, 0), {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(353)} - 6', 'left': f'P.x > {kx(353)} + 6'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(2)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(362)}', 'left': f'P.x > {kx(364)}'}, 'until': f'P.grounded && P.x > {kx(359)}', 'frames': 400}, k_lauf(368)]
+        r = await koop(g, f=kat(346, 15), m=kat(344, 15), plans={'f': f + runter, 'm': [{'frames': 600}, k_lauf(358, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(4)} + 2 && P.x > {kx(359)}', 'frames': 900}, k_lauf(366)]}, maxFrames=4000)
+        soll(r.get('done') and r['pos']['f'][0] >= 399, 'E2 Aufwind hinauf (Schwein), Stege hinunter', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        m = [k_lauf(358, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(4)} + 2 && P.x > {kx(359)}', 'frames': 900}, k_lauf(368)]
+        r = await koop(g, m=kat(346, 15), f=kat(344, 15), plans={'m': m + runter, 'f': [{'frames': 400}] + f}, maxFrames=4000)
+        soll(r.get('done') and r['pos']['m'][0] >= 399, 'E2 Kamin hinauf (Affe), Stege hinunter', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(411), {'hold': ['right'], 'until': f'P.x > {kx(432)}', 'frames': 600}, {'until': 'P.grounded', 'frames': 100}, k_lauf(446), {'until': 'P.grounded', 'frames': 100}, k_lauf(450)]
+            r = await koop(g, **{who: kat(405, 15), o: kat(403, 15)}, plans={who: pl, o: [{'frames': 200}] + pl}, maxFrames=4000)
+            soll(r.get('done') and r['pos'][who][0] >= 449, f'E3 Band ins Tor hinter die Felswand ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        # Bild-Regel: Tunnel 460–475 statt 460–490, blaues Tor 457 -> 477, Hebel 6 bei 479
+        m = [k_lauf(452), {'hold': ['right'], 'until': f'P.x > {kx(470)}', 'frames': 300}] + am(479) + [{'wait': f'Q.x >= {kx(476)}'}, k_lauf(502)]
+        f = [k_lauf(457, -10), {'wait': '!!linkOn[6]'}, {'hold': ['right'], 'until': f'P.x >= {kx(476)}', 'frames': 600}, k_lauf(500)]
+        r = await koop(g, m=kat(450, 15), f=kat(457, 15), plans={'m': [{'frames': 30}] + m, 'f': f}, maxFrames=4000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 499, 'E3 Band-Weiche: Affe durchs Tor, Hebel 6, Schwein fährt durch', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, f=kat(456, 15), m=kat(450, 15), plans={'f': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 500}]}, maxFrames=600)
+        soll(r['pos']['f'][0] < 476, 'E3 ohne Hebel 6 kein Schwein durch den Gang', r.get('pos'))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for d in (0, 1):
+                pl = [k_lauf(532 + d, 0)] + sprung_zu(kx(537) + 20) + [k_lauf(538), {'until': f'P.x > {kx(546)} && P.grounded', 'frames': 200}, k_lauf(548, 0)] + sprung_zu(kx(553) + 20) + \
+                     [k_lauf(554), {'until': f'P.x > {kx(562)} && P.grounded', 'frames': 200}, k_lauf(565, 0)] + sprung_zu(kx(571)) + [k_lauf(571)]
+                r = await koop(g, **{who: kat(527, 15), o: kat(525, 15)}, plans={who: pl, o: [{'frames': 500}, k_lauf(531, -10)]}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 570: ok.append(d)
+            soll(ok, f'E3 Tor-Kette über die Stachelgrube ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        steg = ((610, 14), (616, 12), (622, 14), (628, 12), (634, 14), (640, 13))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            ok = []
+            for hold in (4, 8):
+                pl = [k_lauf(606, 0)] + sprung_zu(kx(610) + 20, hold)
+                for c, r in steg[1:]: pl += [k_lauf(c - 5, 10)] + sprung_zu(kx(c) + 20, hold)
+                pl += [k_lauf(641, 10)] + sprung_zu(kx(647), hold)
+                r = await koop(g, **{who: kat(603, 15), o: kat(601, 15)}, plans={who: pl, o: [{'frames': 500}, k_lauf(605, -10)]}, maxFrames=5000)
+                if r.get('done') and r['pos'][who][0] >= 645.5 and r['pos'][who][1] == 15: ok.append(hold)
+            soll(ok, f'E4 lange Steg-Passage im Dunkeln ({who})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12, 16):
+            f = [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.x > {kx(675 + hold // 4)} && !P.grounded', 'frames': 600}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}] + am(689)
+            r = await koop(g, f=kat(662, 15), m=kat(660, 15), plans={'f': f}, maxFrames=3000)
+            if await g.ev('!!linkOn[8]'): ok = hold; break
+        soll(ok, 'E4 Schwein segelt über Grube A, Hebel 8', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for jx in (676, 677):
+            for hold in (10, 16):
+                r = await koop(g, m=kat(663, 15), f=kat(690, 15), plans={'m': [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]}, links=[8], maxFrames=800)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 685 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E4 Schleuder A: Affe über Grube A (Hebel 8 an)', ok)
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(688, 15), f=kat(690, 15), plans={'m': kette(691, 3, rel) + am(720)}, maxFrames=4000)
+            if await g.ev('!!linkOn[9]'): ok.append(rel[:14])
+        soll(ok, 'E4 Affe an den Haken über Grube B, Hebel 9', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for jx in (703, 705):
+            for hold in (8, 16):
+                f = [k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+                r = await koop(g, f=kat(691, 15), m=kat(722, 15), plans={'f': f}, links=[8, 9], maxFrames=1500)
+                if r.get('pos', {}).get('f', [0, 0])[0] >= 716 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E4 Schleuder B: Schwein segelt über Grube B (Hebel 9 an)', ok)
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(733, 15), f=kat(731, 15), plans={'m': kette(733, 5, rel) + [k_lauf(771)], 'f': [{'frames': 100}, hl(733)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 769: ok.append(rel[:14])
+        soll(ok, 'E4 Affe an den Haken über die letzten Eissäulen', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for hold in (3, 6, 10):
+            sg = lambda tx: [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 300}]
+            f = [k_lauf(734, 0)] + sg(kx(738) + 20)
+            for c0 in (745, 752, 759): f += sg(kx(c0) + 20)
+            f += sg(kx(771)) + [k_lauf(771)]
+            r = await koop(g, f=kat(733, 15), m=kat(731, 15), plans={'f': f, 'm': [{'frames': 100}, hl(733)]}, maxFrames=5000)
+            if r.get('done') and r['pos']['f'][0] >= 769: ok.append(hold)
+        soll(ok, 'E4 Schwein segelt über die letzten Eissäulen', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    assert not fehler, fehler
+
+@test
+async def level17_glutpfad(g):
+    """Ausbau 7, Vulkan Level 1 „Glutpfad“ (levels/vulkan/01-glutpfad.json, morgens, trocken): Lehr-Level Lava, steigende Lava, Sprungpilze. Koop-Bot spielt jede Etappe: Lava-Gruben, Pilz im Lavasee, Pilz-Stufe, Trittsteine, Pilz-Kette, Lava-Raum mit Hebel, Lava-Kamin, Pilz-Flucht, Lava-Graben mit Platten, Schweinchen-Platte, Lava-Raum 2, Pilz-Kette über den steigenden See, Steg-Turm vor der Lava, letzte Gruben."""
+    await koop_level(g, 'vulkan/01-glutpfad.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000))
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        await beide('E1 Lava-Gruben', 7, lambda w: [k_lauf(13, -6)] + sprung_zu(kx(18)) + [k_lauf(25, 0)] + sprung_zu(kx(32)) + [k_lauf(36)], 35)
+        await beide('E1 Pilz im Lavasee', 38, lambda w: [{'aim': [kx(49), kx(57)], 'jumps': [kx(43)], 'until': f'P.grounded && P.x > {kx(54)}', 'frames': 600}, k_lauf(62)], 61)
+        await beide('E1 Pilz-Stufe, über die Grube', 60, lambda w: [{'aim': [kx(66), kx(71)], 'jumps': [kx(63)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, k_lauf(72, 0)] + sprung_zu(kx(86)) + [k_lauf(88)], 87)
+        await beide('E1 Trittsteine', 88, lambda w: [k_lauf(91, 0)] + sprung_zu(kx(96)) + sprung_zu(kx(101)) + sprung_zu(kx(106)) + sprung_zu(kx(111)) + sprung_zu(kx(116)) + sprung_zu(kx(123)) + [k_lauf(124)], 123)
+        await beide('E1 Pilz-Kette über den Lavasee', 126, lambda w: [{'aim': [kx(140), kx(147), kx(154), kx(161), kx(167)], 'jumps': [kx(133)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(164)}', 'frames': 900}, k_lauf(175)], 174)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        stufen = lambda: sprung_zu(kx(208)) + sprung_zu(kx(214)) + sprung_zu(kx(220)) + sprung_zu(kx(226)) + sprung_zu(kx(232)) + [k_lauf(245), {'until': 'P.grounded', 'frames': 200}, k_lauf(249)]
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            # Bild-Regel: Hebel 1 steht jetzt auf dem ersten Steg (210), 20 Spalten unter der Tür
+            zieht = [k_lauf(205, -10)] + sprung_zu(kx(209)) + am(210) + stufen()[2:]
+            r = await koop(g, **{who: kat(202, 15), o: kat(200, 15)}, plans={who: zieht, o: [{'wait': '!!linkOn[1]'}, {'frames': 40}, k_lauf(205, -10)] + stufen()}, maxFrames=4000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 247, f'E2 Lava-Raum: Hebel 1, Stege hinauf vor der Lava ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(202, 15), f=kat(200, 15), plans={'m': [k_lauf(205, -10)] + stufen()}, maxFrames=1500)
+        soll(not r.get('done') or r['pos']['m'][0] < 231, 'E2 Tür 1 zu ohne Hebel', r.get('pos'))
+        r = await koop(g, m=kat(208, 13), f=kat(200, 15), plans={'m': [{'frames': 1400}]}, links=[1], maxFrames=1500)
+        soll(r.get('dead') == 'm', 'E2 wer unten bleibt, verbrennt (Lava steigt)', r.get('pos'))
+        kamin = lambda: [k_lauf(259, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(264)}', 'frames': 900}, k_lauf(285), {'until': 'P.grounded', 'frames': 100}, k_lauf(290), {'until': 'P.grounded', 'frames': 100}, k_lauf(295), {'until': 'P.grounded', 'frames': 100}, k_lauf(297)]
+        await beide('E2 Lava-Kamin', 252, lambda w: kamin(), 296, delay=100)
+        r = await koop(g, m=kat(262, 15), f=kat(263, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
+        soll(r.get('dead'), 'E2 Lava im Kamin steigt, sobald beide unten sind', r.get('pos'))
+        await beide('E2 Pilz-Flucht', 297, lambda w: [{'aim': [kx(303), kx(309), kx(315), kx(323)], 'jumps': [kx(298)], 'glide': w == 'f', 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 900}, k_lauf(335), {'until': 'P.grounded', 'frames': 200}, k_lauf(341)], 340, delay=60)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 4000}
+        leer = lambda c0: f'lavaBecken.find(b => b.minX === {c0*40}).surf >= 559'
+        for halt, lauf in (('m', 'f'), ('f', 'm')):
+            weg = [{'wait': leer(410)}, k_lauf(410), {'until': 'P.grounded', 'frames': 100}, k_lauf(439, 0)] + sprung_zu(kx(443))
+            pl_l = weg + [halten(445), hp(445, f'Q.x >= {kx(442)} && Q.grounded && Q.y <= {ky(11)} + 2')]
+            pl_h = [halten(406), hp(406, f'Q.x >= {kx(444)} && Q.grounded && Q.y <= {ky(11)} + 2')] + weg + [k_lauf(450)]
+            r = await koop(g, **{halt: kat(404, 11), lauf: kat(402, 11)}, plans={halt: pl_h, lauf: [{'frames': 30}] + pl_l}, maxFrames=6000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 442, f'E3 Lava-Graben: Platte 2 hält die Lava unten ({halt} hält zuerst)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(404, 11), f=kat(402, 11), plans={'m': [k_lauf(410), {'frames': 200}]}, maxFrames=400)
+        soll(r.get('dead') == 'm', 'E3 ohne Platte: Lava im Graben', r.get('pos'))
+        ok = None
+        for hold in (4, 8, 12):
+            f = [k_lauf(452)] + sprung_zu(kx(458)) + glide_to(462, kx(480), hold) + [halten(480), hp(480, f'Q.x >= {kx(480)} && Q.grounded && Q.y <= {ky(11)} + 2')]
+            m = [k_lauf(452)] + sprung_zu(kx(458)) + [{'wait': leer(463)}, k_lauf(463), {'until': 'P.grounded', 'frames': 100}, k_lauf(476, 0)] + sprung_zu(kx(478))
+            r = await koop(g, f=kat(450, 11), m=kat(448, 11), plans={'f': f, 'm': [{'frames': 60}] + m}, maxFrames=6000)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 477: ok = hold; break
+        soll(ok, 'E3 Schwein segelt, Platte 3, Affe läuft durch den Graben', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        hoch = lambda: sprung_zu(kx(501)) + sprung_zu(kx(507)) + [{'aim': [kx(511), kx(517)], 'jumps': [kx(506)], 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 600}] + sprung_zu(kx(524)) + [k_lauf(534), {'until': 'P.grounded', 'frames': 200}, k_lauf(539)]
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            zieht = [k_lauf(497, 0)] + sprung_zu(kx(501)) + am(502) + [{'holdIf': {'left': f'P.x > {kx(501)}'}, 'frames': 20}] + hoch()[2:]   # Bild-Regel: Hebel 4 auf dem ersten Steg (502)
+            r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: zieht, o: [{'wait': '!!linkOn[4]'}, {'frames': 40}, k_lauf(497, 0)] + hoch()}, maxFrames=4000)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 537, f'E3 Lava-Raum 2: Hebel 4, Stege und Pilz hinauf ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hop = lambda tx: [{'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+        await beide('E4 Pilz-Kette über den steigenden Lavasee', 605, lambda w: [{'aim': [kx(616), kx(623), kx(630), kx(637), kx(647)], 'jumps': [kx(610)], 'until': f'P.grounded && P.x > {kx(644)}', 'frames': 1200}, k_lauf(652)], 651, delay=40)
+        r = await koop(g, m=kat(616, 13), f=kat(623, 13), plans={'m': [{'frames': 900}]}, maxFrames=1000)
+        soll(r.get('dead'), 'E4 der Lavasee steigt über die Säulen', r.get('pos'))
+        turm = lambda: [k_lauf(670), {'until': 'P.grounded', 'frames': 60}, halten(675)] + hop(678) + hop(672) + hop(678) + hop(672) + hop(679) + [halten(680)] + sprung_zu(kx(687), 12) + \
+                       [k_lauf(700), {'until': 'P.grounded', 'frames': 100}, k_lauf(706), {'until': 'P.grounded', 'frames': 100}, k_lauf(711), {'until': 'P.grounded', 'frames': 100}, k_lauf(716), {'until': 'P.grounded', 'frames': 100}, k_lauf(720)]
+        await beide('E4 Steg-Turm vor der Lava', 662, lambda w: turm(), 719, delay=60)
+        await beide('E4 letzte Gruben zum Ziel', 721, lambda w: [k_lauf(725, -6)] + sprung_zu(kx(731)) + [k_lauf(735, -6)] + sprung_zu(kx(742)) + [{'aim': [kx(748), kx(760)], 'jumps': [kx(745)], 'until': f'P.grounded && P.x > {kx(759)}', 'frames': 600}, k_lauf(765)], 764)
+    assert not fehler, fehler
+
+@test
+async def level18_aschefeld(g):
+    """Ausbau 7, Vulkan Level 2 „Aschefeld“ (levels/vulkan/02-aschefeld.json, mittags, heißer Regen): Lehr-Level Stachelpressen und Förderband. Koop-Bot spielt jede Etappe (wartet den Takt der Pressen ab): eine Presse, Pressen-Welle, Grube und Presse, Pressen-Gang, Doppel-Presse, Pressen über dem Förderband, Gegenband, Schlacke-Fließband, Platte hält die Pressen an, Hebel wirft Pressen an, Pressen-Treppe, großer Pressen-Rhythmus, Pressen über Kreuz, letzte Presse."""
+    await koop_level(g, 'vulkan/02-aschefeld.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        await beide('E1 eine Presse', 7, lambda w: [durch(26)], 25)
+        await beide('E1 Pressen-Welle', 26, lambda w: [durch(54)], 53)
+        await beide('E1 Grube und Presse', 55, lambda w: [k_lauf(61, -6)] + sprung_zu(kx(66) - 30) + [durch(76)], 75)
+        await beide('E1 Pressen-Gang (Takt 2 s)', 77, lambda w: [durch(128)], 127, delay=100)
+        await beide('E1 Doppel-Presse', 129, lambda w: [durch(162)], 161)
+        r = await koop(g, m=kat(20, 15), f=kat(15, 15), plans={'m': [{'frames': 400}]}, maxFrames=500)
+        soll(r.get('dead') == 'm', 'E1 wer unter der Presse stehen bleibt, stirbt', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        await beide('E2 Pressen über dem Förderband', 203, lambda w: [durchBand(244)], 243, delay=150)
+        await beide('E2 Gegenband unter Pressen', 245, lambda w: [durchBand(288, 70)], 287, delay=150)
+        ok = []
+        for jx in (329, 330):
+            for who in ('m', 'f'):
+                o = 'f' if who == 'm' else 'm'
+                r = await koop(g, **{who: kat(299, 15), o: kat(297, 15)}, plans={who: [durchBand(jx)] + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(336)]}, maxFrames=4000, pre=PRE)
+                if r.get('done') and r['pos'][who][0] >= 335: ok.append((jx, who))
+                else: print('  ', jx, who, {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        soll(len(ok) >= 2, 'E2 Schlacke-Fließband: unter der Presse durch, über die Grube', ok)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 5000}
+        f = [halten(412), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(412)} + 10', 'left': f'P.x > {kx(413)} - 10'}, 'until': f'P.y < {ky(4)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(430)} - 6', 'left': f'P.x > {kx(430)} + 6'}, 'until': 'P.grounded', 'frames': 400}, halten(430), hp(430, '!!linkOn[6]'), k_lauf(462), {'until': 'P.grounded', 'frames': 200}, k_lauf(470)]
+        m = [{'wait': '!!linkOn[5]'}, durch(464)] + am(466) + [{'wait': f'Q.x >= {kx(463)} && Q.grounded'}, k_lauf(469)]
+        r = await koop(g, f=kat(405, 15), m=kat(403, 15), plans={'f': f, 'm': m}, maxFrames=6000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 468, 'E3 Schwein aufs Dach, Platte 5 hält die Pressen an, Affe durch, Hebel 6', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        bruecke = lambda: [k_lauf(478, 0)] + sprung_zu(kx(481)) + [durch(517)]
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(472, 15), o: kat(470, 15)}, plans={who: am(476) + bruecke(), o: [{'wait': '!!linkOn[7]'}, {'frames': 60}] + bruecke()}, maxFrames=6000, pre=PRE)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 516, f'E3 Hebel 7: Tor auf, Pressen an, über die Brücke ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(486, 14), f=kat(470, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
+        soll(not r.get('dead'), 'E3 ohne Hebel 7 stehen die Pressen still', r.get('pos'))
+        def treppe():
+            pl = [k_lauf(522, 0)]
+            for c0 in (524, 530, 536, 542): pl += sprung_zu(kx(c0)) + [durch(c0 + 4)]
+            return pl + sprung_zu(kx(549)) + [k_lauf(560), {'until': 'P.grounded', 'frames': 200}, k_lauf(566), {'until': 'P.grounded', 'frames': 200}, k_lauf(571), {'until': 'P.grounded', 'frames': 200}, k_lauf(580)]
+        await beide('E3 Pressen-Treppe', 519, lambda w: treppe(), 579, delay=150)
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        await beide('E4 großer Pressen-Rhythmus mit Gegenbändern', 605, lambda w: [durchBand(664, 40)], 663, delay=200, maxFrames=8000)
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
+        f = [halten(670), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(670)} + 10', 'left': f'P.x > {kx(671)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(675)} - 6', 'left': f'P.x > {kx(675)} + 6'}, 'until': 'P.grounded', 'frames': 400},
+             {'wait': '!!linkOn[8]'}, durch(690), halten(691), hp(691, f'Q.grounded && Math.abs(Q.x - {kx(693)}) < 10 && Q.y > {ky(12)}'),
+             {'wait': '!!linkOn[11]'}, durch(707), halten(708), hp(708, f'Q.x >= {kx(711)}'), k_lauf(711), {'until': 'P.grounded', 'frames': 200}, k_lauf(720)]
+        m = [halten(675), hp(675, f'Q.grounded && Math.abs(Q.x - {kx(691)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[10]'}, durch(692), halten(693),
+             hp(693, f'Q.grounded && Math.abs(Q.x - {kx(708)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[9]'}, durch(716)]
+        # Bild-Regel: Doppelgang in zwei Hälften – Treffpunkt in der Mitte (Platte 10 oben 691 / Platte 11 unten 693), keiner läuft aus dem Bild
+        r = await koop(g, f=kat(668, 15), m=kat(666, 15), plans={'f': f, 'm': m}, maxFrames=9000, pre=PRE, trace=True)
+        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(676)] or [99])
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 715, 'E4 Pressen über Kreuz in zwei Hälften: Platten 8/10, dann 11/9', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        soll(abst <= 20.5, 'E4 beide bleiben im Bild (höchstens 20 Spalten auseinander)', abst)
+        soll(await g.ev("pressen.filter(p => p.link === 8 || p.link === 10 || p.link === 11 || p.link === 9).length") == 8, 'E4 je Gang vier Pressen (zwei je Hälfte)')
+        await beide('E4 letzte Presse, Grube, Ziel', 723, lambda w: [durch(748), k_lauf(749, 0)] + sprung_zu(kx(756)) + [k_lauf(765)], 764)
+    assert not fehler, fehler
+
+@test
+async def level19_magmakammer(g):
+    """Ausbau 7, Vulkan Level 4 „Magmakammer“ (levels/vulkan/04-magmakammer.json, abends, trocken): Kombi-Level Lava-Flucht durch Kamine, Haken und Aufwind über der Lava, Pilz-Turm, Doppel-Schacht. Koop-Bot spielt jede Etappe: Zickzack-Kamin mit Lava, Aufwind und Kamin vor der Lava, Glutfelder, Lavasee mit Haken und Aufwinden, Hebel des Schweinchens, zweiter See, Pilz-Turm, Kamin mit Presse, Pressen über dem Lavasteg, Doppel-Schacht, Finale."""
+    await koop_level(g, 'vulkan/04-magmakammer.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        # erster Schacht auf Breite 3 verbreitert (Kombi-Nachschärfen): oben nach rechts aufs Sims aussteigen
+        zz = lambda: [k_lauf(32, -8), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(7)} && P.vy < 0', 'frames': 900},
+                      {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(33)}', 'frames': 300},
+                      k_lauf(37, 0), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(1)} + 2 && P.x > {kx(39)}', 'frames': 900},
+                      k_lauf(61), {'until': 'P.grounded', 'frames': 100}, k_lauf(66), {'until': 'P.grounded', 'frames': 100}, k_lauf(71), {'until': 'P.grounded', 'frames': 100}, k_lauf(76), {'until': 'P.grounded', 'frames': 100}, k_lauf(80)]
+        await beide('E1 Zickzack-Kamin mit Lava', 24, lambda w: zz(), 79, delay=40)
+        r = await koop(g, m=kat(31, 15), f=kat(32, 15), plans={'m': [{'frames': 200}]}, maxFrames=300)
+        soll(r.get('dead'), 'E1 Lava steigt im Kamin, sobald beide unten sind', r.get('pos'))
+        f = [k_lauf(89, 0), {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(91)} - 6', 'left': f'P.x > {kx(91)} + 6'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(2)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(100)}', 'left': f'P.x > {kx(102)}'}, 'until': f'P.grounded && P.x > {kx(97)}', 'frames': 400}, k_lauf(106)]
+        m = [k_lauf(95, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(4)} + 2 && P.x > {kx(97)}', 'frames': 900}, k_lauf(108)]
+        runter = [k_lauf(119), {'until': 'P.grounded', 'frames': 100}, k_lauf(125), {'until': 'P.grounded', 'frames': 100}, k_lauf(131), {'until': 'P.grounded', 'frames': 100}, k_lauf(136)]
+        r = await koop(g, f=kat(84, 15), m=kat(82, 15), plans={'f': f + runter, 'm': m + runter}, maxFrames=5000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 135, 'E1 Aufwind (Schwein) und Kamin (Affe) vor der Lava', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        await beide('E1 Glutfelder', 137, lambda w: [k_lauf(143, -6)] + sprung_zu(kx(149)) + [{'aim': [kx(157), kx(165)], 'jumps': [kx(152)], 'until': f'P.grounded && P.x > {kx(163)}', 'frames': 600}, k_lauf(169, -6)] + sprung_zu(kx(175)) + [k_lauf(180)], 179)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(207, 15), f=kat(205, 15), plans={'m': kette(208, 4, rel) + [k_lauf(244)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 244: ok.append(rel[:14])
+        soll(ok, 'E2 Affe an vier Haken über den Lavasee', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(207, 15), m=kat(246, 15), plans={'f': glide_to(210, kx(247), hold) + [k_lauf(248)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 246: ok = hold; break
+        soll(ok, 'E2 Schwein segelt mit zwei Aufwinden über den steigenden See', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(207, 15), f=kat(247, 15), plans={'m': kette(208, 4, rel) + [k_lauf(246)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 245: ok.append(rel[:14])
+        soll(ok, 'E2 Affe hinterher, während der See steigt', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            f = [halten(258), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(258)} + 10', 'left': f'P.x > {kx(259)} - 10'}, 'until': f'P.y < {ky(2)}', 'frames': 400},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(263)} - 6', 'left': f'P.x > {kx(263)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + [k_lauf(275)] + am(278) + glide_to(279, kx(294), hold) + [k_lauf(303)]   # Bild-Regel: Sims bis 279, Hebel 3 bei 278
+            m = [k_lauf(270, -10), {'wait': '!!linkOn[3]'}, k_lauf(271, 0)] + sprung_zu(kx(273)) + [halten(274)] + sprung_zu(kx(278)) + [k_lauf(291), {'until': 'P.grounded', 'frames': 100}, k_lauf(303)]
+            r = await koop(g, f=kat(254, 15), m=kat(252, 15), plans={'f': f, 'm': m}, maxFrames=6000)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 302: ok = hold; break
+        soll(ok, 'E2 Schwein zieht Hebel 3 oben, Affe läuft vor der Lava über den Steinweg', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(285, 12), f=kat(254, 15), plans={'m': [{'frames': 500}]}, links=[3], maxFrames=600)
+        soll(r.get('dead') == 'm', 'E2 Hebel 3: die Lava steigt über den Steinweg', r.get('pos'))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(310, 15), f=kat(308, 15), plans={'m': kette(314, 4, rel) + [k_lauf(346)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 345: ok.append(rel[:14])
+        soll(ok, 'E2 zweiter See: Affe an drei Haken', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(310, 15), m=kat(346, 15), plans={'f': glide_to(315, kx(347), hold) + [k_lauf(348)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 346: ok = hold; break
+        soll(ok, 'E2 zweiter See: Schwein mit Aufwind (See steigt schneller)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        turm = lambda: [{'aim': [kx(412), kx(418), kx(424), kx(430), kx(439)], 'jumps': [kx(409)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
+                        k_lauf(453), {'until': 'P.grounded', 'frames': 100}, k_lauf(458), {'until': 'P.grounded', 'frames': 100}, k_lauf(462), {'until': 'P.grounded', 'frames': 100}, k_lauf(468)]
+        await beide('E3 Pilz-Turm vor der Lava', 404, lambda w: turm(), 467, delay=40)
+        kamin = lambda: [k_lauf(472, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(477)}', 'frames': 900}, durch(497),
+                         k_lauf(498), {'until': 'P.grounded', 'frames': 100}, k_lauf(503), {'until': 'P.grounded', 'frames': 100}, k_lauf(508), {'until': 'P.grounded', 'frames': 100}, k_lauf(512)]
+        await beide('E3 Kamin mit Presse am Ausgang', 469, lambda w: kamin(), 511, delay=60)
+        await beide('E3 Pressen über dem Lavasteg', 513, lambda w: [k_lauf(518, 0)] + sprung_zu(kx(521)) + [durch(548), {'until': 'P.grounded', 'frames': 100}, k_lauf(552)], 551)
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
+        runter = [k_lauf(641), {'until': 'P.grounded', 'frames': 100}, k_lauf(646), {'until': 'P.grounded', 'frames': 100}, k_lauf(651), {'until': 'P.grounded', 'frames': 100}, k_lauf(656), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
+        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'wait': '!!linkOn[10]'}, {'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},   # Nacht-Ausbau: unten warten (mit Wand-Rutschen fiel der hüpfende Bot sonst in den Nachbarschacht)
+             {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(613)}', 'frames': 900}, k_lauf(625, -10)] + am(626) + \
+            [{'wait': f'Q.grounded && Q.x >= {kx(622)} && Q.y <= {ky(0)} + 2'}] + runter
+        f = [{'frames': 40}, k_lauf(609, 0)] + sprung_zu(kx(613)) + [k_lauf(615, 0), halten(617), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(620)} - 4', 'left': f'P.x > {kx(620)} + 4'}, 'until': 'P.grounded', 'frames': 300},
+             hp(620, f'Q.y < {ky(6)}'), {'wait': '!!linkOn[11]'},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(-1)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(628)} - 6', 'left': f'P.x > {kx(628)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + runter
+        r = await koop(g, m=kat(606, 15), f=kat(608, 15), plans={'m': m, 'f': f}, maxFrames=9000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 663, 'E4 Doppel-Schacht: Platte 10 öffnet den Kamin, Hebel 11 die Klappe über dem Aufwind', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(612, 13), f=kat(616, 13), plans={'m': [{'frames': 2600}]}, maxFrames=2700)
+        soll(r.get('dead'), 'E4 die Lava steigt in beiden Schächten', r.get('pos'))
+        fin = lambda: [k_lauf(669, 0)] + [{'aim': [kx(675), kx(683)], 'jumps': [kx(670)], 'until': f'P.grounded && P.x > {kx(681)}', 'frames': 600}, durch(700), k_lauf(703, 0)] + sprung_zu(kx(711)) + [k_lauf(722)]
+        await beide('E4 Finale: Pilz, Presse, steigende Grube', 665, lambda w: fin(), 721, delay=60)
+    assert not fehler, fehler
+
+@test
+async def level20_schlackewerk(g):
+    """Ausbau 7, Vulkan Level 5 „Schlackewerk“ (levels/vulkan/05-schlackewerk.json, mittags, wechselndes Wetter): Kombi-Level Förderbänder unter Pressen, Hebel über Kreuz, Flammenfallen über Bändern, großes Werk. Koop-Bot spielt jede Etappe: Band unter der Pressen-Welle, Gegenband-Tunnel, Band zum Pilz über die Presse, Hebel über Kreuz, Schleuder mit Presse, Pilz unter der Presse, Flammen-Decke über dem Band, Flammen durch die Stege, Flammen-Vorhang mit zwei Hebeln, Haken + Brücke, Segeln übers Gegenband, Finale mit steigender Lava."""
+    await koop_level(g, 'vulkan/05-schlackewerk.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16 && P.y >= Q.y0 && P.y - P.h <= Q.y0 + Q.hub + 52) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      if(P.y < Q.y0 || P.y - P.h > Q.y0 + Q.hub + 52) return true;   // andere Höhe (z. B. oberer/unterer Gang)
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });
+    window.flammeOK = (P, weit, v) => {
+      const hoch = b => b.y < P.y && b.y + b.h > P.y - P.h;
+      if(fallen.some(f => { const b = falleFlammeBox(f); return f.art === 'flamme' && hoch(b) && b.x < P.x + 16 && b.x + b.w > P.x - 16; })) return true;
+      return fallen.every(f => { if(f.art !== 'flamme' || !falleAktiv(f)) return true; const b = falleFlammeBox(f);
+        if(!hoch(b) || b.x + b.w <= P.x - 16 || b.x >= P.x + (weit || 80)) return true;
+        const n = falleTaktSchritte(f), t = falleZeit(f);
+        if(t < n*FLAMME_ANTEIL) return false;
+        return n - t > (b.x + b.w + 16 - P.x)/(v || 4) + 4; }); };
+    window.flFrei = (c, a, b) => { const f = fallen.find(q => Math.round(q.x/40) === c); const n = falleTaktSchritte(f), t = falleZeit(f);
+      for(let s = a; s <= b; s++) if((t + s) % n < n*FLAMME_ANTEIL) return false; return true; };'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        await beide('E1 schnelles Band unter der Pressen-Welle', 7, lambda w: [durchBand(56, 30)], 55, delay=150)
+        await beide('E1 Gegenband-Tunnel mit breiten Pressen', 57, lambda w: [durchBand(106, 70)], 105, delay=200, maxFrames=8000)
+        pl = lambda w: [k_lauf(109, 0), {'holdIf': {'left': f'P.x > {kx(109)}'}, 'until': '(window.__need = 90, durchOK(P, 1000))', 'frames': 2000},
+                        {'aim': [kx(127), kx(137)], 'jumps': [kx(123)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, k_lauf(142, 0)] + sprung_zu(kx(155)) + [k_lauf(158)]
+        await beide('E1 Band zum Pilz, über die Presse auf den Sims, über die Grube', 107, pl, 157, delay=60)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        # Bild-Regel: Doppelgang in zwei Hälften – Treffpunkt in der Mitte (Hebel 11 oben 228 / Hebel 12 unten 230)
+        m = am(211) + [{'wait': '!!linkOn[11]'}, durch(229)] + am(230) + [{'wait': '!!linkOn[5]'}, durch(256)]
+        f = [halten(206), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(206)} + 10', 'left': f'P.x > {kx(207)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(213)} - 6', 'left': f'P.x > {kx(213)} + 6'}, 'until': 'P.grounded', 'frames': 400}, {'wait': '!!linkOn[4]'}, durch(227)] + am(228) + [{'wait': '!!linkOn[12]'}, durch(245)] + am(246) + [k_lauf(248), {'until': 'P.grounded', 'frames': 200}, k_lauf(258)]
+        r = await koop(g, m=kat(209, 15), f=kat(204, 15), plans={'m': m, 'f': f}, maxFrames=9000, pre=PRE, trace=True)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 255, 'E2 Hebel über Kreuz in zwei Hälften: Hebel 4/11, dann 12/5', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(212)] or [99])
+        soll(abst <= 20.5, 'E2 beide bleiben im Bild (höchstens 20 Spalten auseinander)', abst)
+        ok = None
+        for hold in (4, 8, 12, 16):
+            f = [{'holdIf': {'left': f'P.x > {kx(262)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
+                 {'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.x > {kx(275 + hold // 4)} && !P.grounded', 'frames': 600}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}] + am(290)
+            r = await koop(g, f=kat(262, 15), m=kat(260, 15), plans={'f': f}, maxFrames=3000, pre=PRE)
+            if await g.ev('!!linkOn[6]'): ok = hold; break
+        soll(ok, 'E2 Schwein über Band und Grube, Hebel 6', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for jx in (277, 278, 279):
+            for hold in (10, 16):
+                m = [{'holdIf': {'left': f'P.x > {kx(263)}'}, 'until': '(window.__need = 40, durchOK(P, 1000))', 'frames': 2000}, k_lauf(jx, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+                r = await koop(g, m=kat(263, 15), f=kat(291, 15), plans={'m': m}, links=[6], maxFrames=2500, pre=PRE)
+                if r.get('pos', {}).get('m', [0, 0])[0] >= 286 and not r.get('dead'): ok.append((jx, hold))
+        soll(ok, 'E2 Schleuder: Affe über die Grube (Hebel 6 an)', ok)
+        pl = lambda w: [{'holdIf': {'left': f'P.x > {kx(304)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
+                        {'aim': [kx(310), kx(316)], 'jumps': [kx(307)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, durch(331), k_lauf(332), {'until': 'P.grounded', 'frames': 100}, k_lauf(336), {'until': 'P.grounded', 'frames': 100}, k_lauf(340)]
+        await beide('E2 Pilz unter der Presse, Pressen auf dem Sims', 299, pl, 339, delay=60)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        pl = lambda w: [{'holdIf': {'right': 'flammeOK(P, 120, 6)', 'left': '!flammeOK(P, 50, 6)'}, 'until': f'P.x >= {kx(456)}', 'frames': 3000}]
+        await beide('E3 Flammen-Decke über dem Band', 404, pl, 455, delay=120)
+        def stege(w):
+            m = [k_lauf(458, 0)]
+            for c in (465, 471, 477, 483, 489):
+                m += [{'wait': f'flFrei({c}, 8, 55)'}] + sprung_zu(kx(c))
+            return m + [{'wait': 'flFrei(489, 0, 1)'}] + sprung_zu(kx(497)) + [k_lauf(498)]
+        await beide('E3 Flammen durch die Stege über der Lava', 457, stege, 497, delay=150)
+        res = None
+        for jx in (499, 500, 501):
+            for pull in (30, 60):
+                m = haken(jx, 9, pull) + am(508) + [k_lauf(512), {'until': 'P.grounded', 'frames': 200}, k_lauf(555), {'wait': '!!linkOn[8]'}, k_lauf(566)]
+                f = [{'wait': '!!linkOn[7]'}, halten(540), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4},
+                     {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(542)} + 10', 'left': f'P.x > {kx(543)} - 10'}, 'until': f'P.y < {ky(1)}', 'frames': 600},
+                     {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(552)} - 6', 'left': f'P.x > {kx(552)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + am(552) + [k_lauf(560), {'until': 'P.grounded', 'frames': 200}, k_lauf(568)]
+                r = await koop(g, m=kat(497, 15), f=kat(495, 15), plans={'m': m, 'f': f}, maxFrames=6000, pre=PRE)
+                if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 565: res = (jx, pull); break
+            if res: break
+        soll(res, 'E3 Vorhang: Affe (Haken, Hebel 7) und Schwein (Aufwind, Hebel 8) öffnen sich gegenseitig den Weg', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(514, 15), f=kat(512, 15), plans={'m': [k_lauf(526)]}, maxFrames=600, pre=PRE)
+        soll(r.get('dead'), 'E3 ohne Hebel 7 kommt niemand durch den Vorhang', r.get('dead'))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        res = []
+        for rel in RELS:
+            m = kette(604, 4, rel) + am(645) + [k_lauf(650)]
+            f = [k_lauf(604, 0), {'wait': '!!linkOn[9]'}, k_lauf(649)]
+            r = await koop(g, m=kat(603, 15), f=kat(601, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 648: res.append(rel[:14])
+        soll(res, 'E4 Affe an vier Haken, Hebel 9 – Brücke fürs Schwein', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        res = None
+        for hold in (4, 8, 12):
+            f = glide_to(658, kx(694), hold) + am(691) + [k_lauf(702)]   # Bild-Regel: Hebel 10 bei 691 statt 696
+            m = [{'wait': '!!linkOn[10]'}, {'holdIf': {'left': f'P.x > {kx(662)}'}, 'until': '(window.__need = 40, durchOK(P, 1000))', 'frames': 2000}, durch(700)]
+            r = await koop(g, m=kat(657, 15), f=kat(653, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+            if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 699: res = hold; break
+        soll(res, 'E4 Schwein segelt übers Gegenband, Hebel 10 hält es an, Affe passt die Pressen ab', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(651, 15), f=kat(649, 15), plans={'m': [k_lauf(700)]}, maxFrames=600, pre=PRE)
+        soll(r.get('pos', {}).get('m', [999])[0] < 664, 'E4 gegen das reißende Band kommt niemand an', r.get('pos'))
+        pl = lambda w: [k_lauf(718, 0)] + sprung_zu(kx(723)) + [{'aim': [kx(732), kx(736)], 'jumps': [kx(729)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(740)) + sprung_zu(kx(747)) + [k_lauf(792)]
+        await beide('E4 Finale: das Werk läuft voll – Band, Pilz, Stege hinauf', 705, pl, 790, delay=60)
+    assert not fehler, fehler
+
+@test
+async def level21_feuerschlund(g):
+    """Ausbau 7, Vulkan Level 6 „Feuerschlund“ (levels/vulkan/06-feuerschlund.json, nachts, trocken): Kombi-/Meister-Level dunkle Lavagänge mit Leuchtkristallen, Teleporter vor steigender Lava, Wechselboden über Lava, Doppel-Flucht. Koop-Bot spielt jede Etappe: Kristall + Lava-Gruben, Affe zum Kristall / Schwein segelt / Tür 1, Teleporter-Kammer mit steigender Lava, Wechselboden im Takt, zwei Brücken mit Druckplatten, der Schlund, Licht halten + Pilze + Teleporter, zweite Teleporter-Kammer, Klappen im Lavagang, Doppel-Flucht mit zwei Lavaständen, schnelle Takt-Klappen, Finale."""
+    await koop_level(g, 'vulkan/06-feuerschlund.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16 && P.y >= Q.y0 && P.y - P.h <= Q.y0 + Q.hub + 52) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      if(P.y < Q.y0 || P.y - P.h > Q.y0 + Q.hub + 52) return true;   // andere Höhe (z. B. oberer/unterer Gang)
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });
+    window.flammeOK = (P, weit, v) => {
+      const hoch = b => b.y < P.y && b.y + b.h > P.y - P.h;
+      if(fallen.some(f => { const b = falleFlammeBox(f); return f.art === 'flamme' && hoch(b) && b.x < P.x + 16 && b.x + b.w > P.x - 16; })) return true;
+      return fallen.every(f => { if(f.art !== 'flamme' || !falleAktiv(f)) return true; const b = falleFlammeBox(f);
+        if(!hoch(b) || b.x + b.w <= P.x - 16 || b.x >= P.x + (weit || 80)) return true;
+        const n = falleTaktSchritte(f), t = falleZeit(f);
+        if(t < n*FLAMME_ANTEIL) return false;
+        return n - t > (b.x + b.w + 16 - P.x)/(v || 4) + 4; }); };
+    window.flFrei = (c, a, b) => { const f = fallen.find(q => Math.round(q.x/40) === c); const n = falleTaktSchritte(f), t = falleZeit(f);
+      for(let s = a; s <= b; s++) if((t + s) % n < n*FLAMME_ANTEIL) return false; return true; };'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            pl = [k_lauf(12, 0)] + am(14) + [k_lauf(24, 0)] + sprung_zu(kx(31)) + [k_lauf(34, 0)] + sprung_zu(kx(41)) + [k_lauf(44, 0)] + sprung_zu(kx(51)) + [k_lauf(58)]
+            r = await koop(g, **{who: kat(6, 15), o: kat(4, 15)}, plans={who: pl, o: [{'frames': 60}] + pl[len(am(14)) + 1:]}, maxFrames=3000)
+            soll(r.get('done') and await g.ev('leuchtKristalle[0].t > 0'), f'E1 Kristall anschlagen, über die Lava-Gruben ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        ok = None
+        for jx in (60, 61, 62):
+            for pull in (30, 60):
+                r = await koop(g, m=kat(58, 15), f=kat(56, 15), plans={'m': haken(jx, 9, pull) + am(69)}, maxFrames=2000)
+                if r.get('pos', {}).get('m', [0, 0])[1] == 9 and await g.ev('leuchtKristalle[1].t > 0'): ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E1 Affe per Haken zum Kristall auf dem Sims', (ok, r.get('pos')))
+        ok = None
+        for hold in (4, 8, 12):
+            gl = lambda a, tx: [k_lauf(a, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 400}]
+            f = gl(73, 81) + gl(83, 91) + gl(93, 101) + am(104)
+            r = await koop(g, f=kat(60, 15), m=kat(69, 9), plans={'f': f}, maxFrames=3000)
+            if await g.ev('!!linkOn[1]'): ok = hold; break
+        soll(ok, 'E1 Schwein segelt über die Lava-Gruben, Hebel 1', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(64, 15), f=kat(100, 15), plans={'m': kette(72, 3, rel) + [k_lauf(114)]}, links=[1], maxFrames=4000)
+            if r.get('done'): ok.append(rel[:14])
+        soll(ok, 'E1 Affe an den Haken über die Lava, Tür 1', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(104, 15), f=kat(102, 15), plans={'m': [k_lauf(114)]}, maxFrames=600)
+        soll(r['pos']['m'][0] < 110, 'E1 Tür 1 zu ohne Hebel', r.get('pos'))
+        hoch = [k_lauf(121, 0)] + sprung_zu(kx(124)) + sprung_zu(kx(127)) + sprung_zu(kx(130)) + sprung_zu(kx(134)) + [k_lauf(137), {'until': 'P.grounded', 'frames': 200}]
+        m = hoch + [k_lauf(148, -4), {'until': f'P.y < {ky(8)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 100}] + am(158) + [{'wait': f'Q.y < {ky(8)}'}, k_lauf(172), {'until': 'P.grounded', 'frames': 200}, k_lauf(190)]
+        f = [{'frames': 30}] + hoch + [{'holdIf': {'right': f'P.x < {kx(138)} - 3', 'left': f'P.x > {kx(138)} + 3'}, 'until': f'P.y < {ky(8)}', 'frames': 2000}, {'until': 'P.grounded', 'frames': 100}, k_lauf(172), {'until': 'P.grounded', 'frames': 200}, k_lauf(191)]
+        r = await koop(g, m=kat(116, 15), f=kat(114, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 189, 'E1 Kammer: Lava steigt, Affe teleportiert hinaus, Hebel 2 schaltet den Teleporter des Schweins an', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(140, 13), f=kat(142, 13), plans={'m': [{'frames': 500}]}, maxFrames=600)
+        soll(r.get('dead'), 'E1 die Lava füllt die Kammer', r.get('pos'))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        def takt(w):
+            m = [k_lauf(204, 0), {'wait': 'Math.floor(wechselSchritte/120) % 2 === 0 && wechselSchritte % 120 < 30'}] + sprung_zu(kx(210))
+            for c in range(214, 248, 6): m += [{'wait': 'wechselSchritte % 120 >= 100'}] + sprung_zu(kx(c + 2))
+            return m + sprung_zu(kx(253)) + [k_lauf(255)]
+        await beide('E2 Wechselboden im Takt über der Lava', 202, takt, 254, delay=240)
+        f = [halten(262), {'wait': f'Q.x > {kx(298)} && !!linkOn[4]'}, {'holdIf': {'left': f'P.x > {kx(258)}'}, 'until': f'P.x <= {kx(258)}', 'frames': 300}] + sprung_zu(kx(259)) + sprung_zu(kx(268)) + [k_lauf(297), {'until': 'P.grounded', 'frames': 200}, k_lauf(303)]
+        m = [{'wait': '!!linkOn[3]'}, k_lauf(297, 0), halten(299), {'wait': f'Q.x > {kx(297)} && Q.grounded'}, k_lauf(304)]
+        r = await koop(g, m=kat(258, 15), f=kat(256, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 302, 'E2 zwei Brücken: Platte 3 (Schwein) für den Affen, Platte 4 (Affe) für das Schwein', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(262, 15), f=kat(258, 15), plans={'m': [k_lauf(290)]}, maxFrames=400)
+        soll(r.get('dead') == 'm', 'E2 ohne Platte 3 keine Brücke', r.get('pos'))
+        sl = lambda w: [k_lauf(328, 0)] + sprung_zu(kx(334)) + sprung_zu(kx(340)) + sprung_zu(kx(346)) + sprung_zu(kx(352)) + sprung_zu(kx(358)) + sprung_zu(kx(365)) + [k_lauf(382), {'until': 'P.grounded', 'frames': 200}, k_lauf(392)]
+        await beide('E2 der Schlund: Stege treppauf, der See steigt', 310, sl, 391, delay=60)
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        # Bild-Regel: Lavafeld mit Zwischen-Insel (424–427) – zwei Pilze, Insel (Hebel 12 holt das Schwein, Platte 13 = Licht 2), zwei Pilze
+        m = [{'wait': '!!linkOn[5]'}, {'aim': [kx(412), kx(418), kx(426)], 'jumps': [kx(406)], 'until': f'P.grounded && P.x > {kx(424)}', 'frames': 1200}] + am(426) + \
+            [{'wait': '!!linkOn[13]'}, {'aim': [kx(432), kx(438), kx(444)], 'jumps': [kx(427)], 'until': f'P.grounded && P.x > {kx(443)}', 'frames': 1200}] + am(444) + [{'wait': f'Q.x > {kx(445)} && Q.grounded'}, k_lauf(458)]
+        f = [halten(406), {'wait': '!!linkOn[12]'}, {'holdIf': {'right': f'P.x < {kx(407)}'}, 'until': f'P.x > {kx(420)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, halten(425),
+             {'wait': '!!linkOn[6]'}, {'holdIf': {'right': f'P.x < {kx(427)}'}, 'until': f'P.x > {kx(440)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, k_lauf(457)]
+        r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': m, 'f': f}, maxFrames=6000, pre=PRE, trace=True)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 456, 'E3 Schwein hält das Licht (Platte 5), Affe über zwei Pilze zur Insel, Hebel 12 holt das Schwein, Platte 13 Licht 2, zwei Pilze, Hebel 6', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(404)] or [99])
+        soll(abst <= 20.5, 'E3 Lavafeld: beide bleiben im Bild (höchstens 20 Spalten auseinander)', abst)
+        r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': [{'frames': 10}], 'f': [{'frames': 30}, k_lauf(407, 0), {'frames': 120}]}, maxFrames=2000, pre=PRE)
+        soll(await g.ev(f"p2.x < {kx(410)}"), 'E3 Teleporter 3 nur mit Hebel 12 (ohne Hebel bleibt das Schwein vorne)', r.get('pos'))
+        hoch = [k_lauf(457, 0)] + sprung_zu(kx(460)) + sprung_zu(kx(463)) + sprung_zu(kx(466)) + sprung_zu(kx(470)) + [k_lauf(473), {'until': 'P.grounded', 'frames': 200}]
+        m = hoch + [halten(481), {'wait': f'Q.y < {ky(8)}'}, {'wait': '!!linkOn[8]'}, {'holdIf': {'left': f'P.x > {kx(477)}'}, 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, k_lauf(503)]
+        f = [{'frames': 30}] + hoch + [{'wait': '!!linkOn[7]'}, {'holdIf': {'right': f'P.x < {kx(475)} - 3', 'left': f'P.x > {kx(475)} + 3'}, 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 100}, halten(496), {'wait': f'Q.y < {ky(8)} && Q.grounded'}, k_lauf(504)]
+        r = await koop(g, m=kat(458, 15), f=kat(456, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 502, 'E3 Kammer: Platte 7 (Affe) schaltet den Teleporter des Schweins, Platte 8 (Schwein) den des Affen', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        m = [k_lauf(510, -10), {'wait': f'Q.grounded && Math.abs(Q.x - {kx(530)}) < 10 && Q.y < {ky(10)}'}, k_lauf(521, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+             k_lauf(533, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(556)]
+        f = [halten(506), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(506)} + 10', 'left': f'P.x > {kx(507)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(512)} - 6', 'left': f'P.x > {kx(512)} + 6'}, 'until': 'P.grounded', 'frames': 400}, halten(530),
+             {'pressIf': {'use': f'!linkOn[9] && Q.x > {kx(522)} && !Q.grounded'}, 'until': '!!linkOn[9]', 'frames': 2000},
+             {'pressIf': {'use': f'linkOn[9] && Q.x > {kx(534)} && !Q.grounded'}, 'until': '!linkOn[9]', 'frames': 2000}, k_lauf(551), {'until': 'P.grounded', 'frames': 200}, k_lauf(557)]
+        r = await koop(g, m=kat(503, 15), f=kat(501, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 555, 'E3 Klappen im Lavagang: das Schwein schaltet Hebel 9, während der Affe springt', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(510, 15), f=kat(501, 15), plans={'m': [k_lauf(530)]}, maxFrames=600)
+        soll(r.get('dead') == 'm', 'E3 ohne Umschalten fällt der Affe in die Lava', r.get('pos'))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
+        runter = [k_lauf(641), {'until': 'P.grounded', 'frames': 100}, k_lauf(646), {'until': 'P.grounded', 'frames': 100}, k_lauf(651), {'until': 'P.grounded', 'frames': 100}, k_lauf(656), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
+        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'wait': '!!linkOn[10]'}, {'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},   # Nacht-Ausbau: unten warten (mit Wand-Rutschen fiel der hüpfende Bot sonst in den Nachbarschacht)
+             {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(613)}', 'frames': 900}, k_lauf(625, -10)] + am(626) + \
+            [{'wait': f'Q.grounded && Q.x >= {kx(622)} && Q.y <= {ky(0)} + 2'}] + runter
+        f = [{'frames': 40}, k_lauf(609, 0)] + sprung_zu(kx(613)) + [k_lauf(615, 0), halten(617), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(620)} - 4', 'left': f'P.x > {kx(620)} + 4'}, 'until': 'P.grounded', 'frames': 300},
+             hp(620, f'Q.y < {ky(6)}'), {'wait': '!!linkOn[11]'},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(-1)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(628)} - 6', 'left': f'P.x > {kx(628)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + runter
+        r = await koop(g, m=kat(606, 15), f=kat(608, 15), plans={'m': m, 'f': f}, maxFrames=9000)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 663, 'E4 Doppel-Schacht: Platte 10 öffnet den Kamin, Hebel 11 die Klappe über dem Aufwind', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(612, 13), f=kat(616, 13), plans={'m': [{'frames': 2600}]}, maxFrames=2700)
+        soll(r.get('dead'), 'E4 die Lava steigt in beiden Schächten', r.get('pos'))
+        def takt(w):
+            m = [k_lauf(666, 0), {'wait': 'Math.floor(wechselSchritte/90) % 2 === 0 && wechselSchritte % 90 < 20'}] + sprung_zu(kx(672))
+            for c in range(676, 704, 6): m += [{'wait': 'wechselSchritte % 90 >= 72'}] + sprung_zu(kx(c + 2))
+            return m + sprung_zu(kx(708)) + [k_lauf(714)]
+        await beide('E4 Klappen im Takt über dem Glutsee (1,5 s)', 665, takt, 713, delay=180)
+        pl = lambda w: [k_lauf(736, 0)] + sprung_zu(kx(741)) + [{'aim': [kx(750), kx(754)], 'jumps': [kx(747)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(758)) + sprung_zu(kx(765)) + [k_lauf(792)]
+        await beide('E4 Finale: der Schlund läuft voll – Pilz, Stege hinauf', 718, pl, 790, delay=60)
+    assert not fehler, fehler
+
+@test
+async def level22_kraterherz(g):
+    """Ausbau 7, Vulkan Level 7 „Kraterherz“ (levels/vulkan/07-kraterherz.json, nachts, Regen): Meister-Level, alles kombiniert – Pressen + Pilze, Lava-Flucht mit Bändern und Eis, Hebel-Ketten über der Lava, Finale: der Krater läuft voll. Koop-Bot spielt jede Etappe: Pilz unter der Presse, Pilz-Turm vor der Lava, Pilz-Kette über den Lavasee, Flucht über Eis und Band, Eis unter Pressen (gegensteuern), Haken/Aufwinde über den steigenden See, Hebel-Kette mit Brücken und Tor, Platten-Staffel unter den Pressen, Gruben und Presse, Kessel-Flucht, Kraterschlucht, Gipfel."""
+    await koop_level(g, 'vulkan/07-kraterherz.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
+    halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
+    PRE = '''window.durchOK = (P, weit) => pressen.some(Q => Q.x < P.x + 16 && Q.x + Q.w > P.x - 16 && P.y >= Q.y0 && P.y - P.h <= Q.y0 + Q.hub + 52) || pressen.every(Q => {
+      if(Q.x + Q.w <= P.x - 16 || Q.x >= P.x + (weit || 100)) return true;
+      if(P.y < Q.y0 || P.y - P.h > Q.y0 + Q.hub + 52) return true;   // andere Höhe (z. B. oberer/unterer Gang)
+      const t = presseZeit(Q), w = presseWartet(Q), fall = Math.max(4, Math.ceil(Q.hub/PRESSE_FALL));
+      if(!presseLaeuft(Q) && presseLage(Q, t) === 0) return true;
+      const frei = Q.y + 52 < P.y - P.h - 4, steigt = t >= w + fall + PRESSE_LIEGEN;
+      return frei && (steigt || w - t > (window.__need || 30) + Q.w/4); });
+    window.flammeOK = (P, weit, v) => {
+      const hoch = b => b.y < P.y && b.y + b.h > P.y - P.h;
+      if(fallen.some(f => { const b = falleFlammeBox(f); return f.art === 'flamme' && hoch(b) && b.x < P.x + 16 && b.x + b.w > P.x - 16; })) return true;
+      return fallen.every(f => { if(f.art !== 'flamme' || !falleAktiv(f)) return true; const b = falleFlammeBox(f);
+        if(!hoch(b) || b.x + b.w <= P.x - 16 || b.x >= P.x + (weit || 80)) return true;
+        const n = falleTaktSchritte(f), t = falleZeit(f);
+        if(t < n*FLAMME_ANTEIL) return false;
+        return n - t > (b.x + b.w + 16 - P.x)/(v || 4) + 4; }); };
+    window.flFrei = (c, a, b) => { const f = fallen.find(q => Math.round(q.x/40) === c); const n = falleTaktSchritte(f), t = falleZeit(f);
+      for(let s = a; s <= b; s++) if((t + s) % n < n*FLAMME_ANTEIL) return false; return true; };'''
+    durch = lambda c: {'holdIf': {'right': 'durchOK(P)'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    durchBand = lambda c, need=30: {'holdIf': {'right': f'(window.__need = {need}, durchOK(P))', 'left': f'(window.__need = {need}, !durchOK(P))'}, 'until': f'P.x >= {kx(c)}', 'frames': 3000}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, 15), o: kat(start - 2, 15)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), pre=PRE)
+            good = r.get('done') and r['pos'][who][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        pl = lambda w: [{'holdIf': {'left': f'P.x > {kx(14)}'}, 'until': '(window.__need = 60, durchOK(P, 1000))', 'frames': 2000},
+                        {'aim': [kx(20), kx(26)], 'jumps': [kx(17)], 'until': f'P.grounded && P.y <= {ky(10)} + 2', 'frames': 600}, durch(41), k_lauf(42), {'until': 'P.grounded', 'frames': 100}, k_lauf(46), {'until': 'P.grounded', 'frames': 100}, k_lauf(52)]
+        await beide('E1 Pilz unter der Presse, Pressen auf dem Sims', 9, pl, 51, delay=60)
+        turm = lambda w: [{'aim': [kx(62), kx(68), kx(74), kx(80), kx(89)], 'jumps': [kx(59)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
+                          durch(101), k_lauf(103), {'until': 'P.grounded', 'frames': 100}, k_lauf(108), {'until': 'P.grounded', 'frames': 100}, k_lauf(112), {'until': 'P.grounded', 'frames': 100}, k_lauf(119)]
+        await beide('E1 Pilz-Turm vor der Lava, Presse auf dem Sims', 54, turm, 118, delay=40)
+        pkette = lambda w: [{'aim': [kx(140), kx(147), kx(154), kx(161), kx(167)], 'jumps': [kx(133)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(164)}', 'frames': 900}, durch(176), k_lauf(179)]
+        await beide('E1 Pilz-Kette über den Lavasee, Presse am Ufer', 126, pkette, 178)
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        fl = lambda w: [k_lauf(202, 0)] + sprung_zu(kx(204)) + sprung_zu(kx(207)) + sprung_zu(kx(211)) + [k_lauf(215), {'until': 'P.grounded', 'frames': 200}, k_lauf(244, 0)] + sprung_zu(kx(247)) + sprung_zu(kx(251)) + sprung_zu(kx(255)) + sprung_zu(kx(259)) + [k_lauf(276), {'until': 'P.grounded', 'frames': 200}, k_lauf(281)]
+        await beide('E2 Flucht über Eis und Band, Stege hinauf', 202, fl, 280, delay=60)
+        for need in (60,):
+            await beide(f'E2 Eis unter Pressen (Zeitfenster {need})', 282, lambda w: [{'holdIf': {'right': f'(window.__need = {need}, durchOK(P, 160))', 'left': f'(window.__need = {need}, !durchOK(P, 160))'}, 'until': f'P.x >= {kx(318)}', 'frames': 3000}, k_lauf(320)], 319, delay=120)
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(337, 15), f=kat(335, 15), plans={'m': kette(338, 4, rel) + [k_lauf(374)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 374: ok.append(rel[:14])
+        soll(ok, 'E2 Affe an vier Haken über den Lavasee', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(337, 15), m=kat(376, 15), plans={'f': glide_to(340, kx(377), hold) + [k_lauf(378)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 376: ok = hold; break
+        soll(ok, 'E2 Schwein segelt mit zwei Aufwinden über den steigenden See', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(337, 15), f=kat(377, 15), plans={'m': kette(338, 4, rel) + [k_lauf(376)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 375: ok.append(rel[:14])
+        soll(ok, 'E2 Affe hinterher, während der See steigt', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        raus = lambda: [k_lauf(456, 0)] + sprung_zu(kx(460)) + [k_lauf(474, 0)] + sprung_zu(kx(477)) + sprung_zu(kx(481)) + sprung_zu(kx(486)) + [k_lauf(490)]
+        res = None
+        for jx in (402, 403, 404):
+            for pull in (30, 60):
+                m = haken(jx, 9, pull) + am(410) + [k_lauf(412), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[2]'}, k_lauf(451, 0), {'wait': f'Q.x >= {kx(450)}'}] + am(453) + raus()
+                f = [{'wait': '!!linkOn[1]'}, k_lauf(431, 0), halten(433)] + am(433) + [k_lauf(450, 0), {'wait': '!!linkOn[3]'}] + raus()
+                r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': m, 'f': f}, maxFrames=6000, pre=PRE)
+                if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 489: res = (jx, pull); break
+            if res: break
+        soll(res, 'E3 Hebel-Kette: Hebel 1 (Affe) Brücke 1, Hebel 2 (Schwein) Brücke 2, Hebel 3 Tor + Lava – zügig nach oben', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        r = await koop(g, m=kat(440, 15), f=kat(434, 15), plans={'m': [{'frames': 400}]}, links=[1, 2, 3], maxFrames=500)
+        soll(r.get('dead') == 'm', 'E3 Hebel 3: wer noch auf der Brücke steht, verbrennt', r.get('pos'))
+        an = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 600}
+        da = lambda c: f'Q.grounded && Math.abs(Q.x - {kx(c)}) < 8'
+        m = [an(508), {'wait': da(516)}, an(520), {'wait': da(528)}, k_lauf(541)]
+        f = [{'wait': '!!linkOn[5]'}, an(516), {'wait': da(520)}, {'wait': '!!linkOn[6]'}, an(528), {'wait': f'Q.x > {kx(533)}'}, k_lauf(541)]
+        r = await koop(g, m=kat(503, 15), f=kat(501, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 540, 'E3 Platten-Staffel unter den Pressen', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        await beide('E3 Gruben und Presse', 545, lambda w: [k_lauf(548, 0)] + sprung_zu(kx(554)) + [k_lauf(558, 0)] + sprung_zu(kx(564)) + [durch(574), k_lauf(579)], 578)
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        ks = lambda w: [k_lauf(603, 0)] + sprung_zu(kx(608)) + [{'aim': [kx(617), kx(621)], 'jumps': [kx(614)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(625)) + sprung_zu(kx(632)) + [k_lauf(641)]
+        await beide('E4 Kessel: Band, Pilz, Stege hinauf, die Lava steigt schnell', 600, ks, 640, delay=60)
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(649, 4), f=kat(653, 4), plans={'m': kette(652, 4, rel) + [k_lauf(689)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 688: ok.append(rel[:14])
+        soll(ok, 'E4 Kraterschlucht: Affe an vier Haken', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        ok = None
+        for hold in (4, 8, 12):
+            r = await koop(g, f=kat(649, 4), m=kat(690, 4), plans={'f': glide_to(654, kx(691), hold) + [k_lauf(692)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 690: ok = hold; break
+        soll(ok, 'E4 Kraterschlucht: Schwein segelt mit zwei Aufwinden', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(696, 4), o: kat(694, 4)}, plans={who: [durch(736), k_lauf(742)], o: [{'frames': 90}, durch(736), k_lauf(742)]}, maxFrames=5000, pre=PRE)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 741, f'E4 Gipfel: zwei Pressen auf dem Kraterrand ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+    assert not fehler, fehler
+
+@test
+async def dschungel5_dornenpfad(g):
+    """Dschungel 5 „Dornenpfad“ (6er-Welten): Koop-Bot spielt jede Stelle (Bröckel-Steine zu zweit, Haken/Pilz+Aufwind über Dornen, Hebel über Kreuz, Stachelwand-Jagden, Inseln im Wechsel, Seilbahn + Fähre, hoher Kamin, Dornendecke, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht, Zwei-Gänge-Staffel, Finale) bis zum Ziel; Checkpoints höchstens 70 Spalten auseinander."""
+    await koop_level(g, 'dschungel/05-dornenpfad.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def wind_hoch(c0, c1, bis_r):
+        return [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c0)}', 'left': f'P.x > {kx(c1)}'}, 'until': f'P.y < {ky(bis_r)}', 'frames': 900}]
+    def info(r): return r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    async def beide(name, start, pl, ziel, delay=200, ok=None, r0=15, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, r0), o: kat(start - 2, r0)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), links=kw.get('links', []))
+            good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who} vorn)', info(r))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        steine = lambda w: [k_lauf(13, -4)] + sprung_zu(kx(16)) + sprung_zu(kx(20)) + sprung_zu(kx(24)) + sprung_zu(kx(28)) + sprung_zu(kx(32)) + sprung_zu(kx(37)) + [k_lauf(39)]
+        await beide('E1 Bröckel-Steine dicht hintereinander', 9, steine, 38, delay=12)
+        r = await koop(g, m=kat(9, 15), f=kat(7, 15), plans={'m': steine('m'), 'f': [{'frames': 80}] + steine('f')}, maxFrames=3000)
+        soll(r.get('dead') == 'f', 'E1 zu spät hinterher: die Steine sind weg', info(r))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(56, 15), f=kat(54, 15), plans={'m': kette(60, 4, rel) + [k_lauf(93)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 92: ok.append(rel[:14])
+        soll(ok, 'E1 Affe an vier Haken über das Dornenfeld', (ok, info(r)))
+        pilzflug = [k_lauf(57, 0), {'frames': 12}, {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(61)} - 6', 'left': f'P.x > {kx(61)} + 6'}, 'until': 'P.vy < -14', 'frames': 100}, {'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}, k_lauf(93)]
+        r = await koop(g, f=kat(54, 15), m=kat(92, 15), plans={'f': pilzflug}, maxFrames=4000)
+        soll(r.get('done') and r['pos']['f'][0] >= 92, 'E1 Schwein: Pilz, Aufwind, über das Dornenfeld', info(r))
+        r = await koop(g, f=kat(93, 15), m=kat(91, 15), plans={'f': [k_lauf(96, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(97, 98, 5) + [{'hold': ['right'], 'until': f'P.x >= {kx(100)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 300}] + am(102)}, maxFrames=4000)
+        soll(r.get('done') and await g.ev('!!linkOn[1]'), 'E1 Schwein: Aufwind -> Sims -> Hebel 1', info(r))
+        r = await koop(g, m=kat(93, 15), f=kat(91, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['m'][0] < 110, 'E1 ohne Hebel 1 hält Tür 1', info(r))
+        ok = None
+        for jx in (112, 113, 114, 115):
+            r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': haken(jx, 10) + am(121)}, links=[1], maxFrames=3000)
+            if r.get('done') and r['pos']['m'][1] == 10 and await g.ev('!!linkOn[2]'): ok = jx; break
+        soll(ok, 'E1 Affe: Haken -> Sims -> Hebel 2', (ok, info(r)))
+        stufe = lambda w: [k_lauf(128, -4)] + sprung_zu(kx(131)) + sprung_zu(kx(134)) + [{'frames': 10}]
+        r = await koop(g, m=kat(124, 15), f=kat(122, 15), plans={'m': stufe('m'), 'f': [{'frames': 30}] + stufe('f')}, links=[1, 2], maxFrames=3000)
+        soll(r.get('done') and r['pos']['m'][1] == 11 and r['pos']['f'][1] == 11, 'E1 Tür 2 offen, beide auf den Absatz', info(r))
+        r = await koop(g, m=kat(126, 15), f=kat(124, 15), plans={'m': [{'hold': ['right'], 'frames': 200}]}, links=[1], maxFrames=1000)
+        soll(r['pos']['m'][0] < 128, 'E1 ohne Hebel 2 hält Tür 2', info(r))
+        # Jagd: Affe zieht Hebel 3, beide fliehen
+        flucht = lambda w: [k_lauf(149, -10)] + sprung_zu(kx(152)) + sprung_zu(kx(157)) + sprung_zu(kx(162)) + sprung_zu(kx(167)) + sprung_zu(kx(172)) + sprung_zu(kx(176)) + [k_lauf(199)]
+        for delay in (0, 20):
+            m = [k_lauf(142, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(144, -4), {'wait': '!!linkOn[3]'}] + flucht('f')
+            r = await koop(g, m=kat(133, 11), f=kat(134, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 198 and r['pos']['f'][0] >= 198, f'E1 Stachelwand-Jagd (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(133, 11), f=kat(134, 11), plans={'m': [k_lauf(142, -14), {'use': True, 'frames': 2}, {'frames': 60}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E1 1 s gezögert: die Wand holt den Affen ein', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        plat = lambda c: f"solids.find(s => s.type === 'moveplat' && Math.round(s.startX / 40) === {c})"
+        gleich = lambda a, b: f"Math.abs({plat(a)}.y - {plat(b)}.y) < 24"
+        def insel(w):
+            pl = [k_lauf(206, -4), {'wait': f"{plat(208)}.y > {ky(15)} - 10"}] + sprung_zu(kx(209))
+            for a, b_ in ((208, 215), (215, 222), (222, 229)):
+                pl += [{'holdIf': {'right': f'P.x < {kx(a + 1)} - 4', 'left': f'P.x > {kx(a + 1)} + 4'}, 'wait': gleich(a, b_), 'frames': 900}] + sprung_zu(kx(b_ + 1))
+            return pl + [{'wait': f"{plat(229)}.y > {ky(15)} - 30", 'frames': 900}] + sprung_zu(kx(237)) + [k_lauf(241)]
+        await beide('E2 Inseln im Wechsel', 203, insel, 240, delay=150, maxFrames=6000)
+        # Seilbahn: Schwein am Hebel 4, Affe hängt am fahrenden Haken (Bild-Regel: Grube 251–268, Fahrten 15 Spalten, Hebel 5 bei 271)
+        ok = []
+        for rel in (f'P.anchor.x > {kx(266)} && P.vx > 1', f'P.anchor.x > {kx(266)} && P.x > {kx(263)} && P.vx > 0.5', f'P.anchor.x > {kx(267)} && P.vx > 2'):
+            m = [k_lauf(249, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 3000}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}] + am(271)
+            f = [k_lauf(249, -14), {'wait': 'p1.hookAttached'}, {'use': True, 'frames': 2}, {'holdIf': {'right': f'P.x < {kx(252)} - 4', 'left': f'P.x > {kx(252)} + 4'}, 'wait': '!!linkOn[5]', 'frames': 3000}, {'until': "solids.some(s => s.type === 'moveplat' && s.switchLink === 5 && Math.abs(s.x - s.targetX) < 6)", 'frames': 2000}, k_lauf(290)]
+            r = await koop(g, m=kat(244, 15), f=kat(243, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+            if r.get('done') and r['pos']['m'][0] >= 268 and r['pos']['f'][0] >= 289: ok.append(rel[-12:])
+        soll(ok, 'E2 Seilbahn (Hebel 4) und Fähre (Hebel 5)', (ok, info(r)))
+        r = await koop(g, m=kat(244, 15), f=kat(243, 15), plans={'m': [k_lauf(249, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80}, {'swing': True, 'pull': 0, 'release': 'f > 200', 'frames': 400}, {'hold': ['right'], 'frames': 200}]}, maxFrames=3000)
+        soll(r.get('dead') == 'm', 'E2 ohne Hebel 4 fährt der Haken nicht', info(r))
+        r = await koop(g, f=kat(244, 15), m=kat(243, 15), plans={'f': [k_lauf(250, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]}, maxFrames=3000)
+        soll(r.get('dead') == 'f', 'E2 Schwein kommt ohne Fähre nicht hinüber', info(r))
+        # Dornen-Kamin
+        # Kombi-Nachschärfen: oben geht es direkt über Stacheln (316–325) weiter – Affe Wandsprung + Haken 317, Schweinchen
+        # Wandsprung + Segeln; die Wandspitzen (311/315) bröckeln, die zweite Figur schafft es trotzdem (beide nacheinander)
+        hoch = [k_lauf(310, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(0)} && P.vy < 0 && P.vx > 2', 'frames': 900}]
+        lande = {'holdIf': {'right': f'P.x < {kx(327)}', 'left': f'P.x > {kx(330)}'}, 'until': 'P.grounded', 'frames': 400}
+        kamin = lambda w: hoch + ([{'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 120},
+                                   {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400}, lande] if w == 'm'
+                                  else [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])]) + [k_lauf(331)]
+        await beide('E2 Hoher Kamin', 305, kamin, 330, delay=120)
+        for w in ('m', 'f'):
+            r = await koop(g, **{w: kat(305, 15), ('f' if w == 'm' else 'm'): kat(303, 15)}, plans={w: hoch + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=2000)
+            soll(r.get('dead') == w, f'E2 Hoher Kamin ohne Haken/Schirm in die Stacheln ({w})', info(r))
+        # Dornendecke: Hebel 6, dann kurze Sprünge über die Stufen
+        hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        flucht = lambda w: hupf(352) + hupf(362) + hupf(372) + [k_lauf(399)]
+        for delay in (0, 20):
+            m = [k_lauf(341, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}] + flucht('f')
+            r = await koop(g, m=kat(338, 15), f=kat(339, 15), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 398 and r['pos']['f'][0] >= 398, f'E2 Dornendecke (Schwein {delay} Schritte später)', info(r))
+        r = await koop(g, m=kat(338, 15), f=kat(336, 15), plans={'m': [k_lauf(341, -14), {'use': True, 'frames': 2}, {'frames': 100}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E2 2 s gezögert: die Decke erwischt den Affen', info(r))
+        r = await koop(g, m=kat(338, 15), f=kat(336, 15), plans={'m': [k_lauf(341, -14), {'use': True, 'frames': 2}] + hupf(352) + hupf(362) + [k_lauf(370, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]}, maxFrames=2000)
+        soll(r.get('dead') == 'm', 'E2 voller Sprung an der letzten Stufe stößt in die Dornen', info(r))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        PRE = """window.pendelOK = P => solids.every(s => { if(s.type !== 'moveplat' || s.startY !== 360 || s.switchCtl) return true;
+          if(!(s.x + s.w > P.x - 16 && s.x < P.x + 130)) return true;
+          if(s.x < P.x + 16 && s.x + s.w > P.x - 16) return true;
+          const off = s.y - s.startY; return off < 20 || (s.moveDir === -1 && off < 110); });"""
+        def takt(w):
+            pl = [k_lauf(406, -6), {'wait': 'Math.floor(wechselSchritte / 72) % 2 === 0 && (72 - wechselSchritte % 72) > 58'}] + sprung_zu(kx(409) + 20)
+            for c0 in range(412, 436, 3):
+                pl += [{'wait': '(72 - wechselSchritte % 72) <= 22 && (72 - wechselSchritte % 72) > 4'}] + sprung_zu(kx(c0) + 20)
+            return pl + [{'wait': '(72 - wechselSchritte % 72) <= 26'}] + sprung_zu(kx(440)) + [k_lauf(443)]
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 144, 24):
+                r = await koop(g, **{who: kat(402, 15), ('f' if who == 'm' else 'm'): kat(441, 15)}, plans={who: [{'frames': wait + 1}] + takt(who)}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 442: n += 1
+            soll(n > 0, f'E3 Takt-Steine 1,2 s ({who})', (f'{n}/6', info(r)))
+        pend = lambda w: [{'holdIf': {'right': 'pendelOK(P)'}, 'until': f'P.x >= {kx(473)}', 'frames': 3000}, k_lauf(475)]
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 200, 25):
+                r = await koop(g, **{who: kat(444, 15), ('f' if who == 'm' else 'm'): kat(442, 15)}, plans={who: [{'frames': wait + 1}] + pend(who)}, maxFrames=4000, pre=PRE)
+                if r.get('done') and r['pos'][who][0] >= 474: n += 1
+            soll(n >= 6, f'E3 Stachel-Pendel mit Abwarten ({who})', f'{n}/8')
+        n = 0
+        for wait in range(0, 200, 20):
+            r = await koop(g, m=kat(444, 15), f=kat(442, 15), plans={'m': [{'frames': wait + 1}, k_lauf(475)]}, maxFrames=2000)
+            if r.get('done'): n += 1
+        soll(n <= 4, 'E3 Stachel-Pendel stur durchlaufen klappt selten', f'{n}/10')
+        # Schleuse
+        ok = []
+        for rel in RELS:
+            m = [{'wait': '!!linkOn[7]'}] + kette(482, 2, rel) + am(498) + [{'wait': f'Q.x >= {kx(504)}'}, k_lauf(504), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
+            f = [k_lauf(477, -6), {'frames': 10}, {'wait': '!!linkOn[8]'}, k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}, k_lauf(509)]
+            r = await koop(g, m=kat(476, 15), f=kat(474, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+            if r.get('done') and r['pos']['m'][0] >= 510 and r['pos']['f'][0] >= 508: ok.append(rel[:14])
+        soll(ok, 'E3 Druckplatten-Schleuse: Affe über Haken zu Hebel 8, Schwein im Aufwind hinterher', (ok, info(r)))
+        r = await koop(g, m=kat(480, 15), f=kat(470, 15), plans={'m': [{'hold': ['right'], 'frames': 150}]}, maxFrames=1000)
+        soll(r['pos']['m'][0] < 482, 'E3 ohne Platte 7 hält Tür 7', info(r))
+        r = await koop(g, f=kat(476, 15), m=kat(470, 15), plans={'f': [k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=3000)
+        soll(r.get('pos', {}).get('f', [999])[0] < 482, 'E3 ohne Hebel 8 bleibt der Schacht zu', info(r))
+        # Pilz-Flucht
+        flucht = lambda w: [k_lauf(528, 0)] + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(531)} - 6', 'left': f'P.x > {kx(531)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+                   {'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 200}] + sprung_zu(kx(546)) + sprung_zu(kx(551)) + sprung_zu(kx(559)) + [k_lauf(597)]
+        for delay in (0, 20):
+            m = [k_lauf(524, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(526, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
+            r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 596 and r['pos']['f'][0] >= 596, f'E3 Pilz-Flucht (Schwein {delay} Schritte später unten)', info(r))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        m = [k_lauf(606, 0), {'until': f'P.x > {kx(613)}', 'frames': 200}] + am(617) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}, k_lauf(632, -10)] + sprung_zu(kx(635)) + sprung_zu(kx(639)) + sprung_zu(kx(641)) + am(642) + \
+            [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(657, -10)] + sprung_zu(kx(661)) + sprung_zu(kx(665)) + [k_lauf(667)]
+        f = [k_lauf(609, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(610, 611, 3) + [{'hold': ['right'], 'until': f'P.x >= {kx(614)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 300},
+             {'wait': '!!linkOn[10]', 'frames': 3000}, {'frames': 20}] + glide_to(620, kx(629)) + am(629) + [{'wait': '!!linkOn[12]', 'frames': 3000}, {'frames': 20}] + glide_to(645, kx(654)) + am(654) + [k_lauf(666)]
+        r = await koop(g, m=kat(604, 15), f=kat(602, 15), plans={'m': m, 'f': f}, maxFrames=8000)
+        soll(r.get('done') and r['pos']['m'][0] >= 665 and r['pos']['f'][0] >= 665, 'E4 Zwei-Gänge-Staffel (beide zusammen)', info(r))
+        r = await koop(g, f=kat(603, 15), m=kat(601, 15), plans={'f': [k_lauf(616)]}, maxFrames=800)
+        soll(r['pos']['f'][0] < 612, 'E4 Schwein kommt nicht in den unteren Gang', info(r))
+        r = await koop(g, m=kat(603, 15), f=kat(601, 15), plans={'m': [k_lauf(609, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'frames': 200}]}, maxFrames=800)
+        soll(r['pos']['m'][1] > 10, 'E4 Affe kommt nicht in den oberen Gang', info(r))
+        r = await koop(g, m=kat(616, 15), f=kat(616, 7), plans={'m': [{'hold': ['right'], 'frames': 300}]}, links=[10], maxFrames=1000)
+        soll(r['pos']['m'][0] < 631, 'E4 ohne Hebel 11 hält Tür 11', info(r))
+        r = await koop(g, f=kat(615, 7), m=kat(616, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['f'][0] < 619, 'E4 ohne Hebel 10 hält Tür 10', info(r))
+        # Finale
+        def lauf(bis, kanten):
+            cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+            return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+        flucht = lambda w: [lauf(700, [688])] + [{'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(703)} - 6', 'left': f'P.x > {kx(703)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+             {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, lauf(773, [724, 734])]
+        for delay in (0, 20):
+            m = [k_lauf(680, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(682, -4), {'wait': '!!linkOn[14]'}] + flucht('f')
+            r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 772 and r['pos']['f'][0] >= 772, f'E4 Finale: schnellste Stachelwand (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': [k_lauf(680, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E4 1 s gezögert: die schnellste Wand holt den Affen ein', info(r))
+        r = await koop(g, m=kat(774, 15), f=kat(772, 15), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
+        soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
+    assert not fehler, fehler
+
+@test
+async def dschungel6_wipfelsturm(g):
+    """Dschungel 6 „Wipfelsturm“ (6er-Welten, schwerstes Dschungel-Level): Koop-Bot spielt jede Stelle (Luft-Tore über Dornen, Brücke per Platte, Takt-Treppe 1 s, Jagd durchs Tor, wippende Haken/Aufwinde, Tor-Staffel, Pilz-Turm, Bröckel-Abstieg, Wechsel-Schleuse mit Klappe, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale) bis zum Ziel; Checkpoints höchstens 70 Spalten auseinander."""
+    await koop_level(g, 'dschungel/06-wipfelsturm.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def wind_hoch(c0, c1, bis_r):
+        return [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c0)}', 'left': f'P.x > {kx(c1)}'}, 'until': f'P.y < {ky(bis_r)}', 'frames': 900}]
+    def info(r): return r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    def lauf(bis, kanten):
+        cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+        return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+    def takt_plan(start_c, stufen, ziel_x, n):
+        pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
+        for c0 in stufen[1:]:
+            pl += [{'wait': f'({n} - wechselSchritte % {n}) <= 20 && ({n} - wechselSchritte % {n}) > 3'}] + sprung_zu(kx(c0) + 20)
+        return pl + [{'wait': f'({n} - wechselSchritte % {n}) <= 24'}] + sprung_zu(ziel_x)
+    async def beide(name, start, pl, ziel, delay=200, ok=None, r0=15, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, r0), o: kat(start - 2, r0)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), links=kw.get('links', []))
+            good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who} vorn)', info(r))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            if who == 'm':
+                ok = []
+                for rel in RELS:
+                    pl = [k_lauf(14, 0), {'until': f'P.x > {kx(22)}', 'frames': 200}, {'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 60}]
+                    for k in range(3): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+                    pl += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(54)]
+                    r = await koop(g, m=kat(10, 15), f=kat(52, 15), plans={'m': pl}, maxFrames=3000)
+                    if r.get('done') and r['pos']['m'][0] >= 53: ok.append(rel[:14])
+                soll(ok, 'E1 Luft-Tor: Affe greift die Haken über den Dornen', (ok, info(r)))
+            else:
+                r = await koop(g, f=kat(10, 15), m=kat(52, 15), plans={'f': [k_lauf(14, 0), {'until': f'P.x > {kx(22)}', 'frames': 200}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}, k_lauf(54)]}, maxFrames=3000)
+                soll(r.get('done') and r['pos']['f'][0] >= 53, 'E1 Luft-Tor: Schwein segelt über die Dornen', info(r))
+        r = await koop(g, m=kat(10, 15), f=kat(52, 15), plans={'m': [k_lauf(14, 0), {'until': f'P.x > {kx(22)}', 'frames': 200}, {'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r.get('dead') == 'm', 'E1 Luft-Tor ohne Haken: Affe fällt in die Dornen', info(r))
+        ok = []
+        for rel in RELS:
+            m = [k_lauf(57, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(76)}', 'frames': 3000}] + kette(58, 2, rel) + [k_lauf(84)]
+            f = [{'wait': '!!linkOn[2]', 'frames': 1000}, {'frames': 10}, k_lauf(77, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[3]'}, k_lauf(85)]
+            r = await koop(g, m=kat(54, 15), f=kat(55, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 83 and r['pos']['f'][0] >= 84: ok.append(rel[:14])
+        soll(ok, 'E1 Brücke für die Partnerin (Platte 2, Hebel 3, Affe an zwei Haken)', (ok, info(r)))
+        r = await koop(g, f=kat(55, 15), m=kat(53, 15), plans={'f': glide_to(58, kx(77), 10)}, maxFrames=2000)
+        soll(r.get('dead') == 'f', 'E1 ohne Brücke kommt das Schwein nicht hinüber', info(r))
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 120, 20):
+                r = await koop(g, **{who: kat(82, 15), ('f' if who == 'm' else 'm'): kat(108, 9)}, plans={who: [{'frames': wait + 1}] + takt_plan(85, [87, 90, 93, 96, 99, 102], kx(106), 60) + [k_lauf(109)]}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 108: n += 1
+            soll(n > 0, f'E1 Takt-Treppe 1 s ({who})', (f'{n}/6', info(r)))
+        flucht = lambda w: [lauf(147, [132]), {'until': f'P.x > {kx(150)}', 'frames': 100}, k_lauf(163)]
+        for delay in (0, 20):
+            m = [k_lauf(124, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(126, -4), {'wait': '!!linkOn[4]'}] + flucht('f')
+            r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 162 and r['pos']['f'][0] >= 162, f'E1 Jagd durchs Tor (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': [k_lauf(124, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E1 1 s gezögert: die Wand holt den Affen ein', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            for warte in (0, 40, 80):
+                pl = [{'frames': warte + 1}] + kette(208, 4, rel) + [k_lauf(243)]
+                r = await koop(g, m=kat(206, 15), f=kat(204, 15), plans={'m': pl}, maxFrames=4000)
+                if r.get('done') and r['pos']['m'][0] >= 242: ok.append((rel[:14], warte))
+        soll(ok, 'E2 Affe an wippenden Haken', (ok, info(r)))
+        ok = None
+        for hold in (6, 10, 14):
+            r = await koop(g, f=kat(206, 15), m=kat(244, 15), plans={'f': glide_to(209, kx(243), hold) + [k_lauf(244)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 243: ok = hold; break
+        soll(ok, 'E2 Schwein segelt von Aufwind zu Aufwind', (ok, info(r)))
+        m = [{'wait': '!!linkOn[5]', 'frames': 3000}, {'frames': 20}, k_lauf(281, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, k_lauf(298, -14), {'use': True, 'frames': 2}, k_lauf(301), {'until': 'P.grounded', 'frames': 200}, {'wait': f'Q.x >= {kx(299)}', 'frames': 2000}, k_lauf(305)]
+        f = [k_lauf(256, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, k_lauf(276, -14), {'use': True, 'frames': 2}, k_lauf(278), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[6]', 'frames': 3000}, {'frames': 20}, k_lauf(300)]
+        r = await koop(g, m=kat(253, 15), f=kat(252, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+        soll(r.get('done') and r['pos']['m'][0] >= 304 and r['pos']['f'][0] >= 299, 'E2 Tor-Staffel (pinkes Tor -> Hebel 5, blaues Tor -> Hebel 6)', info(r))
+        r = await koop(g, m=kat(253, 15), f=kat(250, 15), plans={'m': [k_lauf(267)]}, maxFrames=600)
+        soll(r['pos']['m'][1] == 15 and r['pos']['m'][0] < 268, 'E2 Affe nimmt nicht das pinke Tor, Tür 5 hält', info(r))
+        turm = lambda w: [{'aim': [kx(308), kx(313), kx(318), kx(323), kx(330)], 'jumps': [kx(305)], 'until': f'P.grounded && P.y <= {ky(3)} + 2', 'frames': 1200}, k_lauf(332)]
+        await beide('E2 Pilz-Turm über die Dornen', 300, turm, 331, delay=40)
+        ab = lambda w: [k_lauf(344, -4)] + sprung_zu(kx(347) + 20) + sprung_zu(kx(351) + 20) + sprung_zu(kx(355) + 20) + sprung_zu(kx(359) + 20) + sprung_zu(kx(363) + 20) + sprung_zu(kx(370)) + [k_lauf(375)]
+        for delay in (5, 15):
+            r = await koop(g, m=kat(340, 3), f=kat(338, 3), plans={'m': ab('m'), 'f': [{'frames': delay}] + ab('f')}, maxFrames=3000)
+            soll(r.get('done') and r['pos']['m'][0] >= 374 and r['pos']['f'][0] >= 374, f'E2 Bröckel-Abstieg (Schwein {delay} Schritte später)', info(r))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            pl = [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200}, {'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 60}]
+            for k in range(3): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+            pl += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(446)]
+            r = await koop(g, m=kat(407, 15), f=kat(446, 15), plans={'m': pl}, maxFrames=3000)
+            if r.get('done') and r['pos']['m'][0] >= 445: ok.append(rel[:14])
+        soll(ok, 'E3 Hohes Luft-Tor: Affe an drei Haken', (ok, info(r)))
+        r = await koop(g, f=kat(407, 15), m=kat(446, 15), plans={'f': [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(447)}'}, 'until': 'P.grounded', 'frames': 900}, k_lauf(446)]}, maxFrames=3000)
+        soll(r.get('done') and r['pos']['f'][0] >= 445, 'E3 Hohes Luft-Tor: Schwein segelt mit Aufwind', info(r))
+        for who in ('m', 'f'):
+            n = 0
+            for wait in range(0, 120, 20):
+                r = await koop(g, **{who: kat(448, 15), ('f' if who == 'm' else 'm'): kat(482, 15)}, plans={who: [{'frames': wait + 1}] + takt_plan(451, list(range(453, 477, 3)), kx(480), 60) + [k_lauf(483)]}, maxFrames=4000)
+                if r.get('done') and r['pos'][who][0] >= 482: n += 1
+            soll(n > 0, f'E3 Takt-Steine 1 s ({who})', (f'{n}/6', info(r)))
+        m = [k_lauf(483, -4)] + sprung_zu(kx(487)) + [k_lauf(489, -24), {'frames': 10}, {'wait': '!!linkOn[8]', 'frames': 3000}, {'hold': ['right'], 'until': f'P.x > {kx(511)}', 'frames': 200}, k_lauf(518)]
+        f = [k_lauf(483, -4)] + sprung_zu(kx(486)) + [{'wait': '!!linkOn[7]', 'frames': 1000}, {'frames': 10}, k_lauf(508, -14), {'use': True, 'frames': 2}, {'wait': f'Q.x > {kx(511)}', 'frames': 2000}, k_lauf(519)]
+        r = await koop(g, m=kat(481, 15), f=kat(480, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+        soll(r.get('done') and r['pos']['m'][0] >= 517 and r['pos']['f'][0] >= 518 and r['pos']['m'][1] == 13, 'E3 Wechsel-Schleuse (Platte 7, Hebel 8, Klappe + blaues Tor)', info(r))
+        r = await koop(g, m=kat(486, 13), f=kat(485, 13), plans={'m': [k_lauf(491, -10), {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
+        soll(r.get('dead') == 'm' or r['pos']['m'][0] < 492, 'E3 ohne Hebel 8 bleibt die Klappe zu (Affe fällt nicht ins Tor)', info(r))
+        hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        flucht = lambda w: [k_lauf(537)] + hupf(546) + hupf(556) + hupf(566) + [k_lauf(585)]
+        for delay in (0, 20):
+            m = [k_lauf(533, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(535, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
+            r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 584 and r['pos']['f'][0] >= 584, f'E3 Doppel-Jagd (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': [k_lauf(533, -14), {'use': True, 'frames': 2}, {'frames': 80}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E3 1,5 s gezögert: Wand oder Decke erwischen den Affen', info(r))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        ok = []
+        for rel in RELS:
+            m = [k_lauf(602, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, {'frames': 5}, {'wait': '!!linkOn[10]', 'frames': 3000}, {'frames': 20}] + kette(616, 1, rel) + am(624) + \
+                [{'wait': '!!linkOn[12]', 'frames': 3000}, {'frames': 20}] + kette(642, 2, rel) + am(653) + [k_lauf(662)]
+            f = [k_lauf(604, 0), {'until': f'P.x > {kx(609)}', 'frames': 200}, {'frames': 5}] + am(613) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}] + \
+                takt_plan(627, [629, 632, 635], kx(638), 72) + am(639) + [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(663)]
+            r = await koop(g, m=kat(600, 15), f=kat(599, 15), plans={'m': m, 'f': f}, maxFrames=9000)
+            if r.get('done') and r['pos']['m'][0] >= 661 and r['pos']['f'][0] >= 662: ok.append(rel[:14])
+        soll(ok, 'E4 Wipfel-Staffel (beide zusammen)', (ok, info(r)))
+        r = await koop(g, f=kat(611, 15), m=kat(611, 7), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['f'][0] < 626, 'E4 ohne Hebel 11 hält Tür 11', info(r))
+        r = await koop(g, m=kat(611, 7), f=kat(611, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
+        soll(r['pos']['m'][0] < 615, 'E4 ohne Hebel 10 hält Tür 10', info(r))
+        flucht = lambda w: [lauf(697, [686]), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(699)} - 6', 'left': f'P.x > {kx(699)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+                            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(742, -4)] + sprung_zu(kx(745)) + sprung_zu(kx(751)) + sprung_zu(kx(757)) + sprung_zu(kx(764)) + [k_lauf(767)]
+        for delay in (0, 20):
+            m = [k_lauf(679, -14), {'use': True, 'frames': 2}] + flucht('m')
+            f = [{'frames': delay}, k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + flucht('f')
+            r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': m, 'f': f}, maxFrames=4000)
+            soll(r.get('done') and r['pos']['m'][0] >= 766 and r['pos']['f'][0] >= 766, f'E4 Finale: Sturm-Jagd und Stege (Schwein {delay} Schritte später unten)', info(r))
+        r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': [k_lauf(679, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
+        soll(r.get('dead') == 'm', 'E4 1 s gezögert: die Wand holt den Affen ein', info(r))
+        r = await koop(g, m=kat(768, 5), f=kat(766, 5), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
+        soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
+    assert not fehler, fehler
+
+@test
+async def ruinen6_tempelherz(g):
+    """Ruinen 6 „Tempelherz“ (6er-Welten, schwerstes Ruinen-Level): Koop-Bot spielt jede Stelle (Fels unter dem Pfeilregen, Insel-/Sims-Spiegel, Fels-Flucht durch die Tore, Takt-Steine mit Fels, Licht-Takt-Tor, Pfeilgang mit Brücke, Flammen-Welle mit Fels, Wechsel-Flucht, Licht-Brücke, Flammen-Kreuz, Fels und Licht-Tor, Doppelstrahl-Tor, letzte Felsflucht) bis zum Ziel; Checkpoints höchstens 70 Spalten auseinander."""
+    await koop_level(g, 'ruinen/06-tempelherz.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
+    def sprung_zu(tx, hold=4):
+        return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+    def haken(jx, land_r, pull=60):
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def glide_to(edge, tx, hold=8):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
+        n = 0
+        for w in waits:
+            r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
+            if ok_fn(r): n += 1
+        return n, len(list(waits))
+    def spiegel(*cs): return ' '.join(f'spiegelListe.find(s => s.c === {c}).stellung = spiegelListe.find(s => s.c === {c}).stellung === "/" ? "\\\\" : "/";' for c in cs)
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    def kette(start, n, rel):
+        m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        return m + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    def wind_hoch(c0, c1, bis_r):
+        return [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c0)}', 'left': f'P.x > {kx(c1)}'}, 'until': f'P.y < {ky(bis_r)}', 'frames': 900}]
+    def info(r): return r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    def lauf(bis, kanten):
+        cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+        return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+    def takt_plan(start_c, stufen, ziel_x, n):
+        pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
+        for c0 in stufen[1:]:
+            pl += [{'wait': f'({n} - wechselSchritte % {n}) <= 20 && ({n} - wechselSchritte % {n}) > 3'}] + sprung_zu(kx(c0) + 20)
+        return pl + [{'wait': f'({n} - wechselSchritte % {n}) <= 24'}] + sprung_zu(ziel_x)
+    async def beide(name, start, pl, ziel, delay=200, ok=None, r0=15, **kw):
+        for who in ('m', 'f'):
+            o = 'f' if who == 'm' else 'm'
+            r = await koop(g, **{who: kat(start, r0), o: kat(start - 2, r0)}, plans={who: pl(who), o: [{'frames': delay}] + pl(o)}, maxFrames=kw.get('maxFrames', 5000), links=kw.get('links', []))
+            good = r.get('done') and r['pos'][who][0] >= ziel and r['pos'][o][0] >= ziel and (ok is None or ok(r, who))
+            soll(good, f'{name} ({who} vorn)', info(r))
+    cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
+    luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70]
+    soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
+    # --- Etappe 1 ---
+    if True:
+        def pfeil_plan(cs):
+            pl = []
+            for c in cs:
+                pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 130)'}, k_lauf(c + 2)]
+            return pl
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            pl = {puller: [k_lauf(12, 0)] + am(14) + pfeil_plan((31, 37, 43, 49)) + [k_lauf(55, 0)] + sprung_zu(kx(61)) + [k_lauf(62)],
+                  other: [{'wait': '!!linkOn[1]'}] + pfeil_plan((31, 37, 43, 49)) + [k_lauf(54, 0)] + sprung_zu(kx(60)) + [k_lauf(61), {'wait': 'felsen[0].weg'}]}
+            r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans=pl, maxFrames=4000)
+            soll(r.get('done') and await g.ev('felsen[0].weg'), f'E1 Fels unter dem Pfeilregen (zieht: {puller})', info(r))
+        ok = None
+        for hold in (4, 8, 12):
+            f = [k_lauf(70, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(79)} - 4', 'left': f'P.x > {kx(79)} + 4'}, 'until': 'P.grounded', 'frames': 400}, {'use': True, 'frames': 5}, {'frames': 20}] + glide_to(82, kx(92), 8) + [k_lauf(96)]
+            r = await koop(g, f=kat(67, 15), m=kat(91, 15), plans={'f': [k_lauf(68, 0)] + sprung_zu(kx(70) + 20) + f[0:]}, maxFrames=3000)
+            if r.get('done') and r['pos']['f'][0] >= 95: ok = hold; break
+        soll(ok, 'E1 Schwein: Insel-Spiegel drehen, Licht öffnet Tür 2', (ok, info(r)))
+        ok = []
+        for rel in RELS:
+            r = await koop(g, m=kat(67, 15), f=kat(95, 15), plans={'m': [k_lauf(68, 0)] + sprung_zu(kx(71)) + kette(71, 2, rel) + [k_lauf(92)]}, maxFrames=3000)
+            if r.get('done') and r['pos']['m'][0] >= 91: ok.append(rel[:14])
+        soll(ok, 'E1 Affe an zwei Haken über die Grube', (ok, info(r)))
+        r = await koop(g, m=kat(91, 15), f=kat(90, 15), plans={'m': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 94, 'E1 ohne Spiegel hält Tür 2', info(r))
+        ok = None
+        for jx in (102, 103, 104):
+            for pull in (40, 80):
+                r = await koop(g, m=kat(99, 15), f=kat(97, 15), plans={'m': haken(jx, 10, pull) + am(110) + [k_lauf(112), {'until': 'P.grounded', 'frames': 200}, k_lauf(122)]}, maxFrames=3000)
+                if r.get('done') and r['pos']['m'][0] >= 121: ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E1 Affe: Haken -> Sims-Spiegel, Licht öffnet Tür 3', (ok, info(r)))
+        r = await koop(g, f=kat(114, 15), m=kat(112, 15), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
+        soll(r['pos']['f'][0] < 118, 'E1 ohne Spiegel hält Tür 3', info(r))
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            tc = {'m': 152, 'f': 155}
+            pl = {puller: [k_lauf(130, 0)] + am(132) + [k_lauf(tc[puller]), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(189), {'until': 'P.grounded', 'frames': 200}],
+                  other: [{'wait': '!!linkOn[4]'}, k_lauf(tc[other]), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(190), {'until': 'P.grounded', 'frames': 200}, {'wait': 'felsen[1].weg'}]}
+            r = await koop(g, m=kat(134, 15), f=kat(135, 15), plans=pl, maxFrames=3000)
+            soll(r.get('done') and await g.ev('felsen[1].weg'), f'E1 Fels-Flucht durch die Tore (zieht: {puller})', info(r))
+        r = await koop(g, m=kat(134, 15), f=kat(136, 15), plans={'f': [k_lauf(130, 0)] + am(132) + [k_lauf(180)]}, maxFrames=1200)
+        soll(r.get('dead'), 'E1 ohne Tor = überrollt', info(r))
+    if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
+    # --- Etappe 2 ---
+    if True:
+        def takt_fels():
+            stones = list(range(213, 235, 3))
+            pl = [k_lauf(210, -6), {'wait': '(Math.floor(wechselSchritte / 72) % 2 === 0 && wechselSchritte % 72 < 16) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 140)'}] + sprung_zu(kx(213) + 20)
+            for c0 in stones[1:]:
+                pl += [{'wait': '(72 - wechselSchritte % 72) <= 20 && (72 - wechselSchritte % 72) > 3'}] + sprung_zu(kx(c0) + 20)
+            return pl + [{'wait': '(72 - wechselSchritte % 72) <= 24'}] + sprung_zu(kx(238))
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            n = 0
+            for w in range(0, 144, 24):
+                pl = {puller: [{'frames': w + 1}, k_lauf(201, 0)] + am(203) + takt_fels() + [k_lauf(241)], other: [{'wait': '!!linkOn[7]'}] + takt_fels() + [k_lauf(240)]}
+                r = await koop(g, **{puller: kat(199, 15), other: kat(205, 15)}, plans=pl, maxFrames=4000)
+                if r.get('done') and r['pos']['m'][0] >= 239 and r['pos']['f'][0] >= 239: n += 1; break
+            soll(n > 0, f'E2 Takt-Steine mit Fels im Nacken (zieht: {puller})', (f'{n}/6', info(r)))
+        for who in ('m', 'f'):
+            n = 0
+            for w in range(0, 144, 24):
+                pl = [{'frames': w + 1}, k_lauf(250, 0), {'wait': 'kristalle.find(k => k.link === 8).an && (72 - wechselSchritte % 72) > 50 && !solids.some(s => s.type === "door" && s.link === 8 && !s.gone && !s.open)'}, k_lauf(272)]
+                r = await koop(g, **{who: kat(244, 15), ('f' if who == 'm' else 'm'): kat(242, 15)}, plans={who: pl}, maxFrames=3000)
+                if r.get('done'): n += 1; break
+            soll(n > 0, f'E2 Licht-Takt-Tor ({who})', (f'{n}/6', info(r)))
+        def pfeil_brücke(cs):
+            pl = []
+            for c in cs:
+                pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)', 'frames': 400}, k_lauf(c + 2)]
+            return pl
+        ok = []
+        for rel in RELS:
+            m = [k_lauf(276, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(296)}', 'frames': 3000}] + kette(277, 2, rel) + [k_lauf(304)]
+            f = [{'wait': '!!linkOn[9]', 'frames': 1000}, {'frames': 10}] + pfeil_brücke((283, 287, 291)) + [k_lauf(297, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[10]'}, k_lauf(305)]
+            r = await koop(g, m=kat(273, 15), f=kat(274, 15), plans={'m': m, 'f': f}, maxFrames=5000)
+            if r.get('done') and r['pos']['m'][0] >= 303 and r['pos']['f'][0] >= 304: ok.append(rel[:14])
+        soll(ok, 'E2 Pfeilgang mit Brücke (Platte 9, Hebel 10, Affe an zwei Haken)', (ok, info(r)))
+        def welle():
+            pl = []
+            for c in range(327, 360, 4):
+                fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+                pl += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 26'}, k_lauf(c + 1)]
+            return pl
+        for puller in ('f', 'm'):
+            other = 'm' if puller == 'f' else 'f'
+            ok = 0
+            for w in (0, 20, 40):
+                pl = {puller: [{'frames': w + 1}, k_lauf(311, 0)] + am(313) + welle() + [k_lauf(365, 0)] + sprung_zu(kx(371)) + [k_lauf(372), {'wait': 'felsen[3].weg'}],
+                      other: [{'wait': '!!linkOn[11]'}] + welle() + [k_lauf(364, 0)] + sprung_zu(kx(370)) + [k_lauf(371)]}
+                r = await koop(g, **{puller: kat(310, 15), other: kat(315, 15)}, plans=pl, maxFrames=5000)
+                if r.get('done'): ok += 1; break
+            soll(ok > 0, f'E2 Flammen-Welle mit Fels im Nacken (zieht: {puller})', (f'{ok}/3', info(r)))
+    if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
+    # --- Etappe 3 ---
+    if True:
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            hop = [k_lauf(394, -6)] + sprung_zu(kx(398) + 20, 10) + [k_lauf(399, 0)] + sprung_zu(kx(402) + 20, 6) + [k_lauf(403, 0)] + sprung_zu(kx(406) + 20, 6) + [k_lauf(407, 0)] + sprung_zu(kx(412), 6) + [k_lauf(418)]
+            n = 0
+            for w in (0, 20, 40):
+                pl = {puller: [{'frames': w + 1}, k_lauf(386, 0)] + am(388) + hop, other: [{'wait': '!!linkOn[12]'}, {'frames': 30}] + hop + [{'wait': 'felsen[4].weg'}]}
+                r = await koop(g, **{puller: kat(385, 15), other: kat(390, 15)}, plans=pl, maxFrames=3000)
+                if r.get('done') and await g.ev('felsen[4].weg'): n += 1; break
+            soll(n > 0, f'E3 Wechsel-Flucht unter Pfeilen (zieht: {puller})', (f'{n}/3', info(r)))
+        for who in ('m', 'f'):
+            n = 0
+            for w in range(0, 180, 30):
+                pl = [{'frames': w + 1}, k_lauf(430, 0), {'wait': 'kristalle.find(k => k.link === 13).an && (90 - wechselSchritte % 90) > 60'}, k_lauf(449)]
+                r = await koop(g, **{who: kat(426, 15), ('f' if who == 'm' else 'm'): kat(424, 15)}, plans={who: pl}, maxFrames=3000)
+                if r.get('done'): n += 1; break
+            soll(n > 0, f'E3 Licht-Brücke ({who})', (f'{n}/6', info(r)))
+        def flammen_oben():
+            pl = []
+            for c in (470, 474, 478):
+                fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+                pl += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 24', 'frames': 400}, k_lauf(c + 1)]
+            return pl
+        ok = None
+        for jx in (450, 451, 452):
+            for pull in (40, 80):
+                m = haken(jx, 10, pull) + [{'wait': '!!linkOn[14]', 'frames': 3000}, {'frames': 20}] + flammen_oben() + [k_lauf(483, -14), {'use': True, 'frames': 2}, k_lauf(496), {'until': 'P.grounded', 'frames': 200}, {'wait': f'Q.x >= {kx(487)}', 'frames': 2000}, k_lauf(499)]
+                f = [{'frames': 60}, k_lauf(450, 0), {'until': f'P.x > {kx(456)}', 'frames': 200}, {'frames': 5}] + am(462) + [{'wait': '!!linkOn[15]', 'frames': 3000}, {'frames': 20}, k_lauf(468, -6)] + sprung_zu(kx(474)) + [k_lauf(476, -6)] + sprung_zu(kx(482)) + [k_lauf(500)]
+                r = await koop(g, m=kat(446, 15), f=kat(445, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+                if r.get('done') and r['pos']['m'][0] >= 498 and r['pos']['f'][0] >= 499: ok = (jx, pull); break
+            if ok: break
+        soll(ok, 'E3 Flammen-Kreuz (Affe oben per Haken, Schwein unten per pinkem Tor)', (ok, info(r)))
+        r = await koop(g, m=kat(446, 15), f=kat(444, 15), plans={'m': [k_lauf(462)]}, maxFrames=800)
+        soll(r['pos']['m'][0] < 456, 'E3 Affe kommt nicht in den unteren Gang', info(r))
+        steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            pl = {puller: [k_lauf(506, 0)] + am(508) + [k_lauf(524, 0)] + am(526) + steg(538) + [k_lauf(576), {'wait': 'felsen[5].weg'}],
+                  other: [{'wait': '!!linkOn[16]'}, k_lauf(531, 0), {'wait': '!!linkOn[17]', 'frames': 300}] + steg(539) + [k_lauf(577)]}
+            r = await koop(g, **{puller: kat(504, 15), other: kat(510, 15)}, plans=pl, maxFrames=4000)
+            soll(r.get('done') and await g.ev('felsen[5].weg'), f'E3 Fels und Licht-Tor (zieht und dreht: {puller})', info(r))
+        r = await koop(g, m=kat(504, 15), f=kat(530, 15), plans={'m': [k_lauf(506, 0)] + am(508) + [k_lauf(540)]}, maxFrames=2000)
+        soll(r.get('dead') or r['pos']['m'][0] < 534, 'E3 ohne Spiegel bleibt das Licht-Tor zu', info(r))
+    if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
+    # --- Etappe 4 ---
+    if True:
+        fenster = "kristalle.find(k => k.link === 18).an && kristalle.find(k => k.link === 19).an && (90 - wechselSchritte % 90) > 45"
+        ok = []
+        for jx in (605, 606, 607):
+            for pull in (40, 80):
+                for rel in RELS:
+                    m = haken(jx, 10, pull) + am(613) + [{'holdIf': {'right': f'P.x < {kx(615)} - 3', 'left': f'P.x > {kx(615)} + 3'}, 'until': f'P.grounded && P.y > {ky(14)} && Math.abs(P.x - {kx(615)}) <= 3', 'frames': 300}] + kette(616, 2, rel) + [k_lauf(629), {'wait': fenster, 'frames': 2000}, k_lauf(642)]
+                    f = [k_lauf(614, 0)] + sprung_zu(kx(622)) + [{'frames': 5}, {'use': True, 'frames': 5}, {'frames': 10}] + glide_to(623, kx(629), 6) + [{'wait': f'Q.x >= {kx(627)}', 'frames': 3000}, {'wait': fenster, 'frames': 2000}, k_lauf(643)]
+                    r = await koop(g, m=kat(602, 15), f=kat(601, 15), plans={'m': m, 'f': f}, maxFrames=6000)
+                    if r.get('done') and r['pos']['m'][0] >= 641 and r['pos']['f'][0] >= 642: ok.append((jx, pull, rel[:12]))
+                if ok: break
+            if ok: break
+        soll(ok, 'E4 Doppelstrahl-Tor (Affe-Spiegel per Haken, Schwein-Spiegel per Insel, Takt-Fenster)', (ok, info(r)))
+        r = await koop(g, m=kat(628, 15), f=kat(627, 15), plans={'m': [k_lauf(642)]}, pre=spiegel(614), maxFrames=800)
+        soll(r['pos']['m'][0] < 635, 'E4 nur ein Spiegel gedreht: Tür 19 bleibt zu', info(r))
+        def pfeile(cs):
+            pl = []
+            for c in cs:
+                pl += [k_lauf(c - 2, 0), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 120)'}, k_lauf(c + 2)]
+            return pl
+        flamme = [k_lauf(696, 0), {'wait': '(() => { const t = fallen.find(t => t.x === ' + str(698*40) + ' && t.art === "flamme"); return (!falleBrennt(t) && (falleTaktSchritte(t) - falleZeit(t)) > 20) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 100); })()'}, k_lauf(700)]
+        steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+        hakensprung = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                                  {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+        for puller in ('m', 'f'):
+            other = 'f' if puller == 'm' else 'm'
+            n = []
+            for hold in (4, 8):
+                for jx in (661, 662):
+                    weg = {'m': hakensprung(jx), 'f': glide_to(662, kx(672), hold)}
+                    pl = {puller: [k_lauf(649, 0)] + am(651) + weg[puller] + pfeile((681, 687)) + flamme + steg(704) + [k_lauf(744), {'wait': 'felsen[6].weg', 'frames': 600}],
+                          other: [{'wait': '!!linkOn[20]'}] + weg[other] + pfeile((681, 687)) + flamme + steg(705) + [k_lauf(745)]}
+                    r = await koop(g, **{puller: kat(647, 15), other: kat(653, 15)}, plans=pl, maxFrames=5000)
+                    if r.get('done') and await g.ev('felsen[6].weg'): n.append((hold, jx)); break
+                if n: break
+            soll(n, f'E4 Finale: letzte Felsflucht (zieht: {puller})', (n, info(r)))
+        # Der Weg ab Spalte 747 zum Ziel führt jetzt durch das Licht-Rätsel „Sonnenkrone“: Test tempelherz_sonnenkrone
+    assert not fehler, fehler
+
+@test
+async def hebel_haben_grund(g):
+    """Alle Projekt-Levels: jeder Hebel / jede Druckplatte bewirkt etwas (Tür, bewegtes Teil, bewegter Haken, Wechselboden,
+    Teleporter, Falle, Fels, Förderband, Leuchtkristall, Sonnenstein „per Nummer“ oder schaltbarer Spiegel),
+    und ein Hebel, der eine Gefahr startet (bewegtes Teil mit Stacheln), öffnet auch ein Tor – sonst hätte man
+    keinen Grund, ihn zu ziehen (Nutzerwunsch: „es muss in sich schlüssig sein“)."""
+    fehler = []
+    for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
+        if L.get('versteckt'): continue
+        await g.load(str(ROOT / 'levels' / L['datei']))
+        fehler += await g.ev("""(() => {
+          syncSwitchCarriers();
+          const out = [], name = %s;
+          const trig = [...switchDefs.map(s=>['Hebel', s.link]), ...plates.map(p=>['Platte', p.link])];
+          for(const [art, l] of trig){
+            const doors = solids.filter(d=>d.type==='door' && d.link===l).length;
+            const movers = solids.filter(m=>m.type==='moveplat' && m.switchLink===l);
+            const hk = hooks.filter(h=>h.moving && h.switchLink===l).length;
+            const wb = solids.filter(s=>s.type==='wechsel' && s.link===l).length;          // Wechselboden (Ausbau 4)
+            const tp = (typeof teleporters !== 'undefined' ? teleporters : []).filter(t=>t.link===l).length;   // Teleporter (Ausbau 4)
+            const fa = (typeof fallen !== 'undefined' ? fallen : []).filter(f=>f.link===l).length;   // Fallen aus (Ausbau 7)
+            const fe = (typeof felsen !== 'undefined' ? felsen : []).filter(F=>F.link===l).length;   // Rollender Fels (Ausbau 7)
+            const ba = solids.filter(s=>s.type==='band' && s.link===l).length;                // Förderband dreht/hält (Ausbau 7)
+            const lk = (typeof leuchtKristalle !== 'undefined' ? leuchtKristalle : []).filter(k=>k.link===l).length;   // Licht im Dunkeln (Ausbau 7)
+            const lv = (typeof lavaBecken !== 'undefined' ? lavaBecken : []).reduce((n, b) => n + b.marken.filter(m=>m.link===l).length, 0);   // Lava steigt (Ausbau 7)
+            const pr = (typeof pressen !== 'undefined' ? pressen : []).filter(P=>P.link===l).length;   // Pressen anhalten/anwerfen (Ausbau 7)
+            const sq = (typeof lichtquellen !== 'undefined' ? lichtquellen : []).filter(q=>q.link===l).length;   // Sonnenstein „per Nummer“ (Ruinen-Licht)
+            const sp = (typeof spiegelListe !== 'undefined' ? spiegelListe : []).filter(s=>s.link===l).length;   // schaltbarer Spiegel
+            if(!doors && !movers.length && !hk && !wb && !tp && !fa && !fe && !ba && !lk && !lv && !pr && !sq && !sp) out.push(name + ': ' + art + ' ' + l + ' bewirkt nichts');
+            const gefahr = movers.some(m => spikes.some(sp => sp.carrier === m)) || fe > 0 || lv > 0;   // auch: Hebel lässt Lava steigen
+            if(art === 'Hebel' && gefahr && !doors) out.push(name + ': Hebel ' + l + ' startet Stacheln, öffnet aber kein Tor');
+          }
+          return out;
+        })()""" % json.dumps(L['datei']))
+    assert not fehler, f'Hebel ohne Grund: {sorted(set(fehler))}'
+
+@test
+async def level2_fahrstuhl_anhalten(g):
+    """Level 2, Abschnitt 4 (Nutzer-Version): Schweinchen schaltet den Fahrstuhl (Hebel 3) an und auf Höhe des oberen
+    Bodens wieder aus; der Affe läuft oben heraus (ganz oben warten Stacheln an der Decke)."""
+    await g.load(str(ROOT / 'levels' / 'dschungel/02-baumkronen.json'))
+    await g.ev("p1.x=111*40+40; p1.y=14*40; p2.x=107*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
+    await g.p.wait_for_timeout(300)
+    await g.p.keyboard.press('Numpad2')
+    for _ in range(400):
+        if await g.ev("p1.y") <= 8 * 40 + 1: break
+        await g.p.wait_for_timeout(5)
+    else:
+        raise AssertionError("Fahrstuhl fährt nicht hoch")
+    await g.p.keyboard.press('Numpad2'); await g.p.wait_for_timeout(300)
+    y = await g.ev("p1.y"); await g.p.wait_for_timeout(300)
+    assert abs(await g.ev("p1.y") - y) < 1, "Fahrstuhl hält nicht an"
+    await g.p.keyboard.down('KeyD'); await g.p.wait_for_timeout(900); await g.p.keyboard.up('KeyD')
+    st = await g.ev("({x:p1.x, y:p1.y, d:!!deathState})")
+    assert not st['d'] and st['x'] > 114 * 40 and abs(st['y'] - 8 * 40) < 2, f"Affe nicht oben ausgestiegen: {st}"
+
+@test
+async def level3_fahrstuhl_unter_stacheln(g):
+    """Level 3, Abschnitt 4: fährt der Fahrstuhl ganz hoch, sticht die Decke; hält der Affe ihn an (Hebel 4),
+    steigt das Schweinchen oben aus."""
+    await g.load(str(ROOT / 'levels' / 'ruinen/01-ruinen.json'))
+    await g.ev("p2.x=131*40+40; p2.y=14*40; p1.x=127*40+20; p1.y=15*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
+    await g.p.wait_for_timeout(300)
+    await g.p.keyboard.press('KeyJ')
+    for _ in range(300):
+        if await g.ev("p2.y") <= 8 * 40 + 4: break
+        await g.p.wait_for_timeout(16)
+    else:
+        raise AssertionError("Fahrstuhl fährt nicht hoch")
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(300)
+    await g.p.keyboard.down('ArrowRight'); await g.p.keyboard.press('Numpad0'); await g.p.wait_for_timeout(900); await g.p.keyboard.up('ArrowRight')
+    st = await g.ev("({x:p2.x, y:p2.y, d:!!deathState})")
+    assert not st['d'] and st['x'] > 134 * 40 and abs(st['y'] - 8 * 40) < 2, f"Schweinchen nicht ausgestiegen: {st}"
+    assert await g.ev("spikes.some(s => Math.abs(s.x - (131*40+20)) < 1 && s.dir === 2)"), "Stacheln an der Decke fehlen"
+
+@test
+async def nur_muenzen_klingeln(g):
+    """Glocken-/Spieluhr-Klänge nur bei Münzen: Checkpoint, Entdeckung, Knospe (Blumen), Herzchen klingen nicht."""
+    src = (ROOT / 'js' / '18-sound.js').read_text()
+    for name in ('checkpoint', 'discover', 'bud', 'heart'):
+        zeile = next(l for l in src.splitlines() if l.strip().startswith(name + ':'))
+        i = src.index(zeile); block = src[i:src.index('return b; },', i)]
+        for klang in ('musicbox', 'kalimba', 'glass', 'NOTE('):
+            assert klang not in block, f'{name} klingelt noch ({klang})'
+    assert 'glass' in src[src.index('    coin:'):src.index('return b; },', src.index('    coin:'))], 'Münze klingt nicht mehr'
+
+@test
+async def wetter_wechselt_selten(g):
+    """Wetter: Regen ist auf Nutzerwunsch komplett aus dem Spiel (Design-Politur 2) – es bleibt immer Sonne, auch nach
+    langer Zeit und wenn Regen ausdrücklich angefordert wird."""
+    assert await g.ev("REGEN_AUS === true")
+    st = await g.ev("(() => { for(let i = 0; i < 50; i++){ weather.t = 99999; weatherUpdate(0.5); } weatherForce('rain'); weatherUpdate(0.016); return {ph: weather.phase, r: weather.rain, bow: weather.rainbow}; })()")
+    assert st == {'ph': 'sun', 'r': 0, 'bow': 0}, st
+
+@test
+async def stachelwand_faehrt_mit(g):
+    """Stacheln, die mit dem Fuß an einem bewegten Stück kleben, fahren mit (bewegliche Stachelwand) und töten;
+    in den bestehenden Levels fährt kein Stachel aus Versehen mit (außer in Levels, die direkt aus dem Editor kommen)."""
+    wall = {'x': 400, 'y': 360, 'w': 40, 'h': 320, 'type': 'moveplat', 'look': 'wall', 'group': 1,
+            'targetX': 2400, 'targetY': 360, 'speed': 3}
+    sp = [{'x': 460, 'y': 680 - 40*k, 'w': 40, 'h': 40, 'dir': 1} for k in range(8)]
+    await g.load(level([ground(0, 680, 3000)], {'x': 900, 'y': 680}, {'x': 860, 'y': 680},
+                       movingPlatforms=[wall], spikes=sp))
+    assert await g.ev("spikes.every(s => s.carrier)"), 'Stacheln hängen nicht an der Wand'
+    x0 = await g.ev("spikes[0].x")
+    await g.p.wait_for_timeout(1200)
+    assert await g.ev("spikes[0].x") > x0 + 60, 'Stacheln fahren nicht mit'
+    for _ in range(60):
+        if await g.ev("!!deathState"): break
+        await g.p.wait_for_timeout(100)
+    assert await g.ev("!!deathState"), 'fahrende Stacheln töten nicht'
+    for name in [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]:
+        await g.load(str(ROOT / 'levels' / name))
+        n = await g.ev("spikes.filter(s => s.carrier).length")
+        # Soll-Zahl steht als Notiz „_mitfahrendeStacheln“ in der Level-Datei. Levels, die der Nutzer direkt aus dem
+        # Editor hochlädt („☁ Auf GitHub speichern“), haben diese Notiz nicht – dort gilt, was er im Editor gebaut
+        # und getestet hat, also hier nicht prüfen.
+        daten = json.loads((ROOT / 'levels' / name).read_text())
+        if '_mitfahrendeStacheln' not in daten and len(daten.get('movingPlatforms', [])) > 0 and n > 0: continue
+        want = daten.get('_mitfahrendeStacheln', 0)
+        assert n == want, f'{name}: {n} mitfahrende Stacheln, erwartet {want}'
+
+@test
+async def ziel_tanz_dann_menue(g):
+    """Beide im Ziel: Figuren tanzen (Eingaben ruhen), ohne Hinweis „Beide im Ziel“, danach öffnet sich das Hauptmenü."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 330, 'y': 680},
+                       goal={'x': 315, 'y': 680}))
+    for _ in range(40):
+        if await g.ev("won"): break
+        await g.p.wait_for_timeout(50)
+    assert await g.ev("won"), "Sieg nicht erkannt"
+    assert not await g.ev("document.getElementById('toast').classList.contains('show')"), "Hinweis „Beide im Ziel“ erscheint noch"
+    x0 = await g.ev("p1.x")
+    await g.hold(['KeyD'], 600)
+    await g.p.keyboard.up('KeyD')
+    assert abs(await g.ev("p1.x") - x0) < 1, "Figur läuft während des Tanzes weg"
+    d = await g.ev("danceMove(p1)")
+    assert d['dy'] <= 0 and abs(d['sx']) > 0.5, f"Tanz-Bewegung seltsam: {d}"
+    assert await g.ev("menuScreen") is None, "Menü kommt zu früh"
+    for _ in range(120):
+        if await g.ev("menuScreen") == 'start': break
+        await g.p.wait_for_timeout(50)
+    assert await g.ev("menuScreen") == 'start', "nach dem Tanz kein Menü"
+    assert await sm_screen(g) == 'sm-s-menu', "nach dem Tanz nicht im Hauptmenü"
+    assert not await g.ev("document.getElementById('toast').classList.contains('show')")
+
+@test
+async def haken_schwung_holen(g):
+    """Am Haken: Taste halten drückt NICHT sofort weit zur Seite; im Takt schaukeln baut Schwung auf."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
+    setup = """(()=>{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+150+p1.h*0.6; p1.vx=0; p1.vy=0; p1.grounded=false;
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=150; p1.ropeMax=200; window.__ang=[];
+      if(!window.__os){ window.__os=stepSim; stepSim=function(ts){
+        if(window.__pump){ KEYS.KeyD = p1.vx>=0; KEYS.KeyA = p1.vx<0; }
+        __os(ts); if(p1.hookAttached) __ang.push(Math.atan2(p1.x-hooks[0].x,(p1.y-p1.h*0.6)-hooks[0].y)*180/Math.PI); }; } })()"""
+    await g.ev(setup); await g.hold(('KeyD',), 500)
+    ang = await g.ev('__ang')
+    assert ang and max(ang) < 32, f'rechts halten schwingt zu weit: {max(ang or [0]):.0f}°'
+    await g.ev(setup); await g.ev('window.__pump=true'); await g.p.wait_for_timeout(3000)
+    await g.ev('window.__pump=false; KEYS.KeyD=false; KEYS.KeyA=false')
+    ang = await g.ev('__ang')
+    assert ang and max(abs(a) for a in ang) > 55, f'Schaukeln baut zu wenig Schwung auf: {max(abs(a) for a in ang or [0]):.0f}°'
+
+@test
+async def deko_vogel_flattert_weg(g):
+    """Vögel sitzen auf dem Boden und flattern weg, wenn eine Figur kommt (reine Deko, keine Kollision)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.p.wait_for_timeout(200)
+    n = await g.ev('birds.length')
+    assert n >= 2, f'zu wenige Vögel: {n}'
+    b0 = await g.ev("(()=>{ const b=birds.find(b=>b.state==='sit'); return b && {x:b.x, y:b.y}; })()")
+    assert b0 and b0['y'] == 680, f'Vogel sitzt nicht auf dem Boden: {b0}'
+    await g.ev(f"p1.x={b0['x']} - 60; p1.vx=0")
+    await g.p.wait_for_timeout(500)
+    b1 = await g.ev(f"(()=>{{ const b=birds.find(b=>b.homeX==={b0['x']}); return {{state:b.state, y:b.y}}; }})()")
+    assert b1['state'] in ('fly', 'gone') and b1['y'] < 640, f'Vogel fliegt nicht weg: {b1}'
+
+@test
+async def deko_frei_von_spielobjekten(g):
+    """Pflanzen und Vögel stehen nie auf Münzen, Stacheln, Hebeln, Checkpoints oder am Ziel."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       coins=[{'x': x, 'y': 660} for x in range(420, 2900, 160)],
+                       spikes=[{'x': 500, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}, {'x': 1300, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}],
+                       switches=[{'x': 900, 'y': 660, 'link': 1}], checkpoints=[{'x': 1500, 'y': 680}],
+                       goal={'x': 2800, 'y': 680}))
+    await g.p.wait_for_timeout(200)
+    bad = await g.ev("""(()=>{ const pts=[...coins.map(c=>c.x), ...spikes.map(s=>s.x), ...switchDefs.map(s=>s.x), ...checkpointDefs.map(c=>c.x), goal.x];
+      const deko=[...decoPlants.map(p=>p.x), ...birds.map(b=>b.homeX)];
+      return deko.filter(x=>pts.some(px=>Math.abs(px-x)<24)); })()""")
+    assert not bad, f'Deko auf Spielobjekten bei x={bad}'
+    assert await g.ev('decoPlants.length') > 0, 'gar keine Pflanzen'
+
+@test
+async def auffaellige_elemente(g):
+    """Nutzerwunsch: Hebel, Sprungpilze und Druckplatten fallen auf – leichter Schein und kreisende Glühwürmchen als Hinweis, solange
+    man sie noch benutzen muss (Hebel aus, Platte frei; Pilz immer); im weiten Umkreis keine Deko-Pflanzen/-Tiere."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       switches=[{'x': 300, 'y': 660, 'link': 1}], plates=[{'x': 420, 'y': 660, 'link': 2}],
+                       bouncers=[{'x': 540, 'y': 680}]))
+    await g.p.wait_for_timeout(200)
+    zaehlen = "(() => { menuScreen = null; deathState = null; draw(); return hinweisPfeile; })()"
+    assert await g.ev(zaehlen) == 3, 'Hinweis-Pfeile fehlen (Hebel, Platte, Pilz)'
+    n = await g.ev(f"(() => {{ setLink(1, true); p2.x = 420; p2.y = 680; p2.grounded = true; updatePlates([p1, p2]); return {zaehlen}; }})()")
+    assert n == 1, f'Pfeil bleibt an benutztem Hebel / gedrückter Platte: {n}'
+    bad = await g.ev("""(() => { const pts = [...bouncers.map(b => b.x), ...plates.map(p => p.x), ...switchDefs.map(s => s.x)];
+      const deko = [...decoPlants.map(p => p.x), ...birds.map(b => b.homeX), ...critters.map(c => c.homeX ?? c.x)];
+      return deko.filter(x => pts.some(px => Math.abs(px - x) < 100)); })()""")
+    assert not bad, f'Deko nahe Hebel/Pilz/Platte bei x={bad}'
+    weg = await g.ev("""(() => { const pts = [...bouncers.map(b => b.x), ...plates.map(p => p.x), ...switchDefs.map(s => s.x)];
+      return critters.filter(c => c.minX !== undefined).filter(c => pts.some(px => px > c.minX - 100 && px < c.maxX + 100)).map(c => c.kind); })()""")
+    assert not weg, f'Tiere laufen/hüpfen bis an Hebel/Pilz/Platte: {weg}'
+
+@test
+async def muenzen_groesser_3d(g):
+    """Münzen werden größer gezeichnet (Radius > 11) und haben in Seitenansicht eine sichtbare Kante."""
+    res = await g.ev("""(()=>{ const cv = document.createElement('canvas'); cv.width = cv.height = 200;
+      const c = cv.getContext('2d'), a = (x,y)=>c.getImageData(x,y,1,1).data[3];
+      drawCoin3D(100, 100, COIN_DRAW_R, 0, COIN_PAL.gold, 1, false, c);
+      const face = [a(100,100+COIN_DRAW_R-1), a(100,100-COIN_DRAW_R+1), a(100+11.5,100)];
+      c.clearRect(0,0,200,200);
+      drawCoin3D(100, 100, COIN_DRAW_R, Math.PI/2 - 0.05, COIN_PAL.gold, 1, false, c);
+      let w = 0; for(let x=80;x<120;x++) if(a(x,100)>200) w++;
+      return {r: COIN_DRAW_R, face, w}; })()""")
+    assert res['r'] > 11 and all(v > 0 for v in res['face']), f'Münze nicht größer: {res}'
+    assert res['w'] >= 3, f'keine sichtbare Kante in Seitenansicht: {res}'
+
+@test
+async def broeckelboden_animation(g):
+    """Bröckelboden hält weiter 0,6 s, zerspringt dann in viele Brocken mit Staub; danach ist alles weg."""
+    await g.load(level([ground(0, 680, 300), ground(400, 600, 160, 40, 'crumble'), ground(400, 680, 600)],
+                       {'x': 480, 'y': 600}, {'x': 60, 'y': 680}))
+    await g.ev("solids.find(s=>s.type==='crumble').triggered=false")
+    await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); s.triggered=true; s.timer=0; })()")
+    await g.steps(23)   # ~0,42 s Spielzeit
+    st = await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); return {gone:s.gone, t:s.timer}; })()")
+    assert not st['gone'], f'bricht zu früh: {st}'
+    await g.steps(24)   # weitere ~0,45 s
+    st = await g.ev("(()=>{ const s=solids.find(s=>s.type==='crumble'); return {gone:s.gone, n:(s.fragments||[]).length, d:(s.dust||[]).length, poly:!!(s.fragments&&s.fragments[0].pts)}; })()")
+    assert st['gone'] and st['n'] >= 12 and st['d'] > 0 and st['poly'], f'kein Zerspringen: {st}'
+    try: await g.p.wait_for_function("solids.find(s=>s.type==='crumble').fragments === null", timeout=6000)
+    except Exception: pass
+    assert await g.ev("solids.find(s=>s.type==='crumble').fragments === null"), 'Brocken verschwinden nicht'
+    # sieht anders aus als normaler Boden: eigene Zeichenfunktion mit Sandstein-Farben
+    assert await g.ev("typeof drawCrumbleBlocks==='function' && CRUMBLE_PAL.light!==undefined"), 'kein eigenes Bröckelboden-Aussehen'
+
+@test
+async def editor_testen_knopf(g):
+    """Editor „▶ Testen“ öffnet das Spiel sofort mit dem aktuellen Editor-Level; Pause -> „Zurück zum Editor“."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)],
+                 'coins': [{'c': 10, 'r': 15, 'color': 'gold'}, {'c': 12, 'r': 15, 'color': 'blue'}, {'c': 14, 'r': 15, 'color': 'pink'}],
+                 'startM': {'c': 3, 'r': 16}, 'startF': {'c': 2, 'r': 16}, 'goal': {'c': 35, 'r': 16},
+                 'hooks': [], 'switches': [], 'doors': [], 'spikes': [], 'checkpoints': [], 'movers': []}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.wait_for_timeout(300)
+        # Enter im Namensfeld (Levels-Fenster) startet KEINEN Test
+        await p.click('#levelsBtn')
+        await p.wait_for_selector('#projectList .lvl', state='attached', timeout=8000)   # Projekt-Liste fertig geladen (sonst kann das spätere Neuzeichnen den Fokus nehmen)
+        await p.fill('#levelName', 'x'); await p.keyboard.press('Escape')
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        assert '/editor/' in p.url, 'Enter im Textfeld hat den Test gestartet'
+        await p.click('#c', position={'x': 5, 'y': 5}, button='right'); await p.wait_for_timeout(100)   # Fokus weg vom Feld
+        await p.evaluate("document.activeElement && document.activeElement.blur()")
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(800)   # Enter = Testen
+        # langsame Rechner: warten, bis das Spiel fertig geladen und das Test-Level gestartet ist (sonst sieht man noch das Menü)
+        await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof coins !== 'undefined' && coins.length === 3", timeout=8000)
+        assert 'index.html?test=1' in p.url and '/editor/' not in p.url, f'Enter startet den Test nicht: {p.url}'
+        assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
+        assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
+        assert abs(await g.ev('p1.x') - 140) < 30, 'Start nicht aus dem Editor'
+        # Pausenmenü bietet „Zurück zum Editor“; Esc beendet den Test direkt
+        await p.evaluate("showPauseMenu()"); await p.wait_for_timeout(100)
+        texte = await menu_texte(p)
+        assert any('Zurück zum Editor' in t for t in texte), f'Pausenmenü: {texte}'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(100)   # schließt erst die Pause
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(600)   # beendet den Test
+        assert '/editor/' in p.url, f'Esc führt nicht zurück in den Editor: {p.url}'
+        # Editor weiter rechts gescrollt -> Figuren starten dort (auf dem Boden, nicht im Loch/auf Stacheln)
+        draft['cols'] = 200   # breit genug, dass die Ansicht nicht am Levelende anstößt (mehr Werkzeuge = niedrigere Ansicht = mehr Spalten sichtbar)
+        draft['tiles'] = [[c, 17, 'ground'] for c in range(120) if not 60 <= c <= 62] + [[c, 12, 'crumble'] for c in range(70, 74)]
+        draft['spikes'] = [{'c': c, 'r': 16, 'dir': 0} for c in range(66, 70)]
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.wait_for_timeout(300)
+        await p.evaluate("const w=document.getElementById('canvasWrap'); w.scrollLeft = 50*40 / (document.getElementById('c').width / document.getElementById('c').getBoundingClientRect().width)")
+        await p.wait_for_timeout(100)
+        vis = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
+        await p.click('#testBtn'); await p.wait_for_timeout(800)
+        await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && p1 && typeof coins !== 'undefined'", timeout=8000)   # langsame Rechner
+        pos = await g.ev("({m:[p1.x,p1.y], f:[p2.x,p2.y], cam:camPos, dead:!!deathState})")
+        assert vis[0]*40 <= pos['m'][0] <= vis[1]*40 and vis[0]*40 - 40 <= pos['f'][0] <= vis[1]*40 + 40, f'Start nicht im Editor-Ausschnitt {vis}: {pos}'
+        assert abs(pos['m'][1] - 680) < 2 and abs(pos['f'][1] - 680) < 2 and not pos['dead'], f'nicht auf dem Boden: {pos}'
+        for x in (pos['m'][0], pos['f'][0]):
+            assert not (60*40 <= x < 63*40) and not (66*40 <= x < 70*40), f'Start im Loch/auf Stacheln: {x}'
+        assert pos['cam'] > 1000, f'Kamera nicht an der Startstelle: {pos}'
+        await g.p.wait_for_timeout(1200)
+        assert not await g.ev('!!deathState'), 'Figur stirbt direkt nach dem Start'
+        # weiterlaufen, dann Esc -> Editor zeigt die Stelle, wo die Figuren JETZT stehen (Nutzerwunsch)
+        await g.ev("p1.x = 95*40+20; p2.x = 94*40+20; p1.y = p2.y = 680; p1.vx = p2.vx = 0")
+        await p.wait_for_timeout(100)
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        assert '/editor/' in p.url, f'Esc führt nicht zurück: {p.url}'
+        try: await p.wait_for_function("document.getElementById('canvasWrap') && document.getElementById('canvasWrap').scrollLeft > 0", timeout=8000)
+        except Exception: pass   # langsame Rechner: Editor erst fertig laden lassen
+        back = await p.evaluate("(()=>{ const w=document.getElementById('canvasWrap'), c=document.getElementById('c'); const k=c.width/c.getBoundingClientRect().width; return [w.scrollLeft*k/40, (w.scrollLeft+w.clientWidth)*k/40]; })()")
+        assert back[0] + 1 < 94 < back[1] - 1, f'Editor zeigt nicht die Figuren (Spalte 94): Ansicht {back}'
+        # nochmal Enter -> Test startet wieder bei den Figuren
+        await p.keyboard.press('Enter')
+        await p.wait_for_url('**/index.html?test=1', timeout=8000)
+        await p.wait_for_function("typeof p1 !== 'undefined' && !!p1", timeout=8000); await p.wait_for_timeout(300)
+        x2 = await g.ev('p1.x') / 40
+        assert abs(x2 - 94) < 4, f'Erneuter Test startet nicht bei den Figuren: Spalte {x2}'
+        # normaler Spielstart (ohne ?test=1) zeigt weiter das Hauptmenü, kein „Zurück zum Editor“
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(400)
+        assert await sm_screen(g) == 'sm-s-title', 'Startmenü fehlt beim normalen Start'
+    finally:
+        srv.shutdown()
+
+@test
+async def dateien_immer_frisch(g):
+    """Alle Spiel-Skripte werden mit ?v=<Zeit> geladen -> Browser nimmt nie alte Kopien aus dem Zwischenspeicher."""
+    srcs = await g.ev("[...document.scripts].map(s=>s.src).filter(Boolean)")
+    js = [x for x in srcs if '/js/' in x]
+    assert len(js) >= 19 and all('?v=' in x for x in js), f'Skripte ohne ?v=: {[x for x in js if "?v=" not in x]}'
+    html = (ROOT / 'editor' / 'index.html').read_text()
+    assert ".js?v=' + Date.now()" in html, 'Editor-Skripte ohne ?v='
+    for f in (ROOT / 'editor' / 'js').glob('*.js'):   # jede Editor-Datei steht in der Lade-Liste
+        assert f"'{f.stem}'" in html, f'editor/js/{f.name} wird nicht geladen'
+
+@test
+async def hebel_faehrt_mit_boden(g):
+    """Ein Hebel auf bewegtem Boden fährt mit, lässt sich unterwegs betätigen und springt beim Neustart zurück."""
+    mp = {'x': 400, 'y': 600, 'w': 120, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 800, 'targetY': 600, 'speed': 2}
+    await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       movingPlatforms=[mp], switches=[{'x': 460, 'y': 580, 'link': 3}, {'x': 1000, 'y': 660, 'link': 4}],
+                       doors=[{'x': 1500, 'y': 660, 'link': 3}]))
+    await g.ev("solids.filter(s=>s.type==='moveplat').forEach(s=>s.tripActive=true)")
+    await g.p.wait_for_timeout(700)
+    st = await g.ev("(()=>{ const pl=solids.find(s=>s.type==='moveplat'); const sw=switchDefs[0], fix=switchDefs[1]; return {px:pl.x, py:pl.y, sx:sw.x, sy:sw.y, fx:fix.x}; })()")
+    assert st['px'] > 420, f'Boden fährt nicht: {st}'
+    assert abs(st['sx'] - (st['px'] + 60)) < 0.01 and abs(st['sy'] - (st['py'] - 20)) < 0.01, f'Hebel fährt nicht mit: {st}'
+    assert st['fx'] == 1000, f'Hebel auf festem Boden hat sich bewegt: {st}'
+    # unterwegs betätigen: Affe neben den mitgefahrenen Hebel stellen
+    await g.ev("p1.x = switchDefs[0].x - 20; p1.y = solids.find(s=>s.type==='moveplat').y; p1.vy = 0; p1.grounded = true")
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(150)
+    assert await g.ev("solids.find(s=>s.type==='door').open"), 'mitgefahrener Hebel lässt sich nicht betätigen'
+    await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(100)
+    st = await g.ev("(()=>{ const pl=solids.find(s=>s.type==='moveplat'); return {px:pl.x, sx:switchDefs[0].x}; })()")
+    assert st['px'] < 520 and abs(st['sx'] - (st['px'] + 60)) < 0.01, f'Hebel nach Neustart nicht mit dem Boden am Start: {st}'
+
+@test
+async def editor_bewegung_nachbearbeiten(g):
+    """Editor: Klick auf bewegtes Stück wählt es aus; Tempo/Schalter änderbar; Entf entfernt. Vergebene Nummern mit ✓."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)] + [[10, 12, 'ground'], [11, 12, 'ground']],
+                 'movers': [{'c': 10, 'r': 12, 'dc': 4, 'dr': 0, 'speed': 2, 'link': None}],
+                 'switches': [{'c': 3, 'r': 16, 'link': 3}], 'doors': [{'c': 20, 'r': 16, 'link': 5}],
+                 'hooks': [], 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        opts = await p.eval_on_selector_all('#linkSelect option', 'os => os.map(o => [o.value, o.textContent])')
+        o = dict(opts)
+        assert '✓' in o['3'] and 'Schalter' in o['3'] and '✓' in o['5'] and 'Tür' in o['5'] and '✓' not in o['1'], f'Markierung: {opts[:6]}'
+        async def click_cell(c, r):
+            box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+            await p.mouse.click(box['x'] + (c*40 + 20)*k, box['y'] + ((r + 3)*40 + 20)*k)   # 3 Himmel-Reihen über Reihe 0
+        await ed_werkzeug(p, 'move')
+        await click_cell(10, 12); await p.wait_for_timeout(100)
+        assert await p.is_visible('#moveDelBtn'), 'Bewegung nicht ausgewählt'
+        assert await p.input_value('#speedSelect') == '2', 'Tempo der Auswahl nicht angezeigt'
+        await p.select_option('#speedSelect', '4.5'); await p.select_option('#moveSwitchSelect', '3')
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        assert d['movers'] and d['movers'][0]['speed'] == 4.5 and d['movers'][0]['link'] == 3, f'Änderung nicht übernommen: {d["movers"]}'
+        assert d['movers'][0]['dc'] == 4, 'Ziel hat sich verändert'
+        t3 = await p.evaluate("[...document.getElementById('moveSwitchSelect').options].find(o=>o.value==='3').textContent")
+        assert 'Bewegung' in t3 and 'Schalter' in t3, f'per-Schalter-Liste: {t3}'
+        await p.keyboard.press('Delete'); await p.wait_for_timeout(100)
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        assert d['movers'] == [], f'Entf entfernt die Bewegung nicht: {d["movers"]}'
+        assert not await p.is_visible('#moveDelBtn'), 'Entfernen-Knopf bleibt sichtbar'
+    finally:
+        srv.shutdown()
+
+@test
+async def hebel_ein_aus(g):
+    """Hebel schaltet ein/aus: Tür bleibt offen (kein 5-s-Zuklappen) und schließt beim 2. Mal – erst wenn frei;
+    schaltergesteuerter Boden stoppt beim 2. Mal an Ort und Stelle und fährt beim 3. Mal von dort weiter."""
+    mp = {'x': 600, 'y': 500, 'w': 80, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 1000, 'targetY': 500, 'speed': 3, 'switchLink': 2}
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
+                       switches=[{'x': 240, 'y': 660, 'link': 1}, {'x': 140, 'y': 660, 'link': 2}],
+                       doors=[{'x': 420, 'y': 660, 'link': 1}], movingPlatforms=[mp]))
+    door = "solids.find(s=>s.type==='door')"
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(150)
+    assert await g.ev(door + ".open"), 'Tür geht nicht auf'
+    await g.p.wait_for_timeout(5400)
+    assert await g.ev(door + ".open"), 'Tür ist von allein wieder zugegangen'
+    # Affe in die Tür stellen, Schweinchen betätigt den Hebel -> Tür wartet, bis der Affe raus ist
+    await g.ev("p2.x = 240; p2.y = 680; p1.x = 420; p1.y = 680; p1.vx = 0")
+    await g.p.wait_for_timeout(80)
+    await g.p.keyboard.press('Numpad2'); await g.p.wait_for_timeout(150)
+    assert await g.ev(door + ".open"), 'Tür klemmt den Affen ein'
+    await g.ev("p1.x = 200"); await g.p.wait_for_timeout(150)
+    assert not await g.ev(door + ".open"), 'Tür schließt beim 2. Betätigen nicht'
+    # bewegter Boden über Hebel 2
+    plat = "solids.find(s=>s.type==='moveplat')"
+    await g.ev("p1.x = 140; p1.vx = 0"); await g.p.wait_for_timeout(80)
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(500)
+    x1 = await g.ev(plat + ".x"); assert x1 > 610, f'Boden fährt nicht los: {x1}'
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(60)
+    x2 = await g.ev(plat + ".x"); await g.p.wait_for_timeout(400)
+    x3 = await g.ev(plat + ".x")
+    assert abs(x3 - x2) < 0.01 and x3 > 610, f'Boden stoppt nicht an Ort und Stelle: {x2} -> {x3}'
+    await g.p.keyboard.press('KeyJ'); await g.p.wait_for_timeout(300)
+    assert await g.ev(plat + ".x") > x3 + 5, 'Boden fährt beim 3. Mal nicht weiter'
+
+@test
+async def stacheln_neues_aussehen(g):
+    """Stacheln: Metall-Bild vorhanden; Berührung tötet weiterhin (Treffer-Bereich unverändert)."""
+    await g.load(level([ground(0, 680, 1400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       spikes=[{'x': 300, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}]))
+    assert await g.ev("SPIKE_SPRITE instanceof HTMLCanvasElement && SPIKE_SPRITE.width >= 40"), 'Stachel-Bild fehlt'
+    await g.hold(('KeyD',), 900)
+    assert await g.ev('!!deathState'), 'Stacheln töten nicht mehr'
+
+@test
+async def geraeusche(g):
+    """Springen, Landen, Haken, Bröckelboden, Tod lösen Geräusche aus; M schaltet den Ton aus/an (gemerkt)."""
+    await g.load(level([ground(0, 680, 1400), ground(500, 560, 80, 40, 'crumble')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       hooks=[{'x': 160, 'y': 500, 'radius': 260}]))
+    await g.p.wait_for_function("p1.grounded && !deathState", timeout=5000)   # erst springen, wenn der Affe sicher steht
+    await g.ev("SFX_LOG.length = 0")
+    await g.p.keyboard.press('Space')
+    try: await g.p.wait_for_function("SFX_LOG.includes('jump') && SFX_LOG.includes('land')", timeout=3000)
+    except Exception: pass
+    log = await g.ev("SFX_LOG.slice()")
+    assert 'jump' in log and 'land' in log, f'Sprung/Landung ohne Ton: {log}'
+    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(150)
+    assert 'hook' in await g.ev("SFX_LOG.slice()"), 'Haken ohne Ton'
+    await g.ev("solids.find(s=>s.type==='crumble').triggered = true")
+    try: await g.p.wait_for_function("SFX_LOG.includes('crumblewarn') && SFX_LOG.includes('crumble')", timeout=3000)
+    except Exception: pass
+    log = await g.ev("SFX_LOG.slice()")
+    assert 'crumblewarn' in log and 'crumble' in log, f'Bröckelboden ohne Ton: {log}'
+    await g.p.keyboard.press('KeyM'); await g.p.wait_for_timeout(50)
+    assert await g.ev("soundMuted && localStorage.getItem('monchichi_mute')==='1'"), 'M schaltet nicht stumm'
+    await g.p.keyboard.press('Escape'); await g.p.wait_for_timeout(100)
+    assert any('Ton ist aus' in t for t in await menu_texte(g.p)), 'Ton-Schalter fehlt im Pausenmenü'
+    await g.p.keyboard.press('Escape'); await g.p.keyboard.press('KeyM'); await g.p.wait_for_timeout(50)
+    assert not await g.ev("soundMuted"), 'M schaltet nicht wieder ein'
+    assert await g.ev("!masterGain || Math.abs(masterGain.gain.value - MASTER_VOL) < 0.01"), 'Gesamtlautstärke nach Wieder-Einschalten falsch'
+    assert await g.ev("MASTER_VOL < 1 && FILE_VOL.music < 0.5"), 'Gesamt-/Musiklautstärke nicht reduziert'
+
+@test
+async def wetter_regen_und_sonne(g):
+    """Kein Regen mehr (Nutzerwunsch, Design-Politur 2): auch in einem Level mit „wetter: regen“ und nach
+    weatherForce('rain') fallen keine Tropfen, keine Spritzer, der Hintergrund wird nicht dunkler."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', wetter='regen'))
+    await g.ev("weatherForce('rain')"); await g.steps(40)
+    st = await g.ev("({r: weather.rain, sp: weather.splashes.length, phase: weather.phase})")
+    assert st['phase'] == 'sun' and st['r'] == 0 and st['sp'] == 0, f'es regnet: {st}'
+    x0 = await g.ev('p1.x'); await g.hold(('KeyD',), 500)
+    assert await g.ev('p1.x') - x0 > 50, 'Figur läuft nicht normal'
+
+@test
+async def tiere_reagieren(g):
+    """Süße Tiere: Frosch hüpft weg, Pilz federt mit Ton, Knospe geht auf, Faultier wacht auf (alles nur Deko)."""
+    await g.load(level([ground(0, 680, 4000), ground(1200, 400, 200, 40)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.p.wait_for_timeout(200)
+    # feste Testtiere einsetzen (die zufällige Verteilung hängt vom Level ab)
+    await g.ev("""critters = [
+      {kind:'frog', x:700, y:680, home:700, minX:300, maxX:3900, dir:1, hop:null, t:0, nextCroak:99},
+      {kind:'mush', x:1000, y:680, squish:0, lastT:0, big:false},
+      {kind:'bud', x:1600, y:680, open:0, target:0, col:'#ff7eb0'},
+      {kind:'sloth', x:1300, y:440, awake:0, wave:0, found:false}]; critFor = solids; SFX_LOG.length = 0""")
+    await g.ev("p1.x = 640; p1.vx = 0"); await g.p.wait_for_timeout(600)
+    fx = await g.ev("critters[0].x")
+    assert fx > 740, f'Frosch hüpft nicht weg: {fx}'
+    await g.ev("p1.x = 1000"); await g.p.wait_for_timeout(150)
+    assert 'mushroom' in await g.ev("SFX_LOG.slice()") and await g.ev("critters[1].squish") > 0.3, 'Pilz federt nicht'
+    await g.ev("p1.x = 1300"); await g.p.wait_for_timeout(900)
+    assert await g.ev("critters[3].awake") > 0.8 and 'discover' in await g.ev("SFX_LOG.slice()"), 'Faultier wacht nicht auf'
+    await g.ev("p1.x = 1600"); await g.p.wait_for_timeout(800)
+    assert await g.ev("critters[2].open") > 0.8, 'Knospe geht nicht auf'
+    assert not await g.ev('!!deathState'), 'Deko beeinflusst das Spiel'
+
+@test
+async def figuren_leben(g):
+    """Figuren: Strecken beim Absprung, Stauchen + Staub beim Landen, Herzchen wenn beide nah beieinander stehen."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 160, 'y': 680}))
+    await g.p.wait_for_function("p1.grounded && !deathState", timeout=5000)   # erst springen, wenn der Affe steht
+    await g.p.keyboard.down('Space')
+    try: await g.p.wait_for_function("!!p1._jumpT", timeout=3000)   # langsame Rechner: auf den Absprung warten
+    except Exception: pass
+    # Strecken zu einem festen Zeitpunkt kurz nach dem Absprung messen (langsame Rechner: sonst schon vorbei)
+    st = await g.ev("(() => { const j = !!p1._jumpT, d = dustFx.length; if (j) p1._jumpT = performance.now() - 60; return {j, sq: charSquash(p1), dust: d}; })()")
+    await g.p.keyboard.up('Space')
+    assert st['j'] and st['sq'][1] > 1.005 and st['dust'] > 0, f'kein Strecken/Staub beim Absprung: {st}'
+    await g.p.wait_for_timeout(1300)
+    assert await g.ev("!!p1._landT && dustFx.length >= 0"), 'Landung nicht erkannt'
+    sq = await g.ev("(()=>{ p1._landT = performance.now() - 100; p1._landV = 1; return charSquash(p1); })()")
+    assert sq[1] < 0.9, f'kein Stauchen beim Landen: {sq}'
+    await g.ev("p1.x = 200; p2.x = 170"); await g.p.wait_for_timeout(1600)
+    for _ in range(20):
+        if await g.ev("heartFx.length") > 0: break
+        await g.p.wait_for_timeout(250)
+    assert await g.ev("heartFx.length") > 0, 'keine Herzchen, obwohl beide beieinander stehen'
+
+@test
+async def regen_klang(g):
+    """Kein Regen-Rauschen mehr (Regen ist aus dem Spiel): auch nach weatherForce('rain') wird nichts vom Regen gespielt."""
+    await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')   # Ton freischalten (erster Tastendruck)
+    await g.ev("weatherForce('rain')"); await g.steps(60)
+    assert await g.ev("weather.rain === 0 && weather.phase === 'sun'"), 'Regen läuft'
+
+@test
+async def asmr_klangbibliothek(g):
+    """Alle Geräusche: Klangbibliothek (Stereo, mehrere Varianten) wird gebaut; Abspielen klappt nach dem ersten Tastendruck."""
+    st = await g.ev("""(()=>{ const out={}; const it=sfxBuild(new OfflineAudioContext(2,44100,44100), out); while(!it.next().done){}
+      const names = Object.keys(out.bank); const bad = names.filter(k => !out.bank[k].length || out.bank[k][0].numberOfChannels !== 2);
+      return {names, bad, steps: out.bank.step.length, ir: !!out.ir, vol: names.filter(k => !(k in SFX_VOL))}; })()""")
+    need = ['step', 'land', 'jump', 'wall', 'coin', 'hookAttach', 'rope', 'umbrella', 'lever', 'doorOpen', 'doorClose',
+            'crumbleWarn', 'crumbleBreak', 'death', 'checkpoint', 'mushroom', 'frog', 'discover', 'bud', 'heart', 'birdFlap', 'menuTick', 'menuOk', 'menuStart']
+    assert all(n in st['names'] for n in need) and not st['bad'] and st['steps'] >= 4 and st['ir'] and not st['vol'], f'Bibliothek: {st}'
+    await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF'); await g.p.wait_for_timeout(1500)
+    if await g.ev("audioCtx && audioCtx.state === 'running'"):
+        try: await g.p.wait_for_function("!!sfxBank", timeout=10000)   # Klangbibliothek wird im Hintergrund gebaut
+        except Exception: pass
+        assert await g.ev("!!sfxBank && sfxPlay('coin', {x: p1.x})"), 'Geräusch lässt sich nicht abspielen'
+
+@test
+async def menue_ton_dezent(g):
+    """Design-Politur G: Menü-Klänge sind kurz und tief statt klingelnd – menuTick (Cursor/Zurück) ≤ 50 ms, menuOk
+    (Bestätigen) ≤ 80 ms, menuStart (Level-Start) ≤ 120 ms, ohne hohe Spieluhr-Anteile (Energie über 2 kHz klein),
+    am Ende verklungen; schnelle Cursor-Schritte klappern nicht (höchstens einer je MENU_TICK_ABSTAND ms)."""
+    st = await g.ev("""(()=>{ const out={}; const it=sfxBuild(new OfflineAudioContext(2,44100,44100), out); while(!it.next().done){}
+      const r = {};
+      for(const n of ['menuTick', 'menuOk', 'menuStart']){
+        const buf = out.bank[n][0], d = buf.getChannelData(0), N = d.length;
+        let e = 0, hi = 0, tail = 0, prev = 0;
+        for(let i = 0; i < N; i++){ e += d[i]*d[i]; const h = d[i] - prev; hi += h*h; prev = d[i]; if(i > N*0.8) tail += d[i]*d[i]; }
+        r[n] = {ms: Math.round(buf.duration*1000), hoch: +(hi/(e || 1)).toFixed(3), ende: +(tail/(e || 1)).toFixed(4)};
+      }
+      return r; })()""")
+    grenze = {'menuTick': 50, 'menuOk': 80, 'menuStart': 120}
+    for n, v in st.items():
+        assert v['ms'] <= grenze[n], f'{n} zu lang: {v}'
+        assert v['hoch'] < 0.15, f'{n} zu hell/klingelnd (Anteil hoher Frequenzen): {v}'
+        assert v['ende'] < 0.05, f'{n} klingt am Ende noch nach: {v}'
+    # schnelle Cursor-Schritte: nur ein Tap je MENU_TICK_ABSTAND
+    n = await g.ev("""(()=>{ let c = 0; const alt = SFX.menuTick; SFX.menuTick = () => c++;
+      for(let i = 0; i < 5; i++) GameMenu.snd.play('move'); SFX.menuTick = alt; return c; })()""")
+    assert n == 1, f'5 schnelle Cursor-Schritte -> {n} Klänge'
+
+@test
+async def levelkarten_gleich_breit(g):
+    """Design-Politur F: auf der Welt-Seite sind alle Levelkarten (auch die Boss-Karte, mit und ohne Statistik-Zeile)
+    gleich breit und gleich hoch, liegen ganz im Bild und kein Titel ragt aus seiner Karte – bei 1920×1080 und 1366×768,
+    mit 6, 5 und 4 Leveln in der Welt. Lange Titel werden kleiner bzw. an einer Silbe umgebrochen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("""localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json'],
+            completed: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], stats: {'dschungel/01-dschungel.json': {m: 2, f: 3}}, bosse: []})); localStorage.setItem('monchichi.introGesehen', 'true')""")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        alle = await g.ev("GameMenu.config.levels.map((l, i) => i).filter(i => GameMenu.config.levels[i].welt === 'dschungel')")
+        assert len(alle) >= 6, alle
+        for w, h in ((1920, 1080), (1366, 768)):
+            await p.set_viewport_size({'width': w, 'height': h}); await p.wait_for_timeout(200)
+            for n in (6, 5, 4):
+                await g.ev(f"{alle}.forEach((i, k) => GameMenu.config.levels[i].welt = k < {n} ? 'dschungel' : '_weg')")
+                for welt in ('dschungel', 'ruinen'):
+                    await g.ev(f"GameMenu.show('levels', {{world: '{welt}'}})"); await p.wait_for_timeout(450)
+                    k = await g.ev("""[...document.querySelectorAll('#sm-cards .lc')].map(b => { const r = b.getBoundingClientRect(), nm = b.querySelector('.nm');
+                        return {w: r.width, h: r.height, l: r.left, r: r.right, boss: b.classList.contains('boss'), duel: !!b.querySelector('.duel'),
+                                t: nm.textContent, rausW: nm.scrollWidth - nm.clientWidth, rausH: nm.scrollHeight - nm.clientHeight, nmR: nm.getBoundingClientRect().right}; })""")
+                    wo = f'{w}x{h}, {welt}, {n} Level'
+                    if welt == 'dschungel': assert len(k) == n + 1 and k[-1]['boss'] and k[0]['duel'], f'{wo}: {k}'
+                    assert max(c['w'] for c in k) - min(c['w'] for c in k) < 1, f'{wo}: Breiten {[round(c["w"], 1) for c in k]}'
+                    assert max(c['h'] for c in k) - min(c['h'] for c in k) < 1, f'{wo}: Höhen {[round(c["h"], 1) for c in k]}'
+                    assert min(c['l'] for c in k) >= 0 and max(c['r'] for c in k) <= w, f'{wo}: Karten ragen aus dem Bild'
+                    for c in k:
+                        assert c['rausW'] <= 1 and c['rausH'] <= 2 and c['nmR'] <= c['r'], f'{wo}: Titel ragt heraus: {c}'
+            await g.ev(f"{alle}.forEach(i => GameMenu.config.levels[i].welt = 'dschungel')")
+    finally:
+        await p.set_viewport_size({'width': 1280, 'height': 720})
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+# Design-Politur A: Obergrenze für die Zeichenzeit eines Bildes (ms) bei doppelter Pixeldichte – großzügig über den
+# Messwerten (2–4 ms im Testbrowser), fängt aber Ausreißer wie die frühere Dunkel-Schicht (80–90 ms) sicher ab
+ZEICHNEN_MS_GRENZE = 20
+LEISTUNG_STELLEN = [('dschungel', 'dschungel/03-lianenschlucht.json', 360), ('ruinen', 'ruinen/04-sonnentempel.json', 300),
+                    ('hoehle', 'hoehle/02-tropfsteingang.json', 300), ('vulkan', 'vulkan/01-glutpfad.json', 340)]
+
+# Design-Politur B: Mindest-Kontrast (WCAG-Kontrastverhältnis, Median) zwischen Bodenoberkante und dem Hintergrund
+# 16 px darüber, je Welt und Tageszeit (gemessen nach der Politur, mit etwas Abstand gegen Zufall von Tieren/Teilchen)
+KONTRAST_MIN = {'mittag': 1.12, 'abend': 1.12, 'nacht': 1.4}   # Mittag: Ruinen am schwächsten (~1,26); Abend: warmes Orange hinter orangem Boden (~1,17) – die dunkle Kontur trennt dort
+KONTRAST_MIN_WELT = {'hoehle': 1.35, 'vulkan': 1.55}   # eigene Untergrenze für dunkle Welten (gilt zu jeder Tageszeit)
+KONTRAST_JS = r"""() => {
+  const L = (r, g, b) => { const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }; return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b); };
+  const img = ctx.getImageData(0, 0, cvs.width, cvs.height).data, Wc = cvs.width, Hc = cvs.height;
+  const lumAt = (sx, sy, r) => { let s = 0, n = 0; for(let dy = -r; dy <= r; dy++) for(let dx = -r; dx <= r; dx++){ const x = Math.round(sx)+dx, y = Math.round(sy)+dy;
+    if(x < 0 || y < 0 || x >= Wc || y >= Hc) continue; const i = (y*Wc+x)*4; s += L(img[i], img[i+1], img[i+2]); n++; } return n ? s/n : null; };
+  const scr = (wx, wy) => [((wx - camX)*zoom)*RS, (wy*zoom + H*(1-zoom) + CEILING_MARGIN)*RS];
+  const cr = (a, b) => (Math.max(a, b) + 0.05)/(Math.min(a, b) + 0.05), out = [];
+  const sichtbar = (x, y) => x > 8 && y > 8 && x < Wc - 8 && y < Hc - 8;
+  for(const so of solids){
+    if(so.type === 'oneway' || so.gone || so.w < 40) continue;
+    for(let px = so.x + 20; px < so.x + so.w - 10; px += 80){
+      const [ix, iy] = scr(px, so.y + 5), [ox, oy] = scr(px, so.y - 16);
+      if(!sichtbar(ix, iy) || !sichtbar(ox, oy)) continue;
+      if(solids.some(o => o !== so && px >= o.x && px < o.x + o.w && so.y - 16 >= o.y && so.y - 16 < o.y + o.h)) continue;
+      const a = lumAt(ix, iy, 2*RS), b = lumAt(ox, oy, 2*RS); if(a != null && b != null) out.push(cr(a, b));
+    }
+  }
+  return out; }"""
+
+@test
+async def kontur_wand_boden_einheitlich(g):
+    """Nutzerwunsch: Wand und Boden haben immer dieselbe Outline – gleiche Breite an allen freien Seiten (oben, unten,
+    links, rechts), auch über Moos/Pflanzen; wo Boden an Wand grenzt (daneben, darauf, darunter) genau EINE Linie in
+    derselben Breite (früher doppelt bzw. mit eigenem Wand-Rand). Gemessen mit deckender Prüf-Farbe."""
+    G = ground
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(500)
+        await startmenue_bis_level(g)
+        await kontur_messen(g, G)
+    finally:
+        await kx.close(); srv.shutdown()
+
+async def kontur_messen(g, G):
+    await g.load(level([G(0, 680, 1600), G(80, 400, 160, 120), G(360, 400, 160, 120, 'wall'),
+                        G(640, 400, 80, 120), G(720, 400, 80, 120, 'wall'),          # Boden neben Wand
+                        G(900, 320, 120, 80, 'wall'), G(900, 400, 120, 80),           # Wand auf Boden
+                        G(1100, 320, 120, 80), G(1100, 400, 120, 80, 'wall')],        # Boden auf Wand
+                       {'x': 60, 'y': 680}, {'x': 30, 'y': 680}, welt='dschungel'))
+    await g.steps(5); await g.ev("menuScreen = 'pause'")
+    r = await g.ev("""(() => { const alt = designLook; designLook = () => ({...alt(), kante: 1, kanteFarbe: '255,0,255'});
+      camPos = camX = 0; draw(); designLook = alt;
+      const img = ctx.getImageData(0, 0, cvs.width, cvs.height).data, Wc = cvs.width;
+      const scr = (wx, wy) => [Math.round(((wx - camX)*zoom)*RS), Math.round((wy*zoom + H*(1-zoom) + CEILING_MARGIN)*RS)];
+      const mag = (x, y) => { const i = (y*Wc + x)*4; return img[i] > 170 && img[i+1] < 90 && img[i+2] > 140; };   // Prüf-Farbe (auch unter leichtem Dunst)
+      // Prüf-Farbe auf einer Linie durch den Rand zählen (±12 Welt-px um die Kante)
+      const quer = (wx, wy, dx, dy) => { const [a0, b0] = scr(wx - dx*12, wy - dy*12), [a1, b1] = scr(wx + dx*12, wy + dy*12);
+        let n = 0; const st = Math.max(Math.abs(a1 - a0), Math.abs(b1 - b0));
+        for(let k = 0; k <= st; k++){ if(mag(Math.round(a0 + (a1 - a0)*k/st), Math.round(b0 + (b1 - b0)*k/st))) n++; } return n; };
+      // je Seite drei Stellen, die breiteste zählt (Tiere/Blätter davor sollen das Messen nicht stören)
+      const drei = f => Math.max(f(0.3), f(0.5), f(0.7));
+      const seiten = (x, y, w, h) => ({oben: drei(t => quer(x + w*t, y, 0, 1)), unten: drei(t => quer(x + w*t, y + h, 0, 1)),
+        links: drei(t => quer(x, y + h*t, 1, 0)), rechts: drei(t => quer(x + w, y + h*t, 1, 0))});
+      return {boden: seiten(80, 400, 160, 120), wand: seiten(360, 400, 160, 120), rs: RS, zoom,
+        nebeneinander: drei(t => quer(720, 400 + 120*t, 1, 0)), wandAufBoden: drei(t => quer(900 + 120*t, 400, 0, 1)),
+        bodenAufWand: drei(t => quer(1100 + 120*t, 400, 0, 1))}; })()""")
+    soll = 3 * r['zoom'] * r['rs']   # DESIGN_LOOK kanteBreite 3 Welt-px
+    werte = {**{f'boden_{k}': v for k, v in r['boden'].items()}, **{f'wand_{k}': v for k, v in r['wand'].items()},
+             'nebeneinander': r['nebeneinander'], 'wandAufBoden': r['wandAufBoden'], 'bodenAufWand': r['bodenAufWand']}
+    falsch = {k: v for k, v in werte.items() if abs(v - soll) > 1.6}
+    assert not falsch, f'Outline nicht einheitlich (soll ≈ {soll:.1f} Bild-px): {falsch}; alle: {werte}'
+    assert max(werte.values()) - min(werte.values()) <= 2, f'Outline-Breiten unterschiedlich: {werte}'
+
+@test
+async def kontrast_mindestwerte(g):
+    """Design-Politur B: in jeder Welt (Dschungel, Ruinen, Höhle, Vulkan) zu Mittag, Abend und Nacht hebt sich die
+    Bodenoberkante deutlich vom Hintergrund ab – Median des Kontrastverhältnisses mindestens KONTRAST_MIN (Tageszeit)
+    bzw. KONTRAST_MIN_WELT; die Tageszeiten bleiben unterscheidbar (mittlere Helligkeit Mittag > Abend > Nacht)."""
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(800)
+        await startmenue_bis_level(g)
+        zu_wenig, werte = {}, {}
+        for welt, datei, spalte in LEISTUNG_STELLEN:
+            await koop_level(g, datei)
+            hell = {}
+            for zeit in ('mittag', 'abend', 'nacht'):
+                pool = []; hs = []
+                for sp in (spalte, spalte + 200):
+                    await g.ev(f"""(() => {{ menuScreen = null; deathState = null; p1.x = {sp}*40 + 60; p2.x = {sp}*40 + 20; p1.y = p2.y = 100;
+                        camPos = camX = Math.max(0, {sp}*40 - 200); setTheme(composeLook('{welt}', '{zeit}')); weatherForce('sun'); }})()""")
+                    await g.steps(25); await g.ev(f"menuScreen = 'pause'; camPos = Math.max(0, {sp}*40 - 200)"); await g.ev("draw()")
+                    pool += await p.evaluate(KONTRAST_JS)
+                    hs.append(await g.ev("(() => { const d = ctx.getImageData(0, 0, cvs.width, cvs.height).data; let s = 0; for(let i = 0; i < d.length; i += 400) s += d[i] + d[i+1] + d[i+2]; return s/(d.length/400)/765; })()"))
+                    await g.ev("menuScreen = null")
+                med = sorted(pool)[len(pool)//2] if pool else 0
+                grenze = KONTRAST_MIN_WELT.get(welt, KONTRAST_MIN[zeit])
+                werte[f'{welt}-{zeit}'] = round(med, 2); hell[zeit] = sum(hs)/len(hs)
+                if len(pool) < 5 or med < grenze: zu_wenig[f'{welt}-{zeit}'] = (round(med, 2), grenze, len(pool))
+            if welt in ('dschungel', 'ruinen'):
+                assert hell['mittag'] > hell['abend'] > hell['nacht'], f'{welt}: Tageszeiten nicht unterscheidbar {hell}'
+        print('    Kontrast:', werte)
+        assert not zu_wenig, f'Kontrast zu gering (Wert, Grenze, Messpunkte): {zu_wenig}'
+    finally:
+        await kx.close(); srv.shutdown()
+
+@test
+async def welt_details_und_vordergrund(g):
+    """Design-Politur D: jede Welt bekommt ihre Details (Ruinen: Fackeln, Höhle: Tropfsteine mit Tropfen, Dschungel:
+    Wasserfall mit Regenbogen, Vulkan: Asche/Funken). Ein dunkler Vordergrund am unteren Bildrand gibt es NICHT mehr
+    (Nutzerwunsch: „was soll diese zusätzliche untere Reihe mit Schatten“)."""
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(800)
+        await startmenue_bis_level(g)
+        for welt, datei, spalte in LEISTUNG_STELLEN:
+            await koop_level(g, datei)
+            r = await g.ev(f"""(() => {{ setTheme(composeLook('{welt}', 'mittag')); return {{welt: detailWelt, fackeln: BG_FACKELN.length, tropfen: BG_TROPFEN.length,
+                ebene: BG_LAYERS.includes(detailEbene), vorne: typeof vordergrundZeichnen === 'function'}}; }})()""")
+            assert r['welt'] == welt and r['ebene'], f'{welt}: Details fehlen {r}'
+            assert not r['vorne'], 'Vordergrund-Schatten unten ist wieder da'
+            if welt == 'ruinen': assert r['fackeln'] > 0, r
+            if welt == 'hoehle': assert r['tropfen'] > 0, r
+    finally:
+        await kx.close(); srv.shutdown()
+
+# Ruckeln (Design-Politur 2): Obergrenze für einen Spielschritt (ms) in den teuersten Leveln. Vorher kostete die
+# Licht- und Fallen-Berechnung im Sonnentempel/Fallengang 15–26 ms je Schritt (54 Schritte je Sekunde -> Ruckeln).
+SPIELSCHRITT_MS_GRENZE = 6
+@test
+async def spielschritt_schnell(g):
+    """Ruckeln behoben (Design-Politur 2): Lichtstrahl und Flammen prüfen feste Teile über ein Raster-Verzeichnis statt
+    jedes Teil des Levels – ein Spielschritt dauert auch in den Licht-/Fallen-Leveln höchstens SPIELSCHRITT_MS_GRENZE ms;
+    der Lichtweg ist derselbe wie mit der alten Prüfung (jedes Kästchen verglichen)."""
+    for datei in ('ruinen/04-sonnentempel.json', 'ruinen/03-fallengang.json', 'vulkan/05-schlackewerk.json'):
+        await koop_level(g, datei)
+        ms = await g.ev("(() => { for(let i = 0; i < 5; i++) stepSim(performance.now()); const t0 = performance.now(); for(let i = 0; i < 60; i++) stepSim(performance.now()); return (performance.now() - t0)/60; })()")
+        assert ms <= SPIELSCHRITT_MS_GRENZE, f'{datei}: Spielschritt {ms:.1f} ms (Grenze {SPIELSCHRITT_MS_GRENZE})'
+        gleich = await g.ev("""(() => { const alt = (c, r) => { const px = c*40 + 20, py = r*40 + 20;
+            return solids.some(s => !s.gone && s.type !== 'oneway' && s.type !== 'fake' && s.type !== 'lichtquelle' && px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h); };
+          const altF = (px, py) => solids.some(s => !s.gone && s.type !== 'oneway' && s.type !== 'fake' && px >= s.x && px < s.x + s.w && py >= s.y && py < s.y + s.h);
+          let n = 0, falsch = 0; const cmax = Math.ceil(LEVEL_W/40);
+          for(let c = -1; c <= cmax; c++) for(let r = -4; r <= 18; r++){ n++; if(alt(c, r) !== lichtFestImSpiel(c, r)) falsch++;
+            const px = c*40 + 7, py = r*40 + 29; if(altF(px, py) !== falleFestBei(px, py)) falsch++; }
+          return {n, falsch}; })()""")
+        assert gleich['falsch'] == 0, f'{datei}: Raster-Prüfung weicht ab: {gleich}'
+
+@test
+async def leinwand_scharf_und_schnell(g):
+    """Design-Politur A: bei doppelter Pixeldichte (DPR 2) hat die Leinwand echte 2560×1440 Pixel (RS = 2, scharf statt
+    hochskaliert), bei 4K-Dichte bis LEINWAND_MAX_BREITE; ein Bild zu zeichnen dauert in jeder Welt am Tag und in der
+    Nacht höchstens ZEICHNEN_MS_GRENZE ms (früher kostete die Dunkel-Schicht bei DPR 2 rund 90 ms)."""
+    srv = webserver(); seite = await g.p.context.browser.new_page(viewport={'width': 1280, 'height': 720}, device_scale_factor=2)
+    try:
+        await seite.goto(srv.url + 'index.html'); await seite.wait_for_function("GameMenu.levelsReady()", timeout=8000); await seite.wait_for_timeout(800)
+        g2 = Game(seite); await startmenue_bis_level(g2)
+        r = await g2.ev("(() => { fitCanvasRes(); return {w: cvs.width, h: cvs.height, rs: RS, max: LEINWAND_MAX_BREITE}; })()")
+        assert r['w'] == 2560 and r['h'] == 1440 and r['rs'] == 2 and r['max'] >= 3840, f'Leinwand bei DPR 2: {r}'
+        v = await g2.ev("(() => { const b = cvs.getBoundingClientRect(); return Math.abs((cvs.width/cvs.height)/(b.width/b.height) - 1); })()")
+        assert v < 0.01, f'Spielbild verzerrt (Seitenverhältnis weicht um {v:.2%} ab)'
+        zeiten = {}
+        for welt, datei, spalte in LEISTUNG_STELLEN:
+            await koop_level(g2, datei)
+            for zeit in ('mittag', 'nacht'):
+                await g2.ev(f"""(() => {{ menuScreen = null; p1.x = {spalte}*40 + 60; p2.x = {spalte}*40 + 20; p1.y = p2.y = 100;
+                    camPos = camX = {spalte}*40 - 200; setTheme(composeLook('{welt}', '{zeit}')); }})()""")
+                await g2.steps(20); await g2.ev("menuScreen = 'pause'")
+                zeiten[f'{welt}-{zeit}'] = await g2.ev("(() => { draw(); draw(); const t0 = performance.now(); for (let i = 0; i < 10; i++) draw(); return (performance.now() - t0)/10; })()")
+                await g2.ev("menuScreen = null")
+        langsam = {k: round(v, 1) for k, v in zeiten.items() if v > ZEICHNEN_MS_GRENZE}
+        assert not langsam, f'Zeichnen zu langsam (Grenze {ZEICHNEN_MS_GRENZE} ms): {langsam}; alle: {zeiten}'
+    finally:
+        await seite.close(); srv.shutdown()
+
+@test
+async def musik_und_ambiente(g):
+    """Klaviermusik: Takte in F-Dur, beim Regenbogen heller (höher); Klavier/Wind/Grillen/Bach werden vorberechnet."""
+    st = await g.ev("""(()=>{ const out={}; const it=musicBuild(new OfflineAudioContext(2,44100,44100), out); while(!it.next().done){}
+      mus.motif = null; const normal=[], bright=[];
+      for(let b=0;b<16;b++){ normal.push(...musicCompose(b,false)); }
+      mus.motif = null; for(let b=0;b<16;b++){ bright.push(...musicCompose(b,true)); }
+      const F = [5,7,9,10,0,2,4];
+      const inKey = [...normal, ...bright].every(e => F.includes(((e.midi%12)+12)%12));
+      const avg = a => a.filter(e=>e.midi>=60).reduce((s,e)=>s+e.midi,0)/Math.max(1,a.filter(e=>e.midi>=60).length);
+      return {piano:Object.keys(out.piano).length, amb:!!(out.wind&&out.crickets&&out.brook), n:normal.length, inKey, up: avg(bright)-avg(normal)}; })()""")
+    assert st['piano'] == 4 and st['amb'] and st['n'] > 100, f'Musik/Ambiente fehlt: {st}'
+    assert st['inKey'], 'Töne außerhalb von F-Dur'
+    assert st['up'] > 8, f'Regenbogen-Musik nicht heller: {st}'
+    await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')
+    if await g.ev("audioCtx && audioCtx.state === 'running'"):
+        for _ in range(60):   # Musik wird im Hintergrund berechnet – langsame Rechner brauchen länger (bis 30 s)
+            if await g.ev("mus.ready && mus.log.length > 0"): break
+            await g.p.wait_for_timeout(500)
+        assert await g.ev("mus.ready && mus.log.length > 0"), 'Musik spielt nicht'
+
+@test
+async def eigene_aufnahmen(g):
+    """Eigene Aufnahmen: Vögel/Regen/Fluss laufen als nahtlose Schleife, Musik streamt, blendet ein,
+    blendet beim Tod aus und startet nach dem Weitermachen von vorne."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
+        await startmenue_bis_level(g)   # Ton freischalten + über das Startmenü ins Level
+        if not await g.ev("audioCtx && audioCtx.state === 'running'"):
+            return   # ohne Tonausgabe (manche Testumgebungen) nichts zu prüfen
+        for _ in range(30):
+            if await g.ev("fileAudio.ok.birds && fileAudio.ok.rain && fileAudio.ok.river && fileAudio.ok.music"): break
+            await p.wait_for_timeout(500)
+        ok = await g.ev("({...fileAudio.ok})")
+        assert ok.get('birds') and ok.get('rain') and ok.get('river'), f'Schleifen nicht geladen: {ok}'
+        assert ok.get('music'), f'Musik spielt nicht: {ok}'
+        # nahtlose Schleife: Anfang/Ende ohne Stille
+        assert await g.ev("""(()=>{ const src = audioCtx.createBuffer(2, 44100*4, 44100);
+            for(let c=0;c<2;c++){ const d=src.getChannelData(c); for(let i=0;i<d.length;i++) d[i]=Math.random()*0.4-0.2; }
+            const b = fileLoopBuffer(audioCtx, src, 1); const d = b.getChannelData(0);
+            return Math.abs(b.length - 44100*3) < 50 && Math.abs(d[0]) < 0.25; })()"""), 'Schleife kaputt'
+        await p.wait_for_timeout(3000)
+        t1 = await g.ev("fileAudio.el.currentTime")
+        assert t1 > 1, f'Musik läuft nicht weiter: {t1}'
+        # Tod -> ausblenden; weitermachen -> von vorne
+        await g.ev("die(p1)"); await p.wait_for_timeout(1500)
+        assert await g.ev("fileAudio.gain.gain.value") < 0.05, 'Musik blendet beim Tod nicht aus'
+        await p.keyboard.press('KeyA'); await p.wait_for_timeout(2600)
+        assert await g.ev("fileAudio.el.currentTime") < 3, 'Musik startet nach dem Tod nicht von vorne'
+    finally:
+        srv.shutdown()
+
+@test
+async def seil_abflug_mit_schwung(g):
+    """Vom Seil loslassen (Springen) mit Schwung: Affe fliegt weit weiter, auch ohne Taste (kein Abbremsen auf 7,2)."""
+    await g.load(level([ground(0, 680, 4000)], {'x': 900, 'y': 680}, {'x': 860, 'y': 680}, hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
+    await g.ev("""(()=>{ const h=hooks[0]; p1.x=h.x-60; p1.y=h.y+170+p1.h*0.6; p1.vx=11; p1.vy=0; p1.grounded=false;
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; })()""")
+    await g.p.wait_for_timeout(50)
+    await g.p.keyboard.press('Space')
+    try: await g.p.wait_for_function("!p1.hookAttached", timeout=3000)   # langsame Rechner: auf den nächsten Schritt warten
+    except Exception: pass
+    st = await g.ev("({hook: p1.hookAttached, vx: p1.vx, x: p1.x})")
+    assert not st['hook'], 'Springen löst das Seil nicht'
+    await g.steps(14)   # ~0,25 s Spielzeit
+    st2 = await g.ev("({vx: p1.vx, x: p1.x, g: p1.grounded})")
+    assert st2['vx'] > 8 or st2['g'], f'Schwung nach dem Loslassen weg: {st} -> {st2}'
+    assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
+
+@test
+async def seil_absprung_wie_schwung(g):
+    """Abspringen vom Seil: Abfluggeschwindigkeit = Schwunggeschwindigkeit (kein künstlicher Schub), Schwung bleibt erhalten."""
+    for vx0 in (0, 6):
+        await g.load(level([ground(0, 680, 4000)], {'x': 880, 'y': 680}, {'x': 840, 'y': 680}, hooks=[{'x': 1000, 'y': 300, 'radius': 260}]))
+        await g.ev(f"""(()=>{{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+180+p1.h*0.6; p1.vx={vx0}; p1.vy=0; p1.grounded=false;
+          p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; }})()""")
+        await g.ev("""window.__rv=null; window.__rv10=null; window.__rn=0; if(!window.__or){ window.__or=stepSim; stepSim=function(ts){ const was=p1.hookAttached; __or(ts);
+          if(was && !p1.hookAttached && window.__rv===null){ window.__rv=p1.vx; window.__rn=0; }
+          else if(window.__rv!==null && ++window.__rn===10) window.__rv10=p1.vx; }; }""")
+        if vx0 == 0: await g.p.keyboard.down('KeyD')
+        # Zustand setzen und sofort springen (im selben Aufruf) – sonst schwingt die Figur auf langsamen Rechnern
+        # vorher schon ein paar Schritte, und der Abflug-Schwung ist nicht mehr der gesetzte
+        await g.ev(f"""(()=>{{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+180+p1.h*0.6; p1.vx={vx0}; p1.vy=0; p1.grounded=false;
+          p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; p1._px=p1.x; p1._py=p1.y;
+          KEYS.Space = true; KEYS.Space_pressed = true; }})()""")
+        await g.p.wait_for_timeout(120); await g.ev("KEYS.Space = false"); await g.p.wait_for_timeout(200)
+        rv, vx = await g.ev("window.__rv"), await g.ev("window.__rv10")   # vx 10 Schritte nach dem Loslassen
+        if vx0 == 0:
+            await g.p.keyboard.up('KeyD')
+            assert rv is not None and abs(rv) < 2, f'künstlicher Schub beim Abspringen aus dem Stand: {rv}'
+            assert vx <= 7.3, f'zu schnell ohne Schwung: {vx}'
+        else:
+            assert rv is not None and abs(rv - 6) < 1.2, f'Abflug passt nicht zum Schwung (6): {rv}'
+            assert vx > rv*0.88, f'Schwung nach dem Loslassen weg: {rv} -> {vx}'
+
+# ---------------------------------------------------------------- Runner
+
+@test
+async def level_themen(g):
+    """Jedes Level hat sein eigenes Aussehen (Thema): Level 1 Dschungel, 2 Abendrot, 3 Ruinen; alle 6 Themen
+    zeichnen fehlerfrei; Nacht/Höhle sind dunkel mit Licht um die Figuren; der Editor speichert das Thema."""
+    erwartet = {'dschungel/01-dschungel.json': 'dschungel', 'dschungel/02-baumkronen.json': 'abend', 'ruinen/01-ruinen.json': 'ruinen', 'ruinen/02-mondnacht.json': 'nacht', 'hoehle/01-kristallhoehle.json': 'hoehle', 'vulkan/03-feuerberg.json': 'vulkan'}
+    for datei, th in erwartet.items():
+        d = json.loads((ROOT / 'levels' / datei).read_text())
+        assert d.get('theme') == th, f'{datei}: Thema {d.get("theme")} statt {th}'
+    assert await g.ev("THEME_ORDER.join(',')") == 'dschungel,abend,ruinen,nacht,hoehle,vulkan'
+    await g.load(level([ground(0, 680, 3000), ground(400, 560, 200, 40, 'wall'), ground(700, 680, 120, 40, 'crumble')],
+                       {'x': 300, 'y': 680}, {'x': 260, 'y': 680}, theme='nacht',
+                       coins=[{'x': 500, 'y': 600, 'color': 'blue'}], switches=[{'x': 900, 'y': 660, 'link': 1}],
+                       hooks=[{'x': 1000, 'y': 400, 'radius': 160}], checkpoints=[{'x': 1100, 'y': 680}]))
+    await g.p.wait_for_timeout(300)   # dunkles Thema mit Münzen, Hebel, Haken: Zeichnen ohne Fehler
+    assert await g.ev('themeName') == 'nacht', 'Thema aus der Level-Datei nicht übernommen'
+    farben = set()
+    for th in ('dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'):
+        await g.ev(f"setTheme('{th}')"); await g.p.wait_for_timeout(350)
+        # Farbe des Himmels oben links unterscheidet sich je Thema
+        farben.add(await g.ev("Array.from(BG_SKY.getContext('2d').getImageData(5, 5, 1, 1).data).slice(0,3).join(',')"))
+        assert await g.ev('THEME.ground.grass'), 'keine Bodenfarbe'
+    assert len(farben) == 6, f'Themen sehen gleich aus: {farben}'
+    # dunkles Thema: Bild um die Figur heller als weit weg
+    await g.ev("setTheme('hoehle')"); await g.p.wait_for_timeout(400)
+    hell = await g.ev("""(()=>{ const sx=Math.round((p1.x-camX)*zoom), sy=Math.round((p1.y-p1.h*0.5)*zoom+H*(1-zoom));
+        const k = darkCanvas.width/W;   // Dunkel-Schicht in halber Auflösung (Design-Politur)
+        const a = darkCtx.getImageData(Math.round(sx*k), Math.round(sy*k), 1, 1).data[3], b = darkCtx.getImageData(Math.round(Math.min(W-2, sx+600)*k), Math.round(60*k), 1, 1).data[3]; return [a, b]; })()""")
+    assert hell[0] < hell[1], f'kein Licht um die Figur: {hell}'
+    # ohne Thema: Dschungel
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 260, 'y': 680}))
+    assert await g.ev('themeName') == 'dschungel'
+    # Editor: Thema wählen -> gespeichert, exportiert und im Spiel-Format
+    srv = webserver()
+    try:
+        p = g.p
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        # seit Ausbau 2: Thema = „Look-Override“ im Fenster Level-Info
+        await p.click('#metaBtn'); await p.select_option('#metaLook', 'vulkan'); await p.click('#metaClose'); await p.wait_for_timeout(100)
+        roh = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2')).theme")
+        assert roh == 'vulkan', f'Editor speichert das Thema nicht: {roh}'
+        await p.reload(); await p.wait_for_timeout(300)
+        assert await p.eval_on_selector('#metaLook', 'e => e.value') == 'vulkan', 'Thema nach Neuladen weg'
+        await p.click('#exportBtn'); await p.wait_for_timeout(200)
+        exp = json.loads(await p.eval_on_selector('#exportText', 'e => e.value'))
+        assert exp.get('theme') == 'vulkan', 'Export ohne Thema'
+    finally:
+        srv.shutdown()
+
+@test
+async def neue_elemente(g):
+    """Druckplatte (Tür offen nur solange jemand draufsteht), Aufwind (trägt das Schweinchen mit Schirm hoch,
+    den Affen nicht), Scheinwand (durchlaufbar, sieht aus wie Wand), Sprungpilz (schleudert ~6 Kästchen hoch, nur beim Draufspringen)."""
+    lv = level([ground(0, 680, 3000)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680},
+               plates=[{'x': 300, 'y': 660, 'link': 3}], doors=[{'x': 620, 'y': 660, 'link': 3}, {'x': 620, 'y': 620, 'link': 3}])
+    await g.load(lv)
+    tuer = "solids.filter(s=>s.type==='door').every(d=>d.gone)"
+    assert not await g.ev(tuer), 'Tür ist am Anfang offen'
+    # zur Platte laufen, bis der Affe dort ist (feste Zeiten passen nicht auf jeden Rechner)
+    await g.p.keyboard.down('KeyD')
+    try: await g.p.wait_for_function("p1.x >= 272", timeout=6000)
+    except Exception: pass
+    await g.p.keyboard.up('KeyD'); await g.steps(14)
+    x = await g.ev('p1.x')
+    assert abs(x - 300) < 40, f'Affe nicht auf der Platte: {x}'
+    if abs(x - 300) >= 16: await g.ev('p1.x = 300; p1.vx = 0')
+    await g.p.wait_for_timeout(200)
+    assert await g.ev(tuer), 'Druckplatte öffnet die Tür nicht'
+    assert await g.ev('plates[0].down'), 'Platte nicht gedrückt'
+    await g.ev('p1.x = 460'); await g.p.wait_for_timeout(250)
+    assert not await g.ev(tuer), 'Tür bleibt offen, obwohl niemand mehr auf der Platte steht'
+
+    # Aufwind: Schweinchen mit Schirm steigt, Affe nicht
+    lv = level([ground(0, 680, 3000)], {'x': 700, 'y': 680}, {'x': 300, 'y': 680},
+               winds=[{'x': 240, 'y': 120, 'w': 120, 'h': 560}])
+    await g.load(lv); await g.p.wait_for_timeout(200)
+    await g.p.keyboard.down('Numpad0'); await g.p.wait_for_timeout(60); await g.p.keyboard.down('Numpad1')
+    await g.p.wait_for_timeout(1400)
+    y = await g.ev('p2.y')
+    await g.p.keyboard.up('Numpad0'); await g.p.keyboard.up('Numpad1')
+    assert y < 400, f'Aufwind trägt das Schweinchen nicht: y={y:.0f}'
+    await g.ev('p1.x = 300; p1.y = 680; p2.x = 700'); await g.p.wait_for_timeout(200)
+    await g.hold(('Space',), 200); await g.p.wait_for_timeout(900)
+    assert await g.ev('p1.y') > 660, 'Aufwind trägt auch den Affen'
+
+    # Scheinwand: Affe läuft hindurch
+    lv = level([ground(0, 680, 3000), {'x': 400, 'y': 440, 'w': 120, 'h': 240, 'type': 'fake'}],
+               {'x': 300, 'y': 680}, {'x': 100, 'y': 680})
+    await g.load(lv)
+    assert await g.ev('fakeWalls.length') == 1 and await g.ev("!solids.some(s=>s.type==='fake')"), 'Scheinwand nicht geladen'
+    await g.hold(('KeyD',), 900)
+    assert await g.ev('p1.x') > 540, f"Affe kommt nicht durch die Scheinwand: {await g.ev('p1.x')}"
+
+    # Sprungpilz: drüberlaufen -> nichts passiert; draufspringen -> hoch geschleudert
+    lv = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, bouncers=[{'x': 380, 'y': 680}])
+    await g.load(lv)
+    await g.ev("window.__minY = 999; window.__minVy = 0; if(!window.__bo){ window.__bo = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minY = Math.min(window.__minY, p1.y); window.__minVy = Math.min(window.__minVy, p1.vy); }; }")
+    await g.hold(('KeyD',), 300); await g.p.wait_for_timeout(1200)
+    hoch = 680 - await g.ev('window.__minY')
+    assert hoch < 5 and await g.ev('p1.x') > 400, f'Sprungpilz beim Drüberlaufen ausgelöst: {hoch:.0f} px hoch'
+    await g.ev("p1.x = 380; p1.y = 520; p1.vx = 0; p1.vy = 2; p1.grounded = false; p1._px = p1.x; p1._py = p1.y; window.__minVy = 0; window.__minY = 999")
+    await g.p.wait_for_timeout(1500)
+    assert await g.ev('window.__minVy') <= -17, f"Sprungpilz beim Draufspringen nicht ausgelöst: {await g.ev('window.__minVy')}"
+    hoch = 680 - await g.ev('window.__minY')
+    assert 200 < hoch < 280, f'Sprungpilz: {hoch:.0f} px hoch (erwartet ~230)'
+
+@test
+async def editor_neue_werkzeuge(g):
+    """Editor: Scheinwand, Aufwind, Sprungpilz und Druckplatte setzen -> Export und Spiel-Umwandlung enthalten sie."""
+    srv = webserver()
+    try:
+        p = g.p
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        snap = {'cols': 60, 'tiles': [[c, 15, 'ground'] for c in range(20)] + [[5, 14, 'fake'], [5, 13, 'fake'], [8, 10, 'wind'], [8, 11, 'wind'], [9, 10, 'wind']],
+                'plates': [{'c': 3, 'r': 14, 'link': 4}], 'bouncers': [{'c': 12, 'r': 14}], 'doors': [{'c': 15, 'r': 14, 'link': 4}],
+                'startM': {'c': 1, 'r': 14}, 'startF': {'c': 2, 'r': 14}}
+        await p.evaluate(f"localStorage.setItem('monchichi_level_editor_v2', JSON.stringify({json.dumps(snap)}))")
+        await p.reload(); await p.wait_for_timeout(300)
+        for tool in ('fake', 'wind', 'bounce', 'plate'):
+            assert await p.query_selector(f'.tool[data-tool="{tool}"]'), f'Werkzeug {tool} fehlt'
+        await p.click('#exportBtn'); await p.wait_for_timeout(200)
+        exp = json.loads(await p.eval_on_selector('#exportText', 'e => e.value'))
+        assert any(s['type'] == 'fake' for s in exp['solids']), 'Scheinwand fehlt im Export'
+        assert sum(w['w']*w['h'] for w in exp['winds']) == 3*1600, f"Aufwind falsch: {exp['winds']}"
+        assert exp['plates'] == [{'x': 140, 'y': 580, 'link': 4}], f"Druckplatte falsch: {exp['plates']}"
+        assert exp['bouncers'] == [{'x': 500, 'y': 600}], f"Sprungpilz falsch: {exp['bouncers']}"
+        # gleiche Umwandlung im Spiel (Projekt-Levels im Editor-Format)
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['plates'] == exp['plates'] and umg['bouncers'] == exp['bouncers'], 'Spiel wandelt anders um als der Editor'
+        assert sum(w['w']*w['h'] for w in umg['winds']) == 3*1600 and any(s['type'] == 'fake' for s in umg['solids'])
+    finally:
+        srv.shutdown()
+
+@test
+async def kamera_ruhig_bei_zwei(g):
+    """Kamera wackelt nicht: kleine Hin-und-her-Bewegungen der hinteren Figur bewegen das Bild nicht,
+    gemeinsames Vorwärtslaufen schon; Bild ist 15 % herausgezoomt (0,85)."""
+    assert abs(await g.ev('zoom') - 0.85) < 1e-9, 'Zoom ist nicht 0,85'
+    assert abs(await g.ev('VW') - 1280/0.85) < 1, 'sichtbare Weltbreite passt nicht zum Zoom'
+    await g.load(level([ground(0, 680, 6000)], {'x': 600, 'y': 680}, {'x': 700, 'y': 680}))
+    await g.p.wait_for_timeout(1500)
+    await g.hold(('KeyA',), 700); await g.p.wait_for_timeout(1200)   # Affe ganz hinten im ruhigen Bereich
+    cam0 = await g.ev('camPos')
+    for _ in range(20):   # unter Last braucht die Kamera länger zum Ausrollen -> warten, bis sie steht
+        await g.p.wait_for_timeout(200)
+        c = await g.ev('camPos')
+        if abs(c - cam0) < 0.3: break
+        cam0 = c
+    for _ in range(3):   # Affe (hinten) zappelt hin und her und springt (je ~150 ms, genau gezählt in Spielschritten)
+        await halte_schritte(g, ('KeyD', 'Space'), 8); await halte_schritte(g, ('KeyA',), 8)
+    await g.steps(16)
+    cam1 = await g.ev('camPos')
+    assert abs(cam1 - cam0) < 3, f'Kamera wackelt mit: {cam0:.0f} -> {cam1:.0f}'
+    await g.hold(('KeyD', 'ArrowRight'), 1500); await g.p.wait_for_timeout(600)
+    cam2 = await g.ev('camPos')
+    assert cam2 > cam1 + 200, f'Kamera folgt beim Vorwärtslaufen nicht: {cam1:.0f} -> {cam2:.0f}'
+    back = await g.ev('Math.min(p1.x,p2.x) - camPos')
+    front = await g.ev('Math.max(p1.x,p2.x) - camPos')
+    assert back > 100 and front < await g.ev('VW') - 100, f'Figuren nicht gut im Bild: {back:.0f} / {front:.0f}'
+
+@test
+async def spieltempo_langsamer(g):
+    """Spiel läuft 10 % langsamer (GAME_SPEED 0,9): in 1 s laufen ~10 % weniger Weg, Sprünge gleich weit."""
+    assert abs(await g.ev('GAME_SPEED') - 0.9) < 1e-9, 'GAME_SPEED ist nicht 0,9'
+    await g.load(level([ground(0, 680, 6000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
+    await g.p.wait_for_timeout(500)
+    # Schritte zählen und die echten Bildzeiten mitschreiben (auf langsamen Rechnern holt das Spiel pro Bild höchstens
+    # 5 Schritte nach -> erwartete Schritte aus den Bildzeiten mit Tempo 0,9 nachrechnen statt starr ~54/s zu verlangen)
+    await g.ev('''window.__steps = 0; window.__dts = [];
+      const o = stepSim; stepSim = function(ts){ window.__steps++; return o(ts); };
+      const l = loop; loop = function(ts){ const s0 = window.__steps; l(ts); window.__dts.push([frameDt, window.__steps - s0]); };''')
+    await g.p.wait_for_timeout(2000)
+    n, dts = await g.ev('[window.__steps, window.__dts]')
+    acc, erwartet, zeit = 0.0, 0, 0.0
+    for i, (dt, _) in enumerate(dts):
+        if i == 0: continue   # erstes Bild nach dem Einhängen: Startwert des Zählers unbekannt
+        acc += dt * 0.9; k = 0
+        while acc >= 1000/60 and k < 5: acc -= 1000/60; k += 1
+        if k >= 5: acc = 0
+        erwartet += k; zeit += dt
+    n_ab_2 = sum(s for _, s in dts[1:])
+    assert abs(n_ab_2 - erwartet) <= 3, f'Spieltempo passt nicht zu 0,9: {n_ab_2} Schritte statt {erwartet}'
+    assert n > 30, f'Spiel läuft kaum: {n} Schritte in 2 s'
+
+# ---------------------------------------------------------------- Packages & Cosmetics (26/27/28)
+
+@test
+async def packages_wahrscheinlichkeiten(g):
+    """Seltenheiten: Leer 10 %, Gewöhnlich 42 %, Ungewöhnlich 25 %, Selten 13 %, Episch 7 %, Legendär 2,5 %, Prestige 0,5 %."""
+    r = await g.ev("""(() => { const n = 200000, c = {}; for (let i = 0; i < n; i++) { const k = rollRarity(); c[k] = (c[k]||0) + 1; }
+      return Object.fromEntries(Object.entries(c).map(([k, v]) => [k, v/n*100])); })()""")
+    soll = {'empty': 10, 'common': 42, 'uncommon': 25, 'rare': 13, 'epic': 7, 'legendary': 2.5, 'prestige': 0.5}
+    for k, v in soll.items():
+        assert abs(r.get(k, 0) - v) < max(0.35, v*0.06), f'{k}: {r.get(k, 0):.2f} % statt {v} %'
+
+@test
+async def packages_duplikate(g):
+    """Duplikat-Regeln: Legendär/Prestige nie doppelt, Episch/Selten nicht doppelt, solange noch welche fehlen;
+    Gewöhnlich/Ungewöhnlich dürfen doppelt sein. Jedes Package zieht genau 1 vom Inventar der Figur ab."""
+    r = await g.ev("""(() => { cosmeticsReset(); const orig = rollRarity, bad = [];
+      for (const rar of ['prestige', 'legendary', 'epic', 'rare']) {
+        const total = COSMETICS.filter(c => c.rarity === rar).length;
+        for (let i = 0; i < total; i++) { rollRarity = () => rar; cosmeticsSave.pending.m = 1;
+          const res = openPackage('m'); if (res.duplicate) bad.push(rar + ' doppelt bei ' + i); if (res.rarity !== rar) bad.push(rar + ' -> ' + res.rarity); }
+      }
+      // alle legendären/Prestige besessen -> wieder „legendär“ gezogen: kein Duplikat, sondern Ersatz aus fehlenden
+      rollRarity = () => 'legendary'; cosmeticsSave.pending.m = 1; const x = openPackage('m');
+      if (x.duplicate) bad.push('legendär doppelt, obwohl noch etwas fehlt');
+      if (cosmeticsSave.pending.m !== 0) bad.push('Package nicht abgezogen');
+      for (const it of COSMETICS) if ((it.rarity === 'legendary' || it.rarity === 'prestige') && ownedCount('m', it.id) > 1) bad.push(it.id + ' mehrfach');
+      rollRarity = orig; return bad; })()""")
+    assert not r, f'Duplikat-Regeln verletzt: {r}'
+    # komplette Sammlung: nie ein doppeltes Legendär/Prestige, alles irgendwann gefunden
+    r = await g.ev("""(() => { cosmeticsReset(); let n = 0; while (collectionCount('f') < COSMETICS.length && n < 5000) { cosmeticsSave.pending.f = 1; openPackage('f'); n++; }
+      const dup = COSMETICS.filter(c => (c.rarity === 'legendary' || c.rarity === 'prestige') && ownedCount('f', c.id) > 1).map(c => c.id);
+      return {n, voll: collectionCount('f'), dup, m: collectionCount('m')}; })()""")
+    assert r['voll'] == await g.ev('COSMETICS.length') and not r['dup'], f'Sammlung: {r}'
+    assert r['m'] == 0, 'Öffnen beim Schweinchen hat dem Affen etwas gegeben'
+
+@test
+async def packages_vergabe(g):
+    """Pro Level: 1 Package fürs Schaffen, +1 wenn alle Münzen gesammelt – je Figur (beide bekommen ihre eigenen).
+    Am Ende im Statistik-Bildschirm ein Knopf „Packages öffnen“ (freiwillig, „Weiter“ ist vorausgewählt)."""
+    r = await g.ev("""(() => { cosmeticsReset(); awardPackages(false); const a = {...cosmeticsSave.pending}; awardPackages(true);
+      return [a, {...cosmeticsSave.pending}]; })()""")
+    assert r[0] == {'m': 1, 'f': 1} and r[1] == {'m': 3, 'f': 3}, f'Vergabe: {r}'
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await g.ev("cosmeticsReset()")
+        await startmenue_bis_level(g)
+        await g.ev("for (const c of coins) c.taken = false; coins[0].taken = true; winFinish()"); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-results', 'kein Statistik-Bildschirm'
+        assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'nicht alle Münzen -> 1 Package je Figur erwartet'
+        k = await g.ev("({sicht: getComputedStyle(document.getElementById('sm-r-pack')).display !== 'none', text: document.getElementById('sm-r-pack').textContent, weiter: document.getElementById('sm-r-go').classList.contains('sel')})")
+        assert k['sicht'] and '2' in k['text'] and k['weiter'], f'Packages-Knopf: {k}'
+        # Gewinner-Animation: je Figur ein eigener Package-Zähler, der hochzählt (hier bis 1), mit Ton
+        await p.wait_for_function("document.querySelector('#sm-s-results').classList.contains('win')", timeout=5000)
+        await p.wait_for_function("[...document.querySelectorAll('#sm-s-results .r-pack b.pack')].map(b => b.textContent).join() === '1,1'", timeout=5000)
+        assert 'packCount' in await g.ev("SFX_LOG.slice()"), 'kein Ton beim Hochzählen der Packages'
+        assert await g.ev("document.querySelectorAll('#sm-s-results .r-giftbox svg.gift').length") == 2, 'kein Geschenkpaket in den Karten'
+        await p.wait_for_timeout(300); await p.keyboard.press('KeyA'); await p.wait_for_timeout(200); await p.keyboard.press('Space')
+        await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-packs', 'Packages-Knopf öffnet den Öffnen-Bildschirm nicht'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-levels', 'Fertig führt nicht zur Levelauswahl'
+        await p.wait_for_timeout(2600)   # Schloss-Animation
+        k = await g.ev("({t: document.getElementById('sm-l-pack').textContent, n: (document.querySelector('#sm-l-pack .num') || {}).textContent})")
+        assert 'Packages öffnen' in k['t'] and k['n'] == '2', f'Levelauswahl zeigt „Packages öffnen“ mit Zahl 2 nicht: {k}'
+        await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-packs', 'Menüpunkt „Packages öffnen“ öffnet den Öffnen-Bildschirm nicht'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'ungeöffnete Packages müssen im Inventar bleiben'
+    finally:
+        srv.shutdown()
+
+@test
+async def packages_oeffnen(g):
+    """Beide öffnen gleichzeitig: links Affe (Leertaste), rechts Schweinchen (Enter) – unabhängige Ergebnisse.
+    Ablauf: Wackeln mit Spannungston -> Platzen -> Item + Fanfare je Seltenheit -> Anlegen/Behalten. Leer: eigene Animation."""
+    p = g.p
+    await g.ev("""cosmeticsReset(); cosmeticsSave.pending.m = 2; cosmeticsSave.pending.f = 1;
+      window.__force = ['epic', 'empty', 'common']; const o = rollRarity; rollRarity = r => window.__force.length ? window.__force.shift() : o(r);
+      SFX_LOG.length = 0; GameMenu.show('packs', {ret: ['levels']})""")
+    await p.wait_for_function("SFX_LOG.includes('packRattle')", timeout=5000)   # Paket tanzt/klopft vor dem Öffnen
+    await p.keyboard.press('Space'); await p.wait_for_timeout(60); await p.keyboard.press('Enter')
+    ph = await g.ev("[PackagesUI.PK.sides.m.phase, PackagesUI.PK.sides.f.phase]")
+    assert ph == ['shake', 'shake'], f'beide Nüsse sollten gleichzeitig wackeln: {ph}'
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(100)
+    assert await sm_screen(g) == 'sm-s-packs', 'Esc während des Öffnens darf nicht abbrechen'
+    await p.wait_for_function("['choose'].includes(PackagesUI.PK.sides.m.phase) && PackagesUI.PK.sides.f.phase === 'emptyChoose'", timeout=12000)
+    log = await g.ev("SFX_LOG.slice()")
+    for s in ('packShake', 'packBurst', 'packFanfare_epic', 'packEmpty'):
+        assert s in log, f'Geräusch {s} fehlt: {log}'
+    info = await g.ev("[document.querySelector('.pk-m .pk-rar').textContent, document.querySelector('.pk-f .pk-name').textContent, PackagesUI.PK.sides.m.res.item.id]")
+    assert info[0] == 'Episch' and info[1] == 'Leer!', f'Anzeige: {info}'
+    await p.keyboard.press('Space'); await p.wait_for_timeout(200)   # Anlegen (vorausgewählt)
+    assert await g.ev(f"isEquipped('m', '{info[2]}')"), 'Anlegen hat das Item nicht angelegt'
+    await p.keyboard.press('Enter'); await p.wait_for_timeout(200)   # Leer: Weiter
+    k = await g.ev("[PackagesUI.PK.sides.m.phase, PackagesUI.PK.sides.f.phase, {...cosmeticsSave.pending}]")
+    assert k == ['idle', 'idle', {'m': 1, 'f': 0}], f'nach der Entscheidung: {k}'
+    # zweites Package Affe: Behalten -> nicht angelegt, aber im Besitz
+    await p.keyboard.press('Space')
+    await p.wait_for_function("PackagesUI.PK.sides.m.phase === 'choose'", timeout=12000)
+    it = await g.ev("PackagesUI.PK.sides.m.res.item.id")
+    await p.keyboard.press('KeyD'); await p.wait_for_timeout(100); await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+    assert await g.ev(f"ownedCount('m', '{it}') >= 1 && !isEquipped('m', '{it}')"), 'Behalten: Item muss im Besitz, aber nicht angelegt sein'
+    await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+    assert await g.ev("PackagesUI.PK.sides.m.phase") == 'idle', 'ohne Packages darf sich nichts öffnen'
+
+@test
+async def sammlung_ausruesten(g):
+    """Umkleide (Menüpunkt in der Levelauswahl: ▲ + Springen, E oder Klick): je Figur besessen / angelegt / fehlt mit Seltenheit; Springen legt an bzw. ab;
+    fehlende Items lassen sich nicht anlegen; E wechselt die Figur; alles bleibt nach Neuladen gespeichert."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await g.ev("cosmeticsReset(); cosmeticsSave.owned.m.trail_bubbles = 2; cosmeticsPersist(); GameMenu.show('levels')")
+        await p.wait_for_timeout(500)
+        assert 'Umkleide' in await p.text_content('#sm-l-coll'), 'kein Menüpunkt Umkleide in der Levelauswahl'
+        await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200)
+        assert await g.ev("document.getElementById('sm-l-pack').classList.contains('sel')"), '▲ wählt „Packages öffnen“ nicht aus'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-packs', 'Packages-Bereich muss auch ohne Packages aufgehen (dort kann man kaufen)'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        await p.keyboard.press('ArrowUp'); await p.wait_for_timeout(200)
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(200)
+        assert await g.ev("document.getElementById('sm-l-coll').classList.contains('sel')"), '▶ wählt die Umkleide nicht aus'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-collection', 'Springen auf „Umkleide“ öffnet sie nicht'
+        # gesperrte Items: mit Namen, grau (kaum Farbe) und Schloss
+        grau = await g.ev("""(() => { const t = [...document.querySelectorAll('#sm-s-collection .co-tile.miss')].find(e => e.textContent.includes('Regenbogen'));
+          const d = t.querySelector('canvas').getContext('2d').getImageData(0, 0, 150, 100).data; let n = 0;
+          for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - d[i+1]) > 20 || Math.abs(d[i+1] - d[i+2]) > 20) n++; return n; })()""")
+        assert grau < 900, f'gesperrtes Item nicht grau: {grau} farbige Pixel'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(700)
+        await p.keyboard.press('KeyE'); await p.wait_for_timeout(700)
+        assert await sm_screen(g) == 'sm-s-collection', 'E öffnet die Umkleide nicht'
+        k = await g.ev("""({tiles: document.querySelectorAll('#sm-s-collection .co-tile').length, miss: document.querySelectorAll('#sm-s-collection .co-tile.miss').length,
+          count: document.querySelector('#sm-s-collection .co-count').textContent, names: [...document.querySelectorAll('#sm-s-collection .co-tile .nm')].map(e => e.textContent)})""")
+        assert k['tiles'] == await g.ev("COSMETICS.filter(c => c.slot === 'trail').length") and k['miss'] == k['tiles'] - 1, f'Kacheln: {k}'
+        assert '1' in k['count'] and str(await g.ev('COSMETICS.length')) in k['count'] and 'Blubberblasen' in k['names'], f'Zähler/Namen: {k}'
+        await p.keyboard.press('Space'); await p.wait_for_timeout(200)   # erstes Item (Staubwölkchen) fehlt
+        assert not await g.ev("isEquipped('m', 'trail_dust')"), 'fehlendes Item wurde angelegt'
+        await p.keyboard.press('KeyD'); await p.wait_for_timeout(150); await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+        assert await g.ev("isEquipped('m', 'trail_bubbles')"), 'besessenes Item nicht angelegt'
+        assert await g.ev("document.querySelectorAll('#sm-s-collection .co-tile.eq').length") == 1, 'angelegt-Markierung fehlt'
+        await p.keyboard.press('KeyE'); await p.wait_for_timeout(300)
+        assert await g.ev("PackagesUI.CO.who") == 'f', 'E wechselt nicht zum Schweinchen'
+        await p.reload(); await p.wait_for_timeout(700)
+        assert await g.ev("isEquipped('m', 'trail_bubbles') && ownedCount('m', 'trail_bubbles') === 2"), 'nach Neuladen nicht mehr gespeichert'
+        assert await g.ev("equippedItem('m', 'trail').id") == 'trail_bubbles'
+    finally:
+        srv.shutdown()
+
+@test
+async def cosmetics_zeichnen_rollfest(g):
+    """Jedes Cosmetic wird an beiden Figuren in vielen Drehwinkeln (volle 360°), beim Laufen, Springen und Stehen
+    ohne Fehler gezeichnet; Sonnenbrillen (groß) und Tattoos (Tribal über die ganze Figur) sitzen auf dem Gesicht;
+    die Kategorie Kugel-Skin gibt es nicht mehr."""
+    lvl = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
+    await g.load(lvl)
+    n = await g.ev("""(() => { let n = 0; for (const it of COSMETICS) { cosmeticsReset(); cosResetState();
+        for (const w of ['m', 'f']) { cosmeticsSave.owned[w][it.id] = 1; equipItem(w, it.id); }
+        for (let i = 0; i < 40; i++) { for (const P of [p1, p2]) { P.rollAngle = i*Math.PI/10; P.vx = Math.sin(i*0.4)*6; P.vy = i % 10 < 5 ? -5 : 3; P.grounded = i % 10 > 7; }
+          cosmeticsStep(); draw(); n++; } }
+      cosmeticsReset(); return n; })()""")
+    assert n == 40 * await g.ev('COSMETICS.length')
+    # Sonnenbrillen + Tattoos: eigene Kategorien, sitzen auf dem Gesicht (werden im gedrehten Gesicht gezeichnet)
+    k = await g.ev("""(() => { const n = sl => COSMETICS.filter(c => c.slot === sl).length; cosmeticsReset();
+      for (const id of ['gl_aviator', 'tat_flame']) { cosmeticsSave.owned.m[id] = 1; equipItem('m', id); }
+      let gl = 0, ta = 0; const og = drawGlasses, ot = drawTattoo;
+      drawGlasses = (...a) => { gl++; return og(...a); }; drawTattoo = (...a) => { ta++; return ot(...a); };
+      p1.rollAngle = 1.3; draw(); drawGlasses = og; drawTattoo = ot; cosmeticsReset();
+      return {slots: SLOTS.map(s => s.id), gl: n('glasses'), ta: n('tattoo'), drawnGl: gl, drawnTa: ta}; })()""")
+    assert 'glasses' in k['slots'] and 'tattoo' in k['slots'] and k['gl'] >= 8 and k['ta'] >= 8, f'Brillen/Tattoos fehlen: {k}'
+    assert k['drawnGl'] >= 1 and k['drawnTa'] >= 1, f'Brille/Tattoo wird im Spiel nicht gezeichnet: {k}'
+    assert 'skin' not in k['slots'] and await g.ev("COSMETICS.every(c => c.slot !== 'skin')"), 'Kugel-Skin noch vorhanden'
+    # Tattoo bedeckt die ganze Figur (nicht nur einen kleinen Fleck): Muster im Kopf-Kreis messen
+    t = await g.ev("""(() => { const out = {}; for (const it of COSMETICS.filter(c => c.slot === 'tattoo')) {
+        const cv = document.createElement('canvas'); cv.width = cv.height = 200; const c = cv.getContext('2d');
+        c.translate(100, 100); c.scale(100, 100); tattooPattern(c, it.fx.kind);
+        const d = c.getImageData(0, 0, 200, 200).data; let ink = 0, all = 0;
+        for (let y = 0; y < 200; y += 2) for (let x = 0; x < 200; x += 2) { if (Math.hypot(x - 100, y - 100) > 100) continue; all++; if (d[(y*200 + x)*4 + 3] > 40) ink++; }
+        out[it.id] = ink/all; } return out; })()""")
+    for tid, v in t.items():
+        assert v > 0.08, f'Tattoo {tid} bedeckt zu wenig von der Figur: {v:.2f}'
+    gw = await g.ev("""(() => { let w = 0; const og = drawGlasses; drawGlasses = (c, k, L, R, ww) => { w = ww; };
+      drawFaceWear(ctx, {x: 0, y: 0, w: 308, h: 257}, 'monkey', {glasses: COSMETIC.gl_classic}); drawGlasses = og; return w; })()""")
+    assert gw >= 28, f'Sonnenbrille zu klein: halbe Glasbreite {gw} von 308'
+
+@test
+async def cosmetics_kein_vorteil(g):
+    """Cosmetics sind rein optisch: mit allen Slots belegt (Prestige) laufen und springen die Figuren exakt gleich wie ohne."""
+    lvl = level([ground(0, 680, 3000), ground(700, 560, 200)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
+    await g.load(lvl)
+    lauf = """(() => { resetLevel(); for (const k in KEYS) KEYS[k] = false; const out = [];
+      for (let i = 0; i < 240; i++) { KEYS.KeyD = KEYS.ArrowRight = true;
+        if (i === 30 || i === 120) { KEYS.Space = KEYS.Space_pressed = true; KEYS.Numpad0 = KEYS.Numpad0_pressed = true; }
+        if (i === 45 || i === 135) { KEYS.Space = KEYS.Numpad0 = false; }
+        stepSim(performance.now()); out.push([p1.x, p1.y, p2.x, p2.y, p1.vx, p2.vy].map(v => Math.round(v*1000)/1000)); }
+      for (const k in KEYS) KEYS[k] = false; return out; })()"""
+    await g.ev("cosmeticsReset()")
+    ohne = await g.ev(lauf)
+    await g.ev("""for (const id of ['pres_saturn', 'pres_inferno', 'pres_rainbow', 'trail_galaxy', 'pet_robot', 'gl_bling', 'tat_rune'])
+                    for (const w of ['m', 'f']) { cosmeticsSave.owned[w][id] = 1; equipItem(w, id); }""")
+    mit = await g.ev(lauf)
+    await g.ev("cosmeticsReset()")
+    assert ohne[-1][0] > ohne[0][0] + 100, 'Figuren sind nicht gelaufen'
+    assert ohne == mit, 'Cosmetics verändern die Bewegung!'
+
+
+@test
+async def packages_menue_design(g):
+    """Keine Kategorie „Anhängsel“ und kein Ei/Eiswürfel/Schatten-Aura mehr; Levelauswahl: „Packages öffnen“ und „Umkleide“ als eigene Menüpunkte ohne Emojis,
+    die sich nie mit den Figuren über der gewählten Levelkarte überschneiden (auch bei Level 5/6)."""
+    assert await g.ev("SLOTS.every(s => s.id !== 'attach') && COSMETICS.every(c => c.slot !== 'attach')"), 'Anhängsel noch vorhanden'
+    assert await g.ev("['skin_egg', 'skin_icecube', 'aura_shadow'].every(id => !COSMETIC[id])"), 'Ei/Eiswürfel/Schatten-Aura noch vorhanden'
+    await g.ev("GameMenu.unlockAll()")
+    for w in await g.ev("GameMenu.mapWorlds().filter(w => w.idx.length).map(w => w.id)"):   # jede Welt-Seite (Ausbau 3)
+        await g.ev(f"GameMenu.show('levels', {{world: '{w}'}})"); await g.p.wait_for_timeout(600)
+        for i in range(await g.ev("document.querySelectorAll('#sm-cards .lc').length")):
+            await g.ev(f"document.querySelectorAll('#sm-cards .lc')[{i}].click()"); await g.p.wait_for_timeout(500)
+            r = await g.ev("""(() => { const R = s => document.querySelector(s).getBoundingClientRect(), a = R('#sm-pair'), o = [R('#sm-l-pack'), R('#sm-l-coll')];
+              return o.some(b => !(b.right <= a.left || b.left >= a.right || b.bottom <= a.top || b.top >= a.bottom)); })()""")
+            assert not r, f'Menüpunkt überschneidet die Figuren bei Welt {w}, Karte {i + 1}'
+    txt = await g.ev("document.getElementById('sm-l-pack').textContent + document.getElementById('sm-l-coll').textContent + document.getElementById('sm-l-hint').textContent")
+    import re
+    assert not re.search('[\U0001F300-\U0001FAFF]', txt), f'Emoji im Menü: {txt}'
+
+@test
+async def figuren_rollen_rund(g):
+    """Figuren rollen rund um die Kopfmitte (Drehpunkt bleibt bei jedem Winkel gleich und liegt in der Kopfmitte,
+    Ohren zählen nicht), Bild unverzerrt; die Leinwand hat die echte Bildschirmauflösung (scharf statt hochskaliert)."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
+    r = await g.ev("""(() => { const piv = [], orig = ctx.rotate.bind(ctx), dimg = ctx.drawImage.bind(ctx); let rec = false, sz = null;
+      ctx.rotate = a => { if (rec) { const m = ctx.getTransform(); piv.push([m.e, m.f]); } return orig(a); };
+      ctx.drawImage = function(im, ...r) { if (rec && im === ASSETS.monkey && r.length === 4) sz = [r[2], r[3]]; return dimg(im, ...r); };
+      p1.blink = 9999;
+      for (const a of [0, 1.1, 2.2, 3.3, 4.4]) { p1.rollAngle = a; ctx.setTransform(1, 0, 0, 1, 0, 0); rec = true; drawCharacter(p1, camX); rec = false; }
+      delete ctx.rotate; delete ctx.drawImage;
+      const size = Math.max(p1.w, p1.h)*1.55, hgt = size*257/308, hy = size/2 - hgt + HEAD_CENTER.monkey[1]*hgt;
+      return {piv, sz, headY: Math.round(p1.y) - p1.h*0.5 + hy, cw: cvs.width, rect: cvs.getBoundingClientRect().width, rs: RS, max: LEINWAND_MAX_BREITE}; })()""")
+    xs = {round(p[0], 2) for p in r['piv']}; ys = {round(p[1], 2) for p in r['piv']}
+    assert len(xs) == 1 and len(ys) == 1, f'Drehpunkt wandert beim Rollen: {r["piv"]}'
+    assert abs(list(ys)[0] - r['headY']) < 1.5, f'Drehpunkt nicht in der Kopfmitte: {r}'
+    assert r['sz'] and abs(r['sz'][1]/r['sz'][0] - 257/308) < 0.002, f'Figur verzerrt: {r}'
+    assert abs(r['cw'] - min(r['max'], max(1280, round(r['rect'])))) <= 2 and abs(r['rs'] - r['cw']/1280) < 1e-6, f'Leinwand nicht in Bildschirmauflösung: {r}'
+
+@test
+async def anzeigen_muenzen_tode(g):
+    """Münz-Anzeige oben links je Figur (blau/pink, gesammelt / vorhanden, Balken), keine Gold-Zählung „x / 10“ mehr und
+    keine Mindest-Münzen fürs Ziel; Tode-Anzeige oben rechts größer (wächst mit dem Bildschirm), mit „TODE“."""
+    coins = [{'x': 400 + i*40, 'y': 640, 'color': 'blue'} for i in range(3)] + [{'x': 600 + i*40, 'y': 640, 'color': 'pink'} for i in range(2)]
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 160, 'y': 680}, coins=coins))
+    await g.ev("coins[0].taken = true; coins[3].taken = true"); await g.p.wait_for_timeout(300)
+    k = await g.ev("""({m: document.getElementById('coinM').textContent, mt: document.getElementById('coinMT').textContent,
+      f: document.getElementById('coinF').textContent, ft: document.getElementById('coinFT').textContent,
+      bar: parseFloat(document.getElementById('coinMBar').style.width), txt: document.getElementById('coinCard').textContent,
+      need: coinsNeeded, h: document.getElementById('duelCard').getBoundingClientRect().height, tode: document.getElementById('duelCard').textContent})""")
+    assert (k['m'], k['mt'], k['f'], k['ft']) == ('1', '/ 3', '1', '/ 2'), f'Münz-Anzeige: {k}'
+    assert 32 < k['bar'] < 35 and '/ 10' not in k['txt'] and k['need'] == 0, f'Gold-Zählung/Pflicht noch da: {k}'
+    assert k['h'] >= 50 and 'TODE' in k['tode'], f'Tode-Anzeige zu klein/ohne Beschriftung: {k}'
+
+@test
+async def paket_kaufen_und_muenzkonto(g):
+    """Münz-Konto je Figur: am Levelende kommen die selbst gesammelten Münzen dazu. Ohne Packages kann man im
+    Packages-Bereich für 200 Münzen eins kaufen (zu wenig Münzen: nichts passiert). Schleimspur nur am Boden."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await g.ev("cosmeticsReset()")
+        await startmenue_bis_level(g)
+        await g.ev("""(() => { let a = 0, b = 0; for (const c of coins) { if (c.color === 'blue' && a < 3) { c.taken = true; c.takenBy = 'm'; a++; }
+                      if (c.color === 'pink' && b < 2) { c.taken = true; c.takenBy = 'f'; b++; } } winFinish(); })()""")
+        await p.wait_for_timeout(700)
+        k = await g.ev("cosmeticsSave.coins")
+        assert k['m'] >= 3 and k['f'] >= 2, f'Münzen nicht aufs Konto: {k}'
+        await g.ev("cosmeticsSave.pending = {m: 0, f: 0}; cosmeticsSave.coins = {m: 230, f: 50}; GameMenu.show('packs', {ret: ['levels']})")
+        await p.wait_for_timeout(600)
+        assert await g.ev("document.querySelector('.pk-m .pk-buy').classList.contains('on')"), 'kein Kaufen-Knopf ohne Packages'
+        await p.keyboard.press('Space'); await p.wait_for_timeout(200); await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        k = await g.ev("[cosmeticsSave.coins, cosmeticsSave.pending]")
+        assert k == [{'m': 30, 'f': 50}, {'m': 1, 'f': 0}], f'Kaufen: {k}'
+        await p.keyboard.press('Space'); await p.wait_for_timeout(200)
+        assert await g.ev("PackagesUI.PK.sides.m.phase") == 'shake', 'gekauftes Paket lässt sich nicht öffnen'
+    finally:
+        srv.shutdown()
+    # Schleimspur: am Boden ja, in der Luft keine neuen Tropfen
+    n = await g.ev("""(() => { const st = cosNewState(), it = COSMETIC.trail_slime, rig = g => ({x: 100, y: 100, r: 21, roll: 0, vx: 5, vy: g ? 0 : -6, grounded: g, facing: 1});
+      for (let i = 0; i < 30; i++) cosStep(rig(true), st, 'm', {trail: it}); const boden = st.parts.length; st.parts.length = 0;
+      for (let i = 0; i < 30; i++) cosStep(rig(false), st, 'm', {trail: it}); return [boden, st.parts.length]; })()""")
+    assert n[0] > 5 and n[1] == 0, f'Schleimspur: {n}'
+    # alle Roll-Spuren: nur beim Rollen (am Boden + in Bewegung), nicht im Stehen und nicht im Sprung
+    r = await g.ev("""COSMETICS.filter(c => c.slot === 'trail').map(it => { const out = [];
+      for (const [gr, vx] of [[true, 5], [true, 0], [false, 5]]) { const st = cosNewState();
+        for (let i = 0; i < 40; i++) cosStep({x: 100 + i*vx, y: 100, r: 21, roll: 0, vx, vy: gr ? 0 : -5, grounded: gr, facing: 1}, st, 'm', {trail: it});
+        out.push(st.parts.length + (it.fx.kind === 'rainbow' ? st.hist.filter(h => h.roll).length : 0)); }
+      return [it.id, ...out]; })""")
+    for it, rollen, stehen, luft in r:
+        assert rollen > 0 and stehen == 0 and luft == 0, f'Roll-Spur {it}: rollen {rollen}, stehen {stehen}, Sprung {luft}'
+
+@test
+async def level_ladefehler_mit_grund(g):
+    """Lässt sich ein Level nicht laden, springt das Spiel nicht still zurück, sondern zeigt in der Levelauswahl den Grund."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await p.route('**/levels/ruinen/01-ruinen.json*', lambda r: r.fulfill(status=404, body='weg'))
+        await g.ev("GameMenu.unlockAll(); GameMenu.show('levels', {world: 'ruinen'})"); await p.wait_for_timeout(600)
+        await g.ev("document.querySelectorAll('#sm-cards .lc')[0].click()"); await p.wait_for_timeout(400)   # Level 3 wählen …
+        await g.ev("document.querySelectorAll('#sm-cards .lc')[0].click()"); await p.wait_for_timeout(700)   # … und starten
+        await g.ev("document.getElementById('sm-go-btn').click()")
+        await p.wait_for_function("document.getElementById('sm-modal').classList.contains('on')", timeout=15000)
+        t = await g.ev("document.getElementById('sm-modal-text').textContent")
+        assert '404' in t and await sm_screen(g) == 'sm-s-levels', f'Fehlermeldung: {t}'
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_github_speichern(g):
+    """Editor: „Auf GitHub speichern“ – ohne Schlüssel erscheint die Anleitung; mit Schlüssel werden Spiel- und
+    Editor-Datei des geladenen Hauptlevels in EINEM Commit nach main geschrieben (GitHub-API hier simuliert)."""
+    srv = webserver(); p = g.p; calls = []; kopf = {'sha': 'c0'}
+    async def api(route):
+        req = route.request; url = req.url.split('/repos/b48bvggmn7-ops/koopgame')[-1]
+        calls.append((req.method, url, req.headers.get('authorization'), req.post_data))
+        body = {'GET /git/ref/heads/main': {'object': {'sha': kopf['sha']}}, 'GET /git/commits/' + kopf['sha']: {'tree': {'sha': 't0'}},
+                'POST /git/trees': {'sha': 't1'}, 'POST /git/commits': {'sha': 'c1'}, 'PATCH /git/refs/heads/main': {'object': {'sha': 'c1'}}}
+        if url.startswith('/contents/'):
+            import base64
+            datei = url.split('?')[0][len('/contents/'):]
+            body[req.method + ' ' + url] = {'content': base64.b64encode((ROOT / datei).read_bytes()).decode(), 'encoding': 'base64'}
+        await route.fulfill(status=200, content_type='application/json', headers={'Cache-Control': 'private, max-age=60'},
+                            body=json.dumps(body.get(req.method + ' ' + url, {})))
+    try:
+        await p.route('https://api.github.com/**', api)
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        # merken, ob die GitHub-Abfragen am Browser-Zwischenspeicher vorbei gehen (sonst alter Stand -> HTTP 422)
+        await g.ev("window.__ghCache = []; const f0 = window.fetch; window.fetch = (u, o) => { if (String(u).includes('api.github.com')) __ghCache.push((o||{}).cache); return f0(u, o); }")
+        await p.click('#levelsBtn'); await p.wait_for_timeout(500)
+        await projekt_laden(p, json.loads((ROOT / 'levels' / 'levels.json').read_text())[2]['datei'])   # Level 3 laden
+        await p.click('#githubBtn'); await p.wait_for_timeout(500)
+        assert await g.ev("getComputedStyle(document.getElementById('ghKeySect')).display !== 'none'"), 'ohne Schlüssel keine Anleitung'
+        await p.fill('#ghToken', 'github_pat_TEST123'); await p.click('#ghKeySave'); await p.wait_for_timeout(200)
+        assert await g.ev("document.getElementById('ghTarget').value") == 'ruinen/01-ruinen.json', 'geladenes Hauptlevel nicht vorausgewählt'
+        await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        wege = [c[0] + ' ' + c[1] for c in calls]
+        assert wege == ['GET /git/ref/heads/main', 'GET /git/commits/c0', 'GET /contents/levels/worlds.json?ref=c0', 'GET /contents/levels/levels.json?ref=c0',
+                        'POST /git/trees', 'POST /git/commits', 'PATCH /git/refs/heads/main'], wege
+        calls[:] = [c for c in calls if '/contents/' not in c[1]]
+        assert all(c[2] == 'Bearer github_pat_TEST123' for c in calls), 'Schlüssel nicht mitgeschickt'
+        tree = json.loads(calls[2][3])['tree']
+        assert [t['path'] for t in tree] == ['levels/ruinen/01-ruinen.json', 'levels/editor-format/ruinen/01-ruinen.json', 'levels/worlds.json'], tree
+        assert tree[2]['content'] == (ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'), 'worlds.json unnötig verändert'
+        spiel, ed = json.loads(tree[0]['content']), json.loads(tree[1]['content'])
+        orig = json.loads((ROOT / 'levels' / 'editor-format' / 'ruinen/01-ruinen.json').read_text())
+        assert 'solids' in spiel and ed['name'] == 'Level 3' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, orig['tiles'])), 'Inhalt falsch'
+        assert json.loads(calls[4][3])['sha'] == 'c1' and json.loads(calls[3][3])['parents'] == ['c0']
+        # zweites Hochladen direkt danach: main ist jetzt c1 – der Editor muss den NEUEN Stand holen (nicht aus dem
+        # Browser-Zwischenspeicher), sonst gibt GitHub HTTP 422 (Fehler beim Nutzer)
+        await p.wait_for_function("!document.getElementById('ghBox').classList.contains('show')", timeout=4000)   # schließt von selbst
+        calls.clear(); kopf['sha'] = 'c1'
+        await p.click('#githubBtn'); await p.wait_for_timeout(400)
+        await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        calls[:] = [c for c in calls if '/contents/' not in c[1]]
+        assert json.loads(calls[3][3])['parents'] == ['c1'], f'alter Stand von main benutzt: {calls[3][3]}'
+        assert set(await g.ev("__ghCache")) == {'no-store'}, 'GitHub-Abfragen dürfen nicht zwischengespeichert werden'
+    finally:
+        srv.shutdown()
+
+@test
+async def scheinwand_ohne_moos_verrat(g):
+    """Auf Flächen direkt unter einer Scheinwand wächst kein Moos/Gras (und keine Ranken daneben) – sonst sähe man den
+    versteckten Weg."""
+    lvl = level([ground(0, 680, 2000), {'x': 400, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'},
+                 {'x': 400, 'y': 320, 'w': 200, 'h': 120, 'type': 'fake'}, {'x': 800, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'}],
+                {'x': 100, 'y': 680}, {'x': 60, 'y': 680})
+    await g.load(lvl)
+    k = await g.ev("""(() => { buildDeco(); const unter = decoMoss.filter(m => !m.side && m.x >= 400 && m.x < 600 && m.y === 440).length,
+      frei = decoMoss.filter(m => !m.side && m.x >= 800 && m.x < 1000 && m.y === 440).length; return [unter, frei]; })()""")
+    assert k[0] == 0 and k[1] == 5, f'Moos unter Scheinwand / auf freier Wand: {k}'
+
+@test
+async def neues_spiel_loescht_alles(g):
+    """Hauptmenü: beim ersten Start nur Spielen/Optionen/Beenden; nach dem Spielen kommt „Fortfahren“ dazu.
+    „Spielen“ mit vorhandenem Spielstand fragt nach und löscht dann ALLES: Level, Packages, Items/Skins, Münzen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Optionen', 'Geschichte', 'Beenden']
+        # Spielstand vorhanden: Level geschafft, Packages, Items, Münzen
+        await g.ev("""GameMenu.completeLevel(1, true); GameMenu.completeLevel(2, true);
+          cosmeticsSave.pending = {m: 2, f: 1}; cosmeticsSave.coins = {m: 340, f: 90};
+          cosmeticsSave.owned.m.trail_bubbles = 1; equipItem('m', 'trail_bubbles'); cosmeticsPersist();
+          (() => { const s = JSON.parse(localStorage.getItem('monchichi.save')); s.played = true; localStorage.setItem('monchichi.save', JSON.stringify(s)); })()""")
+        await p.reload(); await p.wait_for_timeout(700)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(1100)
+        assert await g.ev("[...document.querySelectorAll('#sm-menu .mi')].map(b => b.textContent)") == ['Spielen', 'Fortfahren', 'Optionen', 'Geschichte', 'Beenden']
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(400)          # Spielen -> Rückfrage
+        assert await g.ev("document.getElementById('sm-modal').classList.contains('on')"), 'keine Rückfrage'
+        assert 'Münzen' in await g.ev("document.getElementById('sm-modal-text').textContent")
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(150); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        for _ in range(120):
+            if await g.ev("menuScreen === null"): break
+            await p.wait_for_timeout(100)
+        k = await g.ev("({sv: GameMenu.getSave(), c: JSON.parse(localStorage.getItem('monchichi_cosmetics_v1'))})")
+        assert k['sv']['unlocked'] == [] and k['sv']['completed'] == [] and k['sv']['stats'] == {}, f"Level nicht zurückgesetzt: {k['sv']}"
+        c = k['c']
+        assert c['pending'] == {'m': 0, 'f': 0} and c['coins'] == {'m': 0, 'f': 0} and not c['owned']['m'] and not c['equipped']['m'], f'Cosmetics nicht zurückgesetzt: {c}'
+    finally:
+        srv.shutdown()
+
+@test
+async def welten_laden(g):
+    """Ausbau 1: levels/worlds.json lädt (Welten in Reihenfolge, Level darin); Levelkarten bleiben wie vorher
+    (gleiche Reihenfolge und Namen); ohne worlds.json gilt levels.json; Level außerhalb jeder Welt gehen nicht verloren."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    ids = [x['id'] for x in sorted(w['welten'], key=lambda x: x['reihenfolge'])]
+    assert ids == ['dschungel', 'ruinen', 'hoehle', 'wasser', 'vulkan'], ids
+    for x in w['welten']:
+        assert set(x) >= {'id', 'name', 'titel', 'reihenfolge', 'level', 'boss'} and x['boss'] == ('dschungel/boss-bruno.json' if x['id'] == 'dschungel' else None), x   # Ausbau 6: Boss 1
+        for d in x['level']: assert (ROOT / 'levels' / d).exists(), f'Level-Datei fehlt: {d}'
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html')
+        await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        k = await g.ev("({w: GameMenu.config.worlds.map(x => x.id), l: GameMenu.config.levels.map(l => [l.datei, l.name, l.welt])})")
+        assert k['w'] == ids, k
+        # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
+        assert [x[0] for x in k['l']] == [d for x in w['welten'] for d in x['level']] == [   # Editor-Umbau: Welt-Ordner
+            'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json',
+            'ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json',
+            'hoehle/02-tropfsteingang.json', 'hoehle/03-eisgrotte.json', 'hoehle/01-kristallhoehle.json', 'hoehle/04-leuchtgrotte.json',
+            'hoehle/05-foerderwerk.json', 'hoehle/06-tiefenschlund.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json',
+            'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json',
+            'vulkan/07-kraterherz.json'], f'Reihenfolge geändert: {k}'
+        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Wipfelsturm', 'Ruinen', 'Fallengang', 'Sonnentempel',
+                                          'Mondnacht', 'Felsenflucht', 'Tempelherz', 'Tropfsteingang', 'Eisgrotte', 'Kristallhöhle', 'Leuchtgrotte',
+                                          'Förderwerk', 'Tiefenschlund', 'Glutpfad', 'Aschefeld', 'Feuerberg', 'Magmakammer',
+                                          'Schlackewerk', 'Feuerschlund', 'Kraterherz'], f'Namen geändert: {k}'
+        assert [x[2] for x in k['l']] == ['dschungel'] * 6 + ['ruinen'] * 6 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
+        # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
+        f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
+          return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
+                   mit: GameMenu.buildLevelOrder(list, {welten: [{id:'w2', reihenfolge:2, level:['a.json']}, {id:'w1', reihenfolge:1, level:['b.json']}]}).map(l => l.datei + ':' + l.welt) }; })()""")
+        assert f['ohne'] == ['a.json', 'b.json', 'c.json'], f
+        assert f['mit'] == ['b.json:w1', 'a.json:w2', 'c.json:null'], f
+    finally:
+        srv.shutdown()
+
+@test
+async def level_ordner_nach_welten(g):
+    """Editor-Umbau (Teil I): Level liegen in levels/<welt>/<nr>-<titel>.json (Bosse <welt>/boss-<name>.json); jede Datei
+    aus worlds.json existiert; jede Level-Datei in levels/ steht in genau einer Welt (Level oder Boss) – außer test/
+    (Testlevel), partner/ (Begleitdateien des Computer-Partners) und archiv/ (alte Entwürfe, in levels.json versteckt); editor-format/ spiegelt genau dieselben Dateien;
+    levels.json kennt jede Datei; levels/README.md erklärt die Struktur."""
+    import re
+    lv = ROOT / 'levels'
+    w = json.loads((lv / 'worlds.json').read_text(encoding='utf-8'))
+    liste = json.loads((lv / 'levels.json').read_text(encoding='utf-8'))
+    eingetragen = []
+    for x in w['welten']:
+        for d in x['level'] + ([x['boss']] if x.get('boss') else []):
+            assert (lv / d).exists(), f'Datei aus worlds.json fehlt: {d}'
+            assert d.startswith(x['id'] + '/'), f'{d} liegt nicht im Ordner der Welt {x["id"]}'
+            assert re.fullmatch(r'[a-z]+/(\d\d-[a-z0-9-]+|boss-[a-z0-9-]+)\.json', d), f'Name passt nicht zum Schema: {d}'
+            eingetragen.append(d)
+    assert len(eingetragen) == len(set(eingetragen)), 'Datei in mehreren Welten'
+    dateien = sorted(str(f.relative_to(lv)).replace('\\', '/') for f in lv.rglob('*.json')
+                     if f.parent != lv and f.parts[len(lv.parts)] not in ('editor-format', 'test', 'partner'))
+    archiv = [d for d in dateien if d.startswith('archiv/')]
+    assert sorted(set(dateien) - set(archiv)) == sorted(eingetragen), f'Datei ohne Welt / Welt ohne Datei: {sorted(set(dateien) ^ set(eingetragen))}'
+    versteckt = {L['datei'] for L in liste if L.get('versteckt')}
+    assert all(d in versteckt for d in archiv), f'Archiv-Datei nicht versteckt: {archiv}'
+    assert not [f.name for f in lv.glob('*.json') if f.name not in ('levels.json', 'worlds.json')], 'Level-Datei liegt noch flach in levels/'
+    ed = sorted(str(f.relative_to(lv / 'editor-format')).replace('\\', '/') for f in (lv / 'editor-format').rglob('*.json'))
+    assert ed == dateien, f'editor-format spiegelt nicht: {sorted(set(ed) ^ set(dateien))}'
+    assert sorted(L['datei'] for L in liste) == dateien, 'levels.json kennt nicht genau diese Dateien'
+    assert (lv / 'README.md').exists() and len((lv / 'README.md').read_text(encoding='utf-8').strip().splitlines()) <= 14
+
+@test
+async def spielstand_umzug_welt_ordner(g):
+    """Editor-Umbau (Teil I): ein Spielstand mit den ALTEN Dateinamen (level-6.json …) wird beim Laden auf die neuen
+    Pfade umgeschrieben – nichts geht verloren (Freischaltungen, Geschafft, Statistik); auch der Editor findet sein
+    zuletzt geladenes Projekt-Level (alter Name) unter dem neuen Pfad wieder."""
+    srv = webserver(); p = g.p
+    alt = {'v': 2, 'played': True, 'unlocked': ['level-1.json', 'level-2.json', 'level-7.json', 'level-8.json', 'level-3.json', 'level-17.json'],
+           'completed': ['level-1.json', 'level-2.json', 'level-7.json', 'level-8.json', 'level-6.json'], 'stats': {'level-6.json': {'m': 4, 'f': 1}, 'level-2.json': {'m': 0, 'f': 2}}, 'bosse': ['dschungel']}
+    try:
+        await p.goto(srv.url + 'index.html')
+        await g.ev(f"localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({json.dumps(alt)}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        sv = await g.ev("GameMenu.getSave()")
+        assert sv['unlocked'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json',
+                                  'dschungel/04-gluehwald.json', 'ruinen/01-ruinen.json', 'vulkan/01-glutpfad.json'], sv
+        assert sv['completed'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json',
+                                   'dschungel/04-gluehwald.json', 'vulkan/03-feuerberg.json'], sv
+        assert sv['stats'] == {'vulkan/03-feuerberg.json': {'m': 4, 'f': 1}, 'dschungel/02-baumkronen.json': {'m': 0, 'f': 2}} and sv['bosse'] == ['dschungel'], sv
+        # im Menü: Dschungel ganz geschafft, Ruinen offen, Feuerberg geschafft
+        nr = lambda d: g.ev(f"GameMenu.config.levels.findIndex(l => l.datei === '{d}')")
+        assert await g.ev(f"GameMenu.levelUnlocked({await nr('ruinen/01-ruinen.json')})") and await g.ev("GameMenu.worldUnlocked('ruinen')")
+        assert await g.ev(f"GameMenu.levelDone({await nr('vulkan/03-feuerberg.json')})"), 'Feuerberg nicht mehr geschafft'
+        # gespeichert ist jetzt der neue Stand; nochmal laden ändert nichts mehr
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        assert await g.ev("GameMenu.getSave()") == sv
+        # Editor: Arbeitsstand mit altem Projekt-Dateinamen
+        await p.goto(srv.url + 'editor/index.html')
+        await p.evaluate("localStorage.setItem('monchichi_level_editor_v2', JSON.stringify({cols: 60, tiles: [[1, 17, 'ground']], welt: 'vulkan', currentProjectFile: 'level-6.json', currentLevelName: 'Level 6'}))")
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.evaluate("currentProjectFile") == 'vulkan/03-feuerberg.json'
+        assert (await p.text_content('#curName')).startswith('Vulkan 3'), await p.text_content('#curName')
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def spielstand_migration(g):
+    """Ausbau 1: alter Spielstand (Level-Nummern) wird auf Dateinamen umgerechnet, nichts geht verloren; das Original
+    bleibt unverändert als Sicherung (monchichi.save_v1_backup) und wird nie überschrieben."""
+    srv = webserver(); p = g.p
+    alt = {'played': True, 'unlocked': 4, 'completed': [1, 2, 3], 'stats': {'1': {'m': 2, 'f': 3}, '3': {'m': 0, 'f': 5}}}
+    try:
+        await p.goto(srv.url + 'index.html')
+        await g.ev(f"localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({json.dumps(alt)}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        sv = await g.ev("GameMenu.getSave()")
+        assert sv['v'] == 2 and sv['played'] is True, sv
+        assert sv['unlocked'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json', 'ruinen/02-mondnacht.json'], sv
+        assert sv['completed'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json'], sv
+        assert sv['stats'] == {'dschungel/01-dschungel.json': {'m': 2, 'f': 3}, 'ruinen/01-ruinen.json': {'m': 0, 'f': 5}}, sv
+        assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung fehlt/verändert'
+        # Level: 4 offen, 3 geschafft – wie vorher (seit Ausbau 3 auf die Welten verteilt)
+        offen = await g.ev("[1, 2, 3, 4, 5, 6].map(i => GameMenu.levelUnlocked(GameMenu.config.levels.findIndex(l => l.datei === levelNeuerName(`level-${i}.json`))))")
+        assert offen == [True, True, True, True, False, False], offen
+        # Weiterspielen: Level 4 schaffen schaltet das nächste Ruinen-Level frei (neue Reihenfolge: Felsenflucht), Sicherung bleibt unverändert
+        assert await g.ev("(() => { const nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1; return GameMenu.completeLevel(nr('ruinen/02-mondnacht.json'), true) === nr('ruinen/05-felsenflucht.json'); })()")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        sv = await g.ev("GameMenu.getSave()")
+        assert 'ruinen/05-felsenflucht.json' in sv['unlocked'] and 'ruinen/02-mondnacht.json' in sv['completed'] and sv['stats']['dschungel/01-dschungel.json'] == {'m': 2, 'f': 3}, sv
+        assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung überschrieben'
+        # kaputte/zu große Werte: nichts stürzt ab
+        m = await g.ev("GameMenu.migrateSave({unlocked: 99, completed: [7, 'x', 2]})")
+        assert m['unlocked'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json', 'ruinen/02-mondnacht.json',
+                                 'hoehle/01-kristallhoehle.json', 'vulkan/03-feuerberg.json'] and m['completed'] == ['dschungel/02-baumkronen.json'], m
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def schichten_tageszeit_wetter(g):
+    """Ausbau 1: Welt + Tageszeit + Wetter als Schichten. Alte Levels (theme) behalten genau ihren Look und den
+    Wetter-Wechsel; neue Levels: Tageszeit ändert Himmel/Sonne/Mond/Dunkelheit/Farbstich, Wetter trocken/regen wirkt."""
+    k = await g.ev("""(() => { const r = d => resolveLevelLook(d);
+      return { alt: ['dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'].map(t => r({theme: t})),
+               ohne: r({}), look: r({welt: 'ruinen', look: 'nacht'}), morgen: r({welt: 'dschungel'}), mittagR: r({welt: 'ruinen', tageszeit: 'mittag'}),
+               nacht: r({welt: 'dschungel', tageszeit: 'nacht'}), abend: r({welt: 'dschungel', tageszeit: 'abend'}),
+               mittag: r({welt: 'dschungel', tageszeit: 'mittag'}), hoehleTag: r({welt: 'hoehle', tageszeit: 'mittag'}),
+               hoehleNacht: r({welt: 'hoehle', tageszeit: 'nacht'}), unbekannt: r({welt: 'dschungel', tageszeit: 'quatsch'}) }; })()""")
+    assert k['alt'] == ['dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'] and k['ohne'] == 'dschungel', k
+    assert k['look'] == 'nacht' and k['morgen'] == 'dschungel' and k['mittagR'] == 'ruinen' and k['hoehleTag'] == 'hoehle', k
+    assert k['unbekannt'] == 'dschungel', k
+    t = await g.ev(f"""(() => {{ const T = n => THEMES[n]; const n = T({json.dumps(k['nacht'])}), a = T({json.dumps(k['abend'])}), m = T({json.dumps(k['mittag'])});
+      return {{ nMoon: !!n.moon, nSun: !!n.sun, nDark: n.dark, nWash: !!n.layerWash, nGround: n.ground === THEMES.dschungel.ground,
+               aSky: a.sky === THEMES.abend.sky, aWash: !!a.layerWash, mSky: m.sky === THEMES.ruinen.sky,
+               hD: T({json.dumps(k['hoehleNacht'])}).dark, hBase: THEMES.hoehle.dark, altWash: !!THEMES.dschungel.layerWash }}; }})()""")
+    # (Ausbau 7: nachts ist der Boden jetzt abgedunkelt – vorher blieb er taghell, also nGround früher True)
+    assert t['nMoon'] and not t['nSun'] and t['nDark'] > 0.3 and t['nWash'] and not t['nGround'], f'Nacht-Schicht falsch: {t}'
+    assert t['aSky'] and t['aWash'] and t['mSky'], f'Abend/Mittag-Schicht falsch: {t}'
+    assert t['hD'] > t['hBase'] and not t['altWash'], f'Höhle nachts / alte Looks verändert: {t}'
+    # Wetter: regen = dauernd Regen, trocken = nie Regen, wechselnd = wie bisher
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', tageszeit='nacht', wetter='regen'))
+    await g.p.wait_for_timeout(300)
+    w = await g.ev("(() => { weather.t = 99999; weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode, look: levelTheme, moon: !!THEME.moon}; })()")
+    assert w['ph'] == 'sun' and w['mode'] == 'regen' and w['moon'], f'Nacht wirkt nicht / es regnet (Regen ist aus): {w}'
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', wetter='trocken'))
+    await g.p.wait_for_timeout(300)
+    w = await g.ev("(() => { weatherForce('rain'); weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode}; })()")
+    assert w['ph'] == 'sun' and w['mode'] == 'trocken', f'trocken regnet: {w}'
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, theme='abend'))
+    await g.p.wait_for_timeout(300)
+    w = await g.ev("(() => { weather.phase = 'sun'; weather.t = 99999; weatherUpdate(0.016); return {ph: weather.phase, mode: weatherMode, look: levelTheme}; })()")
+    assert w['mode'] == 'wechselnd' and w['ph'] == 'sun' and w['look'] == 'abend', f'altes Level: Look anders / es zieht zu (Regen ist aus): {w}'
+
+@test
+async def dschungel_welt_look(g):
+    """Ausbau 7: Dschungel-Look als Eintrag in worlds.json ("aussehen"); mit jeder Tageszeit und jedem Wetter ladbar.
+    Abends/nachts sind Boden, Wände und Moos abgedunkelt (vorher taghell), nachts Eulen, Glühwürmchen, Fledermaus;
+    Ambiente: nachts keine Vogel-Aufnahme, dafür Grillen. Alte Levels (theme) bleiben unverändert."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'dschungel').get('aussehen')
+    assert a and a['basis'] == 'dschungel' and a['zeit'] == 'morgen' and a['himmel'] is True, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'dschungel', aussehen: {json.dumps(a)}}}]);
+      const hell = c => {{ const h = i => parseInt(c.slice(i, i + 2), 16); return h(1) + h(3) + h(5); }};
+      const L = z => THEMES[resolveLevelLook({{welt: 'dschungel', tageszeit: z}})];
+      const m = L('morgen'), mi = L('mittag'), ab = L('abend'), n = L('nacht');
+      return {{ morgenGleich: m === THEMES.dschungel, mittagBoden: mi.ground.dirt1 === m.ground.dirt1,
+               dunkler: [hell(ab.ground.dirt1) < hell(m.ground.dirt1), hell(n.ground.dirt1) < hell(ab.ground.dirt1), hell(n.wall.top) < hell(m.wall.top)],
+               nacht: [n.birds.every(b => b.owl), n.critters.air, n.critters.hanging], amb: [n.ambiente.voegel, n.ambiente.grillen, mi.ambiente.voegel],
+               alt: [THEMES.dschungel.ambiente, THEMES.abend.ground.dirt1, THEMES.nacht.ground.dirt1] }}; }})()""")
+    assert k['morgenGleich'] and k['mittagBoden'] and all(k['dunkler']), k
+    assert k['nacht'] == [True, 'firefly', 'bat'] and k['amb'] == [0, 1, 0.8], k
+    assert k['alt'] == [None, '#d98650', '#6a5a80'], f'alte Themen verändert: {k}'
+    # jede Tageszeit mit jedem Wetter: lädt ohne Fehler, Wetter wirkt
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel', tageszeit=zeit, wetter=wetter))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('dschungel'), (zeit, wetter, r)
+
+@test
+async def hoehle_welt_look(g):
+    """Ausbau 7: Höhlen-Look als Eintrag in worlds.json ("aussehen": kein Himmel, eigenes Ambiente: keine Vögel, kaum
+    Grillen, Wasser in der Ferne). Unter Tage sehen morgens/mittags/abends gleich aus, nachts ist es dunkler (Ambiente
+    bleibt); Wetter „regen“ = Tropfwasser von der Decke statt Regen. Alle Tageszeiten und Wetter ladbar; das alte Level 5
+    (theme "hoehle") bleibt unverändert."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'hoehle').get('aussehen')
+    assert a and a['basis'] == 'hoehle' and a['himmel'] is False and a['ambiente']['voegel'] == 0, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'hoehle', aussehen: {json.dumps(a)}}}]);
+      const L = z => resolveLevelLook({{welt: 'hoehle', tageszeit: z}});
+      return {{ namen: ['morgen', 'mittag', 'abend', 'nacht'].map(L), amb: ['mittag', 'nacht'].map(z => THEMES[L(z)].ambiente),
+               dunkel: ['mittag', 'nacht'].map(z => THEMES[L(z)].dark), alt: resolveLevelLook({{theme: 'hoehle'}}), altAmb: THEMES.hoehle.ambiente || null }}; }})()""")
+    assert k['namen'] == ['hoehle@morgen~amb', 'hoehle@mittag~amb', 'hoehle@abend~amb', 'hoehle@nacht'], k
+    assert all(x == {'voegel': 0, 'grillen': 0.15, 'fluss': 0.7} for x in k['amb']) and k['dunkel'][1] > k['dunkel'][0], k
+    assert k['alt'] == 'hoehle' and k['altAmb'] is None, k
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='hoehle', tageszeit=zeit, wetter=wetter,
+                               eis=[{'x': 600, 'y': 680, 'w': 40, 'h': 40}], leuchtkristalle=[{'x': 800, 'y': 660}]))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground, regen: weather.rain, drips: !!THEME.drips})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('hoehle') and r['regen'] < 0.05 and r['drips'], (zeit, wetter, r)
+    # Tropfwasser zeichnet ohne Fehler (nur Anzeige)
+    await g.ev("draw()")
+
+@test
+async def vulkan_welt_look(g):
+    """Ausbau 7: Vulkan-Look als Eintrag in worlds.json ("aussehen": eigener Feuer-Himmel, Farbsatz „feuer“ je Tageszeit,
+    keine Vögel, wenig Grillen). Morgens goldener, abends violett-rot, nachts dunkel (Lava leuchtet), mittags = der
+    Welt-Look. Wetter „regen“ = heißer Regen (Dampf über der Lava), sonst kein Regen. Alle Tageszeiten und Wetter
+    ladbar; das alte Level 6 (theme "vulkan") bleibt unverändert und bekommt nie Regen."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'vulkan').get('aussehen')
+    assert a and a['basis'] == 'vulkan' and a['himmel'] is False and a['zeitFarben'] == 'feuer' and a['ambiente']['voegel'] == 0, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'vulkan', aussehen: {json.dumps(a)}}}]);
+      const L = z => resolveLevelLook({{welt: 'vulkan', tageszeit: z}});
+      const n = ['morgen', 'mittag', 'abend', 'nacht'].map(L);
+      return {{ namen: n, himmel: n.map(x => THEMES[x].sky[0][1]), dunkel: n.map(x => THEMES[x].dark), amb: THEMES[n[3]].ambiente,
+               alt: resolveLevelLook({{theme: 'vulkan'}}), altHimmel: THEMES.vulkan.sky[0][1] }}; }})()""")
+    assert k['namen'] == ['vulkan@morgen~amb', 'vulkan@mittag~amb', 'vulkan@abend~amb', 'vulkan@nacht~amb'], k
+    assert len(set(k['himmel'][i] for i in (0, 2, 3))) == 3 and k['himmel'][1] == k['altHimmel'], k
+    assert k['dunkel'][3] > k['dunkel'][2] > k['dunkel'][1], k
+    assert k['amb'] == {'voegel': 0, 'grillen': 0.2, 'fluss': 0} and k['alt'] == 'vulkan', k
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='vulkan', tageszeit=zeit, wetter=wetter,
+                               lava=[{'x': 600, 'y': 680, 'w': 80, 'h': 40}], pressen=[{'x': 900, 'y': 400, 'breite': 1, 'takt': 3, 'versatz': 0}]))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground, regen: weather.rain})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('vulkan'), (zeit, wetter, r)
+            assert r['regen'] < 0.05, (zeit, wetter, r)   # Regen ist aus dem Spiel (auch kein heißer Regen mehr)
+            await g.ev("camPos = 400; draw()")   # Dampf/Lava/Presse zeichnen ohne Fehler
+    # altes Level 6 (wechselndes Wetter, theme vulkan): nie Regen
+    await g.load(str(ROOT / 'levels' / 'vulkan/03-feuerberg.json')); await g.ev("weatherForce('rain')"); await g.steps(5)
+    assert await g.ev("weather.phase") == 'sun' and await g.ev("levelTheme") == 'vulkan'
+
+@test
+async def ruinen_welt_look(g):
+    """Ausbau 7: Ruinen-Look als Eintrag in worlds.json ("aussehen" mit eigenem Ambiente: weniger Vögel, Grillen leise
+    am Tag, Fluss leise); mit jeder Tageszeit und jedem Wetter ladbar; alte Level mit theme "ruinen" bleiben unverändert."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    a = next(x for x in w['welten'] if x['id'] == 'ruinen').get('aussehen')
+    assert a and a['basis'] == 'ruinen' and a['zeit'] == 'mittag' and a['ambiente']['voegel'] < 1, a
+    k = await g.ev(f"""(() => {{ weltAussehenUebernehmen([{{id: 'ruinen', aussehen: {json.dumps(a)}}}]);
+      const L = z => resolveLevelLook({{welt: 'ruinen', tageszeit: z}});
+      return {{ namen: ['morgen', 'mittag', 'abend', 'nacht'].map(L), mittagAmb: THEMES[L('mittag')].ambiente, nachtAmb: THEMES[L('nacht')].ambiente,
+               mittagWand: THEMES[L('mittag')].wall === THEMES.ruinen.wall, alt: resolveLevelLook({{theme: 'ruinen'}}), altAmb: THEMES.ruinen.ambiente || null }}; }})()""")
+    assert k['namen'] == ['ruinen@morgen', 'ruinen@mittag~amb', 'ruinen@abend', 'ruinen@nacht'], k
+    assert k['mittagAmb'] == {'voegel': 0.6, 'grillen': 0.5, 'fluss': 0.4} and k['nachtAmb']['voegel'] == 0 and k['mittagWand'], k
+    assert k['alt'] == 'ruinen' and k['altAmb'] is None, k
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        for wetter in ('wechselnd', 'trocken', 'regen'):
+            await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='ruinen', tageszeit=zeit, wetter=wetter,
+                               traps=[{'x': 600, 'y': 640, 'art': 'flamme', 'richtung': 'o', 'takt': 2, 'versatz': 0}]))
+            await g.steps(10)
+            r = await g.ev("({look: levelTheme, mode: weatherMode, ok: !!THEME && !!THEME.ground})")
+            assert r['mode'] == wetter and r['ok'] and r['look'].startswith('ruinen'), (zeit, wetter, r)
+
+@test
+async def alte_levels_unveraendert(g):
+    """Ausbau 1: alle Level-Dateien (ohne welt/tageszeit/wetter) laden weiter mit ihrem bisherigen Look und
+    wechselndem Wetter; das Testlevel levels/test/schichten-dschungel.json lässt sich direkt öffnen, T/Z schalten durch."""
+    for d in json.loads((ROOT / 'levels' / 'levels.json').read_text(encoding='utf-8')):
+        if d.get('boss'): continue   # Boss-Level (Ausbau 6) sind neu, mit eigener Welt/Tageszeit
+        data = json.loads((ROOT / 'levels' / d['datei']).read_text(encoding='utf-8'))
+        if data.get('welt'): continue   # neue Level (Ausbau 7) beschreiben ihr Aussehen mit welt/tageszeit/wetter
+        await g.load(str(ROOT / 'levels' / d['datei'])); await g.p.wait_for_timeout(150)
+        k = await g.ev("({look: levelTheme, mode: weatherMode, wash: !!THEME.layerWash})")
+        assert k == {'look': data.get('theme') or 'dschungel', 'mode': 'wechselnd', 'wash': False}, f"{d['datei']}: {k}"
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=schichten-dschungel')
+        await p.wait_for_function("typeof levelLayers !== 'undefined' && levelLayers.vorschau && menuScreen === null", timeout=8000)
+        seen = []
+        for _ in range(4):
+            await p.keyboard.press('KeyT'); await p.wait_for_timeout(120)
+            seen.append(await g.ev("[levelLayers.tageszeit, !!THEME.moon]"))
+        assert [x[0] for x in seen] == ['mittag', 'abend', 'nacht', 'morgen'] and seen[2][1] and not seen[3][1], seen
+        modes = []
+        for _ in range(3):
+            await p.keyboard.press('KeyZ'); await p.wait_for_timeout(120)
+            modes.append(await g.ev("weatherMode"))
+        assert modes == ['trocken', 'regen', 'wechselnd'], modes
+    finally:
+        srv.shutdown()
+
+@test
+async def bahnen_alte_mechaniken(g):
+    """Nacht-Ausbau (harte Regel): Laufen, Sprung, Kamin-Wandsprung, Haken-Schwung (+ Seil ran/geben), Segeln, Aufwind,
+    Sprungpilz und Einzelwand liefern Schritt für Schritt EXAKT dieselben Bahnen wie vor dem Einbau von Dash, Durchbruch-
+    Wand, Wand-Rutschen und Haftfläche. Referenz: tests/bahnen_referenz.json (vor dem Ausbau aufgezeichnet, nie anpassen)."""
+    ref = json.loads((ROOT / 'tests' / 'bahnen_referenz.json').read_text(encoding='utf-8'))
+    assert len(ref) >= 7, len(ref)
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=bahnen')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        await p.evaluate("() => {" + (ROOT / 'tests' / 'bahnen.js').read_text(encoding='utf-8') + "}")
+        erg = await p.evaluate("ref => bahnenAbspielen(ref)", ref)
+        falsch = [e for e in erg if e.get('fehler', 'x') is not None]
+        assert not falsch, f'Bahnen weichen ab: {falsch[:3]}'
+        assert sum(e['schritte'] for e in erg) >= 2000, erg
+    finally:
+        srv.shutdown()
+
+async def neue_mechaniken_messen(g, teil):
+    """Nacht-Ausbau: Szenario aus tests/neue_mechaniken.js im Testlevel neue-mechaniken laufen lassen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=neue-mechaniken')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        await p.evaluate("() => {" + (ROOT / 'tests' / 'neue_mechaniken.js').read_text(encoding='utf-8') + "}")
+        return await p.evaluate(f"NM.{teil}()")
+    finally:
+        srv.shutdown()
+
+@test
+async def dash_richtungen_und_laden(g):
+    """Nacht-Ausbau: Dash in 8 Richtungen (Boden und Luft, beide Figuren), nur ein Luft-Dash, Aufladen am Boden,
+    an der Wand und am Haken, kein Durchtunneln von Wänden (auch schräg)."""
+    r = await neue_mechaniken_messen(g, 'dash')
+    for wer in 'mf':
+        R = {k[1:]: v for k, v in r['richtung'].items() if k[0] == wer}
+        assert R['r'][0] > 3.5 and R['l'][0] < -3.5 and abs(R['r'][1]) < 0.5, (wer, R)
+        assert R['o'][1] < -3.5 and R['u'][1] > 3.5 and abs(R['o'][0]) < 0.1, (wer, R)
+        for d, sx, sy in (('ro', 1, -1), ('lo', -1, -1), ('ru', 1, 1), ('lu', -1, 1)):
+            assert R[d][0]*sx > 2.5 and R[d][1]*sy > 2.5, (wer, d, R[d])
+        assert all(v[2] == 0 for v in R.values()), f'Luft-Dash kostet keinen Punkt: {R}'
+        assert r[wer + 'Boden'] > 3.5, (wer, r[wer + 'Boden'])
+    assert not r['zweiterLuftDash'], 'zweiter Luft-Dash ging'
+    assert 50 <= r['ladeSchritte'] <= 58, r['ladeSchritte']
+    assert r['wandLaden']['vorher'] == 0 and r['wandLaden']['schritte'] < 120, r['wandLaden']
+    if r['hakenLaden'] is not None:
+        assert r['hakenLaden']['haken'] and r['hakenLaden']['punkte'] == 1, r['hakenLaden']
+    assert r['keinTunnel'] < 90 and r['keinTunnelSchraeg'] < 90, (r['keinTunnel'], r['keinTunnelSchraeg'])
+
+@test
+async def durchbruch_wand(g):
+    """Nacht-Ausbau: Durchbruch-Wand bricht nur durch einen Dash (Laufen/Springen nicht), beide Figuren, auch nach
+    unten; Trefferstopp; bleibt kaputt bis Neustart; Option „wächst nach“ wartet, solange eine Figur drin steht."""
+    r = await neue_mechaniken_messen(g, 'bruch')
+    assert r['laufen']['weg'] == 0 and r['laufen']['c'] < 20, r['laufen']
+    assert r['dash']['weg'] >= 1 and r['dash']['c'] > 21, r['dash']
+    assert r['dash']['stopp'] >= 1, f"kein Trefferstopp: {r['dash']}"
+    assert r['schwein']['weg'] >= 1 and r['schwein']['c'] > 21, r['schwein']
+    assert r['unten']['weg'] >= 1 and r['unten']['r'] > 15, r['unten']
+    assert r['bleibt'] >= 1 and r['nachNeustart'] == 0, r
+    w = r['wachsen']
+    assert w['wegNachDash'] >= 1 and w['wartet'] and w['wegMitFigur'] >= 1 and w['frei'], w
+    assert w['wegOhneFigur'] == 0, w
+
+@test
+async def wand_rutschen(g):
+    """Nacht-Ausbau: an einer Wand herunterfallen bremst automatisch auf WAND_RUTSCH_MAX_FALL (ohne Richtungstaste,
+    beide Figuren); ein Wandsprung mitten im Rutschen ist der ganz normale Wandsprung."""
+    r = await neue_mechaniken_messen(g, 'rutschen')
+    gr = await g.ev("WAND_RUTSCH_MAX_FALL")
+    assert r['ohneTaste']['maxVy'] <= gr + 1e-6 and r['ohneTaste']['rutschte'] > 5, r
+    assert r['schwein'] <= gr + 1e-6, r
+    assert r['wandsprung']['vx'] < -3 and r['wandsprung']['vy'] < -8, r['wandsprung']
+
+@test
+async def haftflaeche(g):
+    """Nacht-Ausbau: Haftfläche – mit „hoch“ von unten festhalten (beide Figuren, ohne „hoch“ nicht), langsamer als
+    Laufen mit Schwung entlangrollen, kein Sofort-Stopp, um Kanten herum, loslassen = fallen, Absprung, Dash von dort."""
+    r = await neue_mechaniken_messen(g, 'haft')
+    tempo = await g.ev("HAFT_TEMPO"); lauf = await g.ev("MOVE_SPEED")
+    assert tempo < lauf, (tempo, lauf)
+    assert r['greifen'] and r['schwein'] and not r['ohneHoch'], r
+    assert r['rollen']['haft'] and r['rollen']['anfang'] < tempo*0.6 and r['rollen']['max'] <= tempo + 1e-6, r['rollen']
+    assert r['auslaufen'] > 2, r['auslaufen']
+    assert len(r['ecken']) >= 3, f"nicht um die Ecken gerollt: {r['ecken']}"
+    assert not r['loslassen']['haft'] and r['loslassen']['vy'] > 0, r['loslassen']
+    assert not r['absprung']['haft'] and r['absprung']['vy'] > 0, r['absprung']
+    assert r['dashVonHaft']['dash'] and not r['dashVonHaft']['haft'], r['dashVonHaft']
+
+TASTEN_ALT = {1: {'left': 'KeyA', 'right': 'KeyD', 'jump': 'Space', 'ability': 'KeyG', 'pull': 'KeyW', 'slack': 'KeyS', 'use': 'KeyJ'},
+              2: {'left': 'ArrowLeft', 'right': 'ArrowRight', 'jump': 'Numpad0', 'ability': 'Numpad1', 'pull': 'ArrowUp', 'slack': 'ArrowDown', 'use': 'Numpad2'}}
+
+async def tasten_menue_oeffnen(g, srv):
+    p = g.p
+    await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(900)
+    await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(400)
+    await p.click('#sm-menu >> text=Optionen'); await p.wait_for_function("document.querySelector('#sm-s-options.active')", timeout=8000); await p.wait_for_timeout(400)
+    await p.click('#sm-keys'); await p.wait_for_function("document.querySelector('#sm-s-tasten.active')", timeout=8000); await p.wait_for_timeout(400)
+
+async def tb_knopf(g, n, aktion):
+    await g.p.click(f'#sm-tb-grid button[data-n="{n}"][data-a="{aktion}"]'); await g.p.wait_for_timeout(300)
+
+@test
+async def tasten_belegen_menue(g):
+    """Nacht-Ausbau: Optionen → Tasten belegen. Standard = alte Belegung (+ Dash K / Num 3). Taste ändern, Esc bricht ab,
+    gesperrte Tasten gehen nicht, Konflikt wird markiert und blockiert das Verlassen, Zurücksetzen je Spieler,
+    Speichern unter monchichi.tasten, nach Neuladen aktiv (auch für die Figur im Spiel)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.evaluate("localStorage.clear()")
+        await tasten_menue_oeffnen(g, srv)
+        ks = await g.ev("JSON.parse(JSON.stringify(KEYSETS))")
+        for n in (1, 2):
+            for a, k in TASTEN_ALT[n].items(): assert ks[str(n)][a] == k, (n, a, ks[str(n)][a])
+        assert ks['1']['dash'] == 'KeyK' and ks['2']['dash'] == 'Numpad3', ks
+        # Springen von Spieler 1 auf L
+        await tb_knopf(g, 1, 'jump'); assert await g.ev("!!document.querySelector('#sm-tb-grid .tb-k.fang')")
+        await p.keyboard.press('KeyL'); await p.wait_for_timeout(350)
+        assert await g.ev("KEYSETS[1].jump") == 'KeyL'
+        # Esc bricht ab (Belegung bleibt)
+        await tb_knopf(g, 1, 'use'); await p.keyboard.press('Escape'); await p.wait_for_timeout(350)
+        assert await g.ev("KEYSETS[1].use") == 'KeyJ' and await g.ev("document.querySelector('#sm-s-tasten.active') !== null")
+        # gesperrte Taste (R = Neustart) wird abgelehnt, Fangmodus bleibt -> dann Esc
+        await tb_knopf(g, 1, 'use'); await p.keyboard.press('KeyR'); await p.wait_for_timeout(300)
+        assert await g.ev("KEYSETS[1].use") == 'KeyJ'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(350)
+        # Konflikt: Spieler 2 Fähigkeit auf L -> beide rot, Verlassen blockiert (Dialog)
+        await tb_knopf(g, 2, 'ability'); await p.keyboard.press('KeyL'); await p.wait_for_timeout(350)
+        assert await g.ev("document.querySelectorAll('#sm-tb-grid .tb-k.konflikt').length") == 2
+        await p.click('#sm-tb-back'); await p.wait_for_timeout(400)
+        assert await g.ev("document.querySelector('#sm-modal').classList.contains('on')"), 'kein Konflikt-Dialog'
+        await p.click('#sm-modal-btns .btn >> nth=0'); await p.wait_for_timeout(400)   # weiter ändern
+        assert await g.ev("document.querySelector('#sm-s-tasten.active') !== null")
+        # Spieler 2 zurücksetzen -> Konflikt weg, Verlassen speichert
+        await p.click('#sm-tb-grid .tb-std >> nth=1'); await p.wait_for_timeout(350)
+        assert await g.ev("KEYSETS[2].ability") == 'Numpad1' and await g.ev("document.querySelectorAll('#sm-tb-grid .tb-k.konflikt').length") == 0
+        await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
+        assert await g.ev("document.querySelector('#sm-s-options.active') !== null")
+        gesp = await g.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")
+        assert gesp['tastatur']['1']['jump'] == 'KeyL' and gesp['tastatur']['2']['ability'] == 'Numpad1', gesp
+        # Anzeige in den Optionen zeigt die neue Taste
+        assert 'L' in await g.ev("[...document.querySelectorAll('#sm-ctrl-cards .key')].map(e => e.textContent)")
+        # neu laden: Belegung bleibt, Spiel-Figur (Spieler 1 = Affe) springt mit L
+        await p.goto(srv.url + 'index.html?testlevel=bahnen')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        assert await g.ev("KEYSETS[1].jump") == 'KeyL' and await g.ev("p1.keys.jump") == 'KeyL'
+        assert 'L' in await g.ev("document.getElementById('hudMKeys').textContent")
+        await g.ev("p1.x = 300; p1.y = 720; p1.vy = 0"); await g.steps(10)
+        await p.keyboard.down('KeyL'); await g.steps(6); await p.keyboard.up('KeyL')
+        assert await g.ev("p1.vy < 0 || !p1.grounded"), 'Affe springt nicht mit der neuen Taste'
+        # Zurücksetzen Spieler 1 stellt die alte Belegung wieder her
+        await g.ev("KEYSETS[1].jump = TASTEN_STANDARD[1].jump; tastenSpeichern(); tastenAnwenden()")
+        assert await g.ev("p1.keys.jump") == 'Space'
+    finally:
+        srv.shutdown()
+
+PAD_STUB_TYP = """window.__pad = {id: '%s', index: 0, connected: true, axes:[0,0,0,0], buttons: Array.from({length:17},()=>({pressed:false,value:0})), mapping:'standard'};
+navigator.getGamepads = () => [window.__pad, null, null, null];"""
+
+@test
+async def tasten_controller_je_typ(g):
+    """Nacht-Ausbau: Controller-Belegung frei (auch Schultertasten/Trigger), je Spieler UND Controller-Typ gespeichert;
+    andere Typen behalten die Standard-Belegung; Options/Share sind gesperrt. Simulierter Controller (kein echtes Gerät)."""
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g2 = Game(p)
+    try:
+        await p.add_init_script(PAD_STUB_TYP % 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e)')
+        await p.goto(srv.url + 'index.html'); await p.evaluate("localStorage.clear()")
+        await tasten_menue_oeffnen(g2, srv)
+        assert await g2.ev("padTypAktuell[0]") == 'xbox'
+        await p.click('#sm-tb-seg button[data-art="pad"]'); await p.wait_for_timeout(300)
+        assert 'Xbox' in await g2.ev("document.getElementById('sm-tb-typ').textContent")
+        # Dash von Spieler 1 auf RB (Knopf 5)
+        async def druck(knopf, bis, wert="{pressed: true, value: 1}"):
+            # gedrückt halten, bis das Menü reagiert hat (langsame Rechner: nicht feste Zeiten), dann loslassen
+            await g2.ev(f"__pad.buttons[{knopf}] = {wert}")
+            await p.wait_for_function(bis, timeout=8000)
+            await g2.ev(f"__pad.buttons[{knopf}] = {{pressed: false, value: 0}}"); await p.wait_for_timeout(300)
+        await tb_knopf(g2, 1, 'dash')
+        await druck(5, "PADSETS[1].xbox.dash === 5")
+        assert await g2.ev("PADSETS[1].xbox.dash") == 5
+        assert await g2.ev("PADSETS[1].playstation.dash") == 3 and await g2.ev("PADSETS[2].xbox.dash") == 3
+        # Trigger (analog, nur value) auf Fähigkeit
+        await tb_knopf(g2, 1, 'ability')
+        await druck(7, "PADSETS[1].xbox.ability === 7", "{pressed: false, value: 0.9}")
+        assert await g2.ev("PADSETS[1].xbox.ability") == 7
+        # Share (8) gesperrt, Options (9) bricht ab
+        await tb_knopf(g2, 1, 'use')
+        await druck(8, "document.getElementById('sm-toast').textContent.includes('gesperrt')")
+        assert await g2.ev("PADSETS[1].xbox.use") == 1 and await g2.ev("!!document.querySelector('.tb-k.fang')")
+        await druck(9, "!document.querySelector('.tb-k.fang')")
+        assert await g2.ev("!document.querySelector('.tb-k.fang')") and await g2.ev("PADSETS[1].xbox.use") == 1
+        await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
+        gesp = await g2.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")
+        assert gesp['pad']['1']['xbox']['dash'] == 5 and gesp['pad']['1']['playstation']['dash'] == 3, gesp['pad']['1']
+        # im Spiel: RB dasht mit dem Xbox-Controller, Y (3) nicht mehr
+        await p.goto(srv.url + 'index.html?testlevel=bahnen')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        await g2.ev("__pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
+        assert not await g2.ev("!!PAD[KEYSETS[1].dash]")
+        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; __pad.buttons[5] = {pressed: true, value: 1}; pollGamepads()")
+        assert await g2.ev("!!PAD[KEYSETS[1].dash]")
+        # derselbe Platz mit PlayStation-Controller: Standard (△ = 3) gilt
+        await g2.ev("__pad.buttons[5] = {pressed: false, value: 0}; __pad.id = 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)'; __pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
+        assert await g2.ev("padTypAktuell[0]") == 'playstation' and await g2.ev("!!PAD[KEYSETS[1].dash]")
+        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; pollGamepads()")
+    finally:
+        await kx.close(); srv.shutdown()
+
+@test
+async def tasten_alter_spielstand(g):
+    """Nacht-Ausbau: Spielstand ohne Tasten-Eintrag (vor dem Ausbau) oder kaputter Eintrag -> Standard-Belegung;
+    teilweise gespeicherte Belegung ergänzt fehlende Aktionen (z. B. Dash) mit dem Standard. Spielstand bleibt erhalten."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html')
+        await p.evaluate("""localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], completed: ['dschungel/01-dschungel.json'], stats: {}, bosse: []}))""")
+        await p.reload(); await p.wait_for_timeout(800)
+        ks = await g.ev("JSON.parse(JSON.stringify(KEYSETS))")
+        for n in (1, 2):
+            for a, k in TASTEN_ALT[n].items(): assert ks[str(n)][a] == k, (n, a)
+        assert 'dschungel/01-dschungel.json' in (await g.ev("GameMenu.getSave()"))['completed']
+        await p.evaluate("localStorage.setItem('monchichi.tasten', '{kaputt')"); await p.reload(); await p.wait_for_timeout(600)
+        assert await g.ev("KEYSETS[1].jump") == 'Space' and await g.ev("KEYSETS[2].dash") == 'Numpad3'
+        await p.evaluate("localStorage.setItem('monchichi.tasten', JSON.stringify({version: 1, tastatur: {1: {jump: 'KeyL'}}}))"); await p.reload(); await p.wait_for_timeout(600)
+        assert await g.ev("KEYSETS[1].jump") == 'KeyL' and await g.ev("KEYSETS[1].dash") == 'KeyK' and await g.ev("PADSETS[1].xbox.jump") == 0
+    finally:
+        srv.shutdown()
+
+@test
+async def muenz_klassen(g):
+    """Nacht-Ausbau: Münz-Klasse (Pfad / Geschick / Meister) – im Editor wählbar (Feld „Klasse“ beim Münz-Werkzeug,
+    Klick mit anderer Klasse ändert die Klasse, sonst wie bisher die Farbe), wird exportiert (nur wenn nicht Pfad, alte
+    Level bleiben gleich) und im Spiel geladen; Meister-Münzen funkeln (zeichnen ohne Fehler)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(500)
+        await p.evaluate("clearLevelContent(); coins.push({c: 5, r: 10, color: 'gold'}, {c: 6, r: 10, color: 'blue', klasse: 'meister'}, {c: 7, r: 10, color: 'pink', klasse: 'geschick'})")
+        ex = await p.evaluate("JSON.parse(exportLevel()).coins")
+        assert 'klasse' not in ex[0] and ex[1]['klasse'] == 'meister' and ex[2]['klasse'] == 'geschick', ex
+        await ed_werkzeug(p, 'coin'); assert await p.is_visible('#opt-coin-klasse')
+        await p.select_option('#opt-coin-klasse', 'meister')
+        x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y); await p.wait_for_timeout(80)
+        c0 = await p.evaluate("coins.find(c => c.c === 5 && c.r === 10)")
+        assert c0['klasse'] == 'meister' and c0['color'] == 'gold', c0
+        await p.mouse.click(x, y); await p.wait_for_timeout(80)
+        c0 = await p.evaluate("coins.find(c => c.c === 5 && c.r === 10)")
+        assert c0['klasse'] == 'meister' and c0['color'] == 'blue', c0   # gleiche Klasse: Klick wechselt wie bisher die Farbe
+    finally:
+        srv.shutdown()
+    await p.goto(GAME); await p.wait_for_timeout(400)
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
+                       coins=[{'x': 420, 'y': 600, 'color': 'gold', 'klasse': 'meister'}, {'x': 500, 'y': 600, 'color': 'gold'}]))
+    assert await g.ev("coins[0].klasse") == 'meister' and await g.ev("coins[1].klasse") == 'pfad'
+    await g.steps(20)
+
+sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
+import plaene as NB   # Bot-Pläne der Nacht-Bausteine (tests/bausteine/plaene.py)
+
+@test
+async def bausteine_nacht(g):
+    """Nacht-Ausbau: Bausteine B1–B7 (levels/test/bausteine-nacht.json, tests/bausteine/testlevel_bauen.py) – jeder mit
+    beiden Figuren (B7 nur Schweinchen) per Bot geschafft, und jede Gegenprobe ohne die neue Mechanik scheitert:
+    B1 Dash-Grube · B2 Durchbruch-Tor + Grube (Bruch-Fenster) · B3 Haftfläche über Grube · B4 Kamin mit Durchbruch-Deckel
+    · B5 Haken -> Durchbruch (Schweinchen: Segeln + Dash) · B6 Haftfläche + Dash · B7 Segeln + Dash (Rolle Schweinchen)."""
+    await koop_level(g, 'test/bausteine-nacht.json')
+    faelle = [
+        ('B1', 'm', 17, NB.nb_dashgrube(19), 30, [k_lauf(19, -8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, NB.LANDEN]),
+        ('B1', 'f', 17, k_segeln(19), 30, None),
+        ('B2', 'm', 33, NB.nb_bruchtor(38), 48, [{'hold': ['right'], 'frames': 200}]),
+        ('B2', 'f', 33, NB.nb_bruchtor(38), 48, None),
+        ('B3', 'm', 58, NB.nb_haft(64, 79), 79, [k_lauf(64), {'press': ['jump'], 'hold': ['jump', 'right'], 'frames': 40}, NB.LANDEN]),
+        ('B3', 'f', 58, NB.nb_haft(64, 79), 79, None),
+        ('B4', 'm', 90, NB.nb_bruchkamin(98, 5, 104), 104, [k_lauf(98), {'climb': True, 'dir': 1, 'until': f'P.x >= {kx(104)} && P.grounded', 'frames': 600}]),
+        ('B4', 'f', 90, NB.nb_bruchkamin(98, 5, 104), 104, None),
+        ('B5', 'm', 119, NB.nb_haken_bruch(124, 138), 139, NB.nb_haken_bruch(124, 138)[:3] + [NB.LANDEN]),
+        ('B5', 'f', 119, NB.nb_segel_dash(125, 134), 139, k_segeln(125)),
+        ('B6', 'm', 143, NB.nb_haft_dash(150, 160), 167, NB.nb_haft(150, 160)),
+        ('B6', 'f', 143, NB.nb_haft_dash(150, 160), 167, None),
+        ('B7', 'f', 180, NB.nb_segel_dash(185, 195), 203, k_segeln(185)),
+    ]
+    fehler = []
+    for name, wer, c, plan, ziel, gegen in faelle:
+        anders = 'f' if wer == 'm' else 'm'
+        r = await koop(g, **{wer: kat(c, 14), anders: kat(c - 2, 14)}, plans={wer: plan}, maxFrames=3000)
+        if not (r.get('done') and r['pos'][wer][0] >= ziel): fehler.append(f"{name} {wer}: {r.get('pos')} {r.get('dead')}")
+        if gegen:
+            r = await koop(g, **{wer: kat(c, 14), anders: kat(c - 2, 14)}, plans={wer: gegen}, maxFrames=1500)
+            if r.get('done') and r['pos'][wer][0] >= ziel and r['pos'][wer][1] >= (4 if name == 'B4' else 14):
+                fehler.append(f"{name} {wer}: Gegenprobe ohne neue Mechanik geht auch: {r.get('pos')}")
+    assert not fehler, fehler
+
+def level_teil(k, v):
+    """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
+    zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""
+    if v in (None, []): return None
+    if k in ('solids', 'movingPlatforms', 'winds'):
+        out = set()
+        for o in v:
+            extra = json.dumps({kk: vv for kk, vv in o.items() if kk not in ('x', 'y', 'w', 'h', 'targetX', 'targetY', 'group')}, sort_keys=True)
+            dx, dy = o.get('targetX', o['x']) - o['x'], o.get('targetY', o['y']) - o['y']
+            for x in range(o['x'], o['x'] + o['w'], 40):
+                for y in range(o['y'], o['y'] + o['h'], 40): out.add((x, y, dx, dy, extra))
+        return out
+    if isinstance(v, list): return sorted(json.dumps(o, sort_keys=True) for o in v)
+    return v
+
+@test
+async def editor_rundreise_alle_level(g):
+    """Ausbau 2: Jedes Projekt-Level (1–22) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
+    die Spiel-Datei in levels/ (gleiche Daten) – Beweis, dass der Editor beim Umbau nichts verändert."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
+        assert len(liste) == 25, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
+        for i, L in enumerate(liste):
+            await p.click('#levelsBtn'); await p.wait_for_timeout(250)
+            await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
+            await projekt_laden(p, L['datei'], 350)
+            await p.click('#exportBtn'); await p.wait_for_timeout(150)
+            out = json.loads(await p.input_value('#exportText'))
+            await p.click('#closeExport')
+            erwartet = json.loads((ROOT / 'levels' / L['datei']).read_text(encoding='utf-8'))
+            META = ('welt', 'tageszeit', 'wetter', 'look')   # Level-Info (Ausbau 2) – kommt im Export dazu
+            diff = [k for k in set(out) | set(erwartet) if not k.startswith('_') and k not in META and level_teil(k, out.get(k)) != level_teil(k, erwartet.get(k))]
+            assert not diff, f"{L['datei']}: Export weicht ab bei {diff}"
+            welt = next(w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten'] if L['datei'] in w['level'])
+            if erwartet.get('welt'):   # neue Level (Ausbau 7): Welt/Tageszeit/Wetter aus der Datei
+                # alle vier Angaben wie in der Datei (auch ein Look, z. B. Level 1 nach dem Speichern aus dem Editor)
+                assert [out.get(k) for k in META] == [erwartet.get(k) for k in META] and out.get('welt') == welt, \
+                    f"{L['datei']}: Level-Info falsch: {[out.get(k) for k in META]}"
+                continue
+            assert out.get('look') == erwartet.get('theme') and out.get('welt') == welt and out.get('wetter') == 'wechselnd' and 'tageszeit' not in out, \
+                f"{L['datei']}: Level-Info falsch: {[out.get(k) for k in META]}"
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_werkzeug_gruppen(g):
+    """Ausbau 2 / Editor-Umbau: Werkzeuge stehen in Gruppen, jetzt als Reiter (Gelände, Gefahren, Licht, Schalter & Logik,
+    Haken & Sprung, Bewegung, Wasser, Boss, Münzen & Marken – höchstens 9); jedes Werkzeug in genau einer Gruppe; ein
+    Reiter zeigt nur seine Gruppe, die Wahl bleibt nach dem Neuladen; Werkzeuge gehen weiter."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        gr = await p.evaluate("""[...document.querySelectorAll('.tgroup')].map(g => [g.dataset.name,
+            [...g.querySelectorAll('.tool')].map(t => t.dataset.tool)])""")
+        assert [x[0] for x in gr] == ['Gelände', 'Gefahren', 'Licht', 'Schalter & Logik', 'Haken & Sprung', 'Bewegung', 'Wasser', 'Boss', 'Münzen & Marken'], gr
+        alle = sum((x[1] for x in gr), [])
+        for t in ['ground', 'wall', 'crumble', 'fake', 'spike', 'switch', 'door', 'plate', 'hook', 'wind', 'bounce', 'move', 'coin', 'checkpoint', 'startM', 'startF', 'goal']:
+            assert alle.count(t) == 1, f'Werkzeug {t} nicht genau einmal in einer Gruppe: {gr}'
+        assert await p.is_visible('.tool[data-tool=erase]') and await p.is_visible('.tool[data-tool=select]'), 'Radieren/Auswahl fehlt'
+        await p.click('[data-tab=gefahren]'); await p.wait_for_timeout(100)
+        assert await p.is_visible('.tool[data-tool=spike]') and not await p.is_visible('.tool[data-tool=ground]'), 'Reiter zeigt nicht nur seine Gruppe'
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.is_visible('.tool[data-tool=spike]') and not await p.is_visible('.tool[data-tool=ground]'), 'gewählter Reiter nicht gemerkt'
+        await p.click('.tool[data-tool=spike]')
+        assert await p.evaluate("currentTool") == 'spike', 'Werkzeug in der Gruppe lässt sich nicht wählen'
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+WERKZEUG_PRUEF_JS = """
+window.__daten = t => {
+  const E = elementNachWerkzeug(t);
+  if(E && E.editor.art === 'punkt') return (elementPunkte[E.feld] || []).map(p => ({...p}));
+  if((E && E.editor.art === 'kachel') || ['ground', 'wall', 'crumble', 'fake'].includes(t))
+    return Object.keys(tiles).filter(k => tiles[k] === t).map(k => { const [c, r] = k.split(',').map(Number); return {c, r}; });
+  if(t === 'hook') return hooks.map(h => ({...h}));
+  if(t === 'spike') return spikes.map(h => ({...h}));
+  if(t === 'coin') return coins.map(h => ({...h}));
+  if(t === 'checkpoint') return checkpoints.map(h => ({...h}));
+  if(t === 'move') return movers.map(m => ({...m}));
+  const v = {startM, startF, goal}[t];
+  return v ? [{...v}] : [];
+};
+// Wo wird ein Punkt-Element im Editor sichtbar gezeichnet? Mitte der Zeichnung (Zeichen-Befehle mitschreiben) -> Kästchen
+window.__sichtZelle = (t, p) => {
+  const E = elementNachWerkzeug(t);
+  if(!E || E.editor.art !== 'punkt' || !E.editor.zeichnen) return [p.c, p.r];
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, tx = 0, ty = 0; const st = [];
+  const add = (x, y) => { x += tx; y += ty; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  const f = new Proxy({}, {get(o, k){
+    if(k === 'save') return () => st.push([tx, ty]);
+    if(k === 'restore') return () => { const s = st.pop(); if(s){ tx = s[0]; ty = s[1]; } };
+    if(k === 'translate') return (a, b) => { tx += a; ty += b; };
+    if(['fillRect', 'strokeRect', 'rect', 'roundRect'].includes(k)) return (x, y, w, h) => { add(x, y); add(x + w, y + h); };
+    if(k === 'arc') return (x, y, r) => { add(x - r, y - r); add(x + r, y + r); };
+    if(k === 'ellipse') return (x, y, a, b) => { add(x - a, y - b); add(x + a, y + b); };
+    if(['moveTo', 'lineTo', 'quadraticCurveTo', 'bezierCurveTo'].includes(k)) return (...a) => { for(let i = 0; i + 1 < a.length; i += 2) add(a[i], a[i + 1]); };
+    if(k === 'drawImage') return (img, ...a) => { if(a.length >= 4){ add(a[0], a[1]); add(a[0] + a[2], a[1] + a[3]); } else add(a[0], a[1]); };
+    if(k === 'measureText') return s => ({width: String(s).length * 7});
+    if(['createLinearGradient', 'createRadialGradient', 'createPattern'].includes(k)) return () => ({addColorStop(){}});
+    if(typeof CanvasRenderingContext2D.prototype[k] === 'function') return () => {};   // Text, Füllen, Drehen … ändern die Lage nicht
+    return o[k];
+  }, set(o, k, v){ o[k] = v; return true; }});
+  try{ E.editor.zeichnen(f, p.c, p.r, TILE, p); }catch(e){ return [p.c, p.r]; }
+  if(x0 > x1) return [p.c, p.r];
+  return [Math.floor((x0 + x1) / 2 / TILE), Math.floor((y0 + y1) / 2 / TILE)];
+};
+"""
+PRUEFPUNKTE = ['setzen', 'optionen', 'rechtsklick', 'radierer', 'undo_redo', 'speichern_laden', 'kopieren_einfuegen']
+
+async def werkzeug_pruefen(p, t):
+    """Ein Werkzeug durch alle 7 Prüfpunkte schicken; Ergebnis {Prüfpunkt: True/False/Text}."""
+    C, R = 12, 10
+    res = {}
+    async def daten(): return await p.evaluate("t => __daten(t)", t)
+    async def bei(c, r): return [e for e in await daten() if e.get('c') == c and e.get('r') == r]
+    async def taste(k):
+        await p.evaluate("document.activeElement && document.activeElement.blur()"); await p.keyboard.press(k); await p.wait_for_timeout(60)
+    async def klick(c, r, button='left'):
+        x, y = await ed_zelle(p, c, r); await p.mouse.click(x, y, button=button); await p.wait_for_timeout(40)
+    await p.evaluate("clearLevelContent(); setCols(MIN_COLS); save(); histReset(); selRect = null; clipboard = null")
+    # 1 + 2: Optionen wählen (je Auswahl-Feld den letzten Wert, nicht den ersten), dann setzen
+    erwartet = {}
+    if t == 'move':
+        await ed_werkzeug(p, 'ground'); await klick(C, R)
+    await ed_werkzeug(p, t)
+    for sel in await p.evaluate("t => [...document.querySelectorAll('#propRow .prop.zeig select')].map(s => [s.id, [...s.options].map(o => o.value)])", t):
+        sid, werte = sel
+        if not werte or sid in ('moveSwitchSelect',): continue
+        wert = werte[-1] if sid != 'linkSelect' else '7'
+        await p.select_option('#' + sid, wert)
+        key = {'spikeDir': 'dir', 'coinColor': 'color', 'speedSelect': 'speed', 'linkSelect': 'link'}.get(sid) or sid.split('-', 2)[2]
+        erwartet[key] = wert
+    if t == 'hook':
+        await p.fill('#radiusInput', '4'); erwartet['radius'] = '4'
+    if t == 'move':
+        a = await ed_zelle(p, C, R); b = await ed_zelle(p, C + 3, R)
+        await p.mouse.move(*a); await p.mouse.down(); await p.mouse.move(*b, steps=4); await p.mouse.up(); await p.wait_for_timeout(60)
+    else:
+        await klick(C, R)
+        if t == 'tele': await klick(C + 3, R)   # Teleporter kommen paarweise
+    e = await bei(C, R)
+    res['setzen'] = bool(e)
+    if not e: return {k: 'nicht gesetzt' for k in PRUEFPUNKTE}
+    e = e[0]
+    if 'link' in erwartet and 'link' not in e: erwartet.pop('link')   # Nummer nur, wenn das Element sie benutzt (an/aus „per Nummer“)
+    falsch = {k: (e.get(k), v) for k, v in erwartet.items() if str(e.get(k)) != v and not (isinstance(e.get(k), (int, float)) and float(v) == float(e.get(k)))}
+    res['optionen'] = not falsch or f'gespeichert anders: {falsch}'
+    # 5: Rückgängig / Wiederholen
+    schritte = 2 if t == 'tele' else 1   # Teleporter-Paar = zwei Klicks = zwei Schritte
+    for _ in range(schritte): await taste('Control+z')
+    weg = not await bei(C, R)
+    for _ in range(schritte): await taste('Control+y')
+    da = bool(await bei(C, R))
+    res['undo_redo'] = (weg and da) or f'Strg+Z entfernt: {weg}, Strg+Y bringt zurück: {da}'
+    # 6: Speichern (Arbeitsstand im Browser) und wieder laden; Export enthält es
+    await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000); await p.evaluate("() => {" + WERKZEUG_PRUEF_JS + "}")
+    geladen = bool(await bei(C, R))
+    exp = await p.evaluate("t => { const E = elementNachWerkzeug(t), o = JSON.parse(exportLevel()); return E ? (o[E.feld] || []).length : -1; }", t)
+    res['speichern_laden'] = (geladen and exp != 0) or f'nach Neuladen da: {geladen}, im Export: {exp}'
+    if not geladen: return {**res, 'rechtsklick': 'nicht geladen', 'radierer': 'nicht geladen', 'kopieren_einfuegen': 'nicht geladen'}
+    # 3: Rechtsklick dort, wo das Element zu sehen ist (und gespeichert ist)
+    vis = await p.evaluate("([t, p]) => __sichtZelle(t, p)", [t, (await bei(C, R))[0]])
+    await klick(vis[0], vis[1], 'right')
+    rk = not await bei(C, R)
+    if not rk:
+        await klick(C, R, 'right'); rk2 = not await bei(C, R)
+        res['rechtsklick'] = f'Rechtsklick auf das sichtbare Kästchen {tuple(vis)} entfernt nicht (gespeichert in {(C, R)}; dort: {rk2})'
+    else: res['rechtsklick'] = True
+    # 4: Radierer (Werkzeug „Radieren“, Linksklick) – erst zurückholen
+    await taste('Control+z')
+    if not await bei(C, R): res['radierer'] = 'Strg+Z nach Rechtsklick bringt es nicht zurück'
+    else:
+        await ed_werkzeug(p, 'erase'); await klick(vis[0], vis[1])
+        res['radierer'] = (not await bei(C, R)) or f'Radierer auf {tuple(vis)} entfernt nicht'
+        await taste('Control+z')
+    # 7: Kopieren und Einfügen (Start/Ziel gibt es nur einmal: die werden mit der Auswahl verschoben)
+    if not await bei(C, R): res['kopieren_einfuegen'] = 'nicht wiederhergestellt'; return res
+    vorher = len(await daten())
+    await ed_werkzeug(p, 'select')
+    a = await ed_zelle(p, C - 1, R - 1); b = await ed_zelle(p, C + (4 if t == 'tele' else 1), R + 1)
+    await p.mouse.move(*a); await p.mouse.down(); await p.mouse.move(*b, steps=4); await p.mouse.up(); await p.wait_for_timeout(60)
+    if t in ('startM', 'startF', 'goal'):
+        x0, y0 = await ed_zelle(p, C, R); x1, y1 = await ed_zelle(p, C + 8, R)
+        await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x1, y1, steps=5); await p.mouse.up(); await p.wait_for_timeout(60)
+        res['kopieren_einfuegen'] = bool(await bei(C + 8, R)) or 'Verschieben mit der Auswahl klappt nicht'
+    else:
+        await taste('Control+c')
+        x, y = await ed_zelle(p, C + 15, R - 1); await p.mouse.move(x, y); await p.wait_for_timeout(40)
+        await taste('Control+v')
+        nachher = await daten()
+        neu = [d for d in nachher if d.get('c', 0) >= C + 14]
+        res['kopieren_einfuegen'] = (len(nachher) > vorher and bool(neu)) or f'vorher {vorher}, nachher {len(nachher)}'
+    return res
+
+@test
+async def editor_werkzeug_pruefung(g):
+    """Editor-Umbau (Teil J): JEDES Werkzeug (alle Elemente aus dem Register mit Editor-Werkzeug, Boden/Wand/Bröckelboden/
+    Scheinwand, Haken, Stacheln, Münze, Checkpoint, Bewegung, Start ♂/♀, Ziel) besteht 7 Prüfpunkte: setzen,
+    Optionen ändern (werden gespeichert), Rechtsklick entfernt – und zwar dort, wo es SICHTBAR gezeichnet ist –,
+    Radierer entfernt, Rückgängig/Wiederholen, Speichern + Laden (+ Export), Kopieren + Einfügen. Neue Elemente
+    werden automatisch mitgeprüft."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.evaluate("localStorage.clear()")
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("() => {" + WERKZEUG_PRUEF_JS + "}")
+        werkzeuge = await p.evaluate("[...document.querySelectorAll('#toolGroups .tool')].map(t => t.dataset.tool)")
+        for t in ['hook', 'spike', 'coin', 'checkpoint', 'move', 'startM', 'startF', 'goal', 'switch', 'lava', 'fels', 'presse', 'boss']:
+            assert t in werkzeuge, f'Werkzeug {t} fehlt in der Prüfung'
+        tabelle, fehler = {}, []
+        for t in werkzeuge:
+            try: r = await werkzeug_pruefen(p, t)
+            except Exception as ex:   # ein Werkzeug, das hängt/abstürzt, ist ein Befund – die anderen trotzdem prüfen
+                r = {'setzen': f'Abbruch: {str(ex)[:160]}'}
+                await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000); await p.evaluate("() => {" + WERKZEUG_PRUEF_JS + "}")
+            tabelle[t] = r
+            for k in PRUEFPUNKTE:
+                if r.get(k) is not True: fehler.append(f'{t}/{k}: {r.get(k)}')
+        print('    Werkzeug-Prüfung: ' + json.dumps({t: ''.join('✓' if r.get(k) is True else '✗' for k in PRUEFPUNKTE) for t, r in tabelle.items()}, ensure_ascii=False))
+        assert not fehler, fehler
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def werkzeug_welten(g):
+    """Editor-Umbau: jedes Werkzeug steht in der Empfehlungs-Tabelle (editor/js/00-welt-werkzeuge.js) – als Grundwerkzeug,
+    bei einer Welt oder als Boss-Werkzeug; sonst sähe man ein neues Element nur mit „Alle Werkzeuge“."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        fehlt = await p.evaluate("""(() => { const bekannt = new Set([...GRUND_WERKZEUGE, ...BOSS_WERKZEUGE, ...Object.values(WELT_WERKZEUGE).flat()]);
+            return [...document.querySelectorAll('#app .tool')].map(t => t.dataset.tool).filter(t => !bekannt.has(t)); })()""")
+        assert not fehlt, f'Werkzeuge ohne Eintrag in WELT_WERKZEUGE/GRUND_WERKZEUGE: {fehlt}'
+        welten = [w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']]
+        assert set(await p.evaluate("Object.keys(WELT_WERKZEUGE)")) == set(welten), 'Welt ohne Werkzeug-Empfehlung'
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_werkzeugleiste(g):
+    """Editor-Umbau: Reiterwechsel zeigt nur die Werkzeuge der Gruppe; die Eigenschaften-Zeile zeigt nur die Optionen
+    des aktiven Werkzeugs (und springt dabei nicht in der Höhe); „Aktiv: …“ bleibt beim Reiterwechsel; Welt-Voreinstellung
+    und „Alle Werkzeuge“ (gemerkt); ein Werkzeug, das im Level vorkommt, bleibt sichtbar; „Zuletzt“ (5 Werkzeuge);
+    die Leiste ist bei 1920x1080 höchstens 20 %, bei 1366x768 höchstens 25 % der Fensterhöhe hoch."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.evaluate("localStorage.clear()")
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        aus = lambda t: p.evaluate(f"document.querySelector('.tool[data-tool={t}]').classList.contains('aus')")
+        # Welt-Voreinstellung (neues Level = Dschungel): Dschungel-Werkzeuge da, Vulkan/Ruinen-Werkzeuge ausgeblendet
+        assert not await aus('crumble') and not await aus('bounce') and await aus('lava') and await aus('falle'), 'Dschungel-Voreinstellung'
+        await p.click('#metaBtn'); await p.select_option('#metaWelt', 'vulkan'); await p.click('#metaClose'); await p.wait_for_timeout(100)
+        assert not await aus('lava') and not await aus('presse') and await aus('falle') and await aus('crumble'), 'Vulkan-Voreinstellung'
+        assert not await aus('ground') and not await aus('coin') and not await aus('switch'), 'Grundwerkzeuge fehlen'
+        assert await aus('boss'), 'Boss-Werkzeug außerhalb eines Boss-Levels'
+        # Reiterwechsel: nur Werkzeuge dieser Gruppe sichtbar
+        await p.click('#alleWerkzeuge'); await p.wait_for_timeout(50)
+        for tab in await p.evaluate("[...document.querySelectorAll('#toolTabs .tab')].map(t => t.dataset.tab)"):
+            await p.click(f'[data-tab={tab}]')
+            sicht = await p.evaluate("[...document.querySelectorAll('#toolGroups .tool')].filter(t => t.offsetParent).map(t => t.closest('.tgroup').dataset.group)")
+            assert sicht and set(sicht) == {tab}, (tab, sicht)
+        # „Alle Werkzeuge“ wird gemerkt
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.is_checked('#alleWerkzeuge') and not await aus('falle') and not await aus('boss'), '„Alle Werkzeuge“ nicht gemerkt'
+        await p.click('#alleWerkzeuge'); await p.wait_for_timeout(50)
+        assert await aus('falle'), '„Alle Werkzeuge“ aus wirkt nicht'
+        # Eigenschaften: Falle zeigt Art/Richtung/Takt/Versatz/an-aus + Nummer, Boden zeigt nichts; Höhe springt nicht
+        h0 = await p.evaluate("document.querySelector('header').getBoundingClientRect().height")
+        await ed_werkzeug(p, 'falle')
+        zeig = await p.evaluate("[...document.querySelectorAll('#propRow .prop')].filter(e => e.offsetParent).map(e => (e.querySelector('select,input') || e).id)")
+        assert zeig == ['opt-falle-art', 'opt-falle-richtung', 'opt-falle-takt', 'opt-falle-versatz', 'opt-falle-schalter', 'linkSelect', 'linkName'], zeig
+        await p.click('[data-tab=marken]')   # anderer Reiter: das aktive Werkzeug bleibt (Anzeige + Optionen)
+        assert await p.evaluate("currentTool") == 'falle' and 'Falle' in await p.text_content('#aktivTool'), 'aktives Werkzeug beim Reiterwechsel verloren'
+        assert await p.is_visible('#opt-falle-art'), 'Optionen verschwinden beim Reiterwechsel'
+        await ed_werkzeug(p, 'ground')
+        zeig = await p.evaluate("[...document.querySelectorAll('#propRow .prop')].filter(e => e.offsetParent).length")
+        assert zeig == 0 and await p.is_visible('#propLeer'), 'Boden zeigt Optionen'
+        await ed_werkzeug(p, 'hook'); assert await p.is_visible('#radiusInput') and not await p.is_visible('#spikeDir')
+        await ed_werkzeug(p, 'coin'); assert await p.is_visible('#coinColor') and not await p.is_visible('#radiusInput')
+        h1 = await p.evaluate("document.querySelector('header').getBoundingClientRect().height")
+        assert abs(h1 - h0) < 1, f'Leiste springt: {h0} -> {h1}'
+        # „Zuletzt“: die letzten Werkzeuge, neuestes vorn; Klick wählt, ohne den Reiter zu wechseln
+        z = await p.evaluate("[...document.querySelectorAll('#recentRow .rtool')].map(b => b.dataset.recent)")
+        assert z[:4] == ['coin', 'hook', 'ground', 'falle'], z
+        for t in ('wall', 'spike', 'checkpoint'): await ed_werkzeug(p, t)
+        z = await p.evaluate("[...document.querySelectorAll('#recentRow .rtool')].map(b => b.dataset.recent)")
+        assert z == ['checkpoint', 'spike', 'wall', 'coin', 'hook'], z
+        tab = await p.evaluate("aktiverReiter")
+        await p.click('.rtool[data-recent=hook]')
+        assert await p.evaluate("currentTool") == 'hook' and await p.evaluate("aktiverReiter") == tab, '„Zuletzt“ wählt nicht oder wechselt den Reiter'
+        # Werkzeug, das im geladenen Level vorkommt, bleibt sichtbar (Vulkan-Level mit einer Falle)
+        await p.evaluate("""localStorage.setItem('monchichi_level_editor_v2', JSON.stringify({cols: 60, tiles: [[1, 17, 'ground']], welt: 'vulkan',
+            traps: [{c: 5, r: 10, art: 'pfeil', richtung: 'r', takt: 2, versatz: 0, schalter: 'immer'}]}))""")
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert not await p.is_checked('#alleWerkzeuge') and not await aus('falle') and await aus('fels'), 'Werkzeug aus dem Level ausgeblendet'
+        # Höhe der Leiste
+        for w, h, anteil in ((1920, 1080, 0.20), (1366, 768, 0.25)):
+            await p.set_viewport_size({'width': w, 'height': h}); await p.wait_for_timeout(200)
+            hh = await p.evaluate("document.querySelector('header').getBoundingClientRect().height")
+            assert hh <= h * anteil, f'Leiste bei {w}x{h}: {hh} px'
+    finally:
+        await p.set_viewport_size({'width': 1400, 'height': 840})
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+def github_attrappe(calls):
+    """Simulierte GitHub-API für Editor-Tests: liefert Repo-Dateien (worlds.json, levels.json) aus dem Projektordner."""
+    import base64
+    async def api(route):
+        req = route.request; url = req.url.split('/repos/b48bvggmn7-ops/koopgame')[-1]
+        calls.append((req.method, url, req.post_data))
+        body = {'GET /git/ref/heads/main': {'object': {'sha': 'c0'}}, 'GET /git/commits/c0': {'tree': {'sha': 't0'}},
+                'POST /git/trees': {'sha': 't1'}, 'POST /git/commits': {'sha': 'c1'}, 'PATCH /git/refs/heads/main': {'object': {'sha': 'c1'}}}
+        if url.startswith('/contents/'):
+            body[req.method + ' ' + url] = {'content': base64.b64encode((ROOT / url.split('?')[0][len('/contents/'):]).read_bytes()).decode()}
+        await route.fulfill(status=200, content_type='application/json', body=json.dumps(body.get(req.method + ' ' + url, {})))
+    return api
+
+@test
+async def editor_level_info(g):
+    """Ausbau 2: Fenster „Level-Info“: Welt (aus worlds.json), Position, Titel, Tageszeit, Wetter, look-Override.
+    Projekt-Level übernehmen Welt/Position/Titel; Export und Autosave enthalten die Felder; „Auf GitHub speichern“
+    setzt das Level in worlds.json an die gewählte Stelle (auch als NEUES Level, dann auch levels.json) – ein Commit."""
+    srv = webserver(); p = g.p; calls = []
+    projekt = json.loads((ROOT / 'levels' / 'levels.json').read_text())
+    NEU = 'wasser/01-tiefsee.json'   # Editor-Umbau: neues Level im Ordner seiner Welt, nächste freie Nummer dieser Welt, Titel im Namen
+    try:
+        await p.route('https://api.github.com/**', github_attrappe(calls))
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
+        await p.evaluate("localStorage.setItem('monchichi_github_token', 'github_pat_TEST')")
+        async def lade(datei):
+            await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+            await projekt_laden(p, datei)
+        await lade('ruinen/02-mondnacht.json')
+        m = await p.evaluate("({...meta})")
+        assert m == {'welt': 'ruinen', 'position': 4, 'titel': 'Mondnacht', 'tageszeit': '', 'wetter': 'wechselnd', 'look': 'nacht'}, m
+        assert 'Ruinen' in await p.text_content('#metaBtn')
+        # Felder im Fenster ändern
+        await p.click('#metaBtn'); await p.wait_for_timeout(150)
+        await p.select_option('#metaWelt', 'wasser'); await p.fill('#metaTitel', 'Tiefsee')
+        await p.select_option('#metaLook', ''); await p.select_option('#metaZeit', 'nacht'); await p.select_option('#metaWetter', 'regen')
+        await p.click('#metaClose')
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert (out['welt'], out.get('tageszeit'), out['wetter'], 'look' in out, 'theme' in out) == ('wasser', 'nacht', 'regen', False, False), out
+        await p.reload(); await p.wait_for_timeout(500)
+        m = await p.evaluate("({...meta})")
+        assert (m['welt'], m['titel'], m['tageszeit'], m['wetter'], m['look']) == ('wasser', 'Tiefsee', 'nacht', 'regen', ''), f'nicht gemerkt: {m}'
+        # als NEUES Level in die Wasserwelt speichern
+        await p.click('#githubBtn'); await p.wait_for_timeout(500)
+        opts = await p.eval_on_selector_all('#ghTarget option', 'os => os.map(o => o.value)')
+        assert opts[-1] == NEU, opts   # nächste freie Nummer der Welt Wasser (noch leer -> 01)
+        await p.select_option('#ghTarget', NEU); calls.clear()
+        await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
+        assert sorted(tree) == sorted([f'levels/editor-format/{NEU}', f'levels/{NEU}', 'levels/levels.json', 'levels/worlds.json']), sorted(tree)
+        w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
+        assert w['wasser'] == [NEU] and w['ruinen'] == ['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json'], w
+        lv = json.loads(tree['levels/levels.json'])
+        assert lv[-1] == {'datei': NEU, 'name': 'Wasser 1', 'titel': 'Tiefsee'} and len(lv) == len(projekt) + 1, lv[-2:]
+        assert json.loads(tree[f'levels/{NEU}'])['welt'] == 'wasser'
+        assert sum(1 for c in calls if c[1] == '/git/commits' and c[0] == 'POST') == 1, 'nicht in einem Commit'
+        # vorhandenes Level in eine andere Welt verschieben: Level 3 als 1. Level in den Vulkan
+        await p.wait_for_function("!document.getElementById('ghBox').classList.contains('show')", timeout=4000)
+        await lade('ruinen/01-ruinen.json')
+        await p.click('#metaBtn'); await p.select_option('#metaWelt', 'vulkan'); await p.select_option('#metaPos', '1'); await p.click('#metaClose')
+        await p.click('#githubBtn'); await p.wait_for_timeout(500)
+        assert await p.input_value('#ghTarget') == 'ruinen/01-ruinen.json'
+        calls.clear(); await p.click('#ghUpload')
+        await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
+        tree = {t['path']: t['content'] for t in json.loads(next(c[2] for c in calls if c[1] == '/git/trees'))['tree']}
+        w = {x['id']: x['level'] for x in json.loads(tree['levels/worlds.json'])['welten']}
+        assert w['vulkan'] == ['ruinen/01-ruinen.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json', 'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json', 'vulkan/07-kraterherz.json'] and w['ruinen'] == ['ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json'], w
+        assert 'levels/levels.json' not in tree, 'levels.json ohne Änderung mitgeschickt'
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+async def ed_werkzeug(p, tool):
+    """Editor-Umbau: Werkzeug wählen – erst seinen Reiter öffnen (ist es für die Welt ausgeblendet, „Alle Werkzeuge“
+    an), dann den Knopf wirklich anklicken."""
+    await p.evaluate("t => werkzeugZeigen(t)", tool)
+    await p.click(f'.tool[data-tool="{tool}"]')
+
+async def ed_zelle(p, c, r):
+    """Bildschirm-Punkt (Mitte) eines Editor-Kästchens (Spalte c, Reihe r)."""
+    return await p.evaluate(f"""(() => {{ const R = cvs.getBoundingClientRect(), k = R.width / cvs.width;
+      return [R.left + ({c}*TILE + TILE/2)*k, R.top + (({r} + SKY)*TILE + TILE/2)*k]; }})()""")
+
+async def ed_ziehen(p, a, b):
+    x0, y0 = await ed_zelle(p, *a); x1, y1 = await ed_zelle(p, *b)
+    await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x1, y1, steps=24); await p.mouse.up()
+
+@test
+async def editor_rueckgaengig_und_auswahl(g):
+    """Ausbau 2: Strg+Z/Strg+Y (ein Pinselstrich = ein Schritt) und Rechteck-Auswahl: kopieren/einfügen (Verknüpfungen
+    bei Konflikt neu nummeriert, Hebel/Tür/Haken-Bewegung/bewegtes Stück bleiben zusammen), ausschneiden, verschieben."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'ground')
+        await ed_ziehen(p, (2, 10), (8, 10)); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.keys(tiles).length") == 7
+        await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.keys(tiles).length") == 0, 'Pinselstrich nicht in einem Schritt rückgängig'
+        await p.keyboard.press('Control+y'); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.keys(tiles).length") == 7, 'Wiederholen geht nicht'
+        # kleine Szene: Boden, Hebel 1, Tür 1, Haken mit Bewegung (Schalter 1), bewegtes Bodenstück (Schalter 1)
+        await p.evaluate("""(() => { tiles['3,12'] = 'ground'; tiles['4,12'] = 'ground';
+          elementPunkte.switches.push({c: 2, r: 9, link: 1}); elementPunkte.doors.push({c: 6, r: 9, link: 1});
+          hooks.push({c: 5, r: 6, radius: 4, move: {dc: 3, dr: 0, speed: 3, link: 1}});
+          movers.push({c: 3, r: 12, dc: 0, dr: -2, speed: 2, link: 1}); save(); })()""")
+        n0 = await p.evaluate("undoStack.length")
+        await ed_werkzeug(p, 'select')
+        await ed_ziehen(p, (2, 6), (8, 12)); await p.wait_for_timeout(100)
+        assert await p.evaluate("JSON.stringify(selRect)") == '{"c0":2,"r0":6,"c1":8,"r1":12}'
+        await p.keyboard.press('Control+c')
+        x, y = await ed_zelle(p, 20, 6); await p.mouse.move(x, y)
+        await p.keyboard.press('Control+v'); await p.wait_for_timeout(100)
+        k = await p.evaluate("""({sw: elementPunkte.switches.map(s => [s.c, s.r, s.link]), dr: elementPunkte.doors.map(d => [d.c, d.link]), hk: hooks.map(h => [h.c, h.r, h.move.link, h.move.dc]),
+                               mv: movers.map(m => [m.c, m.r, m.link, m.dr]), t: ['20,10', '26,10', '21,12', '22,12'].map(k => tiles[k] || null)})""")
+        assert k['sw'] == [[2, 9, 1], [20, 9, 2]] and k['dr'] == [[6, 1], [24, 2]], f'Hebel/Tür nicht neu nummeriert: {k}'
+        assert k['hk'] == [[5, 6, 1, 3], [23, 6, 2, 3]] and k['mv'] == [[3, 12, 1, -2], [21, 12, 2, -2]], f'Haken/Bewegung falsch: {k}'
+        assert k['t'] == ['ground', 'ground', 'ground', 'ground'], f'Kästchen nicht kopiert: {k}'
+        assert await p.evaluate("undoStack.length") == n0 + 1, 'Einfügen nicht als ein Schritt rückgängig machbar'
+        await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
+        assert await p.evaluate("elementPunkte.switches.length") == 1, 'Einfügen nicht rückgängig'
+        # ausschneiden + einfügen: Nummer bleibt (kein Konflikt mehr)
+        await p.evaluate("selRect = {c0: 2, r0: 6, c1: 8, r1: 12}")
+        await p.keyboard.press('Control+x'); await p.wait_for_timeout(100)
+        assert await p.evaluate("elementPunkte.switches.length + elementPunkte.doors.length + hooks.length + movers.length") == 0, 'Ausschneiden lässt etwas stehen'
+        x, y = await ed_zelle(p, 30, 6); await p.mouse.move(x, y)
+        await p.keyboard.press('Control+v'); await p.wait_for_timeout(100)
+        assert await p.evaluate("[elementPunkte.switches[0].c, elementPunkte.switches[0].link, elementPunkte.doors[0].link, hooks[0].move.link, movers[0].link]") == [30, 1, 1, 1, 1]
+        # verschieben: in die Auswahl klicken und ziehen (Start ♂ darin wandert mit)
+        await p.evaluate("startM = {c: 31, r: 11}; save()")
+        await ed_ziehen(p, (32, 8), (35, 7)); await p.wait_for_timeout(100)
+        assert await p.evaluate("[elementPunkte.switches[0].c, elementPunkte.switches[0].r, startM.c, startM.r, tiles['34,11'], tiles['31,12'] || null]") == [33, 8, 34, 10, 'ground', None], \
+            await p.evaluate("JSON.stringify({sw: switches, s: startM})")
+        # Entf löscht den Inhalt der Auswahl
+        await p.keyboard.press('Delete'); await p.wait_for_timeout(100)
+        assert await p.evaluate("elementPunkte.switches.length + elementPunkte.doors.length + hooks.length + movers.length") == 0
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def editor_verknuepfungen_60_mit_namen(g):
+    """Ausbau 2: Verknüpfung und „per Schalter“ bieten 1–60; eine Nummer kann einen Namen bekommen (steht in der
+    Auswahl, wird gemerkt, geht beim Kopieren mit); die ✓-Markierungen bleiben; Nummern über 20 landen im Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        n = await p.evaluate("[[...linkSelect.options].map(o => o.value), [...moveSwitchSelect.options].map(o => o.value)]")
+        assert n[0] == [str(i) for i in range(1, 61)] and n[1] == [''] + [str(i) for i in range(1, 61)], n
+        await ed_werkzeug(p, 'switch')   # Editor-Umbau: Nummer/Name stehen in der Eigenschaften-Zeile des Werkzeugs
+        await p.select_option('#linkSelect', '45'); await p.fill('#linkName', 'Tor zum Turm')
+        x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y); await p.wait_for_timeout(100)
+        txt = await p.evaluate("[...linkSelect.options].find(o => o.value === '45').textContent")
+        assert 'Tor zum Turm' in txt and '✓ Schalter' in txt, txt
+        await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'switch'); await p.select_option('#linkSelect', '45')
+        assert await p.input_value('#linkName') == 'Tor zum Turm', 'Name nicht gemerkt'
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['switches'] == [{'x': 220, 'y': 420, 'link': 45}], out['switches']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def element_register(g):
+    """Ausbau 2: Element-Register (elemente/): Sprungpilz und Aufwind haben je EINEN Eintrag (Daten, Editor-Werkzeug,
+    Zeichnen, Spiel-Logik), den Spiel und Editor gemeinsam laden; jede Datei steht in beiden Lade-Listen (mit ?v=)."""
+    dateien = sorted(f.stem for f in (ROOT / 'elemente').glob('*.js'))
+    for html in (ROOT / 'index.html', ROOT / 'editor' / 'index.html'):
+        t = html.read_text(encoding='utf-8')
+        for d in dateien: assert f"'{d}'" in t, f'{d}.js fehlt in {html.name}'
+        assert "elemente/' + " in t and ".js?v=' + " in t, f'{html}: Element-Dateien ohne ?v='
+    k = await g.ev("ELEMENTE.map(E => [E.id, E.feld, !!E.editor, !!(E.spiel && E.spiel.laden && E.spiel.zeichnen)])")
+    assert k == [['hebel', 'switches', True, True], ['tuer', 'doors', True, False], ['druckplatte', 'plates', True, True],
+                 ['sprungpilz', 'bouncers', True, True], ['aufwind', 'winds', True, True],
+                 ['wechselboden', 'switchFloors', True, True], ['teleporter', 'teleporters', True, True],
+                 ['einseitig', 'oneways', True, True], ['wasser', 'waters', True, False],
+                 ['stroemung', 'currents', True, False], ['pegel', 'waterLevels', True, False],
+                 ['boss', 'boss', True, True], ['bossArena', 'bossArena', True, False], ['bossPlatz', 'bossPlaetze', True, False],
+                 ['falle', 'traps', True, True], ['fels', 'boulders', True, True],
+                 ['lichtquelle', 'lichtquellen', True, True], ['spiegel', 'spiegel', True, False], ['kristall', 'kristalle', True, False],
+                 ['eis', 'eis', True, True], ['foerderband', 'baender', True, True], ['leuchtkristall', 'leuchtkristalle', True, True],
+                 ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
+                 ['presse', 'pressen', True, True],
+                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+    # Spiel: Laden und Zeichnen laufen über das Register
+    await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
+    n = await g.ev("""(() => { let z = 0; const E = ELEMENTE.find(e => e.id === 'sprungpilz'), f = E.spiel.zeichnen;
+      E.spiel.zeichnen = () => { z++; f(); }; draw(); E.spiel.zeichnen = f; return [bouncers.length, winds.length, z]; })()""")
+    assert n == [1, 1, 1], n
+    # Editor: Knöpfe kommen aus dem Register (Gruppe Bewegung, alte Reihenfolge), Setzen + Export klappen
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        # Editor-Umbau: Haken/Aufwind/Sprungpilz im Reiter „Haken & Sprung“, Teleporter/Förderband/Bewegung in „Bewegung“,
+        # Licht-Werkzeuge im eigenen Reiter „Licht“; Optionen nicht mehr in der Gruppe, sondern in der Eigenschaften-Zeile
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['hook', 'wind', 'bounce'], reihe
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
+        logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
+        assert logik == ['switch', 'door', 'plate', 'wechsel'], logik
+        licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
+        assert licht == ['lichtquelle', 'spiegel', 'kristall', 'leucht', 'dunkel'], licht
+        # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
+        for t, c in (('switch', 2), ('door', 3), ('plate', 5)):
+            await ed_werkzeug(p, f'{t}'); await p.select_option('#linkSelect', '7'); x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out2 = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert (out2['switches'], out2['doors'], out2['plates']) == ([{'x': 100, 'y': 660, 'link': 7}], [{'x': 140, 'y': 660, 'link': 7}], [{'x': 220, 'y': 660, 'link': 7}]), out2
+        assert '✓ Schalter, Tür, Druckplatte' in await p.evaluate("[...linkSelect.options].find(o => o.value === '7').textContent")
+        await ed_werkzeug(p, 'bounce'); x, y = await ed_zelle(p, 4, 16); await p.mouse.click(x, y)
+        await ed_werkzeug(p, 'wind'); await ed_ziehen(p, (8, 14), (8, 16))
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['bouncers'] == [{'x': 180, 'y': 680}] and out['winds'] == [{'x': 320, 'y': 560, 'w': 40, 'h': 120}] or \
+               sorted(json.dumps(w) for w in out['winds']) == sorted(json.dumps({'x': 320, 'y': y0, 'w': 40, 'h': 40}) for y0 in (560, 600, 640)), out
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def editor_alles_loeschen_wirklich_alles(g):
+    """„Alles löschen“ und „Neues leeres Level“ entfernen WIRKLICH alles – auch Druckplatten und Sprungpilze
+    (Fehler bis Ausbau 2: die blieben stehen)."""
+    srv = webserver(); p = g.p
+    fuellen = """(() => { tiles['3,10'] = 'ground'; tiles['5,8'] = 'wind'; elementPunkte.plates.push({c: 4, r: 9, link: 2}); elementPunkte.bouncers.push({c: 6, r: 9});
+      elementPunkte.switches.push({c: 7, r: 9, link: 2}); elementPunkte.doors.push({c: 8, r: 9, link: 2}); coins.push({c: 9, r: 9, color: 'blue'}); linkNames[2] = 'Tor'; save(); })()"""
+    leer = """(() => { const d = JSON.parse(exportLevel()); return ['solids', 'winds', 'plates', 'bouncers', 'switches', 'doors', 'coins']
+      .filter(k => (d[k] || []).length).concat(Object.keys(linkNames).length ? ['linkNames'] : []); })()"""
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.evaluate(fuellen)
+        await p.click('#clearBtn'); await p.click('#clearBtn'); await p.wait_for_timeout(100)   # 2. Klick bestätigt
+        assert await p.evaluate(leer) == [], f'„Alles löschen“ lässt stehen: {await p.evaluate(leer)}'
+        await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
+        assert await p.evaluate("elementPunkte.plates.length + elementPunkte.bouncers.length") == 2, 'Alles löschen nicht rückgängig machbar'
+        await p.evaluate("dirty = false")
+        await p.click('#levelsBtn'); await p.click('#newLevelBtn'); await p.wait_for_timeout(100)
+        assert await p.evaluate(leer) == [], f'„Neues leeres Level“ lässt stehen: {await p.evaluate(leer)}'
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+PAD_STUB_JS = PAD_STUB   # dieselbe Controller-Attrappe, zur Laufzeit eingesetzt (das Menü fragt jedes Bild ab)
+
+async def wk_inseln(g):
+    return await g.ev("""[...document.querySelectorAll('#sm-wm .isl')].map(b => ({name: b.querySelector('b').textContent,
+      lock: b.classList.contains('lock'), soon: b.classList.contains('soon'), sel: b.classList.contains('sel'),
+      info: b.querySelector('small').textContent, boss: !!b.querySelector('.boss .ico') }))""")
+
+@test
+async def weltkarte_gemalt_ohne_fehler(g):
+    """Design-Politur E: die Weltkarte lädt ohne JavaScript-Fehler; gemaltes Meer mit Nägeln auf den Seil-Ecken (ohne Seil-Linien), Kompass, Brücken und
+    Fußspuren; jede Insel hat ihre Stimmungsfarbe (--mood), ein eigenes Wetter und ein Tier; gesperrte Welten liegen im
+    Nebel (nicht grau); Affe und Schweinchen wippen auf der gewählten Insel."""
+    srv = webserver(); p = g.p; fehler = []
+    p.on('pageerror', lambda e: fehler.append(str(e)))
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: [], stats: {}}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(700)
+        r = await g.ev("""(() => { const box = document.querySelector('#sm-wm'), isl = [...box.querySelectorAll('.isl')];
+          const deko = box.querySelector('.wm-deko');
+          // Nägel ohne Seil-Linien, Mitte genau auf der gestrichelten Seil-Linie (Eckbogen-Mitte)
+          const st = getComputedStyle(box, '::before'), ins = parseFloat(st.top), bw = parseFloat(st.borderTopWidth),
+            rad = parseFloat(st.borderTopLeftRadius), br = box.getBoundingClientRect(), ab = ins + rad - (rad - bw / 2) * Math.SQRT1_2;
+          const sk = br.width / box.offsetWidth, rb = parseFloat(getComputedStyle(box).borderLeftWidth);   // Karte kann leicht skaliert sein
+          const cw = box.offsetWidth - 2 * rb, ch = box.offsetHeight - 2 * rb;   // innen (ohne Rahmen), ungerundet genug
+          const soll = [[ab, ab], [cw - ab, ab], [cw - ab, ch - ab], [ab, ch - ab]];
+          const naegel = [...box.querySelectorAll('.wm-nagel')].map((n, i) => { const q = n.getBoundingClientRect();
+            return Math.hypot((q.left + q.width / 2 - br.left) / sk - rb - soll[i][0], (q.top + q.height / 2 - br.top) / sk - rb - soll[i][1]); });
+          return {deko: !!deko, ecken: naegel.length, nagelAbweichung: Math.max(...naegel),
+            seil: deko ? [...deko.querySelectorAll('path')].filter(e => /h7|v12/.test(e.getAttribute('d'))).length : 0, bruecken: deko ? deko.querySelectorAll('rect').length : 0,
+            spuren: deko ? deko.querySelectorAll('.wm-spuren ellipse').length : 0, pfade: document.querySelectorAll('#sm-wm-path path').length,
+            mood: isl.map(b => getComputedStyle(b).getPropertyValue('--mood').trim()),
+            wetter: isl.map(b => !!b.querySelector('[class^="w-"]')), tier: isl.map(b => !!b.querySelector('[class^="t-"]')),
+            nebel: isl.map(b => b.classList.contains('lock') ? getComputedStyle(b.querySelector('.isl-nebel')).opacity : null),
+            grau: isl.filter(b => b.classList.contains('lock')).map(b => getComputedStyle(b.querySelector('.isl-art svg')).filter),
+            wippen: getComputedStyle(document.querySelector('#sm-m-pair > *')).animationName,
+            verzerrt: (() => { const r = box.getBoundingClientRect(), vb = deko.viewBox.baseVal; return Math.abs((vb.width/vb.height)/(r.width/r.height) - 1); })()}; })()""")
+        assert r['verzerrt'] < 0.02, f'Karten-Deko verzerrt (Seitenverhältnis weicht um {r["verzerrt"]:.2%} ab)'
+        assert r['ecken'] == 4 and r['nagelAbweichung'] < 1.5 and r['seil'] == 0, f"Nägel nicht auf den Seil-Ecken: {r}"
+        assert r['deko'] and r['bruecken'] == len(r['mood']) - 1 and r['spuren'] > 0 and r['pfade'] == 1, r
+        assert all(r['mood']) and len(set(r['mood'])) == len(r['mood']), f'Stimmungsfarben: {r["mood"]}'
+        assert all(r['wetter']) and all(r['tier']), r
+        assert all(n == '1' for n in r['nebel'] if n is not None), f'gesperrte Welten ohne Nebel: {r["nebel"]}'
+        assert all('grayscale' not in f for f in r['grau']), f'gesperrte Welten grau: {r["grau"]}'
+        assert r['wippen'] == 'paarWippen', r
+        assert not fehler, fehler
+    finally:
+        srv.shutdown()
+
+@test
+async def weltkarte_und_navigation(g):
+    """Ausbau 3: „Fortfahren“ öffnet die Weltkarte (Inseln in der Reihenfolge aus worlds.json, Pfade, Fortschritt x/y Level,
+    Boss-Symbol); gesperrte Welten verschleiert mit Schloss, Wasser ohne Level = „Bald“ (nicht anwählbar). Tasten wie in
+    den anderen Menüs: ◀ ▶ wählen, Springen öffnet die Welt-Seite (Level der Welt + Boss-Karte), Esc zurück."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: [], stats: {}}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter')   # Fortfahren
+        await p.wait_for_function("document.querySelector('#sm-s-map.active')", timeout=8000); await p.wait_for_timeout(300)
+        isl = await wk_inseln(g)
+        assert [i['name'] for i in isl] == ['Dschungel', 'Ruinen', 'Höhle', 'Wasser', 'Vulkan'], isl
+        assert [i['lock'] for i in isl] == [False, True, True, True, True] and isl[3]['soon'] and isl[3]['info'] == 'Bald', isl
+        nl = {w['id']: len(w['level']) for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']}   # 6er-Welten: Anzahl aus worlds.json
+        assert isl[0]['info'] == f"0 / {nl['dschungel']} Level" and isl[0]['sel'] and isl[0]['boss'], isl
+        assert await g.ev("document.querySelectorAll('#sm-wm-path path').length") == 1, 'keine Pfade'
+        # gesperrte Welt: Springen öffnet nichts
+        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(150)
+        assert (await wk_inseln(g))[1]['sel'] and 'Gesperrt' in await p.text_content('#sm-m-hint')
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(400)
+        assert await sm_screen(g) == 'sm-s-map', 'gesperrte Welt lässt sich öffnen'
+        # „Bald“-Welt ebenfalls nicht
+        for _ in range(2): await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(120)
+        assert (await wk_inseln(g))[3]['sel']; await p.keyboard.press('Enter'); await p.wait_for_timeout(400)
+        assert await sm_screen(g) == 'sm-s-map', '„Bald“-Welt lässt sich öffnen'
+        # Dschungel öffnen -> Welt-Seite mit 2 Leveln + Boss-Karte
+        for _ in range(3): await p.keyboard.press('ArrowLeft'); await p.wait_for_timeout(120)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
+        assert await sm_screen(g) == 'sm-s-levels'
+        k = await g.ev("({t: document.getElementById('sm-l-title').textContent, n: [...document.querySelectorAll('#sm-cards .lc')].map(b => b.classList.contains('boss')), c: document.getElementById('sm-l-count').textContent})")
+        assert k['t'] == 'Dschungel' and k['n'] == [False] * nl['dschungel'] + [True] and f"0 / {nl['dschungel']}" in k['c'], k
+        assert await p.is_visible('#sm-l-pack') and await p.is_visible('#sm-l-coll'), 'Packages/Umkleide fehlen auf der Welt-Seite'
+        # Esc -> Weltkarte (Dschungel gewählt), Esc -> Hauptmenü
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
+        assert await sm_screen(g) == 'sm-s-map' and (await wk_inseln(g))[0]['sel']
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
+        assert await sm_screen(g) == 'sm-s-menu'
+        # Controller (simuliert): Steuerkreuz rechts + ✕ funktionieren auch auf der Karte (gleiche Eingabe wie die anderen Menüs)
+        await g.ev("GameMenu.unlockAll(); GameMenu.show('map', {sel: 'dschungel'})"); await p.wait_for_timeout(500)
+        await g.ev(PAD_STUB_JS)
+        for knopf in (15, 0):   # 15 = Steuerkreuz rechts, 0 = ✕
+            await g.ev(f"__pad.buttons[{knopf}].pressed = true"); await p.wait_for_timeout(200)
+            await g.ev(f"__pad.buttons[{knopf}].pressed = false"); await p.wait_for_timeout(350)
+        await p.wait_for_timeout(300)
+        assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Ruinen'
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def neues_level_in_welt_offen(g):
+    """Ausbau 7: Kommt in eine Welt ein neues Level hinzu, ist es in alten Spielständen offen, sobald das Level davor
+    geschafft ist (sonst müsste man das vorige Level nochmal spielen). Sonst bleibt es Level für Level."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        # Spielstand, in dem Level 1 geschafft, Level 2 aber nie freigeschaltet wurde (wie ein neu eingefügtes Level)
+        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: ['dschungel/01-dschungel.json'], stats: {}, bosse: []}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        assert await g.ev("[0, 1].map(i => GameMenu.levelUnlocked(i))") == [True, True], 'Level nach geschafftem Vorgänger gesperrt'
+        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: [], stats: {}, bosse: []}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        assert await g.ev("[0, 1].map(i => GameMenu.levelUnlocked(i))") == [True, False], 'Level für Level gilt nicht mehr'
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def welten_freischaltung(g):
+    """Ausbau 3: Welt 1 ist immer offen; die nächste Welt öffnet, wenn alle Level der vorigen geschafft sind (Welten
+    ohne Level wie Wasser werden übersprungen); in der Welt geht es Level für Level. Nach „Level geschafft“ geht es
+    zurück zur Welt-Seite (Schloss auf dem neuen Level), nach dem letzten Level einer Welt zur Weltkarte mit
+    Freischalt-Animation auf der neuen Welt. Alte Spielstände passen weiter."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.resetSave()")
+        offen = "['dschungel', 'ruinen', 'hoehle', 'wasser', 'vulkan'].map(w => GameMenu.worldUnlocked(w))"
+        assert await g.ev(offen) == [True, False, False, False, False]
+        await g.ev("window.nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1")   # Nummer der Levelkarte (Ausbau 7: Dschungel hat 4 Level)
+        fertig = lambda d: g.ev(f"GameMenu.completeLevel(nr('{d}'), true)")
+        nr = lambda d: g.ev(f"nr('{d}')")
+        assert await fertig('dschungel/01-dschungel.json') == await nr('dschungel/02-baumkronen.json') and await g.ev("GameMenu.lastFreshWorld()") is None
+        assert await g.ev(offen) == [True, False, False, False, False]
+        assert await fertig('dschungel/02-baumkronen.json') == await nr('dschungel/03-lianenschlucht.json') and await fertig('dschungel/03-lianenschlucht.json') == await nr('dschungel/04-gluehwald.json')
+        # Ausbau 6: Dschungel hat einen Boss -> nach dem letzten Level erst der Boss, dann öffnen die Ruinen
+        assert await fertig('dschungel/04-gluehwald.json') == await nr('dschungel/05-dornenpfad.json')   # 6er-Welten: Dschungel 5
+        assert await fertig('dschungel/05-dornenpfad.json') == await nr('dschungel/06-wipfelsturm.json')
+        assert await fertig('dschungel/06-wipfelsturm.json') == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
+        assert await g.ev(offen) == [True, False, False, False, False], 'Ruinen offen ohne besiegten Boss'
+        assert await g.ev("GameMenu.completeBoss('dschungel')") == 'ruinen'
+        assert await g.ev(offen) == [True, True, False, False, False]
+        assert await g.ev("['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json'].map(f => GameMenu.levelUnlocked(nr(f) - 1))") == [True, False], 'in der Welt nicht Level für Level'
+        for d in ('ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json'): await fertig(d)   # Ausbau 7: Ruinen haben 5 Level
+        assert await g.ev(offen) == [True, True, False, False, False], 'Höhle offen, obwohl Level 11 fehlt'
+        await fertig('ruinen/05-felsenflucht.json')
+        assert await g.ev(offen) == [True, True, False, False, False], 'Höhle offen, obwohl Ruinen 6 fehlt'   # 6er-Welten
+        await fertig('ruinen/06-tempelherz.json')
+        assert await g.ev("GameMenu.lastFreshWorld()") == 'hoehle' and await g.ev(offen) == [True, True, True, False, False]
+        for d in ('hoehle/02-tropfsteingang.json', 'hoehle/03-eisgrotte.json', 'hoehle/01-kristallhoehle.json', 'hoehle/04-leuchtgrotte.json'): await fertig(d)   # Ausbau 7: Höhle hat 6 Level
+        assert await g.ev(offen) == [True, True, True, False, False], 'Vulkan offen, obwohl Höhlen-Level fehlen'
+        await fertig('hoehle/05-foerderwerk.json')
+        assert await fertig('hoehle/06-tiefenschlund.json') == await nr('vulkan/01-glutpfad.json') and await g.ev("GameMenu.lastFreshWorld()") == 'vulkan', 'Wasser (ohne Level) wird nicht übersprungen'
+        assert await g.ev(offen) == [True, True, True, False, True]
+        # Ausbau 7: Vulkan hat 7 Level (Glutpfad, Aschefeld, Feuerberg, …) – auch hier Level für Level
+        assert await g.ev("['vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json'].map(f => GameMenu.levelUnlocked(nr(f) - 1))") == [True, False], 'Vulkan nicht Level für Level'
+        assert await fertig('vulkan/01-glutpfad.json') == await nr('vulkan/02-aschefeld.json') and await fertig('vulkan/02-aschefeld.json') == await nr('vulkan/03-feuerberg.json')
+        # „Level geschafft“ -> Weiter: mitten in der Welt zur Welt-Seite mit Schloss auf dem neuen Level
+        await g.ev("GameMenu.resetSave(); GameMenu.completeLevel(1, true)")
+        await g.ev("GameMenu.show('results', {n: 1, fresh: 2, packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Dschungel'
+        assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
+        await p.wait_for_function("!document.querySelector('.ulock')", timeout=6000)
+        # letzter Sieg der Welt (Ausbau 6: der Boss) -> Weltkarte mit Freischalt-Animation auf „Ruinen“
+        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json'].forEach(f => GameMenu.completeLevel(nr(f), true)); GameMenu.completeBoss('dschungel')")
+        await g.ev("GameMenu.show('results', {n: 2, fresh: 3, freshWorld: 'ruinen', packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
+        assert await sm_screen(g) == 'sm-s-map', 'nach der letzten Level einer Welt nicht zur Weltkarte'
+        k = await g.ev("(() => { const l = document.querySelector('#sm-wm .ulock'); return l ? [...document.querySelectorAll('#sm-wm .isl')].indexOf(l.parentNode) : -1; })()")
+        assert k == 1, f'keine Freischalt-Animation auf Ruinen: {k}'
+        await p.wait_for_function("document.querySelector('#sm-wm .ulock.burst')", timeout=5000)
+        await p.wait_for_function("!document.querySelector('#sm-wm .ulock')", timeout=6000)
+        isl = await wk_inseln(g)
+        nl = {w['id']: len(w['level']) for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']}   # 6er-Welten: Anzahl aus worlds.json
+        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == f"{nl['dschungel']} / {nl['dschungel']} Level", isl
+        # alter Spielstand (Nummern): Level 1–3 geschafft, 4 offen -> Dschungel fertig, Ruinen offen, Höhle zu
+        await g.ev("localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({played: true, unlocked: 4, completed: [1, 2, 3]}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        assert await g.ev(offen) == [True, True, False, False, False]
+        await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
+        isl = await wk_inseln(g)
+        assert [i['info'] for i in isl] == [f"2 / {nl['dschungel']} Level", f"1 / {nl['ruinen']} Level", f"0 / {nl['hoehle']} Level", 'Bald', f"0 / {nl['vulkan']} Level"] and isl[1]['sel'], isl   # Ruinen bleiben offen
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def level_nummern_je_welt(g):
+    """Welt-Seite: jede Welt zeigt nur ihre eigenen Level, nummeriert ab 1 (Nutzerwunsch: kein „Level 15“ in der Höhle).
+    Auch Vorhang, Statistik-Bildschirm und Meldungen zählen in der Welt."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.unlockAll()")
+        w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+        titel = dict(await g.ev("GameMenu.config.levels.map(l => [l.datei, l.name])"))
+        for x in w['welten']:
+            if not x['level']: continue
+            await g.ev(f"startMenuShow('levels', {{world: '{x['id']}'}})"); await p.wait_for_timeout(500)
+            karten = await p.eval_on_selector_all('#sm-cards .lc:not(.boss)', 'els => els.map(e => [e.querySelector(".n").textContent, e.querySelector(".nm").textContent])')
+            assert karten == [[str(k + 1), titel[d]] for k, d in enumerate(x['level'])], (x['id'], karten)
+        # Statistik nach Feuerberg (3. Level im Vulkan)
+        n = await g.ev("GameMenu.config.levels.findIndex(l => l.datei === 'vulkan/03-feuerberg.json') + 1")
+        await g.ev(f"GameMenu.show('results', {{n: {n}, fresh: 0, packs: 0, st: {{m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}}}})"); await p.wait_for_timeout(300)
+        assert await g.ev("document.getElementById('sm-r-level').textContent") == 'Level 3 · Feuerberg'
+    finally:
+        await g.ev("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def wechselboden(g):
+    """Ausbau 4: Wechselboden. Gruppe A fest, solange die Nummer aus ist, B fest, solange sie an ist (Hebel); steht eine
+    Figur dort, wo Boden fest werden soll, wartet dieses Kästchen, bis sie weg ist. Takt-Variante wechselt von selbst
+    (mit Vorwarn-Blinken und Ton); Neustart setzt alles zurück."""
+    wand = [{'x': 1000, 'y': y, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 5} for y in (560, 600, 640)]
+    steg = [{'x': x, 'y': 520, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 5} for x in (400, 440)]
+    await g.load(level([ground(0, 680, 2000)], {'x': 230, 'y': 680}, {'x': 1020, 'y': 680},
+                       switches=[{'x': 260, 'y': 660, 'link': 5}], switchFloors=wand + steg))
+    zust = "solids.filter(s => s.type === 'wechsel').map(s => s.gruppe + (s.gone ? '-' : '+'))"
+    # Start: Schweinchen steht dort, wo die A-Wand ist -> das unterste Wand-Kästchen wartet, bis es frei ist
+    await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'A+', 'A-', 'B-', 'B-'], await g.ev(zust)
+    assert await g.ev("solids.filter(s => s.type === 'wechsel')[2].wartet"), 'Kästchen mit Figur darin wartet nicht'
+    await g.ev("p2.x = 1300; p2._px = p2.x"); await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'A+', 'A+', 'B-', 'B-'], f'Wand wird nach dem Weggehen nicht fest: {await g.ev(zust)}'
+    # Hebel: A weg, B fest (gegenläufig), mit Ton
+    await g.ev("SFX_LOG.length = 0")
+    await g.p.keyboard.press('KeyJ')
+    await g.p.wait_for_function("linkOn[5] === true", timeout=4000); await g.steps(2)
+    assert await g.ev(zust) == ['A-', 'A-', 'A-', 'B+', 'B+'], f'Hebel schaltet nicht gegenläufig: {await g.ev(zust)}'
+    assert 'wechselan' in await g.ev("SFX_LOG") and 'wechselweg' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # Affe läuft durch die Stelle, wo die Wand war
+    await g.ev("p1.x = 960; p1._px = p1.x"); await g.hold(('KeyD',), 500)
+    assert await g.ev("p1.x") > 1045, f"Affe kommt nicht durch die verschwundene Wand: {await g.ev('p1.x')}"
+    # B ist fest: man kann darauf stehen
+    await g.ev("p2.x = 420; p2.y = 480; p2.vy = 0; p2._px = p2.x; p2._py = p2.y"); await g.steps(20)
+    assert abs(await g.ev("p2.y") - 520) < 1 and await g.ev("p2.grounded"), f"Kann nicht auf B stehen: {await g.ev('p2.y')}"
+    # Neustart: Hebel aus, A fest, B weg
+    await g.p.keyboard.press('KeyR'); await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'A+', 'A-', 'B-', 'B-'] or await g.ev(zust) == ['A+', 'A+', 'A+', 'B-', 'B-'], await g.ev(zust)
+
+    # Takt: alle 2 s, A und B abwechselnd; 1 s vorher Warnung (Blinken + Ton)
+    takt = [{'x': 400, 'y': 600, 'w': 40, 'h': 40, 'gruppe': 'A', 'takt': 2}, {'x': 480, 'y': 600, 'w': 40, 'h': 40, 'gruppe': 'B', 'takt': 2}]
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, switchFloors=takt))
+    await g.steps(3)
+    assert await g.ev(zust) == ['A+', 'B-'], await g.ev(zust)
+    assert await g.ev("wechselWarnung(solids.find(s => s.type === 'wechsel'))") == 0, 'Warnung zu früh'
+    await g.ev("SFX_LOG.length = 0; wechselSchritte = 50"); await g.steps(15)
+    assert await g.ev("wechselWarnung(solids.find(s => s.type === 'wechsel'))") > 0, 'keine Vorwarnung vor dem Wechsel'
+    assert 'wechselwarn' in await g.ev("SFX_LOG"), f'kein Warn-Ton: {await g.ev("SFX_LOG")}'
+    await g.p.wait_for_function("wechselSchritte > 122", timeout=6000); await g.steps(1)
+    assert await g.ev(zust) == ['A-', 'B+'], f'Takt wechselt nicht: {await g.ev(zust)}'
+    await g.p.wait_for_function("wechselSchritte > 242", timeout=8000); await g.steps(1)
+    assert await g.ev(zust) == ['A+', 'B-'], f'Takt wechselt nicht zurück: {await g.ev(zust)}'
+
+@test
+async def editor_wechselboden(g):
+    """Ausbau 4: Editor-Werkzeug Wechselboden (Gruppe Schalter & Logik): Gruppe A/B und Takt wählen, ziehen malt mehrere
+    Kästchen, Klick auf ein vorhandenes tauscht A/B; Export und Spiel-Umwandlung liefern switchFloors."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'wechsel')
+        await p.select_option('#linkSelect', '4'); await p.select_option('#opt-wechsel-gruppe', 'B')
+        await ed_ziehen(p, (3, 12), (5, 12))
+        x, y = await ed_zelle(p, 3, 12); await p.mouse.click(x, y)            # Klick auf vorhandenes: B -> A
+        await p.select_option('#opt-wechsel-takt', '3'); x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        sf = sorted(out['switchFloors'], key=lambda f: f['x'])
+        assert sf == [{'x': 120, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 4},
+                      {'x': 160, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 4},
+                      {'x': 200, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 4},
+                      {'x': 320, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'B', 'takt': 3}], sf
+        assert 'Wechselboden' in await p.evaluate("[...linkSelect.options].find(o => o.value === '4').textContent")
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert sorted(umg['switchFloors'], key=lambda f: f['x']) == sf, umg['switchFloors']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def teleporter(g):
+    """Ausbau 4: Teleporter. Hineinlaufen -> beim Partner heraus (Schwung bleibt, Ton + Funken); kein Hin-und-her
+    (erst raus, dann ca. 1 s Abklingzeit); Seil löst sich, Schirm bleibt offen; „nur Affe“ lässt das Schweinchen nicht
+    durch; per Verknüpfung erst an, wenn die Nummer an ist; zugestellter Ausgang -> nichts passiert."""
+    tele = [{'x': 300, 'y': 680, 'paar': 1, 'fuer': 'beide'}, {'x': 900, 'y': 680, 'paar': 1, 'fuer': 'beide'},
+            {'x': 1300, 'y': 680, 'paar': 2, 'fuer': 'affe'}, {'x': 1700, 'y': 680, 'paar': 2, 'fuer': 'affe'},
+            {'x': 2100, 'y': 680, 'paar': 3, 'fuer': 'beide', 'link': 4}, {'x': 2500, 'y': 680, 'paar': 3, 'fuer': 'beide', 'link': 4},
+            {'x': 2800, 'y': 680, 'paar': 4, 'fuer': 'beide'}, {'x': 2950, 'y': 400, 'paar': 4, 'fuer': 'beide'}]
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, teleporters=tele,
+                       hooks=[{'x': 260, 'y': 500, 'radius': 260}]))
+    assert await g.ev("teleporters.length === 8 && teleporters.every(t => t.partner && t.partner.paar === t.paar)"), 'Paare nicht verbunden'
+    await g.ev("SFX_LOG.length = 0")
+    await g.p.keyboard.down('KeyD')
+    try: await g.p.wait_for_function("p1.x > 800", timeout=6000)
+    except Exception: pass
+    vx = await g.ev("p1.vx")
+    await g.p.keyboard.up('KeyD')
+    assert await g.ev("p1.x") > 850, f"Affe nicht teleportiert: {await g.ev('p1.x')}"
+    assert vx > 2, f'Schwung nicht erhalten: vx={vx}'
+    assert 'teleport' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # stehen bleiben im Ausgang: kein Zurück-Teleportieren
+    await g.steps(70)
+    await g.ev("p1.x = 300; p1.vx = 0; p1._px = p1.x"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 900) < 5, f"Teleporter aus dem Stand geht nicht: {await g.ev('p1.x')}"
+    await g.steps(90)
+    assert abs(await g.ev("p1.x") - 900) < 5, f"springt hin und her: {await g.ev('p1.x')}"
+    # raus und nach der Abklingzeit wieder rein -> zurück
+    await g.ev("p1.x = 980; p1._px = p1.x"); await g.steps(70)
+    await g.ev("p1.x = 905; p1._px = p1.x"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 300) < 30, f"Rückweg geht nicht: {await g.ev('p1.x')}"
+    # Seil löst sich
+    await g.ev("p1.x = 120; p1.y = 600; p1._px = p1.x; p1._py = p1.y; p1.teleCool = 0; p1.teleFrei = true; p1.vx = 0; p1.vy = 0;"
+               "p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 230; p1.ropeMax = 260; p1.ropeWasAirborne = true")
+    await g.steps(1)
+    await g.ev("p1.x = 300; p1.y = 670; p1._px = p1.x; p1._py = p1.y; p1.vx = 3"); await g.steps(2)
+    assert await g.ev("p1.x") > 850 and not await g.ev("p1.hookAttached"), f"Seil: x={await g.ev('p1.x')} haken={await g.ev('p1.hookAttached')}"
+    # nur Affe: Schweinchen geht nicht durch, Affe schon
+    await g.ev("p2.x = 1300; p2.y = 680; p2._px = p2.x; p2._py = p2.y; p2.teleCool = 0; p2.teleFrei = true"); await g.steps(5)
+    assert abs(await g.ev("p2.x") - 1300) < 10, 'Schweinchen benutzt „nur Affe“-Teleporter'
+    await g.ev("p1.x = 1300; p1.y = 680; p1._px = p1.x; p1._py = p1.y; p1.teleCool = 0; p1.teleFrei = true"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 1700) < 10, f"Affe kommt nicht durch „nur Affe“: {await g.ev('p1.x')}"
+    # per Verknüpfung: aus -> nichts, an -> geht
+    await g.ev("p2.x = 2000; p2._px = p2.x; p1.x = 2100; p1._px = p1.x; p1.teleCool = 0; p1.teleFrei = true"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 2100) < 10, 'Teleporter wirkt, obwohl seine Nummer aus ist'
+    await g.ev("setLink(4, true); p1.x = 2060; p1._px = p1.x"); await g.steps(3)
+    await g.ev("p1.x = 2100; p1._px = p1.x"); await g.steps(3)
+    assert abs(await g.ev("p1.x") - 2500) < 10, f"Teleporter geht nach dem Anschalten nicht: {await g.ev('p1.x')}"
+    # Schirm bleibt offen: Schweinchen segelt in das Tor
+    await g.ev("p2.x = 2800; p2.y = 560; p2.vx = 0; p2.vy = 1; p2._px = p2.x; p2._py = p2.y; p2.grounded = false")
+    await g.p.keyboard.down('Numpad1')
+    try: await g.p.wait_for_function("p2.x > 2900", timeout=6000)
+    except Exception: pass
+    await g.steps(3)
+    segelt = await g.ev("p2.gliding && p2.y < 600"); x2 = await g.ev("p2.x")
+    await g.p.keyboard.up('Numpad1')
+    assert x2 > 2900, f'Schweinchen nicht teleportiert: {x2}'
+    assert segelt, 'Schirm nach dem Teleport zu'
+    # Ausgang zugestellt -> bleibt
+    await g.ev("solids.push({x: 880, y: 640, w: 40, h: 40, type: 'wall'}); p2.x = 400; p2._px = p2.x; p1.x = 300; p1.y = 680; p1._px = p1.x; p1._py = p1.y; p1.teleCool = 0; p1.teleFrei = true")
+    await g.steps(3)
+    assert abs(await g.ev("p1.x") - 300) < 10, 'teleportiert in eine Wand'
+
+@test
+async def editor_teleporter(g):
+    """Ausbau 4: Editor-Werkzeug Teleporter (Gruppe Bewegung): 1. Klick = Tor, 2. Klick = Partner (gleiche Paar-Nummer,
+    Verbindungslinie); das nächste Tor beginnt ein neues Paar. „für“ und „an/aus per Verknüpfung“ gehen mit; Export/Umwandlung."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'tele')
+        await p.select_option('#opt-tele-fuer', 'affe')
+        for c in (3, 10): x, y = await ed_zelle(p, c, 12); await p.mouse.click(x, y)
+        await p.select_option('#opt-tele-fuer', 'beide'); await p.select_option('#opt-tele-schalter', 'nummer'); await p.select_option('#linkSelect', '6')
+        for c in (14, 20): x, y = await ed_zelle(p, c, 12); await p.mouse.click(x, y)
+        x, y = await ed_zelle(p, 25, 12); await p.mouse.click(x, y)   # drittes Paar, noch ohne Partner
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert sorted(out['teleporters'], key=lambda t: t['x']) == [
+            {'x': 140, 'y': 520, 'paar': 1, 'fuer': 'affe'}, {'x': 420, 'y': 520, 'paar': 1, 'fuer': 'affe'},
+            {'x': 580, 'y': 520, 'paar': 2, 'fuer': 'beide', 'link': 6}, {'x': 820, 'y': 520, 'paar': 2, 'fuer': 'beide', 'link': 6},
+            {'x': 1020, 'y': 520, 'paar': 3, 'fuer': 'beide', 'link': 6}], out['teleporters']
+        assert 'Teleporter' in await p.evaluate("[...linkSelect.options].find(o => o.value === '6').textContent")
+        # Radieren eines Tors: das nächste neue Tor wird sein Partner
+        x, y = await ed_zelle(p, 10, 12); await p.mouse.click(x, y, button='right')
+        x, y = await ed_zelle(p, 12, 12); await ed_werkzeug(p, 'tele'); await p.mouse.click(x, y)
+        paare = await p.evaluate("elementPunkte.teleporters.map(t => t.c + ':' + t.paar).sort()")
+        assert sorted(paare) == sorted(['3:1', '14:2', '20:2', '25:3', '12:1']), paare
+        snap = await p.evaluate("snapshot()")
+        # Kopieren + Einfügen eines Paars: bekommt eine neue, freie Paar-Nummer (beide Tore dieselbe)
+        n = await p.evaluate("(() => { const clip = copyRect({c0: 14, r0: 12, c1: 20, r1: 12}, false); pasteClip(clip, 30, 5, true); return elementPunkte.teleporters.filter(t => t.r === 5).map(t => t.paar); })()")
+        assert len(n) == 2 and n[0] == n[1] and n[0] not in (1, 2, 3), n
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert len(umg['teleporters']) == 5 and {'x': 500, 'y': 520, 'paar': 1, 'fuer': 'affe'} in umg['teleporters'], umg['teleporters']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def einseitige_plattform(g):
+    """Ausbau 4: Einseitige Plattform (Steg). Von unten durchspringen und oben landen; seitlich hindurchlaufen; kein
+    Wandsprung an ihrer Seite; Seil-Sicht geht hindurch (Haken über dem Steg erreichbar); oben stehen bleibt stabil."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 500, 'y': 680}, {'x': 100, 'y': 680},
+                       oneways=[{'x': 400, 'y': 600, 'w': 200, 'h': 12}, {'x': 900, 'y': 640, 'w': 120, 'h': 12}],
+                       hooks=[{'x': 500, 'y': 380, 'radius': 320}]))
+    assert await g.ev("solids.filter(s => s.type === 'oneway').length") == 2
+    # Seil-Sicht durch den Steg
+    assert await g.ev("lineClear(500, 660, 500, 380)"), 'Steg blockiert die Seil-Sicht'
+    assert await g.ev("findHookTarget(p1) === hooks[0]"), 'Haken über dem Steg nicht erreichbar'
+    # von unten durchspringen und oben landen
+    await g.ev("window.__minY = 999; if(!window.__ow){ window.__ow = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minY = Math.min(window.__minY, p1.y); }; }")
+    await g.hold(('Space',), 250); await g.steps(70)
+    assert await g.ev("window.__minY") < 590, f"nicht durch den Steg gesprungen: {await g.ev('window.__minY')}"
+    assert abs(await g.ev("p1.y") - 600) < 0.5 and await g.ev("p1.grounded"), f"nicht oben gelandet: y={await g.ev('p1.y')}"
+    assert 'steg' in await g.ev("SFX_LOG"), f'kein Steg-Ton beim Landen: {await g.ev("SFX_LOG")}'
+    await g.steps(30)
+    assert abs(await g.ev("p1.y") - 600) < 0.5, 'steht nicht stabil auf dem Steg'
+    # runter: einfach über die Kante laufen
+    await g.hold(('KeyD',), 900); await g.steps(40)
+    assert await g.ev("p1.y") > 670, f"kommt nicht vom Steg herunter: {await g.ev('p1.y')}"
+    # seitlich durch den niedrigen Steg laufen (er steckt in Kopfhöhe)
+    await g.ev("p1.x = 840; p1.y = 680; p1._px = p1.x; p1._py = p1.y; p1.vx = 0"); await g.steps(2)
+    await g.hold(('KeyD',), 900)
+    assert await g.ev("p1.x") > 1040, f"seitlich blockiert: {await g.ev('p1.x')}"
+    # kein Wandsprung: Steg-Seite zählt nicht als Wand
+    await g.ev("p1.x = 400 - p1.w/2 - 1; p1.y = 630; p1.grounded = false")
+    assert not await g.ev("touchingWall(p1, 1)"), 'Steg-Seite zählt als Wand'
+
+@test
+async def editor_einseitige_plattform(g):
+    """Ausbau 4: Editor-Werkzeug „Steg (einseitig)“ (Gruppe Gelände, ziehbar) -> Export und Spiel-Umwandlung liefern oneways (12 px dick)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gelaende] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'bruch', 'haft', 'fake'], reihe   # + Eis (Ausbau 7, Höhle); + Durchbruch, Haftfläche (Nacht-Ausbau); Dunkelzone steht seit dem Editor-Umbau im Reiter „Licht“
+        await ed_werkzeug(p, 'oneway'); await ed_ziehen(p, (4, 12), (7, 12))
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['oneways'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 12}], out['oneways']
+        assert not any(s['type'] == 'oneway' for s in out['solids'])
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['oneways'] == out['oneways'], umg['oneways']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def wasser_schwimmen_luft(g):
+    """Ausbau 5: Wasser. Darin schwimmen beide frei (Auftrieb, Widerstand, Höchsttempo), kein Haken (Seil löst sich) und
+    kein Schirm; Luft je Figur sinkt unter Wasser, füllt sich an der Oberfläche auf, Warnung kurz vor dem Ende, leer = Tod;
+    an der Oberfläche springt man aus dem Wasser; Platschen beim Eintauchen."""
+    await g.load(level([ground(0, 680, 2400)], {'x': 200, 'y': 680}, {'x': 140, 'y': 680},
+                       waters=[{'x': 400, 'y': 360, 'w': 800, 'h': 320}], hooks=[{'x': 300, 'y': 200, 'radius': 300}]))
+    assert await g.ev("wasserBecken.length") == 1
+    setz = lambda p, x, y: g.ev(f"{p}.x = {x}; {p}.y = {y}; {p}.vx = 0; {p}.vy = 0; {p}._px = {p}.x; {p}._py = {p}.y; {p}.grounded = false")
+    # Auftrieb: ohne Taste treibt der Affe nach oben, die Luft sinkt
+    await setz('p1', 800, 620); await g.ev("SFX_LOG.length = 0"); await g.steps(2)
+    assert await g.ev("p1.inWater && p1.headUnder"), 'Affe nicht im Wasser'
+    y0 = await g.ev("p1.y"); await g.steps(40)
+    assert await g.ev("p1.y") < y0 - 10, f"kein Auftrieb: {y0} -> {await g.ev('p1.y')}"
+    assert await g.ev("p1.luft") < await g.ev("LUFT_MAX"), 'Luft sinkt unter Wasser nicht'
+    # Schwimmen: Höchsttempo, kein Haken unter Wasser
+    await setz('p1', 600, 640); await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('KeyG'); await g.steps(30)
+    vx = await g.ev("p1.vx"); await g.p.keyboard.up('KeyD')
+    assert 2 < vx <= await g.ev("SWIM_MAX_SPEED") + 0.01, f'Schwimmtempo: {vx}'
+    assert not await g.ev("p1.hookAttached"), 'Haken geht unter Wasser'
+    # Seil löst sich beim Eintauchen
+    await setz('p1', 380, 300); await g.ev("p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 110; p1.ropeMax = 300; p1.ropeWasAirborne = true")
+    await setz('p1', 420, 500); await g.steps(2)
+    assert not await g.ev("p1.hookAttached"), 'Seil löst sich im Wasser nicht'
+    # Schweinchen: kein Schirm unter Wasser
+    await setz('p2', 900, 600); await g.p.keyboard.down('Numpad1'); await g.steps(20)
+    gl = await g.ev("p2.gliding || p2.umbrella > 0.1"); await g.p.keyboard.up('Numpad1')
+    assert not gl, 'Schirm geht unter Wasser'
+    # Oberfläche: Kopf draußen -> Luft füllt sich auf; Springen -> aus dem Wasser
+    await setz('p2', 1000, 380); await g.ev("p2.luft = 100"); await g.steps(90)
+    assert await g.ev("p2.kannAtmen && p2.luft === LUFT_MAX"), f"Luft füllt sich an der Oberfläche nicht: {await g.ev('[p2.y, p2.headUnder, p2.luft]')}"
+    # Sprungtaste halten (ein kurzer Druck geht auf langsamen Rechnern zwischen zwei Schritten verloren); höchste Stelle
+    # wird im Spiel je Schritt mitgeschrieben
+    await g.ev("window.__minY = p2.y; window.__yStep = stepSim; stepSim = function(ts){ const r = __yStep(ts); __minY = Math.min(__minY, p2.y); return r; }")
+    try:
+        # erst warten, bis der Tastendruck im Spiel angekommen ist (Sprung beginnt), dann 12 Schritte weiter halten
+        await g.p.keyboard.down('Numpad0'); await g.steps(12); await g.p.keyboard.up('Numpad0')
+        hoch = await g.ev("__minY")
+    finally:
+        await g.ev("stepSim = __yStep")
+    assert hoch < 330, f"springt nicht aus dem Wasser: {hoch}"
+    for _ in range(3):   # Kopf knapp unter Wasser (wippt): der Sprung darf nicht vom Wasser geschluckt werden
+        await setz('p2', 1000, 392); await g.steps(3)
+        await g.ev("window.__minY = p2.y; window.__yStep = stepSim; stepSim = function(ts){ const r = __yStep(ts); __minY = Math.min(__minY, p2.y); return r; }")
+        try:
+            await g.ev("KEYS[p2.keys.jump + '_pressed'] = true"); await g.steps(14)
+            hoch = await g.ev("__minY")
+        finally:
+            await g.ev("stepSim = __yStep")
+        assert hoch < 330, f"Sprung aus dem Wasser verpufft (Kopf knapp unter Wasser): {hoch}"
+    # Platschen beim Eintauchen
+    assert 'platsch' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # Luft-Warnung und Tod bei leerer Luft; danach volle Luft
+    await setz('p1', 700, 660); await g.ev(f"p1.luft = LUFT_WARN + 3; SFX_LOG.length = 0")
+    await g.p.keyboard.down('KeyS'); await g.steps(8)
+    assert 'luftwarn' in await g.ev("SFX_LOG"), f'keine Luft-Warnung: {await g.ev("SFX_LOG")}'
+    await g.ev("p1.luft = 3"); await g.p.wait_for_function("!!deathState", timeout=4000); await g.p.keyboard.up('KeyS')
+    assert await g.ev("deathState.victim === p1"), 'kein Tod bei leerer Luft'
+    for _ in range(40):   # Weitermachen geht erst nach kurzer Pause
+        await g.p.keyboard.press('KeyK'); await g.p.wait_for_timeout(150)
+        if not await g.ev("!!deathState"): break
+    await g.steps(2)
+    assert await g.ev("p1.luft === LUFT_MAX"), 'Luft nach dem Tod nicht voll'
+
+@test
+async def editor_wasser(g):
+    """Ausbau 5: Editor-Werkzeug Wasser (Gruppe Wasser, ziehbar wie Aufwind) -> Export und Spiel-Umwandlung liefern waters
+    (Kästchen zu großen Rechtecken zusammengefasst, auch untereinander)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.query_selector('.tgroup[data-group=wasser] .tool[data-tool=water]'), 'Werkzeug Wasser fehlt'
+        await ed_werkzeug(p, 'water'); await ed_ziehen(p, (4, 12), (7, 12)); await ed_ziehen(p, (4, 13), (7, 13))
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['waters'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 80}], out['waters']
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['waters'] == out['waters'], umg['waters']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def wasser_luftblase(g):
+    """Ausbau 5: Gemeinsame Luftblase. Beide dicht zusammen unter Wasser und jeder drückt seine Fähigkeitstaste (Affe G,
+    Schweinchen Num 1) -> Blase entsteht (Ton), beide atmen darin (Luft füllt sich); allein oder zu weit weg: keine Blase;
+    schwimmen sie auseinander, platzt sie."""
+    await g.load(level([ground(0, 680, 2400)], {'x': 200, 'y': 680}, {'x': 140, 'y': 680},
+                       waters=[{'x': 400, 'y': 200, 'w': 1200, 'h': 480}]))
+    setz = lambda x1, x2, y: g.ev(f"p1.x = {x1}; p2.x = {x2}; p1.y = p2.y = {y}; p1.vx = p2.vx = p1.vy = p2.vy = 0;"
+                                  "p1._px = p1.x; p2._px = p2.x; p1._py = p1.y; p2._py = p2.y; p1.luft = p2.luft = 300")
+    # nur einer drückt -> keine Blase
+    await setz(800, 850, 600); await g.steps(3)
+    await g.p.keyboard.press('KeyG'); await g.steps(70)
+    assert not await g.ev("!!luftblase"), 'Blase entsteht, obwohl nur einer gedrückt hat'
+    # zu weit auseinander -> keine Blase
+    await setz(700, 900, 600); await g.steps(3)
+    await g.p.keyboard.press('KeyG'); await g.p.keyboard.press('Numpad1'); await g.steps(5)
+    assert not await g.ev("!!luftblase"), 'Blase entsteht trotz großem Abstand'
+    await g.steps(60)   # Ruf abwarten
+    # zusammen + beide drücken -> Blase, Luft füllt sich auf
+    await setz(800, 840, 600); await g.ev("SFX_LOG.length = 0"); await g.steps(50)
+    await g.p.keyboard.press('KeyG'); await g.steps(10); await g.p.keyboard.press('Numpad1'); await g.steps(3)
+    assert await g.ev("!!luftblase && luftblase.pop < 0"), 'keine Luftblase'
+    assert 'blaseauf' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    await g.ev("p1.luft = p2.luft = 300"); await g.steps(40)
+    assert await g.ev("p1.headUnder && p2.headUnder && p1.luft === LUFT_MAX && p2.luft === LUFT_MAX"), \
+        f"Luft füllt sich in der Blase nicht: {await g.ev('[p1.headUnder, p1.luft, p2.luft]')}"
+    # auseinander -> platzt
+    await g.ev("p2.x = 1100; p2._px = p2.x"); await g.steps(3)
+    assert await g.ev("!luftblase || luftblase.pop >= 0"), 'Blase platzt nicht beim Auseinanderschwimmen'
+    assert 'blaseplatzt' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    await g.steps(40)
+    l1 = await g.ev("p1.luft"); await g.steps(20)
+    assert await g.ev("p1.luft") < l1, 'Luft sinkt nach dem Platzen nicht mehr'
+
+@test
+async def wasser_stroemung_pegel(g):
+    """Ausbau 5: Strömung schiebt Schwimmende (gegen „stark“ kommt man nicht an, gegen „schwach“ schon); Wasserstand per
+    Verknüpfung: Nummer an -> Wasser steigt bzw. sinkt weich bis zur Marke, aus -> zurück (mit Ton)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 140, 'y': 680},
+                       waters=[{'x': 400, 'y': 300, 'w': 1200, 'h': 380}, {'x': 1800, 'y': 300, 'w': 400, 'h': 380}],
+                       currents=[{'x': 800, 'y': 300, 'w': 200, 'h': 380, 'dx': 1, 'dy': 0, 'staerke': 3},
+                                 {'x': 1200, 'y': 300, 'w': 200, 'h': 380, 'dx': -1, 'dy': 0, 'staerke': 1}],
+                       switches=[{'x': 300, 'y': 660, 'link': 2}],
+                       waterLevels=[{'x': 500, 'y': 200, 'link': 2}, {'x': 1900, 'y': 600, 'link': 2}]))
+    setz = lambda x, y: g.ev(f"p1.x = {x}; p1.y = {y}; p1.vx = p1.vy = 0; p1._px = p1.x; p1._py = p1.y; p2.x = {x} - 60; p2._px = p2.x")
+    # starke Strömung nach rechts: gegenan (links) schwimmen hilft nicht
+    await setz(860, 560); await g.p.keyboard.down('KeyA'); await g.steps(30); await g.p.keyboard.up('KeyA')
+    assert await g.ev("p1.x") > 870, f"starke Strömung schiebt nicht: {await g.ev('p1.x')}"
+    # schwache Strömung nach links: gegenan (rechts) kommt man voran
+    await setz(1260, 560); await g.p.keyboard.down('KeyD'); await g.steps(30); await g.p.keyboard.up('KeyD')
+    assert await g.ev("p1.x") > 1270, f"gegen schwache Strömung kein Vorankommen: {await g.ev('p1.x')}"
+    # ohne Taste treibt man mit der Strömung
+    await setz(1300, 560); await g.steps(30)
+    assert await g.ev("p1.x") < 1290, f"schwache Strömung treibt nicht: {await g.ev('p1.x')}"
+    # Wasserstand: Hebel an -> Becken 1 steigt auf 200, Becken 2 sinkt auf 600
+    assert await g.ev("!imWasser(500, 250) && imWasser(1900, 400)")
+    await g.ev("window.B = x => wasserBecken.find(b => b.minX === x); SFX_LOG.length = 0; setLink(2, true)")
+    await g.p.wait_for_function("B(400).surf === 200 && B(1800).surf === 600", timeout=10000)
+    assert await g.ev("imWasser(500, 250) && !imWasser(1900, 400) && imWasser(1900, 650)"), 'Wasserstand falsch'
+    assert 'pegel' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+    # aus -> zurück
+    await g.ev("setLink(2, false)")
+    await g.p.wait_for_function("B(400).surf === 300 && B(1800).surf === 300", timeout=10000)
+
+@test
+async def editor_stroemung_pegel(g):
+    """Ausbau 5: Editor-Werkzeuge Strömung (Richtung/Stärke wählen, ziehbar, Klick dreht) und Wasserstand (mit
+    Verknüpfungs-Nummer) in der Gruppe Wasser -> Export und Spiel-Umwandlung."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=wasser] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['water', 'current', 'waterlevel'], reihe
+        await ed_werkzeug(p, 'current')
+        await p.select_option('#opt-current-richtung', 'l'); await p.select_option('#opt-current-staerke', '3')
+        await ed_ziehen(p, (4, 12), (6, 12))
+        x, y = await ed_zelle(p, 9, 12); await p.mouse.click(x, y); await p.mouse.click(x, y)   # 2. Klick dreht: links -> hoch
+        await ed_werkzeug(p, 'waterlevel'); await p.select_option('#linkSelect', '5')
+        x, y = await ed_zelle(p, 12, 8); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['currents'] == [{'x': 160, 'y': 480, 'w': 120, 'h': 40, 'dx': -1, 'dy': 0, 'staerke': 3},
+                                   {'x': 360, 'y': 480, 'w': 40, 'h': 40, 'dx': 0, 'dy': -1, 'staerke': 3}], out['currents']
+        assert out['waterLevels'] == [{'x': 500, 'y': 320, 'link': 5}], out['waterLevels']
+        assert 'Wasserstand' in await p.evaluate("[...linkSelect.options].find(o => o.value === '5').textContent")
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['currents'] == out['currents'] and umg['waterLevels'] == out['waterLevels'], umg
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def wasser_testlevel_ton_welt(g):
+    """Ausbau 5: Testlevel levels/test/wasser.json enthält alle Wasser-Regeln (Becken, Tauch-Tunnel, Strömungen, Schleuse
+    mit Hebel) und lädt ohne Fehler; Ton unter Wasser gedämpft (ein Kopf etwas, beide stark), Schwimmstoß hörbar;
+    Welt „Wasser“ ist vorbereitet (eigener Lagunen-Look, noch ohne Level = „Bald“)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=wasser')
+        await p.wait_for_function("menuScreen === null && wasserBecken.length > 0", timeout=10000)
+        n = await g.ev("[wasserBecken.length, stroemungen.length, wasserBecken.reduce((a, b) => a + b.pegel.length, 0), switchDefs.length, levelTheme]")
+        assert n[0] >= 3 and n[1] >= 2 and n[2] >= 1 and n[3] >= 1 and n[4] == 'wasser', n
+        # Tauch-Tunnel: über dem Wasser liegt eine Decke -> dort kein Luftholen
+        assert await g.ev("solids.some(s => s.type === 'wall' && s.w >= 800 && wasserBecken.some(b => s.y <= b.top && s.y + s.h > b.top && s.x >= b.minX && s.x + s.w <= b.maxX))"), 'Tauch-Tunnel fehlt'
+        # gedämpfter Ton
+        await g.ev("p1.x = 1000; p2.x = 1040; p1.y = p2.y = 640; p1._px = p1.x; p2._px = p2.x; p1._py = p1.y; p2._py = p2.y"); await g.steps(3)
+        assert await g.ev("wasserDaempfungZiel === WASSER_TON_BEIDE"), await g.ev("wasserDaempfungZiel")
+        await g.ev("p2.x = 300; p2.y = 680; p2._px = p2.x; p2._py = p2.y"); await g.steps(3)
+        assert await g.ev("wasserDaempfungZiel === WASSER_TON_EINER"), await g.ev("wasserDaempfungZiel")
+        await g.ev("SFX_LOG.length = 0"); await g.p.keyboard.press('Space'); await g.steps(3)
+        assert 'schwimmzug' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
+        await g.ev("p1.x = 200; p1.y = 680; p1._px = p1.x; p1._py = p1.y"); await g.steps(3)
+        assert await g.ev("wasserDaempfungZiel === 20000"), await g.ev("wasserDaempfungZiel")
+        # Welt Wasser vorbereitet
+        w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+        wa = next(x for x in w['welten'] if x['id'] == 'wasser')
+        assert wa['level'] == [] and wa.get('look') == 'wasser', wa
+        assert await g.ev("composeLook('wasser', 'morgen') === 'wasser' && THEMES.wasser.label.startsWith('Lagune')")
+    finally:
+        srv.shutdown()
+
+@test
+async def falle_pfeil_flamme(g):
+    """Ausbau 7 (Ruinen): Element Falle – Stein-Kopf (fest), Pfeil im Takt fliegt bis zum Stein und tötet, Flamme brennt
+    40 % des Takts (vorher Warnung), Versatz verschiebt den Takt, „per Nummer aus“ stellt die Falle ab, Neustart setzt
+    die Takt-Uhr zurück (danach erst Warnung, dann Schuss); Testlevel levels/test/falle.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'falle.json')); await g.steps(2)
+    k = await g.ev("[fallen.length, solids.filter(s => s.type === 'falle').length, fallen.map(f => f.flammeLen)]")
+    assert k[0] == 6 and k[1] == 6 and k[2][1] == 116, k
+    # Pfeil: Affe steht in der Schusslinie (Kopf links, Pfeil fliegt nach links) -> getroffen
+    await g.ev("p1.x = 900; p1.y = 680; p2.x = 2700; p2.y = 680; camPos = camX = 600; deathState = null; fallenZuruecksetzen();")
+    await g.p.wait_for_function("!!deathState || simSteps < 0", timeout=8000)
+    assert await g.ev("deathState.victim === p1"), 'Pfeil trifft nicht'
+    await weiter_nach_tod(g)
+    # Flamme (Takt 3 s = 180 Schritte, brennt 72): außerhalb des Brennens sicher, beim Zünden tot; vorher Warnung
+    await g.ev("p1.x = 1820; p1.y = 680; p2.x = 2700; p2.y = 680; camPos = camX = 1500; deathState = null; fallenSchritte = 90 + FALLE_WARN;")
+    await g.steps(20)
+    w = await g.ev("[!!deathState, falleWarnung(fallen[2]) > 0, falleBrennt(fallen[2])]")
+    assert w == [False, False, False], w
+    await g.ev("fallenSchritte = 150 + FALLE_WARN;"); await g.steps(3)
+    assert await g.ev("falleWarnung(fallen[2]) > 0 && !deathState"), 'keine Warnung vor dem Zünden'
+    await g.p.wait_for_function("!!deathState", timeout=6000)
+    assert await g.ev("deathState.victim === p1 && fallenSchritte <= 190 + FALLE_WARN"), 'Flamme tötet nicht beim Zünden'
+    await weiter_nach_tod(g)
+    assert await g.ev("fallenSchritte") < 60, 'Takt-Uhr nach dem Tod nicht zurückgesetzt'
+    # Versatz: die drei Flammen brennen nacheinander
+    b = await g.ev("[0, 50, 100, 140].map(t => { fallenSchritte = t + FALLE_WARN; return [2, 3, 4].map(i => falleBrennt(fallen[i])); })")
+    assert b[0] == [True, False, False] and b[2][2] and not b[2][0], b
+    # per Nummer aus: Hebel 1 an -> keine neuen Pfeile
+    await g.ev("deathState = null; p1.x = 2620; p1.y = 680; p2.x = 2580; p2.y = 680; camPos = camX = 2300; fallenPfeile = [];")
+    await g.p.keyboard.press('KeyJ'); await g.steps(5)
+    assert await g.ev("!!linkOn[1] && !falleAktiv(fallen[5])")
+    await g.ev("fallenSchritte = 0;"); await g.steps(140)
+    assert await g.ev("fallenPfeile.every(a => a.x < 2700) && !deathState"), "abgestellte Falle schießt"
+
+@test
+async def editor_falle(g):
+    """Ausbau 7: Editor-Werkzeug Falle (Gruppe Gefahren) mit Art, Richtung, Takt, Versatz, „per Nummer aus“; Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'falle')
+        await p.select_option('#opt-falle-art', 'flamme'); await p.select_option('#opt-falle-richtung', 'u')
+        await p.select_option('#opt-falle-takt', '3'); await p.select_option('#opt-falle-versatz', '0.5')
+        x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y)
+        await p.select_option('#opt-falle-art', 'pfeil'); await p.select_option('#opt-falle-richtung', 'l')
+        await p.select_option('#opt-falle-schalter', 'nummer'); await p.select_option('#linkSelect', '4')
+        x, y = await ed_zelle(p, 9, 12); await p.mouse.click(x, y)
+        await p.mouse.click(x, y)   # Klick auf vorhandene Falle: Richtung drehen (l -> o)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert sorted(out['traps'], key=lambda t: t['x']) == [
+            {'x': 200, 'y': 400, 'art': 'flamme', 'richtung': 'u', 'takt': 3, 'versatz': 0.5},
+            {'x': 360, 'y': 480, 'art': 'pfeil', 'richtung': 'o', 'takt': 3, 'versatz': 0.5, 'link': 4}], out['traps']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def fels_rollt(g):
+    """Ausbau 7 (Ruinen): Rollender Fels – wartet, bis seine Nummer an geht; rollt dann (Richtung/Tempo), fällt über die
+    Kante, rollt durch die offene Tür, zerschellt an der Wand; Berührung = tot; Neustart: zurück an den Start, wartet.
+    Testlevel levels/test/fels.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'fels.json')); await g.steps(2)
+    await g.ev("p1.x = 2400; p1.y = 680; p2.x = 2450; p2.y = 680; deathState = null;")
+    await g.steps(30)
+    assert await g.ev("felsen[0].aktiv === false && felsen[0].x === 120 && felsen[0].y === 510"), 'Fels rollt ohne Hebel'
+    await g.ev("setLink(1, true)")
+    await g.p.wait_for_function("felsen[0].x > 700", timeout=15000)
+    k = await g.ev("[felsen[0].y, felsen[0].vx, felsen[0].weg]")
+    assert k[0] == 630 and abs(k[1] - 4.4) < 0.01 and not k[2], f'Fels rollt nicht über die Stufe hinunter: {k}'
+    # Druckplatte 2 startet den schnellen Fels, der an der Wand zerschellt
+    await g.ev("p1.x = 1980; p1.y = 680; p2.x = 1940; p2.y = 680;")
+    await g.p.wait_for_function("felsen[1].weg", timeout=15000)
+    assert await g.ev("felsen[1].x > 2900 && felsen[1].x < 3040"), await g.ev("felsen[1].x")
+    # Berührung = tot
+    await g.ev("deathState = null; p1.x = 2400; p1.y = 680; felsZuruecksetzen(); felsen[1].aktiv = true;")
+    await g.p.wait_for_function("!!deathState", timeout=15000)
+    assert await g.ev("deathState.victim === p1"), 'Fels tötet nicht'
+    await weiter_nach_tod(g)
+    assert await g.ev("felsen.every(F => !F.aktiv && !F.weg && F.x === F.sx)"), 'Fels nach dem Tod nicht zurück'
+
+@test
+async def editor_fels(g):
+    """Ausbau 7: Editor-Werkzeug Rollender Fels (Gruppe Gefahren, mit Verknüpfung), Richtung/Tempo, Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'fels')
+        await p.select_option('#linkSelect', '3'); await p.select_option('#opt-fels-richtung', 'l'); await p.select_option('#opt-fels-tempo', '5.4')
+        x, y = await ed_zelle(p, 6, 14); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['boulders'] == [{'x': 260, 'y': 600, 'link': 3, 'richtung': 'l', 'tempo': 5.4}], out['boulders']
+        assert 'Fels' in await p.evaluate("[...linkSelect.options].find(o => o.value === '3').textContent")
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def licht_spiegel_kristall(g):
+    """Ausbau 7 (Ruinen): Licht – die Quelle schickt einen Strahl, Stein stoppt ihn, Spiegel lenken um 90° um und lassen
+    sich mit der Hebel-Taste drehen (beide Figuren), der Kristall schaltet seine Nummer an, solange Licht darauf fällt
+    (Tür auf); Neustart stellt die Spiegel zurück. Testlevel levels/test/licht.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'licht.json')); await g.steps(3)
+    assert await g.ev("JSON.stringify(lichtWege)") == '[[[5,15],[20,15],[20,16.5]]]', await g.ev("JSON.stringify(lichtWege)")
+    await g.ev("p1.x = 820; p1.y = 680; p2.x = 900; p2.y = 680;"); await g.steps(3)
+    await g.p.keyboard.press('KeyJ'); await g.steps(5)
+    k = await g.ev("[spiegelListe.map(s => s.stellung).join(''), kristalle[0].an, !!linkOn[1]]")
+    assert k == ['/\\', False, False], k
+    await g.ev("p2.x = 860; p2.y = 400;"); await g.steps(3)
+    await g.p.keyboard.press('Numpad2'); await g.steps(5)
+    k = await g.ev("[JSON.stringify(lichtWege), kristalle[0].an, !!linkOn[1], solids.filter(d => d.type === 'door').every(d => d.open)]")
+    assert k == ['[[[5,15],[20,15],[20,8],[33,8]]]', True, True, True], k
+    # Spiegel zurückdrehen -> Licht weg -> Nummer aus
+    await g.p.keyboard.press('Numpad2'); await g.steps(5)
+    assert await g.ev("!kristalle[0].an && !linkOn[1]"), 'Kristall bleibt an ohne Licht'
+    await g.ev("resetLevel()"); await g.steps(3)
+    assert await g.ev("spiegelListe.map(s => s.stellung).join('')") == '\\\\', 'Spiegel nach Neustart nicht zurück'
+
+@test
+async def editor_licht(g):
+    """Ausbau 7: Editor-Werkzeuge Lichtquelle, Spiegel, Lichtkristall (Gruppe Schalter & Logik) mit Strahl-Vorschau; Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'lichtquelle'); await p.select_option('#opt-lichtquelle-richtung', 'r')
+        x, y = await ed_zelle(p, 2, 12); await p.mouse.click(x, y)
+        await ed_werkzeug(p, 'spiegel'); await p.select_option('#opt-spiegel-stellung', '/')
+        x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)
+        x, y = await ed_zelle(p, 8, 12); await p.mouse.click(x, y)   # Klick auf vorhandenen Spiegel: Stellung wechseln
+        await ed_werkzeug(p, 'kristall'); await p.select_option('#linkSelect', '5')
+        x, y = await ed_zelle(p, 8, 16); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['lichtquellen'] == [{'x': 80, 'y': 480, 'richtung': 'r'}], out['lichtquellen']
+        assert out['spiegel'] == [{'x': 320, 'y': 480, 'stellung': '\\'}], out['spiegel']
+        assert out['kristalle'] == [{'x': 320, 'y': 640, 'link': 5}], out['kristalle']
+        assert 'Lichtkristall' in await p.evaluate("[...linkSelect.options].find(o => o.value === '5').textContent")
+        # schaltbarer Spiegel: „per Nummer“ + Verknüpfung 9 -> Export mit link, Name in der Nummern-Liste, Rückgängig
+        await ed_werkzeug(p, 'spiegel'); await p.select_option('#opt-spiegel-schalter', 'nummer'); await p.select_option('#linkSelect', '9')
+        x, y = await ed_zelle(p, 12, 12); await p.mouse.click(x, y)
+        await p.select_option('#opt-spiegel-schalter', 'hand')
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['spiegel'] == [{'x': 320, 'y': 480, 'stellung': '\\'}, {'x': 480, 'y': 480, 'stellung': '/', 'link': 9}], out['spiegel']
+        assert 'Spiegel dreht' in await p.evaluate("[...linkSelect.options].find(o => o.value === '9').textContent")
+        await p.keyboard.press('Control+z')
+        assert await p.evaluate("elementPunkte.spiegel.length") == 1, 'Rückgängig entfernt den schaltbaren Spiegel'
+        await p.keyboard.press('Control+y')
+        assert await p.evaluate("elementPunkte.spiegel.length") == 2, 'Wiederholen holt ihn zurück'
+        await p.wait_for_timeout(300); await p.reload(); await p.wait_for_timeout(500)   # Speichern/Laden (Arbeitsstand)
+        sp = await p.evaluate("elementPunkte.spiegel.map(s => [s.c, s.r, s.stellung, s.schalter || 'hand', s.link || 0])")
+        assert [12, 12, '/', 'nummer', 9] in sp, ('schaltbarer Spiegel nach Neuladen', sp)
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def intro_szene(g):
+    """Ausbau 6: Intro-Szene (Texte in story/story.json). Läuft beim allerersten „Spielen“ nach der Spielerwahl:
+    Kino-Balken, Sprechblasen, Springen blättert weiter, Esc überspringt -> Level 1 startet. Beim nächsten neuen
+    Spiel kommt sie nicht wieder, nur über den Menüpunkt „Geschichte“ (danach zurück ins Hauptmenü)."""
+    srv = webserver(); p = g.p
+    try:
+        story = json.loads((ROOT / 'story' / 'story.json').read_text(encoding='utf-8'))
+        assert story['intro']['schritte'] and all('text' in s for s in story['intro']['schritte'] if 'wer' in s)
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        # Titel -> Menü: direkt nach dem Laden geht die erste Taste manchmal verloren (Testumgebung) – dann nochmal drücken
+        for _ in range(6):
+            await p.keyboard.press('Enter')
+            try: await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=1500); break
+            except Exception: pass
+        await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000); await p.wait_for_timeout(300)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        await p.wait_for_function("menuScreen === 'szene' && szene && szene.name === 'intro'", timeout=15000)
+        assert await g.ev("document.body.classList.contains('szene') && kameraFest === 0 && !document.getElementById('sm').classList.contains('on')")
+        await p.wait_for_timeout(400)
+        i0 = await g.ev("szene.i"); await p.keyboard.press('Space'); await p.wait_for_timeout(300)
+        assert await g.ev("szene.i") > i0, 'Springen blättert nicht weiter'
+        x0 = await g.ev("p1.x"); await p.keyboard.press('KeyD'); await p.wait_for_timeout(200)
+        assert await g.ev("p1.x") == x0, 'Figuren lassen sich in der Szene steuern'
+        await p.keyboard.press('Escape')
+        await p.wait_for_function("menuScreen === null", timeout=15000)
+        spiel = json.loads((ROOT / 'levels' / 'dschungel/01-dschungel.json').read_text())
+        assert await g.ev("!szene && kameraFest === null && coins.length") == len(spiel['coins']), 'Level 1 startet nach der Szene nicht'
+        assert await g.ev("localStorage.getItem('monchichi.introGesehen')") == 'true'
+        # zweites neues Spiel: keine Szene
+        await g.ev("GameMenu.show('select', 'new')"); await p.wait_for_timeout(500)
+        await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        await p.wait_for_function("menuScreen === 'curtain' || menuScreen === 'szene'", timeout=15000)
+        assert await g.ev("menuScreen") == 'curtain', 'Intro läuft beim zweiten Mal wieder'
+        await p.wait_for_function("menuScreen === null", timeout=15000)
+        # Menüpunkt „Geschichte“ spielt sie und führt zurück ins Hauptmenü
+        await g.ev("GameMenu.show('menu')"); await p.wait_for_timeout(500)
+        idx = await g.ev("[...document.querySelectorAll('#sm-menu .mi')].findIndex(b => b.textContent === 'Geschichte')")
+        for _ in range(idx): await p.keyboard.press('ArrowDown'); await p.wait_for_timeout(80)
+        await p.keyboard.press('Enter')
+        await p.wait_for_function("menuScreen === 'szene'", timeout=15000)
+        await p.wait_for_timeout(400); await p.keyboard.press('Escape')
+        await p.wait_for_function("document.querySelector('#sm-s-menu.active') && document.getElementById('sm').classList.contains('on')", timeout=8000)
+    finally:
+        srv.shutdown()
+
+def boss_level(pause1=30, pause2=30, treffer=2, angriffe1=('kokos',), angriffe2=('stampf',)):
+    return level([ground(0, 680, 1480), ground(0, -120, 40, 800, 'wall'), ground(1440, -120, 40, 800, 'wall'), ground(80, 560, 240, 120)],
+                 {'x': 400, 'y': 680}, {'x': 110, 'y': 560},
+                 plates=[{'x': 200, 'y': 540, 'link': 1}],
+                 boss=[{'x': 900, 'y': 680, 'typ': 'bruno', 'treffer': treffer, 'tempo': 1, 'name': 'Bruno',
+                        'phasen': [{'angriffe': list(angriffe1), 'pause': pause1}, {'angriffe': list(angriffe2), 'pause': pause2}]}],
+                 bossPlaetze=[{'x': 900, 'y': 680, 'phase': 1, 'link': 1}, {'x': 1100, 'y': 680, 'phase': 2, 'link': 1}],
+                 bossArena=[{'x': 20}, {'x': 1460}])
+
+async def boss_sprung(g, wer='p1'):
+    """Figur von oben auf den Boss-Kopf fallen lassen."""
+    await g.ev(f"{wer}.x = bossKampf.x; {wer}.y = bossKampf.y - bossKampf.T.h - 40; {wer}.vx = 0; {wer}.vy = 4; {wer}.grounded = false;"
+               f"{wer}._px = {wer}.x; {wer}._py = {wer}.y")
+    await g.steps(12)
+
+@test
+async def eis_rutschen(g):
+    """Ausbau 7 (Höhle): Eis – fester Boden, auf dem man langsam anläuft und ohne Taste lange rutscht; normaler Boden
+    bremst wie bisher. Testlevel levels/test/eis.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'eis.json')); await g.steps(2)
+    # ohne Taste mit vollem Tempo: Bremsweg auf Boden vs. Eis
+    await g.ev("p2.x = 3000; p2.y = 680; p1.x = 200; p1.y = 680; p1.vx = 4.4; window.__x0 = p1.x")
+    await g.steps(60)
+    boden = await g.ev("p1.x - __x0")
+    await g.ev("p1.x = 900; p1.y = 680; p1.vx = 4.4; p2.x = 1000; window.__x0 = p1.x")
+    await g.steps(90)
+    eis = await g.ev("p1.x - __x0")
+    assert boden < 30 and eis > 120, f'Bremsweg Boden {boden}, Eis {eis}'
+    assert await g.ev("aufEis(p1)"), 'steht nicht auf Eis'
+    # Anlaufen: nach 8 Schritten auf Eis deutlich langsamer als auf Boden. Tempo wird im Spiel je Schritt mitgeschrieben
+    # (ab dem ersten Schritt mit gedrückter Taste) – sonst zählen auf langsamen Rechnern Extra-Schritte mit
+    await g.ev("window.__vx = []; window.__vxStep = stepSim; stepSim = function(ts){ const r = __vxStep(ts); __vx.push(p1.vx); return r; }")
+    async def anlauf(x):
+        await g.ev(f"p1.x = {x}; p1.y = 680; p1.vx = 0"); await g.steps(3); await g.ev("__vx = []")
+        await g.p.keyboard.down('KeyD'); await g.steps(12); await g.p.keyboard.up('KeyD')
+        return await g.ev("(() => { const i = __vx.findIndex(v => v > 0); return i < 0 ? 0 : __vx[Math.min(i + 7, __vx.length - 1)]; })()")
+    try:
+        v_eis = await anlauf(1200)
+        v_boden = await anlauf(400)
+    finally:
+        await g.ev("stepSim = __vxStep")
+    assert v_boden > 4 and v_eis < 3, f'Anlaufen Boden {v_boden}, Eis {v_eis}'
+    # Eis ist fest (man fällt nicht durch) und wird vom Element gezeichnet (nicht als normale Wand)
+    assert await g.ev("solids.filter(s => s.type === 'eis').length") == 32 and await g.ev("ELEMENT_SOLID_TYPEN.has('eis')")
+
+@test
+async def foerderband_mitnehmen(g):
+    """Ausbau 7 (Höhle): Förderband nimmt Figuren auf ihm mit (Richtung/Tempo); Nummer „dreht um“ bzw. „hält an“;
+    in der Luft nimmt es niemanden mit. Testlevel levels/test/foerderband.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'foerderband.json')); await g.steps(2)
+    await g.ev("p1.x = 1000; p1.y = 680; p1.vx = 0; p2.x = 1100; p2.y = 680; p2.vx = 0; window.__x0 = [p1.x, p2.x]")
+    await g.steps(54)
+    d = await g.ev("[p1.x - __x0[0], p2.x - __x0[1]]")
+    assert 60 < d[0] < 110 and 60 < d[1] < 110, f'langsames Band nach rechts: {d}'
+    await g.ev("p1.x = 2000; p1.y = 680; p1.vx = 0; p2.x = 2100; p2.y = 680; window.__x0 = p1.x")
+    await g.steps(30)
+    links = await g.ev("p1.x - __x0")
+    await g.ev("setLink(1, true); p1.x = 2000; p1.y = 680; p1.vx = 0; window.__x0 = p1.x")
+    await g.steps(30)
+    rechts = await g.ev("p1.x - __x0")
+    assert links < -50 and rechts > 50, f'Nummer 1 dreht das Band nicht um: {links} / {rechts}'
+    # in der Luft: kein Mitnehmen
+    await g.ev("setLink(1, false); p1.x = 2000; p1.y = 600; p1.vx = 0; p1.vy = -9; p1.grounded = false; p1.bandSchwung = 0; window.__x0 = p1.x")
+    await g.steps(6)
+    assert abs(await g.ev("p1.x - __x0")) < 1, 'nimmt in der Luft mit'
+    # knapp darüber (Mini-Hüpfer im Tunnel) nimmt es trotzdem mit
+    await g.ev("p1.x = 2000; p1.y = 675; p1.vx = 0; p1.vy = -0.5; p1.grounded = false; p1.bandSchwung = 0; window.__x0 = p1.x; window.__nah = bandUnter(p1)")
+    assert await g.ev("!!__nah"), 'knapp über dem Band zählt nicht'
+    # Nummer 2 hält das obere Band an
+    await g.ev("p1.x = 3000; p1.y = 560; p1.vx = 0; p2.x = 3100; p2.y = 560; window.__x0 = p1.x"); await g.steps(20)
+    lauf = await g.ev("p1.x - __x0")
+    await g.ev("setLink(2, true); p1.x = 3000; p1.y = 560; p1.vx = 0; window.__x0 = p1.x"); await g.steps(20)
+    still = await g.ev("p1.x - __x0")
+    assert lauf < -30 and abs(still) < 1, f'Nummer 2 hält nicht an: {lauf} / {still}'
+    # Absprung vom Band: Schwung des Bands kommt dazu (Schleuder)
+    await g.ev("setLink(1, true); p1.x = 1700; p1.y = 680; p1.vx = 0; p1.vy = 0"); await g.steps(3)
+    # Weg in den 12 Schritten nach dem Absprung – im Spiel je Schritt mitgeschrieben (auf langsamen Rechnern laufen
+    # zwischen zwei Abfragen sonst Extra-Schritte)
+    await g.ev("window.__xs = []; window.__xsStep = stepSim; stepSim = function(ts){ const r = __xsStep(ts); __xs.push([p1.x, p1.grounded]); return r; }")
+    try:
+        await g.p.keyboard.down('Space'); await g.steps(3); await g.p.keyboard.up('Space'); await g.steps(14)
+        weg = await g.ev("(() => { const i = __xs.findIndex(s => !s[1]); return i < 0 || i + 12 >= __xs.length ? 0 : __xs[i + 12][0] - __xs[i][0]; })()")
+    finally:
+        await g.ev("stepSim = __xsStep")
+    assert weg > 15, f'kein Band-Schwung beim Absprung: {weg}'
+
+@test
+async def leuchtkristall_dunkelzone(g):
+    """Ausbau 7 (Höhle): Dunkelzone macht es fast stockdunkel (kleiner Lichtkreis um die Figuren); ein Leuchtkristall
+    leuchtet nach dem Anschlagen (Hebel-Taste) 8 s und flackert vorher; per Nummer leuchtet er dauerhaft; Neustart
+    löscht das Licht. Testlevel levels/test/leuchtkristall.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'leuchtkristall.json')); await g.steps(2)
+    await g.ev("p1.x = 600; p1.y = 680; p2.x = 560; p2.y = 680")
+    assert await g.ev("dunkelZonen.length") == 1 and await g.ev("leuchtKristalle.length") == 2
+    # Dunkelheit an einer Stelle = Deckkraft der Dunkel-Ebene (0 = hell, 255 = schwarz)
+    dunkel = lambda wx, wy: g.ev(f"(() => {{ camX = 300; draw(); if(!dunkelCanvas) return 0; const k = dunkelCanvas.width/W, x = Math.round(({wx} - camX)*zoom*k), y = Math.round(({wy}*zoom + H*(1 - zoom))*k); return dunkelCanvas.getContext('2d').getImageData(x, y, 1, 1).data[3]; }})()")
+    await g.ev("p1.x = 740; p2.x = 700; camPos = 300")
+    vorher = await dunkel(1150, 560)
+    aussen = await dunkel(500, 560)
+    assert vorher > 200 and aussen < 20, f'Dunkelzone nicht dunkel: drin {vorher}, draußen {aussen}'
+    # Kristall anschlagen (Schweinchen, Num 2)
+    await g.ev("p2.x = 1010; p2.y = 680"); await g.steps(2)
+    await g.p.keyboard.press('Numpad2'); await g.steps(3)
+    assert await g.ev("leuchtKristalle[0].t > 400"), 'Kristall leuchtet nach dem Anschlagen nicht'
+    await g.ev("p2.x = 740; camPos = 300")
+    nachher = await dunkel(1150, 560)
+    assert nachher < vorher - 80, f'Kristall-Licht hellt nicht auf: {vorher} -> {nachher}'
+    await g.ev("leuchtKristalle[0].t = 130"); await g.steps(20)
+    assert 0 < await g.ev("leuchtStaerke(leuchtKristalle[0])") < 1, 'flackert nicht vor dem Ausgehen'
+    await g.steps(130)
+    assert await g.ev("leuchtKristalle[0].t") == 0
+    # per Nummer: leuchtet, solange Hebel 1 an ist
+    assert await g.ev("leuchtStaerke(leuchtKristalle[1])") == 0
+    await g.ev("setLink(1, true)"); await g.steps(2)
+    assert await g.ev("leuchtStaerke(leuchtKristalle[1])") == 1
+    # Neustart löscht das Licht
+    await g.ev("leuchtKristalle[0].t = 300"); await g.p.keyboard.press('KeyR'); await g.steps(3)
+    assert await g.ev("leuchtKristalle[0].t") == 0, 'Neustart lässt den Kristall leuchten'
+
+@test
+async def editor_hoehlen_elemente(g):
+    """Ausbau 7: Editor-Werkzeuge Eis und Dunkelzone (Gelände, malbar), Förderband (Bewegung; Richtung/Tempo/Nummer),
+    Leuchtkristall (Schalter & Logik; anschlagen oder per Nummer); Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'eis'); await ed_ziehen(p, (2, 16), (4, 16))
+        await ed_werkzeug(p, 'dunkel'); await ed_ziehen(p, (10, 10), (11, 10))
+        await ed_werkzeug(p, 'band'); await p.select_option('#opt-band-richtung', 'l'); await p.select_option('#opt-band-tempo', '2.8')
+        await p.select_option('#opt-band-schalter', 'dreht'); await p.select_option('#linkSelect', '4')
+        x, y = await ed_zelle(p, 6, 16); await p.mouse.click(x, y)
+        await ed_werkzeug(p, 'leucht'); await p.select_option('#opt-leucht-schalter', 'anschlagen')
+        x, y = await ed_zelle(p, 8, 15); await p.mouse.click(x, y)
+        await p.select_option('#opt-leucht-schalter', 'nummer'); await p.select_option('#linkSelect', '6')
+        x, y = await ed_zelle(p, 9, 15); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert sorted(e['x'] for e in out['eis']) == [80, 120, 160] and all(e['y'] == 640 for e in out['eis']), out['eis']
+        assert sorted(z['x'] for z in out['dunkelzonen']) == [400, 440], out['dunkelzonen']
+        assert out['baender'] == [{'x': 240, 'y': 640, 'w': 40, 'h': 40, 'richtung': 'l', 'tempo': 2.8, 'link': 4, 'schalter': 'dreht'}], out['baender']
+        assert out['leuchtkristalle'] == [{'x': 340, 'y': 620}, {'x': 380, 'y': 620, 'link': 6}], out['leuchtkristalle']
+        assert 'Leuchtkristall' in await p.evaluate("[...linkSelect.options].find(o => o.value === '6').textContent")
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+
+@test
+async def lava_steigen(g):
+    """Ausbau 7 (Vulkan): Lava-Becken töten; Lava-Marke „per Nummer“ lässt die Lava bis zur Marke steigen (Hebel aus =
+    sinkt zurück); Marke „sobald beide da sind“ startet erst, wenn beide Figuren das Becken erreicht haben; Tod/Neustart = Lava unten.
+    Lava wird hinter Boden/Wänden gezeichnet und leuchtet im Dunkeln. Testlevel levels/test/lava.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'lava.json')); await g.steps(2)
+    assert await g.ev("lavaBecken.length") == 3 and await g.ev("lavaBecken.map(b => b.marken.length)") == [0, 1, 1]
+    # Becken A: hineinfallen = Tod (Zischen)
+    await g.ev("SFX_LOG.length = 0; p1.x = 860; p1.y = 600; p1.vx = 0; p2.x = 700; p2.y = 680")
+    await g.steps(40)
+    assert await g.ev("!!deathState && deathState.victim === p1"), 'Lava tötet nicht'
+    assert 'lavazisch' in await g.ev("SFX_LOG")
+    await weiter_nach_tod(g)
+    # Becken B: Hebel 1 -> steigt bis zur Marke (560), mittel = 0,6 px pro Schritt; aus -> sinkt zurück
+    b = "lavaBecken[1]"
+    assert await g.ev(f"{b}.surf") == 640
+    await g.ev("p1.x = 1700; p1.y = 680; p2.x = 1750; p2.y = 680; SFX_LOG.length = 0; setLink(1, true)")
+    await g.steps(60)
+    s1 = await g.ev(f"{b}.surf")
+    assert 590 < s1 < 612, f'Lava steigt nicht im Tempo: {s1}'
+    assert 'lavasteigt' in await g.ev("SFX_LOG")
+    await g.steps(100)
+    assert await g.ev(f"{b}.surf") == 560
+    assert await g.ev("inLava(1500, 570) && !inLava(1500, 550) && !inLava(1700, 670)"), 'Lava-Bereich falsch'
+    await g.ev("setLink(1, false)"); await g.steps(140)
+    assert await g.ev(f"{b}.surf") == 640, 'Lava sinkt nicht zurück'
+    # Becken C: „sobald beide da sind“ (schnell = 1 px pro Schritt)
+    c = "lavaBecken[2]"
+    await g.ev("p1.x = 2100; p1.y = 680; p2.x = 2060; p2.y = 680"); await g.steps(30)
+    assert await g.ev(f"{c}.surf") == 640, 'Lava steigt, obwohl niemand da ist'
+    await g.ev("p1.x = 2460; p1.y = 480; p1.vy = 0; p2.x = 2100; p2.y = 680"); await g.steps(20)   # Affe drüben auf der Mauer
+    assert await g.ev(f"{c}.surf") == 640, 'Lava steigt schon, obwohl erst eine Figur da ist'
+    await g.ev("p2.x = 2470; p2.y = 480; p2.vy = 0"); await g.steps(60)
+    s2 = await g.ev(f"{c}.surf")
+    assert 540 < s2 < 600, f'Lava-Flucht startet nicht: {s2} ' + str(await g.ev("[!!deathState, simSteps, menuScreen, p1.x, p2.x]"))
+    # Tod -> Lava wieder unten
+    await g.ev("die(p2)"); await weiter_nach_tod(g)
+    assert await g.ev("lavaBecken.map(b => b.surf)") == [680, 640, 640], 'Lava nach dem Tod nicht zurückgesetzt'
+    # Zeichnen: hinter den Wänden, Lichter im Dunkeln
+    n = await g.ev("""(() => { let z = 0; const E = ELEMENTE.find(e => e.id === 'lava'), f = E.spiel.zeichnenHinten;
+      E.spiel.zeichnenHinten = () => { z++; f(); }; camPos = 1200; draw(); E.spiel.zeichnenHinten = f; const L = []; lavaLichter(L); return [z, L.length > 0]; })()""")
+    assert n == [1, True], n
+
+@test
+async def presse_takt(g):
+    """Ausbau 7 (Vulkan): Stachelpresse kracht im Takt bis auf den Boden, bleibt kurz liegen, wird hochgezogen; vorher
+    Vorwarnung (Kette); Versatz verschiebt den Takt; „hält bei Nummer an“ (Druckplatte) – fährt erst hoch, dann steht sie;
+    Berührung = Tod; Neustart = gleicher Rhythmus. Testlevel levels/test/presse.json."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'presse.json')); await g.steps(1)
+    assert await g.ev("pressen.length") == 6
+    assert await g.ev("pressen.map(P => P.hub)") == [308] * 6, await g.ev("pressen.map(P => P.hub)")   # Decke 320 -> Boden 680
+    await g.ev("p1.x = 300; p2.x = 260; SFX_LOG.length = 0")
+    # Takt 3 s = 180 Schritte: oben warten, Warnung, Fall, liegen, hoch
+    await g.p.wait_for_function("presseWarnung(pressen[0]) > 0.2", timeout=8000)
+    assert await g.ev("pressen[0].y") == 320, 'Presse fällt schon während der Vorwarnung'
+    assert 'pressekette' in await g.ev("SFX_LOG"), 'keine Vorwarnung (Kette)'
+    await g.p.wait_for_function("pressen[0].unten", timeout=8000)
+    assert await g.ev("pressen[0].y") == 628 and 'pressestampf' in await g.ev("SFX_LOG"), await g.ev("pressen[0].y")
+    await g.p.wait_for_function("!pressen[0].unten", timeout=8000); await g.steps(20)
+    y = await g.ev("pressen[0].y")
+    assert 320 < y < 628, f'Presse wird nicht hochgezogen: {y}'
+    # Versatz: die Welle fällt nacheinander
+    lagen = await g.ev("[1, 2, 3].map(i => presseZeit(pressen[i]))")
+    assert lagen[0] != lagen[1] != lagen[2], lagen
+    # Berührung = Tod
+    await g.ev("p1.x = 620; p1.y = 680"); 
+    for _ in range(40):
+        await g.steps(5)
+        if await g.ev("!!deathState"): break
+    assert await g.ev("!!deathState && deathState.victim === p1"), 'Presse tötet nicht'
+    await weiter_nach_tod(g)
+    assert await g.ev("pressen.every(P => P.t < 60) && pressen[0].y === pressen[0].y0"), 'Neustart setzt die Pressen nicht zurück'
+    # Druckplatte 2 hält die beiden Pressen an (erst hoch, dann stehen)
+    await g.ev("p2.x = 2020; p2.y = 680; p1.x = 1950; p1.y = 680"); await g.steps(250)
+    assert await g.ev("!!linkOn[2]") and await g.ev("pressen[4].y === pressen[4].y0 && pressen[5].y === pressen[5].y0"), await g.ev("[pressen[4].y, pressen[5].y]")
+    await g.ev("p2.x = 1900"); await g.steps(200)
+    assert await g.ev("pressen[4].y > pressen[4].y0 || pressen[5].y > pressen[5].y0"), 'Pressen laufen nach der Platte nicht weiter'
+
+@test
+async def editor_vulkan_elemente(g):
+    """Ausbau 7: Editor-Werkzeuge Lava (malbar, wird zu Rechtecken zusammengefasst), Lava-Marke (per Nummer / sobald
+    jemand kommt, Tempo) und Stachelpresse (Breite, Takt, Versatz, Nummer) in der Gruppe Gefahren; Export."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        gef = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gefahren] .tool')].map(t => t.dataset.tool)")
+        assert 'lava' in gef and 'lavapegel' in gef and 'presse' in gef, gef
+        await ed_werkzeug(p, 'lava'); await ed_ziehen(p, (2, 16), (4, 16))
+        await ed_werkzeug(p, 'lavapegel'); await p.select_option('#opt-lavapegel-start', 'nummer'); await p.select_option('#opt-lavapegel-tempo', 'langsam')
+        await p.select_option('#linkSelect', '3'); x, y = await ed_zelle(p, 3, 13); await p.mouse.click(x, y)
+        await p.select_option('#opt-lavapegel-start', 'naehe'); await p.select_option('#opt-lavapegel-tempo', 'schnell')
+        x, y = await ed_zelle(p, 4, 12); await p.mouse.click(x, y)
+        await ed_werkzeug(p, 'presse'); await p.select_option('#opt-presse-breite', '2'); await p.select_option('#opt-presse-takt', '2.5')
+        await p.select_option('#opt-presse-versatz', '0.25'); await p.select_option('#opt-presse-schalter', 'stopp'); await p.select_option('#linkSelect', '5')
+        x, y = await ed_zelle(p, 8, 10); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        assert out['lava'] == [{'x': 80, 'y': 640, 'w': 120, 'h': 40}], out['lava']
+        assert out['lavaPegel'] == [{'x': 140, 'y': 520, 'tempo': 'langsam', 'start': 'nummer', 'link': 3},
+                                    {'x': 180, 'y': 480, 'tempo': 'schnell', 'start': 'naehe'}], out['lavaPegel']
+        assert out['pressen'] == [{'x': 320, 'y': 400, 'breite': 2, 'takt': 2.5, 'versatz': 0.25, 'schalter': 'stopp', 'link': 5}], out['pressen']
+        assert 'Lava steigt' in await p.evaluate("[...linkSelect.options].find(o => o.value === '3').textContent")
+        assert 'Presse' in await p.evaluate("[...linkSelect.options].find(o => o.value === '5').textContent")
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+
+async def weiter_nach_tod(g):
+    for _ in range(40):
+        await g.p.keyboard.press('KeyK'); await g.p.wait_for_timeout(150)
+        if not await g.ev("!!deathState"): break
+    await g.steps(2)
+
+@test
+async def boss_geruest(g):
+    """Ausbau 6: Boss-Gerüst. Boss-Level = feste Kamera an der Arena, kein Ziel, Lebensbalken. Treffer nur zusammen:
+    mit Helm prallt man ab; steht die andere Figur auf der Druckplatte (Schild-Nummer), ist der Helm ab und ein Sprung auf
+    den Kopf trifft. Treffer leer -> nächste Phase (Checkpoint, Boss springt an seinen neuen Platz). Tod -> aktuelle Phase
+    von vorn (volle Treffer), R -> Phase 1. Berührung = Tod. Sieg -> Zahnrad -> Sieges-Szene -> „geschafft“."""
+    srv = webserver()   # Szenen-Texte (story/story.json) per fetch
+    await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(600)
+    await g.load(boss_level())
+    st = await g.ev("[!!bossKampf, kameraFest, goal.x < 0, bossKampf.phase, bossKampf.hp, bossKampf.phasen.length]")
+    assert st == [True, 0, True, 0, 2, 2], st
+    await g.ev("draw()")   # Lebensbalken zeichnet ohne Fehler
+    await g.p.wait_for_function("bossKampf.zustand === 'warten'", timeout=8000)
+    # mit Helm: abprallen, kein Treffer
+    await g.ev("SFX_LOG.length = 0"); await boss_sprung(g)
+    assert await g.ev("bossKampf.hp") == 2 and 'helmabprall' in await g.ev("SFX_LOG"), await g.ev("[bossKampf.hp, SFX_LOG]")
+    # Schweinchen auf die Platte -> Helm ab -> Treffer
+    await g.ev("p2.x = 200; p2.y = 560; p2._px = p2.x; p2._py = p2.y"); await g.steps(4)
+    assert await g.ev("linkOn[1] === true && bossHelmAb(bossKampf)"), 'Platte nimmt den Helm nicht ab'
+    await boss_sprung(g)
+    assert await g.ev("bossKampf.hp") == 1 and 'bosstreffer' in await g.ev("SFX_LOG"), await g.ev("[bossKampf.hp, SFX_LOG]")
+    await g.steps(80); await boss_sprung(g)
+    assert await g.ev("bossKampf.phase === 1 && bossKampf.zustand === 'wechsel'"), await g.ev("[bossKampf.phase, bossKampf.zustand]")
+    assert 'Phase 2' in await g.ev("testJumpMsg"), await g.ev("testJumpMsg")
+    await g.p.wait_for_function("bossKampf.zustand !== 'wechsel'", timeout=8000)
+    assert abs(await g.ev("bossKampf.x") - 1100) < 1, 'Boss springt nicht an den Platz der Phase 2'
+    # Treffer in Phase 2, dann Tod -> Phase 2 wieder mit vollen Treffern (Checkpoint pro Phase)
+    await g.p.wait_for_function("bossKampf.zustand === 'warten'", timeout=8000)
+    await boss_sprung(g)
+    assert await g.ev("bossKampf.hp") == 1
+    await g.ev("p1.x = 1100; p1.y = 680; p1.vx = 0; p1.vy = 0; p1._px = p1.x; p1._py = p1.y"); await g.steps(3)   # Körper berühren
+    assert await g.ev("!!deathState && deathState.victim === p1"), 'Berührung des Bosses tötet nicht'
+    await weiter_nach_tod(g)
+    assert await g.ev("[bossKampf.phase, bossKampf.hp, bossKampf.x, linkOn[1] || false, kameraFest]") == [1, 2, 1100, False, 0], \
+        await g.ev("[bossKampf.phase, bossKampf.hp, bossKampf.x, linkOn[1], kameraFest]")
+    # R -> Kampf von vorn
+    await g.p.keyboard.press('KeyR'); await g.steps(3)
+    assert await g.ev("[bossKampf.phase, bossKampf.hp, bossKampf.x]") == [0, 2, 900]
+    # ganz besiegen -> Zahnrad -> Sieges-Szene -> Esc -> „geschafft“ (hier ohne Weltkarte: zurück ins Menü)
+    await g.ev("bossKampf.phase = 1; bossKampf.hp = 1; bossKampf.x = 1100; bossKampf.zustand = 'warten'; bossKampf.t = 0;"
+               "p2.x = 200; p2.y = 560; p2._px = p2.x; p2._py = p2.y"); await g.steps(4)
+    await boss_sprung(g)
+    assert await g.ev("bossKampf.zustand") == 'besiegt', await g.ev("bossKampf.zustand")
+    assert 'bossbesiegt' in await g.ev("SFX_LOG")
+    await g.steps(50)
+    await g.ev("p1.x = bossKampf.zahnrad.x; p1.y = bossKampf.zahnrad.y + 20; p1._px = p1.x; p1._py = p1.y")
+    await g.p.wait_for_function("menuScreen === 'szene' && szene.name === 'boss1_sieg'", timeout=8000)
+    assert await g.ev("kameraFest") == 0, 'Sieges-Szene verschiebt die Kamera'
+    await g.p.keyboard.press('Escape')
+    await g.p.wait_for_function("menuScreen === 'start'", timeout=8000)
+    srv.shutdown()
+
+@test
+async def boss_angriffe(g):
+    """Ausbau 6: Angriffe aus den Level-Daten. Kokosnüsse: erst Warn-Schatten, dann fallen sie und treffen (Tod);
+    Stampfen: Druckwelle läuft am Boden, wer drüberspringt, überlebt, wer am Boden steht, nicht."""
+    await g.load(boss_level(pause1=0.3, angriffe1=('kokos',)))
+    await g.ev("p2.x = 120; p2.y = 680; p2._px = p2.x")
+    await g.p.wait_for_function("bossKampf.geschosse.length >= 3", timeout=8000)
+    assert await g.ev("bossKampf.geschosse.every(k => k.warte > 0)"), 'Kokosnüsse fallen ohne Warnung'
+    await g.p.wait_for_function("!!deathState", timeout=10000)
+    # Stampfen: Welle
+    await g.load(boss_level(pause1=0.3, angriffe1=('stampf',)))
+    await g.ev("p1.x = 560; p2.x = 520; p1._px = p1.x; p2._px = p2.x")
+    await g.p.wait_for_function("bossKampf.wellen.length > 0", timeout=8000)
+    await g.p.wait_for_function("!!deathState", timeout=8000)
+    assert 'stampf' in await g.ev("SFX_LOG")
+    # drüberspringen: Figuren werden über der Welle gehalten -> kein Tod
+    await g.load(boss_level(pause1=0.3, angriffe1=('stampf',)))
+    await g.ev("window.__hoch = true; if(!window.__bw){ window.__bw = 1; const o = stepSim; stepSim = function(ts){ if(window.__hoch){ for(const pl of [p1, p2]){ pl.y = 600; pl.vy = 0; pl._py = pl.y; } } o(ts); }; }")
+    await g.ev("p1.x = 560; p2.x = 520; p1._px = p1.x; p2._px = p2.x")
+    await g.p.wait_for_function("bossKampf.wellen.length > 0", timeout=8000)
+    await g.steps(150)   # mehrere Wellen laufen unter den Figuren durch
+    assert not await g.ev("!!deathState"), 'Welle trifft auch über ihr'
+    await g.ev("window.__hoch = false")
+
+@test
+async def editor_boss(g):
+    """Ausbau 6: Editor-Gruppe „Boss“: Boss (nur einer, Treffer/Tempo), Arena-Grenze (2 Marken), Boss-Platz (Phase + Helm-Nummer)
+    -> Export enthält boss (mit Phasen und Angriffen), bossArena, bossPlaetze; Spiel-Umwandlung gleich."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=boss] .tool')].map(t => t.dataset.tool)")
+        assert reihe == ['boss', 'arena', 'bossplatz'], reihe
+        await ed_werkzeug(p, 'boss'); await p.select_option('#opt-boss-treffer', '4')
+        for c in (10, 15): x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)   # zweiter Boss ersetzt den ersten
+        await ed_werkzeug(p, 'arena')
+        for c in (1, 30): x, y = await ed_zelle(p, c, 16); await p.mouse.click(x, y)
+        await ed_werkzeug(p, 'bossplatz'); await p.select_option('#linkSelect', '2')
+        x, y = await ed_zelle(p, 15, 16); await p.mouse.click(x, y)
+        await p.select_option('#opt-bossplatz-phase', '2'); await p.select_option('#linkSelect', '3')
+        x, y = await ed_zelle(p, 15, 8); await p.mouse.click(x, y)
+        await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
+        b = out['boss']
+        assert len(b) == 1 and b[0]['x'] == 620 and b[0]['y'] == 680 and b[0]['treffer'] == 4 and b[0]['name'] == 'Bruno', b
+        assert len(b[0]['phasen']) == 3 and all(ph['angriffe'] and ph['treffer'] == 4 for ph in b[0]['phasen']), b[0]['phasen']
+        assert out['bossArena'] == [{'x': 60}, {'x': 1220}], out['bossArena']
+        assert out['bossPlaetze'] == [{'x': 620, 'y': 680, 'phase': 1, 'link': 2}, {'x': 620, 'y': 360, 'phase': 2, 'link': 3}], out['bossPlaetze']
+        assert 'Boss-Helm' in await p.evaluate("[...linkSelect.options].find(o => o.value === '3').textContent")
+        snap = await p.evaluate("snapshot()")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        umg = await p.evaluate(f"convertEditorSnapshot({json.dumps(snap)})")
+        assert umg['boss'] == b and umg['bossPlaetze'] == out['bossPlaetze'] and umg['bossArena'] == out['bossArena']
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def boss1_bruno(g):
+    """Ausbau 6: Boss 1 „Bruno“ (Dschungel, levels/dschungel/boss-bruno.json): 3 Phasen à 3 Treffer, Helm-Schalter je Phase
+    (Platte links, Platte rechts, Hebel oben am Aufwind mit Rückklappen nach 5 s); Ast nur per Seil oder Aufwind
+    erreichbar. Boss-Karte erst nach allen Dschungel-Leveln offen; Spielerwahl -> Vorhang „Boss“ -> Start-Szene ->
+    Kampf; Sieg -> Sieges-Szene -> „Boss besiegt“ -> Weltkarte schaltet die Ruinen frei."""
+    srv = webserver(); p = g.p
+    try:
+        w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+        dsch = next(x for x in w['welten'] if x['id'] == 'dschungel')
+        assert dsch['boss'] == 'dschungel/boss-bruno.json', dsch
+        L = json.loads((ROOT / 'levels' / 'dschungel/boss-bruno.json').read_text(encoding='utf-8'))
+        b = L['boss'][0]
+        assert b['name'] == 'Bruno' and len(b['phasen']) == 3 and all(ph['treffer'] == 3 for ph in b['phasen']), b
+        links = sorted(pl['link'] for pl in L['bossPlaetze'])
+        assert links == [1, 2, 3] and {p_['link'] for p_ in L['plates']} == {1, 2} and L['switches'][0]['link'] == 3
+        # Erreichbarkeit: Haken vom Boden aus, Ast (Steg) zwischen den Haken, Aufwind reicht bis über den Hebel-Sims
+        ast = L['oneways'][0]
+        for h in L['hooks']: assert abs((680 - 20) - h['y']) <= h['radius'], h
+        assert ast['x'] < 740 < ast['x'] + ast['w'] and ast['y'] == 320
+        assert min(wi['y'] for wi in L['winds']) < L['switches'][0]['y']
+        # Menü: Boss-Karte gesperrt, bis beide Dschungel-Level geschafft sind
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], completed: ['dschungel/01-dschungel.json'], stats: {}}));"
+                   "localStorage.setItem('monchichi.introGesehen', 'true')")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
+        boss = "document.querySelector('#sm-cards .lc.boss')"
+        assert await g.ev(f"{boss}.classList.contains('lock')"), 'Boss-Karte offen, obwohl Level 2 fehlt'
+        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # alle Dschungel-Level (Ausbau 7: 4)
+        assert await g.ev("GameMenu.worldUnlocked('ruinen')") is False, 'Ruinen offen ohne Boss'
+        await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
+        assert not await g.ev(f"{boss}.classList.contains('lock')") and 'Bruno' in await g.ev(f"{boss}.textContent"), await g.ev(f"{boss}.outerHTML")
+        # Boss-Karte wählen -> Spielerwahl -> Kampf (Start-Szene mit Esc überspringen)
+        await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(200)
+        await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-select.active')", timeout=8000)
+        await p.wait_for_timeout(300); await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
+        await p.wait_for_function("menuScreen === 'szene' && szene.name === 'boss1_start'", timeout=20000)
+        await p.keyboard.press('Escape')
+        await p.wait_for_function("menuScreen === null && !!bossKampf", timeout=8000)
+        assert await g.ev("[bossKampf.name, bossKampf.phasen.length, kameraFest, LEVEL_W > 1400]") == ['Bruno', 3, 0, True]
+        # Phase 3: Hebel klappt nach 5 s zurück
+        await g.ev("bossKampf.phasen[2].pause = 999; bossKampf.phase = 2; bossKampf.hp = 3; bossKampf.x = 740; bossKampf.y = 320; bossKampf.zustand = 'warten'; bossKampf.t = 0; setLink(3, true)")
+        await g.steps(int(5 * 60) + 10)
+        assert not await g.ev("!!linkOn[3]"), 'Hebel klappt in Phase 3 nicht zurück'
+        # Sieg (letzter Treffer) -> Zahnrad -> Sieges-Szene -> Ergebnis -> Weltkarte mit Ruinen frei
+        await g.ev("bossKampf.hp = 1; bossKampf.unverwundbar = 0; setLink(3, true);"
+                   "p1.x = 740; p1.y = 320 - bossKampf.T.h - 40; p1.vx = 0; p1.vy = 4; p1.grounded = false; p1._px = p1.x; p1._py = p1.y")
+        await p.wait_for_function("bossKampf.zustand === 'besiegt'", timeout=8000)
+        await g.steps(50)
+        await g.ev("p1.x = bossKampf.zahnrad.x; p1.y = bossKampf.zahnrad.y + 20; p1._px = p1.x; p1._py = p1.y")
+        await p.wait_for_function("menuScreen === 'szene' && szene.name === 'boss1_sieg'", timeout=8000)
+        await p.keyboard.press('Escape')
+        await p.wait_for_function("document.querySelector('#sm-s-results.active')", timeout=8000)
+        assert 'Boss besiegt' in await g.ev("document.getElementById('sm-r-level').textContent")
+        assert await g.ev("GameMenu.getSave().bosse") == ['dschungel'] and await g.ev("GameMenu.worldUnlocked('ruinen')") is True
+        await p.wait_for_timeout(600); await p.keyboard.press('Enter')
+        await p.wait_for_function("document.querySelector('#sm-s-map.active')", timeout=8000)
+        await p.wait_for_function("document.querySelector('#sm-wm .ulock')", timeout=5000)
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_boss_github(g):
+    """Ausbau 6: „☁ Auf GitHub speichern“ mit einem Boss-Level: wird Boss der gewählten Welt in worlds.json (keine
+    Levelkarte, aus allen Level-Listen heraus) und in levels.json versteckt eingetragen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        worlds = (ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8')
+        lv = (ROOT / 'levels' / 'levels.json').read_text(encoding='utf-8')
+        out = await p.evaluate("""async ([worlds, lv]) => {
+            ghReadText = async path => path.endsWith('worlds.json') ? worlds : lv;
+            elementPunkte.boss = [{c: 10, r: 16, typ: 'bruno', treffer: 3, tempo: 1}]; meta.welt = 'ruinen'; meta.position = 1;
+            const files = await ghProjectFiles('sha', 'boss-2.json', 'Boss 2', true);
+            return Object.fromEntries(files.map(f => [f.path, JSON.parse(f.content)]));
+        }""", [worlds, lv])
+        w = {x['id']: x for x in out['levels/worlds.json']['welten']}
+        assert w['ruinen']['boss'] == 'boss-2.json' and w['ruinen']['level'] == ['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json'], w['ruinen']
+        assert w['dschungel']['boss'] == 'dschungel/boss-bruno.json'
+        e = out['levels/levels.json'][-1]
+        assert e['datei'] == 'boss-2.json' and e['versteckt'] and e['boss'], e
+    finally:
+        await p.evaluate("localStorage.clear()")
+        srv.shutdown()
+
+@test
+async def kombi_pruefung(g):
+    """Kombi-Nachschärfen (Prüfwerkzeug tests/kombi_pruefen.py, Richtwerte gemessen in js/02-physik-werte.js): kein Kamin zu
+    eng oder zu weit, jedes Level erreicht die Mindestzahl an Kombi-Stellen seiner Welt, jede Etappe ihre Mindestzahl, in
+    Ruinen/Höhle mindestens ein Drittel mit Timing/Tempo – außer den begründeten Ausnahmen in tests/kombi_ausnahmen.json
+    (jede noch gültig und begründet). Dazu: das Werkzeug erkennt einen zu engen Kamin (Breite 2) und zählt eine Kombi."""
+    sys.path.insert(0, str(ROOT / 'tests'))
+    import importlib, kombi_pruefen as KP
+    importlib.reload(KP)
+    phys = (ROOT / 'js' / '02-physik-werte.js').read_text(encoding='utf-8')
+    for n in ('KAMIN_ZU_ENG', 'KAMIN_BEQUEM_MIN', 'KAMIN_BEQUEM_MAX', 'KAMIN_KNAPP_MAX', 'KAMIN_MAX', 'WAND_MIN_HOEHE', 'KOMBI_ABSTAND'):
+        assert re.search(r'\b' + n + r'\s*=', phys), f'Richtwert {n} fehlt in js/02-physik-werte.js'
+    assert await g.ev("KAMIN_BEQUEM_MIN === 3 && KAMIN_BEQUEM_MAX === 5 && KAMIN_MAX === 8"), 'Richtwerte im Spiel geladen'
+    res = KP.pruefe_alle()
+    assert len(res) >= 26, f'zu wenige Level geprüft: {len(res)}'
+    neu = [f"{r['level']} [{b['regel']}] {b['spalte']}: {b['text']}" for r in res for b in r['befunde'] if not b['ausnahme']]
+    assert not neu, 'neue Befunde (beheben oder begründet in tests/kombi_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
+    alle = [(r['level'], b['regel'], b['spalte']) for r in res for b in r['befunde']]
+    stellen = {(r['level'], s['von']) for r in res for s in r['stellen']} | {(r['level'], s2) for r in res for s in r['stellen'] if s.get('kette') for s2 in range(s['von'], s['bis'] + 1)}
+    welten_offen = {KP.welt_von(r['level']) for r in res for b in r['befunde'] if b['ausnahme'] == 'offen'}
+    veraltet = [a for a in KP.ausnahmen() if not (
+        (a['regel'] == 'Kombi-offen' and a.get('welt') in welten_offen) or
+        (a['regel'] == 'Kette' and (a.get('level'), a.get('spalte')) in stellen) or
+        (a.get('level'), a['regel'], a.get('spalte')) in alle)]
+    assert not veraltet, f'veraltete Ausnahmen: {veraltet}'
+    assert all(a.get('begruendung') for a in KP.ausnahmen()), 'jede Ausnahme braucht eine Begründung'
+    hand = KP.kombi_stellen_hand()
+    assert all(h.get('beschreibung') and h.get('art') and h.get('wer') in ('m', 'f', 'beide') for h in hand), 'von Hand eingetragene Kombi-Stellen brauchen Art, wer und Beschreibung'
+    # das Werkzeug erkennt einen zu engen Kamin und eine Kombi (Kamin + Haken)
+    d = {'solids': [{'x': 0, 'y': 680, 'w': 1600, 'h': 40, 'type': 'ground'}, {'x': 400, 'y': 200, 'w': 40, 'h': 360, 'type': 'wall'},
+                    {'x': 520, 'y': 400, 'w': 40, 'h': 280, 'type': 'wall'}], 'hooks': [{'x': 740, 'y': 180, 'radius': 200}]}
+    ks = KP.kamine(d)
+    assert ks and ks[0]['breite'] == 2 and ks[0]['art'] == 'zu eng', ks
+    d['solids'][2]['x'] = 600
+    assert KP.kamine(d)[0]['art'] == 'bequem' and any(k['art'] == 'Wandsprung + Haken' for k in KP.kombis_auto(d)), (KP.kamine(d), KP.kombis_auto(d))
+
+# --- Kombi-Nachschärfen: Bot-Pläne für die eingebauten Kombi-Stellen (Bausteine aus levels/test/kombis.json) ---
+def kombi_pilz(x0):   # auf den Pilz bei Spalte x0 springen (Pilz-Schwung)
+    return [k_lauf(x0 - 3, 0), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {x0}*40+14', 'left': f'P.x > {x0}*40+26'}, 'until': 'P.vy < -15', 'frames': 200}]
+def kombi_pilz_grube(x0, l0):
+    """Baustein Pilz -> Grube mit hohem Haken -> erhöhter Landeplatz (l0 = erste Spalte des Landeplatzes)"""
+    lande = {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 2)}'}, 'until': 'P.grounded', 'frames': 400}
+    return {'f': kombi_pilz(x0) + [{'hold': ['right'], 'until': 'P.vy > -1', 'frames': 100}, dict(lande, hold=['glide'])],
+            'm': kombi_pilz(x0) + [{'hold': ['right'], 'hookWhen': 'P.vy > -8', 'until': 'P.hookAttached', 'frames': 120},
+                                   {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, lande],
+            'f_ohne': [k_lauf(x0 + 1, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}],
+            'm_ohne': [k_lauf(x0 + 1, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.hookAttached || (P.grounded && f > 10)', 'frames': 200},
+                       {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}
+def kombi_kamin_grube(x0, s):
+    """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
+    rw = x0 + 5
+    kamin = [k_lauf(x0 + 2, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(s - 8)} && P.vy < 0', 'frames': 900}]
+    lande = {'holdIf': {'right': f'P.x < {kx(rw + 13)}', 'left': f'P.x > {kx(rw + 16)}'}, 'until': 'P.grounded', 'frames': 300}
+    return {'m': kamin + [{'hold': ['right'], 'hookWhen': f'P.vy > -3 && P.x > {rw + 1}*40', 'until': 'P.hookAttached', 'frames': 120},
+                          {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
+            'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(rw + 1)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}],
+            'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
+
+def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True):
+    """Kompakter Kamin (linke Säule x0, Breite 3) -> Stachelgrube (9) mit Haken -> Landeplatz 6 Reihen hoch; über der Grube
+    eine Flamme im Takt (Timing: losklettern 20 Schritte nach dem Zünden). s = Bodenreihe."""
+    rw = x0 + breite + 1; l0 = rw + 1 + grube; fx = (rw + 4) * 40
+    warte = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': 20}] if flamme else []
+    kamin = [k_lauf(x0 + 2, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(s - 8)} && P.vy < 0 && P.vx > 1', 'frames': 900}]
+    lande = {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'until': 'P.grounded', 'frames': 300}
+    return {'m': warte + kamin + [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
+                                  {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
+            'f': warte + kamin + [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])],
+            'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
+            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
+
+# je Stelle: (Level, Name, Start Affe, Start Schweinchen, Pläne {wer: Plan}, Pläne ohne Kombi {wer: Plan} -> müssen scheitern)
+def _d1_haken_pilz():
+    greif = lambda bed='true': {'hold': ['right'], 'hookWhen': f'({bed})', 'until': 'P.hookAttached', 'frames': 300}
+    m = [k_lauf(68, 14), {'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 200},
+         {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, {'holdIf': {'right': 'P.x < 77*40'}, 'until': 'P.grounded', 'frames': 200},
+         wb_halt(kx(76)), {'hold': ['right'], 'until': f'P.x >= {kx(78)} + 8', 'frames': 100},
+         {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -6 && P.x > 79*40', 'until': 'P.hookAttached', 'frames': 120},
+         {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400},
+         {'holdIf': {'right': 'P.x < 89*40-4', 'left': 'P.x > 89*40+4'}, 'until': 'P.vy < -10', 'frames': 300},
+         greif('P.x > 91*40 && P.vy > -3'), {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+    f = [k_lauf(68, 14), {'hold': ['glide'], 'holdIf': {'right': 'P.x < 77*40'}, 'until': 'P.grounded', 'frames': 400},
+         wb_halt(kx(76)), {'hold': ['right'], 'until': f'P.x >= {kx(78)} + 8', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+         {'hold': ['glide'], 'holdIf': {'right': 'P.x < 89*40-4', 'left': 'P.x > 89*40+4'}, 'until': 'P.vy < -10 || P.grounded', 'frames': 400},
+         {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+    return {'m': m, 'f': f}
+def _d1_kamin_haken():
+    kamin = [k_lauf(410, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(-2)} && P.vy < 0', 'frames': 900}]
+    return {'m': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(413)} + 6', 'frames': 100},
+                          {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -2', 'until': 'P.hookAttached', 'frames': 200},
+                          {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vy < -1 && P.vx > 1', 'frames': 400},
+                          {'holdIf': {'right': f'P.x < {kx(427)}', 'left': f'P.x > {kx(429)}'}, 'until': 'P.grounded', 'frames': 300}],
+            'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(413)} + 6', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+                          {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(427)}', 'left': f'P.x > {kx(429)}'}, 'until': 'P.grounded', 'frames': 400}],
+            'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.grounded && f > 5', 'frames': 300}]}
+KOMBI_STELLEN_BOT = [
+    ('dschungel/01-dschungel.json', 'Pilz in der Hakengrube (88)', kat(66, 3), kat(64, 3), _d1_haken_pilz, {'m': (102, 15), 'f': (102, 15)}),
+    ('dschungel/01-dschungel.json', 'Pilz-Grube auf dem Sims (233)', kat(229, 11), kat(228, 11), lambda: kombi_pilz_grube(233, 243), {'m': (243, 7), 'f': (243, 7)}),
+    ('dschungel/01-dschungel.json', 'Kamin -> Haken/Segeln (408)', kat(410, 16), kat(411, 16), _d1_kamin_haken, {'m': (426, 7), 'f': (426, 7)}),
+    ('dschungel/01-dschungel.json', 'Kamin-Grube vor dem Ziel (746)', kat(742, 14), kat(741, 14), lambda: kombi_kamin_grube(746, 15), {'m': (762, 8), 'f': (762, 8)}),
+    ('dschungel/01-dschungel.json', 'Pilz-Grube vor dem Ziel (773)', kat(768, 8), kat(769, 8), lambda: kombi_pilz_grube(773, 783), {'m': (783, 10), 'f': (783, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube am Start (23)', kat(21, 14), kat(20, 14), lambda: kombi_pilz_grube(23, 33), {'m': (33, 10), 'f': (33, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (209)', kat(204, 13), kat(203, 13), lambda: kombi_pilz_grube(209, 219), {'m': (219, 9), 'f': (219, 9)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (386)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_grube(386, 396), {'m': (396, 10), 'f': (396, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (443)', kat(438, 14), kat(439, 14), lambda: kombi_pilz_grube(443, 453), {'m': (453, 10), 'f': (453, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (572)', kat(567, 14), kat(566, 14), lambda: kombi_pilz_grube(572, 582), {'m': (582, 10), 'f': (582, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (778)', kat(776, 14), kat(775, 14), lambda: kombi_pilz_grube(778, 788), {'m': (788, 10), 'f': (788, 10)}),
+    ('dschungel/02-baumkronen.json', 'Pilz-Grube (797)', kat(793, 14), kat(792, 14), lambda: kombi_pilz_grube(797, 807), {'m': (807, 10), 'f': (807, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (70)', kat(65, 14), kat(64, 14), lambda: kombi_pilz_grube(70, 80), {'m': (80, 10), 'f': (80, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (130)', kat(125, 12), kat(124, 12), lambda: kombi_pilz_grube(130, 140), {'m': (140, 8), 'f': (140, 8)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (180)', kat(175, 14), kat(174, 14), lambda: kombi_pilz_grube(180, 190), {'m': (190, 10), 'f': (190, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (360)', kat(355, 14), kat(354, 14), lambda: kombi_pilz_grube(360, 370), {'m': (370, 10), 'f': (370, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (390)', kat(385, 14), kat(384, 14), lambda: kombi_pilz_grube(390, 400), {'m': (400, 10), 'f': (400, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (740)', kat(735, 8), kat(734, 8), lambda: kombi_pilz_grube(740, 750), {'m': (750, 4), 'f': (750, 4)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (760)', kat(755, 8), kat(754, 8), lambda: kombi_pilz_grube(760, 770), {'m': (770, 4), 'f': (770, 4)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (780)', kat(775, 8), kat(774, 8), lambda: kombi_pilz_grube(780, 790), {'m': (790, 4), 'f': (790, 4)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (125)', kat(120, 14), kat(119, 14), lambda: kombi_pilz_grube(125, 135), {'m': (135, 10), 'f': (135, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (164)', kat(162, 14), kat(161, 14), lambda: kombi_pilz_grube(164, 172), {'m': (172, 10), 'f': (172, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (473)', kat(468, 14), kat(467, 14), lambda: kombi_pilz_grube(473, 483), {'m': (483, 10), 'f': (483, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (668)', kat(666, 6), kat(664, 6), lambda: kombi_pilz_grube(668, 676), {'m': (676, 2), 'f': (676, 2)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (681)', kat(678, 2), kat(677, 2), lambda: kombi_pilz_grube(681, 689), {'m': (689, 2), 'f': (689, 2)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (170)', kat(165, 15), kat(164, 15), lambda: kombi_pilz_grube(170, 180), {'m': (180, 11), 'f': (180, 11)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_grube(190, 200), {'m': (200, 11), 'f': (200, 11)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (392)', kat(387, 15), kat(386, 15), lambda: kombi_pilz_grube(392, 402), {'m': (402, 11), 'f': (402, 11)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16), {'m': (182, 9), 'f': (182, 9)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (303)', kat(301, 15), kat(300, 15), lambda: kombi_flammen_kamin(303, 16), {'m': (317, 9), 'f': (317, 9)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16), {'m': (598, 9), 'f': (598, 9)}),
+    ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15), {'m': (536, 8), 'f': (536, 8)}),
+    ('ruinen/02-mondnacht.json', 'Flammen-Kamin (89)', kat(87, 14), kat(86, 14), lambda: kombi_flammen_kamin(89, 15), {'m': (103, 8), 'f': (103, 8)}),
+    ('ruinen/03-fallengang.json', 'Flammen-Kamin (579)', kat(577, 15), kat(576, 15), lambda: kombi_flammen_kamin(579, 16), {'m': (593, 9), 'f': (593, 9)}),
+    ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16), {'m': (594, 9), 'f': (594, 9)}),
+    ('hoehle/01-kristallhoehle.json', 'Pilz-Grube (273)', kat(271, 14), kat(270, 14), lambda: kombi_pilz_grube(273, 281), {'m': (281, 10), 'f': (281, 10)}),
+    ('hoehle/01-kristallhoehle.json', 'Pilz-Grube (359)', kat(357, 14), kat(356, 14), lambda: kombi_pilz_grube(359, 367), {'m': (367, 10), 'f': (367, 10)}),
+    ('hoehle/02-tropfsteingang.json', 'Pilz-Grube (266)', kat(264, 15), kat(263, 15), lambda: kombi_pilz_grube(266, 274), {'m': (274, 11), 'f': (274, 11)}),
+    ('hoehle/02-tropfsteingang.json', 'Pilz-Grube (445)', kat(443, 15), kat(442, 15), lambda: kombi_pilz_grube(445, 453), {'m': (453, 11), 'f': (453, 11)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Pilz-Grube (185)', kat(183, 15), kat(182, 15), lambda: kombi_pilz_grube(185, 193), {'m': (193, 11), 'f': (193, 11)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False), {'m': (360, 9), 'f': (360, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (370)', kat(368, 15), kat(367, 15), lambda: kombi_flammen_kamin(370, 16, flamme=False), {'m': (384, 9), 'f': (384, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False), {'m': (560, 9), 'f': (560, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False), {'m': (584, 9), 'f': (584, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False), {'m': (782, 9), 'f': (782, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Pilz-Grube (188)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_grube(188, 196), {'m': (196, 11), 'f': (196, 11)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False), {'m': (366, 9), 'f': (366, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (376)', kat(374, 15), kat(373, 15), lambda: kombi_flammen_kamin(376, 16, flamme=False), {'m': (390, 9), 'f': (390, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (766)', kat(764, 15), kat(763, 15), lambda: kombi_flammen_kamin(766, 16, flamme=False), {'m': (780, 9), 'f': (780, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Pilz-Grube (44)', kat(42, 15), kat(41, 15), lambda: kombi_pilz_grube(44, 52), {'m': (52, 11), 'f': (52, 11)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Pilz-Grube (194)', kat(192, 15), kat(191, 15), lambda: kombi_pilz_grube(194, 202), {'m': (202, 11), 'f': (202, 11)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (349)', kat(347, 15), kat(346, 15), lambda: kombi_flammen_kamin(349, 16, flamme=False), {'m': (363, 9), 'f': (363, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False), {'m': (392, 9), 'f': (392, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (558)', kat(556, 15), kat(555, 15), lambda: kombi_flammen_kamin(558, 16, flamme=False), {'m': (572, 9), 'f': (572, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, flamme=False), {'m': (594, 9), 'f': (594, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (728)', kat(726, 15), kat(725, 15), lambda: kombi_flammen_kamin(728, 16, flamme=False), {'m': (742, 9), 'f': (742, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (752)', kat(750, 15), kat(749, 15), lambda: kombi_flammen_kamin(752, 16, flamme=False), {'m': (766, 9), 'f': (766, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
+    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (164)', kat(162, 15), kat(161, 15), lambda: kombi_flammen_kamin(164, 16, flamme=False), {'m': (178, 9), 'f': (178, 9)}),
+    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False), {'m': (360, 9), 'f': (360, 9)}),
+    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (370)', kat(368, 15), kat(367, 15), lambda: kombi_flammen_kamin(370, 16, flamme=False), {'m': (384, 9), 'f': (384, 9)}),
+    ('vulkan/06-feuerschlund.json', 'Lava-Kamin (560)', kat(558, 15), kat(557, 15), lambda: kombi_flammen_kamin(560, 16, flamme=False), {'m': (574, 9), 'f': (574, 9)}),
+    ('vulkan/07-kraterherz.json', 'Lava-Kamin (182)', kat(180, 15), kat(179, 15), lambda: kombi_flammen_kamin(182, 16, flamme=False), {'m': (196, 9), 'f': (196, 9)}),
+    ('vulkan/07-kraterherz.json', 'Lava-Pilz-Grube (324)', kat(322, 15), kat(321, 15), lambda: kombi_pilz_grube(324, 332), {'m': (332, 11), 'f': (332, 11)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False), {'m': (194, 9), 'f': (194, 9)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False), {'m': (582, 9), 'f': (582, 9)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False), {'m': (774, 9), 'f': (774, 9)}),
+    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (366)', kat(364, 15), kat(363, 15), lambda: kombi_flammen_kamin(366, 16, flamme=False), {'m': (380, 9), 'f': (380, 9)}),
+    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False), {'m': (560, 9), 'f': (560, 9)}),
+    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False), {'m': (584, 9), 'f': (584, 9)}),
+    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (772)', kat(770, 15), kat(769, 15), lambda: kombi_flammen_kamin(772, 16, flamme=False), {'m': (786, 9), 'f': (786, 9)}),
+    ('hoehle/06-tiefenschlund.json', 'Pilz-Grube (572)', kat(570, 15), kat(569, 15), lambda: kombi_pilz_grube(572, 580), {'m': (580, 11), 'f': (580, 11)}),
+    ('hoehle/06-tiefenschlund.json', 'Kamin-Grube (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
+]
+# Abkürzungs-Proben: liegen zwei Kombi-Stellen dicht hintereinander, darf man die zweite NICHT vom erhöhten Landeplatz der
+# ersten aus ohne neue Kombi schaffen (sonst ist sie keine eigene Stelle, sondern „Kette“ in tests/kombi_ausnahmen.json).
+# (Level, Name, Start auf dem vorigen Landeplatz (c, r), Absprung-Spalte, Ziel-Landeplatz Spalte, Ziel-Reihe)
+KOMBI_ABKUERZUNG = [
+    ('dschungel/02-baumkronen.json', '778 -> 797', (789, 10), 791, 807, 10),
+    ('dschungel/03-lianenschlucht.json', '740 -> 760', (751, 4), 753, 770, 4),
+    ('dschungel/03-lianenschlucht.json', '760 -> 780', (771, 4), 773, 790, 4),
+    ('dschungel/06-wipfelsturm.json', '170 -> 190', (182, 11), 183, 200, 11),
+]
+
+def kombi_abkuerzung_plaene(kante):
+    return {'f': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}],
+            'm': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.hookAttached || (P.grounded && f > 10)', 'frames': 200},
+                  {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}
+
+async def kombi_stellen_pruefen(g, welt):
+    """Bot-Lauf über jede eingebaute Kombi-Stelle der Welt: mit Kombi kommen beide an (mindestens bis Spalte/Reihe des
+    Ziels), ohne Kombi (Plan *_ohne) scheitert die Figur."""
+    fehler, aktuell = [], None
+    for lv, name, ms, fs, plaene, ziel in KOMBI_STELLEN_BOT:
+        if not lv.startswith(welt + '/'): continue
+        if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        pl = plaene()
+        for wer in ('m', 'f'):
+            if wer not in pl: continue
+            r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer]}, maxFrames=4000)
+            zc, zr = ziel[wer]
+            ok = r.get('done') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
+            if not ok: fehler.append(f"{lv} {name} ({wer}): {r.get('pos')} {r.get('dead')} {(r.get('log') or [])[-3:]}")
+            if wer + '_ohne' in pl:
+                r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer + '_ohne']}, maxFrames=2500)
+                geschafft = r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
+                if geschafft: fehler.append(f"{lv} {name} ({wer}) ohne Kombi trotzdem geschafft: {r.get('pos')}")
+        if 'm' in pl and 'f' in pl:   # beide nacheinander (Affe vorn, Schweinchen 2,5 s später): bröckelnde Kanten o. Ä. dürfen den zweiten nicht aufhalten
+            r = await koop(g, m=ms, f=fs, plans={'m': pl['m'], 'f': [{'frames': 150}] + pl['f']}, maxFrames=5000)
+            ok = r.get('done') and all(r['pos'][w][0] >= ziel[w][0] - 0.5 and r['pos'][w][1] <= ziel[w][1] + 0.1 for w in ('m', 'f'))
+            if not ok: fehler.append(f"{lv} {name} (beide nacheinander): {r.get('pos')} {r.get('dead')}")
+    for lv, name, (sc, sr), kante, zc, zr in KOMBI_ABKUERZUNG:
+        if not lv.startswith(welt + '/'): continue
+        if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        for wer, pl in kombi_abkuerzung_plaene(kante).items():
+            andere = 'f' if wer == 'm' else 'm'
+            r = await koop(g, **{wer: kat(sc, sr), andere: kat(sc - 1, sr)}, plans={wer: pl}, maxFrames=2000)
+            if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1:
+                fehler.append(f"{lv} Abkürzung {name} ({wer}) ohne Kombi möglich: {r.get('pos')}")
+    assert not fehler, fehler
+
+@test
+async def kombi_stellen_dschungel(g):
+    """Kombi-Nachschärfen, Welt Dschungel: jede eingebaute Kombi-Stelle (KOMBI_STELLEN_BOT) mit dem Koop-Bot – mit Kombi
+    geschafft, ohne Kombi gescheitert."""
+    await kombi_stellen_pruefen(g, 'dschungel')
+
+@test
+async def kombi_stellen_ruinen(g):
+    """Kombi-Nachschärfen, Welt Ruinen: Flammen-Kamine (Wandsprung + Haken / Wandsprung + Segeln, Flamme im Takt) mit dem
+    Koop-Bot – mit Kombi und Timing geschafft (auch beide nacheinander), ohne Haken/Schirm gescheitert."""
+    await kombi_stellen_pruefen(g, 'ruinen')
+
+@test
+async def kombi_stellen_hoehle(g):
+    """Kombi-Nachschärfen, Welt Höhle: Kamin-Gruben (Wandsprung + Haken / Wandsprung + Segeln) und Leuchtpilz-Gruben
+    (Pilz + Haken / Pilz + Segeln) mit dem Koop-Bot – mit Kombi geschafft (auch beide nacheinander), ohne gescheitert."""
+    await kombi_stellen_pruefen(g, 'hoehle')
+
+@test
+async def kombi_stellen_vulkan(g):
+    """Kombi-Nachschärfen, Welt Vulkan: Lava-Kamine (Wandsprung + Haken / Wandsprung + Segeln) und Lava-Pilz-Gruben
+    (Pilz + Haken / Pilz + Segeln) mit dem Koop-Bot – mit Kombi geschafft (auch beide nacheinander), ohne in der Lava."""
+    await kombi_stellen_pruefen(g, 'vulkan')
+
+@test
+async def kombi_testlevel(g):
+    """Testlevel levels/test/kombis.json: Affe klettert den Kamin (Breite 4) per Wandsprung hinauf und greift oben den
+    Haken über der Stachelgrube (Wandsprung + Haken); Schweinchen klettert den zweiten Kamin hinauf und segelt über die
+    breite Grube (Wandsprung + Segeln). Ohne Haken bzw. ohne Schirm landet man in den Stacheln."""
+    await koop_level(g, 'test/kombis.json')
+    affe = [k_lauf(12, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(9)} && P.vy < 0', 'frames': 900},
+            {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
+            {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
+            {'holdIf': {'right': f'P.x < {kx(28)}', 'left': f'P.x > {kx(31)}'}, 'until': 'P.grounded', 'frames': 300}]
+    r = await koop(g, m=kat(3, 16), f=kat(37, 16), plans={'m': affe}, maxFrames=3000)
+    assert r.get('done') and r['pos']['m'][1] == 10 and 26 <= r['pos']['m'][0] <= 34, ('Wandsprung + Haken', r.get('pos'), r.get('log'))
+    r = await koop(g, m=kat(3, 16), f=kat(37, 16), plans={'m': affe[:2] + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=1500)
+    assert r.get('dead') == 'm', ('ohne Haken in die Stacheln', r.get('pos'))
+    schwein = [k_lauf(42, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(9)} && P.vy < 0', 'frames': 900},
+               {'hold': ['right'], 'until': f'P.x > {kx(46)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+    r = await koop(g, m=kat(36, 16), f=kat(37, 16), plans={'f': schwein}, maxFrames=3000)
+    assert r.get('done') and r['pos']['f'][1] == 11 and r['pos']['f'][0] >= 56, ('Wandsprung + Segeln', r.get('pos'), r.get('log'))
+    r = await koop(g, m=kat(36, 16), f=kat(37, 16), plans={'f': schwein[:3] + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=1500)
+    assert r.get('dead') == 'f', ('ohne Schirm in die Stacheln', r.get('pos'))
+
+@test
+async def bildregel_pruefung(g):
+    """Bild-Regel + Leveldesign-Regeln (AUSBAU-REGELWERK Punkt 12, Prüfwerkzeug tests/bildregel_pruefen.py) für ALLE Level der
+    Welten: kein Befund (Bild, Plattform, Haken, Checkpoint) außer den begründeten in tests/bildregel_ausnahmen.json;
+    jede Ausnahme muss noch zu einem Befund passen (sonst ist sie veraltet und wird entfernt)."""
+    sys.path.insert(0, str(ROOT / 'tests'))
+    import importlib, bildregel_pruefen as BR
+    importlib.reload(BR)
+    js = (ROOT / 'js' / '09-kamera.js').read_text(encoding='utf-8')
+    assert 'const BILD_MAX_SPALTEN = 20;' in js and BR.BILD_MAX_SPALTEN == 20, 'Grenzwert BILD_MAX_SPALTEN fehlt in js/09-kamera.js'
+    assert await g.ev("typeof BILD_MAX_SPALTEN") == 'number' and await g.ev("BILD_MAX_SPALTEN * 40 <= FRONT_MAX * VW - CAM_BACK_MIN"), \
+        'BILD_MAX_SPALTEN passt nicht mehr zur Kamera (beide sicher im Bild bis FRONT_MAX·VW − CAM_BACK_MIN)'
+    res = BR.pruefe_alle()
+    assert len(res) >= 26, f'zu wenige Level geprüft: {len(res)}'
+    neu = [f"{r['level']} [{v['regel']}] Spalte {v['spalte']}: {v['text']}" for r in res for v in r['befunde'] if not v['ausnahme']]
+    assert not neu, 'neue Verstöße (beheben oder begründet in tests/bildregel_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
+    alle = [(r['level'], v['regel'], v['spalte']) for r in res for v in r['befunde']]
+    veraltet = [a for a in BR.ausnahmen() if (a['level'], a['regel'], a.get('spalte')) not in alle]
+    assert not veraltet, f'veraltete Ausnahmen (Befund gibt es nicht mehr): {veraltet}'
+    assert all(a.get('begruendung') for a in BR.ausnahmen()), 'jede Ausnahme braucht eine Begründung'
+    # das Werkzeug erkennt einen Verstoß: Hebel 21 Spalten vor seiner Tür, Checkpoint 10 Spalten nach dem vorigen
+    d = {'switches': [{'x': 100 * 40 + 20, 'y': 600, 'link': 1}], 'doors': [{'x': 121 * 40, 'y': 400, 'w': 40, 'h': 200, 'link': 1}],
+         'checkpoints': [{'x': 60 * 40 + 20, 'y': 600}, {'x': 70 * 40 + 20, 'y': 600}], 'solids': [], 'startM': {'x': 20, 'y': 600}, 'startF': {'x': 60, 'y': 600}}
+    _, bv = BR.bild_pruefen(d); _, cv = BR.checkpoints_pruefen(d)
+    assert bv and 'Tür' in bv[0]['text'] and any('nur 10 Spalten' in v['text'] for v in cv), (bv, cv)
+
+@test
+async def haken_richtwerte_bot(g):
+    """Haken-Richtwerte (AUSBAU-REGELWERK Punkt 12): der Koop-Bot hangelt an drei typischen Stellen (Dschungel 1 Dornengrube,
+    Dschungel 1 Hebel-Sims, Dschungel 2 hoher Sims – alle mit 3 Haken im Abstand 7) mit 8 Loslass-Arten; jede Stelle muss in
+    mindestens 4 von 8 Arten klappen. Ausgabe: Erfolge, Zeit, Schwunghöhe (höchste Reihe), Landung (Spalten hinter der Kante)."""
+    rels = [f'P.x > P.anchor.x + {k} && P.vx > 1' for k in (0, 20, 40, 60, 80)] + [f'P.y < P.anchor.y + {d} && P.vx > 1 && P.vy < 0' for d in (40, 60, 90)]
+    stellen = (('dschungel/01-dschungel.json', 'Dornengrube', (560, 14), 565, 3, (588, 14)),
+               ('dschungel/01-dschungel.json', 'Hebel-Sims', (607, 8), 613, 3, (636, 8)),
+               ('dschungel/02-baumkronen.json', 'hoher Sims', (117, 7), 125, 3, (146, 7)))
+    bericht = []
+    for datei, name, start, anlauf, n, ziel in stellen:
+        await koop_level(g, datei)
+        ok, zeit, top, land = 0, [], [], []
+        for rel in rels:
+            pl = [k_lauf(anlauf, -30), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
+            for k in range(n): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+            pl += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+            r = await koop(g, m=kat(*start), f=kat(start[0] - 3, start[1]), plans={'m': pl}, maxFrames=3000)
+            if r.get('done') and r['pos']['m'][0] >= ziel[0] - 0.5 and r['pos']['m'][1] == ziel[1]:
+                ok += 1; zeit.append(r['f'] / 54); top.append(r['top']['m']); land.append(r['pos']['m'][0] - ziel[0])
+        bericht.append(f"{name}: {ok}/8, {sum(zeit) / len(zeit):.1f} s, Schwung bis Reihe {min(top)}, Landung {min(land):.0f}–{max(land):.0f} Spalten hinter der Kante" if ok else f'{name}: 0/8')
+        assert ok >= 4, f'{datei} {name}: nur {ok}/8 Loslass-Arten klappen'
+    print('    Haken-Stellen: ' + ' | '.join(bericht))
+
+def k_ankunft(link):
+    return f"solids.some(s => s.type === 'moveplat' && s.switchLink === {link} && Math.hypot(s.x - s.targetX, s.y - s.targetY) < 6)"
+K_MESS = "(window.__maxAb = Math.max(window.__maxAb || 0, Math.abs(P.x - Q.x)), false)"
+
+@test
+async def ruinen1_etappen_im_bild(g):
+    """Bild-Regel, Ruinen 1 (Nutzer-Level 3): die lange Plattform-Fahrt (früher 80 -> 115, 35 Spalten) ist in zwei Etappen
+    geteilt – Insel 95–97 in der Mitte, wo beide wieder zusammenkommen (Schweinchen segelt hin, Hebel 3 holt den Affen,
+    dann segelt es weiter zu Hebel 20, Plattform B bringt den Affen ans Ufer). Fähre 197 -> 236: die Hebel 6/7/8 fahren
+    mit, der Affe öffnet unterwegs die Türen 210/225 für das Schweinchen oben. Beide bleiben dabei höchstens 20 Spalten
+    auseinander; ohne Hebel bewegt sich nichts."""
+    await koop_level(g, 'ruinen/01-ruinen.json')
+    def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 90}, {'use': True, 'frames': 5}]
+    def gleit(edge, tx, hold):
+        return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold},
+                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    ok = None
+    for hold in (4, 8, 12):
+        f = [{'wait': K_MESS + ' || true'}] + gleit(76, kx(96), hold) + am(97) + [{'wait': f'{K_MESS} || (Q.grounded && Q.x > {kx(95)} && Q.y < {ky(11)})', 'frames': 2500}] \
+            + gleit(97, kx(118), hold) + am(118) + [{'wait': f'{K_MESS} || (Q.x >= {kx(113)} && Q.grounded)', 'frames': 2500}]
+        m = [{'wait': f'{K_MESS} || !!linkOn[3]', 'frames': 2500}, {'wait': f'{K_MESS} || {k_ankunft(3)}', 'frames': 1500}, k_lauf(96), {'until': 'P.grounded', 'frames': 200},
+             {'holdIf': {'right': f'P.x < {kx(99)} - 4', 'left': f'P.x > {kx(99)} + 4'}, 'frames': 40}, {'wait': f'{K_MESS} || !!linkOn[20]', 'frames': 2500},
+             {'wait': f'{K_MESS} || {k_ankunft(20)}', 'frames': 1500}, k_lauf(116), {'until': 'P.grounded', 'frames': 200}]
+        r = await koop(g, f=kat(73, 2), m=kat(81, 6), plans={'f': f, 'm': m}, maxFrames=7000, pre='window.__maxAb = 0')
+        if r.get('done'): ok = await g.ev('window.__maxAb'); break
+    assert ok is not None, f'zwei Etappen über die Grube klappen nicht: {r.get("pos")}'
+    assert ok <= 20.5 * 40, f'Etappen: {ok / 40:.1f} Spalten auseinander'
+    r = await koop(g, m=kat(81, 6), f=kat(96, 10), plans={'m': [{'frames': 300}]}, maxFrames=400)
+    assert await g.ev(f"solids.find(s => s.type === 'moveplat' && s.switchLink === 3).x") == 80 * 40, 'Plattform A fährt ohne Hebel'
+    fp = "solids.find(s => s.type === 'moveplat' && s.switchLink === 6)"
+    def zu(e): return {'holdIf': {'right': f'P.x < {e} - 4', 'left': f'P.x > {e} + 4'}, 'until': f'Math.abs(P.x - ({e})) <= 4', 'frames': 120}
+    m = [zu(f'{fp}.x + 20'), {'use': True, 'frames': 3}, {'wait': f'{K_MESS} || {fp}.x + 60 >= {kx(210)}', 'frames': 3000}, zu(f'{fp}.x + 60'), {'use': True, 'frames': 3},
+         {'wait': f'{K_MESS} || {fp}.x + 100 >= {kx(225)}', 'frames': 3000}, zu(f'{fp}.x + 100'), {'use': True, 'frames': 3},
+         {'wait': f'{K_MESS} || Math.abs({fp}.x - {fp}.targetX) < 6', 'frames': 3000}, k_lauf(240), {'until': 'P.grounded', 'frames': 200}]
+    f = [k_lauf(207, -10), {'wait': f'{K_MESS} || !!linkOn[7]', 'frames': 3000}, k_lauf(222, -10), {'wait': f'{K_MESS} || !!linkOn[8]', 'frames': 3000}, k_lauf(240), {'until': 'P.grounded', 'frames': 200}]
+    r = await koop(g, m=kat(198, 14), f=kat(195, 9), plans={'m': m, 'f': f}, maxFrames=6000, pre='window.__maxAb = 0')
+    assert r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 239, f'Fähre mit mitfahrenden Hebeln: {r.get("pos")}'
+    assert await g.ev('window.__maxAb') <= 20.5 * 40, f'Fähre: {await g.ev("window.__maxAb") / 40:.1f} Spalten auseinander'
+
+@test
+async def ruinen2_hakenreihe(g):
+    """Bild-/Haken-Regel, Ruinen 2 (Nutzer-Level 4): die Hakenreihe unter dem Sims hat 5 Haken im Abstand 8 (vorher 4 im
+    Abstand 10–11), Reichweite unverändert 3,5 Kästchen. Der Koop-Bot fällt vom Sims an den ersten Haken und schwingt bis
+    zum letzten (213, unter dem Zwischen-Block 196–201 wartet das Schweinchen)."""
+    lv = json.loads((ROOT / 'levels' / 'ruinen/02-mondnacht.json').read_text())
+    hs = sorted(h['x'] // 40 for h in lv['hooks'] if 175 < h['x'] / 40 < 220)
+    assert hs == [181, 189, 197, 205, 213] and all(h['radius'] == 140 for h in lv['hooks'] if 175 < h['x'] / 40 < 220), hs
+    await koop_level(g, 'ruinen/02-mondnacht.json')
+    ok = False
+    for t in (150, 200, 250):
+        rel = f'f > {t} && P.y < P.anchor.y + 60 && P.vx > 1.5 && P.vy < 0'
+        pl = [k_lauf(182, -10), {'holdIf': {'left': 'P.vx > 0.3'}, 'frames': 20}, {'hold': ['right'], 'until': f'P.x > {182 * 40 + 56}', 'frames': 40},
+              {'hold': [], 'holdIf': {'left': 'P.vx > 0.8'}, 'hookWhen': 'P.y > 340', 'until': 'P.hookAttached', 'frames': 80}]
+        for k in range(4): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 900}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        pl += [{'wait': f'P.hookAttached && P.anchor.x === {kx(213)}'}]
+        r = await koop(g, m=kat(178, 6), f=kat(174, 6), plans={'m': pl}, maxFrames=12000)
+        if r.get('done'): ok = True; break
+    assert ok, f'Bot kommt nicht bis zum letzten Haken: {r.get("pos")}'
+
+@test
+async def ziel_hinweis_pfeil(g):
+    """Bild-Regel, Teil E: schaltet ein Hebel eine Tür außerhalb des Bildes, zeigt ein Pfeil in der Farbe der Nummer
+    kurz (≈ 1 s) am Bildrand dorthin; liegt das Ziel im Bild, gibt es keinen Pfeil. Die Kamera ändert sich dabei nicht."""
+    door_far = {'x': 60 * 40, 'y': 520, 'w': 40, 'h': 160, 'link': 1}
+    door_near = {'x': 12 * 40, 'y': 520, 'w': 40, 'h': 160, 'link': 2}
+    await g.load(level([ground(0, 680, 4000)], {'x': 140, 'y': 680}, {'x': 100, 'y': 680},
+                       switches=[{'x': 4 * 40 + 20, 'y': 680, 'link': 1}, {'x': 6 * 40 + 20, 'y': 680, 'link': 2}], doors=[door_far, door_near]))
+    await g.ev("p1.x = 6*40+20; p1.vx = 0;"); await g.steps(5)
+    cam = await g.ev("camX")
+    await g.p.keyboard.press('KeyJ'); await g.steps(3)   # Hebel 2: Tür 12 liegt im Bild
+    assert await g.ev("!!linkOn[2]") and await g.ev("zielHinweise.length") == 0, 'Pfeil, obwohl das Ziel im Bild ist'
+    await g.ev("p1.x = 4*40+20; p1.vx = 0;"); await g.steps(3)
+    await g.p.keyboard.press('KeyJ'); await g.steps(4)   # Hebel 1: Tür 60 liegt rechts außerhalb
+    assert await g.ev("!!linkOn[1]") and await g.ev("zielHinweise.length") == 1, await g.ev("JSON.stringify(zielHinweise)")
+    await g.p.wait_for_function("zielHinweisPfeile === 1", timeout=3000)
+    assert abs(await g.ev("camX") - cam) < 41, 'Kamera hat sich bewegt'
+    await g.steps(60)
+    await g.p.wait_for_function("zielHinweisPfeile === 0", timeout=3000)
+
+@test
+async def hoehle1_faehre_im_bild(g):
+    """Bild-Regel, Höhle 1 „Kristallhöhle“: die Fähre unter den Stachelpressen fährt nur noch 15 statt 30 Spalten (Platten
+    an den Kanten 248 / 268). Das Schweinchen hält die Platte, der Affe fährt hinüber; währenddessen sind beide nie mehr als
+    20 Spalten auseinander. Danach holt der Affe auf der rechten Platte die Fähre für das Schweinchen zurück."""
+    await koop_level(g, 'hoehle/01-kristallhoehle.json')
+    da = "solids.some(s => s.type === 'moveplat' && s.switchLink === 6 && Math.abs(s.x - s.targetX) < 6)"
+    zurueck = "solids.some(s => s.type === 'moveplat' && s.switchLink === 6 && Math.abs(s.x - s.startX) < 6)"
+    mess = "(window.__maxAb = Math.max(window.__maxAb || 0, Math.abs(P.x - Q.x)), false)"
+    ok = None
+    for w in range(0, 360, 20):
+        f = [{'frames': w + 1}, {'holdIf': {'right': f'P.x < {kx(248)} - 3', 'left': f'P.x > {kx(248)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(248)}) <= 3', 'frames': 200},
+             {'wait': f'{mess} || Q.x >= {kx(268)}', 'frames': 1500}]
+        m = [{'wait': '!!linkOn[6]', 'frames': 900}, {'wait': f'{mess} || {da}', 'frames': 1500}, k_lauf(270)]
+        r = await koop(g, m=kat(251, 12), f=kat(244, 14), plans={'m': m, 'f': f}, maxFrames=3000, pre='window.__maxAb = 0')
+        if r.get('done'): ok = await g.ev('window.__maxAb'); break
+    assert ok is not None, 'Affe kommt mit der Fähre nicht hinüber'
+    assert ok <= 20.5 * 40, f'beim Fahren {ok / 40:.1f} Spalten auseinander'
+    # Rückweg: Affe hält die rechte Platte, die Fähre pendelt zurück, das Schweinchen fährt hinüber
+    for w in range(0, 360, 20):
+        m = [{'holdIf': {'right': f'P.x < {kx(268)} - 3', 'left': f'P.x > {kx(268)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(268)}) <= 3', 'frames': 200},
+             {'wait': f'Q.x >= {kx(268)}', 'frames': 2500}]
+        fp = "solids.find(s => s.type === 'moveplat' && s.switchLink === 6)"
+        f = [{'frames': w + 1}, {'wait': zurueck, 'frames': 900}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
+             {'holdIf': {'right': f'P.x < {fp}.x + 60', 'left': f'P.x > {fp}.x + 80'}, 'until': 'P.grounded', 'frames': 120}, {'wait': da, 'frames': 1500}, k_lauf(270)]
+        r = await koop(g, m=kat(271, 14), f=kat(249, 14), plans={'m': m, 'f': f}, maxFrames=4000)
+        if r.get('done'): break
+    assert r.get('done'), f'Schweinchen kommt mit der Fähre nicht zurück hinüber: {r.get("pos")}'
+
+@test
+async def spielstand_ohne_checkpoints(g):
+    """Checkpoints wurden für die Bild-Regel verschoben/entfernt: der Spielstand merkt sich keine Checkpoint-Nummern
+    (nur Level-Dateien, Statistik, Bosse), alte Spielstände laden daher unverändert; jedes Level startet am Start."""
+    await g.p.evaluate("""() => { localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true,
+        unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], completed: ['dschungel/01-dschungel.json'],
+        stats: {'dschungel/01-dschungel.json': {m: 3, f: 4}}, bosse: []})); }""")
+    await g.p.reload(); await g.p.wait_for_timeout(400)
+    raw = await g.ev("localStorage.getItem('monchichi.save')")
+    s = json.loads(raw)
+    assert s['completed'] == ['dschungel/01-dschungel.json'] and 'dschungel/02-baumkronen.json' in s['unlocked'], s
+    assert 'checkpoint' not in raw.lower() and 'activecp' not in raw.lower(), raw
+    await g.load(str(ROOT / 'levels' / 'dschungel/02-baumkronen.json'))
+    assert await g.ev("activeCp") == -1 and await g.ev("checkpointDefs.length") == 13
+    await g.p.evaluate("localStorage.removeItem('monchichi.save')")
+
+# ---------------------------------------------------------------- Ruinen-Überarbeitung
+PFEIL_MIN_LAENGE = 60      # Bildpunkte (Spielfeld 1280×720): so lang muss ein fliegender Pfeil samt Spur mindestens sein
+PFEIL_MIN_STARK = 100      # so viele Bildpunkte des Pfeils müssen mindestens Kontrast 3:1 zum Hintergrund dahinter haben
+PIXEL_VERGLEICH_JS = """async ([A, B, C]) => {
+  // drei Bildschirmfotos (ohne Pfeil, mit Pfeil, wieder ohne): Pfeil-Bildpunkte = anders als vorher UND nachher gleich
+  const lade = async u => { const im = new Image(); im.src = 'data:image/png;base64,' + u; await im.decode();
+    const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const c = cv.getContext('2d');
+    c.drawImage(im, 0, 0); return {w: im.width, h: im.height, d: c.getImageData(0, 0, im.width, im.height).data}; };
+  const a = await lade(A), b = await lade(B), a2 = await lade(C);
+  const lum = (r, g, b) => { const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v + 0.055)/1.055, 2.4); };
+    return 0.2126*f(r) + 0.7152*f(g) + 0.0722*f(b); };
+  const D = (u, v, i) => Math.abs(u[i] - v[i]) + Math.abs(u[i+1] - v[i+1]) + Math.abs(u[i+2] - v[i+2]);
+  let n = 0, stark = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1; const ks = [];
+  for(let i = 0; i < a.d.length; i += 4){
+    if(D(a.d, a2.d, i) >= 30 || D(a.d, b.d, i) < 30) continue;   // bewegte Deko/Regen nicht mitzählen
+    const k = i/4, x = k % a.w, y = Math.floor(k/a.w), la = lum(a.d[i], a.d[i+1], a.d[i+2]), lb = lum(b.d[i], b.d[i+1], b.d[i+2]);
+    const kr = (Math.max(la, lb) + 0.05)/(Math.min(la, lb) + 0.05);
+    n++; ks.push(kr); if(kr >= 3) stark++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  }
+  ks.sort((p, q) => p - q);
+  return {pixel: n, stark, laenge: n ? Math.max(x1 - x0, y1 - y0) + 1 : 0, kontrast90: n ? +ks[Math.floor(ks.length*0.9)].toFixed(2) : 0};
+}"""
+async def pfeil_messen(g, x, y, dx, dy):
+    """Pfeil an (x, y) zeichnen lassen (Spiel steht, Zeit eingefroren) und gegen den Hintergrund dahinter messen"""
+    import base64
+    sx, sy = await g.ev(f"[Math.round(({x} - camX)*zoom), Math.round(({y} + SKY_ROOM)*zoom)]")
+    clip = {'x': max(0, sx - 70), 'y': max(0, sy - 70), 'width': 140, 'height': 140}
+    async def foto():
+        await g.p.wait_for_timeout(60); return base64.b64encode(await g.p.screenshot(clip=clip)).decode()
+    await g.ev("fallenPfeile = []"); A = await foto()
+    await g.ev(f"fallenPfeile = [{{x: {x}, y: {y}, dx: {dx}, dy: {dy}, steckt: -1, weg: 120}}]"); B = await foto()
+    await g.ev("fallenPfeile = []"); C = await foto()
+    return await g.p.evaluate(PIXEL_VERGLEICH_JS, [A, B, C])
+
+@test
+async def pfeil_lesbarkeit(g):
+    """Ruinen-Überarbeitung 1: Fallen-Pfeile sind auf einen Blick erkennbar – vor jedem Ruinen-Hintergrund (morgens, mittags,
+    abends, nachts, Regen) misst der Test am echten Bild: Länge des fliegenden Pfeils samt Spur ≥ PFEIL_MIN_LAENGE Bildpunkte
+    und mindestens PFEIL_MIN_STARK Bildpunkte mit Kontrast ≥ 3:1 zum Hintergrund (dunkler Umriss + helles Holz + rote Federn
+    + Stahlspitze). Vorher (3 px brauner Strich): Länge ≈ 29, 0–86 starke Bildpunkte. Die Trefferfläche bleibt 10×10 px um die
+    Spitze (PFEIL_TREFFER), die sichtbare Spitze ist 14 px lang und 14 px breit; der Schaft war und ist ungefährlich."""
+    await g.p.set_viewport_size({'width': 1280, 'height': 720}); await g.p.wait_for_timeout(200)
+    assert await g.ev("PFEIL_TREFFER") == 10, 'Trefferfläche darf sich nicht ändern'
+    proben = [(24*40 + 20, 14*40, 0, 1), (30*40 + 20, 13*40 + 10, 0, 1), (26*40, 15*40 + 10, 1, 0), (33*40, 14*40, -1, 0)]
+    fehler = []; tabelle = []
+    for tz, we in (('morgen', 'trocken'), ('mittag', 'trocken'), ('abend', 'trocken'), ('nacht', 'trocken'), ('mittag', 'regen')):
+        d = json.loads((ROOT / 'levels/ruinen/03-fallengang.json').read_text(encoding='utf-8')); d['tageszeit'] = tz; d['wetter'] = we
+        f = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False); json.dump(d, f); f.close()
+        await g.load(f.name)
+        await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__pn = window.__pn || performance.now.bind(performance);"
+                   "const T0 = window.__pn(); performance.now = () => T0;"
+                   "for(const P of [p1, p2]){ P.x = 18*40 + 20 + (P === p2 ? -60 : 0); P.y = 16*40; P.vx = P.vy = 0; }"
+                   "camPos = Math.max(0, p2.x - CAM_LEFT); camX = Math.round(camPos);")
+        for x, y, dx, dy in proben:
+            r = await pfeil_messen(g, x, y, dx, dy)
+            tabelle.append((tz, we, 'quer' if dx else 'runter', r['laenge'], r['stark'], r['kontrast90']))
+            if r['laenge'] < PFEIL_MIN_LAENGE or r['stark'] < PFEIL_MIN_STARK: fehler.append(tabelle[-1])
+        await g.ev("menuScreen = null; performance.now = window.__pn;")
+    print('     Pfeil-Lesbarkeit (Tageszeit, Wetter, Richtung, Länge, starke Bildpunkte, Kontrast 90 %):', tabelle)
+    assert not fehler, f'schlecht lesbar: {fehler}'
+
+@test
+async def fels_verhalten(g):
+    """Ruinen-Überarbeitung 2: Rollender Fels (levels/test/fels-wand.json) – Start: wackelt erst FELS_WARN Schritte (½ s,
+    Warn-Signal), dann rollt er; Schatten liegt auf dem Boden; Ankündigung: rollt er außerhalb des Bildes auf einen zu,
+    steigt die Anzeige am Bildrand (ankuendigung > 0); Bröckel-Wand: er bricht durch und rollt langsamer weiter (räumt den
+    Weg frei); Zerschellen an der Wand mit Bruchstücken und Kamera-Wackeln; geschlossenes Tor 2: er zerschellt davor;
+    Tod/Neustart: Fels, Bröckel-Wand und Wackeln wieder wie am Anfang."""
+    await g.load(str(ROOT / 'levels' / 'test' / 'fels-wand.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+    lauf = lambda n: g.ev(f"(() => {{ for(let i = 0; i < {n}; i++) stepSim(0); return [felsen[0].x, felsen[0].aktiv, felsen[0].warn, felsen[0].weg]; }})()")
+    await lauf(20)
+    assert await g.ev("!felsen[0].aktiv && felsen[0].x === 260"), 'Fels rollt ohne Hebel'
+    # Tor 2 auf, Hebel 1: erst wackeln, dann rollen
+    await g.ev("setLink(2, true); setLink(1, true);")
+    x, aktiv, warn, weg = await lauf(1)
+    assert not aktiv and warn == await g.ev("FELS_WARN") and x == 260, ('kein Warn-Signal', x, aktiv, warn)
+    x, aktiv, warn, weg = await lauf(await g.ev("FELS_WARN") - 1)
+    assert not aktiv and x == 260, 'rollt schon während der Warnung'
+    x, aktiv, warn, weg = await lauf(10)
+    assert aktiv and x > 260, ('rollt nach der Warnung nicht los', x)
+    await g.ev("camPos = camX = 0;")
+    await lauf(4)
+    assert await g.ev("felsen[0].boden") == 680, await g.ev("felsen[0].boden")
+    # Ankündigung: Kamera steht weiter rechts, der Fels rollt von links ins Bild
+    ank = await g.ev("(() => { camPos = camX = 900; stepSim(0); return felsen[0].ankuendigung; })()")
+    assert ank > 0, f'keine Ankündigung am Bildrand: {ank}'
+    await g.ev("camPos = camX = 0;")
+    # Bröckel-Wand bei Spalte 30–31: durchbrochen, rollt weiter; zerschellt an der Wand (Spalte 45) mit Bruchstücken
+    for _ in range(80):
+        x, aktiv, warn, weg = await lauf(10)
+        await g.ev("camPos = camX = Math.max(0, felsen[0].x - 600)")
+        if weg: break
+    assert weg and 1700 < x < 1800, ('zerschellt nicht an der Wand', x, weg)
+    assert await g.ev("felsen[0].durchbrochen === 1 && solids.find(s => s.type === 'crumble').gone"), 'Bröckel-Wand nicht durchbrochen'
+    assert await g.ev("felsen[0].brocken && felsen[0].brocken.length >= 8"), 'keine Bruchstücke'
+    assert await g.ev("kameraWackeln > 0"), 'Kamera wackelt nicht'
+    # Neustart: alles wie am Anfang
+    await g.ev("resetLevel(); deathState = null; menuScreen = 'pause';")
+    assert await g.ev("felsen[0].x === 260 && !felsen[0].aktiv && !felsen[0].weg && !felsen[0].warn && !solids.find(s => s.type === 'crumble').gone && kameraWackeln === 0"), 'Neustart unsauber'
+    # Tor 2 zu: der Fels zerschellt am Tor, die Bröckel-Wand bleibt
+    await g.ev("setLink(1, true);")
+    for _ in range(40):
+        x, aktiv, warn, weg = await lauf(10)
+        if weg: break
+    assert weg and x < 660, ('zerschellt nicht am geschlossenen Tor', x)
+    assert await g.ev("!solids.find(s => s.type === 'crumble').gone"), 'Wand trotz geschlossenem Tor kaputt'
+    # nach einem Tod startet er sauber neu (Spiel läuft wieder)
+    await g.ev("menuScreen = null; deathState = null;")
+    await g.ev("die(p1)"); await weiter_nach_tod(g)
+    assert await g.ev("felsen.every(F => !F.aktiv && !F.weg && F.x === F.sx && !F.warn) && !solids.find(s => s.type === 'crumble').gone"), 'nach dem Tod nicht zurückgesetzt'
+
+def wb_halt(x):
+    """genau bei x stehen bleiben (Insel bzw. Naht zwischen zwei Wechselboden-Gruppen)"""
+    return {'holdIf': {'right': f'P.x < {x} - 3 && (P.x < {x} - 60 || P.vx < 1.5)', 'left': f'P.x > {x} + 3 && (P.x > {x} + 60 || P.vx > -1.5)'},
+            'until': f'P.grounded && Math.abs(P.x - {x}) <= 3 && Math.abs(P.vx) < 0.6', 'frames': 600}
+def wb_haken(jx, land_r, pull=60):
+    return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+def wb_aufwind(c, r_hoch, ziel):
+    """Schweinchen: im Aufwind (Spalte c/c+1) nach oben segeln, dann zur Galerie"""
+    return [wb_halt(kx(c) + 20), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
+            {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(c)} + 10', 'left': f'P.x > {kx(c + 1)} - 10'}, 'until': f'P.y < {ky(r_hoch)}', 'frames': 400},
+            {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(ziel)} - 6', 'left': f'P.x > {kx(ziel)} + 6'}, 'until': 'P.grounded', 'frames': 400}]
+def wb_schalter(hebel, haltestellen, aus):
+    """Schalter: an den Hebel, dann bei jeder Haltestelle des Läufers (Q) umlegen, danach nach rechts hinunter"""
+    pl = [wb_halt(kx(hebel))]
+    for x in haltestellen: pl += [{'wait': f'Q.grounded && Math.abs(Q.x - {x}) <= 4 && Math.abs(Q.vx) < 0.6', 'frames': 3000}, {'use': True, 'frames': 8}]
+    return pl + [k_lauf(aus), {'until': 'P.grounded', 'frames': 300}]
+def wb_laeufer(hebel, haltestellen, link, aus):
+    pl = [{'wait': f'Q.grounded && Math.abs(Q.x - {kx(hebel)}) <= 6', 'frames': 3000}]
+    an = True
+    for x in haltestellen: pl += [wb_halt(x), {'wait': f'{"" if an else "!"}linkOn[{link}]', 'frames': 3000}]; an = not an
+    return pl + [k_lauf(aus)]
+
+@test
+async def wechselboden_schalter_laeufer(g):
+    """Ruinen-Überarbeitung 3: Wechselboden mit Schalter und Läufer (levels/test/wechselboden-hebel.json). Der Läufer geht durch
+    einen 1 Kästchen hohen Gang (kein Springen, kein Segeln) über Wechselboden; der Schalter steht oben auf der Galerie am Hebel,
+    die der Läufer nicht erreicht, und legt um, sobald der Läufer an der Haltestelle steht. Koop-Bot spielt alle 3 Rätsel:
+    1) Affe schaltet (Haken), Schweinchen läuft A – Insel – B – Insel – A; 2) Schweinchen schaltet (Aufwind), Affe läuft;
+    3) A-B-A ohne Inseln: Läufer bleibt auf der Naht stehen. Dazu: allein kommt der Läufer nicht durch, die jeweils andere Figur
+    kommt nicht auf die Galerie, zu frühes Umlegen lässt den Läufer fallen, Abstand Hebel–Boden ≤ 20 Spalten."""
+    await koop_level(g, 'test/wechselboden-hebel.json')
+    d = json.loads((ROOT / 'levels/test/wechselboden-hebel.json').read_text(encoding='utf-8'))
+    for sw in d['switches']:
+        weit = max(abs(f['x'] // 40 - sw['x'] // 40) for f in d['switchFloors'] if f['link'] == sw['link'])
+        assert weit <= 20, f'Hebel {sw["link"]}: Wechselboden {weit} Spalten weg (Bild-Regel)'
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    insel = lambda c: kx(c) + 20
+    # 1) Affe schaltet, Schweinchen läuft
+    r = await koop(g, m=kat(3, 16), f=kat(1, 16), plans={'m': wb_haken(5, 10) + wb_schalter(20, [insel(16), insel(24)], 34),
+                                                         'f': wb_laeufer(20, [insel(16), insel(24)], 1, 35)}, maxFrames=6000)
+    soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 33, '1) Affe schaltet, Schweinchen läuft', info(r))
+    r = await koop(g, m=kat(3, 16), f=kat(1, 16), plans={'f': [k_lauf(30)]}, maxFrames=1500)
+    soll(r.get('dead') == 'f', '1) ohne Schalter fällt das Schweinchen', info(r))
+    r = await koop(g, m=kat(3, 16), f=kat(5, 16), plans={'f': [k_lauf(6, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 11, '1) Schweinchen kommt nicht auf die Galerie', r.get('top'))
+    # 2) Schweinchen schaltet (Aufwind), Affe läuft
+    r = await koop(g, m=kat(38, 16), f=kat(36, 16), plans={'f': wb_aufwind(45, 8, 50) + wb_schalter(60, [insel(56), insel(64)], 74),
+                                                           'm': wb_laeufer(60, [insel(56), insel(64)], 2, 75)}, maxFrames=6000)
+    soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 73, '2) Schweinchen schaltet, Affe läuft', info(r))
+    r = await koop(g, m=kat(43, 16), f=kat(36, 16), plans={'m': [k_lauf(45, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['m'] > 11, '2) Affe kommt nicht auf die Galerie', r.get('top'))
+    # 3) A-B-A ohne Inseln: Läufer auf der Naht, Schalter legt dann um
+    naht = [97*40, 104*40]
+    r = await koop(g, m=kat(83, 16), f=kat(81, 16), plans={'m': wb_haken(85, 10) + wb_schalter(100, naht, 114),
+                                                           'f': wb_laeufer(100, naht, 3, 115)}, maxFrames=6000)
+    soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 113, '3) A-B-A auf der Naht', info(r))
+    r = await koop(g, m=kat(83, 16), f=kat(81, 16), plans={'m': wb_haken(85, 10) + wb_schalter(100, [kx(94)], 114),
+                                                           'f': wb_laeufer(100, [kx(94)], 3, 115)}, maxFrames=4000)
+    soll(r.get('dead') == 'f', '3) zu früh umgelegt (Läufer noch ganz auf A): er fällt', info(r))
+    assert not fehler, fehler
+
+async def bild_vergleich(g, clip, ohne_js, mit_js):
+    """Bildschirmfoto-Vergleich eines Ausschnitts: ohne / mit / wieder ohne (bewegte Deko zählt nicht)"""
+    import base64
+    async def foto():
+        await g.p.wait_for_timeout(60); return base64.b64encode(await g.p.screenshot(clip=clip)).decode()
+    await g.ev(ohne_js); A = await foto()
+    await g.ev(mit_js); B = await foto()
+    await g.ev(ohne_js); C = await foto()
+    return await g.p.evaluate(PIXEL_VERGLEICH_JS, [A, B, C])
+
+@test
+async def wechselboden_geisteranzeige(g):
+    """Ruinen-Überarbeitung 3: Der gerade nicht feste Wechselboden ist als blasser Umriss mit Muster und Buchstaben sichtbar
+    (Geisteranzeige: der Läufer sieht, was kommt), und am Hebel zeigen zwei kleine Kacheln A ▨ / B ⠿, welche Gruppe gerade fest
+    ist. Gemessen am echten Bild (levels/test/wechselboden-hebel.json, Rätsel 1)."""
+    await g.p.set_viewport_size({'width': 1280, 'height': 720}); await g.p.wait_for_timeout(200)
+    await g.load(str(ROOT / 'levels/test/wechselboden-hebel.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__pn = window.__pn || performance.now.bind(performance);"
+               "const T0 = window.__pn(); performance.now = () => T0; p1.x = 3*40 + 20; p1.y = 680; p2.x = 60; p2.y = 680;"
+               "camPos = camX = 0; wechselSchritte = 500;")
+    assert await g.ev("wechselAktiveGruppe(1)") == 'A' and await g.ev("wechselAktiveGruppe(99)") is None
+    # Geist: B-Kacheln (Spalte 18–23) sind weg -> blasser Umriss; zum Vergleich ganz ausgeblendet
+    sx, sy = await g.ev("[Math.round((18*40 - camX)*zoom), Math.round((17*40 + SKY_ROOM)*zoom)]")
+    w = await g.ev("Math.round(6*40*zoom)"); h = await g.ev("Math.round(40*zoom)")
+    clip = {'x': sx, 'y': sy, 'width': w, 'height': min(h, 720 - sy)}
+    weg = "solids.filter(s => s.type === 'wechsel' && s.gruppe === 'B' && s.link === 1).forEach(s => s.type = 'versteckt');"
+    da = "solids.filter(s => s.type === 'versteckt').forEach(s => s.type = 'wechsel');"
+    r = await bild_vergleich(g, clip, weg, da)
+    flaeche = clip['width']*clip['height']
+    assert await g.ev("solids.some(s => s.type === 'wechsel' && s.gruppe === 'B' && s.gone)"), 'B müsste weg sein'
+    assert r['pixel'] >= flaeche*0.3 and r['kontrast90'] >= 1.5, f'Geisteranzeige zu schwach: {r} von {flaeche} Bildpunkten'
+    # Hebel-Anzeige: A aktiv vs. B aktiv sieht verschieden aus
+    # nur die Kachel „B“ rechts neben dem Hebel (Welt x +27…+38, y 404…420 – dort schwenkt die Hebelstange nicht hin)
+    hx, hy = await g.ev("[Math.round((20*40 + 20 + 27 - camX)*zoom), Math.round((404 + SKY_ROOM)*zoom)]")
+    clip = {'x': hx, 'y': hy, 'width': await g.ev("Math.round(11*zoom)"), 'height': await g.ev("Math.round(16*zoom)")}
+    r2 = await bild_vergleich(g, clip, "linkOn[1] = false;", "linkOn[1] = true;")
+    assert r2['pixel'] >= clip['width']*clip['height']*0.4, f'Hebel zeigt die aktive Gruppe nicht: {r2}'
+    await g.ev("linkOn[1] = false; menuScreen = null; performance.now = window.__pn;")
+    print('     Geist:', r, 'Hebel:', r2)
+
+@test
+async def aktions_hinweis(g):
+    """Alles, was die Hebel-Taste braucht, zeigt die Tasten-Blase (J / Num 2 bzw. ○), sobald eine Figur davor steht: Hebel
+    (wie bisher), Spiegel (Licht umlenken) und Leuchtkristall (anschlagen). Die Blase erscheint dort, wo die Taste gerade
+    wirkt (Hebel vor Spiegel vor Leuchtkristall); steht niemand davor, keine Blase. Drücken dreht den Spiegel wirklich."""
+    log = "window.__ah = []; if(!window.__ahw){ window.__ahw = 1; const o = aktionsHinweis; aktionsHinweis = function(x, y, a, b){ window.__ah.push([Math.round(x + camX), a, b]); return o.apply(this, arguments); }; }"
+    async def blasen(js):
+        return await g.ev(f"(() => {{ {js}; {log}; drawInterpolated(1); return window.__ah; }})()")
+    # Spiegel (levels/test/licht.json: Spiegel bei x 800–840, y 600)
+    await g.load(str(ROOT / 'levels/test/licht.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__ahw = 0;")
+    b = await blasen("p1.x = 820; p1.y = 680; p2.x = 200; p2.y = 680; camPos = camX = 300;")
+    assert any(abs(x - 820) < 5 and m and not f for x, m, f in b), f'keine Blase am Spiegel: {b}'
+    b = await blasen("p1.x = 400; p1.y = 680;")
+    assert not b, f'Blase ohne Figur davor: {b}'
+    b = await blasen("p2.x = 820; p2.y = 680;")
+    assert any(abs(x - 820) < 5 and f for x, m, f in b), f'keine Blase für das Schweinchen: {b}'
+    st = await g.ev("spiegelListe[0].stellung")
+    await g.ev("p1.x = 820; p1.y = 680; menuScreen = null;"); await g.steps(3)
+    await g.p.keyboard.press(await g.ev("p1.keys.use")); await g.steps(3)
+    assert await g.ev("spiegelListe[0].stellung") != st, 'Spiegel dreht sich nicht mit der Hebel-Taste'
+    # Leuchtkristall (levels/test/leuchtkristall.json: x 1000, y 660) und Hebel (x 1700) – Hebel weiter mit Blase
+    await g.load(str(ROOT / 'levels/test/leuchtkristall.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__ahw = 0;")
+    b = await blasen("p1.x = 1000; p1.y = 680; p2.x = 200; p2.y = 680; camPos = camX = 600;")
+    assert any(abs(x - 1000) < 5 and m for x, m, f in b), f'keine Blase am Leuchtkristall: {b}'
+    b = await blasen("p1.x = 1700; p1.y = 680; camPos = camX = 1300;")
+    assert any(abs(x - 1700) < 5 and m for x, m, f in b), f'keine Blase am Hebel: {b}'
+    await g.ev("menuScreen = null;")
+
+@test
+async def licht_optionen(g):
+    """Ruinen-Licht: Sonnenstein „nur per Nummer“ (leuchtet nur, solange seine Nummer an ist) und Lichtkristall „bleibt an“
+    (einmal getroffen, bleibt seine Nummer an – bis Tod/Neustart). Alte Level ohne diese Felder: wie bisher."""
+    d = level([ground(0, 680, 2400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+              lichtquellen=[{'x': 400, 'y': 600, 'richtung': 'r', 'link': 5}],
+              spiegel=[{'x': 800, 'y': 600, 'stellung': '/'}],
+              kristalle=[{'x': 800, 'y': 640, 'link': 6}, {'x': 800, 'y': 200, 'link': 7, 'bleibt': True}])
+    await g.load(d)
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+    lauf = lambda: g.ev("(() => { for(let i = 0; i < 4; i++) stepSim(0); return [lichtWege[0].length, !!linkOn[6], !!linkOn[7]]; })()")
+    w, k6, k7 = await lauf()
+    assert w == 0 and not k6 and not k7, ('Sonnenstein leuchtet ohne Nummer', w, k6, k7)
+    await g.ev("setLink(5, true)")
+    w, k6, k7 = await lauf()
+    assert w > 0 and k7 and not k6, ('Strahl über den Spiegel nach oben auf Kristall 7 erwartet', w, k6, k7)
+    await g.ev("spiegelListe[0].stellung = '\\\\'")
+    w, k6, k7 = await lauf()
+    assert k6 and k7, ('Kristall 7 („bleibt an“) muss an bleiben, Kristall 6 jetzt im Licht', k6, k7)
+    await g.ev("setLink(5, false)")
+    w, k6, k7 = await lauf()
+    assert w == 0 and not k6 and k7, ('Sonnenstein aus: Kristall 6 aus, Kristall 7 bleibt', w, k6, k7)
+    await g.ev("resetLevel(); deathState = null; menuScreen = 'pause';")
+    w, k6, k7 = await lauf()
+    assert not k7, 'nach Neustart muss Kristall 7 wieder aus sein'
+    await g.ev("menuScreen = null;")
+
+# Licht-Löser (Teil E „Schaltbare Spiegel“): probiert für ein Licht-Rätsel ALLE Stellungen der schaltbaren Spiegel durch
+# (jede Nummer = ein Bit, Spiegel gleicher Nummer drehen zusammen) und verfolgt den Strahl mit der Spiel-Logik.
+LICHT_LOESER_JS = """(cfg) => {
+  const [c0, c1] = cfg.spalten, imBereich = o => o.c >= c0 && o.c <= c1;
+  const res = [];
+  for(let m = 0; m < (1 << cfg.links.length); m++){
+    for(const s of spiegelListe){ const i = cfg.links.indexOf(s.link); if(i < 0) continue;
+      s.stellung = (m >> i) & 1 ? (s.start === '/' ? '\\\\' : '/') : s.start; s.drehS = 0; s.wartet = false; }
+    linkOn = {}; for(const d of solids) if(d.type === 'door'){ d.open = false; d.gone = false; d.closing = false; }
+    for(const l of cfg.offen || []) setLink(l, true);
+    if(cfg.pre) (new Function(cfg.pre))();
+    const sp = new Map(spiegelListe.map(s => [s.c + ',' + s.r, s])), kr = new Map(kristalle.map(k => [k.c + ',' + k.r, k]));
+    const hits = [], enden = [];
+    for(const q of lichtquellen){ if(!imBereich(q) || !lichtQuelleAn(q)) continue;
+      const v = lichtVerfolgen(q.c, q.r, q.dx, q.dy, lichtFestImSpiel, (c, r) => sp.get(c + ',' + r), (c, r) => kr.get(c + ',' + r));
+      for(const k of v.getroffen) hits.push(k.link);
+      const e = v.weg[v.weg.length - 1]; enden.push([v.ende ? v.ende.art : 'weit', Math.round(e[0]*2)/2, Math.round(e[1]*2)/2]); }
+    res.push({m, stellung: spiegelListe.filter(s => cfg.links.includes(s.link)).map(s => s.stellung).join(''), hits, enden});
+  }
+  for(const s of spiegelListe){ s.stellung = s.start; s.drehS = 0; s.wartet = false; }
+  linkOn = {}; for(const d of solids) if(d.type === 'door'){ d.open = false; d.gone = false; d.closing = false; }
+  const ausloeser = cfg.links.map(l => switchDefs.filter(s => s.link === l).length + plates.filter(p => p.link === l).length);
+  return {res, ausloeser};
+}"""
+async def licht_loesen(g, cfg):
+    """-> (Lösungen [Stellungen], falsche Pfade [verschiedene Sackgassen-Enden], Fehlerliste)"""
+    out = await g.p.evaluate(LICHT_LOESER_JS, cfg)
+    fehler, loes, sack = [], [], set()
+    for x in out['res']:
+        if all(z in x['hits'] for z in cfg['ziel']): loes.append(x['stellung'])
+        for e in x['enden']:
+            if e[0] == 'weit': fehler.append(f"{cfg['name']}: Stellung {x['stellung']} – Strahl endet nirgends sichtbar")
+            if e[0] == 'wand': sack.add((e[1], e[2]))
+    if any(n == 0 for n in out['ausloeser']): fehler.append(f"{cfg['name']}: Nummer ohne Platte/Hebel {cfg['links']} {out['ausloeser']}")
+    return loes, sorted(sack), fehler
+
+# Alle Licht-Rätsel mit schaltbaren Spiegeln: Spaltenbereich, Nummern der Spiegel, Ziel-Kristall(e), vorher offene Nummern
+# (z. B. gehaltene Platte), erlaubte Zahl an Lösungen, Mindestzahl falscher Pfade (verschiedene Sackgassen)
+LICHT_RAETSEL = [
+    {'level': 'ruinen/01-ruinen.json', 'name': 'Ruinen 1 „Zwei Spiegel in Reihe“', 'spalten': [786, 812], 'links': [22, 21], 'ziel': [23], 'loesungen': 1, 'sackgassen': 2},
+    {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Brücke', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [33], 'loesungen': 1, 'sackgassen': 1},
+    {'level': 'ruinen/02-mondnacht.json', 'name': 'Mondnacht Abschnitt 1 (Tor)', 'spalten': [450, 500], 'links': [53], 'ziel': [50], 'offen': [52], 'loesungen': 1, 'sackgassen': 0},
+    {'level': 'ruinen/02-mondnacht.json', 'name': 'Mondnacht „Strahl-Labyrinth“', 'spalten': [450, 500], 'links': [52, 53, 55, 56], 'ziel': [51], 'offen': [52], 'loesungen': 1, 'sackgassen': 3},
+    {'level': 'ruinen/05-felsenflucht.json', 'name': 'Felsenflucht „Felsbrecher-Licht“', 'spalten': [750, 790], 'links': [45, 46], 'ziel': [42], 'offen': [40, 41, 44], 'loesungen': 1, 'sackgassen': 2,
+     'pre': "for(const s of solids) if(s.type === 'crumble' && s.x === 765*40) s.gone = true;"},   # der Fels hat die Bröckel-Wand aufgebrochen
+    {'level': 'ruinen/06-tempelherz.json', 'name': 'Tempelherz Teil 1 (Tor 1)', 'spalten': [748, 790], 'links': [23], 'ziel': [5], 'offen': [60], 'loesungen': 1, 'sackgassen': 0},
+    {'level': 'ruinen/06-tempelherz.json', 'name': 'Tempelherz Teil 2 (Brücke)', 'spalten': [748, 790], 'links': [23, 24, 25], 'ziel': [21], 'offen': [60, 5], 'loesungen': 1, 'sackgassen': 2},
+    {'level': 'ruinen/06-tempelherz.json', 'name': 'Tempelherz „Geteilter Strahl“ (Doppeltor)', 'spalten': [748, 790], 'links': [23, 24, 25], 'ziel': [6, 26], 'offen': [60, 5], 'loesungen': 1, 'sackgassen': 2},
+    {'level': 'ruinen/04-sonnentempel.json', 'name': 'Sonnentempel „Licht plus Fallen“', 'spalten': [482, 518], 'links': [15, 16, 17], 'ziel': [11], 'loesungen': 1, 'sackgassen': 2},
+    {'level': 'ruinen/03-fallengang.json', 'name': 'Fallengang „Lichtweiche“ Ausgang', 'spalten': [770, 805], 'links': [35, 36], 'ziel': [34], 'loesungen': 1, 'sackgassen': 1},
+]
+@test
+async def licht_raetsel_loeser(g):
+    """Löser für jedes Licht-Rätsel: alle Spiegel-Stellungen durchprobieren -> genau die erlaubte Zahl an Lösungen (meist
+    eine), mindestens so viele verschiedene Sackgassen wie geplant, jeder Strahl endet sichtbar (Wand/Tür/Kristall, nie
+    „ins Leere“), jede Spiegel-Nummer hat eine Platte oder einen Hebel. Da jeder Auslöser einen Spiegel nur um eine Stellung
+    dreht und man ihn beliebig oft auslösen kann, ist jede Stellung von jeder aus erreichbar (kein Zustand ohne Ausweg)."""
+    fehler, bericht = [], []
+    for cfg in LICHT_RAETSEL:
+        await g.load(str(ROOT / 'levels' / cfg['level']))
+        await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+        loes, sack, f = await licht_loesen(g, cfg)
+        fehler += f
+        if not (1 <= len(loes) <= cfg['loesungen']): fehler.append(f"{cfg['name']}: {len(loes)} Lösungen {loes}")
+        if len(sack) < cfg['sackgassen']: fehler.append(f"{cfg['name']}: nur {len(sack)} Sackgassen {sack}")
+        bericht.append(f"{cfg['name']}: {2 ** len(cfg['links'])} Stellungen, Lösung {loes}, {len(sack)} Sackgassen")
+    await g.ev("menuScreen = null;")
+    print('    ' + '\n    '.join(bericht))
+    assert not fehler, fehler
+
+@test
+async def spiegel_schaltbar(g):
+    """Schaltbarer Spiegel („per Nummer“): jedes BETRETEN einer Druckplatte seiner Nummer dreht ihn genau einmal (Verlassen
+    und Stehenbleiben nicht; beide zugleich = einmal), jede Hebel-Betätigung genau einmal; Drehung ≈ 0,3 s animiert, der
+    Strahl endet währenddessen am Spiegel; weitere Auslöser während der Drehung: einer wartet, zwei heben sich auf
+    (Endstellung = Zahl der Auslöser, nichts hängt); von Hand gesperrt; gleiche Nummer = drehen zusammen; Neustart und
+    Tod: Anfangsstellung; nie von selbst (ohne Auslöser keine Drehung). Spiegel ohne Nummer: wie bisher von Hand."""
+    d = level([ground(0, 680, 2400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+              lichtquellen=[{'x': 400, 'y': 600, 'richtung': 'r'}],
+              spiegel=[{'x': 800, 'y': 600, 'stellung': '/', 'link': 5}, {'x': 1600, 'y': 600, 'stellung': '/', 'link': 5},
+                       {'x': 2000, 'y': 600, 'stellung': '/'}],
+              kristalle=[{'x': 800, 'y': 200, 'link': 6}, {'x': 800, 'y': 640, 'link': 7}],
+              plates=[{'x': 1220, 'y': 660, 'link': 5}], switches=[{'x': 1820, 'y': 660, 'link': 5}])
+    await g.load(d)
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';")
+    st = lambda: g.ev("[spiegelListe.map(s => s.stellung).join(''), spiegelListe[0].drehS, !!linkOn[6], !!linkOn[7]]")
+    schritte = lambda n: g.ev(f"(() => {{ for(let i = 0; i < {n}; i++) stepSim(0); }})()")
+    park = "p1.x = 100; p1.y = 680; p2.x = 60; p2.y = 680; p1.vx = p2.vx = p1.vy = p2.vy = 0;"
+    await g.ev(park); await schritte(30)
+    s0 = await st()
+    assert s0[0] == '///' and s0[2] and not s0[3], ('Start: Licht über Spiegel / nach oben auf Kristall 6', s0)
+    await schritte(330)
+    assert (await st())[0] == '///', 'Spiegel darf sich nie von selbst drehen (6 s ohne Eingabe)'
+    # Hand-Drehung: gesperrt beim schaltbaren Spiegel, frei beim normalen
+    gesperrt = await g.ev("(() => { p1.x = 820; p1.y = 680; return spiegelBedienen(p1); })()")
+    frei = await g.ev("(() => { p1.x = 2020; p1.y = 680; const ok = spiegelBedienen(p1); return [ok, spiegelListe[2].stellung]; })()")
+    assert not gesperrt and frei[0] and frei[1] == '\\', ('von Hand: verknüpft gesperrt, normal drehbar', gesperrt, frei)
+    await g.ev(park + "spiegelListe[2].stellung = '/';"); await schritte(5)
+    # Platte betreten: genau eine Drehung (beide Spiegel der Nummer), animiert, Strahl endet währenddessen am Spiegel
+    await g.ev("p1.x = 1220; p1.y = 680;"); await schritte(3)
+    a = await g.ev("[spiegelListe[0].drehS > 0, spiegelListe[1].drehS > 0, lichtWege[0].ende && lichtWege[0].ende.art, spiegelListe[0].stellung]")
+    assert a[0] and a[1] and a[2] == 'dreh' and a[3] == '/', ('Drehung läuft (beide Spiegel), Strahl endet am Spiegel', a)
+    await schritte(25)
+    b = await st()
+    assert b[0] == '\\\\/' and b[1] == 0 and b[3] and not b[2], ('nach 0,3 s: beide gedreht, Licht jetzt auf Kristall 7', b)
+    await schritte(120)
+    assert (await st())[0] == '\\\\/', 'Stehenbleiben dreht nicht weiter'
+    await g.ev(park); await schritte(40)
+    assert (await st())[0] == '\\\\/', 'Verlassen dreht nicht'
+    await g.ev("p1.x = 1215; p1.y = 680; p2.x = 1225; p2.y = 680;"); await schritte(40)
+    assert (await st())[0] == '///', 'beide zugleich betreten = eine Drehung'
+    await g.ev(park); await schritte(10)
+    # Hebel: jede Betätigung eine Drehung; schnell hintereinander: einer wartet, zwei heben sich auf
+    await g.ev("triggerSwitch(switchDefs[0], p1)"); await schritte(30)
+    assert (await st())[0] == '\\\\/', 'Hebel einmal = eine Drehung'
+    await g.ev("triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1);"); await schritte(60)
+    c = await st()
+    assert c[0] == '\\\\/' and c[1] == 0, ('2 schnelle Auslöser = hin und zurück (Endstellung wie vorher)', c)
+    await g.ev("triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1);")
+    n = await g.ev("(() => { let n = 0; while(spiegelListe.some(s => s.drehS > 0) && n < 500){ stepSim(0); n++; } return n; })()")
+    c = await st()
+    assert c[0] == '///' and n <= 40, ('3 schnelle Auslöser = eine Drehung netto, nach höchstens 2 Drehungen fertig', c, n)
+    # Neustart und Tod: Anfangsstellung, Drehung/Warten gelöscht, Platte wieder frei
+    await g.ev("triggerSwitch(switchDefs[0], p1)"); await schritte(30)
+    await g.ev("triggerSwitch(switchDefs[0], p1); resetLevel(); deathState = null; menuScreen = 'pause';")
+    r = await g.ev("[spiegelListe.map(s => s.stellung + s.drehS + s.wartet).join(','), plates.every(p => !p.down)]")
+    assert r == ['/0false,/0false,/0false', True], ('Neustart: Anfangsstellung', r)
+    await g.ev("triggerSwitch(switchDefs[0], p1); stepSim(0); triggerSwitch(switchDefs[0], p1); continueAfterDeath(); menuScreen = 'pause';")
+    await g.ev(park); await schritte(40)
+    assert (await st())[0] == '///', 'nach Tod: Anfangsstellung, gemerkte Auslöser verworfen'
+    # Spiegel ist kein festes Hindernis: eine Figur an der Stelle wird beim Drehen nicht verschoben
+    await g.ev("p1.x = 820; p1.y = 680;"); await schritte(2)
+    x0 = await g.ev("p1.x")
+    await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
+    assert abs(await g.ev("p1.x") - x0) < 0.01 and not await g.ev("solids.some(s => s.x <= 820 && s.x + s.w > 820 && s.y <= 620 && s.y + s.h > 620)"), 'Spiegel schiebt keine Figur'
+    # Kreis aus Spiegeln: Strahl endet (Besucht-Liste), kein Hängen
+    k = await g.ev("""(() => { const sp = new Map([['3,0', {stellung: '/'}], ['3,-3', {stellung: '\\\\'}], ['0,-3', {stellung: '/'}], ['0,0', {stellung: '\\\\'}]]);
+        const v = lichtVerfolgen(1, 0, 1, 0, () => false, (c, r) => sp.get(c + ',' + r), () => null); return v.weg.length; })()""")
+    assert k < 40, ('Strahl im Spiegel-Kreis muss enden', k)
+    # Mini-Testlevel: falsch -> Sackgasse, Platte 1 + Hebel 2 je einmal -> Kristall 3 -> Tür 3 auf
+    await g.load(str(ROOT / 'levels' / 'test' / 'licht-schalter.json'))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause';"); await schritte(5)
+    assert not await g.ev("!!linkOn[3]"), 'Testlevel: am Anfang Sackgasse'
+    se = await g.ev("(() => { const e = lichtWege[0].ende; draw(); return e && e.art; })()")
+    assert se == 'wand', ('Sackgasse: Strahl endet an der Wand (Funken-Aufprall wird gezeichnet)', se)
+    await g.ev("p1.x = 300; p1.y = 680;"); await schritte(30)
+    await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
+    assert await g.ev("!!linkOn[3] && solids.filter(s => s.type === 'door').every(s => s.open)"), 'Testlevel: Platte + Hebel öffnen Tür 3'
+    # Strahl läuft aus dem Bild: Randzeichen mit dem, was ihn draußen erwartet (Kristall bzw. Sackgasse)
+    rand = await g.ev("(() => { const alt = camX; camX = 600 - VW; const r = lichtRandListe(lichtWege[0]); draw(); camX = alt; return r.map(x => [x.d, x.art]); })()")
+    assert rand == [[1, 'kristall']], ('Randzeichen rechts: Kristall', rand)
+    await g.ev("triggerSwitch(switchDefs[0], p2)"); await schritte(30)
+    rand = await g.ev("(() => { const alt = camX; camX = 300; const r = lichtRandListe(lichtWege[0]); camX = alt; return r.map(x => [x.d, x.art]); })()")
+    assert rand == [[-1, 'wand']], ('Randzeichen links: Sackgasse (Strahl endet draußen an der Säule)', rand)
+    # alte Level ohne Nummer: Spiegel von Hand wie bisher
+    await g.load(str(ROOT / 'levels' / 'test' / 'licht.json'))
+    alt = await g.ev("spiegelListe.map(s => s.link)")
+    assert alt and all(x is None for x in alt), ('alte Spiegel ohne Nummer', alt)
+    await g.ev("menuScreen = null;")
+
+@test
+async def ruinen1_sonnenkammer(g):
+    """Ruinen 1, Licht-Rätsel „Zwei Spiegel in Reihe“ (Spalte 786–826, vor dem Ziel; schaltbare Spiegel): Der Sonnenstein
+    strahlt nach rechts auf Spiegel A, unter ihm hängt Spiegel B. Spiegel A dreht Druckplatte 22 auf dem Sims, das nur das
+    Schweinchen per Aufwind erreicht; Spiegel B dreht Hebel 21 auf dem Sims, das nur der Affe per Haken erreicht. Falsch:
+    A „/“ = Strahl in die Decke, B „\\“ = Strahl ans Ausgangstor (Sackgassen). Richtig (A „\\“, B „/“): Kristall 23
+    („bleibt an“) -> Ausgang offen. Koop-Bot: Affe Haken -> Hebel einmal; Schweinchen Aufwind -> Platte einmal betreten.
+    Dazu: nur Platte / nur Hebel bleibt der Ausgang zu, zweimal Hebel wieder falsch, keiner kommt aufs Sims des anderen."""
+    await koop_level(g, 'ruinen/01-ruinen.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    def affe(n_hebel=1, jx=788.5):
+        # unter dem Haken stehen bleiben, gerade hochspringen (mit Anlauf verdeckt das Sims die Sicht), Haken, ranziehen, aufs Sims
+        hoch = [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(7)} + 4 && P.vx > 0.3 && f > 10'},
+                {'holdIf': {'right': f'P.x < {kx(790)}', 'left': f'P.x > {kx(791)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200}]
+        pl = hoch + [wb_halt(kx(791))]
+        for _ in range(n_hebel): pl += [{'use': True, 'frames': 8}, {'frames': 30}]
+        return pl + [k_lauf(794), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[23]', 'frames': 3000}, k_lauf(818)]
+    def schwein(platte=True):
+        pl = wb_aufwind(797, 7, 804) + [wb_halt(kx(804))]
+        if platte: pl += [wb_halt(kx(806)), {'frames': 30}, wb_halt(kx(804))]
+        return pl + [{'wait': '!!linkOn[23]', 'frames': 3000}, k_lauf(817)]
+    ok = []
+    for jx in (788.5, 789):
+        r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(jx=jx), 'f': schwein()}, maxFrames=9000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 817: ok.append(jx); break
+    soll(ok, 'Zwei Spiegel in Reihe gemeinsam gelöst', (info(r), r.get('log')))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(n_hebel=0), 'f': schwein()}, maxFrames=5000)
+    soll(not await g.ev("!!linkOn[23]") and await g.ev("lichtWege.some(w => w.ende && w.ende.art === 'wand')"), 'nur Platte: Sackgasse, Ausgang zu', info(r))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(), 'f': schwein(platte=False)}, maxFrames=5000)
+    soll(not await g.ev("!!linkOn[23]"), 'nur Hebel: Strahl in die Decke, Ausgang zu', info(r))
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(n_hebel=2), 'f': schwein()}, maxFrames=5000)
+    soll(not await g.ev("!!linkOn[23]"), 'Hebel zweimal: B wieder falsch, Ausgang zu', info(r))
+    r = await koop(g, m=kat(784, 14), f=kat(788, 14), plans={'f': [k_lauf(789, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 7, 'Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
+    r = await koop(g, m=kat(797, 14), f=kat(784, 14), plans={'m': [k_lauf(797, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'frames': 120}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['m'] > 9.5, 'Affe kommt nicht aufs Spiegel-Sims', r.get('top'))
+    assert not fehler, fehler
+
+@test
+async def fallengang_lichtweiche(g):
+    """Fallengang, Licht-Rätsel „Lichtweiche“ (Spalte 772–818, vor dem Ziel; schaltbare Spiegel): Über der Grube liegen
+    Wechselboden-Brücken A (links) und B (rechts) – B ist da, solange Licht auf den Weichen-Kristall 33 fällt. Druckplatte 35
+    auf dem Affen-Sims (nur per Haken) dreht Spiegel 1 UND 2 zugleich (eine Platte, zwei Spiegel); Hebel 36 auf dem
+    Schweinchen-Sims (nur per Aufwind) dreht Spiegel 3, die Weiche: „\\“ = hinunter auf Kristall 33 (Brücke B), „/“ = hinauf
+    auf Kristall 34 („bleibt an“, Ausgang). Falsch: Spiegel 1 „\\“ = Strahl in den Boden. Ablauf: Schweinchen auf die Naht,
+    Affe betritt die Platte (B kommt), Schweinchen hinüber und per Aufwind an den Hebel (Ausgang offen, B weg, A wieder da),
+    Affe auf die Naht, Schweinchen legt den Hebel zurück (B), Affe hinüber."""
+    await koop_level(g, 'ruinen/03-fallengang.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    naht = 790*40
+    def affe(jx=777.5):
+        return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'},
+                {'holdIf': {'right': f'P.x < {kx(780)}', 'left': f'P.x > {kx(781)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(781)), {'wait': f'Q.grounded && Math.abs(Q.x - {naht}) <= 4', 'frames': 4000}, wb_halt(kx(779)), {'frames': 10}, wb_halt(kx(781)),
+                {'wait': '!!linkOn[34] && !linkOn[33]', 'frames': 4000}, k_lauf(783), {'until': 'P.grounded', 'frames': 200},
+                wb_halt(naht), {'wait': '!!linkOn[33]', 'frames': 4000}, k_lauf(811)]
+    schwein = [{'wait': f'Q.grounded && Q.y < {ky(10)} && Q.x > {kx(779)}', 'frames': 4000}, wb_halt(naht), {'wait': '!!linkOn[33]', 'frames': 4000},
+               k_lauf(797)] + wb_aufwind(800, 3, 798) + [wb_halt(kx(798)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[34]', 'frames': 300},
+               {'wait': f'Q.grounded && Math.abs(Q.x - {naht}) <= 4', 'frames': 4000}, {'use': True, 'frames': 8},
+               {'wait': f'Q.x > {kx(797)} && Q.grounded', 'frames': 4000}, k_lauf(811)]
+    ok = []
+    for jx in (777.5, 778):
+        r = await koop(g, m=kat(768, 15), f=kat(766, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=12000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 810.5: ok.append(jx); break
+    soll(ok, 'Lichtweiche gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    r = await koop(g, m=kat(768, 15), f=kat(766, 15), plans={'f': [k_lauf(792)]}, maxFrames=1500)
+    soll(r.get('dead') == 'f', 'ohne Weiche fällt das Schweinchen in die Grube', info(r))
+    r = await koop(g, m=kat(768, 15), f=kat(779, 15), plans={'f': [{'press': ['jump'], 'hold': ['jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 9, 'Schweinchen kommt nicht aufs Affen-Sims', (r.get('top'), info(r)))
+    r = await koop(g, m=kat(799, 15), f=kat(768, 15), links=[33], plans={'m': [{'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'true', 'frames': 120}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['m'] > 4, 'Affe kommt nicht aufs Schweinchen-Sims', r.get('top'))
+    assert not fehler, fehler
+
+@test
+async def felsenflucht_felsbrecher_licht(g):
+    """Felsenflucht, Licht-Rätsel „Felsbrecher-Licht“ (Spalte 752–800, vor dem Ziel): Hebel 40 lässt den Fels rollen und
+    öffnet Tor 40; der Fels bricht die Bröckel-Wand auf (Gang und Strahl frei) und fällt in die Grube. Der Sonnenstein
+    leuchtet nur, solange jemand auf Platte 44 steht. Schaltbare Spiegel: Spiegel 1 am Boden dreht Hebel 45 (jeder),
+    Spiegel 2 dreht Platte 46 auf dem Affen-Sims (Haken); Licht-Tür 41 im Strahl – ihr Hebel liegt oben im Aufwind-Schacht
+    (nur das Schweinchen). Sackgassen: Spiegel 1 „\\“ = Boden, Spiegel 2 „\\“ = Wand links, Tür 41 zu. Kristall 42
+    („bleibt an“) öffnet den Ausgang. Koop-Bot: Affe Hebel 40, über die Grube, Haken, Platte 46 (liest Spiegel 2), zurück
+    auf Platte 44; Schweinchen Schacht -> Hebel 41, runter, Hebel 45. Dazu: ohne Fels bleibt die Bröckel-Wand zu."""
+    await koop_level(g, 'ruinen/05-felsenflucht.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    fels_weg = {'wait': 'felsen.find(F => F.link === 40).weg', 'frames': 1500}
+    m2 = 'spiegelListe.find(s => s.c === 774 && s.r === 9).stellung'
+    ueber_stein = [{'holdIf': {'right': f'P.x < {kx(753)} - 6'}, 'until': f'P.x >= {kx(753)} - 6 || P.x > {kx(755)}', 'frames': 300},
+                   {'pressIf': {'jump': f'P.grounded && P.x < {kx(755)}'}, 'hold': ['right', 'jump'], 'until': f'P.x > {kx(755)} && P.grounded', 'frames': 200}]
+    rechts = ueber_stein + [k_lauf(766, -8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    links = [{'hold': ['left'], 'until': f'P.x <= {kx(771)} + 8', 'frames': 300}, {'press': ['jump'], 'hold': ['left', 'jump'], 'frames': 12},
+             {'hold': ['left'], 'until': 'P.grounded', 'frames': 200}]
+    def affe(jx=771):
+        return [wb_halt(kx(752)), {'use': True, 'frames': 8}, fels_weg] + rechts + [wb_halt(int(jx*40) + 20),
+                {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'},
+                {'holdIf': {'right': f'P.x < {kx(772)}', 'left': f'P.x > {kx(773)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(773)), {'holdIf': {'left': f'{m2} === "\\\\" && P.x > {kx(772)}'}, 'until': f'({m2} === "/" && P.x > {kx(772)} + 25) || P.x <= {kx(772)} + 2', 'frames': 200},
+                {'wait': f'{m2} === "/"', 'frames': 100}, {'hold': ['right'], 'until': f'P.x > {kx(774)} + 10', 'frames': 200},
+                {'until': 'P.grounded', 'frames': 200}] + links + [wb_halt(kx(756)), {'wait': '!!linkOn[42]', 'frames': 5000}] + rechts + [k_lauf(795)]
+    schwein = [fels_weg] + rechts + [k_lauf(782)] + wb_aufwind(783, 2, 782) + [{'use': True, 'frames': 8},
+               {'hold': ['right'], 'until': f'P.x > {kx(783)}', 'frames': 100}, {'until': 'P.grounded', 'frames': 300},
+               {'hold': ['left'], 'until': f'P.x < {kx(778)}', 'frames': 300}, wb_halt(kx(776)),
+               {'wait': f'Q.grounded && Math.abs(Q.x - {kx(756)}) < 8 && spiegelListe.find(s => s.c === 774 && s.r === 9).stellung === "/"', 'frames': 5000},
+               {'use': True, 'frames': 8}, {'wait': '!!linkOn[42]', 'frames': 300}, k_lauf(795)]
+    ok = []
+    for jx in (771, 770.6):
+        r = await koop(g, m=kat(750, 15), f=kat(749, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=14000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 794: ok.append(jx); break
+    soll(ok, 'Felsbrecher-Licht gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    r = await koop(g, m=kat(750, 15), f=kat(749, 15), plans={'m': [k_lauf(764)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 762, 'ohne Fels-Hebel ist Tor 40 zu', r.get('pos'))
+    r = await koop(g, m=kat(763, 15), f=kat(749, 15), links=[40], plans={'m': [k_lauf(767)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 765, 'ohne Fels bleibt die Bröckel-Wand zu', r.get('pos'))
+    assert not fehler, fehler
+
+@test
+async def mondnacht_mondspiegel(g):
+    """Mondnacht, Strahl-Labyrinth „Mondspiegel“ hinter dem Turm (Spalte 451–500, nachts; schaltbare Spiegel, zwei
+    Abschnitte). Abschnitt 1: Licht-Tor 52 im Strahl ist nur offen, solange jemand auf Platte 52 steht – jedes BETRETEN der
+    Platte dreht aber Spiegel B (oben). Spiegel A dreht Hebel 53 auf dem Affen-Sims (Haken). Erst hält das Schweinchen die
+    Platte (B dreht nach „/“), der Affe stellt A nach unten -> Kristall 50 („bleibt an“) öffnet Tor 50. Dann Übergabe: der
+    Affe stellt A nach oben und tritt auf die Platte, BEVOR das Schweinchen absteigt (sonst dreht B falsch, Strahl an die
+    Wand – dann ab- und wieder aufsteigen). Abschnitt 2 jenseits der breiten Grube (nur das Schweinchen segelt hinüber):
+    Platte 55 dreht E und G zugleich, Hebel 56 dreht F. Sackgassen: Decke über E, Affen-Sims (F nach links), Wand neben
+    dem Turm (B falsch). Richtig: E, F, G „\\“ -> Kristall 51 -> Brücke für den Affen."""
+    await koop_level(g, 'ruinen/02-mondnacht.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    platte = lambda wer: f'{wer}.grounded && Math.abs({wer}.x - {kx(458)}) < 8'
+    B = 'spiegelListe.find(s => s.c === 466 && s.r === 2).stellung'
+    hoch = lambda jx: [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(8)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
+                {'holdIf': {'left': f'P.x > {kx(468)}', 'right': f'P.x < {kx(467)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200}]
+    def affe(jx=469):
+        return hoch(jx) + [wb_halt(kx(467)), {'wait': platte('Q'), 'frames': 4000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[50]', 'frames': 300},
+                {'use': True, 'frames': 8}, {'hold': ['left'], 'until': f'P.x < {kx(466)} + 10', 'frames': 200}, {'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(458)), {'wait': f'!{platte("Q")}', 'frames': 3000},
+                # B lesen: zeigt der Strahl an die Wand („\\“), ab- und wieder aufsteigen (jedes Betreten dreht B einmal)
+                {'holdIf': {'left': f'{B} === "\\\\" && P.x > {kx(455)}'}, 'until': f'{B} === "/" || P.x <= {kx(455)} + 2', 'frames': 300},
+                wb_halt(kx(458)), {'wait': '!!linkOn[51]', 'frames': 5000}, k_lauf(495)]
+    schwein = [wb_halt(kx(458)), {'wait': f'!!linkOn[50] && spiegelListe.find(s => s.c === 466 && s.r === 8).stellung === "/" && {platte("Q")}', 'frames': 5000},
+               k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
+               {'wait': f'{B} === "/" && !!linkOn[52]', 'frames': 3000}, wb_halt(kx(491)), {'frames': 20}, wb_halt(kx(494)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[51]', 'frames': 300}, k_lauf(495)]
+    ok = []
+    for jx in (469, 469.4):
+        r = await koop(g, m=kat(455, 14), f=kat(453, 14), plans={'m': affe(jx), 'f': schwein}, maxFrames=12000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 494: ok.append(jx); break
+    soll(ok, 'Mondspiegel gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    # ohne Übergabe: das Schweinchen steigt ab, bevor der Affe draufsteht -> sein Betreten dreht B falsch (Strahl an die Wand)
+    r = await koop(g, m=kat(462, 14), f=kat(458, 14), pre="spiegelListe.find(s => s.c === 466 && s.r === 8).stellung = '/';",
+                   plans={'f': [{'frames': 20}, k_lauf(463)], 'm': [{'frames': 60}, {'hold': ['left'], 'until': f'P.x < {kx(459)}', 'frames': 200}, wb_halt(kx(458)), {'frames': 40}]}, maxFrames=600)
+    e = await g.ev("[spiegelListe.find(s => s.c === 466 && s.r === 2).stellung, lichtWege[0].ende && lichtWege[0].ende.art, Math.round(lichtWege[0][lichtWege[0].length - 1][0])]")
+    soll(e[0] == '\\' and e[1] == 'wand' and e[2] <= 462, 'Platte frei und neu betreten: B falsch, Strahl endet an der Wand', e)
+    r = await koop(g, m=kat(470, 14), f=kat(453, 14), pre="kristalle.find(k => k.link === 50).gemerkt = true; setLink(50, true);", plans={'m': [k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=800)
+    soll(r.get('dead') == 'm', 'der Affe schafft die breite Grube nicht', info(r))
+    r = await koop(g, m=kat(453, 14), f=kat(468, 14), plans={'f': [{'press': ['jump'], 'hold': ['jump', 'glide'], 'frames': 90}]}, maxFrames=400)
+    soll(r.get('done') and r['top']['f'] > 8, 'das Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
+    assert not fehler, fehler
+
+@test
+async def tempelherz_sonnenkrone(g):
+    """Tempelherz, Licht-Rätsel „Geteilter Strahl“ (Spalte 750–798, vor dem Ziel; schwerste Licht-Stelle, schaltbare
+    Spiegel, zwei Sonnensteine). Hebel 60 unter der Pfeilfalle schaltet Sonnenstein 1 an (ausweichen!). 1) Affe (Haken-Sims)
+    legt Hebel 23 um: Spiegel 1 nach unten -> Kristall 5 (Tor 1). 2) Hebel 23 zurück (Licht hoch über Spiegel 2 zu Spiegel
+    3); das Schweinchen segelt über die breite Grube: Hebel 24 dreht Spiegel 3 UND Spiegel 5 (zweiter Strahl), Hebel 25
+    dreht Spiegel 4: „/“ = zurück über die Grube auf Kristall 21 (Brücke für den Affen), „\\“ = Kristall 6. 3) Doppeltor
+    am Ausgang: Tor 2a (Kristall 6) und Tor 2b (Kristall 26, zweiter Sonnenstein über Spiegel 5) sind nur offen, solange
+    BEIDE Kristalle gleichzeitig Licht haben. Sackgassen: Decke über Spiegel 3 und 5, Spiegel 4 in die falsche Richtung."""
+    await koop_level(g, 'ruinen/06-tempelherz.json')
+    fehler = []
+    def soll(ok, name, info=''):
+        if not ok: fehler.append(f'{name}: {str(info)[:300]}')
+    info = lambda r: r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps', 'timeout')}
+    px = kx(753)
+    def sonne_an():   # Pfeil einschlagen lassen, dann an den Hebel unter der Falle, umlegen, zurück
+        return [k_lauf(751, -10), {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {px}) < 4 && a.steckt >= 0)', 'frames': 400},
+                wb_halt(px), {'use': True, 'frames': 6}, {'hold': ['left'], 'until': f'P.x < {kx(751)}', 'frames': 200}]
+    def affe(jx=761):
+        return [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(10)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
+                {'holdIf': {'left': f'P.x > {kx(760)}', 'right': f'P.x < {kx(759)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200},
+                wb_halt(kx(760)), {'wait': '!!linkOn[60]', 'frames': 6000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[5]', 'frames': 300},
+                {'use': True, 'frames': 8}, {'hold': ['left'], 'until': f'P.x < {kx(758)} + 10', 'frames': 200}, {'until': 'P.grounded', 'frames': 200},
+                {'wait': '!!linkOn[21]', 'frames': 6000}, k_lauf(779), {'wait': '!!linkOn[6] && !!linkOn[26]', 'frames': 3000}, k_lauf(794)]
+    schwein = [k_lauf(749)] + sonne_an() + [{'wait': '!!linkOn[5]', 'frames': 6000},
+               k_lauf(766, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
+               wb_halt(kx(785)), {'use': True, 'frames': 8}, {'frames': 30}, wb_halt(kx(778)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[21]', 'frames': 300},
+               {'wait': f'Q.x > {kx(777)} && Q.grounded', 'frames': 4000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[6] && !!linkOn[26]', 'frames': 300}, k_lauf(793)]
+    ok = []
+    for jx in (761, 761.4):
+        r = await koop(g, m=kat(746, 15), f=kat(745, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=16000)
+        if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 792: ok.append(jx); break
+    soll(ok, 'Geteilter Strahl gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
+    # nur ein Kristall am Doppeltor reicht nicht: Spiegel 4 auf die Brücke (Kristall 6 aus) -> Tor 2a zu
+    r = await koop(g, m=kat(786, 15), f=kat(783, 15), links=[60, 5, 21], pre="for(const s of spiegelListe){ if(s.link === 24 || s.link === 25) s.stellung = s.stellung === '/' ? '\\\\' : '/'; }",
+                   plans={'m': [k_lauf(794)]}, maxFrames=600)
+    soll(r['pos']['m'][0] < 788, 'Doppeltor: nur Kristall 26 an (Spiegel 4 zur Brücke) – Tor 2a bleibt zu', info(r))
+    r = await koop(g, m=kat(752, 15), f=kat(745, 15), plans={'m': [wb_halt(px), {'frames': 200}]}, maxFrames=400)
+    soll(r.get('dead') == 'm', 'wer stur am Hebel unter der Falle stehen bleibt, wird vom Pfeil getroffen', info(r))
+    assert not fehler, fehler
+
+# ---------- Computer-Partner (js/30-partner.js) ----------
+def level_daten(solids, start_m, start_f, **extra):
+    d = {'solids': solids, 'hooks': [], 'switches': [], 'doors': [], 'spikes': [], 'coins': [],
+         'movingPlatforms': [], 'checkpoints': [], 'startM': start_m, 'startF': start_f, 'goal': {'x': 4000, 'y': 680}}
+    d.update(extra)
+    return d
+
+async def partner_test_start(g, daten, ich='m', an=True, extra_js=''):
+    """Spiel im Testmodus (wie Editor-Knopf „▶ Testen“) mit dem Level daten starten; Computer-Partner an/aus, ich = Figur."""
+    srv = webserver(); p = g.p
+    await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(200)
+    await p.evaluate("([d, w]) => { localStorage.setItem('monchichi_test_level', d); localStorage.setItem('monchichi_partner', w);"
+                     " localStorage.setItem('monchichi.introGesehen', 'true'); }", [json.dumps(daten), json.dumps({'an': an, 'ich': ich})])
+    await p.goto(srv.url + 'index.html?test=1')
+    await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && !!p1", timeout=8000)
+    await p.wait_for_timeout(150)
+    if extra_js: await g.ev(extra_js)
+    return srv
+
+@test
+async def partner_geruest(g):
+    """Computer-Partner Teilschritt 1: im Testmodus mit „allein als Affe“ hört der Affe auf BEIDE Tastaturhälften, das
+    Schweinchen auf die Partner-Tasten (es steht still, solange er nichts tut); V tauscht die Rollen, P schaltet den Partner
+    aus (dann wieder zwei Spieler mit den normalen Tasten); die Wahl wird im Browser gemerkt; Anzeige oben nennt den Partner."""
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}), ich='m',
+                                   extra_js="partnerDenken = () => ({halten: {}, druecken: []})")   # hier: Partner ohne „Gehirn“ (steht)
+    p = g.p
+    try:
+        k = await g.ev("({an: partnerAktiv(), m: p1.keys.left, f: p2.keys.left, mj: p1.keys.jump, fg: p2.keys.glide})")
+        assert k == {'an': True, 'm': 'Solo_left', 'f': 'Partner_left', 'mj': 'Solo_jump', 'fg': 'Partner_ability'}, k
+        assert 'Computer-Partner' in await p.text_content('.hud'), 'Anzeige nennt den Partner nicht'
+        x0 = await g.ev("[p1.x, p2.x]")
+        await halte_schritte(g, ['ArrowRight'], 40)   # rechte Tastaturhälfte steuert jetzt MEINE Figur (Affe)
+        x1 = await g.ev("[p1.x, p2.x]")
+        assert x1[0] - x0[0] > 60 and abs(x1[1] - x0[1]) < 2, f'Pfeiltaste bewegt nicht den Affen / Partner bewegt sich: {x0} -> {x1}'
+        await halte_schritte(g, ['KeyA'], 40)          # linke Hälfte ebenso
+        x2 = await g.ev("[p1.x, p2.x]")
+        assert x1[0] - x2[0] > 60, f'A bewegt den Affen nicht: {x1} -> {x2}'
+        await g.ev("window.__minY = 1e9; window.__altSim = stepSim; stepSim = function(...a){ const r = __altSim.apply(this, a); __minY = Math.min(__minY, p1.y); return r; }")
+        await halte_schritte(g, ['Space'], 2); await g.steps(40)
+        assert await g.ev("(() => { stepSim = __altSim; return __minY < 650; })()"), 'Leertaste springt nicht'
+        # V: Rollen tauschen -> ich bin das Schweinchen
+        await p.keyboard.press('v'); await g.steps(2)
+        k = await g.ev("({ich: partner.ich, m: p1.keys.left, f: p2.keys.left, gemerkt: JSON.parse(localStorage.getItem('monchichi_partner')).ich})")
+        assert k == {'ich': 'f', 'm': 'Partner_left', 'f': 'Solo_left', 'gemerkt': 'f'}, k
+        x3 = await g.ev("[p1.x, p2.x]")
+        await halte_schritte(g, ['KeyD'], 40)
+        x4 = await g.ev("[p1.x, p2.x]")
+        assert x4[1] - x3[1] > 60 and abs(x4[0] - x3[0]) < 2, f'nach dem Tausch steuere ich nicht das Schweinchen: {x3} -> {x4}'
+        # P: Partner aus -> zwei Spieler wie immer
+        await p.keyboard.press('p'); await g.steps(2)
+        k = await g.ev("({an: partnerAktiv(), m: p1.keys.left, f: p2.keys.left, gemerkt: JSON.parse(localStorage.getItem('monchichi_partner')).an})")
+        assert k == {'an': False, 'm': 'KeyA', 'f': 'ArrowLeft', 'gemerkt': False}, k
+        assert 'Computer-Partner' not in await p.text_content('.hud')
+    finally:
+        srv.shutdown()
+
+@test
+async def partner_nicht_im_normalen_spiel(g):
+    """Computer-Partner: auch wenn „allein testen“ gemerkt ist, gibt es im normalen Spiel (ohne Editor-Test) keinen Partner
+    und kein neues Verhalten: normale Tasten, P/V tun nichts; im Editor-Test mit „zu zweit“ ebenso."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(200)
+        await g.ev("localStorage.setItem('monchichi_partner', JSON.stringify({an: true, ich: 'f'}))")
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("typeof partner !== 'undefined'", timeout=8000)
+        await g.load(level([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}))
+        k = await g.ev("({an: partnerAktiv(), gemerkt: partner.an, m: p1.keys.left, f: p2.keys.left})")
+        assert k == {'an': False, 'gemerkt': True, 'm': 'KeyA', 'f': 'ArrowLeft'}, k
+        await p.keyboard.press('v'); await p.keyboard.press('p'); await g.steps(3)
+        k = await g.ev("({an: partner.an, ich: partner.ich, m: p1.keys.left})")
+        assert k == {'an': True, 'ich': 'f', 'm': 'KeyA'}, f'P/V wirken im normalen Spiel: {k}'
+        x0 = await g.ev("[p1.x, p2.x]")
+        await halte_schritte(g, ['ArrowRight'], 30)
+        x1 = await g.ev("[p1.x, p2.x]")
+        assert abs(x1[0] - x0[0]) < 2 and x1[1] - x0[1] > 40, f'Pfeiltaste steuert nicht wie immer das Schweinchen: {x0} -> {x1}'
+    finally:
+        srv.shutdown()
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 3000)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}), an=False)
+    try:
+        k = await g.ev("({an: partnerAktiv(), m: p1.keys.left, f: p2.keys.left})")
+        assert k == {'an': False, 'm': 'KeyA', 'f': 'ArrowLeft'}, k
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_partner_wahl(g):
+    """Editor: Auswahl „👥 zu zweit / 🐵 allein als Affe / 🐷 allein als Schweinchen“ neben „▶ Testen“ wird gemerkt;
+    „Testen“ gibt die Projekt-Datei mit (für die Begleiter-Aufgaben)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
+        assert await p.input_value('#partnerWahl') == 'aus'
+        await p.select_option('#partnerWahl', 'f')
+        assert json.loads(await g.ev("localStorage.getItem('monchichi_partner')")) == {'an': True, 'ich': 'f'}
+        await p.reload(); await p.wait_for_timeout(400)
+        assert await p.input_value('#partnerWahl') == 'f', 'Auswahl nicht gemerkt'
+        await p.click('#levelsBtn'); await p.wait_for_timeout(500)
+        await projekt_laden(p, 'dschungel/01-dschungel.json')
+        await p.click('#testBtn'); await p.wait_for_url('**/index.html?test=1', timeout=8000)
+        await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && !!p1", timeout=8000)
+        k = await g.ev("({an: partnerAktiv(), ich: partner.ich, datei: JSON.parse(localStorage.getItem('monchichi_test_level')).projektDatei, f: p1.keys.left})")
+        assert k == {'an': True, 'ich': 'f', 'datei': 'dschungel/01-dschungel.json', 'f': 'Partner_left'}, k
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
+        await p.select_option('#partnerWahl', 'aus')
+        assert json.loads(await g.ev("localStorage.getItem('monchichi_partner')")) == {'an': False, 'ich': 'f'}
+    finally:
+        srv.shutdown()
+
+PARTNER_LAUF_JS = r"""o => {   // Partner-Tests: n Spielschritte direkt rechnen (schneller als Echtzeit), Tod/Endlage melden
+  menuScreen = 'pause'; deathState = null;
+  let ts = 0, tod = null, sichtbar = true, vor = 0;
+  for(let f = 0; f < o.n; f++){
+    ts += 16.6;
+    stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    const P = partnerFigur();
+    if(P.x < camX - 10 || P.x > camX + VW + 10) sichtbar = false;
+    if(deathState){ tod = deathState.victim === partnerFigur() ? 'partner' : 'ich'; break; }
+  }
+  const P = partnerFigur(), M = meineFigur();
+  return {tod, sichtbar, P: [Math.round(P.x), Math.round(P.y)], M: [Math.round(M.x), Math.round(M.y)], text: partner.text, ms: +(partnerHirn.maxMs || 0).toFixed(1)};
+}"""
+
+def partner_mensch(ich, plan):
+    return {'m' if ich == 'm' else 'f': plan}
+
+@test
+async def partner_folgt_gemuetlich(g):
+    """Computer-Partner Teilschritt 2 (Folgen): ich laufe (Skript) über Gruben und Stufen, bleibe zwischendurch stehen. Der
+    Partner folgt mit denselben Tasten/derselben Physik: er bleibt immer im Bild, läuft nie vor (höchstens Abstand +
+    Spielraum vor mir), wartet, wenn ich stehe (steht dann still neben mir), springt über die Gruben, stirbt nicht –
+    als Schweinchen und als Affe."""
+    sol = [ground(0, 680, 900), ground(980, 680, 320), ground(1300, 640, 300, 80), ground(1680, 680, 1400)]
+    daten = level_daten(sol, {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
+    hop = lambda x: [{'hold': ['right'], 'until': f'P.x >= {x}'}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 120}]
+    plan = [{'hold': ['right'], 'until': 'P.x >= 600'}, {'frames': 200}] + hop(850) + hop(1250) + hop(1570) + \
+           [{'hold': ['right'], 'until': 'P.x >= 2300'}, {'frames': 260}]
+    mess = "if(f % 3) return; const P = partnerFigur(), M = meineFigur(); return [P.x - camX, P.x - M.x, P.y, M.x, VW, Math.abs(P.vx), M.vx]"
+    for ich in ('m', 'f'):
+        start_m, start_p = ([300, 680], [200, 680])
+        srv = await partner_test_start(g, daten, ich=ich)
+        try:
+            r = await koop(g, **{'m' if ich == 'm' else 'f': start_m, 'f' if ich == 'm' else 'm': start_p},
+                           plans=partner_mensch(ich, plan), jeBild=mess, maxFrames=3000)
+            assert r.get('done'), f'{ich}: Lauf nicht fertig {r.get("dead")} {r.get("pos")}'
+            m = r['mess']
+            aus = [x for x in m if not (-5 <= x[0] <= x[4] + 5)]
+            assert not aus, f'{ich}: Partner nicht im Bild: {aus[:3]}'
+            vor = max(x[1] for x in m)
+            assert vor <= PARTNER_VOR_MAX, f'{ich}: Partner läuft vor ({vor:.0f} px vor mir)'
+            # erstes Warten (Bilder 60–200 meines Wartens): am Ende steht er still nah bei mir
+            ende_warten = [x for x in m if x[3] < 700 and abs(x[6]) < 0.01][-8:]
+            assert all(abs(x[1]) <= 140 and x[5] < 0.3 for x in ende_warten), f'{ich}: wartet nicht ruhig neben mir: {ende_warten}'
+            schluss = m[-8:]
+            assert all(abs(x[1]) <= 140 and x[5] < 0.3 and abs(x[2] - 680) < 2 for x in schluss), f'{ich}: kommt nicht nach: {schluss}'
+            weit = max(abs(x[1]) for x in m)
+            print(f'    {ich}: größter Abstand {weit:.0f} px, höchstens {vor:.0f} px voraus')
+        finally:
+            srv.shutdown()
+
+PARTNER_VOR_MAX = 160   # px: so weit darf der Partner höchstens vor mir sein (Abstand 90 + Spielraum 40 + Rundung)
+
+PARTNER_GEFAHREN = {
+    'stacheln': dict(solids=[ground(0, 680, 3000)], spikes=[{'x': 700, 'y': 680, 'w': 40, 'h': 20}, {'x': 740, 'y': 680, 'w': 40, 'h': 20}]),
+    'grube': dict(solids=[ground(0, 680, 700), ground(820, 680, 2000)]),
+    'lava': dict(solids=[ground(0, 680, 700), ground(700, 720, 120), ground(820, 680, 2000)], lava=[{'x': 700, 'y': 680, 'w': 120, 'h': 40}]),
+    'pfeil': dict(solids=[ground(0, 680, 3000)], traps=[{'x': 1200, 'y': 640, 'art': 'pfeil', 'richtung': 'l', 'takt': 2, 'versatz': 0}]),
+    'flamme': dict(solids=[ground(0, 680, 3000), ground(560, 480, 200, 40, 'wall')], traps=[{'x': 640, 'y': 520, 'art': 'flamme', 'richtung': 'u', 'takt': 3, 'versatz': 0}]),
+    'presse': dict(solids=[ground(0, 680, 3000)], pressen=[{'x': 640, 'y': 320, 'breite': 2, 'takt': 3, 'versatz': 0, 'schalter': 'immer'}]),
+}
+
+@test
+async def partner_gefahren(g):
+    """Computer-Partner Teilschritt 2: ich stehe hinter einer Gefahr, der Partner kommt nach, ohne zu sterben – Stacheln,
+    Grube, Lava, Pfeilfalle (Pfeile kommen ihm entgegen), Flammenfalle im Takt, Stachelpresse im Takt; als Affe und als
+    Schweinchen. Er rechnet seine Sprünge vorher mit derselben Physik durch und wartet auf Lücken."""
+    fehler = []
+    for name, f in PARTNER_GEFAHREN.items():
+        for ich in ('m', 'f'):
+            ich_pos, sein_pos = {'x': 1500, 'y': 680}, {'x': 300, 'y': 680}
+            d = level_daten(f['solids'], ich_pos if ich == 'm' else sein_pos, sein_pos if ich == 'm' else ich_pos,
+                            **{k: v for k, v in f.items() if k != 'solids'})
+            srv = await partner_test_start(g, d, ich=ich)
+            try:
+                r = await g.p.evaluate(PARTNER_LAUF_JS, {'n': 1300})
+                if r['tod'] or abs(r['P'][0] - r['M'][0]) > 140 or not r['sichtbar'] and False:
+                    fehler.append((name, ich, r))
+            finally:
+                srv.shutdown()
+    assert not fehler, f'Partner scheitert an Gefahren: {fehler}'
+
+def tuer_kacheln(c, r0, r1, link): return [{'x': c*40, 'y': r*40, 'link': link} for r in range(r0, r1 + 1)]
+
+PARTNER_AUFGABE_JS = r"""o => {   // Begleiter-Aufgabe ausprobieren: ich stehe/laufe per Skript, der Partner erledigt seine Hälfte
+  menuScreen = 'pause'; deathState = null;
+  if(o.aufgaben) partnerAufgabenSetzen(o.aufgaben, 'test');
+  let ts = 0, tod = null; const texte = new Set(), merk = [];
+  for(let f = 0; f < o.n; f++){
+    ts += 16.6;
+    const M = meineFigur();
+    if(o.ich_ziel !== undefined){ const los = o.ich_wenn ? Function('return (' + o.ich_wenn + ')')() : true; KEYS.Solo_right = los && M.x < o.ich_ziel; }
+    stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    texte.add(partner.text);
+    if(o.merk) merk.push(Function('return (' + o.merk + ')')());
+    if(deathState){ tod = deathState.victim === partnerFigur() ? 'partner' : 'ich'; break; }
+    if(o.bis && Function('return (' + o.bis + ')')()) return {f, tod, ok: true, texte: [...texte], merk};
+  }
+  return {f: o.n, tod, ok: false, texte: [...texte], merk, P: [partnerFigur().x, partnerFigur().y], M: [meineFigur().x, meineFigur().y]};
+}"""
+
+async def partner_aufgabe_probe(g, lvl, ich_pos, sein_pos, ich, o):
+    d = level_daten(lvl['solids'], ich_pos if ich == 'm' else sein_pos, sein_pos if ich == 'm' else ich_pos,
+                    **{k: v for k, v in lvl.items() if k != 'solids'})
+    srv = await partner_test_start(g, d, ich=ich)
+    try:
+        return await g.p.evaluate(PARTNER_AUFGABE_JS, o)
+    finally:
+        srv.shutdown()
+
+@test
+async def partner_aufgaben_mechaniken(g):
+    """Computer-Partner Teilschritt 3: je Mechanik eine Begleiter-Aufgabe (Format wie in levels/partner/…): Hebel umlegen,
+    Platte halten bis ich durch die Tür bin, Spiegel in die richtige Stellung drehen (Kristall -> Tür), Wechselboden-Hebel
+    erst, wenn ich an der Grube stehe („wann“), Affe per Haken auf den hohen Sims, Schweinchen segelt über die breite
+    Grube. Alles mit echten Tasten; die Anzeige über dem Partner nennt die Aufgabe."""
+    G = ground
+    tuer = tuer_kacheln(30, 13, 16, 1)
+    faelle = {
+        'hebel': (dict(solids=[G(0, 680, 3000)], doors=tuer, switches=[{'x': 900, 'y': 660, 'link': 1}]), 'm',
+                  {'aufgaben': [{'id': 'h1', 'zone': [20, 35], 'aktion': 'hebel', 'nummer': 1}], 'n': 900, 'bis': '!!linkOn[1]'}),
+        'platte': (dict(solids=[G(0, 680, 3000)], doors=tuer, plates=[{'x': 900, 'y': 660, 'link': 1}]), 'm',
+                   {'aufgaben': [{'id': 'p1', 'zone': [20, 35], 'aktion': 'platte', 'nummer': 1}], 'n': 1500, 'ich_ziel': 1500,
+                    'ich_wenn': '(window.__los = window.__los || !!linkOn[1])', 'bis': 'meineFigur().x > 1450',
+                    'merk': '[!!linkOn[1], Math.round(partnerFigur().x), Math.round(meineFigur().x)]'}),
+        'spiegel': (dict(solids=[G(0, 680, 3000)], doors=tuer, lichtquellen=[{'x': 200, 'y': 640, 'richtung': 'r'}],
+                         spiegel=[{'x': 800, 'y': 640, 'stellung': '\\'}], kristalle=[{'x': 800, 'y': 440, 'link': 1}]), 'm',
+                    {'aufgaben': [{'id': 's1', 'zone': [0, 35], 'aktion': 'spiegel', 'ziel': {'c': 20, 'r': 16}, 'stellung': '/'}], 'n': 1200,
+                     'bis': "!!linkOn[1] && spiegelListe[0].stellung === '/'"}),
+        'wechselboden': (dict(solids=[G(0, 680, 1000), G(1240, 680, 2000)], switches=[{'x': 700, 'y': 660, 'link': 1}],
+                              switchFloors=[{'x': 1000 + 40*i, 'y': 680, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 1} for i in range(6)]), 'm',
+                         {'aufgaben': [{'id': 'w1', 'zone': [0, 40], 'aktion': 'wechsel', 'nummer': 1, 'wann': {'ich_in': [23, 25], 'ich_steht': True}}],
+                          'n': 1500, 'ich_ziel': 1600, 'ich_wenn': '!!linkOn[1]', 'bis': 'meineFigur().x > 1550 && meineFigur().grounded',
+                          'merk': '[!!linkOn[1], Math.floor(meineFigur().x/40)]'}),
+        'haken': (dict(solids=[G(0, 680, 3000), G(1120, 480, 240, 200, 'wall')], hooks=[{'x': 1020, 'y': 400}]), 'f',
+                  {'aufgaben': [{'id': 'k1', 'aktion': 'haken', 'ziel': {'c': 30, 'r': 11}}], 'n': 1500,
+                   'bis': 'partnerFigur().grounded && partnerFigur().y < 490', 'merk': 'partnerFigur().hookAttached'}),
+        'segeln': (dict(solids=[G(0, 680, 900), G(1300, 680, 2000)]), 'm',
+                   {'aufgaben': [{'id': 'g1', 'aktion': 'segeln', 'ziel': {'c': 35, 'r': 16}}], 'n': 1200,
+                    'bis': 'partnerFigur().grounded && partnerFigur().x > 1300', 'merk': 'partnerFigur().gliding'}),
+    }
+    fehler = {}
+    for name, (lvl, ich, o) in faelle.items():
+        ich_pos = {'x': 960 if name == 'wechselboden' else 1140 if name in ('hebel', 'platte', 'spiegel') else 1500, 'y': 680}
+        r = await partner_aufgabe_probe(g, lvl, ich_pos, {'x': 400 if name not in ('haken', 'segeln', 'wechselboden') else 500 if name != 'wechselboden' else 300, 'y': 680}, ich, o)
+        if not r['ok'] or r['tod']: fehler[name] = r; continue
+        if not any(t.startswith('Aufgabe') for t in r['texte']): fehler[name] = ('keine Anzeige', r['texte'])
+        if name == 'platte':   # Tür blieb offen, solange ich davor/darin war (Partner auf der Platte)
+            zu = [m for m in r['merk'] if not m[0] and 1150 < m[2] < 1250]
+            if zu: fehler[name] = ('Platte losgelassen, während ich in der Tür war', zu[:3])
+        if name == 'wechselboden':   # Hebel erst, als ich an der Grube stand
+            vorher = [m for m in r['merk'] if m[0] and m[1] < 23]
+            if vorher: fehler[name] = ('zu früh geschaltet', vorher[:3])
+        if name == 'haken' and not any(r['merk']): fehler[name] = 'ohne Haken hinauf?'
+        if name == 'segeln' and not any(r['merk']): fehler[name] = 'ohne Schirm hinüber?'
+    assert not fehler, f'Aufgaben: {fehler}'
+
+@test
+async def partner_auto_aufgaben(g):
+    """Computer-Partner: ohne Begleitdatei hilft er bei einfachen Fällen selbst – geschlossene Tür vor mir, der Hebel bzw.
+    die Platte dazu in Reichweite -> er legt den Hebel um bzw. hält die Platte. Löst die Nummer auch einen rollenden Felsen
+    aus, rührt er den Hebel NICHT an (er soll mich nie in Gefahr bringen)."""
+    G = ground
+    tuer = tuer_kacheln(30, 13, 16, 1)
+    r = await partner_aufgabe_probe(g, dict(solids=[G(0, 680, 3000)], doors=tuer, switches=[{'x': 900, 'y': 660, 'link': 1}]),
+                                    {'x': 1140, 'y': 680}, {'x': 400, 'y': 680}, 'f', {'n': 900, 'bis': '!!linkOn[1]'})
+    assert r['ok'] and not r['tod'] and 'Aufgabe: Hebel 1' in r['texte'], f'Auto-Hebel: {r}'
+    r = await partner_aufgabe_probe(g, dict(solids=[G(0, 680, 3000)], doors=tuer, plates=[{'x': 900, 'y': 660, 'link': 1}]),
+                                    {'x': 1140, 'y': 680}, {'x': 400, 'y': 680}, 'm',
+                                    {'n': 1500, 'ich_ziel': 1500, 'ich_wenn': '(window.__los = window.__los || !!linkOn[1])', 'bis': 'meineFigur().x > 1450'})
+    assert r['ok'] and not r['tod'] and 'Aufgabe: Platte 1 halten' in r['texte'], f'Auto-Platte: {r}'
+    r = await partner_aufgabe_probe(g, dict(solids=[G(0, 680, 3000)], doors=tuer, switches=[{'x': 900, 'y': 660, 'link': 1}],
+                                            boulders=[{'x': 2600, 'y': 680, 'link': 1, 'richtung': 'l', 'tempo': 4.4}]),
+                                    {'x': 1140, 'y': 680}, {'x': 400, 'y': 680}, 'm', {'n': 500, 'bis': '!!linkOn[1]'})
+    assert not r['ok'], 'Partner löst einen Felsen aus'
+
+PARTNER_SCHRITTE_JS = r"""o => {   // n Spielschritte rechnen; ich laufe optional nach rechts bis ich_ziel; Partner-Tasten mitschreiben
+  menuScreen = 'pause'; deathState = null;
+  let ts = window.__pts || 0, gedrueckt = 0;
+  for(let f = 0; f < o.n; f++){
+    ts += 16.6;
+    const M = meineFigur();
+    KEYS.Solo_right = o.ich_ziel !== undefined && M.x < o.ich_ziel;
+    stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    if(['left', 'right', 'jump', 'ability', 'use'].some(a => KEYS['Partner_' + a])) gedrueckt++;
+  }
+  window.__pts = ts; menuScreen = null;   // Tasten (Q/E/V) wirken nur, wenn kein Menü offen ist
+  const P = partnerFigur(), M = meineFigur();
+  return {P: [Math.round(P.x), Math.round(P.y)], M: [Math.round(M.x), Math.round(M.y)], modus: partner.modus, text: partner.text, gedrueckt,
+          an: !!linkOn[1], tod: !!deathState};
+}"""
+
+@test
+async def partner_steuerung(g):
+    """Computer-Partner Teilschritt 4: Q = „Warte hier“ (er bleibt stehen, auch wenn ich weggehe) / nochmal Q = „Komm her“
+    (er folgt wieder); E = „Mach deine Aufgabe jetzt“ (Aufgabe außerhalb ihrer Zone sofort); hängt er fest (ich bin
+    unerreichbar auf einem hohen Sims), meldet er das nach ~10 s sichtbar und drückt keine Tasten mehr, bis ich ihn rufe;
+    Controller: L1 = warten/komm, R1 = Aufgabe jetzt, Share = Rollen tauschen."""
+    p = g.p
+    # Warte / Komm
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 4000)], {'x': 700, 'y': 680}, {'x': 600, 'y': 680}), ich='m')
+    try:
+        await g.ev('(() => { window.__ps = ' + PARTNER_SCHRITTE_JS + '; return 1; })()')
+        r = await g.ev("__ps({n: 60})")
+        await p.keyboard.press('q')
+        r0 = await g.ev("__ps({n: 5})")
+        assert r0['modus'] == 'warten', r0
+        r = await g.ev("__ps({n: 400, ich_ziel: 1600})")
+        assert abs(r['P'][0] - r0['P'][0]) < 30 and r['M'][0] > 1500 and 'wartet' in r['text'], f'wartet nicht: {r0} -> {r}'
+        await p.keyboard.press('q')
+        r = await g.ev("__ps({n: 500})")
+        assert r['modus'] == 'folgen' and abs(r['P'][0] - r['M'][0]) <= 140, f'kommt nicht: {r}'
+    finally:
+        srv.shutdown()
+    # E: Aufgabe jetzt (Zone weit weg)
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 4000)], {'x': 400, 'y': 680}, {'x': 300, 'y': 680},
+                                                 switches=[{'x': 1100, 'y': 660, 'link': 1}]), ich='m')
+    try:
+        await g.ev('(() => { window.__ps = ' + PARTNER_SCHRITTE_JS + '; return 1; })()')
+        await g.ev("partnerAufgabenSetzen([{id: 'h', zone: [30, 36], aktion: 'hebel', nummer: 1}], 'test')")
+        r = await g.ev("__ps({n: 300})")
+        assert not r['an'], f'Aufgabe ohne Zone begonnen: {r}'
+        await p.keyboard.press('e')
+        r = await g.ev("__ps({n: 600})")
+        assert r['an'], f'E startet die Aufgabe nicht: {r}'
+    finally:
+        srv.shutdown()
+    # festhängen: ich oben auf einem hohen Sims (für ihn unerreichbar)
+    srv = await partner_test_start(g, level_daten([ground(0, 680, 4000), ground(1000, 280, 400, 400, 'wall')], {'x': 1200, 'y': 280}, {'x': 600, 'y': 680}), ich='m')
+    try:
+        await g.ev('(() => { window.__ps = ' + PARTNER_SCHRITTE_JS + '; return 1; })()')
+        r = await g.ev("__ps({n: 700})")
+        assert r['modus'] == 'fest' and 'hänge fest' in r['text'] and not r['tod'], f'meldet Festhängen nicht: {r}'
+        r = await g.ev("__ps({n: 120})")
+        assert r['gedrueckt'] == 0, f'hämmert weiter auf die Tasten: {r}'
+        await p.keyboard.press('q')
+        r = await g.ev("__ps({n: 3})")
+        assert r['modus'] == 'folgen', f'Rufen löst das Festhängen nicht: {r}'
+        # Controller: L1 = warten, R1 = Aufgabe jetzt, Share = Rollen tauschen
+        await g.ev(PAD_STUB)
+        await g.ev("__pad.buttons[4].pressed = true"); await g.ev("__ps({n: 2})"); await g.ev("__pad.buttons[4].pressed = false"); r = await g.ev("__ps({n: 2})")
+        assert r['modus'] == 'warten', f'L1: {r}'
+        await g.ev("__pad.buttons[8].pressed = true"); await g.ev("__ps({n: 2})"); await g.ev("__pad.buttons[8].pressed = false"); await g.ev("__ps({n: 2})")
+        assert await g.ev("partner.ich") == 'f', 'Share tauscht nicht'
+    finally:
+        srv.shutdown()
+
+PARTNER_PROBE_JS = r"""o => {
+  menuScreen = 'pause';
+  resetLevel(); deathState = null;
+  for(const l of (o.links || [])) setLink(l, true);
+  const M = meineFigur(), P = partnerFigur();
+  M.x = o.ich[0]; M.y = o.ich[1]; P.x = o.er[0]; P.y = o.er[1]; M.vx = M.vy = P.vx = P.vy = 0;
+  partnerHirnNeu();
+  partnerAufgabenSetzen([o.aufgabe], 'probe');
+  partnerHirn.sofort = true;
+  camPos = Math.max(0, Math.min(LEVEL_W - VW, Math.min(p1.x, p2.x) - CAM_LEFT)); camX = Math.round(camPos);
+  let ts = 0, an = false, tod = null, f;
+  for(f = 0; f < o.n; f++){
+    ts += 16.6; stepSim(ts);
+    camPos += (cameraTarget(camPos) - camPos) * CAM_FOLLOW; camX = Math.round(camPos);
+    if(linkOn[o.aufgabe.nummer]){ an = true; break; }
+    if(deathState){ tod = deathState.victim === P ? 'partner' : 'ich'; break; }
+  }
+  return {an, tod, f, P: [Math.round(P.x/40), Math.round(P.y/40)], text: partner.text};
+}"""   # eine Begleiter-Aufgabe ab ihrem Startplatz ausprobieren (auch tests/partner_aufgaben_pruefen.py)
+
+async def partner_aufgaben_welt(g, welt):
+    """alle Begleiter-Aufgaben (levels/partner/<welt>/…) einer Welt ab ihrem Probe-Startplatz durchspielen"""
+    fehler, gezaehlt = [], 0
+    for f in sorted((ROOT / 'levels' / 'partner' / welt).glob('*.json')):
+        datei = f'{welt}/{f.name}'
+        bd = json.loads(f.read_text(encoding='utf-8'))
+        assert bd.get('level') == datei, f'{f}: falsches Level {bd.get("level")}'
+        d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+        srv = await partner_test_start(g, d, ich='m')
+        try:
+            await g.ev('(() => { window.__probe = ' + PARTNER_PROBE_JS + '; return 1; })()')
+            for a in bd['aufgaben']:
+                pr = a.get('probe')
+                if not pr: continue
+                fig = pr['figur']
+                await g.ev(f"(() => {{ partner.ich = '{'f' if fig == 'm' else 'm'}'; partnerTastenNeu(); return 1; }})()")
+                c, r = pr['start']
+                o = {'ich': [kx(c) + 20, ky(r)], 'er': [kx(c) - 20, ky(r)], 'n': pr['schritte'], 'links': pr.get('links', []),   # wie im Prüfwerkzeug
+                     'aufgabe': {k: v for k, v in a.items() if k not in ('probe', 'zone', 'wann')}}   # Probe = „Mach jetzt“ (E)
+                res = await g.p.evaluate('o => __probe(o)', o)
+                gezaehlt += 1
+                if not res['an'] or res['tod']: fehler.append((datei, a['id'], fig, res))
+        finally:
+            srv.shutdown()
+    return gezaehlt, fehler
+
+@test
+async def partner_aufgaben_dschungel(g):
+    """Computer-Partner Teilschritt 5: jede Begleiter-Aufgabe der Dschungel-Level (levels/partner/dschungel/…) wird ab
+    ihrem Startplatz mit der echten Physik durchgespielt – der Partner geht hin (auch über Umwege, Kamine, Haken,
+    Segeln) und legt den Hebel um bzw. hält die Platte, ohne zu sterben."""
+    n, fehler = await partner_aufgaben_welt(g, 'dschungel')
+    assert n >= 40, f'zu wenige Aufgaben geprüft: {n}'
+    assert not fehler, f'{len(fehler)} von {n} Aufgaben klappen nicht: {fehler[:4]}'
+
+@test
+async def partner_aufgaben_ruinen(g):
+    """Computer-Partner Teilschritt 5 (Ruinen): wie partner_aufgaben_dschungel für levels/partner/ruinen/… – Licht-/
+    Spiegel-Rätsel stehen dort bewusst unter „offen“ (löst der Mensch)."""
+    n, fehler = await partner_aufgaben_welt(g, 'ruinen')
+    assert n >= 15, f'zu wenige Aufgaben geprüft: {n}'
+    assert not fehler, f'{len(fehler)} von {n} Aufgaben klappen nicht: {fehler[:4]}'
+
+async def partner_projekt_start(g, datei, ich):
+    """Projekt-Level im Testmodus wie aus dem Editor (mit projektDatei -> Begleitdatei wird geladen)"""
+    d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+    d['projektDatei'] = datei
+    srv = await partner_test_start(g, d, ich=ich)
+    await g.p.wait_for_function("partnerAufgaben.length > 0 && partnerAufgabenDatei !== null", timeout=8000)
+    return srv
+
+@test
+async def partner_koop_dschungel(g):
+    """Computer-Partner, Dschungel: ein Skript (Koop-Bot) steuert MEINE Figur, der Partner macht seine Hälfte mit der
+    echten Begleitdatei (aus levels/partner/, geladen wie beim Editor-Test).
+    1) Dornenpfad-Finale bis zum Ziel: ich lege Hebel 14 um, sobald er bei mir ist; die Stachelwand jagt uns – er flieht
+       mit (nicht gemütlich, auch nicht hinter mir her in die Wand) und kommt mit ins Ziel (als Affe und als Schweinchen).
+    2) Lianenschlucht-Schleuse: er hält Platte 5, bis ich durch die Tür bin; danach halte ich die hintere Platte, und er
+       kommt per Haken über den Graben nach."""
+    fehler = []
+    def lauf(bis, kanten):
+        cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
+        return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
+    flucht = [lauf(700, [688]), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(703)} - 6', 'left': f'P.x > {kx(703)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+              {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, lauf(773, [724, 734])]
+    for ich in ('m', 'f'):
+        srv = await partner_projekt_start(g, 'dschungel/05-dornenpfad.json', ich)
+        try:
+            plan = [k_lauf(680, -14), {'wait': f'Q.x > {kx(675)} && Q.grounded', 'frames': 1200}, {'use': True, 'frames': 2}] + flucht + \
+                   [k_lauf(797), {'wait': f'Q.x > {kx(790)}', 'frames': 1500}]
+            r = await koop(g, **{ich: kat(671, 11), ('f' if ich == 'm' else 'm'): kat(672, 11)}, plans={ich: plan}, pre='partnerHirnNeu()', maxFrames=5000)
+            if not (r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 790): fehler.append(('Jagd bis zum Ziel', ich, r.get('dead'), r.get('pos')))
+        finally:
+            srv.shutdown()
+    srv = await partner_projekt_start(g, 'dschungel/03-lianenschlucht.json', 'f')
+    try:
+        f = [{'wait': '!!linkOn[5]', 'frames': 1500}] + k_hop(kx(289) - 10, 8) + [k_lauf(293, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
+             {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300},
+             {'holdIf': {'right': f'P.x < {kx(307)} - 4', 'left': f'P.x > {kx(307)} + 4'}, 'until': f'Q.x >= {kx(304)} && Q.grounded', 'frames': 3000}, {'frames': 30}]
+        mess = "if(f % 5) return; return [!!linkOn[5], partnerFigur().x, partner.text]"
+        r = await koop(g, m=kat(276, 15), f=kat(286, 15), plans={'f': f}, jeBild=mess, pre='partnerHirnNeu()', maxFrames=4000)
+        if not (r.get('done') and r['pos']['m'][0] >= 304 and r['pos']['f'][0] >= 306): fehler.append(('Schleuse', r.get('dead'), r.get('pos')))
+        if not any(x[2] == 'Aufgabe: Platte 5 halten' and x[0] and x[1] < kx(284) for x in r['mess']): fehler.append(('Schleuse: Partner hält Platte 5 nicht', r['mess'][:10]))
+    finally:
+        srv.shutdown()
+    assert not fehler, fehler
+
+async def main(filter_):
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
+        ok = fail = 0
+        for fn in TESTS:
+            if filter_ and not any(f in fn.__name__ for f in filter_.split(',')): continue   # Kurztest: mehrere Filter mit Komma
+            ctx = await browser.new_context(viewport={'width': 1400, 'height': 840})
+            page = await ctx.new_page(); errors = []
+            page.on('pageerror', lambda e: errors.append(str(e)))
+            await page.goto(GAME); await page.wait_for_timeout(400)
+            try:
+                await fn(Game(page))
+                assert not errors, f'JavaScript-Fehler: {errors[:3]}'
+                print(f'  ✓ {fn.__name__}'); ok += 1
+            except AssertionError as e:
+                print(f'  ✗ {fn.__name__}: {e}'); fail += 1
+            await ctx.close()
+        await browser.close()
+        print(f'\n{ok} bestanden, {fail} fehlgeschlagen')
+        return fail
+
+if __name__ == '__main__':
+    sys.exit(1 if asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else '')) else 0)

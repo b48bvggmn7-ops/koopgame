@@ -5945,6 +5945,33 @@ async def bausteine_nacht(g):
                 fehler.append(f"{name} {wer}: Gegenprobe ohne neue Mechanik geht auch: {r.get('pos')}")
     assert not fehler, fehler
 
+import stellen as NS   # neue Stellen in den Leveln (tests/bausteine/stellen.py)
+
+async def nacht_stellen_pruefen(g, welt):
+    """alle neuen Stellen einer Welt mit dem Bot spielen (+ Gegenprobe ohne neue Mechanik)"""
+    fehler, geladen = [], None
+    for st in NS.je_welt(welt):
+        if st['level'] != geladen:
+            await koop_level(g, st['level']); geladen = st['level']
+        wer = st['wer']; anders = 'f' if wer == 'm' else 'm'
+        def ok(r):
+            if not r.get('done'): return False
+            c, rr = r['pos'][wer]
+            return c >= st['ziel'] and (st.get('ziel_reihe') is None or abs(rr - st['ziel_reihe']) < 0.6)
+        r = await koop(g, **{wer: kat(*st['start']), anders: kat(*st['partner'])}, plans={wer: st['plan']}, links=st['links'], maxFrames=st.get('frames', 3000))
+        if not ok(r): fehler.append(f"{st['level']} {st['name']} ({wer}): {r.get('pos')} tot={r.get('dead')} schritte={r.get('steps')}")
+        if st['gegen']:
+            r = await koop(g, **{wer: kat(*st['start']), anders: kat(*st['partner'])}, plans={wer: st['gegen']}, links=st['links'], maxFrames=st.get('frames', 3000))
+            if ok(r): fehler.append(f"{st['level']} {st['name']} ({wer}): Gegenprobe ohne neue Mechanik kommt auch durch {r.get('pos')}")
+    return fehler
+
+@test
+async def nacht_stellen_dschungel(g):
+    """Nacht-Ausbau Phase 3: neue Stellen in der Welt Dschungel (tests/bausteine/stellen.py) – je Stelle beide Figuren
+    (wo vorgesehen) per Bot, Gegenprobe ohne neue Mechanik scheitert."""
+    fehler = await nacht_stellen_pruefen(g, 'dschungel')
+    assert not fehler, fehler
+
 def level_teil(k, v):
     """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
     zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""

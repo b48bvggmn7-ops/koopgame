@@ -80,7 +80,13 @@ def tuer_zellen(d):
 def welt(d, datei): return d.get('welt') or datei.split('/')[0]
 
 def vermessen(datei):
-    d = B.lade(datei)
+    return vermessen_daten(B.lade(datei), datei)
+
+def gruben_aus(d):
+    """nur die Gruben-Liste eines Level-Dicts (für tests/kombi_pruefen.py)"""
+    return vermessen_daten(d, d.get('_datei', 'x/x.json'))['gruben']
+
+def vermessen_daten(d, datei):
     fest = B.feste_kaestchen(d, stege=True) | tuer_zellen(d) | zellen_von(d, 'bruchWaende') | zellen_von(d, 'haftflaechen')
     for s in d.get('solids', []):
         if s.get('type') == 'door': fest.update(B.felder_zellen(s))
@@ -163,13 +169,19 @@ def vermessen(datei):
     tuer_check = []
     for grp in B.gruppen(tueren):
         cs = sorted(set(c for c, r in grp)); rs = sorted(set(r for c, r in grp))
-        unten = max(rs)
-        boden = unten + 1 if any((c, unten + 1) in fest for c in cs) else None
-        frei = None
-        for r in range(min(rs) - 1, -4, -1):
-            if all((c, r) not in fest for c in cs): frei = r; break
-        if frei is None: tuer_check.append({'spalte': cs[0], 'reihe': unten, 'zu': True}); continue
-        h = (boden if boden is not None else unten + 1) - frei - 1   # so hoch muss man (Reihen über dem Boden)
+        oben, unten = min(rs), max(rs)
+        L, R = cs[0] - 1, cs[-1] + 1
+        boden = unten + 1
+        def decke(c):   # erste feste Reihe über dem Gang in Spalte c (von der Tür-Unterkante nach oben)
+            for r in range(unten, -5, -1):
+                if (c, r) in fest and (c, r) not in tueren: return r
+            return -5
+        dl, dr = decke(L), decke(R)
+        weg = None
+        for r in range(oben - 1, max(dl, dr, -4), -1):   # Reihe über der Tür (höchstens Reihe -3 = Bildrand oben), in der links, Tür-Spalten und rechts frei sind
+            if all((c, r) not in fest for c in range(L, R + 1)): weg = r; break
+        if weg is None: tuer_check.append({'spalte': cs[0], 'reihe': unten, 'zu': True}); continue
+        h = boden - weg
         e = {'spalte': cs[0], 'reihe': unten, 'zu': False, 'hoehe': h}
         for wer in 'mf':
             e['alt_' + wer] = h <= klettern_max(ALT[wer]); e['neu_' + wer] = h <= klettern_max(NEU[wer])

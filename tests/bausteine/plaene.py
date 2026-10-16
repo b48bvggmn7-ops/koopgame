@@ -16,6 +16,13 @@ def nb_bruchtor(wand, vorlauf=1):
             {'hold': ['right'], 'until': '!P.dash', 'frames': 20},
             {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10}, LANDEN]
 
+def nb_bruch_durch(wand, vorlauf=1, weiter=3):
+    """B2 ohne Grube: vor der Wand Dash nach vorn (bricht sie), danach bis Spalte wand+weiter laufen und stehen bleiben"""
+    return [{'hold': ['right'], 'until': f'P.x >= {kx(wand - vorlauf)}'},
+            {'press': ['dash'], 'hold': ['right'], 'until': 'P.bruchFenster > 0', 'frames': 40},
+            {'hold': ['right'], 'until': f'!P.dash && P.x >= {kx(wand + weiter)}', 'frames': 120},
+            {'holdIf': {'left': 'P.vx > 0.5'}, 'until': 'P.grounded && Math.abs(P.vx) < 0.5', 'frames': 120}]
+
 def nb_haft(absprung, ende, nach_ende=None):
     """B3: unter der Haftfläche hochspringen, „hoch“ halten, nach rechts rollen bis Spalte ende, dann loslassen"""
     return [{'hold': ['right'], 'until': f'P.x >= {kx(absprung)}'},

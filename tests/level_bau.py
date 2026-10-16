@@ -118,3 +118,73 @@ if __name__ == '__main__':
     neu = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
     diff = [k for k in set(alt) | set(neu) if rt.level_teil(k, alt.get(k)) != rt.level_teil(k, neu.get(k))]
     print('verschieden:', diff)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Bausteine (Nacht-Ausbau Phase 3) auf eine flache Strecke setzen. r = Reihe der Boden-OBERKANTE (Figur steht in r-1).
+def _boden_weg(lv, c, r):
+    """Boden in Spalte c ab Reihe r nach unten entfernen (bis zur untersten Reihe 17 – die bleibt als Grund)"""
+    for rr in range(r, 17): lv.leer(c, rr)
+
+def grube(lv, c0, c1, r, stacheln=True):
+    """Grube Spalten c0..c1 in einen Boden (Oberkante r) graben; unten Stacheln auf Reihe 16 (Grund Reihe 17)"""
+    for c in range(c0, c1 + 1):
+        _boden_weg(lv, c, r)
+        if lv.typ(c, 17) is None: lv.kachel(c, 17, 'ground')
+        if stacheln: lv.stachel(c, 16)
+    return lv
+
+def b1_dashgrube(lv, c0, r, breite=10):
+    """B1: Dash-Grube (Affe: Sprung + Dash; Schweinchen: Segeln). Kante = c0-1, Landung ab c0+breite"""
+    return grube(lv, c0, c0 + breite - 1, r)
+
+def b3_haftgrube(lv, c0, r, breite=14, dicke=5):
+    """B3: Grube mit Haftdecke. Haftfläche Reihe r-4 von c0-1 bis c0+breite, darüber Fels (dicke Reihen, oben drauf
+    unerreichbar), Grube c0..c0+breite-1. Absprung an Spalte c0-1, Landung ab c0+breite"""
+    grube(lv, c0, c0 + breite - 1, r)
+    for c in range(c0 - 3, c0 + breite + 2):
+        for rr in range(r - 4 - dicke, r - 4): lv.kachel(c, rr, 'wall')
+    for c in range(c0 - 1, c0 + breite + 1): lv.haft(c, r - 4)
+    return lv
+
+def b2_bruchsaeule(lv, c, r, hoehe=3, bis=-3):
+    """B2 ohne Grube: Säule in Spalte c – unten hoehe Kästchen Durchbruch (auf dem Boden), darüber feste Wand bis Reihe bis"""
+    lv.bruch_rechteck(c, r - hoehe, c, r - 1)
+    for rr in range(bis, r - hoehe): lv.kachel(c, rr, 'wall')
+    return lv
+
+def b6_haftdash(lv, c0, r, breite=16, haft=11, dicke=5):
+    """B6: Grube c0..c0+breite-1, Haftdecke nur über den ersten haft Spalten (ab c0-1), Rest per Dash"""
+    grube(lv, c0, c0 + breite - 1, r)
+    for c in range(c0 - 3, c0 + haft + 1):
+        for rr in range(r - 4 - dicke, r - 4): lv.kachel(c, rr, 'wall')
+    for c in range(c0 - 1, c0 + haft): lv.haft(c, r - 4)
+    return lv
+
+def flache_strecken(datei, abdeckung=None, laenge=20, frei_hoehe=10):
+    """flache Bodenstrecken (gleiche Oberkante, darüber frei_hoehe Reihen frei, keine Elemente drauf), nicht auf
+    alten Bot-Wegen -> [(c0, c1, r)]"""
+    import bildregel_pruefen as B
+    d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+    fest = B.feste_kaestchen(d, stege=True)
+    belegt = set()
+    for f in ('hooks', 'switches', 'doors', 'plates', 'bouncers', 'checkpoints', 'teleporters', 'traps', 'pressen', 'boulders',
+              'lichtquellen', 'spiegel', 'kristalle', 'leuchtkristalle', 'spikes'):
+        for o in d.get(f, []): belegt.add(B.spalte(o['x']))
+    for f in ('winds', 'movingPlatforms', 'switchFloors', 'lava', 'baender', 'eis', 'oneways', 'dunkelzonen'):
+        for o in d.get(f, []):
+            for c, rr in B.felder_zellen(o): belegt.add(c)
+    bedeckt = set()
+    if abdeckung and datei in abdeckung:
+        for a, b in abdeckung[datei]['m'] + abdeckung[datei]['f']: bedeckt.update(range(a, b + 1))
+    breite = max(c for c, r in fest) + 1
+    out = []
+    for r in range(0, 18):
+        c = 0
+        while c < breite:
+            ok = lambda cc: (cc, r) in fest and all((cc, r - 1 - i) not in fest for i in range(frei_hoehe)) and cc not in belegt and cc not in bedeckt
+            if ok(c):
+                c0 = c
+                while c < breite and ok(c): c += 1
+                if c - c0 >= laenge: out.append((c0, c - 1, r))
+            c += 1
+    return out

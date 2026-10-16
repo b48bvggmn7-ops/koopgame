@@ -17,7 +17,7 @@ Sicherung: Tag `vor-nacht-ausbau` (lokal) **und** Branch `vor-nacht-ausbau` auf 
 | P0.3 | Ausgangs-Testlauf (voll): 200 bestanden, 0 fehlgeschlagen | fertig |
 | P0.4 | Level-Liste (Abnahme-Liste) | fertig |
 | P1 | Dash, Durchbruch-Wand, Wand-Rutschen, Haftfläche, Tastenbelegung (+ Editor, Tests, Doku) | fertig (Kurztests grün, großer Lauf folgt) |
-| P2 | Messwerkzeuge (Reichweite + Erfolgsfenster, Einstufung, Level-Vermesser, Exploit-Suche, Bild-Regel, Checkpoints, Münzen) | offen |
+| P2 | Messwerkzeuge (Reichweite + Erfolgsfenster, Einstufung, Level-Vermesser, Exploit-Suche, Bild-Regel, Checkpoints, Münzen) | fertig (reichweite_messen, level_vermessen, stelle_pruefen, level_ascii, level_bau; Kombi-Zählung erweitert) |
 | P3 | Alle 25 Level vermessen und anpassen | offen |
 | P4 | Zweiter Durchgang, Gesamtprüfung, Bericht | offen |
 
@@ -91,6 +91,22 @@ Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis · 3 Landeplätze ·
 10. **Konflikte:** sofort rot markiert; Verlassen öffnet einen Dialog („Weiter ändern“ / „Änderungen verwerfen“) –
     gespeichert wird nur konfliktfrei. Tastatur-Konflikte zählen über beide Spieler (gemeinsame Tastatur), Controller-
     Konflikte je Spieler und Typ (jeder hat seinen eigenen Controller).
+
+11. **Exploit-Regel (was gilt als Exploit und wird im Level behoben):** (a) über eine geschlossene Tür / an einem Rätsel
+    vorbei, (b) Rollen-Abkürzung – eine Stelle, die früher nur EINE Figur schaffte (Koop-Absicht), schafft jetzt auch die
+    andere, (c) ein Hilfs-Abschnitt (Haken/Pilz/Aufwind/Plattform) wird mit Dash *komfortabel* übersprungen. Knappe oder
+    Grenz-Abkürzungen über Hilfs-Abschnitte bleiben als „Abkürzung für Könner“ (passt zu „schwer, aber machbar“) und stehen
+    in der Level-Tabelle. Werkzeuge: `tests/level_vermessen.py` (Kandidaten), `tests/stelle_pruefen.py` (echte Physik).
+12. **Bausteine:** neue Stellen werden aus geprüften Bausteinen gebaut (`levels/test/bausteine-nacht.json`, Test
+    `bausteine_nacht` mit Gegenprobe ohne neue Mechanik): B1 Dash-Grube, B2 Durchbruch-Tor + Grube (Bruch-Fenster-Sprung),
+    B3 Haftfläche über Grube, B4 Kamin mit Durchbruch-Deckel, B5 Haken → Durchbruch, B6 Haftfläche + Dash, B7 Segel-Dash-
+    Grube (nur Schweinchen). Wichtig gelernt: Decken über Haftflächen und Gängen müssen DICK sein (sonst läuft man oben
+    drüber), Haft-Absprung direkt unter der Haftfläche.
+13. **Kamine neu vermessen (mit Wand-Rutschen):** Reaktionsfenster an der Wand (Schritte, nach denen der nächste
+    Wandsprung noch höher führt) – Breite 3: 16 → 22, Breite 4: 10 → 16, Breite 5: 5 → 10. Kamine werden also gnädiger.
+    Die Richtwert-Konstanten `KAMIN_*` bleiben (Harte Regel: bestehende Konstanten nicht ändern); das Prüfwerkzeug stuft
+    weiter wie bisher ein (eher zu streng als zu lasch).
+14. **Spiel-Format Stacheln:** x = Mitte, y = Unterkante (wie der Editor exportiert) – im Vermesser/Text-Bild berücksichtigt.
 
 ## Geänderte Tests
 - `element_register`: erwartete Element-Liste um `durchbruch` und `haftflaeche` ergänzt (neue Elemente; alle bisherigen
