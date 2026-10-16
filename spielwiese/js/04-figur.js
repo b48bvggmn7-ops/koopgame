@@ -4,7 +4,7 @@
 const fig = {
   x: 0, y: 0, vx: 0, vy: 0, px: 0, py: 0,
   amBoden: false, coyote: 0, puffer: 0,
-  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0, wandHaltRest: 0, dashWand: 0, nachDashZeit: 0, dashSprungMerk: 0, wandAlter: 99, wandWarten: 0, losgelassen: false, sprungZahl: 0,
+  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0, wandHaltRest: 0, rutschBild: 0, rutschBildVor: 0, rutschSeite: 1, dashWand: 0, nachDashZeit: 0, dashSprungMerk: 0, wandAlter: 99, wandWarten: 0, losgelassen: false, sprungZahl: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
   haengt: null, ball: null, rollWinkel: 0, laufWinkel: 0, laufWinkelVor: 0,
   hakenPuffer: 0, kette: 0,
@@ -23,7 +23,7 @@ function figurAufPunkt(p){
   fig.dash = null; fig.luftDashes = luftDashMax(); fig.ladung = 0; fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
   fig.wandSprungSeite = 0; fig.seil = null; fig.fehlschuss = null; fig.rutsch = 0;
   fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
-  fig.sx = fig.sy = 1; fig.svx = fig.svy = 0;
+  fig.sx = fig.sy = 1; fig.svx = fig.svy = 0; fig.rutschBild = fig.rutschBildVor = 0;
 }
 function zurueckSetzen(){ bruchAlleHeilen(); kristallAlleZurueck(); fig.durchbruch = 0; figurAufPunkt(fig.rueck); fig.tot = 0; schwein.da = false; ton('teleport'); kameraSpringen(); }
 function zuStation(st){
@@ -426,6 +426,20 @@ function figurSchritt(){
   figurSchrittEnde();
 }
 function figurSchrittEnde(){
+  // Rutsch-Animation: fällt die Figur an einer Wand entlang, blendet die Rutsch-Haltung weich ein (nur Aussehen)
+  fig.rutschBildVor = fig.rutschBild;
+  const rutscht = V.wandRutschBild && fig.wand && !fig.amBoden && fig.vy > 1 && !fig.seil && !fig.ball && !fig.haengt && !fig.dash && !fig.tot;
+  if(rutscht) fig.rutschSeite = fig.wand;
+  fig.rutschBild += ((rutscht ? 1 : 0) - fig.rutschBild) * (rutscht ? 0.35 : 0.25);
+  if(fig.rutschBild < 0.01) fig.rutschBild = 0;
+  if(rutscht){
+    fig.blick = -fig.wand;   // Blick von der Wand weg: bereit zum Wandsprung
+    if(schrittZaehler % 3 === 0){   // Staub kratzt an der Wand ab (je schneller, desto mehr)
+      const wx = fig.wand > 0 ? fig.x + FIG_B : fig.x;
+      staubWolke(wx, fig.y + FIG_H * 0.35, fig.vy > 6 ? 2 : 1, -fig.wand);
+    }
+    if(schrittZaehler % 9 === 0) ton('schaben', Math.min(1, fig.vy / 10));
+  }
   // Rollen beim Laufen wie im Spiel: Drehung = zurückgelegter Weg / halbe Figurbreite
   fig.laufWinkelVor = fig.laufWinkel;
   if(!fig.ball && !fig.haengt) fig.laufWinkel += fig.vx / (FIG_B * 0.5);

@@ -50,7 +50,8 @@ wert(G_WAND, 'wandSprungX', 'Wandsprung: weg von der Wand', 7.5, 2, 16, 0.1);
 wert(G_WAND, 'wandSprungY', 'Wandsprung: nach oben', 12.8, 4, 20, 0.1);
 wert(G_WAND, 'wandFenster', 'Wandsprung-Fenster (Schritte)', 10, 0, 30, 1, 'so lange nach dem Wandkontakt klappt er noch');
 wert(G_WAND, 'wandSperre', 'Lenk-Sperre danach (Schritte)', 9, 0, 30, 1, 'kurz nicht zurücklenken -> sauberer Kamin');
-schalter(G_WAND, 'wandHalt', 'Kurz an der Wand halten', true, 'springt man gegen eine Wand, bleibt man einen Augenblick hängen (fällt nicht), dann geht es normal weiter');
+schalter(G_WAND, 'wandRutschBild', 'Rutsch-Animation an der Wand', true, 'fällt man an einer Wand entlang: an die Wand gedrückt, Blick von der Wand weg, Staub kratzt ab (nur Aussehen, gleiche Physik)');
+schalter(G_WAND, 'wandHalt', 'Kurz an der Wand halten', false, 'springt man gegen eine Wand, bleibt man einen Augenblick hängen (fällt nicht), dann geht es normal weiter');
 wert(G_WAND, 'wandHaltZeit', 'Halten an der Wand (Schritte)', 12, 1, 60, 1, 'wie lange man sich hält (12 ≈ 0,2 s)');
 schalter(G_WAND, 'wandRutschenAn', 'An der Wand langsam runterrutschen', false, 'auch bei „Wie im Spiel“ (im Spiel selbst gibt es kein Rutschen)');
 wert(G_WAND, 'wandRutschen', 'Rutschen an der Wand (Tempo)', 2.4, 0.5, 15, 0.1);
@@ -265,7 +266,7 @@ let figurAussehen = 'affe';
 function einstellungenObjekt(){
   const werte = {}; for(const w of WERTE_LISTE) werte[w.key] = V[w.key];
   const varianten = {}; for(const id in MECHANIKEN) varianten[id] = MECHANIKEN[id].aktiv;
-  return {spielwiese: 5, figur: figurAussehen, werte, varianten};
+  return {spielwiese: 6, figur: figurAussehen, werte, varianten};
 }
 function einstellungenAnwenden(o){
   if(!o || typeof o !== 'object') return false;
@@ -276,6 +277,7 @@ function einstellungenAnwenden(o){
     if(alt && w.key === 'nachbildTempo') continue;
     if((o.spielwiese || 1) < 4 && w.key === 'dashBalken') continue;   // Standard wieder Punkte
     if((o.spielwiese || 1) < 5 && w.key === 'wandRutschenAn') continue;   // Standard wieder ohne Rutschen
+    if((o.spielwiese || 1) < 6 && w.key === 'wandHalt') continue;   // Halten an der Wand wieder aus
     const v = o.werte[w.key];
     if(w.art === 'schalter') V[w.key] = !!v;
     else if(typeof v === 'number' && isFinite(v)) V[w.key] = klemmen(v, w.min, w.max);

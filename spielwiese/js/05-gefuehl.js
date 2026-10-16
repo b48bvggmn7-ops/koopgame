@@ -117,4 +117,5 @@ function ton(art, staerke){
   else if(art === 'ring'){ rauschen(0.12, 0.1, 2200); piep(500, 1000, 0.12, 0.06, 'sine'); }
   else if(art === 'reissen'){ rauschen(0.14, 0.16, 1200); piep(300, 150, 0.1, 0.06, 'square'); }
   else if(art === 'klick') piep(900, 700, 0.035, 0.06, 'sine');
+  else if(art === 'schaben') rauschen(0.07, 0.025 + 0.035 * s, 1800);   // leises Kratzen beim Rutschen an der Wand
 }
