@@ -6,6 +6,7 @@ const fig = {
   amBoden: false, coyote: 0, puffer: 0,
   wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
+  haengt: null, ball: null, rollWinkel: 0,
   seil: null, hakenZiel: null, zielStrahl: null, fehlschuss: null, rutsch: 0,
   dash: null, luftDashes: 1, dashPuffer: 0, dashPause: 0, gleit: 0, hyperFenster: 0, nachDash: null, blitz: 0,
   sx: 1, sy: 1, svx: 0, svy: 0,          // Dehnen/Stauchen (nur Anzeige, im Takt gerechnet)
@@ -19,6 +20,7 @@ function figurAufPunkt(p){
   fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = 0; fig.sprint = 0; fig.sprungAktiv = false;
   fig.dash = null; fig.luftDashes = luftDashMax(); fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
   fig.wandSprungSeite = 0; fig.seil = null; fig.fehlschuss = null; fig.rutsch = 0;
+  fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
   fig.sx = fig.sy = 1; fig.svx = fig.svy = 0;
 }
 function zurueckSetzen(){ figurAufPunkt(fig.rueck); fig.tot = 0; ton('teleport'); kameraSpringen(); }
@@ -153,6 +155,8 @@ function dashKannStarten(){
   return fig.amBoden || fig.luftDashes > 0;
 }
 function dashStarten(){
+  if(fig.ball && !rollenBeenden()) return;   // aus dem Rollen: erst aufstehen
+  fig.haengt = null;
   const {dx, dy} = dashRichtung();
   if(fig.seil) seilLoesen(false);   // Dash aus dem Schwung: Seil los
   if(!fig.amBoden) fig.luftDashes--;
@@ -200,7 +204,7 @@ function dashAufladen(){
 
 function sterben(){
   if(fig.tot) return;
-  fig.tot = 36; fig.dash = null; fig.seil = null; wackeln(0.55); trefferStopp(6); ton('tod');
+  fig.tot = 36; fig.dash = null; fig.seil = null; fig.ball = null; fig.haengt = null; wackeln(0.55); trefferStopp(6); ton('tod');
   teilchenBurst(fig.x + FIG_B / 2, fig.y + FIG_H / 2, 22, figurAussehen === 'affe' ? '#8a5a35' : '#ff8fc0');
 }
 
@@ -230,6 +234,9 @@ function figurSchritt(){
   // Dash starten (mit Puffer: auch knapp vor der Landung gedrückt)
   if(fig.dashPuffer > 0 && dashKannStarten()) dashStarten();
   if(fig.dashPuffer > 0) fig.dashPuffer--;
+
+  // Unterseite (04b-haften.js): Hängen oder Rollen übernimmt die Bewegung ganz
+  if(!fig.dash && !amSeil && haftSchritt(E, rx)){ if(fig.puffer > 0) fig.puffer--; figurSchrittEnde(); return; }
 
   if(fig.dash){
     const d = fig.dash;
@@ -311,6 +318,7 @@ function figurSchritt(){
     if(fig.dash && V.fxNachbilder) nachbild(fig);
   }
   fig.amBoden = fig.vy >= 0 && bodenUnter(fig);
+  if(!fig.amBoden && !fig.seil && fig.vy >= 0 && rampeAufsetzen(fig, warBoden)) fig.amBoden = true;   // Rampen
   if(fig.amBoden && !fig.dash) fig.vy = 0;
   if(!warBoden && fig.amBoden && !fig.dash) landen(fallTempo);
   if(fig.amBoden){ fig.wandSprungSeite = 0; if(!fig.dash) dashAufladen(); }
@@ -324,6 +332,9 @@ function figurSchritt(){
     }
   }
 
+  figurSchrittEnde();
+}
+function figurSchrittEnde(){
   // Gefahren
   if(stachelTreffer(fig) || fig.y > KARTE_H * K + 120) sterben();
 

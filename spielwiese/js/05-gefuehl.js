@@ -91,5 +91,7 @@ function ton(art, staerke){
   else if(art === 'greifen'){ piep(520, 390, 0.05, 0.09, 'square'); rauschen(0.04, 0.08, 900); }
   else if(art === 'abwurf'){ rauschen(0.14, 0.1, 1600); piep(420, 700, 0.08, 0.05); }
   else if(art === 'fehlschuss') piep(300, 220, 0.06, 0.04, 'sine');
+  else if(art === 'kleben'){ piep(200, 150, 0.07, 0.1, 'sine'); rauschen(0.05, 0.06, 500); }
+  else if(art === 'rollen') piep(240, 320, 0.06, 0.06, 'sine');
   else if(art === 'klick') piep(900, 700, 0.035, 0.06, 'sine');
 }

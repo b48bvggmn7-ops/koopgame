@@ -83,6 +83,8 @@ function hakenZielSuchen(ohne){
 
 // ---------- Seil: schießen, straffen, lösen ----------
 function hakenSchiessen(z){
+  if(fig.ball && !rollenBeenden()) return;
+  fig.haengt = null;
   const m = figMitte();
   fig.seil = {x: z.x, y: z.y, anker: z.anker, zustand: 'flug', t: 0, n: Math.max(1, Math.round(V.hakenFlug)),
     startX: m.x, startY: m.y, len: 0, startLen: 0};

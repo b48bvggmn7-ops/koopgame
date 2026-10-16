@@ -43,7 +43,7 @@ function zeichnen(alpha){
   for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true);
   if(!fig.tot){
     const fx_ = mischen(fig.px, fig.x, alpha), fy_ = mischen(fig.py, fig.y, alpha);
-    figurBild(fx_, fy_, fig.sx, fig.sy, fig.blick, 1, false);
+    figurBild(fx_, fy_, fig.sx, fig.sy, fig.blick, 1, false, fig.ball ? fig.rollWinkel : (fig.haengt ? Math.PI : 0));
     if(fig.blitz > 0){   // Dash wieder voll: kurzer heller Ring
       ctx.strokeStyle = 'rgba(255,255,255,' + (fig.blitz / 10) + ')'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(fx_ + FIG_B / 2, fy_ + FIG_H / 2, 26 + (10 - fig.blitz) * 2.5, 0, Math.PI * 2); ctx.stroke();
@@ -73,13 +73,15 @@ function kaestchenZeichnen(kx){
   const c0 = Math.max(0, Math.floor(kx / K) - 1), c1 = Math.min(KARTE_B - 1, Math.ceil((kx + SICHT_B) / K) + 1);
   for(let r = 0; r < KARTE_H; r++) for(let c = c0; c <= c1; c++){
     const z = karte[r][c], x = c * K, y = r * K;
-    if(z === '#'){
+    if(istRampe(z)){ rampeZeichnen(c, r, z); continue; }
+    if(z === '#' || z === '='){
       ctx.fillStyle = FARBE.erde; ctx.fillRect(x, y, K + 0.6, K + 0.6);   // etwas größer: keine hellen Fugen beim Zoom
       ctx.fillStyle = FARBE.erdeDunkel;
       if(!fest(c, r + 1)) ctx.fillRect(x, y + K - 4, K, 4);
       if(!fest(c - 1, r)) ctx.fillRect(x, y, 3, K);
       if(!fest(c + 1, r)) ctx.fillRect(x + K - 3, y, 3, K);
-      if(!fest(c, r - 1)){ ctx.fillStyle = FARBE.gras; ctx.fillRect(x, y, K, 8); }
+      if(!fest(c, r - 1) && z === '#'){ ctx.fillStyle = FARBE.gras; ctx.fillRect(x, y, K, 8); }
+      if(z === '=') haftflaecheZeichnen(c, r);
     } else if(z === '^'){
       ctx.fillStyle = FARBE.stachel; ctx.strokeStyle = FARBE.stachelDunkel; ctx.lineWidth = 2;
       for(let i = 0; i < 2; i++){
@@ -104,13 +106,15 @@ function schildZeichnen(sch){
 }
 
 // Figur: Bild des Spiels (Affe/Schweinchen) in derselben Größe wie im Spiel, gestaucht/gedehnt um die Füße
-function figurBild(x, y, sx, sy, blick, deckkraft, schatten){
+function figurBild(x, y, sx, sy, blick, deckkraft, schatten, winkel){
   const img = BILDER[figurAussehen], [kx, ky] = KOPF_MITTE[figurAussehen];
   const groesse = Math.max(FIG_B, FIG_H) * 1.55;
   const hoehe = img.naturalWidth ? groesse * img.naturalHeight / img.naturalWidth : groesse * 0.83;
   ctx.save();
   ctx.globalAlpha = deckkraft;
-  ctx.translate(x + FIG_B / 2, y + FIG_H);
+  if(winkel){   // gedreht um die Mitte (Rollen: Kugel; Hängen: kopfüber)
+    ctx.translate(x + FIG_B / 2, y + FIG_H / 2); ctx.rotate(winkel); ctx.translate(0, FIG_H / 2);
+  } else ctx.translate(x + FIG_B / 2, y + FIG_H);
   ctx.scale(sx * blick, sy);
   const mitteY = -FIG_H / 2;
   if(schatten) ctx.filter = 'brightness(1.6) saturate(0.4)';
@@ -123,7 +127,7 @@ function dashPunkteZeichnen(x, y){
   const max = luftDashMax();
   const n = max === Infinity ? 1 : max, voll = max === Infinity ? 1 : fig.luftDashes;
   for(let i = 0; i < n; i++){
-    const px = x + FIG_B / 2 + (i - (n - 1) / 2) * 11, py = y - 20;
+    const px = x + FIG_B / 2 + (i - (n - 1) / 2) * 11, py = fig.haengt ? y + FIG_H + 14 : y - 20;
     ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
     ctx.fillStyle = i < voll ? (max === Infinity ? '#b48cff' : '#4fd2ff') : 'rgba(40,50,70,0.35)'; ctx.fill();
     ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(15,20,30,0.6)'; ctx.stroke();
@@ -139,7 +143,7 @@ function textMitRand(t, x, y, groesse, farbe, ausr){
 function anzeigeZeichnen(){
   textMitRand('Station ' + fig.station.nr + ': ' + fig.station.name, 16, 12, 18, '#fff');
   const m = MECHANIKEN[aktiveMechanik];
-  if(m) textMitRand(m.name + ': ' + m.varianten[m.aktiv].name + '   (1–4)', BILD_B / 2, 12, 18, '#ffe27a', 'center');
+  if(m) textMitRand(m.name + ': ' + m.varianten[m.aktiv].name + '   (1–' + m.varianten.length + ')', BILD_B / 2, 12, 18, '#ffe27a', 'center');
   textMitRand('Tab = Einstellungen', BILD_B - 16, 12, 15, '#dfe8f5', 'right');
   if(performance.now() < hinweisBis){
     const a = Math.min(1, (hinweisBis - performance.now()) / 400);
@@ -156,7 +160,7 @@ function anzeigeZeichnen(){
 }
 const LEGENDE = [
   ['A / D', 'laufen'], ['Leertaste', 'springen (an der Wand: Wandsprung)'], ['J', 'Dash (mit Richtung: 8 Richtungen)'], ['K / Maus', 'Haken (halten = festhalten)'],
-  ['L', 'Greifen (Teil 4)'], ['W / S', 'Seil ran / geben (S halten = rutschen)'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'],
+  ['L', 'Greifen: Decke halten / rollen'], ['W / S', 'Seil ran / geben (S halten = rutschen)'], ['1–4', 'Variante wechseln'], ['R', 'zurück zum Rücksetzpunkt'],
   ['Tab', 'Einstellungen, Teleport'],
 ];
 const LEGENDE_PAD = 'Controller: Stick laufen · ✕ springen · □ Dash · R1 Haken · L1 Greifen · R2 Variante · Share zurück · Options Einstellungen';

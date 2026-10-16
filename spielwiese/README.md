@@ -33,7 +33,11 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
    Stick). K halten = festhalten, loslassen = Abwurf mit Schwung; W/S Seil ran/geben (S halten = rutschen);
    Leertaste am Seil = loslassen mit Hüpfer, an der Wand Wandsprung; J am Seil = Dash aus dem Schwung.
    Im Panel: „Taste halten“ aus = drücken zum An/Los, nochmal drücken hangelt direkt zum nächsten Anker.
-4. Unterseite · 5. Durchbruch · 6. Kombi – folgen · 7. Freie Fläche
+4. Unterseite – Gang mit Haftfläche (lila) an der Decke über Stacheln; Roll-Parcours: Rampe hinunter, klebriger
+   Boden, Wand hoch, unter der Decke zurück, außen herum, Schanze über Stacheln
+   (Varianten: A Unterseiten-Haften = L halten an lila Flächen, S/Loslassen = fallen, Leertaste = Absprung;
+   B Rollen = L halten, Kugel mit Schwung, klebt an lila Flächen auch um Ecken; C Haften an jeder Decke)
+5. Durchbruch · 6. Kombi – folgen · 7. Freie Fläche
 
 Im Panel außerdem: Wandsprung-Varianten (A einfach, B wie im Spiel) und die Kantenhilfe (Kopf rutscht an Ecken
 vorbei, Dash hüpft auf knappe Stufen).

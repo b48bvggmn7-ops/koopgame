@@ -19,14 +19,15 @@ function zelle(c, r){
   if(r < 0 || r >= KARTE_H) return '.';
   return karte[r][c];
 }
-const fest = (c, r) => zelle(c, r) === '#';
+const fest = (c, r) => { const z = zelle(c, r); return z === '#' || z === '='; };   // '=' = Haftfläche (fest, Unterseite klebt)
+const RAMPE_HOCH_RECHTS = '/', RAMPE_HOCH_LINKS = '\\';   // Rampen: nur ihre schräge Fläche zählt (Laufen + Rollen)
 
 // Stationen: von/bis = Spalten; start = Rücksetzpunkt (Füße auf Reihe r); mech = welche Mechanik die Tasten 1–4 umschalten
 const STATIONEN = [
   {nr: 1, name: 'Grundlagen', von: 0, bis: 51, start: {c: 4, r: BODEN_R}, mech: 'sprung'},
   {nr: 2, name: 'Dash', von: 52, bis: 99, start: {c: 55, r: BODEN_R}, mech: 'dash'},
   {nr: 3, name: 'Haken', von: 100, bis: 149, start: {c: 102, r: BODEN_R}, mech: 'haken'},
-  {nr: 4, name: 'Unterseite', von: 150, bis: 189, start: {c: 153, r: BODEN_R}, mech: null},
+  {nr: 4, name: 'Unterseite', von: 150, bis: 189, start: {c: 152, r: BODEN_R}, mech: 'haft'},
   {nr: 5, name: 'Durchbruch', von: 190, bis: 224, start: {c: 193, r: BODEN_R}, mech: null},
   {nr: 6, name: 'Kombi', von: 225, bis: 254, start: {c: 228, r: BODEN_R}, mech: null},
   {nr: 7, name: 'Freie Fläche', von: 255, bis: 299, start: {c: 258, r: BODEN_R}, mech: null},
@@ -84,9 +85,23 @@ function arenaBauen(){
   grube(141, 147);                                   // ein Anker hoch über einer langen Grube
   setze(144, 5, 144, 5, 'o');
 
-  // ----- Stationen 4–6: Platzhalter, werden in Teil 2–6 gebaut -----
-  const platzhalter = [[4, 151, 'Unterseite', 'Teil 4'],
-                       [5, 191, 'Durchbruch', 'Teil 5'], [6, 226, 'Kombi', 'Teil 6']];
+  // ----- Station 4: Unterseite (Haften und Rollen) -----
+  setze(149, 17, 149, 17, '#');                      // Grenzstein
+  SCHILDER.push({c: 151, r: BODEN_R, zeilen: ['Station 4: Unterseite (L)', 'A haften · B rollen · C überall', 'Tasten 1–3: Varianten']});
+  setze(152, 14, 167, 14, '=');                      // Gang: Haftfläche an der Decke über Stacheln (beginnt schon über dem Boden)
+  grube(155, 166);
+  SCHILDER.push({c: 169, r: 16, zeilen: ['Rollen (B):', 'L halten, rechts halten']});
+  setze(168, 16, 170, 17, '#');                      // Podest
+  setze(171, 16, 171, 16, RAMPE_HOCH_LINKS); setze(171, 17, 171, 17, '#');   // Rampe hinunter
+  setze(172, 17, 172, 17, RAMPE_HOCH_LINKS);
+  setze(173, 18, 180, 18, '=');                      // klebriger Boden
+  setze(181, 10, 181, 17, '=');                      // Wand hoch (innere Ecke)
+  setze(175, 10, 181, 10, '=');                      // Decke zurück (innere Ecke), außen herum (äußere Ecken)
+  grube(184, 186);                                   // Absprung am Ende
+  setze(183, 17, 183, 17, RAMPE_HOCH_RECHTS);        // kleine Schanze
+
+  // ----- Stationen 5–6: Platzhalter, werden in Teil 5–6 gebaut -----
+  const platzhalter = [[5, 191, 'Durchbruch', 'Teil 5'], [6, 226, 'Kombi', 'Teil 6']];
   for(const [nr, c, n, teil] of platzhalter){
     SCHILDER.push({c, r: BODEN_R, zeilen: ['Station ' + nr + ': ' + n, 'wird in ' + teil + ' gebaut']});
     setze(c - 2, 17, c - 2, 17, '#');   // kleiner Grenzstein

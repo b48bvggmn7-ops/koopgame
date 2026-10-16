@@ -97,6 +97,23 @@ wert(G_HAKEN, 'magnetZug', 'C: Magnet zieht (px pro Schritt)', 5, 0.5, 15, 0.5, 
 wert(G_HAKEN, 'magnetAnteil', 'C: Magnet bis Anteil der Länge', 0.5, 0.1, 1, 0.05, 'Variante C: so weit zieht er');
 wert(G_HAKEN, 'ankerBonus', 'B: Vorrang für echte Anker', 0.3, 0, 2, 0.05, 'Variante B: Anker vor beliebigen Flächen');
 
+// ---------- Unterseite: Haften und Rollen (Teil 4) ----------
+const G_HAFT = 'Unterseite';
+schalter(G_HAFT, 'haftAuto', 'A/C: automatisch greifen (ohne L)', false, 'aus: L halten zum Festhalten · an: Berühren von unten reicht');
+wert(G_HAFT, 'haftTempo', 'A/C: Tempo an der Decke', 4.2, 1, 10, 0.1);
+wert(G_HAFT, 'haftBeschl', 'A/C: Griff an der Decke', 0.25, 0.02, 1, 0.01);
+wert(G_HAFT, 'haftAbsprungY', 'A/C: Absprung nach unten', 3, 0, 12, 0.5, 'Leertaste an der Decke');
+wert(G_HAFT, 'haftAbsprungX', 'A/C: Absprung nach vorn', 5, 0, 14, 0.5);
+schalter(G_HAFT, 'haftKante', 'A/C: am Ende der Fläche anhalten (Rail)', true, 'aus: am Ende fällt man herunter');
+schalter(G_HAFT, 'rollUmschalten', 'B: L drücken schaltet Rollen an/aus', false, 'aus: L halten = rollen');
+wert(G_HAFT, 'rollBeschl', 'B: Rollen beschleunigen', 0.28, 0.02, 1.5, 0.01);
+wert(G_HAFT, 'rollMax', 'B: Rollen Höchsttempo (mit Taste)', 11, 3, 25, 0.5, 'Rampen und Schwung dürfen schneller machen');
+wert(G_HAFT, 'rollReibung', 'B: Rollen ausrollen (1 = nie bremsen)', 0.992, 0.95, 1, 0.001);
+wert(G_HAFT, 'rollSchwer', 'B: Schwerkraft beim Rollen (× normal)', 1, 0, 2, 0.05, 'zieht auf Rampen und an Wänden');
+wert(G_HAFT, 'rollKlebSchwer', 'B: Schwerkraft auf Haftflächen (× normal)', 0.25, 0, 1, 0.05, 'klein = Wände hochrollen geht auch langsam');
+wert(G_HAFT, 'rollFang', 'B: Haftflächen fangen ab (px)', 6, 0, 20, 1, 'so weit darf die Kugel abheben und bleibt trotzdem kleben');
+wert(G_HAFT, 'rollSprung', 'B: Absprung von der Fläche', 9, 2, 18, 0.5, 'Leertaste beim Rollen: weg von der Fläche');
+
 schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
 
 // ---------- Kamera ----------
@@ -149,6 +166,11 @@ mechanik('haken', 'Haken', [
   {name: 'B – Decken überall', hilfe: 'haftet an jeder festen Fläche über oder neben dir (Anker haben Vorrang)'},
   {name: 'C – Anker mit Magnet', hilfe: 'wie A, aber der Anker zieht dich ein Stück heran'},
   {name: 'D – Freies Zielen', hilfe: 'zielen mit Maus oder rechtem Stick, trifft Anker und Flächen; Maustaste = Haken'},
+]);
+mechanik('haft', 'Unterseite', [
+  {name: 'A – Unterseiten-Haften', hilfe: 'an Haftflächen (lila) von unten festhalten (L), entlanglaufen, abspringen, dashen'},
+  {name: 'B – Rollen', hilfe: 'L halten = Kugel: rollt mit Schwung, klebt an Haftflächen (auch um Ecken), Rampen geben Tempo'},
+  {name: 'C – Haften überall', hilfe: 'wie A, aber jede Decke ist klebrig (zum Testen)'},
 ]);
 let aktiveMechanik = 'sprung';
 function varianteSetzen(id, i){
