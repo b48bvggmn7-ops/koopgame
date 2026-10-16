@@ -5653,6 +5653,25 @@ async def alte_levels_unveraendert(g):
     finally:
         srv.shutdown()
 
+@test
+async def bahnen_alte_mechaniken(g):
+    """Nacht-Ausbau (harte Regel): Laufen, Sprung, Kamin-Wandsprung, Haken-Schwung (+ Seil ran/geben), Segeln, Aufwind,
+    Sprungpilz und Einzelwand liefern Schritt für Schritt EXAKT dieselben Bahnen wie vor dem Einbau von Dash, Durchbruch-
+    Wand, Wand-Rutschen und Haftfläche. Referenz: tests/bahnen_referenz.json (vor dem Ausbau aufgezeichnet, nie anpassen)."""
+    ref = json.loads((ROOT / 'tests' / 'bahnen_referenz.json').read_text(encoding='utf-8'))
+    assert len(ref) >= 7, len(ref)
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=bahnen')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        await p.evaluate("() => {" + (ROOT / 'tests' / 'bahnen.js').read_text(encoding='utf-8') + "}")
+        erg = await p.evaluate("ref => bahnenAbspielen(ref)", ref)
+        falsch = [e for e in erg if e.get('fehler', 'x') is not None]
+        assert not falsch, f'Bahnen weichen ab: {falsch[:3]}'
+        assert sum(e['schritte'] for e in erg) >= 2000, erg
+    finally:
+        srv.shutdown()
+
 def level_teil(k, v):
     """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
     zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""
