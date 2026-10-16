@@ -2,7 +2,7 @@
 // Zeichen je Kästchen: '.' frei · '#' Boden/Wand · '^' Stacheln (später: Anker, Haftflächen, brechbare Wände).
 // Boden-Oberkante = Reihe 18 (Füße bei y = 18 · 40). Sichtbar sind ca. 21 Reihen.
 
-let KARTE_B = 400;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
+let KARTE_B = 480;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
 const KARTE_H = 21, BODEN_R = 18;
 let karte = [];   // karte[r][c]
 
@@ -32,6 +32,7 @@ const STATIONEN = [
   {nr: 5, name: 'Durchbruch', von: 190, bis: 239, start: {c: 192, r: BODEN_R}, mech: 'bruch'},
   {nr: 6, name: 'Kombi', von: 240, bis: 289, start: {c: 242, r: BODEN_R}, mech: null},
   {nr: 7, name: 'Freie Fläche', von: 290, bis: 399, start: {c: 292, r: BODEN_R}, mech: null},
+  {nr: 8, name: 'Spaß-Level', von: 400, bis: 479, start: {c: 402, r: BODEN_R}, mech: null},
 ];
 // Schilder: Text im Bild (Spalte, Reihe der Füße des Pfostens, Zeilen)
 let SCHILDER = [];
@@ -159,6 +160,26 @@ function arenaBauen(){
   SCHILDER.push({c: F + 79, r: BODEN_R, zeilen: ['Kristalle (grün):', 'laden den Dash in der Luft']});
   grube(F + 82, F + 102);                            // Kristall-Strecke: Sprung + Dash, Kristall, Dash, Kristall …
   for(const c of [F + 87, F + 92, F + 97]) setze(c, 14, c, 14, 'k');   // auf Höhe eines flachen Dashes nach dem Sprung
+
+  // ----- Station 8: Spaß-Level – jede Mechanik einmal, von links nach rechts -----
+  setze(399, 17, 399, 17, '#');
+  SCHILDER.push({c: 401, r: BODEN_R, zeilen: ['Station 8: Spaß-Level', 'alles einmal – viel Spaß!']});
+  setze(405, 17, 405, 17, RAMPE_HOCH_RECHTS); setze(406, 17, 407, 17, '#'); setze(408, 17, 408, 17, RAMPE_HOCH_LINKS);   // Hügel
+  grube(410, 411);                                   // kleiner Sprung
+  setze(415, 10, 415, 15, '#');                      // Kamin (Wandsprung)
+  setze(419, 10, 422, 17, '#');
+  ZWISCHENPUNKTE.push({c: 420, r: 10});
+  setze(420, 6, 430, 6, '=');                        // Haftdecke (L halten) über Stacheln
+  grube(423, 430);
+  setze(435, 12, 437, 12, '#'); setze(436, 13, 436, 17, 'x');   // Risswand unter einem Dach: Dash (J) durch
+  ZWISCHENPUNKTE.push({c: 438, r: BODEN_R});
+  grube(440, 450);                                   // Kristalle: Sprung + Dash, Kristall, Dash …
+  setze(444, 14, 444, 14, 'k'); setze(449, 14, 449, 14, 'k');
+  ZWISCHENPUNKTE.push({c: 454, r: BODEN_R});   // breiter Landeplatz 451–456
+  grube(457, 468);                                   // Haken-Schwünge (K halten)
+  setze(460, 8, 460, 8, 'o'); setze(466, 8, 466, 8, 'o');
+  setze(476, 14, 478, 17, '#');                      // Ziel-Podest: Sprung + Dash nach oben
+  SCHILDER.push({c: 477, r: 14, zeilen: ['Ziel!', 'Geschafft :)']});
 }
 arenaBauen();
 

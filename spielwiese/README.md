@@ -47,6 +47,10 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 7. Freie Fläche (zum Herumtoben und Selbstbauen) – mit Knick-Block neben einem Anker, Halfpipe aus normalen Wänden
    und einer Kristall-Strecke (Sprung + Dash, jeder grüne Kristall lädt den Dash in der Luft wieder auf)
 
+8. Spaß-Level – kurzes Level, jede Sache einmal: Hügel mit Rampen, kleiner Sprung, Kamin (Wandsprung), Haftdecke (L),
+   Risswand (Dash), Kristall-Grube (Sprung + Dash, Kristalle laden auf), zwei Haken-Schwünge (K), Ziel-Podest
+   (Sprung + Dash nach oben). Drei Fähnchen = Zwischenpunkte.
+
 ## Zusatz-Schalter (Ideen 1–4, im Panel)
 1. Dash-Kristalle (Gruppe Dash): grüne Rauten laden den Dash auf, kommen nach ein paar Sekunden wieder; im Editor Taste 9.
 2. Lochgröße beim Durchbruch (Gruppe Durchbruch): 0 nur figurgroß · 1 3×3 · 2 ganze Wand/Reihe quer zum Dash.

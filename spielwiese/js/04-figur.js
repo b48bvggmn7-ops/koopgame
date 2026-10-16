@@ -70,6 +70,10 @@ function kanteSeitlich(f, dy){
   }
   return false;
 }
+function stufeHoch(f, dx, max){
+  for(let d = 1; d <= max; d++) if(frei(f.x, f.y - d) && frei(f.x + dx, f.y - d)){ f.y -= d; return true; }
+  return false;
+}
 function kanteStufe(f, dx, max){
   if(!V.kantenhilfe || !max) return false;
   for(let d = 1; d <= max; d++) if(frei(f.x, f.y - d) && frei(f.x + dx, f.y - d)){ f.y -= d; return true; }
@@ -82,7 +86,10 @@ function bewegen(f){
   for(let i = 0; i < n; i++){
     if(dx){
       const sx = dx / n;
-      if(!frei(f.x + sx, f.y) && f.dash && kanteStufe(f, sx, V.kantenStufe)){}   // beim Dash auf die Stufe
+      if(!frei(f.x + sx, f.y)){
+        if(f.dash) kanteStufe(f, sx, V.kantenStufe);   // beim Dash auf die Stufe (Kantenhilfe)
+        else if(f.amBoden) stufeHoch(f, sx, 16);       // Laufen: kleine Kanten (z. B. Rampe -> Block) einfach hinauf
+      }
       f.x += sx; const s = kollisionX(f, dx); if(s){ stossX = s; dx = 0; }
     }
     if(dy){
@@ -326,7 +333,7 @@ function figurSchritt(){
     if(fig.dash && V.fxNachbilder) nachbild(fig);
   }
   fig.amBoden = fig.vy >= 0 && bodenUnter(fig);
-  if(!fig.amBoden && !fig.seil && fig.vy >= 0 && rampeAufsetzen(fig, warBoden)) fig.amBoden = true;   // Rampen
+  if(!fig.seil && fig.vy >= 0 && rampeAufsetzen(fig, warBoden || fig.amBoden)) fig.amBoden = true;   // Rampen (auch vom flachen Boden hinauf)
   if(fig.amBoden && !fig.dash) fig.vy = 0;
   if(!warBoden && fig.amBoden && !fig.dash) landen(fallTempo);
   if(fig.amBoden){ fig.wandSprungSeite = 0; if(!fig.dash) dashAufladen(); }
