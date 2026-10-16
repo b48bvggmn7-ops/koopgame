@@ -107,5 +107,7 @@ function ton(art, staerke){
   else if(art === 'bruch'){ rauschen(0.25, 0.22, 900); piep(160, 70, 0.18, 0.12, 'square'); }
   else if(art === 'tock'){ piep(330, 260, 0.05, 0.08, 'square'); rauschen(0.04, 0.06, 700); }
   else if(art === 'wachsen') piep(300, 450, 0.08, 0.04, 'sine');
+  else if(art === 'kristall'){ piep(660, 990, 0.08, 0.08, 'sine'); piep(990, 1480, 0.1, 0.05, 'sine'); }
+  else if(art === 'knick') piep(420, 380, 0.03, 0.04, 'square');
   else if(art === 'klick') piep(900, 700, 0.035, 0.06, 'sine');
 }

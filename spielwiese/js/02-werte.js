@@ -126,6 +126,13 @@ wert(G_BRUCH, 'abprall', 'Abprallen ohne Dash', 0.5, 0, 1.2, 0.05, 'wer nur läu
 wert(G_BRUCH, 'nachwachsZeit', 'B: wächst nach (Sekunden)', 3, 0.5, 15, 0.5, 'Variante B');
 wert(G_BRUCH, 'bruchTempo', 'C: nötiges Tempo', 21, 10, 40, 0.5, 'Variante C: Dash-Tempo + Schwung davor (z. B. aus dem Seil) muss so hoch sein');
 
+// ---------- Ideen-Schalter (Vorschläge 1–4) ----------
+wert(G_DASH, 'kristallZeit', 'Dash-Kristall: wieder da nach (Sekunden)', 2.5, 0.5, 10, 0.5, 'Kristalle (grüne Rauten) laden den Dash in der Luft auf');
+schalter(G_DASH, 'kristallNurLeer', 'Kristall nur nehmen, wenn Dash leer', true, 'aus: jeder Kristall wird beim Berühren verbraucht');
+wert(G_BRUCH, 'bruchForm', 'Lochgröße: 0 Figur · 1 3×3 · 2 ganze Säule', 0, 0, 2, 1, 'größere Löcher: kein Wandstumpf mehr, fühlt sich saftiger an');
+schalter(G_HAKEN, 'seilKnick', 'Liane knickt an Ecken', false, 'an: die Liane wickelt sich um Ecken statt durch sie zu schneiden');
+schalter(G_HAFT, 'rollUmlenken', 'B: Schwung auch an normalen Wänden umlenken', false, 'wie in einer Halfpipe: an Wänden hochrollen, oben fällt man wieder ab');
+
 schalter(G_DASH, 'dashPunkte', 'Dash-Punkte über der Figur', true, 'zeigt, wie viele Luft-Dashes noch da sind');
 
 // ---------- Kamera ----------

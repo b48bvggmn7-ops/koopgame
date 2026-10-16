@@ -19,17 +19,32 @@ function bruchVorDash(){
     for(let c = Math.floor(x0 / K); c <= Math.floor(x1 / K); c++) if(zelle(c, r) === 'x') treffer.push([c, r]);
   if(!treffer.length) return;
   if(!bruchErlaubt(d)){ d.zuLangsam = true; return; }   // C: prallt ab (wird nach dem Bewegen behandelt)
-  for(const [c, r] of treffer) kastenZerbrechen(c, r, d.dx, d.dy);
+  for(const [c, r] of lochErweitern(treffer, d)) kastenZerbrechen(c, r, d.dx, d.dy);
   d.faktor = (d.faktor || 1) * V.bruchBehalten;
   fig.vx = d.dx * V.dashTempo * d.faktor; fig.vy = d.dy * V.dashTempo * d.faktor;
   fig.durchbruch = V.bruchFenster;
   trefferStopp(V.bruchStopp); wackeln(V.bruchWackeln); ton('bruch');
   dehnen(fig, Math.abs(d.dx) > Math.abs(d.dy) ? 1.3 : 0.8, Math.abs(d.dx) > Math.abs(d.dy) ? 0.8 : 1.3);
 }
+// Idee 2 – größere Löcher: 0 = nur was die Figur trifft · 1 = 3×3 um jeden Treffer · 2 = die ganze zusammenhängende
+// Risse-Säule quer zur Dash-Richtung (waagerechter Dash: ganze Wand, senkrechter Dash: ganze Reihe; schräg: 3×3)
+function lochErweitern(treffer, d){
+  const form = Math.round(V.bruchForm), raus = new Map(), dazu = (c, r) => { if(zelle(c, r) === 'x') raus.set(c + ',' + r, [c, r]); };
+  for(const [c, r] of treffer){
+    dazu(c, r);
+    const schraeg = Math.abs(d.dx) > 0.3 && Math.abs(d.dy) > 0.3;
+    if(form === 1 || (form === 2 && schraeg)){ for(let a = -1; a <= 1; a++) for(let b = -1; b <= 1; b++) dazu(c + a, r + b); }
+    else if(form === 2){
+      const [sc, sr] = Math.abs(d.dx) >= Math.abs(d.dy) ? [0, 1] : [1, 0];
+      for(const s of [1, -1]) for(let i = 1; i < 60 && zelle(c + sc * i * s, r + sr * i * s) === 'x'; i++) dazu(c + sc * i * s, r + sr * i * s);
+    }
+  }
+  return [...raus.values()];
+}
 function kastenZerbrechen(c, r, dx, dy){
   karte[r][c] = '.';
   kaputt.push({c, r, zeit: Math.round(V.nachwachsZeit * 60)});
-  bruchstuecke(c * K + K / 2, r * K + K / 2, dx, dy, V.bruchStuecke);
+  bruchstuecke(c * K + K / 2, r * K + K / 2, dx, dy, Math.round(V.bruchForm) ? Math.ceil(V.bruchStuecke / 2) : V.bruchStuecke);
   staubWolke(c * K + K / 2, r * K + K, 4, 0);
 }
 // ohne Dash (oder zu langsam in C) gegen Risse: abprallen

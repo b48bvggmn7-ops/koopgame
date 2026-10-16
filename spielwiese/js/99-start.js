@@ -22,6 +22,7 @@ function physikSchritt(){
   eingabeSchritt();
   figurSchritt();
   bruchSchritt();
+  kristallSchritt();
   kameraSchritt();
   gefuehlSchritt();
 }

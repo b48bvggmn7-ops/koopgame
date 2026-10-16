@@ -6,6 +6,7 @@
 const WERKZEUGE = [
   {z: '#', name: 'Boden/Wand'}, {z: '=', name: 'Haftfläche'}, {z: 'x', name: 'Brechbar'}, {z: 'o', name: 'Anker'},
   {z: '^', name: 'Stacheln'}, {z: '/', name: 'Rampe ↗'}, {z: '\\', name: 'Rampe ↖'}, {z: '.', name: 'Radierer'},
+  {z: 'k', name: 'Kristall'},
 ];
 const bau = { an: false, werkzeug: 0, zelle: null, malt: 0 };
 
@@ -56,17 +57,17 @@ function karteAnwenden(o){
   if(!o || !Array.isArray(o.zeilen) || o.zeilen.length !== KARTE_H) return false;
   const breite = o.zeilen[0].length;
   if(breite < 40 || breite > 2000 || o.zeilen.some(z => typeof z !== 'string' || z.length !== breite)) return false;
-  const erlaubt = new Set(['.', '#', '=', 'x', 'o', '^', '/', '\\']);
+  const erlaubt = new Set(['.', '#', '=', 'x', 'o', '^', '/', '\\', 'k']);
   KARTE_B = breite;
   karte = o.zeilen.map(z => Array.from(z, ch => erlaubt.has(ch) ? ch : '.'));
   kaputt = []; ankerSammeln(); zurueckSetzen();
   return true;
 }
-function karteOriginal(){ KARTE_B = 360; arenaBauen(); kaputt = []; ankerSammeln(); zurueckSetzen(); }
+function karteOriginal(){ KARTE_B = 400; arenaBauen(); kaputt = []; ankerSammeln(); zurueckSetzen(); }
 
 function karteBereichBauen(p){
   p.appendChild(el('h3', {text: 'Karte (Mini-Editor)'}));
-  p.appendChild(el('div', {class: 'hilfe', text: 'B = Bauen an/aus · linke Maus setzt, rechte löscht · Ziffern 1–8 oder Mausrad wählen: ' +
+  p.appendChild(el('div', {class: 'hilfe', text: 'B = Bauen an/aus · linke Maus setzt, rechte löscht · Ziffern 1–9 oder Mausrad wählen: ' +
     WERKZEUGE.map((w, i) => (i + 1) + ' ' + w.name).join(', ')}));
   p.appendChild(el('div', {class: 'knopfreihe'},
     el('button', {text: 'Bauen an/aus (B)', onclick: () => { bauenUmschalten(); }}),
@@ -106,7 +107,7 @@ function bauZeichnenWelt(kx){
 }
 function bauZeichnenAnzeige(){
   if(!bau.an) return;
-  const breite = 128, x0 = BILD_B / 2 - WERKZEUGE.length * breite / 2, y = BILD_H - 46;
+  const breite = 118, x0 = BILD_B / 2 - WERKZEUGE.length * breite / 2, y = BILD_H - 46;
   ctx.fillStyle = 'rgba(15,20,30,0.75)'; ctx.fillRect(x0 - 8, y - 8, WERKZEUGE.length * breite + 16, 44);
   WERKZEUGE.forEach((w, i) => {
     const x = x0 + i * breite;

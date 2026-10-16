@@ -88,6 +88,7 @@ function kaestchenZeichnen(kx){
     const z = karte[r][c], x = c * K, y = r * K;
     if(istRampe(z)){ rampeZeichnen(c, r, z); continue; }
     if(z === 'x'){ risseZeichnen(c, r); continue; }
+    if(z === 'k'){ kristallZeichnen(c, r); continue; }
     if(z === '#' || z === '='){
       ctx.fillStyle = FARBE.erde; ctx.fillRect(x, y, K + 0.6, K + 0.6);   // etwas größer: keine hellen Fugen beim Zoom
       ctx.fillStyle = FARBE.erdeDunkel;

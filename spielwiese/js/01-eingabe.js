@@ -10,7 +10,7 @@ const TASTEN = {
   neustart: ['KeyR'],      // zurück zum Rücksetzpunkt
   panel: ['Tab'],          // Einstellungen auf/zu
   bauen: ['KeyB'],         // Mini-Editor an/aus
-  ziffer5: ['Digit5', 'Numpad5'], ziffer6: ['Digit6', 'Numpad6'], ziffer7: ['Digit7', 'Numpad7'], ziffer8: ['Digit8', 'Numpad8'],
+  ziffer5: ['Digit5', 'Numpad5'], ziffer6: ['Digit6', 'Numpad6'], ziffer7: ['Digit7', 'Numpad7'], ziffer8: ['Digit8', 'Numpad8'], ziffer9: ['Digit9', 'Numpad9'],
   variante1: ['Digit1', 'Numpad1'], variante2: ['Digit2', 'Numpad2'], variante3: ['Digit3', 'Numpad3'], variante4: ['Digit4', 'Numpad4'],
 };
 // Controller (Standard-Belegung, PS4): 0 ✕, 1 ○, 2 □, 3 △, 4 L1, 5 R1, 6 L2, 7 R2, 8 Share, 9 Options, 12–15 Steuerkreuz
@@ -47,7 +47,7 @@ function inTextfeld(e){
 }
 function aktionAusloesen(a){
   flanken[a] = true;
-  if(['panel', 'neustart', 'bauen', 'variante1', 'variante2', 'variante3', 'variante4', 'varianteWeiter', 'ziffer5', 'ziffer6', 'ziffer7', 'ziffer8'].includes(a)) sofortAktionen.push(a);
+  if(['panel', 'neustart', 'bauen', 'variante1', 'variante2', 'variante3', 'variante4', 'varianteWeiter', 'ziffer5', 'ziffer6', 'ziffer7', 'ziffer8', 'ziffer9'].includes(a)) sofortAktionen.push(a);
 }
 
 window.addEventListener('keydown', e => {

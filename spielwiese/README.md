@@ -44,12 +44,20 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
    viel Tempo = Dash plus Schwung)
 6. Kombi – alles hintereinander: Kamin (Wandsprung) → Haftdecke über der Grube (L) → vom Hängen per Dash durch die
    Risswand → zwei Haken-Schwünge → Landeplatz → Sprung + Dash nach oben ins Ziel. Zwei Fähnchen = Zwischenpunkte.
-7. Freie Fläche (zum Herumtoben und Selbstbauen)
+7. Freie Fläche (zum Herumtoben und Selbstbauen) – mit Knick-Block neben einem Anker, Halfpipe aus normalen Wänden
+   und einer Kristall-Strecke (Sprung + Dash, jeder grüne Kristall lädt den Dash in der Luft wieder auf)
+
+## Zusatz-Schalter (Ideen 1–4, im Panel)
+1. Dash-Kristalle (Gruppe Dash): grüne Rauten laden den Dash auf, kommen nach ein paar Sekunden wieder; im Editor Taste 9.
+2. Lochgröße beim Durchbruch (Gruppe Durchbruch): 0 nur figurgroß · 1 3×3 · 2 ganze Wand/Reihe quer zum Dash.
+3. „Liane knickt an Ecken“ (Gruppe Haken): die Liane wickelt sich um Ecken und wieder ab, statt durchzuschneiden.
+4. „Schwung auch an normalen Wänden umlenken“ (Gruppe Unterseite, Rollen B): Halfpipe – an Wänden hochrollen,
+   wer oben langsam wird, fällt ab.
 
 ## Mini-Editor (Taste B)
 - B schaltet Bauen an/aus, das Spiel läuft dabei weiter (gleich ausprobieren).
-- Linke Maustaste (auch gedrückt ziehen) setzt, rechte löscht. Ziffern 1–8 oder Mausrad wählen:
-  1 Boden/Wand · 2 Haftfläche · 3 Brechbar · 4 Anker · 5 Stacheln · 6 Rampe ↗ · 7 Rampe ↖ · 8 Radierer.
+- Linke Maustaste (auch gedrückt ziehen) setzt, rechte löscht. Ziffern 1–9 oder Mausrad wählen:
+  1 Boden/Wand · 2 Haftfläche · 3 Brechbar · 4 Anker · 5 Stacheln · 6 Rampe ↗ · 7 Rampe ↖ · 8 Radierer · 9 Kristall.
 - Im Panel (Tab) unter „Karte“: speichern (`spielwiese-karte`), gespeicherte laden, Original-Arena, Export/Import als JSON.
 
 Im Panel außerdem: Wandsprung-Varianten (A einfach, B wie im Spiel) und die Kantenhilfe (Kopf rutscht an Ecken

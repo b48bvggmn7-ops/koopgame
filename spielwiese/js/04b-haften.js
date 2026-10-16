@@ -112,7 +112,8 @@ function kugelHerausschieben(b, stoesse){
 }
 // Fläche zum Entlangrollen wählen: Haftflächen immer, normale Flächen nur, wenn sie nach oben zeigen (Boden, Rampe)
 function kugelAuflage(b, fang){
-  const ks = kugelKontakte(b.cx, b.cy, KUGEL_R + fang).filter(t => t.klebt || t.ny < -0.45);
+  // Idee 4 (rollUmlenken): normale Wände zählen auch – aber nur, solange man an ihnen hinauf rollt (Halfpipe)
+  const ks = kugelKontakte(b.cx, b.cy, KUGEL_R + fang).filter(t => t.klebt || t.ny < -0.45 || (V.rollUmlenken && t.ny < 0.45 && !b.wandAb));
   if(!ks.length) return null;
   if(b.eckeN){   // nach einem Eckstoß: die gestoßene Fläche ist die neue Auflage
     ks.sort((p, q) => (q.nx * b.eckeN.nx + q.ny * b.eckeN.ny) - (p.nx * b.eckeN.nx + p.ny * b.eckeN.ny));
@@ -139,6 +140,7 @@ function rollenSchritt(E, rxWert){
   const b = fig.ball, rx = Math.sign(rxWert);
   // Jetzt-Richtung der Fläche (Tangente +t: die Fläche liegt rechts von der Laufrichtung)
   if(b.los > 0) b.los--;
+  if(b.wandAb > 0) b.wandAb--;
   let auf = b.los > 0 ? null : kugelAuflage(b, V.rollFang);
   const g = V.schwerkraft * V.rollSchwer;
   if(auf){
@@ -153,17 +155,23 @@ function rollenSchritt(E, rxWert){
       if(Math.sign(b.rollV) !== ziel || Math.abs(b.rollV) < V.rollMax) b.rollV += ziel * V.rollBeschl;
     } else b.taste = 0;
     b.rollV += g * ty * (auf.klebt ? V.rollKlebSchwer : 1);   // Schwerkraft entlang der Fläche (Rampen, Wände)
-    b.rollV *= V.rollReibung;
-    if(fig.puffer > 0){   // Absprung weg von der Fläche
-      fig.puffer = 0; b.los = 8; b.an = null;
-      b.vx = tx * b.rollV + auf.nx * V.rollSprung; b.vy = ty * b.rollV + auf.ny * V.rollSprung;
-      dehnen(fig, 0.8, 1.2); ton('sprung');
+    // normale Wand (Idee 4): wer nicht mehr hinauf rollt, fällt ab (keine Klebe-Wand)
+    if(!auf.klebt && auf.ny > -0.45 && ty * Math.sign(b.rollV || 1) >= 0){
+      b.wandAb = 12; b.an = null; b.vx = tx * b.rollV; b.vy = ty * b.rollV; auf = null;
     } else {
-      b.vx = tx * b.rollV; b.vy = ty * b.rollV;
-      // an die Fläche andrücken (bleibt kleben)
-      b.cx = auf.qx + auf.nx * KUGEL_R; b.cy = auf.qy + auf.ny * KUGEL_R;
+      b.rollV *= V.rollReibung;
+      if(fig.puffer > 0){   // Absprung weg von der Fläche
+        fig.puffer = 0; b.los = 8; b.an = null;
+        b.vx = tx * b.rollV + auf.nx * V.rollSprung; b.vy = ty * b.rollV + auf.ny * V.rollSprung;
+        dehnen(fig, 0.8, 1.2); ton('sprung');
+      } else {
+        b.vx = tx * b.rollV; b.vy = ty * b.rollV;
+        // an die Fläche andrücken (bleibt kleben)
+        b.cx = auf.qx + auf.nx * KUGEL_R; b.cy = auf.qy + auf.ny * KUGEL_R;
+      }
     }
-  } else {
+  }
+  if(!auf){
     b.an = null; b.vy = Math.min(b.vy + g, V.maxFall); b.vx *= 0.995;
     if(rx) b.vx += rx * V.luftBeschl * 0.6;
   }
@@ -173,7 +181,7 @@ function rollenSchritt(E, rxWert){
   if(b.an){   // nach dem Bewegen: Tempo entlang der Fläche aus der echten Bewegung
     const tx = -b.an.ny, ty = b.an.nx; b.rollV = b.vx * tx + b.vy * ty;
     // innere Ecke: gegen eine Haftfläche gerollt -> Schwung bleibt und läuft im nächsten Schritt an ihr weiter
-    const ecke = stoesse.find(s => (s.t.klebt || s.t.ny < -0.45) && (s.t.nx * tx + s.t.ny * ty) * Math.sign(rollVor) < -0.5);
+    const ecke = stoesse.find(s => (s.t.klebt || s.t.ny < -0.45 || (V.rollUmlenken && s.t.ny < 0.45)) && (s.t.nx * tx + s.t.ny * ty) * Math.sign(rollVor) < -0.5);
     if(ecke){ b.rollV = rollVor; b.an = null; b.eckeN = ecke.t; }
     else if(stoesse.length && Math.abs(rollVor) > 6){ wackeln(0.08); ton('bonk'); }
   }

@@ -93,7 +93,7 @@ function hakenSchiessen(z){
 function hakenFestmachen(){
   const s = fig.seil, m = figMitte();
   s.zustand = 'fest'; s.len = Math.max(V.seilMin, Math.hypot(s.x - m.x, s.y - m.y));
-  s.zielLen = Math.max(V.seilMin, Math.min(s.len, V.seilStartMax)); s.startLen = s.zielLen;
+  s.zielLen = Math.max(V.seilMin, Math.min(s.len, V.seilStartMax)); s.startLen = s.zielLen; s.knicke = [];
   fig.rutsch = 0; fig.sprungAktiv = false; fig.gleit = 0; fig.sperre = 0;
   dashAufladen();   // Haken-Greifen lädt den Dash auf
   trefferStopp(1); wackeln(0.08); ton('greifen');
@@ -157,8 +157,51 @@ function seilFlugSchritt(){
 function seilSchwungEingabe(rx){
   if(!fig.amBoden) fig.vx += rx * V.schwungKraft;
 }
+// Idee 3 – Liane knickt an Ecken: verdeckt eine Ecke die Sicht vom Drehpunkt zur Figur, wird die Ecke der neue Drehpunkt
+// (das Seil wird um das Stück kürzer); schwingt man zurück, wickelt es sich wieder ab.
+const seilDrehpunkt = s => (s.knicke && s.knicke.length) ? s.knicke[s.knicke.length - 1] : s;
+const kreuz = (ax, ay, bx, by) => ax * by - ay * bx;
+function knickSuchen(p, m){
+  const d = Math.hypot(m.x - p.x, m.y - p.y), n = Math.ceil(d / 4);
+  for(let i = 2; i < n; i++){
+    const x = p.x + (m.x - p.x) * i / n, y = p.y + (m.y - p.y) * i / n, c = Math.floor(x / K), r = Math.floor(y / K);
+    if(!fest(c, r)) continue;
+    let best = null, bestK = Infinity;
+    for(const [ex, ey] of [[0, 0], [1, 0], [0, 1], [1, 1]]){
+      const q = {x: (c + ex) * K + (ex ? 1.5 : -1.5), y: (r + ey) * K + (ey ? 1.5 : -1.5)};
+      if(fest(Math.floor(q.x / K), Math.floor(q.y / K))) continue;
+      if(!sichtFrei(p.x, p.y, q.x, q.y, 2) || !sichtFrei(q.x, q.y, m.x, m.y, 2)) continue;
+      const kosten = Math.hypot(q.x - p.x, q.y - p.y) + Math.hypot(m.x - q.x, m.y - q.y);
+      if(kosten < bestK){ bestK = kosten; best = q; }
+    }
+    return best;
+  }
+  return null;
+}
+function seilKnickSchritt(s, m){
+  if(!V.seilKnick){ s.knicke = []; return; }
+  // abwickeln: liegt die Figur wieder auf der anderen Seite des letzten Knicks?
+  while(s.knicke.length){
+    const q = s.knicke[s.knicke.length - 1], p = s.knicke.length > 1 ? s.knicke[s.knicke.length - 2] : s;
+    const sinn = Math.sign(kreuz(q.x - p.x, q.y - p.y, m.x - q.x, m.y - q.y));
+    if(sinn && sinn !== q.sinn){ s.knicke.pop(); s.len += q.stueck; s.zielLen += q.stueck; } else break;
+  }
+  // aufwickeln: Ecke zwischen Drehpunkt und Figur?
+  const p = seilDrehpunkt(s);
+  if(s.knicke.length < 8 && !sichtFrei(p.x, p.y, m.x, m.y, 2)){
+    const q = knickSuchen(p, m);
+    if(q){
+      q.stueck = Math.hypot(q.x - p.x, q.y - p.y);
+      q.sinn = Math.sign(kreuz(q.x - p.x, q.y - p.y, m.x - q.x, m.y - q.y)) || 1;
+      s.knicke.push(q);
+      s.len = Math.max(V.seilMin * 0.5, s.len - q.stueck); s.zielLen = Math.max(V.seilMin * 0.5, s.zielLen - q.stueck);
+      ton('knick');
+    }
+  }
+}
 function seilNachSchwerkraft(){
   const s = fig.seil, m = figMitte();
+  seilKnickSchritt(s, m);
   if(s.len > s.zielLen) s.len = Math.max(s.zielLen, s.len - V.straffTempo);   // Liane strafft sich
   // W = ranziehen, S = geben (immer schneller = Rutschen)
   if(gehalten('hoch') && !gehalten('runter')){ s.len = Math.max(V.seilMin, s.len - V.seilRan); s.zielLen = Math.min(s.zielLen, s.len); fig.rutsch = 0; }
@@ -166,16 +209,17 @@ function seilNachSchwerkraft(){
     fig.rutsch = Math.min(V.rutschMax, Math.max(V.seilGeben, (fig.rutsch || 0) + V.rutschBeschl));
     s.len = Math.min(V.hakenReichweite, s.len + fig.rutsch); s.zielLen = Math.max(s.zielLen, s.len);
   } else fig.rutsch = 0;
-  if(MECHANIKEN.haken.aktiv === 2){   // C: Magnet zieht heran
+  if(MECHANIKEN.haken.aktiv === 2 && !s.knicke.length){   // C: Magnet zieht heran
     const ziel = s.startLen * V.magnetAnteil;
     if(s.len > ziel) s.len = Math.max(ziel, s.len - V.magnetZug);
     s.zielLen = Math.min(s.zielLen, s.len);
   }
   if(!fig.amBoden){ fig.vx *= V.seilDaempfung; fig.vy *= V.seilDaempfung; }
   // Grenze: wo wäre ich nach diesem Schritt? Liegt das außerhalb des Seils -> zurück auf den Kreis, Tempo entsprechend
-  const px = m.x + fig.vx, py = m.y + fig.vy, dx = px - s.x, dy = py - s.y, d = Math.hypot(dx, dy);
+  const dp = seilDrehpunkt(s);
+  const px = m.x + fig.vx, py = m.y + fig.vy, dx = px - dp.x, dy = py - dp.y, d = Math.hypot(dx, dy);
   if(d > s.len){
-    const nx = s.x + dx / d * s.len, ny = s.y + dy / d * s.len;
+    const nx = dp.x + dx / d * s.len, ny = dp.y + dy / d * s.len;
     fig.vx = nx - m.x; fig.vy = ny - m.y;
   }
 }
@@ -204,7 +248,11 @@ function hakenZeichnen(alpha){
   if(s && !fig.tot){
     let tx = s.x, ty = s.y;
     if(s.zustand === 'flug'){ const t = Math.min(1, (s.t + alpha) / s.n); tx = mischen(fx_, s.x, t); ty = mischen(fy_, s.y, t); }
-    lianeZeichnen(fx_, fy_, tx, ty, s.zustand === 'fest' ? 0 : 1);
+    if(s.zustand === 'fest' && s.knicke && s.knicke.length){   // geknickte Liane: Anker -> Knicke -> Figur
+      let a = s; for(const q of s.knicke){ lianeZeichnen(a.x, a.y, q.x, q.y, 0); a = q; }
+      lianeZeichnen(a.x, a.y, fx_, fy_, 0);
+      for(const q of s.knicke){ ctx.fillStyle = '#2f5a24'; ctx.beginPath(); ctx.arc(q.x, q.y, 3.5, 0, Math.PI * 2); ctx.fill(); }
+    } else lianeZeichnen(fx_, fy_, tx, ty, s.zustand === 'fest' ? 0 : 1);
     ctx.fillStyle = '#3c6b2f'; ctx.beginPath(); ctx.arc(tx, ty, 4, 0, Math.PI * 2); ctx.fill();
   }
   if(fig.fehlschuss && !fig.tot){

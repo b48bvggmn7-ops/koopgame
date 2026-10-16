@@ -2,7 +2,7 @@
 // Zeichen je Kästchen: '.' frei · '#' Boden/Wand · '^' Stacheln (später: Anker, Haftflächen, brechbare Wände).
 // Boden-Oberkante = Reihe 18 (Füße bei y = 18 · 40). Sichtbar sind ca. 21 Reihen.
 
-let KARTE_B = 360;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
+let KARTE_B = 400;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
 const KARTE_H = 21, BODEN_R = 18;
 let karte = [];   // karte[r][c]
 
@@ -31,7 +31,7 @@ const STATIONEN = [
   {nr: 4, name: 'Unterseite', von: 150, bis: 189, start: {c: 152, r: BODEN_R}, mech: 'haft'},
   {nr: 5, name: 'Durchbruch', von: 190, bis: 239, start: {c: 192, r: BODEN_R}, mech: 'bruch'},
   {nr: 6, name: 'Kombi', von: 240, bis: 289, start: {c: 242, r: BODEN_R}, mech: null},
-  {nr: 7, name: 'Freie Fläche', von: 290, bis: 359, start: {c: 292, r: BODEN_R}, mech: null},
+  {nr: 7, name: 'Freie Fläche', von: 290, bis: 399, start: {c: 292, r: BODEN_R}, mech: null},
 ];
 // Schilder: Text im Bild (Spalte, Reihe der Füße des Pfostens, Zeilen)
 let SCHILDER = [];
@@ -152,6 +152,13 @@ function arenaBauen(){
   setze(F + 39, 17, F + 40, 17, '^');
   for(const c of [F + 46, F + 52, F + 58]) setze(c, 7, c, 7, 'o');   // ein paar Anker zum Schwingen
   setze(F + 44, 13, F + 47, 13, '=');
+  setze(F + 50, 9, F + 51, 10, '#');                 // Knick-Block: Liane wickelt sich darum (Schalter „Liane knickt an Ecken“)
+  SCHILDER.push({c: F + 62, r: BODEN_R, zeilen: ['Halfpipe (Rollen B +', '„Schwung umlenken“)']});
+  setze(F + 64, 12, F + 64, 17, '#'); setze(F + 76, 12, F + 76, 17, '#');   // Halfpipe aus normalen Wänden
+  setze(F + 65, 17, F + 65, 17, RAMPE_HOCH_LINKS); setze(F + 75, 17, F + 75, 17, RAMPE_HOCH_RECHTS);
+  SCHILDER.push({c: F + 79, r: BODEN_R, zeilen: ['Kristalle (grün):', 'laden den Dash in der Luft']});
+  grube(F + 82, F + 102);                            // Kristall-Strecke: Sprung + Dash, Kristall, Dash, Kristall …
+  for(const c of [F + 87, F + 92, F + 97]) setze(c, 14, c, 14, 'k');   // auf Höhe eines flachen Dashes nach dem Sprung
 }
 arenaBauen();
 
