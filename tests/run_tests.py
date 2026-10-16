@@ -5672,6 +5672,215 @@ async def bahnen_alte_mechaniken(g):
     finally:
         srv.shutdown()
 
+async def neue_mechaniken_messen(g, teil):
+    """Nacht-Ausbau: Szenario aus tests/neue_mechaniken.js im Testlevel neue-mechaniken laufen lassen."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html?testlevel=neue-mechaniken')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        await p.evaluate("() => {" + (ROOT / 'tests' / 'neue_mechaniken.js').read_text(encoding='utf-8') + "}")
+        return await p.evaluate(f"NM.{teil}()")
+    finally:
+        srv.shutdown()
+
+@test
+async def dash_richtungen_und_laden(g):
+    """Nacht-Ausbau: Dash in 8 Richtungen (Boden und Luft, beide Figuren), nur ein Luft-Dash, Aufladen am Boden,
+    an der Wand und am Haken, kein Durchtunneln von Wänden (auch schräg)."""
+    r = await neue_mechaniken_messen(g, 'dash')
+    for wer in 'mf':
+        R = {k[1:]: v for k, v in r['richtung'].items() if k[0] == wer}
+        assert R['r'][0] > 3.5 and R['l'][0] < -3.5 and abs(R['r'][1]) < 0.5, (wer, R)
+        assert R['o'][1] < -3.5 and R['u'][1] > 3.5 and abs(R['o'][0]) < 0.1, (wer, R)
+        for d, sx, sy in (('ro', 1, -1), ('lo', -1, -1), ('ru', 1, 1), ('lu', -1, 1)):
+            assert R[d][0]*sx > 2.5 and R[d][1]*sy > 2.5, (wer, d, R[d])
+        assert all(v[2] == 0 for v in R.values()), f'Luft-Dash kostet keinen Punkt: {R}'
+        assert r[wer + 'Boden'] > 3.5, (wer, r[wer + 'Boden'])
+    assert not r['zweiterLuftDash'], 'zweiter Luft-Dash ging'
+    assert 50 <= r['ladeSchritte'] <= 58, r['ladeSchritte']
+    assert r['wandLaden']['vorher'] == 0 and r['wandLaden']['schritte'] < 120, r['wandLaden']
+    if r['hakenLaden'] is not None:
+        assert r['hakenLaden']['haken'] and r['hakenLaden']['punkte'] == 1, r['hakenLaden']
+    assert r['keinTunnel'] < 90 and r['keinTunnelSchraeg'] < 90, (r['keinTunnel'], r['keinTunnelSchraeg'])
+
+@test
+async def durchbruch_wand(g):
+    """Nacht-Ausbau: Durchbruch-Wand bricht nur durch einen Dash (Laufen/Springen nicht), beide Figuren, auch nach
+    unten; Trefferstopp; bleibt kaputt bis Neustart; Option „wächst nach“ wartet, solange eine Figur drin steht."""
+    r = await neue_mechaniken_messen(g, 'bruch')
+    assert r['laufen']['weg'] == 0 and r['laufen']['c'] < 20, r['laufen']
+    assert r['dash']['weg'] >= 1 and r['dash']['c'] > 21, r['dash']
+    assert r['dash']['stopp'] >= 1, f"kein Trefferstopp: {r['dash']}"
+    assert r['schwein']['weg'] >= 1 and r['schwein']['c'] > 21, r['schwein']
+    assert r['unten']['weg'] >= 1 and r['unten']['r'] > 15, r['unten']
+    assert r['bleibt'] >= 1 and r['nachNeustart'] == 0, r
+    w = r['wachsen']
+    assert w['wegNachDash'] >= 1 and w['wartet'] and w['wegMitFigur'] >= 1 and w['frei'], w
+    assert w['wegOhneFigur'] == 0, w
+
+@test
+async def wand_rutschen(g):
+    """Nacht-Ausbau: an einer Wand herunterfallen bremst automatisch auf WAND_RUTSCH_MAX_FALL (ohne Richtungstaste,
+    beide Figuren); ein Wandsprung mitten im Rutschen ist der ganz normale Wandsprung."""
+    r = await neue_mechaniken_messen(g, 'rutschen')
+    gr = await g.ev("WAND_RUTSCH_MAX_FALL")
+    assert r['ohneTaste']['maxVy'] <= gr + 1e-6 and r['ohneTaste']['rutschte'] > 5, r
+    assert r['schwein'] <= gr + 1e-6, r
+    assert r['wandsprung']['vx'] < -3 and r['wandsprung']['vy'] < -8, r['wandsprung']
+
+@test
+async def haftflaeche(g):
+    """Nacht-Ausbau: Haftfläche – mit „hoch“ von unten festhalten (beide Figuren, ohne „hoch“ nicht), langsamer als
+    Laufen mit Schwung entlangrollen, kein Sofort-Stopp, um Kanten herum, loslassen = fallen, Absprung, Dash von dort."""
+    r = await neue_mechaniken_messen(g, 'haft')
+    tempo = await g.ev("HAFT_TEMPO"); lauf = await g.ev("MOVE_SPEED")
+    assert tempo < lauf, (tempo, lauf)
+    assert r['greifen'] and r['schwein'] and not r['ohneHoch'], r
+    assert r['rollen']['haft'] and r['rollen']['anfang'] < tempo*0.6 and r['rollen']['max'] <= tempo + 1e-6, r['rollen']
+    assert r['auslaufen'] > 2, r['auslaufen']
+    assert len(r['ecken']) >= 3, f"nicht um die Ecken gerollt: {r['ecken']}"
+    assert not r['loslassen']['haft'] and r['loslassen']['vy'] > 0, r['loslassen']
+    assert not r['absprung']['haft'] and r['absprung']['vy'] > 0, r['absprung']
+    assert r['dashVonHaft']['dash'] and not r['dashVonHaft']['haft'], r['dashVonHaft']
+
+TASTEN_ALT = {1: {'left': 'KeyA', 'right': 'KeyD', 'jump': 'Space', 'ability': 'KeyG', 'pull': 'KeyW', 'slack': 'KeyS', 'use': 'KeyJ'},
+              2: {'left': 'ArrowLeft', 'right': 'ArrowRight', 'jump': 'Numpad0', 'ability': 'Numpad1', 'pull': 'ArrowUp', 'slack': 'ArrowDown', 'use': 'Numpad2'}}
+
+async def tasten_menue_oeffnen(g, srv):
+    p = g.p
+    await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(900)
+    await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(400)
+    await p.click('#sm-menu >> text=Optionen'); await p.wait_for_function("document.querySelector('#sm-s-options.active')", timeout=8000); await p.wait_for_timeout(400)
+    await p.click('#sm-keys'); await p.wait_for_function("document.querySelector('#sm-s-tasten.active')", timeout=8000); await p.wait_for_timeout(400)
+
+async def tb_knopf(g, n, aktion):
+    await g.p.click(f'#sm-tb-grid button[data-n="{n}"][data-a="{aktion}"]'); await g.p.wait_for_timeout(300)
+
+@test
+async def tasten_belegen_menue(g):
+    """Nacht-Ausbau: Optionen → Tasten belegen. Standard = alte Belegung (+ Dash K / Num 3). Taste ändern, Esc bricht ab,
+    gesperrte Tasten gehen nicht, Konflikt wird markiert und blockiert das Verlassen, Zurücksetzen je Spieler,
+    Speichern unter monchichi.tasten, nach Neuladen aktiv (auch für die Figur im Spiel)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.evaluate("localStorage.clear()")
+        await tasten_menue_oeffnen(g, srv)
+        ks = await g.ev("JSON.parse(JSON.stringify(KEYSETS))")
+        for n in (1, 2):
+            for a, k in TASTEN_ALT[n].items(): assert ks[str(n)][a] == k, (n, a, ks[str(n)][a])
+        assert ks['1']['dash'] == 'KeyK' and ks['2']['dash'] == 'Numpad3', ks
+        # Springen von Spieler 1 auf L
+        await tb_knopf(g, 1, 'jump'); assert await g.ev("!!document.querySelector('#sm-tb-grid .tb-k.fang')")
+        await p.keyboard.press('KeyL'); await p.wait_for_timeout(350)
+        assert await g.ev("KEYSETS[1].jump") == 'KeyL'
+        # Esc bricht ab (Belegung bleibt)
+        await tb_knopf(g, 1, 'use'); await p.keyboard.press('Escape'); await p.wait_for_timeout(350)
+        assert await g.ev("KEYSETS[1].use") == 'KeyJ' and await g.ev("document.querySelector('#sm-s-tasten.active') !== null")
+        # gesperrte Taste (R = Neustart) wird abgelehnt, Fangmodus bleibt -> dann Esc
+        await tb_knopf(g, 1, 'use'); await p.keyboard.press('KeyR'); await p.wait_for_timeout(300)
+        assert await g.ev("KEYSETS[1].use") == 'KeyJ'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(350)
+        # Konflikt: Spieler 2 Fähigkeit auf L -> beide rot, Verlassen blockiert (Dialog)
+        await tb_knopf(g, 2, 'ability'); await p.keyboard.press('KeyL'); await p.wait_for_timeout(350)
+        assert await g.ev("document.querySelectorAll('#sm-tb-grid .tb-k.konflikt').length") == 2
+        await p.click('#sm-tb-back'); await p.wait_for_timeout(400)
+        assert await g.ev("document.querySelector('#sm-modal').classList.contains('on')"), 'kein Konflikt-Dialog'
+        await p.click('#sm-modal-btns .btn >> nth=0'); await p.wait_for_timeout(400)   # weiter ändern
+        assert await g.ev("document.querySelector('#sm-s-tasten.active') !== null")
+        # Spieler 2 zurücksetzen -> Konflikt weg, Verlassen speichert
+        await p.click('#sm-tb-grid .tb-std >> nth=1'); await p.wait_for_timeout(350)
+        assert await g.ev("KEYSETS[2].ability") == 'Numpad1' and await g.ev("document.querySelectorAll('#sm-tb-grid .tb-k.konflikt').length") == 0
+        await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
+        assert await g.ev("document.querySelector('#sm-s-options.active') !== null")
+        gesp = await g.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")
+        assert gesp['tastatur']['1']['jump'] == 'KeyL' and gesp['tastatur']['2']['ability'] == 'Numpad1', gesp
+        # Anzeige in den Optionen zeigt die neue Taste
+        assert 'L' in await g.ev("[...document.querySelectorAll('#sm-ctrl-cards .key')].map(e => e.textContent)")
+        # neu laden: Belegung bleibt, Spiel-Figur (Spieler 1 = Affe) springt mit L
+        await p.goto(srv.url + 'index.html?testlevel=bahnen')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        assert await g.ev("KEYSETS[1].jump") == 'KeyL' and await g.ev("p1.keys.jump") == 'KeyL'
+        assert 'L' in await g.ev("document.getElementById('hudMKeys').textContent")
+        await g.ev("p1.x = 300; p1.y = 720; p1.vy = 0"); await g.steps(10)
+        await p.keyboard.down('KeyL'); await g.steps(6); await p.keyboard.up('KeyL')
+        assert await g.ev("p1.vy < 0 || !p1.grounded"), 'Affe springt nicht mit der neuen Taste'
+        # Zurücksetzen Spieler 1 stellt die alte Belegung wieder her
+        await g.ev("KEYSETS[1].jump = TASTEN_STANDARD[1].jump; tastenSpeichern(); tastenAnwenden()")
+        assert await g.ev("p1.keys.jump") == 'Space'
+    finally:
+        srv.shutdown()
+
+PAD_STUB_TYP = """window.__pad = {id: '%s', index: 0, connected: true, axes:[0,0,0,0], buttons: Array.from({length:17},()=>({pressed:false,value:0})), mapping:'standard'};
+navigator.getGamepads = () => [window.__pad, null, null, null];"""
+
+@test
+async def tasten_controller_je_typ(g):
+    """Nacht-Ausbau: Controller-Belegung frei (auch Schultertasten/Trigger), je Spieler UND Controller-Typ gespeichert;
+    andere Typen behalten die Standard-Belegung; Options/Share sind gesperrt. Simulierter Controller (kein echtes Gerät)."""
+    srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g2 = Game(p)
+    try:
+        await p.add_init_script(PAD_STUB_TYP % 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e)')
+        await p.goto(srv.url + 'index.html'); await p.evaluate("localStorage.clear()")
+        await tasten_menue_oeffnen(g2, srv)
+        assert await g2.ev("padTypAktuell[0]") == 'xbox'
+        await p.click('#sm-tb-seg button[data-art="pad"]'); await p.wait_for_timeout(300)
+        assert 'Xbox' in await g2.ev("document.getElementById('sm-tb-typ').textContent")
+        # Dash von Spieler 1 auf RB (Knopf 5)
+        await tb_knopf(g2, 1, 'dash')
+        await g2.ev("__pad.buttons[5] = {pressed: true, value: 1}"); await p.wait_for_timeout(150)
+        await g2.ev("__pad.buttons[5] = {pressed: false, value: 0}"); await p.wait_for_timeout(300)
+        assert await g2.ev("PADSETS[1].xbox.dash") == 5
+        assert await g2.ev("PADSETS[1].playstation.dash") == 3 and await g2.ev("PADSETS[2].xbox.dash") == 3
+        # Trigger (analog, nur value) auf Fähigkeit
+        await tb_knopf(g2, 1, 'ability')
+        await g2.ev("__pad.buttons[7] = {pressed: false, value: 0.9}"); await p.wait_for_timeout(150)
+        await g2.ev("__pad.buttons[7] = {pressed: false, value: 0}"); await p.wait_for_timeout(300)
+        assert await g2.ev("PADSETS[1].xbox.ability") == 7
+        # Share (8) gesperrt, Options (9) bricht ab
+        await tb_knopf(g2, 1, 'use')
+        await g2.ev("__pad.buttons[8] = {pressed: true, value: 1}"); await p.wait_for_timeout(150)
+        await g2.ev("__pad.buttons[8] = {pressed: false, value: 0}"); await p.wait_for_timeout(200)
+        assert await g2.ev("PADSETS[1].xbox.use") == 1 and await g2.ev("!!document.querySelector('.tb-k.fang')")
+        await g2.ev("__pad.buttons[9] = {pressed: true, value: 1}"); await p.wait_for_timeout(150)
+        await g2.ev("__pad.buttons[9] = {pressed: false, value: 0}"); await p.wait_for_timeout(300)
+        assert await g2.ev("!document.querySelector('.tb-k.fang')") and await g2.ev("PADSETS[1].xbox.use") == 1
+        await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
+        gesp = await g2.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")
+        assert gesp['pad']['1']['xbox']['dash'] == 5 and gesp['pad']['1']['playstation']['dash'] == 3, gesp['pad']['1']
+        # im Spiel: RB dasht mit dem Xbox-Controller, Y (3) nicht mehr
+        await p.goto(srv.url + 'index.html?testlevel=bahnen')
+        await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        await g2.ev("__pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
+        assert not await g2.ev("!!PAD[KEYSETS[1].dash]")
+        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; __pad.buttons[5] = {pressed: true, value: 1}; pollGamepads()")
+        assert await g2.ev("!!PAD[KEYSETS[1].dash]")
+        # derselbe Platz mit PlayStation-Controller: Standard (△ = 3) gilt
+        await g2.ev("__pad.buttons[5] = {pressed: false, value: 0}; __pad.id = 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)'; __pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
+        assert await g2.ev("padTypAktuell[0]") == 'playstation' and await g2.ev("!!PAD[KEYSETS[1].dash]")
+        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; pollGamepads()")
+    finally:
+        await kx.close(); srv.shutdown()
+
+@test
+async def tasten_alter_spielstand(g):
+    """Nacht-Ausbau: Spielstand ohne Tasten-Eintrag (vor dem Ausbau) oder kaputter Eintrag -> Standard-Belegung;
+    teilweise gespeicherte Belegung ergänzt fehlende Aktionen (z. B. Dash) mit dem Standard. Spielstand bleibt erhalten."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html')
+        await p.evaluate("""localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], completed: ['dschungel/01-dschungel.json'], stats: {}, bosse: []}))""")
+        await p.reload(); await p.wait_for_timeout(800)
+        ks = await g.ev("JSON.parse(JSON.stringify(KEYSETS))")
+        for n in (1, 2):
+            for a, k in TASTEN_ALT[n].items(): assert ks[str(n)][a] == k, (n, a)
+        assert 'dschungel/01-dschungel.json' in (await g.ev("GameMenu.getSave()"))['completed']
+        await p.evaluate("localStorage.setItem('monchichi.tasten', '{kaputt')"); await p.reload(); await p.wait_for_timeout(600)
+        assert await g.ev("KEYSETS[1].jump") == 'Space' and await g.ev("KEYSETS[2].dash") == 'Numpad3'
+        await p.evaluate("localStorage.setItem('monchichi.tasten', JSON.stringify({version: 1, tastatur: {1: {jump: 'KeyL'}}}))"); await p.reload(); await p.wait_for_timeout(600)
+        assert await g.ev("KEYSETS[1].jump") == 'KeyL' and await g.ev("KEYSETS[1].dash") == 'KeyK' and await g.ev("PADSETS[1].xbox.jump") == 0
+    finally:
+        srv.shutdown()
+
 def level_teil(k, v):
     """Vergleichsform eines Level-Felds: Böden/Wände/bewegte Teile als belegte Kästchen (egal wie zu Rechtecken
     zusammengefasst), Listen ohne Reihenfolge, leere Liste = fehlt."""
@@ -6167,7 +6376,8 @@ async def element_register(g):
                  ['lichtquelle', 'lichtquellen', True, True], ['spiegel', 'spiegel', True, False], ['kristall', 'kristalle', True, False],
                  ['eis', 'eis', True, True], ['foerderband', 'baender', True, True], ['leuchtkristall', 'leuchtkristalle', True, True],
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
-                 ['presse', 'pressen', True, True]], k   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['presse', 'pressen', True, True],
+                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))

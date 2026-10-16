@@ -1515,6 +1515,55 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   partner_gefahren, partner_aufgaben_mechaniken, partner_auto_aufgaben, partner_steuerung,
   partner_aufgaben_dschungel, partner_aufgaben_ruinen, partner_koop_dschungel.
 
+### Nacht-Ausbau: Dash, Durchbruch-Wand, Wand-Rutschen, Haftfläche, Tasten frei belegen
+Harte Regel: Sprung, Wandsprung, Haken/Seil, Laufen, Schwerkraft, Segeln, Schweben, Aufwind und Pilze sind unverändert –
+wer die neuen Tasten nicht benutzt, spielt Schritt für Schritt genau wie vorher (Beweis: Test `bahnen_alte_mechaniken`,
+Referenz `tests/bahnen_referenz.json` vor dem Ausbau aufgezeichnet). Einzige neue Wirkung ohne neue Taste: das
+Wand-Rutschen (unten). Alle Werte als Konstanten in `js/02-physik-werte.js` (DASH_*, BRUCH_*, WAND_RUTSCH_MAX_FALL,
+HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/durchbruch.js` und `elemente/haftflaeche.js`.
+- **Dash** (beide Figuren; Affe K, Schweinchen Num 3, Controller △ / Y – frei belegbar): kurzer, schneller Stoß in
+  8 Richtungen (Richtung = gedrückte Richtungs-/Hoch-/Runter-Tasten; nichts gedrückt = Blickrichtung; am Seil ohne
+  Richtung = Schwung-Richtung). Am Boden und in der Luft. Strecke ≈ 4,5 Kästchen gerade, ≈ 3,4 / 3,3 schräg
+  (DASH_TEMPO 16 × DASH_DAUER 10 Schritte). Danach bleibt die Hälfte des Tempos (DASH_BEHALTEN), nach oben mindestens
+  ein normaler Sprung-Schwung. Ein Dash in der Luft (DASH_LUFT 1); Aufladen nur mit Halt: am Boden, an einer Wand,
+  am Haken, an einer Haftfläche – dauert DASH_LADEZEIT 54 Schritte (≈ 1 s), voll = kurzes „Pling“. Anzeige: kleiner Punkt
+  über der Figur, nur solange der Dash fehlt/lädt bzw. kurz nach dem Aufladen. Tastendruck wird 5 Schritte gemerkt
+  (DASH_PUFFER). Kurzer Trefferstopp (2 Schritte, ganzes Spiel), leichtes Kamera-Wackeln, Nachbilder, Staub, Ton.
+  - Zusammenspiel: Dash aus dem Seil-Schwung löst das Seil; Haken greifen während des Dashs beendet ihn (Seil übernimmt);
+    Schirm klappt beim Dash zu und geht danach wieder auf (Taste gehalten); Sprungpilz übernimmt (normaler Pilz-Sprung);
+    Aufwind und bewegte Plattformen wirken nach dem Dash wie immer; gegen eine Wand = Stopp mit „Tock“, danach ist ein
+    normaler Wandsprung möglich. Im Wasser kein Dash. Kein Durchtunneln: der Dash bewegt sich in Teilschritten ≤ 8 px.
+- **Durchbruch-Wand** (Editor: Gelände → „Durchbruch“): rissige Steinkästchen, fest wie Wand/Boden – nur ein Dash
+  zerbricht sie (Laufen/Springen nicht). Trefferstopp 3 Schritte, starkes Wackeln, Bruchstücke und Staub je Welt in
+  passender Farbe (Höhle/Vulkan mit glühenden Rissen), 80 % des Schwungs bleiben (BRUCH_BEHALTEN), danach 14 Schritte
+  lang ein kostenloser Anschluss-Dash oder ein Sprung in der Luft (BRUCH_FENSTER). Senkrecht und waagerecht baubar
+  (auch Dash nach unten durch einen Bruch-Boden). Option „Nach dem Bruch“: bleibt kaputt (Standard, bis Neustart bzw.
+  Tod) oder wächst nach 2/3/5/8 s nach – steht dort jemand, wartet es (blinkender Umriss), niemand wird eingeklemmt.
+- **Wand-Rutschen** (automatisch, keine Taste): wer an einer Wand schneller als 4,5 herunterfällt, rutscht gebremst mit
+  höchstens WAND_RUTSCH_MAX_FALL 4,5 (Rutsch-Haltung, Kratz-Staub, leises Schaben). Nicht beim Segeln, nicht am Seil,
+  nicht im Dash. Der Wandsprung ist der alte (gleiche Werte, gleiche Bedingungen) – er geht auch mitten im Rutschen.
+- **Haftfläche** (Editor: Gelände → „Haftfläche“): Wand-/Deckenkästchen mit lila Klebeschicht. Wer darunter „hoch“
+  hält (Affe W, Schweinchen ↑, Controller Steuerkreuz hoch bzw. Stick hoch), hält sich von unten fest und rollt mit
+  links/rechts entlang – langsamer als Laufen (HAFT_TEMPO 4,2), mit Schwung (kein Sofort-Stopp), um Kanten herum
+  (Innenecke hinunter an der Seite, unten herum, die andere Seite hinauf und oben auf die Fläche). „Hoch“ loslassen =
+  fallen. Springen = Absprung (unten: nach unten-vorn; an der Seite: weg von der Wand). Dash geht von dort (kostet
+  einen Punkt; „hoch“ zählt an der Unterseite nicht als Dash-Richtung). Haken greifen = loslassen. Sonst ist eine
+  Haftfläche eine normale Wand (Boden oben, Wandsprung an der Seite).
+- **Tasten belegen** (Optionen → „⌨ 🎮 Tasten belegen …“): Spieler 1 und Spieler 2 getrennt, alle Aktionen (links,
+  rechts, springen, Fähigkeit, hoch, runter, Hebel, Dash), Tastatur UND Controller. Aktion anklicken bzw. mit
+  Bestätigen wählen → neue Taste / neuen Knopf drücken (Controller: alle Knöpfe, Schultertasten und Trigger); Esc
+  (Controller: Options) bricht ab. Gesperrt: Esc, Enter, Tab, R, F, M, C, X, P, Q, E, V, T, Z, H, Rücktaste
+  (Controller: Options, Share, PS-/Xbox-Taste). Doppelte Belegung wird sofort rot markiert; das Menü lässt sich erst
+  verlassen, wenn alles aufgelöst ist (oder man verwirft die Änderungen). „Auf Standard zurücksetzen“ je Spieler.
+  Controller-Belegung gilt je Spieler UND je Controller-Typ (PlayStation, Xbox, anderer – erkannt am Gerätenamen);
+  ein anderer Typ hat seine eigene Belegung bzw. die Standard-Belegung. Laufen/Zielen geht immer auch mit dem linken
+  Stick. Gespeichert unter `monchichi.tasten` (Standard-Belegung = genau die bisherige, neu nur Dash). Die Anzeige
+  oben im Spiel, die Steuerungs-Karten in den Optionen und die Spielerwahl zeigen die aktuelle Belegung. Alter
+  Spielstand ohne Tasten-Eintrag -> Standard. Echte Controller sind nicht getestet, nur ein simulierter Controller.
+- Testlevel `levels/test/neue-mechaniken.json` (`index.html?testlevel=neue-mechaniken`), Bahnen-Testlevel
+  `levels/test/bahnen.json`. Tests: bahnen_alte_mechaniken, dash_richtungen_und_laden, durchbruch_wand, wand_rutschen,
+  haftflaeche, tasten_belegen_menue, tasten_controller_je_typ, tasten_alter_spielstand, element_register.
+
 ### Design-Politur (nur Aussehen und ein Menü-Klang – Spielablauf, Trefferflächen, Physik und Level-Format unverändert)
 - **Schärfe und Tempo:** Die Leinwand hat bis zur 4K-Breite echte Bildschirm-Pixel (`LEINWAND_MAX_BREITE` 3840, vorher
   2560). Die Dunkel-Schicht (Nacht, Höhle, Dunkelzonen) wird in halber Auflösung gezeichnet (`DUNKEL_AUFLOESUNG`) – bei

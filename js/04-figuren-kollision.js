@@ -8,6 +8,8 @@ function makePlayer(opts){
     grounded:false, onWall:0, lastWallTouch:-9999, wjInputLock:0, wallEntrySpeed:0,
     facing:1, glideTimer:0, hookAttached:false, anchor:null, ropeLen:0, ropeMax:0,
     spawn:{x:0,y:0}, animPhase:0, blink:3000+Math.random()*2000, rollAngle:0,
+    // Nacht-Ausbau (js/32-neue-bewegung.js): Dash, Durchbruch-Fenster, Haftfläche, Wand-Rutschen
+    dashPunkte:DASH_LUFT, dashLadung:0, dash:null, dashPuffer:0, dashPause:0, bruchFenster:0, haft:null, rutscht:false,
   }, opts);
 }
 
@@ -33,6 +35,7 @@ function resetLevel(){
   nudgeFree(p1); nudgeFree(p2);
   won = false;
   if(typeof cosResetState === 'function') cosResetState();   // Cosmetics-Spuren/Begleiter neu (27)
+  if(typeof neueBewegungZuruecksetzen === 'function') neueBewegungZuruecksetzen();   // Nacht-Ausbau: Effekte weg
   document.getElementById('toast').classList.remove('show');
 }
 

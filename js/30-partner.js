@@ -177,8 +177,11 @@ partnerEinstellungLaden();
 function partnerHud(set){
   if(!partnerAktiv()) return false;
   const ichAffe = partner.ich === 'm';
-  const meins = 'A/D oder ← → bewegen · Leertaste/Num&nbsp;0 springen · G/Num&nbsp;1 ' + (ichAffe ? 'Haken' : 'Schirm') +
-    ' · J/Num&nbsp;2 Hebel' + (ichAffe ? ' · W/S Seil' : '');
+  // aktuelle Belegung beider Spieler (Optionen → Tasten belegen), z. B. „A/D oder ←/→“
+  const t = a => [1, 2].map(n => tasteName(KEYSETS[n][a]).replace(/ /g, '&nbsp;')).join(' oder ');
+  const zwei = (a, b) => [1, 2].map(n => tasteName(KEYSETS[n][a]).replace(/ /g, '&nbsp;') + '/' + tasteName(KEYSETS[n][b]).replace(/ /g, '&nbsp;')).join(' oder ');
+  const meins = zwei('left', 'right') + ' bewegen · ' + t('jump') + ' springen · ' + t('ability') + ' ' + (ichAffe ? 'Haken' : 'Schirm') +
+    ' · ' + t('use') + ' Hebel · ' + t('dash') + ' Dash' + (ichAffe ? ' · ' + zwei('pull', 'slack') + ' Seil' : '');
   const seins = 'Q warten/komm · E Aufgabe jetzt · V Rollen tauschen · P Partner aus · Controller: L1 / R1 / Share';
   set(ichAffe ? 'hudMHead' : 'hudFHead', '<b>Du</b> <span class="' + (ichAffe ? 'p1">● Affe, Haken' : 'p2">● Schweinchen, Schirm') + '</span>');
   set(ichAffe ? 'hudMKeys' : 'hudFKeys', meins);

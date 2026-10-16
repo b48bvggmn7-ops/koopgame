@@ -71,7 +71,8 @@ function sNoise(start, dur, o){
 const SFX_SR = 44100;
 const SFX_VOL = {step: 0.11, land: 0.26, jump: 0.2, wall: 0.24, coin: 0.24, hookAttach: 0.3, rope: 0.15, umbrella: 0.24,
   lever: 0.2, doorOpen: 0.2, doorClose: 0.2, crumbleWarn: 0.2, crumbleBreak: 0.4, death: 0.22, checkpoint: 0.22,
-  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, spiegel: 0.18, kristallAn: 0.16, kristallAus: 0.12, bandUm: 0.18, tropfen: 0.07, eisRutsch: 0.1, leuchtAn: 0.18, leuchtFlacker: 0.08, lavaBlubb: 0.12, lavaSteigt: 0.3, lavaZisch: 0.24, presseStampf: 0.3, presseKette: 0.14, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.07, menuOk: 0.11, menuStart: 0.14};
+  mushroom: 0.15, wechselAn: 0.2, wechselAus: 0.18, wechselTick: 0.12, teleport: 0.2, steg: 0.16, platsch: 0.24, luftWarn: 0.16, luftHolen: 0.14, blaseAuf: 0.22, blasePlatzt: 0.2, blaseRuf: 0.12, pegel: 0.22, pfeil: 0.2, flamme: 0.22, fallenWarn: 0.12, felsStart: 0.3, felsRollen: 0.16, felsAufprall: 0.28, felsBruch: 0.3, spiegel: 0.18, kristallAn: 0.16, kristallAus: 0.12, bandUm: 0.18, tropfen: 0.07, eisRutsch: 0.1, leuchtAn: 0.18, leuchtFlacker: 0.08, lavaBlubb: 0.12, lavaSteigt: 0.3, lavaZisch: 0.24, presseStampf: 0.3, presseKette: 0.14, schwimmzug: 0.12, kraehe: 0.2, klau: 0.18, helm: 0.2, bossBruell: 0.22, stampf: 0.3, kokosKnack: 0.2, bossTreffer: 0.24, bossBesiegt: 0.26, frog: 0.15, discover: 0.18, bud: 0.15, heart: 0.07, birdFlap: 0.15, menuTick: 0.07, menuOk: 0.11, menuStart: 0.14,
+  dash: 0.24, dashBonk: 0.2, dashVoll: 0.09, bruch: 0.36, bruchZurueck: 0.14, rutschen: 0.07, haft: 0.18};
 let sfxBank = null, sfxJob = false, sfxRev = null;
 
 function* sfxBuild(a, out){
@@ -240,6 +241,17 @@ function* sfxBuild(a, out){
                      grains(b, 0.02, 0.25, 40, 1500, 5000, 0.0004, 0.0015, 0.3, 0.4, 'decay'); return b; },
     heart:     ()=>{ const b = mk(0.35); puff(b, 0, 0.15, 900, 0.5, 0, 0.05); thump(b, 0, 220, 330, 0.06, 0.4); return b; },
     birdFlap:  ()=>{ const b = mk(0.5); for(let i = 0; i < 9; i++) swish(b, i*0.045, 0.04, 900, 1800, 1.0, 0.5*(1 - i/10), rnd(-0.3, 0.3), 0.3); return b; },
+    // Nacht-Ausbau: Dash (kräftiges Wusch), Aufprall, Dash wieder bereit (kleines Glas-Pling), Durchbruch (Stein bricht),
+    // Wand wächst nach, Rutschen an der Wand (feines Kratzen), Festhalten an der Haftfläche (klebriges „Schmatz“)
+    dash:      ()=>{ const b = mk(0.32); swish(b, 0, 0.22, 3200, 500, 1.6, 1.0, 0, 0.12); puff(b, 0, 0.12, 1800, 0.6, 0, 0.02); thump(b, 0, 160, 90, 0.05, 0.3); return b; },
+    dashBonk:  ()=>{ const b = mk(0.25); thump(b, 0, 120, 70, 0.08, 0.7); grains(b, 0, 0.1, 30, 1200, 4000, 0.0004, 0.0012, 0.3, 0.4, 'decay'); return b; },
+    dashVoll:  ()=>{ const b = mk(0.3); modal(b, 0, 1760, glass, 0.12, 0.5, 0, 0.3); modal(b, 0.04, 2640, glass, 0.1, 0.3, 0, 0.3); return b; },
+    bruch:     ()=>{ const b = mk(0.9); thump(b, 0, 140, 45, 0.16, 1.0); puff(b, 0, 0.3, 900, 0.9, 0, 0.01);
+                     for(let i = 0; i < 26; i++){ const u = R(); modal(b, u*u*0.5, rnd(900, 3000), wood, rnd(0.004, 0.014), rnd(0.3, 0.8), rnd(-0.7, 0.7), 0.4); }
+                     grains(b, 0.02, 0.6, 180, 2000, 8000, 0.0003, 0.0012, 0.3, 0.8, 'decay'); return b; },
+    bruchZurueck:()=>{ const b = mk(0.4); grains(b, 0, 0.3, 80, 1500, 5000, 0.0003, 0.001, 0.3, 0.6, 'grow'); thump(b, 0.28, 180, 120, 0.05, 0.4); return b; },
+    rutschen:  ()=>{ const b = mk(0.18); grains(b, 0, 0.16, 70, 2500, 7000, 0.0003, 0.0009, 0.4, 0.3, 'decay'); swish(b, 0, 0.15, 1800, 1200, 1.2, 0.3, 0, 0.3); return b; },
+    haft:      ()=>{ const b = mk(0.3); puff(b, 0, 0.1, 700, 0.6, 0, 0.01); thump(b, 0, 200, 140, 0.05, 0.4); swish(b, 0.02, 0.12, 900, 400, 2.0, 0.4, 0, 0.2); return b; },
     // Menü-Klänge (Design-Politur): kurz, weich, tief – gedämpftes Holz statt Spieluhr-Klingeln (Länge MENU_TON_MS)
     menuTick:  ()=>{ const b = mk(MENU_TON_MS.tick/1000); thump(b, 0, 360, 260, 0.03, 0.32); modal(b, 0, 640, wood, 0.0035, 0.16, 0, 0.12); return b; },
     menuOk:    ()=>{ const b = mk(MENU_TON_MS.ok/1000); thump(b, 0, 240, 165, 0.055, 0.62); modal(b, 0, 410, wood, 0.006, 0.26, 0, 0.18); return b; },
@@ -320,6 +332,13 @@ const SFX = {
   door(open, x){ sfxLog(open ? 'dooropen' : 'doorclose'); sfxPlay(open ? 'doorOpen' : 'doorClose', {x}); },
   crumbleWarn(x){ sfxLog('crumblewarn'); sfxPlay('crumbleWarn', {x}); },
   crumbleBreak(x){ sfxLog('crumble'); sfxPlay('crumbleBreak', {x}); },
+  dash(pl){ sfxLog('dash'); sfxPlay('dash', {x: pl.x, rate: pl.male ? 1 : 1.15}); },   // Nacht-Ausbau (js/32-neue-bewegung.js)
+  dashBonk(pl){ sfxLog('dashbonk'); sfxPlay('dashBonk', {x: pl.x}); },
+  dashVoll(pl){ sfxLog('dashvoll'); sfxPlay('dashVoll', {x: pl.x, rate: pl.male ? 1 : 1.12}); },
+  bruch(x){ sfxLog('bruch'); sfxPlay('bruch', {x}); },
+  bruchZurueck(x){ sfxLog('bruchzurueck'); sfxPlay('bruchZurueck', {x}); },
+  rutschen(pl){ sfxLog('rutschen'); sfxPlay('rutschen', {x: pl.x, vol: Math.min(1, 0.4 + pl.vy/8)}); },
+  haft(pl){ sfxLog('haft'); sfxPlay('haft', {x: pl.x, rate: pl.male ? 1 : 1.15}); },
   checkpoint(x){ sfxLog('checkpoint'); sfxPlay('checkpoint', {x}); },
   coin(combo, x){ sfxLog('coin'); return sfxPlay('coin', {x, rate: Math.pow(2, combo/12)}); },
   mushroom(x){ sfxLog('mushroom'); sfxPlay('mushroom', {x}); },

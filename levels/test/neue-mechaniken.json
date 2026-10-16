@@ -1,0 +1,162 @@
+{
+ "hinweis": "Testlevel Nacht-Ausbau: neue Mechaniken. Öffnen: index.html?testlevel=neue-mechaniken · Dash (Affe K, Schweinchen Num 3, Controller △) in 8 Richtungen, Durchbruch-Wand (Spalte 20: Wand, Spalten 30–31: Boden, Spalte 40: wächst nach 2 s nach), Haftfläche (Spalten 50–59: Decke mit Ecke nach unten, Spalten 70–72: Block zum Herumrollen; hoch halten = festhalten), Wand-Rutschen (Spalte 90: hohe Wand), Haken Spalte 120 (Dash-Aufladen am Haken).",
+ "welt": "dschungel",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 720,
+   "w": 6000,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1120,
+   "y": 560,
+   "w": 80,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 1280,
+   "y": 560,
+   "w": 120,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 3600,
+   "y": 160,
+   "w": 40,
+   "h": 560,
+   "type": "wall"
+  },
+  {
+   "x": 4000,
+   "y": 320,
+   "w": 200,
+   "h": 40,
+   "type": "ground"
+  }
+ ],
+ "bruchWaende": [
+  {
+   "x": 800,
+   "y": 520,
+   "w": 40,
+   "h": 40
+  },
+  {
+   "x": 800,
+   "y": 560,
+   "w": 40,
+   "h": 40
+  },
+  {
+   "x": 800,
+   "y": 600,
+   "w": 40,
+   "h": 40
+  },
+  {
+   "x": 800,
+   "y": 640,
+   "w": 40,
+   "h": 40
+  },
+  {
+   "x": 800,
+   "y": 680,
+   "w": 40,
+   "h": 40
+  },
+  {
+   "x": 1200,
+   "y": 560,
+   "w": 40,
+   "h": 40
+  },
+  {
+   "x": 1240,
+   "y": 560,
+   "w": 40,
+   "h": 40
+  },
+  {
+   "x": 1600,
+   "y": 560,
+   "w": 40,
+   "h": 40,
+   "nachwachsen": 2
+  },
+  {
+   "x": 1600,
+   "y": 600,
+   "w": 40,
+   "h": 40,
+   "nachwachsen": 2
+  },
+  {
+   "x": 1600,
+   "y": 640,
+   "w": 40,
+   "h": 40,
+   "nachwachsen": 2
+  },
+  {
+   "x": 1600,
+   "y": 680,
+   "w": 40,
+   "h": 40,
+   "nachwachsen": 2
+  }
+ ],
+ "haftflaechen": [
+  {
+   "x": 2000,
+   "y": 400,
+   "w": 360,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 2360,
+   "y": 400,
+   "w": 40,
+   "h": 200,
+   "type": "ground"
+  },
+  {
+   "x": 2800,
+   "y": 400,
+   "w": 120,
+   "h": 40,
+   "type": "ground"
+  }
+ ],
+ "hooks": [
+  {
+   "x": 4820,
+   "y": 260
+  }
+ ],
+ "spikes": [],
+ "coins": [],
+ "movingPlatforms": [],
+ "checkpoints": [],
+ "switches": [],
+ "doors": [],
+ "startM": {
+  "x": 220,
+  "y": 720
+ },
+ "startF": {
+  "x": 140,
+  "y": 720
+ },
+ "goal": {
+  "x": 5820,
+  "y": 720
+ }
+}

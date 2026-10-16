@@ -139,7 +139,8 @@ function drawCharacter(player, camX){
   }
 
   // Landen/Absprung kurz stauchen/strecken (21-figuren-leben.js), an den Füßen verankert
-  const [lx, ly] = typeof charSquash === 'function' ? charSquash(player) : [1, 1];
+  let [lx, ly] = typeof charSquash === 'function' ? charSquash(player) : [1, 1];
+  if(typeof neueBewegungSquash === 'function'){ const [nx, ny] = neueBewegungSquash(player); lx *= nx; ly *= ny; }   // Nacht-Ausbau: Dash/Rutschen/Haften
   ctx.translate(0, player.h*0.5); ctx.scale(lx, ly); ctx.translate(0, -player.h*0.5);
 
   // Rollrotation abhängig von der zurückgelegten Strecke (wie ein rollender Ball)

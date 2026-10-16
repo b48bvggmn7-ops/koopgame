@@ -325,3 +325,19 @@
 #sm #sm-s-levels .lc .st,#sm #sm-s-levels .lc .duel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sm #sm-s-levels .lc .st{font-size:min(1.5cqw,calc(var(--lcw)*.12))}
 #sm #sm-s-levels .lc.boss .st{white-space:normal}
+/* Tasten belegen (Nacht-Ausbau, S.tasten in js/24-startmenue.js) – gleicher Stil wie die Optionen */
+#sm .tb-pan{left:6cqw;right:6cqw;top:19cqh;height:auto;padding:1.6cqh 2cqw}
+#sm #sm-tb-seg{display:flex;align-items:center;gap:1.4cqw}
+#sm .tb-typ{cursor:pointer;font-weight:800;font-size:1.6cqw;display:flex;align-items:center;gap:.6cqw}
+#sm .tb-grid{display:grid;gap:.5cqh;margin-top:1.2cqh}
+#sm .tb-z{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:1cqw;align-items:center;font-size:1.5cqw;font-weight:600;margin:0}
+#sm .tb-kopf b{font-size:1.6cqw;font-weight:800}
+#sm .tb-kopf small{font-weight:600;color:var(--mute);margin-left:.4cqw}
+#sm .tb-kopf .pl1{color:var(--cyan)} #sm .tb-kopf .pl2{color:var(--amber)}
+#sm .tb-k{appearance:none;cursor:pointer;font:800 1.45cqw/1 "Manrope",sans-serif;color:var(--text);padding:.75cqh 1cqw;border-radius:.7cqw;
+  background:rgba(255,255,255,.08);border:.14cqw solid rgba(255,255,255,.3);text-align:left}
+#sm .tb-k.sel{outline:.25cqw solid var(--lime);outline-offset:.15cqw;background:rgba(198,255,61,.12)}
+#sm .tb-k.fang{background:var(--lime);color:#06210f;border-color:var(--lime);animation:blip 1s infinite}
+#sm .tb-k.konflikt{border-color:#ff5a5a;background:rgba(255,70,70,.22);color:#ffd9d9}
+#sm .tb-k.tb-std{text-align:center;color:var(--mute)}
+#sm .tb-warn{color:#ff9a9a}

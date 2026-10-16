@@ -1000,6 +1000,7 @@ function drawSolidLook(s, look, x){
   drawDust();       // Staubwölkchen (21-figuren-leben.js)
   drawCharacter(p2, camX);
   drawCharacter(p1, camX);
+  if(typeof neueBewegungZeichnen === 'function') neueBewegungZeichnen();   // Nacht-Ausbau: Dash-Punkt, Bruchstücke, Rutsch-Staub (nur Anzeige)
   drawHearts();     // Herzchen, wenn beide nah beieinander stehen
   drawCoinFx(camX);
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenVorne) E.spiel.zeichnenVorne();   // vor den Figuren, z. B. Wasser (elemente/)

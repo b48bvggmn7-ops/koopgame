@@ -14,6 +14,8 @@ let simAcc = 0, lastFrameTs = 0, frameDt = STEP;
 let simSteps = 0;   // Zähler der Physik-Schritte (nur zum Messen, z. B. für die Tests – ändert nichts am Spiel)
 function stepSim(ts){
   simSteps++;
+  // Nacht-Ausbau: kurzer Trefferstopp (nur nach Dash-Start / Durchbruch, js/32-neue-bewegung.js) – alles steht kurz still
+  if(neuTrefferStopp > 0){ neuTrefferStopp--; return; }
   if(typeof partnerVorSchritt === 'function') partnerVorSchritt();   // Computer-Partner drückt seine Tasten (30-partner.js, nur Testmodus)
   if(won && ++winSteps === WIN_DANCE_STEPS) winFinish();   // nach dem Tanz zurück ins Menü (21-figuren-leben.js)
   activateVisibleMovers();
@@ -26,6 +28,7 @@ function stepSim(ts){
   updateCrumbles(16.6);
   updateDoorsAndSwitches(16.6, [p1, p2]);
   for(const E of ELEMENTE) if(E.spiel && E.spiel.schritt) E.spiel.schritt([p1, p2]);   // z. B. Wechselboden (elemente/)
+  neueBewegungSchritt([p1, p2]);   // Nacht-Ausbau: Effekte, Nachwachsen der Durchbruch-Wände
   updateMovingPlatforms(16.6, [p1, p2]);
   syncSwitchCarriers();   // Hebel auf bewegtem Boden fahren mit
   updateSpikes(p1);

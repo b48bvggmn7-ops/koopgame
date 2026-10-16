@@ -14,9 +14,9 @@ Sicherung: Tag `vor-nacht-ausbau` (lokal) **und** Branch `vor-nacht-ausbau` auf 
 |---|---|---|
 | P0.1 | Sicherung `vor-nacht-ausbau` (Tag lokal + Branch auf GitHub) | fertig |
 | P0.2 | Bahnen-Test alte Mechaniken (7 Szenarien, 2 Figuren, ~2400 Schritte) aufgezeichnet | fertig |
-| P0.3 | Ausgangs-Testlauf (voll) | in Arbeit |
+| P0.3 | Ausgangs-Testlauf (voll): 200 bestanden, 0 fehlgeschlagen | fertig |
 | P0.4 | Level-Liste (Abnahme-Liste) | fertig |
-| P1 | Dash, Durchbruch-Wand, Wand-Rutschen, Haftfläche, Tastenbelegung (+ Editor, Tests, Doku) | offen |
+| P1 | Dash, Durchbruch-Wand, Wand-Rutschen, Haftfläche, Tastenbelegung (+ Editor, Tests, Doku) | fertig (Kurztests grün, großer Lauf folgt) |
 | P2 | Messwerkzeuge (Reichweite + Erfolgsfenster, Einstufung, Level-Vermesser, Exploit-Suche, Bild-Regel, Checkpoints, Münzen) | offen |
 | P3 | Alle 25 Level vermessen und anpassen | offen |
 | P4 | Zweiter Durchgang, Gesamtprüfung, Bericht | offen |
@@ -69,3 +69,29 @@ Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis · 3 Landeplätze ·
    Die Szenarien enthalten bewusst KEIN Herunterfallen an einer Wand schneller als 4,5 (die spätere Wand-Rutsch-Bedingung);
    der Aufzeichner prüft das und meldet „Rutsch-Bedingung: 0“. Grund: genau dort greift das neue Wand-Rutschen
    (gewollt), überall sonst muss die Bahn gleich bleiben.
+3. **Dash-Taste:** Affe/Spieler 1 = K, Spieler 2 = Num 3, Controller = △/Y (alle frei, keine Überschneidung mit
+   alten Tasten). Richtung = Richtungstasten + „hoch/runter“ (= Seil-ranziehen/geben-Tasten, Controller Steuerkreuz/Stick).
+4. **Dash lädt nur mit Halt** (Boden, Wand, Haken, Haftfläche) und dauert 1 s (Spielwiese-Wert) – sonst wäre der Dash in
+   der Luft beliebig oft nutzbar. Ein Dash in der Luft.
+5. **Festhalten an Haftflächen mit „hoch“ halten** (Affe W, Schweinchen ↑) – die Spielwiese hatte eine eigene Taste;
+   im echten Spiel gibt es keine freie Taste ohne Konflikt, „hoch“ ist dort sonst nur am Seil belegt (Haken greifen löst
+   die Haftfläche). An der Unterseite zählt „hoch“ nicht als Dash-Richtung (sonst klebt man nach dem Dash sofort wieder).
+6. **Wand-Rutschen ohne Taste:** greift nur, wenn man an einer Wand SCHNELLER als 4,5 fällt (Spielwiese-Wert), nicht
+   beim Segeln/Seil/Dash. Der Wandsprung selbst ist unverändert (gleiche Bedingungen, inkl. Anlauf-Schwung). Der
+   Bahnen-Test enthält bewusst keine solche Stelle (siehe 2.) – überall sonst ist alles gleich. In Leveln ändert es
+   nur, wie schnell man an Wänden herunterkommt (Kamine nachmessen: P2/P3).
+7. **Durchbruch-Wand ohne Rückprall:** zerbricht sofort, 80 % Schwung bleiben; danach 14 Schritte „Bruch-Fenster“ mit
+   kostenlosem Anschluss-Dash ODER Sprung in der Luft (aus der Spielwiese übernommen).
+8. **Trefferstopp friert das ganze Spiel ein** (2 bzw. 3 Schritte), nicht nur die Figur – so wirkt er im Koop fair
+   (beide sehen denselben Moment), und kein Gegner/keine Falle läuft unsichtbar weiter.
+9. **Controller je Typ:** erkannt am Gerätenamen (Xbox/045e → Xbox, PlayStation/DualShock/DualSense/054c → PlayStation,
+   sonst „anderer“). Gespeichert je Spieler × Typ; nie gesetzter Typ = Standard (✕/A springen, ○/B Hebel, □/X Fähigkeit,
+   △/Y Dash, Steuerkreuz). Menü-Navigation am Controller bleibt fest (✕/A bestätigen, ○/B zurück) – sonst könnte man
+   sich aussperren. **Echte Controller wurden NICHT getestet**, nur ein simulierter Gamepad (Test tasten_controller_je_typ).
+10. **Konflikte:** sofort rot markiert; Verlassen öffnet einen Dialog („Weiter ändern“ / „Änderungen verwerfen“) –
+    gespeichert wird nur konfliktfrei. Tastatur-Konflikte zählen über beide Spieler (gemeinsame Tastatur), Controller-
+    Konflikte je Spieler und Typ (jeder hat seinen eigenen Controller).
+
+## Geänderte Tests
+- `element_register`: erwartete Element-Liste um `durchbruch` und `haftflaeche` ergänzt (neue Elemente; alle bisherigen
+  Prüfungen unverändert).

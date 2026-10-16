@@ -17,6 +17,10 @@
 | Fähigkeit | G = Haken | Num 1 halten = Schirm | □ |
 | Seil ranziehen / geben | W / S | – | hoch / runter |
 | Hebel betätigen | J | Num 2 | ○ |
+| Dash (8 Richtungen) | K | Num 3 | △ |
+| An Haftfläche festhalten | W halten | ↑ halten | hoch halten |
+
+Alle Tasten (Tastatur und Controller, je Spieler) lassen sich unter **Optionen → Tasten belegen** ändern.
 
 R = Neustart · F = Leistungsanzeige · C / X = zum nächsten / vorherigen Checkpoint springen (Test)
 

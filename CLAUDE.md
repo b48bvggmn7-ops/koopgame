@@ -40,7 +40,7 @@
     `DESIGN_LOOK` je Welt/Tageszeit: Kontur, Randlicht, Tiefe, Dunst; Glanz-Muster `glanzSchatten/glanzFunkeln/glanzBand`
     für alle Elemente) · 11 Hintergrund (je Thema) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
     Asche) · 12 Welt zeichnen (Boden/Wand als durchgehende Blöcke mit EINER gemeinsamen Kontur `designKontur`, gesammelt und nach der Deko gezeichnet; Boden↔Wand-Grenze über `nb.fremd` aus 01, Moos/Lianen an hohen Flächen `hoheFlaechen`) · 13 Anzeige/Leistung ·
-    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Weltkarte + Welt-Seite mit Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 29 Spielszenen (Intro/Zwischensequenzen aus `story/story.json`, Sprechblasen, Kino-Balken) · 30 Computer-Partner (nur Testmodus: Folgen, Vorausrechnung mit echter Physik, Wegsuche, Gefahren, Steuerung Q/E/V/P; Konstanten `PARTNER_*` in 02) · 31 Begleiter-Aufgaben (Begleitdatei `levels/partner/<welt>/<datei>.json`, Auto-Aufgaben) · 99 Start
+    14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Weltkarte + Welt-Seite mit Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 29 Spielszenen (Intro/Zwischensequenzen aus `story/story.json`, Sprechblasen, Kino-Balken) · 30 Computer-Partner (nur Testmodus: Folgen, Vorausrechnung mit echter Physik, Wegsuche, Gefahren, Steuerung Q/E/V/P; Konstanten `PARTNER_*` in 02) · 31 Begleiter-Aufgaben (Begleitdatei `levels/partner/<welt>/<datei>.json`, Auto-Aufgaben) · 32 neue Bewegung (Nacht-Ausbau: Dash, Durchbruch-Treffer, Wand-Rutschen, Haftfläche; Aufrufe aus 08 über `neueBewegungVorher`/`neueBewegungNachher`, Trefferstopp `neuTrefferStopp` in 14) · 99 Start
 - `elemente/` – **Element-Register** (Ausbau 2): eine Datei pro Spiel-Element mit allem, was dazugehört (Daten-Feld,
   Editor-Werkzeug + Zeichnen + Export, Spiel-Laden + Zeichnen + Logik). Spiel UND Editor laden diese Dateien zuerst.
   Umgestellt: `hebel.js`, `tuer.js`, `druckplatte.js` (Punkt-Elemente mit Verknüpfungs-Nummer), `sprungpilz.js`
@@ -48,7 +48,7 @@
   `optionen`, Logik pro Schritt `spiel.schritt`, Neustart `spiel.zuruecksetzen`), `teleporter.js` (Paare per 2. Klick:
   `editor.neu`, Linie `editor.zeichnenAlle`, Einfügen `editor.einfuegen`), `einseitig.js` (Steg, Kachel; Kollision
   type 'oneway' in `collideAxis`); Ausbau 5: `wasser.js` (Wasserflächen, Schwimmen `schwimmPhysik`, Luft `luftSchritt`,
-  vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Ausbau 6: `boss.js` (Endgegner-Gerüst: Boss/Arena/Boss-Platz, Zustandsautomat, Lebensbalken über `spiel.zeichnenOben`); Ausbau 7: `falle.js` (Pfeil/Flamme im Takt, Takt-Uhr `fallenSchritte`), `fels.js` (rollender Fels, startet per Nummer nach ½ s Wackeln, kündigt sich am Bildrand an, bricht durch Bröckel-Wände), `licht.js` (Lichtquelle/Spiegel/Kristall; Kristall wirkt in `updatePlates` über `lichtWunsch`, Spiegel drehen von Hand über `spiegelBedienen`, schaltbare Spiegel (Nummer) über `spiegelAusloesen` bei Platte-Betreten/Hebel; Strahl-Randzeichen `lichtRandListe`); Höhle: `eis.js` (rutschiger Boden, Sonderregel `aufEis` in 08), `foerderband.js` (nimmt Figuren in `nachBewegung` mit), `leuchtkristall.js` (Leuchtkristall anschlagen über `leuchtAnschlagen`, Dunkelzonen über `dunkelZeichnen` in `drawThemeDarkness`); Vulkan: `lava.js` (Lava-Becken + Lava-Marke, steigt per Nummer oder „sobald jemand kommt“; gezeichnet über den neuen Haken `spiel.zeichnenHinten` HINTER Boden/Wänden), `presse.js` (Stachelpresse im Takt, eigene Takt-Uhr je Presse); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Ausbau 6: `boss.js` (Endgegner-Gerüst: Boss/Arena/Boss-Platz, Zustandsautomat, Lebensbalken über `spiel.zeichnenOben`); Ausbau 7: `falle.js` (Pfeil/Flamme im Takt, Takt-Uhr `fallenSchritte`), `fels.js` (rollender Fels, startet per Nummer nach ½ s Wackeln, kündigt sich am Bildrand an, bricht durch Bröckel-Wände), `licht.js` (Lichtquelle/Spiegel/Kristall; Kristall wirkt in `updatePlates` über `lichtWunsch`, Spiegel drehen von Hand über `spiegelBedienen`, schaltbare Spiegel (Nummer) über `spiegelAusloesen` bei Platte-Betreten/Hebel; Strahl-Randzeichen `lichtRandListe`); Höhle: `eis.js` (rutschiger Boden, Sonderregel `aufEis` in 08), `foerderband.js` (nimmt Figuren in `nachBewegung` mit), `leuchtkristall.js` (Leuchtkristall anschlagen über `leuchtAnschlagen`, Dunkelzonen über `dunkelZeichnen` in `drawThemeDarkness`); Vulkan: `durchbruch.js` (Nacht-Ausbau: Durchbruch-Wand, solids type 'bruch', bricht nur per Dash, Option nachwachsen), `haftflaeche.js` (Nacht-Ausbau: Kachel, solids type 'wall' mit `haft: true`); `lava.js` (Lava-Becken + Lava-Marke, steigt per Nummer oder „sobald jemand kommt“; gezeichnet über den neuen Haken `spiel.zeichnenHinten` HINTER Boden/Wänden), `presse.js` (Stachelpresse im Takt, eigene Takt-Uhr je Presse); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `WELTEN.md` – Design je Welt (Thema, Look, Tiere, Musik, Mechaniken je Level, Rollen von Affe und Schweinchen; Ausbau 7/8).
 - `story/story.json` – alle Texte und Abläufe der Spielszenen (Intro, Boss-Siege); vom Nutzer direkt änderbar.
@@ -74,6 +74,9 @@
   schreibt mit `--schreiben` die Begleitdatei `levels/partner/<welt>/<datei>.json` (nicht Geschafftes unter „offen“).
 - `tests/kombi_pruefen.py` – Prüfwerkzeug Wandsprung (Kamine: Breite/Höhe/Einstufung) und Kombi-Stellen je Level/Etappe,
   Ausnahmen in `tests/kombi_ausnahmen.json`, Testlevel `levels/test/kombis.json` (Kombi-Nachschärfen).
+- `tests/bahnen.js` + `tests/bahnen_referenz.json` – Bahnen-Test der alten Mechaniken (Nacht-Ausbau, harte Regel):
+  feste Tasten je Schritt, Vergleich exakt; Referenz NIE neu aufzeichnen/anpassen (`tests/bahnen_aufzeichnen.py`
+  überschreibt nie). `tests/neue_mechaniken.js` – Prüf-Szenarien Dash/Durchbruch/Rutschen/Haftfläche.
 - `tests/run_tests.py` – automatische Tests (Playwright, Chromium). Für Bewegungen im Spiel nicht feste Millisekunden
   warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`
   (zählt ebenfalls Schritte) oder `wait_for_function` auf das erwartete Ereignis – sonst sind Tests auf langsamen
@@ -126,6 +129,11 @@
    und in `updatePlates` (Platte BETRETEN, `pl.down` von aus nach an) aufgerufen; Druckplatten setzen `pl.down` bei
    Neustart/Tod zurück. Optionen „von Hand / per Nummer“ wie beim Sonnenstein (`editor.optionen` key `schalter`,
    `neu`, `nummerAktiv`). Licht-Rätsel in `LICHT_RAETSEL` (tests/run_tests.py) eintragen -> Löser-Test.
+11. Neue Bewegungs-Mechaniken (Muster Nacht-Ausbau): NIE die alte Physik in 08 umschreiben – nur über die Haken
+   `neueBewegungVorher` (true = Tempo gesetzt, normale Physik aus) und `neueBewegungNachher` in `js/32-neue-bewegung.js`
+   einklinken; Test `bahnen_alte_mechaniken` muss grün bleiben (Referenz `tests/bahnen_referenz.json` nie anpassen).
+   Neue Aktion mit eigener Taste: in `TASTEN_STANDARD`/`PAD_STANDARD`/`TASTEN_AKTIONEN` (js/03-eingabe.js) und
+   `TB_NAMEN` (Tasten-Menü in js/24-startmenue.js) eintragen.
 10. Muss den Werkzeug-Test `editor_werkzeug_pruefung` bestehen (setzen, Optionen, Rechtsklick, Radierer, Undo/Redo,
    Speichern/Laden, Kopieren/Einfügen). Wird das Element im Editor größer als sein Kästchen gezeichnet, `editor.bereich(p)`
    angeben (Liste der sichtbar belegten Kästchen, Muster `fels.js`) – sonst trifft der Rechtsklick es nicht.
@@ -156,10 +164,13 @@
 | Fähigkeit | G = Haken | Num 1 halten = Schirm | □ |
 | Seil ranziehen / geben | W / S | – | hoch / runter |
 | Hebel | J | Num 2 | ○ |
+| Dash (Nacht-Ausbau) | K | Num 3 | △ |
+| Haftfläche festhalten | W halten | ↑ halten | hoch |
 | Neustart / Leistungsanzeige / Test-Sprung | R / F / C, X | | – |
 | Pausenmenü (mit Neustart) | Esc | | Options |
 | (Tasten gehören zu Spielern; wer welche Figur spielt, wählt man im Startmenü) | | | |
 | Ton aus/an | M | | (Pausenmenü) |
+| (Standard-Belegung; frei änderbar unter Optionen → Tasten belegen, gespeichert `monchichi.tasten`, Controller je Typ) | | | |
 
 ## Geplante nächste Schritte (mit dem Nutzer abgesprochen)
 1. Alle Einstellwerte (Kamera, Seil, Wandsprung, Hebel …) übersichtlich in `js/02-physik-werte.js` bündeln

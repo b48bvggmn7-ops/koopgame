@@ -104,8 +104,13 @@ function updatePlayer(player, now){
   const isPulling = player.male && !frozen && isDown(player.keys.pull);
   const isSlacking = player.male && !frozen && isDown(player.keys.slack);
 
+  // Nacht-Ausbau (js/32-neue-bewegung.js): Dash, Haftfläche, Sprung im Durchbruch-Fenster – eigene Zustände, die nur mit
+  // der Dash-Taste bzw. an einer Haftfläche anspringen (true = Tempo gesetzt, die Physik darunter bleibt diesen Schritt aus)
+  const neuerZustand = !frozen && neueBewegungVorher(player, now, moveDir, jumpPressed, jumpHeld, nass);
   if(nass || (player.male && player.hookAttached)) player.sprungKurzMoeglich = false;   // Schwimmen/Seil: kein Sprung-Abbruch
-  if(nass){
+  if(neuerZustand){
+    // Tempo kommt aus neueBewegungVorher (Dash bzw. Haftfläche)
+  } else if(nass){
     schwimmPhysik(player, moveDir, jumpPressed, frozen);   // elemente/wasser.js
   } else if(player.male && player.hookAttached){
     player.vy += GRAVITY * 0.9;
@@ -205,6 +210,7 @@ function updatePlayer(player, now){
     } else {
       player.onWall = 0;
     }
+    wandRutschen(player, gliding);   // Nacht-Ausbau: an der Wand gebremst rutschen (nur wenn schneller als 4,5 fallend)
 
     // Controller: Sprung darf auch kurz VOR dem Stick-Umlenken kommen (Reihenfolge egal).
     // Wurde ✕ an der Wand gedrückt, aber der Stick zeigt noch nicht weg, wartet der Sprung bis zu 150 ms.
@@ -256,8 +262,12 @@ function updatePlayer(player, now){
   const wasGrounded = player.grounded, fallVy = player.vy;   // für den Sprungpilz: kam die Figur von oben angeflogen?
   player.grounded = false;
   player.standingOn = null;
+  const neuAltX = player.x, neuAltY = player.y;
+  if(player.dash) dashBewegen(player);   // Nacht-Ausbau: Dash in Teilschritten (kein Durchtunneln), sonst wie immer
+  else {
   player.x += player.vx; collideAxis(player,'x');
   player.y += player.vy; collideAxis(player,'y');
+  }
   for(const E of ELEMENTE) if(E.spiel && E.spiel.nachBewegung) E.spiel.nachBewegung(player, wasGrounded, fallVy);   // z. B. Sprungpilz (elemente/)
   if(wasserBecken.length && !frozen) luftSchritt(player);   // Luft unter Wasser (elemente/wasser.js)
   if(player.male && player.hookAttached){
@@ -278,6 +288,7 @@ function updatePlayer(player, now){
       if(inward > 0){ player.vx += ux*inward; player.vy += uy*inward; }
     }
   }
+  neueBewegungNachher(player, neuAltX, neuAltY);   // Nacht-Ausbau: Dash auswerten, Haftfläche nachführen, Dash aufladen
   if(player.grounded){ player.glideTimer = 0; player.wjInputLock = 0; player.lastWallJumpSide = 0; }
 
   // Decken-Grenze: oberer Bildrand (über Reihe 0 ist durch den Zoom ein Streifen Himmel sichtbar, SKY_ROOM in 09-kamera.js)

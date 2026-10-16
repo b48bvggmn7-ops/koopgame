@@ -65,6 +65,31 @@ const GLIDE_START_GRAV = 0.10;
 const GLIDE_MAX_FALL_START = 2.0;
 const GLIDE_MAX_FALL_END = 8.5;
 
+// ---------- Nacht-Ausbau: neue Mechaniken (js/32-neue-bewegung.js; Werte aus der Spielwiese, spielwiese/js/02-werte.js) ----------
+// Alles NEUE Konstanten – keine der Konstanten oben wurde geändert (harte Regel, Test bahnen_alte_mechaniken).
+// Schritte = Physik-Schritte (60 = 1 Spielsekunde).
+const DASH_TEMPO = 16;            // px pro Schritt (Spielwiese „Tempo“)
+const DASH_DAUER = 10;            // Schritte (Spielwiese „Dauer“) -> 160 px gerade Strecke (Variante A „fester Dash“)
+const DASH_BEHALTEN = 0.5;        // so viel Tempo bleibt nach dem Dash (nach oben höchstens die Sprungkraft)
+const DASH_LUFT = 1;              // Dash-Punkte (Spielwiese „Luft-Dashes“ 1)
+const DASH_LADEZEIT = 54;         // Schritte (0,9 s): so lange füllt sich ein Punkt – nur mit festem Halt (Boden, Wand, Seil, Haftfläche)
+const DASH_PUFFER = 5;            // zu früh gedrückt (z. B. kurz vor der Landung): zählt so viele Schritte
+const DASH_PAUSE = 6;             // Pause nach einem Dash am Boden (gegen Dauer-Dashen)
+const DASH_STOPP = 2;             // kurzer Trefferstopp beim Start (Schritte)
+const DASH_TEILSCHRITT = 8;       // px: der Dash bewegt sich in Teilschritten (nie durch eine Wand tunneln)
+const BRUCH_BEHALTEN = 0.8;       // Durchbruch: so viel Dash-Tempo bleibt je zerbrochener Wand
+const BRUCH_STOPP = 3;            // Trefferstopp beim Durchbruch (Schritte)
+const BRUCH_FENSTER = 14;         // so lange nach einem Durchbruch geht noch ein Dash (kostenlos) oder ein Sprung in der Luft
+const BRUCH_STUECKE = 7;          // Bruchstücke je Kästchen (nur Anzeige)
+const BRUCH_NACHWACHSEN_STD = 3;  // Sekunden, wenn eine Wand „wächst nach“ hat (Option am Element)
+const WAND_RUTSCH_MAX_FALL = 4.5; // Wand-Rutschen: schneller fällt man an einer Wand nicht (frei: bis MAX_FALL 15)
+const HAFT_TEMPO = 4.2;           // Haftfläche: Tempo beim Entlangrollen (langsamer als Laufen 4,4 / Sprint 7,2)
+const HAFT_BESCHL = 0.25;         // Haftfläche: Anteil je Schritt zum Ziel-Tempo (Schwung, kein sofortiges Anhalten)
+const HAFT_ABSPRUNG_Y = 3;        // Absprung von der Haftfläche nach unten
+const HAFT_ABSPRUNG_X = 5;        // … und nach vorn
+const HAFT_KLEB_SCHWER = 0.25;    // an senkrechten Haftflächen: Anteil der Schwerkraft (rutscht langsam)
+const HAFT_FANG = 2.5;            // px: so knapp unter der Haftfläche greift man zu
+
 // ---------- Wasser und Schwimmen (Ausbau 5, elemente/wasser.js) ----------
 // Alle Werte pro Physik-Schritt (60 Schritte = 1 Spielsekunde). Unter Wasser: kein Haken, kein Schirm.
 const SWIM_ACCEL = 0.42;        // Schwimmen links/rechts/hoch/runter: Beschleunigung pro Schritt

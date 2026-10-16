@@ -50,6 +50,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
         <button type="button" tabindex="-1" data-view="gamepad">Controller</button>
       </div></div>
       <div class="ccols" id="sm-ctrl-cards"></div>
+      <div class="opt-row" id="sm-row-keys"><button class="btn unlock" id="sm-keys" type="button" tabindex="-1">⌨ 🎮 Tasten belegen …</button></div>
       <p class="tip" id="sm-ctrl-tip"></p>
     </div>
     <div class="pan glass" style="right:6cqw;width:30cqw">
@@ -61,6 +62,20 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
       <div class="opt-row" id="sm-row-unlock"><button class="btn unlock" id="sm-unlock" type="button" tabindex="-1">Alle Level freischalten (zum Testen)</button></div>
     </div>
     <button class="btn back" id="sm-opt-back" type="button" tabindex="-1">← Zurück</button>
+  </section>
+
+  <!-- 3b) Tasten belegen (Nacht-Ausbau) -->
+  <section class="screen" id="sm-s-tasten" aria-label="Tasten belegen">
+    <div class="o-title display">Tasten</div>
+    <div class="pan glass tb-pan">
+      <div class="opt-row" id="sm-tb-seg"><div class="tabs">
+        <button type="button" tabindex="-1" data-art="tastatur">Tastatur</button>
+        <button type="button" tabindex="-1" data-art="pad">Controller</button>
+      </div><span class="tb-typ" id="sm-tb-typ"></span></div>
+      <div class="tb-grid" id="sm-tb-grid"></div>
+      <p class="tip" id="sm-tb-tip"></p>
+    </div>
+    <button class="btn back" id="sm-tb-back" type="button" tabindex="-1">← Fertig</button>
   </section>
 
   <!-- 4) Spielerwahl -->
@@ -148,19 +163,19 @@ const CONFIG = {
 function controlsData(view) {
   const mP = lastPlayers.monkey, fP = 3 - mP;
   if (view === 'gamepad') {
+    const P = n => a => padName(PADSETS[n][padTypAktuell[n - 1]][a], padTypAktuell[n - 1]);
+    const m = P(mP), f = P(fP);
     return {
-      monkey: [['Controller', ['Nr. ' + mP]], ['Bewegen', ['Stick']], ['Springen', ['✕']], ['Haken', ['□']], ['Seil ran / geben', ['↑', '↓']], ['Hebel', ['○']]],
-      pig:    [['Controller', ['Nr. ' + fP]], ['Bewegen', ['Stick']], ['Springen', ['✕']], ['Schirm (halten)', ['□']], ['Hebel', ['○']]]
+      monkey: [['Controller', ['Nr. ' + mP]], ['Bewegen', ['Stick']], ['Springen', [m('jump')]], ['Haken', [m('ability')]], ['Seil ran / geben', [m('pull'), m('slack')]], ['Hebel', [m('use')]], ['Dash', [m('dash')]]],
+      pig:    [['Controller', ['Nr. ' + fP]], ['Bewegen', ['Stick']], ['Springen', [f('jump')]], ['Schirm (halten)', [f('ability')]], ['Hebel', [f('use')]], ['Dash', [f('dash')]]]
     };
   }
-  const K = {
-    1: { move: ['A', 'D'], jump: ['Leertaste'], ab: ['G'], rope: ['W', 'S'], use: ['J'] },
-    2: { move: ['←', '→'], jump: ['Num 0'], ab: ['Num 1'], rope: ['↑', '↓'], use: ['Num 2'] }
-  };
-  const m = K[mP], f = K[fP];
+  // Tastatur: aktuelle Belegung (Optionen → Tasten belegen; Standard = wie früher, neu nur Dash)
+  const K = n => a => tasteName(KEYSETS[n][a]);
+  const m = K(mP), f = K(fP);
   return {
-    monkey: [['Bewegen', m.move], ['Springen', m.jump], ['Haken', m.ab], ['Seil ran / geben', m.rope], ['Hebel', m.use]],
-    pig:    [['Bewegen', f.move], ['Springen', f.jump], ['Schirm (halten)', f.ab], ['Hebel', f.use]]
+    monkey: [['Bewegen', [m('left'), m('right')]], ['Springen', [m('jump')]], ['Haken', [m('ability')]], ['Seil ran / geben', [m('pull'), m('slack')]], ['Hebel', [m('use')]], ['Dash', [m('dash')]]],
+    pig:    [['Bewegen', [f('left'), f('right')]], ['Springen', [f('jump')]], ['Schirm (halten)', [f('ability')]], ['Hebel', [f('use')]], ['Dash', [f('dash')]]]
   };
 }
 const realCount = () => CONFIG.levels.filter(l => !l.soon).length || 1;
@@ -712,9 +727,9 @@ function quitGame() {
    ===================================================================== */
 S.options = {
   el: $('#sm-s-options'), idx: 0, view: 'keyboard', rows: [],
-  enter() {
-    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-opt-back')];
-    this.idx = 0; this.drawControls(); this.syncVol(); this.paint();
+  enter(arg) {
+    this.rows = [$('#sm-opt-seg'), $('#sm-row-keys'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-opt-back')];
+    this.idx = arg === 'tasten' ? 1 : 0; this.drawControls(); this.syncVol(); this.paint();
   },
   paint() { this.rows.forEach((r, i) => r.classList.toggle('sel', i === this.idx)); },
   syncVol() {
@@ -740,17 +755,18 @@ S.options = {
     else if (type === 'down') { this.idx = (this.idx + 1) % n; this.paint(); Snd.play('move'); }
     else if (type === 'left' || type === 'right') {
       if (this.idx === 0) this.toggleView();
-      else if (this.idx <= 3) {
-        const k = ['master', 'music', 'sfx'][this.idx - 1], r = $('#sm-r-' + k);
+      else if (this.idx >= 2 && this.idx <= 4) {
+        const k = ['master', 'music', 'sfx'][this.idx - 2], r = $('#sm-r-' + k);
         r.value = clamp(+r.value + (type === 'left' ? -10 : 10), 0, 100);
         r.dispatchEvent(new Event('input'));
       }
     }
     else if (type === 'confirm') {
       if (this.idx === 0) this.toggleView();
-      else if (this.idx === 4) toggleFullscreen();
-      else if (this.idx === 5) unlockAll();
-      else if (this.idx === 6) { Snd.play('back'); go('menu'); }
+      else if (this.idx === 1) { Snd.play('ok'); go('tasten'); }
+      else if (this.idx === 5) toggleFullscreen();
+      else if (this.idx === 6) unlockAll();
+      else if (this.idx === 7) { Snd.play('back'); go('menu'); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
   }
@@ -763,7 +779,7 @@ $$('#sm-opt-seg button').forEach(b => b.addEventListener('click', () => { S.opti
     r.style.setProperty('--p', r.value + '%'); $('#sm-v-' + k).textContent = r.value + ' %';
     if (k !== 'music') Snd.play('move');
   });
-  $('#sm-row-' + k).addEventListener('pointerdown', () => { S.options.idx = i + 1; S.options.paint(); });
+  $('#sm-row-' + k).addEventListener('pointerdown', () => { S.options.idx = i + 2; S.options.paint(); });
 });
 $('#sm-opt-back').addEventListener('click', () => { Snd.play('back'); go('menu'); });
 // zum Testen: alle fertigen Level sofort spielbar
@@ -772,8 +788,162 @@ function unlockAll() {
   save.played = true; persist();
   Snd.play('ok'); toast('Alle Level freigeschaltet');
 }
-$('#sm-unlock').addEventListener('click', () => { S.options.idx = 5; S.options.paint(); unlockAll(); });
-$('#sm-fs').addEventListener('click', () => { S.options.idx = 4; S.options.paint(); toggleFullscreen(); });
+$('#sm-unlock').addEventListener('click', () => { S.options.idx = 6; S.options.paint(); unlockAll(); });
+$('#sm-fs').addEventListener('click', () => { S.options.idx = 5; S.options.paint(); toggleFullscreen(); });
+/* =====================================================================
+   3b) TASTEN BELEGEN (Nacht-Ausbau)
+   Spieler 1 und 2 getrennt, Tastatur und Controller (je Controller-Typ PlayStation / Xbox / andere).
+   Aktion wählen (Klick oder Bestätigen) -> neue Taste bzw. neuen Controller-Knopf drücken; Esc (Controller: Options)
+   bricht ab. Geschützte Tasten (Esc, Enter, R, F, M …; Controller: Options, Share, PS-Taste) gehen nicht.
+   Doppelt belegte Tasten werden sofort rot markiert; verlassen geht erst, wenn alle Konflikte aufgelöst sind
+   (oder man verwirft die Änderungen). Gespeichert wird beim Verlassen (tastenSpeichern, js/03-eingabe.js).
+   ===================================================================== */
+const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wandsprung', ability: 'Fähigkeit (Haken / Schirm)',
+  pull: 'Hoch (Seil ran, Festhalten)', slack: 'Runter (Seil geben)', use: 'Hebel', dash: 'Dash'};
+const TB_TYPNAME = {playstation: 'PlayStation', xbox: 'Xbox', andere: 'anderer Controller'};
+let tbFang = null;    // {n, a, art, typ, vorher: gedrückte Knöpfe beim Start} – wartet auf die neue Taste
+S.tasten = {
+  el: $('#sm-s-tasten'), idx: 1, col: 0, art: 'tastatur', typ: 'playstation', sicherung: null,
+  enter() {
+    this.sicherung = JSON.stringify({k: KEYSETS, p: PADSETS});
+    this.idx = 1; this.col = 0; this.art = 'tastatur'; tbFang = null;
+    this.typ = padTypAktuell[0] || 'playstation';
+    this.draw();
+  },
+  leave() { tbFang = null; },
+  // Liste aller Konflikte: [[n, aktion], …] (Tastatur: über beide Spieler; Controller: je Spieler und Typ)
+  konflikte() {
+    const aus = [];
+    const kb = {};
+    for (const n of [1, 2]) for (const a of TASTEN_AKTIONEN) { const c = KEYSETS[n][a]; if (c) (kb[c] = kb[c] || []).push(['tastatur', n, a]); }
+    for (const c in kb) if (kb[c].length > 1) aus.push(...kb[c]);
+    for (const n of [1, 2]) for (const typ of PAD_TYPEN) {
+      const pb = {};
+      for (const a of TASTEN_AKTIONEN) { const b = PADSETS[n][typ][a]; if (b !== undefined && b !== null) (pb[b] = pb[b] || []).push([typ, n, a]); }
+      for (const b in pb) if (pb[b].length > 1) aus.push(...pb[b]);
+    }
+    return aus;
+  },
+  istKonflikt(art, n, a) { return this.konflikte().some(([x, m, b]) => x === art && m === n && b === a); },
+  wert(n, a) { return this.art === 'tastatur' ? tasteName(KEYSETS[n][a]) : padName(PADSETS[n][this.typ][a], this.typ); },
+  draw() {
+    $$('#sm-tb-seg button').forEach(b => b.classList.toggle('on', b.dataset.art === this.art));
+    $('#sm-tb-typ').innerHTML = this.art === 'pad' ? `<span class="key">◀</span> ${TB_TYPNAME[this.typ]} <span class="key">▶</span>` : '';
+    const g = $('#sm-tb-grid'); g.innerHTML = '';
+    const figur = n => (n === lastPlayers.monkey ? 'Affe' : 'Schweinchen');
+    g.appendChild(mk(`<div class="tb-z tb-kopf"><span></span><b class="pl1">Spieler 1 <small>${figur(1)}</small></b><b class="pl2">Spieler 2 <small>${figur(2)}</small></b></div>`));
+    const artKey = this.art === 'tastatur' ? 'tastatur' : this.typ;
+    TASTEN_AKTIONEN.forEach((a, i) => {
+      const z = mk(`<div class="tb-z opt-row"><span>${TB_NAMEN[a]}</span></div>`);
+      for (const n of [1, 2]) {
+        const fang = tbFang && tbFang.n === n && tbFang.a === a;
+        const b = mk(`<button type="button" tabindex="-1" class="tb-k${fang ? ' fang' : ''}${this.istKonflikt(artKey, n, a) ? ' konflikt' : ''}${this.idx === i + 1 && this.col === n - 1 ? ' sel' : ''}"
+          data-n="${n}" data-a="${a}">${fang ? (this.art === 'tastatur' ? 'Taste drücken … (Esc = abbrechen)' : 'Knopf drücken … (Esc / Options = abbrechen)') : this.wert(n, a)}</button>`);
+        b.addEventListener('click', () => { this.idx = i + 1; this.col = n - 1; this.fangen(); });
+        z.appendChild(b);
+      }
+      g.appendChild(z);
+    });
+    const r = mk(`<div class="tb-z opt-row"><span>Auf Standard zurücksetzen</span></div>`);
+    for (const n of [1, 2]) {
+      const b = mk(`<button type="button" tabindex="-1" class="tb-k tb-std${this.idx === 9 && this.col === n - 1 ? ' sel' : ''}">Spieler ${n}</button>`);
+      b.addEventListener('click', () => { this.idx = 9; this.col = n - 1; this.standard(n); });
+      r.appendChild(b);
+    }
+    g.appendChild(r);
+    $('#sm-tb-seg').classList.toggle('sel', this.idx === 0);
+    $('#sm-tb-back').classList.toggle('sel', this.idx === 10);
+    const k = this.konflikte().filter(([x]) => x === artKey).length;
+    $('#sm-tb-tip').innerHTML = k ? '<b class="tb-warn">Rot = doppelt belegt. Bitte eine der Tasten ändern, sonst lässt sich das Menü nicht verlassen.</b>'
+      : (this.art === 'tastatur' ? 'Gesperrt: Esc, Enter, R, F, M, C, X, H (Pause, Neustart, Anzeige, Ton, Test). '
+        : 'Laufen und Zielen geht immer zusätzlich mit dem linken Stick. Gesperrt: Options, Share, PS-/Xbox-Taste. ') +
+        (this.art === 'pad' ? `Die Belegung gilt nur für ${TB_TYPNAME[this.typ]}-Controller.` : 'Gespeichert wird beim Verlassen.');
+  },
+  fangen() {
+    const n = this.col + 1, a = TASTEN_AKTIONEN[this.idx - 1];
+    if (!a) return;
+    const vorher = {};
+    (navigator.getGamepads ? Array.from(navigator.getGamepads()) : []).forEach((p, i) => { if (p) vorher[i] = p.buttons.map(b => !!(b && (b.pressed || b.value > 0.4))); });
+    tbFang = {n, a, art: this.art, typ: this.typ, vorher};
+    Snd.play('ok'); this.draw();
+  },
+  abbrechen() { tbFang = null; Snd.play('back'); this.draw(); lock = performance.now() + 200; },
+  // neue Tastatur-Taste (aus smKeyDown)
+  fangTaste(code) {
+    if (!tbFang) return;
+    if (code === 'Escape') { this.abbrechen(); return; }
+    if (tbFang.art !== 'tastatur') return;
+    if (TASTEN_GESCHUETZT[code] || /^F\d+$/.test(code) || /^(Control|Alt|Meta)/.test(code)) { Snd.play('back'); toast(tasteName(code) + ' ist gesperrt (' + (TASTEN_GESCHUETZT[code] || 'System') + ')'); return; }
+    KEYSETS[tbFang.n][tbFang.a] = code;
+    this.nachBelegen();
+  },
+  // neuer Controller-Knopf (aus poll)
+  fangKnopf(knopf) {
+    if (!tbFang || tbFang.art !== 'pad') return;
+    if (knopf === 9) { this.abbrechen(); return; }
+    if (PAD_GESCHUETZT[knopf] !== undefined) { Snd.play('back'); toast(padName(knopf, tbFang.typ) + ' ist gesperrt (' + PAD_GESCHUETZT[knopf] + ')'); return; }
+    PADSETS[tbFang.n][tbFang.typ][tbFang.a] = knopf;
+    this.nachBelegen();
+  },
+  nachBelegen() {
+    const {n, a} = tbFang; tbFang = null;
+    lock = performance.now() + 250;
+    const art = this.art === 'tastatur' ? 'tastatur' : this.typ;
+    if (this.istKonflikt(art, n, a)) { Snd.play('back'); toast('Doppelt belegt – bitte die rot markierte andere Taste ändern'); }
+    else Snd.play('ok');
+    tastenAnwenden(); this.draw();
+  },
+  standard(n) {
+    for (const a of TASTEN_AKTIONEN) KEYSETS[n][a] = TASTEN_STANDARD[n][a];
+    for (const typ of PAD_TYPEN) for (const a of TASTEN_AKTIONEN) PADSETS[n][typ][a] = PAD_STANDARD[a];
+    tastenAnwenden(); Snd.play('ok'); toast('Spieler ' + n + ': Standard-Belegung'); this.draw();
+  },
+  verlassen() {
+    if (this.konflikte().length) {
+      showModal({ title: 'Tasten doppelt belegt', text: 'Einige Tasten sind doppelt belegt (rot markiert). Bitte erst ändern – oder alle Änderungen verwerfen.',
+        buttons: [{ label: 'Weiter ändern', primary: true, cancel: true }, { label: 'Änderungen verwerfen', onClick: () => this.verwerfen() }] });
+      return;
+    }
+    tastenSpeichern(); tastenAnwenden(); Snd.play('back'); go('options', 'tasten');
+  },
+  verwerfen() {
+    const alt = JSON.parse(this.sicherung);
+    for (const n of [1, 2]) { Object.assign(KEYSETS[n], alt.k[n]); for (const typ of PAD_TYPEN) Object.assign(PADSETS[n][typ], alt.p[n][typ]); }
+    tastenAnwenden(); go('options', 'tasten');
+  },
+  wechselArt(r) {
+    const liste = ['tastatur', ...PAD_TYPEN.map(t => 'pad:' + t)];
+    const jetzt = this.art === 'tastatur' ? 'tastatur' : 'pad:' + this.typ;
+    const neu = liste[(liste.indexOf(jetzt) + r + liste.length) % liste.length];
+    if (neu === 'tastatur') this.art = 'tastatur'; else { this.art = 'pad'; this.typ = neu.slice(4); }
+    Snd.play('swap'); this.draw();
+  },
+  act(type) {
+    if (tbFang) return;    // wartet auf Taste/Knopf
+    if (type === 'up') { this.idx = (this.idx + 10) % 11; Snd.play('move'); this.draw(); }
+    else if (type === 'down') { this.idx = (this.idx + 1) % 11; Snd.play('move'); this.draw(); }
+    else if (type === 'left' || type === 'right') {
+      if (this.idx === 0) this.wechselArt(type === 'left' ? -1 : 1);
+      else if (this.idx <= 9) { this.col = type === 'left' ? 0 : 1; Snd.play('move'); this.draw(); }
+    }
+    else if (type === 'confirm') {
+      if (this.idx === 0) this.wechselArt(1);
+      else if (this.idx <= 8) this.fangen();
+      else if (this.idx === 9) this.standard(this.col + 1);
+      else this.verlassen();
+    }
+    else if (type === 'back') this.verlassen();
+  }
+};
+$$('#sm-tb-seg button').forEach(b => b.addEventListener('click', () => {
+  if (tbFang) return;
+  S.tasten.idx = 0;
+  if (b.dataset.art === 'tastatur') { S.tasten.art = 'tastatur'; S.tasten.draw(); Snd.play('swap'); }
+  else if (S.tasten.art !== 'pad') { S.tasten.art = 'pad'; S.tasten.draw(); Snd.play('swap'); }
+}));
+$('#sm-tb-typ').addEventListener('click', () => { if (!tbFang && S.tasten.art === 'pad') S.tasten.wechselArt(1); });
+$('#sm-tb-back').addEventListener('click', () => { if (!tbFang) S.tasten.verlassen(); });
+$('#sm-keys').addEventListener('click', () => { S.options.idx = 1; S.options.paint(); Snd.play('ok'); go('tasten'); });
 // Vollbild: geht nur nach einem Tastendruck/Klick (Browser-Regel) – deshalb beim ersten Tastendruck im Titelbild
 function goFullscreen() {
   const el = document.documentElement;
@@ -798,7 +968,7 @@ function toggleFullscreen() {
    4) SPIELERWAHL
    ===================================================================== */
 const srcPlayer = s => ({ kbd1: 1, pad0: 1, kbd2: 2, pad1: 2 }[s] || 0);
-const PKEYS = { 1: ['A', 'D', 'Leertaste'], 2: ['←', '→', 'Num 0'] };
+const PKEYS = { get 1() { return ['left', 'right', 'jump'].map(a => tasteName(KEYSETS[1][a])); }, get 2() { return ['left', 'right', 'jump'].map(a => tasteName(KEYSETS[2][a])); } };   // aktuelle Belegung
 S.select = {
   el: $('#sm-s-select'), mode: 'new', side: { 1: 'L', 2: 'R' }, ready: { 1: false, 2: false }, busy: false, timer: null, poll: null,
   enter(mode) {
@@ -1346,6 +1516,7 @@ const KEYMAP = {
 };
 const IGNORE = ['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'CapsLock', 'Tab'];
 window.smKeyDown = e => {
+  if (tbFang && cur === S.tasten) { e.preventDefault(); if (!e.repeat) S.tasten.fangTaste(e.code); return; }   // Tasten-Menü wartet auf Taste
   if (e.ctrlKey || e.metaKey || e.altKey || IGNORE.includes(e.code) || /^F\d+$/.test(e.code)) return;
   Snd.resume();
   const m = KEYMAP[e.code];
@@ -1375,6 +1546,18 @@ function poll(t) {
         if (!st['h' + d]) { st['h' + d] = 1; st['n' + d] = t + 380; Snd.resume(); dispatch(d, src); }
         else if (t >= st['n' + d]) { st['n' + d] = t + 140; dispatch(d, src); }
       } else st['h' + d] = 0;
+    }
+    // Tasten-Menü wartet auf einen Controller-Knopf: der erste NEU gedrückte Knopf (auch Schultertasten/Trigger) zählt
+    if (tbFang && cur === S.tasten) {
+      const vorher = (tbFang.vorher || {})[p.index] || [];
+      for (let i = 0; i < p.buttons.length; i++) {
+        const on = !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > 0.4));
+        if (on && !vorher[i]) { S.tasten.fangKnopf(i); break; }
+        vorher[i] = on;
+      }
+      if (tbFang) tbFang.vorher[p.index] = vorher;
+      p.buttons.forEach((x, i) => { st['b' + i] = !!(x && x.pressed); });
+      slot++; continue;
     }
     const btn = (i, type) => { const on = b(i); if (on && !st['b' + i]) { Snd.resume(); dispatch(type, src); } st['b' + i] = on; };
     btn(0, 'confirm'); btn(9, 'confirm'); btn(1, 'back'); btn(8, 'back');
