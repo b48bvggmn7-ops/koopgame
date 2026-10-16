@@ -6890,7 +6890,7 @@ async def editor_einseitige_plattform(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gelaende] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'fake'], reihe   # + Eis (Ausbau 7, Höhle); Dunkelzone steht seit dem Editor-Umbau im Reiter „Licht“
+        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'bruch', 'haft', 'fake'], reihe   # + Eis (Ausbau 7, Höhle); + Durchbruch, Haftfläche (Nacht-Ausbau); Dunkelzone steht seit dem Editor-Umbau im Reiter „Licht“
         await ed_werkzeug(p, 'oneway'); await ed_ziehen(p, (4, 12), (7, 12))
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['oneways'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 12}], out['oneways']

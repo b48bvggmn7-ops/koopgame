@@ -100,3 +100,5 @@ Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis · 3 Landeplätze ·
   geschlossenen Kamin auf und ab; mit dem (gewollten) Wand-Rutschen fällt er dabei langsamer, landet unten und hüpfte in
   den Nachbarschacht. Geprüft wird dasselbe wie vorher (Platte 10 öffnet den Kamin, Hebel 11 die Klappe, beide kommen
   durch); Level und Spiel für Menschen unverändert. Ohne Wand-Rutschen war der alte Plan grün (gegengeprüft).
+- `editor_einseitige_plattform`: erwartete Reihenfolge im Reiter „Gelände“ um die neuen Werkzeuge `bruch` und `haft`
+  ergänzt (neue Elemente stehen dort; alle anderen Prüfungen unverändert).

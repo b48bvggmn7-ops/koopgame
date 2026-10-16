@@ -22,6 +22,14 @@ window.STELLE = {
     updateDoorsAndSwitches(16.6, [p1, p2]);
     for(const s of solids) if(s.type === 'door' && linkOn[s.link]){ s.open = true; s.gone = true; }
   },
+  // Stacheln und Lava (sonst rechnet das Spiel sie in stepSim, hier wird nur die Figur gerechnet)
+  tot(P){
+    const pb = {x: P.x - P.w/2, y: P.y - P.h, w: P.w, h: P.h};
+    for(const sp of spikes) if(rectsOverlap({x: sp.x - sp.w/2, y: sp.y - sp.h, w: sp.w, h: sp.h}, pb)) return true;
+    if(typeof inLava === 'function' && typeof lavaBecken !== 'undefined' && lavaBecken.length)
+      for(const dx of [-P.w*0.3, 0, P.w*0.3]) if(inLava(P.x + dx, P.y - LAVA_GNADE)) return true;
+    return false;
+  },
   // ein Versuch; Rückgabe true = auf dem Ziel gelandet
   versuch(o, b, j, t, dashDir, segeln){
     for(const k in KEYS) KEYS[k] = false; for(const k in PAD) PAD[k] = false;
@@ -46,7 +54,7 @@ window.STELLE = {
       this.tasten(P, l);
       if(neuTrefferStopp > 0){ neuTrefferStopp--; this.t += 1000/54; continue; }
       updatePlayer(P, this.t); this.t += 1000/54;
-      if(deathState){ deathState = null; return false; }
+      if(deathState || this.tot(P)){ deathState = null; return false; }
       if(i > j + 3 && P.grounded){
         const c = Math.floor(P.x/40);
         if(Math.abs(P.y - o.rz*40) < 1 && c >= o.c0 && c <= o.c1) return true;
