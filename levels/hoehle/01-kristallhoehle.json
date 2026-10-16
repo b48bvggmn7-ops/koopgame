@@ -512,6 +512,13 @@
       "type": "wall"
     },
     {
+      "x": 2400,
+      "y": 40,
+      "w": 400,
+      "h": 40,
+      "type": "wall"
+    },
+    {
       "x": 4000,
       "y": 40,
       "w": 40,
@@ -522,6 +529,13 @@
       "x": 4880,
       "y": 40,
       "w": 2040,
+      "h": 40,
+      "type": "wall"
+    },
+    {
+      "x": 2400,
+      "y": 80,
+      "w": 400,
       "h": 40,
       "type": "wall"
     },
@@ -1189,9 +1203,10 @@
       "color": "blue"
     },
     {
-      "x": 2660,
-      "y": 540,
-      "color": "blue"
+      "x": 2780,
+      "y": 180,
+      "color": "blue",
+      "klasse": "meister"
     },
     {
       "x": 2780,
@@ -3514,7 +3529,14 @@
       "h": 40
     }
   ],
-  "haftflaechen": [],
+  "haftflaechen": [
+    {
+      "x": 2400,
+      "y": 120,
+      "w": 400,
+      "h": 40
+    }
+  ],
   "look": "hoehle",
   "theme": "hoehle",
   "_mitfahrendeStacheln": 32

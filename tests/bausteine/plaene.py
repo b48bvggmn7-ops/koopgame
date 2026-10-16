@@ -62,3 +62,18 @@ def nb_versteck(c, r, kurz=False):
             {'frames': 10},
             {'press': ['jump'], 'hold': ['jump', 'right'], 'frames': 14 if not kurz else 9},
             {'hold': [] if kurz else ['right'], 'holdIf': {'left': f'P.x > {kx(c + 2) + 8}'} if kurz else {}, 'until': f'P.grounded && P.x >= {kx(c + 2) if kurz else kx(c + 3)} - 10', 'frames': 200}]
+
+def nb_haftarm(c, r, laenge=7):
+    """S2: von der Kante (c, Oberkante r) hochspringen, „hoch“ halten, bis zum Arm-Ende rollen (Münze), zurückrollen,
+    über der Kante loslassen"""
+    return [{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'swimUp'], 'until': '!!P.haft', 'frames': 50},
+            {'hold': ['swimUp', 'right'], 'until': f'P.x >= {kx(c + laenge)} - 4 || !P.haft', 'frames': 600},
+            {'hold': ['swimUp', 'left'], 'until': f'P.x <= {kx(c - 1)} || !P.haft', 'frames': 600},
+            {'holdIf': {'left': f'P.x > {kx(c - 1)}', 'right': f'P.x < {kx(c - 2)}'}, 'until': 'P.grounded', 'frames': 200}]
+
+def nb_haftarm_links(c, r, laenge=7):
+    """S2 gespiegelt: Arm ragt nach links über den Abgrund"""
+    return [{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'swimUp'], 'until': '!!P.haft', 'frames': 50},
+            {'hold': ['swimUp', 'left'], 'until': f'P.x <= {kx(c - laenge)} + 4 || !P.haft', 'frames': 600},
+            {'hold': ['swimUp', 'right'], 'until': f'P.x >= {kx(c + 1)} || !P.haft', 'frames': 600},
+            {'holdIf': {'right': f'P.x < {kx(c + 1)}', 'left': f'P.x > {kx(c + 2)}'}, 'until': 'P.grounded', 'frames': 200}]

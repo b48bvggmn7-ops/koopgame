@@ -74,3 +74,42 @@ for _lvl, _liste in _VERSTECKE.items():
         stelle(level=_lvl, name=f'Versteck unter Durchbruch-Boden {_c} (S1, optional, Münze)', wer=_w, start=(_c, _r - 1), partner=(_c, _r - 1),
                plan=nb_versteck(_c, _r, kurz=(_lvl.split('/')[0][0] + _lvl.split('/')[1][:2], _c) in _KURZ), ziel=_c + 1, ziel_reihe=_r - 1, baustein='S1', muenze=(_c, _r + 1),
                gegen=[{'hold': ['right'], 'until': f'P.x >= {kx(_c + 3)}', 'frames': 200}, {'frames': 20}], gegen_muenze=True)
+
+# ---------------- Haft-Arme (S2): optional, Meister-Münze am Arm-Ende (nur hängend erreichbar) ----------------
+_HAFTARME = {
+    'dschungel/04-gluehwald.json': [(590, 8, 'blue')],
+    'dschungel/05-dornenpfad.json': [(136, 12, 'blue'), (518, 12, 'pink')],
+    'dschungel/06-wipfelsturm.json': [(119, 12, 'blue'), (527, 12, 'blue')],
+    'ruinen/03-fallengang.json': [(145, 10, 'pink'), (396, 10, 'blue')],
+    'ruinen/04-sonnentempel.json': [(25, 8, 'blue'), (321, 10, 'pink')],
+    'ruinen/05-felsenflucht.json': [(252, 9, 'blue'), (382, 10, 'blue')],
+    'ruinen/06-tempelherz.json': [(56, 9, 'pink'), (363, 10, 'blue')],
+    'hoehle/01-kristallhoehle.json': [(62, 7, 'blue')],
+    'hoehle/03-eisgrotte.json': [(334, 11, 'pink'), (399, 8, 'pink')],
+    'hoehle/04-leuchtgrotte.json': [(442, 9, 'pink')],
+    'hoehle/05-foerderwerk.json': [(384, 10, 'blue')],
+    'hoehle/06-tiefenschlund.json': [(446, 8, 'pink')],
+    'vulkan/01-glutpfad.json': [(588, 10, 'pink')],
+    'vulkan/02-aschefeld.json': [(394, 10, 'blue')],
+    'vulkan/04-magmakammer.json': [(367, 10, 'pink'), (396, 10, 'pink')],
+    'vulkan/06-feuerschlund.json': [(135, 8, 'blue'), (550, 10, 'pink')],
+    'vulkan/07-kraterherz.json': [(213, 10, 'blue')],
+}
+for _lvl, _liste in _HAFTARME.items():
+    for (_c, _r, _farbe) in _liste:
+        _w = 'm' if _farbe == 'blue' else 'f'
+        stelle(level=_lvl, name=f'Haft-Arm über dem Abgrund an Kante {_c} (S2, optional, Meister-Münze)', wer=_w, start=(_c - 1, _r - 1), partner=(_c - 1, _r - 1),
+               plan=nb_haftarm(_c, _r), ziel=_c - 3, ziel_reihe=_r - 1, baustein='S2', muenze=(_c + 7, _r - 3),
+               gegen=[{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'right'], 'frames': 14}, {'until': 'P.grounded', 'frames': 200}], gegen_muenze=True)
+# gespiegelte Arme (ragen nach links über den Abgrund)
+_HAFTARME_LINKS = {
+    'hoehle/04-leuchtgrotte.json': [(398, 9, 'blue')],
+    'vulkan/01-glutpfad.json': [(400, 12, 'blue')],
+    'vulkan/03-feuerberg.json': [(313, 15, 'pink')],
+}
+for _lvl, _liste in _HAFTARME_LINKS.items():
+    for (_c, _r, _farbe) in _liste:
+        _w = 'm' if _farbe == 'blue' else 'f'
+        stelle(level=_lvl, name=f'Haft-Arm nach links über dem Abgrund an Kante {_c} (S2, optional, Meister-Münze)', wer=_w, start=(_c + 1, _r - 1), partner=(_c + 2, _r - 1),
+               plan=nb_haftarm_links(_c, _r), ziel=_c, ziel_reihe=_r - 1, baustein='S2', muenze=(_c - 7, _r - 3),
+               gegen=[{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'left'], 'frames': 14}, {'until': 'P.grounded', 'frames': 200}], gegen_muenze=True)

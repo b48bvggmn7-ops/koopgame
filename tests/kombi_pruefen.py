@@ -173,7 +173,15 @@ def kombis_neu(d, ks, hooks, gr, winds, pilze, flaechen):
     def nah_pilz(c0, c1): return any(c0 - A <= pc <= c1 + A for pc, pr in pilze)
     def nah_wind(c0, c1): return any(c0 - A <= wc <= c1 + A for wc, wr in winds)
     def nah_grube(c0, c1, weite=A): return any(c0 - weite <= g1 and g0 <= c1 + weite for g0, g1 in gr)
-    bruch = B.gruppen({z for o in d.get('bruchWaende', []) for z in B.felder_zellen(o)})
+    # optionale Extras zählen NICHT als Kombi: S1-Versteck (2 Durchbruch-Kästchen als Boden, darunter die Mulde) und
+    # S2-Haft-Arm (eine Reihe Haftfläche, Meister-Münze unter dem Arm-Ende)
+    fest = B.feste_kaestchen(d)
+    meister = {(B.spalte(m['x']), int(m['y'] // 40)) for m in d.get('coins', []) if m.get('klasse') == 'meister'}
+    def s1(g): return len(g) == 2 and g[0][1] == g[1][1] and all((c, r + 1) not in fest for c, r in g)
+    def s2(g):
+        rs = {r for c, r in g}; cs = [c for c, r in g]
+        return len(rs) == 1 and ((min(cs), min(rs) + 1) in meister or (max(cs), min(rs) + 1) in meister)
+    bruch = [g for g in B.gruppen({z for o in d.get('bruchWaende', []) for z in B.felder_zellen(o)}) if not s1(g)]
     for g in bruch:
         c0, c1 = g[0][0], g[-1][0]; m = (c0 + c1) // 2
         if nah_haken(c0, c1): out.append({'spalte': m, 'art': 'Haken + Dash (Durchbruch)', 'wer': 'm'})
@@ -181,7 +189,7 @@ def kombis_neu(d, ks, hooks, gr, winds, pilze, flaechen):
         if nah_pilz(c0, c1): out.append({'spalte': m, 'art': 'Pilz + Dash (Durchbruch)', 'wer': 'beide'})
         if nah_wind(c0, c1): out.append({'spalte': m, 'art': 'Aufwind + Dash (Durchbruch)', 'wer': 'f'})
         if nah_grube(c0, c1, 4): out.append({'spalte': m, 'art': 'Dash (Durchbruch) + Segeln/Sprung', 'wer': 'beide'})
-    haft = B.gruppen({z for o in d.get('haftflaechen', []) for z in B.felder_zellen(o)})
+    haft = [g for g in B.gruppen({z for o in d.get('haftflaechen', []) for z in B.felder_zellen(o)}) if not s2(g)]
     for g in haft:
         c0, c1 = min(c for c, r in g), max(c for c, r in g); m = (c0 + c1) // 2
         if nah_haken(c0, c1): out.append({'spalte': m, 'art': 'Haken + Haftfläche', 'wer': 'm'})

@@ -234,3 +234,121 @@ def versteck_plaetze(lv, abstand=10):
         if out and c - out[-1][0] < abstand and out[-1][1] == r: continue
         out.append((c, r))
     return out
+
+def haftgang_plaetze(lv, min_lang=7):
+    """S2-Plätze: Unterseite einer Decke (Reihe rc, Boden/Wand) – links ein Einstieg (darunter Boden 2–3 Reihen tiefer,
+    also mit Sprung erreichbar), weiter rechts mindestens 4 Kästchen ohne Boden in Sprungweite (dort die Meister-Münze).
+    -> [(c0, c_ende, rc, c_muenze)]"""
+    import bildregel_pruefen as B
+    d = lv.alt_spiel
+    el = set()
+    for f in ('hooks', 'switches', 'doors', 'plates', 'bouncers', 'checkpoints', 'teleporters', 'traps', 'pressen', 'boulders',
+              'lichtquellen', 'spiegel', 'kristalle', 'leuchtkristalle', 'spikes', 'coins'):
+        for o in d.get(f, []): el.add((B.spalte(o['x']), B.reihe(o['y'])))
+    for f in ('winds', 'movingPlatforms', 'switchFloors', 'lava', 'baender', 'eis', 'oneways', 'dunkelzonen', 'bruchWaende', 'haftflaechen', 'lavaPegel'):
+        for o in d.get(f, []):
+            for z in B.felder_zellen(o) if 'w' in o else [(B.spalte(o['x']), B.reihe(o['y']))]: el.add(z)
+    belegt = lambda c, r: lv.typ(c, r) is not None
+    def abstand(c, rc):   # freie Reihen unter der Decke bis zum nächsten Boden (99 = keiner)
+        for k in range(1, 20):
+            if rc + k > 17: return 99
+            if belegt(c, rc + k): return k - 1
+        return 99
+    out = []
+    breite = max(c for c, r in lv.t) + 1
+    for rc in range(-2, 14):
+        c = 0
+        while c < breite:
+            if lv.typ(c, rc) in ('ground', 'wall') and not belegt(c, rc + 1):
+                c0 = c
+                while c < breite and lv.typ(c, rc) in ('ground', 'wall') and not belegt(c, rc + 1): c += 1
+                c1 = c - 1
+                if c1 - c0 + 1 >= min_lang:
+                    ab = [abstand(cc, rc) for cc in range(c0, c1 + 1)]
+                    # Einstieg: die ersten beiden Spalten 2–3 Reihen frei (darunter Boden), dann eine Leere (>= 5 frei)
+                    if 2 <= ab[0] <= 3 and 2 <= ab[1] <= 3:
+                        leer = [i for i in range(2, len(ab)) if ab[i] >= 5]
+                        if len(leer) >= 4 and leer[0] <= 4:
+                            cm = c0 + leer[min(3, len(leer) - 1)]
+                            if not any((cc, rr) in el for cc in range(c0, cm + 2) for rr in range(rc + 1, rc + 4)):
+                                out.append((c0, c1, rc, cm))
+            c += 1
+    return out
+
+def haft_ueber_grube_plaetze(lv, dicke=5):
+    """B3 über einer VORHANDENEN Grube (6–16 breit, beide Ränder gleich hoch): Fels + Haftfläche passen darüber, ohne
+    Kästchen, Elemente oder alte Bot-Wege zu berühren -> [(c0, breite, r)] (c0 = erste Grubenspalte, r = Rand-Oberkante)"""
+    import level_vermessen as LV, bildregel_pruefen as B
+    d = lv.alt_spiel
+    el = set()
+    for f in ('hooks', 'switches', 'doors', 'plates', 'bouncers', 'checkpoints', 'teleporters', 'traps', 'pressen', 'boulders',
+              'lichtquellen', 'spiegel', 'kristalle', 'leuchtkristalle', 'coins'):
+        for o in d.get(f, []): el.add((B.spalte(o['x']), B.reihe(o['y'])))
+    for f in ('winds', 'movingPlatforms', 'switchFloors', 'lava', 'baender', 'oneways', 'dunkelzonen', 'lavaPegel'):
+        for o in d.get(f, []):
+            for z in B.felder_zellen(o) if 'w' in o else [(B.spalte(o['x']), B.reihe(o['y']))]: el.add(z)
+    for h in d.get('hooks', []):   # Haken-Umkreis frei lassen
+        hc, hr = B.spalte(h['x']), B.reihe(h['y'])
+        for dc in range(-5, 6):
+            for dr in range(-5, 6): el.add((hc + dc, hr + dr))
+    bot = bot_zellen(lv.datei)
+    out = []
+    for g in LV.vermessen(lv.datei)['gruben']:
+        if not (6 <= g['breite'] <= 16) or g['dy'] != 0: continue
+        c0, c1, r = g['von'] + 1, g['nach'] - 1, g['reihe']
+        zellen = [(c, rr) for c in range(c0 - 3, c1 + 3) for rr in range(r - 4 - dicke, r - 3)]
+        if any(lv.typ(*z) is not None or z in el or z in bot for z in zellen): continue
+        if any((c, rr) in bot for c in range(c0 - 1, c1 + 2) for rr in (r - 4, r - 5)): continue
+        out.append((c0, c1 - c0 + 1, r))
+    return out
+
+def _elemente_zellen(d, haken_umkreis=4):
+    import bildregel_pruefen as B
+    el = set()
+    for f in ('hooks', 'switches', 'doors', 'plates', 'bouncers', 'checkpoints', 'teleporters', 'traps', 'pressen', 'boulders',
+              'lichtquellen', 'spiegel', 'kristalle', 'leuchtkristalle', 'coins', 'spikes'):
+        for o in d.get(f, []): el.add((B.spalte(o['x']), B.reihe(o['y'])))
+    for f in ('winds', 'movingPlatforms', 'switchFloors', 'baender', 'oneways', 'bruchWaende', 'haftflaechen'):   # Dunkelzonen/Lava-Marken sind kein Hindernis
+        for o in d.get(f, []):
+            for z in B.felder_zellen(o) if 'w' in o else [(B.spalte(o['x']), B.reihe(o['y']))]: el.add(z)
+            if f == 'movingPlatforms' and 'targetX' in o:
+                el.update(B.felder_zellen({**o, 'x': o['targetX'], 'y': o.get('targetY', o['y'])}))
+    for h in d.get('hooks', []):
+        hc, hr = B.spalte(h['x']), B.reihe(h['y'])
+        for dc in range(-haken_umkreis, haken_umkreis + 1):
+            for dr in range(-haken_umkreis, haken_umkreis + 1): el.add((hc + dc, hr + dr))
+    return el
+
+def haftarm_plaetze(lv, laenge=7, abstand=25, richtung=1):
+    """S2-Plätze: Bodenkante (c_l, r) – rechts davon Leere; darüber passt ein Felsarm (Reihen r-6..r-5) mit Haftfläche
+    (Reihe r-4) von c_l-2 bis c_l+laenge, ohne Kästchen, Elemente oder alte Bot-Wege zu berühren -> [(c_l, r)]"""
+    el = _elemente_zellen(lv.alt_spiel); bot = bot_zellen(lv.datei)
+    out = []
+    for (c, r), t in sorted(lv.t.items()):
+        if t not in ('ground', 'wall') or r < 7 or r > 16 or c < 12: continue
+        R = richtung
+        if lv.typ(c, r - 1) is not None or lv.typ(c + R, r) is not None: continue   # Kante: zur Arm-Seite kein Boden
+        if lv.typ(c - R, r) is None or lv.typ(c - 2 * R, r) is None: continue       # auf der anderen Seite Boden zum Stehen
+        spalten = lambda a, b: range(min(c + a * R, c + b * R), max(c + a * R, c + b * R) + 1)
+        arm = [(cc, rr) for cc in spalten(-2, laenge) for rr in range(r - 6, r - 3)]
+        unter = [(cc, rr) for cc in spalten(-2, laenge + 1) for rr in range(r - 3, r)]
+        leer = [(cc, rr) for cc in spalten(1, laenge) for rr in range(r, min(18, r + 4))]
+        if any(lv.typ(*z) is not None or z in el or z in bot for z in arm): continue
+        if any(lv.typ(*z) is not None or z in el for z in unter): continue
+        if any(lv.typ(*z) not in (None, 'lava') for z in leer): continue   # unter dem Arm darf Lava sein
+        if out and c - out[-1][0] < abstand: continue
+        out.append((c, r))
+    return out
+
+def s2_haftarm(lv, c, r, laenge=7, muenze=None, richtung=1):
+    """S2 bauen: Fels Reihen r-6..r-5, Haftfläche Reihe r-4 von c-2 bis c+laenge; Münze (verschoben, Meister) unter dem
+    Arm-Ende (c+laenge, r-3)"""
+    R = richtung
+    for k in range(-2, laenge + 1):
+        cc = c + k * R
+        for rr in (r - 6, r - 5): lv.kachel(cc, rr, 'wall')
+        lv.haft(cc, r - 4)
+    if muenze:
+        ce = c + laenge * R
+        lv.muenze_verschieben(muenze[0], muenze[1], ce, r - 3); lv.muenze_klasse(ce, r - 3, 'meister')
+    return lv
