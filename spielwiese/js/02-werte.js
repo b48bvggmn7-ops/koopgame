@@ -32,6 +32,7 @@ wert(G_LAUF, 'luftBremse', 'Bremsen in der Luft', 0.03, 0, 0.5, 0.01, 'ohne Tast
 wert(G_LAUF, 'schwerkraft', 'Schwerkraft', 0.62, 0.1, 2, 0.01);
 wert(G_LAUF, 'maxFall', 'Höchste Fallgeschwindigkeit', 15, 4, 30, 0.5);
 wert(G_LAUF, 'sprungKraft', 'Sprungkraft', 12.6, 5, 25, 0.1, 'reicht wie im Spiel für ca. 3,2 Kästchen');
+schalter(G_LAUF, 'sprungWieSpiel', 'Sprung wie im Spiel', true, 'an: genau wie im Spiel – Sprung nur direkt vom Boden (keine Coyote-Time, kein Puffer), volle Höhe ab dem ersten Schritt, kleiner Sprung nach dem Loslassen bleibt klein · aus: mit Coyote-Time und Puffer (Spielwiese bisher)');
 schalter(G_LAUF, 'variablerSprung', 'Kurz drücken = kleiner Sprung', true);
 wert(G_LAUF, 'sprungAbbruch', 'Kleiner Sprung: Rest-Tempo', 6.4, 0, 15, 0.1, 'Aufwärts-Tempo beim frühen Loslassen');
 wert(G_LAUF, 'coyote', 'Coyote-Time (Schritte)', 6, 0, 20, 1, 'so lange nach der Kante darf man noch springen');
@@ -50,6 +51,7 @@ wert(G_WAND, 'wandSprungY', 'Wandsprung: nach oben', 12.8, 4, 20, 0.1);
 wert(G_WAND, 'wandFenster', 'Wandsprung-Fenster (Schritte)', 10, 0, 30, 1, 'so lange nach dem Wandkontakt klappt er noch');
 wert(G_WAND, 'wandSperre', 'Lenk-Sperre danach (Schritte)', 9, 0, 30, 1, 'kurz nicht zurücklenken -> sauberer Kamin');
 wert(G_WAND, 'wandRutschen', 'Rutschen an der Wand (Tempo)', 2.4, 0.5, 15, 0.1);
+wert(G_WAND, 'wandSpielSperre', 'Wie im Spiel: Lenk-Sperre (Schritte)', 16, 0, 30, 1, 'Variante B: so lange nach dem Wandsprung nicht lenken (Spiel: 260 ms)');
 wert(G_WAND, 'wandSpielXmin', 'Wie im Spiel: weg ohne Schwung', 6.96, 2, 16, 0.1, 'Variante B: Wandsprung ohne Anlauf');
 wert(G_WAND, 'wandSpielXmax', 'Wie im Spiel: weg mit vollem Schwung', 12.8, 2, 20, 0.1, 'Variante B: mit vollem Sprint an die Wand');
 wert(G_WAND, 'wandSpielYmin', 'Wie im Spiel: hoch ohne Schwung', 14.4, 4, 22, 0.1);
@@ -194,7 +196,7 @@ schalter('Anzeige', 'zahlen', 'Tempo-Anzeige (Messwerte)', false, 'zeigt Tempo, 
 
 // ---------- Varianten je Mechanik (Tasten 1–4 gelten für die Mechanik der aktuellen Station) ----------
 const MECHANIKEN = {};
-function mechanik(id, name, varianten){ MECHANIKEN[id] = {id, name, varianten, aktiv: 0}; }
+function mechanik(id, name, varianten, std){ MECHANIKEN[id] = {id, name, varianten, std: std || 0, aktiv: std || 0}; }
 mechanik('sprung', 'Sprung', [
   {name: 'A – Wie im Spiel', hilfe: 'gleichmäßige Schwerkraft'},
   {name: 'B – Schwebe-Gipfel', hilfe: 'Taste halten: am höchsten Punkt kurz schweben (mehr Zeit zum Zielen)'},
@@ -203,8 +205,8 @@ mechanik('sprung', 'Sprung', [
 ]);
 mechanik('wand', 'Wandsprung', [
   {name: 'A – Einfach', hilfe: 'immer gleich stark, Richtung egal'},
-  {name: 'B – Wie im Spiel', hilfe: 'stärker mit mehr Schwung beim Anprall, Taste muss von der Wand weg zeigen, je Wandseite einmal'},
-]);
+  {name: 'B – Wie im Spiel', hilfe: 'genau wie im Spiel: stärker mit mehr Schwung beim Anprall, Taste muss von der Wand weg zeigen, je Wandseite einmal, kein langsames Rutschen'},
+], 1);
 mechanik('dash', 'Dash', [
   {name: 'A – Fester Dash', hilfe: 'gerade Strecke, kein Eingriff'},
   {name: 'B – Gleitender Dash', hilfe: 'lenkbar, danach bleibt der Schwung eine Weile'},
@@ -241,7 +243,7 @@ let figurAussehen = 'affe';
 function einstellungenObjekt(){
   const werte = {}; for(const w of WERTE_LISTE) werte[w.key] = V[w.key];
   const varianten = {}; for(const id in MECHANIKEN) varianten[id] = MECHANIKEN[id].aktiv;
-  return {spielwiese: 2, figur: figurAussehen, werte, varianten};
+  return {spielwiese: 3, figur: figurAussehen, werte, varianten};
 }
 function einstellungenAnwenden(o){
   if(!o || typeof o !== 'object') return false;
@@ -255,13 +257,14 @@ function einstellungenAnwenden(o){
     else if(typeof v === 'number' && isFinite(v)) V[w.key] = klemmen(v, w.min, w.max);
   }
   if(o.varianten) for(const id in o.varianten) if(MECHANIKEN[id]){
+    if(id === 'wand' && (o.spielwiese || 1) < 3) continue;   // ältere Speicherstände: Wandsprung jetzt wie im Spiel (B)
     const i = o.varianten[id] | 0; if(i >= 0 && i < MECHANIKEN[id].varianten.length) MECHANIKEN[id].aktiv = i;
   }
   return true;
 }
 function standardWerte(gruppe){
   for(const w of WERTE_LISTE) if(!gruppe || w.gruppe === gruppe) V[w.key] = w.std;
-  if(!gruppe) for(const id in MECHANIKEN) MECHANIKEN[id].aktiv = 0;
+  if(!gruppe) for(const id in MECHANIKEN) MECHANIKEN[id].aktiv = MECHANIKEN[id].std;
   einstellungenMerken();
 }
 let merkenZeit = 0;

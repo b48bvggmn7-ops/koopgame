@@ -73,7 +73,7 @@ function padLesen(){
   ein.stick = {x: ax(0), y: ax(1)}; ein.stickR = {x: ax(2), y: ax(3)};
   const jetzt = {};
   for(const a in PAD_KNOEPFE) jetzt[a] = PAD_KNOEPFE[a].some(n => gp.buttons[n] && (gp.buttons[n].pressed || gp.buttons[n].value > 0.5));
-  for(const a in jetzt) if(jetzt[a] && !padVorher[a]){ aktionAusloesen(a); tonEntsperren(); }
+  for(const a in jetzt) if(jetzt[a] && !padVorher[a]){ aktionAusloesen(a); if(a === 'springen') flanken.springenPad = true; tonEntsperren(); }
   padVorher = jetzt;
 }
 

@@ -4,7 +4,7 @@
 const fig = {
   x: 0, y: 0, vx: 0, vy: 0, px: 0, py: 0,
   amBoden: false, coyote: 0, puffer: 0,
-  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0,
+  wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0, wandAlter: 99, wandWarten: 0, losgelassen: false, sprungZahl: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
   haengt: null, ball: null, rollWinkel: 0, laufWinkel: 0, laufWinkelVor: 0,
   hakenPuffer: 0, kette: 0,
@@ -19,7 +19,7 @@ const luftDashMax = () => V.dashLuft >= 4 ? Infinity : V.dashLuft;
 function figurAufPunkt(p){
   fig.x = p.c * K + K / 2 - FIG_B / 2; fig.y = p.r * K - FIG_H;
   fig.vx = fig.vy = 0; fig.px = fig.x; fig.py = fig.y;
-  fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = 0; fig.sprint = 0; fig.sprungAktiv = false;
+  fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = fig.wandWarten = 0; fig.wandAlter = 99; fig.sprint = 0; fig.sprungAktiv = false;
   fig.dash = null; fig.luftDashes = luftDashMax(); fig.ladung = 0; fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
   fig.wandSprungSeite = 0; fig.seil = null; fig.fehlschuss = null; fig.rutsch = 0;
   fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
@@ -105,8 +105,9 @@ function bodenUnter(f){
   for(let c = c0; c <= c1; c++) if(fest(c, r)) return true;
   return false;
 }
-function wandNeben(f, seite){
-  const c = seite > 0 ? Math.floor((f.x + FIG_B + 0.5) / K) : Math.floor((f.x - 0.5) / K);
+function wandNeben(f, seite, reichweite){   // reichweite: wie weit neben der Figur noch „Wand“ zählt (Spiel: 4 px)
+  const d = reichweite || 0.5;
+  const c = seite > 0 ? Math.floor((f.x + FIG_B + d) / K) : Math.floor((f.x - d) / K);
   const r0 = Math.floor((f.y + 4) / K), r1 = Math.floor((f.y + FIG_H - 4) / K);
   for(let r = r0; r <= r1; r++) if(fest(c, r)) return true;
   return false;
@@ -120,17 +121,27 @@ function stachelTreffer(f){
 }
 
 // ---------- Sprünge ----------
+// Zeitfenster des Spiels in Schritten (Spiel rechnet in echten ms, 54 Schritte/s): Controller-Wandsprung 250 ms,
+// ✕ an der Wand gedrückt, Stick zeigt noch nicht weg: Sprung wartet 150 ms
+const WAND_PAD_FENSTER = 14, WAND_PAD_WARTEN = 8;
 function springen(){
   const mond = MECHANIKEN.sprung.aktiv === 3;
   fig.vy = -V.sprungKraft * (mond ? V.mondKraft : 1);
-  fig.amBoden = false; fig.coyote = 0; fig.puffer = 0; fig.sprungAktiv = true;
+  fig.amBoden = false; fig.coyote = 0; fig.puffer = 0; fig.sprungAktiv = true; fig.losgelassen = false; fig.sprungZahl++;
   dehnen(fig, 0.72, 1.32); staubWolke(fig.x + FIG_B / 2, fig.y + FIG_H, 6, 0); ton('sprung');
 }
 function wandSprungMoeglich(rx){
-  if(!V.wandsprung || fig.wandZeit <= 0) return false;
-  if(MECHANIKEN.wand.aktiv === 1){   // wie im Spiel: Taste von der Wand weg, je Seite einmal, nicht aus dem Stand
-    return rx === -fig.letzteWand && fig.letzteWand !== fig.wandSprungSeite && fig.wandEintritt > 1.3;
+  if(!V.wandsprung) return false;
+  if(MECHANIKEN.wand.aktiv === 1){
+    // genau wie im Spiel (js/08-figur-physik-seil.js): Tastatur nur, solange die Wand berührt wird; Controller darf die
+    // Wand bis 250 ms (14 Schritte) vorher berührt haben. Taste von der Wand weg, je Seite einmal, nicht aus dem Stand.
+    let seite = fig.wand;
+    if(!seite && fig.padSprung && fig.wandAlter <= WAND_PAD_FENSTER) seite = fig.letzteWand;
+    if(!seite || rx !== -seite || seite === fig.wandSprungSeite || fig.wandEintritt <= 1.3) return false;
+    fig.letzteWand = seite;
+    return true;
   }
+  if(fig.wandZeit <= 0) return false;
   return true;
 }
 function wandSpringen(){
@@ -141,7 +152,9 @@ function wandSpringen(){
     fig.vy = -mischen(V.wandSpielYmin, V.wandSpielYmax, m);
     fig.wandSprungSeite = s;
   } else { fig.vx = -s * V.wandSprungX; fig.vy = -V.wandSprungY; }
-  fig.blick = -s; fig.sperre = V.wandSperre; fig.wandZeit = 0; fig.puffer = 0; fig.sprungAktiv = MECHANIKEN.wand.aktiv === 0;
+  const spiel = MECHANIKEN.wand.aktiv === 1;
+  fig.blick = -s; fig.sperre = spiel ? V.wandSpielSperre : V.wandSperre; fig.wandZeit = 0; fig.puffer = 0; fig.wandWarten = 0;
+  fig.wandAlter = 99; fig.sprungAktiv = !spiel; fig.losgelassen = false; fig.sprungZahl++;
   dehnen(fig, 0.75, 1.28); staubWolke(s > 0 ? fig.x + FIG_B : fig.x, fig.y + FIG_H / 2, 6, -s);
   trefferStopp(1); wackeln(0.12); ton('wand');
 }
@@ -244,9 +257,14 @@ function figurSchritt(){
   dashLadenSchritt();
 
   // Eingaben merken (Puffer)
-  if(E.springen) fig.puffer = V.sprungPuffer + 1;
+  const spielSprung = V.sprungWieSpiel;
+  if(E.springen) fig.puffer = (spielSprung ? 0 : V.sprungPuffer) + 1;   // wie im Spiel: kein Puffer, nur genau dieser Schritt
   if(E.dash) fig.dashPuffer = V.dashPuffer + 1;
-  fig.coyote = fig.amBoden ? V.coyote + 1 : fig.coyote - 1;
+  fig.coyote = fig.amBoden ? (spielSprung ? 0 : V.coyote) + 1 : fig.coyote - 1;   // wie im Spiel: keine Coyote-Time
+  fig.wandAlter = fig.wand ? 0 : fig.wandAlter + 1;
+  // Controller wie im Spiel: ✕ in der Luft gedrückt -> Wandsprung wartet kurz auf das Stick-Umlenken
+  if(E.springen && E.springenPad && !fig.amBoden) fig.wandWarten = WAND_PAD_WARTEN + 1;
+  fig.padSprung = !!E.springenPad || fig.wandWarten > 0;
   fig.wandZeit = fig.wand ? V.wandFenster + 1 : fig.wandZeit - 1;
 
   const sprungVerbraucht = hakenEingabe(E, rxs);   // Haken (04a-haken.js): schießen, loslassen, Sprung am Seil
@@ -321,6 +339,8 @@ function figurSchritt(){
     }
 
     // Springen: Puffer (früh gedrückt) + Coyote-Time (kurz nach der Kante) + Wandsprung; C: Dash-Sprung im Fenster danach
+    const sprungZahlVor = fig.sprungZahl;
+    if(fig.puffer <= 0 && fig.wandWarten > 0 && !sprungVerbraucht && !fig.amBoden && MECHANIKEN.wand.aktiv === 1 && wandSprungMoeglich(rxs)) wandSpringen();
     if(fig.puffer > 0 && !sprungVerbraucht){
       if(fig.hyperFenster > 0 && fig.nachDash && (fig.coyote > 0 || fig.wandZeit > 0)) dashSprung(fig.nachDash);
       else if(fig.coyote > 0) springen();
@@ -335,15 +355,30 @@ function figurSchritt(){
     if(sv === 1 && halten && !fig.amBoden && Math.abs(fig.vy) < V.gipfelBand) g *= V.gipfelSchwer;
     if(sv === 2 && fig.vy > 0) g *= V.fallSchwer;
     if(sv === 3) g *= V.mondSchwer;
-    if(fig.sprungAktiv){
-      if(fig.vy >= 0) fig.sprungAktiv = false;
-      else if(!halten && V.variablerSprung && fig.vy < -V.sprungAbbruch) fig.vy = -V.sprungAbbruch + (fig.vy + V.sprungAbbruch) * 0.3;
+    if(spielSprung){
+      // wie im Spiel: im Absprung-Schritt keine Schwerkraft (voller Schwung -12,6), sonst erst Schwerkraft, dann Bremsen;
+      // einmal losgelassen bleibt der Sprung klein, auch wenn man wieder drückt
+      if(fig.sprungZahl === sprungZahlVor) fig.vy = Math.min(fig.vy + g, V.maxFall);
+      if(fig.sprungAktiv){
+        if(fig.vy >= 0) fig.sprungAktiv = false;
+        else {
+          if(!halten) fig.losgelassen = true;
+          if(fig.losgelassen && V.variablerSprung && fig.vy < -V.sprungAbbruch) fig.vy = -V.sprungAbbruch + (fig.vy + V.sprungAbbruch) * 0.3;
+        }
+      }
+    } else {
+      if(fig.sprungAktiv){
+        if(fig.vy >= 0) fig.sprungAktiv = false;
+        else if(!halten && V.variablerSprung && fig.vy < -V.sprungAbbruch) fig.vy = -V.sprungAbbruch + (fig.vy + V.sprungAbbruch) * 0.3;
+      }
+      fig.vy = Math.min(fig.vy + g, V.maxFall);
     }
-    fig.vy = Math.min(fig.vy + g, V.maxFall);
-    if(fig.wand && fig.vy > V.wandRutschen) fig.vy = V.wandRutschen;   // an der Wand langsam rutschen
+    // an der Wand langsam rutschen (Variante A); im Spiel (B) gibt es kein Rutschen
+    if(fig.wand && MECHANIKEN.wand.aktiv !== 1 && fig.vy > V.wandRutschen) fig.vy = V.wandRutschen;
     if(amSeil) seilNachSchwerkraft();   // am Boden mit Seil: Seil hält trotzdem
   }
   if(fig.puffer > 0) fig.puffer--;
+  if(fig.wandWarten > 0) fig.wandWarten--;
 
   // bewegen + Kollision
   const warBoden = fig.amBoden, fallTempo = fig.vy, vxVor = fig.vx, vyVor = fig.vy;
@@ -368,7 +403,8 @@ function figurSchritt(){
   const wandVorher = fig.wand;
   fig.wand = 0;
   if(!fig.amBoden){
-    if(wandNeben(fig, 1)) fig.wand = 1; else if(wandNeben(fig, -1)) fig.wand = -1;
+    const reichweite = MECHANIKEN.wand.aktiv === 1 ? 4 : 0.5;   // Spiel: Wand zählt bis 4 px neben der Figur
+    if(wandNeben(fig, 1, reichweite)) fig.wand = 1; else if(wandNeben(fig, -1, reichweite)) fig.wand = -1;
     if(fig.wand){
       fig.letzteWand = fig.wand;
       if(!wandVorher){ fig.wandEintritt = Math.abs(vxVor); if(!fig.dash) dashAufladen(); }   // NEUE Wandberührung lädt auf

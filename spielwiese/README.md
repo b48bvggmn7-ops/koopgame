@@ -74,12 +74,19 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 ## Laufen
 - „Laufen wie im Spiel“ (Panel „Laufen & Springen“, Standard an): wie im echten Spiel – kräftiger Schub je Schritt,
   nach ca. 0,1 s volles Tempo (7,2), ohne Taste bremst der Boden. Aus = weiches Anlaufen mit langsamem Sprint.
+- „Sprung wie im Spiel“ (Standard an): Sprung genau wie im echten Spiel – nur direkt vom Boden (keine Coyote-Time,
+  kein Puffer), volle Höhe 134 px (gut 3 Kästchen), kurz drücken = kleiner Sprung (82 px), einmal losgelassen bleibt er
+  klein. Gemessen: gleiche Höhen wie im Spiel. Aus = mit Coyote-Time und Puffer (Spielwiese bisher).
+- Wandsprung: Standard ist jetzt Variante B „Wie im Spiel“ – Taste muss von der Wand weg zeigen, je Wandseite einmal
+  (bis Boden oder andere Wand), mehr Anlauf = stärkerer Wandsprung, zu langsam an die Wand = kein Wandsprung, Wand zählt
+  schon 4 px vorher, kein langsames Rutschen, danach ca. 0,3 s nicht lenkbar. Am Controller darf ✕ kurz vor dem
+  Stick-Umlenken kommen (wie im Spiel). Variante A (einfach) bleibt mit Taste 1 wählbar.
 - Nachbilder (durchsichtige Spur) erst ab Tempo 11: beim Laufen keine Spur mehr, nur bei Dash, Seil-Abwurf, Ringen.
 
 ## Aussehen und Dash-Aufladen
 - Spiel-Look (Panel „Aussehen“): Dschungel wie im Spiel – Himmel mit Sonne, Hügel und Bäume, Boden mit Gras,
   Erdschichten und dunkler Kontur, Stacheln und Haken-Punkte wie im Spiel, Schatten unter der Figur. Nachgezeichnet,
-  kein Code aus `../js/`. Die Figur rollt beim Laufen wie im Spiel (Schalter „Figur rollt“).
+  kein geladener Code aus `../js/`. Die Figur rollt beim Laufen wie im Spiel (Schalter „Figur rollt“).
 - Dash lädt langsam auf (Panel „Dash“, Standard an): jeder Dash kostet einen Punkt, der sich in ca. 0,9 s wieder
   füllt (Tortenstück über dem Kopf). Kristalle füllen sofort. Aus = alter Modus (Landung/Wand/Haken füllen sofort).
 - Haken ohne Ziel: keine Liane mehr (Schalter „Ohne Ziel: Liane kurz ins Leere“ holt sie zurück).
@@ -90,8 +97,9 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
   1 Boden/Wand · 2 Haftfläche · 3 Brechbar · 4 Anker · 5 Stacheln · 6 Rampe ↗ · 7 Rampe ↖ · 8 Radierer · 9 Kristall.
 - Im Panel (Tab) unter „Karte“: speichern (`spielwiese-karte`), gespeicherte laden, Original-Arena, Export/Import als JSON.
 
-Im Panel außerdem: Wandsprung-Varianten (A einfach, B wie im Spiel) und die Kantenhilfe (Kopf rutscht an Ecken
-vorbei, Dash hüpft auf knappe Stufen).
+Im Panel außerdem: Wandsprung-Varianten (A einfach, B wie im Spiel = Standard) und die Kantenhilfe (Kopf rutscht an Ecken
+vorbei, Dash hüpft auf knappe Stufen). Teile von Sprung und Wandsprung sind aus `../js/08-figur-physik-seil.js`
+abgeschrieben (kopiert, nicht geladen).
 
 ## Einstellungen (Tab)
 - Schieberegler und Schalter für alle Werte, nach Mechanik gruppiert, je Gruppe „Standard“.
@@ -106,7 +114,7 @@ vorbei, Dash hüpft auf knappe Stufen).
 Kästchen 40 px, Bild 1280×720, Zoom 0,85, Figurengröße wie im Spiel.
 
 ## Regel: getrennt vom Spiel
-- Die Spielwiese benutzt **keinen** Code aus `../js/` und teilt keinen Zustand mit dem Spiel.
+- Die Spielwiese lädt **keinen** Code aus `../js/` (einzelne Teile sind abgeschrieben) und teilt keinen Zustand mit dem Spiel.
 - Sie liest nur die Bilder `../assets/monkey.png` und `../assets/pig.png`.
 - Sie speichert nur unter eigenen Schlüsseln (`spielwiese-einstellungen`, `spielwiese-voreinstellungen`,
   `spielwiese-karte`), nie unter denen des Spiels.
