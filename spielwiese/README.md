@@ -51,6 +51,17 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
    Risswand (Dash), Kristall-Grube (Sprung + Dash, Kristalle laden auf), zwei Haken-Schwünge (K), Ziel-Podest
    (Sprung + Dash nach oben). Drei Fähnchen = Zwischenpunkte.
 
+9. Anker-Spielplatz – schwankende Anker, Einmal-Anker (orange, reißen), Schwung-Ringe (gold, beschleunigen) über
+   einer langen Stachelgrube.
+
+## Liane und Haken (Panel „Haken“)
+- Die Liane ist eine grüne Ranke mit Blättern, hängt locker durch und schlängelt sich im Flug.
+- Perfektes Loslassen: leuchtet die Liane golden, jetzt loslassen = Extra-Schub, „Perfekt!“ (Fenster in Grad einstellbar).
+- Gummi-Liane (Schalter): gibt nach und schnellt zurück wie ein Katapult.
+- Nahtlose Kette: K kurz nach dem Loslassen wieder drücken = die nächste Liane sitzt sofort, ohne Flugzeit.
+- Anker-Sorten: normal, schwankend, Einmal-Anker (reißt nach einem Schwung oder nach ein paar Sekunden, kommt wieder),
+  Schwung-Ring (durchschwingen = schneller). Im Editor: Taste 4 mehrmals drücken wechselt die Sorte.
+
 ## Zusatz-Schalter (Ideen 1–4, im Panel)
 1. Dash-Kristalle (Gruppe Dash): grüne Rauten laden den Dash auf, kommen nach ein paar Sekunden wieder; im Editor Taste 9.
 2. Lochgröße beim Durchbruch (Gruppe Durchbruch): 0 nur figurgroß · 1 3×3 · 2 ganze Wand/Reihe quer zum Dash.

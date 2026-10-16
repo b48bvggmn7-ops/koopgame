@@ -3,10 +3,43 @@
 // ein kleiner Ring zeigt ihn vorher. Liane fliegt sichtbar (hakenFlug Schritte), strafft sich, dann Pendeln.
 // Varianten: A Automatisch (Anker) · B Decken überall · C Anker mit Magnet · D Freies Zielen (Maus / rechter Stick).
 
-let anker = [];   // {x, y} Mitte der Anker-Kästchen ('o' in der Karte)
+// Anker-Sorten: 'o' normal · 's' schwankend (pendelt waagerecht) · 'e' Einmal-Anker (reißt) · 'q' Schwung-Ring (kein Anker)
+let anker = [];   // {x, y, bx, by, art, weg, halt, phase}
+let ringe = [];   // {x, y, kuehl}
 function ankerSammeln(){
-  anker = [];
-  for(let r = 0; r < KARTE_H; r++) for(let c = 0; c < KARTE_B; c++) if(karte[r][c] === 'o') anker.push({x: c * K + K / 2, y: r * K + K / 2});
+  anker = []; ringe = [];
+  for(let r = 0; r < KARTE_H; r++) for(let c = 0; c < KARTE_B; c++){
+    const z = karte[r][c], x = c * K + K / 2, y = r * K + K / 2;
+    if(z === 'o' || z === 's' || z === 'e') anker.push({x, y, bx: x, by: y, art: z, weg: 0, halt: 0, phase: c * 0.7});
+    else if(z === 'q') ringe.push({x, y, kuehl: 0});
+  }
+}
+const ankerDa = a => !(a.weg > 0);
+// je Schritt: schwankende Anker bewegen, Einmal-Anker reißen/zurückkommen, Schwung-Ringe
+function ankerSchritt(){
+  for(const a of anker){
+    if(a.art === 's') a.x = a.bx + Math.sin(schrittZaehler / 60 * Math.PI * 2 * V.schwankTempo + a.phase) * V.schwankWeite;
+    if(a.art === 'e'){
+      if(a.weg > 0 && --a.weg === 0){ staubWolke(a.x, a.y, 4, 0); ton('wachsen'); }
+      const dran = fig.seil && fig.seil.anker === a && seilFest();
+      if(dran && ++a.halt > V.einmalZeit * 60) ankerReissen(a);
+      if(!dran) a.halt = 0;
+    }
+  }
+  for(const g of ringe){
+    if(g.kuehl > 0){ g.kuehl--; continue; }
+    const m = figMitte(), v = Math.hypot(fig.vx, fig.vy);
+    if(!fig.tot && Math.hypot(m.x - g.x, m.y - g.y) < 28 && v > 2){
+      const neu = Math.min(V.ringMax, v * V.ringBoost);
+      fig.vx *= neu / v; fig.vy *= neu / v; g.kuehl = 40;
+      teilchenBurst(g.x, g.y, 16, '#ffd84a'); trefferStopp(1); wackeln(0.1); ton('ring');
+    }
+  }
+}
+function ankerReissen(a){
+  if(fig.seil && fig.seil.anker === a) seilLoesen(true);
+  a.weg = Math.round(V.einmalZurueck * 60); a.halt = 0;
+  teilchenBurst(a.x, a.y, 12, '#ff9a3c'); ton('reissen');
 }
 
 const figMitte = () => ({x: fig.x + FIG_B / 2, y: fig.y + FIG_H / 2});
@@ -55,7 +88,7 @@ function hakenZielSuchen(ohne){
     const treffer = strahl(m.x, m.y, ax, ay, V.hakenReichweite);
     let best = null, bestD = treffer ? treffer.dist : V.hakenReichweite;
     for(const a of anker){   // Anker nahe am Zielstrahl (bis ~35 px daneben) haben Vorrang
-      if(a === ohne) continue;
+      if(a === ohne || !ankerDa(a)) continue;
       const dx = a.x - m.x, dy = a.y - m.y, lang = dx * ax + dy * ay, quer = Math.abs(dx * ay - dy * ax);
       if(lang > 20 && lang <= bestD + 30 && quer < 35 && sichtFrei(m.x, m.y, a.x, a.y)){ best = {x: a.x, y: a.y, anker: a}; bestD = lang; }
     }
@@ -66,7 +99,7 @@ function hakenZielSuchen(ohne){
   const aim = zielRichtungLesen();
   let best = null, bestS = -Infinity;
   for(const a of anker){
-    if(a === ohne) continue;
+    if(a === ohne || !ankerDa(a)) continue;
     const s = zielBewerten(a, aim, v === 1 ? V.ankerBonus : 0);
     if(s > bestS && sichtFrei(m.x, m.y, a.x, a.y)){ bestS = s; best = {x: a.x, y: a.y, anker: a}; }
   }
@@ -86,9 +119,10 @@ function hakenSchiessen(z){
   if(fig.ball && !rollenBeenden()) return;
   fig.haengt = null;
   const m = figMitte();
-  fig.seil = {x: z.x, y: z.y, anker: z.anker, zustand: 'flug', t: 0, n: Math.max(1, Math.round(V.hakenFlug)),
+  const kette = V.ketteAn && fig.kette > 0;   // nahtlose Kette: kurz nach dem Loslassen sitzt die Liane sofort
+  fig.seil = {x: z.x, y: z.y, anker: z.anker, zustand: 'flug', t: 0, n: kette ? 1 : Math.max(1, Math.round(V.hakenFlug)),
     startX: m.x, startY: m.y, len: 0, startLen: 0};
-  ton('schuss');
+  if(kette){ fig.kette = 0; ton('kette'); teilchenBurst(m.x, m.y, 6, '#bff27a'); } else ton('schuss');
 }
 function hakenFestmachen(){
   const s = fig.seil, m = figMitte();
@@ -98,13 +132,29 @@ function hakenFestmachen(){
   dashAufladen();   // Haken-Greifen lädt den Dash auf
   trefferStopp(1); wackeln(0.08); ton('greifen');
 }
+// Perfektes Loslassen: vorn im Aufschwung, Winkel zum Drehpunkt im Fenster (0° = genau darunter)
+function perfektFenster(){
+  const s = fig.seil; if(!V.perfektAn || !s || s.zustand !== 'fest' || fig.amBoden) return false;
+  const p = seilDrehpunkt(s), m = figMitte(), dx = m.x - p.x, dy = m.y - p.y;
+  const w = Math.atan2(Math.abs(dx), dy) * 180 / Math.PI;
+  return fig.vy < 0 && Math.sign(fig.vx) === Math.sign(dx) && Math.abs(fig.vx) > 2 && w >= V.perfektVon && w <= V.perfektBis;
+}
 function seilLoesen(mitBoost){
   const s = fig.seil; if(!s) return;
+  const perfekt = mitBoost && perfektFenster();
   fig.seil = null;
+  if(s.anker && s.anker.art === 'e' && s.zustand === 'fest' && ankerDa(s.anker)) ankerReissen(s.anker);   // Einmal-Anker: nach einem Schwung weg
   if(s.zustand !== 'fest' || !mitBoost || fig.amBoden) return;
+  fig.kette = V.kettenFenster;   // ab jetzt kurz: neues K = nahtlose Kette
   fig.vx *= V.abwurfBoost; fig.vy = fig.vy * V.abwurfBoost - V.abwurfHoch;
+  let max = V.abwurfMax;
+  if(perfekt){
+    fig.vx *= V.perfektBoost; fig.vy *= V.perfektBoost; max *= 1.15;
+    const m = figMitte(); teilchenBurst(m.x, m.y, 14, '#ffd84a'); trefferStopp(2); wackeln(0.12); ton('perfekt');
+    fx.texte.push({x: m.x, y: m.y - 30, text: 'Perfekt!', leben: 40});
+  }
   const v = Math.hypot(fig.vx, fig.vy);
-  if(v > V.abwurfMax){ fig.vx *= V.abwurfMax / v; fig.vy *= V.abwurfMax / v; }
+  if(v > max){ fig.vx *= max / v; fig.vy *= max / v; }
   dehnen(fig, 0.82, 1.2); ton('abwurf');
 }
 const seilFest = () => fig.seil && fig.seil.zustand === 'fest';
@@ -115,6 +165,7 @@ function hakenEingabe(E, rx){
   const halten = V.hakenHalten, gedrueckt = E.haken, gehaltenJetzt = gehalten('haken');
   if(!fig.seil || seilFest()) fig.hakenZiel = hakenZielSuchen(fig.seil ? fig.seil.anker : null);
   if(fig.fehlschuss && ++fig.fehlschuss.t > 10) fig.fehlschuss = null;
+  if(fig.kette > 0) fig.kette--;
 
   if(fig.seil){
     if(halten && !gehaltenJetzt){ seilLoesen(true); return false; }
@@ -149,7 +200,9 @@ function hakenEingabe(E, rx){
 
 // Liane im Flug: Spitze wandert zum Ziel; angekommen -> fest
 function seilFlugSchritt(){
-  const s = fig.seil; if(!s || s.zustand !== 'flug') return;
+  const s = fig.seil; if(!s) return;
+  if(s.anker){ s.x = s.anker.x; s.y = s.anker.y; if(!ankerDa(s.anker)){ seilLoesen(true); return; } }   // bewegter Anker: Liane folgt
+  if(s.zustand !== 'flug') return;
   if(++s.t >= s.n) hakenFestmachen();
 }
 
@@ -218,20 +271,55 @@ function seilNachSchwerkraft(){
   // Grenze: wo wäre ich nach diesem Schritt? Liegt das außerhalb des Seils -> zurück auf den Kreis, Tempo entsprechend
   const dp = seilDrehpunkt(s);
   const px = m.x + fig.vx, py = m.y + fig.vy, dx = px - dp.x, dy = py - dp.y, d = Math.hypot(dx, dy);
-  if(d > s.len){
+  s.dehnung = 0;
+  if(V.gummiLiane && d > s.len){   // Gummi-Liane: zieht wie eine Feder zurück, federt nach, höchstens gummiMax gedehnt
+    const ux = dx / d, uy = dy / d, zug = (d - s.len) * V.gummiHaerte;
+    fig.vx -= ux * zug; fig.vy -= uy * zug;
+    const vr = fig.vx * ux + fig.vy * uy; if(vr > 0){ fig.vx -= ux * vr * (1 - V.gummiDaempfung); fig.vy -= uy * vr * (1 - V.gummiDaempfung); }
+    const grenze = s.len * (1 + V.gummiMax), px2 = m.x + fig.vx, py2 = m.y + fig.vy, d2 = Math.hypot(px2 - dp.x, py2 - dp.y);
+    if(d2 > grenze){ fig.vx = dp.x + (px2 - dp.x) / d2 * grenze - m.x; fig.vy = dp.y + (py2 - dp.y) / d2 * grenze - m.y; }
+    s.dehnung = Math.max(0, Math.min(d2, grenze) / s.len - 1);
+  } else if(d > s.len){
     const nx = dp.x + dx / d * s.len, ny = dp.y + dy / d * s.len;
     fig.vx = nx - m.x; fig.vy = ny - m.y;
   }
 }
 
 // ---------- Zeichnen ----------
-function hakenZeichnen(alpha){
-  const fx_ = mischen(fig.px, fig.x, alpha) + FIG_B / 2, fy_ = mischen(fig.py, fig.y, alpha) + FIG_H / 2;
-  if(V.spielLook) for(const a of anker) lookAnker(a);   // Haken-Punkt wie im Spiel (06a-look.js)
-  else for(const a of anker){   // Anker: Metallring mit Halterung
+function ankerZeichnen(a){
+  if(!ankerDa(a)){   // gerissener Einmal-Anker: nur ein gestrichelter Umriss, bis er wieder da ist
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(255,140,60,0.55)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(a.x, a.y, 11, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); return;
+  }
+  if(a.art === 's'){   // schwankend: feine Bahn zeigt, wo er hin und her pendelt
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([2, 6]);
+    ctx.beginPath(); ctx.moveTo(a.bx - V.schwankWeite, a.by); ctx.lineTo(a.bx + V.schwankWeite, a.by); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if(V.spielLook) lookAnker(a);
+  else {
     ctx.strokeStyle = '#5b6574'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(a.x, a.y, 10, 0, Math.PI * 2); ctx.stroke();
     ctx.strokeStyle = '#c9d3df'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(a.x, a.y, 10, 0, Math.PI * 2); ctx.stroke();
   }
+  if(a.art === 'e'){   // Einmal-Anker: oranger Ring mit Rissen, blinkt, wenn er gleich reißt
+    const rest = 1 - a.halt / (V.einmalZeit * 60), blink = rest < 0.35 && Math.floor(performance.now() / 90) % 2;
+    ctx.strokeStyle = blink ? '#ffffff' : '#ff8a2a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(a.x, a.y, 16, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#7a3a10'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(a.x - 14, a.y - 6); ctx.lineTo(a.x - 9, a.y - 2); ctx.moveTo(a.x + 12, a.y + 8); ctx.lineTo(a.x + 8, a.y + 4); ctx.stroke();
+  }
+}
+function ringZeichnen(g){
+  const p = 1 + Math.sin(performance.now() / 200 + g.x) * 0.06, r = 24 * p;
+  ctx.lineWidth = 7; ctx.strokeStyle = g.kuehl > 0 ? 'rgba(255,216,74,0.35)' : 'rgba(150,100,10,0.7)';
+  ctx.beginPath(); ctx.arc(g.x, g.y, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 3.5; ctx.strokeStyle = g.kuehl > 0 ? 'rgba(255,240,170,0.5)' : '#ffd84a';
+  ctx.beginPath(); ctx.arc(g.x, g.y, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(g.x - r * 0.6, g.y - r * 0.6, 2.5, 0, Math.PI * 2); ctx.fill();
+}
+function hakenZeichnen(alpha){
+  const fx_ = mischen(fig.px, fig.x, alpha) + FIG_B / 2, fy_ = mischen(fig.py, fig.y, alpha) + FIG_H / 2;
+  for(const g of ringe) ringZeichnen(g);
+  for(const a of anker) ankerZeichnen(a);
   // Zielring (dezent, pulsierend) – nur wenn frei bzw. beim Hangeln
   const z = fig.hakenZiel;
   if(V.zielRing && z && !fig.tot && (!fig.seil || seilFest())){
@@ -248,23 +336,71 @@ function hakenZeichnen(alpha){
   const s = fig.seil;
   if(s && !fig.tot){
     let tx = s.x, ty = s.y;
-    if(s.zustand === 'flug'){ const t = Math.min(1, (s.t + alpha) / s.n); tx = mischen(fx_, s.x, t); ty = mischen(fy_, s.y, t); }
-    if(s.zustand === 'fest' && s.knicke && s.knicke.length){   // geknickte Liane: Anker -> Knicke -> Figur
-      let a = s; for(const q of s.knicke){ lianeZeichnen(a.x, a.y, q.x, q.y, 0); a = q; }
-      lianeZeichnen(a.x, a.y, fx_, fy_, 0);
-      for(const q of s.knicke){ ctx.fillStyle = '#2f5a24'; ctx.beginPath(); ctx.arc(q.x, q.y, 3.5, 0, Math.PI * 2); ctx.fill(); }
-    } else lianeZeichnen(fx_, fy_, tx, ty, s.zustand === 'fest' ? 0 : 1);
-    ctx.fillStyle = '#3c6b2f'; ctx.beginPath(); ctx.arc(tx, ty, 4, 0, Math.PI * 2); ctx.fill();
+    const gold = perfektFenster(), dehnung = s.dehnung || 0;
+    if(s.zustand === 'flug'){
+      const t = Math.min(1, (s.t + alpha) / s.n); tx = mischen(fx_, s.x, t); ty = mischen(fy_, s.y, t);
+      lianeZeichnen(fx_, fy_, tx, ty, {flug: 1 - t});
+    } else {
+      // Durchhang: hat die Liane mehr Länge als Abstand (z. B. kurz nach dem Greifen), hängt sie durch
+      let a = s;
+      const stuecke = [];
+      for(const q of (s.knicke || [])){ stuecke.push([a.x, a.y, q.x, q.y]); a = q; }
+      stuecke.push([a.x, a.y, fx_, fy_]);
+      const letzt = stuecke[stuecke.length - 1], abst = Math.hypot(letzt[2] - letzt[0], letzt[3] - letzt[1]);
+      stuecke.forEach((st, i) => lianeZeichnen(st[0], st[1], st[2], st[3], {gold, dehnung,
+        durchhang: i === stuecke.length - 1 ? Math.min(70, Math.max(0, s.len - abst) * 0.6) : 0}));
+      for(const q of (s.knicke || [])){ ctx.fillStyle = '#2b4a1e'; ctx.beginPath(); ctx.arc(q.x, q.y, 4, 0, Math.PI * 2); ctx.fill(); }
+    }
+    blattBuschel(tx, ty);
   }
   if(fig.fehlschuss && !fig.tot){
     const f = fig.fehlschuss, t = f.t <= 5 ? f.t / 5 : (10 - f.t) / 5, l = 160 * t;
-    lianeZeichnen(fx_, fy_, fx_ + f.x * l, fy_ + f.y * l, 1);
+    lianeZeichnen(fx_, fy_, fx_ + f.x * l, fy_ + f.y * l, {flug: 0.6});
   }
 }
-function lianeZeichnen(x0, y0, x1, y1, locker){
-  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + locker * 18;   // im Flug noch etwas durchhängend
-  ctx.strokeStyle = '#2f5a24'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(mx, my, x1, y1); ctx.stroke();
-  ctx.strokeStyle = '#6fb04f'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(mx, my, x1, y1); ctx.stroke();
+// Liane: gedrehte, grüne Ranke mit dunkler Kontur, hellen Windungen und kleinen Blättern; hängt durch, wenn locker;
+// im Flug schlängelt sie; golden leuchtend im Perfekt-Fenster; dünner, wenn die Gummi-Liane gedehnt ist
+function lianeZeichnen(x0, y0, x1, y1, o){
+  o = o || {};
+  const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
+  const zeit = performance.now() / 90;
+  const sag = (o.durchhang || 0) + (o.flug ? 14 * o.flug : 0);
+  const cx = (x0 + x1) / 2 + (ny < 0 ? -nx : nx) * 0 , cy = (y0 + y1) / 2 + sag;   // Durchhang nach unten
+  const punkt = t => {   // Punkt auf der Kurve (+ Schlängeln im Flug)
+    const u = 1 - t, x = u * u * x0 + 2 * u * t * cx + t * t * x1, y = u * u * y0 + 2 * u * t * cy + t * t * y1;
+    const w = o.flug ? Math.sin(t * 14 - zeit) * 5 * o.flug * Math.sin(t * Math.PI) : 0;
+    return [x + nx * w, y + ny * w];
+  };
+  const n = Math.max(6, Math.ceil(l / 12)), pts = [];
+  for(let i = 0; i <= n; i++) pts.push(punkt(i / n));
+  const spur = () => { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); };
+  const dick = 1 / (1 + (o.dehnung || 0) * 1.5);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if(o.gold){   // Perfekt-Fenster: kräftiges goldenes Leuchten (pulsiert)
+    const p = 0.7 + Math.sin(performance.now() / 60) * 0.3;
+    spur(); ctx.strokeStyle = `rgba(255,200,40,${0.35 * p})`; ctx.lineWidth = 20; ctx.stroke();
+    spur(); ctx.strokeStyle = `rgba(255,225,90,${0.75 * p})`; ctx.lineWidth = 11; ctx.stroke();
+  }
+  spur(); ctx.strokeStyle = '#22401a'; ctx.lineWidth = 6.5 * dick; ctx.stroke();
+  spur(); ctx.strokeStyle = o.gold ? '#d6c636' : '#4e8a35'; ctx.lineWidth = 4.5 * dick; ctx.stroke();
+  spur(); ctx.setLineDash([5, 7]); ctx.lineDashOffset = -l * 0.1; ctx.strokeStyle = 'rgba(170,220,120,0.8)'; ctx.lineWidth = 1.6 * dick; ctx.stroke(); ctx.setLineDash([]);
+  // Blätter entlang der Ranke (abwechselnd links/rechts)
+  const blaetter = Math.floor(l / 30);
+  for(let i = 1; i <= blaetter; i++){
+    const t = i / (blaetter + 1), [bx, by] = punkt(t), [ax, ay] = punkt(Math.max(0, t - 0.02));
+    const w = Math.atan2(by - ay, bx - ax) + (i % 2 ? 0.9 : -0.9) + Math.sin(zeit * 0.3 + i) * 0.15;
+    blatt(bx, by, w, i % 3 === 0 ? 8 : 6.5);
+  }
+  ctx.lineCap = 'butt';
+}
+function blatt(x, y, w, gr){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(w);
+  ctx.fillStyle = '#4f9a45'; ctx.beginPath(); ctx.ellipse(gr * 0.9, 0, gr, gr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#2b5a24'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.strokeStyle = 'rgba(190,235,150,0.8)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(gr * 1.6, 0); ctx.stroke();
+  ctx.restore();
+}
+function blattBuschel(x, y){   // Blätterbüschel, wo die Liane festhält
+  for(let i = 0; i < 4; i++) blatt(x, y, i * Math.PI / 2 + 0.4, 6);
+  ctx.fillStyle = '#3c6b2f'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
 }

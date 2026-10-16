@@ -1,7 +1,7 @@
 // 05-gefuehl.js – Spielwiese: Spielgefühl-Hilfen, jede einzeln abschaltbar (Panel „Spielgefühl“).
 // Wackeln, Trefferstopp, Staub/Partikel, Nachbilder, Dehnen/Stauchen, Töne. Alles wird im festen Takt gerechnet.
 
-const fx = { trauma: 0, stopp: 0, teilchen: [], nachbilder: [], brocken: [] };
+const fx = { trauma: 0, stopp: 0, teilchen: [], nachbilder: [], brocken: [], texte: [] };
 
 function wackeln(t){ if(V.fxWackeln) fx.trauma = Math.min(1, fx.trauma + t * V.wackelStaerke); }
 function trefferStopp(n){ if(V.fxStopp) fx.stopp = Math.max(fx.stopp, Math.round(n * V.stoppFaktor)); }
@@ -52,6 +52,8 @@ function gefuehlSchritt(){
   if(fx.teilchen.length > 400) fx.teilchen.splice(0, fx.teilchen.length - 400);
   for(const b of fx.brocken){ b.x += b.vx; b.y += b.vy; b.vy += 0.45; b.vx *= 0.98; b.w += b.vw; b.leben--; }
   fx.brocken = fx.brocken.filter(b => b.leben > 0 && b.y < KARTE_H * K + 100);
+  for(const t of fx.texte){ t.y -= 0.8; t.leben--; }
+  fx.texte = fx.texte.filter(t => t.leben > 0);
   for(const n of fx.nachbilder) n.leben--;
   fx.nachbilder = fx.nachbilder.filter(n => n.leben > 0);
 }
@@ -110,5 +112,9 @@ function ton(art, staerke){
   else if(art === 'wachsen') piep(300, 450, 0.08, 0.04, 'sine');
   else if(art === 'kristall'){ piep(660, 990, 0.08, 0.08, 'sine'); piep(990, 1480, 0.1, 0.05, 'sine'); }
   else if(art === 'knick') piep(420, 380, 0.03, 0.04, 'square');
+  else if(art === 'perfekt'){ piep(660, 990, 0.09, 0.08, 'sine'); piep(990, 1320, 0.12, 0.06, 'sine'); }
+  else if(art === 'kette') piep(560, 820, 0.05, 0.06, 'triangle');
+  else if(art === 'ring'){ rauschen(0.12, 0.1, 2200); piep(500, 1000, 0.12, 0.06, 'sine'); }
+  else if(art === 'reissen'){ rauschen(0.14, 0.16, 1200); piep(300, 150, 0.1, 0.06, 'square'); }
   else if(art === 'klick') piep(900, 700, 0.035, 0.06, 'sine');
 }

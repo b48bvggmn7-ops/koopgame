@@ -7,7 +7,7 @@ const fig = {
   wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
   haengt: null, ball: null, rollWinkel: 0, laufWinkel: 0, laufWinkelVor: 0,
-  hakenPuffer: 0,
+  hakenPuffer: 0, kette: 0,
   seil: null, hakenZiel: null, zielStrahl: null, fehlschuss: null, rutsch: 0,
   durchbruch: 0, ladung: 0,
   dash: null, luftDashes: 1, dashPuffer: 0, dashPause: 0, gleit: 0, hyperFenster: 0, nachDash: null, blitz: 0,

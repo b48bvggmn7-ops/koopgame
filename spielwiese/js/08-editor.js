@@ -15,8 +15,13 @@ function bauenUmschalten(){
   hinweis(bau.an ? 'Bauen: an (B = fertig)' : 'Bauen: aus');
   ton('klick');
 }
+const ANKER_SORTEN = [{z: 'o', name: 'Anker'}, {z: 's', name: 'Anker schwankt'}, {z: 'e', name: 'Einmal-Anker'}, {z: 'q', name: 'Schwung-Ring'}];
 function werkzeugWaehlen(i){
   if(i < 0 || i >= WERKZEUGE.length) return;
+  if(i === 3 && bau.werkzeug === 3){   // Taste 4 nochmal: Anker-Sorte wechseln
+    const j = (ANKER_SORTEN.findIndex(a => a.z === WERKZEUGE[3].z) + 1) % ANKER_SORTEN.length;
+    WERKZEUGE[3] = {...ANKER_SORTEN[j]};
+  }
   bau.werkzeug = i; hinweis('Werkzeug: ' + WERKZEUGE[i].name); ton('klick');
 }
 function mausZelle(){
@@ -26,10 +31,10 @@ function mausZelle(){
 function kastenSetzen(c, r, z){
   if(c < 1 || c >= KARTE_B - 1 || r < 0 || r >= KARTE_H) return;   // äußerer Rand bleibt
   if(karte[r][c] === z) return;
-  const warAnker = karte[r][c] === 'o';
+  const warAnker = 'oseq'.includes(karte[r][c]) && karte[r][c] !== '.';
   karte[r][c] = z;
   kaputt = kaputt.filter(k => k.c !== c || k.r !== r);
-  if(warAnker || z === 'o') ankerSammeln();
+  if(warAnker || 'oseq'.includes(z)) ankerSammeln();
 }
 function bauMalen(){
   if(!bau.an || !bau.malt) return;
@@ -57,13 +62,13 @@ function karteAnwenden(o){
   if(!o || !Array.isArray(o.zeilen) || o.zeilen.length !== KARTE_H) return false;
   const breite = o.zeilen[0].length;
   if(breite < 40 || breite > 2000 || o.zeilen.some(z => typeof z !== 'string' || z.length !== breite)) return false;
-  const erlaubt = new Set(['.', '#', '=', 'x', 'o', '^', '/', '\\', 'k']);
+  const erlaubt = new Set(['.', '#', '=', 'x', 'o', '^', '/', '\\', 'k', 's', 'e', 'q']);
   KARTE_B = breite;
   karte = o.zeilen.map(z => Array.from(z, ch => erlaubt.has(ch) ? ch : '.'));
   kaputt = []; ankerSammeln(); zurueckSetzen();
   return true;
 }
-function karteOriginal(){ KARTE_B = 480; arenaBauen(); kaputt = []; ankerSammeln(); zurueckSetzen(); }
+function karteOriginal(){ KARTE_B = 540; arenaBauen(); kaputt = []; ankerSammeln(); zurueckSetzen(); }
 
 function karteBereichBauen(p){
   p.appendChild(el('h3', {text: 'Karte (Mini-Editor)'}));

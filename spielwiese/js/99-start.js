@@ -20,6 +20,7 @@ function physikSchritt(){
   // Trefferstopp: alles hält kurz an – Tastendrücke bleiben gesammelt und zählen im nächsten echten Schritt
   if(fx.stopp > 0){ fx.stopp--; kam.px = kam.x; fig.px = fig.x; fig.py = fig.y; return; }
   eingabeSchritt();
+  ankerSchritt();
   figurSchritt();
   bruchSchritt();
   kristallSchritt();

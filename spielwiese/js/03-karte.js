@@ -2,7 +2,7 @@
 // Zeichen je Kästchen: '.' frei · '#' Boden/Wand · '^' Stacheln (später: Anker, Haftflächen, brechbare Wände).
 // Boden-Oberkante = Reihe 18 (Füße bei y = 18 · 40). Sichtbar sind ca. 21 Reihen.
 
-let KARTE_B = 480;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
+let KARTE_B = 540;   // Breite (eigene Karten aus dem Mini-Editor dürfen anders breit sein)
 const KARTE_H = 21, BODEN_R = 18;
 let karte = [];   // karte[r][c]
 
@@ -33,6 +33,7 @@ const STATIONEN = [
   {nr: 6, name: 'Kombi', von: 240, bis: 289, start: {c: 242, r: BODEN_R}, mech: null},
   {nr: 7, name: 'Freie Fläche', von: 290, bis: 399, start: {c: 292, r: BODEN_R}, mech: null},
   {nr: 8, name: 'Spaß-Level', von: 400, bis: 479, start: {c: 402, r: BODEN_R}, mech: null},
+  {nr: 9, name: 'Anker-Spielplatz', von: 480, bis: 539, start: {c: 482, r: BODEN_R}, mech: 'haken'},
 ];
 // Schilder: Text im Bild (Spalte, Reihe der Füße des Pfostens, Zeilen)
 let SCHILDER = [];
@@ -180,6 +181,20 @@ function arenaBauen(){
   setze(460, 8, 460, 8, 'o'); setze(466, 8, 466, 8, 'o');
   setze(476, 14, 478, 17, '#');                      // Ziel-Podest: Sprung + Dash nach oben
   SCHILDER.push({c: 477, r: 14, zeilen: ['Ziel!', 'Geschafft :)']});
+
+  // ----- Station 9: Anker-Spielplatz – schwankende Anker, Einmal-Anker, Schwung-Ringe -----
+  setze(479, 17, 479, 17, '#');
+  SCHILDER.push({c: 481, r: BODEN_R, zeilen: ['Station 9: Anker-Spielplatz', 'schwankt · reißt · Ring beschleunigt', 'golden = jetzt loslassen!']});
+  grube(486, 532);
+  setze(490, 8, 490, 8, 's');                        // schwankender Anker
+  setze(500, 7, 500, 7, 'e');                        // Einmal-Anker (reißt)
+  setze(507, 8, 507, 8, 's');
+  setze(515, 7, 515, 7, 'e');
+  setze(521, 8, 521, 8, 'o');                        // normaler Anker
+  setze(529, 7, 529, 7, 'o');
+  for(const c of [490, 515, 529]) setze(c, 13, c, 13, 'q');   // Schwung-Ringe im Tiefpunkt der Schwünge (gemessen)
+  ZWISCHENPUNKTE.push({c: 535, r: BODEN_R});
+  SCHILDER.push({c: 536, r: BODEN_R, zeilen: ['Geschafft!']});
 }
 arenaBauen();
 

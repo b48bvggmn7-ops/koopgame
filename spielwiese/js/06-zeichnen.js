@@ -71,6 +71,12 @@ function zeichnen(alpha){
     ctx.strokeStyle = '#4b3a2b'; ctx.lineWidth = 1.5; ctx.strokeRect(-b.s / 2, -b.s / 2, b.s, b.s); ctx.restore();
   }
   ctx.globalAlpha = 1;
+  for(const t of fx.texte){   // kurze Schriftzüge in der Welt (z. B. „Perfekt!“)
+    ctx.globalAlpha = Math.min(1, t.leben / 15); ctx.font = 'bold 20px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(80,50,0,0.8)'; ctx.strokeText(t.text, t.x, t.y);
+    ctx.fillStyle = '#ffd84a'; ctx.fillText(t.text, t.x, t.y); ctx.textAlign = 'left';
+  }
+  ctx.globalAlpha = 1;
   ctx.restore();
   anzeigeZeichnen();
 }
