@@ -6,10 +6,10 @@ const fig = {
   amBoden: false, coyote: 0, puffer: 0,
   wand: 0, letzteWand: 0, wandZeit: 0, sperre: 0, wandEintritt: 0, wandSprungSeite: 0,
   blick: 1, sprint: 0, sprungAktiv: false,
-  haengt: null, ball: null, rollWinkel: 0,
+  haengt: null, ball: null, rollWinkel: 0, laufWinkel: 0, laufWinkelVor: 0,
   hakenPuffer: 0,
   seil: null, hakenZiel: null, zielStrahl: null, fehlschuss: null, rutsch: 0,
-  durchbruch: 0,
+  durchbruch: 0, ladung: 0,
   dash: null, luftDashes: 1, dashPuffer: 0, dashPause: 0, gleit: 0, hyperFenster: 0, nachDash: null, blitz: 0,
   sx: 1, sy: 1, svx: 0, svy: 0,          // Dehnen/Stauchen (nur Anzeige, im Takt gerechnet)
   tot: 0, station: STATIONEN[0], rueck: STATIONEN[0].start,
@@ -20,7 +20,7 @@ function figurAufPunkt(p){
   fig.x = p.c * K + K / 2 - FIG_B / 2; fig.y = p.r * K - FIG_H;
   fig.vx = fig.vy = 0; fig.px = fig.x; fig.py = fig.y;
   fig.amBoden = false; fig.coyote = fig.puffer = fig.wandZeit = fig.sperre = 0; fig.sprint = 0; fig.sprungAktiv = false;
-  fig.dash = null; fig.luftDashes = luftDashMax(); fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
+  fig.dash = null; fig.luftDashes = luftDashMax(); fig.ladung = 0; fig.dashPuffer = fig.dashPause = fig.gleit = fig.hyperFenster = 0;
   fig.wandSprungSeite = 0; fig.seil = null; fig.fehlschuss = null; fig.rutsch = 0;
   fig.haengt = null; fig.ball = null; fig.rollWinkel = 0;
   fig.sx = fig.sy = 1; fig.svx = fig.svy = 0;
@@ -162,6 +162,7 @@ function dashRichtung(){
 }
 function dashKannStarten(){
   if(fig.dash || fig.dashPause > 0) return false;
+  if(V.dashLangsam) return fig.luftDashes > 0 || fig.durchbruch > 0;   // langsames Aufladen: jeder Dash kostet
   return fig.amBoden || fig.luftDashes > 0 || fig.durchbruch > 0;
 }
 function dashStarten(){
@@ -170,7 +171,7 @@ function dashStarten(){
   const {dx, dy} = dashRichtung();
   if(fig.seil) seilLoesen(false);   // Dash aus dem Schwung: Seil los
   if(fig.durchbruch > 0) fig.durchbruch = 0;   // Anschluss-Dash im Durchbruch-Fenster: kostet nichts
-  else if(!fig.amBoden) fig.luftDashes--;
+  else if(!fig.amBoden || V.dashLangsam) fig.luftDashes--;
   const extra = Math.max(0, fig.vx * dx + fig.vy * dy);   // Schwung davor in Dash-Richtung (für Durchbruch C)
   fig.dash = {zeit: V.dashDauer, dx, dy, startBoden: fig.amBoden, extra, faktor: 1};
   fig.dashPuffer = 0; fig.sprungAktiv = false; fig.gleit = 0; fig.hyperFenster = 0; fig.sperre = 0;
@@ -206,7 +207,16 @@ function dashSprung(d){   // Variante C: weiter, höherer Sprung aus dem Dash
   dehnen(fig, 0.62, 1.45); wackeln(0.3); trefferStopp(2); ton('hyper');
   staubWolke(fig.x + FIG_B / 2, fig.y + FIG_H, 12, 0);
 }
+// langsames Aufladen (Schalter „Dash lädt langsam auf“): jeder fehlende Punkt füllt sich über dashLadeZeit Sekunden
+function dashLadenSchritt(){
+  const max = luftDashMax();
+  if(!V.dashLangsam || fig.dash || fig.luftDashes >= max){ fig.ladung = 0; return; }
+  if(V.dashLadenNurBoden && !fig.amBoden && !fig.haengt) return;
+  fig.ladung += 1 / (V.dashLadeZeit * 60);
+  if(fig.ladung >= 1){ fig.ladung = 0; fig.luftDashes++; fig.blitz = 6; ton('aufladen'); }
+}
 function dashAufladen(){
+  if(V.dashLangsam) return;   // langsames Aufladen: Landung/Wand/Haken füllen nicht sofort
   const max = luftDashMax();
   if(fig.luftDashes < max){
     const vorher = fig.luftDashes; fig.luftDashes = max;
@@ -231,6 +241,7 @@ function figurSchritt(){
   if(rx && !fig.dash) fig.blick = rxs;
   if(fig.blitz > 0) fig.blitz--;
   if(fig.dashPause > 0 && !fig.dash) fig.dashPause--;
+  dashLadenSchritt();
 
   // Eingaben merken (Puffer)
   if(E.springen) fig.puffer = V.sprungPuffer + 1;
@@ -350,6 +361,10 @@ function figurSchritt(){
   figurSchrittEnde();
 }
 function figurSchrittEnde(){
+  // Rollen beim Laufen wie im Spiel: Drehung = zurückgelegter Weg / halbe Figurbreite
+  fig.laufWinkelVor = fig.laufWinkel;
+  if(!fig.ball && !fig.haengt) fig.laufWinkel += fig.vx / (FIG_B * 0.5);
+  if(Math.abs(fig.laufWinkel) > 1000){ fig.laufWinkel %= Math.PI * 2; fig.laufWinkelVor = fig.laufWinkel; }
   // Gefahren
   if(stachelTreffer(fig) || fig.y > KARTE_H * K + 120) sterben();
 

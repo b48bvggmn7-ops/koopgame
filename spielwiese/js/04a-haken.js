@@ -138,9 +138,9 @@ function hakenEingabe(E, rx){
   if(fig.hakenPuffer > 0){
     const z = fig.hakenZiel;
     if(z){ fig.hakenPuffer = 0; if(fig.dash) dashBeenden(false); hakenSchiessen(z); }
-    else if(gedrueckt){   // nichts in Reichweite: Liane fliegt kurz ins Leere und kommt zurück
-      const a = fig.zielStrahl || zielRichtungLesen();
-      fig.fehlschuss = {x: a.x, y: a.y, t: 0}; ton('fehlschuss');
+    else if(gedrueckt){   // nichts in Reichweite: keine Liane (Schalter: kurz ins Leere)
+      if(V.fehlschussZeigen){ const a = fig.zielStrahl || zielRichtungLesen(); fig.fehlschuss = {x: a.x, y: a.y, t: 0}; }
+      ton('fehlschuss');
     }
     if(fig.hakenPuffer > 0) fig.hakenPuffer--;
   }
@@ -227,7 +227,8 @@ function seilNachSchwerkraft(){
 // ---------- Zeichnen ----------
 function hakenZeichnen(alpha){
   const fx_ = mischen(fig.px, fig.x, alpha) + FIG_B / 2, fy_ = mischen(fig.py, fig.y, alpha) + FIG_H / 2;
-  for(const a of anker){   // Anker: Metallring mit Halterung
+  if(V.spielLook) for(const a of anker) lookAnker(a);   // Haken-Punkt wie im Spiel (06a-look.js)
+  else for(const a of anker){   // Anker: Metallring mit Halterung
     ctx.strokeStyle = '#5b6574'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(a.x, a.y, 10, 0, Math.PI * 2); ctx.stroke();
     ctx.strokeStyle = '#c9d3df'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(a.x, a.y, 10, 0, Math.PI * 2); ctx.stroke();
   }

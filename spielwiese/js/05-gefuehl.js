@@ -42,7 +42,8 @@ function bruchstuecke(x, y, dx, dy, n){   // fliegen in Dash-Richtung weg, drehe
   }
 }
 function nachbild(f){
-  fx.nachbilder.push({x: f.x, y: f.y, sx: f.sx, sy: f.sy, blick: f.blick, leben: 12, max: 12});
+  fx.nachbilder.push({x: f.x, y: f.y, sx: f.sx, sy: f.sy, blick: f.blick, leben: 12, max: 12,
+    winkel: f.ball ? f.rollWinkel : (f.haengt ? Math.PI : (V.figurRollt ? f.laufWinkel : 0))});
 }
 function gefuehlSchritt(){
   fx.trauma = Math.max(0, fx.trauma - 0.045);

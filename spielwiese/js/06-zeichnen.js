@@ -25,12 +25,14 @@ const FARBE = { himmelO: '#8fd0f2', himmelU: '#dff3fb', erde: '#7b5638', erdeDun
 function zeichnen(alpha){
   const s = leinwand.width / BILD_B;
   ctx.setTransform(s, 0, 0, s, 0, 0);
-  const verlauf = ctx.createLinearGradient(0, 0, 0, BILD_H);
-  verlauf.addColorStop(0, FARBE.himmelO); verlauf.addColorStop(1, FARBE.himmelU);
-  ctx.fillStyle = verlauf; ctx.fillRect(0, 0, BILD_B, BILD_H);
-
   const kx = mischen(kam.px, kam.x, alpha);
-  hintergrundHuegel(kx);
+  if(V.spielLook) lookHintergrund(kx);   // 06a-look.js
+  else {
+    const verlauf = ctx.createLinearGradient(0, 0, 0, BILD_H);
+    verlauf.addColorStop(0, FARBE.himmelO); verlauf.addColorStop(1, FARBE.himmelU);
+    ctx.fillStyle = verlauf; ctx.fillRect(0, 0, BILD_B, BILD_H);
+    hintergrundHuegel(kx);
+  }
   let ox = 0, oy = 0;
   if(fx.trauma > 0){ const st = fx.trauma * fx.trauma * 16; ox = (Math.random() * 2 - 1) * st; oy = (Math.random() * 2 - 1) * st; }
 
@@ -47,10 +49,11 @@ function zeichnen(alpha){
     ctx.beginPath(); ctx.moveTo(x + 2, y - 36); ctx.lineTo(x + 22, y - 29); ctx.lineTo(x + 2, y - 22); ctx.fill();
   }
   hakenZeichnen(alpha);
-  for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true);
+  for(const n of fx.nachbilder) figurBild(n.x, n.y, n.sx, n.sy, n.blick, 0.35 * n.leben / n.max, true, n.winkel || 0);
   if(!fig.tot){
     const fx_ = mischen(fig.px, fig.x, alpha), fy_ = mischen(fig.py, fig.y, alpha);
-    figurBild(fx_, fy_, fig.sx, fig.sy, fig.blick, 1, false, fig.ball ? fig.rollWinkel : (fig.haengt ? Math.PI : 0));
+    if(V.figurSchatten && !fig.haengt && !fig.ball) lookSchatten(fx_, fy_);
+    figurBild(fx_, fy_, fig.sx, fig.sy, fig.blick, 1, false, figurWinkel(alpha));
     if(fig.blitz > 0){   // Dash wieder voll: kurzer heller Ring
       ctx.strokeStyle = 'rgba(255,255,255,' + (fig.blitz / 10) + ')'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(fx_ + FIG_B / 2, fy_ + FIG_H / 2, 26 + (10 - fig.blitz) * 2.5, 0, Math.PI * 2); ctx.stroke();
@@ -86,6 +89,11 @@ function kaestchenZeichnen(kx){
   const c0 = Math.max(0, Math.floor(kx / K) - 1), c1 = Math.min(KARTE_B - 1, Math.ceil((kx + SICHT_B) / K) + 1);
   for(let r = 0; r < KARTE_H; r++) for(let c = c0; c <= c1; c++){
     const z = karte[r][c], x = c * K, y = r * K;
+    if(V.spielLook){   // Aussehen wie im Spiel (06a-look.js)
+      if(istRampe(z)){ lookRampe(c, r, z); continue; }
+      if(z === '#' || z === '='){ lookBoden(c, r); if(z === '=') haftflaecheZeichnen(c, r); continue; }
+      if(z === '^'){ lookStacheln(c, r); continue; }
+    }
     if(istRampe(z)){ rampeZeichnen(c, r, z); continue; }
     if(z === 'x'){ risseZeichnen(c, r); continue; }
     if(z === 'k'){ kristallZeichnen(c, r); continue; }
@@ -121,17 +129,23 @@ function schildZeichnen(sch){
 }
 
 // Figur: Bild des Spiels (Affe/Schweinchen) in derselben Größe wie im Spiel, gestaucht/gedehnt um die Füße
+// Drehwinkel der Figur: Kugel (Rollen B), kopfüber (Hängen) oder rollend beim Laufen wie im Spiel
+function figurWinkel(alpha){
+  if(fig.ball) return fig.rollWinkel;
+  if(fig.haengt) return Math.PI;
+  return V.figurRollt ? mischen(fig.laufWinkelVor, fig.laufWinkel, alpha) : 0;
+}
 function figurBild(x, y, sx, sy, blick, deckkraft, schatten, winkel){
   const img = BILDER[figurAussehen], [kx, ky] = KOPF_MITTE[figurAussehen];
   const groesse = Math.max(FIG_B, FIG_H) * 1.55;
   const hoehe = img.naturalWidth ? groesse * img.naturalHeight / img.naturalWidth : groesse * 0.83;
   ctx.save();
   ctx.globalAlpha = deckkraft;
-  if(winkel){   // gedreht um die Mitte (Rollen: Kugel; Hängen: kopfüber)
-    ctx.translate(x + FIG_B / 2, y + FIG_H / 2); ctx.rotate(winkel); ctx.translate(0, FIG_H / 2);
-  } else ctx.translate(x + FIG_B / 2, y + FIG_H);
-  ctx.scale(sx * blick, sy);
-  const mitteY = -FIG_H / 2;
+  // wie im Spiel: Stauchen an den Füßen, dann um die Kopfmitte drehen (rollt rund wie ein Ball)
+  ctx.translate(x + FIG_B / 2, y + FIG_H); ctx.scale(sx, sy); ctx.translate(0, -FIG_H / 2);
+  if(winkel) ctx.rotate(winkel);
+  ctx.scale(blick, 1);
+  const mitteY = 0;
   if(schatten) ctx.filter = 'brightness(1.6) saturate(0.4)';
   if(img.complete && img.naturalWidth) ctx.drawImage(img, -kx * groesse, mitteY - ky * hoehe, groesse, hoehe);
   else { ctx.fillStyle = figurAussehen === 'affe' ? '#8a5a35' : '#ff8fc0'; ctx.beginPath(); ctx.arc(0, mitteY, 17, 0, Math.PI * 2); ctx.fill(); }
@@ -145,6 +159,11 @@ function dashPunkteZeichnen(x, y){
     const px = x + FIG_B / 2 + (i - (n - 1) / 2) * 11, py = fig.haengt ? y + FIG_H + 14 : y - 20;
     ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
     ctx.fillStyle = i < voll ? (max === Infinity ? '#b48cff' : '#4fd2ff') : 'rgba(40,50,70,0.35)'; ctx.fill();
+    if(i === voll && fig.ladung > 0){   // lädt gerade: Tortenstück füllt sich
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.arc(px, py, 4, -Math.PI / 2, -Math.PI / 2 + fig.ladung * Math.PI * 2); ctx.closePath();
+      ctx.fillStyle = 'rgba(79,210,255,0.75)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
+    }
     ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(15,20,30,0.6)'; ctx.stroke();
   }
 }

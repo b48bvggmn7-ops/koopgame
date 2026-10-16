@@ -58,6 +58,14 @@ Tasten umlegen: Tabelle `TASTEN` bzw. `PAD_KNOEPFE` in `js/01-eingabe.js`.
 4. „Schwung auch an normalen Wänden umlenken“ (Gruppe Unterseite, Rollen B): Halfpipe – an Wänden hochrollen,
    wer oben langsam wird, fällt ab.
 
+## Aussehen und Dash-Aufladen
+- Spiel-Look (Panel „Aussehen“): Dschungel wie im Spiel – Himmel mit Sonne, Hügel und Bäume, Boden mit Gras,
+  Erdschichten und dunkler Kontur, Stacheln und Haken-Punkte wie im Spiel, Schatten unter der Figur. Nachgezeichnet,
+  kein Code aus `../js/`. Die Figur rollt beim Laufen wie im Spiel (Schalter „Figur rollt“).
+- Dash lädt langsam auf (Panel „Dash“, Standard an): jeder Dash kostet einen Punkt, der sich in ca. 0,9 s wieder
+  füllt (Tortenstück über dem Kopf). Kristalle füllen sofort. Aus = alter Modus (Landung/Wand/Haken füllen sofort).
+- Haken ohne Ziel: keine Liane mehr (Schalter „Ohne Ziel: Liane kurz ins Leere“ holt sie zurück).
+
 ## Mini-Editor (Taste B)
 - B schaltet Bauen an/aus, das Spiel läuft dabei weiter (gleich ausprobieren).
 - Linke Maustaste (auch gedrückt ziehen) setzt, rechte löscht. Ziffern 1–9 oder Mausrad wählen:

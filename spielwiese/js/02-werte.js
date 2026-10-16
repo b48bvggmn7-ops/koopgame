@@ -57,6 +57,9 @@ wert(G_KANTE, 'kantenStufe', 'Stufenhilfe beim Dash (px)', 14, 0, 30, 1, 'Dash k
 
 // ---------- Dash (Teil 2) ----------
 const G_DASH = 'Dash';
+schalter(G_DASH, 'dashLangsam', 'Dash lädt langsam auf', true, 'an: jeder Dash (auch am Boden) kostet einen Punkt, der sich über die Zeit wieder füllt · aus: wie vorher (Landung/Wand/Haken füllen sofort)');
+wert(G_DASH, 'dashLadeZeit', 'Aufladen: Zeit je Punkt (Sekunden)', 0.9, 0.1, 4, 0.05, 'so lange dauert es, bis ein Dash wieder da ist');
+schalter(G_DASH, 'dashLadenNurBoden', 'Aufladen nur am Boden', false, 'aus: lädt auch in der Luft (langsam)');
 wert(G_DASH, 'dashDauer', 'Dauer (Schritte)', 10, 4, 24, 1);
 wert(G_DASH, 'dashTempo', 'Tempo (px pro Schritt)', 16, 6, 30, 0.5);
 wert(G_DASH, 'dashBehalten', 'Tempo danach behalten', 0.5, 0, 1, 0.05, '0,5 = die Hälfte; nach oben höchstens Sprungkraft');
@@ -80,6 +83,7 @@ wert(G_HAKEN, 'hakenFlug', 'Flugzeit der Liane (Schritte)', 6, 1, 15, 1);
 wert(G_HAKEN, 'zielRichtung', 'Ziel: Gewicht Blick-/Stickrichtung', 1, 0, 3, 0.05, 'wie stark die gedrückte Richtung zählt');
 wert(G_HAKEN, 'zielOben', 'Ziel: Gewicht „nach oben“', 0.6, 0, 3, 0.05);
 wert(G_HAKEN, 'zielNaehe', 'Ziel: Gewicht „nah“', 0.5, 0, 3, 0.05);
+schalter(G_HAKEN, 'fehlschussZeigen', 'Ohne Ziel: Liane kurz ins Leere', false, 'aus: ohne Anker in Reichweite passiert nichts (nur ein leises Klicken)');
 schalter(G_HAKEN, 'zielRing', 'Zielanker vorher zeigen (Ring)', true);
 wert(G_HAKEN, 'seilStartMax', 'Straffen auf höchstens (px)', 260, 80, 700, 10, 'nach dem Greifen zieht sich die Liane auf diese Länge zusammen');
 wert(G_HAKEN, 'straffTempo', 'Straffen: Tempo (px pro Schritt)', 9, 1, 30, 0.5);
@@ -156,6 +160,11 @@ wert(G_GEF, 'dehnStaerke', 'Dehnen: Stärke', 1, 0, 2.5, 0.05);
 wert(G_GEF, 'hartLandung', 'Harte Landung ab Falltempo', 13, 6, 30, 0.5, 'dann Wackeln + kurzer Stopp');
 schalter(G_GEF, 'fxTon', 'Töne', true);
 wert(G_GEF, 'lautstaerke', 'Lautstärke', 0.5, 0, 1, 0.05);
+
+// ---------- Aussehen ----------
+schalter('Aussehen', 'spielLook', 'Spiel-Look (Dschungel wie im Spiel)', true, 'aus: schlichte Farben');
+schalter('Aussehen', 'figurRollt', 'Figur rollt beim Laufen (wie im Spiel)', true, 'aus: Figur bleibt aufrecht');
+schalter('Aussehen', 'figurSchatten', 'Schatten unter der Figur', true);
 
 // ---------- Anzeige ----------
 schalter('Anzeige', 'legende', 'Tasten-Legende zeigen', true);
