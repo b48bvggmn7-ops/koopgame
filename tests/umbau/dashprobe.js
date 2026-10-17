@@ -10,7 +10,7 @@ window.DASHPROBE = {
     if(!this._b){ this._b = bouncers.slice(); this._w = winds.slice(); }
     bouncers.length = 0; winds.length = 0;
   },
-  versuch(o, j, t, dashDir, segeln, haltVor){
+  versuch(o, j, t, dashDir, segeln, haltVor, bahn){
     for(const k in KEYS) KEYS[k] = false; for(const k in PAD) PAD[k] = false;
     const m = o.wer === 'm';
     const P = makePlayer({x: o.x, y: o.y, male: m, keys: keysFor(m), spawn: {x: o.x, y: o.y}, umbrella: m ? undefined : 0});
@@ -32,12 +32,14 @@ window.DASHPROBE = {
       STELLE.tasten(P, l);
       if(neuTrefferStopp > 0){ neuTrefferStopp--; this.t += 1000/54; continue; }
       updatePlayer(P, this.t); this.t += 1000/54;
+      if(bahn && i % 4 === 0) bahn.push([+(P.x/40).toFixed(1), +(P.y/40).toFixed(1), P.grounded ? 'B' : P.dash ? 'D' : P.onWall ? 'W' : '']);
       if(deathState || STELLE.tot(P)){ deathState = null; return false; }
       if(P.grounded && Math.floor(P.x/40) >= o.zc && P.y/40 - 1 <= o.zr + 0.1) return true;
       if(P.y > LEVEL_H + 200) return false;
     }
     return false;
   },
+  zeigen(o, b){ this.vorbereiten(o.links); const bahn = []; const ok = this.versuch(o, b.j, b.t, b.dash, b.segeln, b.haltVor, bahn); return {ok, bahn}; },
   // grobes Raster über alle Varianten; für die beste Variante das feine Raster -> Fenster (Schritte)
   pruefen(o){
     this.vorbereiten(o.links);
@@ -51,16 +53,21 @@ window.DASHPROBE = {
       const js = reihe(0, jmax, 3), ts = d ? reihe(0, 39, 3) : [0];
       const ok = js.map(j => ts.map(t => this.versuch(o, j, t, d, sg, hv)));
       const f = STELLE.fenster(ok, !!d);
-      if(f.n) grob.push({d, sg, hv, n: f.n});
+      if(f.n){
+        let j0 = 0, t0 = 0;
+        suche: for(let a = 0; a < js.length; a++) for(let q = 0; q < ts.length; q++) if(ok[a][q]){ j0 = js[a]; t0 = ts[q]; break suche; }
+        grob.push({d, sg, hv, n: f.n, j0, t0});
+      }
     }
     if(!grob.length) return null;
     grob.sort((x, y) => y.n - x.n);
     let best = null;
     for(const v of grob.slice(0, 2)){
-      const js = reihe(0, jmax, 1), ts = v.d ? reihe(0, 40, 1) : [0];
+      // feines Raster nur um den ersten Treffer des groben (±6 Schritte) – reicht für das Fenster, spart viel Zeit
+      const js = reihe(Math.max(0, v.j0 - 6), Math.min(jmax, v.j0 + 6), 1), ts = v.d ? reihe(Math.max(0, v.t0 - 6), Math.min(40, v.t0 + 6), 1) : [0];
       const ok = js.map(j => ts.map(t => this.versuch(o, j, t, v.d, v.sg, v.hv)));
       const f = STELLE.fenster(ok, !!v.d);
-      if(f.n && (!best || f.w > best.fenster)) best = {dash: v.d, segeln: v.sg, haltVor: v.hv, fenster: f.w, treffer: f.n};
+      if(f.n && (!best || f.w > best.fenster)) best = {dash: v.d, segeln: v.sg, haltVor: v.hv, fenster: f.w, treffer: f.n, j: v.j0, t: v.t0};
     }
     return best;
   },

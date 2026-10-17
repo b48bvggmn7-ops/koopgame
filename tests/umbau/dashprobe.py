@@ -34,6 +34,7 @@ async def pruefen(liste):
                 await p.evaluate("() => {" + (ROOT / 'tests' / 'umbau' / 'dashprobe.js').read_text(encoding='utf-8') + "}")
                 geladen = e['level']
             r = await p.evaluate("o => DASHPROBE.pruefen(o)", e)
+            if r and os.environ.get('BAHN'): r['bahn'] = await p.evaluate("([o, b]) => DASHPROBE.zeigen(o, b)", [e, r])
             out.append(dict(e, ergebnis=r))
             print(f"{e['level']} {e['name']} ({e['wer']}): {'–' if not r else str(r)}", flush=True)
         await b.close()

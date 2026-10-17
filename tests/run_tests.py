@@ -7943,6 +7943,15 @@ def kombi_pilz_grube(x0, l0):
             'f_ohne': [k_lauf(x0 + 1, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}],
             'm_ohne': [k_lauf(x0 + 1, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.hookAttached || (P.grounded && f > 10)', 'frames': 200},
                        {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}
+def kombi_pilz_dash_grube(x0, l0, hoch=True):
+    """Umbau-Baustein Pilz + Dash: Pilz-Schwung, am höchsten Punkt Dash nach oben (+ vorwärts), dann auf den hohen
+    Landeplatz (l0 = erste Spalte). Pilz allein (*_ohne) reicht nicht – und ohne Pilz (Dash-Gegenprobe) auch nicht."""
+    lande = {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 2)}'}, 'until': 'P.grounded', 'frames': 400}
+    dash = [{'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100}, {'press': ['dash'], 'hold': ['swimUp'] + (['right'] if not hoch else []), 'frames': 3}]
+    dash_m = [{'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100}, {'press': ['dash'], 'hold': ['swimUp', 'right'], 'frames': 3}]
+    return {'m': kombi_pilz(x0) + dash_m + [lande], 'f': kombi_pilz(x0) + dash + [dict(lande, hold=['glide'])],
+            'm_ohne': kombi_pilz(x0) + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
+            'f_ohne': kombi_pilz(x0) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]}
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
     rw = x0 + 5
@@ -7992,10 +8001,10 @@ def _d1_kamin_haken():
             'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.grounded && f > 5', 'frames': 300}]}
 KOMBI_STELLEN_BOT = [
     ('dschungel/01-dschungel.json', 'Pilz in der Hakengrube (88)', kat(66, 3), kat(64, 3), _d1_haken_pilz, {'m': (102, 15), 'f': (102, 15)}),
-    ('dschungel/01-dschungel.json', 'Pilz-Grube auf dem Sims (233)', kat(229, 11), kat(228, 11), lambda: kombi_pilz_grube(233, 243), {'m': (243, 7), 'f': (243, 7)}),
+    ('dschungel/01-dschungel.json', 'Pilz-Dash-Grube auf dem Sims (233)', kat(229, 11), kat(228, 11), lambda: kombi_pilz_dash_grube(233, 243), {'m': (243, 2), 'f': (243, 2)}),
     ('dschungel/01-dschungel.json', 'Kamin -> Haken/Segeln (408)', kat(410, 16), kat(411, 16), _d1_kamin_haken, {'m': (426, 7), 'f': (426, 7)}),
     ('dschungel/01-dschungel.json', 'Kamin-Grube vor dem Ziel (746)', kat(742, 14), kat(741, 14), lambda: kombi_kamin_grube(746, 15), {'m': (762, 8), 'f': (762, 8)}),
-    ('dschungel/01-dschungel.json', 'Pilz-Grube vor dem Ziel (773)', kat(768, 8), kat(769, 8), lambda: kombi_pilz_grube(773, 783), {'m': (783, 10), 'f': (783, 10)}),
+    ('dschungel/01-dschungel.json', 'Pilz-Dash-Turm vor dem Ziel (769)', kat(764, 8), kat(763, 8), lambda: kombi_pilz_dash_grube(769, 777), {'m': (777, -1), 'f': (777, -1)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube am Start (23)', kat(21, 14), kat(20, 14), lambda: kombi_pilz_grube(23, 33), {'m': (33, 10), 'f': (33, 10)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (209)', kat(204, 13), kat(203, 13), lambda: kombi_pilz_grube(209, 219), {'m': (219, 9), 'f': (219, 9)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Grube (386)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_grube(386, 396), {'m': (396, 10), 'f': (396, 10)}),
