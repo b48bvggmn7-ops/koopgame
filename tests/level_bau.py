@@ -427,7 +427,7 @@ def jagd_tempo(lv, link, tempo):
     """Tempo einer Verfolgung setzen: alle bewegten Teile (movers) bzw. rollenden Felsen mit dieser Verknüpfungs-Nummer"""
     n = 0
     for m in lv.ed.get('movers', []):
-        if m.get('link') == link: m['speed'] = tempo; n += 1
+        if m.get('link') == link and m.get('dc', 0) != 0: m['speed'] = tempo; n += 1   # nur waagerecht fahrende Teile (Wand), keine Decken
     for b in lv.ed.get('boulders', []):
         if b.get('link') == link: b['tempo'] = tempo; n += 1
     if not n: raise KeyError(f'keine Verfolgung mit Nummer {link} in {lv.datei}')

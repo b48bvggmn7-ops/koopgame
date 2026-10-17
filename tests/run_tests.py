@@ -3552,14 +3552,13 @@ async def dschungel6_wipfelsturm(g):
                 r = await koop(g, **{who: kat(82, 15), ('f' if who == 'm' else 'm'): kat(108, 9)}, plans={who: [{'frames': wait + 1}] + takt_plan(85, [87, 90, 93, 96, 99, 102], kx(106), 60) + [k_lauf(109)]}, maxFrames=4000)
                 if r.get('done') and r['pos'][who][0] >= 108: n += 1
             soll(n > 0, f'E1 Takt-Treppe 1 s ({who})', (f'{n}/6', info(r)))
-        flucht = lambda w: [lauf(147, [132]), {'until': f'P.x > {kx(150)}', 'frames': 100}, k_lauf(163)]
-        for delay in (0, 20):
-            m = [k_lauf(124, -14), {'use': True, 'frames': 2}] + flucht('m')
-            f = [{'frames': delay}, k_lauf(126, -4), {'wait': '!!linkOn[4]'}] + flucht('f')
-            r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': m, 'f': f}, maxFrames=4000)
-            soll(r.get('done') and r['pos']['m'][0] >= 162 and r['pos']['f'][0] >= 162, f'E1 Jagd durchs Tor (Schwein {delay} Schritte später unten)', info(r))
-        r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': [k_lauf(124, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
-        soll(r.get('dead') == 'm', 'E1 1 s gezögert: die Wand holt den Affen ein', info(r))
+        # Jagd durchs Tor (Umbau: Wand 8,4 statt 4,8 – ohne Dash eingeholt)
+        for delay in (0, 10):
+            pl = _d6_e1(True)
+            r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
+            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 162 and r['pos']['f'][0] >= 162, f'E1 Jagd durchs Tor mit Dash (Schwein {delay} Schritte später)', info(r))
+        r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans=_d6_e1(False), maxFrames=4000)
+        soll(r.get('dead'), 'E1 Jagd ohne Dash: die Wand holt ein', info(r))
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
     if True:
@@ -3612,15 +3611,13 @@ async def dschungel6_wipfelsturm(g):
         soll(r.get('done') and r['pos']['m'][0] >= 517 and r['pos']['f'][0] >= 518 and r['pos']['m'][1] == 13, 'E3 Wechsel-Schleuse (Platte 7, Hebel 8, Klappe + blaues Tor)', info(r))
         r = await koop(g, m=kat(486, 13), f=kat(485, 13), plans={'m': [k_lauf(491, -10), {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
         soll(r.get('dead') == 'm' or r['pos']['m'][0] < 492, 'E3 ohne Hebel 8 bleibt die Klappe zu (Affe fällt nicht ins Tor)', info(r))
-        hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
-        flucht = lambda w: [k_lauf(537)] + hupf(546) + hupf(556) + hupf(566) + [k_lauf(585)]
-        for delay in (0, 20):
-            m = [k_lauf(533, -14), {'use': True, 'frames': 2}] + flucht('m')
-            f = [{'frames': delay}, k_lauf(535, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
-            r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': m, 'f': f}, maxFrames=4000)
-            soll(r.get('done') and r['pos']['m'][0] >= 584 and r['pos']['f'][0] >= 584, f'E3 Doppel-Jagd (Schwein {delay} Schritte später unten)', info(r))
-        r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': [k_lauf(533, -14), {'use': True, 'frames': 2}, {'frames': 80}] + flucht('m')}, maxFrames=4000)
-        soll(r.get('dead') == 'm', 'E3 1,5 s gezögert: Wand oder Decke erwischen den Affen', info(r))
+        # Doppel-Jagd (Umbau: Wand 8,0 statt 4,4 – über jeden Block hüpfen und sofort dashen, der Dash lädt dazwischen gerade auf)
+        for delay in (0, 10):
+            pl = _d6_e3(True)
+            r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
+            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 584 and r['pos']['f'][0] >= 584, f'E3 Doppel-Jagd mit Dash (Schwein {delay} Schritte später)', info(r))
+        r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans=_d6_e3(False), maxFrames=4000)
+        soll(r.get('dead'), 'E3 Doppel-Jagd ohne Dash: Wand oder Decke erwischen', info(r))
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
@@ -3637,15 +3634,13 @@ async def dschungel6_wipfelsturm(g):
         soll(r['pos']['f'][0] < 626, 'E4 ohne Hebel 11 hält Tür 11', info(r))
         r = await koop(g, m=kat(611, 7), f=kat(611, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
         soll(r['pos']['m'][0] < 615, 'E4 ohne Hebel 10 hält Tür 10', info(r))
-        flucht = lambda w: [lauf(697, [686]), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(699)} - 6', 'left': f'P.x > {kx(699)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
-                            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(742, -4)] + sprung_zu(kx(745)) + sprung_zu(kx(751)) + sprung_zu(kx(757)) + sprung_zu(kx(764)) + [k_lauf(767)]
-        for delay in (0, 20):
-            m = [k_lauf(679, -14), {'use': True, 'frames': 2}] + flucht('m')
-            f = [{'frames': delay}, k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + flucht('f')
-            r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': m, 'f': f}, maxFrames=4000)
-            soll(r.get('done') and r['pos']['m'][0] >= 766 and r['pos']['f'][0] >= 766, f'E4 Finale: Sturm-Jagd und Stege (Schwein {delay} Schritte später unten)', info(r))
-        r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': [k_lauf(679, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
-        soll(r.get('dead') == 'm', 'E4 1 s gezögert: die Wand holt den Affen ein', info(r))
+        # Sturm-Jagd (Umbau: Wand 6,6 statt 5,4)
+        for delay in (0, 10):
+            pl = _d6_e4(True)
+            r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
+            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 766 and r['pos']['f'][0] >= 766, f'E4 Sturm-Jagd mit Dash (Schwein {delay} Schritte später)', info(r))
+        r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans=_d6_e4(False), maxFrames=4000)
+        soll(r.get('dead'), 'E4 Sturm-Jagd ohne Dash: die Wand holt ein', info(r))
         r = await koop(g, m=kat(768, 5), f=kat(766, 5), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
         soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
     assert not fehler, fehler
@@ -7985,6 +7980,26 @@ def _d5_e4(dash):
     weg = [j_lauf(700, [688], dash=dash, dash_ab=693, dash_bis=696)] + pilz + [j_lauf(773, [724, 734], dash=dash, dash_ab=712, ohne=[724, 734])]
     return {'m': [k_lauf(682, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + weg}
 JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E4 Finale', kat(671, 11), kat(672, 11), [], 'Wand', 14, _d5_e4, 772))
+def _d6_e1(dash):
+    weg = [j_lauf(147, [132], dash=dash, ohne=[132]), {'until': f'P.x > {kx(150)}', 'frames': 100}, j_lauf(163, dash=dash)]
+    return {'m': [k_lauf(124, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(126, -4), {'wait': '!!linkOn[4]'}] + weg}
+JAGDEN_BOT.append(('dschungel/06-wipfelsturm.json', 'E1 Jagd durchs Tor', kat(115, 11), kat(116, 11), [], 'Wand', 4, _d6_e1, 162))
+def _d6_e3(dash):
+    hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    # mit Dash: kurzer Hüpfer über den Block und sofort Dash nach vorn (unter der Stachel-Decke) – zwischen zwei Blöcken
+    # lädt der Dash gerade wieder auf
+    hupf_d = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': f'P.x > {kx(c)} + 16 || P.grounded', 'frames': 60},
+                        {'pressIf': {'dash': 'dashKannStarten(P)'}, 'hold': ['right'], 'frames': 2}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    h = hupf_d if dash else hupf
+    weg = [j_lauf(537, dash=False)] + h(546) + h(556) + h(566) + [j_lauf(585, dash=dash)]
+    return {'m': [k_lauf(533, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(535, -4), {'wait': '!!linkOn[9]'}] + weg}
+JAGDEN_BOT.append(('dschungel/06-wipfelsturm.json', 'E3 Doppel-Jagd', kat(524, 11), kat(525, 11), [], 'Wand', 9, _d6_e3, 584))
+def _d6_e4(dash):
+    pilz = [{'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(699)} - 6', 'left': f'P.x > {kx(699)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    weg = [j_lauf(697, [686], dash=dash, ohne=[686])] + pilz + [j_lauf(742, dash=dash, dash_bis=734)] + _sz(kx(745)) + _sz(kx(751)) + _sz(kx(757)) + _sz(kx(764)) + [k_lauf(767)]
+    return {'m': [k_lauf(679, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + weg}
+JAGDEN_BOT.append(('dschungel/06-wipfelsturm.json', 'E4 Sturm-Jagd', kat(670, 11), kat(671, 11), [], 'Wand', 14, _d6_e4, 766))
 
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""

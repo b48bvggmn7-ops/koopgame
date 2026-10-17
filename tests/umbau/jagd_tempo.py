@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT / 'tests'))
 
 def pre(art, link, tempo):
     if art == 'Fels': return f"for(const F of felsen) if(F.link === {link}) F.tempo = {tempo};"
-    return f"for(const s of solids) if(s.type === 'moveplat' && s.switchLink === {link}) s.speed = {tempo};"
+    return f"for(const s of solids) if(s.type === 'moveplat' && s.switchLink === {link} && s.targetX !== s.startX) s.speed = {tempo};"
 
 async def lauf(rt, g, e, dash, tempo=None):
     lv, name, ms, fs, links, art, link, plaene, ziel = e
