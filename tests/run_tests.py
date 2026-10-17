@@ -8174,6 +8174,28 @@ async def kombi_stellen_pruefen(g, welt):
                 fehler.append(f"{lv} Abkürzung {name} ({wer}) ohne Kombi möglich: {r.get('pos')}")
     assert not fehler, fehler
 
+async def jagden_pruefen(g, welt):
+    """Umbau: jede Verfolgung aus JAGDEN_BOT – mit Dash kommen beide an (auch mit 10 Schritten Verzögerung der zweiten
+    Figur), ohne Dash holt der Verfolger jemanden ein (Spannung: schneller als Laufen)"""
+    fehler, aktuell = [], None
+    for lv, name, ms, fs, links, art, link, plaene, ziel in JAGDEN_BOT:
+        if not lv.startswith(welt + '/'): continue
+        if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        for delay in (0, 10):
+            pl = plaene(True)
+            pl = {'m': pl['m'], 'f': [{'frames': delay}] + pl['f']} if delay else pl
+            r = await koop(g, m=ms, f=fs, plans=pl, links=links, maxFrames=5000)
+            if not (r.get('done') and not r.get('dead') and all(r['pos'][w][0] >= ziel - 0.5 for w in pl)):
+                fehler.append(f"{lv} {name} mit Dash (Verzögerung {delay}): {r.get('pos')} tot={r.get('dead')}")
+        r = await koop(g, m=ms, f=fs, plans=plaene(False), links=links, maxFrames=5000)
+        if not r.get('dead'): fehler.append(f"{lv} {name}: ohne Dash NICHT eingeholt {r.get('pos')}")
+    assert not fehler, fehler
+
+@test
+async def jagden_dschungel(g):
+    """Umbau: Verfolgungen im Dschungel (Stachelwände) – schneller als Laufen, nur mit Dash zu entkommen."""
+    await jagden_pruefen(g, 'dschungel')
+
 @test
 async def kombi_stellen_dschungel(g):
     """Kombi-Nachschärfen, Welt Dschungel: jede eingebaute Kombi-Stelle (KOMBI_STELLEN_BOT) mit dem Koop-Bot – mit Kombi
