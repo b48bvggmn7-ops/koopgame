@@ -125,7 +125,10 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 
 - Ruinen 1: Stachelwände 3,6 -> 7,4 (Hebel 13/14, durch die Tore) und 3,8 -> 7,2 (Hebel 19, über das Pendel).
 - Felsenflucht: Fels „erste Flucht“ 3,6 -> 10, „Flucht nach oben“ 5,4 -> 14, „Teleporter-Flucht“ 4,4 -> 14 (der Fels beschleunigt erst und startet nach
-  ½ s Wackeln, deshalb brauchen Felsen deutlich mehr Tempo als Wände). Restliche Felsen: in Arbeit.
+  ½ s Wackeln, deshalb brauchen Felsen deutlich mehr Tempo als Wände). Timing-Fluchten so schnell, wie das Warten an den
+  Fallen erlaubt: Pfeil-Flucht 3,6 -> 6,5, Flammen-Welle 3,6 -> 7, Takt-Steine 3,6 -> 6 (darüber wird man beim Warten
+  überrollt). Wechsel-Schleuse und Finale 4,4 -> 14 (der Fels endet dort in einer Grube und schiebt nur an).
+  Bleibt: Schleuse (Hebel 6, Fels zerschellt an der Tür – Rätsel unter Druck) und Felsbrecher-Licht (Hebel 40, Rätsel).
 - Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
 
 ## Geänderte Tests

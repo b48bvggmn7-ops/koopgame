@@ -1556,14 +1556,7 @@ async def level11_felsenflucht(g):
     m = [k_lauf(298, 0), {'wait': '!!linkOn[5]'}, k_lauf(312)]
     r = await koop(g, m=kat(292, 15), f=kat(290, 15), plans={'m': m, 'f': [halten, {'wait': f'Q.x > {kx(301)}'}, k_lauf(318)]}, maxFrames=1500)
     soll(r['pos']['f'][0] < 316, 'ohne Hebel 6 kein Weiterkommen', r.get('pos'))
-    def welle():
-        pl = []
-        for c in range(346, 379, 4):
-            fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
-            pl += [k_lauf(c - 2, 0), {'wait': f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 30'}, k_lauf(c + 1)]
-        return pl
-    pl = {'f': [k_lauf(328, 0)] + am(330) + welle() + [k_lauf(385, 0)] + sprung_zu(kx(391)) + [k_lauf(392), {'wait': 'felsen[5].weg'}],
-          'm': [{'wait': '!!linkOn[7]'}] + welle() + [k_lauf(384, 0)] + sprung_zu(kx(390)) + [k_lauf(391)]}
+    pl = _r5_e2c(True); pl['f'] = pl['f'] + [{'wait': 'felsen[5].weg'}]   # Umbau: Fels 7 statt 3,6 (Plan in JAGDEN_BOT)
     r = await koop(g, m=kat(332, 15), f=kat(327, 15), plans=pl, maxFrames=5000)
     soll(r.get('done'), 'Flammen-Welle mit Fels im Nacken', info(r))
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
@@ -8070,6 +8063,62 @@ def _r5_e3a(dash):
     oben = [{'wait': f'P.y < {ky(8)}', 'frames': 300}, {'frames': 10}, j_lauf(470, dash=dash), {'until': 'P.grounded', 'frames': 200}]
     return {'m': _hebel(412) + [j_lauf(432, dash=dash, dash_bis=426)] + oben, 'f': [{'wait': '!!linkOn[8]', 'frames': 2000}, j_lauf(435, dash=dash, dash_bis=429)] + oben}
 JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Teleporter-Flucht (Hebel 8)', kat(414, 15), kat(415, 15), [], 'Fels', 8, _r5_e3a, 469))
+def _r5_takt(cs, warte, dash, start=None, durch=True):
+    """Felsenflucht: Vorhänge (Pfeile/Flammen) an den Spalten cs; vor jedem stehen bleiben, bis warte(c) wahr ist, dann
+    (mit Dash) durch. Zwischen den Vorhängen mit Dash nach vorn, wenn er voll ist"""
+    pl, vor = [], start
+    for c in cs:
+        pl += [j_lauf(c - 5, dash=dash, dash_ab=None if vor is None else vor + 1, dash_bis=c - 9), k_lauf(c - 2, 0),
+               {'wait': warte(c), 'frames': 600}, j_lauf(c + 2, dash=dash and durch)]
+        vor = c
+    return pl
+def _r5_pfeil_frei(c): return f'fallenPfeile.some(a => Math.abs(a.x - {kx(c)}) < 4 && a.steckt >= 0)'
+def _r5_flamme_aus(c):
+    fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+    return f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 30'
+def _r5_e2a(dash):
+    """Felsenflucht, Pfeil-Flucht: Affe zieht Hebel 4 (210), durch drei Pfeil-Vorhänge (230/238/246) – direkt nachdem der
+    Pfeil steckt durch (mit Dash), dann auf die Stufe 261"""
+    weg = lambda e: _r5_takt((230, 238, 246), _r5_pfeil_frei, dash) + [k_lauf(e - 6, 0)] + _zu(e) + [k_lauf(e + 1)]
+    return {'m': _hebel(210) + weg(261), 'f': [{'wait': '!!linkOn[4]', 'frames': 2000}] + weg(260)}
+JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Pfeil-Flucht (Hebel 4)', kat(212, 15), kat(214, 15), [], 'Fels', 4, _r5_e2a, 261))
+def _r5_e2c(dash):
+    """Felsenflucht, Flammen-Welle: Schweinchen zieht Hebel 7 (330), durch die Flammen 346–378 (je 4 Spalten), Stufe 391"""
+    # Flammen nur 4 Spalten auseinander: zwischen ihnen kein Dash (er trüge in die nächste Flamme), nur auf dem Anlauf
+    weg = lambda e: _r5_takt(range(346, 379, 4), _r5_flamme_aus, False) + [k_lauf(e - 6, 0)] + _zu(e) + [k_lauf(e + 1)]
+    return {'f': [k_lauf(328, 0)] + _hebel(330) + [j_lauf(339, dash=dash, dash_bis=333)] + weg(391),
+            'm': [{'wait': '!!linkOn[7]', 'frames': 2000}, j_lauf(339, dash=dash, dash_bis=334)] + weg(390)}
+JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Flammen-Welle (Hebel 7)', kat(332, 15), kat(327, 15), [], 'Fels', 7, _r5_e2c, 391))
+def _r5_e3c(dash):
+    """Felsenflucht, Wechsel-Schleuse: Affe zieht Hebel 10 (548), über die Trittsteine 558–571"""
+    hop = [k_lauf(555, -6)] + _zu(558, 10) + [k_lauf(559, 0)] + _zu(562, 6) + [k_lauf(563, 0)] + _zu(566, 6) + [k_lauf(567, 0)] + _zu(571, 6) + [j_lauf(574, dash=dash)]
+    return {'m': _hebel(548) + hop, 'f': [{'wait': '!!linkOn[10]', 'frames': 2000}, {'frames': 30}] + hop}
+JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Wechsel-Schleuse (Hebel 10)', kat(549, 15), kat(550, 15), [], 'Fels', 10, _r5_e3c, 573))
+def _r5_e3b(dash):
+    """Felsenflucht, Takt-Steine: Schweinchen zieht Hebel 9 (480), über die Wechsel-Trittsteine 494–522 im Takt 90 (reines
+    Timing: der Dash hilft nur auf dem Anlauf)"""
+    T = 90
+    def takt():
+        pl = [j_lauf(487, dash=dash, dash_bis=484), k_lauf(491, -6), {'wait': f'(Math.floor(wechselSchritte / {T}) % 2 === 0 && ({T} - wechselSchritte % {T}) > 50) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 160)'}] + _zu(494, 4)
+        for c0 in range(497, 517, 3):
+            pl += [{'wait': f'({T} - wechselSchritte % {T}) <= 26 && ({T} - wechselSchritte % {T}) > 4'}] + _zu(c0, 4)
+        return pl + [{'wait': f'({T} - wechselSchritte % {T}) <= 30'}] + _zu(522, 4)
+    return {'f': [{'frames': 1}, k_lauf(478, 0)] + _hebel(480) + takt() + [k_lauf(524)], 'm': [{'wait': '!!linkOn[9]', 'frames': 2000}] + takt() + [k_lauf(523)]}
+JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Takt-Steine (Hebel 9)', kat(482, 15), kat(476, 15), [], 'Fels', 9, _r5_e3b, 521))
+def _r5_e4(dash):
+    """Felsenflucht, Finale: Affe zieht Hebel 11 (612), Haken über die Grube (Absprung 626), Schweinchen segelt (627),
+    dreht am Spiegel-Hebel 650 das Licht aufs Tor, beide springen auf den Steg (669/670) und laufen bis 708"""
+    steg = lambda jx: [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    haken = [k_lauf(626, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+             {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+    m = _hebel(612) + [j_lauf(619, dash=dash, dash_bis=616)] + haken + [j_lauf(662, dash=dash, dash_bis=658)] + steg(669) + [j_lauf(708, dash=dash)]
+    f = [{'wait': '!!linkOn[11]', 'frames': 2000}, j_lauf(619, dash=dash, dash_bis=616)] + k_segeln(627, 4) + [j_lauf(644, dash=dash, dash_bis=640), k_lauf(648, 0)] + _hebel(650) + steg(670) + [j_lauf(709, dash=dash)]
+    return {'m': m, 'f': f}
+JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Finale (Hebel 11)', kat(608, 15), kat(614, 15), [], 'Fels', 11, _r5_e4, 707))
+# Verfolgungen, bei denen nur „mit Dash geschafft“ geprüft wird: Timing-Stellen (man MUSS an Pfeilen/Flammen/Takt-Steinen
+# warten – das Tempo ist so hoch, wie das Warten erlaubt) und Felsen, die in einer Grube enden (sie schieben nur an)
+JAGDEN_TAKT = {'Fels: Pfeil-Flucht (Hebel 4)', 'Fels: Flammen-Welle (Hebel 7)', 'Fels: Takt-Steine (Hebel 9)',
+               'Fels: Wechsel-Schleuse (Hebel 10)', 'Fels: Finale (Hebel 11)'}
 
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
@@ -8277,6 +8326,7 @@ async def jagden_pruefen(g, welt):
             r = await koop(g, m=ms, f=fs, plans=pl, links=links, maxFrames=5000)
             if not (r.get('done') and not r.get('dead') and all(r['pos'][w][0] >= ziel - 0.5 for w in pl)):
                 fehler.append(f"{lv} {name} mit Dash (Verzögerung {delay}): {r.get('pos')} tot={r.get('dead')}")
+        if name in JAGDEN_TAKT: continue
         r = await koop(g, m=ms, f=fs, plans=plaene(False), links=links, maxFrames=5000)
         if not r.get('dead'): fehler.append(f"{lv} {name}: ohne Dash NICHT eingeholt {r.get('pos')}")
     assert not fehler, fehler

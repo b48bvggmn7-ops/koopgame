@@ -4669,7 +4669,7 @@
       "y": 520,
       "link": 4,
       "richtung": "r",
-      "tempo": 3.6
+      "tempo": 6.5
     },
     {
       "x": 11100,
@@ -4683,7 +4683,7 @@
       "y": 520,
       "link": 7,
       "richtung": "r",
-      "tempo": 3.6
+      "tempo": 7
     },
     {
       "x": 16260,
@@ -4697,21 +4697,21 @@
       "y": 520,
       "link": 9,
       "richtung": "r",
-      "tempo": 3.6
+      "tempo": 6
     },
     {
       "x": 21700,
       "y": 520,
       "link": 10,
       "richtung": "r",
-      "tempo": 4.4
+      "tempo": 14
     },
     {
       "x": 24260,
       "y": 520,
       "link": 11,
       "richtung": "r",
-      "tempo": 4.4
+      "tempo": 14
     },
     {
       "x": 30380,
