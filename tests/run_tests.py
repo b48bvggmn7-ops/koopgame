@@ -3438,14 +3438,13 @@ async def dschungel5_dornenpfad(g):
         soll(r['pos']['m'][0] < 482, 'E3 ohne Platte 7 hält Tür 7', info(r))
         r = await koop(g, f=kat(476, 15), m=kat(470, 15), plans={'f': [k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=3000)
         soll(r.get('pos', {}).get('f', [999])[0] < 482, 'E3 ohne Hebel 8 bleibt der Schacht zu', info(r))
-        # Pilz-Flucht
-        flucht = lambda w: [k_lauf(528, 0)] + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(531)} - 6', 'left': f'P.x > {kx(531)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
-                   {'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 200}] + sprung_zu(kx(546)) + sprung_zu(kx(551)) + sprung_zu(kx(559)) + [k_lauf(597)]
-        for delay in (0, 20):
-            m = [k_lauf(524, -14), {'use': True, 'frames': 2}] + flucht('m')
-            f = [{'frames': delay}, k_lauf(526, -4), {'wait': '!!linkOn[9]'}] + flucht('f')
-            r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans={'m': m, 'f': f}, maxFrames=4000)
-            soll(r.get('done') and r['pos']['m'][0] >= 596 and r['pos']['f'][0] >= 596, f'E3 Pilz-Flucht (Schwein {delay} Schritte später unten)', info(r))
+        # Pilz-Flucht (Umbau: Wand 5,8 statt 5,0 – nur mit Dash vom Bröckel-Stein aufs feste Land zu schaffen)
+        for delay in (0, 10):
+            pl = _d5_e3(True)
+            r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
+            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 596 and r['pos']['f'][0] >= 596, f'E3 Pilz-Flucht mit Dash (Schwein {delay} Schritte später)', info(r))
+        r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans=_d5_e3(False), maxFrames=4000)
+        soll(r.get('dead'), 'E3 Pilz-Flucht ohne Dash: die Wand holt ein', info(r))
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
@@ -3463,19 +3462,13 @@ async def dschungel5_dornenpfad(g):
         soll(r['pos']['m'][0] < 631, 'E4 ohne Hebel 11 hält Tür 11', info(r))
         r = await koop(g, f=kat(615, 7), m=kat(616, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
         soll(r['pos']['f'][0] < 619, 'E4 ohne Hebel 10 hält Tür 10', info(r))
-        # Finale
-        def lauf(bis, kanten):
-            cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
-            return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
-        flucht = lambda w: [lauf(700, [688])] + [{'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(703)} - 6', 'left': f'P.x > {kx(703)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
-             {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, lauf(773, [724, 734])]
-        for delay in (0, 20):
-            m = [k_lauf(680, -14), {'use': True, 'frames': 2}] + flucht('m')
-            f = [{'frames': delay}, k_lauf(682, -4), {'wait': '!!linkOn[14]'}] + flucht('f')
-            r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': m, 'f': f}, maxFrames=4000)
-            soll(r.get('done') and r['pos']['m'][0] >= 772 and r['pos']['f'][0] >= 772, f'E4 Finale: schnellste Stachelwand (Schwein {delay} Schritte später unten)', info(r))
-        r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': [k_lauf(680, -14), {'use': True, 'frames': 2}, {'frames': 54}] + flucht('m')}, maxFrames=4000)
-        soll(r.get('dead') == 'm', 'E4 1 s gezögert: die schnellste Wand holt den Affen ein', info(r))
+        # Finale (Umbau: Wand 7,0 statt 5,2 – schneller als Laufen, nur mit Dash auf den freien Stücken zu entkommen)
+        for delay in (0, 10):
+            pl = _d5_e4(True)
+            r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
+            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 772 and r['pos']['f'][0] >= 772, f'E4 Finale mit Dash (Schwein {delay} Schritte später)', info(r))
+        r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans=_d5_e4(False), maxFrames=4000)
+        soll(r.get('dead'), 'E4 Finale ohne Dash: die schnellste Wand holt ein', info(r))
         r = await koop(g, m=kat(774, 15), f=kat(772, 15), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
         soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
     assert not fehler, fehler
@@ -7978,6 +7971,20 @@ def _d5_e1(dash):
     flucht = steine + [j_lauf(199, dash=dash, dash_ab=176)]
     return {'m': [k_lauf(142, -14), {'use': True, 'frames': 2}] + flucht, 'f': [k_lauf(144, -4), {'wait': '!!linkOn[3]'}] + flucht}
 JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E1 Stachelwand-Jagd über die Bröckel-Steine', kat(133, 11), kat(134, 11), [], 'Wand', 3, _d5_e1, 198))
+def _d5_e3(dash):
+    pilz = [k_lauf(528, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(531)} - 6', 'left': f'P.x > {kx(531)} + 6'}, 'until': 'P.vy < -14', 'frames': 100}]
+    if dash:
+        weg = pilz + [{'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 200}] + _sz(kx(546)) + _sz_dash(kx(558)) + [j_lauf(597, dash=True, dash_ab=559)]
+    else:
+        weg = pilz + [{'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 200}] + _sz(kx(546)) + _sz(kx(551)) + _sz(kx(559)) + [j_lauf(597, dash=False)]
+    return {'m': [k_lauf(524, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(526, -4), {'wait': '!!linkOn[9]'}] + weg}
+JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E3 Pilz-Flucht', kat(515, 11), kat(516, 11), [], 'Wand', 9, _d5_e3, 596))
+def _d5_e4(dash):
+    pilz = [{'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(703)} - 6', 'left': f'P.x > {kx(703)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
+            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    weg = [j_lauf(700, [688], dash=dash, dash_ab=693, dash_bis=696)] + pilz + [j_lauf(773, [724, 734], dash=dash, dash_ab=712, ohne=[724, 734])]
+    return {'m': [k_lauf(682, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + weg}
+JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E4 Finale', kat(671, 11), kat(672, 11), [], 'Wand', 14, _d5_e4, 772))
 
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
@@ -9462,7 +9469,8 @@ async def partner_koop_dschungel(g):
     for ich in ('m', 'f'):
         srv = await partner_projekt_start(g, 'dschungel/05-dornenpfad.json', ich)
         try:
-            plan = [k_lauf(680, -14), {'wait': f'Q.x > {kx(675)} && Q.grounded', 'frames': 1200}, {'use': True, 'frames': 2}] + flucht + \
+            weg = _d5_e4(True)['m'][2:]   # Umbau: Flucht mit Dash (Wand 7,0)
+            plan = [k_lauf(682, -6), {'wait': f'Q.x > {kx(679)} && Q.grounded', 'frames': 1200}, {'use': True, 'frames': 2}] + weg + \
                    [k_lauf(797), {'wait': f'Q.x > {kx(790)}', 'frames': 1500}]
             r = await koop(g, **{ich: kat(671, 11), ('f' if ich == 'm' else 'm'): kat(672, 11)}, plans={ich: plan}, pre='partnerHirnNeu()', maxFrames=5000)
             if not (r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 790): fehler.append(('Jagd bis zum Ziel', ich, r.get('dead'), r.get('pos')))

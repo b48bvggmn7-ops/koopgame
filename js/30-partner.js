@@ -10,7 +10,7 @@
 // Werte (Reaktionszeit, Abstand …) in js/02-physik-werte.js (PARTNER_*).
 
 const PARTNER_SPEICHER = 'monchichi_partner';   // {an, ich: 'm' | 'f'} – im Browser gemerkt (Editor-Auswahl „Allein testen“)
-const PARTNER_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'padUse'];
+const PARTNER_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'padUse', 'dash'];
 const partnerCode = a => 'Partner_' + a;   // Tasten, die der Partner drückt
 const soloCode = a => 'Solo_' + a;         // meine Tasten (beide Tastaturhälften + beide Controller zusammen)
 
@@ -44,9 +44,9 @@ function partnerTasten(male){
   const istPartner = (partner.ich === 'm') !== male;
   const c = istPartner ? partnerCode : soloCode;
   return male ? {left: c('left'), right: c('right'), jump: c('jump'), hook: c('ability'), pull: c('pull'), slack: c('slack'),
-                 use: c('use'), padUse: c('padUse'), swimUp: c('pull'), swimDown: c('slack')}
+                 use: c('use'), padUse: c('padUse'), swimUp: c('pull'), swimDown: c('slack'), dash: c('dash')}
               : {left: c('left'), right: c('right'), jump: c('jump'), glide: c('ability'), use: c('use'), padUse: c('padUse'),
-                 swimUp: c('pull'), swimDown: c('slack')};
+                 swimUp: c('pull'), swimDown: c('slack'), dash: c('dash')};
 }
 function partnerTastenNeu(){
   if(typeof p1 === 'undefined' || !p1) return;
@@ -876,6 +876,25 @@ function partnerFluchtZiel(P){
   }
   return ziel;
 }
+// Dash nach vorn möglich und sicher? Steht, Dash voll, die nächsten PARTNER_DASH_BODEN Kästchen fester Boden ohne
+// Stacheln und frei (kein Hindernis in Kopf-/Fußhöhe)
+function partnerDashFrei(P, dir){
+  if(!P.grounded || typeof dashKannStarten !== 'function' || !dashKannStarten(P)) return false;
+  return partnerBodenFrei(P, dir, PARTNER_DASH_BODEN);
+}
+function partnerBodenFrei(P, dir, n){
+  const c = Math.floor(P.x/40), r = Math.floor((P.y - 1)/40);
+  // feste Teile in der Nähe (offene Türen, Bröckel im Zerfall und Fahrten zählen nicht)
+  const x0 = Math.min(c, c + dir*n)*40 - 40, x1 = Math.max(c, c + dir*n)*40 + 80;
+  const nah = solids.filter(s => !s.gone && !s.open && s.type !== 'oneway' && s.type !== 'moveplat' && s.x < x1 && s.x + s.w > x0);
+  const fest = (cc, rr) => nah.some(s => s.x < cc*40 + 39 && s.x + s.w > cc*40 + 1 && s.y < rr*40 + 39 && s.y + s.h > rr*40 + 1);
+  for(let i = 1; i <= n; i++){
+    const cc = c + dir*i;
+    if(!fest(cc, r + 1) || fest(cc, r) || fest(cc, r - 1)) return false;
+    if(spikes.some(sp => Math.abs(sp.x - (cc*40 + 20)) < 30 && Math.abs(sp.y - (r + 1)*40) < 30)) return false;
+  }
+  return true;
+}
 function partnerFolgen(P, M){
   if(partner.modus === 'aufgabe') partner.modus = 'folgen';
   const F = partnerFluchtZiel(P);
@@ -883,8 +902,22 @@ function partnerFolgen(P, M){
     const H = partnerHirn;
     if(H.zielId !== 'flucht'){ H.suche = null; H.wegSuche = null; H.weg = null; H.naechste = H.schritt; if(P.grounded) H.plan = null; }   // Schreck: sofort los
     const Z = {x: F.x, y: P.y, id: 'flucht', tol: 40, nah: false};
+    if(partner.modus !== 'fest') partner.text = 'flieht!';
+    // Umbau: Verfolger sind schneller als Laufen – liegt vor ihm freier, fester Boden, rennt er sofort los (ohne erst
+    // den Weg zu planen) und dasht nach vorn, sobald der Dash voll ist; sonst plant er den Weg wie bisher
+    if(P.grounded && partnerBodenFrei(P, F.dir, 3)){
+      const e = {dir: F.dir};
+      if(partnerDashFrei(P, F.dir)) e.dash = true;
+      return e;
+    }
     const e = partnerNavi(P, Z, 'flieht!');
     if(partner.modus !== 'fest') partner.text = 'flieht!';
+    // noch kein Weg geplant (er überlegt), die Wand ist aber schneller: einfach nach vorn springen statt stehen zu bleiben
+    if(!e || (!e.dir && !e.springen && !e.sprungHalten)){
+      const kante = P.grounded && !partnerBodenFrei(P, F.dir, 1);   // erst an der Kante abspringen
+      return {dir: F.dir, springen: kante, sprungHalten: !P.grounded};
+    }
+    if(e.dir === F.dir && !e.springen && partnerDashFrei(P, F.dir)) e.dash = true;
     return e;
   }
   const Z = partnerFolgeZiel(P, M); Z.id = 'folgen';
@@ -903,6 +936,7 @@ function partnerTastenAus(P, e){
   if(e.use) druecken.push('use');
   if(e.pull) halten.pull = true;
   if(e.slack) halten.slack = true;
+  if(e.dash) druecken.push('dash');
   return {halten, druecken};
 }
 function partnerDenken(P, M){

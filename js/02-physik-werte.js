@@ -197,3 +197,4 @@ const PARTNER_BUDGET_GESAMT = 24000;   // … und je Überlegung insgesamt (vert
 const PARTNER_WEG_KNOTEN = 140;         // Wegsuche (Umwege, Kamine): höchstens so viele Standplätze ausprobieren …
 const PARTNER_WEG_BUDGET = 120000;      // … und so viele Vorausschritte (≈ 1–2 s „überlegen“, verteilt auf viele Spielschritte)
 const PARTNER_WEG_PAUSE = 300;          // Schritte: so lange keine neue Wegsuche zum selben Ziel, wenn keine gefunden wurde
+const PARTNER_DASH_BODEN = 6;     // Computer-Partner auf der Flucht: so viele Kästchen fester, freier Boden vor ihm, damit er dasht (Umbau)
