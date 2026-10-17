@@ -113,7 +113,7 @@ Alle 20 Entscheidungen stehen mit Begründung in NACHT-STATUS.md. Die wichtigste
 - **Geänderte alte Tests** (mit Begründung in NACHT-STATUS.md): element_register (Liste um 2 neue Elemente ergänzt),
   editor_einseitige_plattform (Werkzeug-Reihenfolge um 2 neue Werkzeuge ergänzt), level19_magmakammer und
   level21_feuerschlund (Bot-Affe wartet im Doppel-Schacht, bis die Platte den Kamin öffnet – wegen Wand-Rutschen).
-- Großer Lauf: siehe Abschluss unten.
+- Großer Lauf am Ende: **216 bestanden, 0 fehlgeschlagen** (danach nur noch dieser Bericht geändert).
 
 ## So testest du
 1. Spiel starten, Dschungel 3 (Lianenschlucht): Stachelgrube mit lila Decke – springen, **W** (Affe) bzw. **↑**

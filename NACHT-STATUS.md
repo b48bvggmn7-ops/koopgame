@@ -19,7 +19,7 @@ Sicherung: Tag `vor-nacht-ausbau` (lokal) **und** Branch `vor-nacht-ausbau` auf 
 | P1 | Dash, Durchbruch-Wand, Wand-Rutschen, Haftfläche, Tastenbelegung (+ Editor, Tests, Doku) | fertig (großer Lauf grün) |
 | P2 | Messwerkzeuge (Reichweite + Erfolgsfenster, Einstufung, Level-Vermesser, Exploit-Suche, Bild-Regel, Checkpoints, Münzen) | fertig (reichweite_messen, level_vermessen, stelle_pruefen, level_ascii, level_bau; Kombi-Zählung erweitert) |
 | P3 | Alle 25 Level vermessen und anpassen | fertig bis auf Kombi-Mindestzahlen (braucht Entscheidung, siehe unten) |
-| P4 | Zweiter Durchgang, Gesamtprüfung, Bericht | offen |
+| P4 | Zweiter Durchgang, Gesamtprüfung, Bericht | fertig (großer Lauf 216/0, Unberührt-Vergleich leer, Bericht NACHT-BERICHT.md) |
 
 ## Abnahme-Liste (25 Level)
 Spalten = Level-Checkliste Phase 3: 1 Vermessen · 2 Kombis (Ist, Mindestzahl laut `tests/kombi_pruefen.py`; optionale
