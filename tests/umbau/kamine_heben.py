@@ -20,6 +20,8 @@ def heben(lv, x0, hoch=3, breite=3, grube=9):
         for r in range(max(-3, top - hoch), top): lv.kachel(wc, r, 'wall')
         if spitze == 'crumble': lv.kachel(wc, top, 'wall'); lv.kachel(wc, max(-3, top - hoch), 'crumble')
         if wc == rw: wand_oben = top - hoch
+        for m in lv.ed.get('coins', []):   # Münzen über der Wandspitze wandern mit
+            if m['c'] == wc and top - hoch <= m['r'] < top: m['r'] -= hoch
     # Landeplatz: der ganze Block ab l0 (Spalten, die zwei Reihen unter der Oberkante fest sind – auch mit Versteck oben)
     alt = L.oberkante(lv, l0)
     fest = lambda c, r: lv.typ(c, r) in FEST or any(b['c'] == c and b['r'] == r for b in lv.ed.get('bruchWaende', []))
@@ -37,7 +39,7 @@ def heben(lv, x0, hoch=3, breite=3, grube=9):
         for r in range(alt + 3 - hoch, alt + 3):
             if lv.typ(c, r) is None and not any(b['c'] == c and b['r'] == r for b in lv.ed.get('bruchWaende', [])): lv.kachel(c, r, 'ground')
         for m in lv.ed.get('coins', []):
-            if m['c'] == c and alt - 1 <= m['r'] < alt + 3: m['r'] -= hoch
+            if m['c'] == c and alt - 1 - hoch <= m['r'] < alt + 3: m['r'] -= hoch   # auch Münzen knapp über dem Platz
     # Haft-Arm (S2) am Block (Haftfläche 4 Reihen über der alten Oberkante, Fels darüber, Münze am Arm-Ende): mit nach oben
     arm = [c for c in range(l0 - 2, c1 + 12) if lv.typ(c, alt - 4) == 'haft']
     for c in arm:

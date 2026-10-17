@@ -3317,9 +3317,8 @@
     },
     {
       "x": 14020,
-      "y": 260,
-      "color": "blue",
-      "klasse": "geschick"
+      "y": 140,
+      "color": "blue"
     },
     {
       "x": 14260,
@@ -3329,9 +3328,8 @@
     },
     {
       "x": 14500,
-      "y": 340,
-      "color": "blue",
-      "klasse": "geschick"
+      "y": 220,
+      "color": "blue"
     },
     {
       "x": 15420,
@@ -3457,9 +3455,8 @@
     },
     {
       "x": 22020,
-      "y": 260,
-      "color": "blue",
-      "klasse": "geschick"
+      "y": 140,
+      "color": "blue"
     },
     {
       "x": 22260,
@@ -3469,9 +3466,8 @@
     },
     {
       "x": 22500,
-      "y": 340,
-      "color": "blue",
-      "klasse": "geschick"
+      "y": 220,
+      "color": "blue"
     },
     {
       "x": 22740,
@@ -3641,9 +3637,8 @@
     },
     {
       "x": 31300,
-      "y": 340,
-      "color": "pink",
-      "klasse": "geschick"
+      "y": 220,
+      "color": "pink"
     }
   ],
   "spikes": [],

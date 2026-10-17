@@ -2501,9 +2501,8 @@
     },
     {
       "x": 7820,
-      "y": 340,
-      "color": "blue",
-      "klasse": "geschick"
+      "y": 220,
+      "color": "blue"
     },
     {
       "x": 7900,
@@ -2861,9 +2860,8 @@
     },
     {
       "x": 22900,
-      "y": 260,
-      "color": "pink",
-      "klasse": "geschick"
+      "y": 140,
+      "color": "pink"
     },
     {
       "x": 23140,
@@ -3010,9 +3008,8 @@
     },
     {
       "x": 30980,
-      "y": 340,
-      "color": "blue",
-      "klasse": "geschick"
+      "y": 220,
+      "color": "blue"
     },
     {
       "x": 31220,
