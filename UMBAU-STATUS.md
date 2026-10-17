@@ -23,33 +23,36 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
    nach jeder Welt, dann `main`.
 
 ## Stand je Level
-| Level | Kombi-Stellen dashfest | Abkürzungen | Münzen | Jagden | Dash-Ketten | Pflicht neu | Tests |
-|---|---|---|---|---|---|---|---|
-| dschungel/01-dschungel | offen | offen | offen | offen | offen | offen | offen |
-| dschungel/02-baumkronen | offen | offen | offen | offen | offen | offen | offen |
-| dschungel/03-lianenschlucht | offen | offen | offen | offen | offen | offen | offen |
-| dschungel/04-gluehwald | offen | offen | offen | offen | offen | offen | offen |
-| dschungel/05-dornenpfad | offen | offen | offen | offen | offen | offen | offen |
-| dschungel/06-wipfelsturm | offen | offen | offen | offen | offen | offen | offen |
-| ruinen/01-ruinen | offen | offen | offen | offen | offen | offen | offen |
-| ruinen/03-fallengang | offen | offen | offen | offen | offen | offen | offen |
-| ruinen/04-sonnentempel | offen | offen | offen | offen | offen | offen | offen |
-| ruinen/02-mondnacht | offen | offen | offen | offen | offen | offen | offen |
-| ruinen/05-felsenflucht | offen | offen | offen | offen | offen | offen | offen |
-| ruinen/06-tempelherz | offen | offen | offen | offen | offen | offen | offen |
-| hoehle/02-tropfsteingang | offen | offen | offen | offen | offen | offen | offen |
-| hoehle/03-eisgrotte | offen | offen | offen | offen | offen | offen | offen |
-| hoehle/01-kristallhoehle | offen | offen | offen | offen | offen | offen | offen |
-| hoehle/04-leuchtgrotte | offen | offen | offen | offen | offen | offen | offen |
-| hoehle/05-foerderwerk | offen | offen | offen | offen | offen | offen | offen |
-| hoehle/06-tiefenschlund | offen | offen | offen | offen | offen | offen | offen |
-| vulkan/01-glutpfad | offen | offen | offen | offen | offen | offen | offen |
-| vulkan/02-aschefeld | offen | offen | offen | offen | offen | offen | offen |
-| vulkan/03-feuerberg | offen | offen | offen | offen | offen | offen | offen |
-| vulkan/04-magmakammer | offen | offen | offen | offen | offen | offen | offen |
-| vulkan/05-schlackewerk | offen | offen | offen | offen | offen | offen | offen |
-| vulkan/06-feuerschlund | offen | offen | offen | offen | offen | offen | offen |
-| vulkan/07-kraterherz | offen | offen | offen | offen | offen | offen | offen |
+| Level | Hilfs-Stellen dashfest | Abkürzungen (Werkzeug) | Münzen | Jagden (Tempo) | Dash-Ketten | Pflicht neu |
+|---|---|---|---|---|---|---|
+| dschungel/01-dschungel | ja | geprüft | ja | – | – | Durchbruch 715 (Probe) |
+| dschungel/02-baumkronen | ja | geprüft | ja | 7,8 / 6,6 | – | Durchbruch 172 |
+| dschungel/03-lianenschlucht | ja | geprüft | ja | – | – | Haft + Durchbruch (Nacht) |
+| dschungel/04-gluehwald | ja | geprüft | ja | – | – | Haftdecke (Nacht) |
+| dschungel/05-dornenpfad | ja | geprüft | ja | 5,6 / 5,8 / 7,4 | – | Durchbruch 298 |
+| dschungel/06-wipfelsturm | ja | geprüft | ja | 8,4 / 8,0 / 6,6 | Tunnel + Doppel-Jagd | Durchbruch 381 |
+| ruinen/01-ruinen | Kamin 522 höher | offen | Stein-Münzen behoben | 7,4 / 7,2 | – | offen |
+| ruinen/03-fallengang | Kamin 579 höher | offen | offen | – | – | offen |
+| ruinen/04-sonnentempel | Kamine höher | offen | offen | – | Tunnel (3 Gruben) | offen |
+| ruinen/02-mondnacht | Kamin 89 höher | offen | offen | Doppel-Wand offen | – | offen |
+| ruinen/05-felsenflucht | Kamin 580 höher | offen | Stein-Münze behoben | Felsen 5,5–14 | – | offen |
+| ruinen/06-tempelherz | – | offen | offen | Felsen 7–14 | – | offen |
+| hoehle/02-tropfsteingang | Pilz-Dash | offen | offen | – | Tunnel (3 Gruben) | offen |
+| hoehle/03-eisgrotte | Pilz-Dash | offen | offen | – | – | offen |
+| hoehle/01-kristallhoehle | Pilz-Dash | offen | offen | – | – | offen |
+| hoehle/04-leuchtgrotte | Kamine höher | offen | offen | – | – | offen |
+| hoehle/05-foerderwerk | Kamine höher | offen | offen | – | – | offen |
+| hoehle/06-tiefenschlund | Pilz-Dash | offen | offen | – | – | offen |
+| vulkan/01-glutpfad | Lava-Kamine höher | offen | offen | Lava 5 Stellen schneller | – | offen |
+| vulkan/02-aschefeld | Lava-Kamin höher | offen | offen | – | – | offen |
+| vulkan/03-feuerberg | Pilz-Dash | offen | offen | Wand 4,5 (Grenze) | – | offen |
+| vulkan/04-magmakammer | Pilz-Dash | offen | offen | Lava 5 Stellen schneller | – | offen |
+| vulkan/05-schlackewerk | Pilz-Dash | offen | offen | – | Tunnel | offen |
+| vulkan/06-feuerschlund | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | – | offen |
+| vulkan/07-kraterherz | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | Tunnel (3 Gruben) | offen |
+
+„offen“ = noch nicht mit dem Werkzeug durchgeprüft (Abkürzungen: `tests/umbau/abkuerzungen.py`, ~20 min je Level;
+Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon Pilz-Dash-Gruben.
 
 ## Rezepte
 - **Pilz-Grube -> Pilz-Dash-Grube:** Landeplatz 9 Reihen über der Pilz-Fläche (Sprung+Dash ~8 reicht nicht, Pilz allein ~6
