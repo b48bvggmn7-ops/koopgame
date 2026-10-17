@@ -8026,6 +8026,28 @@ def _d2_staffel(dash):
     return {'m': m, 'f': f}
 JAGDEN_BOT.append(('dschungel/02-baumkronen.json', 'Hebel-Staffel unter Jagd', kat(311, 10), kat(316, 14), [], 'Wand', 8, _d2_staffel, 346))
 
+def _hebel(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}, {'use': True, 'frames': 3}]
+def _r1_j1(dash):
+    """Ruinen 1, erste Stachelwand (Hebel 13 bei 427 startet sie und öffnet das Tor 429): über die Gruben und Bröckel-
+    Brücken, Hebel 14 bei 463 öffnet das zweite Tor 466 – bis zum Checkpoint 519"""
+    # Dash nur auf festem Boden (vor/nach den Bröckel-Brücken, hinter dem Tor), über die Lücken der Brücken hüpfen
+    a = [j_lauf(452, [430, 440, 445, 450], dash=dash, dash_ab=433, dash_bis=437), j_lauf(462, dash=dash, dash_ab=453)]
+    b = [j_lauf(472, dash=dash, dash_ab=467, dash_bis=470), j_lauf(518, [475, 490, 495], dash=dash, dash_ab=480, ohne=[490, 495])]
+    return {'m': _hebel(427) + a + _hebel(463) + b, 'f': [{'wait': '!!linkOn[13]', 'frames': 2000}] + a + [{'wait': '!!linkOn[14]', 'frames': 2000}] + b}
+JAGDEN_BOT.append(('ruinen/01-ruinen.json', 'Stachelwand durch die Tore (Hebel 13/14)', kat(424, 14), kat(423, 14), [], 'Wand', 13, _r1_j1, 517))
+def _r1_j2(dash):
+    """Ruinen 1, zweite Stachelwand (Hebel 19 bei 666 startet sie und öffnet das Tor 668): über das Stachel-Pendel 674,
+    die Grube 688–691 und die Bröckel-Brücke bis zum Checkpoint 712"""
+    if dash:   # weit über das Pendel: Sprung + Dash am höchsten Punkt
+        pendel = [j_lauf(669, dash=False), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': '!P.grounded && P.vy > -2', 'frames': 40},
+                  {'press': ['dash'], 'hold': ['right'], 'frames': 2}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    else:      # ohne Dash: warten, bis das Pendel rechts umkehrt, dann springen
+        pendel = [j_lauf(670, dash=False), {'wait': "solids.some(s => s.type === 'moveplat' && Math.abs(s.startX - 674*40) < 2 && s.x < 674.5*40)", 'frames': 300},
+                  {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    weg = pendel + [j_lauf(716, [687, 697, 702], dash=dash, ohne=[687, 697, 702])]   # Bröckel-Brücke: über die Lücke hüpfen
+    return {'m': _hebel(666) + weg, 'f': [{'wait': '!!linkOn[19]', 'frames': 2000}] + weg}
+JAGDEN_BOT.append(('ruinen/01-ruinen.json', 'Stachelwand über das Pendel (Hebel 19)', kat(663, 14), kat(662, 14), [], 'Wand', 19, _r1_j2, 715))
+
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
     rw = x0 + 5
@@ -8316,6 +8338,11 @@ async def umbau_rollen_dschungel(g):
 async def jagden_dschungel(g):
     """Umbau: Verfolgungen im Dschungel (Stachelwände) – schneller als Laufen, nur mit Dash zu entkommen."""
     await jagden_pruefen(g, 'dschungel')
+
+@test
+async def jagden_ruinen(g):
+    """Umbau: Verfolgungen in den Ruinen (Stachelwände, rollende Felsen) – schneller als Laufen, nur mit Dash zu entkommen."""
+    await jagden_pruefen(g, 'ruinen')
 
 @test
 async def kombi_stellen_dschungel(g):
