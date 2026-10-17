@@ -5945,49 +5945,49 @@
       "y": 640,
       "link": 1,
       "richtung": "r",
-      "tempo": 3.8
+      "tempo": 7
     },
     {
       "x": 5060,
       "y": 520,
       "link": 4,
       "richtung": "r",
-      "tempo": 5.4
+      "tempo": 14
     },
     {
       "x": 7940,
       "y": 520,
       "link": 7,
       "richtung": "r",
-      "tempo": 3.8
+      "tempo": 7
     },
     {
       "x": 12300,
       "y": 520,
       "link": 11,
       "richtung": "r",
-      "tempo": 3.8
+      "tempo": 7
     },
     {
       "x": 15300,
       "y": 520,
       "link": 12,
       "richtung": "r",
-      "tempo": 4.2
+      "tempo": 14
     },
     {
       "x": 20100,
       "y": 520,
       "link": 16,
       "richtung": "r",
-      "tempo": 4.4
+      "tempo": 14
     },
     {
       "x": 25820,
       "y": 520,
       "link": 20,
       "richtung": "r",
-      "tempo": 4.4
+      "tempo": 14
     }
   ],
   "lichtquellen": [

@@ -3728,9 +3728,8 @@ async def ruinen6_tempelherz(g):
         soll(r['pos']['f'][0] < 118, 'E1 ohne Spiegel hält Tür 3', info(r))
         for puller in ('m', 'f'):
             other = 'f' if puller == 'm' else 'm'
-            tc = {'m': 152, 'f': 155}
-            pl = {puller: [k_lauf(130, 0)] + am(132) + [k_lauf(tc[puller]), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(189), {'until': 'P.grounded', 'frames': 200}],
-                  other: [{'wait': '!!linkOn[4]'}, k_lauf(tc[other]), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}, k_lauf(190), {'until': 'P.grounded', 'frames': 200}, {'wait': 'felsen[1].weg'}]}
+            pl = _r6_e1b(True, puller)   # Umbau: Fels 14 statt 5,4 – mit Dash zu den Toren
+            pl[other] = pl[other] + [{'wait': 'felsen[1].weg'}]
             r = await koop(g, m=kat(134, 15), f=kat(135, 15), plans=pl, maxFrames=3000)
             soll(r.get('done') and await g.ev('felsen[1].weg'), f'E1 Fels-Flucht durch die Tore (zieht: {puller})', info(r))
         r = await koop(g, m=kat(134, 15), f=kat(136, 15), plans={'f': [k_lauf(130, 0)] + am(132) + [k_lauf(180)]}, maxFrames=1200)
@@ -8115,10 +8114,64 @@ def _r5_e4(dash):
     f = [{'wait': '!!linkOn[11]', 'frames': 2000}, j_lauf(619, dash=dash, dash_bis=616)] + k_segeln(627, 4) + [j_lauf(644, dash=dash, dash_bis=640), k_lauf(648, 0)] + _hebel(650) + steg(670) + [j_lauf(709, dash=dash)]
     return {'m': m, 'f': f}
 JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Finale (Hebel 11)', kat(608, 15), kat(614, 15), [], 'Fels', 11, _r5_e4, 707))
+def _steg(jx): return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+def _haken_sprung(jx):
+    return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+def _r6_e1a(dash):
+    """Tempelherz, Fels unter dem Pfeilregen: Affe zieht Hebel 1 (14), vier Pfeil-Vorhänge (31–49), Stufe 61"""
+    weg = lambda e: [j_lauf(26, dash=dash, dash_bis=22)] + _r5_takt((31, 37, 43, 49), _r5_pfeil_frei, dash, durch=False) + [k_lauf(e - 6, 0)] + _zu(e) + [k_lauf(e + 1)]
+    return {'m': _hebel(14) + weg(61), 'f': [{'wait': '!!linkOn[1]', 'frames': 2000}] + weg(60)}
+JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: unter dem Pfeilregen (Hebel 1)', kat(8, 15), kat(10, 15), [], 'Fels', 1, _r6_e1a, 60))
+def _r6_e1b(dash, zieht='m'):
+    """Tempelherz, Fels-Flucht durch die Tore: Affe (oder Schweinchen) zieht Hebel 4 (132), beide durch die Teleporter
+    (Affe 152, Schweinchen 155) nach oben"""
+    oben = lambda e: [{'wait': f'P.y < {ky(8)}', 'frames': 300}, {'frames': 10}, j_lauf(e, dash=dash), {'until': 'P.grounded', 'frames': 200}]
+    weg = {'m': [j_lauf(152, dash=dash, dash_bis=146)] + oben(189), 'f': [j_lauf(155, dash=dash, dash_bis=149)] + oben(190)}
+    andere = 'f' if zieht == 'm' else 'm'
+    return {zieht: _hebel(132) + weg[zieht], andere: [{'wait': '!!linkOn[4]', 'frames': 2000}] + weg[andere]}
+JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: Flucht durch die Tore (Hebel 4)', kat(134, 15), kat(135, 15), [], 'Fels', 4, _r6_e1b, 188))
+def _r6_e2a(dash):
+    """Tempelherz, Takt-Steine (Takt 72): Affe zieht Hebel 7 (203), über die Steine 213–235 auf 238"""
+    def takt():
+        pl = [j_lauf(207, dash=dash, dash_bis=204), k_lauf(210, -6), {'wait': '(Math.floor(wechselSchritte / 72) % 2 === 0 && wechselSchritte % 72 < 16) || felsen.some(F => F.aktiv && !F.weg && F.x > P.x - 140)'}] + _zu(213)
+        for c0 in range(216, 235, 3):
+            pl += [{'wait': '(72 - wechselSchritte % 72) <= 20 && (72 - wechselSchritte % 72) > 3'}] + _zu(c0)
+        return pl + [{'wait': '(72 - wechselSchritte % 72) <= 24'}] + _zu(238)
+    return {'m': [k_lauf(201, 0)] + _hebel(203) + takt() + [k_lauf(241)], 'f': [{'wait': '!!linkOn[7]', 'frames': 2000}] + takt() + [k_lauf(240)]}
+JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: Takt-Steine (Hebel 7)', kat(199, 15), kat(205, 15), [], 'Fels', 7, _r6_e2a, 239))
+def _r6_e2b(dash):
+    """Tempelherz, Flammen-Welle: Schweinchen zieht Hebel 11 (313), Flammen 327–359, Stufe 371"""
+    weg = lambda e: [j_lauf(320, dash=dash, dash_bis=317)] + _r5_takt(range(327, 360, 4), _r5_flamme_aus, False) + [k_lauf(e - 6, 0)] + _zu(e) + [k_lauf(e + 1)]
+    return {'f': [k_lauf(311, 0)] + _hebel(313) + weg(371), 'm': [{'wait': '!!linkOn[11]', 'frames': 2000}] + weg(370)}
+JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: Flammen-Welle (Hebel 11)', kat(315, 15), kat(310, 15), [], 'Fels', 11, _r6_e2b, 370))
+def _r6_e3a(dash):
+    """Tempelherz, Wechsel-Flucht unter Pfeilen: Affe zieht Hebel 12 (388), über die Trittsteine 398–412"""
+    hop = [k_lauf(394, -6)] + _zu(398, 10) + [k_lauf(399, 0)] + _zu(402, 6) + [k_lauf(403, 0)] + _zu(406, 6) + [k_lauf(407, 0)] + _zu(412, 6) + [j_lauf(418, dash=dash)]
+    return {'m': [k_lauf(386, 0)] + _hebel(388) + hop, 'f': [{'wait': '!!linkOn[12]', 'frames': 2000}, {'frames': 30}] + hop}
+JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: Wechsel-Flucht (Hebel 12)', kat(385, 15), kat(390, 15), [], 'Fels', 12, _r6_e3a, 417))
+def _r6_e3b(dash):
+    """Tempelherz, Fels und Licht-Tor: Affe zieht Hebel 16 (508) und dreht den Spiegel (526), Schweinchen wartet am Tor"""
+    m = _hebel(508) + [j_lauf(521, dash=dash, dash_bis=517), k_lauf(524, 0)] + _hebel(526) + _steg(538) + [j_lauf(576, dash=dash)]
+    f = [{'wait': '!!linkOn[16]', 'frames': 2000}, j_lauf(527, dash=dash, dash_bis=522), k_lauf(531, 0), {'wait': '!!linkOn[17]', 'frames': 300}] + _steg(539) + [j_lauf(577, dash=dash)]
+    return {'m': m, 'f': f}
+JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: Fels und Licht-Tor (Hebel 16)', kat(504, 15), kat(510, 15), [], 'Fels', 16, _r6_e3b, 575))
+def _r6_e4(dash):
+    """Tempelherz, letzte Felsflucht: Affe zieht Hebel 20 (651), Haken (661) / Schweinchen segelt (662), Pfeile 681/687,
+    Flamme 698, Steg 704"""
+    def flamme(c):
+        fi = f'fallen.find(t => t.x === {c*40} && t.art === "flamme")'
+        return f'!falleBrennt({fi}) && (falleTaktSchritte({fi}) - falleZeit({fi})) > 20'
+    rest = lambda e: _r5_takt((681, 687), _r5_pfeil_frei, dash, durch=False) + _r5_takt((698,), flamme, dash, start=687, durch=False) + _steg(e - 40) + [j_lauf(e, dash=dash)]
+    segeln = [k_lauf(662, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(672)} - 6', 'left': f'P.x > {kx(672)} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    return {'m': _hebel(651) + _haken_sprung(661) + rest(744), 'f': [{'wait': '!!linkOn[20]', 'frames': 2000}] + segeln + rest(745)}
+JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: letzte Felsflucht (Hebel 20)', kat(647, 15), kat(653, 15), [], 'Fels', 20, _r6_e4, 743))
 # Verfolgungen, bei denen nur „mit Dash geschafft“ geprüft wird: Timing-Stellen (man MUSS an Pfeilen/Flammen/Takt-Steinen
 # warten – das Tempo ist so hoch, wie das Warten erlaubt) und Felsen, die in einer Grube enden (sie schieben nur an)
 JAGDEN_TAKT = {'Fels: Pfeil-Flucht (Hebel 4)', 'Fels: Flammen-Welle (Hebel 7)', 'Fels: Takt-Steine (Hebel 9)',
-               'Fels: Wechsel-Schleuse (Hebel 10)', 'Fels: Finale (Hebel 11)'}
+               'Fels: Wechsel-Schleuse (Hebel 10)', 'Fels: Finale (Hebel 11)',
+               'Fels: unter dem Pfeilregen (Hebel 1)', 'Fels: Takt-Steine (Hebel 7)', 'Fels: Flammen-Welle (Hebel 11)',
+               'Fels: Wechsel-Flucht (Hebel 12)', 'Fels: Fels und Licht-Tor (Hebel 16)', 'Fels: letzte Felsflucht (Hebel 20)'}
 
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
