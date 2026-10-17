@@ -1524,10 +1524,10 @@ async def level11_felsenflucht(g):
         return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': h}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
     def info(r): return {k: r.get(k) for k in ('dead', 'pos')}
     # --- Etappe 1 ---
-    pl = {'f': [k_lauf(12, 0)] + am(14) + [k_lauf(55, 0)] + sprung_zu(kx(61)) + [k_lauf(62)],
-          'm': [{'wait': '!!linkOn[1]'}, k_lauf(54, 0)] + sprung_zu(kx(60)) + [k_lauf(61), {'wait': 'felsen[0].weg'}]}
+    # Umbau: Fels 10 statt 3,6 – nur mit Dash zu entkommen (Pläne in JAGDEN_BOT)
+    pl = _r5_e1a(True); pl['m'] = pl['m'] + [{'wait': 'felsen[0].weg'}]
     r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans=pl, maxFrames=2500)
-    soll(r.get('done') and await g.ev("felsen[0].weg"), 'erste Flucht, Fels zerschellt an der Stufe', info(r))
+    soll(r.get('done') and await g.ev("felsen[0].weg"), 'erste Flucht mit Dash, Fels zerschellt an der Stufe', info(r))
     r = await koop(g, m=kat(8, 15), f=kat(10, 15), plans={'f': [k_lauf(12, 0)] + am(14) + [{'frames': 200}]}, maxFrames=600)
     soll(r.get('dead'), 'wer stehen bleibt, wird überrollt', info(r))
     m = [k_lauf(72, 0)] + am(74) + [k_lauf(88, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
@@ -1535,10 +1535,9 @@ async def level11_felsenflucht(g):
     f = [{'wait': '!!linkOn[2]'}] + k_segeln(88, 4) + [k_lauf(101), {'wait': 'felsen[1].weg'}]
     r = await koop(g, m=kat(68, 15), f=kat(70, 15), plans={'m': m, 'f': f}, maxFrames=2500)
     soll(r.get('done') and await g.ev("felsen[1].weg"), 'Fels und Grube (Affe Haken, Schweinchen segelt)', info(r))
-    f = [k_lauf(108, 0)] + am(110) + [k_lauf(123, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, k_lauf(180)]
-    m = [{'wait': '!!linkOn[3]'}, k_lauf(124, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, k_lauf(181), {'wait': 'felsen[2].weg'}]
-    r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': m, 'f': f}, maxFrames=2500)
-    soll(r.get('done') and await g.ev("felsen[2].weg"), 'Flucht nach oben auf die Stege', info(r))
+    pl = _r5_e1c(True); pl['m'] = pl['m'] + [{'wait': 'felsen[2].weg'}]   # Umbau: Fels 14 statt 5,4
+    r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans=pl, maxFrames=2500)
+    soll(r.get('done') and await g.ev("felsen[2].weg"), 'Flucht nach oben auf die Stege (mit Dash)', info(r))
     r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'f': [k_lauf(108, 0)] + am(110) + [k_lauf(168)]}, maxFrames=1200)
     soll(r.get('dead'), 'unten bleiben = überrollt', info(r))
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
@@ -8047,6 +8046,19 @@ def _r1_j2(dash):
     weg = pendel + [j_lauf(716, [687, 697, 702], dash=dash, ohne=[687, 697, 702])]   # Bröckel-Brücke: über die Lücke hüpfen
     return {'m': _hebel(666) + weg, 'f': [{'wait': '!!linkOn[19]', 'frames': 2000}] + weg}
 JAGDEN_BOT.append(('ruinen/01-ruinen.json', 'Stachelwand über das Pendel (Hebel 19)', kat(663, 14), kat(662, 14), [], 'Wand', 19, _r1_j2, 715))
+def _zu(c, h=4):   # kurzer Sprung genau auf Spalte c
+    return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': h}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(c)} - 6', 'left': f'P.x > {kx(c)} + 6'}, 'until': 'P.grounded', 'frames': 100}]
+def _r5_e1a(dash):
+    """Felsenflucht, erste Flucht: Schweinchen zieht Hebel 1 (14), der Fels rollt los – bis auf die Stufe 61 (dort zerschellt er)"""
+    return {'f': [k_lauf(12, 0)] + _hebel(14) + [j_lauf(55, dash=dash, dash_bis=50)] + _zu(61) + [k_lauf(62)],
+            'm': [{'wait': '!!linkOn[1]', 'frames': 2000}, j_lauf(54, dash=dash, dash_bis=49)] + _zu(60) + [k_lauf(61)]}
+JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: erste Flucht (Hebel 1)', kat(8, 15), kat(10, 15), [], 'Fels', 1, _r5_e1a, 60))
+def _r5_e1c(dash):
+    """Felsenflucht, Flucht nach oben auf die Stege: Hebel 3 (110), über die Kante 123/124 nach oben, der Fels rollt unten durch"""
+    sprung = lambda c: [k_lauf(c, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
+    return {'f': [k_lauf(108, 0)] + _hebel(110) + [j_lauf(120, dash=dash)] + sprung(123) + [j_lauf(180, dash=dash)],
+            'm': [{'wait': '!!linkOn[3]', 'frames': 2000}, j_lauf(121, dash=dash)] + sprung(124) + [j_lauf(181, dash=dash)]}
+JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: Flucht nach oben auf die Stege (Hebel 3)', kat(108, 15), kat(106, 15), [], 'Fels', 3, _r5_e1c, 179))
 
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""

@@ -123,6 +123,11 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - Vulkan 4/7: zwei Münz-Verstecke lagen seit dem Pilz-Dash-Umbau begraben – wieder an die Oberkante (203/7, 333/7).
 - Münzen Lianenschlucht (487–501, 256–262) und Wipfelsturm (780) auf die echten Bahnen gelegt (per Bot eingesammelt).
 
+- Ruinen 1: Stachelwände 3,6 -> 7,4 (Hebel 13/14, durch die Tore) und 3,8 -> 7,2 (Hebel 19, über das Pendel).
+- Felsenflucht: Fels „erste Flucht“ 3,6 -> 10, „Flucht nach oben“ 5,4 -> 14 (der Fels beschleunigt erst und startet nach
+  ½ s Wackeln, deshalb brauchen Felsen deutlich mehr Tempo als Wände). Restliche Felsen: in Arbeit.
+- Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s
@@ -137,4 +142,6 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - KOMBI_ABKUERZUNG: neue Turmhöhen (Reihe -1 bzw. 6) und zusätzlich Dash-Varianten (m_dash/f_dash) – keine Abkürzung.
 - KOMBI_STELLEN_BOT: Flammen-/Kamin-/Lava-Kamine mit hoch=3 und Ziel-Reihe 3 höher; Verstecke/Haft-Arme in
   tests/bausteine/stellen.py an die neuen Höhen.
+- level11_felsenflucht: erste Flucht und Flucht nach oben laufen jetzt mit Dash (Pläne _r5_e1a/_r5_e1c aus JAGDEN_BOT).
+- Neu: jagden_ruinen.
 - partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.
