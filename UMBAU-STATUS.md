@@ -90,6 +90,12 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - Pflicht-Durchbruch (Regel 6) auf dem Hauptweg: Baumkronen 172, Dornenpfad 298, Wipfelsturm 381 (nacht_stellen_dschungel).
 - Computer-Partner: dasht durch Durchbruch-Wände (`partnerBruchVorn`, Konstante PARTNER_BRUCH_NAH), Test partner_gefahren.
 
+- Baumkronen fahrender Haken 13: Hebel-Block 647–651 jetzt 6 Reihen hoch (Oberkante Reihe 9), Hebel 13 oben bei 647,
+  Aufwind 639–640 in der Grube (nur das segelnde Schweinchen steigt). Affe kommt mit Sprung + Dash nicht mehr hinüber,
+  sondern fährt am Haken (Sprung + Dash hoch zum Haken, Seil kurz ziehen). Test umbau_rollen_dschungel.
+- Bewusst gelassen (geprüft): D1 Lift 134 (Komfort-Lift, kein Partner nötig), D2 791→807 (hinter dem Ziel),
+  D1 68→82 / 206→220 (Affe erreicht nur pinke Münzen bzw. eine Tür, die er selbst nicht öffnen kann).
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s

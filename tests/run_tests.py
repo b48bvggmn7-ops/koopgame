@@ -8261,6 +8261,38 @@ async def dash_ketten_dschungel(g):
     ohne Dash gescheitert."""
     await dash_ketten_pruefen(g, 'dschungel')
 
+# ---------------- Umbau: Rollen-Stellen (die andere Figur darf es auch mit Dash nicht allein schaffen) ----------------
+def _am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}, {'use': True, 'frames': 5}]
+def _sprung_dash(kante, lande_c0, lande_c1, richtung, schirm):
+    """Sprung an der Kante, am höchsten Punkt Dash (richtung: Tasten), dann (Schweinchen) Schirm auf, auf lande_c0..c1 landen"""
+    return [k_lauf(kante, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': '!P.grounded && P.vy > -2', 'frames': 60},
+            {'press': ['dash'], 'hold': richtung, 'frames': 3},
+            {'hold': ['glide'] if schirm else [], 'holdIf': {'right': f'P.x < {kx(lande_c0)}', 'left': f'P.x > {kx(lande_c1)}'}, 'until': 'P.grounded', 'frames': 400}]
+
+@test
+async def umbau_rollen_dschungel(g):
+    """Umbau Rollen-Stellen Dschungel: Baumkronen fahrender Haken 13 – Schweinchen segelt über den Aufwind (639–640) auf den
+    hohen Hebel-Block (647–651, Oberkante Reihe 9) und schaltet den Haken, der Affe fährt hinüber; der Affe schafft es mit
+    Sprung + Dash allein nicht."""
+    fehler = []
+    await koop_level(g, 'dschungel/02-baumkronen.json')
+    f = [k_lauf(633, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(639)}', 'frames': 200},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(639)} + 10', 'left': f'P.x > {kx(640)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(648)}', 'left': f'P.x > {kx(650)}'}, 'until': 'P.grounded', 'frames': 400},
+         {'wait': 'p1.hookAttached', 'frames': 2000}] + _am(647)
+    m = [{'wait': f'Q.grounded && Q.x > {kx(646)}', 'frames': 2000}, wb_halt(kx(627)), {'press': ['jump'], 'hold': ['jump'], 'until': '!P.grounded && P.vy > -2', 'frames': 60},
+         {'press': ['dash'], 'hold': ['swimUp'], 'hookWhen': 'P.vy > -30', 'until': 'P.hookAttached', 'frames': 80},   # Sprung + Dash hoch zum Haken
+         {'swing': True, 'pull': 80, 'release': f'P.anchor.x > {kx(645)} && P.x > {kx(646)}', 'frames': 3000},   # Seil kurz ziehen (Block ist hoch)
+         {'holdIf': {'right': f'P.x < {kx(648)}', 'left': f'P.x > {kx(650)}'}, 'until': 'P.grounded', 'frames': 300}]
+    r = await koop(g, m=kat(626, 14), f=kat(632, 13), plans={'m': m, 'f': f}, maxFrames=5000)
+    if not (r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 646 and r['pos']['m'][1] <= 8.1):
+        fehler.append(f'Baumkronen Haken 13 (Schweinchen Schirm + Dash, Hebel, Affe fährt): {r.get("pos")} tot={r.get("dead")}')
+    for richtung in (['right'], ['right', 'swimUp'], ['swimUp']):
+        r = await koop(g, m=kat(632, 13), f=kat(626, 14), plans={'m': _sprung_dash(633, 647, 650, richtung, False)}, maxFrames=1500)
+        if r.get('done') and not r.get('dead') and r['pos']['m'][1] <= 8.1:
+            fehler.append(f'Baumkronen Haken 13: Affe kommt mit Sprung + Dash {richtung} allein hinauf {r.get("pos")}')
+    assert not fehler, fehler
+
 @test
 async def jagden_dschungel(g):
     """Umbau: Verfolgungen im Dschungel (Stachelwände) – schneller als Laufen, nur mit Dash zu entkommen."""

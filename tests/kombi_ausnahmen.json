@@ -48,12 +48,6 @@
   "begruendung": "Etappe 1 hat 1 Kombi-Stelle (Pilz + Aufwind/Haken 61). Dornenpfad ist durchgehend mit Rätseln und Verfolgungen belegt (Stachelwand-Jagd 133–198, Inseln im Wechsel 207–235, Seilbahn/Fähre 244–300, Dornendecke 338–398, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht 515–596, Zwei-Gänge-Staffel 604–665, Finale-Jagd 674–760). Probe-Gruben bei 175, 275, 296 und 748 haben Jagden, Seilbahn und Kamin zerstört und wurden zurückgenommen; der Hohe Kamin 311 ist jetzt eine echte Kombi für beide (oben über Stacheln: Wandsprung + Haken / Wandsprung + Segeln). Mehr Kombis nur mit Umbau der Jagden -> „braucht Entscheidung“."
  },
  {
-  "level": "dschungel/05-dornenpfad.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 200,
-  "begruendung": "Etappe 2 hat 1 Kombi-Stelle (Hoher Kamin 311). Dornenpfad ist durchgehend mit Rätseln und Verfolgungen belegt (Stachelwand-Jagd 133–198, Inseln im Wechsel 207–235, Seilbahn/Fähre 244–300, Dornendecke 338–398, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht 515–596, Zwei-Gänge-Staffel 604–665, Finale-Jagd 674–760). Probe-Gruben bei 175, 275, 296 und 748 haben Jagden, Seilbahn und Kamin zerstört und wurden zurückgenommen; der Hohe Kamin 311 ist jetzt eine echte Kombi für beide (oben über Stacheln: Wandsprung + Haken / Wandsprung + Segeln). Mehr Kombis nur mit Umbau der Jagden -> „braucht Entscheidung“."
- },
- {
   "level": "dschungel/06-wipfelsturm.json",
   "regel": "Kombi-Level",
   "spalte": null,
@@ -568,5 +562,11 @@
   "regel": "Kombi-Etappe",
   "spalte": 600,
   "begruendung": "Etappe 600–799: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 182, Lava-Pilz-Grube 324. Proben bei 384, 575 zerstörten Hebel-Kette und Gruben/Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "dschungel/05-dornenpfad.json",
+  "regel": "Kamin",
+  "spalte": 298,
+  "begruendung": "Kein Kamin: Pflicht-Durchbruch-Säule 298 (Umbau Regel 6) – man dasht unten hindurch; zusammen mit der Wand 311 sieht das Prüfwerkzeug einen 12 breiten „Kamin“, der nicht zum Klettern gedacht ist."
  }
 ]
