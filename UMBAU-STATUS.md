@@ -31,24 +31,24 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | dschungel/04-gluehwald | ja | geprüft | ja | – | – | Haftdecke (Nacht) |
 | dschungel/05-dornenpfad | ja | geprüft | ja | 5,6 / 5,8 / 7,4 | – | Durchbruch 298 |
 | dschungel/06-wipfelsturm | ja | geprüft | ja | 8,4 / 8,0 / 6,6 | Tunnel + Doppel-Jagd | Durchbruch 381 |
-| ruinen/01-ruinen | Kamin 522 höher | offen | Stein-Münzen behoben | 7,4 / 7,2 | – | offen |
+| ruinen/01-ruinen | Kamin 522 höher | offen | Stein-Münzen behoben | 7,4 / 7,2 | – | Durchbruch 296 |
 | ruinen/03-fallengang | Kamin 579 höher | offen | offen | – | – | offen |
-| ruinen/04-sonnentempel | Kamine höher | offen | offen | – | Tunnel (3 Gruben) | offen |
+| ruinen/04-sonnentempel | Kamine höher | offen | offen | – | Tunnel (3 Gruben) | Durchbruch 331 |
 | ruinen/02-mondnacht | Kamin 89 höher | offen | offen | Doppel-Wand offen | – | offen |
-| ruinen/05-felsenflucht | Kamin 580 höher | offen | Stein-Münze behoben | Felsen 5,5–14 | – | offen |
+| ruinen/05-felsenflucht | Kamin 580 höher | offen | Stein-Münze behoben | Felsen 5,5–14 | – | Durchbruch 532 |
 | ruinen/06-tempelherz | – | offen | offen | Felsen 7–14 | – | offen |
-| hoehle/02-tropfsteingang | Pilz-Dash | offen | offen | – | Tunnel (3 Gruben) | offen |
+| hoehle/02-tropfsteingang | Pilz-Dash | offen | offen | – | Tunnel (3 Gruben) | Durchbruch 585 |
 | hoehle/03-eisgrotte | Pilz-Dash | offen | offen | – | – | offen |
-| hoehle/01-kristallhoehle | Pilz-Dash | offen | offen | – | – | offen |
+| hoehle/01-kristallhoehle | Pilz-Dash | offen | offen | – | – | Durchbruch 115 |
 | hoehle/04-leuchtgrotte | Kamine höher | offen | offen | – | – | offen |
-| hoehle/05-foerderwerk | Kamine höher | offen | offen | – | – | offen |
+| hoehle/05-foerderwerk | Kamine höher | offen | offen | – | – | Durchbruch 392 |
 | hoehle/06-tiefenschlund | Pilz-Dash | offen | offen | – | – | offen |
 | vulkan/01-glutpfad | Lava-Kamine höher | offen | offen | Lava 5 Stellen schneller | – | offen |
-| vulkan/02-aschefeld | Lava-Kamin höher | offen | offen | – | – | offen |
+| vulkan/02-aschefeld | Lava-Kamin höher | offen | offen | – | – | Durchbruch 790 |
 | vulkan/03-feuerberg | Pilz-Dash | offen | offen | Wand 4,5 (Grenze) | – | offen |
 | vulkan/04-magmakammer | Pilz-Dash | offen | offen | Lava 5 Stellen schneller | – | offen |
-| vulkan/05-schlackewerk | Pilz-Dash | offen | offen | – | Tunnel | offen |
-| vulkan/06-feuerschlund | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | – | offen |
+| vulkan/05-schlackewerk | Pilz-Dash | offen | offen | – | Tunnel | Durchbruch 194 |
+| vulkan/06-feuerschlund | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | – | Durchbruch 589 |
 | vulkan/07-kraterherz | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | Tunnel (3 Gruben) | offen |
 
 „offen“ = noch nicht mit dem Werkzeug durchgeprüft (Abkürzungen: `tests/umbau/abkuerzungen.py`, ~20 min je Level;
@@ -150,6 +150,11 @@ Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon P
   breit möglich – das Schweinchen segelt ohne Dash drüber).
 - Geänderte Tests: level10_sonnentempel „bis zum Ziel“, level12_tropfsteingang „E4 Ziel“, level20_schlackewerk „E4 Finale“
   laufen durch den Dash-Tunnel (dash_kette).
+- Pflicht-Durchbruch (Regel 6) auch in Ruinen/Höhle/Vulkan: Säulen (unten Durchbruch, darüber Wand bis oben) in
+  Ruinen 1 (296), Sonnentempel (331), Felsenflucht (532), Kristallhöhle (115), Tropfsteingang (585), Förderwerk (392),
+  Aschefeld (790), Schlackewerk (194), Feuerschlund (589) – nur auf flachen Wegstücken ohne Bot-Test, Elemente und
+  Rätsel (Glutpfad 788 verworfen: dort entstand ein 1 breiter Kamin; Sonnentempel 327 -> 331 wegen Haft-Arm).
+  Tests nacht_stellen_<welt>. Kristallhöhle zählt dadurch eine Kombi-Stelle mehr (Ausnahme „Kombi-Etappe 0“ entfällt).
 - Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
 
 ## Geänderte Tests

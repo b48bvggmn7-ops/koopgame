@@ -44,6 +44,14 @@ for _w in 'mf':
     stelle(level='dschungel/06-wipfelsturm.json', name='Durchbruch-Säule 381 (B2, Pflicht)', wer=_w, start=(377, 15), partner=(375, 15),
            plan=nb_bruch_durch(381), ziel=383, ziel_reihe=15, baustein='B2', gegen=_laufen)
 
+# ---------------- Umbau (Regel 6): Pflicht-Durchbruch auf dem Hauptweg in Ruinen, Höhle, Vulkan ----------------
+for _w in 'mf':
+    for _lv, _c, _r in (('ruinen/01-ruinen.json', 296, 15), ('ruinen/04-sonnentempel.json', 331, 16), ('ruinen/05-felsenflucht.json', 532, 16),
+                        ('hoehle/01-kristallhoehle.json', 115, 15), ('hoehle/02-tropfsteingang.json', 585, 8), ('hoehle/05-foerderwerk.json', 392, 16),
+                        ('vulkan/02-aschefeld.json', 790, 16), ('vulkan/05-schlackewerk.json', 194, 16), ('vulkan/06-feuerschlund.json', 589, 16)):
+        stelle(level=_lv, name=f'Durchbruch-Säule {_c} (B2, Pflicht)', wer=_w, start=(_c - 5, _r - 1), partner=(_c - 7, _r - 1),
+               plan=nb_bruch_durch(_c), ziel=_c + 2, ziel_reihe=_r - 1, baustein='B2', gegen=_laufen)
+
 # ---------------- Dschungel 1 (sanfte Probe) ----------------
 for _w in 'mf':
     stelle(level='dschungel/01-dschungel.json', name='Durchbruch-Wand unter dem Münz-Sims 715 (sanfte Probe; oben herum per Lift geht auch)', wer=_w,

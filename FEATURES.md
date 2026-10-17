@@ -1614,7 +1614,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   hintereinander, auf dem Podest warten, bis der Dash wieder voll ist (sofort weiter = Absturz). Wipfelsturm vor dem Ziel,
   Sonnentempel vor dem Ziel (3 Gruben), Tropfsteingang vor dem Ziel (3 Gruben), Schlackewerk vor dem Ziel, Kraterherz
   vor dem Ziel (3 Gruben). Werkzeug `tests/umbau/dash_tunnel.py`, Tests `dash_ketten_<welt>`.
-- **Pflicht-Durchbruch** auf dem Hauptweg: Baumkronen 172, Dornenpfad 298, Wipfelsturm 381. Der Computer-Partner dasht
+- **Pflicht-Durchbruch** auf dem Hauptweg (Säule: unten Durchbruch, darüber Wand bis oben – nur per Dash): Baumkronen 172,
+  Dornenpfad 298, Wipfelsturm 381, Ruinen 1 296, Sonnentempel 331, Felsenflucht 532, Kristallhöhle 115, Tropfsteingang 585,
+  Förderwerk 392, Aschefeld 790, Schlackewerk 194, Feuerschlund 589. Der Computer-Partner dasht
   durch Durchbruch-Wände.
 
 ### Design-Politur (nur Aussehen und ein Menü-Klang – Spielablauf, Trefferflächen, Physik und Level-Format unverändert)
