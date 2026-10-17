@@ -1817,7 +1817,7 @@
       "group": 8,
       "targetX": 23120,
       "targetY": 400,
-      "speed": 4.5,
+      "speed": 7.8,
       "switchLink": 14
     },
     {
@@ -1829,7 +1829,7 @@
       "group": 8,
       "targetX": 23120,
       "targetY": 440,
-      "speed": 4.5,
+      "speed": 7.8,
       "switchLink": 14
     },
     {
@@ -1841,7 +1841,7 @@
       "group": 8,
       "targetX": 23120,
       "targetY": 480,
-      "speed": 4.5,
+      "speed": 7.8,
       "switchLink": 14
     },
     {
@@ -1853,7 +1853,7 @@
       "group": 8,
       "targetX": 23120,
       "targetY": 520,
-      "speed": 4.5,
+      "speed": 7.8,
       "switchLink": 14
     },
     {
@@ -1865,7 +1865,7 @@
       "group": 8,
       "targetX": 23120,
       "targetY": 560,
-      "speed": 4.5,
+      "speed": 7.8,
       "switchLink": 14
     },
     {

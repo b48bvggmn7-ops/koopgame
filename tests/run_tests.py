@@ -8000,6 +8000,11 @@ def _d6_e4(dash):
     weg = [j_lauf(697, [686], dash=dash, ohne=[686])] + pilz + [j_lauf(742, dash=dash, dash_bis=734)] + _sz(kx(745)) + _sz(kx(751)) + _sz(kx(757)) + _sz(kx(764)) + [k_lauf(767)]
     return {'m': [k_lauf(679, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + weg}
 JAGDEN_BOT.append(('dschungel/06-wipfelsturm.json', 'E4 Sturm-Jagd', kat(670, 11), kat(671, 11), [], 'Wand', 14, _d6_e4, 766))
+def _d2_bruecken(dash):
+    pd = kombi_pilz_dash_grube(572, 582)   # am Ende die Pilz-Dash-Grube (Landeplatz hoch oben)
+    lauf = [j_lauf(569, [504, 540], dash=dash, ohne=[504, 540], dash_bis=556)]   # Dash für den Pilz aufheben (muss voll sein)
+    return {'m': [k_lauf(498, -14), {'use': True, 'frames': 2}] + lauf + pd['m'][1:], 'f': [k_lauf(497, -4), {'wait': '!!linkOn[14]'}] + lauf + pd['f'][1:]}
+JAGDEN_BOT.append(('dschungel/02-baumkronen.json', 'Jagd über die Bröckel-Brücken', kat(494, 14), kat(493, 14), [], 'Wand', 14, _d2_bruecken, 582))
 
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
