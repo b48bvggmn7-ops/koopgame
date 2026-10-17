@@ -24,12 +24,6 @@
   "begruendung": "Etappe 3 nur 1 Kombi-Stelle (473): Wechselboden-Feld und Doppel-Gang-Staffel. Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
  },
  {
-  "level": "dschungel/01-dschungel.json",
-  "regel": "Kette",
-  "spalte": 773,
-  "begruendung": "Vom Landeplatz der Kamin-Grube 746 (Reihe 9) erreichen Affe (Haken 779) und Schweinchen (Segeln) den Landeplatz 783 auch ohne Pilz (Bot geprüft) -> Teil der Kette Kamin -> Haken/Segeln -> Pilz -> Haken/Segeln, keine eigene Stelle."
- },
- {
   "level": "dschungel/04-gluehwald.json",
   "regel": "Kette",
   "spalte": 681,
@@ -58,12 +52,6 @@
   "regel": "Kombi-Etappe",
   "spalte": 200,
   "begruendung": "Etappe 2 hat 1 Kombi-Stelle (Hoher Kamin 311). Dornenpfad ist durchgehend mit Rätseln und Verfolgungen belegt (Stachelwand-Jagd 133–198, Inseln im Wechsel 207–235, Seilbahn/Fähre 244–300, Dornendecke 338–398, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht 515–596, Zwei-Gänge-Staffel 604–665, Finale-Jagd 674–760). Probe-Gruben bei 175, 275, 296 und 748 haben Jagden, Seilbahn und Kamin zerstört und wurden zurückgenommen; der Hohe Kamin 311 ist jetzt eine echte Kombi für beide (oben über Stacheln: Wandsprung + Haken / Wandsprung + Segeln). Mehr Kombis nur mit Umbau der Jagden -> „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/06-wipfelsturm.json",
-  "regel": "Kette",
-  "spalte": 409,
-  "begruendung": "Kein echter Kamin: die Lücke zwischen dem Landeplatz der Pilz-Grube 392 (4 Reihen hoch) und der Wand 413 wird als Kamin erkannt; zählt nicht als eigene Kombi-Stelle."
  },
  {
   "level": "dschungel/06-wipfelsturm.json",
@@ -502,12 +490,6 @@
   "regel": "Kombi-Level",
   "spalte": null,
   "begruendung": "nur 12 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 9 Stellen (44, 194, 349, 378, 558, 580, 728, 752, 776); weitere Plätze haben Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
- },
- {
-  "level": "vulkan/04-magmakammer.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 200,
-  "begruendung": "Etappe 200–399: nur 2 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 9 Stellen (44, 194, 349, 378, 558, 580, 728, 752, 776); weitere Plätze haben Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
  },
  {
   "level": "vulkan/05-schlackewerk.json",

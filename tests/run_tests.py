@@ -1137,9 +1137,9 @@ async def level8_gluehwald(g):
          k_lauf(553, -6)] + ueber_haken(kx(566)) + [{'wait': '!!linkOn[13]'}, k_lauf(592), {'until': 'P.grounded', 'frames': 200}, k_lauf(596)]
     f = [k_lauf(508, -14), {'use': True, 'frames': 5}, {'wait': '!!linkOn[10]'}, k_lauf(526, -2)] + sprung_zu(kx(536), 6) + [k_lauf(537, -14), {'use': True, 'frames': 5},
          {'wait': '!!linkOn[12]'}, k_lauf(556, -2)] + sprung_zu(kx(566), 6) + [k_lauf(567, -14), {'use': True, 'frames': 5}, {'wait': f'Q.x >= {kx(590)}'}, k_lauf(596)]
-    r = await koop(g, m=kat(487, 14), f=kat(484, 10), plans={'m': m, 'f': f}, maxFrames=6000)
+    r = await koop(g, m=kat(487, 14), f=kat(484, 5), plans={'m': m, 'f': f}, maxFrames=6000)
     soll(r.get('done'), 'Doppel-Gang-Staffel (Hebel 9–13)', r.get('pos'))
-    r = await koop(g, m=kat(487, 14), f=kat(484, 10), plans={'m': [k_lauf(489), {'wait': f'P.y < {ky(8)}'}, {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
+    r = await koop(g, m=kat(487, 14), f=kat(484, 5), plans={'m': [k_lauf(489), {'wait': f'P.y < {ky(8)}'}, {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
     soll(r['pos']['m'][0] < 512, 'Wand 9 hält den Affen ohne Hebel 9', r.get('pos'))
     # nach einem Tod am Checkpoint (unten im Gang) kommt der Affe durchs blaue Tor 8 wieder hinauf
     r = await koop(g, m=kat(539, 14), f=kat(541, 14), plans={'m': [{'hold': ['left'], 'until': f'P.y < {ky(8)}', 'frames': 300}, {'until': 'P.grounded', 'frames': 200}]}, maxFrames=800)

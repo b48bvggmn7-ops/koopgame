@@ -48,7 +48,7 @@ _KURZ = {('d02', 220), ('d06', 201), ('d06', 403), ('r04', 183), ('r04', 366), (
 _VERSTECKE = {
     'dschungel/04-gluehwald.json': [(181, 15, 'pink'), (344, 15, 'pink'), (535, 8, 'blue')],
     'dschungel/05-dornenpfad.json': [(328, 3, 'pink'), (447, 3, 'pink'), (614, 8, 'pink')],
-    'dschungel/06-wipfelsturm.json': [(201, 12, 'blue'), (403, 12, 'blue'), (627, 8, 'pink')],
+    'dschungel/06-wipfelsturm.json': [(201, 7, 'blue'), (403, 7, 'blue'), (627, 8, 'pink')],
     'ruinen/03-fallengang.json': [(238, 9, 'blue'), (389, 10, 'pink'), (631, 6, 'blue')],
     'ruinen/04-sonnentempel.json': [(183, 10, 'pink'), (366, 10, 'pink'), (599, 10, 'blue')],
     'ruinen/05-felsenflucht.json': [(223, 9, 'pink'), (373, 10, 'blue'), (595, 10, 'pink')],
@@ -64,7 +64,7 @@ _VERSTECKE = {
     'vulkan/05-schlackewerk.json': [(210, 8, 'pink'), (535, 4, 'pink')],
     'vulkan/06-feuerschlund.json': [(373, 5, 'pink'), (515, 10, 'pink')],
     'vulkan/07-kraterherz.json': [(273, 5, 'pink'), (333, 12, 'blue'), (634, 5, 'blue')],
-    'dschungel/02-baumkronen.json': [(220, 10, 'blue'), (410, 15, 'blue'), (616, 15, 'pink')],
+    'dschungel/02-baumkronen.json': [(220, 5, 'blue'), (410, 15, 'blue'), (616, 15, 'pink')],
     'ruinen/01-ruinen.json': [(196, 10, 'blue'), (406, 15, 'pink'), (623, 15, 'pink')],
     'ruinen/02-mondnacht.json': [(118, 15, 'blue'), (243, 6, 'pink'), (368, 9, 'blue')],
 }
