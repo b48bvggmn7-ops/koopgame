@@ -70,7 +70,8 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
   (Haken 73 und 95). Kamin-Grube vor dem Ziel: Landeblock 762–770 -> 769–776, Pilz 769 -> 770 (vor dem Pilz-Dash-Turm).
 - Dschungel 1: Pilz-Grube 233 -> Pilz-Dash-Grube; Pilz-Grube vor dem Ziel -> Pilz-Dash-Turm (Pilz auf dem Block, Sims oben).
 - Dschungel 2: 7 Pilz-Gruben -> Pilz-Dash-Gruben; Jagd über die Bröckel-Brücken 4,5 -> 7,8 (Dash für den Pilz aufheben).
-  Die Hebel-Staffel unter Jagd (Hebel 8–11) bleibt 4,5 – Ablauf noch nicht als Bot-Plan verstanden (offen).
+  Hebel-Staffel unter Jagd (Hebel 8–11): 4,5 -> 6,6 (Bot-Plan `_d2_staffel`: oben Kamin bzw. mit Dash senkrecht über die
+  Wand 331, unten wartet das Schweinchen am Tor – ohne Dash eingeholt).
 - Dschungel 3: 8 Pilz-Stachelgruben -> Pilz-Dash. Dschungel 4: 4 Pilz-Gruben -> Pilz-Dash, die Pilz-Grube 681 entfällt.
 - Dornenpfad: Jagden 4,6/5,0/5,2 -> 5,6/5,8/7,4 (Finale: Hebel 2 Spalten nach vorn, sonst stand man zu nah an der Wand).
 - Wipfelsturm: 3 Pilz-Stachelgruben -> Pilz-Dash; Jagden 4,8/4,4/5,4 -> 8,4/8,0/6,6; Doppel-Jagd = Dash-Kette.

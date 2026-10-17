@@ -8010,6 +8010,17 @@ def _d2_bruecken(dash):
     lauf = [j_lauf(569, [504, 540], dash=dash, ohne=[504, 540], dash_bis=556)]   # Dash für den Pilz aufheben (muss voll sein)
     return {'m': [k_lauf(498, -14), {'use': True, 'frames': 2}] + lauf + pd['m'][1:], 'f': [k_lauf(497, -4), {'wait': '!!linkOn[14]'}] + lauf + pd['f'][1:]}
 JAGDEN_BOT.append(('dschungel/02-baumkronen.json', 'Jagd über die Bröckel-Brücken', kat(494, 14), kat(493, 14), [], 'Wand', 14, _d2_bruecken, 582))
+def _d2_staffel(dash):
+    """Hebel-Staffel unter Jagd (Hebel 8–11): oben (Affe) Hebel 8, Kamin 326–330 über die Wand 331, Hebel 10; unten
+    (Schweinchen, Stachelwand dahinter) Hebel 9, warten am Tor 332, Hebel 11, über den Block 339 hinaus"""
+    hebel = lambda c: [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}, {'use': True, 'frames': 3}]
+    ueber = ([j_lauf(326, dash=False), wb_halt(kx(327)), {'press': ['jump'], 'hold': ['jump'], 'until': '!P.grounded && P.vy > -2', 'frames': 60}, {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3}]
+             if dash else [j_lauf(327, dash=False), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(4)} && P.vy < 0', 'frames': 900}])   # mit Dash über die Wand statt Kamin
+    m = hebel(314) + [{'wait': '!!linkOn[9]', 'frames': 2000}] + ueber + [{'hold': ['right'], 'until': f'P.x > {kx(333)} && P.grounded', 'frames': 300}] + hebel(336) + [{'wait': '!!linkOn[11]', 'frames': 2000}, j_lauf(347, dash=dash)]
+    f = [{'wait': '!!linkOn[8]', 'frames': 2000}, j_lauf(321, dash=dash)] + hebel(322) + [j_lauf(329, [323, 327], dash=dash),
+         {'holdIf': {'right': f'P.x < {kx(330)} - 4', 'left': f'P.x > {kx(330)} + 4'}, 'wait': '!!linkOn[10]', 'frames': 2000}, j_lauf(335, dash=dash)] + hebel(336) + [j_lauf(347, [338], dash=dash)]
+    return {'m': m, 'f': f}
+JAGDEN_BOT.append(('dschungel/02-baumkronen.json', 'Hebel-Staffel unter Jagd', kat(311, 10), kat(316, 14), [], 'Wand', 8, _d2_staffel, 346))
 
 def kombi_kamin_grube(x0, s):
     """Baustein Kamin (linke Säule x0, Breite 4) -> Grube (10) mit Haken -> Landeplatz 6 Reihen hoch; s = Bodenreihe"""
