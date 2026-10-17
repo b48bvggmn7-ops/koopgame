@@ -939,10 +939,17 @@ function partnerTastenAus(P, e){
   if(e.dash) druecken.push('dash');
   return {halten, druecken};
 }
+// Umbau: steht direkt vor ihm eine Durchbruch-Wand (in Laufrichtung, in Körperhöhe), bricht er sie mit einem Dash auf
+function partnerBruchVorn(P, dir){
+  if(!dir) return false;
+  const x0 = dir > 0 ? P.x + P.w/2 : P.x - P.w/2 - PARTNER_BRUCH_NAH, x1 = x0 + PARTNER_BRUCH_NAH;
+  return solids.some(s => s.type === 'bruch' && !s.gone && s.x < x1 && s.x + s.w > x0 && s.y < P.y - 2 && s.y + s.h > P.y - P.h + 2);
+}
 function partnerDenken(P, M){
   if(typeof deathState !== 'undefined' && deathState) return {halten: {}, druecken: []};
   if(partner.modus === 'warten') return partnerTastenAus(P, partnerWarten(P));
   // Aufgaben (31-partner-aufgaben.js) haben Vorrang; sonst folgen
   const e = (typeof partnerAufgabeSchritt === 'function' && partnerAufgabeSchritt(P, M)) || partnerFolgen(P, M);
+  if(e && P.grounded && typeof dashKannStarten === 'function' && dashKannStarten(P) && partnerBruchVorn(P, e.dir)) e.dash = true;
   return partnerTastenAus(P, e);
 }

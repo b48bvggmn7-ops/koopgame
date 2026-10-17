@@ -35,6 +35,15 @@ for _w in 'mf':
     stelle(level='dschungel/03-lianenschlucht.json', name='Durchbruch-Säule 676 (B2)', wer=_w, start=(670, 14), partner=(668, 14),
            plan=nb_bruch_durch(676), ziel=678, ziel_reihe=14, baustein='B2', gegen=_laufen)
 
+# ---------------- Umbau (Regel 6): Pflicht-Durchbruch auf dem Hauptweg in Dschungel 2, 5, 6 ----------------
+for _w in 'mf':
+    stelle(level='dschungel/02-baumkronen.json', name='Durchbruch-Säule 172 (B2, Pflicht)', wer=_w, start=(167, 13), partner=(165, 13),
+           plan=nb_bruch_durch(172), ziel=174, ziel_reihe=13, baustein='B2', gegen=_laufen)
+    stelle(level='dschungel/05-dornenpfad.json', name='Durchbruch-Säule 298 (B2, Pflicht)', wer=_w, start=(293, 15), partner=(291, 15),
+           plan=nb_bruch_durch(298), ziel=300, ziel_reihe=15, baustein='B2', gegen=_laufen)
+    stelle(level='dschungel/06-wipfelsturm.json', name='Durchbruch-Säule 381 (B2, Pflicht)', wer=_w, start=(377, 15), partner=(375, 15),
+           plan=nb_bruch_durch(381), ziel=383, ziel_reihe=15, baustein='B2', gegen=_laufen)
+
 # ---------------- Dschungel 1 (sanfte Probe) ----------------
 for _w in 'mf':
     stelle(level='dschungel/01-dschungel.json', name='Durchbruch-Wand unter dem Münz-Sims 715 (sanfte Probe; oben herum per Lift geht auch)', wer=_w,

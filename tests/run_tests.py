@@ -3646,7 +3646,8 @@ async def dschungel6_wipfelsturm(g):
             soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 766 and r['pos']['f'][0] >= 766, f'E4 Sturm-Jagd mit Dash (Schwein {delay} Schritte später)', info(r))
         r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans=_d6_e4(False), maxFrames=4000)
         soll(r.get('dead'), 'E4 Sturm-Jagd ohne Dash: die Wand holt ein', info(r))
-        r = await koop(g, m=kat(768, 5), f=kat(766, 5), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
+        # Umbau: vor dem Ziel der Dash-Tunnel (zwei Dashes, auf dem Podest warten, bis er wieder voll ist)
+        r = await koop(g, m=kat(764, 5), f=kat(762, 5), plans={'m': dash_kette([768, 781], 797), 'f': [{'frames': 30}] + dash_kette([768, 781], 796)}, maxFrames=3000)
         soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
     assert not fehler, fehler
 
@@ -8226,6 +8227,40 @@ async def jagden_pruefen(g, welt):
         if not r.get('dead'): fehler.append(f"{lv} {name}: ohne Dash NICHT eingeholt {r.get('pos')}")
     assert not fehler, fehler
 
+# ---------------- Umbau: Dash-Ketten (2–3 Dashes kurz hintereinander; auf das Aufladen achten) ----------------
+def dash_kette(kanten, ende, art='warten'):
+    """über Stachelgruben mit Decke: an jeder Kante springen + Dash; art 'warten' = auf dem Podest warten, bis der Dash wieder
+    voll ist; 'ungeduldig' = sofort weiter (Dash noch leer); 'ohne' = ohne Dash"""
+    st = []
+    for k in kanten:
+        if art == 'warten': st.append({'wait': 'dashKannStarten(P)', 'frames': 200})
+        st += [k_lauf(k, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}]
+        if art != 'ohne': st += [{'hold': ['right'], 'frames': 5}, {'press': ['dash'], 'hold': ['right'], 'frames': 2}]
+        st += [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(k + 11)}', 'left': f'P.x > {kx(k + 12)}'}, 'until': 'P.grounded', 'frames': 200}, {'holdIf': {'left': 'P.vx > 0.5'}, 'until': 'Math.abs(P.vx) < 0.5', 'frames': 60}]
+    return st + [k_lauf(ende)]
+# je Kette: (Level, Name, Start Affe, Start Schweinchen, Kanten, Ziel-Spalte)
+DASH_KETTEN_BOT = [
+    ('dschungel/06-wipfelsturm.json', 'Dash-Tunnel vor dem Ziel', kat(763, 5), kat(762, 5), [768, 781], 795),
+]
+async def dash_ketten_pruefen(g, welt):
+    fehler, aktuell = [], None
+    for lv, name, ms, fs, kanten, ende in DASH_KETTEN_BOT:
+        if not lv.startswith(welt + '/'): continue
+        if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        for wer in ('m', 'f'):
+            start = {'m': ms, 'f': fs} if wer == 'm' else {'m': fs, 'f': ms}
+            for art in ('warten', 'ungeduldig', 'ohne'):
+                r = await koop(g, **start, plans={wer: dash_kette(kanten, ende, art)}, maxFrames=3000)
+                ok = bool(r.get('done') and not r.get('dead') and r['pos'][wer][0] >= ende - 0.5)
+                if ok != (art == 'warten'): fehler.append(f"{lv} {name} ({wer}, {art}): {'geschafft' if ok else 'gescheitert'} {r.get('pos')} tot={r.get('dead')}")
+    assert not fehler, fehler
+
+@test
+async def dash_ketten_dschungel(g):
+    """Umbau: Dash-Ketten im Dschungel – mit Dash und Warten aufs Aufladen geschafft; sofort weiter (Dash noch leer) und
+    ohne Dash gescheitert."""
+    await dash_ketten_pruefen(g, 'dschungel')
+
 @test
 async def jagden_dschungel(g):
     """Umbau: Verfolgungen im Dschungel (Stachelwände) – schneller als Laufen, nur mit Dash zu entkommen."""
@@ -9268,13 +9303,16 @@ PARTNER_GEFAHREN = {
     'pfeil': dict(solids=[ground(0, 680, 3000)], traps=[{'x': 1200, 'y': 640, 'art': 'pfeil', 'richtung': 'l', 'takt': 2, 'versatz': 0}]),
     'flamme': dict(solids=[ground(0, 680, 3000), ground(560, 480, 200, 40, 'wall')], traps=[{'x': 640, 'y': 520, 'art': 'flamme', 'richtung': 'u', 'takt': 3, 'versatz': 0}]),
     'presse': dict(solids=[ground(0, 680, 3000)], pressen=[{'x': 640, 'y': 320, 'breite': 2, 'takt': 3, 'versatz': 0, 'schalter': 'immer'}]),
+    # Umbau: Durchbruch-Säule (unten 3 Bruch-Kästchen, darüber Wand bis oben) – er dasht hindurch
+    'durchbruch': dict(solids=[ground(0, 680, 3000), ground(700, -200, 40, 760, 'wall')],
+                       bruchWaende=[{'x': 700, 'y': y, 'w': 40, 'h': 40} for y in (560, 600, 640)]),
 }
 
 @test
 async def partner_gefahren(g):
     """Computer-Partner Teilschritt 2: ich stehe hinter einer Gefahr, der Partner kommt nach, ohne zu sterben – Stacheln,
-    Grube, Lava, Pfeilfalle (Pfeile kommen ihm entgegen), Flammenfalle im Takt, Stachelpresse im Takt; als Affe und als
-    Schweinchen. Er rechnet seine Sprünge vorher mit derselben Physik durch und wartet auf Lücken."""
+    Grube, Lava, Pfeilfalle (Pfeile kommen ihm entgegen), Flammenfalle im Takt, Stachelpresse im Takt, Durchbruch-Säule (Umbau:
+    er dasht hindurch); als Affe und als Schweinchen. Er rechnet seine Sprünge vorher mit derselben Physik durch und wartet auf Lücken."""
     fehler = []
     for name, f in PARTNER_GEFAHREN.items():
         for ich in ('m', 'f'):

@@ -85,6 +85,11 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
   ohne Fähre: vorher Fenster 24, jetzt 7 Schritte (Profi-Trick, bewusst gelassen). Bild-Regel-Ausnahmen begründet.
 - Glühwald 287→306: Schweinchen-Rolle (Schirm) bleibt; Affe nur Fenster 2 (bewusst gelassen).
 
+- Wipfelsturm: Dash-Tunnel vor dem Ziel (Decke 3 Reihen über dem Boden, Stachelgruben 769–778 und 782–791, Podest
+  779–781): zweimal Dash, auf dem Podest warten, bis er wieder voll ist (Test dash_ketten_dschungel: sofort weiter -> tot).
+- Pflicht-Durchbruch (Regel 6) auf dem Hauptweg: Baumkronen 172, Dornenpfad 298, Wipfelsturm 381 (nacht_stellen_dschungel).
+- Computer-Partner: dasht durch Durchbruch-Wände (`partnerBruchVorn`, Konstante PARTNER_BRUCH_NAH), Test partner_gefahren.
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s
@@ -94,4 +99,5 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
   mit Schirm + Dash ohne Fähre -> tot“.
 - KOMBI_STELLEN_BOT Dschungel 1: „Pilz in der Hakengrube (88)“ -> zwei Stellen (73: Haken / Schirm + Dash, 95: Haken + Dash /
   Pilz + Dash); „Kamin-Grube vor dem Ziel“ -> eigener Plan `_d1_kamin_grube`; Pilz-Dash-Turm startet am Pilz 770.
+- dschungel6_wipfelsturm „E4 Ziel“: führt jetzt durch den Dash-Tunnel (dash_kette).
 - partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.
