@@ -3611,7 +3611,7 @@ async def dschungel6_wipfelsturm(g):
                 if r.get('done') and r['pos'][who][0] >= 482: n += 1
             soll(n > 0, f'E3 Takt-Steine 1 s ({who})', (f'{n}/6', info(r)))
         m = [k_lauf(483, -4)] + sprung_zu(kx(487)) + [k_lauf(489, -24), {'frames': 10}, {'wait': '!!linkOn[8]', 'frames': 3000}, {'hold': ['right'], 'until': f'P.x > {kx(511)}', 'frames': 200}, k_lauf(518)]
-        f = [k_lauf(483, -4)] + sprung_zu(kx(486)) + [{'wait': '!!linkOn[7]', 'frames': 1000}, {'frames': 10}, k_lauf(508, -14), {'use': True, 'frames': 2}, {'wait': f'Q.x > {kx(511)}', 'frames': 2000}, k_lauf(519)]
+        f = [k_lauf(483, -4)] + sprung_zu(kx(486)) + [{'wait': '!!linkOn[7]', 'frames': 1000}, {'frames': 10}, k_lauf(510, -14), {'use': True, 'frames': 2}, {'wait': f'Q.x > {kx(511)}', 'frames': 2000}, k_lauf(519)]
         r = await koop(g, m=kat(481, 15), f=kat(480, 15), plans={'m': m, 'f': f}, maxFrames=5000)
         soll(r.get('done') and r['pos']['m'][0] >= 517 and r['pos']['f'][0] >= 518 and r['pos']['m'][1] == 13, 'E3 Wechsel-Schleuse (Platte 7, Hebel 8, Klappe + blaues Tor)', info(r))
         r = await koop(g, m=kat(486, 13), f=kat(485, 13), plans={'m': [k_lauf(491, -10), {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
@@ -8273,7 +8273,7 @@ def _sprung_dash(kante, lande_c0, lande_c1, richtung, schirm):
 async def umbau_rollen_dschungel(g):
     """Umbau Rollen-Stellen Dschungel: Baumkronen fahrender Haken 13 – Schweinchen segelt über den Aufwind (639–640) auf den
     hohen Hebel-Block (647–651, Oberkante Reihe 9) und schaltet den Haken, der Affe fährt hinüber; der Affe schafft es mit
-    Sprung + Dash allein nicht."""
+    Sprung + Dash allein nicht. Wipfelsturm: Turm zu Turm (Baumstamm 186) und Wechsel-Schleuse (Brücke 492–508) nicht allein."""
     fehler = []
     await koop_level(g, 'dschungel/02-baumkronen.json')
     f = [k_lauf(633, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(639)}', 'frames': 200},
@@ -8291,6 +8291,16 @@ async def umbau_rollen_dschungel(g):
         r = await koop(g, m=kat(632, 13), f=kat(626, 14), plans={'m': _sprung_dash(633, 647, 650, richtung, False)}, maxFrames=1500)
         if r.get('done') and not r.get('dead') and r['pos']['m'][1] <= 8.1:
             fehler.append(f'Baumkronen Haken 13: Affe kommt mit Sprung + Dash {richtung} allein hinauf {r.get("pos")}')
+    # Wipfelsturm: Baumstamm 186 – vom Pilz-Turm nicht per Sprung/Schirm + Dash zum zweiten Turm; Wechsel-Schleuse: Grube
+    # 492–508 nur über die Brücke (Platte 7), weder Affe noch Schweinchen kommen allein hinüber
+    await koop_level(g, 'dschungel/06-wipfelsturm.json')
+    for name, start, kante, l0, l1, reihe in (('Turm zu Turm', (181, 6), 183, 200, 203, 6), ('Wechsel-Schleuse ohne Brücke', (488, 13), 491, 509, 513, 13)):
+        for wer in ('m', 'f'):
+            for richtung in (['right'], ['right', 'swimUp'], ['swimUp']):
+                o = 'f' if wer == 'm' else 'm'
+                r = await koop(g, **{wer: kat(*start), o: kat(start[0] - 2, start[1])}, plans={wer: _sprung_dash(kante, l0, l1, richtung, wer == 'f')}, maxFrames=1500)
+                if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= l0 - 0.5 and r['pos'][wer][1] <= reihe + 0.1:
+                    fehler.append(f'Wipfelsturm {name}: {wer} kommt mit Dash {richtung} allein hinüber {r.get("pos")}')
     assert not fehler, fehler
 
 @test

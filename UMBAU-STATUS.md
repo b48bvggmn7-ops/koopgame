@@ -96,6 +96,13 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - Bewusst gelassen (geprüft): D1 Lift 134 (Komfort-Lift, kein Partner nötig), D2 791→807 (hinter dem Ziel),
   D1 68→82 / 206→220 (Affe erreicht nur pinke Münzen bzw. eine Tür, die er selbst nicht öffnen kann).
 
+- Wipfelsturm: Baumstamm 186 (Wand bis oben, unten Durchgang) zwischen Pilz-Turm 180–183 und Turm 200–203 – keine
+  Abkürzung Turm zu Turm mehr (vorher Affe Fenster 8, Schweinchen 24). Wechsel-Schleuse: Grube 492–505 -> 492–508,
+  Brücke (Wechselboden B, Platte 7) entsprechend länger, Hebel 8 bei 510 (vorher Affe allein Fenster 14).
+  Gang-Grube 628–636 bewusst gelassen: oben/unten sind dort gleichwertige Rollen, beide Hebel bleiben nötig.
+- Bewusst gelassen: Wipfelsturm 58→75 (Brücke Platte 2): Schweinchen schafft es mit Schirm + Dash ohne Brücke
+  (Fenster 24) – die Grube müsste dafür 25 breit sein; Hebel 3 bleibt Aufgabe des Schweinchens.
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s

@@ -568,5 +568,11 @@
   "regel": "Kamin",
   "spalte": 298,
   "begruendung": "Kein Kamin: Pflicht-Durchbruch-Säule 298 (Umbau Regel 6) – man dasht unten hindurch; zusammen mit der Wand 311 sieht das Prüfwerkzeug einen 12 breiten „Kamin“, der nicht zum Klettern gedacht ist."
+ },
+ {
+  "level": "dschungel/06-wipfelsturm.json",
+  "regel": "Kamin",
+  "spalte": 183,
+  "begruendung": "Kein Kamin: Baumstamm 186 (Umbau) trennt den Pilz-Turm 180–183 vom zweiten Turm 200–203, damit man nicht mit Sprung + Dash von Turm zu Turm abkürzt; der 2 breite Spalt 184–185 ist nur Durchgang nach unten zum Pilz 190."
  }
 ]
