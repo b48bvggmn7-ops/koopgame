@@ -6,16 +6,17 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 
 ## Messwerte (echte Physik, tests/reichweiten.json)
 - Sprung allein: ~8 Kästchen weit (gleiche Höhe). Sprung + Dash schräg hoch: ~16. Schweinchen Schirm + Dash: ~25.
-- Laufen 4,4 px/Schritt. Mit Dash, sobald er voll ist (10 Schritte à 16 px + 54 Schritte Aufladen): im Schnitt ~6,2.
-- Verfolgungen vorher: Stachelwände 3,6–6,3, Felsen 3,6–5,4 – meist 82–105 % vom Laufen (zu langsam).
+- Laufen: gemessen ~7 px pro Schritt (MOVE_SPEED 4,4 ist nur der Beschleunigungs-Wert). Verfolger fahren ihr Tempo
+  direkt in px/Schritt – vorher 3,6–6,3, also fast alle LANGSAMER als normales Laufen (deshalb keine Spannung).
+- Sprung + Dash nach oben: ~8 Reihen hoch (Sprung ~3,4 + Dash 4). Pilz allein: ~6 Reihen, Pilz + Dash: ~11 Reihen.
 
 ## Regeln für den Umbau
 1. **Hilfs-Stelle** (Haken, Pilz, Aufwind, Kamin, Fahrt): ohne die Hilfe darf man mit Sprung + Schirm + Dash nicht
    ankommen (Dash-Gegenprobe `tests/umbau/dashprobe.py`, Fenster 0). Hilfe + Dash zusammen ist erwünscht (Kombi).
 2. **Rollen-Stelle** (früher nur eine Figur): die andere Figur darf es auch mit Dash nicht schaffen.
 3. **Münzen:** jede Münze ist für ihre Figur erreichbar und man überlebt es (`tests/umbau/muenzen_erreichbar.py`).
-4. **Verfolgungen:** Tempo mindestens 5,2 (schneller als Laufen) – entkommen nur, wenn man den Dash immer wieder
-   einsetzt, sobald er voll ist. Jede Jagd per Bot mit Dash geschafft, ohne Dash eingeholt.
+4. **Verfolgungen:** Tempo je Jagd mit dem Bot gesucht (`tests/umbau/jagd_tempo.py`): ohne Dash eingeholt, mit Dash
+   (auch zweite Figur 10 Schritte später) geschafft. Test `jagden_<welt>` (Liste JAGDEN_BOT).
 5. **Dash-Ketten:** in jeder Welt ab Dschungel 2 Stellen, an denen 2–3 Dashes kurz hintereinander nötig sind.
 6. **Neue Mechaniken auf dem Weg:** Durchbruch und Haftfläche als Pflicht-Stellen, nicht nur optional.
 7. Alte Tests werden an die neuen Wege angepasst (jede Änderung hier unter „Geänderte Tests“). Großer Lauf grün
@@ -50,9 +51,26 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | vulkan/06-feuerschlund | offen | offen | offen | offen | offen | offen | offen |
 | vulkan/07-kraterherz | offen | offen | offen | offen | offen | offen | offen |
 
+## Rezepte
+- **Pilz-Grube -> Pilz-Dash-Grube:** Landeplatz 9 Reihen über der Pilz-Fläche (Sprung+Dash ~8 reicht nicht, Pilz allein ~6
+  nicht, Pilz+Dash ~11 schon). Werkzeug `tests/umbau/pilzgruben.py`, Plan `kombi_pilz_dash_grube` (Dash am höchsten Punkt).
+  Achtung: liegt daneben eine höhere Absprungkante, muss der Landeplatz entsprechend höher (Glühwald 668).
+
 ## Erledigt (Einzelstellen)
+- Dschungel 1: Pilz-Grube 233 -> Pilz-Dash-Grube; Pilz-Grube vor dem Ziel -> Pilz-Dash-Turm (Pilz auf dem Block, Sims oben).
+- Dschungel 2: 7 Pilz-Gruben -> Pilz-Dash-Gruben; Jagd über die Bröckel-Brücken 4,5 -> 7,8 (Dash für den Pilz aufheben).
+  Die Hebel-Staffel unter Jagd (Hebel 8–11) bleibt 4,5 – Ablauf noch nicht als Bot-Plan verstanden (offen).
+- Dschungel 3: 8 Pilz-Stachelgruben -> Pilz-Dash. Dschungel 4: 4 Pilz-Gruben -> Pilz-Dash, die Pilz-Grube 681 entfällt.
+- Dornenpfad: Jagden 4,6/5,0/5,2 -> 5,6/5,8/7,4 (Finale: Hebel 2 Spalten nach vorn, sonst stand man zu nah an der Wand).
+- Wipfelsturm: 3 Pilz-Stachelgruben -> Pilz-Dash; Jagden 4,8/4,4/5,4 -> 8,4/8,0/6,6; Doppel-Jagd = Dash-Kette.
+- Höhle/Vulkan: alle Pilz-Gruben -> Pilz-Dash (je Level per Bot geprüft).
+- Computer-Partner: konnte im Partner-Modus gar nicht dashen (Taste fehlte) – behoben; flieht jetzt mit Dash.
 - Lianenschlucht: 3 pinke Münzen (103/106/110) lagen so, dass das Schweinchen sie nur im Sturz in die Stacheln bekam –
   jetzt auf der Gleit-Bahn von der Brücke (104/5, 108/5, 112/6), per Bot geprüft.
 
 ## Geänderte Tests
-(noch keine)
+- KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
+- dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s
+  gezögert -> eingeholt“ wird jetzt „ohne Dash -> eingeholt“ geprüft.
+- level8_gluehwald: Start des Schweinchens für die Doppel-Gang-Staffel auf den neuen (höheren) Landeplatz.
+- partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.
