@@ -3622,14 +3622,14 @@
       "klasse": "geschick"
     },
     {
-      "x": 30180,
-      "y": 500,
+      "x": 30340,
+      "y": -20,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 30340,
-      "y": 540,
+      "y": 300,
       "color": "blue",
       "klasse": "geschick"
     },
@@ -3654,16 +3654,15 @@
       "color": "blue"
     },
     {
-      "x": 30420,
-      "y": 260,
+      "x": 30580,
+      "y": 60,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 31180,
-      "y": 580,
-      "color": "blue",
-      "klasse": "geschick"
+      "y": -20,
+      "color": "blue"
     },
     {
       "x": 10940,
@@ -3826,8 +3825,8 @@
       "klasse": "geschick"
     },
     {
-      "x": 23140,
-      "y": 180,
+      "x": 23060,
+      "y": 220,
       "color": "pink",
       "klasse": "geschick"
     },

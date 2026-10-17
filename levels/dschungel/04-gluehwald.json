@@ -1603,10 +1603,9 @@
       "color": "blue"
     },
     {
-      "x": 10020,
-      "y": 500,
-      "color": "blue",
-      "klasse": "geschick"
+      "x": 9900,
+      "y": 580,
+      "color": "blue"
     },
     {
       "x": 10220,
@@ -1615,10 +1614,9 @@
       "klasse": "geschick"
     },
     {
-      "x": 10420,
-      "y": 460,
-      "color": "blue",
-      "klasse": "geschick"
+      "x": 10500,
+      "y": 540,
+      "color": "blue"
     },
     {
       "x": 11140,

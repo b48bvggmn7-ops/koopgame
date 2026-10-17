@@ -102,11 +102,12 @@ window.MZ = {
     }
     return {ok: false, vorschlag: best};
   },
-  alle(vorschlag){
+  alle(vorschlag, nur){   // nur = [[c, r], ...]: nur diese Münzen prüfen (schnell, nach dem Verschieben)
     this.vorbereiten();
     const out = [];
     for(let i = 0; i < coins.length; i++){
       const c = coins[i];
+      if(nur && !nur.some(([nc, nr]) => nc === Math.floor(c.x/40) && nr === Math.floor(c.y/40))) continue;
       const wer = c.color === 'blue' ? [true] : c.color === 'pink' ? [false] : [true, false];
       const ergebnisse = wer.map(m => this.pruefen(c, m, vorschlag));
       out.push({i, c: Math.floor(c.x/40), r: Math.floor(c.y/40), farbe: c.color, ergebnisse});

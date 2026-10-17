@@ -1,7 +1,7 @@
 # Umbau aller Level: Münz-Erreichbarkeit (tests/umbau/muenzen_erreichbar.js) je Level prüfen.
 # Ausgabe: Münzen, an die die passende Figur ohne Haken/Pilz/Aufwind/Fahrt nicht sicher herankommt – mit Grund-Hinweis
 # (Haken/Pilz/Aufwind/Fahrt in der Nähe = dort nicht geprüft) und Vorschlag (nächster sicherer Bahnpunkt).
-# Aufruf: python3 tests/umbau/muenzen_erreichbar.py <level-datei> [--json]
+# Aufruf: python3 tests/umbau/muenzen_erreichbar.py <level-datei> [--json] [--nur c,r;c,r]  (--nur: nur diese Münzen)
 import asyncio, json, os, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,7 +29,7 @@ def hilfen(d):
                 for r in range(min(rs) - 6, max(rs) + 4): z.setdefault((c, r), name)
     return z
 
-async def pruefen(datei, vorschlag=True):
+async def pruefen(datei, vorschlag=True, nur=None):
     from playwright.async_api import async_playwright
     import run_tests as rt
     async with async_playwright() as pw:
@@ -40,7 +40,7 @@ async def pruefen(datei, vorschlag=True):
         await p.evaluate("() => { closeMenu(); stepSim = () => {}; }")
         await p.evaluate("() => {" + (ROOT / 'tests' / 'stelle_pruefen.js').read_text(encoding='utf-8') + "}")
         await p.evaluate("() => {" + (ROOT / 'tests' / 'umbau' / 'muenzen_erreichbar.js').read_text(encoding='utf-8') + "}")
-        res = await p.evaluate("v => MZ.alle(v)", vorschlag)
+        res = await p.evaluate("([v, n]) => MZ.alle(v, n)", [vorschlag, nur])
         await b.close()
     hz = hilfen(B.lade(datei))
     out = []
@@ -53,7 +53,8 @@ async def pruefen(datei, vorschlag=True):
 
 if __name__ == '__main__':
     datei = sys.argv[1]
-    res = asyncio.run(pruefen(datei))
+    nur = [list(map(int, x.split(','))) for x in sys.argv[sys.argv.index('--nur') + 1].split(';')] if '--nur' in sys.argv else None
+    res = asyncio.run(pruefen(datei, nur=nur))
     if '--json' in sys.argv: print(json.dumps(res, ensure_ascii=False))
     else:
         for e in res:

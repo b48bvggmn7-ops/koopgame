@@ -108,6 +108,11 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - Bewusst gelassen: Lianenschlucht 626/650 (oben/unten-Staffel: der Affe oben blockiert sich selbst, das Schweinchen
   kann unten keine Haken) und 172→190 (Affe Fenster 3).
 
+- Münzen Dschungel 1: 6 Münzen auf die neuen Bahnen gelegt (Kamin-Grube: pink 758/-1, 764/1 auf der Schirm-Bahn, blau
+  758/7 am Haken-Schwung; 779/-1 auf dem Turm, 576/5 Dornengrube) – per Bot eingesammelt. Glühwald: 2 blaue Münzen über
+  der Grube 247–261 an den Rand (247/14, 262/13). Baumkronen 269–274: Werkzeug irrt (fahrender Haken / Segeln sammelt
+  alle pinken ein, per Bot geprüft). `muenzen_erreichbar.py --nur c,r;c,r` prüft einzelne Münzen.
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s
