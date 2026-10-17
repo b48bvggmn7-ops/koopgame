@@ -8036,12 +8036,13 @@ def kombi_kamin_grube(x0, s):
             'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(rw + 1)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}],
             'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
 
-def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True):
+def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=20):
     """Kompakter Kamin (linke Säule x0, Breite 3) -> Stachelgrube (9) mit Haken -> Landeplatz 6 Reihen hoch; über der Grube
-    eine Flamme im Takt (Timing: losklettern 20 Schritte nach dem Zünden). s = Bodenreihe."""
+    eine Flamme im Takt (Timing: losklettern 20 Schritte nach dem Zünden). s = Bodenreihe. hoch = Umbau: rechte Wand und
+    Landeplatz so viele Reihen höher (tests/umbau/kamine_heben.py), damit Sprung + Dash hoch den Kamin nicht überspringt."""
     rw = x0 + breite + 1; l0 = rw + 1 + grube; fx = (rw + 4) * 40
-    warte = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': 20}] if flamme else []
-    kamin = [k_lauf(x0 + 2, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(s - 8)} && P.vy < 0 && P.vx > 1', 'frames': 900}]
+    warte = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': versatz}] if flamme else []
+    kamin = [k_lauf(x0 + 2, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(s - 8 - hoch)} && P.vy < 0 && P.vx > 1', 'frames': 900}]
     lande = {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'until': 'P.grounded', 'frames': 300}
     return {'m': warte + kamin + [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
                                   {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
@@ -8120,25 +8121,25 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (170)', kat(165, 15), kat(164, 15), lambda: kombi_pilz_dash_grube(170, 180), {'m': (180, 6), 'f': (180, 6)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(190, 200), {'m': (200, 6), 'f': (200, 6)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (392)', kat(387, 15), kat(386, 15), lambda: kombi_pilz_dash_grube(392, 402), {'m': (402, 6), 'f': (402, 6)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16), {'m': (182, 9), 'f': (182, 9)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (303)', kat(301, 15), kat(300, 15), lambda: kombi_flammen_kamin(303, 16), {'m': (317, 9), 'f': (317, 9)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16), {'m': (598, 9), 'f': (598, 9)}),
-    ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15), {'m': (536, 8), 'f': (536, 8)}),
-    ('ruinen/02-mondnacht.json', 'Flammen-Kamin (89)', kat(87, 14), kat(86, 14), lambda: kombi_flammen_kamin(89, 15), {'m': (103, 8), 'f': (103, 8)}),
-    ('ruinen/03-fallengang.json', 'Flammen-Kamin (579)', kat(577, 15), kat(576, 15), lambda: kombi_flammen_kamin(579, 16), {'m': (593, 9), 'f': (593, 9)}),
-    ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16), {'m': (594, 9), 'f': (594, 9)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3), {'m': (182, 6), 'f': (182, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (303)', kat(301, 15), kat(300, 15), lambda: kombi_flammen_kamin(303, 16, hoch=3), {'m': (317, 6), 'f': (317, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3), {'m': (598, 6), 'f': (598, 6)}),
+    ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3), {'m': (536, 5), 'f': (536, 5)}),
+    ('ruinen/02-mondnacht.json', 'Flammen-Kamin (89)', kat(87, 14), kat(86, 14), lambda: kombi_flammen_kamin(89, 15, hoch=3), {'m': (103, 5), 'f': (103, 5)}),
+    ('ruinen/03-fallengang.json', 'Flammen-Kamin (579)', kat(577, 15), kat(576, 15), lambda: kombi_flammen_kamin(579, 16, hoch=3), {'m': (593, 6), 'f': (593, 6)}),
+    ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, hoch=3), {'m': (594, 6), 'f': (594, 6)}),
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (273)', kat(271, 14), kat(270, 14), lambda: kombi_pilz_dash_grube(273, 281), {'m': (281, 5), 'f': (281, 5)}),
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (359)', kat(357, 14), kat(356, 14), lambda: kombi_pilz_dash_grube(359, 367), {'m': (367, 5), 'f': (367, 5)}),
     ('hoehle/02-tropfsteingang.json', 'Pilz-Dash-Grube (266)', kat(264, 15), kat(263, 15), lambda: kombi_pilz_dash_grube(266, 274), {'m': (274, 6), 'f': (274, 6)}),
     ('hoehle/02-tropfsteingang.json', 'Pilz-Dash-Grube (445)', kat(443, 15), kat(442, 15), lambda: kombi_pilz_dash_grube(445, 453), {'m': (453, 6), 'f': (453, 6)}),
     ('vulkan/01-glutpfad.json', 'Lava-Pilz-Dash-Grube (185)', kat(183, 15), kat(182, 15), lambda: kombi_pilz_dash_grube(185, 193), {'m': (193, 6), 'f': (193, 6)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False), {'m': (360, 9), 'f': (360, 9)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (370)', kat(368, 15), kat(367, 15), lambda: kombi_flammen_kamin(370, 16, flamme=False), {'m': (384, 9), 'f': (384, 9)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False), {'m': (560, 9), 'f': (560, 9)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False), {'m': (584, 9), 'f': (584, 9)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False), {'m': (782, 9), 'f': (782, 9)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False, hoch=3), {'m': (360, 6), 'f': (360, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (370)', kat(368, 15), kat(367, 15), lambda: kombi_flammen_kamin(370, 16, flamme=False, hoch=3), {'m': (384, 6), 'f': (384, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False, hoch=3), {'m': (560, 6), 'f': (560, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False, hoch=3), {'m': (584, 6), 'f': (584, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False, hoch=3), {'m': (782, 6), 'f': (782, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Pilz-Dash-Grube (188)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(188, 196), {'m': (196, 6), 'f': (196, 6)}),
-    ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False), {'m': (366, 9), 'f': (366, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False, hoch=3), {'m': (366, 6), 'f': (366, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Kamin (376)', kat(374, 15), kat(373, 15), lambda: kombi_flammen_kamin(376, 16, flamme=False), {'m': (390, 9), 'f': (390, 9)}),
     ('vulkan/02-aschefeld.json', 'Lava-Kamin (766)', kat(764, 15), kat(763, 15), lambda: kombi_flammen_kamin(766, 16, flamme=False), {'m': (780, 9), 'f': (780, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (44)', kat(42, 15), kat(41, 15), lambda: kombi_pilz_dash_grube(44, 52), {'m': (52, 6), 'f': (52, 6)}),
@@ -8156,11 +8157,11 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/06-feuerschlund.json', 'Lava-Kamin (560)', kat(558, 15), kat(557, 15), lambda: kombi_flammen_kamin(560, 16, flamme=False), {'m': (574, 9), 'f': (574, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Kamin (182)', kat(180, 15), kat(179, 15), lambda: kombi_flammen_kamin(182, 16, flamme=False), {'m': (196, 9), 'f': (196, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Pilz-Dash-Grube (324)', kat(322, 15), kat(321, 15), lambda: kombi_pilz_dash_grube(324, 332), {'m': (332, 6), 'f': (332, 6)}),
-    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False), {'m': (194, 9), 'f': (194, 9)}),
-    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False), {'m': (582, 9), 'f': (582, 9)}),
-    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False), {'m': (774, 9), 'f': (774, 9)}),
-    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (366)', kat(364, 15), kat(363, 15), lambda: kombi_flammen_kamin(366, 16, flamme=False), {'m': (380, 9), 'f': (380, 9)}),
-    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False), {'m': (560, 9), 'f': (560, 9)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False, hoch=3), {'m': (194, 6), 'f': (194, 6)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False, hoch=3), {'m': (582, 6), 'f': (582, 6)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False, hoch=3), {'m': (774, 6), 'f': (774, 6)}),
+    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (366)', kat(364, 15), kat(363, 15), lambda: kombi_flammen_kamin(366, 16, flamme=False, hoch=3), {'m': (380, 6), 'f': (380, 6)}),
+    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False, hoch=3), {'m': (560, 6), 'f': (560, 6)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False), {'m': (584, 9), 'f': (584, 9)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (772)', kat(770, 15), kat(769, 15), lambda: kombi_flammen_kamin(772, 16, flamme=False), {'m': (786, 9), 'f': (786, 9)}),
     ('hoehle/06-tiefenschlund.json', 'Pilz-Dash-Grube (572)', kat(570, 15), kat(569, 15), lambda: kombi_pilz_dash_grube(572, 580), {'m': (580, 6), 'f': (580, 6)}),

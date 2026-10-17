@@ -2729,20 +2729,21 @@
     },
     {
       "x": 10260,
-      "y": 500,
+      "y": 380,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 10380,
-      "y": 540,
+      "y": 420,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 10500,
-      "y": 580,
-      "color": "pink"
+      "y": 500,
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 10620,
@@ -2960,31 +2961,31 @@
     },
     {
       "x": 19500,
-      "y": 220,
+      "y": 60,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 19660,
-      "y": 260,
+      "y": 100,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 19780,
-      "y": 300,
+      "y": 140,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 19900,
-      "y": 340,
+      "y": 220,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 20060,
-      "y": 380,
+      "y": 300,
       "color": "pink",
       "klasse": "geschick"
     },

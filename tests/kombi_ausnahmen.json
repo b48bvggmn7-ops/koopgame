@@ -574,5 +574,11 @@
   "regel": "Kamin",
   "spalte": 183,
   "begruendung": "Kein Kamin: Baumstamm 186 (Umbau) trennt den Pilz-Turm 180–183 vom zweiten Turm 200–203, damit man nicht mit Sprung + Dash von Turm zu Turm abkürzt; der 2 breite Spalt 184–185 ist nur Durchgang nach unten zum Pilz 190."
+ },
+ {
+  "level": "vulkan/04-magmakammer.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Umbau: Etappe 2 hat 2 eigene Kombi-Stellen (Kamine 349/378 als Lava-Kamine). Die dritte war ein versehentlich begrabenes Münz-Versteck (Durchbruch 203 im Pilz-Dash-Landeplatz), das das Prüfwerkzeug als Kombi zählte; es liegt jetzt wieder oben auf dem Landeplatz (optional, keine Kombi)."
  }
 ]

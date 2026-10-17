@@ -61,6 +61,10 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - **Kamin-Grube -> Kamin + breite Grube:** Landeplatz >= 17 Spalten hinter der Kaminkante, Haken dazwischen.
 - Achtung Bot-Tests: die zweite Figur muss in der Nähe stehen (sonst hält der Bildrand die erste Figur fest).
 
+- **Flammen-/Kamin-/Lava-Kamin-Gruben** (Baustein kombi_flammen_kamin): beide Kaminwände, Landeplatz (samt Versteck,
+  Haft-Arm, Münzen), Haken und Flamme über der Grube 3 Reihen höher (`tests/umbau/kamine_heben.py`). Danach reicht
+  Sprung + Dash hoch + Schirm nicht mehr, um den Kamin zu überspringen. Plan: `kombi_flammen_kamin(..., hoch=3)`.
+
 ## Prüfwerkzeug-Korrektur
 - Dash-Gegenprobe und stelle_pruefen kannten beim Schweinchen nur „Schirm ab Absprung“. Weiter kommt man mit
   „Sprung, Dash, DANN Schirm“ (Variante `'nach'`). Alle Gegenproben werden damit neu gerechnet.
@@ -113,6 +117,12 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
   der Grube 247–261 an den Rand (247/14, 262/13). Baumkronen 269–274: Werkzeug irrt (fahrender Haken / Segeln sammelt
   alle pinken ein, per Bot geprüft). `muenzen_erreichbar.py --nur c,r;c,r` prüft einzelne Münzen.
 
+- Kamine angehoben (Dash-Gegenprobe vorher Schweinchen Fenster 7): Ruinen 1 (522), Sonnentempel (168/303/584),
+  Mondnacht (89), Fallengang (579), Felsenflucht (580), Leuchtgrotte (180/568/760), Förderwerk (366/546), Glutpfad
+  (346/370/546/570/768), Aschefeld (352).
+- Vulkan 4/7: zwei Münz-Verstecke lagen seit dem Pilz-Dash-Umbau begraben – wieder an die Oberkante (203/7, 333/7).
+- Münzen Lianenschlucht (487–501, 256–262) und Wipfelsturm (780) auf die echten Bahnen gelegt (per Bot eingesammelt).
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s
@@ -125,4 +135,6 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - dschungel6_wipfelsturm „E4 Ziel“: führt jetzt durch den Dash-Tunnel (dash_kette).
 - level7_lianenschlucht „letzte Schlucht“: Landung ab 732, Affe drei Haken, Schweinchen auch mit Dash + Schirm.
 - KOMBI_ABKUERZUNG: neue Turmhöhen (Reihe -1 bzw. 6) und zusätzlich Dash-Varianten (m_dash/f_dash) – keine Abkürzung.
+- KOMBI_STELLEN_BOT: Flammen-/Kamin-/Lava-Kamine mit hoch=3 und Ziel-Reihe 3 höher; Verstecke/Haft-Arme in
+  tests/bausteine/stellen.py an die neuen Höhen.
 - partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.
