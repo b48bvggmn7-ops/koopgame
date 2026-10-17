@@ -8166,11 +8166,24 @@ def _r6_e4(dash):
     segeln = [k_lauf(662, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(672)} - 6', 'left': f'P.x > {kx(672)} + 6'}, 'until': 'P.grounded', 'frames': 600}]
     return {'m': _hebel(651) + _haken_sprung(661) + rest(744), 'f': [{'wait': '!!linkOn[20]', 'frames': 2000}] + segeln + rest(745)}
 JAGDEN_BOT.append(('ruinen/06-tempelherz.json', 'Fels: letzte Felsflucht (Hebel 20)', kat(647, 15), kat(653, 15), [], 'Fels', 20, _r6_e4, 743))
+def _v3_wand(dash):
+    """Feuerberg, Stachelwand (Hebel 2 bei 70 startet sie und öffnet das Tor 75): Pilz 77 über die Säule 80, über die Bröckel-
+    Brücken 90–98 von Stein zu Stein (94, 99), Pilz 103 über die Säule 106, Sprung auf die Pilz-Insel 117 über beide Gruben"""
+    def pilz(c, ziel):   # 4 Spalten davor kurz hüpfen, auf den Pilz lenken, nach dem Hochschleudern erst über der Säule zum Ziel
+        return [k_lauf(c - 4, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 3},
+                {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': 'P.vy < -15', 'frames': 80},
+                {'until': f'P.y < {ky(9)}', 'frames': 80}, {'holdIf': {'right': f'P.x < {kx(ziel)} - 6', 'left': f'P.x > {kx(ziel)} + 6'}, 'until': 'P.grounded', 'frames': 200}]
+    weg = lambda w: pilz(77, 86) + [j_lauf(88, dash=dash, dash_bis=84)] + _zu(94, 8) + _zu(99, 8) + pilz(103, 109) + [j_lauf(110, dash=dash, dash_bis=107), k_lauf(111, -8),
+          {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'] + (['glide'] if w == 'f' else []), 'until': f'P.x > {kx(116)}', 'frames': 300},
+          {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, j_lauf(136, dash=dash)]   # Schweinchen segelt zur Pilz-Insel
+    return {'m': _hebel(70) + weg('m'), 'f': [{'wait': '!!linkOn[2]', 'frames': 2000}] + weg('f')}
+JAGDEN_BOT.append(('vulkan/03-feuerberg.json', 'Stachelwand (Hebel 2)', kat(68, 14), kat(67, 14), [], 'Wand', 2, _v3_wand, 135))
 # Verfolgungen, bei denen nur „mit Dash geschafft“ geprüft wird: Timing-Stellen (man MUSS an Pfeilen/Flammen/Takt-Steinen
 # warten – das Tempo ist so hoch, wie das Warten erlaubt) und Felsen, die in einer Grube enden (sie schieben nur an)
 JAGDEN_TAKT = {'Fels: Pfeil-Flucht (Hebel 4)', 'Fels: Flammen-Welle (Hebel 7)', 'Fels: Takt-Steine (Hebel 9)',
                'Fels: Wechsel-Schleuse (Hebel 10)', 'Fels: Finale (Hebel 11)',
                'Fels: unter dem Pfeilregen (Hebel 1)', 'Fels: Takt-Steine (Hebel 7)', 'Fels: Flammen-Welle (Hebel 11)',
+               'Stachelwand (Hebel 2)',   # Feuerberg: Pilz-Strecke, mit Dash schafft der Bot höchstens 4,5 (Tempo unverändert)
                'Fels: Wechsel-Flucht (Hebel 12)', 'Fels: Fels und Licht-Tor (Hebel 16)', 'Fels: letzte Felsflucht (Hebel 20)'}
 
 def kombi_kamin_grube(x0, s):
@@ -8469,6 +8482,11 @@ async def jagden_dschungel(g):
 async def jagden_ruinen(g):
     """Umbau: Verfolgungen in den Ruinen (Stachelwände, rollende Felsen) – schneller als Laufen, nur mit Dash zu entkommen."""
     await jagden_pruefen(g, 'ruinen')
+
+@test
+async def jagden_vulkan(g):
+    """Umbau: Verfolgungen im Vulkan (Feuerberg-Stachelwand über Pilze und Bröckel-Brücken) – mit Dash geschafft."""
+    await jagden_pruefen(g, 'vulkan')
 
 @test
 async def kombi_stellen_dschungel(g):
