@@ -22,7 +22,7 @@ window.DASHPROBE = {
       const l = [];
       if(i < j + t + 2 || haltVor) l.push('right');
       if(i >= j && i < j + 12) l.push('jump');
-      if(segeln && i >= j + 6) l.push('glide');
+      if(segeln && i >= (segeln === 'nach' ? j + t + 2 : j + 6)) l.push('glide');   // 'nach' = Schirm erst nach dem Dash auf (weiter!)
       if(dashDir && i >= j + t && i < j + t + 2){
         l.push('dash');
         if(dashDir.includes('hoch')) l.push('swimUp');
@@ -44,7 +44,7 @@ window.DASHPROBE = {
   pruefen(o){
     this.vorbereiten(o.links);
     const dashs = [null, 'vor', 'vor+hoch', 'hoch', 'vor+runter'];
-    const segelns = o.wer === 'f' ? [false, true] : [false];
+    const segelns = o.wer === 'f' ? [false, true, 'nach'] : [false];
     const jmax = o.jmax || 90;
     const reihe = (von, bis, sch) => { const a = []; for(let x = von; x <= bis; x += sch) a.push(x); return a; };
     const grob = [];

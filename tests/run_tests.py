@@ -8030,20 +8030,26 @@ def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True):
             'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
 
 # je Stelle: (Level, Name, Start Affe, Start Schweinchen, Pläne {wer: Plan}, Pläne ohne Kombi {wer: Plan} -> müssen scheitern)
-def _d1_haken_pilz():
-    greif = lambda bed='true': {'hold': ['right'], 'hookWhen': f'({bed})', 'until': 'P.hookAttached', 'frames': 300}
-    m = [k_lauf(68, 14), {'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 200},
-         {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, {'holdIf': {'right': 'P.x < 77*40'}, 'until': 'P.grounded', 'frames': 200},
-         wb_halt(kx(76)), {'hold': ['right'], 'until': f'P.x >= {kx(78)} + 8', 'frames': 100},
-         {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -6 && P.x > 79*40', 'until': 'P.hookAttached', 'frames': 120},
-         {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400},
-         {'holdIf': {'right': 'P.x < 89*40-4', 'left': 'P.x > 89*40+4'}, 'until': 'P.vy < -10', 'frames': 300},
-         greif('P.x > 91*40 && P.vy > -3'), {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
-    f = [k_lauf(68, 14), {'hold': ['glide'], 'holdIf': {'right': 'P.x < 77*40'}, 'until': 'P.grounded', 'frames': 400},
-         wb_halt(kx(76)), {'hold': ['right'], 'until': f'P.x >= {kx(78)} + 8', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
-         {'hold': ['glide'], 'holdIf': {'right': 'P.x < 89*40-4', 'left': 'P.x > 89*40+4'}, 'until': 'P.vy < -10 || P.grounded', 'frames': 400},
-         {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
-    return {'m': m, 'f': f}
+def _d1_haken_grube():
+    """Umbau: breite Grube 65–83 mit Haken (73) bis zur Pilz-Insel 84–86. Affe: Haken, Schweinchen: Schirm + Dash
+    (Schirm erst nach dem Dash auf). Sprung + Dash allein reicht nicht (Dash-Gegenprobe)."""
+    insel = {'holdIf': {'right': f'P.x < {kx(84)}', 'left': f'P.x > {kx(86)}'}, 'until': 'P.grounded', 'frames': 300}
+    m = [k_lauf(64, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': f'P.x > {kx(67)}', 'until': 'P.hookAttached', 'frames': 120},
+         {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400}, insel]
+    f = [k_lauf(64, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3}, dict(insel, hold=['glide'])]
+    return {'m': m, 'f': f, 'm_ohne': [k_lauf(64, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 300}],
+            'f_ohne': [k_lauf(64, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, dict(insel, hold=['glide'])]}
+def _d1_pilz_insel():
+    """Umbau: von der Pilz-Insel (Pilz 85) über die Grube 87–104 zum Checkpoint 105. Affe: Haken (95) + Dash am höchsten
+    Punkt, Schweinchen: Pilz + Dash + Schirm. Haken allein reicht knapp nicht."""
+    scheitel = {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100}
+    haken = [k_lauf(86, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': f'P.x > {kx(88)}', 'until': 'P.hookAttached', 'frames': 120},
+             {'swing': True, 'release': 'P.x > P.anchor.x + 60 && P.vy < -1', 'frames': 400}]
+    pilz = [wb_halt(kx(84)), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(85)} - 4', 'left': f'P.x > {kx(85)} + 4'}, 'until': 'P.vy < -14', 'frames': 100}]
+    lande = {'holdIf': {'right': f'P.x < {kx(105)}', 'left': f'P.x > {kx(107)}'}, 'until': 'P.grounded', 'frames': 300}
+    return {'m': haken + [scheitel, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, lande],
+            'f': pilz + [scheitel, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, dict(lande, hold=['glide'], frames=400)],
+            'm_ohne': haken + [lande], 'f_ohne': pilz + [dict(lande, hold=['glide'], frames=400)]}
 def _d1_kamin_haken():
     kamin = [k_lauf(410, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(-2)} && P.vy < 0', 'frames': 900}]
     return {'m': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(413)} + 6', 'frames': 100},
@@ -8053,12 +8059,25 @@ def _d1_kamin_haken():
             'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(413)} + 6', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
                           {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(427)}', 'left': f'P.x > {kx(429)}'}, 'until': 'P.grounded', 'frames': 400}],
             'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.grounded && f > 5', 'frames': 300}]}
+def _d1_kamin_grube():
+    """Umbau: Kamin (746–751) -> Grube 752–768 (17 breit) mit Haken 757 -> Landeblock 769–776 (Pilz 770). Affe: Haken + Dash am
+    höchsten Punkt, Schweinchen: Schirm + Dash. Sprung + Dash von der Kaminkante reicht nicht."""
+    kamin = [k_lauf(748, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(7)} && P.vy < 0', 'frames': 900}]
+    scheitel = {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100}
+    lande = {'holdIf': {'right': f'P.x < {kx(771)}', 'left': f'P.x > {kx(774)}'}, 'until': 'P.grounded', 'frames': 400}
+    haken = [{'hold': ['right'], 'hookWhen': f'P.vy > -3 && P.x > {kx(752)}', 'until': 'P.hookAttached', 'frames': 120},
+             {'swing': True, 'release': 'P.x > P.anchor.x + 60 && P.vy < -1', 'frames': 400}]
+    return {'m': kamin + haken + [scheitel, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, lande],
+            'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(752)}', 'frames': 100}, scheitel, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3},
+                          dict(lande, hold=['glide'])],
+            'm_ohne': kamin + haken + [lande], 'f_ohne': kamin + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]}
 KOMBI_STELLEN_BOT = [
-    ('dschungel/01-dschungel.json', 'Pilz in der Hakengrube (88)', kat(66, 3), kat(64, 3), _d1_haken_pilz, {'m': (102, 15), 'f': (102, 15)}),
+    ('dschungel/01-dschungel.json', 'Haken / Schirm + Dash über die breite Grube (73)', kat(62, 16), kat(61, 16), _d1_haken_grube, {'m': (84, 16), 'f': (84, 16)}),
+    ('dschungel/01-dschungel.json', 'Haken + Dash / Pilz + Dash von der Pilz-Insel (95)', kat(86, 16), kat(84, 16), _d1_pilz_insel, {'m': (105, 15), 'f': (105, 15)}),
     ('dschungel/01-dschungel.json', 'Pilz-Dash-Grube auf dem Sims (233)', kat(229, 11), kat(228, 11), lambda: kombi_pilz_dash_grube(233, 243), {'m': (243, 2), 'f': (243, 2)}),
     ('dschungel/01-dschungel.json', 'Kamin -> Haken/Segeln (408)', kat(410, 16), kat(411, 16), _d1_kamin_haken, {'m': (426, 7), 'f': (426, 7)}),
-    ('dschungel/01-dschungel.json', 'Kamin-Grube vor dem Ziel (746)', kat(742, 14), kat(741, 14), lambda: kombi_kamin_grube(746, 15), {'m': (762, 8), 'f': (762, 8)}),
-    ('dschungel/01-dschungel.json', 'Pilz-Dash-Turm vor dem Ziel (769)', kat(764, 8), kat(763, 8), lambda: kombi_pilz_dash_grube(769, 777), {'m': (777, -1), 'f': (777, -1)}),
+    ('dschungel/01-dschungel.json', 'Kamin + Haken/Schirm + Dash vor dem Ziel (746)', kat(742, 14), kat(741, 14), _d1_kamin_grube, {'m': (769, 8), 'f': (769, 8)}),
+    ('dschungel/01-dschungel.json', 'Pilz-Dash-Turm vor dem Ziel (770)', kat(769, 8), kat(772, 8), lambda: kombi_pilz_dash_grube(770, 777), {'m': (777, -1), 'f': (777, -1)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube am Start (23)', kat(21, 14), kat(20, 14), lambda: kombi_pilz_dash_grube(23, 33), {'m': (33, 5), 'f': (33, 5)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (209)', kat(204, 13), kat(203, 13), lambda: kombi_pilz_dash_grube(209, 219), {'m': (219, 4), 'f': (219, 4)}),
     ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (386)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_dash_grube(386, 396), {'m': (396, 5), 'f': (396, 5)}),

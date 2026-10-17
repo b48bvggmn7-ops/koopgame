@@ -56,7 +56,18 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
   nicht, Pilz+Dash ~11 schon). Werkzeug `tests/umbau/pilzgruben.py`, Plan `kombi_pilz_dash_grube` (Dash am höchsten Punkt).
   Achtung: liegt daneben eine höhere Absprungkante, muss der Landeplatz entsprechend höher (Glühwald 668).
 
+- **Breite Haken-Grube:** Grube >= 17 breit (Sprung + Dash ~16), Haken etwa in der Mitte. Affe: Haken (bei kurzem
+  Anlauf Haken + Dash am höchsten Punkt), Schweinchen: Schirm + Dash (Schirm ERST NACH dem Dash öffnen – sonst kürzer).
+- **Kamin-Grube -> Kamin + breite Grube:** Landeplatz >= 17 Spalten hinter der Kaminkante, Haken dazwischen.
+- Achtung Bot-Tests: die zweite Figur muss in der Nähe stehen (sonst hält der Bildrand die erste Figur fest).
+
+## Prüfwerkzeug-Korrektur
+- Dash-Gegenprobe und stelle_pruefen kannten beim Schweinchen nur „Schirm ab Absprung“. Weiter kommt man mit
+  „Sprung, Dash, DANN Schirm“ (Variante `'nach'`). Alle Gegenproben werden damit neu gerechnet.
+
 ## Erledigt (Einzelstellen)
+- Dschungel 1: Haken-Gruben am Anfang (Inseln 76–78/88–89) -> zwei breite Gruben 65–83 und 87–104 mit Pilz-Insel 84–86
+  (Haken 73 und 95). Kamin-Grube vor dem Ziel: Landeblock 762–770 -> 769–776, Pilz 769 -> 770 (vor dem Pilz-Dash-Turm).
 - Dschungel 1: Pilz-Grube 233 -> Pilz-Dash-Grube; Pilz-Grube vor dem Ziel -> Pilz-Dash-Turm (Pilz auf dem Block, Sims oben).
 - Dschungel 2: 7 Pilz-Gruben -> Pilz-Dash-Gruben; Jagd über die Bröckel-Brücken 4,5 -> 7,8 (Dash für den Pilz aufheben).
   Die Hebel-Staffel unter Jagd (Hebel 8–11) bleibt 4,5 – Ablauf noch nicht als Bot-Plan verstanden (offen).

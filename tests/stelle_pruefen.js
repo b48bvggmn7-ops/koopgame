@@ -44,7 +44,7 @@ window.STELLE = {
     for(let i = 0; i < (o.schritte || 260); i++){
       const l = [lauf];
       if(i >= j && i < j + 12) l.push('jump');
-      if(segeln && i >= j + 6) l.push('glide');
+      if(segeln && i >= (segeln === 'nach' ? j + t + 2 : j + 6)) l.push('glide');   // 'nach' = Schirm erst nach dem Dash auf (weiter!)
       if(dashDir && i >= j + t && i < j + t + 2){
         l.push('dash');
         if(dashDir.includes('hoch')) l.push('swimUp');
@@ -80,7 +80,7 @@ window.STELLE = {
   pruefen(o){
     this.vorbereiten(o.links);
     const dashs = o.mittel === 'neu' ? [null, 'vor', 'vor+hoch', 'hoch', 'vor+runter'] : [null];
-    const segelns = o.wer === 'f' ? [false, true] : [false];
+    const segelns = o.wer === 'f' ? [false, true, 'nach'] : [false];
     const anlauf = o.anlauf || [0, 3, 6];
     const jmax = o.jmax || 30;
     const reihe = (von, bis, sch) => { const a = []; for(let x = von; x <= bis; x += sch) a.push(x); return a; };
