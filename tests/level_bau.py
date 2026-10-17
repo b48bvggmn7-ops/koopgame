@@ -403,3 +403,22 @@ def s4_bruchnische(lv, w, g, muenze=None, richtung=1):
     if muenze:
         lv.muenze_verschieben(muenze[0], muenze[1], w + R, g - 1); lv.muenze_klasse(w + R, g - 1, 'geschick')
     return lv
+
+# ---------------- Umbau aller Level (nach dem Nacht-Ausbau) ----------------
+def oberkante(lv, c, ab=-3, bis=17):
+    """oberste feste Reihe (ground/wall/haft) in Spalte c zwischen ab und bis, sonst None"""
+    for r in range(ab, bis + 1):
+        if lv.typ(c, r) in ('ground', 'wall', 'haft'): return r
+    return None
+
+def landung_heben(lv, c0, c1, neue_oben, typ='ground', unter=None):
+    """Landeplatz in den Spalten c0..c1 nach oben verlängern, bis die Oberkante in Reihe neue_oben liegt. Münzen, die
+    dabei im Stein landen würden, wandern direkt über die neue Oberkante (Liste/Identität bleibt).
+    unter: nur Stein unterhalb dieser Reihe zählt als bisheriger Landeplatz (Standard: alles)"""
+    for c in range(c0, c1 + 1):
+        alt = oberkante(lv, c, ab=neue_oben if unter is None else unter)
+        if alt is None or alt <= neue_oben: continue
+        for r in range(neue_oben, alt): lv.kachel(c, r, typ)
+        for m in lv.ed.get('coins', []):
+            if m['c'] == c and neue_oben <= m['r'] < alt: m['r'] = neue_oben - 1 - (alt - 1 - m['r'])
+    return lv
