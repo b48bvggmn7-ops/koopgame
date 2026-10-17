@@ -5078,7 +5078,7 @@
     {
       "x": 3740,
       "y": 200,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     },
     {
@@ -5097,19 +5097,19 @@
     {
       "x": 13220,
       "y": 480,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     },
     {
       "x": 16820,
       "y": 120,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     },
     {
       "x": 19020,
       "y": 200,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     },
     {
@@ -5121,7 +5121,7 @@
     {
       "x": 28260,
       "y": 560,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     }
   ],
