@@ -139,6 +139,14 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
   Magmakammer 93/330/420/475/706 -> schnell; Feuerschlund 143/479 -> schnell; Kraterherz 70/671 -> schnell, 235 -> mittel.
   Unverändert (dort holt die schnellere Lava die zweite Figur ein): Glutpfad 218/505/630, Magmakammer 226/283/616,
   Feuerschlund 612/617, Kraterherz 356/420/442/470.
+- Dash-Ketten (Regel 5): Dash-Tunnel (Werkzeug tests/umbau/dash_tunnel.py) in Sonnentempel 738–777 (3 Gruben),
+  Tropfsteingang 746–785 (3 Gruben), Schlackewerk 757–781 und Kraterherz 744–780 (3 Gruben; Gruben dort 9 breit – bei
+  10 landete man mit Anlauf knapp zu kurz). Ruinen und Höhle haben nur je eine Kette: alle anderen flachen Strecken liegen
+  in Rätseln (Sonnentempel 370 = „Tunnel mit Licht“, Teleporter/Dunkelzone in der Leuchtgrotte, Band-Rätsel im
+  Förderwerk, Zwei-Wege-Gänge in Fallengang/Eisgrotte/Tropfsteingang). Tempelherz 581–603 verworfen (Gruben dort nur 8
+  breit möglich – das Schweinchen segelt ohne Dash drüber).
+- Geänderte Tests: level10_sonnentempel „bis zum Ziel“, level12_tropfsteingang „E4 Ziel“, level20_schlackewerk „E4 Finale“
+  laufen durch den Dash-Tunnel (dash_kette).
 - Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
 
 ## Geänderte Tests
@@ -156,5 +164,5 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - KOMBI_STELLEN_BOT: Flammen-/Kamin-/Lava-Kamine mit hoch=3 und Ziel-Reihe 3 höher; Verstecke/Haft-Arme in
   tests/bausteine/stellen.py an die neuen Höhen.
 - level11_felsenflucht: erste Flucht und Flucht nach oben laufen jetzt mit Dash (Pläne _r5_e1a/_r5_e1c aus JAGDEN_BOT).
-- Neu: jagden_ruinen.
+- Neu: jagden_ruinen, jagden_vulkan, dash_ketten_ruinen/hoehle/vulkan (die andere Figur folgt mit dem Warten-Plan).
 - partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.

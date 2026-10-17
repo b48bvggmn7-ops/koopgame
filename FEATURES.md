@@ -1597,6 +1597,26 @@ Level-Test läuft; alles andere sind **optionale** Stellen mit einer Münze als 
 - Vom Nutzer gestaltete Level (Dschungel 2, Ruinen 1, Mondnacht) haben nur optionale Ergänzungen bekommen (Verstecke,
   Haft-Inseln, Münz-Klassen) – Checkpoints und Wege dort sind unverändert.
 
+### Umbau aller Level an den Dash (nach dem Nacht-Ausbau; Stand und Einzelheiten: UMBAU-STATUS.md)
+Mit dem Dash kommt man viel weiter (Sprung + Dash ~16 Kästchen, Schweinchen Schirm + Dash ~25). Die Level sind so
+umgebaut, dass Haken, Pilz, Schirm, Aufwind und Kamine wieder gebraucht werden und Verfolgungen Spannung haben.
+Wasserwelt, Boss-Level und Spielwiese sind unverändert.
+- **Hilfs-Stellen dashfest:** Pilz-Gruben -> Pilz-Dash-Gruben (Landeplatz 9 Reihen hoch: nur Pilz + Dash reicht), breite
+  Haken-Gruben (>= 17), Kamin-Gruben mit Landeplatz >= 17 Spalten hinter dem Kamin, Flammen-/Lava-Kamine 3 Reihen höher,
+  Baumstämme zwischen Pilz-Türmen (kein Turm-zu-Turm-Sprung mehr), Rollen-Stellen so, dass die andere Figur sie auch mit
+  Dash nicht allein schafft (z. B. Baumkronen fahrender Haken 13, Dornenpfad Seilbahn).
+- **Münzen** auf den echten Bahnen ihrer Figur (blau = Affe, pink = Schweinchen), per Bot eingesammelt.
+- **Verfolgungen schneller:** Stachelwände und rollende Felsen fahren so schnell, dass man ohne Dash eingeholt wird
+  (Ruinen 1 7,4/7,2; Dornenpfad 5,6/5,8/7,4; Wipfelsturm 8,4/8,0/6,6; Baumkronen 7,8/6,6; Felsenflucht bis 14; Tempelherz
+  bis 14). Fluchten mit Wartestellen (Pfeile, Flammen, Takt-Steine) so schnell, wie das Warten erlaubt (6–7). Steigende
+  Lava eine Stufe schneller, wo die Level-Tests es zulassen. Feuerberg-Wand bleibt 4,5 (Pilz-Strecke).
+- **Dash-Ketten (Dash-Tunnel):** niedrige Decke (3 Reihen), Stachelgruben, dazwischen Podeste – zwei bis drei Dashes kurz
+  hintereinander, auf dem Podest warten, bis der Dash wieder voll ist (sofort weiter = Absturz). Wipfelsturm vor dem Ziel,
+  Sonnentempel vor dem Ziel (3 Gruben), Tropfsteingang vor dem Ziel (3 Gruben), Schlackewerk vor dem Ziel, Kraterherz
+  vor dem Ziel (3 Gruben). Werkzeug `tests/umbau/dash_tunnel.py`, Tests `dash_ketten_<welt>`.
+- **Pflicht-Durchbruch** auf dem Hauptweg: Baumkronen 172, Dornenpfad 298, Wipfelsturm 381. Der Computer-Partner dasht
+  durch Durchbruch-Wände.
+
 ### Design-Politur (nur Aussehen und ein Menü-Klang – Spielablauf, Trefferflächen, Physik und Level-Format unverändert)
 - **Schärfe und Tempo:** Die Leinwand hat bis zur 4K-Breite echte Bildschirm-Pixel (`LEINWAND_MAX_BREITE` 3840, vorher
   2560). Die Dunkel-Schicht (Nacht, Höhle, Dunkelzonen) wird in halber Auflösung gezeichnet (`DUNKEL_AUFLOESUNG`) – bei

@@ -801,6 +801,16 @@ Level, ≥3 je Etappe) sind ohne Umbau bestehender Rätsel/Jagden nicht erreichb
 Strecken mehr, die nicht zu einem Rätsel gehören (Vulkan: keine einzige). Optionale Stellen zählen bewusst nicht als
 Kombi. Stand je Level: NACHT-BERICHT.md.
 
+## Umbau an den Dash (alle Welten außer Wasser/Boss)
+Leitlinie für neue und geänderte Level (Werte gemessen, Regeln und Rezepte in UMBAU-STATUS.md):
+- Eine Hilfs-Stelle (Haken, Pilz, Aufwind, Kamin, Fahrt) muss auch mit Dash nötig bleiben: Gruben >= 17 breit, Pilz-
+  Landeplätze 9 Reihen hoch, Kamin-Landeplätze >= 17 Spalten weit, Kamin-Wände so hoch, dass Sprung + Dash hoch + Schirm
+  nicht drüber reicht. Prüfen mit `tests/umbau/dashprobe.py` / `tests/umbau/abkuerzungen.py`.
+- Verfolgungen schneller als Laufen (Bot sucht das Tempo: `tests/umbau/jagd_tempo.py`), ohne Dash eingeholt.
+- Dash-Ketten (2–3 Dashes kurz hintereinander): Dschungel Wipfelsturm-Tunnel + Doppel-Jagd; Ruinen Sonnentempel (3 Gruben)
+  + Jagden mit Dash; Höhle Tropfsteingang (3 Gruben); Vulkan Schlackewerk, Kraterherz (3 Gruben). Mehr freie flache
+  Strecken ohne Rätsel gibt es in Ruinen/Höhle nicht.
+
 ## Look je Welt (Design-Politur)
 
 Richtung (Nutzer-Referenzbilder): gemütlich, schön, echt, magisch, weich, verträumt, lebendig. Das Spielfeld hat den

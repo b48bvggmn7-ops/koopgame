@@ -1503,7 +1503,8 @@ async def level10_sonnentempel(g):
     soll(r.get('done'), 'Affe über die Takt-Brücken', r.get('pos'))
     r = await koop(g, f=kat(708, 15), m=kat(702, 15), plans={'f': gleit(711, kx(718) + 20, 4) + gleit(719, kx(728), 4) + [k_lauf(730)]}, maxFrames=1500)
     soll(r.get('done'), 'Schweinchen segelt über die Gruben', r.get('pos'))
-    r = await koop(g, m=kat(735, 15), f=kat(733, 15), plans={'m': [k_lauf(791)], 'f': [k_lauf(789)]}, maxFrames=1500)
+    tunnel = dash_kette([739, 752, 765], 779)   # Umbau: Dash-Tunnel mit 3 Gruben vor dem Ziel
+    r = await koop(g, m=kat(735, 15), f=kat(733, 15), plans={'m': tunnel + [k_lauf(791)], 'f': [{'frames': 60}] + tunnel + [k_lauf(789)]}, maxFrames=3000)
     soll(r.get('done'), 'bis zum Ziel', r.get('pos'))
     assert not fehler, fehler
 
@@ -1769,7 +1770,8 @@ async def level12_tropfsteingang(g):
         soll(ok, 'E4 Platten-Staffel: Affe hält Platte 10, Schwein durch den Tunnel, Hebel 11, Affe übers Dach', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         r = await koop(g, f=kat(700, 15), m=kat(690, 15), plans={'f': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 600}]}, maxFrames=700)
         soll(r['pos']['f'][0] < 727, 'E4 ohne Platte 10 kein Durchkommen im Tunnel', r.get('pos'))
-        r = await koop(g, m=kat(746, 15), f=kat(744, 15), plans={'m': [k_lauf(793)], 'f': [k_lauf(791)]}, maxFrames=1500)
+        tunnel = dash_kette([747, 760, 773], 787)   # Umbau: Dash-Tunnel mit 3 Gruben vor dem Ziel
+        r = await koop(g, m=kat(742, 15), f=kat(741, 15), plans={'m': tunnel + [k_lauf(793)], 'f': [{'frames': 60}] + tunnel + [k_lauf(791)]}, maxFrames=3000)
         soll(r.get('done'), 'E4 Ziel', r.get('pos'))
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
     soll(all(b - a <= 70 for a, b in zip(cps, cps[1:])), 'Checkpoints höchstens 70 Spalten auseinander', cps)
@@ -2970,7 +2972,7 @@ async def level20_schlackewerk(g):
         soll(res, 'E4 Schwein segelt übers Gegenband, Hebel 10 hält es an, Affe passt die Pressen ab', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         r = await koop(g, m=kat(651, 15), f=kat(649, 15), plans={'m': [k_lauf(700)]}, maxFrames=600, pre=PRE)
         soll(r.get('pos', {}).get('m', [999])[0] < 664, 'E4 gegen das reißende Band kommt niemand an', r.get('pos'))
-        pl = lambda w: [k_lauf(718, 0)] + sprung_zu(kx(723)) + [{'aim': [kx(732), kx(736)], 'jumps': [kx(729)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(740)) + sprung_zu(kx(747)) + [k_lauf(792)]
+        pl = lambda w: [k_lauf(718, 0)] + sprung_zu(kx(723)) + [{'aim': [kx(732), kx(736)], 'jumps': [kx(729)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(740)) + sprung_zu(kx(747)) + dash_kette([758, 770], 783) + [k_lauf(792)]   # Umbau: Dash-Tunnel
         await beide('E4 Finale: das Werk läuft voll – Band, Pilz, Stege hinauf', 705, pl, 790, delay=60)
     assert not fehler, fehler
 
@@ -8411,6 +8413,10 @@ def dash_kette(kanten, ende, art='warten'):
 # je Kette: (Level, Name, Start Affe, Start Schweinchen, Kanten, Ziel-Spalte)
 DASH_KETTEN_BOT = [
     ('dschungel/06-wipfelsturm.json', 'Dash-Tunnel vor dem Ziel', kat(763, 5), kat(762, 5), [768, 781], 795),
+    ('ruinen/04-sonnentempel.json', 'Dash-Tunnel vor dem Ziel (3 Gruben)', kat(734, 15), kat(733, 15), [739, 752, 765], 779),
+    ('hoehle/02-tropfsteingang.json', 'Dash-Tunnel vor dem Ziel (3 Gruben)', kat(742, 15), kat(741, 15), [747, 760, 773], 787),
+    ('vulkan/05-schlackewerk.json', 'Dash-Tunnel vor dem Ziel (Gruben je 9)', kat(753, 4), kat(752, 4), [758, 770], 783),
+    ('vulkan/07-kraterherz.json', 'Dash-Tunnel vor dem Ziel (3 Gruben je 9)', kat(741, 4), kat(740, 4), [745, 757, 769], 782),
 ]
 async def dash_ketten_pruefen(g, welt):
     fehler, aktuell = [], None
@@ -8420,7 +8426,9 @@ async def dash_ketten_pruefen(g, welt):
         for wer in ('m', 'f'):
             start = {'m': ms, 'f': fs} if wer == 'm' else {'m': fs, 'f': ms}
             for art in ('warten', 'ungeduldig', 'ohne'):
-                r = await koop(g, **start, plans={wer: dash_kette(kanten, ende, art)}, maxFrames=3000)
+                andere = 'f' if wer == 'm' else 'm'   # die andere Figur folgt (sonst hält der Bildrand die vordere fest)
+                plaene = {wer: dash_kette(kanten, ende, art), andere: [{'frames': 120}] + dash_kette(kanten, ende, 'warten')}
+                r = await koop(g, **start, plans=plaene, maxFrames=4000)
                 ok = bool(r.get('done') and not r.get('dead') and r['pos'][wer][0] >= ende - 0.5)
                 if ok != (art == 'warten'): fehler.append(f"{lv} {name} ({wer}, {art}): {'geschafft' if ok else 'gescheitert'} {r.get('pos')} tot={r.get('dead')}")
     assert not fehler, fehler
@@ -8430,6 +8438,22 @@ async def dash_ketten_dschungel(g):
     """Umbau: Dash-Ketten im Dschungel – mit Dash und Warten aufs Aufladen geschafft; sofort weiter (Dash noch leer) und
     ohne Dash gescheitert."""
     await dash_ketten_pruefen(g, 'dschungel')
+
+@test
+async def dash_ketten_ruinen(g):
+    """Umbau: Dash-Kette in den Ruinen (Sonnentempel, 3 Gruben vor dem Ziel) – mit Warten aufs Aufladen geschafft, sofort
+    weiter und ohne Dash gescheitert."""
+    await dash_ketten_pruefen(g, 'ruinen')
+
+@test
+async def dash_ketten_hoehle(g):
+    """Umbau: Dash-Kette in der Höhle (Tropfsteingang, 3 Gruben vor dem Ziel)."""
+    await dash_ketten_pruefen(g, 'hoehle')
+
+@test
+async def dash_ketten_vulkan(g):
+    """Umbau: Dash-Ketten im Vulkan (Schlackewerk, Kraterherz 3 Gruben)."""
+    await dash_ketten_pruefen(g, 'vulkan')
 
 # ---------------- Umbau: Rollen-Stellen (die andere Figur darf es auch mit Dash nicht allein schaffen) ----------------
 def _am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}, {'use': True, 'frames': 5}]
