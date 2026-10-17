@@ -187,6 +187,20 @@
    "spalte": 630,
    "nummer": 12,
    "begruendung": "Spiegel 630 (Affe) – Checkpoint 636 liegt 6 Spalten dahinter: nach einem Tod ist der Spiegel zurückgestellt, der Affe geht 6 Spalten zurück und hakt sich wieder hoch (kurzer Weg, Tür 12 und Brücke liegen in Sichtweite)"
+  },
+  {
+   "level": "dschungel/05-dornenpfad.json",
+   "regel": "Plattform",
+   "spalte": 251,
+   "nummer": 5,
+   "begruendung": "Dash-Umbau Seilbahn/Fähre: die Grube muss 21 breit und der Landesims 4 Reihen hoch sein, sonst kommt das Schweinchen mit Schirm + Dash ohne Fähre hinüber. Beide fahren dafür etwas weiter; die Figuren bleiben trotzdem zusammen im Bild (sichtbar ~37 Spalten)."
+  },
+  {
+   "level": "dschungel/05-dornenpfad.json",
+   "regel": "Plattform",
+   "spalte": 254,
+   "nummer": 4,
+   "begruendung": "Dash-Umbau Seilbahn/Fähre: die Grube muss 21 breit und der Landesims 4 Reihen hoch sein, sonst kommt das Schweinchen mit Schirm + Dash ohne Fähre hinüber. Beide fahren dafür etwas weiter; die Figuren bleiben trotzdem zusammen im Bild (sichtbar ~37 Spalten)."
   }
  ]
 }

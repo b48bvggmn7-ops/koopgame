@@ -79,9 +79,18 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - Lianenschlucht: 3 pinke Münzen (103/106/110) lagen so, dass das Schweinchen sie nur im Sturz in die Stacheln bekam –
   jetzt auf der Gleit-Bahn von der Brücke (104/5, 108/5, 112/6), per Bot geprüft.
 
+- Dornenpfad Seilbahn/Fähre: Grube 251–268 -> 251–271, Landesims 272–276 vier Reihen höher, Hebel 5 bei 273, Haken fährt
+  17, Fähre 18 Spalten schräg 5 Reihen hoch (endet über dem Sims, weil sie sofort umkehrt). Schweinchen mit Schirm + Dash
+  ohne Fähre: vorher Fenster 24, jetzt 7 Schritte (Profi-Trick, bewusst gelassen). Bild-Regel-Ausnahmen begründet.
+- Glühwald 287→306: Schweinchen-Rolle (Schirm) bleibt; Affe nur Fenster 2 (bewusst gelassen).
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s
   gezögert -> eingeholt“ wird jetzt „ohne Dash -> eingeholt“ geprüft.
 - level8_gluehwald: Start des Schweinchens für die Doppel-Gang-Staffel auf den neuen (höheren) Landeplatz.
+- dschungel5_dornenpfad Seilbahn: Affe lässt am Ende los und dasht schräg hoch auf den Sims; neue Gegenprobe „Schweinchen
+  mit Schirm + Dash ohne Fähre -> tot“.
+- KOMBI_STELLEN_BOT Dschungel 1: „Pilz in der Hakengrube (88)“ -> zwei Stellen (73: Haken / Schirm + Dash, 95: Haken + Dash /
+  Pilz + Dash); „Kamin-Grube vor dem Ziel“ -> eigener Plan `_d1_kamin_grube`; Pilz-Dash-Turm startet am Pilz 770.
 - partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.
