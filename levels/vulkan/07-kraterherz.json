@@ -3631,13 +3631,13 @@
     {
       "x": 2820,
       "y": 120,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     },
     {
       "x": 9420,
       "y": 240,
-      "tempo": "langsam",
+      "tempo": "mittel",
       "start": "naehe"
     },
     {
@@ -3676,7 +3676,7 @@
     {
       "x": 26860,
       "y": 240,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     }
   ],

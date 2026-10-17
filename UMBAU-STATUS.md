@@ -133,6 +133,12 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
   (Felsen enden in Gruben/an Toren und schieben an); Timing-Fluchten (Pfeilregen, Takt-Steine, Flammen-Welle) 3,8 -> 7
   (Bot-Grenze 8). Tests: JAGDEN_BOT-Einträge für alle Felsen, JAGDEN_TAKT = Fluchten, bei denen nur „mit Dash geschafft“
   geprüft wird.
+- Feuerberg: Stachelwand bleibt 4,5 (Pilz-Strecke – man fliegt fast senkrecht; mit Dash schafft der Bot nicht mehr), neuer
+  Bot-Plan + Test jagden_vulkan.
+- Steigende Lava eine Stufe schneller, wo die Level-Tests es zulassen: Glutpfad 262/310/425/470 -> schnell, 676 -> mittel;
+  Magmakammer 93/330/420/475/706 -> schnell; Feuerschlund 143/479 -> schnell; Kraterherz 70/671 -> schnell, 235 -> mittel.
+  Unverändert (dort holt die schnellere Lava die zweite Figur ein): Glutpfad 218/505/630, Magmakammer 226/283/616,
+  Feuerschlund 612/617, Kraterherz 356/420/442/470.
 - Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
 
 ## Geänderte Tests
