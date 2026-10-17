@@ -422,3 +422,13 @@ def landung_heben(lv, c0, c1, neue_oben, typ='ground', unter=None):
         for m in lv.ed.get('coins', []):
             if m['c'] == c and neue_oben <= m['r'] < alt: m['r'] = neue_oben - 1 - (alt - 1 - m['r'])
     return lv
+
+def jagd_tempo(lv, link, tempo):
+    """Tempo einer Verfolgung setzen: alle bewegten Teile (movers) bzw. rollenden Felsen mit dieser Verknüpfungs-Nummer"""
+    n = 0
+    for m in lv.ed.get('movers', []):
+        if m.get('link') == link: m['speed'] = tempo; n += 1
+    for b in lv.ed.get('boulders', []):
+        if b.get('link') == link: b['tempo'] = tempo; n += 1
+    if not n: raise KeyError(f'keine Verfolgung mit Nummer {link} in {lv.datei}')
+    return lv

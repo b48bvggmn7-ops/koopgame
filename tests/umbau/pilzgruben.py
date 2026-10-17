@@ -20,7 +20,7 @@ def umbauen(datei, nur=None):
         if not pilz: print('kein Pilz bei', x0); continue
         flaeche = pilz[0]['r'] + 1
         oben = flaeche - HOEHE
-        spalten = [c for c in range(l0, l0 + 4) if L.oberkante(lv, c, ab=-3) is not None and L.oberkante(lv, c, ab=-3) > oben]
+        spalten = [c for c in range(l0, l0 + 4) if L.oberkante(lv, c, ab=oben) is not None and L.oberkante(lv, c, ab=oben) > oben]   # Decken über dem Landeplatz nicht mitzählen
         bis = l0
         while bis + 1 in spalten: bis += 1
         L.landung_heben(lv, l0, bis, oben)
