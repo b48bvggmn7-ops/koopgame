@@ -4305,26 +4305,26 @@
     {
       "x": 10500,
       "y": 200,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     },
     {
       "x": 12420,
       "y": 240,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "naehe"
     },
     {
       "x": 17020,
       "y": 560,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "nummer",
       "link": 2
     },
     {
       "x": 18820,
       "y": 560,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "nummer",
       "link": 3
     },
@@ -4344,7 +4344,7 @@
     {
       "x": 27060,
       "y": 160,
-      "tempo": "langsam",
+      "tempo": "mittel",
       "start": "naehe"
     }
   ],
