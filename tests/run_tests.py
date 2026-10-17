@@ -1016,12 +1016,15 @@ async def level7_lianenschlucht(g):
                 {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(702)} - 6'}, 'until': 'P.vy < -14', 'frames': 100}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
         r = await koop(g, **{who: kat(684, 14), other: kat(680, 14)}, plans={who: plan}, maxFrames=2000)
         soll(k_pos(r, who) and k_pos(r, who)[1] == 4, f'Pilze auf die Äste {who}', r.get('pos'))
+    # Umbau: letzte Schlucht 712–731 (Sims endet bei 711, Landung ab 732), Affe drei Haken, Schweinchen Schirm (+ Dash)
     ok = False
     for hold in (1, 6, 12):
-        r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': k_segeln(713, hold)}, maxFrames=1500)
-        ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 727 and k_pos(r, 'f')[1] == 8)
+        for plan in (k_segeln(711, hold), [k_lauf(711), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 60},
+                                          {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]):
+            r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': plan}, maxFrames=1500)
+            ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 732 and k_pos(r, 'f')[1] == 8)
     soll(ok, 'letzte Schlucht (Schweinchen)')
-    soll(await affe((711, 4), [], (727, 745, 8), 2, (R1, R2)), 'letzte Schlucht mit zwei Haken (Affe)')
+    soll(await affe((709, 4), [], (732, 745, 8), 3, (R1, R2)), 'letzte Schlucht mit drei Haken (Affe)')
     assert not fehler, fehler
 
 @test
@@ -8168,15 +8171,20 @@ KOMBI_STELLEN_BOT = [
 # (Level, Name, Start auf dem vorigen Landeplatz (c, r), Absprung-Spalte, Ziel-Landeplatz Spalte, Ziel-Reihe)
 KOMBI_ABKUERZUNG = [
     ('dschungel/02-baumkronen.json', '778 -> 797', (789, 10), 791, 807, 10),
-    ('dschungel/03-lianenschlucht.json', '740 -> 760', (751, 4), 753, 770, 4),
-    ('dschungel/03-lianenschlucht.json', '760 -> 780', (771, 4), 773, 790, 4),
-    ('dschungel/06-wipfelsturm.json', '170 -> 190', (182, 11), 183, 200, 11),
+    ('dschungel/03-lianenschlucht.json', '740 -> 760', (751, -1), 753, 770, -1),   # Umbau: Türme jetzt oben (Pilz-Dash), Baumstamm 757
+    ('dschungel/03-lianenschlucht.json', '760 -> 780', (771, -1), 773, 790, -1),   # Baumstamm 777
+    ('dschungel/06-wipfelsturm.json', '170 -> 190', (182, 6), 183, 200, 6),        # Baumstamm 186
 ]
 
 def kombi_abkuerzung_plaene(kante):
     return {'f': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}],
             'm': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.hookAttached || (P.grounded && f > 10)', 'frames': 200},
-                  {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}
+                  {'swing': True, 'release': 'P.x > P.anchor.x + 30 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}],
+            # Umbau: auch mit Dash am höchsten Punkt (Affe schräg hoch, Schweinchen hoch + danach Schirm) keine Abkürzung
+            'm_dash': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': '!P.grounded && P.vy > -2', 'frames': 60},
+                       {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}],
+            'f_dash': [k_lauf(kante, 8), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': '!P.grounded && P.vy > -2', 'frames': 60},
+                       {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]}
 
 async def kombi_stellen_pruefen(g, welt):
     """Bot-Lauf über jede eingebaute Kombi-Stelle der Welt: mit Kombi kommen beide an (mindestens bis Spalte/Reihe des
@@ -8203,11 +8211,11 @@ async def kombi_stellen_pruefen(g, welt):
     for lv, name, (sc, sr), kante, zc, zr in KOMBI_ABKUERZUNG:
         if not lv.startswith(welt + '/'): continue
         if lv != aktuell: await koop_level(g, lv); aktuell = lv
-        for wer, pl in kombi_abkuerzung_plaene(kante).items():
-            andere = 'f' if wer == 'm' else 'm'
+        for art, pl in kombi_abkuerzung_plaene(kante).items():
+            wer = art[0]; andere = 'f' if wer == 'm' else 'm'
             r = await koop(g, **{wer: kat(sc, sr), andere: kat(sc - 1, sr)}, plans={wer: pl}, maxFrames=2000)
             if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1:
-                fehler.append(f"{lv} Abkürzung {name} ({wer}) ohne Kombi möglich: {r.get('pos')}")
+                fehler.append(f"{lv} Abkürzung {name} ({art}) ohne Kombi möglich: {r.get('pos')}")
     assert not fehler, fehler
 
 async def jagden_pruefen(g, welt):

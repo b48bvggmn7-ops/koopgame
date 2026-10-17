@@ -103,6 +103,11 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - Bewusst gelassen: Wipfelsturm 58→75 (Brücke Platte 2): Schweinchen schafft es mit Schirm + Dash ohne Brücke
   (Fenster 24) – die Grube müsste dafür 25 breit sein; Hebel 3 bleibt Aufgabe des Schweinchens.
 
+- Lianenschlucht Ende: letzte Haken-Schlucht 714–726 -> 712–731 (dritter Haken 729): Affe nur mit Haken, Schweinchen
+  mit Schirm (+ Dash). Baumstämme 757 und 777 zwischen den Pilz-Dash-Türmen (vorher Turm zu Turm mit Dash, Fenster 8/10).
+- Bewusst gelassen: Lianenschlucht 626/650 (oben/unten-Staffel: der Affe oben blockiert sich selbst, das Schweinchen
+  kann unten keine Haken) und 172→190 (Affe Fenster 3).
+
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
 - dschungel5_dornenpfad, dschungel6_wipfelsturm: die Jagd-Abschnitte nutzen die JAGDEN_BOT-Pläne mit Dash; statt „1 s
@@ -113,4 +118,6 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - KOMBI_STELLEN_BOT Dschungel 1: „Pilz in der Hakengrube (88)“ -> zwei Stellen (73: Haken / Schirm + Dash, 95: Haken + Dash /
   Pilz + Dash); „Kamin-Grube vor dem Ziel“ -> eigener Plan `_d1_kamin_grube`; Pilz-Dash-Turm startet am Pilz 770.
 - dschungel6_wipfelsturm „E4 Ziel“: führt jetzt durch den Dash-Tunnel (dash_kette).
+- level7_lianenschlucht „letzte Schlucht“: Landung ab 732, Affe drei Haken, Schweinchen auch mit Dash + Schirm.
+- KOMBI_ABKUERZUNG: neue Turmhöhen (Reihe -1 bzw. 6) und zusätzlich Dash-Varianten (m_dash/f_dash) – keine Abkürzung.
 - partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.
