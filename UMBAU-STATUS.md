@@ -124,7 +124,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 - Münzen Lianenschlucht (487–501, 256–262) und Wipfelsturm (780) auf die echten Bahnen gelegt (per Bot eingesammelt).
 
 - Ruinen 1: Stachelwände 3,6 -> 7,4 (Hebel 13/14, durch die Tore) und 3,8 -> 7,2 (Hebel 19, über das Pendel).
-- Felsenflucht: Fels „erste Flucht“ 3,6 -> 10, „Flucht nach oben“ 5,4 -> 14 (der Fels beschleunigt erst und startet nach
+- Felsenflucht: Fels „erste Flucht“ 3,6 -> 10, „Flucht nach oben“ 5,4 -> 14, „Teleporter-Flucht“ 4,4 -> 14 (der Fels beschleunigt erst und startet nach
   ½ s Wackeln, deshalb brauchen Felsen deutlich mehr Tempo als Wände). Restliche Felsen: in Arbeit.
 - Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
 
