@@ -2055,14 +2055,14 @@ async def level14_leuchtgrotte(g):
     if True:
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            pl = [k_lauf(227, 0)] + sprung_zu(kx(229)) + sprung_zu(kx(234)) + [{'hold': ['right'], 'until': f'P.x >= {kx(240)}', 'frames': 300}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(246)]
-            r = await koop(g, **{who: kat(214, 15), o: kat(212, 15)}, plans={who: pl, o: [{'frames': 30}] + pl}, maxFrames=3000)
-            soll(r.get('done') and r['pos'][who][0] >= 245, f'E2 Scheinwände, Stege hinauf, Fenster ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            pl = [k_lauf(235, 0)] + sprung_zu(kx(237)) + sprung_zu(kx(242)) + [{'hold': ['right'], 'until': f'P.x >= {kx(248)}', 'frames': 300}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(254)]
+            r = await koop(g, **{who: kat(222, 15), o: kat(220, 15)}, plans={who: pl, o: [{'frames': 30}] + pl}, maxFrames=3000)
+            soll(r.get('done') and r['pos'][who][0] >= 253, f'E2 Scheinwände, Stege hinauf, Fenster ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         # Bild-Regel: Fels 262–272 statt 262–286, Ausgänge 276/279, Hebel 4 bei 277
-        r = await koop(g, m=kat(252, 15), f=kat(250, 15), plans={'m': [{'frames': 30}, k_lauf(258), {'wait': f'P.x > {kx(270)}'}] + am(277), 'f': [k_lauf(254), {'wait': '!!linkOn[4]'}, k_lauf(261), {'frames': 10}, k_lauf(295)]}, maxFrames=3000)
+        r = await koop(g, m=kat(260, 15), f=kat(258, 15), plans={'m': [{'frames': 30}, k_lauf(266), {'wait': f'P.x > {kx(270)}'}] + am(277), 'f': [k_lauf(262), {'wait': '!!linkOn[4]'}, k_lauf(269), {'frames': 10}, k_lauf(295)]}, maxFrames=3000)
         soll(r.get('done') and r['pos']['m'][0] > 275 and r['pos']['f'][0] > 289, 'E2 Affe durchs blaue Tor, Hebel 4, Schwein durchs pinke', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
-        r = await koop(g, m=kat(250, 15), f=kat(252, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=400)
-        soll(r['pos']['f'][0] < 262, 'E2 ohne Hebel 4 kein Schwein durch', r.get('pos'))
+        r = await koop(g, m=kat(258, 15), f=kat(260, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=400)
+        soll(r['pos']['f'][0] < 270, 'E2 ohne Hebel 4 kein Schwein durch', r.get('pos'))
         ok = None
         for hold in (4, 8, 12):
             f = am(304) + glide_to(309, kx(324), hold) + am(328)
@@ -8336,7 +8336,7 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/06-feuerschlund.json', 'Lava-Kamin (560)', kat(558, 15), kat(557, 15), lambda: kombi_flammen_kamin(560, 16, flamme=False, weit=8, versatz_f=0), {'m': (582, 9), 'f': (581, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Kamin (174)', kat(172, 15), kat(171, 15), lambda: kombi_flammen_kamin(174, 16, flamme=False, weit=8, versatz_f=0), {'m': (196, 9), 'f': (195, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Pilz-Dash-Grube (324)', kat(322, 15), kat(321, 15), lambda: kombi_pilz_dash_grube(324, 332), {'m': (332, 6), 'f': (332, 6)}),
-    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False, hoch=3), {'m': (194, 6), 'f': (194, 6)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (202, 6), 'f': (201, 6)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False, hoch=3), {'m': (582, 6), 'f': (582, 6)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (782, 6), 'f': (781, 6)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (366)', kat(364, 15), kat(363, 15), lambda: kombi_flammen_kamin(366, 16, flamme=False, hoch=3), {'m': (380, 6), 'f': (380, 6)}),

@@ -154,7 +154,7 @@ for _lvl, _liste in _HAFTINSELN.items():
 
 # ---------------- Durchbruch-Nischen (S4): optional, Münze hinter einem Durchbruch-Kästchen in der Wand ----------------
 _NISCHEN = {   # (w, g, Farbe, Richtung): Richtung 1 = Wand zeigt nach links (von links her), -1 = nach rechts
-    'hoehle/04-leuchtgrotte.json': [(198, 16, 'pink', -1), (356, 16, 'blue', -1), (586, 16, 'pink', -1)],
+    'hoehle/04-leuchtgrotte.json': [(206, 16, 'pink', -1), (356, 16, 'blue', -1), (586, 16, 'pink', -1)],
     'hoehle/05-foerderwerk.json': [(564, 16, 'blue', -1), (620, 16, 'pink', -1)],
     'hoehle/06-tiefenschlund.json': [(240, 16, 'blue', -1), (583, 16, 'pink', -1)],
     'vulkan/05-schlackewerk.json': [(744, 14, 'pink', 1)],
