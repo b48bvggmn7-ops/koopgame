@@ -1725,6 +1725,8 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     sich auf langsamen Geräten von selbst ab (einmal über `LAVA_FLIMMERN_SOFORT_MS` 8 ms oder im Mittel über
     `LAVA_FLIMMERN_MAX_MS` 1,5 ms) und lässt sich mit localStorage `monchichi.lavaFlimmern` = `aus` ausschalten.
   - **Haken:** wie bisher (Schein, Ringe, Funkeln), dazu eine dunkle Unterlage und kräftigeres Cyan-Leuchten.
+  - **Fallen-Pfeil etwas auffälliger** (damit er vor der neuen Ziegelwand lesbar bleibt): Schaft 6 statt 5 px
+    (`PFEIL_BILD_DICKE`), helle Flugspur kräftiger und breiter; Trefferfläche unverändert. Test pfeil_lesbarkeit.
   - **Keine Zahlen mehr an Tür, Wechselboden und Portal:** deren Nummern-Plaketten entfallen, die Verknüpfung zeigt die
     Farbe (Diamant). Im Editor bleiben die Nummern.
   - Unverändert in dieser Runde: Sprungpilz, Checkpoint, Münzen, Leuchtkristall, Stacheln (das gewählte „Stahl“ ist der

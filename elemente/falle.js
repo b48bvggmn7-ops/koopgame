@@ -217,8 +217,8 @@ function pfeilBild(c, schweif){
   const L = PFEIL_BILD_LAENGE, D = PFEIL_BILD_DICKE, hinten = 7 - L;
   if(schweif > 4){   // Bewegungsspur: heller Streifen, der nach hinten ausläuft
     const g = c.createLinearGradient(hinten, 0, hinten - schweif, 0);
-    g.addColorStop(0, 'rgba(255,248,225,.75)'); g.addColorStop(1, 'rgba(255,248,225,0)');
-    c.fillStyle = g; c.beginPath(); c.moveTo(hinten + 6, -3.5); c.lineTo(hinten - schweif, -1); c.lineTo(hinten - schweif, 1); c.lineTo(hinten + 6, 3.5); c.fill();
+    g.addColorStop(0, 'rgba(255,248,225,.95)'); g.addColorStop(1, 'rgba(255,248,225,0)');   // kräftiger (neues Aussehen: vor Ziegelwand lesbar)
+    c.fillStyle = g; c.beginPath(); c.moveTo(hinten + 6, -4.5); c.lineTo(hinten - schweif, -1.5); c.lineTo(hinten - schweif, 1.5); c.lineTo(hinten + 6, 4.5); c.fill();
   }
   // Schaft: dunkler Umriss, helles Holz
   c.fillStyle = '#1a0f06'; c.fillRect(hinten - 1, -D/2 - 2, L - 6, D + 4);

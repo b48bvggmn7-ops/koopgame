@@ -132,7 +132,7 @@ const FLAMME_ANTEIL = 0.4;      // Anteil des Takts, in dem die Flamme brennt
 // Pfeil-Aussehen (Ruinen-Überarbeitung; nur Anzeige – die Trefferfläche bleibt PFEIL_TREFFER × PFEIL_TREFFER um die Spitze)
 const PFEIL_TREFFER = 10;       // px Kantenlänge der tödlichen Fläche um die Pfeilspitze (unverändert seit Ausbau 7)
 const PFEIL_BILD_LAENGE = 52;   // px gezeichnete Länge (Spitze bis Federn), vorher 35
-const PFEIL_BILD_DICKE = 5;     // px Schaft (vorher 3), dazu 2 px dunkler Umriss
+const PFEIL_BILD_DICKE = 6;     // px Schaft (vorher 3, dann 5; 6 = besser lesbar vor der neuen Ziegelwand), dazu 2 px dunkler Umriss
 const PFEIL_SCHWEIF = 46;       // px Bewegungsspur hinter einem fliegenden Pfeil
 const PFEIL_LICHT = 95;         // px Lichtkreis um einen fliegenden Pfeil in dunklen Leveln (nachts lesbar; Design-Politur 2: vorher 70)
 // Rollender Fels (elemente/fels.js)
