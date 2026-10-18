@@ -14,9 +14,13 @@ def profil(lv, c): return tuple(lv.typ(c, r) for r in range(-3, 18))
 def belegt(lv, c):
     return any(o['c'] == c for k, v in G._listen(lv) if k != 'coins' for o in v) or \
         any(isinstance(lv.ed.get(k), dict) and lv.ed[k].get('c') == c for k in ('startM', 'startF', 'goal'))
+def schlicht(p0):
+    """schlichter Boden: oben frei, ab der Oberkante bis ganz unten nur Boden/Wand (keine schwebenden Inseln, Stege …)"""
+    i = next((i for i, t in enumerate(p0) if t is not None), None)
+    return i is not None and all(t in ('ground', 'wall') for t in p0[i:])
 def frei(lv, q, n=8):
     p0 = profil(lv, q)
-    return not all(t is None for t in p0) and all(profil(lv, c) == p0 and not belegt(lv, c) for c in range(q, q + n))
+    return schlicht(p0) and all(profil(lv, c) == p0 and not belegt(lv, c) for c in range(q, q + n))
 def suche_rechts(lv, start): return next((q for q in range(start, start + 200) if frei(lv, q)), None)
 def suche_links(lv, start): return next((q for q in range(start - 8, max(0, start - 200), -1) if frei(lv, q)), None)
 
@@ -41,6 +45,13 @@ def umbauen(datei, xs, max_weg=60, seite=None):
             info = G.weiten(lv, p, q, 8, rw + 1); bereich = (p, q + 7, 8); neu_x0 = x0   # auch das herausgenommene Stück
         else:
             info = G.weiten_links(lv, rw, ql, 8, rw + 9); bereich = (ql, rw, -8); neu_x0 = x0 - 8
+        # Haken über der Grube neu: drei Haken (Abstand 5) eine Reihe tiefer als der alte – so reicht die Kette sicher
+        # bis zur Landung (gemessen am Feuerschlund 560: 2 Haken 0/20, 3 Haken 20/20)
+        g0 = neu_x0 + 5; alte = [h for h in lv.ed.get('hooks', []) if g0 <= h['c'] <= g0 + 16]
+        if alte:
+            hr = min(h['r'] for h in alte) + 1; rad = alte[0].get('radius', 5.0)
+            lv.ed['hooks'] = [h for h in lv.ed['hooks'] if h not in alte] + [{'c': g0 + d, 'r': hr, 'radius': rad} for d in (3, 8, 13)]
+            info['haken'] = [(g0 + d, hr) for d in (3, 8, 13)]
         print(datei, x0, '->', neu_x0, info)
         rng = [bereich]
         T.datei_schieben(ROOT / 'tests' / 'run_tests.py', datei, rng)

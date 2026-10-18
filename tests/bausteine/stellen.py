@@ -49,7 +49,7 @@ for _w in 'mf':
     for _lv, _c, _r in (('ruinen/01-ruinen.json', 296, 15), ('ruinen/04-sonnentempel.json', 331, 16), ('ruinen/05-felsenflucht.json', 532, 16),
                         ('hoehle/01-kristallhoehle.json', 115, 15), ('hoehle/02-tropfsteingang.json', 585, 8), ('hoehle/05-foerderwerk.json', 392, 16),
                         ('vulkan/02-aschefeld.json', 790, 16), ('vulkan/05-schlackewerk.json', 194, 16), ('vulkan/06-feuerschlund.json', 589, 16)):
-        stelle(level=_lv, name=f'Durchbruch-Säule {_c} (B2, Pflicht)', wer=_w, start=(_c - 5, _r - 1), partner=(_c - 7, _r - 1),
+        stelle(level=_lv, name=f'Durchbruch-Säule {_c} (B2, Pflicht)', wer=_w, start=(_c - 2, _r - 1), partner=(_c + 4, _r - 1),
                plan=nb_bruch_durch(_c), ziel=_c + 2, ziel_reihe=_r - 1, baustein='B2', gegen=_laufen)
 
 # ---------------- Dschungel 1 (sanfte Probe) ----------------

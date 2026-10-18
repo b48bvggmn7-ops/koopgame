@@ -47,7 +47,7 @@ def weiten(lv, p, q, n=8, grube_von=None, haken=True):
     if haken and grube_von is not None:
         hs = [h for h in lv.ed.get('hooks', []) if grube_von <= h['c'] < p]
         if hs:
-            mitte = (grube_von + p + n - 1) // 2 + 1   # +1: genug Stehplätze hinter dem letzten Haken (Bild-Regel)
+            mitte = p + n - 6   # 6 vor der Landung: der zweite Schwung reicht hinüber, genug Stehplätze dahinter (Bild-Regel)
             if all(abs(h['c'] - mitte) > 2 for h in hs):
                 lv.haken(mitte, hs[0]['r'], hs[0].get('radius', 5.0)); info['haken_neu'] = mitte
     return info
@@ -83,7 +83,7 @@ def weiten_links(lv, rw, q, n=8, grube_bis=None, haken=True):
     if haken and grube_bis is not None:
         hs = [h for h in lv.ed.get('hooks', []) if rw < h['c'] <= grube_bis]
         if hs:
-            mitte = (rw - n + 1 + grube_bis) // 2
+            mitte = grube_bis + 1 - 6
             if all(abs(h['c'] - mitte) > 2 for h in hs):
                 lv.haken(mitte, hs[0]['r'], hs[0].get('radius', 5.0)); info['haken_neu'] = mitte
     return info

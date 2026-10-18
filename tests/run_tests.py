@@ -2932,7 +2932,7 @@ async def level20_schlackewerk(g):
     # --- Etappe 3 ---
     if True:
         pl = lambda w: [{'holdIf': {'right': 'flammeOK(P, 120, 6)', 'left': '!flammeOK(P, 50, 6)'}, 'until': f'P.x >= {kx(456)}', 'frames': 3000}]
-        await beide('E3 Flammen-Decke über dem Band', 404, pl, 455, delay=120)
+        await beide('E3 Flammen-Decke über dem Band', 407, pl, 455, delay=120)
         def stege(w):
             m = [k_lauf(458, 0)]
             for c in (465, 471, 477, 483, 489):
@@ -8221,7 +8221,8 @@ def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f):
     haken = [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
              {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
              {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
-             {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande]
+             {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
+             dict(lande, hold=['up'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'})]   # zu kurz: Dash schräg hoch
     return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'up'], True),
             'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
             'm_ohne_dash': warte + kamin + sprung_dash(11, ['right', 'up'], False), 'm_ohne_dash2': warte + kamin + sprung_dash(17, ['right'], False),
@@ -8329,10 +8330,10 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (728)', kat(726, 15), kat(725, 15), lambda: kombi_flammen_kamin(728, 16, flamme=False), {'m': (742, 9), 'f': (742, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (752)', kat(750, 15), kat(749, 15), lambda: kombi_flammen_kamin(752, 16, flamme=False), {'m': (766, 9), 'f': (766, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
-    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (164)', kat(162, 15), kat(161, 15), lambda: kombi_flammen_kamin(164, 16, flamme=False), {'m': (178, 9), 'f': (178, 9)}),
-    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False), {'m': (360, 9), 'f': (360, 9)}),
-    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (370)', kat(368, 15), kat(367, 15), lambda: kombi_flammen_kamin(370, 16, flamme=False), {'m': (384, 9), 'f': (384, 9)}),
-    ('vulkan/06-feuerschlund.json', 'Lava-Kamin (560)', kat(558, 15), kat(557, 15), lambda: kombi_flammen_kamin(560, 16, flamme=False), {'m': (574, 9), 'f': (574, 9)}),
+    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (164)', kat(162, 15), kat(161, 15), lambda: kombi_flammen_kamin(164, 16, flamme=False, weit=8, versatz_f=0), {'m': (186, 9), 'f': (185, 9)}),
+    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False, weit=8, versatz_f=0), {'m': (368, 9), 'f': (367, 9)}),
+    ('vulkan/05-schlackewerk.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False, weit=8, versatz_f=0), {'m': (400, 9), 'f': (399, 9)}),
+    ('vulkan/06-feuerschlund.json', 'Lava-Kamin (560)', kat(558, 15), kat(557, 15), lambda: kombi_flammen_kamin(560, 16, flamme=False, weit=8, versatz_f=0), {'m': (582, 9), 'f': (581, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Kamin (182)', kat(180, 15), kat(179, 15), lambda: kombi_flammen_kamin(182, 16, flamme=False), {'m': (196, 9), 'f': (196, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Pilz-Dash-Grube (324)', kat(322, 15), kat(321, 15), lambda: kombi_pilz_dash_grube(324, 332), {'m': (332, 6), 'f': (332, 6)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False, hoch=3), {'m': (194, 6), 'f': (194, 6)}),
