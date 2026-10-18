@@ -2112,27 +2112,27 @@ async def level14_leuchtgrotte(g):
         hl = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            pl = [hl(603)] + hop(605) + [hl(607)] + hop(612) + [hl(610)] + hop(605) + [hl(607)] + hop(612) + [hl(613)] + hop(617) + [k_lauf(630)]
-            r = await koop(g, **{who: kat(598, 15), o: kat(596, 15)}, plans={who: pl, o: [{'frames': 400}] + pl}, maxFrames=4000)
-            soll(r.get('done') and r['pos'][who][0] >= 629 and r['pos'][who][1] <= 4, f'E4 Steg-Turm hinauf ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            pl = [hl(611)] + hop(613) + [hl(615)] + hop(620) + [hl(618)] + hop(613) + [hl(615)] + hop(620) + [hl(621)] + hop(625) + [k_lauf(638)]
+            r = await koop(g, **{who: kat(606, 15), o: kat(604, 15)}, plans={who: pl, o: [{'frames': 400}] + pl}, maxFrames=4000)
+            soll(r.get('done') and r['pos'][who][0] >= 637 and r['pos'][who][1] <= 4, f'E4 Steg-Turm hinauf ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         halten = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 200}
         for hoch, tief in (('m', 'f'), ('f', 'm')):
             ok = None
-            for jx in (639, 640):
-                oben = [k_lauf(jx, 0)] + sprung_zu(kx(648)) + am(660) + [{'wait': '!!linkOn[11]'}, k_lauf(679), {'until': 'P.grounded', 'frames': 200}, k_lauf(684)]
-                unten = [{'frames': 40}, k_lauf(641), {'until': 'P.grounded', 'frames': 200}, k_lauf(646, -10)] + sprung_zu(kx(652)) + [{'wait': '!!linkOn[10]'}, halten(675), {'wait': f'Q.x >= {kx(681)}'}, k_lauf(686)]
-                r = await koop(g, **{hoch: kat(633, 4), tief: kat(631, 4)}, plans={hoch: oben, tief: unten}, maxFrames=5000)
-                if r.get('done') and r['pos'][hoch][0] >= 683 and r['pos'][tief][0] >= 683: ok = jx; break
+            for jx in (647, 648):
+                oben = [k_lauf(jx, 0)] + sprung_zu(kx(656)) + am(668) + [{'wait': '!!linkOn[11]'}, k_lauf(687), {'until': 'P.grounded', 'frames': 200}, k_lauf(692)]
+                unten = [{'frames': 40}, k_lauf(649), {'until': 'P.grounded', 'frames': 200}, k_lauf(654, -10)] + sprung_zu(kx(660)) + [{'wait': '!!linkOn[10]'}, halten(683), {'wait': f'Q.x >= {kx(689)}'}, k_lauf(694)]
+                r = await koop(g, **{hoch: kat(641, 4), tief: kat(639, 4)}, plans={hoch: oben, tief: unten}, maxFrames=5000)
+                if r.get('done') and r['pos'][hoch][0] >= 691 and r['pos'][tief][0] >= 691: ok = jx; break
             soll(ok, f'E4 getrennte Wege: Hebel 10 oben, Platte 11 unten (oben {hoch})', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
-        r = await koop(g, m=kat(658, 4), f=kat(652, 15), plans={'m': [{'hold': ['right'], 'frames': 200}], 'f': [{'hold': ['right'], 'frames': 200}]}, maxFrames=300)
-        soll(r['pos']['m'][0] < 670 and r['pos']['f'][0] < 655, 'E4 Tür 10 und 11 zu ohne Hebel/Platte', r.get('pos'))
+        r = await koop(g, m=kat(666, 4), f=kat(660, 15), plans={'m': [{'hold': ['right'], 'frames': 200}], 'f': [{'hold': ['right'], 'frames': 200}]}, maxFrames=300)
+        soll(r['pos']['m'][0] < 678 and r['pos']['f'][0] < 663, 'E4 Tür 10 und 11 zu ohne Hebel/Platte', r.get('pos'))
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            pl = [k_lauf(711, -6)] + sprung_zu(kx(716))
-            for a in (722, 729, 736, 743): pl += [k_lauf(a - 5, 0)] + sprung_zu(kx(a + 1))
-            pl += [k_lauf(745, 0)] + sprung_zu(kx(753)) + [k_lauf(760)]
-            r = await koop(g, **{who: kat(709, 15), o: kat(707, 15)}, plans={who: pl, o: [{'frames': 300}] + pl}, maxFrames=5000)
-            soll(r.get('done') and r['pos'][who][0] >= 759, f'E4 Steg-Hüpfer über die Stachelgrube ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            pl = [k_lauf(719, -6)] + sprung_zu(kx(724))
+            for a in (730, 737, 744, 751): pl += [k_lauf(a - 5, 0)] + sprung_zu(kx(a + 1))
+            pl += [k_lauf(753, 0)] + sprung_zu(kx(761)) + [k_lauf(768)]
+            r = await koop(g, **{who: kat(717, 15), o: kat(715, 15)}, plans={who: pl, o: [{'frames': 300}] + pl}, maxFrames=5000)
+            soll(r.get('done') and r['pos'][who][0] >= 767, f'E4 Steg-Hüpfer über die Stachelgrube ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     assert not fehler, fehler
 
 @test
@@ -8337,8 +8337,8 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/07-kraterherz.json', 'Lava-Kamin (174)', kat(172, 15), kat(171, 15), lambda: kombi_flammen_kamin(174, 16, flamme=False, weit=8, versatz_f=0), {'m': (196, 9), 'f': (195, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Pilz-Dash-Grube (324)', kat(322, 15), kat(321, 15), lambda: kombi_pilz_dash_grube(324, 332), {'m': (332, 6), 'f': (332, 6)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (202, 6), 'f': (201, 6)}),
-    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False, hoch=3), {'m': (582, 6), 'f': (582, 6)}),
-    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (760)', kat(758, 15), kat(757, 15), lambda: kombi_flammen_kamin(760, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (782, 6), 'f': (781, 6)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (590, 6), 'f': (589, 6)}),
+    ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (790, 6), 'f': (789, 6)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (366)', kat(364, 15), kat(363, 15), lambda: kombi_flammen_kamin(366, 16, flamme=False, hoch=3), {'m': (380, 6), 'f': (380, 6)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False, hoch=3), {'m': (560, 6), 'f': (560, 6)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False), {'m': (584, 9), 'f': (584, 9)}),
