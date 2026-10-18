@@ -3202,8 +3202,8 @@ async def level22_kraterherz(g):
         turm = lambda w: [{'aim': [kx(62), kx(68), kx(74), kx(80), kx(89)], 'jumps': [kx(59)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
                           durch(101), k_lauf(103), {'until': 'P.grounded', 'frames': 100}, k_lauf(108), {'until': 'P.grounded', 'frames': 100}, k_lauf(112), {'until': 'P.grounded', 'frames': 100}, k_lauf(119)]
         await beide('E1 Pilz-Turm vor der Lava, Presse auf dem Sims', 54, turm, 118, delay=40)
-        pkette = lambda w: [{'aim': [kx(140), kx(147), kx(154), kx(161), kx(167)], 'jumps': [kx(133)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(164)}', 'frames': 900}, durch(176), k_lauf(179)]
-        await beide('E1 Pilz-Kette über den Lavasee, Presse am Ufer', 126, pkette, 178)
+        pkette = lambda w: [{'aim': [kx(132), kx(139), kx(146), kx(153), kx(159)], 'jumps': [kx(125)], 'glide': w == 'f', 'until': f'P.grounded && P.x > {kx(156)}', 'frames': 900}, durch(168), k_lauf(171)]
+        await beide('E1 Pilz-Kette über den Lavasee, Presse am Ufer', 118, pkette, 170)
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
     if True:
@@ -8334,7 +8334,7 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/05-schlackewerk.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False, weit=8, versatz_f=0), {'m': (368, 9), 'f': (367, 9)}),
     ('vulkan/05-schlackewerk.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False, weit=8, versatz_f=0), {'m': (400, 9), 'f': (399, 9)}),
     ('vulkan/06-feuerschlund.json', 'Lava-Kamin (560)', kat(558, 15), kat(557, 15), lambda: kombi_flammen_kamin(560, 16, flamme=False, weit=8, versatz_f=0), {'m': (582, 9), 'f': (581, 9)}),
-    ('vulkan/07-kraterherz.json', 'Lava-Kamin (182)', kat(180, 15), kat(179, 15), lambda: kombi_flammen_kamin(182, 16, flamme=False), {'m': (196, 9), 'f': (196, 9)}),
+    ('vulkan/07-kraterherz.json', 'Lava-Kamin (174)', kat(172, 15), kat(171, 15), lambda: kombi_flammen_kamin(174, 16, flamme=False, weit=8, versatz_f=0), {'m': (196, 9), 'f': (195, 9)}),
     ('vulkan/07-kraterherz.json', 'Lava-Pilz-Dash-Grube (324)', kat(322, 15), kat(321, 15), lambda: kombi_pilz_dash_grube(324, 332), {'m': (332, 6), 'f': (332, 6)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (180)', kat(178, 15), kat(177, 15), lambda: kombi_flammen_kamin(180, 16, flamme=False, hoch=3), {'m': (194, 6), 'f': (194, 6)}),
     ('hoehle/04-leuchtgrotte.json', 'Kamin-Grube (568)', kat(566, 15), kat(565, 15), lambda: kombi_flammen_kamin(568, 16, flamme=False, hoch=3), {'m': (582, 6), 'f': (582, 6)}),
