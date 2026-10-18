@@ -46,6 +46,8 @@ def umbauen(datei, xs, max_weg=60, seite=None):
             print(datei, x0, '->', neu_x0, info)
             for f in (ROOT / 'tests' / 'run_tests.py',): T.datei_schieben(f, datei, bereich)
             T.datei_schieben(ROOT / 'tests' / 'bausteine' / 'stellen.py', datei, bereich, nur_zeilen=True)
+            kurz = datei[0] + datei.split('/')[1][:2]; sp = ROOT / 'tests' / 'bausteine' / 'stellen.py'; t = sp.read_text(encoding='utf-8')
+            sp.write_text(re.sub(r"\('" + kurz + r"', (\d+)\)", lambda m: f"('{kurz}', {T.neu(int(m.group(1)), bereich)})", t), encoding='utf-8')
             for j in ('bildregel_ausnahmen.json', 'kombi_ausnahmen.json'): T.json_schieben(ROOT / 'tests' / j, datei, bereich)
             g0 = x0 + 5; alte = [h for h in lv.ed.get('hooks', []) if g0 <= h['c'] <= g0 + 16]
             if alte:

@@ -128,7 +128,7 @@
   {
    "level": "vulkan/02-aschefeld.json",
    "regel": "Bild",
-   "spalte": 476,
+   "spalte": 484,
    "nummer": 7,
    "begruendung": "Takt-Brücke: Hebel 7 schaltet die Pressen AN und öffnet das Tor am Ende (513) – die ersten Pressen sieht man sofort, das Tor ist das Ziel der Überquerung (wie eine Verfolgung)"
   },
@@ -142,7 +142,7 @@
   {
    "level": "vulkan/02-aschefeld.json",
    "regel": "Checkpoint",
-   "spalte": 603,
+   "spalte": 611,
    "nummer": 13,
    "begruendung": "Etappen-Übergang (Laufstrecke) vor Etappe 4; ohne ihn wäre die Lücke größer als 70 (Regel: höchstens 70 Spalten)"
   },

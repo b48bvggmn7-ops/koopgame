@@ -2668,41 +2668,41 @@ async def level18_aschefeld(g):
     # --- Etappe 3 ---
     if True:
         hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 5000}
-        f = [halten(412), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(412)} + 10', 'left': f'P.x > {kx(413)} - 10'}, 'until': f'P.y < {ky(4)}', 'frames': 400},
-             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(430)} - 6', 'left': f'P.x > {kx(430)} + 6'}, 'until': 'P.grounded', 'frames': 400}, halten(430), hp(430, '!!linkOn[6]'), k_lauf(462), {'until': 'P.grounded', 'frames': 200}, k_lauf(470)]
-        m = [{'wait': '!!linkOn[5]'}, durch(464)] + am(466) + [{'wait': f'Q.x >= {kx(463)} && Q.grounded'}, k_lauf(469)]
-        r = await koop(g, f=kat(413, 15), m=kat(411, 15), plans={'f': f, 'm': m}, maxFrames=6000, pre=PRE)
-        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 468, 'E3 Schwein aufs Dach, Platte 5 hält die Pressen an, Affe durch, Hebel 6', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
-        bruecke = lambda: [k_lauf(478, 0)] + sprung_zu(kx(481)) + [durch(517)]
+        f = [halten(420), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(420)} + 10', 'left': f'P.x > {kx(421)} - 10'}, 'until': f'P.y < {ky(4)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(438)} - 6', 'left': f'P.x > {kx(438)} + 6'}, 'until': 'P.grounded', 'frames': 400}, halten(438), hp(438, '!!linkOn[6]'), k_lauf(470), {'until': 'P.grounded', 'frames': 200}, k_lauf(478)]
+        m = [{'wait': '!!linkOn[5]'}, durch(472)] + am(474) + [{'wait': f'Q.x >= {kx(471)} && Q.grounded'}, k_lauf(477)]
+        r = await koop(g, f=kat(421, 15), m=kat(419, 15), plans={'f': f, 'm': m}, maxFrames=6000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 476, 'E3 Schwein aufs Dach, Platte 5 hält die Pressen an, Affe durch, Hebel 6', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        bruecke = lambda: [k_lauf(486, 0)] + sprung_zu(kx(489)) + [durch(525)]
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            r = await koop(g, **{who: kat(472, 15), o: kat(470, 15)}, plans={who: am(476) + bruecke(), o: [{'wait': '!!linkOn[7]'}, {'frames': 60}] + bruecke()}, maxFrames=6000, pre=PRE)
-            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 516, f'E3 Hebel 7: Tor auf, Pressen an, über die Brücke ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
-        r = await koop(g, m=kat(486, 14), f=kat(470, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
+            r = await koop(g, **{who: kat(480, 15), o: kat(478, 15)}, plans={who: am(484) + bruecke(), o: [{'wait': '!!linkOn[7]'}, {'frames': 60}] + bruecke()}, maxFrames=6000, pre=PRE)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 524, f'E3 Hebel 7: Tor auf, Pressen an, über die Brücke ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        r = await koop(g, m=kat(494, 14), f=kat(478, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
         soll(not r.get('dead'), 'E3 ohne Hebel 7 stehen die Pressen still', r.get('pos'))
         def treppe():
-            pl = [k_lauf(522, 0)]
-            for c0 in (524, 530, 536, 542): pl += sprung_zu(kx(c0)) + [durch(c0 + 4)]
-            return pl + sprung_zu(kx(549)) + [k_lauf(560), {'until': 'P.grounded', 'frames': 200}, k_lauf(566), {'until': 'P.grounded', 'frames': 200}, k_lauf(571), {'until': 'P.grounded', 'frames': 200}, k_lauf(580)]
-        await beide('E3 Pressen-Treppe', 519, lambda w: treppe(), 579, delay=150)
+            pl = [k_lauf(530, 0)]
+            for c0 in (532, 538, 544, 550): pl += sprung_zu(kx(c0)) + [durch(c0 + 4)]
+            return pl + sprung_zu(kx(557)) + [k_lauf(568), {'until': 'P.grounded', 'frames': 200}, k_lauf(574), {'until': 'P.grounded', 'frames': 200}, k_lauf(579), {'until': 'P.grounded', 'frames': 200}, k_lauf(588)]
+        await beide('E3 Pressen-Treppe', 527, lambda w: treppe(), 587, delay=150)
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
-        await beide('E4 großer Pressen-Rhythmus mit Gegenbändern', 605, lambda w: [durchBand(664, 40)], 663, delay=200, maxFrames=8000)
+        await beide('E4 großer Pressen-Rhythmus mit Gegenbändern', 613, lambda w: [durchBand(672, 40)], 671, delay=200, maxFrames=8000)
         hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
-        f = [halten(670), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(670)} + 10', 'left': f'P.x > {kx(671)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
-             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(675)} - 6', 'left': f'P.x > {kx(675)} + 6'}, 'until': 'P.grounded', 'frames': 400},
-             {'wait': '!!linkOn[8]'}, durch(690), halten(691), hp(691, f'Q.grounded && Math.abs(Q.x - {kx(693)}) < 10 && Q.y > {ky(12)}'),
-             {'wait': '!!linkOn[11]'}, durch(707), halten(708), hp(708, f'Q.x >= {kx(711)}'), k_lauf(711), {'until': 'P.grounded', 'frames': 200}, k_lauf(720)]
-        m = [halten(675), hp(675, f'Q.grounded && Math.abs(Q.x - {kx(691)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[10]'}, durch(692), halten(693),
-             hp(693, f'Q.grounded && Math.abs(Q.x - {kx(708)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[9]'}, durch(716)]
-        # Bild-Regel: Doppelgang in zwei Hälften – Treffpunkt in der Mitte (Platte 10 oben 691 / Platte 11 unten 693), keiner läuft aus dem Bild
-        r = await koop(g, f=kat(668, 15), m=kat(666, 15), plans={'f': f, 'm': m}, maxFrames=9000, pre=PRE, trace=True)
-        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(676)] or [99])
-        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 715, 'E4 Pressen über Kreuz in zwei Hälften: Platten 8/10, dann 11/9', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        f = [halten(678), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(678)} + 10', 'left': f'P.x > {kx(679)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(683)} - 6', 'left': f'P.x > {kx(683)} + 6'}, 'until': 'P.grounded', 'frames': 400},
+             {'wait': '!!linkOn[8]'}, durch(698), halten(699), hp(699, f'Q.grounded && Math.abs(Q.x - {kx(701)}) < 10 && Q.y > {ky(12)}'),
+             {'wait': '!!linkOn[11]'}, durch(715), halten(716), hp(716, f'Q.x >= {kx(719)}'), k_lauf(719), {'until': 'P.grounded', 'frames': 200}, k_lauf(728)]
+        m = [halten(683), hp(683, f'Q.grounded && Math.abs(Q.x - {kx(699)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[10]'}, durch(700), halten(701),
+             hp(701, f'Q.grounded && Math.abs(Q.x - {kx(716)}) < 10 && Q.y < {ky(8)}'), {'wait': '!!linkOn[9]'}, durch(724)]
+        # Bild-Regel: Doppelgang in zwei Hälften – Treffpunkt in der Mitte (Platte 10 oben 699 / Platte 11 unten 701), keiner läuft aus dem Bild
+        r = await koop(g, f=kat(676, 15), m=kat(674, 15), plans={'f': f, 'm': m}, maxFrames=9000, pre=PRE, trace=True)
+        abst = max([abs(a[0] - b[0]) / 40 for a, b in zip(r.get('trace', {}).get('m', []), r.get('trace', {}).get('f', [])) if min(a[0], b[0]) > kx(684)] or [99])
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 723, 'E4 Pressen über Kreuz in zwei Hälften: Platten 8/10, dann 11/9', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         soll(abst <= 20.5, 'E4 beide bleiben im Bild (höchstens 20 Spalten auseinander)', abst)
         soll(await g.ev("pressen.filter(p => p.link === 8 || p.link === 10 || p.link === 11 || p.link === 9).length") == 8, 'E4 je Gang vier Pressen (zwei je Hälfte)')
-        await beide('E4 letzte Presse, Grube, Ziel', 723, lambda w: [durch(748), k_lauf(749, 0)] + sprung_zu(kx(756)) + [k_lauf(765)], 764)
+        await beide('E4 letzte Presse, Grube, Ziel', 731, lambda w: [durch(756), k_lauf(757, 0)] + sprung_zu(kx(764)) + [k_lauf(773)], 772)
     assert not fehler, fehler
 
 @test
@@ -8318,9 +8318,9 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/01-glutpfad.json', 'Lava-Kamin (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (592, 6), 'f': (591, 6)}),
     ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (790, 6), 'f': (789, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Pilz-Dash-Grube (188)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(188, 196), {'m': (196, 6), 'f': (196, 6)}),
-    ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False, hoch=3), {'m': (366, 6), 'f': (366, 6)}),
-    ('vulkan/02-aschefeld.json', 'Lava-Kamin (376)', kat(374, 15), kat(373, 15), lambda: kombi_flammen_kamin(376, 16, flamme=False, weit=8, versatz_f=0), {'m': (398, 9), 'f': (397, 9)}),
-    ('vulkan/02-aschefeld.json', 'Lava-Kamin (766)', kat(764, 15), kat(763, 15), lambda: kombi_flammen_kamin(766, 16, flamme=False, weit=8, versatz_f=0), {'m': (788, 9), 'f': (787, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (374, 6), 'f': (373, 6)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (384)', kat(382, 15), kat(381, 15), lambda: kombi_flammen_kamin(384, 16, flamme=False, weit=8, versatz_f=0), {'m': (406, 9), 'f': (405, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (774)', kat(772, 15), kat(771, 15), lambda: kombi_flammen_kamin(774, 16, flamme=False, weit=8, versatz_f=0), {'m': (796, 9), 'f': (795, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (44)', kat(42, 15), kat(41, 15), lambda: kombi_pilz_dash_grube(44, 52), {'m': (52, 6), 'f': (52, 6)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (194)', kat(192, 15), kat(191, 15), lambda: kombi_pilz_dash_grube(194, 202), {'m': (202, 6), 'f': (202, 6)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (341)', kat(339, 15), kat(338, 15), lambda: kombi_flammen_kamin(341, 16, flamme=False, weit=8, versatz_f=0), {'m': (363, 9), 'f': (362, 9)}),
