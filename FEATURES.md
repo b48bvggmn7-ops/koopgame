@@ -1602,7 +1602,8 @@ Mit dem Dash kommt man viel weiter (Sprung + Dash ~16 Kästchen, Schweinchen Sch
 umgebaut, dass Haken, Pilz, Schirm, Aufwind und Kamine wieder gebraucht werden und Verfolgungen Spannung haben.
 Wasserwelt, Boss-Level und Spielwiese sind unverändert.
 - **Hilfs-Stellen dashfest:** Pilz-Gruben -> Pilz-Dash-Gruben (Landeplatz 9 Reihen hoch: nur Pilz + Dash reicht), breite
-  Haken-Gruben (>= 17), Kamin-Gruben mit Landeplatz >= 17 Spalten hinter dem Kamin, Flammen-/Lava-Kamine 3 Reihen höher,
+  Haken-Gruben (>= 17), Kamin-Gruben mit Landeplatz >= 17 Spalten hinter dem Kamin (alle 34 Kamin-Gruben in Ruinen/Höhle/
+  Vulkan sind 17 breit mit drei Haken; einige Level dadurch bis 832 Spalten lang), Flammen-/Lava-Kamine 3 Reihen höher,
   Baumstämme zwischen Pilz-Türmen (kein Turm-zu-Turm-Sprung mehr), Rollen-Stellen so, dass die andere Figur sie auch mit
   Dash nicht allein schafft (z. B. Baumkronen fahrender Haken 13, Dornenpfad Seilbahn).
 - **Münzen** auf den echten Bahnen ihrer Figur (blau = Affe, pink = Schweinchen), per Bot eingesammelt.
