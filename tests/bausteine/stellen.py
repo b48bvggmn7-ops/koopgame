@@ -60,7 +60,7 @@ for _w in 'mf':
 # ---------------- Verstecke (S1) in den vom Nutzer gestalteten Leveln: nur zusätzlich, optional ----------------
 # Verstecke auf schmalen Sockeln: nach dem Hinausspringen nur kurz nach rechts (sonst fällt der Bot vom Sockel)
 _KURZ = {('d02', 220), ('d06', 201), ('d06', 403), ('r04', 191), ('r04', 366), ('r04', 607), ('r05', 595), ('r06', 183),
-         ('h01', 301), ('h02', 139), ('h02', 397), ('h05', 593), ('v01', 243), ('v01', 385), ('v04', 203), ('v04', 457),
+         ('h01', 301), ('h02', 139), ('h02', 397), ('h05', 601), ('v01', 243), ('v01', 385), ('v04', 203), ('v04', 457),
          ('v04', 645), ('v07', 273), ('v07', 333)}
 _VERSTECKE = {
     'dschungel/04-gluehwald.json': [(181, 15, 'pink'), (344, 15, 'pink'), (535, 8, 'blue')],
@@ -73,7 +73,7 @@ _VERSTECKE = {
     'hoehle/01-kristallhoehle.json': [(103, 15, 'pink'), (217, 3, 'pink'), (301, 8, 'pink')],
     'hoehle/02-tropfsteingang.json': [(139, 4, 'pink'), (397, 13, 'pink'), (590, 8, 'blue')],
     'hoehle/03-eisgrotte.json': [(369, 8, 'pink'), (611, 6, 'blue'), (643, 6, 'blue')],
-    'hoehle/05-foerderwerk.json': [(593, 10, 'pink')],
+    'hoehle/05-foerderwerk.json': [(601, 10, 'pink')],
     'vulkan/01-glutpfad.json': [(243, 6, 'pink'), (385, 7, 'pink'), (685, 4, 'pink')],
     'vulkan/02-aschefeld.json': [(441, 8, 'pink'), (554, 8, 'pink'), (682, 8, 'pink')],
     'vulkan/03-feuerberg.json': [(126, 15, 'pink'), (211, 15, 'blue'), (323, 15, 'blue')],
@@ -155,7 +155,7 @@ for _lvl, _liste in _HAFTINSELN.items():
 # ---------------- Durchbruch-Nischen (S4): optional, Münze hinter einem Durchbruch-Kästchen in der Wand ----------------
 _NISCHEN = {   # (w, g, Farbe, Richtung): Richtung 1 = Wand zeigt nach links (von links her), -1 = nach rechts
     'hoehle/04-leuchtgrotte.json': [(206, 16, 'pink', -1), (356, 16, 'blue', -1), (594, 16, 'pink', -1)],
-    'hoehle/05-foerderwerk.json': [(564, 16, 'blue', -1), (628, 16, 'pink', -1)],
+    'hoehle/05-foerderwerk.json': [(572, 16, 'blue', -1), (636, 16, 'pink', -1)],
     'hoehle/06-tiefenschlund.json': [(240, 16, 'blue', -1), (583, 16, 'pink', -1)],
     'vulkan/05-schlackewerk.json': [(744, 14, 'pink', 1)],
     'vulkan/06-feuerschlund.json': [(611, 16, 'blue', 1)],
