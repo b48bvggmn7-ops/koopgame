@@ -325,18 +325,6 @@
  },
  {
   "level": "hoehle/01-kristallhoehle.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "nur 4 Kombi-Stellen, Mindestzahl 7. Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 273, 359 (Level hat nur 480 Spalten, Fähren-Abschnitt bleibt frei). Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
- },
- {
-  "level": "hoehle/01-kristallhoehle.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 200,
-  "begruendung": "Etappe 200–415: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 273, 359 (Level hat nur 480 Spalten, Fähren-Abschnitt bleibt frei). Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
- },
- {
-  "level": "hoehle/01-kristallhoehle.json",
   "regel": "Kombi-Timing",
   "spalte": null,
   "begruendung": "nur 0 von 4 Kombi-Stellen mit Timing/Tempo (mindestens 2). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Gruben 273, 359 (Level hat nur 480 Spalten, Fähren-Abschnitt bleibt frei). Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."

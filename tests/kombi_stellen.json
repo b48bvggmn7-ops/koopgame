@@ -1,1 +1,8 @@
-[]
+[
+ {"level": "hoehle/01-kristallhoehle.json", "spalte": 35, "art": "Haken + Dash", "wer": "m",
+  "beschreibung": "Umbau: Absprung 3 Reihen tiefer, Affe kommt nur mit Haken 41 und Dash nach oben auf die Landung (Bot: nacht_stellen_hoehle), Schweinchen per Aufwind"},
+ {"level": "hoehle/01-kristallhoehle.json", "spalte": 200, "art": "Haken + Dash", "wer": "m",
+  "beschreibung": "Umbau: Plattform 3 Reihen tiefer, Affe kommt nur mit Haken 205 und Dash nach oben auf die Treppe (Bot: nacht_stellen_hoehle), Schweinchen per Aufwind"},
+ {"level": "hoehle/01-kristallhoehle.json", "spalte": 388, "art": "Haken + Dash", "wer": "m",
+  "beschreibung": "Umbau Ziel: Lücke 17, Haken-Kette 391/397 und Dash nach oben aufs Podest (Bot: nacht_stellen_hoehle); Schweinchen per Aufwind, wenn der Affe auf Platte 8 steht"}
+]
