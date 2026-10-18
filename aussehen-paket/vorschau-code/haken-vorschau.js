@@ -1,0 +1,5 @@
+// HAKEN (dunkle Unterlage + Cyan-Leuchten)
+// Vorschau-Code (Vorschau-Seite): Aussehen/Zahlen exakt übernehmen, Anbindung ans Spiel anpassen.
+
+ if(ob)LV.hooks.forEach(([x,y,rr])=>{if(x<x0-rr||x>x1+rr)return;const pulse=3+Math.sin(t*5+x*.05)*2;{const bk=g.createRadialGradient(x,y,0,x,y,34);bk.addColorStop(0,'rgba(5,32,46,.7)');bk.addColorStop(.65,'rgba(5,32,46,.5)');bk.addColorStop(1,'rgba(5,32,46,0)');g.fillStyle=bk;g.beginPath();g.arc(x,y,34,0,7);g.fill()}
+g.fillStyle='rgba(0,229,255,.55)';g.fillStyle='rgba(0,229,255,.7)';g.beginPath();g.arc(x,y,20+pulse,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.arc(x,y,9,0,7);g.stroke();g.strokeStyle='#00e5ff';g.lineWidth=2;g.beginPath();g.arc(x,y,12,0,7);g.stroke();g.fillStyle='#ff2e88';g.beginPath();g.arc(x,y,4.5,0,7);g.fill();g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.4;g.beginPath();g.arc(x,y,12,Math.PI*1.05,Math.PI*1.6);g.stroke();g.strokeStyle='rgba(10,20,40,.35)';g.beginPath();g.arc(x,y,13,Math.PI*.1,Math.PI*.65);g.stroke()});
