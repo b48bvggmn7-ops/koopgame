@@ -12,7 +12,7 @@ window.MZ = {
     for(const s of solids) if(s.type === 'door'){ s.open = true; s.gone = true; }
     const F = new Set(), steh = [];
     for(const s of solids){
-      if(s.gone || s.type === 'oneway' || s.type === 'moveplat') continue;
+      if(s.gone || s.type === 'moveplat') continue;   // einseitige Stege zählen als Stehplatz
       for(let x = s.x; x < s.x + s.w - 1; x += 40) for(let y = s.y; y < s.y + s.h - 1; y += 40) F.add(Math.floor(x/40) + ',' + Math.floor(y/40));
     }
     const gef = new Set();

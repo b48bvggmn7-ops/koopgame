@@ -1837,10 +1837,9 @@
       "klasse": "geschick"
     },
     {
-      "x": 10700,
-      "y": 380,
-      "color": "blue",
-      "klasse": "geschick"
+      "x": 10860,
+      "y": 580,
+      "color": "blue"
     },
     {
       "x": 11860,
@@ -1878,7 +1877,7 @@
     },
     {
       "x": 12260,
-      "y": 500,
+      "y": 340,
       "color": "pink",
       "klasse": "meister"
     },

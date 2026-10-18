@@ -8,7 +8,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | Wunsch | Stand |
 |---|---|
 | Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ✅ Kraterherz Lava-Brücken (Gruben 412–432/437–455 breiter, Affe nur mit Brücke) |
-| Münzen für ihre Figur erreichbar | ✅ Dschungel; ⚠️ Ruinen/Höhle/Vulkan: nur Einstufung, Bot-Prüfung jeder Münze offen |
+| Münzen für ihre Figur erreichbar | ✅ Dschungel; ✅ Ruinen/Höhle/Vulkan: jede Münze ohne Hilfe in der Nähe mit echter Physik geprüft (19 Level), falsche umgelegt; ⚠️ Münzen direkt an Haken/Pilz/Aufwind/Fahrt liegen auf deren Bahnen, nicht einzeln per Bot geprüft |
 | Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
 | Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/7,2 statt 5,4/6,3, Bot-Plan); ✅ Lava zweite Runde: Glutpfad Lava-Raum 1+2, Magmakammer Steinweg schneller; ⚠️ 8 Lava-Stellen + Feuerberg-Wand bleiben (mit Dash nicht schneller schaffbar, Gründe unten) |
 | (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ alle 22 Level (zweite Runde: Durchbruch-Säulen in Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz) |
@@ -224,3 +224,12 @@ Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen,
 - level11_felsenflucht: erste Flucht und Flucht nach oben laufen jetzt mit Dash (Pläne _r5_e1a/_r5_e1c aus JAGDEN_BOT).
 - Neu: jagden_ruinen, jagden_vulkan, dash_ketten_ruinen/hoehle/vulkan (die andere Figur folgt mit dem Warten-Plan).
 - partner_koop_dschungel: mein Bot-Teil flieht mit Dash, steht beim Umlegen von Hebel 14 an dessen neuer Stelle.
+
+## Münzen Ruinen/Höhle/Vulkan (Werkzeug tests/umbau/muenzen_erreichbar.py, echte Physik)
+- Prüfwerkzeug verbessert: Dash schräg nach unten (Verstecke), niedrige Gänge (Förderband-Tunnel) und einseitige Stege
+  als Stehplätze, schneller Lauf mit `--ohne-vorschlag`. Die übrigen Meldungen von Hand nachgeprüft (Kamin-Münzen
+  Tiefenschlund: Bot klettert und sammelt sie; Lava-Graben Glutpfad: Bot sammelt sie, Test level17).
+- Umgelegt: Dash-Tunnel-Münzen in Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz auf die echte Dash-Bahn
+  (Werkzeug tests/umbau/tunnel_muenzen.py, Test dash_ketten_<welt> prüft das Einsammeln); Kristallhöhle obere Route
+  (315/319/330, Test hoehle1_obere_route); Mondnacht 190 auf die Schirm-Dash-Bahn (Test ruinen2_hakenreihe); Feuerberg
+  267 -> 271 (lag für den Affen unerreichbar über der Grube) und 306 -> Reihe 8.

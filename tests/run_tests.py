@@ -2583,6 +2583,9 @@ async def level17_glutpfad(g):
             pl_h = [halten(406), hp(406, f'Q.x >= {kx(444)} && Q.grounded && Q.y <= {ky(11)} + 2')] + weg + [k_lauf(450)]
             r = await koop(g, **{halt: kat(404, 11), lauf: kat(402, 11)}, plans={halt: pl_h, lauf: [{'frames': 30}] + pl_l}, maxFrames=6000)
             soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 442, f'E3 Lava-Graben: Platte 2 hält die Lava unten ({halt} hält zuerst)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            farbe = 'blue' if lauf == 'm' else 'pink'   # Münz-Prüfung: wer durch den Graben läuft, nimmt seine Münzen darin mit
+            offen = await g.ev(f"coins.filter(c => !c.taken && c.color === '{farbe}' && c.x > {kx(410)} && c.x < {kx(441)} && c.y > {ky(12)}).length")
+            soll(not offen, f'E3 Lava-Graben: Münzen ({farbe}) im Graben eingesammelt', offen)
         r = await koop(g, m=kat(404, 11), f=kat(402, 11), plans={'m': [k_lauf(410), {'frames': 200}]}, maxFrames=400)
         soll(r.get('dead') == 'm', 'E3 ohne Platte: Lava im Graben', r.get('pos'))
         ok = None
@@ -2592,6 +2595,8 @@ async def level17_glutpfad(g):
             r = await koop(g, f=kat(450, 11), m=kat(448, 11), plans={'f': f, 'm': [{'frames': 60}] + m}, maxFrames=6000)
             if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 477: ok = hold; break
         soll(ok, 'E3 Schwein segelt, Platte 3, Affe läuft durch den Graben', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        offen = await g.ev(f"coins.filter(c => !c.taken && c.color === 'blue' && c.x > {kx(463)} && c.x < {kx(477)} && c.y > {ky(12)}).length")
+        soll(not offen, 'E3 Graben 2: blaue Münzen eingesammelt', offen)   # Münz-Prüfung
         hoch = lambda: sprung_zu(kx(501)) + sprung_zu(kx(507)) + [{'aim': [kx(511), kx(517)], 'jumps': [kx(506)], 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 600}] + sprung_zu(kx(524)) + [k_lauf(526), {'until': 'P.grounded', 'frames': 200}, k_lauf(531)]
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
@@ -8747,6 +8752,7 @@ async def ruinen2_hakenreihe(g):
          {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(202)}', 'left': f'P.x > {kx(203)}'}, 'until': 'P.grounded', 'frames': 600}]
     r = await koop(g, f=kat(180, 6), m=kat(178, 6), plans={'f': f}, maxFrames=1500)
     assert k_pos(r, 'f') and 199.5 <= k_pos(r, 'f')[0] <= 205.9 and k_pos(r, 'f')[1] == 6, f'Schweinchen Schirm + Dash zum Zwischen-Block: {r.get("pos")}'
+    assert await g.ev(f"coins.some(c => c.taken && c.color === 'pink' && Math.abs(c.x - {kx(190)}) < 2)"), 'pinke Münze 190 auf der Schirm-Dash-Bahn'   # Münz-Prüfung
     for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (20, ['right', 'swimUp'])):
         m = [k_lauf(182, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
         r = await koop(g, m=kat(180, 6), f=kat(178, 6), plans={'m': m}, maxFrames=1500)
