@@ -1606,6 +1606,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   Vulkan sind 17 breit mit drei Haken; einige Level dadurch bis 832 Spalten lang), Flammen-/Lava-Kamine 3 Reihen höher,
   Baumstämme zwischen Pilz-Türmen (kein Turm-zu-Turm-Sprung mehr), Rollen-Stellen so, dass die andere Figur sie auch mit
   Dash nicht allein schafft (z. B. Baumkronen fahrender Haken 13, Dornenpfad Seilbahn).
+- **Abkürzungen geschlossen** (Werkzeug tests/umbau/abkuerzungen.py): Kristallhöhle (Haken-Gruben 35/200, obere Route nur
+  fürs Schweinchen, Ziel mit Haken-Kette und Aufwind), Eisgrotte (Hebel 4 nur fürs Schweinchen), Fallengang (Pfeil-Galerie),
+  Mondnacht (Hakenreihe, Mondspiegel mit Stachel-Decke), Feuerberg (Ziel-Plateau höher). Offen: Ruinen 1 Fähre/Insel.
 - **Münzen** auf den echten Bahnen ihrer Figur (blau = Affe, pink = Schweinchen), per Bot eingesammelt.
 - **Verfolgungen schneller:** Stachelwände und rollende Felsen fahren so schnell, dass man ohne Dash eingeholt wird
   (Ruinen 1 7,4/7,2; Dornenpfad 5,6/5,8/7,4; Wipfelsturm 8,4/8,0/6,6; Baumkronen 7,8/6,6; Felsenflucht bis 14; Tempelherz

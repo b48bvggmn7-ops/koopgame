@@ -31,21 +31,21 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | dschungel/04-gluehwald | ja | geprüft | ja | – | – | Haftdecke (Nacht) |
 | dschungel/05-dornenpfad | ja | geprüft | ja | 5,6 / 5,8 / 7,4 | – | Durchbruch 298 |
 | dschungel/06-wipfelsturm | ja | geprüft | ja | 8,4 / 8,0 / 6,6 | Tunnel + Doppel-Jagd | Durchbruch 381 |
-| ruinen/01-ruinen | Kamin-Gruben 17 breit | offen | Stein-Münzen behoben | 7,4 / 7,2 | – | Durchbruch 296 |
-| ruinen/03-fallengang | Kamin-Gruben 17 breit | offen | offen | – | – | offen |
-| ruinen/04-sonnentempel | Kamin-Gruben 17 breit | offen | offen | – | Tunnel (3 Gruben) | Durchbruch 331 |
-| ruinen/02-mondnacht | Kamin-Gruben 17 breit | offen | offen | Doppel-Wand offen | – | offen |
-| ruinen/05-felsenflucht | Kamin-Gruben 17 breit | offen | Stein-Münze behoben | Felsen 5,5–14 | – | Durchbruch 532 |
-| ruinen/06-tempelherz | – | offen | offen | Felsen 7–14 | – | offen |
-| hoehle/02-tropfsteingang | Pilz-Dash | offen | offen | – | Tunnel (3 Gruben) | Durchbruch 585 |
-| hoehle/03-eisgrotte | Pilz-Dash | offen | offen | – | – | offen |
-| hoehle/01-kristallhoehle | Pilz-Dash | offen | offen | – | – | Durchbruch 115 |
-| hoehle/04-leuchtgrotte | Kamin-Gruben 17 breit | offen | offen | – | – | offen |
-| hoehle/05-foerderwerk | Kamin-Gruben 17 breit | offen | offen | – | – | Durchbruch 400 |
-| hoehle/06-tiefenschlund | Pilz-Dash | offen | offen | – | – | offen |
-| vulkan/01-glutpfad | Lava-Kamin-Gruben 17 breit | offen | offen | Lava 5 Stellen schneller | – | offen |
-| vulkan/02-aschefeld | Lava-Kamin-Gruben 17 breit | offen | offen | – | – | offen |
-| vulkan/03-feuerberg | Pilz-Dash | offen | offen | Wand 4,5 (Grenze) | – | offen |
+| ruinen/01-ruinen | Kamin-Gruben 17 breit | geprüft; offen: Fähre/Insel 76→95 (Bild-Regel) | Stein-Münzen behoben | 7,4 / 7,2 | – | Durchbruch 296 |
+| ruinen/03-fallengang | Kamin-Gruben 17 breit | geprüft (Pfeil-Galerie) | offen | – | – | offen |
+| ruinen/04-sonnentempel | Kamin-Gruben 17 breit | geprüft | offen | – | Tunnel (3 Gruben) | Durchbruch 331 |
+| ruinen/02-mondnacht | Kamin-Gruben 17 breit | geprüft (Hakenreihe, Mondspiegel) | offen | Doppel-Wand offen | – | offen |
+| ruinen/05-felsenflucht | Kamin-Gruben 17 breit | geprüft | Stein-Münze behoben | Felsen 5,5–14 | – | Durchbruch 532 |
+| ruinen/06-tempelherz | – | geprüft | offen | Felsen 7–14 | – | offen |
+| hoehle/02-tropfsteingang | Pilz-Dash | geprüft | offen | – | Tunnel (3 Gruben) | Durchbruch 585 |
+| hoehle/03-eisgrotte | Pilz-Dash | geprüft (Hebel 4) | offen | – | – | offen |
+| hoehle/01-kristallhoehle | Pilz-Dash | geprüft (35, 200, obere Route, Ziel) | offen | – | – | Durchbruch 115 |
+| hoehle/04-leuchtgrotte | Kamin-Gruben 17 breit | geprüft | offen | – | – | offen |
+| hoehle/05-foerderwerk | Kamin-Gruben 17 breit | geprüft | offen | – | – | Durchbruch 400 |
+| hoehle/06-tiefenschlund | Pilz-Dash | geprüft | offen | – | – | offen |
+| vulkan/01-glutpfad | Lava-Kamin-Gruben 17 breit | geprüft | offen | Lava 5 Stellen schneller | – | offen |
+| vulkan/02-aschefeld | Lava-Kamin-Gruben 17 breit | geprüft | offen | – | – | offen |
+| vulkan/03-feuerberg | Pilz-Dash | geprüft (Ziel-Plateau) | offen | Wand 4,5 (Grenze) | – | offen |
 | vulkan/04-magmakammer | Pilz-Dash | offen | offen | Lava 5 Stellen schneller | – | offen |
 | vulkan/05-schlackewerk | Pilz-Dash | offen | offen | – | Tunnel | Durchbruch 194 |
 | vulkan/06-feuerschlund | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | – | Durchbruch 589 |
@@ -164,6 +164,24 @@ Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon P
   Rätsel (Glutpfad 788 verworfen: dort entstand ein 1 breiter Kamin; Sonnentempel 327 -> 331 wegen Haft-Arm).
   Tests nacht_stellen_<welt>. Kristallhöhle zählt dadurch eine Kombi-Stelle mehr (Ausnahme „Kombi-Etappe 0“ entfällt).
 - Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
+
+## Abkürzungen (Werkzeug tests/umbau/abkuerzungen.py) – Umbauten
+Gesucht: Stellen, an denen eine Figur mit Dash eine Hilfe (Haken, Pilz, Aufwind, Kamin, Fähre) oder die Aufgabe der
+anderen Figur überspringt. Geprüft mit echter Physik (tests/stelle_pruefen.py, Dash nach oben = Taste swimUp). Gewollte
+Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen, Sackgassen) bleiben.
+- Kristallhöhle: Haken-/Aufwind-Gruben 35 und 200 – Absprung 3 Reihen tiefer, Haken tiefer (Affe Haken + Dash hoch,
+  Schweinchen Aufwind); obere Route über dem Haken-Tunnel nur fürs Schweinchen (Stelle 318–321 Stacheln, Münzen pink);
+  Ziel: Lücke 388–404 (17) mit Haken 391/397, Podest 3 höher, Aufwind bis unten, Schweinchen nur mit Affe auf Platte 8.
+- Eisgrotte: Aufwind-Leiter zu Hebel 4 – Eis-Plattformen 13/4, Aufwind länger: der Affe kommt nicht mehr an den Hebel.
+- Fallengang: Pfeil-Galerie – oberster Steg 205–208 (Lücke 21), vierter Haken 211.
+- Mondnacht: Zwischen-Block über der Hakenreihe 200–205 (Lücke 17); Mondspiegel: Stachel auf der Mauer über Tor 50,
+  niedrige Stachel-Decke über der breiten Grube 477–486 (Schweinchen segelt mit Schirm + Dash darunter durch).
+- Feuerberg: Ziel-Plateau 410–440 drei Reihen höher, Haken 404 höher, Aufwind bis oben.
+- Offen: Ruinen 1 Fähre/Insel (76→95): der Affe kommt per Dash zur Insel des Schweinchens. Messung: erst ab Lücke 21+
+  zuverlässig dicht – dann wären Affe auf Fähre A und Schweinchen am Hebel 3 über 20 Spalten auseinander (Bild-Regel,
+  Test ruinen1_etappen_im_bild). Braucht eine Entscheidung (Bild-Regel-Ausnahme oder anderer Aufbau).
+- Test-Pläne: „Dash nach oben“ heißt im Koop-Bot swimUp (vorher stand 'up' da – die Gegenproben dashten nur waagerecht);
+  alle Kamin-Gegenproben laufen jetzt mit echtem Dash schräg hoch und bleiben grün.
 
 ## Geänderte Tests
 - KOMBI_STELLEN_BOT: alle Pilz-Gruben -> Pilz-Dash-Gruben (neuer Plan, Ziel-Reihe = neuer Landeplatz); Glühwald 681 entfernt.
