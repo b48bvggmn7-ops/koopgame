@@ -232,4 +232,5 @@ Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen,
 - Umgelegt: Dash-Tunnel-Münzen in Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz auf die echte Dash-Bahn
   (Werkzeug tests/umbau/tunnel_muenzen.py, Test dash_ketten_<welt> prüft das Einsammeln); Kristallhöhle obere Route
   (315/319/330, Test hoehle1_obere_route); Mondnacht 190 auf die Schirm-Dash-Bahn (Test ruinen2_hakenreihe); Feuerberg
-  267 -> 271 (lag für den Affen unerreichbar über der Grube) und 306 -> Reihe 8.
+  267 -> 271 (lag für den Affen unerreichbar über der Grube). Feuerberg 306 bleibt (Meister-Münze am Haft-Arm – das
+  Prüfwerkzeug kennt Haftflächen nicht; der Test nacht_stellen_vulkan sammelt sie ein).
