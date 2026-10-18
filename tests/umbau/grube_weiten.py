@@ -16,7 +16,7 @@ def _profil(lv, c): return tuple(lv.typ(c, r) for r in range(-3, 18))
 
 def weiten(lv, p, q, n=8, grube_von=None, haken=True):
     prof = _profil(lv, q)
-    for c in range(q - 1, q + n + 1):
+    for c in range(q, q + n):
         if _profil(lv, c) != prof: raise ValueError(f'{lv.datei}: Ausgleichsstrecke {q}..{q + n - 1} nicht gleichförmig (Spalte {c})')
         for k, v in _listen(lv):
             if k != 'coins' and any(o['c'] == c for o in v): raise ValueError(f'{lv.datei}: {k} in der Ausgleichsstrecke (Spalte {c})')
@@ -56,7 +56,7 @@ def weiten_links(lv, rw, q, n=8, grube_bis=None, haken=True):
     """Spiegelbild: die n schlichten Spalten q..q+n-1 (LINKS vom Kamin) entfallen, alles von q+n bis rw (Kamin samt
     Anlauf) rückt n nach links; die frei gewordenen Spalten rw-n+1..rw werden Grube wie Spalte rw+1."""
     prof = _profil(lv, q)
-    for c in range(q - 1, q + n + 1):
+    for c in range(q, q + n):
         if _profil(lv, c) != prof: raise ValueError(f'{lv.datei}: Ausgleichsstrecke {q}..{q + n - 1} nicht gleichförmig (Spalte {c})')
         for k, v in _listen(lv):
             if k != 'coins' and any(o['c'] == c for o in v): raise ValueError(f'{lv.datei}: {k} in der Ausgleichsstrecke (Spalte {c})')

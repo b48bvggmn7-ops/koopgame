@@ -16,7 +16,7 @@ def belegt(lv, c):
         any(isinstance(lv.ed.get(k), dict) and lv.ed[k].get('c') == c for k in ('startM', 'startF', 'goal'))
 def frei(lv, q, n=8):
     p0 = profil(lv, q)
-    return not all(t is None for t in p0) and all(profil(lv, c) == p0 and not belegt(lv, c) for c in range(q - 1, q + n + 1))
+    return not all(t is None for t in p0) and all(profil(lv, c) == p0 and not belegt(lv, c) for c in range(q, q + n))
 def suche_rechts(lv, start): return next((q for q in range(start, start + 200) if frei(lv, q)), None)
 def suche_links(lv, start): return next((q for q in range(start - 8, max(0, start - 200), -1) if frei(lv, q)), None)
 

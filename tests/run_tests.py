@@ -1577,8 +1577,7 @@ async def level11_felsenflucht(g):
     pl = {'f': [{'frames': 1}, k_lauf(478, 0)] + am(480) + takt_flucht() + [k_lauf(524)], 'm': [{'wait': '!!linkOn[9]'}] + takt_flucht() + [k_lauf(523)]}
     r = await koop(g, m=kat(482, 15), f=kat(476, 15), plans=pl, maxFrames=4000)
     soll(r.get('done') and k_pos(r, 'f')[0] >= 521 and k_pos(r, 'm')[0] >= 521, 'Takt-Steine mit Fels im Nacken', info(r))
-    hop = [k_lauf(555, -6)] + sprung_zu(kx(558) + 20, 10) + [k_lauf(559, 0)] + sprung_zu(kx(562) + 20, 6) + [k_lauf(563, 0)] + sprung_zu(kx(566) + 20, 6) + [k_lauf(567, 0)] + sprung_zu(kx(571), 6) + [k_lauf(574)]
-    pl = {'m': [k_lauf(546, 0)] + am(548) + hop, 'f': [{'wait': '!!linkOn[10]'}, {'frames': 30}] + hop + [{'wait': 'felsen[8].weg'}]}
+    pl = _r5_e3c(True); pl['f'] = pl['f'] + [{'wait': 'felsen[8].weg'}]   # Umbau: Fels 14, Plan aus JAGDEN_BOT
     r = await koop(g, m=kat(549, 15), f=kat(550, 15), plans=pl, maxFrames=3000)
     soll(r.get('done') and await g.ev("felsen[8].weg"), 'Wechsel-Schleuse auf der Flucht', info(r))
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
@@ -8306,7 +8305,7 @@ KOMBI_STELLEN_BOT = [
     ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3, weit=8, versatz_f=0), {'m': (544, 5), 'f': (543, 5)}),
     ('ruinen/02-mondnacht.json', 'Flammen-Kamin (81)', kat(79, 14), kat(78, 14), lambda: kombi_flammen_kamin(81, 15, hoch=3, weit=8, versatz_f=0), {'m': (103, 5), 'f': (102, 5)}),
     ('ruinen/03-fallengang.json', 'Flammen-Kamin (571)', kat(569, 15), kat(568, 15), lambda: kombi_flammen_kamin(571, 16, hoch=3, weit=8, versatz_f=0), {'m': (593, 6), 'f': (592, 6)}),
-    ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, hoch=3), {'m': (594, 6), 'f': (594, 6)}),
+    ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (572)', kat(570, 15), kat(569, 15), lambda: kombi_flammen_kamin(572, 16, hoch=3, weit=8, versatz_f=0), {'m': (594, 6), 'f': (593, 6)}),
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (273)', kat(271, 14), kat(270, 14), lambda: kombi_pilz_dash_grube(273, 281), {'m': (281, 5), 'f': (281, 5)}),
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (359)', kat(357, 14), kat(356, 14), lambda: kombi_pilz_dash_grube(359, 367), {'m': (367, 5), 'f': (367, 5)}),
     ('hoehle/02-tropfsteingang.json', 'Pilz-Dash-Grube (266)', kat(264, 15), kat(263, 15), lambda: kombi_pilz_dash_grube(266, 274), {'m': (274, 6), 'f': (274, 6)}),
