@@ -4348,7 +4348,7 @@
     {
       "x": 8740,
       "y": 360,
-      "tempo": "langsam",
+      "tempo": "mittel",
       "start": "nummer",
       "link": 1
     },
@@ -4381,7 +4381,7 @@
     {
       "x": 20220,
       "y": 280,
-      "tempo": "mittel",
+      "tempo": "schnell",
       "start": "nummer",
       "link": 4
     },

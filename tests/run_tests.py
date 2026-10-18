@@ -2561,7 +2561,7 @@ async def level17_glutpfad(g):
             o = 'f' if who == 'm' else 'm'
             # Bild-Regel: Hebel 1 steht jetzt auf dem ersten Steg (210), 20 Spalten unter der Tür
             zieht = [k_lauf(205, -10)] + sprung_zu(kx(209)) + am(210) + stufen()[2:]
-            r = await koop(g, **{who: kat(202, 15), o: kat(200, 15)}, plans={who: zieht, o: [{'wait': '!!linkOn[1]'}, {'frames': 40}, k_lauf(205, -10)] + stufen()}, maxFrames=4000)
+            r = await koop(g, **{who: kat(202, 15), o: kat(200, 15)}, plans={who: zieht, o: [{'frames': 20}, k_lauf(205, -10)] + sprung_zu(kx(207)) + [{'wait': '!!linkOn[1]'}] + stufen()[2:]}, maxFrames=4000)   # Umbau: Lava mittel – die zweite Figur steigt schon mit auf den ersten Steg
             soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 247, f'E2 Lava-Raum: Hebel 1, Stege hinauf vor der Lava ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         r = await koop(g, m=kat(202, 15), f=kat(200, 15), plans={'m': [k_lauf(205, -10)] + stufen()}, maxFrames=1500)
         soll(not r.get('done') or r['pos']['m'][0] < 231, 'E2 Tür 1 zu ohne Hebel', r.get('pos'))
@@ -2596,7 +2596,7 @@ async def level17_glutpfad(g):
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
             zieht = [k_lauf(497, 0)] + sprung_zu(kx(501)) + am(502) + [{'holdIf': {'left': f'P.x > {kx(501)}'}, 'frames': 20}] + hoch()[2:]   # Bild-Regel: Hebel 4 auf dem ersten Steg (502)
-            r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: zieht, o: [{'wait': '!!linkOn[4]'}, {'frames': 40}, k_lauf(497, 0)] + hoch()}, maxFrames=4000)
+            r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: zieht, o: [{'frames': 20}, k_lauf(497, 0)] + sprung_zu(kx(500)) + [{'wait': '!!linkOn[4]'}] + hoch()[2:]}, maxFrames=4000)   # Umbau: Lava schnell – die zweite Figur steigt schon mit auf den ersten Steg
             soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 530, f'E3 Lava-Raum 2: Hebel 4, Stege und Pilz hinauf ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
@@ -2803,10 +2803,16 @@ async def level19_magmakammer(g):
         for hold in (4, 8, 12):
             f = [halten(258), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(258)} + 10', 'left': f'P.x > {kx(259)} - 10'}, 'until': f'P.y < {ky(2)}', 'frames': 400},
                  {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(263)} - 6', 'left': f'P.x > {kx(263)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + [k_lauf(275)] + am(278) + glide_to(279, kx(294), hold) + [k_lauf(303)]   # Bild-Regel: Sims bis 279, Hebel 3 bei 278
-            m = [k_lauf(270, -10), {'wait': '!!linkOn[3]'}, k_lauf(271, 0)] + sprung_zu(kx(273)) + [halten(274)] + sprung_zu(kx(278)) + [k_lauf(291), {'until': 'P.grounded', 'frames': 100}, k_lauf(303)]
+            m = [k_lauf(270, -10), {'wait': '!!linkOn[3]'}, k_lauf(271, 0)] + sprung_zu(kx(273)) + [halten(274), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}, k_lauf(291), {'until': 'P.grounded', 'frames': 100}, k_lauf(303)]   # Umbau: Lava mittel – der Affe dasht über den Steinweg
             r = await koop(g, f=kat(254, 15), m=kat(252, 15), plans={'f': f, 'm': m}, maxFrames=6000)
             if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 302: ok = hold; break
         soll(ok, 'E2 Schwein zieht Hebel 3 oben, Affe läuft vor der Lava über den Steinweg', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
+        if ok:   # Umbau: Gegenprobe – ohne Dash holt die (jetzt mittel schnelle) Lava den Affen auf dem Steinweg ein
+            m = [k_lauf(270, -10), {'wait': '!!linkOn[3]'}, k_lauf(271, 0)] + sprung_zu(kx(273)) + [halten(274)] + sprung_zu(kx(278)) + [k_lauf(291), {'until': 'P.grounded', 'frames': 100}, k_lauf(303)]
+            f = [halten(258), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(258)} + 10', 'left': f'P.x > {kx(259)} - 10'}, 'until': f'P.y < {ky(2)}', 'frames': 400},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(263)} - 6', 'left': f'P.x > {kx(263)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + [k_lauf(275)] + am(278) + glide_to(279, kx(294), ok) + [k_lauf(303)]
+            r = await koop(g, f=kat(254, 15), m=kat(252, 15), plans={'f': f, 'm': m}, maxFrames=6000)
+            soll(r.get('dead') == 'm', 'E2 Steinweg ohne Dash: Lava holt den Affen ein', r.get('pos'))
         r = await koop(g, m=kat(285, 12), f=kat(254, 15), plans={'m': [{'frames': 500}]}, links=[3], maxFrames=600)
         soll(r.get('dead') == 'm', 'E2 Hebel 3: die Lava steigt über den Steinweg', r.get('pos'))
         ok = []
