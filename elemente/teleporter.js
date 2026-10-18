@@ -85,14 +85,8 @@ function teleZeichnen(){
     if(t.blitz){ const k = (tw - t.blitz)/350; if(k < 1){ ctx.globalAlpha = 1 - k; ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.ellipse(0, 0, 17 + k*10, 23 + k*12, 0, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; } }
     // Paar-Nummer unten, Figuren-Zeichen (nur Affe / nur Schweinchen) oben
-    ctx.fillStyle = farbe; ctx.beginPath(); ctx.arc(0, 21, 6.5, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(t.paar), 0, 21.5);
-    if(t.fuer === 'affe' || t.fuer === 'schwein'){
-      ctx.fillStyle = TELE_INNEN[t.fuer]; ctx.beginPath(); ctx.arc(0, -28, 6, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.fillText(t.fuer === 'affe' ? 'A' : 'S', 0, -27.5);
-    }
+    ctx.fillStyle = 'rgba(30,20,10,.55)'; ctx.beginPath(); ctx.arc(0, 21, 7, 0, Math.PI*2); ctx.fill();
+    elementEdelstein(0, 21, 5, farbe);   // nur noch Farbe, keine Nummer
     ctx.restore();
   }
 }

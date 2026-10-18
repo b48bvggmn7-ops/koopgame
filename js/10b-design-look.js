@@ -171,3 +171,63 @@ function gemuetlichHimmel(g){
   hg.addColorStop(0, `rgba(${L.col},0)`); hg.addColorStop(1, `rgba(${L.col},${(L.a*0.7).toFixed(3)})`);
   g.fillStyle = hg; g.fillRect(0, 0, W, H);
 }
+
+// ---------- Neues Aussehen, Runde 1: Materialien (Boden, Wand, Gras, Outline) ----------
+// Übernommen aus der abgenommenen Vorschau (aussehen-paket/basis/materialien-vorschau.js): Farben, Zahlen und Reihenfolge
+// der Zeichenschritte sind Absicht – nicht „verbessern“. Gewählt: Wand „Alt“ (Ziegel, wallK 'B'), Erde „Fein“ (soilK 'A',
+// #533b2c), Gras „Weich“, Outline „Weich“ (outK 'A': dünne dunkle Innenlinie, kein Schatten).
+// Die Elemente in elemente/ (Durchbruch, Haftfläche, Wechselboden …) benutzen diese Globals direkt.
+// Zusammengesetzte Flächen (Kachel-Aufbau, Zwischenspeicher) stehen in js/12-welt-zeichnen.js (materialZeichnen).
+let wallK = 'B', soilK = 'A', outK = 'A';   // Standardwerte
+let g = null;   // Zeichen-Kontext der Material-Hilfen (wie in der Vorschau): wird beim Zeichnen kurz auf den Ziel-Kontext gesetzt
+// Schalter der Vorschau (Wolken in der Erde, Gras an Seiten/Unterseite, raue Bruchkante): im Spiel alle aus –
+// Gras nur oben auf freien Oberkanten (Vorgabe), darum ist ihr Code hier nicht übernommen.
+// fester Pseudo-Zufall (Zahlenfolge) aus einem Startwert
+function rnd(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const hsh = (i, j) => { const v = Math.sin(i*127.1 + j*311.7)*43758.5453; return v - Math.floor(v); };   // fester Pseudo-Zufall pro Kachel
+const EA={gd:'#23a257',gt:'#5fe093',grass:'#34c46c',edge:'26,18,12'};   // Gras „Weich“: Kante, helle Oberkante, Fläche
+const SOILBASE={A:'#533b2c',B:'#533b2c',C:'#4c3628'};
+// Wellenlinie der Graskante (gleiche Formel wie bisher im Spiel)
+function waveY(wx){ return Math.sin(wx*0.055)*2.4 + Math.sin(wx*0.137+1.3)*1.2; }
+
+// Wand-Kachel (40×40) an k.x/k.y in den Kontext g; st = Wand-Stil ('B' = „Alt“, Ziegel – Muster aus der Weltlage, daher nahtlos)
+function wallTile(k,r,st){const x=k.x,y=k.y;g.save();g.beginPath();g.rect(x,y,40,40);g.clip();
+ if(st=='A'){g.fillStyle='#4f5b64';g.fillRect(x,y,40,40);const h1=12+Math.floor(r()*16);
+  [[0,h1],[h1,40]].forEach(([a,b])=>{let sx=0;while(sx<38){let w=9+r()*17;if(40-sx-w<9)w=40-sx;const cl=['#a9b6bf','#97a5af','#b6c2ca','#8a98a3','#a3b0a6'][Math.floor(r()*5)];
+   g.beginPath();g.roundRect(x+sx+1,y+a+1,w-2,b-a-2,4);g.fillStyle=cl;g.fill();
+   g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.roundRect(x+sx+2.5,y+a+2,Math.max(1,w-5),2.2,1);g.fill();
+   g.fillStyle='rgba(30,40,48,.22)';g.beginPath();g.roundRect(x+sx+2,y+b-4.5,Math.max(1,w-4),2.5,1);g.fill();
+   if(r()<.18){g.fillStyle='rgba(88,150,76,.55)';g.beginPath();g.ellipse(x+sx+w*(.3+r()*.4),y+a+3,w*.28,2.6,0,0,7);g.fill()}
+   sx+=w}})}
+ else if(st=='B'){g.fillStyle='#7d7062';g.fillRect(x,y,40,40);
+  for(let j=0;j<4;j++){const row=Math.round(y/10)+j,off=(row&1)?10:0;
+   for(let bx=off-20;bx<40;bx+=20){if(bx+20<=0)continue;const ci=Math.floor((x+bx)/20),hv=hsh(ci,row),by=y+j*10;
+    g.fillStyle=['#b98a66','#a97b5a','#c49872','#9b6f50','#b08868'][Math.floor(hv*5)];g.beginPath();g.roundRect(x+bx+1,by+1,18,8,1.5);g.fill();
+    g.fillStyle='rgba(255,235,200,.25)';g.fillRect(x+bx+2,by+1,16,1.5);g.fillStyle='rgba(40,20,10,.25)';g.fillRect(x+bx+2,by+7,16,2);
+    if(hsh(ci*3+1,row)<.22){g.fillStyle='rgba(92,150,70,.65)';g.beginPath();g.ellipse(x+bx+6+hsh(ci,row+9)*8,by+8,5,2.4,0,0,7);g.fill()}
+    if(hsh(ci*5+2,row)<.1){g.strokeStyle='rgba(40,22,12,.5)';g.lineWidth=1;g.beginPath();g.moveTo(x+bx+8,by+1);g.lineTo(x+bx+11,by+5);g.lineTo(x+bx+9,by+9);g.stroke()}}}}
+ else{g.fillStyle='#434d55';g.fillRect(x,y,40,40);const hv=hsh(x/40,y/40),gq=g.createLinearGradient(x,y,x+40,y+40);gq.addColorStop(0,hv<.5?'#a3b0b8':'#98a6ae');gq.addColorStop(1,hv<.5?'#7a8892':'#6f7d88');
+  g.beginPath();g.roundRect(x+1.5,y+1.5,37,37,6);g.fillStyle=gq;g.fill();
+  g.lineWidth=1.6;g.lineCap='round';g.strokeStyle='rgba(255,255,255,.38)';g.beginPath();g.moveTo(x+3.5,y+35);g.lineTo(x+3.5,y+8);g.quadraticCurveTo(x+3.5,y+3.5,x+8,y+3.5);g.lineTo(x+35,y+3.5);g.stroke();
+  g.strokeStyle='rgba(20,28,34,.35)';g.beginPath();g.moveTo(x+36.5,y+6);g.lineTo(x+36.5,y+32);g.quadraticCurveTo(x+36.5,y+36.5,x+32,y+36.5);g.lineTo(x+6,y+36.5);g.stroke();
+  if(r()<.45){g.strokeStyle='rgba(30,40,48,.5)';g.lineWidth=1.2;g.beginPath();const cx=x+10+r()*20;g.moveTo(cx,y+4);g.lineTo(cx-4,y+14);g.lineTo(cx+3,y+22);g.lineTo(cx-2,y+32);g.stroke()}
+  g.strokeStyle='rgba(30,40,48,.2)';g.lineWidth=1;for(let i=0;i<3;i++){const px=x+8+r()*24,py=y+9+r()*22;g.beginPath();g.moveTo(px,py);g.lineTo(px+4,py-1.5);g.stroke()}
+  if(r()<.35){for(let i=0;i<5;i++){g.fillStyle='rgba(150,172,108,'+(.35+r()*.3)+')';g.beginPath();g.arc(x+8+r()*24,y+8+r()*24,1+r()*2,0,7);g.fill()}}}
+ g.restore()}
+
+// Erd-Körnung einer Kachel (40×40) an x/y in den Kontext q; Stil soilK ('A' = „Fein“)
+function grain(q,x,y,r){const k=soilK;
+ q.save();const area=1600;
+ if(k=='A'){for(let i=0;i<area/4.5;i++){const px=x+r()*40,py=y+r()*40,v=r(),sz=.45+r()*.75;q.fillStyle=v<.4?'rgba(214,184,148,'+(.2+r()*.3)+')':v<.85?'rgba(28,16,8,'+(.25+r()*.3)+')':'rgba(168,128,92,'+(.3+r()*.3)+')';q.fillRect(px,py,sz,sz)}}
+ else if(k=='B'){for(let i=0;i<area/10;i++){const px=x+r()*40,py=y+r()*40,v=r(),sz=.8+r()*1.5;q.fillStyle=v<.4?'rgba(214,184,148,'+(.22+r()*.3)+')':v<.85?'rgba(28,16,8,'+(.28+r()*.3)+')':'rgba(168,128,92,'+(.3+r()*.3)+')';q.fillRect(px,py,sz,sz)}}
+ else{for(let i=0;i<area/16;i++){const px=x+r()*40,py=y+r()*40,sz=1.3+r()*r()*4.2,e=sz*(.65+.35*r()),ro=r()*3;
+   q.fillStyle='rgba(12,6,2,.45)';q.beginPath();q.ellipse(px+sz*.25,py+sz*.35,sz*.95,e*.9,ro,0,7);q.fill();
+   q.fillStyle=['#4a3427','#56402f','#3d2a1f','#604636','#33231a'][Math.floor(r()*5)];q.beginPath();q.ellipse(px,py,sz,e,ro,0,7);q.fill();
+   q.fillStyle='rgba(206,166,126,'+(.18+r()*.3)+')';q.beginPath();q.ellipse(px-sz*.28,py-sz*.34,sz*.5,e*.28,ro,0,7);q.fill()}}
+ q.restore()}
+
+// Outline an den freien Kanten (edge) der Gesamtform; 'A' = „Weich“: dünne dunkle Innenlinie (nur innen sichtbar, clip),
+// 'B'/'C' hätten zusätzlich einen weichen Schatten (verworfen); sc = Zeichen-Maßstab (für die Schatten-Unschärfe)
+function outlineDraw(q,edge,clipP,st,sc){if(st=='O')return;
+ if(st=='B'||st=='C'){q.save();q.globalCompositeOperation='destination-over';q.filter='blur('+(4*sc)+'px)';q.translate(0,1.5);q.strokeStyle='rgba(4,20,8,.3)';q.lineWidth=9;q.lineJoin='round';q.stroke(edge);q.restore()}
+ if(st=='A'||st=='C'){q.save();q.lineJoin='round';q.lineCap='round';q.clip(clipP);q.strokeStyle='rgba(40,25,14,.5)';q.lineWidth=3.5;q.stroke(edge);q.restore()}}

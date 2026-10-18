@@ -8,7 +8,7 @@
 //   - „sobald beide da sind“: sobald BEIDE Figuren das Becken erreicht haben (linker Rand), steigt die Lava (Lava-Flucht)
 //     und sinkt erst nach dem Tod / Neustart wieder. (Nur eine Figur genügt nicht – sonst sperrt die Lava den
 //     Nachzügler aus.)
-//   Vorher sichtbar: gestrichelte Glut-Linie in Markenhöhe; beim Losgehen grollt es.
+//   Beim Losgehen grollt es (die gestrichelte Glut-Linie in Markenhöhe ist seit dem neuen Aussehen weg).
 // Rolle: der Affe klettert per Wandsprung/Seil voraus und zieht oben den Hebel, das Schweinchen steigt im Aufwind und
 // hält Druckplatten, die die Lava unten halten.
 // Spiel-Daten: lava [{x, y, w, h}] (Rechtecke), lavaPegel [{x, y (Oberkante), tempo, start: 'nummer'|'naehe', link?}]
@@ -96,23 +96,66 @@ function lavaSpalteZeichnen(c, x, y, w, h, t, oben){
   const g = c.createLinearGradient(0, y, 0, y + Math.min(h, 160));
   g.addColorStop(0, '#ffe27a'); g.addColorStop(0.12, '#ff9a2a'); g.addColorStop(0.5, '#e2481a'); g.addColorStop(1, '#8a1e10');
   c.fillStyle = g; c.fillRect(x, y, w, h);
-  // dunkle Schlacke-Schollen, die langsam treiben
-  c.fillStyle = 'rgba(70,20,10,.35)';
-  for(let i = 0; i < 2; i++){
-    const sx = x + ((t*6 + i*23 + x*0.37) % w), sy = y + 14 + i*18;
-    if(sy < y + h - 6){ c.beginPath(); c.ellipse(sx, sy, 7, 3, 0, 0, Math.PI*2); c.fill(); }
-  }
   if(!oben) return;
   // welliger heller Rand oben + Blasen
   c.fillStyle = '#fff2b0';
   c.beginPath(); c.moveTo(x, y + 3);
   for(let k = 0; k <= 4; k++) c.lineTo(x + w*k/4, y + 1.5 + Math.sin(t*3 + (x + w*k/4)*0.05)*2);
   c.lineTo(x + w, y + 5); c.lineTo(x, y + 5); c.fill();
-  const ph = (((t*0.7 + x*0.013) % 1) + 1) % 1;   // auch links vom Bildrand (x < 0) nie negativ
-  if(ph < 0.6){
-    const r = 2 + ph*6;
-    c.strokeStyle = 'rgba(255,240,170,' + (0.8 - ph) + ')'; c.lineWidth = 1.5;
-    c.beginPath(); c.arc(x + w*0.5 + Math.sin(x)*8, y - r*0.6, r, Math.PI, Math.PI*2); c.stroke();
+  // Blasen an der Oberfläche: wölben sich auf, platzen und spritzen kleine Tropfen
+  const hx = Math.abs(Math.sin(x*12.9898)*43758.5453) % 1;
+  if(hx > 0.35){
+    const q = (((t*0.34 + hx*3.1) % 1) + 1) % 1, bx = x + w*(0.3 + 0.4*hx), r0 = 3 + hx*3;
+    if(q < 0.55){
+      const k = q/0.55, rr = r0*(0.35 + 0.65*k);
+      c.fillStyle = 'rgba(255,196,96,' + (0.55 + 0.25*k) + ')'; c.beginPath(); c.arc(bx, y + 1, rr, Math.PI, Math.PI*2); c.fill();
+      c.strokeStyle = 'rgba(255,244,190,.85)'; c.lineWidth = 1.2; c.beginPath(); c.arc(bx, y + 1, rr, Math.PI, Math.PI*2); c.stroke();
+      c.fillStyle = 'rgba(255,255,230,.8)'; c.beginPath(); c.arc(bx - rr*0.35, y + 1 - rr*0.55, Math.max(.6, rr*0.18), 0, Math.PI*2); c.fill();
+    } else {
+      const k = (q - 0.55)/0.45;
+      for(let i = 0; i < 4; i++){ const vx = (i - 1.5)*5.5, hh = 16 + (i % 2)*9, px = bx + vx*k, py = y - hh*4*k*(1 - k) + 1; const al = 1 - k*0.6;
+        c.fillStyle = 'rgba(255,' + (150 + i*22) + ',60,' + al + ')'; c.beginPath(); c.arc(px, py, 1.9 - k*0.7, 0, Math.PI*2); c.fill(); }
+      c.strokeStyle = 'rgba(255,226,150,' + (0.7*(1 - k*2 > 0 ? 1 - k*2 : 0)) + ')'; c.lineWidth = 1.2; c.beginPath(); c.arc(bx, y + 1, r0*(1 + k*0.9), Math.PI*1.1, Math.PI*1.9); c.stroke();   // Ring, der sich auflöst
+    }
+  }
+}
+// Hitzeflimmern: das schon gezeichnete Bild über der Lava wird in dünnen Streifen leicht seitlich verschoben (wie die Luft über Glut)
+// Abschaltbar (schwache Geräte): von Hand mit localStorage 'monchichi.lavaFlimmern' = 'aus', und von selbst, wenn das
+// Flimmern einmal länger als LAVA_FLIMMERN_SOFORT_MS braucht oder im Mittel länger als LAVA_FLIMMERN_MAX_MS je Bild
+// (gemessen über LAVA_FLIMMERN_PROBE Bilder). Der Bildausschnitt über der Lava wird dazu EINMAL je Bild kopiert und
+// dann streifenweise verschoben zurückgemalt (14-mal das ganze Bild als Quelle wäre auf jedem Gerät sehr langsam).
+const LAVA_FLIMMERN_MAX_MS = 1.5, LAVA_FLIMMERN_SOFORT_MS = 8, LAVA_FLIMMERN_PROBE = 90;
+const lavaFlimmernMess = {an: null, n: 0, summe: 0};
+let lavaFlimmernC = null;   // kleiner Zwischenspeicher für den Bildausschnitt über der Lava
+function lavaFlimmernAn(){
+  if(lavaFlimmernMess.an === null){ let aus = false; try { aus = localStorage.getItem('monchichi.lavaFlimmern') === 'aus'; } catch(e){} lavaFlimmernMess.an = !aus; }
+  return lavaFlimmernMess.an;
+}
+function lavaFlimmern(x, y, w, hoehe, t){
+  if(!lavaFlimmernAn()) return;
+  const t0 = performance.now();
+  lavaFlimmernStreifen(x, y, w, hoehe, t);
+  const M = lavaFlimmernMess, dauer = performance.now() - t0; M.summe += dauer;
+  if(dauer > LAVA_FLIMMERN_SOFORT_MS) M.an = false;
+  if(++M.n >= LAVA_FLIMMERN_PROBE){ if(M.summe/M.n > LAVA_FLIMMERN_MAX_MS) M.an = false; M.n = 0; M.summe = 0; }
+}
+function lavaFlimmernStreifen(x, y, w, hoehe, t){
+  const m = ctx.getTransform(), cv2 = ctx.canvas, n = Math.max(4, Math.round(hoehe/4)), sh = hoehe/n;
+  // nur der sichtbare Teil (waagerecht); senkrecht wie bisher: Streifen außerhalb der Leinwand fallen weg
+  const px0 = Math.max(0, m.a*x + m.e), px1 = Math.min(cv2.width, m.a*(x + w) + m.e);
+  const py0 = Math.max(0, m.d*(y - hoehe) + m.f), py1 = Math.min(cv2.height, m.d*y + m.f);
+  if(px1 - px0 < 1 || py1 - py0 < 1) return;
+  const cw = Math.ceil(px1 - px0), ch = Math.ceil(py1 - py0);
+  if(!lavaFlimmernC) lavaFlimmernC = document.createElement('canvas');
+  if(lavaFlimmernC.width < cw || lavaFlimmernC.height < ch){ lavaFlimmernC.width = Math.max(lavaFlimmernC.width, cw); lavaFlimmernC.height = Math.max(lavaFlimmernC.height, ch); }
+  const q = lavaFlimmernC.getContext('2d');
+  q.clearRect(0, 0, cw, ch); q.drawImage(cv2, px0, py0, cw, ch, 0, 0, cw, ch);
+  const xv = (px0 - m.e)/m.a, wv = cw/m.a;
+  for(let i = 0; i < n; i++){
+    const yy = y - hoehe + i*sh, k = i/n, py = m.d*yy + m.f;
+    if(py < py0 - 0.01 || py + m.d*sh > py1 + 0.01) continue;
+    const dx = Math.sin(t*1.3 + i*0.7 + x*0.01)*1.6*(0.3 + k);
+    ctx.drawImage(lavaFlimmernC, 0, py - py0, cw, m.d*sh, xv + dx, yy, wv, sh);
   }
 }
 function lavaZeichnen(){
@@ -124,6 +167,7 @@ function lavaZeichnen(){
     sg.addColorStop(0, 'rgba(255,120,40,0)'); sg.addColorStop(1, 'rgba(255,120,40,0.28)');
     ctx.fillStyle = sg; ctx.fillRect(b.minX - camX, b.surf - 70, b.maxX - b.minX, 70);
     for(const [x, unten] of b.spalten) lavaSpalteZeichnen(ctx, x - camX, b.surf, 40, unten - b.surf, t, true);
+    lavaFlimmern(b.minX - camX, b.surf - 2, b.maxX - b.minX, 56, t);
     // heißer Regen (Vulkan, Wetter „regen“): Dampf steigt von der Lava auf (nur Bild)
     if(typeof weather !== 'undefined' && weather.rain > 0.05){
       for(const [x] of b.spalten){
@@ -135,7 +179,7 @@ function lavaZeichnen(){
   }
 }
 // gestrichelte Glut-Linie: bis hierhin steigt die Lava (Farbe der Nummer bzw. orange bei „sobald beide da sind“)
-function lavaMarkenZeichnen(){
+function lavaMarkenZeichnen(){ return;   // gestrichelte Steige-Linie entfernt
   for(const b of lavaBecken) for(const m of b.marken){
     if(b.maxX < camX || b.minX > camX + VW || Math.abs(b.surf - m.y) < 1) continue;
     ctx.save(); ctx.setLineDash([10, 7]); ctx.lineDashOffset = -performance.now()*0.03;

@@ -78,94 +78,15 @@ function drawCoin3D(x, y, r, ang, pal, alpha, glow, g){
   c.beginPath(); c.ellipse(-rx*0.42, -r*0.48, Math.max(0.6, rx*0.22), r*0.14, -0.6, 0, Math.PI*2); c.fill();
   c.restore();
 }
-// Bröckelboden: wachsende Risse und rieselnde Krümel während der Vorwarnung (ohne Spielzustand zu ändern:
-// alles wird aus s.timer berechnet)
+// Bröckelboden: rieselnde Krümel während der Vorwarnung (ohne Spielzustand zu ändern: alles wird aus s.timer berechnet).
+// Neues Aussehen: keine wachsenden Risse mehr (Regel „keine Risse und Kratzer für brüchig“); Zittern + roter Schein bleiben.
 function crumbleRnd(a, b){ const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; return v - Math.floor(v); }
-// Bröckelboden-Aussehen: lose, sandfarbene Steinbrocken mit dunklen Fugen, trockenes Moos oben,
-// bröselige Unterseite mit hängenden Krümeln und ab und zu rieselndem Sand -> klar anders als normaler Boden.
+// Farben der Bruchstücke beim Zerbrechen (drawCrumbleBreak; je Level-Thema überschrieben in setTheme, 10a-themen.js)
 const CRUMBLE_PAL = {light:'#e6c88f', mid:'#cfa66a', dark:'#a97c47', edge:'#6b4a26', gap:'rgba(60,35,15,.75)',
                      moss:'#9bab5c', mossLight:'#c2cf7e', speck:'rgba(120,85,45,.55)'};
 const CRUMBLE_PAL_DEFAULT = {...CRUMBLE_PAL};   // je Level-Thema überschrieben (setTheme, 10a-themen.js)
-function drawCrumbleBlocks(s, x, y){
-  const T = 40, nx = Math.max(1, Math.round(s.w/T)), ny = Math.max(1, Math.round(s.h/T));
-  ctx.save();
-  // dunkle Fugen/Hintergrund
-  ctx.fillStyle = CRUMBLE_PAL.gap; roundRect(x + 1, y + 2, s.w - 2, s.h - 3, 7); ctx.fill();
-  for(let iy = 0; iy < ny; iy++){
-    for(let ix = 0; ix < nx; ix++){
-      const wx = s.x + ix*T, wy = s.y + iy*T, bx = x + ix*T, by = y + iy*T;
-      const r = k => crumbleRnd(wx + k*7.3, wy + k*3.1);
-      // zwei Brocken pro Kästchen (oben/unten versetzt) mit leicht schiefen Kanten
-      const split = 17 + r(1)*6;
-      for(const [y0, y1, k] of [[1, split, 2], [split + 2, T - 2, 5]]){
-        const inset = 1.6;
-        const pts = [[bx + inset + r(k)*2, by + y0 + r(k+1)*1.5], [bx + T - inset - r(k+2)*2, by + y0 + r(k+3)*1.5],
-                     [bx + T - inset - r(k+4)*2.5, by + y1 - r(k+5)*1.5], [bx + inset + r(k+6)*2.5, by + y1 - r(k+7)*1.5]];
-        const g = ctx.createLinearGradient(0, by + y0, 0, by + y1);
-        g.addColorStop(0, CRUMBLE_PAL.light); g.addColorStop(0.6, CRUMBLE_PAL.mid); g.addColorStop(1, CRUMBLE_PAL.dark);
-        ctx.fillStyle = g; ctx.beginPath();
-        pts.forEach(([px, py], i)=> i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = CRUMBLE_PAL.edge; ctx.lineWidth = 1.2; ctx.stroke();
-        // heller Lichtrand oben
-        ctx.strokeStyle = 'rgba(255,245,215,.6)'; ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(pts[0][0] + 2, pts[0][1] + 1.5); ctx.lineTo(pts[1][0] - 2, pts[1][1] + 1.5); ctx.stroke();
-        // Steinchen-Sprenkel
-        ctx.fillStyle = CRUMBLE_PAL.speck;
-        for(let q = 0; q < 3; q++){
-          ctx.beginPath(); ctx.arc(bx + 6 + r(k+8+q)*28, by + y0 + 4 + r(k+11+q)*(y1 - y0 - 8), 1 + r(k+14+q)*1.2, 0, Math.PI*2); ctx.fill();
-        }
-        // feiner Haarriss
-        if(r(k+17) > 0.4){
-          const cx0 = bx + 8 + r(k+18)*24;
-          ctx.strokeStyle = 'rgba(80,50,20,.6)'; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(cx0, by + y0 + 2); ctx.lineTo(cx0 + 3 - r(k+19)*6, by + (y0 + y1)/2); ctx.lineTo(cx0 + 1, by + y1 - 2); ctx.stroke();
-        }
-      }
-    }
-  }
-  // trockenes Moos oben (nur wo nichts darüber liegt) – kein sattes Gras wie beim normalen Boden
-  for(let ix = 0; ix < nx; ix++){
-    const wx = s.x + ix*T, bx = x + ix*T;
-    ctx.fillStyle = CRUMBLE_PAL.moss;
-    ctx.beginPath(); ctx.moveTo(bx + 2, y + 4);
-    for(let q = 0; q <= 6; q++) ctx.lineTo(bx + 2 + q*6, y + 1 + crumbleRnd(wx + q, 3)*2.5);
-    for(let q = 6; q >= 0; q--) ctx.lineTo(bx + 2 + q*6, y + 4 + crumbleRnd(wx + q, 5)*3.5);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = CRUMBLE_PAL.mossLight;
-    for(let q = 0; q < 3; q++){ ctx.beginPath(); ctx.arc(bx + 6 + crumbleRnd(wx, q + 9)*28, y + 2.5, 1.4, 0, Math.PI*2); ctx.fill(); }
-  }
-  // bröselige Unterseite: hängende Krümel
-  const bottom = y + s.h - 1;
-  ctx.fillStyle = CRUMBLE_PAL.dark;
-  for(let q = 0; q < s.w/9; q++){
-    const px = x + 4 + crumbleRnd(s.x + q, 21)*(s.w - 8), len = 2 + crumbleRnd(q, s.x)*5;
-    ctx.beginPath(); ctx.moveTo(px - 2.5, bottom - 1); ctx.lineTo(px + 2.5, bottom - 1); ctx.lineTo(px + crumbleRnd(q, 4) - 0.5, bottom + len); ctx.closePath(); ctx.fill();
-  }
-  // ab und zu rieselt etwas Sand herunter (rein zeitbasiert, kein Spielzustand)
-  const tt = performance.now();
-  for(let q = 0; q < Math.max(1, Math.round(s.w/60)); q++){
-    const period = 1800 + crumbleRnd(s.x, q)*1400, ph = ((tt + crumbleRnd(q, s.y)*period) % period) / period;
-    if(ph > 0.35) continue;
-    const a = ph/0.35, px = x + 6 + crumbleRnd(s.x + q*13, Math.floor((tt + crumbleRnd(q, s.y)*period)/period))*(s.w - 12);
-    ctx.globalAlpha = 1 - a; ctx.fillStyle = CRUMBLE_PAL.mid;
-    for(let d = 0; d < 3; d++) ctx.fillRect(px + d*1.5 - 1.5, bottom + 3 + a*26 + d*4, 2, 2);
-  }
-  ctx.restore();
-}
 function drawCrumbleWarning(s, x, y, t){
-  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  for(let cx0 = 12; cx0 < s.w - 6; cx0 += 26){
-    const r = crumbleRnd(s.x + cx0, s.y);
-    const px = x + cx0 + r*8, py = y + s.h*0.5;
-    for(const dir of [-1, 1]){
-      const len = (8 + r*10)*t;
-      ctx.strokeStyle = 'rgba(60,28,8,.85)'; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(px, py);
-      ctx.lineTo(px + dir*len*0.6, py - len*0.35); ctx.lineTo(px + dir*len, py + len*0.2*(r - 0.5)); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,220,180,.35)'; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(px + 1, py + 1); ctx.lineTo(px + dir*len*0.6 + 1, py - len*0.35 + 1); ctx.stroke();
-    }
-  }
+  ctx.save();
   // Krümel rieseln unten heraus
   const n = Math.round(s.w/12);
   for(let i = 0; i < n; i++){
@@ -209,70 +130,6 @@ function drawCrumbleBreak(s){
     }
     ctx.strokeStyle = pal.edge; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.restore();
-  }
-  ctx.restore();
-}
-// Tür als Holztor mit Eisenbeschlägen; Rahmen + Edelstein in der Farbe ihres Hebels.
-// Öffnen/Schließen: das Tor gleitet nach oben/unten (nur Anzeige – die Kollision schaltet sofort).
-function drawDoor(s, x, col){
-  const target = s.open ? 1 : 0;
-  s.anim = s.anim === undefined ? target : s.anim + (target - s.anim)*(1 - Math.pow(0.78, frameDt/STEP));
-  if(Math.abs(s.anim - target) < 0.01) s.anim = target;
-  const y = s.y, w = s.w, h = s.h;
-  ctx.save();
-  // Rahmen (immer sichtbar, damit man sieht, wo die Tür ist)
-  ctx.fillStyle = 'rgba(40,25,10,.35)'; ctx.fillRect(x + 3, y, w - 6, h);
-  // übereinander gestapelte Türen derselben Nummer bekommen EINEN durchgehenden Rahmen
-  if(s.nbUp === undefined){
-    s.nbUp = solids.some(d => d.type==='door' && d.link===s.link && d.x===s.x && Math.abs(d.y + d.h - s.y) < 1);
-    s.nbDown = solids.some(d => d.type==='door' && d.link===s.link && d.x===s.x && Math.abs(s.y + s.h - d.y) < 1);
-  }
-  ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath();
-  const t0 = s.nbUp ? y : y + 1.5, t1 = s.nbDown ? y + h : y + h - 1.5;
-  ctx.moveTo(x + 1.5, t0); ctx.lineTo(x + 1.5, t1); ctx.moveTo(x + w - 1.5, t0); ctx.lineTo(x + w - 1.5, t1);
-  if(!s.nbUp){ ctx.moveTo(x, y + 1.5); ctx.lineTo(x + w, y + 1.5); }
-  if(!s.nbDown){ ctx.moveTo(x, y + h - 1.5); ctx.lineTo(x + w, y + h - 1.5); }
-  ctx.stroke();
-  const vis = h*(1 - s.anim);
-  if(vis > 0.5){
-    ctx.beginPath(); ctx.rect(x + 3, y, w - 6, vis); ctx.clip();
-    const off = -(h - vis);                      // Tor schiebt sich nach oben weg
-    // Bretter
-    const nb = 3, bw = (w - 6)/nb;
-    for(let i = 0; i < nb; i++){
-      const bx = x + 3 + i*bw, g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
-      g.addColorStop(0, '#8d5a2b'); g.addColorStop(0.5, '#a96d36'); g.addColorStop(1, '#7a4b22');
-      ctx.fillStyle = g; ctx.fillRect(bx, y + off, bw, h);
-      ctx.strokeStyle = 'rgba(50,28,10,.6)'; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, y + off + 0.5, bw - 1, h - 1);
-      ctx.strokeStyle = 'rgba(60,35,12,.35)';   // Maserung
-      ctx.beginPath(); ctx.moveTo(bx + bw*0.35, y + off + 4); ctx.quadraticCurveTo(bx + bw*0.6, y + off + h*0.5, bx + bw*0.4, y + off + h - 4); ctx.stroke();
-    }
-    // Eisenbänder mit Nieten
-    for(const fy of [0.22, 0.72]){
-      const by = y + off + h*fy;
-      ctx.fillStyle = '#4a4f57'; ctx.fillRect(x + 3, by - 3, w - 6, 6);
-      ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x + 3, by - 3, w - 6, 1.5);
-      ctx.fillStyle = '#9aa3ad';
-      for(const rx of [x + 7, x + w/2, x + w - 7]){ ctx.beginPath(); ctx.arc(rx, by, 1.6, 0, Math.PI*2); ctx.fill(); }
-    }
-    // Design-Politur C: dunkle Kontur um das Tor, Glanzstreifen wandert über die Bretter
-    ctx.strokeStyle = 'rgba(30,16,6,.6)'; ctx.lineWidth = 2; ctx.strokeRect(x + 4, y + off + 1, w - 8, h - 2);
-    glanzBand(x + 3, y + off, w - 6, h, s.x*0.01 + s.y*0.03);
-    // Edelstein in Hebel-Farbe
-    const gy = y + off + h*0.47;
-    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + w/2, gy - 5); ctx.lineTo(x + w/2 + 4.5, gy); ctx.lineTo(x + w/2, gy + 5); ctx.lineTo(x + w/2 - 4.5, gy); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x + w/2 - 1.5, gy - 3, 1.5, 2);
-    glanzFunkeln(x + w/2 - 1.5, gy - 2.5, 5, s.x*0.03 + s.y);
-    // Unterkante (Spitzen des Tors)
-    ctx.fillStyle = '#4a4f57';
-    for(let i = 0; i < 3; i++){
-      const tx = x + 3 + (i + 0.5)*(w - 6)/3;
-      ctx.beginPath(); ctx.moveTo(tx - 4, y + off + h - 3); ctx.lineTo(tx + 4, y + off + h - 3); ctx.lineTo(tx, y + off + h + 1); ctx.closePath(); ctx.fill();
-    }
-  } else {
-    // offen: oben sieht man den eingefahrenen Torrand
-    if(!s.nbUp){ ctx.fillStyle = '#6b4420'; ctx.fillRect(x + 3, y, w - 6, 3); }
   }
   ctx.restore();
 }
@@ -356,52 +213,333 @@ function elementEdelstein(x, y, r, col){
   ctx.strokeStyle = 'rgba(40,22,8,.7)'; ctx.lineWidth = 1.2; ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x - r*0.35, y - r*0.6, r*0.3, r*0.4);
 }
-// ---------- Design-Politur B: Kontur, Randlicht und Tiefe an Boden, Wand und Plattform ----------
-// Werte je Welt/Tageszeit: DESIGN_LOOK (10b-design-look.js). Nur an freien Rändern (nicht dort, wo ein Nachbarstück
-// anschließt), damit zusammengesetzte Flächen nahtlos bleiben.
-// freie Abschnitte [a, b] von 0..w, die keine der Strecken in list bedeckt – genau an den Nachbar-Kanten (früher in
-// 4-px-Schritten -> neben aufliegenden Stücken blieb ein Streifen ohne Gras/Kontur)
-function freieSpannen(list, w){
-  const bel = list.map(([a, b]) => [Math.max(0, a), Math.min(w, b)]).filter(([a, b]) => b > a).sort((p, q) => p[0] - q[0]);
-  const out = []; let pos = 0;
-  for(const [a, b] of bel){ if(a - pos > 1) out.push([pos, a]); pos = Math.max(pos, b); }
-  if(w - pos > 1) out.push([pos, w]);
+// ---------- Neues Aussehen, Runde 1: Boden und Wand als EINE zusammenhängende Schicht ----------
+// Übersetzung von buildChunk aus der abgenommenen Vorschau (aussehen-paket/basis): alle Boden-/Wand-Kästchen kommen in ein
+// Raster (Tc); daraus entstehen gemeinsame Formen – runde Ecken nur an Außenecken, keine Fugen zwischen Kästchen, Gras-Kappe
+// nur auf freien Oberkanten, die Outline (outlineDraw, 10b-design-look.js) nur um die Gesamtform (auch Treppen, L-Formen,
+// Löcher). Zeichenschritte, Farben und Zahlen wie in der Vorschau. Material-Funktionen: js/10b-design-look.js.
+// Leistung: die Vorschau zeichnet Stücke einmal in Bilder. Im Spiel geht das nicht: Chrome hat je Bild ein festes Budget
+// (rund 32 MB) für Bilder, die in die Leinwand gemalt werden, und der Hintergrund braucht davon schon fast alles – darüber
+// rendert der Browser mitten im Bild (gemessen 100–250 ms). Darum wird hier je Stück (MAT_STUECK Welt-px) EINMAL alles
+// berechnet und in fertige Zeichenpfade (Path2D) gelegt – je Farbe ein Pfad; pro Bild werden nur diese Pfade gefüllt
+// (rund 25 Aufrufe für den ganzen Bildausschnitt). Die Erd-Körnung ist ein kleines, einmal gezeichnetes Muster.
+const MAT_STUECK = 320;          // Breite eines Stücks (Welt-px, Vielfaches von 40)
+const MAT_RAND = 60;             // so weit links/rechts außerhalb des Bilds wird mitgezeichnet (Ziegel-/Gras-Überstand)
+const MAT_KORN_KACHEL = 160;     // Größe der Körnungs-Kachel (Welt-px): 4×4 Kästchen mit je eigener Körnung, dann Wiederholung
+const MAT_ZIEGEL = ['#b98a66','#a97b5a','#c49872','#9b6f50','#b08868'];   // Ziegelfarben (wallTile 'B')
+let matRaster = {quelle: null, n: -1, nf: -1, version: 0, zellen: new Map(), fake: new Set(), spalten: new Map()};
+// Raster aller Boden-/Wand-/Bröckel-Kästchen (1 = Boden, 2 = Wand – auch Haftfläche und Scheinwand –, 3 = Bröckelboden)
+function matRasterHolen(){
+  if(matRaster.quelle === solids && matRaster.n === solids.length && matRaster.nf === fakeWalls.length) return matRaster;
+  const zellen = new Map(), fake = new Set(), spalten = new Map();
+  const eintragen = (s, t, istFake) => {
+    for(let c = Math.floor(s.x/40 + 1e-6); c < Math.ceil((s.x + s.w)/40 - 1e-6); c++)
+      for(let r = Math.floor(s.y/40 + 1e-6); r < Math.ceil((s.y + s.h)/40 - 1e-6); r++){
+        const k = c + ',' + r;
+        if(istFake){ if(zellen.has(k)) continue; fake.add(k); } else fake.delete(k);
+        zellen.set(k, t);
+      }
+  };
+  for(const f of fakeWalls) eintragen(f, 2, true);
+  for(const s of solids){
+    const t = s.type === 'ground' ? 1 : s.type === 'wall' ? 2 : s.type === 'crumble' ? 3 : 0;
+    if(t) eintragen(s, t, false);
+  }
+  for(const [k, t] of zellen){ const [c, r] = k.split(',').map(Number); if(!spalten.has(c)) spalten.set(c, []); spalten.get(c).push({c, r, t, fake: fake.has(k)}); }
+  matRaster = {quelle: solids, n: solids.length, nf: fakeWalls.length, version: matRaster.version + 1, zellen, fake, spalten};
+  matStuecke.clear(); matSicht = {key: ''};
+  return matRaster;
+}
+// Kästchen-Art an Spalte/Reihe (0 = leer) – wie Tc in der Vorschau
+function Tc(c, r){ return matRaster.zellen.get(c + ',' + r) || 0; }
+// Körnung (Erde, grain aus 10b) als Muster: MAT_KORN_KACHEL Welt-px groß, je 40er-Kästchen eigene Körnung, in Bildschirm-
+// Auflösung S einmal gezeichnet; das Muster hängt an der Welt (wandert nicht mit der Kamera)
+let matKornCache = {S: 0, c: null, muster: null};
+function matKornMuster(q, S){
+  if(matKornCache.S !== S){
+    const c = document.createElement('canvas'); c.width = c.height = Math.ceil(MAT_KORN_KACHEL*S);
+    const qq = c.getContext('2d'); qq.setTransform(c.width/MAT_KORN_KACHEL, 0, 0, c.width/MAT_KORN_KACHEL, 0, 0);
+    const n = MAT_KORN_KACHEL/40;
+    for(let i = 0; i < n; i++) for(let j = 0; j < n; j++){ qq.save(); qq.beginPath(); qq.rect(i*40, j*40, 40, 40); qq.clip(); grain(qq, i*40, j*40, rnd(4100 + i*97 + j*13)); qq.restore(); }
+    matKornCache = {S, c, muster: null};
+  }
+  if(!matKornCache.muster){
+    const m = q.createPattern(matKornCache.c, 'repeat'), k = MAT_KORN_KACHEL/matKornCache.c.width;
+    if(m.setTransform) m.setTransform(new DOMMatrix([k, 0, 0, k, 0, 0]));
+    matKornCache.muster = m;
+  }
+  return matKornCache.muster;
+}
+// leere Zeichenpfade eines Stücks bzw. Ausschnitts
+function matPfadeNeu(){
+  const P = () => new Path2D();
+  return {PG: P(), PW: P(), PA: P(), edge: P(), gras: P(), grasLinie: P(), grasLicht: P(), baender: new Map(),
+          ecke: P(), eckeLinie: P(), eckeLicht: P(), ziegel: MAT_ZIEGEL.map(P), zLicht: P(), zSchatten: P(), zMoos: P(), zRiss: P(),
+          wLicht: P(), wGras: P(), wGrasHell: P(), wMoos: P(), hatG: false, hatW: false};
+}
+// Berechnet für die Kästchen 'liste' ({c, r, t}) alle Zeichenschritte von buildChunk (Vorschau) als Pfade in Welt-Koordinaten.
+// ziegelVon/ziegelBis: nur Ziegel mit linker Kante in diesem Bereich (jeder Ziegel gehört genau einem Stück); weitere
+// Kästchen für Ziegel, die von nebenan herüberragen, in 'nachbarn'. Zufall der Vorschau (r()) hier je Kästchen fest.
+function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
+  const D = matPfadeNeu(), ziegelGesehen = new Set();
+  const kaestchen = liste.map(({c: cc, r: rr, t}) => {
+    const n=Tc(cc,rr-1)>0,s=Tc(cc,rr+1)>0,wl=Tc(cc-1,rr)>0,e=Tc(cc+1,rr)>0,rad=[(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0],x=cc*40,y=rr*40;
+    return {t,x,y,n,s,wl,e,rad,cc,rr,nG:Tc(cc,rr-1)==1};
+  });
+  for(const k of kaestchen){
+    const {x, y, rad, n, s, wl, e} = k, edge = D.edge;
+    (k.t==1?D.PG:D.PW).roundRect(x,y,40,40,rad); D.PA.roundRect(x,y,40,40,rad);
+    if(!n){edge.moveTo(x+rad[0],y);edge.lineTo(x+40-rad[1],y)}if(!e){edge.moveTo(x+40,y+rad[1]);edge.lineTo(x+40,y+40-rad[2])}if(!s){edge.moveTo(x+40-rad[2],y+40);edge.lineTo(x+rad[3],y+40)}if(!wl){edge.moveTo(x,y+40-rad[3]);edge.lineTo(x,y+rad[0])}
+    if(rad[0]){edge.moveTo(x,y+rad[0]);edge.arc(x+rad[0],y+rad[0],rad[0],Math.PI,1.5*Math.PI)}if(rad[1]){edge.moveTo(x+40-rad[1],y);edge.arc(x+40-rad[1],y+rad[1],rad[1],1.5*Math.PI,2*Math.PI)}if(rad[2]){edge.moveTo(x+40,y+40-rad[2]);edge.arc(x+40-rad[2],y+40-rad[2],rad[2],0,.5*Math.PI)}if(rad[3]){edge.moveTo(x+rad[3],y+40);edge.arc(x+rad[3],y+40-rad[3],rad[3],.5*Math.PI,Math.PI)}
+  }
+  // Erde: Gras-Kappe auf freien Oberseiten (Schatten-Band, Grasfläche, dunkle Wellenlinie, helle Oberkante)
+  for(const k of kaestchen){
+    if(k.t!=1) continue; D.hatG = true;
+    if(!k.nG){const xa=k.x,xb=k.x+40,y=k.y;
+     if(!D.baender.has(y)) D.baender.set(y, new Path2D()); D.baender.get(y).rect(xa,y+12,40,14);
+     const G=D.gras;G.moveTo(xa,y-3);G.lineTo(xb+.5,y-3);for(let px=xb+.5;px>=xa;px-=5)G.lineTo(px,y+12+waveY(px));G.lineTo(xa,y+12+waveY(xa));G.closePath();
+     const L=D.grasLinie;for(let px=xa;px<=xb+.5;px+=5){const yy=y+13+waveY(px);px==xa?L.moveTo(px,yy):L.lineTo(px,yy)}
+     D.grasLicht.rect(xa,y+2,40.5,3)}
+    // Gras-Kanten: an Stufen nach oben läuft das Gras ein Stück an der höheren Fläche hoch
+    if(!k.n)[[1,k.x+40],[-1,k.x]].forEach(([dir,xw])=>{const nb=dir>0?k.e:k.wl;if(!nb||Tc(k.cc+dir,k.rr-1)<=0)return;const y=k.y;
+     const F=D.ecke;F.moveTo(xw,y+12+waveY(xw));F.lineTo(xw,y-14);F.quadraticCurveTo(xw-dir*3,y-9,xw-dir*17,y+1);F.lineTo(xw-dir*17,y+14);F.closePath();
+     D.eckeLinie.moveTo(xw-dir*1,y-14);D.eckeLinie.quadraticCurveTo(xw-dir*4,y-9,xw-dir*17,y+1.5);
+     D.eckeLicht.moveTo(xw-dir*1.5,y-11);D.eckeLicht.quadraticCurveTo(xw-dir*3.5,y-6,xw-dir*12,y-.5)});
+  }
+  // Ziegelwand (wallTile 'B'): Ziegel aus der Weltlage, jeder Ziegel einmal (auch wenn er über zwei Kästchen reicht)
+  const ziegelAus = (x, y) => {
+    for(let j=0;j<4;j++){const row=Math.round(y/10)+j,off=(row&1)?10:0;
+     for(let bx=off-20;bx<40;bx+=20){if(bx+20<=0)continue;const ci=Math.floor((x+bx)/20),hv=hsh(ci,row),by=y+j*10,X=x+bx;
+      if(X<ziegelVon||X>=ziegelBis||ziegelGesehen.has(ci+','+row))continue;ziegelGesehen.add(ci+','+row);
+      D.ziegel[Math.floor(hv*5)].roundRect(X+1,by+1,18,8,1.5);
+      D.zLicht.rect(X+2,by+1,16,1.5);D.zSchatten.rect(X+2,by+7,16,2);
+      if(hsh(ci*3+1,row)<.22){D.zMoos.moveTo(X+6+hsh(ci,row+9)*8+5,by+8);D.zMoos.ellipse(X+6+hsh(ci,row+9)*8,by+8,5,2.4,0,0,7)}
+      if(hsh(ci*5+2,row)<.1){D.zRiss.moveTo(X+8,by+1);D.zRiss.lineTo(X+11,by+5);D.zRiss.lineTo(X+9,by+9)}}}
+  };
+  for(const k of kaestchen){
+    if(k.t!=2) continue; D.hatW = true;
+    ziegelAus(k.x, k.y);
+    const r = rnd(Math.round(k.cc*7919 + k.rr*104729 + 13));
+    if(!k.n){D.wLicht.rect(k.x+2,k.y+1.5,36,1.5);const G=D.wGras;G.moveTo(k.x,k.y-2);G.lineTo(k.x+40,k.y-2);for(let px=k.x+40;px>=k.x;px-=5)G.lineTo(px,k.y+6+waveY(px)*.8);G.closePath();D.wGrasHell.rect(k.x,k.y,40,2)}
+    if(!k.wl&&r()<.5){const my=k.y+10+r()*20,mr=5+r()*4;D.wMoos.moveTo(k.x+3+mr,my);D.wMoos.ellipse(k.x+3,my,mr,4,0,0,7)}
+  }
+  for(const z of nachbarn) if(z.t==2) ziegelAus(z.c*40, z.r*40);
+  return D;
+}
+// mehrere Stücke zu einem Ausschnitt zusammenfügen (je Pfad ein Aufruf beim Zeichnen, keine Nahtstellen zwischen Stücken)
+function matPfadeVereinen(liste){
+  const V = matPfadeNeu();
+  for(const D of liste){
+    for(const k of ['PG','PW','PA','edge','gras','grasLinie','grasLicht','ecke','eckeLinie','eckeLicht','zLicht','zSchatten','zMoos','zRiss','wLicht','wGras','wGrasHell','wMoos']) V[k].addPath(D[k]);
+    D.ziegel.forEach((p, i) => V.ziegel[i].addPath(p));
+    for(const [y, p] of D.baender){ if(!V.baender.has(y)) V.baender.set(y, new Path2D()); V.baender.get(y).addPath(p); }
+    V.hatG = V.hatG || D.hatG; V.hatW = V.hatW || D.hatW;
+  }
+  return V;
+}
+// Zeichnen der Pfade in den Kontext q (Welt-Koordinaten) – Reihenfolge wie buildChunk: Erde, Gras, Gras-Kanten, Wand, Outline
+function matPfadeZeichnen(q, V, S){
+  if(V.hatG){
+    q.fillStyle=SOILBASE[soilK];q.fill(V.PG);
+    q.fillStyle=matKornMuster(q,S);q.fill(V.PG);   // Vorschau: grain(q,k.x,k.y,r) je Kästchen
+    q.save();q.clip(V.PG);
+    if(!V.grad) V.grad = new Map();
+    for(const [y, p] of V.baender){ let sg = V.grad.get(y); if(!sg){ sg=q.createLinearGradient(0,y+12,0,y+26);sg.addColorStop(0,'rgba('+EA.edge+',.24)');sg.addColorStop(1,'rgba('+EA.edge+',0)'); V.grad.set(y, sg); } q.fillStyle=sg;q.fill(p); }
+    q.fillStyle=EA.grass;q.fill(V.gras);q.strokeStyle=EA.gd;q.lineWidth=2.5;q.stroke(V.grasLinie);q.fillStyle=EA.gt;q.fill(V.grasLicht);
+    q.restore();
+    q.fillStyle=EA.grass;q.fill(V.ecke);q.strokeStyle=EA.gd;q.lineWidth=2;q.stroke(V.eckeLinie);q.strokeStyle=EA.gt;q.lineWidth=1.6;q.stroke(V.eckeLicht);
+  }
+  if(V.hatW){
+    q.fillStyle='#7d7062';q.fill(V.PW);q.save();q.clip(V.PW);
+    V.ziegel.forEach((p,i)=>{q.fillStyle=MAT_ZIEGEL[i];q.fill(p)});
+    q.fillStyle='rgba(255,235,200,.25)';q.fill(V.zLicht);q.fillStyle='rgba(40,20,10,.25)';q.fill(V.zSchatten);
+    q.fillStyle='rgba(92,150,70,.65)';q.fill(V.zMoos);q.strokeStyle='rgba(40,22,12,.5)';q.lineWidth=1;q.stroke(V.zRiss);
+    q.fillStyle='rgba(255,255,255,.3)';q.fill(V.wLicht);q.fillStyle='#5aa35a';q.fill(V.wGras);q.fillStyle='#7cc36f';q.fill(V.wGrasHell);
+    q.fillStyle='rgba(90,163,90,.55)';q.fill(V.wMoos);
+    q.restore();
+  }
+  outlineDraw(q,V.edge,V.PA,outK,S);
+}
+// Zeichen-Maßstab (echte Bildschirm-Pixel je Welt-Pixel; für die Körnung)
+function matMassstab(){ return Math.min(4, Math.max(0.5, RS*zoom)); }
+let matStuecke = new Map(), matSicht = {key: ''};
+// Pfade eines Stücks (Spalten ci*MAT_STUECK … +MAT_STUECK); Scheinwand und Bröckelboden zeichnen sich selbst
+function matStueckDaten(ci){
+  if(matStuecke.has(ci)) return matStuecke.get(ci);
+  const R = matRaster, c0 = ci*MAT_STUECK/40, c1 = c0 + MAT_STUECK/40, liste = [], nachbarn = [];
+  for(let c = c0 - 1; c <= c1; c++) for(const z of (R.spalten.get(c) || [])){
+    if(z.fake || z.t === 3) continue;
+    if(c >= c0 && c < c1) liste.push(z); else nachbarn.push(z);
+  }
+  const D = liste.length ? matPfadeBauen(liste, nachbarn, c0*40, c1*40) : null;
+  matStuecke.set(ci, D);
+  return D;
+}
+// Boden und Wand des Levels: Pfade der sichtbaren Stücke (einmal je Ausschnitt vereint) füllen
+function materialZeichnen(){
+  const R = matRasterHolen();
+  const a = Math.floor((camX - MAT_RAND)/MAT_STUECK), b = Math.floor((camX + VW + MAT_RAND)/MAT_STUECK), key = R.version + ':' + a + ':' + b;
+  if(matSicht.key !== key){
+    const L = []; for(let ci = a; ci <= b; ci++){ const D = matStueckDaten(ci); if(D) L.push(D); }
+    matSicht = {key, V: matPfadeVereinen(L)};
+  }
+  ctx.save(); ctx.translate(-camX, 0);
+  matPfadeZeichnen(ctx, matSicht.V, matMassstab());
+  ctx.restore();
+}
+// Scheinwand: dieselbe Wand (Ziegel aus der Weltlage -> nahtlos zur echten Wand) als eigenes kleines Bild je Scheinwand,
+// damit sie beim Hineingehen als Ganzes durchsichtig werden kann (wenige, kleine Flächen)
+function matScheinwandBild(f){
+  const R = matRasterHolen(), S = matMassstab();
+  if(f._mat && f._mat.S === S && f._mat.v === R.version) return f._mat;
+  const liste = [];
+  for(let c = Math.floor(f.x/40 + 1e-6); c < Math.ceil((f.x + f.w)/40 - 1e-6); c++)
+    for(let r = Math.floor(f.y/40 + 1e-6); r < Math.ceil((f.y + f.h)/40 - 1e-6); r++) if(R.fake.has(c + ',' + r)) liste.push({c, r, t: 2});
+  const X = Math.floor(f.x/40 + 1e-6)*40 - 4, Y = Math.floor(f.y/40 + 1e-6)*40 - 20, w = Math.ceil((f.x + f.w)/40 - 1e-6)*40 + 4 - X, h = Math.ceil((f.y + f.h)/40 - 1e-6)*40 + 6 - Y;
+  const c = document.createElement('canvas'); c.width = Math.ceil(w*S); c.height = Math.ceil(h*S);
+  const q = c.getContext('2d'); q.setTransform(S, 0, 0, S, -X*S, -Y*S);
+  matPfadeZeichnen(q, matPfadeBauen(liste, [], -Infinity, Infinity), S);
+  return f._mat = {c, x: X, y: Y, w, h, S, v: R.version};
+}
+// Bewegliche Plattform aus Boden/Wand (pieceDraw aus der Vorschau): ein abgerundeter Block in Erde mit Gras-Kappe bzw. Wand,
+// Outline wie die Flächen, kein Schatten. Gezeichnet 2-fach in ein eigenes Bild (Rand 24 px), vorher geleert (kein Restschatten).
+function pieceDraw(p){const [x,y,w,h,look]=p.m,q=p.c.getContext('2d');q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,p.c.width,p.c.height);q.setTransform(2,0,0,2,24*2,24*2);const sv=g;g=q;const r=rnd(w*7+h);const path=()=>{q.beginPath();q.roundRect(0,0,w,h,9)};
+ if(look=='wall'&&wallK!='O'){path();q.fillStyle='#98a8b2';q.fill();q.save();path();q.clip();for(let cx=0;cx<w;cx+=40)for(let cy=0;cy<h;cy+=40)wallTile({x:cx,y:cy},r,wallK);q.restore()}
+ else if(look=='wall'){path();q.fillStyle='#98a8b2';q.fill();q.save();path();q.clip();for(let cy=0;cy<h;cy+=20)for(let cx=-((cy/20&1)?20:0);cx<w;cx+=40){q.fillStyle='rgba(58,70,79,.42)';q.fillRect(cx-1,cy,2,20);q.fillRect(0,cy-1,w,2);const v=r();q.fillStyle=v>.5?'rgba(255,255,255,'+((v-.5)*.16)+')':'rgba(30,40,48,'+((.5-v)*.14)+')';q.fillRect(cx+1,cy+1,38,18)}q.fillStyle='rgba(255,255,255,.3)';q.fillRect(3,1.5,w-6,1.5);q.restore()}
+ else{path();q.fillStyle=SOILBASE[soilK];q.fill();q.save();path();q.clip();for(let cx=0;cx<w;cx+=40)for(let cy=0;cy<h;cy+=40)grain(q,cx,cy,r);q.beginPath();q.moveTo(0,-3);q.lineTo(w,-3);for(let px=w;px>=0;px-=5)q.lineTo(px,12+waveY(px));q.closePath();q.fillStyle=EA.grass;q.fill();q.strokeStyle=EA.gd;q.lineWidth=2.5;q.beginPath();for(let px=0;px<=w;px+=5){px?q.lineTo(px,13+waveY(px)):q.moveTo(px,13+waveY(px))}q.stroke();q.fillStyle=EA.gt;q.fillRect(0,2,w,3);q.restore()}
+ {const pp=new Path2D();pp.roundRect(0,0,w,h,9);outlineDraw(q,pp,pp,outK,2)}g=sv;p.done=1}
+// bewegliche Boden-/Wand-Stücke je Gruppe: bilden sie (am Start) ein volles Rechteck, wird die ganze Gruppe EIN Block,
+// sonst jedes Stück für sich
+let matBeweglich = {quelle: null, n: -1, liste: []};
+function matBeweglicheStuecke(){
+  if(matBeweglich.quelle === solids && matBeweglich.n === solids.length) return matBeweglich.liste;
+  const gruppen = new Map();
+  for(const s of solids){
+    if(s.type !== 'moveplat' || (s.look !== 'ground' && s.look !== 'wall')) continue;
+    const k2 = s.group === undefined || s.group === null ? s : s.group + '|' + s.look;
+    if(!gruppen.has(k2)) gruppen.set(k2, []);
+    gruppen.get(k2).push(s);
+  }
+  const liste = [], stueck = (teile, look) => {
+    const x0 = Math.min(...teile.map(s => s.startX)), y0 = Math.min(...teile.map(s => s.startY));
+    const w = Math.max(...teile.map(s => s.startX + s.w)) - x0, h = Math.max(...teile.map(s => s.startY + s.h)) - y0;
+    const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + 48)*2);
+    liste.push({teile, x0, y0, w, h, piece: {m: [0, 0, w, h, look], c, done: 0}});
+  };
+  for(const teile of gruppen.values()){
+    const look = teile[0].look;
+    const x0 = Math.min(...teile.map(s => s.startX)), y0 = Math.min(...teile.map(s => s.startY));
+    const w = Math.max(...teile.map(s => s.startX + s.w)) - x0, h = Math.max(...teile.map(s => s.startY + s.h)) - y0;
+    if(Math.abs(teile.reduce((a, s) => a + s.w*s.h, 0) - w*h) < 1) stueck(teile, look);
+    else for(const s of teile) stueck([s], look);
+  }
+  matBeweglich = {quelle: solids, n: solids.length, liste};
+  return liste;
+}
+function matBeweglichZeichnen(){
+  for(const B of matBeweglicheStuecke()){
+    const s0 = B.teile[0], x = Math.round(B.x0 + (s0.x - s0.startX) - camX), y = Math.round(B.y0 + (s0.y - s0.startY));
+    if(x + B.w < -20 || x > VW + 20) continue;
+    if(!B.piece.done) pieceDraw(B.piece);
+    ctx.drawImage(B.piece.c, x - 24, y - 24, B.w + 48, B.h + 48);
+  }
+}
+// Bröckelboden (aussehen-paket/vorschau-code): Erde wie der normale Boden, trockenes hellbraunes Gras obendrauf, Klumpen
+// und Kiesel (bruchRisse 'erde', elemente/durchbruch.js), glatte Unterkante. Je Kästchen einmal gezeichnet (Zwischenspeicher).
+function crumbTile(k,r){const x=k.x,y=k.y;g.drawImage(matTile('soil',71+Math.floor(hsh(x,y)*5)),x,y,40,40);
+ if(!k.n)grasKappe(x,y,40,x,{grass:'#bfa468',gd:'#8d7242',gt:'#dccb96'},g);
+ bruchRisse(g,x,y,40,40,x*3+y*7,'erde',1);g.strokeStyle='rgba(30,22,16,.4)';g.lineWidth=1.2;g.strokeRect(x+.6,y+.6,38.8,38.8)}
+const __broeckel = {};
+function broeckelKachel(cc, rr){
+  const R = matRasterHolen(), key = R.version + ':' + cc + ',' + rr;
+  if(__broeckel[key]) return __broeckel[key];
+  const x = cc*40, y = rr*40, c = document.createElement('canvas'); c.width = 80; c.height = 88;   // 40×44 (4 px Gras darüber)
+  const q = c.getContext('2d'); q.setTransform(2, 0, 0, 2, -x*2, -(y - 4)*2);
+  const sv = g; g = q;
+  const n=Tc(cc,rr-1)>0,s=Tc(cc,rr+1)>0,wl=Tc(cc-1,rr)>0,e=Tc(cc+1,rr)>0,rad=[(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0];
+  crumbTile({x, y, n}, null);
+  // Outline an den freien Kanten wie bei der Gesamtform (in der Vorschau gehört der Bröckelboden mit zur Form)
+  const PA = new Path2D(), edge = new Path2D(); PA.roundRect(x,y,40,40,rad);
+  if(!n){edge.moveTo(x+rad[0],y);edge.lineTo(x+40-rad[1],y)}if(!e){edge.moveTo(x+40,y+rad[1]);edge.lineTo(x+40,y+40-rad[2])}if(!s){edge.moveTo(x+40-rad[2],y+40);edge.lineTo(x+rad[3],y+40)}if(!wl){edge.moveTo(x,y+40-rad[3]);edge.lineTo(x,y+rad[0])}
+  if(rad[0]){edge.moveTo(x,y+rad[0]);edge.arc(x+rad[0],y+rad[0],rad[0],Math.PI,1.5*Math.PI)}if(rad[1]){edge.moveTo(x+40-rad[1],y);edge.arc(x+40-rad[1],y+rad[1],rad[1],1.5*Math.PI,2*Math.PI)}if(rad[2]){edge.moveTo(x+40,y+40-rad[2]);edge.arc(x+40-rad[2],y+40-rad[2],rad[2],0,.5*Math.PI)}if(rad[3]){edge.moveTo(x+rad[3],y+40);edge.arc(x+rad[3],y+40-rad[3],rad[3],.5*Math.PI,Math.PI)}
+  outlineDraw(q, edge, PA, outK, 2);
+  g = sv;
+  return __broeckel[key] = c;
+}
+function drawCrumbleBlocks(s, x, y){
+  for(let cx = 0; cx < s.w - 1; cx += 40) for(let cy = 0; cy < s.h - 1; cy += 40)
+    ctx.drawImage(broeckelKachel(Math.floor((s.x + cx)/40 + 1e-6), Math.floor((s.y + cy)/40 + 1e-6)), x + cx, y + cy - 4, 40, 44);
+}
+// Tür (aussehen-paket/vorschau-code/tuer-vorschau.js): zusammenhängende Tür-Kästchen derselben Nummer = EINE Tür (auch lang,
+// dick oder ein einzelner Block), Holzbretter mit Eisenbändern, dunkler Rahmen (nicht farbig) und EIN Diamant in der
+// Hebel-Farbe mittig auf dunkler Fassung. Öffnen: das Tor fährt ein (nur Anzeige – die Kollision schaltet je Kästchen).
+let tuerFlaechen = {quelle: null, n: -1, liste: []};
+function tuerFlaechenHolen(){
+  if(tuerFlaechen.quelle === solids && tuerFlaechen.n === solids.length) return tuerFlaechen.liste;
+  const cells = {}, teil = {};
+  for(const s of solids) if(s.type === 'door'){ const k = s.link + '|' + s.x + '|' + s.y; cells[k] = 1; teil[k] = s; }
+  const used = {}, out = [];
+  Object.keys(cells).map(k => k.split('|').map(Number)).sort((a, b) => a[2] - b[2] || a[1] - b[1]).forEach(([l, x, y]) => {
+    const k0 = l + '|' + x + '|' + y; if(used[k0]) return;
+    let w = 1; while(cells[l + '|' + (x + 40*w) + '|' + y] && !used[l + '|' + (x + 40*w) + '|' + y]) w++;
+    let h = 1; ok: while(true){ for(let i = 0; i < w; i++){ const kk = l + '|' + (x + 40*i) + '|' + (y + 40*h); if(!cells[kk] || used[kk]) break ok; } h++; }
+    const teile = [];
+    for(let j = 0; j < h; j++) for(let i = 0; i < w; i++){ const kk = l + '|' + (x + 40*i) + '|' + (y + 40*j); used[kk] = 1; teile.push(teil[kk]); }
+    out.push({x, y, w: w*40, h: h*40, l, teile});
+  });
+  tuerFlaechen = {quelle: solids, n: solids.length, liste: out};
   return out;
 }
-function rundPfad(x, y, w, h, r){
-  const {tl = 0, tr = 0, bl = 0, br = 0} = r;
-  ctx.beginPath();
-  ctx.moveTo(x + tl, y);
-  ctx.lineTo(x + w - tr, y); if(tr) ctx.arcTo(x + w, y, x + w, y + tr, tr);
-  ctx.lineTo(x + w, y + h - br); if(br) ctx.arcTo(x + w, y + h, x + w - br, y + h, br);
-  ctx.lineTo(x + bl, y + h); if(bl) ctx.arcTo(x, y + h, x, y + h - bl, bl);
-  ctx.lineTo(x, y + tl); if(tl) ctx.arcTo(x, y, x + tl, y, tl);
-  ctx.closePath();
-}
-// dunkle Kontur an den freien Rändern; oben/unten = Spannen der Ober-/Unterseite mit Kontur (unten fehlt: ganz, wenn !nb.b).
-// Einheitlich für Boden und Wand (gleiche Farbe, Breite, Deckkraft, Ecken). Während der Boden/Wand-Schleife in draw()
-// werden die Konturen nur gesammelt und NACH Moos/Pflanzen/Lianen gezeichnet -> nichts deckt sie ab.
-let konturSammeln = null;
-function designKontur(x, y, w, h, r, nb, oben, unten){
-  if(konturSammeln){ konturSammeln.push([x, y, w, h, r, nb, oben, unten]); return; }
-  const D = designLook(); if(!D.kante) return;
-  if(!unten) unten = nb.b ? [] : [[0, w]];
-  const lw = D.kanteBreite, i = lw/2, aus = lw + 3;
-  // Linie: an Seiten mit Nachbar (und oben, wenn ganz bedeckt) nach außen geschoben -> fällt aus dem Ausschnitt.
-  // Ausschnitt = nur die Randstreifen der freien Seiten (über die ganze Höhe – keine Lücken an Reihengrenzen)
-  const x0 = nb.l ? x - aus : x + i, x1 = nb.r ? x + w + aus : x + w - i, y1 = unten.length ? y + h - i : y + h + aus, yo = oben.length ? y + i : y - aus;
-  ctx.save();
-  ctx.beginPath();
-  if(!nb.l) ctx.rect(x - 4, y - 4, lw + 5, h + 8);
-  if(!nb.r) ctx.rect(x + w - lw - 1, y - 4, lw + 5, h + 8);
-  for(const [a, b] of unten){ const l = a === 0 ? x - 4 : x + a, rr = b === w ? x + w + 4 : x + b; if(rr > l) ctx.rect(l, y + h - lw - 1, rr - l, lw + 5); }
-  for(const [a, b] of oben){ const l = a === 0 ? x - 4 : x + a, rr = b === w ? x + w + 4 : x + b; if(rr > l) ctx.rect(l, y - 4, rr - l, lw + 5); }
-  ctx.clip();
-  const k = v => Math.max(0, (v || 0) - i);
-  rundPfad(x0, yo, x1 - x0, y1 - yo, {tl: nb.l || !oben.length ? 0 : k(r.tl), tr: nb.r || !oben.length ? 0 : k(r.tr), bl: nb.l || !unten.length ? 0 : k(r.bl), br: nb.r || !unten.length ? 0 : k(r.br)});
-  ctx.strokeStyle = `rgba(${D.kanteFarbe},${D.kante})`; ctx.lineWidth = lw; ctx.lineJoin = 'round';
-  ctx.stroke();
-  ctx.restore();
+const gateAnim = {};
+function drawGate(d, open, x){
+ const y=d.y,w=d.w,h=d.h,col=linkColor(d.l),key=d.l+'|'+d.x+'|'+y;
+ const tg=open?1:0;gateAnim[key]=gateAnim[key]===undefined?tg:gateAnim[key]+(tg-gateAnim[key])*(1-Math.pow(.88,frameDt/STEP));const an=gateAnim[key];   // Vorschau: *.12 je Bild – hier gleich schnell bei jeder Bildrate
+ const sv=g;g=ctx;g.save();
+ const rr=(a,b,c,e,r)=>{g.beginPath();g.roundRect(a,b,c,e,r)};
+ // Nische
+ rr(x+1,y+1,w-2,h-2,6);g.fillStyle='rgba(28,16,8,.55)';g.fill();
+ const vert=h>=w,ix=x+4,iy=y+4,iw=w-8,ih=h-8;
+ const vis=vert?ih*(1-an*.88):ih,vw=vert?iw:iw*(1-an*.88);
+ if(vis>1&&vw>1){g.save();g.beginPath();g.rect(ix,iy,vert?iw:vw,vert?vis:ih);g.clip();
+  const off=vert?-(ih-vis):0,offx=vert?0:-(iw-vw);
+  g.translate(offx,off);
+  // Bretter entlang der langen Achse
+  const cross=vert?iw:ih,np=Math.max(2,Math.round(cross/13)),pw=cross/np;
+  for(let i=0;i<np;i++){const bx=vert?ix+i*pw:ix,by=vert?iy:iy+i*pw,bw=vert?pw:iw,bh=vert?ih:pw;
+   const gr=vert?g.createLinearGradient(bx,0,bx+bw,0):g.createLinearGradient(0,by,0,by+bh);const sh=hsh(d.x+i*7,y)*.12;
+   gr.addColorStop(0,'#9a6330');gr.addColorStop(.5,'#b7773c');gr.addColorStop(1,'#80501f');g.fillStyle=gr;g.fillRect(bx,by,bw,bh);
+   g.fillStyle='rgba(255,230,170,'+(.08+sh)+')';g.fillRect(bx,by,vert?2:bw,vert?bh:2);
+   g.strokeStyle='rgba(46,26,10,.65)';g.lineWidth=1;g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
+   // Maserung
+   g.strokeStyle='rgba(70,40,14,.3)';g.beginPath();
+   if(vert){const m=bx+bw*(.3+hsh(i,y)*.4);g.moveTo(m,by+5);g.quadraticCurveTo(m+3,by+bh*.5,m-1,by+bh-5)}else{const m=by+bh*(.3+hsh(i,d.x)*.4);g.moveTo(bx+5,m);g.quadraticCurveTo(bx+bw*.5,m+3,bx+bw-5,m-1)}g.stroke();
+   if(hsh(d.x+i,y+3)<.35){const kx=vert?bx+bw/2:bx+bw*(.2+hsh(i,y)*.6),ky=vert?by+bh*(.15+hsh(i,d.x)*.7):by+bh/2;g.fillStyle='rgba(60,34,12,.5)';g.beginPath();g.ellipse(kx,ky,2.4,3.2,0,0,7);g.fill()}}
+  // Eisenbänder quer zur langen Achse
+  const L=vert?ih:iw,ns=Math.max(1,Math.round(L/56));
+  for(let i=0;i<ns;i++){const p=(i+.5)/ns*L,bx=vert?ix:ix+p-3.5,by=vert?iy+p-3.5:iy,bw=vert?iw:7,bh=vert?7:ih;
+   const gr=vert?g.createLinearGradient(0,by,0,by+bh):g.createLinearGradient(bx,0,bx+bw,0);gr.addColorStop(0,'#6b727c');gr.addColorStop(.5,'#4a5059');gr.addColorStop(1,'#2c3036');g.fillStyle=gr;g.fillRect(bx,by,bw,bh);
+   g.fillStyle='rgba(255,255,255,.3)';g.fillRect(bx,by,vert?bw:1.3,vert?1.3:bh);g.strokeStyle='rgba(18,20,24,.8)';g.lineWidth=1;g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
+   g.fillStyle='#b8c0c9';const n=Math.max(2,Math.round((vert?bw:bh)/16));for(let k=0;k<n;k++){const q=((k+.5)/n)*(vert?bw:bh);g.beginPath();g.arc(vert?bx+q:bx+bw/2,vert?by+bh/2:by+q,1.4,0,7);g.fill()}}
+  // Edelstein-Platte, mittig (ein Diamant pro Tür)
+  const ng=1;
+  for(let i=0;i<ng;i++){const p=(i+.5)/ng*L,cx=vert?ix+iw/2:ix+p,cy=vert?iy+p:iy+ih/2;
+   g.fillStyle='#3a3f46';g.beginPath();g.roundRect(cx-12,cy-12,24,24,5);g.fill();g.strokeStyle='#15171a';g.lineWidth=1;g.stroke();
+   g.fillStyle=col;g.beginPath();g.moveTo(cx,cy-10);g.lineTo(cx+9,cy);g.lineTo(cx,cy+10);g.lineTo(cx-9,cy);g.closePath();g.fill();g.strokeStyle='rgba(0,0,0,.5)';g.stroke();
+   g.fillStyle='rgba(255,255,255,.75)';g.fillRect(cx-3.5,cy-6,3,4);glanzFunkeln(cx-2,cy-3,5,d.x*.03+y+i*5)}
+  // Weiche Tiefe: Licht von oben links
+  const sg=g.createLinearGradient(ix,iy,ix+iw*.6,iy+ih*.6);sg.addColorStop(0,'rgba(255,240,200,.16)');sg.addColorStop(1,'rgba(20,10,0,.12)');g.fillStyle=sg;g.fillRect(ix,iy,iw,ih);
+  g.restore()}
+ // dunkler Rahmen, durchgehend um die ganze Tür
+ rr(x+1.5,y+1.5,w-3,h-3,6);g.strokeStyle='rgba(34,20,8,.85)';g.lineWidth=3;g.stroke();
+ // Eckbeschläge bei größeren Türen
+ if(w>=80||h>=80){g.fillStyle='#4a5059';[[x+2,y+2],[x+w-12,y+2],[x+2,y+h-12],[x+w-12,y+h-12]].forEach(([a,b])=>{g.beginPath();g.roundRect(a,b,10,10,2);g.fill();g.strokeStyle='#15171a';g.lineWidth=.8;g.stroke();g.fillStyle='#b8c0c9';g.beginPath();g.arc(a+5,b+5,1.3,0,7);g.fill();g.fillStyle='#4a5059'})}
+ g.restore();g=sv}
+function tuerenZeichnen(){
+  for(const d of tuerFlaechenHolen()){
+    const x = Math.round(d.x - camX);
+    if(x + d.w < -20 || x > VW + 20) continue;
+    drawGate(d, d.teile.some(s => s.open), x);   // offen, solange noch ein Teil offen ist (schließt erst, wenn niemand drinsteht)
+  }
 }
 // ---------- Moos und Lianen an hohen freien Seitenflächen (Nutzerwunsch: ab 3 Reihen) ----------
 // Senkrechte freie Kanten von Boden/Wand werden über Stückgrenzen hinweg zusammengefasst; ist eine Fläche mindestens
@@ -466,16 +604,6 @@ function designPlattform(x, y, w, h){
   if(D.licht > 0){ ctx.fillStyle = `rgba(255,240,210,${D.licht*0.8})`; ctx.fillRect(x + 3, y + 1, w - 6, 1.5); }
   if(D.kante > 0){ ctx.strokeStyle = `rgba(${D.kanteFarbe},${D.kante*0.85})`; ctx.lineWidth = 2; roundRect(x + 1, y + 1, w - 2, h - 2, 4); ctx.stroke(); }
 }
-// weicher Schatten unter einem schwebenden Stück (fällt auf den Hintergrund)
-function designSchattenUnten(x, yUnten, w, r){
-  const D = designLook(); if(!D.bodenSchatten || yUnten >= LEVEL_H - 2) return;
-  const hh = D.bodenSchattenHoehe, g = ctx.createLinearGradient(0, yUnten, 0, yUnten + hh);
-  g.addColorStop(0, `rgba(${D.kanteFarbe},${D.bodenSchatten})`); g.addColorStop(1, `rgba(${D.kanteFarbe},0)`);
-  ctx.fillStyle = g;
-  const e = Math.min(w/3, (r || 0) + 4);
-  ctx.beginPath(); ctx.moveTo(x + e, yUnten); ctx.lineTo(x + w - e, yUnten); ctx.lineTo(x + w - e*1.6, yUnten + hh); ctx.lineTo(x + e*1.6, yUnten + hh); ctx.closePath(); ctx.fill();
-}
-
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_BACK_MIN..CAM_BACK_PUSH px,
   // Totzone gegen Wackeln, cameraTarget in 09-kamera.js), damit man möglichst viel von dem sieht,
@@ -560,171 +688,6 @@ function draw(){
       ctx.drawImage(img, 0,srcY,iw,srcH, sx-camX, tT, sw, tB-tT);
     }
   }
-  // Boden direkt gezeichnet (statt Textur-Streifen): durchgehendes Gras mit welliger Kante,
-  // Erde mit Verlauf, runde Ecken nur an echten Enden, nahtlos zu angrenzenden Stücken.
-  // off = Verschiebung der Wellen (bei bewegten Stücken fährt das Muster mit)
-  const GROUND_PAL = {g: THEME.ground};   // Farben je Level-Thema (10a-themen.js)
-  const R_CORNER = 9, GRASS_H = 12, ERDSCHICHT = 22;   // ERDSCHICHT: Abstand der Erdschicht-Linien (Welt-px)
-  function waveY(wx){ return Math.sin(wx*0.055)*2.4 + Math.sin(wx*0.137+1.3)*1.2; }
-  function drawGroundPiece(s, x, y, off, pal, cracked){
-    const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[],below:[]};
-    const coveredAt = px => nb.above.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
-    const coveredUnten = px => nb.below.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
-    const topFreeL = !coveredAt(1), topFreeR = !coveredAt(w-1);
-    const tl = (!nb.l && topFreeL) ? R_CORNER : 0, tr = (!nb.r && topFreeR) ? R_CORNER : 0;
-    const unten = freieSpannen(nb.below, w);   // freie Abschnitte der Unterseite (Kontur nur dort)
-    const bl = (!nb.l && !coveredUnten(1)) ? R_CORNER : 0, br = (!nb.r && !coveredUnten(w-1)) ? R_CORNER : 0;
-    // Erde (Design-Politur, Nutzerwunsch „Boden nach oben bauen sieht komisch aus“): EINE durchgehende Erdfarbe und an der
-    // Welt ausgerichtete Erdschichten – übereinander/nebeneinander gebaute Stücke verschmelzen zu einem Block (vorher hatte
-    // jede Reihe ihren eigenen Hell-Dunkel-Verlauf -> sichtbare Streifen). Tiefe nur an echten Rändern: Schatten unter
-    // freiem Gras, dunkler an einer freien Unterkante. Verläufe hängen nur von y ab -> je Stück zwischengespeichert.
-    if(!pal.dirtMitte) pal.dirtMitte = farbeMischen(pal.dirt1, pal.dirt2, 0.4);
-    ctx.fillStyle = pal.dirtMitte;
-    ctx.beginPath();
-    ctx.moveTo(x+tl, y);
-    ctx.lineTo(x+w-tr, y); if(tr) ctx.arcTo(x+w, y, x+w, y+tr, tr);
-    ctx.lineTo(x+w, y+h-br); if(br) ctx.arcTo(x+w, y+h, x+w-br, y+h, br);
-    ctx.lineTo(x+bl, y+h); if(bl) ctx.arcTo(x, y+h, x, y+h-bl, bl);
-    ctx.lineTo(x, y+tl); if(tl) ctx.arcTo(x, y, x+tl, y, tl);
-    ctx.closePath(); ctx.fill();
-    const DL = designLook(), oben = freieSpannen(nb.above, w);
-    const bewegt = s.type === 'moveplat', ankerY = bewegt ? y - (s.y - s.startY) : y;   // Weltlage (bewegte Stücke: Startlage)
-    ctx.save(); ctx.clip();
-    // Erdschichten: alle ERDSCHICHT px eine weiche Wellenlinie, Lage aus Welt-x/-y -> laufen über Stückgrenzen durch
-    ctx.strokeStyle = pal.stripe; ctx.lineWidth = 3;
-    const y0 = ankerY + (oben.length ? GRASS_H + 4 : 0);
-    for(let k = Math.ceil((y0 - ankerY + ankerY - 11)/ERDSCHICHT); k*ERDSCHICHT + 11 < ankerY + h + 3; k++){
-      const wy = k*ERDSCHICHT + 11; if(wy < y0) continue;
-      const sy = y + (wy - ankerY);
-      ctx.beginPath();
-      for(let px = -2; px <= w + 2; px += 6){
-        const yy = sy + Math.sin((x+camX+px-off)*0.045 + k*1.7)*2.2;
-        if(px === -2) ctx.moveTo(x+px, yy); else ctx.lineTo(x+px, yy);
-      }
-      ctx.stroke();
-    }
-    if(DL.innenSchatten > 0){
-      const key = themeName + ':' + y + ':' + h;
-      if(!s._tiefe || s._tiefe.key !== key || bewegt){
-        const sg = ctx.createLinearGradient(0, y + GRASS_H, 0, y + GRASS_H + 14);
-        sg.addColorStop(0, `rgba(${DL.kanteFarbe},${DL.innenSchatten})`); sg.addColorStop(1, `rgba(${DL.kanteFarbe},0)`);
-        const bg = ctx.createLinearGradient(0, y + h - 30, 0, y + h);
-        bg.addColorStop(0, `rgba(${DL.kanteFarbe},0)`); bg.addColorStop(1, `rgba(${DL.kanteFarbe},${DL.innenSchatten*0.9})`);
-        s._tiefe = {key, sg, bg};
-      }
-      ctx.fillStyle = s._tiefe.sg;
-      for(const [a, b] of oben) ctx.fillRect(x + a, y + GRASS_H, b - a, 14);   // nur unter echtem Gras
-      ctx.fillStyle = s._tiefe.bg; for(const [a, b] of unten) ctx.fillRect(x + a, y + h - 30, b - a, 30);
-    }
-    ctx.restore();
-    // Gras nur auf freien Abschnitten der Oberseite
-    const spans = freieSpannen(nb.above, w);
-    for(const [a, b] of spans){
-      const capL = (a===0) ? tl : 0, capR = (b===w) ? tr : 0;
-      ctx.beginPath();
-      ctx.moveTo(x+a, y+capL);
-      if(capL) ctx.arcTo(x+a, y, x+a+capL, y, capL); else ctx.lineTo(x+a, y);
-      ctx.lineTo(x+b-capR, y);
-      if(capR) ctx.arcTo(x+b, y, x+b, y+capR, capR); else ctx.lineTo(x+b, y);
-      for(let px = b; px >= a; px -= 5){
-        ctx.lineTo(x+px, y + GRASS_H + waveY(x+camX+px-off));
-      }
-      ctx.lineTo(x+a, y + GRASS_H + waveY(x+camX+a-off));
-      ctx.closePath();
-      ctx.fillStyle = pal.grass; ctx.fill();
-      ctx.strokeStyle = pal.grassDark; ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      for(let px = a+ (capL?3:0); px <= b-(capR?3:0); px += 5){
-        const yy = y + GRASS_H + waveY(x+camX+px-off) + 1;
-        if(px===a+(capL?3:0)) ctx.moveTo(x+px, yy); else ctx.lineTo(x+px, yy);
-      }
-      ctx.stroke();
-      // heller Glanzstreifen oben
-      ctx.fillStyle = pal.grassTop;
-      ctx.fillRect(x+a+Math.max(capL,2), y+2, Math.max(0, (b-a)-Math.max(capL,2)-Math.max(capR,2)), 3);
-    }
-    designKontur(x, y, w, h, {tl, tr, bl, br}, nb, spans, unten);   // Design-Politur B (einheitlich mit der Wand)
-    for(const [a, b] of unten) designSchattenUnten(x + a, y + h, b - a, a === 0 || b === w ? Math.max(bl, br) : 0);
-    // Risse beim Bröckelboden (fest an der Welt verankert, damit sie nicht flackern)
-    if(cracked){
-      ctx.strokeStyle = 'rgba(80,40,15,.75)'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
-      for(let cx0 = 12; cx0 < w-6; cx0 += 26){
-        const seed = Math.sin((s.x+cx0)*12.9898)*43758.5453, rnd = seed - Math.floor(seed);
-        const sx0 = x + cx0 + rnd*8;
-        ctx.beginPath();
-        ctx.moveTo(sx0, y + GRASS_H + 2);
-        ctx.lineTo(sx0 - 5 + rnd*4, y + h*0.45);
-        ctx.lineTo(sx0 + 4, y + h*0.62);
-        ctx.lineTo(sx0 - 2, y + h - 4);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // ---------- Wand als Mauerwerk ----------
-  // Steinquader (40x20) direkt gezeichnet, Fugen an der Welt ausgerichtet -> laufen über alle
-  // angrenzenden Wandstücke nahtlos durch (senkrecht wie waagerecht, auch große Flächen).
-  // Kanten/Ecken nur dort, wo die Wand wirklich aufhört. offX/offY: bewegte Wand -> Muster fährt mit.
-  const WALL = THEME.wall;   // Farben je Level-Thema (10a-themen.js)
-  function drawWallPiece(s, x, y, offX, offY){
-    const w = s.w, h = s.h, nb = s.nb || {l:false,r:false,b:false,above:[],below:[]};
-    const cov = (list, px) => list.some(([a,b]) => px >= a-0.5 && px <= b+0.5);
-    const topFreeL = !cov(nb.above, 1), topFreeR = !cov(nb.above, w-1);
-    const fr = nb.fremd || {l:false, r:false, above:[], below:[]};   // angrenzender Boden (01-level.js)
-    const obenAlle = nb.above.concat(fr.above), untenAlle = nb.below.concat(fr.below);
-    const botFreeL = !cov(untenAlle, 1), botFreeR = !cov(untenAlle, w-1);
-    const R = R_CORNER;   // gleiche Ecken wie Boden (einheitliche Kontur)
-    const eL = nb.l || fr.l, eR = nb.r || fr.r;
-    const tl = (!eL && topFreeL && !cov(fr.above, 1)) ? R : 0, tr = (!eR && topFreeR && !cov(fr.above, w-1)) ? R : 0;
-    const bl = (!eL && botFreeL) ? R : 0, br = (!eR && botFreeR) ? R : 0;
-    // Grundfläche (leichter Verlauf, an der Welt ausgerichtet, damit Stapel nicht streifig wirken)
-    const wy0 = y - offY;
-    const g = ctx.createLinearGradient(0, y - (((wy0 % 80)+80)%80), 0, y - (((wy0 % 80)+80)%80) + 80);
-    g.addColorStop(0, WALL.top); g.addColorStop(0.5, WALL.bottom); g.addColorStop(1, WALL.top);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(x+tl, y);
-    ctx.lineTo(x+w-tr, y); if(tr) ctx.arcTo(x+w, y, x+w, y+tr, tr);
-    ctx.lineTo(x+w, y+h-br); if(br) ctx.arcTo(x+w, y+h, x+w-br, y+h, br);
-    ctx.lineTo(x+bl, y+h); if(bl) ctx.arcTo(x, y+h, x, y+h-bl, bl);
-    ctx.lineTo(x, y+tl); if(tl) ctx.arcTo(x, y, x+tl, y, tl);
-    ctx.closePath(); ctx.fill();
-    // Steinquader: leichte Helligkeits-Unterschiede + Fugen
-    const CH = 20, BW = 40;
-    const wx0 = x + camX - offX;                     // Weltkoordinate der linken Kante
-    for(let cy = y - (((wy0 % CH)+CH)%CH); cy < y + h; cy += CH){
-      const course = Math.round((cy - y + wy0) / CH);
-      const shift = (course & 1) ? BW/2 : 0;
-      const top = Math.max(cy, y), bot = Math.min(cy + CH, y + h);
-      // Fuge oben an dieser Steinreihe (nicht am oberen Rand, außer dort grenzt Wand an)
-      if(cy > y + 0.5 || (cy >= y - 0.5 && !topFreeL && !topFreeR)){
-        if(cy > y - 0.5 && cy < y + h - 0.5){
-          ctx.fillStyle = WALL.mortar; ctx.fillRect(x + (cy <= y+0.5 && tl ? tl : 0), cy - 1, w, 2);
-        }
-      }
-      // senkrechte Fugen + Tönung je Stein
-      let bx = x - ((((wx0 + shift) % BW) + BW) % BW);
-      for(; bx < x + w; bx += BW){
-        const L = Math.max(bx, x), Rr = Math.min(bx + BW, x + w);
-        const seed = Math.sin((Math.round(bx - x + wx0)*0.731 + course*12.9898)) * 43758.5453;
-        const v = seed - Math.floor(seed);
-        ctx.fillStyle = v > 0.5 ? `rgba(255,255,255,${(v-0.5)*0.16})` : `rgba(30,40,48,${(0.5-v)*0.14})`;
-        ctx.fillRect(L + 1, top + 1, Math.max(0, Rr - L - 2), Math.max(0, bot - top - 2));
-        if(bx > x + 0.5 && bx < x + w - 0.5){ ctx.fillStyle = WALL.mortar; ctx.fillRect(bx - 1, top, 2, bot - top); }
-      }
-    }
-    // Kanten: nur noch die gemeinsame Kontur (früher zusätzlich heller Rand oben, Schatten unten, dunkle Seiten –
-    // dadurch sah der Wand-Rand anders aus als der Boden-Rand; Nutzerwunsch: einheitliche Outline)
-    const spans = list => freieSpannen(list, w);
-    // Design-Politur B: Randlicht oben, dunkle Kontur an freien Rändern, weicher Schatten darunter
-    const DL = designLook(), oben = spans(nb.above);   // Kontur auch dort, wo Boden aufliegt (nur die Wand zeichnet sie)
-    if(DL.licht > 0){ ctx.fillStyle = `rgba(255,255,255,${DL.licht})`; for(const [a,b] of spans(obenAlle)){ const l = a===0 ? tl : 0, r = b===w ? tr : 0; ctx.fillRect(x+a+l, y+1.5, Math.max(0, (b-a)-l-r), 1.5); } }
-    designKontur(x, y, w, h, {tl, tr, bl, br}, {l: nb.l, r: nb.r, b: nb.b}, oben, spans(nb.below));
-    for(const [a,b] of spans(untenAlle)) designSchattenUnten(x + a, y + h, b - a, 0);
-  }
-
-  // Bewegte Stücke sehen aus wie normaler Boden/Wand. Die Textur ist am Stück selbst verankert
-  // (nicht an der Welt), damit sie mitfährt statt unter dem Stück durchzurutschen.
 // bewegter Boden je Gruppe zusammengefasst: Umriss jetzt, Umriss am Start, Verschiebung
 function moverGroupInfo(){
   const map = new Map();
@@ -792,11 +755,7 @@ function drawSolidLook(s, look, x){
       ctx.fillStyle = colorOf('--platform-shadow');
       roundRect(x+6, s.y+s.h+2, Math.max(0,s.w-12), 6, 3); ctx.fill();
     }
-    if(look==='wall'){
-      drawWallPiece(s, x, Math.round(s.y), ax, ay);
-    } else if(look==='ground'){
-      drawGroundPiece(s, x, Math.round(s.y), ax, GROUND_PAL.g, false);
-    } else {
+    {
       const img = themedImg(look==='platform' ? ASSETS.platformWood : ASSETS.groundGrass);
       if(img.complete && img.naturalWidth) drawTiledH(img, s.x, s.y, s.w, s.h, ax);
       else { ctx.fillStyle = colorOf(look==='platform' ? '--platform' : '--ground'); ctx.fillRect(x,s.y,s.w,s.h); }
@@ -804,16 +763,20 @@ function drawSolidLook(s, look, x){
   }
   // (Fahrweg-Linien/Umrisse bewegter Böden auf Nutzerwunsch entfernt)
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenHinten) E.spiel.zeichnenHinten();   // HINTER Boden/Wänden, z. B. Lava (elemente/)
-  konturSammeln = [];   // Konturen von Boden/Wand erst nach Moos/Pflanzen zeichnen (designKontur)
+  // Neues Aussehen: Boden und Wand als eine zusammenhängende Schicht (Zwischenspeicher-Stücke), bewegliche Boden-/Wand-
+  // Stücke als je ein Block (pieceDraw), Türen als je eine zusammenhängende Tür (drawGate)
+  materialZeichnen();
+  matBeweglichZeichnen();
   for(const s of solids){
     if(ELEMENT_SOLID_TYPEN.has(s.type)) continue;   // zeichnet sich selbst (elemente/, z. B. Wechselboden)
+    if(s.type==='ground' || s.type==='wall' || s.type==='door') continue;   // schon gezeichnet (materialZeichnen, tuerenZeichnen)
     if(s.gone){
       if(s.type==='crumble' && s.fragments) drawCrumbleBreak(s);
-      if(s.type==='door'){ const dx = s.x-camX; if(dx+s.w >= -20 && dx <= VW+20) drawDoor(s, dx, linkColor(s.link)); }
       continue;
     }
     const x = s.x-camX;
     if(x+s.w < -20 || x > VW+20) continue;
+    if(s.type==='moveplat' && (s.look==='ground' || s.look==='wall')) continue;   // matBeweglichZeichnen
     if(s.type==='moveplat' && s.look){ drawSolidLook(s, s.look, Math.round(x)); continue; }
 
     if(s.type==='platform'){
@@ -821,11 +784,7 @@ function drawSolidLook(s, look, x){
       roundRect(x+6, s.y+s.h+2, Math.max(0,s.w-12), 6, 3); ctx.fill();
     }
 
-    if(s.type==='wall'){
-      drawWallPiece(s, x, s.y, 0, 0);
-    } else if(s.type==='door'){
-      drawDoor(s, x, linkColor(s.link));
-    } else if(s.type==='moveplat'){
+    if(s.type==='moveplat'){
       const grad = ctx.createLinearGradient(x,s.y,x,s.y+s.h);
       grad.addColorStop(0,'#6cc9ef'); grad.addColorStop(1,'#2e8fb8');
       ctx.fillStyle = grad;
@@ -844,8 +803,6 @@ function drawSolidLook(s, look, x){
         ctx.fillStyle = `rgba(220,40,30,${(t*0.3 + pulse).toFixed(2)})`;
         roundRect(sx, sy, s.w, s.h, 6); ctx.fill();
       }
-    } else if(s.type==='ground'){
-      drawGroundPiece(s, x, s.y, 0, GROUND_PAL.g, false);
     } else {
       const img = themedImg(s.type==='platform' ? ASSETS.platformWood : ASSETS.groundGrass);
       if(img.complete && img.naturalWidth) drawTiledH(img, s.x, s.y, s.w, s.h);
@@ -857,9 +814,9 @@ function drawSolidLook(s, look, x){
     }
   }
 
+  tuerenZeichnen();
   hoheFlaechenZeichnen();   // Moos und Lianen an hohen Seitenflächen (Design-Politur)
   drawGroundDeco();   // Dschungel-Pflanzen und Moos (17-deko.js)
-  { const L = konturSammeln; konturSammeln = null; for(const a of L) designKontur(...a); }   // einheitliche Outline obenauf
 
   // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
   for(const h of hooks){
@@ -877,7 +834,11 @@ function drawSolidLook(s, look, x){
     const x=h.x-camX;
     if(x<-30||x>VW+30) continue;
     const pulse = 3 + Math.sin(performance.now()*0.005 + h.x*0.05)*2;
-    ctx.fillStyle = colorOf('--hook-glow');
+    // Neues Aussehen (aussehen-paket/vorschau-code/haken-vorschau.js): dunkle Unterlage, damit der Haken zwischen Blumen und
+    // Gras sofort auffällt, darüber das Cyan-Leuchten (etwas kräftiger als bisher)
+    { const bk = ctx.createRadialGradient(x, h.y, 0, x, h.y, 34); bk.addColorStop(0, 'rgba(5,32,46,.7)'); bk.addColorStop(.65, 'rgba(5,32,46,.5)'); bk.addColorStop(1, 'rgba(5,32,46,0)');
+      ctx.fillStyle = bk; ctx.beginPath(); ctx.arc(x, h.y, 34, 0, Math.PI*2); ctx.fill(); }
+    ctx.fillStyle = 'rgba(0,229,255,.7)';
     ctx.beginPath(); ctx.arc(x,h.y,20+pulse,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle = colorOf('--hook-ring'); ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(x,h.y,9,0,Math.PI*2); ctx.stroke();
@@ -917,6 +878,8 @@ function drawSolidLook(s, look, x){
   for(const sw of [...switchDefs, ...plates]){
     if(seen.has(sw.link)) continue; seen.add(sw.link);
     for(const t of linkTargets(sw.link)){
+      // Neues Aussehen: keine Zahlen mehr an Tür, Wechselboden und Portal – dort zeigt ein Diamant in der Hebel-Farbe die Verknüpfung
+      if(t.kind === 'door' || t.kind === 'wechsel' || t.kind === 'tele') continue;
       const x = t.x - camX; if(x < -20 || x > VW+20) continue;
       // nie über den oberen Bildrand hinaus (Tür bis in die oberste Himmel-Reihe: Plakette ins oberste Türteil)
       drawLinkBadge(Math.round(x), Math.round(Math.max(t.y, -SKY_ROOM + 14)), sw.link, t.active);
@@ -1004,8 +967,9 @@ function drawSolidLook(s, look, x){
     if(x + f.w < -20 || x > VW + 20) continue;
     const inside = [p1, p2].some(p => rectsOverlap({x:p.x-p.w/2, y:p.y-p.h, w:p.w, h:p.h}, {x:f.x-60, y:f.y-60, w:f.w+120, h:f.h+120}));
     f.alpha = f.alpha === undefined ? 1 : f.alpha + ((inside ? 0.35 : 1) - f.alpha)*Math.min(1, frameDt*0.01);
+    const B = matScheinwandBild(f);   // gleiche Wand wie ringsum (Zwischenspeicher je Scheinwand)
     ctx.save(); ctx.globalAlpha = f.alpha;
-    drawWallPiece(f, x, f.y, 0, 0);
+    ctx.drawImage(B.c, B.x - camX, B.y, B.w, B.h);
     ctx.restore();
   }
   drawCritters();   // Schmetterlinge, Frösche, Schnecken, Pilze, Knospen, Faultier (20-tiere.js)
