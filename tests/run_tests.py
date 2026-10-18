@@ -8063,6 +8063,23 @@ def _r5_e1a(dash):
     """Felsenflucht, erste Flucht: Schweinchen zieht Hebel 1 (14), der Fels rollt los – bis auf die Stufe 61 (dort zerschellt er)"""
     return {'f': [k_lauf(12, 0)] + _hebel(14) + [j_lauf(55, dash=dash, dash_bis=50)] + _zu(61) + [k_lauf(62)],
             'm': [{'wait': '!!linkOn[1]', 'frames': 2000}, j_lauf(54, dash=dash, dash_bis=49)] + _zu(60) + [k_lauf(61)]}
+def _r2_doppelwand(dash):
+    """Mondnacht, Doppel-Wand (Hebel 5): zwei Stachelwände (unten 6,2, oben 7,2 statt 5,4/6,3). Affe unten an der
+    Hakenkette (253–297), Schweinchen oben über die Bröckel-Stege, öffnet mit Hebel 9 das Tor 280 des Affen und mit Hebel 10
+    ihr eigenes Tor 292; mit Dash über die Lücken (256, 273) entkommt sie der oberen Wand, ohne Dash nicht."""
+    def luecke(kante, tx):
+        st = [j_lauf(kante, dash=False), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6 if dash else 12}]
+        if dash: st.append({'press': ['dash'], 'hold': ['right'], 'frames': 2})
+        return st + [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(tx)} - 6', 'left': f'P.x > {kx(tx)} + 6'}, 'until': 'P.grounded', 'frames': 200}]
+    f = [{'wait': '!!linkOn[5]'}] + luecke(256, 264) + [k_lauf(269, 0), {'use': True, 'frames': 2}] + luecke(273, 281) + \
+        [k_lauf(286, 0), {'use': True, 'frames': 2}, j_lauf(293, dash=False), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(308)} - 6', 'left': f'P.x > {kx(308)} + 6'}, 'until': 'P.grounded', 'frames': 400}, k_lauf(309)]
+    m = [k_lauf(244, 0), {'use': True, 'frames': 2}, k_lauf(246, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]
+    for _ in range(5): m += [{'swing': True, 'pull': 10, 'release': 'f > 30 && P.vy < 0 && P.x > P.anchor.x + 60', 'frames': 900},
+                             {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+    m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(309)]
+    return {'m': m, 'f': f}
+JAGDEN_BOT.append(('ruinen/02-mondnacht.json', 'Doppel-Wand (Hebel 5)', kat(243, 14), kat(245, 5), [], 'Wand', 5, _r2_doppelwand, 308))
 JAGDEN_BOT.append(('ruinen/05-felsenflucht.json', 'Fels: erste Flucht (Hebel 1)', kat(8, 15), kat(10, 15), [], 'Fels', 1, _r5_e1a, 60))
 def _r5_e1c(dash):
     """Felsenflucht, Flucht nach oben auf die Stege: Hebel 3 (110), über die Kante 123/124 nach oben, der Fels rollt unten durch"""

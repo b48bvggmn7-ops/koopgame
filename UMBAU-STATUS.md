@@ -10,7 +10,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ✅ Kraterherz Lava-Brücken (Gruben 412–432/437–455 breiter, Affe nur mit Brücke) |
 | Münzen für ihre Figur erreichbar | ✅ Dschungel; ⚠️ Ruinen/Höhle/Vulkan: nur Einstufung, Bot-Prüfung jeder Münze offen |
 | Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
-| Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ❌ Mondnacht Doppel-Wand; ⚠️ 12 Lava-Stellen + Feuerberg-Wand unverändert |
+| Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/7,2 statt 5,4/6,3, Bot-Plan); ⚠️ 12 Lava-Stellen + Feuerberg-Wand unverändert |
 | (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ 11 Level; ❌ Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz |
 
 ## Messwerte (echte Physik, tests/reichweiten.json)
@@ -172,7 +172,9 @@ Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon P
   Schlackewerk (194), Feuerschlund (589) (Aschefeld 790 wieder entfernt: lag nach dem Kamin-Umbau hinter dem Ziel) – nur auf flachen Wegstücken ohne Bot-Test, Elemente und
   Rätsel (Glutpfad 788 verworfen: dort entstand ein 1 breiter Kamin; Sonnentempel 327 -> 331 wegen Haft-Arm).
   Tests nacht_stellen_<welt>. Kristallhöhle zählt dadurch eine Kombi-Stelle mehr (Ausnahme „Kombi-Etappe 0“ entfällt).
-- Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
+- Mondnacht Doppel-Wand (Hebel 5): untere Wand 5,4 -> 6,2, obere 6,3 -> 7,2. Bot-Plan in JAGDEN_BOT: Affe unten an der
+  Hakenkette 253–297, Schweinchen oben über die Bröckel-Stege (Hebel 9 öffnet das Tor des Affen, Hebel 10 ihr eigenes); mit
+  Dash über die Lücken 256/273 entkommt sie (auch 10 Schritte später), ohne Dash holt die obere Wand sie ein.
 
 ## Abkürzungen (Werkzeug tests/umbau/abkuerzungen.py) – Umbauten
 Gesucht: Stellen, an denen eine Figur mit Dash eine Hilfe (Haken, Pilz, Aufwind, Kamin, Fähre) oder die Aufgabe der
