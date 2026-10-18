@@ -5,21 +5,30 @@
 import re, sys, json
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
-NICHT = re.compile(r"(frames'?\s*[:=]\s*|maxFrames=|'pull':\s*|frames=|range\(0,\s*|delay=|'wait':\s*f?'[^']*)$")
+NICHT = re.compile(r"(frames'?\s*[:=]\s*|maxFrames=|'pull':\s*|frames=|range\(0,\s*|delay=|'wait':\s*f?'[^']*|'(links|ziel|offen|sackgassen)': \[[\d, ]*)$")
 
 def neu(n, rng):
     for a, b, d in rng:
         if a <= n <= b: return n + d
     return n
 
-def zeile_schieben(l, rng):
+# nur Zahlen an typischen Spalten-Stellen werden verschoben; andere Zahlen im Bereich werden nur gemeldet
+SPALTE = re.compile(r"(kx\(|kat\(|k_lauf\(|am\(|_hebel\(|haken\(|kette\(|glide_to\(|k_segeln\(|k_hop\(|steg\(|hakensprung\(|durch\(|halten\("
+                    r"|_zu\(|j_lauf\(|range\(|kombi_flammen_kamin\(|kombi_pilz_dash_grube\(|nb_bruch_durch\(|nb_haft\(|dash_kette\(\[|'[mf]': \(|\(\'?|"
+                    r"Kamin \(|Grube \(|kanten=\[|ohne=\[|dash_ab=|dash_bis=|, \[|\[|spalten': \[)$")
+VERDAECHTIG = []
+
+def zeile_schieben(l, rng, nr=0):
     out, pos = [], 0
     for m in re.finditer(r'(?<![\w.])(\d{2,3})(?![\w.])', l):
+        n = int(m.group(1)); n2 = neu(n, rng)
+        if n2 == n: continue
         vor = l[max(0, m.start() - 40):m.start()]
-        n = int(m.group(1))
-        if NICHT.search(vor) or 'ky(' in vor[-4:] or "'r'" in vor[-6:]: continue
-        n2 = neu(n, rng)
-        if n2 != n: out.append(l[pos:m.start()] + str(n2)); pos = m.end()
+        if NICHT.search(vor): continue
+        # direkt nach Spalten-Funktion / Tupel-Anfang, oder als weiteres Argument (z. B. range(a, b), kanten [a, b])
+        ok = SPALTE.search(vor) or re.search(r"(kx|kat|range|kanten|ohne|_zu|k_lauf|j_lauf|dash_kette)\([^()]*, $", vor) or re.search(r"\[(\d{2,3}, )+$", vor)
+        if not ok: VERDAECHTIG.append((nr, l.strip()[:160], n)); continue
+        out.append(l[pos:m.start()] + str(n2)); pos = m.end()
     out.append(l[pos:]); return ''.join(out)
 
 def datei_schieben(pfad, lvl, rng, nur_zeilen=False):
@@ -31,7 +40,7 @@ def datei_schieben(pfad, lvl, rng, nur_zeilen=False):
         if in_fn or lvl in l:
             andere = set(re.findall(r"'([a-z]+/\d\d-[a-z-]+\.json)'", l)) - {lvl}
             if lvl in l and andere: print('  VON HAND (mehrere Level in einer Zeile):', pfad.name, i + 1); continue
-            n = zeile_schieben(l, rng)
+            n = zeile_schieben(l, rng, i + 1)
             if n != l: zeilen[i] = n; geaendert += 1
     pfad.write_text('\n'.join(zeilen), encoding='utf-8'); return geaendert
 
@@ -53,3 +62,4 @@ if __name__ == '__main__':
     t = re.sub(r"\('" + kurz + r"', (\d+)\)", lambda m: f"('{kurz}', {neu(int(m.group(1)), rng)})", t); sp.write_text(t, encoding='utf-8')
     for j in ('bildregel_ausnahmen.json', 'kombi_ausnahmen.json'):
         print(j, json_schieben(ROOT / 'tests' / j, lvl, rng))
+    for v in VERDAECHTIG: print('  NICHT verschoben (prüfen):', v)

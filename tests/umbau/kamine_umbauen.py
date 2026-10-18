@@ -1,0 +1,63 @@
+# Umbau aller Level: Kamin-Gruben (kombi_flammen_kamin) eines Levels auf 17 verbreitern – Ablauf je Kamin (rechts nach links):
+# 1. Ausgleichsstrecke (8 Spalten schlichter Boden) rechts hinter dem Landeplatz oder links vor dem Kamin suchen – die
+#    Seite mit dem kürzeren verschobenen Stück (höchstens 60 Spalten); tests/umbau/grube_weiten.py
+# 2. Spaltenzahlen in den Tests nachziehen (tests/umbau/tests_verschieben.py)
+# 3. Kombi-Eintrag in KOMBI_STELLEN_BOT: weit=8 (Gegenproben mit Dash), Ziel Schweinchen eine Spalte früher (Kante)
+# Aufruf: python3 tests/umbau/kamine_umbauen.py <level> <x0> [<x0> ...]
+import sys, re, json
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tests')); sys.path.insert(0, str(ROOT / 'tests' / 'umbau'))
+import level_bau as L, grube_weiten as G, tests_verschieben as T
+
+def profil(lv, c): return tuple(lv.typ(c, r) for r in range(-3, 18))
+def belegt(lv, c):
+    return any(o['c'] == c for k, v in G._listen(lv) if k != 'coins' for o in v) or \
+        any(isinstance(lv.ed.get(k), dict) and lv.ed[k].get('c') == c for k in ('startM', 'startF', 'goal'))
+def frei(lv, q, n=8):
+    p0 = profil(lv, q)
+    return not all(t is None for t in p0) and all(profil(lv, c) == p0 and not belegt(lv, c) for c in range(q - 1, q + n + 1))
+def suche_rechts(lv, start): return next((q for q in range(start, start + 200) if frei(lv, q)), None)
+def suche_links(lv, start): return next((q for q in range(start - 8, max(0, start - 200), -1) if frei(lv, q)), None)
+
+def kombi_eintrag(datei, x0):
+    p = ROOT / 'tests' / 'run_tests.py'; s = p.read_text(encoding='utf-8')
+    pat = re.compile(r"(\('" + re.escape(datei) + r"', '[^']*\(\d+\)'[^\n]*?kombi_flammen_kamin\(" + str(x0) + r", (\d+)([^)]*))\), \{'m': \((\d+), (\d+)\), 'f': \((\d+), (\d+)\)\}")
+    m = pat.search(s)
+    if not m: print('  Kombi-Eintrag nicht gefunden:', x0); return
+    rest = m.group(3)
+    if 'weit=' in rest: return
+    neu = f"{m.group(1)}, weit=8, versatz_f=0), {{'m': ({m.group(4)}, {m.group(5)}), 'f': ({int(m.group(6)) - 1}, {m.group(7)})}}"
+    p.write_text(s[:m.start()] + neu + s[m.end():], encoding='utf-8')
+
+def umbauen(datei, xs, max_weg=60, seite=None):
+    lv = L.Level(datei); log = []
+    for x0 in sorted(xs, reverse=True):
+        rw = x0 + 4; p = rw + 10
+        q = suche_rechts(lv, p + 3); ql = suche_links(lv, x0 - 2)
+        rechts = (q - p) if q else 9999; links = (rw - (ql + 8)) if ql is not None else 9999
+        if min(rechts, links) > max_weg: print('KEINE kurze Ausgleichsstrecke:', datei, x0, 'rechts', rechts, 'links', links); log.append({'x0': x0, 'fehlt': True}); continue
+        if seite == 'rechts' or (seite is None and rechts <= links):
+            info = G.weiten(lv, p, q, 8, rw + 1); bereich = (p, q + 7, 8); neu_x0 = x0   # auch das herausgenommene Stück
+        else:
+            info = G.weiten_links(lv, rw, ql, 8, rw + 9); bereich = (ql, rw, -8); neu_x0 = x0 - 8
+        print(datei, x0, '->', neu_x0, info)
+        rng = [bereich]
+        T.datei_schieben(ROOT / 'tests' / 'run_tests.py', datei, rng)
+        T.datei_schieben(ROOT / 'tests' / 'bausteine' / 'stellen.py', datei, rng, nur_zeilen=True)
+        kurz = datei[0] + datei.split('/')[1][:2]; sp = ROOT / 'tests' / 'bausteine' / 'stellen.py'; t = sp.read_text(encoding='utf-8')
+        sp.write_text(re.sub(r"\('" + kurz + r"', (\d+)\)", lambda m: f"('{kurz}', {T.neu(int(m.group(1)), rng)})", t), encoding='utf-8')
+        for j in ('bildregel_ausnahmen.json', 'kombi_ausnahmen.json'): T.json_schieben(ROOT / 'tests' / j, datei, rng)
+        kombi_eintrag(datei, neu_x0)
+        for v in T.VERDAECHTIG: print('  NICHT verschoben (prüfen):', v)
+        T.VERDAECHTIG.clear()
+        log.append(dict(info, x0=x0, neu_x0=neu_x0, bereich=bereich))
+    lv.merke(f'Kamin-Gruben auf 17 verbreitert: {xs}')
+    L.speichern([lv])
+    return log
+
+if __name__ == '__main__':
+    a = sys.argv[1:]; seite = a[a.index('--seite') + 1] if '--seite' in a else None
+    mw = int(a[a.index('--max') + 1]) if '--max' in a else 60
+    xs = [int(x) for i, x in enumerate(a[1:], 1) if x.isdigit() and a[i - 1] not in ('--seite', '--max')]
+    print(json.dumps(umbauen(a[0], xs, mw, seite), ensure_ascii=False))

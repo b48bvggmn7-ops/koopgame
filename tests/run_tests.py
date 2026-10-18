@@ -1311,9 +1311,9 @@ async def level9_fallengang(g):
     r = await koop(g, f=kat(490, 15), m=kat(510, 15), plans={'f': [k_lauf(515)]}, links=[8, 9], maxFrames=1500)
     soll(r.get('done'), 'Schweinchen durch die Flammen (aus) und Tür 9', r.get('pos'))
     for who, other in (('m', 'f'), ('f', 'm')):
-        soll(await k_irgendwann(g, lambda w, who=who: {who: [{'frames': w + 1}] + k_takt(list(range(542, 566, 3)), kx(571), 539, 1.5)},
-                                lambda r, who=who: bool(k_pos(r, who)) and k_pos(r, who)[0] >= 569, range(0, 180, 30),
-                                **{who: kat(537, 15), other: kat(535, 15)}, maxFrames=4000), f'Takt unter Pfeil-Vorhängen ({who})')
+        soll(await k_irgendwann(g, lambda w, who=who: {who: [{'frames': w + 1}] + k_takt(list(range(534, 558, 3)), kx(563), 531, 1.5)},
+                                lambda r, who=who: bool(k_pos(r, who)) and k_pos(r, who)[0] >= 561, range(0, 180, 30),
+                                **{who: kat(529, 15), other: kat(527, 15)}, maxFrames=4000), f'Takt unter Pfeil-Vorhängen ({who})')
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
@@ -8303,9 +8303,9 @@ KOMBI_STELLEN_BOT = [
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3, weit=8, versatz_f=0), {'m': (190, 6), 'f': (189, 6)}),
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (295)', kat(293, 15), kat(292, 15), lambda: kombi_flammen_kamin(295, 16, hoch=3, weit=8, versatz_f=0), {'m': (317, 6), 'f': (316, 6)}),
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3, weit=8, versatz_f=0), {'m': (606, 6), 'f': (605, 6)}),
-    ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3), {'m': (536, 5), 'f': (536, 5)}),
-    ('ruinen/02-mondnacht.json', 'Flammen-Kamin (89)', kat(87, 14), kat(86, 14), lambda: kombi_flammen_kamin(89, 15, hoch=3), {'m': (103, 5), 'f': (103, 5)}),
-    ('ruinen/03-fallengang.json', 'Flammen-Kamin (579)', kat(577, 15), kat(576, 15), lambda: kombi_flammen_kamin(579, 16, hoch=3), {'m': (593, 6), 'f': (593, 6)}),
+    ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3, weit=8, versatz_f=0), {'m': (544, 5), 'f': (543, 5)}),
+    ('ruinen/02-mondnacht.json', 'Flammen-Kamin (81)', kat(79, 14), kat(78, 14), lambda: kombi_flammen_kamin(81, 15, hoch=3, weit=8, versatz_f=0), {'m': (103, 5), 'f': (102, 5)}),
+    ('ruinen/03-fallengang.json', 'Flammen-Kamin (571)', kat(569, 15), kat(568, 15), lambda: kombi_flammen_kamin(571, 16, hoch=3, weit=8, versatz_f=0), {'m': (593, 6), 'f': (592, 6)}),
     ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, hoch=3), {'m': (594, 6), 'f': (594, 6)}),
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (273)', kat(271, 14), kat(270, 14), lambda: kombi_pilz_dash_grube(273, 281), {'m': (281, 5), 'f': (281, 5)}),
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (359)', kat(357, 14), kat(356, 14), lambda: kombi_pilz_dash_grube(359, 367), {'m': (367, 5), 'f': (367, 5)}),
