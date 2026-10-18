@@ -1228,15 +1228,22 @@ async def level9_fallengang(g):
         soll(neu, f'Stege hinauf bis Reihe {zr}', pos)
         if not neu: break
         pos = neu
-    soll(await k_irgendwann(g, lambda w: {'f': [{'frames': w + 1}] + k_segeln(213, 6)},
+    # Umbau: oberster Steg 205–208 (Lücke 21) – Schweinchen Schirm + Dash, Affe vier Haken (211, 216, 222, 228)
+    galerie_f = lambda w: [{'frames': w + 1}, k_lauf(208), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20},
+                           {'press': ['dash'], 'hold': ['right', 'up'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+    soll(await k_irgendwann(g, lambda w: {'f': galerie_f(w)},
                             lambda r: bool(k_pos(r, 'f')) and k_pos(r, 'f')[0] >= 229.5 and k_pos(r, 'f')[1] == 8, range(0, 120, 8),
-                            f=kat(211, 3), m=kat(210, 3), maxFrames=2500), 'Pfeil-Galerie segeln (Schweinchen)')
+                            f=kat(206, 3), m=kat(205, 3), maxFrames=2500), 'Pfeil-Galerie Schirm + Dash (Schweinchen)')
+    for d, rich in ((8, ['right']), (14, ['right', 'up']), (20, ['right', 'up'])):
+        m = [k_lauf(208), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
+        r = await koop(g, m=kat(206, 3), f=kat(205, 3), plans={'m': m}, maxFrames=1500)
+        soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 229.5), f'Pfeil-Galerie: Affe ohne Haken nur mit Dash ({d}, {rich})', r.get('pos'))
     def galerie_affe(w):
-        m = [{'frames': w + 1}] + k_haken(3, 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 213, 0)
+        m = [{'frames': w + 1}] + k_haken(4, 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 208, 0)
         m[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(238)} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
         return {'m': m}
     soll(await k_irgendwann(g, galerie_affe, lambda r: bool(k_pos(r, 'm')) and k_pos(r, 'm')[0] >= 229.5 and k_pos(r, 'm')[1] == 8, range(0, 120, 8),
-                            m=kat(211, 3), f=kat(210, 3), maxFrames=2500), 'Pfeil-Galerie mit Haken (Affe)')
+                            m=kat(206, 3), f=kat(205, 3), maxFrames=2500), 'Pfeil-Galerie mit Haken (Affe)')
     m = [k_lauf(248, -14), {'frames': 20}, {'wait': f'Q.x >= {kx(262)} - 20'}, k_lauf(266)]
     f = [{'wait': '!!linkOn[3]'}, k_lauf(262, -14), {'frames': 10}, {'wait': f'Q.x >= {kx(260)}'}]
     r = await koop(g, m=kat(244, 8), f=kat(245, 8), plans={'m': m, 'f': f}, maxFrames=3000)

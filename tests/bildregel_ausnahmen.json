@@ -53,8 +53,8 @@
   {
    "level": "ruinen/03-fallengang.json",
    "regel": "Haken",
-   "spalte": 216,
-   "begruendung": "Pfeil-Galerie: flache Hangel-Leiste 2 Reihen über dem Steg (gewollt unter den Pfeilen); Bot-Test level9_fallengang spielt sie – tief, aber spielbar"
+   "spalte": 211,
+   "begruendung": "Pfeil-Galerie: flache Hangel-Leiste 2 Reihen über dem Steg (gewollt unter den Pfeilen; Umbau: Steg 205–208, vier Haken ab 211, damit der Dash nicht reicht); Bot-Test level9_fallengang spielt sie – tief, aber spielbar"
   },
   {
    "level": "ruinen/03-fallengang.json",
