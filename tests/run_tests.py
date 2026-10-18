@@ -1230,11 +1230,11 @@ async def level9_fallengang(g):
         pos = neu
     # Umbau: oberster Steg 205–208 (Lücke 21) – Schweinchen Schirm + Dash, Affe vier Haken (211, 216, 222, 228)
     galerie_f = lambda w: [{'frames': w + 1}, k_lauf(208), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20},
-                           {'press': ['dash'], 'hold': ['right', 'up'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+                           {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
     soll(await k_irgendwann(g, lambda w: {'f': galerie_f(w)},
                             lambda r: bool(k_pos(r, 'f')) and k_pos(r, 'f')[0] >= 229.5 and k_pos(r, 'f')[1] == 8, range(0, 120, 8),
                             f=kat(206, 3), m=kat(205, 3), maxFrames=2500), 'Pfeil-Galerie Schirm + Dash (Schweinchen)')
-    for d, rich in ((8, ['right']), (14, ['right', 'up']), (20, ['right', 'up'])):
+    for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (20, ['right', 'swimUp'])):
         m = [k_lauf(208), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
         r = await koop(g, m=kat(206, 3), f=kat(205, 3), plans={'m': m}, maxFrames=1500)
         soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 229.5), f'Pfeil-Galerie: Affe ohne Haken nur mit Dash ({d}, {rich})', r.get('pos'))
@@ -8236,12 +8236,12 @@ def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f):
              {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
              {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
              {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
-             dict(lande, hold=['up'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'})]   # zu kurz: Dash schräg hoch
-    return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'up'], True),
+             dict(lande, hold=['swimUp'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'})]   # zu kurz: Dash schräg hoch
+    return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'swimUp'], True),
             'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
-            'm_ohne_dash': warte + kamin + sprung_dash(11, ['right', 'up'], False), 'm_ohne_dash2': warte + kamin + sprung_dash(17, ['right'], False),
+            'm_ohne_dash': warte + kamin + sprung_dash(11, ['right', 'swimUp'], False), 'm_ohne_dash2': warte + kamin + sprung_dash(17, ['right'], False),
             'f_ohne': warte_f + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
-            'f_ohne_dash': warte_f + kamin + sprung_dash(20, ['right', 'up'], False)}
+            'f_ohne_dash': warte_f + kamin + sprung_dash(20, ['right', 'swimUp'], False)}
 
 # je Stelle: (Level, Name, Start Affe, Start Schweinchen, Pläne {wer: Plan}, Pläne ohne Kombi {wer: Plan} -> müssen scheitern)
 def _d1_haken_grube():
@@ -8697,11 +8697,11 @@ async def ruinen2_hakenreihe(g):
         r = await koop(g, m=kat(178, 6), f=kat(174, 6), plans={'m': pl}, maxFrames=12000)
         if r.get('done'): ok = True; break
     assert ok, f'Bot kommt nicht bis zum letzten Haken: {r.get("pos")}'
-    f = [k_lauf(182, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'press': ['dash'], 'hold': ['right', 'up'], 'frames': 3},
+    f = [k_lauf(182, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3},
          {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(202)}', 'left': f'P.x > {kx(203)}'}, 'until': 'P.grounded', 'frames': 600}]
     r = await koop(g, f=kat(180, 6), m=kat(178, 6), plans={'f': f}, maxFrames=1500)
     assert k_pos(r, 'f') and 199.5 <= k_pos(r, 'f')[0] <= 205.9 and k_pos(r, 'f')[1] == 6, f'Schweinchen Schirm + Dash zum Zwischen-Block: {r.get("pos")}'
-    for d, rich in ((8, ['right']), (14, ['right', 'up']), (20, ['right', 'up'])):
+    for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (20, ['right', 'swimUp'])):
         m = [k_lauf(182, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
         r = await koop(g, m=kat(180, 6), f=kat(178, 6), plans={'m': m}, maxFrames=1500)
         assert not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 199.5 and k_pos(r, 'm')[1] == 6), f'Affe per Dash auf dem Zwischen-Block ({d}, {rich}): {r.get("pos")}'
@@ -9379,7 +9379,7 @@ async def mondnacht_mondspiegel(g):
                 {'holdIf': {'left': f'{B} === "\\\\" && P.x > {kx(455)}'}, 'until': f'{B} === "/" || P.x <= {kx(455)} + 2', 'frames': 300},
                 wb_halt(kx(458)), {'wait': '!!linkOn[51]', 'frames': 5000}, k_lauf(495)]
     schwein = [wb_halt(kx(458)), {'wait': f'!!linkOn[50] && spiegelListe.find(s => s.c === 466 && s.r === 8).stellung === "/" && {platte("Q")}', 'frames': 5000},
-               k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400},
+               k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right', 'jump'], 'frames': 8}, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 2}, {'hold': ['right', 'glide'], 'until': f'P.grounded || P.x > {kx(487)}', 'frames': 400}, {'hold': ['glide'], 'until': 'P.grounded', 'frames': 300},
                {'wait': f'{B} === "/" && !!linkOn[52]', 'frames': 3000}, wb_halt(kx(491)), {'frames': 20}, wb_halt(kx(494)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[51]', 'frames': 300}, k_lauf(495)]
     ok = []
     for jx in (469, 469.4):
@@ -9393,6 +9393,17 @@ async def mondnacht_mondspiegel(g):
     soll(e[0] == '\\' and e[1] == 'wand' and e[2] <= 462, 'Platte frei und neu betreten: B falsch, Strahl endet an der Wand', e)
     r = await koop(g, m=kat(470, 14), f=kat(453, 14), pre="kristalle.find(k => k.link === 50).gemerkt = true; setLink(50, true);", plans={'m': [k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=800)
     soll(r.get('dead') == 'm', 'der Affe schafft die breite Grube nicht', info(r))
+    # Umbau: über der Grube 477–486 eine niedrige Decke mit Stacheln (Reihe 11/12) – das Schweinchen kommt mit Schirm + Dash
+    # flach darunter durch, der Affe auch mit Sprung + Dash (gerade / schräg hoch / hoch) nicht
+    for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (4, ['swimUp'])):
+        r = await koop(g, m=kat(470, 14), f=kat(453, 14), pre="kristalle.find(k => k.link === 50).gemerkt = true; setLink(50, true);",
+                       plans={'m': [k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=800)
+        soll(r.get('dead') == 'm' or (r.get('done') and r['pos']['m'][0] < 477), f'der Affe schafft die Grube auch mit Dash nicht ({d}, {rich})', info(r))
+    # Stachel auf der Mauer über Tor 50: vom Affen-Sims kommt keiner per Dash darüber
+    for wer in ('m', 'f'):
+        o = 'f' if wer == 'm' else 'm'
+        r = await koop(g, **{wer: kat(467, 8), o: kat(453, 14)}, plans={wer: [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=600)
+        soll(not (r.get('done') and r['pos'][wer][0] >= 476), f'über die Mauer bei Tor 50 ({wer})', info(r))
     r = await koop(g, m=kat(453, 14), f=kat(468, 14), plans={'f': [{'press': ['jump'], 'hold': ['jump', 'glide'], 'frames': 90}]}, maxFrames=400)
     soll(r.get('done') and r['top']['f'] > 8, 'das Schweinchen kommt nicht aufs Affen-Sims', r.get('top'))
     assert not fehler, fehler
