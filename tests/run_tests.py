@@ -8704,6 +8704,26 @@ async def ziel_hinweis_pfeil(g):
     await g.p.wait_for_function("zielHinweisPfeile === 0", timeout=3000)
 
 @test
+async def hoehle1_obere_route(g):
+    """Umbau, Höhle 1 „Kristallhöhle“: die obere Route über dem Haken-Tunnel (Wand-Oberkante 299–350) ist nur noch für das
+    Schweinchen mit den Aufwinden 310/325 (Stelle 318–321 jetzt Stacheln). Der Affe kommt von 299/305 auch mit Sprung + Dash
+    (gerade, schräg hoch, am höchsten Punkt) nicht über die 28 Stachel-Spalten – er muss unten durch den Haken-Tunnel."""
+    await koop_level(g, 'hoehle/01-kristallhoehle.json')
+    f = [k_lauf(303, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(310)}', 'left': f'P.x > {kx(311)}'}, 'until': f'P.y < {ky(3)}', 'frames': 400},
+         {'hold': ['glide', 'right'], 'until': f'P.x > {kx(324)}', 'frames': 400},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(325)}', 'left': f'P.x > {kx(326)}'}, 'until': f'P.y < {ky(4)} || P.grounded', 'frames': 300},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(335)}', 'left': f'P.x > {kx(336)}'}, 'until': 'P.grounded', 'frames': 900}]
+    r = await koop(g, f=kat(301, 7), m=kat(300, 7), plans={'f': f}, maxFrames=2500)
+    assert r.get('done') and not r.get('dead') and 334 <= r['pos']['f'][0] <= 338, ('Schweinchen mit den Aufwinden', r)
+    for st in (300, 305):
+        for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (20, ['right'])):
+            m = [k_lauf(st, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3},
+                 {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
+            r = await koop(g, m=kat(st - 1, 7), f=kat(st - 2, 7), plans={'m': m}, maxFrames=1200)
+            assert r.get('dead') == 'm' or r['pos']['m'][0] < 318, (f'Affe kommt oben drüber ({st}, {d}, {rich})', r)
+
+@test
 async def hoehle1_faehre_im_bild(g):
     """Bild-Regel, Höhle 1 „Kristallhöhle“: die Fähre unter den Stachelpressen fährt nur noch 15 statt 30 Spalten (Platten
     an den Kanten 248 / 268). Das Schweinchen hält die Platte, der Affe fährt hinüber; währenddessen sind beide nie mehr als
