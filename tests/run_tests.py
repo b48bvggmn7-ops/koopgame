@@ -2557,7 +2557,7 @@ async def level17_glutpfad(g):
         await beide('E2 Lava-Kamin', 252, lambda w: kamin(), 296, delay=100)
         r = await koop(g, m=kat(262, 15), f=kat(263, 15), plans={'m': [{'frames': 300}]}, maxFrames=400)
         soll(r.get('dead'), 'E2 Lava im Kamin steigt, sobald beide unten sind', r.get('pos'))
-        await beide('E2 Pilz-Flucht', 297, lambda w: [{'aim': [kx(303), kx(309), kx(315), kx(323)], 'jumps': [kx(298)], 'glide': w == 'f', 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 900}, k_lauf(335), {'until': 'P.grounded', 'frames': 200}, k_lauf(341)], 340, delay=60)
+        await beide('E2 Pilz-Flucht', 297, lambda w: [{'aim': [kx(303), kx(309), kx(315), kx(323)], 'jumps': [kx(298)], 'glide': w == 'f', 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 900}, k_lauf(327), {'until': 'P.grounded', 'frames': 200}, k_lauf(333)], 332, delay=60)
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
     if True:
@@ -2578,12 +2578,12 @@ async def level17_glutpfad(g):
             r = await koop(g, f=kat(450, 11), m=kat(448, 11), plans={'f': f, 'm': [{'frames': 60}] + m}, maxFrames=6000)
             if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 477: ok = hold; break
         soll(ok, 'E3 Schwein segelt, Platte 3, Affe läuft durch den Graben', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
-        hoch = lambda: sprung_zu(kx(501)) + sprung_zu(kx(507)) + [{'aim': [kx(511), kx(517)], 'jumps': [kx(506)], 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 600}] + sprung_zu(kx(524)) + [k_lauf(534), {'until': 'P.grounded', 'frames': 200}, k_lauf(539)]
+        hoch = lambda: sprung_zu(kx(501)) + sprung_zu(kx(507)) + [{'aim': [kx(511), kx(517)], 'jumps': [kx(506)], 'until': f'P.grounded && P.y <= {ky(4)} + 2', 'frames': 600}] + sprung_zu(kx(524)) + [k_lauf(526), {'until': 'P.grounded', 'frames': 200}, k_lauf(531)]
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
             zieht = [k_lauf(497, 0)] + sprung_zu(kx(501)) + am(502) + [{'holdIf': {'left': f'P.x > {kx(501)}'}, 'frames': 20}] + hoch()[2:]   # Bild-Regel: Hebel 4 auf dem ersten Steg (502)
             r = await koop(g, **{who: kat(494, 15), o: kat(492, 15)}, plans={who: zieht, o: [{'wait': '!!linkOn[4]'}, {'frames': 40}, k_lauf(497, 0)] + hoch()}, maxFrames=4000)
-            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 537, f'E3 Lava-Raum 2: Hebel 4, Stege und Pilz hinauf ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 530, f'E3 Lava-Raum 2: Hebel 4, Stege und Pilz hinauf ({who} zieht)', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
@@ -8312,11 +8312,11 @@ KOMBI_STELLEN_BOT = [
     ('hoehle/02-tropfsteingang.json', 'Pilz-Dash-Grube (266)', kat(264, 15), kat(263, 15), lambda: kombi_pilz_dash_grube(266, 274), {'m': (274, 6), 'f': (274, 6)}),
     ('hoehle/02-tropfsteingang.json', 'Pilz-Dash-Grube (445)', kat(443, 15), kat(442, 15), lambda: kombi_pilz_dash_grube(445, 453), {'m': (453, 6), 'f': (453, 6)}),
     ('vulkan/01-glutpfad.json', 'Lava-Pilz-Dash-Grube (185)', kat(183, 15), kat(182, 15), lambda: kombi_pilz_dash_grube(185, 193), {'m': (193, 6), 'f': (193, 6)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False, hoch=3), {'m': (360, 6), 'f': (360, 6)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (370)', kat(368, 15), kat(367, 15), lambda: kombi_flammen_kamin(370, 16, flamme=False, hoch=3), {'m': (384, 6), 'f': (384, 6)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False, hoch=3), {'m': (560, 6), 'f': (560, 6)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False, hoch=3), {'m': (584, 6), 'f': (584, 6)}),
-    ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False, hoch=3), {'m': (782, 6), 'f': (782, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (338)', kat(336, 15), kat(335, 15), lambda: kombi_flammen_kamin(338, 16, flamme=False, hoch=3), {'m': (352, 6), 'f': (352, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (362)', kat(360, 15), kat(359, 15), lambda: kombi_flammen_kamin(362, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (384, 6), 'f': (383, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (538)', kat(536, 15), kat(535, 15), lambda: kombi_flammen_kamin(538, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (560, 6), 'f': (559, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (592, 6), 'f': (591, 6)}),
+    ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (790, 6), 'f': (789, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Pilz-Dash-Grube (188)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(188, 196), {'m': (196, 6), 'f': (196, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False, hoch=3), {'m': (366, 6), 'f': (366, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Kamin (376)', kat(374, 15), kat(373, 15), lambda: kombi_flammen_kamin(376, 16, flamme=False), {'m': (390, 9), 'f': (390, 9)}),

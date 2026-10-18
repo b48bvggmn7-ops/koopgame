@@ -106,7 +106,7 @@ _HAFTARME = {
     'hoehle/04-leuchtgrotte.json': [(442, 9, 'pink')],
     'hoehle/05-foerderwerk.json': [(384, 7, 'blue')],
     'hoehle/06-tiefenschlund.json': [(446, 8, 'pink')],
-    'vulkan/01-glutpfad.json': [(588, 7, 'pink')],
+    'vulkan/01-glutpfad.json': [(596, 7, 'pink')],
     'vulkan/02-aschefeld.json': [(394, 10, 'blue')],
     'vulkan/04-magmakammer.json': [(367, 10, 'pink'), (396, 10, 'pink')],
     'vulkan/06-feuerschlund.json': [(135, 8, 'blue'), (550, 10, 'pink')],
