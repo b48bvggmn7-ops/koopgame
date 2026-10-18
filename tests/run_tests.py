@@ -2671,7 +2671,7 @@ async def level18_aschefeld(g):
         f = [halten(412), {'press': ['jump'], 'hold': ['jump'], 'frames': 4}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(412)} + 10', 'left': f'P.x > {kx(413)} - 10'}, 'until': f'P.y < {ky(4)}', 'frames': 400},
              {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(430)} - 6', 'left': f'P.x > {kx(430)} + 6'}, 'until': 'P.grounded', 'frames': 400}, halten(430), hp(430, '!!linkOn[6]'), k_lauf(462), {'until': 'P.grounded', 'frames': 200}, k_lauf(470)]
         m = [{'wait': '!!linkOn[5]'}, durch(464)] + am(466) + [{'wait': f'Q.x >= {kx(463)} && Q.grounded'}, k_lauf(469)]
-        r = await koop(g, f=kat(405, 15), m=kat(403, 15), plans={'f': f, 'm': m}, maxFrames=6000, pre=PRE)
+        r = await koop(g, f=kat(413, 15), m=kat(411, 15), plans={'f': f, 'm': m}, maxFrames=6000, pre=PRE)
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 468, 'E3 Schwein aufs Dach, Platte 5 hält die Pressen an, Affe durch, Hebel 6', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         bruecke = lambda: [k_lauf(478, 0)] + sprung_zu(kx(481)) + [durch(517)]
         for who in ('m', 'f'):
@@ -8319,8 +8319,8 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/01-glutpfad.json', 'Lava-Kamin (768)', kat(766, 15), kat(765, 15), lambda: kombi_flammen_kamin(768, 16, flamme=False, hoch=3, weit=8, versatz_f=0), {'m': (790, 6), 'f': (789, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Pilz-Dash-Grube (188)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(188, 196), {'m': (196, 6), 'f': (196, 6)}),
     ('vulkan/02-aschefeld.json', 'Lava-Kamin (352)', kat(350, 15), kat(349, 15), lambda: kombi_flammen_kamin(352, 16, flamme=False, hoch=3), {'m': (366, 6), 'f': (366, 6)}),
-    ('vulkan/02-aschefeld.json', 'Lava-Kamin (376)', kat(374, 15), kat(373, 15), lambda: kombi_flammen_kamin(376, 16, flamme=False), {'m': (390, 9), 'f': (390, 9)}),
-    ('vulkan/02-aschefeld.json', 'Lava-Kamin (766)', kat(764, 15), kat(763, 15), lambda: kombi_flammen_kamin(766, 16, flamme=False), {'m': (780, 9), 'f': (780, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (376)', kat(374, 15), kat(373, 15), lambda: kombi_flammen_kamin(376, 16, flamme=False, weit=8, versatz_f=0), {'m': (398, 9), 'f': (397, 9)}),
+    ('vulkan/02-aschefeld.json', 'Lava-Kamin (766)', kat(764, 15), kat(763, 15), lambda: kombi_flammen_kamin(766, 16, flamme=False, weit=8, versatz_f=0), {'m': (788, 9), 'f': (787, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (44)', kat(42, 15), kat(41, 15), lambda: kombi_pilz_dash_grube(44, 52), {'m': (52, 6), 'f': (52, 6)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (194)', kat(192, 15), kat(191, 15), lambda: kombi_pilz_dash_grube(194, 202), {'m': (202, 6), 'f': (202, 6)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (349)', kat(347, 15), kat(346, 15), lambda: kombi_flammen_kamin(349, 16, flamme=False), {'m': (363, 9), 'f': (363, 9)}),

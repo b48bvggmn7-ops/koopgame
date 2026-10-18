@@ -44,7 +44,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | hoehle/05-foerderwerk | Kamine höher | offen | offen | – | – | Durchbruch 392 |
 | hoehle/06-tiefenschlund | Pilz-Dash | offen | offen | – | – | offen |
 | vulkan/01-glutpfad | Lava-Kamine höher | offen | offen | Lava 5 Stellen schneller | – | offen |
-| vulkan/02-aschefeld | Lava-Kamin höher | offen | offen | – | – | Durchbruch 790 |
+| vulkan/02-aschefeld | Lava-Kamin höher | offen | offen | – | – | offen |
 | vulkan/03-feuerberg | Pilz-Dash | offen | offen | Wand 4,5 (Grenze) | – | offen |
 | vulkan/04-magmakammer | Pilz-Dash | offen | offen | Lava 5 Stellen schneller | – | offen |
 | vulkan/05-schlackewerk | Pilz-Dash | offen | offen | – | Tunnel | Durchbruch 194 |
@@ -152,7 +152,7 @@ Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon P
   laufen durch den Dash-Tunnel (dash_kette).
 - Pflicht-Durchbruch (Regel 6) auch in Ruinen/Höhle/Vulkan: Säulen (unten Durchbruch, darüber Wand bis oben) in
   Ruinen 1 (296), Sonnentempel (331), Felsenflucht (532), Kristallhöhle (115), Tropfsteingang (585), Förderwerk (392),
-  Aschefeld (790), Schlackewerk (194), Feuerschlund (589) – nur auf flachen Wegstücken ohne Bot-Test, Elemente und
+  Schlackewerk (194), Feuerschlund (589) (Aschefeld 790 wieder entfernt: lag nach dem Kamin-Umbau hinter dem Ziel) – nur auf flachen Wegstücken ohne Bot-Test, Elemente und
   Rätsel (Glutpfad 788 verworfen: dort entstand ein 1 breiter Kamin; Sonnentempel 327 -> 331 wegen Haft-Arm).
   Tests nacht_stellen_<welt>. Kristallhöhle zählt dadurch eine Kombi-Stelle mehr (Ausnahme „Kombi-Etappe 0“ entfällt).
 - Offen: Mondnacht Doppel-Wand (Hebel 5) – Bot-Plan für die Haken-Kette unter zwei Wänden fehlt noch, Tempo unverändert.
