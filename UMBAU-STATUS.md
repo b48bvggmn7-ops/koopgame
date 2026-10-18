@@ -8,7 +8,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | Wunsch | Stand |
 |---|---|
 | Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ✅ Kraterherz Lava-Brücken (Gruben 412–432/437–455 breiter, Affe nur mit Brücke) |
-| Münzen für ihre Figur erreichbar | ✅ Dschungel; ✅ Ruinen/Höhle/Vulkan: jede Münze ohne Hilfe in der Nähe mit echter Physik geprüft (19 Level), falsche umgelegt; ⚠️ Münzen direkt an Haken/Pilz/Aufwind/Fahrt liegen auf deren Bahnen, nicht einzeln per Bot geprüft |
+| Münzen für ihre Figur erreichbar | ✅ Dschungel; ✅ Ruinen/Höhle/Vulkan: jede Münze geprüft – ohne Hilfe mit echter Physik, an Hilfen (Haken, Pilz, Aufwind, Fahrt, Haftfläche) mit dem ganzen Spiel bzw. den Test-Bots; nicht geholte auf die echte Bot-Bahn gelegt |
 | Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
 | Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/7,2 statt 5,4/6,3, Bot-Plan); ✅ Lava zweite Runde: Glutpfad Lava-Raum 1+2, Magmakammer Steinweg schneller; ⚠️ 8 Lava-Stellen + Feuerberg-Wand bleiben (mit Dash nicht schneller schaffbar, Gründe unten) |
 | (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ alle 22 Level (zweite Runde: Durchbruch-Säulen in Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz) |
@@ -234,3 +234,14 @@ Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen,
   (315/319/330, Test hoehle1_obere_route); Mondnacht 190 auf die Schirm-Dash-Bahn (Test ruinen2_hakenreihe); Feuerberg
   267 -> 271 (lag für den Affen unerreichbar über der Grube). Feuerberg 306 bleibt (Meister-Münze am Haft-Arm – das
   Prüfwerkzeug kennt Haftflächen nicht; der Test nacht_stellen_vulkan sammelt sie ein).
+
+## Münzen an Hilfen (zweite Runde)
+- 157 Münzen an Hilfen blieben nach der ersten Prüfung offen. Werkzeug tests/umbau/muenzen_hilfen.py (ganzes Spiel:
+  Haken greifen/loslassen, Pilz, Aufwind, Fahrt, Haftfläche, Dash) bestätigt 79. Münz-Protokoll der Test-Bots
+  (MUENZ_LOG=<datei> beim großen Lauf) bestätigt weitere – offen blieben 46, fast alle unter Haken-Ketten.
+- Umgelegt auf die echte Bahn der Test-Bots (Bahn-Protokoll MUENZ_BAHN, Werkzeug tests/umbau/muenzen_auf_bahn.py):
+  30 Münzen in Leuchtgrotte, Tiefenschlund, Ruinen 1, Mondnacht, Fallengang, Sonnentempel, Aschefeld, Magmakammer,
+  Kraterherz. Vier Haken-Ketten ohne Level-Test (Kristallhöhle 308–348, Ruinen 1 155–171 und 736–752, Feuerberg
+  227–259) und die Feuerberg-Aufwinde (Schweinchen) bekamen Bot-Pläne (tests/umbau/haken_ketten.py) und den Test
+  muenzen_haken_ketten; ihre Münzen liegen jetzt auf der Schwungbahn.
+- Ergebnis großer Lauf mit Münz-Protokoll: jede vorher offene Münze wird von einem Test-Bot eingesammelt.
