@@ -1902,6 +1902,13 @@ async def level13_eisgrotte(g):
         soll(r.get('done'), 'E3 Tür 4 offen für den Affen', r.get('pos'))
         r = await koop(g, m=kat(430, 15), f=kat(445, 15), plans={'m': [{'hold': ['right'], 'pressIf': {'jump': 'P.grounded'}, 'frames': 300}]}, maxFrames=400)
         soll(r['pos']['m'][0] < 440, 'E3 ohne Hebel 4 kein Affe durch', r.get('pos'))
+        # Umbau: Hebel 4 bleibt Schweinchen-Sache – der Affe kommt auch mit Sprung + Dash nicht auf die obere Eis-Plattform
+        for st, rr in ((420, 12), (418, 12), (413, 15)):
+            for d, rich in ((14, ['swimUp']), (14, ['right', 'swimUp']), (20, ['right', 'swimUp'])):
+                m = [k_lauf(st, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3},
+                     {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+                r = await koop(g, m=kat(st - 1, rr), f=kat(405, 15), plans={'m': m}, maxFrames=800)
+                soll(not (r['pos']['m'][0] >= 426 and r['pos']['m'][1] <= 3), f'E3 Affe per Dash an Hebel 4 ({st}, {d}, {rich})', r.get('pos'))
         # Bremsen am Seil
         ok = None
         for jx in (494, 495, 496, 497):
