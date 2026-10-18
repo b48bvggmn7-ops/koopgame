@@ -94,6 +94,19 @@ stelle(level='hoehle/01-kristallhoehle.json', name='Ziel: Schweinchen per Aufwin
              {'hold': ['glide', 'right'], 'until': 'P.grounded', 'frames': 600}], ziel=405, ziel_reihe=3, baustein='Umbau',
        gegen=_sprung_dash(387))
 
+# Feuerberg Ziel-Plateau (Oberkante 1): Affe von der Pilz-Plattform an Haken 404 + Dash hoch, Schweinchen per Aufwind 405
+_fb_affe = [{'holdIf': {'right': f'P.x < {kx(396)} - 4', 'left': f'P.x > {kx(396)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(396)}) <= 4', 'frames': 200},
+            {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
+            {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100},
+            {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3}, {'holdIf': {'right': f'P.x < {kx(413)}', 'left': f'P.x > {kx(414)}'}, 'until': 'P.grounded', 'frames': 300}]
+_fb_schwein = [{'holdIf': {'right': f'P.x < {kx(397)}'}, 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+               {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(405)} + 20', 'left': f'P.x > {kx(406)}'}, 'until': f'P.y < {ky(0)}', 'frames': 900},
+               {'hold': ['glide', 'right'], 'until': 'P.grounded', 'frames': 600}]
+stelle(level='vulkan/03-feuerberg.json', name='Ziel-Plateau: Haken 404 + Dash hoch (dashfest)', wer='m', start=(395, 8), partner=(396, 8),
+       plan=_fb_affe, ziel=410, ziel_reihe=0, baustein='Umbau', gegen=_sprung_dash(397))
+stelle(level='vulkan/03-feuerberg.json', name='Ziel-Plateau: Schweinchen per Aufwind', wer='f', start=(395, 8), partner=(396, 8),
+       plan=_fb_schwein, ziel=410, ziel_reihe=0, baustein='Umbau')
+
 # ---------------- Dschungel 1 (sanfte Probe) ----------------
 for _w in 'mf':
     stelle(level='dschungel/01-dschungel.json', name='Durchbruch-Wand unter dem Münz-Sims 715 (sanfte Probe; oben herum per Lift geht auch)', wer=_w,
