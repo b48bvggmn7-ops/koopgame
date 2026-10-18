@@ -1,0 +1,70 @@
+--- a/elemente/foerderband.js
++++ b/elemente/foerderband.js
+@@ -40,31 +40,47 @@
+   if(um) SFX.bandUm(um.x + um.w/2);
+ }
+ function bandBild(c, x, y, w, h, t, phase){
+-  c.fillStyle = '#3b3446'; c.fillRect(x, y, w, h);                        // Rahmen
+-  c.fillStyle = '#26212f'; c.fillRect(x + 2, y + 4, w - 4, h - 8);
+-  // Gurt oben mit wandernden Pfeilen
+-  c.fillStyle = '#5c5468'; c.fillRect(x, y, w, 9);
+-  c.save(); c.beginPath(); c.rect(x, y, w, 9); c.clip();
+-  c.fillStyle = t === 0 ? 'rgba(200,200,210,.35)' : '#ffd36a';
+-  const dir = Math.sign(t) || 1, off = ((phase % 16) + 16) % 16;
+-  for(let k = -16; k < w + 16; k += 16){
+-    const px = x + k + (dir > 0 ? off : 16 - off);
+-    c.beginPath(); c.moveTo(px - 3*dir, y + 1.5); c.lineTo(px + 3*dir, y + 4.5); c.lineTo(px - 3*dir, y + 7.5); c.closePath(); c.fill();
++  // ein zusammenhängender Lauf (auch ein einzelnes Kästchen) wird als EIN Band gezeichnet: Lederband mit Holzkörper,
++  // breite weiche Pfeile, nur an den beiden Enden Rollen – keine Nahtstellen zwischen den Kästchen
++  const rr = (X, Y, W, H, R) => { c.beginPath(); c.roundRect ? c.roundRect(X, Y, W, H, R) : c.rect(X, Y, W, H); };
++  // Körper aus Holz
++  rr(x, y + 5, w, h - 5, 7); c.fillStyle = '#5a4130'; c.fill();
++  c.save(); rr(x, y + 5, w, h - 5, 7); c.clip();
++  c.fillStyle = 'rgba(20,12,6,.35)'; c.fillRect(x, y + h - 14, w, 14);
++  c.fillStyle = 'rgba(255,230,190,.10)'; for(let k = 0; k < w; k += 40){ c.fillRect(x + k, y + 15, 40, 1.2); }
++  c.fillStyle = '#b8a070'; for(let k = 20; k < w; k += 40){ c.beginPath(); c.arc(x + k, y + h - 8, 1.4, 0, 7); c.fill(); }   // Nieten
++  c.restore();
++  c.strokeStyle = 'rgba(25,15,8,.65)'; c.lineWidth = 1.4; rr(x + .7, y + 5.7, w - 1.4, h - 6.4, 6.5); c.stroke();
++  // Gurt oben: Leder mit wandernden Pfeilen
++  rr(x, y, w, 12, 6); c.fillStyle = '#3d2c1f'; c.fill();
++  c.save(); rr(x, y, w, 12, 6); c.clip();
++  const dir = Math.sign(t) || 1, P = 24, off = ((phase % P) + P) % P;
++  c.strokeStyle = t === 0 ? 'rgba(220,210,190,.35)' : 'rgba(246,204,112,.92)'; c.lineWidth = 2.6; c.lineCap = 'round'; c.lineJoin = 'round';
++  for(let k = -P; k < w + P; k += P){
++    const px = x + k + (dir > 0 ? off : P - off);
++    c.beginPath(); c.moveTo(px - 3.2*dir, y + 2.6); c.lineTo(px + 2.6*dir, y + 6); c.lineTo(px - 3.2*dir, y + 9.4); c.stroke();
+   }
++  c.fillStyle = 'rgba(255,235,190,.22)'; c.fillRect(x + 4, y + 1, w - 8, 1.2);
+   c.restore();
+-  // Rollen
+-  c.fillStyle = '#8a8296';
+-  for(const rx of [x + 8, x + w - 8]){ c.beginPath(); c.arc(rx, y + h*0.62, 5, 0, Math.PI*2); c.fill(); }
+-  c.fillStyle = '#26212f';
+-  for(const rx of [x + 8, x + w - 8]){ c.beginPath(); c.arc(rx, y + h*0.62, 1.8, 0, Math.PI*2); c.fill(); }
++  c.strokeStyle = 'rgba(20,12,6,.7)'; c.lineWidth = 1.2; rr(x + .6, y + .6, w - 1.2, 10.8, 5.4); c.stroke();
++  // Rollen nur an den Enden
++  for(const rx of [x + 10, x + w - 10]){
++    c.fillStyle = '#b89a58'; c.beginPath(); c.arc(rx, y + 25, 6.2, 0, 7); c.fill();
++    c.strokeStyle = 'rgba(40,26,10,.6)'; c.lineWidth = 1; c.stroke();
++    c.fillStyle = '#3a2a1a'; c.beginPath(); c.arc(rx, y + 25, 2.2, 0, 7); c.fill();
++  }
+ }
+ function bandZeichnen(){
+-  for(const s of solids){
+-    if(s.type !== 'band') continue;
+-    const x = Math.round(s.x - camX);
+-    if(x + s.w < -20 || x > VW + 20) continue;
+-    bandBild(ctx, x, s.y, s.w, s.h, bandTempo(s), bandSchritte*bandTempo(s)*0.5);
++  const liste = solids.filter(s => s.type === 'band').sort((a, b) => a.y - b.y || a.x - b.x);
++  let lauf = null;
++  const fertig = () => { if(!lauf) return; const x = Math.round(lauf.x - camX);
++    if(!(x + lauf.w < -20 || x > VW + 20)) bandBild(ctx, x, lauf.y, lauf.w, lauf.h, lauf.t, bandSchritte*lauf.t*0.5); lauf = null; };
++  for(const s of liste){
++    const t = bandTempo(s);
++    if(lauf && lauf.y === s.y && lauf.x + lauf.w === s.x && lauf.t === t && lauf.h === s.h) lauf.w += s.w;
++    else { fertig(); lauf = {x: s.x, y: s.y, w: s.w, h: s.h, t}; }
+   }
++  fertig();
+ }
+ ELEMENT_SOLID_TYPEN.add('band');
+ elementRegistrieren({
