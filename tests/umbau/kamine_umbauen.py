@@ -40,6 +40,20 @@ def umbauen(datei, xs, max_weg=60, seite=None):
         rw = x0 + 4; p = rw + 10
         q = suche_rechts(lv, p + 3); ql = suche_links(lv, x0 - 2)
         rechts = (q - p) if q else 9999; links = (rw - (ql + 8)) if ql is not None else 9999
+        ende = lv.ed.get('cols', 800) - p
+        if seite == 'ende' or (seite is None and min(rechts, links) > max_weg and ende <= 40):
+            info = G.weiten_ende(lv, p, 8, rw + 1); bereich = [(p, 9999, 8)]; neu_x0 = x0
+            print(datei, x0, '->', neu_x0, info)
+            for f in (ROOT / 'tests' / 'run_tests.py',): T.datei_schieben(f, datei, bereich)
+            T.datei_schieben(ROOT / 'tests' / 'bausteine' / 'stellen.py', datei, bereich, nur_zeilen=True)
+            for j in ('bildregel_ausnahmen.json', 'kombi_ausnahmen.json'): T.json_schieben(ROOT / 'tests' / j, datei, bereich)
+            g0 = x0 + 5; alte = [h for h in lv.ed.get('hooks', []) if g0 <= h['c'] <= g0 + 16]
+            if alte:
+                hr = min(h['r'] for h in alte) + 1; rad = alte[0].get('radius', 5.0)
+                lv.ed['hooks'] = [h for h in lv.ed['hooks'] if h not in alte] + [{'c': g0 + d, 'r': hr, 'radius': rad} for d in (3, 8, 13)]
+            kombi_eintrag(datei, neu_x0)
+            for v in T.VERDAECHTIG: print('  NICHT verschoben (prüfen):', v)
+            T.VERDAECHTIG.clear(); log.append(dict(info, x0=x0, neu_x0=neu_x0)); continue
         if min(rechts, links) > max_weg: print('KEINE kurze Ausgleichsstrecke:', datei, x0, 'rechts', rechts, 'links', links); log.append({'x0': x0, 'fehlt': True}); continue
         if seite == 'rechts' or (seite is None and rechts <= links):
             info = G.weiten(lv, p, q, 8, rw + 1); bereich = [(p, q - 1, 8), (q, q + 7, '=', q + 7)]; neu_x0 = x0   # herausgenommenes Stück -> an das Blockende

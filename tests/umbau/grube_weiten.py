@@ -52,6 +52,28 @@ def weiten(lv, p, q, n=8, grube_von=None, haken=True):
                 lv.haken(mitte, hs[0]['r'], hs[0].get('radius', 5.0)); info['haken_neu'] = mitte
     return info
 
+def weiten_ende(lv, p, n=8, grube_von=None):
+    """Grube vor Spalte p um n breiter, indem das Level hinten n Spalten länger wird: alles ab p rückt n nach rechts
+    (für Kamine kurz vor dem Ziel – es entfällt nichts)."""
+    lv.ed['cols'] = lv.ed.get('cols', 800) + n
+    neu = {}
+    for (c, r), t in lv.t.items(): neu[(c + n, r) if c >= p else (c, r)] = t
+    lv.t = neu
+    for k, v in _listen(lv):
+        for o in v:
+            if o['c'] >= p: o['c'] += n
+    for k in ('startM', 'startF', 'goal'):
+        o = lv.ed.get(k)
+        if isinstance(o, dict) and o.get('c', -1) >= p: o['c'] += n
+    for c in range(p, p + n):
+        for r in range(-3, 18):
+            t = lv.typ(p - 1, r)
+            if t: lv.kachel(c, r, t)
+        for k, v in _listen(lv):
+            if k in ('spikes', 'lava', 'dunkelzonen'):
+                for o in [o for o in v if o['c'] == p - 1]: v.append(dict(o, c=c))
+    return {'grube': (grube_von, p + n - 1), 'verschoben_ende': p, 'n': n, 'cols': lv.ed['cols']}
+
 def weiten_links(lv, rw, q, n=8, grube_bis=None, haken=True):
     """Spiegelbild: die n schlichten Spalten q..q+n-1 (LINKS vom Kamin) entfallen, alles von q+n bis rw (Kamin samt
     Anlauf) rückt n nach links; die frei gewordenen Spalten rw-n+1..rw werden Grube wie Spalte rw+1."""

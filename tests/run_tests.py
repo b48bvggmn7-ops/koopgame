@@ -8329,7 +8329,7 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, flamme=False, weit=8, versatz_f=0), {'m': (602, 9), 'f': (601, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (712)', kat(710, 15), kat(709, 15), lambda: kombi_flammen_kamin(712, 16, flamme=False, weit=8, versatz_f=0), {'m': (734, 9), 'f': (733, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (744)', kat(742, 15), kat(741, 15), lambda: kombi_flammen_kamin(744, 16, flamme=False, weit=8, versatz_f=0), {'m': (766, 9), 'f': (765, 9)}),
-    ('vulkan/04-magmakammer.json', 'Lava-Kamin (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False, weit=8, versatz_f=0), {'m': (798, 9), 'f': (797, 9)}),
     ('vulkan/05-schlackewerk.json', 'Lava-Kamin (164)', kat(162, 15), kat(161, 15), lambda: kombi_flammen_kamin(164, 16, flamme=False, weit=8, versatz_f=0), {'m': (186, 9), 'f': (185, 9)}),
     ('vulkan/05-schlackewerk.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False, weit=8, versatz_f=0), {'m': (368, 9), 'f': (367, 9)}),
     ('vulkan/05-schlackewerk.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False, weit=8, versatz_f=0), {'m': (400, 9), 'f': (399, 9)}),
