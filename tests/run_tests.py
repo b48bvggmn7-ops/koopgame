@@ -1419,7 +1419,7 @@ async def level10_sonnentempel(g):
     soll(r.get('done'), 'Affe an zwei Haken über die Grube, Tür 5', r.get('pos'))
     r = await koop(g, f=kat(242, 10), m=kat(258, 15), plans={'f': gleit(244, kx(258), 4) + [k_lauf(262)]}, pre=dreh(220, 241), maxFrames=1500)
     soll(r.get('done'), 'Schweinchen segelt von der Insel durch Tür 5', r.get('pos'))
-    pl = [k_lauf(285, 0), {'wait': f'kristalle.find(k => k.link === 6).an && fallenPfeile.some(a => a.steckt >= 0 && Math.abs(a.x - {kx(288)}) < 4)'}, k_lauf(294)]
+    pl = [k_lauf(277, 0), {'wait': f'kristalle.find(k => k.link === 6).an && fallenPfeile.some(a => a.steckt >= 0 && Math.abs(a.x - {kx(280)}) < 4)'}, k_lauf(286)]
     r = await koop(g, m=kat(270, 15), f=kat(266, 15), plans={'m': pl}, maxFrames=3000)
     soll(r.get('done'), 'Licht-Takt durch Tür 6', r.get('pos'))
     m = [{'frames': 10}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(345) + 20} - 6', 'left': f'P.x > {kx(345) + 20} + 6'}, 'until': 'P.grounded', 'frames': 100},
@@ -4468,7 +4468,7 @@ async def levelkarten_gleich_breit(g):
 # Design-Politur A: Obergrenze für die Zeichenzeit eines Bildes (ms) bei doppelter Pixeldichte – großzügig über den
 # Messwerten (2–4 ms im Testbrowser), fängt aber Ausreißer wie die frühere Dunkel-Schicht (80–90 ms) sicher ab
 ZEICHNEN_MS_GRENZE = 20
-LEISTUNG_STELLEN = [('dschungel', 'dschungel/03-lianenschlucht.json', 360), ('ruinen', 'ruinen/04-sonnentempel.json', 300),
+LEISTUNG_STELLEN = [('dschungel', 'dschungel/03-lianenschlucht.json', 360), ('ruinen', 'ruinen/04-sonnentempel.json', 292),
                     ('hoehle', 'hoehle/02-tropfsteingang.json', 300), ('vulkan', 'vulkan/01-glutpfad.json', 340)]
 
 # Design-Politur B: Mindest-Kontrast (WCAG-Kontrastverhältnis, Median) zwischen Bodenoberkante und dem Hintergrund
@@ -8198,11 +8198,11 @@ def kombi_kamin_grube(x0, s):
             'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(rw + 1)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}],
             'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
 
-def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=20):
+def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=20, weit=0, versatz_f=None):
     """Kompakter Kamin (linke Säule x0, Breite 3) -> Stachelgrube (9) mit Haken -> Landeplatz 6 Reihen hoch; über der Grube
     eine Flamme im Takt (Timing: losklettern 20 Schritte nach dem Zünden). s = Bodenreihe. hoch = Umbau: rechte Wand und
     Landeplatz so viele Reihen höher (tests/umbau/kamine_heben.py), damit Sprung + Dash hoch den Kamin nicht überspringt."""
-    rw = x0 + breite + 1; l0 = rw + 1 + grube; fx = (rw + 4) * 40
+    rw = x0 + breite + 1; l0 = rw + 1 + grube + weit; fx = (rw + 4) * 40
     warte = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': versatz}] if flamme else []
     kamin = [k_lauf(x0 + 2, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(s - 8 - hoch)} && P.vy < 0 && P.vx > 1', 'frames': 900}]
     lande = {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'until': 'P.grounded', 'frames': 300}
@@ -8210,7 +8210,24 @@ def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=2
                                   {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
             'f': warte + kamin + [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])],
             'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
-            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
+            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]} if not weit else kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz if versatz_f is None else versatz_f)
+
+def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f):
+    """Umbau: Kamin-Grube 8 breiter (tests/umbau/grube_weiten.py, Grube 17). Affe: zwei Haken nacheinander; Schweinchen:
+    oben auf die Kaminwand, Sprung, Dash schräg hoch, DANN Schirm. Gegenproben: oben stehen + Sprung + Dash (ohne Haken
+    bzw. Schirm) -> Grube."""
+    warte_f = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': versatz_f}] if flamme else []
+    oben = [{'holdIf': {'right': f'P.x < {kx(rw)} - 4', 'left': f'P.x > {kx(rw)} + 4'}, 'until': 'P.grounded', 'frames': 200}]
+    def sprung_dash(d, rich, schirm): return oben + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, dict(lande, hold=['glide'] if schirm else [])]
+    haken = [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
+             {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
+             {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
+             {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande]
+    return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'up'], True),
+            'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
+            'm_ohne_dash': warte + kamin + sprung_dash(11, ['right', 'up'], False), 'm_ohne_dash2': warte + kamin + sprung_dash(17, ['right'], False),
+            'f_ohne': warte_f + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
+            'f_ohne_dash': warte_f + kamin + sprung_dash(20, ['right', 'up'], False)}
 
 # je Stelle: (Level, Name, Start Affe, Start Schweinchen, Pläne {wer: Plan}, Pläne ohne Kombi {wer: Plan} -> müssen scheitern)
 def _d1_haken_grube():
@@ -8283,9 +8300,9 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (170)', kat(165, 15), kat(164, 15), lambda: kombi_pilz_dash_grube(170, 180), {'m': (180, 6), 'f': (180, 6)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(190, 200), {'m': (200, 6), 'f': (200, 6)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (392)', kat(387, 15), kat(386, 15), lambda: kombi_pilz_dash_grube(392, 402), {'m': (402, 6), 'f': (402, 6)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3), {'m': (182, 6), 'f': (182, 6)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (303)', kat(301, 15), kat(300, 15), lambda: kombi_flammen_kamin(303, 16, hoch=3), {'m': (317, 6), 'f': (317, 6)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3), {'m': (598, 6), 'f': (598, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3, weit=8, versatz_f=0), {'m': (190, 6), 'f': (189, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (295)', kat(293, 15), kat(292, 15), lambda: kombi_flammen_kamin(295, 16, hoch=3, weit=8, versatz_f=0), {'m': (317, 6), 'f': (316, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3, weit=8, versatz_f=0), {'m': (606, 6), 'f': (605, 6)}),
     ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3), {'m': (536, 5), 'f': (536, 5)}),
     ('ruinen/02-mondnacht.json', 'Flammen-Kamin (89)', kat(87, 14), kat(86, 14), lambda: kombi_flammen_kamin(89, 15, hoch=3), {'m': (103, 5), 'f': (103, 5)}),
     ('ruinen/03-fallengang.json', 'Flammen-Kamin (579)', kat(577, 15), kat(576, 15), lambda: kombi_flammen_kamin(579, 16, hoch=3), {'m': (593, 6), 'f': (593, 6)}),
@@ -8363,10 +8380,10 @@ async def kombi_stellen_pruefen(g, welt):
             zc, zr = ziel[wer]
             ok = r.get('done') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
             if not ok: fehler.append(f"{lv} {name} ({wer}): {r.get('pos')} {r.get('dead')} {(r.get('log') or [])[-3:]}")
-            if wer + '_ohne' in pl:
-                r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer + '_ohne']}, maxFrames=2500)
+            for gegen in [k for k in pl if k.startswith(wer + '_ohne')]:   # Gegenproben (ohne Kombi, Umbau: auch nur mit Dash)
+                r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[gegen]}, maxFrames=2500)
                 geschafft = r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
-                if geschafft: fehler.append(f"{lv} {name} ({wer}) ohne Kombi trotzdem geschafft: {r.get('pos')}")
+                if geschafft: fehler.append(f"{lv} {name} ({wer}) {gegen}: trotzdem geschafft: {r.get('pos')}")
         if 'm' in pl and 'f' in pl:   # beide nacheinander (Affe vorn, Schweinchen 2,5 s später): bröckelnde Kanten o. Ä. dürfen den zweiten nicht aufhalten
             r = await koop(g, m=ms, f=fs, plans={'m': pl['m'], 'f': [{'frames': 150}] + pl['f']}, maxFrames=5000)
             ok = r.get('done') and all(r['pos'][w][0] >= ziel[w][0] - 0.5 and r['pos'][w][1] <= ziel[w][1] + 0.1 for w in ('m', 'f'))
