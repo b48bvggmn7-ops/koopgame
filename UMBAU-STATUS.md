@@ -7,7 +7,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 ## Checkliste Nutzerwünsche (wird laufend aktualisiert)
 | Wunsch | Stand |
 |---|---|
-| Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ⚠️ Kraterherz Lava-Brücken (Affe Fenster 2–3) |
+| Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ✅ Kraterherz Lava-Brücken (Gruben 412–432/437–455 breiter, Affe nur mit Brücke) |
 | Münzen für ihre Figur erreichbar | ✅ Dschungel; ⚠️ Ruinen/Höhle/Vulkan: nur Einstufung, Bot-Prüfung jeder Münze offen |
 | Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
 | Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ❌ Mondnacht Doppel-Wand; ⚠️ 12 Lava-Stellen + Feuerberg-Wand unverändert |
@@ -192,8 +192,9 @@ Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen,
   (86, 106) über die Stacheln. Im Tunnel kann der Affe nicht springen, über die Stacheln kommt er auch mit Dash nicht
   (Gegenproben in ruinen1_etappen_im_bild); beide bleiben höchstens 20 Spalten auseinander. Blaue Münzen liegen jetzt in
   den Tunneln.
-- Kraterherz Brücken-Gruben 412–430/435–451 (Hebel 1/2): das Schweinchen kommt mit Schirm + Dash auch ohne Brücke hinüber
-  (Kombi), der Affe nur mit Fenster 2–3 Schritten – bleibt so. Magmakammer 275: ging schon ohne Dash (nichts Neues).
+- Kraterherz Brücken-Gruben (Hebel 1/2) verbreitert auf 412–432 und 437–455 (Rest des Levels 5 Spalten nach rechts,
+  Wechselböden verlängert): der Affe kommt jetzt auch mit Dash nicht mehr ohne Brücke hinüber (Gegenprobe in
+  level22_kraterherz, je 3 Absprünge), das Schweinchen weiter mit Schirm + Dash (Kombi). Magmakammer 275: ging schon ohne Dash (nichts Neues).
 - Test-Pläne: „Dash nach oben“ heißt im Koop-Bot swimUp (vorher stand 'up' da – die Gegenproben dashten nur waagerecht);
   alle Kamin-Gegenproben laufen jetzt mit echtem Dash schräg hoch und bleiben grün.
 

@@ -135,7 +135,7 @@ _VERSTECKE = {
     'vulkan/04-magmakammer.json': [(203, 7, 'pink'), (457, 2, 'pink'), (645, 1, 'pink')],
     'vulkan/05-schlackewerk.json': [(210, 8, 'pink'), (535, 4, 'pink')],
     'vulkan/06-feuerschlund.json': [(373, 5, 'pink'), (515, 10, 'pink')],
-    'vulkan/07-kraterherz.json': [(273, 5, 'pink'), (333, 7, 'blue'), (634, 5, 'blue')],
+    'vulkan/07-kraterherz.json': [(273, 5, 'pink'), (333, 7, 'blue'), (639, 5, 'blue')],
     'dschungel/02-baumkronen.json': [(220, 5, 'blue'), (410, 15, 'blue'), (616, 15, 'pink')],
     'ruinen/01-ruinen.json': [(196, 10, 'blue'), (406, 15, 'pink'), (623, 15, 'pink')],
     'ruinen/02-mondnacht.json': [(118, 15, 'blue'), (243, 6, 'pink'), (368, 9, 'blue')],
@@ -197,7 +197,7 @@ _HAFTINSELN = {
     'vulkan/02-aschefeld.json': [(339, 16, 'pink')],
     'vulkan/03-feuerberg.json': [(202, 15, 'pink')],
     'vulkan/05-schlackewerk.json': [(294, 16, 'pink'), (696, 16, 'blue')],
-    'vulkan/07-kraterherz.json': [(540, 16, 'pink')],
+    'vulkan/07-kraterherz.json': [(545, 16, 'pink')],
 }
 for _lvl, _liste in _HAFTINSELN.items():
     for (_a, _g, _farbe) in _liste:

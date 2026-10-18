@@ -3243,44 +3243,50 @@ async def level22_kraterherz(g):
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
     if True:
-        raus = lambda: [k_lauf(456, 0)] + sprung_zu(kx(460)) + [k_lauf(474, 0)] + sprung_zu(kx(477)) + sprung_zu(kx(481)) + sprung_zu(kx(486)) + [k_lauf(490)]
+        raus = lambda: [k_lauf(461, 0)] + sprung_zu(kx(465)) + [k_lauf(479, 0)] + sprung_zu(kx(482)) + sprung_zu(kx(486)) + sprung_zu(kx(491)) + [k_lauf(495)]
         res = None
         for jx in (402, 403, 404):
             for pull in (30, 60):
-                m = haken(jx, 9, pull) + am(410) + [k_lauf(412), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[2]'}, k_lauf(451, 0), {'wait': f'Q.x >= {kx(450)}'}] + am(453) + raus()
-                f = [{'wait': '!!linkOn[1]'}, k_lauf(431, 0), halten(433)] + am(433) + [k_lauf(450, 0), {'wait': '!!linkOn[3]'}] + raus()
+                m = haken(jx, 9, pull) + am(410) + [k_lauf(412), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[2]'}, k_lauf(456, 0), {'wait': f'Q.x >= {kx(452)}'}] + am(458) + raus()
+                f = [{'wait': '!!linkOn[1]'}, k_lauf(433, 0), halten(435)] + am(435) + [k_lauf(452, 0), {'wait': '!!linkOn[3]'}] + raus()
                 r = await koop(g, m=kat(401, 15), f=kat(400, 15), plans={'m': m, 'f': f}, maxFrames=6000, pre=PRE)
-                if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 489: res = (jx, pull); break
+                if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 494: res = (jx, pull); break
             if res: break
         soll(res, 'E3 Hebel-Kette: Hebel 1 (Affe) Brücke 1, Hebel 2 (Schwein) Brücke 2, Hebel 3 Tor + Lava – zügig nach oben', (res, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
-        r = await koop(g, m=kat(440, 15), f=kat(434, 15), plans={'m': [{'frames': 400}]}, links=[1, 2, 3], maxFrames=500)
+        r = await koop(g, m=kat(442, 15), f=kat(436, 15), plans={'m': [{'frames': 400}]}, links=[1, 2, 3], maxFrames=500)
         soll(r.get('dead') == 'm', 'E3 Hebel 3: wer noch auf der Brücke steht, verbrennt', r.get('pos'))
+        # Umbau: Brücken-Gruben 412–432 / 437–455 – ohne Brücke kommt der Affe auch mit Sprung + Dash nicht hinüber
+        for st, rr, ziel in ((411, 9, 433), (436, 15, 456)):
+            for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (20, ['right', 'swimUp'])):
+                pl = [k_lauf(st, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
+                r = await koop(g, m=kat(st - 1, rr), f=kat(400, 15), plans={'m': pl}, maxFrames=1500, pre=PRE)
+                soll(not (r.get('done') and r['pos']['m'][0] >= ziel), f'E3 Affe ohne Brücke per Dash ab {st} ({d}, {rich})', r.get('pos'))
         an = lambda c: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 600}
         da = lambda c: f'Q.grounded && Math.abs(Q.x - {kx(c)}) < 8'
-        m = [an(508), {'wait': da(516)}, an(520), {'wait': da(528)}, k_lauf(541)]
-        f = [{'wait': '!!linkOn[5]'}, an(516), {'wait': da(520)}, {'wait': '!!linkOn[6]'}, an(528), {'wait': f'Q.x > {kx(533)}'}, k_lauf(541)]
-        r = await koop(g, m=kat(503, 15), f=kat(501, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
-        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 540, 'E3 Platten-Staffel unter den Pressen', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
-        await beide('E3 Gruben und Presse', 545, lambda w: [k_lauf(548, 0)] + sprung_zu(kx(554)) + [k_lauf(558, 0)] + sprung_zu(kx(564)) + [durch(574), k_lauf(579)], 578)
+        m = [an(513), {'wait': da(521)}, an(525), {'wait': da(533)}, k_lauf(546)]
+        f = [{'wait': '!!linkOn[5]'}, an(521), {'wait': da(525)}, {'wait': '!!linkOn[6]'}, an(533), {'wait': f'Q.x > {kx(538)}'}, k_lauf(546)]
+        r = await koop(g, m=kat(508, 15), f=kat(506, 15), plans={'m': m, 'f': f}, maxFrames=5000, pre=PRE)
+        soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 545, 'E3 Platten-Staffel unter den Pressen', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+        await beide('E3 Gruben und Presse', 550, lambda w: [k_lauf(553, 0)] + sprung_zu(kx(559)) + [k_lauf(563, 0)] + sprung_zu(kx(569)) + [durch(579), k_lauf(584)], 583)
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
-        ks = lambda w: [k_lauf(603, 0)] + sprung_zu(kx(608)) + [{'aim': [kx(617), kx(621)], 'jumps': [kx(614)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(625)) + sprung_zu(kx(632)) + [k_lauf(641)]
-        await beide('E4 Kessel: Band, Pilz, Stege hinauf, die Lava steigt schnell', 600, ks, 640, delay=60)
+        ks = lambda w: [k_lauf(608, 0)] + sprung_zu(kx(613)) + [{'aim': [kx(622), kx(626)], 'jumps': [kx(619)], 'until': f'P.grounded && P.y <= {ky(8)} + 2', 'frames': 600}] + sprung_zu(kx(630)) + sprung_zu(kx(637)) + [k_lauf(646)]
+        await beide('E4 Kessel: Band, Pilz, Stege hinauf, die Lava steigt schnell', 605, ks, 645, delay=60)
         ok = []
         for rel in RELS:
-            r = await koop(g, m=kat(649, 4), f=kat(653, 4), plans={'m': kette(652, 4, rel) + [k_lauf(689)]}, maxFrames=4000)
-            if r.get('done') and r['pos']['m'][0] >= 688: ok.append(rel[:14])
+            r = await koop(g, m=kat(654, 4), f=kat(658, 4), plans={'m': kette(657, 4, rel) + [k_lauf(694)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 693: ok.append(rel[:14])
         soll(ok, 'E4 Kraterschlucht: Affe an vier Haken', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         ok = None
         for hold in (4, 8, 12):
-            r = await koop(g, f=kat(649, 4), m=kat(690, 4), plans={'f': glide_to(654, kx(691), hold) + [k_lauf(692)]}, maxFrames=4000)
-            if r.get('done') and r['pos']['f'][0] >= 690: ok = hold; break
+            r = await koop(g, f=kat(654, 4), m=kat(695, 4), plans={'f': glide_to(659, kx(696), hold) + [k_lauf(697)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 695: ok = hold; break
         soll(ok, 'E4 Kraterschlucht: Schwein segelt mit zwei Aufwinden', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         for who in ('m', 'f'):
             o = 'f' if who == 'm' else 'm'
-            r = await koop(g, **{who: kat(696, 4), o: kat(694, 4)}, plans={who: [durch(736), k_lauf(742)], o: [{'frames': 90}, durch(736), k_lauf(742)]}, maxFrames=5000, pre=PRE)
-            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 741, f'E4 Gipfel: zwei Pressen auf dem Kraterrand ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
+            r = await koop(g, **{who: kat(701, 4), o: kat(699, 4)}, plans={who: [durch(741), k_lauf(747)], o: [{'frames': 90}, durch(741), k_lauf(747)]}, maxFrames=5000, pre=PRE)
+            soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 746, f'E4 Gipfel: zwei Pressen auf dem Kraterrand ({who})', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     assert not fehler, fehler
 
 @test
@@ -8447,7 +8453,7 @@ DASH_KETTEN_BOT = [
     ('ruinen/04-sonnentempel.json', 'Dash-Tunnel vor dem Ziel (3 Gruben)', kat(734, 15), kat(733, 15), [739, 752, 765], 779),
     ('hoehle/02-tropfsteingang.json', 'Dash-Tunnel vor dem Ziel (3 Gruben)', kat(742, 15), kat(741, 15), [747, 760, 773], 787),
     ('vulkan/05-schlackewerk.json', 'Dash-Tunnel vor dem Ziel (Gruben je 9)', kat(753, 4), kat(752, 4), [758, 770], 783),
-    ('vulkan/07-kraterherz.json', 'Dash-Tunnel vor dem Ziel (3 Gruben je 9)', kat(741, 4), kat(740, 4), [745, 757, 769], 782),
+    ('vulkan/07-kraterherz.json', 'Dash-Tunnel vor dem Ziel (3 Gruben je 9)', kat(746, 4), kat(745, 4), [750, 762, 774], 787),
 ]
 async def dash_ketten_pruefen(g, welt):
     fehler, aktuell = [], None
