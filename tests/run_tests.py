@@ -2797,13 +2797,13 @@ async def level19_magmakammer(g):
         soll(r.get('dead') == 'm', 'E2 Hebel 3: die Lava steigt über den Steinweg', r.get('pos'))
         ok = []
         for rel in RELS:
-            r = await koop(g, m=kat(310, 15), f=kat(308, 15), plans={'m': kette(314, 4, rel) + [k_lauf(346)]}, maxFrames=4000)
-            if r.get('done') and r['pos']['m'][0] >= 345: ok.append(rel[:14])
+            r = await koop(g, m=kat(302, 15), f=kat(300, 15), plans={'m': kette(306, 4, rel) + [k_lauf(338)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['m'][0] >= 337: ok.append(rel[:14])
         soll(ok, 'E2 zweiter See: Affe an drei Haken', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         ok = None
         for hold in (4, 8, 12):
-            r = await koop(g, f=kat(310, 15), m=kat(346, 15), plans={'f': glide_to(315, kx(347), hold) + [k_lauf(348)]}, maxFrames=4000)
-            if r.get('done') and r['pos']['f'][0] >= 346: ok = hold; break
+            r = await koop(g, f=kat(302, 15), m=kat(338, 15), plans={'f': glide_to(307, kx(339), hold) + [k_lauf(340)]}, maxFrames=4000)
+            if r.get('done') and r['pos']['f'][0] >= 338: ok = hold; break
         soll(ok, 'E2 zweiter See: Schwein mit Aufwind (See steigt schneller)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
@@ -2812,9 +2812,9 @@ async def level19_magmakammer(g):
                         k_lauf(453), {'until': 'P.grounded', 'frames': 100}, k_lauf(458), {'until': 'P.grounded', 'frames': 100}, k_lauf(462), {'until': 'P.grounded', 'frames': 100}, k_lauf(468)]
         await beide('E3 Pilz-Turm vor der Lava', 404, lambda w: turm(), 467, delay=40)
         kamin = lambda: [k_lauf(472, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(477)}', 'frames': 900}, durch(497),
-                         k_lauf(498), {'until': 'P.grounded', 'frames': 100}, k_lauf(503), {'until': 'P.grounded', 'frames': 100}, k_lauf(508), {'until': 'P.grounded', 'frames': 100}, k_lauf(512)]
-        await beide('E3 Kamin mit Presse am Ausgang', 469, lambda w: kamin(), 511, delay=60)
-        await beide('E3 Pressen über dem Lavasteg', 513, lambda w: [k_lauf(518, 0)] + sprung_zu(kx(521)) + [durch(548), {'until': 'P.grounded', 'frames': 100}, k_lauf(552)], 551)
+                         k_lauf(498), {'until': 'P.grounded', 'frames': 100}, k_lauf(503), {'until': 'P.grounded', 'frames': 100}, k_lauf(508), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
+        await beide('E3 Kamin mit Presse am Ausgang', 469, lambda w: kamin(), 510, delay=60)
+        await beide('E3 Pressen über dem Lavasteg', 509, lambda w: [k_lauf(510, 0)] + sprung_zu(kx(513)) + [durch(540), {'until': 'P.grounded', 'frames': 100}, k_lauf(544)], 543)
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
@@ -2833,8 +2833,8 @@ async def level19_magmakammer(g):
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 663, 'E4 Doppel-Schacht: Platte 10 öffnet den Kamin, Hebel 11 die Klappe über dem Aufwind', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
         r = await koop(g, m=kat(612, 13), f=kat(616, 13), plans={'m': [{'frames': 2600}]}, maxFrames=2700)
         soll(r.get('dead'), 'E4 die Lava steigt in beiden Schächten', r.get('pos'))
-        fin = lambda: [k_lauf(669, 0)] + [{'aim': [kx(675), kx(683)], 'jumps': [kx(670)], 'until': f'P.grounded && P.x > {kx(681)}', 'frames': 600}, durch(700), k_lauf(703, 0)] + sprung_zu(kx(711)) + [k_lauf(722)]
-        await beide('E4 Finale: Pilz, Presse, steigende Grube', 665, lambda w: fin(), 721, delay=60)
+        fin = lambda: [k_lauf(669, 0)] + [{'aim': [kx(675), kx(683)], 'jumps': [kx(670)], 'until': f'P.grounded && P.x > {kx(681)}', 'frames': 600}, durch(692), k_lauf(695, 0)] + sprung_zu(kx(703)) + [k_lauf(706)]
+        await beide('E4 Finale: Pilz, Presse, steigende Grube', 665, lambda w: fin(), 705, delay=60)
     assert not fehler, fehler
 
 @test
@@ -8323,12 +8323,12 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/02-aschefeld.json', 'Lava-Kamin (766)', kat(764, 15), kat(763, 15), lambda: kombi_flammen_kamin(766, 16, flamme=False, weit=8, versatz_f=0), {'m': (788, 9), 'f': (787, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (44)', kat(42, 15), kat(41, 15), lambda: kombi_pilz_dash_grube(44, 52), {'m': (52, 6), 'f': (52, 6)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (194)', kat(192, 15), kat(191, 15), lambda: kombi_pilz_dash_grube(194, 202), {'m': (202, 6), 'f': (202, 6)}),
-    ('vulkan/04-magmakammer.json', 'Lava-Kamin (349)', kat(347, 15), kat(346, 15), lambda: kombi_flammen_kamin(349, 16, flamme=False), {'m': (363, 9), 'f': (363, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (341)', kat(339, 15), kat(338, 15), lambda: kombi_flammen_kamin(341, 16, flamme=False, weit=8, versatz_f=0), {'m': (363, 9), 'f': (362, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False), {'m': (392, 9), 'f': (392, 9)}),
-    ('vulkan/04-magmakammer.json', 'Lava-Kamin (558)', kat(556, 15), kat(555, 15), lambda: kombi_flammen_kamin(558, 16, flamme=False), {'m': (572, 9), 'f': (572, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (550)', kat(548, 15), kat(547, 15), lambda: kombi_flammen_kamin(550, 16, flamme=False, weit=8, versatz_f=0), {'m': (572, 9), 'f': (571, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, flamme=False), {'m': (594, 9), 'f': (594, 9)}),
-    ('vulkan/04-magmakammer.json', 'Lava-Kamin (728)', kat(726, 15), kat(725, 15), lambda: kombi_flammen_kamin(728, 16, flamme=False), {'m': (742, 9), 'f': (742, 9)}),
-    ('vulkan/04-magmakammer.json', 'Lava-Kamin (752)', kat(750, 15), kat(749, 15), lambda: kombi_flammen_kamin(752, 16, flamme=False), {'m': (766, 9), 'f': (766, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (712)', kat(710, 15), kat(709, 15), lambda: kombi_flammen_kamin(712, 16, flamme=False, weit=8, versatz_f=0), {'m': (734, 9), 'f': (733, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (744)', kat(742, 15), kat(741, 15), lambda: kombi_flammen_kamin(744, 16, flamme=False, weit=8, versatz_f=0), {'m': (766, 9), 'f': (765, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
     ('vulkan/05-schlackewerk.json', 'Lava-Kamin (164)', kat(162, 15), kat(161, 15), lambda: kombi_flammen_kamin(164, 16, flamme=False, weit=8, versatz_f=0), {'m': (186, 9), 'f': (185, 9)}),
     ('vulkan/05-schlackewerk.json', 'Lava-Kamin (346)', kat(344, 15), kat(343, 15), lambda: kombi_flammen_kamin(346, 16, flamme=False, weit=8, versatz_f=0), {'m': (368, 9), 'f': (367, 9)}),
