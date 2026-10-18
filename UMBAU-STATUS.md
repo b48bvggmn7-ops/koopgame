@@ -41,7 +41,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | hoehle/03-eisgrotte | Pilz-Dash | offen | offen | – | – | offen |
 | hoehle/01-kristallhoehle | Pilz-Dash | offen | offen | – | – | Durchbruch 115 |
 | hoehle/04-leuchtgrotte | Kamine höher | offen | offen | – | – | offen |
-| hoehle/05-foerderwerk | Kamine höher | offen | offen | – | – | Durchbruch 392 |
+| hoehle/05-foerderwerk | Kamine höher | offen | offen | – | – | Durchbruch 400 |
 | hoehle/06-tiefenschlund | Pilz-Dash | offen | offen | – | – | offen |
 | vulkan/01-glutpfad | Lava-Kamine höher | offen | offen | Lava 5 Stellen schneller | – | offen |
 | vulkan/02-aschefeld | Lava-Kamin höher | offen | offen | – | – | offen |
