@@ -19,7 +19,7 @@ window.MZ = {
     for(const sp of spikes) gef.add(Math.floor(sp.x/40) + ',' + Math.floor((sp.y - 1)/40));
     for(const k of F){
       const [c, r] = k.split(',').map(Number);
-      if(F.has(c + ',' + (r - 1)) || F.has(c + ',' + (r - 2))) continue;
+      if(F.has(c + ',' + (r - 1))) continue;   // auch niedrige Gänge (1 Reihe hoch, z. B. Förderband-Tunnel)
       if(gef.has(c + ',' + (r - 1))) continue;
       steh.push([c, r]);
     }
