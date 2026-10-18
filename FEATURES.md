@@ -1608,12 +1608,13 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   Dash nicht allein schafft (z. B. Baumkronen fahrender Haken 13, Dornenpfad Seilbahn).
 - **Abkürzungen geschlossen** (Werkzeug tests/umbau/abkuerzungen.py): Kristallhöhle (Haken-Gruben 35/200, obere Route nur
   fürs Schweinchen, Ziel mit Haken-Kette und Aufwind), Eisgrotte (Hebel 4 nur fürs Schweinchen), Fallengang (Pfeil-Galerie),
-  Mondnacht (Hakenreihe, Mondspiegel mit Stachel-Decke), Feuerberg (Ziel-Plateau höher). Offen: Ruinen 1 Fähre/Insel.
+  Mondnacht (Hakenreihe, Mondspiegel mit Stachel-Decke), Feuerberg (Ziel-Plateau höher). Ruinen 1 Fähre/Insel neu (Tunnel unter Stachel-Decken, Druckplatten, Aufwinde); Kraterherz Lava-Brücken breiter.
 - **Münzen** auf den echten Bahnen ihrer Figur (blau = Affe, pink = Schweinchen), per Bot eingesammelt.
 - **Verfolgungen schneller:** Stachelwände und rollende Felsen fahren so schnell, dass man ohne Dash eingeholt wird
-  (Ruinen 1 7,4/7,2; Dornenpfad 5,6/5,8/7,4; Wipfelsturm 8,4/8,0/6,6; Baumkronen 7,8/6,6; Felsenflucht bis 14; Tempelherz
+  (Ruinen 1 7,4/7,2; Mondnacht Doppel-Wand 6,2/7,2; Dornenpfad 5,6/5,8/7,4; Wipfelsturm 8,4/8,0/6,6; Baumkronen 7,8/6,6; Felsenflucht bis 14; Tempelherz
   bis 14). Fluchten mit Wartestellen (Pfeile, Flammen, Takt-Steine) so schnell, wie das Warten erlaubt (6–7). Steigende
-  Lava eine Stufe schneller, wo die Level-Tests es zulassen. Feuerberg-Wand bleibt 4,5 (Pilz-Strecke).
+  Lava eine Stufe schneller, wo die Level-Tests es zulassen (zweite Runde: Glutpfad Lava-Raum 1 mittel, Lava-Raum 2
+  schnell, Magmakammer Steinweg mittel – nur mit Dash). Feuerberg-Wand bleibt 4,5 (Pilz-Strecke).
 - **Dash-Ketten (Dash-Tunnel):** niedrige Decke (3 Reihen), Stachelgruben, dazwischen Podeste – zwei bis drei Dashes kurz
   hintereinander, auf dem Podest warten, bis der Dash wieder voll ist (sofort weiter = Absturz). Wipfelsturm vor dem Ziel,
   Sonnentempel vor dem Ziel (3 Gruben), Tropfsteingang vor dem Ziel (3 Gruben), Schlackewerk vor dem Ziel, Kraterherz

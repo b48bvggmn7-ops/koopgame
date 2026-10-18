@@ -10,7 +10,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ✅ Kraterherz Lava-Brücken (Gruben 412–432/437–455 breiter, Affe nur mit Brücke) |
 | Münzen für ihre Figur erreichbar | ✅ Dschungel; ⚠️ Ruinen/Höhle/Vulkan: nur Einstufung, Bot-Prüfung jeder Münze offen |
 | Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
-| Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/7,2 statt 5,4/6,3, Bot-Plan); ⚠️ 12 Lava-Stellen + Feuerberg-Wand unverändert |
+| Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/7,2 statt 5,4/6,3, Bot-Plan); ✅ Lava zweite Runde: Glutpfad Lava-Raum 1+2, Magmakammer Steinweg schneller; ⚠️ 8 Lava-Stellen + Feuerberg-Wand bleiben (mit Dash nicht schneller schaffbar, Gründe unten) |
 | (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ 11 Level; ❌ Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz |
 
 ## Messwerte (echte Physik, tests/reichweiten.json)
@@ -157,8 +157,12 @@ Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon P
   Bot-Plan + Test jagden_vulkan.
 - Steigende Lava eine Stufe schneller, wo die Level-Tests es zulassen: Glutpfad 262/310/425/470 -> schnell, 676 -> mittel;
   Magmakammer 93/330/420/475/706 -> schnell; Feuerschlund 143/479 -> schnell; Kraterherz 70/671 -> schnell, 235 -> mittel.
-  Unverändert (dort holt die schnellere Lava die zweite Figur ein): Glutpfad 218/505/630, Magmakammer 226/283/616,
-  Feuerschlund 612/617, Kraterherz 356/420/442/470.
+  Zweite Runde: Glutpfad 218 langsam -> mittel und 505 mittel -> schnell (die zweite Figur steigt gleich mit auf den ersten
+  Steg), Magmakammer 283 langsam -> mittel (Affe dasht über den Steinweg; ohne Dash holt ihn die Lava ein – Gegenprobe in
+  level19_magmakammer). Ausprobiert und zurückgenommen (auch mit Dash nicht zu schaffen): Glutpfad 630 (Pilz-Kette – die
+  Pilze versinken selbst), Magmakammer 226 und Kraterherz 356 (Schweinchen segelt mit Aufwinden über den See, die Lava holt
+  sie in der Luft ein), Magmakammer 624 und Feuerschlund 612/617 (Doppel-Schacht – Klettern im Kamin geht nicht schneller),
+  Kraterherz 420/444/475 (schnell: nach Hebel 3 sind es 25 Spalten bis oben, die Lava ist nach gut 2 s da).
 - Dash-Ketten (Regel 5): Dash-Tunnel (Werkzeug tests/umbau/dash_tunnel.py) in Sonnentempel 738–777 (3 Gruben),
   Tropfsteingang 746–785 (3 Gruben), Schlackewerk 757–781 und Kraterherz 744–780 (3 Gruben; Gruben dort 9 breit – bei
   10 landete man mit Anlauf knapp zu kurz). Ruinen und Höhle haben nur je eine Kette: alle anderen flachen Strecken liegen
