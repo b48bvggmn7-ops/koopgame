@@ -52,6 +52,29 @@ for _w in 'mf':
         stelle(level=_lv, name=f'Durchbruch-Säule {_c} (B2, Pflicht)', wer=_w, start=(_c - 2, _r - 1), partner=(_c + 4, _r - 1),
                plan=nb_bruch_durch(_c), ziel=_c + 2, ziel_reihe=_r - 1, baustein='B2', gegen=_laufen)
 
+# ---------------- Umbau (Regel 1): Haken-/Aufwind-Gruben dashfest ----------------
+# Absprung so tief unter der Landung, dass Sprung + Dash nicht reicht; Affe: Haken + Dash nach oben am höchsten Punkt,
+# Schweinchen: Aufwind. Gegenprobe: Affe nur mit Sprung + Dash schräg hoch (ohne Haken).
+def _haken_dash_hoch(c, z):
+    return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200},
+            {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
+            {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100},
+            {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3},
+            {'holdIf': {'right': f'P.x < {kx(z + 2)}', 'left': f'P.x > {kx(z + 4)}'}, 'until': 'P.grounded', 'frames': 300}]
+def _aufwind(c, w, z):
+    return [{'holdIf': {'right': f'P.x < {kx(c)}', 'left': f'P.x > {kx(c)} + 8'}, 'until': 'P.grounded', 'frames': 200},
+            {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+            {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(w)} + 20', 'left': f'P.x > {kx(w + 1)}'}, 'until': f'P.y < {ky(4)}', 'frames': 600},
+            {'hold': ['glide', 'right'], 'until': 'P.grounded', 'frames': 600}, {'holdIf': {'right': f'P.x < {kx(z + 2)}'}, 'frames': 60}]
+def _sprung_dash(c):
+    return [{'hold': ['right'], 'until': f'P.x >= {kx(c)}', 'frames': 200}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
+            {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, LANDEN]
+for _c, _r, _w, _z, _zr in ((35, 14, 37, 46, 6), (200, 12, 202, 211, 4)):
+    stelle(level='hoehle/01-kristallhoehle.json', name=f'Haken-Grube {_c} (Haken + Dash hoch, dashfest)', wer='m', start=(_c - 2, _r - 1), partner=(_c - 1, _r - 1),
+           plan=_haken_dash_hoch(_c, _z), ziel=_z, ziel_reihe=_zr, baustein='Umbau', gegen=_sprung_dash(_c))
+    stelle(level='hoehle/01-kristallhoehle.json', name=f'Aufwind-Grube {_c} (Schweinchen)', wer='f', start=(_c - 2, _r - 1), partner=(_c - 1, _r - 1),
+           plan=_aufwind(_c, _w, _z), ziel=_z, ziel_reihe=_zr, baustein='Umbau')
+
 # ---------------- Dschungel 1 (sanfte Probe) ----------------
 for _w in 'mf':
     stelle(level='dschungel/01-dschungel.json', name='Durchbruch-Wand unter dem Münz-Sims 715 (sanfte Probe; oben herum per Lift geht auch)', wer=_w,
