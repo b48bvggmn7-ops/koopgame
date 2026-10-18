@@ -8,8 +8,9 @@ ROOT = Path(__file__).resolve().parents[2]
 NICHT = re.compile(r"(frames'?\s*[:=]\s*|maxFrames=|'pull':\s*|frames=|range\(0,\s*|delay=|'wait':\s*f?'[^']*|'(links|ziel|offen|sackgassen)': \[[\d, ]*)$")
 
 def neu(n, rng):
-    for a, b, d in rng:
-        if a <= n <= b: return n + d
+    for e in rng:
+        a, b = e[0], e[1]
+        if a <= n <= b: return e[3] if len(e) > 3 else n + e[2]   # (a, b, '=', v): herausgenommenes Stück -> Rand
     return n
 
 # nur Zahlen an typischen Spalten-Stellen werden verschoben; andere Zahlen im Bereich werden nur gemeldet

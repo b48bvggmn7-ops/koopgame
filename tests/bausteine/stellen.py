@@ -60,8 +60,8 @@ for _w in 'mf':
 # ---------------- Verstecke (S1) in den vom Nutzer gestalteten Leveln: nur zusätzlich, optional ----------------
 # Verstecke auf schmalen Sockeln: nach dem Hinausspringen nur kurz nach rechts (sonst fällt der Bot vom Sockel)
 _KURZ = {('d02', 220), ('d06', 201), ('d06', 403), ('r04', 191), ('r04', 366), ('r04', 607), ('r05', 595), ('r06', 183),
-         ('h01', 301), ('h02', 139), ('h02', 397), ('h05', 585), ('v01', 243), ('v01', 385), ('v04', 203), ('v04', 449),
-         ('v04', 637), ('v07', 273), ('v07', 333)}
+         ('h01', 301), ('h02', 139), ('h02', 397), ('h05', 585), ('v01', 243), ('v01', 385), ('v04', 203), ('v04', 457),
+         ('v04', 645), ('v07', 273), ('v07', 333)}
 _VERSTECKE = {
     'dschungel/04-gluehwald.json': [(181, 15, 'pink'), (344, 15, 'pink'), (535, 8, 'blue')],
     'dschungel/05-dornenpfad.json': [(328, 3, 'pink'), (447, 3, 'pink'), (614, 8, 'pink')],
@@ -77,7 +77,7 @@ _VERSTECKE = {
     'vulkan/01-glutpfad.json': [(243, 6, 'pink'), (385, 7, 'pink'), (685, 4, 'pink')],
     'vulkan/02-aschefeld.json': [(433, 8, 'pink'), (546, 8, 'pink'), (674, 8, 'pink')],
     'vulkan/03-feuerberg.json': [(126, 15, 'pink'), (211, 15, 'blue'), (323, 15, 'blue')],
-    'vulkan/04-magmakammer.json': [(203, 7, 'pink'), (449, 2, 'pink'), (637, 1, 'pink')],
+    'vulkan/04-magmakammer.json': [(203, 7, 'pink'), (457, 2, 'pink'), (645, 1, 'pink')],
     'vulkan/05-schlackewerk.json': [(210, 8, 'pink'), (535, 4, 'pink')],
     'vulkan/06-feuerschlund.json': [(373, 5, 'pink'), (515, 10, 'pink')],
     'vulkan/07-kraterherz.json': [(273, 5, 'pink'), (333, 7, 'blue'), (634, 5, 'blue')],
@@ -108,7 +108,7 @@ _HAFTARME = {
     'hoehle/06-tiefenschlund.json': [(446, 8, 'pink')],
     'vulkan/01-glutpfad.json': [(596, 7, 'pink')],
     'vulkan/02-aschefeld.json': [(402, 10, 'blue')],
-    'vulkan/04-magmakammer.json': [(367, 10, 'pink'), (396, 10, 'pink')],
+    'vulkan/04-magmakammer.json': [(367, 10, 'pink'), (404, 10, 'pink')],
     'vulkan/06-feuerschlund.json': [(135, 8, 'blue'), (550, 10, 'pink')],
     'vulkan/07-kraterherz.json': [(213, 10, 'blue')],
 }

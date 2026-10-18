@@ -42,9 +42,9 @@ def umbauen(datei, xs, max_weg=60, seite=None):
         rechts = (q - p) if q else 9999; links = (rw - (ql + 8)) if ql is not None else 9999
         if min(rechts, links) > max_weg: print('KEINE kurze Ausgleichsstrecke:', datei, x0, 'rechts', rechts, 'links', links); log.append({'x0': x0, 'fehlt': True}); continue
         if seite == 'rechts' or (seite is None and rechts <= links):
-            info = G.weiten(lv, p, q, 8, rw + 1); bereich = (p, q + 7, 8); neu_x0 = x0   # auch das herausgenommene Stück
+            info = G.weiten(lv, p, q, 8, rw + 1); bereich = [(p, q - 1, 8), (q, q + 7, '=', q + 7)]; neu_x0 = x0   # herausgenommenes Stück -> an das Blockende
         else:
-            info = G.weiten_links(lv, rw, ql, 8, rw + 9); bereich = (ql, rw, -8); neu_x0 = x0 - 8
+            info = G.weiten_links(lv, rw, ql, 8, rw + 9); bereich = [(ql + 8, rw, -8), (ql, ql + 7, '=', ql - 1)]; neu_x0 = x0 - 8
         # Haken über der Grube neu: drei Haken (Abstand 5) eine Reihe tiefer als der alte – so reicht die Kette sicher
         # bis zur Landung (gemessen am Feuerschlund 560: 2 Haken 0/20, 3 Haken 20/20)
         g0 = neu_x0 + 5; alte = [h for h in lv.ed.get('hooks', []) if g0 <= h['c'] <= g0 + 16]
@@ -53,7 +53,7 @@ def umbauen(datei, xs, max_weg=60, seite=None):
             lv.ed['hooks'] = [h for h in lv.ed['hooks'] if h not in alte] + [{'c': g0 + d, 'r': hr, 'radius': rad} for d in (3, 8, 13)]
             info['haken'] = [(g0 + d, hr) for d in (3, 8, 13)]
         print(datei, x0, '->', neu_x0, info)
-        rng = [bereich]
+        rng = bereich
         T.datei_schieben(ROOT / 'tests' / 'run_tests.py', datei, rng)
         T.datei_schieben(ROOT / 'tests' / 'bausteine' / 'stellen.py', datei, rng, nur_zeilen=True)
         kurz = datei[0] + datei.split('/')[1][:2]; sp = ROOT / 'tests' / 'bausteine' / 'stellen.py'; t = sp.read_text(encoding='utf-8')

@@ -2808,9 +2808,9 @@ async def level19_magmakammer(g):
     if await g.ev("goal.x") < 590 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
     if True:
-        turm = lambda: [{'aim': [kx(412), kx(418), kx(424), kx(430), kx(439)], 'jumps': [kx(409)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
-                        k_lauf(453), {'until': 'P.grounded', 'frames': 100}, k_lauf(458), {'until': 'P.grounded', 'frames': 100}, k_lauf(462), {'until': 'P.grounded', 'frames': 100}, k_lauf(468)]
-        await beide('E3 Pilz-Turm vor der Lava', 404, lambda w: turm(), 467, delay=40)
+        turm = lambda: [{'aim': [kx(420), kx(426), kx(432), kx(438), kx(447)], 'jumps': [kx(417)], 'until': f'P.grounded && P.y <= {ky(1)} + 2', 'frames': 1200},
+                        k_lauf(461), {'until': 'P.grounded', 'frames': 100}, k_lauf(466), {'until': 'P.grounded', 'frames': 100}, k_lauf(470), {'until': 'P.grounded', 'frames': 100}, k_lauf(471)]
+        await beide('E3 Pilz-Turm vor der Lava', 412, lambda w: turm(), 469, delay=40)
         kamin = lambda: [k_lauf(472, -8), {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(3)} + 2 && P.x > {kx(477)}', 'frames': 900}, durch(497),
                          k_lauf(498), {'until': 'P.grounded', 'frames': 100}, k_lauf(503), {'until': 'P.grounded', 'frames': 100}, k_lauf(508), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
         await beide('E3 Kamin mit Presse am Ausgang', 469, lambda w: kamin(), 510, delay=60)
@@ -2819,19 +2819,19 @@ async def level19_magmakammer(g):
     # --- Etappe 4 ---
     if True:
         hp = lambda c, cond: {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': cond, 'frames': 6000}
-        runter = [k_lauf(641), {'until': 'P.grounded', 'frames': 100}, k_lauf(646), {'until': 'P.grounded', 'frames': 100}, k_lauf(651), {'until': 'P.grounded', 'frames': 100}, k_lauf(656), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
-        m = [k_lauf(609, 0)] + sprung_zu(kx(612)) + [{'wait': '!!linkOn[10]'}, {'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},   # Nacht-Ausbau: unten warten (mit Wand-Rutschen fiel der hüpfende Bot sonst in den Nachbarschacht)
-             {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(613)}', 'frames': 900}, k_lauf(625, -10)] + am(626) + \
+        runter = [k_lauf(649), {'until': 'P.grounded', 'frames': 100}, k_lauf(654), {'until': 'P.grounded', 'frames': 100}, k_lauf(659), {'until': 'P.grounded', 'frames': 100}, k_lauf(664), {'until': 'P.grounded', 'frames': 100}, k_lauf(664)]
+        m = [k_lauf(617, 0)] + sprung_zu(kx(620)) + [{'wait': '!!linkOn[10]'}, {'climb': True, 'dir': 1, 'until': '!!linkOn[10] && f > 20', 'frames': 2000},   # Nacht-Ausbau: unten warten (mit Wand-Rutschen fiel der hüpfende Bot sonst in den Nachbarschacht)
+             {'climb': True, 'dir': 1, 'until': f'P.grounded && P.y <= {ky(0)} + 2 && P.x > {kx(621)}', 'frames': 900}, k_lauf(633, -10)] + am(634) + \
             [{'wait': f'Q.grounded && Q.x >= {kx(622)} && Q.y <= {ky(0)} + 2'}] + runter
-        f = [{'frames': 40}, k_lauf(609, 0)] + sprung_zu(kx(613)) + [k_lauf(615, 0), halten(617), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
-             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
-             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(620)} - 4', 'left': f'P.x > {kx(620)} + 4'}, 'until': 'P.grounded', 'frames': 300},
-             hp(620, f'Q.y < {ky(6)}'), {'wait': '!!linkOn[11]'},
-             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(617)} + 10', 'left': f'P.x > {kx(618)} - 10'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(-1)}', 'frames': 600},
-             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(628)} - 6', 'left': f'P.x > {kx(628)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + runter
-        r = await koop(g, m=kat(606, 15), f=kat(608, 15), plans={'m': m, 'f': f}, maxFrames=9000)
+        f = [{'frames': 40}, k_lauf(617, 0)] + sprung_zu(kx(621)) + [k_lauf(623, 0), halten(625), {'press': ['jump'], 'hold': ['jump'], 'frames': 4},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(625)} + 10', 'left': f'P.x > {kx(626)} - 10'}, 'until': f'P.y < {ky(7)}', 'frames': 400},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(628)} - 4', 'left': f'P.x > {kx(628)} + 4'}, 'until': 'P.grounded', 'frames': 300},
+             hp(628, f'Q.y < {ky(6)}'), {'wait': '!!linkOn[11]'},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(625)} + 10', 'left': f'P.x > {kx(626)} - 10'}, 'pressIf': {'jump': 'P.grounded'}, 'until': f'P.y < {ky(-1)}', 'frames': 600},
+             {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(636)} - 6', 'left': f'P.x > {kx(636)} + 6'}, 'until': 'P.grounded', 'frames': 400}] + runter
+        r = await koop(g, m=kat(614, 15), f=kat(616, 15), plans={'m': m, 'f': f}, maxFrames=9000)
         soll(r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 663, 'E4 Doppel-Schacht: Platte 10 öffnet den Kamin, Hebel 11 die Klappe über dem Aufwind', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
-        r = await koop(g, m=kat(612, 13), f=kat(616, 13), plans={'m': [{'frames': 2600}]}, maxFrames=2700)
+        r = await koop(g, m=kat(620, 13), f=kat(624, 13), plans={'m': [{'frames': 2600}]}, maxFrames=2700)
         soll(r.get('dead'), 'E4 die Lava steigt in beiden Schächten', r.get('pos'))
         fin = lambda: [k_lauf(669, 0)] + [{'aim': [kx(675), kx(683)], 'jumps': [kx(670)], 'until': f'P.grounded && P.x > {kx(681)}', 'frames': 600}, durch(692), k_lauf(695, 0)] + sprung_zu(kx(703)) + [k_lauf(706)]
         await beide('E4 Finale: Pilz, Presse, steigende Grube', 665, lambda w: fin(), 705, delay=60)
@@ -8324,9 +8324,9 @@ KOMBI_STELLEN_BOT = [
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (44)', kat(42, 15), kat(41, 15), lambda: kombi_pilz_dash_grube(44, 52), {'m': (52, 6), 'f': (52, 6)}),
     ('vulkan/04-magmakammer.json', 'Lava-Pilz-Dash-Grube (194)', kat(192, 15), kat(191, 15), lambda: kombi_pilz_dash_grube(194, 202), {'m': (202, 6), 'f': (202, 6)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (341)', kat(339, 15), kat(338, 15), lambda: kombi_flammen_kamin(341, 16, flamme=False, weit=8, versatz_f=0), {'m': (363, 9), 'f': (362, 9)}),
-    ('vulkan/04-magmakammer.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False), {'m': (392, 9), 'f': (392, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (378)', kat(376, 15), kat(375, 15), lambda: kombi_flammen_kamin(378, 16, flamme=False, weit=8, versatz_f=0), {'m': (400, 9), 'f': (399, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (550)', kat(548, 15), kat(547, 15), lambda: kombi_flammen_kamin(550, 16, flamme=False, weit=8, versatz_f=0), {'m': (572, 9), 'f': (571, 9)}),
-    ('vulkan/04-magmakammer.json', 'Lava-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, flamme=False), {'m': (594, 9), 'f': (594, 9)}),
+    ('vulkan/04-magmakammer.json', 'Lava-Kamin (580)', kat(578, 15), kat(577, 15), lambda: kombi_flammen_kamin(580, 16, flamme=False, weit=8, versatz_f=0), {'m': (602, 9), 'f': (601, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (712)', kat(710, 15), kat(709, 15), lambda: kombi_flammen_kamin(712, 16, flamme=False, weit=8, versatz_f=0), {'m': (734, 9), 'f': (733, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (744)', kat(742, 15), kat(741, 15), lambda: kombi_flammen_kamin(744, 16, flamme=False, weit=8, versatz_f=0), {'m': (766, 9), 'f': (765, 9)}),
     ('vulkan/04-magmakammer.json', 'Lava-Kamin (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
