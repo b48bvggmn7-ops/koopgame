@@ -8644,9 +8644,9 @@ K_MESS = "(window.__maxAb = Math.max(window.__maxAb || 0, Math.abs(P.x - Q.x)), 
 
 @test
 async def ruinen1_etappen_im_bild(g):
-    """Bild-Regel, Ruinen 1 (Nutzer-Level 3): die lange Plattform-Fahrt (früher 80 -> 115, 35 Spalten) ist in zwei Etappen
-    geteilt – Insel 95–97 in der Mitte, wo beide wieder zusammenkommen (Schweinchen segelt hin, Hebel 3 holt den Affen,
-    dann segelt es weiter zu Hebel 20, Plattform B bringt den Affen ans Ufer). Fähre 197 -> 236: die Hebel 6/7/8 fahren
+    """Bild-Regel, Ruinen 1 (Nutzer-Level 3): die lange Plattform-Fahrt ist in zwei Etappen geteilt – Insel 95–97 in der
+    Mitte. Umbau (Dash): der Affe fährt in Tunneln unter Stachel-Decken, das Schweinchen hält Druckplatten (Sims 76,
+    Insel 97) und segelt mit Aufwinden hinterher; per Dash kommt der Affe nirgends allein hinüber. Fähre 197 -> 236: die Hebel 6/7/8 fahren
     mit, der Affe öffnet unterwegs die Türen 210/225 für das Schweinchen oben. Beide bleiben dabei höchstens 20 Spalten
     auseinander; ohne Hebel bewegt sich nichts."""
     await koop_level(g, 'ruinen/01-ruinen.json')
@@ -8654,19 +8654,32 @@ async def ruinen1_etappen_im_bild(g):
     def gleit(edge, tx, hold):
         return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold},
                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
-    ok = None
-    for hold in (4, 8, 12):
-        f = [{'wait': K_MESS + ' || true'}] + gleit(76, kx(96), hold) + am(97) + [{'wait': f'{K_MESS} || (Q.grounded && Q.x > {kx(95)} && Q.y < {ky(11)})', 'frames': 2500}] \
-            + gleit(97, kx(118), hold) + am(118) + [{'wait': f'{K_MESS} || (Q.x >= {kx(113)} && Q.grounded)', 'frames': 2500}]
-        m = [{'wait': f'{K_MESS} || !!linkOn[3]', 'frames': 2500}, {'wait': f'{K_MESS} || {k_ankunft(3)}', 'frames': 1500}, k_lauf(96), {'until': 'P.grounded', 'frames': 200},
-             {'holdIf': {'right': f'P.x < {kx(99)} - 4', 'left': f'P.x > {kx(99)} + 4'}, 'frames': 40}, {'wait': f'{K_MESS} || !!linkOn[20]', 'frames': 2500},
-             {'wait': f'{K_MESS} || {k_ankunft(20)}', 'frames': 1500}, k_lauf(116), {'until': 'P.grounded', 'frames': 200}]
-        r = await koop(g, f=kat(73, 2), m=kat(81, 6), plans={'f': f, 'm': m}, maxFrames=7000, pre='window.__maxAb = 0')
-        if r.get('done'): ok = await g.ev('window.__maxAb'); break
-    assert ok is not None, f'zwei Etappen über die Grube klappen nicht: {r.get("pos")}'
-    assert ok <= 20.5 * 40, f'Etappen: {ok / 40:.1f} Spalten auseinander'
-    r = await koop(g, m=kat(81, 6), f=kat(96, 10), plans={'m': [{'frames': 300}]}, maxFrames=400)
-    assert await g.ev(f"solids.find(s => s.type === 'moveplat' && s.switchLink === 3).x") == 80 * 40, 'Plattform A fährt ohne Hebel'
+    # Umbau (Dash): der Affe fährt in zwei Tunneln unter Stachel-Decken – Fähre A 77 -> 92 (Platte 3 auf dem Sims, 76),
+    # Fähre B 98 -> 114 (Platte 20 auf der Insel, 97); das Schweinchen hält die Platten und segelt mit je einem Aufwind
+    # (86, 106) über die Stacheln. Beide bleiben dabei höchstens 20 Spalten auseinander.
+    def wind(start, w, hoch, ziel):
+        return [k_lauf(start, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
+                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(w)} + 20', 'left': f'P.x > {kx(w + 1)}'}, 'until': f'P.y < {ky(hoch)}', 'frames': 900},
+                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(ziel)}', 'left': f'P.x > {kx(ziel + 1)}'}, 'until': 'P.grounded', 'frames': 600}]
+    def halt(c): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 300}
+    f = [{'wait': f'{K_MESS} || (Q.grounded && Q.y > {ky(8)})', 'frames': 1500}, halt(76), {'wait': f'{K_MESS} || (Q.grounded && Q.x >= {kx(95)} && Q.y < {ky(11)})', 'frames': 3000}] + wind(76, 86, 2, 96) + [{'wait': f'{K_MESS} || (Q.grounded && Q.y > {ky(12)})', 'frames': 3000}, halt(97),
+         {'wait': f'{K_MESS} || (Q.grounded && Q.x >= {kx(117)})', 'frames': 3000}] + wind(97, 106, 4, 119)
+    m = [{'hold': ['right'], 'until': f'P.x > {kx(77)} - 4', 'frames': 200},
+         {'holdIf': {'right': f'P.x < {kx(78)} - 4', 'left': f'P.x > {kx(78)} + 4'}, 'until': 'P.grounded', 'frames': 200}, {'wait': f'{K_MESS} || (P.x >= {kx(91)} && ' + k_ankunft(3) + ')', 'frames': 2500}, k_lauf(95), {'until': 'P.grounded', 'frames': 100},
+         {'hold': ['right'], 'until': f'P.x > {kx(98)} - 4', 'frames': 200},
+         {'holdIf': {'right': f'P.x < {kx(99)} - 4', 'left': f'P.x > {kx(99)} + 4'}, 'until': 'P.grounded', 'frames': 200}, {'wait': f'{K_MESS} || (P.x >= {kx(113)} && ' + k_ankunft(20) + ')', 'frames': 2500}, k_lauf(117), {'until': 'P.grounded', 'frames': 100}]
+    r = await koop(g, f=kat(72, 2), m=kat(70, 2), plans={'f': f, 'm': m}, maxFrames=9000, pre='window.__maxAb = 0')
+    assert r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 117, f'Tunnel-Fähren mit Platten: {r.get("pos")} {r.get("dead")} {r.get("steps")}'
+    ok = await g.ev('window.__maxAb')
+    assert ok <= 20.5 * 40, f'Tunnel-Fähren: {ok / 40:.1f} Spalten auseinander'
+    r = await koop(g, m=kat(77, 9), f=kat(70, 2), plans={'m': [{'frames': 300}]}, maxFrames=400)
+    assert await g.ev(f"solids.find(s => s.type === 'moveplat' && s.switchLink === 3).x") == 77 * 40, 'Fähre A fährt ohne Platte'
+    # der Affe kommt auch mit Sprung + Dash (gerade, schräg hoch) weder vom Sims noch aus den Tunneln zur Insel/ans Ufer
+    for st, rr, ziel in ((76, 2, 95), (79, 9, 95), (97, 10, 117), (100, 13, 117)):
+        for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (20, ['right', 'swimUp'])):
+            pl = [k_lauf(st, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
+            r = await koop(g, m=kat(st - 1, rr), f=kat(60, 2), plans={'m': pl}, maxFrames=1500)
+            assert not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= ziel), f'Affe per Dash ab {st} ({d}, {rich}): {r.get("pos")}'
     fp = "solids.find(s => s.type === 'moveplat' && s.switchLink === 6)"
     def zu(e): return {'holdIf': {'right': f'P.x < {e} - 4', 'left': f'P.x > {e} + 4'}, 'until': f'Math.abs(P.x - ({e})) <= 4', 'frames': 120}
     m = [zu(f'{fp}.x + 20'), {'use': True, 'frames': 3}, {'wait': f'{K_MESS} || {fp}.x + 60 >= {kx(210)}', 'frames': 3000}, zu(f'{fp}.x + 60'), {'use': True, 'frames': 3},

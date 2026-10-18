@@ -4,6 +4,15 @@ Auftrag (Nutzer): ALLE Level umbauen. Mit dem Dash kommt man viel weiter – Hak
 Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figur erreichbar sein. Der Dash soll auch mal
 2–3-mal kurz hintereinander gebraucht werden (darauf achten, dass er wieder voll ist). Verfolgungen sollen Spannung haben.
 
+## Checkliste Nutzerwünsche (wird laufend aktualisiert)
+| Wunsch | Stand |
+|---|---|
+| Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ⚠️ Kraterherz Lava-Brücken (Affe Fenster 2–3) |
+| Münzen für ihre Figur erreichbar | ✅ Dschungel; ⚠️ Ruinen/Höhle/Vulkan: nur Einstufung, Bot-Prüfung jeder Münze offen |
+| Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
+| Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ❌ Mondnacht Doppel-Wand; ⚠️ 12 Lava-Stellen + Feuerberg-Wand unverändert |
+| (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ 11 Level; ❌ Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz |
+
 ## Messwerte (echte Physik, tests/reichweiten.json)
 - Sprung allein: ~8 Kästchen weit (gleiche Höhe). Sprung + Dash schräg hoch: ~16. Schweinchen Schirm + Dash: ~25.
 - Laufen: gemessen ~7 px pro Schritt (MOVE_SPEED 4,4 ist nur der Beschleunigungs-Wert). Verfolger fahren ihr Tempo
@@ -31,7 +40,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | dschungel/04-gluehwald | ja | geprüft | ja | – | – | Haftdecke (Nacht) |
 | dschungel/05-dornenpfad | ja | geprüft | ja | 5,6 / 5,8 / 7,4 | – | Durchbruch 298 |
 | dschungel/06-wipfelsturm | ja | geprüft | ja | 8,4 / 8,0 / 6,6 | Tunnel + Doppel-Jagd | Durchbruch 381 |
-| ruinen/01-ruinen | Kamin-Gruben 17 breit | geprüft; offen: Fähre/Insel 76→95 (Bild-Regel) | Stein-Münzen behoben | 7,4 / 7,2 | – | Durchbruch 296 |
+| ruinen/01-ruinen | Kamin-Gruben 17 breit | geprüft; Fähre/Insel neu gebaut | Stein-Münzen behoben | 7,4 / 7,2 | – | Durchbruch 296 |
 | ruinen/03-fallengang | Kamin-Gruben 17 breit | geprüft (Pfeil-Galerie) | offen | – | – | offen |
 | ruinen/04-sonnentempel | Kamin-Gruben 17 breit | geprüft | offen | – | Tunnel (3 Gruben) | Durchbruch 331 |
 | ruinen/02-mondnacht | Kamin-Gruben 17 breit | geprüft (Hakenreihe, Mondspiegel) | offen | Doppel-Wand offen | – | offen |
@@ -177,9 +186,12 @@ Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen,
 - Mondnacht: Zwischen-Block über der Hakenreihe 200–205 (Lücke 17); Mondspiegel: Stachel auf der Mauer über Tor 50,
   niedrige Stachel-Decke über der breiten Grube 477–486 (Schweinchen segelt mit Schirm + Dash darunter durch).
 - Feuerberg: Ziel-Plateau 410–440 drei Reihen höher, Haken 404 höher, Aufwind bis oben.
-- Offen: Ruinen 1 Fähre/Insel (76→95): der Affe kommt per Dash zur Insel des Schweinchens. Messung: erst ab Lücke 21+
-  zuverlässig dicht – dann wären Affe auf Fähre A und Schweinchen am Hebel 3 über 20 Spalten auseinander (Bild-Regel,
-  Test ruinen1_etappen_im_bild). Braucht eine Entscheidung (Bild-Regel-Ausnahme oder anderer Aufbau).
+- Ruinen 1 Fähre/Insel neu gebaut (Nutzer: „grundsätzlich anders“): der Affe fällt durch einen Schacht auf Fähre A und fährt
+  in einem Tunnel unter einer Stachel-Decke zur Insel (77 -> 92), dann durch einen zweiten Schacht auf Fähre B im Tunnel zum
+  Ufer (98 -> 114). Das Schweinchen hält dafür Druckplatte 3 (Sims 76) bzw. 20 (Insel 97) und segelt mit je einem Aufwind
+  (86, 106) über die Stacheln. Im Tunnel kann der Affe nicht springen, über die Stacheln kommt er auch mit Dash nicht
+  (Gegenproben in ruinen1_etappen_im_bild); beide bleiben höchstens 20 Spalten auseinander. Blaue Münzen liegen jetzt in
+  den Tunneln.
 - Kraterherz Brücken-Gruben 412–430/435–451 (Hebel 1/2): das Schweinchen kommt mit Schirm + Dash auch ohne Brücke hinüber
   (Kombi), der Affe nur mit Fenster 2–3 Schritten – bleibt so. Magmakammer 275: ging schon ohne Dash (nichts Neues).
 - Test-Pläne: „Dash nach oben“ heißt im Koop-Bot swimUp (vorher stand 'up' da – die Gegenproben dashten nur waagerecht);

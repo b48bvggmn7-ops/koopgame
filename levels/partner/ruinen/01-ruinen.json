@@ -5,28 +5,20 @@
   {
    "id": "nummer-3",
    "zone": [
-    68,
-    100
+    64,
+    80
    ],
-   "rolle": "f",
-   "aktion": "hebel",
+   "rolle": "beide",
+   "aktion": "platte",
    "nummer": 3,
-   "wann": {
-    "ich_in": [
-     80,
-     82
-    ],
-    "ich_steht": true
-   },
-   "text": "Hebel 3 (wenn du auf der Plattform stehst)",
    "probe": {
-    "figur": "f",
+    "figur": "m",
     "start": [
      64,
      2
     ],
     "links": [],
-    "schritte": 796
+    "schritte": 456
    }
   },
   {
@@ -129,7 +121,7 @@
      14
     ],
     "links": [],
-    "schritte": 674
+    "schritte": 662
    }
   },
   {
@@ -148,15 +140,15 @@
      14
     ],
     "links": [
-     20,
      4,
      5,
      7,
      8,
      9,
-     3
+     3,
+     20
     ],
-    "schritte": 1384
+    "schritte": 1224
    }
   },
   {
@@ -175,16 +167,16 @@
      14
     ],
     "links": [
-     20,
      4,
      5,
      7,
      8,
      9,
      10,
-     3
+     3,
+     20
     ],
-    "schritte": 928
+    "schritte": 778
    }
   },
   {
@@ -205,33 +197,6 @@
     "links": [],
     "schritte": 438
    }
-  },
-  {
-   "id": "nummer-20",
-   "zone": [
-    86,
-    121
-   ],
-   "rolle": "beide",
-   "aktion": "hebel",
-   "nummer": 20,
-   "wann": {
-    "ich_in": [
-     98,
-     100
-    ],
-    "ich_steht": true
-   },
-   "text": "Hebel 20 (wenn du auf der Plattform stehst)",
-   "probe": {
-    "figur": "m",
-    "start": [
-     121,
-     14
-    ],
-    "links": [],
-    "schritte": 348
-   }
   }
  ],
  "offen": [
@@ -242,7 +207,7 @@
   },
   {
    "nummer": 16,
-   "spalte": 559,
+   "spalte": 567,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   },
   {
@@ -253,6 +218,11 @@
   {
    "nummer": 18,
    "spalte": 632,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 20,
+   "spalte": 97,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   },
   {
