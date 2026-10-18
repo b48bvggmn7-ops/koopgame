@@ -8681,7 +8681,8 @@ async def ruinen1_etappen_im_bild(g):
 async def ruinen2_hakenreihe(g):
     """Bild-/Haken-Regel, Ruinen 2 (Nutzer-Level 4): die Hakenreihe unter dem Sims hat 5 Haken im Abstand 8 (vorher 4 im
     Abstand 10–11), Reichweite unverändert 3,5 Kästchen. Der Koop-Bot fällt vom Sims an den ersten Haken und schwingt bis
-    zum letzten (213, unter dem Zwischen-Block 196–201 wartet das Schweinchen)."""
+    zum letzten (213, unter dem Zwischen-Block 200–205 wartet das Schweinchen). Umbau: der Zwischen-Block liegt 17 Spalten
+    hinter dem Sims – das Schweinchen kommt mit Schirm + Dash hin, der Affe mit Sprung + Dash nicht (er muss an die Haken)."""
     lv = json.loads((ROOT / 'levels' / 'ruinen/02-mondnacht.json').read_text())
     hs = sorted(h['x'] // 40 for h in lv['hooks'] if 175 < h['x'] / 40 < 220)
     assert hs == [181, 189, 197, 205, 213] and all(h['radius'] == 140 for h in lv['hooks'] if 175 < h['x'] / 40 < 220), hs
@@ -8696,6 +8697,14 @@ async def ruinen2_hakenreihe(g):
         r = await koop(g, m=kat(178, 6), f=kat(174, 6), plans={'m': pl}, maxFrames=12000)
         if r.get('done'): ok = True; break
     assert ok, f'Bot kommt nicht bis zum letzten Haken: {r.get("pos")}'
+    f = [k_lauf(182, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'press': ['dash'], 'hold': ['right', 'up'], 'frames': 3},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(202)}', 'left': f'P.x > {kx(203)}'}, 'until': 'P.grounded', 'frames': 600}]
+    r = await koop(g, f=kat(180, 6), m=kat(178, 6), plans={'f': f}, maxFrames=1500)
+    assert k_pos(r, 'f') and 199.5 <= k_pos(r, 'f')[0] <= 205.9 and k_pos(r, 'f')[1] == 6, f'Schweinchen Schirm + Dash zum Zwischen-Block: {r.get("pos")}'
+    for d, rich in ((8, ['right']), (14, ['right', 'up']), (20, ['right', 'up'])):
+        m = [k_lauf(182, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]
+        r = await koop(g, m=kat(180, 6), f=kat(178, 6), plans={'m': m}, maxFrames=1500)
+        assert not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 199.5 and k_pos(r, 'm')[1] == 6), f'Affe per Dash auf dem Zwischen-Block ({d}, {rich}): {r.get("pos")}'
 
 @test
 async def ziel_hinweis_pfeil(g):
