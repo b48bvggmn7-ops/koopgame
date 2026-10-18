@@ -86,7 +86,7 @@ window.coopRun = function(o){
     for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false;
     if(jeBild){ const v = jeBild(f); if(v !== undefined) mess.push(v); }
     minY.m = Math.min(minY.m, p1.y); minY.f = Math.min(minY.f, p2.y);
-    if(o.trace && f % 4 === 0){ trace.m.push([Math.round(p1.x), Math.round(p1.y - 16)]); trace.f.push([Math.round(p2.x), Math.round(p2.y - 16)]); }
+    if(o.trace && f % (o.traceStep || 4) === 0){ trace.m.push([Math.round(p1.x), Math.round(p1.y - 16)]); trace.f.push([Math.round(p2.x), Math.round(p2.y - 16)]); }
     const pos = () => ({m: [+((p1.x-20)/40).toFixed(1), +(p1.y/40-1).toFixed(1)], f: [+((p2.x-20)/40).toFixed(1), +(p2.y/40-1).toFixed(1)]});
     if(deathState) return {dead: deathState.victim === p1 ? 'm' : 'f', f, steps: [st.m.i, st.f.i], pos: pos(), log, trace, mess};
     if(st.m.i >= plans.m.length && st.f.i >= plans.f.length && (!o.settle || f > o.settle)) return {done: true, f, pos: pos(), log, trace, mess, top: {m: +(minY.m/40-1).toFixed(1), f: +(minY.f/40-1).toFixed(1)}};

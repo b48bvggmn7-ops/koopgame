@@ -1808,7 +1808,7 @@
     },
     {
       "x": 9220,
-      "y": 180,
+      "y": 220,
       "color": "pink",
       "klasse": "geschick"
     },
@@ -1820,19 +1820,19 @@
     },
     {
       "x": 9860,
-      "y": 180,
+      "y": 220,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 10180,
-      "y": 380,
+      "y": 260,
       "color": "blue",
       "klasse": "geschick"
     },
     {
       "x": 10500,
-      "y": 180,
+      "y": 220,
       "color": "pink",
       "klasse": "geschick"
     },

@@ -3565,13 +3565,13 @@
     },
     {
       "x": 8900,
-      "y": 500,
+      "y": 580,
       "color": "blue",
       "klasse": "geschick"
     },
     {
       "x": 9220,
-      "y": 500,
+      "y": 540,
       "color": "blue",
       "klasse": "geschick"
     },
@@ -3656,7 +3656,7 @@
     },
     {
       "x": 12780,
-      "y": 500,
+      "y": 580,
       "color": "blue",
       "klasse": "geschick"
     },
