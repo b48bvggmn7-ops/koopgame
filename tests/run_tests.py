@@ -8491,6 +8491,10 @@ async def dash_ketten_pruefen(g, welt):
                 r = await koop(g, **start, plans=plaene, maxFrames=4000)
                 ok = bool(r.get('done') and not r.get('dead') and r['pos'][wer][0] >= ende - 0.5)
                 if ok != (art == 'warten'): fehler.append(f"{lv} {name} ({wer}, {art}): {'geschafft' if ok else 'gescheitert'} {r.get('pos')} tot={r.get('dead')}")
+                if ok and art == 'warten':   # Münz-Prüfung: die Münzen der Figur im Tunnel liegen auf ihrer Dash-Bahn
+                    farbe = 'blue' if wer == 'm' else 'pink'
+                    offen = await g.ev(f"coins.filter(c => !c.taken && (c.color === '{farbe}' || c.color === 'gold') && c.x > {kx(kanten[0])} && c.x < {kx(ende)}).map(c => [Math.round((c.x - 20) / 40), Math.round((c.y - 20) / 40)])")
+                    if offen: fehler.append(f"{lv} {name} ({wer}): Münzen im Tunnel nicht eingesammelt {offen}")
     assert not fehler, fehler
 
 @test
@@ -8781,6 +8785,9 @@ async def hoehle1_obere_route(g):
          {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(335)}', 'left': f'P.x > {kx(336)}'}, 'until': 'P.grounded', 'frames': 900}]
     r = await koop(g, f=kat(301, 7), m=kat(300, 7), plans={'f': f}, maxFrames=2500)
     assert r.get('done') and not r.get('dead') and 334 <= r['pos']['f'][0] <= 338, ('Schweinchen mit den Aufwinden', r)
+    # Münz-Prüfung: die pinken Münzen der oberen Route nimmt das Schweinchen auf dem Weg mit
+    genommen = await g.ev(f"coins.filter(c => c.taken && c.x > {kx(312)} && c.x < {kx(334)} && c.y < {ky(7)}).map(c => [Math.round((c.x - 20) / 40), Math.round((c.y - 20) / 40)])")
+    assert sorted(genommen) == [[315, 1], [319, 2], [326, 4], [330, 2]], ('pinke Münzen der oberen Route', genommen)
     for st in (300, 305):
         for d, rich in ((8, ['right']), (14, ['right', 'swimUp']), (20, ['right'])):
             m = [k_lauf(st, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3},

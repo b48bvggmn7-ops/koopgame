@@ -2312,13 +2312,13 @@
     },
     {
       "x": 30060,
-      "y": 180,
+      "y": 140,
       "color": "blue",
       "klasse": "geschick"
     },
     {
       "x": 30260,
-      "y": 180,
+      "y": 140,
       "color": "pink",
       "klasse": "geschick"
     },
@@ -2329,25 +2329,25 @@
     },
     {
       "x": 30660,
-      "y": 180,
+      "y": 140,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 30860,
-      "y": 180,
+      "y": 140,
       "color": "blue",
       "klasse": "geschick"
     },
     {
       "x": 31060,
-      "y": 180,
+      "y": 100,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 31260,
-      "y": 180,
+      "y": 140,
       "color": "blue",
       "klasse": "geschick"
     },

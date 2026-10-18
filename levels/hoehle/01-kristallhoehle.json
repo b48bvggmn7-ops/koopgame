@@ -1595,14 +1595,15 @@
     },
     {
       "x": 12620,
-      "y": 180,
+      "y": 60,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 12780,
-      "y": 260,
-      "color": "pink"
+      "y": 100,
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 13060,
@@ -1612,8 +1613,9 @@
     },
     {
       "x": 13220,
-      "y": 220,
-      "color": "pink"
+      "y": 100,
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 13420,

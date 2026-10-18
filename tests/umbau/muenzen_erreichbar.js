@@ -1,6 +1,6 @@
 // tests/umbau/muenzen_erreichbar.js – Umbau aller Level: kommt die passende Figur an jede Münze (blau = Affe, pink =
 // Schweinchen, gold = beide) UND überlebt sie es? Echte Figuren-Physik (updatePlayer) aus Stehplätzen in der Nähe: laufen,
-// springen (kurz/lang), Schirm, Dash (vor / vor+hoch / hoch). Erfolg = Münze berührt (wie updateCoins: |dx|<24, |dy|<26)
+// springen (kurz/lang), Schirm, Dash (vor / vor+hoch / hoch / vor+runter). Erfolg = Münze berührt (wie updateCoins: |dx|<24, |dy|<26)
 // und danach wieder sicher auf festem Boden (nicht tot, nicht aus dem Level gefallen). Türen gelten als offen.
 // Nicht geprüft werden Wege mit Haken, Pilz, Aufwind, Fahrten, Teleporter (die laufen hier nicht) – solche Münzen
 // werden mit Grund gemeldet. Zusätzlich: der nächste sichere Bahnpunkt (für das Umlegen der Münze).
@@ -40,6 +40,7 @@ window.MZ = {
       if(dash && i >= j + t && i < j + t + 2){
         l.push('dash');
         if(dash.includes('hoch')) l.push('swimUp');
+        if(dash.includes('runter')) l.push('swimDown');   // Dash schräg nach unten (in Verstecke/Nischen)
         if(!dash.includes('vor')) l.splice(0, 1);
       }
       STELLE.tasten(P, l);
@@ -61,7 +62,7 @@ window.MZ = {
       out.push([dir, -1, false, false, null, 0]);
       for(const j of [0, 5, 11, 18]) for(const kurz of [false, true]) for(const sg of (m ? [false] : [false, true])){
         out.push([dir, j, kurz, sg, null, 0]);
-        if(!kurz) for(const d of ['vor', 'vor+hoch', 'hoch']) for(const t of [5, 12, 20]) out.push([dir, j, kurz, sg, d, t]);
+        if(!kurz) for(const d of ['vor', 'vor+hoch', 'hoch', 'vor+runter']) for(const t of [5, 12, 20]) out.push([dir, j, kurz, sg, d, t]);
       }
     }
     return out;
