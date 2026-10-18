@@ -41,6 +41,7 @@ navigator.getGamepads = () => [window.__pad, null, null, null];"""
 class Game:
     def __init__(self, page): self.p = page
     async def load(self, path):
+        self.datei = str(Path(path).resolve().relative_to(ROOT / 'levels')) if str(path).startswith(str(ROOT / 'levels')) else str(path)
         await self.p.set_input_files('#loadLevelInput', path)
         await self.p.wait_for_timeout(250)
         await self.p.keyboard.press('KeyR'); await self.p.wait_for_timeout(120)
@@ -124,7 +125,12 @@ def k_haken(n, release, jump_at=None, d=0):
 async def koop(g, **o):
     """Koop-Bot laufen lassen: m=/f= Startpunkte, plans={'m': [...], 'f': [...]}, links=[...] vorher an"""
     if not await g.ev("typeof window.coopRun === 'function'"): await g.p.evaluate("() => {" + KOOP_BOT + "}")
-    return await g.p.evaluate("o => coopRun(o)", o)
+    r = await g.p.evaluate("o => coopRun(o)", o)
+    if MUENZ_LOG and not r.get('dead'):   # Münz-Protokoll (Umbau): welche Münzen holen die Bots in den Tests (Figur überlebt)?
+        genommen = await g.ev("coins.filter(c => c.taken).map(c => [Math.floor(c.x / 40), Math.floor(c.y / 40), c.color, c.takenBy])")
+        with open(MUENZ_LOG, 'a', encoding='utf-8') as fh: fh.write(json.dumps({'level': getattr(g, 'datei', '?'), 'muenzen': genommen}) + '\n')
+    return r
+MUENZ_LOG = os.environ.get('MUENZ_LOG')
 def k_pos(r, who): return r['pos'][who] if r.get('done') else None
 async def halte_schritte(g, keys, n):
     """Tasten genau n Spielschritte halten und IM SPIEL loslassen (unabhängig davon, wie schnell der Rechner zeichnet –
