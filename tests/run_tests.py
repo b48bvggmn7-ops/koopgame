@@ -303,7 +303,8 @@ async def himmel_ohne_unsichtbare_decke(g):
 
 @test
 async def plakette_im_bild(g):
-    """Nummer im Kreis (Plakette) über einer Tür bleibt im Bild, auch wenn die Tür bis in die oberste Himmel-Reihe reicht;
+    """Neues Aussehen (Runde 1): Türen tragen KEINE Nummer-Plakette mehr (die Verknüpfung zeigt der Diamant in der Hebel-
+    Farbe) – auch nicht, wenn die Tür bis in die oberste Himmel-Reihe reicht (früher: Plakette bleibt im Bild);
     bewegte Teile zeigen keine gestrichelte Fahrweg-Anzeige mehr."""
     mp = {'x': 800, 'y': 600, 'w': 80, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 1200, 'targetY': 600, 'speed': 3}
     await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
@@ -315,8 +316,8 @@ async def plakette_im_bild(g):
       ctx.setLineDash = function(a){ if(a && a.length) striche.push(a.join(',')); return oDash.apply(this, arguments); };
       try { draw(); } finally { ctx.arc = o; ctx.setLineDash = oDash; }
       return {kreise, striche}; })()""")
-    assert r['kreise'], 'keine Plakette gezeichnet'
-    assert min(r['kreise']) >= -0.5, f"Plakette ragt oben aus dem Bild: {r['kreise']}"
+    assert not r['kreise'], f"Tür hat noch eine Nummer-Plakette: {r['kreise']}"
+    assert await g.ev("tuerFlaechenHolen().length") == 1, 'drei übereinander liegende Tür-Kästchen sind nicht EINE Tür'
     assert '6,5' not in r['striche'] and '3,7' not in r['striche'], f"Fahrweg-Striche noch da: {r['striche']}"
 
 @test
@@ -4527,8 +4528,9 @@ KONTRAST_JS = r"""() => {
 @test
 async def kontur_wand_boden_einheitlich(g):
     """Nutzerwunsch: Wand und Boden haben immer dieselbe Outline – gleiche Breite an allen freien Seiten (oben, unten,
-    links, rechts), auch über Moos/Pflanzen; wo Boden an Wand grenzt (daneben, darauf, darunter) genau EINE Linie in
-    derselben Breite (früher doppelt bzw. mit eigenem Wand-Rand). Gemessen mit deckender Prüf-Farbe."""
+    links, rechts). Neues Aussehen (Runde 1): Outline „Weich“ = dünne Innenlinie (outlineDraw, 3,5 px Strich, nur innen
+    sichtbar) NUR um die Gesamtform; wo Boden an Wand grenzt (daneben, darauf, darunter) ist es eine Fläche ohne Linie.
+    Gemessen mit deckender Prüf-Farbe."""
     G = ground
     srv = webserver(); kx = await g.p.context.browser.new_context(viewport={'width': 1280, 'height': 720}); p = await kx.new_page(); g = Game(p)
     try:
@@ -4545,8 +4547,9 @@ async def kontur_messen(g, G):
                         G(1100, 320, 120, 80), G(1100, 400, 120, 80, 'wall')],        # Boden auf Wand
                        {'x': 60, 'y': 680}, {'x': 30, 'y': 680}, welt='dschungel'))
     await g.steps(5); await g.ev("menuScreen = 'pause'")
-    r = await g.ev("""(() => { const alt = designLook; designLook = () => ({...alt(), kante: 1, kanteFarbe: '255,0,255'});
-      camPos = camX = 0; draw(); designLook = alt;
+    r = await g.ev("""(() => { const alt = outlineDraw;
+      outlineDraw = (q, edge, clipP) => { q.save(); q.lineJoin = 'round'; q.lineCap = 'round'; q.clip(clipP); q.strokeStyle = '#ff00ff'; q.lineWidth = 3.5; q.stroke(edge); q.restore(); };
+      camPos = camX = 0; draw(); outlineDraw = alt;
       const img = ctx.getImageData(0, 0, cvs.width, cvs.height).data, Wc = cvs.width;
       const scr = (wx, wy) => [Math.round(((wx - camX)*zoom)*RS), Math.round((wy*zoom + H*(1-zoom) + CEILING_MARGIN)*RS)];
       const mag = (x, y) => { const i = (y*Wc + x)*4; return img[i] > 170 && img[i+1] < 90 && img[i+2] > 140; };   // Prüf-Farbe (auch unter leichtem Dunst)
@@ -4561,11 +4564,12 @@ async def kontur_messen(g, G):
       return {boden: seiten(80, 400, 160, 120), wand: seiten(360, 400, 160, 120), rs: RS, zoom,
         nebeneinander: drei(t => quer(720, 400 + 120*t, 1, 0)), wandAufBoden: drei(t => quer(900 + 120*t, 400, 0, 1)),
         bodenAufWand: drei(t => quer(1100 + 120*t, 400, 0, 1))}; })()""")
-    soll = 3 * r['zoom'] * r['rs']   # DESIGN_LOOK kanteBreite 3 Welt-px
-    werte = {**{f'boden_{k}': v for k, v in r['boden'].items()}, **{f'wand_{k}': v for k, v in r['wand'].items()},
-             'nebeneinander': r['nebeneinander'], 'wandAufBoden': r['wandAufBoden'], 'bodenAufWand': r['bodenAufWand']}
+    soll = 1.75 * r['zoom'] * r['rs']   # outlineDraw: 3,5 px Strich, nur die innere Hälfte sichtbar
+    werte = {**{f'boden_{k}': v for k, v in r['boden'].items()}, **{f'wand_{k}': v for k, v in r['wand'].items()}}
     falsch = {k: v for k, v in werte.items() if abs(v - soll) > 1.6}
     assert not falsch, f'Outline nicht einheitlich (soll ≈ {soll:.1f} Bild-px): {falsch}; alle: {werte}'
+    innen = {k: r[k] for k in ('nebeneinander', 'wandAufBoden', 'bodenAufWand') if r[k] > 0}
+    assert not innen, f'Linie zwischen Boden und Wand (soll eine Fläche sein): {innen}'
     assert max(werte.values()) - min(werte.values()) <= 2, f'Outline-Breiten unterschiedlich: {werte}'
 
 @test
@@ -9034,34 +9038,61 @@ async def bild_vergleich(g, clip, ohne_js, mit_js):
     return await g.p.evaluate(PIXEL_VERGLEICH_JS, [A, B, C])
 
 @test
+async def neues_aussehen_runde1(g):
+    """Neues Aussehen, Runde 1: Boden/Wand als EINE Schicht aus fertigen Zeichenpfaden (keine vorgezeichneten großen Bilder –
+    alle Bilder eines Bildes zusammen bleiben unter Chromes ~32-MB-Budget), keine Zahlen/Buchstaben an Hebel, Druckplatte,
+    Portal, Tür und Wechselboden im Spielbild, zusammenhängende Tür-Kästchen = eine Tür, Lava-Flimmern abschaltbar."""
+    await g.load(level([ground(0, 680, 3000), ground(400, 520, 160, 160, 'wall'), ground(560, 600, 120, 80)],
+                       {'x': 200, 'y': 680}, {'x': 100, 'y': 680},
+                       switches=[{'x': 300, 'y': 660, 'link': 12}], plates=[{'x': 700, 'y': 660, 'link': 3}],
+                       doors=[{'x': 820, 'y': 620, 'link': 12}, {'x': 820, 'y': 660, 'link': 12}, {'x': 860, 'y': 660, 'link': 3}],
+                       switchFloors=[{'x': 960, 'y': 640, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 3}, {'x': 1000, 'y': 640, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 3}],
+                       teleporters=[{'x': 1100, 'y': 660, 'paar': 1, 'fuer': 'affe'}, {'x': 1300, 'y': 660, 'paar': 1, 'fuer': 'affe'}]))
+    await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; camPos = camX = 0;")
+    r = await g.ev("""(() => { const texte = [], bilder = new Map(); const ft = ctx.fillText, di = ctx.drawImage;
+      ctx.fillText = function(t){ texte.push(String(t)); return ft.apply(this, arguments); };
+      ctx.drawImage = function(im){ bilder.set(im, (im.width || 0)*(im.height || 0)*4); return di.apply(this, arguments); };
+      try { draw(); } finally { ctx.fillText = ft; ctx.drawImage = di; }
+      let mb = 0; for(const v of bilder.values()) mb += v;
+      return {texte: texte.filter(t => /[0-9AB]/.test(t) && t.length <= 3), mb: mb/1048576, tueren: tuerFlaechenHolen().map(d => [d.l, d.w, d.h]),
+        stuecke: matStuecke.size, pfad: matSicht.V instanceof Object && matSicht.V.PG instanceof Path2D}; })()""")
+    assert not r['texte'], f"Zahlen/Buchstaben im Spielbild: {r['texte']}"
+    assert r['pfad'] and r['stuecke'] > 0, f'Boden/Wand nicht als Zeichenpfade: {r}'
+    assert r['mb'] < 32, f"zu viele Bilder in einem Bild ({r['mb']:.1f} MB) – Chrome rendert dann mitten im Bild"
+    assert sorted(r['tueren']) == [[3, 40, 40], [12, 40, 80]], f"Türen nicht zusammengefasst: {r['tueren']}"
+    # Lava-Flimmern: per localStorage aus, sonst an
+    aus = await g.ev("(() => { lavaFlimmernMess.an = null; localStorage.setItem('monchichi.lavaFlimmern', 'aus'); const a = lavaFlimmernAn();"
+                     " localStorage.removeItem('monchichi.lavaFlimmern'); lavaFlimmernMess.an = null; return [a, lavaFlimmernAn()]; })()")
+    assert aus == [False, True], f'Lava-Flimmern nicht abschaltbar: {aus}'
+    await g.ev("menuScreen = null")
+
+@test
 async def wechselboden_geisteranzeige(g):
-    """Ruinen-Überarbeitung 3: Der gerade nicht feste Wechselboden ist als blasser Umriss mit Muster und Buchstaben sichtbar
-    (Geisteranzeige: der Läufer sieht, was kommt), und am Hebel zeigen zwei kleine Kacheln A ▨ / B ⠿, welche Gruppe gerade fest
-    ist. Gemessen am echten Bild (levels/test/wechselboden-hebel.json, Rätsel 1)."""
+    """Neues Aussehen (Runde 1) statt der früheren Geisteranzeige: Ist ein Wechselboden „weg“, bleibt nur ein leichter,
+    weicher Schatten (kein Umriss, kein Muster, kein Buchstabe; bei Hebel-Böden der halb durchsichtige Diamant), und die
+    A/B-Anzeige am Hebel entfällt. Gemessen am echten Bild (levels/test/wechselboden-hebel.json, Rätsel 1)."""
     await g.p.set_viewport_size({'width': 1280, 'height': 720}); await g.p.wait_for_timeout(200)
     await g.load(str(ROOT / 'levels/test/wechselboden-hebel.json'))
     await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; window.__pn = window.__pn || performance.now.bind(performance);"
                "const T0 = window.__pn(); performance.now = () => T0; p1.x = 3*40 + 20; p1.y = 680; p2.x = 60; p2.y = 680;"
                "camPos = camX = 0; wechselSchritte = 500;")
     assert await g.ev("wechselAktiveGruppe(1)") == 'A' and await g.ev("wechselAktiveGruppe(99)") is None
-    # Geist: B-Kacheln (Spalte 18–23) sind weg -> blasser Umriss; zum Vergleich ganz ausgeblendet
+    # weg: B-Kacheln (Spalte 18–23) -> nur leichter Schatten; zum Vergleich ganz ausgeblendet
     sx, sy = await g.ev("[Math.round((18*40 - camX)*zoom), Math.round((17*40 + SKY_ROOM)*zoom)]")
     w = await g.ev("Math.round(6*40*zoom)"); h = await g.ev("Math.round(40*zoom)")
     clip = {'x': sx, 'y': sy, 'width': w, 'height': min(h, 720 - sy)}
-    weg = "solids.filter(s => s.type === 'wechsel' && s.gruppe === 'B' && s.link === 1).forEach(s => s.type = 'versteckt');"
-    da = "solids.filter(s => s.type === 'versteckt').forEach(s => s.type = 'wechsel');"
+    weg = "solids.filter(s => s.type === 'wechsel' && s.gruppe === 'B' && s.link === 1).forEach(s => s.type = 'versteckt'); __wReihen = null;"   # Reihen-Zwischenspeicher neu bilden
+    da = "solids.filter(s => s.type === 'versteckt').forEach(s => s.type = 'wechsel'); __wReihen = null;"
     r = await bild_vergleich(g, clip, weg, da)
-    flaeche = clip['width']*clip['height']
     assert await g.ev("solids.some(s => s.type === 'wechsel' && s.gruppe === 'B' && s.gone)"), 'B müsste weg sein'
-    assert r['pixel'] >= flaeche*0.3 and r['kontrast90'] >= 1.5, f'Geisteranzeige zu schwach: {r} von {flaeche} Bildpunkten'
-    # Hebel-Anzeige: A aktiv vs. B aktiv sieht verschieden aus
-    # nur die Kachel „B“ rechts neben dem Hebel (Welt x +27…+38, y 404…420 – dort schwenkt die Hebelstange nicht hin)
-    hx, hy = await g.ev("[Math.round((20*40 + 20 + 27 - camX)*zoom), Math.round((404 + SKY_ROOM)*zoom)]")
-    clip = {'x': hx, 'y': hy, 'width': await g.ev("Math.round(11*zoom)"), 'height': await g.ev("Math.round(16*zoom)")}
-    r2 = await bild_vergleich(g, clip, "linkOn[1] = false;", "linkOn[1] = true;")
-    assert r2['pixel'] >= clip['width']*clip['height']*0.4, f'Hebel zeigt die aktive Gruppe nicht: {r2}'
+    assert r['pixel'] > 0, f'kein Schatten, wo der Wechselboden weg ist: {r}'
+    # A/B-Anzeige am Hebel entfällt: wechselHebelAnzeige zeichnet nichts
+    n = await g.ev("""(() => { let n = 0; const f = ctx.fill, t = ctx.fillText; ctx.fill = function(){ n++; return f.apply(this, arguments); };
+      ctx.fillText = function(){ n++; return t.apply(this, arguments); };
+      try { wechselHebelAnzeige(400, 440, 1); } finally { ctx.fill = f; ctx.fillText = t; } return n; })()""")
+    assert n == 0, f'A/B-Anzeige am Hebel wird noch gezeichnet ({n} Zeichen-Aufrufe)'
     await g.ev("linkOn[1] = false; menuScreen = null; performance.now = window.__pn;")
-    print('     Geist:', r, 'Hebel:', r2)
+    print('     Schatten:', r)
 
 @test
 async def aktions_hinweis(g):
