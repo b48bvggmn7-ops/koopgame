@@ -11,7 +11,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | Münzen für ihre Figur erreichbar | ✅ Dschungel; ⚠️ Ruinen/Höhle/Vulkan: nur Einstufung, Bot-Prüfung jeder Münze offen |
 | Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
 | Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/7,2 statt 5,4/6,3, Bot-Plan); ✅ Lava zweite Runde: Glutpfad Lava-Raum 1+2, Magmakammer Steinweg schneller; ⚠️ 8 Lava-Stellen + Feuerberg-Wand bleiben (mit Dash nicht schneller schaffbar, Gründe unten) |
-| (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ 11 Level; ❌ Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz |
+| (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ alle 22 Level (zweite Runde: Durchbruch-Säulen in Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz) |
 
 ## Messwerte (echte Physik, tests/reichweiten.json)
 - Sprung allein: ~8 Kästchen weit (gleiche Höhe). Sprung + Dash schräg hoch: ~16. Schweinchen Schirm + Dash: ~25.
@@ -176,6 +176,9 @@ Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon P
   Schlackewerk (194), Feuerschlund (589) (Aschefeld 790 wieder entfernt: lag nach dem Kamin-Umbau hinter dem Ziel) – nur auf flachen Wegstücken ohne Bot-Test, Elemente und
   Rätsel (Glutpfad 788 verworfen: dort entstand ein 1 breiter Kamin; Sonnentempel 327 -> 331 wegen Haft-Arm).
   Tests nacht_stellen_<welt>. Kristallhöhle zählt dadurch eine Kombi-Stelle mehr (Ausnahme „Kombi-Etappe 0“ entfällt).
+  Zweite Runde (alle übrigen Level): Mondnacht 342, Fallengang 356, Tempelherz 590, Eisgrotte 196, Leuchtgrotte 381,
+  Tiefenschlund 511, Glutpfad 392, Aschefeld 176, Feuerberg 287, Magmakammer 7, Kraterherz 390 – flache Wegstücke ohne
+  Bot-Test (Tiefenschlund: Suche ohne die Dunkelzonen, die dort das ganze Level bedecken).
 - Mondnacht Doppel-Wand (Hebel 5): untere Wand 5,4 -> 6,2, obere 6,3 -> 7,2. Bot-Plan in JAGDEN_BOT: Affe unten an der
   Hakenkette 253–297, Schweinchen oben über die Bröckel-Stege (Hebel 9 öffnet das Tor des Affen, Hebel 10 ihr eigenes); mit
   Dash über die Lücken 256/273 entkommt sie (auch 10 Schritte später), ohne Dash holt die obere Wand sie ein.

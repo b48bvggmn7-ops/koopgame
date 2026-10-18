@@ -1621,7 +1621,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   vor dem Ziel (3 Gruben). Werkzeug `tests/umbau/dash_tunnel.py`, Tests `dash_ketten_<welt>`.
 - **Pflicht-Durchbruch** auf dem Hauptweg (Säule: unten Durchbruch, darüber Wand bis oben – nur per Dash): Baumkronen 172,
   Dornenpfad 298, Wipfelsturm 381, Ruinen 1 296, Sonnentempel 331, Felsenflucht 532, Kristallhöhle 115, Tropfsteingang 585,
-  Förderwerk 392, Schlackewerk 194, Feuerschlund 589. Der Computer-Partner dasht
+  Förderwerk 392, Schlackewerk 194, Feuerschlund 589; zweite Runde: Mondnacht 342, Fallengang 356, Tempelherz 590,
+  Eisgrotte 196, Leuchtgrotte 381, Tiefenschlund 511, Glutpfad 392, Aschefeld 176, Feuerberg 287, Magmakammer 7 (gleich am
+  Start), Kraterherz 390 – damit hat jedes Level mindestens eine Pflicht-Stelle. Der Computer-Partner dasht
   durch Durchbruch-Wände.
 
 ### Design-Politur (nur Aussehen und ein Menü-Klang – Spielablauf, Trefferflächen, Physik und Level-Format unverändert)

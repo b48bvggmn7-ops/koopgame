@@ -426,12 +426,6 @@
   "begruendung": "nur 1 von 4 Kombi-Stellen mit Timing/Tempo (mindestens 2). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Leuchtpilz-Grube 572, Kamin-Grube 776. Proben bei 133, 485, 593 zerstörten Platten-Tunnel, Band-Weiche und Steg-Passage; 243 hatte Stege darüber. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
  },
  {
-  "level": "vulkan/01-glutpfad.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "nur 13 Kombi-Stellen, Mindestzahl 15. Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 6 Stellen (185, 346, 370, 546, 570, 768). Proben bei 596 (Pilz-Kette über den Lavasee) und 705 (Stege darüber) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
- },
- {
   "level": "vulkan/02-aschefeld.json",
   "regel": "Kombi-Level",
   "spalte": null,
