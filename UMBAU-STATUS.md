@@ -46,10 +46,10 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | vulkan/01-glutpfad | Lava-Kamin-Gruben 17 breit | geprüft | offen | Lava 5 Stellen schneller | – | offen |
 | vulkan/02-aschefeld | Lava-Kamin-Gruben 17 breit | geprüft | offen | – | – | offen |
 | vulkan/03-feuerberg | Pilz-Dash | geprüft (Ziel-Plateau) | offen | Wand 4,5 (Grenze) | – | offen |
-| vulkan/04-magmakammer | Pilz-Dash | offen | offen | Lava 5 Stellen schneller | – | offen |
-| vulkan/05-schlackewerk | Pilz-Dash | offen | offen | – | Tunnel | Durchbruch 194 |
-| vulkan/06-feuerschlund | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | – | Durchbruch 589 |
-| vulkan/07-kraterherz | Pilz-Dash | offen | offen | Lava 2 Stellen schneller | Tunnel (3 Gruben) | offen |
+| vulkan/04-magmakammer | Pilz-Dash | geprüft | offen | Lava 5 Stellen schneller | – | offen |
+| vulkan/05-schlackewerk | Pilz-Dash | geprüft | offen | – | Tunnel | Durchbruch 194 |
+| vulkan/06-feuerschlund | Pilz-Dash | geprüft | offen | Lava 2 Stellen schneller | – | Durchbruch 589 |
+| vulkan/07-kraterherz | Pilz-Dash | geprüft (Brücken-Gruben: Affe Fenster 2–3) | offen | Lava 2 Stellen schneller | Tunnel (3 Gruben) | offen |
 
 „offen“ = noch nicht mit dem Werkzeug durchgeprüft (Abkürzungen: `tests/umbau/abkuerzungen.py`, ~20 min je Level;
 Münzen: `tests/umbau/muenzen_erreichbar.py`). Pilz-Gruben sind überall schon Pilz-Dash-Gruben.
@@ -180,6 +180,8 @@ Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen,
 - Offen: Ruinen 1 Fähre/Insel (76→95): der Affe kommt per Dash zur Insel des Schweinchens. Messung: erst ab Lücke 21+
   zuverlässig dicht – dann wären Affe auf Fähre A und Schweinchen am Hebel 3 über 20 Spalten auseinander (Bild-Regel,
   Test ruinen1_etappen_im_bild). Braucht eine Entscheidung (Bild-Regel-Ausnahme oder anderer Aufbau).
+- Kraterherz Brücken-Gruben 412–430/435–451 (Hebel 1/2): das Schweinchen kommt mit Schirm + Dash auch ohne Brücke hinüber
+  (Kombi), der Affe nur mit Fenster 2–3 Schritten – bleibt so. Magmakammer 275: ging schon ohne Dash (nichts Neues).
 - Test-Pläne: „Dash nach oben“ heißt im Koop-Bot swimUp (vorher stand 'up' da – die Gegenproben dashten nur waagerecht);
   alle Kamin-Gegenproben laufen jetzt mit echtem Dash schräg hoch und bleiben grün.
 
