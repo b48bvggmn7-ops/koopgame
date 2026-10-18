@@ -41,6 +41,7 @@ navigator.getGamepads = () => [window.__pad, null, null, null];"""
 class Game:
     def __init__(self, page): self.p = page
     async def load(self, path):
+        self.datei = str(Path(path).resolve().relative_to(ROOT / 'levels')) if str(path).startswith(str(ROOT / 'levels')) else str(path)
         await self.p.set_input_files('#loadLevelInput', path)
         await self.p.wait_for_timeout(250)
         await self.p.keyboard.press('KeyR'); await self.p.wait_for_timeout(120)
@@ -124,7 +125,15 @@ def k_haken(n, release, jump_at=None, d=0):
 async def koop(g, **o):
     """Koop-Bot laufen lassen: m=/f= Startpunkte, plans={'m': [...], 'f': [...]}, links=[...] vorher an"""
     if not await g.ev("typeof window.coopRun === 'function'"): await g.p.evaluate("() => {" + KOOP_BOT + "}")
-    return await g.p.evaluate("o => coopRun(o)", o)
+    if MUENZ_BAHN and getattr(g, 'datei', '') in MUENZ_LEVELS: o = {**o, 'trace': True, 'traceStep': 2}
+    r = await g.p.evaluate("o => coopRun(o)", o)
+    if MUENZ_BAHN and (r.get('trace') or {}).get('m') and not r.get('dead'):   # Bahnen der Bots (Mitte der Figur, alle 2 Schritte) fürs Umlegen von Münzen
+        with open(MUENZ_BAHN, 'a', encoding='utf-8') as fh: fh.write(json.dumps({'level': getattr(g, 'datei', '?'), 'trace': r.get('trace')}) + '\n')
+    if MUENZ_LOG and not r.get('dead'):   # Münz-Protokoll (Umbau): welche Münzen holen die Bots in den Tests (Figur überlebt)?
+        genommen = await g.ev("coins.filter(c => c.taken).map(c => [Math.floor(c.x / 40), Math.floor(c.y / 40), c.color, c.takenBy])")
+        with open(MUENZ_LOG, 'a', encoding='utf-8') as fh: fh.write(json.dumps({'level': getattr(g, 'datei', '?'), 'muenzen': genommen}) + '\n')
+    return r
+MUENZ_LOG = os.environ.get('MUENZ_LOG'); MUENZ_BAHN = os.environ.get('MUENZ_BAHN'); MUENZ_LEVELS = os.environ.get('MUENZ_LEVELS', '').split(',')
 def k_pos(r, who): return r['pos'][who] if r.get('done') else None
 async def halte_schritte(g, keys, n):
     """Tasten genau n Spielschritte halten und IM SPIEL loslassen (unabhängig davon, wie schnell der Rechner zeichnet –
@@ -8781,6 +8790,41 @@ async def ziel_hinweis_pfeil(g):
     assert abs(await g.ev("camX") - cam) < 41, 'Kamera hat sich bewegt'
     await g.steps(60)
     await g.p.wait_for_function("zielHinweisPfeile === 0", timeout=3000)
+
+@test
+async def muenzen_haken_ketten(g):
+    """Münz-Prüfung an Hilfen (Umbau): an vier Haken-Ketten ohne eigenen Level-Test (Kristallhöhle 308–348, Ruinen 1
+    155–171 und 736–752, Feuerberg 227–259 mit Pilz + Dash) schwingt der Affe die Kette (Einstellungen aus
+    tests/umbau/haken_ketten.py) – zusammen holen die Fahrten jede blaue Münze der Kette. In Feuerberg fliegt das
+    Schweinchen mit Pilz und den drei Aufwinden und holt die pinken Münzen darüber."""
+    sys.path.insert(0, str(ROOT / 'tests' / 'umbau'))
+    import haken_ketten as HK
+    fehler, geladen = [], None
+    for lv, (c, r), anlauf, n, ende, art in HK.KETTEN:
+        if lv != geladen: await koop_level(g, lv); geladen = lv
+        x0, x1 = kx(anlauf), kx(ende)
+        blau = {(cc * 40 + 20, rr * 40 + 20) for cc, rr in HK.MUENZEN[anlauf]}
+        geholt, geschafft = set(), 0
+        for pull in (0, 10, 20, 40):
+            for d in (20, 40, 60, 80):
+                rel = f'f > 30 && P.vy < 0 && P.x > P.anchor.x + {d}'
+                res = await koop(g, m=kat(c, r), f=kat(c - 2, r), plans={'m': HK.kette(sys.modules[__name__], anlauf, n, pull, rel, art)}, maxFrames=4000, jeBild=HK.MITNEHMEN)
+                if res.get('done') and not res.get('dead') and res['pos']['m'][0] >= ende - 1:
+                    geschafft += 1
+                    geholt |= set(map(tuple, await g.ev(f"coins.filter(c => c.taken && c.color === 'blue' && c.x > {x0} && c.x < {x1}).map(c => [c.x, c.y])")))
+        if not geschafft: fehler.append(f'{lv} Kette ab {anlauf}: Affe schafft sie nie')
+        if blau - geholt: fehler.append(f'{lv} Kette ab {anlauf}: blaue Münzen nie geholt {sorted((int(x // 40), int(y // 40)) for x, y in blau - geholt)}')
+    await koop_level(g, 'vulkan/03-feuerberg.json')
+    def wind(w, nxt):
+        return [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(w)} + 10', 'left': f'P.x > {kx(w + 1)} - 10'}, 'until': f'P.y < {ky(4)}', 'frames': 300},
+                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(nxt)}', 'left': f'P.x > {kx(nxt + 1)}'}, 'until': f'P.grounded || Math.abs(P.x - {kx(nxt)}) < 30', 'frames': 400}]
+    f = [k_lauf(219, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['right'], 'until': 'P.vy < -10', 'frames': 80},
+         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(230)}', 'left': f'P.x > {kx(231)}'}, 'until': f'Math.abs(P.x - {kx(230)}) < 30', 'frames': 300}]
+    f += wind(230, 246) + wind(246, 262) + wind(262, 271) + [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(271)}'}, 'until': 'P.grounded', 'frames': 400}]
+    res = await koop(g, f=kat(216, 14), m=kat(214, 14), plans={'f': f}, maxFrames=4000, jeBild='p1.x = p2.x; p1.y = p2.y; p1.vx = 0; p1.vy = 0;')
+    offen = await g.ev(f"coins.filter(c => !c.taken && c.color === 'pink' && c.x > {kx(226)} && c.x < {kx(266)}).map(c => [Math.floor(c.x / 40), Math.floor(c.y / 40)])")
+    if not (res.get('done') and not res.get('dead')) or offen: fehler.append(f'Feuerberg Schweinchen über die Aufwinde: {res.get("pos")} offen {offen}')
+    assert not fehler, fehler
 
 @test
 async def hoehle1_obere_route(g):

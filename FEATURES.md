@@ -1609,7 +1609,7 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
 - **Abkürzungen geschlossen** (Werkzeug tests/umbau/abkuerzungen.py): Kristallhöhle (Haken-Gruben 35/200, obere Route nur
   fürs Schweinchen, Ziel mit Haken-Kette und Aufwind), Eisgrotte (Hebel 4 nur fürs Schweinchen), Fallengang (Pfeil-Galerie),
   Mondnacht (Hakenreihe, Mondspiegel mit Stachel-Decke), Feuerberg (Ziel-Plateau höher). Ruinen 1 Fähre/Insel neu (Tunnel unter Stachel-Decken, Druckplatten, Aufwinde); Kraterherz Lava-Brücken breiter.
-- **Münzen** auf den echten Bahnen ihrer Figur (blau = Affe, pink = Schweinchen), per Bot eingesammelt.
+- **Münzen** auf den echten Bahnen ihrer Figur (blau = Affe, pink = Schweinchen), per Bot eingesammelt – auch an Haken-Ketten, Pilzen, Aufwinden und Fahrten (Test muenzen_haken_ketten, Münz-Protokoll MUENZ_LOG im großen Lauf).
 - **Verfolgungen schneller:** Stachelwände und rollende Felsen fahren so schnell, dass man ohne Dash eingeholt wird
   (Ruinen 1 7,4/7,2; Mondnacht Doppel-Wand 6,2/7,2; Dornenpfad 5,6/5,8/7,4; Wipfelsturm 8,4/8,0/6,6; Baumkronen 7,8/6,6; Felsenflucht bis 14; Tempelherz
   bis 14). Fluchten mit Wartestellen (Pfeile, Flammen, Takt-Steine) so schnell, wie das Warten erlaubt (6–7). Steigende

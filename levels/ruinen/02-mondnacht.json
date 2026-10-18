@@ -2475,19 +2475,19 @@
     },
     {
       "x": 10740,
-      "y": 500,
+      "y": 380,
       "color": "blue",
       "klasse": "geschick"
     },
     {
       "x": 11180,
-      "y": 500,
+      "y": 460,
       "color": "blue",
       "klasse": "geschick"
     },
     {
       "x": 11620,
-      "y": 500,
+      "y": 460,
       "color": "blue",
       "klasse": "geschick"
     },
@@ -2624,8 +2624,9 @@
     },
     {
       "x": 19300,
-      "y": 460,
-      "color": "pink"
+      "y": 540,
+      "color": "pink",
+      "klasse": "geschick"
     }
   ],
   "spikes": [
