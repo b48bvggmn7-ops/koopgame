@@ -8342,9 +8342,9 @@ KOMBI_STELLEN_BOT = [
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (366)', kat(364, 15), kat(363, 15), lambda: kombi_flammen_kamin(366, 16, flamme=False, hoch=3), {'m': (380, 6), 'f': (380, 6)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (546)', kat(544, 15), kat(543, 15), lambda: kombi_flammen_kamin(546, 16, flamme=False, hoch=3), {'m': (560, 6), 'f': (560, 6)}),
     ('hoehle/05-foerderwerk.json', 'Kamin-Grube (570)', kat(568, 15), kat(567, 15), lambda: kombi_flammen_kamin(570, 16, flamme=False), {'m': (584, 9), 'f': (584, 9)}),
-    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (772)', kat(770, 15), kat(769, 15), lambda: kombi_flammen_kamin(772, 16, flamme=False), {'m': (786, 9), 'f': (786, 9)}),
+    ('hoehle/05-foerderwerk.json', 'Kamin-Grube (772)', kat(770, 15), kat(769, 15), lambda: kombi_flammen_kamin(772, 16, flamme=False, weit=8, versatz_f=0), {'m': (794, 9), 'f': (793, 9)}),
     ('hoehle/06-tiefenschlund.json', 'Pilz-Dash-Grube (572)', kat(570, 15), kat(569, 15), lambda: kombi_pilz_dash_grube(572, 580), {'m': (580, 6), 'f': (580, 6)}),
-    ('hoehle/06-tiefenschlund.json', 'Kamin-Grube (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False), {'m': (790, 9), 'f': (790, 9)}),
+    ('hoehle/06-tiefenschlund.json', 'Kamin-Grube (776)', kat(774, 15), kat(773, 15), lambda: kombi_flammen_kamin(776, 16, flamme=False, weit=8, versatz_f=0), {'m': (798, 9), 'f': (797, 9)}),
 ]
 # Abkürzungs-Proben: liegen zwei Kombi-Stellen dicht hintereinander, darf man die zweite NICHT vom erhöhten Landeplatz der
 # ersten aus ohne neue Kombi schaffen (sonst ist sie keine eigene Stelle, sondern „Kette“ in tests/kombi_ausnahmen.json).
