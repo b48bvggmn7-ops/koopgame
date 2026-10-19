@@ -58,14 +58,15 @@ const DJ_GL = '255,236,160';                                 // Lichtstaub-Farbe
 const DJ_LICHTSTAUB_TAG = 90, DJ_LICHTSTAUB_NACHT = 20;      // Lichtstaub-Punkte (Nacht: kein Gewimmel)
 // Abschalten auf schwachen Geräten (wie Lava-Flimmern): von Hand localStorage 'monchichi.dschungelWind' bzw.
 // 'monchichi.dschungelNachtlicht' = 'aus', und von selbst, wenn die Bilder im Mittel länger als DJ_BILD_MAX_MS
-// auseinanderliegen (gemessen über DJ_PROBE Bilder; unter ~40 Bildern/s): erst der Wind (dann sind alle Ebenen still
+// auseinanderliegen (gemessen über DJ_PROBE Bilder; unter ~40 Bildern/s) oder DJ_SOFORT_N Bilder hintereinander über DJ_SOFORT_MS: erst der Wind (dann sind alle Ebenen still
 // vorgezeichnete Kacheln, viel billiger), danach – falls es immer noch zu langsam ist – das Nacht-Licht.
 // Ebenen, die sich im Wind wiegen (je Pflanze einzeln gedreht); die übrigen sind still vorgezeichnete Kacheln
 let DJ_WIND_EBENEN = new Set(['mid', 'stems', 'near']);
-const DJ_BILD_MAX_MS = 25, DJ_PROBE = 120;
+const DJ_BILD_MAX_MS = 25, DJ_PROBE = 20;
+const DJ_SOFORT_MS = 50, DJ_SOFORT_N = 4;   // so viele Bilder hintereinander über DJ_SOFORT_MS -> sofort aus (sonst ruckelt es sekundenlang)
 const djSchalter = {
-  wind:  {an: null, n: 0, summe: 0, key: 'monchichi.dschungelWind', max: DJ_BILD_MAX_MS},
-  licht: {an: null, n: 0, summe: 0, key: 'monchichi.dschungelNachtlicht', max: DJ_BILD_MAX_MS},
+  wind:  {an: null, n: 0, summe: 0, lang: 0, key: 'monchichi.dschungelWind', max: DJ_BILD_MAX_MS},
+  licht: {an: null, n: 0, summe: 0, lang: 0, key: 'monchichi.dschungelNachtlicht', max: DJ_BILD_MAX_MS},
 };
 function djAn(S){
   if(S.an === null){ let aus = false; try { aus = localStorage.getItem(S.key) === 'aus'; } catch(e){} S.an = !aus; }
@@ -73,6 +74,8 @@ function djAn(S){
 }
 function djMessen(S, dauer){
   S.summe += dauer;
+  S.lang = dauer > DJ_SOFORT_MS ? S.lang + 1 : 0;
+  if(S.lang >= DJ_SOFORT_N){ S.an = false; S.lang = 0; }
   if(++S.n >= DJ_PROBE){ if(S.summe/S.n > S.max) S.an = false; S.n = 0; S.summe = 0; }
 }
 

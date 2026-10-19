@@ -1783,7 +1783,7 @@ js/17-deko.js).
   die Lianen schwingen mit. Die hinteren Ebenen (ganz fern, fern, Riesenblätter, Stämme, Farn-Unterwuchs, hängende
   Wedel) sind still vorgezeichnete Kacheln (Leistung, siehe unten). Wind ist reine Deko (Zeit aus performance.now).
   Abschaltbar: localStorage `monchichi.dschungelWind` = `aus`; schaltet sich von selbst ab, wenn die Bilder im Mittel
-  länger als `DJ_BILD_MAX_MS` (25 ms) auseinanderliegen. Ohne Wind sieht alles gleich aus, nur still.
+  länger als `DJ_BILD_MAX_MS` (25 ms, über 20 Bilder) auseinanderliegen oder 4 Bilder hintereinander über 50 ms brauchen. Ohne Wind sieht alles gleich aus, nur still.
 - **Nacht:** gleich dichter Dschungel, alle Ebenen beim Vorzeichnen dunkelblau eingefärbt (Farbton rgb(30,96,150),
   Kontrast 2, Helligkeit 0,58, dünner dunkelblauer Schleier) – einmal, nicht pro Bild; dahinter dunkelblauer Grund mit
   Sternen und Mond (kaum sichtbar). Riesenblätter leuchten konstant und dezent (türkis, helle Adern), hängende Wedel

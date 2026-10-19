@@ -4692,11 +4692,11 @@ async def dschungel_hintergrund_tag_nacht(g):
             assert r['blau'] and r['leuchtblatt'], f'Nacht: Ebenen nicht eingefärbt / Riesenblätter ohne Leuchten {r}'
             assert r['dark'] > 0, 'Test erwartet ein Nacht-Thema mit eigener Abdunklung (die der neue Look ersetzt)'
         # Schalter für schwache Geräte: Wind aus -> stille Kacheln, Nacht-Licht aus -> ohne Schäfte/Nebel/ferne Pflanzen
-        r2 = await g.ev("""(() => { try { localStorage.setItem('monchichi.dschungelWind', 'aus'); localStorage.setItem('monchichi.dschungelNachtlicht', 'aus'); } catch(e){}
+        r2 = await g.ev("""(() => { const vorW = djSchalter.wind.an, vorL = djSchalter.licht.an; try { localStorage.setItem('monchichi.dschungelWind', 'aus'); localStorage.setItem('monchichi.dschungelNachtlicht', 'aus'); } catch(e){}
           djSchalter.wind.an = null; djSchalter.licht.an = null; draw();
           const r = {wind: djAn(djSchalter.wind), licht: djAn(djSchalter.licht), kacheln: Object.keys(DJ.kacheln).filter(k => k.startsWith('near')).length};
           try { localStorage.removeItem('monchichi.dschungelWind'); localStorage.removeItem('monchichi.dschungelNachtlicht'); } catch(e){}
-          djSchalter.wind.an = null; djSchalter.licht.an = null; return r; })()""")
+          djSchalter.wind.an = vorW; djSchalter.licht.an = vorL; return r; })()""")
         assert r2['wind'] is False and r2['licht'] is False and r2['kacheln'] >= 1, f'{zeit}: Schalter wirken nicht {r2}'
         await g.ev("menuScreen = null")
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
