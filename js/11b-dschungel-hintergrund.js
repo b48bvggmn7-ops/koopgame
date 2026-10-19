@@ -340,20 +340,20 @@ function djAufbauen(){
   DJ.fertig = true;
   DJ.aufbauMs = performance.now() - t0;
 }
-function djHimmelTag(){   // (weich -> halbe Auflösung)
-  const c = document.createElement('canvas'); c.width = W/2; c.height = H/2;
+function djHimmelTag(){   // (in Spiel-Bildpunkten wie BG_SKY: 1:1 kopieren ist ohne Grafikkarte viel billiger als vergrößern)
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
   const q = c.getContext('2d'), Y0 = DJ_BASE - H/zoom, VHH = H/zoom;
-  q.setTransform(zoom/2, 0, 0, zoom/2, 0, H*(1 - zoom)/2);
+  q.setTransform(zoom, 0, 0, zoom, 0, H*(1 - zoom));
   const gr = q.createLinearGradient(0, Y0, 0, DJ_BASE);
   gr.addColorStop(0, '#0b4a3a'); gr.addColorStop(0.45, '#2f8a62'); gr.addColorStop(1, '#17613a');
   q.fillStyle = gr; q.fillRect(0, Y0, VW, VHH);
   djGlow(q, 210, Y0 - 20, 1000, '255,226,140', 0.75); djGlow(q, VW + 60, Y0 - 60, 640, '190,255,200', 0.25); djGlow(q, VW*0.5, DJ_BASE - 40, 900, '60,160,110', 0.4);
   return c;
 }
-function djVignette(){   // (weich -> halbe Auflösung)
-  const c = document.createElement('canvas'); c.width = W/2; c.height = H/2;
+function djVignette(){   // (ersetzt die bisherige Vignette VIGNETTE gleicher Größe)
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
   const q = c.getContext('2d'), VHH = H/zoom;
-  q.setTransform(zoom/2, 0, 0, zoom/2, 0, 0);
+  q.setTransform(zoom, 0, 0, zoom, 0, 0);
   const vg = q.createRadialGradient(VW/2, VHH/2, VW*0.32, VW/2, VHH/2, VW*0.78);
   vg.addColorStop(0, 'rgba(2,36,22,0)'); vg.addColorStop(1, 'rgba(2,34,20,.5)');
   q.fillStyle = vg; q.fillRect(0, 0, VW, VHH);
@@ -396,7 +396,9 @@ function djBand(name, list, f, t, wind, nacht){
 }
 // stille Kachel: alle Teile in Ruhelage, nahtlos über die Kachelkante (Periode per), in Spiel-Bildpunkten (wie die
 // bisherigen Hintergrund-Ebenen), nur so hoch wie nötig. teile() -> [{s, x, y, rot, flip, b}]; nachts eingefärbt.
-const DJ_KACHEL_HALB = new Set(['xfar', 'far', 'dach1', 'riesen', 'stamm', 'dens1']);   // weiche Ebenen: Kachel in halber Auflösung
+// weiche Ebenen: Kachel in halber Auflösung, aber nur bei hoher Pixeldichte (RS > 1). Bei RS = 1 werden alle Kacheln 1:1
+// kopiert – ohne Grafikkarte ist das ein Vielfaches schneller als vergrößern (gemessen: 0,4 statt 4,7 ms je Ebene)
+const DJ_KACHEL_HALB = new Set(['xfar', 'far', 'dach1', 'riesen', 'stamm', 'dens1']);
 function djKachel(name, per, teile, nacht, extra){
   const key = name + (nacht ? '@n' : '');
   if(DJ.kacheln[key]) return DJ.kacheln[key];
@@ -408,7 +410,7 @@ function djKachel(name, per, teile, nacht, extra){
     y0 = Math.min(y0, top - r - 20); y1 = Math.max(y1, bot + r + 20);
   }
   y0 = Math.floor(Math.max(y0, Y0)*zoom)/zoom; y1 = Math.min(y1, DJ_BASE);
-  const sc = DJ_KACHEL_HALB.has(name) ? zoom/2 : zoom, c = document.createElement('canvas'); c.width = Math.ceil(per*sc); c.height = Math.ceil((y1 - y0)*sc);
+  const sc = DJ_KACHEL_HALB.has(name) && RS > 1.01 ? zoom/2 : zoom, c = document.createElement('canvas'); c.width = Math.ceil(per*sc); c.height = Math.ceil((y1 - y0)*sc);
   const q = c.getContext('2d');
   for(const p of T){
     const s = nacht ? (p.ns || djNachtSprite(p.s, p.b || p)) : p.s;
@@ -428,6 +430,17 @@ function djKachelZeichnen(K, off){
   for(let x = x0; x < W; x += per) ctx.drawImage(K.c, x, y, K.c.width*k, K.c.height*k);
 }
 function djEinheiten(){ ctx.setTransform(RS*zoom, 0, 0, RS*zoom, 0, RS*H*(1 - zoom)); }
+// kleines Bild in Spiel-Bildpunkten vorzeichnen: Bereich (x0, y0, w, h) in Einheiten; zeichnen(q) in Einheiten
+function djVorBild(x0, y0, w, h, zeichnen){
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w*zoom)); c.height = Math.max(1, Math.ceil(h*zoom));
+  const q = c.getContext('2d'); q.setTransform(zoom, 0, 0, zoom, -x0*zoom, -y0*zoom); zeichnen(q);
+  return {c, x0, y0};
+}
+// vorgezeichnetes Bild an (ux, uy) Einheiten setzen – auf ganze Spiel-Bildpunkte gerundet (1:1, ohne Grafikkarte billig)
+function djBildSetzen(B, ux, uy){
+  ctx.setTransform(RS, 0, 0, RS, 0, 0);
+  ctx.drawImage(B.c, Math.round((ux + B.x0)*zoom), Math.round((uy + B.y0)*zoom + H*(1 - zoom)));
+}
 // Baumstämme (Vorschau: trunks, Periode 2600, zweiter Stamm gespiegelt) – still
 function djStaemme(nacht){
   const K = djKachel('stamm', 2600, () => [[800, 1], [1950, -1]].map(([x, fl]) => ({s: DJ.TRK, ns: nacht ? DJ.nTRK : null, x, y: 0, rot: 0, flip: fl})), nacht);
@@ -481,15 +494,18 @@ function djLiane(v, vx, t, nacht){
   g2.restore();
 }
 // Dunst (Vorschau: mist)
+// (Schwade einmal vorgezeichnet; die Deckkraft a wechselt per globalAlpha – gleiches Ergebnis, der Verlauf ist linear in a)
+const djDunstBilder = {};
 function djDunst(t, y, a, col){
-  djEinheiten();
+  const B = djDunstBilder[col] || (djDunstBilder[col] = djVorBild(-330, -99, 660, 198, q => {
+    const g2 = q.createRadialGradient(0, 0, 0, 0, 0, 330); g2.addColorStop(0, 'rgba(' + col + ',1)'); g2.addColorStop(1, 'rgba(' + col + ',0)');
+    q.fillStyle = g2; q.scale(1, 0.3); q.fillRect(-330, -330, 660, 660); }));
+  ctx.save(); ctx.globalCompositeOperation = 'screen';
   for(let i = 0; i < 3; i++){
     const x = ((t*7 + i*700 + y) % (VW + 800)) - 400;
-    ctx.save(); ctx.globalCompositeOperation = 'screen';
-    const q = ctx.createRadialGradient(x, y, 0, x, y, 330);
-    q.addColorStop(0, 'rgba(' + col + ',' + (a + 0.03*Math.sin(t*0.4 + i)) + ')'); q.addColorStop(1, 'rgba(' + col + ',0)');
-    ctx.fillStyle = q; ctx.translate(x, y); ctx.scale(1, 0.3); ctx.translate(-x, -y); ctx.fillRect(x - 330, y - 330, 660, 660); ctx.restore();
+    ctx.globalAlpha = Math.max(0, a + 0.03*Math.sin(t*0.4 + i)); djBildSetzen(B, x, y);
   }
+  ctx.restore();
 }
 // Hintergrund eines neuen Stils (aus drawBackground, js/11-hintergrund.js)
 function hgStilZeichnen(){
@@ -615,8 +631,8 @@ function djNachtAufbauen(){
   DJ.nTRK = djNachtTönen(DJ.TRK, 0, false);
   // Grund hinter den Ebenen (Vorschau: TZ.sky) ohne Sterne: Verlauf + Mond
   {
-    const c = document.createElement('canvas'); c.width = W/2; c.height = H/2;   // (weich -> halbe Auflösung)
-    const g2 = c.getContext('2d'), w = W, h = H; g2.scale(0.5, 0.5);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g2 = c.getContext('2d'), w = W, h = H;
     const gr = g2.createLinearGradient(0, 0, 0, h);
     gr.addColorStop(0, '#04122e'); gr.addColorStop(0.45, '#082a58'); gr.addColorStop(0.8, '#0b4068'); gr.addColorStop(1, '#0e5070');
     g2.fillStyle = gr; g2.fillRect(0, 0, w, h);
@@ -652,13 +668,9 @@ function djNachtAufbauen(){
   { const r4 = djNachtR(91);
     for(let i = 0; i < 16; i++){ const par = 0.4 + r4()*0.4; DJN.bgP.push({x: i*125 + r4()*90, par, k: i % 3, h: 18 + r4()*26, c: DJ_NACHT_COLS[Math.floor(r4()*DJ_NACHT_COLS.length)], sc: 0.55 + par*0.4, n: 2, ph: r4()*9, wy: 640 - (1 - par)*55 - r4()*40}); }
     for(const p of DJN.bgP){
-      const c = document.createElement('canvas'); c.width = 180; c.height = 150;
-      const x2 = c.getContext('2d'); x2.filter = 'blur(' + ((1 - p.par)*5 + 0.8) + 'px)';
       // Pflanze zuerst scharf in eine Zwischenfläche, dann einmal weich (gleiches Ergebnis, ein Weichzeichner statt vieler)
-      const s = document.createElement('canvas'); s.width = 180; s.height = 150;
-      djPflanze(s.getContext('2d'), Object.assign({}, p, {wx: 90, wy: 132}), 90, 132, 0, false);
-      x2.drawImage(s, 0, 0); x2.filter = 'none';
-      p.spr = c;
+      const s = djVorBild(0, 0, 180, 150, q => djPflanze(q, Object.assign({}, p, {wx: 90, wy: 132}), 90, 132, 0, false));
+      p.spr = djVorBild(0, 0, 180, 150, q => { q.setTransform(1, 0, 0, 1, 0, 0); q.filter = 'blur(' + (((1 - p.par)*5 + 0.8)*zoom) + 'px)'; q.drawImage(s.c, 0, 0); q.filter = 'none'; });
     }
   }
   DJ.nachtFertig = true;
@@ -714,64 +726,75 @@ function djPflanze(q, p, x, y, t, windAn){
 // Bodennebel, ferne Leuchtpflanzen. Schäfte, Bodennebel und ferne Pflanzen lassen sich abschalten (Nacht-Licht).
 function djNachtHintergrundLicht(t){
   const lichtAn = djAn(djSchalter.licht);
+  if(!DJN.bilder) djNachtLichtBilder();
+  const Bi = DJN.bilder;
   ctx.save(); ctx.globalCompositeOperation = 'screen';
+  ctx.setTransform(RS, 0, 0, RS, 0, 0);
   const hz = ctx.createLinearGradient(0, H*0.5, 0, H); hz.addColorStop(0, 'rgba(40,170,160,0)'); hz.addColorStop(1, 'rgba(40,170,160,.16)');
-  ctx.fillStyle = hz; ctx.fillRect(0, 0, W, H); ctx.restore();
-  djEinheiten();
+  ctx.fillStyle = hz; ctx.fillRect(0, H*0.5, W, H*0.5);   // (oberhalb H/2 ist der Verlauf durchsichtig)
   const Y0 = DJ_BASE - H/zoom;
-  if(lichtAn){   // Lichtschäfte
-    ctx.save(); ctx.globalCompositeOperation = 'screen';
+  if(lichtAn){   // Lichtschäfte (schräg, einmal vorgezeichnet)
     [[260, 0.3, 0.5, 0], [900, 0.3, 0.7, 3], [1560, 0.3, 0.6, 6]].forEach(([x0, par, wd, ph], i) => {
       const x = djWrap(x0, par); if(x < -300 || x > VW + 300) return;
-      ctx.save(); ctx.globalAlpha = 0.075 + 0.03*Math.sin(t*0.12 + ph); ctx.translate(x, Y0); ctx.transform(1, 0, -0.3, 1, 0, 0);
-      ctx.drawImage(DJN.shS[i], -150*wd, 0, 300*wd, 760); ctx.restore();
+      ctx.globalAlpha = 0.075 + 0.03*Math.sin(t*0.12 + ph); djBildSetzen(Bi.schaft[i], x, Y0);
     });
-    ctx.restore();
   }
-  // Lichtflecken am Stamm, Moos-Streifen und Baumpilze
+  // Lichtflecken am Stamm (atmen langsam), Moos-Streifen und Baumpilze (still, je Stamm vorgezeichnet)
   const off = camX*0.38*DJ_PAR_K, PT = 2600;
-  const Lw = y => { const u = (y + 170)/940; return 120 + 50*u + (u > 0.72 ? Math.pow((u - 0.72)/0.28, 1.5)*190 : 0); };
   [[800, 1], [1950, -1]].forEach(([x0, fl], ti) => {
     const x = ((x0 - off) % PT + PT) % PT;
     for(const xx of [x, x - PT]){
       if(xx < -380 || xx > VW + 380) continue;
       [[-20, 0.2, 70], [24, 0.52, 50], [-8, 0.78, 60]].forEach(([dx, k, w], j) => {
-        const y = Y0 + 60 + k*(640 - Y0 - 60), a = 0.07 + 0.025*Math.sin(t*0.15 + j + ti*2);
-        ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.translate(xx + dx, y); ctx.scale(1, 1.8);
-        const q = ctx.createRadialGradient(0, 0, 0, 0, 0, w); q.addColorStop(0, 'rgba(150,215,255,' + a + ')'); q.addColorStop(1, 'rgba(150,215,255,0)');
-        ctx.fillStyle = q; ctx.beginPath(); ctx.arc(0, 0, w, 0, 7); ctx.fill(); ctx.restore();
+        const y = Y0 + 60 + k*(640 - Y0 - 60);
+        ctx.globalAlpha = 0.07 + 0.025*Math.sin(t*0.15 + j + ti*2); djBildSetzen(Bi.fleck[j], xx + dx, y);
       });
-      for(const sd of [-1, 1]){
-        ctx.save(); ctx.globalCompositeOperation = 'screen';
-        const gr = ctx.createLinearGradient(0, Y0 + 60, 0, 640); gr.addColorStop(0, 'rgba(70,225,225,0)'); gr.addColorStop(0.5, 'rgba(70,225,225,.10)'); gr.addColorStop(1, 'rgba(70,225,225,0)');
-        ctx.strokeStyle = gr; ctx.lineWidth = 3; ctx.beginPath();
-        for(let y = Y0 + 60; y <= 640; y += 20){ const px = xx + sd*Lw(y)*0.86 + Math.sin(y*0.04 + ti)*4; y === Y0 + 60 ? ctx.moveTo(px, y) : ctx.lineTo(px, y); }
-        ctx.stroke(); ctx.restore();
-      }
-      for(const b of DJN.brk){
-        if(b.tr !== ti) continue;
-        const y = Y0 + b.y*1.15, px = xx + b.side*Lw(y)*0.84, s = b.s; if(y > 600) continue;
-        ctx.save(); ctx.globalCompositeOperation = 'screen'; djGlow(ctx, px, y, s*4.2, '70,225,235', 0.13);
-        ctx.fillStyle = 'rgba(70,225,235,.5)'; ctx.beginPath(); ctx.ellipse(px, y, s, s*0.42, 0, Math.PI, 0); ctx.fill();
-        ctx.strokeStyle = 'rgba(215,255,255,.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(px, y, s, s*0.42, 0, Math.PI, 0); ctx.stroke();
-        ctx.fillStyle = 'rgba(70,225,235,.28)'; ctx.beginPath(); ctx.ellipse(px, y + 1.5, s*0.8, s*0.14, 0, 0, 7); ctx.fill(); ctx.restore();
-      }
+      ctx.globalAlpha = 1; djBildSetzen(Bi.stamm[ti], xx, 0);
     }
   });
   if(lichtAn){
     // Bodennebel
-    ctx.save(); ctx.globalCompositeOperation = 'screen';
     for(const m of DJN.mistW){
       const x = (((m.x + t*m.sp - camX*m.par*DJ_PAR_K) % 2400) + 2400) % 2400 - 300; if(x < -m.w || x > VW + m.w) continue;
-      ctx.save(); ctx.translate(x, m.y); ctx.scale(1, 0.18);
-      const q = ctx.createRadialGradient(0, 0, 0, 0, 0, m.w), a = 0.10 + 0.04*Math.sin(t*0.2 + m.ph);
-      q.addColorStop(0, 'rgba(80,215,220,' + a + ')'); q.addColorStop(1, 'rgba(80,215,220,0)');
-      ctx.fillStyle = q; ctx.beginPath(); ctx.arc(0, 0, m.w, 0, 7); ctx.fill(); ctx.restore();
+      ctx.globalAlpha = 0.10 + 0.04*Math.sin(t*0.2 + m.ph); djBildSetzen(m.bild, x, m.y);
     }
-    ctx.restore();
     // ferne Leuchtpflanzen (vorgezeichnet)
-    for(const p of DJN.bgP){ const x = djWrap(p.x, p.par); if(x < -80 || x > VW + 80) continue; ctx.drawImage(p.spr, x - 90, 640 - (1 - p.par)*55 - 130, 180, 150); }
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    for(const p of DJN.bgP){ const x = djWrap(p.x, p.par); if(x < -80 || x > VW + 80) continue; djBildSetzen(p.spr, x - 90, 640 - (1 - p.par)*55 - 130); }
   }
+  ctx.restore();
+}
+// einmal vorzeichnen: schräge Lichtschäfte, Lichtflecken (Deckkraft 1, pro Bild globalAlpha), Moos-Streifen + Baumpilze je
+// Stamm (wie in der Vorschau 'screen' übereinander), Bodennebel-Schwaden
+function djNachtLichtBilder(){
+  const Bi = DJN.bilder = {schaft: [], fleck: [], stamm: []}, Y0 = DJ_BASE - H/zoom;
+  [0.5, 0.7, 0.6].forEach((wd, i) => {
+    Bi.schaft.push(djVorBild(-150*wd - 0.3*760, 0, 300*wd + 0.3*760, 760, q => { q.transform(1, 0, -0.3, 1, 0, 0); q.drawImage(DJN.shS[i], -150*wd, 0, 300*wd, 760); }));
+  });
+  for(const w of [70, 50, 60]) Bi.fleck.push(djVorBild(-w, -w*1.8, 2*w, 3.6*w, q => {
+    q.scale(1, 1.8); const g2 = q.createRadialGradient(0, 0, 0, 0, 0, w); g2.addColorStop(0, 'rgba(150,215,255,1)'); g2.addColorStop(1, 'rgba(150,215,255,0)');
+    q.fillStyle = g2; q.beginPath(); q.arc(0, 0, w, 0, 7); q.fill(); }));
+  const Lw = y => { const u = (y + 170)/940; return 120 + 50*u + (u > 0.72 ? Math.pow((u - 0.72)/0.28, 1.5)*190 : 0); };
+  for(const ti of [0, 1]) Bi.stamm.push(djVorBild(-270, Y0 + 30, 540, 640 - Y0, q => {
+    q.globalCompositeOperation = 'screen';
+    for(const sd of [-1, 1]){
+      const gr = q.createLinearGradient(0, Y0 + 60, 0, 640); gr.addColorStop(0, 'rgba(70,225,225,0)'); gr.addColorStop(0.5, 'rgba(70,225,225,.10)'); gr.addColorStop(1, 'rgba(70,225,225,0)');
+      q.strokeStyle = gr; q.lineWidth = 3; q.beginPath();
+      for(let y = Y0 + 60; y <= 640; y += 20){ const px = sd*Lw(y)*0.86 + Math.sin(y*0.04 + ti)*4; y === Y0 + 60 ? q.moveTo(px, y) : q.lineTo(px, y); }
+      q.stroke();
+    }
+    for(const b of DJN.brk){
+      if(b.tr !== ti) continue;
+      const y = Y0 + b.y*1.15, px = b.side*Lw(y)*0.84, s = b.s; if(y > 600) continue;
+      djGlow(q, px, y, s*4.2, '70,225,235', 0.13);
+      q.fillStyle = 'rgba(70,225,235,.5)'; q.beginPath(); q.ellipse(px, y, s, s*0.42, 0, Math.PI, 0); q.fill();
+      q.strokeStyle = 'rgba(215,255,255,.6)'; q.lineWidth = 1; q.beginPath(); q.ellipse(px, y, s, s*0.42, 0, Math.PI, 0); q.stroke();
+      q.fillStyle = 'rgba(70,225,235,.28)'; q.beginPath(); q.ellipse(px, y + 1.5, s*0.8, s*0.14, 0, 0, 7); q.fill();
+    }
+  }));
+  for(const m of DJN.mistW) m.bild = djVorBild(-m.w, -m.w*0.18, 2*m.w, 0.36*m.w, q => {
+    q.scale(1, 0.18); const g2 = q.createRadialGradient(0, 0, 0, 0, 0, m.w); g2.addColorStop(0, 'rgba(80,215,220,1)'); g2.addColorStop(1, 'rgba(80,215,220,0)');
+    q.fillStyle = g2; q.beginPath(); q.arc(0, 0, m.w, 0, 7); q.fill(); });
 }
 // Leuchtpflanzen am Boden (Vorschau: TZ.pw): nur auf Oberseiten fester Erd-Flächen (Breite >= 60, nicht an der Decke,
 // nicht in einer anderen Fläche), große Flächen mit unregelmäßigen Abständen (260–780), kleine höchstens 1–2 Pflanzen,

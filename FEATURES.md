@@ -1792,9 +1792,14 @@ js/17-deko.js).
 - **Nacht-Leuchten der Tiere:** Frosch, Schnecke, Knospe, Pilz und Eulen-Augen leuchten sanft.
 - **Leistung:** alle Pflanzen einmal vorgezeichnet (beim ersten Dschungel-Level ~0,2 s, Nacht-Einfärbung ~0,1 s,
   danach zwischengespeichert). Chrome zeichnet ein Bild sofort (bremsend) fertig, wenn es mehr als rund 30 MB
-  verschiedene Vorlagen benutzt – darum sind die weichen Ebenen in halber Auflösung vorgezeichnet und nur die vorderen
-  Ebenen im Wind einzeln gezeichnet (zusammen ~20 MB). Tests: dschungel_look_auswahl, dschungel_hintergrund_tag_nacht,
-  dschungel_tiere_regeln, dschungel_leuchtpflanzen.
+  verschiedene Vorlagen benutzt – darum sind die weichen Ebenen bei hoher Pixeldichte in halber Auflösung vorgezeichnet
+  und nur die vorderen Ebenen im Wind einzeln gezeichnet. Bei normaler Pixeldichte werden alle stillen Ebenen 1:1 auf
+  ganze Bildpunkte kopiert (ohne Grafikkarte ein Vielfaches schneller als vergrößern). Dunst, Lichtschäfte, Lichtflecken,
+  Stamm-Leuchten, Bodennebel und ferne Leuchtpflanzen sind ebenfalls einmal vorgezeichnet (pro Bild nur Deckkraft/Lage).
+  Gemessen auf dem Testrechner ohne Grafikkarte (echte Bilder/s, Dschungel-Level, Kamera mittendrin): Tag vorher 34,
+  nachher still 35 (mit Wind 10–12 – dort schaltet sich der Wind von selbst ab); Nacht vorher 39, nachher still 35, ohne
+  Nacht-Licht 38. Tests: dschungel_look_auswahl, dschungel_hintergrund_tag_nacht, dschungel_tiere_regeln,
+  dschungel_leuchtpflanzen.
 
 ## Level-Editor (editor/)
 ```
