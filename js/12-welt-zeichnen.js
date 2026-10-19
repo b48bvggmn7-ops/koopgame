@@ -986,6 +986,7 @@ function drawSolidLook(s, look, x){
   }
   drawCritters();   // Schmetterlinge, Frösche, Schnecken, Pilze, Knospen, Faultier (20-tiere.js)
   drawBirds();
+  tierLeuchtenNacht();   // neuer Dschungel-Look nachts: Tiere leuchten sanft (20-tiere.js)
   drawDust();       // Staubwölkchen (21-figuren-leben.js)
   drawCharacter(p2, camX);
   drawCharacter(p1, camX);

@@ -117,6 +117,7 @@ function buildDeco(){
   decoFor = solids; decoPlants = []; decoMoss = []; birds = [];
   const blocked = dekoSperre();
   const nearStart = x => Math.abs(x - levelStartM.x) < 260 || (levelStartF && Math.abs(x - levelStartF.x) < 260);
+  const neueRegeln = typeof hgTierRegeln === 'function' && hgTierRegeln();   // neuer Dschungel-Look: Vögel unten (vogelSitzplaetze)
   let sinceBird = DECO_BIRD_EVERY*0.6;
   const tops = solids.filter(s => s.type === 'ground' || s.type === 'wall').sort((a, b)=> a.x - b.x || a.y - b.y);
   for(const s of tops){
@@ -131,7 +132,7 @@ function buildDeco(){
       }
       if(blocked(mid, s.y)) continue;
       sinceBird += 40;
-      if(sinceBird >= DECO_BIRD_EVERY && !nearStart(mid) && r > 0.3 && !birds.some(b => Math.abs(b.homeX - mid) < DECO_BIRD_GAP)){
+      if(!neueRegeln && sinceBird >= DECO_BIRD_EVERY && !nearStart(mid) && r > 0.3 && !birds.some(b => Math.abs(b.homeX - mid) < DECO_BIRD_GAP)){
         sinceBird = 0;
         const pals = THEME.birds;   // Vögel je Level-Thema (10a-themen.js); Höhle: keine
         if(!pals.length) continue;
@@ -147,6 +148,7 @@ function buildDeco(){
       }
     }
   }
+  if(neueRegeln) vogelSitzplaetze(blocked, nearStart);
   // Moos/Ranken an Wandseiten, die zur Luft zeigen
   for(const s of solids){
     if(s.type !== 'wall') continue;
@@ -206,6 +208,26 @@ function drawGroundDeco(){
   }
 }
 
+// Dschungel-Paket D (neuer Dschungel-Look, js/11b-dschungel-hintergrund.js): Vögel sitzen auf den Oberseiten fester
+// Flächen (Boden und Wände, nie an der Decke), je VOGEL_ABSCHNITT px einer auf der höchsten Fläche; sie fliegen nicht weg
+// (bleibt), sondern picken und hüpfen nur. Spielwichtige Stellen und der Start bleiben wie bisher frei.
+const VOGEL_ABSCHNITT = 900;
+function vogelSitzplaetze(blocked, nearStart){
+  const pals = THEME.birds; if(!pals.length) return;
+  const perches = [];
+  for(const s of solids){
+    if(s.type !== 'ground' && s.type !== 'wall' && s.type !== 'platform') continue;
+    if(s.w < 48 || s.y < 40) continue;
+    for(let x = s.x + 24; x <= s.x + s.w - 24; x += 70){ if(decoSolidAt(x, s.y - 2) || blocked(x, s.y)) continue; perches.push({x, y: s.y}); }
+  }
+  for(let x0 = 0, bi = 0; x0 < LEVEL_W; x0 += VOGEL_ABSCHNITT, bi++){
+    let best = null;
+    for(const q of perches){ if(q.x < x0 || q.x >= x0 + VOGEL_ABSCHNITT || nearStart(q.x)) continue; if(!best || q.y < best.y - 10) best = q; }
+    if(best && !birds.some(b => Math.abs(b.homeX - best.x) < 40 && Math.abs(b.homeY - best.y) < 10))
+      birds.push({x: best.x, y: best.y, homeX: best.x, homeY: best.y, pal: pals[bi % pals.length], dir: bi % 2 ? -1 : 1,
+                  state: 'sit', t: 0, vx: 0, vy: 0, flap: 0, hop: 0, peck: 0, bleibt: true});
+  }
+}
 // Vögel: werden im festen Takt mit der Spiel-Physik bewegt (stepSim), gezeichnet mit Überblendung
 function updateBirds(){
   if(decoFor !== solids) buildDeco();
@@ -217,7 +239,7 @@ function updateBirds(){
       if(b.hop <= 0 && b.peck <= 0 && Math.random() < 0.006){
         if(Math.random() < 0.5) b.peck = 380; else { b.hop = 280; if(Math.random() < 0.4) b.dir = -b.dir; }
       }
-      for(const p of [p1, p2]){
+      for(const p of (b.bleibt ? [] : [p1, p2])){
         const dx = b.x - p.x, dy = b.y - p.y;
         if(Math.abs(dx) < BIRD_SCARE_DIST && Math.abs(dy) < 140){
           b.state = 'fly'; b.dir = dx >= 0 ? 1 : -1;

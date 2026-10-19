@@ -17,6 +17,7 @@ function critNearPlayer(x, y, dx, dy){
 }
 function buildCritters(){
   critFor = solids; critters = [];
+  if(typeof hgTierRegeln === 'function' && hgTierRegeln()){ buildCrittersDschungel(); return; }   // neuer Dschungel-Look (unten)
   const CT = THEME.critters;
   const keep = [];
   for(const c of coins) keep.push([c.x, c.y]);
@@ -375,5 +376,228 @@ function drawBat(c, x, t){
     }
     ctx.fillStyle = '#5c4c6c'; ctx.beginPath(); ctx.ellipse(0, 1, 4.5, 5.5, 0, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#ffd23f'; for(const ex of [-1.7, 1.7]){ ctx.beginPath(); ctx.arc(ex, -0.5, 1.1, 0, Math.PI*2); ctx.fill(); }
+  }
+}
+
+// ---------- Dschungel-Paket D: neue Tier-Regeln (Dschungel Tag und Nacht, js/11b-dschungel-hintergrund.js) ----------
+// Übernommen aus der Vorschau (dschungel-paket/referenz/tiere-platzierung.js, DK.build): deutlich weniger Tiere, nie in
+// Materialien, nie in Pflanzen. Zusätzlich gelten wie bisher die Spiel-Regeln (nicht an Münzen, Stacheln, Hebeln …).
+const DJT_BODEN = [['frog', 0.018], ['snail', 0.03], ['mush', 0.035], ['bud', 0.04]];   // Anteil je 40-px-Schritt
+const DJT_ABSTAND_BODEN = 650;      // zwischen zwei Boden-Tieren
+const DJT_ABSTAND_LAEUFER = 1400;   // Frosch zu Frosch, Schnecke zu Schnecke
+const DJT_ABSTAND_FLIEGER = 800;    // Schmetterling/Glühwürmchen
+const DJT_ABSTAND_SONST = 420;      // Pilz zu Pilz, Knospe zu Knospe
+const DJT_FLIEGER_P = 0.07;
+const DJT_ABSTAND_HAENGER = 1300;   // höchstens ein Faultier/eine Fledermaus je so viele px
+const DJT_RAND = 45;                // Abstand zum Rand der Fläche
+const DJT_FREI_X = 34, DJT_FREI_H = 46;   // um das Tier herum kein Block, keine Stufe
+const DJT_LAUF_MIN = 70;            // Frosch/Schnecke brauchen so viel freie Laufstrecke
+function buildCrittersDschungel(){
+  const N = hgNacht();
+  const CT = {air: N ? 'firefly' : 'butterfly', airCols: N ? ['#d8ff6a'] : ['#7ec8ff', '#ff9ecb', '#ffd166', '#b69cff'], hanging: N ? 'bat' : 'sloth', mushGlow: N};
+  if(decoFor !== solids) buildDeco();   // Pflanzen zuerst (Tiere stehen in den Lücken)
+  const blocked = dekoSperre();
+  const frei = [...switchDefs.map(sw => [sw.x, sw.y]), ...bouncers.map(b => [b.x, b.y - 20]), ...plates.map(pl => [pl.x, pl.y])];
+  const nearStart = x => Math.abs(x - levelStartM.x) < 200;
+  const last = {}; let slot = 0, lastG = -1e9, lastH = -1e9, goldDone = false;
+  const fest = solids.filter(o => !o.gone && o.type !== 'oneway');
+  const boxFree = (x, y) => { for(const o of fest){ if(x + DJT_FREI_X > o.x && x - DJT_FREI_X < o.x + o.w && y - DJT_FREI_H < o.y + o.h && y - 2 > o.y) return false; } return true; };
+  const grounds = solids.filter(s => s.type === 'ground').sort((a, b) => a.x - b.x || a.y - b.y);
+  for(const s of grounds){
+    for(let cx = s.x; cx < s.x + s.w; cx += 40){
+      if(decoSolidAt(cx + 20, s.y - 2) || s.y < 40) continue;
+      const mid = cx + 20, r = decoHash(cx + 5, s.y + 9);
+      const far = k => !last[k] || Math.abs(last[k] - mid) > (k === 'fly' ? DJT_ABSTAND_FLIEGER : (k === 'frog' || k === 'snail') ? DJT_ABSTAND_LAEUFER : DJT_ABSTAND_SONST);
+      if(nearStart(mid) || blocked(mid, s.y)) continue;
+      let acc = 0, kind = null;
+      for(const [k, w] of DJT_BODEN){ acc += w; if(r < acc){ kind = k; break; } }
+      if(kind && (Math.abs(mid - lastG) < DJT_ABSTAND_BODEN || mid < s.x + DJT_RAND || mid > s.x + s.w - DJT_RAND || !boxFree(mid, s.y))) kind = null;
+      if(N && kind === 'frog') kind = 'snail';   // nachts Schnecke statt Frosch
+      let c = null;
+      if(kind === 'frog' && far('frog')){ last.frog = mid;
+        c = {kind: 'frog', x: mid, y: s.y, home: mid, minX: s.x + 10, maxX: s.x + s.w - 10, dir: r < 0.035 ? -1 : 1, hop: null, t: Math.random()*5000, nextCroak: 3 + Math.random()*8};
+      } else if(kind === 'snail' && far('snail') && s.w >= 120){ last.snail = mid;
+        c = {kind: 'snail', x: mid, y: s.y, minX: s.x + 8, maxX: s.x + s.w - 8, dir: 1, hide: 0};
+      } else if(kind === 'mush' && far('mush')){ last.mush = mid;
+        c = {kind: 'mush', x: mid + (r*40 % 14) - 7, y: s.y, squish: 0, lastT: 0, big: r*7 % 1 < 0.5,
+             glowCap: CT.mushGlow ? (r*13 % 1 < 0.5 ? '#6af0ff' : '#c08aff') : null, glow: CT.mushGlow ? 60 : 0};
+      } else if(kind === 'bud' && far('bud')){ last.bud = mid;
+        c = {kind: 'bud', x: mid, y: s.y, open: 0, target: 0, col: r*7 % 1 < 0.5 ? '#ff7eb0' : '#ffb347'};
+      }
+      if(c){ critters.push(c); lastG = mid; c.pl = [s.x + DJT_RAND, s.x + s.w - DJT_RAND]; }
+      // Schmetterling (nachts Glühwürmchen): selten, nur wo darüber nichts im Weg ist; wie bisher EIN goldener je Level
+      const rb = decoHash(cx + 77, s.y + 31);
+      if(rb < DJT_FLIEGER_P && far('fly') && !decoSolidAt(mid, s.y - 50) && !decoSolidAt(mid - 30, s.y - 50) && !decoSolidAt(mid + 30, s.y - 50)){
+        last.fly = mid;
+        const gold = !goldDone && rb > 0.05 && mid > levelStartM.x + 800;
+        if(gold) goldDone = true;
+        const air = gold ? 'butterfly' : CT.air;
+        critters.push({kind: air, hx: mid, hy: s.y - 50, x: mid, y: s.y - 50, ph: r*100, flee: 0, gold, found: false,
+                       glow: air === 'firefly' ? 70 : 0, col: gold ? '#ffd23f' : CT.airCols[Math.floor(rb*1000) % CT.airCols.length]});
+      }
+    }
+    // Faultier bzw. Fledermaus unter schwebendem Boden: höchstens eins je DJT_ABSTAND_HAENGER px
+    if(slot < 8 && s.w >= 120 && s.y > 120 && s.y + s.h + 90 < LEVEL_H){
+      const ux = s.x + s.w*0.5;
+      if(Math.abs(ux - lastH) > DJT_ABSTAND_HAENGER && !decoSolidAt(ux, s.y + s.h + 4) && !decoSolidAt(ux, s.y + s.h + 70) && decoHash(s.x, s.y) < 0.5 && !blocked(ux, s.y + s.h + 60)){
+        slot++; lastH = ux;
+        critters.push(CT.hanging === 'bat' ? {kind: 'bat', x: ux, y: s.y + s.h, hx: ux, hy: s.y + s.h, state: 'hang', t: 0, vx: 0, vy: 0, ph: Math.random()*9}
+                                          : {kind: 'sloth', x: ux, y: s.y + s.h, awake: 0, wave: 0, found: false});
+      }
+    }
+  }
+  // Pflanzen am Boden (Farn/großes Blatt wie die Agaven der Vorschau, Blüten, nachts Leuchtpflanzen): Tiere nur in den
+  // Lücken; steht eins ungünstig, rückt es zur nächsten freien Stelle derselben Fläche, sonst entfällt es. Gras zählt nicht.
+  const decor = [];
+  for(const pl of decoPlants){ if(pl.kind === 0 || pl.kind === 4) decor.push({x: pl.x, y: pl.y - 7, r: 36}); else if(pl.kind === 2 || pl.kind === 3) decor.push({x: pl.x, y: pl.y - 7, r: 24}); }
+  if(N) for(const p of hgLeuchtpflanzen()) decor.push({x: p.wx, y: p.wy, r: 58});
+  const bad = (x, y, r0) => decor.some(d => Math.abs(d.x - x) < d.r + r0 && Math.abs(d.y - y) < 70);
+  for(const c of critters){
+    if(!c.pl || !bad(c.x, c.y, 16)) continue;
+    let ok = false;
+    for(let d = 50; d <= 450 && !ok; d += 40) for(const sd of [1, -1]){
+      const nx = c.x + sd*d;
+      if(nx < c.pl[0] || nx > c.pl[1] || bad(nx, c.y, 16) || !boxFree(nx, c.y) || blocked(nx, c.y) || critters.some(o => o !== c && o.pl && Math.abs(o.x - nx) < 400 && Math.abs(o.y - c.y) < 80)) continue;
+      const dx = nx - c.x; c.x = nx; if(c.home !== undefined) c.home = nx; if(c.minX !== undefined){ c.minX += dx; c.maxX += dx; }
+      ok = true; break;
+    }
+    if(!ok) c.drop = true;
+  }
+  critters = critters.filter(c => !c.drop);
+  // Läufer (Frosch, Schnecke) bleiben auf freier Strecke: nie durch Stufen/Blöcke oder Pflanzen, nie in die freie Zone
+  // um Hebel/Pilze/Druckplatten (wie bisher)
+  for(const c of critters){
+    if(c.minX === undefined) continue;
+    let lo = c.x, hi = c.x;
+    while(lo > c.minX && !decoSolidAt(lo - 8, c.y - 6) && !bad(lo - 8, c.y, 14)) lo -= 8;
+    while(hi < c.maxX && !decoSolidAt(hi + 8, c.y - 6) && !bad(hi + 8, c.y, 14)) hi += 8;
+    c.minX = Math.max(c.minX, lo + 6); c.maxX = Math.min(c.maxX, hi - 6);
+    for(const [kx, ky] of frei){
+      if(ky < c.y - 120 || ky > c.y + 40) continue;
+      if(kx >= c.x) c.maxX = Math.min(c.maxX, kx - DEKO_FREI_ABSTAND); else c.minX = Math.max(c.minX, kx + DEKO_FREI_ABSTAND);
+    }
+    if(c.minX > c.maxX) c.minX = c.maxX = c.x;
+  }
+  critters = critters.filter(c => !(c.minX !== undefined && c.maxX - c.minX < DJT_LAUF_MIN));
+}
+// Nacht: Frosch, Schnecke, Knospe, Pilz und Eulen-Augen leuchten sanft (Vorschau: DK.glow) – nach den Tieren gezeichnet
+function tierLeuchtenNacht(){
+  if(typeof hgNacht !== 'function' || !hgNacht() || !hgTierRegeln()) return;
+  const g2 = ctx; g2.save(); g2.globalCompositeOperation = 'lighter';
+  const halo = (x, y, r, col, a) => { const q = g2.createRadialGradient(x, y, 0, x, y, r); q.addColorStop(0, 'rgba(' + col + ',' + a + ')'); q.addColorStop(1, 'rgba(' + col + ',0)'); g2.fillStyle = q; g2.fillRect(x - r, y - r, 2*r, 2*r); };
+  const dot = (x, y, r, col, a) => { g2.fillStyle = 'rgba(' + col + ',' + a + ')'; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); };
+  for(const c of critters){
+    const x = Math.round(c.x - camX);
+    if(x < -60 || x > VW + 60) continue;
+    if(c.kind === 'frog'){ const s = 1.35*c.dir, y = c.y + (c.jy || 0); halo(x, y - 8, 22, '110,255,230', 0.16); [[-3, -11], [1, -13], [4, -10], [-6, -8]].forEach(([a, b]) => dot(x + a*s, y + b*1.35, 1.5, '140,255,235', 0.8)); }
+    else if(c.kind === 'snail'){
+      const s = 1.25*c.dir; halo(x - 1*s, c.y - 10, 18, '110,230,255', 0.2);
+      g2.strokeStyle = 'rgba(160,250,255,.6)'; g2.lineWidth = 1.1; g2.beginPath();
+      for(let a = 0; a < Math.PI*4; a += 0.3){ const rr = 1 + a*0.5; g2.lineTo(x + (-1 + Math.cos(a)*rr)*s, c.y + (-8 + Math.sin(a)*rr)*1.25); }
+      g2.stroke();
+    }
+    else if(c.kind === 'bud') halo(x, c.y - 22, 24, c.col.replace('#', '').match(/../g).map(h => parseInt(h, 16)).join(','), 0.22);
+    else if(c.kind === 'mush' && c.glowCap) halo(x, c.y - 12, 42, c.glowCap === '#6af0ff' ? '106,240,255' : '192,138,255', 0.2);
+  }
+  for(const b of birds){
+    if(b.state === 'gone' || !b.pal.owl) continue;
+    const x = b.x - camX; if(x < -40 || x > VW + 40) continue;
+    halo(x + 6*b.dir, b.y - 16, 10, '255,215,90', 0.18);
+  }
+  g2.restore();
+}
+
+// ---------- Dezente Tiere im Hintergrund (Vorschau: BA.*) – unscharf wie ihre Umgebung ----------
+// Schnecken klettern den Baumstamm hoch, ferne Schmetterlinge (nachts Nachtfalter), nachts Fledermäuse weit hinten oben.
+// Keine Schlangen, keine Geckos. Die Vorschau zeichnet jedes Tier pro Bild in eine kleine Fläche und blendet es weich
+// ein (Weichzeichner pro Bild); hier sind die Bilder EINMAL weich vorgezeichnet (Flügelschlag in Stufen) und werden pro
+// Bild nur noch gesetzt (Weichzeichner sparsam, Nutzerwunsch).
+const DJT_HG = {};
+const DJT_FLUEGEL_STUFEN = 8;
+// Bild w×h (Einheiten) mit Mittelpunkt in der Mitte: scharf zeichnen, einmal weich machen
+function djtWeich(w, h, blur, zeichnen){
+  const k = 0.85, pad = Math.ceil(blur*3), cw = Math.ceil((w + 2*pad)*k), ch = Math.ceil((h + 2*pad)*k);
+  const a = document.createElement('canvas'); a.width = cw; a.height = ch;
+  const q = a.getContext('2d'); q.setTransform(k, 0, 0, k, cw/2, ch/2); zeichnen(q);
+  const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+  const z = c.getContext('2d'); if('filter' in z) z.filter = 'blur(' + (blur*k) + 'px)'; z.drawImage(a, 0, 0);
+  return {c, w: cw/k, h: ch/k};
+}
+function djtSchneckeBild(N){
+  const key = 'schnecke' + (N ? 'N' : '');
+  if(DJT_HG[key]) return DJT_HG[key];
+  return DJT_HG[key] = djtWeich(64, 64, 3.5, g => {
+    g.rotate(-Math.PI/2); g.scale(1.7, 1.7);
+    g.fillStyle = N ? 'rgba(24,76,84,.95)' : 'rgba(190,160,126,.9)'; g.beginPath(); g.ellipse(3, -2.5, 11, 3, 0, 0, 7); g.fill();
+    g.strokeStyle = g.fillStyle; g.lineWidth = 1.2;
+    for(const [ax, ay] of [[12, -9], [9, -8]]){ g.beginPath(); g.moveTo(9, -3); g.lineTo(ax, ay); g.stroke(); }
+    g.fillStyle = N ? 'rgba(30,96,108,.95)' : 'rgba(168,96,58,.92)'; g.beginPath(); g.arc(-1, -8, 7.5, 0, 7); g.fill();
+    g.strokeStyle = N ? 'rgba(140,250,255,.8)' : 'rgba(110,64,40,.8)'; g.lineWidth = 1.1; g.beginPath();
+    for(let a = 0; a < Math.PI*4; a += 0.3){ const rr = 1 + a*0.5; g.lineTo(-1 + Math.cos(a)*rr, -8 + Math.sin(a)*rr); }
+    g.stroke();
+    if(N){ g.globalCompositeOperation = 'lighter'; const q = g.createRadialGradient(-1, -8, 0, -1, -8, 22); q.addColorStop(0, 'rgba(110,235,255,.3)'); q.addColorStop(1, 'rgba(110,235,255,0)'); g.fillStyle = q; g.fillRect(-24, -30, 48, 44); }
+  });
+}
+function djtFalterBild(N, farbe, stufe){
+  const key = 'falter' + (N ? 'N' : farbe) + ':' + stufe;
+  if(DJT_HG[key]) return DJT_HG[key];
+  const fl = stufe/(DJT_FLUEGEL_STUFEN - 1);
+  return DJT_HG[key] = djtWeich(60, 60, 1.4, g => {
+    if(N){ g.globalCompositeOperation = 'lighter'; const q = g.createRadialGradient(0, 0, 0, 0, 0, 26); q.addColorStop(0, 'rgba(170,250,255,.22)'); q.addColorStop(1, 'rgba(170,250,255,0)'); g.fillStyle = q; g.fillRect(-26, -26, 52, 52); g.globalCompositeOperation = 'source-over'; }
+    g.globalAlpha = N ? 0.8 : 0.7;
+    for(const sd of [-1, 1]){
+      g.save(); g.scale(sd*(0.25 + 0.75*fl), 1); g.fillStyle = N ? 'rgba(200,250,255,.9)' : farbe;
+      g.beginPath(); g.ellipse(4, -2, 5, 3.4, -0.5, 0, 7); g.fill(); g.beginPath(); g.ellipse(3, 2.5, 3.2, 2.4, 0.5, 0, 7); g.fill(); g.restore();
+    }
+    g.fillStyle = N ? 'rgba(230,255,255,.9)' : 'rgba(60,45,45,.8)'; g.beginPath(); g.ellipse(0, 0, 1, 3.6, 0, 0, 7); g.fill();
+  });
+}
+function djtFledermausBild(stufe){
+  const key = 'fledermaus:' + stufe;
+  if(DJT_HG[key]) return DJT_HG[key];
+  const f = -1 + 2*stufe/(DJT_FLUEGEL_STUFEN - 1);
+  return DJT_HG[key] = djtWeich(60, 52, 2.4, g => {
+    g.scale(1.3, 1.3); g.fillStyle = 'rgba(8,20,48,.9)';
+    for(const sd of [-1, 1]){ g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(sd*8, -9*f - 2, sd*17, -3*f); g.lineTo(sd*12, 3); g.lineTo(sd*8, 1); g.lineTo(sd*5, 4); g.closePath(); g.fill(); }
+    g.beginPath(); g.ellipse(0, 1, 4, 5, 0, 0, 7); g.fill();
+    g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(255,215,90,.9)'; g.beginPath(); g.arc(-1.6, -0.5, 1, 0, 7); g.arc(1.6, -0.5, 1, 0, 7); g.fill();
+  });
+}
+function djtSetzen(B, x, y, rot){
+  if(rot){ ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.drawImage(B.c, -B.w/2, -B.h/2, B.w, B.h); ctx.restore(); }
+  else ctx.drawImage(B.c, x - B.w/2, y - B.h/2, B.w, B.h);
+}
+// Schnecken kriechen senkrecht den Stamm hoch (Start knapp über dem Boden) – nach den Stämmen gezeichnet
+function djHgTiereStamm(t, N){
+  if(!hgTierRegeln()) return;
+  djEinheiten();
+  const off = camX*0.38*DJ_PAR_K, PT = 2600, B = djtSchneckeBild(N);
+  for(const [x0, fl, per, so, dx] of [[800, 1, 90, 0, 60], [800, 1, 120, 50, -70], [1950, -1, 100, 20, 50]]){
+    const u = ((t + so) % per)/per; if(u > 0.8) continue;
+    const y = 618 - (u/0.8)*560, x = ((x0 - off) % PT + PT) % PT;
+    for(const xx of [x, x - PT]){ if(xx < -300 || xx > VW + 300) continue; djtSetzen(B, xx + dx*fl + Math.sin(y*0.03)*5, y, 0); }
+  }
+}
+// ferne Schmetterlinge (nachts Nachtfalter) – nach der mittleren Ebene
+function djHgTiereFliegen(t, N){
+  if(!hgTierRegeln()) return;
+  djEinheiten();
+  const off = camX*0.45*DJ_PAR_K, cols = ['#ffd166', '#ff9ecb', '#7ec8ff', '#b69cff'];
+  for(let i = 0; i < 8; i++){
+    const ph = i*1.9, bx = i*DJ_PER/8 + 120, x = (((bx - off) + Math.sin(t*0.22 + ph)*150) % DJ_PER + DJ_PER) % DJ_PER,
+          y = -50 + ((i*97) % 520) + Math.sin(t*0.5 + ph)*46, fl = Math.abs(Math.sin(t*(N ? 7 : 9) + ph));
+    const B = djtFalterBild(N, cols[i % 4], Math.round(fl*(DJT_FLUEGEL_STUFEN - 1)));
+    for(const xx of [x, x - DJ_PER]){ if(xx < -30 || xx > VW + 30) continue; djtSetzen(B, xx, y, Math.sin(t*0.8 + ph)*0.3); }
+  }
+}
+// nachts Fledermäuse weit hinten im oberen Bereich – nach der fernsten Ebene
+function djHgTiereHimmel(t){
+  if(!hgTierRegeln()) return;
+  djEinheiten();
+  const Y0 = DJ_BASE - H/zoom, off = camX*0.12*DJ_PAR_K;
+  for(let i = 0; i < 5; i++){
+    const sp = 20 + i*6, y = Y0 + 50 + ((i*83) % 230) + Math.sin(t*0.6 + i)*10, xb = (((i*DJ_PER/5 + t*sp) - off) % DJ_PER + DJ_PER) % DJ_PER - 60,
+          f = Math.sin(t*9 + i*2.3), B = djtFledermausBild(Math.round((f + 1)/2*(DJT_FLUEGEL_STUFEN - 1)));
+    for(const xx of [xb, xb - DJ_PER]){ if(xx < -60 || xx > VW + 60) continue; djtSetzen(B, xx, y, 0); }
   }
 }
