@@ -298,7 +298,8 @@ async def himmel_ohne_unsichtbare_decke(g):
     assert abs(r - 16/9) < 0.01, f'Spielfeld verzerrt: {r}'
     fig = await g.ev("""(() => { const o = ctx.drawImage, out = [];
       ctx.drawImage = function(img, x, y, w, h){ if(img === ASSETS.monkey || img === ASSETS.monkeyBlink) out.push([w / h, img.naturalWidth / img.naturalHeight]); return o.apply(this, arguments); };
-      try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { ctx.drawImage = o; }
+      const neu = NEUE_FIGUREN; NEUE_FIGUREN = false;   // dieser Test prüft die alte Kugel-Figur (Bild-Seitenverhältnis)
+      try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { ctx.drawImage = o; NEUE_FIGUREN = neu; }
       return out; })()""")
     assert fig and all(abs(a - b) < 0.01 for a, b in fig), f'Affe verzerrt gezeichnet: {fig}'
     # Editor: 3 Himmel-Reihen über Reihe 0, bebaubar; ganze Höhe ohne senkrechtes Scrollen sichtbar
