@@ -171,6 +171,19 @@ async def start_ohne_fehler(g):
     assert await g.ev('typeof frameDt==="number"'), 'Spielschleife läuft nicht'
 
 @test
+async def neue_figuren_zeichnen(g):
+    """Neue Figuren (Fuß-Figuren, js/10c): sind an, zeichnen Laufen/Springen/Seil/Schirm ohne Fehler; Schirm-Hand und Seil-Ende gesetzt."""
+    await g.load(level([ground(0, 680, 1400)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
+                       hooks=[{'x': 300, 'y': 420, 'radius': 300}]))
+    assert await g.ev("typeof neueFigurenAn === 'function' && neueFigurenAn()"), 'neue Figuren sind nicht an'
+    await g.hold(('KeyD', 'ArrowRight'), 400)
+    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(150)
+    assert await g.ev('p1._handDev && isFinite(p1._handDev.x)'), 'Hand-Position des Affen fehlt'
+    await g.ev("p2.gliding = true; p2.umbrella = 1")
+    await g.p.wait_for_timeout(200)
+    assert await g.ev('p2._handDev && isFinite(p2._handDev.x)'), 'Hand-Position des Schweinchens fehlt'
+
+@test
 async def tode_zaehler(g):
     """Tode-Duell oben rechts: Tode je Figur (Affe / Schwein), keine Münzen (die stehen oben links); wer mehr Tode hat,
     ist rot und wird mit jedem Tod Vorsprung größer. Zählt pro Level: Weitermachen und R lassen den Stand,
@@ -285,7 +298,8 @@ async def himmel_ohne_unsichtbare_decke(g):
     assert abs(r - 16/9) < 0.01, f'Spielfeld verzerrt: {r}'
     fig = await g.ev("""(() => { const o = ctx.drawImage, out = [];
       ctx.drawImage = function(img, x, y, w, h){ if(img === ASSETS.monkey || img === ASSETS.monkeyBlink) out.push([w / h, img.naturalWidth / img.naturalHeight]); return o.apply(this, arguments); };
-      try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { ctx.drawImage = o; }
+      const neu = NEUE_FIGUREN; NEUE_FIGUREN = false;   // dieser Test prüft die alte Kugel-Figur (Bild-Seitenverhältnis)
+      try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { ctx.drawImage = o; NEUE_FIGUREN = neu; }
       return out; })()""")
     assert fig and all(abs(a - b) < 0.01 for a, b in fig), f'Affe verzerrt gezeichnet: {fig}'
     # Editor: 3 Himmel-Reihen über Reihe 0, bebaubar; ganze Höhe ohne senkrechtes Scrollen sichtbar

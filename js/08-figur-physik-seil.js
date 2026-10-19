@@ -78,6 +78,7 @@ function updatePlayer(player, now){
   let moveDir = 0;
   if(left){ moveDir = -1; player.facing = -1; }
   if(right){ moveDir = 1; player.facing = 1; }
+  player._moveDir = moveDir;   // nur fürs Zeichnen (10c)
   // Wasser (elemente/wasser.js): darin wird geschwommen – kein Haken, kein Schirm
   const nass = wasserBecken.length ? wasserPruefen(player) : (player.inWater = player.headUnder = false);
 
@@ -239,6 +240,7 @@ function updatePlayer(player, now){
           const vxMag = WALL_JUMP_VX_MIN + (WALL_JUMP_VX_MAX-WALL_JUMP_VX_MIN)*momentum;
           player.vx = vxMag * moveDir; // in Richtung der gedrückten Taste (= von der Wand weg)
           player.lastWallJumpSide = side;
+          player._wjT = performance.now();
           player.lastWallTouch = -9999;
           player.wjPendingUntil = 0;
           player.glideTimer = 0;

@@ -141,6 +141,7 @@ function drawCharacter(player, camX){
   // Landen/Absprung kurz stauchen/strecken (21-figuren-leben.js), an den Füßen verankert
   let [lx, ly] = typeof charSquash === 'function' ? charSquash(player) : [1, 1];
   if(typeof neueBewegungSquash === 'function'){ const [nx, ny] = neueBewegungSquash(player); lx *= nx; ly *= ny; }   // Nacht-Ausbau: Dash/Rutschen/Haften
+  if(typeof neueFigurenAn === 'function' && neueFigurenAn()){ lx = 1 + (lx-1)*0.35; ly = 1 + (ly-1)*0.35; }   // Landen: Füße federn selbst, Stauchen nur noch leicht
   ctx.translate(0, player.h*0.5); ctx.scale(lx, ly); ctx.translate(0, -player.h*0.5);
 
   // Rollrotation abhängig von der zurückgelegten Strecke (wie ein rollender Ball)
@@ -162,6 +163,7 @@ function drawCharacter(player, camX){
     const d = danceMove(player);
     ctx.translate(0, d.dy); ctx.rotate(d.rot); ctx.scale(d.sx, d.sy);
   }
+  if(typeof neueFigurenAn === 'function' && neueFigurenAn()){ fussFigurZeichnen(player); } else {
   const rollA = (deathState && player === deathState.other ? 0 : (lean || won ? 0 : player.rollAngle)) + wob + lean;
   const size = Math.max(player.w, player.h)*1.55;
   // im echten Seitenverhältnis des Bildes (308 × 257); gedreht wird genau um die Mitte des runden Kopfes
@@ -178,6 +180,7 @@ function drawCharacter(player, camX){
     ctx.fillStyle = player.male ? colorOf('--p1-accent') : colorOf('--p2-accent');
     ctx.beginPath(); ctx.arc(0,0,size*0.4,0,Math.PI*2); ctx.fill();
   }
+  }
   ctx.restore();
   if(typeof cosmeticsDrawFront === 'function') cosmeticsDrawFront(player, camX);
 
@@ -188,10 +191,12 @@ function drawCharacter(player, camX){
     ctx.lineWidth = 2.4 - st*1.2;
     const jit = st > 0.3 ? (Math.random()-0.5)*st*3 : 0;
     ctx.beginPath();
-    ctx.moveTo(px, py-player.h*0.6);
-    ctx.lineTo((px + player.anchor.x-camX)/2 + jit, (py-player.h*0.6 + player.anchor.y)/2 + jit);
+    let rx = px, ry = py-player.h*0.6;
+    if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
+    ctx.moveTo(rx, ry);
+    ctx.lineTo((rx + player.anchor.x-camX)/2 + jit, (ry + player.anchor.y)/2 + jit);
     ctx.lineTo(player.anchor.x-camX, player.anchor.y);
     ctx.stroke();
   }
-  if(!player.male && player.umbrella > 0.02) drawUmbrella(player, px, py);
+  if(!player.male && player.umbrella > 0.02 && !(typeof neueFigurenAn === 'function' && neueFigurenAn())) drawUmbrella(player, px, py);
 }
