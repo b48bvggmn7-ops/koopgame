@@ -1485,9 +1485,19 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 - Die Figuren sind jetzt Kopf + Arme + Stummelfüße statt der rollenden Kugel. Taste **B** schaltet zur alten Kugel zurück (und wieder her).
 - Posen: Stehen, Laufen, Bremsen, Landen, Hoch/Runter, Wandrutschen (liegt an der Wand), Haften an der Decke, Seil, Dash, Schirm-Gleiten, Siegestanz.
 - Sprung-Varianten: nach einem normalen Sprung kommt immer eine Variante (Vorwärtsrolle oder Salto), auf Dauer je 1/3; gilt auch für Wandsprünge.
-- Langeweile: nach 8 s ohne Eingabe schauen die Figuren nach vorn und machen Unsinn (tanzen, winken, hüpfen, wackeln, Salto).
-- Seil: das Seil endet an der Hand des Affen. Schirm: der Griff sitzt in der Hand des Schweinchens, der Schirm zeigt immer senkrecht nach oben;
-  sobald der Schirm offen ist, läuft eine Rolle/Dash-Haltung schnell aus und das Schweinchen hängt aufrecht darunter.
+- Langeweile / Leerlauf-Aktionen: nach 15 s ohne Eingabe (`IDLE_START`) dreht sich die Figur nach vorn und macht im Wechsel
+  Unsinn – jede Figur hat ihre eigenen Aktionen (zufällig, nie zweimal dieselbe hintereinander; jede Eingabe beendet es):
+  - Affe: Disco (Arme abwechselnd hoch, Füße stampfen), Hüpfen mit Armen oben, Salto, Klatschen über dem Kopf, Kopf
+    kratzen, **Seilspringen mit einer Liane** (die Liane schwingt um ihn herum, vorne/hinten richtig verdeckt).
+  - Schweinchen: Hin- und Herwackeln, Knicks, Tippeln von Fuß zu Fuß, Spielen mit dem Schirm und **Schirm-Böe** (ein
+    Windstoß hebt sie am Schirm kurz an). Bei beiden Schirm-Aktionen ist es der **Original-Schirm** aus dem Spiel.
+- Seil: das Seil endet an der Hand des Affen. Schirm: beim Gleiten ist es der **Original-Schirm**; der Griff sitzt in der Hand
+  des Schweinchens, der Schirm zeigt immer senkrecht nach oben; sobald der Schirm offen ist, läuft eine Rolle/Dash-Haltung
+  schnell aus und das Schweinchen hängt aufrecht darunter.
+- Cosmetics im Gesicht: **Brille und Tattoo** (Packages) werden auch an den neuen Figuren gezeichnet – in der Seitenansicht
+  ein Glas am sichtbaren Auge mit Bügel, in der Vorderansicht (Leerlauf) beide Gläser und das Tattoo. Test neue_figuren_brille_tattoo.
+- Tests, die die alte Kugel prüfen (himmel_ohne_unsichtbare_decke, cosmetics_zeichnen_rollfest, figuren_rollen_rund), schalten
+  dafür bewusst kurz auf die Kugel um (`NEUE_FIGUREN = false`, danach zurück). Test neue_figuren_zeichnen.
 - Nur Aussehen: Physik, Trefferflächen und Level unverändert (Hilfswerte `_moveDir`, `_wjT` in 08 nur fürs Zeichnen).
 
 ### Computer-Partner (nur Testmodus – das normale Zwei-Spieler-Spiel bleibt unverändert)

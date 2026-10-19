@@ -184,6 +184,24 @@ async def neue_figuren_zeichnen(g):
     assert await g.ev('p2._handDev && isFinite(p2._handDev.x)'), 'Hand-Position des Schweinchens fehlt'
 
 @test
+async def neue_figuren_brille_tattoo(g):
+    """Neue Figuren: Brille und Tattoo (Cosmetics) werden auch an den Fuß-Figuren gezeichnet – Seitenansicht: Brille,
+    Vorderansicht (Leerlauf nach IDLE_START s): Brille und Tattoo."""
+    await g.load(level([ground(0, 680, 1400)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}))
+    r = await g.ev("""(() => { cosmeticsReset();
+      for (const id of ['gl_aviator', 'tat_flame']) { cosmeticsSave.owned.m[id] = 1; equipItem('m', id); }
+      let gl = 0, ta = 0; const og = drawGlasses, ot = drawTattoo;
+      drawGlasses = (...a) => { gl++; return og(...a); }; drawTattoo = (...a) => { ta++; return ot(...a); };
+      const zeichne = () => { ctx.save(); drawCharacter(p1, camX); ctx.restore(); };
+      try { menuScreen = 'pause'; p1.vx = 0; zeichne(); const seite = {gl, ta}; gl = ta = 0;
+        for (let i = 0; i < 40; i++){ if (p1._ff) { p1._ff.idleT = IDLE_START + 5; p1._ff.t -= 50; } zeichne(); }
+        return {an: neueFigurenAn(), seite, vorn: {gl, ta}, front: p1._ff ? p1._ff.front : null};
+      } finally { drawGlasses = og; drawTattoo = ot; cosmeticsReset(); menuScreen = null; } })()""")
+    assert r['an'], 'neue Figuren sind nicht an'
+    assert r['seite']['gl'] >= 1, f'Brille an der neuen Figur (Seitenansicht) fehlt: {r}'
+    assert r['vorn']['gl'] >= 1 and r['vorn']['ta'] >= 1, f'Brille/Tattoo in der Vorderansicht fehlen: {r}'
+
+@test
 async def tode_zaehler(g):
     """Tode-Duell oben rechts: Tode je Figur (Affe / Schwein), keine Münzen (die stehen oben links); wer mehr Tode hat,
     ist rot und wird mit jedem Tod Vorsprung größer. Zählt pro Level: Weitermachen und R lassen den Stand,
@@ -5136,6 +5154,11 @@ async def cosmetics_zeichnen_rollfest(g):
     die Kategorie Kugel-Skin gibt es nicht mehr."""
     lvl = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
     await g.load(lvl)
+    await g.ev("window.__nf = NEUE_FIGUREN; NEUE_FIGUREN = false")   # prüft bewusst die alte Kugel (Brille/Tattoo der neuen Figuren: neue_figuren_brille_tattoo)
+    try: await cosmetics_rollfest_kugel(g)
+    finally: await g.ev("NEUE_FIGUREN = window.__nf")
+
+async def cosmetics_rollfest_kugel(g):
     n = await g.ev("""(() => { let n = 0; for (const it of COSMETICS) { cosmeticsReset(); cosResetState();
         for (const w of ['m', 'f']) { cosmeticsSave.owned[w][it.id] = 1; equipItem(w, it.id); }
         for (let i = 0; i < 40; i++) { for (const P of [p1, p2]) { P.rollAngle = i*Math.PI/10; P.vx = Math.sin(i*0.4)*6; P.vy = i % 10 < 5 ? -5 : 3; P.grounded = i % 10 > 7; }
@@ -5212,8 +5235,9 @@ async def figuren_rollen_rund(g):
     r = await g.ev("""(() => { const piv = [], orig = ctx.rotate.bind(ctx), dimg = ctx.drawImage.bind(ctx); let rec = false, sz = null;
       ctx.rotate = a => { if (rec) { const m = ctx.getTransform(); piv.push([m.e, m.f]); } return orig(a); };
       ctx.drawImage = function(im, ...r) { if (rec && im === ASSETS.monkey && r.length === 4) sz = [r[2], r[3]]; return dimg(im, ...r); };
-      p1.blink = 9999;
-      for (const a of [0, 1.1, 2.2, 3.3, 4.4]) { p1.rollAngle = a; ctx.setTransform(1, 0, 0, 1, 0, 0); rec = true; drawCharacter(p1, camX); rec = false; }
+      p1.blink = 9999; const neu = NEUE_FIGUREN; NEUE_FIGUREN = false;   // prüft bewusst die alte Kugel-Figur
+      try { for (const a of [0, 1.1, 2.2, 3.3, 4.4]) { p1.rollAngle = a; ctx.setTransform(1, 0, 0, 1, 0, 0); rec = true; drawCharacter(p1, camX); rec = false; } }
+      finally { NEUE_FIGUREN = neu; }
       delete ctx.rotate; delete ctx.drawImage;
       const size = Math.max(p1.w, p1.h)*1.55, hgt = size*257/308, hy = size/2 - hgt + HEAD_CENTER.monkey[1]*hgt;
       return {piv, sz, headY: Math.round(p1.y) - p1.h*0.5 + hy, cw: cvs.width, rect: cvs.getBoundingClientRect().width, rs: RS, max: LEINWAND_MAX_BREITE}; })()""")
