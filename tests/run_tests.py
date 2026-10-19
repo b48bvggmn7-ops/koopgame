@@ -5727,7 +5727,7 @@ async def dash_richtungen_und_laden(g):
         assert r[wer + 'Boden'] > 3.5, (wer, r[wer + 'Boden'])
     assert not r['zweiterLuftDash'], 'zweiter Luft-Dash ging'
     assert r['ladungInLuft'], 'Dash lädt in der Luft nicht (neue Regel: immer laden)'
-    assert 72 <= r['ladeSchritte'] <= 90, r['ladeSchritte']   # DASH_LADEZEIT 72 nach dem Dash (+ Dash-Dauer), auch in der Luft
+    assert 120 <= r['ladeSchritte'] <= 140, r['ladeSchritte']   # DASH_LADEZEIT 120 nach dem Dash (+ Dash-Dauer), auch in der Luft
     assert r['wandLaden']['vorher'] == 0 and r['wandLaden']['schritte'] < 120, r['wandLaden']
     if r['hakenLaden'] is not None:
         assert r['hakenLaden']['haken'] and r['hakenLaden']['punkte'] == 1, r['hakenLaden']
