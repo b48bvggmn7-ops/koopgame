@@ -9109,6 +9109,11 @@ async def neues_aussehen_runde1(g):
                      " localStorage.removeItem('monchichi.lavaFlimmern'); lavaFlimmernMess.an = null; return [a, lavaFlimmernAn()]; })()")
     assert aus == [False, True], f'Lava-Flimmern nicht abschaltbar: {aus}'
     await g.ev("menuScreen = null")
+    # Nutzerwunsch: Fläche am oberen Bildrand läuft über den Rand hinaus (oben weder runde Ecke, Gras noch Linie)
+    await g.load(level([ground(0, 680, 2000), ground(400, -120, 40, 800, 'wall'), ground(800, -80, 40, 40, 'wall')],
+                       {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    r = await g.ev("(() => { matRasterHolen(); return [Tc(10, -4), Tc(20, -3)]; })()")
+    assert r == [2, 0], f'Fläche am oberen Rand läuft nicht über den Rand hinaus (bzw. tiefere Fläche wird verlängert): {r}'
 
 @test
 async def wechselboden_geisteranzeige(g):

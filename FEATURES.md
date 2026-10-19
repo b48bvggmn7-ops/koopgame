@@ -1697,6 +1697,8 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     einmal je Abschnitt (`MAT_STUECK`) zu fertigen Zeichenpfaden berechnet, pro Bild nur gefüllt; die Körnung ist ein
     kleines Muster. (Vorgezeichnete Bilder wie in der Vorschau sprengen in Chrome das Bild-Budget je Bild, das der
     Hintergrund schon fast ausschöpft.) Scheinwände sehen genauso aus und gehen nahtlos in die Wand über.
+  - **Am oberen Bildrand** läuft eine Fläche über den Rand hinaus weiter (oben keine runden Ecken, kein Gras, keine
+    Linie), wenn sie bis in die oberste Reihe reicht (Nutzerwunsch).
   - **Bewegliche Plattformen** aus Boden/Wand: ein abgerundeter Block im gleichen Material (`pieceDraw`), ganze Gruppe
     als ein Block, wenn sie ein Rechteck bildet; Outline wie die Flächen, kein Schatten, kein Restschatten.
   - **Bröckelboden:** Erde wie der normale Boden, trockenes hellbraunes Gras obendrauf, Klumpen und Kiesel, glatte
