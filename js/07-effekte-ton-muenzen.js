@@ -184,10 +184,7 @@ function drawZielHinweise(){
     ctx.beginPath(); ctx.moveTo(side*30, 0); ctx.lineTo(side*6, -19); ctx.lineTo(side*6, 19); ctx.closePath(); ctx.fill();
     ctx.fillStyle = col;
     ctx.beginPath(); ctx.moveTo(side*25, 0); ctx.lineTo(side*9, -13); ctx.lineTo(side*9, 13); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.arc(-side*8, 0, 11, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(-side*8, 0, 8.5, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = (h.link > 9 ? 'bold 9.5px' : 'bold 11px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(h.link), -side*8, 0.5);
+    if(typeof verknuepfungsDiamant === 'function') verknuepfungsDiamant(-side*8, 0, col);   // Diamant statt Zahl (neues Aussehen)
     ctx.restore();
   }
 }

@@ -43,8 +43,9 @@ window.NM = {
     const x1 = p1.x; S.schritt(['right','dash']); S.n(5, ['right']);
     out.zweiterLuftDash = Math.abs(p1.x - x1) > 60;
     let n = 0; while(!p1.grounded && n < 200){ S.schritt(); n++; }
+    out.ladungInLuft = p1.dashLadung > 0 || p1.dashPunkte > 0;   // neue Regel: lädt auch in der Luft
     let lade = 0; while(p1.dashPunkte < 1 && lade < 200){ S.schritt(); lade++; }
-    out.ladeSchritte = lade;
+    out.ladeSchritte = 12 + 1 + 5 + n + lade;   // Schritte seit dem zweiten Dash-Versuch bzw. ab dem ersten Dash
     // Aufladen an der Wand (Spalte 90): in der Luft dashen, dann an die Wand -> lädt dort
     S.start(); S.stellen(p1, 86, 10); S.stellen(p2, 84, 17); S.n(2);
     S.schritt(['swimUp','dash']); S.n(12, ['right']);

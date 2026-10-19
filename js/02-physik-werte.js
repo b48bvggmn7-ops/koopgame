@@ -72,7 +72,7 @@ const DASH_TEMPO = 16;            // px pro Schritt (Spielwiese „Tempo“)
 const DASH_DAUER = 10;            // Schritte (Spielwiese „Dauer“) -> 160 px gerade Strecke (Variante A „fester Dash“)
 const DASH_BEHALTEN = 0.5;        // so viel Tempo bleibt nach dem Dash (nach oben höchstens die Sprungkraft)
 const DASH_LUFT = 1;              // Dash-Punkte (Spielwiese „Luft-Dashes“ 1)
-const DASH_LADEZEIT = 54;         // Schritte (0,9 s): so lange füllt sich ein Punkt – nur mit festem Halt (Boden, Wand, Seil, Haftfläche)
+const DASH_LADEZEIT = 120;        // Schritte (2,0 s): so lange füllt sich ein Punkt – immer, auch in der Luft (Nutzerwunsch; vorher 54, nur mit festem Halt)
 const DASH_PUFFER = 5;            // zu früh gedrückt (z. B. kurz vor der Landung): zählt so viele Schritte
 const DASH_PAUSE = 6;             // Pause nach einem Dash am Boden (gegen Dauer-Dashen)
 const DASH_STOPP = 2;             // kurzer Trefferstopp beim Start (Schritte)
@@ -132,7 +132,7 @@ const FLAMME_ANTEIL = 0.4;      // Anteil des Takts, in dem die Flamme brennt
 // Pfeil-Aussehen (Ruinen-Überarbeitung; nur Anzeige – die Trefferfläche bleibt PFEIL_TREFFER × PFEIL_TREFFER um die Spitze)
 const PFEIL_TREFFER = 10;       // px Kantenlänge der tödlichen Fläche um die Pfeilspitze (unverändert seit Ausbau 7)
 const PFEIL_BILD_LAENGE = 52;   // px gezeichnete Länge (Spitze bis Federn), vorher 35
-const PFEIL_BILD_DICKE = 5;     // px Schaft (vorher 3), dazu 2 px dunkler Umriss
+const PFEIL_BILD_DICKE = 6;     // px Schaft (vorher 3, dann 5; 6 = besser lesbar vor der neuen Ziegelwand), dazu 2 px dunkler Umriss
 const PFEIL_SCHWEIF = 46;       // px Bewegungsspur hinter einem fliegenden Pfeil
 const PFEIL_LICHT = 95;         // px Lichtkreis um einen fliegenden Pfeil in dunklen Leveln (nachts lesbar; Design-Politur 2: vorher 70)
 // Rollender Fels (elemente/fels.js)

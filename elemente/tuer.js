@@ -1,7 +1,7 @@
 // elemente/tuer.js – Element „Tür“ (Punkt-Element mit Verknüpfungs-Nummer, siehe 00-register.js).
 // Holztor, das aufgeht, solange seine Nummer an ist (Hebel umgelegt / Druckplatte gedrückt); schließt erst, wenn
 // niemand mehr darin steht. Rolle: trennt die Wege – der eine öffnet, der andere geht durch.
-// Im Spiel ist die Tür eine feste Wand (solids, type 'door'); gezeichnet mit den Wänden (drawDoor in
+// Im Spiel ist die Tür eine feste Wand (solids, type 'door'); gezeichnet als zusammenhängende Tür (drawGate in
 // js/12-welt-zeichnen.js), Logik im Verknüpfungs-System (js/05-level-objekte.js: setLink, Schließen).
 elementRegistrieren({
   id: 'tuer', name: 'Tür', feld: 'doors',

@@ -1525,8 +1525,9 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
   8 Richtungen (Richtung = gedrückte Richtungs-/Hoch-/Runter-Tasten; nichts gedrückt = Blickrichtung; am Seil ohne
   Richtung = Schwung-Richtung). Am Boden und in der Luft. Strecke ≈ 4,5 Kästchen gerade, ≈ 3,4 / 3,3 schräg
   (DASH_TEMPO 16 × DASH_DAUER 10 Schritte). Danach bleibt die Hälfte des Tempos (DASH_BEHALTEN), nach oben
-  höchstens so viel Aufwärts-Schwung wie ein normaler Sprung. Ein Dash in der Luft (DASH_LUFT 1); Aufladen nur mit Halt: am Boden, an einer Wand,
-  am Haken, an einer Haftfläche – dauert DASH_LADEZEIT 54 Schritte (≈ 1 s), voll = kurzes „Pling“. Anzeige: kleiner Punkt
+  höchstens so viel Aufwärts-Schwung wie ein normaler Sprung. Ein Dash in der Luft (DASH_LUFT 1); Aufladen immer, auch in der Luft
+  (Nutzerwunsch; früher nur mit Halt: Boden, Wand, Haken, Haftfläche, 54 Schritte) – dauert DASH_LADEZEIT 120 Schritte
+  (≈ 2,0 s; Nutzer prüft die Dash-Tunnel und Verfolgungen von Hand), voll = kurzes „Pling“. Anzeige: kleiner Punkt
   über der Figur, nur solange der Dash fehlt/lädt bzw. kurz nach dem Aufladen. Tastendruck wird 5 Schritte gemerkt
   (DASH_PUFFER). Kurzer Trefferstopp (2 Schritte, ganzes Spiel), leichtes Kamera-Wackeln, Nachbilder, Staub, Ton.
   - Zusammenspiel: Dash aus dem Seil-Schwung löst das Seil; Haken greifen während des Dashs beendet ihn (Seil übernimmt);
@@ -1685,6 +1686,58 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
 - **Menü-Klang:** kurzes, tiefes Holz-„Tock“ statt Spieluhr-Klingeln (menuTick 40 ms, menuOk 65 ms, menuStart 110 ms
   beim Level-Start), ohne Nachhall; schnelle Cursor-Schritte klappern nicht (`MENU_TICK_ABSTAND`). Spielgeräusche
   unverändert. Test menue_ton_dezent.
+- **Neues Aussehen, Runde 1 (aus dem abgenommenen Aussehen-Paket; nur Optik – Physik, Logik, Level-Daten und Editor
+  unverändert). Ersetzt bei Boden, Wand, Bröckelboden und Tür die Beschreibungen weiter oben (Erdschichten, Kontur
+  `designKontur`, Schatten unter schwebenden Stücken, sandfarbene Bröckel-Steine, Holztor je Kästchen):**
+  - **Materialien** (js/10b-design-look.js, Werte genau wie in der Vorschau): Erde „Fein“ (#533b2c, feine Körnung,
+    `soilK` 'A'), Wand „Alt“ (Ziegel in warmem Braun-Orange, Muster aus der Weltlage, `wallK` 'B'), Gras „Weich“
+    (Fläche #34c46c, Kante #23a257, Oberkante #5fe093), Outline „Weich“ (`outK` 'A': dünne dunkle Innenlinie, kein
+    Schatten). Gleich in allen Welten. Material folgt der Ausrichtung: Wand senkrecht (Stein), Boden waagerecht (Erde mit Gras).
+  - **Boden und Wand = eine zusammenhängende Schicht** (js/12-welt-zeichnen.js, `materialZeichnen`, Kachel-Aufbau wie
+    `buildChunk` der Vorschau): alle Kästchen kommen in ein Raster (`Tc`), runde Ecken nur an Außenecken, keine Fugen
+    zwischen Kästchen, Körnung und Ziegel laufen durch, Gras-Kappe nur auf freien Oberkanten (an Stufen läuft das Gras
+    ein Stück an der höheren Fläche hoch), Outline nur um die Gesamtform (auch Treppen, L-Formen, Löcher). Leistung:
+    einmal je Abschnitt (`MAT_STUECK`) zu fertigen Zeichenpfaden berechnet, pro Bild nur gefüllt; die Körnung ist ein
+    kleines Muster. (Vorgezeichnete Bilder wie in der Vorschau sprengen in Chrome das Bild-Budget je Bild, das der
+    Hintergrund schon fast ausschöpft.) Scheinwände sehen genauso aus und gehen nahtlos in die Wand über.
+  - **Am oberen Bildrand** läuft eine Fläche über den Rand hinaus weiter (oben keine runden Ecken, kein Gras, keine
+    Linie), wenn sie bis in die oberste Reihe reicht (Nutzerwunsch).
+  - **Bewegliche Plattformen** aus Boden/Wand: ein abgerundeter Block im gleichen Material (`pieceDraw`), ganze Gruppe
+    als ein Block, wenn sie ein Rechteck bildet; Outline wie die Flächen, kein Schatten, kein Restschatten.
+  - **Bröckelboden:** Erde wie der normale Boden, trockenes hellbraunes Gras obendrauf, Klumpen und Kiesel, glatte
+    Unterkante, Outline an freien Kanten; je Kästchen einmal gezeichnet (`broeckelKachel`). Vorwarnung: Zittern, roter
+    Schein und rieselnde Krümel (keine Risse mehr); danach komplett unsichtbar (keine Uhr, kein Balken).
+  - **Durchbruch-Wand** (elemente/durchbruch.js): Entwurf 2 „Feucht“ – Wandmaterial, braun-grün angelaufen, Moos an
+    den Fugen, vorstehende Ziegel, dunkle Tropfspuren, Glanzpunkte; keine Löcher, keine Risse; je Kachel einmal
+    gezeichnet. Beim Nachwachsen füllt sich ein blasser Block. Gemeinsame Hilfen `matTile`, `matBlock`, `grasKappe`, `bruchRisse`.
+  - **Wechselboden** (elemente/wechselboden.js): waagerecht normaler Boden mit Gras, senkrecht normale Wand; eine
+    zusammenhängende Reihe ist ein Block (einmal zwischengespeichert). Weg: nur ein leichter weicher Schatten. Takt-Böden:
+    Balken über die ganze Breite (senkrecht: Höhe), der bis zum Wechsel schrumpft. Hebel-Böden: kein Balken, Diamant
+    mittig auf dunkler Platte (Gruppe A voll, Gruppe B mit dunklem Kern). Die A/B-Anzeige am Hebel entfällt.
+  - **Haftfläche:** normales Wandmaterial mit Honig übergossen (welliger Rand, Glanzlichter, unten langsam tropfend).
+  - **Hebel:** wie bisher, aber ohne Zahl – nur Farbe und kleiner Glanzpunkt auf der Plakette; Tasten-Blase bleibt.
+  - **Tür:** zusammenhängende Tür-Kästchen derselben Nummer sind EINE Tür (auch lang, dick oder ein Block): Holzbretter,
+    Eisenbänder, dunkler Rahmen (nicht farbig), Eckbeschläge bei großen Türen und genau ein Diamant in der Hebel-Farbe
+    mittig auf dunkler Fassung. Sie gleitet beim Öffnen ein; offen, solange noch ein Teil offen ist.
+  - **Druckplatte:** Eisenrahmen mit Messingplatte auf dem Boden, ein Diamant in der Link-Farbe, keine Zahl; sinkt ein.
+  - **Teleporter:** keine Zahl, keine Buchstaben, kein Punkt oben; unten ein Diamant in der Paar-Farbe; „nur Affe /
+    nur Schweinchen“ nur über die Innenfarbe.
+  - **Förderband:** zusammenhängende Kästchen = ein Band ohne Nähte: Holzkörper mit Nieten, Lederband mit breiten
+    weichen goldenen Pfeilen in Laufrichtung (Stillstand blass grau), Rollen nur an den beiden Enden.
+  - **Lava:** keine dunklen Schollen, keine aufsteigenden Blasen, keine gestrichelte Steige-Linie mehr; warmer Glut-
+    Schein, Blasen an der Oberfläche wölben sich auf, platzen und spritzen Tropfen; ruhiges Hitzeflimmern über der
+    Oberfläche (verschiebt schon gezeichnete Pixel; der Ausschnitt wird je Bild einmal kopiert). Das Flimmern schaltet
+    sich auf langsamen Geräten von selbst ab (einmal über `LAVA_FLIMMERN_SOFORT_MS` 8 ms oder im Mittel über
+    `LAVA_FLIMMERN_MAX_MS` 1,5 ms) und lässt sich mit localStorage `monchichi.lavaFlimmern` = `aus` ausschalten.
+  - **Haken:** wie bisher (Schein, Ringe, Funkeln), dazu eine dunkle Unterlage und kräftigeres Cyan-Leuchten.
+  - **Fallen-Pfeil etwas auffälliger** (damit er vor der neuen Ziegelwand lesbar bleibt): Schaft 6 statt 5 px
+    (`PFEIL_BILD_DICKE`), helle Flugspur kräftiger und breiter; Trefferfläche unverändert. Test pfeil_lesbarkeit.
+  - **Keine Zahlen mehr im Spielbild:** Tür, Wechselboden und Portal haben keine Nummern-Plakette mehr (eigener Diamant);
+    bewegliche Plattformen, bewegte Haken, Wasser-/Lava-Marken und Presse zeigen statt der Zahl einen Diamanten in der
+    Hebel-Farbe auf dunkler Fassung (`verknuepfungsDiamant`, wie an der Tür; pulsierender Ring, solange aktiv), ebenso
+    der Hinweis-Pfeil am Bildrand. Verknüpfungen erkennt man nur an der Farbe. Im Editor bleiben die Nummern.
+  - Unverändert in dieser Runde: Sprungpilz, Checkpoint, Münzen, Leuchtkristall, Stacheln (das gewählte „Stahl“ ist der
+    bisherige Stachel), Stachelpresse, Boss, rollender Fels und alle übrigen Elemente.
 
 ## Level-Editor (editor/)
 ```

@@ -58,7 +58,7 @@ elementRegistrieren({
         elementEdelstein(0, -29.5, 7.5, col);
         glanzFunkeln(-2.5, -32, 6, sw.x*0.05 + sw.y);   // Design-Politur C: Funkeln am Edelstein-Knauf
         ctx.restore();
-        // Steinsockel mit Eisenband, Nummer auf einer Plakette in der Hebel-Farbe
+        // Steinsockel mit Eisenband, Plakette in der Hebel-Farbe (neues Aussehen: ohne Zahl, nur Farbe + kleiner Glanzpunkt)
         ctx.fillStyle = 'rgba(0,0,0,.22)'; roundRect(xr-18, baseY-11, 36, 12, 4); ctx.fill();
         const stein = ctx.createLinearGradient(0, baseY-16, 0, baseY);
         stein.addColorStop(0, '#a89c8c'); stein.addColorStop(1, '#6f655a');
@@ -67,10 +67,9 @@ elementRegistrieren({
         ctx.strokeStyle = '#3b2f25'; ctx.lineWidth = 1.5; roundRect(xr-17, baseY-16, 34, 15, 4); ctx.stroke();
         ctx.fillStyle = '#4a4f57'; ctx.fillRect(xr-17, baseY-10, 34, 4);
         ctx.fillStyle = '#9aa3ad'; for(const rx of [xr-13, xr+13]){ ctx.beginPath(); ctx.arc(rx, baseY-8, 1.4, 0, Math.PI*2); ctx.fill(); }
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xr, baseY-8, sw.link > 9 ? 7 : 6.2, 0, Math.PI*2); ctx.fill();
+        const lab = sw.label || String(sw.link); ctx.fillStyle = col; ctx.beginPath(); if(lab.length > 1) ctx.roundRect(xr-11, baseY-14.4, 22, 12.8, 6.4); else ctx.arc(xr, baseY-8, sw.link > 9 ? 7 : 6.2, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = 'rgba(40,22,8,.7)'; ctx.lineWidth = 1.2; ctx.stroke();
-        ctx.fillStyle='#fff'; ctx.font=(sw.link > 9 ? 'bold 8px' : 'bold 9px') + ' sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(String(sw.link), xr, baseY-7.5);
+        ctx.fillStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(xr-1.8, baseY-9.8, 1.7, 0, Math.PI*2); ctx.fill();   // nur noch Farbe, kleiner Glanzpunkt
         if(typeof wechselHebelAnzeige === 'function') wechselHebelAnzeige(xr, baseY, sw.link);   // Wechselboden: welche Gruppe fest ist
         if(anyOpen){ ctx.strokeStyle = col; ctx.globalAlpha = 0.4 + 0.25*Math.sin(performance.now()*0.008); ctx.lineWidth = 2.5;
           roundRect(xr-21, baseY-20, 42, 22, 8); ctx.stroke(); ctx.globalAlpha = 1; }

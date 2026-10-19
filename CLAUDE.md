@@ -38,8 +38,12 @@
     06 Tod/Checkpoints (+ Test-Sprung C/X) · 07 Effekte/Ton/Münzen · 08 Figuren-Physik/Seil ·
     09 Kamera (+ Kamera-Wackeln kameraStoss) · 10 Figuren zeichnen · 10a Level-Themen (Aussehen je Level: Himmel, Farben, Tiere, Dunkelheit) · 10b Design-Look (zentrale Tabelle
     `DESIGN_LOOK` je Welt/Tageszeit: Kontur, Randlicht, Tiefe, Dunst; Glanz-Muster `glanzSchatten/glanzFunkeln/glanzBand`
-    für alle Elemente) · 11 Hintergrund (je Thema) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
-    Asche) · 12 Welt zeichnen (Boden/Wand als durchgehende Blöcke mit EINER gemeinsamen Kontur `designKontur`, gesammelt und nach der Deko gezeichnet; Boden↔Wand-Grenze über `nb.fremd` aus 01, Moos/Lianen an hohen Flächen `hoheFlaechen`) · 13 Anzeige/Leistung ·
+    für alle Elemente; Neues Aussehen: Materialien `wallTile`/`grain`/`outlineDraw`, Farben `EA`/`SOILBASE`, Stil-Wahl
+    `wallK`/`soilK`/`outK`, Hilfen `rnd`/`hsh`/`waveY` und der Zeichen-Kontext `g` der Vorschau) · 11 Hintergrund (je Thema) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
+    Asche) · 12 Welt zeichnen (Neues Aussehen: Boden/Wand als EINE Schicht – Raster `Tc`, je Abschnitt `MAT_STUECK` einmal
+    zu Zeichenpfaden berechnet (`matPfadeBauen`), pro Bild nur gefüllt (`materialZeichnen`); KEINE vorgezeichneten Bilder
+    dafür: Chrome hat je Bild ~32 MB Bild-Budget und der Hintergrund braucht fast alles. Bewegliche Plattformen `pieceDraw`,
+    Bröckelboden `broeckelKachel`, Türen `drawGate` (zusammenhängend = eine Tür); Moos/Lianen an hohen Flächen `hoheFlaechen`) · 13 Anzeige/Leistung ·
     14 Spielschleife · 15 Level laden · 16 Hauptmenü/Levelauswahl/Pause · 17 Deko (Pflanzen, Moos, Vögel) · 18 Geräusche (SFX, Ton aus/an) · 19 Wetter/Licht (Regen, Sonne, Regenbogen) · 20 Tiere/Entdeckungen · 21 Figuren-Effekte (Stauchen, Staub, Herzchen) · 22 Musik (Klavier) + Sonnen-Ambiente (Ersatz) · 23 eigene Aufnahmen (assets/audio: Musik, Vögel, Regen, Fluss) · 24 Startmenü (Titel, Menü, Optionen, Spielerwahl, Weltkarte + Welt-Seite mit Levelkarten, „Level geschafft“ + Schloss-Animation, Blätter-Vorhang; Stil in css/startmenue.css) · 25 Duell (Tode je Figur oben rechts, Münzen/Tode für den Statistik-Bildschirm „Level geschafft“, Levelkarten-Zeile) · 26 Cosmetics-Katalog, Seltenheiten, Package-Vergabe/-Öffnen, Speicher · 27 Cosmetics zeichnen (rollfest; Partikel im festen Takt `cosmeticsStep`) · 28 Packages-Öffnen-Bildschirm + Sammlung (Stil in css/packages.css; nutzt `GameMenu.ui` aus 24) · 29 Spielszenen (Intro/Zwischensequenzen aus `story/story.json`, Sprechblasen, Kino-Balken) · 30 Computer-Partner (nur Testmodus: Folgen, Vorausrechnung mit echter Physik, Wegsuche, Gefahren, Steuerung Q/E/V/P; Konstanten `PARTNER_*` in 02) · 31 Begleiter-Aufgaben (Begleitdatei `levels/partner/<welt>/<datei>.json`, Auto-Aufgaben) · 32 neue Bewegung (Nacht-Ausbau: Dash, Durchbruch-Treffer, Wand-Rutschen, Haftfläche; Aufrufe aus 08 über `neueBewegungVorher`/`neueBewegungNachher`, Trefferstopp `neuTrefferStopp` in 14) · 99 Start
 - `elemente/` – **Element-Register** (Ausbau 2): eine Datei pro Spiel-Element mit allem, was dazugehört (Daten-Feld,
   Editor-Werkzeug + Zeichnen + Export, Spiel-Laden + Zeichnen + Logik). Spiel UND Editor laden diese Dateien zuerst.
@@ -106,7 +110,9 @@
 - Schärfe: Leinwand bis `LEINWAND_MAX_BREITE` (3840, 4K) echte Pixel. **Keine zusätzlichen großen Offscreen-Leinwände**
   pro Bild zeichnen (Hintergrund-Ebene, Dunkel-Schicht …): ab einer gewissen Zahl zeichnet der Browser sie sehr langsam
   (gemessen 8–80 ms je Bild). Details lieber in vorhandene Ebenen malen, weiche Schichten in halber Auflösung
-  (`DUNKEL_AUFLOESUNG`). Test leinwand_scharf_und_schnell wacht darüber.
+  (`DUNKEL_AUFLOESUNG`). Test leinwand_scharf_und_schnell wacht darüber. Grund (gemessen beim neuen Aussehen): alle Bilder/Leinwände,
+  die in einem Bild ins Spielbild gemalt werden, zählen zusammen; über ~32 MB rendert Chrome mitten im Bild (100–250 ms) –
+  die Hintergrund-Ebenen brauchen davon schon rund 31 MB. Große Flächen daher als Zeichenpfade (Muster `matPfadeBauen`).
 - Pro Spielschritt nie „für jedes Kästchen alle solids durchlaufen“ (Licht, Flammen …): Raster-Verzeichnis nutzen
   (Muster `lichtGitterHolen` in elemente/licht.js, `falleGitterHolen` in elemente/falle.js). Test spielschritt_schnell.
 - Regen ist aus dem Spiel (`REGEN_AUS` in 19-wetter.js, Nutzerwunsch).
