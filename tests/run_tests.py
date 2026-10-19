@@ -4607,12 +4607,127 @@ async def kontrast_mindestwerte(g):
                 grenze = KONTRAST_MIN_WELT.get(welt, KONTRAST_MIN[zeit])
                 werte[f'{welt}-{zeit}'] = round(med, 2); hell[zeit] = sum(hs)/len(hs)
                 if len(pool) < 5 or med < grenze: zu_wenig[f'{welt}-{zeit}'] = (round(med, 2), grenze, len(pool))
-            if welt in ('dschungel', 'ruinen'):
+            if welt == 'ruinen':
                 assert hell['mittag'] > hell['abend'] > hell['nacht'], f'{welt}: Tageszeiten nicht unterscheidbar {hell}'
+            if welt == 'dschungel':   # Dschungel-Paket: Abend hat (noch) den neuen Tag-Hintergrund -> nur die Nacht muss dunkler sein
+                assert min(hell['mittag'], hell['abend']) > hell['nacht'], f'{welt}: Nacht nicht dunkler {hell}'
         print('    Kontrast:', werte)
         assert not zu_wenig, f'Kontrast zu gering (Wert, Grenze, Messpunkte): {zu_wenig}'
     finally:
         await kx.close(); srv.shutdown()
+
+@test
+async def dschungel_look_auswahl(g):
+    """Dschungel-Paket: der neue Hintergrund-Stil gilt nur in der Dschungel-Welt (HG_STIL_TABELLE): Tag (mittag) und Nacht
+    ganz neu, Morgen/Abend nur der neue Hintergrund (sonst wie bisher); alle anderen Welten und das alte Thema „nacht“
+    (Mondnacht, Ruinen-Welt) bleiben wie bisher (kein Stil, alte Ebenen)."""
+    r = await g.ev("""(() => { const f = n => { const s = hgStilFuer(n); return s ? s.name : null; };
+      return {tag: f('dschungel@mittag'), nacht: f('dschungel@nacht'), morgen: f('dschungel'), abend: f('dschungel@abend'), altAbend: f('abend'),
+              altNacht: f('nacht'), andere: ['ruinen', 'ruinen@nacht', 'ruinen@mittag', 'hoehle', 'hoehle@nacht', 'vulkan@abend', 'wasser', 'wasser@nacht'].map(f).filter(x => x)}; })()""")
+    assert r == {'tag': 'dschungelTag', 'nacht': 'dschungelNacht', 'morgen': 'dschungelHG', 'abend': 'dschungelHG', 'altAbend': 'dschungelHG',
+                 'altNacht': None, 'andere': []}, f'Auswahl falsch: {r}'
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen', tageszeit='nacht'))
+    r = await g.ev("({stil: BG_STIL, ebenen: BG_LAYERS.length, licht: hgEigenesLicht(), tiere: hgTierRegeln()})")
+    assert r == {'stil': None, 'ebenen': 5, 'licht': False, 'tiere': False}, f'Ruinen-Nacht nicht wie bisher: {r}'
+
+@test
+async def dschungel_hintergrund_tag_nacht(g):
+    """Dschungel-Paket A–C: Dschungel-Tag mit grünem Himmel und Wind (Pflanzen wiegen sich), Nacht dunkelblau (Ebenen beim
+    Vorzeichnen eingefärbt, Riesenblätter leuchten), ohne bisherige Nacht-Abdunklung; Wind und Nacht-Licht lassen sich
+    abschalten (localStorage), dann wird still gezeichnet; nichts davon ändert Spielzustand."""
+    G = ground
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    for zeit in ('mittag', 'nacht'):
+        await g.load(level([G(0, 680, 4000), G(600, 520, 200), G(1200, 440, 120, 240, 'wall')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                           welt='dschungel', tageszeit=zeit))
+        await g.steps(10); await g.ev("menuScreen = 'pause'")
+        r = await g.ev("""(() => { djSchalter.wind.an = true; djSchalter.licht.an = true; const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps]);
+          camPos = camX = 300; draw(); draw();
+          const H2 = hgNacht() ? DJ.skyNacht : DJ.sky, himmel = Array.from(H2.getContext('2d').getImageData(H2.width/2, 2, 1, 1).data).slice(0, 3);
+          // Wind: dieselbe Pflanze zu zwei Zeitpunkten anders gedreht (nur Zeichnen)
+          const b = DJ.LY.near[3], w1 = djWind(b.x, 10), w2 = djWind(b.x, 11.3);
+          const nacht = hgNacht(), nk = nacht ? DJ.kacheln['far@n'] : null;
+          let blau = null; if(nk){ const d = nk.c.getContext('2d').getImageData(0, 0, nk.c.width, nk.c.height).data; let r = 0, b2 = 0, n = 0;
+            for(let i = 0; i < d.length; i += 4*97) if(d[i+3] > 200){ r += d[i]; b2 += d[i+2]; n++; } blau = n ? b2 > r*1.3 : null; }
+          return {stil: BG_STIL.name, himmel, wind: Math.abs(w1 - w2) > 0.01, licht: hgEigenesLicht(), dark: THEME.dark, nacht, blau,
+                  leuchtblatt: nacht ? DJ.MUSH.every(m => m.glow && m.ns) : null, unveraendert: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()""")
+        assert r['unveraendert'], f'{zeit}: Zeichnen hat Spielzustand verändert'
+        assert r['wind'] and r['licht'], f'{zeit}: {r}'
+        if zeit == 'mittag':
+            assert r['stil'] == 'dschungelTag' and r['himmel'][1] > r['himmel'][0] and r['himmel'][1] > r['himmel'][2], f'Tag: Himmel nicht grün {r}'
+        else:
+            assert r['stil'] == 'dschungelNacht' and r['himmel'][2] > r['himmel'][0] and r['himmel'][2] > r['himmel'][1], f'Nacht: Grund nicht blau {r}'
+            assert r['blau'] and r['leuchtblatt'], f'Nacht: Ebenen nicht eingefärbt / Riesenblätter ohne Leuchten {r}'
+            assert r['dark'] > 0, 'Test erwartet ein Nacht-Thema mit eigener Abdunklung (die der neue Look ersetzt)'
+        # Schalter für schwache Geräte: Wind aus -> stille Kacheln, Nacht-Licht aus -> ohne Schäfte/Nebel/ferne Pflanzen
+        r2 = await g.ev("""(() => { try { localStorage.setItem('monchichi.dschungelWind', 'aus'); localStorage.setItem('monchichi.dschungelNachtlicht', 'aus'); } catch(e){}
+          djSchalter.wind.an = null; djSchalter.licht.an = null; draw();
+          const r = {wind: djAn(djSchalter.wind), licht: djAn(djSchalter.licht), kacheln: Object.keys(DJ.kacheln).filter(k => k.startsWith('near')).length};
+          try { localStorage.removeItem('monchichi.dschungelWind'); localStorage.removeItem('monchichi.dschungelNachtlicht'); } catch(e){}
+          djSchalter.wind.an = null; djSchalter.licht.an = null; return r; })()""")
+        assert r2['wind'] is False and r2['licht'] is False and r2['kacheln'] >= 1, f'{zeit}: Schalter wirken nicht {r2}'
+        await g.ev("menuScreen = null")
+    assert not fehler, f'Fehler beim Zeichnen: {fehler}'
+
+@test
+async def dschungel_tiere_regeln(g):
+    """Dschungel-Paket D: deutlich weniger Tiere (Regeln aus DK.build): Boden-Tiere nie in Materialien (frei ±34 px, 46 px
+    hoch, 45 px vom Rand), Frosch/Schnecke mit mind. 70 px Laufstrecke, Boden-Tiere weit auseinander, Faultier höchstens
+    alle 1300 px; Vögel sitzen auf Oberseiten fester Flächen und fliegen NICHT weg; nachts Schnecke statt Frosch."""
+    G = ground
+    teile = [G(0, 680, 9000)] + [G(x, 600, 80, 80, 'wall') for x in range(900, 9000, 1100)] + [G(x, 400, 320) for x in range(500, 9000, 1500)]
+    for zeit in ('mittag', 'nacht'):
+        await g.load(level(teile, {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit=zeit, goal={'x': 8900, 'y': 680}))
+        await g.steps(5)
+        r = await g.ev("""(() => { critFor = null; decoFor = null; buildDeco(); buildCritters();
+          const fest = solids.filter(o => !o.gone && o.type !== 'oneway');
+          const imMaterial = critters.filter(c => ['frog', 'snail', 'mush', 'bud'].includes(c.kind) && fest.some(o => c.x + 33 > o.x && c.x - 33 < o.x + o.w && c.y - 45 < o.y + o.h && c.y - 2 > o.y));
+          const boden = critters.filter(c => ['frog', 'snail', 'mush', 'bud'].includes(c.kind)).sort((a, b) => a.x - b.x);
+          let minAbstand = 1e9; for(let i = 1; i < boden.length; i++) if(boden[i].y === boden[i-1].y) minAbstand = Math.min(minAbstand, boden[i].x - boden[i-1].x);
+          const laeufer = critters.filter(c => c.minX !== undefined), kurz = laeufer.filter(c => c.maxX - c.minX < 70);
+          const haenger = critters.filter(c => c.kind === 'sloth' || c.kind === 'bat').map(c => c.x).sort((a, b) => a - b);
+          let minH = 1e9; for(let i = 1; i < haenger.length; i++) minH = Math.min(minH, haenger[i] - haenger[i-1]);
+          const voegel = birds.map(b => ({x: b.x, y: b.y, bleibt: b.bleibt, oben: !decoSolidAt(b.x, b.y - 2) && solids.some(s => s.y === b.y && b.x >= s.x && b.x <= s.x + s.w)}));
+          const neu = critters.length; window.__alt = hgTierRegeln; window.hgTierRegeln = () => false; critFor = null; decoFor = null; buildDeco(); buildCritters();
+          const alt = critters.length; window.hgTierRegeln = __alt; critFor = null; decoFor = null; buildDeco(); buildCritters();
+          return {imMaterial: imMaterial.map(c => c.kind + '@' + Math.round(c.x)), minAbstand, kurz: kurz.length, minH, voegel, neu, alt,
+                  froesche: critters.filter(c => c.kind === 'frog').length, nacht: hgNacht()}; })()""")
+        assert not r['imMaterial'], f'{zeit}: Tiere in Materialien {r["imMaterial"]}'
+        assert r['minAbstand'] >= 400, f'{zeit}: Boden-Tiere zu dicht {r["minAbstand"]}'
+        assert r['kurz'] == 0 and r['minH'] >= 1300, f'{zeit}: {r}'
+        assert r['neu'] < r['alt']*0.7, f'{zeit}: nicht deutlich weniger Tiere ({r["neu"]} statt {r["alt"]})'
+        assert r['voegel'] and all(v['bleibt'] and v['oben'] for v in r['voegel']), f'{zeit}: Vögel {r["voegel"]}'
+        if zeit == 'nacht': assert r['nacht'] and r['froesche'] == 0, f'nachts Frosch statt Schnecke: {r}'
+        # Vögel fliegen nicht weg, auch wenn eine Figur ganz nah ist
+        b0 = r['voegel'][0]
+        await g.ev(f"p1.x = {b0['x']} - 30; p1.y = {b0['y']}; p1.vx = 0")
+        await g.steps(30)
+        st = await g.ev(f"birds.find(b => b.homeX === {b0['x']}).state")
+        assert st == 'sit', f'{zeit}: Vogel fliegt weg ({st})'
+
+@test
+async def dschungel_leuchtpflanzen(g):
+    """Dschungel-Paket C: Leuchtpflanzen am Boden nur nachts, nur auf Oberseiten fester Erd-Flächen (Breite >= 60, nicht
+    an der Decke, nicht in einer anderen Fläche), kleine Flächen höchstens 1–2 Pflanzen, große mit 260–780 px Abstand,
+    keine zwei gleichen Arten nebeneinander; nicht an Hebeln/Münzen."""
+    G = ground
+    teile = [G(0, 680, 6000), G(800, 640, 600, 40), G(1600, 480, 80), G(2000, 480, 300), G(2600, 520, 40), G(3000, 30, 400)]
+    await g.load(level(teile, {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit='nacht',
+                       switches=[{'x': 4000, 'y': 660, 'link': 1}], coins=[{'x': 4600, 'y': 660}]))
+    await g.steps(5)
+    r = await g.ev("""(() => { djPwFor = null; const pw = hgLeuchtpflanzen();
+      const auf = p => solids.find(s => s.type === 'ground' && s.y === p.wy && p.wx >= s.x && p.wx <= s.x + s.w);
+      const fehl = pw.filter(p => { const s = auf(p); return !s || s.w < 60 || s.y <= 40 || decoSolidAt(p.wx, p.wy - 6); });
+      const proFlaeche = {}; for(const p of pw){ const s = auf(p); if(s){ const k = s.x + ',' + s.y + ',' + s.w; (proFlaeche[k] = proFlaeche[k] || []).push(p.wx); } }
+      const zuViel = Object.entries(proFlaeche).filter(([k, xs]) => { const w = +k.split(',')[2]; return w <= 400 && xs.length > (w > 260 ? 2 : 1); });
+      let gleich = 0; for(let i = 1; i < pw.length; i++) if(pw[i].k === pw[i-1].k) gleich++;
+      let eng = 0; for(const xs of Object.values(proFlaeche)){ xs.sort((a, b) => a - b); for(let i = 1; i < xs.length; i++) if(xs[i] - xs[i-1] < 200) eng++; }
+      const anHebel = pw.filter(p => Math.abs(p.wx - 4000) < 160 || Math.abs(p.wx - 4600) < 40).length;
+      const tag = (() => { const alt = BG_STIL; BG_STIL = Object.assign({}, alt, {nacht: false}); const n = hgLeuchtpflanzen().length; BG_STIL = alt; return n; })();
+      return {n: pw.length, fehl: fehl.length, zuViel, gleich, eng, anHebel, tag}; })()""")
+    assert r['n'] >= 4, f'zu wenige Leuchtpflanzen: {r}'
+    assert r['fehl'] == 0 and not r['zuViel'] and r['gleich'] == 0 and r['eng'] == 0 and r['anHebel'] == 0, f'Leuchtpflanzen falsch verteilt: {r}'
+    assert r['tag'] == 0, 'Leuchtpflanzen am Tag'
 
 @test
 async def welt_details_und_vordergrund(g):
@@ -4626,8 +4741,11 @@ async def welt_details_und_vordergrund(g):
         for welt, datei, spalte in LEISTUNG_STELLEN:
             await koop_level(g, datei)
             r = await g.ev(f"""(() => {{ setTheme(composeLook('{welt}', 'mittag')); return {{welt: detailWelt, fackeln: BG_FACKELN.length, tropfen: BG_TROPFEN.length,
-                ebene: BG_LAYERS.includes(detailEbene), vorne: typeof vordergrundZeichnen === 'function'}}; }})()""")
-            assert r['welt'] == welt and r['ebene'], f'{welt}: Details fehlen {r}'
+                ebene: BG_LAYERS.includes(detailEbene), vorne: typeof vordergrundZeichnen === 'function', stil: BG_STIL && BG_STIL.name}}; }})()""")
+            if welt == 'dschungel':   # Dschungel-Paket: eigener neuer Hintergrund (ohne Wasserfall) statt der alten Ebenen mit Details
+                assert r['stil'] == 'dschungelTag', f'{welt}: neuer Dschungel-Hintergrund fehlt {r}'
+            else:
+                assert r['welt'] == welt and r['ebene'] and not r['stil'], f'{welt}: Details fehlen {r}'
             assert not r['vorne'], 'Vordergrund-Schatten unten ist wieder da'
             if welt == 'ruinen': assert r['fackeln'] > 0, r
             if welt == 'hoehle': assert r['tropfen'] > 0, r
@@ -4798,10 +4916,11 @@ async def level_themen(g):
     farben = set()
     for th in ('dschungel', 'abend', 'ruinen', 'nacht', 'hoehle', 'vulkan'):
         await g.ev(f"setTheme('{th}')"); await g.p.wait_for_timeout(350)
-        # Farbe des Himmels oben links unterscheidet sich je Thema
-        farben.add(await g.ev("Array.from(BG_SKY.getContext('2d').getImageData(5, 5, 1, 1).data).slice(0,3).join(',')"))
+        # Farbe des Himmels oben links unterscheidet sich je Thema (Dschungel-Paket: Dschungel-Morgen und das alte Thema
+        # „abend“ (Baumkronen, Dschungel-Welt) haben beide den neuen Dschungel-Hintergrund mit seinem grünen Himmel)
+        farben.add(await g.ev("Array.from((BG_STIL ? DJ.sky : BG_SKY).getContext('2d').getImageData(5, 5, 1, 1).data).slice(0,3).join(',')"))
         assert await g.ev('THEME.ground.grass'), 'keine Bodenfarbe'
-    assert len(farben) == 6, f'Themen sehen gleich aus: {farben}'
+    assert len(farben) == 5, f'Themen sehen gleich aus: {farben}'
     # dunkles Thema: Bild um die Figur heller als weit weg
     await g.ev("setTheme('hoehle')"); await g.p.wait_for_timeout(400)
     hell = await g.ev("""(()=>{ const sx=Math.round((p1.x-camX)*zoom), sy=Math.round((p1.y-p1.h*0.5)*zoom+H*(1-zoom));
