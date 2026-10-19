@@ -8788,6 +8788,18 @@ async def ziel_hinweis_pfeil(g):
     await g.p.wait_for_function("zielHinweisPfeile === 0", timeout=3000)
 
 @test
+async def checkpoints_frei(g):
+    """Checkpoint-Fahnen stecken nie in Material: Mast (2 Kästchen hoch) und Fahne (ragt in die Spalte rechts) frei von
+    Boden, Wand, Tür, Durchbruch; darunter fester Boden (kein Schweben). Werkzeug tests/umbau/checkpoints_frei.py."""
+    sys.path.insert(0, str(ROOT / 'tests' / 'umbau'))
+    import checkpoints_frei as CF, level_bau as LB
+    fehler = []
+    for datei in CF.level_liste():
+        ed = LB.Level(datei).ed; z = CF.belegt_zellen(ed)
+        fehler += [f"{datei} Checkpoint ({cp['c']},{cp['r']})" for cp in ed.get('checkpoints', []) if not CF.gut(z, cp['c'], cp['r'])]
+    assert not fehler, fehler
+
+@test
 async def muenzen_haken_ketten(g):
     """Münz-Prüfung an Hilfen (Umbau): an vier Haken-Ketten ohne eigenen Level-Test (Kristallhöhle 308–348, Ruinen 1
     155–171 und 736–752, Feuerberg 227–259 mit Pilz + Dash) schwingt der Affe die Kette (Einstellungen aus

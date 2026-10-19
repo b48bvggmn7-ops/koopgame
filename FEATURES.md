@@ -1619,6 +1619,8 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   hintereinander, auf dem Podest warten, bis der Dash wieder voll ist (sofort weiter = Absturz). Wipfelsturm vor dem Ziel,
   Sonnentempel vor dem Ziel (3 Gruben), Tropfsteingang vor dem Ziel (3 Gruben), Schlackewerk vor dem Ziel, Kraterherz
   vor dem Ziel (3 Gruben). Werkzeug `tests/umbau/dash_tunnel.py`, Tests `dash_ketten_<welt>`.
+- **Checkpoints frei:** keine Fahne steckt in Boden, Wand oder Tür und keine schwebt (12 Checkpoints verschoben: eine
+  Spalte zur Seite bzw. auf den Boden darunter; Werkzeug tests/umbau/checkpoints_frei.py, Test checkpoints_frei).
 - **Pflicht-Durchbruch** auf dem Hauptweg (Säule: unten Durchbruch, darüber Wand bis oben – nur per Dash): Baumkronen 172,
   Dornenpfad 298, Wipfelsturm 381, Ruinen 1 296, Sonnentempel 331, Felsenflucht 532, Kristallhöhle 115, Tropfsteingang 585,
   Förderwerk 392, Schlackewerk 194, Feuerschlund 589; zweite Runde: Mondnacht 342, Fallengang 356, Tempelherz 590,
