@@ -1481,6 +1481,15 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
+### Neue Figuren (Affe und Schweinchen mit runden Stummelfüßen und Armen; js/10c-fuss-figuren.js)
+- Die Figuren sind jetzt Kopf + Arme + Stummelfüße statt der rollenden Kugel. Taste **B** schaltet zur alten Kugel zurück (und wieder her).
+- Posen: Stehen, Laufen, Bremsen, Landen, Hoch/Runter, Wandrutschen (liegt an der Wand), Haften an der Decke, Seil, Dash, Schirm-Gleiten, Siegestanz.
+- Sprung-Varianten: nach einem normalen Sprung kommt immer eine Variante (Vorwärtsrolle oder Salto), auf Dauer je 1/3; gilt auch für Wandsprünge.
+- Langeweile: nach 8 s ohne Eingabe schauen die Figuren nach vorn und machen Unsinn (tanzen, winken, hüpfen, wackeln, Salto).
+- Seil: das Seil endet an der Hand des Affen. Schirm: der Griff sitzt in der Hand des Schweinchens, der Schirm zeigt immer senkrecht nach oben;
+  sobald der Schirm offen ist, läuft eine Rolle/Dash-Haltung schnell aus und das Schweinchen hängt aufrecht darunter.
+- Nur Aussehen: Physik, Trefferflächen und Level unverändert (Hilfswerte `_moveDir`, `_wjT` in 08 nur fürs Zeichnen).
+
 ### Computer-Partner (nur Testmodus – das normale Zwei-Spieler-Spiel bleibt unverändert)
 - Im Editor-Test („▶ Testen“) steuert auf Wunsch der Computer die zweite Figur (Auswahl `#partnerWahl` neben „Testen“:
   „Partner aus“ / „Ich bin der Affe“ / „Ich bin das Schweinchen“; gemerkt in localStorage `monchichi_partner` {an, ich}).
