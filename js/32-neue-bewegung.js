@@ -310,12 +310,10 @@ function neueBewegungNachher(P, altX, altY){
   }
   if(P.haft) haftNachher(P, altX, altY);
   if(P.haft && P.haft.flaeche !== 'unten') P.rollAngle += P.vy/(P.w*0.5)*(P.haft.flaeche === 'links' ? 1 : -1);
-  // Dash aufladen: nur mit festem Halt (Boden, Wand, Seil, Haftfläche), nicht frei in der Luft
+  // Dash aufladen: immer (auch frei in der Luft; Nutzerwunsch – früher nur mit festem Halt, dafür doppelt so schnell)
   if(P.dashPunkte < DASH_LUFT && !P.dash){
-    if(P.grounded || P.onWall || P.hookAttached || P.haft){
-      P.dashLadung += 1/DASH_LADEZEIT;
-      if(P.dashLadung >= 1){ P.dashLadung = 0; P.dashPunkte++; P._dashVollT = performance.now(); if(typeof SFX !== 'undefined' && SFX.dashVoll) SFX.dashVoll(P); }
-    }
+    P.dashLadung += 1/DASH_LADEZEIT;
+    if(P.dashLadung >= 1){ P.dashLadung = 0; P.dashPunkte++; P._dashVollT = performance.now(); if(typeof SFX !== 'undefined' && SFX.dashVoll) SFX.dashVoll(P); }
   } else P.dashLadung = 0;
   // Rutsch-Bild (nur Anzeige): Staub und Kratzspur an der Wand
   if(P.rutscht && schrittNr() % 3 === 0){
