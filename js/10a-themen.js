@@ -206,7 +206,7 @@ function themedImg(img){
 
 function setTheme(name){
   if(!THEMES[name]) name = 'dschungel';
-  const changed = name !== themeName || !BG_LAYERS.length;
+  const changed = name !== themeName || (!BG_LAYERS.length && !BG_STIL);
   themeName = name; THEME = THEMES[name];
   if(changed) buildBackground();
   Object.assign(CRUMBLE_PAL, CRUMBLE_PAL_DEFAULT, THEME.crumble || {});
@@ -242,7 +242,7 @@ function themeLights(){
   return L;
 }
 function drawThemeDarkness(){
-  const a = THEME.dark;
+  const a = typeof hgEigenesLicht === 'function' && hgEigenesLicht() ? 0 : THEME.dark;   // neuer Nacht-Look bringt eigenes Licht mit (11b) – kein Doppel-Dunkel
   if(!a){ if(typeof dunkelZeichnen === 'function') dunkelZeichnen(); return; }
   const g = darkCtx;
   g.setTransform(DUNKEL_AUFLOESUNG, 0, 0, DUNKEL_AUFLOESUNG, 0, 0);

@@ -179,8 +179,11 @@ function weatherFront(){
   }
   // warmer Schimmer (bei Regen kühler) + weiche Vignette
   const DW = typeof designLook === 'function' ? designLook() : null, wm = DW && DW.waerme;   // warmer Schimmer je Look (10b)
-  ctx.fillStyle = r > 0.5 ? `rgba(120,150,190,${(0.06*r).toFixed(3)})` : wm ? `rgba(${wm.col},${(wm.a*(1 - r)).toFixed(3)})` : `rgba(255,190,110,${(0.06*(1 - r)).toFixed(3)})`;
-  ctx.fillRect(0, 0, W, H);
+  if(!hgEigenesLicht()){   // neuer Dschungel-Look Tag/Nacht (11b): ohne warmen Schimmer, eigene Vignette
+    ctx.fillStyle = r > 0.5 ? `rgba(120,150,190,${(0.06*r).toFixed(3)})` : wm ? `rgba(${wm.col},${(wm.a*(1 - r)).toFixed(3)})` : `rgba(255,190,110,${(0.06*(1 - r)).toFixed(3)})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+  if(hgStilVignette()) return;
   if(DW && DW.vignette) vignetteSetzen(DW.vignette);
   ctx.drawImage(VIGNETTE, 0, 0, W, H);
 }

@@ -632,9 +632,10 @@ function draw(){
   applyWorldZoom();
 
   // weiche Lichtstrahlen von oben (Design-Politur 2: warme, sanft schwankende Strahlen aus DESIGN_LOOK, sonst wie bisher)
-  if(designLook().strahlen) gemuetlichStrahlen();
+  // (neuer Hintergrund-Stil, 11b: keine Lichtstrahlen und eigener Lichtstaub statt der Pollen)
+  if(designLook().strahlen && !BG_STIL) gemuetlichStrahlen();
   ctx.save();
-  for(let i=0;i<(THEME.ray && !designLook().strahlen ? 2 : 0);i++){
+  for(let i=0;i<(THEME.ray && !designLook().strahlen && !BG_STIL ? 2 : 0);i++){
     const rx = ((i*420 - camX*0.5) % (VW+500)) - 100;
     const rg = ctx.createLinearGradient(rx,0,rx+160,H);
     rg.addColorStop(0, THEME.ray);
@@ -648,7 +649,7 @@ function draw(){
 
   // treibende Lichtpartikel
   const PM = THEME.particles, pCol = designLook().pollen || PM.col;   // warme Pollen (Design-Politur 2)
-  for(const pt of particles){
+  for(const pt of (BG_STIL ? [] : particles)){
     const k = frameDt/STEP;
     pt.phase += 0.02 * k;
     if(PM.mode === 'firefly'){   // Glühwürmchen: schwirren langsam umher, blinken
@@ -827,6 +828,7 @@ function drawSolidLook(s, look, x){
   tuerenZeichnen();
   hoheFlaechenZeichnen();   // Moos und Lianen an hohen Seitenflächen (Design-Politur)
   drawGroundDeco();   // Dschungel-Pflanzen und Moos (17-deko.js)
+  hgBodenLicht();     // neuer Nacht-Look: Boden abdunkeln, Leuchtpflanzen, Licht um die Figuren (11b)
 
   // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
   for(const h of hooks){
@@ -1004,7 +1006,8 @@ function drawSolidLook(s, look, x){
     ctx.fillStyle = '#ffd23f'; ctx.fillText(msg, gx, goal.y-79);
   }
   ctx.restore();
-  if(THEME.tint){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
+  hgStilVorne();   // neuer Hintergrund-Stil: Lichtstaub vor dem Spielfeld, nachts Glühwürmchen (11b)
+  if(THEME.tint && !hgEigenesLicht()){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
   drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
   drawFakeGlints();      // dezentes Glitzern an Scheinwänden (auch im Dunkeln sichtbar)
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenOben) E.spiel.zeichnenOben();   // Bildschirm-Anzeigen, z. B. Boss-Lebensbalken (elemente/)

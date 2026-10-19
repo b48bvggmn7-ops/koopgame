@@ -98,9 +98,8 @@ function decoSolidAt(x, y){
   return false;
 }
 const DEKO_FREI_ABSTAND = 160;   // px links/rechts von Hebeln, Sprungpilzen und Druckplatten bleiben frei (auch für Tiere, 20-tiere.js)
-function buildDeco(){
-  decoFor = solids; decoPlants = []; decoMoss = []; birds = [];
-  // Spielwichtige Punkte, an denen keine Pflanze/kein Vogel stehen soll
+// Spielwichtige Punkte, an denen keine Pflanze/kein Vogel stehen soll -> Prüf-Funktion blocked(x, Oberkante)
+function dekoSperre(){
   const keep = [];
   for(const c of coins) keep.push([c.x, c.y]);
   for(const sp of spikes) keep.push([sp.x, sp.y - 20]);
@@ -109,8 +108,14 @@ function buildDeco(){
   for(const cp of checkpointDefs) keep.push([cp.x, cp.y - 20]);
   if(goal) keep.push([goal.x, goal.y - 20]);
   for(const s of solids) if(s.type === 'door' || s.type === 'crumble' || s.type === 'moveplat') keep.push([s.x + s.w/2, s.y]);
-  const blocked = (x, top)=> keep.some(([kx, ky])=> Math.abs(kx - x) < 40 && ky > top - 90 && ky < top + 30) ||
+  return (x, top)=> keep.some(([kx, ky])=> Math.abs(kx - x) < 40 && ky > top - 90 && ky < top + 30) ||
     frei.some(([kx, ky])=> Math.abs(kx - x) < DEKO_FREI_ABSTAND && ky > top - 120 && ky < top + 40);
+}
+// frei für Deko? (Gegenteil von dekoSperre, z. B. für die Leuchtpflanzen der Dschungel-Nacht, 11b)
+function dekoFreiPruefer(){ const b = dekoSperre(); return (x, top) => !b(x, top); }
+function buildDeco(){
+  decoFor = solids; decoPlants = []; decoMoss = []; birds = [];
+  const blocked = dekoSperre();
   const nearStart = x => Math.abs(x - levelStartM.x) < 260 || (levelStartF && Math.abs(x - levelStartF.x) < 260);
   let sinceBird = DECO_BIRD_EVERY*0.6;
   const tops = solids.filter(s => s.type === 'ground' || s.type === 'wall').sort((a, b)=> a.x - b.x || a.y - b.y);

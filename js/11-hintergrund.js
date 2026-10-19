@@ -11,6 +11,7 @@ const BG_TW = 1600;
 const BG_LAYERS = [];
 let BG_SKY = null;
 const BG_WATERFALLS = [];   // {layer, x, top, bottom, w} – Wasserfälle in Ebenen-Koordinaten
+let BG_STIL = null;         // neuer Hintergrund-Stil dieses Looks (js/11b-dschungel-hintergrund.js), sonst null = wie bisher
 
 function bgRand(seed){ let s = seed >>> 0 || 1; return ()=>{ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
 function bgCanvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -95,6 +96,9 @@ function bgBlur(g, px){
 function buildBackground(){
   const T = THEME;
   BG_LAYERS.length = 0; BG_WATERFALLS.length = 0;
+  // neuer Stil je Welt/Tageszeit (dschungel-paket): eigener Hintergrund statt der Ebenen unten
+  BG_STIL = typeof hgStilFuer === 'function' ? hgStilFuer(themeName) : null;
+  if(BG_STIL){ hgStilAufbauen(BG_STIL); return; }
   bgMistCol = T.mistCol || (T.dark ? '60,70,110' : '240,248,238');
   if(typeof designLook === 'function' && designLook().nebel) bgMistCol = designLook().nebel;   // warmer Nebel (Design-Politur 2)
   // Himmel (fest, ganz weit weg): Verlauf + Sonne bzw. Mond und Sterne
@@ -515,6 +519,7 @@ function drawWaterfallFlow(off, t){
   }
 }
 function drawBackground(){
+  if(BG_STIL){ hgStilZeichnen(); if(typeof weatherBgTint === 'function') weatherBgTint(); return; }   // neuer Stil (11b)
   ctx.drawImage(BG_SKY, 0, 0);
   if(typeof weatherSkyFx === 'function') weatherSkyFx();   // Sonnenstrahlen, Regenbogen (19-wetter.js)
   const t = performance.now();
