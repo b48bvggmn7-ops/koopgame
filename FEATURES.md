@@ -1525,8 +1525,9 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
   8 Richtungen (Richtung = gedrückte Richtungs-/Hoch-/Runter-Tasten; nichts gedrückt = Blickrichtung; am Seil ohne
   Richtung = Schwung-Richtung). Am Boden und in der Luft. Strecke ≈ 4,5 Kästchen gerade, ≈ 3,4 / 3,3 schräg
   (DASH_TEMPO 16 × DASH_DAUER 10 Schritte). Danach bleibt die Hälfte des Tempos (DASH_BEHALTEN), nach oben
-  höchstens so viel Aufwärts-Schwung wie ein normaler Sprung. Ein Dash in der Luft (DASH_LUFT 1); Aufladen nur mit Halt: am Boden, an einer Wand,
-  am Haken, an einer Haftfläche – dauert DASH_LADEZEIT 54 Schritte (≈ 1 s), voll = kurzes „Pling“. Anzeige: kleiner Punkt
+  höchstens so viel Aufwärts-Schwung wie ein normaler Sprung. Ein Dash in der Luft (DASH_LUFT 1); Aufladen immer, auch in der Luft
+  (Nutzerwunsch; früher nur mit Halt: Boden, Wand, Haken, Haftfläche, 54 Schritte) – dauert DASH_LADEZEIT 120 Schritte
+  (≈ 2,0 s; Nutzer prüft die Dash-Tunnel und Verfolgungen von Hand), voll = kurzes „Pling“. Anzeige: kleiner Punkt
   über der Figur, nur solange der Dash fehlt/lädt bzw. kurz nach dem Aufladen. Tastendruck wird 5 Schritte gemerkt
   (DASH_PUFFER). Kurzer Trefferstopp (2 Schritte, ganzes Spiel), leichtes Kamera-Wackeln, Nachbilder, Staub, Ton.
   - Zusammenspiel: Dash aus dem Seil-Schwung löst das Seil; Haken greifen während des Dashs beendet ihn (Seil übernimmt);
@@ -1697,6 +1698,8 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     einmal je Abschnitt (`MAT_STUECK`) zu fertigen Zeichenpfaden berechnet, pro Bild nur gefüllt; die Körnung ist ein
     kleines Muster. (Vorgezeichnete Bilder wie in der Vorschau sprengen in Chrome das Bild-Budget je Bild, das der
     Hintergrund schon fast ausschöpft.) Scheinwände sehen genauso aus und gehen nahtlos in die Wand über.
+  - **Am oberen Bildrand** läuft eine Fläche über den Rand hinaus weiter (oben keine runden Ecken, kein Gras, keine
+    Linie), wenn sie bis in die oberste Reihe reicht (Nutzerwunsch).
   - **Bewegliche Plattformen** aus Boden/Wand: ein abgerundeter Block im gleichen Material (`pieceDraw`), ganze Gruppe
     als ein Block, wenn sie ein Rechteck bildet; Outline wie die Flächen, kein Schatten, kein Restschatten.
   - **Bröckelboden:** Erde wie der normale Boden, trockenes hellbraunes Gras obendrauf, Klumpen und Kiesel, glatte

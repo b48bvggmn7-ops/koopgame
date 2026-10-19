@@ -245,6 +245,14 @@ function matRasterHolen(){
     const t = s.type === 'ground' ? 1 : s.type === 'wall' ? 2 : s.type === 'crumble' ? 3 : 0;
     if(t) eintragen(s, t, false);
   }
+  // Nutzerwunsch: reicht eine Fläche bis an den oberen Bildrand, läuft sie über den Rand hinaus weiter (keine runden Ecken,
+  // kein Gras, keine Linie oben) – dazu bekommt sie unsichtbar weitere Kästchen bis über den Rand (nur fürs Zeichnen)
+  const randReihe = Math.floor(-SKY_ROOM/40) - 1;
+  for(const [k, t] of [...zellen]){
+    const [c, r] = k.split(',').map(Number);
+    if(fake.has(k) || t === 3 || r*40 >= -SKY_ROOM + 40 || zellen.has(c + ',' + (r - 1))) continue;
+    for(let rr = r - 1; rr >= randReihe; rr--) zellen.set(c + ',' + rr, t);
+  }
   for(const [k, t] of zellen){ const [c, r] = k.split(',').map(Number); if(!spalten.has(c)) spalten.set(c, []); spalten.get(c).push({c, r, t, fake: fake.has(k)}); }
   matRaster = {quelle: solids, n: solids.length, nf: fakeWalls.length, version: matRaster.version + 1, zellen, fake, spalten};
   matStuecke.clear(); matSicht = {key: ''};

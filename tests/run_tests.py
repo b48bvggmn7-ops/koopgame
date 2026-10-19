@@ -5726,7 +5726,8 @@ async def dash_richtungen_und_laden(g):
         assert all(v[2] == 0 for v in R.values()), f'Luft-Dash kostet keinen Punkt: {R}'
         assert r[wer + 'Boden'] > 3.5, (wer, r[wer + 'Boden'])
     assert not r['zweiterLuftDash'], 'zweiter Luft-Dash ging'
-    assert 50 <= r['ladeSchritte'] <= 58, r['ladeSchritte']
+    assert r['ladungInLuft'], 'Dash lädt in der Luft nicht (neue Regel: immer laden)'
+    assert 120 <= r['ladeSchritte'] <= 140, r['ladeSchritte']   # DASH_LADEZEIT 120 nach dem Dash (+ Dash-Dauer), auch in der Luft
     assert r['wandLaden']['vorher'] == 0 and r['wandLaden']['schritte'] < 120, r['wandLaden']
     if r['hakenLaden'] is not None:
         assert r['hakenLaden']['haken'] and r['hakenLaden']['punkte'] == 1, r['hakenLaden']
@@ -9109,6 +9110,11 @@ async def neues_aussehen_runde1(g):
                      " localStorage.removeItem('monchichi.lavaFlimmern'); lavaFlimmernMess.an = null; return [a, lavaFlimmernAn()]; })()")
     assert aus == [False, True], f'Lava-Flimmern nicht abschaltbar: {aus}'
     await g.ev("menuScreen = null")
+    # Nutzerwunsch: Fläche am oberen Bildrand läuft über den Rand hinaus (oben weder runde Ecke, Gras noch Linie)
+    await g.load(level([ground(0, 680, 2000), ground(400, -120, 40, 800, 'wall'), ground(800, -80, 40, 40, 'wall')],
+                       {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    r = await g.ev("(() => { matRasterHolen(); return [Tc(10, -4), Tc(20, -3)]; })()")
+    assert r == [2, 0], f'Fläche am oberen Rand läuft nicht über den Rand hinaus (bzw. tiefere Fläche wird verlängert): {r}'
 
 @test
 async def wechselboden_geisteranzeige(g):
