@@ -1730,8 +1730,10 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   - **Haken:** wie bisher (Schein, Ringe, Funkeln), dazu eine dunkle Unterlage und kräftigeres Cyan-Leuchten.
   - **Fallen-Pfeil etwas auffälliger** (damit er vor der neuen Ziegelwand lesbar bleibt): Schaft 6 statt 5 px
     (`PFEIL_BILD_DICKE`), helle Flugspur kräftiger und breiter; Trefferfläche unverändert. Test pfeil_lesbarkeit.
-  - **Keine Zahlen mehr an Tür, Wechselboden und Portal:** deren Nummern-Plaketten entfallen, die Verknüpfung zeigt die
-    Farbe (Diamant). Im Editor bleiben die Nummern.
+  - **Keine Zahlen mehr im Spielbild:** Tür, Wechselboden und Portal haben keine Nummern-Plakette mehr (eigener Diamant);
+    bewegliche Plattformen, bewegte Haken, Wasser-/Lava-Marken und Presse zeigen statt der Zahl einen Diamanten in der
+    Hebel-Farbe auf dunkler Fassung (`verknuepfungsDiamant`, wie an der Tür; pulsierender Ring, solange aktiv), ebenso
+    der Hinweis-Pfeil am Bildrand. Verknüpfungen erkennt man nur an der Farbe. Im Editor bleiben die Nummern.
   - Unverändert in dieser Runde: Sprungpilz, Checkpoint, Münzen, Leuchtkristall, Stacheln (das gewählte „Stahl“ ist der
     bisherige Stachel), Stachelpresse, Boss, rollender Fels und alle übrigen Elemente.
 

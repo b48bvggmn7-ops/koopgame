@@ -711,16 +711,18 @@ function moverGroupInfo(){
   }
   return [...map.values()];
 }
+// Plakette an allem, was ein Hebel/eine Druckplatte steuert (bewegliche Plattform, bewegter Haken, Wasser-/Lava-Marke,
+// Presse): neues Aussehen – keine Zahl mehr, sondern wie an der Tür ein Diamant in der Hebel-Farbe auf dunkler Fassung
+function verknuepfungsDiamant(x, y, col){
+  ctx.fillStyle = '#3a3f46'; ctx.beginPath(); ctx.roundRect(x - 10, y - 10, 20, 20, 4.5); ctx.fill();
+  ctx.strokeStyle = '#15171a'; ctx.lineWidth = 1; ctx.stroke();
+  elementEdelstein(x, y, 8, col);
+}
 function drawLinkBadge(x, y, link, active){
   const col = linkColor(link);
-  ctx.fillStyle = 'rgba(255,255,255,.92)';
-  ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = col;
-  ctx.beginPath(); ctx.arc(x, y, 8.5, 0, Math.PI*2); ctx.fill();
   if(active){ ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
-    ctx.beginPath(); ctx.arc(x, y, 14 + Math.sin(performance.now()*0.008)*1.5, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
-  ctx.fillStyle = '#fff'; ctx.font = (link > 9 ? 'bold 9.5px' : 'bold 11px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(String(link), x, y+0.5);
+    ctx.beginPath(); ctx.arc(x, y, 15 + Math.sin(performance.now()*0.008)*1.5, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
+  verknuepfungsDiamant(x, y, col);
 }
 // Was steuert Schalter n? Liefert Punkte (Weltkoordinaten) für Plaketten und Verbindungslinien
 function linkTargets(link){

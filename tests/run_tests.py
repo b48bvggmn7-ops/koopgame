@@ -9092,7 +9092,8 @@ async def neues_aussehen_runde1(g):
                        switches=[{'x': 300, 'y': 660, 'link': 12}], plates=[{'x': 700, 'y': 660, 'link': 3}],
                        doors=[{'x': 820, 'y': 620, 'link': 12}, {'x': 820, 'y': 660, 'link': 12}, {'x': 860, 'y': 660, 'link': 3}],
                        switchFloors=[{'x': 960, 'y': 640, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 3}, {'x': 1000, 'y': 640, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 3}],
-                       teleporters=[{'x': 1100, 'y': 660, 'paar': 1, 'fuer': 'affe'}, {'x': 1300, 'y': 660, 'paar': 1, 'fuer': 'affe'}]))
+                       teleporters=[{'x': 1100, 'y': 660, 'paar': 1, 'fuer': 'affe'}, {'x': 1300, 'y': 660, 'paar': 1, 'fuer': 'affe'}],
+                       movingPlatforms=[{'x': 1360, 'y': 560, 'w': 80, 'h': 40, 'look': 'ground', 'group': 5, 'targetX': 1360, 'targetY': 400, 'speed': 3, 'switchLink': 12}]))
     await g.ev("closeMenu(); deathState = null; menuScreen = 'pause'; camPos = camX = 0;")
     r = await g.ev("""(() => { const texte = [], bilder = new Map(); const ft = ctx.fillText, di = ctx.drawImage;
       ctx.fillText = function(t){ texte.push(String(t)); return ft.apply(this, arguments); };
@@ -9101,7 +9102,7 @@ async def neues_aussehen_runde1(g):
       let mb = 0; for(const v of bilder.values()) mb += v;
       return {texte: texte.filter(t => /[0-9AB]/.test(t) && t.length <= 3), mb: mb/1048576, tueren: tuerFlaechenHolen().map(d => [d.l, d.w, d.h]),
         stuecke: matStuecke.size, pfad: matSicht.V instanceof Object && matSicht.V.PG instanceof Path2D}; })()""")
-    assert not r['texte'], f"Zahlen/Buchstaben im Spielbild: {r['texte']}"
+    assert not r['texte'], f"Zahlen/Buchstaben im Spielbild (auch Plaketten an Plattform/Marke/Presse): {r['texte']}"
     assert r['pfad'] and r['stuecke'] > 0, f'Boden/Wand nicht als Zeichenpfade: {r}'
     assert r['mb'] < 32, f"zu viele Bilder in einem Bild ({r['mb']:.1f} MB) – Chrome rendert dann mitten im Bild"
     assert sorted(r['tueren']) == [[3, 40, 40], [12, 40, 80]], f"Türen nicht zusammengefasst: {r['tueren']}"
