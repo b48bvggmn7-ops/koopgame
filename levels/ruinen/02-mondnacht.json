@@ -2057,7 +2057,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": 0,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2069,7 +2069,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": 40,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2081,7 +2081,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": 80,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2093,7 +2093,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": 120,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2105,7 +2105,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": 160,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2117,7 +2117,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": 200,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2129,7 +2129,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": -40,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2141,7 +2141,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": -80,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {
@@ -2153,7 +2153,7 @@
       "group": 2,
       "targetX": 11760,
       "targetY": -120,
-      "speed": 7.2,
+      "speed": 6.8,
       "switchLink": 5
     },
     {

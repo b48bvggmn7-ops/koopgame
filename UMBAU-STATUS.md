@@ -10,7 +10,7 @@ Verfolgungen sind dadurch zu leicht bzw. witzlos. Münzen müssen für ihre Figu
 | Hilfsstellen nicht per Dash überspringbar | ✅ Dschungel; ✅ alle 34 Kamin-Gruben; ✅ Abkürzungen Kristallhöhle, Eisgrotte, Fallengang, Mondnacht, Feuerberg; ✅ Ruinen 1 Fähre/Insel neu (Tunnel + Druckplatten + Aufwind); ✅ Kraterherz Lava-Brücken (Gruben 412–432/437–455 breiter, Affe nur mit Brücke) |
 | Münzen für ihre Figur erreichbar | ✅ Dschungel; ✅ Ruinen/Höhle/Vulkan: jede Münze geprüft – ohne Hilfe mit echter Physik, an Hilfen (Haken, Pilz, Aufwind, Fahrt, Haftfläche) mit dem ganzen Spiel bzw. den Test-Bots; nicht geholte auf die echte Bot-Bahn gelegt |
 | Dash-Ketten 2–3× | ✅ je Welt (Wipfelsturm, Sonnentempel, Tropfsteingang, Schlackewerk, Kraterherz) |
-| Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/7,2 statt 5,4/6,3, Bot-Plan); ✅ Lava zweite Runde: Glutpfad Lava-Raum 1+2, Magmakammer Steinweg schneller; ⚠️ 8 Lava-Stellen + Feuerberg-Wand bleiben (mit Dash nicht schneller schaffbar, Gründe unten) |
+| Verfolgungen schneller | ✅ Dschungel, Ruinen 1, Felsenflucht, Tempelherz, Lava 14 Stellen; ✅ Mondnacht Doppel-Wand (6,2/6,8 statt 5,4/6,3, Bot-Plan; mit Dash-Ladezeit 2,0 s nachgestellt); ✅ Lava zweite Runde: Glutpfad Lava-Raum 1+2, Magmakammer Steinweg schneller; ⚠️ 8 Lava-Stellen + Feuerberg-Wand bleiben (mit Dash nicht schneller schaffbar, Gründe unten) |
 | (eigene Regel) Pflicht-Stelle neue Mechanik | ✅ alle 22 Level (zweite Runde: Durchbruch-Säulen in Mondnacht, Fallengang, Tempelherz, Eisgrotte, Leuchtgrotte, Tiefenschlund, Glutpfad, Aschefeld, Feuerberg, Magmakammer, Kraterherz) |
 
 ## Messwerte (echte Physik, tests/reichweiten.json)
@@ -245,3 +245,7 @@ Funde (Schweinchen nach dem Kamin mit Schirm + Dash, Dash-Tunnel, Münz-Nischen,
   227–259) und die Feuerberg-Aufwinde (Schweinchen) bekamen Bot-Pläne (tests/umbau/haken_ketten.py) und den Test
   muenzen_haken_ketten; ihre Münzen liegen jetzt auf der Schwungbahn.
 - Ergebnis großer Lauf mit Münz-Protokoll: jede vorher offene Münze wird von einem Test-Bot eingesammelt.
+
+## Dash-Ladezeit 2,0 s (Änderung aus anderer Sitzung) – Jagden nachgestellt
+- Mondnacht Doppel-Wand oben 7,2 -> 6,8, Baumkronen Bröckel-Brücken 7,8 -> 7,4: der zweite Dash war bei 2,0 s Ladezeit
+  nicht rechtzeitig voll. Mit Dash (auch 10 Schritte später) geschafft, ohne Dash weiter eingeholt (jagden_<welt>).

@@ -8089,7 +8089,7 @@ def _r5_e1a(dash):
     return {'f': [k_lauf(12, 0)] + _hebel(14) + [j_lauf(55, dash=dash, dash_bis=50)] + _zu(61) + [k_lauf(62)],
             'm': [{'wait': '!!linkOn[1]', 'frames': 2000}, j_lauf(54, dash=dash, dash_bis=49)] + _zu(60) + [k_lauf(61)]}
 def _r2_doppelwand(dash):
-    """Mondnacht, Doppel-Wand (Hebel 5): zwei Stachelwände (unten 6,2, oben 7,2 statt 5,4/6,3). Affe unten an der
+    """Mondnacht, Doppel-Wand (Hebel 5): zwei Stachelwände (unten 6,2, oben 6,8 statt 5,4/6,3; mit Dash-Ladezeit 2,0 s von 7,2 auf 6,8). Affe unten an der
     Hakenkette (253–297), Schweinchen oben über die Bröckel-Stege, öffnet mit Hebel 9 das Tor 280 des Affen und mit Hebel 10
     ihr eigenes Tor 292; mit Dash über die Lücken (256, 273) entkommt sie der oberen Wand, ohne Dash nicht."""
     def luecke(kante, tx):
