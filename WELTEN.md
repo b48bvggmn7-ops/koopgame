@@ -66,6 +66,12 @@ Es fängt mild an (1–2 Versuche) und steigt bis zu Bruno deutlich an (6er-Welt
   mit Silhouetten, Nacht = Mond, Glühwürmchen und leuchtende Pilze.
 - Hintergrund-Ebenen: Karstfelsen in der Ferne, Wasserfall mit Felsen, Baumkronen mit Palmen und Lianen, Farn- und
   Blattwerk ganz vorne.
+- **Neu (Dschungel-Paket, js/11b-dschungel-hintergrund.js):** dichter Regenwald in sattem, dunklerem Blattgrün mit
+  mehreren Tiefen-Ebenen (ferne Palmen im Dunst, Riesenblätter, zwei große Baumstämme, Heliconien, Bananenblätter,
+  Monstera, hängende Wedel und Lianen oben), Dunst und Lichtstaub; die vorderen Pflanzen wiegen sich im Wind. Keine
+  Lichtstrahlen, kein Wasserfall, keine Wolken. Tag (Mittag) und Nacht ganz neu, Morgen und Abend vorerst mit dem
+  Tag-Hintergrund (sonst wie bisher). Nacht: derselbe dichte Wald dunkelblau, ruhig leuchtende Riesenblätter,
+  Lichtschäfte, Baumpilze, Bodennebel, Leuchtpflanzen auf dem Boden, wenige Glühwürmchen – nichts blinkt.
 - Boden und Wände: sattgrünes Gras auf warmer, orangebrauner Erde; graublaue Steinwände mit Moos und Ranken.
 - Wetter: Alle drei Arten sehen passend aus.
   - wechselnd: Sonne und Schauer, danach ein Regenbogen
@@ -73,13 +79,17 @@ Es fängt mild an (1–2 Versuche) und steigt bis zu Bruno deutlich an (6er-Welt
   - regen: Dauerregen im Regenwald
 
 **Tiere:** Bunte Vögel (bei Nacht Eulen), Frösche, Schnecken, Schmetterlinge (bei Nacht Glühwürmchen), ein hängendes
-Faultier, Pilze und Knospen. Die Tiere reagieren auf die Figuren.
+Faultier, Pilze und Knospen. Die Tiere reagieren auf die Figuren. Tag/Nacht (Dschungel-Paket): deutlich weniger Tiere,
+nur auf freien Stellen (nie in Materialien oder Pflanzen), nachts Schnecke statt Frosch; Vögel sitzen auf Boden und
+Wänden und fliegen nicht weg; im Hintergrund kriechen Schnecken am Stamm, ferne Schmetterlinge (nachts Nachtfalter und
+Fledermäuse).
 
 **Deko:** Blumen, Farne, Moospolster an Wandkanten, Ranken an Wandseiten und Vögel, die auffliegen. Die Deko steht nie
 auf Münzen, Hebeln, Checkpoints oder Türen.
 
 **Musik und Ambiente:** Klavier-Musik (eigene Aufnahme `musik.mp3`). Dazu Vogelstimmen bei Sonne, Regen-Aufnahme beim
-Schauer und leises Flussrauschen, das lauter wird, wenn der Wasserfall ins Bild kommt.
+Schauer und leises Flussrauschen, das lauter wird, wenn der Wasserfall ins Bild kommt (mit dem neuen Hintergrund gibt
+es im Dschungel keinen Wasserfall mehr – das Flussrauschen bleibt dann gleichmäßig leise).
 
 **Mechanik-Set:** Haken/Seil, Segeln, Hebel/Türen, Bröckelboden, fahrende Plattformen, Sprungpilze, einseitige Stege,
 Wechselboden und Teleporter (die letzten beiden nur sanft, als erste Begegnung).

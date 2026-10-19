@@ -39,7 +39,11 @@
     09 Kamera (+ Kamera-Wackeln kameraStoss) · 10 Figuren zeichnen · 10a Level-Themen (Aussehen je Level: Himmel, Farben, Tiere, Dunkelheit) · 10b Design-Look (zentrale Tabelle
     `DESIGN_LOOK` je Welt/Tageszeit: Kontur, Randlicht, Tiefe, Dunst; Glanz-Muster `glanzSchatten/glanzFunkeln/glanzBand`
     für alle Elemente; Neues Aussehen: Materialien `wallTile`/`grain`/`outlineDraw`, Farben `EA`/`SOILBASE`, Stil-Wahl
-    `wallK`/`soilK`/`outK`, Hilfen `rnd`/`hsh`/`waveY` und der Zeichen-Kontext `g` der Vorschau) · 11 Hintergrund (je Thema) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
+    `wallK`/`soilK`/`outK`, Hilfen `rnd`/`hsh`/`waveY` und der Zeichen-Kontext `g` der Vorschau) · 11 Hintergrund (je Thema) · 11b Dschungel-Hintergrund (Dschungel-Paket: eigener Stil je Welt/Tageszeit über
+    `HG_STIL_TABELLE`/`BG_STIL` – fehlt der Eintrag, bleibt der Hintergrund aus 11; Pflanzen-Sprites, Wind nur vorne, stille Ebenen als
+    Kacheln, Nacht-Einfärbung beim Vorzeichnen, Leuchtpflanzen, Hintergrund-Licht; Haken `hgBodenLicht`/`hgStilVorne` in 12; Schalter
+    localStorage `monchichi.dschungelWind`/`monchichi.dschungelNachtlicht`; Tier-Regeln `buildCrittersDschungel`, Hintergrund-Tiere und
+    `tierLeuchtenNacht` in 20, Vogel-Sitzplätze `vogelSitzplaetze` in 17) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
     Asche) · 12 Welt zeichnen (Neues Aussehen: Boden/Wand als EINE Schicht – Raster `Tc`, je Abschnitt `MAT_STUECK` einmal
     zu Zeichenpfaden berechnet (`matPfadeBauen`), pro Bild nur gefüllt (`materialZeichnen`); KEINE vorgezeichneten Bilder
     dafür: Chrome hat je Bild ~32 MB Bild-Budget und der Hintergrund braucht fast alles. Bewegliche Plattformen `pieceDraw`,
@@ -112,7 +116,8 @@
   (gemessen 8–80 ms je Bild). Details lieber in vorhandene Ebenen malen, weiche Schichten in halber Auflösung
   (`DUNKEL_AUFLOESUNG`). Test leinwand_scharf_und_schnell wacht darüber. Grund (gemessen beim neuen Aussehen): alle Bilder/Leinwände,
   die in einem Bild ins Spielbild gemalt werden, zählen zusammen; über ~32 MB rendert Chrome mitten im Bild (100–250 ms) –
-  die Hintergrund-Ebenen brauchen davon schon rund 31 MB. Große Flächen daher als Zeichenpfade (Muster `matPfadeBauen`).
+  die Hintergrund-Ebenen brauchen davon schon rund 31 MB (neuer Dschungel-Hintergrund, 11b: rund 20 MB – weiche Ebenen in halber
+  Auflösung, `DJ_KACHEL_HALB`). Große Flächen daher als Zeichenpfade (Muster `matPfadeBauen`).
 - Pro Spielschritt nie „für jedes Kästchen alle solids durchlaufen“ (Licht, Flammen …): Raster-Verzeichnis nutzen
   (Muster `lichtGitterHolen` in elemente/licht.js, `falleGitterHolen` in elemente/falle.js). Test spielschritt_schnell.
 - Regen ist aus dem Spiel (`REGEN_AUS` in 19-wetter.js, Nutzerwunsch).

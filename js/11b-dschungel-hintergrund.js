@@ -826,5 +826,4 @@ function djNachtVorne(t){
   }
 }
 
-// erster Aufbau: 11a hat den Hintergrund beim Start schon (alt) gebaut – gilt für den Start-Look ein neuer Stil, neu aufbauen
-if(hgStilFuer(themeName)) buildBackground();
+// (erster Aufbau am Ende von 11a-welt-details.js – diese Datei wird darum VOR 11a geladen)

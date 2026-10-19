@@ -156,6 +156,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Lianen, Unterholz, nahe große Blätter und Farne; ab und zu zieht ein ferner Vogelschwarm vorbei.
     Parallax (weit weg = langsamer, heller, unschärfer), alles dunstig und heller als die Spielelemente;
     vorgezeichnet (billig pro Bild). Seitenrand der Seite dunkelgrün.
+    (Seit dem Dschungel-Paket gilt dieser Hintergrund nur noch für Looks ohne eigenen Stil, z. B. die Lagune/Wasser-Welt;
+    die Dschungel-Welt hat den neuen Dschungel-Hintergrund, siehe „Dschungel-Paket“ unten.)
   - Figuren mit mehr Leben (js/21-figuren-leben.js, nur Anzeige): Strecken beim Absprung, Stauchen beim Landen (je nach
     Fallhöhe, an den Füßen verankert) – beides nur kurz und dezent; kein Dauer-Atmen und kein Stauchen beim Fallen mehr
     (Nutzerwunsch: Figuren sollen nicht verzerrt wirken). Staubwölkchen bei Landung/Sprung/Wandsprung.
@@ -197,6 +199,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Bröckelboden, bewegtem Boden. Bunte Vögel (blau/rot/gelb/grün) sitzen auf dem Boden, picken/hüpfen und
     flattern mit leisem Zwitschern weg, wenn eine Figur näher als 170 px kommt (BIRD_SCARE_DIST); nach ~9 s
     kommen sie zurück, wenn niemand in der Nähe ist. Nicht in der Nähe des Starts, mind. 520 px Abstand.
+    (Dschungel Tag und Nacht seit dem Dschungel-Paket: Vögel sitzen auf den Oberseiten von Boden UND Wänden, einer je
+    900 px auf der höchsten Fläche, und fliegen nicht mehr weg – siehe „Dschungel-Paket“ unten.)
   - Fester Spieltakt: Physik immer 60 Schritte/s (Akkumulator in loop/stepSim), Anzeige dazwischen interpoliert
     (drawInterpolated: Figuren, bewegter Boden, bewegte Haken) -> auf 120/144-Hz-Bildschirmen NICHT schneller;
     Kamera-Nachziehen und Lichtpartikel ebenfalls zeitbasiert
@@ -1738,6 +1742,59 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     der Hinweis-Pfeil am Bildrand. Verknüpfungen erkennt man nur an der Farbe. Im Editor bleiben die Nummern.
   - Unverändert in dieser Runde: Sprungpilz, Checkpoint, Münzen, Leuchtkristall, Stacheln (das gewählte „Stahl“ ist der
     bisherige Stachel), Stachelpresse, Boss, rollender Fels und alle übrigen Elemente.
+
+### Dschungel-Paket: neuer Dschungel-Look (Hintergrund mit Wind, dichte blaue Nacht, weniger Tiere)
+Reine Optik/Deko – Physik, Level-Daten, Boden/Wände/Elemente und Editor unverändert. Übernommen aus Leons abgenommener
+Vorschau (Farben, Zahlen, Reihenfolge wie dort), Code in `js/11b-dschungel-hintergrund.js` (Tiere: js/20-tiere.js, Vögel:
+js/17-deko.js).
+- **Auswahl je Welt und Tageszeit** (`HG_STIL_TABELLE`): Dschungel-Welt **Mittag (= Tag)** und **Nacht** bekommen den ganzen
+  neuen Look (Hintergrund, Licht, Tier-Regeln); **Morgen und Abend** (auch das alte Thema „abend“ = Baumkronen) nur den
+  neuen Hintergrund mit Wind, sonst wie bisher (alte Tiere, Abend-Farbstich `THEME.tint`, warmer Schimmer). Alle anderen
+  Welten und das alte Thema „nacht“ (Mondnacht, Ruinen-Welt) bleiben genau wie bisher. Ein Look für eine andere
+  Welt/Tageszeit lässt sich später als eigener Eintrag in `HG_STIL_TABELLE`/`HG_STILE` einhängen.
+- **Hintergrund Tag** (hinten nach vorne): dunkler Grün-Himmel mit warmem Licht oben links, weiche Licht-Kreise (Bokeh),
+  ganz ferne und ferne Palmen/Bananen im Dunst, Riesenblatt-Pflanzen, zwei große Baumstämme mit Kletterlianen und
+  Farnen, Farn-Unterwuchs, hängende Wedel oben (hell/dunstig), Dunst-Schwaden, Lianen weit oben (kräftig, mit Blüten),
+  Bananenblätter + Monstera, Heliconien mit roten/orangen Blüten, dunkle Wedel und Blätter oben, dunkle große Blätter
+  vorne, nahe Lianen; vor dem Spielfeld feiner Lichtstaub und eine grüne Vignette. **Keine Lichtstrahlen**, keine
+  Wolken, kein Wasserfall, kein Vogelschwarm (gab es in der Vorschau nicht), keine warmen Pollen und kein warmer
+  Schimmer am Tag. Ebenen wiederholen sich alle 2000 Einheiten nahtlos; Parallaxe wie die bisherigen Ebenen
+  (`DJ_PAR_K`: nah 0,8 -> 0,45 wie die bisherige nahe Ebene).
+- **Wind:** Bananenblätter/Monstera, Heliconien und die nahen Blätter wiegen sich (einzeln leicht gedreht, `djWind`),
+  die Lianen schwingen mit. Die hinteren Ebenen (ganz fern, fern, Riesenblätter, Stämme, Farn-Unterwuchs, hängende
+  Wedel) sind still vorgezeichnete Kacheln (Leistung, siehe unten). Wind ist reine Deko (Zeit aus performance.now).
+  Abschaltbar: localStorage `monchichi.dschungelWind` = `aus`; schaltet sich von selbst ab, wenn die Bilder im Mittel
+  länger als `DJ_BILD_MAX_MS` (25 ms) auseinanderliegen. Ohne Wind sieht alles gleich aus, nur still.
+- **Nacht:** gleich dichter Dschungel, alle Ebenen beim Vorzeichnen dunkelblau eingefärbt (Farbton rgb(30,96,150),
+  Kontrast 2, Helligkeit 0,58, dünner dunkelblauer Schleier) – einmal, nicht pro Bild; dahinter dunkelblauer Grund mit
+  Sternen und Mond (kaum sichtbar). Riesenblätter leuchten konstant und dezent (türkis, helle Adern), hängende Wedel
+  nicht. Licht im Hintergrund: drei sehr weiche Lichtschäfte, Lichtflecken, Moos-Streifen und leuchtende Baumpilze an
+  den Stämmen, Bodennebel, 16 ferne unscharfe Leuchtpflanzen. Leuchtpflanzen am Boden (Pilzgruppe, Glockenstängel,
+  Leuchtfarn) nur auf Oberseiten fester Erd-Flächen (Breite ≥ 60, nicht an der Decke, nicht in einer anderen Fläche),
+  große Flächen 260–780 px Abstand, kleine höchstens 1–2, nie zwei gleiche nebeneinander, nicht an Hebeln/Münzen usw.
+  Der Boden-Bereich wird etwas abgedunkelt, Figuren bekommen ein weiches kühles Licht; Elemente, Münzen und Figuren
+  werden danach gezeichnet (bleiben hell). 6 Glühwürmchen, ~20 Lichtstaub-Punkte, kein Bokeh, nichts blinkt. Ersetzt
+  die bisherige Nacht-Abdunklung (`THEME.dark`) und den Farbstich (kein Doppel-Dunkel). Nacht-Licht abschaltbar:
+  localStorage `monchichi.dschungelNachtlicht` = `aus` (ohne Schäfte, Bodennebel, ferne Pflanzen); schaltet sich von
+  selbst ab, wenn es trotz stillem Wind noch zu langsam ist.
+- **Tiere** (Dschungel Tag/Nacht, `buildCrittersDschungel`): deutlich weniger. Boden-Tiere je 40-px-Schritt Frosch 0,018,
+  Schnecke 0,03, Pilz 0,035, Knospe 0,04; zwischen zwei Boden-Tieren ≥ 650 px, Frosch/Schnecke untereinander ≥ 1400 px;
+  nachts Schnecke statt Frosch. Nie in Materialien (±34 px frei, 46 px hoch, 45 px vom Flächenrand), Frosch/Schnecke
+  brauchen ≥ 70 px freie Laufstrecke und halten vor Stufen/Blöcken/Pflanzen an; nicht in Farnen/großen Blättern/Blüten
+  (nachts Leuchtpflanzen) – sonst rücken sie zur nächsten freien Stelle oder entfallen. Faultier (nachts Fledermaus)
+  höchstens eins je 1300 px. Schmetterlinge (nachts Glühwürmchen) Anteil 0,07, ≥ 800 px Abstand, nur wo darüber frei
+  ist; der goldene Schmetterling bleibt (einer je Level). Wie bisher nie an Münzen, Stacheln, Hebeln, Start usw.
+- **Vögel** (Dschungel Tag/Nacht): sitzen auf Oberseiten von Boden und Wänden (nie an der Decke), je 900 px einer auf der
+  höchsten Fläche, nachts Eulen; sie fliegen **nicht** weg, picken und hüpfen nur.
+- **Hintergrund-Tiere** (dezent, so unscharf wie ihre Umgebung, einmal weich vorgezeichnet): Schnecken kriechen die
+  Baumstämme hoch, ferne Schmetterlinge (nachts Nachtfalter), nachts Fledermäuse weit hinten oben. Keine Schlangen,
+  keine Geckos.
+- **Nacht-Leuchten der Tiere:** Frosch, Schnecke, Knospe, Pilz und Eulen-Augen leuchten sanft.
+- **Leistung:** alle Pflanzen einmal vorgezeichnet (beim ersten Dschungel-Level ~0,2 s, Nacht-Einfärbung ~0,1 s,
+  danach zwischengespeichert). Chrome zeichnet ein Bild sofort (bremsend) fertig, wenn es mehr als rund 30 MB
+  verschiedene Vorlagen benutzt – darum sind die weichen Ebenen in halber Auflösung vorgezeichnet und nur die vorderen
+  Ebenen im Wind einzeln gezeichnet (zusammen ~20 MB). Tests: dschungel_look_auswahl, dschungel_hintergrund_tag_nacht,
+  dschungel_tiere_regeln, dschungel_leuchtpflanzen.
 
 ## Level-Editor (editor/)
 ```
