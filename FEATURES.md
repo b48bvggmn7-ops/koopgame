@@ -1820,6 +1820,33 @@ js/17-deko.js).
   Nacht-Licht 38. Tests: dschungel_look_auswahl, dschungel_hintergrund_tag_nacht, dschungel_tiere_regeln,
   dschungel_leuchtpflanzen.
 
+
+### Boden-Dekor im Dschungel (boden-dekor-paket, ergänzt das Dschungel-Paket)
+Nur Optik/Deko, `js/17a-dschungel-boden.js`; gilt bei jeder Dschungel-Auswahl (Morgen, Tag, Abend, Nacht), andere Welten unverändert.
+- **Dickicht:** je 40-px-Oberseiten-Kästchen (Boden und Wand, keine Scheinwand) 3 Chancen zu 80 % auf ein weiches Blatt
+  (14 Farnwedel + 8 Monstera aus der Vorschau, `DJ.POOL` in 11b), Fuß 10 px unter der Oberkante, Schräge ±0,15, wiegt im
+  Wind (0,075). Gezeichnet HINTER dem Boden – schaut an den Kanten heraus. Abschaltbar/automatisch aus wie der Wind
+  (localStorage `monchichi.dschungelDickicht` = `aus`; bei langsamen Bildern schaltet es als ERSTES ab, dann der Wind, dann das
+  Nacht-Licht); ohne Wiegen als vorgezeichnete Stücke.
+- **Feines Gras** (alle 7–13 px ein Büschel, 4–6 Halme, 5–13 px hoch), **Grasbüschel** (70 %, 3–5 Halme, 7–16 px),
+  **Pilze** (6 %): einmal vorgezeichnet in Stücken von höchstens 800 px, still. **Farnbusch** (7 %, Größe 0,44–0,71) und
+  **Blumen** (10 %, rot/orange/rosa, 17–35 px) wiegen im Wind (ohne Wind mit im vorgezeichneten Stück). Kein nach unten
+  hängendes Gras an Unterseiten („Gras unten“ ist in der Grundeinstellung aus).
+- **Reihenfolge, nichts übereinander:** zuerst große Pflanzen (Farnbusch, Blume, Pilz; nachts Leuchtpflanzen) mit 60 px
+  Abstand untereinander und 45 px vom Rand der Fläche, dann Gras und Dickicht, zuletzt Tiere (±34 px weg von großen
+  Pflanzen, sonst versetzt oder gestrichen).
+- **Freihalte-Zone** (`djbPruefer`): 60 px links/rechts und 90 px senkrecht um Hebel, Stacheln, Türen, Sprungpilze,
+  Druckplatten, Haken, Checkpoints und Ziel kein Gras, kein Dickicht (zusätzlich seine halbe Breite), keine Pflanze, kein
+  Tier, kein Vogel, keine Leuchtpflanze – auch beim Versetzen von Tieren; dazu wie bisher Münzen und 260 px um den Start.
+- Die alten Pflanzen und das Moos/die Ranken an Wänden aus 17-deko.js gibt es im Dschungel nicht mehr (ersetzt; „Moos an
+  Seiten“ ist in der Grundeinstellung aus). Nachts dieselben Formen, eingefärbt wie der Hintergrund (beim Vorzeichnen).
+- **Hintergrund-Tiere bei jeder Dschungel-Auswahl** (auch Morgen/Abend, `HG_STILE.dschungelHG.tiere`), Schnecken am Stamm
+  jetzt nach der mittleren Ebene gezeichnet (vorher fast ganz verdeckt). Damit gelten auch morgens/abends die neuen
+  Tier-Regeln (weniger Tiere, Vögel bleiben sitzen).
+- **Glühwürmchen orange:** fliegende Nacht-Tiere und die 6 Glühwürmchen vor dem Spielfeld warmes Orange (Kern #ffb347,
+  Schein 255,150,40): Punkt r 2, Hof r 14 (0,3), weicher Schein r 38 (0,16, bei 40 % des Radius 38 %, bei 70 % 10 %),
+  langsames ruhiges Pulsieren statt Blinken (`djGluehwuermchen`, 20-tiere.js). Nachtfalter im Hintergrund unverändert.
+- Tests: dschungel_boden_dekor, dschungel_boden_abstaende, dschungel_hintergrund_tiere_alle, dschungel_boden_frei.
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

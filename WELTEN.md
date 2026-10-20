@@ -82,7 +82,10 @@ Es fängt mild an (1–2 Versuche) und steigt bis zu Bruno deutlich an (6er-Welt
 Faultier, Pilze und Knospen. Die Tiere reagieren auf die Figuren. Tag/Nacht (Dschungel-Paket): deutlich weniger Tiere,
 nur auf freien Stellen (nie in Materialien oder Pflanzen), nachts Schnecke statt Frosch; Vögel sitzen auf Boden und
 Wänden und fliegen nicht weg; im Hintergrund kriechen Schnecken am Stamm, ferne Schmetterlinge (nachts Nachtfalter und
-Fledermäuse).
+Fledermäuse) – seit dem Boden-Dekor bei jeder Dschungel-Tageszeit. Glühwürmchen leuchten nachts warm orange.
+
+**Boden-Dekor (boden-dekor-paket):** dichtes Dickicht an den Boden-Kanten, feines Gras, Grasbüschel, Farnbüsche, rote/orange/
+rosa Blumen und Pilze auf allen Oberseiten von Boden und Wand; nichts übereinander und nichts an Spielobjekten (Freihalte-Zone).
 
 **Deko:** Blumen, Farne, Moospolster an Wandkanten, Ranken an Wandseiten und Vögel, die auffliegen. Die Deko steht nie
 auf Münzen, Hebeln, Checkpoints oder Türen.
