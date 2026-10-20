@@ -122,7 +122,7 @@ function drawCrumbleBreak(s){
     const g = ctx.createLinearGradient(0, -12, 0, 12);
     g.addColorStop(0, pal.dirt1); g.addColorStop(1, pal.dirt2);
     ctx.fillStyle = f.pebble ? pal.dirt2 : g; ctx.fill();
-    if(f.grassTop !== null){
+    if(f.grassTop !== null && false){   // Bröckelboden hat kein Gras mehr obendrauf (Nutzerwunsch) – Bruchstücke auch nicht
       ctx.save(); ctx.clip();
       ctx.fillStyle = pal.grass; ctx.fillRect(-40, f.grassTop, 80, 11);
       ctx.fillStyle = pal.grassTop; ctx.fillRect(-40, f.grassTop, 80, 4);
@@ -454,9 +454,10 @@ function matBeweglichZeichnen(){
 }
 // Bröckelboden (aussehen-paket/vorschau-code): Erde wie der normale Boden, trockenes hellbraunes Gras obendrauf, Klumpen
 // und Kiesel (bruchRisse 'erde', elemente/durchbruch.js), glatte Unterkante. Je Kästchen einmal gezeichnet (Zwischenspeicher).
+// Nutzerwunsch (nach der Vorschau): ohne trockenes Gras obendrauf und ohne Rahmen je Kästchen – nebeneinander liegende
+// Bröckel-Kästchen bilden eine durchgehende Fläche, nur die Outline an freien Kanten (broeckelKachel) umrandet sie
 function crumbTile(k,r){const x=k.x,y=k.y;g.drawImage(matTile('soil',71+Math.floor(hsh(x,y)*5)),x,y,40,40);
- if(!k.n)grasKappe(x,y,40,x,{grass:'#bfa468',gd:'#8d7242',gt:'#dccb96'},g);
- bruchRisse(g,x,y,40,40,x*3+y*7,'erde',1);g.strokeStyle='rgba(30,22,16,.4)';g.lineWidth=1.2;g.strokeRect(x+.6,y+.6,38.8,38.8)}
+ bruchRisse(g,x,y,40,40,x*3+y*7,'erde',1)}
 const __broeckel = {};
 function broeckelKachel(cc, rr){
   const R = matRasterHolen(), key = R.version + ':' + cc + ',' + rr;

@@ -1727,8 +1727,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     Linie), wenn sie bis in die oberste Reihe reicht (Nutzerwunsch).
   - **Bewegliche Plattformen** aus Boden/Wand: ein abgerundeter Block im gleichen Material (`pieceDraw`), ganze Gruppe
     als ein Block, wenn sie ein Rechteck bildet; Outline wie die Flächen, kein Schatten, kein Restschatten.
-  - **Bröckelboden:** Erde wie der normale Boden, trockenes hellbraunes Gras obendrauf, Klumpen und Kiesel, glatte
-    Unterkante, Outline an freien Kanten; je Kästchen einmal gezeichnet (`broeckelKachel`). Vorwarnung: Zittern, roter
+  - **Bröckelboden:** Erde wie der normale Boden, Klumpen und Kiesel, glatte Unterkante, Outline nur an freien Kanten –
+    nebeneinander liegende Kästchen sind EINE durchgehende Fläche (Nutzerwunsch: kein trockenes Gras obendrauf und kein
+    Rahmen je Kästchen mehr, auch die Bruchstücke ohne Gras); je Kästchen einmal gezeichnet (`broeckelKachel`). Vorwarnung: Zittern, roter
     Schein und rieselnde Krümel (keine Risse mehr); danach komplett unsichtbar (keine Uhr, kein Balken).
   - **Durchbruch-Wand** (elemente/durchbruch.js): Entwurf 2 „Feucht“ – Wandmaterial, braun-grün angelaufen, Moos an
     den Fugen, vorstehende Ziegel, dunkle Tropfspuren, Glanzpunkte; keine Löcher, keine Risse; je Kachel einmal
