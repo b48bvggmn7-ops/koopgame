@@ -1071,8 +1071,10 @@ function drawSolidLook(s, look, x){
   drawBirds();
   tierLeuchtenNacht();   // neuer Dschungel-Look nachts: Tiere leuchten sanft (20-tiere.js)
   drawDust();       // Staubwölkchen (21-figuren-leben.js)
-  drawCharacter(p2, camX);
-  drawCharacter(p1, camX);
+  if(!baumFigurenVersteckt()){   // Dschungel: Tür des Ziel-Baums zu -> beide sind drin, nicht mehr sichtbar (12a-hohler-baum.js)
+    drawCharacter(p2, camX);
+    drawCharacter(p1, camX);
+  }
   if(typeof neueBewegungZeichnen === 'function') neueBewegungZeichnen();   // Nacht-Ausbau: Dash-Punkt, Bruchstücke, Rutsch-Staub (nur Anzeige)
   drawHearts();     // Herzchen, wenn beide nah beieinander stehen
   drawCoinFx(camX);

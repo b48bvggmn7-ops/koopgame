@@ -206,5 +206,8 @@ function baumZielPlatz(P){
   return goal.x + (P.x < goal.x ? -1 : 1)*BAUM_WARTE_ABSTAND;
 }
 function baumGehtHinein(){ return won && baumAktiv() && winSteps > BAUM_TANZ_SCHRITTE && winSteps <= BAUM_TANZ_SCHRITTE + BAUM_HINEIN_DAUER; }
-function baumTanzt(){ return won && !baumGehtHinein(); }   // Siegestanz anzeigen (10/10c) – nicht während des Hineingehens
+// Siegestanz anzeigen (10/10c, Herzchen 21): im Dschungel nur VOR dem Hineingehen – im Baum stehen beide still (passen hinter die Tür)
+function baumTanzt(){ return won && (!baumAktiv() || winSteps <= BAUM_TANZ_SCHRITTE); }
+// Tür ganz zu: die Figuren sind im Baum und werden nicht mehr gezeichnet (12-welt-zeichnen.js)
+function baumFigurenVersteckt(){ return won && baumAktiv() && baumTuerAnteil() >= 1; }
 function winEndeSchritte(){ return baumAktiv() ? BAUM_SIEG_ENDE : WIN_DANCE_STEPS; }

@@ -70,7 +70,7 @@ function winFinish(){
 }
 function drawHearts(){
   const t = performance.now();
-  if(won && p1 && p2 && Math.random() < frameDt/220){    // Herzchen und Freude beim Tanzen
+  if(baumTanzt() && p1 && p2 && Math.random() < frameDt/220){    // Herzchen und Freude beim Tanzen (Dschungel: nur vor dem Baum)
     const pl = Math.random() < 0.5 ? p1 : p2;
     heartFx.push({x: pl.x + (Math.random() - 0.5)*24, y: pl.y - 50, t0: t, wob: Math.random()*6});
   }

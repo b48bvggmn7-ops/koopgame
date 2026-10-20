@@ -157,7 +157,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Ziel: Eingang zuerst dunkel. Wer den Baum zuerst erreicht (am Boden), lässt sich nicht mehr steuern (Nutzerwunsch), geht
     bis 30 px vor den Eingang und schaut zum Partner. Sind beide da: erst tanzen beide fröhlich (Herzchen, 2,5 s), dann gehen
     sie zusammen in den Baum, der Eingang leuchtet auf und eine Holztür mit rundem Fenster fährt herunter (Licht scheint durch
-    Ritzen und Fenster); nach 5,5 s geht es weiter wie nach dem Tanz. Fester Takt über winSteps (BAUM_* Konstanten in
+    Ritzen und Fenster). Im Baum tanzen sie nicht mehr; ist die Tür zu, sind sie nicht mehr zu sehen (auch keine Herzchen,
+    Nutzerwunsch). Nach 5,5 s geht es weiter wie nach dem Tanz. Fester Takt über winSteps (BAUM_* Konstanten in
     12a; Steuerung aus über P.zielWartet). Test hohler_baum_start_ziel.
   - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
     Stick/Steuerkreuz laufen, Kreuz springen, Viereck = Haken bzw. Schirm, Kreis = Hebel, hoch = ranziehen, runter = Seil geben,

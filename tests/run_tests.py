@@ -6225,7 +6225,8 @@ async def hohler_baum_start_ziel(g):
     """Start und Ziel im Dschungel = hohler Baum (12a-hohler-baum.js), ganz vorne vor Boden/Wand: der Start-Baum rückt von
     einer Wand weg, das Ziel-Schild fehlt. Wer den Baum zuerst erreicht, lässt sich nicht mehr steuern, geht bis 30 px vor
     den Eingang und wartet. Sind beide da: erst tanzen beide (Siegestanz), dann gehen sie ZUSAMMEN hinein (Plätze ±12),
-    dann leuchtet der Eingang auf und die Tür fährt zu, danach geht es weiter (winEndeSchritte). Andere Welten: Schild."""
+    dann leuchtet der Eingang auf und die Tür fährt zu; ist sie zu, sind die Figuren nicht mehr zu sehen; danach geht es
+    weiter (winEndeSchritte). Andere Welten: Schild."""
     teile = [ground(0, 680, 3000), ground(0, 400, 40, 280, 'wall')]
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='dschungel'))
     await g.steps(5)
@@ -6250,9 +6251,10 @@ async def hohler_baum_start_ziel(g):
     r = await g.ev("({tanz: baumTanzt(), hinein: baumGehtHinein()})")
     assert r['hinein'] and not r['tanz'], f'dann gehen beide zusammen hinein (kein Tanz dabei): {r}'
     await g.p.wait_for_function("winSteps >= 250", timeout=15000)
-    r = await g.ev("({won, d1: p1.x - goal.x, d2: p2.x - goal.x, licht: baumZielLicht(), tuer: baumTuerAnteil(), ende: winEndeSchritte()})")
+    r = await g.ev("({won, d1: p1.x - goal.x, d2: p2.x - goal.x, licht: baumZielLicht(), tuer: baumTuerAnteil(), ende: winEndeSchritte(), tanz: baumTanzt(), weg: baumFigurenVersteckt()})")
     assert r['won'] and abs(r['d1'] + 12) < 2 and abs(r['d2'] - 12) < 2, f'beide sollen im Baum stehen: {r}'
     assert r['licht'] > 0.99 and r['tuer'] == 1 and r['ende'] > 250, f'Eingang hell und Tür zu: {r}'
+    assert not r['tanz'] and r['weg'], f'Tür zu: im Baum kein Tanz mehr, Figuren nicht mehr zu sehen: {r}'
     await g.ev("draw()")   # zeichnet ohne Fehler (Tür, Licht)
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='ruinen'))
     await g.steps(5)

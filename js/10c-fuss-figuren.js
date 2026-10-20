@@ -310,7 +310,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     if(!P.grounded) S.gelaufen = false; else if(P._moveDir) S.gelaufen = true;   // Wackeln an der Kante nur nach Laufen, nicht nach einer Landung
     let p, key, xoff = 0, yoff = 0, flip = P.facing < 0 ? -1 : 1, rot = 0, rotCenter = false;
     const sinceLand = now - (P._landT || -1e9), sinceWJ = now - (P._wjT || -1e9);
-    if(typeof won !== 'undefined' && won && !(typeof baumGehtHinein === 'function' && baumGehtHinein())){ p = copy(AIR); p.dy = 5; key = 'cheer'; }
+    if(typeof baumTanzt === 'function' && baumTanzt()){ p = copy(AIR); p.dy = 5; key = 'cheer'; }   // Siegestanz (Dschungel: nur vor dem Baum, 12a)
     else if(P.hookAttached && P.anchor){ p = copy(RPP); key = 'seil'; }
     else if(P.haft){
       if(P.haft.flaeche === 'unten'){ p = hangPose(S.hp); key = 'haft'; }

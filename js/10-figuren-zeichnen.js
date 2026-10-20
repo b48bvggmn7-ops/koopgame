@@ -186,7 +186,7 @@ function drawCharacter(player, camX){
     else player.leverAnim = null;
   }
   // Siegestanz (21-figuren-leben.js): hüpfen, wippen, drehen – nur Anzeige
-  if(baumTanzt() && typeof danceMove === 'function'){   // Dschungel: beim Hineingehen in den Baum kein Tanz (12a)
+  if(baumTanzt() && typeof danceMove === 'function'){   // Dschungel: nur vor dem Baum, beim Hineingehen und im Baum kein Tanz (12a)
     const d = danceMove(player);
     ctx.translate(0, d.dy); ctx.rotate(d.rot); ctx.scale(d.sx, d.sy);
   }
