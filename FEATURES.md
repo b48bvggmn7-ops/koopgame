@@ -537,7 +537,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Aufwind (winds {x,y,w,h}): trägt das Schweinchen mit offenem Schirm nach oben (WIND_LIFT 1,15, höchstens
         WIND_MAX_UP 6,5 px/Schritt), auch wenn sie gerade steigt; Schirm-Zeit beginnt im Wind von vorn. Den Affen
         trägt er NICHT. Sichtbar als heller Streifen mit aufsteigenden Schlieren und Blättchen. Neues Aussehen: übereinander
-        liegende Kästchen-Reihen werden beim Zeichnen zu EINER Säule zusammengefasst (`windSaeulen`) – eine weiche,
+        liegende Kästchen-Reihen werden beim Zeichnen zu EINER Säule zusammengefasst (`windSaeulen`, gleich breite Reihen werden zu einem Rechteck verbunden – sonst feine Linien an den Kästchen-Nähten) – eine weiche,
         an den Seiten, oben und unten auslaufende Fläche (ohne Kante: senkrecht ein fließender Verlauf, waagerecht übereinander liegende Streifen statt Bänder; zum unteren Teil heller, sanftes „Atmen“), darin lange, sich schlängelnde
         Luftschlieren, Funkel-Staub und taumelnde Blättchen, gleichmäßig steigend über die ganze Säule. Test aufwind_saeule.
       Scheinwand (solids type 'fake', im Spiel in fakeWalls): sieht exakt aus wie Wand (nahtlos mit echten

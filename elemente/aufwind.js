@@ -9,7 +9,7 @@ function inWind(player){
   return winds.some(w => rectsOverlap(box, w));
 }
 // (Spiel, nur Zeichnen) Der Editor speichert Aufwind als Reihen-Streifen (je 1 Kästchen hoch). Zum Zeichnen werden
-// sich berührende Streifen zu Säulen zusammengefasst: {x, y, w, h (Umriss), teile:[Streifen]}. Zwischenspeicher je Level.
+// sich berührende Streifen zu Säulen zusammengefasst: {x, y, w, h (Umriss), teile:[Rechtecke]}. Zwischenspeicher je Level.
 let windSaeulenCache = null, windSaeulenQuelle = null;
 function windSaeulen(){
   if(windSaeulenQuelle === winds && windSaeulenCache && windSaeulenCache.n === winds.length) return windSaeulenCache.liste;
@@ -21,7 +21,15 @@ function windSaeulen(){
   for(let i = 0; i < n; i++) for(let j = i + 1; j < n; j++) if(beruehrt(winds[i], winds[j])) chef[wurzel(i)] = wurzel(j);
   const gruppen = new Map();
   winds.forEach((w, i) => { const r = wurzel(i); if(!gruppen.has(r)) gruppen.set(r, []); gruppen.get(r).push(w); });
-  const liste = [...gruppen.values()].map(teile => {
+  const liste = [...gruppen.values()].map(streifen => {
+    // gleich breite, direkt übereinander liegende Streifen zu einem Rechteck verbinden: sonst zeichnet der
+    // Zuschnitt (clip) an jeder Kästchen-Naht eine haarfeine waagerechte Linie (Zoom = halbe Pixel)
+    const teile = [];
+    for(const t of [...streifen].sort((u, v) => u.x - v.x || u.w - v.w || u.y - v.y)){
+      const vor = teile[teile.length - 1];
+      if(vor && vor.x === t.x && vor.w === t.w && Math.abs(vor.y + vor.h - t.y) < 0.5) vor.h = t.y + t.h - vor.y;
+      else teile.push({x: t.x, y: t.y, w: t.w, h: t.h});
+    }
     const x = Math.min(...teile.map(t => t.x)), y = Math.min(...teile.map(t => t.y));
     return {x, y, w: Math.max(...teile.map(t => t.x + t.w)) - x, h: Math.max(...teile.map(t => t.y + t.h)) - y, teile};
   });

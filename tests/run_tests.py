@@ -5097,13 +5097,14 @@ async def level_themen(g):
 @test
 async def aufwind_saeule(g):
     """Aufwind-Aussehen: übereinander liegende Kästchen-Reihen (so speichert der Editor) werden zum Zeichnen zu EINER
-    Säule zusammengefasst – keine einzelnen Blöcke mehr; getrennte Bereiche bleiben getrennt. Zeichnen läuft fehlerfrei."""
+    Säule zusammengefasst – keine einzelnen Blöcke und keine Linien an den Nähten mehr; getrennte Bereiche bleiben getrennt. Zeichnen läuft fehlerfrei."""
     reihen = [{'x': 400, 'y': y0, 'w': 80, 'h': 40} for y0 in range(200, 680, 40)]
     lv = level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 160, 'y': 680},
                winds=reihen + [{'x': 800, 'y': 400, 'w': 120, 'h': 280}, {'x': 480, 'y': 160, 'w': 40, 'h': 40}])
     await g.load(lv); await g.p.wait_for_timeout(200)
     s = await g.ev("windSaeulen().map(s => [s.x, s.y, s.w, s.h, s.teile.length]).sort((a, b) => a[0] - b[0] || a[1] - b[1])")
-    assert s == [[400, 200, 80, 480, 12], [480, 160, 40, 40, 1], [800, 400, 120, 280, 1]], f'Säulen falsch: {s}'
+    # teile = 1: die 12 Reihen sind zu EINEM Rechteck verbunden (sonst feine Linien an den Kästchen-Nähten)
+    assert s == [[400, 200, 80, 480, 1], [480, 160, 40, 40, 1], [800, 400, 120, 280, 1]], f'Säulen falsch: {s}'
     fehler = await g.ev("(() => { try { draw(); return null; } catch(e) { return String(e); } })()")
     assert fehler is None, fehler
 
