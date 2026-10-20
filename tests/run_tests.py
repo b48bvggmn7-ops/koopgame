@@ -199,6 +199,39 @@ async def neue_figuren_zeichnen(g):
     assert await g.ev('p2._handDev && isFinite(p2._handDev.x)'), 'Hand-Position des Schweinchens fehlt'
 
 @test
+async def neue_figuren_sprung_rolle(g):
+    """Sprung-Varianten der neuen Figuren (10c): erzwungene Vorwärtsrolle (Math.random fest) läuft von 0 bis 1 – auch bei
+    einem kurzen Hüpfer, bei dem die Figur mittendrin landet (läuft dann in 0,15 s aus statt abzubrechen); beim Wandsprung
+    ebenso (vorwärts); über viele echte Sprünge kommen normaler Sprung, Rolle und Salto vor. Nur Zeichnen."""
+    await g.load(level([ground(0, 680, 4000), ground(1500, 200, 40, 480, 'wall')], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='ruinen'))
+    await g.steps(40)
+    mitschreiben = """window.__rl = []; if(!window.__rlAn){ window.__rlAn = true; (function f(){ const S = p1._ff; if(S) __rl.push([S.roll, p1.grounded ? 1 : 0]); requestAnimationFrame(f); })(); }"""
+    # 1) kurzer Hüpfer mit erzwungener Vorwärtsrolle
+    await g.ev("window.__zufall = Math.random; Math.random = () => 0.1; p1._ff.lastTyp = 0; " + mitschreiben)
+    await g.p.keyboard.down('Space'); await g.steps(2); await g.p.keyboard.up('Space'); await g.steps(70)
+    rl = await g.ev("Math.random = __zufall; __rl")
+    werte = [r for r, _ in rl]
+    abbruch = [i for i in range(1, len(rl)) if 0 < rl[i-1][0] < 0.95 and rl[i][0] == -1]
+    assert max(werte) >= 0.98 and any(0 < w < 0.5 for w in werte), f'Rolle läuft nicht von 0 bis 1: {werte[:60]}'
+    assert not abbruch, f'Rolle bricht beim Landen ab: {werte[:60]}'
+    # 2) Wandsprung (vom Spiel als neuer _wjT gemeldet) mit erzwungener Rolle – hoch in der Luft, damit Zeit bleibt
+    await g.ev("p1.x = 1400; p1.y = 120; p1._px = p1.x; p1._py = p1.y; p1.vx = 0; p1.vy = 0")
+    await g.steps(3)   # erst in der Luft sein und ein gezeichnetes Bild abwarten (sonst zählt der Wandsprung als Absprung vom Boden)
+    await g.p.wait_for_function("p1._ff && p1._ff.wasG === false && !p1.grounded")
+    await g.ev("Math.random = () => 0.1; p1._ff.lastTyp = 0; p1.vy = -6; p1._wjT = performance.now(); " + mitschreiben)
+    await g.steps(60)
+    rl = await g.ev("Math.random = __zufall; __rl")
+    werte = [r for r, _ in rl]
+    assert max(werte) >= 0.98 and any(0 < w < 0.5 for w in werte), f'Wandsprung-Rolle läuft nicht durch: {werte[:60]}'
+    # 3) viele echte Sprünge: alle drei Varianten kommen vor
+    await g.ev("p1.x = 300; p1.y = 680; p1._px = 300; p1._py = 680; p1.vx = p1.vy = 0; window.__typen = new Set(); if(!window.__tyAn){ window.__tyAn = true; (function f(){ if(p1._ff && p1._ff.lastTyp !== undefined) __typen.add(p1._ff.lastTyp); requestAnimationFrame(f); })(); }")
+    for i in range(14):
+        await g.p.keyboard.down('Space'); await g.steps(10); await g.p.keyboard.up('Space'); await g.steps(50)
+        if await g.ev("__typen.size") >= 3: break
+    typen = await g.ev("[...__typen].sort()")
+    assert typen == [0, 1, 2], f'nicht alle Varianten (0 normal, 1 Rolle, 2 Salto): {typen}'
+
+@test
 async def neue_figuren_drehung_seil_dash(g):
     """Neue Figuren (Nutzerwunsch): greift der Affe mitten in einer Rolle/einem Salto den Haken oder dasht er, friert die
     Drehung nicht schräg ein, sondern läuft schnell aus – am Seil hängt er aufrecht, beim Dash zeigt er in Dash-Richtung."""

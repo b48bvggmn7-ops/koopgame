@@ -341,11 +341,13 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
         const mv = (wall || sp >= 1.2) ? (P.vx < 0 || (P.vx === 0 && flip < 0) ? -1 : 1) : flip;      // vorwärts = in Bewegungs-/Blickrichtung
         S.rollSign = (typ === 2 && !wall) ? -mv : mv; }
     };
-    if(S.wjSeen === undefined) S.wjSeen = P._wjT;
-    if(P.grounded){ S.roll = -1; S.wasG = true; }
+    // Wandsprung-Zeitpunkt merken (null = noch keiner; vorher blieb es undefined, und der ERSTE Wandsprung zählte nie als neu)
+    if(!('wjSeen' in S)) S.wjSeen = P._wjT === undefined ? null : P._wjT;
+    // am Boden: Rolle beenden – außer sie läuft gerade (dann unten in 0,15 s zu Ende, vorher brach sie hier beim Landen ab)
+    if(P.grounded){ if(!(S.roll > 0 && S.roll < 1)) S.roll = -1; S.wasG = true; }
     else {
       if(S.wasG){ S.wasG = false; S.roll = -1; if(P.vy < -3) pickJump(false); }
-      if(P._wjT !== S.wjSeen){ S.wjSeen = P._wjT; pickJump(true); }              // neuer Wandsprung
+      if(P._wjT !== undefined && P._wjT !== S.wjSeen){ S.wjSeen = P._wjT; pickJump(true); }              // neuer Wandsprung
       if(key === 'ws' || key === 'haft' || key === 'segeln' || key === 'seil' || key === 'dash') S.roll = -1;   // Wand/Schirm/Seil/Dash: Reste vom letzten Sprung abbrechen (Drehung läuft unten weich aus)
       const inAir = (key === 'up' || key === 'down' || key === 'wj');
       if(S.roll >= 0 && S.roll < 1 && inAir) S.roll += dt/ROLL_ZEIT;

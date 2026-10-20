@@ -1504,6 +1504,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 - Die Figuren sind jetzt Kopf + Arme + Stummelfüße statt der rollenden Kugel. Taste **B** schaltet zur alten Kugel zurück (und wieder her).
 - Posen: Stehen, Laufen, Bremsen, Landen, Hoch/Runter, Wandrutschen (liegt an der Wand), Haften an der Decke, Seil, Dash, Schirm-Gleiten, Siegestanz.
 - Sprung-Varianten: nach einem normalen Sprung kommt immer eine Variante (Vorwärtsrolle oder Salto), auf Dauer je 1/3; gilt auch für Wandsprünge.
+  Bei jedem Absprung vom Boden und jedem Wandsprung wird gewürfelt (nach einer Variante 50 % normal, 25 % Rolle, 25 % Salto;
+  Wandsprung nur vorwärts). Die Drehung dauert ~0,6 s (`ROLL_ZEIT`), fängt sofort an und läuft in einem Rutsch durch;
+  landet die Figur mittendrin, dreht sie in 0,15 s zu Ende (vorher brach sie beim Landen schlagartig ab). Auch der erste
+  Wandsprung einer Figur zählt (vorher nie). Mit Schirm, am Seil, beim Dash und an der Wand läuft sie weich aus.
+  Test neue_figuren_sprung_rolle.
 - Kante (Nutzerwunsch): Steht der Fuß nicht mehr auf dem Boden (unter Mitte ± `KANTE_FUSS` 4 px trägt nichts), rutscht
   eine stehende/langsame Figur mit `KANTE_RUTSCH` 1,2 px je Schritt über die Kante und fällt (`kanteAbrutschen` in
   js/32-neue-bewegung.js, Werte in 02). Vorher „schwebte“ sie bis ~14 px über dem Abgrund (die Kollisions-Box ist breiter
