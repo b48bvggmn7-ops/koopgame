@@ -1497,6 +1497,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 - Die Figuren sind jetzt Kopf + Arme + Stummelfüße statt der rollenden Kugel. Taste **B** schaltet zur alten Kugel zurück (und wieder her).
 - Posen: Stehen, Laufen, Bremsen, Landen, Hoch/Runter, Wandrutschen (liegt an der Wand), Haften an der Decke, Seil, Dash, Schirm-Gleiten, Siegestanz.
 - Sprung-Varianten: nach einem normalen Sprung kommt immer eine Variante (Vorwärtsrolle oder Salto), auf Dauer je 1/3; gilt auch für Wandsprünge.
+- Fast runterfallen (Nutzerwunsch): steht eine Figur still an einer Kante (Mitte über dem Abgrund oder höchstens
+  `KANTE_RAND` 4 px davor, `kanteRichtung`), dreht sie sich zum Abgrund, steht auf dem hinteren Fuß, der vordere hängt über
+  der Kante, der Körper kippt vor und zurück und beide Arme kreisen über dem Kopf (`kantePose`, Takt `KANTE_TAKT` 0,9 s).
+  Nur Zeichnen (js/10c-fuss-figuren.js), Physik unverändert; statt der Langeweile-Aktionen. Test neue_figuren_kante_wackeln.
 - Langeweile / Leerlauf-Aktionen: nach 15 s ohne Eingabe (`IDLE_START`) dreht sich die Figur nach vorn und macht im Wechsel
   Unsinn – jede Figur hat ihre eigenen Aktionen (zufällig, nie zweimal dieselbe hintereinander; jede Eingabe beendet es):
   - Affe: Disco (Arme abwechselnd hoch, Füße stampfen), Hüpfen mit Armen oben, Salto, Klatschen über dem Kopf, Kopf
