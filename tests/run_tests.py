@@ -4281,9 +4281,12 @@ async def editor_testen_knopf(g):
         # Enter im Namensfeld (Levels-Fenster) startet KEINEN Test
         await p.click('#levelsBtn')
         await p.wait_for_selector('#projectList .lvl', state='attached', timeout=8000)   # Projekt-Liste fertig geladen (sonst kann das spätere Neuzeichnen den Fokus nehmen)
-        await p.fill('#levelName', 'x'); await p.keyboard.press('Escape')
+        await p.fill('#levelName', 'x')
+        # erst prüfen, wenn der Cursor wirklich im Feld steht (auf langsamen Rechnern lädt die Liste nach und nimmt den Fokus)
+        await p.wait_for_function("document.activeElement && document.activeElement.id === 'levelName'", timeout=8000)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
         assert '/editor/' in p.url, 'Enter im Textfeld hat den Test gestartet'
+        await p.keyboard.press('Escape')
         await p.click('#c', position={'x': 5, 'y': 5}, button='right'); await p.wait_for_timeout(100)   # Fokus weg vom Feld
         await p.evaluate("document.activeElement && document.activeElement.blur()")
         await p.keyboard.press('Enter'); await p.wait_for_timeout(800)   # Enter = Testen
