@@ -321,6 +321,8 @@
 #sm #sm-s-levels .lc.sel{height:40cqh;margin-bottom:4cqh}
 #sm #sm-s-levels .lc > div{min-width:0}
 #sm #sm-s-levels .lc .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Unterlängen (das „g“ in „Dschungel“) passen bei großer Schrift ins Feld; gleicher Platz außen wieder abgezogen -> Karte bleibt gleich hoch */
+#sm #sm-s-levels .lc .nm:not(.zwei){padding-bottom:.2em;margin-bottom:-.2em}
 #sm #sm-s-levels .lc .nm.zwei{white-space:normal;hyphens:manual;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 #sm #sm-s-levels .lc .st,#sm #sm-s-levels .lc .duel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sm #sm-s-levels .lc .st{font-size:min(1.5cqw,calc(var(--lcw)*.12))}

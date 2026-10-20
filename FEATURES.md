@@ -1697,6 +1697,7 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   Funktionen wie bisher. Test weltkarte_gemalt_ohne_fehler.
 - **Levelkarten gleich groß:** festes Raster, alle Karten einer Welt (auch Boss-Karte, mit/ohne Statistik) gleich breit
   und hoch; lange Titel etwas kleiner bzw. an einer Silbe in zwei Zeilen umgebrochen. Test levelkarten_gleich_breit
+  (Titel-Feld unten mit etwas Platz für Unterlängen wie das „g“ in „Dschungel“ – auch bei großer Schrift nicht angeschnitten.)
   (1920×1080 und 1366×768, 4–6 Level).
 - **Design-Politur 2 (Rückmeldung des Nutzers):**
   - Boden und Wand lassen sich in alle Richtungen und mehrfach übereinander bauen und sehen wie EIN Block aus: Erde in
