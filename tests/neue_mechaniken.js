@@ -136,6 +136,18 @@ window.NM = {
     for(let i = 0; i < 30 && !ok; i++){ wer === 'f' ? S.schritt([], tasten) : S.schritt(tasten); ok = !!P.haft; }
     return ok;
   },
+  // Nutzerwunsch: Kopf schon in den Honig-Tropfen (knapp unter der Haftdecke, höchster Punkt des Sprungs) -> festhalten geht;
+  // deutlich tiefer nicht. abstand = px zwischen Kopf und Unterkante der Haftdecke (y 440)
+  haftTropfen(){
+    const S = this, out = {};
+    for(const abstand of [2, 9, 11, 20]){
+      S.start(); S.stellen(p2, 47, 17);
+      p1.x = 52*40 + 20; p1.y = 440 + p1.h + abstand; p1.vx = 0; p1.vy = 0; p1.grounded = false;
+      let ok = false; for(let i = 0; i < 3 && !ok; i++){ S.schritt(['swimUp']); ok = !!p1.haft; }
+      out[abstand] = ok;
+    }
+    return out;
+  },
   haft(){
     const S = this, out = {};
     // greifen: unter der Haftdecke (Spalten 50–58, Reihe 10) hochspringen und hoch halten

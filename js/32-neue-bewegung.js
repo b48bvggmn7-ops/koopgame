@@ -162,7 +162,8 @@ const festIst = (c, r) => { const H = haftZellen(); return H.zellen.has(c + ',' 
 function haftUeberKopf(P){
   if(!haftZellen().zellen.size) return null;
   const kopf = P.y - P.h, r = Math.round(kopf/40) - 1, c = Math.floor(P.x/40);
-  if(Math.abs(kopf - (r + 1)*40) > HAFT_FANG) return null;
+  const abstand = kopf - (r + 1)*40;   // > 0: Kopf unter der Fläche
+  if(abstand < -2.5 || abstand > HAFT_FANG) return null;
   return haftIst(c, r) && !festIst(c, r + 1) ? {c, r} : null;
 }
 function haftLos(P){ P.haft = null; }

@@ -6040,6 +6040,14 @@ async def haftflaeche(g):
     assert not r['absprung']['haft'] and r['absprung']['vy'] > 0, r['absprung']
     assert r['dashVonHaft']['dash'] and not r['dashVonHaft']['haft'], r['dashVonHaft']
 
+@test
+async def haft_greifen_in_tropfen(g):
+    """Nutzerwunsch: hängt der Kopf beim Sprung schon in den Honig-Tropfen unter der Haftfläche (bis HAFT_FANG = 12 px),
+    hält man sich mit „hoch“ fest – auch wenn man die Kante selbst nicht ganz erreicht; deutlich tiefer nicht."""
+    r = await neue_mechaniken_messen(g, 'haftTropfen')
+    assert r['2'] and r['9'] and r['11'], f'in den Tropfen nicht festgehalten: {r}'
+    assert not r['20'], f'zu tief unten trotzdem festgehalten: {r}'
+
 TASTEN_ALT = {1: {'left': 'KeyA', 'right': 'KeyD', 'jump': 'Space', 'ability': 'KeyG', 'pull': 'KeyW', 'slack': 'KeyS', 'use': 'KeyJ'},
               2: {'left': 'ArrowLeft', 'right': 'ArrowRight', 'jump': 'Numpad0', 'ability': 'Numpad1', 'pull': 'ArrowUp', 'slack': 'ArrowDown', 'use': 'Numpad2'}}
 

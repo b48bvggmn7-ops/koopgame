@@ -1580,7 +1580,8 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
   nicht im Dash. Der Wandsprung ist der alte (gleiche Werte, gleiche Bedingungen) – er geht auch mitten im Rutschen.
 - **Haftfläche** (Editor: Gelände → „Haftfläche“): Wand-/Deckenkästchen mit lila Klebeschicht. Wer darunter „hoch“
   hält (Affe W, Schweinchen ↑, Controller Steuerkreuz hoch bzw. Stick hoch), hält sich von unten fest und rollt mit
-  links/rechts entlang – langsamer als Laufen (HAFT_TEMPO 4,2), mit Schwung (kein Sofort-Stopp), um Kanten herum
+  links/rechts entlang (greifen klappt schon, wenn der Kopf in den Honig-Tropfen hängt: bis HAFT_FANG 12 px unter der
+  Kante, vorher 2,5 px – Nutzerwunsch; man wird dann an die Fläche hochgezogen) – langsamer als Laufen (HAFT_TEMPO 4,2), mit Schwung (kein Sofort-Stopp), um Kanten herum
   (Innenecke hinunter an der Seite, unten herum, die andere Seite hinauf und oben auf die Fläche). „Hoch“ loslassen =
   fallen. Springen = Absprung (unten: nach unten-vorn; an der Seite: weg von der Wand). Dash geht von dort (kostet
   einen Punkt; „hoch“ zählt an der Unterseite nicht als Dash-Richtung). Haken greifen = loslassen. Sonst ist eine
