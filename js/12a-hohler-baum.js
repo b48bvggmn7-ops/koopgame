@@ -6,9 +6,14 @@
 const BAUM_SKALA = 0.7;            // Entwurf (scratchpad baum.html) ist 1,0 = ca. 330 px hoch -> im Spiel ca. 230 px
 const BAUM_BILD_AUFLOESUNG = 3;    // Pixel je Weltpixel im Zwischenspeicher (scharf bis 4K)
 const BAUM_LICHT_START = 0.6, BAUM_LICHT_ZIEL = 0.15;   // Leuchten des Eingangs (0..1) vor dem Sieg
-const BAUM_HINEIN_SCHRITTE = 50, BAUM_HINEIN_TEMPO = 1.6, BAUM_HINEIN_ABSTAND = 12;   // Figuren gehen in den Baum (px/Schritt)
-const BAUM_LICHT_AB = 30, BAUM_LICHT_DAUER = 60;   // Eingang leuchtet auf (Schritte nach dem Sieg)
-const BAUM_TUER_AB = 75, BAUM_TUER_DAUER = 45;     // Tür fährt herunter
+// Ablauf nach dem Sieg (Schritte nach won, 54 = 1 s): erst tanzen beide (fröhlich, Herzchen), dann gehen sie ZUSAMMEN in
+// den Baum, dann leuchtet der Eingang auf und die Tür fährt herunter; danach „Level geschafft“
+const BAUM_TANZ_SCHRITTE = 135;                     // so lange tanzen beide vor dem Baum
+const BAUM_HINEIN_DAUER = 55, BAUM_HINEIN_TEMPO = 1.7, BAUM_HINEIN_ABSTAND = 12;   // gemeinsam hineingehen (px/Schritt, Plätze ±12)
+const BAUM_LICHT_AB = 175, BAUM_LICHT_DAUER = 50;   // Eingang leuchtet auf
+const BAUM_TUER_AB = 200, BAUM_TUER_DAUER = 45;     // Tür fährt herunter
+const BAUM_SIEG_ENDE = 300;                          // dann weiter wie nach dem Tanz (statt WIN_DANCE_STEPS)
+const BAUM_WARTE_ABSTAND = 30, BAUM_WARTE_TEMPO = 1.5;   // wer zuerst ankommt: geht bis 30 px vor den Eingang und wartet
 
 function baumAktiv(){ return typeof BG_STIL !== 'undefined' && !!(BG_STIL && BG_STIL.tiere); }
 function baumFarben(nacht){
@@ -178,12 +183,28 @@ function baumVorneZeichnen(){
   }
   ctx.restore();
 }
-// fester Takt: nach dem Sieg gehen beide Figuren in den Baum (nur Dschungel-Look)
-function baumSiegSchritt(){
-  if(!won || !baumAktiv() || winSteps > BAUM_HINEIN_SCHRITTE) return;
+// Wer den Baum erreicht, ist angekommen: keine Steuerung mehr (P.zielWartet -> 08: frozen), geht bis vor den Eingang,
+// schaut zum Partner und wartet. Gilt nur im Dschungel-Look; Tod/Neustart (weit weg vom Ziel) hebt es auf.
+function baumVorSchritt(){
   for(const P of [p1, p2]){
-    const ziel = goal.x + (P === p1 ? -1 : 1)*BAUM_HINEIN_ABSTAND;
-    if(Math.abs(P.x - goal.x) > 90) continue;   // nur, wer wirklich am Eingang steht
-    P.x += Math.max(-BAUM_HINEIN_TEMPO, Math.min(BAUM_HINEIN_TEMPO, ziel - P.x));
+    if(!baumAktiv() || deathState || Math.abs(P.x - goal.x) > 100){ P.zielWartet = false; continue; }
+    if(won || (P.atGoal && P.grounded && !P.hookAttached && coinsCollected() >= coinsNeeded)) P.zielWartet = true;   // beim Sieg beide
+    if(!P.zielWartet) continue;
+    const Q = P === p1 ? p2 : p1, ziel = baumZielPlatz(P);
+    const dx = ziel - P.x, tempo = baumGehtHinein() ? BAUM_HINEIN_TEMPO : BAUM_WARTE_TEMPO;
+    if(Math.abs(dx) > 1.5 && (!won || baumGehtHinein())){ P.vx = Math.max(-tempo, Math.min(tempo, dx*0.3)); P.facing = Math.sign(dx); }
+    else if(!won) P.facing = Math.sign(Q.x - P.x) || P.facing;   // wartet und schaut zum Partner
   }
 }
+// Platz der Figur: beim Warten 30 px vor dem Eingang (auf ihrer Seite), beim Hineingehen links/rechts der Mitte
+function baumZielPlatz(P){
+  const Q = P === p1 ? p2 : p1;
+  if(baumGehtHinein() || (won && winSteps > BAUM_TANZ_SCHRITTE)){
+    const links = P.x < Q.x || (P.x === Q.x && P === p1);
+    return goal.x + (links ? -1 : 1)*BAUM_HINEIN_ABSTAND;
+  }
+  return goal.x + (P.x < goal.x ? -1 : 1)*BAUM_WARTE_ABSTAND;
+}
+function baumGehtHinein(){ return won && baumAktiv() && winSteps > BAUM_TANZ_SCHRITTE && winSteps <= BAUM_TANZ_SCHRITTE + BAUM_HINEIN_DAUER; }
+function baumTanzt(){ return won && !baumGehtHinein(); }   // Siegestanz anzeigen (10/10c) – nicht während des Hineingehens
+function winEndeSchritte(){ return baumAktiv() ? BAUM_SIEG_ENDE : WIN_DANCE_STEPS; }

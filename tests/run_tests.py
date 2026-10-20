@@ -6223,8 +6223,9 @@ async def wand_rutschen(g):
 @test
 async def hohler_baum_start_ziel(g):
     """Start und Ziel im Dschungel = hohler Baum (12a-hohler-baum.js), ganz vorne vor Boden/Wand: der Start-Baum rückt von
-    einer Wand weg, das Ziel-Schild fehlt. Sind beide im Ziel, gehen sie in den Baum, der Eingang leuchtet auf und die Tür
-    fährt zu (fester Takt über winSteps). Andere Welten behalten das Schild (kein Baum)."""
+    einer Wand weg, das Ziel-Schild fehlt. Wer den Baum zuerst erreicht, lässt sich nicht mehr steuern, geht bis 30 px vor
+    den Eingang und wartet. Sind beide da: erst tanzen beide (Siegestanz), dann gehen sie ZUSAMMEN hinein (Plätze ±12),
+    dann leuchtet der Eingang auf und die Tür fährt zu, danach geht es weiter (winEndeSchritte). Andere Welten: Schild."""
     teile = [ground(0, 680, 3000), ground(0, 400, 40, 280, 'wall')]
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='dschungel'))
     await g.steps(5)
@@ -6232,18 +6233,33 @@ async def hohler_baum_start_ziel(g):
     assert r['an'], 'im Dschungel soll der hohle Baum stehen'
     assert r['start']['x'] - 64 >= 40, f"Start-Baum soll vor der Wand weggerückt sein: {r['start']}"
     assert r['licht'] < 0.3 and r['tuer'] == 0, f'Ziel-Eingang vor dem Sieg dunkel, Tür offen: {r}'
-    await g.ev("for(const P of [p1, p2]){ P.x = goal.x + (P === p1 ? -50 : 45); P.y = goal.y; P.vy = 0; } coinsNeeded = 0;")
+    # Affe kommt zuerst an: Steuerung aus (Taste rechts gedrückt halten bewirkt nichts), er geht bis 30 px vor den Eingang
+    await g.ev("p1.x = goal.x - 55; p1.y = goal.y; p1.vx = p1.vy = 0;")
     await g.steps(10)
-    assert await g.ev("won"), 'beide im Ziel -> gewonnen'
-    await g.ev("winSteps = 0")
-    await g.steps(140)
-    r = await g.ev("({won, d1: p1.x - goal.x, d2: p2.x - goal.x, licht: baumZielLicht(), tuer: baumTuerAnteil()})")
-    assert r['won'] and abs(r['d1'] + 12) < 1 and abs(r['d2'] - 12) < 1, f'beide sollen in den Baum gegangen sein: {r}'
-    assert r['licht'] > 0.99 and r['tuer'] == 1, f'Eingang hell und Tür zu: {r}'
+    await g.ev("KEYS[p1.keys.right] = true")
+    await g.steps(60)
+    r = await g.ev("({w: p1.zielWartet, d: p1.x - goal.x, won})")
+    await g.ev("KEYS[p1.keys.right] = false")
+    assert r['w'] and not r['won'] and abs(r['d'] + 30) < 3, f'Affe soll am Baum warten (Steuerung aus, 30 px davor): {r}'
+    # Schweinchen kommt dazu -> gewonnen; erst Tanz, dann zusammen hinein, dann Licht und Tür
+    await g.ev("p2.x = goal.x + 45; p2.y = goal.y; p2.vx = p2.vy = 0;")
+    await g.p.wait_for_function("won && winSteps >= 100", timeout=15000)
+    r = await g.ev("({tanz: baumTanzt(), hinein: baumGehtHinein(), d1: p1.x - goal.x, d2: p2.x - goal.x})")
+    assert r['tanz'] and not r['hinein'] and abs(r['d1']) > 25 and abs(r['d2']) > 25, f'erst tanzen beide vor dem Baum: {r}'
+    await g.p.wait_for_function("winSteps >= 160", timeout=15000)
+    r = await g.ev("({tanz: baumTanzt(), hinein: baumGehtHinein()})")
+    assert r['hinein'] and not r['tanz'], f'dann gehen beide zusammen hinein (kein Tanz dabei): {r}'
+    await g.p.wait_for_function("winSteps >= 250", timeout=15000)
+    r = await g.ev("({won, d1: p1.x - goal.x, d2: p2.x - goal.x, licht: baumZielLicht(), tuer: baumTuerAnteil(), ende: winEndeSchritte()})")
+    assert r['won'] and abs(r['d1'] + 12) < 2 and abs(r['d2'] - 12) < 2, f'beide sollen im Baum stehen: {r}'
+    assert r['licht'] > 0.99 and r['tuer'] == 1 and r['ende'] > 250, f'Eingang hell und Tür zu: {r}'
     await g.ev("draw()")   # zeichnet ohne Fehler (Tür, Licht)
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='ruinen'))
     await g.steps(5)
     assert not await g.ev("baumAktiv()"), 'außerhalb des Dschungels kein Baum (Ziel-Schild bleibt)'
+    await g.ev("p1.x = goal.x - 55; p1.y = goal.y; p1.vx = p1.vy = 0;")
+    await g.steps(10)
+    assert not await g.ev("p1.zielWartet"), 'außerhalb des Dschungels bleibt die Steuerung am Ziel an'
 
 @test
 async def haft_ende_anhalten(g):

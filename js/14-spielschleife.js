@@ -17,11 +17,11 @@ function stepSim(ts){
   // Nacht-Ausbau: kurzer Trefferstopp (nur nach Dash-Start / Durchbruch, js/32-neue-bewegung.js) – alles steht kurz still
   if(neuTrefferStopp > 0){ neuTrefferStopp--; return; }
   if(typeof partnerVorSchritt === 'function') partnerVorSchritt();   // Computer-Partner drückt seine Tasten (30-partner.js, nur Testmodus)
-  if(won && ++winSteps === WIN_DANCE_STEPS) winFinish();   // nach dem Tanz zurück ins Menü (21-figuren-leben.js)
+  if(won && ++winSteps === winEndeSchritte()) winFinish();   // nach dem Tanz (Dschungel: Tanz + Baum-Tür, 12a) zurück ins Menü (21-figuren-leben.js)
+  baumVorSchritt();   // Dschungel: am Baum angekommen = Steuerung aus, warten, nach dem Tanz zusammen hinein (12a-hohler-baum.js)
   activateVisibleMovers();
   updatePlayer(p1, ts);
   updatePlayer(p2, ts);
-  baumSiegSchritt();   // Dschungel: nach dem Sieg gehen beide in den hohlen Baum (12a-hohler-baum.js)
   keepTogether();   // vordere Figur darf höchstens 1,25 Bildschirmbreiten vor der hinteren sein
   updateMovingHooks();
   updateCoins([p1, p2]);

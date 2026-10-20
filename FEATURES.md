@@ -154,9 +154,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     großer alter Baum mit abgebrochener Krone, Wurzeln, Moos, Efeu, Pilzen und einem Loch als Eingang (Tag- und Nacht-Farben).
     Er steht ganz vorne vor Boden, Wänden und Pflanzen (Nutzerwunsch), Münzen und Figuren bleiben davor sichtbar.
     Start: zwischen den Startplätzen, Eingang leuchtet warm; stünde er vor einer Wand, rückt er bis 160 px zur Seite.
-    Ziel: Eingang zuerst dunkel; sind beide im Ziel, gehen Affe und Schweinchen in den Baum, der Eingang leuchtet auf und eine
-    Holztür mit rundem Fenster fährt herunter (Licht scheint durch Ritzen und Fenster). Ablauf im festen Takt über winSteps
-    (BAUM_* Konstanten), Tanz und Herzchen bleiben. Test hohler_baum_start_ziel.
+    Ziel: Eingang zuerst dunkel. Wer den Baum zuerst erreicht (am Boden), lässt sich nicht mehr steuern (Nutzerwunsch), geht
+    bis 30 px vor den Eingang und schaut zum Partner. Sind beide da: erst tanzen beide fröhlich (Herzchen, 2,5 s), dann gehen
+    sie zusammen in den Baum, der Eingang leuchtet auf und eine Holztür mit rundem Fenster fährt herunter (Licht scheint durch
+    Ritzen und Fenster); nach 5,5 s geht es weiter wie nach dem Tanz. Fester Takt über winSteps (BAUM_* Konstanten in
+    12a; Steuerung aus über P.zielWartet). Test hohler_baum_start_ziel.
   - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
     Stick/Steuerkreuz laufen, Kreuz springen, Viereck = Haken bzw. Schirm, Kreis = Hebel, hoch = ranziehen, runter = Seil geben,
     Options = Pausenmenü (darin „Level neu starten“; früher direkt Neustart); Status "Controller verbunden" in den Steuerungs-Kästen
