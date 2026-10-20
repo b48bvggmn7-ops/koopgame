@@ -199,6 +199,27 @@ async def neue_figuren_zeichnen(g):
     assert await g.ev('p2._handDev && isFinite(p2._handDev.x)'), 'Hand-Position des Schweinchens fehlt'
 
 @test
+async def neue_figuren_drehung_seil_dash(g):
+    """Neue Figuren (Nutzerwunsch): greift der Affe mitten in einer Rolle/einem Salto den Haken oder dasht er, friert die
+    Drehung nicht schräg ein, sondern läuft schnell aus – am Seil hängt er aufrecht, beim Dash zeigt er in Dash-Richtung."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 460, 'y': 400, 'radius': 300}]))
+    await g.ev("closeMenu(); deathState = null;")
+    rolle = "(() => { const S = p1._ff; S.roll = 0.45; S.rollSign = 1; })()"
+    await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.steps(6)
+    await g.ev(rolle); await g.p.keyboard.press('KeyG'); await g.steps(14); await g.p.keyboard.up('KeyD')
+    r = await g.ev("({hook: p1.hookAttached, roll: p1._ff.roll, rot: p1._ff.rotE})")
+    assert r['hook'] and r['roll'] < 0 and abs(r['rot']) < 0.05, f'am Seil noch schräg gedreht: {r}'
+    await g.ev("p1.hookAttached = false; p1.anchor = null;"); await g.steps(40)
+    await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.steps(6)
+    await g.ev(rolle); await g.p.keyboard.press('KeyK'); await g.steps(5); await g.p.keyboard.up('KeyD')
+    r = await g.ev("({dash: !!p1.dash, roll: p1._ff.roll, rot: p1._ff.rotE})")
+    assert r['roll'] < 0 and abs(r['rot']) < 0.6, f'Dash mitten in der Rolle: Drehung läuft nicht in Dash-Richtung aus: {r}'
+    # Seil = Liane (gezeichnet über lianeZeichnen)
+    n = await g.ev("""(() => { let n = 0; const o = lianeZeichnen; lianeZeichnen = (...a) => { n++; return o(...a); };
+      p1.hookAttached = true; p1.anchor = hooks[0]; try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { lianeZeichnen = o; p1.hookAttached = false; p1.anchor = null; } return n; })()""")
+    assert n == 1, 'Seil wird nicht als Liane gezeichnet'
+
+@test
 async def neue_figuren_brille_tattoo(g):
     """Neue Figuren: Brille und Tattoo (Cosmetics) werden auch an den Fuß-Figuren gezeichnet – Seitenansicht: Brille,
     Vorderansicht (Leerlauf nach IDLE_START s): Brille und Tattoo."""

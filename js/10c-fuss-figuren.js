@@ -333,7 +333,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     else {
       if(S.wasG){ S.wasG = false; S.roll = -1; if(P.vy < -3) pickJump(false); }
       if(P._wjT !== S.wjSeen){ S.wjSeen = P._wjT; pickJump(true); }              // neuer Wandsprung
-      if(key === 'ws' || key === 'haft' || key === 'segeln') S.roll = -1;                            // an der Wand: Reste vom letzten Sprung abbrechen
+      if(key === 'ws' || key === 'haft' || key === 'segeln' || key === 'seil' || key === 'dash') S.roll = -1;   // Wand/Schirm/Seil/Dash: Reste vom letzten Sprung abbrechen (Drehung läuft unten weich aus)
       const inAir = (key === 'up' || key === 'down' || key === 'wj');
       if(S.roll >= 0 && S.roll < 1 && inAir) S.roll += dt/ROLL_ZEIT;
     }
@@ -363,7 +363,9 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     } else { S.antic = undefined; S.anticT = 0; S.prevFr = null; S.curFr = null; S.umbA = 0; S.umbVis = false; S.ropeOn = false; }
     if(frRot){ rot += frRot*ease(S.front); rotCenter = true; }
     // Schirm offen: Drehung läuft schnell aus, die Figur hängt aufrecht darunter (kein Überkopf / keine Schräglage)
-    if(key === 'segeln'){ const wr = Math.atan2(Math.sin(S.rotE||0), Math.cos(S.rotE||0)); S.rotE = wr*Math.exp(-dt*14); rot = S.rotE; rotCenter = true; }
+    // Genauso am Seil (aufrecht) und beim Dash (in Dash-Richtung): eine angefangene Rolle/ein Salto friert nicht schräg ein
+    const rotZiel = (key === 'segeln' || key === 'seil') ? 0 : key === 'dash' ? rot : null;
+    if(rotZiel !== null){ const d = (S.rotE || 0) - rotZiel, wr = Math.atan2(Math.sin(d), Math.cos(d)); S.rotE = rotZiel + wr*Math.exp(-dt*14); rot = S.rotE; rotCenter = true; }
     else S.rotE = rot;           // Salto (Antic): Drehung der ganzen Figur
     // weicher Übergang zwischen zwei Posen (0,12 s)
     if(S.key !== key){ S.snap = S.last || p; S.k0 = now; S.bt = (key === 'ws' || S.key === 'ws') ? 60 : 120; S.key = key; }   // Wand: schnell ausrichten (0,06 s)

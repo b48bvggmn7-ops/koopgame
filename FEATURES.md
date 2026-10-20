@@ -1498,6 +1498,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     kratzen, **Seilspringen mit einer Liane** (die Liane schwingt um ihn herum, vorne/hinten richtig verdeckt).
   - Schweinchen: Hin- und Herwackeln, Knicks, Tippeln von Fuß zu Fuß, Spielen mit dem Schirm und **Schirm-Böe** (ein
     Windstoß hebt sie am Schirm kurz an). Bei beiden Schirm-Aktionen ist es der **Original-Schirm** aus dem Spiel.
+- Seil als **Liane** (Nutzerwunsch, `lianeZeichnen` in js/10-figuren-zeichnen.js): grüner Strang mit hellem Kern, leicht
+  durchhängend, kleine Blätter; gedehnt wird sie wie bisher dünner, orange-rot und zittert (Blätter fallen dann weg).
+- Greift der Affe mitten in einer Rolle/einem Salto den Haken oder dasht eine Figur, läuft die Drehung schnell aus (wie beim
+  Schirm): am Seil hängt er aufrecht, beim Dash zeigt die Figur in Dash-Richtung. Test neue_figuren_drehung_seil_dash.
 - Seil: das Seil endet an der Hand des Affen. Schirm: beim Gleiten ist es der **Original-Schirm**; der Griff sitzt in der Hand
   des Schweinchens, der Schirm zeigt immer senkrecht nach oben; sobald der Schirm offen ist, läuft eine Rolle/Dash-Haltung
   schnell aus und das Schweinchen hängt aufrecht darunter.

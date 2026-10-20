@@ -111,6 +111,33 @@ function groundBelow(P){
   }
   return best;
 }
+// Liane zwischen Hand (x0,y0) und Haken (x1,y1); st = Dehnung 0..1, seed = fester Zufall (Lage der Blätter)
+const LIANE_DURCHHANG = 9, LIANE_BLATT_ABSTAND = 20;
+function lianeZeichnen(x0, y0, x1, y1, st, jit, seed){
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1, nx = -dy/len, ny = dx/len;
+  const sag = LIANE_DURCHHANG*(1 - st)*Math.min(1, len/120);
+  const cx = (x0 + x1)/2 + nx*sag*Math.sign(ny || 1) + jit, cy = (y0 + y1)/2 + Math.abs(ny)*sag + jit;   // Durchhang nach unten
+  const pt = t => [(1-t)*(1-t)*x0 + 2*(1-t)*t*cx + t*t*x1, (1-t)*(1-t)*y0 + 2*(1-t)*t*cy + t*t*y1];
+  const aussen = st > 0.05 ? `rgb(${Math.round(63+st*169)},${Math.round(122-st*72)},${Math.round(58-st*28)})` : '#3f7a3a';
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(cx, cy, x1, y1);
+  ctx.strokeStyle = 'rgba(18,34,12,.7)'; ctx.lineWidth = 6.4 - st*2.4; ctx.stroke();   // dunkler Rand
+  ctx.strokeStyle = aussen; ctx.lineWidth = 4.6 - st*2; ctx.stroke();
+  ctx.strokeStyle = st > 0.05 ? 'rgba(255,220,170,.55)' : '#6fb35a'; ctx.lineWidth = 1.6; ctx.stroke();   // heller Kern
+  if(st < 0.6){   // Blätter (beim starken Dehnen nicht mehr)
+    const n = Math.floor(len/LIANE_BLATT_ABSTAND);
+    for(let i = 1; i <= n; i++){
+      const t = i/(n + 1), [bx, by] = pt(t), [ax, ay] = pt(Math.min(1, t + 0.02)), w = Math.atan2(ay - by, ax - bx);
+      const seite = (i + Math.floor(seed/40)) % 2 ? 1 : -1, r = 0.9 + 0.25*Math.sin(seed*0.1 + i*2.3);
+      ctx.save(); ctx.translate(bx, by); ctx.rotate(w + seite*0.9);
+      ctx.fillStyle = '#2f5f28'; ctx.beginPath(); ctx.ellipse(5*r, 0, 6.6*r, 3.3*r, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#5aa84c'; ctx.beginPath(); ctx.ellipse(5*r, 0, 5.6*r, 2.5*r, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(190,240,150,.5)'; ctx.beginPath(); ctx.ellipse(4*r, -0.8*r, 3*r, 0.9*r, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
 function drawCharacter(player, camX){
   if(deathState && player === deathState.victim) return; // verpufft
   // auf ganze Pixel runden: Figur, Boden und Kamera liegen im selben Raster -> kein Zittern gegeneinander
@@ -185,18 +212,13 @@ function drawCharacter(player, camX){
   if(typeof cosmeticsDrawFront === 'function') cosmeticsDrawFront(player, camX);
 
   if(player.male && player.hookAttached){
-    // gedehntes Seil: wird dünner, färbt sich orange-rot und zittert
+    // Seil als Liane (Nutzerwunsch): grüner Strang mit hellem Kern, leicht durchhängend, kleine Blätter.
+    // Gedehnt: wird dünner, färbt sich orange-rot, hängt nicht mehr durch und zittert (wie bisher)
     const st = Math.min(1, (player.ropeStretch||0) / ROPE_SNAP_STRETCH);
-    ctx.strokeStyle = st > 0.05 ? `rgb(${Math.round(60+st*172)},${Math.round(110-st*60)},${Math.round(190-st*160)})` : colorOf('--rope');
-    ctx.lineWidth = 2.4 - st*1.2;
     const jit = st > 0.3 ? (Math.random()-0.5)*st*3 : 0;
-    ctx.beginPath();
     let rx = px, ry = py-player.h*0.6;
     if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
-    ctx.moveTo(rx, ry);
-    ctx.lineTo((rx + player.anchor.x-camX)/2 + jit, (ry + player.anchor.y)/2 + jit);
-    ctx.lineTo(player.anchor.x-camX, player.anchor.y);
-    ctx.stroke();
+    lianeZeichnen(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.x);
   }
   if(!player.male && player.umbrella > 0.02 && !(typeof neueFigurenAn === 'function' && neueFigurenAn())) drawUmbrella(player, px, py);
 }
