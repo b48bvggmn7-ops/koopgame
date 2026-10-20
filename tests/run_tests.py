@@ -1145,7 +1145,7 @@ async def level8_gluehwald(g):
         soll(r.get('done'), f'Takt-Steine 2 s ({who})', r.get('pos'))
     if await g.ev("goal.x") < 290 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
-    r = await koop(g, m=kat(140, 14), f=kat(138, 14), plans={'m': [k_lauf(165)], 'f': [{'frames': 60}, k_lauf(163)]}, maxFrames=2000)
+    r = await koop(g, m=kat(140, 14), f=kat(138, 14), plans={'m': [k_lauf(164)], 'f': [{'frames': 60}, k_lauf(163)]}, maxFrames=2000)   # Kante: nicht ganz vorn anhalten (Abrutschen)
     soll(r.get('done'), 'Tor 1 durch den Felsen (beide)', r.get('pos'))
     f = [k_lauf(179), {'wait': f'P.y < {ky(7)}'}, k_lauf(197, -10), {'use': True, 'frames': 5}, k_lauf(201), {'until': 'P.grounded', 'frames': 200}]
     r = await koop(g, f=kat(176, 14), m=kat(174, 10), plans={'f': f}, maxFrames=2000)
@@ -1161,7 +1161,7 @@ async def level8_gluehwald(g):
     m = [k_lauf(246, -14), {'frames': 20}, {'wait': f'Q.x >= {kx(258)} && Q.x <= {kx(262)} + 14 && Q.grounded'},
          {'hold': ['left'], 'until': f'P.x >= {kx(262)}', 'frames': 300}]
     f = [{'wait': '!!linkOn[5]'}, k_lauf(244), {'wait': f'P.x >= {kx(262)}'}, {'frames': 20},
-         {'hold': ['left'], 'until': f'P.x <= {kx(262)} + 10', 'frames': 200}, {'frames': 10}, {'wait': f'Q.x >= {kx(262)}'}]
+         {'hold': ['left'], 'until': f'P.x <= {kx(262)} + 40', 'frames': 200}, {'frames': 10}, {'wait': f'Q.x >= {kx(262)}'}]   # +40: Auslaufen endet vor der Kante
     r = await koop(g, m=kat(238, 14), f=kat(236, 14), plans={'m': m, 'f': f}, maxFrames=3000)
     soll(r.get('done') and r['pos']['m'][0] >= 260 and r['pos']['f'][0] >= 260, 'Teleporter-Schleuse (Platten 5)', r.get('pos'))
     for hold in (6, 10, 14, 18):
@@ -3613,8 +3613,8 @@ async def dschungel6_wipfelsturm(g):
     def lauf(bis, kanten):
         cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
         return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
-    def takt_plan(start_c, stufen, ziel_x, n):
-        pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
+    def takt_plan(start_c, stufen, ziel_x, n, vor=-6):   # vor: Haltepunkt (Kante: Auslaufen darf nicht über die Kante tragen)
+        pl = [k_lauf(start_c, vor), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
         for c0 in stufen[1:]:
             pl += [{'wait': f'({n} - wechselSchritte % {n}) <= 20 && ({n} - wechselSchritte % {n}) > 3'}] + sprung_zu(kx(c0) + 20)
         return pl + [{'wait': f'({n} - wechselSchritte % {n}) <= 24'}] + sprung_zu(ziel_x)
@@ -3648,7 +3648,7 @@ async def dschungel6_wipfelsturm(g):
         ok = []
         for rel in RELS:
             m = [k_lauf(57, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(76)}', 'frames': 3000}] + kette(58, 2, rel) + [k_lauf(84)]
-            f = [{'wait': '!!linkOn[2]', 'frames': 1000}, {'frames': 10}, k_lauf(77, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[3]'}, k_lauf(85)]
+            f = [{'wait': '!!linkOn[2]', 'frames': 1000}, {'frames': 10}, k_lauf(77, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[3]'}, k_lauf(84)]   # Kante: nicht ganz vorn anhalten
             r = await koop(g, m=kat(54, 15), f=kat(55, 15), plans={'m': m, 'f': f}, maxFrames=5000)
             if r.get('done') and r['pos']['m'][0] >= 83 and r['pos']['f'][0] >= 84: ok.append(rel[:14])
         soll(ok, 'E1 Brücke für die Partnerin (Platte 2, Hebel 3, Affe an zwei Haken)', (ok, info(r)))
@@ -3734,7 +3734,7 @@ async def dschungel6_wipfelsturm(g):
             m = [k_lauf(602, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, {'frames': 5}, {'wait': '!!linkOn[10]', 'frames': 3000}, {'frames': 20}] + kette(616, 1, rel) + am(624) + \
                 [{'wait': '!!linkOn[12]', 'frames': 3000}, {'frames': 20}] + kette(642, 2, rel) + am(653) + [k_lauf(662)]
             f = [k_lauf(604, 0), {'until': f'P.x > {kx(609)}', 'frames': 200}, {'frames': 5}] + am(613) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}] + \
-                takt_plan(627, [629, 632, 635], kx(638), 72) + am(639) + [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(663)]
+                takt_plan(627, [629, 632, 635], kx(638), 72, vor=-40) + am(639) + [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(663)]
             r = await koop(g, m=kat(600, 15), f=kat(599, 15), plans={'m': m, 'f': f}, maxFrames=9000)
             if r.get('done') and r['pos']['m'][0] >= 661 and r['pos']['f'][0] >= 662: ok.append(rel[:14])
         soll(ok, 'E4 Wipfel-Staffel (beide zusammen)', (ok, info(r)))
