@@ -4136,8 +4136,12 @@ async def haken_schwung_holen(g):
       p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=150; p1.ropeMax=200; window.__ang=[];
       if(!window.__os){ window.__os=stepSim; stepSim=function(ts){
         if(window.__pump){ KEYS.KeyD = p1.vx>=0; KEYS.KeyA = p1.vx<0; }
-        __os(ts); if(p1.hookAttached) __ang.push(Math.atan2(p1.x-hooks[0].x,(p1.y-p1.h*0.6)-hooks[0].y)*180/Math.PI); }; } })()"""
-    await g.ev(setup); await g.hold(('KeyD',), 500)
+        if(window.__halteD > 0) KEYS.KeyD = true;
+        __os(ts); if(p1.hookAttached) __ang.push(Math.atan2(p1.x-hooks[0].x,(p1.y-p1.h*0.6)-hooks[0].y)*180/Math.PI);
+        if(window.__halteD > 0 && --window.__halteD === 0) KEYS.KeyD = false; }; } })()"""
+    # rechts genau 27 Physik-Schritte (= 0,5 s) halten – unabhängig davon, wie lange ein Bild zum Zeichnen braucht
+    # (vorher Tastatur + Warten: bei langsamen Bildern blieb die Taste ein paar Schritte länger gedrückt)
+    await g.ev(setup); await g.ev('window.__halteD = 27'); await g.steps(40)
     ang = await g.ev('__ang')
     assert ang and max(ang) < 32, f'rechts halten schwingt zu weit: {max(ang or [0]):.0f}°'
     await g.ev(setup); await g.ev('window.__pump=true'); await g.p.wait_for_timeout(3000)
