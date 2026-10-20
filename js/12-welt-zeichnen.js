@@ -240,10 +240,30 @@ function matRasterHolen(){
         zellen.set(k, t);
       }
   };
-  for(const f of fakeWalls) eintragen(f, 2, true);
   for(const s of solids){
     const t = s.type === 'ground' ? 1 : s.type === 'wall' ? 2 : s.type === 'crumble' ? 3 : 0;
     if(t) eintragen(s, t, false);
+  }
+  // Scheinwand nimmt das Material ihrer Umgebung an (Nutzerwunsch: im Boden ein „Scheinboden“ statt Ziegeln): je
+  // zusammenhängende Scheinwand-Fläche zählen, ob ringsum mehr Erde oder mehr Wand liegt
+  const fz = new Set();
+  for(const f of fakeWalls)
+    for(let c = Math.floor(f.x/40 + 1e-6); c < Math.ceil((f.x + f.w)/40 - 1e-6); c++)
+      for(let r = Math.floor(f.y/40 + 1e-6); r < Math.ceil((f.y + f.h)/40 - 1e-6); r++){ const k = c + ',' + r; if(!zellen.has(k)) fz.add(k); }
+  const fertig = new Set();
+  for(const start of fz){
+    if(fertig.has(start)) continue;
+    const flaeche = [start], stapel = [start]; fertig.add(start); let erde = 0, wand = 0;
+    while(stapel.length){
+      const [c, r] = stapel.pop().split(',').map(Number);
+      for(const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const k = (c + dc) + ',' + (r + dr);
+        if(fz.has(k)){ if(!fertig.has(k)){ fertig.add(k); flaeche.push(k); stapel.push(k); } continue; }
+        const t = zellen.get(k); if(t === 1 || t === 3) erde++; else if(t === 2) wand++;
+      }
+    }
+    const t = erde > wand ? 1 : 2;
+    for(const k of flaeche){ zellen.set(k, t); fake.add(k); }
   }
   // Nutzerwunsch: reicht eine Fläche bis an den oberen Bildrand, läuft sie über den Rand hinaus weiter (keine runden Ecken,
   // kein Gras, keine Linie oben) – dazu bekommt sie unsichtbar weitere Kästchen bis über den Rand (nur fürs Zeichnen)
@@ -387,22 +407,37 @@ function matStueckDaten(ci){
 function materialZeichnen(){
   const R = matRasterHolen();
   const a = Math.floor((camX - MAT_RAND)/MAT_STUECK), b = Math.floor((camX + VW + MAT_RAND)/MAT_STUECK), key = R.version + ':' + a + ':' + b;
-  if(matSicht.key !== key){
+  // Scheinwände, in denen gerade niemand steht, kommen mit in dieselben Pfade -> keine feinen Kanten zum echten Boden;
+  // sie werden später trotzdem noch einmal deckend darübergemalt (verdecken Münzen/Hebel), erst durchsichtig ohne sie
+  const opak = fakeWalls.filter(f => !(f.alpha < 0.999) && f.x + f.w > camX - MAT_RAND && f.x < camX + VW + MAT_RAND);
+  const k2 = key + ':' + opak.map(f => fakeWalls.indexOf(f)).join(',');
+  if(matSicht.key !== k2){
     const L = []; for(let ci = a; ci <= b; ci++){ const D = matStueckDaten(ci); if(D) L.push(D); }
-    matSicht = {key, V: matPfadeVereinen(L)};
+    for(const f of opak) L.push(matScheinPfade(f));
+    matSicht = {key: k2, V: matPfadeVereinen(L)};
   }
   ctx.save(); ctx.translate(-camX, 0);
   matPfadeZeichnen(ctx, matSicht.V, matMassstab());
   ctx.restore();
 }
-// Scheinwand: dieselbe Wand (Ziegel aus der Weltlage -> nahtlos zur echten Wand) als eigenes kleines Bild je Scheinwand,
+// Pfade einer Scheinwand (für das nahtlose Mitzeichnen in materialZeichnen)
+function matScheinZellen(f, R){
+  const liste = [];
+  for(let c = Math.floor(f.x/40 + 1e-6); c < Math.ceil((f.x + f.w)/40 - 1e-6); c++)
+    for(let r = Math.floor(f.y/40 + 1e-6); r < Math.ceil((f.y + f.h)/40 - 1e-6); r++) if(R.fake.has(c + ',' + r)) liste.push({c, r, t: R.zellen.get(c + ',' + r)});   // Wand oder Erde (wie die Umgebung)
+  return liste;
+}
+function matScheinPfade(f){
+  const R = matRasterHolen();
+  if(!f._pf || f._pf.v !== R.version) f._pf = {v: R.version, D: matPfadeBauen(matScheinZellen(f, R), [], -Infinity, Infinity)};
+  return f._pf.D;
+}
+// Scheinwand: dasselbe Material wie ringsum (Wand oder Erde, siehe matRasterHolen; nahtlos) als eigenes kleines Bild je Scheinwand,
 // damit sie beim Hineingehen als Ganzes durchsichtig werden kann (wenige, kleine Flächen)
 function matScheinwandBild(f){
   const R = matRasterHolen(), S = matMassstab();
   if(f._mat && f._mat.S === S && f._mat.v === R.version) return f._mat;
-  const liste = [];
-  for(let c = Math.floor(f.x/40 + 1e-6); c < Math.ceil((f.x + f.w)/40 - 1e-6); c++)
-    for(let r = Math.floor(f.y/40 + 1e-6); r < Math.ceil((f.y + f.h)/40 - 1e-6); r++) if(R.fake.has(c + ',' + r)) liste.push({c, r, t: 2});
+  const liste = matScheinZellen(f, R);
   const X = Math.floor(f.x/40 + 1e-6)*40 - 4, Y = Math.floor(f.y/40 + 1e-6)*40 - 20, w = Math.ceil((f.x + f.w)/40 - 1e-6)*40 + 4 - X, h = Math.ceil((f.y + f.h)/40 - 1e-6)*40 + 6 - Y;
   const c = document.createElement('canvas'); c.width = Math.ceil(w*S); c.height = Math.ceil(h*S);
   const q = c.getContext('2d'); q.setTransform(S, 0, 0, S, -X*S, -Y*S);

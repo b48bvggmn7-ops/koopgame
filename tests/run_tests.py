@@ -9285,6 +9285,11 @@ async def neues_aussehen_runde1(g):
                        {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
     r = await g.ev("(() => { matRasterHolen(); return [Tc(10, -4), Tc(20, -3)]; })()")
     assert r == [2, 0], f'Fläche am oberen Rand läuft nicht über den Rand hinaus (bzw. tiefere Fläche wird verlängert): {r}'
+    # Nutzerwunsch: Scheinwand nimmt das Material ihrer Umgebung an (im Boden = Scheinboden aus Erde, an Wand = Wand)
+    await g.load(level([ground(0, 400, 400, 320), ground(560, 400, 320, 320), ground(400, 600, 160, 120), ground(1000, 400, 120, 320, 'wall'),
+                        ground(400, 400, 160, 200, 'fake'), ground(1120, 400, 80, 120, 'fake')], {'x': 200, 'y': 400}, {'x': 100, 'y': 400}))
+    r = await g.ev("(() => { matRasterHolen(); return [Tc(11, 12), Tc(28, 11), matRaster.fake.has('11,12')]; })()")
+    assert r == [1, 2, True], f'Scheinwand passt ihr Material nicht der Umgebung an: {r}'
 
 @test
 async def wechselboden_geisteranzeige(g):

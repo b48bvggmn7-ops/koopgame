@@ -1722,7 +1722,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     ein Stück an der höheren Fläche hoch), Outline nur um die Gesamtform (auch Treppen, L-Formen, Löcher). Leistung:
     einmal je Abschnitt (`MAT_STUECK`) zu fertigen Zeichenpfaden berechnet, pro Bild nur gefüllt; die Körnung ist ein
     kleines Muster. (Vorgezeichnete Bilder wie in der Vorschau sprengen in Chrome das Bild-Budget je Bild, das der
-    Hintergrund schon fast ausschöpft.) Scheinwände sehen genauso aus und gehen nahtlos in die Wand über.
+    Hintergrund schon fast ausschöpft.) Scheinwände nehmen das Material ihrer Umgebung an (Nutzerwunsch: mitten im Boden ein „Scheinboden“ aus Erde,
+    an einer Wand Ziegel; je zusammenhängender Scheinwand zählt, ob ringsum mehr Erde oder Wand liegt) und werden, solange
+    niemand darin steht, mit der Fläche zusammen gezeichnet -> keine Kanten; beim Hineingehen wie bisher durchsichtig.
   - **Am oberen Bildrand** läuft eine Fläche über den Rand hinaus weiter (oben keine runden Ecken, kein Gras, keine
     Linie), wenn sie bis in die oberste Reihe reicht (Nutzerwunsch).
   - **Bewegliche Plattformen** aus Boden/Wand: ein abgerundeter Block im gleichen Material (`pieceDraw`), ganze Gruppe
