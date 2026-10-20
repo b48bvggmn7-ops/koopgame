@@ -4850,6 +4850,22 @@ async def dschungel_leuchtpflanzen(g):
     assert r['tag'] == 0, 'Leuchtpflanzen am Tag'
 
 @test
+async def broeckel_und_durchbruch_ecken(g):
+    """Nutzerwunsch: (1) grenzt Wand/Boden an eine Durchbruch-Wand, gibt es dort keine runde Ecke (sie zählt als Nachbar);
+    (2) Bröckelboden: an freien Ecken wirklich rund (Ecke durchsichtig), oben gelbes trockenes Gras."""
+    G = ground
+    await g.load(level([G(0, 680, 2000), G(200, 360, 80, 160, 'wall'), G(200, 520, 80, 80, 'bruch'), G(700, 480, 160, 40, 'crumble')],
+                       {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.steps(3)
+    r = await g.ev("""(() => { matRasterHolen(); const unten = Tn(5, 13), frei = Tn(4, 12);
+      const c = broeckelKachel(17, 12), q = c.getContext('2d'), px = (x, y) => Array.from(q.getImageData(x, y, 1, 1).data);
+      // Kachel 80×88 (2-fach, 4 px Gras darüber): linke obere Ecke frei -> rund (durchsichtig); oben in der Mitte Gras
+      return {unten, frei, ecke: px(1, 9)[3], gras: px(40, 12)}; })()""")
+    assert r['unten'] and not r['frei'], f'Durchbruch-Wand zählt nicht als Nachbar: {r}'
+    assert r['ecke'] < 40, f'Bröckelboden-Ecke nicht rund: {r}'
+    gr = r['gras']; assert gr[3] > 200 and gr[0] > 150 and gr[1] > 130 and gr[2] < gr[1], f'kein gelbes Gras oben: {r}'
+
+@test
 async def welt_details_und_vordergrund(g):
     """Design-Politur D: jede Welt bekommt ihre Details (Ruinen: Fackeln, Höhle: Tropfsteine mit Tropfen, Dschungel:
     Wasserfall mit Regenbogen, Vulkan: Asche/Funken). Ein dunkler Vordergrund am unteren Bildrand gibt es NICHT mehr
