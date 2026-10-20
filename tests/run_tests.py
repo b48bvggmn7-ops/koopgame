@@ -4111,8 +4111,9 @@ async def haken_schwung_holen(g):
 
 @test
 async def deko_vogel_flattert_weg(g):
-    """Vögel sitzen auf dem Boden und flattern weg, wenn eine Figur kommt (reine Deko, keine Kollision)."""
-    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    """Vögel sitzen auf dem Boden und flattern weg, wenn eine Figur kommt (reine Deko, keine Kollision). Gilt außerhalb des
+    Dschungels (im Dschungel bleiben Vögel seit dem Dschungel-Paket sitzen, Test dschungel_tiere_regeln)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen'))
     await g.p.wait_for_timeout(200)
     n = await g.ev('birds.length')
     assert n >= 2, f'zu wenige Vögel: {n}'
@@ -4125,8 +4126,9 @@ async def deko_vogel_flattert_weg(g):
 
 @test
 async def deko_frei_von_spielobjekten(g):
-    """Pflanzen und Vögel stehen nie auf Münzen, Stacheln, Hebeln, Checkpoints oder am Ziel."""
-    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+    """Pflanzen und Vögel stehen nie auf Münzen, Stacheln, Hebeln, Checkpoints oder am Ziel (alte Deko, außerhalb des
+    Dschungels; Dschungel: Test dschungel_boden_frei)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen',
                        coins=[{'x': x, 'y': 660} for x in range(420, 2900, 160)],
                        spikes=[{'x': 500, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}, {'x': 1300, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}],
                        switches=[{'x': 900, 'y': 660, 'link': 1}], checkpoints=[{'x': 1500, 'y': 680}],
@@ -4760,6 +4762,101 @@ async def dschungel_leuchtpflanzen(g):
     assert r['n'] >= 4, f'zu wenige Leuchtpflanzen: {r}'
     assert r['fehl'] == 0 and not r['zuViel'] and r['gleich'] == 0 and r['eng'] == 0 and r['anHebel'] == 0, f'Leuchtpflanzen falsch verteilt: {r}'
     assert r['tag'] == 0, 'Leuchtpflanzen am Tag'
+
+@test
+async def dschungel_boden_dekor(g):
+    """boden-dekor-paket (a): im Dschungel liegen Dickicht, feines Gras, Grasbüschel, Farnbüsche, Blumen und Pilze auf den
+    Oberseiten von Boden und Wand (Mengen wie in der Vorschau) und sind gezeichnet (Bildpunkte über der Oberkante); die alten
+    Pflanzen/Moos aus 17-deko.js gibt es dort nicht mehr; andere Welten behalten die alte Deko."""
+    G = ground
+    for zeit in ('mittag', 'nacht', 'morgen'):
+        await g.load(level([G(0, 680, 6000), G(800, 480, 400), G(1600, 400, 160, 280, 'wall')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                           welt='dschungel', tageszeit=zeit))
+        await g.steps(5)
+        r = await g.ev("""(() => { djbFor = null; const D = djbHolen(); let fein = 0, bue = 0, dick = 0, pilz = 0;
+          for(const z of D.zellen){ fein += z.fine.length; bue += z.tufts.length; dick += z.thick.length; if(z.mush) pilz++; }
+          // Bildpunkt-Probe: im vorgezeichneten Stück (vorne/hinten) über der Oberkante gibt es gefärbte Bildpunkte
+          const probe = (st, art) => { const B = djbStueckBild(st, art, hgNacht(), false), q = B.c.getContext('2d'), k = B.c.height/B.h;
+            const yo = Math.round((st.y - 6 - B.y0)*k), d = q.getImageData(0, yo, B.c.width, Math.max(1, Math.round(4*k))).data; let n = 0;
+            for(let i = 3; i < d.length; i += 4) if(d[i] > 40) n++; return n/(d.length/4); };
+          const st = D.stuecke.find(s => s.y === 680);
+          return {zellen: D.zellen.length, fein, bue, dick, pilz, farn: D.agaves.length, blumen: D.flowers.length, gross: D.gross.length,
+                  vorne: probe(st, 'vorne'), hinten: probe(st, 'hinten'), alt: decoPlants.length + decoMoss.length, stil: BG_STIL && BG_STIL.name}; })()""")
+        z = r['zellen']
+        assert z > 100 and r['fein'] > z*3 and r['bue'] > z*0.4 and r['dick'] > z*1.5, f'{zeit}: zu wenig Gras/Dickicht {r}'
+        assert r['farn'] + r['blumen'] + r['pilz'] > 3, f'{zeit}: keine großen Pflanzen {r}'
+        assert r['vorne'] > 0.3 and r['hinten'] > 0.2, f'{zeit}: Dekor nicht gezeichnet {r}'
+        assert r['alt'] == 0, f'{zeit}: alte Deko zusätzlich {r}'
+    await g.load(level([G(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen'))
+    await g.steps(5)
+    assert await g.ev("(() => { decoFor = null; buildDeco(); return decoPlants.length > 0 && !hgBodenDekor(); })()"), 'andere Welt: alte Deko fehlt'
+
+@test
+async def dschungel_boden_abstaende(g):
+    """boden-dekor-paket (b): große Pflanzen (Farnbusch, Blume, Pilz) mind. 60 px auseinander und 45 px vom Flächenrand; kein
+    Boden-Tier innerhalb von ±34 px einer großen Pflanze; nachts keine Leuchtpflanze näher als 60 px an einer großen Pflanze."""
+    G = ground
+    teile = [G(0, 680, 9000)] + [G(x, 520, 400) for x in range(600, 9000, 1200)]
+    for zeit in ('mittag', 'nacht'):
+        await g.load(level(teile, {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit=zeit, goal={'x': 8900, 'y': 680}))
+        await g.steps(5)
+        r = await g.ev("""(() => { djbFor = null; djPwFor = null; critFor = null; decoFor = null; buildDeco(); buildCritters();
+          const gr = djbGrossePflanzen(), D = djbHolen(); let eng = 0, rand = 0;
+          for(let i = 0; i < gr.length; i++) for(let j = i + 1; j < gr.length; j++) if(Math.abs(gr[i].x - gr[j].x) < 60 && Math.abs(gr[i].y - gr[j].y) < 60) eng++;
+          for(const p of gr){ const l = djbLaufAn(p.x, p.y); if(!l || p.x < l.x0 + 45 || p.x > l.x1 - 45) rand++; }
+          const tiere = critters.filter(c => ['frog', 'snail', 'mush', 'bud'].includes(c.kind));
+          const tierNah = tiere.filter(c => gr.some(p => Math.abs(p.x - c.x) < 34 && Math.abs(p.y - c.y) < 40)).length;
+          const pw = hgLeuchtpflanzen(), pwNah = pw.filter(p => gr.some(q => Math.abs(q.x - p.wx) < 60 && Math.abs(q.y - p.wy) < 60)).length;
+          return {gross: gr.length, eng, rand, tiere: tiere.length, tierNah, pw: pw.length, pwNah}; })()""")
+        assert r['gross'] > 5 and r['eng'] == 0 and r['rand'] == 0, f'{zeit}: große Pflanzen {r}'
+        assert r['tierNah'] == 0, f'{zeit}: Tier in großer Pflanze {r}'
+        if zeit == 'nacht': assert r['pw'] > 0 and r['pwNah'] == 0, f'Leuchtpflanzen {r}'
+
+@test
+async def dschungel_hintergrund_tiere_alle(g):
+    """boden-dekor-paket (c): Schnecken am Baumstamm und ferne Schmetterlinge (nachts Nachtfalter, dazu Fledermäuse) werden bei
+    JEDER Dschungel-Auswahl gezeichnet – Morgen, Tag, Abend, Nacht (vorher fehlten sie bei Morgen/Abend)."""
+    await g.load(level([ground(0, 680, 6000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel'))
+    await g.steps(5); await g.ev("menuScreen = 'pause'")
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        r = await g.ev(f"""(() => {{ setTheme(composeLook('dschungel', '{zeit}'));
+          const K = DJ_PAR_K*0.38; let cam = 0; for(let c = 0; c < LEVEL_W - VW; c += 10){{ const x = ((800 - c*K) % 2600 + 2600) % 2600; if(Math.abs(x - VW/2) < 8){{ cam = c; break; }} }}
+          camPos = camX = cam; const zaehl = {{schnecke: 0, falter: 0, fledermaus: 0}}, altS = djtSetzen;
+          window.djtSetzen = (B, x, y, rot) => {{ for(const k in DJT_HG) if(DJT_HG[k] === B) zaehl[k.startsWith('schnecke') ? 'schnecke' : k.startsWith('falter') ? 'falter' : 'fledermaus']++; altS(B, x, y, rot); }};
+          const altNow = performance.now.bind(performance); performance.now = () => 36000;
+          try {{ draw(); }} finally {{ performance.now = altNow; window.djtSetzen = altS; }}
+          return {{stil: BG_STIL.name, tiere: hgTierRegeln(), ...zaehl}}; }})()""")
+        assert r['tiere'] and r['schnecke'] >= 1 and r['falter'] >= 1, f'{zeit}: Hintergrund-Tiere fehlen {r}'
+        if zeit == 'nacht': assert r['fledermaus'] >= 1, f'nachts keine Fledermäuse {r}'
+    await g.ev("menuScreen = null")
+
+@test
+async def dschungel_boden_frei(g):
+    """boden-dekor-paket (d): nichts (Gras, Dickicht, Farnbusch, Blume, Pilz, Tier, Vogel, Leuchtpflanze) steht auf Münzen,
+    Stacheln, Hebeln, Sprungpilzen, Druckplatten, Checkpoint oder Ziel – Freihalte-Zone 60 px seitlich / 90 px senkrecht
+    (Dickicht entsprechend seiner Breite weiter weg), Münzen wie bisher."""
+    G = ground
+    for zeit in ('mittag', 'nacht'):
+        await g.load(level([G(0, 680, 5000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit=zeit,
+                           coins=[{'x': x, 'y': 660} for x in range(700, 4800, 450)],
+                           spikes=[{'x': 1000, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}, {'x': 2200, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}],
+                           switches=[{'x': 1500, 'y': 660, 'link': 1}], bouncers=[{'x': 2800, 'y': 680}], plates=[{'x': 3300, 'y': 660, 'link': 2}],
+                           checkpoints=[{'x': 3800, 'y': 680}], goal={'x': 4600, 'y': 680}))
+        await g.steps(5)
+        r = await g.ev("""(() => { djbFor = null; djPwFor = null; critFor = null; decoFor = null; buildDeco(); buildCritters();
+          const obj = [...spikes.map(s => [s.x + 20, 680]), ...switchDefs.map(s => [s.x, 680]), ...bouncers.map(b => [b.x, 680]), ...plates.map(p => [p.x, 680]),
+                       ...checkpointDefs.map(c => [c.x, 680]), [goal.x, 680]];
+          const D = djbHolen(), schlecht = [];
+          const pruef = (art, x, m) => { if(obj.some(([ox]) => Math.abs(ox - x) < (m || 60))) schlecht.push(art + '@' + Math.round(x)); };
+          for(const z of D.zellen){ for(const f of z.fine) pruef('gras', f.x); for(const f of z.tufts) pruef('bueschel', f.x);
+            for(const b of z.thick) pruef('dickicht', b.x, 60 + b.s.w*0.35); if(z.mush) pruef('pilz', z.mush.x); }
+          for(const a of D.agaves) pruef('farn', a.x); for(const f of D.flowers) pruef('blume', f.x);
+          for(const c of critters) pruef('tier:' + c.kind, c.x); for(const b of birds) pruef('vogel', b.homeX);
+          for(const p of hgLeuchtpflanzen()) pruef('leucht', p.wx);
+          const muenze = [...D.zellen.flatMap(z => z.fine.map(f => f.x)), ...D.agaves.map(a => a.x), ...D.flowers.map(f => f.x)].filter(x => coins.some(c => Math.abs(c.x - x) < 24)).length;
+          return {schlecht: schlecht.slice(0, 12), n: schlecht.length, muenze, gras: D.zellen.reduce((s, z) => s + z.fine.length, 0)}; })()""")
+        assert r['gras'] > 200, f'{zeit}: kaum Gras {r}'
+        assert r['n'] == 0 and r['muenze'] == 0, f'{zeit}: Dekor/Tiere an Spielobjekten {r}'
 
 @test
 async def welt_details_und_vordergrund(g):
