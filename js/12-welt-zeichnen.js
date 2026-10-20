@@ -776,6 +776,7 @@ function drawSolidLook(s, look, x){
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenHinten) E.spiel.zeichnenHinten();   // HINTER Boden/Wänden, z. B. Lava (elemente/)
   // Neues Aussehen: Boden und Wand als eine zusammenhängende Schicht (Zwischenspeicher-Stücke), bewegliche Boden-/Wand-
   // Stücke als je ein Block (pieceDraw), Türen als je eine zusammenhängende Tür (drawGate)
+  djbDickichtZeichnen();   // Dschungel: Dickicht hinter dem Boden, schaut an den Kanten heraus (17a-dschungel-boden.js)
   materialZeichnen();
   matBeweglichZeichnen();
   for(const s of solids){

@@ -189,7 +189,7 @@ function drawCritters(){
     else if(c.kind === 'mush') drawMushroom(c, x);
     else if(c.kind === 'bud') drawBud(c, x, t);
     else if(c.kind === 'sloth') drawSloth(c, x, t);
-    else if(c.kind === 'firefly') drawFirefly(c, x, t);
+    else if(c.kind === 'firefly'){ if(typeof hgBodenDekor === 'function' && hgBodenDekor()) djGluehwuermchen(ctx, x, c.y, t/1000, c.ph); else drawFirefly(c, x, t); }
     else if(c.kind === 'lizard') drawLizard(c, x, t);
     else if(c.kind === 'crystal') drawCrystalCrit(c, x, t);
     else if(c.kind === 'bat'){ if(c.state !== 'gone') drawBat(c, x, t); }
@@ -394,9 +394,10 @@ const DJT_FREI_X = 34, DJT_FREI_H = 46;   // um das Tier herum kein Block, keine
 const DJT_LAUF_MIN = 70;            // Frosch/Schnecke brauchen so viel freie Laufstrecke
 function buildCrittersDschungel(){
   const N = hgNacht();
-  const CT = {air: N ? 'firefly' : 'butterfly', airCols: N ? ['#d8ff6a'] : ['#7ec8ff', '#ff9ecb', '#ffd166', '#b69cff'], hanging: N ? 'bat' : 'sloth', mushGlow: N};
+  const CT = {air: N ? 'firefly' : 'butterfly', airCols: N ? ['#ffb347'] : ['#7ec8ff', '#ff9ecb', '#ffd166', '#b69cff'], hanging: N ? 'bat' : 'sloth', mushGlow: N};   // Glühwürmchen orange (boden-dekor-paket)
   if(decoFor !== solids) buildDeco();   // Pflanzen zuerst (Tiere stehen in den Lücken)
-  const blocked = dekoSperre();
+  // bisherige Sperre + Freihalte-Zone um alle Spielobjekte (boden-dekor-paket, 17a-dschungel-boden.js) – auch beim Versetzen
+  const blocked = (() => { const a = dekoSperre(), b = typeof djbPruefer === 'function' && hgBodenDekor() ? djbPruefer() : () => false; return (x, y) => a(x, y) || b(x, y); })();
   const frei = [...switchDefs.map(sw => [sw.x, sw.y]), ...bouncers.map(b => [b.x, b.y - 20]), ...plates.map(pl => [pl.x, pl.y])];
   const nearStart = x => Math.abs(x - levelStartM.x) < 200;
   const last = {}; let slot = 0, lastG = -1e9, lastH = -1e9, goldDone = false;
@@ -450,6 +451,8 @@ function buildCrittersDschungel(){
   // Lücken; steht eins ungünstig, rückt es zur nächsten freien Stelle derselben Fläche, sonst entfällt es. Gras zählt nicht.
   const decor = [];
   for(const pl of decoPlants){ if(pl.kind === 0 || pl.kind === 4) decor.push({x: pl.x, y: pl.y - 7, r: 36}); else if(pl.kind === 2 || pl.kind === 3) decor.push({x: pl.x, y: pl.y - 7, r: 24}); }
+  // neues Boden-Dekor (17a): große Pflanzen – kein Tier innerhalb von ±34 px (Farnbusch breiter)
+  if(typeof djbGrossePflanzen === 'function') for(const g2 of djbGrossePflanzen()) decor.push({x: g2.x, y: g2.y, r: g2.art === 'agave' ? 36 : 34});
   if(N) for(const p of hgLeuchtpflanzen()) decor.push({x: p.wx, y: p.wy, r: 58});
   const bad = (x, y, r0) => decor.some(d => Math.abs(d.x - x) < d.r + r0 && Math.abs(d.y - y) < 70);
   for(const c of critters){
@@ -600,4 +603,30 @@ function djHgTiereHimmel(t){
           f = Math.sin(t*9 + i*2.3), B = djtFledermausBild(Math.round((f + 1)/2*(DJT_FLUEGEL_STUFEN - 1)));
     for(const xx of [xb, xb - DJ_PER]){ if(xx < -60 || xx > VW + 60) continue; djtSetzen(B, xx, y, 0); }
   }
+}
+
+// ---------- Glühwürmchen im Dschungel: warmes Orange (boden-dekor-paket) ----------
+// Heller Punkt (r ~2), kleiner Hof (~14, Deckkraft ~0,3), großer, sehr weicher Schein (~38, ~0,16) mit Zwischenstufen
+// (bei 40 % des Radius ~38 % der Deckkraft, bei 70 % ~10 %, am Rand 0 – keine sichtbare Kante), langsames ruhiges Pulsieren.
+// Der Schein ist einmal vorgezeichnet; pro Bild nur Deckkraft. Benutzt für die fliegenden Nacht-Tiere und die 6 Glühwürmchen
+// vor dem Spielfeld (11b). Die Nachtfalter im Hintergrund bleiben getrennt.
+const GLUEH_KERN = '#ffb347', GLUEH_HOF = '255,150,40';
+let gluehBild = null;
+function gluehSchein(){
+  if(gluehBild) return gluehBild;
+  const R = 38, c = document.createElement('canvas'); c.width = c.height = 2*R*2;
+  const q = c.getContext('2d'); q.scale(2, 2);
+  const weich = (r, a) => { const g2 = q.createRadialGradient(R, R, 0, R, R, r);
+    g2.addColorStop(0, 'rgba(' + GLUEH_HOF + ',' + a + ')'); g2.addColorStop(0.4, 'rgba(' + GLUEH_HOF + ',' + (a*0.38) + ')');
+    g2.addColorStop(0.7, 'rgba(' + GLUEH_HOF + ',' + (a*0.1) + ')'); g2.addColorStop(1, 'rgba(' + GLUEH_HOF + ',0)');
+    q.fillStyle = g2; q.beginPath(); q.arc(R, R, r, 0, 7); q.fill(); };
+  weich(38, 0.16); weich(14, 0.3);
+  return gluehBild = {c, R};
+}
+function djGluehwuermchen(q, x, y, tSek, ph){
+  const B = gluehSchein(), k = 0.85 + 0.15*Math.sin(tSek*1.5 + (ph || 0));
+  q.save(); q.globalAlpha = k; q.drawImage(B.c, x - B.R, y - B.R, 2*B.R, 2*B.R); q.globalAlpha = 1;
+  q.fillStyle = GLUEH_KERN; q.beginPath(); q.arc(x, y, 2, 0, 7); q.fill();
+  q.fillStyle = 'rgba(255,240,210,.9)'; q.beginPath(); q.arc(x, y, 0.9, 0, 7); q.fill();
+  q.restore();
 }

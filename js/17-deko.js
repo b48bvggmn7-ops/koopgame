@@ -118,6 +118,7 @@ function buildDeco(){
   const blocked = dekoSperre();
   const nearStart = x => Math.abs(x - levelStartM.x) < 260 || (levelStartF && Math.abs(x - levelStartF.x) < 260);
   const neueRegeln = typeof hgTierRegeln === 'function' && hgTierRegeln();   // neuer Dschungel-Look: Vögel unten (vogelSitzplaetze)
+  const neuesDekor = typeof hgBodenDekor === 'function' && hgBodenDekor();   // Dschungel: Boden-Dekor aus 17a statt Pflanzen/Moos hier
   let sinceBird = DECO_BIRD_EVERY*0.6;
   const tops = solids.filter(s => s.type === 'ground' || s.type === 'wall').sort((a, b)=> a.x - b.x || a.y - b.y);
   for(const s of tops){
@@ -126,6 +127,7 @@ function buildDeco(){
       if(decoSolidAt(mid, s.y - 2)) continue;           // oben liegt noch etwas -> keine Oberseite
       if(s.y < 40) continue;
       const r = decoHash(cx, s.y);
+      if(neuesDekor) continue;
       if(s.type === 'wall'){
         decoMoss.push({x: cx, y: s.y, seed: r});
         continue;
@@ -148,9 +150,9 @@ function buildDeco(){
       }
     }
   }
-  if(neueRegeln) vogelSitzplaetze(blocked, nearStart);
-  // Moos/Ranken an Wandseiten, die zur Luft zeigen
-  for(const s of solids){
+  if(neueRegeln) vogelSitzplaetze(neuesDekor ? (() => { const g2 = djbPruefer(); return (x, y) => blocked(x, y) || g2(x, y); })() : blocked, nearStart);
+  // Moos/Ranken an Wandseiten, die zur Luft zeigen (im Dschungel mit neuem Boden-Dekor aus: „Moos an Seiten“ ist dort aus)
+  for(const s of (neuesDekor ? [] : solids)){
     if(s.type !== 'wall') continue;
     for(let cy = s.y; cy < s.y + s.h; cy += 40){
       for(const side of [-1, 1]){
@@ -165,6 +167,7 @@ function buildDeco(){
 
 function drawGroundDeco(){
   if(decoFor !== solids) buildDeco();
+  if(typeof hgBodenDekor === 'function' && hgBodenDekor()){ djbVorneZeichnen(); return; }   // Dschungel: neues Boden-Dekor (17a)
   const t = performance.now();
   // Moos auf Wand-Oberseiten und Ranken an Wandseiten
   for(const m of decoMoss){

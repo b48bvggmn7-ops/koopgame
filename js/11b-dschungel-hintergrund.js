@@ -25,7 +25,7 @@ const HG_ALTE_THEMEN = {abend: 'dschungel@abend'};
 // tiere: neue Tier-/Deko-Regeln (20-tiere.js, 17-deko.js); licht: eigenes Licht statt Strahlen, Pollen, Wärme-Schimmer
 // und (nachts) statt der bisherigen Abdunklung. Morgen/Abend bekommen nur den neuen Hintergrund (A+B), sonst wie bisher.
 const HG_STILE = {
-  dschungelHG:    {nacht: false, tiere: false, licht: false},
+  dschungelHG:    {nacht: false, tiere: true,  licht: false},   // (tiere seit boden-dekor-paket auch hier: Hintergrund-Tiere bei jeder Auswahl)
   dschungelTag:   {nacht: false, tiere: true,  licht: true},
   dschungelNacht: {nacht: true,  tiere: true,  licht: true},
 };
@@ -65,6 +65,7 @@ let DJ_WIND_EBENEN = new Set(['mid', 'stems', 'near']);
 const DJ_BILD_MAX_MS = 25, DJ_PROBE = 20;
 const DJ_SOFORT_MS = 50, DJ_SOFORT_N = 4;   // so viele Bilder hintereinander über DJ_SOFORT_MS -> sofort aus (sonst ruckelt es sekundenlang)
 const djSchalter = {
+  dickicht: {an: null, n: 0, summe: 0, lang: 0, key: 'monchichi.dschungelDickicht', max: DJ_BILD_MAX_MS},   // Dickicht-Wiegen (schaltet zuerst ab)
   wind:  {an: null, n: 0, summe: 0, lang: 0, key: 'monchichi.dschungelWind', max: DJ_BILD_MAX_MS},
   licht: {an: null, n: 0, summe: 0, lang: 0, key: 'monchichi.dschungelNachtlicht', max: DJ_BILD_MAX_MS},
 };
@@ -323,10 +324,10 @@ function djAufbauen(){
         nf = mk(6, i => djFrondSprite(110 + r()*90, sg()*(20 + r()*50), '#0c4a24', T('#48b03c', 0.03), 2, 14, 0.35));
   for(let i = 0; i < 22; i++) pt(LY.near, i*span/22 + (r() - 0.5)*50, BY, 0.9 + r()*0.5, 0, pick(nf), 0.04);
   for(let i = 0; i < 7; i++) pt(LY.near, 90 + i*(span - 180)/7 + r()*100, BY, 1, sg()*0.1, i % 2 ? pick(nb) : pick(nm), 0.045);
-  // Dickicht an den Boden-Kanten (Vorschau: POOL) gehört zum Boden, nicht zu dieser Runde – die Zufallszahlen werden
-  // trotzdem gezogen, damit die Lianen genau wie in der Vorschau liegen
-  for(let i = 0; i < 14; i++){ r(); sg(); r(); r(); }
-  for(let i = 0; i < 8; i++){ r(); r(); sg(); }
+  // Dickicht an den Boden-Kanten (Vorschau: POOL): 14 Farnwedel + 8 Monstera, benutzt vom Boden-Dekor (17a-dschungel-boden.js)
+  DJ.POOL = [];
+  for(let i = 0; i < 14; i++) DJ.POOL.push(djFrondSprite(40 + r()*60, sg()*(10 + r()*26), '#1a6a34', r() < 0.5 ? '#82e45a' : '#5ccb52', 0.8, 10, 0.3));
+  for(let i = 0; i < 8; i++) DJ.POOL.push(djMonsteraSprite(22 + r()*10, 16 + r()*14, sg()*8, '#1a6a34', '#3fa850', 0.6, i + 210));
   // Lianen
   DJ.LIA = [];
   for(let i = 0; i < 11; i++) DJ.LIA.push({x: i*DJ_PER/11 + (r() - 0.5)*50, y: TY, len: 110 + r()*180, ph: r()*6, near: i % 3 == 1,
@@ -530,19 +531,22 @@ function hgStilZeichnen(){
   const fog = nacht ? djNachtFarbeRgb(DJ_FOG_NACHT) : DJ_FOG, LY = DJ.LY;
   // Bildabstand messen (frameDt, 14-spielschleife.js): zu langsam -> erst Wind, dann Nacht-Licht aus
   const bild = typeof frameDt === 'number' ? frameDt : 16;
-  if(windAn) djMessen(djSchalter.wind, bild);
-  else if(nacht && djAn(djSchalter.licht)) djMessen(djSchalter.licht, bild);
+  if(windAn && djAn(djSchalter.dickicht)) djMessen(djSchalter.dickicht, bild);   // erst das Dickicht-Wiegen (boden-dekor-paket),
+  else if(windAn) djMessen(djSchalter.wind, bild);                                // dann der Wind,
+  else if(nacht && djAn(djSchalter.licht)) djMessen(djSchalter.licht, bild);      // dann das Nacht-Licht
   djBand('xfar', LY.xfar, 0.12, tw, windAn, nacht);
   if(nacht && typeof djHgTiereHimmel === 'function') djHgTiereHimmel(t);   // Fledermäuse weit hinten (20-tiere.js)
   djBand('far', LY.far, 0.25, tw, windAn, nacht);
   djRiesenblaetter(nacht);
   djStaemme(nacht);
-  if(typeof djHgTiereStamm === 'function') djHgTiereStamm(t, nacht);       // Schnecken am Stamm (20-tiere.js)
   djBand('dens1', LY.dens1, 0.38, tw, windAn, nacht);
   djBand('dach1', LY.dach1, 0.25, tw, windAn, nacht);
   djDunst(t, 430, 0.05, fog);
   djLianen(tw, false, nacht);
   djBand('mid', LY.mid, 0.5, tw, windAn, nacht);
+  // Schnecken am Stamm (20-tiere.js): nach der mittleren Ebene, sonst verschwinden sie hinter Unterwuchs und Bananenblättern
+  // (boden-dekor-paket: „Schnecken am Baum sieht man nicht“)
+  if(typeof djHgTiereStamm === 'function') djHgTiereStamm(t, nacht);
   if(typeof djHgTiereFliegen === 'function') djHgTiereFliegen(t, nacht);    // ferne Schmetterlinge / Nachtfalter (20-tiere.js)
   djBand('dens2', LY.dens2, 0.56, tw, windAn, nacht);
   djBand('stems', LY.stems, 0.62, tw, windAn, nacht);
@@ -809,13 +813,19 @@ function djLeuchtpflanzenBauen(){
   const fest = solids.filter(statisch);
   const cov = (wx0, sl) => fest.some(o => o !== sl && wx0 > o.x - 14 && wx0 < o.x + o.w + 14 && sl.y - 6 >= o.y && sl.y - 6 <= o.y + o.h);
   const frei = typeof dekoFreiPruefer === 'function' ? dekoFreiPruefer() : () => true;
+  // boden-dekor-paket: nach Farnbusch/Blumen/Pilzen gesetzt, 60 px Abstand zu ihnen und untereinander, 45 px vom Rand der
+  // Fläche, nicht in der Freihalte-Zone um Spielobjekte (17a-dschungel-boden.js)
+  const gross = typeof djbGrossePflanzen === 'function' ? djbGrossePflanzen() : [], gesperrt = typeof djbPruefer === 'function' ? djbPruefer() : () => false;
+  const platz = (x, y) => { const l = typeof djbLaufAn === 'function' ? djbLaufAn(x, y) : null;
+    return !gesperrt(x, y) && (!l || (x >= l.x0 + DJB_RAND && x <= l.x1 - DJB_RAND)) &&
+      ![...gross, ...djPw.map(p => ({x: p.wx, y: p.wy}))].some(g2 => Math.abs(g2.x - x) < DJB_GROSS_ABSTAND && Math.abs(g2.y - y) < DJB_GROSS_ABSTAND); };
   let lk = 0;
   for(const sl of solids){
     if(sl.type !== 'ground' || sl.w < 60 || sl.y <= 40) continue;
     const big = sl.w > 400; let x = sl.x + (big ? 40 + R()*260 : sl.w*(0.3 + R()*0.4));
     const lim = sl.x + sl.w - 30; let cnt = 0;
     while(x < lim && cnt < (big ? 60 : (sl.w > 260 ? 2 : 1))){
-      if(!cov(x, sl) && frei(x, sl.y)){
+      if(!cov(x, sl) && frei(x, sl.y) && platz(x, sl.y)){
         lk = (lk + 1 + Math.floor(R()*2)) % 3;
         djPw.push({wx: x, wy: sl.y, k: lk, h: 18 + R()*30, c: DJ_NACHT_COLS[Math.floor(R()*DJ_NACHT_COLS.length)], ph: R()*9, sc: 0.95 + R()*0.3, n: 2 + Math.floor(R()*2)});
         cnt++;
@@ -836,8 +846,18 @@ function hgBodenLicht(){
   ctx.fillStyle = m; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'source-over';
   djEinheiten(); ctx.translate(-camX, 0);
-  for(const p of hgLeuchtpflanzen()){ if(p.wx < camX - 90 || p.wx > camX + VW + 90) continue; djPflanze(ctx, p, p.wx, p.wy, t, windAn); }
-  for(const p of [p1, p2]) if(p) djGlow(ctx, p.x, p.y - 22, 100, '170,225,245', 0.11);
+  // Leuchtpflanzen: mit Wind live gezeichnet, ohne Wind als vorgezeichnetes Bild (alles 'screen', darum gleiches Ergebnis)
+  for(const p of hgLeuchtpflanzen()){
+    if(p.wx < camX - 90 || p.wx > camX + VW + 90) continue;
+    if(windAn){ djPflanze(ctx, p, p.wx, p.wy, t, true); continue; }
+    if(!p.bild) p.bild = djVorBild(-120, -230, 240, 270, q => djPflanze(q, p, 0, 0, 0, false));
+    ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.drawImage(p.bild.c, p.wx - 120, p.wy - 230, 240, 270); ctx.restore();
+  }
+  // kühles Licht um die Figuren (einmal vorgezeichnet)
+  if(!DJN.figLicht) DJN.figLicht = djVorBild(-100, -100, 200, 200, q => djGlow(q, 0, 0, 100, '170,225,245', 0.11));
+  ctx.save(); ctx.globalCompositeOperation = 'screen';
+  for(const p of [p1, p2]) if(p) ctx.drawImage(DJN.figLicht.c, p.x - 100, p.y - 122, 200, 200);
+  ctx.restore();
   ctx.restore();
 }
 // vor dem Spielfeld (Vorschau: TZ.dark): ganz leichte Abdunklung + 6 Glühwürmchen
@@ -847,8 +867,7 @@ function djNachtVorne(t){
   for(const f of DJN.ff){
     const x = djWrap(f.x + Math.sin(t*0.3*f.sp + f.ph)*f.dx*3, f.par*0.5), y = f.y + Math.sin(t*0.5*f.sp + f.ph*1.3)*22;
     if(x < -20 || x > VW + 20) continue;
-    djGlow(ctx, x, y, 9 + f.s*5, '170,250,255', 0.22);
-    ctx.fillStyle = 'rgba(215,252,255,.7)'; ctx.beginPath(); ctx.arc(x, y, f.s, 0, 7); ctx.fill();
+    djGluehwuermchen(ctx, x, y, t, f.ph);   // boden-dekor-paket: warmes Orange (20-tiere.js)
   }
 }
 
