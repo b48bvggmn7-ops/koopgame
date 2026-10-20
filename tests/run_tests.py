@@ -6118,6 +6118,16 @@ async def haft_bewegt(g):
     finally:
         srv.shutdown()
 
+@test
+async def druckplatte_ganz_gedrueckt(g):
+    """Nutzerwunsch: steht eine Figur auf der Druckplatte, ist sie ganz eingesunken (Anzeige), sonst oben."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 60, 'y': 680},
+                       plates=[{'x': 300, 'y': 660, 'link': 1}, {'x': 500, 'y': 660, 'link': 2}]))
+    await g.steps(60)
+    r = await g.ev("plates.map(p => [p.down, p.anzeigeDruck])")
+    assert r[0][0] and r[0][1] > 0.95, f'Platte unter der Figur nicht ganz eingesunken: {r}'
+    assert not r[1][0] and r[1][1] < 0.05, f'freie Platte nicht oben: {r}'
+
 TASTEN_ALT = {1: {'left': 'KeyA', 'right': 'KeyD', 'jump': 'Space', 'ability': 'KeyG', 'pull': 'KeyW', 'slack': 'KeyS', 'use': 'KeyJ'},
               2: {'left': 'ArrowLeft', 'right': 'ArrowRight', 'jump': 'Numpad0', 'ability': 'Numpad1', 'pull': 'ArrowUp', 'slack': 'ArrowDown', 'use': 'Numpad2'}}
 
