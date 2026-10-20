@@ -65,6 +65,11 @@ const GLIDE_START_GRAV = 0.10;
 const GLIDE_MAX_FALL_START = 2.0;
 const GLIDE_MAX_FALL_END = 8.5;
 
+// ---------- Kante (Nutzerwunsch): Fuß nicht mehr auf dem Boden -> abrutschen (js/32-neue-bewegung.js, kanteAbrutschen) ----------
+const KANTE_FUSS = 4;         // px: halbe Fußbreite um die Mitte – trägt darunter nichts mehr, rutscht die Figur über die Kante
+const KANTE_RUTSCH = 1.2;     // px pro Schritt: so schnell rutscht sie ab (wer schneller läuft, fällt einfach runter)
+const KANTE_WACKEL_RAND = 8;  // px: so weit vor der Kante wackelt eine stehende Figur schon (nur Zeichnen, js/10c)
+
 // ---------- Nacht-Ausbau: neue Mechaniken (js/32-neue-bewegung.js; Werte aus der Spielwiese, spielwiese/js/02-werte.js) ----------
 // Alles NEUE Konstanten – keine der Konstanten oben wurde geändert (harte Regel, Test bahnen_alte_mechaniken).
 // Schritte = Physik-Schritte (60 = 1 Spielsekunde).

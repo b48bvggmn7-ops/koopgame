@@ -1145,7 +1145,7 @@ async def level8_gluehwald(g):
         soll(r.get('done'), f'Takt-Steine 2 s ({who})', r.get('pos'))
     if await g.ev("goal.x") < 290 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
-    r = await koop(g, m=kat(140, 14), f=kat(138, 14), plans={'m': [k_lauf(165)], 'f': [{'frames': 60}, k_lauf(163)]}, maxFrames=2000)
+    r = await koop(g, m=kat(140, 14), f=kat(138, 14), plans={'m': [k_lauf(164)], 'f': [{'frames': 60}, k_lauf(163)]}, maxFrames=2000)   # Kante: nicht ganz vorn anhalten (Abrutschen)
     soll(r.get('done'), 'Tor 1 durch den Felsen (beide)', r.get('pos'))
     f = [k_lauf(179), {'wait': f'P.y < {ky(7)}'}, k_lauf(197, -10), {'use': True, 'frames': 5}, k_lauf(201), {'until': 'P.grounded', 'frames': 200}]
     r = await koop(g, f=kat(176, 14), m=kat(174, 10), plans={'f': f}, maxFrames=2000)
@@ -1161,7 +1161,7 @@ async def level8_gluehwald(g):
     m = [k_lauf(246, -14), {'frames': 20}, {'wait': f'Q.x >= {kx(258)} && Q.x <= {kx(262)} + 14 && Q.grounded'},
          {'hold': ['left'], 'until': f'P.x >= {kx(262)}', 'frames': 300}]
     f = [{'wait': '!!linkOn[5]'}, k_lauf(244), {'wait': f'P.x >= {kx(262)}'}, {'frames': 20},
-         {'hold': ['left'], 'until': f'P.x <= {kx(262)} + 10', 'frames': 200}, {'frames': 10}, {'wait': f'Q.x >= {kx(262)}'}]
+         {'hold': ['left'], 'until': f'P.x <= {kx(262)} + 40', 'frames': 200}, {'frames': 10}, {'wait': f'Q.x >= {kx(262)}'}]   # +40: Auslaufen endet vor der Kante
     r = await koop(g, m=kat(238, 14), f=kat(236, 14), plans={'m': m, 'f': f}, maxFrames=3000)
     soll(r.get('done') and r['pos']['m'][0] >= 260 and r['pos']['f'][0] >= 260, 'Teleporter-Schleuse (Platten 5)', r.get('pos'))
     for hold in (6, 10, 14, 18):
@@ -3613,8 +3613,8 @@ async def dschungel6_wipfelsturm(g):
     def lauf(bis, kanten):
         cond = ' || '.join(f'(P.x > {kx(e)} - 12 && P.x < {kx(e)} + 6)' for e in kanten) or 'false'
         return {'hold': ['right'], 'pressIf': {'jump': f'P.grounded && ({cond})'}, 'until': f'P.x >= {kx(bis)}', 'frames': 2000}
-    def takt_plan(start_c, stufen, ziel_x, n):
-        pl = [k_lauf(start_c, -6), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
+    def takt_plan(start_c, stufen, ziel_x, n, vor=-6):   # vor: Haltepunkt (Kante: Auslaufen darf nicht über die Kante tragen)
+        pl = [k_lauf(start_c, vor), {'wait': f'Math.floor(wechselSchritte / {n}) % 2 === 0 && wechselSchritte % {n} < {n} - 50'}] + sprung_zu(kx(stufen[0]) + 20)
         for c0 in stufen[1:]:
             pl += [{'wait': f'({n} - wechselSchritte % {n}) <= 20 && ({n} - wechselSchritte % {n}) > 3'}] + sprung_zu(kx(c0) + 20)
         return pl + [{'wait': f'({n} - wechselSchritte % {n}) <= 24'}] + sprung_zu(ziel_x)
@@ -3648,7 +3648,7 @@ async def dschungel6_wipfelsturm(g):
         ok = []
         for rel in RELS:
             m = [k_lauf(57, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(76)}', 'frames': 3000}] + kette(58, 2, rel) + [k_lauf(84)]
-            f = [{'wait': '!!linkOn[2]', 'frames': 1000}, {'frames': 10}, k_lauf(77, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[3]'}, k_lauf(85)]
+            f = [{'wait': '!!linkOn[2]', 'frames': 1000}, {'frames': 10}, k_lauf(77, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[3]'}, k_lauf(84)]   # Kante: nicht ganz vorn anhalten
             r = await koop(g, m=kat(54, 15), f=kat(55, 15), plans={'m': m, 'f': f}, maxFrames=5000)
             if r.get('done') and r['pos']['m'][0] >= 83 and r['pos']['f'][0] >= 84: ok.append(rel[:14])
         soll(ok, 'E1 Brücke für die Partnerin (Platte 2, Hebel 3, Affe an zwei Haken)', (ok, info(r)))
@@ -3734,7 +3734,7 @@ async def dschungel6_wipfelsturm(g):
             m = [k_lauf(602, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, {'frames': 5}, {'wait': '!!linkOn[10]', 'frames': 3000}, {'frames': 20}] + kette(616, 1, rel) + am(624) + \
                 [{'wait': '!!linkOn[12]', 'frames': 3000}, {'frames': 20}] + kette(642, 2, rel) + am(653) + [k_lauf(662)]
             f = [k_lauf(604, 0), {'until': f'P.x > {kx(609)}', 'frames': 200}, {'frames': 5}] + am(613) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}] + \
-                takt_plan(627, [629, 632, 635], kx(638), 72) + am(639) + [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(663)]
+                takt_plan(627, [629, 632, 635], kx(638), 72, vor=-40) + am(639) + [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(663)]
             r = await koop(g, m=kat(600, 15), f=kat(599, 15), plans={'m': m, 'f': f}, maxFrames=9000)
             if r.get('done') and r['pos']['m'][0] >= 661 and r['pos']['f'][0] >= 662: ok.append(rel[:14])
         soll(ok, 'E4 Wipfel-Staffel (beide zusammen)', (ok, info(r)))
@@ -4740,6 +4740,33 @@ async def dschungel_hintergrund_tag_nacht(g):
         assert r2['wind'] is False and r2['licht'] is False and r2['kacheln'] >= 1, f'{zeit}: Schalter wirken nicht {r2}'
         await g.ev("menuScreen = null")
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
+
+@test
+async def neue_figuren_kante_wackeln(g):
+    """Kante (Nutzerwunsch): Steht der Fuß (Mitte ± KANTE_FUSS) nicht mehr auf dem Boden, rutscht eine stehende Figur ab
+    und fällt; steht er noch halb drauf, bleibt sie stehen. Wackeln (Pose „kante“: auf einem Fuß, Arme wedeln, Blick zum
+    Abgrund) nur, wenn sie an die Kante GELAUFEN ist – nicht nach einer Landung. Wer normal läuft, fällt einfach runter."""
+    await g.load(level([ground(0, 560, 600, 160), ground(800, 560, 600, 160)], {'x': 603, 'y': 560}, {'x': 797, 'y': 560}))
+    await g.steps(60)
+    r = await g.ev("""(() => { const e = {x1: p1.x, x2: p2.x, g1: p1.grounded, g2: p2.grounded};
+      draw(); draw(); e.k1 = p1._ff && p1._ff.key;                         // gelandet/hingestellt: kein Wackeln
+      p1._ff.gelaufen = true; p2._ff.gelaufen = true; p1._moveDir = 0; p2._moveDir = 0;
+      const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y]);
+      draw(); draw(); e.k1b = p1._ff.key; e.k2b = p2._ff.key; e.f1 = p1._ff.gelaufen;
+      e.gleich = vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y]); return e; })()""")
+    assert r['x1'] == 603 and r['x2'] == 797 and r['g1'] and r['g2'], f'Fuß halb auf dem Boden: muss stehen bleiben {r}'
+    assert r['k1'] != 'kante', f'nach dem Hinstellen/Landen kein Wackeln: {r}'
+    assert r['k1b'] == 'kante' and r['k2b'] == 'kante' and r['gleich'], f'an die Kante gelaufen: Wackeln {r}'
+    # Fuß ganz über dem Abgrund: rutscht ab und fällt
+    await g.ev("p1.x = 610; p1._px = 610; p1.vx = 0; p2.x = 789; p2._px = 789; p2.vx = 0")
+    await g.steps(40)
+    r = await g.ev("({y1: p1.y, y2: p2.y, x1: p1.x, x2: p2.x})")
+    assert r['y1'] > 600 and r['y2'] > 600 and r['x1'] > 610 and r['x2'] < 789, f'Fuß in der Luft, aber nicht gefallen: {r}'
+    # mitten auf dem Boden: normale Steh-Pose, kein Abrutschen
+    await g.ev("p1.x = 300; p1._px = 300; p1.y = 560; p1._py = 560; p1.vx = p1.vy = 0")
+    await g.steps(40)
+    r = await g.ev("({x: p1.x, k: p1._ff.key, r: kanteRichtung(p1, KANTE_WACKEL_RAND)})")
+    assert r['x'] == 300 and r['k'] != 'kante' and r['r'] == 0, f'mitten auf dem Boden: {r}'
 
 @test
 async def muenzen_greifen_grosszuegig(g):
@@ -9031,7 +9058,8 @@ async def ruinen1_etappen_im_bild(g):
         return [k_lauf(start, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(w)} + 20', 'left': f'P.x > {kx(w + 1)}'}, 'until': f'P.y < {ky(hoch)}', 'frames': 900},
                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(ziel)}', 'left': f'P.x > {kx(ziel + 1)}'}, 'until': 'P.grounded', 'frames': 600}]
-    def halt(c): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 300}
+    # halt: erst fertig, wenn sie dort STEHT (sonst trug das Auslaufen über die Sims-Kante – Kante-Abrutschen)
+    def halt(c): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3 && Math.abs(P.vx) < 0.3', 'frames': 300}
     f = [{'wait': f'{K_MESS} || (Q.grounded && Q.y > {ky(8)})', 'frames': 1500}, halt(76), {'wait': f'{K_MESS} || (Q.grounded && Q.x >= {kx(95)} && Q.y < {ky(11)})', 'frames': 3000}] + wind(76, 86, 2, 96) + [{'wait': f'{K_MESS} || (Q.grounded && Q.y > {ky(12)})', 'frames': 3000}, halt(97),
          {'wait': f'{K_MESS} || (Q.grounded && Q.x >= {kx(117)})', 'frames': 3000}] + wind(97, 106, 4, 119)
     m = [{'hold': ['right'], 'until': f'P.x > {kx(77)} - 4', 'frames': 200},
@@ -9191,7 +9219,7 @@ async def hoehle1_faehre_im_bild(g):
     mess = "(window.__maxAb = Math.max(window.__maxAb || 0, Math.abs(P.x - Q.x)), false)"
     ok = None
     for w in range(0, 360, 20):
-        f = [{'frames': w + 1}, {'holdIf': {'right': f'P.x < {kx(248)} - 3', 'left': f'P.x > {kx(248)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(248)}) <= 3', 'frames': 200},
+        f = [{'frames': w + 1}, {'holdIf': {'right': f'P.x < {kx(248)} - 3', 'left': f'P.x > {kx(248)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(248)}) <= 3 && Math.abs(P.vx) < 0.3', 'frames': 200},
              {'wait': f'{mess} || Q.x >= {kx(268)}', 'frames': 1500}]
         m = [{'wait': '!!linkOn[6]', 'frames': 900}, {'wait': f'{mess} || {da}', 'frames': 1500}, k_lauf(270)]
         r = await koop(g, m=kat(251, 12), f=kat(244, 14), plans={'m': m, 'f': f}, maxFrames=3000, pre='window.__maxAb = 0')
@@ -9200,7 +9228,7 @@ async def hoehle1_faehre_im_bild(g):
     assert ok <= 20.5 * 40, f'beim Fahren {ok / 40:.1f} Spalten auseinander'
     # Rückweg: Affe hält die rechte Platte, die Fähre pendelt zurück, das Schweinchen fährt hinüber
     for w in range(0, 360, 20):
-        m = [{'holdIf': {'right': f'P.x < {kx(268)} - 3', 'left': f'P.x > {kx(268)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(268)}) <= 3', 'frames': 200},
+        m = [{'holdIf': {'right': f'P.x < {kx(268)} - 3', 'left': f'P.x > {kx(268)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(268)}) <= 3 && Math.abs(P.vx) < 0.3', 'frames': 200},
              {'wait': f'Q.x >= {kx(268)}', 'frames': 2500}]
         fp = "solids.find(s => s.type === 'moveplat' && s.switchLink === 6)"
         f = [{'frames': w + 1}, {'wait': zurueck, 'frames': 900}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},

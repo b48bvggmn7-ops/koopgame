@@ -1497,6 +1497,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 - Die Figuren sind jetzt Kopf + Arme + Stummelfüße statt der rollenden Kugel. Taste **B** schaltet zur alten Kugel zurück (und wieder her).
 - Posen: Stehen, Laufen, Bremsen, Landen, Hoch/Runter, Wandrutschen (liegt an der Wand), Haften an der Decke, Seil, Dash, Schirm-Gleiten, Siegestanz.
 - Sprung-Varianten: nach einem normalen Sprung kommt immer eine Variante (Vorwärtsrolle oder Salto), auf Dauer je 1/3; gilt auch für Wandsprünge.
+- Kante (Nutzerwunsch): Steht der Fuß nicht mehr auf dem Boden (unter Mitte ± `KANTE_FUSS` 4 px trägt nichts), rutscht
+  eine stehende/langsame Figur mit `KANTE_RUTSCH` 1,2 px je Schritt über die Kante und fällt (`kanteAbrutschen` in
+  js/32-neue-bewegung.js, Werte in 02). Vorher „schwebte“ sie bis ~14 px über dem Abgrund (die Kollisions-Box ist breiter
+  als die Füße). Wer läuft, ist schneller und wird nicht beeinflusst; wer zurückläuft, rutscht nicht – Sprungweiten bleiben.
+- Fast runterfallen: ist eine Figur an die Kante GELAUFEN und steht still (Mitte höchstens `KANTE_WACKEL_RAND` 8 px vor
+  der Kante, `kanteRichtung`), dreht sie sich zum Abgrund, steht auf dem hinteren Fuß, der vordere hängt über der Kante,
+  der Körper kippt vor und zurück und beide Arme kreisen über dem Kopf (`kantePose`, Takt `KANTE_TAKT` 0,9 s). Nicht nach
+  einer Landung; wer normal läuft, fällt einfach runter. Nur Zeichnen (js/10c). Test neue_figuren_kante_wackeln.
 - Langeweile / Leerlauf-Aktionen: nach 15 s ohne Eingabe (`IDLE_START`) dreht sich die Figur nach vorn und macht im Wechsel
   Unsinn – jede Figur hat ihre eigenen Aktionen (zufällig, nie zweimal dieselbe hintereinander; jede Eingabe beendet es):
   - Affe: Disco (Arme abwechselnd hoch, Füße stampfen), Hüpfen mit Armen oben, Salto, Klatschen über dem Kopf, Kopf

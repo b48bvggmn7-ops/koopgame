@@ -254,6 +254,29 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   return false;
 }
 // nach dem Bewegen: Dash auswerten, Haftfläche nachführen, Dash aufladen
+// ---------- Kante: Fuß nicht mehr auf dem Boden -> abrutschen (Nutzerwunsch) ----------
+// Die Kollisions-Box ist breiter als die gezeichneten Füße: ohne das hier „schwebt“ eine stehende Figur bis zu ~14 px über
+// dem Abgrund. Sprünge bleiben gleich (wer läuft, ist schneller als KANTE_RUTSCH und wird nicht beeinflusst).
+function kanteTraegt(P, x){
+  return solids.some(s => !s.gone && s.type !== 'fake' && s.y >= P.y - 2 && s.y <= P.y + 3 && x >= s.x && x <= s.x + s.w);
+}
+// Abgrund-Seite (1 = rechts, -1 = links), wenn bei P.x ± rand nichts trägt, am anderen Rand der Box aber schon; sonst 0
+function kanteRichtung(P, rand){
+  if(!P.grounded) return 0;
+  const halb = P.w/2 - 0.5;
+  if(!kanteTraegt(P, P.x + rand) && kanteTraegt(P, P.x - halb)) return 1;
+  if(!kanteTraegt(P, P.x - rand) && kanteTraegt(P, P.x + halb)) return -1;
+  return 0;
+}
+function kanteAbrutschen(P){
+  if(!P.grounded || P.hookAttached || P.dash || P.haft || P.inWater) return;
+  if(kanteTraegt(P, P.x - KANTE_FUSS) || kanteTraegt(P, P.x + KANTE_FUSS)) return;   // Fuß steht noch (teilweise)
+  const dir = kanteRichtung(P, KANTE_FUSS);
+  if(!dir || P._moveDir === -dir) return;                                            // läuft zurück: nicht abrutschen
+  if(Math.sign(P.vx) === dir && Math.abs(P.vx) >= KANTE_RUTSCH) return;               // läuft ohnehin runter
+  const nx = P.x + dir*KANTE_RUTSCH;
+  if(spotFree(nx, P.y, P)) P.x = nx;
+}
 function neueBewegungNachher(P, altX, altY){
   if(P.hookAttached || P.dash || P.haft || P.inWater) P.rutscht = false;
   const d = P.dash;
@@ -268,6 +291,7 @@ function neueBewegungNachher(P, altX, altY){
     if(d && schrittNr() % 2 === 0) neuFxDazu({art: 'nachbild', x: P.x, y: P.y, male: P.male, roll: P.rollAngle, facing: P.facing, leben: 12, max: 12});
   }
   if(P.haft) haftNachher(P, altX, altY);
+  kanteAbrutschen(P);
   // Dash aufladen: immer (auch frei in der Luft; Nutzerwunsch – früher nur mit festem Halt, dafür doppelt so schnell)
   if(P.dashPunkte < DASH_LUFT && !P.dash){
     P.dashLadung += 1/DASH_LADEZEIT;

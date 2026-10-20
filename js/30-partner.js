@@ -337,6 +337,17 @@ function partnerHakenZiel(b){
   }
   return best;
 }
+// Kante: Fuß nicht mehr auf dem Boden -> abrutschen (gleiche Regel wie kanteAbrutschen in js/32-neue-bewegung.js)
+function partnerKanteAbrutschen(U, b, dir){
+  const traegt = x => U.feste.some(s => !s.gone && s.y >= b.y - 2 && s.y <= b.y + 3 && x >= s.x && x <= s.x + s.w) ||
+                      U.stege.some(s => s.y >= b.y - 2 && s.y <= b.y + 3 && x >= s.x && x <= s.x + s.w);
+  if(traegt(b.x - KANTE_FUSS) || traegt(b.x + KANTE_FUSS)) return;
+  const halb = b.w/2 - 0.5, k = traegt(b.x - halb) ? 1 : traegt(b.x + halb) ? -1 : 0;
+  if(!k || dir === -k) return;
+  if(Math.sign(b.vx) === k && Math.abs(b.vx) >= KANTE_RUTSCH) return;
+  const nx = b.x + k*KANTE_RUTSCH, box = {x: nx - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
+  if(!U.feste.some(s => !s.gone && box.x < s.x + s.w && box.x + box.w > s.x && box.y < s.y + s.h && box.y + box.h > s.y)) b.x = nx;
+}
 // ein Schritt: e = {dir, springen (neu drücken), sprungHalten, gleiten, haken (neu drücken), loslassen}
 let partnerSimZaehler = 0;   // gerechnete Vorausschritte (Budget je Entscheidung: PARTNER_BUDGET)
 function partnerSimSchritt(U, b, e){
@@ -427,6 +438,7 @@ function partnerSimSchritt(U, b, e){
     const hx = b.x - b.hook.anchor.x, hy = (b.y - b.h*0.6) - b.hook.anchor.y, dd = Math.hypot(hx, hy) || 1, ux = hx/dd, uy = hy/dd;
     const innen = -(b.vx*ux + b.vy*uy); if(innen > 0){ b.vx += ux*innen; b.vy += uy*innen; }
   }
+  if(b.grounded && !b.hook) partnerKanteAbrutschen(U, b, dir);   // wie kanteAbrutschen (js/32-neue-bewegung.js)
   if(b.grounded){ b.glideTimer = 0; b.wjLock = 0; b.lastWallJumpSide = 0; }
   // „gemeinsamer Bildschirm“ (keepTogether in 09-kamera.js): höchstens MAX_SEPARATION von mir weg (ich stehe still gedacht)
   if(partnerHirn && partnerHirn.mx !== undefined){
