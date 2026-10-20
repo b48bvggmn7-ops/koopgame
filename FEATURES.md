@@ -26,6 +26,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Haken-Richtwerte (Koop-Bot-Messung): Abstand in einer Hakenreihe 5–6 Spalten (4–8 erlaubt), Höhe 6–7 Reihen über
       dem Absprung, freier Bogen, mindestens 3 Stehplätze zum Landen. Die zu weiten Reihen in Dschungel 1 und 2 haben
       jetzt 3 Haken im Abstand 7. Test haken_richtwerte_bot (spielt 3 Hangel-Stellen, mindestens 4 von 8 Loslass-Arten).
+      (Test entfallen, als Dschungel 1+2 durch neue Nutzer-Dateien ersetzt wurden – die drei Stellen gibt es nicht mehr.)
     - Checkpoints nur nach einer Leistung und vor dem nächsten schweren Stück: 25–70 Spalten Abstand mit einer Stelle
       dazwischen, nie zwischen Hebel und Tür. Überzählige Checkpoints sind entfernt oder zusammengelegt (insgesamt
       432 -> 356); die Spielstände merken sich keine Checkpoint-Nummern (Test spielstand_ohne_checkpoints).
@@ -427,6 +428,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (Segel-/Schwungbahnen vom Test-Bot gemessen); keine Münze in Boden/Wand/Tür; Haken-Radius höchstens 5 Kästchen;
     Wege eindeutig: Nur-Schweinchen-Lücken sind mind. ~5 Kästchen weiter als der Affe springen kann (mit Gefälle,
     Stacheln darunter), Nur-Affe-Stellen sind für das Schweinchen klar zu weit (>= 18 flach) oder 4 Reihen höher.
+  - Austausch (Nutzerwunsch): Dschungel 1 und 2 sind jetzt die vom Nutzer im Editor gebauten Dateien (Level 2 im normalen
+    Dschungel-Look, nicht mehr Abendrot). Die Beschreibungen unten gelten für die alten Fassungen. Übernommen mit
+    `python3 tests/level_import.py <spiel.json> <welt>/<datei>.json` (wandelt im echten Editor in beide Formate um und prüft
+    den Rückweg). Alte Stellen-Tests dieser zwei Level sind raus; Regel-Befunde stehen begründet in den Ausnahme-Listen.
   - Level 2 „Baumkronen“ (levels/level-2.json, 800 Spalten, etwas knapper als Level 1, neue Mechaniken):
     1) Bröckel-Trittsteine; 2) hoher Wandsprung-Kamin für beide; 3) Schweinchen segelt tief zu Hebel 2 → schräg
     fahrende Plattform bringt den Affen; 4) Fahrstuhl anhalten: Schweinchen schaltet Hebel 3 an/aus, Affe steigt oben

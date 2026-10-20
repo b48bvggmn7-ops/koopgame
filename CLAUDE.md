@@ -75,6 +75,7 @@
   Editor-Speicherformat (gleiche Unterordner). `levels/README.md` erklärt das in 10 Zeilen. Alte Dateinamen
   (`level-6.json` …) -> neue: Tabelle `js/01a-level-umzug.js` (Spiel + Editor laden sie; Spielstände werden beim Laden
   umgeschrieben). Level-Dateien NIE von Hand umbenennen.
+- `tests/level_import.py <spiel.json> <welt>/<datei>.json` – Level aus dem Spiel-Format (z. B. Datei vom Nutzer) in beide Formate übernehmen (Rückweg geprüft).
 - `tests/koop_bot.js` – Koop-Bot für Level-Tests (steuert beide Figuren nach Plänen, Helfer `koop()` in run_tests.py; Ausbau 7).
 - `tests/bildregel_pruefen.py` – Prüfwerkzeug Bild-Regel/Plattform/Haken/Checkpoints (Grenze `BILD_MAX_SPALTEN` in js/09-kamera.js),
   begründete Ausnahmen in `tests/bildregel_ausnahmen.json`; Ziel-Hinweis-Pfeil am Bildrand: `zielHinweisMerken` (05) / `drawZielHinweise` (07).

@@ -1,11 +1,5 @@
 [
  {
-  "level": "dschungel/01-dschungel.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "4 statt 6 eigenständige Kombi-Stellen (die Pilz-Grube 773 zählt als Kette mit der Kamin-Grube 746): Level 1 ist der Einstieg und vom Nutzer gestaltet; Etappe 2/3 bestehen aus engen Hebel-/Plattform-Abschnitten (Hebel 2–8, fahrende Plattformen über der 30er-Grube), in die keine Fähigkeiten-Kombi passt, ohne sie umzubauen; der Start bleibt bewusst ohne Kombi-Grube. Jede Etappe hat mindestens eine Kombi-Stelle."
- },
- {
   "level": "dschungel/04-gluehwald.json",
   "regel": "Kombi-Level",
   "spalte": null,
@@ -556,5 +550,17 @@
   "regel": "Kombi-Etappe",
   "spalte": 200,
   "begruendung": "Umbau: Etappe 2 hat 2 eigene Kombi-Stellen (Kamine 349/378 als Lava-Kamine). Die dritte war ein versehentlich begrabenes Münz-Versteck (Durchbruch 203 im Pilz-Dash-Landeplatz), das das Prüfwerkzeug als Kombi zählte; es liegt jetzt wieder oben auf dem Landeplatz (optional, keine Kombi)."
+ },
+ {
+  "level": "dschungel/02-baumkronen.json",
+  "regel": "Kamin",
+  "spalte": 36,
+  "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+ },
+ {
+  "level": "dschungel/02-baumkronen.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 600,
+  "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
  }
 ]

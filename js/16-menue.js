@@ -166,7 +166,8 @@ function convertEditorSnapshot(d){
   groups.forEach(({mv, g}, i)=>{
     for(const rect of mergeCellsToRects(g.cells.map(([c, r])=>({c, r})))){
       movingPlatforms.push({...rect, look:g.type, group:i+1,
-        targetX: rect.x+mv.dc*T, targetY: rect.y+mv.dr*T, speed: mv.speed||4.5, switchLink: mv.link||null});
+        targetX: rect.x+mv.dc*T, targetY: rect.y+mv.dr*T, speed: mv.speed||4.5, switchLink: mv.link||null,
+        ...(mv.einmal ? {einmal: true} : {})});   // „fährt die Strecke einmal“ (wie der Editor-Export)
     }
   });
   const foot = p => p ? {x:p.c*T+T/2, y:p.r*T+T} : null;
@@ -176,7 +177,7 @@ function convertEditorSnapshot(d){
       const o = {x:h.c*T+T/2, y:h.r*T+T/2, radius:(h.radius||6.5)*T};
       if(h.move && (h.move.dc || h.move.dr)){
         o.targetX = o.x + h.move.dc*T; o.targetY = o.y + h.move.dr*T;
-        o.speed = h.move.speed||4.5; o.switchLink = h.move.link||null;
+        o.speed = h.move.speed||4.5; o.switchLink = h.move.link||null; if(h.move.einmal) o.einmal = true;
       }
       return o;
     }),

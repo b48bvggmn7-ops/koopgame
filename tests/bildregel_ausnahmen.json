@@ -2,13 +2,6 @@
  "hinweis": "Begründete Ausnahmen zur Bild-Regel und den Leveldesign-Regeln (AUSBAU-REGELWERK.md Punkt 12). Je Eintrag: level, regel (Bild/Plattform/Haken/Checkpoint), spalte (wie im Prüfwerkzeug angezeigt), nummer (Verknüpfung oder Checkpoint, nur zur Info), begruendung. Der Test bildregel_pruefung schlägt bei jedem Befund fehl, der hier nicht steht.",
  "ausnahmen": [
   {
-   "level": "dschungel/02-baumkronen.json",
-   "regel": "Checkpoint",
-   "spalte": 590,
-   "nummer": 11,
-   "begruendung": "Verfolgung durch die Stachelwand (Hebel 14, Spalte 490–578) läuft am Stück – mitten in der Flucht kein Checkpoint"
-  },
-  {
    "level": "dschungel/03-lianenschlucht.json",
    "regel": "Checkpoint",
    "spalte": 668,
@@ -201,6 +194,69 @@
    "spalte": 254,
    "nummer": 4,
    "begruendung": "Dash-Umbau Seilbahn/Fähre: die Grube muss 21 breit und der Landesims 4 Reihen hoch sein, sonst kommt das Schweinchen mit Schirm + Dash ohne Fähre hinüber. Beide fahren dafür etwas weiter; die Figuren bleiben trotzdem zusammen im Bild (sichtbar ~37 Spalten)."
+  },
+  {
+   "level": "dschungel/01-dschungel.json",
+   "regel": "Haken",
+   "spalte": 567,
+   "nummer": null,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/01-dschungel.json",
+   "regel": "Checkpoint",
+   "spalte": 131,
+   "nummer": 3,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/01-dschungel.json",
+   "regel": "Checkpoint",
+   "spalte": 147,
+   "nummer": 4,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/01-dschungel.json",
+   "regel": "Checkpoint",
+   "spalte": 428,
+   "nummer": 9,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/02-baumkronen.json",
+   "regel": "Bild",
+   "spalte": 651,
+   "nummer": 13,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/02-baumkronen.json",
+   "regel": "Plattform",
+   "spalte": 627,
+   "nummer": 13,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/02-baumkronen.json",
+   "regel": "Haken",
+   "spalte": 130,
+   "nummer": null,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/02-baumkronen.json",
+   "regel": "Checkpoint",
+   "spalte": 760,
+   "nummer": 13,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "dschungel/02-baumkronen.json",
+   "regel": "Checkpoint",
+   "spalte": 590,
+   "nummer": 11,
+   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   }
  ]
 }

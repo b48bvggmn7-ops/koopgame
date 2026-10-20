@@ -5217,7 +5217,8 @@ async def seil_absprung_wie_schwung(g):
 async def level_themen(g):
     """Jedes Level hat sein eigenes Aussehen (Thema): Level 1 Dschungel, 2 Abendrot, 3 Ruinen; alle 6 Themen
     zeichnen fehlerfrei; Nacht/Höhle sind dunkel mit Licht um die Figuren; der Editor speichert das Thema."""
-    erwartet = {'dschungel/01-dschungel.json': 'dschungel', 'dschungel/02-baumkronen.json': 'abend', 'ruinen/01-ruinen.json': 'ruinen', 'ruinen/02-mondnacht.json': 'nacht', 'hoehle/01-kristallhoehle.json': 'hoehle', 'vulkan/03-feuerberg.json': 'vulkan'}
+    erwartet = {'dschungel/01-dschungel.json': 'dschungel', 'dschungel/02-baumkronen.json': 'dschungel',   # Level 2: neue Nutzer-Datei ohne Abend-Look
+                'ruinen/01-ruinen.json': 'ruinen', 'ruinen/02-mondnacht.json': 'nacht', 'hoehle/01-kristallhoehle.json': 'hoehle', 'vulkan/03-feuerberg.json': 'vulkan'}
     for datei, th in erwartet.items():
         d = json.loads((ROOT / 'levels' / datei).read_text())
         assert d.get('theme') == th, f'{datei}: Thema {d.get("theme")} statt {th}'
@@ -8634,7 +8635,6 @@ def _d2_bruecken(dash):
     pd = kombi_pilz_dash_grube(572, 582)   # am Ende die Pilz-Dash-Grube (Landeplatz hoch oben)
     lauf = [j_lauf(569, [504, 540], dash=dash, ohne=[504, 540], dash_bis=556)]   # Dash für den Pilz aufheben (muss voll sein)
     return {'m': [k_lauf(498, -14), {'use': True, 'frames': 2}] + lauf + pd['m'][1:], 'f': [k_lauf(497, -4), {'wait': '!!linkOn[14]'}] + lauf + pd['f'][1:]}
-JAGDEN_BOT.append(('dschungel/02-baumkronen.json', 'Jagd über die Bröckel-Brücken', kat(494, 14), kat(493, 14), [], 'Wand', 14, _d2_bruecken, 582))
 def _d2_staffel(dash):
     """Hebel-Staffel unter Jagd (Hebel 8–11): oben (Affe) Hebel 8, Kamin 326–330 über die Wand 331, Hebel 10; unten
     (Schweinchen, Stachelwand dahinter) Hebel 9, warten am Tor 332, Hebel 11, über den Block 339 hinaus"""
@@ -8645,7 +8645,6 @@ def _d2_staffel(dash):
     f = [{'wait': '!!linkOn[8]', 'frames': 2000}, j_lauf(321, dash=dash)] + hebel(322) + [j_lauf(329, [323, 327], dash=dash),
          {'holdIf': {'right': f'P.x < {kx(330)} - 4', 'left': f'P.x > {kx(330)} + 4'}, 'wait': '!!linkOn[10]', 'frames': 2000}, j_lauf(335, dash=dash)] + hebel(336) + [j_lauf(347, [338], dash=dash)]
     return {'m': m, 'f': f}
-JAGDEN_BOT.append(('dschungel/02-baumkronen.json', 'Hebel-Staffel unter Jagd', kat(311, 10), kat(316, 14), [], 'Wand', 8, _d2_staffel, 346))
 
 def _hebel(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200}, {'use': True, 'frames': 3}]
 def _r1_j1(dash):
@@ -8920,19 +8919,6 @@ def _d1_kamin_grube():
                           dict(lande, hold=['glide'])],
             'm_ohne': kamin + haken + [lande], 'f_ohne': kamin + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]}
 KOMBI_STELLEN_BOT = [
-    ('dschungel/01-dschungel.json', 'Haken / Schirm + Dash über die breite Grube (73)', kat(62, 16), kat(61, 16), _d1_haken_grube, {'m': (84, 16), 'f': (84, 16)}),
-    ('dschungel/01-dschungel.json', 'Haken + Dash / Pilz + Dash von der Pilz-Insel (95)', kat(86, 16), kat(84, 16), _d1_pilz_insel, {'m': (105, 15), 'f': (105, 15)}),
-    ('dschungel/01-dschungel.json', 'Pilz-Dash-Grube auf dem Sims (233)', kat(229, 11), kat(228, 11), lambda: kombi_pilz_dash_grube(233, 243), {'m': (243, 2), 'f': (243, 2)}),
-    ('dschungel/01-dschungel.json', 'Kamin -> Haken/Segeln (408)', kat(410, 16), kat(411, 16), _d1_kamin_haken, {'m': (426, 7), 'f': (426, 7)}),
-    ('dschungel/01-dschungel.json', 'Kamin + Haken/Schirm + Dash vor dem Ziel (746)', kat(742, 14), kat(741, 14), _d1_kamin_grube, {'m': (769, 8), 'f': (769, 8)}),
-    ('dschungel/01-dschungel.json', 'Pilz-Dash-Turm vor dem Ziel (770)', kat(769, 8), kat(772, 8), lambda: kombi_pilz_dash_grube(770, 777), {'m': (777, -1), 'f': (777, -1)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube am Start (23)', kat(21, 14), kat(20, 14), lambda: kombi_pilz_dash_grube(23, 33), {'m': (33, 5), 'f': (33, 5)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (209)', kat(204, 13), kat(203, 13), lambda: kombi_pilz_dash_grube(209, 219), {'m': (219, 4), 'f': (219, 4)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (386)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_dash_grube(386, 396), {'m': (396, 5), 'f': (396, 5)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (443)', kat(438, 14), kat(439, 14), lambda: kombi_pilz_dash_grube(443, 453), {'m': (453, 5), 'f': (453, 5)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (572)', kat(567, 14), kat(566, 14), lambda: kombi_pilz_dash_grube(572, 582), {'m': (582, 5), 'f': (582, 5)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (778)', kat(776, 14), kat(775, 14), lambda: kombi_pilz_dash_grube(778, 788), {'m': (788, 5), 'f': (788, 5)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Dash-Grube (797)', kat(793, 14), kat(792, 14), lambda: kombi_pilz_dash_grube(797, 807), {'m': (807, 5), 'f': (807, 5)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Dash-Stachelgrube (70)', kat(65, 14), kat(64, 14), lambda: kombi_pilz_dash_grube(70, 80), {'m': (80, 5), 'f': (80, 5)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Dash-Stachelgrube (130)', kat(125, 12), kat(124, 12), lambda: kombi_pilz_dash_grube(130, 140), {'m': (140, 3), 'f': (140, 3)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Dash-Stachelgrube (180)', kat(175, 14), kat(174, 14), lambda: kombi_pilz_dash_grube(180, 190), {'m': (190, 5), 'f': (190, 5)}),
@@ -8998,7 +8984,6 @@ KOMBI_STELLEN_BOT = [
 # ersten aus ohne neue Kombi schaffen (sonst ist sie keine eigene Stelle, sondern „Kette“ in tests/kombi_ausnahmen.json).
 # (Level, Name, Start auf dem vorigen Landeplatz (c, r), Absprung-Spalte, Ziel-Landeplatz Spalte, Ziel-Reihe)
 KOMBI_ABKUERZUNG = [
-    ('dschungel/02-baumkronen.json', '778 -> 797', (789, 10), 791, 807, 10),
     ('dschungel/03-lianenschlucht.json', '740 -> 760', (751, -1), 753, 770, -1),   # Umbau: Türme jetzt oben (Pilz-Dash), Baumstamm 757
     ('dschungel/03-lianenschlucht.json', '760 -> 780', (771, -1), 773, 790, -1),   # Baumstamm 777
     ('dschungel/06-wipfelsturm.json', '170 -> 190', (182, 6), 183, 200, 6),        # Baumstamm 186
@@ -9134,26 +9119,8 @@ def _sprung_dash(kante, lande_c0, lande_c1, richtung, schirm):
 
 @test
 async def umbau_rollen_dschungel(g):
-    """Umbau Rollen-Stellen Dschungel: Baumkronen fahrender Haken 13 – Schweinchen segelt über den Aufwind (639–640) auf den
-    hohen Hebel-Block (647–651, Oberkante Reihe 9) und schaltet den Haken, der Affe fährt hinüber; der Affe schafft es mit
-    Sprung + Dash allein nicht. Wipfelsturm: Turm zu Turm (Baumstamm 186) und Wechsel-Schleuse (Brücke 492–508) nicht allein."""
+    """Umbau Rollen-Stellen Dschungel (Baumkronen-Stelle entfällt: Level 2 durch Nutzer-Datei ersetzt). Wipfelsturm: Turm zu Turm (Baumstamm 186) und Wechsel-Schleuse (Brücke 492–508) nicht allein."""
     fehler = []
-    await koop_level(g, 'dschungel/02-baumkronen.json')
-    f = [k_lauf(633, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(639)}', 'frames': 200},
-         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(639)} + 10', 'left': f'P.x > {kx(640)} - 10'}, 'until': f'P.y < {ky(5)}', 'frames': 400},
-         {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(648)}', 'left': f'P.x > {kx(650)}'}, 'until': 'P.grounded', 'frames': 400},
-         {'wait': 'p1.hookAttached', 'frames': 2000}] + _am(647)
-    m = [{'wait': f'Q.grounded && Q.x > {kx(646)}', 'frames': 2000}, wb_halt(kx(627)), {'press': ['jump'], 'hold': ['jump'], 'until': '!P.grounded && P.vy > -2', 'frames': 60},
-         {'press': ['dash'], 'hold': ['swimUp'], 'hookWhen': 'P.vy > -30', 'until': 'P.hookAttached', 'frames': 80},   # Sprung + Dash hoch zum Haken
-         {'swing': True, 'pull': 80, 'release': f'P.anchor.x > {kx(645)} && P.x > {kx(646)}', 'frames': 3000},   # Seil kurz ziehen (Block ist hoch)
-         {'holdIf': {'right': f'P.x < {kx(648)}', 'left': f'P.x > {kx(650)}'}, 'until': 'P.grounded', 'frames': 300}]
-    r = await koop(g, m=kat(626, 14), f=kat(632, 13), plans={'m': m, 'f': f}, maxFrames=5000)
-    if not (r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 646 and r['pos']['m'][1] <= 8.1):
-        fehler.append(f'Baumkronen Haken 13 (Schweinchen Schirm + Dash, Hebel, Affe fährt): {r.get("pos")} tot={r.get("dead")}')
-    for richtung in (['right'], ['right', 'swimUp'], ['swimUp']):
-        r = await koop(g, m=kat(632, 13), f=kat(626, 14), plans={'m': _sprung_dash(633, 647, 650, richtung, False)}, maxFrames=1500)
-        if r.get('done') and not r.get('dead') and r['pos']['m'][1] <= 8.1:
-            fehler.append(f'Baumkronen Haken 13: Affe kommt mit Sprung + Dash {richtung} allein hinauf {r.get("pos")}')
     # Wipfelsturm: Baumstamm 186 – vom Pilz-Turm nicht per Sprung/Schirm + Dash zum zweiten Turm; Wechsel-Schleuse: Grube
     # 492–508 nur über die Brücke (Platte 7), weder Affe noch Schweinchen kommen allein hinüber
     await koop_level(g, 'dschungel/06-wipfelsturm.json')
@@ -9251,30 +9218,6 @@ async def bildregel_pruefung(g):
          'checkpoints': [{'x': 60 * 40 + 20, 'y': 600}, {'x': 70 * 40 + 20, 'y': 600}], 'solids': [], 'startM': {'x': 20, 'y': 600}, 'startF': {'x': 60, 'y': 600}}
     _, bv = BR.bild_pruefen(d); _, cv = BR.checkpoints_pruefen(d)
     assert bv and 'Tür' in bv[0]['text'] and any('nur 10 Spalten' in v['text'] for v in cv), (bv, cv)
-
-@test
-async def haken_richtwerte_bot(g):
-    """Haken-Richtwerte (AUSBAU-REGELWERK Punkt 12): der Koop-Bot hangelt an drei typischen Stellen (Dschungel 1 Dornengrube,
-    Dschungel 1 Hebel-Sims, Dschungel 2 hoher Sims – alle mit 3 Haken im Abstand 7) mit 8 Loslass-Arten; jede Stelle muss in
-    mindestens 4 von 8 Arten klappen. Ausgabe: Erfolge, Zeit, Schwunghöhe (höchste Reihe), Landung (Spalten hinter der Kante)."""
-    rels = [f'P.x > P.anchor.x + {k} && P.vx > 1' for k in (0, 20, 40, 60, 80)] + [f'P.y < P.anchor.y + {d} && P.vx > 1 && P.vy < 0' for d in (40, 60, 90)]
-    stellen = (('dschungel/01-dschungel.json', 'Dornengrube', (560, 14), 565, 3, (588, 14)),
-               ('dschungel/01-dschungel.json', 'Hebel-Sims', (607, 8), 613, 3, (636, 8)),
-               ('dschungel/02-baumkronen.json', 'hoher Sims', (117, 7), 125, 3, (146, 7)))
-    bericht = []
-    for datei, name, start, anlauf, n, ziel in stellen:
-        await koop_level(g, datei)
-        ok, zeit, top, land = 0, [], [], []
-        for rel in rels:
-            pl = [k_lauf(anlauf, -30), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
-            for k in range(n): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
-            pl += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
-            r = await koop(g, m=kat(*start), f=kat(start[0] - 3, start[1]), plans={'m': pl}, maxFrames=3000)
-            if r.get('done') and r['pos']['m'][0] >= ziel[0] - 0.5 and r['pos']['m'][1] == ziel[1]:
-                ok += 1; zeit.append(r['f'] / 54); top.append(r['top']['m']); land.append(r['pos']['m'][0] - ziel[0])
-        bericht.append(f"{name}: {ok}/8, {sum(zeit) / len(zeit):.1f} s, Schwung bis Reihe {min(top)}, Landung {min(land):.0f}–{max(land):.0f} Spalten hinter der Kante" if ok else f'{name}: 0/8')
-        assert ok >= 4, f'{datei} {name}: nur {ok}/8 Loslass-Arten klappen'
-    print('    Haken-Stellen: ' + ' | '.join(bericht))
 
 def k_ankunft(link):
     return f"solids.some(s => s.type === 'moveplat' && s.switchLink === {link} && Math.hypot(s.x - s.targetX, s.y - s.targetY) < 6)"

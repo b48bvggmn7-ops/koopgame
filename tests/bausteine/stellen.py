@@ -7,7 +7,11 @@ from plaene import *
 
 STELLEN = []
 
+# Vom Nutzer neu gebaute Level (ersetzt): die alten Stellen dort gibt es nicht mehr – Nutzer-Entscheidung: deren Stellen-Prüfungen
+# entfallen (allgemeine Prüfungen wie Bild-Regel, Leistung, Laden laufen weiter)
+ERSETZTE_LEVEL = {'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'}
 def stelle(**e):
+    if e['level'] in ERSETZTE_LEVEL: return
     e.setdefault('partner', (e['start'][0] - 2, e['start'][1]))
     e.setdefault('gegen', None); e.setdefault('links', [])
     STELLEN.append(e)
