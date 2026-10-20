@@ -35,7 +35,7 @@
   Browser schon gibt (z. B. `top`, `name`, `status`, `parent`).
   - 00 Canvas/Bilder · 01 Level-Aufbau · 02 Physik-Werte · 03 Eingabe (Tastatur/Controller) ·
     01a Level-Umzug (alte Dateinamen -> Welt-Ordner) · 04 Figuren/Kollision · 05 Level-Objekte (Bröckelboden, Hebel, Türen, bewegte Teile/Haken) ·
-    06 Tod/Checkpoints (+ Test-Sprung C/X) · 07 Effekte/Ton/Münzen · 08 Figuren-Physik/Seil ·
+    06 Tod/Checkpoints (+ Test-Sprung C/X, im Editor-Test Q = andere Figur holen) · 07 Effekte/Ton/Münzen · 08 Figuren-Physik/Seil ·
     09 Kamera (+ Kamera-Wackeln kameraStoss) · 10 Figuren zeichnen · 10a Level-Themen (Aussehen je Level: Himmel, Farben, Tiere, Dunkelheit) · 10b Design-Look (zentrale Tabelle
     `DESIGN_LOOK` je Welt/Tageszeit: Kontur, Randlicht, Tiefe, Dunst; Glanz-Muster `glanzSchatten/glanzFunkeln/glanzBand`
     für alle Elemente; Neues Aussehen: Materialien `wallTile`/`grain`/`outlineDraw`, Farben `EA`/`SOILBASE`, Stil-Wahl

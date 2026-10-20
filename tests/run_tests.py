@@ -171,6 +171,21 @@ async def start_ohne_fehler(g):
     assert await g.ev('typeof frameDt==="number"'), 'Spielschleife läuft nicht'
 
 @test
+async def editor_test_q_holt_partner(g):
+    """Editor-Test (Nutzerwunsch): Taste Q holt die andere Figur direkt neben die eigene (Spieler 1); nur im Editor-Test und
+    nur ohne Computer-Partner (dort bleibt Q „Warte hier / Komm her“); im normalen Spiel passiert nichts."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 1500, 'y': 680}, {'x': 200, 'y': 680}))
+    await g.ev("closeMenu(); deathState = null;")
+    await g.p.keyboard.press('KeyQ'); await g.steps(3)
+    assert await g.ev("Math.abs(p2.x - p1.x) > 500"), 'Q holt auch außerhalb des Editor-Tests'
+    await g.ev("editorTestMode = true")
+    try:
+        await g.p.keyboard.press('KeyQ'); await g.steps(3)
+        r = await g.ev("[Math.round(Math.abs(p2.x - p1.x)), Math.round(Math.abs(p2.y - p1.y)), monkeyPlayer]")
+        assert r[0] <= 40 and r[1] <= 2, f'Q hat die andere Figur nicht geholt: {r}'
+    finally: await g.ev("editorTestMode = false")
+
+@test
 async def neue_figuren_zeichnen(g):
     """Neue Figuren (Fuß-Figuren, js/10c): sind an, zeichnen Laufen/Springen/Seil/Schirm ohne Fehler; Schirm-Hand und Seil-Ende gesetzt."""
     await g.load(level([ground(0, 680, 1400)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},

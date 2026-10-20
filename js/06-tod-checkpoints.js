@@ -72,10 +72,22 @@ function testJump(step){
   testJumpMsg = target < 0 ? 'Test: Start' : 'Test: Checkpoint ' + (target+1) + ' von ' + checkpointDefs.length;
   testJumpT = now;
 }
+// Test-Hilfe im Editor-Test (Nutzerwunsch): Taste Q holt die andere Figur zur eigenen (Spieler 1 = Tastatur links). Nur ohne
+// Computer-Partner – mit Partner bleibt Q „Warte hier / Komm her“ (30-partner.js).
+const TEST_HOLEN_ABSTAND = 30;   // px neben der eigenen Figur
+function testHolen(){
+  const ich = monkeyPlayer === 1 ? p1 : p2, andere = ich === p1 ? p2 : p1;
+  andere.hookAttached = false; andere.anchor = null;
+  andere.x = ich.x - (ich.facing || 1)*TEST_HOLEN_ABSTAND; andere.y = ich.y; andere.vx = andere.vy = 0;
+  andere._px = andere.x; andere._py = andere.y;   // kein Wischen beim Zeichnen (Zwischenbilder)
+  testJumpMsg = (andere.male ? 'Affe' : 'Schweinchen') + ' geholt (Q)'; testJumpT = performance.now();
+}
 window.addEventListener('keydown', e=>{
   if(e.repeat) return;
   if(e.code==='KeyC') testJump(+1);
   if(e.code==='KeyX') testJump(-1);
+  if(e.code==='KeyQ' && typeof editorTestMode !== 'undefined' && editorTestMode && !(typeof partnerAktiv === 'function' && partnerAktiv())
+     && !(typeof menuActive === 'function' && menuActive()) && !deathState) testHolen();
 });
 window.addEventListener('pointerdown', requestContinue);
 
