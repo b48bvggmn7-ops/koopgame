@@ -6967,6 +6967,29 @@ async def ed_ziehen(p, a, b):
     await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x1, y1, steps=24); await p.mouse.up()
 
 @test
+async def editor_auswahl_fuellen(g):
+    """Editor (Nutzerwunsch): Auswahl-Werkzeug – Knöpfe „Auswahl mit Boden füllen“ / „… mit Wand füllen“ in der
+    Eigenschaften-Zeile füllen jedes Kästchen der Auswahl (vorhandene Kacheln ersetzt, Stacheln dort entfernt, Münzen
+    bleiben); ein Schritt für Strg+Z."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await p.evaluate("tiles['4,10'] = 'crumble'; spikes.push({c: 5, r: 10, dir: 0}); coins.push({c: 6, r: 9, color: 'gold'}); save(); histReset()")
+        await ed_werkzeug(p, 'select')
+        assert await p.evaluate("[...document.querySelectorAll('#propRow .prop.zeig')].map(b => b.id)") == ['selFillGround', 'selFillWall']
+        await ed_ziehen(p, (3, 9), (7, 11)); await p.wait_for_timeout(100)
+        await p.click('#selFillGround'); await p.wait_for_timeout(100)
+        k = await p.evaluate("""({n: Object.keys(tiles).length, alle: Object.values(tiles).every(t => t === 'ground'), stacheln: spikes.length, muenzen: coins.length, undo: undoStack.length})""")
+        assert k == {'n': 15, 'alle': True, 'stacheln': 0, 'muenzen': 1, 'undo': 1}, f'Boden füllen: {k}'
+        await p.click('#selFillWall'); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.values(tiles).every(t => t === 'wall') && Object.keys(tiles).length === 15"), 'Wand füllen'
+        await p.keyboard.press('Control+z'); await p.wait_for_timeout(100)
+        assert await p.evaluate("Object.values(tiles).every(t => t === 'ground')"), 'Strg+Z nimmt das Füllen nicht in einem Schritt zurück'
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_rueckgaengig_und_auswahl(g):
     """Ausbau 2: Strg+Z/Strg+Y (ein Pinselstrich = ein Schritt) und Rechteck-Auswahl: kopieren/einfügen (Verknüpfungen
     bei Konflikt neu nummeriert, Hebel/Tür/Haken-Bewegung/bewegtes Stück bleiben zusammen), ausschneiden, verschieben."""

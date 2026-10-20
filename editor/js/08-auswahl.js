@@ -149,6 +149,18 @@ function selPaste(){
   flash('Eingefügt' + (n ? ` – ${n} Verknüpfungs-Nummer${n > 1 ? 'n' : ''} neu vergeben` : ''));
 }
 function selDelete(){ if(!selRect) return; eraseRect(selRect, false); save(); flash('Inhalt der Auswahl gelöscht'); }
+// Auswahl füllen (Nutzerwunsch): jedes Kästchen der Auswahl wird Boden bzw. Wand (wie Malen mit dem Werkzeug: vorhandene
+// Kacheln werden ersetzt, Stacheln an diesen Stellen entfernt; Münzen, Hebel usw. bleiben)
+function selFill(typ){
+  if(!selRect) return flash('Erst mit „Auswahl ⬚“ ein Rechteck aufziehen');
+  const R = selRect;
+  for(let c = R.c0; c <= R.c1; c++) for(let r = R.r0; r <= R.r1; r++) tiles[c + ',' + r] = typ;
+  spikes = spikes.filter(h => !inRect(R, h.c, h.r));
+  save(); histNote();
+  flash(`Auswahl mit ${typ === 'wall' ? 'Wand' : 'Boden'} gefüllt (${(R.c1 - R.c0 + 1)*(R.r1 - R.r0 + 1)} Kästchen)`);
+}
+document.getElementById('selFillGround').addEventListener('click', () => selFill('ground'));
+document.getElementById('selFillWall').addEventListener('click', () => selFill('wall'));
 function setTool(t){
   document.querySelectorAll('.tool').forEach(x => x.classList.toggle('active', x.dataset.tool === t));
   currentTool = t;

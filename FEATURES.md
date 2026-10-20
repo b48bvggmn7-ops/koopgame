@@ -1946,6 +1946,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
     Verschieben wandern sie mit. Einfügen einer Kopie: Verknüpfungs-Nummern, die es im Level schon gibt, werden neu
     vergeben (nächste freie Nummer); alle Teile mit derselben Nummer bekommen dieselbe neue (Hebel, Tür, Bewegung und
     Haken bleiben zusammen). Ausschneiden + Einfügen und Verschieben behalten die Nummern. Test editor_rueckgaengig_und_auswahl.
+    Füllen (Nutzerwunsch): bei aktivem Auswahl-Werkzeug zeigt die Eigenschaften-Zeile „▦ Auswahl mit Boden füllen“ und
+    „▦ Auswahl mit Wand füllen“ – jedes Kästchen der Auswahl wird Boden bzw. Wand (vorhandene Kacheln ersetzt, Stacheln dort
+    entfernt, Münzen/Hebel bleiben), ein Schritt für Strg+Z (`selFill`, editor/js/08-auswahl.js). Test editor_auswahl_fuellen.
   - Werkzeug-Gruppen (Ausbau 2, seit dem Editor-Umbau als REITER): oben eine Zeile mit Level-Info/Name/Knöpfen; darunter
     - Reiter-Zeile: Gelände (Boden, Wand, Bröckelboden, Steg, Eis, Scheinwand) · Gefahren (Stacheln, Falle, Rollender
       Fels, Lava, Lava-Marke, Stachelpresse) · Licht (Lichtquelle, Spiegel, Lichtkristall, Leuchtkristall, Dunkelzone) ·
