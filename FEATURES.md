@@ -540,7 +540,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         einen Hebel benutzen. Bewegte Teile/Haken „per Schalter“ funktionieren auch mit Druckplatten.
       Aufwind (winds {x,y,w,h}): trägt das Schweinchen mit offenem Schirm nach oben (WIND_LIFT 1,15, höchstens
         WIND_MAX_UP 6,5 px/Schritt), auch wenn sie gerade steigt; Schirm-Zeit beginnt im Wind von vorn. Den Affen
-        trägt er NICHT. Sichtbar als heller Streifen mit aufsteigenden Schlieren und Blättchen.
+        trägt er NICHT. Sichtbar als heller Streifen mit aufsteigenden Schlieren und Blättchen. Neues Aussehen: übereinander
+        liegende Kästchen-Reihen werden beim Zeichnen zu EINER Säule zusammengefasst (`windSaeulen`, gleich breite Reihen werden zu einem Rechteck verbunden – sonst feine Linien an den Kästchen-Nähten) – eine weiche,
+        an den Seiten, oben und unten auslaufende Fläche (ohne Kante und ohne Körnung: EIN kleines, je Pixel berechnetes Schein-Bild `windScheinBild` 32×128, auf die Säule gezogen – keine gestapelten blassen Schichten, die flimmern; zum unteren Teil heller, sanftes „Atmen“), darin lange, sich schlängelnde
+        Luftschlieren, Funkel-Staub und taumelnde Blättchen, gleichmäßig steigend über die ganze Säule. Test aufwind_saeule.
       Scheinwand (solids type 'fake', im Spiel in fakeWalls): sieht exakt aus wie Wand (nahtlos mit echten
         Wänden), liegt ÜBER Hebeln/Münzen und versteckt sie; keine Kollision (man läuft hindurch, kein Wandsprung).
         Steht eine Figur drin oder direkt davor, wird sie halb durchsichtig.
