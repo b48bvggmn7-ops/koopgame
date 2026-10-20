@@ -2,6 +2,7 @@
 // Ändert nur das Zeichnen (Physik, Hitbox und Tempo sind die echten Spielwerte). Taste B: zwischen Kugel und Füßen wechseln.
 let NEUE_FIGUREN = true;
 const ROLL_ZEIT = 0.6, IDLE_START = 15;   // Sekunden für die Rolle im Sprung bzw. bis zur Langeweile
+const KANTE_TAKT = 0.9;   // Sekunden je Wackeln an der Kante (kantePose)
 function neueFigurenAn(){ return NEUE_FIGUREN; }
 
 (function(){
@@ -55,6 +56,16 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
   function wsPose(t){ const w = 2*PI*t/1.2;
     return {dy:12+1.0*Math.sin(w*1.3), lean:-42, lp:[4,-50], nf:[29,-14.3+1.5*Math.sin(w+1),-90], ff:[12,-30,-90],
             na:[38.8,-59.6,45.5,-60.9,51.7+2*Math.sin(w),-63.5], fa:[4,-46,6,-44,8,-42]}; }
+  // Fast runterfallen (Nutzerwunsch): steht die Figur an einer Kante, ruht sie auf dem hinteren Fuß, der vordere Fuß hängt
+  // über dem Abgrund, der Körper kippt vor und zurück und beide Arme kreisen wie Windmühlen (Blick zum Abgrund)
+  function kantePose(t){
+    const w = 2*PI*t/KANTE_TAKT, sw = Math.sin(w);
+    // Hand kreist über/neben dem Kopf (sonst verschwindet der Arm hinter dem großen Kopf)
+    const muehle = (sx, sy, mx, my, ph, r) => { const a = w*1.7 + ph, hx = mx + r*Math.cos(a), hy = my + r*Math.sin(a);
+      return [sx, sy, (sx + hx)/2 + 6, (sy + hy)/2 - 4, hx, hy]; };
+    return {dy:6 + 1.5*Math.sin(w*2), lean:12 + 10*sw, nf:[42, -16 + 5*sw, -35 + 20*sw], ff:[-8, -9, 0],
+            na:muehle(34, -42, 56, -76, 0, 15), fa:muehle(-22, -62, -34, -98, PI, 14)};
+  }
   function hangPose(hp){
     const ph = 2*PI*hp/72.8;
     const hand = (phs,bx) => { const s = (((ph+phs)%(2*PI))+2*PI)%(2*PI);
@@ -296,6 +307,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     if(!P.grounded || P._moveDir || (sp < 0.8 && now > S.skidMin)) S.skidOn = false;
     else if(!S.skidOn && now - S.inSince > 50 && sp > 2.0){ S.skidOn = true; S.skidMin = now + 180; }
     S.pv = sp;
+    if(!P.grounded) S.gelaufen = false; else if(P._moveDir) S.gelaufen = true;   // Wackeln an der Kante nur nach Laufen, nicht nach einer Landung
     let p, key, xoff = 0, yoff = 0, flip = P.facing < 0 ? -1 : 1, rot = 0, rotCenter = false;
     const sinceLand = now - (P._landT || -1e9), sinceWJ = now - (P._wjT || -1e9);
     if(typeof won !== 'undefined' && won){ p = copy(AIR); p.dy = 5; key = 'cheer'; }
@@ -316,6 +328,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
       if(sinceLand < 260){ const kL = 0.4 + 0.6*(P._landV || 0.5); p = mixPose(idleP(t), kf([[0,L1],[0.3,L2],[0.7,L3],[1,idleP(t)]], sinceLand/260), kL); key = 'land'; }
       else if(S.skidOn){ p = copy(SKID); key = 'skid'; }
       else if(sp > 0.3){ p = runPose(S.phase%8); key = 'run'; }
+      else if(S.gelaufen && kanteRichtung(P, KANTE_WACKEL_RAND)){ p = kantePose(t); key = 'kante'; flip = kanteRichtung(P, KANTE_WACKEL_RAND); }
       else { p = idleP(t); key = 'idle'; }
     }
     // Sprung-Variante bei jedem Absprung vom Boden UND bei jedem Wandsprung: 0 = normal, 1 = Vorwärtsrolle, 2 = Rückwärtssalto (Wandsprung: auch vorwärts)

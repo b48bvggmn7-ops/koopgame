@@ -4742,6 +4742,33 @@ async def dschungel_hintergrund_tag_nacht(g):
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
 
 @test
+async def neue_figuren_kante_wackeln(g):
+    """Kante (Nutzerwunsch): Steht der Fuß (Mitte ± KANTE_FUSS) nicht mehr auf dem Boden, rutscht eine stehende Figur ab
+    und fällt; steht er noch halb drauf, bleibt sie stehen. Wackeln (Pose „kante“: auf einem Fuß, Arme wedeln, Blick zum
+    Abgrund) nur, wenn sie an die Kante GELAUFEN ist – nicht nach einer Landung. Wer normal läuft, fällt einfach runter."""
+    await g.load(level([ground(0, 560, 600, 160), ground(800, 560, 600, 160)], {'x': 603, 'y': 560}, {'x': 797, 'y': 560}))
+    await g.steps(60)
+    r = await g.ev("""(() => { const e = {x1: p1.x, x2: p2.x, g1: p1.grounded, g2: p2.grounded};
+      draw(); draw(); e.k1 = p1._ff && p1._ff.key;                         // gelandet/hingestellt: kein Wackeln
+      p1._ff.gelaufen = true; p2._ff.gelaufen = true; p1._moveDir = 0; p2._moveDir = 0;
+      const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y]);
+      draw(); draw(); e.k1b = p1._ff.key; e.k2b = p2._ff.key; e.f1 = p1._ff.gelaufen;
+      e.gleich = vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y]); return e; })()""")
+    assert r['x1'] == 603 and r['x2'] == 797 and r['g1'] and r['g2'], f'Fuß halb auf dem Boden: muss stehen bleiben {r}'
+    assert r['k1'] != 'kante', f'nach dem Hinstellen/Landen kein Wackeln: {r}'
+    assert r['k1b'] == 'kante' and r['k2b'] == 'kante' and r['gleich'], f'an die Kante gelaufen: Wackeln {r}'
+    # Fuß ganz über dem Abgrund: rutscht ab und fällt
+    await g.ev("p1.x = 610; p1._px = 610; p1.vx = 0; p2.x = 789; p2._px = 789; p2.vx = 0")
+    await g.steps(40)
+    r = await g.ev("({y1: p1.y, y2: p2.y, x1: p1.x, x2: p2.x})")
+    assert r['y1'] > 600 and r['y2'] > 600 and r['x1'] > 610 and r['x2'] < 789, f'Fuß in der Luft, aber nicht gefallen: {r}'
+    # mitten auf dem Boden: normale Steh-Pose, kein Abrutschen
+    await g.ev("p1.x = 300; p1._px = 300; p1.y = 560; p1._py = 560; p1.vx = p1.vy = 0")
+    await g.steps(40)
+    r = await g.ev("({x: p1.x, k: p1._ff.key, r: kanteRichtung(p1, KANTE_WACKEL_RAND)})")
+    assert r['x'] == 300 and r['k'] != 'kante' and r['r'] == 0, f'mitten auf dem Boden: {r}'
+
+@test
 async def muenzen_greifen_grosszuegig(g):
     """Münzen (Nutzerwunsch): zählen schon bei leichter Berührung der gezeichneten Figur (nicht erst, wenn man halb
     drinsteht), auch am Seil (Affe hängt gezeichnet unter dem Seil-Ende) und bei schnellen Bewegungen (Dash) – der Weg
