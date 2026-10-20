@@ -174,7 +174,7 @@ function finishMoveDrag(){
       if(hook.move) selectMove({hook}); else { selectMove(null); flash('Dieser Haken bewegt sich noch nicht – zum Ziel ziehen'); }
       return;
     }
-    hook.move = {dc:tc-c, dr:tr-r, speed:Number(speedSelect.value), link:curMoveLink()};
+    hook.move = curMoveMode({dc:tc-c, dr:tr-r, speed:Number(speedSelect.value), link:curMoveLink()});
     ensureRoom(tc); save(); selectMove({hook}); return;
   }
   const existing = moverForCell(c,r);
@@ -184,7 +184,7 @@ function finishMoveDrag(){
     return;
   }
   if(existing) movers = movers.filter(m=>m!==existing.mv);
-  const mv = {c, r, dc:tc-c, dr:tr-r, speed:Number(speedSelect.value), link:curMoveLink()};
+  const mv = curMoveMode({c, r, dc:tc-c, dr:tr-r, speed:Number(speedSelect.value), link:curMoveLink()});
   movers.push(mv);
   ensureRoom(tc); save(); selectMove({mv});
 }
@@ -200,6 +200,7 @@ function selectMove(sel){
   const sp = String(d.speed || 4.5);
   if([...speedSelect.options].some(o=>o.value===sp)) speedSelect.value = sp;
   moveSwitchSelect.value = d.link ? String(d.link) : '';
+  moveModeSelect.value = d.einmal ? 'einmal' : '';
   moveDelBtn.style.display = '';
   flash('Bewegung ausgewählt – Tempo/Schalter oben ändern, ziehen = neues Ziel, Entf = entfernen');
 }
@@ -210,6 +211,7 @@ function deleteSelMove(){
 }
 speedSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.speed = Number(speedSelect.value); save(); } });
 moveSwitchSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.link = curMoveLink(); save(); } });
+moveModeSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ curMoveMode(d); save(); } });
 moveDelBtn.addEventListener('click', deleteSelMove);
 window.addEventListener('mouseup', ()=>{ painting=false; eraseDrag=false; finishMoveDrag(); });
 let flashT=0, flashMsg='';

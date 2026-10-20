@@ -467,7 +467,7 @@ function partnerMoverSchritt(U, b){
     const tx = v.dir === 1 ? s.targetX : s.startX, ty = v.dir === 1 ? s.targetY : s.startY;
     const dx = tx - v.x, dy = ty - v.y, dist = Math.hypot(dx, dy);
     let sx, sy;
-    if(dist <= sp){ sx = dx; sy = dy; v.dir *= -1; } else { sx = dx/dist*sp; sy = dy/dist*sp; }
+    if(dist <= sp){ sx = dx; sy = dy; if(s.einmal) v.aktiv = false; else v.dir *= -1; } else { sx = dx/dist*sp; sy = dy/dist*sp; }
     const drauf = b && b.grounded && b.standingOn === v;
     v.x += sx; v.y += sy;
     if(drauf){ b.x += sx; b.y += sy; }

@@ -44,6 +44,8 @@ let moveDrag = null;         // {c,r,tc,tr} während Pfeil gezogen wird
 let selMove = null;          // ausgewählte Bewegung zum Nachbearbeiten: {mv} (Boden/Wand) oder {hook}
 const speedSelect = document.getElementById('speedSelect');
 const moveSwitchSelect = document.getElementById('moveSwitchSelect');
+const moveModeSelect = document.getElementById('moveModeSelect');   // „fährt hin und her“ / „fährt die Strecke einmal“
+function curMoveMode(o){ if(moveModeSelect.value === 'einmal') o.einmal = true; else delete o.einmal; return o; }
 function curMoveLink(){ return moveSwitchSelect.value ? Number(moveSwitchSelect.value) : null; }
 
 const linkSelect = document.getElementById('linkSelect');

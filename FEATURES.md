@@ -1924,6 +1924,10 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
     optional „per Schalter“ 1–20 → Schalter startet die Bewegung, danach dauerhaft; bei Tod zurück an Start; auch mit Haken:
     Bewegung vom Haken aus ziehen → Haken pendelt, Daten in hook.move {dc,dr,speed,link}),
     Bewegung nachträglich bearbeiten: Klick (ohne Ziehen) mit „Bewegung“ auf ein bewegtes Stück/einen bewegten Haken
+    Fahrt (Nutzerwunsch, Auswahl „Fahrt“ in der Eigenschaften-Zeile von „Bewegung“): „↔ fährt hin und her“ (wie bisher,
+    pendelt immer weiter) oder „→ fährt die Strecke einmal“ (`einmal: true` im Export) – bewegter Boden/Wand/Haftfläche und
+    bewegter Haken fahren einmal zum Ziel und bleiben dort stehen; per Hebel/Platte startet erneutes Schalten nicht wieder.
+    Neustart (R) und Tod setzen sie wie alle bewegten Teile an den Start zurück. Test bewegung_einmal.
     WÄHLT es aus (gelb umrandet; früher: Klick = Pfeil löschen). Tempo und „per Schalter“ zeigen dann dessen Werte,
     Änderungen gelten sofort; Ziehen = neues Ziel; „✕ Bewegung entfernen“ bzw. Entf/Backspace entfernt; Esc/Klick ins
     Leere/anderes Werkzeug hebt die Auswahl auf.

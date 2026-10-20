@@ -4373,6 +4373,32 @@ async def hebel_faehrt_mit_boden(g):
     assert st['px'] < 520 and abs(st['sx'] - (st['px'] + 60)) < 0.01, f'Hebel nach Neustart nicht mit dem Boden am Start: {st}'
 
 @test
+async def bewegung_einmal(g):
+    """Bewegung „fährt die Strecke einmal“ (Nutzerwunsch): bewegter Boden und bewegter Haken fahren einmal zum Ziel und
+    bleiben dort stehen (auch per Hebel: erneutes Schalten startet nicht wieder); „hin und her“ pendelt wie bisher;
+    Neustart setzt alles zurück."""
+    mps = [{'x': 400, 'y': 600, 'w': 80, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 560, 'targetY': 600, 'speed': 4, 'einmal': True},
+           {'x': 400, 'y': 440, 'w': 80, 'h': 40, 'look': 'ground', 'group': 2, 'targetX': 560, 'targetY': 440, 'speed': 4},
+           {'x': 800, 'y': 600, 'w': 80, 'h': 40, 'look': 'wall', 'group': 3, 'targetX': 800, 'targetY': 480, 'speed': 4, 'einmal': True, 'switchLink': 1}]
+    hooks = [{'x': 1000, 'y': 300, 'radius': 260, 'targetX': 1200, 'targetY': 300, 'speed': 4, 'einmal': True}]
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, movingPlatforms=mps, hooks=hooks,
+                       switches=[{'x': 200, 'y': 660, 'link': 1}]))
+    await g.steps(120)
+    r = await g.ev("""(() => { const M = solids.filter(s => s.type === 'moveplat');
+      return {einmal: [M[0].x, M[0].tripActive, M[0].fertig], pendel: M[1].moveDir, hebel: M[2].y, haken: [hooks[0].x, hooks[0].fertig]}; })()""")
+    assert r['einmal'] == [560, False, True], f'einmal: bleibt nicht am Ziel {r}'
+    assert r['haken'] == [1200, True], f'Haken einmal: {r}'
+    assert r['hebel'] == 600, f'per Hebel: fährt ohne Hebel los {r}'
+    await g.ev("setLink(1, true)"); await g.steps(60)
+    await g.ev("setLink(1, false)"); await g.ev("setLink(1, true)"); await g.steps(60)
+    r2 = await g.ev("(() => { const M = solids.filter(s => s.type === 'moveplat'); return [M[2].y, M[2].fertig, M[2].tripActive, M[0].x]; })()")
+    assert r2 == [480, True, False, 560], f'per Hebel einmal: {r2}'
+    assert await g.ev("(() => { const m = solids.filter(s => s.type === 'moveplat')[1]; return m.tripActive && !m.fertig; })()"), 'hin und her pendelt nicht mehr'
+    await g.p.keyboard.press('KeyR'); await g.p.wait_for_timeout(150)
+    r3 = await g.ev("(() => { const M = solids.filter(s => s.type === 'moveplat'); return [M[0].fertig, M[2].y, hooks[0].fertig]; })()")
+    assert r3[0] is False and r3[2] is False and r3[1] == 600, f'Neustart setzt nicht zurück: {r3}'
+
+@test
 async def editor_bewegung_nachbearbeiten(g):
     """Editor: Klick auf bewegtes Stück wählt es aus; Tempo/Schalter änderbar; Entf entfernt. Vergebene Nummern mit ✓."""
     srv = webserver(); p = g.p
@@ -4398,6 +4424,14 @@ async def editor_bewegung_nachbearbeiten(g):
         d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
         assert d['movers'] and d['movers'][0]['speed'] == 4.5 and d['movers'][0]['link'] == 3, f'Änderung nicht übernommen: {d["movers"]}'
         assert d['movers'][0]['dc'] == 4, 'Ziel hat sich verändert'
+        # Fahrt: „fährt die Strecke einmal“ (Nutzerwunsch) – wird gespeichert und exportiert, „hin und her“ nimmt es wieder weg
+        await p.select_option('#moveModeSelect', 'einmal')
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        assert d['movers'][0].get('einmal') is True, f'einmal nicht gespeichert: {d["movers"]}'
+        assert await p.evaluate("JSON.parse(exportLevel()).movingPlatforms.every(m => m.einmal === true)"), 'einmal nicht exportiert'
+        await p.select_option('#moveModeSelect', '')
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        assert 'einmal' not in d['movers'][0], f'hin und her nicht zurückgesetzt: {d["movers"]}'
         t3 = await p.evaluate("[...document.getElementById('moveSwitchSelect').options].find(o=>o.value==='3').textContent")
         assert 'Bewegung' in t3 and 'Schalter' in t3, f'per-Schalter-Liste: {t3}'
         await p.keyboard.press('Delete'); await p.wait_for_timeout(100)
@@ -6702,6 +6736,7 @@ async def werkzeug_pruefen(p, t):
         if not werte or sid in ('moveSwitchSelect',): continue
         wert = werte[-1] if sid != 'linkSelect' else '7'
         await p.select_option('#' + sid, wert)
+        if sid == 'moveModeSelect': erwartet['einmal'] = 'True'; continue   # „fährt die Strecke einmal“ -> einmal: true
         key = {'spikeDir': 'dir', 'coinColor': 'color', 'speedSelect': 'speed', 'linkSelect': 'link'}.get(sid) or sid.split('-', 2)[2]
         erwartet[key] = wert
     if t == 'hook':

@@ -23,12 +23,12 @@ function resetLevel(){
   for(const s of solids){ if(s.type==='crumble'){ s.triggered=false; s.gone=false; s.timer=0; s.fragments=null; s.breakElapsed=0; } }
   for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; } }
   linkOn = {};   // alle Hebel wieder aus
-  for(const s of solids){ if(s.type==='moveplat'){ s.x=s.startX; s.y=s.startY; s.moveDir=1; s.tripActive=false; } }
+  for(const s of solids){ if(s.type==='moveplat'){ s.x=s.startX; s.y=s.startY; s.moveDir=1; s.tripActive=false; s.fertig=false; } }
   for(const sw of switchDefs) sw.wasPressed = false;
   if(typeof syncSwitchCarriers === 'function') syncSwitchCarriers();   // mitfahrende Hebel zurück an den Start
   for(const c of coins){ c.taken = false; c.pop = 0; c.takenAt = 0; }
   coinFx = []; // Neustart: Münzen wieder da (beim Sterben bleiben sie gesammelt)
-  for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; } }
+  for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; h.fertig=false; } }
   activeCp = -1; deathState = null; zielHinweise = [];
   for(const cp of checkpointDefs){ cp.reachedM = false; cp.reachedF = false; cp.raiseT = 0; }
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zuruecksetzen) E.spiel.zuruecksetzen();   // z. B. Wechselboden (elemente/)

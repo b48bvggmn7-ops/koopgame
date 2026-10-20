@@ -46,7 +46,7 @@ function exportLevel(){
     for(const rect of mergeRects(g.cells.map(([c,r])=>({c,r})))){
       movingPlatforms.push({...rect, look:g.type, group:i+1,
         targetX: rect.x+mv.dc*TILE, targetY: rect.y+mv.dr*TILE, speed: mv.speed||4.5,
-        switchLink: mv.link||null});
+        switchLink: mv.link||null, ...(mv.einmal ? {einmal: true} : {})});
     }
   });
   const out = {
@@ -55,7 +55,7 @@ function exportLevel(){
       const o = {x:h.c*TILE+TILE/2, y:h.r*TILE+TILE/2, radius:(h.radius||6.5)*TILE};
       if(h.move && (h.move.dc||h.move.dr)){
         o.targetX = o.x + h.move.dc*TILE; o.targetY = o.y + h.move.dr*TILE;
-        o.speed = h.move.speed||4.5; o.switchLink = h.move.link||null;
+        o.speed = h.move.speed||4.5; o.switchLink = h.move.link||null; if(h.move.einmal) o.einmal = true;
       }
       return o;
     }),

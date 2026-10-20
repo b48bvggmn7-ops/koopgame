@@ -87,6 +87,7 @@ function buildLevel(data){
     if(typeof h.targetX === 'number'){
       // Bewegter Haken: pendelt wie bewegter Boden, optional per Schalter
       o.moving = true; o.startX = h.x; o.startY = h.y; o.moveDir = 1; o.tripActive = false;
+      o.einmal = !!h.einmal; o.fertig = false;   // einmal: fährt die Strecke nur einmal und bleibt am Ziel stehen
       o.switchLink = h.switchLink||null;
       o.switchCtl = !!(h.switchLink && ((data.switches||[]).some(sw=>sw.link===h.switchLink) || (data.plates||[]).some(p=>p.link===h.switchLink)));
     }
@@ -105,7 +106,8 @@ function buildLevel(data){
       switchLink: mp.switchLink||null,
       // Nur schaltergesteuert, wenn es im Level auch einen Schalter mit dieser Nummer gibt
       switchCtl: !!(mp.switchLink && (switchDefs.some(sw=>sw.link===mp.switchLink) || plates.some(p=>p.link===mp.switchLink))), tripActive:false,
-      startX:mp.x, startY:mp.y, targetX:mp.targetX, targetY:mp.targetY, moveDir:1});
+      startX:mp.x, startY:mp.y, targetX:mp.targetX, targetY:mp.targetY, moveDir:1,
+      einmal: !!mp.einmal, fertig: false});   // einmal: fährt die Strecke nur einmal und bleibt am Ziel stehen
   }
 
   // Ziel: entweder vorgegeben, oder automatisch auf dem am weitesten rechts liegenden Boden/Plattform

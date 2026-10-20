@@ -93,10 +93,10 @@ function setLink(link, on){
     else d.closing = true;            // schließt in updateDoorsAndSwitches, sobald frei
   }
   for(const m of solids){
-    if(m.type==='moveplat' && m.switchCtl && m.switchLink===link) m.tripActive = on;
+    if(m.type==='moveplat' && m.switchCtl && m.switchLink===link) m.tripActive = on && !m.fertig;
   }
   for(const h of hooks){
-    if(h.moving && h.switchCtl && h.switchLink===link) h.tripActive = on;
+    if(h.moving && h.switchCtl && h.switchLink===link) h.tripActive = on && !h.fertig;
   }
 }
 // Ziel-Hinweis (Bild-Regel, AUSBAU-REGELWERK Punkt 12): schaltet ein Hebel/eine Druckplatte etwas, das gerade außerhalb
@@ -194,12 +194,14 @@ function updateMovingPlatforms(dt, players){
     let stepX=0, stepY=0;
     if(dist <= speed){
       stepX=dx; stepY=dy;
-      s.moveDir*=-1; // immer weiter hin und her (auch nach Schalter-Start)
+      if(s.einmal) s.fertig = true;   // „fährt die Strecke einmal“: am Ziel stehen bleiben
+      else s.moveDir*=-1; // immer weiter hin und her (auch nach Schalter-Start)
     }
     else { stepX = dx/dist*speed; stepY = dy/dist*speed; }
     const onTopList = players.map(player => player.grounded && Math.abs(player.y - s.y) < 2 &&
       player.x+player.w/2 > s.x && player.x-player.w/2 < s.x+s.w);
     s.x += stepX; s.y += stepY;
+    if(s.fertig) s.tripActive = false;
     players.forEach((player, i)=>{
     const onTop = onTopList[i];
     // hängt die Figur unter einer bewegten Haftfläche (elemente/haftflaeche.js), fährt sie mit; wird es eng: loslassen
@@ -316,16 +318,16 @@ function pathVisible(x1, x2, w){
 function activateVisibleMovers(){
   const groups = new Set();
   for(const s of solids){
-    if(s.type!=='moveplat' || s.switchCtl || s.tripActive) continue;
+    if(s.type!=='moveplat' || s.switchCtl || s.tripActive || s.fertig) continue;
     if(pathVisible(s.startX, s.targetX, s.w)) groups.add(s.group===undefined ? s : s.group);
   }
   if(groups.size){
     for(const s of solids){
-      if(s.type==='moveplat' && !s.switchCtl && !s.tripActive && (groups.has(s) || groups.has(s.group))){ s.tripActive = true; }
+      if(s.type==='moveplat' && !s.switchCtl && !s.tripActive && !s.fertig && (groups.has(s) || groups.has(s.group))){ s.tripActive = true; }
     }
   }
   for(const h of hooks){
-    if(h.moving && !h.switchCtl && !h.tripActive && pathVisible(h.startX, h.targetX, 0)) h.tripActive = true;
+    if(h.moving && !h.switchCtl && !h.tripActive && !h.fertig && pathVisible(h.startX, h.targetX, 0)) h.tripActive = true;
   }
 }
 
@@ -339,7 +341,8 @@ function updateMovingHooks(){
     const dx = tx-h.x, dy = ty-h.y, dist = Math.hypot(dx,dy);
     if(dist <= speed){
       h.x = tx; h.y = ty;
-      h.moveDir *= -1;
+      if(h.einmal){ h.fertig = true; h.tripActive = false; }   // „fährt die Strecke einmal“
+      else h.moveDir *= -1;
     } else { h.x += dx/dist*speed; h.y += dy/dist*speed; }
   }
 }
