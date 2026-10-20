@@ -54,20 +54,22 @@ elementRegistrieren({
         if(x0 + s.w < -30 || x0 > VW + 30) continue;
         ctx.save();
         ctx.beginPath(); for(const r of s.teile) ctx.rect(r.x - camX, r.y, r.w, r.h); ctx.clip();
-        // Fläche: an den Seiten weich auslaufend, zum unteren Drittel heller (dort „bläst“ es), oben und unten weich auslaufend
+        // Fläche: an allen Rändern weich auslaufend, zum unteren Teil heller (dort „bläst“ es)
         const atem = 0.88 + 0.12*Math.sin(tw*1.6 + s.x*0.01);
-        const gq = ctx.createLinearGradient(x0, 0, x0 + s.w, 0);
-        gq.addColorStop(0, 'rgba(225,248,255,0)'); gq.addColorStop(0.22, `rgba(225,248,255,${0.3*atem})`);
-        gq.addColorStop(0.5, `rgba(235,252,255,${0.4*atem})`); gq.addColorStop(0.78, `rgba(225,248,255,${0.3*atem})`);
-        gq.addColorStop(1, 'rgba(225,248,255,0)');
-        // in waagerechten Bändern mit wechselnder Deckkraft: oben und unten weich ausblenden (keine Kante)
-        ctx.fillStyle = gq;
-        const baender = 16;
-        for(let b = 0; b < baender; b++){
-          const m = (b + 0.5)/baender;   // 0 = oben, 1 = unten
-          ctx.globalAlpha = Math.min(1, m/0.3, (1 - m)/0.18)*(0.75 + 0.55*m*m);
-          const ya = Math.round(s.y + s.h*b/baender), yb = Math.round(s.y + s.h*(b + 1)/baender);
-          ctx.fillRect(x0, ya, s.w, yb - ya);
+        // senkrecht: EIN fließender Verlauf (oben und unten bis 0 – keine Kante, keine Stufen)
+        const gv = ctx.createLinearGradient(0, s.y, 0, s.y + s.h);
+        for(let k = 0; k <= 12; k++){
+          const m = k/12, glatt = t => t <= 0 ? 0 : t >= 1 ? 1 : t*t*(3 - 2*t);   // 0 = oben, 1 = unten
+          const a = glatt(m/0.35)*glatt((1 - m)/0.2)*(0.75 + 0.55*m*m)*0.55*atem;
+          gv.addColorStop(m, `rgba(232,250,255,${a.toFixed(3)})`);
+        }
+        // waagerecht weich: mehrere übereinander liegende, nach innen schmaler werdende Streifen (Rand = wenig, Mitte = alle)
+        ctx.fillStyle = gv;
+        const streifen = 8;
+        ctx.globalAlpha = 1/streifen;
+        for(let k = 0; k < streifen; k++){
+          const rein = s.w*0.32*k/streifen;
+          ctx.fillRect(x0 + rein, s.y, s.w - 2*rein, s.h);
         }
         ctx.globalAlpha = 1;
         // lange Luftschlieren: steigen gleichmäßig (px/s), schlängeln sich und laufen an beiden Enden aus
