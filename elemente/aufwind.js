@@ -36,6 +36,28 @@ function windSaeulen(){
   windSaeulenQuelle = winds; windSaeulenCache = {n, liste};
   return liste;
 }
+// Schein einer Säule als kleines Bild (32×128 Pixel, einmal berechnet): an allen Rändern weich auslaufend, zum unteren
+// Teil heller. Je Pixel gerechnet statt aus durchsichtigen Schichten gestapelt – blasse Schichten übereinander zeichnet
+// der Browser körnig (gestreute Pixel), und das flimmert, sobald sich die Helligkeit ändert.
+let windScheinCache = null;
+function windScheinBild(){
+  if(windScheinCache) return windScheinCache;
+  const B = 32, H = 128, c = document.createElement('canvas'); c.width = B; c.height = H;
+  const g2 = c.getContext('2d'), bild = g2.createImageData(B, H);
+  const glatt = t => t <= 0 ? 0 : t >= 1 ? 1 : t*t*(3 - 2*t);
+  for(let y = 0; y < H; y++){
+    const m = (y + 0.5)/H;   // 0 = oben, 1 = unten
+    const senk = glatt(m/0.35)*glatt((1 - m)/0.2)*(0.75 + 0.55*m*m);
+    for(let x = 0; x < B; x++){
+      const q = (x + 0.5)/B, waag = glatt(Math.min(q, 1 - q)/0.32);
+      const i = (y*B + x)*4;
+      bild.data[i] = 232; bild.data[i + 1] = 250; bild.data[i + 2] = 255;
+      bild.data[i + 3] = Math.round(255*0.55*senk*waag);
+    }
+  }
+  g2.putImageData(bild, 0, 0);
+  return windScheinCache = c;
+}
 // feste „Zufallszahl“ 0…1 je Ziffer (damit Schlieren/Staub jedes Bild am gleichen Platz bleiben)
 function windZufall(k){ const v = Math.sin(k*12.9898 + 78.233)*43758.5453; return v - Math.floor(v); }
 elementRegistrieren({
@@ -64,21 +86,9 @@ elementRegistrieren({
         ctx.beginPath(); for(const r of s.teile) ctx.rect(r.x - camX, r.y, r.w, r.h); ctx.clip();
         // Fläche: an allen Rändern weich auslaufend, zum unteren Teil heller (dort „bläst“ es)
         const atem = 0.88 + 0.12*Math.sin(tw*1.6 + s.x*0.01);
-        // senkrecht: EIN fließender Verlauf (oben und unten bis 0 – keine Kante, keine Stufen)
-        const gv = ctx.createLinearGradient(0, s.y, 0, s.y + s.h);
-        for(let k = 0; k <= 12; k++){
-          const m = k/12, glatt = t => t <= 0 ? 0 : t >= 1 ? 1 : t*t*(3 - 2*t);   // 0 = oben, 1 = unten
-          const a = glatt(m/0.35)*glatt((1 - m)/0.2)*(0.75 + 0.55*m*m)*0.55*atem;
-          gv.addColorStop(m, `rgba(232,250,255,${a.toFixed(3)})`);
-        }
-        // waagerecht weich: mehrere übereinander liegende, nach innen schmaler werdende Streifen (Rand = wenig, Mitte = alle)
-        ctx.fillStyle = gv;
-        const streifen = 8;
-        ctx.globalAlpha = 1/streifen;
-        for(let k = 0; k < streifen; k++){
-          const rein = s.w*0.32*k/streifen;
-          ctx.fillRect(x0 + rein, s.y, s.w - 2*rein, s.h);
-        }
+        // EIN weiches Schein-Bild (klein vorgemalt, `windScheinBild`), auf die Säule gezogen: glatt, ohne Körnung/Flimmern
+        ctx.globalAlpha = atem; ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(windScheinBild(), x0, s.y, s.w, s.h);
         ctx.globalAlpha = 1;
         // lange Luftschlieren: steigen gleichmäßig (px/s), schlängeln sich und laufen an beiden Enden aus
         ctx.lineCap = 'round';
