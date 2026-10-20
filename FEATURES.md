@@ -1636,6 +1636,9 @@ Level-Test läuft; alles andere sind **optionale** Stellen mit einer Münze als 
     hängend erreichbar (hin- und zurückrollen). Auch gespiegelt (Arm nach links).
   - **S3 Haft-Insel:** schwebende Haftfläche 4 Reihen über flachem Boden (ein Sprung schafft nur 3): darunter festhalten,
     um die Ecke hinauf rollen, oben liegt die Meister-Münze.
+    **Seit „Schleim nur unten, kein Hochziehen an den Seiten“ (Haftfläche) geht das nicht mehr; Nutzer-Entscheidung: die
+    Regel bleibt, die 13 Meister-Münzen auf den Haft-Inseln bleiben liegen und sind nicht mehr erreichbar**
+    (Stellen-Prüfung abgeschaltet: `HAFTINSELN_ERREICHBAR` in tests/bausteine/stellen.py).
   - **S4 Durchbruch-Nische:** ein Durchbruch-Kästchen in einer Wandfläche, dahinter eine Münze (Dash hinein).
   - Ab Dschungel 3 hat jedes Level mindestens 2 Haftflächen, ab Dschungel 2 mindestens 3 Durchbruch-Wände (Ausnahme
     Tiefenschlund: 2 – mehr freie Wandflächen gibt es dort nicht).

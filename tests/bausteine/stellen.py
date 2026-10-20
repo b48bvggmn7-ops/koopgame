@@ -204,7 +204,11 @@ _HAFTINSELN = {
     'vulkan/05-schlackewerk.json': [(294, 16, 'pink'), (696, 16, 'blue')],
     'vulkan/07-kraterherz.json': [(545, 16, 'pink')],
 }
-for _lvl, _liste in _HAFTINSELN.items():
+# Seit „Haftfläche: Schleim nur unten, kein Hochziehen an den Seiten“ (Nutzerwunsch) kommt man nicht mehr um die Ecke
+# auf die Insel; Nutzer-Entscheidung: die Regel bleibt, die Meister-Münzen oben bleiben liegen (nicht mehr erreichbar).
+# Darum werden diese Stellen nicht mehr als „schaffbar“ geprüft (Liste bleibt als Nachweis, wo die Inseln liegen).
+HAFTINSELN_ERREICHBAR = False
+for _lvl, _liste in (_HAFTINSELN.items() if HAFTINSELN_ERREICHBAR else []):
     for (_a, _g, _farbe) in _liste:
         _w = 'm' if _farbe == 'blue' else 'f'
         stelle(level=_lvl, name=f'Haft-Insel {_a} (S3, optional, Meister-Münze oben)', wer=_w, start=(_a - 2, _g - 1), partner=(_a - 3, _g - 1),
