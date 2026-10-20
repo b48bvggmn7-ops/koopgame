@@ -254,6 +254,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     dunkler Umriss, weicher Schein in Münzfarbe und leichter Schatten -> heben sich vom Dschungel ab
   - Münzen (data.coins [{x,y}] aus dem Editor): blau = Affe, pink = Schweinchen. Keine Mindest-Münzen mehr fürs Ziel
     (die gemeinsame Gold-Zählung „x / 10“ und der Hinweis „Noch X Münzen!“ wurden auf Nutzerwunsch entfernt).
+  - Münzen einsammeln (Nutzerwunsch „schon beim leichten Berühren“): zählt, sobald die GEZEICHNETE Figur den Münzrand
+    berührt (Greif-Bereich `MUENZ_GREIF_X/Y` 36/38 px um die Figur-Mitte, vorher 24/26 um die schmalere Kollisions-Box).
+    Am Seil zählt die Stelle, an der der Affe gezeichnet hängt (`muenzGreifPunkt`, unter dem Seil-Ende); schnelle
+    Bewegungen (Dash, Schwung) werden in 8-px-Teilschritten abgefahren, damit keine Münze übersprungen wird – aber nicht
+    nach Neustart/Test-Sprung/Q (Sprung passt nicht zum Tempo). Test muenzen_greifen_grosszuegig.
     Münz-Anzeige oben links (modern, wächst mit der Bildschirmgröße): dunkle Glas-Karte mit je einer Spalte pro
     Figur – leuchtende Münze in Figurenfarbe, große Zahl „gesammelt / vorhanden“, Fortschrittsbalken; voll = Zahl grün;
     beim Einsammeln dreht sich die Münze der passenden Spalte und die Zahl hüpft. Beim Sterben bleiben

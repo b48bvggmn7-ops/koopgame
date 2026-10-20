@@ -249,13 +249,37 @@ function coinsCollected(){ let n=0; for(const c of coins) if(c.taken) n++; retur
 const COIN_PAL = {gold:['#d99a00','#ffd23f','#fff4b8','255,190,40'], blue:['#1c6fd1','#4dabf7','#d0ebff','77,171,247'],
                   pink:['#d6336c','#f783ac','#ffe3ef','247,131,172']};
 function canCollect(pl, c){ return c.color==='gold' || (c.color==='blue' && pl.male) || (c.color==='pink' && !pl.male); }
+// Münze greifen (Nutzerwunsch: schon bei leichter Berührung des Rands): Greif-Bereich = gezeichnete Figur + Münzradius,
+// nicht die schmalere Kollisions-Box. Am Seil hängt der gezeichnete Affe unter dem Seil-Ende (10c-fuss-figuren.js) –
+// dann zählt diese Stelle. Schnelle Bewegungen (Dash, Schwung) werden in Teilschritten abgefahren, damit keine Münze
+// übersprungen wird.
+const MUENZ_GREIF_X = 36, MUENZ_GREIF_Y = 38;   // halbe Breite/Höhe des Greif-Bereichs um die Figur-Mitte (px)
+const MUENZ_MITTE_HOEHE = 22;                    // Mitte der gezeichneten Figur über den Füßen (px)
+const MUENZ_TEILSCHRITT = 8, MUENZ_SPRUNG_SPIEL = 24;   // px; nur abfahren, was zum Tempo passt (Neustart, Test-Sprung, Q nicht)
+function muenzGreifPunkt(pl){
+  if(pl.male && pl.hookAttached && pl.anchor && typeof neueFigurenAn === 'function' && neueFigurenAn()){
+    const cx = pl.x, cy = pl.y - pl.h*0.6, phi = Math.atan2(pl.anchor.x - cx, cy - pl.anchor.y);
+    const lx = -15.6*(pl.facing < 0 ? -1 : 1), ly = 23, cs = Math.cos(phi), sn = Math.sin(phi);
+    return [cx + lx*cs - ly*sn, cy + lx*sn + ly*cs];
+  }
+  return [pl.x, pl.y - MUENZ_MITTE_HOEHE];
+}
 function updateCoins(players){
   const now = performance.now();
+  const wege = players.map(pl => {
+    const [x, y] = muenzGreifPunkt(pl), vx = pl._muenzX, vy = pl._muenzY;
+    pl._muenzX = x; pl._muenzY = y;
+    const d = vx === undefined ? 0 : Math.hypot(x - vx, y - vy);
+    if(!d || d > Math.hypot(pl.vx, pl.vy) + MUENZ_SPRUNG_SPIEL) return [[x, y]];
+    const n = Math.ceil(d / MUENZ_TEILSCHRITT), pkt = [];
+    for(let i = 1; i <= n; i++) pkt.push([vx + (x - vx)*i/n, vy + (y - vy)*i/n]);
+    return pkt;
+  });
   for(const c of coins){
     if(c.taken){ if(c.pop < 1) c.pop = Math.min(1, c.pop + 0.05); continue; }
-    for(const pl of players){
-      const cx = pl.x, cy = pl.y - pl.h*0.5;
-      if(Math.abs(cx - c.x) < 24 && Math.abs(cy - c.y) < 26){
+    for(let k = 0; k < players.length; k++){
+      const pl = players[k];
+      if(wege[k].some(([cx, cy]) => Math.abs(cx - c.x) < MUENZ_GREIF_X && Math.abs(cy - c.y) < MUENZ_GREIF_Y)){
         if(canCollect(pl, c)){ c.taken = true; c.takenBy = pl === p1 ? 'm' : 'f'; c.pop = 0; coinPickupFx(c); break; }
         else if(!c.nudgeT || now - c.nudgeT > 500) c.nudgeT = now;   // falsche Figur: Münze wackelt nur
       }

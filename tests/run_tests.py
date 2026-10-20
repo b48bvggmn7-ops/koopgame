@@ -4738,6 +4738,33 @@ async def dschungel_hintergrund_tag_nacht(g):
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
 
 @test
+async def muenzen_greifen_grosszuegig(g):
+    """Münzen (Nutzerwunsch): zählen schon bei leichter Berührung der gezeichneten Figur (nicht erst, wenn man halb
+    drinsteht), auch am Seil (Affe hängt gezeichnet unter dem Seil-Ende) und bei schnellen Bewegungen (Dash) – der Weg
+    wird in Teilschritten abgefahren. Nach Neustart/Test-Sprung wird nichts unterwegs eingesammelt."""
+    coins = [{'x': 433, 'y': 658}, {'x': 450, 'y': 658}]
+    await g.load(level([ground(0, 680, 3000)], {'x': 400, 'y': 680}, {'x': 100, 'y': 680}, coins=coins))
+    await g.steps(10)
+    r = await g.ev("""(() => { menuScreen = 'pause';
+      const P = p1, frei = () => { for(const c of coins){ c.taken = false; } P._muenzX = undefined; };
+      const setze = (x, y) => { coins[0].x = x; coins[0].y = y; coins[1].x = 9000; frei(); updateCoins([P]); return coins[0].taken; };
+      const x = P.x, y = P.y, e = {};
+      e.rand = setze(x + 33, y - 22);         // Rand der gezeichneten Figur
+      e.weit = setze(x + 52, y - 22);         // deutlich daneben: nicht
+      e.oben = setze(x, y - 56);              // über dem Kopf (Rand)
+      // Seil: Affe hängt gezeichnet links unter dem Seil-Ende (Anker rechts oben)
+      const vor = {h: P.hookAttached, a: P.anchor, f: P.facing};
+      P.hookAttached = true; P.anchor = {x: x + 60, y: y - 200}; P.facing = 1;
+      e.seil = setze(x - 28, y + 4);
+      P.hookAttached = vor.h; P.anchor = vor.a; P.facing = vor.f;
+      // schneller Weg: Münze liegt nur zwischen alter und neuer Stelle
+      coins[0].x = x - 42; coins[0].y = y - 22; frei(); P._muenzX = x - 60; P._muenzY = y - 22; P.vx = 44; updateCoins([P]); e.weg = coins[0].taken;
+      // Sprung ohne passendes Tempo (Neustart/Test-Sprung): nicht abfahren
+      frei(); P._muenzX = x - 88; P._muenzY = y - 22; P.vx = 0; updateCoins([P]); e.teleport = coins[0].taken;
+      frei(); menuScreen = null; return e; })()""")
+    assert r == {'rand': True, 'weit': False, 'oben': True, 'seil': True, 'weg': True, 'teleport': False}, f'Münzen greifen: {r}'
+
+@test
 async def dschungel_wind_anlaufzeit(g):
     """Wind-Abschaltung (Nutzerwunsch „Warum weht kein Wind?“): In den ersten DJ_ANLAUF_MS nach dem Levelstart, bei
     einzelnen Aussetzern ab DJ_LUECKE_MS (Tab-Wechsel) und im Menü zählen langsame Bilder nicht; danach schalten
