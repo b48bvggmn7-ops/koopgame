@@ -1607,6 +1607,9 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
   an der Seite hoch oder oben drauf (Nutzerwunsch, früher ging das). „Hoch“ loslassen = fallen. Springen = Absprung
   nach unten-vorn. Dash geht von dort (kostet einen Punkt; „hoch“ zählt an der Unterseite nicht als Dash-Richtung).
   Haken greifen = loslassen. Sonst ist eine Haftfläche eine normale Wand (Boden oben, Wandsprung an der Seite).
+  Am freien Ende hält die hangelnde Figur an (Nutzerwunsch): ihre Mitte bleibt `HAFT_RAND` 8 px vor der Kante, Tempo 0, die
+  Hangel-Bewegung stoppt (vorher rutschte sie jeden Schritt ein Stück weiter und „hangelte in der Luft“; `haftWeiter`).
+  Gilt auch für bewegte Haftflächen. Test haft_ende_anhalten.
 - **Bewegte Haftfläche** (Nutzerwunsch): im Editor lässt sich eine Haftfläche mit dem Werkzeug „Bewegung“ zum Ziel
   ziehen (wie Boden/Wand; Export als bewegtes Stück mit look 'haft', im Spiel Wand-Aussehen + `haft: true`). Wer sich
   darunter festhält, fährt mit (`updateMovingPlatforms`), kann unter ihr hangeln (bis zu ihrem Ende) und an jeder

@@ -189,8 +189,21 @@ function haftSchritt(P, moveDir){
   const h = P.haft;
   h.v += (moveDir*HAFT_TEMPO - h.v)*HAFT_BESCHL;
   if(Math.abs(h.v) < 0.03) h.v = 0;
+  // Ende der Fläche (Nutzerwunsch): vorher anhalten – die Hände bleiben unter der Fläche, kein Weiterhangeln in der Luft
+  if(h.v !== 0 && !haftWeiter(P, P.x + h.v + Math.sign(h.v)*HAFT_RAND)) h.v = 0;
   P.vx = h.v; P.vy = 0;
   P.grounded = false;
+}
+// trägt die Haftfläche an Stelle x noch (gleiche Fläche/Gruppe, gleiche Unterkante)?
+function haftWeiter(P, x){
+  const h = P.haft;
+  if(h.mp){
+    const unten = h.mp.y + h.mp.h;
+    return solids.some(s => s.type === 'moveplat' && s.haft && !s.gone && haftGleichesStueck(s, h.mp) &&
+                            Math.abs(s.y + s.h - unten) < 1 && x >= s.x && x <= s.x + s.w);
+  }
+  const c = Math.floor(x/40);
+  return haftIst(c, h.r) && !festIst(c, h.r + 1);
 }
 // gleiche bewegte Haftfläche (auch ein anderes Teil derselben Gruppe)?
 function haftGleichesStueck(a, b){ return a === b || (a.group !== undefined && a.group !== null && a.group === b.group); }

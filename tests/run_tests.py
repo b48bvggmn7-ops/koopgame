@@ -6220,6 +6220,27 @@ async def wand_rutschen(g):
     assert r['wandsprung']['vx'] < -3 and r['wandsprung']['vy'] < -8, r['wandsprung']
 
 @test
+async def haft_ende_anhalten(g):
+    """Haftfläche (Nutzerwunsch): wer am freien Ende ankommt, hält an – die Mitte bleibt HAFT_RAND vor der Kante, das Tempo
+    ist 0 und die Hangel-Animation läuft nicht in der Luft weiter; auch bei einer bewegten Haftfläche."""
+    mps = [{'x': 1400, 'y': 200, 'w': 160, 'h': 40, 'look': 'haft', 'group': 1, 'targetX': 1400, 'targetY': 200, 'speed': 1}]
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
+                       haftflaechen=[{'x': 400, 'y': 200, 'w': 200, 'h': 40}], movingPlatforms=mps))
+    await g.steps(10)
+    for start, kante in ((500, 600), (1480, 1560)):
+        r = await g.ev(f"""(() => {{ p1.x = {start}; p1.y = 240 + p1.h + 2; p1._px = p1.x; p1._py = p1.y; p1.vx = 0; p1.vy = -1; p1.grounded = false;
+          KEYS.KeyW = true; KEYS.KeyD = true; return true; }})()""")
+        await g.steps(150)
+        r = await g.ev("({x: p1.x, vx: p1.vx, haft: !!p1.haft, hp: p1._ff ? p1._ff.hp : 0})")
+        await g.steps(30)
+        r2 = await g.ev("({x: p1.x, hp: p1._ff ? p1._ff.hp : 0})")
+        await g.ev("KEYS.KeyW = false; KEYS.KeyD = false")
+        assert r['haft'], f'nicht mehr an der Haftfläche {r}'
+        assert {kante} and r['x'] <= kante - 7.9 and r['x'] > kante - 20 and r['vx'] == 0 and abs(r2['x'] - r['x']) < 0.01, f'Ende {kante}: hält nicht an {r} {r2}'
+        assert r2['hp'] - r['hp'] < 0.5, f'Hangel-Animation läuft am Ende weiter {r} {r2}'
+        await g.steps(30)
+
+@test
 async def haftflaeche(g):
     """Nacht-Ausbau: Haftfläche – mit „hoch“ von unten festhalten (beide Figuren, ohne „hoch“ nicht), langsamer als
     Laufen mit Schwung entlanghangeln, kein Sofort-Stopp, NICHT um Kanten herum (Nutzerwunsch: nur unten, an der Seite
