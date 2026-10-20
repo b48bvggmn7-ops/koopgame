@@ -106,7 +106,7 @@ KOOP_BOT = (ROOT / 'tests' / 'koop_bot.js').read_text(encoding='utf-8')
 def kx(c): return c * 40 + 20          # Mitte von Spalte c (px)
 def ky(r): return (r + 1) * 40         # Füße, wenn man in Reihe r steht
 def kat(c, r): return [kx(c), ky(r)]
-def k_lauf(c, d=0): return {'hold': ['right'], 'until': f'P.x >= {kx(c) + d}'}
+def k_lauf(c, d=0): return {'hold': ['right'], 'until': f'P.x >= {kx(c) + d} || P.zielWartet'}   # zielWartet: am Ziel-Baum angekommen (Steuerung aus, 12a)
 def k_hop(xj, brake, glide=False):
     """an x springen, `brake` Bilder nach rechts halten, danach abbremsen bis zur Landung"""
     return [{'hold': ['right'], 'until': f'P.x >= {xj}'}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': brake},
