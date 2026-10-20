@@ -80,8 +80,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       und Nummern-Plakette.
     - Druckplatte (etwas breiter, so breit wie der Bereich, der wirklich drückt): Messingplatte im Eisenrahmen mit
       Nieten, zwei Edelsteine in der Verknüpfungs-Farbe und Nummer; gedrückt dunkler und abgesenkt.
-      Gedrückt sinkt sie GANZ ein (Nutzerwunsch: die Figur soll richtig darauf stehen, nicht „in“ der Platte): nur noch
-      ein flacher Streifen auf Bodenhöhe mit einem Strich in der Verknüpfungs-Farbe; weiche Bewegung nur in der Anzeige
+      Nutzerwunsch „die Figur soll sichtbar AUF der Platte stehen“: die Platte sitzt in einer Vertiefung im Boden
+      (Eisenrahmen mit Nieten) und ragt frei 8 px heraus; gedrückt sinkt sie ganz ein, ihre Messing-Oberseite liegt dann
+      genau auf Bodenhöhe unter den Füßen (Edelstein bleibt sichtbar); weiche Bewegung nur in der Anzeige
       (`anzeigeDruck`, bei jeder Bildrate gleich schnell). Test druckplatte_ganz_gedrueckt.
     - Sprungpilz (dicker, so breit wie der Bereich, der wirklich federt): warmes Gold-Orange mit cremefarbenen Tupfen,
       brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze).
