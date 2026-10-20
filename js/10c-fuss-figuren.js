@@ -64,7 +64,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     const muehle = (sx, sy, mx, my, ph, r) => { const a = w*1.7 + ph, hx = mx + r*Math.cos(a), hy = my + r*Math.sin(a);
       return [sx, sy, (sx + hx)/2 + 6, (sy + hy)/2 - 4, hx, hy]; };
     return {dy:6 + 1.5*Math.sin(w*2), lean:12 + 10*sw, nf:[42, -16 + 5*sw, -35 + 20*sw], ff:[-8, -9, 0],
-            na:muehle(34, -42, 56, -76, 0, 15), fa:muehle(-22, -62, -34, -98, PI, 14)};
+            na:muehle(34, -42, 47, -62, 0, 9), fa:muehle(-22, -62, -29, -82, PI, 8)};
   }
   function hangPose(hp){
     const ph = 2*PI*hp/72.8;
