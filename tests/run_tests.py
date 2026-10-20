@@ -5593,11 +5593,18 @@ async def scheinwand_ohne_moos_verrat(g):
     versteckten Weg."""
     lvl = level([ground(0, 680, 2000), {'x': 400, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'},
                  {'x': 400, 'y': 320, 'w': 200, 'h': 120, 'type': 'fake'}, {'x': 800, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'}],
-                {'x': 100, 'y': 680}, {'x': 60, 'y': 680})
+                {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen')
     await g.load(lvl)
     k = await g.ev("""(() => { buildDeco(); const unter = decoMoss.filter(m => !m.side && m.x >= 400 && m.x < 600 && m.y === 440).length,
       frei = decoMoss.filter(m => !m.side && m.x >= 800 && m.x < 1000 && m.y === 440).length; return [unter, frei]; })()""")
     assert k[0] == 0 and k[1] == 5, f'Moos unter Scheinwand / auf freier Wand: {k}'
+    # Dschungel (boden-dekor-paket): dasselbe für das neue Gras/Dickicht – nichts unter der Scheinwand, auf der freien Wand schon
+    await g.load(level([ground(0, 680, 2000), {'x': 400, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'},
+                 {'x': 400, 'y': 320, 'w': 200, 'h': 120, 'type': 'fake'}, {'x': 800, 'y': 440, 'w': 200, 'h': 40, 'type': 'wall'}],
+                {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel'))
+    k = await g.ev("""(() => { djbFor = null; const Z = djbHolen().zellen; return [Z.filter(z => z.x >= 400 && z.x < 600 && z.y === 440).length,
+      Z.filter(z => z.x >= 800 && z.x < 1000 && z.y === 440).length]; })()""")
+    assert k[0] == 0 and k[1] == 5, f'Dschungel-Gras unter Scheinwand / auf freier Wand: {k}'
 
 @test
 async def neues_spiel_loescht_alles(g):
