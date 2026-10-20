@@ -142,117 +142,76 @@ function wandRutschen(P, gliding){
 }
 
 // ---------- Haftfläche (elemente/haftflaeche.js: Wände mit haft: true, liegen im 40er-Raster) ----------
-let haftZellenCache = {src: null, n: -1, zellen: new Set(), fest: new Set()};
+// Nutzerwunsch: festhalten nur an der UNTERSEITE (hangeln links/rechts), kein Hochziehen an den Seiten; bewegte
+// Haftflächen (moveplat mit haft: true, Editor-Werkzeug „Bewegung“) nehmen die Figur mit, loslassen geht überall.
+let haftZellenCache = {src: null, n: -1, zellen: new Set(), fest: new Set(), bewegt: false};
 function haftZellen(){
   if(haftZellenCache.src === solids && haftZellenCache.n === solids.length) return haftZellenCache;
-  const zellen = new Set(), fest = new Set();
+  const zellen = new Set(), fest = new Set(); let bewegt = false;
   for(const s of solids){
-    if(s.type === 'oneway' || s.type === 'moveplat') continue;
+    if(s.type === 'moveplat'){ if(s.haft) bewegt = true; continue; }
+    if(s.type === 'oneway') continue;
     for(let x = s.x; x < s.x + s.w - 1; x += 40) for(let y = s.y; y < s.y + s.h - 1; y += 40){
       const k = Math.floor(x/40) + ',' + Math.floor(y/40);
       if(s.haft) zellen.add(k); else fest.add(k);
     }
   }
-  haftZellenCache = {src: solids, n: solids.length, zellen, fest};
+  haftZellenCache = {src: solids, n: solids.length, zellen, fest, bewegt};
   return haftZellenCache;
 }
 const haftIst = (c, r) => haftZellen().zellen.has(c + ',' + r);
 const festIst = (c, r) => { const H = haftZellen(); return H.zellen.has(c + ',' + r) || H.fest.has(c + ',' + r); };
-// Haftfläche direkt über dem Kopf (Kopfmitte, höchstens HAFT_FANG px darunter)? -> {c, r} der Zelle
+// Haftfläche direkt über dem Kopf (Kopfmitte, höchstens HAFT_FANG px darunter)? -> {c, r} der Zelle bzw. {mp} (bewegt)
 function haftUeberKopf(P){
-  if(!haftZellen().zellen.size) return null;
-  const kopf = P.y - P.h, r = Math.round(kopf/40) - 1, c = Math.floor(P.x/40);
-  const abstand = kopf - (r + 1)*40;   // > 0: Kopf unter der Fläche
-  if(abstand < -2.5 || abstand > HAFT_FANG) return null;
-  return haftIst(c, r) && !festIst(c, r + 1) ? {c, r} : null;
+  const H = haftZellen(), kopf = P.y - P.h;
+  if(H.zellen.size){
+    const r = Math.round(kopf/40) - 1, c = Math.floor(P.x/40);
+    const abstand = kopf - (r + 1)*40;   // > 0: Kopf unter der Fläche
+    if(abstand >= -2.5 && abstand <= HAFT_FANG && haftIst(c, r) && !festIst(c, r + 1)) return {c, r};
+  }
+  if(H.bewegt) for(const s of solids){
+    if(s.type !== 'moveplat' || !s.haft || s.gone) continue;
+    const abstand = kopf - (s.y + s.h);
+    if(abstand >= -2.5 && abstand <= HAFT_FANG && P.x >= s.x && P.x <= s.x + s.w) return {mp: s};
+  }
+  return null;
 }
 function haftLos(P){ P.haft = null; }
 function haftStarten(P, z){
-  P.haft = {flaeche: 'unten', c: z.c, r: z.r, v: P.vx, taste: 0, sinn: 1};
-  P.y = (z.r + 1)*40 + P.h; P.vy = 0; P.gliding = false; P.glideTimer = 0;
+  P.haft = z.mp ? {flaeche: 'unten', mp: z.mp, v: P.vx} : {flaeche: 'unten', c: z.c, r: z.r, v: P.vx};
+  P.y = (z.mp ? z.mp.y + z.mp.h : (z.r + 1)*40) + P.h; P.vy = 0; P.gliding = false; P.glideTimer = 0;
   P._haftT = performance.now();
   if(typeof dustPuff === 'function') dustPuff(P.x, P.y - P.h, 4, 0, 3);
   if(typeof SFX !== 'undefined' && SFX.haft) SFX.haft(P);
 }
-// Bewegung an der Fläche: setzt vx/vy so, dass die normale Bewegung die Figur entlang schiebt (Kollision bleibt wie immer)
+// Hangeln unter der Fläche: setzt vx so, dass die normale Bewegung die Figur entlang schiebt (Kollision bleibt wie immer)
 function haftSchritt(P, moveDir){
   const h = P.haft;
-  if(h.flaeche === 'unten'){
-    h.v += (moveDir*HAFT_TEMPO - h.v)*HAFT_BESCHL;
-    if(Math.abs(h.v) < 0.03) h.v = 0;
-    P.vx = h.v; P.vy = 0;
-  } else {
-    // senkrechte Haftfläche: dieselbe Taste weiter halten = weiter in dieselbe Richtung (auch um die Ecke)
-    if(moveDir){
-      if(moveDir !== h.taste){ h.taste = moveDir; h.sinn = Math.sign(h.v) || -1; }
-      h.v += (h.sinn*HAFT_TEMPO - h.v)*HAFT_BESCHL;
-    } else { h.taste = 0; h.v *= 1 - HAFT_BESCHL; }
-    h.v += GRAVITY*HAFT_KLEB_SCHWER;                    // klebt, rutscht aber langsam
-    h.v = Math.max(-HAFT_TEMPO*1.5, Math.min(HAFT_TEMPO*1.5, h.v));
-    P.vx = 0; P.vy = h.v;
-  }
+  h.v += (moveDir*HAFT_TEMPO - h.v)*HAFT_BESCHL;
+  if(Math.abs(h.v) < 0.03) h.v = 0;
+  P.vx = h.v; P.vy = 0;
   P.grounded = false;
 }
-// nach dem Bewegen: noch an der Fläche? Um Kanten herum weiter, sonst am Ende anhalten (wie eine Schiene)
+// gleiche bewegte Haftfläche (auch ein anderes Teil derselben Gruppe)?
+function haftGleichesStueck(a, b){ return a === b || (a.group !== undefined && a.group !== null && a.group === b.group); }
+// nach dem Bewegen: noch unter der Fläche? Am Ende anhalten (wie eine Schiene) – nicht um die Ecke an die Seite
 function haftNachher(P, altX, altY){
   const h = P.haft; if(!h) return;
-  const frei = (x, y) => spotFree(x, y, P);
   if(P.hookAttached || P.grounded){ haftLos(P); return; }
-  if(h.flaeche === 'unten'){
-    const r = h.r;
-    if(P.vx === 0 && h.v !== 0){                        // gegen eine Wand gerollt: innere Ecke? -> an ihr weiter nach unten
-      const s = Math.sign(h.v), vor = Math.floor((P.x + s*(P.w/2 + 1))/40);
-      if(haftIst(vor, r + 1)){
-        const nx = s > 0 ? vor*40 - P.w/2 : (vor + 1)*40 + P.w/2;
-        if(frei(nx, P.y)){ P.haft = {flaeche: s > 0 ? 'links' : 'rechts', c: vor, r: r + 1, v: Math.abs(h.v), taste: h.taste, sinn: 1}; P.x = nx; return; }
-      }
-      h.v = 0; return;
-    }
-    const c = Math.floor(P.x/40);
-    if(c === h.c) return;
-    const s = Math.sign(c - h.c);
-    if(haftIst(c, r) && !festIst(c, r + 1)){ h.c = c; return; }   // geht unter der Fläche weiter
-    const vor = h.c + s;
-    if(haftIst(vor, r + 1)){                            // innere Ecke: Haftwand geht nach unten weiter
-      const nx = s > 0 ? vor*40 - P.w/2 : (vor + 1)*40 + P.w/2;
-      if(frei(nx, P.y)){ P.haft = {flaeche: s > 0 ? 'links' : 'rechts', c: vor, r: r + 1, v: Math.abs(h.v), taste: h.taste, sinn: 1}; P.x = nx; return; }
-    }
-    if(!festIst(vor, r)){                               // äußere Ecke: an der Seite der Zelle hinauf
-      const nx = s > 0 ? (h.c + 1)*40 + P.w/2 : h.c*40 - P.w/2, ny = (r + 1)*40;
-      if(frei(nx, ny)){ P.haft = {flaeche: s > 0 ? 'rechts' : 'links', c: h.c, r, v: -Math.abs(h.v), taste: h.taste, sinn: -1}; P.x = nx; P.y = ny; return; }
-    }
-    P.x = altX; h.v = 0;                                // Ende der Fläche: anhalten (Schiene)
+  if(P.vx === 0 && h.v !== 0){ h.v = 0; return; }      // gegen eine Wand gehangelt: anhalten
+  if(h.mp){
+    const mp = h.mp, unten = mp.y + mp.h;
+    if(P.x >= mp.x && P.x <= mp.x + mp.w) return;
+    const weiter = solids.find(s => s !== mp && s.type === 'moveplat' && s.haft && !s.gone && haftGleichesStueck(s, mp) &&
+      Math.abs(s.y + s.h - unten) < 1 && P.x >= s.x && P.x <= s.x + s.w);
+    if(weiter){ h.mp = weiter; return; }
+    P.x = Math.max(mp.x, Math.min(mp.x + mp.w, P.x)); h.v = 0;   // Ende der bewegten Fläche: anhalten
     return;
   }
-  // senkrechte Fläche: Mitte der Figur in Reihe h.r?
-  const seite = h.flaeche === 'links' ? -1 : 1;        // Figur steht links bzw. rechts neben der Zelle
-  if(P.vy === 0 && h.v !== 0){
-    if(h.v < 0){                                        // nach oben gegen eine Decke: Haft-Decke? -> unter ihr weiter
-      const kopfR = Math.floor((P.y - P.h - 1)/40), nachbarC = h.c + seite;
-      if(haftIst(nachbarC, kopfR)){ P.haft = {flaeche: 'unten', c: nachbarC, r: kopfR, v: seite*Math.abs(h.v), taste: h.taste, sinn: 1}; return; }
-    }
-    h.v = 0; return;
-  }
-  const cy = P.y - P.h/2, r = Math.floor(cy/40);
-  if(r === h.r) return;
-  const s = Math.sign(r - h.r), nachbarC = h.c + seite;
-  if(haftIst(h.c, r) && !festIst(nachbarC, r)){ h.r = r; return; }      // geht an der Wand weiter
-  if(s < 0){
-    if(haftIst(nachbarC, h.r - 1)){                     // innere Ecke oben: Haft-Decke -> unter ihr weiter (vom Wand weg)
-      const ny = h.r*40 + P.h;
-      if(frei(P.x, ny)){ P.haft = {flaeche: 'unten', c: nachbarC, r: h.r - 1, v: seite*Math.abs(h.v), taste: h.taste, sinn: 1}; P.y = ny; return; }
-    }
-    if(!festIst(h.c, h.r - 1)){                         // äußere Ecke oben: auf die Zelle hinauf (loslassen, stehen)
-      const nx = h.c*40 + 20, ny = h.r*40;
-      if(frei(nx, ny)){ P.x = nx; P.y = ny; P.vx = 0; P.vy = 0; haftLos(P); return; }
-    }
-  } else {
-    if(!festIst(h.c, h.r + 1)){                         // äußere Ecke unten: unter die Zelle (Richtung Zelle)
-      const nx = h.c*40 + 20 + seite*(20 - P.w/2), ny = (h.r + 1)*40 + P.h;
-      if(frei(nx, ny)){ P.haft = {flaeche: 'unten', c: h.c, r: h.r, v: -seite*Math.abs(h.v), taste: h.taste, sinn: 1}; P.x = nx; P.y = ny; return; }
-    }
-  }
-  P.y = altY; h.v = 0;                                  // Ende: anhalten
+  const c = Math.floor(P.x/40);
+  if(c === h.c) return;
+  if(haftIst(c, h.r) && !festIst(c, h.r + 1)){ h.c = c; return; }   // geht unter der Fläche weiter
+  P.x = altX; h.v = 0;                                  // Ende der Fläche: anhalten (Schiene)
 }
 
 // ---------- Aufrufe aus 08-figur-physik-seil.js ----------
@@ -274,10 +233,9 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   // Haftfläche
   if(P.haft){
     if(P.hookAttached || !neuOben(P)){ haftLos(P); return false; }   // losgelassen: fällt (normale Physik)
-    if(jumpPressed){                                     // Absprung: unten weg nach unten-vorn, an der Seite weg von der Wand
-      const h = P.haft; haftLos(P);
-      if(h.flaeche === 'unten'){ P.vy = HAFT_ABSPRUNG_Y; P.vx += moveDir*HAFT_ABSPRUNG_X; }
-      else { const w = h.flaeche === 'links' ? -1 : 1; P.vx = w*HAFT_ABSPRUNG_X; P.vy = -HAFT_ABSPRUNG_Y*2; P.facing = w; }
+    if(jumpPressed){                                     // Absprung: nach unten-vorn
+      haftLos(P);
+      P.vy = HAFT_ABSPRUNG_Y; P.vx += moveDir*HAFT_ABSPRUNG_X;
       P._jumpT = performance.now();
       return true;
     }
@@ -310,7 +268,6 @@ function neueBewegungNachher(P, altX, altY){
     if(d && schrittNr() % 2 === 0) neuFxDazu({art: 'nachbild', x: P.x, y: P.y, male: P.male, roll: P.rollAngle, facing: P.facing, leben: 12, max: 12});
   }
   if(P.haft) haftNachher(P, altX, altY);
-  if(P.haft && P.haft.flaeche !== 'unten') P.rollAngle += P.vy/(P.w*0.5)*(P.haft.flaeche === 'links' ? 1 : -1);
   // Dash aufladen: immer (auch frei in der Luft; Nutzerwunsch – früher nur mit festem Halt, dafür doppelt so schnell)
   if(P.dashPunkte < DASH_LUFT && !P.dash){
     P.dashLadung += 1/DASH_LADEZEIT;

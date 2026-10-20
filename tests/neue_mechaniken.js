@@ -157,9 +157,10 @@ window.NM = {
     out.rollen = {anfang: +v1[0].toFixed(2), max: +Math.max(...v1).toFixed(2), haft: !!p1.haft};
     // kein Sofort-Stopp: Richtung loslassen -> rollt noch etwas weiter
     const xs = p1.x; S.n(4, ['swimUp']); out.auslaufen = +(p1.x - xs).toFixed(2);
-    // um die Ecke: weiter nach rechts -> innen an der Seitenwand (Spalte 59) hinunter, unten herum, rechte Seite hinauf
+    // Nutzerwunsch: nicht mehr um die Ecke / an der Seite hoch – weiter nach rechts hangeln hält an der Seitenwand
+    // (Spalte 59) an, man hängt weiter unten an der Decke
     const flaechen = new Set(); for(let i = 0; i < 200 && p1.haft; i++){ S.schritt(['right','swimUp']); if(p1.haft) flaechen.add(p1.haft.flaeche); }
-    out.ecken = [...flaechen].sort();
+    out.ecken = [...flaechen].sort(); out.amEnde = {haft: !!p1.haft, x: +p1.x.toFixed(1), kopf: +(p1.y - p1.h).toFixed(1)};
     // loslassen = fallen
     S.anDecke('m', ['swimUp']);
     S.n(5, ['swimUp']); S.n(3, []);

@@ -158,7 +158,7 @@ cvs.addEventListener('mousedown', e=>{
     const hk = hooks.find(h=>h.c===c&&h.r===r);
     if(hk) moveDrag = {c,r,tc:c,tr:r,hook:hk};
     else if(SOLID_TILES.includes(tiles[c+','+r])) moveDrag = {c,r,tc:c,tr:r};
-    else { selectMove(null); flash('Bewegung: auf einen Haken oder ein Boden-/Wand-Kästchen klicken und zum Ziel ziehen'); }
+    else { selectMove(null); flash('Bewegung: auf einen Haken oder ein Boden-/Wand-/Haftflächen-Kästchen klicken und zum Ziel ziehen'); }
     return;
   }
   clickNotDrag = true;
