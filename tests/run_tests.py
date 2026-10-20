@@ -9146,7 +9146,7 @@ async def hoehle1_faehre_im_bild(g):
     mess = "(window.__maxAb = Math.max(window.__maxAb || 0, Math.abs(P.x - Q.x)), false)"
     ok = None
     for w in range(0, 360, 20):
-        f = [{'frames': w + 1}, {'holdIf': {'right': f'P.x < {kx(248)} - 3', 'left': f'P.x > {kx(248)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(248)}) <= 3', 'frames': 200},
+        f = [{'frames': w + 1}, {'holdIf': {'right': f'P.x < {kx(248)} - 3', 'left': f'P.x > {kx(248)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(248)}) <= 3 && Math.abs(P.vx) < 0.3', 'frames': 200},
              {'wait': f'{mess} || Q.x >= {kx(268)}', 'frames': 1500}]
         m = [{'wait': '!!linkOn[6]', 'frames': 900}, {'wait': f'{mess} || {da}', 'frames': 1500}, k_lauf(270)]
         r = await koop(g, m=kat(251, 12), f=kat(244, 14), plans={'m': m, 'f': f}, maxFrames=3000, pre='window.__maxAb = 0')
@@ -9155,7 +9155,7 @@ async def hoehle1_faehre_im_bild(g):
     assert ok <= 20.5 * 40, f'beim Fahren {ok / 40:.1f} Spalten auseinander'
     # Rückweg: Affe hält die rechte Platte, die Fähre pendelt zurück, das Schweinchen fährt hinüber
     for w in range(0, 360, 20):
-        m = [{'holdIf': {'right': f'P.x < {kx(268)} - 3', 'left': f'P.x > {kx(268)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(268)}) <= 3', 'frames': 200},
+        m = [{'holdIf': {'right': f'P.x < {kx(268)} - 3', 'left': f'P.x > {kx(268)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(268)}) <= 3 && Math.abs(P.vx) < 0.3', 'frames': 200},
              {'wait': f'Q.x >= {kx(268)}', 'frames': 2500}]
         fp = "solids.find(s => s.type === 'moveplat' && s.switchLink === 6)"
         f = [{'frames': w + 1}, {'wait': zurueck, 'frames': 900}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
