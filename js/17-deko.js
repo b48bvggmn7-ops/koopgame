@@ -148,8 +148,13 @@ function buildDeco(){
       }
     }
   }
-  if(neueRegeln) vogelSitzplaetze(blocked, nearStart);
-  // Moos/Ranken an Wandseiten, die zur Luft zeigen
+  if(neueRegeln){   // Dschungel (boden-dekor-paket): neues Boden-Dekor statt Pflanzen-Bildchen/Moos (17a-dschungel-boden.js);
+    decoPlants = [];   // Vögel als Tiere zuletzt, nur auf freien Stellen (Freihalte-Zone, Start, große Pflanzen)
+    const sperre = bodenSperre(), gross = bodenGrossePflanzen();
+    vogelSitzplaetze((x, y) => sperre(x, y) || gross.some(g => Math.abs(g.x - x) < 34 && Math.abs(g.y - y) < 60), bodenNahStart);
+  }
+  // Moos/Ranken an Wandseiten, die zur Luft zeigen (im Dschungel aus: neues Boden-Dekor, „Moos an Seiten“ aus)
+  if(neueRegeln){ decoMoss = []; return; }
   for(const s of solids){
     if(s.type !== 'wall') continue;
     for(let cy = s.y; cy < s.y + s.h; cy += 40){
@@ -165,6 +170,7 @@ function buildDeco(){
 
 function drawGroundDeco(){
   if(decoFor !== solids) buildDeco();
+  if(bodenDekorAn()){ bodenDekorZeichnen(); return; }   // Dschungel: Gras, Farnbüsche, Blumen, Pilze (17a-dschungel-boden.js)
   const t = performance.now();
   // Moos auf Wand-Oberseiten und Ranken an Wandseiten
   for(const m of decoMoss){

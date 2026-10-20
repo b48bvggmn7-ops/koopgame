@@ -1844,6 +1844,41 @@ js/17-deko.js).
   Nacht-Licht 38. Tests: dschungel_look_auswahl, dschungel_hintergrund_tag_nacht, dschungel_tiere_regeln,
   dschungel_leuchtpflanzen.
 
+### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
+Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:
+`js/17a-dschungel-boden.js` (neu), Anpassungen in 11b, 12, 17, 20. Gilt Tag UND Nacht, für alle Dschungel-Auswahlen.
+- **Grundeinstellung** (fest): AN – Tiere am Boden, Tiere im Hintergrund, alle Pflanzen-Ebenen (ganz fern, fern, hängende
+  Wedel, Baumstamm, Riesenblätter, Heliconien, Mitte, Unterwuchs hinten/vorn, nah), Dickicht, Lianen, Nebel, Gras &
+  Blumen, Vignette. AUS – Leuchtkreise (die Licht-Kreise/Bokeh am Tag, `DJ_LEUCHTKREISE`), Schwebesamen (Lichtstaub-Punkte
+  vor dem Spielfeld, `DJ_SCHWEBESAMEN`), Lichtstrahlen (nachts die drei Lichtschäfte, `DJ_LICHTSTRAHLEN`), Moos an Seiten
+  (Moos/Ranken an Wandseiten und Moos/Lianen an hohen Seitenflächen), Gras unten, Erd-Schatten, Bröckelrand, Filmkorn
+  (die letzten vier gibt es im Spiel nicht bzw. nicht mehr). Damit gelten die Angaben „Bokeh“, „feiner Lichtstaub“ und
+  „drei sehr weiche Lichtschäfte“ im Abschnitt oben nicht mehr.
+- **Alle Dschungel-Auswahlen** (auch Morgen/Abend = „alter Hintergrund“) haben jetzt die neuen Tier-Regeln, Vögel, die
+  sitzen bleiben, und die Hintergrund-Tiere (Schnecken am Stamm, 8 ferne Schmetterlinge, nachts Fledermäuse):
+  `HG_STILE.dschungelHG.tiere = true`.
+- **Boden-Dekor je 40-px-Oberseite** (echter Boden/Wand, nicht unter Scheinwänden; ersetzt im Dschungel das alte Dekor
+  aus 17-deko.js – Pflanzen-Bildchen, Moos): Dickicht 3 Chancen × 80 % (22 weiche Blatt-Bilder: 14 Farnwedel + 8 Monstera,
+  Fuß 10 px unter der Oberkante, ±0,15 rad schräg, wiegt im Wind mit 0,075; VOR dem Boden gezeichnet, schaut an den Kanten
+  heraus), feines Gras alle 7–13 px (4–6 Halme, 5–13 px), Grasbüschel 70 % (3–5 Halme, 7–16 px), Farnbusch 7 % (Größe
+  0,44–0,71), Blume 10 % (rot/orange/rosa, 17–35 px, wiegt), Pilz 6 %.
+- **Reihenfolge, nichts übereinander:** zuerst große Pflanzen (Farnbusch, Blume, Pilz, nachts Leuchtpflanzen): 60 px
+  Abstand untereinander, 45 px von der Kante, nicht am Start (260 px); dann Gras und Dickicht in die Lücken (nach dem
+  Boden, vor Objekten/Münzen/Figuren); zuletzt Tiere (±34 px von großen Pflanzen, sonst versetzt oder gestrichen; vor dem
+  Gras gezeichnet). Vögel ebenso.
+- **Freihalte-Zone** um Hebel, Stacheln, Türen, Sprungpilze, Druckplatten, Haken, Checkpoints, Teleporter, Fallen und Ziel:
+  60 px links/rechts, 90 px senkrecht keine Pflanze, kein Gras, kein Dickicht, kein Tier, keine Leuchtpflanze
+  (`bodenSperre` = `dekoSperre` + Zone; Münzen wie bisher über `dekoSperre`).
+- **Nacht:** dieselben Formen, beim Vorzeichnen eingefärbt wie die Hintergrund-Ebenen. Glühwürmchen (Boden-Tiere und die
+  schwebenden vor dem Spielfeld) leuchten warm orange (Kern #ffb347, Schein 255,150,40): Punkt ~2 px, Hof ~14 px (~0,3),
+  großer weicher Schein ~38 px (~0,16), läuft weich aus, pulsiert langsam (`gluehwuermchenZeichnen`). Nachtfalter im
+  Hintergrund bleiben getrennt davon.
+- **Leistung:** Gras als Zeichenpfade je Stück (4 Kästchen), pro Bild nur eine Wind-Scherung je Stück; Dickicht-Bilder
+  einmal vorgezeichnet (nachts eingefärbt), pro Bild nur gedreht gesetzt. Ohne Wind (langsames Gerät, siehe Wind oben)
+  wiegt nichts. Gemessen: Zeichenzeit je Bild mit und ohne Boden-Dekor gleich (Testrechner ~50 ms Tag/Nacht).
+- Tests: boden_dekor_dschungel, boden_dekor_freihalten (deko_vogel_flattert_weg und deko_frei_von_spielobjekten prüfen
+  das alte Dekor jetzt in der Ruinen-Welt).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

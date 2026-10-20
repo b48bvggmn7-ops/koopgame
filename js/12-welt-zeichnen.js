@@ -812,6 +812,7 @@ function drawSolidLook(s, look, x){
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenHinten) E.spiel.zeichnenHinten();   // HINTER Boden/Wänden, z. B. Lava (elemente/)
   // Neues Aussehen: Boden und Wand als eine zusammenhängende Schicht (Zwischenspeicher-Stücke), bewegliche Boden-/Wand-
   // Stücke als je ein Block (pieceDraw), Türen als je eine zusammenhängende Tür (drawGate)
+  bodenDickichtZeichnen();   // Dschungel: Dickicht VOR den Bodenkacheln, schaut an den Kanten heraus (17a-dschungel-boden.js)
   materialZeichnen();
   matBeweglichZeichnen();
   for(const s of solids){
@@ -862,7 +863,7 @@ function drawSolidLook(s, look, x){
   }
 
   tuerenZeichnen();
-  hoheFlaechenZeichnen();   // Moos und Lianen an hohen Seitenflächen (Design-Politur)
+  if(!bodenDekorAn()) hoheFlaechenZeichnen();   // Moos und Lianen an hohen Seitenflächen (Design-Politur; im Dschungel „Moos an Seiten“ aus, boden-dekor-paket)
   drawGroundDeco();   // Dschungel-Pflanzen und Moos (17-deko.js)
   hgBodenLicht();     // neuer Nacht-Look: Boden abdunkeln, Leuchtpflanzen, Licht um die Figuren (11b)
 

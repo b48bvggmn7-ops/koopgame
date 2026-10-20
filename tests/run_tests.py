@@ -4151,8 +4151,9 @@ async def haken_schwung_holen(g):
 
 @test
 async def deko_vogel_flattert_weg(g):
-    """Vögel sitzen auf dem Boden und flattern weg, wenn eine Figur kommt (reine Deko, keine Kollision)."""
-    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    """Vögel sitzen auf dem Boden und flattern weg, wenn eine Figur kommt (reine Deko, keine Kollision). Gilt außerhalb
+    des Dschungels – dort bleiben sie sitzen (Dschungel-Paket D, seit dem boden-dekor-paket bei jeder Dschungel-Auswahl)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen'))
     await g.p.wait_for_timeout(200)
     n = await g.ev('birds.length')
     assert n >= 2, f'zu wenige Vögel: {n}'
@@ -4165,12 +4166,13 @@ async def deko_vogel_flattert_weg(g):
 
 @test
 async def deko_frei_von_spielobjekten(g):
-    """Pflanzen und Vögel stehen nie auf Münzen, Stacheln, Hebeln, Checkpoints oder am Ziel."""
+    """Pflanzen und Vögel stehen nie auf Münzen, Stacheln, Hebeln, Checkpoints oder am Ziel (altes Dekor außerhalb des
+    Dschungels; Dschungel: Test boden_dekor_freihalten)."""
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        coins=[{'x': x, 'y': 660} for x in range(420, 2900, 160)],
                        spikes=[{'x': 500, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}, {'x': 1300, 'y': 680, 'w': 40, 'h': 40, 'dir': 0}],
                        switches=[{'x': 900, 'y': 660, 'link': 1}], checkpoints=[{'x': 1500, 'y': 680}],
-                       goal={'x': 2800, 'y': 680}))
+                       goal={'x': 2800, 'y': 680}, welt='ruinen'))
     await g.p.wait_for_timeout(200)
     bad = await g.ev("""(()=>{ const pts=[...coins.map(c=>c.x), ...spikes.map(s=>s.x), ...switchDefs.map(s=>s.x), ...checkpointDefs.map(c=>c.x), goal.x];
       const deko=[...decoPlants.map(p=>p.x), ...birds.map(b=>b.homeX)];
@@ -4815,6 +4817,80 @@ async def dschungel_wind_anlaufzeit(g):
     assert r['anlauf'] and r['luecke'] and r['menue'], f'Wind zu früh aus: {r}'
     assert r['danach'] is False, f'Wind bleibt trotz langsamer Bilder an: {r}'
     assert 'Wind: an' in r['text'] and 'Wind: aus' in r['text2'], f'Anzeige falsch: {r}'
+
+@test
+async def boden_dekor_dschungel(g):
+    """boden-dekor-paket (a)+(c): bei JEDER Dschungel-Auswahl (Morgen, Mittag, Abend, Nacht) ist Boden-Dekor gezeichnet –
+    Dickicht, feines Gras/Büschel, Farnbusch/Blume/Pilz (Pixelprobe über der Oberseite gegen ein Bild ohne Dekor) – und
+    die Hintergrund-Tiere laufen (Schnecken am Stamm, ferne Schmetterlinge/Nachtfalter). Leuchtkreise, Schwebesamen und
+    nächtliche Lichtschäfte sind aus. Zeichnen ändert keinen Spielzustand."""
+    teile = [ground(0, 680, 6000), ground(1600, 520, 400), ground(2600, 440, 240, 240, 'wall')]
+    srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)   # Leinwand lesbar (nicht file://)
+    assert not await g.ev("DJ_LEUCHTKREISE || DJ_SCHWEBESAMEN || DJ_LICHTSTRAHLEN"), 'Leuchtkreise/Schwebesamen/Lichtstrahlen sollen aus sein'
+    for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
+        await g.load(level(teile, {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit=zeit))
+        await g.steps(10); await g.ev("menuScreen = 'pause'")
+        r = await g.ev("""(() => { const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps]);
+          const e = {stil: BG_STIL && BG_STIL.name, tiere: hgTierRegeln(), an: bodenDekorAn()};
+          bodenBereit(); e.dickicht = BODEN.dickicht.length; e.gras = BODEN.stuecke.length; e.gross = BODEN.gross.length;
+          e.arten = [...new Set(BODEN.gross.map(g => g.art))].sort();
+          // Pixelprobe: Streifen knapp über der Oberseite mit und ohne Dekor
+          p1.x = p2.x = 9000; p1._px = p2._px = 9000; camPos = camX = 800; djSchalter.wind.an = false;
+          const cv = document.querySelector('canvas'), c2 = cv.getContext('2d'), k = cv.width / W;
+          const streifen = () => { draw(); return c2.getImageData(0, Math.floor(cv.height*0.80), cv.width, Math.floor(cv.height*0.12)).data; };   // Streifen knapp über dem Boden
+          const mit = streifen(); const alt = window.bodenDekorAn; window.bodenDekorAn = () => false; const ohne = streifen(); window.bodenDekorAn = alt;
+          let diff = 0; for(let i = 0; i < mit.length; i += 16) if(Math.abs(mit[i] - ohne[i]) + Math.abs(mit[i+1] - ohne[i+1]) + Math.abs(mit[i+2] - ohne[i+2]) > 30) diff++;
+          e.anteil = +(diff / (mit.length/16)).toFixed(3);
+          // Hintergrund-Tiere: Schnecken am Stamm / ferne Schmetterlinge setzen Bilder
+          const orig = djtSetzen; let n = 0; window.djtSetzen = (...a) => { n++; return orig(...a); };
+          let stamm = 0, flieger = 0;
+          for(let t = 0; t < 120; t += 7){ for(const cx of [0, 1300, 2600, 3900]){ camX = cx; n = 0; djHgTiereStamm(t, hgNacht()); stamm += n; n = 0; djHgTiereFliegen(t, hgNacht()); flieger += n; } }
+          window.djtSetzen = orig; e.stamm = stamm; e.flieger = flieger;
+          p1.x = 100; p2.x = 60; p1._px = 100; p2._px = 60;
+          e.gleich = vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps]); return e; })()""")
+        await g.ev("menuScreen = null")
+        assert r['tiere'] and r['an'], f'{zeit}: Boden-Dekor/Tiere nicht an {r}'
+        assert r['dickicht'] > 50 and r['gras'] > 10 and r['gross'] > 3, f'{zeit}: zu wenig Dekor {r}'
+        assert r['anteil'] > 0.05, f'{zeit}: Dekor kaum zu sehen {r}'
+        assert r['stamm'] > 0 and r['flieger'] > 0, f'{zeit}: Hintergrund-Tiere fehlen {r}'
+        assert r['gleich'], f'{zeit}: Zeichnen hat Spielzustand verändert'
+    srv.shutdown()
+
+@test
+async def boden_dekor_freihalten(g):
+    """boden-dekor-paket (b)+(d): große Pflanzen (Farnbusch, Blume, Pilz) 60 px auseinander, 45 px von der Kante, nicht
+    am Start (260 px); nichts (Pflanze, Dickicht, Tier, Leuchtpflanze) in der Freihalte-Zone um Münzen, Stacheln, Hebel,
+    Sprungpilze, Druckplatten, Haken, Checkpoint und Ziel (60 px links/rechts, 90 px senkrecht); kein Boden-Tier innerhalb
+    von ±34 px einer großen Pflanze, keine Leuchtpflanze innerhalb von 60 px."""
+    teile = [ground(0, 680, 9000), ground(1400, 520, 600), ground(3000, 480, 800), ground(5200, 560, 1200)]
+    obj = dict(coins=[{'x': x, 'y': 660} for x in range(700, 8800, 900)],
+               spikes=[{'x': 2200, 'y': 640, 'w': 40, 'h': 40, 'dir': 0}, {'x': 6000, 'y': 520, 'w': 40, 'h': 40, 'dir': 0}],
+               switches=[{'x': 3300, 'y': 460, 'link': 1}], checkpoints=[{'x': 4200, 'y': 680}], hooks=[{'x': 2600, 'y': 560}],
+               bouncers=[{'x': 4800, 'y': 680}], plates=[{'x': 7000, 'y': 680, 'link': 2}], goal={'x': 8700, 'y': 680})
+    for zeit in ('mittag', 'nacht'):
+        await g.load(level(teile, {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit=zeit, **obj))
+        await g.steps(10)
+        r = await g.ev("""(() => { critFor = null; decoFor = null; bodenFor = null; djPwFor = null; buildDeco(); buildCritters(); bodenBereit();
+          const P = bodenFreihaltePunkte(), sperr = bodenSperre(), G = BODEN.gross, f = [];
+          const inZone = (x, y) => P.some(([px, py]) => Math.abs(px - x) < 60 && Math.abs(py - y) < 90);
+          for(const g of G){ const y = g.boden !== undefined ? g.boden : g.y;
+            if(inZone(g.x, y) || sperr(g.x, y)) f.push('Pflanze in Zone ' + g.art + '@' + Math.round(g.x));
+            if(bodenNahStart(g.x)) f.push('Pflanze am Start @' + Math.round(g.x));
+            const z = BODEN.zellen.find(z => z.y === y && g.x >= z.x - 1 && g.x <= z.x + 41);
+            if(z && (g.x - z.lauf.x0 < 45 || z.lauf.x1 - g.x < 45)) f.push('Pflanze an der Kante @' + Math.round(g.x)); }
+          for(let i = 0; i < G.length; i++) for(let j = i + 1; j < G.length; j++)
+            if(Math.abs(G[i].x - G[j].x) < 60 && Math.abs(G[i].y - G[j].y) < 60) f.push('Pflanzen zu dicht @' + Math.round(G[i].x));
+          for(const d of BODEN.dickicht) if(inZone(d.x, d.y - 10)) f.push('Dickicht in Zone @' + Math.round(d.x));
+          for(const c of critters){ const y = c.hy !== undefined ? c.hy + 50 : c.y;
+            if(c.kind !== 'sloth' && c.kind !== 'bat' && inZone(c.x, y)) f.push('Tier in Zone ' + c.kind + '@' + Math.round(c.x));
+            if(c.pl && G.some(g => Math.abs(g.x - c.x) < 34 && Math.abs((g.boden !== undefined ? g.boden : g.y) - c.y) < 60)) f.push('Tier an Pflanze ' + c.kind + '@' + Math.round(c.x));
+            if(c.pl && bodenNahStart(c.x)) f.push('Tier am Start'); }
+          for(const b of birds) if(inZone(b.homeX, b.homeY) || G.some(g => Math.abs(g.x - b.homeX) < 34 && Math.abs((g.boden !== undefined ? g.boden : g.y) - b.homeY) < 60)) f.push('Vogel @' + b.homeX);
+          for(const p of hgLeuchtpflanzen()){ if(inZone(p.wx, p.wy)) f.push('Leuchtpflanze in Zone @' + Math.round(p.wx));
+            if(G.some(g => Math.abs(g.x - p.wx) < 60)) f.push('Leuchtpflanze an Pflanze @' + Math.round(p.wx)); }
+          return {f: f.slice(0, 12), gross: G.length, tiere: critters.length, leucht: hgLeuchtpflanzen().length}; })()""")
+        assert not r['f'], f'{zeit}: {r}'
+        assert r['gross'] > 5, f'{zeit}: zu wenig große Pflanzen {r}'
 
 @test
 async def dschungel_tiere_regeln(g):

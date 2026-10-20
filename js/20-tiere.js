@@ -318,6 +318,7 @@ function drawSloth(c, x, t){
 }
 
 function drawFirefly(c, x, t){
+  if(c.col === GLUEH_KERN){ gluehwuermchenZeichnen(ctx, x, c.y, t/1000, c.ph); return; }   // Dschungel-Nacht: orange, weich (11b)
   const k = c.glow/80;
   const g = ctx.createRadialGradient(x, c.y, 0, x, c.y, 14);
   g.addColorStop(0, c.col); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -394,11 +395,11 @@ const DJT_FREI_X = 34, DJT_FREI_H = 46;   // um das Tier herum kein Block, keine
 const DJT_LAUF_MIN = 70;            // Frosch/Schnecke brauchen so viel freie Laufstrecke
 function buildCrittersDschungel(){
   const N = hgNacht();
-  const CT = {air: N ? 'firefly' : 'butterfly', airCols: N ? ['#d8ff6a'] : ['#7ec8ff', '#ff9ecb', '#ffd166', '#b69cff'], hanging: N ? 'bat' : 'sloth', mushGlow: N};
+  const CT = {air: N ? 'firefly' : 'butterfly', airCols: N ? [GLUEH_KERN] : ['#7ec8ff', '#ff9ecb', '#ffd166', '#b69cff'], hanging: N ? 'bat' : 'sloth', mushGlow: N};   // nachts orange Glühwürmchen (boden-dekor-paket)
   if(decoFor !== solids) buildDeco();   // Pflanzen zuerst (Tiere stehen in den Lücken)
-  const blocked = dekoSperre();
+  const blocked = bodenSperre();   // dekoSperre + Freihalte-Zone um alle Spielobjekte (boden-dekor-paket, 17a-dschungel-boden.js)
   const frei = [...switchDefs.map(sw => [sw.x, sw.y]), ...bouncers.map(b => [b.x, b.y - 20]), ...plates.map(pl => [pl.x, pl.y])];
-  const nearStart = x => Math.abs(x - levelStartM.x) < 200;
+  const nearStart = bodenNahStart;   // 260 px um beide Startpunkte
   const last = {}; let slot = 0, lastG = -1e9, lastH = -1e9, goldDone = false;
   const fest = solids.filter(o => !o.gone && o.type !== 'oneway');
   const boxFree = (x, y) => { for(const o of fest){ if(x + DJT_FREI_X > o.x && x - DJT_FREI_X < o.x + o.w && y - DJT_FREI_H < o.y + o.h && y - 2 > o.y) return false; } return true; };
@@ -448,8 +449,8 @@ function buildCrittersDschungel(){
   }
   // Pflanzen am Boden (Farn/großes Blatt wie die Agaven der Vorschau, Blüten, nachts Leuchtpflanzen): Tiere nur in den
   // Lücken; steht eins ungünstig, rückt es zur nächsten freien Stelle derselben Fläche, sonst entfällt es. Gras zählt nicht.
-  const decor = [];
-  for(const pl of decoPlants){ if(pl.kind === 0 || pl.kind === 4) decor.push({x: pl.x, y: pl.y - 7, r: 36}); else if(pl.kind === 2 || pl.kind === 3) decor.push({x: pl.x, y: pl.y - 7, r: 24}); }
+  // boden-dekor-paket: große Pflanzen (Farnbusch, Blume, Pilz) – kein Tier innerhalb von ±34 px (r + 16 = 34)
+  const decor = bodenGrossePflanzen().map(g => ({x: g.x, y: g.boden !== undefined ? g.boden : g.y, r: 34 - 16}));
   if(N) for(const p of hgLeuchtpflanzen()) decor.push({x: p.wx, y: p.wy, r: 58});
   const bad = (x, y, r0) => decor.some(d => Math.abs(d.x - x) < d.r + r0 && Math.abs(d.y - y) < 70);
   for(const c of critters){

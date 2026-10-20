@@ -25,7 +25,7 @@ const HG_ALTE_THEMEN = {abend: 'dschungel@abend'};
 // tiere: neue Tier-/Deko-Regeln (20-tiere.js, 17-deko.js); licht: eigenes Licht statt Strahlen, Pollen, Wärme-Schimmer
 // und (nachts) statt der bisherigen Abdunklung. Morgen/Abend bekommen nur den neuen Hintergrund (A+B), sonst wie bisher.
 const HG_STILE = {
-  dschungelHG:    {nacht: false, tiere: false, licht: false},
+  dschungelHG:    {nacht: false, tiere: true,  licht: false},   // tiere: true (boden-dekor-paket: Hintergrund-Tiere + Boden-Dekor bei JEDER Dschungel-Auswahl)
   dschungelTag:   {nacht: false, tiere: true,  licht: true},
   dschungelNacht: {nacht: true,  tiere: true,  licht: true},
 };
@@ -43,6 +43,12 @@ function hgStilFuer(name){
 function hgEigenesLicht(){ return !!(BG_STIL && BG_STIL.licht); }
 function hgTierRegeln(){ return !!(BG_STIL && BG_STIL.tiere); }
 function hgNacht(){ return !!(BG_STIL && BG_STIL.nacht); }
+
+// ---------- Grundeinstellung (boden-dekor-paket, Bild einstellung-schalter.png; gilt Tag UND Nacht) ----------
+// AN: alle Pflanzen-Ebenen, Baumstamm, Lianen, Nebel, Tiere, Vignette, Dickicht + Gras & Blumen (17a-dschungel-boden.js).
+// AUS: Leuchtkreise (Lichtstaub-Kreise am Tag), Schwebesamen (Lichtstaub-Punkte vor dem Spielfeld), Lichtstrahlen
+// (nachts die schrägen Lichtschäfte), Moos an Seiten (12/17), Gras unten, Erd-Schatten, Bröckelrand, Filmkorn (im Spiel nicht vorhanden).
+const DJ_LEUCHTKREISE = false, DJ_SCHWEBESAMEN = false, DJ_LICHTSTRAHLEN = false;
 
 // ---------- Werte aus der Vorschau ----------
 const DJ_PER = 2000;          // Ebenen wiederholen sich alle so viele Einheiten
@@ -537,7 +543,7 @@ function hgStilZeichnen(){
     ctx.drawImage(DJ.sky, 0, 0, W, H);
     // Lichtstaub-Kreise (Bokeh) – nachts aus
     djEinheiten();
-    for(const b of DJ.bok){
+    for(const b of (DJ_LEUCHTKREISE ? DJ.bok : [])){
       const x = b.x + Math.sin(t*0.15 + b.ph)*16, y = b.y + Math.cos(t*0.11 + b.ph*1.7)*11;
       ctx.fillStyle = 'rgba(' + DJ_GL + ',' + b.a + ')'; ctx.beginPath(); ctx.arc(x, y, b.q, 0, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(' + DJ_GL + ',.18)'; ctx.lineWidth = 1.2; ctx.stroke();
@@ -579,7 +585,7 @@ function hgStilVorne(){
   if(BG_STIL.nacht && BG_STIL.licht) djNachtVorne(t);
   djEinheiten();
   const Y0 = DJ_BASE - H/zoom;
-  for(const m of DJ.staub){
+  for(const m of (DJ_SCHWEBESAMEN ? DJ.staub : [])){
     m.x += (8 + (windAn ? djWind(m.x, t)*24 : 0))*dt*m.v; m.y += Math.sin(t*0.8 + m.ph)*5*dt - 1.2*dt;
     if(m.x > VW + 8) m.x = -8; if(m.y < Y0 - 8) m.y = DJ_BASE + 8;
     const p = 0.5 + 0.5*Math.sin(t*1.2 + m.ph*3);
@@ -752,7 +758,7 @@ function djNachtHintergrundLicht(t){
   const hz = ctx.createLinearGradient(0, H*0.5, 0, H); hz.addColorStop(0, 'rgba(40,170,160,0)'); hz.addColorStop(1, 'rgba(40,170,160,.16)');
   ctx.fillStyle = hz; ctx.fillRect(0, H*0.5, W, H*0.5);   // (oberhalb H/2 ist der Verlauf durchsichtig)
   const Y0 = DJ_BASE - H/zoom;
-  if(lichtAn){   // Lichtschäfte (schräg, einmal vorgezeichnet)
+  if(lichtAn && DJ_LICHTSTRAHLEN){   // Lichtschäfte (schräg, einmal vorgezeichnet)
     [[260, 0.3, 0.5, 0], [900, 0.3, 0.7, 3], [1560, 0.3, 0.6, 6]].forEach(([x0, par, wd, ph], i) => {
       const x = djWrap(x0, par); if(x < -300 || x > VW + 300) return;
       ctx.globalAlpha = 0.075 + 0.03*Math.sin(t*0.12 + ph); djBildSetzen(Bi.schaft[i], x, Y0);
@@ -824,14 +830,17 @@ function djLeuchtpflanzenBauen(){
   const R = djNachtR(11 + Math.round(LEVEL_W) % 997), statisch = s => s.type === 'ground' || s.type === 'wall' || s.type === 'platform' || s.type === 'crumble';
   const fest = solids.filter(statisch);
   const cov = (wx0, sl) => fest.some(o => o !== sl && wx0 > o.x - 14 && wx0 < o.x + o.w + 14 && sl.y - 6 >= o.y && sl.y - 6 <= o.y + o.h);
-  const frei = typeof dekoFreiPruefer === 'function' ? dekoFreiPruefer() : () => true;
+  // boden-dekor-paket: Freihalte-Zone um Spielobjekte, nicht am Start, 45 px von der Kante (große Pflanze, 17a-dschungel-boden.js)
+  const sperre = typeof bodenSperre === 'function' ? bodenSperre() : (typeof dekoSperre === 'function' ? dekoSperre() : () => false);
+  const frei = (x, y, sl) => !sperre(x, y) && !(typeof bodenNahStart === 'function' && bodenNahStart(x)) &&
+                             x - sl.x >= BODEN_GROSS_RAND && sl.x + sl.w - x >= BODEN_GROSS_RAND;
   let lk = 0;
   for(const sl of solids){
     if(sl.type !== 'ground' || sl.w < 60 || sl.y <= 40) continue;
     const big = sl.w > 400; let x = sl.x + (big ? 40 + R()*260 : sl.w*(0.3 + R()*0.4));
     const lim = sl.x + sl.w - 30; let cnt = 0;
     while(x < lim && cnt < (big ? 60 : (sl.w > 260 ? 2 : 1))){
-      if(!cov(x, sl) && frei(x, sl.y)){
+      if(!cov(x, sl) && frei(x, sl.y, sl)){
         lk = (lk + 1 + Math.floor(R()*2)) % 3;
         djPw.push({wx: x, wy: sl.y, k: lk, h: 18 + R()*30, c: DJ_NACHT_COLS[Math.floor(R()*DJ_NACHT_COLS.length)], ph: R()*9, sc: 0.95 + R()*0.3, n: 2 + Math.floor(R()*2)});
         cnt++;
@@ -857,14 +866,25 @@ function hgBodenLicht(){
   ctx.restore();
 }
 // vor dem Spielfeld (Vorschau: TZ.dark): ganz leichte Abdunklung + 6 Glühwürmchen
+// Glühwürmchen (boden-dekor-paket): warmes Orange, dezent – heller Punkt (~2 px), kleiner Hof (~14 px, ~.3), großer sehr
+// weicher Schein (~38 px, ~.16), der weich ausläuft (40 % des Radius: ~38 %, 70 %: ~10 %, Rand 0); langsames Pulsieren
+const GLUEH_KERN = '#ffb347', GLUEH_HOF = '255,150,40';
+function gluehwuermchenZeichnen(q, x, y, t, ph){
+  const p = 0.85 + 0.15*Math.sin(t*1.3 + ph);
+  const weich = (r, a) => { const g = q.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, 'rgba(' + GLUEH_HOF + ',' + a + ')'); g.addColorStop(0.4, 'rgba(' + GLUEH_HOF + ',' + (a*0.38) + ')');
+    g.addColorStop(0.7, 'rgba(' + GLUEH_HOF + ',' + (a*0.1) + ')'); g.addColorStop(1, 'rgba(' + GLUEH_HOF + ',0)');
+    q.fillStyle = g; q.fillRect(x - r, y - r, 2*r, 2*r); };
+  weich(38, 0.16*p); weich(14, 0.3*p);
+  q.fillStyle = GLUEH_KERN; q.beginPath(); q.arc(x, y, 2, 0, 7); q.fill();
+}
 function djNachtVorne(t){
   ctx.setTransform(RS, 0, 0, RS, 0, 0); ctx.fillStyle = 'rgba(6,16,46,.08)'; ctx.fillRect(0, 0, W, H);
   djEinheiten();
   for(const f of DJN.ff){
     const x = djWrap(f.x + Math.sin(t*0.3*f.sp + f.ph)*f.dx*3, f.par*0.5), y = f.y + Math.sin(t*0.5*f.sp + f.ph*1.3)*22;
     if(x < -20 || x > VW + 20) continue;
-    djGlow(ctx, x, y, 9 + f.s*5, '170,250,255', 0.22);
-    ctx.fillStyle = 'rgba(215,252,255,.7)'; ctx.beginPath(); ctx.arc(x, y, f.s, 0, 7); ctx.fill();
+    gluehwuermchenZeichnen(ctx, x, y, t, f.ph);
   }
 }
 
