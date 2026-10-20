@@ -1744,11 +1744,13 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   - **Bröckelboden:** Erde wie der normale Boden, Klumpen und Kiesel, glatte Unterkante, Outline nur an freien Kanten –
     nebeneinander liegende Kästchen sind EINE durchgehende Fläche (kein Rahmen je Kästchen). Oben wieder das gelbe trockene
     Gras (`BROECKEL_GRAS`, durchgehende Welle; auch auf den Bruchstücken), runde Ecken an freien Ecken wie Boden/Wand (die
-    Fläche wird auf die runde Form ausgeschnitten), älter: dunkler verwittert, feine Risse, ausgewaschene Flecken, etwas
+    Fläche wird auf die runde Form ausgeschnitten, auch der rote Warn-Schein; nichts ragt über die Outline hinaus), älter: dunkler verwittert, feine Risse, ausgewaschene Flecken, etwas
     trockenes Moos (`broeckelAlt`) – Nutzerwunsch; je Kästchen einmal gezeichnet (`broeckelKachel`). Vorwarnung: Zittern, roter
     Schein und rieselnde Krümel (keine Risse mehr); danach komplett unsichtbar (keine Uhr, kein Balken).
   - **Wand/Boden an Durchbruch-Wand:** wo Wand, Boden oder Bröckelboden an eine Durchbruch-Wand grenzt, keine runden Ecken und
     keine Linie – sie zählt als Nachbar (`Tn`, `matRaster.bruch` in 12-welt-zeichnen.js; Nutzerwunsch).
+  - **Ecken der Durchbruch-Wand:** frei hängend rund wie Boden/Wand, wo sie steht oder anstößt gerade (`kachelRad`,
+    gleiche Regel wie beim Bröckelboden; Nutzerwunsch).
   - **Durchbruch-Wand** (elemente/durchbruch.js): Entwurf 2 „Feucht“ – Wandmaterial, braun-grün angelaufen, Moos an
     den Fugen, vorstehende Ziegel, dunkle Tropfspuren, Glanzpunkte; keine Löcher, keine Risse; je Kachel einmal
     gezeichnet. Beim Nachwachsen füllt sich ein blasser Block. Gemeinsame Hilfen `matTile`, `matBlock`, `grasKappe`, `bruchRisse`.

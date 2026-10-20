@@ -137,7 +137,14 @@ function bruchZeichnen(){
       ctx.save(); ctx.globalAlpha = (s.wartet ? 0.5 + 0.3*Math.sin(performance.now()/90) : 0.35)*.8; ctx.fillStyle = '#6b5a48';
       ctx.fillRect(x + 3, s.y + s.h - 3 - (s.h - 6)*k, s.w - 6, (s.h - 6)*k); ctx.restore(); continue;
     }
-    for(let cx = 0; cx < s.w; cx += 40) for(let cy = 0; cy < s.h; cy += 40) ctx.drawImage(bruchKachel(Math.abs(((s.x + cx)*7 + (s.y + cy)*13)|0) % 6, bruchVariante(s)), x + cx, s.y + cy, 40, 40);
+    // Ecken (Nutzerwunsch): frei hängende Ecken rund wie Wand/Boden, wo sie an Wand, Boden, Bröckelboden oder eine andere
+    // Durchbruch-Wand stößt gerade (kachelRad aus 12-welt-zeichnen.js)
+    for(let cx = 0; cx < s.w; cx += 40) for(let cy = 0; cy < s.h; cy += 40){
+      const rad = typeof kachelRad === 'function' ? kachelRad(Math.floor((s.x + cx)/40 + 1e-6), Math.floor((s.y + cy)/40 + 1e-6)) : [0, 0, 0, 0];
+      const bild = bruchKachel(Math.abs(((s.x + cx)*7 + (s.y + cy)*13)|0) % 6, bruchVariante(s));
+      if(rad.some(v => v)){ ctx.save(); ctx.beginPath(); ctx.roundRect(x + cx, s.y + cy, 40, 40, rad); ctx.clip(); ctx.drawImage(bild, x + cx, s.y + cy, 40, 40); ctx.restore(); }
+      else ctx.drawImage(bild, x + cx, s.y + cy, 40, 40);
+    }
     { const l = ((s.x - 200) % 1200 + 1200) % 1200;
       if(false && s.y === 520 && (l === 80 || l === 320 || l === 560) && s.x - 200 > 0 && ((s.x - 200) % 1200) === l){ ctx.save(); ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 3; const t2 = l === 80 ? '1  Dichter' : l === 320 ? '2  Feucht' : '3  Blümchen & Pilze'; ctx.strokeText(t2, x, s.y - 10); ctx.fillText(t2, x, s.y - 10); ctx.restore(); } }
     if(s.neuT > 0){ s.neuT -= 0.5; ctx.globalAlpha = s.neuT/12*0.5; ctx.fillStyle = '#fff'; ctx.fillRect(x, s.y, s.w, s.h); ctx.globalAlpha = 1; }

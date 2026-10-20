@@ -520,19 +520,24 @@ function broeckelAlt(q,x,y){
   for(let i=0;i<4;i++){q.fillStyle=i%2?'rgba(140,138,70,.55)':'rgba(112,112,58,.5)';q.beginPath();q.ellipse(px+(r()-.5)*7,py+(r()-.5)*4,2+r()*2,1.4+r(),r()*3,0,7);q.fill()}}
  q.restore()}
 const __broeckel = {};
+// Ecken-Radien einer Kachel (oben links, oben rechts, unten rechts, unten links): rund nur, wo beide Nachbarseiten frei sind
+function kachelRad(cc, rr){
+  matRasterHolen();
+  const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr);
+  return [(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0];
+}
 function broeckelKachel(cc, rr){
   const R = matRasterHolen(), key = R.version + ':' + cc + ',' + rr;
   if(__broeckel[key]) return __broeckel[key];
   const x = cc*40, y = rr*40, c = document.createElement('canvas'); c.width = 80; c.height = 88;   // 40×44 (4 px Gras darüber)
   const q = c.getContext('2d'); q.setTransform(2, 0, 0, 2, -x*2, -(y - 4)*2);
   const sv = g; g = q;
-  const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr),rad=[(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0];
+  const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr),rad=kachelRad(cc,rr);
   // Outline an den freien Kanten wie bei der Gesamtform (in der Vorschau gehört der Bröckelboden mit zur Form)
   const PA = new Path2D(), edge = new Path2D(); PA.roundRect(x,y,40,40,rad);
-  // runde Ecken: die Fläche auf die abgerundete Form ausschneiden (vorher wurde nur die Linie rund, die Fläche blieb eckig);
-  // das Gras darf oben 3 px über die Kante hinaus, an runden Ecken folgt es der Rundung
-  const CL = new Path2D(); CL.roundRect(x, y - (n ? 0 : 3), 40, 40 + (n ? 0 : 3), rad);
-  q.save(); q.clip(CL); crumbTile({x, y, n}, null); q.restore();
+  // runde Ecken: die Fläche (mit Gras) auf die abgerundete Form ausschneiden – nichts ragt über die Linie hinaus (Nutzerwunsch:
+  // keine gelbe Schicht über der Outline)
+  q.save(); q.clip(PA); crumbTile({x, y, n}, null); q.restore();
   if(!n){edge.moveTo(x+rad[0],y);edge.lineTo(x+40-rad[1],y)}if(!e){edge.moveTo(x+40,y+rad[1]);edge.lineTo(x+40,y+40-rad[2])}if(!s){edge.moveTo(x+40-rad[2],y+40);edge.lineTo(x+rad[3],y+40)}if(!wl){edge.moveTo(x,y+40-rad[3]);edge.lineTo(x,y+rad[0])}
   if(rad[0]){edge.moveTo(x,y+rad[0]);edge.arc(x+rad[0],y+rad[0],rad[0],Math.PI,1.5*Math.PI)}if(rad[1]){edge.moveTo(x+40-rad[1],y);edge.arc(x+40-rad[1],y+rad[1],rad[1],1.5*Math.PI,2*Math.PI)}if(rad[2]){edge.moveTo(x+40,y+40-rad[2]);edge.arc(x+40-rad[2],y+40-rad[2],rad[2],0,.5*Math.PI)}if(rad[3]){edge.moveTo(x+rad[3],y+40);edge.arc(x+rad[3],y+40-rad[3],rad[3],.5*Math.PI,Math.PI)}
   outlineDraw(q, edge, PA, outK, 2);
@@ -877,7 +882,11 @@ function drawSolidLook(s, look, x){
         drawCrumbleWarning(s, sx, sy, t);
         const pulse = t > 0.5 ? 0.16*(0.5 + 0.5*Math.sin(s.timer*0.05)) : 0;
         ctx.fillStyle = `rgba(220,40,30,${(t*0.3 + pulse).toFixed(2)})`;
-        roundRect(sx, sy, s.w, s.h, 6); ctx.fill();
+        // je Kachel dieselbe Form wie der Boden darunter (runde Ecken nur an freien Ecken)
+        ctx.beginPath();
+        for(let cx = 0; cx < s.w - 1; cx += 40) for(let cy = 0; cy < s.h - 1; cy += 40)
+          ctx.roundRect(sx + cx, sy + cy, 40, 40, kachelRad(Math.floor((s.x + cx)/40 + 1e-6), Math.floor((s.y + cy)/40 + 1e-6)));
+        ctx.fill();
       }
     } else {
       const img = themedImg(s.type==='platform' ? ASSETS.platformWood : ASSETS.groundGrass);
