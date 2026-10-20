@@ -4738,6 +4738,27 @@ async def dschungel_hintergrund_tag_nacht(g):
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
 
 @test
+async def dschungel_wind_anlaufzeit(g):
+    """Wind-Abschaltung (Nutzerwunsch „Warum weht kein Wind?“): In den ersten DJ_ANLAUF_MS nach dem Levelstart, bei
+    einzelnen Aussetzern ab DJ_LUECKE_MS (Tab-Wechsel) und im Menü zählen langsame Bilder nicht; danach schalten
+    4 langsame Bilder hintereinander den Wind weiterhin ab. Die Leistungsanzeige (F) zeigt den Zustand."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit='mittag'))
+    await g.steps(5)
+    r = await g.ev("""(() => { const S = djSchalter.wind; S.an = true; S.n = 0; S.summe = 0; S.lang = 0;
+      djMessLevel = null; for(let i = 0; i < 10; i++) djMessen(S, 120);   // Levelstart: viel Vorzeichnen
+      const anlauf = S.an;
+      djAnlaufBis = 0; for(let i = 0; i < 10; i++) djMessen(S, 500);    // Tab-Wechsel / einzelne lange Lücken
+      const luecke = S.an;
+      menuScreen = 'pause'; for(let i = 0; i < 10; i++) djMessen(S, 120); menuScreen = null;
+      const menue = S.an, text = djStatusText();
+      for(let i = 0; i < 4; i++) djMessen(S, 120);                        // danach wirklich langsam -> aus
+      const r = {anlauf, luecke, menue, text, danach: S.an, text2: djStatusText()};
+      S.an = true; S.n = 0; S.summe = 0; S.lang = 0; return r; })()""")
+    assert r['anlauf'] and r['luecke'] and r['menue'], f'Wind zu früh aus: {r}'
+    assert r['danach'] is False, f'Wind bleibt trotz langsamer Bilder an: {r}'
+    assert 'Wind: an' in r['text'] and 'Wind: aus' in r['text2'], f'Anzeige falsch: {r}'
+
+@test
 async def dschungel_tiere_regeln(g):
     """Dschungel-Paket D: deutlich weniger Tiere (Regeln aus DK.build): Boden-Tiere nie in Materialien (frei ±34 px, 46 px
     hoch, 45 px vom Rand), Frosch/Schnecke mit mind. 70 px Laufstrecke, Boden-Tiere weit auseinander, Faultier höchstens

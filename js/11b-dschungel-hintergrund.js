@@ -72,11 +72,27 @@ function djAn(S){
   if(S.an === null){ let aus = false; try { aus = localStorage.getItem(S.key) === 'aus'; } catch(e){} S.an = !aus; }
   return S.an;
 }
+// Anlaufzeit (Nutzerwunsch: Wind fehlte auch auf schnellen Laptops): direkt nach dem Levelstart werden viele Bilder
+// vorgezeichnet – diese ersten DJ_ANLAUF_MS zählen nicht, ebenso Bilder in Menü/Pause und nach einem Tab-Wechsel
+const DJ_ANLAUF_MS = 3000, DJ_LUECKE_MS = 200;
+let djMessLevel = null, djAnlaufBis = 0;
+function djMessenErlaubt(dauer){
+  const jetzt = performance.now();
+  if(djMessLevel !== solids){ djMessLevel = solids; djAnlaufBis = jetzt + DJ_ANLAUF_MS; }
+  if(jetzt < djAnlaufBis || dauer >= DJ_LUECKE_MS) return false;
+  return !(typeof menuScreen !== 'undefined' && menuScreen) && !(typeof deathState !== 'undefined' && deathState);
+}
 function djMessen(S, dauer){
+  if(!djMessenErlaubt(dauer)){ S.lang = 0; return; }
   S.summe += dauer;
   S.lang = dauer > DJ_SOFORT_MS ? S.lang + 1 : 0;
   if(S.lang >= DJ_SOFORT_N){ S.an = false; S.lang = 0; }
   if(++S.n >= DJ_PROBE){ if(S.summe/S.n > S.max) S.an = false; S.n = 0; S.summe = 0; }
+}
+// Zeile für die Leistungsanzeige (Taste F, js/13-anzeige-leistung.js)
+function djStatusText(){
+  const txt = S => S.an === null ? '–' : S.an ? 'an' : 'aus';
+  return 'Dschungel-Wind: ' + txt(djSchalter.wind) + '   Nacht-Licht: ' + txt(djSchalter.licht);
 }
 
 // ---------- kleine Helfer (Vorschau: hex, toHex, mix, glow, wind) ----------
