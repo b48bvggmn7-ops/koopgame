@@ -538,7 +538,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         WIND_MAX_UP 6,5 px/Schritt), auch wenn sie gerade steigt; Schirm-Zeit beginnt im Wind von vorn. Den Affen
         trägt er NICHT. Sichtbar als heller Streifen mit aufsteigenden Schlieren und Blättchen. Neues Aussehen: übereinander
         liegende Kästchen-Reihen werden beim Zeichnen zu EINER Säule zusammengefasst (`windSaeulen`) – eine weiche,
-        an den Seiten und oben auslaufende Fläche (unten heller, sanftes „Atmen“), darin lange, sich schlängelnde
+        an den Seiten, oben und unten auslaufende Fläche (ohne Kante; zum unteren Teil heller, sanftes „Atmen“), darin lange, sich schlängelnde
         Luftschlieren, Funkel-Staub und taumelnde Blättchen, gleichmäßig steigend über die ganze Säule. Test aufwind_saeule.
       Scheinwand (solids type 'fake', im Spiel in fakeWalls): sieht exakt aus wie Wand (nahtlos mit echten
         Wänden), liegt ÜBER Hebeln/Münzen und versteckt sie; keine Kollision (man läuft hindurch, kein Wandsprung).

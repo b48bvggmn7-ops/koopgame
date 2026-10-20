@@ -54,18 +54,18 @@ elementRegistrieren({
         if(x0 + s.w < -30 || x0 > VW + 30) continue;
         ctx.save();
         ctx.beginPath(); for(const r of s.teile) ctx.rect(r.x - camX, r.y, r.w, r.h); ctx.clip();
-        // Fläche: an den Seiten weich auslaufend, unten heller (dort „bläst“ es), nach oben verblassend
+        // Fläche: an den Seiten weich auslaufend, zum unteren Drittel heller (dort „bläst“ es), oben und unten weich auslaufend
         const atem = 0.88 + 0.12*Math.sin(tw*1.6 + s.x*0.01);
         const gq = ctx.createLinearGradient(x0, 0, x0 + s.w, 0);
-        gq.addColorStop(0, 'rgba(225,248,255,0)'); gq.addColorStop(0.22, `rgba(225,248,255,${0.2*atem})`);
-        gq.addColorStop(0.5, `rgba(235,252,255,${0.27*atem})`); gq.addColorStop(0.78, `rgba(225,248,255,${0.2*atem})`);
+        gq.addColorStop(0, 'rgba(225,248,255,0)'); gq.addColorStop(0.22, `rgba(225,248,255,${0.3*atem})`);
+        gq.addColorStop(0.5, `rgba(235,252,255,${0.4*atem})`); gq.addColorStop(0.78, `rgba(225,248,255,${0.3*atem})`);
         gq.addColorStop(1, 'rgba(225,248,255,0)');
-        // in waagerechten Bändern mit wechselnder Deckkraft: oben weich ausblenden, unten leicht einblenden
+        // in waagerechten Bändern mit wechselnder Deckkraft: oben und unten weich ausblenden (keine Kante)
         ctx.fillStyle = gq;
         const baender = 16;
         for(let b = 0; b < baender; b++){
           const m = (b + 0.5)/baender;   // 0 = oben, 1 = unten
-          ctx.globalAlpha = Math.min(1, m/0.3, (1 - m)/0.06 + 0.45)*(0.75 + 0.55*m*m);
+          ctx.globalAlpha = Math.min(1, m/0.3, (1 - m)/0.18)*(0.75 + 0.55*m*m);
           const ya = Math.round(s.y + s.h*b/baender), yb = Math.round(s.y + s.h*(b + 1)/baender);
           ctx.fillRect(x0, ya, s.w, yb - ya);
         }
@@ -81,7 +81,7 @@ elementRegistrieren({
             const gl = ctx.createLinearGradient(0, yy, 0, yy - laenge);
             const al = 0.55 + z*0.3;
             gl.addColorStop(0, 'rgba(250,255,255,0)'); gl.addColorStop(0.5, `rgba(250,255,255,${al})`); gl.addColorStop(1, 'rgba(250,255,255,0)');
-            ctx.globalAlpha = Math.max(0, Math.min(1, (yy - laenge*0.5 - s.y)/(s.h*0.25 + 1)));
+            ctx.globalAlpha = Math.max(0, Math.min(1, (yy - laenge*0.5 - s.y)/(s.h*0.25 + 1), (s.y + s.h - yy + laenge*0.5)/(s.h*0.18 + 1)));
             ctx.strokeStyle = gl; ctx.lineWidth = 1.2 + z*1.2;
             ctx.beginPath();
             for(let j = 0; j <= 8; j++){
