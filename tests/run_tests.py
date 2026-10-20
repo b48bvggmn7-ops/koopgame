@@ -5287,6 +5287,9 @@ async def spieltempo_langsamer(g):
     """Spiel läuft 10 % langsamer (GAME_SPEED 0,9): in 1 s laufen ~10 % weniger Weg, Sprünge gleich weit."""
     assert abs(await g.ev('GAME_SPEED') - 0.9) < 1e-9, 'GAME_SPEED ist nicht 0,9'
     await g.load(level([ground(0, 680, 6000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
+    # Dschungel-Wind aus: er bleibt die ersten 3 s nach dem Levelstart an (DJ_ANLAUF_MS) und macht das Zeichnen auf dem
+    # Testrechner ohne Grafikkarte sehr langsam – hier geht es ums Spieltempo, nicht ums Zeichnen
+    await g.ev("djSchalter.wind.an = false")
     await g.p.wait_for_timeout(500)
     # Schritte zählen und die echten Bildzeiten mitschreiben (auf langsamen Rechnern holt das Spiel pro Bild höchstens
     # 5 Schritte nach -> erwartete Schritte aus den Bildzeiten mit Tempo 0,9 nachrechnen statt starr ~54/s zu verlangen)
