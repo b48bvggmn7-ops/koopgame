@@ -4953,6 +4953,28 @@ async def dschungel_leuchtpflanzen(g):
     assert r['tag'] == 0, 'Leuchtpflanzen am Tag'
 
 @test
+async def broeckel_und_durchbruch_ecken(g):
+    """Nutzerwunsch: (1) grenzt Wand/Boden an eine Durchbruch-Wand, gibt es dort keine runde Ecke (sie zählt als Nachbar);
+    (2) Bröckelboden: an freien Ecken wirklich rund (Ecke durchsichtig), oben gelbes trockenes Gras, nichts über der Outline;
+    (3) Durchbruch-Wand frei hängend rund, auf dem Boden stehend unten gerade."""
+    G = ground
+    await g.load(level([G(0, 680, 2000), G(200, 360, 80, 160, 'wall'), G(200, 520, 80, 80, 'bruch'), G(700, 480, 160, 40, 'crumble'),
+                        G(1000, 400, 40, 40, 'bruch'), G(1200, 600, 40, 80, 'bruch')],
+                       {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    await g.steps(3)
+    r = await g.ev("""(() => { matRasterHolen(); const unten = Tn(5, 13), frei = Tn(4, 12);
+      const c = broeckelKachel(17, 12), q = c.getContext('2d'), px = (x, y) => Array.from(q.getImageData(x, y, 1, 1).data);
+      // Kachel 80×88 (2-fach, 4 px Gras darüber): linke obere Ecke frei -> rund (durchsichtig); oben in der Mitte Gras
+      return {unten, frei, ecke: px(1, 9)[3], gras: px(40, 12), ueber: px(40, 5)[3],
+              haengt: kachelRad(25, 10), steht: [kachelRad(30, 15), kachelRad(30, 16)]}; })()""")
+    assert r['unten'] and not r['frei'], f'Durchbruch-Wand zählt nicht als Nachbar: {r}'
+    assert r['ecke'] < 40, f'Bröckelboden-Ecke nicht rund: {r}'
+    gr = r['gras']; assert gr[3] > 200 and gr[0] > 150 and gr[1] > 130 and gr[2] < gr[1], f'kein gelbes Gras oben: {r}'
+    assert r['ueber'] < 10, f'Gras ragt über die Outline hinaus: {r}'
+    assert r['haengt'] == [9, 9, 9, 9], f'frei hängende Durchbruch-Wand nicht rund: {r}'
+    assert r['steht'] == [[9, 9, 0, 0], [0, 0, 0, 0]], f'auf dem Boden stehende Durchbruch-Wand unten nicht gerade: {r}'
+
+@test
 async def welt_details_und_vordergrund(g):
     """Design-Politur D: jede Welt bekommt ihre Details (Ruinen: Fackeln, Höhle: Tropfsteine mit Tropfen, Dschungel:
     Wasserfall mit Regenbogen, Vulkan: Asche/Funken). Ein dunkler Vordergrund am unteren Bildrand gibt es NICHT mehr
@@ -6116,17 +6138,78 @@ async def wand_rutschen(g):
 @test
 async def haftflaeche(g):
     """Nacht-Ausbau: Haftfläche – mit „hoch“ von unten festhalten (beide Figuren, ohne „hoch“ nicht), langsamer als
-    Laufen mit Schwung entlangrollen, kein Sofort-Stopp, um Kanten herum, loslassen = fallen, Absprung, Dash von dort."""
+    Laufen mit Schwung entlanghangeln, kein Sofort-Stopp, NICHT um Kanten herum (Nutzerwunsch: nur unten, an der Seite
+    nicht hochziehen – am Ende anhalten), loslassen = fallen, Absprung, Dash von dort."""
     r = await neue_mechaniken_messen(g, 'haft')
     tempo = await g.ev("HAFT_TEMPO"); lauf = await g.ev("MOVE_SPEED")
     assert tempo < lauf, (tempo, lauf)
     assert r['greifen'] and r['schwein'] and not r['ohneHoch'], r
     assert r['rollen']['haft'] and r['rollen']['anfang'] < tempo*0.6 and r['rollen']['max'] <= tempo + 1e-6, r['rollen']
     assert r['auslaufen'] > 2, r['auslaufen']
-    assert len(r['ecken']) >= 3, f"nicht um die Ecken gerollt: {r['ecken']}"
+    assert r['ecken'] == ['unten'] and r['amEnde']['haft'] and r['amEnde']['kopf'] == 440, \
+        f"soll nur unten hangeln und an der Seitenwand anhalten (nicht hochziehen): {r['ecken']} {r['amEnde']}"
     assert not r['loslassen']['haft'] and r['loslassen']['vy'] > 0, r['loslassen']
     assert not r['absprung']['haft'] and r['absprung']['vy'] > 0, r['absprung']
     assert r['dashVonHaft']['dash'] and not r['dashVonHaft']['haft'], r['dashVonHaft']
+
+@test
+async def haft_greifen_in_tropfen(g):
+    """Nutzerwunsch: hängt der Kopf beim Sprung schon in den Honig-Tropfen unter der Haftfläche (bis HAFT_FANG = 12 px),
+    hält man sich mit „hoch“ fest – auch wenn man die Kante selbst nicht ganz erreicht; deutlich tiefer nicht."""
+    r = await neue_mechaniken_messen(g, 'haftTropfen')
+    assert r['2'] and r['9'] and r['11'], f'in den Tropfen nicht festgehalten: {r}'
+    assert not r['20'], f'zu tief unten trotzdem festgehalten: {r}'
+
+@test
+async def haft_bewegt(g):
+    """Nutzerwunsch: Haftfläche lässt sich im Editor mit „Bewegung“ kombinieren. Export als bewegtes Stück (look 'haft');
+    im Spiel: von unten festhalten, die Fläche nimmt die Figur mit, hangeln nur bis zum Ende des Stücks, loslassen
+    überall = fallen. Schleim nur unten."""
+    mp = {'x': 400, 'y': 400, 'w': 160, 'h': 40, 'look': 'haft', 'group': 1, 'targetX': 800, 'targetY': 400, 'speed': 2}
+    await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, movingPlatforms=[mp]))
+    await g.steps(3)
+    r = await g.ev("""(() => {
+      const P = p1, S = solids.find(s => s.type === 'moveplat' && s.haft); for(const k in KEYS) KEYS[k] = false;
+      let t = performance.now() + 1e6; const st = () => { stepSim(t); t += 1000/54; };
+      S.tripActive = true; P.x = S.x + 60; P.y = S.y + S.h + P.h + 6; P.vx = 0; P.vy = 0; P.grounded = false;
+      KEYS[P.keys.swimUp] = true;
+      for(let i = 0; i < 3 && !P.haft; i++) st();
+      const greift = !!(P.haft && P.haft.mp), off0 = P.x - S.x, x0 = S.x;
+      for(let i = 0; i < 40; i++) st();
+      const mit = {haft: !!P.haft, off: +(P.x - S.x - off0).toFixed(2), gefahren: +(S.x - x0).toFixed(1), kopf: +(P.y - P.h - S.y - S.h).toFixed(2)};
+      KEYS[P.keys.right] = true; for(let i = 0; i < 80; i++) st(); KEYS[P.keys.right] = false;
+      const ende = {haft: !!P.haft, rel: +(P.x - S.x).toFixed(1), w: S.w};
+      KEYS[P.keys.swimUp] = false; for(let i = 0; i < 4; i++) st();
+      return {greift, mit, ende, los: {haft: !!P.haft, vy: P.vy}, wand: S.look};
+    })()""")
+    assert r['greift'], f'an der bewegten Haftfläche nicht festgehalten: {r}'
+    assert r['mit']['haft'] and abs(r['mit']['off']) < 0.01 and r['mit']['gefahren'] > 60 and abs(r['mit']['kopf']) < 0.01, f'nicht mitgenommen: {r}'
+    assert r['ende']['haft'] and 0 <= r['ende']['rel'] <= r['ende']['w'], f'über das Ende der bewegten Fläche hinaus: {r}'
+    assert not r['los']['haft'] and r['los']['vy'] > 0, f'Loslassen geht nicht: {r}'
+    assert r['wand'] == 'wall', r
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'haft')
+        await ed_ziehen(p, (10, 8), (13, 8)); await p.wait_for_timeout(100)
+        await ed_werkzeug(p, 'move')
+        await ed_ziehen(p, (11, 8), (19, 8)); await p.wait_for_timeout(100)
+        ex = await p.evaluate("(() => { const o = JSON.parse(exportLevel()); return {mp: o.movingPlatforms, haft: o.haftflaechen || []}; })()")
+        assert len(ex['mp']) == 1 and ex['mp'][0]['look'] == 'haft' and ex['mp'][0]['targetX'] - ex['mp'][0]['x'] == 320, f'Haftfläche nicht bewegt exportiert: {ex}'
+        assert ex['haft'] == [], f'bewegte Haftfläche zusätzlich fest exportiert: {ex}'
+    finally:
+        srv.shutdown()
+
+@test
+async def druckplatte_ganz_gedrueckt(g):
+    """Nutzerwunsch: steht eine Figur auf der Druckplatte, ist sie ganz eingesunken (Anzeige), sonst oben."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 60, 'y': 680},
+                       plates=[{'x': 300, 'y': 660, 'link': 1}, {'x': 500, 'y': 660, 'link': 2}]))
+    await g.steps(60)
+    r = await g.ev("plates.map(p => [p.down, p.anzeigeDruck])")
+    assert r[0][0] and r[0][1] > 0.95, f'Platte unter der Figur nicht ganz eingesunken: {r}'
+    assert not r[1][0] and r[1][1] < 0.05, f'freie Platte nicht oben: {r}'
 
 TASTEN_ALT = {1: {'left': 'KeyA', 'right': 'KeyD', 'jump': 'Space', 'ability': 'KeyG', 'pull': 'KeyW', 'slack': 'KeyS', 'use': 'KeyJ'},
               2: {'left': 'ArrowLeft', 'right': 'ArrowRight', 'jump': 'Numpad0', 'ability': 'Numpad1', 'pull': 'ArrowUp', 'slack': 'ArrowDown', 'use': 'Numpad2'}}

@@ -25,22 +25,32 @@ elementRegistrieren({
       for(const pl of plates){
         const x = Math.round(pl.x - camX);
         if(x < -40 || x > VW + 40) continue;
-        const baseY = pl.y + 20, col = linkColor(pl.link), d = pl.down ? 4 : 0;
-        // Auffälliger und passend zur Spielwelt (Nutzerwunsch): breite Messingplatte im Eisenrahmen mit Nieten und einem
-        // Edelstein in der Verknüpfungs-Farbe (wie auf den Türen); leichter Schein, solange niemand draufsteht Glühwürmchen
-        elementLeuchten(x, baseY - 8, 44, col, pl.down ? 0.5 : 1);
-        glanzSchatten(x, baseY, 34, 4);
-        ctx.fillStyle = 'rgba(0,0,0,.28)'; roundRect(x - 29, baseY - 6, 58, 6, 2); ctx.fill();
-        ctx.fillStyle = '#4a4f57'; roundRect(x - 28, baseY - 14 + d, 56, 14 - d, 3); ctx.fill();
-        ctx.strokeStyle = '#2b2f35'; ctx.lineWidth = 1.5; roundRect(x - 28, baseY - 14 + d, 56, 14 - d, 3); ctx.stroke();
-        const platte = ctx.createLinearGradient(0, baseY - 12 + d, 0, baseY - 3);
-        platte.addColorStop(0, pl.down ? '#b08a3a' : '#ffe08a'); platte.addColorStop(1, pl.down ? '#7a5c1e' : '#d9a43a');
-        ctx.fillStyle = platte; roundRect(x - 24, baseY - 12 + d, 48, 9 - d*0.5, 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x - 22, baseY - 12 + d, 44, 1.5);
-        if(!pl.down){ ctx.save(); roundRect(x - 24, baseY - 12 + d, 48, 9 - d*0.5, 2); ctx.clip(); glanzBand(x - 24, baseY - 12 + d, 48, 9, pl.x*0.02); ctx.restore(); }
-        ctx.fillStyle = '#9aa3ad'; for(const rx of [x - 26, x + 26]){ ctx.beginPath(); ctx.arc(rx, baseY - 7 + d/2, 1.5, 0, Math.PI*2); ctx.fill(); }
-        ctx.fillStyle = 'rgba(30,20,10,.55)'; roundRect(x - 8, baseY - 11.2 + d*0.5, 16, 8.4 - d*0.5, 2.5); ctx.fill();   // dunkle Fassung wie bei der Tür
-        elementEdelstein(x, baseY - 7.5 + d/2, 5, col);   // nur ein Diamant in der Mitte, keine Zahl
+        // Nutzerwunsch: die Figur soll sichtbar AUF der Platte stehen. Die Platte sitzt in einer Vertiefung im Boden und ragt
+        // frei 8 px heraus; gedrückt ist ihre Oberseite genau auf Bodenhöhe (dort stehen die Füße), der Rest steckt im Boden.
+        // Weiche Bewegung nur in der Anzeige (gleich schnell bei jeder Bildrate, wie die Türen)
+        const ziel = pl.down ? 1 : 0;
+        pl.anzeigeDruck = pl.anzeigeDruck === undefined ? ziel : pl.anzeigeDruck + (ziel - pl.anzeigeDruck)*(1 - Math.pow(0.6, frameDt/STEP));
+        const a = pl.anzeigeDruck, baseY = pl.y + 20, col = linkColor(pl.link);
+        const HOCH = 8, DICK = 12, top = baseY - HOCH*(1 - a), unten = baseY + DICK - HOCH;   // Plattenblock top … top+DICK
+        // Auffälliger und passend zur Spielwelt (Nutzerwunsch): Messingplatte im Eisenrahmen mit Nieten und einem Edelstein
+        // in der Verknüpfungs-Farbe (wie auf den Türen); leichter Schein, solange niemand draufsteht
+        elementLeuchten(x, baseY - 6, 44, col, 1 - 0.5*a);
+        // Vertiefung im Boden (Eisenrahmen), in die die Platte einsinkt
+        ctx.fillStyle = '#2b2f35'; roundRect(x - 30, baseY - 1.5, 60, unten - baseY + 3.5, 2.5); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(x - 27, baseY, 54, unten - baseY);
+        ctx.fillStyle = '#9aa3ad'; for(const rx of [x - 28, x + 28]){ ctx.beginPath(); ctx.arc(rx, baseY + 2.5, 1.3, 0, Math.PI*2); ctx.fill(); }
+        // Plattenblock (unten von der Vertiefung abgeschnitten)
+        ctx.save(); ctx.beginPath(); ctx.rect(x - 40, top - 2, 80, unten - top + 2); ctx.clip();
+        const platte = ctx.createLinearGradient(0, top, 0, top + DICK);
+        platte.addColorStop(0, a > 0.5 ? '#e0b45a' : '#ffe08a'); platte.addColorStop(1, a > 0.5 ? '#8a6a24' : '#c98f2a');
+        ctx.fillStyle = platte; roundRect(x - 25, top, 50, DICK, 2.5); ctx.fill();
+        ctx.strokeStyle = '#6b5410'; ctx.lineWidth = 1.2; roundRect(x - 25, top, 50, DICK, 2.5); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(x - 23, top + 1, 46, 1.5);   // helle Oberkante: hier steht man
+        if(a < 0.5){ ctx.save(); roundRect(x - 25, top, 50, DICK, 2.5); ctx.clip(); glanzBand(x - 25, top, 50, DICK, pl.x*0.02); ctx.restore(); }
+        const gy = top + 6.5;
+        ctx.fillStyle = 'rgba(30,20,10,.55)'; roundRect(x - 8, gy - 4.2, 16, 8.4, 2.5); ctx.fill();   // dunkle Fassung wie bei der Tür
+        elementEdelstein(x, gy, 4.5, col);   // nur ein Diamant in der Mitte, keine Zahl
+        ctx.restore();
         if(!pl.down) hinweisPfeil(x, baseY - 40, col);
       }
     },

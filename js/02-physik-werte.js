@@ -93,7 +93,7 @@ const HAFT_BESCHL = 0.25;         // Haftfläche: Anteil je Schritt zum Ziel-Tem
 const HAFT_ABSPRUNG_Y = 3;        // Absprung von der Haftfläche nach unten
 const HAFT_ABSPRUNG_X = 5;        // … und nach vorn
 const HAFT_KLEB_SCHWER = 0.25;    // an senkrechten Haftflächen: Anteil der Schwerkraft (rutscht langsam)
-const HAFT_FANG = 2.5;            // px: so knapp unter der Haftfläche greift man zu
+const HAFT_FANG = 12;             // px: so weit unter der Haftfläche greift man zu (bis in die Honig-Tropfen; Nutzerwunsch, vorher 2,5)
 
 // ---------- Wasser und Schwimmen (Ausbau 5, elemente/wasser.js) ----------
 // Alle Werte pro Physik-Schritt (60 Schritte = 1 Spielsekunde). Unter Wasser: kein Haken, kein Schirm.

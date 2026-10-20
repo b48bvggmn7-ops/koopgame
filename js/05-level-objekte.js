@@ -202,7 +202,15 @@ function updateMovingPlatforms(dt, players){
     s.x += stepX; s.y += stepY;
     players.forEach((player, i)=>{
     const onTop = onTopList[i];
-    if(onTop && !carried.has(player)){
+    // hängt die Figur unter einer bewegten Haftfläche (elemente/haftflaeche.js), fährt sie mit; wird es eng: loslassen
+    const haengt = player.haft && player.haft.mp && haftGleichesStueck(player.haft.mp, s);
+    if(haengt){
+      if(!carried.has(player)){
+        player.x += stepX; player.y += stepY; carried.add(player);
+        if(playerBlocked(player, s)){ player.x -= stepX; player.y -= stepY; haftLos(player); }
+      }
+    }
+    else if(onTop && !carried.has(player)){
       player.x += stepX; player.y += stepY; carried.add(player);
       // nie durch feste Wände/Decken mitnehmen: wird es eng, bleibt die Figur stehen (rutscht von der Platte)
       if(stepX && playerBlocked(player, s)) player.x -= stepX;

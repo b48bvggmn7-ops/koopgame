@@ -80,6 +80,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       und Nummern-Plakette.
     - Druckplatte (etwas breiter, so breit wie der Bereich, der wirklich drückt): Messingplatte im Eisenrahmen mit
       Nieten, zwei Edelsteine in der Verknüpfungs-Farbe und Nummer; gedrückt dunkler und abgesenkt.
+      Nutzerwunsch „die Figur soll sichtbar AUF der Platte stehen“: die Platte sitzt in einer Vertiefung im Boden
+      (Eisenrahmen mit Nieten) und ragt frei 8 px heraus; gedrückt sinkt sie ganz ein, ihre Messing-Oberseite liegt dann
+      genau auf Bodenhöhe unter den Füßen (Edelstein bleibt sichtbar); weiche Bewegung nur in der Anzeige
+      (`anzeigeDruck`, bei jeder Bildrate gleich schnell). Test druckplatte_ganz_gedrueckt.
     - Sprungpilz (dicker, so breit wie der Bereich, der wirklich federt): warmes Gold-Orange mit cremefarbenen Tupfen,
       brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze).
     - Leichter, pulsierender Schein und drei Glühwürmchen in der Farbe des Elements, die langsam darüber kreisen (statt
@@ -1586,13 +1590,19 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
 - **Wand-Rutschen** (automatisch, keine Taste): wer an einer Wand schneller als 4,5 herunterfällt, rutscht gebremst mit
   höchstens WAND_RUTSCH_MAX_FALL 4,5 (Rutsch-Haltung, Kratz-Staub, leises Schaben). Nicht beim Segeln, nicht am Seil,
   nicht im Dash. Der Wandsprung ist der alte (gleiche Werte, gleiche Bedingungen) – er geht auch mitten im Rutschen.
-- **Haftfläche** (Editor: Gelände → „Haftfläche“): Wand-/Deckenkästchen mit lila Klebeschicht. Wer darunter „hoch“
-  hält (Affe W, Schweinchen ↑, Controller Steuerkreuz hoch bzw. Stick hoch), hält sich von unten fest und rollt mit
-  links/rechts entlang – langsamer als Laufen (HAFT_TEMPO 4,2), mit Schwung (kein Sofort-Stopp), um Kanten herum
-  (Innenecke hinunter an der Seite, unten herum, die andere Seite hinauf und oben auf die Fläche). „Hoch“ loslassen =
-  fallen. Springen = Absprung (unten: nach unten-vorn; an der Seite: weg von der Wand). Dash geht von dort (kostet
-  einen Punkt; „hoch“ zählt an der Unterseite nicht als Dash-Richtung). Haken greifen = loslassen. Sonst ist eine
-  Haftfläche eine normale Wand (Boden oben, Wandsprung an der Seite).
+- **Haftfläche** (Editor: Gelände → „Haftfläche“): Wand-/Deckenkästchen mit Honig-Schicht NUR an der Unterseite
+  (Nutzerwunsch; Band an den runden Ecken passend abgeschnitten, Tropfen darunter). Wer darunter „hoch“
+  hält (Affe W, Schweinchen ↑, Controller Steuerkreuz hoch bzw. Stick hoch), hält sich von unten fest und hangelt mit
+  links/rechts entlang (greifen klappt schon, wenn der Kopf in den Honig-Tropfen hängt: bis HAFT_FANG 12 px unter der
+  Kante, vorher 2,5 px – Nutzerwunsch; man wird dann an die Fläche hochgezogen) – langsamer als Laufen (HAFT_TEMPO 4,2),
+  mit Schwung (kein Sofort-Stopp). Am Ende der Fläche bzw. an einer Wand hält man an – NICHT mehr um die Kanten herum
+  an der Seite hoch oder oben drauf (Nutzerwunsch, früher ging das). „Hoch“ loslassen = fallen. Springen = Absprung
+  nach unten-vorn. Dash geht von dort (kostet einen Punkt; „hoch“ zählt an der Unterseite nicht als Dash-Richtung).
+  Haken greifen = loslassen. Sonst ist eine Haftfläche eine normale Wand (Boden oben, Wandsprung an der Seite).
+- **Bewegte Haftfläche** (Nutzerwunsch): im Editor lässt sich eine Haftfläche mit dem Werkzeug „Bewegung“ zum Ziel
+  ziehen (wie Boden/Wand; Export als bewegtes Stück mit look 'haft', im Spiel Wand-Aussehen + `haft: true`). Wer sich
+  darunter festhält, fährt mit (`updateMovingPlatforms`), kann unter ihr hangeln (bis zu ihrem Ende) und an jeder
+  beliebigen Stelle loslassen. Fährt sie die Figur gegen eine Wand oder in den Boden, lässt die Figur los. Test haft_bewegt.
 - **Tasten belegen** (Optionen → „⌨ 🎮 Tasten belegen …“): Spieler 1 und Spieler 2 getrennt, alle Aktionen (links,
   rechts, springen, Fähigkeit, hoch, runter, Hebel, Dash), Tastatur UND Controller. Aktion anklicken bzw. mit
   Bestätigen wählen → neue Taste / neuen Knopf drücken (Controller: alle Knöpfe, Schultertasten und Trigger); Esc
@@ -1751,9 +1761,15 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
   - **Bewegliche Plattformen** aus Boden/Wand: ein abgerundeter Block im gleichen Material (`pieceDraw`), ganze Gruppe
     als ein Block, wenn sie ein Rechteck bildet; Outline wie die Flächen, kein Schatten, kein Restschatten.
   - **Bröckelboden:** Erde wie der normale Boden, Klumpen und Kiesel, glatte Unterkante, Outline nur an freien Kanten –
-    nebeneinander liegende Kästchen sind EINE durchgehende Fläche (Nutzerwunsch: kein trockenes Gras obendrauf und kein
-    Rahmen je Kästchen mehr, auch die Bruchstücke ohne Gras); je Kästchen einmal gezeichnet (`broeckelKachel`). Vorwarnung: Zittern, roter
+    nebeneinander liegende Kästchen sind EINE durchgehende Fläche (kein Rahmen je Kästchen). Oben wieder das gelbe trockene
+    Gras (`BROECKEL_GRAS`, durchgehende Welle; auch auf den Bruchstücken), runde Ecken an freien Ecken wie Boden/Wand (die
+    Fläche wird auf die runde Form ausgeschnitten, auch der rote Warn-Schein; nichts ragt über die Outline hinaus), älter: dunkler verwittert, feine Risse, ausgewaschene Flecken, etwas
+    trockenes Moos (`broeckelAlt`) – Nutzerwunsch; je Kästchen einmal gezeichnet (`broeckelKachel`). Vorwarnung: Zittern, roter
     Schein und rieselnde Krümel (keine Risse mehr); danach komplett unsichtbar (keine Uhr, kein Balken).
+  - **Wand/Boden an Durchbruch-Wand:** wo Wand, Boden oder Bröckelboden an eine Durchbruch-Wand grenzt, keine runden Ecken und
+    keine Linie – sie zählt als Nachbar (`Tn`, `matRaster.bruch` in 12-welt-zeichnen.js; Nutzerwunsch).
+  - **Ecken der Durchbruch-Wand:** frei hängend rund wie Boden/Wand, wo sie steht oder anstößt gerade (`kachelRad`,
+    gleiche Regel wie beim Bröckelboden; Nutzerwunsch).
   - **Durchbruch-Wand** (elemente/durchbruch.js): Entwurf 2 „Feucht“ – Wandmaterial, braun-grün angelaufen, Moos an
     den Fugen, vorstehende Ziegel, dunkle Tropfspuren, Glanzpunkte; keine Löcher, keine Risse; je Kachel einmal
     gezeichnet. Beim Nachwachsen füllt sich ein blasser Block. Gemeinsame Hilfen `matTile`, `matBlock`, `grasKappe`, `bruchRisse`.

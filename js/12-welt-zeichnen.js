@@ -101,7 +101,7 @@ function drawCrumbleWarning(s, x, y, t){
 }
 // Zerbrechen: drehende Brocken (oben mit Gras), Steinchen und Staubwolke
 function drawCrumbleBreak(s){
-  const pal = {grass:'#9bab5c', grassTop:'#c2cf7e', dirt1:CRUMBLE_PAL.light, dirt2:CRUMBLE_PAL.dark, edge:CRUMBLE_PAL.edge};
+  const pal = {grass:BROECKEL_GRAS.grass, grassTop:BROECKEL_GRAS.gt, dirt1:CRUMBLE_PAL.light, dirt2:CRUMBLE_PAL.dark, edge:CRUMBLE_PAL.edge};
   const k = Math.min(1, s.breakElapsed/CRUMBLE_FRAGMENT_LIFE);
   const fade = k < 0.6 ? 1 : 1 - (k - 0.6)/0.4;
   ctx.save();
@@ -122,7 +122,7 @@ function drawCrumbleBreak(s){
     const g = ctx.createLinearGradient(0, -12, 0, 12);
     g.addColorStop(0, pal.dirt1); g.addColorStop(1, pal.dirt2);
     ctx.fillStyle = f.pebble ? pal.dirt2 : g; ctx.fill();
-    if(f.grassTop !== null && false){   // Bröckelboden hat kein Gras mehr obendrauf (Nutzerwunsch) – Bruchstücke auch nicht
+    if(f.grassTop !== null){   // Bruchstücke von oben tragen das gelbe Trockengras mit
       ctx.save(); ctx.clip();
       ctx.fillStyle = pal.grass; ctx.fillRect(-40, f.grassTop, 80, 11);
       ctx.fillStyle = pal.grassTop; ctx.fillRect(-40, f.grassTop, 80, 4);
@@ -244,6 +244,12 @@ function matRasterHolen(){
     const t = s.type === 'ground' ? 1 : s.type === 'wall' ? 2 : s.type === 'crumble' ? 3 : 0;
     if(t) eintragen(s, t, false);
   }
+  // Durchbruch-Wand (elemente/durchbruch.js) zeichnet sich selbst, zählt aber als Nachbar: grenzt Wand/Boden/Bröckelboden
+  // daran, gibt es dort keine runden Ecken und keine Linie (Nutzerwunsch)
+  const bruch = new Set();
+  for(const s of solids) if(s.type === 'bruch')
+    for(let c = Math.floor(s.x/40 + 1e-6); c < Math.ceil((s.x + s.w)/40 - 1e-6); c++)
+      for(let r = Math.floor(s.y/40 + 1e-6); r < Math.ceil((s.y + s.h)/40 - 1e-6); r++) bruch.add(c + ',' + r);
   // Scheinwand nimmt das Material ihrer Umgebung an (Nutzerwunsch: im Boden ein „Scheinboden“ statt Ziegeln): je
   // zusammenhängende Scheinwand-Fläche zählen, ob ringsum mehr Erde oder mehr Wand liegt
   const fz = new Set();
@@ -274,12 +280,14 @@ function matRasterHolen(){
     for(let rr = r - 1; rr >= randReihe; rr--) zellen.set(c + ',' + rr, t);
   }
   for(const [k, t] of zellen){ const [c, r] = k.split(',').map(Number); if(!spalten.has(c)) spalten.set(c, []); spalten.get(c).push({c, r, t, fake: fake.has(k)}); }
-  matRaster = {quelle: solids, n: solids.length, nf: fakeWalls.length, version: matRaster.version + 1, zellen, fake, spalten};
+  matRaster = {quelle: solids, n: solids.length, nf: fakeWalls.length, version: matRaster.version + 1, zellen, fake, spalten, bruch};
   matStuecke.clear(); matSicht = {key: ''};
   return matRaster;
 }
 // Kästchen-Art an Spalte/Reihe (0 = leer) – wie Tc in der Vorschau
 function Tc(c, r){ return matRaster.zellen.get(c + ',' + r) || 0; }
+// Nachbar für Ecken/Linien: Material ODER Durchbruch-Wand
+function Tn(c, r){ return Tc(c, r) > 0 || !!(matRaster.bruch && matRaster.bruch.has(c + ',' + r)); }
 // Körnung (Erde, grain aus 10b) als Muster: MAT_KORN_KACHEL Welt-px groß, je 40er-Kästchen eigene Körnung, in Bildschirm-
 // Auflösung S einmal gezeichnet; das Muster hängt an der Welt (wandert nicht mit der Kamera)
 let matKornCache = {S: 0, c: null, muster: null};
@@ -311,7 +319,7 @@ function matPfadeNeu(){
 function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
   const D = matPfadeNeu(), ziegelGesehen = new Set();
   const kaestchen = liste.map(({c: cc, r: rr, t}) => {
-    const n=Tc(cc,rr-1)>0,s=Tc(cc,rr+1)>0,wl=Tc(cc-1,rr)>0,e=Tc(cc+1,rr)>0,rad=[(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0],x=cc*40,y=rr*40;
+    const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr),rad=[(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0],x=cc*40,y=rr*40;
     return {t,x,y,n,s,wl,e,rad,cc,rr,nG:Tc(cc,rr-1)==1};
   });
   for(const k of kaestchen){
@@ -487,23 +495,49 @@ function matBeweglichZeichnen(){
     ctx.drawImage(B.piece.c, x - 24, y - 24, B.w + 48, B.h + 48);
   }
 }
-// Bröckelboden (aussehen-paket/vorschau-code): Erde wie der normale Boden, trockenes hellbraunes Gras obendrauf, Klumpen
-// und Kiesel (bruchRisse 'erde', elemente/durchbruch.js), glatte Unterkante. Je Kästchen einmal gezeichnet (Zwischenspeicher).
-// Nutzerwunsch (nach der Vorschau): ohne trockenes Gras obendrauf und ohne Rahmen je Kästchen – nebeneinander liegende
-// Bröckel-Kästchen bilden eine durchgehende Fläche, nur die Outline an freien Kanten (broeckelKachel) umrandet sie
+// Bröckelboden (aussehen-paket/vorschau-code): Erde wie der normale Boden mit Klumpen und Kieseln (bruchRisse 'erde',
+// elemente/durchbruch.js). Nutzerwünsche: kein Rahmen je Kästchen (nebeneinander eine durchgehende Fläche); oben das gelbe
+// trockene Gras (BROECKEL_GRAS, Welle aus der Weltlage -> über die Kästchen durchgehend); runde Ecken wie Boden/Wand (die
+// Fläche wird auf die abgerundete Form ausgeschnitten); älter: dunkler verwittert, feine Risse, ausgewaschene Flecken,
+// etwas trockenes Moos. Je Kästchen einmal gezeichnet (Zwischenspeicher).
+const BROECKEL_GRAS = {grass:'#bfa468', gd:'#8d7242', gt:'#dccb96'};
 function crumbTile(k,r){const x=k.x,y=k.y;g.drawImage(matTile('soil',71+Math.floor(hsh(x,y)*5)),x,y,40,40);
- bruchRisse(g,x,y,40,40,x*3+y*7,'erde',1)}
+ broeckelAlt(g,x,y);bruchRisse(g,x,y,40,40,x*3+y*7,'erde',1);if(!k.n)grasKappe(x,y,40,x,BROECKEL_GRAS,g)}
+// „älter“: Verwitterung je Kästchen, fester Zufall aus der Weltlage (nahtlos, keine Kanten am Kästchenrand)
+function broeckelAlt(q,x,y){
+ const r = rnd(Math.floor(hsh(x*1.7,y*2.3)*1e9));
+ q.save();
+ q.fillStyle='rgba(52,34,18,.22)';q.fillRect(x,y,40,40);                                    // dunkler, älter
+ for(let i=0;i<3;i++){const px=x+4+r()*32,py=y+8+r()*28,rr=5+r()*8;                         // ausgewaschene helle Flecken
+  const gr=q.createRadialGradient(px,py,0,px,py,rr);gr.addColorStop(0,'rgba(196,168,128,.22)');gr.addColorStop(1,'rgba(196,168,128,0)');q.fillStyle=gr;q.fillRect(px-rr,py-rr,2*rr,2*rr)}
+ for(let i=0;i<2+Math.floor(r()*2);i++){                                                   // feine Risse (dunkel + heller Grat)
+  let px=x+4+r()*32,py=y+10+r()*24;const pts=[[px,py]];
+  for(let j=0;j<3+Math.floor(r()*3);j++){px+=(r()-.5)*12;py+=2+r()*6;pts.push([Math.max(x+1,Math.min(x+39,px)),Math.min(y+39,py)])}
+  q.lineCap='round';q.lineJoin='round';
+  q.strokeStyle='rgba(28,18,10,.6)';q.lineWidth=1.3;q.beginPath();pts.forEach((p,i)=>i?q.lineTo(p[0],p[1]):q.moveTo(p[0],p[1]));q.stroke();
+  q.strokeStyle='rgba(214,186,146,.25)';q.lineWidth=.7;q.beginPath();pts.forEach((p,i)=>i?q.lineTo(p[0]+.8,p[1]+.5):q.moveTo(p[0]+.8,p[1]+.5));q.stroke()}
+ if(r()<.45){const px=x+6+r()*28,py=y+14+r()*20;                                            // trockenes Moos
+  for(let i=0;i<4;i++){q.fillStyle=i%2?'rgba(140,138,70,.55)':'rgba(112,112,58,.5)';q.beginPath();q.ellipse(px+(r()-.5)*7,py+(r()-.5)*4,2+r()*2,1.4+r(),r()*3,0,7);q.fill()}}
+ q.restore()}
 const __broeckel = {};
+// Ecken-Radien einer Kachel (oben links, oben rechts, unten rechts, unten links): rund nur, wo beide Nachbarseiten frei sind
+function kachelRad(cc, rr){
+  matRasterHolen();
+  const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr);
+  return [(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0];
+}
 function broeckelKachel(cc, rr){
   const R = matRasterHolen(), key = R.version + ':' + cc + ',' + rr;
   if(__broeckel[key]) return __broeckel[key];
   const x = cc*40, y = rr*40, c = document.createElement('canvas'); c.width = 80; c.height = 88;   // 40×44 (4 px Gras darüber)
   const q = c.getContext('2d'); q.setTransform(2, 0, 0, 2, -x*2, -(y - 4)*2);
   const sv = g; g = q;
-  const n=Tc(cc,rr-1)>0,s=Tc(cc,rr+1)>0,wl=Tc(cc-1,rr)>0,e=Tc(cc+1,rr)>0,rad=[(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0];
-  crumbTile({x, y, n}, null);
+  const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr),rad=kachelRad(cc,rr);
   // Outline an den freien Kanten wie bei der Gesamtform (in der Vorschau gehört der Bröckelboden mit zur Form)
   const PA = new Path2D(), edge = new Path2D(); PA.roundRect(x,y,40,40,rad);
+  // runde Ecken: die Fläche (mit Gras) auf die abgerundete Form ausschneiden – nichts ragt über die Linie hinaus (Nutzerwunsch:
+  // keine gelbe Schicht über der Outline)
+  q.save(); q.clip(PA); crumbTile({x, y, n}, null); q.restore();
   if(!n){edge.moveTo(x+rad[0],y);edge.lineTo(x+40-rad[1],y)}if(!e){edge.moveTo(x+40,y+rad[1]);edge.lineTo(x+40,y+40-rad[2])}if(!s){edge.moveTo(x+40-rad[2],y+40);edge.lineTo(x+rad[3],y+40)}if(!wl){edge.moveTo(x,y+40-rad[3]);edge.lineTo(x,y+rad[0])}
   if(rad[0]){edge.moveTo(x,y+rad[0]);edge.arc(x+rad[0],y+rad[0],rad[0],Math.PI,1.5*Math.PI)}if(rad[1]){edge.moveTo(x+40-rad[1],y);edge.arc(x+40-rad[1],y+rad[1],rad[1],1.5*Math.PI,2*Math.PI)}if(rad[2]){edge.moveTo(x+40,y+40-rad[2]);edge.arc(x+40-rad[2],y+40-rad[2],rad[2],0,.5*Math.PI)}if(rad[3]){edge.moveTo(x+rad[3],y+40);edge.arc(x+rad[3],y+40-rad[3],rad[3],.5*Math.PI,Math.PI)}
   outlineDraw(q, edge, PA, outK, 2);
@@ -849,7 +883,11 @@ function drawSolidLook(s, look, x){
         drawCrumbleWarning(s, sx, sy, t);
         const pulse = t > 0.5 ? 0.16*(0.5 + 0.5*Math.sin(s.timer*0.05)) : 0;
         ctx.fillStyle = `rgba(220,40,30,${(t*0.3 + pulse).toFixed(2)})`;
-        roundRect(sx, sy, s.w, s.h, 6); ctx.fill();
+        // je Kachel dieselbe Form wie der Boden darunter (runde Ecken nur an freien Ecken)
+        ctx.beginPath();
+        for(let cx = 0; cx < s.w - 1; cx += 40) for(let cy = 0; cy < s.h - 1; cy += 40)
+          ctx.roundRect(sx + cx, sy + cy, 40, 40, kachelRad(Math.floor((s.x + cx)/40 + 1e-6), Math.floor((s.y + cy)/40 + 1e-6)));
+        ctx.fill();
       }
     } else {
       const img = themedImg(s.type==='platform' ? ASSETS.platformWood : ASSETS.groundGrass);
