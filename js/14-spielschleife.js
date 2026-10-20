@@ -21,6 +21,7 @@ function stepSim(ts){
   activateVisibleMovers();
   updatePlayer(p1, ts);
   updatePlayer(p2, ts);
+  baumSiegSchritt();   // Dschungel: nach dem Sieg gehen beide in den hohlen Baum (12a-hohler-baum.js)
   keepTogether();   // vordere Figur darf höchstens 1,25 Bildschirmbreiten vor der hinteren sein
   updateMovingHooks();
   updateCoins([p1, p2]);

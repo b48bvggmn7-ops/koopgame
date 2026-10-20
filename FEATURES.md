@@ -150,6 +150,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Im Ziel (beide da): Affe und Schweinchen tanzen 4,5 s (ohne Hinweis „Beide im Ziel“ – Nutzerwunsch) (im Wechsel
     hüpfen, wippen, zur Seite schauen, jeder 4. Takt eine Drehung, Herzchen; WIN_DANCE_STEPS in 21-figuren-leben.js),
     Eingaben ruhen solange; danach öffnet sich das Hauptmenü (früher: Hinweis „Drücke R für einen neuen Versuch“)
+  - Hohler Baum als Start und Ziel (nur Dschungel-Look; andere Welten: Ziel-Schild wie bisher; js/12a-hohler-baum.js):
+    großer alter Baum mit abgebrochener Krone, Wurzeln, Moos, Efeu, Pilzen und einem Loch als Eingang (Tag- und Nacht-Farben).
+    Er steht ganz vorne vor Boden, Wänden und Pflanzen (Nutzerwunsch), Münzen und Figuren bleiben davor sichtbar.
+    Start: zwischen den Startplätzen, Eingang leuchtet warm; stünde er vor einer Wand, rückt er bis 160 px zur Seite.
+    Ziel: Eingang zuerst dunkel; sind beide im Ziel, gehen Affe und Schweinchen in den Baum, der Eingang leuchtet auf und eine
+    Holztür mit rundem Fenster fährt herunter (Licht scheint durch Ritzen und Fenster). Ablauf im festen Takt über winSteps
+    (BAUM_* Konstanten), Tanz und Herzchen bleiben. Test hohler_baum_start_ziel.
   - Controller (Gamepad-API, Standard-Belegung): Controller 1 = Affe, Controller 2 = Schweinchen, parallel zur Tastatur;
     Stick/Steuerkreuz laufen, Kreuz springen, Viereck = Haken bzw. Schirm, Kreis = Hebel, hoch = ranziehen, runter = Seil geben,
     Options = Pausenmenü (darin „Level neu starten“; früher direkt Neustart); Status "Controller verbunden" in den Steuerungs-Kästen

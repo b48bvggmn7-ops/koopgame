@@ -6221,6 +6221,31 @@ async def wand_rutschen(g):
     assert r['wandsprung']['vx'] < -3 and r['wandsprung']['vy'] < -8, r['wandsprung']
 
 @test
+async def hohler_baum_start_ziel(g):
+    """Start und Ziel im Dschungel = hohler Baum (12a-hohler-baum.js), ganz vorne vor Boden/Wand: der Start-Baum rückt von
+    einer Wand weg, das Ziel-Schild fehlt. Sind beide im Ziel, gehen sie in den Baum, der Eingang leuchtet auf und die Tür
+    fährt zu (fester Takt über winSteps). Andere Welten behalten das Schild (kein Baum)."""
+    teile = [ground(0, 680, 3000), ground(0, 400, 40, 280, 'wall')]
+    await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='dschungel'))
+    await g.steps(5)
+    r = await g.ev("({an: baumAktiv(), start: baumStartPunkt(), licht: baumZielLicht(), tuer: baumTuerAnteil()})")
+    assert r['an'], 'im Dschungel soll der hohle Baum stehen'
+    assert r['start']['x'] - 64 >= 40, f"Start-Baum soll vor der Wand weggerückt sein: {r['start']}"
+    assert r['licht'] < 0.3 and r['tuer'] == 0, f'Ziel-Eingang vor dem Sieg dunkel, Tür offen: {r}'
+    await g.ev("for(const P of [p1, p2]){ P.x = goal.x + (P === p1 ? -50 : 45); P.y = goal.y; P.vy = 0; } coinsNeeded = 0;")
+    await g.steps(10)
+    assert await g.ev("won"), 'beide im Ziel -> gewonnen'
+    await g.ev("winSteps = 0")
+    await g.steps(140)
+    r = await g.ev("({won, d1: p1.x - goal.x, d2: p2.x - goal.x, licht: baumZielLicht(), tuer: baumTuerAnteil()})")
+    assert r['won'] and abs(r['d1'] + 12) < 1 and abs(r['d2'] - 12) < 1, f'beide sollen in den Baum gegangen sein: {r}'
+    assert r['licht'] > 0.99 and r['tuer'] == 1, f'Eingang hell und Tür zu: {r}'
+    await g.ev("draw()")   # zeichnet ohne Fehler (Tür, Licht)
+    await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='ruinen'))
+    await g.steps(5)
+    assert not await g.ev("baumAktiv()"), 'außerhalb des Dschungels kein Baum (Ziel-Schild bleibt)'
+
+@test
 async def haft_ende_anhalten(g):
     """Haftfläche (Nutzerwunsch): wer am freien Ende ankommt, hält an – die Mitte bleibt HAFT_RAND vor der Kante, das Tempo
     ist 0 und die Hangel-Animation läuft nicht in der Luft weiter; auch bei einer bewegten Haftfläche."""

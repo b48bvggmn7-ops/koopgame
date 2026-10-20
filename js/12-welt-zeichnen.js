@@ -1015,6 +1015,8 @@ function drawSolidLook(s, look, x){
     }
   }
 
+  baumZeichnenAlle();   // Dschungel: hohler Baum als Start und Ziel, VOR Boden/Wand/Pflanzen, hinter Münzen und Figuren (12a-hohler-baum.js)
+
   // Münzen: drehen sich (Breite pulsiert), eingesammelte hüpfen hoch und blenden aus
   const tNow = performance.now();
   for(const c of coins){
@@ -1041,8 +1043,10 @@ function drawSolidLook(s, look, x){
 
   const gx = goal.x-camX;
   const signImg = ASSETS.signExit;
-  glanzSchatten(gx, goal.y, 26, 5);   // Design-Politur C: Kontaktschatten unter dem Ziel-Schild
-  if(signImg.complete && signImg.naturalWidth){
+  // Dschungel: Ziel ist der hohle Baum (12a-hohler-baum.js, schon hinter dem Boden gezeichnet), sonst das Schild
+  if(!baumAktiv()) glanzSchatten(gx, goal.y, 26, 5);   // Design-Politur C: Kontaktschatten unter dem Ziel-Schild
+  if(baumAktiv()){}
+  else if(signImg.complete && signImg.naturalWidth){
     const sw=56, sh=56;
     ctx.drawImage(signImg, gx-sw/2, goal.y-sh, sw, sh);
   } else {
@@ -1072,6 +1076,7 @@ function drawSolidLook(s, look, x){
   if(typeof neueBewegungZeichnen === 'function') neueBewegungZeichnen();   // Nacht-Ausbau: Dash-Punkt, Bruchstücke, Rutsch-Staub (nur Anzeige)
   drawHearts();     // Herzchen, wenn beide nah beieinander stehen
   drawCoinFx(camX);
+  baumVorneZeichnen();   // Dschungel: Tür und Licht am Ziel-Baum beim Sieg (12a-hohler-baum.js)
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenVorne) E.spiel.zeichnenVorne();   // vor den Figuren, z. B. Wasser (elemente/)
   if(typeof szeneZeichnen === 'function') szeneZeichnen();   // Spielszene: Figuren + Sprechblasen (29-story.js)
   if(deathState && deathState.phrase) drawDeathBubble();
