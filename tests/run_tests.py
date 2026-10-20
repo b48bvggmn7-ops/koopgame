@@ -8985,7 +8985,8 @@ async def ruinen1_etappen_im_bild(g):
         return [k_lauf(start, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(w)} + 20', 'left': f'P.x > {kx(w + 1)}'}, 'until': f'P.y < {ky(hoch)}', 'frames': 900},
                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(ziel)}', 'left': f'P.x > {kx(ziel + 1)}'}, 'until': 'P.grounded', 'frames': 600}]
-    def halt(c): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3', 'frames': 300}
+    # halt: erst fertig, wenn sie dort STEHT (sonst trug das Auslaufen über die Sims-Kante – Kante-Abrutschen)
+    def halt(c): return {'holdIf': {'right': f'P.x < {kx(c)} - 3', 'left': f'P.x > {kx(c)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 3 && Math.abs(P.vx) < 0.3', 'frames': 300}
     f = [{'wait': f'{K_MESS} || (Q.grounded && Q.y > {ky(8)})', 'frames': 1500}, halt(76), {'wait': f'{K_MESS} || (Q.grounded && Q.x >= {kx(95)} && Q.y < {ky(11)})', 'frames': 3000}] + wind(76, 86, 2, 96) + [{'wait': f'{K_MESS} || (Q.grounded && Q.y > {ky(12)})', 'frames': 3000}, halt(97),
          {'wait': f'{K_MESS} || (Q.grounded && Q.x >= {kx(117)})', 'frames': 3000}] + wind(97, 106, 4, 119)
     m = [{'hold': ['right'], 'until': f'P.x > {kx(77)} - 4', 'frames': 200},
