@@ -6208,6 +6208,25 @@ async def haft_greifen_in_tropfen(g):
     assert not r['20'], f'zu tief unten trotzdem festgehalten: {r}'
 
 @test
+async def haft_bewegt_aussehen(g):
+    """Bewegte Haftfläche aus mehreren übereinander gesetzten Kästchen (Nutzerwunsch): ein Block, gelbe Schicht nur ganz
+    unten (auch mit Wand-Kästchen derselben Gruppe darüber); sitzt der Block in der obersten Reihe, läuft er über den
+    oberen Bildrand hinaus (nur gezeichnet, Kollision unverändert)."""
+    mps = [{'x': 400, 'y': y, 'w': 80, 'h': 40, 'look': 'haft', 'group': 1, 'targetX': 400, 'targetY': y + 120, 'speed': 1} for y in range(-120, 320, 40)]
+    mps += [{'x': 700, 'y': y, 'w': 40, 'h': 40, 'look': 'wall', 'group': 2, 'targetX': 900, 'targetY': y, 'speed': 1} for y in range(40, 200, 40)]
+    mps += [{'x': 700, 'y': 200, 'w': 40, 'h': 40, 'look': 'haft', 'group': 2, 'targetX': 900, 'targetY': 200, 'speed': 1}]
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, movingPlatforms=mps))
+    await g.steps(5)
+    r = await g.ev("""(() => { const H = solids.filter(s => s.type === 'moveplat' && s.haft);
+      const gelb = H.filter(s => !haftBewegtBelegt(s, 0, s.h)).map(s => [s.startX, s.startY]);
+      const B = matBeweglicheStuecke(), oben = B.filter(b => b.oben > 0).map(b => [b.x0, b.y0, b.h]);
+      const hoehe = solids.filter(s => s.type === 'moveplat' && s.group === 1).reduce((a, s) => Math.min(a, s.y), 1e9);
+      return {gelb, oben, bloecke: B.length, hoehe}; })()""")
+    assert sorted(r['gelb']) == [[400, 280], [700, 200]], f'gelb nicht nur ganz unten: {r}'
+    assert r['bloecke'] == 2 and r['oben'] == [[400, -120, 440]], f'Block oben nicht über den Rand verlängert: {r}'
+    assert r['hoehe'] >= -120, f'Kollision verändert: {r}'
+
+@test
 async def haft_bewegt(g):
     """Nutzerwunsch: Haftfläche lässt sich im Editor mit „Bewegung“ kombinieren. Export als bewegtes Stück (look 'haft');
     im Spiel: von unten festhalten, die Fläche nimmt die Figur mit, hangeln nur bis zum Ende des Stücks, loslassen

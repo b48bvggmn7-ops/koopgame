@@ -11,6 +11,15 @@
 // nach dem Segeln im Aufwind.
 // Im Spiel: solids mit type 'wall' und haft: true (Kollision und Aussehen wie Wand, dazu die lila Schicht).
 const HAFT_LILA = {schicht: '#e9a620', hell: '#fff1a8', dunkel: '#9a5a08'};
+// bewegte Haftfläche: liegt an (dx, dy) relativ zum Stück s (Startlage) ein Kästchen desselben Stücks oder derselben Gruppe?
+function haftBewegtBelegt(s, dx, dy){
+  const x = s.startX + dx + 20, y = s.startY + dy + 20;
+  for(const t of solids){
+    if(t.type !== 'moveplat' || (t !== s && !(s.group !== undefined && s.group !== null && t.group === s.group))) continue;
+    if(x > t.startX && x < t.startX + t.w && y > t.startY && y < t.startY + t.h) return true;
+  }
+  return false;
+}
 function haftSchichtZeichnen(){
   const t = performance.now();
   const H = HAFT_LILA;
@@ -21,12 +30,13 @@ function haftSchichtZeichnen(){
     const bewegt = s.type === 'moveplat';
     for(let cx = 0; cx < s.w; cx += 40) for(let cy = 0; cy < s.h; cy += 40){
       const c = Math.floor(((bewegt ? s.startX : s.x) + cx)/40), r = Math.floor((s.y + cy)/40), x = x0 + cx, y = Math.round(s.y) + cy;
-      // Schleim nur unten (Nutzerwunsch): an freien Unterseiten; bewegt: unterste Reihe des Stücks
-      if(bewegt ? cy + 40 < s.h : festIst(c, r + 1)) continue;
+      // Schleim nur unten (Nutzerwunsch): an freien Unterseiten; bewegt: nur wo darunter kein anderes Stück derselben
+      // Gruppe hängt (übereinander gesetzte bewegte Kästchen = ein Block, gelb nur ganz unten)
+      if(bewegt ? haftBewegtBelegt(s, cx, cy + 40) : festIst(c, r + 1)) continue;
       ctx.fillStyle = H.schicht; ctx.globalAlpha = .93;
       {
         // Band auf die Form der Kachel zuschneiden (runde Ecken unten wie Wand/Boden), die Tropfen hängen frei darunter
-        const rad = bewegt ? [0, 0, cx + 40 >= s.w ? 9 : 0, cx === 0 ? 9 : 0] : (typeof kachelRad === 'function' ? kachelRad(c, r) : 0);
+        const rad = bewegt ? [0, 0, haftBewegtBelegt(s, cx + 40, cy) ? 0 : 9, haftBewegtBelegt(s, cx - 40, cy) ? 0 : 9] : (typeof kachelRad === 'function' ? kachelRad(c, r) : 0);
         ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, 40, 40, rad); ctx.clip();
         ctx.beginPath(); ctx.moveTo(x, y + 28);
         for(let i = 0; i <= 8; i++) ctx.lineTo(x + i*5, y + 31 + 2*Math.sin(c*1.3 + i*1.5));

@@ -462,6 +462,7 @@ function pieceDraw(p){const [x,y,w,h,look]=p.m,q=p.c.getContext('2d');q.setTrans
 // bewegliche Boden-/Wand-Stücke je Gruppe: bilden sie (am Start) ein volles Rechteck, wird die ganze Gruppe EIN Block,
 // sonst jedes Stück für sich
 let matBeweglich = {quelle: null, n: -1, liste: []};
+const MAT_BEWEGT_RAND = 400;   // px: so weit läuft ein bewegtes Stück aus der obersten Reihe über den Bildrand hinaus
 function matBeweglicheStuecke(){
   if(matBeweglich.quelle === solids && matBeweglich.n === solids.length) return matBeweglich.liste;
   const gruppen = new Map();
@@ -474,8 +475,11 @@ function matBeweglicheStuecke(){
   const liste = [], stueck = (teile, look) => {
     const x0 = Math.min(...teile.map(s => s.startX)), y0 = Math.min(...teile.map(s => s.startY));
     const w = Math.max(...teile.map(s => s.startX + s.w)) - x0, h = Math.max(...teile.map(s => s.startY + s.h)) - y0;
-    const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + 48)*2);
-    liste.push({teile, x0, y0, w, h, piece: {m: [0, 0, w, h, look], c, done: 0}});
+    // sitzt das Stück in der obersten Reihe, läuft es (wie feste Flächen) über den oberen Bildrand hinaus weiter –
+    // nur gezeichnet, nach oben MAT_BEWEGT_RAND px länger (auch wenn es nach unten fährt)
+    const oben = y0 < -SKY_ROOM + 40 ? MAT_BEWEGT_RAND : 0;
+    const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + oben + 48)*2);
+    liste.push({teile, x0, y0, w, h, oben, piece: {m: [0, 0, w, h + oben, look], c, done: 0}});
   };
   for(const teile of gruppen.values()){
     const look = teile[0].look;
@@ -492,7 +496,7 @@ function matBeweglichZeichnen(){
     const s0 = B.teile[0], x = Math.round(B.x0 + (s0.x - s0.startX) - camX), y = Math.round(B.y0 + (s0.y - s0.startY));
     if(x + B.w < -20 || x > VW + 20) continue;
     if(!B.piece.done) pieceDraw(B.piece);
-    ctx.drawImage(B.piece.c, x - 24, y - 24, B.w + 48, B.h + 48);
+    ctx.drawImage(B.piece.c, x - 24, y - 24 - B.oben, B.w + 48, B.h + B.oben + 48);
   }
 }
 // Bröckelboden (aussehen-paket/vorschau-code): Erde wie der normale Boden mit Klumpen und Kieseln (bruchRisse 'erde',

@@ -1611,6 +1611,9 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
   ziehen (wie Boden/Wand; Export als bewegtes Stück mit look 'haft', im Spiel Wand-Aussehen + `haft: true`). Wer sich
   darunter festhält, fährt mit (`updateMovingPlatforms`), kann unter ihr hangeln (bis zu ihrem Ende) und an jeder
   beliebigen Stelle loslassen. Fährt sie die Figur gegen eine Wand oder in den Boden, lässt die Figur los. Test haft_bewegt.
+  Übereinander/nebeneinander gesetzte bewegte Kästchen derselben Gruppe sind EIN Block: gelbe Schicht nur ganz unten
+  (`haftBewegtBelegt`, auch mit Wand-Kästchen darüber); sitzt der Block in der obersten Reihe, läuft er wie feste Flächen
+  über den oberen Bildrand hinaus (nur gezeichnet, `MAT_BEWEGT_RAND`). Test haft_bewegt_aussehen.
 - **Tasten belegen** (Optionen → „⌨ 🎮 Tasten belegen …“): Spieler 1 und Spieler 2 getrennt, alle Aktionen (links,
   rechts, springen, Fähigkeit, hoch, runter, Hebel, Dash), Tastatur UND Controller. Aktion anklicken bzw. mit
   Bestätigen wählen → neue Taste / neuen Knopf drücken (Controller: alle Knöpfe, Schultertasten und Trigger); Esc
