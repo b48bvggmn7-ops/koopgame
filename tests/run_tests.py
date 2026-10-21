@@ -45,6 +45,7 @@ class Game:
         await self.p.set_input_files('#loadLevelInput', path)
         await self.p.wait_for_timeout(250)
         await self.p.keyboard.press('KeyR'); await self.p.wait_for_timeout(120)
+        await self.p.evaluate("typeof baumIntroAbbrechen === 'function' && baumIntroAbbrechen()")   # Start-Ablauf am Baum überspringen (12a)
     async def ev(self, js): return await self.p.evaluate(js)
     async def steps(self, n, ms=None):
         """Warten, bis das Spiel n Physik-Schritte gemacht hat (54 Schritte = 1 Sekunde bei voller Geschwindigkeit).
@@ -90,7 +91,9 @@ async def startmenue_bis_level(g, tasten_vorher=()):
     await p.keyboard.press('Space'); await p.wait_for_timeout(100); await p.keyboard.press('Numpad0')
     for _ in range(200):   # Countdown, beim ersten Spielen die Intro-Szene (Esc überspringt), Blätter-Vorhang
         if await g.ev("menuScreen === 'szene'"): await p.keyboard.press('Escape')
-        if await g.ev("menuScreen === null"): return
+        if await g.ev("menuScreen === null"):
+            await g.ev("typeof baumIntroAbbrechen === 'function' && baumIntroAbbrechen()")   # Start-Ablauf am Baum überspringen (12a)
+            return
         await p.wait_for_timeout(100)
     raise AssertionError('Level startet nach der Spielerwahl nicht')
 
@@ -4295,6 +4298,7 @@ async def editor_testen_knopf(g):
         assert 'index.html?test=1' in p.url and '/editor/' not in p.url, f'Enter startet den Test nicht: {p.url}'
         assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
         assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
+        await p.wait_for_function("typeof baumIntro === 'undefined' || !baumIntro", timeout=10000)   # Start-Ablauf am Baum (12a) abwarten
         assert abs(await g.ev('p1.x') - 140) < 30, 'Start nicht aus dem Editor'
         # Pausenmenü bietet „Zurück zum Editor“; Esc beendet den Test direkt
         await p.evaluate("showPauseMenu()"); await p.wait_for_timeout(100)
@@ -6226,7 +6230,8 @@ async def hohler_baum_start_ziel(g):
     einer Wand weg, das Ziel-Schild fehlt. Wer den Baum zuerst erreicht, lässt sich nicht mehr steuern, geht bis 30 px vor
     den Eingang und wartet. Sind beide da: erst tanzen beide (Siegestanz), dann gehen sie ZUSAMMEN hinein (Plätze ±12),
     dann leuchtet der Eingang auf und die Tür fährt zu; ist sie zu, sind die Figuren nicht mehr zu sehen; danach geht es
-    weiter (winEndeSchritte). Andere Welten: Schild."""
+    weiter (winEndeSchritte). Start-Ablauf: Tür zu -> auf -> beide kommen heraus. Baum nur an gesetztem Start/Ziel.
+    Andere Welten: Schild."""
     teile = [ground(0, 680, 3000), ground(0, 400, 40, 280, 'wall')]
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='dschungel'))
     await g.steps(5)
@@ -6256,6 +6261,31 @@ async def hohler_baum_start_ziel(g):
     assert r['licht'] > 0.99 and r['tuer'] == 1 and r['ende'] > 250, f'Eingang hell und Tür zu: {r}'
     assert not r['tanz'] and r['weg'], f'Tür zu: im Baum kein Tanz mehr, Figuren nicht mehr zu sehen: {r}'
     await g.ev("draw()")   # zeichnet ohne Fehler (Tür, Licht)
+    # Start-Ablauf: Tür zu (Figuren im Baum, unsichtbar, keine Steuerung) -> Tür geht auf -> beide gehen zu ihren Startplätzen
+    await g.load(level(teile, {'x': 300, 'y': 680}, {'x': 360, 'y': 680}, goal={'x': 1600, 'y': 680}, welt='dschungel'))
+    await g.ev("menuScreen = 'pause'; resetLevel();")
+    r = await g.ev("({intro: !!baumIntro, frei: !!p1.baumIntro && !!p2.baumIntro, weg: baumFigurenVersteckt(), tuer: baumStartTuer(), d1: p1.x - baumStartPunkt().x, d2: p2.x - baumStartPunkt().x})")
+    assert r['intro'] and r['frei'] and r['weg'] and r['tuer'] == 1 and abs(r['d1'] + 12) < 1 and abs(r['d2'] - 12) < 1, f'Start: beide im Baum hinter geschlossener Tür: {r}'
+    await g.ev("menuScreen = null; KEYS[p1.keys.left] = true")
+    await g.p.wait_for_function("baumIntro && baumIntro.n > 50", timeout=10000)
+    r = await g.ev("({tuer: baumStartTuer(), weg: baumFigurenVersteckt()})")
+    assert 0 < r['tuer'] < 1 and not r['weg'], f'Tür geht auf, Figuren werden sichtbar: {r}'
+    await g.p.wait_for_function("baumIntro && baumIntro.n > 90 && p1.x > baumStartPunkt().x + 15", timeout=10000)   # läuft trotz Taste links hinaus
+    await g.ev("KEYS[p1.keys.left] = false")
+    await g.p.wait_for_function("!baumIntro", timeout=15000)
+    r = await g.ev("({d1: p1.x - levelStartM.x, d2: p2.x - levelStartF.x, frei: !p1.baumIntro && !p2.baumIntro, b: baumStartPunkt().x})")
+    assert abs(r['d1']) < 3 and abs(r['d2']) < 3 and r['frei'] and abs(r['b'] - 240) < 1, f'Baum links hinter dem Start; nach dem Herauskommen auf den Startplätzen, Steuerung an (Taste links während des Ablaufs ohne Wirkung): {r}'
+    # nur wo im Editor gesetzt: ohne Start kein Start-Baum (und kein Ablauf), ohne Ziel kein Ziel-Baum (Schild)
+    await g.load(level(teile, None, None, goal=None, welt='dschungel'))
+    await g.ev("resetLevel()")
+    r = await g.ev("({start: baumStartAktiv(), ziel: baumZielAktiv(), intro: !!baumIntro})")
+    assert not r['start'] and not r['ziel'] and not r['intro'], f'ohne gesetzten Start/Ziel kein Baum: {r}'
+    # Testen ab einer Stelle (Editor): Baum am echten Start, kein Start-Ablauf
+    await g.load(level(teile, {'x': 2000, 'y': 680}, {'x': 2040, 'y': 680}, goal={'x': 2800, 'y': 680}, welt='dschungel', testStart=True,
+                       startEchtM={'x': 300, 'y': 680}, startEchtF={'x': 360, 'y': 680}))
+    await g.ev("resetLevel()")
+    r = await g.ev("({start: baumStartAktiv(), x: baumStartPunkt().x, intro: !!baumIntro})")
+    assert r['start'] and abs(r['x'] - 240) < 1 and not r['intro'], f'Test ab Stelle: Baum am echten Start, kein Ablauf: {r}'
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='ruinen'))
     await g.steps(5)
     assert not await g.ev("baumAktiv()"), 'außerhalb des Dschungels kein Baum (Ziel-Schild bleibt)'

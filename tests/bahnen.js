@@ -138,6 +138,7 @@
   function vorbereiten(sz){
     alleLos(); won = false; deathState = null;
     resetLevel();
+    if(typeof baumIntroAbbrechen === 'function') baumIntroAbbrechen();   // Start-Ablauf am hohlen Baum (12a) gehört nicht zur Bahn
     stellen(p1, sz.m0); stellen(p2, sz.f0);
     p1.facing = 1; p2.facing = 1;
     for(let k = 0; k < 3; k++){ tastenSetzen(p1, []); tastenSetzen(p2, []); stepSim(TS0 - (3 - k) * TS_SCHRITT); }

@@ -69,7 +69,7 @@ function findHookTarget(player){
 }
 
 function updatePlayer(player, now){
-  const frozen = won || !!player.zielWartet;   // beide im Ziel: Figuren tanzen, Eingaben ruhen (Dschungel: schon ab Ankunft am Baum, 12a)
+  const frozen = won || !!player.zielWartet || !!player.baumIntro;   // beide im Ziel: Figuren tanzen, Eingaben ruhen (Dschungel: schon ab Ankunft am Baum und beim Start-Ablauf, 12a)
   const left = !frozen && isDown(player.keys.left), right = !frozen && isDown(player.keys.right);
   const jumpHeld = !frozen && isDown(player.keys.jump);
   const jumpPressed = !frozen && KEYS[player.keys.jump+'_pressed'];

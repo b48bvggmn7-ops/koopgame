@@ -1044,8 +1044,8 @@ function drawSolidLook(s, look, x){
   const gx = goal.x-camX;
   const signImg = ASSETS.signExit;
   // Dschungel: Ziel ist der hohle Baum (12a-hohler-baum.js, schon hinter dem Boden gezeichnet), sonst das Schild
-  if(!baumAktiv()) glanzSchatten(gx, goal.y, 26, 5);   // Design-Politur C: Kontaktschatten unter dem Ziel-Schild
-  if(baumAktiv()){}
+  if(!baumZielAktiv()) glanzSchatten(gx, goal.y, 26, 5);   // Design-Politur C: Kontaktschatten unter dem Ziel-Schild
+  if(baumZielAktiv()){}
   else if(signImg.complete && signImg.naturalWidth){
     const sw=56, sh=56;
     ctx.drawImage(signImg, gx-sw/2, goal.y-sh, sw, sh);
@@ -1071,9 +1071,12 @@ function drawSolidLook(s, look, x){
   drawBirds();
   tierLeuchtenNacht();   // neuer Dschungel-Look nachts: Tiere leuchten sanft (20-tiere.js)
   drawDust();       // Staubwölkchen (21-figuren-leben.js)
-  if(!baumFigurenVersteckt()){   // Dschungel: Tür des Ziel-Baums zu -> beide sind drin, nicht mehr sichtbar (12a-hohler-baum.js)
+  if(!baumFigurenVersteckt()){   // Dschungel: Tür des Baums zu -> beide sind drin, nicht mehr sichtbar (12a-hohler-baum.js)
+    const bc = baumFigurenClip();   // Tür geht auf/zu: nur im Eingang zu sehen
+    if(bc){ ctx.save(); baumClipAnwenden(bc); }
     drawCharacter(p2, camX);
     drawCharacter(p1, camX);
+    if(bc) ctx.restore();
   }
   if(typeof neueBewegungZeichnen === 'function') neueBewegungZeichnen();   // Nacht-Ausbau: Dash-Punkt, Bruchstücke, Rutsch-Staub (nur Anzeige)
   drawHearts();     // Herzchen, wenn beide nah beieinander stehen

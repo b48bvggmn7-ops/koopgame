@@ -121,6 +121,8 @@ document.getElementById('testBtn').addEventListener('click', ()=>{
   const data = JSON.parse(exportLevel());
   const spot = testSpot();
   if(spot){
+    if(data.startM) data.startEchtM = data.startM;   // echte Startplätze: dort steht im Spiel der hohle Baum (js/12a)
+    if(data.startF) data.startEchtF = data.startF;
     data.startM = {x: spot.m.c*TILE + TILE/2, y: spot.m.r*TILE + TILE};
     data.startF = {x: spot.f.c*TILE + TILE/2, y: spot.f.r*TILE + TILE};
     data.testStart = true;

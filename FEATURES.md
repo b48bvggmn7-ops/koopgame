@@ -153,7 +153,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Hohler Baum als Start und Ziel (nur Dschungel-Look; andere Welten: Ziel-Schild wie bisher; js/12a-hohler-baum.js):
     großer alter Baum mit abgebrochener Krone, Wurzeln, Moos, Efeu, Pilzen und einem Loch als Eingang (Tag- und Nacht-Farben).
     Er steht ganz vorne vor Boden, Wänden und Pflanzen (Nutzerwunsch), Münzen und Figuren bleiben davor sichtbar.
-    Start: zwischen den Startplätzen, Eingang leuchtet warm; stünde er vor einer Wand, rückt er bis 160 px zur Seite.
+    Start: früher zwischen den Startplätzen; jetzt etwas links hinter ihnen (60 px vor dem linken Platz), Eingang leuchtet
+    warm; stünde er vor einer Wand oder links aus dem Level, rückt er bis 160 px zur Seite.
+    Nur wo im Editor Start bzw. Ziel gesetzt ist, steht ein Baum (Nutzerwunsch); ohne gesetztes Ziel bleibt das Schild.
+    Beim Testen ab einer Stelle (Editor) steht der Start-Baum am echten Start (startEchtM/F), ohne Start-Ablauf.
+    Start-Ablauf (Nutzerwunsch, bei jedem Level-Start/Neustart, nicht nach einem Tod): erst ist die Tür zu und beide sind
+    im Baum (unsichtbar), dann fährt die Tür nach oben auf (die Figuren sind nur im Eingang zu sehen), dann laufen beide
+    heraus zu ihren Startplätzen (mindestens 50/90 px rechts vom Eingang) – erst dann geht die Steuerung an (ca. 2,5 s).
     Ziel: Eingang zuerst dunkel. Wer den Baum zuerst erreicht (am Boden), lässt sich nicht mehr steuern (Nutzerwunsch), geht
     bis 30 px vor den Eingang und schaut zum Partner. Sind beide da: erst tanzen beide fröhlich (Herzchen, 2,5 s), dann gehen
     sie zusammen in den Baum, der Eingang leuchtet auf und eine Holztür mit rundem Fenster fährt herunter (Licht scheint durch

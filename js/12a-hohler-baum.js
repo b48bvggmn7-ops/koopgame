@@ -123,14 +123,25 @@ function baumZeichnen(x, y, licht){
     ctx.fillStyle = bl; ctx.beginPath(); ctx.arc(0, 0, 70, 0, 7); ctx.fill(); ctx.restore();
   }
 }
-// Start-Baum: zwischen den Startplätzen; stünde er vor einer Wand (würde sie verdecken), rückt er zur Seite (höchstens BAUM_START_VERSATZ)
-const BAUM_START_VERSATZ = 160, BAUM_STAMM_HALB = 64, BAUM_STAMM_HOEHE = 150;
+// Start-Baum: etwas links hinter den Startplätzen (BAUM_START_LINKS vor dem linken Platz), damit beide beim Start sichtbar
+// herauslaufen; stünde er vor einer Wand (würde sie verdecken), rückt er zur Seite (höchstens BAUM_START_VERSATZ)
+const BAUM_START_LINKS = 60, BAUM_START_VERSATZ = 160, BAUM_STAMM_HALB = 64, BAUM_STAMM_HOEHE = 150;
 let baumStartMerk = null;
+// Nur wo im Editor Start bzw. Ziel gesetzt ist, steht ein Baum (Nutzerwunsch). Beim Testen ab einer Stelle (testStart) zählen die
+// echten Startplätze (startEchtM/F, vom Editor mitgegeben) – dort steht der Baum, ein Start-Ablauf gibt es dann nicht.
+let baumStartDaten = null, baumZielGesetzt = false, baumTestStart = false;
+function baumLevelMerken(data){
+  const m = data.testStart ? data.startEchtM : data.startM, f = data.testStart ? data.startEchtF : data.startF;
+  baumStartDaten = (m || f) ? {m: m || f, f: f || m} : null;
+  baumZielGesetzt = !!data.goal; baumTestStart = !!data.testStart; baumStartMerk = null;
+}
+function baumStartAktiv(){ return baumAktiv() && !!baumStartDaten; }
+function baumZielAktiv(){ return baumAktiv() && baumZielGesetzt && !(typeof bossKampf !== 'undefined' && bossKampf); }
 function baumStartPunkt(){
-  const m = levelStartM, f = levelStartF || m;
+  const m = baumStartDaten.m, f = baumStartDaten.f;
   if(baumStartMerk && baumStartMerk.m === m && baumStartMerk.f === f) return baumStartMerk.p;
-  const x0 = (m.x + f.x)/2, y = Math.max(m.y, f.y);
-  const frei = x => !solids.some(s => s.type !== 'oneway' && s.x < x + BAUM_STAMM_HALB && s.x + s.w > x - BAUM_STAMM_HALB &&
+  const x0 = Math.min(m.x, f.x) - BAUM_START_LINKS, y = Math.max(m.y, f.y);
+  const frei = x => x >= BAUM_STAMM_HALB && !solids.some(s => s.type !== 'oneway' && s.x < x + BAUM_STAMM_HALB && s.x + s.w > x - BAUM_STAMM_HALB &&
                                       s.y < y - 2 && s.y + s.h > y - BAUM_STAMM_HOEHE);
   let x = x0;
   for(let d = 0; d <= BAUM_START_VERSATZ; d += 4){
@@ -147,18 +158,20 @@ function baumTuerAnteil(){ const k = baumSiegAnteil(BAUM_TUER_AB, BAUM_TUER_DAUE
 
 // Start- und Ziel-Baum: ganz vorne in der Welt (vor Boden, Wänden, Pflanzen; Nutzerwunsch), hinter Münzen und Figuren
 function baumZeichnenAlle(){
-  if(!baumAktiv()) return;
-  const s = baumStartPunkt();
-  baumZeichnen(s.x, s.y, BAUM_LICHT_START);
-  baumZeichnen(goal.x, goal.y, baumZielLicht());
+  if(baumStartAktiv()){ const s = baumStartPunkt(); baumZeichnen(s.x, s.y, BAUM_LICHT_START); }
+  if(baumZielAktiv()) baumZeichnen(goal.x, goal.y, baumZielLicht());
 }
-// VOR den Figuren: Tür und Lichtschein beim Sieg
+// VOR den Figuren: Tür und Lichtschein – am Ziel beim Sieg, am Start während des Start-Ablaufs
 function baumVorneZeichnen(){
-  if(!baumAktiv() || !won) return;
-  const k = baumTuerAnteil(), L = baumZielLicht(), sx = goal.x - camX;
+  if(baumIntro && baumStartAktiv()){ const s = baumStartPunkt(); baumTuerZeichnen(s.x, s.y, baumStartTuer(), 1); }
+  if(won && baumZielAktiv()) baumTuerZeichnen(goal.x, goal.y, baumTuerAnteil(), baumZielLicht());
+}
+// Tür im Eingang: k = 1 zu, 0 offen (fährt nach oben weg); L = Stärke des Lichtscheins
+function baumTuerZeichnen(x, y, k, L){
+  const sx = x - camX;
   if(sx < -160 || sx > VW + 160) return;
   const F = baumFarben(typeof hgNacht === 'function' && hgNacht());
-  ctx.save(); ctx.translate(sx, goal.y); ctx.scale(BAUM_SKALA, BAUM_SKALA);
+  ctx.save(); ctx.translate(sx, y); ctx.scale(BAUM_SKALA, BAUM_SKALA);
   // warmer Schein rund um den Eingang
   const hof = ctx.createRadialGradient(0, -50, 20, 0, -50, 130); hof.addColorStop(0, 'rgba(' + F.licht + ',' + (.32*L) + ')'); hof.addColorStop(1, 'rgba(' + F.licht + ',0)');
   ctx.fillStyle = hof; ctx.beginPath(); ctx.arc(0, -50, 130, 0, 7); ctx.fill();
@@ -186,8 +199,9 @@ function baumVorneZeichnen(){
 // Wer den Baum erreicht, ist angekommen: keine Steuerung mehr (P.zielWartet -> 08: frozen), geht bis vor den Eingang,
 // schaut zum Partner und wartet. Gilt nur im Dschungel-Look; Tod/Neustart (weit weg vom Ziel) hebt es auf.
 function baumVorSchritt(){
+  baumIntroSchritt();
   for(const P of [p1, p2]){
-    if(!baumAktiv() || deathState || Math.abs(P.x - goal.x) > 100){ P.zielWartet = false; continue; }
+    if(!baumZielAktiv() || deathState || Math.abs(P.x - goal.x) > 100){ P.zielWartet = false; continue; }
     if(won || (P.atGoal && P.grounded && !P.hookAttached && coinsCollected() >= coinsNeeded)) P.zielWartet = true;   // beim Sieg beide
     if(!P.zielWartet) continue;
     const Q = P === p1 ? p2 : p1, ziel = baumZielPlatz(P);
@@ -205,9 +219,71 @@ function baumZielPlatz(P){
   }
   return goal.x + (P.x < goal.x ? -1 : 1)*BAUM_WARTE_ABSTAND;
 }
-function baumGehtHinein(){ return won && baumAktiv() && winSteps > BAUM_TANZ_SCHRITTE && winSteps <= BAUM_TANZ_SCHRITTE + BAUM_HINEIN_DAUER; }
+function baumGehtHinein(){ return won && baumZielAktiv() && winSteps > BAUM_TANZ_SCHRITTE && winSteps <= BAUM_TANZ_SCHRITTE + BAUM_HINEIN_DAUER; }
 // Siegestanz anzeigen (10/10c, Herzchen 21): im Dschungel nur VOR dem Hineingehen – im Baum stehen beide still (passen hinter die Tür)
-function baumTanzt(){ return won && (!baumAktiv() || winSteps <= BAUM_TANZ_SCHRITTE); }
-// Tür ganz zu: die Figuren sind im Baum und werden nicht mehr gezeichnet (12-welt-zeichnen.js)
-function baumFigurenVersteckt(){ return won && baumAktiv() && baumTuerAnteil() >= 1; }
-function winEndeSchritte(){ return baumAktiv() ? BAUM_SIEG_ENDE : WIN_DANCE_STEPS; }
+function baumTanzt(){ return won && (!baumZielAktiv() || winSteps <= BAUM_TANZ_SCHRITTE); }
+// Tür ganz zu: die Figuren sind im Baum und werden nicht mehr gezeichnet (12-welt-zeichnen.js) – am Ziel nach dem Sieg,
+// am Start, solange die Tür noch geschlossen ist
+function baumFigurenVersteckt(){ return (won && baumZielAktiv() && baumTuerAnteil() >= 1) || (!!baumIntro && baumStartTuer() >= 1); }
+// Solange eine Tür im Eingang ist (geht am Start auf / am Ziel zu), stehen die Figuren IM Baum: nur im Eingang sichtbar
+function baumFigurenClip(){
+  if(baumIntro && baumStartTuer() > 0) return baumStartPunkt();
+  if(won && baumZielAktiv() && baumTuerAnteil() > 0) return goal;
+  return null;
+}
+function baumClipAnwenden(B){
+  const sx = B.x - camX;
+  ctx.translate(sx, B.y); ctx.scale(BAUM_SKALA, BAUM_SKALA); ctx.clip(baumLoch());
+  ctx.scale(1/BAUM_SKALA, 1/BAUM_SKALA); ctx.translate(-sx, -B.y);
+}
+function winEndeSchritte(){ return baumZielAktiv() ? BAUM_SIEG_ENDE : WIN_DANCE_STEPS; }
+
+// ---------- Start-Ablauf (Nutzerwunsch): Tür zu -> Tür geht auf -> beide kommen heraus -> los ----------
+// Läuft bei jedem Level-Start/Neustart (resetLevel), nicht nach einem Tod und nicht beim Testen ab einer Stelle.
+// Während des Ablaufs keine Steuerung (P.baumIntro -> 08: frozen); fester Takt (Schritte).
+const BAUM_INTRO_ZU = 30, BAUM_INTRO_AUF = 45, BAUM_INTRO_RAUS_MAX = 150, BAUM_INTRO_TEMPO = 1.7;
+const BAUM_RAUS_ABSTAND = 50, BAUM_RAUS_LUECKE = 40;   // px rechts vom Eingang / Abstand zwischen beiden
+let baumIntro = null;   // {n: Schritte seit Start}
+function baumIntroStarten(){
+  baumIntroEnde();
+  if(!baumStartAktiv() || baumTestStart || !p1 || !p2) return;
+  const s = baumStartPunkt();
+  // Ziel nach dem Herauskommen: der eigene Startplatz, aber mindestens BAUM_RAUS_ABSTAND rechts vom Eingang (steht der Baum
+  // wegen einer Wand auf den Startplätzen, laufen beide ein Stück weiter heraus)
+  const reihe = [p1, p2].sort((a, b) => a.x - b.x);
+  baumIntro = {n: 0, vor: new Map([p1, p2].map(P => [P, {x: P.x, y: P.y}])),   // Platz nach resetLevel (ohne Ablauf)
+               ziel: new Map(reihe.map((P, i) => [P, Math.max(P.x, s.x + BAUM_RAUS_ABSTAND + i*BAUM_RAUS_LUECKE)]))};
+  for(const P of [p1, p2]){   // beide stehen im Baum (hinter der geschlossenen Tür)
+    P.baumIntro = true; P.x = P._px = s.x + (P === p1 ? -1 : 1)*BAUM_HINEIN_ABSTAND; P.y = P._py = s.y; P.vx = P.vy = 0;
+    P.facing = Math.sign(P.spawn.x - P.x) || 1;
+  }
+}
+function baumIntroEnde(){
+  baumIntro = null;
+  for(const P of [p1, p2]) if(P) P.baumIntro = false;
+}
+// sofort fertig: beide stehen wieder genau dort, wo resetLevel sie hingestellt hat (z. B. für Tests)
+function baumIntroAbbrechen(){
+  if(!baumIntro) return;
+  for(const P of [p1, p2]){ const v = baumIntro.vor.get(P); P.x = P._px = v.x; P.y = P._py = v.y; P.vx = P.vy = 0; }
+  baumIntroEnde();
+}
+function baumStartTuer(){
+  if(!baumIntro) return 0;
+  const n = baumIntro.n;
+  if(n <= BAUM_INTRO_ZU) return 1;
+  const k = Math.min(1, (n - BAUM_INTRO_ZU)/BAUM_INTRO_AUF);
+  return 1 - k*k*(3 - 2*k);   // fährt weich nach oben auf
+}
+function baumIntroSchritt(){
+  if(!baumIntro) return;
+  if(deathState || won){ baumIntroEnde(); return; }
+  const n = ++baumIntro.n;
+  if(n <= BAUM_INTRO_ZU + BAUM_INTRO_AUF) return;
+  let fertig = true;
+  for(const P of [p1, p2]){   // herauskommen und zu den Startplätzen gehen
+    const dx = baumIntro.ziel.get(P) - P.x;
+    if(Math.abs(dx) > 2){ fertig = false; P.vx = Math.max(-BAUM_INTRO_TEMPO, Math.min(BAUM_INTRO_TEMPO, dx*0.3)); P.facing = Math.sign(dx); }
+  }
+  if(fertig || n > BAUM_INTRO_ZU + BAUM_INTRO_AUF + BAUM_INTRO_RAUS_MAX) baumIntroEnde();
+}

@@ -124,6 +124,7 @@ function buildLevel(data){
   if(typeof bossKampf !== 'undefined' && bossKampf) goal = {x: -1e6, y: -1e6};   // Boss-Level: kein Ziel, Sieg = Boss besiegt (elemente/boss.js)
   levelStartM = data.startM ? {x:data.startM.x, y:data.startM.y} : {x:60, y:640};
   levelStartF = data.startF ? {x:data.startF.x, y:data.startF.y} : {x:levelStartM.x+44, y:levelStartM.y};
+  if(typeof baumLevelMerken === 'function') baumLevelMerken(data);   // hohler Baum nur an gesetztem Start/Ziel (12a)
 
   // Checkpoints automatisch aus allen Boden-Stücken (von links nach rechts sortiert)
   const grounds = solids.filter(s=>s.type==='ground').sort((a,b)=>a.x-b.x);
