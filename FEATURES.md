@@ -157,7 +157,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     warm; stünde er vor einer Wand oder links aus dem Level, rückt er bis 160 px zur Seite.
     Nur wo im Editor Start bzw. Ziel gesetzt ist, steht ein Baum (Nutzerwunsch); ohne gesetztes Ziel bleibt das Schild.
     Beim Testen ab einer Stelle (Editor) steht der Start-Baum am echten Start (startEchtM/F), ohne Start-Ablauf.
-    Start-Ablauf (Nutzerwunsch, bei jedem Level-Start/Neustart, nicht nach einem Tod): erst ist die Tür zu und beide sind
+    Start-Ablauf (Nutzerwunsch, bei jedem Level-Start und Neustart per R/Pausenmenü; nicht nach einem Tod, nicht bei
+    Testlevel-Adressen ?testlevel= und nicht in den Spielszenen – deren Bühne hat keinen Baum): erst ist die Tür zu und beide sind
     im Baum (unsichtbar), dann fährt die Tür nach oben auf (die Figuren sind nur im Eingang zu sehen), dann laufen beide
     heraus zu ihren Startplätzen (mindestens 50/90 px rechts vom Eingang) – erst dann geht die Steuerung an (ca. 2,5 s).
     Ziel: Eingang zuerst dunkel. Wer den Baum zuerst erreicht (am Boden), lässt sich nicht mehr steuern (Nutzerwunsch), geht

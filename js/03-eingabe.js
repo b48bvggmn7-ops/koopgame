@@ -81,7 +81,7 @@ window.addEventListener('keydown', e=>{
   const code = keyAlias(e.code);
   if(!KEYS[code]) KEYS[code+'_pressed'] = true;
   KEYS[code] = true;
-  if(e.code === 'KeyR') resetLevel();
+  if(e.code === 'KeyR'){ resetLevel(); if(typeof baumIntroStarten === 'function') baumIntroStarten(); }   // Neustart; Dschungel: Start-Ablauf am Baum (12a)
 });
 window.addEventListener('keyup', e=>{
   if(istSpielTaste(e.code)) e.preventDefault();

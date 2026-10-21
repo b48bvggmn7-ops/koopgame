@@ -36,7 +36,7 @@ async function szeneSpielen(name, fertig, opt){
     const pos = k => st[k] ? {x: st[k][0], y: st[k][1]} : null;
     const m = pos('affe') || {x: 400, y: SZENE_BODEN}, f = pos('schwein') || {x: 450, y: SZENE_BODEN};
     buildLevel({solids: [{x: -400, y: SZENE_BODEN, w: 3000, h: 120, type: 'ground'}], startM: m, startF: f,
-                goal: {x: 5000, y: SZENE_BODEN}, welt: def.welt || 'dschungel', tageszeit: def.tageszeit, wetter: 'trocken'});
+                goal: {x: 5000, y: SZENE_BODEN}, welt: def.welt || 'dschungel', tageszeit: def.tageszeit, wetter: 'trocken', baumAus: true});   // Bühne: kein hohler Baum (12a)
     resetLevel();
     if(typeof cosResetState === 'function') cosResetState();
     kameraFest = 0; camPos = 0;

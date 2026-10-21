@@ -63,7 +63,7 @@ function showMainMenu(){
 function showPauseMenu(){
   menuBegin('pause', 'Pause');
   menuAddItem('▶ Weiterspielen', closeMenu);
-  menuAddItem('↺ Level neu starten', ()=>{ resetLevel(); closeMenu(); });
+  menuAddItem('↺ Level neu starten', ()=>{ resetLevel(); if(typeof baumIntroStarten === 'function') baumIntroStarten(); closeMenu(); });   // Start-Ablauf am Baum (12a)
   menuAddItem('☰ Zurück zum Menü', showMainMenu);
   menuAddItem(soundMuted ? '🔇 Ton ist aus – einschalten (M)' : '🔊 Ton ist an – ausschalten (M)', ()=>{ setMuted(!soundMuted); showPauseMenu(); menuSelect(3); });
   if(editorTestMode) menuAddItem('✏️ Zurück zum Editor (Esc)', backToEditor);
@@ -74,6 +74,7 @@ function showPauseMenu(){
 function startLevel(data){
   buildLevel(data);
   resetLevel();
+  if(typeof baumIntroStarten === 'function') baumIntroStarten();   // Dschungel: Tür geht auf, beide kommen aus dem Baum (12a)
   closeMenu();
 }
 async function showLevelSelect(){
@@ -288,7 +289,7 @@ function startTestLevelFromUrl(){
   if(!m) return false;
   fetch(PROJECT_LEVELS + 'test/' + m[1] + '.json', {cache:'no-store'})
     .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
-    .then(data => { startLevel(data); if(levelLayers.vorschau) layerPreviewMsg(); })
+    .then(data => { window.baumIntroAus = true; startLevel(data); if(levelLayers.vorschau) layerPreviewMsg(); })   // Testlevel: ohne Start-Ablauf am Baum (12a)
     .catch(e => { console.error('Testlevel lädt nicht:', e); showTitleScreen(); });
   return true;
 }

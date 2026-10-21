@@ -67,6 +67,7 @@ document.getElementById('loadLevelInput').addEventListener('change', (e)=>{
       if(data.tiles && !data.solids) data = convertEditorSaveFormat(data);
       buildLevel(data);
       resetLevel();
+      if(typeof baumIntroStarten === 'function') baumIntroStarten();   // Start-Ablauf am Baum (12a)
     }catch(err){
       alert('Konnte die Datei nicht laden – ist es eine vom Editor exportierte JSON-Datei?');
     }

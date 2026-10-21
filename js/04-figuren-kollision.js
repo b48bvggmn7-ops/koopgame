@@ -36,7 +36,6 @@ function resetLevel(){
   won = false;
   if(typeof cosResetState === 'function') cosResetState();   // Cosmetics-Spuren/Begleiter neu (27)
   if(typeof neueBewegungZuruecksetzen === 'function') neueBewegungZuruecksetzen();   // Nacht-Ausbau: Effekte weg
-  if(typeof baumIntroStarten === 'function') baumIntroStarten();   // Dschungel: Tür geht auf, beide kommen aus dem Baum (12a)
   document.getElementById('toast').classList.remove('show');
 }
 

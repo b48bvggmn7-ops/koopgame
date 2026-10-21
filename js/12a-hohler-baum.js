@@ -132,8 +132,8 @@ let baumStartMerk = null;
 let baumStartDaten = null, baumZielGesetzt = false, baumTestStart = false;
 function baumLevelMerken(data){
   const m = data.testStart ? data.startEchtM : data.startM, f = data.testStart ? data.startEchtF : data.startF;
-  baumStartDaten = (m || f) ? {m: m || f, f: f || m} : null;
-  baumZielGesetzt = !!data.goal; baumTestStart = !!data.testStart; baumStartMerk = null;
+  baumStartDaten = (m || f) && !data.baumAus ? {m: m || f, f: f || m} : null;   // baumAus: Bühne der Spielszenen (29)
+  baumZielGesetzt = !!data.goal && !data.baumAus; baumTestStart = !!data.testStart; baumStartMerk = null;
 }
 function baumStartAktiv(){ return baumAktiv() && !!baumStartDaten; }
 function baumZielAktiv(){ return baumAktiv() && baumZielGesetzt && !(typeof bossKampf !== 'undefined' && bossKampf); }
@@ -239,14 +239,15 @@ function baumClipAnwenden(B){
 function winEndeSchritte(){ return baumZielAktiv() ? BAUM_SIEG_ENDE : WIN_DANCE_STEPS; }
 
 // ---------- Start-Ablauf (Nutzerwunsch): Tür zu -> Tür geht auf -> beide kommen heraus -> los ----------
-// Läuft bei jedem Level-Start/Neustart (resetLevel), nicht nach einem Tod und nicht beim Testen ab einer Stelle.
+// Läuft bei jedem Level-Start (startLevel, Datei laden) und Neustart (R, Pausenmenü) – nicht nach einem Tod, nicht beim
+// Testen ab einer Stelle und nicht bei resetLevel() allein (Tests, Spielszenen).
 // Während des Ablaufs keine Steuerung (P.baumIntro -> 08: frozen); fester Takt (Schritte).
 const BAUM_INTRO_ZU = 30, BAUM_INTRO_AUF = 45, BAUM_INTRO_RAUS_MAX = 150, BAUM_INTRO_TEMPO = 1.7;
 const BAUM_RAUS_ABSTAND = 50, BAUM_RAUS_LUECKE = 40;   // px rechts vom Eingang / Abstand zwischen beiden
 let baumIntro = null;   // {n: Schritte seit Start}
 function baumIntroStarten(){
   baumIntroEnde();
-  if(!baumStartAktiv() || baumTestStart || !p1 || !p2) return;
+  if(!baumStartAktiv() || baumTestStart || !p1 || !p2 || window.baumIntroAus) return;   // baumIntroAus: Testlevel-Adresse / automatische Tests
   const s = baumStartPunkt();
   // Ziel nach dem Herauskommen: der eigene Startplatz, aber mindestens BAUM_RAUS_ABSTAND rechts vom Eingang (steht der Baum
   // wegen einer Wand auf den Startplätzen, laufen beide ein Stück weiter heraus)
