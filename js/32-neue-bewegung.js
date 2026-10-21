@@ -25,7 +25,7 @@ function neuFigurBox(P, x, y){ return {x: (x === undefined ? P.x : x) - P.w/2, y
 // ---------- Dash ----------
 function dashKannStarten(P){
   if(P.dash || P.dashPause > 0 || P.inWater) return false;
-  return P.dashPunkte > 0 || P.bruchFenster > 0;   // im Durchbruch-Fenster kostet der Anschluss-Dash nichts
+  return P.dashPunkte > 0;   // kein kostenloser Anschluss-Dash nach einem Durchbruch mehr (Nutzerwunsch: ein Dash, dann aufladen)
 }
 function dashRichtung(P, moveDir){
   let dx = moveDir, dy = neuOben(P) ? -1 : (neuUnten(P) ? 1 : 0);
@@ -44,7 +44,7 @@ function dashStarten(P, moveDir){
   const {dx, dy} = dashRichtung(P, moveDir);
   if(P.hookAttached){ P.hookAttached = false; if(typeof SFX !== 'undefined') SFX.hookRelease(P); }   // Dash aus dem Schwung: Seil los
   P.haft = null; P.gliding = false; P.ropeFling = false; P.sprungKurzMoeglich = false;
-  if(P.bruchFenster > 0) P.bruchFenster = 0; else P.dashPunkte--;
+  P.bruchFenster = 0; P.dashPunkte--;
   P.dashLadung = 0;
   P.dash = {zeit: DASH_DAUER, dx, dy, faktor: 1, stossX: 0, stossY: 0};
   P.dashPuffer = 0;

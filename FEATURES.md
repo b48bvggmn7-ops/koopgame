@@ -1627,7 +1627,8 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
 - **Durchbruch-Wand** (Editor: Gelände → „Durchbruch“): rissige Steinkästchen, fest wie Wand/Boden – nur ein Dash
   zerbricht sie (Laufen/Springen nicht). Trefferstopp 3 Schritte, starkes Wackeln, Bruchstücke und Staub je Welt in
   passender Farbe (Höhle/Vulkan mit glühenden Rissen), 80 % des Schwungs bleiben (BRUCH_BEHALTEN), danach 14 Schritte
-  lang ein kostenloser Anschluss-Dash oder ein Sprung in der Luft (BRUCH_FENSTER). Senkrecht und waagerecht baubar
+  lang ein Sprung in der Luft (BRUCH_FENSTER). Früher ging darin auch ein kostenloser Anschluss-Dash – raus (Nutzerwunsch:
+  ein Dash, dann muss er erst wieder aufladen). Senkrecht und waagerecht baubar
   (auch Dash nach unten durch einen Bruch-Boden). Option „Nach dem Bruch“: bleibt kaputt (Standard, bis Neustart bzw.
   Tod) oder wächst nach 2/3/5/8 s nach – steht dort jemand, wartet es (blinkender Umriss), niemand wird eingeklemmt.
 - **Wand-Rutschen** (automatisch, keine Taste): wer an einer Wand schneller als 4,5 herunterfällt, rutscht gebremst mit

@@ -1,7 +1,7 @@
 // elemente/durchbruch.js – Element „Durchbruch-Wand“ (Nacht-Ausbau; Punkt-Element mit eigener Auswahl, siehe 00-register.js).
 // Rissige Steinkästchen: fest wie Boden/Wand, aber ein DASH zerbricht sie (normales Laufen/Springen nicht – dann ist es eine
 // ganz normale Wand bzw. ein normaler Boden). Trefferstopp, Kamera-Wackeln, Bruchstücke und Staub, ein Teil des
-// Dash-Schwungs bleibt (BRUCH_BEHALTEN); kurz danach geht ein kostenloser Anschluss-Dash oder ein Sprung (BRUCH_FENSTER).
+// Dash-Schwungs bleibt (BRUCH_BEHALTEN); kurz danach geht ein Sprung in der Luft (BRUCH_FENSTER; der kostenlose Anschluss-Dash ist raus, Nutzerwunsch).
 // Senkrecht (Wand), waagerecht (Boden, Decke) und in jeder Größe aus Kästchen baubar.
 // Option „wächst nach“: nach X Sekunden ist das Kästchen wieder da – steht dort gerade jemand, wartet es (wie Türen und
 // Wechselboden), niemand wird eingeklemmt. Standard: bleibt kaputt bis Neustart bzw. Tod (zurück zum Checkpoint).

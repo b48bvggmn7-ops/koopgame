@@ -6246,6 +6246,29 @@ async def wand_rutschen(g):
     assert r['wandsprung']['vx'] < -3 and r['wandsprung']['vy'] < -8, r['wandsprung']
 
 @test
+async def durchbruch_kein_gratis_dash(g):
+    """Nach einem Durchbruch gibt es KEINEN kostenlosen Anschluss-Dash mehr (Nutzerwunsch: ein Dash, dann aufladen) – auch
+    nicht im Durchbruch-Fenster; der Sprung in der Luft im Fenster bleibt. Ist der Punkt wieder geladen, geht der Dash."""
+    srv = webserver()
+    try:
+        await g.p.goto(srv.url + 'index.html?testlevel=neue-mechaniken')
+        await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
+        await g.p.evaluate("() => {" + (ROOT / 'tests' / 'neue_mechaniken.js').read_text(encoding='utf-8') + "}")
+        r = await g.ev("""(() => { const S = NM; menuScreen = 'pause';
+          S.start(); S.stellen(p1, 16, 17); S.stellen(p2, 12, 17); S.n(10, ['right']);
+          S.schritt(['right','dash']); let i = 0; while(!S.weg() && i < 30){ S.schritt(['right']); i++; }
+          let k = 0; while((p1.dash || p1.dashPause > 0) && k < 40){ S.schritt(['right']); k++; }
+          const fenster = p1.bruchFenster, punkte = p1.dashPunkte;
+          S.schritt(['right','dash']); S.schritt(['right']); const gratis = !!p1.dash;
+          S.n(DASH_LADEZEIT + 10); S.schritt(['dash']); const geladen = !!p1.dash;
+          return {weg: S.weg(), fenster, punkte, gratis, geladen}; })()""")
+        assert r['weg'] == 1 and r['fenster'] > 0 and r['punkte'] == 0, f'Aufbau: {r}'
+        assert not r['gratis'], f'nach dem Durchbruch ging ohne Dash-Punkt noch ein Dash: {r}'
+        assert r['geladen'], f'nach dem Aufladen geht der Dash wieder: {r}'
+    finally:
+        srv.shutdown()
+
+@test
 async def hohler_baum_start_ziel(g):
     """Start und Ziel im Dschungel = hohler Baum (12a-hohler-baum.js), ganz vorne vor Boden/Wand: der Start-Baum rückt von
     einer Wand weg, das Ziel-Schild fehlt. Wer den Baum zuerst erreicht, lässt sich nicht mehr steuern, geht bis 30 px vor
