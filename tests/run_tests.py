@@ -6298,6 +6298,16 @@ async def hohler_baum_start_ziel(g):
     await g.p.wait_for_function("!baumIntro", timeout=15000)
     r = await g.ev("({d1: p1.x - levelStartM.x, d2: p2.x - levelStartF.x, frei: !p1.baumIntro && !p2.baumIntro, b: baumStartPunkt().x})")
     assert abs(r['d1']) < 3 and abs(r['d2']) < 3 and r['frei'] and abs(r['b'] - 240) < 1, f'Baum links hinter dem Start; nach dem Herauskommen auf den Startplätzen, Steuerung an (Taste links während des Ablaufs ohne Wirkung): {r}'
+    # Ziel direkt neben erhöhtem Boden: der Baum rückt (hier 75 px) zur Seite, bis er frei auf dem Boden steht (nicht „im Boden“);
+    # nach dem Sieg gehen beide trotzdem rechtzeitig in seinen Eingang
+    await g.load(level([ground(0, 680, 3000), ground(1620, 560, 200, 120)], {'x': 300, 'y': 680}, {'x': 360, 'y': 680}, goal={'x': 1600, 'y': 680}, welt='dschungel'))
+    await g.steps(5)
+    r = await g.ev("({x: baumZielPunkt().x, sperr: baumSperrFlaechen(baumZielPunkt().x, 680).length})")
+    assert r['sperr'] == 0 and 1600 - 160 <= r['x'] <= 1525, f'Ziel-Baum soll frei neben dem erhöhten Boden stehen: {r}'
+    await g.ev("for(const P of [p1, p2]){ P.x = goal.x + (P === p1 ? -40 : -10); P.y = goal.y; P.vx = P.vy = 0; } coinsNeeded = 0;")
+    await g.p.wait_for_function("won && winSteps >= 240", timeout=20000)
+    r = await g.ev("({d1: p1.x - baumZielPunkt().x, d2: p2.x - baumZielPunkt().x})")
+    assert abs(r['d1'] + 12) < 3 and abs(r['d2'] - 12) < 3, f'beide sollen im (verschobenen) Baum stehen: {r}'
     # nur wo im Editor gesetzt: ohne Start kein Start-Baum (und kein Ablauf), ohne Ziel kein Ziel-Baum (Schild)
     await g.load(level(teile, None, None, goal=None, welt='dschungel'))
     await g.ev("resetLevel(); baumIntroStarten()")

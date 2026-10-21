@@ -158,8 +158,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Nur wo im Editor Start bzw. Ziel gesetzt ist, steht ein Baum (Nutzerwunsch); ohne gesetztes Ziel bleibt das Schild.
     Wurzeln schmaler (Nutzerwunsch: ca. ±90 statt ±115 px); wo Boden/Wand höher als der Fuß des Baums in seinen Bereich ragt,
     wird der Baum dort weggeschnitten (er liegt nie über Boden/Wand, baumSperrFlaechen). Vorher sucht er einen freien Platz
-    (baumFreiSuchen: erst ganzer Baum mit Wurzeln, sonst nur der Stamm): Start bis 160 px, Ziel bis 60 px zur Seite (Ziel-Baum
-    stand sonst „im Boden“; Warten bleibt am Ziel, hineingehen zum Eingang des Baums). Unterkante von Stamm und Eingang ohne
+    (baumFreiSuchen: erst ganzer Baum mit Wurzeln, sonst nur der Stamm; nur wo Boden unter dem ganzen Stamm ist): Start und
+    Ziel bis 160 px zur Seite (Ziel vorher 60 px – reichte neben erhöhtem Boden nicht, der Baum stand „im Boden“; Warten bleibt
+    am Ziel, hineingehen zum Eingang des Baums, bei größerem Abstand entsprechend schneller). Unterkante von Stamm und Eingang ohne
     Umrisslinie (lag als Strich auf dem Gras).
     Beim Testen ab einer Stelle (Editor) steht der Start-Baum am echten Start (startEchtM/F), ohne Start-Ablauf.
     Start-Ablauf (Nutzerwunsch, bei jedem Level-Start und Neustart per R/Pausenmenü; nicht nach einem Tod, nicht bei

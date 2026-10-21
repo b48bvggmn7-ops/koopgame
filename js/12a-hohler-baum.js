@@ -158,13 +158,17 @@ function baumLevelMerken(data){
   const m = data.testStart ? data.startEchtM : data.startM, f = data.testStart ? data.startEchtF : data.startF;
   baumStartDaten = (m || f) && !data.baumAus ? {m: m || f, f: f || m} : null;   // baumAus: Bühne der Spielszenen (29)
   baumZielGesetzt = !!data.goal && !data.baumAus; baumTestStart = !!data.testStart; baumStartMerk = null;
+  baumZielMerk = null; baumSperrMerk.clear();   // neues Level: Plätze neu suchen
 }
 function baumStartAktiv(){ return baumAktiv() && !!baumStartDaten; }
 function baumZielAktiv(){ return baumAktiv() && baumZielGesetzt && !(typeof bossKampf !== 'undefined' && bossKampf); }
 // Nächster freier Platz um x0 (höchstens versatz weit): erst für den ganzen Baum mit Wurzeln, sonst nur für den Stamm
 // (die Wurzeln werden dann an Boden/Wand weggeschnitten, baumSperrFlaechen); nie links aus dem Level hinaus
 function baumFreiSuchen(x0, y, versatz){
-  const frei = (x, halb, hoch) => x >= halb && !solids.some(s => s.type !== 'oneway' && s.type !== 'moveplat' &&
+  // Boden muss unter dem ganzen Stamm sein (sonst schwebt der Baum über einer Grube)
+  const traegt = x => { let n = 0; for(const s of solids) if(s.type !== 'oneway' && s.type !== 'moveplat' && Math.abs(s.y - y) < 3)
+    n += Math.max(0, Math.min(s.x + s.w, x + BAUM_STAMM_HALB) - Math.max(s.x, x - BAUM_STAMM_HALB)); return n >= 2*BAUM_STAMM_HALB - 1; };
+  const frei = (x, halb, hoch) => x >= halb && traegt(x) && !solids.some(s => s.type !== 'oneway' && s.type !== 'moveplat' &&
     s.x < x + halb && s.x + s.w > x - halb && s.y < y - 2 && s.y + s.h > y - hoch);
   for(const [halb, hoch] of [[BAUM_BREITE_HALB, BAUM_HOEHE], [BAUM_STAMM_HALB, BAUM_STAMM_HOEHE]])
     for(let d = 0; d <= versatz; d += 4){
@@ -181,8 +185,9 @@ function baumStartPunkt(){
   return baumStartMerk.p;
 }
 // Ziel-Baum: am Ziel; ragt dort Boden/Wand in den Baum (z. B. erhöhter Boden daneben), rückt er bis BAUM_ZIEL_VERSATZ zur Seite
-// (Nutzerwunsch: steht sonst „im Boden“). Warten vor dem Baum bleibt am Ziel (goal.x ± 30), hineingehen zum Eingang des Baums.
-const BAUM_ZIEL_VERSATZ = 60;
+// (Nutzerwunsch: steht sonst „im Boden“). Warten vor dem Baum bleibt am Ziel (goal.x ± 30), hineingehen zum Eingang des Baums
+// (steht er weiter weg, gehen beide entsprechend schneller, damit sie rechtzeitig vor dem Licht drin sind).
+const BAUM_ZIEL_VERSATZ = 160;   // vorher 60: reichte neben erhöhtem Boden nicht, der Baum wurde abgeschnitten („im Boden“)
 let baumZielMerk = null;
 function baumZielPunkt(){
   if(baumZielMerk && baumZielMerk.x0 === goal.x && baumZielMerk.y0 === goal.y && baumZielMerk.n === solids.length) return baumZielMerk.p;
@@ -243,7 +248,8 @@ function baumVorSchritt(){
     if(won || (P.atGoal && P.grounded && !P.hookAttached && coinsCollected() >= coinsNeeded)) P.zielWartet = true;   // beim Sieg beide
     if(!P.zielWartet) continue;
     const Q = P === p1 ? p2 : p1, ziel = baumZielPlatz(P);
-    const dx = ziel - P.x, tempo = baumGehtHinein() ? BAUM_HINEIN_TEMPO : BAUM_WARTE_TEMPO;
+    const dx = ziel - P.x, rest = Math.max(8, BAUM_TANZ_SCHRITTE + BAUM_HINEIN_DAUER - 10 - winSteps);
+    const tempo = baumGehtHinein() ? Math.max(BAUM_HINEIN_TEMPO, Math.abs(dx)/rest*1.3) : BAUM_WARTE_TEMPO;
     if(Math.abs(dx) > 1.5 && (!won || baumGehtHinein())){ P.vx = Math.max(-tempo, Math.min(tempo, dx*0.3)); P.facing = Math.sign(dx); }
     else if(!won) P.facing = Math.sign(Q.x - P.x) || P.facing;   // wartet und schaut zum Partner
   }
