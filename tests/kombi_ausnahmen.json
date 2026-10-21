@@ -553,12 +553,6 @@
  },
  {
   "level": "dschungel/02-baumkronen.json",
-  "regel": "Kamin",
-  "spalte": 36,
-  "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
- },
- {
-  "level": "dschungel/02-baumkronen.json",
   "regel": "Kombi-Etappe",
   "spalte": 600,
   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
