@@ -167,7 +167,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Testlevel-Adressen ?testlevel= und nicht in den Spielszenen – deren Bühne hat keinen Baum): erst ist die Tür zu und beide sind
     im Baum (unsichtbar), dann fährt die Tür nach oben auf (die Figuren sind nur im Eingang zu sehen), dann laufen beide
     heraus zu ihren Startplätzen (wer dort direkt im Eingang stünde, geht bis 40/70 px rechts vom Eingang) – erst dann geht
-    die Steuerung an (ca. 2,5 s).
+    die Steuerung an (ca. 1 s; Nutzerwunsch „schneller“, vorher ca. 2,5 s).
     Ziel: Eingang zuerst dunkel. Wer den Baum zuerst erreicht (am Boden), lässt sich nicht mehr steuern (Nutzerwunsch), geht
     bis 30 px vor den Eingang und schaut zum Partner. Sind beide da: erst tanzen beide fröhlich (Herzchen, 2,5 s), dann gehen
     sie zusammen in den Baum, der Eingang leuchtet auf und eine Holztür mit rundem Fenster fährt herunter (Licht scheint durch

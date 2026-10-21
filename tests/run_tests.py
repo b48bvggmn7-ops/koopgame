@@ -6289,15 +6289,17 @@ async def hohler_baum_start_ziel(g):
     await g.ev("window.baumIntroAus = false; menuScreen = 'pause'; resetLevel(); baumIntroStarten();")
     r = await g.ev("({intro: !!baumIntro, frei: !!p1.baumIntro && !!p2.baumIntro, weg: baumFigurenVersteckt(), tuer: baumStartTuer(), d1: p1.x - baumStartPunkt().x, d2: p2.x - baumStartPunkt().x})")
     assert r['intro'] and r['frei'] and r['weg'] and r['tuer'] == 1 and abs(r['d1'] + 12) < 1 and abs(r['d2'] - 12) < 1, f'Start: beide im Baum hinter geschlossener Tür: {r}'
-    await g.ev("menuScreen = null; KEYS[p1.keys.left] = true")
-    await g.p.wait_for_function("baumIntro && baumIntro.n > 50", timeout=10000)
-    r = await g.ev("({tuer: baumStartTuer(), weg: baumFigurenVersteckt()})")
-    assert 0 < r['tuer'] < 1 and not r['weg'], f'Tür geht auf, Figuren werden sichtbar: {r}'
-    await g.p.wait_for_function("baumIntro && baumIntro.n > 90 && p1.x > baumStartPunkt().x + 15", timeout=10000)   # läuft trotz Taste links hinaus
-    await g.ev("KEYS[p1.keys.left] = false")
-    await g.p.wait_for_function("!baumIntro", timeout=15000)
-    r = await g.ev("({d1: p1.x - levelStartM.x, d2: p2.x - levelStartF.x, frei: !p1.baumIntro && !p2.baumIntro, b: baumStartPunkt().x})")
-    assert abs(r['d1']) < 3 and abs(r['d2']) < 3 and r['frei'] and abs(r['b'] - 240) < 1, f'Baum links hinter dem Start; nach dem Herauskommen auf den Startplätzen, Steuerung an (Taste links während des Ablaufs ohne Wirkung): {r}'
+    # Schritt für Schritt (fester Takt): Taste links gedrückt halten – während des Ablaufs ohne Wirkung
+    r = await g.ev("""(() => { let ts = 0; const x0 = p1.x; KEYS[p1.keys.left] = true;
+      for(let i = 0; i < 25; i++) stepSim(ts += 16.6);
+      const mitte = {tuer: baumStartTuer(), weg: baumFigurenVersteckt(), dx: p1.x - x0};
+      let n = 25; while(baumIntro && n < 400){ stepSim(ts += 16.6); n++; }
+      KEYS[p1.keys.left] = false;
+      return {mitte, n, d1: p1.x - levelStartM.x, d2: p2.x - levelStartF.x, frei: !p1.baumIntro && !p2.baumIntro, b: baumStartPunkt().x}; })()""")
+    assert 0 < r['mitte']['tuer'] < 1 and not r['mitte']['weg'] and abs(r['mitte']['dx']) < 1, f'Tür geht auf, Figuren werden sichtbar, Taste ohne Wirkung: {r}'
+    assert r['n'] <= 75, f'Start-Ablauf zu langsam (Nutzerwunsch: schnell heraus): {r["n"]} Schritte'
+    assert abs(r['d1']) < 3 and abs(r['d2']) < 3 and r['frei'] and abs(r['b'] - 240) < 1, f'Baum links hinter dem Start; nach dem Herauskommen auf den Startplätzen, Steuerung an: {r}'
+    await g.ev("menuScreen = null")
     # Ziel direkt neben erhöhtem Boden: der Baum rückt (hier 75 px) zur Seite, bis er frei auf dem Boden steht (nicht „im Boden“);
     # nach dem Sieg gehen beide trotzdem rechtzeitig in seinen Eingang
     await g.load(level([ground(0, 680, 3000), ground(1620, 560, 200, 120)], {'x': 300, 'y': 680}, {'x': 360, 'y': 680}, goal={'x': 1600, 'y': 680}, welt='dschungel'))

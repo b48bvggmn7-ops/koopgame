@@ -286,7 +286,7 @@ function winEndeSchritte(){ return baumZielAktiv() ? BAUM_SIEG_ENDE : WIN_DANCE_
 // Läuft bei jedem Level-Start (startLevel, Datei laden) und Neustart (R, Pausenmenü) – nicht nach einem Tod, nicht beim
 // Testen ab einer Stelle und nicht bei resetLevel() allein (Tests, Spielszenen).
 // Während des Ablaufs keine Steuerung (P.baumIntro -> 08: frozen); fester Takt (Schritte).
-const BAUM_INTRO_ZU = 30, BAUM_INTRO_AUF = 45, BAUM_INTRO_RAUS_MAX = 150, BAUM_INTRO_TEMPO = 1.7;
+const BAUM_INTRO_ZU = 15, BAUM_INTRO_AUF = 22, BAUM_INTRO_RAUS_MAX = 100, BAUM_INTRO_TEMPO = 4.6;   // schneller (Nutzerwunsch; vorher 30/45/150/1,7)
 const BAUM_RAUS_ABSTAND = 40, BAUM_RAUS_LUECKE = 30;   // mindestens so weit vom Eingang / Abstand, falls beide im Eingang stünden
 let baumIntro = null;   // {n: Schritte seit Start}
 function baumIntroStarten(){
@@ -328,7 +328,7 @@ function baumIntroSchritt(){
   let fertig = true;
   for(const P of [p1, p2]){   // herauskommen und zu den Startplätzen gehen
     const dx = baumIntro.ziel.get(P) - P.x;
-    if(Math.abs(dx) > 2){ fertig = false; P.vx = Math.max(-BAUM_INTRO_TEMPO, Math.min(BAUM_INTRO_TEMPO, dx*0.3)); P.facing = Math.sign(dx); }
+    if(Math.abs(dx) > 2){ fertig = false; P.vx = Math.sign(dx)*Math.min(BAUM_INTRO_TEMPO, Math.max(1.2, Math.abs(dx)*0.6)); P.facing = Math.sign(dx); }   // zügig bis zum Platz (kein langes Ausrollen)
   }
   if(fertig || n > BAUM_INTRO_ZU + BAUM_INTRO_AUF + BAUM_INTRO_RAUS_MAX) baumIntroEnde();
 }
