@@ -156,6 +156,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Start: früher zwischen den Startplätzen; jetzt etwas links hinter ihnen (60 px vor dem linken Platz), Eingang leuchtet
     warm; stünde er vor einer Wand oder links aus dem Level, rückt er bis 160 px zur Seite.
     Nur wo im Editor Start bzw. Ziel gesetzt ist, steht ein Baum (Nutzerwunsch); ohne gesetztes Ziel bleibt das Schild.
+    Wurzeln schmaler (Nutzerwunsch: ca. ±90 statt ±115 px); wo Boden/Wand höher als der Fuß des Baums in seinen Bereich ragt,
+    wird der Baum dort weggeschnitten (er liegt nie über Boden/Wand, baumSperrFlaechen).
     Beim Testen ab einer Stelle (Editor) steht der Start-Baum am echten Start (startEchtM/F), ohne Start-Ablauf.
     Start-Ablauf (Nutzerwunsch, bei jedem Level-Start und Neustart per R/Pausenmenü; nicht nach einem Tod, nicht bei
     Testlevel-Adressen ?testlevel= und nicht in den Spielszenen – deren Bühne hat keinen Baum): erst ist die Tür zu und beide sind

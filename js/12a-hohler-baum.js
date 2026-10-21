@@ -32,19 +32,17 @@ function baumLoch(){
 function baumKoerperMalen(q, nacht){
   const r = rnd(77), F = baumFarben(nacht);
   const umriss = new Path2D();
-  umriss.moveTo(-162, 0);
-  umriss.bezierCurveTo(-140, -2, -128, -10, -118, -22);         // äußere linke Wurzel
-  umriss.bezierCurveTo(-112, -14, -104, -12, -98, -16);
-  umriss.bezierCurveTo(-90, -30, -84, -46, -86, -70);           // linke Wurzel
+  umriss.moveTo(-124, 0);                                        // Wurzeln schmaler (Nutzerwunsch; vorher bis -162/+172)
+  umriss.bezierCurveTo(-110, -2, -102, -8, -96, -16);           // linke Wurzel
+  umriss.bezierCurveTo(-90, -30, -84, -46, -86, -70);
   umriss.bezierCurveTo(-80, -150, -94, -228, -76, -292);        // linke Seite
   // abgebrochene Krone: unregelmäßige Splitter
   umriss.lineTo(-70, -312); umriss.lineTo(-61, -296); umriss.lineTo(-50, -340); umriss.lineTo(-38, -305); umriss.lineTo(-29, -318);
   umriss.lineTo(-14, -300); umriss.lineTo(-4, -308); umriss.lineTo(10, -288); umriss.lineTo(24, -326); umriss.lineTo(31, -302);
   umriss.lineTo(46, -312); umriss.lineTo(58, -290); umriss.lineTo(72, -298);
   umriss.bezierCurveTo(90, -228, 74, -150, 86, -72);            // rechte Seite
-  umriss.bezierCurveTo(88, -44, 98, -26, 112, -18);             // rechte Wurzel
-  umriss.bezierCurveTo(120, -22, 128, -24, 134, -18);
-  umriss.bezierCurveTo(146, -8, 158, -2, 172, 0);
+  umriss.bezierCurveTo(88, -44, 94, -28, 104, -16);             // rechte Wurzel
+  umriss.bezierCurveTo(112, -8, 120, -2, 132, 0);
   umriss.closePath();
   const gr = q.createLinearGradient(-100, 0, 100, 0); gr.addColorStop(0, F.rindeH); gr.addColorStop(.45, F.rinde); gr.addColorStop(1, F.rindeD);
   q.fillStyle = gr; q.fill(umriss);
@@ -68,7 +66,7 @@ function baumKoerperMalen(q, nacht){
   q.fillStyle = bs; q.fillRect(-160, -40, 330, 40);
   q.fillStyle = F.moos;   // Moos links und an den Wurzeln
   for(let i = 0; i < 40; i++){ const y = -r()*280, x = -86 + Math.abs(y)*.02 + r()*22; q.globalAlpha = .55 + r()*.4; q.beginPath(); q.ellipse(x, y, 4 + r()*6, 3 + r()*4, r()*3, 0, 7); q.fill(); }
-  for(let i = 0; i < 26; i++){ const x = -150 + r()*310, y = -r()*14; q.globalAlpha = .7; q.beginPath(); q.ellipse(x, y, 5 + r()*7, 3 + r()*3, 0, 0, 7); q.fill(); }
+  for(let i = 0; i < 26; i++){ const x = -118 + r()*244, y = -r()*14; q.globalAlpha = .7; q.beginPath(); q.ellipse(x, y, 5 + r()*7, 3 + r()*3, 0, 0, 7); q.fill(); }
   q.fillStyle = F.moosH; for(let i = 0; i < 30; i++){ const y = -r()*260, x = -84 + Math.abs(y)*.02 + r()*16; q.globalAlpha = .6; q.beginPath(); q.arc(x, y, 1.5 + r()*2, 0, 7); q.fill(); }
   q.globalAlpha = 1;
   q.restore();
@@ -83,7 +81,7 @@ function baumKoerperMalen(q, nacht){
     q.fillStyle = i % 2 ? F.blatt : F.blattH; q.save(); q.translate(x, y); q.rotate((i % 2 ? 1 : -1)*.8); q.beginPath(); q.moveTo(0, 0); q.bezierCurveTo(4, -6, 12, -6, 15, 0); q.bezierCurveTo(12, 6, 4, 6, 0, 0); q.fill(); q.restore(); }
   q.strokeStyle = F.rindeD; q.lineWidth = 5; q.beginPath(); q.moveTo(70, -250); q.quadraticCurveTo(110, -270, 130, -300); q.stroke();   // Zweig
   for(let i = 0; i < 6; i++){ q.fillStyle = i % 2 ? F.blatt : F.blattH; q.save(); q.translate(100 + i*6, -270 - i*6); q.rotate(-.6 + (i % 2)*1.2); q.beginPath(); q.ellipse(8, 0, 10, 4, 0, 0, 7); q.fill(); q.restore(); }
-  for(const [x, s] of [[104, 1], [118, .7], [-118, .8]]){   // Pilze an der Wurzel
+  for(const [x, s] of [[98, 1], [110, .7], [-100, .8]]){   // Pilze an der Wurzel
     q.fillStyle = '#efe4c8'; q.fillRect(x - 2*s, -10*s, 4*s, 10*s);
     q.fillStyle = F.pilz; q.beginPath(); q.ellipse(x, -10*s, 8*s, 5*s, 0, Math.PI, 0); q.fill();
     q.fillStyle = 'rgba(255,255,255,.85)'; q.beginPath(); q.arc(x - 3*s, -12*s, 1.4*s, 0, 7); q.arc(x + 3*s, -13*s, 1.1*s, 0, 7); q.fill();
@@ -112,9 +110,32 @@ function baumLochZeichnen(x, y, licht, F){
   ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(0, -100, 60, 22, 0, 0, 7); ctx.fill();   // Tiefe oben im Loch
   ctx.restore();
 }
+// Boden/Wand, die höher als der Fuß des Baums in seinen Bereich ragen (z. B. eine Wand neben dem Start): dort wird der Baum
+// weggeschnitten – er steht ganz vorne, darf aber nicht über Boden/Wand liegen (Nutzerwunsch). Einmal je Baum-Platz berechnet.
+const BAUM_BREITE_HALB = 95, BAUM_HOEHE = 245;   // Spielpixel (Wurzeln ±132·0,7, Krone 340·0,7)
+const baumSperrMerk = new Map();
+function baumSperrFlaechen(x, y){
+  const k = solids.length + ':' + x + ':' + y;
+  if(!baumSperrMerk.has(k)){
+    if(baumSperrMerk.size > 8) baumSperrMerk.clear();
+    baumSperrMerk.set(k, solids.filter(s => s.type !== 'oneway' && s.type !== 'moveplat' && s.y < y - 2 &&
+      s.x < x + BAUM_BREITE_HALB && s.x + s.w > x - BAUM_BREITE_HALB && s.y + s.h > y - BAUM_HOEHE));
+  }
+  return baumSperrMerk.get(k);
+}
 function baumZeichnen(x, y, licht){
   if(x < camX - 160 || x > camX + VW + 160) return;
   const nacht = typeof hgNacht === 'function' && hgNacht(), F = baumFarben(nacht), B = baumBild(nacht), sx = x - camX;
+  const sperr = baumSperrFlaechen(x, y);
+  ctx.save();
+  for(const s of sperr){   // je Fläche einmal ausschneiden (mehrere Ausschnitte schneiden sich -> auch bei Überlappung richtig)
+    const p = new Path2D(); p.rect(sx - BAUM_BREITE_HALB - 10, y - BAUM_HOEHE - 10, 2*BAUM_BREITE_HALB + 20, BAUM_HOEHE + 30);
+    p.rect(s.x - camX, s.y, s.w, s.h); ctx.clip(p, 'evenodd');
+  }
+  baumZeichnenInnen(sx, y, licht, F, B);
+  ctx.restore();
+}
+function baumZeichnenInnen(sx, y, licht, F, B){
   baumLochZeichnen(sx, y, licht, F);
   ctx.drawImage(B.c, sx + B.x, y + B.y, B.w, B.h);
   if(licht > 0.05){   // Licht fällt aus dem Loch auf den Boden

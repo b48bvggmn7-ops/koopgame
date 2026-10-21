@@ -6259,6 +6259,7 @@ async def hohler_baum_start_ziel(g):
     r = await g.ev("({an: baumAktiv(), start: baumStartPunkt(), licht: baumZielLicht(), tuer: baumTuerAnteil()})")
     assert r['an'], 'im Dschungel soll der hohle Baum stehen'
     assert r['start']['x'] - 64 >= 40, f"Start-Baum soll vor der Wand weggerückt sein: {r['start']}"
+    assert await g.ev("baumSperrFlaechen(baumStartPunkt().x, baumStartPunkt().y).length") >= 1, 'Wurzel über der Wand wird nicht weggeschnitten'
     assert r['licht'] < 0.3 and r['tuer'] == 0, f'Ziel-Eingang vor dem Sieg dunkel, Tür offen: {r}'
     # Affe kommt zuerst an: Steuerung aus (Taste rechts gedrückt halten bewirkt nichts), er geht bis 30 px vor den Eingang
     await g.ev("p1.x = goal.x - 55; p1.y = goal.y; p1.vx = p1.vy = 0;")
