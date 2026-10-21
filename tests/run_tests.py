@@ -10253,6 +10253,7 @@ async def partner_test_start(g, daten, ich='m', an=True, extra_js=''):
     await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(200)
     await p.evaluate("([d, w]) => { localStorage.setItem('monchichi_test_level', d); localStorage.setItem('monchichi_partner', w);"
                      " localStorage.setItem('monchichi.introGesehen', 'true'); }", [json.dumps(daten), json.dumps({'an': an, 'ich': ich})])
+    await p.add_init_script("window.baumIntroAus = true")   # Start-Ablauf am Baum (12a) gar nicht erst starten (Fallen-Takt wie früher)
     await p.goto(srv.url + 'index.html?test=1')
     await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && !!p1", timeout=8000)
     await p.wait_for_timeout(150)
