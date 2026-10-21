@@ -73,8 +73,11 @@ function baumKoerperMalen(q, nacht){
   // Loch ausstanzen, dann der dicke Rand aus heller Rinde
   const loch = baumLoch();
   q.save(); q.globalCompositeOperation = 'destination-out'; q.fill(loch); q.restore();
+  // Ränder nur oberhalb des Bodens: die Unterkante von Stamm und Eingang bekommt keine Linie (lag sonst als Strich auf dem Gras)
+  q.save(); q.beginPath(); q.rect(-400, -500, 800, 497); q.clip();
   q.save(); q.lineWidth = 9; q.strokeStyle = F.rindeD; q.stroke(loch); q.lineWidth = 3; q.strokeStyle = 'rgba(255,225,180,.28)'; q.translate(-1.5, -1.5); q.stroke(loch); q.restore();
   q.lineWidth = 3; q.strokeStyle = 'rgba(20,12,6,.75)'; q.stroke(umriss);   // Umrisslinie wie Boden/Wand
+  q.restore();
   q.strokeStyle = F.blatt; q.lineWidth = 3; q.lineCap = 'round';   // Efeu links am Stamm
   q.beginPath(); q.moveTo(-70, -300); q.bezierCurveTo(-96, -230, -60, -180, -84, -120); q.bezierCurveTo(-100, -80, -76, -50, -88, -20); q.stroke();
   for(let i = 0; i < 14; i++){ const t = i/13, y = -300 + t*280, x = -80 + Math.sin(t*9)*10;
@@ -158,19 +161,33 @@ function baumLevelMerken(data){
 }
 function baumStartAktiv(){ return baumAktiv() && !!baumStartDaten; }
 function baumZielAktiv(){ return baumAktiv() && baumZielGesetzt && !(typeof bossKampf !== 'undefined' && bossKampf); }
+// Nächster freier Platz um x0 (höchstens versatz weit): erst für den ganzen Baum mit Wurzeln, sonst nur für den Stamm
+// (die Wurzeln werden dann an Boden/Wand weggeschnitten, baumSperrFlaechen); nie links aus dem Level hinaus
+function baumFreiSuchen(x0, y, versatz){
+  const frei = (x, halb, hoch) => x >= halb && !solids.some(s => s.type !== 'oneway' && s.type !== 'moveplat' &&
+    s.x < x + halb && s.x + s.w > x - halb && s.y < y - 2 && s.y + s.h > y - hoch);
+  for(const [halb, hoch] of [[BAUM_BREITE_HALB, BAUM_HOEHE], [BAUM_STAMM_HALB, BAUM_STAMM_HOEHE]])
+    for(let d = 0; d <= versatz; d += 4){
+      if(frei(x0 + d, halb, hoch)) return x0 + d;
+      if(frei(x0 - d, halb, hoch)) return x0 - d;
+    }
+  return x0;
+}
 function baumStartPunkt(){
   const m = baumStartDaten.m, f = baumStartDaten.f;
   if(baumStartMerk && baumStartMerk.m === m && baumStartMerk.f === f) return baumStartMerk.p;
-  const x0 = Math.min(m.x, f.x) - BAUM_START_LINKS, y = Math.max(m.y, f.y);
-  const frei = x => x >= BAUM_STAMM_HALB && !solids.some(s => s.type !== 'oneway' && s.x < x + BAUM_STAMM_HALB && s.x + s.w > x - BAUM_STAMM_HALB &&
-                                      s.y < y - 2 && s.y + s.h > y - BAUM_STAMM_HOEHE);
-  let x = x0;
-  for(let d = 0; d <= BAUM_START_VERSATZ; d += 4){
-    if(frei(x0 + d)){ x = x0 + d; break; }
-    if(frei(x0 - d)){ x = x0 - d; break; }
-  }
-  baumStartMerk = {m, f, p: {x, y}};
+  const y = Math.max(m.y, f.y);
+  baumStartMerk = {m, f, p: {x: baumFreiSuchen(Math.min(m.x, f.x) - BAUM_START_LINKS, y, BAUM_START_VERSATZ), y}};
   return baumStartMerk.p;
+}
+// Ziel-Baum: am Ziel; ragt dort Boden/Wand in den Baum (z. B. erhöhter Boden daneben), rückt er bis BAUM_ZIEL_VERSATZ zur Seite
+// (Nutzerwunsch: steht sonst „im Boden“). Warten vor dem Baum bleibt am Ziel (goal.x ± 30), hineingehen zum Eingang des Baums.
+const BAUM_ZIEL_VERSATZ = 60;
+let baumZielMerk = null;
+function baumZielPunkt(){
+  if(baumZielMerk && baumZielMerk.x0 === goal.x && baumZielMerk.y0 === goal.y && baumZielMerk.n === solids.length) return baumZielMerk.p;
+  baumZielMerk = {x0: goal.x, y0: goal.y, n: solids.length, p: {x: baumFreiSuchen(goal.x, goal.y, BAUM_ZIEL_VERSATZ), y: goal.y}};
+  return baumZielMerk.p;
 }
 // Fortschritt des Sieg-Ablaufs (0..1) aus den Spielschritten
 function baumSiegAnteil(ab, dauer){ return won ? Math.max(0, Math.min(1, (winSteps - ab)/dauer)) : 0; }
@@ -180,12 +197,12 @@ function baumTuerAnteil(){ const k = baumSiegAnteil(BAUM_TUER_AB, BAUM_TUER_DAUE
 // Start- und Ziel-Baum: ganz vorne in der Welt (vor Boden, Wänden, Pflanzen; Nutzerwunsch), hinter Münzen und Figuren
 function baumZeichnenAlle(){
   if(baumStartAktiv()){ const s = baumStartPunkt(); baumZeichnen(s.x, s.y, BAUM_LICHT_START); }
-  if(baumZielAktiv()) baumZeichnen(goal.x, goal.y, baumZielLicht());
+  if(baumZielAktiv()){ const z = baumZielPunkt(); baumZeichnen(z.x, z.y, baumZielLicht()); }
 }
 // VOR den Figuren: Tür und Lichtschein – am Ziel beim Sieg, am Start während des Start-Ablaufs
 function baumVorneZeichnen(){
   if(baumIntro && baumStartAktiv()){ const s = baumStartPunkt(); baumTuerZeichnen(s.x, s.y, baumStartTuer(), 1); }
-  if(won && baumZielAktiv()) baumTuerZeichnen(goal.x, goal.y, baumTuerAnteil(), baumZielLicht());
+  if(won && baumZielAktiv()){ const z = baumZielPunkt(); baumTuerZeichnen(z.x, z.y, baumTuerAnteil(), baumZielLicht()); }
 }
 // Tür im Eingang: k = 1 zu, 0 offen (fährt nach oben weg); L = Stärke des Lichtscheins
 function baumTuerZeichnen(x, y, k, L){
@@ -236,7 +253,7 @@ function baumZielPlatz(P){
   const Q = P === p1 ? p2 : p1;
   if(baumGehtHinein() || (won && winSteps > BAUM_TANZ_SCHRITTE)){
     const links = P.x < Q.x || (P.x === Q.x && P === p1);
-    return goal.x + (links ? -1 : 1)*BAUM_HINEIN_ABSTAND;
+    return baumZielPunkt().x + (links ? -1 : 1)*BAUM_HINEIN_ABSTAND;
   }
   return goal.x + (P.x < goal.x ? -1 : 1)*BAUM_WARTE_ABSTAND;
 }
@@ -249,7 +266,7 @@ function baumFigurenVersteckt(){ return (won && baumZielAktiv() && baumTuerAntei
 // Solange eine Tür im Eingang ist (geht am Start auf / am Ziel zu), stehen die Figuren IM Baum: nur im Eingang sichtbar
 function baumFigurenClip(){
   if(baumIntro && baumStartTuer() > 0) return baumStartPunkt();
-  if(won && baumZielAktiv() && baumTuerAnteil() > 0) return goal;
+  if(won && baumZielAktiv() && baumTuerAnteil() > 0) return baumZielPunkt();
   return null;
 }
 function baumClipAnwenden(B){
