@@ -4320,7 +4320,7 @@ async def editor_testen_knopf(g):
         assert not await g.ev("document.getElementById('menu').classList.contains('show')"), 'Menü statt Test-Level'
         assert await g.ev("coins.length===3 && coins.some(c=>c.color==='pink')"), 'Editor-Level nicht geladen'
         await p.wait_for_function("typeof baumIntro === 'undefined' || !baumIntro", timeout=10000)   # Start-Ablauf am Baum (12a) abwarten
-        assert abs(await g.ev('p1.x') - 140) < 30, 'Start nicht aus dem Editor'
+        assert abs(await g.ev('p1.x') - 140) < 30, f"Start nicht aus dem Editor: {await g.ev('[p1.x, p2.x, levelStartM.x, levelStartF.x, typeof baumStartPunkt === \'function\' && baumStartAktiv() ? baumStartPunkt().x : null]')}"
         # Pausenmenü bietet „Zurück zum Editor“; Esc beendet den Test direkt
         await p.evaluate("showPauseMenu()"); await p.wait_for_timeout(100)
         texte = await menu_texte(p)

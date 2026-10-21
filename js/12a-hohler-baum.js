@@ -287,17 +287,17 @@ function winEndeSchritte(){ return baumZielAktiv() ? BAUM_SIEG_ENDE : WIN_DANCE_
 // Testen ab einer Stelle und nicht bei resetLevel() allein (Tests, Spielszenen).
 // Während des Ablaufs keine Steuerung (P.baumIntro -> 08: frozen); fester Takt (Schritte).
 const BAUM_INTRO_ZU = 30, BAUM_INTRO_AUF = 45, BAUM_INTRO_RAUS_MAX = 150, BAUM_INTRO_TEMPO = 1.7;
-const BAUM_RAUS_ABSTAND = 50, BAUM_RAUS_LUECKE = 40;   // px rechts vom Eingang / Abstand zwischen beiden
+const BAUM_RAUS_ABSTAND = 40, BAUM_RAUS_LUECKE = 30;   // mindestens so weit vom Eingang / Abstand, falls beide im Eingang stünden
 let baumIntro = null;   // {n: Schritte seit Start}
 function baumIntroStarten(){
   baumIntroEnde();
   if(!baumStartAktiv() || baumTestStart || !p1 || !p2 || window.baumIntroAus) return;   // baumIntroAus: Testlevel-Adresse / automatische Tests
   const s = baumStartPunkt();
-  // Ziel nach dem Herauskommen: der eigene Startplatz, aber mindestens BAUM_RAUS_ABSTAND rechts vom Eingang (steht der Baum
-  // wegen einer Wand auf den Startplätzen, laufen beide ein Stück weiter heraus)
+  // Ziel nach dem Herauskommen: der eigene Startplatz – nur wer dort direkt im Eingang stünde (näher als BAUM_RAUS_ABSTAND),
+  // geht ein Stück weiter nach rechts heraus (passiert, wenn der Baum wegen einer Wand auf den Startplätzen steht)
   const reihe = [p1, p2].sort((a, b) => a.x - b.x);
   baumIntro = {n: 0, vor: new Map([p1, p2].map(P => [P, {x: P.x, y: P.y}])),   // Platz nach resetLevel (ohne Ablauf)
-               ziel: new Map(reihe.map((P, i) => [P, Math.max(P.x, s.x + BAUM_RAUS_ABSTAND + i*BAUM_RAUS_LUECKE)]))};
+               ziel: new Map(reihe.map((P, i) => [P, Math.abs(P.x - s.x) >= BAUM_RAUS_ABSTAND ? P.x : s.x + BAUM_RAUS_ABSTAND + i*BAUM_RAUS_LUECKE]))};
   for(const P of [p1, p2]){   // beide stehen im Baum (hinter der geschlossenen Tür)
     P.baumIntro = true; P.x = P._px = s.x + (P === p1 ? -1 : 1)*BAUM_HINEIN_ABSTAND; P.y = P._py = s.y; P.vx = P.vy = 0;
     P.facing = Math.sign(P.spawn.x - P.x) || 1;
