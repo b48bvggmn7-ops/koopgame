@@ -204,7 +204,7 @@ async def neue_figuren_zeichnen(g):
 async def neue_figuren_sprung_rolle(g):
     """Sprung-Varianten der neuen Figuren (10c): erzwungene Vorwärtsrolle (Math.random fest) läuft von 0 bis 1 – auch bei
     einem kurzen Hüpfer, bei dem die Figur mittendrin landet (läuft dann in 0,15 s aus statt abzubrechen); beim Wandsprung
-    ebenso (vorwärts); über viele echte Sprünge kommen normaler Sprung, Rolle und Salto vor. Nur Zeichnen."""
+    ebenso (vorwärts); über viele echte Sprünge kommen normaler Sprung, Rolle, Salto und Seitwärtsrolle vor. Nur Zeichnen."""
     await g.load(level([ground(0, 680, 4000), ground(1500, 200, 40, 480, 'wall')], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='ruinen'))
     await g.steps(40)
     mitschreiben = """window.__rl = []; if(!window.__rlAn){ window.__rlAn = true; (function f(){ const S = p1._ff; if(S) __rl.push([S.roll, p1.grounded ? 1 : 0]); requestAnimationFrame(f); })(); }"""
@@ -227,11 +227,30 @@ async def neue_figuren_sprung_rolle(g):
     assert max(werte) >= 0.98 and any(0 < w < 0.5 for w in werte), f'Wandsprung-Rolle läuft nicht durch: {werte[:60]}'
     # 3) viele echte Sprünge: alle drei Varianten kommen vor
     await g.ev("p1.x = 300; p1.y = 680; p1._px = 300; p1._py = 680; p1.vx = p1.vy = 0; window.__typen = new Set(); if(!window.__tyAn){ window.__tyAn = true; (function f(){ if(p1._ff && p1._ff.lastTyp !== undefined) __typen.add(p1._ff.lastTyp); requestAnimationFrame(f); })(); }")
-    for i in range(14):
+    for i in range(30):
         await g.p.keyboard.down('Space'); await g.steps(10); await g.p.keyboard.up('Space'); await g.steps(50)
-        if await g.ev("__typen.size") >= 3: break
+        if await g.ev("__typen.size") >= 4: break
     typen = await g.ev("[...__typen].sort()")
-    assert typen == [0, 1, 2], f'nicht alle Varianten (0 normal, 1 Rolle, 2 Salto): {typen}'
+    assert typen == [0, 1, 2, 3], f'nicht alle Varianten (0 normal, 1 Rolle, 2 Salto, 3 Seitwärtsrolle): {typen}'
+
+@test
+async def neue_figuren_seitwaertsrolle(g):
+    """Seitwärtsrolle (Nutzerwunsch): Sprung-Variante 3 dreht die Figur um die Hochachse (Seite -> vorn -> andere Seite ->
+    hinten -> Seite) statt in der Bildebene; läuft von 0 bis 1. Die Drehansicht zeichnet Affe und Schweinchen in jedem
+    Winkel ohne Fehler; das Affengesicht ist EIN wanderndes Gesicht (früher zwei überblendete Masken). Nur Zeichnen."""
+    await g.load(level([ground(0, 680, 4000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='ruinen'))
+    await g.steps(40)
+    await g.ev("""window.__zufall = Math.random; Math.random = () => 0.9; p1._ff.lastTyp = 0; window.__sr = [];
+      if(!window.__srAn){ window.__srAn = true; (function f(){ const S = p1._ff; if(S) __sr.push([S.roll, S.rollArt || '']); requestAnimationFrame(f); })(); }""")
+    await g.p.keyboard.down('Space'); await g.steps(12); await g.p.keyboard.up('Space'); await g.steps(70)
+    sr = await g.ev("Math.random = __zufall; __sr")
+    werte = [r for r, a in sr if a == 'seite']
+    assert werte and max(werte) >= 0.98 and any(0 < w < 0.5 for w in werte), f'Seitwärtsrolle läuft nicht von 0 bis 1: {sr[:40]}'
+    fehler = await g.ev("""(() => { const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; const c = cv.getContext('2d'); const f = [];
+      for(const male of [true, false]) for(let i = 0; i < 24; i++){ try{ c.save(); c.translate(100, 160); figurDrehungZeichnen(c, male, -i/24*2*Math.PI + 0.001); c.restore(); }
+        catch(e){ f.push((male ? 'Affe ' : 'Schwein ') + i + ': ' + e.message); } }
+      return f; })()""")
+    assert not fehler, fehler
 
 @test
 async def neue_figuren_drehung_seil_dash(g):

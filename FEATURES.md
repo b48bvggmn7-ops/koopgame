@@ -1526,6 +1526,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 - Die Figuren sind jetzt Kopf + Arme + Stummelfüße statt der rollenden Kugel. Taste **B** schaltet zur alten Kugel zurück (und wieder her).
 - Posen: Stehen, Laufen, Bremsen, Landen, Hoch/Runter, Wandrutschen (liegt an der Wand), Haften an der Decke, Seil, Dash, Schirm-Gleiten, Siegestanz.
 - Sprung-Varianten: nach einem normalen Sprung kommt immer eine Variante (Vorwärtsrolle oder Salto), auf Dauer je 1/3; gilt auch für Wandsprünge.
+- Seitwärtsrolle (Nutzerwunsch): vierte Sprung-Variante – die Figur dreht sich einmal um die Hochachse (Seite -> von vorn ->
+  andere Seite -> von hinten -> Seite, 0,6 s). Jetzt: nach einem normalen Sprung je 1/3 Rolle, Salto oder Seitwärtsrolle; nach
+  einer Variante 50 % normal, sonst eine der drei. Bricht wie die Rolle bei Schirm/Seil/Dash/Wand ab.
+- Affengesicht in der Drehansicht (Seitwärtsrolle, Langeweile von vorn): EIN Gesicht, dessen Teile (Maske, Augen, Wangen,
+  Nase, Mund) mit dem Blickwinkel wandern und am Kopfrand verschwinden – früher wurden Seiten- und Vorder-Gesicht übereinander
+  geblendet (Zwischenbilder mit drei hellen Kreisen). Prüfbild-Helfer figurDrehungZeichnen(c, male, th).
   Bei jedem Absprung vom Boden und jedem Wandsprung wird gewürfelt (nach einer Variante 50 % normal, 25 % Rolle, 25 % Salto;
   Wandsprung nur vorwärts). Die Drehung dauert ~0,6 s (`ROLL_ZEIT`), fängt sofort an und läuft in einem Rutsch durch;
   landet die Figur mittendrin, dreht sie in 0,15 s zu Ende (vorher brach sie beim Landen schlagartig ab). Auch der erste

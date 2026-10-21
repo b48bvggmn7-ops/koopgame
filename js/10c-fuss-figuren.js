@@ -201,6 +201,44 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
       return frBase({dy:15-h, lean:2*sn(th), na:[FX-26,-32,FX-36,-38,FX-39,-42+2*sn(th)], fa:[FX+26,-32,FX+36,-38,FX+39,-42-2*sn(th)], nf:[FX-10,-8-h,0], ff:[FX+10,-8-h,0]}); },
       rope:t => t*2*PI*1.25},
   ];
+  // Affengesicht in der Drehung: EIN Gesicht, dessen Teile mit dem Blickwinkel phi wandern (0 = Seite rechts, PI/2 = von vorn,
+  // PI = Seite links, 3PI/2 = von hinten). Vorher wurden Seiten- und Vorder-Gesicht übereinander geblendet -> Zwischenbilder
+  // zeigten zwei Masken („drei hellbraune Kreise“). Alles wird auf die Kopfkugel geschnitten (verschwindet hinter dem Rand).
+  const AF_SEITE = {mL:[14,-46,20,22], mR:[14,-46,20,22], mM:[14,-46,20,22], aL:[20,-54,5,6.5], aR:[34,-54,0,6.5],
+    wL:[14,-40,6,4.5], wR:[34,-40,0,4.5], nL:[31,-45,1.4,1.4], nR:[31,-45,0,1.4], mund:[18,-36,26,-33,32,-38]};
+  const AF_VORN = {mL:[-4,-52,12,11], mR:[12,-52,12,11], mM:[4,-40,16,14], aL:[-4,-54,4.5,6.2], aR:[12,-54,4.5,6.2],
+    wL:[-10,-37,4.5,3.5], wR:[18,-37,4.5,3.5], nL:[1.5,-44,1.3,1.3], nR:[6.5,-44,1.3,1.3], mund:[-4,-36,4,-30,12,-36]};
+  // gespiegelte Seitenansicht (Blick nach links): rechtes Auge/Wange/Nasenloch wird das sichtbare, das linke geht hinter den Rand
+  const afSpiegel = a => [8 - a[0], ...a.slice(1)];
+  const AF_LINKS = {mL:afSpiegel(AF_SEITE.mL), mR:afSpiegel(AF_SEITE.mR), mM:afSpiegel(AF_SEITE.mM),
+    aL:[-26,-54,0,6.5], aR:afSpiegel(AF_SEITE.aL), wL:[-26,-40,0,4.5], wR:afSpiegel(AF_SEITE.wL),
+    nL:[8-31,-45,0,1.4], nR:afSpiegel(AF_SEITE.nL), mund:[8-32,-38,8-26,-33,8-18,-36]};
+  const afMix = (A, B, f) => { const o = {}; for(const k in A) o[k] = A[k].map((v, i) => v + (B[k][i] - v)*f); return o; };
+  // hinter den Rand schieben: k = 0 (wie A) .. 1 (ganz verschwunden), richtung -1 = nach links, +1 = nach rechts
+  const afWeg = (A, k, richtung) => { const o = {}; for(const k2 in A){ const a = A[k2].slice();
+      if(k2 === 'mund'){ for(let i = 0; i < 6; i += 2) a[i] += richtung*34*k; }
+      else { a[0] += richtung*34*k; a[2] *= 1 - k; } o[k2] = a; } return o; };
+  function affenGesicht(phi){
+    const q = PI/2, e = x => ease(clamp(x, 0, 1));
+    phi = ((phi % (2*PI)) + 2*PI) % (2*PI);
+    if(phi <= q) return afMix(AF_SEITE, AF_VORN, e(phi/q));
+    if(phi <= 2*q) return afMix(AF_VORN, AF_LINKS, e((phi - q)/q));
+    if(phi <= 3*q) return afWeg(AF_LINKS, e((phi - 2*q)/q), -1);
+    return afWeg(AF_SEITE, 1 - e((phi - 3*q)/q), 1);
+  }
+  function affenGesichtZeichnen(c, phi, blink){
+    const G = affenGesicht(phi);
+    c.save(); c.beginPath(); c.ellipse(4, -50, 34, 34, 0, 0, PI*2); c.clip();
+    for(const k of ['mL', 'mR', 'mM']){ const a = G[k]; if(a[2] > 0.3) ell(c, a[0], a[1], a[2], a[3], '#f5d6b0'); }
+    for(const k of ['wL', 'wR']){ const a = G[k]; if(a[2] > 0.3) ell(c, a[0], a[1], a[2], a[3], '#f4a08c'); }
+    for(const k of ['aL', 'aR']){ const a = G[k]; if(a[2] < 0.3) continue;
+      ell(c, a[0], a[1], a[2], blink ? 1 : a[3], '#2b1d18');
+      if(!blink) ell(c, a[0] + a[2]*0.3, a[1] - 3, 1.7*Math.min(1, a[2]/4.5), 1.7, '#fff'); }
+    for(const k of ['nL', 'nR']){ const a = G[k]; if(a[2] > 0.2) ell(c, a[0], a[1], a[2], a[3], '#6b4a35'); }
+    const m = G.mund; c.lineWidth = 1.6; c.strokeStyle = '#6b4a35'; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(m[0], m[1]); c.quadraticCurveTo(m[2], m[3], m[4], m[5]); c.stroke();
+    c.restore();
+  }
   // ---- Seitendrehung in 3D: Drehung um die Hochachse. Der Kopf bleibt eine runde Kugel, Gesicht/Ohren/Füße/Arme wandern um sie herum ----
   function figureSpin(c,male,p,blink,th){
     const B = male ? PM : PP, hs = p.hs || [1,1], ar = p.ar === undefined ? 1 : p.ar;
@@ -224,14 +262,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
       add(-1,true,c => ellG(c,cx-4*ct,-86,9,6,'#9a6340'));
       [1,-1].forEach(zs => { const z0 = zs*31.8, x = cx-12*ct+z0*st, z = 12*st+z0*ct, k0 = Math.max(0.25,Math.abs(ct)), k = k0+(1-k0)*fw;
         add((z > 0 || fw > 0.3 ? 50 : -60)+z*0.01,true,c => { ellG(c,x,-52,10*k,10,'#8a5636'); ellG(c,x,-52,6*k,6,'#f4a8a0'); }); });
-      surfEll(100,14,-46,20,22,'#f5d6b0');
-      if(st < 0) add(100,true,c => ellG(c,cx+26*ct,-46,15*Math.abs(st),20,'#f5d6b0',null,0,FA));
-      surfEll(102,20,-54,5,blink?1:6.5,'#2b1d18'); if(!blink) surfEll(103,21.5,-57,1.7,1.7,'#fff');
-      surfEll(101,14,-40,6,4.5,'#f4a08c'); surfEll(104,31,-45,1.4,1.4,'#6b4a35');
-      const mp = []; for(let i=0;i<=8;i++){ const u = i/8; mp.push([(1-u)*(1-u)*18+2*u*(1-u)*26+u*u*32, (1-u)*(1-u)*-36+2*u*(1-u)*-33+u*u*-38]); }
-      [1,-1].forEach(zs => { const q = mp.map(a => sp(a[0],a[1],zs)); if(!q.some(a => a[2] > 0.5)) return;
-        add(104,true,c => { c.globalAlpha = FA; c.lineWidth = 1.6; c.strokeStyle = '#6b4a35'; c.lineCap = 'round'; c.beginPath(); let on = false;
-          q.forEach(a => { if(a[2] > 0.5){ on ? c.lineTo(a[0],a[1]) : c.moveTo(a[0],a[1]); on = true; } else on = false; }); c.stroke(); c.globalAlpha = 1; }); });
+      add(100,true,c => affenGesichtZeichnen(c, -th, blink));   // ein Gesicht, das mit der Drehung wandert (statt Überblendung)
     } else {
       [1,-1].forEach(zs => {                               // Ohr = Dreieck im Raum: Fuß (zwei Punkte) auf dem Kopf, Spitze oben/leicht außen
         const P3 = [[-6,-74,13],[-10,-92,22],[12,-80,31]], I3 = [[-3,-76,15],[-6,-86,22],[7,-79,29]];
@@ -251,20 +282,6 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
       if(sz > -6){ const sx0 = cx+33*ct, rx = Math.sqrt(Math.pow(8*ct,2)+Math.pow(11*st,2));
         add(110,true,c => ell(c,sx0,-44,rx,11,'#ee86a8'));
         [1,-1].forEach(zs => add(111,true,c => ell(c,cx+37*ct+zs*3.5*st,-44,2,4.5,'#b8456c'))); }
-    }
-    if(fw > 0.02 && male){                                  // eigene Vorderansicht (Affe) des Gesichts (sauberer als die gedrehte Seitenansicht)
-      add(105,true,c => {
-        if(male){
-          [[-8,-52,12,11],[8,-52,12,11],[0,-40,16,14]].forEach(a => ell(c,cx+a[0],a[1],a[2],a[3],'#f5d6b0',null,0,fw));
-          [-8,8].forEach(d => { ell(c,cx+d,-54,4.5,blink?1:6.2,'#2b1d18',null,0,fw); if(!blink) ell(c,cx+d+1.2,-57,1.6,1.6,'#fff',null,0,fw);
-            ell(c,cx+d*1.75,-37,4.5,3.5,'#f4a08c',null,0,0.8*fw); });
-          [-2.5,2.5].forEach(d => ell(c,cx+d,-44,1.3,1.3,'#6b4a35',null,0,fw));
-          c.globalAlpha = fw; c.lineWidth = 1.6; c.strokeStyle = '#6b4a35'; c.lineCap = 'round'; c.beginPath(); c.moveTo(cx-8,-36); c.quadraticCurveTo(cx,-30,cx+8,-36); c.stroke(); c.globalAlpha = 1;
-        } else {
-          [-12,12].forEach(d => { ell(c,cx+d,-56,5,blink?1:5,'#2b1d18',null,0,fw); if(!blink) ell(c,cx+d+1.5,-58.5,1.7,1.7,'#fff',null,0,fw);
-            ell(c,cx+d*1.5,-42,6,4.5,'#f58fb0',null,0,0.7*fw); });
-          ell(c,cx,-43,11,9,'#ee86a8',null,0,fw); [-4,4].forEach(d => ell(c,cx+d,-43,2,4,'#b8456c',null,0,fw));
-        } });
     }
     add(120,true,c => { gesichtZeug(c, male, true, fw); gesichtZeug(c, male, false, Math.pow(FA,3)); });   // Brille/Tattoo
     // Schwanz (hinten auf der Mittellinie)
@@ -294,6 +311,8 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
         const lp = p.lp || [0,-20]; c.translate(lp[0],lp[1]); c.rotate(p.lean*PI/180); c.translate(-lp[0],-lp[1]); }
       it.fn(c); c.restore(); });
   }
+  // Drehansicht einzeln zeichnen (Prüfbilder/Tests): Stehpose, Drehwinkel th (0 = Seite, -PI/2 = von vorn)
+  window.figurDrehungZeichnen = (c, male, th) => figureSpin(c, male, idleP(0), false, th);
   // ---- Pose aus dem echten Spielzustand ----
   window.fussFigurZeichnen = function(P){
     const c = ctx, now = performance.now(), male = P.male;
@@ -331,12 +350,13 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
       else if(S.gelaufen && kanteRichtung(P, KANTE_WACKEL_RAND)){ p = kantePose(t); key = 'kante'; flip = kanteRichtung(P, KANTE_WACKEL_RAND); }
       else { p = idleP(t); key = 'idle'; }
     }
-    // Sprung-Variante bei jedem Absprung vom Boden UND bei jedem Wandsprung: 0 = normal, 1 = Vorwärtsrolle, 2 = Rückwärtssalto (Wandsprung: auch vorwärts)
-    // Nach einem normalen Sprung kommt immer eine Variante (je 50 %); nach einer Variante 50 % normal -> auf Dauer je 1/3.
+    // Sprung-Variante bei jedem Absprung vom Boden UND bei jedem Wandsprung: 0 = normal, 1 = Vorwärtsrolle, 2 = Rückwärtssalto
+    // (Wandsprung: auch vorwärts), 3 = Seitwärtsrolle (Drehung um die Hochachse: Seite -> vorn -> andere Seite -> hinten, Nutzerwunsch).
+    // Nach einem normalen Sprung kommt immer eine Variante (je 1/3); nach einer Variante 50 % normal, sonst eine der drei.
     const pickJump = wall => {
       const r = Math.random();
-      const typ = S.lastTyp === 0 ? (r < 0.5 ? 1 : 2) : S.lastTyp === undefined ? (r < 1/3 ? 0 : r < 2/3 ? 1 : 2) : (r < 0.5 ? 0 : r < 0.75 ? 1 : 2);
-      S.lastTyp = typ; S.roll = -1; S.rollSign = 0;
+      const typ = S.lastTyp === 0 ? 1 + Math.floor(r*3) : S.lastTyp === undefined ? Math.floor(r*4) : (r < 0.5 ? 0 : 1 + Math.floor((r - 0.5)*6));
+      S.lastTyp = typ; S.roll = -1; S.rollSign = 0; S.rollArt = typ === 3 ? 'seite' : 'rolle';
       if(typ > 0){ S.roll = 0;
         const mv = (wall || sp >= 1.2) ? (P.vx < 0 || (P.vx === 0 && flip < 0) ? -1 : 1) : flip;      // vorwärts = in Bewegungs-/Blickrichtung
         S.rollSign = (typ === 2 && !wall) ? -mv : mv; }
@@ -355,7 +375,8 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     // Landet die Figur mitten in der Rolle, läuft sie in 0,15 s zu Ende (kein Ruck)
     if(P.grounded && S.roll > 0 && S.roll < 1) S.roll += dt/0.15;
     const flow = x => x*0.65+ease(x)*0.35;                   // fast gleichmäßig: fängt sofort an zu drehen
-    if(S.roll > 0 && S.roll < 1){ rot = 2*PI*flow(S.roll)*S.rollSign; rotCenter = true; }
+    let spinTh = 0;   // Seitwärtsrolle: Drehwinkel um die Hochachse (figureSpin), sonst Drehung in der Bildebene
+    if(S.roll > 0 && S.roll < 1){ if(S.rollArt === 'seite') spinTh = -2*PI*flow(S.roll); else { rot = 2*PI*flow(S.roll)*S.rollSign; rotCenter = true; } }
     // Langeweile: nach IDLE_START Sekunden ohne Eingabe dreht sich die Figur zum Spieler (Vorderansicht) und macht Unsinn (Affe: Disco, Hüpfen, Salto, Klatschen, Kratzen; Schwein: Winken, Wackeln, Knicks, Tippeln)
     S.idleT = (key === 'idle' && !P._moveDir) ? (S.idleT || 0) + dt : 0;
     const wantFront = S.idleT > IDLE_START;
@@ -444,7 +465,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     };
     const lianeHinten = seilSpringen && Math.sin(S.ropeTh) < 0;
     if(lianeHinten) liane();
-    const thTotal = frPose ? -PI/2*ease(S.front) : 0;
+    const thTotal = frPose ? -PI/2*ease(S.front) : spinTh;
     if(thTotal){
       const pd = Object.assign({}, p);
       if(frPose){ const wf = ease(S.front); pd.fr = frPose; pd.w = wf; pd.dy = p.dy + (frPose.dy - p.dy)*wf; pd.lean = p.lean + (frPose.lean - p.lean)*wf;
