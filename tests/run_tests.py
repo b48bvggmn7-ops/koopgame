@@ -10727,7 +10727,10 @@ async def main(filter_):
                 print(f'  ✓ {fn.__name__}'); ok += 1
             except AssertionError as e:
                 print(f'  ✗ {fn.__name__}: {e}'); fail += 1
-            await ctx.close()
+            except Exception as e:   # z. B. Zeitüberschreitung beim Warten: als rot zählen und weitermachen (brach sonst den ganzen Lauf ab)
+                print(f'  ✗ {fn.__name__}: {type(e).__name__}: {str(e).splitlines()[0][:300] if str(e) else ""}'); fail += 1
+            try: await ctx.close()
+            except Exception: pass
         await browser.close()
         print(f'\n{ok} bestanden, {fail} fehlgeschlagen')
         return fail
