@@ -46,13 +46,13 @@ function prog(vs,fs){const p=gl.createProgram();for(const [t,s] of [[gl.VERTEX_S
 const VS=`#version 300 es
 in vec3 aPos;in vec3 aNrm;in vec2 aUv;in float aLayer;
 uniform mat4 uVP,uM;uniform mat3 uNM;uniform vec3 uScale;uniform float uLen,uGrav;uniform vec2 uTile;
-out vec2 vUv;out vec3 vN;out float vL;out vec3 vW;
-void main(){vec3 p=aPos+aNrm*uLen*aLayer/uScale;vec4 w=uM*vec4(p,1.);w.y-=uGrav*aLayer*aLayer;
+out vec2 vUv;out vec2 vUv0;out vec3 vN;out float vL;out vec3 vW;
+void main(){vUv0=aUv;vec3 p=aPos+aNrm*uLen*aLayer/uScale;vec4 w=uM*vec4(p,1.);w.y-=uGrav*aLayer*aLayer;
 vW=w.xyz;vN=normalize(uNM*aNrm);vUv=aUv*uTile;vL=aLayer;gl_Position=uVP*w;}`;
 const FS=`#version 300 es
 precision highp float;
-uniform sampler2D uNoise;uniform vec3 uRoot,uTip,uCam;uniform float uFur,uSpec,uEmit,uAlpha;
-in vec2 vUv;in vec3 vN;in float vL;in vec3 vW;out vec4 o;
+uniform sampler2D uNoise,uTat;uniform vec3 uRoot,uTip,uCam;uniform float uFur,uSpec,uEmit,uAlpha,uTatOn;
+in vec2 vUv;in vec2 vUv0;in vec3 vN;in float vL;in vec3 vW;out vec4 o;
 void main(){
  vec3 L1=normalize(vec3(0.45,0.8,0.75)),L2=normalize(vec3(-0.8,0.2,0.4)),L3=normalize(vec3(-0.2,0.5,-0.9));
  float layer=vL;vec4 t=vec4(.5,.5,0.,1.);float cov=1.;
@@ -64,10 +64,12 @@ void main(){
  float f=uFur>.5?(.4+.4*smoothstep(0.,1.,layer)):0.;
  vec3 base=pow(mix(uRoot,uTip,f),vec3(2.2));
  if(uFur>.5)base*=.997+.006*t.g;
+ if(uTatOn>.5){vec4 tc=texture(uTat,vUv0);base=mix(base,pow(tc.rgb,vec3(2.2)),tc.a*.9);}   // Tattoo färbt das Fell
  float ao=uFur>.5?mix(.86,1.,layer):1.;
  vec3 hemi=mix(vec3(.62,.68,.56),vec3(1.,.97,.9),N.y*.5+.5);
  vec3 col=base*(hemi*.62+vec3(1.,.95,.86)*wrap*.78+d2*vec3(.7,.85,1.))*ao*1.18;
  col+=base*vec3(1.,.55,.45)*(1.-wrap)*.14;
+ if(uTatOn>.5){vec4 tc=texture(uTat,vUv0);col=mix(col,pow(tc.rgb,vec3(2.2))*(.5+.6*wrap),tc.a*.8);}   // Tattoo kräftig: auch nach dem Licht (Haarspitzen/Licht hellen es sonst auf)
  float rim=pow(1.-max(dot(N,V),0.),3.)*(dot(N,L3)*.5+.5);
  col+=(uFur>.5?pow(uTip,vec3(2.2))*layer*.6:vec3(.06))*rim;
  if(uFur>.5){vec3 H2=normalize(L1+V);col+=vec3(1.,.97,.9)*pow(max(dot(N,H2),0.),22.)*(.04+.2*layer)*.5;}
@@ -80,7 +82,7 @@ out vec2 v;void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);v=p;gl_Posi
 `#version 300 es
 precision highp float;in vec2 v;out vec4 o;uniform vec3 uA,uB;
 void main(){vec3 c=mix(uB,uA,smoothstep(0.,1.,v.y));c+=.08*(1.-length((v-vec2(.5,.45))*vec2(1.,1.2)));o=vec4(c,1.);}`);
-const U={};for(const n of ['uVP','uM','uNM','uScale','uLen','uGrav','uTile','uNoise','uRoot','uTip','uCam','uFur','uSpec','uEmit','uAlpha'])U[n]=gl.getUniformLocation(PRG,n);
+const U={};for(const n of ['uVP','uM','uNM','uScale','uLen','uGrav','uTile','uNoise','uRoot','uTip','uCam','uFur','uSpec','uEmit','uAlpha','uTat','uTatOn'])U[n]=gl.getUniformLocation(PRG,n);
 // Haar-Textur: runde, spitz zulaufende Haare
 const noise=(()=>{const cells=128,px=6,s=cells*px;const c=document.createElement('canvas');c.width=c.height=s;const x=c.getContext('2d');const img=x.createImageData(s,s);
  const R=[];for(let i=0;i<cells*cells;i++)R.push([0.35+0.65*rnd(),rnd(),(rnd()-.5)*.3,(rnd()-.5)*.3]);
@@ -114,12 +116,13 @@ function tube(pts,r0,r1,shells,seg=60,rad=14){const pos=[],nrm=[],uv=[],idx=[];l
  for(let i=0;i<seg;i++)for(let j=0;j<rad;j++){const a=i*(rad+1)+j,b=a+rad+1;idx.push(a,b,a+1,b,b+1,a+1)}
  return mkGeo(pos,nrm,uv,idx,shells)}
 // ---------- Szenengraph ----------
+const TAT={on:false};   // Tattoo der gerade gezeichneten Figur an/aus (Textur auf Einheit 1)
 class Nd{constructor(o={}){this.pos=o.pos||[0,0,0];this.rot=o.rot||[0,0,0];this.sc=o.sc||[1,1,1];this.kids=[];this.part=null;this.visible=true}
  add(k){this.kids.push(k);return k}}
 const h=x=>[(x>>16&255)/255,(x>>8&255)/255,(x&255)/255];
 const SHELLS=FELL_SCHICHTEN;
 function F(par,o){const n=par.add(new Nd(o));const r=(n.sc[0]+n.sc[1]+n.sc[2])/3;const dens=(o.dens||30)*FELL_DICHTE;
- n.part={geo:o.geo||SPH(SHELLS),fur:true,root:h(o.root),tip:h(o.tip),len:o.len||.09,grav:o.grav==null?.05:o.grav,tile:o.tile||[r*2*Math.PI*dens/128,r*Math.PI*dens/128],spec:0,emit:0,alpha:1};return n}
+ n.part={geo:o.geo||SPH(SHELLS),fur:true,root:h(o.root),tip:h(o.tip),len:o.len||.09,grav:o.grav==null?.05:o.grav,tile:o.tile||[r*2*Math.PI*dens/128,r*Math.PI*dens/128],spec:0,emit:0,alpha:1,tat:!!o.tat};return n}
 function K(par,o){const n=par.add(new Nd(o));n.part={geo:o.geo||SPH(1),fur:false,root:h(o.color),tip:h(o.color),len:0,grav:0,tile:[1,1],spec:o.spec||0,emit:o.emit||0,alpha:o.alpha==null?1:o.alpha};return n}
 function drawNode(n,pm,VPm,cam){const loc=M.mul(M.mul(M.mul(M.T(...n.pos),M.RZ(n.rot[2])),M.mul(M.RY(n.rot[1]),M.RX(n.rot[0]))),M.S(...n.sc));
  let parentOnly=M.mul(pm,M.mul(M.mul(M.T(...n.pos),M.RZ(n.rot[2])),M.mul(M.RY(n.rot[1]),M.RX(n.rot[0]))));if(n.gs)parentOnly=M.mul(parentOnly,M.S(...n.gs));const w=M.mul(pm,loc);
@@ -128,7 +131,7 @@ function drawNode(n,pm,VPm,cam){const loc=M.mul(M.mul(M.mul(M.T(...n.pos),M.RZ(n
   gl.uniformMatrix4fv(U.uVP,false,VPm);gl.uniformMatrix4fv(U.uM,false,w);gl.uniformMatrix3fv(U.uNM,false,M.nm(w));
   gl.uniform3f(U.uScale,...n.sc);gl.uniform1f(U.uLen,p.len);gl.uniform1f(U.uGrav,p.grav);gl.uniform2f(U.uTile,...p.tile);
   gl.uniform3f(U.uRoot,...p.root);gl.uniform3f(U.uTip,...p.tip);gl.uniform3f(U.uCam,...cam);
-  gl.uniform1f(U.uFur,p.fur?1:0);gl.uniform1f(U.uSpec,p.spec);gl.uniform1f(U.uEmit,p.emit);gl.uniform1f(U.uAlpha,p.alpha);
+  gl.uniform1f(U.uFur,p.fur?1:0);gl.uniform1f(U.uTatOn,p.tat&&TAT.on?1:0);gl.uniform1f(U.uSpec,p.spec);gl.uniform1f(U.uEmit,p.emit);gl.uniform1f(U.uAlpha,p.alpha);
   gl.drawElementsInstanced(gl.TRIANGLES,p.geo.n,gl.UNSIGNED_INT,0,p.geo.shells)}
  if(n.visible)for(const k of n.kids)drawNode(k,parentOnly,VPm,cam)}
 // ---------- Affe ----------
@@ -136,12 +139,12 @@ function glints(H,x,y,z,s){return [K(H,{geo:SPH(1),pos:[x+.07*s,y+.105,z+.085],s
  K(H,{geo:SPH(1),pos:[x-.06*s,y-.1,z+.08],sc:[.036,.036,.025],color:0xffffff,emit:1})]}
 function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x95592e,TIP=0xe3ab6b;
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
- F(H,{sc:[1.08,1,1],root:ROOT,tip:TIP,len:.11});
+ F(H,{sc:[1.08,1,1],root:ROOT,tip:TIP,len:.11,tat:true});
  F(H,{pos:[0,.95,.3],sc:[.3,.22,.3],root:0x9a6234,tip:0xe0aa6c,len:.13});
  F(H,{pos:[.16,.93,.25],sc:[.16,.16,.2],rot:[0,0,-.4],root:0x9a6234,tip:0xe0aa6c,len:.1});
  for(const s of [-1,1]){
   K(H,{pos:[s*.34,-.02,.92],sc:[.42,.38,.18],color:0xffe2c2,spec:30});
-  F(H,{pos:[s*1.0,.12,-.05],sc:[.14,.36,.36],root:ROOT,tip:0x9a6a3c,len:.05});
+  F(H,{pos:[s*1.0,.12,-.05],sc:[.14,.36,.36],root:ROOT,tip:0x9a6a3c,len:.05,tat:true});
   K(H,{pos:[s*1.1,.12,0],sc:[.07,.25,.25],color:0xe9a38f,spec:10});
   { const e = K(H,{pos:[s*.36,.16,1.07],sc:[.23,.28,.11],color:0x1a0f0b,spec:140}); eyes.push({n:e, g:glints(H,s*.36,.16,1.07,s), y:.26}); }
   K(H,{pos:[s*.66,-.2,.78],sc:[.22,.14,.06],color:0xff8f9a,alpha:.65});
@@ -153,7 +156,7 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x95592e,TIP=0x
  K(H,{geo:tube(mp,.03,.03,1,30,8),color:0x5a2f25});
  K(H,{pos:[0,-.585,1.14],sc:[.1,.05,.04],color:0xff7d8f,spec:40});
  const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.3,1.5,.1]}));
-  F(A,{pos:[0,-.3,0],sc:[.2,.4,.2],root:ROOT,tip:TIP,len:.08});K(A,{pos:[0,-.75,.04],sc:[.19,.19,.19],color:0xffe2c2,spec:30});for(const fx of [-.09,0,.09])K(A,{pos:[fx,-.9+Math.abs(fx)*.3,.1],sc:[.065,.085,.065],color:0xffe2c2,spec:30});K(A,{pos:[-s*.17,-.78,.08],sc:[.06,.08,.06],color:0xffe2c2,spec:30});AP.push(A)}
+  F(A,{pos:[0,-.3,0],sc:[.2,.4,.2],root:ROOT,tip:TIP,len:.08,tat:true});K(A,{pos:[0,-.75,.04],sc:[.19,.19,.19],color:0xffe2c2,spec:30});for(const fx of [-.09,0,.09])K(A,{pos:[fx,-.9+Math.abs(fx)*.3,.1],sc:[.065,.085,.065],color:0xffe2c2,spec:30});K(A,{pos:[-s*.17,-.78,.08],sc:[.06,.08,.06],color:0xffe2c2,spec:30});AP.push(A)}
  const LP=[];for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,.7,.1]}));
   F(L,{pos:[0,-.12,0],sc:[.3,.3,.32],root:ROOT,tip:TIP,len:.08});
   K(L,{pos:[0,-.56,.1],sc:[.26,.14,.28],color:0xe3a869,spec:30});
@@ -173,9 +176,9 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x95592e,TIP=0x
 // ---------- Schwein ----------
 function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffdde8,D=40;
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
- F(H,{sc:[1.12,1,1.02],root:ROOT,tip:TIP,len:.045,dens:D});
+ F(H,{sc:[1.12,1,1.02],root:ROOT,tip:TIP,len:.045,dens:D,tat:true});
  for(const s of [-1,1]){
-  F(H,{pos:[s*.62,.86,.14],sc:[.36,.3,.12],rot:[.55,0,-s*.7],root:0xd0607f,tip:0xffb5c9,len:.04,dens:D});
+  F(H,{pos:[s*.62,.86,.14],sc:[.36,.3,.12],rot:[.55,0,-s*.7],root:0xd0607f,tip:0xffb5c9,len:.04,dens:D,tat:true});
   { const e = K(H,{pos:[s*.43,.22,.9],sc:[.17,.22,.11],color:0x1a0d12,spec:140}); eyes.push({n:e, g:glints(H,s*.43,.22,.9,s), y:.22}); }
   K(H,{pos:[s*.7,-.08,.74],sc:[.26,.18,.07],color:0xff6f8f,alpha:.55});
   K(H,{pos:[s*.15,-.2,1.245],sc:[.075,.115,.05],color:0xa84465,spec:30});
@@ -186,7 +189,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
  K(H,{geo:tube([[0,.98,.3],[.07,1.14,.3],[.02,1.28,.3],[-.1,1.24,.3],[-.1,1.14,.3]],.04,.02,1,30,8),color:0xf590ac,spec:20});
  K(H,{geo:tube([[-.24,-.6,.85],[-.12,-.7,.9],[0,-.73,.92],[.12,-.7,.9],[.24,-.6,.85]],.03,.03,1,30,8),color:0x9a3c58});
  for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.35,1.45,.1]}));
-  F(A,{pos:[0,-.26,0],sc:[.2,.35,.2],root:ROOT,tip:TIP,len:.04,dens:D});K(A,{pos:[0,-.66,.03],sc:[.17,.17,.17],color:0xf590ac,spec:20});R['a'+s]=A}
+  F(A,{pos:[0,-.26,0],sc:[.2,.35,.2],root:ROOT,tip:TIP,len:.04,dens:D,tat:true});K(A,{pos:[0,-.66,.03],sc:[.17,.17,.17],color:0xf590ac,spec:20});R['a'+s]=A}
  for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,.7,.1]}));
   F(L,{pos:[0,-.2,0],sc:[.3,.32,.32],root:ROOT,tip:TIP,len:.04,dens:D});
   for(const hx of [-.1,.1])K(L,{pos:[hx,-.56,.1],sc:[.14,.14,.28],color:0xf590ac,spec:30});R['l'+s]=L}
@@ -197,11 +200,36 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
  for(const k of R.kids){if(k===R['l-1']||k===R['l1'])continue;if(k===R['a-1']||k===R['a1']){k.pos=[k.pos[0],k.pos[1]+.12,k.pos[2]];continue}k.pos=[k.pos[0],k.pos[1]-.22,k.pos[2]]}
  return {root:R,head:H,armN:R['a-1'],armP:R['a1'],legN:R['l-1'],legP:R['l1'],eyes}}
 
-  return {gl, PRG, U, M, Nd, buildMonkey, buildPig, drawNode, cv, noise};
+  return {gl, PRG, U, M, Nd, buildMonkey, buildPig, drawNode, cv, noise, TAT};
   }
   let E;
   try { E = baue(); } catch(e){ console.warn('3D-Figuren nicht verfügbar:', e); return; }
-  const {gl, PRG, U, M, Nd, buildMonkey, buildPig, drawNode, cv, noise} = E;
+  const {gl, PRG, U, M, Nd, buildMonkey, buildPig, drawNode, cv, noise, TAT} = E;
+  // ---------- Tattoo als Fell-Textur (Umkleide, Muster aus js/27 tattooPattern) ----------
+  // Das Muster (für die Gesichtsscheibe gemacht, Einheitskreis) wird von vorn auf die vordere Kugelhälfte gelegt und gespiegelt
+  // auf die hintere – so geht es rund um die ganze Figur, wölbt sich mit und dreht sich mit (Kopf/Körper, Arme, Ohren).
+  const TAT_TEX = {};
+  function tattooTextur(kind){
+    if(TAT_TEX[kind]) return TAT_TEX[kind];
+    if(typeof tattooPattern !== 'function') return null;
+    const N = 256, P = document.createElement('canvas'); P.width = P.height = N;
+    const pc = P.getContext('2d'); pc.translate(N/2, N/2); pc.scale(N/2*.96, N/2*.96); pc.lineJoin = 'round'; pc.lineCap = 'round';
+    try { tattooPattern(pc, kind); } catch(e){ return null; }
+    const pd = pc.getImageData(0, 0, N, N).data, TW = 512, TH = 256;
+    const T = document.createElement('canvas'); T.width = TW; T.height = TH;
+    const tc = T.getContext('2d'), img = tc.createImageData(TW, TH), d = img.data;
+    for(let j = 0; j < TH; j++){ const th = (j + .5)/TH*Math.PI, sy = Math.cos(th), r = Math.sin(th);
+      for(let i = 0; i < TW; i++){ const ph = (i + .5)/TW*2*Math.PI, x = r*Math.cos(ph), z = r*Math.sin(ph);
+        const ux = z >= 0 ? x : -x, px = Math.min(N - 1, Math.max(0, Math.round(N/2 + ux*N/2*.98))), py = Math.min(N - 1, Math.max(0, Math.round(N/2 - sy*N/2*.98)));
+        const a = (py*N + px)*4, b = (j*TW + i)*4; d[b] = pd[a]; d[b+1] = pd[a+1]; d[b+2] = pd[a+2]; d[b+3] = pd[a+3]; } }
+    tc.putImageData(img, 0, 0);
+    const tex = gl.createTexture(); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, T);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.activeTexture(gl.TEXTURE0);
+    return TAT_TEX[kind] = tex;
+  }
   // ---------- Figuren-Halter ----------
   const halter = {};
   function holen(male){
@@ -267,14 +295,10 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     return {p:{head:[0,0,Math.sin(t*1.1)*.06], armN:[0,0,-.55-b*.05], armP:[0,0,.55+b*.05], legN:[0,0,0], legP:[0,0,0]}, key:'idle'};
   }
   const handPunkt = (n, hx, hy, hz) => { const w = n.capM; return w ? [w[0]*hx + w[4]*hy + w[8]*hz + w[12], w[1]*hx + w[5]*hy + w[9]*hz + w[13]] : [0, 2]; };
-  let an3d = true;
+  // (Taste 3 / Knopf zum Umschalten auf die bisherigen Figuren entfernt – Nutzerwunsch; ohne WebGL2 oder nur mit Software-Grafik
+  //  bleiben die bisherigen Figuren automatisch, siehe baue())
   const vieleSchritte = true;   // festgelegt (Nutzerwunsch): ganz viele kleine Schritte, im Spiel nicht umschaltbar
-  const umschalten = () => { an3d = !an3d; const b = document.getElementById('d3Btn'); if(b) b.textContent = an3d ? '3D: an (3)' : '3D: aus (3)'; };
-  addEventListener('keydown', e => { if(e.code === 'Digit3' && !e.repeat) umschalten(); });
-  { const b = document.getElementById('d3Btn'); if(b){ b.textContent = '3D: an (3)'; b.addEventListener('click', e => { umschalten(); b.blur(); }); } }
-  const orig = window.fussFigurZeichnen;   // bisherige Figur (10c) – für „3D aus“ (Taste 3); fehlte, dann gab es bei jedem Bild einen Fehler
   window.fussFigurZeichnen = function(P){
-    if(!an3d) return orig(P);
     const c = ctx, now = performance.now(), male = P.male;
     let S = P._f3; if(!S) S = P._f3 = {t:now, phase:0, yaw:.8, rollA:0, cur:null, nb:now + 1500, bl:0, lean:0};
     const dt = Math.min(.05, Math.max(0, (now - S.t)/1000)); S.t = now;
@@ -409,6 +433,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
     gl.useProgram(PRG); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, noise); gl.uniform1i(U.uNoise, 0);
+    { const wear = typeof cosItemsOf === 'function' ? cosItemsOf(male ? 'm' : 'f') : null, kind = wear && wear.tattoo ? wear.tattoo.fx.kind : null;
+      const tex = kind ? tattooTextur(kind) : null; TAT.on = !!tex; S.tat = tex ? kind : null;
+      if(tex){ gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(U.uTat, 1); gl.activeTexture(gl.TEXTURE0); } }
     gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     drawNode(H.wrap, M.id(), M.ortho(FR.x0, FR.x1, FR.y0, FR.y1, -20, 20), [0, 1.8, 30]);
     const fy = P.h*0.5 + 4 + hangSenke(ch, S.al||1, P.h, male ? 4.5 : 3.0);   // 4 px tiefer: die Figur steht im Gras
@@ -428,7 +455,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     // Brille/Tattoo (Umkleide, js/27): als 2D-Auflage auf die projizierten Augen der 3D-Figur – von vorn beide Gläser, von der Seite ein Glas
     try{
       const wear = typeof cosItemsOf === 'function' ? cosItemsOf(male ? 'm' : 'f') : null;
-      if(wear && (wear.glasses || wear.tattoo) && ch.eyes.length >= 2 && ch.eyes[0].n.capM && ch.head.capM){
+      if(wear && wear.glasses && ch.eyes.length >= 2 && ch.eyes[0].n.capM && ch.head.capM){
         const cm = n => n.capM, pt = n => { const w = cm(n); return [w[12], w[13], w[14]]; };
         const e0 = pt(ch.eyes[0].n), e1 = pt(ch.eyes[1].n), hc = pt(ch.head), hopPx = IT.hop*42;
         const lo = q => [q[0]*SC, fy - q[1]*SC - hopPx];
@@ -439,10 +466,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         c.save(); c.shadowColor = 'transparent'; c.shadowBlur = 0;
         if(aF > .02){
           c.globalAlpha = aF;
-          if(wear.tattoo && typeof drawTattoo === 'function' && typeof FACE_SPOTS !== 'undefined'){
-            const face = male ? 'monkey' : 'pig', F = FACE_SPOTS[face], hw = (male ? 1.4 : 1.38)*SC*Math.abs(Math.cos(S.yaw + IT.yaw)) + .001, sx = hw/F.head[2];
-            drawTattoo(c, wear.tattoo.fx.kind, face, {x: mid[0] - F.eyes[0][0]*0 - 153.5*sx, y: mid[1] - F.eyes[0][1]*sx, w: 308*sx, h: 257*sx});
-          }
+          // (Tattoo nicht mehr als flaches Bild hier – es sitzt jetzt als Färbung im Fell, siehe tattooTextur)
           if(wear.glasses && typeof drawGlasses === 'function'){ const w = dE3*(male ? .33 : .27), h = w*1.12;
             c.save(); c.translate(mid[0], mid[1]); c.rotate(Math.atan2(R[1] - L[1], R[0] - L[0]));
             drawGlasses(c, wear.glasses.fx.kind, [-dE/2, 0], [dE/2, 0], w, h); c.restore(); }

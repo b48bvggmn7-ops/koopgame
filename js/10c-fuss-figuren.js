@@ -475,12 +475,9 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     if(seilSpringen && !lianeHinten) liane();
     c.restore();
   };
-  window.addEventListener('keydown', e => {
-    if(e.code === 'KeyB' && !e.repeat && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) NEUE_FIGUREN = !NEUE_FIGUREN;
-  });
+  // (Taste B / Knopf „Aussehen“ zum Umschalten auf die alte Kugel entfernt – Nutzerwunsch)
   window.addEventListener('DOMContentLoaded', () => {
-    const lb = document.getElementById('lookBtn'), fb = document.getElementById('fsBtn');
-    if(lb) lb.addEventListener('click', () => { NEUE_FIGUREN = !NEUE_FIGUREN; lb.blur(); });
+    const fb = document.getElementById('fsBtn');
     if(fb) fb.addEventListener('click', () => {
       const el = document.documentElement;
       (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => {}); fb.blur();

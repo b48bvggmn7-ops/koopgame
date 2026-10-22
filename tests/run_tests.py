@@ -6292,7 +6292,7 @@ async def f3d_bereit(g):
     """Level laden und prüfen, dass die 3D-Figuren wirklich zeichnen (WebGL2 da, 3D an). Der Testrechner hat nur
     Software-Grafik – dort bleiben sonst die bisherigen Figuren; hier wird 3D erzwungen (langsam, aber für ein paar Bilder ok)."""
     await g.p.add_init_script("window.figuren3dErzwingen = true")
-    await g.p.goto(GAME); await g.p.wait_for_timeout(400)
+    g._srv = webserver(); await g.p.goto(g._srv.url + 'index.html'); await g.p.wait_for_timeout(400)   # Webserver: Leinwand lesbar
     await g.load(level([ground(0, 680, 2400)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}, welt='ruinen'))
     await g.steps(10)
     await g.p.evaluate(F3D_ZEICHNEN, {'n': 2, 'wer': 'beide'})
@@ -6323,23 +6323,35 @@ async def figuren3d_hebel(g):
 
 @test
 async def figuren3d_brille_tattoo(g):
-    """3D-Figuren: Brille und Tattoo aus der Umkleide sitzen auf den 3D-Augen – von vorn Brille und Tattoo, von der Seite
-    ein schmales Brillenglas (für Affe und Schweinchen)."""
+    """3D-Figuren: Brille aus der Umkleide sitzt auf den 3D-Augen (von vorn beide Gläser, von der Seite ein schmales Glas);
+    das Tattoo liegt als Färbung im Fell rund um die ganze Figur (vorn, Seite, hinten) – kein flaches Bild mehr darüber.
+    Mit Tattoo sieht die Figur sichtbar anders aus als ohne (Pixelvergleich der 3D-Leinwand-Ausgabe)."""
     await f3d_bereit(g)
     for wer, figur in (('m', 'p1'), ('f', 'p2')):
-        r = await g.ev(f"""(() => {{ cosmeticsReset();
-          for(const id of ['gl_aviator', 'tat_flame']){{ cosmeticsSave.owned.{wer}[id] = 1; equipItem('{wer}', id); }}
+        await g.ev(f"""(() => {{ cosmeticsReset();
           window.__gl = 0; window.__ta = 0; window.__og = drawGlasses; window.__ot = drawTattoo;
-          drawGlasses = (...a) => {{ __gl++; return __og(...a); }}; drawTattoo = (...a) => {{ __ta++; return __ot(...a); }};
-          return true; }})()""")
+          drawGlasses = (...a) => {{ __gl++; return __og(...a); }}; drawTattoo = (...a) => {{ __ta++; return __ot(...a); }}; }})()""")
+        # Bildausschnitt der Figur (Hauptleinwand, Webserver -> lesbar) mit und ohne Tattoo vergleichen
+        ausschnitt = f"""(() => {{ const cv = document.querySelector('canvas'), k = cv.width/W, P = {figur};
+          const x = Math.round(((P.x - camX)/VW*W - 40)*k), y = Math.round((P.y/H*H - 70)*k);
+          return Array.from(cv.getContext('2d').getImageData(x, y, Math.round(80*k), Math.round(70*k)).data); }})()"""
         try:
-            vorn = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': wer, 'vorher': f"{figur}._yawTest = 0", 'merk': "[__gl, __ta]"})
-            await g.ev("__gl = 0; __ta = 0")
-            seite = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': wer, 'vorher': f"{figur}._yawTest = 1.5", 'merk': "[__gl, __ta]"})
+            await g.p.evaluate(F3D_ZEICHNEN, {'n': 6, 'wer': 'beide', 'vorher': f"{figur}._yawTest = 0; draw()"})
+            ohne = await g.ev(ausschnitt)
+            await g.ev(f"for(const id of ['gl_aviator', 'tat_flame']){{ cosmeticsSave.owned.{wer}[id] = 1; equipItem('{wer}', id); }}")
+            r = {}
+            for blick, yaw in (('vorn', 0), ('seite', 1.5), ('hinten', 3.14)):
+                await g.ev("__gl = 0; __ta = 0")
+                m = await g.p.evaluate(F3D_ZEICHNEN, {'n': 6, 'wer': 'beide', 'vorher': f"{figur}._yawTest = {yaw}; draw()", 'merk': f"[__gl, __ta, {figur}._f3.tat]"})
+                r[blick] = m[-1]
+                if blick == 'vorn': mit = await g.ev(ausschnitt)
         finally:
             await g.ev(f"drawGlasses = __og; drawTattoo = __ot; {figur}._yawTest = null; cosmeticsReset(); menuScreen = null")
-        assert vorn[-1][0] >= 1 and vorn[-1][1] >= 1, f'{wer}: Brille/Tattoo von vorn fehlen: {vorn[-1]}'
-        assert seite[-1][0] >= 1, f'{wer}: Brillenglas von der Seite fehlt: {seite[-1]}'
+        anders = sum(1 for i in range(0, len(mit), 4) if abs(mit[i] - ohne[i]) + abs(mit[i+1] - ohne[i+1]) + abs(mit[i+2] - ohne[i+2]) > 40) / (len(mit)/4)
+        assert r['vorn'][0] >= 1 and r['seite'][0] >= 1, f'{wer}: Brille von vorn/von der Seite fehlt: {r}'
+        assert all(v[2] == 'flames' for v in r.values()), f'{wer}: Tattoo nicht im Fell (vorn/Seite/hinten): {r}'
+        assert all(v[1] == 0 for v in r.values()), f'{wer}: Tattoo wird noch als flaches Bild gemalt: {r}'
+        assert anders > 0.05, f'{wer}: mit Tattoo sieht die Figur kaum anders aus: {anders:.3f}'
 
 @test
 async def hohler_baum_start_ziel(g):
