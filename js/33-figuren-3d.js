@@ -210,6 +210,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   const lerpA = (a,b,t) => a.map((v,i) => v + (b[i]-v)*t);
   const ease = x => x*x*(3-2*x);
   const TUCK = {head:[.55,0,0], armN:[-1.75,0,.25], armP:[-1.75,0,-.25], legN:[-1.45,0,.1], legP:[-1.45,0,-.1]};
+  const TANZ_ARM = .75, TANZ_ABSTAND = 30;   // Siegestanz: Verlängerung des Einhak-Arms, Abstand der beiden Figuren (px)
   const WJ_ZEIT = 480;   // ms: Salto nach dem Wandsprung
   // wie tief die Figur beim Hangeln unter der Fläche hängt: die Hand-Spitze (Arm mit Faktor al) soll genau die Unterkante der Fläche (Oberkante der Hitbox) berühren
   function hangSenke(ch, al, ph, voll){
@@ -219,11 +220,30 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     return Math.max(0, tip - 4 - ph - 2)*Math.min(1, (al - 1)/(voll - 1));
   }
   const wandRichtung = P => P.onWall || (P.haft ? (P.haft.flaeche === 'links' ? 1 : (P.haft.flaeche === 'rechts' ? -1 : 0)) : 0);
+  // Siegestanz zu zweit: stehen beide nah beieinander, haken sie die inneren Arme ein und hüpfen im Takt; sonst jubeln beide mit erhobenen Armen
+  function tanzInfo(P){
+    const o = P === p1 ? p2 : p1, near = !!o && Math.abs(o.x - P.x) < 150 && Math.abs(o.y - P.y) < 70;
+    const left = o ? (P.x < o.x || (P.x === o.x && P.male)) : true;
+    return {o, near, side: left ? 1 : -1};   // side: auf welcher Seite der Partner steht (1 = rechts)
+  }
+  function tanzPose(P, S){
+    const ti = S.tz = tanzInfo(P), bt = (performance.now() - winT0)/DANCE_BEAT, ph = bt % 1, side = ti.side;
+    const kick = Math.floor(bt) % 2 ? 1 : -1, kk = Math.sin(ph*Math.PI)*.8;
+    const legs = {legN:[kick > 0 ? -kk : 0,0,0], legP:[kick < 0 ? -kk : 0,0,0]};
+    if(!ti.near){ const j = 2.6 + Math.sin(bt*Math.PI*2)*.25; return Object.assign({head:[-.1,0,Math.sin(bt*Math.PI)*.12], armN:[0,0,-j], armP:[0,0,j]}, legs); }
+    const aussen = 2.55 + Math.sin(bt*Math.PI*2)*.3, innen = 1.5 + Math.sin(bt*Math.PI*2)*.08;
+    const arm = {head:[-.08,0,Math.sin(bt*Math.PI)*.14]};
+    if(side > 0){ arm.armP = [0,0,innen]; arm.armN = [0,0,-aussen]; } else { arm.armN = [0,0,-innen]; arm.armP = [0,0,aussen]; }
+    return Object.assign(arm, legs);
+  }
   function zielPose(P, S, t, flip, sinceWJ){
     const sp = S.spG, male = P.male, s = Math.sin(S.phase), w = Math.min(1, sp/4.4);
+    if(typeof baumTanzt === 'function' && baumTanzt()) return {p: tanzPose(P, S), key:'tanz'};   // gemeinsamer Siegestanz
     if(P.dash) return {p: TUCK, key:'dash'};
     if(sinceWJ < WJ_ZEIT){ const k = sinceWJ/WJ_ZEIT, tk = Math.sin(Math.min(1,k*1.15)*Math.PI);   // Salto: erst einrollen, am Ende strecken
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
+    if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
+      if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-2.0*e,0,-.3], armP:[-.6*e,0,.3], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
     if(male && P.hookAttached && P.anchor) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
     if(!male && P.gliding) return {p:{head:[-.1,0,0], armN:[0,0,-2.5], armP:[0,0,2.5], legN:[-.15+Math.sin(t*2.2)*.1,0,0], legP:[.2-Math.sin(t*2.2)*.1,0,0]}, key:'segeln'};
     if(P.haft && P.haft.flaeche === 'unten'){   // Haftfläche (Decke): erst greift der eine Arm nach vorn, dann der andere – im Stand bleiben die Arme still
@@ -267,6 +287,11 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     let z = zielPose(P, S, t, flip, sinceWJ);
     const tk = S.trick ? Math.min(1, (now - S.trick.t0)/(S.trick.typ === 'dreh' ? 520 : 650)) : 1, tke = ease(tk);
     if(S.trick && (S.trick.typ === 'salto' || S.trick.typ === 'schraube') && (z.key === 'up' || z.key === 'down')) z = {p: TUCK, key: z.key};
+    // Siegestanz: die Vorgabe des Spiels (hüpfen/drehen der ganzen Figur) wird hier selbst gemacht -> erst herausrechnen
+    if(z.key === 'tanz' && typeof danceMove === 'function'){ const d = danceMove(P); c.scale(1/d.sx, 1/d.sy); c.rotate(-d.rot); c.translate(0, -d.dy); }
+    { const tt = z.key === 'tanz' && S.tz && S.tz.near ? 1 : 0; S.ti = (S.ti||0) + (tt - (S.ti||0))*(1 - Math.exp(-dt*5));
+      let dxT = 0; if(tt){ const o = S.tz.o; dxT = (P.x + o.x)/2 - S.tz.side*TANZ_ABSTAND/2 - P.x; }
+      S.dxs = (S.dxs||0) + (dxT - (S.dxs||0))*(1 - Math.exp(-dt*(tt ? 6 : 10))); if(Math.abs(S.dxs) > .05) c.translate(S.dxs, 0); }
     const k = 1 - Math.exp(-dt*(z.key === 'lauf' ? 30 : (z.key === 'haft' ? 9 : 22)));
     if(!S.cur) S.cur = JSON.parse(JSON.stringify(z.p));
     for(const n in z.p) S.cur[n] = lerpA(S.cur[n], z.p[n], k);
@@ -310,11 +335,21 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         }
       }
     }
+    if(z.key === 'tanz'){   // im Takt hüpfen, gemeinsam wippen, jeden 4. Takt eine Pirouette (beide zusammen)
+      const bt = (now - winT0)/DANCE_BEAT, ph = bt % 1, bar = Math.floor(bt) % 4;
+      IT.hop = Math.sin(ph*Math.PI)*.55; IT.roll = Math.sin(bt*Math.PI)*.12;
+      if(bar === 3) IT.yaw = Math.PI*2*ease(ph);
+    }
+    if(typeof deathState !== 'undefined' && deathState && deathState.phrase && P === deathState.other){   // Kopfschütteln des Mitspielers
+      const a = now - deathState.t0; IT.yaw += Math.sin(a*.03)*.5*Math.max(.25, 1 - a/1500); }
     let ty = bewegt ? flip*1.5 : S.lf*1.35*(1 - langw2) + Math.sin(t*.7)*.12*langw2;   // laufen: im Profil nach rechts/links, Ruhe: in die Kamera
     if(z.key === 'dash' || z.key === 'wj') ty = flip*1.42;
     if(z.key === 'ws') ty = (wandRichtung(P) > 0 ? 1 : -1)*1.2;
     if(z.key === 'haft') ty = flip*1.2;   // Profil: man sieht, wie die Arme abwechselnd nach vorn greifen
     if(z.key === 'seil') ty = flip*1.57;   // am Seil: ganz von der Seite   // fast von vorn: beide Arme sichtbar          // zur Wand gedreht
+    if(z.key === 'tanz') ty = S.tz && S.tz.near ? S.tz.side*.3 : 0;   // zur Kamera, leicht zum Partner
+    if(z.key === 'hebel') ty = (P.leverAnim && P.leverAnim.dir < 0 ? -1 : 1)*1.4;   // zum Hebel hin im Profil
+    if(P._yawTest != null) ty = P._yawTest;   // nur fuer Tests
     S.yaw += (ty - S.yaw)*(1 - Math.exp(-dt*14));
     // Drehung: Dash = Rolle, Wandsprung = ganzer Salto weg von der Wand
     let rollA = 0;
@@ -337,6 +372,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       let al = S.al;
       if(z.key !== 'haft') al = S.as;   // am Seil/Haken: langer Greif-Arm (der andere etwas länger)
       if(z.key === 'seil') al *= 1 + (a === ch.armN ? 1 : -1)*.16*klet;
+      if(z.key === 'tanz' && S.tz && S.tz.near && a === (S.tz.side > 0 ? ch.armP : ch.armN)) al = 1 + TANZ_ARM*S.ti;   // eingehakter Arm etwas länger, damit die Hände sich treffen
       a.alF = al;
       a.kids.forEach((q,i) => { if(i > 0) q.visible = z.key !== 'seil'; });   // am Seil: keine Hand-Knubbel oben, die Hände sind im Seil
       a.kids.forEach((q,i) => { const b = a.k0[i]; q.pos = [b.p[0], b.p[1]*al, b.p[2]]; if(i === 0) q.sc = [b.s[0], b.s[1]*al, b.s[2]]; });
