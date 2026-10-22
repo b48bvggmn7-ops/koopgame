@@ -264,10 +264,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   }
   const handPunkt = (n, hx, hy, hz) => { const w = n.capM; return w ? [w[0]*hx + w[4]*hy + w[8]*hz + w[12], w[1]*hx + w[5]*hy + w[9]*hz + w[13]] : [0, 2]; };
   let an3d = true;
-  let vieleSchritte = true;   // Taste 4: ganz viele kleine Schritte statt einzelner großer
-  const stilUmschalten = () => { vieleSchritte = !vieleSchritte; const b = document.getElementById('d3Stil'); if(b) b.textContent = vieleSchritte ? 'Schritte: viele kleine (4)' : 'Schritte: einzelne (4)'; };
-  window.addEventListener('keydown', e => { if(e.key === '4' && !e.repeat) stilUmschalten(); });
-  { const d = document.getElementById('d3Btn'); if(d && !document.getElementById('d3Stil')){ const b = document.createElement('button'); b.id = 'd3Stil'; b.style.cssText = d.style.cssText; b.textContent = 'Schritte: viele kleine (4)'; b.addEventListener('click', () => { stilUmschalten(); b.blur(); }); d.after(b); } }
+  const vieleSchritte = true;   // festgelegt (Nutzerwunsch): ganz viele kleine Schritte, im Spiel nicht umschaltbar
   const umschalten = () => { an3d = !an3d; const b = document.getElementById('d3Btn'); if(b) b.textContent = an3d ? '3D: an (3)' : '3D: aus (3)'; };
   addEventListener('keydown', e => { if(e.code === 'Digit3' && !e.repeat) umschalten(); });
   { const b = document.getElementById('d3Btn'); if(b){ b.textContent = '3D: an (3)'; b.addEventListener('click', e => { umschalten(); b.blur(); }); } }
