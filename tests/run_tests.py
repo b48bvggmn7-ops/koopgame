@@ -6276,20 +6276,23 @@ async def durchbruch_kein_gratis_dash(g):
         srv.shutdown()
 
 # ---- 3D-Figuren (js/33-figuren-3d.js): zeichnen in einer kleinen WebGL-Leinwand und ersetzen fussFigurZeichnen ----
-F3D_ZEICHNEN = """async (o) => {   // die Figur(en) o.n Bilder lang zeichnen, je o.ms Millisekunden Abstand (die 3D-Figur glättet über die Zeit)
-  const warte = ms => new Promise(r => setTimeout(r, ms)); menuScreen = 'pause';
+F3D_ZEICHNEN = """(o) => {   // die Figur(en) o.n Bilder lang zeichnen; jedes Bild zählt als 50 ms (die 3D-Figur glättet über die Zeit) –
+  // ohne Pausen, damit die Spielschleife nicht dazwischen zeichnet, und gleich auf schnellen und langsamen Rechnern
+  menuScreen = 'pause';
   const merk = [];
   for(let i = 0; i < o.n; i++){
     if(o.vorher) Function(o.vorher)();
-    for(const P of o.wer === 'beide' ? [p2, p1] : [o.wer === 'f' ? p2 : p1]){ ctx.save(); drawCharacter(P, camX); ctx.restore(); }
+    for(const P of o.wer === 'beide' ? [p2, p1] : [o.wer === 'f' ? p2 : p1]){ if(P._f3) P._f3.t = performance.now() - 50; ctx.save(); drawCharacter(P, camX); ctx.restore(); }
     if(o.merk) merk.push(Function('return (' + o.merk + ')')());
-    await warte(o.ms || 30);
   }
   return merk;
 }"""
 
 async def f3d_bereit(g):
-    """Level laden und prüfen, dass die 3D-Figuren wirklich zeichnen (WebGL2 da, 3D an)."""
+    """Level laden und prüfen, dass die 3D-Figuren wirklich zeichnen (WebGL2 da, 3D an). Der Testrechner hat nur
+    Software-Grafik – dort bleiben sonst die bisherigen Figuren; hier wird 3D erzwungen (langsam, aber für ein paar Bilder ok)."""
+    await g.p.add_init_script("window.figuren3dErzwingen = true")
+    await g.p.goto(GAME); await g.p.wait_for_timeout(400)
     await g.load(level([ground(0, 680, 2400)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}, welt='ruinen'))
     await g.steps(10)
     await g.p.evaluate(F3D_ZEICHNEN, {'n': 2, 'wer': 'beide'})
@@ -6311,9 +6314,10 @@ async def figuren3d_hebel(g):
     """3D-Figuren: beim Hebel (leverAnim) greift der Arm nach vorn (Arm dreht deutlich nach vorn) und die Figur dreht sich
     zum Hebel ins Profil; danach wieder normale Pose."""
     await f3d_bereit(g)
-    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 9, 'wer': 'm', 'ms': 25, 'vorher': "if(!p1.leverAnim && !window.__hz) { p1.leverAnim = {t0: performance.now(), dir: 1}; window.__hz = 1; }",
+    # Hebel-Bewegung je Bild auf ihrem Höhepunkt festhalten (Mitte der 320 ms) – unabhängig davon, wie lange ein Bild dauert
+    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 9, 'wer': 'm', 'vorher': "p1.leverAnim = {t0: performance.now() - 160, dir: 1}",
                                           'merk': "[p1._f3.cur.armN[0], p1._f3.yaw]"})
-    await g.ev("menuScreen = null; window.__hz = 0")
+    await g.ev("menuScreen = null; p1.leverAnim = null")
     assert min(a for a, _ in r) < -0.4, f'Arm greift beim Hebel nicht nach vorn: {r}'
     assert max(y for _, y in r) > 1.0, f'Figur dreht sich nicht zum Hebel: {r}'
 

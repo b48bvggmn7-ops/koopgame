@@ -1528,6 +1528,28 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level21_feuerschlund (Koop-Bot + Checkpoint-Abstände).
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
+### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
+- Affe und Schweinchen werden als echte 3D-Figuren mit Fell gezeichnet (WebGL2, eigene kleine Leinwand je Bild, als Bild an die
+  Stelle der Figur gemalt). Nur Zeichnen: Physik, Kollision, Kamera, Stauchen, Schatten und Seil bleiben die des Spiels.
+  Standard AN; Taste **3** schaltet zurück auf die bisherigen Figuren (js/10c) und wieder an, Taste **4** wechselt die
+  Schrittart (viele kleine / einzelne große Schritte). Adresse: ?fell=0.4 (Haardichte), ?schichten=18 (Fell-Schichten).
+- Posen: Stehen (dreht sich nach ~4 s Stillstand zur Kamera, danach ab und zu ein Leerlauf-Trick: Affe Salto/Radschlag/
+  Kombi, Schweinchen Schraube/Pirouette/Kombi), Laufen, Sprung (Arme hoch/seitlich), Sprung-Tricks (Salto, Drehung,
+  Schraube), Wandsprung-Salto, Wand-Rutschen, Haftfläche (Arme greifen abwechselnd, nie über den Rand), Seil (Hand über
+  Hand), Dash (eingerollte Rolle), Schirm-Gleiten (bisheriger 2D-Schirm über der Figur).
+- Hebel: die Figur dreht sich zum Hebel ins Profil, greift mit langem Arm nach vorn und zieht herunter. Test figuren3d_hebel.
+- Siegestanz: stehen beide nah beieinander, haken sie die inneren Arme ein und hüpfen im Takt, jeder 4. Takt eine
+  gemeinsame Pirouette; sonst jubeln beide mit erhobenen Armen. Am Ziel-Baum (Dschungel) wie bisher: erst Tanz, dann hinein,
+  Tür zu. Test figuren3d_siegestanz.
+- Umkleide (js/27): Brille und Tattoo sitzen als Auflage auf den 3D-Augen – von vorn beide Gläser und das Tattoo, von der
+  Seite ein schmales Glas mit Bügel (kein Tattoo). Roll-Spur, Aura, Begleiter und kreisende Objekte wie bisher um die Figur.
+  Test figuren3d_brille_tattoo.
+- Kein WebGL2 oder nur Software-Grafik (z. B. SwiftShader, wenn Chrome die Grafikkarte nicht nutzt – dort kostet eine Figur
+  ~0,5 s je Bild): die bisherigen Figuren bleiben. Erzwingen zum Ausprobieren/Testen: ?d3=1 oder window.figuren3dErzwingen.
+  (Der automatische Testrechner hat nur Software-Grafik: die großen Tests laufen dort mit den bisherigen Figuren, die
+  3D-Tests erzwingen 3D.)
+- Behoben: „3D aus“ (Taste 3) rief eine nicht vorhandene Funktion auf (Fehler bei jedem Bild, Figuren verschwanden).
+
 ### Neue Figuren (Affe und Schweinchen mit runden Stummelfüßen und Armen; js/10c-fuss-figuren.js)
 - Die Figuren sind jetzt Kopf + Arme + Stummelfüße statt der rollenden Kugel. Taste **B** schaltet zur alten Kugel zurück (und wieder her).
 - Posen: Stehen, Laufen, Bremsen, Landen, Hoch/Runter, Wandrutschen (liegt an der Wand), Haften an der Decke, Seil, Dash, Schirm-Gleiten, Siegestanz.

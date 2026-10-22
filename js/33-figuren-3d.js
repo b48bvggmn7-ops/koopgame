@@ -38,6 +38,10 @@ nm(m){const a=(r,c)=>m[c*4+r];const cof=(r,c)=>{const rs=[0,1,2].filter(i=>i!==r
 const cv=document.createElement('canvas');cv.width=SPR;cv.height=SPRH;
 const gl=cv.getContext('webgl2',{antialias:true,alpha:true,premultipliedAlpha:false,preserveDrawingBuffer:false});
 if(!gl)throw new Error('kein webgl2');
+// Nur Software-Grafik (z. B. SwiftShader, wenn Chrome die Grafikkarte nicht nutzt): eine Figur kostet dann ~0,5 s je Bild -> wie „kein WebGL2“
+// behandeln, die bisherigen Figuren bleiben. Erzwingen (nur Tests/Ausprobieren): ?d3=1 oder window.figuren3dErzwingen = true vor dem Laden.
+{ const dbg=gl.getExtension('WEBGL_debug_renderer_info'), ren=String(dbg?gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));
+  if(/swiftshader|llvmpipe|softpipe|software|basic render/i.test(ren) && QS.get('d3') !== '1' && !window.figuren3dErzwingen) throw new Error('nur Software-Grafik ('+ren+')'); }
 function prog(vs,fs){const p=gl.createProgram();for(const [t,s] of [[gl.VERTEX_SHADER,vs],[gl.FRAGMENT_SHADER,fs]]){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));gl.attachShader(p,sh)}gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p}
 const VS=`#version 300 es
 in vec3 aPos;in vec3 aNrm;in vec2 aUv;in float aLayer;
