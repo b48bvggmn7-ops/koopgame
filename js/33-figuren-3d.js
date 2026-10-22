@@ -204,7 +204,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(halter[male]) return halter[male];
     const ch = male ? buildMonkey() : buildPig();
     const wrap = new Nd(), yawN = wrap.add(new Nd()); yawN.kids.push(ch.root);
-    ch.armN.cap = true; ch.armP.cap = true;
+    ch.armN.cap = true; ch.armP.cap = true; ch.head.cap = true; ch.eyes.forEach(e => { e.n.cap = true; });
     return halter[male] = {ch, wrap, yawN};
   }
   const lerpA = (a,b,t) => a.map((v,i) => v + (b[i]-v)*t);
@@ -386,6 +386,36 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.shadowColor = 'rgba(46,28,14,.8)'; c.shadowBlur = Math.max(1, Math.min(5, 1.5*Math.hypot(Tm.a, Tm.b))); c.shadowOffsetX = 0; c.shadowOffsetY = 0;   // weiche dunkle Kontur
     c.drawImage(cv, FR.x0*SC, fy - FR.y1*SC - IT.hop*42, (FR.x1 - FR.x0)*SC, (FR.y1 - FR.y0)*SC);
+    // Brille/Tattoo (Umkleide, js/27): als 2D-Auflage auf die projizierten Augen der 3D-Figur – von vorn beide Gläser, von der Seite ein Glas
+    try{
+      const wear = typeof cosItemsOf === 'function' ? cosItemsOf(male ? 'm' : 'f') : null;
+      if(wear && (wear.glasses || wear.tattoo) && ch.eyes.length >= 2 && ch.eyes[0].n.capM && ch.head.capM){
+        const cm = n => n.capM, pt = n => { const w = cm(n); return [w[12], w[13], w[14]]; };
+        const e0 = pt(ch.eyes[0].n), e1 = pt(ch.eyes[1].n), hc = pt(ch.head), hopPx = IT.hop*42;
+        const lo = q => [q[0]*SC, fy - q[1]*SC - hopPx];
+        const d0 = e0[2] - hc[2], d1 = e1[2] - hc[2];
+        const aF = Math.max(0, Math.min(1, (Math.min(d0, d1) - .25)/.45));                 // beide Augen klar vorn -> Vorderansicht
+        const aS = Math.max(0, Math.min(1, (Math.max(d0, d1) - .15)/.35))*(1 - aF);        // nur ein Auge sichtbar -> Seitenansicht
+        const dE3 = Math.hypot(e1[0]-e0[0], e1[1]-e0[1], e1[2]-e0[2])*SC, L = lo(e0), R = lo(e1), dE = Math.hypot(R[0] - L[0], R[1] - L[1]), mid = [(L[0] + R[0])/2, (L[1] + R[1])/2];
+        c.save(); c.shadowColor = 'transparent'; c.shadowBlur = 0;
+        if(aF > .02){
+          c.globalAlpha = aF;
+          if(wear.tattoo && typeof drawTattoo === 'function' && typeof FACE_SPOTS !== 'undefined'){
+            const face = male ? 'monkey' : 'pig', F = FACE_SPOTS[face], hw = (male ? 1.4 : 1.5)*SC*Math.abs(Math.cos(S.yaw + IT.yaw)) + .001, sx = hw/F.head[2];
+            drawTattoo(c, wear.tattoo.fx.kind, face, {x: mid[0] - F.eyes[0][0]*0 - 153.5*sx, y: mid[1] - F.eyes[0][1]*sx, w: 308*sx, h: 257*sx});
+          }
+          if(wear.glasses && typeof drawGlasses === 'function'){ const w = dE3*(male ? .33 : .27), h = w*1.12;
+            c.save(); c.translate(mid[0], mid[1]); c.rotate(Math.atan2(R[1] - L[1], R[0] - L[0]));
+            drawGlasses(c, wear.glasses.fx.kind, [-dE/2, 0], [dE/2, 0], w, h); c.restore(); }
+        }
+        if(aS > .02 && wear.glasses && typeof drawGlasses === 'function'){
+          c.globalAlpha = aS; const vis = d0 > d1 ? L : R, w = dE3*(male ? .33 : .27)*1.15, h = w*1.12;
+          c.save(); c.translate(vis[0], vis[1]); c.scale((vis[0] >= lo(hc)[0]) ? 1 : -1, 1);
+          drawGlasses(c, wear.glasses.fx.kind, [0, 0], [.01, 0], w, h); c.restore();
+        }
+        c.restore();
+      }
+    }catch(e){}
     c.restore();
     c.restore();
     if(!male && P.umbrella > 0.03 && typeof drawUmbrella === 'function') drawUmbrella(P, 0, fy);   // bisheriger Schirm (2D), 3D-Schirm folgt ggf.
