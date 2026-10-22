@@ -274,13 +274,13 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(bewegt || S.is == null){ S.is = now; S.lf = flip; }
     const langw = Math.min(1, Math.max(0, ((now - S.is)/1000 - 4)/2.5)), langw2 = langw*langw*(3 - 2*langw);   // nach ~4 s Stillstand dreht sie sich langsam zur Kamera
     // Leerlauf-Tricks: schaut sie lange in die Kamera (niemand spielt), macht sie ab und zu einen Trick (nur Anzeige, bricht sofort ab, sobald man sich bewegt)
-    const ITDUR = {kombi:2600, salto:1100, radschlag:1000, schraube:1100};
+    const ITDUR = {kombi:2600, salto:1100, radschlag:1000, schraube:1100, pirouette:800};
     const IT = {roll:0, yaw:0, hop:0, pose:null, env:0, tail:0};
     if(z.key !== 'idle' || bewegt){ S.it = null; S.itNext = null; }
     else if(langw2 > .95){
       if(S.itNext == null) S.itNext = now + 700 + Math.random()*1200;
       if(!S.it && now > S.itNext){
-        const liste = male ? ['salto','radschlag','kombi'] : ['schraube','radschlag','kombi'];
+        const liste = male ? ['salto','radschlag','kombi'] : ['schraube','pirouette','kombi'];
         let typ; do { typ = liste[Math.floor(Math.random()*liste.length)]; } while(typ === S.itLast && liste.length > 1);
         S.itLast = typ; S.it = {typ, t0: now, dur: ITDUR[typ]};
       }
@@ -301,6 +301,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
           };
           if(ty0 === 'salto') salto(.16, .78, 0, 1.15, 2);
           else if(ty0 === 'schraube') salto(.18, .8, 1, 1.15, 1);
+          else if(ty0 === 'pirouette'){ const k2 = lin((u - .08)/.84); IT.yaw = Math.PI*2*3*ease(k2); IT.hop = par(k2)*.4; IT.pose = k2 > 0 && k2 < 1 ? {armN:[0,0,-1.5], armP:[0,0,1.5], legN:[-.3,0,0], legP:[-.3,0,0], head:[0,0,0]} : JUB; }
           else if(ty0 === 'radschlag'){ const k2 = lin((u - .1)/.8); IT.roll = -flip*Math.PI*2*k2; IT.hop = par(k2)*.5; IT.pose = {armN:[0,0,-2.2], armP:[0,0,2.2], legN:[0,0,-.5], legP:[0,0,.5], head:[0,0,0]}; }
           else if(ty0 === 'kombi'){   // 3 Hüpfer mit Jubel, dann Salto
             if(u < .45){ const k2 = u/.45; IT.hop = Math.abs(Math.sin(k2*Math.PI*3))*.75; IT.roll = Math.sin(k2*Math.PI*3)*.12; IT.pose = JUB; }
@@ -401,7 +402,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         if(aF > .02){
           c.globalAlpha = aF;
           if(wear.tattoo && typeof drawTattoo === 'function' && typeof FACE_SPOTS !== 'undefined'){
-            const face = male ? 'monkey' : 'pig', F = FACE_SPOTS[face], hw = (male ? 1.4 : 1.5)*SC*Math.abs(Math.cos(S.yaw + IT.yaw)) + .001, sx = hw/F.head[2];
+            const face = male ? 'monkey' : 'pig', F = FACE_SPOTS[face], hw = (male ? 1.4 : 1.38)*SC*Math.abs(Math.cos(S.yaw + IT.yaw)) + .001, sx = hw/F.head[2];
             drawTattoo(c, wear.tattoo.fx.kind, face, {x: mid[0] - F.eyes[0][0]*0 - 153.5*sx, y: mid[1] - F.eyes[0][1]*sx, w: 308*sx, h: 257*sx});
           }
           if(wear.glasses && typeof drawGlasses === 'function'){ const w = dE3*(male ? .33 : .27), h = w*1.12;
