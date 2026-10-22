@@ -210,7 +210,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   const lerpA = (a,b,t) => a.map((v,i) => v + (b[i]-v)*t);
   const ease = x => x*x*(3-2*x);
   const TUCK = {head:[.55,0,0], armN:[-1.75,0,.25], armP:[-1.75,0,-.25], legN:[-1.45,0,.1], legP:[-1.45,0,-.1]};
-  const TANZ_ARM = .75, TANZ_ABSTAND = 30;   // Siegestanz: Verlängerung des Einhak-Arms, Abstand der beiden Figuren (px)
+  const TANZ_ARM = .75, TANZ_ABSTAND = 50;   // Siegestanz: Verlängerung des Einhak-Arms, Abstand der beiden Figuren (px)
   const WJ_ZEIT = 480;   // ms: Salto nach dem Wandsprung
   // wie tief die Figur beim Hangeln unter der Fläche hängt: die Hand-Spitze (Arm mit Faktor al) soll genau die Unterkante der Fläche (Oberkante der Hitbox) berühren
   function hangSenke(ch, al, ph, voll){
@@ -243,7 +243,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(sinceWJ < WJ_ZEIT){ const k = sinceWJ/WJ_ZEIT, tk = Math.sin(Math.min(1,k*1.15)*Math.PI);   // Salto: erst einrollen, am Ende strecken
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
     if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
-      if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-2.0*e,0,-.3], armP:[-.6*e,0,.3], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
+      if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[(male?-1:1)*1.45*e,0,-.2], armP:[(male?-1:1)*1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
     if(male && P.hookAttached && P.anchor) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
     if(!male && P.gliding) return {p:{head:[-.1,0,0], armN:[0,0,-2.5], armP:[0,0,2.5], legN:[-.15+Math.sin(t*2.2)*.1,0,0], legP:[.2-Math.sin(t*2.2)*.1,0,0]}, key:'segeln'};
     if(P.haft && P.haft.flaeche === 'unten'){   // Haftfläche (Decke): erst greift der eine Arm nach vorn, dann der andere – im Stand bleiben die Arme still
@@ -363,7 +363,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const H = holen(male), ch = H.ch;
     // Hangeln: lange Arme (Hände kleben oben an der Haftfläche), sonst normale Arme
     S.al = (S.al||1) + ((z.key === 'haft' ? (male ? 4.5 : 3.0) : 1) - (S.al||1))*(1 - Math.exp(-dt*14));
-    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : 1) - (S.as||1))*(1 - Math.exp(-dt*12));
+    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : 1)) - (S.as||1))*(1 - Math.exp(-dt*12));
     // Seil hochklettern/herablassen (W/S): Hand über Hand – ein Arm zieht, der andere greift nach
     if(z.key === 'seil' && P.ropeLen != null){ const d = S.rl == null ? 0 : Math.abs(P.ropeLen - S.rl); S.rl = P.ropeLen; S.cp = (S.cp||0) + d; S.cs = (S.cs||0) + (d - (S.cs||0))*.3; } else { S.rl = null; S.cs = 0; }
     const klet = Math.sin(2*Math.PI*(S.cp||0)/46)*Math.min(1, (S.cs||0)/.6);
@@ -445,10 +445,16 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
             c.save(); c.translate(mid[0], mid[1]); c.rotate(Math.atan2(R[1] - L[1], R[0] - L[0]));
             drawGlasses(c, wear.glasses.fx.kind, [-dE/2, 0], [dE/2, 0], w, h); c.restore(); }
         }
-        if(aS > .02 && wear.glasses && typeof drawGlasses === 'function'){
-          c.globalAlpha = aS; const vis = d0 > d1 ? L : R, w = dE3*(male ? .33 : .27)*1.15, h = w*1.12;
-          c.save(); c.translate(vis[0], vis[1]); c.scale((vis[0] >= lo(hc)[0]) ? 1 : -1, 1);
-          drawGlasses(c, wear.glasses.fx.kind, [0, 0], [.01, 0], w, h); c.restore();
+        if(aS > .02 && wear.glasses && typeof drawGlasses === 'function'){   // Seitenansicht: Glas von der Kante (schmal), Bügel läuft nach hinten zum Ohr
+          c.globalAlpha = aS; const vis = d0 > d1 ? L : R, w = dE3*(male ? .33 : .27)*1.15, h = w*1.12, kind = wear.glasses.fx.kind;
+          const BUEGEL = {classic:'#111', round:'#c9a24a', aviator:'#d8b660', shutter:'#fff', heart:'#d6336c', '3d':'#e8e8e8', star:'#e0a800', cyber:'#7fe0ff', bling:'#ffd23f'};
+          const SQ = .4, vor = w*.55, laenge = (male ? 1.05 : .95)*SC*.72;   // Glas-Breite von der Seite, Versatz nach vorn, Bügel-Länge
+          c.save(); c.translate(vis[0], vis[1]); c.scale((vis[0] >= lo(hc)[0]) ? 1 : -1, 1); c.translate(vor, 0);
+          c.save(); c.beginPath(); c.rect(-w*1.04*SQ, -h*1.6, w*2.08*SQ, h*3.2); c.clip(); c.scale(SQ, 1);
+          drawGlasses(c, kind, [0, 0], [.01, 0], w, h); c.restore();
+          c.strokeStyle = BUEGEL[kind] || '#222'; c.lineWidth = Math.max(.9, w*.2); c.lineCap = 'round';
+          c.beginPath(); c.moveTo(-w*SQ, -h*.3); c.lineTo(-w*SQ - laenge, -h*.05); c.stroke();
+          c.restore();
         }
         c.restore();
       }
