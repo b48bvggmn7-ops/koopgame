@@ -14,7 +14,7 @@ function die(player){
   lastPhrase = phrase;
   // nicht jedes Mal meckern: etwa jedes dritte Mal, aber spätestens nach 3 stillen Toden wieder
   deathsWithoutComplaint = (deathsWithoutComplaint||0);
-  const complain = deathsWithoutComplaint >= 3 || Math.random() < 0.33;
+  const complain = false;   // Nutzerwunsch: keine Sprüche mehr beim Tod (Liste DEATH_PHRASES bleibt, wird nur nicht angezeigt)
   deathsWithoutComplaint = complain ? 0 : deathsWithoutComplaint + 1;
   deathCount[player === p1 ? 'm' : 'f']++;
   if(typeof duelBump === 'function') duelBump(player === p1 ? 'm' : 'f');   // Duell-Tafel oben rechts (25-duell.js)

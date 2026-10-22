@@ -163,6 +163,13 @@ def test(fn): TESTS.append(fn); return fn
 # ---------------------------------------------------------------- Tests
 
 @test
+async def tod_ohne_sprueche(g):
+    """Beim Tod erscheint nie eine Sprechblase/ein Spruch (Nutzerwunsch)."""
+    for i in range(12):
+        await g.ev("deathState = null; die(p1); window.__ph = deathState && deathState.phrase; deathState = null")
+        assert await g.ev("window.__ph === null"), 'Beim Tod darf kein Spruch erscheinen'
+
+@test
 async def start_ohne_fehler(g):
     """Spiel startet, Figuren existieren, Spielschleife läuft."""
     await g.p.wait_for_timeout(600)

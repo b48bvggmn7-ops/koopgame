@@ -333,9 +333,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Checkpoints aus dem Editor (data.checkpoints [{x,y}]): zählen erst, wenn BEIDE vorbei sind (Punkte am Mast
     zeigen, wer schon durch ist) -> Fahne geht hoch + Funken + kleine Fanfare. Automatische Pro-Figur-Checkpoints
     entfernt. Ohne erreichten Checkpoint = Start.
-  - Tod (Stacheln/Absturz): Spiel pausiert, Figur verpufft; NUR MANCHMAL (~1/3, spätestens nach 3 stillen Toden)
-    schüttelt die andere genervt den Kopf mit Sprechblase (zufälliger Spruch: "Idiot!", "Einmal mit Profis…",
-    "Arschloch!" …), dann "Beliebige Taste drücken" (Tastatur, Maus, JEDE Controller-Taste inkl. Options oder
+  - Tod (Stacheln/Absturz): Spiel pausiert, Figur verpufft; KEINE Sprüche/Sprechblasen und kein
+    Kopfschütteln mehr (Nutzerwunsch; früher manchmal ein Spruch wie "Idiot!" – Liste DEATH_PHRASES bleibt im Code ungenutzt), dann "Beliebige Taste drücken" (Tastatur, Maus, JEDE Controller-Taste inkl. Options oder
     Stick kräftig bewegen, ab 0,6 s) -> BEIDE starten am letzten gemeinsamen Checkpoint; Bröckelboden/Türen/
     bewegte Teile zurückgesetzt, Münzen bleiben. Freie Stelle wird per nudgeFree gesichert.
   - Decken-Begrenzung, Kenney-Tiles
