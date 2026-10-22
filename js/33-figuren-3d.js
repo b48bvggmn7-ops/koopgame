@@ -271,6 +271,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   const umschalten = () => { an3d = !an3d; const b = document.getElementById('d3Btn'); if(b) b.textContent = an3d ? '3D: an (3)' : '3D: aus (3)'; };
   addEventListener('keydown', e => { if(e.code === 'Digit3' && !e.repeat) umschalten(); });
   { const b = document.getElementById('d3Btn'); if(b){ b.textContent = '3D: an (3)'; b.addEventListener('click', e => { umschalten(); b.blur(); }); } }
+  const orig = window.fussFigurZeichnen;   // bisherige Figur (10c) – für „3D aus“ (Taste 3); fehlte, dann gab es bei jedem Bild einen Fehler
   window.fussFigurZeichnen = function(P){
     if(!an3d) return orig(P);
     const c = ctx, now = performance.now(), male = P.male;

@@ -6275,6 +6275,68 @@ async def durchbruch_kein_gratis_dash(g):
     finally:
         srv.shutdown()
 
+# ---- 3D-Figuren (js/33-figuren-3d.js): zeichnen in einer kleinen WebGL-Leinwand und ersetzen fussFigurZeichnen ----
+F3D_ZEICHNEN = """async (o) => {   // die Figur(en) o.n Bilder lang zeichnen, je o.ms Millisekunden Abstand (die 3D-Figur glättet über die Zeit)
+  const warte = ms => new Promise(r => setTimeout(r, ms)); menuScreen = 'pause';
+  const merk = [];
+  for(let i = 0; i < o.n; i++){
+    if(o.vorher) Function(o.vorher)();
+    for(const P of o.wer === 'beide' ? [p2, p1] : [o.wer === 'f' ? p2 : p1]){ ctx.save(); drawCharacter(P, camX); ctx.restore(); }
+    if(o.merk) merk.push(Function('return (' + o.merk + ')')());
+    await warte(o.ms || 30);
+  }
+  return merk;
+}"""
+
+async def f3d_bereit(g):
+    """Level laden und prüfen, dass die 3D-Figuren wirklich zeichnen (WebGL2 da, 3D an)."""
+    await g.load(level([ground(0, 680, 2400)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}, welt='ruinen'))
+    await g.steps(10)
+    await g.p.evaluate(F3D_ZEICHNEN, {'n': 2, 'wer': 'beide'})
+    assert await g.ev("!!(p1._f3 && p2._f3)"), '3D-Figuren zeichnen nicht (WebGL2 fehlt oder 3D aus)'
+
+@test
+async def figuren3d_siegestanz(g):
+    """3D-Figuren: Siegestanz zu zweit – stehen beide nahe beieinander, erkennen sie den Partner (tz.near), haken die
+    inneren Arme ein (Einhak-Anteil ti wächst) und schauen zur Kamera; nur Zeichnen, ohne Fehler."""
+    await f3d_bereit(g)
+    await g.ev("p1.x = 700; p2.x = 760; p1.y = p2.y = 680; won = true; winSteps = 0; winT0 = performance.now();")
+    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 25, 'wer': 'beide', 'merk': "[p1._f3.tz && p1._f3.tz.near, p1._f3.ti || 0, p2._f3.tz && p2._f3.tz.side]"})
+    await g.ev("won = false; menuScreen = null")
+    assert r[-1][0] and r[-1][1] > 0.5, f'Tanz zu zweit: Partner nicht erkannt / nicht eingehakt: {r[-3:]}'
+    assert r[-1][2] == -1, f'Schweinchen (rechts) soll den Partner links sehen: {r[-1]}'
+
+@test
+async def figuren3d_hebel(g):
+    """3D-Figuren: beim Hebel (leverAnim) greift der Arm nach vorn (Arm dreht deutlich nach vorn) und die Figur dreht sich
+    zum Hebel ins Profil; danach wieder normale Pose."""
+    await f3d_bereit(g)
+    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 9, 'wer': 'm', 'ms': 25, 'vorher': "if(!p1.leverAnim && !window.__hz) { p1.leverAnim = {t0: performance.now(), dir: 1}; window.__hz = 1; }",
+                                          'merk': "[p1._f3.cur.armN[0], p1._f3.yaw]"})
+    await g.ev("menuScreen = null; window.__hz = 0")
+    assert min(a for a, _ in r) < -0.4, f'Arm greift beim Hebel nicht nach vorn: {r}'
+    assert max(y for _, y in r) > 1.0, f'Figur dreht sich nicht zum Hebel: {r}'
+
+@test
+async def figuren3d_brille_tattoo(g):
+    """3D-Figuren: Brille und Tattoo aus der Umkleide sitzen auf den 3D-Augen – von vorn Brille und Tattoo, von der Seite
+    ein schmales Brillenglas (für Affe und Schweinchen)."""
+    await f3d_bereit(g)
+    for wer, figur in (('m', 'p1'), ('f', 'p2')):
+        r = await g.ev(f"""(() => {{ cosmeticsReset();
+          for(const id of ['gl_aviator', 'tat_flame']){{ cosmeticsSave.owned.{wer}[id] = 1; equipItem('{wer}', id); }}
+          window.__gl = 0; window.__ta = 0; window.__og = drawGlasses; window.__ot = drawTattoo;
+          drawGlasses = (...a) => {{ __gl++; return __og(...a); }}; drawTattoo = (...a) => {{ __ta++; return __ot(...a); }};
+          return true; }})()""")
+        try:
+            vorn = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': wer, 'vorher': f"{figur}._yawTest = 0", 'merk': "[__gl, __ta]"})
+            await g.ev("__gl = 0; __ta = 0")
+            seite = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': wer, 'vorher': f"{figur}._yawTest = 1.5", 'merk': "[__gl, __ta]"})
+        finally:
+            await g.ev(f"drawGlasses = __og; drawTattoo = __ot; {figur}._yawTest = null; cosmeticsReset(); menuScreen = null")
+        assert vorn[-1][0] >= 1 and vorn[-1][1] >= 1, f'{wer}: Brille/Tattoo von vorn fehlen: {vorn[-1]}'
+        assert seite[-1][0] >= 1, f'{wer}: Brillenglas von der Seite fehlt: {seite[-1]}'
+
 @test
 async def hohler_baum_start_ziel(g):
     """Start und Ziel im Dschungel = hohler Baum (12a-hohler-baum.js), ganz vorne vor Boden/Wand: der Start-Baum rückt von
