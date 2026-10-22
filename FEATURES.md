@@ -1531,8 +1531,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 ### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
 - Affe und Schweinchen werden als echte 3D-Figuren mit Fell gezeichnet (WebGL2, eigene kleine Leinwand je Bild, als Bild an die
   Stelle der Figur gemalt). Nur Zeichnen: Physik, Kollision, Kamera, Stauchen, Schatten und Seil bleiben die des Spiels.
-  Standard AN; Taste **3** schaltet zurück auf die bisherigen Figuren (js/10c) und wieder an, Taste **4** wechselt die
-  Schrittart (viele kleine / einzelne große Schritte). Adresse: ?fell=0.4 (Haardichte), ?schichten=18 (Fell-Schichten).
+  Standard AN; Taste **3** schaltet zurück auf die bisherigen Figuren (js/10c) und wieder an. Schritte: fest „viele kleine“
+  (Taste 4 und Umschalt-Knopf entfernt, Nutzerwunsch). Adresse: ?fell=0.4 (Haardichte), ?schichten=18 (Fell-Schichten).
 - Posen: Stehen (dreht sich nach ~4 s Stillstand zur Kamera, danach ab und zu ein Leerlauf-Trick: Affe Salto/Radschlag/
   Kombi, Schweinchen Schraube/Pirouette/Kombi), Laufen, Sprung (Arme hoch/seitlich), Sprung-Tricks (Salto, Drehung,
   Schraube), Wandsprung-Salto, Wand-Rutschen, Haftfläche (Arme greifen abwechselnd, nie über den Rand), Seil (Hand über
