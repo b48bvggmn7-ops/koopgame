@@ -243,7 +243,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(sinceWJ < WJ_ZEIT){ const k = sinceWJ/WJ_ZEIT, tk = Math.sin(Math.min(1,k*1.15)*Math.PI);   // Salto: erst einrollen, am Ende strecken
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
     if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
-      if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[(male?-1:1)*1.45*e,0,-.2], armP:[(male?-1:1)*1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
+      if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-1.45*e,0,-.2], armP:[-1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
     if(male && P.hookAttached && P.anchor) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
     if(!male && P.gliding) return {p:{head:[-.1,0,0], armN:[0,0,-2.5], armP:[0,0,2.5], legN:[-.15+Math.sin(t*2.2)*.1,0,0], legP:[.2-Math.sin(t*2.2)*.1,0,0]}, key:'segeln'};
     if(P.haft && P.haft.flaeche === 'unten'){   // Haftfläche (Decke): erst greift der eine Arm nach vorn, dann der andere – im Stand bleiben die Arme still
