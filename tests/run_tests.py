@@ -268,7 +268,7 @@ async def neue_figuren_drehung_seil_dash(g):
     await g.ev("closeMenu(); deathState = null;")
     rolle = "(() => { const S = p1._ff; S.roll = 0.45; S.rollSign = 1; })()"
     await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.steps(6)
-    await g.ev(rolle); await g.p.keyboard.down('KeyG'); await g.steps(14); await g.p.keyboard.up('KeyD')
+    await g.ev(rolle); await g.p.keyboard.down('KeyG'); await g.steps(20); await g.p.keyboard.up('KeyD')   # Drehung läuft je gezeichnetem Bild aus
     r = await g.ev("({hook: p1.hookAttached, roll: p1._ff.roll, rot: p1._ff.rotE})"); await g.p.keyboard.up('KeyG')
     assert r['hook'] and r['roll'] < 0 and abs(r['rot']) < 0.05, f'am Seil noch schräg gedreht: {r}'
     await g.ev("p1.hookAttached = false; p1.anchor = null;"); await g.steps(40)
@@ -4201,7 +4201,7 @@ async def haken_schwung_holen(g):
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
     setup = """(()=>{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+150+p1.h*0.6; p1.vx=0; p1.vy=0; p1.grounded=false;
-      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=150; p1.ropeMax=200; window.__ang=[];
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=150; p1.ropeMax=200; window.__ang=[]; KEYS.KeyG=true;
       if(!window.__os){ window.__os=stepSim; stepSim=function(ts){
         if(window.__pump){ KEYS.KeyD = p1.vx>=0; KEYS.KeyA = p1.vx<0; }
         if(window.__halteD > 0) KEYS.KeyD = true;
@@ -4213,7 +4213,7 @@ async def haken_schwung_holen(g):
     ang = await g.ev('__ang')
     assert ang and max(ang) < 32, f'rechts halten schwingt zu weit: {max(ang or [0]):.0f}°'
     await g.ev(setup); await g.ev('window.__pump=true'); await g.steps(162)   # 3 s in Spielschritten (feste Zeit war auf langsamen Rechnern zu kurz)
-    await g.ev('window.__pump=false; KEYS.KeyD=false; KEYS.KeyA=false')
+    await g.ev('window.__pump=false; KEYS.KeyD=false; KEYS.KeyA=false; KEYS.KeyG=false')
     ang = await g.ev('__ang')
     assert ang and max(abs(a) for a in ang) > 55, f'Schaukeln baut zu wenig Schwung auf: {max(abs(a) for a in ang or [0]):.0f}°'
 
@@ -5211,10 +5211,10 @@ async def seil_abflug_mit_schwung(g):
     await g.ev("""(()=>{ const h=hooks[0]; p1.x=h.x-60; p1.y=h.y+170+p1.h*0.6; p1.vx=11; p1.vy=0; p1.grounded=false;
       p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; KEYS.KeyG = true; })()""")
     await g.p.wait_for_timeout(50)
-    await g.p.keyboard.press('Space'); await g.ev("KEYS.KeyG = false")
+    await g.p.keyboard.press('Space')
     try: await g.p.wait_for_function("!p1.hookAttached", timeout=3000)   # langsame Rechner: auf den nächsten Schritt warten
     except Exception: pass
-    st = await g.ev("({hook: p1.hookAttached, vx: p1.vx, x: p1.x})")
+    st = await g.ev("KEYS.KeyG = false, ({hook: p1.hookAttached, vx: p1.vx, x: p1.x})")
     assert not st['hook'], 'Springen löst das Seil nicht'
     await g.steps(14)   # ~0,25 s Spielzeit
     st2 = await g.ev("({vx: p1.vx, x: p1.x, g: p1.grounded})")
