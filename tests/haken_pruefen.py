@@ -5,7 +5,7 @@
 #   Ring  – Reichweiten-Kreise zweier Haken überdecken sich nicht (Abstand der Haken ≥ Reichweite 1 + Reichweite 2); so
 #           greift man nie den falschen Haken. Mit Schwung schafft der Affe bequem 9–10 Spalten (gemessen mit der echten
 #           Physik: aus einem Schwung bis 13 Spalten, mit Schwung holen bis 16, Reichweite 4,5 Kästchen).
-#   Landen (nur die Füße setzen von oben auf Boden/Wand auf) ist kein Anstoßen. Fahrende Haken zählen mit Start- und Zielpunkt. Haken, die bewusst anders stehen, kommen mit Begründung in
+#   Landen (nur die Füße setzen von oben auf Boden/Wand auf) ist kein Anstoßen. Fahrende Haken zählen mit ihrem Startplatz (auf der Fahrt an anderen vorbei = gewollt). Haken, die bewusst anders stehen, kommen mit Begründung in
 #   tests/haken_ausnahmen.json ({"level", "spalte", "regel", "grund"}).
 # Aufruf: python3 tests/haken_pruefen.py [--level <welt>/<datei>] [--alle]  (Ausgabe: Befunde je Level; Rückgabe 1 bei Befunden)
 import json, math, sys
@@ -62,9 +62,8 @@ def bahn_pruefen(hind, h):
     return None
 
 def punkte(h):
-    P = [(h['x'], h['y'])]
-    if 'targetX' in h: P.append((h['targetX'], h.get('targetY', h['y'])))
-    return P
+    # fahrende Haken: nur der Startplatz – dass sie auf ihrer Fahrt an anderen vorbeikommen, ist gewollt (Timing)
+    return [(h['x'], h['y'])]
 
 def pruefen(datei, ausnahmen):
     d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
