@@ -6500,7 +6500,7 @@ async def figuren3d_brille_dreht_mit(g):
         breite = {}
         for yaw in (0, 0.4, 0.8, 1.2, 3.14):
             await g.ev("__bx = []")
-            r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 4, 'wer': 'beide', 'vorher': f"__bx = []; p1._yawTest = p2._yawTest = {yaw}", 'merk': "__bx.slice()"})
+            r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': 'beide', 'vorher': f"__bx = []; p1._yawTest = p2._yawTest = {yaw}", 'merk': "__bx.slice()"})
             breite[yaw] = r[-1]
         for yaw in (0, 0.4, 0.8, 1.2):
             assert len(breite[yaw]) == 2, f'Brille bei Drehung {yaw}: {len(breite[yaw])} Mal gezeichnet (soll: einmal je Figur)'
