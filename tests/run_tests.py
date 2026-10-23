@@ -6382,6 +6382,95 @@ async def figuren3d_haft_arme(g):
     m, f = r[-1]
     assert m > 2 and abs(m - f) < 0.05, f'Arme an der Haftfläche: Affe {m:.2f}, Schwein {f:.2f} – sollen gleich lang sein'
 
+# 3D-Figuren über das normale Spielbild zeichnen (draw(): Kamera, Zoom, Umkleide) – n Bilder, je 50 ms; ohne Leerlauf-Tricks
+F3D_BILD = """(o) => { menuScreen = 'pause';
+  for(let i = 0; i < o.n; i++){
+    for(const P of [p1, p2]) if(P._f3){ P._f3.t = performance.now() - 50; P._f3.is = performance.now(); P._f3.it = null; P._f3.trick = null; }
+    if(o.vorher) Function(o.vorher)();
+    draw();
+  }
+  return o.merk ? Function('return (' + o.merk + ')')() : null; }"""
+# Farbe im Umkreis r (Gerätepixel), die der Zielfarbe am nächsten kommt (dünne, weich gezeichnete Linien)
+F3D_NAECHSTE = """(([x, y, r, z]) => { const d = document.querySelector('canvas').getContext('2d').getImageData(Math.round(x) - r, Math.round(y) - r, 2*r + 1, 2*r + 1).data;
+  let best = null, bd = 1e9; for(let i = 0; i < d.length; i += 4){ const q = Math.abs(d[i] - z[0]) + Math.abs(d[i+1] - z[1]) + Math.abs(d[i+2] - z[2]); if(q < bd){ bd = q; best = [d[i], d[i+1], d[i+2]]; } }
+  return [bd, best]; })"""
+# Farbe im Umkreis r, die am stärksten von der Farbe z abweicht (Kontrast einer dünnen Linie zur Umgebung)
+F3D_WEITESTE = F3D_NAECHSTE.replace('let best = null, bd = 1e9', 'let best = null, bd = -1').replace('if(q < bd)', 'if(q > bd)')
+F3D_PIXEL = """(([x, y]) => { const d = document.querySelector('canvas').getContext('2d').getImageData(Math.round(x), Math.round(y), 1, 1).data; return [d[0], d[1], d[2]]; })"""
+
+@test
+async def figuren3d_groesse_umkleide(g):
+    """3D-Figuren 10 % kleiner (figuren-rund): Kopfhöhe über den Füßen = 2,4 Einheiten × 17 × 0,9 px. Die Umkleide-Effekte im
+    Spiel schrumpfen mit (cosFigurMass = figur3dMass = 0,9): Kugel-Radius 21 -> 18,9, Mitte im selben Verhältnis über den
+    Füßen; der Begleiter läuft 42 × 0,9 px hinter der Figur. Ohne 3D (figur3dMass fehlt) bleibt alles im alten Maß."""
+    await f3d_bereit(g)
+    try:
+        r = await g.p.evaluate(F3D_BILD, {'n': 5, 'vorher': "p1._yawTest = 0",
+                                           'merk': "[(p1._fussDev.y - p1._headDev.y)/p1._fussDev.skala, window.figur3dMass, cosFigurMass(), playerRig(p1).r, playerRig(p1).y - p1.y]"})
+        kopf, mass, f, rr, dy = r
+        assert mass == 0.9 and f == 0.9, f'Figuren-Maß falsch: {r}'
+        assert abs(kopf - 2.4*17*0.9) < 0.6, f'Kopfhöhe {kopf:.2f} px statt {2.4*17*0.9:.2f} (10 % kleiner)'
+        assert abs(rr - 18.9) < 0.01 and abs(dy - (4 - (4 + p_h_halb_minus5())*0.9)) < 0.05, f'Umkleide-Kugel nicht mitgeschrumpft: {r}'
+        hinten = await g.ev("""(() => { cosmeticsReset(); cosResetState(); cosmeticsSave.owned.m.pet_mouse = 1; equipItem('m', 'pet_mouse');
+          p1.facing = 1; p1.vx = 0; p1.grounded = true; for(let i = 0; i < 200; i++) cosmeticsStep(); return p1.x - COS_STATE.m.pet.x; })()""")
+        assert abs(hinten - 42*0.9) < 0.5, f'Begleiter-Abstand {hinten:.1f} statt {42*0.9}'
+        alt = await g.ev("(() => { const m = window.figur3dMass; delete window.figur3dMass; const r = [cosFigurMass(), playerRig(p1).r]; window.figur3dMass = m; return r; })()")
+        assert alt == [1, 21], f'ohne 3D-Figuren soll die Umkleide im alten Maß bleiben: {alt}'
+    finally:
+        await g.ev("p1._yawTest = null; cosmeticsReset(); cosResetState(); menuScreen = null")
+
+def p_h_halb_minus5():   # Abstand Kugel-Mitte -> P.y im alten Maß (P.h/2 - 5, Figurenhöhe 32,3)
+    return 32.3/2 - 5
+
+@test
+async def figuren3d_affe_hellbraun(g):
+    """3D-Affe (Nutzerwunsch: „Hut weg, einfach komplett hellbraun“): von vorn ist oben auf dem Kopf keine dunkle Fellkappe mehr,
+    sondern helles Braun (nicht dunkel, nicht pink wie beim Schwein); Affe und Schwein haben dieselbe Streckung (gleich groß)."""
+    await f3d_bereit(g)
+    try:
+        pk = await g.p.evaluate(F3D_BILD, {'n': 6, 'vorher': "p1._yawTest = p2._yawTest = 0",
+                                            'merk': "[[p1._headDev.x, p1._headDev.y], [p2._headDev.x, p2._headDev.y]]"})
+        affe = await g.p.evaluate(F3D_PIXEL, pk[0]); schwein = await g.p.evaluate(F3D_PIXEL, pk[1])
+        assert affe[0] > 160 and affe[1] > 110 and affe[2] < affe[1] and affe[0] > affe[2] + 40, f'Affe oben nicht hellbraun (dunkle Kappe?): {affe}'
+        assert schwein[0] > 200 and schwein[0] > schwein[1] + 20, f'Schwein oben nicht pink: {schwein}'
+    finally:
+        await g.ev("p1._yawTest = p2._yawTest = null; menuScreen = null")
+    src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
+    assert 'male?1.05' not in src and '0x3e2415' not in src, 'Affe wieder gestreckt bzw. mit dunkler Fellkappe'
+
+@test
+async def figuren3d_brillen_buegel(g):
+    """3D-Figuren von der Seite: alle 9 Brillen bekommen einen Bügel nach hinten zum Ohr, lang genug (Affe 1,3 × SC, Schwein
+    1,2 × SC, SC = 17 × 0,9; vorher nur ~0,7 × SC) und sichtbar (dunkler Rand, auch helle Bügel auf hellem Fell).
+    (Die Prüfung „nicht in der dunklen Fellkappe“ ist entfallen: der Affe hat keine Kappe mehr, Nutzerwunsch.)"""
+    await f3d_bereit(g)
+    BUEGEL = {'classic': '#111111', 'round': '#c9a24a', 'aviator': '#d8b660', 'shutter': '#ffffff', 'heart': '#d6336c',
+              '3d': '#e8e8e8', 'star': '#e0a800', 'cyber': '#7fe0ff', 'bling': '#ffd23f'}
+    try:
+        ids = await g.ev("COSMETICS.filter(i => i.slot === 'glasses').map(i => [i.id, i.fx.kind])")
+        assert len(ids) == 9, ids
+        fehler = []
+        for iid, kind in ids:
+            await g.ev(f"cosmeticsReset(); for(const w of ['m', 'f']){{ cosmeticsSave.owned[w]['{iid}'] = 1; equipItem(w, '{iid}'); }}")
+            r = await g.p.evaluate(F3D_BILD, {'n': 6, 'vorher': "p1._yawTest = p2._yawTest = 1.5; p1._buegelDev = p2._buegelDev = null",
+                                               'merk': "[p1, p2].map(P => P._buegelDev && P._buegelDev.f === P._frameNo ? Object.assign({skala: P._fussDev.skala}, P._buegelDev) : null)"})
+            for wer, b in zip(('Affe', 'Schwein'), r):
+                if not b: fehler.append(f'{iid} {wer}: kein Bügel'); continue
+                soll = (1.3 if wer == 'Affe' else 1.2)*17*0.9
+                lang = ((b['x1'] - b['x0'])**2 + (b['y1'] - b['y0'])**2)**0.5/b['skala']
+                if abs(b['laenge'] - soll) > 0.01 or lang < soll - 1: fehler.append(f'{iid} {wer}: Bügel {lang:.1f} px statt {soll:.1f}')
+                mitte = [(b['x0'] + b['x1'])/2, (b['y0'] + b['y1'])/2]
+                z = [int(BUEGEL[kind][i:i + 2], 16) for i in (1, 3, 5)]
+                for t in (0.3, 0.5, 0.8):   # an mehreren Stellen entlang des Bügels
+                    pt = [b['x0'] + (b['x1'] - b['x0'])*t, b['y0'] + (b['y1'] - b['y0'])*t]
+                    daneben = await g.p.evaluate(F3D_PIXEL, [pt[0], pt[1] + 4*b['skala']])   # 4 px unter dem Bügel (Haut)
+                    ab, farbe = await g.p.evaluate(F3D_WEITESTE, [pt[0], pt[1], 3, daneben])   # 3 Gerätepixel Umkreis (Kantenglättung)
+                    # über dem Kopf prüfen (vorn hängt der Bügel noch vor dem Gesicht, über dem Hintergrund)
+                    if t > 0.4 and ab < 70: fehler.append(f'{iid} {wer}: Bügel bei {t} kaum sichtbar {farbe} (daneben {daneben})')
+        assert not fehler, fehler
+    finally:
+        await g.ev("p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
+
 @test
 async def figuren3d_brille_tattoo(g):
     """3D-Figuren: Brille aus der Umkleide sitzt auf den 3D-Augen (von vorn beide Gläser, von der Seite ein schmales Glas);
@@ -6393,9 +6482,9 @@ async def figuren3d_brille_tattoo(g):
           window.__gl = 0; window.__ta = 0; window.__og = drawGlasses; window.__ot = drawTattoo;
           drawGlasses = (...a) => {{ __gl++; return __og(...a); }}; drawTattoo = (...a) => {{ __ta++; return __ot(...a); }}; }})()""")
         # Bildausschnitt der Figur (Hauptleinwand, Webserver -> lesbar) mit und ohne Tattoo vergleichen
-        ausschnitt = f"""(() => {{ const cv = document.querySelector('canvas'), k = cv.width/W, P = {figur};
-          const x = Math.round(((P.x - camX)/VW*W - 40)*k), y = Math.round((P.y/H*H - 70)*k);
-          return Array.from(cv.getContext('2d').getImageData(x, y, Math.round(80*k), Math.round(70*k)).data); }})()"""
+        # Ausschnitt um die gezeichnete Figur (Fußpunkt aus der 3D-Figur, Figur ~45 px hoch – 10 % kleiner)
+        ausschnitt = f"""(() => {{ const cv = document.querySelector('canvas'), P = {figur}, F = P._fussDev, k = F.skala;
+          return Array.from(cv.getContext('2d').getImageData(Math.round(F.x - 32*k), Math.round(F.y - 52*k), Math.round(64*k), Math.round(56*k)).data); }})()"""
         try:
             await g.p.evaluate(F3D_ZEICHNEN, {'n': 6, 'wer': 'beide', 'vorher': f"{figur}._yawTest = 0; draw()"})
             ohne = await g.ev(ausschnitt)

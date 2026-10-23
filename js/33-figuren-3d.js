@@ -8,7 +8,8 @@
   'use strict';
   const QS = new URLSearchParams(location.search);
   const SPR = 256, FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
-  const SC = 17;                                   // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 50 px)
+  const FIGUR_GROESSE = 0.9;                       // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
+  const SC = 17*FIGUR_GROESSE;                     // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 45 px)
   const FR = {x0:-2.4, x1:2.4, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0)
   if(typeof window.fussFigurZeichnen !== 'function') return;
   // ---------- 3D-Teil (eigene kleine Welt, getrennt vom Spiel) ----------
@@ -137,23 +138,23 @@ function drawNode(n,pm,VPm,cam){const loc=M.mul(M.mul(M.mul(M.T(...n.pos),M.RZ(n
 // ---------- Affe ----------
 function glints(H,x,y,z,s){return [K(H,{geo:SPH(1),pos:[x+.07*s,y+.105,z+.085],sc:[.075,.075,.04],color:0xffffff,emit:1}),
  K(H,{geo:SPH(1),pos:[x-.06*s,y-.1,z+.08],sc:[.036,.036,.025],color:0xffffff,emit:1})]}
-function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0xc98a52,TIP=0xe8b57a;   // ganz hellbraun (Nutzerwunsch: kein dunkler „Hut“)
+function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0xb98a58,TIP=0xe3c08c;
+ // Affe ganz hellbraun (Nutzerwunsch: keine dunkle Fellkappe/kein „Hut“), kurzes Fell wie beim Schwein -> gleich groß
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
- F(H,{sc:[1.1,1,1.02],root:ROOT,tip:TIP,len:.05,tat:true});   // kurzes Fell wie beim Schwein (gleich groß), ohne Haarbüschel
+ F(H,{sc:[1,1,1],root:ROOT,tip:TIP,len:.05,tat:true});
  for(const s of [-1,1]){
-  K(H,{pos:[s*.34,-.02,.82],sc:[.42,.38,.14],color:0xffe2c2,spec:30});   // Gesichtsfeld flacher (Augen stehen von der Seite nicht mehr ab)
-  F(H,{pos:[s*.97,.32,-.05],sc:[.12,.28,.28],root:ROOT,tip:TIP,len:.04,tat:true});   // Ohren höher und kleiner: frei von den Armen
-  K(H,{pos:[s*1.05,.32,0],sc:[.06,.19,.19],color:0xe9a38f,spec:10});
-  { const e = K(H,{pos:[s*.36,.16,.96],sc:[.21,.26,.1],color:0x1a0f0b,spec:140}); eyes.push({n:e, g:glints(H,s*.36,.16,.96,s), y:.26}); }
+  K(H,{pos:[s*.3,.0,.82],sc:[.42,.4,.15],color:0xf8dcb6,spec:30});   // helle Gesichtshälften (flacher: Augen stehen von der Seite nicht ab)
+  F(H,{pos:[s*.9,.4,-.04],sc:[.2,.22,.15],root:ROOT,tip:TIP,len:.04,tat:true});   // runde Ohren, höher und kleiner (frei von den Armen)
+  K(H,{pos:[s*.95,.4,.08],sc:[.12,.13,.07],color:0xf0a89a,spec:12});   // rosa Innenohr
+  { const e = K(H,{pos:[s*.36,.1,.96],sc:[.21,.27,.1],color:0x1a0f0b,spec:140}); eyes.push({n:e, g:glints(H,s*.36,.1,.96,s), y:.28}); }
   K(H,{pos:[s*.66,-.2,.78],sc:[.22,.14,.06],color:0xff8f9a,alpha:.65});
-  F(H,{pos:[s*.36,.48,.84],sc:[.22,.07,.08],rot:[0,0,-s*.25],root:0x8a5a30,tip:0xb8804a,len:.04,grav:.01});
-}
- K(H,{pos:[0,-.42,.88],sc:[.52,.38,.34],color:0xffeacb,spec:34});
+ }
+ K(H,{pos:[0,-.36,.88],sc:[.5,.38,.34],color:0xf0cfa0,spec:34});
  K(H,{pos:[0,-.28,1.185],sc:[.1,.065,.05],color:0x4b2d22,spec:60});
  const mp=[];for(let i=0;i<=10;i++){const x=-.25+i*.05;const y=-.5-.11*(1-(x/.25)**2);const q=Math.max(0,1-(x/.52)**2-((y+.42)/.38)**2);mp.push([x,y,.88+.34*Math.sqrt(q)+.012])}
  K(H,{geo:tube(mp,.03,.03,1,30,8),color:0x5a2f25});
  K(H,{pos:[0,-.585,1.14],sc:[.1,.05,.04],color:0xff7d8f,spec:40});
- const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.38,1.42,.1]}));   // Arme wie beim Schwein (nicht an den Ohren)
+ const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.16,1.42,.1]}));   // Arme wie beim Schwein (nicht an den Ohren)
   F(A,{pos:[0,-.3,0],sc:[.2,.4,.2],root:ROOT,tip:TIP,len:.08,tat:true});K(A,{pos:[0,-.75,.04],sc:[.19,.19,.19],color:0xffe2c2,spec:30});for(const fx of [-.09,0,.09])K(A,{pos:[fx,-.9+Math.abs(fx)*.3,.1],sc:[.065,.085,.065],color:0xffe2c2,spec:30});K(A,{pos:[-s*.17,-.78,.08],sc:[.06,.08,.06],color:0xffe2c2,spec:30});AP.push(A)}
  const LP=[];for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,.7,.1]}));
   F(L,{pos:[0,-.12,0],sc:[.3,.3,.32],root:ROOT,tip:TIP,len:.08});
@@ -174,7 +175,7 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0xc98a52,TIP=0x
 // ---------- Schwein ----------
 function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffdde8,D=40;
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
- F(H,{sc:[1.12,1,1.02],root:ROOT,tip:TIP,len:.045,dens:D,tat:true});
+ F(H,{sc:[1,1,1],root:ROOT,tip:TIP,len:.045,dens:D,tat:true});
  for(const s of [-1,1]){
   F(H,{pos:[s*.62,.86,.14],sc:[.36,.3,.12],rot:[.55,0,-s*.7],root:0xd0607f,tip:0xffb5c9,len:.04,dens:D,tat:true});
   { const e = K(H,{pos:[s*.43,.22,.9],sc:[.17,.22,.11],color:0x1a0d12,spec:140}); eyes.push({n:e, g:glints(H,s*.43,.22,.9,s), y:.22}); }
@@ -186,7 +187,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
  K(H,{pos:[0,-.2,.98],sc:[.44,.34,.3],color:0xf79ab4,spec:35});
  K(H,{geo:tube([[0,.98,.3],[.07,1.14,.3],[.02,1.28,.3],[-.1,1.24,.3],[-.1,1.14,.3]],.04,.02,1,30,8),color:0xf590ac,spec:20});
  K(H,{geo:tube([[-.24,-.6,.85],[-.12,-.7,.9],[0,-.73,.92],[.12,-.7,.9],[.24,-.6,.85]],.03,.03,1,30,8),color:0x9a3c58});
- for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.35,1.45,.1]}));
+ for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.14,1.45,.1]}));
   F(A,{pos:[0,-.26,0],sc:[.2,.35,.2],root:ROOT,tip:TIP,len:.04,dens:D,tat:true});K(A,{pos:[0,-.66,.03],sc:[.17,.17,.17],color:0xf590ac,spec:20});R['a'+s]=A}
  for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,.7,.1]}));
   F(L,{pos:[0,-.2,0],sc:[.3,.32,.32],root:ROOT,tip:TIP,len:.04,dens:D});
@@ -203,6 +204,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   let E;
   try { E = baue(); } catch(e){ console.warn('3D-Figuren nicht verfügbar:', e); return; }
   const {gl, PRG, U, M, Nd, buildMonkey, buildPig, drawNode, cv, noise, TAT} = E;
+  window.figur3dMass = FIGUR_GROESSE;   // nur wenn die 3D-Figuren wirklich zeichnen (sonst bleibt die Umkleide im alten Maß)
   // ---------- Tattoo als Fell-Textur (Umkleide, Muster aus js/27 tattooPattern) ----------
   // Das Muster (für die Gesichtsscheibe gemacht, Einheitskreis) wird von vorn auf die vordere Kugelhälfte gelegt und gespiegelt
   // auf die hintere – so geht es rund um die ganze Figur, wölbt sich mit und dreht sich mit (Kopf/Körper, Arme, Ohren).
@@ -240,8 +242,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   const lerpA = (a,b,t) => a.map((v,i) => v + (b[i]-v)*t);
   const ease = x => x*x*(3-2*x);
   const TUCK = {head:[.55,0,0], armN:[-1.75,0,.25], armP:[-1.75,0,-.25], legN:[-1.45,0,.1], legP:[-1.45,0,-.1]};
-  const TANZ_ARM = .75, TANZ_ABSTAND = 50;   // Siegestanz: Verlängerung des Einhak-Arms, Abstand der beiden Figuren (px)
-  const HAFT_ARM = 3.0;   // Armlänge (Faktor) beim Hangeln an der Haftfläche – Affe wie Schwein (Nutzerwunsch; Affe vorher 4,5)
+  const TANZ_ARM = .75, TANZ_ABSTAND = 44;   // Siegestanz: Verlängerung des Einhak-Arms, Abstand der beiden Figuren (px)
+  const HAFT_ARM = 3.0;   // Armlänge (Faktor) beim Hangeln an der Haftfläche – Affe wie Schwein
   const WJ_ZEIT = 480;   // ms: Salto nach dem Wandsprung
   // wie tief die Figur beim Hangeln unter der Fläche hängt: die Hand-Spitze (Arm mit Faktor al) soll genau die Unterkante der Fläche (Oberkante der Hitbox) berühren
   function hangSenke(ch, al, ph, voll){
@@ -427,7 +429,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(now > S.nb){ S.bl = now + 130; S.nb = now + 2200 + Math.random()*2800; }
     const zu = now < S.bl;
     for(const e of ch.eyes){ e.n.sc = [e.n.sc[0], zu ? e.y*.16 : e.y, e.n.sc[2]]; for(const g of e.g) g.visible = !zu; }
-    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14, (1 + sq), (1 - sq*.5)*1.14];
+    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14, (1 + sq), (1 - sq*.5)*1.14];   // Affe und Schwein gleich groß
     // in die kleine Leinwand zeichnen
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
@@ -448,6 +450,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const hp = handPunkt(ch.armP, 0, -.75*(ch.armP.alF||1), .04), h2 = handPunkt(ch.armN, 0, -.75*(ch.armN.alF||1), .04), hd = dev(0, 2.4);
     const a = dev(hp[0], hp[1]), b = dev(h2[0], h2[1]);
     P._handDev = {x: a.x, y: a.y, f: P._frameNo = (P._frameNo||0) + 1}; P._hand2Dev = {x: b.x, y: b.y}; P._headDev = {x: hd.x, y: hd.y};
+    { const fu = dev(0, 0); P._fussDev = {x: fu.x, y: fu.y, skala: Math.hypot(Tm.a, Tm.b)}; }   // für Tests: Fußpunkt und Maßstab (Gerätepixel je Spielpixel)
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.shadowColor = 'rgba(46,28,14,.8)'; c.shadowBlur = Math.max(1, Math.min(5, 1.5*Math.hypot(Tm.a, Tm.b))); c.shadowOffsetX = 0; c.shadowOffsetY = 0;   // weiche dunkle Kontur
     c.drawImage(cv, FR.x0*SC, fy - FR.y1*SC - IT.hop*42, (FR.x1 - FR.x0)*SC, (FR.y1 - FR.y0)*SC);
@@ -473,12 +476,16 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         if(aS > .02 && wear.glasses && typeof drawGlasses === 'function'){   // Seitenansicht: Glas von der Kante (schmal), Bügel läuft nach hinten zum Ohr
           c.globalAlpha = aS; const vis = d0 > d1 ? L : R, w = dE3*(male ? .33 : .27)*1.15, h = w*1.12, kind = wear.glasses.fx.kind;
           const BUEGEL = {classic:'#111', round:'#c9a24a', aviator:'#d8b660', shutter:'#fff', heart:'#d6336c', '3d':'#e8e8e8', star:'#e0a800', cyber:'#7fe0ff', bling:'#ffd23f'};
-          const SQ = .4, vor = w*.55, laenge = (male ? 1.05 : .95)*SC*.72;   // Glas-Breite von der Seite, Versatz nach vorn, Bügel-Länge
+          const SQ = .4, vor = w*.55, laenge = (male ? 1.3 : 1.2)*SC;   // Glas-Breite von der Seite, Versatz nach vorn, Bügel-Länge
           c.save(); c.translate(vis[0], vis[1]); c.scale((vis[0] >= lo(hc)[0]) ? 1 : -1, 1); c.translate(vor, 0);
           c.save(); c.beginPath(); c.rect(-w*1.04*SQ, -h*1.6, w*2.08*SQ, h*3.2); c.clip(); c.scale(SQ, 1);
           drawGlasses(c, kind, [0, 0], [.01, 0], w, h); c.restore();
-          c.strokeStyle = BUEGEL[kind] || '#222'; c.lineWidth = Math.max(.9, w*.2); c.lineCap = 'round';
-          c.beginPath(); c.moveTo(-w*SQ, -h*.3); c.lineTo(-w*SQ - laenge, -h*.05); c.stroke();
+          const bw = Math.max(1.1, w*.22); c.lineCap = 'round';   // etwas kräftiger: helle Bügel (Jalousie, 3D, Pilot) auch auf hellem Fell sichtbar
+          c.beginPath(); c.moveTo(-w*SQ, -h*.3); c.lineTo(-w*SQ - laenge, -h*.05);
+          c.strokeStyle = 'rgba(45,28,22,.8)'; c.lineWidth = bw + 1.2; c.stroke();   // dunkler Rand: helle Bügel (Jalousie, 3D) auch auf heller Haut sichtbar
+          c.strokeStyle = BUEGEL[kind] || '#222'; c.lineWidth = bw; c.stroke();
+          { const T = c.getTransform(), q0 = T.transformPoint(new DOMPoint(-w*SQ, -h*.3)), q1 = T.transformPoint(new DOMPoint(-w*SQ - laenge, -h*.05));   // für Tests: Bügel in Gerätepixeln
+            P._buegelDev = {x0: q0.x, y0: q0.y, x1: q1.x, y1: q1.y, laenge, f: P._frameNo}; }
           c.restore();
         }
         c.restore();
