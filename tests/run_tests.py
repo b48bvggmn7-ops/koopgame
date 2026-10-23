@@ -1401,7 +1401,7 @@ async def level9_fallengang(g):
             # Bild-Regel: Hebel 4 steht jetzt bei 322 zwischen den Pfeilen 318/324 – warten, bis der Pfeil von 318 steckt
             {'holdIf': {'right': f'P.x < {kx(314)} - 4', 'left': f'P.x > {kx(314)} + 4'}, 'frames': 60},
             {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(318)}) < 4 && a.steckt >= 0)', 'frames': 400},
-            {'holdIf': {'right': f'P.x < {kx(322)} - 4', 'left': f'P.x > {kx(322)} + 4'}, 'frames': 40}, {'use': True, 'frames': 5}]
+            {'holdIf': {'right': f'P.x < {kx(322)} - 4', 'left': f'P.x > {kx(322)} + 4'}, 'frames': 90}, {'use': True, 'frames': 5}]
     r = await koop(g, m=kat(292, 15), f=kat(294, 15), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 10 and await g.ev("!!linkOn[4]"), 'Affe auf die Decke + Hebel 4', r.get('pos'))
     r = await koop(g, f=kat(338, 15), m=kat(320, 10), plans={'f': [{'hold': ['right'], 'frames': 100}]}, maxFrames=600)
@@ -9514,6 +9514,23 @@ async def kombi_testlevel(g):
     assert r.get('done') and r['pos']['f'][1] == 11 and r['pos']['f'][0] >= 56, ('Wandsprung + Segeln', r.get('pos'), r.get('log'))
     r = await koop(g, m=kat(36, 16), f=kat(37, 16), plans={'f': schwein[:3] + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=1500)
     assert r.get('dead') == 'f', ('ohne Schirm in die Stacheln', r.get('pos'))
+
+@test
+async def haken_pruefung(g):
+    """Haken aufgeräumt (Nutzerwunsch, Prüfwerkzeug tests/haken_pruefen.py): in ALLEN Leveln der Welten stößt der Affe beim
+    Schwingen nirgends an (Körper unter dem Seil-Ende, volle und ¾ Seillänge, ±50°; Landen von oben zählt nicht) und die
+    Reichweiten-Kreise zweier Haken überdecken sich nicht – außer den begründeten Ausnahmen in tests/haken_ausnahmen.json;
+    jede Ausnahme passt noch zu einem echten Haken."""
+    sys.path.insert(0, str(ROOT / 'tests'))
+    import importlib, haken_pruefen as HP
+    importlib.reload(HP)
+    aus = json.loads((ROOT / 'tests' / 'haken_ausnahmen.json').read_text(encoding='utf-8'))
+    befunde = [(d, b['text']) for d in HP.welten_level() for b in HP.pruefen(d, aus)]
+    assert not befunde, befunde[:6]
+    for a in aus:
+        hs = json.loads((ROOT / 'levels' / a['level']).read_text(encoding='utf-8'))['hooks']
+        assert any(int(h['x'] // 40) == a['spalte'] for h in hs), f'veraltete Haken-Ausnahme: {a}'
+        assert a.get('grund'), f'Ausnahme ohne Begründung: {a}'
 
 @test
 async def bildregel_pruefung(g):

@@ -3,6 +3,72 @@
  "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
  "aufgaben": [
   {
+   "id": "schleuder-hebel-4",
+   "von_hand": true,
+   "zone": [
+    310,
+    345
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 4,
+   "start": {
+    "c": 292,
+    "r": 15
+   },
+   "text": "Schleuder, Hebel 4 im Pfeil-Takt",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 11980"
+    },
+    {
+     "frames": 6
+    },
+    {
+     "schleuder": true,
+     "zug": -1
+    },
+    {
+     "until": "P.grounded && f > 5",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 12580 - 4",
+      "left": "P.x > 12580 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "wait": "fallenPfeile.some(a => Math.abs(a.x - 12740) < 4 && a.steckt >= 0)",
+     "frames": 400
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 12900 - 4",
+      "left": "P.x > 12900 + 4"
+     },
+     "frames": 90
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     292,
+     15
+    ],
+    "links": [],
+    "schritte": 1500
+   }
+  },
+  {
    "id": "nummer-2",
    "zone": [
     58,
@@ -40,25 +106,6 @@
     ],
     "links": [],
     "schritte": 466
-   }
-  },
-  {
-   "id": "nummer-4",
-   "zone": [
-    310,
-    345
-   ],
-   "rolle": "m",
-   "aktion": "hebel",
-   "nummer": 4,
-   "probe": {
-    "figur": "m",
-    "start": [
-     289,
-     15
-    ],
-    "links": [],
-    "schritte": 1090
    }
   },
   {

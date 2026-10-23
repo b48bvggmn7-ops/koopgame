@@ -81,6 +81,8 @@
   begründete Ausnahmen in `tests/bildregel_ausnahmen.json`; Ziel-Hinweis-Pfeil am Bildrand: `zielHinweisMerken` (05) / `drawZielHinweise` (07).
 - `tests/partner_aufgaben_pruefen.py` – probiert je Hebel-/Platten-Nummer aus, ob der Computer-Partner sie schafft, und
   schreibt mit `--schreiben` die Begleitdatei `levels/partner/<welt>/<datei>.json` (nicht Geschafftes unter „offen“).
+- `tests/haken_pruefen.py` – Prüfwerkzeug Haken (freie Schwungbahn unter dem Seil-Ende, Reichweiten-Kreise ohne Überdeckung),
+  begründete Ausnahmen in `tests/haken_ausnahmen.json` (Test `haken_pruefung`).
 - `tests/kombi_pruefen.py` – Prüfwerkzeug Wandsprung (Kamine: Breite/Höhe/Einstufung) und Kombi-Stellen je Level/Etappe,
   Ausnahmen in `tests/kombi_ausnahmen.json`, Testlevel `levels/test/kombis.json` (Kombi-Nachschärfen).
 - `tests/bahnen.js` + `tests/bahnen_referenz.json` – Bahnen-Test der alten Mechaniken (Nacht-Ausbau, harte Regel):
@@ -160,7 +162,7 @@
 
 ## Neues oder geändertes Level (Checkliste)
 1. Bild-Regel und Leveldesign-Regeln (AUSBAU-REGELWERK Punkt 12): Auslöser und Ziel höchstens `BILD_MAX_SPALTEN` (20)
-   auseinander, Fahrten/Tore nie weiter vom Partner weg, Haken-Richtwerte (Abstand 5–6, Höhe 6–7 Reihen), Checkpoints
+   auseinander, Fahrten/Tore nie weiter vom Partner weg, Haken-Richtwerte (Kreise ohne Überdeckung = Abstand ≥ Summe der Reichweiten, meist 9–10; Höhe 6–7 Reihen; freie Schwungbahn: `python3 tests/haken_pruefen.py --level <welt>/<datei>`), Checkpoints
    25–70 Spalten auseinander mit einer Stelle dazwischen und nie zwischen Hebel und Tür.
 2. Vor dem Commit `python3 tests/bildregel_pruefen.py --level <welt>/<datei>` (ohne `--level`: alle Level; `--alle` zeigt
    die ganzen Tabellen). Bleibt ein Befund bewusst, kommt er mit Begründung in `tests/bildregel_ausnahmen.json`.

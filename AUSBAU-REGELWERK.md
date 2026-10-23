@@ -47,11 +47,14 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
     - **Plattform**: Bewegte Plattformen, fahrende Haken, Bänder und Ein-Figur-Tore bringen niemanden weiter als 20 Spalten
       vom Partner weg – auch mitten in der Fahrt (Partner am Einstieg bzw. am Hebel). Abhilfe: Strecke kürzen, Hebel in
       die Mitte, Strecke in Etappen teilen, Ausgang so legen, dass man nebeneinander weiterläuft.
-    - **Haken** (Richtwerte aus Koop-Bot-Messungen, Reichweite 4,5 Kästchen): Abstand in einer Reihe **5–6 Spalten**
-      (4–8 erlaubt; ab 8 klappt nur noch jeder 2., ab 9 jeder 3. Versuch; unter 4 greift man oft den alten Haken wieder,
-      weil das Spiel immer den nächsten Haken nimmt). Höhe **6–7 Reihen** über dem Absprung-Boden (4–8 erlaubt).
-      Freier Bogen: in den 3 Reihen unter einem Schwung-Haken kein Stein (±2 Spalten). Landung: mindestens 3 Stehplätze
-      2–10 Spalten hinter dem letzten Haken. Größere Reichweite erlaubt etwas mehr Abstand (1,8 × Reichweite).
+    - **Haken** (Haken aufgeräumt, gemessen mit der echten Physik inkl. Liane-Halten): Die Reichweiten-Kreise zweier Haken
+      **überdecken sich nicht** (Abstand ≥ Reichweite 1 + Reichweite 2, also meist **9–10 Spalten** bei Reichweite 4,5 bzw.
+      8 bei 4) – oft reicht ein Haken weniger. Aus einem Schwung schafft der Affe 2,4 × Reichweite + 2,3 Spalten; erlaubt
+      sind bis 90 % davon. **Freie Schwungbahn**: der Affe hängt unter dem Seil-Ende – sein Körper stößt bei voller und
+      ¾ Seillänge bis ±50° nirgends an (Prüfwerkzeug `tests/haken_pruefen.py`, Ausnahmen `tests/haken_ausnahmen.json`).
+      Hoch auf ein Sims vom Boden aus: **Schleuder** statt Aufzug-Haken. Höhe **6–7 Reihen** über dem Absprung-Boden
+      (4–8 erlaubt). Freier Bogen: in den 3 Reihen unter einem Schwung-Haken kein Stein (±2 Spalten). Landung: mindestens
+      3 Stehplätze 2–10 Spalten hinter dem letzten Haken.
     - **Checkpoints** nur nach einer Leistung und vor dem nächsten schweren Stück: mindestens **25 Spalten** Abstand
       (≈ ⅔ Bildbreite bzw. 4 s Laufen – näher liegende Checkpoints sparen nichts), höchstens **70** (≈ 12 s Laufen plus
       1–2 Stellen); zwischen zwei Checkpoints mindestens eine Stelle (Rätsel, Hebel, Falle, Gegner, Grube, Haken,

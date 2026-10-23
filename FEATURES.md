@@ -27,6 +27,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       dem Absprung, freier Bogen, mindestens 3 Stehplätze zum Landen. Die zu weiten Reihen in Dschungel 1 und 2 haben
       jetzt 3 Haken im Abstand 7. Test haken_richtwerte_bot (spielt 3 Hangel-Stellen, mindestens 4 von 8 Loslass-Arten).
       (Test entfallen, als Dschungel 1+2 durch neue Nutzer-Dateien ersetzt wurden – die drei Stellen gibt es nicht mehr.)
+    - Haken aufgeräumt (Nutzerwunsch: „ich stoße beim Schwingen an Boden und Wand“): Prüfwerkzeug tests/haken_pruefen.py
+      (Test haken_pruefung) für alle Level – (1) freie Schwungbahn: der Affe hängt UNTER dem Seil-Ende; sein Körper darf bei
+      voller und ¾ Seillänge bis ±50° nirgends anstoßen (Landen von oben zählt nicht); (2) die Reichweiten-Kreise zweier
+      Haken überdecken sich nicht (Abstand ≥ Reichweite 1 + Reichweite 2; fahrende Haken nur am Startplatz). Gemessen mit
+      der echten Physik: aus einem Schwung schafft der Affe bis 2,4 × Reichweite + 2,3 Spalten (Reichweite 4,5 -> 13), mit
+      Schwung holen mehr – Haken-Reihen haben daher jetzt etwa 2 × Reichweite Abstand (meist 9–10 Spalten bzw. 8 bei
+      Reichweite 4); die Bild-Regel erlaubt bis 90 % der Schwung-Weite. Umbau in allen Welten: dichte Reihen ausgedünnt
+      (oft reicht ein Haken weniger), Kreise auf halben Abstand verkleinert, Haken neben Säulen/Kanten 1–3 Spalten versetzt
+      oder etwas kleinere Reichweite, Flammen-/Lava-Kamin-Gruben mit zwei Haken 6 und 16 Spalten hinter der Kaminwand,
+      Aufzug-Haken (vom Boden hochziehen auf ein Sims) durch Schleudern ersetzt. Begründete Ausnahmen (Boss-Arena Bruno,
+      zwei Hochzieh-Haken ohne Schwingen) in tests/haken_ausnahmen.json.
     - Checkpoints nur nach einer Leistung und vor dem nächsten schweren Stück: 25–70 Spalten Abstand mit einer Stelle
       dazwischen, nie zwischen Hebel und Tür. Überzählige Checkpoints sind entfernt oder zusammengelegt (insgesamt
       432 -> 356); die Spielstände merken sich keine Checkpoint-Nummern (Test spielstand_ohne_checkpoints).

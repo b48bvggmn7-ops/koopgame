@@ -1558,22 +1558,22 @@
     {
       "x": 9100,
       "y": 180,
-      "radius": 200
+      "radius": 180
     },
     {
       "x": 9460,
       "y": 180,
-      "radius": 200
+      "radius": 180
     },
     {
       "x": 10020,
       "y": 180,
-      "radius": 200
+      "radius": 180
     },
     {
       "x": 10380,
       "y": 180,
-      "radius": 200
+      "radius": 180
     },
     {
       "x": 15580,
@@ -3990,6 +3990,7 @@
       "h": 40
     }
   ],
+  "schleudern": [],
   "look": "vulkan",
   "theme": "vulkan"
 }

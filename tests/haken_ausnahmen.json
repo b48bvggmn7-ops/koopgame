@@ -10,5 +10,23 @@
   "spalte": 789,
   "regel": "Bahn",
   "grund": "Sonnenkammer: Hochzieh-Haken im engen Schacht – man springt gerade hoch, zieht sich hoch (W) und steigt aufs Hebel-Sims; geschwungen wird hier nicht (für eine Schleuder ist der Schacht zu eng)"
+ },
+ {
+  "level": "dschungel/boss-bruno.json",
+  "spalte": 14,
+  "regel": "Bahn",
+  "grund": "Boss-Arena Bruno: die zwei Haken greift man direkt vom Arena-Boden (lange Seile, 10,5 Kästchen) – so ist der Kampf gebaut (Test boss_bruno: Haken vom Boden erreichbar); in der kleinen Arena geht das nicht ohne Bodennähe"
+ },
+ {
+  "level": "dschungel/boss-bruno.json",
+  "spalte": 23,
+  "regel": "Bahn",
+  "grund": "Boss-Arena Bruno: die zwei Haken greift man direkt vom Arena-Boden (lange Seile, 10,5 Kästchen) – so ist der Kampf gebaut (Test boss_bruno: Haken vom Boden erreichbar); in der kleinen Arena geht das nicht ohne Bodennähe"
+ },
+ {
+  "level": "dschungel/boss-bruno.json",
+  "spalte": 14,
+  "regel": "Ring",
+  "grund": "Boss-Arena Bruno: die zwei Haken greift man direkt vom Arena-Boden (lange Seile, 10,5 Kästchen) – so ist der Kampf gebaut (Test boss_bruno: Haken vom Boden erreichbar); in der kleinen Arena geht das nicht ohne Bodennähe"
  }
 ]
