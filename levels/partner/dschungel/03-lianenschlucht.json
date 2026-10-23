@@ -3,7 +3,7 @@
  "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
  "aufgaben": [
   {
-   "id": "schleuder-hebel-1",
+   "id": "dash-hebel-1",
    "von_hand": true,
    "zone": [
     45,
@@ -16,23 +16,38 @@
     "c": 44,
     "r": 14
    },
-   "text": "Schleuder, Hebel 1",
+   "text": "Sprung + Dash hoch, Hebel 1",
    "schritte": [
     {
      "hold": [
       "right"
      ],
-     "until": "P.x >= 2060"
+     "until": "P.x >= 1970"
     },
     {
-     "frames": 6
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 4
     },
     {
-     "schleuder": true,
-     "zug": -1
+     "press": [
+      "dash"
+     ],
+     "hold": [
+      "pull"
+     ],
+     "frames": 2
     },
     {
-     "until": "P.grounded && f > 5",
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
      "frames": 300
     },
     {

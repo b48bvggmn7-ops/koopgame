@@ -6337,12 +6337,6 @@
       "h": 40
     }
   ],
-  "schleudern": [
-    {
-      "x": 4260,
-      "y": 420
-    }
-  ],
   "welt": "ruinen",
   "tageszeit": "nacht",
   "wetter": "regen"

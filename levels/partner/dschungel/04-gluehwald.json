@@ -3,7 +3,7 @@
  "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
  "aufgaben": [
   {
-   "id": "schleuder-platte-7",
+   "id": "dash-platte-7",
    "von_hand": true,
    "zone": [
     356,
@@ -16,23 +16,39 @@
     "c": 358,
     "r": 14
    },
-   "text": "Schleuder, Platte 7",
+   "text": "Sprung + Dash hoch, Platte 7",
    "schritte": [
     {
      "hold": [
       "right"
      ],
-     "until": "P.x >= 14620"
+     "until": "P.x >= 14570"
     },
     {
-     "frames": 6
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 4
     },
     {
-     "schleuder": true,
-     "zug": -1
+     "press": [
+      "dash"
+     ],
+     "hold": [
+      "pull"
+     ],
+     "frames": 2
     },
     {
-     "until": "P.grounded && f > 5",
+     "holdIf": {
+      "right": "P.x < 14740 - 4",
+      "left": "P.x > 14740 + 4"
+     },
+     "until": "P.grounded",
      "frames": 300
     },
     {
@@ -57,7 +73,7 @@
    }
   },
   {
-   "id": "schleuder-hebel-6",
+   "id": "dash-hebel-6",
    "von_hand": true,
    "zone": [
     298,
@@ -70,23 +86,38 @@
     "c": 299,
     "r": 14
    },
-   "text": "Schleuder, Hebel 6",
+   "text": "Sprung + Dash hoch, Hebel 6",
    "schritte": [
     {
      "hold": [
       "right"
      ],
-     "until": "P.x >= 12220"
+     "until": "P.x >= 12170"
     },
     {
-     "frames": 6
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 4
     },
     {
-     "schleuder": true,
-     "zug": -1
+     "press": [
+      "dash"
+     ],
+     "hold": [
+      "pull"
+     ],
+     "frames": 2
     },
     {
-     "until": "P.grounded && f > 5",
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
      "frames": 300
     },
     {
@@ -112,7 +143,7 @@
    }
   },
   {
-   "id": "schleuder-hebel-2",
+   "id": "dash-hebel-2",
    "von_hand": true,
    "zone": [
     44,
@@ -125,23 +156,38 @@
     "c": 44,
     "r": 14
    },
-   "text": "Schleuder, Hebel 2",
+   "text": "Sprung + Dash hoch, Hebel 2",
    "schritte": [
     {
      "hold": [
       "right"
      ],
-     "until": "P.x >= 2060"
+     "until": "P.x >= 2010"
     },
     {
-     "frames": 6
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 4
     },
     {
-     "schleuder": true,
-     "zug": -1
+     "press": [
+      "dash"
+     ],
+     "hold": [
+      "pull"
+     ],
+     "frames": 2
     },
     {
-     "until": "P.grounded && f > 5",
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
      "frames": 300
     },
     {

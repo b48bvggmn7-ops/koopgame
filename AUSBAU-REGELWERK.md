@@ -52,8 +52,10 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
       8 bei 4) – oft reicht ein Haken weniger. Aus einem Schwung schafft der Affe 2,4 × Reichweite + 2,3 Spalten; erlaubt
       sind bis 90 % davon. **Freie Schwungbahn**: der Affe hängt unter dem Seil-Ende – sein Körper stößt bei voller und
       ¾ Seillänge bis ±50° nirgends an (Prüfwerkzeug `tests/haken_pruefen.py`, Ausnahmen `tests/haken_ausnahmen.json`).
-      Hoch auf ein Sims vom Boden aus: **Schleuder** statt Aufzug-Haken. Höhe **6–7 Reihen** über dem Absprung-Boden
-      (4–8 erlaubt). Freier Bogen: in den 3 Reihen unter einem Schwung-Haken kein Stein (±2 Spalten). Landung: mindestens
+      Hoch auf ein Sims vom Boden aus (Schleuder entfernt, Nutzerwunsch): **nichts setzen**, wenn der Affe mit Wandsprung/Dash
+      hinaufkommt (Sprung + Dash nach oben schafft bis 8 Reihen; mit `tests/stelle_pruefen.py` prüfen); sonst ein **Haken**, an
+      dem der Affe beim Schwingen nirgends an die Wand stößt (Test haken_schwung_frei). Kein Aufzug-Haken.
+      Freier Bogen: in den 3 Reihen unter einem Schwung-Haken kein Stein (±2 Spalten). Landung: mindestens
       3 Stehplätze 2–10 Spalten hinter dem letzten Haken.
     - **Checkpoints** nur nach einer Leistung und vor dem nächsten schweren Stück: mindestens **25 Spalten** Abstand
       (≈ ⅔ Bildbreite bzw. 4 s Laufen – näher liegende Checkpoints sparen nichts), höchstens **70** (≈ 12 s Laufen plus

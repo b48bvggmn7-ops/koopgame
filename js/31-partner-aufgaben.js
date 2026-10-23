@@ -16,7 +16,7 @@
 //   wann   Bedingung zum Start, z. B. {"ich_in": [120, 125], "ich_steht": true, "nummer_an": 3, "nummer_aus": 4}
 //   bis    wie lange er hält (Platte): {"ich_vorbei": 131} (Standard: bis ich an der Tür dieser Nummer vorbei bin)
 //   zeit   Sekunden, bis er aufgibt (Standard 30) · text kurze Anzeige
-//   schritte (nur „ablauf“): Koop-Bot-Schritte (hold/press/frames/until/wait/use/hookWhen/swing/schleuder) ab start {c, r}
+//   schritte (nur „ablauf“): Koop-Bot-Schritte (hold/press/frames/until/wait/use/hookWhen/swing; press dash) ab start {c, r}
 // Ohne Eintrag hilft er bei einfachen Fällen selbst (Auto-Aufgabe): geschlossene Tür vor mir, Hebel oder Platte dazu
 // für ihn erreichbar und höchstens PARTNER_AUTO_WEITE weg -> er geht hin und betätigt ihn / hält die Platte.
 // Auto-Aufgaben nie bei Nummern, die Felsen oder steigende Lava auslösen (er soll mich nie in Gefahr bringen).
@@ -237,13 +237,10 @@ function partnerAblauf(P, M, A, st, text, geh){
   const e = {dir: 0};
   const halte = n => { if(n === 'right') e.dir = 1; else if(n === 'left') e.dir = -1; else if(n === 'jump') e.sprungHalten = true;
     else if(n === 'glide') e.gleiten = true; else if(n === 'pull') e.pull = true; else if(n === 'slack') e.slack = true; };
-  const druecke = n => { if(n === 'jump') e.springen = true; else if(n === 'hook') e.haken = true; else if(n === 'use') e.use = true; else halte(n); };
+  const druecke = n => { if(n === 'jump') e.springen = true; else if(n === 'hook') e.haken = true; else if(n === 'use') e.use = true;
+    else if(n === 'dash') e.dash = true; else halte(n); };   // dash + hold pull = Dash nach oben (pull = „hoch“-Taste)
   let fertig = false;
-  if(S.schleuder){   // Schleuder (elemente/schleuder.js): Seil an den Ring, in Richtung zug spannen, loslassen
-    if(!P.schleuder){ if(f === 0) e.haken = true; else if(f > 2) fertig = true; }
-    else if(schleuderSpannung(P) < (S.spannung || SCHLEUDER_MAX - 2) && f < (S.frames || 240)){ e.schleuderHalten = true; e.dir = S.zug < 0 ? -1 : 1; }
-    else fertig = true;   // Taste nicht mehr halten = loslassen
-  } else if(S.swing){
+  if(S.swing){
     if(!partnerAnker(P) && f > 2) fertig = true;
     else {
       if(f <= (S.pull || 0)) e.pull = true;

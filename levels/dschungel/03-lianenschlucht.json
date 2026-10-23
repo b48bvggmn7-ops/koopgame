@@ -5898,16 +5898,6 @@
       "h": 40
     }
   ],
-  "schleudern": [
-    {
-      "x": 2060,
-      "y": 380
-    },
-    {
-      "x": 10020,
-      "y": 220
-    }
-  ],
   "welt": "dschungel",
   "tageszeit": "mittag",
   "wetter": "regen"

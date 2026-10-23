@@ -5378,20 +5378,6 @@
       "h": 40
     }
   ],
-  "schleudern": [
-    {
-      "x": 2060,
-      "y": 380
-    },
-    {
-      "x": 12220,
-      "y": 380
-    },
-    {
-      "x": 14620,
-      "y": 380
-    }
-  ],
   "welt": "dschungel",
   "tageszeit": "nacht",
   "wetter": "trocken"

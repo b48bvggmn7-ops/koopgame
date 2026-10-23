@@ -36,7 +36,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Reichweite 4); die Bild-Regel erlaubt bis 90 % der Schwung-Weite. Umbau in allen Welten: dichte Reihen ausgedünnt
       (oft reicht ein Haken weniger), Kreise auf halben Abstand verkleinert, Haken neben Säulen/Kanten 1–3 Spalten versetzt
       oder etwas kleinere Reichweite, Flammen-/Lava-Kamin-Gruben mit zwei Haken 6 und 16 Spalten hinter der Kaminwand,
-      Aufzug-Haken (vom Boden hochziehen auf ein Sims) durch Schleudern ersetzt. Begründete Ausnahmen (Boss-Arena Bruno,
+      Aufzug-Haken (vom Boden hochziehen auf ein Sims) durch Schleudern ersetzt (Schleuder inzwischen wieder entfernt, siehe
+      unten: dort kommt der Affe mit Sprung + Dash nach oben hinauf). Begründete Ausnahmen (Boss-Arena Bruno,
       zwei Hochzieh-Haken ohne Schwingen) in tests/haken_ausnahmen.json.
     - Checkpoints nur nach einer Leistung und vor dem nächsten schweren Stück: 25–70 Spalten Abstand mit einer Stelle
       dazwischen, nie zwischen Hebel und Tür. Überzählige Checkpoints sind entfernt oder zusammengelegt (insgesamt
@@ -133,19 +134,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (fällt einfach). Danach normaler Abflug (ropeFling). Springen am Seil löst weiterhin (mit HOOK_RELEASE_BOOST).
     Koop-Bot und Computer-Partner halten die Taste am Seil; der Bahnen-Test fährt mit der alten Bedienung
     (window.hakenTippen, Referenz unverändert). Test liane_halten_loslassen_schub.
-  - Schleuder (zweites Haken-Element, Nutzerwunsch; elemente/schleuder.js, Editor-Reiter „Haken“, alle Welten): EIN Punkt
-    (Astgabel mit Gummi in warmem Orange, Reichweiten-Kreis wie beim Haken, blau wenn erreichbar) – im Editor an die Kante
-    setzen, auf die es hinaufgehen soll. Der Affe wirft seine Liane an den Punkt (G drücken und halten, Reichweite
-    SCHLEUDER_REICHWEITE 260 px ab den Händen wie beim Haken), läuft ein paar Schritte weg und spannt die Liane – die erste
-    Laufrichtung nach dem Greifen ist die Spann-Richtung, geschleudert wird in die Gegenrichtung (also einfach von der Kante
-    weglaufen, auf die man will; egal ob man links, rechts oder unter dem Punkt steht) (wird zäher,
-    höchstens SCHLEUDER_MAX 120 px Weg; ohne Laufen zieht sie ihn langsam zurück). Die Liane bleibt dabei eine normale Liane
-    (nur leicht gedehnt). G loslassen schleudert ihn hinauf zum Punkt – voll gespannt bis knapp über den Punkt und gut eine
-    Spalte darüber hinaus, weniger gespannt kürzer; kaum gespannt (< 20 px) kein Schub. Springen löst ohne Schub. Ton:
-    Haken-Klick beim Greifen, Gummi-Schnalzen beim Abschuss. (Erste Fassung mit Haken + Gummiband + Ring darunter auf
-    Nutzerwunsch ersetzt: „es reicht doch 1 Punkt“, „das Seil ist keine Liane“.) Rolle: nur der Affe – kommt so auf eine
-    Kante und hilft oben dem Schweinchen (Hebel, Platte, Tür). Testlevel levels/test/schleuder.json, Test
-    schleuder_spannen_und_loslassen.
+  - Schleuder ENTFERNT (Nutzerwunsch; vorher elemente/schleuder.js: Punkt, an den der Affe die Liane warf, spannte und sich
+    hinauf schleudern ließ). Kein Element, kein Editor-Werkzeug, aus allen Leveln genommen (beide Formate). An den 9 früheren
+    Stellen (Dschungel 3: 2, Dschungel 4: 3, Dschungel 5: 1, Fallengang: 3 (Ruinen 3), Tempelherz: 1 (Ruinen 6)) – jeweils ein
+    Sims bzw. eine schwebende Plattform 5–6 Reihen über dem Boden – kommt der Affe mit Anlauf, Sprung und gleich danach Dash
+    nach oben hinauf (mit der echten Physik geprüft, tests/stelle_pruefen.py: Fenster 19–30 Schritte); deshalb wurden dort
+    KEINE Haken gesetzt (Nutzerwunsch: nur wenn Wandsprung/Dash nicht reichen). Koop-Bot-Baustein k_dash_hoch
+    (tests/run_tests.py), Computer-Partner-Abläufe (levels/partner/…, Schritt press dash + hold pull) angepasst.
+    Test schleuder_entfernt.
   - Schwung holen am Haken wie beim Schaukeln (SWING_PUSH 0,2): die Laufen-Taste schiebt nur, wenn man in die
     Richtung drückt, in die der Affe gerade schwingt (oder er fast stillhängt). Taste nur halten drückt ihn nicht
     mehr sofort weit zur Seite (0,5 s halten: früher ~45°, jetzt ~26°); im Takt rechts/links baut schnell Schwung auf.

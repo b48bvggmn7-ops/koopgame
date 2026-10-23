@@ -326,7 +326,6 @@ const SFX = {
   hookThrow(pl){ sfxLog('hookthrow'); sfxPlay('rope', {x: pl && pl.x}); },
   hookAttach(pl){ sfxLog('hook'); sfxPlay('hookAttach', {x: pl && pl.x}); },
   hookRelease(pl){ sfxLog('hookrelease'); sfxPlay('rope', {x: pl && pl.x, rate: 1.15}); },
-  schleuder(pl, k){ sfxLog('schleuder'); sfxPlay('rope', {x: pl && pl.x, rate: 0.75}); sfxPlay('mushroom', {x: pl && pl.x, vol: 0.4 + 0.5*(k || 1), rate: 1.3}); },   // Schleuder (elemente/schleuder.js)
   umbrella(pl){ sfxLog('umbrella'); sfxPlay('umbrella', {x: pl && pl.x}); },
   death(x){ sfxLog('death'); sfxPlay('death', {x}); },
   lever(on, x){ sfxLog('lever'); sfxPlay('lever', {x, rate: on ? 1.08 : 0.92}); },

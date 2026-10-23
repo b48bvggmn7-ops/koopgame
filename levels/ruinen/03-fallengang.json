@@ -5412,20 +5412,6 @@
       "h": 40
     }
   ],
-  "schleudern": [
-    {
-      "x": 2020,
-      "y": 220
-    },
-    {
-      "x": 11980,
-      "y": 420
-    },
-    {
-      "x": 14940,
-      "y": 380
-    }
-  ],
   "welt": "ruinen",
   "tageszeit": "morgen",
   "wetter": "wechselnd"

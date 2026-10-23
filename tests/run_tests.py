@@ -115,9 +115,13 @@ def k_hop(xj, brake, glide=False):
             {'hold': ['glide'] if glide else [], 'holdIf': {'left': 'P.vx > 0.8', 'right': 'P.vx < -0.8'}, 'until': 'P.grounded'}]
 def k_segeln(c_absprung, hold=10):
     return [k_lauf(c_absprung), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
-def k_schleuder(c, zug=-1, d=0):
-    """Schleuder (elemente/schleuder.js): an den Ring in Spalte c laufen, Seil werfen, in Richtung zug spannen, loslassen, landen"""
-    return [k_lauf(c, d), {'frames': 6}, {'schleuder': True, 'zug': zug}, {'until': 'P.grounded && f > 5', 'frames': 300}]
+def k_dash_hoch(c, ziel=None):
+    """Affe hinauf aufs Sims (statt der früheren Schleuder): 1¼ Kästchen vor Spalte c abspringen, nach 4 Schritten Dash nach
+    oben, dann weiter nach rechts auf die Kante (Fenster mit der echten Physik gemessen: Absprung -80…-10 px, Dash 0–6 Schritte);
+    ziel = Spalte, auf die er danach zusteuert (kleine Plattform: nicht über den Rand hinaus)"""
+    weiter = {'hold': ['right']} if ziel is None else {'holdIf': {'right': f'P.x < {kx(ziel)} - 4', 'left': f'P.x > {kx(ziel)} + 4'}}
+    return [{'hold': ['right'], 'until': f'P.x >= {kx(c) - 50}'}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4},
+            {'press': ['dash'], 'hold': ['swimUp'], 'frames': 2}, dict(weiter, until='P.grounded', frames=300)]
 def k_haken(n, release, jump_at=None, d=0):
     """(vom Boden) springen, n Haken nacheinander greifen; release = Loslass-Bedingung je Haken"""
     st = ([k_lauf(jump_at, d)] if jump_at is not None else []) + [
@@ -1042,8 +1046,8 @@ async def level7_lianenschlucht(g):
         plan = k_hop(kx(13) + 20, 24) + k_hop(kx(17) + 20, 24) + k_hop(kx(22) + 20, 24)
         r = await koop(g, **{who: kat(3, 14), other: kat(1, 14)}, plans={who: plan}, maxFrames=2500)
         soll(k_pos(r, who) and k_pos(r, who)[1] == 8, f'Steg-Treppe {who}', r.get('pos'))
-    # 2) Schleuder statt Seil-Aufzug (Haken aufgeräumt): auf den Sims; Hebel 1 öffnet Tür 1
-    plan = k_schleuder(51) + [k_lauf(57, -10), {'use': True, 'frames': 5}]
+    # 2) Sprung + Dash nach oben (Schleuder entfernt): auf den Sims; Hebel 1 öffnet Tür 1
+    plan = k_dash_hoch(50) + [k_lauf(57, -10), {'use': True, 'frames': 5}]
     r = await koop(g, m=kat(40, 14), f=kat(40, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[1]"), 'Seil-Aufzug + Hebel 1', r.get('pos'))
     # 3) Segel-Schlucht: nur das Schweinchen kommt rüber; Hebel 2 fährt die Plattform mit dem Affen
@@ -1078,7 +1082,7 @@ async def level7_lianenschlucht(g):
         r = await koop(g, f=kat(249, 11), m=kat(247, 11), plans={'f': k_segeln(252, hold)}, maxFrames=1500)
         ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 267.5 and k_pos(r, 'f')[1] == 15)
     soll(ok, 'Tunnel (Schweinchen)')
-    plan = k_schleuder(250)   # Haken aufgeräumt: Schleuder an der Felskante statt Aufzug-Haken
+    plan = k_dash_hoch(249)   # Schleuder entfernt: Sprung + Dash nach oben auf die Felskante
     r = await koop(g, m=kat(246, 11), f=kat(243, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5, 'Affe auf den Felsen', r.get('pos'))
     # 7) Schleuse: Affe hält Platte 5, Schweinchen durch Tür 5 und über den Graben; dann Affe per Haken
@@ -1200,7 +1204,7 @@ async def level8_gluehwald(g):
     soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 34), 'Affe ohne Brücke nicht rüber', r.get('pos'))
     r = await koop(g, m=kat(19, 11), f=kat(37, 14), plans={'m': [k_lauf(40)]}, links=[1], maxFrames=1500)
     soll(r.get('done'), 'Brücke B trägt den Affen (Hebel 1 an)', r.get('pos'))
-    plan = k_schleuder(51) + [k_lauf(56, -10), {'use': True, 'frames': 5}]   # Haken aufgeräumt: Schleuder statt Aufzug-Haken
+    plan = k_dash_hoch(51) + [k_lauf(56, -10), {'use': True, 'frames': 5}]   # Schleuder entfernt: Sprung + Dash nach oben
     r = await koop(g, m=kat(40, 14), f=kat(42, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[2]"), 'Haken -> Sims -> Hebel 2 (Affe)', r.get('pos'))
     r = await koop(g, f=kat(60, 14), m=kat(56, 9), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=1000)
@@ -1236,7 +1240,7 @@ async def level8_gluehwald(g):
     # --- Etappe 3 ---
     ok = False
     for jx in (0,):
-        plan = k_schleuder(305) + [k_lauf(310, -10), {'use': True, 'frames': 5}]   # Haken aufgeräumt: Schleuder statt Aufzug-Haken
+        plan = k_dash_hoch(305) + [k_lauf(310, -10), {'use': True, 'frames': 5}]   # Schleuder entfernt: Sprung + Dash nach oben
         r = await koop(g, m=kat(292, 14), f=kat(294, 14), plans={'m': plan}, maxFrames=2000)
         if k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[6]"): ok = True; break
     soll(ok, 'Haken -> Sims -> Hebel 6 (Affe)')
@@ -1255,7 +1259,7 @@ async def level8_gluehwald(g):
     soll(r.get('pos', {}).get('f', [0, 0])[1] > 10, 'ohne Hebel 6 kein Teleport', r.get('pos'))
     ok = False
     for jx in (0,):
-        m = k_schleuder(365) + [   # Haken aufgeräumt: Schleuder statt Aufzug-Haken
+        m = k_dash_hoch(365, ziel=368) + [   # Schleuder entfernt: Sprung + Dash nach oben, auf die kleine Plattform (366–369)
              {'holdIf': {'right': f'P.x < {kx(368)} - 4', 'left': f'P.x > {kx(368)} + 4'}, 'frames': 60}, {'wait': f'Q.x >= {kx(399)} - 20'},
              k_lauf(372), {'hold': ['right'], 'until': f'P.x >= {kx(398)}', 'frames': 600}]
         f = [{'wait': '!!linkOn[7]'}, k_lauf(399, -14), {'frames': 10}, {'wait': f'Q.x >= {kx(397)}'}]
@@ -1337,7 +1341,7 @@ async def level9_fallengang(g):
     soll(ok, 'Tunnel segeln (Flammen aus)')
     r = await koop(g, f=kat(70, 15), m=kat(66, 15), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
     soll(r['pos']['f'][0] < 76, 'Tür 1 hält ohne Hebel 1', r.get('pos'))
-    plan = k_schleuder(50) + [   # Haken aufgeräumt: Schleuder an der Felskante statt Aufzug-Haken
+    plan = k_dash_hoch(49) + [   # Schleuder entfernt: Sprung + Dash nach oben auf die Felskante
             {'holdIf': {'right': f'P.x < {kx(60)} - 4', 'left': f'P.x > {kx(60)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
     r = await koop(g, m=kat(46, 11), f=kat(43, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5 and await g.ev("!!linkOn[1]"), 'Affe auf den Felsen + Hebel 1', r.get('pos'))
@@ -1397,7 +1401,7 @@ async def level9_fallengang(g):
         r = await koop(g, f=kat(301, 14), m=kat(320, 10), plans={'f': k_segeln(303, hold) + [k_lauf(339, -10), {'use': True, 'frames': 5}]}, links=[4], maxFrames=2500)
         ok = ok or (bool(r.get('done')) and await g.ev("!!linkOn[5]"))
     soll(ok, 'Schweinchen segelt in den Pfeil-Gang, Hebel 5')
-    plan = k_schleuder(299) + [   # Haken aufgeräumt: Schleuder an der Deckenkante statt Aufzug-Haken
+    plan = k_dash_hoch(298) + [   # Schleuder entfernt: Sprung + Dash nach oben auf die Deckenkante
             # Bild-Regel: Hebel 4 steht jetzt bei 322 zwischen den Pfeilen 318/324 – warten, bis der Pfeil von 318 steckt
             {'holdIf': {'right': f'P.x < {kx(314)} - 4', 'left': f'P.x > {kx(314)} + 4'}, 'frames': 60},
             {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(318)}) < 4 && a.steckt >= 0)', 'frames': 400},
@@ -1413,7 +1417,7 @@ async def level9_fallengang(g):
     halt = [kx(382) + 20, 390*40]
     ok = []
     for jx in (371, 372):
-        r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'m': k_schleuder(373) + wb_schalter(386, halt, 400), 'f': wb_laeufer(386, halt, 15, 402)}, maxFrames=6000)
+        r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'m': k_dash_hoch(372) + wb_schalter(386, halt, 400), 'f': wb_laeufer(386, halt, 15, 402)}, maxFrames=6000)
         if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 399: ok.append(jx)
     soll(ok, 'Schalter/Läufer: Affe schaltet Hebel 15, Schweinchen läuft über den Wechselboden', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'f': [k_lauf(392)]}, maxFrames=1500)
@@ -3497,7 +3501,7 @@ async def dschungel5_dornenpfad(g):
         soll(r['pos']['m'][0] < 110, 'E1 ohne Hebel 1 hält Tür 1', info(r))
         ok = None
         for jx in (117,):
-            r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': k_schleuder(117) + am(121)}, links=[1], maxFrames=3000)   # Haken aufgeräumt: Schleuder
+            r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': k_dash_hoch(117) + am(121)}, links=[1], maxFrames=3000)   # Schleuder entfernt: Sprung + Dash nach oben
             if r.get('done') and r['pos']['m'][1] == 10 and await g.ev('!!linkOn[2]'): ok = jx; break
         soll(ok, 'E1 Affe: Haken -> Sims -> Hebel 2', (ok, info(r)))
         stufe = lambda w: [k_lauf(128, -4)] + sprung_zu(kx(131)) + sprung_zu(kx(134)) + [{'frames': 10}]
@@ -3891,7 +3895,7 @@ async def ruinen6_tempelherz(g):
         ok = None
         for jx in (102, 103, 104):
             for pull in (40, 80):
-                r = await koop(g, m=kat(99, 15), f=kat(97, 15), plans={'m': k_schleuder(106) + am(110) + [k_lauf(112), {'until': 'P.grounded', 'frames': 200}, k_lauf(122)]}, maxFrames=3000)
+                r = await koop(g, m=kat(99, 15), f=kat(97, 15), plans={'m': k_dash_hoch(105) + am(110) + [k_lauf(112), {'until': 'P.grounded', 'frames': 200}, k_lauf(122)]}, maxFrames=3000)
                 if r.get('done') and r['pos']['m'][0] >= 121: ok = (jx, pull); break
             if ok: break
         soll(ok, 'E1 Affe: Haken -> Sims-Spiegel, Licht öffnet Tür 3', (ok, info(r)))
@@ -7557,8 +7561,7 @@ async def element_register(g):
                  ['eis', 'eis', True, True], ['foerderband', 'baender', True, True], ['leuchtkristall', 'leuchtkristalle', True, True],
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
                  ['presse', 'pressen', True, True],
-                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
-                 ['schleuder', 'schleudern', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -7573,7 +7576,7 @@ async def element_register(g):
         # Editor-Umbau: Haken/Aufwind/Sprungpilz im Reiter „Haken & Sprung“, Teleporter/Förderband/Bewegung in „Bewegung“,
         # Licht-Werkzeuge im eigenen Reiter „Licht“; Optionen nicht mehr in der Gruppe, sondern in der Eigenschaften-Zeile
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['hook', 'wind', 'bounce', 'schleuder'], reihe   # Schleuder: zweites Haken-Element
+        assert reihe == ['hook', 'wind', 'bounce'], reihe   # Schleuder entfernt (Nutzerwunsch)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
@@ -8482,47 +8485,17 @@ async def boss_sprung(g, wer='p1'):
     await g.steps(12)
 
 @test
-async def schleuder_spannen_und_loslassen(g):
-    """Schleuder (elemente/schleuder.js, Nutzerwunsch: EIN Punkt, echte Liane): Affe wirft die Liane an den Punkt (G), läuft
-    ein paar Schritte weg und spannt sie (nie über SCHLEUDER_MAX), G loslassen schleudert ihn hinauf auf die 4 Reihen hohe
-    Kante (Testlevel schleuder).
-    Kaum gespannt: kein Schub. Springen löst ohne Schub. Das Schweinchen kann die Schleuder nicht benutzen."""
+async def schleuder_entfernt(g):
+    """Schleuder entfernt (Nutzerwunsch): kein Element, kein Editor-Werkzeug, in keinem Level (beide Formate) ein Eintrag
+    „schleudern“. An den früheren Stellen kommt der Affe mit Sprung + Dash nach oben hinauf (gemessen mit
+    tests/stelle_pruefen.py, Fenster 19–30 Schritte) – das prüfen die Level-Tests mit dem Bot-Baustein k_dash_hoch."""
+    assert await g.ev("!ELEMENTE.some(E => E.id === 'schleuder' || E.feld === 'schleudern') && typeof schleuderVorher === 'undefined'"), 'Schleuder noch im Spiel'
+    reste = [str(f.relative_to(ROOT)) for f in (ROOT / 'levels').rglob('*.json') if '"schleudern"' in f.read_text(encoding='utf-8')]
+    assert not reste, f'Level mit Schleuder: {reste}'
     srv = webserver()
     try:
-        p = g.p
-        await p.goto(srv.url + 'index.html?testlevel=schleuder')
-        await p.wait_for_function("typeof schleudern !== 'undefined' && schleudern.length === 1 && typeof p1 !== 'undefined' && p1", timeout=10000)
-        r = await g.ev("""(() => { menuScreen = 'pause'; deathState = null; let ts = 5e6;
-          const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
-          const s = schleudern[0], stell = P => { P.x = s.x; P.y = 680; P.vx = P.vy = 0; P.schleuder = null; for(let i = 0; i < 5; i++) st(); };
-          const e = {};
-          try {
-            stell(p1); SFX_LOG.length = 0;
-            KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); e.an = !!p1.schleuder;
-            KEYS.KeyA = true; let sp = 0; for(let n = 0; n < 120; n++){ st(); sp = Math.max(sp, schleuderSpannung(p1)); } KEYS.KeyA = false;
-            e.spMax = sp; KEYS.KeyG = false; st(); e.ab = {vx: p1.vx, vy: p1.vy, k: p1.schleuderSchub};
-            let t = 0, maxH = 0; for(; t < 150; t++){ st(); maxH = Math.max(maxH, 680 - p1.y); if(p1.grounded && t > 3) break; }
-            e.land = {x: p1.x, y: p1.y, maxH}; e.log = SFX_LOG.slice();
-            // kaum gespannt: kein Schub
-            stell(p1); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); KEYS.KeyA = true; st(); st(); KEYS.KeyA = false;
-            KEYS.KeyG = false; st(); e.kaum = {los: !p1.schleuder, k: p1.schleuderSchub, vy: p1.vy};
-            // Springen löst ohne Schub
-            stell(p1); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); KEYS.KeyA = true; for(let n = 0; n < 40; n++) st(); KEYS.KeyA = false;
-            KEYS.Space = true; KEYS.Space_pressed = true; st(); KEYS.Space = false; e.sprung = {los: !p1.schleuder, k: p1.schleuderSchub, vx: p1.vx};
-            KEYS.KeyG = false; st();
-            // Schweinchen: keine Schleuder
-            stell(p2); KEYS.Numpad1 = true; KEYS.Numpad1_pressed = true; st(); st(); KEYS.Numpad1 = false; e.schwein = !!p2.schleuder;
-          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
-          return e; })()""")
-        assert r['an'], f'Seil greift den Ring nicht: {r}'
-        assert 100 <= r['spMax'] <= 121, f'Spannung falsch (max {r["spMax"]}): {r}'
-        assert r['ab']['k'] > 0.9 and r['ab']['vx'] > 4 and r['ab']['vy'] < -13, f'kein Schub beim Loslassen: {r}'
-        assert abs(r['land']['y'] - 520) < 1 and r['land']['x'] > 880, f'landet nicht auf der Kante: {r}'
-        assert r['land']['maxH'] < 230, f'Schub zu stark: {r}'
-        assert 'hook' in r['log'] and 'schleuder' in r['log'], f'Ton fehlt: {r["log"]}'
-        assert r['kaum']['los'] and r['kaum']['k'] == 0 and r['kaum']['vy'] >= -1, f'kaum gespannt trotzdem Schub: {r}'
-        assert r['sprung']['los'] and r['sprung']['k'] == 0 and abs(r['sprung']['vx']) < 4.5, f'Springen löst nicht ohne Schub: {r}'
-        assert not r['schwein'], 'Schweinchen benutzt die Schleuder'
+        await g.p.goto(srv.url + 'editor/index.html'); await g.p.wait_for_timeout(400)
+        assert not await g.ev("!!document.querySelector('.tool[data-tool=schleuder]')"), 'Editor-Werkzeug Schleuder noch da'
     finally:
         srv.shutdown()
 
