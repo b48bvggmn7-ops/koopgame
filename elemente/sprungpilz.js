@@ -3,11 +3,13 @@
 // (Nutzerwunsch). Rolle: beide Figuren nutzen ihn – der Affe erreicht damit hohe Haken, das Schweinchen startet
 // von dort ins Segeln.
 const BOUNCE_V = -17.2;
+const PILZ_TREFFER = 22;   // px: so weit (plus halbe Figurenbreite) neben der Mitte zählt das Draufspringen – so breit wie der Pilzhut
+                          // (vorher 14: wer auf dem Hutrand landete, sprang „ins Leere“; Nutzerwunsch, Ausnahme im Bahnen-Test)
 // (Spiel) Liste der Pilze steht in `bouncers` (01-level.js): {x, y (Fußpunkt), squish}
 function checkBounce(player, wasGrounded, fallVy){
   if(player.hookAttached || player.vy < 0 || wasGrounded || !(fallVy > 0)) return;
   for(const b of bouncers){
-    if(Math.abs(player.x - b.x) < 14 + player.w/2 && player.y > b.y - 14 && player.y <= b.y + 1){
+    if(Math.abs(player.x - b.x) < PILZ_TREFFER + player.w/2 && player.y > b.y - 14 && player.y <= b.y + 1){
       player.vy = BOUNCE_V; player.grounded = false; player.glideTimer = 0; player.lastWallJumpSide = 0;
       b.squish = 1; SFX.mushroom(b.x);
       return;

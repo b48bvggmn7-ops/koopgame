@@ -5395,6 +5395,21 @@ async def neue_elemente(g):
     assert 200 < hoch < 280, f'Sprungpilz: {hoch:.0f} px hoch (erwartet ~230)'
 
 @test
+async def sprungpilz_hutrand(g):
+    """Nutzer-Rückmeldung „man springt häufig ins Leere“: der Sprungpilz federt auf der ganzen Hutbreite (PILZ_TREFFER 22 px
+    + halbe Figurenbreite neben der Mitte, vorher 14) – auch wer auf dem Hutrand landet, wird hochgeschleudert; daneben nicht."""
+    lv = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, bouncers=[{'x': 800, 'y': 680}])
+    await g.load(lv)
+    assert await g.ev("PILZ_TREFFER") == 22
+    await g.ev("window.__minVy = 0; if(!window.__hr){ window.__hr = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minVy = Math.min(window.__minVy, p1.vy); }; }")
+    for dx, soll in ((0, True), (33, True), (-33, True), (48, False)):
+        await g.ev(f"p1.x = {800 + dx}; p1.y = 560; p1.vx = 0; p1.vy = 2; p1.grounded = false; p1._px = p1.x; p1._py = p1.y; window.__minVy = 0")
+        await g.steps(60)
+        hoch = await g.ev('window.__minVy') <= -17
+        assert hoch == soll, f'Sprungpilz bei {dx} px neben der Mitte: {"federt" if hoch else "federt nicht"} (soll {soll})'
+        await g.steps(90)
+
+@test
 async def editor_neue_werkzeuge(g):
     """Editor: Scheinwand, Aufwind, Sprungpilz und Druckplatte setzen -> Export und Spiel-Umwandlung enthalten sie."""
     srv = webserver()

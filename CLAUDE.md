@@ -87,7 +87,8 @@
   Ausnahmen in `tests/kombi_ausnahmen.json`, Testlevel `levels/test/kombis.json` (Kombi-Nachschärfen).
 - `tests/bahnen.js` + `tests/bahnen_referenz.json` – Bahnen-Test der alten Mechaniken (Nacht-Ausbau, harte Regel):
   feste Tasten je Schritt, Vergleich exakt; Referenz NIE neu aufzeichnen/anpassen (`tests/bahnen_aufzeichnen.py`
-  überschreibt nie). `tests/neue_mechaniken.js` – Prüf-Szenarien Dash/Durchbruch/Rutschen/Haftfläche.
+  überschreibt nie). Ausnahmen nur mit ausdrücklicher Erlaubnis des Nutzers in `AUSNAHMEN` (tests/bahnen.js; bisher:
+  segeln_aufwind Affe ab Schritt 141 – breiter Sprungpilz). `tests/neue_mechaniken.js` – Prüf-Szenarien Dash/Durchbruch/Rutschen/Haftfläche.
 - Nacht-Ausbau Werkzeuge: `tests/reichweite_messen.py` (Reichweiten/Erfolgsfenster -> `tests/reichweiten.json`),
   `tests/level_vermessen.py` (Gruben, Sperren, Exploit-Kandidaten), `tests/stelle_pruefen.py` (eine Stelle mit echter
   Physik), `tests/level_ascii.py <datei> <von> <bis>` (Text-Bild eines Level-Stücks), `tests/level_bau.py` (Level per

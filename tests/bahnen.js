@@ -158,6 +158,10 @@
     return {name: sz.name, tasten: gedrueckt, bahn};
   }
   window.bahnenAufzeichnen = () => SZENARIEN.map(sz => lauf(sz, null));
+  // Ausnahmen (nur mit ausdrücklicher Erlaubnis des Nutzers): Szenario -> Figur -> ab diesem Schritt nicht mehr verglichen.
+  // segeln_aufwind: der Affe landet bei Schritt 141 31 px neben der Pilz-Mitte (Körper auf dem Hutrand) – seit der Sprungpilz
+  // auf der ganzen Hutbreite federt (PILZ_TREFFER, elemente/sprungpilz.js; Nutzerwunsch) wird er dort hochgeschleudert.
+  const AUSNAHMEN = {segeln_aufwind: {0: 141}};
   // Abspielen gegen die Referenz: liefert die erste Abweichung je Szenario (oder null)
   window.bahnenAbspielen = (referenz) => referenz.map(ref => {
     const sz = SZENARIEN.find(z => z.name === ref.name);
@@ -165,6 +169,8 @@
     const neu = lauf(sz, ref.tasten);
     for(let i = 0; i < ref.bahn.length; i++){
       for(let w = 0; w < 2; w++){
+        const ab = (AUSNAHMEN[ref.name] || {})[w];
+        if(ab !== undefined && i >= ab) continue;
         const a = ref.bahn[i][w], b = neu.bahn[i][w];
         for(let j = 0; j < a.length; j++) if(a[j] !== b[j])
           return {name: ref.name, schritt: i, figur: w ? 'Schweinchen' : 'Affe', wert: j, alt: a[j], neu: b[j]};

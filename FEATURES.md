@@ -97,7 +97,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       genau auf Bodenhöhe unter den Füßen (Edelstein bleibt sichtbar); weiche Bewegung nur in der Anzeige
       (`anzeigeDruck`, bei jeder Bildrate gleich schnell). Test druckplatte_ganz_gedrueckt.
     - Sprungpilz (dicker, so breit wie der Bereich, der wirklich federt): warmes Gold-Orange mit cremefarbenen Tupfen,
-      brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze).
+      brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze). Federt auf der ganzen
+      Hutbreite (PILZ_TREFFER 22 px + halbe Figurenbreite neben der Mitte; vorher 14 – wer auf dem Hutrand landete, sprang
+      „ins Leere“, Nutzerwunsch). Dafür mit Erlaubnis des Nutzers EINE Ausnahme im Bahnen-Test (tests/bahnen.js
+      AUSNAHMEN: segeln_aufwind, Affe ab Schritt 141 – dort landet er auf dem Hutrand). Test sprungpilz_hutrand.
     - Leichter, pulsierender Schein und drei Glühwürmchen in der Farbe des Elements, die langsam darüber kreisen (statt
       Pfeilen) – beim Hebel, solange er aus ist; bei der Druckplatte, solange niemand draufsteht; beim Pilz immer.
     - Im Umkreis von 4 Kästchen (DEKO_FREI_ABSTAND 160 px) stehen keine Deko-Pflanzen und keine Tiere; Frosch, Schnecke
