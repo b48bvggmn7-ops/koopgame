@@ -6496,7 +6496,7 @@ async def figuren3d_brille_dreht_mit(g):
     try:
         await g.ev("""cosmeticsReset(); for(const w of ['m', 'f']) for(const id of ['gl_aviator', 'aura_ice']){ cosmeticsSave.owned[w][id] = 1; equipItem(w, id); }
           window.__bx = []; window.__og2 = drawGlasses;
-          drawGlasses = (c, ...a) => { const T = c.getTransform(); __bx.push(Math.hypot(T.a, T.b)/Math.hypot(T.c, T.d)); return __og2(c, ...a); }""")
+          drawGlasses = (c, ...a) => { if(c && c.getTransform && a[0] !== undefined){ const T = c.getTransform(); __bx.push(Math.hypot(T.a, T.b)/Math.hypot(T.c, T.d)); } return __og2(c, ...a); }""")
         breite = {}
         for yaw in (0, 0.4, 0.8, 1.2, 3.14):
             await g.ev("__bx = []")
