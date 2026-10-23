@@ -58,8 +58,8 @@ window.NM = {
       S.start(); p1.x = h.x - 60; p1.y = h.y + 150; S.stellen(p2, Math.floor(h.x/40) + 2, 17);
       S.schritt(['dash','swimUp']); S.n(10);
       const vorHaken = p1.dashPunkte;
-      S.schritt(['hook']); S.schritt([]);
-      let hs = 0; while(p1.hookAttached && p1.dashPunkte < 1 && hs < 120){ S.schritt([]); hs++; }
+      S.schritt(['hook']); S.schritt(['hook']);   // Liane halten (LIANE_HALTEN)
+      let hs = 0; while(p1.hookAttached && p1.dashPunkte < 1 && hs < 120){ S.schritt(['hook']); hs++; }
       out.hakenLaden = {vorher: vorHaken, haken: !!p1.hookAttached, punkte: p1.dashPunkte};
     }
     // kein Tunneln: Dash gegen Wand Spalte 90 aus kurzer Distanz, auch diagonal

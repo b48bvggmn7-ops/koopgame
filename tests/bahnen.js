@@ -7,6 +7,7 @@
 // (reagieren auf den Zustand); gespeichert werden nur die gedrückten Tasten je Schritt. Abspielen: bahnenAbspielen(ref).
 
 (function(){
+  window.hakenTippen = true;   // Referenz wurde mit der alten Haken-Bedienung aufgezeichnet (G antippen statt halten)
   const TS0 = 100000, TS_SCHRITT = 1000 / 54;   // gleichmäßiger „Bildschirm-Takt“ für die Zeitfenster (Wandsprung)
   const ALLE = ['left', 'right', 'jump', 'hook', 'glide', 'pull', 'slack', 'use'];
   const K = 40;

@@ -227,10 +227,25 @@ function haftNachher(P, altX, altY){
   P.x = altX; h.v = 0;                                  // Ende der Fläche: anhalten (Schiene)
 }
 
+// ---------- Liane halten (Nutzerwunsch): Haken-Taste losgelassen -> abspringen ----------
+// Leichter Schub in Richtung des Schwungs (Bahn-Richtung) plus kleiner Hub – nur mit Schwung, weich ansteigend, damit
+// es zur Pendel-Physik passt. Danach fliegt die Figur wie nach jedem Loslassen weiter (ropeFling, ROPE_FLING_* in 02).
+function lianeLoslassen(P){
+  P.hookAttached = false;
+  const v = Math.hypot(P.vx, P.vy), k = Math.max(0, Math.min(1, (v - LIANE_MIN_SCHWUNG)/LIANE_SCHWUNG_VOLL));
+  if(k > 0){
+    P.vx += P.vx/v*LIANE_BOOST*k;
+    P.vy += P.vy/v*LIANE_BOOST*k + LIANE_HUB*k;
+    P.lianeSchub = k;
+  } else P.lianeSchub = 0;
+  ropeFling(P);
+}
+
 // ---------- Aufrufe aus 08-figur-physik-seil.js ----------
 // vor dem Tempo: Dash-Taste, Dash, Haftfläche, Sprung im Durchbruch-Fenster. true = Tempo ist gesetzt (normale Physik aus)
 function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   const K = P.keys || {};
+  if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
   if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }
   if(P.dashPause > 0 && !P.dash) P.dashPause--;

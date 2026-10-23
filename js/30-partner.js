@@ -945,6 +945,7 @@ function partnerTastenAus(P, e){
   if(e.sprungHalten) halten.jump = true;
   if(!P.male && e.gleiten) halten.ability = true;
   if(P.male && e.haken) druecken.push('ability');
+  if(P.male && P.hookAttached) halten.ability = true;   // Liane halten (LIANE_HALTEN): losgelassen wird per Sprung wie geplant
   if(e.use) druecken.push('use');
   if(e.pull) halten.pull = true;
   if(e.slack) halten.slack = true;

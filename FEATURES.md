@@ -103,7 +103,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Controller: Steuerkreuz/Stick hoch = ranziehen, runter = Seil geben; R/L-Tasten fürs Seil entfallen)
   - Seil ist elastisch: streift man beim Schwingen eine Wand, löst es NICHT, die Figur wird aufgehalten/rutscht
     entlang; hängt sie fest, dehnt sich das Seil (dünner, orange-rot, zittert, zieht zurück). Es REISST NIE
-    (bei >70 px Dehnung gibt es Seil nach). Gelöst wird es per G, Springen oder wenn man am Seil auf etwas LANDET
+    (bei >70 px Dehnung gibt es Seil nach). Gelöst wird es per G loslassen (siehe Liane halten), Springen oder wenn man am Seil auf etwas LANDET
     (Boden, Wand-Oberseite, Bröckelboden, bewegter Boden …). Vom Boden aus eingehakt bleibt es dran
     (ropeWasAirborne), damit man sich mit W / Hoch hochziehen kann. Ranziehen langsamer (ROPE_PULL_SPEED 2,4)
     und ohne Schwung Richtung Haken (kein Hüpfen oben); runterlassen bis zum Rand des Reichweiten-Rings (ropeMax).
@@ -112,6 +112,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Springen gibt nur den kleinen Hub nach oben (HOOK_RELEASE_BOOST). Der Schwung wird danach nicht mehr gekappt/stark
     gebremst (bis ROPE_FLING_MAX 15, ohne Taste nur ROPE_FLING_DRAG 0,993 statt 0,94); Taste halten macht nicht schneller
     als normal; endet beim Landen oder an einer Wand.
+  - Liane HALTEN (Nutzerwunsch): Die Haken-Taste (G / Num 1 / □) muss GEDRÜCKT GEHALTEN werden, solange der Affe am Seil
+    hängt; Taste loslassen = abspringen, ohne Leertaste (js/32 lianeLoslassen; LIANE_HALTEN in 02, false = alte
+    Antipp-Bedienung). Mit Schwung gibt es einen leichten Absprung-Schub in Schwungrichtung (LIANE_BOOST 1,6 px/Schritt
+    + kleiner Hub LIANE_HUB −1,2), weich ansteigend ab LIANE_MIN_SCHWUNG 2,5 bis voll bei 6,5; aus dem Stand kein Schub
+    (fällt einfach). Danach normaler Abflug (ropeFling). Springen am Seil löst weiterhin (mit HOOK_RELEASE_BOOST).
+    Koop-Bot und Computer-Partner halten die Taste am Seil; der Bahnen-Test fährt mit der alten Bedienung
+    (window.hakenTippen, Referenz unverändert). Test liane_halten_loslassen_schub.
   - Schwung holen am Haken wie beim Schaukeln (SWING_PUSH 0,2): die Laufen-Taste schiebt nur, wenn man in die
     Richtung drückt, in die der Affe gerade schwingt (oder er fast stillhängt). Taste nur halten drückt ihn nicht
     mehr sofort weit zur Seite (0,5 s halten: früher ~45°, jetzt ~26°); im Takt rechts/links baut schnell Schwung auf.

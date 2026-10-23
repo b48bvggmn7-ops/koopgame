@@ -201,8 +201,9 @@ async def neue_figuren_zeichnen(g):
                        hooks=[{'x': 300, 'y': 420, 'radius': 300}]))
     assert await g.ev("typeof neueFigurenAn === 'function' && neueFigurenAn()"), 'neue Figuren sind nicht an'
     await g.hold(('KeyD', 'ArrowRight'), 400)
-    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(150)
+    await g.p.keyboard.down('KeyG'); await g.p.wait_for_timeout(150)   # Liane: Taste halten
     assert await g.ev('p1._handDev && isFinite(p1._handDev.x)'), 'Hand-Position des Affen fehlt'
+    await g.p.keyboard.up('KeyG')
     await g.ev("p2.gliding = true; p2.umbrella = 1")
     await g.p.wait_for_timeout(200)
     assert await g.ev('p2._handDev && isFinite(p2._handDev.x)'), 'Hand-Position des Schweinchens fehlt'
@@ -267,8 +268,8 @@ async def neue_figuren_drehung_seil_dash(g):
     await g.ev("closeMenu(); deathState = null;")
     rolle = "(() => { const S = p1._ff; S.roll = 0.45; S.rollSign = 1; })()"
     await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.steps(6)
-    await g.ev(rolle); await g.p.keyboard.press('KeyG'); await g.steps(14); await g.p.keyboard.up('KeyD')
-    r = await g.ev("({hook: p1.hookAttached, roll: p1._ff.roll, rot: p1._ff.rotE})")
+    await g.ev(rolle); await g.p.keyboard.down('KeyG'); await g.steps(14); await g.p.keyboard.up('KeyD')
+    r = await g.ev("({hook: p1.hookAttached, roll: p1._ff.roll, rot: p1._ff.rotE})"); await g.p.keyboard.up('KeyG')
     assert r['hook'] and r['roll'] < 0 and abs(r['rot']) < 0.05, f'am Seil noch schräg gedreht: {r}'
     await g.ev("p1.hookAttached = false; p1.anchor = null;"); await g.steps(40)
     await g.p.keyboard.down('KeyD'); await g.p.keyboard.press('Space'); await g.steps(6)
@@ -530,32 +531,35 @@ async def seil_vom_boden_hochziehen(g):
     """Vom Boden einhaken bleibt dran; W zieht hoch."""
     await g.load(level([ground(0, 680, 1400)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
                        hooks=[{'x': 300, 'y': 420, 'radius': 300}]))
-    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(100)
+    await g.p.keyboard.down('KeyG'); await g.p.wait_for_timeout(100)   # Liane: Taste halten
     assert await g.ev('p1.hookAttached'), 'Seil löst sich sofort'
     y0 = await g.ev('p1.y'); await g.hold(('KeyW',), 700)
     assert await g.ev('p1.hookAttached') and await g.ev('p1.y') < y0 - 60, 'W zieht nicht hoch'
+    await g.p.keyboard.up('KeyG')
 
 @test
 async def seil_runterlassen_bis_ring(g):
     """Mit S bis an den Rand des Reichweiten-Rings runterlassen; oben kein Hüpfer."""
     await g.load(level([ground(0, 400, 260), ground(700, 680, 700)], {'x': 230, 'y': 400}, {'x': 100, 'y': 400},
                        hooks=[{'x': 330, 'y': 230, 'radius': 300}]))
-    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(100)
+    await g.p.keyboard.down('KeyG'); await g.p.wait_for_timeout(100)   # Liane: Taste halten
     await g.hold(('KeyD',), 500); await g.steps(65)
     await g.hold(('KeyS',), 2500); await g.steps(43)
     assert round(await g.ev('p1.ropeLen')) == 300, 'nicht bis zum Ring runtergelassen'
     await g.hold(('KeyW',), 3000); await g.steps(16)
     y1 = await g.ev('p1.y'); await g.steps(27); y2 = await g.ev('p1.y')
     assert abs(y2 - y1) < 3, f'hüpft oben ({y1} -> {y2})'
+    await g.p.keyboard.up('KeyG')
 
 @test
 async def seil_loest_beim_landen(g):
     await g.load(level([ground(0, 680, 1400)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
                        hooks=[{'x': 300, 'y': 590, 'radius': 300}]))
     await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(150)
-    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(50)
+    await g.p.keyboard.down('KeyG'); await g.p.wait_for_timeout(50)   # Liane: Taste halten
     await g.hold(('KeyD',), 1200); await g.p.wait_for_timeout(300)
     assert not await g.ev('p1.hookAttached'), 'Seil bleibt nach dem Landen dran'
+    await g.p.keyboard.up('KeyG')
 
 @test
 async def muenzen_nach_farbe(g):
@@ -5205,9 +5209,9 @@ async def seil_abflug_mit_schwung(g):
     """Vom Seil loslassen (Springen) mit Schwung: Affe fliegt weit weiter, auch ohne Taste (kein Abbremsen auf 7,2)."""
     await g.load(level([ground(0, 680, 4000)], {'x': 900, 'y': 680}, {'x': 860, 'y': 680}, hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
     await g.ev("""(()=>{ const h=hooks[0]; p1.x=h.x-60; p1.y=h.y+170+p1.h*0.6; p1.vx=11; p1.vy=0; p1.grounded=false;
-      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; })()""")
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; KEYS.KeyG = true; })()""")
     await g.p.wait_for_timeout(50)
-    await g.p.keyboard.press('Space')
+    await g.p.keyboard.press('Space'); await g.ev("KEYS.KeyG = false")
     try: await g.p.wait_for_function("!p1.hookAttached", timeout=3000)   # langsame Rechner: auf den nächsten Schritt warten
     except Exception: pass
     st = await g.ev("({hook: p1.hookAttached, vx: p1.vx, x: p1.x})")
@@ -5216,6 +5220,37 @@ async def seil_abflug_mit_schwung(g):
     st2 = await g.ev("({vx: p1.vx, x: p1.x, g: p1.grounded})")
     assert st2['vx'] > 8 or st2['g'], f'Schwung nach dem Loslassen weg: {st} -> {st2}'
     assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
+
+@test
+async def liane_halten_loslassen_schub(g):
+    """Liane (Nutzerwunsch): Haken-Taste GEDRÜCKT HALTEN = am Seil bleiben; Taste loslassen = abspringen ohne Leertaste.
+    Mit Schwung gibt es einen leichten Schub in Schwungrichtung (+ kleiner Hub), aus dem Stand keinen."""
+    await g.load(level([ground(0, 680, 4000)], {'x': 880, 'y': 680}, {'x': 840, 'y': 680}, hooks=[{'x': 1000, 'y': 300, 'radius': 260}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6;
+      const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+      const h = hooks[0], setz = vx => { p1.x = h.x; p1.y = h.y + 180 + p1.h*0.6; p1.vx = vx; p1.vy = 0; p1.grounded = false;
+        p1.hookAttached = true; p1.ropeWasAirborne = true; p1.anchor = h; p1.ropeLen = 180; p1.ropeMax = 220; };
+      const o = lianeLoslassen; let m = null;
+      lianeLoslassen = P => { const a = [P.vx, P.vy]; o(P); m = {a, b: [P.vx, P.vy], k: P.lianeSchub}; };
+      const e = {};
+      try {
+        setz(0); KEYS.KeyG = true; for(let i = 0; i < 60; i++) st(); e.haelt = p1.hookAttached;
+        setz(0); st(); m = null; KEYS.KeyG = false; st(); e.still = {los: !p1.hookAttached, m};
+        setz(8); KEYS.KeyG = true; st(); m = null; KEYS.KeyG = false; st(); e.schwung = {los: !p1.hookAttached, m, fling: p1.ropeFling};
+        setz(-8); KEYS.KeyG = true; st(); m = null; KEYS.KeyG = false; st(); e.links = {m};
+      } finally { lianeLoslassen = o; KEYS.KeyG = false; menuScreen = null; }
+      return e; })()""")
+    assert r['haelt'], f'Seil bleibt bei gehaltener Taste nicht dran: {r}'
+    s = r['still']
+    assert s['los'] and s['m'] and s['m']['k'] == 0 and s['m']['a'] == s['m']['b'], f'aus dem Stand: kein Schub erwartet: {s}'
+    w = r['schwung']; m = w['m']
+    assert w['los'] and m and w['fling'], f'Loslassen der Taste löst das Seil nicht: {w}'
+    import math
+    va, vb = math.hypot(*m['a']), math.hypot(*m['b'])
+    assert m['k'] > 0.9 and 0.8 < vb - va < 2.5, f'Schub zu stark/schwach: {m}'
+    assert m['b'][0] > m['a'][0] > 0 and m['b'][1] < m['a'][1], f'Schub nicht in Schwungrichtung (+ leicht hoch): {m}'
+    l = r['links']['m']
+    assert l and l['b'][0] < l['a'][0] < 0, f'nach links: Schub nicht nach links: {l}'
 
 @test
 async def seil_absprung_wie_schwung(g):
@@ -5232,8 +5267,8 @@ async def seil_absprung_wie_schwung(g):
         # vorher schon ein paar Schritte, und der Abflug-Schwung ist nicht mehr der gesetzte
         await g.ev(f"""(()=>{{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+180+p1.h*0.6; p1.vx={vx0}; p1.vy=0; p1.grounded=false;
           p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; p1._px=p1.x; p1._py=p1.y;
-          KEYS.Space = true; KEYS.Space_pressed = true; }})()""")
-        await g.p.wait_for_timeout(120); await g.ev("KEYS.Space = false"); await g.p.wait_for_timeout(200)
+          KEYS.Space = true; KEYS.Space_pressed = true; KEYS.KeyG = true; }})()""")
+        await g.p.wait_for_timeout(120); await g.ev("KEYS.Space = false; KEYS.KeyG = false"); await g.p.wait_for_timeout(200)
         rv, vx = await g.ev("window.__rv"), await g.ev("window.__rv10")   # vx 10 Schritte nach dem Loslassen
         if vx0 == 0:
             await g.p.keyboard.up('KeyD')
@@ -7778,7 +7813,7 @@ async def teleporter(g):
     assert abs(await g.ev("p1.x") - 300) < 30, f"Rückweg geht nicht: {await g.ev('p1.x')}"
     # Seil löst sich
     await g.ev("p1.x = 120; p1.y = 600; p1._px = p1.x; p1._py = p1.y; p1.teleCool = 0; p1.teleFrei = true; p1.vx = 0; p1.vy = 0;"
-               "p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 230; p1.ropeMax = 260; p1.ropeWasAirborne = true")
+               "p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 230; p1.ropeMax = 260; p1.ropeWasAirborne = true; KEYS.KeyG = true")
     await g.steps(1)
     await g.ev("p1.x = 300; p1.y = 670; p1._px = p1.x; p1._py = p1.y; p1.vx = 3"); await g.steps(2)
     assert await g.ev("p1.x") > 850 and not await g.ev("p1.hookAttached"), f"Seil: x={await g.ev('p1.x')} haken={await g.ev('p1.hookAttached')}"

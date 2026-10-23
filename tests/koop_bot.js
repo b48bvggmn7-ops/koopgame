@@ -28,6 +28,7 @@ window.coopRun = function(o){
       // Variable Sprunghöhe: ein Sprung vom Boden wird wie ein normaler Tastendruck mindestens JUMP_FULL_STEPS Schritte
       // gehalten (volle Höhe) – so springt der Bot wie ein Spieler, der hoch springen will (Plan-Schritt kurzerSprung: nur antippen)
       if(f < (S.sprungBis || 0)) KEYS[SEM(P, 'jump')] = true;
+      if(P.hookAttached && !S.lianeLos) KEYS[SEM(P, 'hook')] = true;   // Liane halten (LIANE_HALTEN); losgelassen wird per Sprung
       const step = plans[who][S.i];
       if(!step) continue;
       const ev = s => Function('P', 'Q', 'f', 'S', 'return (' + s + ')')(P, Q, f - S.t0, S);
