@@ -1,5 +1,5 @@
 {
- "hinweis": "Testlevel Schleuder: links Boden, Schleuder (Haken Spalte 21, Reihe 12, Ring 3 Reihen tiefer); rechts ab Spalte 22 eine Kante 4 Reihen hoch. Affe: an den Ring stellen, G halten, nach links laufen (Gummi spannen), G loslassen -> schleudert nach rechts oben auf die Kante. Öffnen: index.html?testlevel=schleuder",
+ "hinweis": "Testlevel Schleuder: links Boden, Schleuder-Punkt an der Kante (Spalte 21, Reihe 12); rechts ab Spalte 22 eine Kante 4 Reihen hoch. Affe: unter/neben den Punkt stellen, G halten (Liane fliegt an den Punkt), ein paar Schritte nach links laufen (spannen), G loslassen -> schleudert nach rechts oben auf die Kante. Öffnen: index.html?testlevel=schleuder",
  "welt": "dschungel",
  "tageszeit": "mittag",
  "wetter": "trocken",
@@ -43,8 +43,7 @@
  "schleudern": [
   {
    "x": 860,
-   "y": 500,
-   "unten": 3
+   "y": 500
   }
  ]
 }

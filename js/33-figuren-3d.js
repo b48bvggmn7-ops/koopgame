@@ -461,34 +461,36 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         const cm = n => n.capM, pt = n => { const w = cm(n); return [w[12], w[13], w[14]]; };
         const e0 = pt(ch.eyes[0].n), e1 = pt(ch.eyes[1].n), hc = pt(ch.head), hopPx = IT.hop*42;
         const lo = q => [q[0]*SC, fy - q[1]*SC - hopPx];
-        const d0 = e0[2] - hc[2], d1 = e1[2] - hc[2];
-        const aF = Math.max(0, Math.min(1, (Math.min(d0, d1) - .25)/.45));                 // beide Augen klar vorn -> Vorderansicht
-        const aS = Math.max(0, Math.min(1, (Math.max(d0, d1) - .15)/.35))*(1 - aF);        // nur ein Auge sichtbar -> Seitenansicht
-        const dE3 = Math.hypot(e1[0]-e0[0], e1[1]-e0[1], e1[2]-e0[2])*SC, L = lo(e0), R = lo(e1), dE = Math.hypot(R[0] - L[0], R[1] - L[1]), mid = [(L[0] + R[0])/2, (L[1] + R[1])/2];
-        c.save(); c.shadowColor = 'transparent'; c.shadowBlur = 0;
-        if(aF > .02){
-          c.globalAlpha = aF;
-          // (Tattoo nicht mehr als flaches Bild hier – es sitzt jetzt als Färbung im Fell, siehe tattooTextur)
-          if(wear.glasses && typeof drawGlasses === 'function'){ const w = dE3*(male ? .33 : .27), h = w*1.12;
-            c.save(); c.translate(mid[0], mid[1]); c.rotate(Math.atan2(R[1] - L[1], R[0] - L[0]));
-            drawGlasses(c, wear.glasses.fx.kind, [-dE/2, 0], [dE/2, 0], w, h); c.restore(); }
-        }
-        if(aS > .02 && wear.glasses && typeof drawGlasses === 'function'){   // Seitenansicht: Glas von der Kante (schmal), Bügel läuft nach hinten zum Ohr
-          c.globalAlpha = aS; const vis = d0 > d1 ? L : R, w = dE3*(male ? .33 : .27)*1.15, h = w*1.12, kind = wear.glasses.fx.kind;
-          const BUEGEL = {classic:'#111', round:'#c9a24a', aviator:'#d8b660', shutter:'#fff', heart:'#d6336c', '3d':'#e8e8e8', star:'#e0a800', cyber:'#7fe0ff', bling:'#ffd23f'};
-          const SQ = .4, vor = w*.55, laenge = (male ? 1.3 : 1.2)*SC;   // Glas-Breite von der Seite, Versatz nach vorn, Bügel-Länge
-          c.save(); c.translate(vis[0], vis[1]); c.scale((vis[0] >= lo(hc)[0]) ? 1 : -1, 1); c.translate(vor, 0);
-          c.save(); c.beginPath(); c.rect(-w*1.04*SQ, -h*1.6, w*2.08*SQ, h*3.2); c.clip(); c.scale(SQ, 1);
-          drawGlasses(c, kind, [0, 0], [.01, 0], w, h); c.restore();
-          const bw = Math.max(1.1, w*.22); c.lineCap = 'round';   // etwas kräftiger: helle Bügel (Jalousie, 3D, Pilot) auch auf hellem Fell sichtbar
-          c.beginPath(); c.moveTo(-w*SQ, -h*.3); c.lineTo(-w*SQ - laenge, -h*.05);
-          c.strokeStyle = 'rgba(45,28,22,.8)'; c.lineWidth = bw + 1.2; c.stroke();   // dunkler Rand: helle Bügel (Jalousie, 3D) auch auf heller Haut sichtbar
-          c.strokeStyle = BUEGEL[kind] || '#222'; c.lineWidth = bw; c.stroke();
-          { const T = c.getTransform(), q0 = T.transformPoint(new DOMPoint(-w*SQ, -h*.3)), q1 = T.transformPoint(new DOMPoint(-w*SQ - laenge, -h*.05));   // für Tests: Bügel in Gerätepixeln
-            P._buegelDev = {x0: q0.x, y0: q0.y, x1: q1.x, y1: q1.y, laenge, f: P._frameNo}; }
+        // Brille als flache Platte VOR den Augen, die sich mit dem Kopf mitdreht (Nutzerwunsch: „3D“ statt Umschalten
+        // zwischen Vorder- und Seitenansicht): x-Achse = Auge→Auge, y-Achse = Kopf-oben, beide in die Bildebene projiziert –
+        // dreht sich der Kopf, werden die Gläser stetig schmaler; der Bügel läuft vom äußeren Glasrand nach hinten zum Ohr
+        // (nur auf der Seite, die man sieht).
+        const nrm = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0]/l, v[1]/l, v[2]/l]; };
+        const hm = cm(ch.head), ex = nrm([e1[0] - e0[0], e1[1] - e0[1], e1[2] - e0[2]]), up = nrm([hm[4], hm[5], hm[6]]), fw = nrm([hm[8], hm[9], hm[10]]);
+        const dE3 = Math.hypot(e1[0]-e0[0], e1[1]-e0[1], e1[2]-e0[2])*SC, w = dE3*(male ? .33 : .27), h = w*1.12, kind = wear.glasses.fx.kind;
+        const VOR = .07, m3 = [(e0[0] + e1[0])/2 + fw[0]*VOR, (e0[1] + e1[1])/2 + fw[1]*VOR, (e0[2] + e1[2])/2 + fw[2]*VOR], M0 = lo(m3);
+        const sicht = Math.max(0, Math.min(1, (fw[2] + .15)/.3));   // von hinten nicht zu sehen
+        if(sicht > .02 && typeof drawGlasses === 'function'){
+          c.save(); c.shadowColor = 'transparent'; c.shadowBlur = 0; c.globalAlpha = sicht;
+          // Platte: lokales x (px) -> Bild (ex.x, -ex.y), lokales y (px, nach unten) -> Bild (-up.x, up.y)
+          c.save(); c.transform(ex[0], -ex[1], -up[0], up[1], M0[0], M0[1]);
+          drawGlasses(c, kind, [-dE3/2, 0], [dE3/2, 0], w, h); c.restore();
+          // Bügel der sichtbaren Seite (die zur Kamera zeigt), Länge in 3D: projiziert nach hinten
+          const seite = ex[2] >= 0 ? 1 : -1, zeig = Math.min(1, Math.abs(ex[2])*3);
+          if(zeig > .02){
+            const BUEGEL = {classic:'#111', round:'#c9a24a', aviator:'#d8b660', shutter:'#fff', heart:'#d6336c', '3d':'#e8e8e8', star:'#e0a800', cyber:'#7fe0ff', bling:'#ffd23f'};
+            const laenge = (male ? 1.3 : 1.2)*SC, rand = seite*(dE3/2 + w*.95);
+            const q0 = [M0[0] + ex[0]*rand + up[0]*h*.3, M0[1] - ex[1]*rand - up[1]*h*.3];   // äußerer Glasrand, etwas über der Mitte
+            const q1 = [q0[0] - fw[0]*laenge - up[0]*h*.25, q0[1] + fw[1]*laenge + up[1]*h*.25];   // nach hinten, leicht abfallend zum Ohr
+            const bw = Math.max(1.1, w*.22); c.lineCap = 'round'; c.globalAlpha = sicht*zeig;
+            c.beginPath(); c.moveTo(q0[0], q0[1]); c.lineTo(q1[0], q1[1]);
+            c.strokeStyle = 'rgba(45,28,22,.8)'; c.lineWidth = bw + 1.2; c.stroke();   // dunkler Rand: helle Bügel (Jalousie, 3D) auch auf heller Haut sichtbar
+            c.strokeStyle = BUEGEL[kind] || '#222'; c.lineWidth = bw; c.stroke();
+            { const T = c.getTransform(), d0 = T.transformPoint(new DOMPoint(q0[0], q0[1])), d1 = T.transformPoint(new DOMPoint(q1[0], q1[1]));   // für Tests: Bügel in Gerätepixeln
+              P._buegelDev = {x0: d0.x, y0: d0.y, x1: d1.x, y1: d1.y, laenge, f: P._frameNo}; }
+          }
           c.restore();
         }
-        c.restore();
       }
     }catch(e){}
     c.restore();

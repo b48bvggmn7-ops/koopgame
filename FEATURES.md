@@ -97,7 +97,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       genau auf Bodenhöhe unter den Füßen (Edelstein bleibt sichtbar); weiche Bewegung nur in der Anzeige
       (`anzeigeDruck`, bei jeder Bildrate gleich schnell). Test druckplatte_ganz_gedrueckt.
     - Sprungpilz (dicker, so breit wie der Bereich, der wirklich federt): warmes Gold-Orange mit cremefarbenen Tupfen,
-      brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze).
+      brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze). Federt jetzt auf der
+      ganzen Hutbreite (PILZ_TREFFER 22 px + halbe Figurenbreite neben der Mitte; vorher 14 – wer auf dem Hutrand landete,
+      sprang „ins Leere“, Nutzer-Rückmeldung). Test sprungpilz_hutrand.
     - Leichter, pulsierender Schein und drei Glühwürmchen in der Farbe des Elements, die langsam darüber kreisen (statt
       Pfeilen) – beim Hebel, solange er aus ist; bei der Druckplatte, solange niemand draufsteht; beim Pilz immer.
     - Im Umkreis von 4 Kästchen (DEKO_FREI_ABSTAND 160 px) stehen keine Deko-Pflanzen und keine Tiere; Frosch, Schnecke
@@ -130,16 +132,19 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (fällt einfach). Danach normaler Abflug (ropeFling). Springen am Seil löst weiterhin (mit HOOK_RELEASE_BOOST).
     Koop-Bot und Computer-Partner halten die Taste am Seil; der Bahnen-Test fährt mit der alten Bedienung
     (window.hakenTippen, Referenz unverändert). Test liane_halten_loslassen_schub.
-  - Schleuder (zweites Haken-Element, Nutzerwunsch; elemente/schleuder.js, Editor-Reiter „Haken“, alle Welten): oben ein
-    Haken, darunter (1–4 Reihen, Option „Ring“) ein Ring an einem Gummiband. Der Affe wirft sein Seil an den Ring (G drücken
-    und halten, Reichweite SCHLEUDER_GREIF 110 px ab den Händen, eigener Kreis), läuft vom Ring weg und spannt das Seil
-    wie ein Gummi (wird zum Ende zäher, höchstens SCHLEUDER_MAX 120 px; ohne Laufen zieht es ihn langsam zurück). G
-    loslassen schleudert ihn zurück Richtung Ring und schräg hoch – je stärker gespannt, desto kräftiger, voll gespannt
-    ca. 4,5 Reihen hoch und 6–7 Spalten weit (SCHLEUDER_VX 6, SCHLEUDER_VY −15,5); kaum gespannt (< 24 px) kein Schub.
-    Springen löst ohne Schub. Gespanntes Seil = gedehnte Liane (dünner, rötlich). Ton: Haken-Klick beim Greifen,
-    Gummi-Schnalzen beim Abschuss. Rolle: nur der Affe (er braucht sein Seil) – kommt so auf eine Kante und hilft oben dem
-    Schweinchen (Hebel, Platte, Tür); das Schweinchen braucht einen eigenen Weg. Testlevel levels/test/schleuder.json
-    (Ring direkt neben einer 4 Reihen hohen Kante), Test schleuder_spannen_und_loslassen.
+  - Schleuder (zweites Haken-Element, Nutzerwunsch; elemente/schleuder.js, Editor-Reiter „Haken“, alle Welten): EIN Punkt
+    (Astgabel mit Gummi in warmem Orange, Reichweiten-Kreis wie beim Haken, blau wenn erreichbar) – im Editor an die Kante
+    setzen, auf die es hinaufgehen soll. Der Affe wirft seine Liane an den Punkt (G drücken und halten, Reichweite
+    SCHLEUDER_REICHWEITE 260 px ab den Händen wie beim Haken), läuft ein paar Schritte weg und spannt die Liane – die erste
+    Laufrichtung nach dem Greifen ist die Spann-Richtung, geschleudert wird in die Gegenrichtung (also einfach von der Kante
+    weglaufen, auf die man will; egal ob man links, rechts oder unter dem Punkt steht) (wird zäher,
+    höchstens SCHLEUDER_MAX 120 px Weg; ohne Laufen zieht sie ihn langsam zurück). Die Liane bleibt dabei eine normale Liane
+    (nur leicht gedehnt). G loslassen schleudert ihn hinauf zum Punkt – voll gespannt bis knapp über den Punkt und gut eine
+    Spalte darüber hinaus, weniger gespannt kürzer; kaum gespannt (< 20 px) kein Schub. Springen löst ohne Schub. Ton:
+    Haken-Klick beim Greifen, Gummi-Schnalzen beim Abschuss. (Erste Fassung mit Haken + Gummiband + Ring darunter auf
+    Nutzerwunsch ersetzt: „es reicht doch 1 Punkt“, „das Seil ist keine Liane“.) Rolle: nur der Affe – kommt so auf eine
+    Kante und hilft oben dem Schweinchen (Hebel, Platte, Tür). Testlevel levels/test/schleuder.json, Test
+    schleuder_spannen_und_loslassen.
   - Schwung holen am Haken wie beim Schaukeln (SWING_PUSH 0,2): die Laufen-Taste schiebt nur, wenn man in die
     Richtung drückt, in die der Affe gerade schwingt (oder er fast stillhängt). Taste nur halten drückt ihn nicht
     mehr sofort weit zur Seite (0,5 s halten: früher ~45°, jetzt ~26°); im Takt rechts/links baut schnell Schwung auf.

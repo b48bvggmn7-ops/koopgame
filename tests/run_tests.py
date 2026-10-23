@@ -5395,6 +5395,21 @@ async def neue_elemente(g):
     assert 200 < hoch < 280, f'Sprungpilz: {hoch:.0f} px hoch (erwartet ~230)'
 
 @test
+async def sprungpilz_hutrand(g):
+    """Nutzer-Rückmeldung „man springt häufig ins Leere“: der Sprungpilz federt auf der ganzen Hutbreite (PILZ_TREFFER 22 px
+    + halbe Figurenbreite neben der Mitte, vorher 14) – auch wer auf dem Hutrand landet, wird hochgeschleudert; daneben nicht."""
+    lv = level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, bouncers=[{'x': 800, 'y': 680}])
+    await g.load(lv)
+    assert await g.ev("PILZ_TREFFER") == 22
+    await g.ev("window.__minVy = 0; if(!window.__hr){ window.__hr = 1; const o = stepSim; stepSim = function(ts){ o(ts); window.__minVy = Math.min(window.__minVy, p1.vy); }; }")
+    for dx, soll in ((0, True), (33, True), (-33, True), (48, False)):
+        await g.ev(f"p1.x = {800 + dx}; p1.y = 560; p1.vx = 0; p1.vy = 2; p1.grounded = false; p1._px = p1.x; p1._py = p1.y; window.__minVy = 0")
+        await g.steps(60)
+        hoch = await g.ev('window.__minVy') <= -17
+        assert hoch == soll, f'Sprungpilz bei {dx} px neben der Mitte: {"federt" if hoch else "federt nicht"} (soll {soll})'
+        await g.steps(90)
+
+@test
 async def editor_neue_werkzeuge(g):
     """Editor: Scheinwand, Aufwind, Sprungpilz und Druckplatte setzen -> Export und Spiel-Umwandlung enthalten sie."""
     srv = webserver()
@@ -6470,6 +6485,34 @@ async def figuren3d_brillen_buegel(g):
         assert not fehler, fehler
     finally:
         await g.ev("p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
+
+@test
+async def figuren3d_brille_dreht_mit(g):
+    """Nutzer-Rückmeldung „die Brille ist nicht 3D gezeichnet – dreht sich das Schwein, wechselt sie einfach in eine andere
+    Ansicht“: die Brille ist jetzt eine Platte vor den Augen, die sich mit dem Kopf mitdreht – je weiter der Kopf zur Seite
+    dreht, desto schmaler werden die Gläser (stetig, kein Umschalten), von hinten ist sie weg. Dazu die Aura (Eis-Aura sah
+    mitten ins Gesicht): bei den 3D-Figuren liegt ihr Kreis um die ganze Figur (AURA_3D_MITTE/AURA_3D_RADIUS, js/27)."""
+    await f3d_bereit(g)
+    try:
+        await g.ev("""cosmeticsReset(); for(const w of ['m', 'f']) for(const id of ['gl_aviator', 'aura_ice']){ cosmeticsSave.owned[w][id] = 1; equipItem(w, id); }
+          window.__bx = []; window.__og2 = drawGlasses;
+          drawGlasses = (c, ...a) => { const T = c.getTransform(); __bx.push(Math.hypot(T.a, T.b)/Math.hypot(T.c, T.d)); return __og2(c, ...a); }""")
+        breite = {}
+        for yaw in (0, 0.4, 0.8, 1.2, 3.14):
+            await g.ev("__bx = []")
+            r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 4, 'wer': 'beide', 'vorher': f"__bx = []; p1._yawTest = p2._yawTest = {yaw}", 'merk': "__bx.slice()"})
+            breite[yaw] = r[-1]
+        for yaw in (0, 0.4, 0.8, 1.2):
+            assert len(breite[yaw]) == 2, f'Brille bei Drehung {yaw}: {len(breite[yaw])} Mal gezeichnet (soll: einmal je Figur)'
+        assert not breite[3.14], f'von hinten soll keine Brille zu sehen sein: {breite[3.14]}'
+        for i in range(2):
+            b = [breite[y][i] for y in (0, 0.4, 0.8, 1.2)]
+            assert b[0] > 0.9 and all(b[k] > b[k + 1] + 0.05 for k in range(3)), f'Gläser werden beim Drehen nicht stetig schmaler: {b}'
+        a = await g.ev("[p1, p2].map(P => { const r = auraRig(P, playerRig(P)); return [P.y + 4 - r.y, r.r]; })")
+        for mitte, rad in a:
+            assert abs(mitte - 22) < 0.01 and rad == 24, f'Aura-Kreis nicht um die ganze Figur: {a}'
+    finally:
+        await g.ev("if(window.__og2) drawGlasses = __og2; p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
 
 @test
 async def figuren3d_brille_tattoo(g):
@@ -8440,8 +8483,9 @@ async def boss_sprung(g, wer='p1'):
 
 @test
 async def schleuder_spannen_und_loslassen(g):
-    """Schleuder (elemente/schleuder.js, Nutzerwunsch): Affe wirft das Seil an den Ring (G), läuft weg und spannt es (nie
-    über SCHLEUDER_MAX), G loslassen schleudert ihn zurück und hoch auf die 4 Reihen hohe Kante (Testlevel schleuder).
+    """Schleuder (elemente/schleuder.js, Nutzerwunsch: EIN Punkt, echte Liane): Affe wirft die Liane an den Punkt (G), läuft
+    ein paar Schritte weg und spannt sie (nie über SCHLEUDER_MAX), G loslassen schleudert ihn hinauf auf die 4 Reihen hohe
+    Kante (Testlevel schleuder).
     Kaum gespannt: kein Schub. Springen löst ohne Schub. Das Schweinchen kann die Schleuder nicht benutzen."""
     srv = webserver()
     try:
@@ -8450,7 +8494,7 @@ async def schleuder_spannen_und_loslassen(g):
         await p.wait_for_function("typeof schleudern !== 'undefined' && schleudern.length === 1 && typeof p1 !== 'undefined' && p1", timeout=10000)
         r = await g.ev("""(() => { menuScreen = 'pause'; deathState = null; let ts = 5e6;
           const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
-          const s = schleudern[0], stell = P => { P.x = s.rx; P.y = 680; P.vx = P.vy = 0; P.schleuder = null; for(let i = 0; i < 5; i++) st(); };
+          const s = schleudern[0], stell = P => { P.x = s.x; P.y = 680; P.vx = P.vy = 0; P.schleuder = null; for(let i = 0; i < 5; i++) st(); };
           const e = {};
           try {
             stell(p1); SFX_LOG.length = 0;
