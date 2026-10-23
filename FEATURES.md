@@ -119,6 +119,16 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (fällt einfach). Danach normaler Abflug (ropeFling). Springen am Seil löst weiterhin (mit HOOK_RELEASE_BOOST).
     Koop-Bot und Computer-Partner halten die Taste am Seil; der Bahnen-Test fährt mit der alten Bedienung
     (window.hakenTippen, Referenz unverändert). Test liane_halten_loslassen_schub.
+  - Schleuder (zweites Haken-Element, Nutzerwunsch; elemente/schleuder.js, Editor-Reiter „Haken“, alle Welten): oben ein
+    Haken, darunter (1–4 Reihen, Option „Ring“) ein Ring an einem Gummiband. Der Affe wirft sein Seil an den Ring (G drücken
+    und halten, Reichweite SCHLEUDER_GREIF 110 px ab den Händen, eigener Kreis), läuft vom Ring weg und spannt das Seil
+    wie ein Gummi (wird zum Ende zäher, höchstens SCHLEUDER_MAX 120 px; ohne Laufen zieht es ihn langsam zurück). G
+    loslassen schleudert ihn zurück Richtung Ring und schräg hoch – je stärker gespannt, desto kräftiger, voll gespannt
+    ca. 4,5 Reihen hoch und 6–7 Spalten weit (SCHLEUDER_VX 6, SCHLEUDER_VY −15,5); kaum gespannt (< 24 px) kein Schub.
+    Springen löst ohne Schub. Gespanntes Seil = gedehnte Liane (dünner, rötlich). Ton: Haken-Klick beim Greifen,
+    Gummi-Schnalzen beim Abschuss. Rolle: nur der Affe (er braucht sein Seil) – kommt so auf eine Kante und hilft oben dem
+    Schweinchen (Hebel, Platte, Tür); das Schweinchen braucht einen eigenen Weg. Testlevel levels/test/schleuder.json
+    (Ring direkt neben einer 4 Reihen hohen Kante), Test schleuder_spannen_und_loslassen.
   - Schwung holen am Haken wie beim Schaukeln (SWING_PUSH 0,2): die Laufen-Taste schiebt nur, wenn man in die
     Richtung drückt, in die der Affe gerade schwingt (oder er fast stillhängt). Taste nur halten drückt ihn nicht
     mehr sofort weit zur Seite (0,5 s halten: früher ~45°, jetzt ~26°); im Takt rechts/links baut schnell Schwung auf.

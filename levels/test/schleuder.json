@@ -1,0 +1,50 @@
+{
+ "hinweis": "Testlevel Schleuder: links Boden, Schleuder (Haken Spalte 21, Reihe 12, Ring 3 Reihen tiefer); rechts ab Spalte 22 eine Kante 4 Reihen hoch. Affe: an den Ring stellen, G halten, nach links laufen (Gummi spannen), G loslassen -> schleudert nach rechts oben auf die Kante. Öffnen: index.html?testlevel=schleuder",
+ "welt": "dschungel",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {
+   "x": 0,
+   "y": 680,
+   "w": 880,
+   "h": 40,
+   "type": "ground"
+  },
+  {
+   "x": 880,
+   "y": 520,
+   "w": 1200,
+   "h": 200,
+   "type": "wall"
+  }
+ ],
+ "switches": [],
+ "doors": [],
+ "hooks": [],
+ "plates": [],
+ "spikes": [],
+ "movingPlatforms": [],
+ "coins": [],
+ "checkpoints": [],
+ "startM": {
+  "x": 300,
+  "y": 680
+ },
+ "startF": {
+  "x": 220,
+  "y": 680
+ },
+ "goal": {
+  "x": 2000,
+  "y": 520
+ },
+ "eis": [],
+ "schleudern": [
+  {
+   "x": 860,
+   "y": 500,
+   "unten": 3
+  }
+ ]
+}

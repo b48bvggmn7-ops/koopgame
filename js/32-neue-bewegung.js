@@ -246,7 +246,8 @@ function lianeLoslassen(P){
 function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   const K = P.keys || {};
   if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
-  if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
+  if(!nass && typeof schleuderVorher === 'function' && schleuderVorher(P, moveDir, jumpPressed)) return true;   // Schleuder (elemente/schleuder.js)
+  if(nass){ if(P.schleuder) P.schleuder = null; if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }
   if(P.dashPause > 0 && !P.dash) P.dashPause--;
   if(P.bruchFenster > 0 && !P.dash) P.bruchFenster--;

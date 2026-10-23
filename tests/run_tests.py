@@ -7432,7 +7432,8 @@ async def element_register(g):
                  ['eis', 'eis', True, True], ['foerderband', 'baender', True, True], ['leuchtkristall', 'leuchtkristalle', True, True],
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
                  ['presse', 'pressen', True, True],
-                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
+                 ['schleuder', 'schleudern', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -7447,7 +7448,7 @@ async def element_register(g):
         # Editor-Umbau: Haken/Aufwind/Sprungpilz im Reiter „Haken & Sprung“, Teleporter/Förderband/Bewegung in „Bewegung“,
         # Licht-Werkzeuge im eigenen Reiter „Licht“; Optionen nicht mehr in der Gruppe, sondern in der Eigenschaften-Zeile
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['hook', 'wind', 'bounce'], reihe
+        assert reihe == ['hook', 'wind', 'bounce', 'schleuder'], reihe   # Schleuder: zweites Haken-Element
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
@@ -8354,6 +8355,50 @@ async def boss_sprung(g, wer='p1'):
     await g.ev(f"{wer}.x = bossKampf.x; {wer}.y = bossKampf.y - bossKampf.T.h - 40; {wer}.vx = 0; {wer}.vy = 4; {wer}.grounded = false;"
                f"{wer}._px = {wer}.x; {wer}._py = {wer}.y")
     await g.steps(12)
+
+@test
+async def schleuder_spannen_und_loslassen(g):
+    """Schleuder (elemente/schleuder.js, Nutzerwunsch): Affe wirft das Seil an den Ring (G), läuft weg und spannt es (nie
+    über SCHLEUDER_MAX), G loslassen schleudert ihn zurück und hoch auf die 4 Reihen hohe Kante (Testlevel schleuder).
+    Kaum gespannt: kein Schub. Springen löst ohne Schub. Das Schweinchen kann die Schleuder nicht benutzen."""
+    srv = webserver()
+    try:
+        p = g.p
+        await p.goto(srv.url + 'index.html?testlevel=schleuder')
+        await p.wait_for_function("typeof schleudern !== 'undefined' && schleudern.length === 1 && typeof p1 !== 'undefined' && p1", timeout=10000)
+        r = await g.ev("""(() => { menuScreen = 'pause'; deathState = null; let ts = 5e6;
+          const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+          const s = schleudern[0], stell = P => { P.x = s.rx; P.y = 680; P.vx = P.vy = 0; P.schleuder = null; for(let i = 0; i < 5; i++) st(); };
+          const e = {};
+          try {
+            stell(p1); SFX_LOG.length = 0;
+            KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); e.an = !!p1.schleuder;
+            KEYS.KeyA = true; let sp = 0; for(let n = 0; n < 120; n++){ st(); sp = Math.max(sp, schleuderSpannung(p1)); } KEYS.KeyA = false;
+            e.spMax = sp; KEYS.KeyG = false; st(); e.ab = {vx: p1.vx, vy: p1.vy, k: p1.schleuderSchub};
+            let t = 0, maxH = 0; for(; t < 150; t++){ st(); maxH = Math.max(maxH, 680 - p1.y); if(p1.grounded && t > 3) break; }
+            e.land = {x: p1.x, y: p1.y, maxH}; e.log = SFX_LOG.slice();
+            // kaum gespannt: kein Schub
+            stell(p1); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); KEYS.KeyA = true; st(); st(); KEYS.KeyA = false;
+            KEYS.KeyG = false; st(); e.kaum = {los: !p1.schleuder, k: p1.schleuderSchub, vy: p1.vy};
+            // Springen löst ohne Schub
+            stell(p1); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); KEYS.KeyA = true; for(let n = 0; n < 40; n++) st(); KEYS.KeyA = false;
+            KEYS.Space = true; KEYS.Space_pressed = true; st(); KEYS.Space = false; e.sprung = {los: !p1.schleuder, k: p1.schleuderSchub, vx: p1.vx};
+            KEYS.KeyG = false; st();
+            // Schweinchen: keine Schleuder
+            stell(p2); KEYS.Numpad1 = true; KEYS.Numpad1_pressed = true; st(); st(); KEYS.Numpad1 = false; e.schwein = !!p2.schleuder;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['an'], f'Seil greift den Ring nicht: {r}'
+        assert 100 <= r['spMax'] <= 121, f'Spannung falsch (max {r["spMax"]}): {r}'
+        assert r['ab']['k'] > 0.9 and r['ab']['vx'] > 4 and r['ab']['vy'] < -13, f'kein Schub beim Loslassen: {r}'
+        assert abs(r['land']['y'] - 520) < 1 and r['land']['x'] > 880, f'landet nicht auf der Kante: {r}'
+        assert r['land']['maxH'] < 230, f'Schub zu stark: {r}'
+        assert 'hook' in r['log'] and 'schleuder' in r['log'], f'Ton fehlt: {r["log"]}'
+        assert r['kaum']['los'] and r['kaum']['k'] == 0 and r['kaum']['vy'] >= -1, f'kaum gespannt trotzdem Schub: {r}'
+        assert r['sprung']['los'] and r['sprung']['k'] == 0 and abs(r['sprung']['vx']) < 4.5, f'Springen löst nicht ohne Schub: {r}'
+        assert not r['schwein'], 'Schweinchen benutzt die Schleuder'
+    finally:
+        srv.shutdown()
 
 @test
 async def eis_rutschen(g):
