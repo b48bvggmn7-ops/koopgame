@@ -2847,36 +2847,36 @@
     {
       "x": 6220,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
       "x": 6540,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
       "x": 6860,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
-      "x": 10540,
+      "x": 10500,
       "y": 380,
-      "radius": 180,
-      "targetX": 10700,
+      "radius": 160,
+      "targetX": 10660,
       "targetY": 380,
       "speed": 1.5,
       "switchLink": null
     },
     {
-      "x": 10860,
+      "x": 10900,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
-      "x": 11180,
+      "x": 11220,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
       "x": 12220,
@@ -2891,30 +2891,30 @@
     {
       "x": 29460,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
       "x": 29780,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
       "x": 30100,
       "y": 380,
-      "radius": 180
+      "radius": 160
     },
     {
-      "x": 31580,
+      "x": 31660,
       "y": 260,
       "radius": 200
     },
     {
-      "x": 21260,
+      "x": 21180,
       "y": -20,
       "radius": 200
     },
     {
-      "x": 21460,
+      "x": 21580,
       "y": -20,
       "radius": 200
     }
@@ -6962,6 +6962,7 @@
       "h": 40
     }
   ],
+  "schleudern": [],
   "look": "ruinen",
   "theme": "ruinen",
   "_mitfahrendeStacheln": 33

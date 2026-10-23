@@ -257,6 +257,42 @@
    "spalte": 590,
    "nummer": 11,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+  },
+  {
+   "level": "ruinen/01-ruinen.json",
+   "regel": "Haken",
+   "spalte": 529,
+   "begruendung": "Flammen-Kamin-Grube (Haken aufgeräumt: zwei Haken 10 Spalten auseinander): man greift den ersten Haken aus dem Kamin heraus – die Kaminwand direkt darunter ist kein Absprung vom Boden"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Haken",
+   "spalte": 175,
+   "begruendung": "Flammen-Kamin-Grube (Haken aufgeräumt: zwei Haken 10 Spalten auseinander): man greift den ersten Haken aus dem Kamin heraus – die Kaminwand direkt darunter ist kein Absprung vom Boden"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Haken",
+   "spalte": 302,
+   "begruendung": "Flammen-Kamin-Grube (Haken aufgeräumt: zwei Haken 10 Spalten auseinander): man greift den ersten Haken aus dem Kamin heraus – die Kaminwand direkt darunter ist kein Absprung vom Boden"
+  },
+  {
+   "level": "ruinen/04-sonnentempel.json",
+   "regel": "Haken",
+   "spalte": 591,
+   "begruendung": "Flammen-Kamin-Grube (Haken aufgeräumt: zwei Haken 10 Spalten auseinander): man greift den ersten Haken aus dem Kamin heraus – die Kaminwand direkt darunter ist kein Absprung vom Boden"
+  },
+  {
+   "level": "ruinen/05-felsenflucht.json",
+   "regel": "Haken",
+   "spalte": 579,
+   "begruendung": "Flammen-Kamin-Grube (Haken aufgeräumt: zwei Haken 10 Spalten auseinander): man greift den ersten Haken aus dem Kamin heraus – die Kaminwand direkt darunter ist kein Absprung vom Boden"
+  },
+  {
+   "level": "ruinen/03-fallengang.json",
+   "regel": "Haken",
+   "spalte": 213,
+   "begruendung": "Haken aufgeräumt (vier -> zwei Haken): Absprung ist der letzte Steg der Steg-Treppe, die Haken hängen bewusst knapp darüber"
   }
  ]
 }

@@ -186,25 +186,6 @@
    }
   },
   {
-   "id": "nummer-3",
-   "zone": [
-    178,
-    200
-   ],
-   "rolle": "f",
-   "aktion": "hebel",
-   "nummer": 3,
-   "probe": {
-    "figur": "f",
-    "start": [
-     177,
-     14
-    ],
-    "links": [],
-    "schritte": 388
-   }
-  },
-  {
    "id": "nummer-4",
    "zone": [
     208,
@@ -240,25 +221,6 @@
     ],
     "links": [],
     "schritte": 466
-   }
-  },
-  {
-   "id": "nummer-9",
-   "zone": [
-    496,
-    515
-   ],
-   "rolle": "m",
-   "aktion": "hebel",
-   "nummer": 9,
-   "probe": {
-    "figur": "m",
-    "start": [
-     470,
-     14
-    ],
-    "links": [],
-    "schritte": 906
    }
   },
   {
@@ -313,6 +275,16 @@
   }
  ],
  "offen": [
+  {
+   "nummer": 3,
+   "spalte": 197,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 9,
+   "spalte": 508,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
   {
    "nummer": 10,
    "spalte": 520,

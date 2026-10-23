@@ -2221,17 +2221,17 @@
       "radius": 140
     },
     {
-      "x": 18780,
-      "y": 260,
+      "x": 18740,
+      "y": 300,
       "radius": 200
     },
     {
-      "x": 3940,
+      "x": 4100,
       "y": -20,
       "radius": 200
     },
     {
-      "x": 3780,
+      "x": 3700,
       "y": -20,
       "radius": 200
     }
@@ -4992,6 +4992,7 @@
       "h": 40
     }
   ],
+  "schleudern": [],
   "look": "nacht",
   "theme": "nacht",
   "_mitfahrendeStacheln": 15
