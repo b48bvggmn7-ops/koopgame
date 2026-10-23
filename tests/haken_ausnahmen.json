@@ -112,5 +112,11 @@
   "spalte": 451,
   "regel": "Schwung",
   "grund": "Flammen-Kreuz E3: der Affe braucht die volle Reichweite 4,5, um oben den Hakenweg zu greifen (kleiner -> Weg unterbrochen); man schwingt dort nach rechts weg, nicht zur Wand"
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "spalte": 470,
+  "regel": "Schwung",
+  "grund": "neben der Hebel-Tür (Spalte 466): geschlossen stößt man an, offen schwingt man hindurch – gewollt; darunter Flammen im Takt (Timing)"
  }
 ]
