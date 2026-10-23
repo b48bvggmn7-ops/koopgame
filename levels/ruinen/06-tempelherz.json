@@ -2989,11 +2989,6 @@
       "radius": 160
     },
     {
-      "x": 4100,
-      "y": 340,
-      "radius": 180
-    },
-    {
       "x": 11340,
       "y": 420,
       "radius": 140
@@ -6342,7 +6337,13 @@
       "h": 40
     }
   ],
-  "schleudern": [],
+  "schleudern": [
+    {
+      "x": 4260,
+      "y": 420,
+      "unten": 5
+    }
+  ],
   "welt": "ruinen",
   "tageszeit": "nacht",
   "wetter": "regen"

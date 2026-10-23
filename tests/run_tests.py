@@ -1337,8 +1337,7 @@ async def level9_fallengang(g):
     soll(ok, 'Tunnel segeln (Flammen aus)')
     r = await koop(g, f=kat(70, 15), m=kat(66, 15), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=800)
     soll(r['pos']['f'][0] < 76, 'Tür 1 hält ohne Hebel 1', r.get('pos'))
-    plan = [k_lauf(47, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+    plan = k_schleuder(50) + [   # Haken aufgeräumt: Schleuder an der Felskante statt Aufzug-Haken
             {'holdIf': {'right': f'P.x < {kx(60)} - 4', 'left': f'P.x > {kx(60)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
     r = await koop(g, m=kat(46, 11), f=kat(43, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5 and await g.ev("!!linkOn[1]"), 'Affe auf den Felsen + Hebel 1', r.get('pos'))
@@ -1398,8 +1397,7 @@ async def level9_fallengang(g):
         r = await koop(g, f=kat(301, 14), m=kat(320, 10), plans={'f': k_segeln(303, hold) + [k_lauf(339, -10), {'use': True, 'frames': 5}]}, links=[4], maxFrames=2500)
         ok = ok or (bool(r.get('done')) and await g.ev("!!linkOn[5]"))
     soll(ok, 'Schweinchen segelt in den Pfeil-Gang, Hebel 5')
-    plan = [k_lauf(296, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(10)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+    plan = k_schleuder(299) + [   # Haken aufgeräumt: Schleuder an der Deckenkante statt Aufzug-Haken
             # Bild-Regel: Hebel 4 steht jetzt bei 322 zwischen den Pfeilen 318/324 – warten, bis der Pfeil von 318 steckt
             {'holdIf': {'right': f'P.x < {kx(314)} - 4', 'left': f'P.x > {kx(314)} + 4'}, 'frames': 60},
             {'wait': f'fallenPfeile.some(a => Math.abs(a.x - {kx(318)}) < 4 && a.steckt >= 0)', 'frames': 400},
@@ -1415,7 +1413,7 @@ async def level9_fallengang(g):
     halt = [kx(382) + 20, 390*40]
     ok = []
     for jx in (371, 372):
-        r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'m': wb_haken(jx, 9) + wb_schalter(386, halt, 400), 'f': wb_laeufer(386, halt, 15, 402)}, maxFrames=6000)
+        r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'m': k_schleuder(373) + wb_schalter(386, halt, 400), 'f': wb_laeufer(386, halt, 15, 402)}, maxFrames=6000)
         if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 399: ok.append(jx)
     soll(ok, 'Schalter/Läufer: Affe schaltet Hebel 15, Schweinchen läuft über den Wechselboden', r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')})
     r = await koop(g, m=kat(368, 15), f=kat(366, 15), plans={'f': [k_lauf(392)]}, maxFrames=1500)
@@ -1559,7 +1557,7 @@ async def level10_sonnentempel(g):
     r = await koop(g, f=kat(241, 10), m=kat(222, 9), plans={'f': [{'frames': 10}] + am(241) + [{'frames': 10}]}, maxFrames=600)
     soll(not await g.ev("!!linkOn[5]"), 'nur Spiegel 5b reicht nicht', r.get('pos'))
     m = [k_lauf(231, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
-         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500},
+         {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 1', 'frames': 500},   # Haken aufgeräumt (Kreise berühren sich nur): erst Schwung holen
          {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
          {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(262)]
     r = await koop(g, m=kat(226, 15), f=kat(241, 10), plans={'m': m}, pre=dreh(220, 241), maxFrames=2500)
@@ -3893,7 +3891,7 @@ async def ruinen6_tempelherz(g):
         ok = None
         for jx in (102, 103, 104):
             for pull in (40, 80):
-                r = await koop(g, m=kat(99, 15), f=kat(97, 15), plans={'m': haken(jx, 10, pull) + am(110) + [k_lauf(112), {'until': 'P.grounded', 'frames': 200}, k_lauf(122)]}, maxFrames=3000)
+                r = await koop(g, m=kat(99, 15), f=kat(97, 15), plans={'m': k_schleuder(106) + am(110) + [k_lauf(112), {'until': 'P.grounded', 'frames': 200}, k_lauf(122)]}, maxFrames=3000)
                 if r.get('done') and r['pos']['m'][0] >= 121: ok = (jx, pull); break
             if ok: break
         soll(ok, 'E1 Affe: Haken -> Sims-Spiegel, Licht öffnet Tür 3', (ok, info(r)))

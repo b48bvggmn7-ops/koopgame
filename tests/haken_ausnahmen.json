@@ -1,0 +1,14 @@
+[
+ {
+  "level": "ruinen/04-sonnentempel.json",
+  "spalte": 350,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken am Spiegel-Sims: man greift ihn vom Trittstein knapp darunter und zieht sich hoch (W) – geschwungen wird hier nicht"
+ },
+ {
+  "level": "ruinen/01-ruinen.json",
+  "spalte": 789,
+  "regel": "Bahn",
+  "grund": "Sonnenkammer: Hochzieh-Haken im engen Schacht – man springt gerade hoch, zieht sich hoch (W) und steigt aufs Hebel-Sims; geschwungen wird hier nicht (für eine Schleuder ist der Schacht zu eng)"
+ }
+]
