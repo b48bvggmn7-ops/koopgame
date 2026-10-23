@@ -257,6 +257,12 @@
    "regel": "Haken",
    "spalte": 213,
    "begruendung": "Haken aufgeräumt (vier -> zwei Haken): Absprung ist der letzte Steg der Steg-Treppe, die Haken hängen bewusst knapp darüber"
+  },
+  {
+   "level": "hoehle/04-leuchtgrotte.json",
+   "regel": "Haken",
+   "spalte": 775,
+   "begruendung": "Kamin-Grube (Haken aufgeräumt: zwei Haken 9 Spalten auseinander, gemessen): man greift den ersten Haken aus dem Kamin heraus – die Kaminwand direkt darunter ist kein Absprung vom Boden"
   }
  ]
 }
