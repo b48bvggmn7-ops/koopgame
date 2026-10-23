@@ -3,6 +3,170 @@
  "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
  "aufgaben": [
   {
+   "id": "schleuder-platte-7",
+   "von_hand": true,
+   "zone": [
+    356,
+    399
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 7,
+   "start": {
+    "c": 358,
+    "r": 14
+   },
+   "text": "Schleuder, Platte 7",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 14620"
+    },
+    {
+     "frames": 6
+    },
+    {
+     "schleuder": true,
+     "zug": -1
+    },
+    {
+     "until": "P.grounded && f > 5",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 14740 - 4",
+      "left": "P.x > 14740 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "frames": 30
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     358,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
+   "id": "schleuder-hebel-6",
+   "von_hand": true,
+   "zone": [
+    298,
+    313
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 6,
+   "start": {
+    "c": 299,
+    "r": 14
+   },
+   "text": "Schleuder, Hebel 6",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 12220"
+    },
+    {
+     "frames": 6
+    },
+    {
+     "schleuder": true,
+     "zug": -1
+    },
+    {
+     "until": "P.grounded && f > 5",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 12420 - 4",
+      "left": "P.x > 12420 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     299,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
+   "id": "schleuder-hebel-2",
+   "von_hand": true,
+   "zone": [
+    44,
+    67
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 2,
+   "start": {
+    "c": 44,
+    "r": 14
+   },
+   "text": "Schleuder, Hebel 2",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 2060"
+    },
+    {
+     "frames": 6
+    },
+    {
+     "schleuder": true,
+     "zug": -1
+    },
+    {
+     "until": "P.grounded && f > 5",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 2260 - 4",
+      "left": "P.x > 2260 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     44,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
    "id": "nummer-1",
    "zone": [
     9,
@@ -19,25 +183,6 @@
     ],
     "links": [],
     "schritte": 372
-   }
-  },
-  {
-   "id": "nummer-2",
-   "zone": [
-    44,
-    67
-   ],
-   "rolle": "m",
-   "aktion": "hebel",
-   "nummer": 2,
-   "probe": {
-    "figur": "m",
-    "start": [
-     42,
-     14
-    ],
-    "links": [],
-    "schritte": 734
    }
   },
   {
@@ -95,44 +240,6 @@
     ],
     "links": [],
     "schritte": 466
-   }
-  },
-  {
-   "id": "nummer-6",
-   "zone": [
-    298,
-    313
-   ],
-   "rolle": "m",
-   "aktion": "hebel",
-   "nummer": 6,
-   "probe": {
-    "figur": "m",
-    "start": [
-     299,
-     14
-    ],
-    "links": [],
-    "schritte": 698
-   }
-  },
-  {
-   "id": "nummer-7",
-   "zone": [
-    356,
-    399
-   ],
-   "rolle": "m",
-   "aktion": "platte",
-   "nummer": 7,
-   "probe": {
-    "figur": "m",
-    "start": [
-     356,
-     14
-    ],
-    "links": [],
-    "schritte": 706
    }
   },
   {

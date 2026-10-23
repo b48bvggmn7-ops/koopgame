@@ -3,6 +3,61 @@
  "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
  "aufgaben": [
   {
+   "id": "schleuder-hebel-1",
+   "von_hand": true,
+   "zone": [
+    45,
+    66
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 1,
+   "start": {
+    "c": 44,
+    "r": 14
+   },
+   "text": "Schleuder, Hebel 1",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 2060"
+    },
+    {
+     "frames": 6
+    },
+    {
+     "schleuder": true,
+     "zug": -1
+    },
+    {
+     "until": "P.grounded && f > 5",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 2300 - 4",
+      "left": "P.x > 2300 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     44,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
    "id": "brunnen-hebel-3",
    "von_hand": true,
    "zone": [
@@ -51,29 +106,9 @@
      "until": "!!linkOn[3]"
     },
     {
-     "hold": [
-      "pull"
-     ],
-     "until": "P.y < 520",
-     "frames": 120
-    },
-    {
      "swing": true,
      "pull": 0,
-     "release": "P.x > 9220 + 20 && P.vy < 0 && P.vx > 2"
-    },
-    {
-     "hold": [
-      "right"
-     ],
-     "hookWhen": "P.vy > -3",
-     "until": "P.hookAttached || P.grounded",
-     "frames": 200
-    },
-    {
-     "swing": true,
-     "pull": 0,
-     "release": "P.x > 9420 + 20 && P.vy < 0 && P.vx > 1"
+     "release": "P.x > 9220 + 60 && P.vy < 0 && P.vx > 2"
     },
     {
      "hold": [
@@ -275,25 +310,6 @@
     ],
     "links": [],
     "schritte": 1800
-   }
-  },
-  {
-   "id": "nummer-1",
-   "zone": [
-    45,
-    66
-   ],
-   "rolle": "beide",
-   "aktion": "hebel",
-   "nummer": 1,
-   "probe": {
-    "figur": "m",
-    "start": [
-     36,
-     14
-    ],
-    "links": [],
-    "schritte": 810
    }
   },
   {

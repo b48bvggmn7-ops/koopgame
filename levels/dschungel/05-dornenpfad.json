@@ -1959,11 +1959,6 @@
       "radius": 180
     },
     {
-      "x": 4660,
-      "y": 300,
-      "radius": 140
-    },
-    {
       "x": 10180,
       "y": 380,
       "radius": 180,
@@ -6018,7 +6013,13 @@
       "h": 40
     }
   ],
-  "schleudern": [],
+  "schleudern": [
+    {
+      "x": 4700,
+      "y": 420,
+      "unten": 5
+    }
+  ],
   "welt": "dschungel",
   "tageszeit": "abend",
   "wetter": "regen"

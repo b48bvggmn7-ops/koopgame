@@ -3,6 +3,63 @@
  "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
  "aufgaben": [
   {
+   "id": "schleuder-hebel-2",
+   "von_hand": true,
+   "zone": [
+    109,
+    131
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 2,
+   "start": {
+    "c": 110,
+    "r": 15
+   },
+   "text": "Schleuder, Hebel 2",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 4700"
+    },
+    {
+     "frames": 6
+    },
+    {
+     "schleuder": true,
+     "zug": -1
+    },
+    {
+     "until": "P.grounded && f > 5",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 4860 - 4",
+      "left": "P.x > 4860 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     110,
+     15
+    ],
+    "links": [
+     1
+    ],
+    "schritte": 1200
+   }
+  },
+  {
    "id": "nummer-1",
    "zone": [
     90,
@@ -19,27 +76,6 @@
     ],
     "links": [],
     "schritte": 1412
-   }
-  },
-  {
-   "id": "nummer-2",
-   "zone": [
-    109,
-    131
-   ],
-   "rolle": "beide",
-   "aktion": "hebel",
-   "nummer": 2,
-   "probe": {
-    "figur": "m",
-    "start": [
-     93,
-     15
-    ],
-    "links": [
-     1
-    ],
-    "schritte": 844
    }
   },
   {
