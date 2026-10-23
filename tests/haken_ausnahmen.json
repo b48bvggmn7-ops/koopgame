@@ -78,12 +78,6 @@
   "grund": "Lichtweiche: Hochzieh-Haken neben dem Platten-Sims – man springt gerade hoch, zieht sich hoch (W) und steigt aufs Sims; geschwungen wird hier nicht"
  },
  {
-  "level": "dschungel/04-gluehwald.json",
-  "spalte": 626,
-  "regel": "Bahn",
-  "grund": "Rechnung meldet den Wechselboden darunter bei 5°; mit der echten Spiel-Physik (Test haken_schwung_frei) schwingt man frei – Haken wurde dafür versetzt"
- },
- {
   "level": "dschungel/06-wipfelsturm.json",
   "spalte": 619,
   "regel": "Bahn",
@@ -100,5 +94,17 @@
   "spalte": 617,
   "regel": "Schwung",
   "grund": "Sims unter dem Haken: ein anderer Platz überdeckt die Nachbar-Haken; man schwingt vom Sims aus nach rechts weiter"
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "spalte": 613,
+  "regel": "Schwung",
+  "grund": "über der Wechselboden-Treppe (Takt 1,5 s): ob man an eine Stufe stößt, hängt vom Takt ab – gewollt (Timing-Stelle)"
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "spalte": 625,
+  "regel": "Schwung",
+  "grund": "über der Wechselboden-Treppe (Takt 1,5 s): ob man an eine Stufe stößt, hängt vom Takt ab – gewollt (Timing-Stelle)"
  }
 ]
