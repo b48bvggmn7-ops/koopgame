@@ -134,7 +134,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Koop-Bot und Computer-Partner halten die Taste am Seil; der Bahnen-Test fährt mit der alten Bedienung
     (window.hakenTippen, Referenz unverändert). Test liane_halten_loslassen_schub.
   - Schleuder (zweites Haken-Element, Nutzerwunsch; elemente/schleuder.js, Editor-Reiter „Haken“, alle Welten): EIN Punkt
-    (Astgabel mit Gummi in warmem Orange, Reichweiten-Kreis wie beim Haken, blau wenn erreichbar) – im Editor an die Kante
+    (Astgabel mit Gummi in warmem Orange; Reichweiten-Kreis NUR im Editor – im Spiel ruht der Punkt gedämpft und „wacht auf“
+    (leuchtet warm, pulsiert, heller Ring), sobald der Affe in Reichweite ist, Nutzerwunsch; schleuderAktiv) – im Editor an die Kante
     setzen, auf die es hinaufgehen soll. Der Affe wirft seine Liane an den Punkt (G drücken und halten, Reichweite
     SCHLEUDER_REICHWEITE 260 px ab den Händen wie beim Haken), läuft ein paar Schritte weg und spannt die Liane – die erste
     Laufrichtung nach dem Greifen ist die Spann-Richtung, geschleudert wird in die Gegenrichtung (also einfach von der Kante

@@ -8527,6 +8527,29 @@ async def schleuder_spannen_und_loslassen(g):
         srv.shutdown()
 
 @test
+async def schleuder_punkt_wacht_auf(g):
+    """Schleuder im Spiel (Nutzerwunsch): KEIN Reichweiten-Kreis (nur im Editor) – der Punkt ruht gedämpft und „wacht auf“
+    (leuchtet), sobald der Affe in Reichweite ist und freie Sicht hat (schleuderAktiv, genau dann greift G)."""
+    srv = webserver()
+    try:
+        await g.p.goto(srv.url + 'index.html?testlevel=schleuder')
+        await g.p.wait_for_function("typeof schleudern !== 'undefined' && schleudern.length === 1 && typeof p1 !== 'undefined' && p1", timeout=10000)
+        r = await g.ev("""(() => { menuScreen = 'pause'; const s = schleudern[0], e = {};
+          const o = ctx.arc.bind(ctx); let kreis = 0; ctx.arc = (x, y, rad, ...a) => { if(Math.abs(rad - SCHLEUDER_REICHWEITE) < 1) kreis++; return o(x, y, rad, ...a); };
+          try {
+            p1.x = s.x - 800; p1.y = 680; e.weit = schleuderAktiv(s, p1); e.weitZiel = !!schleuderZiel(p1);
+            ctx.save(); schleuderZeichnen(); ctx.restore();
+            p1.x = s.x - 40; p1.y = 680; e.nah = schleuderAktiv(s, p1); e.nahZiel = !!schleuderZiel(p1);
+            ctx.save(); schleuderZeichnen(); ctx.restore();
+          } finally { delete ctx.arc; menuScreen = null; }
+          e.kreis = kreis; return e; })()""")
+        assert r['kreis'] == 0, f'im Spiel wird noch ein Reichweiten-Kreis gezeichnet: {r}'
+        assert not r['weit'] and not r['weitZiel'], f'weit weg darf der Punkt nicht aktiv sein: {r}'
+        assert r['nah'] and r['nahZiel'], f'in Reichweite soll der Punkt aufwachen: {r}'
+    finally:
+        srv.shutdown()
+
+@test
 async def eis_rutschen(g):
     """Ausbau 7 (Höhle): Eis – fester Boden, auf dem man langsam anläuft und ohne Taste lange rutscht; normaler Boden
     bremst wie bisher. Testlevel levels/test/eis.json."""

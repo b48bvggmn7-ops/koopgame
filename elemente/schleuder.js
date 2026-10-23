@@ -1,6 +1,6 @@
 // elemente/schleuder.js – Element „Schleuder“ (Punkt-Element; Aufbau siehe 00-register.js). Nutzerwunsch: zweites
 // Haken-Element neben dem Schwung-Haken – EIN Punkt (an die Kante setzen, auf die es hinaufgehen soll). Der Affe wirft seine
-// Liane an den Punkt (Haken-Taste G drücken und halten, Reichweite wie beim Haken als Kreis), läuft ein paar Schritte vom
+// Liane an den Punkt (Haken-Taste G drücken und halten; ist er nah genug, leuchtet der Punkt auf – Kreis nur im Editor), läuft ein paar Schritte vom
 // Punkt weg und spannt die Liane wie ein Gummi (wird zum Ende zäher). Lässt er G los, schleudert ihn die Liane hinauf zum
 // Punkt: voll gespannt bis knapp über den Punkt und ein kleines Stück darüber hinaus (bewusst „nur ein bisschen“) – weniger
 // gespannt entsprechend kürzer. Springen löst ohne Schub. Ersetzt die alten Aufzug-Haken, an denen man beim Hochziehen an
@@ -91,32 +91,34 @@ function schleuderVorher(P, moveDir, jumpPressed){
 }
 
 // ---------- Zeichnen ----------
-// Schleuder-Punkt: wie ein Haken, aber mit warmem Holz-/Gummi-Ring und kleiner Astgabel (Steinschleuder), damit man ihn erkennt
-function schleuderPunktZeichnen(x, y){
-  const pulse = 2 + Math.sin(performance.now()*0.005 + x*0.05)*1.5;
-  ctx.fillStyle = 'rgba(40,20,8,.55)'; ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = 'rgba(255,170,80,.55)'; ctx.beginPath(); ctx.arc(x, y, 15 + pulse, 0, Math.PI*2); ctx.fill();
-  ctx.save(); ctx.lineCap = 'round';
+// Schleuder-Punkt: kleine Astgabel mit Gummi (Steinschleuder). Im Spiel KEIN Reichweiten-Kreis (Nutzerwunsch, nur im Editor):
+// ist der Affe nah genug (und die Sicht frei), „wacht“ der Punkt auf – er leuchtet warm, pulsiert und bekommt einen hellen
+// Ring; sonst ruht er gedämpft.
+function schleuderPunktZeichnen(x, y, an){
+  const t = performance.now(), pulse = an ? 2 + Math.sin(t*0.009 + x*0.05)*2 : 0;
+  if(an){ elementLeuchten(x, y, 34 + pulse*2, '#ffb15a'); }
+  ctx.fillStyle = an ? 'rgba(60,30,10,.6)' : 'rgba(40,20,8,.35)'; ctx.beginPath(); ctx.arc(x, y, an ? 20 : 15, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = an ? 'rgba(255,175,85,.8)' : 'rgba(170,130,95,.45)'; ctx.beginPath(); ctx.arc(x, y, (an ? 14 : 10) + pulse, 0, Math.PI*2); ctx.fill();
+  if(an){ ctx.strokeStyle = 'rgba(255,240,200,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 18 + pulse, 0, Math.PI*2); ctx.stroke(); }
+  ctx.save(); ctx.lineCap = 'round'; ctx.globalAlpha = an ? 1 : 0.7;
   ctx.strokeStyle = '#4a2c14'; ctx.lineWidth = 5;   // Astgabel
   ctx.beginPath(); ctx.moveTo(x, y + 11); ctx.lineTo(x, y + 2); ctx.moveTo(x, y + 3); ctx.lineTo(x - 7, y - 8); ctx.moveTo(x, y + 3); ctx.lineTo(x + 7, y - 8); ctx.stroke();
-  ctx.strokeStyle = '#a8703c'; ctx.lineWidth = 2.6;
+  ctx.strokeStyle = an ? '#c98a4c' : '#8a6a4c'; ctx.lineWidth = 2.6;
   ctx.beginPath(); ctx.moveTo(x, y + 11); ctx.lineTo(x, y + 2); ctx.moveTo(x, y + 3); ctx.lineTo(x - 7, y - 8); ctx.moveTo(x, y + 3); ctx.lineTo(x + 7, y - 8); ctx.stroke();
-  ctx.strokeStyle = '#c8643c'; ctx.lineWidth = 2;   // Gummi zwischen den Gabel-Enden
+  ctx.strokeStyle = an ? '#ff7a3c' : '#9a6650'; ctx.lineWidth = 2;   // Gummi zwischen den Gabel-Enden
   ctx.beginPath(); ctx.moveTo(x - 7, y - 8); ctx.quadraticCurveTo(x, y - 3, x + 7, y - 8); ctx.stroke();
   ctx.restore();
-  glanzFunkeln(x - 6, y - 9, 5, x*0.11 + y);
+  if(an) glanzFunkeln(x - 6, y - 9, 5, x*0.11 + y);
+}
+// in Reichweite (Hände -> Punkt) und freie Sicht = der Punkt ist „an“ (genau dann greift G)
+function schleuderAktiv(s, A){
+  if(!A) return false;
+  if(A.schleuder) return A.schleuder.s === s;
+  const h = schleuderHand(A);
+  return Math.hypot(s.x - h.x, s.y - h.y) <= SCHLEUDER_REICHWEITE && lineClear(h.x, h.y, s.x, s.y);
 }
 function schleuderZeichnen(){
-  const A = p1 && p1.male ? p1 : p2, h = A ? schleuderHand(A) : null;
-  for(const s of schleudern){
-    const x = s.x - camX;
-    if(x < -SCHLEUDER_REICHWEITE - 30 || x > VW + SCHLEUDER_REICHWEITE + 30) continue;
-    // Reichweite (wie beim Haken: blau, wenn der Affe nah genug ist)
-    const nah = h && Math.hypot(s.x - h.x, s.y - h.y) <= SCHLEUDER_REICHWEITE;
-    ctx.fillStyle = nah ? 'rgba(80,170,255,0.14)' : 'rgba(150,150,150,0.1)';
-    ctx.strokeStyle = nah ? 'rgba(80,170,255,0.5)' : 'rgba(150,150,150,0.3)'; ctx.lineWidth = nah ? 2 : 1.4;
-    ctx.beginPath(); ctx.arc(x, s.y, SCHLEUDER_REICHWEITE, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-  }
+  const A = p1 && p1.male ? p1 : p2;
   for(const s of schleudern){
     const x = s.x - camX;
     if(x < -40 || x > VW + 40) continue;
@@ -125,7 +127,7 @@ function schleuderZeichnen(){
       const zug = Math.min(1, schleuderSpannung(F)/SCHLEUDER_MAX);
       lianeZeichnen(x, s.y, F.x - camX, F.y - F.h*0.6, zug*0.45, 0, s.x);
     }
-    schleuderPunktZeichnen(x, s.y);
+    schleuderPunktZeichnen(x, s.y, schleuderAktiv(s, A));
   }
 }
 
