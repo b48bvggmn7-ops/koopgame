@@ -538,5 +538,23 @@
   "regel": "Kombi-Etappe",
   "spalte": 600,
   "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
+ },
+ {
+  "level": "hoehle/05-foerderwerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 1 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 366, 546, 570, 772. Proben bei 246/305 (Rätselanfänge) und 625 (Stege von oben) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "hoehle/05-foerderwerk.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 400,
+  "begruendung": "Etappe 400–599: nur 2 Kombi-Stellen (mindestens 3). Höhle: Leuchtpilz-Gruben und Kamin-Gruben nur auf freien, flachen Strecken ohne Stege darüber. Neu: Kamin-Gruben 366, 546, 570, 772. Proben bei 246/305 (Rätselanfänge) und 625 (Stege von oben) zurückgenommen. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/02-aschefeld.json",
+  "regel": "Kombi-Etappe",
+  "spalte": 200,
+  "begruendung": "Etappe 200–399: nur 2 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 4 Stellen (188, 352, 376, 766). Proben bei 156, 400, 575, 726 zerstörten Doppel-Presse, Dach-Weg, Pressen-Treppe und letzte Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
  }
 ]
