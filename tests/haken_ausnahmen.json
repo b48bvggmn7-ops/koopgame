@@ -76,5 +76,29 @@
   "spalte": 778,
   "regel": "Bahn",
   "grund": "Lichtweiche: Hochzieh-Haken neben dem Platten-Sims – man springt gerade hoch, zieht sich hoch (W) und steigt aufs Sims; geschwungen wird hier nicht"
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "spalte": 626,
+  "regel": "Bahn",
+  "grund": "Rechnung meldet den Wechselboden darunter bei 5°; mit der echten Spiel-Physik (Test haken_schwung_frei) schwingt man frei – Haken wurde dafür versetzt"
+ },
+ {
+  "level": "dschungel/06-wipfelsturm.json",
+  "spalte": 619,
+  "regel": "Bahn",
+  "grund": "Rechnung meldet den Boden bei -40°; mit der echten Spiel-Physik (Test haken_schwung_frei) schwingt man frei – Haken wurde dafür eine Reihe tiefer gesetzt"
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "spalte": 645,
+  "regel": "Schwung",
+  "grund": "neben der Tür (Hebel-Tür): geschlossen stößt man an, offen schwingt man hindurch – gewollt"
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "spalte": 617,
+  "regel": "Schwung",
+  "grund": "Sims unter dem Haken: ein anderer Platz überdeckt die Nachbar-Haken; man schwingt vom Sims aus nach rechts weiter"
  }
 ]

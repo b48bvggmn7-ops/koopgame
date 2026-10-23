@@ -9649,6 +9649,63 @@ async def kombi_testlevel(g):
     r = await koop(g, m=kat(36, 16), f=kat(37, 16), plans={'f': schwein[:3] + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=1500)
     assert r.get('dead') == 'f', ('ohne Schirm in die Stacheln', r.get('pos'))
 
+HAKEN_SCHWUNG_JS = r"""(a) => { const [hx, hy, nx, ny, nr, GRENZE] = a;
+  const h = hooks.reduce((p, q) => Math.hypot(q.x-hx, q.y-hy) < Math.hypot(p.x-hx, p.y-hy) ? q : p);
+  const alt = {x: h.x, y: h.y, radius: h.radius};
+  h.x = nx; h.y = ny; if(nr) h.radius = nr;
+  const R = hookRange(h), P = p1, erg = [];
+  menuScreen = 'pause'; let ts = 9e6;
+  const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+  const sp2 = {x: p2.x, y: p2.y};
+  try {
+    for(const L of [1, 0.75]) for(const start of [-50, 50]){
+      const len = L*R, w = start*Math.PI/180;
+      deathState = null; for(const k in KEYS) KEYS[k] = false;
+      P.x = h.x + Math.sin(w)*len; P.y = h.y + Math.cos(w)*len + P.h*0.6; P.vx = P.vy = 0; P._px = P.x; P._py = P.y;
+      p2.x = sp2.x; p2.y = sp2.y; p2.vx = p2.vy = 0;
+      if(!spotFree(P.x, P.y, P)){ erg.push({besetzt: true}); continue; }
+      P.hookAttached = true; P.anchor = h; P.ropeLen = len; P.ropeMax = Math.max(len, R); P.grounded = false; P.ropeWasAirborne = true;
+      let w1 = null, max = 0, tot = false;
+      for(let i = 0; i < 320; i++){
+        for(const k of ['left', 'right']) KEYS[P.keys[k]] = false;
+        KEYS[P.keys.hook] = true; KEYS[P.keys[P.vx >= 0 ? 'right' : 'left']] = true;
+        p2.x = P.x; p2.y = P.y; p2.vx = P.vx; p2.vy = P.vy; p2._px = p2.x; p2._py = p2.y;
+        st();
+        if(deathState){ if(deathState.victim === P) tot = true; break; }
+        if(!P.hookAttached) break;
+        const a = Math.abs(Math.atan2(P.x - P.anchor.x, P.y - P.h*0.6 - P.anchor.y))*180/Math.PI; max = Math.max(max, a);
+        if(w1 === null && (P.onWall || touchingWall(P, 1) || touchingWall(P, -1))) w1 = Math.round(a);
+      }
+      erg.push({w1, max: Math.round(max), tot, los: !P.hookAttached});
+      P.hookAttached = false; deathState = null;
+    }
+  } finally { h.x = alt.x; h.y = alt.y; h.radius = alt.radius; for(const k in KEYS) KEYS[k] = false; deathState = null; }
+  return erg;
+}"""
+HAKEN_SCHWUNG_GRENZE = 65   # Grad: stößt man schon unter diesem Ausschlag an eine Wand, ist der Haken falsch gesetzt
+
+@test
+async def haken_schwung_frei(g):
+    """Nutzer-Rückmeldung „schon wieder gegen die Wand“: jeder Schwung-Haken in allen Leveln wird mit der ECHTEN Spiel-Physik
+    geprüft – der Affe hängt bei ±50° (volle und ¾ Seillänge) und schwingt 320 Schritte kräftig (Richtung = Bewegungsrichtung).
+    Er darf unter HAKEN_SCHWUNG_GRENZE Grad Ausschlag keine Wand/keinen Boden berühren. Tode zählen hier nicht (Fallen über dem
+    Haken, steigende Lava, Boss sind gewollt). Ausnahmen: tests/haken_ausnahmen.json mit Regel „Schwung“ oder „Bahn“."""
+    aus = json.loads((ROOT / 'tests' / 'haken_ausnahmen.json').read_text(encoding='utf-8'))
+    frei = {(a['level'], a['spalte']) for a in aus if a['regel'] in ('Schwung', 'Bahn')}
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    befunde, n = [], 0
+    for lv in [f for welt in w['welten'] for f in welt.get('level', []) + ([welt['boss']] if welt.get('boss') else [])]:
+        d = json.loads((ROOT / 'levels' / lv).read_text(encoding='utf-8'))
+        hs = [h for h in d.get('hooks', []) if 'targetX' not in h and (lv, int(h['x'] // 40)) not in frei]
+        if not hs: continue
+        await koop_level(g, lv)
+        for h in hs:
+            erg = await g.p.evaluate(HAKEN_SCHWUNG_JS, [h['x'], h['y'], h['x'], h['y'], 0, HAKEN_SCHWUNG_GRENZE]); n += 1
+            wand = [e['w1'] for e in erg if not e.get('besetzt') and e['w1'] is not None and e['w1'] < HAKEN_SCHWUNG_GRENZE]
+            if wand: befunde.append(f"{lv} Haken {int(h['x'] // 40)}/{int(h['y'] // 40)}: stößt bei {min(wand)}° an")
+    assert n > 200, n
+    assert not befunde, befunde
+
 @test
 async def haken_pruefung(g):
     """Haken aufgeräumt (Nutzerwunsch, Prüfwerkzeug tests/haken_pruefen.py): in ALLEN Leveln der Welten stößt der Affe beim

@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 T = 40
 W, H = 28.5, 32.3            # Figur (js/04-figuren-kollision.js)
 HAENDE = 0.6                 # Seil-Ende = Füße - 0,6 * Höhe (js/08-figur-physik-seil.js)
-BAHN_WINKEL = 70             # so weit (Grad) schwingt man beim Spielen aus (Nutzer-Rückmeldung: bei 50 stieß er im Pilz-Haken-Baustein noch an)
+BAHN_WINKEL = 50             # Grob-Prüfung (Rechnung); die echte Wand-Prüfung mit der Spiel-Physik macht der Test haken_schwung_frei
 RING_TOLERANZ = 4            # px: so knapp dürfen sich zwei Kreise berühren
 STD_RADIUS = 260             # HOOK_MAX_RANGE (js/02-physik-werte.js)
 
