@@ -96,7 +96,8 @@ def _haken_kette_dash(c, z, n=2, rel1='P.x > P.anchor.x + 40 && P.vx > 1'):
 # Kristallhöhle Ziel: Lücke 388–404 (17), Haken 391/397, Podest 3 Reihen höher; Schweinchen nur per Aufwind, wenn der Affe
 # oben auf Platte 8 steht (Tür im Aufwind).
 stelle(level='hoehle/01-kristallhoehle.json', name='Ziel: Haken-Kette 391/397 + Dash hoch aufs Podest', wer='m', start=(385, 10), partner=(386, 10),
-       plan=_haken_kette_dash(387, 405, rel1='P.x > P.anchor.x + 80 && P.vy < 0'),   # Haken aufgeräumt (391/400): erst Schwung holen ziel=405, ziel_reihe=3, baustein='Umbau', gegen=_sprung_dash(387))
+       plan=_haken_kette_dash(387, 405, rel1='P.x > P.anchor.x + 80 && P.vy < 0'),   # Haken aufgeräumt (391/400): erst Schwung holen
+       ziel=405, ziel_reihe=3, baustein='Umbau', gegen=_sprung_dash(387))
 stelle(level='hoehle/01-kristallhoehle.json', name='Ziel: Schweinchen per Aufwind, Affe auf Platte 8', wer='f', start=(385, 10), partner=(409, 2),
        plan=[{'holdIf': {'right': f'P.x < {kx(387)}'}, 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
              {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(401)} + 20', 'left': f'P.x > {kx(402)}'}, 'until': f'P.y < {ky(2)}', 'frames': 900},
