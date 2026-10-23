@@ -243,6 +243,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   const ease = x => x*x*(3-2*x);
   const TUCK = {head:[.55,0,0], armN:[-1.75,0,.25], armP:[-1.75,0,-.25], legN:[-1.45,0,.1], legP:[-1.45,0,-.1]};
   const TANZ_ARM = .75, TANZ_ABSTAND = 50;   // Siegestanz: Verlängerung des Einhak-Arms, Abstand der beiden Figuren (px)
+  const HAFT_ARM = 3.0;   // Armlänge (Faktor) beim Hangeln an der Haftfläche – Affe wie Schwein (Nutzerwunsch; Affe vorher 4,5)
   const WJ_ZEIT = 480;   // ms: Salto nach dem Wandsprung
   // wie tief die Figur beim Hangeln unter der Fläche hängt: die Hand-Spitze (Arm mit Faktor al) soll genau die Unterkante der Fläche (Oberkante der Hitbox) berühren
   function hangSenke(ch, al, ph, voll){
@@ -388,7 +389,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(S.trick && (S.trick.typ === 'salto' || S.trick.typ === 'schraube') && !z.key.startsWith('w')) rollA += -flip*2*Math.PI*tke;
     const H = holen(male), ch = H.ch;
     // Hangeln: lange Arme (Hände kleben oben an der Haftfläche), sonst normale Arme
-    S.al = (S.al||1) + ((z.key === 'haft' ? (male ? 4.5 : 3.0) : 1) - (S.al||1))*(1 - Math.exp(-dt*14));
+    S.al = (S.al||1) + ((z.key === 'haft' ? HAFT_ARM : 1) - (S.al||1))*(1 - Math.exp(-dt*14));
     S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : 1)) - (S.as||1))*(1 - Math.exp(-dt*12));
     // Seil hochklettern/herablassen (W/S): Hand über Hand – ein Arm zieht, der andere greift nach
     if(z.key === 'seil' && P.ropeLen != null){ const d = S.rl == null ? 0 : Math.abs(P.ropeLen - S.rl); S.rl = P.ropeLen; S.cp = (S.cp||0) + d; S.cs = (S.cs||0) + (d - (S.cs||0))*.3; } else { S.rl = null; S.cs = 0; }
@@ -438,7 +439,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       if(tex){ gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(U.uTat, 1); gl.activeTexture(gl.TEXTURE0); } }
     gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     drawNode(H.wrap, M.id(), M.ortho(FR.x0, FR.x1, FR.y0, FR.y1, -20, 20), [0, 1.8, 30]);
-    const fy = P.h*0.5 + 4 + hangSenke(ch, S.al||1, P.h, male ? 4.5 : 3.0);   // 4 px tiefer: die Figur steht im Gras
+    const fy = P.h*0.5 + 4 + hangSenke(ch, S.al||1, P.h, HAFT_ARM);   // 4 px tiefer: die Figur steht im Gras
     // Am Seil schwingt die ganze Figur mit (Körper hängt entlang des Seils, Drehpunkt = Hände) – wie im 2D-Spiel
     let rs = 0; if(z.key === 'seil' && P.anchor){ const cx = P.x, cy = P.y - P.h*.6; rs = Math.atan2(P.anchor.x - cx, cy - P.anchor.y); }
     S.rs = (S.rs||0) + (rs - (S.rs||0))*(1 - Math.exp(-dt*18));

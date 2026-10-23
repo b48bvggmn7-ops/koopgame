@@ -390,42 +390,52 @@ function lensGlare(c, x, y, w, h){
 }
 function drawGlasses(c, k, L, R, w, h){
   const t = performance.now(), lw = Math.max(0.8, w*0.2);   // kräftige Rahmen, damit man die Brille gut sieht
-  const bridge = (col) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(L[0] + w*0.9, L[1] - h*0.25); c.quadraticCurveTo((L[0] + R[0])/2, L[1] - h*0.55, R[0] - w*0.9, R[1] - h*0.25); c.stroke(); };
-  const arms = (col) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(L[0] - w, L[1] - h*0.3); c.lineTo(L[0] - w*1.9, L[1] - h*0.5); c.moveTo(R[0] + w, R[1] - h*0.3); c.lineTo(R[0] + w*1.9, R[1] - h*0.5); c.stroke(); };
+  // Steg über der Nase und Seitenbügel: werden NACH den Gläsern gezeichnet (vorher davor -> von großen Gläsern verdeckt) und
+  // setzen am Rand des jeweiligen Glases an (e = halbe Glasbreite der Form). Überlappen sich die Gläser, bleibt ein kurzer Steg.
+  // kräftiger als die Glasränder und mit feinem dunklem Rand darunter, damit man sie auf jedem Fell sieht (Gold auf Orange …)
+  const lwF = Math.max(1.2, w*0.3), rahmen = (col) => { c.lineCap = 'round'; c.strokeStyle = 'rgba(30,20,15,.45)'; c.lineWidth = lwF + Math.max(1, w*0.12); c.stroke();
+    c.strokeStyle = col; c.lineWidth = lwF; c.stroke(); };
+  const bridge = (col, e = w) => {
+    let x0 = L[0] + e*0.85, x1 = R[0] - e*0.85; const mx = (L[0] + R[0])/2, my = (L[1] + R[1])/2;
+    if(x1 - x0 < w*0.5){ x0 = mx - w*0.35; x1 = mx + w*0.35; }
+    c.beginPath(); c.moveTo(x0, L[1] - h*0.25); c.quadraticCurveTo(mx, my - h*0.6, x1, R[1] - h*0.25); rahmen(col); };
+  const arms = (col, e = w) => { c.beginPath();
+    c.moveTo(L[0] - e*0.95, L[1] - h*0.3); c.lineTo(L[0] - e - w*0.9, L[1] - h*0.5);
+    c.moveTo(R[0] + e*0.95, R[1] - h*0.3); c.lineTo(R[0] + e + w*0.9, R[1] - h*0.5); rahmen(col); };
   const rr = (x, y, ww, hh, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + ww, y, x + ww, y + hh, r); c.arcTo(x + ww, y + hh, x, y + hh, r); c.arcTo(x, y + hh, x, y, r); c.arcTo(x, y, x + ww, y, r); c.closePath(); };
   switch(k){
     case 'classic': {   // schwarze Wayfarer
-      arms('#111'); bridge('#111');
       for(const [x, y] of [L, R]){ rr(x - w, y - h*0.8, w*2, h*1.55, w*0.35); c.fillStyle = '#14161a'; c.fill(); c.strokeStyle = '#000'; c.lineWidth = lw; c.stroke(); lensGlare(c, x, y, w, h); }
+      arms('#111'); bridge('#111');
       break; }
     case 'round': {     // runde Retro-Brille, goldener Rahmen
-      arms('#c9a24a'); bridge('#c9a24a');
       for(const [x, y] of [L, R]){ c.beginPath(); c.arc(x, y, w*1.02, 0, Math.PI*2); c.fillStyle = 'rgba(40,30,60,.85)'; c.fill(); c.strokeStyle = '#e0b85a'; c.lineWidth = lw; c.stroke(); lensGlare(c, x, y, w, h); }
+      arms('#c9a24a', w*1.02); bridge('#c9a24a', w*1.02);
       break; }
     case 'aviator': {   // Pilotenbrille: Tropfenform, Verlaufsglas
-      arms('#d8b660'); bridge('#d8b660');
       for(const [x, y] of [L, R]){
         const g = c.createLinearGradient(0, y - h, 0, y + h); g.addColorStop(0, '#3a2414'); g.addColorStop(1, '#d08a34');
         c.beginPath(); c.moveTo(x - w*1.05, y - h*0.7); c.lineTo(x + w*1.05, y - h*0.7); c.quadraticCurveTo(x + w*1.1, y + h*1.1, x, y + h*1.0); c.quadraticCurveTo(x - w*1.2, y + h*0.9, x - w*1.05, y - h*0.7); c.closePath();
         c.fillStyle = g; c.fill(); c.strokeStyle = '#f0d27a'; c.lineWidth = lw*0.8; c.stroke(); lensGlare(c, x, y, w, h);
       }
+      arms('#d8b660', w*1.05); bridge('#d8b660', w*1.05);
       break; }
     case 'shutter': {   // Gitter-Brille
-      arms('#fff'); bridge('#fff');
       for(const [x, y] of [L, R]){ rr(x - w, y - h*0.8, w*2, h*1.55, w*0.3); c.strokeStyle = '#ffffff'; c.lineWidth = lw; c.stroke();
         c.lineWidth = lw*0.7; for(let i = 1; i < 5; i++){ const yy = y - h*0.8 + i*h*1.55/5; c.beginPath(); c.moveTo(x - w, yy); c.lineTo(x + w, yy); c.stroke(); } }
+      arms('#fff'); bridge('#fff');
       break; }
     case 'heart': {     // Herzbrille
-      bridge('#d6336c'); arms('#d6336c');
       for(const [x, y] of [L, R]){ cosHeart(c, x, y + h*0.15, w*2.2); c.fillStyle = 'rgba(255,90,150,.9)'; c.fill(); c.strokeStyle = '#a61e4d'; c.lineWidth = lw*0.8; c.stroke(); lensGlare(c, x, y, w, h); }
+      arms('#d6336c', w*1.1); bridge('#d6336c', w*1.1);
       break; }
     case '3d': {        // 3D-Kino-Brille
-      arms('#f3f3f3'); bridge('#f3f3f3');
       [[L, 'rgba(230,40,50,.85)'], [R, 'rgba(40,140,240,.85)']].forEach(([[x, y], col]) => { rr(x - w, y - h*0.75, w*2, h*1.45, w*0.15); c.fillStyle = col; c.fill(); c.strokeStyle = '#f3f3f3'; c.lineWidth = lw*1.3; c.stroke(); });
+      arms('#f3f3f3'); bridge('#f3f3f3');
       break; }
     case 'star': {      // Sternbrille
-      bridge('#f5b800'); arms('#f5b800');
       for(const [x, y] of [L, R]){ cosStar(c, x, y, w*1.3, -Math.PI/2, 5); c.fillStyle = 'rgba(255,214,40,.92)'; c.fill(); c.strokeStyle = '#b07a00'; c.lineWidth = lw*0.8; c.stroke(); lensGlare(c, x, y, w*0.8, h*0.8); }
+      arms('#f5b800', w*1.15); bridge('#f5b800', w*1.15);
       break; }
     case 'cyber': {     // Cyber-Visier: durchgehendes Neon-Band mit Lauflicht
       const x0 = L[0] - w*1.4, x1 = R[0] + w*1.4, y = (L[1] + R[1])/2;
@@ -435,15 +445,16 @@ function drawGlasses(c, k, L, R, w, h){
       const p = ((t*0.0012) % 1);
       c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(x0 + (x1 - x0)*p, y - h*0.6, w*0.35, h*1.15);
       c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = lw*0.5; for(let i = 0; i < 3; i++){ const yy = y - h*0.3 + i*h*0.3; c.beginPath(); c.moveTo(x0 + w*0.3, yy); c.lineTo(x1 - w*0.3, yy); c.stroke(); }
+      arms('#7fe0ff', w*1.4);   // durchgehendes Band = Steg; Bügel an den Enden
       break; }
     case 'bling': {     // Gold-Brille mit Diamanten (funkelt)
-      arms('#ffd23f'); bridge('#ffd23f');
       for(const [x, y] of [L, R]){
         rr(x - w*1.05, y - h*0.8, w*2.1, h*1.6, w*0.5); c.fillStyle = '#1a1206'; c.fill();
         c.strokeStyle = '#ffd23f'; c.lineWidth = lw*1.4; c.shadowColor = '#ffcf3d'; c.shadowBlur = w*0.8; c.stroke(); c.shadowBlur = 0;
         lensGlare(c, x, y, w, h);
         for(let i = 0; i < 3; i++){ const a = t*0.003 + i*2.1, s = (Math.sin(a) + 1)/2; c.fillStyle = `rgba(255,255,255,${0.35 + s*0.65})`; cosStar(c, x - w + i*w, y - h*0.85, w*0.22*(0.6 + s), 0, 4); c.fill(); }
       }
+      arms('#ffd23f', w*1.05); bridge('#ffd23f', w*1.05);
       break; }
   }
 }

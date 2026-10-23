@@ -6299,6 +6299,28 @@ async def f3d_bereit(g):
     assert await g.ev("!!(p1._f3 && p2._f3)"), '3D-Figuren zeichnen nicht (WebGL2 fehlt oder 3D aus)'
 
 @test
+async def brillen_steg_und_buegel(g):
+    """Alle Brillen (Umkleide): vorn ein Steg über der Nase und an beiden Seiten ein Bügel – Steg/Bügel werden NACH den Gläsern
+    gezeichnet und setzen am Glasrand an (vorher von großen Gläsern wie Herz/Stern verdeckt, Cyber ohne Bügel)."""
+    r = await g.ev("""(() => { const cv = document.createElement('canvas'); cv.width = 300; cv.height = 200; const c = cv.getContext('2d');
+      // Abstände wie an der 3D-Figur (Glas-Halbbreite ≈ 0,33 × Augenabstand)
+      const w = 33, h = 37, L = [100, 100], R = [200, 100], out = {};
+      const RAHMEN = {classic:'#111111', round:'#c9a24a', aviator:'#d8b660', shutter:'#ffffff', heart:'#d6336c', '3d':'#f3f3f3', star:'#f5b800', bling:'#ffd23f'};
+      const hex = s => [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16));
+      const da = (x, y) => { const d = c.getImageData(Math.round(x) - 2, Math.round(y) - 2, 5, 5).data; for(let i = 3; i < d.length; i += 4) if(d[i] > 40) return true; return false; };
+      const farbe = (x, y, col) => { const d = c.getImageData(Math.round(x) - 2, Math.round(y) - 2, 5, 5).data, z = hex(col);   // Rahmenfarbe obenauf?
+        for(let i = 0; i < d.length; i += 4) if(d[i+3] > 200 && Math.abs(d[i] - z[0]) + Math.abs(d[i+1] - z[1]) + Math.abs(d[i+2] - z[2]) < 60) return true; return false; };
+      for(const it of COSMETICS.filter(i => i.slot === 'glasses')){
+        const k = it.fx.kind; c.clearRect(0, 0, 300, 200); drawGlasses(c, k, L, R, w, h);
+        out[it.id] = {steg: k === 'cyber' ? da(150, 100) : farbe(150, 100 - h*0.425, RAHMEN[k]),
+                      links: da(L[0] - 1.85*w, L[1] - h*0.47), rechts: da(R[0] + 1.85*w, R[1] - h*0.47)};
+      }
+      return out; })()""")
+    fehlt = {k: v for k, v in r.items() if not all(v.values())}
+    assert not fehlt, f'Brillen ohne Steg/Bügel: {fehlt}'
+    assert len(r) == 9, f'nicht alle Brillen geprüft: {list(r)}'
+
+@test
 async def figuren3d_siegestanz(g):
     """3D-Figuren: Siegestanz zu zweit – stehen beide nahe beieinander, erkennen sie den Partner (tz.near), haken die
     inneren Arme ein (Einhak-Anteil ti wächst) und schauen zur Kamera; nur Zeichnen, ohne Fehler."""
@@ -6320,6 +6342,17 @@ async def figuren3d_hebel(g):
     await g.ev("menuScreen = null; p1.leverAnim = null")
     assert min(a for a, _ in r) < -0.4, f'Arm greift beim Hebel nicht nach vorn: {r}'
     assert max(y for _, y in r) > 1.0, f'Figur dreht sich nicht zum Hebel: {r}'
+
+@test
+async def figuren3d_haft_arme(g):
+    """3D-Figuren an der Haftfläche (Decke): der Affe hat dieselbe Armlänge wie das Schweinchen (Nutzerwunsch; vorher
+    deutlich längere Arme beim Affen)."""
+    await f3d_bereit(g)
+    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 14, 'wer': 'beide', 'vorher': "for(const P of [p1, p2]){ P.haft = {flaeche: 'unten'}; P.grounded = false; P.vx = 0; }",
+                                          'merk': "[p1._f3.al, p2._f3.al]"})
+    await g.ev("for(const P of [p1, p2]) P.haft = null; menuScreen = null")
+    m, f = r[-1]
+    assert m > 2 and abs(m - f) < 0.05, f'Arme an der Haftfläche: Affe {m:.2f}, Schwein {f:.2f} – sollen gleich lang sein'
 
 @test
 async def figuren3d_brille_tattoo(g):

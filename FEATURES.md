@@ -1537,12 +1537,17 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   Kombi, Schweinchen Schraube/Pirouette/Kombi), Laufen, Sprung (Arme hoch/seitlich), Sprung-Tricks (Salto, Drehung,
   Schraube), Wandsprung-Salto, Wand-Rutschen, Haftfläche (Arme greifen abwechselnd, nie über den Rand), Seil (Hand über
   Hand), Dash (eingerollte Rolle), Schirm-Gleiten (bisheriger 2D-Schirm über der Figur).
+- Haftfläche: Affe und Schweinchen haben beim Hangeln dieselbe Armlänge (Faktor 3,0, `HAFT_ARM`; Affe vorher 4,5 –
+  Nutzerwunsch). Test figuren3d_haft_arme.
 - Hebel: die Figur dreht sich zum Hebel ins Profil, greift mit langem Arm nach vorn und zieht herunter. Test figuren3d_hebel.
 - Siegestanz: stehen beide nah beieinander, haken sie die inneren Arme ein und hüpfen im Takt, jeder 4. Takt eine
   gemeinsame Pirouette; sonst jubeln beide mit erhobenen Armen. Am Ziel-Baum (Dschungel) wie bisher: erst Tanz, dann hinein,
   Tür zu. Test figuren3d_siegestanz.
 - Umkleide (js/27): die Brille sitzt als Auflage auf den 3D-Augen – von vorn beide Gläser, von der Seite ein schmales Glas
-  mit Bügel. Das Tattoo geht über die ganze Figur (Nutzerwunsch): das Muster (tattooPattern) wird einmal in eine Textur
+  mit Bügel. Jede Brille (auch an den bisherigen Figuren) hat vorn einen Steg über der Nase und an beiden Seiten
+  einen Bügel: werden nach den Gläsern gezeichnet, setzen am Glasrand an, etwas kräftiger und mit feinem dunklem Rand (vorher
+  unter großen Gläsern wie Herz/Stern verdeckt bzw. auf dem Fell kaum zu sehen; Cyber-Brille ohne Bügel). Test
+  brillen_steg_und_buegel. Das Tattoo geht über die ganze Figur (Nutzerwunsch): das Muster (tattooPattern) wird einmal in eine Textur
   gerechnet, die vorn und gespiegelt hinten um die Kugel liegt, und färbt das Fell von Kopf/Körper, Armen und Ohren
   (vor und nach dem Licht, damit es kräftig bleibt) – wölbt sich mit, dreht sich mit, auch von der Seite und hinten sichtbar;
   Augen, Schnauze und Gesichtsmaske liegen darüber und bleiben frei. Früher ein flaches Bild über dem Gesicht.
