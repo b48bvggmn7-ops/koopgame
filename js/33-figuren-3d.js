@@ -137,25 +137,23 @@ function drawNode(n,pm,VPm,cam){const loc=M.mul(M.mul(M.mul(M.T(...n.pos),M.RZ(n
 // ---------- Affe ----------
 function glints(H,x,y,z,s){return [K(H,{geo:SPH(1),pos:[x+.07*s,y+.105,z+.085],sc:[.075,.075,.04],color:0xffffff,emit:1}),
  K(H,{geo:SPH(1),pos:[x-.06*s,y-.1,z+.08],sc:[.036,.036,.025],color:0xffffff,emit:1})]}
-function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x95592e,TIP=0xe3ab6b;
+function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0xc98a52,TIP=0xe8b57a;   // ganz hellbraun (Nutzerwunsch: kein dunkler „Hut“)
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
- F(H,{sc:[1.08,1,1],root:ROOT,tip:TIP,len:.11,tat:true});
- F(H,{pos:[0,.95,.3],sc:[.3,.22,.3],root:0x9a6234,tip:0xe0aa6c,len:.13});
- F(H,{pos:[.16,.93,.25],sc:[.16,.16,.2],rot:[0,0,-.4],root:0x9a6234,tip:0xe0aa6c,len:.1});
+ F(H,{sc:[1.1,1,1.02],root:ROOT,tip:TIP,len:.05,tat:true});   // kurzes Fell wie beim Schwein (gleich groß), ohne Haarbüschel
  for(const s of [-1,1]){
-  K(H,{pos:[s*.34,-.02,.92],sc:[.42,.38,.18],color:0xffe2c2,spec:30});
-  F(H,{pos:[s*1.0,.12,-.05],sc:[.14,.36,.36],root:ROOT,tip:0x9a6a3c,len:.05,tat:true});
-  K(H,{pos:[s*1.1,.12,0],sc:[.07,.25,.25],color:0xe9a38f,spec:10});
-  { const e = K(H,{pos:[s*.36,.16,1.07],sc:[.23,.28,.11],color:0x1a0f0b,spec:140}); eyes.push({n:e, g:glints(H,s*.36,.16,1.07,s), y:.26}); }
+  K(H,{pos:[s*.34,-.02,.82],sc:[.42,.38,.14],color:0xffe2c2,spec:30});   // Gesichtsfeld flacher (Augen stehen von der Seite nicht mehr ab)
+  F(H,{pos:[s*.97,.32,-.05],sc:[.12,.28,.28],root:ROOT,tip:TIP,len:.04,tat:true});   // Ohren höher und kleiner: frei von den Armen
+  K(H,{pos:[s*1.05,.32,0],sc:[.06,.19,.19],color:0xe9a38f,spec:10});
+  { const e = K(H,{pos:[s*.36,.16,.96],sc:[.21,.26,.1],color:0x1a0f0b,spec:140}); eyes.push({n:e, g:glints(H,s*.36,.16,.96,s), y:.26}); }
   K(H,{pos:[s*.66,-.2,.78],sc:[.22,.14,.06],color:0xff8f9a,alpha:.65});
-  F(H,{pos:[s*.36,.5,.86],sc:[.22,.07,.09],rot:[0,0,-s*.25],root:0x6a4020,tip:0xa8703c,len:.05,grav:.01});
+  F(H,{pos:[s*.36,.48,.84],sc:[.22,.07,.08],rot:[0,0,-s*.25],root:0x8a5a30,tip:0xb8804a,len:.04,grav:.01});
 }
  K(H,{pos:[0,-.42,.88],sc:[.52,.38,.34],color:0xffeacb,spec:34});
  K(H,{pos:[0,-.28,1.185],sc:[.1,.065,.05],color:0x4b2d22,spec:60});
  const mp=[];for(let i=0;i<=10;i++){const x=-.25+i*.05;const y=-.5-.11*(1-(x/.25)**2);const q=Math.max(0,1-(x/.52)**2-((y+.42)/.38)**2);mp.push([x,y,.88+.34*Math.sqrt(q)+.012])}
  K(H,{geo:tube(mp,.03,.03,1,30,8),color:0x5a2f25});
  K(H,{pos:[0,-.585,1.14],sc:[.1,.05,.04],color:0xff7d8f,spec:40});
- const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.3,1.5,.1]}));
+ const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.38,1.42,.1]}));   // Arme wie beim Schwein (nicht an den Ohren)
   F(A,{pos:[0,-.3,0],sc:[.2,.4,.2],root:ROOT,tip:TIP,len:.08,tat:true});K(A,{pos:[0,-.75,.04],sc:[.19,.19,.19],color:0xffe2c2,spec:30});for(const fx of [-.09,0,.09])K(A,{pos:[fx,-.9+Math.abs(fx)*.3,.1],sc:[.065,.085,.065],color:0xffe2c2,spec:30});K(A,{pos:[-s*.17,-.78,.08],sc:[.06,.08,.06],color:0xffe2c2,spec:30});AP.push(A)}
  const LP=[];for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,.7,.1]}));
   F(L,{pos:[0,-.12,0],sc:[.3,.3,.32],root:ROOT,tip:TIP,len:.08});
@@ -165,10 +163,10 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x95592e,TIP=0x
  const TL=R.add(new Nd({pos:[0,1.2,-.7]})); TL.segs=[];   // Schwanz aus Gliedern: kann sich ein- und ausrollen
  { let par=TL; const NS=7, SEG=.33;
    for(let i=0;i<NS;i++){ const Si=par.add(new Nd({pos:i?[0,0,-SEG]:[0,0,0]})), rd=.14-.011*i;
-     F(Si,{geo:tube([[0,0,0],[0,0,-SEG/3],[0,0,-2*SEG/3],[0,0,-SEG]],rd,rd-.011,SHELLS,10,10),root:ROOT,tip:0x9a6a3c,len:.06,tile:[.9,.2],grav:.02});
-     F(Si,{sc:[rd,rd,rd],root:ROOT,tip:0x9a6a3c,len:.06,dens:30});
+     F(Si,{geo:tube([[0,0,0],[0,0,-SEG/3],[0,0,-2*SEG/3],[0,0,-SEG]],rd,rd-.011,SHELLS,10,10),root:ROOT,tip:TIP,len:.06,tile:[.9,.2],grav:.02});
+     F(Si,{sc:[rd,rd,rd],root:ROOT,tip:TIP,len:.06,dens:30});
      TL.segs.push(Si); par=Si; }
-   F(par,{pos:[0,0,-SEG],sc:[.12,.12,.12],root:0x7b5530,tip:0xf0cd96,len:.05,dens:30}); }
+   F(par,{pos:[0,0,-SEG],sc:[.12,.12,.12],root:ROOT,tip:0xf0cd96,len:.05,dens:30}); }
  for(const A of AP){A.kids.forEach((q,i)=>{q.sc=i===0?[q.sc[0]*1.35,q.sc[1],q.sc[2]*1.35]:q.sc.map(v=>v*1.45)})}
  for(const L of LP){L.kids[0].visible=false;for(const q of L.kids.slice(1)){q.pos=q.pos.map(v=>v*1.98);q.sc=q.sc.map(v=>v*1.98)}L.pos[1]=.01+.7*1.98;L.base=L.pos.slice()}
  for(const k of R.kids){if(LP.includes(k))continue;if(AP.includes(k)){k.pos=[k.pos[0],k.pos[1]+.12,k.pos[2]];continue}k.pos=[k.pos[0],k.pos[1]-.22,k.pos[2]]}
@@ -429,7 +427,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(now > S.nb){ S.bl = now + 130; S.nb = now + 2200 + Math.random()*2800; }
     const zu = now < S.bl;
     for(const e of ch.eyes){ e.n.sc = [e.n.sc[0], zu ? e.y*.16 : e.y, e.n.sc[2]]; for(const g of e.g) g.visible = !zu; }
-    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*(male?1.13:1.14), (1 + sq)*(male?1.05:1), (1 - sq*.5)*(male?1.13:1.14)];
+    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14, (1 + sq), (1 - sq*.5)*1.14];
     // in die kleine Leinwand zeichnen
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);

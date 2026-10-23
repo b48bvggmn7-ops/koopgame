@@ -70,5 +70,11 @@
   "spalte": 401,
   "regel": "Bahn",
   "grund": "Kristallhöhle-Ziel: zweiter Haken vor dem hohen Ziel-Podest – nur bei weitem Ausschlag mit voller Seillänge streift man die Podestkante; man lässt vorher los und springt per Dash hoch (mit kleinerer Reichweite schafft der Bot die Kette nicht)"
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "spalte": 778,
+  "regel": "Bahn",
+  "grund": "Lichtweiche: Hochzieh-Haken neben dem Platten-Sims – man springt gerade hoch, zieht sich hoch (W) und steigt aufs Sims; geschwungen wird hier nicht"
  }
 ]

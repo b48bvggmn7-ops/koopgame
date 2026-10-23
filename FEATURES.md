@@ -1557,6 +1557,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
+- Affe überarbeitet (Nutzerwunsch): ganz hellbraun ohne dunklen „Hut“ (keine Haarbüschel oben, Fell überall gleich hell und
+  kurz wie beim Schweinchen), gleich groß wie das Schweinchen (gleiche Streckung), Augen sitzen flacher im Gesicht (stehen von der
+  Seite nicht mehr ab), Ohren höher und kleiner und die Arme etwas tiefer/weiter außen – Ohren und Arme berühren sich nicht mehr.
 - Affe und Schweinchen werden als echte 3D-Figuren mit Fell gezeichnet (WebGL2, eigene kleine Leinwand je Bild, als Bild an die
   Stelle der Figur gemalt). Nur Zeichnen: Physik, Kollision, Kamera, Stauchen, Schatten und Seil bleiben die des Spiels.
   Immer an (Taste 3 zum Umschalten auf die bisherigen Figuren entfernt, Nutzerwunsch). Schritte: fest „viele kleine“
