@@ -28,5 +28,11 @@
   "spalte": 14,
   "regel": "Ring",
   "grund": "Boss-Arena Bruno: die zwei Haken greift man direkt vom Arena-Boden (lange Seile, 10,5 Kästchen) – so ist der Kampf gebaut (Test boss_bruno: Haken vom Boden erreichbar); in der kleinen Arena geht das nicht ohne Bodennähe"
+ },
+ {
+  "level": "ruinen/04-sonnentempel.json",
+  "spalte": 316,
+  "regel": "Bahn",
+  "grund": "Flammen-Kamin 295: zweiter Haken direkt vor dem hohen Landeturm – nur mit eingezogenem Seil (¾) streift man die Turmkante; so ist die Stelle gemessen spielbar (andere Stellungen schafft der Bot nicht)"
  }
 ]
