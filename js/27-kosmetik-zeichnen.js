@@ -16,9 +16,15 @@ function cosNewState(){ return {parts:[], hist:[], pet:null, tick:0, sparks:[]};
 function cosResetState(){ COS_STATE.m = cosNewState(); COS_STATE.f = cosNewState(); }
 const cosRand = (a, b) => a + Math.random()*(b - a);
 
+// Größe der Figur im Spiel im Verhältnis zur Kugel (1 = r 21): die 3D-Figuren (33-figuren-3d.js) sind kleiner
+// (`figur3dMass`, z. B. 0,9) -> Schein, kreisende Objekte, Spur und Begleiter schrumpfen mit, um den Punkt an den Füßen.
+function cosFigurMass(){
+  return (typeof neueFigurenAn === 'function' && neueFigurenAn() && window.figur3dMass) || 1;
+}
 // Kugel-Daten einer Spielfigur (Weltkoordinaten; Mitte des Gesichts)
 function playerRig(P){
-  return {x:P.x, y:P.y - P.h*0.5 + 5, r:21, roll:P.rollAngle || 0, vx:P.vx, vy:P.vy, grounded:P.grounded, facing:P.facing || 1};
+  const f = cosFigurMass(), fuss = P.y + 4;   // 4 px: die Figur steht im Gras (wie in 33-figuren-3d.js)
+  return {x:P.x, y:fuss - (fuss - (P.y - P.h*0.5 + 5))*f, r:21*f, roll:P.rollAngle || 0, vx:P.vx, vy:P.vy, grounded:P.grounded, facing:P.facing || 1};
 }
 
 // ===== Schritt im festen Takt: Spur-Partikel erzeugen/bewegen, Bahn merken, Begleiter nachziehen =====
@@ -48,8 +54,9 @@ function cosStep(rig, st, who, items){
   const pet = items.pet;
   if(pet){
     const flyer = ['ghost', 'bat', 'robot'].includes(pet.fx.kind);
-    if(!st.pet) st.pet = {x:rig.x - rig.facing*40, y:rig.y + rig.r, vy:0, ground:rig.y + rig.r, face:rig.facing, idle:0, hop:0};
-    const pt = st.pet, back = rig.facing*(flyer ? 34 : 42);
+    const gr = rig.r/21;   // kleinere Figur -> Begleiter näher dran
+    if(!st.pet) st.pet = {x:rig.x - rig.facing*40*gr, y:rig.y + rig.r, vy:0, ground:rig.y + rig.r, face:rig.facing, idle:0, hop:0};
+    const pt = st.pet, back = rig.facing*(flyer ? 34 : 42)*gr;
     const tx = rig.x - back, groundY = rig.grounded ? rig.y + rig.r : pt.ground;
     pt.x += (tx - pt.x)*0.12;
     if(Math.abs(tx - pt.x) > 2) pt.face = Math.sign(tx - pt.x) || pt.face;
@@ -73,7 +80,7 @@ function newTrailPart(fx, rig, move){
   const back = -Math.sign(rig.vx || rig.facing);
   const p = {kind:k, col, x:rig.x + back*rig.r*0.6 + cosRand(-4, 4), y:rig.y + cosRand(-rig.r*0.5, rig.r*0.8),
              vx:back*cosRand(0.2, 1.2), vy:cosRand(-0.6, 0.3), g:0, drag:0.97, life:40, max:40,
-             size:cosRand(3, 6)*(0.7 + move*0.6), rot:Math.random()*6, vr:cosRand(-0.1, 0.1)};
+             size:cosRand(3, 6)*(0.7 + move*0.6)*rig.r/21, rot:Math.random()*6, vr:cosRand(-0.1, 0.1)};
   if(k === 'puff'){ p.y = rig.y + rig.r*0.8; p.vy = cosRand(-0.5, -0.1); p.size *= 1.4; p.life = p.max = 34; }
   if(k === 'bubble'){ p.vy = cosRand(-1.2, -0.4); p.life = p.max = 55; }
   if(k === 'leaf'){ p.g = 0.04; p.vr = cosRand(-0.15, 0.15); p.life = p.max = 60; }
@@ -299,11 +306,11 @@ function drawSaturn(c, x, y, r, layer, t){
 }
 
 // Begleiter zeichnen (Weltposition aus dem Zustand)
-function drawPet(c, st, item, ox, who){
+function drawPet(c, st, item, ox, who, gr = 1){   // gr: Größe der Figur (cosFigurMass)
   if(!item || !st || !st.pet) return;
   const k = item.fx.kind, pt = st.pet, x = pt.x - ox, t = performance.now();
   const idle = pt.idle > 90, bob = Math.sin(t*0.008)*(idle ? 1.5 : 0.6);
-  c.save(); c.translate(x, pt.y); c.scale((pt.face < 0 ? -1 : 1)*1.45, 1.45);   // 1,45× – sonst zu klein neben der Figur
+  c.save(); c.translate(x, pt.y); c.scale((pt.face < 0 ? -1 : 1)*1.45*gr, 1.45*gr);   // 1,45× – sonst zu klein neben der Figur
   const eye = (ex, ey, s) => { c.fillStyle = '#1d1a1f'; c.beginPath(); c.arc(ex, ey, s || 1.3, 0, Math.PI*2); c.fill(); };
   switch(k){
     case 'snail':
@@ -613,18 +620,22 @@ function cosmeticsStep(){
     cosStep(playerRig(P), COS_STATE[who], who, cosItemsOf(who));
   }
 }
+// Schein und kreisende Objekte im Maß der Kugel (r 21) zeichnen und als Ganzes auf die Figurgröße verkleinern –
+// so schrumpfen auch Strichstärken und kleine Teile (Sterne, Blasen) mit
+function cosMitMass(rig, x, f){
+  const k = rig.r/21;
+  ctx.save(); ctx.translate(x, rig.y); ctx.scale(k, k); f(); ctx.restore();
+}
 // hinter der Figur (vor dem Körper aufgerufen, Bildschirmkoordinaten)
 function cosmeticsDrawBack(P, camX){
   const who = P === p1 ? 'm' : 'f', it = cosItemsOf(who), st = COS_STATE[who], rig = playerRig(P), x = rig.x - camX;
   drawTrail(ctx, rig, st, it.trail, camX);
-  drawPet(ctx, st, it.pet, camX, who);
-  drawAura(ctx, x, rig.y, rig.r, it.aura, 'back');
-  drawOrbit(ctx, x, rig.y, rig.r, it.orbit, 'back');
+  drawPet(ctx, st, it.pet, camX, who, rig.r/21);
+  cosMitMass(rig, x, () => { drawAura(ctx, 0, 0, 21, it.aura, 'back'); drawOrbit(ctx, 0, 0, 21, it.orbit, 'back'); });
 }
 // vor der Figur
 function cosmeticsDrawFront(P, camX){
   const who = P === p1 ? 'm' : 'f', it = cosItemsOf(who), st = COS_STATE[who], rig = playerRig(P), x = rig.x - camX;
-  drawAura(ctx, x, rig.y, rig.r, it.aura, 'front');
-  drawOrbit(ctx, x, rig.y, rig.r, it.orbit, 'front');
+  cosMitMass(rig, x, () => { drawAura(ctx, 0, 0, 21, it.aura, 'front'); drawOrbit(ctx, 0, 0, 21, it.orbit, 'front'); });
   drawPrestigeSparkle(ctx, x, rig.y, st);
 }

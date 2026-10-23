@@ -8,7 +8,8 @@
   'use strict';
   const QS = new URLSearchParams(location.search);
   const SPR = 256, FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
-  const SC = 17*0.9;                                   // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 50 px)
+  const FIGUR_GROESSE = 0.9;                       // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
+  const SC = 17*FIGUR_GROESSE;                     // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 45 px)
   const FR = {x0:-2.4, x1:2.4, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0)
   if(typeof window.fussFigurZeichnen !== 'function') return;
   // ---------- 3D-Teil (eigene kleine Welt, getrennt vom Spiel) ----------
@@ -204,6 +205,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   let E;
   try { E = baue(); } catch(e){ console.warn('3D-Figuren nicht verfügbar:', e); return; }
   const {gl, PRG, U, M, Nd, buildMonkey, buildPig, drawNode, cv, noise, TAT} = E;
+  window.figur3dMass = FIGUR_GROESSE;   // nur wenn die 3D-Figuren wirklich zeichnen (sonst bleibt die Umkleide im alten Maß)
   // ---------- Tattoo als Fell-Textur (Umkleide, Muster aus js/27 tattooPattern) ----------
   // Das Muster (für die Gesichtsscheibe gemacht, Einheitskreis) wird von vorn auf die vordere Kugelhälfte gelegt und gespiegelt
   // auf die hintere – so geht es rund um die ganze Figur, wölbt sich mit und dreht sich mit (Kopf/Körper, Arme, Ohren).
@@ -449,6 +451,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const hp = handPunkt(ch.armP, 0, -.75*(ch.armP.alF||1), .04), h2 = handPunkt(ch.armN, 0, -.75*(ch.armN.alF||1), .04), hd = dev(0, 2.4);
     const a = dev(hp[0], hp[1]), b = dev(h2[0], h2[1]);
     P._handDev = {x: a.x, y: a.y, f: P._frameNo = (P._frameNo||0) + 1}; P._hand2Dev = {x: b.x, y: b.y}; P._headDev = {x: hd.x, y: hd.y};
+    { const fu = dev(0, 0); P._fussDev = {x: fu.x, y: fu.y, skala: Math.hypot(Tm.a, Tm.b)}; }   // für Tests: Fußpunkt und Maßstab (Gerätepixel je Spielpixel)
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.shadowColor = 'rgba(46,28,14,.8)'; c.shadowBlur = Math.max(1, Math.min(5, 1.5*Math.hypot(Tm.a, Tm.b))); c.shadowOffsetX = 0; c.shadowOffsetY = 0;   // weiche dunkle Kontur
     c.drawImage(cv, FR.x0*SC, fy - FR.y1*SC - IT.hop*42, (FR.x1 - FR.x0)*SC, (FR.y1 - FR.y0)*SC);

@@ -6389,6 +6389,56 @@ async def figuren3d_haft_arme(g):
     m, f = r[-1]
     assert m > 2 and abs(m - f) < 0.05, f'Arme an der Haftfläche: Affe {m:.2f}, Schwein {f:.2f} – sollen gleich lang sein'
 
+# 3D-Figuren über das normale Spielbild zeichnen (draw(): Kamera, Zoom, Umkleide) – n Bilder, je 50 ms; ohne Leerlauf-Tricks
+F3D_BILD = """(o) => { menuScreen = 'pause';
+  for(let i = 0; i < o.n; i++){
+    for(const P of [p1, p2]) if(P._f3){ P._f3.t = performance.now() - 50; P._f3.is = performance.now(); P._f3.it = null; P._f3.trick = null; }
+    if(o.vorher) Function(o.vorher)();
+    draw();
+  }
+  return o.merk ? Function('return (' + o.merk + ')')() : null; }"""
+F3D_PIXEL = """(([x, y]) => { const d = document.querySelector('canvas').getContext('2d').getImageData(Math.round(x), Math.round(y), 1, 1).data; return [d[0], d[1], d[2]]; })"""
+
+@test
+async def figuren3d_groesse_umkleide(g):
+    """3D-Figuren 10 % kleiner (figuren-rund): Kopfhöhe über den Füßen = 2,4 Einheiten × 17 × 0,9 px. Die Umkleide-Effekte im
+    Spiel schrumpfen mit (cosFigurMass = figur3dMass = 0,9): Kugel-Radius 21 -> 18,9, Mitte im selben Verhältnis über den
+    Füßen; der Begleiter läuft 42 × 0,9 px hinter der Figur. Ohne 3D (figur3dMass fehlt) bleibt alles im alten Maß."""
+    await f3d_bereit(g)
+    try:
+        r = await g.p.evaluate(F3D_BILD, {'n': 5, 'vorher': "p1._yawTest = 0",
+                                           'merk': "[(p1._fussDev.y - p1._headDev.y)/p1._fussDev.skala, window.figur3dMass, cosFigurMass(), playerRig(p1).r, playerRig(p1).y - p1.y]"})
+        kopf, mass, f, rr, dy = r
+        assert mass == 0.9 and f == 0.9, f'Figuren-Maß falsch: {r}'
+        assert abs(kopf - 2.4*17*0.9) < 0.6, f'Kopfhöhe {kopf:.2f} px statt {2.4*17*0.9:.2f} (10 % kleiner)'
+        assert abs(rr - 18.9) < 0.01 and abs(dy - (4 - (4 + p_h_halb_minus5())*0.9)) < 0.05, f'Umkleide-Kugel nicht mitgeschrumpft: {r}'
+        hinten = await g.ev("""(() => { cosmeticsReset(); cosResetState(); cosmeticsSave.owned.m.pet_mouse = 1; equipItem('m', 'pet_mouse');
+          p1.facing = 1; p1.vx = 0; p1.grounded = true; for(let i = 0; i < 200; i++) cosmeticsStep(); return p1.x - COS_STATE.m.pet.x; })()""")
+        assert abs(hinten - 42*0.9) < 0.5, f'Begleiter-Abstand {hinten:.1f} statt {42*0.9}'
+        alt = await g.ev("(() => { const m = window.figur3dMass; delete window.figur3dMass; const r = [cosFigurMass(), playerRig(p1).r]; window.figur3dMass = m; return r; })()")
+        assert alt == [1, 21], f'ohne 3D-Figuren soll die Umkleide im alten Maß bleiben: {alt}'
+    finally:
+        await g.ev("p1._yawTest = null; cosmeticsReset(); cosResetState(); menuScreen = null")
+
+def p_h_halb_minus5():   # Abstand Kugel-Mitte -> P.y im alten Maß (P.h/2 - 5, Figurenhöhe 32,3)
+    return 32.3/2 - 5
+
+@test
+async def figuren3d_kapuziner_affe(g):
+    """Neuer 3D-Affe (Kapuziner): von vorn sitzt oben auf dem Kopf eine dunkle Fellkappe (dunkelbraun, nicht das helle Gesicht
+    und nicht pink wie beim Schwein). Die Kappe trägt KEIN Tattoo (bewusst: wirkt wie Haare) – mit Tattoo bleibt sie dunkel."""
+    await f3d_bereit(g)
+    try:
+        for tattoo in (False, True):
+            if tattoo: await g.ev("for(const w of ['m', 'f']){ cosmeticsSave.owned[w].tat_heart = 1; equipItem(w, 'tat_heart'); }")
+            pk = await g.p.evaluate(F3D_BILD, {'n': 6, 'vorher': "p1._yawTest = p2._yawTest = 0",
+                                                'merk': "[[p1._headDev.x, p1._headDev.y], [p2._headDev.x, p2._headDev.y]]"})
+            affe = await g.p.evaluate(F3D_PIXEL, pk[0]); schwein = await g.p.evaluate(F3D_PIXEL, pk[1])
+            assert affe[0] < 160 and affe[1] < 115 and affe[0] > affe[2] + 30, f'Affe ohne dunkle Fellkappe (Tattoo {tattoo}): {affe}'
+            if not tattoo: assert schwein[0] > 200 and schwein[0] > schwein[1] + 20, f'Schwein oben nicht pink: {schwein}'
+    finally:
+        await g.ev("p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
+
 @test
 async def figuren3d_brille_tattoo(g):
     """3D-Figuren: Brille aus der Umkleide sitzt auf den 3D-Augen (von vorn beide Gläser, von der Seite ein schmales Glas);
@@ -6400,9 +6450,9 @@ async def figuren3d_brille_tattoo(g):
           window.__gl = 0; window.__ta = 0; window.__og = drawGlasses; window.__ot = drawTattoo;
           drawGlasses = (...a) => {{ __gl++; return __og(...a); }}; drawTattoo = (...a) => {{ __ta++; return __ot(...a); }}; }})()""")
         # Bildausschnitt der Figur (Hauptleinwand, Webserver -> lesbar) mit und ohne Tattoo vergleichen
-        ausschnitt = f"""(() => {{ const cv = document.querySelector('canvas'), k = cv.width/W, P = {figur};
-          const x = Math.round(((P.x - camX)/VW*W - 40)*k), y = Math.round((P.y/H*H - 70)*k);
-          return Array.from(cv.getContext('2d').getImageData(x, y, Math.round(80*k), Math.round(70*k)).data); }})()"""
+        # Ausschnitt um die gezeichnete Figur (Fußpunkt aus der 3D-Figur, Figur ~45 px hoch – 10 % kleiner)
+        ausschnitt = f"""(() => {{ const cv = document.querySelector('canvas'), P = {figur}, F = P._fussDev, k = F.skala;
+          return Array.from(cv.getContext('2d').getImageData(Math.round(F.x - 32*k), Math.round(F.y - 52*k), Math.round(64*k), Math.round(56*k)).data); }})()"""
         try:
             await g.p.evaluate(F3D_ZEICHNEN, {'n': 6, 'wer': 'beide', 'vorher': f"{figur}._yawTest = 0; draw()"})
             ohne = await g.ev(ausschnitt)

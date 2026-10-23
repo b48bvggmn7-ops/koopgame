@@ -1544,6 +1544,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   Kombi, Schweinchen Schraube/Pirouette/Kombi), Laufen, Sprung (Arme hoch/seitlich), Sprung-Tricks (Salto, Drehung,
   Schraube), Wandsprung-Salto, Wand-Rutschen, Haftfläche (Arme greifen abwechselnd, nie über den Rand), Seil (Hand über
   Hand), Dash (eingerollte Rolle), Schirm-Gleiten (bisheriger 2D-Schirm über der Figur).
+- Größe und Aussehen (Zweig figuren-rund): beide Figuren 10 % kleiner (`FIGUR_GROESSE` 0,9 in js/33: Spielpixel je 3D-Einheit
+  17 × 0,9 ≈ 15,3, Figur ~45 px statt ~50 px hoch; Kopf rund statt breit, Arme näher am Körper, Abstand beim Siegestanz 44 statt
+  50 px). Nur Zeichnen – Hitbox und Physik unverändert (Test bahnen_alte_mechaniken). Neuer Affe: Kapuziner – heller, runder Kopf
+  mit dunkler Fellkappe oben, kleine runde Ohren seitlich (rosa innen), ohne den hellen Haarbüschel oben und ohne Fell-Augenbrauen; Fell dunkler braun.
+  Tests figuren3d_groesse_umkleide, figuren3d_kapuziner_affe.
 - Haftfläche: Affe und Schweinchen haben beim Hangeln dieselbe Armlänge (Faktor 3,0, `HAFT_ARM`; Affe vorher 4,5 –
   Nutzerwunsch). Test figuren3d_haft_arme.
 - Hebel: die Figur dreht sich zum Hebel ins Profil, greift mit langem Arm nach vorn und zieht herunter. Test figuren3d_hebel.
@@ -1559,6 +1564,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   (vor und nach dem Licht, damit es kräftig bleibt) – wölbt sich mit, dreht sich mit, auch von der Seite und hinten sichtbar;
   Augen, Schnauze und Gesichtsmaske liegen darüber und bleiben frei. Früher ein flaches Bild über dem Gesicht.
   Roll-Spur, Aura, Begleiter und kreisende Objekte wie bisher um die Figur. Test figuren3d_brille_tattoo.
+  Kleinere Figuren: Schein/Aura, kreisende Objekte, Spur und Begleiter schrumpfen im Spiel mit (`cosFigurMass` in js/27 =
+  `figur3dMass` aus js/33, nur wenn die 3D-Figuren wirklich zeichnen): Kugel-Radius 21 -> 18,9, Mitte im selben Verhältnis über
+  den Füßen, Schein und kreisende Objekte als Ganzes verkleinert (auch Strichstärken/kleine Teile), Spur-Teilchen kleiner,
+  Begleiter 0,9 × so groß und 42 × 0,9 px hinter der Figur. Die Umkleide-Vorschau (rollende Kugel) bleibt unverändert.
+  Tattoo beim Kapuziner-Affen: liegt auf Gesicht, Körper, Armen und Ohren, NICHT auf der dunklen Fellkappe (bewusst: die Kappe
+  wirkt wie Haare, auf dem dunklen Braun wäre das Muster kaum zu sehen).
 - Kein WebGL2 oder nur Software-Grafik (z. B. SwiftShader, wenn Chrome die Grafikkarte nicht nutzt – dort kostet eine Figur
   ~0,5 s je Bild): die bisherigen Figuren bleiben. Erzwingen zum Ausprobieren/Testen: ?d3=1 oder window.figuren3dErzwingen.
   (Der automatische Testrechner hat nur Software-Grafik: die großen Tests laufen dort mit den bisherigen Figuren, die
