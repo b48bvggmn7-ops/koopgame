@@ -4,6 +4,7 @@
 // Plan-Schritte: {hold:[...], until:'Bedingung'} · {press:[...]} · {frames:n} · {wait:'Bedingung'} · {use:true}
 //   {climb:true, until} (Kamin/Wandsprung) · {aim:[x...], jumps:[x...], until} (Pilz-Ketten)
 //   {swing:true, pull, release:'Bedingung'} (am Haken schwingen, loslassen) · hookWhen:'Bedingung' (Haken greifen)
+//   {schleuder:true, zug:-1|1, spannung} (Seil an den Schleuder-Ring, in Richtung zug spannen, loslassen)
 // In Bedingungen: P = diese Figur, Q = die andere, f = Bilder seit Schrittbeginn.
 window.coopRun = function(o){
   resetLevel();
@@ -58,6 +59,14 @@ window.coopRun = function(o){
         if(!P.grounded && P.vy < 0) hold('jump');
         if(step.glide && P.vy > 0) hold('glide');
         if(ev(step.until)) done = true;
+      } else if(step.schleuder){
+        // Schleuder (elemente/schleuder.js): Seil an den Ring (G), in Richtung zug weglaufen bis zur Spannung, G loslassen
+        if(!P.schleuder){ if(S.att++ === 0) press('hook'); else done = true; }
+        else {
+          hold('hook'); S.att++;
+          if(schleuderSpannung(P) < (step.spannung || SCHLEUDER_MAX - 2) && f - S.t0 < (step.frames || 240)) hold(step.zug < 0 ? 'left' : 'right');
+          else done = true;   // nächstes Bild ohne G = loslassen
+        }
       } else if(step.swing){
         // am Haken: Schwung holen in Bewegungsrichtung, ggf. ranziehen, loslassen bei Bedingung
         if(!P.hookAttached){ done = true; }

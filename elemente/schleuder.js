@@ -1,8 +1,10 @@
 // elemente/schleuder.js – Element „Schleuder“ (Punkt-Element; Aufbau siehe 00-register.js). Nutzerwunsch: zweites
-// Haken-Element neben dem Schwung-Haken. Oben ein Haken, darunter (1–4 Reihen) ein Ring an einem Gummiband. Der Affe wirft
-// sein Seil an den Ring (Haken-Taste G gedrückt halten), läuft ein Stück weg und spannt das Seil wie ein Gummi. Lässt er
-// die Taste los, schleudert ihn das Gummi zurück in Richtung Ring und schräg nach oben – je stärker gespannt, desto
-// kräftiger, voll gespannt etwa 4,5 Reihen hoch und 6–7 Spalten weit (bewusst „nur ein bisschen“). Springen löst ohne Schub.
+// Haken-Element neben dem Schwung-Haken. Oben ein Haken (an der Kante, auf die es hinaufgeht), darunter (1–8 Reihen) ein
+// Ring an einem Gummiband. Der Affe wirft sein Seil an den Ring (Haken-Taste G gedrückt halten), läuft ein Stück weg und
+// spannt das Seil wie ein Gummi. Lässt er die Taste los, schleudert ihn das Gummiband hinauf zum Haken: voll gespannt bis
+// knapp über die Haken-Höhe und ein kleines Stück darüber hinaus (bewusst „nur ein bisschen“) – weniger gespannt
+// entsprechend kürzer. So passt die Schleuder zu jeder Kanten-Höhe (ersetzt die alten Aufzug-Haken, an denen man beim
+// Hochziehen an die Kante stieß). Springen löst ohne Schub.
 // Rolle: nur der Affe (er braucht sein Seil) – er kommt so auf eine Kante und hilft oben dem Schweinchen weiter (Hebel,
 // Druckplatte, Tür); das Schweinchen braucht dafür einen eigenen Weg (Schirm, Aufwind, Pilz).
 // Im Spiel: schleudern = [{x, y (Haken), rx, ry (Ring)}]; der Zustand am Affen steht in P.schleuder = {s}.
@@ -12,8 +14,9 @@ const SCHLEUDER_GREIF = 110;      // so nah (Hände -> Ring, px) muss der Affe s
 const SCHLEUDER_RUHE = 34;        // ungespannte Seillänge (px)
 const SCHLEUDER_MAX = 120;        // so weit lässt sich das Seil höchstens spannen (px über SCHLEUDER_RUHE)
 const SCHLEUDER_MIN = 24;         // darunter gibt es beim Loslassen keinen Schub
-const SCHLEUDER_VX = 6;           // Abflug bei voller Spannung: seitlich (px/Schritt) …
-const SCHLEUDER_VY = -15.5;       // … und nach oben (Springen: -12,6) – ca. 4,5 Reihen hoch, 6–7 Spalten weit
+const SCHLEUDER_UEBER = 14;       // voll gespannt: die Füße kommen bis so weit (px) über die Haken-Mitte …
+const SCHLEUDER_WEITER = 44;      // … und fliegen so weit (px) über den Haken hinaus (dann landet er auf der Kante)
+const SCHLEUDER_HOEHE_MAX = 340;  // höchstens so hoch (px, Füße) – darüber ist der Haken zu hoch für die Schleuder
 const SCHLEUDER_ZUG = 0.9;        // Lauftempo beim Spannen (Anteil von MOVE_SPEED, wird zum Ende hin langsamer)
 const SCHLEUDER_RUECK = 0.025;    // ohne Taste zieht das Gummi den Affen langsam zurück (Anteil der Spannung je Schritt)
 let schleudern = [];
@@ -39,8 +42,12 @@ function schleuderLos(P, schub){
   const k = schub ? Math.max(0, Math.min(1, (schleuderSpannung(P) - SCHLEUDER_MIN)/(SCHLEUDER_MAX - SCHLEUDER_MIN))) : 0;
   P.schleuder = null;
   if(k > 0){
-    const richtung = Math.sign(S.s.rx - P.x) || -P.facing || 1;   // zurück Richtung Ring (und darüber hinaus)
-    P.vx = richtung*SCHLEUDER_VX*k; P.vy = SCHLEUDER_VY*k;
+    // Bahn zum Haken: Gipfel (Füße) knapp über dem Haken und ein Stück dahinter; weniger Spannung = kleinere Bahn (√k)
+    const H = S.s, richtung = Math.sign(H.x - P.x) || Math.sign(H.rx - P.x) || P.facing || 1;
+    const hoch = Math.min(SCHLEUDER_HOEHE_MAX, Math.max(40, P.y - (H.y - SCHLEUDER_UEBER)));
+    const vy = Math.sqrt(2*GRAVITY*hoch), t = vy/GRAVITY;
+    const weit = Math.abs(H.x + richtung*SCHLEUDER_WEITER - P.x);
+    P.vx = richtung*(weit/t)*Math.sqrt(k); P.vy = -vy*Math.sqrt(k);
     P.grounded = false; P.ropeFling = true; P.facing = richtung;
     P.schleuderSchub = k;
     if(typeof SFX !== 'undefined' && SFX.schleuder) SFX.schleuder(P, k);
@@ -127,12 +134,13 @@ elementRegistrieren({
   id: 'schleuder', name: 'Schleuder', feld: 'schleudern',
   editor: {
     werkzeug: 'schleuder', gruppe: 'haken', vor: 'move', art: 'punkt', ziehbar: false,
-    titel: 'Schleuder: Haken mit Gummiband und Ring darunter. Der Affe wirft sein Seil an den Ring (G halten), läuft weg ' +
-           'und spannt es; G loslassen schleudert ihn zurück und schräg hoch (ca. 4 Reihen). Nur der Affe.',
+    titel: 'Schleuder: Haken (an die Kante setzen) mit Gummiband und Ring darunter (am Boden). Der Affe wirft sein Seil an den ' +
+           'Ring (G halten), läuft weg und spannt es; G loslassen schleudert ihn hinauf zum Haken und knapp darüber. Nur der Affe.',
     farbe: '#c8643c',
     optionen: [
       {key: 'unten', label: 'Ring', zahl: true, titel: 'so viele Reihen unter dem Haken hängt der Ring',
-       werte: [['3', '3 Reihen tiefer'], ['2', '2 Reihen tiefer'], ['4', '4 Reihen tiefer'], ['1', '1 Reihe tiefer']]},
+       werte: [['3', '3 Reihen tiefer'], ['1', '1 Reihe tiefer'], ['2', '2 Reihen tiefer'], ['4', '4 Reihen tiefer'], ['5', '5 Reihen tiefer'],
+               ['6', '6 Reihen tiefer'], ['7', '7 Reihen tiefer'], ['8', '8 Reihen tiefer']]},
     ],
     bereich: p => { const n = Number(p.unten) || 3, L = []; for(let i = 0; i <= n; i++) L.push([p.c, p.r + i]); return L; },
     zeichnen(ctx, c, r, TILE, p){

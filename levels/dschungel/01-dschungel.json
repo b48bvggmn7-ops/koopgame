@@ -2809,7 +2809,7 @@
     {
       "x": 9580,
       "y": 60,
-      "radius": 180
+      "radius": 160
     },
     {
       "x": 2940,
@@ -5808,6 +5808,7 @@
     }
   ],
   "haftflaechen": [],
+  "schleudern": [],
   "welt": "dschungel",
   "wetter": "wechselnd",
   "look": "dschungel",

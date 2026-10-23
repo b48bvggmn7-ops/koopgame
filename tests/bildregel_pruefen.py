@@ -18,6 +18,7 @@ T = 40
 BILD_MAX_SPALTEN = int(re.search(r'const BILD_MAX_SPALTEN = (\d+)', (ROOT / 'js' / '09-kamera.js').read_text(encoding='utf-8')).group(1))
 # Haken-Richtwerte (Koop-Bot-Messung, siehe WELTEN.md „Leveldesign“): Abstand in einer Reihe 5–7 Spalten
 HAKEN_ABSTAND_MIN, HAKEN_ABSTAND_MAX = 4, 8        # außerhalb -> Warnung (zu eng / zu weit)
+HAKEN_WEITE_ANTEIL = 0.9                          # größte erlaubte Haken-Lücke: 90 % der Schwung-Weite (Messung, haken_pruefen.py)
 HAKEN_HOEHE_MIN, HAKEN_HOEHE_MAX = 4, 8            # Reihen zwischen Absprung-Boden (Oberkante) und Haken
 HAKEN_REIHE_LUECKE = 10                            # weiter auseinander = neue Reihe
 LANDUNG_MIN = 3                                    # so viele Stehplätze braucht die Landung (2–10 Spalten hinter dem letzten Haken)
@@ -272,8 +273,9 @@ def haken_pruefen(d):
         z = {'von': c0, 'bis': rh[-1][0], 'anzahl': len(rh), 'reihe': r0, 'abstaende': abst, 'hoehe': hoehe, 'warnungen': []}
         for a, b in zip(rh, rh[1:]):
             s_ = b[0] - a[0]
-            # größere Reichweite erlaubt weitere Abstände (Messung mit Radius 180 = 4,5 Kästchen -> höchstens 8)
-            weit_max = max(HAKEN_ABSTAND_MAX, int(1.8 * min(a[2].get('radius', 260), b[2].get('radius', 260)) / T))
+            # Haken aufgeräumt (Nutzerwunsch): Kreise überdecken sich nicht mehr (tests/haken_pruefen.py) – erlaubt ist bis
+            # „knapp“ = 90 % der gemessenen Schwung-Weite aus einem Schwung (≈ 2,4 × Reichweite + 2,3 Spalten)
+            weit_max = max(HAKEN_ABSTAND_MAX, int(HAKEN_WEITE_ANTEIL * (2.4 * min(a[2].get('radius', 260), b[2].get('radius', 260)) / T + 2.3)))
             if s_ < HAKEN_ABSTAND_MIN: z['warnungen'].append(f'zu eng ({a[0]}→{b[0]}: {s_} Spalten)')
             if s_ > weit_max: z['warnungen'].append(f'zu weit ({a[0]}→{b[0]}: {s_} Spalten)')
         hilft = any(abs(x - c0) <= 8 for x in hilfe)   # Pilz/Aufwind im Anlauf-Bereich: die Höhe kommt von dort

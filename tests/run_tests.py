@@ -115,6 +115,9 @@ def k_hop(xj, brake, glide=False):
             {'hold': ['glide'] if glide else [], 'holdIf': {'left': 'P.vx > 0.8', 'right': 'P.vx < -0.8'}, 'until': 'P.grounded'}]
 def k_segeln(c_absprung, hold=10):
     return [k_lauf(c_absprung), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]
+def k_schleuder(c, zug=-1, d=0):
+    """Schleuder (elemente/schleuder.js): an den Ring in Spalte c laufen, Seil werfen, in Richtung zug spannen, loslassen, landen"""
+    return [k_lauf(c, d), {'frames': 6}, {'schleuder': True, 'zug': zug}, {'until': 'P.grounded && f > 5', 'frames': 300}]
 def k_haken(n, release, jump_at=None, d=0):
     """(vom Boden) springen, n Haken nacheinander greifen; release = Loslass-Bedingung je Haken"""
     st = ([k_lauf(jump_at, d)] if jump_at is not None else []) + [
@@ -1039,10 +1042,8 @@ async def level7_lianenschlucht(g):
         plan = k_hop(kx(13) + 20, 24) + k_hop(kx(17) + 20, 24) + k_hop(kx(22) + 20, 24)
         r = await koop(g, **{who: kat(3, 14), other: kat(1, 14)}, plans={who: plan}, maxFrames=2500)
         soll(k_pos(r, who) and k_pos(r, who)[1] == 8, f'Steg-Treppe {who}', r.get('pos'))
-    # 2) Seil-Aufzug: Haken, ranziehen (W), auf den Sims; Hebel 1 öffnet Tür 1
-    plan = [k_lauf(46, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-            {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
-            k_lauf(57, -10), {'use': True, 'frames': 5}]
+    # 2) Schleuder statt Seil-Aufzug (Haken aufgeräumt): auf den Sims; Hebel 1 öffnet Tür 1
+    plan = k_schleuder(51) + [k_lauf(57, -10), {'use': True, 'frames': 5}]
     r = await koop(g, m=kat(40, 14), f=kat(40, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[1]"), 'Seil-Aufzug + Hebel 1', r.get('pos'))
     # 3) Segel-Schlucht: nur das Schweinchen kommt rüber; Hebel 2 fährt die Plattform mit dem Affen
@@ -1064,9 +1065,8 @@ async def level7_lianenschlucht(g):
     # 5) Brunnen: Affe hängt am Seil (S), legt Hebel 3 um (J), zieht sich hoch (W), schwingt rüber
     plan = [k_lauf(225, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
             {'hold': ['slack'], 'until': f'P.y > {ky(12)} + 10', 'frames': 120}, {'frames': 60, 'pressIf': {'use': 'f % 10 === 0'}, 'until': '!!linkOn[3]'},
-            {'hold': ['pull'], 'until': f'P.y < {ky(12)}', 'frames': 120}, {'swing': True, 'pull': 0, 'release': f'P.x > {kx(230)} + 20 && P.vy < 0 && P.vx > 2'},
-            {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
-            {'swing': True, 'pull': 0, 'release': f'P.x > {kx(235)} + 20 && P.vy < 0 && P.vx > 1'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(239)]
+            {'swing': True, 'pull': 0, 'release': f'P.x > {kx(230)} + 60 && P.vy < 0 && P.vx > 2', 'frames': 900},   # Haken aufgeräumt: ein Haken reicht
+            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(239)]
     r = await koop(g, m=kat(220, 14), f=kat(214, 14), plans={'m': plan}, maxFrames=3000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 238 and k_pos(r, 'm')[1] == 14, 'Brunnen (Affe am Seil, Hebel 3)', r.get('pos'))
     plan = [k_lauf(225, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'hold': ['right', 'glide'], 'pressIf': {'use': 'f % 2 === 0'}, 'until': 'P.grounded', 'frames': 300}]
@@ -1078,8 +1078,7 @@ async def level7_lianenschlucht(g):
         r = await koop(g, f=kat(249, 11), m=kat(247, 11), plans={'f': k_segeln(252, hold)}, maxFrames=1500)
         ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 267.5 and k_pos(r, 'f')[1] == 15)
     soll(ok, 'Tunnel (Schweinchen)')
-    plan = [k_lauf(247, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-            {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+    plan = k_schleuder(250)   # Haken aufgeräumt: Schleuder an der Felskante statt Aufzug-Haken
     r = await koop(g, m=kat(246, 11), f=kat(243, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5, 'Affe auf den Felsen', r.get('pos'))
     # 7) Schleuse: Affe hält Platte 5, Schweinchen durch Tür 5 und über den Graben; dann Affe per Haken
@@ -1201,9 +1200,7 @@ async def level8_gluehwald(g):
     soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 34), 'Affe ohne Brücke nicht rüber', r.get('pos'))
     r = await koop(g, m=kat(19, 11), f=kat(37, 14), plans={'m': [k_lauf(40)]}, links=[1], maxFrames=1500)
     soll(r.get('done'), 'Brücke B trägt den Affen (Hebel 1 an)', r.get('pos'))
-    plan = [k_lauf(46, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-            {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
-            k_lauf(56, -10), {'use': True, 'frames': 5}]
+    plan = k_schleuder(51) + [k_lauf(56, -10), {'use': True, 'frames': 5}]   # Haken aufgeräumt: Schleuder statt Aufzug-Haken
     r = await koop(g, m=kat(40, 14), f=kat(42, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[2]"), 'Haken -> Sims -> Hebel 2 (Affe)', r.get('pos'))
     r = await koop(g, f=kat(60, 14), m=kat(56, 9), plans={'f': [{'hold': ['right'], 'frames': 120}]}, maxFrames=1000)
@@ -1238,10 +1235,8 @@ async def level8_gluehwald(g):
     if await g.ev("goal.x") < 470 * 40: assert not fehler, fehler; return
     # --- Etappe 3 ---
     ok = False
-    for jx in (298, 299, 300, 301):
-        plan = [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-                {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
-                k_lauf(310, -10), {'use': True, 'frames': 5}]
+    for jx in (0,):
+        plan = k_schleuder(305) + [k_lauf(310, -10), {'use': True, 'frames': 5}]   # Haken aufgeräumt: Schleuder statt Aufzug-Haken
         r = await koop(g, m=kat(292, 14), f=kat(294, 14), plans={'m': plan}, maxFrames=2000)
         if k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[6]"): ok = True; break
     soll(ok, 'Haken -> Sims -> Hebel 6 (Affe)')
@@ -1251,17 +1246,15 @@ async def level8_gluehwald(g):
     ok = False
     for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'):
         m = [k_lauf(315), {'hold': ['right'], 'until': f'P.y < {ky(5)}', 'frames': 100}, {'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 60},
-             {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
-             {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+             {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]   # Haken aufgeräumt: ein Haken
         r = await koop(g, m=kat(312, 14), f=kat(310, 14), plans={'m': m}, links=[6], maxFrames=2500)
         ok = ok or bool(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 341.5 and k_pos(r, 'm')[1] == 14)
     soll(ok, 'Luft-Tor: Affe greift die Haken')
     r = await koop(g, f=kat(312, 14), m=kat(310, 14), plans={'f': [k_lauf(317)]}, maxFrames=800)
     soll(r.get('pos', {}).get('f', [0, 0])[1] > 10, 'ohne Hebel 6 kein Teleport', r.get('pos'))
     ok = False
-    for jx in (359, 360, 361, 362):
-        m = [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-             {'swing': True, 'pull': 30, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200},
+    for jx in (0,):
+        m = k_schleuder(365) + [   # Haken aufgeräumt: Schleuder statt Aufzug-Haken
              {'holdIf': {'right': f'P.x < {kx(368)} - 4', 'left': f'P.x > {kx(368)} + 4'}, 'frames': 60}, {'wait': f'Q.x >= {kx(399)} - 20'},
              k_lauf(372), {'hold': ['right'], 'until': f'P.x >= {kx(398)}', 'frames': 600}]
         f = [{'wait': '!!linkOn[7]'}, k_lauf(399, -14), {'frames': 10}, {'wait': f'Q.x >= {kx(397)}'}]
@@ -3503,8 +3496,8 @@ async def dschungel5_dornenpfad(g):
         r = await koop(g, m=kat(93, 15), f=kat(91, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
         soll(r['pos']['m'][0] < 110, 'E1 ohne Hebel 1 hält Tür 1', info(r))
         ok = None
-        for jx in (112, 113, 114, 115):
-            r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': haken(jx, 10) + am(121)}, links=[1], maxFrames=3000)
+        for jx in (0,):
+            r = await koop(g, m=kat(108, 15), f=kat(106, 15), plans={'m': k_schleuder(117) + am(121)}, links=[1], maxFrames=3000)   # Haken aufgeräumt: Schleuder
             if r.get('done') and r['pos']['m'][1] == 10 and await g.ev('!!linkOn[2]'): ok = jx; break
         soll(ok, 'E1 Affe: Haken -> Sims -> Hebel 2', (ok, info(r)))
         stufe = lambda w: [k_lauf(128, -4)] + sprung_zu(kx(131)) + sprung_zu(kx(134)) + [{'frames': 10}]
@@ -3605,7 +3598,7 @@ async def dschungel5_dornenpfad(g):
         # Schleuse
         ok = []
         for rel in RELS:
-            m = [{'wait': '!!linkOn[7]'}] + kette(482, 2, rel) + am(498) + [{'wait': f'Q.x >= {kx(504)}'}, k_lauf(504), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
+            m = [{'wait': '!!linkOn[7]'}] + kette(482, 1, rel) + am(498)   # Haken aufgeräumt: ein Haken + [{'wait': f'Q.x >= {kx(504)}'}, k_lauf(504), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
             f = [k_lauf(477, -6), {'frames': 10}, {'wait': '!!linkOn[8]'}, k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}, k_lauf(509)]
             r = await koop(g, m=kat(476, 15), f=kat(474, 15), plans={'m': m, 'f': f}, maxFrames=6000)
             if r.get('done') and r['pos']['m'][0] >= 510 and r['pos']['f'][0] >= 508: ok.append(rel[:14])
@@ -3715,11 +3708,11 @@ async def dschungel6_wipfelsturm(g):
         soll(r.get('dead') == 'm', 'E1 Luft-Tor ohne Haken: Affe fällt in die Dornen', info(r))
         ok = []
         for rel in RELS:
-            m = [k_lauf(57, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(76)}', 'frames': 3000}] + kette(58, 2, rel) + [k_lauf(84)]
+            m = [k_lauf(57, -24), {'frames': 10}, {'wait': f'Q.x >= {kx(76)}', 'frames': 3000}] + kette(58, 1, rel) + [k_lauf(84)]   # Haken aufgeräumt: ein Haken
             f = [{'wait': '!!linkOn[2]', 'frames': 1000}, {'frames': 10}, k_lauf(77, -14), {'use': True, 'frames': 2}, {'wait': '!!linkOn[3]'}, k_lauf(84)]   # Kante: nicht ganz vorn anhalten
             r = await koop(g, m=kat(54, 15), f=kat(55, 15), plans={'m': m, 'f': f}, maxFrames=5000)
             if r.get('done') and r['pos']['m'][0] >= 83 and r['pos']['f'][0] >= 84: ok.append(rel[:14])
-        soll(ok, 'E1 Brücke für die Partnerin (Platte 2, Hebel 3, Affe an zwei Haken)', (ok, info(r)))
+        soll(ok, 'E1 Brücke für die Partnerin (Platte 2, Hebel 3, Affe an einem Haken)', (ok, info(r)))
         r = await koop(g, f=kat(55, 15), m=kat(53, 15), plans={'f': glide_to(58, kx(77), 10)}, maxFrames=2000)
         soll(r.get('dead') == 'f', 'E1 ohne Brücke kommt das Schwein nicht hinüber', info(r))
         for who in ('m', 'f'):
