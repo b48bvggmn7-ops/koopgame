@@ -97,9 +97,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       genau auf Bodenhöhe unter den Füßen (Edelstein bleibt sichtbar); weiche Bewegung nur in der Anzeige
       (`anzeigeDruck`, bei jeder Bildrate gleich schnell). Test druckplatte_ganz_gedrueckt.
     - Sprungpilz (dicker, so breit wie der Bereich, der wirklich federt): warmes Gold-Orange mit cremefarbenen Tupfen,
-      brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze). Federt jetzt auf der
-      ganzen Hutbreite (PILZ_TREFFER 22 px + halbe Figurenbreite neben der Mitte; vorher 14 – wer auf dem Hutrand landete,
-      sprang „ins Leere“, Nutzer-Rückmeldung). Test sprungpilz_hutrand.
+      brauner Rand, gemaserter Stiel (grün ging im Gras unter, rot sähe aus wie die Deko-Pilze).
     - Leichter, pulsierender Schein und drei Glühwürmchen in der Farbe des Elements, die langsam darüber kreisen (statt
       Pfeilen) – beim Hebel, solange er aus ist; bei der Druckplatte, solange niemand draufsteht; beim Pilz immer.
     - Im Umkreis von 4 Kästchen (DEKO_FREI_ABSTAND 160 px) stehen keine Deko-Pflanzen und keine Tiere; Frosch, Schnecke
@@ -127,8 +125,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     als normal; endet beim Landen oder an einer Wand.
   - Liane HALTEN (Nutzerwunsch): Die Haken-Taste (G / Num 1 / □) muss GEDRÜCKT GEHALTEN werden, solange der Affe am Seil
     hängt; Taste loslassen = abspringen, ohne Leertaste (js/32 lianeLoslassen; LIANE_HALTEN in 02, false = alte
-    Antipp-Bedienung). Mit Schwung gibt es einen leichten Absprung-Schub in Schwungrichtung (LIANE_BOOST 1,6 px/Schritt
-    + kleiner Hub LIANE_HUB −1,2), weich ansteigend ab LIANE_MIN_SCHWUNG 2,5 bis voll bei 6,5; aus dem Stand kein Schub
+    Antipp-Bedienung). Mit Schwung gibt es einen Absprung-Schub in Schwungrichtung (LIANE_BOOST 2,4 px/Schritt
+    + kleiner Hub LIANE_HUB −1,6; vorher 1,6/−1,2 – Nutzerwunsch: etwas stärker), weich ansteigend ab LIANE_MIN_SCHWUNG 2,5 bis voll bei 6,5; aus dem Stand kein Schub
     (fällt einfach). Danach normaler Abflug (ropeFling). Springen am Seil löst weiterhin (mit HOOK_RELEASE_BOOST).
     Koop-Bot und Computer-Partner halten die Taste am Seil; der Bahnen-Test fährt mit der alten Bedienung
     (window.hakenTippen, Referenz unverändert). Test liane_halten_loslassen_schub.

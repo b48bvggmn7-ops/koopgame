@@ -64,8 +64,8 @@ const ROPE_FLING_DRAG = 0.993;  // Luftbremse ohne Taste im Abflug (normal in de
 const LIANE_HALTEN = true;          // false = alte Bedienung (G antippen = greifen, nochmal G = loslassen)
 const LIANE_MIN_SCHWUNG = 2.5;      // px/Schritt: darunter kein Schub (still hängen)
 const LIANE_SCHWUNG_VOLL = 4;       // ab MIN + diesem Wert voller Schub (dazwischen weich ansteigend)
-const LIANE_BOOST = 1.6;            // Schub in Schwungrichtung (px/Schritt; Schwung am Seil meist 5–10)
-const LIANE_HUB = -1.2;             // dazu ein kleiner Hub nach oben (Springen am Seil: -4,5)
+const LIANE_BOOST = 2.4;            // Schub in Schwungrichtung (px/Schritt; Schwung am Seil meist 5–10; vorher 1,6 – Nutzerwunsch: etwas stärker)
+const LIANE_HUB = -1.6;             // dazu ein kleiner Hub nach oben (Springen am Seil: -4,5; vorher -1,2)
 
 const GLIDE_RAMP_MS = 2600;
 const GLIDE_START_GRAV = 0.10;
