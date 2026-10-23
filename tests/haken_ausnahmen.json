@@ -34,5 +34,41 @@
   "spalte": 316,
   "regel": "Bahn",
   "grund": "Flammen-Kamin 295: zweiter Haken direkt vor dem hohen Landeturm – nur mit eingezogenem Seil (¾) streift man die Turmkante; so ist die Stelle gemessen spielbar (andere Stellungen schafft der Bot nicht)"
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "spalte": 88,
+  "regel": "Ring",
+  "grund": "Eissäulen (Eisgrotte Etappe 1): Haken gehen nur in die Lücken zwischen den Eissäulen (alle 7 Spalten) – mit kleinerer Reichweite erreicht man den ersten Haken nicht mehr; Überdeckung/Kontakt mit den Säulen-Spitzen hier nötig"
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "spalte": 95,
+  "regel": "Ring",
+  "grund": "Eissäulen (Eisgrotte Etappe 1): Haken gehen nur in die Lücken zwischen den Eissäulen (alle 7 Spalten) – mit kleinerer Reichweite erreicht man den ersten Haken nicht mehr; Überdeckung/Kontakt mit den Säulen-Spitzen hier nötig"
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "spalte": 102,
+  "regel": "Ring",
+  "grund": "Eissäulen (Eisgrotte Etappe 1): Haken gehen nur in die Lücken zwischen den Eissäulen (alle 7 Spalten) – mit kleinerer Reichweite erreicht man den ersten Haken nicht mehr; Überdeckung/Kontakt mit den Säulen-Spitzen hier nötig"
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "spalte": 109,
+  "regel": "Ring",
+  "grund": "Eissäulen (Eisgrotte Etappe 1): Haken gehen nur in die Lücken zwischen den Eissäulen (alle 7 Spalten) – mit kleinerer Reichweite erreicht man den ersten Haken nicht mehr; Überdeckung/Kontakt mit den Säulen-Spitzen hier nötig"
+ },
+ {
+  "level": "hoehle/03-eisgrotte.json",
+  "spalte": 116,
+  "regel": "Ring",
+  "grund": "Eissäulen (Eisgrotte Etappe 1): Haken gehen nur in die Lücken zwischen den Eissäulen (alle 7 Spalten) – mit kleinerer Reichweite erreicht man den ersten Haken nicht mehr; Überdeckung/Kontakt mit den Säulen-Spitzen hier nötig"
+ },
+ {
+  "level": "hoehle/01-kristallhoehle.json",
+  "spalte": 401,
+  "regel": "Bahn",
+  "grund": "Kristallhöhle-Ziel: zweiter Haken vor dem hohen Ziel-Podest – nur bei weitem Ausschlag mit voller Seillänge streift man die Podestkante; man lässt vorher los und springt per Dash hoch (mit kleinerer Reichweite schafft der Bot die Kette nicht)"
  }
 ]

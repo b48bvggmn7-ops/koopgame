@@ -9191,7 +9191,8 @@ def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f):
              {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
              {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
              {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
-             dict(lande, hold=['swimUp'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'})]   # zu kurz: Dash schräg hoch
+             dict(lande, hold=['swimUp'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'}),
+             {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'frames': 40}]   # nach der Landung abbremsen (Haken aufgeräumt: mehr Schwung)   # zu kurz: Dash schräg hoch
     return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'swimUp'], True),
             'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
             'm_ohne_dash': warte + kamin + sprung_dash(11, ['right', 'swimUp'], False), 'm_ohne_dash2': warte + kamin + sprung_dash(17, ['right'], False),

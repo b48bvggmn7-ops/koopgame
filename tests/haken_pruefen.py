@@ -32,6 +32,7 @@ def hindernisse(d):
          if s.get('type', 'ground') in ('ground', 'wall', 'crumble', 'bruch')]
     L += [(s['x'], s['y'], s.get('w', T), s.get('h', T), 'bruch') for s in d.get('bruchWaende', [])]
     L += [(s['x'], s['y'], s.get('w', T), s.get('h', T), 'wechsel') for s in d.get('switchFloors', []) if s.get('gruppe', 'A') == 'A']
+    L += [(s['x'], s['y'], s.get('w', T), s.get('h', T), 'eis') for s in d.get('eis', [])]   # Eis ist fester Boden (elemente/eis.js)
     for o in d.get('spikes', []): L.append((o['x'] - o.get('w', T)/2, o['y'] - o.get('h', T), o.get('w', T), o.get('h', T), 'Stacheln'))
     for o in d.get('traps', []) + d.get('pressen', []): L.append((o['x'] - T/2, o['y'] - T/2, T, T, 'Falle/Presse'))
     return L
@@ -48,7 +49,7 @@ def stoss(hind, box):
     x0, y0, x1, y1 = box
     for (x, y, w, h, art) in hind:
         if x < x1 - 0.5 and x + w > x0 + 0.5 and y < y1 - 0.5 and y + h > y0 + 0.5:
-            if art in ('ground', 'wall', 'crumble', 'bruch', 'wechsel') and y1 - y <= LANDE_TIEFE: continue
+            if art in ('ground', 'wall', 'crumble', 'bruch', 'wechsel', 'eis') and y1 - y <= LANDE_TIEFE: continue
             return (x, y, art)
     return None
 
