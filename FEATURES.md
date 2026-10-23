@@ -1559,7 +1559,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   mit Bügel. Jede Brille (auch an den bisherigen Figuren) hat vorn einen Steg über der Nase und an beiden Seiten
   einen Bügel: werden nach den Gläsern gezeichnet, setzen am Glasrand an, etwas kräftiger und mit feinem dunklem Rand (vorher
   unter großen Gläsern wie Herz/Stern verdeckt bzw. auf dem Fell kaum zu sehen; Cyber-Brille ohne Bügel). Test
-  brillen_steg_und_buegel. Das Tattoo geht über die ganze Figur (Nutzerwunsch): das Muster (tattooPattern) wird einmal in eine Textur
+  brillen_steg_und_buegel. Von der Seite (3D): Bügel länger, bis zum Ohr (Affe 1,3 × SC, Schwein 1,2 × SC; vorher ~0,7 × SC),
+  läuft beim Kapuziner-Affen unter der Fellkappe und hat einen feinen dunklen Rand (helle Bügel wie Jalousie/3D-Brille sonst
+  auf heller Haut kaum zu sehen). Test figuren3d_brillen_buegel. Das Tattoo geht über die ganze Figur (Nutzerwunsch): das Muster (tattooPattern) wird einmal in eine Textur
   gerechnet, die vorn und gespiegelt hinten um die Kugel liegt, und färbt das Fell von Kopf/Körper, Armen und Ohren
   (vor und nach dem Licht, damit es kräftig bleibt) – wölbt sich mit, dreht sich mit, auch von der Seite und hinten sichtbar;
   Augen, Schnauze und Gesichtsmaske liegen darüber und bleiben frei. Früher ein flaches Bild über dem Gesicht.

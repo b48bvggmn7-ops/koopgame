@@ -481,8 +481,12 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
           c.save(); c.translate(vis[0], vis[1]); c.scale((vis[0] >= lo(hc)[0]) ? 1 : -1, 1); c.translate(vor, 0);
           c.save(); c.beginPath(); c.rect(-w*1.04*SQ, -h*1.6, w*2.08*SQ, h*3.2); c.clip(); c.scale(SQ, 1);
           drawGlasses(c, kind, [0, 0], [.01, 0], w, h); c.restore();
-          c.strokeStyle = BUEGEL[kind] || '#222'; c.lineWidth = Math.max(.9, w*.2); c.lineCap = 'round';
-          c.beginPath(); c.moveTo(-w*SQ, -h*.3); c.lineTo(-w*SQ - laenge, -h*.05); c.stroke();
+          const bw = Math.max(.9, w*.2); c.lineCap = 'round';
+          c.beginPath(); c.moveTo(-w*SQ, -h*.3); c.lineTo(-w*SQ - laenge, -h*.05);
+          c.strokeStyle = 'rgba(45,28,22,.6)'; c.lineWidth = bw + 1.1; c.stroke();   // dunkler Rand: helle Bügel (Jalousie, 3D) auch auf heller Haut sichtbar
+          c.strokeStyle = BUEGEL[kind] || '#222'; c.lineWidth = bw; c.stroke();
+          { const T = c.getTransform(), q0 = T.transformPoint(new DOMPoint(-w*SQ, -h*.3)), q1 = T.transformPoint(new DOMPoint(-w*SQ - laenge, -h*.05));   // für Tests: Bügel in Gerätepixeln
+            P._buegelDev = {x0: q0.x, y0: q0.y, x1: q1.x, y1: q1.y, laenge, f: P._frameNo}; }
           c.restore();
         }
         c.restore();

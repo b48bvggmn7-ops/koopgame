@@ -6397,6 +6397,12 @@ F3D_BILD = """(o) => { menuScreen = 'pause';
     draw();
   }
   return o.merk ? Function('return (' + o.merk + ')')() : null; }"""
+# Farbe im Umkreis r (Gerätepixel), die der Zielfarbe am nächsten kommt (dünne, weich gezeichnete Linien)
+F3D_NAECHSTE = """(([x, y, r, z]) => { const d = document.querySelector('canvas').getContext('2d').getImageData(Math.round(x) - r, Math.round(y) - r, 2*r + 1, 2*r + 1).data;
+  let best = null, bd = 1e9; for(let i = 0; i < d.length; i += 4){ const q = Math.abs(d[i] - z[0]) + Math.abs(d[i+1] - z[1]) + Math.abs(d[i+2] - z[2]); if(q < bd){ bd = q; best = [d[i], d[i+1], d[i+2]]; } }
+  return [bd, best]; })"""
+# Farbe im Umkreis r, die am stärksten von der Farbe z abweicht (Kontrast einer dünnen Linie zur Umgebung)
+F3D_WEITESTE = F3D_NAECHSTE.replace('let best = null, bd = 1e9', 'let best = null, bd = -1').replace('if(q < bd)', 'if(q > bd)')
 F3D_PIXEL = """(([x, y]) => { const d = document.querySelector('canvas').getContext('2d').getImageData(Math.round(x), Math.round(y), 1, 1).data; return [d[0], d[1], d[2]]; })"""
 
 @test
@@ -6436,6 +6442,42 @@ async def figuren3d_kapuziner_affe(g):
             affe = await g.p.evaluate(F3D_PIXEL, pk[0]); schwein = await g.p.evaluate(F3D_PIXEL, pk[1])
             assert affe[0] < 160 and affe[1] < 115 and affe[0] > affe[2] + 30, f'Affe ohne dunkle Fellkappe (Tattoo {tattoo}): {affe}'
             if not tattoo: assert schwein[0] > 200 and schwein[0] > schwein[1] + 20, f'Schwein oben nicht pink: {schwein}'
+    finally:
+        await g.ev("p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
+
+@test
+async def figuren3d_brillen_buegel(g):
+    """3D-Figuren von der Seite: alle 9 Brillen bekommen einen Bügel nach hinten zum Ohr, lang genug (Affe 1,3 × SC, Schwein
+    1,2 × SC, SC = 17 × 0,9; vorher nur ~0,7 × SC), sichtbar in der Bügelfarbe, und beim Affen UNTER der Fellkappe
+    (knapp über dem Bügel ist Gesicht, keine dunkle Kappe)."""
+    await f3d_bereit(g)
+    BUEGEL = {'classic': '#111111', 'round': '#c9a24a', 'aviator': '#d8b660', 'shutter': '#ffffff', 'heart': '#d6336c',
+              '3d': '#e8e8e8', 'star': '#e0a800', 'cyber': '#7fe0ff', 'bling': '#ffd23f'}
+    try:
+        ids = await g.ev("COSMETICS.filter(i => i.slot === 'glasses').map(i => [i.id, i.fx.kind])")
+        assert len(ids) == 9, ids
+        fehler = []
+        for iid, kind in ids:
+            await g.ev(f"cosmeticsReset(); for(const w of ['m', 'f']){{ cosmeticsSave.owned[w]['{iid}'] = 1; equipItem(w, '{iid}'); }}")
+            r = await g.p.evaluate(F3D_BILD, {'n': 6, 'vorher': "p1._yawTest = p2._yawTest = 1.5; p1._buegelDev = p2._buegelDev = null",
+                                               'merk': "[p1, p2].map(P => P._buegelDev && P._buegelDev.f === P._frameNo ? Object.assign({skala: P._fussDev.skala}, P._buegelDev) : null)"})
+            for wer, b in zip(('Affe', 'Schwein'), r):
+                if not b: fehler.append(f'{iid} {wer}: kein Bügel'); continue
+                soll = (1.3 if wer == 'Affe' else 1.2)*17*0.9
+                lang = ((b['x1'] - b['x0'])**2 + (b['y1'] - b['y0'])**2)**0.5/b['skala']
+                if abs(b['laenge'] - soll) > 0.01 or lang < soll - 1: fehler.append(f'{iid} {wer}: Bügel {lang:.1f} px statt {soll:.1f}')
+                mitte = [(b['x0'] + b['x1'])/2, (b['y0'] + b['y1'])/2]
+                z = [int(BUEGEL[kind][i:i + 2], 16) for i in (1, 3, 5)]
+                for t in (0.3, 0.5, 0.8):   # an mehreren Stellen entlang des Bügels
+                    pt = [b['x0'] + (b['x1'] - b['x0'])*t, b['y0'] + (b['y1'] - b['y0'])*t]
+                    daneben = await g.p.evaluate(F3D_PIXEL, [pt[0], pt[1] + 4*b['skala']])   # 4 px unter dem Bügel (Haut)
+                    ab, farbe = await g.p.evaluate(F3D_WEITESTE, [pt[0], pt[1], 2, daneben])
+                    # über dem Kopf prüfen (vorn hängt der Bügel noch vor dem Gesicht, über dem Hintergrund)
+                    if t > 0.4 and ab < 70: fehler.append(f'{iid} {wer}: Bügel bei {t} kaum sichtbar {farbe} (daneben {daneben})')
+                    if wer == 'Affe' and t < 0.5:   # vorderer Teil, 2,5 px über dem Bügel: Gesicht, nicht die dunkle Kappe (hinten = Ohr, ebenfalls dunkel)
+                        ab, farbe = await g.p.evaluate(F3D_NAECHSTE, [pt[0], pt[1] - 2.5*b['skala'], 1, [110, 62, 32]])
+                        if ab < 60: fehler.append(f'{iid} Affe: Bügel liegt bei {t} in der Fellkappe ({farbe})')
+        assert not fehler, fehler
     finally:
         await g.ev("p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
 
