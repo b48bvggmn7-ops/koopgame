@@ -106,5 +106,11 @@
   "spalte": 625,
   "regel": "Schwung",
   "grund": "über der Wechselboden-Treppe (Takt 1,5 s): ob man an eine Stufe stößt, hängt vom Takt ab – gewollt (Timing-Stelle)"
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "spalte": 451,
+  "regel": "Schwung",
+  "grund": "Flammen-Kreuz E3: der Affe braucht die volle Reichweite 4,5, um oben den Hakenweg zu greifen (kleiner -> Weg unterbrochen); man schwingt dort nach rechts weg, nicht zur Wand"
  }
 ]
