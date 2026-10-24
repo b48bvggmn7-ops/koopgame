@@ -9686,6 +9686,27 @@ async def haken_schwung_frei(g):
     assert not befunde, befunde
 
 @test
+async def material_schoen_pruefung(g):
+    """Material-Einsatz (Nutzerwunsch „schön und etwas realistischer, ohne den Spielfluss zu stören“, tests/material_schoen.py):
+    unterer Boden ist überall mindestens 3 Kästchen dick, wo niemand hinkommt (Trittsteine dürfen dünn bleiben), und in der
+    Höhle hängt oben eine Felsdecke, wo niemand hinkommt – das Werkzeug findet in keinem Level mehr etwas zu tun.
+    Haken hängen an Liane/Kette (js/12b-haken-aussehen.js): unter Material darüber führt die Kette bis dorthin."""
+    sys.path.insert(0, str(ROOT / 'tests'))
+    import importlib, material_schoen as MS
+    importlib.reload(MS)
+    rest = []
+    for d in MS.welten_level():
+        lv, na, nb = MS.bearbeiten(d)
+        if na or nb: rest.append((d, na, nb))
+    assert not rest, f'Material-Werkzeug fände noch etwas (python3 tests/material_schoen.py): {rest}'
+    # Haken: Aufhängung an Material darüber (Höhle 2, Haken unter dem Sims) bzw. frei
+    await g.load(str(ROOT / 'levels' / 'hoehle' / '02-tropfsteingang.json'))
+    r = await g.ev("""(() => { const out = hooks.map(h => [Math.round(h.x/40), Math.round(h.y/40), hakenAufhaengung(h)]);
+      ctx.save(); draw(); ctx.restore(); return {out, welt: hakenWelt()}; })()""")
+    assert r['welt'] == 'hoehle', r
+    assert any(y is not None for _, _, y in r['out']), f'kein Haken hängt an Material: {r}'
+
+@test
 async def haken_pruefung(g):
     """Haken aufgeräumt (Nutzerwunsch, Prüfwerkzeug tests/haken_pruefen.py): in ALLEN Leveln der Welten stößt der Affe beim
     Schwingen nirgends an (Körper unter dem Seil-Ende, volle und ¾ Seillänge, ±50°; Landen von oben zählt nicht) und die

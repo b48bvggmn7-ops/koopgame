@@ -44,7 +44,7 @@
     Kacheln, Nacht-Einfärbung beim Vorzeichnen, Leuchtpflanzen, Hintergrund-Licht; Haken `hgBodenLicht`/`hgStilVorne` in 12; Schalter
     localStorage `monchichi.dschungelWind`/`monchichi.dschungelNachtlicht`; Tier-Regeln `buildCrittersDschungel`, Hintergrund-Tiere und
     `tierLeuchtenNacht` in 20, Vogel-Sitzplätze `vogelSitzplaetze` in 17) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
-    Asche) · 12a hohler Baum (Start/Ziel im Dschungel, Tür beim Sieg) · 12 Welt zeichnen (Neues Aussehen: Boden/Wand als EINE Schicht – Raster `Tc`, je Abschnitt `MAT_STUECK` einmal
+    Asche) · 12a hohler Baum (Start/Ziel im Dschungel, Tür beim Sieg) · 12b Haken-Aussehen (Ring an Liane/Kette je Welt, Aufhängung an Material darüber `hakenAufhaengung`) · 12 Welt zeichnen (Neues Aussehen: Boden/Wand als EINE Schicht – Raster `Tc`, je Abschnitt `MAT_STUECK` einmal
     zu Zeichenpfaden berechnet (`matPfadeBauen`), pro Bild nur gefüllt (`materialZeichnen`); KEINE vorgezeichneten Bilder
     dafür: Chrome hat je Bild ~32 MB Bild-Budget und der Hintergrund braucht fast alles. Bewegliche Plattformen `pieceDraw`,
     Bröckelboden `broeckelKachel`, Türen `drawGate` (zusammenhängend = eine Tür); Moos/Lianen an hohen Flächen `hoheFlaechen`) · 13 Anzeige/Leistung ·
@@ -81,6 +81,8 @@
   begründete Ausnahmen in `tests/bildregel_ausnahmen.json`; Ziel-Hinweis-Pfeil am Bildrand: `zielHinweisMerken` (05) / `drawZielHinweise` (07).
 - `tests/partner_aufgaben_pruefen.py` – probiert je Hebel-/Platten-Nummer aus, ob der Computer-Partner sie schafft, und
   schreibt mit `--schreiben` die Begleitdatei `levels/partner/<welt>/<datei>.json` (nicht Geschafftes unter „offen“).
+- `tests/material_schoen.py` – Material-Einsatz: unteren Boden auf 3 Kästchen füllen, Höhlen-Decke oben – nur wo niemand hinkommt
+  (Test `material_schoen_pruefung`; nach Level-Änderungen einfach erneut laufen lassen).
 - `tests/haken_pruefen.py` – Prüfwerkzeug Haken (freie Schwungbahn unter dem Seil-Ende, Reichweiten-Kreise ohne Überdeckung),
   begründete Ausnahmen in `tests/haken_ausnahmen.json` (Test `haken_pruefung`).
 - `tests/kombi_pruefen.py` – Prüfwerkzeug Wandsprung (Kamine: Breite/Höhe/Einstufung) und Kombi-Stellen je Level/Etappe,

@@ -39,6 +39,18 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Aufzug-Haken (vom Boden hochziehen auf ein Sims) durch Schleudern ersetzt (Schleuder inzwischen wieder entfernt, siehe
       unten: dort kommt der Affe mit Sprung + Dash nach oben hinauf). Begründete Ausnahmen (Boss-Arena Bruno,
       zwei Hochzieh-Haken ohne Schwingen) in tests/haken_ausnahmen.json.
+    - Material schöner einsetzen (Nutzerwunsch „Materialien 2–3 Kästchen dick, oben kreativ, realistischer – ohne den
+      Spielfluss zu stören“; Werkzeug tests/material_schoen.py, Test material_schoen_pruefung): unterer Boden (Oberkante
+      ab Reihe 13, mindestens 5 Spalten breit) ist mindestens 3 Kästchen dick, nur wo niemand hinkommt (Trittsteine und
+      Plattformen, auf die man springt, bleiben dünn) – Ruinen 1, Mondnacht, Tempelherz, Kristallhöhle, Feuerberg,
+      Magmakammer. Oben: in der Höhle hängt eine Erd-Decke am oberen Rand (2–3 Reihen, abgestuft), nur wo selbst mit
+      Sprung + Dash, Pilz, Haken und Aufwind niemand hinkommt (Tropfsteingang, Eisgrotte, Leuchtgrotte, Förderwerk).
+      Draußen (Dschungel, Ruinen, Vulkan) bleibt der Himmel offen – eine Decke ergäbe dort keinen Sinn; Bögen zwischen
+      hohen Säulen wären möglich, es gibt aber keine Stelle, an die niemand hinkommt. Bosse unverändert.
+    - Haken passend zur Welt (Nutzerwunsch „nicht nur ein blauer Punkt in der Luft“; js/12b-haken-aussehen.js): ein Ring
+      an einer Liane (Dschungel, hängt vom Blätterdach) bzw. Kette (Ruinen: Bronze, Höhle: Eisen mit Leuchtkristall,
+      Vulkan: Eisen mit Glut). Ist höchstens 9 Reihen darüber Boden/Wand, hängt die Kette dort an einer Halterung, sonst
+      läuft sie nach oben weich aus. Leichter warmer Schein, in Reichweite kräftig; der Reichweiten-Kreis bleibt.
     - Checkpoints nur nach einer Leistung und vor dem nächsten schweren Stück: 25–70 Spalten Abstand mit einer Stelle
       dazwischen, nie zwischen Hebel und Tür. Überzählige Checkpoints sind entfernt oder zusammengelegt (insgesamt
       432 -> 356); die Spielstände merken sich keine Checkpoint-Nummern (Test spielstand_ohne_checkpoints).

@@ -924,25 +924,8 @@ function drawSolidLook(s, look, x){
   for(const h of hooks){
     const x=h.x-camX;
     if(x<-30||x>VW+30) continue;
-    const pulse = 3 + Math.sin(performance.now()*0.005 + h.x*0.05)*2;
-    // Neues Aussehen (aussehen-paket/vorschau-code/haken-vorschau.js): dunkle Unterlage, damit der Haken zwischen Blumen und
-    // Gras sofort auffällt, darüber das Cyan-Leuchten (etwas kräftiger als bisher)
-    { const bk = ctx.createRadialGradient(x, h.y, 0, x, h.y, 34); bk.addColorStop(0, 'rgba(5,32,46,.7)'); bk.addColorStop(.65, 'rgba(5,32,46,.5)'); bk.addColorStop(1, 'rgba(5,32,46,0)');
-      ctx.fillStyle = bk; ctx.beginPath(); ctx.arc(x, h.y, 34, 0, Math.PI*2); ctx.fill(); }
-    ctx.fillStyle = 'rgba(0,229,255,.7)';
-    ctx.beginPath(); ctx.arc(x,h.y,20+pulse,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = colorOf('--hook-ring'); ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(x,h.y,9,0,Math.PI*2); ctx.stroke();
-    ctx.strokeStyle = colorOf('--hook'); ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(x,h.y,12,0,Math.PI*2); ctx.stroke();
-    ctx.fillStyle = colorOf('--hook-core');
-    ctx.beginPath(); ctx.arc(x,h.y,4.5,0,Math.PI*2); ctx.fill();
-    // Design-Politur C: Metallglanz am Ring (oben links hell, unten rechts dunkel) + Funkeln
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(x, h.y, 12, Math.PI*1.05, Math.PI*1.6); ctx.stroke();
-    ctx.strokeStyle = 'rgba(10,20,40,.35)'; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(x, h.y, 13, Math.PI*0.1, Math.PI*0.65); ctx.stroke();
-    glanzFunkeln(x - 7, h.y - 7, 6, h.x*0.11 + h.y);
+    // Haken passend zur Welt: Ring an Liane/Kette, die an Material darüber hängt (12b-haken-aussehen.js, Nutzerwunsch)
+    hakenZeichnen(h, x, Math.hypot(h.x - p1.x, h.y - (p1.y - p1.h*0.6)) <= hookRange(h));
   }
 
   for(const sp of spikes){
