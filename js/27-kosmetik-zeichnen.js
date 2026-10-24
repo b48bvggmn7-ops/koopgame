@@ -626,7 +626,7 @@ function cosMitMass(rig, x, f){
   const k = rig.r/21;
   ctx.save(); ctx.translate(x, rig.y); ctx.scale(k, k); f(); ctx.restore();
 }
-// Aura um die ganze 3D-Figur (Nutzer-Rückmeldung: die Eis-Aura stach mitten ins Gesicht des Schweinchens – der alte
+// Aura und Umläufer um die ganze 3D-Figur (Nutzer-Rückmeldung: die Eis-Aura stach mitten ins Gesicht des Schweinchens – der alte
 // Kugel-Kreis sitzt tief und ist kleiner als die stehende 3D-Figur): Mitte halb so hoch wie die Figur, Kreis um sie herum
 const AURA_3D_MITTE = 22, AURA_3D_RADIUS = 24;   // Spielpixel über dem Fußpunkt bzw. Radius (3D-Figur ~44 px hoch)
 function auraRig(P, rig){
@@ -639,12 +639,12 @@ function cosmeticsDrawBack(P, camX){
   drawTrail(ctx, rig, st, it.trail, camX);
   drawPet(ctx, st, it.pet, camX, who, rig.r/21);
   cosMitMass(auraRig(P, rig), x, () => drawAura(ctx, 0, 0, 21, it.aura, 'back'));
-  cosMitMass(rig, x, () => drawOrbit(ctx, 0, 0, 21, it.orbit, 'back'));
+  cosMitMass(auraRig(P, rig), x, () => drawOrbit(ctx, 0, 0, 21, it.orbit, 'back'));
 }
 // vor der Figur
 function cosmeticsDrawFront(P, camX){
   const who = P === p1 ? 'm' : 'f', it = cosItemsOf(who), st = COS_STATE[who], rig = playerRig(P), x = rig.x - camX;
   cosMitMass(auraRig(P, rig), x, () => drawAura(ctx, 0, 0, 21, it.aura, 'front'));
-  cosMitMass(rig, x, () => drawOrbit(ctx, 0, 0, 21, it.orbit, 'front'));
+  cosMitMass(auraRig(P, rig), x, () => drawOrbit(ctx, 0, 0, 21, it.orbit, 'front'));
   drawPrestigeSparkle(ctx, x, rig.y, st);
 }

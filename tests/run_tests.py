@@ -6499,24 +6499,30 @@ async def figuren3d_brille_dreht_mit(g):
     await f3d_bereit(g)
     try:
         await g.ev("""cosmeticsReset(); for(const w of ['m', 'f']) for(const id of ['gl_aviator', 'aura_ice']){ cosmeticsSave.owned[w][id] = 1; equipItem(w, id); }
-          window.__bx = []; window.__og2 = drawGlasses;
-          drawGlasses = (c, ...a) => { if(c && c.getTransform && a[0] !== undefined){ const T = c.getTransform(); __bx.push(Math.hypot(T.a, T.b)/Math.hypot(T.c, T.d)); } return __og2(c, ...a); }""")
+          window.__bx = []; window.__og2 = drawGlasses; window.__oc2 = drawCharacter; window.__wer = null;
+          drawCharacter = (P, ...a) => { window.__wer = P; try { return __oc2(P, ...a); } finally { window.__wer = null; } };
+          drawGlasses = (c, ...a) => { const P = window.__wer; if(P && c && c.getTransform && a[0] !== undefined && P._fussDev){ const T = c.getTransform();
+            __bx.push([P === p1 ? 'm' : 'f', Math.hypot(T.a, T.b)/P._fussDev.skala]); } return __og2(c, ...a); }""")
         breite = {}
         for yaw in (0, 0.4, 0.8, 1.2, 3.14):
-            await g.ev("__bx = []")
-            r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 4, 'wer': 'beide', 'vorher': f"__bx = []; p1._yawTest = p2._yawTest = {yaw}", 'merk': "__bx.slice()"})
-            breite[yaw] = r[-1]
+            r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 14, 'wer': 'beide', 'vorher': f"__bx = []; p1._yawTest = p2._yawTest = {yaw}", 'merk': "__bx.slice()"})
+            # die letzten 6 Bilder (Drehung eingeschwungen); kleine Ruhe-Kunststücke der Figuren (Pirouette …) drehen sie
+            # gelegentlich kurz weg -> je Figur: in wie vielen Bildern gezeichnet und der mittlere Wert
+            breite[yaw] = {}
+            for w in ('m', 'f'):
+                v = sorted(x for bild in r[-6:] for (wer, x) in bild if wer == w)
+                breite[yaw][w] = (len(v), v[len(v)//2] if v else None)
         for yaw in (0, 0.4, 0.8, 1.2):
-            assert len(breite[yaw]) == 2, f'Brille bei Drehung {yaw}: {len(breite[yaw])} Mal gezeichnet (soll: einmal je Figur)'
-        assert not breite[3.14], f'von hinten soll keine Brille zu sehen sein: {breite[3.14]}'
-        for i in range(2):
-            b = [breite[y][i] for y in (0, 0.4, 0.8, 1.2)]
-            assert b[0] > 0.9 and all(b[k] > b[k + 1] + 0.05 for k in range(3)), f'Gläser werden beim Drehen nicht stetig schmaler: {b}'
+            assert all(n >= 4 for n, _ in breite[yaw].values()), f'Brille bei Drehung {yaw} fehlt: {breite[yaw]}'
+        assert all(n <= 2 for n, _ in breite[3.14].values()), f'von hinten soll keine Brille zu sehen sein: {breite[3.14]}'
+        for w in ('m', 'f'):
+            b = [breite[y][w][1] for y in (0, 0.4, 0.8, 1.2)]
+            assert b[0] > 0.9 and all(b[k] > b[k + 1] + 0.05 for k in range(3)), f'{w}: Gläser werden beim Drehen nicht stetig schmaler: {b}'
         a = await g.ev("[p1, p2].map(P => { const r = auraRig(P, playerRig(P)); return [P.y + 4 - r.y, r.r]; })")
         for mitte, rad in a:
             assert abs(mitte - 22) < 0.01 and rad == 24, f'Aura-Kreis nicht um die ganze Figur: {a}'
     finally:
-        await g.ev("if(window.__og2) drawGlasses = __og2; p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
+        await g.ev("if(window.__og2) drawGlasses = __og2; if(window.__oc2) drawCharacter = __oc2; p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
 
 @test
 async def figuren3d_brille_tattoo(g):
