@@ -7,10 +7,24 @@
 (function(){
   'use strict';
   const QS = new URLSearchParams(location.search);
-  const SPR = 256, FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
+  const SPR = 352, FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
   const FIGUR_GROESSE = 0.9;                       // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
   const SC = 17*FIGUR_GROESSE;                     // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 45 px)
-  const FR = {x0:-2.4, x1:2.4, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0)
+  const FR = {x0:-3.3, x1:3.3, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0);
+  // breiter als früher (±2,4): von der Seite war der Affen-Schwanz abgeschnitten (Nutzer-Rückmeldung); SPR wächst mit (gleiche Schärfe)
+  // Leistung (Nutzer: „ruckelt“): läuft das Spiel länger als ca. 2 s unter ~45 Bildern/s, nimmt die 3D-Figur weniger Fell-Schichten
+  // (14 -> 8 -> 5; das Fell bleibt gleich lang, nur weniger fein). Wird nie wieder hochgestellt (kein Hin und Her). Nur Zeichnen.
+  const F3D_STUFEN = [FELL_SCHICHTEN, Math.min(FELL_SCHICHTEN, 8), Math.min(FELL_SCHICHTEN, 5)];
+  const F3D_LANGSAM_MS = 22, F3D_LANGSAM_BILDER = 110;
+  const F3D_QUALI = window.F3D_QUALI = {stufe: 0, ema: 16.7, langsam: 0, letzt: 0,
+    schichten(){ return F3D_STUFEN[this.stufe]; },
+    bild(now){   // einmal je gezeichnetem Bild (Affe) – misst den Abstand zum letzten Bild
+      const dt = now - this.letzt; this.letzt = now;
+      if(!(dt > 0 && dt < 200)) return;
+      this.ema = this.ema*0.95 + dt*0.05;
+      this.langsam = this.ema > F3D_LANGSAM_MS ? this.langsam + 1 : Math.max(0, this.langsam - 2);
+      if(this.langsam > F3D_LANGSAM_BILDER && this.stufe < F3D_STUFEN.length - 1){ this.stufe++; this.langsam = 0; this.ema = 16.7; }
+    }};
   if(typeof window.fussFigurZeichnen !== 'function') return;
   // ---------- 3D-Teil (eigene kleine Welt, getrennt vom Spiel) ----------
   function baue(){
@@ -46,10 +60,10 @@ if(!gl)throw new Error('kein webgl2');
 function prog(vs,fs){const p=gl.createProgram();for(const [t,s] of [[gl.VERTEX_SHADER,vs],[gl.FRAGMENT_SHADER,fs]]){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));gl.attachShader(p,sh)}gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p}
 const VS=`#version 300 es
 in vec3 aPos;in vec3 aNrm;in vec2 aUv;in float aLayer;
-uniform mat4 uVP,uM;uniform mat3 uNM;uniform vec3 uScale;uniform float uLen,uGrav;uniform vec2 uTile;
+uniform mat4 uVP,uM;uniform mat3 uNM;uniform vec3 uScale;uniform float uLen,uGrav,uLayerMul;uniform vec2 uTile;
 out vec2 vUv;out vec2 vUv0;out vec3 vN;out float vL;out vec3 vW;
-void main(){vUv0=aUv;vec3 p=aPos+aNrm*uLen*aLayer/uScale;vec4 w=uM*vec4(p,1.);w.y-=uGrav*aLayer*aLayer;
-vW=w.xyz;vN=normalize(uNM*aNrm);vUv=aUv*uTile;vL=aLayer;gl_Position=uVP*w;}`;
+void main(){float la=aLayer*uLayerMul;vUv0=aUv;vec3 p=aPos+aNrm*uLen*la/uScale;vec4 w=uM*vec4(p,1.);w.y-=uGrav*la*la;
+vW=w.xyz;vN=normalize(uNM*aNrm);vUv=aUv*uTile;vL=la;gl_Position=uVP*w;}`;
 const FS=`#version 300 es
 precision highp float;
 uniform sampler2D uNoise,uTat;uniform vec3 uRoot,uTip,uCam;uniform float uFur,uSpec,uEmit,uAlpha,uTatOn;
@@ -83,7 +97,7 @@ out vec2 v;void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);v=p;gl_Posi
 `#version 300 es
 precision highp float;in vec2 v;out vec4 o;uniform vec3 uA,uB;
 void main(){vec3 c=mix(uB,uA,smoothstep(0.,1.,v.y));c+=.08*(1.-length((v-vec2(.5,.45))*vec2(1.,1.2)));o=vec4(c,1.);}`);
-const U={};for(const n of ['uVP','uM','uNM','uScale','uLen','uGrav','uTile','uNoise','uRoot','uTip','uCam','uFur','uSpec','uEmit','uAlpha','uTat','uTatOn'])U[n]=gl.getUniformLocation(PRG,n);
+const U={};for(const n of ['uVP','uM','uNM','uScale','uLen','uGrav','uLayerMul','uTile','uNoise','uRoot','uTip','uCam','uFur','uSpec','uEmit','uAlpha','uTat','uTatOn'])U[n]=gl.getUniformLocation(PRG,n);
 // Haar-Textur: runde, spitz zulaufende Haare
 const noise=(()=>{const cells=128,px=6,s=cells*px;const c=document.createElement('canvas');c.width=c.height=s;const x=c.getContext('2d');const img=x.createImageData(s,s);
  const R=[];for(let i=0;i<cells*cells;i++)R.push([0.35+0.65*rnd(),rnd(),(rnd()-.5)*.3,(rnd()-.5)*.3]);
@@ -133,41 +147,43 @@ function drawNode(n,pm,VPm,cam){const loc=M.mul(M.mul(M.mul(M.T(...n.pos),M.RZ(n
   gl.uniform3f(U.uScale,...n.sc);gl.uniform1f(U.uLen,p.len);gl.uniform1f(U.uGrav,p.grav);gl.uniform2f(U.uTile,...p.tile);
   gl.uniform3f(U.uRoot,...p.root);gl.uniform3f(U.uTip,...p.tip);gl.uniform3f(U.uCam,...cam);
   gl.uniform1f(U.uFur,p.fur?1:0);gl.uniform1f(U.uTatOn,p.tat&&TAT.on?1:0);gl.uniform1f(U.uSpec,p.spec);gl.uniform1f(U.uEmit,p.emit);gl.uniform1f(U.uAlpha,p.alpha);
-  gl.drawElementsInstanced(gl.TRIANGLES,p.geo.n,gl.UNSIGNED_INT,0,p.geo.shells)}
+  { const sh=p.geo.shells, nS=sh>1?Math.min(sh,F3D_QUALI.schichten()):1; gl.uniform1f(U.uLayerMul,sh>1&&nS>1?(sh-1)/(nS-1):1);
+    gl.drawElementsInstanced(gl.TRIANGLES,p.geo.n,gl.UNSIGNED_INT,0,nS); }}
  if(n.visible)for(const k of n.kids)drawNode(k,parentOnly,VPm,cam)}
 // ---------- Affe ----------
 function glints(H,x,y,z,s){return [K(H,{geo:SPH(1),pos:[x+.07*s,y+.105,z+.085],sc:[.075,.075,.04],color:0xffffff,emit:1}),
  K(H,{geo:SPH(1),pos:[x-.06*s,y-.1,z+.08],sc:[.036,.036,.025],color:0xffffff,emit:1})]}
-function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0xb98a58,TIP=0xe3c08c;
- // Affe ganz hellbraun (Nutzerwunsch: keine dunkle Fellkappe/kein „Hut“), kurzes Fell wie beim Schwein -> gleich groß
+function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x6a3e20,GES=0xf2d3a6;
+ // Affe wie der Monchichi aus dem Video (Nutzerwunsch): dunkelbraunes Fell überall, großes helles Gesicht (Herzform: zwei
+ // Augen-Felder + Schnauze), große glänzende schwarze Augen, runde Ohren mit hellem Innenohr; Hände/Füße hell
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
  F(H,{sc:[1,1,1],root:ROOT,tip:TIP,len:.05,tat:true});
  for(const s of [-1,1]){
-  K(H,{pos:[s*.3,.0,.82],sc:[.42,.4,.15],color:0xf8dcb6,spec:30});   // helle Gesichtshälften (flacher: Augen stehen von der Seite nicht ab)
-  F(H,{pos:[s*.9,.4,-.04],sc:[.2,.22,.15],root:ROOT,tip:TIP,len:.04,tat:true});   // runde Ohren, höher und kleiner (frei von den Armen)
-  K(H,{pos:[s*.95,.4,.08],sc:[.12,.13,.07],color:0xf0a89a,spec:12});   // rosa Innenohr
-  { const e = K(H,{pos:[s*.36,.1,.96],sc:[.21,.27,.1],color:0x1a0f0b,spec:140}); eyes.push({n:e, g:glints(H,s*.36,.1,.96,s), y:.28}); }
-  K(H,{pos:[s*.66,-.2,.78],sc:[.22,.14,.06],color:0xff8f9a,alpha:.65});
+  K(H,{pos:[s*.32,.04,.8],sc:[.47,.46,.17],color:GES,spec:30});   // helle Gesichtshälften (Herzform oben), flach: von der Seite nicht abstehend
+  F(H,{pos:[s*.9,.4,-.04],sc:[.22,.24,.15],root:ROOT,tip:TIP,len:.04,tat:true});   // runde Ohren
+  K(H,{pos:[s*.95,.4,.08],sc:[.13,.15,.07],color:0xe8c49a,spec:12});   // helles Innenohr
+  { const e = K(H,{pos:[s*.34,.08,.96],sc:[.24,.3,.1],color:0x0d0806,spec:160}); eyes.push({n:e, g:glints(H,s*.34,.08,.96,s), y:.31}); }
+  K(H,{pos:[s*.62,-.22,.8],sc:[.18,.11,.05],color:0xf2a08f,alpha:.35});
  }
- K(H,{pos:[0,-.36,.88],sc:[.5,.38,.34],color:0xf0cfa0,spec:34});
+ K(H,{pos:[0,-.36,.88],sc:[.56,.42,.34],color:GES,spec:34});   // Schnauze
  K(H,{pos:[0,-.28,1.185],sc:[.1,.065,.05],color:0x4b2d22,spec:60});
  const mp=[];for(let i=0;i<=10;i++){const x=-.25+i*.05;const y=-.5-.11*(1-(x/.25)**2);const q=Math.max(0,1-(x/.52)**2-((y+.42)/.38)**2);mp.push([x,y,.88+.34*Math.sqrt(q)+.012])}
  K(H,{geo:tube(mp,.03,.03,1,30,8),color:0x5a2f25});
  K(H,{pos:[0,-.585,1.14],sc:[.1,.05,.04],color:0xff7d8f,spec:40});
  const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.16,1.42,.1]}));   // Arme wie beim Schwein (nicht an den Ohren)
-  F(A,{pos:[0,-.3,0],sc:[.2,.4,.2],root:ROOT,tip:TIP,len:.08,tat:true});K(A,{pos:[0,-.75,.04],sc:[.19,.19,.19],color:0xffe2c2,spec:30});for(const fx of [-.09,0,.09])K(A,{pos:[fx,-.9+Math.abs(fx)*.3,.1],sc:[.065,.085,.065],color:0xffe2c2,spec:30});K(A,{pos:[-s*.17,-.78,.08],sc:[.06,.08,.06],color:0xffe2c2,spec:30});AP.push(A)}
+  F(A,{pos:[0,-.3,0],sc:[.2,.4,.2],root:ROOT,tip:TIP,len:.08,tat:true});K(A,{pos:[0,-.75,.04],sc:[.19,.19,.19],color:GES,spec:30});for(const fx of [-.09,0,.09])K(A,{pos:[fx,-.9+Math.abs(fx)*.3,.1],sc:[.065,.085,.065],color:GES,spec:30});K(A,{pos:[-s*.17,-.78,.08],sc:[.06,.08,.06],color:GES,spec:30});AP.push(A)}
  const LP=[];for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,.7,.1]}));
   F(L,{pos:[0,-.12,0],sc:[.3,.3,.32],root:ROOT,tip:TIP,len:.08});
-  K(L,{pos:[0,-.56,.1],sc:[.26,.14,.28],color:0xe3a869,spec:30});
+  K(L,{pos:[0,-.56,.1],sc:[.26,.14,.28],color:0xd9b285,spec:30});
   LP.push(L)}
  const tp=[[0,1.2,-.7],[0,.9,-1.3],[0,.9,-1.95],[0,1.4,-2.2],[0,1.95,-1.9],[0,2.1,-1.4]];
- const TL=R.add(new Nd({pos:[0,1.2,-.7]})); TL.segs=[];   // Schwanz aus Gliedern: kann sich ein- und ausrollen
+ const TL=R.add(new Nd({pos:[0,1.15,-1.0]})); TL.segs=[];   // Ansatz am Rücken (vorher z −0,7 = im Körper, Nutzer: „Schwanz abgeschnitten“)   // Schwanz aus Gliedern: kann sich ein- und ausrollen
  { let par=TL; const NS=7, SEG=.33;
    for(let i=0;i<NS;i++){ const Si=par.add(new Nd({pos:i?[0,0,-SEG]:[0,0,0]})), rd=.14-.011*i;
      F(Si,{geo:tube([[0,0,0],[0,0,-SEG/3],[0,0,-2*SEG/3],[0,0,-SEG]],rd,rd-.011,SHELLS,10,10),root:ROOT,tip:TIP,len:.06,tile:[.9,.2],grav:.02});
      F(Si,{sc:[rd,rd,rd],root:ROOT,tip:TIP,len:.06,dens:30});
      TL.segs.push(Si); par=Si; }
-   F(par,{pos:[0,0,-SEG],sc:[.12,.12,.12],root:ROOT,tip:0xf0cd96,len:.05,dens:30}); }
+   F(par,{pos:[0,0,-SEG],sc:[.12,.12,.12],root:ROOT,tip:TIP,len:.05,dens:30}); }
  for(const A of AP){A.kids.forEach((q,i)=>{q.sc=i===0?[q.sc[0]*1.35,q.sc[1],q.sc[2]*1.35]:q.sc.map(v=>v*1.45)})}
  for(const L of LP){L.kids[0].visible=false;for(const q of L.kids.slice(1)){q.pos=q.pos.map(v=>v*1.98);q.sc=q.sc.map(v=>v*1.98)}L.pos[1]=.01+.7*1.98;L.base=L.pos.slice()}
  for(const k of R.kids){if(LP.includes(k))continue;if(AP.includes(k)){k.pos=[k.pos[0],k.pos[1]+.12,k.pos[2]];continue}k.pos=[k.pos[0],k.pos[1]-.22,k.pos[2]]}
@@ -301,6 +317,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   const vieleSchritte = true;   // festgelegt (Nutzerwunsch): ganz viele kleine Schritte, im Spiel nicht umschaltbar
   window.fussFigurZeichnen = function(P){
     const c = ctx, now = performance.now(), male = P.male;
+    if(male) F3D_QUALI.bild(now);
     let S = P._f3; if(!S) S = P._f3 = {t:now, phase:0, yaw:.8, rollA:0, cur:null, nb:now + 1500, bl:0, lean:0};
     const dt = Math.min(.05, Math.max(0, (now - S.t)/1000)); S.t = now;
     const t = now/1000, sp = Math.abs(P.vx), flip = P.facing < 0 ? -1 : 1;
@@ -406,8 +423,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     }
     if(ch.tail){   // Affen-Schwanz: rollt sich langsam ein und wieder aus, wedelt dabei; beim Laufen etwas schneller
       const wv = Math.min(1, S.spG/4.4); S.tp = (S.tp||0) + dt*(.8 + 1.4*wv + IT.tail*IT.env);
-      const k = .35 + .65*(.5 - .5*Math.cos(S.tp)), n = ch.tail.segs.length;   // 0 = ausgerollt, 1 = eingerollt
-      ch.tail.segs.forEach((sg, i) => { sg.rot = [(i === 0 ? -.35 : .1) + (i === 0 ? 0 : .72)*k + Math.sin(t*5 - i*.9)*.07*(i ? 1 : 0), 0, Math.sin(t*3 - i*.7)*(.14 - .07*k)*(i ? 1 : 0)]; });
+      const k = .15 + .55*(.5 - .5*Math.cos(S.tp)), n = ch.tail.segs.length;   // 0 = ausgerollt, 1 = eingerollt (nie ganz eingerollt: bleibt sichtbar)
+      ch.tail.segs.forEach((sg, i) => { sg.rot = [(i === 0 ? -.55 : .05) + (i === 0 ? 0 : .6)*k + Math.sin(t*5 - i*.9)*.07*(i ? 1 : 0), 0, Math.sin(t*3 - i*.7)*(.14 - .07*k)*(i ? 1 : 0)]; });
     }
     ch.head.rot = S.cur.head; ch.armN.rot = S.cur.armN; ch.armP.rot = S.cur.armP; ch.legN.rot = S.cur.legN; ch.legP.rot = S.cur.legP;
     if(IT.pose){ for(const nm of ['head','armN','armP','legN','legP']) if(IT.pose[nm]) ch[nm].rot = lerpA(S.cur[nm], IT.pose[nm], IT.env); }
@@ -497,4 +514,6 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     c.restore();
     if(!male && P.umbrella > 0.03 && typeof drawUmbrella === 'function') drawUmbrella(P, 0, fy);   // bisheriger Schirm (2D), 3D-Schirm folgt ggf.
   };
+  { const roh = window.fussFigurZeichnen;   // Zeit für die 3D-Figuren messen (Leistungs-Anzeige, Taste F)
+    window.fussFigurZeichnen = function(P){ const t = performance.now(); try { return roh(P); } finally { F3D_QUALI.zeit = (F3D_QUALI.zeit || 0) + performance.now() - t; } }; }
 })();

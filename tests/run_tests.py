@@ -6443,20 +6443,44 @@ def p_h_halb_minus5():   # Abstand Kugel-Mitte -> P.y im alten Maß (P.h/2 - 5, 
     return 32.3/2 - 5
 
 @test
-async def figuren3d_affe_hellbraun(g):
-    """3D-Affe (Nutzerwunsch: „Hut weg, einfach komplett hellbraun“): von vorn ist oben auf dem Kopf keine dunkle Fellkappe mehr,
-    sondern helles Braun (nicht dunkel, nicht pink wie beim Schwein); Affe und Schwein haben dieselbe Streckung (gleich groß)."""
+async def figuren3d_affe_monchichi(g):
+    """3D-Affe wie der Monchichi aus dem Video (Nutzerwunsch, ersetzt „komplett hellbraun“): dunkelbraunes Fell oben am Kopf,
+    großes helles Gesicht (Schnauze hell-beige); Affe und Schwein gleich gestreckt. Der Schwanz ist von der Seite zu sehen
+    (Bild der Figur breiter, FR ±3,3; Ansatz am Rücken)."""
     await f3d_bereit(g)
     try:
-        pk = await g.p.evaluate(F3D_BILD, {'n': 6, 'vorher': "p1._yawTest = p2._yawTest = 0",
-                                            'merk': "[[p1._headDev.x, p1._headDev.y], [p2._headDev.x, p2._headDev.y]]"})
-        affe = await g.p.evaluate(F3D_PIXEL, pk[0]); schwein = await g.p.evaluate(F3D_PIXEL, pk[1])
-        assert affe[0] > 160 and affe[1] > 110 and affe[2] < affe[1] and affe[0] > affe[2] + 40, f'Affe oben nicht hellbraun (dunkle Kappe?): {affe}'
+        pk = await g.p.evaluate(F3D_BILD, {'n': 8, 'vorher': "p1._yawTest = p2._yawTest = 0",
+                                            'merk': "[[p1._headDev.x, p1._headDev.y], [p2._headDev.x, p2._headDev.y], p1._fussDev.skala]"})
+        k = pk[2]*17*0.9
+        fell = await g.p.evaluate(F3D_PIXEL, [pk[0][0], pk[0][1] - 0.25*k])
+        schnauze = await g.p.evaluate(F3D_PIXEL, [pk[0][0], pk[0][1] + 1.25*k])
+        schwein = await g.p.evaluate(F3D_PIXEL, pk[1])
+        assert fell[0] < 150 and fell[0] > fell[2] + 15, f'Affe oben nicht dunkelbraun: {fell}'
+        assert schnauze[0] > 190 and schnauze[1] > 150 and schnauze[0] > schnauze[2] + 20, f'Affen-Gesicht nicht hell-beige: {schnauze}'
         assert schwein[0] > 200 and schwein[0] > schwein[1] + 20, f'Schwein oben nicht pink: {schwein}'
     finally:
         await g.ev("p1._yawTest = p2._yawTest = null; menuScreen = null")
     src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
-    assert 'male?1.05' not in src and '0x3e2415' not in src, 'Affe wieder gestreckt bzw. mit dunkler Fellkappe'
+    assert 'male?1.05' not in src and 'x0:-3.3, x1:3.3' in src, 'Affe gestreckt bzw. Bild wieder zu schmal (Schwanz abgeschnitten)'
+
+@test
+async def figuren3d_leistung_stufen(g):
+    """Leistung (Nutzer: „ruckelt“): läuft das Spiel länger als ca. 2 s unter ~45 Bildern/s, nimmt die 3D-Figur weniger
+    Fell-Schichten (14 -> 8 -> 5) und stellt nie wieder hoch; die Leistungs-Anzeige (F) zeigt Zeit und Stufe der 3D-Figuren."""
+    await f3d_bereit(g)
+    r = await g.ev("""(() => { const Q = F3D_QUALI, alt = {stufe: Q.stufe, ema: Q.ema, langsam: Q.langsam, letzt: Q.letzt};
+      Q.stufe = 0; Q.ema = 16.7; Q.langsam = 0; Q.letzt = 0;
+      const e = {start: Q.schichten()}; let t = 1000;
+      for(let i = 0; i < 200; i++){ t += 16.7; Q.bild(t); } e.flott = Q.stufe;
+      for(let i = 0; i < 400; i++){ t += 33; Q.bild(t); } e.langsam1 = Q.stufe; e.sch1 = Q.schichten();
+      for(let i = 0; i < 400; i++){ t += 33; Q.bild(t); } e.langsam2 = Q.stufe; e.sch2 = Q.schichten();
+      for(let i = 0; i < 400; i++){ t += 16.7; Q.bild(t); } e.wieder = Q.stufe;
+      Object.assign(Q, alt); return e; })()""")
+    assert r['start'] == 14 and r['flott'] == 0, r
+    assert r['langsam1'] >= 1 and r['langsam2'] == 2 and r['sch2'] == 5 and r['wieder'] == 2, r
+    await g.ev("F3D_QUALI.stufe = 2"); await g.p.evaluate(F3D_ZEICHNEN, {'n': 2, 'wer': 'beide'}); await g.ev("F3D_QUALI.stufe = 0")   # zeichnet ohne Fehler
+    src = (ROOT / 'js' / '13-anzeige-leistung.js').read_text(encoding='utf-8')
+    assert "'3D-Figuren: '" in src
 
 @test
 async def figuren3d_brillen_buegel(g):

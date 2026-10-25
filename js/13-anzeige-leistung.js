@@ -64,10 +64,12 @@ function perfFrame(ts, tStart, tAfterUpdate, tEnd){
         'Arbeit/Bild:  <span class="v '+cls(avgWork,5,10)+'">'+avgWork.toFixed(1)+' ms</span>  (max '+maxWork.toFixed(1)+')\n'+
         '  davon Logik '+(perf.sumUpd/perf.n).toFixed(1)+' ms, Zeichnen '+(perf.sumDraw/perf.n).toFixed(1)+' ms\n'+
         '<span class="v '+vcls+'">'+verdict+'</span>\n'+
+        (window.F3D_QUALI ? '3D-Figuren: '+((F3D_QUALI.zeit||0)/perf.n).toFixed(1)+' ms/Bild, Fell-Stufe '+(F3D_QUALI.stufe+1)+' ('+F3D_QUALI.schichten()+' Schichten)\n' : '3D-Figuren: aus\n') +
         (typeof audioStatusText === 'function' ? audioStatusText() + '\n' : '') +
         (typeof djStatusText === 'function' ? djStatusText() + '\n' : '') +
         '<span style="opacity:.6">F = Anzeige aus/an</span>';
     }
+    if(window.F3D_QUALI) F3D_QUALI.zeit = 0;
     perf.uneven=0; perf.n=0; perf.sumDt=0; perf.maxDt=0; perf.long=0; perf.sumWork=0; perf.maxWork=0; perf.sumUpd=0; perf.sumDraw=0; perf.since=ts;
   }
 }

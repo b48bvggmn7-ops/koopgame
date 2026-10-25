@@ -1577,6 +1577,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
+  - Affe wie der Monchichi aus dem Video (Nutzerwunsch; ersetzt „komplett hellbraun“): dunkelbraunes Fell überall, großes
+    helles Gesicht in Herzform (zwei Augen-Felder + Schnauze), große glänzende schwarze Augen, helles Innenohr, helle Hände
+    und Füße. Schwanz von der Seite sichtbar (vorher abgeschnitten): Ansatz am Rücken, rollt sich nie ganz ein, das Bild der
+    Figur ist breiter (±3,3 statt ±2,4 Einheiten, gleiche Schärfe). Test figuren3d_affe_monchichi.
+  - Leistung (Nutzer: „ruckelt“): läuft das Spiel länger als ca. 2 s unter ~45 Bildern/s, nimmt die 3D-Figur weniger
+    Fell-Schichten (14 -> 8 -> 5, Fell gleich lang, nur weniger fein; F3D_QUALI in js/33) und stellt nie wieder hoch. Die
+    Leistungs-Anzeige (Taste F) zeigt jetzt auch die Zeit der 3D-Figuren je Bild und die Fell-Stufe. Test figuren3d_leistung_stufen.
 - Affe überarbeitet (Nutzerwunsch): ganz hellbraun ohne dunklen „Hut“ (keine Haarbüschel oben, Fell überall gleich hell und
   kurz wie beim Schweinchen), gleich groß wie das Schweinchen (gleiche Streckung), Augen sitzen flacher im Gesicht (stehen von der
   Seite nicht mehr ab), Ohren höher und kleiner und die Arme etwas tiefer/weiter außen – Ohren und Arme berühren sich nicht mehr.
