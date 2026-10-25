@@ -158,6 +158,8 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x
  // Augen-Felder + Schnauze), große glänzende schwarze Augen, runde Ohren mit hellem Innenohr; Hände/Füße hell
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
  F(H,{sc:[1,1,1],root:ROOT,tip:TIP,len:.05,tat:true});
+ // Erhöhung oben auf dem Kopf (wie im Video): breite, weiche Fell-Wölbung, die in den Kopf übergeht – der Kopf wird oben höher und runder
+ F(H,{pos:[0,.84,-.06],sc:[.52,.4,.52],root:ROOT,tip:TIP,len:.05,tat:true});
  for(const s of [-1,1]){
   K(H,{pos:[s*.32,.04,.8],sc:[.47,.46,.17],color:GES,spec:30});   // helle Gesichtshälften (Herzform oben), flach: von der Seite nicht abstehend
   F(H,{pos:[s*.9,.4,-.04],sc:[.22,.24,.15],root:ROOT,tip:TIP,len:.04,tat:true});   // runde Ohren
