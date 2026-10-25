@@ -1579,7 +1579,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
 ### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
   - Affe wie der Monchichi aus dem Video (Nutzerwunsch; ersetzt „komplett hellbraun“): dunkelbraunes Fell überall, großes
     helles Gesicht in Herzform (zwei Augen-Felder + Schnauze), große glänzende schwarze Augen, helles Innenohr, helle Hände
-    und Füße, oben auf dem Kopf eine breite, runde Fell-Wölbung wie im Video (kein spitzes Büschel). Schwanz von der Seite sichtbar (vorher abgeschnitten): Ansatz am Rücken, rollt sich nie ganz ein, das Bild der
+    und Füße. Keine Erhöhung oben auf dem Kopf (ausprobiert, Nutzerwunsch: wieder weg). Schwanz von der Seite sichtbar (vorher abgeschnitten): Ansatz am Rücken, rollt sich nie ganz ein, das Bild der
     Figur ist breiter (±3,3 statt ±2,4 Einheiten, gleiche Schärfe). Test figuren3d_affe_monchichi.
   - Leistung (Nutzer: „ruckelt“): läuft das Spiel länger als ca. 2 s unter ~45 Bildern/s, nimmt die 3D-Figur weniger
     Fell-Schichten (14 -> 8 -> 5, Fell gleich lang, nur weniger fein; F3D_QUALI in js/33) und stellt nie wieder hoch. Die
