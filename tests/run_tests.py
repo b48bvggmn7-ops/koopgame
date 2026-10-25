@@ -6557,9 +6557,17 @@ async def figuren3d_brille_tattoo(g):
         assert anders > 0.05, f'{wer}: mit Tattoo sieht die Figur kaum anders aus: {anders:.3f}'
 
 @test
+async def level1_bei_nacht(g):
+    """Nutzerwunsch: Dschungel Level 1 spielt bei Nacht (Tageszeit „nacht“ in beiden Level-Dateien, Look dschungel@nacht)."""
+    for f in ('levels/dschungel/01-dschungel.json', 'levels/editor-format/dschungel/01-dschungel.json'):
+        assert json.loads((ROOT / f).read_text(encoding='utf-8')).get('tageszeit') == 'nacht', f
+    await g.load(str(ROOT / 'levels' / 'dschungel' / '01-dschungel.json'))
+    assert await g.ev("themeName") == 'dschungel@nacht', await g.ev("themeName")
+
+@test
 async def hohler_baum_start_ziel(g):
-    """Start und Ziel im Dschungel = hohler Baum (12a-hohler-baum.js), ganz vorne vor Boden/Wand: der Start-Baum rückt von
-    einer Wand weg, das Ziel-Schild fehlt. Wer den Baum zuerst erreicht, lässt sich nicht mehr steuern, geht bis 30 px vor
+    """Ziel im Dschungel = hohler Baum (12a-hohler-baum.js), ganz vorne vor Boden/Wand, das Ziel-Schild fehlt. Am START steht
+    kein Baum mehr und es gibt keinen Start-Ablauf (Nutzerwunsch „Baumhaus als Startpunkt wieder entfernen“, BAUM_START_AN). Wer den Baum zuerst erreicht, lässt sich nicht mehr steuern, geht bis 30 px vor
     den Eingang und wartet. Sind beide da: erst tanzen beide (Siegestanz), dann gehen sie ZUSAMMEN hinein (Plätze ±12),
     dann leuchtet der Eingang auf und die Tür fährt zu; ist sie zu, sind die Figuren nicht mehr zu sehen; danach geht es
     weiter (winEndeSchritte). Start-Ablauf: Tür zu -> auf -> beide kommen heraus. Baum nur an gesetztem Start/Ziel.
@@ -6567,11 +6575,9 @@ async def hohler_baum_start_ziel(g):
     teile = [ground(0, 680, 3000), ground(0, 400, 40, 280, 'wall')]
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='dschungel'))
     await g.steps(5)
-    r = await g.ev("({an: baumAktiv(), start: baumStartPunkt(), licht: baumZielLicht(), tuer: baumTuerAnteil()})")
-    assert r['an'], 'im Dschungel soll der hohle Baum stehen'
-    assert r['start']['x'] - 64 >= 40, f"Start-Baum soll vor der Wand weggerückt sein: {r['start']}"
-    assert await g.ev("baumStartPunkt().x - BAUM_BREITE_HALB >= 40 && baumSperrFlaechen(baumStartPunkt().x, baumStartPunkt().y).length === 0"), 'Start-Baum soll mit Wurzeln frei neben der Wand stehen'
-    assert await g.ev("baumSperrFlaechen(60, 680).length") >= 1, 'stünde er an der Wand, würde die Wurzel weggeschnitten'
+    r = await g.ev("({an: baumAktiv(), start: baumStartAktiv(), licht: baumZielLicht(), tuer: baumTuerAnteil()})")
+    assert r['an'], 'im Dschungel soll der hohle Baum (am Ziel) stehen'
+    assert not r['start'], f'am Start soll kein Baum mehr stehen: {r}'
     assert r['licht'] < 0.3 and r['tuer'] == 0, f'Ziel-Eingang vor dem Sieg dunkel, Tür offen: {r}'
     # Affe kommt zuerst an: Steuerung aus (Taste rechts gedrückt halten bewirkt nichts), er geht bis 30 px vor den Eingang
     await g.ev("p1.x = goal.x - 55; p1.y = goal.y; p1.vx = p1.vy = 0;")
@@ -6595,22 +6601,12 @@ async def hohler_baum_start_ziel(g):
     assert r['licht'] > 0.99 and r['tuer'] == 1 and r['ende'] > 250, f'Eingang hell und Tür zu: {r}'
     assert not r['tanz'] and r['weg'], f'Tür zu: im Baum kein Tanz mehr, Figuren nicht mehr zu sehen: {r}'
     await g.ev("draw()")   # zeichnet ohne Fehler (Tür, Licht)
-    # Start-Ablauf: Tür zu (Figuren im Baum, unsichtbar, keine Steuerung) -> Tür geht auf -> beide gehen zu ihren Startplätzen
+    # kein Start-Ablauf mehr: nach dem Neustart stehen beide sofort auf ihren Startplätzen und sind steuerbar
     await g.load(level(teile, {'x': 300, 'y': 680}, {'x': 360, 'y': 680}, goal={'x': 1600, 'y': 680}, welt='dschungel'))
     await g.ev("window.baumIntroAus = false; menuScreen = 'pause'; resetLevel(); baumIntroStarten();")
-    r = await g.ev("({intro: !!baumIntro, frei: !!p1.baumIntro && !!p2.baumIntro, weg: baumFigurenVersteckt(), tuer: baumStartTuer(), d1: p1.x - baumStartPunkt().x, d2: p2.x - baumStartPunkt().x})")
-    assert r['intro'] and r['frei'] and r['weg'] and r['tuer'] == 1 and abs(r['d1'] + 12) < 1 and abs(r['d2'] - 12) < 1, f'Start: beide im Baum hinter geschlossener Tür: {r}'
-    # Schritt für Schritt (fester Takt): Taste links gedrückt halten – während des Ablaufs ohne Wirkung
-    r = await g.ev("""(() => { let ts = 0; const x0 = p1.x; KEYS[p1.keys.left] = true;
-      for(let i = 0; i < 25; i++) stepSim(ts += 16.6);
-      const mitte = {tuer: baumStartTuer(), weg: baumFigurenVersteckt(), dx: p1.x - x0};
-      let n = 25; while(baumIntro && n < 400){ stepSim(ts += 16.6); n++; }
-      KEYS[p1.keys.left] = false;
-      return {mitte, n, d1: p1.x - levelStartM.x, d2: p2.x - levelStartF.x, frei: !p1.baumIntro && !p2.baumIntro, b: baumStartPunkt().x}; })()""")
-    assert 0 < r['mitte']['tuer'] < 1 and not r['mitte']['weg'] and abs(r['mitte']['dx']) < 1, f'Tür geht auf, Figuren werden sichtbar, Taste ohne Wirkung: {r}'
-    assert r['n'] <= 75, f'Start-Ablauf zu langsam (Nutzerwunsch: schnell heraus): {r["n"]} Schritte'
-    assert abs(r['d1']) < 3 and abs(r['d2']) < 3 and r['frei'] and abs(r['b'] - 240) < 1, f'Baum links hinter dem Start; nach dem Herauskommen auf den Startplätzen, Steuerung an: {r}'
-    await g.ev("menuScreen = null")
+    r = await g.ev("({intro: !!baumIntro, frei: !p1.baumIntro && !p2.baumIntro, weg: baumFigurenVersteckt(), d1: p1.x - levelStartM.x, d2: p2.x - levelStartF.x})")
+    assert not r['intro'] and r['frei'] and not r['weg'] and abs(r['d1']) < 1 and abs(r['d2']) < 1, f'ohne Start-Baum kein Start-Ablauf: {r}'
+    await g.ev("window.baumIntroAus = true; menuScreen = null")
     # Ziel direkt neben erhöhtem Boden: der Baum rückt (hier 75 px) zur Seite, bis er frei auf dem Boden steht (nicht „im Boden“);
     # nach dem Sieg gehen beide trotzdem rechtzeitig in seinen Eingang
     await g.load(level([ground(0, 680, 3000), ground(1620, 560, 200, 120)], {'x': 300, 'y': 680}, {'x': 360, 'y': 680}, goal={'x': 1600, 'y': 680}, welt='dschungel'))
@@ -6626,12 +6622,6 @@ async def hohler_baum_start_ziel(g):
     await g.ev("resetLevel(); baumIntroStarten()")
     r = await g.ev("({start: baumStartAktiv(), ziel: baumZielAktiv(), intro: !!baumIntro})")
     assert not r['start'] and not r['ziel'] and not r['intro'], f'ohne gesetzten Start/Ziel kein Baum: {r}'
-    # Testen ab einer Stelle (Editor): Baum am echten Start, kein Start-Ablauf
-    await g.load(level(teile, {'x': 2000, 'y': 680}, {'x': 2040, 'y': 680}, goal={'x': 2800, 'y': 680}, welt='dschungel', testStart=True,
-                       startEchtM={'x': 300, 'y': 680}, startEchtF={'x': 360, 'y': 680}))
-    await g.ev("resetLevel(); baumIntroStarten()")
-    r = await g.ev("({start: baumStartAktiv(), x: baumStartPunkt().x, intro: !!baumIntro})")
-    assert r['start'] and abs(r['x'] - 240) < 1 and not r['intro'], f'Test ab Stelle: Baum am echten Start, kein Ablauf: {r}'
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='ruinen'))
     await g.steps(5)
     assert not await g.ev("baumAktiv()"), 'außerhalb des Dschungels kein Baum (Ziel-Schild bleibt)'

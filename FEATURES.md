@@ -195,7 +195,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Hohler Baum als Start und Ziel (nur Dschungel-Look; andere Welten: Ziel-Schild wie bisher; js/12a-hohler-baum.js):
     großer alter Baum mit abgebrochener Krone, Wurzeln, Moos, Efeu, Pilzen und einem Loch als Eingang (Tag- und Nacht-Farben).
     Er steht ganz vorne vor Boden, Wänden und Pflanzen (Nutzerwunsch), Münzen und Figuren bleiben davor sichtbar.
-    Start: früher zwischen den Startplätzen; jetzt etwas links hinter ihnen (60 px vor dem linken Platz), Eingang leuchtet
+    **Start-Baum entfernt** (Nutzerwunsch „Baumhaus als Startpunkt wieder entfernen – wir benutzen etwas anderes“;
+    BAUM_START_AN = false in js/12a-hohler-baum.js): am Start steht kein Baum mehr und es gibt keinen Start-Ablauf, beide
+    stehen sofort auf ihren Startplätzen; der Ziel-Baum bleibt. Das Folgende zum Start gilt nur, wenn er wieder an ist.
+    Start: früher zwischen den Startplätzen; dann etwas links hinter ihnen (60 px vor dem linken Platz), Eingang leuchtet
     warm; stünde er vor einer Wand oder links aus dem Level, rückt er bis 160 px zur Seite.
     Nur wo im Editor Start bzw. Ziel gesetzt ist, steht ein Baum (Nutzerwunsch); ohne gesetztes Ziel bleibt das Schild.
     Wurzeln schmaler (Nutzerwunsch: ca. ±90 statt ±115 px); wo Boden/Wand höher als der Fuß des Baums in seinen Bereich ragt,

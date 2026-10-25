@@ -160,7 +160,10 @@ function baumLevelMerken(data){
   baumZielGesetzt = !!data.goal && !data.baumAus; baumTestStart = !!data.testStart; baumStartMerk = null;
   baumZielMerk = null; baumSperrMerk.clear();   // neues Level: Plätze neu suchen
 }
-function baumStartAktiv(){ return baumAktiv() && !!baumStartDaten; }
+// Start-Baum ausgeschaltet (Nutzerwunsch: „Baumhaus als Startpunkt wieder entfernen – wir benutzen etwas anderes“); der
+// Ziel-Baum bleibt. Wieder an: BAUM_START_AN = true.
+const BAUM_START_AN = false;
+function baumStartAktiv(){ return BAUM_START_AN && baumAktiv() && !!baumStartDaten; }
 function baumZielAktiv(){ return baumAktiv() && baumZielGesetzt && !(typeof bossKampf !== 'undefined' && bossKampf); }
 // Nächster freier Platz um x0 (höchstens versatz weit): erst für den ganzen Baum mit Wurzeln, sonst nur für den Stamm
 // (die Wurzeln werden dann an Boden/Wand weggeschnitten, baumSperrFlaechen); nie links aus dem Level hinaus
