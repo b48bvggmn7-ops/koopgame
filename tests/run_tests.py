@@ -5281,7 +5281,8 @@ async def seil_absprung_wie_schwung(g):
 async def level_themen(g):
     """Jedes Level hat sein eigenes Aussehen (Thema): Level 1 Dschungel, 2 Abendrot, 3 Ruinen; alle 6 Themen
     zeichnen fehlerfrei; Nacht/Höhle sind dunkel mit Licht um die Figuren; der Editor speichert das Thema."""
-    erwartet = {'dschungel/01-dschungel.json': 'dschungel', 'dschungel/02-baumkronen.json': 'dschungel',   # Level 2: neue Nutzer-Datei ohne Abend-Look
+    # Level 1: kein altes Thema mehr – Nacht über Welt + Tageszeit (Nutzerwunsch, Test level1_bei_nacht)
+    erwartet = {'dschungel/02-baumkronen.json': 'dschungel',   # Level 2: neue Nutzer-Datei ohne Abend-Look
                 'ruinen/01-ruinen.json': 'ruinen', 'ruinen/02-mondnacht.json': 'nacht', 'hoehle/01-kristallhoehle.json': 'hoehle', 'vulkan/03-feuerberg.json': 'vulkan'}
     for datei, th in erwartet.items():
         d = json.loads((ROOT / 'levels' / datei).read_text())
