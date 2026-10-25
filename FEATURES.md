@@ -47,6 +47,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
       Sprung + Dash, Pilz, Haken und Aufwind niemand hinkommt (Tropfsteingang, Eisgrotte, Leuchtgrotte, Förderwerk).
       Draußen (Dschungel, Ruinen, Vulkan) bleibt der Himmel offen – eine Decke ergäbe dort keinen Sinn; Bögen zwischen
       hohen Säulen wären möglich, es gibt aber keine Stelle, an die niemand hinkommt. Bosse unverändert.
+    - Holz-Plattform-Material entfernt (Nutzerwunsch „ich weiß gar nicht, was das sein soll“; Test keine_holzplattform_mehr):
+      in allen Leveln ist die Kachel „Plattform“ (Holz) ersetzt – durch Wand, wo sie an Boden stieß, sonst durch Boden.
+      Bewegte Böden fahren weiter wie bisher, nur im neuen Material; das Spiel kann alte Dateien mit Plattform noch laden.
     - Haken passend zur Welt (Nutzerwunsch „nicht nur ein blauer Punkt in der Luft“; js/12b-haken-aussehen.js): ein Ring
       an einer Liane (Dschungel, hängt vom Blätterdach) bzw. Kette (Ruinen: Bronze, Höhle: Eisen mit Leuchtkristall,
       Vulkan: Eisen mit Glut). Ist höchstens 9 Reihen darüber Boden/Wand, hängt die Kette dort an einer Halterung, sonst

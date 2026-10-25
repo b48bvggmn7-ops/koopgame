@@ -2338,7 +2338,7 @@
       "y": 360,
       "w": 120,
       "h": 40,
-      "look": "platform",
+      "look": "wall",
       "group": 1,
       "targetX": 4360,
       "targetY": 360,

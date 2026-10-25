@@ -2259,7 +2259,7 @@
       "y": 560,
       "w": 80,
       "h": 40,
-      "look": "platform",
+      "look": "wall",
       "group": 3,
       "targetX": 12800,
       "targetY": 80,

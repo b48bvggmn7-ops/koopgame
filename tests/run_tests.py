@@ -9676,6 +9676,18 @@ async def haken_schwung_frei(g):
     assert not befunde, befunde
 
 @test
+async def keine_holzplattform_mehr(g):
+    """Nutzerwunsch („Ich weiß gar nicht, was das sein soll“): das Holz-Plattform-Material (Kachel 'platform') ist aus allen
+    Leveln heraus – ersetzt durch Wand, wo es an Boden stieß, sonst Boden (bewegte Böden fahren weiter, nur im neuen Material)."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    for f in [f for welt in w['welten'] for f in welt.get('level', []) + ([welt['boss']] if welt.get('boss') else [])]:
+        ed = json.loads((ROOT / 'levels' / 'editor-format' / f).read_text(encoding='utf-8'))
+        assert not [t for t in ed['tiles'] if t[2] == 'platform'], f'{f}: noch Holz-Plattform'
+        spiel = json.loads((ROOT / 'levels' / f).read_text(encoding='utf-8'))
+        assert not [s for s in spiel.get('solids', []) if s.get('type') == 'platform'], f'{f}: noch Holz-Plattform (Spiel-Datei)'
+        assert not [m for m in spiel.get('movingPlatforms', []) if m.get('look') == 'platform'], f'{f}: bewegte Holz-Plattform'
+
+@test
 async def material_schoen_pruefung(g):
     """Material-Einsatz (Nutzerwunsch „schön und etwas realistischer, ohne den Spielfluss zu stören“, tests/material_schoen.py):
     unterer Boden ist überall mindestens 3 Kästchen dick, wo niemand hinkommt (Trittsteine dürfen dünn bleiben), und in der
