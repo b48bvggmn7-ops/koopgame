@@ -142,6 +142,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Springen gibt nur den kleinen Hub nach oben (HOOK_RELEASE_BOOST). Der Schwung wird danach nicht mehr gekappt/stark
     gebremst (bis ROPE_FLING_MAX 15, ohne Taste nur ROPE_FLING_DRAG 0,993 statt 0,94); Taste halten macht nicht schneller
     als normal; endet beim Landen oder an einer Wand.
+  - Liane 2 – natürliches Schwingen (Nutzerwunsch „fühlt sich wie ein Bug an“, Video; js/32 lianeSchritt, Werte LIANE2_* in
+    02): beim Halten der Haken-Taste ein echtes Pendel mit FESTER Seillänge – das Seil gibt nicht mehr nach und dehnt sich
+    nicht (keine rot-orange Gummi-Liane, straff gezeichnet; hängt nur durch, wenn es locker ist). Länge = Abstand beim Greifen,
+    mindestens 100 px (nah gegriffen rutscht der Affe weich auf diese Länge), höchstens die Reichweite; W/S wie bisher.
+    Schwung holen mit der Richtungstaste bis 70°, ab 80° bremst die Luft stärker, höchstens ca. 95° (kein Überschlag mehr).
+    Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach und zieht weich zurück statt zu rucken. Schub beim
+    Loslassen kräftiger (LIANE_BOOST 3,2). Die alte Seil-Physik bleibt für die alte Antipp-Bedienung (Bahnen-Test unverändert).
+    Sechs Haken um ein Kästchen versetzt, an denen man mit dem neuen Pendel an eine Wand stieß. Test liane2_natuerliches_pendel.
   - Liane HALTEN (Nutzerwunsch): Die Haken-Taste (G / Num 1 / □) muss GEDRÜCKT GEHALTEN werden, solange der Affe am Seil
     hängt; Taste loslassen = abspringen, ohne Leertaste (js/32 lianeLoslassen; LIANE_HALTEN in 02, false = alte
     Antipp-Bedienung). Mit Schwung gibt es einen Absprung-Schub in Schwungrichtung (LIANE_BOOST 2,4 px/Schritt

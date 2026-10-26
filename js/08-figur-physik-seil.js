@@ -279,7 +279,7 @@ function updatePlayer(player, now){
       if(player.ropeWasAirborne) player.hookAttached = false;
     } else {
       player.ropeWasAirborne = true;
-      updateRopeTension(player);
+      if(!(typeof lianeNeu === 'function' && lianeNeu(player))) updateRopeTension(player);   // Liane 2 (js/32): Seil dehnt sich nicht
     }
     // Beim Ranziehen keinen Schwung Richtung Haken mitnehmen – sonst schießt der Affe oben über den
     // Haken hinaus und "hüpft". Seitlicher Schwung (Pendeln) bleibt erhalten.

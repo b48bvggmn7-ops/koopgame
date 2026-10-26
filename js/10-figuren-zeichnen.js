@@ -113,9 +113,9 @@ function groundBelow(P){
 }
 // Liane zwischen Hand (x0,y0) und Haken (x1,y1); st = Dehnung 0..1, seed = fester Zufall (Lage der Blätter)
 const LIANE_DURCHHANG = 9, LIANE_BLATT_ABSTAND = 20;
-function lianeZeichnen(x0, y0, x1, y1, st, jit, seed){
+function lianeZeichnen(x0, y0, x1, y1, st, jit, seed, sagF){
   const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1, nx = -dy/len, ny = dx/len;
-  const sag = LIANE_DURCHHANG*(1 - st)*Math.min(1, len/120);
+  const sag = LIANE_DURCHHANG*(sagF ?? (1 - st))*Math.min(1, len/120);   // sagF: eigener Durchhang (Liane 2: straff)
   const cx = (x0 + x1)/2 + nx*sag*Math.sign(ny || 1) + jit, cy = (y0 + y1)/2 + Math.abs(ny)*sag + jit;   // Durchhang nach unten
   const pt = t => [(1-t)*(1-t)*x0 + 2*(1-t)*t*cx + t*t*x1, (1-t)*(1-t)*y0 + 2*(1-t)*t*cy + t*t*y1];
   const aussen = st > 0.05 ? `rgb(${Math.round(63+st*169)},${Math.round(122-st*72)},${Math.round(58-st*28)})` : '#3f7a3a';
@@ -215,10 +215,13 @@ function drawCharacter(player, camX){
     // Seil als Liane (Nutzerwunsch): grüner Strang mit hellem Kern, leicht durchhängend, kleine Blätter.
     // Gedehnt: wird dünner, färbt sich orange-rot, hängt nicht mehr durch und zittert (wie bisher)
     const st = Math.min(1, (player.ropeStretch||0) / ROPE_SNAP_STRETCH);
+    // Liane 2 (js/32): das Seil ist straff, solange der Affe daran hängt – hängt nur durch, wenn es locker ist (z. B. beim Fallen)
+    const neu = typeof lianeNeu === 'function' && lianeNeu(player);
+    const locker = neu ? Math.max(0, Math.min(1, (player.ropeLen - Math.hypot(player.x - player.anchor.x, player.y - player.h*0.6 - player.anchor.y))/30)) : null;
     const jit = st > 0.3 ? (Math.random()-0.5)*st*3 : 0;
     let rx = px, ry = py-player.h*0.6;
     if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
-    lianeZeichnen(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.x);
+    lianeZeichnen(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);
   }
   if(!player.male && player.umbrella > 0.02 && !(typeof neueFigurenAn === 'function' && neueFigurenAn())) drawUmbrella(player, px, py);
 }

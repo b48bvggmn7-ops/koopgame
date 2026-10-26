@@ -231,7 +231,7 @@ function haftNachher(P, altX, altY){
 // Leichter Schub in Richtung des Schwungs (Bahn-Richtung) plus kleiner Hub – nur mit Schwung, weich ansteigend, damit
 // es zur Pendel-Physik passt. Danach fliegt die Figur wie nach jedem Loslassen weiter (ropeFling, ROPE_FLING_* in 02).
 function lianeLoslassen(P){
-  P.hookAttached = false;
+  P.hookAttached = false; P._lianeA = null;
   const v = Math.hypot(P.vx, P.vy), k = Math.max(0, Math.min(1, (v - LIANE_MIN_SCHWUNG)/LIANE_SCHWUNG_VOLL));
   if(k > 0){
     P.vx += P.vx/v*LIANE_BOOST*k;
@@ -239,6 +239,59 @@ function lianeLoslassen(P){
     P.lianeSchub = k;
   } else P.lianeSchub = 0;
   ropeFling(P);
+}
+
+// ---------- Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“): echtes Pendel mit fester Länge ----------
+// Gilt beim Halten der Haken-Taste (LIANE_HALTEN, nicht in der alten Antipp-Bedienung des Bahnen-Tests). Statt Gummi-Seil:
+// - Länge fest (Fallen ins Seil: kurz nachfedern, LIANE2_FANG_*): beim Greifen die Entfernung, aber mindestens LIANE2_MIN (näher gegriffen: das Seil wird weich nachgegeben,
+//   der Affe rutscht in LIANE2_ABROLL px/Schritt auf die Länge) und höchstens die Reichweite; W/S ändern sie wie bisher.
+// - Schwung holen mit der Richtungstaste nur bis LIANE2_PUMP_WINKEL, ab LIANE2_BREMS_WINKEL bremst die Luft stärker, über
+//   LIANE2_MAX_WINKEL wird er weich gebremst (kein
+//   Überschlag). - Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach (LIANE2_FANG_*).
+// - Das Seil gibt nie nach und dehnt sich nicht (keine rote Gummi-Liane mehr). Wände/Boden halten ihn normal auf.
+function lianeNeu(P){ return !!(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen); }
+function lianeSchritt(P, moveDir, jumpPressed){
+  const A = P.anchor, K = P.keys || {};
+  if(jumpPressed){   // Springen am Seil: loslassen mit Hub (wie bisher), Schwung bleibt
+    P.hookAttached = false; P._lianeA = null; P.vy += HOOK_RELEASE_BOOST; ropeFling(P); return false;
+  }
+  const hx = P.x, hy = P.y - P.h*0.6, dx0 = hx - A.x, dy0 = hy - A.y, d0 = Math.hypot(dx0, dy0) || 1;
+  if(P._lianeA !== A){   // gerade gegriffen
+    P._lianeA = A; P._dehn = 0;
+    P.lianeZiel = Math.max(LIANE2_MIN, Math.min(hookRange(A), d0));
+    P.ropeLen = d0; P.ropeMax = Math.max(P.lianeZiel, hookRange(A));
+  }
+  if(K.pull && isDown(K.pull)) P.lianeZiel = Math.max(HOOK_MIN_LEN, P.lianeZiel - ROPE_PULL_SPEED);
+  if(K.slack && isDown(K.slack)) P.lianeZiel = Math.min(P.ropeMax, P.lianeZiel + ROPE_ADJUST_SPEED);
+  // Seillänge zur Wunschlänge
+  P.ropeLen += Math.max(-LIANE2_ABROLL, Math.min(LIANE2_ABROLL, P.lianeZiel - P.ropeLen));
+  let vx = P.vx, vy = P.vy + GRAVITY*0.9;
+  const tx = dy0/d0, ty = -dx0/d0, a = Math.atan2(dx0, dy0)*180/Math.PI;   // Tangente (rechts herum), Winkel (0 = unten)
+  const vt = vx*tx + vy*ty;
+  if(moveDir && Math.abs(a) < LIANE2_PUMP_WINKEL && vt*moveDir > -0.3){ vx += tx*moveDir*LIANE2_PUMP; vy += ty*moveDir*LIANE2_PUMP; }
+  const dmp = Math.abs(a) > LIANE2_BREMS_WINKEL ? LIANE2_DAEMPF_OBEN : LIANE2_DAEMPF; vx *= dmp; vy *= dmp;
+  let nx = hx + vx, ny = hy + vy;
+  const dx = nx - A.x, dy = ny - A.y, d = Math.hypot(dx, dy) || 1, ux = dx/d, uy = dy/d;
+  // straff: auf den Kreis (Länge + kleine Fang-Dehnung). Fällt der Affe ins Seil, wird das Hinausfliegen über mehrere
+  // Schritte gebremst (je Schritt bleibt LIANE2_FANG_REST davon) – das Seil federt kurz nach und zieht weich zurück
+  P._dehn = P._dehn || 0;
+  if(d > P.ropeLen + P._dehn){
+    let radial = vx*ux + vy*uy;
+    if(radial > LIANE2_FANG_AB){ radial *= LIANE2_FANG_REST; P._dehn = Math.min(LIANE2_FANG_MAX, P._dehn + radial); }
+    const Lw = P.ropeLen + P._dehn;
+    nx = A.x + ux*Lw; ny = A.y + uy*Lw;
+  }
+  P._dehn *= LIANE2_FANG_ZURUECK; if(P._dehn < 0.3) P._dehn = 0;
+  // über LIANE2_MAX_WINKEL (nach oben hinaus) weich bremsen – kein Überschlag
+  const an = Math.atan2(nx - A.x, ny - A.y)*180/Math.PI;
+  if(Math.abs(an) > LIANE2_MAX_WINKEL && Math.abs(an) > Math.abs(a)){
+    const k = 0.8; nx = hx + (nx - hx)*k; ny = hy + (ny - hy)*k;
+  }
+  P.vx = nx - hx; P.vy = ny - hy;
+  const sp = Math.hypot(P.vx, P.vy);
+  if(sp > ROPE_MAX_STEP){ P.vx *= ROPE_MAX_STEP/sp; P.vy *= ROPE_MAX_STEP/sp; }
+  P.ropeStretch = 0; P.ropePulledNow = false;
+  return true;
 }
 
 // ---------- Aufrufe aus 08-figur-physik-seil.js ----------
@@ -274,6 +327,9 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
     if(z){ haftStarten(P, z); haftSchritt(P, moveDir); return true; }
   }
   // Durchbruch-Fenster: kurz nach einem Durchbruch geht ein Sprung auch in der Luft (Spielwiese: bruchFenster)
+  // Liane 2: am Seil in der Luft das neue Pendel (am Boden bleibt die alte Seil-Regel: hochziehen mit W)
+  if(!P.hookAttached) P._lianeA = null;
+  else if(lianeNeu(P) && !P.grounded) return lianeSchritt(P, moveDir, jumpPressed);
   if(P.bruchFenster > 0 && jumpPressed && !P.grounded && !P.hookAttached){
     P.bruchFenster = 0; P.vy = JUMP_V; P.sprungKurzMoeglich = true; P.sprungLosgelassen = false; P.glideTimer = 0;
     if(moveDir) P.vx = moveDir*Math.max(Math.abs(P.vx), MOVE_SPEED);

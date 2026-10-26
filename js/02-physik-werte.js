@@ -64,8 +64,21 @@ const ROPE_FLING_DRAG = 0.993;  // Luftbremse ohne Taste im Abflug (normal in de
 const LIANE_HALTEN = true;          // false = alte Bedienung (G antippen = greifen, nochmal G = loslassen)
 const LIANE_MIN_SCHWUNG = 2.5;      // px/Schritt: darunter kein Schub (still hängen)
 const LIANE_SCHWUNG_VOLL = 4;       // ab MIN + diesem Wert voller Schub (dazwischen weich ansteigend)
-const LIANE_BOOST = 2.4;            // Schub in Schwungrichtung (px/Schritt; Schwung am Seil meist 5–10; vorher 1,6 – Nutzerwunsch: etwas stärker)
+const LIANE_BOOST = 3.2;            // Schub in Schwungrichtung (px/Schritt; Schwung am Seil meist 5–10; vorher 1,6 – Nutzerwunsch: etwas stärker)
 const LIANE_HUB = -1.6;             // dazu ein kleiner Hub nach oben (Springen am Seil: -4,5; vorher -1,2)
+// Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“; js/32 lianeSchritt): echtes Pendel mit fester Länge – gilt
+// beim Halten der Haken-Taste (LIANE_HALTEN); die alte Seil-Physik in 08 bleibt für die alte Antipp-Bedienung (Bahnen-Test)
+const LIANE2_MIN = 100;             // px: kürzeste Seillänge – greift man näher, rutscht der Affe weich auf diese Länge
+const LIANE2_ABROLL = 3.2;          // px/Schritt: so schnell wird das Seil auf die Wunschlänge gegeben/geholt
+const LIANE2_PUMP = 0.16;           // px/Schritt²: Schwung holen mit der Richtungstaste (nur im Bereich bis LIANE2_PUMP_WINKEL)
+const LIANE2_PUMP_WINKEL = 70;      // Grad: darüber gibt die Taste keinen Schwung mehr
+const LIANE2_MAX_WINKEL = 95;       // Grad: höher schwingt der Affe nie (kein Überschlag) – oben wird er weich abgebremst
+const LIANE2_DAEMPF = 0.998;        // Luftwiderstand je Schritt
+const LIANE2_BREMS_WINKEL = 80, LIANE2_DAEMPF_OBEN = 0.95;   // oben (ab 80°) bremst die Luft stärker – weicher Umkehrpunkt
+const LIANE2_FANG_AB = 4;           // px/Schritt: ab diesem Tempo hinaus zählt es als „ins Seil fallen“ (sonst nur straff halten)
+const LIANE2_FANG_REST = 0.7;       // Fällt der Affe ins Seil (z. B. von oben gegriffen): so viel vom Hinausfliegen bleibt je Schritt
+const LIANE2_FANG_MAX = 45;         // px: so weit federt das Seil dabei höchstens nach
+const LIANE2_FANG_ZURUECK = 0.8;    // danach zieht es sich je Schritt um diesen Anteil zurück
 
 const GLIDE_RAMP_MS = 2600;
 const GLIDE_START_GRAV = 0.10;

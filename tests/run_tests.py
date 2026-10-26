@@ -5203,20 +5203,63 @@ async def eigene_aufnahmen(g):
 
 @test
 async def seil_abflug_mit_schwung(g):
-    """Vom Seil loslassen (Springen) mit Schwung: Affe fliegt weit weiter, auch ohne Taste (kein Abbremsen auf 7,2)."""
+    """Vom Seil loslassen (Springen) mit Schwung: Affe fliegt weit weiter, auch ohne Taste (kein Abbremsen auf 7,2).
+    (Schritt für Schritt im festen Takt – unabhängig davon, wie schnell der Rechner ist; Liane 2 seit Nutzerwunsch.)"""
     await g.load(level([ground(0, 680, 4000)], {'x': 900, 'y': 680}, {'x': 860, 'y': 680}, hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
-    await g.ev("""(()=>{ const h=hooks[0]; p1.x=h.x-60; p1.y=h.y+170+p1.h*0.6; p1.vx=11; p1.vy=0; p1.grounded=false;
-      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=180; p1.ropeMax=220; KEYS.KeyG = true; })()""")
-    await g.p.wait_for_timeout(50)
-    await g.p.keyboard.press('Space')
-    try: await g.p.wait_for_function("!p1.hookAttached", timeout=3000)   # langsame Rechner: auf den nächsten Schritt warten
-    except Exception: pass
-    st = await g.ev("KEYS.KeyG = false, ({hook: p1.hookAttached, vx: p1.vx, x: p1.x})")
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1;
+      const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+      P.x = h.x - 60; P.y = h.y + 170 + P.h*0.6; P.vx = 11; P.vy = 0; P.grounded = false; P._px = P.x; P._py = P.y;
+      P.hookAttached = true; P.ropeWasAirborne = true; P.anchor = h; P.ropeLen = 180; P.ropeMax = 220; KEYS.KeyG = true;
+      for(let i = 0; i < 3; i++) st();
+      KEYS.Space = true; KEYS.Space_pressed = true; st(); KEYS.Space = false; KEYS.KeyG = false;
+      const a = {hook: P.hookAttached, vx: P.vx, x: P.x};
+      for(let i = 0; i < 14; i++) st();
+      menuScreen = null; return {a, b: {vx: P.vx, x: P.x, g: P.grounded}}; })()""")
+    st, st2 = r['a'], r['b']
     assert not st['hook'], 'Springen löst das Seil nicht'
-    await g.steps(14)   # ~0,25 s Spielzeit
-    st2 = await g.ev("({vx: p1.vx, x: p1.x, g: p1.grounded})")
     assert st2['vx'] > 8 or st2['g'], f'Schwung nach dem Loslassen weg: {st} -> {st2}'
     assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
+
+@test
+async def liane2_natuerliches_pendel(g):
+    """Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“, js/32 lianeSchritt): nah gegriffen rutscht der Affe weich
+    auf LIANE2_MIN (100 px) – nie ruckartig; mit Pumpen höchstens knapp über waagerecht (kein Überschlag) und ohne Ruck; von
+    oben ins Seil gefallen federt es weich nach (Ruck höchstens ~6 px/Schritt statt ~17) und das Seil bleibt danach gleich lang;
+    beim Loslassen mit Schwung gibt es einen spürbaren Schub nach vorn."""
+    await g.load(level([ground(0, 680, 4000)], {'x': 880, 'y': 680}, {'x': 600, 'y': 680}, hooks=[{'x': 1000, 'y': 260, 'radius': 200}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1;
+      const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+      const setz = (x, y, vx, vy) => { P.x = x; P.y = y + P.h*0.6; P.vx = vx; P.vy = vy; P.grounded = false; P._px = P.x; P._py = P.y; P.hookAttached = false; P._lianeA = null;
+        KEYS.KeyG = true; KEYS.KeyG_pressed = true; };
+      const e = {};
+      // 1) nah gegriffen (40 px unter dem Haken): rutscht weich auf 100
+      setz(h.x, h.y + 40, 0, 0); const L = []; for(let i = 0; i < 40; i++){ st(); L.push(Math.round(Math.hypot(P.x - h.x, P.y - P.h*0.6 - h.y))); }
+      e.nah = {att: P.hookAttached, laengen: L.filter((_, i) => i % 5 === 0), ende: P.ropeLen};
+      // 2) schwingen mit Pumpen 8 s: max Winkel
+      setz(h.x - 120, h.y + 120, 0, 0); let maxA = 0, sprung = 0, letzt = null;
+      for(let i = 0; i < 430; i++){ KEYS.KeyD = P.vx >= 0; KEYS.KeyA = P.vx < 0; st();
+        const a = Math.abs(Math.atan2(P.x - h.x, P.y - P.h*0.6 - h.y))*180/Math.PI; maxA = Math.max(maxA, a);
+        const v = [P.vx, P.vy]; if(letzt) sprung = Math.max(sprung, Math.hypot(v[0]-letzt[0], v[1]-letzt[1])); letzt = v; }
+      KEYS.KeyD = KEYS.KeyA = false;
+      e.pumpen = {maxWinkel: Math.round(maxA), maxRuck: +sprung.toFixed(2), len: Math.round(P.ropeLen), att: P.hookAttached};
+      // 3) von oben gegriffen: 150 px über dem Haken fallen lassen
+      setz(h.x + 60, h.y - 150, 0, 6); let ruck = 0; letzt = null; const lens = [];
+      for(let i = 0; i < 90; i++){ st(); const v = [P.vx, P.vy]; if(letzt) ruck = Math.max(ruck, Math.hypot(v[0]-letzt[0], v[1]-letzt[1])); letzt = v; if(i % 6 === 0) lens.push(Math.round(Math.hypot(P.x - h.x, P.y - P.h*0.6 - h.y))); }
+      e.vonOben = {att: P.hookAttached, maxRuck: +ruck.toFixed(2), abstand: lens};
+      // 4) Loslassen unten mit Schwung: Schub
+      setz(h.x - 150, h.y + 100, 0, 0); for(let i = 0; i < 400 && !(Math.abs(P.x - h.x) < 10 && P.vx > 3); i++){ KEYS.KeyD = P.vx >= 0; KEYS.KeyA = P.vx < 0; st(); }
+      KEYS.KeyD = KEYS.KeyA = false; const vor = [P.vx, P.vy]; KEYS.KeyG = false; st(); e.los = {vor: vor.map(v => +v.toFixed(2)), nach: [+P.vx.toFixed(2), +P.vy.toFixed(2)], schub: P.lianeSchub, att: P.hookAttached};
+      let x0 = P.x; for(let i = 0; i < 200 && !P.grounded; i++) st(); e.los.weite = Math.round(P.x - x0);
+      menuScreen = null; KEYS.KeyG = false; return e; })()""")
+    n = r['nah']
+    assert n['att'] and abs(n['ende'] - 100) < 1 and n['laengen'][-1] in (99, 100, 101), f'nah gegriffen: {n}'
+    assert all(b - a <= 40 for a, b in zip(n['laengen'], n['laengen'][1:])), f'nah gegriffen: zu ruckartig {n}'
+    p = r['pumpen']
+    assert p['att'] and p['maxWinkel'] <= 100 and p['maxRuck'] < 3, f'Pumpen: Überschlag oder Ruck {p}'
+    o = r['vonOben']
+    assert o['att'] and o['maxRuck'] < 7 and len(set(o['abstand'][-5:])) == 1, f'von oben gegriffen: {o}'
+    l = r['los']
+    assert not l['att'] and l['schub'] > 0.9 and l['nach'][0] > l['vor'][0] + 2 and l['weite'] > 250, f'Loslassen: {l}'
 
 @test
 async def liane_halten_loslassen_schub(g):
