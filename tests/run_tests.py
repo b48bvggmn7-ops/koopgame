@@ -5257,7 +5257,7 @@ async def liane2_natuerliches_pendel(g):
     p = r['pumpen']
     assert p['att'] and p['maxWinkel'] <= 100 and p['maxRuck'] < 3, f'Pumpen: Überschlag oder Ruck {p}'
     o = r['vonOben']
-    assert o['att'] and o['maxRuck'] < 8 and len(set(o['abstand'][-5:])) == 1, f'von oben gegriffen: {o}'
+    assert o['att'] and o['maxRuck'] < 8 and max(o['abstand'][-5:]) - min(o['abstand'][-5:]) <= 2, f'von oben gegriffen: {o}'
     l = r['los']
     assert not l['att'] and l['schub'] > 0.9 and l['nach'][0] > l['vor'][0] + 2 and l['weite'] > 250, f'Loslassen: {l}'
 

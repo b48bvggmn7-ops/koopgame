@@ -147,7 +147,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     nicht (keine rot-orange Gummi-Liane, straff gezeichnet; hängt nur durch, wenn es locker ist). Länge = Abstand beim Greifen,
     mindestens 70 px (nah gegriffen rutscht der Affe weich auf diese Länge), höchstens die Reichweite; W/S wie bisher.
     Schwung holen mit der Richtungstaste bis 70°, ab 80° bremst die Luft stärker, höchstens ca. 95° (kein Überschlag mehr).
-    Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach und zieht weich zurück statt zu rucken. Schub beim
+    Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach und zieht weich zurück statt zu rucken; ein Teil des
+    Hineinfallens wird dabei zu Schwung entlang des Bogens (LIANE2_FANG_SCHWUNG), so verliert man beim Greifen im Flug keinen
+    Schwung. Die Bremse oben wirkt nur bei straffem Seil beim Hinaufschwingen (fliegt der Affe frei über dem Haken, bremst
+    nichts). Bot-Pläne Pfeil-Galerie (Level 9) und oberer Weg (Sonnentempel) lassen dafür später/im Umkehrpunkt los. Schub beim
     Loslassen kräftiger (LIANE_BOOST 3,2). Die alte Seil-Physik bleibt für die alte Antipp-Bedienung (Bahnen-Test unverändert).
     Sechs Haken um ein Kästchen versetzt, an denen man mit dem neuen Pendel an eine Wand stieß. Test liane2_natuerliches_pendel.
   - Liane HALTEN (Nutzerwunsch): Die Haken-Taste (G / Num 1 / □) muss GEDRÜCKT GEHALTEN werden, solange der Affe am Seil
