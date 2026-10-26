@@ -67,7 +67,7 @@ for _w in 'mf':
 def _haken_dash_hoch(c, z):
     return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200},
             {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
-            {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100},
+            {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.4 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100},   # Liane 2: je nach Seillänge
             {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3},
             {'holdIf': {'right': f'P.x < {kx(z + 2)}', 'left': f'P.x > {kx(z + 4)}'}, 'until': 'P.grounded', 'frames': 300}]
 def _aufwind(c, w, z):

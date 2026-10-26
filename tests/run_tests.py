@@ -124,7 +124,7 @@ def k_dash_hoch(c, ziel=None):
             {'press': ['dash'], 'hold': ['swimUp'], 'frames': 2}, dict(weiter, until='P.grounded', frames=300)]
 # Liane 2 (festes Pendel, js/32): der Affe muss meist später loslassen als mit dem alten Gummi-Seil – diese Loslass-Bedingungen
 # probieren alle Haken-Ketten zusätzlich (die Stellen bleiben schaffbar, nur der richtige Moment ist ein anderer)
-RELS_SPAET = ('P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 2', 'P.x > P.anchor.x + 80 && P.vy < 0', 'P.x > P.anchor.x + 40 && P.vy < -3')
+RELS_SPAET = ('P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.7 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.5 && P.vy < 0')   # je nach Seillänge
 def k_haken(n, release, jump_at=None, d=0):
     """(vom Boden) springen, n Haken nacheinander greifen; release = Loslass-Bedingung je Haken"""
     st = ([k_lauf(jump_at, d)] if jump_at is not None else []) + [
@@ -1913,7 +1913,7 @@ async def level12_tropfsteingang(g):
         ok = None
         for jx in (687, 688):
             for pull in (30, 60):
-                m = haken(jx, 9, pull) + [halten(695), {'wait': '!!linkOn[11]'}, k_lauf(699, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(744), {'until': 'P.grounded', 'frames': 200}]
+                m = haken(jx, 9, pull) + [halten(695), {'holdIf': {'right': f'P.x < {kx(695)} - 3', 'left': f'P.x > {kx(695)} + 3'}, 'until': f'P.grounded && Math.abs(P.x - {kx(695)}) <= 3 && Math.abs(P.vx) < 0.3', 'frames': 300}, {'wait': '!!linkOn[11]'}, k_lauf(699, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(744), {'until': 'P.grounded', 'frames': 200}]   # Liane 2: erst auf der Platte zur Ruhe kommen (sonst rutscht der Affe herunter)
                 f = [{'wait': '!!linkOn[10]'}, k_lauf(734, 0)] + am(736) + [k_lauf(745)]
                 r = await koop(g, m=kat(684, 15), f=kat(686, 15), plans={'m': m, 'f': f}, maxFrames=4000)
                 if r.get('done'): ok = (jx, pull); break
@@ -2094,7 +2094,7 @@ async def level13_eisgrotte(g):
             if r.get('done'): ok.append(hold)
         soll(ok, 'E3 Eissäulen im Aufwind (Schwein)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         ok = []
-        for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 80 && P.vy < 0'):   # + Haken aufgeräumt: spät loslassen
+        for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 80 && P.vy < 0') + RELS_SPAET:   # + Haken aufgeräumt: spät loslassen
             m = [k_lauf(540, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
             for k in range(6): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
             m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(596)]
@@ -3832,9 +3832,9 @@ async def ruinen6_tempelherz(g):
     def am(c): return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'frames': 60}, {'use': True, 'frames': 5}]
     def sprung_zu(tx, hold=4):
         return [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 100}]
-    def haken(jx, land_r, pull=60):
+    def haken(jx, land_r, pull=60, rel=None):
         return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+                {'swing': True, 'pull': pull, 'release': rel or f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
     def glide_to(edge, tx, hold=8):
         return [k_lauf(edge, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {tx} - 6', 'left': f'P.x > {tx} + 6'}, 'until': 'P.grounded', 'frames': 600}]
     async def sweep(g, who, start, other, plan_fn, ok_fn, waits=range(0, 240, 12), **kw):
@@ -4016,7 +4016,7 @@ async def ruinen6_tempelherz(g):
         for jx in (605, 606, 607):
             for pull in (40, 80):
                 for rel in RELS:
-                    m = haken(jx, 10, pull) + am(613) + [{'holdIf': {'right': f'P.x < {kx(615)} - 3', 'left': f'P.x > {kx(615)} + 3'}, 'until': f'P.grounded && P.y > {ky(14)} && Math.abs(P.x - {kx(615)}) <= 3', 'frames': 300}] + kette(616, 2, rel) + [k_lauf(629), {'wait': fenster, 'frames': 2000}, k_lauf(642)]
+                    m = haken(jx, 10, pull, f'P.y < {ky(10)} + 4 && P.vx > -0.5 && P.vy > -2 && f > 10') + am(613) + [{'holdIf': {'right': f'P.x < {kx(615)} - 3', 'left': f'P.x > {kx(615)} + 3'}, 'until': f'P.grounded && P.y > {ky(14)} && Math.abs(P.x - {kx(615)}) <= 3', 'frames': 300}] + kette(616, 2, rel) + [k_lauf(629), {'wait': fenster, 'frames': 2000}, k_lauf(642)]   # Liane 2: im höchsten Punkt loslassen
                     f = [k_lauf(614, 0)] + sprung_zu(kx(622)) + [{'frames': 5}, {'use': True, 'frames': 5}, {'frames': 10}] + glide_to(623, kx(629), 6) + [{'wait': f'Q.x >= {kx(627)}', 'frames': 3000}, {'wait': fenster, 'frames': 2000}, k_lauf(643)]
                     r = await koop(g, m=kat(602, 15), f=kat(601, 15), plans={'m': m, 'f': f}, maxFrames=6000)
                     if r.get('done') and r['pos']['m'][0] >= 641 and r['pos']['f'][0] >= 642: ok.append((jx, pull, rel[:12]))
