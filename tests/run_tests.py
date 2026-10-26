@@ -122,6 +122,9 @@ def k_dash_hoch(c, ziel=None):
     weiter = {'hold': ['right']} if ziel is None else {'holdIf': {'right': f'P.x < {kx(ziel)} - 4', 'left': f'P.x > {kx(ziel)} + 4'}}
     return [{'hold': ['right'], 'until': f'P.x >= {kx(c) - 50}'}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4},
             {'press': ['dash'], 'hold': ['swimUp'], 'frames': 2}, dict(weiter, until='P.grounded', frames=300)]
+# Liane 2 (festes Pendel, js/32): der Affe muss meist später loslassen als mit dem alten Gummi-Seil – diese Loslass-Bedingungen
+# probieren alle Haken-Ketten zusätzlich (die Stellen bleiben schaffbar, nur der richtige Moment ist ein anderer)
+RELS_SPAET = ('P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 2', 'P.x > P.anchor.x + 80 && P.vy < 0', 'P.x > P.anchor.x + 40 && P.vy < -3')
 def k_haken(n, release, jump_at=None, d=0):
     """(vom Boden) springen, n Haken nacheinander greifen; release = Loslass-Bedingung je Haken"""
     st = ([k_lauf(jump_at, d)] if jump_at is not None else []) + [
@@ -1173,7 +1176,7 @@ async def level7_lianenschlucht(g):
             r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': plan}, maxFrames=1500)
             ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 732 and k_pos(r, 'f')[1] == 8)
     soll(ok, 'letzte Schlucht (Schweinchen)')
-    soll(await affe((709, 4), [], (732, 745, 8), 3, (R1, R2)), 'letzte Schlucht mit drei Haken (Affe)')
+    soll(await affe((709, 4), [], (732, 745, 8), 3, (R1, R2) + RELS_SPAET), 'letzte Schlucht mit drei Haken (Affe)')
     assert not fehler, fehler
 
 @test
@@ -2160,7 +2163,7 @@ async def level14_leuchtgrotte(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -2312,7 +2315,7 @@ async def level15_foerderwerk(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -2491,7 +2494,7 @@ async def level16_tiefenschlund(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 80 && P.vy < 0')   # + Haken aufgeräumt: spät loslassen
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 80 && P.vy < 0') + RELS_SPAET   # + Haken aufgeräumt: spät loslassen
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -2672,7 +2675,7 @@ async def level17_glutpfad(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -2779,7 +2782,7 @@ async def level18_aschefeld(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -2887,7 +2890,7 @@ async def level19_magmakammer(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -3025,7 +3028,7 @@ async def level20_schlackewerk(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -3163,7 +3166,7 @@ async def level21_feuerschlund(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -3326,7 +3329,7 @@ async def level22_kraterherz(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -3464,7 +3467,7 @@ async def dschungel5_dornenpfad(g):
             if ok_fn(r): n += 1
         return n, len(list(waits))
     RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0',
-            'P.x > P.anchor.x + 80 && P.vy < 0')   # Haken aufgeräumt (9 Spalten Abstand): erst Schwung holen, spät loslassen
+            'P.x > P.anchor.x + 80 && P.vy < 0') + RELS_SPAET   # Haken aufgeräumt (9 Spalten Abstand): erst Schwung holen, spät loslassen
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel[k] if isinstance(rel, tuple) else rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -3667,7 +3670,7 @@ async def dschungel6_wipfelsturm(g):
             r = await koop(g, **{who: kat(*start), ('f' if who == 'm' else 'm'): kat(*other)}, plans={who: [{'frames': w + 1}] + plan_fn()}, maxFrames=4000, **kw)
             if ok_fn(r): n += 1
         return n, len(list(waits))
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
@@ -3841,7 +3844,7 @@ async def ruinen6_tempelherz(g):
             if ok_fn(r): n += 1
         return n, len(list(waits))
     def spiegel(*cs): return ' '.join(f'spiegelListe.find(s => s.c === {c}).stellung = spiegelListe.find(s => s.c === {c}).stellung === "/" ? "\\\\" : "/";' for c in cs)
-    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0')
+    RELS = ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0') + RELS_SPAET
     def kette(start, n, rel):
         m = [k_lauf(start, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
         for k in range(n): m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
