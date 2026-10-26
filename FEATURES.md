@@ -145,7 +145,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Liane 2 – natürliches Schwingen (Nutzerwunsch „fühlt sich wie ein Bug an“, Video; js/32 lianeSchritt, Werte LIANE2_* in
     02): beim Halten der Haken-Taste ein echtes Pendel mit FESTER Seillänge – das Seil gibt nicht mehr nach und dehnt sich
     nicht (keine rot-orange Gummi-Liane, straff gezeichnet; hängt nur durch, wenn es locker ist). Länge = Abstand beim Greifen,
-    mindestens 100 px (nah gegriffen rutscht der Affe weich auf diese Länge), höchstens die Reichweite; W/S wie bisher.
+    mindestens 70 px (nah gegriffen rutscht der Affe weich auf diese Länge), höchstens die Reichweite; W/S wie bisher.
     Schwung holen mit der Richtungstaste bis 70°, ab 80° bremst die Luft stärker, höchstens ca. 95° (kein Überschlag mehr).
     Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach und zieht weich zurück statt zu rucken. Schub beim
     Loslassen kräftiger (LIANE_BOOST 3,2). Die alte Seil-Physik bleibt für die alte Antipp-Bedienung (Bahnen-Test unverändert).

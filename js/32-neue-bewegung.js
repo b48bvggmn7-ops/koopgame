@@ -249,7 +249,7 @@ function lianeLoslassen(P){
 //   LIANE2_MAX_WINKEL wird er weich gebremst (kein
 //   Überschlag). - Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach (LIANE2_FANG_*).
 // - Das Seil gibt nie nach und dehnt sich nicht (keine rote Gummi-Liane mehr). Wände/Boden halten ihn normal auf.
-function lianeNeu(P){ return !!(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen); }
+function lianeNeu(P){ return !!(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus); }   // liane2Aus: nur zum Vergleichen (Tests)
 function lianeSchritt(P, moveDir, jumpPressed){
   const A = P.anchor, K = P.keys || {};
   if(jumpPressed){   // Springen am Seil: loslassen mit Hub (wie bisher), Schwung bleibt
@@ -268,22 +268,30 @@ function lianeSchritt(P, moveDir, jumpPressed){
   let vx = P.vx, vy = P.vy + GRAVITY*0.9;
   const tx = dy0/d0, ty = -dx0/d0, a = Math.atan2(dx0, dy0)*180/Math.PI;   // Tangente (rechts herum), Winkel (0 = unten)
   if(moveDir && Math.abs(a) < LIANE2_PUMP_WINKEL && vx*moveDir > -0.3) vx += moveDir*LIANE2_PUMP;   // wie bisher: waagerecht schieben
-  const dmp = Math.abs(a) > LIANE2_BREMS_WINKEL ? LIANE2_DAEMPF_OBEN : LIANE2_DAEMPF; vx *= dmp; vy *= dmp;
+  const dmp = Math.abs(a) > LIANE2_BREMS_WINKEL && vy < 0 ? LIANE2_DAEMPF_OBEN : LIANE2_DAEMPF;   // nur beim Hinaufschwingen (fällt er hinein, kein Schwung-Verlust) vx *= dmp; vy *= dmp;
   let nx = hx + vx, ny = hy + vy;
   const dx = nx - A.x, dy = ny - A.y, d = Math.hypot(dx, dy) || 1, ux = dx/d, uy = dy/d;
   // straff: auf den Kreis (Länge + kleine Fang-Dehnung). Fällt der Affe ins Seil, wird das Hinausfliegen über mehrere
   // Schritte gebremst (je Schritt bleibt LIANE2_FANG_REST davon) – das Seil federt kurz nach und zieht weich zurück
   P._dehn = P._dehn || 0;
+  const straff = d > P.ropeLen + P._dehn - 1;   // schlaffes Seil (Affe fliegt frei, z. B. über dem Haken): nichts bremsen
   if(d > P.ropeLen + P._dehn){
-    let radial = vx*ux + vy*uy;
+    let radial = vx*ux + vy*uy, ex = ux, ey = uy;
+    if(radial > LIANE2_FANG_AB && Math.abs(a) < LIANE2_BREMS_WINKEL){
+      // ins Seil gefallen: ein Teil des Hinausfliegens wird zu Schwung entlang des Bogens (Richtung = bisherige Bewegung)
+      const tan = vx*tx + vy*ty, sg = tan ? Math.sign(tan) : (Math.sign(vx) || 1), rest = radial*LIANE2_FANG_REST;
+      const zu = Math.sqrt(tan*tan + (radial*radial - rest*rest)*LIANE2_FANG_SCHWUNG) - Math.abs(tan);
+      nx += tx*sg*zu; ny += ty*sg*zu;
+      const d2 = Math.hypot(nx - A.x, ny - A.y) || 1; ex = (nx - A.x)/d2; ey = (ny - A.y)/d2;
+    }
     if(radial > LIANE2_FANG_AB){ radial *= LIANE2_FANG_REST; P._dehn = Math.min(LIANE2_FANG_MAX, P._dehn + radial); }
     const Lw = P.ropeLen + P._dehn;
-    nx = A.x + ux*Lw; ny = A.y + uy*Lw;
+    if(Math.hypot(nx - A.x, ny - A.y) > Lw){ nx = A.x + ex*Lw; ny = A.y + ey*Lw; }
   }
   P._dehn *= LIANE2_FANG_ZURUECK; if(P._dehn < 0.3) P._dehn = 0;
   // über LIANE2_MAX_WINKEL (nach oben hinaus) weich bremsen – kein Überschlag
   const an = Math.atan2(nx - A.x, ny - A.y)*180/Math.PI;
-  if(Math.abs(an) > LIANE2_MAX_WINKEL && Math.abs(an) > Math.abs(a)){
+  if(straff && Math.abs(an) > LIANE2_MAX_WINKEL && Math.abs(an) > Math.abs(a)){
     const k = 0.8; nx = hx + (nx - hx)*k; ny = hy + (ny - hy)*k;
   }
   P.vx = nx - hx; P.vy = ny - hy;

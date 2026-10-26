@@ -68,7 +68,7 @@ const LIANE_BOOST = 3.2;            // Schub in Schwungrichtung (px/Schritt; Sch
 const LIANE_HUB = -1.6;             // dazu ein kleiner Hub nach oben (Springen am Seil: -4,5; vorher -1,2)
 // Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“; js/32 lianeSchritt): echtes Pendel mit fester Länge – gilt
 // beim Halten der Haken-Taste (LIANE_HALTEN); die alte Seil-Physik in 08 bleibt für die alte Antipp-Bedienung (Bahnen-Test)
-const LIANE2_MIN = 100;             // px: kürzeste Seillänge – greift man näher, rutscht der Affe weich auf diese Länge
+const LIANE2_MIN = 70;              // px: kürzeste Seillänge (100 war zu lang: Bots/Spieler, die nah greifen, sackten in Stacheln ab) – greift man näher, rutscht der Affe weich auf diese Länge
 const LIANE2_ABROLL = 3.2;          // px/Schritt: so schnell wird das Seil auf die Wunschlänge gegeben/geholt
 const LIANE2_PUMP = SWING_PUSH;     // px/Schritt²: Schwung holen mit der Richtungstaste (waagerecht wie bisher, nur bis LIANE2_PUMP_WINKEL)
 const LIANE2_PUMP_WINKEL = 80;      // Grad: darüber gibt die Taste keinen Schwung mehr
@@ -77,6 +77,7 @@ const LIANE2_DAEMPF = 1;            // Luftwiderstand je Schritt (wie bisher kei
 const LIANE2_BREMS_WINKEL = 88, LIANE2_DAEMPF_OBEN = 0.95;   // oben (ab 88°) bremst die Luft stärker – weicher Umkehrpunkt
 const LIANE2_FANG_AB = 4;           // px/Schritt: ab diesem Tempo hinaus zählt es als „ins Seil fallen“ (sonst nur straff halten)
 const LIANE2_FANG_REST = 0.7;       // Fällt der Affe ins Seil (z. B. von oben gegriffen): so viel vom Hinausfliegen bleibt je Schritt
+const LIANE2_FANG_SCHWUNG = 0.6;   // so viel davon (Energie-Anteil) wird beim Hineinfallen zu Schwung entlang des Bogens
 const LIANE2_FANG_MAX = 45;         // px: so weit federt das Seil dabei höchstens nach
 const LIANE2_FANG_ZURUECK = 0.8;    // danach zieht es sich je Schritt um diesen Anteil zurück
 

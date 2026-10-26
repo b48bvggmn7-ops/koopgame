@@ -1382,7 +1382,7 @@ async def level9_fallengang(g):
         r = await koop(g, m=kat(206, 3), f=kat(205, 3), plans={'m': m}, maxFrames=1500)
         soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 229.5), f'Pfeil-Galerie: Affe ohne Haken nur mit Dash ({d}, {rich})', r.get('pos'))
     def galerie_affe(w):
-        m = [{'frames': w + 1}] + k_haken(4, 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 208, 0)
+        m = [{'frames': w + 1}] + k_haken(4, 'P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 2', 208, 0)   # Liane 2: später loslassen (weiter rechts)
         m[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(238)} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
         return {'m': m}
     soll(await k_irgendwann(g, galerie_affe, lambda r: bool(k_pos(r, 'm')) and k_pos(r, 'm')[0] >= 229.5 and k_pos(r, 'm')[1] == 8, range(0, 120, 8),
@@ -1522,9 +1522,9 @@ async def level10_sonnentempel(g):
     def gleit(kante, ziel_x, halten):
         return [k_lauf(kante, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': halten},
                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {ziel_x} - 6', 'left': f'P.x > {ziel_x} + 6'}, 'until': 'P.grounded', 'frames': 600}]
-    def haken(jx, land_r, pull):
+    def haken(jx, land_r, pull, rel=None):
         return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-                {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
+                {'swing': True, 'pull': pull, 'release': rel or f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
     # --- Etappe 1 ---
     r = await koop(g, f=kat(4, 15), m=kat(2, 15), plans={'f': [k_lauf(20)] + am(22) + [k_lauf(40)]}, maxFrames=1500)
     soll(r.get('done') and await g.ev("!!linkOn[1]"), 'Spiegel 1 -> Tür 1', r.get('pos'))
@@ -1586,7 +1586,7 @@ async def level10_sonnentempel(g):
     # --- Etappe 3 ---
     r = await koop(g, f=kat(401, 15), m=kat(400, 15), plans={'f': [k_lauf(404), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}] + am(408)}, maxFrames=1000)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 6 and await g.ev("!!linkOn[9]"), 'pinkes Tor -> Spiegel 8 -> Tür 9', r.get('pos'))
-    r = await koop(g, m=kat(406, 15), f=kat(407, 6), plans={'m': haken(411, 9, 30) + [k_lauf(428)]}, pre=dreh(409), maxFrames=1500)
+    r = await koop(g, m=kat(406, 15), f=kat(407, 6), plans={'m': haken(411, 9, 30, f'P.y < {ky(9)} + 4 && P.vx > -0.5 && P.vy > -2 && f > 10') + [k_lauf(428)]}, pre=dreh(409), maxFrames=1500)   # Liane 2: oben im Umkehrpunkt loslassen
     soll(r.get('done') and k_pos(r, 'm')[1] == 9, 'Affe per Haken auf den oberen Weg, durch Tür 9', r.get('pos'))
     r = await koop(g, m=kat(420, 9), f=kat(407, 6), plans={'m': [k_lauf(428)]}, maxFrames=600)
     soll(r['pos']['m'][0] < 424, 'Tür 9 zu ohne Licht', r.get('pos'))
@@ -5223,8 +5223,8 @@ async def seil_abflug_mit_schwung(g):
 @test
 async def liane2_natuerliches_pendel(g):
     """Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“, js/32 lianeSchritt): nah gegriffen rutscht der Affe weich
-    auf LIANE2_MIN (100 px) – nie ruckartig; mit Pumpen höchstens knapp über waagerecht (kein Überschlag) und ohne Ruck; von
-    oben ins Seil gefallen federt es weich nach (Ruck höchstens ~6 px/Schritt statt ~17) und das Seil bleibt danach gleich lang;
+    auf LIANE2_MIN (70 px) – nie ruckartig; mit Pumpen höchstens knapp über waagerecht (kein Überschlag) und ohne Ruck; von
+    oben ins Seil gefallen federt es weich nach (Ruck unter 8 px/Schritt statt ~17) und das Seil bleibt danach gleich lang;
     beim Loslassen mit Schwung gibt es einen spürbaren Schub nach vorn."""
     await g.load(level([ground(0, 680, 4000)], {'x': 880, 'y': 680}, {'x': 600, 'y': 680}, hooks=[{'x': 1000, 'y': 260, 'radius': 200}]))
     r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1;
@@ -5232,9 +5232,9 @@ async def liane2_natuerliches_pendel(g):
       const setz = (x, y, vx, vy) => { P.x = x; P.y = y + P.h*0.6; P.vx = vx; P.vy = vy; P.grounded = false; P._px = P.x; P._py = P.y; P.hookAttached = false; P._lianeA = null;
         KEYS.KeyG = true; KEYS.KeyG_pressed = true; };
       const e = {};
-      // 1) nah gegriffen (40 px unter dem Haken): rutscht weich auf 100
+      // 1) nah gegriffen (40 px unter dem Haken): rutscht weich auf LIANE2_MIN
       setz(h.x, h.y + 40, 0, 0); const L = []; for(let i = 0; i < 40; i++){ st(); L.push(Math.round(Math.hypot(P.x - h.x, P.y - P.h*0.6 - h.y))); }
-      e.nah = {att: P.hookAttached, laengen: L.filter((_, i) => i % 5 === 0), ende: P.ropeLen};
+      e.nah = {att: P.hookAttached, laengen: L.filter((_, i) => i % 5 === 0), ende: P.ropeLen, min: LIANE2_MIN};
       // 2) schwingen mit Pumpen 8 s: max Winkel
       setz(h.x - 120, h.y + 120, 0, 0); let maxA = 0, sprung = 0, letzt = null;
       for(let i = 0; i < 430; i++){ KEYS.KeyD = P.vx >= 0; KEYS.KeyA = P.vx < 0; st();
@@ -5252,12 +5252,12 @@ async def liane2_natuerliches_pendel(g):
       let x0 = P.x; for(let i = 0; i < 200 && !P.grounded; i++) st(); e.los.weite = Math.round(P.x - x0);
       menuScreen = null; KEYS.KeyG = false; return e; })()""")
     n = r['nah']
-    assert n['att'] and abs(n['ende'] - 100) < 1 and n['laengen'][-1] in (99, 100, 101), f'nah gegriffen: {n}'
+    assert n['att'] and abs(n['ende'] - n['min']) < 1 and abs(n['laengen'][-1] - n['min']) <= 1, f'nah gegriffen: {n}'
     assert all(b - a <= 40 for a, b in zip(n['laengen'], n['laengen'][1:])), f'nah gegriffen: zu ruckartig {n}'
     p = r['pumpen']
     assert p['att'] and p['maxWinkel'] <= 100 and p['maxRuck'] < 3, f'Pumpen: Überschlag oder Ruck {p}'
     o = r['vonOben']
-    assert o['att'] and o['maxRuck'] < 7 and len(set(o['abstand'][-5:])) == 1, f'von oben gegriffen: {o}'
+    assert o['att'] and o['maxRuck'] < 8 and len(set(o['abstand'][-5:])) == 1, f'von oben gegriffen: {o}'
     l = r['los']
     assert not l['att'] and l['schub'] > 0.9 and l['nach'][0] > l['vor'][0] + 2 and l['weite'] > 250, f'Loslassen: {l}'
 
