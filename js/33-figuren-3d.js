@@ -8,6 +8,8 @@
   'use strict';
   const QS = new URLSearchParams(location.search);
   const SPR = 352, FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
+  const FIGUR_HALB = 30;                           // px: halbe gezeichnete Breite der 3D-Figur mit Armen und Fell (Stoßfläche: 14,25)
+  const SEIL_KOERPER_PROBEN = [10, 20, 30];       // px vom Griff am Körper entlang: so weit darf der schräge Körper frei sein
   const FIGUR_GROESSE = 0.9;                       // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
   const SC = 17*FIGUR_GROESSE;                     // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 45 px)
   const FR = {x0:-3.3, x1:3.3, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0);
@@ -458,9 +460,27 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     drawNode(H.wrap, M.id(), M.ortho(FR.x0, FR.x1, FR.y0, FR.y1, -20, 20), [0, 1.8, 30]);
     const fy = P.h*0.5 + 4 + hangSenke(ch, S.al||1, P.h, HAFT_ARM);   // 4 px tiefer: die Figur steht im Gras
     // Am Seil schwingt die ganze Figur mit (Körper hängt entlang des Seils, Drehpunkt = Hände) – wie im 2D-Spiel
-    let rs = 0; if(z.key === 'seil' && P.anchor){ const cx = P.x, cy = P.y - P.h*.6; rs = Math.atan2(P.anchor.x - cx, cy - P.anchor.y); }
+    let rs = 0; if(z.key === 'seil' && P.anchor){ const cx = P.x, cy = P.y - P.h*.6; rs = Math.atan2(P.anchor.x - cx, cy - P.anchor.y);
+      // Nutzer: „ich schwinge durch Boden/Wand“ – der gezeichnete Körper hängt am Seil schräg, die Kollisionsbox bleibt aufrecht;
+      // ragte der schräge Körper in Boden/Wand, wird er so weit aufgerichtet, bis er frei ist (nur Zeichnen, Raster festIst aus 32)
+      if(rs && typeof festIst === 'function') for(let k = 0; k < 8; k++){
+        let stoss = false;
+        for(const d of SEIL_KOERPER_PROBEN){ const bx = cx - Math.sin(rs)*d, by = cy + Math.cos(rs)*d; if(festIst(Math.floor(bx/40), Math.floor(by/40))){ stoss = true; break; } }
+        if(!stoss) break; rs *= 0.7;
+      } }
     S.rs = (S.rs||0) + (rs - (S.rs||0))*(1 - Math.exp(-dt*18));
     c.save();
+    // An Wänden: die 3D-Figur ist breiter gezeichnet als ihre Stoßfläche – liegt Boden/Wand im gezeichneten Rand, wird sie
+    // um diesen Unterschied davon weggeschoben (nur Zeichnen; Nutzer: „schwinge durch Boden/Wand“)
+    { let ziel = 0;
+      if(typeof festIst === 'function'){
+        const by = Math.floor((P.y - P.h*.55)/40), rand = FIGUR_HALB - P.w/2;
+        const rechts = P.x + FIGUR_HALB, links = P.x - FIGUR_HALB;
+        if(festIst(Math.floor(rechts/40), by) && !festIst(Math.floor((P.x + P.w/2 - 1)/40), by)) ziel = -Math.min(rand, rechts - Math.floor(rechts/40)*40);
+        else if(festIst(Math.floor(links/40), by) && !festIst(Math.floor((P.x - P.w/2 + 1)/40), by)) ziel = Math.min(rand, Math.floor(links/40)*40 + 40 - links);
+      }
+      S.wn = (S.wn || 0) + (ziel - (S.wn || 0))*(1 - Math.exp(-dt*25));
+      if(Math.abs(S.wn) > .05) c.translate(S.wn, 0); }
     if(Math.abs(S.rs) > .001){ const a0 = ch.armP, tipPx = (() => { let top = 0; (a0.k0||[]).forEach((b, i) => { top = Math.max(top, i === 0 ? (Math.abs(b.p[1]) + b.s[1])*(a0.alF||1) : Math.abs(b.p[1])*(a0.alF||1) + b.s[1]); }); return (a0.pos[1] + top)*SC*.98; })(), py = fy - tipPx; c.translate(0, py); c.rotate(S.rs); c.translate(0, -py); }
     const Tm = c.getTransform();
     const dev = (x, y) => Tm.transformPoint(new DOMPoint(x*SC, fy - y*SC));

@@ -267,8 +267,7 @@ function lianeSchritt(P, moveDir, jumpPressed){
   P.ropeLen += Math.max(-LIANE2_ABROLL, Math.min(LIANE2_ABROLL, P.lianeZiel - P.ropeLen));
   let vx = P.vx, vy = P.vy + GRAVITY*0.9;
   const tx = dy0/d0, ty = -dx0/d0, a = Math.atan2(dx0, dy0)*180/Math.PI;   // Tangente (rechts herum), Winkel (0 = unten)
-  const vt = vx*tx + vy*ty;
-  if(moveDir && Math.abs(a) < LIANE2_PUMP_WINKEL && vt*moveDir > -0.3){ vx += tx*moveDir*LIANE2_PUMP; vy += ty*moveDir*LIANE2_PUMP; }
+  if(moveDir && Math.abs(a) < LIANE2_PUMP_WINKEL && vx*moveDir > -0.3) vx += moveDir*LIANE2_PUMP;   // wie bisher: waagerecht schieben
   const dmp = Math.abs(a) > LIANE2_BREMS_WINKEL ? LIANE2_DAEMPF_OBEN : LIANE2_DAEMPF; vx *= dmp; vy *= dmp;
   let nx = hx + vx, ny = hy + vy;
   const dx = nx - A.x, dy = ny - A.y, d = Math.hypot(dx, dy) || 1, ux = dx/d, uy = dy/d;
