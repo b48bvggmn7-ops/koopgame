@@ -245,12 +245,29 @@ function lianeLoslassen(P){
 // lang nicht wieder gegriffen werden, und den Schub gibt es erst nach LIANE_BOOST_HALTEN Schritten am Seil – sonst hüpft
 // der Affe mit jedem Greifen/Loslassen wild um den Haken. Ein anderer Haken (Haken-Kette) geht sofort.
 function lianeSperren(P){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P.anchor; P._gegriffenA = null; }
+// so lang darf die Liane höchstens werden, ohne dass der Affe senkrecht unter dem Haken Boden, Stacheln oder Lava berührt
+// (sonst landet er – das Seil löst sich – oder fällt hinein); LIANE_BODEN_ABSTAND px Luft unter den Füßen
+function lianeFreiUnten(A, P){
+  const x0 = A.x - P.w/2, x1 = A.x + P.w/2;
+  let oben = Infinity;
+  for(const s of solids) if(!s.gone && s.y > A.y && s.x < x1 && s.x + s.w > x0) oben = Math.min(oben, s.y);
+  for(const sp of spikes) if(sp.y - sp.h > A.y && sp.x - sp.w/2 < x1 && sp.x + sp.w/2 > x0) oben = Math.min(oben, sp.y - sp.h);
+  if(typeof lavaBecken !== 'undefined') for(const b of lavaBecken) if(A.x >= b.minX && A.x < b.maxX && b.surf > A.y) oben = Math.min(oben, b.surf);
+  return oben - A.y - P.h*0.6 - LIANE_BODEN_ABSTAND - LIANE2_FANG_MAX;   // + Platz fürs Nachfedern beim Hineinfallen
+}
 function lianeGriffPruefen(P){
   if(P.lianeSperre > 0) P.lianeSperre--;
   if(P.hookAttached && P._gegriffenA !== P.anchor){   // gerade gegriffen (08)
     if(P.lianeSperre > 0 && P.anchor === P.lianeSperreA){ P.hookAttached = false; return; }   // zu schnell wieder derselbe Haken
     P._gegriffenA = P.anchor; P._lianeHalten = 0;
+    // Nutzerwunsch: die Liane gibt sofort bis an den Rand der Reichweite nach – der Affe fällt hinein und schwingt dann
+    // (ganz nah hängen ist selten gewollt; hochziehen geht weiter mit W). Vom Boden aus gegriffen bleibt es straff, damit W
+    // sofort hochzieht.
+    const A = P.anchor, d = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y);
+    P._lianeA = A; P._dehn = 0; P.ropeMax = Math.max(d, hookRange(A));
+    P.lianeZiel = P.ropeLen = P.grounded ? d : Math.max(d, Math.min(P.ropeMax, lianeFreiUnten(A, P)));
   }
+  if(P.hookAttached && P.grounded) P.lianeZiel = Math.min(P.lianeZiel ?? P.ropeLen, P.ropeLen);   // am Boden zieht W über 08 (Seil kürzer)
   if(P.hookAttached) P._lianeHalten = (P._lianeHalten || 0) + 1;
   else if(P._gegriffenA){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P._gegriffenA; P._gegriffenA = null; }   // auf anderem Weg gelöst (G erneut gedrückt, Landen)
 }
@@ -313,9 +330,7 @@ function lianeSchritt(P, moveDir, jumpPressed){
   const d0 = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y) || 1;
   if(P._lianeA !== A){   // gerade gegriffen
     P._lianeA = A; P._dehn = 0;
-    // Nutzerwunsch: die Liane gibt sofort bis an den Rand der Reichweite nach – der Affe fällt hinein und schwingt dann
-    // (ganz nah hängen ist selten gewollt; hochziehen geht weiter mit W)
-    P.lianeZiel = P.ropeLen = P.ropeMax = Math.max(d0, hookRange(A));
+    P.lianeZiel = P.ropeLen = P.ropeMax = Math.max(d0, hookRange(A));   // (sonst schon in lianeGriffPruefen gesetzt)
   }
   const S = {hx: P.x, hy: P.y - P.h*0.6, vx: P.vx, vy: P.vy, len: P.ropeLen, ziel: P.lianeZiel, max: P.ropeMax, dehn: P._dehn || 0};
   lianeKern(S, A, moveDir, K.pull && isDown(K.pull), K.slack && isDown(K.slack));

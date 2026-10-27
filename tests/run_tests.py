@@ -541,6 +541,7 @@ async def seil_vom_boden_hochziehen(g):
     """Vom Boden einhaken bleibt dran; W zieht hoch."""
     await g.load(level([ground(0, 680, 1400)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
                        hooks=[{'x': 300, 'y': 420, 'radius': 300}]))
+    await g.steps(10)   # erst sicher stehen (gleich nach dem Laden ist die Figur noch nicht „am Boden“ – dann zählt es als Landen)
     await g.p.keyboard.down('KeyG'); await g.p.wait_for_timeout(100)   # Liane: Taste halten
     assert await g.ev('p1.hookAttached'), 'Seil löst sich sofort'
     y0 = await g.ev('p1.y'); await g.hold(('KeyW',), 700)
@@ -4201,7 +4202,7 @@ async def haken_schwung_holen(g):
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        hooks=[{'x': 1000, 'y': 250, 'radius': 260}]))
     setup = """(()=>{ const h=hooks[0]; p1.x=h.x; p1.y=h.y+150+p1.h*0.6; p1.vx=0; p1.vy=0; p1.grounded=false;
-      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=150; p1.ropeMax=200; p1._lianeA=h; p1.lianeZiel=150; p1._dehn=0;   /* Liane 2: Länge 150 vorgeben */ window.__ang=[]; KEYS.KeyG=true;
+      p1.hookAttached=true; p1.ropeWasAirborne=true; p1.anchor=h; p1.ropeLen=150; p1.ropeMax=200; p1._lianeA=h; p1._gegriffenA=h; p1.lianeZiel=150; p1._dehn=0;   /* Liane 2: Länge 150 vorgeben */ window.__ang=[]; KEYS.KeyG=true;
       if(!window.__os){ window.__os=stepSim; stepSim=function(ts){
         if(window.__pump){ KEYS.KeyD = p1.vx>=0; KEYS.KeyA = p1.vx<0; }
         if(window.__halteD > 0) KEYS.KeyD = true;
@@ -5224,6 +5225,25 @@ async def seil_abflug_mit_schwung(g):
     assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
 
 @test
+async def liane_volle_laenge(g):
+    """Nutzerwunsch „die Liane soll immer erst mal in den weitesten Radius gehen“: in der Luft gegriffen gibt die Liane sofort
+    bis zur Reichweite nach (der Affe fällt hinein und schwingt) – aber nie so weit, dass er senkrecht unter dem Haken auf
+    Boden, Stacheln oder Lava kommt (LIANE_BODEN_ABSTAND). Vom Boden gegriffen bleibt sie straff (W zieht sofort hoch)."""
+    await g.load(level([ground(0, 680, 900), ground(1300, 680, 900)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
+                       hooks=[{'x': 500, 'y': 200, 'radius': 260}, {'x': 1100, 'y': 400, 'radius': 400}],
+                       spikes=[{'x': 1100, 'y': 680, 'w': 40, 'h': 40}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const P = p1, e = {};
+      const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+      const greif = (h, dx, dy) => { P.x = h.x + dx; P.y = h.y + dy + P.h*0.6; P.vx = 0; P.vy = 0; P.grounded = false; P.hookAttached = false; P.lianeSperre = 0;
+        KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); const L = P.ropeLen; for(let i = 0; i < 60; i++) st(); return {L: Math.round(L), haengt: P.hookAttached, tot: !!deathState}; };
+      e.frei = greif(hooks[0], 20, 50);      // viel Luft: volle Reichweite
+      e.stacheln = greif(hooks[1], 20, 50);  // Stacheln 280 px darunter, Reichweite 400: kürzer
+      KEYS.KeyG = false; menuScreen = null; return e; })()""")
+    assert r['frei']['haengt'] and r['frei']['L'] == 260, f'nicht bis zur Reichweite nachgegeben: {r}'
+    s = r['stacheln']
+    assert s['haengt'] and not s['tot'] and s['L'] < 240 - 19, f'fällt in die Stacheln: {r}'
+
+@test
 async def liane_g_spammen(g):
     """Nutzer-Video „G spammen“: wer die Haken-Taste hektisch drückt, greift denselben Haken erst nach LIANE_SPERRE Schritten
     wieder und bekommt beim Loslassen keinen Schub, solange er kürzer als LIANE_BOOST_HALTEN Schritte am Seil hing – der Affe
@@ -5295,7 +5315,7 @@ async def liane_halten_loslassen_schub(g):
     r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6;
       const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
       const h = hooks[0], setz = vx => { p1.x = h.x; p1.y = h.y + 180 + p1.h*0.6; p1.vx = vx; p1.vy = 0; p1.grounded = false;
-        p1.hookAttached = true; p1.ropeWasAirborne = true; p1.anchor = h; p1.ropeLen = 180; p1.ropeMax = 220; };
+        p1.hookAttached = true; p1.ropeWasAirborne = true; p1.anchor = h; p1.ropeLen = 180; p1.ropeMax = 220; p1.lianeSperre = 0; p1._gegriffenA = h; p1._lianeHalten = 99; };   // umgesetzt: keine G-Sperre, „lange genug am Seil“
       const o = lianeLoslassen; let m = null;
       lianeLoslassen = P => { const a = [P.vx, P.vy]; o(P); m = {a, b: [P.vx, P.vy], k: P.lianeSchub}; };
       const e = {};
