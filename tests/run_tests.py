@@ -9405,23 +9405,29 @@ def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=2
                                   {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
             'f': warte + kamin + [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])],
             'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
-            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]} if not weit else kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz if versatz_f is None else versatz_f, rel)
+            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]} if not weit else kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz if versatz_f is None else versatz_f, rel,
+            [[warte[0], {'frames': v}] for v in (20, 40) if v != versatz] if flamme else [])
 
-def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f, rel=None):
+def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f, rel=None, warte_alt=()):
     """Umbau: Kamin-Grube 8 breiter (tests/umbau/grube_weiten.py, Grube 17). Affe: zwei Haken nacheinander; Schweinchen:
     oben auf die Kaminwand, Sprung, Dash schräg hoch, DANN Schirm. Gegenproben: oben stehen + Sprung + Dash (ohne Haken
     bzw. Schirm) -> Grube."""
     warte_f = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': versatz_f}] if flamme else []
     oben = [{'holdIf': {'right': f'P.x < {kx(rw)} - 4', 'left': f'P.x > {kx(rw)} + 4'}, 'until': 'P.grounded', 'frames': 200}]
     def sprung_dash(d, rich, schirm): return oben + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, dict(lande, hold=['glide'] if schirm else [])]
-    # Liane 2 (festes Pendel): je nach Seillänge beim Aufsteigen loslassen
-    haken = [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
-             {'swing': True, 'release': rel or 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
-             {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
-             {'swing': True, 'release': rel or 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
-             dict(lande, hold=['swimUp'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'}),
-             {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'frames': 40}]   # nach der Landung abbremsen (Haken aufgeräumt: mehr Schwung)   # zu kurz: Dash schräg hoch
-    return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'swimUp'], True),
+    # Liane 2 (festes Pendel, gibt bis zur Reichweite nach): je nach Seillänge beim Aufsteigen loslassen, ggf. Seil einholen
+    def hakenplan(rl, pull=0):
+        return [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
+                {'swing': True, 'pull': pull, 'release': rl, 'frames': 400},
+                {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
+                {'swing': True, 'pull': pull, 'release': rl, 'frames': 400},
+                dict(lande, hold=['swimUp'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'}),
+                {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'frames': 40}]   # nach der Landung abbremsen   # zu kurz: Dash schräg hoch
+    haken = hakenplan(rel or 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0')
+    # weitere Varianten (Flammen-Phase, Loslass-Zeitpunkt, Seil einholen) – der Test nimmt die erste, die klappt
+    alt = [w + kamin + hakenplan(rl, pu) for w in [warte] + list(warte_alt) for pu in (0, 20, 40)
+           for rl in ('P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.3 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.4 && P.vx > 1')]
+    return {'m': warte + kamin + haken, 'm_alt': alt, 'f': warte_f + kamin + sprung_dash(20, ['right', 'swimUp'], True),
             'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
             'm_ohne_dash': warte + kamin + sprung_dash(11, ['right', 'swimUp'], False), 'm_ohne_dash2': warte + kamin + sprung_dash(17, ['right'], False),
             'f_ohne': warte_f + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
@@ -9560,9 +9566,11 @@ async def kombi_stellen_pruefen(g, welt):
         pl = plaene()
         for wer in ('m', 'f'):
             if wer not in pl: continue
-            r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[wer]}, maxFrames=4000)
             zc, zr = ziel[wer]
-            ok = r.get('done') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
+            for plan in [pl[wer]] + pl.get(wer + '_alt', []):   # *_alt: weitere Varianten (Liane 2), die erste, die klappt, zählt
+                r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: plan}, maxFrames=4000)
+                ok = r.get('done') and r['pos'][wer][0] >= zc - 0.5 and r['pos'][wer][1] <= zr + 0.1
+                if ok: pl[wer] = plan; break
             if not ok: fehler.append(f"{lv} {name} ({wer}): {r.get('pos')} {r.get('dead')} {(r.get('log') or [])[-3:]}")
             for gegen in [k for k in pl if k.startswith(wer + '_ohne')]:   # Gegenproben (ohne Kombi, Umbau: auch nur mit Dash)
                 r = await koop(g, m=ms if wer == 'm' else fs, f=fs if wer == 'm' else ms, plans={wer: pl[gegen]}, maxFrames=2500)
@@ -10583,7 +10591,7 @@ async def ruinen1_sonnenkammer(g):
     def affe(n_hebel=1, jx=788.5):
         # unter dem Haken stehen bleiben, gerade hochspringen (mit Anlauf verdeckt das Sims die Sicht), Haken, ranziehen, aufs Sims
         hoch = [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(7)} + 4 && P.vx > 0.3 && f > 10'},
+                {'hold': ['pull'], 'holdIf': {'left': f'P.x > {kx(789)} - 10'}, 'until': f'P.y < {ky(7)} - 4', 'frames': 200}, {'swing': True, 'release': 'true', 'after': 'right'},   # Liane 2: neben dem Sims hochziehen
                 {'holdIf': {'right': f'P.x < {kx(790)}', 'left': f'P.x > {kx(791)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200}]
         pl = hoch + [wb_halt(kx(791))]
         for _ in range(n_hebel): pl += [{'use': True, 'frames': 8}, {'frames': 30}]
@@ -10599,7 +10607,7 @@ async def ruinen1_sonnenkammer(g):
     soll(ok, 'Zwei Spiegel in Reihe gemeinsam gelöst', (info(r), r.get('log')))
     r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(n_hebel=0), 'f': schwein()}, maxFrames=5000)
     soll(not await g.ev("!!linkOn[23]") and await g.ev("lichtWege.some(w => w.ende && w.ende.art === 'wand')"), 'nur Platte: Sackgasse, Ausgang zu', info(r))
-    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(), 'f': schwein(platte=False)}, maxFrames=5000)
+    r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(), 'f': schwein(platte=False)}, maxFrames=3000)   # vor Ablauf der Wartezeit (danach liefe das Schweinchen über die Platte)
     soll(not await g.ev("!!linkOn[23]"), 'nur Hebel: Strahl in die Decke, Ausgang zu', info(r))
     r = await koop(g, m=kat(784, 14), f=kat(782, 14), plans={'m': affe(n_hebel=2), 'f': schwein()}, maxFrames=5000)
     soll(not await g.ev("!!linkOn[23]"), 'Hebel zweimal: B wieder falsch, Ausgang zu', info(r))
