@@ -9360,10 +9360,11 @@ def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f):
     warte_f = [{'wait': f'fallen.some(F => F.x === {fx} && falleBrennt(F))', 'frames': 400}, {'frames': versatz_f}] if flamme else []
     oben = [{'holdIf': {'right': f'P.x < {kx(rw)} - 4', 'left': f'P.x > {kx(rw)} + 4'}, 'until': 'P.grounded', 'frames': 200}]
     def sprung_dash(d, rich, schirm): return oben + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, dict(lande, hold=['glide'] if schirm else [])]
+    # Liane 2 (festes Pendel): je nach Seillänge beim Aufsteigen loslassen
     haken = [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
-             {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
+             {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
              {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
-             {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400},
+             {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
              dict(lande, hold=['swimUp'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'}),
              {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'frames': 40}]   # nach der Landung abbremsen (Haken aufgeräumt: mehr Schwung)   # zu kurz: Dash schräg hoch
     return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'swimUp'], True),
@@ -10617,7 +10618,7 @@ async def felsenflucht_felsbrecher_licht(g):
     def affe(jx=771):
         return [wb_halt(kx(752)), {'use': True, 'frames': 8}, fels_weg] + rechts + [wb_halt(int(jx*40) + 20),
                 {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(9)} + 4 && P.vx > 0.3 && f > 10'},
+                {'hold': ['pull', 'left'], 'until': f'P.y < {ky(9)} - 4', 'frames': 150}, {'swing': True, 'release': 'true', 'after': 'right'},   # Liane 2: neben dem Sims hochziehen (nicht darunter)
                 {'holdIf': {'right': f'P.x < {kx(772)}', 'left': f'P.x > {kx(773)} && P.vx > 0.5'}, 'until': 'P.grounded', 'frames': 200},
                 wb_halt(kx(773)), {'holdIf': {'left': f'{m2} === "\\\\" && P.x > {kx(772)}'}, 'until': f'({m2} === "/" && P.x > {kx(772)} + 25) || P.x <= {kx(772)} + 2', 'frames': 200},
                 {'wait': f'{m2} === "/"', 'frames': 100}, {'hold': ['right'], 'until': f'P.x > {kx(774)} + 10', 'frames': 200},
@@ -10656,7 +10657,7 @@ async def mondnacht_mondspiegel(g):
     platte = lambda wer: f'{wer}.grounded && Math.abs({wer}.x - {kx(458)}) < 8'
     B = 'spiegelListe.find(s => s.c === 466 && s.r === 2).stellung'
     hoch = lambda jx: [wb_halt(int(jx*40) + 20), {'press': ['jump'], 'hold': ['jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
-                {'swing': True, 'pull': 60, 'release': f'P.y < {ky(8)} + 4 && P.vx < -0.3 && f > 10', 'after': 'left'},
+                {'hold': ['pull', 'right'], 'until': f'P.y < {ky(8)} - 4', 'frames': 150}, {'swing': True, 'release': 'true', 'after': 'left'},   # Liane 2: neben dem Sims hochziehen (nicht darunter)
                 {'holdIf': {'left': f'P.x > {kx(468)}', 'right': f'P.x < {kx(467)} && P.vx < -0.5'}, 'until': 'P.grounded', 'frames': 200}]
     def affe(jx=469):
         return hoch(jx) + [wb_halt(kx(467)), {'wait': platte('Q'), 'frames': 4000}, {'use': True, 'frames': 8}, {'wait': '!!linkOn[50]', 'frames': 300},

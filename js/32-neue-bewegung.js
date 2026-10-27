@@ -250,33 +250,25 @@ function lianeLoslassen(P){
 //   Überschlag). - Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach (LIANE2_FANG_*).
 // - Das Seil gibt nie nach und dehnt sich nicht (keine rote Gummi-Liane mehr). Wände/Boden halten ihn normal auf.
 function lianeNeu(P){ return !!(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus); }   // liane2Aus: nur zum Vergleichen (Tests)
-function lianeSchritt(P, moveDir, jumpPressed){
-  const A = P.anchor, K = P.keys || {};
-  if(jumpPressed){   // Springen am Seil: loslassen mit Hub (wie bisher), Schwung bleibt
-    P.hookAttached = false; P._lianeA = null; P.vy += HOOK_RELEASE_BOOST; ropeFling(P); return false;
-  }
-  const hx = P.x, hy = P.y - P.h*0.6, dx0 = hx - A.x, dy0 = hy - A.y, d0 = Math.hypot(dx0, dy0) || 1;
-  if(P._lianeA !== A){   // gerade gegriffen
-    P._lianeA = A; P._dehn = 0;
-    P.lianeZiel = Math.max(LIANE2_MIN, Math.min(hookRange(A), d0));
-    P.ropeLen = d0; P.ropeMax = Math.max(P.lianeZiel, hookRange(A));
-  }
-  if(K.pull && isDown(K.pull)) P.lianeZiel = Math.max(HOOK_MIN_LEN, P.lianeZiel - ROPE_PULL_SPEED);
-  if(K.slack && isDown(K.slack)) P.lianeZiel = Math.min(P.ropeMax, P.lianeZiel + ROPE_ADJUST_SPEED);
+// Kern des Pendels (auch für die Vorausrechnung des Computer-Partners, js/30): S = {hx, hy (Griff-Punkt), vx, vy,
+// len (Seillänge), ziel (Wunschlänge), max, dehn (Fang-Dehnung)} wird um einen Schritt weitergerechnet
+function lianeKern(S, A, moveDir, ziehen, geben){
+  if(ziehen) S.ziel = Math.max(HOOK_MIN_LEN, S.ziel - ROPE_PULL_SPEED);
+  if(geben) S.ziel = Math.min(S.max, S.ziel + ROPE_ADJUST_SPEED);
   // Seillänge zur Wunschlänge
-  P.ropeLen += Math.max(-LIANE2_ABROLL, Math.min(LIANE2_ABROLL, P.lianeZiel - P.ropeLen));
-  let vx = P.vx, vy = P.vy + GRAVITY*0.9;
+  S.len += Math.max(-LIANE2_ABROLL, Math.min(LIANE2_ABROLL, S.ziel - S.len));
+  const hx = S.hx, hy = S.hy, dx0 = hx - A.x, dy0 = hy - A.y, d0 = Math.hypot(dx0, dy0) || 1;
+  let vx = S.vx, vy = S.vy + GRAVITY*0.9;
   const tx = dy0/d0, ty = -dx0/d0, a = Math.atan2(dx0, dy0)*180/Math.PI;   // Tangente (rechts herum), Winkel (0 = unten)
   if(moveDir && Math.abs(a) < LIANE2_PUMP_WINKEL && vx*moveDir > -0.3) vx += moveDir*LIANE2_PUMP;   // wie bisher: waagerecht schieben
-  const amSeil = d0 > P.ropeLen + (P._dehn || 0) - 2;   // hängt straff (fliegt er frei über dem Haken / fällt hinein: kein Schwung-Verlust)
+  const amSeil = d0 > S.len + S.dehn - 2;   // hängt straff (fliegt er frei über dem Haken / fällt hinein: kein Schwung-Verlust)
   const dmp = Math.abs(a) > LIANE2_BREMS_WINKEL && amSeil && vy < 0 ? LIANE2_DAEMPF_OBEN : LIANE2_DAEMPF; vx *= dmp; vy *= dmp;
   let nx = hx + vx, ny = hy + vy;
   const dx = nx - A.x, dy = ny - A.y, d = Math.hypot(dx, dy) || 1, ux = dx/d, uy = dy/d;
   // straff: auf den Kreis (Länge + kleine Fang-Dehnung). Fällt der Affe ins Seil, wird das Hinausfliegen über mehrere
   // Schritte gebremst (je Schritt bleibt LIANE2_FANG_REST davon) – das Seil federt kurz nach und zieht weich zurück
-  P._dehn = P._dehn || 0;
-  const straff = d > P.ropeLen + P._dehn - 1;   // schlaffes Seil (Affe fliegt frei, z. B. über dem Haken): nichts bremsen
-  if(d > P.ropeLen + P._dehn){
+  const straff = d > S.len + S.dehn - 1;   // schlaffes Seil (Affe fliegt frei, z. B. über dem Haken): nichts bremsen
+  if(d > S.len + S.dehn){
     let radial = vx*ux + vy*uy, ex = ux, ey = uy;
     if(radial > LIANE2_FANG_AB && Math.abs(a) < LIANE2_BREMS_WINKEL){
       // ins Seil gefallen: ein Teil des Hinausfliegens wird zu Schwung entlang des Bogens (Richtung = bisherige Bewegung)
@@ -285,19 +277,34 @@ function lianeSchritt(P, moveDir, jumpPressed){
       nx += tx*sg*zu; ny += ty*sg*zu;
       const d2 = Math.hypot(nx - A.x, ny - A.y) || 1; ex = (nx - A.x)/d2; ey = (ny - A.y)/d2;
     }
-    if(radial > LIANE2_FANG_AB){ radial *= LIANE2_FANG_REST; P._dehn = Math.min(LIANE2_FANG_MAX, P._dehn + radial); }
-    const Lw = P.ropeLen + P._dehn;
+    if(radial > LIANE2_FANG_AB){ radial *= LIANE2_FANG_REST; S.dehn = Math.min(LIANE2_FANG_MAX, S.dehn + radial); }
+    const Lw = S.len + S.dehn;
     if(Math.hypot(nx - A.x, ny - A.y) > Lw){ nx = A.x + ex*Lw; ny = A.y + ey*Lw; }
   }
-  P._dehn *= LIANE2_FANG_ZURUECK; if(P._dehn < 0.3) P._dehn = 0;
+  S.dehn *= LIANE2_FANG_ZURUECK; if(S.dehn < 0.3) S.dehn = 0;
   // über LIANE2_MAX_WINKEL (nach oben hinaus) weich bremsen – kein Überschlag
   const an = Math.atan2(nx - A.x, ny - A.y)*180/Math.PI;
   if(straff && Math.abs(an) > LIANE2_MAX_WINKEL && Math.abs(an) > Math.abs(a)){
     const k = 0.8; nx = hx + (nx - hx)*k; ny = hy + (ny - hy)*k;
   }
-  P.vx = nx - hx; P.vy = ny - hy;
-  const sp = Math.hypot(P.vx, P.vy);
-  if(sp > ROPE_MAX_STEP){ P.vx *= ROPE_MAX_STEP/sp; P.vy *= ROPE_MAX_STEP/sp; }
+  S.vx = nx - hx; S.vy = ny - hy;
+  const sp = Math.hypot(S.vx, S.vy);
+  if(sp > ROPE_MAX_STEP){ S.vx *= ROPE_MAX_STEP/sp; S.vy *= ROPE_MAX_STEP/sp; }
+}
+function lianeSchritt(P, moveDir, jumpPressed){
+  const A = P.anchor, K = P.keys || {};
+  if(jumpPressed){   // Springen am Seil: loslassen mit Hub (wie bisher), Schwung bleibt
+    P.hookAttached = false; P._lianeA = null; P.vy += HOOK_RELEASE_BOOST; ropeFling(P); return false;
+  }
+  const d0 = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y) || 1;
+  if(P._lianeA !== A){   // gerade gegriffen
+    P._lianeA = A; P._dehn = 0;
+    P.lianeZiel = Math.max(LIANE2_MIN, Math.min(hookRange(A), d0));
+    P.ropeLen = d0; P.ropeMax = Math.max(P.lianeZiel, hookRange(A));
+  }
+  const S = {hx: P.x, hy: P.y - P.h*0.6, vx: P.vx, vy: P.vy, len: P.ropeLen, ziel: P.lianeZiel, max: P.ropeMax, dehn: P._dehn || 0};
+  lianeKern(S, A, moveDir, K.pull && isDown(K.pull), K.slack && isDown(K.slack));
+  P.vx = S.vx; P.vy = S.vy; P.ropeLen = S.len; P.lianeZiel = S.ziel; P._dehn = S.dehn;
   P.ropeStretch = 0; P.ropePulledNow = false;
   return true;
 }
