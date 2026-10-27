@@ -1141,20 +1141,20 @@ async def level7_lianenschlucht(g):
     for x0, kante, ziel, links in ((620, 626, (637, 650), [10]), (645, 650, (661, 676), [10, 12])):
         r = await koop(g, f=kat(x0, 2), m=kat(kante - 6, 2), plans={'f': k_segeln(kante, 10)}, links=links, maxFrames=1500)
         soll(k_pos(r, 'f') and ziel[0] <= k_pos(r, 'f')[0] <= ziel[1] and k_pos(r, 'f')[1] == 2, f'Dach-Lücke bis {ziel[0]} (Schweinchen)', r.get('pos'))
-    async def affe(start, links, ziel, n, rels, slacks=(0,)):
+    async def affe(start, links, ziel, n, rels, slacks=(0,), pulls=(0,)):   # pulls: Liane gibt bis zur Reichweite nach – ggf. mit W einholen
         for rel in rels:
             for d in (0, -10, 10, -20):
-                for sl in slacks:
+                for sl, pu in [(a, b) for a in slacks for b in pulls]:
                     plan = k_haken(n, rel, start[0] + 1, d)
                     for st in plan:
-                        if st.get('swing'): st['slack'] = sl
+                        if st.get('swing'): st['slack'] = sl; st['pull'] = pu
                     plan[-1] = {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(ziel[1])} && P.vx > -1'}, 'until': 'P.grounded', 'frames': 300}
                     r = await koop(g, m=kat(*start), f=kat(start[0] + 2, 2), plans={'m': plan}, links=links, maxFrames=2500)
                     if k_pos(r, 'm') and ziel[0] - 0.6 <= k_pos(r, 'm')[0] <= ziel[1] + 0.6 and k_pos(r, 'm')[1] == ziel[2]: return True
         return False
     R1, R2 = 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'
     R3, R4 = 'P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 60 && P.vy < 0 && P.vx > 2'
-    soll(await affe((610, 14), [], (620, 621, 9), 1, (R1, R2, R3, R4)), 'Rand -> Haken -> Säule A (Affe)')
+    soll(await affe((610, 14), [], (620, 621, 9), 1, (R3, R1, R2, R4), pulls=(0, 80)), 'Rand -> Haken -> Säule A (Affe)')
     # Bild-Regel: Haken zwischen den Säulen eine Reihe höher (Reihe 6 statt 7, 4 Reihen über der Säule) – bleibt eine Präzisionsstelle
     R5, R6 = 'P.x > P.anchor.x + 40 && P.vy < -3', 'P.vy < -5 && f > 30'
     R7, R8 = 'P.y < P.anchor.y + 20 && P.vy < 0', 'P.y < P.anchor.y && f > 20'
@@ -1177,7 +1177,7 @@ async def level7_lianenschlucht(g):
             r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': plan}, maxFrames=1500)
             ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 732 and k_pos(r, 'f')[1] == 8)
     soll(ok, 'letzte Schlucht (Schweinchen)')
-    soll(await affe((709, 4), [], (732, 745, 8), 3, (R1, R2) + RELS_SPAET), 'letzte Schlucht mit drei Haken (Affe)')
+    soll(await affe((709, 4), [], (732, 745, 8), 3, ('P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', R1, R2) + RELS_SPAET, pulls=(0, 30)), 'letzte Schlucht mit drei Haken (Affe)')
     assert not fehler, fehler
 
 @test
@@ -1526,6 +1526,10 @@ async def level10_sonnentempel(g):
     def gleit(kante, ziel_x, halten):
         return [k_lauf(kante, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': halten},
                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {ziel_x} - 6', 'left': f'P.x > {ziel_x} + 6'}, 'until': 'P.grounded', 'frames': 600}]
+    def hoch(jx, land_r):   # Liane 2 (gibt bis zur Reichweite nach): neben dem Sims mit W hochziehen, dann hinüber
+        return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'hold': ['pull', 'right'], 'until': f'P.y < {ky(land_r)} - 4', 'frames': 200}, {'swing': True, 'release': 'true', 'after': 'right'},
+                {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
     def haken(jx, land_r, pull, rel=None):
         return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
                 {'swing': True, 'pull': pull, 'release': rel or f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
@@ -1534,7 +1538,7 @@ async def level10_sonnentempel(g):
     soll(r.get('done') and await g.ev("!!linkOn[1]"), 'Spiegel 1 -> Tür 1', r.get('pos'))
     r = await koop(g, f=kat(30, 15), m=kat(28, 15), plans={'f': [k_lauf(40)]}, maxFrames=600)
     soll(r['pos']['f'][0] < 34, 'Tür 1 zu ohne Licht', r.get('pos'))
-    r = await koop(g, m=kat(50, 15), f=kat(48, 15), plans={'m': haken(55, 9, 30) + am(61)}, maxFrames=1500)
+    r = await koop(g, m=kat(50, 15), f=kat(48, 15), plans={'m': hoch(55, 9) + am(61)}, maxFrames=1500)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[2]"), 'Affe per Haken zum Spiegel 2', r.get('pos'))
     r = await koop(g, f=kat(58, 15), m=kat(50, 15), plans={'f': [k_lauf(60), {'press': ['jump'], 'hold': ['jump'], 'frames': 14}, {'use': True, 'frames': 20}]}, maxFrames=600)
     soll(not await g.ev("!!linkOn[2]"), 'Schweinchen erreicht Spiegel 2 nicht', r.get('pos'))
@@ -1554,7 +1558,7 @@ async def level10_sonnentempel(g):
     soll(r['pos']['f'][0] < 164, 'Tür 4 zu ohne Licht', r.get('pos'))
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
-    r = await koop(g, m=kat(210, 15), f=kat(208, 15), plans={'m': haken(215, 9, 30) + am(221)}, maxFrames=1500)
+    r = await koop(g, m=kat(210, 15), f=kat(208, 15), plans={'m': hoch(215, 9) + am(221)}, maxFrames=1500)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("spiegelListe.find(s => s.c === 220).stellung") == '\\', 'Affe per Haken zum Spiegel 5a', r.get('pos'))
     r = await koop(g, f=kat(222, 15), m=kat(222, 9), plans={'f': [k_lauf(227), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}]}, maxFrames=800)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 6, 'pinkes Tor auf den Turm (Schweinchen)', r.get('pos'))
@@ -1590,7 +1594,7 @@ async def level10_sonnentempel(g):
     # --- Etappe 3 ---
     r = await koop(g, f=kat(401, 15), m=kat(400, 15), plans={'f': [k_lauf(404), {'wait': f'P.y < {ky(8)}'}, {'frames': 10}] + am(408)}, maxFrames=1000)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 6 and await g.ev("!!linkOn[9]"), 'pinkes Tor -> Spiegel 8 -> Tür 9', r.get('pos'))
-    r = await koop(g, m=kat(406, 15), f=kat(407, 6), plans={'m': haken(411, 9, 30, f'P.y < {ky(9)} + 4 && P.vx > -0.5 && P.vy > -2 && f > 10') + [k_lauf(428)]}, pre=dreh(409), maxFrames=1500)   # Liane 2: oben im Umkehrpunkt loslassen
+    r = await koop(g, m=kat(406, 15), f=kat(407, 6), plans={'m': hoch(411, 9) + [k_lauf(428)]}, pre=dreh(409), maxFrames=1500)   # Liane 2: hochziehen und hinüber
     soll(r.get('done') and k_pos(r, 'm')[1] == 9, 'Affe per Haken auf den oberen Weg, durch Tür 9', r.get('pos'))
     r = await koop(g, m=kat(420, 9), f=kat(407, 6), plans={'m': [k_lauf(428)]}, maxFrames=600)
     soll(r['pos']['m'][0] < 424, 'Tür 9 zu ohne Licht', r.get('pos'))
@@ -1632,7 +1636,7 @@ async def level10_sonnentempel(g):
     cps = sorted(await g.ev("checkpointDefs.map(c => Math.round((c.x - 20) / 40))"))
     luecken = [(a, b) for a, b in zip(cps, cps[1:]) if b - a > 70 and a != 401]   # Ausnahme: zwei Wege 401–474 (ein Rätsel)
     soll(not luecken, 'Checkpoints höchstens 70 Spalten auseinander', luecken)
-    r = await koop(g, m=kat(620, 15), f=kat(618, 15), plans={'m': haken(625, 9, 30) + am(631)}, maxFrames=1500)
+    r = await koop(g, m=kat(620, 15), f=kat(618, 15), plans={'m': hoch(625, 9) + am(631)}, maxFrames=1500)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 9 and await g.ev("!!linkOn[12]"), 'Affe per Haken zum Spiegel -> Kristall 12', r.get('pos'))
     r = await koop(g, f=kat(642, 6), m=kat(632, 9), plans={'f': gleit(643, kx(654), 4) + [{'frames': 10}] + am(653)}, maxFrames=1500)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[1] == 10 and await g.ev("spiegelListe.find(s => s.c === 653).stellung") == '\\', 'Schweinchen segelt zur Insel, Spiegel 12', r.get('pos'))
