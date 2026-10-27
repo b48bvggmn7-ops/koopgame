@@ -9339,7 +9339,7 @@ def kombi_kamin_grube(x0, s):
             'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(rw + 1)}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}],
             'm_ohne': kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
 
-def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=20, weit=0, versatz_f=None):
+def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=20, weit=0, versatz_f=None, rel=None):
     """Kompakter Kamin (linke Säule x0, Breite 3) -> Stachelgrube (9) mit Haken -> Landeplatz 6 Reihen hoch; über der Grube
     eine Flamme im Takt (Timing: losklettern 20 Schritte nach dem Zünden). s = Bodenreihe. hoch = Umbau: rechte Wand und
     Landeplatz so viele Reihen höher (tests/umbau/kamine_heben.py), damit Sprung + Dash hoch den Kamin nicht überspringt."""
@@ -9351,9 +9351,9 @@ def kombi_flammen_kamin(x0, s, breite=3, grube=9, flamme=True, hoch=0, versatz=2
                                   {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, lande],
             'f': warte + kamin + [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])],
             'm_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
-            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]} if not weit else kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz if versatz_f is None else versatz_f)
+            'f_ohne': warte + kamin + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]} if not weit else kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz if versatz_f is None else versatz_f, rel)
 
-def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f):
+def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f, rel=None):
     """Umbau: Kamin-Grube 8 breiter (tests/umbau/grube_weiten.py, Grube 17). Affe: zwei Haken nacheinander; Schweinchen:
     oben auf die Kaminwand, Sprung, Dash schräg hoch, DANN Schirm. Gegenproben: oben stehen + Sprung + Dash (ohne Haken
     bzw. Schirm) -> Grube."""
@@ -9362,9 +9362,9 @@ def kombi_kamin_weit(x0, s, rw, l0, warte, kamin, lande, flamme, fx, versatz_f):
     def sprung_dash(d, rich, schirm): return oben + [{'press': ['jump'], 'hold': ['right', 'jump'], 'frames': d}, {'press': ['dash'], 'hold': rich, 'frames': 3}, dict(lande, hold=['glide'] if schirm else [])]
     # Liane 2 (festes Pendel): je nach Seillänge beim Aufsteigen loslassen
     haken = [{'hold': ['right'], 'hookWhen': f'P.vy > -6 && P.x > {kx(rw)}', 'until': 'P.hookAttached', 'frames': 120},
-             {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
+             {'swing': True, 'release': rel or 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
              {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
-             {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
+             {'swing': True, 'release': rel or 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
              dict(lande, hold=['swimUp'], pressIf={'dash': f'!P.grounded && P.vy > 1 && P.x < {kx(l0)} - 40 && dashKannStarten(P)'}),
              {'holdIf': {'right': f'P.x < {kx(l0 + 1)}', 'left': f'P.x > {kx(l0 + 3)}'}, 'frames': 40}]   # nach der Landung abbremsen (Haken aufgeräumt: mehr Schwung)   # zu kurz: Dash schräg hoch
     return {'m': warte + kamin + haken, 'f': warte_f + kamin + sprung_dash(20, ['right', 'swimUp'], True),
@@ -9432,7 +9432,7 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(190, 200), {'m': (200, 6), 'f': (200, 6)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (392)', kat(387, 15), kat(386, 15), lambda: kombi_pilz_dash_grube(392, 402), {'m': (402, 6), 'f': (402, 6)}),
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3, weit=8, versatz_f=0), {'m': (190, 6), 'f': (189, 6)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (295)', kat(293, 15), kat(292, 15), lambda: kombi_flammen_kamin(295, 16, hoch=3, weit=8, versatz_f=0), {'m': (317, 6), 'f': (316, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (295)', kat(293, 15), kat(292, 15), lambda: kombi_flammen_kamin(295, 16, hoch=3, weit=8, versatz=40, versatz_f=0, rel='P.x > P.anchor.x + P.ropeLen*0.4 && P.vy < 0'), {'m': (317, 6), 'f': (316, 6)}),   # Liane 2: andere Flammen-Phase, früher loslassen
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3, weit=8, versatz_f=0), {'m': (606, 6), 'f': (605, 6)}),
     ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3, weit=8, versatz_f=0), {'m': (544, 5), 'f': (543, 5)}),
     ('ruinen/02-mondnacht.json', 'Flammen-Kamin (81)', kat(79, 14), kat(78, 14), lambda: kombi_flammen_kamin(81, 15, hoch=3, weit=8, versatz_f=0), {'m': (103, 5), 'f': (102, 5)}),
