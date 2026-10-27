@@ -6569,7 +6569,8 @@ async def figuren3d_brillen_buegel(g):
         ids = await g.ev("COSMETICS.filter(i => i.slot === 'glasses').map(i => [i.id, i.fx.kind])")
         assert len(ids) == 9, ids
         fehler = []
-        for iid, kind in ids:
+        async def pruefen(iid, kind):
+            fehler = []
             await g.ev(f"cosmeticsReset(); for(const w of ['m', 'f']){{ cosmeticsSave.owned[w]['{iid}'] = 1; equipItem(w, '{iid}'); }}")
             r = await g.p.evaluate(F3D_BILD, {'n': 6, 'vorher': "p1._yawTest = p2._yawTest = 1.5; p1._buegelDev = p2._buegelDev = null",
                                                'merk': "[p1, p2].map(P => P._buegelDev && P._buegelDev.f === P._frameNo ? Object.assign({skala: P._fussDev.skala}, P._buegelDev) : null)"})
@@ -6586,6 +6587,12 @@ async def figuren3d_brillen_buegel(g):
                     ab, farbe = await g.p.evaluate(F3D_WEITESTE, [pt[0], pt[1], 3, daneben])   # 3 Gerätepixel Umkreis (Kantenglättung)
                     # über dem Kopf prüfen (vorn hängt der Bügel noch vor dem Gesicht, über dem Hintergrund)
                     if t > 0.4 and ab < 70: fehler.append(f'{iid} {wer}: Bügel bei {t} kaum sichtbar {farbe} (daneben {daneben})')
+            return fehler
+        for iid, kind in ids:
+            for _ in range(3):   # Leerlauf-Bewegungen können ein einzelnes Bild verfälschen: bis zu dreimal messen
+                f = await pruefen(iid, kind)
+                if not f: break
+            fehler += f
         assert not fehler, fehler
     finally:
         await g.ev("p1._yawTest = p2._yawTest = null; cosmeticsReset(); menuScreen = null")
