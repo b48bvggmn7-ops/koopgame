@@ -153,6 +153,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     nichts). Bot-Pläne Pfeil-Galerie (Level 9) und oberer Weg (Sonnentempel) lassen dafür später/im Umkehrpunkt los. Schub beim
     Loslassen kräftiger (LIANE_BOOST 3,2). Die alte Seil-Physik bleibt für die alte Antipp-Bedienung (Bahnen-Test unverändert).
     Sechs Haken um ein Kästchen versetzt, an denen man mit dem neuen Pendel an eine Wand stieß. Test liane2_natuerliches_pendel.
+  - Haken-Taste hektisch drücken (Nutzer-Video „G spammen“): nach dem Loslassen lässt sich DERSELBE Haken ⅓ s lang nicht
+    wieder greifen (LIANE_SPERRE), und den Loslass-Schub gibt es erst, wenn der Affe mindestens ¼ s am Seil hing
+    (LIANE_BOOST_HALTEN) – kein wildes Hüpfen um den Haken mehr. Ein anderer Haken (Haken-Kette) geht sofort. Test liane_g_spammen.
   - Liane HALTEN (Nutzerwunsch): Die Haken-Taste (G / Num 1 / □) muss GEDRÜCKT GEHALTEN werden, solange der Affe am Seil
     hängt; Taste loslassen = abspringen, ohne Leertaste (js/32 lianeLoslassen; LIANE_HALTEN in 02, false = alte
     Antipp-Bedienung). Mit Schwung gibt es einen Absprung-Schub in Schwungrichtung (LIANE_BOOST 2,4 px/Schritt

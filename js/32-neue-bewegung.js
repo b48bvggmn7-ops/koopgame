@@ -231,14 +231,28 @@ function haftNachher(P, altX, altY){
 // Leichter Schub in Richtung des Schwungs (Bahn-Richtung) plus kleiner Hub – nur mit Schwung, weich ansteigend, damit
 // es zur Pendel-Physik passt. Danach fliegt die Figur wie nach jedem Loslassen weiter (ropeFling, ROPE_FLING_* in 02).
 function lianeLoslassen(P){
-  P.hookAttached = false; P._lianeA = null;
-  const v = Math.hypot(P.vx, P.vy), k = Math.max(0, Math.min(1, (v - LIANE_MIN_SCHWUNG)/LIANE_SCHWUNG_VOLL));
+  lianeSperren(P); P.hookAttached = false; P._lianeA = null;
+  const v = Math.hypot(P.vx, P.vy), k = (P._lianeHalten || 0) < LIANE_BOOST_HALTEN ? 0 : Math.max(0, Math.min(1, (v - LIANE_MIN_SCHWUNG)/LIANE_SCHWUNG_VOLL));
   if(k > 0){
     P.vx += P.vx/v*LIANE_BOOST*k;
     P.vy += P.vy/v*LIANE_BOOST*k + LIANE_HUB*k;
     P.lianeSchub = k;
   } else P.lianeSchub = 0;
   ropeFling(P);
+}
+
+// Haken-Taste hektisch gedrückt (Nutzer-Video „G spammen“): nach dem Loslassen kann derselbe Haken LIANE_SPERRE Schritte
+// lang nicht wieder gegriffen werden, und den Schub gibt es erst nach LIANE_BOOST_HALTEN Schritten am Seil – sonst hüpft
+// der Affe mit jedem Greifen/Loslassen wild um den Haken. Ein anderer Haken (Haken-Kette) geht sofort.
+function lianeSperren(P){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P.anchor; }
+function lianeGriffPruefen(P){
+  if(P.lianeSperre > 0) P.lianeSperre--;
+  if(P.hookAttached && P._gegriffenA !== P.anchor){   // gerade gegriffen (08)
+    if(P.lianeSperre > 0 && P.anchor === P.lianeSperreA){ P.hookAttached = false; return; }   // zu schnell wieder derselbe Haken
+    P._gegriffenA = P.anchor; P._lianeHalten = 0;
+  }
+  if(P.hookAttached) P._lianeHalten = (P._lianeHalten || 0) + 1;
+  else if(P._gegriffenA){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P._gegriffenA; P._gegriffenA = null; }   // auf anderem Weg gelöst (G erneut gedrückt, Landen)
 }
 
 // ---------- Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“): echtes Pendel mit fester Länge ----------
@@ -294,7 +308,7 @@ function lianeKern(S, A, moveDir, ziehen, geben){
 function lianeSchritt(P, moveDir, jumpPressed){
   const A = P.anchor, K = P.keys || {};
   if(jumpPressed){   // Springen am Seil: loslassen mit Hub (wie bisher), Schwung bleibt
-    P.hookAttached = false; P._lianeA = null; P.vy += HOOK_RELEASE_BOOST; ropeFling(P); return false;
+    lianeSperren(P); P.hookAttached = false; P._lianeA = null; P.vy += HOOK_RELEASE_BOOST; ropeFling(P); return false;
   }
   const d0 = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y) || 1;
   if(P._lianeA !== A){   // gerade gegriffen
@@ -313,6 +327,7 @@ function lianeSchritt(P, moveDir, jumpPressed){
 // vor dem Tempo: Dash-Taste, Dash, Haftfläche, Sprung im Durchbruch-Fenster. true = Tempo ist gesetzt (normale Physik aus)
 function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   const K = P.keys || {};
+  if(P.male && LIANE_HALTEN && !window.hakenTippen) lianeGriffPruefen(P);
   if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
   if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }

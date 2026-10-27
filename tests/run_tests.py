@@ -5224,6 +5224,35 @@ async def seil_abflug_mit_schwung(g):
     assert st2['x'] - st['x'] > 100, f'Affe kommt nach dem Loslassen nicht nach vorne: {st} -> {st2}'
 
 @test
+async def liane_g_spammen(g):
+    """Nutzer-Video „G spammen“: wer die Haken-Taste hektisch drückt, greift denselben Haken erst nach LIANE_SPERRE Schritten
+    wieder und bekommt beim Loslassen keinen Schub, solange er kürzer als LIANE_BOOST_HALTEN Schritte am Seil hing – der Affe
+    hüpft nicht mehr wild um den Haken. Ein anderer Haken lässt sich sofort greifen (Haken-Kette)."""
+    await g.load(level([ground(0, 680, 4000)], {'x': 880, 'y': 680}, {'x': 600, 'y': 680},
+                       hooks=[{'x': 1000, 'y': 260, 'radius': 400}, {'x': 2400, 'y': 260, 'radius': 200}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1;
+      const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+      P.x = h.x - 100; P.y = h.y + 100 + P.h*0.6; P.vx = 6; P.vy = 0; P.grounded = false; P.hookAttached = false; P._lianeA = null;
+      KEYS.KeyG = true; KEYS.KeyG_pressed = true; st();
+      for(let i = 0; i < 30; i++){ KEYS.KeyD = true; st(); }
+      const e = {griffe: 0, schub: 0, minAbstand: 999}; let los = -1, war = P.hookAttached;
+      for(let i = 0; i < 120; i++){   // alle 2 Schritte G drücken / loslassen
+        const an = i % 4 < 2; KEYS.KeyG = an; if(an && i % 4 === 0) KEYS.KeyG_pressed = true;
+        st();
+        if(P.hookAttached && !war){ e.griffe++; if(los >= 0) e.minAbstand = Math.min(e.minAbstand, i - los); }
+        if(!P.hookAttached && war){ los = i; e.schub = Math.max(e.schub, P.lianeSchub || 0); }
+        war = P.hookAttached;
+      }
+      // anderer Haken: sofort greifbar
+      KEYS.KeyG = false; st(); P.x = 2400 + 40; P.y = 260 + 90 + P.h*0.6; P.vx = 0; P.vy = 0; P.grounded = false;
+      KEYS.KeyG = true; KEYS.KeyG_pressed = true; st();
+      e.anderer = P.hookAttached && P.anchor === hooks[1];
+      KEYS.KeyD = KEYS.KeyG = false; menuScreen = null; return e; })()""")
+    assert r['griffe'] >= 1 and r['minAbstand'] >= await g.ev('LIANE_SPERRE'), f'derselbe Haken zu schnell wieder gegriffen: {r}'
+    assert r['schub'] == 0, f'Schub trotz kurzem Halten: {r}'
+    assert r['anderer'], f'anderer Haken nicht sofort greifbar: {r}'
+
+@test
 async def liane2_natuerliches_pendel(g):
     """Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“, js/32 lianeSchritt): nah gegriffen rutscht der Affe weich
     auf LIANE2_MIN (70 px) – nie ruckartig; mit Pumpen höchstens knapp über waagerecht (kein Überschlag) und ohne Ruck; von

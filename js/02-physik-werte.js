@@ -64,6 +64,8 @@ const ROPE_FLING_DRAG = 0.993;  // Luftbremse ohne Taste im Abflug (normal in de
 const LIANE_HALTEN = true;          // false = alte Bedienung (G antippen = greifen, nochmal G = loslassen)
 const LIANE_MIN_SCHWUNG = 2.5;      // px/Schritt: darunter kein Schub (still hängen)
 const LIANE_SCHWUNG_VOLL = 4;       // ab MIN + diesem Wert voller Schub (dazwischen weich ansteigend)
+const LIANE_SPERRE = 18;            // Schritte (~⅓ s): so lange lässt sich derselbe Haken nach dem Loslassen nicht wieder greifen (G-Taste hektisch gedrückt)
+const LIANE_BOOST_HALTEN = 12;      // Schritte: erst wer so lange am Seil hing, bekommt beim Loslassen den Schub
 const LIANE_BOOST = 3.2;            // Schub in Schwungrichtung (px/Schritt; Schwung am Seil meist 5–10; vorher 1,6 – Nutzerwunsch: etwas stärker)
 const LIANE_HUB = -1.6;             // dazu ein kleiner Hub nach oben (Springen am Seil: -4,5; vorher -1,2)
 // Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“; js/32 lianeSchritt): echtes Pendel mit fester Länge – gilt
