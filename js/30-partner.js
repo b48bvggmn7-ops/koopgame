@@ -294,7 +294,7 @@ function partnerKoerper(P){
           onWall: P.onWall || 0, wallEntrySpeed: P.wallEntrySpeed || 0, lastWallJumpSide: P.lastWallJumpSide || 0, wjLock: P.wjInputLock || 0,
           t: 0, lastWallTouch: P.lastWallTouch !== undefined && P.lastWallTouch > -9000 ? -1e9 : -1e9,
           kurz: !!P.sprungKurzMoeglich, los: !!P.sprungLosgelassen, fling: !!P.ropeFling, standingOn: P.standingOn,
-          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen, ziel: P.lianeZiel ?? P.ropeLen, max: P.ropeMax ?? P.ropeLen, dehn: P._dehn || 0} : null, lastAnchor: null, inWater: !!P.inWater};
+          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen} : null, lastAnchor: null, inWater: !!P.inWater};
 }
 function partnerKollision(U, b, achse){
   const box = {x: b.x - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
@@ -348,8 +348,6 @@ function partnerKanteAbrutschen(U, b, dir){
   const nx = b.x + k*KANTE_RUTSCH, box = {x: nx - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
   if(!U.feste.some(s => !s.gone && box.x < s.x + s.w && box.x + box.w > s.x && box.y < s.y + s.h && box.y + box.h > s.y)) b.x = nx;
 }
-// rechnet das Spiel den Affen am Haken mit Liane 2 (js/32 lianeNeu)? Dann rechnet die Vorausschau genauso
-const partnerLiane2 = () => LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus && !window.partnerSimAlt;   // partnerSimAlt: nur zum Vergleichen (Tests)
 // ein Schritt: e = {dir, springen (neu drücken), sprungHalten, gleiten, haken (neu drücken), loslassen}
 let partnerSimZaehler = 0;   // gerechnete Vorausschritte (Budget je Entscheidung: PARTNER_BUDGET)
 function partnerSimSchritt(U, b, e){
@@ -357,16 +355,9 @@ function partnerSimSchritt(U, b, e){
   const dir = e.dir || 0;
   if(b.male && e.haken && !b.hook){
     const t = partnerHakenZiel(b);
-    if(t){ b.hook = {anchor: t, len: Math.hypot(t.x - b.x, t.y - (b.y - b.h*0.6))}; b.luft = false;
-      const r = hookRange(t); b.hook.ziel = Math.max(LIANE2_MIN, Math.min(r, b.hook.len)); b.hook.max = Math.max(b.hook.ziel, r); b.hook.dehn = 0; }
+    if(t){ b.hook = {anchor: t, len: Math.hypot(t.x - b.x, t.y - (b.y - b.h*0.6))}; b.luft = false; }
   }
-  const liane2 = b.hook && !b.grounded && partnerLiane2();
-  if(liane2){   // Liane 2 (js/32 lianeKern): festes Pendel wie im Spiel
-    const S = {hx: b.x, hy: b.y - b.h*0.6, vx: b.vx, vy: b.vy, len: b.hook.len, ziel: b.hook.ziel, max: b.hook.max, dehn: b.hook.dehn};
-    lianeKern(S, b.hook.anchor, dir, !!e.pull, false);
-    b.vx = S.vx; b.vy = S.vy; b.hook.len = S.len; b.hook.ziel = S.ziel; b.hook.dehn = S.dehn; b.gezogen = false;
-    if(e.loslassen){ b.lastAnchor = b.hook.anchor; b.hook = null; b.vy += HOOK_RELEASE_BOOST; b.fling = true; }
-  } else if(b.hook){
+  if(b.hook){
     b.vy += GRAVITY*0.9;
     if(dir !== 0 && b.vx*dir > -0.3) b.vx += dir*SWING_PUSH;
     const lenVor = b.hook.len;
@@ -438,7 +429,7 @@ function partnerSimSchritt(U, b, e){
     for(const p of bouncers) if(Math.abs(b.x - p.x) < 14 + b.w/2 && b.y > p.y - 14 && b.y <= p.y + 1){ b.vy = BOUNCE_V; b.grounded = false; b.glideTimer = 0; break; }
   }
   if(b.hook){ if(b.grounded && b.luft) b.hook = null; else if(!b.grounded) b.luft = true; }
-  if(b.hook && !b.grounded && !partnerLiane2()){   // Seilspannung wie updateRopeTension (Gummi-Zug, gibt bei starker Dehnung nach)
+  if(b.hook && !b.grounded){   // Seilspannung wie updateRopeTension (Gummi-Zug, gibt bei starker Dehnung nach)
     const A = b.hook.anchor, dx = b.x - A.x, dy = (b.y - b.h*0.6) - A.y, dist = Math.hypot(dx, dy) || 1, over = dist - b.hook.len;
     if(over > 3){ b.vx -= dx/dist*over*0.05; b.vy -= dy/dist*over*0.05; }
     if(over > ROPE_SNAP_STRETCH) b.hook.len = dist - ROPE_SNAP_STRETCH;

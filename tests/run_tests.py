@@ -9431,13 +9431,13 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (170)', kat(165, 15), kat(164, 15), lambda: kombi_pilz_dash_grube(170, 180), {'m': (180, 6), 'f': (180, 6)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_dash_grube(190, 200), {'m': (200, 6), 'f': (200, 6)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Dash-Stachelgrube (392)', kat(387, 15), kat(386, 15), lambda: kombi_pilz_dash_grube(392, 402), {'m': (402, 6), 'f': (402, 6)}),
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (190, 6), 'f': (189, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3, weit=8, versatz_f=0), {'m': (190, 6), 'f': (189, 6)}),
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (295)', kat(293, 15), kat(292, 15), lambda: kombi_flammen_kamin(295, 16, hoch=3, weit=8, versatz=40, versatz_f=0, rel='P.x > P.anchor.x + P.ropeLen*0.4 && P.vy < 0'), {'m': (317, 6), 'f': (316, 6)}),   # Liane 2: andere Flammen-Phase, früher loslassen
-    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (606, 6), 'f': (605, 6)}),
-    ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (544, 5), 'f': (543, 5)}),
-    ('ruinen/02-mondnacht.json', 'Flammen-Kamin (81)', kat(79, 14), kat(78, 14), lambda: kombi_flammen_kamin(81, 15, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (103, 5), 'f': (102, 5)}),
-    ('ruinen/03-fallengang.json', 'Flammen-Kamin (571)', kat(569, 15), kat(568, 15), lambda: kombi_flammen_kamin(571, 16, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (593, 6), 'f': (592, 6)}),
-    ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (572)', kat(570, 15), kat(569, 15), lambda: kombi_flammen_kamin(572, 16, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (594, 6), 'f': (593, 6)}),
+    ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3, weit=8, versatz_f=0), {'m': (606, 6), 'f': (605, 6)}),
+    ('ruinen/01-ruinen.json', 'Flammen-Kamin (522)', kat(520, 14), kat(519, 14), lambda: kombi_flammen_kamin(522, 15, hoch=3, weit=8, versatz_f=0), {'m': (544, 5), 'f': (543, 5)}),
+    ('ruinen/02-mondnacht.json', 'Flammen-Kamin (81)', kat(79, 14), kat(78, 14), lambda: kombi_flammen_kamin(81, 15, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (103, 5), 'f': (102, 5)}),   # Liane 2: andere Flammen-Phase
+    ('ruinen/03-fallengang.json', 'Flammen-Kamin (571)', kat(569, 15), kat(568, 15), lambda: kombi_flammen_kamin(571, 16, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (593, 6), 'f': (592, 6)}),   # Liane 2: andere Flammen-Phase
+    ('ruinen/05-felsenflucht.json', 'Flammen-Kamin (572)', kat(570, 15), kat(569, 15), lambda: kombi_flammen_kamin(572, 16, hoch=3, weit=8, versatz=40, versatz_f=0), {'m': (594, 6), 'f': (593, 6)}),   # Liane 2: andere Flammen-Phase
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (273)', kat(271, 14), kat(270, 14), lambda: kombi_pilz_dash_grube(273, 281), {'m': (281, 5), 'f': (281, 5)}),
     ('hoehle/01-kristallhoehle.json', 'Pilz-Dash-Grube (359)', kat(357, 14), kat(356, 14), lambda: kombi_pilz_dash_grube(359, 367), {'m': (367, 5), 'f': (367, 5)}),
     ('hoehle/02-tropfsteingang.json', 'Pilz-Dash-Grube (266)', kat(264, 15), kat(263, 15), lambda: kombi_pilz_dash_grube(266, 274), {'m': (274, 6), 'f': (274, 6)}),
