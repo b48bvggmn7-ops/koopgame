@@ -412,14 +412,67 @@
    }
   },
   {
-   "id": "nummer-10",
+   "id": "saeule-hebel-10",
+   "von_hand": true,
    "zone": [
     609,
     628
    ],
    "rolle": "m",
-   "aktion": "hebel",
+   "aktion": "ablauf",
    "nummer": 10,
+   "start": {
+    "c": 586,
+    "r": 14
+   },
+   "text": "am Seil auf die Säule, Hebel 10",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 24460"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "hookWhen": "P.vy > -3",
+     "until": "P.hookAttached",
+     "frames": 120
+    },
+    {
+     "swing": true,
+     "pull": 0,
+     "release": "P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0",
+     "frames": 500
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "holdIf": {
+      "left": "P.x > 24860 && P.vx > -1"
+     },
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 24860 - 4",
+      "left": "P.x > 24860 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
    "probe": {
     "figur": "m",
     "start": [
@@ -427,7 +480,7 @@
      14
     ],
     "links": [],
-    "schritte": 874
+    "schritte": 1200
    }
   }
  ],

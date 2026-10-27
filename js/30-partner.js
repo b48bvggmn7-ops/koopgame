@@ -294,7 +294,7 @@ function partnerKoerper(P){
           onWall: P.onWall || 0, wallEntrySpeed: P.wallEntrySpeed || 0, lastWallJumpSide: P.lastWallJumpSide || 0, wjLock: P.wjInputLock || 0,
           t: 0, lastWallTouch: P.lastWallTouch !== undefined && P.lastWallTouch > -9000 ? -1e9 : -1e9,
           kurz: !!P.sprungKurzMoeglich, los: !!P.sprungLosgelassen, fling: !!P.ropeFling, standingOn: P.standingOn,
-          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen} : null, lastAnchor: null, inWater: !!P.inWater};
+          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen, ziel: P.lianeZiel ?? P.ropeLen, max: P.ropeMax ?? P.ropeLen, dehn: P._dehn || 0} : null, lastAnchor: null, inWater: !!P.inWater};
 }
 function partnerKollision(U, b, achse){
   const box = {x: b.x - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
@@ -349,7 +349,7 @@ function partnerKanteAbrutschen(U, b, dir){
   if(!U.feste.some(s => !s.gone && box.x < s.x + s.w && box.x + box.w > s.x && box.y < s.y + s.h && box.y + box.h > s.y)) b.x = nx;
 }
 // rechnet das Spiel den Affen am Haken mit Liane 2 (js/32 lianeNeu)? Dann rechnet die Vorausschau genauso
-const partnerLiane2 = () => LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus;
+const partnerLiane2 = () => LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus && !window.partnerSimAlt;   // partnerSimAlt: nur zum Vergleichen (Tests)
 // ein Schritt: e = {dir, springen (neu drücken), sprungHalten, gleiten, haken (neu drücken), loslassen}
 let partnerSimZaehler = 0;   // gerechnete Vorausschritte (Budget je Entscheidung: PARTNER_BUDGET)
 function partnerSimSchritt(U, b, e){
