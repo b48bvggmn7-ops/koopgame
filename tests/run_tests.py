@@ -2011,8 +2011,8 @@ async def level13_eisgrotte(g):
         soll(r['pos']['m'][0] < 226, 'E2 Tür 2 zu ohne Platte', r.get('pos'))
         ok = None
         for jx in (252, 253, 254):
-            for pull in (30, 60):
-                r = await koop(g, m=kat(250, 15), f=kat(248, 15), plans={'m': haken(jx, 9, pull) + [{'holdIf': {'right': f'P.x < {kx(265)} - 3', 'left': f'P.x > {kx(265)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(265)}) < 30 && P.grounded && !linkOn[3] && f % 20 === 0'}, 'until': '!!linkOn[3]', 'frames': 600}]}, maxFrames=2500)
+            for pull in (30, 60, 'hoch'):   # Liane 2 gibt bis zur Reichweite nach: 'hoch' = neben dem Sims mit W hochziehen, dann hinüber
+                r = await koop(g, m=kat(250, 15), f=kat(248, 15), plans={'m': (haken(jx, 9, pull) if pull != 'hoch' else [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80}, {'hold': ['pull'], 'holdIf': {'left': f'P.x > {kx(257)} - 10'}, 'until': f'P.y < {ky(9)} - 4', 'frames': 200}, {'swing': True, 'release': 'true', 'after': 'right'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]) + [{'holdIf': {'right': f'P.x < {kx(265)} - 3', 'left': f'P.x > {kx(265)} + 3'}, 'pressIf': {'use': f'Math.abs(P.x - {kx(265)}) < 30 && P.grounded && !linkOn[3] && f % 20 === 0'}, 'until': '!!linkOn[3]', 'frames': 600}]}, maxFrames=2500)
                 if r.get('pos', {}).get('m', [0, 0])[1] == 9 and await g.ev('!!linkOn[3]'): ok = (jx, pull); break
             if ok: break
         soll(ok, 'E2 Affe auf den vereisten Sims, Hebel 3', (ok, r.get('pos')))
