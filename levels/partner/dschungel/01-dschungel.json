@@ -76,13 +76,14 @@
    }
   },
   {
-   "id": "nummer-4",
+   "id": "insel-hebel-4",
+   "von_hand": true,
    "zone": [
     289,
     317
    ],
    "rolle": "m",
-   "aktion": "hebel",
+   "aktion": "ablauf",
    "nummer": 4,
    "wann": {
     "ich_in": [
@@ -91,7 +92,58 @@
     ],
     "ich_steht": true
    },
-   "text": "Hebel 4 (wenn du auf der Plattform stehst)",
+   "start": {
+    "c": 296,
+    "r": 13
+   },
+   "text": "Hebel 4 (wenn du auf der Plattform stehst): am Seil auf die Insel",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 12010"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "hookWhen": "P.vy > -3",
+     "until": "P.hookAttached",
+     "frames": 120
+    },
+    {
+     "swing": true,
+     "pull": 30,
+     "release": "P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0",
+     "frames": 500
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "holdIf": {
+      "left": "P.x > 12580 && P.vx > -1"
+     },
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 12580 - 4",
+      "left": "P.x > 12580 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
    "probe": {
     "figur": "m",
     "start": [
@@ -99,7 +151,7 @@
      13
     ],
     "links": [],
-    "schritte": 582
+    "schritte": 900
    }
   },
   {

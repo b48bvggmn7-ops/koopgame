@@ -146,7 +146,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     02): beim Halten der Haken-Taste ein echtes Pendel mit FESTER Seillänge – das Seil gibt nicht mehr nach und dehnt sich
     nicht (keine rot-orange Gummi-Liane, straff gezeichnet; hängt nur durch, wenn es locker ist). In der Luft gegriffen gibt
     die Liane sofort bis zur vollen Reichweite nach (Nutzerwunsch: ganz nah hängen ist selten gewollt – der Affe fällt hinein
-    und schwingt), aber nie so weit, dass er senkrecht unter dem Haken Boden, Stacheln oder Lava berührt (LIANE_BODEN_ABSTAND
+    und schwingt), aber nie so weit, dass er senkrecht unter dem Haken Boden, Stacheln, Lava oder eine Flammen-Falle berührt (LIANE_BODEN_ABSTAND
     + Platz fürs Nachfedern, `lianeFreiUnten`). Vom Boden aus gegriffen bleibt sie straff (W zieht sofort hoch). Hochziehen
     mit W, S gibt nach. Test liane_volle_laenge.
     Schwung holen mit der Richtungstaste bis 70°, ab 80° bremst die Luft stärker, höchstens ca. 95° (kein Überschlag mehr).

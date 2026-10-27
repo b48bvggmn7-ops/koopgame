@@ -245,7 +245,8 @@ function lianeLoslassen(P){
 // lang nicht wieder gegriffen werden, und den Schub gibt es erst nach LIANE_BOOST_HALTEN Schritten am Seil – sonst hüpft
 // der Affe mit jedem Greifen/Loslassen wild um den Haken. Ein anderer Haken (Haken-Kette) geht sofort.
 function lianeSperren(P){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P.anchor; P._gegriffenA = null; }
-// so lang darf die Liane höchstens werden, ohne dass der Affe senkrecht unter dem Haken Boden, Stacheln oder Lava berührt
+// so lang darf die Liane höchstens werden, ohne dass der Affe senkrecht unter dem Haken Boden, Stacheln, Lava oder eine
+// Flamme (Falle nach oben) berührt
 // (sonst landet er – das Seil löst sich – oder fällt hinein); LIANE_BODEN_ABSTAND px Luft unter den Füßen
 function lianeFreiUnten(A, P){
   const x0 = A.x - P.w/2, x1 = A.x + P.w/2;
@@ -253,6 +254,8 @@ function lianeFreiUnten(A, P){
   for(const s of solids) if(!s.gone && s.y > A.y && s.x < x1 && s.x + s.w > x0) oben = Math.min(oben, s.y);
   for(const sp of spikes) if(sp.y - sp.h > A.y && sp.x - sp.w/2 < x1 && sp.x + sp.w/2 > x0) oben = Math.min(oben, sp.y - sp.h);
   if(typeof lavaBecken !== 'undefined') for(const b of lavaBecken) if(A.x >= b.minX && A.x < b.maxX && b.surf > A.y) oben = Math.min(oben, b.surf);
+  if(typeof fallen !== 'undefined') for(const f of fallen)   // Flammen-Fallen nach oben: nicht in die Flamme hängen
+    if(f.art === 'flamme' && f.dy < 0 && f.y > A.y && f.x < x1 && f.x + 40 > x0) oben = Math.min(oben, f.y - FLAMME_LAENGE*40);
   return oben - A.y - P.h*0.6 - LIANE_BODEN_ABSTAND - LIANE2_FANG_MAX;   // + Platz fürs Nachfedern beim Hineinfallen
 }
 function lianeGriffPruefen(P){

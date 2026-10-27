@@ -5232,7 +5232,7 @@ async def seil_abflug_mit_schwung(g):
 async def liane_volle_laenge(g):
     """Nutzerwunsch „die Liane soll immer erst mal in den weitesten Radius gehen“: in der Luft gegriffen gibt die Liane sofort
     bis zur Reichweite nach (der Affe fällt hinein und schwingt) – aber nie so weit, dass er senkrecht unter dem Haken auf
-    Boden, Stacheln oder Lava kommt (LIANE_BODEN_ABSTAND). Vom Boden gegriffen bleibt sie straff (W zieht sofort hoch)."""
+    Boden, Stacheln, Lava oder in eine Flammen-Falle kommt (LIANE_BODEN_ABSTAND). Vom Boden gegriffen bleibt sie straff (W zieht sofort hoch)."""
     await g.load(level([ground(0, 680, 900), ground(1300, 680, 900)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
                        hooks=[{'x': 500, 'y': 200, 'radius': 260}, {'x': 1100, 'y': 400, 'radius': 400}],
                        spikes=[{'x': 1100, 'y': 680, 'w': 40, 'h': 40}]))
@@ -5246,6 +5246,11 @@ async def liane_volle_laenge(g):
     assert r['frei']['haengt'] and r['frei']['L'] == 260, f'nicht bis zur Reichweite nachgegeben: {r}'
     s = r['stacheln']
     assert s['haengt'] and not s['tot'] and s['L'] < 240 - 19, f'fällt in die Stacheln: {r}'
+    # Flammen-Falle nach oben im Boden unter dem Haken: die Liane bleibt über der Flamme (FLAMME_LAENGE Kästchen)
+    await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 1000, 'y': 200, 'radius': 400}],
+                       traps=[{'x': 980, 'y': 640, 'art': 'flamme', 'richtung': 'o', 'takt': 2, 'versatz': 0}]))
+    frei = await g.ev("lianeFreiUnten(hooks[0], p1) + hooks[0].y + p1.h*0.6")   # tiefste Füße
+    assert frei < 640 - await g.ev('FLAMME_LAENGE')*40, f'Liane hängt in die Flamme: Füße bis {frei}'
 
 @test
 async def liane_g_spammen(g):
