@@ -281,7 +281,7 @@ function lianeGriffPruefen(P){
 //   Überschlag). - Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach (LIANE2_FANG_*).
 // - Das Seil gibt nie nach und dehnt sich nicht (keine rote Gummi-Liane mehr). Wände/Boden halten ihn normal auf.
 function lianeNeu(P){ return !!(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus); }   // liane2Aus: nur zum Vergleichen (Tests)
-// Kern des Pendels: S = {hx, hy (Griff-Punkt), vx, vy,
+// Kern des Pendels (auch für die Vorausrechnung des Computer-Partners, js/30): S = {hx, hy (Griff-Punkt), vx, vy,
 // len (Seillänge), ziel (Wunschlänge), max, dehn (Fang-Dehnung)} wird um einen Schritt weitergerechnet
 function lianeKern(S, A, moveDir, ziehen, geben){
   if(ziehen) S.ziel = Math.max(HOOK_MIN_LEN, S.ziel - ROPE_PULL_SPEED);
