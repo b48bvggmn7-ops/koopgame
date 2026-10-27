@@ -144,8 +144,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     als normal; endet beim Landen oder an einer Wand.
   - Liane 2 – natürliches Schwingen (Nutzerwunsch „fühlt sich wie ein Bug an“, Video; js/32 lianeSchritt, Werte LIANE2_* in
     02): beim Halten der Haken-Taste ein echtes Pendel mit FESTER Seillänge – das Seil gibt nicht mehr nach und dehnt sich
-    nicht (keine rot-orange Gummi-Liane, straff gezeichnet; hängt nur durch, wenn es locker ist). Länge = Abstand beim Greifen,
-    mindestens 70 px (nah gegriffen rutscht der Affe weich auf diese Länge), höchstens die Reichweite; W/S wie bisher.
+    nicht (keine rot-orange Gummi-Liane, straff gezeichnet; hängt nur durch, wenn es locker ist). Länge = immer die volle
+    Reichweite des Hakens (Nutzerwunsch: greift man nah, gibt die Liane sofort nach, der Affe fällt hinein und schwingt;
+    hochziehen mit W wie bisher, S gibt nach).
     Schwung holen mit der Richtungstaste bis 70°, ab 80° bremst die Luft stärker, höchstens ca. 95° (kein Überschlag mehr).
     Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach und zieht weich zurück statt zu rucken; ein Teil des
     Hineinfallens wird dabei zu Schwung entlang des Bogens (LIANE2_FANG_SCHWUNG), so verliert man beim Greifen im Flug keinen

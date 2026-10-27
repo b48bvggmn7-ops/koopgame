@@ -244,7 +244,7 @@ function lianeLoslassen(P){
 // Haken-Taste hektisch gedrückt (Nutzer-Video „G spammen“): nach dem Loslassen kann derselbe Haken LIANE_SPERRE Schritte
 // lang nicht wieder gegriffen werden, und den Schub gibt es erst nach LIANE_BOOST_HALTEN Schritten am Seil – sonst hüpft
 // der Affe mit jedem Greifen/Loslassen wild um den Haken. Ein anderer Haken (Haken-Kette) geht sofort.
-function lianeSperren(P){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P.anchor; }
+function lianeSperren(P){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P.anchor; P._gegriffenA = null; }
 function lianeGriffPruefen(P){
   if(P.lianeSperre > 0) P.lianeSperre--;
   if(P.hookAttached && P._gegriffenA !== P.anchor){   // gerade gegriffen (08)
@@ -257,8 +257,8 @@ function lianeGriffPruefen(P){
 
 // ---------- Liane 2 (Nutzerwunsch „Schwingen fühlt sich wie ein Bug an“): echtes Pendel mit fester Länge ----------
 // Gilt beim Halten der Haken-Taste (LIANE_HALTEN, nicht in der alten Antipp-Bedienung des Bahnen-Tests). Statt Gummi-Seil:
-// - Länge fest (Fallen ins Seil: kurz nachfedern, LIANE2_FANG_*): beim Greifen die Entfernung, aber mindestens LIANE2_MIN (näher gegriffen: das Seil wird weich nachgegeben,
-//   der Affe rutscht in LIANE2_ABROLL px/Schritt auf die Länge) und höchstens die Reichweite; W/S ändern sie wie bisher.
+// - Länge fest (Fallen ins Seil: kurz nachfedern, LIANE2_FANG_*): beim Greifen gibt die Liane sofort bis an den Rand der
+//   Reichweite nach (der Affe fällt hinein); W/S ändern sie wie bisher (in LIANE2_ABROLL px/Schritt).
 // - Schwung holen mit der Richtungstaste nur bis LIANE2_PUMP_WINKEL, ab LIANE2_BREMS_WINKEL bremst die Luft stärker, über
 //   LIANE2_MAX_WINKEL wird er weich gebremst (kein
 //   Überschlag). - Fällt der Affe ins Seil (z. B. von oben gegriffen), federt es kurz nach (LIANE2_FANG_*).
@@ -313,8 +313,9 @@ function lianeSchritt(P, moveDir, jumpPressed){
   const d0 = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y) || 1;
   if(P._lianeA !== A){   // gerade gegriffen
     P._lianeA = A; P._dehn = 0;
-    P.lianeZiel = Math.max(LIANE2_MIN, Math.min(hookRange(A), d0));
-    P.ropeLen = d0; P.ropeMax = Math.max(P.lianeZiel, hookRange(A));
+    // Nutzerwunsch: die Liane gibt sofort bis an den Rand der Reichweite nach – der Affe fällt hinein und schwingt dann
+    // (ganz nah hängen ist selten gewollt; hochziehen geht weiter mit W)
+    P.lianeZiel = P.ropeLen = P.ropeMax = Math.max(d0, hookRange(A));
   }
   const S = {hx: P.x, hy: P.y - P.h*0.6, vx: P.vx, vy: P.vy, len: P.ropeLen, ziel: P.lianeZiel, max: P.ropeMax, dehn: P._dehn || 0};
   lianeKern(S, A, moveDir, K.pull && isDown(K.pull), K.slack && isDown(K.slack));
