@@ -7161,6 +7161,27 @@ sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
 import plaene as NB   # Bot-Pläne der Nacht-Bausteine (tests/bausteine/plaene.py)
 
 @test
+async def dschungel1_ende_ohne_dash_hoch(g):
+    """Dash nur waagerecht (Nutzerwunsch), Dschungel 1 (Nutzer-Level) vor dem Ziel: vom Pilz 776 über die Grube und mit
+    einem seitlichen Dash durch die Durchbruch-Wand 790 – der Affe über den neuen Haken 784 (früher Dash schräg nach oben),
+    das Schweinchen mit Schirm + Dash. Beide Figuren kommen hinüber."""
+    await koop_level(g, 'dschungel/01-dschungel.json')
+    durch = lambda dx: [{'hold': ['right'], 'until': f'P.x > {kx(dx) - 20} || P.grounded', 'frames': 200},
+                        {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded && !P.dash', 'frames': 300}]
+    affe = lambda rel, dx: kombi_pilz(776) + [{'hold': ['right'], 'hookWhen': 'P.vy > -8', 'until': 'P.hookAttached || P.grounded', 'frames': 150},
+                                               {'swing': True, 'release': rel, 'frames': 600}] + durch(dx)
+    ok = []
+    for rel, dx in [('P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 787), ('P.x > P.anchor.x + 30 && P.vx > 1', 787), ('P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', 788)]:
+        r = await koop(g, m=kat(773, 8), f=kat(771, 8), plans={'m': affe(rel, dx)}, maxFrames=3000)
+        if r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 791: ok.append('m'); break
+    for vy in (-1, 2, 4):
+        pl = kombi_pilz(776) + [{'hold': ['right', 'glide'], 'until': f'P.vy > {vy}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(787)} - 20 || P.grounded', 'frames': 300},
+                                {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 300}]
+        r = await koop(g, f=kat(773, 8), m=kat(771, 8), plans={'f': pl}, maxFrames=3000)
+        if r.get('done') and not r.get('dead') and r['pos']['f'][0] >= 791: ok.append('f'); break
+    assert ok == ['m', 'f'], (ok, r.get('pos'), r.get('dead'))
+
+@test
 async def bausteine_nacht(g):
     """Nacht-Ausbau: Bausteine B1–B7 (levels/test/bausteine-nacht.json, tests/bausteine/testlevel_bauen.py) – jeder mit
     beiden Figuren (B7 nur Schweinchen) per Bot geschafft, und jede Gegenprobe ohne die neue Mechanik scheitert:
