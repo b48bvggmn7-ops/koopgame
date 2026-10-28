@@ -150,12 +150,7 @@ _VERSTECKE = {
     'ruinen/01-ruinen.json': [(196, 10, 'blue'), (406, 15, 'pink'), (623, 15, 'pink')],
     'ruinen/02-mondnacht.json': [(118, 15, 'blue'), (243, 6, 'pink'), (368, 9, 'blue')],
 }
-for _lvl, _liste in _VERSTECKE.items():
-    for (_c, _r, _farbe) in _liste:
-        _w = 'm' if _farbe == 'blue' else 'f'
-        stelle(level=_lvl, name=f'Versteck unter Durchbruch-Boden {_c} (S1, optional, Münze)', wer=_w, start=(_c, _r - 1), partner=(_c, _r - 1),
-               plan=nb_versteck(_c, _r, kurz=(_lvl.split('/')[0][0] + _lvl.split('/')[1][:2], _c) in _KURZ), ziel=_c + 1, ziel_reihe=_r - 1, baustein='S1', muenze=(_c, _r + 1),
-               gegen=[{'hold': ['right'], 'until': f'P.x >= {kx(_c + 3)}', 'frames': 200}, {'frames': 20}], gegen_muenze=True)
+
 
 # ---------------- Haft-Arme (S2): optional, Meister-Münze am Arm-Ende (nur hängend erreichbar) ----------------
 _HAFTARME = {
@@ -229,6 +224,15 @@ _NISCHEN = {   # (w, g, Farbe, Richtung): Richtung 1 = Wand zeigt nach links (vo
     'vulkan/05-schlackewerk.json': [(744, 14, 'pink', 1)],
     'vulkan/06-feuerschlund.json': [(611, 16, 'blue', 1)],
 }
+# Dash nur noch waagerecht (Nutzerwunsch): die Boden-Verstecke (Dash nach unten) sind zu S4-Nischen mit seitlichem Eingang
+# umgebaut (tests/bausteine/verstecke_umbauen.py -> nischen_aus_verstecken.json); wo keine Wand in der Nähe passte, liegt
+# die Münze sichtbar über dem alten Versteck (kein Test nötig). _VERSTECKE bleibt nur als Eingabe des Umbau-Skripts.
+import json as _json
+from pathlib import Path as _Path
+for _e in _json.loads((_Path(__file__).resolve().parent / 'nischen_aus_verstecken.json').read_text(encoding='utf-8')):
+    _lvl, _w0, _g, _farbe, _R = _e[:5]
+    if _w0 is None: continue
+    _NISCHEN.setdefault(_lvl, []).append((_w0, _g, _farbe, _R))
 for _lvl, _liste in _NISCHEN.items():
     for (_w0, _g, _farbe, _R) in _liste:
         _w = 'm' if _farbe == 'blue' else 'f'
