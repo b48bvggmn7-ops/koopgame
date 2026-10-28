@@ -1102,14 +1102,16 @@ async def level7_lianenschlucht(g):
     plan = k_haken_hoch(249)   # Dash nur waagerecht: Haken vor dem Sims, hochziehen auf die Felskante
     r = await koop(g, m=kat(246, 11), f=kat(243, 14), plans={'m': plan}, maxFrames=2000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5, 'Affe auf den Felsen', r.get('pos'))
-    # 7) Schleuse: Affe hält Platte 5, Schweinchen durch Tür 5 und über den Graben; dann Affe per Haken
+    # 7) Schleuse: Affe hält Platte 5, Schweinchen durch Tür 5 und über den Graben; dann Affe per Sprung + Dash (Haken 298 entfernt: wurde nicht gebraucht)
     m = [k_lauf(282, -10), {'frames': 20}, {'wait': f'Q.x >= {kx(304)}'}]
     f = [{'wait': '!!linkOn[5]'}] + k_hop(kx(289) - 10, 8) + [k_lauf(293, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8},
          {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300}, k_lauf(307, -10), {'frames': 10}]
     r = await koop(g, m=kat(279, 15), f=kat(286, 15), plans={'m': m, 'f': f}, maxFrames=3000)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 304, 'Schleuse (Schweinchen)', r.get('pos'))
-    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_haken(1, f'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 292, -10)}, links=[5], maxFrames=2000)
-    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 304 and k_pos(r, 'm')[1] == 15, 'Graben (Affe am Haken)', r.get('pos'))
+    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_sprung_dash(293, 304)}, links=[5], maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 304 and k_pos(r, 'm')[1] == 15, 'Graben (Affe Sprung + Dash)', r.get('pos'))
+    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_sprung_dash(293, 304, dash=False)}, links=[5], maxFrames=2000)
+    soll(r.get('dead') == 'm', 'Graben: ohne Dash schafft der Affe es nicht', r.get('pos'))
     # 8) Bröckel-Steine (beide)
     for who, other in (('m', 'f'), ('f', 'm')):
         plan = sum([k_hop(kx(e) + 20, b) for e, b in ((330, 16), (334, 20), (339, 20), (344, 20), (349, 24))], [])
@@ -1288,8 +1290,10 @@ async def level8_gluehwald(g):
         soll(k_pos(r, who) and k_pos(r, who)[0] >= 441.5 and k_pos(r, who)[1] == 14, f'Takt-Steine 1,5 s ({who})', r.get('pos'))
     r = await koop(g, f=kat(443, 14), m=kat(442, 14), plans={'f': k_segeln(443, 6)}, maxFrames=1500)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 453, 'letzte Lücke (Schweinchen)', r.get('pos'))
-    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_haken(1, 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 443, 0)}, maxFrames=1500)
-    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 453, 'letzte Lücke (Affe am Haken)', r.get('pos'))
+    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_sprung_dash(443, 453)}, maxFrames=1500)   # Haken 447 entfernt (wurde nicht gebraucht)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 453, 'letzte Lücke (Affe Sprung + Dash)', r.get('pos'))
+    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_sprung_dash(443, 453, dash=False)}, maxFrames=1500)
+    soll(r.get('dead') == 'm', 'letzte Lücke: ohne Dash schafft der Affe es nicht', r.get('pos'))
     if await g.ev("goal.x") < 690 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     def ueber_haken(land_x):
@@ -3568,17 +3572,16 @@ async def dschungel5_dornenpfad(g):
                                                                    {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]}, maxFrames=3000)
         soll(r.get('dead') == 'f', 'E2 Schwein kommt auch mit Schirm + Dash nicht ohne Fähre hinüber', info(r))
         # Dornen-Kamin
-        # Kombi-Nachschärfen: oben geht es direkt über Stacheln (316–325) weiter – Affe Wandsprung + Haken 317, Schweinchen
+        # Kombi-Nachschärfen: oben geht es direkt über Stacheln (316–325) weiter – Affe Wandsprung + Dash (Haken 317 entfernt: wurde nicht gebraucht), Schweinchen
         # Wandsprung + Segeln; die Wandspitzen (311/315) bröckeln, die zweite Figur schafft es trotzdem (beide nacheinander)
         hoch = [k_lauf(310, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(0)} && P.vy < 0 && P.vx > 2', 'frames': 900}]
         lande = {'holdIf': {'right': f'P.x < {kx(327)}', 'left': f'P.x > {kx(330)}'}, 'until': 'P.grounded', 'frames': 400}
-        kamin = lambda w: hoch + ([{'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 120},
-                                   {'swing': True, 'release': 'P.x > P.anchor.x + 50 && P.vx > 1', 'frames': 400}, lande] if w == 'm'
+        kamin = lambda w: hoch + ([{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, {'press': ['dash'], 'hold': ['right'], 'frames': 3}, lande] if w == 'm'
                                   else [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])]) + [k_lauf(331)]
         await beide('E2 Hoher Kamin', 305, kamin, 330, delay=120)
         for w in ('m', 'f'):
             r = await koop(g, **{w: kat(305, 15), ('f' if w == 'm' else 'm'): kat(303, 15)}, plans={w: hoch + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=2000)
-            soll(r.get('dead') == w, f'E2 Hoher Kamin ohne Haken/Schirm in die Stacheln ({w})', info(r))
+            soll(r.get('dead') == w, f'E2 Hoher Kamin ohne Dash/Schirm in die Stacheln ({w})', info(r))
         # Dornendecke: Hebel 6, dann kurze Sprünge über die Stufen
         hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
         flucht = lambda w: hupf(352) + hupf(362) + hupf(372) + [k_lauf(399)]
@@ -7196,7 +7199,7 @@ async def lianenschlucht_pilz180_weiter(g):
     """Dash nur waagerecht: hinter der Pilz-Grube 180 (Turm 190–193 abgesenkt) geht es oben weiter – der Block über der
     Haftdecke (194–209) ist nur noch eine Reihe dick (Stufe 1). Beide Figuren: Pilz-Grube, dann bis Spalte 212."""
     await koop_level(g, 'dschungel/03-lianenschlucht.json')
-    pl = kombi_pilz_grube(180, 190)
+    pl = kombi_pilz_grube(180, 190, haken=False)
     for wer in 'mf':
         anders = 'f' if wer == 'm' else 'm'
         ok = False
@@ -9273,6 +9276,12 @@ async def kombi_pruefung(g):
 # --- Kombi-Nachschärfen: Bot-Pläne für die eingebauten Kombi-Stellen (Bausteine aus levels/test/kombis.json) ---
 def kombi_pilz(x0):   # auf den Pilz bei Spalte x0 springen (Pilz-Schwung)
     return [k_lauf(x0 - 3, 0), {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {x0}*40+14', 'left': f'P.x > {x0}*40+26'}, 'until': 'P.vy < -15', 'frames': 200}]
+def k_sprung_dash(rand, ziel, dash=True, vy=1):
+    """Affe: von der Kante rand (Anlauf) abspringen, kurz nach dem Höhepunkt waagerecht dashen, bei Spalte ziel landen"""
+    return [k_lauf(rand, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': f'P.vy > {vy}', 'frames': 60}] + \
+           ([{'press': ['dash'], 'hold': ['right'], 'frames': 3}] if dash else []) + \
+           [{'holdIf': {'right': f'P.x < {kx(ziel + 1)}'}, 'until': 'P.grounded && !P.dash', 'frames': 300}]
+
 def kombi_pilz_grube(x0, l0, haken=True):
     """Baustein Pilz -> Grube -> erhöhter Landeplatz (l0 = erste Spalte des Landeplatzes). haken=True: der Affe braucht
     den Haken (Gegenprobe: Pilz + Dash ohne Haken reicht nicht); haken=False: der Affe kommt mit Pilz + Dash hinüber

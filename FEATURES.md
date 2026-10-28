@@ -1768,6 +1768,18 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
     Hakenblock 171; Glutpfad Stufe 398–399 in der Mulde hinter der Durchbruch-Säule 392. Tests dschungel1_ende_ohne_dash_hoch,
     lianenschlucht_pilz180_weiter, mondnacht_stufen_zum_hakenblock, glutpfad_mulde_nach_durchbruch. Ein Dash in
     der Welt abschalten: DASH_AUS_WELTEN (leer; Dschungel behält den Dash, Nutzerentscheidung).
+    **Dschungel ganzheitlich: jede Hilfe wird gebraucht** (Nutzerwunsch „entweder ich brauch den Haken oder nicht“;
+    je Stelle entschieden): Prüfwerkzeug `tests/hilfen_pruefen.py <welt>/<datei>` probiert jeden Haken, Pilz und Aufwind
+    mit echter Physik mit und ohne die Hilfe. Pilz-Gruben: entweder Pilz + Haken 4 Spalten weiter von der Grube weg, so
+    dass der Affe ohne Haken nicht hinkommt (Lianenschlucht 386/390, Glühwald 121/125 und 469/473, Wipfelsturm 166/170
+    und 388/392), oder Haken entfernt (Affe: Pilz + Dash; Dschungel 1 237, Baumkronen 213/447/576, Lianenschlucht
+    72/184/364/744/764/784, Glühwald 166/670/686, Wipfelsturm 194; Werkzeug `tests/umbau/pilzgruben_haken.py`).
+    Baumkronen: die vier Pilz-Türme (33, 219, 453, 582) 4 Reihen hoch, Platte 455 mit abgesenkt; Dschungel 1: Block
+    243–246 fünf Reihen tiefer. Flache Gruben ohne überflüssigen Haken: Lianenschlucht 298 (Graben an der Schleuse),
+    Glühwald 447 (letzte Lücke), Dornenpfad 317 (oben am Hohen Kamin) – der Affe springt und dasht waagerecht hinüber
+    (ohne Dash fällt er). Münzen in den alten Haken-Bögen tiefer gelegt. Bleibt: Lianenschlucht Haken 230 (Hebel in der
+    Grube) und Pilze, die nur zu hohen Münzen führen. Der Computer-Partner kann jetzt auch „Sprung + Dash“ (Plan
+    planSprungDash in js/30, Dash in seiner Vorausrechnung).
 - **Durchbruch-Wand** (Editor: Gelände → „Durchbruch“): rissige Steinkästchen, fest wie Wand/Boden – nur ein Dash
   zerbricht sie (Laufen/Springen nicht). Trefferstopp 3 Schritte, starkes Wackeln, Bruchstücke und Staub je Welt in
   passender Farbe (Höhle/Vulkan mit glühenden Rissen), 80 % des Schwungs bleiben (BRUCH_BEHALTEN), danach 14 Schritte

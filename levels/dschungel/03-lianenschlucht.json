@@ -2451,30 +2451,33 @@
     },
     {
       "x": 11860,
-      "y": 500,
+      "y": 420,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 11980,
-      "y": 540,
+      "y": 420,
       "color": "pink",
       "klasse": "geschick"
     },
     {
       "x": 12100,
-      "y": 580,
-      "color": "pink"
+      "y": 420,
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 11900,
-      "y": 620,
-      "color": "blue"
+      "y": 420,
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 12020,
-      "y": 580,
-      "color": "blue"
+      "y": 420,
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 12220,

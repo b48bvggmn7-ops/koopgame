@@ -53,7 +53,7 @@ Vor jedem Ausbau-Schritt lesen und befolgen, zusammen mit AUSBAU-VISION.md.
       sind bis 90 % davon. **Freie Schwungbahn**: der Affe hängt unter dem Seil-Ende – sein Körper stößt bei voller und
       ¾ Seillänge bis ±50° nirgends an (Prüfwerkzeug `tests/haken_pruefen.py`, Ausnahmen `tests/haken_ausnahmen.json`).
       Hoch auf ein Sims vom Boden aus (Schleuder entfernt, Nutzerwunsch): **nichts setzen**, wenn der Affe mit Wandsprung/Dash
-      hinaufkommt (Sprung + Dash nach oben schafft bis 8 Reihen; mit `tests/stelle_pruefen.py` prüfen); sonst ein **Haken**, an
+      hinaufkommt (Dash nur waagerecht: Sprung schafft 3 Reihen, Pilz ~6; mit `tests/stelle_pruefen.py` prüfen); jede Hilfe muss gebraucht werden (`tests/hilfen_pruefen.py`); sonst ein **Haken**, an
       dem der Affe beim Schwingen nirgends an die Wand stößt (Test haken_schwung_frei). Kein Aufzug-Haken.
       Freier Bogen: in den 3 Reihen unter einem Schwung-Haken kein Stein (±2 Spalten). Landung: mindestens
       3 Stehplätze 2–10 Spalten hinter dem letzten Haken.

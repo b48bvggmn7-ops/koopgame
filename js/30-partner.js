@@ -294,7 +294,8 @@ function partnerKoerper(P){
           onWall: P.onWall || 0, wallEntrySpeed: P.wallEntrySpeed || 0, lastWallJumpSide: P.lastWallJumpSide || 0, wjLock: P.wjInputLock || 0,
           t: 0, lastWallTouch: P.lastWallTouch !== undefined && P.lastWallTouch > -9000 ? -1e9 : -1e9,
           kurz: !!P.sprungKurzMoeglich, los: !!P.sprungLosgelassen, fling: !!P.ropeFling, standingOn: P.standingOn,
-          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen, ziel: P.lianeZiel ?? P.ropeLen, max: P.ropeMax ?? P.ropeLen, dehn: P._dehn || 0, frei: P._lianeFrei} : null, lastAnchor: null, inWater: !!P.inWater};
+          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen, ziel: P.lianeZiel ?? P.ropeLen, max: P.ropeMax ?? P.ropeLen, dehn: P._dehn || 0, frei: P._lianeFrei} : null, lastAnchor: null, inWater: !!P.inWater,
+          dashPunkte: P.dashPunkte || 0, dash: P.dash ? P.dash.zeit : 0, dashDx: P.dash ? P.dash.dx : 0};
 }
 function partnerKollision(U, b, achse){
   const box = {x: b.x - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
@@ -366,7 +367,11 @@ function partnerSimSchritt(U, b, e){
       } }
   }
   const liane2 = b.hook && !b.grounded && partnerLiane2();
-  if(liane2){   // Liane 2 (js/32 lianeKern): festes Pendel wie im Spiel
+  // Dash (js/32 dashStarten/dashSchritt): nur waagerecht, feste Strecke ohne Schwerkraft, danach halbes Tempo
+  if(e.dash && !b.hook && !b.dash && b.dashPunkte > 0 && !b.inWater){ b.dashPunkte--; b.dash = DASH_DAUER; b.dashDx = dir || Math.sign(b.vx) || 1; b.kurz = false; }
+  if(b.dash){
+    b.vx = b.dashDx*DASH_TEMPO; b.vy = 0;
+  } else if(liane2){   // Liane 2 (js/32 lianeKern): festes Pendel wie im Spiel
     const S = {hx: b.x, hy: b.y - b.h*0.6, vx: b.vx, vy: b.vy, len: b.hook.len, ziel: b.hook.ziel, max: b.hook.max, dehn: b.hook.dehn, frei: b.hook.frei};
     lianeKern(S, b.hook.anchor, dir, !!e.pull, false);
     b.vx = S.vx; b.vy = S.vy; b.hook.len = S.len; b.hook.ziel = S.ziel; b.hook.dehn = S.dehn; b.gezogen = false;
@@ -438,6 +443,7 @@ function partnerSimSchritt(U, b, e){
   b.grounded = false; b.standingOn = null; b.wand = false;
   b.x += b.vx; partnerKollision(U, b, 'x');
   b.y += b.vy; partnerKollision(U, b, 'y');
+  if(b.dash && --b.dash === 0){ b.vx *= DASH_BEHALTEN; b.vy *= DASH_BEHALTEN; }
   if(b.standingOn && b.standingOn.broeckel && b.standingOn.bricht === Infinity) b.standingOn.bricht = U.simK + CRUMBLE_TRIGGER_MS/16.6;
   if(!b.hook && !warBoden && fallVy > 0 && b.vy >= 0){   // Sprungpilz (elemente/sprungpilz.js)
     for(const p of bouncers) if(Math.abs(b.x - p.x) < 14 + b.w/2 && b.y > p.y - 14 && b.y <= p.y + 1){ b.vy = BOUNCE_V; b.grounded = false; b.glideTimer = 0; break; }
@@ -542,6 +548,21 @@ function planSprung(d, jx, halt, stopX, gleit, zurueckX){
     },
     fertig: (k, b, st) => (st.ab && k - st.k0 > 3 && b.grounded) || k > 400 || (!st.ab && k > 200)};
 }
+// Sprung + Luft-Dash über eine breite Grube (ohne Haken): abspringen bei jx, dashen, sobald vy > dashVy
+function planSprungDash(d, jx, dashVy, zurueckX){
+  return {art: 'sprung', d,
+    eingabe(k, b, st){
+      const a = planAnlauf(d, zurueckX, b, st); if(a) return a;
+      if(!st.ab){
+        if(b.grounded && (b.x - jx)*d >= 0){ st.ab = true; st.k0 = k; return {dir: d, springen: true, sprungHalten: true}; }
+        return {dir: (b.x - jx)*d < 0 ? d : 0};
+      }
+      if(!st.dash && !b.grounded && b.vy > dashVy){ st.dash = true; return {dir: d, dash: true}; }
+      return {dir: d, sprungHalten: k - st.k0 < 10};
+    },
+    fertig: (k, b, st) => (st.ab && k - st.k0 > 3 && b.grounded && !b.dash) || k > 400 || (!st.ab && k > 200)};
+}
+const partnerDashDa = b => (b.dashPunkte || 0) > 0 && typeof dashKannStarten === 'function' && !(typeof dashAusHier === 'function' && dashAusHier());
 // Affe: springen bei jx, Haken greifen, schwingen, loslassen hinter dem Haken; weitere Haken möglich
 function planHaken(d, jx, stopX, ziehen, zurueckX){
   return {art: 'haken', d,
@@ -657,6 +678,8 @@ function* partnerSuche(P, Z){
       const hakenNah = P.male && hooks.some(h => Math.abs(h.x - P.x) < 700);
       if(!gut() && hakenNah) for(const ziehen of [0, 30]) for(let i = 0; i <= 8; i += 2) for(const stopX of [d*Infinity, Z.x])
         yield* pruefe(planHaken(d, P.x + d*i*16, stopX, ziehen), 420, 40);
+      if(!gut() && partnerDashDa(P)) for(let i = 0; i <= 8; i += 2) for(const vy of [-2, 1])
+        yield* pruefe(planSprungDash(d, P.x + d*i*16, vy), 300, 30);
       // mit Anlauf (z. B. direkt vor einer Wand stehend)
       for(const z of [100, 200]){
         if(gut()) break;
@@ -698,7 +721,7 @@ function* partnerSuche(P, Z){
 // Bestensuche über Standplätze: von jedem Platz aus werden Pläne in BEIDE Richtungen vorausgerechnet (laufen, springen,
 // segeln, Haken, Kamin); jeder sichere Landeplatz ist ein neuer Platz. Gefahren im Takt zählen mit der Zeit, zu der er
 // dort wäre. Ergebnis: Liste von Plänen, die nacheinander ausgeführt werden. Wie partnerSuche über mehrere Spielschritte.
-function partnerPlatz(x, y, P, t){ return {x, y, vx: 0, vy: 0, w: P.w, h: P.h, male: P.male, grounded: true, glideTimer: 0, t}; }
+function partnerPlatz(x, y, P, t){ return {x, y, vx: 0, vy: 0, w: P.w, h: P.h, male: P.male, grounded: true, glideTimer: 0, t, dashPunkte: P.dashPunkte || 0}; }
 function partnerMakroPlaene(platz, U){
   const L = [], x = platz.x;
   for(const d of [1, -1]){
@@ -706,6 +729,7 @@ function partnerMakroPlaene(platz, U){
     for(let i = 0; i <= 6; i++) for(const halt of [10, 4]) L.push([planSprung(d, x + d*i*20, halt, d*Infinity, false), 200]);
     L.push([planSprung(d, x, 10, x + d*30, false), 200]);
     if(!platz.male) for(let i = 0; i <= 6; i += 2) L.push([planSprung(d, x + d*i*20, 10, d*Infinity, true), 380]);
+    if(partnerDashDa(platz)) for(let i = 0; i <= 6; i += 2) for(const vy of [-2, 1]) L.push([planSprungDash(d, x + d*i*20, vy), 300]);
     if(platz.male && hooks.some(h => Math.abs(h.x - x) < 500)) for(let i = 0; i <= 6; i += 2) for(const z of [0, 30]) L.push([planHaken(d, x + d*i*20, d*Infinity, z), 460]);
     // Kamin/Wand: nur wenn in dieser Richtung eine Wand nah ist
     const probe = {x: x + d*60, y: platz.y - 40, w: 4, h: 4};

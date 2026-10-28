@@ -2249,8 +2249,9 @@
     },
     {
       "x": 12740,
-      "y": 100,
-      "color": "blue"
+      "y": -60,
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 12660,
