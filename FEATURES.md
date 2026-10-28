@@ -156,6 +156,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     nichts). Bot-Pläne Pfeil-Galerie (Level 9) und oberer Weg (Sonnentempel) lassen dafür später/im Umkehrpunkt los. Schub beim
     Loslassen kräftiger (LIANE_BOOST 3,2). Die alte Seil-Physik bleibt für die alte Antipp-Bedienung (Bahnen-Test unverändert).
     Sechs Haken um ein Kästchen versetzt, an denen man mit dem neuen Pendel an eine Wand stieß. Test liane2_natuerliches_pendel.
+  - 3D-Figur am Seil (Nutzer-Screenshot „schwinge in Boden/Wand“): der gedreht gezeichnete Körper wird auch QUER zum Seil auf
+    Boden/Wand geprüft (SEIL_KOERPER_BREITE = halbe Figurenbreite, js/33) und sonst aufgerichtet – waagerecht am Seil über
+    einer Kante ragt der Bauch nicht mehr in die Erde. Test figuren3d_seil_waagerecht_nicht_im_boden.
   - Haken-Taste hektisch drücken (Nutzer-Video „G spammen“): nach dem Loslassen lässt sich DERSELBE Haken ⅓ s lang nicht
     wieder greifen (LIANE_SPERRE), und den Loslass-Schub gibt es erst, wenn der Affe mindestens ¼ s am Seil hing
     (LIANE_BOOST_HALTEN) – kein wildes Hüpfen um den Haken mehr. Ein anderer Haken (Haken-Kette) geht sofort. Test liane_g_spammen.
@@ -2160,6 +2163,8 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   - Seitenleiste: Raster-Infos (Kästchengröße, Länge) und Zähler (Checkpoints, Münzen, Blau/Pink-Bilanz) bleiben sichtbar;
     die langen Erklärungen (Hilfe, Bewegungs-Referenz, Legende) sind eingeklappt – Knopf „Hilfe ▸“.
   - Haken-Werkzeug auf bestehenden Haken = Radius übernehmen; Reichweiten-Kreis wird angezeigt
+  - Haken setzen und die Maus gedrückt halten (Nutzerwunsch): nach oben ziehen = Reichweite größer, nach unten = kleiner
+    (½ Kästchen je 12 px, 1–20 Kästchen; das Radius-Feld zieht mit, gespeichert beim Loslassen). Test editor_haken_ziehen.
   - Level wächst nach rechts automatisch mit, „+20 Spalten“-Button, Mausrad scrollt seitlich
   - „Alles löschen“ und „Neues leeres Level“ entfernen wirklich alles (auch Druckplatten, Sprungpilze und Namen der
     Verknüpfungen – bis Ausbau 2 blieben Druckplatten und Pilze stehen); „Alles löschen“ behält die Level-Info und ist

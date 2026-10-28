@@ -4443,6 +4443,33 @@ async def bewegung_einmal(g):
     assert r3[0] is False and r3[2] is False and r3[1] == 600, f'Neustart setzt nicht zurück: {r3}'
 
 @test
+async def editor_haken_ziehen(g):
+    """Editor (Nutzerwunsch): Haken setzen und dabei die Maus gedrückt halten – nach oben ziehen macht die Reichweite größer,
+    nach unten kleiner (½ Kästchen je HAKEN_ZIEH_PX px, 1 … HAKEN_RADIUS_MAX); erst beim Loslassen wird gespeichert."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)], 'hooks': [], 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        await ed_werkzeug(p, 'hook')
+        r0 = await p.evaluate("curRadius()"); px = await p.evaluate("HAKEN_ZIEH_PX")
+        box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+        x, y = box['x'] + (10*40 + 20)*k, box['y'] + ((8 + 3)*40 + 20)*k
+        await p.mouse.move(x, y); await p.mouse.down()
+        await p.mouse.move(x, y - 4*px, steps=4)   # 4 Stufen hoch = +2 Kästchen
+        mitte = await p.evaluate("hooks.find(h => h.c === 10 && h.r === 8).radius")
+        await p.mouse.up()
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        h = [h for h in d['hooks'] if h['c'] == 10 and h['r'] == 8]
+        assert mitte == r0 + 2 and h and h[0]['radius'] == r0 + 2, f'hochziehen: {r0} -> {mitte}, gespeichert {h}'
+        await p.mouse.move(x, y); await p.mouse.down(); await p.mouse.move(x, y + 100*px, steps=6); await p.mouse.up()   # weit runter: kleinste Reichweite
+        assert await p.evaluate("hooks.find(h => h.c === 10 && h.r === 8).radius") == 1, 'runterziehen macht nicht kleiner (bis 1)'
+        assert await p.evaluate("hooks.length") == 1, 'beim Ziehen entstehen weitere Haken'
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_bewegung_nachbearbeiten(g):
     """Editor: Klick auf bewegtes Stück wählt es aus; Tempo/Schalter änderbar; Entf entfernt. Vergebene Nummern mit ✓."""
     srv = webserver(); p = g.p
@@ -6443,6 +6470,20 @@ async def f3d_bereit(g):
     await g.steps(10)
     await g.p.evaluate(F3D_ZEICHNEN, {'n': 2, 'wer': 'beide'})
     assert await g.ev("!!(p1._f3 && p2._f3)"), '3D-Figuren zeichnen nicht (WebGL2 fehlt oder 3D aus)'
+
+@test
+async def figuren3d_seil_waagerecht_nicht_im_boden(g):
+    """Nutzer-Screenshot „ich schwinge immer noch in Boden/Wand“: hängt der Affe waagerecht am Seil knapp über einer
+    Bodenkante, wird der 3D-Körper (dick, mit Fell) nicht mehr gedreht in die Erde gezeichnet – die Prüfung am Seil schaut
+    jetzt auch quer zum Körper (SEIL_KOERPER_BREITE, js/33) und richtet ihn auf."""
+    await f3d_bereit(g)
+    await g.load(level([ground(0, 680, 2400), ground(1000, 560, 400, 120)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680},
+                       hooks=[{'x': 840, 'y': 536, 'radius': 220}], welt='ruinen'))
+    await g.steps(5)
+    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': 'm', 'vorher': """p1.x = 1016; p1.y = 555; p1.vx = 0; p1.vy = 0; p1.grounded = false;
+        p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 176; p1._seilTest = 1""", 'merk': "p1._f3 ? p1._f3.rs : null"})
+    await g.ev("p1.hookAttached = false; p1.anchor = null; menuScreen = null")
+    assert r[-1] is not None and abs(r[-1]) < 0.45, f'Körper liegt gedreht im Boden: Drehung {r[-1]:.2f} rad'
 
 @test
 async def brillen_steg_und_buegel(g):

@@ -164,7 +164,23 @@ cvs.addEventListener('mousedown', e=>{
   clickNotDrag = true;
   applyTool(c,r,eraseDrag);
   clickNotDrag = false;
+  // Haken (Nutzerwunsch): Maus gedrückt halten und ziehen ändert die Reichweite – nach oben größer, nach unten kleiner
+  if(!eraseDrag && currentTool==='hook'){
+    const hk = hooks.find(h=>h.c===c&&h.r===r);
+    if(hk){ painting=false; hakenZiehen = {hook: hk, y0: e.clientY, r0: hk.radius}; }
+  }
 });
+// Reichweite beim Ziehen: HAKEN_ZIEH_PX Bildschirm-Pixel = ½ Kästchen, in ½-Schritten, 1 … HAKEN_RADIUS_MAX Kästchen
+const HAKEN_ZIEH_PX = 12, HAKEN_RADIUS_MAX = 20;
+let hakenZiehen = null;
+function hakenZiehenBewegen(e){
+  if(!hakenZiehen) return false;
+  const neu = Math.max(1, Math.min(HAKEN_RADIUS_MAX, hakenZiehen.r0 + Math.round((hakenZiehen.y0 - e.clientY)/HAKEN_ZIEH_PX)*0.5));
+  if(neu !== hakenZiehen.hook.radius){ hakenZiehen.hook.radius = neu; radiusInput.value = neu; }
+  flash(`Haken-Reichweite: ${neu} Kästchen (hoch = größer, runter = kleiner)`);
+  return true;
+}
+function hakenZiehenEnde(){ if(!hakenZiehen) return; const geaendert = hakenZiehen.hook.radius !== hakenZiehen.r0; hakenZiehen = null; if(geaendert) save(); }
 function finishMoveDrag(){
   if(!moveDrag) return;
   const {c,r,tc,tr,hook} = moveDrag; moveDrag=null;
@@ -213,7 +229,8 @@ speedSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.speed
 moveSwitchSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.link = curMoveLink(); save(); } });
 moveModeSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ curMoveMode(d); save(); } });
 moveDelBtn.addEventListener('click', deleteSelMove);
-window.addEventListener('mouseup', ()=>{ painting=false; eraseDrag=false; finishMoveDrag(); });
+window.addEventListener('mouseup', ()=>{ painting=false; eraseDrag=false; finishMoveDrag(); hakenZiehenEnde(); });
+window.addEventListener('mousemove', e=>{ hakenZiehenBewegen(e); });   // auch außerhalb der Leinwand weiterziehen
 let flashT=0, flashMsg='';
 function flash(m){ flashMsg=m; flashT=performance.now(); document.getElementById('coordLabel').textContent=m; }
 cvs.addEventListener('mousemove', e=>{

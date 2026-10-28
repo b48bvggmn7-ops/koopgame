@@ -10,6 +10,7 @@
   const SPR = 352, FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
   const FIGUR_HALB = 30;                           // px: halbe gezeichnete Breite der 3D-Figur mit Armen und Fell (Stoßfläche: 14,25)
   const SEIL_KOERPER_PROBEN = [10, 20, 30];       // px vom Griff am Körper entlang: so weit darf der schräge Körper frei sein
+  const SEIL_KOERPER_BREITE = [-FIGUR_HALB, 0, FIGUR_HALB];   // px quer dazu (halbe gezeichnete Dicke mit Armen und Fell) (Nutzer: waagerecht am Seil ragte der Bauch in den Boden)
   const FIGUR_GROESSE = 0.9;                       // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
   const SC = 17*FIGUR_GROESSE;                     // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 45 px)
   const FR = {x0:-3.3, x1:3.3, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0);
@@ -465,7 +466,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       // ragte der schräge Körper in Boden/Wand, wird er so weit aufgerichtet, bis er frei ist (nur Zeichnen, Raster festIst aus 32)
       if(rs && typeof festIst === 'function') for(let k = 0; k < 8; k++){
         let stoss = false;
-        for(const d of SEIL_KOERPER_PROBEN){ const bx = cx - Math.sin(rs)*d, by = cy + Math.cos(rs)*d; if(festIst(Math.floor(bx/40), Math.floor(by/40))){ stoss = true; break; } }
+        for(const d of SEIL_KOERPER_PROBEN) for(const q of SEIL_KOERPER_BREITE){   // entlang des Körpers UND quer (dicker Körper mit Fell)
+          const bx = cx - Math.sin(rs)*d + Math.cos(rs)*q, by = cy + Math.cos(rs)*d + Math.sin(rs)*q;
+          if(festIst(Math.floor(bx/40), Math.floor(by/40))){ stoss = true; break; } }
         if(!stoss) break; rs *= 0.7;
       } }
     S.rs = (S.rs||0) + (rs - (S.rs||0))*(1 - Math.exp(-dt*18));
