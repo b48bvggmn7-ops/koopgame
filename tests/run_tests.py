@@ -7164,7 +7164,7 @@ import plaene as NB   # Bot-Pläne der Nacht-Bausteine (tests/bausteine/plaene.p
 async def bausteine_nacht(g):
     """Nacht-Ausbau: Bausteine B1–B7 (levels/test/bausteine-nacht.json, tests/bausteine/testlevel_bauen.py) – jeder mit
     beiden Figuren (B7 nur Schweinchen) per Bot geschafft, und jede Gegenprobe ohne die neue Mechanik scheitert:
-    B1 Dash-Grube · B2 Durchbruch-Tor + Grube (Bruch-Fenster) · B3 Haftfläche über Grube · B4 Kamin mit Durchbruch-Deckel
+    B1 Dash-Grube · B2 Durchbruch-Tor + Grube (Bruch-Fenster) · B3 Haftfläche über Grube · B4 Kamin mit Durchbruch oben in der Seitenwand
     · B5 Haken -> Durchbruch (Schweinchen: Segeln + Dash) · B6 Haftfläche + Dash · B7 Segeln + Dash (Rolle Schweinchen)."""
     await koop_level(g, 'test/bausteine-nacht.json')
     faelle = [
@@ -7174,12 +7174,12 @@ async def bausteine_nacht(g):
         ('B2', 'f', 33, NB.nb_bruchtor(38), 48, None),
         ('B3', 'm', 58, NB.nb_haft(64, 79), 79, [k_lauf(64), {'press': ['jump'], 'hold': ['jump', 'right'], 'frames': 40}, NB.LANDEN]),
         ('B3', 'f', 58, NB.nb_haft(64, 79), 79, None),
-        ('B4', 'm', 90, NB.nb_bruchkamin(98, 5, 104), 104, [k_lauf(98), {'climb': True, 'dir': 1, 'until': f'P.x >= {kx(104)} && P.grounded', 'frames': 600}]),
-        ('B4', 'f', 90, NB.nb_bruchkamin(98, 5, 104), 104, None),
+        ('B4', 'm', 90, NB.nb_bruchkamin(98, 6, 104), 104, [k_lauf(98), {'climb': True, 'dir': 1, 'until': f'P.x >= {kx(104)} && P.grounded', 'frames': 600}]),
+        ('B4', 'f', 90, NB.nb_bruchkamin(98, 6, 104), 104, None),
         ('B5', 'm', 119, NB.nb_haken_bruch(124, 138), 139, NB.nb_haken_bruch(124, 138)[:3] + [NB.LANDEN]),
         ('B5', 'f', 119, NB.nb_segel_dash(125, 134), 139, k_segeln(125)),
-        ('B6', 'm', 143, NB.nb_haft_dash(150, 160), 167, NB.nb_haft(150, 160)),
-        ('B6', 'f', 143, NB.nb_haft_dash(150, 160), 167, None),
+        ('B6', 'm', 143, NB.nb_haft_dash(150, 160), 166, NB.nb_haft(150, 160)),
+        ('B6', 'f', 143, NB.nb_haft_dash(150, 160), 166, None),
         ('B7', 'f', 180, NB.nb_segel_dash(185, 195), 203, k_segeln(185)),
     ]
     fehler = []

@@ -2,7 +2,7 @@
 #   B1 Dash-Grube (10 breit)            Affe: Sprung + Dash · Schweinchen: Segeln
 #   B2 Durchbruch-Tor + Grube (9)       Dash durch die Wand, im Bruch-Fenster springen
 #   B3 Haftfläche über Grube (14)       hoch halten, entlangrollen, am Ende loslassen
-#   B4 Kamin mit Durchbruch-Deckel      Wandsprung hinauf, oben Dash nach oben durch den Deckel
+#   B4 Kamin mit Durchbruch oben seitlich  Wandsprung hinauf, oben Dash nach rechts durch die Wand
 #   B5 Haken -> Durchbruch-Wand         Affe: Schwung, loslassen, Dash durch die Wand · Schweinchen: Segeln + Dash
 #   B6 Haftfläche + Dash (16)           an der Decke bis zum Ende, dann Dash über den Rest
 #   B7 Segel-Dash-Grube (17)            nur Schweinchen: Segeln + Dash (Rolle)
@@ -22,16 +22,17 @@ rect(33, 4, 38, 12, 'wall'); bruch += [{'x': 38*T, 'y': r*T, 'w': T, 'h': T} for
 grube(39, 47); rect(48, 15, 64, 17)
 # B3: Grube 65–78, Haftdecke Reihe 11 über 63–79
 grube(65, 78); rect(55, 5, 79, 10, 'wall'); haft.append({'x': 63*T, 'y': 11*T, 'w': 17*T, 'h': T}); rect(79, 15, 95, 17)   # dicker Fels über der Haftfläche
-# B4: Kamin innen 97–100, Wände 96 (Reihen 6–13) und 101 (6–14), Deckel Reihe 5 aus Durchbruch, oben Boden ab 101
-rect(96, 6, 96, 13, 'wall'); rect(101, 6, 101, 14, 'wall'); rect(96, 15, 101, 17)
-bruch += [{'x': c*T, 'y': 5*T, 'w': T, 'h': T} for c in range(97, 101)]
-rect(96, 5, 96, 5, 'wall'); rect(101, 5, 112, 5); rect(113, 5, 113, 14, 'wall')   # oben: Sims 101–112, rechts Wand runter
+# B4: Kamin innen 97–100, Wände 96 (Reihen 5–13) und 101, fester Deckel Reihe 5; oben in der rechten Wand (Reihen 6–7)
+# ein Durchbruch (Dash ist nur noch waagerecht, Nutzerwunsch), dahinter Sims Reihe 8 (Spalten 102–112) unter Decke Reihe 5
+rect(96, 5, 96, 13, 'wall'); rect(97, 5, 100, 5, 'wall'); rect(101, 5, 101, 5, 'wall'); rect(101, 8, 101, 14, 'wall')
+rect(96, 15, 101, 17); bruch += [{'x': 101*T, 'y': r*T, 'w': T, 'h': T} for r in (6, 7)]
+rect(102, 5, 112, 5); rect(102, 8, 112, 8); rect(113, 5, 113, 14, 'wall')
 rect(102, 15, 125, 17)
 # B5: Grube 126–137 mit Haken (132, 9), Durchbruch-Wand 138 direkt an der Grube (Reihen 11–14) unter fester Wand (4–10)
 grube(126, 137); hooks.append({'x': 132*T + 20, 'y': 9*T + 20, 'radius': 200})
 rect(138, 15, 150, 17); rect(138, 4, 138, 10, 'wall'); bruch += [{'x': 138*T, 'y': r*T, 'w': T, 'h': T} for r in range(11, 15)]
-# B6: Grube 151–168, Haftdecke Reihe 11 über 150–160, Landung ab 169
-grube(151, 166); rect(144, 5, 160, 10, 'wall'); haft.append({'x': 150*T, 'y': 11*T, 'w': 11*T, 'h': T}); rect(167, 15, 185, 17)
+# B6: Grube 151–165, Haftdecke Reihe 11 über 150–160, Landung ab 166 (waagerechter Dash reicht bis dahin)
+grube(151, 165); rect(144, 5, 160, 10, 'wall'); haft.append({'x': 150*T, 'y': 11*T, 'w': 11*T, 'h': T}); rect(166, 15, 185, 17)
 # B7: Grube 186–202 (nur Segeln + Dash), Landung ab 203
 grube(186, 202); rect(203, 15, 220, 17)
 lvl = {'hinweis': 'Testlevel Nacht-Ausbau: Bausteine B1–B7 (tests/bausteine/testlevel_bauen.py). Öffnen: index.html?testlevel=bausteine-nacht',

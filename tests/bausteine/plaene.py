@@ -33,11 +33,12 @@ def nb_haft_dash(absprung, ende):
     """B6: wie nb_haft, am Ende Dash nach vorn über den Rest der Grube"""
     return nb_haft(absprung, ende, [{'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 2}, LANDEN])
 
-def nb_bruchkamin(eingang, deckel_reihe, oben_rechts):
-    """B4: in den Kamin, per Wandsprung hinauf, 3 Reihen unter dem Deckel Dash nach oben, dann rechts auf den Sims"""
+def nb_bruchkamin(eingang, bruch_reihe, oben_rechts):
+    """B4: in den Kamin, per Wandsprung hinauf bis auf Höhe des Durchbruchs (Reihe bruch_reihe, rechte Wand),
+    dann Dash nach rechts durch die Wand und auf dem Sims dahinter bis Spalte oben_rechts"""
     return [{'hold': ['right'], 'until': f'P.x >= {kx(eingang)}'},
-            {'climb': True, 'dir': 1, 'until': f'P.y < {ky(deckel_reihe + 3)} && P.vy < 0', 'frames': 900},
-            {'press': ['dash'], 'hold': ['swimUp'], 'until': f'P.y < {ky(deckel_reihe - 1)}', 'frames': 40},
+            {'climb': True, 'dir': 1, 'until': f'P.y < {ky(bruch_reihe + 1)} && P.vy < 0', 'frames': 900},
+            {'press': ['dash'], 'hold': ['right'], 'frames': 2},
             {'hold': ['right'], 'until': f'P.grounded && P.x >= {kx(oben_rechts)}', 'frames': 400}]
 
 def nb_haken_bruch(absprung, wand):
