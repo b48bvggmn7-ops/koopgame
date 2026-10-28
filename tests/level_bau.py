@@ -109,6 +109,10 @@ async def _speichern(levels):
 def speichern(levels):
     asyncio.run(_speichern(levels if isinstance(levels, list) else [levels]))
 
+async def speichern_async(levels):
+    """wie speichern, aber aus einem laufenden asyncio-Programm heraus (z. B. Prüfwerkzeuge mit offenem Browser)"""
+    await _speichern(levels if isinstance(levels, list) else [levels])
+
 if __name__ == '__main__':
     # Probe: Level unverändert durch den Editor schicken und zeigen, ob sich die Daten ändern (sollte nicht)
     import run_tests as rt
