@@ -162,7 +162,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Von oben greifen (Nutzer-Video „von oben reinspringen, der Haken flippt rum“): liegt die Hand über dem Haken (Seil wäre
     steiler als LIANE_GRIFF_WINKEL 100°), greift der Affe noch nicht; hält er die Haken-Taste, greift er, sobald er weit genug
     gefallen ist – die Liane klappt nicht mehr über den Haken. Von oben gegriffen gibt die Liane höchstens bis über
-    Boden/Gefahr nach (ist er weiter weg, wird sie weich eingeholt), auch das Nachfedern bleibt darüber. Test liane_von_oben.
+    Boden/Gefahr nach (ist er weiter weg, wird sie nur vor einer Gefahr – Stacheln, Lava, Flamme – weich eingeholt; über
+    festem Boden, z. B. einem Hebel-Sims unter dem Haken, bleibt sie so lang, sonst schwingt er zu hoch und stößt oben an),
+    auch das Nachfedern bleibt darüber. Test liane_von_oben, haken_schwung_frei.
   - Haken-Taste hektisch drücken (Nutzer-Video „G spammen“): nach dem Loslassen lässt sich DERSELBE Haken ⅓ s lang nicht
     wieder greifen (LIANE_SPERRE), und den Loslass-Schub gibt es erst, wenn der Affe mindestens ¼ s am Seil hing
     (LIANE_BOOST_HALTEN) – kein wildes Hüpfen um den Haken mehr. Ein anderer Haken (Haken-Kette) geht sofort. Test liane_g_spammen.
@@ -180,6 +182,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     nach oben hinauf (mit der echten Physik geprüft, tests/stelle_pruefen.py: Fenster 19–30 Schritte); deshalb wurden dort
     KEINE Haken gesetzt (Nutzerwunsch: nur wenn Wandsprung/Dash nicht reichen). Koop-Bot-Baustein k_dash_hoch
     (tests/run_tests.py), Computer-Partner-Abläufe (levels/partner/…, Schritt press dash + hold pull) angepasst.
+    Seit Dash nur waagerecht: an allen 10 Stellen ein Haken 2 Spalten vor dem Sims, 2 Reihen über seiner Oberkante
+    (Reichweite 5; tests/bausteine/simse_haken.py) – hochspringen, greifen, mit W hochziehen, aufs Sims; Bot-Baustein
+    k_haken_hoch, Partner-Abläufe „Haken hoch aufs Sims“; Hochzieh-Ausnahmen in tests/haken_ausnahmen.json.
     Test schleuder_entfernt.
   - Schwung holen am Haken wie beim Schaukeln (SWING_PUSH 0,2): die Laufen-Taste schiebt nur, wenn man in die
     Richtung drückt, in die der Affe gerade schwingt (oder er fast stillhängt). Taste nur halten drückt ihn nicht
@@ -1751,12 +1756,20 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
     Schirm klappt beim Dash zu und geht danach wieder auf (Taste gehalten); Sprungpilz übernimmt (normaler Pilz-Sprung);
     Aufwind und bewegte Plattformen wirken nach dem Dash wie immer; gegen eine Wand = Stopp mit „Tock“, danach ist ein
     normaler Wandsprung möglich. Im Wasser kein Dash. Kein Durchtunneln: der Dash bewegt sich in Teilschritten ≤ 8 px.
+  - **Nur noch nach links/rechts** (Nutzerwunsch „Dash darf man nur nach rechts oder links machen“; Schalter
+    DASH_NUR_WAAGERECHT in js/02): hoch/runter zählen nicht mehr als Dash-Richtung; Richtung = Laufrichtung, am Seil die
+    Schwung-Richtung, sonst Blickrichtung. Alle Stellen, die Dash nach oben/unten brauchten, sind umgebaut:
+    Simse -> Haken davor (hochziehen), Pilz-Dash-Gruben -> wieder Pilz-Gruben (Turm 4–5 Reihen über dem Absprung: Affe
+    Pilz + Haken, Schweinchen Pilz + Schirm, bei weiter Grube Schirm + seitlicher Dash; Pilz allein reicht nicht;
+    Werkzeug tests/umbau/pilzgruben_zurueck.py), Haken-Gruben Kristallhöhle mit dem Haken allein, Feuerberg-Ziel mit
+    zweitem Haken 410 über der Plateau-Kante, Verstecke unter Bruch-Böden -> Nischen mit seitlichem Eingang. Ein Dash in
+    der Welt abschalten: DASH_AUS_WELTEN (leer; Dschungel behält den Dash, Nutzerentscheidung).
 - **Durchbruch-Wand** (Editor: Gelände → „Durchbruch“): rissige Steinkästchen, fest wie Wand/Boden – nur ein Dash
   zerbricht sie (Laufen/Springen nicht). Trefferstopp 3 Schritte, starkes Wackeln, Bruchstücke und Staub je Welt in
   passender Farbe (Höhle/Vulkan mit glühenden Rissen), 80 % des Schwungs bleiben (BRUCH_BEHALTEN), danach 14 Schritte
   lang ein Sprung in der Luft (BRUCH_FENSTER). Früher ging darin auch ein kostenloser Anschluss-Dash – raus (Nutzerwunsch:
   ein Dash, dann muss er erst wieder aufladen). Senkrecht und waagerecht baubar
-  (auch Dash nach unten durch einen Bruch-Boden). Option „Nach dem Bruch“: bleibt kaputt (Standard, bis Neustart bzw.
+  (auch Dash nach unten durch einen Bruch-Boden – seit der Dash nur noch waagerecht geht, bricht ein Bruch-Boden nicht mehr). Option „Nach dem Bruch“: bleibt kaputt (Standard, bis Neustart bzw.
   Tod) oder wächst nach 2/3/5/8 s nach – steht dort jemand, wartet es (blinkender Umriss), niemand wird eingeklemmt.
 - **Wand-Rutschen** (automatisch, keine Taste): wer an einer Wand schneller als 4,5 herunterfällt, rutscht gebremst mit
   höchstens WAND_RUTSCH_MAX_FALL 4,5 (Rutsch-Haltung, Kratz-Staub, leises Schaben). Nicht beim Segeln, nicht am Seil,
@@ -1806,7 +1819,8 @@ Level-Test läuft; alles andere sind **optionale** Stellen mit einer Münze als 
 - **Optionale Bausteine** (jede Stelle per Bot geprüft, mit Gegenprobe ohne die neue Mechanik; Liste und Pläne in
   `tests/bausteine/stellen.py`, Tests `nacht_stellen_<welt>`):
   - **S1 Versteck:** zwei Durchbruch-Kästchen im Boden, darunter eine Mulde mit einer Münze (Dash nach unten öffnet sie,
-    hinausspringen). Je 3 in fast allen Leveln (Förderwerk 1, Schlackewerk/Feuerschlund 2; keine in Dschungel 1/3,
+    hinausspringen). Seit Dash nur waagerecht umgebaut (Nutzer: „seitlicher Eingang“): 32 Verstecke sind jetzt S4-Nischen
+    in einer Wand in der Nähe, wo keine passte, liegt die Münze sichtbar (tests/bausteine/verstecke_umbauen.py). Je 3 in fast allen Leveln (Förderwerk 1, Schlackewerk/Feuerschlund 2; keine in Dschungel 1/3,
     Leuchtgrotte, Tiefenschlund – dort ist kein Platz unter dem Boden). Übersicht je Level: NACHT-BERICHT.md.
   - **S2 Haft-Arm:** ein Felsarm mit Haftfläche ragt über einen Abgrund; die Meister-Münze hängt unter dem Arm-Ende – nur
     hängend erreichbar (hin- und zurückrollen). Auch gespiegelt (Arm nach links).
@@ -1837,7 +1851,8 @@ Level-Test läuft; alles andere sind **optionale** Stellen mit einer Münze als 
 Mit dem Dash kommt man viel weiter (Sprung + Dash ~16 Kästchen, Schweinchen Schirm + Dash ~25). Die Level sind so
 umgebaut, dass Haken, Pilz, Schirm, Aufwind und Kamine wieder gebraucht werden und Verfolgungen Spannung haben.
 Wasserwelt, Boss-Level und Spielwiese sind unverändert.
-- **Hilfs-Stellen dashfest:** Pilz-Gruben -> Pilz-Dash-Gruben (Landeplatz 9 Reihen hoch: nur Pilz + Dash reicht), breite
+- **Hilfs-Stellen dashfest:** Pilz-Gruben -> Pilz-Dash-Gruben (Landeplatz 9 Reihen hoch: nur Pilz + Dash reicht; seit Dash
+  nur waagerecht wieder Pilz-Gruben, siehe Dash), breite
   Haken-Gruben (>= 17), Kamin-Gruben mit Landeplatz >= 17 Spalten hinter dem Kamin (alle 34 Kamin-Gruben in Ruinen/Höhle/
   Vulkan sind 17 breit mit drei Haken; einige Level dadurch bis 832 Spalten lang), Flammen-/Lava-Kamine 3 Reihen höher,
   Baumstämme zwischen Pilz-Türmen (kein Turm-zu-Turm-Sprung mehr), Rollen-Stellen so, dass die andere Figur sie auch mit
