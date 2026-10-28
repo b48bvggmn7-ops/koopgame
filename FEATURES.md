@@ -1760,7 +1760,13 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
     Simse -> Haken davor (hochziehen), Pilz-Dash-Gruben -> wieder Pilz-Gruben (Turm 4–5 Reihen über dem Absprung: Affe
     Pilz + Haken, Schweinchen Pilz + Schirm, bei weiter Grube Schirm + seitlicher Dash; Pilz allein reicht nicht;
     Werkzeug tests/umbau/pilzgruben_zurueck.py), Haken-Gruben Kristallhöhle mit dem Haken allein, Feuerberg-Ziel mit
-    zweitem Haken 410 über der Plateau-Kante, Verstecke unter Bruch-Böden -> Nischen mit seitlichem Eingang. Ein Dash in
+    zweitem Haken 410 über der Plateau-Kante, Verstecke unter Bruch-Böden -> Nischen mit seitlichem Eingang.
+    Nachkontrolle aller Level mit beiden Figuren (Nutzerwunsch; jede verdächtige Stelle mit echter Physik, alter gegen neuer
+    Dash): Dschungel 1 vor dem Ziel Haken 784 (Affe: Pilz + Haken + Dash durch die Bruch-Wand), Lianenschlucht Pilz 124 ->
+    Nutzer-Plateau 140 bleibt oben, Affe Haken 130 + neuer Haken 136, Schweinchen neuer Aufwind 134–135; Lianenschlucht 180:
+    Block über der Haftdecke nur 1 Reihe dick (oben geht es weiter); Mondnacht zwei Trittstufen (164–165, 167–168) zum
+    Hakenblock 171; Glutpfad Stufe 398–399 in der Mulde hinter der Durchbruch-Säule 392. Tests dschungel1_ende_ohne_dash_hoch,
+    lianenschlucht_pilz180_weiter, mondnacht_stufen_zum_hakenblock, glutpfad_mulde_nach_durchbruch. Ein Dash in
     der Welt abschalten: DASH_AUS_WELTEN (leer; Dschungel behält den Dash, Nutzerentscheidung).
 - **Durchbruch-Wand** (Editor: Gelände → „Durchbruch“): rissige Steinkästchen, fest wie Wand/Boden – nur ein Dash
   zerbricht sie (Laufen/Springen nicht). Trefferstopp 3 Schritte, starkes Wackeln, Bruchstücke und Staub je Welt in

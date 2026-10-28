@@ -7209,6 +7209,20 @@ async def glutpfad_mulde_nach_durchbruch(g):
         assert r.get('done') and not r.get('dead') and r['pos'][wer][0] >= 400.5 and r['pos'][wer][1] == 11, (wer, r.get('pos'), r.get('dead'), r.get('steps'))
 
 @test
+async def mondnacht_stufen_zum_hakenblock(g):
+    """Dash nur waagerecht: in Mondnacht (Nutzer-Level 4) liegt der Block mit der Hakenreihe (171–182, Oberkante 7) 8 Reihen
+    über dem Boden – früher Sprung + Dash nach oben. Neu: zwei Trittstufen (164–165 Oberkante 12, 167–168 Oberkante 9);
+    beide Figuren kommen vom Checkpoint 157 mit drei Sprüngen hinauf."""
+    await koop_level(g, 'ruinen/02-mondnacht.json')
+    sprung = lambda c, z: [k_lauf(c, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
+                           {'holdIf': {'right': f'P.x < {kx(z)}', 'left': f'P.x > {kx(z) + 10}'}, 'until': 'P.grounded', 'frames': 150}]
+    for wer in 'mf':
+        anders = 'f' if wer == 'm' else 'm'
+        pl = sprung(162, 164) + sprung(165, 167) + sprung(168, 172) + [{'holdIf': {'right': f'P.x < {kx(175)}'}, 'until': f'P.x >= {kx(175)} - 6', 'frames': 100}]
+        r = await koop(g, **{wer: kat(158, 14), anders: kat(156, 14)}, plans={wer: pl}, maxFrames=2000)
+        assert r.get('done') and not r.get('dead') and r['pos'][wer][0] >= 174 and r['pos'][wer][1] == 6, (wer, r.get('pos'), r.get('dead'), r.get('steps'))
+
+@test
 async def bausteine_nacht(g):
     """Nacht-Ausbau: Bausteine B1–B7 (levels/test/bausteine-nacht.json, tests/bausteine/testlevel_bauen.py) – jeder mit
     beiden Figuren (B7 nur Schweinchen) per Bot geschafft, und jede Gegenprobe ohne die neue Mechanik scheitert:
