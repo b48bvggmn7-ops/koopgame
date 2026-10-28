@@ -5279,6 +5279,27 @@ async def liane_volle_laenge(g):
     assert frei < 640 - await g.ev('FLAMME_LAENGE')*40, f'Liane hängt in die Flamme: Füße bis {frei}'
 
 @test
+async def liane_von_oben(g):
+    """Nutzer-Video „von oben reinspringen, der Haken flippt rum“: liegt die Hand über dem Haken (Seil steiler als
+    LIANE_GRIFF_WINKEL), greift der Affe noch nicht – mit gehaltener Haken-Taste greift er, sobald er auf Hakenhöhe gefallen
+    ist; die Liane klappt nicht mehr über den Haken. Ohne gehaltene Taste wird nicht nachgegriffen."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 1000, 'y': 400, 'radius': 200}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const P = p1, h = hooks[0], e = {};
+      const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+      const setz = () => { P.x = h.x + 40; P.y = h.y - 90 + P.h*0.6; P.vx = 1; P.vy = -2; P.grounded = false; P.hookAttached = false; P.lianeSperre = 0; };
+      setz(); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st();
+      e.sofort = P.hookAttached; let n = 0;
+      while(!P.hookAttached && n < 80){ st(); n++; }
+      e.spaeter = P.hookAttached; e.handUeber = Math.round(h.y - (P.y - P.h*0.6));
+      e.winkel = Math.round(Math.abs(Math.atan2(P.x - h.x, P.y - P.h*0.6 - h.y))*180/Math.PI);
+      KEYS.KeyG = false; st();
+      setz(); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); KEYS.KeyG = false;   // nur angetippt
+      for(let i = 0; i < 40; i++) st(); e.ohneHalten = P.hookAttached;
+      menuScreen = null; return e; })()""")
+    assert not r['sofort'] and r['spaeter'] and r['winkel'] <= await g.ev('LIANE_GRIFF_WINKEL') + 1, f'von oben gegriffen: {r}'
+    assert not r['ohneHalten'], f'ohne gehaltene Taste nachgegriffen: {r}'
+
+@test
 async def liane_g_spammen(g):
     """Nutzer-Video „G spammen“: wer die Haken-Taste hektisch drückt, greift denselben Haken erst nach LIANE_SPERRE Schritten
     wieder und bekommt beim Loslassen keinen Schub, solange er kürzer als LIANE_BOOST_HALTEN Schritte am Seil hing – der Affe

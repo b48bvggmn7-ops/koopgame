@@ -159,6 +159,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - 3D-Figur am Seil (Nutzer-Screenshot „schwinge in Boden/Wand“): der gedreht gezeichnete Körper wird auch QUER zum Seil auf
     Boden/Wand geprüft (SEIL_KOERPER_BREITE = halbe Figurenbreite, js/33) und sonst aufgerichtet – waagerecht am Seil über
     einer Kante ragt der Bauch nicht mehr in die Erde. Test figuren3d_seil_waagerecht_nicht_im_boden.
+  - Von oben greifen (Nutzer-Video „von oben reinspringen, der Haken flippt rum“): liegt die Hand über dem Haken (Seil wäre
+    steiler als LIANE_GRIFF_WINKEL 100°), greift der Affe noch nicht; hält er die Haken-Taste, greift er, sobald er weit genug
+    gefallen ist – die Liane klappt nicht mehr über den Haken. Von oben gegriffen gibt die Liane höchstens bis über
+    Boden/Gefahr nach (ist er weiter weg, wird sie weich eingeholt), auch das Nachfedern bleibt darüber. Test liane_von_oben.
   - Haken-Taste hektisch drücken (Nutzer-Video „G spammen“): nach dem Loslassen lässt sich DERSELBE Haken ⅓ s lang nicht
     wieder greifen (LIANE_SPERRE), und den Loslass-Schub gibt es erst, wenn der Affe mindestens ¼ s am Seil hing
     (LIANE_BOOST_HALTEN) – kein wildes Hüpfen um den Haken mehr. Ein anderer Haken (Haken-Kette) geht sofort. Test liane_g_spammen.

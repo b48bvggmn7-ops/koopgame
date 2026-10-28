@@ -357,7 +357,8 @@ function partnerSimSchritt(U, b, e){
   const dir = e.dir || 0;
   if(b.male && e.haken && !b.hook){
     const t = partnerHakenZiel(b);
-    if(t){ b.hook = {anchor: t, len: Math.hypot(t.x - b.x, t.y - (b.y - b.h*0.6))}; b.luft = false;
+    if(t && partnerLiane2() && !b.grounded && lianeUeberHaken(b, t)){ /* über dem Haken: das Spiel greift erst später (js/32) */ }
+    else if(t){ b.hook = {anchor: t, len: Math.hypot(t.x - b.x, t.y - (b.y - b.h*0.6))}; b.luft = false;
       if(partnerLiane2()){   // wie lianeGriffPruefen (js/32): in der Luft gibt die Liane bis zur Reichweite nach (höchstens bis über Boden/Gefahr)
         const d = b.hook.len; b.hook.max = Math.max(d, hookRange(t)); b.hook.dehn = 0;
         if(b.grounded) b.hook.ziel = b.hook.len = d;

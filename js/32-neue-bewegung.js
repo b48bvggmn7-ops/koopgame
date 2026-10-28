@@ -270,6 +270,8 @@ function lianeFreiUnten(A, P){
     if(f.art === 'flamme' && f.dy < 0 && f.y > A.y && f.x < x1 && f.x + 40 > x0) oben = Math.min(oben, f.y - FLAMME_LAENGE*40);
   return oben - A.y - P.h*0.6 - LIANE_BODEN_ABSTAND - LIANE2_FANG_MAX;   // + Platz fürs Nachfedern beim Hineinfallen
 }
+// Hand so weit über dem Haken, dass das Seil steiler als LIANE_GRIFF_WINKEL (von unten gemessen) nach oben zeigen würde?
+function lianeUeberHaken(P, A){ const dx = P.x - A.x, dy = P.y - P.h*0.6 - A.y; return Math.abs(Math.atan2(dx, dy))*180/Math.PI > LIANE_GRIFF_WINKEL; }
 function lianeGriffPruefen(P){
   if(P.lianeSperre > 0) P.lianeSperre--;
   const K = P.keys || {};
@@ -278,14 +280,14 @@ function lianeGriffPruefen(P){
   if(P._hakenWarten && (!K.hook || !isDown(K.hook) || P.grounded || P.hookAttached)) P._hakenWarten = false;
   if(P._hakenWarten){
     const t = findHookTarget(P);
-    if(t && P.y - P.h*0.6 >= t.y - LIANE_UEBER_HAKEN && !(P.lianeSperre > 0 && t === P.lianeSperreA)){
+    if(t && !lianeUeberHaken(P, t) && !(P.lianeSperre > 0 && t === P.lianeSperreA)){
       P.hookAttached = true; P.anchor = t; P.ropeWasAirborne = false; P._hakenWarten = false;
       P.ropeLen = Math.hypot(t.x - P.x, t.y - (P.y - P.h*0.6)); P.ropeMax = Math.max(P.ropeLen, hookRange(t));
     }
   }
   if(P.hookAttached && P._gegriffenA !== P.anchor){   // gerade gegriffen (08)
     if(P.lianeSperre > 0 && P.anchor === P.lianeSperreA){ P.hookAttached = false; return; }   // zu schnell wieder derselbe Haken
-    if(!P.grounded && P.y - P.h*0.6 < P.anchor.y - LIANE_UEBER_HAKEN){ P.hookAttached = false; P._hakenWarten = true; return; }   // über dem Haken: erst fallen
+    if(!P.grounded && lianeUeberHaken(P, P.anchor)){ P.hookAttached = false; P._hakenWarten = true; return; }   // über dem Haken: erst fallen
     P._gegriffenA = P.anchor; P._lianeHalten = 0; P._griffSchritt = schrittNr();
     // Nutzerwunsch: die Liane gibt sofort bis an den Rand der Reichweite nach – der Affe fällt hinein und schwingt dann
     // (ganz nah hängen ist selten gewollt; hochziehen geht weiter mit W). Vom Boden aus gegriffen bleibt es straff, damit W
