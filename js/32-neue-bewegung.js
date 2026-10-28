@@ -23,8 +23,9 @@ function neuFxDazu(o){ neuFx.push(o); if(neuFx.length > 260) neuFx.splice(0, neu
 function neuFigurBox(P, x, y){ return {x: (x === undefined ? P.x : x) - P.w/2, y: (y === undefined ? P.y : y) - P.h, w: P.w, h: P.h}; }
 
 // ---------- Dash ----------
+const dashAusHier = () => DASH_AUS_WELTEN.includes(levelWelt);   // Dash in dieser Welt ausgeklammert (Nutzerwunsch: Dschungel)
 function dashKannStarten(P){
-  if(P.dash || P.dashPause > 0 || P.inWater) return false;
+  if(P.dash || P.dashPause > 0 || P.inWater || dashAusHier()) return false;
   return P.dashPunkte > 0;   // kein kostenloser Anschluss-Dash nach einem Durchbruch mehr (Nutzerwunsch: ein Dash, dann aufladen)
 }
 function dashRichtung(P, moveDir){

@@ -177,6 +177,7 @@ elementRegistrieren({
   },
   spiel: {
     laden(daten){
+      if(typeof DASH_AUS_WELTEN !== 'undefined' && DASH_AUS_WELTEN.includes(daten.welt)) return;   // ohne Dash keine Durchbruch-Wände (sonst Weg versperrt)
       for(const b of (daten.bruchWaende || []))
         solids.push({x: b.x, y: b.y, w: b.w || 40, h: b.h || 40, type: 'bruch', nachwachsen: Number(b.nachwachsen) || 0, gone: false, bruchT: 0, wartet: false});
     },
