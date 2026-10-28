@@ -15,16 +15,14 @@ KETTEN = [
     ('vulkan/03-feuerberg.json', (216, 14), 219, 4, 270, 'pilz'),
 ]
 # Münzen an den Ketten (nach dem Umlegen auf die Schwungbahn), die die Fahrten zusammen holen müssen
-MUENZEN = {302: [(320, 12), (328, 11), (336, 13)], 150: [(158, 10), (161, 13), (164, 13), (167, 11), (170, 12)],
+MUENZEN = {302: [(320, 12), (328, 11), (332, 13)], 150: [(158, 10), (161, 13), (164, 13), (167, 11), (170, 12)],
            741: [(742, 12), (745, 13), (747, 9), (748, 12), (751, 12), (755, 9)], 219: [(238, 8), (254, 6)]}
 # die andere Figur wird jeden Schritt zum Affen gesetzt (sonst hält der Bildrand ihn fest)
 MITNEHMEN = 'p2.x = p1.x; p2.y = p1.y; p2.vx = 0; p2.vy = 0;'
 
 def kette(rt, anlauf, n, pull, rel, pilz):
     k = rt.k_lauf(anlauf, -6)
-    if pilz == 'pilz': pl = [k, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['right'], 'until': 'P.vy < -10', 'frames': 80},
-                             {'hold': ['right'], 'until': 'P.vy > -3', 'frames': 80}, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3},
-                             {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]   # Pilz + Dash nach oben
+    if pilz == 'pilz': pl = rt.kombi_pilz(anlauf + 3) + [{'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]   # auf den Pilz, dann Haken (Dash nur noch waagerecht)
     elif pilz == 'fallen': pl = [rt.k_lauf(anlauf, 0), {'hookWhen': 'P.vy > 1', 'until': 'P.hookAttached', 'frames': 400}]   # stehen bleiben, bis der Bröckelboden bricht
     else: pl = [k, {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]
     for _ in range(n): pl += [{'swing': True, 'pull': pull, 'release': rel, 'frames': 900},
