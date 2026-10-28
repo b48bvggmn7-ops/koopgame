@@ -34,8 +34,7 @@ for _w in 'mf':
            plan=nb_bruch_durch(322), ziel=324, ziel_reihe=15, baustein='B2', gegen=_laufen)
     stelle(level='dschungel/03-lianenschlucht.json', name='Haftdecke über der Grube 520–528 (B3)', wer=_w, start=(515, 14), partner=(513, 14),
            plan=nb_haft(519, 529), ziel=529, ziel_reihe=14, baustein='B3', gegen=_lauf_sprung(519))
-    stelle(level='dschungel/03-lianenschlucht.json', name='Durchbruch-Säule 570 + Grube 571–577 (B2, Bruch-Fenster)', wer=_w, start=(566, 14), partner=(564, 14),
-           plan=nb_bruchtor(570), ziel=578, ziel_reihe=14, baustein='B2', gegen=_lauf_sprung(569))
+    # (Durchbruch-Säule 570 + Grube: vom Nutzer im Editor entfernt, Commit a8acb1d)
     stelle(level='dschungel/03-lianenschlucht.json', name='Durchbruch-Säule 676 (B2)', wer=_w, start=(670, 14), partner=(668, 14),
            plan=nb_bruch_durch(676), ziel=678, ziel_reihe=14, baustein='B2', gegen=_laufen)
 
@@ -62,14 +61,14 @@ for _w in 'mf':
                plan=nb_bruch_durch(_c), ziel=_c + 2, ziel_reihe=_r - 1, baustein='B2', gegen=_laufen)
 
 # ---------------- Umbau (Regel 1): Haken-/Aufwind-Gruben dashfest ----------------
-# Absprung so tief unter der Landung, dass Sprung + Dash nicht reicht; Affe: Haken + Dash nach oben am höchsten Punkt,
+# Absprung so tief unter der Landung, dass Sprung + Dash nicht reicht; Affe: Haken (früher + Dash nach oben, seit Dash nur waagerecht: Haken allein),
 # Schweinchen: Aufwind. Gegenprobe: Affe nur mit Sprung + Dash schräg hoch (ohne Haken).
-def _haken_dash_hoch(c, z):
+def _haken_grube(c, z):
     return [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200},
             {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
-            {'swing': True, 'pull': 20, 'release': 'P.x > P.anchor.x + P.ropeLen*0.3 && P.vy < 0', 'frames': 400}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100},   # Liane 2: Seil etwas einholen, je nach Länge loslassen
-            {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3},
-            {'holdIf': {'right': f'P.x < {kx(z + 2)}', 'left': f'P.x > {kx(z + 4)}'}, 'until': 'P.grounded', 'frames': 300}]
+            {'swing': True, 'pull': 20, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},   # Liane 2: Seil etwas einholen, spät loslassen (Dash nur noch waagerecht: Haken allein reicht)
+            {'holdIf': {'right': f'P.x < {kx(z + 2)}', 'left': f'P.x > {kx(z + 4)}'}, 'until': 'P.grounded', 'frames': 300},
+            {'holdIf': {'right': f'P.x < {kx(z + 2)}'}, 'frames': 60}]   # nach der Landung an der Kante noch ein Stück hinein
 def _aufwind(c, w, z):
     return [{'holdIf': {'right': f'P.x < {kx(c)}', 'left': f'P.x > {kx(c)} + 8'}, 'until': 'P.grounded', 'frames': 200},
             {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
@@ -77,26 +76,25 @@ def _aufwind(c, w, z):
             {'hold': ['glide', 'right'], 'until': 'P.grounded', 'frames': 600}, {'holdIf': {'right': f'P.x < {kx(z + 2)}'}, 'frames': 60}]
 def _sprung_dash(c):
     return [{'hold': ['right'], 'until': f'P.x >= {kx(c)}', 'frames': 200}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
-            {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3}, LANDEN]
+            {'press': ['dash'], 'hold': ['right'], 'frames': 3}, LANDEN]
 for _c, _r, _w, _z, _zr in ((35, 14, 37, 46, 6), (200, 12, 202, 211, 4)):
-    stelle(level='hoehle/01-kristallhoehle.json', name=f'Haken-Grube {_c} (Haken + Dash hoch, dashfest)', wer='m', start=(_c - 2, _r - 1), partner=(_c - 1, _r - 1),
-           plan=_haken_dash_hoch(_c, _z), ziel=_z, ziel_reihe=_zr, baustein='Umbau', gegen=_sprung_dash(_c))
+    stelle(level='hoehle/01-kristallhoehle.json', name=f'Haken-Grube {_c} (Haken, dashfest)', wer='m', start=(_c - 2, _r - 1), partner=(_c - 1, _r - 1),
+           plan=_haken_grube(_c, _z), ziel=_z, ziel_reihe=_zr, baustein='Umbau', gegen=_sprung_dash(_c))
     stelle(level='hoehle/01-kristallhoehle.json', name=f'Aufwind-Grube {_c} (Schweinchen)', wer='f', start=(_c - 2, _r - 1), partner=(_c - 1, _r - 1),
            plan=_aufwind(_c, _w, _z), ziel=_z, ziel_reihe=_zr, baustein='Umbau')
 
-def _haken_kette_dash(c, z, n=2, rel1='P.x > P.anchor.x + 40 && P.vx > 1'):
+def _haken_kette(c, z, n=2, rel1='P.x > P.anchor.x + 40 && P.vx > 1'):
     pl = [{'holdIf': {'right': f'P.x < {kx(c)} - 4', 'left': f'P.x > {kx(c)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(c)}) <= 4', 'frames': 200},
           {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
           {'swing': True, 'release': rel1, 'frames': 400}]
     for _ in range(n - 1):
         pl += [{'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
                {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}]
-    return pl + [{'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100}, {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3},
-                 {'holdIf': {'right': f'P.x < {kx(z + 2)}', 'left': f'P.x > {kx(z + 4)}'}, 'until': 'P.grounded', 'frames': 300}]
+    return pl + [{'holdIf': {'right': f'P.x < {kx(z + 2)}', 'left': f'P.x > {kx(z + 4)}'}, 'until': 'P.grounded', 'frames': 300}]
 # Kristallhöhle Ziel: Lücke 388–404 (17), Haken 391/397, Podest 3 Reihen höher; Schweinchen nur per Aufwind, wenn der Affe
 # oben auf Platte 8 steht (Tür im Aufwind).
-stelle(level='hoehle/01-kristallhoehle.json', name='Ziel: Haken-Kette 391/397 + Dash hoch aufs Podest', wer='m', start=(385, 10), partner=(386, 10),
-       plan=_haken_kette_dash(387, 405, rel1='P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0'),   # Haken aufgeräumt (391/400): erst Schwung holen; Liane 2: je nach Seillänge
+stelle(level='hoehle/01-kristallhoehle.json', name='Ziel: Haken-Kette 391/401 aufs Podest', wer='m', start=(385, 10), partner=(386, 10),
+       plan=_haken_kette(387, 405, rel1='P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'),   # Haken aufgeräumt (391/401): erst Schwung holen; Dash nur noch waagerecht: die Kette allein reicht
        ziel=405, ziel_reihe=3, baustein='Umbau', gegen=_sprung_dash(387))
 stelle(level='hoehle/01-kristallhoehle.json', name='Ziel: Schweinchen per Aufwind, Affe auf Platte 8', wer='f', start=(385, 10), partner=(409, 2),
        plan=[{'holdIf': {'right': f'P.x < {kx(387)}'}, 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
@@ -104,15 +102,18 @@ stelle(level='hoehle/01-kristallhoehle.json', name='Ziel: Schweinchen per Aufwin
              {'hold': ['glide', 'right'], 'until': 'P.grounded', 'frames': 600}], ziel=405, ziel_reihe=3, baustein='Umbau',
        gegen=_sprung_dash(387))
 
-# Feuerberg Ziel-Plateau (Oberkante 1): Affe von der Pilz-Plattform an Haken 404 + Dash hoch, Schweinchen per Aufwind 405
+# Feuerberg Ziel-Plateau (Oberkante 1): Affe von der Pilz-Plattform an Haken 404, dann Haken 410 über der Kante (seit Dash nur
+# waagerecht statt Dash hoch), Schweinchen per Aufwind 405
 _fb_affe = [{'holdIf': {'right': f'P.x < {kx(396)} - 4', 'left': f'P.x > {kx(396)} + 4'}, 'until': f'P.grounded && Math.abs(P.x - {kx(396)}) <= 4', 'frames': 200},
             {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120},
-            {'swing': True, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 400}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 100},
-            {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3}, {'holdIf': {'right': f'P.x < {kx(413)}', 'left': f'P.x > {kx(414)}'}, 'until': 'P.grounded', 'frames': 300}]
+            {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
+            {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 120},
+            {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400},
+            {'holdIf': {'right': f'P.x < {kx(413)}', 'left': f'P.x > {kx(414)}'}, 'until': 'P.grounded', 'frames': 300}]
 _fb_schwein = [{'holdIf': {'right': f'P.x < {kx(397)}'}, 'until': 'P.grounded', 'frames': 100}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
                {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(405)} + 20', 'left': f'P.x > {kx(406)}'}, 'until': f'P.y < {ky(0)}', 'frames': 900},
                {'hold': ['glide', 'right'], 'until': 'P.grounded', 'frames': 600}]
-stelle(level='vulkan/03-feuerberg.json', name='Ziel-Plateau: Haken 404 + Dash hoch (dashfest)', wer='m', start=(395, 8), partner=(396, 8),
+stelle(level='vulkan/03-feuerberg.json', name='Ziel-Plateau: Haken 404 + 410 (dashfest)', wer='m', start=(395, 8), partner=(396, 8),
        plan=_fb_affe, ziel=410, ziel_reihe=0, baustein='Umbau', gegen=_sprung_dash(397))
 stelle(level='vulkan/03-feuerberg.json', name='Ziel-Plateau: Schweinchen per Aufwind', wer='f', start=(395, 8), partner=(396, 8),
        plan=_fb_schwein, ziel=410, ziel_reihe=0, baustein='Umbau')
