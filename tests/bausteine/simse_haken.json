@@ -1,0 +1,112 @@
+[
+{
+"level": "dschungel/03-lianenschlucht.json",
+"c": 50,
+"sims": 52,
+"oben": 10,
+"boden": 15,
+"haken": [
+50,
+8
+]
+},
+{
+"level": "dschungel/03-lianenschlucht.json",
+"c": 249,
+"sims": 251,
+"oben": 6,
+"boden": 12,
+"haken": [
+249,
+4
+]
+},
+{
+"level": "dschungel/04-gluehwald.json",
+"c": 51,
+"sims": 52,
+"oben": 10,
+"boden": 15,
+"haken": [
+50,
+8
+]
+},
+{
+"level": "dschungel/04-gluehwald.json",
+"c": 305,
+"sims": 306,
+"oben": 10,
+"boden": 15,
+"haken": [
+304,
+8
+]
+},
+{
+"level": "dschungel/04-gluehwald.json",
+"c": 365,
+"sims": 366,
+"oben": 10,
+"boden": 15,
+"haken": [
+364,
+8
+]
+},
+{
+"level": "ruinen/03-fallengang.json",
+"c": 49,
+"sims": 51,
+"oben": 6,
+"boden": 12,
+"haken": [
+49,
+4
+]
+},
+{
+"level": "ruinen/03-fallengang.json",
+"c": 298,
+"sims": 300,
+"oben": 11,
+"boden": 16,
+"haken": [
+298,
+9
+]
+},
+{
+"level": "ruinen/03-fallengang.json",
+"c": 372,
+"sims": 374,
+"oben": 10,
+"boden": 16,
+"haken": [
+372,
+8
+]
+},
+{
+"level": "dschungel/05-dornenpfad.json",
+"c": 117,
+"sims": 118,
+"oben": 11,
+"boden": 16,
+"haken": [
+116,
+9
+]
+},
+{
+"level": "ruinen/06-tempelherz.json",
+"c": 105,
+"sims": 107,
+"oben": 11,
+"boden": 16,
+"haken": [
+105,
+9
+]
+}
+]
