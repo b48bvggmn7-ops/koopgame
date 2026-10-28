@@ -6810,12 +6810,12 @@ async def haft_ende_anhalten(g):
     await g.steps(10)
     for start, kante in ((500, 600), (1480, 1560)):
         r = await g.ev(f"""(() => {{ p1.x = {start}; p1.y = 240 + p1.h + 2; p1._px = p1.x; p1._py = p1.y; p1.vx = 0; p1.vy = -1; p1.grounded = false;
-          KEYS.KeyW = true; KEYS.KeyD = true; return true; }})()""")
+          KEYS.KeyG = true; KEYS.KeyD = true; return true; }})()""")
         await g.steps(150)
         r = await g.ev("({x: p1.x, vx: p1.vx, haft: !!p1.haft, hp: p1._ff ? p1._ff.hp : 0})")
         await g.steps(30)
         r2 = await g.ev("({x: p1.x, hp: p1._ff ? p1._ff.hp : 0})")
-        await g.ev("KEYS.KeyW = false; KEYS.KeyD = false")
+        await g.ev("KEYS.KeyG = false; KEYS.KeyD = false")
         assert r['haft'], f'nicht mehr an der Haftfläche {r}'
         assert {kante} and r['x'] <= kante - 7.9 and r['x'] > kante - 20 and r['vx'] == 0 and abs(r2['x'] - r['x']) < 0.01, f'Ende {kante}: hält nicht an {r} {r2}'
         assert r2['hp'] - r['hp'] < 0.5, f'Hangel-Animation läuft am Ende weiter {r} {r2}'
@@ -6877,14 +6877,14 @@ async def haft_bewegt(g):
       const P = p1, S = solids.find(s => s.type === 'moveplat' && s.haft); for(const k in KEYS) KEYS[k] = false;
       let t = performance.now() + 1e6; const st = () => { stepSim(t); t += 1000/54; };
       S.tripActive = true; P.x = S.x + 60; P.y = S.y + S.h + P.h + 6; P.vx = 0; P.vy = 0; P.grounded = false;
-      KEYS[P.keys.swimUp] = true;
+      KEYS[P.keys.hook || P.keys.glide] = true;
       for(let i = 0; i < 3 && !P.haft; i++) st();
       const greift = !!(P.haft && P.haft.mp), off0 = P.x - S.x, x0 = S.x;
       for(let i = 0; i < 40; i++) st();
       const mit = {haft: !!P.haft, off: +(P.x - S.x - off0).toFixed(2), gefahren: +(S.x - x0).toFixed(1), kopf: +(P.y - P.h - S.y - S.h).toFixed(2)};
       KEYS[P.keys.right] = true; for(let i = 0; i < 80; i++) st(); KEYS[P.keys.right] = false;
       const ende = {haft: !!P.haft, rel: +(P.x - S.x).toFixed(1), w: S.w};
-      KEYS[P.keys.swimUp] = false; for(let i = 0; i < 4; i++) st();
+      KEYS[P.keys.hook || P.keys.glide] = false; for(let i = 0; i < 4; i++) st();
       return {greift, mit, ende, los: {haft: !!P.haft, vy: P.vy}, wand: S.look};
     })()""")
     assert r['greift'], f'an der bewegten Haftfläche nicht festgehalten: {r}'

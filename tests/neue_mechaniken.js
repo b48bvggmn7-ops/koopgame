@@ -143,40 +143,40 @@ window.NM = {
     for(const abstand of [2, 9, 11, 20]){
       S.start(); S.stellen(p2, 47, 17);
       p1.x = 52*40 + 20; p1.y = 440 + p1.h + abstand; p1.vx = 0; p1.vy = 0; p1.grounded = false;
-      let ok = false; for(let i = 0; i < 3 && !ok; i++){ S.schritt(['swimUp']); ok = !!p1.haft; }
+      let ok = false; for(let i = 0; i < 3 && !ok; i++){ S.schritt(['hook']); ok = !!p1.haft; }
       out[abstand] = ok;
     }
     return out;
   },
   haft(){
     const S = this, out = {};
-    // greifen: unter der Haftdecke (Spalten 50–58, Reihe 10) hochspringen und hoch halten
-    out.greifen = S.anDecke('m', ['swimUp']);
+    // greifen: unter der Haftdecke (Spalten 50–58, Reihe 10) hochspringen und die Fähigkeits-Taste halten (Nutzerwunsch, vorher „hoch“)
+    out.greifen = S.anDecke('m', ['hook']);
     // rollen nach rechts: langsamer als Laufen, mit Schwung (nicht sofort volle Geschwindigkeit)
-    const v1 = []; for(let i = 0; i < 20; i++){ S.schritt(['right','swimUp']); v1.push(Math.abs(p1.vx)); }
+    const v1 = []; for(let i = 0; i < 20; i++){ S.schritt(['right','hook']); v1.push(Math.abs(p1.vx)); }
     out.rollen = {anfang: +v1[0].toFixed(2), max: +Math.max(...v1).toFixed(2), haft: !!p1.haft};
     // kein Sofort-Stopp: Richtung loslassen -> rollt noch etwas weiter
-    const xs = p1.x; S.n(4, ['swimUp']); out.auslaufen = +(p1.x - xs).toFixed(2);
+    const xs = p1.x; S.n(4, ['hook']); out.auslaufen = +(p1.x - xs).toFixed(2);
     // Nutzerwunsch: nicht mehr um die Ecke / an der Seite hoch – weiter nach rechts hangeln hält an der Seitenwand
     // (Spalte 59) an, man hängt weiter unten an der Decke
-    const flaechen = new Set(); for(let i = 0; i < 200 && p1.haft; i++){ S.schritt(['right','swimUp']); if(p1.haft) flaechen.add(p1.haft.flaeche); }
+    const flaechen = new Set(); for(let i = 0; i < 200 && p1.haft; i++){ S.schritt(['right','hook']); if(p1.haft) flaechen.add(p1.haft.flaeche); }
     out.ecken = [...flaechen].sort(); out.amEnde = {haft: !!p1.haft, x: +p1.x.toFixed(1), kopf: +(p1.y - p1.h).toFixed(1)};
     // loslassen = fallen
-    S.anDecke('m', ['swimUp']);
-    S.n(5, ['swimUp']); S.n(3, []);
+    S.anDecke('m', ['hook']);
+    S.n(5, ['hook']); S.n(3, []);
     out.loslassen = {haft: !!p1.haft, vy: +p1.vy.toFixed(2)};
     // Absprung (Springen an der Unterseite)
-    S.anDecke('m', ['swimUp']);
-    S.n(10, ['swimUp']); S.schritt(['swimUp','right']); S.schritt(['jump','swimUp','right']);
+    S.anDecke('m', ['hook']);
+    S.n(10, ['hook']); S.schritt(['hook','right']); S.schritt(['jump','hook','right']);
     out.absprung = {haft: !!p1.haft, vx: +p1.vx.toFixed(2), vy: +p1.vy.toFixed(2)};
     // Dash von der Haftfläche
-    S.anDecke('m', ['swimUp']);
-    S.n(60, ['swimUp']);
-    const pk = p1.dashPunkte; S.schritt(['swimUp','right','dash']);
+    S.anDecke('m', ['hook']);
+    S.n(60, ['hook']);
+    const pk = p1.dashPunkte; S.schritt(['hook','right','dash']);
     out.dashVonHaft = {vorher: pk, dash: !!p1.dash, haft: !!p1.haft, vx: +p1.vx.toFixed(1)};
     // Schweinchen kann sich auch festhalten
-    out.schwein = S.anDecke('f', ['swimUp']);
-    // ohne „hoch“ kein Festhalten (gegen die Decke springen = normale Decke)
+    out.schwein = S.anDecke('f', ['glide']);
+    // ohne Fähigkeits-Taste kein Festhalten (gegen die Decke springen = normale Decke)
     out.ohneHoch = S.anDecke('m', []);
     return out;
   },

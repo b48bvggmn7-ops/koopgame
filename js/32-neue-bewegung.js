@@ -18,6 +18,8 @@ const neuFx = [];          // kurze Effekte (Nachbilder, Bruchstücke, Kratzspur
 
 // ---------- Hilfen ----------
 function neuOben(P){ return P.keys && P.keys.swimUp && isDown(P.keys.swimUp); }
+// Festhalten an der Haftfläche (Nutzerwunsch: nicht mehr „hoch“, sondern die Fähigkeits-Taste – Affe G, Schweinchen Num 1, □)
+function haftHalten(P){ const k = P.keys && (P.male ? P.keys.hook : P.keys.glide); return !!(k && isDown(k)); }
 function neuUnten(P){ return P.keys && P.keys.swimDown && isDown(P.keys.swimDown); }
 function neuFxDazu(o){ neuFx.push(o); if(neuFx.length > 260) neuFx.splice(0, neuFx.length - 260); }
 function neuFigurBox(P, x, y){ return {x: (x === undefined ? P.x : x) - P.w/2, y: (y === undefined ? P.y : y) - P.h, w: P.w, h: P.h}; }
@@ -263,7 +265,7 @@ function lianeGriffPruefen(P){
   if(P.lianeSperre > 0) P.lianeSperre--;
   if(P.hookAttached && P._gegriffenA !== P.anchor){   // gerade gegriffen (08)
     if(P.lianeSperre > 0 && P.anchor === P.lianeSperreA){ P.hookAttached = false; return; }   // zu schnell wieder derselbe Haken
-    P._gegriffenA = P.anchor; P._lianeHalten = 0;
+    P._gegriffenA = P.anchor; P._lianeHalten = 0; P._griffSchritt = schrittNr();
     // Nutzerwunsch: die Liane gibt sofort bis an den Rand der Reichweite nach – der Affe fällt hinein und schwingt dann
     // (ganz nah hängen ist selten gewollt; hochziehen geht weiter mit W). Vom Boden aus gegriffen bleibt es straff, damit W
     // sofort hochzieht.
@@ -363,7 +365,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   }
   // Haftfläche
   if(P.haft){
-    if(P.hookAttached || !neuOben(P)){ haftLos(P); return false; }   // losgelassen: fällt (normale Physik)
+    if(P.hookAttached || !haftHalten(P)){ haftLos(P); return false; }   // losgelassen: fällt (normale Physik)
     if(jumpPressed){                                     // Absprung: nach unten-vorn
       haftLos(P);
       P.vy = HAFT_ABSPRUNG_Y; P.vx += moveDir*HAFT_ABSPRUNG_X;
@@ -372,7 +374,11 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
     }
     haftSchritt(P, moveDir); return true;
   }
-  if(!P.grounded && !P.hookAttached && P.vy <= 2 && neuOben(P)){
+  // Haken in derselben Taste: wurde er gerade erst (in diesem Schritt) gegriffen und ist eine Haftfläche über dem Kopf, gewinnt die Haftfläche
+  if(P.male && P.hookAttached && P._griffSchritt === schrittNr() && !P.grounded && P.vy <= 2 && haftHalten(P) && haftUeberKopf(P)){
+    P.hookAttached = false; P._gegriffenA = null; P._lianeA = null;
+  }
+  if(!P.grounded && !P.hookAttached && P.vy <= 2 && haftHalten(P)){
     const z = haftUeberKopf(P);
     if(z){ haftStarten(P, z); haftSchritt(P, moveDir); return true; }
   }
@@ -420,8 +426,8 @@ function neueBewegungNachher(P, altX, altY){
     else if(d.stossY && d.dy && !d.dx){ dashBeenden(P); }
     else if(d.stossY > 0 && d.dx){ d.dy = 0; d.dx = Math.sign(d.dx); }  // schräg auf den Boden: flach weiter
     else if(--d.zeit <= 0) dashBeenden(P);
-    // Dash nach oben gegen eine Haftfläche: festhalten, wenn „hoch“ gehalten wird
-    if(P.dash && d.stossY < 0 && neuOben(P)){ const z = haftUeberKopf(P); if(z){ P.dash = null; haftStarten(P, z); } }
+    // Dash nach oben gegen eine Haftfläche: festhalten, wenn die Fähigkeits-Taste gehalten wird
+    if(P.dash && d.stossY < 0 && haftHalten(P)){ const z = haftUeberKopf(P); if(z){ P.dash = null; haftStarten(P, z); } }
     if(d && schrittNr() % 2 === 0) neuFxDazu({art: 'nachbild', x: P.x, y: P.y, male: P.male, roll: P.rollAngle, facing: P.facing, leben: 12, max: 12});
   }
   if(P.haft) haftNachher(P, altX, altY);
