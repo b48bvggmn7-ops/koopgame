@@ -1,0 +1,104 @@
+[
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "pilz_alt": 125,
+  "l0": 135,
+  "oben": 11,
+  "reihe": 14,
+  "art": "verschoben",
+  "k": 4,
+  "pilz": 121,
+  "haken": [
+   125,
+   5
+  ],
+  "pruefung": {
+   "m_haken": true,
+   "m_ohne_haken": false,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "pilz_alt": 164,
+  "l0": 172,
+  "oben": 10,
+  "reihe": 14,
+  "art": "haken_weg",
+  "pilz": 164,
+  "haken_alt": [
+   166,
+   5
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": false,
+   "f": false,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "pilz_alt": 473,
+  "l0": 483,
+  "oben": 11,
+  "reihe": 14,
+  "art": "verschoben",
+  "k": 4,
+  "pilz": 469,
+  "haken": [
+   473,
+   5
+  ],
+  "pruefung": {
+   "m_haken": true,
+   "m_ohne_haken": false,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "pilz_alt": 668,
+  "l0": 676,
+  "oben": 2,
+  "reihe": 6,
+  "art": "haken_weg",
+  "pilz": 668,
+  "haken_alt": [
+   670,
+   -3
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": false,
+   "f": false,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "pilz_alt": 681,
+  "l0": 689,
+  "oben": 3,
+  "reihe": 6,
+  "art": "haken_weg",
+  "pilz": 681,
+  "haken_alt": [
+   686,
+   -3
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": false,
+   "f": false,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ }
+]

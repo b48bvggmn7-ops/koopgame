@@ -1,0 +1,64 @@
+[
+ {
+  "level": "dschungel/06-wipfelsturm.json",
+  "pilz_alt": 170,
+  "l0": 180,
+  "oben": 12,
+  "reihe": 15,
+  "art": "verschoben",
+  "k": 4,
+  "pilz": 166,
+  "haken": [
+   170,
+   6
+  ],
+  "pruefung": {
+   "m_haken": true,
+   "m_ohne_haken": false,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/06-wipfelsturm.json",
+  "pilz_alt": 190,
+  "l0": 200,
+  "oben": 12,
+  "reihe": 15,
+  "art": "haken_weg",
+  "pilz": 190,
+  "haken_alt": [
+   194,
+   6
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/06-wipfelsturm.json",
+  "pilz_alt": 392,
+  "l0": 402,
+  "oben": 12,
+  "reihe": 15,
+  "art": "verschoben",
+  "k": 4,
+  "pilz": 388,
+  "haken": [
+   392,
+   6
+  ],
+  "pruefung": {
+   "m_haken": true,
+   "m_ohne_haken": false,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ }
+]

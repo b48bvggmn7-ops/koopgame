@@ -1,0 +1,62 @@
+[
+ {
+  "level": "dschungel/02-baumkronen.json",
+  "pilz_alt": 443,
+  "l0": 453,
+  "oben": 11,
+  "reihe": 14,
+  "art": "haken_weg",
+  "pilz": 443,
+  "haken_alt": [
+   447,
+   5
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": false,
+   "f": false,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/02-baumkronen.json",
+  "pilz_alt": 209,
+  "l0": 219,
+  "oben": 10,
+  "reihe": 13,
+  "art": "haken_weg",
+  "pilz": 209,
+  "haken_alt": [
+   213,
+   4
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/02-baumkronen.json",
+  "pilz_alt": 572,
+  "l0": 582,
+  "oben": 11,
+  "reihe": 14,
+  "art": "haken_weg",
+  "pilz": 572,
+  "haken_alt": [
+   576,
+   5
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": false,
+   "f": false,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ }
+]

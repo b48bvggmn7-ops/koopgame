@@ -1,0 +1,143 @@
+[
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "pilz_alt": 70,
+  "l0": 80,
+  "oben": 11,
+  "reihe": 14,
+  "art": "haken_weg",
+  "pilz": 70,
+  "haken_alt": [
+   72,
+   5
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "pilz_alt": 180,
+  "l0": 190,
+  "oben": 11,
+  "reihe": 14,
+  "art": "haken_weg",
+  "pilz": 180,
+  "haken_alt": [
+   184,
+   5
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "pilz_alt": 360,
+  "l0": 370,
+  "oben": 11,
+  "reihe": 14,
+  "art": "haken_weg",
+  "pilz": 360,
+  "haken_alt": [
+   364,
+   5
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "pilz_alt": 390,
+  "l0": 400,
+  "oben": 11,
+  "reihe": 14,
+  "art": "verschoben",
+  "k": 4,
+  "pilz": 386,
+  "haken": [
+   390,
+   5
+  ],
+  "pruefung": {
+   "m_haken": true,
+   "m_ohne_haken": false,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "pilz_alt": 740,
+  "l0": 750,
+  "oben": 5,
+  "reihe": 8,
+  "art": "haken_weg",
+  "pilz": 740,
+  "haken_alt": [
+   744,
+   -1
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "pilz_alt": 760,
+  "l0": 770,
+  "oben": 5,
+  "reihe": 8,
+  "art": "haken_weg",
+  "pilz": 760,
+  "haken_alt": [
+   764,
+   -1
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "pilz_alt": 780,
+  "l0": 790,
+  "oben": 5,
+  "reihe": 8,
+  "art": "haken_weg",
+  "pilz": 780,
+  "haken_alt": [
+   784,
+   -1
+  ],
+  "pruefung": {
+   "m_haken": null,
+   "m_ohne_haken": true,
+   "f": true,
+   "m_ohne_pilz": false,
+   "f_ohne_pilz": false
+  }
+ }
+]
