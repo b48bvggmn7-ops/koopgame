@@ -294,7 +294,7 @@ function partnerKoerper(P){
           onWall: P.onWall || 0, wallEntrySpeed: P.wallEntrySpeed || 0, lastWallJumpSide: P.lastWallJumpSide || 0, wjLock: P.wjInputLock || 0,
           t: 0, lastWallTouch: P.lastWallTouch !== undefined && P.lastWallTouch > -9000 ? -1e9 : -1e9,
           kurz: !!P.sprungKurzMoeglich, los: !!P.sprungLosgelassen, fling: !!P.ropeFling, standingOn: P.standingOn,
-          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen, ziel: P.lianeZiel ?? P.ropeLen, max: P.ropeMax ?? P.ropeLen, dehn: P._dehn || 0} : null, lastAnchor: null, inWater: !!P.inWater};
+          hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen, ziel: P.lianeZiel ?? P.ropeLen, max: P.ropeMax ?? P.ropeLen, dehn: P._dehn || 0, frei: P._lianeFrei} : null, lastAnchor: null, inWater: !!P.inWater};
 }
 function partnerKollision(U, b, achse){
   const box = {x: b.x - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
@@ -360,12 +360,13 @@ function partnerSimSchritt(U, b, e){
     if(t){ b.hook = {anchor: t, len: Math.hypot(t.x - b.x, t.y - (b.y - b.h*0.6))}; b.luft = false;
       if(partnerLiane2()){   // wie lianeGriffPruefen (js/32): in der Luft gibt die Liane bis zur Reichweite nach (höchstens bis über Boden/Gefahr)
         const d = b.hook.len; b.hook.max = Math.max(d, hookRange(t)); b.hook.dehn = 0;
-        b.hook.ziel = b.hook.len = b.grounded ? d : Math.max(d, Math.min(b.hook.max, lianeFreiUnten(t, b)));
+        if(b.grounded) b.hook.ziel = b.hook.len = d;
+        else { const frei = lianeFreiUnten(t, b); b.hook.ziel = Math.max(HOOK_MIN_LEN, Math.min(b.hook.max, frei)); b.hook.len = Math.max(d, b.hook.ziel); b.hook.frei = frei + LIANE2_FANG_MAX; }
       } }
   }
   const liane2 = b.hook && !b.grounded && partnerLiane2();
   if(liane2){   // Liane 2 (js/32 lianeKern): festes Pendel wie im Spiel
-    const S = {hx: b.x, hy: b.y - b.h*0.6, vx: b.vx, vy: b.vy, len: b.hook.len, ziel: b.hook.ziel, max: b.hook.max, dehn: b.hook.dehn};
+    const S = {hx: b.x, hy: b.y - b.h*0.6, vx: b.vx, vy: b.vy, len: b.hook.len, ziel: b.hook.ziel, max: b.hook.max, dehn: b.hook.dehn, frei: b.hook.frei};
     lianeKern(S, b.hook.anchor, dir, !!e.pull, false);
     b.vx = S.vx; b.vy = S.vy; b.hook.len = S.len; b.hook.ziel = S.ziel; b.hook.dehn = S.dehn; b.gezogen = false;
     if(e.loslassen){ b.lastAnchor = b.hook.anchor; b.hook = null; b.vy += HOOK_RELEASE_BOOST; b.fling = true; }

@@ -65,6 +65,7 @@ const LIANE_HALTEN = true;          // false = alte Bedienung (G antippen = grei
 const LIANE_MIN_SCHWUNG = 2.5;      // px/Schritt: darunter kein Schub (still hängen)
 const LIANE_SCHWUNG_VOLL = 4;       // ab MIN + diesem Wert voller Schub (dazwischen weich ansteigend)
 const LIANE_BODEN_ABSTAND = 10;     // px: so viel Luft bleibt unter den Füßen, wenn die Liane ganz nachgibt (nie auf Boden/Stacheln/Lava)
+const LIANE_UEBER_HAKEN = 40;       // px: ist die Hand höher als der Haken (mehr als das), wird erst gegriffen, wenn der Affe auf Hakenhöhe gefallen ist
 const LIANE_SPERRE = 18;            // Schritte (~⅓ s): so lange lässt sich derselbe Haken nach dem Loslassen nicht wieder greifen (G-Taste hektisch gedrückt)
 const LIANE_BOOST_HALTEN = 12;      // Schritte: erst wer so lange am Seil hing, bekommt beim Loslassen den Schub
 const LIANE_BOOST = 3.2;            // Schub in Schwungrichtung (px/Schritt; Schwung am Seil meist 5–10; vorher 1,6 – Nutzerwunsch: etwas stärker)

@@ -272,15 +272,34 @@ function lianeFreiUnten(A, P){
 }
 function lianeGriffPruefen(P){
   if(P.lianeSperre > 0) P.lianeSperre--;
+  const K = P.keys || {};
+  // Von oben greifen (Nutzer-Video „von oben reinspringen, der Haken flippt rum“): ist die Hand höher als der Haken, greift
+  // der Affe noch nicht – hält er die Haken-Taste, greift er, sobald er auf Hakenhöhe gefallen ist (kein Überschlagen der Liane)
+  if(P._hakenWarten && (!K.hook || !isDown(K.hook) || P.grounded || P.hookAttached)) P._hakenWarten = false;
+  if(P._hakenWarten){
+    const t = findHookTarget(P);
+    if(t && P.y - P.h*0.6 >= t.y - LIANE_UEBER_HAKEN && !(P.lianeSperre > 0 && t === P.lianeSperreA)){
+      P.hookAttached = true; P.anchor = t; P.ropeWasAirborne = false; P._hakenWarten = false;
+      P.ropeLen = Math.hypot(t.x - P.x, t.y - (P.y - P.h*0.6)); P.ropeMax = Math.max(P.ropeLen, hookRange(t));
+    }
+  }
   if(P.hookAttached && P._gegriffenA !== P.anchor){   // gerade gegriffen (08)
     if(P.lianeSperre > 0 && P.anchor === P.lianeSperreA){ P.hookAttached = false; return; }   // zu schnell wieder derselbe Haken
+    if(!P.grounded && P.y - P.h*0.6 < P.anchor.y - LIANE_UEBER_HAKEN){ P.hookAttached = false; P._hakenWarten = true; return; }   // über dem Haken: erst fallen
     P._gegriffenA = P.anchor; P._lianeHalten = 0; P._griffSchritt = schrittNr();
     // Nutzerwunsch: die Liane gibt sofort bis an den Rand der Reichweite nach – der Affe fällt hinein und schwingt dann
     // (ganz nah hängen ist selten gewollt; hochziehen geht weiter mit W). Vom Boden aus gegriffen bleibt es straff, damit W
     // sofort hochzieht.
     const A = P.anchor, d = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y);
     P._lianeA = A; P._dehn = 0; P.ropeMax = Math.max(d, hookRange(A));
-    P.lianeZiel = P.ropeLen = P.grounded ? d : Math.max(d, Math.min(P.ropeMax, lianeFreiUnten(A, P)));
+    if(P.grounded){ P.lianeZiel = P.ropeLen = d; P._lianeFrei = undefined; }
+    else {
+      // höchstens bis über Boden/Gefahr; von oben gegriffen (weiter weg als das erlaubt) wird die Liane weich eingeholt
+      const frei = lianeFreiUnten(A, P);
+      P.lianeZiel = Math.max(HOOK_MIN_LEN, Math.min(P.ropeMax, frei));
+      P.ropeLen = Math.max(d, P.lianeZiel);
+      P._lianeFrei = frei + LIANE2_FANG_MAX;   // Nachfedern beim Hineinfallen nie tiefer als das
+    }
   }
   if(P.hookAttached && P.grounded) P.lianeZiel = Math.min(P.lianeZiel ?? P.ropeLen, P.ropeLen);   // am Boden zieht W über 08 (Seil kürzer)
   if(P.hookAttached) P._lianeHalten = (P._lianeHalten || 0) + 1;
@@ -297,7 +316,7 @@ function lianeGriffPruefen(P){
 // - Das Seil gibt nie nach und dehnt sich nicht (keine rote Gummi-Liane mehr). Wände/Boden halten ihn normal auf.
 function lianeNeu(P){ return !!(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus); }   // liane2Aus: nur zum Vergleichen (Tests)
 // Kern des Pendels (auch für die Vorausrechnung des Computer-Partners, js/30): S = {hx, hy (Griff-Punkt), vx, vy,
-// len (Seillänge), ziel (Wunschlänge), max, dehn (Fang-Dehnung)} wird um einen Schritt weitergerechnet
+// len (Seillänge), ziel (Wunschlänge), max, dehn (Fang-Dehnung), frei (so tief darf es höchstens gehen)} wird um einen Schritt weitergerechnet
 function lianeKern(S, A, moveDir, ziehen, geben){
   if(ziehen) S.ziel = Math.max(HOOK_MIN_LEN, S.ziel - ROPE_PULL_SPEED);
   if(geben) S.ziel = Math.min(S.max, S.ziel + ROPE_ADJUST_SPEED);
@@ -323,7 +342,7 @@ function lianeKern(S, A, moveDir, ziehen, geben){
       nx += tx*sg*zu; ny += ty*sg*zu;
       const d2 = Math.hypot(nx - A.x, ny - A.y) || 1; ex = (nx - A.x)/d2; ey = (ny - A.y)/d2;
     }
-    if(radial > LIANE2_FANG_AB){ radial *= LIANE2_FANG_REST; S.dehn = Math.min(LIANE2_FANG_MAX, S.dehn + radial); }
+    if(radial > LIANE2_FANG_AB){ radial *= LIANE2_FANG_REST; S.dehn = Math.min(LIANE2_FANG_MAX, S.frei !== undefined ? Math.max(0, S.frei - S.len) : Infinity, S.dehn + radial); }
     const Lw = S.len + S.dehn;
     if(Math.hypot(nx - A.x, ny - A.y) > Lw){ nx = A.x + ex*Lw; ny = A.y + ey*Lw; }
   }
@@ -347,7 +366,7 @@ function lianeSchritt(P, moveDir, jumpPressed){
     P._lianeA = A; P._dehn = 0;
     P.lianeZiel = P.ropeLen = P.ropeMax = Math.max(d0, hookRange(A));   // (sonst schon in lianeGriffPruefen gesetzt)
   }
-  const S = {hx: P.x, hy: P.y - P.h*0.6, vx: P.vx, vy: P.vy, len: P.ropeLen, ziel: P.lianeZiel, max: P.ropeMax, dehn: P._dehn || 0};
+  const S = {hx: P.x, hy: P.y - P.h*0.6, vx: P.vx, vy: P.vy, len: P.ropeLen, ziel: P.lianeZiel, max: P.ropeMax, dehn: P._dehn || 0, frei: P._lianeFrei};
   lianeKern(S, A, moveDir, K.pull && isDown(K.pull), K.slack && isDown(K.slack));
   P.vx = S.vx; P.vy = S.vy; P.ropeLen = S.len; P.lianeZiel = S.ziel; P._dehn = S.dehn;
   P.ropeStretch = 0; P.ropePulledNow = false;
