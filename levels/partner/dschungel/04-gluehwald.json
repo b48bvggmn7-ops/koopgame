@@ -16,32 +16,41 @@
     "c": 358,
     "r": 14
    },
-   "text": "Sprung + Dash hoch, Platte 7",
+   "text": "Haken hoch aufs Sims, Platte 7",
    "schritte": [
     {
-     "hold": [
-      "right"
-     ],
-     "until": "P.x >= 14570"
+     "holdIf": {
+      "right": "P.x < 14580 - 34",
+      "left": "P.x > 14580 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (14580 - 30)) <= 5",
+     "frames": 300
     },
     {
      "press": [
       "jump"
      ],
      "hold": [
-      "right",
       "jump"
      ],
-     "frames": 4
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
     },
     {
-     "press": [
-      "dash"
-     ],
      "hold": [
       "pull"
      ],
-     "frames": 2
+     "holdIf": {
+      "left": "P.x > 14580 - 6"
+     },
+     "until": "P.y < 400 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
     },
     {
      "holdIf": {
@@ -86,32 +95,41 @@
     "c": 299,
     "r": 14
    },
-   "text": "Sprung + Dash hoch, Hebel 6",
+   "text": "Haken hoch aufs Sims, Hebel 6",
    "schritte": [
     {
-     "hold": [
-      "right"
-     ],
-     "until": "P.x >= 12170"
+     "holdIf": {
+      "right": "P.x < 12180 - 34",
+      "left": "P.x > 12180 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (12180 - 30)) <= 5",
+     "frames": 300
     },
     {
      "press": [
       "jump"
      ],
      "hold": [
-      "right",
       "jump"
      ],
-     "frames": 4
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
     },
     {
-     "press": [
-      "dash"
-     ],
      "hold": [
       "pull"
      ],
-     "frames": 2
+     "holdIf": {
+      "left": "P.x > 12180 - 6"
+     },
+     "until": "P.y < 400 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
     },
     {
      "hold": [
@@ -156,32 +174,41 @@
     "c": 44,
     "r": 14
    },
-   "text": "Sprung + Dash hoch, Hebel 2",
+   "text": "Haken hoch aufs Sims, Hebel 2",
    "schritte": [
     {
-     "hold": [
-      "right"
-     ],
-     "until": "P.x >= 2010"
+     "holdIf": {
+      "right": "P.x < 2020 - 34",
+      "left": "P.x > 2020 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (2020 - 30)) <= 5",
+     "frames": 300
     },
     {
      "press": [
       "jump"
      ],
      "hold": [
-      "right",
       "jump"
      ],
-     "frames": 4
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
     },
     {
-     "press": [
-      "dash"
-     ],
      "hold": [
       "pull"
      ],
-     "frames": 2
+     "holdIf": {
+      "left": "P.x > 2020 - 6"
+     },
+     "until": "P.y < 400 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
     },
     {
      "hold": [

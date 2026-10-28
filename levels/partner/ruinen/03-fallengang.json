@@ -16,32 +16,41 @@
     "c": 292,
     "r": 15
    },
-   "text": "Sprung + Dash hoch, Hebel 4 im Pfeil-Takt",
+   "text": "Haken hoch aufs Sims, Hebel 4 im Pfeil-Takt",
    "schritte": [
     {
-     "hold": [
-      "right"
-     ],
-     "until": "P.x >= 11890"
+     "holdIf": {
+      "right": "P.x < 11940 - 34",
+      "left": "P.x > 11940 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (11940 - 30)) <= 5",
+     "frames": 300
     },
     {
      "press": [
       "jump"
      ],
      "hold": [
-      "right",
       "jump"
      ],
-     "frames": 4
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
     },
     {
-     "press": [
-      "dash"
-     ],
      "hold": [
       "pull"
      ],
-     "frames": 2
+     "holdIf": {
+      "left": "P.x > 11940 - 6"
+     },
+     "until": "P.y < 440 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
     },
     {
      "hold": [
