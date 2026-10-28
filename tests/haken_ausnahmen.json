@@ -118,5 +118,65 @@
   "spalte": 470,
   "regel": "Schwung",
   "grund": "neben der Hebel-Tür (Spalte 466): geschlossen stößt man an, offen schwingt man hindurch – gewollt; darunter Flammen im Takt (Timing)"
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "spalte": 50,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "spalte": 249,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "spalte": 50,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "spalte": 304,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/04-gluehwald.json",
+  "spalte": 364,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "spalte": 49,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "spalte": 298,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "ruinen/03-fallengang.json",
+  "spalte": 372,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/05-dornenpfad.json",
+  "spalte": 116,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "spalte": 105,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
  }
 ]

@@ -260,10 +260,10 @@ function lianeSperren(P){ P.lianeSperre = LIANE_SPERRE; P.lianeSperreA = P.ancho
 // so lang darf die Liane höchstens werden, ohne dass der Affe senkrecht unter dem Haken Boden, Stacheln, Lava oder eine
 // Flamme (Falle nach oben) berührt
 // (sonst landet er – das Seil löst sich – oder fällt hinein); LIANE_BODEN_ABSTAND px Luft unter den Füßen
-function lianeFreiUnten(A, P){
+function lianeFreiUnten(A, P, nurGefahr){   // nurGefahr: Boden/Wände nicht mitzählen (nur Stacheln, Lava, Flammen)
   const x0 = A.x - P.w/2, x1 = A.x + P.w/2;
   let oben = Infinity;
-  for(const s of solids) if(!s.gone && s.y > A.y && s.x < x1 && s.x + s.w > x0) oben = Math.min(oben, s.y);
+  if(!nurGefahr) for(const s of solids) if(!s.gone && s.y > A.y && s.x < x1 && s.x + s.w > x0) oben = Math.min(oben, s.y);
   for(const sp of spikes) if(sp.y - sp.h > A.y && sp.x - sp.w/2 < x1 && sp.x + sp.w/2 > x0) oben = Math.min(oben, sp.y - sp.h);
   if(typeof lavaBecken !== 'undefined') for(const b of lavaBecken) if(A.x >= b.minX && A.x < b.maxX && b.surf > A.y) oben = Math.min(oben, b.surf);
   if(typeof fallen !== 'undefined') for(const f of fallen)   // Flammen-Fallen nach oben: nicht in die Flamme hängen
@@ -299,6 +299,9 @@ function lianeGriffPruefen(P){
       // höchstens bis über Boden/Gefahr; von oben gegriffen (weiter weg als das erlaubt) wird die Liane weich eingeholt
       const frei = lianeFreiUnten(A, P);
       P.lianeZiel = Math.max(HOOK_MIN_LEN, Math.min(P.ropeMax, frei));
+      // weiter weg gegriffen, als es unten frei ist: nur vor einer Gefahr (Stacheln, Lava, Flamme) weich einholen – über
+      // festem Boden (z. B. Hebel-Sims unter dem Haken) bleibt das Seil so lang, sonst schwingt er höher und stößt oben an
+      if(d > P.lianeZiel) P.lianeZiel = Math.max(HOOK_MIN_LEN, Math.min(d, lianeFreiUnten(A, P, true)));
       P.ropeLen = Math.max(d, P.lianeZiel);
       P._lianeFrei = frei + LIANE2_FANG_MAX;   // Nachfedern beim Hineinfallen nie tiefer als das
     }
