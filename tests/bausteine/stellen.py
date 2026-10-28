@@ -234,10 +234,18 @@ for _e in _json.loads((_Path(__file__).resolve().parent / 'nischen_aus_verstecke
     _lvl, _w0, _g, _farbe, _R = _e[:5]
     if _w0 is None: continue
     _NISCHEN.setdefault(_lvl, []).append((_w0, _g, _farbe, _R))
+# Sonderfälle: Partner-Platz auf einem Teleporter / nur 2 Kästchen Boden vor der Nische (_NISCHE_SCHMAL: eigener Start, und die
+# Figur bleibt nach dem Dash in der Nische – zurücklaufen würde von der schmalen Kante fallen)
+_NISCHE_PLATZ = {('dschungel/06-wipfelsturm.json', 405): ((408, 15), (411, 15))}
+_NISCHE_SCHMAL = {('dschungel/05-dornenpfad.json', 670): ((668, 13), (666, 13)), ('hoehle/01-kristallhoehle.json', 370): ((372, 14), (371, 14))}
+_IN_NISCHE_BLEIBEN = [{'until': 'P.grounded && Math.abs(P.vx) < 0.5', 'frames': 100}]
 for _lvl, _liste in _NISCHEN.items():
     for (_w0, _g, _farbe, _R) in _liste:
         _w = 'm' if _farbe == 'blue' else 'f'
         _richtung = 'right' if _R > 0 else 'left'
-        stelle(level=_lvl, name=f'Durchbruch-Nische {_w0} (S4, optional, Münze in der Wand)', wer=_w, start=(_w0 - 3 * _R, _g - 1), partner=(_w0 - 4 * _R, _g - 1),
-               plan=nb_bruchnische(_w0) if _R > 0 else nb_bruchnische_links(_w0), ziel=_w0 - 3 if _R > 0 else _w0 + 2, ziel_reihe=_g - 1,
+        _start, _partner = _NISCHE_PLATZ.get((_lvl, _w0)) or _NISCHE_SCHMAL.get((_lvl, _w0)) or ((_w0 - 3 * _R, _g - 1), (_w0 - 4 * _R, _g - 1))
+        _plan, _ziel = (nb_bruchnische(_w0), _w0 - 3) if _R > 0 else (nb_bruchnische_links(_w0), _w0 + 2)
+        if (_lvl, _w0) in _NISCHE_SCHMAL: _plan, _ziel = _plan[:4] + _IN_NISCHE_BLEIBEN, (_w0 if _R > 0 else _w0 - 2)
+        stelle(level=_lvl, name=f'Durchbruch-Nische {_w0} (S4, optional, Münze in der Wand)', wer=_w, start=_start, partner=_partner,
+               plan=_plan, ziel=_ziel, ziel_reihe=_g - 1,
                baustein='S4', muenze=(_w0 + _R, _g - 1), gegen=[{'hold': [_richtung], 'frames': 90}], gegen_muenze=True)
