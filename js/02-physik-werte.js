@@ -96,7 +96,8 @@ const KANTE_WACKEL_RAND = 8;  // px: so weit vor der Kante wackelt eine stehende
 // ---------- Nacht-Ausbau: neue Mechaniken (js/32-neue-bewegung.js; Werte aus der Spielwiese, spielwiese/js/02-werte.js) ----------
 // Alles NEUE Konstanten – keine der Konstanten oben wurde geändert (harte Regel, Test bahnen_alte_mechaniken).
 // Schritte = Physik-Schritte (60 = 1 Spielsekunde).
-const DASH_AUS_WELTEN = ['dschungel'];   // Nutzerwunsch: Dash in diesen Welten ausgeklammert (dort auch keine Durchbruch-Wände); Welt einfach aus der Liste nehmen = wieder an
+const DASH_NUR_WAAGERECHT = true;   // Nutzerwunsch: Dash nur nach links/rechts (false = 8 Richtungen wie vorher)
+const DASH_AUS_WELTEN = [];   // Welten ohne Dash (dort auch keine Durchbruch-Wände), z. B. ['dschungel'] – Nutzer: im Dschungel bleibt er vorerst
 const DASH_TEMPO = 16;            // px pro Schritt (Spielwiese „Tempo“)
 const DASH_DAUER = 10;            // Schritte (Spielwiese „Dauer“) -> 160 px gerade Strecke (Variante A „fester Dash“)
 const DASH_BEHALTEN = 0.5;        // so viel Tempo bleibt nach dem Dash (nach oben höchstens die Sprungkraft)

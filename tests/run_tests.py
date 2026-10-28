@@ -1061,13 +1061,12 @@ async def level7_lianenschlucht(g):
     soll(r.get('dead') == 'm' or (k_pos(r, 'm') and k_pos(r, 'm')[0] < 100), 'Affe springt ohne Plattform nicht rüber', r.get('pos'))
     r = await koop(g, m=kat(98, 8), f=kat(118, 12), plans={'m': [k_lauf(101), {'frames': 30}, {'wait': f'P.x >= {kx(109)}'}, k_lauf(116)], 'f': [{'use': True, 'frames': 5}]}, maxFrames=3000)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 12, 'Plattform bringt den Affen', r.get('pos'))
-    # 4) Kamin für beide
+    # 4) Kamin für beide – vom Nutzer im Editor umgebaut (28.10.): Stacheln unten im Kamin, man springt oben von der linken
+    # Mauer (140–147, Reihe 3) über die Lücke auf die rechte (ab 153, Reihe 1)
     for who, other in (('m', 'f'), ('f', 'm')):
-        # Kamin auf Breite 3 verbreitert (Kombi-Nachschärfen): man steigt höher je Sprung – oben nach rechts aussteigen
-        plan = [k_lauf(151, -8), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(2)} && P.vy < 0', 'frames': 900},
-                {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(153)}', 'frames': 300}, k_lauf(165)]
-        r = await koop(g, **{who: kat(145, 12), other: kat(140, 12)}, plans={who: plan}, maxFrames=2500)
-        soll(r.get('done'), f'Kamin {who}', r.get('pos'))
+        plan = [k_lauf(147, -8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(160)]
+        r = await koop(g, **{who: kat(143, 3), other: kat(141, 3)}, plans={who: plan}, maxFrames=2500)
+        soll(r.get('done') and r['pos'][who][0] >= 159.5 and r['pos'][who][1] == 1, f'Kamin {who}', r.get('pos'))
     if await g.ev("goal.x") < 380 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
     # 5) Brunnen: Affe hängt am Seil (S), legt Hebel 3 um (J), zieht sich hoch (W), schwingt rüber
@@ -6827,6 +6826,25 @@ async def haft_ende_anhalten(g):
     await g.steps(5)
     r = await g.ev("({x: p1.x, haft: !!p1.haft})"); await g.ev("KEYS.KeyG = false")
     assert r['haft'] and r['x'] <= 600 - await g.ev('HAFT_RAND') + 0.5, f'am Rand gegriffen: rückt nicht nach innen {r}'
+
+@test
+async def dash_welt_aus(g):
+    """Dash je Welt ausklammerbar (DASH_AUS_WELTEN, js/02; Nutzer: „nur ausklammern, in einer anderen Welt wieder aktivieren“):
+    steht die Welt des Levels in der Liste, startet kein Dash und es gibt dort keine Durchbruch-Wände (sonst Weg versperrt).
+    Standard: leer (Dash überall an)."""
+    lv = lambda welt: level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, welt=welt,
+                            bruchWaende=[{'x': 600, 'y': 600, 'w': 40, 'h': 80}])
+    assert await g.ev("DASH_AUS_WELTEN.length") == 0, 'Standard: Dash in allen Welten an'
+    try:
+        await g.ev("DASH_AUS_WELTEN.push('ruinen')")
+        await g.load(lv('ruinen')); await g.steps(5)
+        r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
+        assert not r['kann'] and r['bruch'] == 0, f'Welt in der Liste: Dash/Durchbruch noch da {r}'
+        await g.load(lv('vulkan')); await g.steps(5)
+        r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
+        assert r['kann'] and r['bruch'] > 0, f'andere Welt: Dash/Durchbruch fehlt {r}'
+    finally:
+        await g.ev("DASH_AUS_WELTEN.length = 0")
 
 @test
 async def haftflaeche(g):

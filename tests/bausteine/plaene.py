@@ -26,8 +26,8 @@ def nb_bruch_durch(wand, vorlauf=1, weiter=3):
 def nb_haft(absprung, ende, nach_ende=None):
     """B3: unter der Haftfläche hochspringen, „hoch“ halten, nach rechts rollen bis Spalte ende, dann loslassen"""
     return [{'hold': ['right'], 'until': f'P.x >= {kx(absprung)}'},
-            {'press': ['jump'], 'hold': ['jump', 'swimUp', 'right'], 'until': '!!P.haft', 'frames': 60},
-            {'hold': ['swimUp', 'right'], 'until': f'P.x >= {kx(ende)} || !P.haft', 'frames': 1200}] + (nach_ende or [LANDEN])
+            {'press': ['jump'], 'hold': ['jump', 'festhalten', 'right'], 'until': '!!P.haft', 'frames': 60},
+            {'hold': ['festhalten', 'right'], 'until': f'P.x >= {kx(ende)} || !P.haft', 'frames': 1200}] + (nach_ende or [LANDEN])
 
 def nb_haft_dash(absprung, ende):
     """B6: wie nb_haft, am Ende Dash nach vorn über den Rest der Grube"""
@@ -66,24 +66,24 @@ def nb_versteck(c, r, kurz=False):
 def nb_haftarm(c, r, laenge=7):
     """S2: von der Kante (c, Oberkante r) hochspringen, „hoch“ halten, bis zum Arm-Ende rollen (Münze), zurückrollen,
     über der Kante loslassen"""
-    return [{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'swimUp'], 'until': '!!P.haft', 'frames': 50},
-            {'hold': ['swimUp', 'right'], 'until': f'P.x >= {kx(c + laenge)} - 4 || !P.haft', 'frames': 600},
-            {'hold': ['swimUp', 'left'], 'until': f'P.x <= {kx(c - 1)} || !P.haft', 'frames': 600},
+    return [{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'festhalten'], 'until': '!!P.haft', 'frames': 50},
+            {'hold': ['festhalten', 'right'], 'until': f'P.x >= {kx(c + laenge)} - 4 || !P.haft', 'frames': 600},
+            {'hold': ['festhalten', 'left'], 'until': f'P.x <= {kx(c - 1)} || !P.haft', 'frames': 600},
             {'holdIf': {'left': f'P.x > {kx(c - 1)}', 'right': f'P.x < {kx(c - 2)}'}, 'until': 'P.grounded', 'frames': 200}]
 
 def nb_haftarm_links(c, r, laenge=7):
     """S2 gespiegelt: Arm ragt nach links über den Abgrund"""
-    return [{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'swimUp'], 'until': '!!P.haft', 'frames': 50},
-            {'hold': ['swimUp', 'left'], 'until': f'P.x <= {kx(c - laenge)} + 4 || !P.haft', 'frames': 600},
-            {'hold': ['swimUp', 'right'], 'until': f'P.x >= {kx(c + 1)} || !P.haft', 'frames': 600},
+    return [{'frames': 6}, {'press': ['jump'], 'hold': ['jump', 'festhalten'], 'until': '!!P.haft', 'frames': 50},
+            {'hold': ['festhalten', 'left'], 'until': f'P.x <= {kx(c - laenge)} + 4 || !P.haft', 'frames': 600},
+            {'hold': ['festhalten', 'right'], 'until': f'P.x >= {kx(c + 1)} || !P.haft', 'frames': 600},
             {'holdIf': {'right': f'P.x < {kx(c + 1)}', 'left': f'P.x > {kx(c + 2)}'}, 'until': 'P.grounded', 'frames': 200}]
 
 def nb_haftinsel(a, g, laenge=5):
     """S3: unter der Haft-Insel (Reihe g-4) hochspringen, „hoch“ halten, nach rechts rollen, um die Ecke hinauf (oben stehen,
     Münze), rechts hinunter und landen"""
     return [{'hold': ['right'], 'until': f'P.x >= {kx(a)}'},
-            {'press': ['jump'], 'hold': ['jump', 'swimUp'], 'until': '!!P.haft', 'frames': 50},
-            {'hold': ['swimUp', 'right'], 'until': '!P.haft', 'frames': 600},
+            {'press': ['jump'], 'hold': ['jump', 'festhalten'], 'until': '!!P.haft', 'frames': 50},
+            {'hold': ['festhalten', 'right'], 'until': '!P.haft', 'frames': 600},
             {'hold': ['right'], 'until': f'P.grounded && P.y > {(g - 1) * 40}', 'frames': 300}]
 
 def nb_bruchnische(w):

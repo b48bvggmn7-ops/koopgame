@@ -19,7 +19,7 @@ window.coopRun = function(o){
   const log = [];
   const jeBild = o.jeBild ? Function('f', o.jeBild) : null, mess = [];   // optional: je Bild messen (z. B. Computer-Partner im Bild?)
   let ts = -3e7, f = 0, minY = {m: 1e9, f: 1e9}, trace = {m: [], f: []};
-  const SEM = (P, n) => P.keys[n];
+  const SEM = (P, n) => n === 'festhalten' ? (P.keys.hook || P.keys.glide) : P.keys[n];   // festhalten = Fähigkeits-Taste (Haftfläche)
   for(f = 0; f < (o.maxFrames || 6000); f++){
     ts += 16.6;
     for(const k in KEYS) if(!k.endsWith('_pressed')) KEYS[k] = false;

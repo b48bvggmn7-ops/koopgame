@@ -25,12 +25,16 @@ function neuFxDazu(o){ neuFx.push(o); if(neuFx.length > 260) neuFx.splice(0, neu
 function neuFigurBox(P, x, y){ return {x: (x === undefined ? P.x : x) - P.w/2, y: (y === undefined ? P.y : y) - P.h, w: P.w, h: P.h}; }
 
 // ---------- Dash ----------
-const dashAusHier = () => DASH_AUS_WELTEN.includes(levelWelt);   // Dash in dieser Welt ausgeklammert (Nutzerwunsch: Dschungel)
+const dashAusHier = () => DASH_AUS_WELTEN.includes(levelWelt);   // Dash in dieser Welt ausgeklammert (DASH_AUS_WELTEN)
 function dashKannStarten(P){
   if(P.dash || P.dashPause > 0 || P.inWater || dashAusHier()) return false;
   return P.dashPunkte > 0;   // kein kostenloser Anschluss-Dash nach einem Durchbruch mehr (Nutzerwunsch: ein Dash, dann aufladen)
 }
 function dashRichtung(P, moveDir){
+  if(DASH_NUR_WAAGERECHT){   // Nutzerwunsch: nur nach links/rechts – Richtungstaste, sonst Schwung am Seil, sonst Blickrichtung
+    let dx = moveDir || (P.hookAttached && Math.abs(P.vx) > 1 ? Math.sign(P.vx) : 0) || P.facing || 1;
+    return {dx, dy: 0};
+  }
   let dx = moveDir, dy = neuOben(P) ? -1 : (neuUnten(P) ? 1 : 0);
   if(!dx && !dy && P.hookAttached && Math.hypot(P.vx, P.vy) > 3){   // aus dem Schwung: in Flugrichtung (8 Richtungen)
     const w = Math.round(Math.atan2(P.vy, P.vx) / (Math.PI/4)) * Math.PI/4;
