@@ -678,8 +678,7 @@ function* partnerSuche(P, Z){
       const hakenNah = P.male && hooks.some(h => Math.abs(h.x - P.x) < 700);
       if(!gut() && hakenNah) for(const ziehen of [0, 30]) for(let i = 0; i <= 8; i += 2) for(const stopX of [d*Infinity, Z.x])
         yield* pruefe(planHaken(d, P.x + d*i*16, stopX, ziehen), 420, 40);
-      if(!gut() && partnerDashDa(P)) for(let i = 0; i <= 8; i += 2) for(const vy of [-2, 1])
-        yield* pruefe(planSprungDash(d, P.x + d*i*16, vy), 300, 30);
+      if(!gut() && partnerDashDa(P)) for(const i of [0, 4, 8]) yield* pruefe(planSprungDash(d, P.x + d*i*16, 1), 300, 30);
       // mit Anlauf (z. B. direkt vor einer Wand stehend)
       for(const z of [100, 200]){
         if(gut()) break;
@@ -729,7 +728,7 @@ function partnerMakroPlaene(platz, U){
     for(let i = 0; i <= 6; i++) for(const halt of [10, 4]) L.push([planSprung(d, x + d*i*20, halt, d*Infinity, false), 200]);
     L.push([planSprung(d, x, 10, x + d*30, false), 200]);
     if(!platz.male) for(let i = 0; i <= 6; i += 2) L.push([planSprung(d, x + d*i*20, 10, d*Infinity, true), 380]);
-    if(partnerDashDa(platz)) for(let i = 0; i <= 6; i += 2) for(const vy of [-2, 1]) L.push([planSprungDash(d, x + d*i*20, vy), 300]);
+    if(partnerDashDa(platz)) for(const i of [0, 4]) L.push([planSprungDash(d, x + d*i*20, 1), 300]);   // wenige Varianten: Suche bleibt schnell
     if(platz.male && hooks.some(h => Math.abs(h.x - x) < 500)) for(let i = 0; i <= 6; i += 2) for(const z of [0, 30]) L.push([planHaken(d, x + d*i*20, d*Infinity, z), 460]);
     // Kamin/Wand: nur wenn in dieser Richtung eine Wand nah ist
     const probe = {x: x + d*60, y: platz.y - 40, w: 4, h: 4};

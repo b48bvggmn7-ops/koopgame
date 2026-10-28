@@ -9282,7 +9282,7 @@ def k_sprung_dash(rand, ziel, dash=True, vy=1):
            ([{'press': ['dash'], 'hold': ['right'], 'frames': 3}] if dash else []) + \
            [{'holdIf': {'right': f'P.x < {kx(ziel + 1)}'}, 'until': 'P.grounded && !P.dash', 'frames': 300}]
 
-def kombi_pilz_grube(x0, l0, haken=True):
+def kombi_pilz_grube(x0, l0, haken=True, probe=False):
     """Baustein Pilz -> Grube -> erhöhter Landeplatz (l0 = erste Spalte des Landeplatzes). haken=True: der Affe braucht
     den Haken (Gegenprobe: Pilz + Dash ohne Haken reicht nicht); haken=False: der Affe kommt mit Pilz + Dash hinüber
     (Nutzerwunsch „entweder ich brauche den Haken oder nicht“ – an diesen Gruben ist der Haken entfernt)."""
@@ -9304,7 +9304,8 @@ def kombi_pilz_grube(x0, l0, haken=True):
                                          {'swing': True, 'release': rel, 'frames': 400}, lande]
                        for rel in ('P.x > P.anchor.x + 30 && P.vx > 1', 'P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.4 && P.vy < 0')
                        for hw in ('P.vy > -8', 'P.vy > -3')]
-        for vy in (-6, -1, 3): pl[f'm_ohne_haken{vy}'] = pilz_dash(vy)   # ohne Haken (Pilz + Dash) reicht nicht
+        if probe:   # bisher nur im Dschungel umgebaut (Nutzerwunsch „entweder ich brauch den Haken oder nicht“)
+            for vy in (-6, -1, 3): pl[f'm_ohne_haken{vy}'] = pilz_dash(vy)   # ohne Haken (Pilz + Dash) reicht nicht
     else:
         pl['m'] = pilz_dash(-1)
         pl['m_alt'] = [pilz_dash(vy) for vy in (-6, -4, 2, 5)]
@@ -9702,17 +9703,17 @@ KOMBI_STELLEN_BOT = [
     ('dschungel/03-lianenschlucht.json', 'Pilz + Haken-Kette / Pilz + Aufwind (124)', kat(120, 12), kat(119, 12), lambda: _d3_pilz124(), {'m': (140, 3), 'f': (140, 3)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (180)', kat(175, 14), kat(174, 14), lambda: kombi_pilz_grube(180, 190, haken=False), {'m': (190, 10), 'f': (190, 10)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (360)', kat(355, 14), kat(354, 14), lambda: kombi_pilz_grube(360, 370, haken=False), {'m': (370, 10), 'f': (370, 10)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (390)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_grube(386, 400), {'m': (400, 10), 'f': (400, 10)}),
+    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (390)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_grube(386, 400, probe=True), {'m': (400, 10), 'f': (400, 10)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (740)', kat(735, 8), kat(734, 8), lambda: kombi_pilz_grube(740, 750, haken=False), {'m': (750, 4), 'f': (750, 4)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (760)', kat(755, 8), kat(754, 8), lambda: kombi_pilz_grube(760, 770, haken=False), {'m': (770, 4), 'f': (770, 4)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (780)', kat(775, 8), kat(774, 8), lambda: kombi_pilz_grube(780, 790, haken=False), {'m': (790, 4), 'f': (790, 4)}),
-    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (125)', kat(116, 14), kat(115, 14), lambda: kombi_pilz_grube(121, 135), {'m': (135, 10), 'f': (135, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (125)', kat(116, 14), kat(115, 14), lambda: kombi_pilz_grube(121, 135, probe=True), {'m': (135, 10), 'f': (135, 10)}),
     ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (164)', kat(162, 14), kat(161, 14), lambda: kombi_pilz_grube(164, 172, haken=False), {'m': (172, 9), 'f': (172, 9)}),
-    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (473)', kat(464, 14), kat(463, 14), lambda: kombi_pilz_grube(469, 483), {'m': (483, 10), 'f': (483, 10)}),
+    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (473)', kat(464, 14), kat(463, 14), lambda: kombi_pilz_grube(469, 483, probe=True), {'m': (483, 10), 'f': (483, 10)}),
     ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (668)', kat(666, 6), kat(664, 6), lambda: kombi_pilz_grube(668, 676, haken=False), {'m': (676, 1), 'f': (676, 1)}),
-    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (170)', kat(161, 15), kat(160, 15), lambda: kombi_pilz_grube(166, 180), {'m': (180, 11), 'f': (180, 11)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (170)', kat(161, 15), kat(160, 15), lambda: kombi_pilz_grube(166, 180, probe=True), {'m': (180, 11), 'f': (180, 11)}),
     ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_grube(190, 200, haken=False), {'m': (200, 11), 'f': (200, 11)}),
-    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (392)', kat(383, 15), kat(382, 15), lambda: kombi_pilz_grube(388, 402), {'m': (402, 11), 'f': (402, 11)}),
+    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (392)', kat(383, 15), kat(382, 15), lambda: kombi_pilz_grube(388, 402, probe=True), {'m': (402, 11), 'f': (402, 11)}),
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3, weit=8, versatz_f=0), {'m': (190, 6), 'f': (189, 6)}),
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (295)', kat(293, 15), kat(292, 15), lambda: kombi_flammen_kamin(295, 16, hoch=3, weit=8, versatz=40, versatz_f=0, rel='P.x > P.anchor.x + P.ropeLen*0.4 && P.vy < 0'), {'m': (317, 6), 'f': (316, 6)}),   # Liane 2: andere Flammen-Phase, früher loslassen
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3, weit=8, versatz_f=0), {'m': (606, 6), 'f': (605, 6)}),
