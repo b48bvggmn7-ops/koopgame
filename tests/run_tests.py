@@ -6406,15 +6406,17 @@ async def neue_mechaniken_messen(g, teil):
 
 @test
 async def dash_richtungen_und_laden(g):
-    """Nacht-Ausbau: Dash in 8 Richtungen (Boden und Luft, beide Figuren), nur ein Luft-Dash, Aufladen am Boden,
-    an der Wand und am Haken, kein Durchtunneln von Wänden (auch schräg)."""
+    """Nacht-Ausbau: Dash – seit Nutzerwunsch nur noch nach links/rechts (DASH_NUR_WAAGERECHT): hoch/runter/schräg
+    gedrückt geht er waagerecht (ohne Richtung in Blickrichtung); Boden und Luft, beide Figuren, nur ein Luft-Dash,
+    Aufladen am Boden, an der Wand und am Haken, kein Durchtunneln von Wänden."""
     r = await neue_mechaniken_messen(g, 'dash')
     for wer in 'mf':
         R = {k[1:]: v for k, v in r['richtung'].items() if k[0] == wer}
-        assert R['r'][0] > 3.5 and R['l'][0] < -3.5 and abs(R['r'][1]) < 0.5, (wer, R)
-        assert R['o'][1] < -3.5 and R['u'][1] > 3.5 and abs(R['o'][0]) < 0.1, (wer, R)
-        for d, sx, sy in (('ro', 1, -1), ('lo', -1, -1), ('ru', 1, 1), ('lu', -1, 1)):
-            assert R[d][0]*sx > 2.5 and R[d][1]*sy > 2.5, (wer, d, R[d])
+        assert R['r'][0] > 3.5 and R['l'][0] < -3.5, (wer, R)
+        for d in ('ro', 'ru'): assert R[d][0] > 3.5, (wer, d, R[d])
+        for d in ('lo', 'lu'): assert R[d][0] < -3.5, (wer, d, R[d])
+        for d in ('o', 'u'): assert abs(R[d][0]) > 3.5, (wer, d, R[d])   # ohne links/rechts: in Blickrichtung
+        assert all(abs(v[1]) < 0.5 for v in R.values()), f'Dash nicht waagerecht: {R}'
         assert all(v[2] == 0 for v in R.values()), f'Luft-Dash kostet keinen Punkt: {R}'
         assert r[wer + 'Boden'] > 3.5, (wer, r[wer + 'Boden'])
     assert not r['zweiterLuftDash'], 'zweiter Luft-Dash ging'
@@ -6427,14 +6429,15 @@ async def dash_richtungen_und_laden(g):
 
 @test
 async def durchbruch_wand(g):
-    """Nacht-Ausbau: Durchbruch-Wand bricht nur durch einen Dash (Laufen/Springen nicht), beide Figuren, auch nach
-    unten; Trefferstopp; bleibt kaputt bis Neustart; Option „wächst nach“ wartet, solange eine Figur drin steht."""
+    """Nacht-Ausbau: Durchbruch-Wand bricht nur durch einen Dash (Laufen/Springen nicht), beide Figuren; seit der Dash
+    nur noch waagerecht geht (Nutzerwunsch), bricht ein Durchbruch-Boden von oben NICHT mehr; Trefferstopp; bleibt kaputt
+    bis Neustart; Option „wächst nach“ wartet, solange eine Figur drin steht."""
     r = await neue_mechaniken_messen(g, 'bruch')
     assert r['laufen']['weg'] == 0 and r['laufen']['c'] < 20, r['laufen']
     assert r['dash']['weg'] >= 1 and r['dash']['c'] > 21, r['dash']
     assert r['dash']['stopp'] >= 1, f"kein Trefferstopp: {r['dash']}"
     assert r['schwein']['weg'] >= 1 and r['schwein']['c'] > 21, r['schwein']
-    assert r['unten']['weg'] >= 1 and r['unten']['r'] > 15, r['unten']
+    assert r['unten']['weg'] == 0, f'Durchbruch-Boden bricht trotz waagerechtem Dash: {r["unten"]}'
     assert r['bleibt'] >= 1 and r['nachNeustart'] == 0, r
     w = r['wachsen']
     assert w['wegNachDash'] >= 1 and w['wartet'] and w['wegMitFigur'] >= 1 and w['frei'], w

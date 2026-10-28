@@ -90,7 +90,9 @@ window.NM = {
     S.start(); S.stellen(p1, 30, 13); S.stellen(p2, 26, 17); S.n(5);
     S.schritt(['swimDown','dash']); S.n(30);
     out.unten = {r: +(p1.y/40).toFixed(2), weg: S.weg()};
-    // bleibt kaputt (Standard), Neustart stellt wieder her
+    // bleibt kaputt (Standard), Neustart stellt wieder her (Dash ist nur noch waagerecht: Wand von der Seite)
+    S.start(); S.stellen(p1, 16, 17); S.stellen(p2, 12, 17); S.n(10, ['right']);
+    S.schritt(['right','dash']); S.n(20, ['right']);
     S.n(300);
     out.bleibt = S.weg();
     resetLevel(); out.nachNeustart = S.weg();
