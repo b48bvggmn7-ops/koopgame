@@ -9583,9 +9583,25 @@ def _d1_kamin_grube():
             'f': kamin + [{'hold': ['right'], 'until': f'P.x > {kx(752)}', 'frames': 100}, scheitel, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 3},
                           dict(lande, hold=['glide'])],
             'm_ohne': kamin + haken + [lande], 'f_ohne': kamin + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]}
+def _d3_pilz124():
+    """Lianenschlucht, vom Nutzer gebaut: Pilz 124 -> hohes Plateau 140–147 (Oberkante 4, von dort der Sprung über den Kamin).
+    Seit Dash nur waagerecht: Affe Pilz + Haken 130 + Haken 136 (Reihe 1), Schweinchen Pilz + Schirm in den Aufwind 134–135."""
+    lande = {'holdIf': {'right': f'P.x < {kx(142)}', 'left': f'P.x > {kx(144)}'}, 'until': 'P.grounded', 'frames': 400}
+    def affe(pull, rel):
+        return kombi_pilz(124) + [{'hold': ['right'], 'hookWhen': 'P.vy > -8', 'until': 'P.hookAttached', 'frames': 120},
+                                  {'swing': True, 'pull': pull, 'release': rel, 'frames': 600},
+                                  {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 150},
+                                  {'swing': True, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 600}, lande]
+    return {'m': affe(20, 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'),
+            'm_alt': [affe(40, 'P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0'), affe(0, 'P.x > P.anchor.x + 60 && P.vy < -2')],
+            'f': kombi_pilz(124) + [{'hold': ['right', 'glide'], 'until': 'P.vy > -1', 'frames': 100},
+                                    {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(134)} + 20', 'left': f'P.x > {kx(135)}'}, 'until': f'P.y < {ky(2)}', 'frames': 600},
+                                    dict(lande, hold=['glide'])],
+            'm_ohne': kombi_pilz(124) + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
+            'f_ohne': kombi_pilz(124) + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
 KOMBI_STELLEN_BOT = [
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (70)', kat(65, 14), kat(64, 14), lambda: kombi_pilz_grube(70, 80), {'m': (80, 10), 'f': (80, 10)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (130)', kat(120, 12), kat(119, 12), lambda: kombi_pilz_grube(124, 140), {'m': (140, 8), 'f': (140, 8)}),   # vom Nutzer umgebaut: Pilz 124, Haken 130; Plateau seit Dash nur waagerecht abgesenkt
+    ('dschungel/03-lianenschlucht.json', 'Pilz + Haken-Kette / Pilz + Aufwind (124)', kat(120, 12), kat(119, 12), lambda: _d3_pilz124(), {'m': (140, 3), 'f': (140, 3)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (180)', kat(175, 14), kat(174, 14), lambda: kombi_pilz_grube(180, 190), {'m': (190, 10), 'f': (190, 10)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (360)', kat(355, 14), kat(354, 14), lambda: kombi_pilz_grube(360, 370), {'m': (370, 10), 'f': (370, 10)}),
     ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (390)', kat(385, 14), kat(384, 14), lambda: kombi_pilz_grube(390, 400), {'m': (400, 10), 'f': (400, 10)}),
