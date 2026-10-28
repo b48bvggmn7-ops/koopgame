@@ -10838,7 +10838,8 @@ async def mondnacht_mondspiegel(g):
                 {'holdIf': {'left': f'{B} === "\\\\" && P.x > {kx(455)}'}, 'until': f'{B} === "/" || P.x <= {kx(455)} + 2', 'frames': 300},
                 wb_halt(kx(458)), {'wait': '!!linkOn[51]', 'frames': 5000}, k_lauf(495)]
     schwein = [wb_halt(kx(458)), {'wait': f'!!linkOn[50] && spiegelListe.find(s => s.c === 466 && s.r === 8).stellung === "/" && {platte("Q")}', 'frames': 5000},
-               k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}, {'hold': ['right', 'jump'], 'frames': 8}, {'press': ['dash'], 'hold': ['right', 'swimUp'], 'frames': 2}, {'hold': ['right', 'glide'], 'until': f'P.grounded || P.x > {kx(487)}', 'frames': 400}, {'hold': ['glide'], 'until': 'P.grounded', 'frames': 300},
+               k_lauf(476, 0), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 14}, {'press': ['dash'], 'hold': ['right'], 'frames': 2},   # Dash nur waagerecht: Schirm schon im Sprung (an der Decke)
+               {'hold': ['right', 'glide'], 'until': f'(P.grounded && !P.dash) || P.x > {kx(487)}', 'frames': 400}, {'hold': ['glide'], 'until': 'P.grounded && !P.dash', 'frames': 300},
                {'wait': f'{B} === "/" && !!linkOn[52]', 'frames': 3000}, wb_halt(kx(491)), {'frames': 20}, wb_halt(kx(494)), {'use': True, 'frames': 8}, {'wait': '!!linkOn[51]', 'frames': 300}, k_lauf(495)]
     ok = []
     for jx in (469, 469.4):
