@@ -190,5 +190,35 @@
   "spalte": 136,
   "regel": "Ring",
   "grund": "Lianenschlucht, vom Nutzer gebaut: Pilz 124 -> Haken 130 -> Haken 136 -> hohes Plateau 140 (Kamin-Sprung oben). Seit Dash nur waagerecht braucht der Affe den zweiten Haken dicht vor dem Plateau – dort landet er gewollt"
+ },
+ {
+  "level": "ruinen/02-mondnacht.json",
+  "spalte": 468,
+  "regel": "Schwung",
+  "grund": "Hebel-Sims 2 Reihen unter dem Haken: die Liane holt ein (sonst hinge man im Sims), man zieht sich aufs Sims – geschwungen wird hier nicht"
+ },
+ {
+  "level": "ruinen/05-felsenflucht.json",
+  "spalte": 772,
+  "regel": "Schwung",
+  "grund": "Hebel-Sims 2 Reihen unter dem Haken: die Liane holt ein (sonst hinge man im Sims), man zieht sich aufs Sims – geschwungen wird hier nicht"
+ },
+ {
+  "level": "ruinen/06-tempelherz.json",
+  "spalte": 759,
+  "regel": "Schwung",
+  "grund": "Hebel-Sims 2 Reihen unter dem Haken: die Liane holt ein (sonst hinge man im Sims), man zieht sich aufs Sims – geschwungen wird hier nicht"
+ },
+ {
+  "level": "vulkan/03-feuerberg.json",
+  "spalte": 410,
+  "regel": "Bahn",
+  "grund": "Ziel-Plateau: seit Dash nur waagerecht hängt hinter Haken 404 ein zweiter Haken 410 über der Plateau-Kante – man schwingt hinauf und landet auf dem Plateau (die Kante ist das Ziel); Test nacht_stellen_vulkan"
+ },
+ {
+  "level": "vulkan/03-feuerberg.json",
+  "spalte": 410,
+  "regel": "Ring",
+  "grund": "Ziel-Plateau: seit Dash nur waagerecht hängt hinter Haken 404 ein zweiter Haken 410 über der Plateau-Kante – man schwingt hinauf und landet auf dem Plateau (die Kante ist das Ziel); Test nacht_stellen_vulkan"
  }
 ]

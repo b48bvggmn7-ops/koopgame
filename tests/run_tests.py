@@ -7196,6 +7196,19 @@ async def lianenschlucht_pilz180_weiter(g):
         assert ok, (wer, r.get('pos'), r.get('dead'))
 
 @test
+async def glutpfad_mulde_nach_durchbruch(g):
+    """Dash nur waagerecht: hinter der Pflicht-Durchbruch-Säule 392 in Glutpfad liegt eine Mulde, die Kante 400 ist 4 Reihen
+    hoch (früher Sprung + Dash nach oben). Neu: Stufe 398–399 (2 Reihen) – beide Figuren kommen mit zwei Sprüngen hinauf."""
+    await koop_level(g, 'vulkan/01-glutpfad.json')
+    for wer in 'mf':
+        anders = 'f' if wer == 'm' else 'm'
+        pl = NB.nb_bruch_durch(392) + [k_lauf(396, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100},
+                                      {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': f'P.grounded && P.x > {kx(401)}', 'frames': 200},
+                                      {'holdIf': {'left': 'P.vx > 0.5'}, 'until': 'P.grounded && Math.abs(P.vx) < 0.5', 'frames': 100}]
+        r = await koop(g, **{wer: kat(389, 15), anders: kat(386, 6)}, plans={wer: pl}, maxFrames=3000)
+        assert r.get('done') and not r.get('dead') and r['pos'][wer][0] >= 400.5 and r['pos'][wer][1] == 11, (wer, r.get('pos'), r.get('dead'), r.get('steps'))
+
+@test
 async def bausteine_nacht(g):
     """Nacht-Ausbau: Bausteine B1–B7 (levels/test/bausteine-nacht.json, tests/bausteine/testlevel_bauen.py) – jeder mit
     beiden Figuren (B7 nur Schweinchen) per Bot geschafft, und jede Gegenprobe ohne die neue Mechanik scheitert:

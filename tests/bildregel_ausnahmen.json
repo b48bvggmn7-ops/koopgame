@@ -263,6 +263,12 @@
    "regel": "Haken",
    "spalte": 775,
    "begruendung": "Kamin-Grube (Haken aufgeräumt: zwei Haken 9 Spalten auseinander, gemessen): man greift den ersten Haken aus dem Kamin heraus – die Kaminwand direkt darunter ist kein Absprung vom Boden"
+  },
+  {
+   "level": "vulkan/03-feuerberg.json",
+   "regel": "Haken",
+   "spalte": 404,
+   "begruendung": "Ziel-Plateau: seit Dash nur waagerecht hängt hinter Haken 404 ein zweiter Haken 410 über der Plateau-Kante – man schwingt hinauf und landet auf dem Plateau (die Kante ist das Ziel); Test nacht_stellen_vulkan"
   }
  ]
 }

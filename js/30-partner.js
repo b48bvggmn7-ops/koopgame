@@ -362,7 +362,7 @@ function partnerSimSchritt(U, b, e){
       if(partnerLiane2()){   // wie lianeGriffPruefen (js/32): in der Luft gibt die Liane bis zur Reichweite nach (höchstens bis über Boden/Gefahr)
         const d = b.hook.len; b.hook.max = Math.max(d, hookRange(t)); b.hook.dehn = 0;
         if(b.grounded) b.hook.ziel = b.hook.len = d;
-        else { const frei = lianeFreiUnten(t, b); b.hook.ziel = Math.max(HOOK_MIN_LEN, Math.min(b.hook.max, frei)); if(d > b.hook.ziel) b.hook.ziel = Math.max(HOOK_MIN_LEN, Math.min(d, lianeFreiUnten(t, b, true))); b.hook.len = Math.max(d, b.hook.ziel); b.hook.frei = frei + LIANE2_FANG_MAX; }
+        else { const frei = lianeFreiUnten(t, b); b.hook.ziel = Math.max(HOOK_MIN_LEN, Math.min(b.hook.max, frei)); b.hook.len = Math.max(d, b.hook.ziel); b.hook.frei = frei + LIANE2_FANG_MAX; }
       } }
   }
   const liane2 = b.hook && !b.grounded && partnerLiane2();
