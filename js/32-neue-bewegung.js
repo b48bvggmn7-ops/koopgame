@@ -281,7 +281,7 @@ function lianeGriffPruefen(P){
   if(P._hakenWarten){
     const t = findHookTarget(P);
     if(t && !lianeUeberHaken(P, t) && !(P.lianeSperre > 0 && t === P.lianeSperreA)){
-      P.hookAttached = true; P.anchor = t; P.ropeWasAirborne = false; P._hakenWarten = false;
+      P.hookAttached = true; P.anchor = t; P.ropeWasAirborne = true; P._hakenWarten = false;   // in der Luft gegriffen: Landen löst das Seil
       P.ropeLen = Math.hypot(t.x - P.x, t.y - (P.y - P.h*0.6)); P.ropeMax = Math.max(P.ropeLen, hookRange(t));
     }
   }

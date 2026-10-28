@@ -556,5 +556,11 @@
   "regel": "Kombi-Etappe",
   "spalte": 200,
   "begruendung": "Etappe 200–399: nur 2 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: 4 Stellen (188, 352, 376, 766). Proben bei 156, 400, 575, 726 zerstörten Doppel-Presse, Dach-Weg, Pressen-Treppe und letzte Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
+ },
+ {
+  "level": "vulkan/01-glutpfad.json",
+  "regel": "Kombi-Level",
+  "spalte": null,
+  "begruendung": "14 statt 15 Kombi-Stellen: die Stelle 390–392 (Kamin + Durchbruch-Säule, danach Mulde) ging nur mit Dash nach oben aus der Mulde heraus. Seit der Dash nur noch waagerecht geht (Nutzerwunsch), hat die Mulde eine Stufe 398–399 (Test glutpfad_mulde_nach_durchbruch) – die Säule bleibt eine Durchbruch-Pflichtstelle, zählt aber nicht mehr als Kombi."
  }
 ]

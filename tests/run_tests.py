@@ -569,13 +569,22 @@ async def seil_runterlassen_bis_ring(g):
 
 @test
 async def seil_loest_beim_landen(g):
-    await g.load(level([ground(0, 680, 1400)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
-                       hooks=[{'x': 300, 'y': 590, 'radius': 300}]))
-    await g.p.keyboard.press('Space'); await g.p.wait_for_timeout(150)
-    await g.p.keyboard.down('KeyG'); await g.p.wait_for_timeout(50)   # Liane: Taste halten
-    await g.hold(('KeyD',), 1200); await g.p.wait_for_timeout(300)
-    assert not await g.ev('p1.hookAttached'), 'Seil bleibt nach dem Landen dran'
+    """Landet der Affe am Seil auf etwas (hier ein Absatz rechts vom Haken), löst sich das Seil. (Liane: die Taste bleibt
+    gehalten; die Liane hängt höchstens bis knapp über den Boden unter dem Haken, also landet man seitlich auf dem Absatz.)"""
+    await g.load(level([ground(0, 680, 1400), ground(380, 600, 400, 80)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
+                       hooks=[{'x': 300, 'y': 470, 'radius': 300}]))
+    # je Schritt mitschreiben: steht er am Seil länger als einen Schritt auf etwas, ist das Lösen kaputt
+    await g.ev("window.__seil = []; const alt = stepSim; stepSim = function(){ const r = alt.apply(this, arguments); __seil.push([p1.hookAttached ? 1 : 0, p1.grounded ? 1 : 0, Math.round(p1.y)]); return r; }")
+    await g.p.keyboard.down('Space'); await g.steps(2)
+    await g.p.keyboard.down('KeyG'); await g.steps(2); await g.p.keyboard.up('Space')   # im Aufsteigen greifen, Taste halten
+    assert await g.ev('p1.hookAttached'), 'nicht gegriffen'
+    await g.hold(('KeyD',), 1500); await g.steps(10)
     await g.p.keyboard.up('KeyG')
+    log = await g.ev('__seil')
+    gelandet = [i for i, (h, gr, y) in enumerate(log) if gr and i > 4]
+    assert gelandet, 'nie gelandet'
+    i = gelandet[0]
+    assert not any(h for h, gr, y in log[i:i + 3]), f'Seil bleibt nach dem Landen dran: {log[i - 2:i + 3]}'
 
 @test
 async def muenzen_nach_farbe(g):
@@ -1978,10 +1987,11 @@ async def level13_eisgrotte(g):
             if r.get('done'): ok.append(hold)
         soll(ok, 'E1 Eis-Säulen (Schwein)', (ok, r.get('pos') if r.get('done') else {k: r.get(k) for k in ('dead', 'pos', 'steps')}))
         ok = []
-        for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 80 && P.vy < 0'):   # + Haken aufgeräumt: spät loslassen
+        for rel, hw in [(r, 'P.vy > -3') for r in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0', 'P.x > P.anchor.x + 80 && P.vy < 0')] + \
+                       [('P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', 'true')]:   # + Haken aufgeräumt: spät loslassen; von oben greift er erst auf Hakenhöhe (Taste gleich wieder halten)
             m = [k_lauf(79, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80}]
             for k in range(6):
-                m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+                m += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': hw, 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
             m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 200}, k_lauf(131)]
             r = await koop(g, m=kat(76, 15), f=kat(105, 12), plans={'m': m}, maxFrames=5000)
             if r.get('done'): ok.append(rel[:14])
@@ -7211,14 +7221,14 @@ async def glutpfad_mulde_nach_durchbruch(g):
 @test
 async def mondnacht_stufen_zum_hakenblock(g):
     """Dash nur waagerecht: in Mondnacht (Nutzer-Level 4) liegt der Block mit der Hakenreihe (171–182, Oberkante 7) 8 Reihen
-    über dem Boden – früher Sprung + Dash nach oben. Neu: zwei Trittstufen (164–165 Oberkante 12, 167–168 Oberkante 9);
+    über dem Boden – früher Sprung + Dash nach oben. Neu: zwei Trittstufen (162–163 Oberkante 12, 165–166 Oberkante 9; dazwischen und zum Block bleibt Platz, kein enger Kamin);
     beide Figuren kommen vom Checkpoint 157 mit drei Sprüngen hinauf."""
     await koop_level(g, 'ruinen/02-mondnacht.json')
     sprung = lambda c, z: [k_lauf(c, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
                            {'holdIf': {'right': f'P.x < {kx(z)}', 'left': f'P.x > {kx(z) + 10}'}, 'until': 'P.grounded', 'frames': 150}]
     for wer in 'mf':
         anders = 'f' if wer == 'm' else 'm'
-        pl = sprung(162, 164) + sprung(165, 167) + sprung(168, 172) + [{'holdIf': {'right': f'P.x < {kx(175)}'}, 'until': f'P.x >= {kx(175)} - 6', 'frames': 100}]
+        pl = sprung(160, 162) + sprung(163, 165) + sprung(166, 172) + [{'holdIf': {'right': f'P.x < {kx(175)}'}, 'until': f'P.x >= {kx(175)} - 6', 'frames': 100}]
         r = await koop(g, **{wer: kat(158, 14), anders: kat(156, 14)}, plans={wer: pl}, maxFrames=2000)
         assert r.get('done') and not r.get('dead') and r['pos'][wer][0] >= 174 and r['pos'][wer][1] == 6, (wer, r.get('pos'), r.get('dead'), r.get('steps'))
 
@@ -10878,7 +10888,7 @@ async def felsenflucht_felsbrecher_licht(g):
                {'wait': f'Q.grounded && Math.abs(Q.x - {kx(756)}) < 8 && spiegelListe.find(s => s.c === 774 && s.r === 9).stellung === "/"', 'frames': 5000},
                {'use': True, 'frames': 8}, {'wait': '!!linkOn[42]', 'frames': 300}, k_lauf(795)]
     ok = []
-    for jx in (771, 770.6):
+    for jx in (771, 770.6, 770.4):   # Liane: von oben greift er erst auf Hakenhöhe – Absprung genau unter dem Sims-Rand
         r = await koop(g, m=kat(750, 15), f=kat(749, 15), plans={'m': affe(jx), 'f': schwein}, maxFrames=14000)
         if r.get('done') and min(r['pos']['m'][0], r['pos']['f'][0]) >= 794: ok.append(jx); break
     soll(ok, 'Felsbrecher-Licht gemeinsam gelöst', (info(r), r.get('log', [])[-6:]))
