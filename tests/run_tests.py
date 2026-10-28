@@ -6817,9 +6817,16 @@ async def haft_ende_anhalten(g):
         r2 = await g.ev("({x: p1.x, hp: p1._ff ? p1._ff.hp : 0})")
         await g.ev("KEYS.KeyG = false; KEYS.KeyD = false")
         assert r['haft'], f'nicht mehr an der Haftfläche {r}'
-        assert {kante} and r['x'] <= kante - 7.9 and r['x'] > kante - 20 and r['vx'] == 0 and abs(r2['x'] - r['x']) < 0.01, f'Ende {kante}: hält nicht an {r} {r2}'
+        rand = await g.ev('HAFT_RAND')   # Nutzerwunsch: beide Hände bleiben unter der Fläche
+        assert {kante} and r['x'] <= kante - rand + 0.1 and r['x'] > kante - rand - 12 and r['vx'] == 0 and abs(r2['x'] - r['x']) < 0.01, f'Ende {kante}: hält nicht an {r} {r2}'
         assert r2['hp'] - r['hp'] < 0.5, f'Hangel-Animation läuft am Ende weiter {r} {r2}'
         await g.steps(30)
+    # ganz am Rand gegriffen: rückt nach innen, bis beide Hände unter der Fläche sind
+    r = await g.ev("""(() => { p1.x = 596; p1.y = 240 + p1.h + 2; p1._px = p1.x; p1._py = p1.y; p1.vx = 0; p1.vy = -1; p1.grounded = false;
+      KEYS.KeyG = true; return true; })()""")
+    await g.steps(5)
+    r = await g.ev("({x: p1.x, haft: !!p1.haft})"); await g.ev("KEYS.KeyG = false")
+    assert r['haft'] and r['x'] <= 600 - await g.ev('HAFT_RAND') + 0.5, f'am Rand gegriffen: rückt nicht nach innen {r}'
 
 @test
 async def haftflaeche(g):

@@ -183,6 +183,11 @@ function haftLos(P){ P.haft = null; }
 function haftStarten(P, z){
   P.haft = z.mp ? {flaeche: 'unten', mp: z.mp, v: P.vx} : {flaeche: 'unten', c: z.c, r: z.r, v: P.vx};
   P.y = (z.mp ? z.mp.y + z.mp.h : (z.r + 1)*40) + P.h; P.vy = 0; P.gliding = false; P.glideTimer = 0;
+  // ganz am Rand gegriffen: so weit nach innen rücken, dass beide Hände unter der Fläche sind (Nutzerwunsch, HAFT_RAND)
+  for(const dir of [1, -1]) for(let i = 0; i < HAFT_RAND && !haftWeiter(P, P.x + dir*HAFT_RAND) && haftWeiter(P, P.x - dir*(HAFT_RAND + 1)); i++){
+    const alt = P.x; P.x -= dir;
+    if(z.mp ? false : !haftWeiter(P, P.x)){ P.x = alt; break; }
+  }
   P._haftT = performance.now();
   if(typeof dustPuff === 'function') dustPuff(P.x, P.y - P.h, 4, 0, 3);
   if(typeof SFX !== 'undefined' && SFX.haft) SFX.haft(P);

@@ -1758,15 +1758,17 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
   höchstens WAND_RUTSCH_MAX_FALL 4,5 (Rutsch-Haltung, Kratz-Staub, leises Schaben). Nicht beim Segeln, nicht am Seil,
   nicht im Dash. Der Wandsprung ist der alte (gleiche Werte, gleiche Bedingungen) – er geht auch mitten im Rutschen.
 - **Haftfläche** (Editor: Gelände → „Haftfläche“): Wand-/Deckenkästchen mit Honig-Schicht NUR an der Unterseite
-  (Nutzerwunsch; Band an den runden Ecken passend abgeschnitten, Tropfen darunter). Wer darunter „hoch“
-  hält (Affe W, Schweinchen ↑, Controller Steuerkreuz hoch bzw. Stick hoch), hält sich von unten fest und hangelt mit
+  (Nutzerwunsch; Band an den runden Ecken passend abgeschnitten, Tropfen darunter). Wer darunter die
+  Fähigkeits-Taste hält (Affe G, Schweinchen Num 1, Controller □; Nutzerwunsch – vorher „hoch“; ein gerade erst gegriffener
+  Haken muss dann der Haftfläche weichen), hält sich von unten fest und hangelt mit
   links/rechts entlang (greifen klappt schon, wenn der Kopf in den Honig-Tropfen hängt: bis HAFT_FANG 12 px unter der
   Kante, vorher 2,5 px – Nutzerwunsch; man wird dann an die Fläche hochgezogen) – langsamer als Laufen (HAFT_TEMPO 4,2),
   mit Schwung (kein Sofort-Stopp). Am Ende der Fläche bzw. an einer Wand hält man an – NICHT mehr um die Kanten herum
-  an der Seite hoch oder oben drauf (Nutzerwunsch, früher ging das). „Hoch“ loslassen = fallen. Springen = Absprung
+  an der Seite hoch oder oben drauf (Nutzerwunsch, früher ging das). Fähigkeits-Taste loslassen = fallen. Springen = Absprung
   nach unten-vorn. Dash geht von dort (kostet einen Punkt; „hoch“ zählt an der Unterseite nicht als Dash-Richtung).
   Haken greifen = loslassen. Sonst ist eine Haftfläche eine normale Wand (Boden oben, Wandsprung an der Seite).
-  Am freien Ende hält die hangelnde Figur an (Nutzerwunsch): ihre Mitte bleibt `HAFT_RAND` 8 px vor der Kante, Tempo 0, die
+  Am freien Ende hält die hangelnde Figur an (Nutzerwunsch): ihre Mitte bleibt `HAFT_RAND` 32 px vor der Kante (vorher 8 –
+  Nutzerwunsch: beide Hände bleiben unter der Fläche; wer ganz am Rand greift, rückt so weit nach innen), Tempo 0, die
   Hangel-Bewegung stoppt (vorher rutschte sie jeden Schritt ein Stück weiter und „hangelte in der Luft“; `haftWeiter`).
   Gilt auch für bewegte Haftflächen. Test haft_ende_anhalten.
 - **Bewegte Haftfläche** (Nutzerwunsch): im Editor lässt sich eine Haftfläche mit dem Werkzeug „Bewegung“ zum Ziel

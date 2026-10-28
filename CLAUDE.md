@@ -190,7 +190,7 @@
 | Seil ranziehen / geben | W / S | – | hoch / runter |
 | Hebel | J | Num 2 | ○ |
 | Dash (Nacht-Ausbau) | K | Num 3 | △ |
-| Haftfläche festhalten | W halten | ↑ halten | hoch |
+| Haftfläche festhalten | G halten | Num 1 halten | □ |
 | Neustart / Leistungsanzeige / Test-Sprung | R / F / C, X | | – |
 | Pausenmenü (mit Neustart) | Esc | | Options |
 | (Tasten gehören zu Spielern; wer welche Figur spielt, wählt man im Startmenü) | | | |
