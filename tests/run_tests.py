@@ -7182,6 +7182,20 @@ async def dschungel1_ende_ohne_dash_hoch(g):
     assert ok == ['m', 'f'], (ok, r.get('pos'), r.get('dead'))
 
 @test
+async def lianenschlucht_pilz180_weiter(g):
+    """Dash nur waagerecht: hinter der Pilz-Grube 180 (Turm 190–193 abgesenkt) geht es oben weiter – der Block über der
+    Haftdecke (194–209) ist nur noch eine Reihe dick (Stufe 1). Beide Figuren: Pilz-Grube, dann bis Spalte 212."""
+    await koop_level(g, 'dschungel/03-lianenschlucht.json')
+    pl = kombi_pilz_grube(180, 190)
+    for wer in 'mf':
+        anders = 'f' if wer == 'm' else 'm'
+        ok = False
+        for plan in [pl[wer]] + pl.get(wer + '_alt', []):
+            r = await koop(g, **{wer: kat(175, 14), anders: kat(174, 14)}, plans={wer: plan + [k_lauf(193, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, k_lauf(212)]}, maxFrames=4000)
+            if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= 211: ok = True; break
+        assert ok, (wer, r.get('pos'), r.get('dead'))
+
+@test
 async def bausteine_nacht(g):
     """Nacht-Ausbau: Bausteine B1–B7 (levels/test/bausteine-nacht.json, tests/bausteine/testlevel_bauen.py) – jeder mit
     beiden Figuren (B7 nur Schweinchen) per Bot geschafft, und jede Gegenprobe ohne die neue Mechanik scheitert:
@@ -9363,7 +9377,7 @@ def _r2_doppelwand(dash):
         [k_lauf(286, 0), {'use': True, 'frames': 2}, j_lauf(293, dash=False), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
          {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(308)} - 6', 'left': f'P.x > {kx(308)} + 6'}, 'until': 'P.grounded', 'frames': 400}, k_lauf(309)]
     m = [k_lauf(244, 0), {'use': True, 'frames': 2}, k_lauf(246, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]
-    for _ in range(5): m += [{'swing': True, 'pull': 10, 'release': 'f > 30 && P.vy < 0 && P.x > P.anchor.x + 60', 'frames': 900},
+    for _ in range(5): m += [{'swing': True, 'pull': 10, 'release': 'f > 20 && P.vy < 0 && P.x > P.anchor.x + 60', 'frames': 900},   # Liane 2: früher loslassen
                              {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
     m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(309)]
     return {'m': m, 'f': f}

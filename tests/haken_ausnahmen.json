@@ -178,5 +178,17 @@
   "spalte": 105,
   "regel": "Bahn",
   "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "spalte": 136,
+  "regel": "Bahn",
+  "grund": "Lianenschlucht, vom Nutzer gebaut: Pilz 124 -> Haken 130 -> Haken 136 -> hohes Plateau 140 (Kamin-Sprung oben). Seit Dash nur waagerecht braucht der Affe den zweiten Haken dicht vor dem Plateau – dort landet er gewollt"
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "spalte": 136,
+  "regel": "Ring",
+  "grund": "Lianenschlucht, vom Nutzer gebaut: Pilz 124 -> Haken 130 -> Haken 136 -> hohes Plateau 140 (Kamin-Sprung oben). Seit Dash nur waagerecht braucht der Affe den zweiten Haken dicht vor dem Plateau – dort landet er gewollt"
  }
 ]
