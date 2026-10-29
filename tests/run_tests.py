@@ -1076,14 +1076,16 @@ async def level2_und_3_regeln(g):
     """Level 2 bis 6: nur blaue/pinke Münzen, keine Münze in Stein/Tür/bewegtem Teil, Haken höchstens 5 Kästchen,
     Ziel ganz rechts, Start links; ab Level 4 ein eigenes Thema, ab Level 5 gleich viele blaue wie pinke Münzen
     (Level 2–4 hat der Nutzer selbst gestaltet)."""
-    namen = [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text())
-             if not L.get('versteckt') and L['datei'] != 'dschungel/01-dschungel.json']
+    namen = [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
+    namen = [t for n in namen for t in (ABS.lies(n)['teile'] if ABS.ist_abschnitt(ABS.lies(n)) else [n])]   # Dschungel-Neu: Abschnitte -> ihre Teile
+    namen = [n for n in namen if n != 'dschungel/01-dschungel.json']
     assert 'ruinen/02-mondnacht.json' in namen, 'Level 4 fehlt in levels.json'
     for name in namen:
         lv = json.loads((ROOT / 'levels' / name).read_text())
+        kurz = lv['goal']['x'] < 200 * 40   # Dschungel-Neu: kurze Rätsel-Teile (weniger Münzen, Ziel nah)
         farben = {c['color'] for c in lv['coins']}
         assert farben <= {'blue', 'pink'}, f"{name}: andere Münzfarben {farben}"
-        assert len(lv['coins']) >= 40, f"{name}: zu wenige Münzen"
+        assert kurz or len(lv['coins']) >= 40, f"{name}: zu wenige Münzen"
         feste = [s for s in lv['solids'] if s.get('type') != 'fake'] + lv['doors'] + lv['movingPlatforms']
         for c in lv['coins']:
             for s in feste:
@@ -1092,7 +1094,7 @@ async def level2_und_3_regeln(g):
                 assert not (x0 < c['x'] < x0 + w and y0 < c['y'] < y0 + h), f"{name}: Münze im Stein {c}"
         for hk in lv['hooks']:
             assert hk['radius'] <= 5 * 40, f"{name}: Haken zu groß {hk}"
-        assert lv['goal']['x'] > 400 * 40 and lv['startM']['x'] < 10 * 40, f"{name}: Start/Ziel falsch"
+        assert (kurz or lv['goal']['x'] > 400 * 40) and lv['startM']['x'] < 12 * 40, f"{name}: Start/Ziel falsch"
         if name not in ('dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json'):   # eigenes Thema – oder (Ausbau 7) Welt + Tageszeit
             assert lv.get('theme') in ('nacht', 'hoehle', 'vulkan') or (lv.get('welt') and lv.get('tageszeit')), f"{name}: Thema {lv.get('theme')}"
         if name not in ('dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json', 'ruinen/02-mondnacht.json'):   # Level 2–4 vom Nutzer gestaltet: eigene Münzverteilung
@@ -1174,16 +1176,7 @@ async def level7_lianenschlucht(g):
     # --- Etappe 3 ---
     def pilz(jx=410, br=10, cx_=414):
         return [k_lauf(jx), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': br}, {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(cx_)} - 6'}, 'until': 'P.vy < -14', 'frames': 100}]
-    # 9) Pilz-Kreuzung: Schweinchen Pilz + Segeln zur unteren Landung, Affe Pilz + zwei Haken auf den oberen Sims
-    r = await koop(g, f=kat(405, 14), m=kat(400, 14), plans={'f': pilz() + [{'hold': ['right', 'jump'], 'frames': 10}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 500}]}, maxFrames=1500)
-    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 431 and k_pos(r, 'f')[1] == 14, 'Pilz + Segeln (Schweinchen)', r.get('pos'))
-    soll(r.get('top', {}).get('f', 0) > 6.2, 'Schweinchen kommt nicht auf den oberen Sims', r.get('top'))
-    plan = pilz() + [{'hold': ['right'], 'hookWhen': 'P.vy > -6', 'until': 'P.hookAttached', 'frames': 120},
-                     {'swing': True, 'pull': 0, 'release': 'P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0'},
-                     {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
-                     {'swing': True, 'pull': 60, 'release': f'P.y < {ky(5)} + 4 && P.vx > 0.3 && f > 10', 'frames': 400}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
-    r = await koop(g, m=kat(405, 14), f=kat(400, 14), plans={'m': plan}, maxFrames=2000)
-    soll(k_pos(r, 'm') and k_pos(r, 'm')[1] == 5 and k_pos(r, 'm')[0] >= 431, 'Pilz + zwei Haken (Affe)', r.get('pos'))
+    # 9) Pilz-Kreuzung -> Dschungel-Neu „Kreuzung 414“ (Test dschungel_neu_stellen_a1)
     # 10) Fahrende Haken: Schweinchen segelt vom Turm zu Hebel 8; der Affe nimmt die fahrenden Haken (nur mit Hebel 8)
     r = await koop(g, f=kat(480, 4), m=kat(478, 4), plans={'f': k_segeln(482, 1)}, maxFrames=2500)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 507.5 and k_pos(r, 'f')[1] == 14, 'Turm -> Ufer (Schweinchen)', r.get('pos'))
@@ -1195,11 +1188,7 @@ async def level7_lianenschlucht(g):
     soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 507.5 and k_pos(r, 'm')[1] == 14, 'fahrende Haken mit Hebel 8 (Affe)', r.get('pos'))
     r = await koop(g, m=kat(480, 4), f=kat(513, 14), plans={'m': plan}, maxFrames=2500)
     soll(not (k_pos(r, 'm') and k_pos(r, 'm')[0] >= 507.5), 'ohne Hebel 8 kommt der Affe nicht rüber', r.get('pos'))
-    # 11) Pilz-Treppe (beide)
-    for who, other in (('m', 'f'), ('f', 'm')):
-        plan = [k_lauf(536), {'aim': [kx(t) for t in (546, 553, 560, 567)], 'jumps': [kx(540)], 'until': f'P.grounded && P.y <= {ky(7)} + 2', 'frames': 900}]
-        r = await koop(g, **{who: kat(536, 14), other: kat(530, 14)}, plans={who: plan}, maxFrames=1500)
-        soll(r.get('done'), f'Pilz-Treppe {who}', r.get('pos'))
+    # 11) Pilz-Treppe -> Dschungel-Neu „Säulen-Treppe 546“ (Test dschungel_neu_stellen_a1)
     if await g.ev("goal.x") < 780 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     # 12) Lianen-Staffel: Schweinchen oben (Hebel 9/11, Lücken segeln), Affe unten an Haken (Hebel 10/12 auf Säulen)
@@ -1230,13 +1219,7 @@ async def level7_lianenschlucht(g):
     soll(await affe((620, 9), [9], (637, 641, 9), 2, RA, (0, 15, 30)), 'Säule A -> Säule B mit Tür 9 offen (Affe)')
     soll(not await affe((620, 9), [], (637, 641, 9), 2, (R1, R2, R3, R4)), 'ohne Tür 9 kommt der Affe nicht zur Säule B')
     soll(await affe((638, 9), [9, 11], (663, 680, 14), 2, (R1, R2)), 'Säule B -> Ufer mit Tür 11 offen (Affe)')
-    # 13) Finale: zwei Pilze auf die Äste (beide), letzte Schlucht: Schweinchen segelt, Affe zwei Haken
-    for who, other in (('m', 'f'), ('f', 'm')):
-        plan = [k_lauf(689), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(692)} - 6'}, 'until': 'P.vy < -14', 'frames': 100},
-                {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(699), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6},
-                {'holdIf': {'left': 'P.vx > 0.5', 'right': f'P.x < {kx(702)} - 6'}, 'until': 'P.vy < -14', 'frames': 100}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
-        r = await koop(g, **{who: kat(684, 14), other: kat(680, 14)}, plans={who: plan}, maxFrames=2000)
-        soll(k_pos(r, who) and k_pos(r, who)[1] == 4, f'Pilze auf die Äste {who}', r.get('pos'))
+    # 13) Finale: die Pilze auf die Äste -> Dschungel-Neu „Puste-Aufzüge 692“ (Test dschungel_neu_stellen_a1)
     # Umbau: letzte Schlucht 712–731 (Sims endet bei 711, Landung ab 732), Affe drei Haken, Schweinchen Schirm (+ Dash)
     ok = False
     for hold in (1, 6, 12):
@@ -3571,11 +3554,7 @@ async def dschungel5_dornenpfad(g):
             r = await koop(g, m=kat(56, 15), f=kat(54, 15), plans={'m': kette(60, 4, rel) + [k_lauf(93)]}, maxFrames=4000)
             if r.get('done') and r['pos']['m'][0] >= 92: ok.append(rel[:14])
         soll(ok, 'E1 Affe an vier Haken über das Dornenfeld', (ok, info(r)))
-        pilzflug = [k_lauf(57, 0), {'frames': 12}, {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(61)} - 6', 'left': f'P.x > {kx(61)} + 6'}, 'until': 'P.vy < -14', 'frames': 100}, {'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}, k_lauf(93)]
-        r = await koop(g, f=kat(54, 15), m=kat(92, 15), plans={'f': pilzflug}, maxFrames=4000)
-        soll(r.get('done') and r['pos']['f'][0] >= 92, 'E1 Schwein: Pilz, Aufwind, über das Dornenfeld', info(r))
-        r = await koop(g, f=kat(93, 15), m=kat(91, 15), plans={'f': [k_lauf(96, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(97, 98, 5) + [{'hold': ['right'], 'until': f'P.x >= {kx(100)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 300}] + am(102)}, maxFrames=4000)
-        soll(r.get('done') and await g.ev('!!linkOn[1]'), 'E1 Schwein: Aufwind -> Sims -> Hebel 1', info(r))
+        # Schwein über das Dornenfeld und Hebel 1 auf dem Sims -> Dschungel-Neu „Puste-Insel 78“, „Hebel-Sims 100“ (dschungel_neu_stellen_a2)
         r = await koop(g, m=kat(93, 15), f=kat(91, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
         soll(r['pos']['m'][0] < 110, 'E1 ohne Hebel 1 hält Tür 1', info(r))
         ok = None
@@ -3677,18 +3656,9 @@ async def dschungel5_dornenpfad(g):
             r = await koop(g, m=kat(444, 15), f=kat(442, 15), plans={'m': [{'frames': wait + 1}, k_lauf(475)]}, maxFrames=2000)
             if r.get('done'): n += 1
         soll(n <= 4, 'E3 Stachel-Pendel stur durchlaufen klappt selten', f'{n}/10')
-        # Schleuse
-        ok = []
-        for rel in RELS + (('P.x > P.anchor.x + 80 && P.vy < 0', RELS[0]),):   # Haken aufgeräumt (zwei Haken, 9 Spalten auseinander): am ersten Schwung holen
-            m = [{'wait': '!!linkOn[7]'}] + kette(482, 2, rel) + am(498) + [{'wait': f'Q.x >= {kx(504)}'}, k_lauf(504), {'until': 'P.grounded', 'frames': 100}, k_lauf(511)]
-            f = [k_lauf(477, -6), {'frames': 10}, {'wait': '!!linkOn[8]'}, k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}, k_lauf(509)]
-            r = await koop(g, m=kat(476, 15), f=kat(474, 15), plans={'m': m, 'f': f}, maxFrames=6000)
-            if r.get('done') and r['pos']['m'][0] >= 510 and r['pos']['f'][0] >= 508: ok.append(str(rel)[:14])
-        soll(ok, 'E3 Druckplatten-Schleuse: Affe über Haken zu Hebel 8, Schwein im Aufwind hinterher', (ok, info(r)))
+        # Schleuse -> Dschungel-Neu „Druckplatten-Schleuse 479“ (Windrad-Treppe, dschungel_neu_stellen_a2)
         r = await koop(g, m=kat(480, 15), f=kat(470, 15), plans={'m': [{'hold': ['right'], 'frames': 150}]}, maxFrames=1000)
         soll(r['pos']['m'][0] < 482, 'E3 ohne Platte 7 hält Tür 7', info(r))
-        r = await koop(g, f=kat(476, 15), m=kat(470, 15), plans={'f': [k_lauf(478, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(479, 480, 2) + [{'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]}, maxFrames=3000)
-        soll(r.get('pos', {}).get('f', [999])[0] < 482, 'E3 ohne Hebel 8 bleibt der Schacht zu', info(r))
         # Pilz-Flucht (Umbau: Wand 5,8 statt 5,0 – nur mit Dash vom Bröckel-Stein aufs feste Land zu schaffen)
         for delay in (0, 10):
             pl = _d5_e3(True)
@@ -3699,11 +3669,11 @@ async def dschungel5_dornenpfad(g):
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
-        m = [k_lauf(606, 0), {'until': f'P.x > {kx(613)}', 'frames': 200}] + am(617) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}, k_lauf(632, -10)] + sprung_zu(kx(635)) + sprung_zu(kx(639)) + sprung_zu(kx(641)) + am(642) + \
+        m = k_pusten_hoch(610, f'Q.grounded && Q.y < {ky(8)}', 10) + [{'hold': ['left'], 'until': f'P.x > {kx(612)}', 'frames': 400}] + am(617) + [{'wait': '!!linkOn[11]', 'frames': 3000}, {'frames': 20}, k_lauf(632, -10)] + sprung_zu(kx(635)) + sprung_zu(kx(639)) + sprung_zu(kx(641)) + am(642) + \
             [{'wait': '!!linkOn[13]', 'frames': 3000}, {'frames': 20}, k_lauf(657, -10)] + sprung_zu(kx(661)) + sprung_zu(kx(665)) + [k_lauf(667)]
-        f = [k_lauf(609, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 6}] + wind_hoch(610, 611, 3) + [{'hold': ['right'], 'until': f'P.x >= {kx(614)}', 'frames': 200}, {'until': 'P.grounded', 'frames': 300},
+        f = [k_hin(607)] + k_puste_flug(614, 616, 6) + [   # Dschungel-Neu: Affe pustet statt Aufwind 610
              {'wait': '!!linkOn[10]', 'frames': 3000}, {'frames': 20}] + glide_to(620, kx(629)) + am(629) + [{'wait': '!!linkOn[12]', 'frames': 3000}, {'frames': 20}] + glide_to(645, kx(654)) + am(654) + [k_lauf(666)]
-        r = await koop(g, m=kat(604, 15), f=kat(602, 15), plans={'m': m, 'f': f}, maxFrames=8000)
+        r = await koop(g, m=kat(608, 15), f=kat(603, 15), plans={'m': m, 'f': f}, maxFrames=8000)
         soll(r.get('done') and r['pos']['m'][0] >= 665 and r['pos']['f'][0] >= 665, 'E4 Zwei-Gänge-Staffel (beide zusammen)', info(r))
         r = await koop(g, f=kat(603, 15), m=kat(601, 15), plans={'f': [k_lauf(616)]}, maxFrames=800)
         soll(r['pos']['f'][0] < 612, 'E4 Schwein kommt nicht in den unteren Gang', info(r))
@@ -3813,26 +3783,14 @@ async def dschungel6_wipfelsturm(g):
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
     if True:
-        ok = []
-        for rel in RELS:
-            for warte in (0, 40, 80):
-                pl = [{'frames': warte + 1}] + kette(208, 4, rel) + [k_lauf(243)]
-                r = await koop(g, m=kat(206, 15), f=kat(204, 15), plans={'m': pl}, maxFrames=4000)
-                if r.get('done') and r['pos']['m'][0] >= 242: ok.append((rel[:14], warte))
-        soll(ok, 'E2 Affe an wippenden Haken', (ok, info(r)))
-        ok = None
-        for hold in (6, 10, 14):
-            r = await koop(g, f=kat(206, 15), m=kat(244, 15), plans={'f': glide_to(209, kx(243), hold) + [k_lauf(244)]}, maxFrames=4000)
-            if r.get('done') and r['pos']['f'][0] >= 243: ok = hold; break
-        soll(ok, 'E2 Schwein segelt von Aufwind zu Aufwind', (ok, info(r)))
+        # wippende Haken / Aufwinde -> Dschungel-Neu „Puste-Insel 226“ (dschungel_neu_stellen_a2)
         m = [{'wait': '!!linkOn[5]', 'frames': 3000}, {'frames': 20}, k_lauf(281, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, k_lauf(298, -14), {'use': True, 'frames': 2}, k_lauf(301), {'until': 'P.grounded', 'frames': 200}, {'wait': f'Q.x >= {kx(299)}', 'frames': 2000}, k_lauf(305)]
         f = [k_lauf(256, 0), {'until': f'P.y < {ky(8)}', 'frames': 200}, k_lauf(276, -14), {'use': True, 'frames': 2}, k_lauf(278), {'until': 'P.grounded', 'frames': 200}, {'wait': '!!linkOn[6]', 'frames': 3000}, {'frames': 20}, k_lauf(300)]
         r = await koop(g, m=kat(253, 15), f=kat(252, 15), plans={'m': m, 'f': f}, maxFrames=6000)
         soll(r.get('done') and r['pos']['m'][0] >= 304 and r['pos']['f'][0] >= 299, 'E2 Tor-Staffel (pinkes Tor -> Hebel 5, blaues Tor -> Hebel 6)', info(r))
         r = await koop(g, m=kat(253, 15), f=kat(250, 15), plans={'m': [k_lauf(267)]}, maxFrames=600)
         soll(r['pos']['m'][1] == 15 and r['pos']['m'][0] < 268, 'E2 Affe nimmt nicht das pinke Tor, Tür 5 hält', info(r))
-        turm = lambda w: [{'aim': [kx(308), kx(313), kx(318), kx(323), kx(330)], 'jumps': [kx(305)], 'until': f'P.grounded && P.y <= {ky(3)} + 2', 'frames': 1200}, k_lauf(332)]
-        await beide('E2 Pilz-Turm über die Dornen', 300, turm, 331, delay=40)
+        # Pilz-Turm -> Dschungel-Neu „Puste-Turm 308“ (dschungel_neu_stellen_a2)
         ab = lambda w: [k_lauf(344, -4)] + sprung_zu(kx(347) + 20) + sprung_zu(kx(351) + 20) + sprung_zu(kx(355) + 20) + sprung_zu(kx(359) + 20) + sprung_zu(kx(363) + 20) + sprung_zu(kx(370)) + [k_lauf(375)]
         for delay in (5, 15):
             r = await koop(g, m=kat(340, 3), f=kat(338, 3), plans={'m': ab('m'), 'f': [{'frames': delay}] + ab('f')}, maxFrames=3000)
@@ -3848,8 +3806,7 @@ async def dschungel6_wipfelsturm(g):
             r = await koop(g, m=kat(407, 15), f=kat(446, 15), plans={'m': pl}, maxFrames=3000)
             if r.get('done') and r['pos']['m'][0] >= 445: ok.append(rel[:14])
         soll(ok, 'E3 Hohes Luft-Tor: Affe an drei Haken', (ok, info(r)))
-        r = await koop(g, f=kat(407, 15), m=kat(446, 15), plans={'f': [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(447)}'}, 'until': 'P.grounded', 'frames': 900}, k_lauf(446)]}, maxFrames=3000)
-        soll(r.get('done') and r['pos']['f'][0] >= 445, 'E3 Hohes Luft-Tor: Schwein segelt mit Aufwind', info(r))
+        # Schwein über das hohe Luft-Tor -> Dschungel-Neu „Hohes Luft-Tor 431“ (Puste-Pfeiler, dschungel_neu_stellen_a2)
         for who in ('m', 'f'):
             n = 0
             for wait in range(0, 120, 20):
@@ -7380,40 +7337,9 @@ async def muenz_klassen_level(g):
 sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
 import plaene as NB   # Bot-Pläne der Nacht-Bausteine (tests/bausteine/plaene.py)
 
-@test
-async def dschungel1_ende_ohne_dash_hoch(g):
-    """Dash nur waagerecht (Nutzerwunsch), Dschungel 1 (Nutzer-Level) vor dem Ziel: vom Pilz 776 über die Grube und mit
-    einem seitlichen Dash durch die Durchbruch-Wand 790 – der Affe über den neuen Haken 784 (früher Dash schräg nach oben),
-    das Schweinchen mit Schirm + Dash. Beide Figuren kommen hinüber."""
-    await koop_level(g, 'dschungel/01-dschungel.json')
-    durch = lambda dx: [{'hold': ['right'], 'until': f'P.x > {kx(dx) - 20} || P.grounded', 'frames': 200},
-                        {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right'], 'until': 'P.grounded && !P.dash', 'frames': 300}]
-    affe = lambda rel, dx: kombi_pilz(776) + [{'hold': ['right'], 'hookWhen': 'P.vy > -8', 'until': 'P.hookAttached || P.grounded', 'frames': 150},
-                                               {'swing': True, 'release': rel, 'frames': 600}] + durch(dx)
-    ok = []
-    for rel, dx in [('P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 787), ('P.x > P.anchor.x + 30 && P.vx > 1', 787), ('P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', 788)]:
-        r = await koop(g, m=kat(773, 8), f=kat(771, 8), plans={'m': affe(rel, dx)}, maxFrames=3000)
-        if r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 791: ok.append('m'); break
-    for vy in (-1, 2, 4):
-        pl = kombi_pilz(776) + [{'hold': ['right', 'glide'], 'until': f'P.vy > {vy}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(787)} - 20 || P.grounded', 'frames': 300},
-                                {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 300}]
-        r = await koop(g, f=kat(773, 8), m=kat(771, 8), plans={'f': pl}, maxFrames=3000)
-        if r.get('done') and not r.get('dead') and r['pos']['f'][0] >= 791: ok.append('f'); break
-    assert ok == ['m', 'f'], (ok, r.get('pos'), r.get('dead'))
+# (dschungel1_ende_ohne_dash_hoch: Pilz-Stelle gibt es nicht mehr -> Dschungel-Neu „Trampolin-Ende 776“ in dschungel_neu_stellen_a1)
 
-@test
-async def lianenschlucht_pilz180_weiter(g):
-    """Dash nur waagerecht: hinter der Pilz-Grube 180 (Turm 190–193 abgesenkt) geht es oben weiter – der Block über der
-    Haftdecke (194–209) ist nur noch eine Reihe dick (Stufe 1). Beide Figuren: Pilz-Grube, dann bis Spalte 212."""
-    await koop_level(g, 'dschungel/03-lianenschlucht.json')
-    pl = kombi_pilz_grube(180, 190, haken=False)
-    for wer in 'mf':
-        anders = 'f' if wer == 'm' else 'm'
-        ok = False
-        for plan in [pl[wer]] + pl.get(wer + '_alt', []):
-            r = await koop(g, **{wer: kat(175, 14), anders: kat(174, 14)}, plans={wer: plan + [k_lauf(193, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 8}, k_lauf(212)]}, maxFrames=4000)
-            if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= 211: ok = True; break
-        assert ok, (wer, r.get('pos'), r.get('dead'))
+# (lianenschlucht_pilz180_weiter: Pilz-Stelle gibt es nicht mehr -> Dschungel-Neu „Windrad-Treppe 180“ in dschungel_neu_stellen_a1)
 
 @test
 async def glutpfad_mulde_nach_durchbruch(g):
@@ -7567,8 +7493,8 @@ async def editor_rundreise_alle_level(g):
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
-        liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert len(liste) == 25, liste   # Ausbau 7: Level 7 und 8 (Dschungel), 9–11 (Ruinen), 12–16 (Höhle), 17–22 (Vulkan)
+        liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if (not L.get('versteckt') and not L.get('abschnitt')) or L.get('teilVon')]
+        assert len(liste) == 27, liste   # Dschungel-Neu: statt der 2 Abschnitte ihre 8 Teile (Abschnitt-Dateien haben kein Gelände)
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -7580,7 +7506,7 @@ async def editor_rundreise_alle_level(g):
             META = ('welt', 'tageszeit', 'wetter', 'look')   # Level-Info (Ausbau 2) – kommt im Export dazu
             diff = [k for k in set(out) | set(erwartet) if not k.startswith('_') and k not in META and level_teil(k, out.get(k)) != level_teil(k, erwartet.get(k))]
             assert not diff, f"{L['datei']}: Export weicht ab bei {diff}"
-            welt = next(w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten'] if L['datei'] in w['level'])
+            welt = next(w['id'] for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten'] if L.get('teilVon', L['datei']) in w['level'])
             if erwartet.get('welt'):   # neue Level (Ausbau 7): Welt/Tageszeit/Wetter aus der Datei
                 # alle vier Angaben wie in der Datei (auch ein Look, z. B. Level 1 nach dem Speichern aus dem Editor)
                 assert [out.get(k) for k in META] == [erwartet.get(k) for k in META] and out.get('welt') == welt, \
@@ -8194,7 +8120,7 @@ async def weltkarte_und_navigation(g):
         assert [i['name'] for i in isl] == ['Dschungel', 'Ruinen', 'Höhle', 'Wasser', 'Vulkan'], isl
         assert [i['lock'] for i in isl] == [False, True, True, True, True] and isl[3]['soon'] and isl[3]['info'] == 'Bald', isl
         nl = {w['id']: len(w['level']) for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']}   # 6er-Welten: Anzahl aus worlds.json
-        assert isl[0]['info'] == f"0 / {nl['dschungel']} Level" and isl[0]['sel'] and isl[0]['boss'], isl
+        assert isl[0]['info'] == f"0 / {nl['dschungel']} Level" and isl[0]['sel'] and not isl[0]['boss'] and isl[1]['boss'], isl   # Dschungel-Neu: Dschungel ohne Boss
         assert await g.ev("document.querySelectorAll('#sm-wm-path path').length") == 1, 'keine Pfade'
         # gesperrte Welt: Springen öffnet nichts
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(150)
@@ -8205,12 +8131,12 @@ async def weltkarte_und_navigation(g):
         for _ in range(2): await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(120)
         assert (await wk_inseln(g))[3]['sel']; await p.keyboard.press('Enter'); await p.wait_for_timeout(400)
         assert await sm_screen(g) == 'sm-s-map', '„Bald“-Welt lässt sich öffnen'
-        # Dschungel öffnen -> Welt-Seite mit 2 Leveln + Boss-Karte
+        # Dschungel öffnen -> Welt-Seite mit 2 Abschnitten (Dschungel-Neu: ohne Boss-Karte)
         for _ in range(3): await p.keyboard.press('ArrowLeft'); await p.wait_for_timeout(120)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await sm_screen(g) == 'sm-s-levels'
         k = await g.ev("({t: document.getElementById('sm-l-title').textContent, n: [...document.querySelectorAll('#sm-cards .lc')].map(b => b.classList.contains('boss')), c: document.getElementById('sm-l-count').textContent})")
-        assert k['t'] == 'Dschungel' and k['n'] == [False] * nl['dschungel'] + [True] and f"0 / {nl['dschungel']}" in k['c'], k
+        assert k['t'] == 'Dschungel' and k['n'] == [False] * nl['dschungel'] and f"0 / {nl['dschungel']}" in k['c'], k   # Dschungel-Neu: keine Boss-Karte
         assert await p.is_visible('#sm-l-pack') and await p.is_visible('#sm-l-coll'), 'Packages/Umkleide fehlen auf der Welt-Seite'
         # Esc -> Weltkarte (Dschungel gewählt), Esc -> Hauptmenü
         await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
@@ -9458,7 +9384,7 @@ async def kombi_pruefung(g):
         assert re.search(r'\b' + n + r'\s*=', phys), f'Richtwert {n} fehlt in js/02-physik-werte.js'
     assert await g.ev("KAMIN_BEQUEM_MIN === 3 && KAMIN_BEQUEM_MAX === 5 && KAMIN_MAX === 8"), 'Richtwerte im Spiel geladen'
     res = KP.pruefe_alle()
-    assert len(res) >= 26, f'zu wenige Level geprüft: {len(res)}'
+    assert len(res) >= 25, f'zu wenige Level geprüft: {len(res)}'   # Dschungel-Neu: Dschungel-Boss im Archiv
     neu = [f"{r['level']} [{b['regel']}] {b['spalte']}: {b['text']}" for r in res for b in r['befunde'] if not b['ausnahme']]
     assert not neu, 'neue Befunde (beheben oder begründet in tests/kombi_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
     alle = [(r['level'], b['regel'], b['spalte']) for r in res for b in r['befunde']]
@@ -9903,27 +9829,7 @@ def _d3_pilz124():
             'm_ohne': kombi_pilz(124) + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}],
             'f_ohne': kombi_pilz(124) + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 400}]}
 KOMBI_STELLEN_BOT = [
-    ('dschungel/01-dschungel.json', 'Pilz-Grube auf dem Sims (233)', kat(231, 11), kat(230, 11), lambda: kombi_pilz_grube(233, 243, haken=False), {'m': (243, 7), 'f': (243, 7)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Grube am Start (23)', kat(21, 14), kat(20, 14), lambda: kombi_pilz_grube(23, 33, haken=False), {'m': (33, 10), 'f': (33, 10)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Grube (209)', kat(207, 13), kat(206, 13), lambda: kombi_pilz_grube(209, 219, haken=False), {'m': (219, 9), 'f': (219, 9)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Grube (443)', kat(441, 14), kat(440, 14), lambda: kombi_pilz_grube(443, 453, haken=False), {'m': (453, 10), 'f': (453, 10)}),
-    ('dschungel/02-baumkronen.json', 'Pilz-Grube (572)', kat(570, 14), kat(568, 14), lambda: kombi_pilz_grube(572, 582, haken=False), {'m': (582, 10), 'f': (582, 10)}),
-    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (681)', kat(680, 6), kat(682, 6), lambda: kombi_pilz_grube(681, 689, haken=False), {'m': (689, 2), 'f': (689, 2)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (70)', kat(65, 14), kat(64, 14), lambda: kombi_pilz_grube(70, 80, haken=False), {'m': (80, 10), 'f': (80, 10)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz + Haken-Kette / Pilz + Aufwind (124)', kat(120, 12), kat(119, 12), lambda: _d3_pilz124(), {'m': (140, 3), 'f': (140, 3)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (180)', kat(175, 14), kat(174, 14), lambda: kombi_pilz_grube(180, 190, haken=False), {'m': (190, 10), 'f': (190, 10)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (360)', kat(355, 14), kat(354, 14), lambda: kombi_pilz_grube(360, 370, haken=False), {'m': (370, 10), 'f': (370, 10)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (390)', kat(381, 14), kat(380, 14), lambda: kombi_pilz_grube(386, 400, probe=True), {'m': (400, 10), 'f': (400, 10)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (740)', kat(735, 8), kat(734, 8), lambda: kombi_pilz_grube(740, 750, haken=False), {'m': (750, 4), 'f': (750, 4)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (760)', kat(755, 8), kat(754, 8), lambda: kombi_pilz_grube(760, 770, haken=False), {'m': (770, 4), 'f': (770, 4)}),
-    ('dschungel/03-lianenschlucht.json', 'Pilz-Stachelgrube (780)', kat(775, 8), kat(774, 8), lambda: kombi_pilz_grube(780, 790, haken=False), {'m': (790, 4), 'f': (790, 4)}),
-    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (125)', kat(116, 14), kat(115, 14), lambda: kombi_pilz_grube(121, 135, probe=True), {'m': (135, 10), 'f': (135, 10)}),
-    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (164)', kat(162, 14), kat(161, 14), lambda: kombi_pilz_grube(164, 172, haken=False), {'m': (172, 9), 'f': (172, 9)}),
-    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (473)', kat(464, 14), kat(463, 14), lambda: kombi_pilz_grube(469, 483, probe=True), {'m': (483, 10), 'f': (483, 10)}),
-    ('dschungel/04-gluehwald.json', 'Pilz-Stachelgrube (668)', kat(666, 6), kat(664, 6), lambda: kombi_pilz_grube(668, 676, haken=False), {'m': (676, 1), 'f': (676, 1)}),
-    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (170)', kat(161, 15), kat(160, 15), lambda: kombi_pilz_grube(166, 180, probe=True), {'m': (180, 11), 'f': (180, 11)}),
-    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (190)', kat(186, 15), kat(185, 15), lambda: kombi_pilz_grube(190, 200, haken=False), {'m': (200, 11), 'f': (200, 11)}),
-    ('dschungel/06-wipfelsturm.json', 'Pilz-Stachelgrube (392)', kat(383, 15), kat(382, 15), lambda: kombi_pilz_grube(388, 402, probe=True), {'m': (402, 11), 'f': (402, 11)}),
+    # Dschungel-Neu: die Pilz-Gruben des Dschungels sind umgebaut -> Test dschungel_neu_stellen_a1/_a2 (mit Gegenproben)
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (168)', kat(166, 15), kat(165, 15), lambda: kombi_flammen_kamin(168, 16, hoch=3, weit=8, versatz_f=0), {'m': (190, 6), 'f': (189, 6)}),
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (295)', kat(293, 15), kat(292, 15), lambda: kombi_flammen_kamin(295, 16, hoch=3, weit=8, versatz=40, versatz_f=0, rel='P.x > P.anchor.x + P.ropeLen*0.4 && P.vy < 0'), {'m': (317, 6), 'f': (316, 6)}),   # Liane 2: andere Flammen-Phase, früher loslassen
     ('ruinen/04-sonnentempel.json', 'Flammen-Kamin (584)', kat(582, 15), kat(581, 15), lambda: kombi_flammen_kamin(584, 16, hoch=3, weit=8, versatz_f=0), {'m': (606, 6), 'f': (605, 6)}),
@@ -10144,7 +10050,8 @@ async def jagden_vulkan(g):
 @test
 async def kombi_stellen_dschungel(g):
     """Kombi-Nachschärfen, Welt Dschungel: jede eingebaute Kombi-Stelle (KOMBI_STELLEN_BOT) mit dem Koop-Bot – mit Kombi
-    geschafft, ohne Kombi gescheitert."""
+    geschafft, ohne Kombi gescheitert. Dschungel-Neu: die Pilz-Gruben sind umgebaut (dschungel_neu_stellen_a1/_a2), hier
+    bleiben die Abkürzungs-Proben."""
     await kombi_stellen_pruefen(g, 'dschungel')
 
 @test
@@ -10306,7 +10213,7 @@ async def bildregel_pruefung(g):
     assert await g.ev("typeof BILD_MAX_SPALTEN") == 'number' and await g.ev("BILD_MAX_SPALTEN * 40 <= FRONT_MAX * VW - CAM_BACK_MIN"), \
         'BILD_MAX_SPALTEN passt nicht mehr zur Kamera (beide sicher im Bild bis FRONT_MAX·VW − CAM_BACK_MIN)'
     res = BR.pruefe_alle()
-    assert len(res) >= 26, f'zu wenige Level geprüft: {len(res)}'
+    assert len(res) >= 25, f'zu wenige Level geprüft: {len(res)}'   # Dschungel-Neu: Dschungel-Boss im Archiv
     neu = [f"{r['level']} [{v['regel']}] Spalte {v['spalte']}: {v['text']}" for r in res for v in r['befunde'] if not v['ausnahme']]
     assert not neu, 'neue Verstöße (beheben oder begründet in tests/bildregel_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
     alle = [(r['level'], v['regel'], v['spalte']) for r in res for v in r['befunde']]
@@ -12111,6 +12018,108 @@ async def dschungel_neu_stellen_a2(g):
     """Dschungel-Neu, Abschnitt 2 (Teile 04–06): wie dschungel_neu_stellen_a1."""
     await dn_stellen_pruefen(g, ABS.lies(A2)['teile'])
 
+@test
+async def szene_nach_abschnitt(g):
+    """Dschungel-Neu: nach Abschnitt 1 läuft vor dem Statistik-Bildschirm die Szene „Das Glühen im Wald“ (nachSzene in der
+    Abschnitt-Datei); Esc überspringt -> Statistik. Die Geschichte kennt keinen Baron und keine Zahnräder mehr."""
+    story = (ROOT / 'story' / 'story.json').read_text(encoding='utf-8')
+    for wort in ('Krähwald', 'Zahnrad', 'Zahnräder', 'Krähe'):
+        assert wort not in story, f'{wort} steht noch in story/story.json'
+    st = json.loads(story)
+    for name in ('intro', 'abschnitt1_ende', 'meteorit_gefunden'):
+        assert st[name]['schritte'], name
+    assert ABS.lies(A1)['nachSzene'] == 'abschnitt1_ende' and ABS.lies(A2)['nachSzene'] == 'meteorit_gefunden'
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
+        await startmenue_bis_level(g)
+        assert await g.ev("levelNachSzene") == 'abschnitt1_ende'
+        await g.ev("winFinish()")
+        await p.wait_for_function("menuScreen === 'szene' && szene && szene.name === 'abschnitt1_ende'", timeout=20000)
+        await p.wait_for_timeout(400); await p.keyboard.press('Escape')
+        await p.wait_for_function("document.querySelector('#sm-s-results.active')", timeout=15000)
+    finally:
+        srv.shutdown()
+
+@test
+async def meteorit_element(g):
+    """Dschungel-Neu: Element „Meteorit“ (nur Aussehen) – Splitter/Brocken/Meteorit werden geladen und gezeichnet (ohne
+    Kollision, ohne Fehler); die Spur liegt in allen Dschungel-Teilen, wird zum Ende dichter, der große Meteorit liegt im
+    Meteoritenkrater vor dem Ziel."""
+    teile = ABS.lies(A1)['teile'] + ABS.lies(A2)['teile']
+    anzahl = [len(json.loads((ROOT / 'levels' / t).read_text(encoding='utf-8')).get('meteoriten', [])) for t in teile]
+    assert all(anzahl), dict(zip(teile, anzahl))
+    gross = [m for t in teile for m in json.loads((ROOT / 'levels' / t).read_text(encoding='utf-8')).get('meteoriten', []) if m.get('art') == 'meteorit']
+    assert len(gross) == 1, gross
+    await koop_level(g, R2)
+    info = await g.ev("({n: meteoriten.length, gross: meteoriten.filter(m => m.art === 'meteorit').map(m => [m.x, m.y]), ziel: goal.x,"
+                      " solid: solids.some(s => s.type === 'meteorit')})")
+    assert info['n'] >= 5 and info['gross'] and not info['solid'], info
+    assert 0 < info['ziel'] - info['gross'][0][0] < 12 * 40, f'Meteorit nicht vor dem Ziel: {info}'
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    await g.ev(f"p1.x = {info['gross'][0][0]}; p2.x = p1.x + 60; camPos = Math.max(0, p1.x - 400); camX = Math.round(camPos);")
+    await g.steps(20); await g.p.wait_for_timeout(300)
+    assert not fehler, fehler
+
+# ---------------------------------------------------------------- Dschungel-Neu: Logik-Rätsel (tests/bausteine/raetsel_teile.py)
+R1, R2 = 'dschungel/07-windrad-lichtung.json', 'dschungel/08-meteoritenkrater.json'
+def _r_allein_grube(rand):   # Schweinchen allein: Sprung, Schirm, Dash über die Grube
+    return [k_lauf(rand, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
+            {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]
+def _r1_loesung():
+    m = k_pusten_seite(13, 1, '!!linkOn[1]') + [{'wait': f'Q.x > {kx(32)}', 'frames': 900}, k_lauf(38)] + \
+        k_pusten_hoch(46, f'Q.grounded && Q.y < {ky(7)}') + [{'wait': '!!linkOn[2]', 'frames': 1500}] + \
+        k_pusten_seite(56, 1, '!linkOn[1]', -10) + [k_lauf(86)]
+    f = [{'wait': '!!linkOn[1]', 'frames': 900}, k_hin(43)] + k_puste_flug(48, 50, 6) + [k_lauf(52), {'until': 'P.grounded', 'frames': 200}, k_hin(53),
+         {'use': True, 'frames': 3}, {'wait': '!linkOn[1]', 'frames': 2000}, k_lauf(86)]
+    return {'m': m, 'f': f}
+def _r2_loesung(abstand=60):
+    m = k_pusten_seite(13, 1, '!!linkOn[1]') + [{'wait': f'Q.x > {kx(33)}', 'frames': 900}, k_lauf(39)] + \
+        k_pusten_seite(38, -1, '!linkOn[1]') + k_trampolin_sprung(None, False, None, abstand) + \
+        [{'until': 'P.vy > -5', 'frames': 80}, {'holdIf': {'right': f'P.x < {kx(45)}', 'left': f'P.x > {kx(46)}'}, 'until': 'P.grounded', 'frames': 200}] + _dn_stufen([(46, 49)]) + \
+        [k_lauf(52), {'until': 'P.grounded', 'frames': 200}, k_hin(53), {'use': True, 'frames': 3}] + k_pusten_seite(56, 1, '!!linkOn[3]', -10) + \
+        [{'wait': f'Q.x > {kx(57)}', 'frames': 1500}, k_lauf(92)]
+    f = [{'wait': '!!linkOn[1]', 'frames': 900}, k_lauf(36), {'wait': '!linkOn[1]', 'frames': 1500}] + k_trampolin(43, f'Q.grounded && Q.y < {ky(11)}') + \
+        [{'wait': '!!linkOn[2] && !!linkOn[3]', 'frames': 2500}, k_lauf(92)]
+    return {'m': m, 'f': f}
+# (Teil, Name, Start Affe, Start Schweinchen, Pläne, Nummern vorher an, Ziel (Spalte, Reihe) für beide | Gegenprobe (wer, Spalte, Reihe))
+RAETSEL_FAELLE = [
+    (R1, 'Lösung', kat(12, 15), kat(10, 15), [_r1_loesung()], [], ('beide', 82, 15)),
+    (R1, 'Schweinchen allein über Grube 1', kat(10, 15), kat(16, 15), [{'f': _r_allein_grube(19)}], [], ('gegen', 'f', 31, 15)),
+    (R1, 'Tunnel bei Windrad aus gesperrt (Riegel)', kat(44, 15), kat(53, 15), [{'m': [k_lauf(56)]}], [2], ('gegen', 'm', 51, 15)),
+    (R1, 'Tunnel ohne Hebel zu', kat(44, 15), kat(40, 15), [{'m': [k_lauf(56)]}], [1], ('gegen', 'm', 51, 15)),
+    (R1, 'Grube 3 bei Windrad an offen', kat(58, 15), kat(56, 15), [{'m': [k_lauf(86)], 'f': [{'frames': 30}, k_lauf(86)]}], [1, 2], ('gegen', 'm', 75, 15)),
+    (R2, 'Lösung', kat(12, 15), kat(10, 15), [_r2_loesung(a) for a in (70, 60, 50)], [], ('beide', 88, 15)),
+    (R2, 'Schweinchen allein über Grube 1', kat(10, 15), kat(16, 15), [{'f': _r_allein_grube(19)}], [], ('gegen', 'f', 31, 15)),
+    (R2, 'Affe ohne Trampolin nicht aufs Sims', kat(43, 15), kat(36, 15), [{'m': _dn_stufen([(43, 45)])}, {'m': _dn_stufen([(44, 46)], 16)}], [], ('gegen', 'm', 45, 10)),
+    (R2, 'Tunnel nur mit Hebel 2 gesperrt (Windrad 3)', kat(53, 15), kat(44, 15), [{'f': [k_lauf(56)]}], [2], ('gegen', 'f', 51, 15)),
+    (R2, 'Falle: Schweinchen über die Mauer gepustet', kat(44, 15), kat(41, 15),
+     [{'m': k_pusten_hoch(46, f'Q.grounded && Q.y < {ky(8)}') + _dn_stufen([(46, 45)]) + [k_lauf(56)], 'f': [k_hin(43)] + k_puste_flug(48, 50, 7) + [k_lauf(53)]}], [1], ('gegen', 'm', 51, 15)),   # 1 an: Brücke da, kein Sims
+]
+
+@test
+async def raetsel_dschungel_neu(g):
+    """Dschungel-Neu: die zwei Logik-Rätsel (Teil 4 der Abschnitte, tests/bausteine/raetsel_teile.py) – der Koop-Bot löst
+    sie in der richtigen Reihenfolge; Gegenproben: allein, falsche Reihenfolge, Windrad im falschen Zustand, die
+    Puste-Falle in Rätsel 2 (kein Trampolin mehr auf seiner Seite)."""
+    fehler, aktuell = [], None
+    for teil, name, ms, fs, varianten, links, ziel in RAETSEL_FAELLE:
+        if os.environ.get('STELLEN_FILTER') and os.environ['STELLEN_FILTER'] not in name: continue
+        if teil != aktuell: await koop_level(g, teil); aktuell = teil
+        ok, r = False, {}
+        for pl in varianten:
+            r = await koop(g, m=ms, f=fs, plans=pl, links=links, maxFrames=9000 if ziel[0] == 'beide' else 2500)
+            if os.environ.get('DN_DEBUG'): print('   ', teil[10:14], name, r.get('pos'), r.get('dead'), (r.get('log') or [])[-int(os.environ.get('DN_LOG', 3)):])
+            if ziel[0] == 'beide':
+                ok = r.get('done') and not r.get('dead') and all(r['pos'][w][0] >= ziel[1] - 0.6 and r['pos'][w][1] <= ziel[2] + 0.1 for w in ('m', 'f'))
+                if ok: break
+            else:
+                wer, zc, zr = ziel[1:]
+                if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= zc - 0.6 and r['pos'][wer][1] <= zr + 0.1: ok = True; break
+        if ziel[0] == 'beide' and not ok: fehler.append(f'{teil} {name}: nicht gelöst {r.get("pos")} tot={r.get("dead")} {(r.get("log") or [])[-4:]}')
+        if ziel[0] == 'gegen' and ok: fehler.append(f'{teil} {name}: Gegenprobe trotzdem geschafft {r.get("pos")}')
+    assert not fehler, fehler
+
 # ---------------------------------------------------------------- Dschungel-Neu: Abschnitte (js/15a-abschnitte.js)
 async def abschnitt_laden(g, datei):
     """Abschnitt (aus seinen Teilen zusammengesetzt, tests/abschnitt.py = js/15a-abschnitte.js) ins Spiel laden"""
@@ -12133,7 +12142,7 @@ async def abschnitt_zusammensetzen(g):
         rund = lambda o: json.loads(json.dumps(o), parse_float=lambda s: round(float(s), 3))
         for datei in dsch['level']:
             d = ABS.lies(datei)
-            assert ABS.ist_abschnitt(d) and len(d['teile']) == 3 and d.get('nachSzene'), d
+            assert ABS.ist_abschnitt(d) and len(d['teile']) == 4 and d.get('nachSzene'), d   # 3 Strecken + 1 Rätsel-Teil
             js = await p.evaluate("async f => abschnittLaden(await (await fetch('levels/' + f)).json())", datei)
             py = ABS.laden(datei)
             assert rund(js) == rund(py), f'{datei}: Spiel und tests/abschnitt.py setzen verschieden zusammen'
@@ -12151,7 +12160,7 @@ async def abschnitt_zusammensetzen(g):
             for k, t in enumerate(teile):
                 eigene = {o['link'] + 20 * k for f in ('switches', 'doors', 'plates') for o in t.get(f, []) if o.get('link')}
                 andere = {o['link'] + 20 * j for j, u in enumerate(teile) if j != k for f in ('switches', 'doors', 'plates') for o in u.get(f, []) if o.get('link')}
-                assert not (eigene & andere) and all(n <= 60 for n in eigene), (datei, k, eigene & andere)
+                assert not (eigene & andere) and all(n <= 20 * len(teile) for n in eigene), (datei, k, eigene & andere)
             await p.evaluate("d => { window.baumIntroAus = true; startLevel(d); menuScreen = null; }", js)
             st = await p.evaluate("[LEVEL_W, goal.x, p1.x, p2.x, solids.length, checkpointDefs.length]")
             assert st[0] > 2200 * 40 and st[1] > 2200 * 40 and st[2] < 400 and st[3] < 400, st

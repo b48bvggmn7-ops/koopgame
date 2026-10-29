@@ -269,6 +269,36 @@
    "regel": "Haken",
    "spalte": 404,
    "begruendung": "Ziel-Plateau: seit Dash nur waagerecht hängt hinter Haken 404 ein zweiter Haken 410 über der Plateau-Kante – man schwingt hinauf und landet auf dem Plateau (die Kante ist das Ziel); Test nacht_stellen_vulkan"
+  },
+  {
+   "level": "dschungel/03-lianenschlucht.json",
+   "regel": "Haken",
+   "spalte": 130,
+   "begruendung": "Dschungel-Neu Haken-Treppe 124: der Affe erreicht die Hakenreihe vom Schirm-Trampolin aus (nicht vom Absprung 129), Höhe bewusst so (sonst ginge es ohne Schweinchen); Bot-Test dschungel_neu_stellen_a1 „Haken-Treppe 124“."
+  },
+  {
+   "level": "dschungel/07-windrad-lichtung.json",
+   "regel": "Checkpoint",
+   "spalte": 10,
+   "begruendung": "Rätsel-Teil (Dschungel-Neu): Checkpoint direkt am Anfang des Rätsels (Teil 4 von Abschnitt 1, davor die Lianenschlucht) – ein Fehler im Rätsel soll nicht die ganze Strecke davor kosten."
+  },
+  {
+   "level": "dschungel/07-windrad-lichtung.json",
+   "regel": "Checkpoint",
+   "spalte": 84,
+   "begruendung": "Rätsel-Teil (Dschungel-Neu): das Rätsel (Windrad 1 an drei Stellen, Hebel 2, Tunnel) läuft am Stück bis zum Ziel; ein Checkpoint mitten drin läge zwischen Windrad/Hebel und dem, was sie schalten."
+  },
+  {
+   "level": "dschungel/08-meteoritenkrater.json",
+   "regel": "Checkpoint",
+   "spalte": 10,
+   "begruendung": "Rätsel-Teil (Dschungel-Neu): Checkpoint direkt am Anfang des Rätsels (Teil 4 von Abschnitt 2) – nach der Puste-Falle (Sackgasse) startet man das Rätsel hier neu."
+  },
+  {
+   "level": "dschungel/08-meteoritenkrater.json",
+   "regel": "Checkpoint",
+   "spalte": 90,
+   "begruendung": "Rätsel-Teil (Dschungel-Neu): das Rätsel (Windrad 1, Hebel 2, Windrad 3, Tunnel) läuft am Stück bis zum Meteoriten und zum Ziel."
   }
  ]
 }

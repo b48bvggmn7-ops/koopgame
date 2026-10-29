@@ -254,6 +254,19 @@ typisch/schwerste steigt von 1/2 bis 3–4/6, danach Bruno.
 - Keine Zufallstode.
 - Jede Stelle ist als komfortabel, knapp oder Grenze eingestuft (Balance-Bericht am Ende von Ausbau 7).
 
+### Dschungel-Neu: zwei Abschnitte (ersetzt die 6 Level und den Boss)
+- **Abschnitt 1 „Spur der Sternschnuppe“** (morgens): Teile 01 Dschungel, 02 Baumkronen, 03 Lianenschlucht, 07 Windrad-Lichtung
+  (Rätsel). **Abschnitt 2 „Das Herz des Meteoriten“** (nachts): 04 Glühwald, 05 Dornenpfad, 06 Wipfelsturm, 08 Meteoritenkrater
+  (Rätsel, am Ende der Meteorit als Tor). Kein Boss mehr (Bruno im Archiv).
+- **Keine Sprungpilze, keine Aufwinde.** Rollen: das Schweinchen bringt den Affen hoch (Schirm-Trampolin), der Affe das
+  Schweinchen (Pusten nach oben / zur Seite); nur der Affe dreht Windräder. Bausteine: Puste-Grube, Windrad-Treppe,
+  Puste-Insel, Puste-Pfeiler, Puste-Turm, Puste-Aufzug, Windrad-Schleuse (Liste mit Spalten: FEATURES.md, Dschungel-Neu).
+- **Geschichte:** Meteorit fällt in den Dschungel (Intro), Splitter als Spur (Element Meteorit, zum Ende hin dichter), Szene
+  nach Abschnitt 1 „Das Glühen im Wald“, nach Abschnitt 2 „Das Herz des Meteoriten“ (Tor in die nächsten Welten).
+- **Logik-Rätsel:** Windrad-Lichtung (eine Nummer schaltet drei Dinge – Brücke an, Tunnel-Riegel und Boden aus; Reihenfolge
+  entscheidet), Meteoritenkrater (Windrad zurückschalten für das Sims, Trampolin statt Pusten, sonst Sackgasse).
+- Die Abschnitte oben (Plan pro Level, Balance-Berichte) beschreiben die alten Einzel-Level; die Teile sind dieselben Strecken.
+
 ## Welt 2 – Ruinen
 
 **Thema:** Ein alter Sandstein-Tempel voller Fallen. Hier geht es um **Timing und Rhythmus**: Fallen schießen im Takt,

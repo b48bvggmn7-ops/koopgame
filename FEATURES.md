@@ -854,13 +854,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         packages_menue_design.
 ```
   - GESCHICHTE / SPIELSZENEN (Ausbau 6, js/29-story.js, Texte in story/story.json):
-      Entführer: Baron Krähwald – eine eitle Krähe mit Sonnenbrille und rotem Schal (Krähen lieben Glänzendes: er klaut
-        die Zahnräder vom Wolken-Fernrohr des Professors; als Vogel kann er den Professor einfach wegtragen; passt zu
-        „süß und cool“). Professor Uhu: kleine Eule mit Brille und Laborkittel. Jeder Boss ist ein Handlanger des Barons
-        und bewacht ein Zahnrad (5 Zahnräder, 5 Welten).
+      (Dschungel-Neu: Baron Krähwald und die Zahnräder sind raus – neue Geschichte um den Meteoriten, siehe Abschnitt
+        „Dschungel-Neu: zwei Abschnitte …“ oben.) Professor Uhu: kleine Eule mit Brille und Laborkittel.
       Intro „Die Nacht der Sternschnuppe“: Bühne mit Dschungel am Abend, Kino-Balken oben/unten, Titel, Sprechblasen mit
-        Namen (Farbe je Figur), Figuren bewegen sich (Krähe fliegt herein, klaut die Zahnräder, packt den Professor,
-        fliegt davon; Affe und Schweinchen gehen los), Geräusche (Krähe, Klau-Glitzern). Springen (Leertaste, Num 0,
+        Namen (Farbe je Figur), Figuren bewegen sich (Meteorit fällt als Feuerball, schlägt ein, leuchtet; Affe und
+        Schweinchen gehen los), Geräusche (Sternschnuppe, Einschlag, Glühen). Springen (Leertaste, Num 0,
         Enter, Controller ✕) blättert weiter, Esc / Options / ○ überspringt alles. Spiel steht still (menuScreen 'szene'),
         Anzeigen oben sind ausgeblendet, Kamera steht fest (kameraFest in 09-kamera.js).
       Läuft beim allerersten „Spielen“ (nach der Spielerwahl, vor Level 1; gemerkt in monchichi.introGesehen – auch ein
@@ -884,7 +882,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Phase von vorn (Boss an seinem Platz, volle Treffer, Schilde aus); Phasenwechsel zeigt „Checkpoint · Phase n von m“.
         R / Neustart = Kampf von Phase 1.
       Lebensbalken oben in der Mitte: Name, Untertitel, Treffer der aktuellen Phase als Segmente (Phase 3 rot), Phasen-Punkte.
-      Sieg: Boss taumelt mit Sternchen und lässt sein Zahnrad fallen; wer es berührt, startet die Sieges-Szene in der
+      Sieg: Boss taumelt mit Sternchen und lässt einen leuchtenden Meteoriten-Splitter fallen (Dschungel-Neu, früher Zahnrad); wer es berührt, startet die Sieges-Szene in der
         Arena (story/story.json, z. B. boss1_sieg), danach „Level geschafft“. Start-Szene (startSzene) nach dem Vorhang.
       Menü: Welten haben in worlds.json "boss": "<datei>". Die Boss-Karte der Welt-Seite ist gesperrt, bis alle Level der
         Welt geschafft sind („Boss freigeschaltet!“ mit Schloss-Animation), dann „Bereit“ → Spielerwahl → Vorhang „Boss“;
@@ -910,7 +908,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Wellen mit Sprung leicht zu meiden; kniffligster Teil ist Phase 3 (5-Sekunden-Fenster). Nach Feedback justierbar
         (Treffer/Tempo im Editor am Boss-Marker, Pausen/Angriffe in BOSS_TYPEN bzw. den Level-Daten).
       Story: Start-Szene „Boss: Bruno, der Kokos-Gorilla“ (Bruno, Affe, Schweinchen; das Schweinchen erklärt den Helm-Trick),
-        Sieges-Szene „Zahnrad 1 von 5“ (Baron Krähwald schimpft mit Bruno und fliegt davon). Danach öffnen die Ruinen.
+        Sieges-Szene „Bruno gibt auf“ (Dschungel-Neu: ohne Baron). Dschungel-Neu: Bruno liegt im Archiv
+        (levels/archiv/dschungel-boss-bruno.json), die Dschungel-Welt hat keinen Boss mehr.
       Test boss1_bruno.
   - WELT DSCHUNGEL (Ausbau 7; Design in WELTEN.md):
     - Welt-Look als Eintrag in der Welt-Definition: levels/worlds.json, Welt „dschungel“ hat jetzt
@@ -2155,6 +2154,50 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Schienen-Enden und an festen Teilen hält es an. Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
   schiebt sein Wind nicht. Neustart/Tod: zurück an den Anfang. Rolle: der Affe pustet, das Schweinchen fährt.
   Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).
+
+### Dschungel-Neu: zwei Abschnitte, neue Geschichte, Meteorit, Logik-Rätsel
+- **Zwei Abschnitte statt sechs Level** (js/15a-abschnitte.js, Spiegel tests/abschnitt.py): Die Dschungel-Welt hat nur noch
+  „Abschnitt 1 – Spur der Sternschnuppe“ (Teile 01 Dschungel, 02 Baumkronen, 03 Lianenschlucht, 07 Windrad-Lichtung, morgens)
+  und „Abschnitt 2 – Herz des Meteoriten“ (04 Glühwald, 05 Dornenpfad, 06 Wipfelsturm, 08 Meteoritenkrater, nachts).
+  Eine Abschnitt-Datei (levels/dschungel/abschnitt-*.json) enthält KEIN Gelände, nur die Liste der Teile; das Spiel setzt
+  sie beim Laden hintereinander (Teil k rückt um die Breite der Teile davor, Nummern um 20·k, nur Start des ersten und
+  Ziel des letzten Teils, an den Nähten keine Rand-Mauer). Im Editor bearbeitet man jeden Teil einzeln (Fenster „Levels“:
+  Teile stehen eingerückt unter ihrem Abschnitt, „Abschnitt n · Teil k“). Weltkarte/Welt-Seite: 2 Levelkarten, kein Boss
+  (worlds.json „ohneBoss“). Alte Spielstände: ein freigeschalteter/geschaffter Teil zählt für seinen Abschnitt.
+  Tests abschnitt_zusammensetzen, levelkarten_gleich_breit, welten_freischaltung.
+- **Boss raus:** Bruno (Kokos-Gorilla) liegt im Archiv (levels/archiv/dschungel-boss-bruno.json, beide Formate); die
+  Ruinen öffnen nach Abschnitt 2. Test boss1_bruno spielt ihn weiter (mit eingeschobener worlds.json).
+- **Keine Sprungpilze und keine Aufwinde mehr im Dschungel** – alle Stellen umgebaut auf die Koop-Aktionen (Bot-Test
+  dschungel_neu_stellen_a1/_a2 mit Gegenprobe „allein geht es nicht“; Umbau-Skript tests/bausteine/dschungel_neu.py):
+  Puste-Gruben (Affe pustet, Schweinchen segelt, Affe am Haken), Windrad-Treppen (Schirm-Trampolin für den Affen, er
+  pustet oben ein Windrad an -> Wechsel-Treppe fürs Schweinchen), Puste-Inseln (zweimal pusten über lange Schluchten),
+  Puste-Pfeiler (Teil 2, Teil 6 „Hohes Luft-Tor“), Puste-Turm (Teil 6: Pusten + Hebel 16 mit Wechsel-Stufen), Puste-Aufzüge
+  (Teil 3), Haftdecken-Grube mit Hebel oben (Teil 2), Druckplatten-Schleuse mit Windrad-Treppe (Teil 5), Zwei-Gänge-Staffel
+  per Pusten (Teil 5), Hebel-Sims per Pusten (Teil 5). Verfolgungen ohne Pilz: kürzere Gruben, dafür Durchbruch-Wände
+  (nur mit Dash entkommt man; Teil 5 Finale 716, Teil 6 Sturm-Jagd 714) bzw. Bröckel-Steine umgesetzt (Teil 5 Pilz-Flucht).
+  Im Editor fehlen Sprungpilz und Aufwind in der Dschungel-Empfehlung (gibt es weiter in Höhle/Vulkan).
+- **Geschichte neu** (story/story.json, js/29-story.js): Baron Krähwald und die Zahnräder sind raus. Intro „Die Nacht der
+  Sternschnuppe“: Affe, Schweinchen und Professor Uhu schauen Sternschnuppen, ein Meteorit fällt glühend in den Dschungel
+  (Feuerball, Einschlag, Leuchten) – die beiden folgen den leuchtenden Splittern. Nach Abschnitt 1 die Szene „Das Glühen im
+  Wald“ (Splitter werden größer, es pulsiert wie ein Herz), nach Abschnitt 2 „Das Herz des Meteoriten“ (der Meteorit öffnet
+  ein leuchtendes Tor, beide werden hineingezogen, „Fortsetzung folgt!“). Die Szene nach einem Abschnitt steht in dessen
+  Datei („nachSzene“) und läuft vor dem Bildschirm „Level geschafft“. Bruno-Szenen neutral (ohne Baron). Tests intro_szene,
+  szene_nach_abschnitt.
+- **Element „Meteorit“** (elemente/meteorit.js, Editor-Reiter „Marken“, im Dschungel empfohlen; nur Aussehen, keine
+  Kollision): Auswahl „Größe“ Splitter (leuchtender Kristall), Brocken (Fels mit glühenden Adern, 2 Kästchen) und der
+  Meteorit (groß, 4×3 Kästchen, pulsierender Schein, aufsteigende Funken). Die Spur wird zum Ende hin dichter (Teil 1 nur
+  am Ende ein paar Splitter, Teil 6 viele mit Brocken; Setz-Skript tests/bausteine/meteoriten_setzen.py); der Meteorit
+  liegt im Meteoritenkrater vor dem Ziel. Test meteorit_element.
+- **Logik-Rätsel** (je Abschnitt eines, als eigener Teil am Ende; tests/bausteine/raetsel_teile.py; Test raetsel_dschungel_neu):
+  - Windrad-Lichtung (Ende Abschnitt 1): Zwei Windräder mit DERSELBEN Nummer 1 schalten gleichzeitig die Brücke über
+    Grube 1 (da, wenn an), einen Riegel im Mauer-Tunnel (da, wenn aus) und den Boden über Grube 3 (da, wenn aus). Der
+    Affe pustet das Schweinchen über die hohe Mauer, es legt Hebel 2 (Tunnel-Tür) um; der Affe muss durch den Tunnel,
+    SOLANGE 1 noch an ist, und drüben das zweite Windrad ausschalten. Denkfalle: zu früh ausschalten sperrt den Tunnel.
+  - Meteoritenkrater (Ende Abschnitt 2, mit dem Meteoriten): Windrad 1 (Brücke / Sims an der Mauer / Boden Grube 3),
+    Hebel 2 (Tunnel-Tür), Windrad 3 (Riegel im Tunnel). Der Affe muss Windrad 1 nach dem Übergang WIEDER ausschalten (Brücke
+    weg, dafür das Sims), per Schirm-Trampolin aufs Sims und über die Mauer, drüben Hebel 2 und Windrad 3 – dann kommt das
+    Schweinchen durch den Tunnel. Denkfalle: wer das Schweinchen (wie im ersten Rätsel) über die Mauer pustet, hat drüben
+    kein Trampolin mehr – Neustart am Checkpoint.
 
 ## Level-Editor (editor/)
 ```

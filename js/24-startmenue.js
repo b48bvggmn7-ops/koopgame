@@ -1330,8 +1330,8 @@ S.map = {
       b.className = 'isl' + (soon ? ' soon lock' : open ? '' : ' lock') + (worldDone(w) ? ' done' : '') + (j === this.idx ? ' sel' : '') + (b.classList.contains('pre') ? ' pre' : '');
       $('b', b).textContent = w.name;
       $('small', b).textContent = soon ? 'Bald' : `${done} / ${w.idx.length} Level`;
-      $('.boss', b).innerHTML = soon ? '' : `${ICON.skull}<i>${w.boss ? (worldDone(w) ? '✓' : '') : 'bald'}</i>`;
-      $('.boss', b).title = w.boss ? 'Boss' : 'Boss – kommt bald';
+      $('.boss', b).innerHTML = soon || w.ohneBoss ? '' : `${ICON.skull}<i>${w.boss ? (worldDone(w) ? '✓' : '') : 'bald'}</i>`;
+      $('.boss', b).title = w.ohneBoss ? '' : w.boss ? 'Boss' : 'Boss – kommt bald';
       if (!open && !$('.lk', b)) b.appendChild(mk(`<span class="lk">${ICON.lock}</span>`));
       if (open) { const lk = $('.lk', b); if (lk) lk.remove(); }
     });

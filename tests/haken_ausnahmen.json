@@ -12,19 +12,19 @@
   "grund": "Sonnenkammer: Hochzieh-Haken im engen Schacht – man springt gerade hoch, zieht sich hoch (W) und steigt aufs Hebel-Sims; geschwungen wird hier nicht (für eine Schleuder ist der Schacht zu eng)"
  },
  {
-  "level": "dschungel/boss-bruno.json",
+  "level": "archiv/dschungel-boss-bruno.json",
   "spalte": 14,
   "regel": "Bahn",
   "grund": "Boss-Arena Bruno: die zwei Haken greift man direkt vom Arena-Boden (lange Seile, 10,5 Kästchen) – so ist der Kampf gebaut (Test boss_bruno: Haken vom Boden erreichbar); in der kleinen Arena geht das nicht ohne Bodennähe"
  },
  {
-  "level": "dschungel/boss-bruno.json",
+  "level": "archiv/dschungel-boss-bruno.json",
   "spalte": 23,
   "regel": "Bahn",
   "grund": "Boss-Arena Bruno: die zwei Haken greift man direkt vom Arena-Boden (lange Seile, 10,5 Kästchen) – so ist der Kampf gebaut (Test boss_bruno: Haken vom Boden erreichbar); in der kleinen Arena geht das nicht ohne Bodennähe"
  },
  {
-  "level": "dschungel/boss-bruno.json",
+  "level": "archiv/dschungel-boss-bruno.json",
   "spalte": 14,
   "regel": "Ring",
   "grund": "Boss-Arena Bruno: die zwei Haken greift man direkt vom Arena-Boden (lange Seile, 10,5 Kästchen) – so ist der Kampf gebaut (Test boss_bruno: Haken vom Boden erreichbar); in der kleinen Arena geht das nicht ohne Bodennähe"
@@ -220,5 +220,11 @@
   "spalte": 410,
   "regel": "Ring",
   "grund": "Ziel-Plateau: seit Dash nur waagerecht hängt hinter Haken 404 ein zweiter Haken 410 über der Plateau-Kante – man schwingt hinauf und landet auf dem Plateau (die Kante ist das Ziel); Test nacht_stellen_vulkan"
+ },
+ {
+  "regel": "Bahn",
+  "level": "dschungel/01-dschungel.json",
+  "spalte": 786,
+  "grund": "Dschungel-Neu Trampolin-Ende 776: der Affe kommt nur vom Schirm-Trampolin an den Haken und dasht nach dem Schwung durch die Durchbruch-Wand 790 – dass die Schwungbahn die Wand streift, ist gewollt (Bot-Test dschungel_neu_stellen_a1)."
  }
 ]

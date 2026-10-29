@@ -9,7 +9,7 @@
 //   - Berührung des Boss-Körpers oder eines Angriffs = Tod. Danach starten beide am Anfang der AKTUELLEN Phase
 //     (Checkpoint pro Phase); der Boss hat in dieser Phase wieder volle Treffer. R = ganzer Kampf von vorn.
 //   - Lebensbalken oben in der Mitte (Name, Treffer je Phase, Phasen-Punkte).
-//   - Sieg: Boss taumelt, lässt sein Zahnrad fallen; wer es einsammelt, startet die Sieges-Szene (story/story.json,
+//   - Sieg: Boss taumelt, lässt einen Meteoriten-Splitter fallen (Feld heißt weiter `zahnrad`); wer es einsammelt, startet die Sieges-Szene (story/story.json,
 //     siegSzene) – danach „Level geschafft“, der Boss zählt als besiegt und die nächste Welt öffnet (24-startmenue.js).
 // Boss-Arten (Aussehen + Angriffe) stehen in BOSS_TYPEN; die Phasen eines Levels können alles überschreiben.
 // Werte (BOSS_*) in js/02-physik-werte.js. Spiel-Zustand: bossKampf (null = kein Boss im Level).
@@ -281,9 +281,9 @@ function bossZeichnen(){
   }
   if(B.zustand === 'besiegt'){
     zeichneBruno(ctx, x, B.y + Math.min(30, B.t*0.6), B, {taumel: true, sterne: true, ohneHelm: true});
-    const Z = B.zahnrad; if(Z && !Z.aufgehoben && typeof zeichneZahnrad === 'function'){
-      const zx = Z.x - camX; ctx.fillStyle = 'rgba(255,230,120,.35)'; ctx.beginPath(); ctx.arc(zx, Z.y, 30 + Math.sin(performance.now()*0.006)*4, 0, Math.PI*2); ctx.fill();
-      zeichneZahnrad(ctx, zx, Z.y, 15, performance.now()*0.003); }
+    const Z = B.zahnrad; if(Z && !Z.aufgehoben && typeof meteorSplitter === 'function'){   // Dschungel-Neu: Meteoriten-Splitter statt Zahnrad
+      const zx = Z.x - camX; ctx.fillStyle = 'rgba(120,220,255,.35)'; ctx.beginPath(); ctx.arc(zx, Z.y, 30 + Math.sin(performance.now()*0.006)*4, 0, Math.PI*2); ctx.fill();
+      meteorSplitter(ctx, zx, Z.y + 14, 16, performance.now()/1000, 7); }
     return;
   }
   const blink = B.unverwundbar > 0 && Math.floor(B.unverwundbar/4) % 2 === 0;
