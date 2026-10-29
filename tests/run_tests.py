@@ -5718,7 +5718,7 @@ async def packages_vergabe(g):
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await g.ev("cosmeticsReset()")
         await startmenue_bis_level(g)
-        await g.ev("for (const c of coins) c.taken = false; coins[0].taken = true; winFinish()"); await p.wait_for_timeout(700)
+        await g.ev("for (const c of coins) c.taken = false; coins[0].taken = true; winFinish()"); await szene_ueberspringen(g); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-results', 'kein Statistik-Bildschirm'
         assert await g.ev("cosmeticsSave.pending") == {'m': 1, 'f': 1}, 'nicht alle Münzen -> 1 Package je Figur erwartet'
         k = await g.ev("({sicht: getComputedStyle(document.getElementById('sm-r-pack')).display !== 'none', text: document.getElementById('sm-r-pack').textContent, weiter: document.getElementById('sm-r-go').classList.contains('sel')})")
