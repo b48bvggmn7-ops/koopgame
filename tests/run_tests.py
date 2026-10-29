@@ -8339,6 +8339,7 @@ async def level_nummern_je_welt(g):
     """Welt-Seite: jede Welt zeigt nur ihre eigenen Level, nummeriert ab 1 (Nutzerwunsch: kein „Level 15“ in der Höhle).
     Auch Vorhang, Statistik-Bildschirm und Meldungen zählen in der Welt."""
     srv = webserver(); p = g.p
+    await alle_welten(p)   # weitere Welten im Spiel ausgeblendet – hier mit allen Welten
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         await g.ev("GameMenu.unlockAll()")
