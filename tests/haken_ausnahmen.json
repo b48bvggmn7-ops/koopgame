@@ -220,5 +220,11 @@
   "spalte": 1752,
   "regel": "Bahn",
   "grund": "Haken-Treppe 124: vom Haken 137 schwingt der Affe hinauf aufs hohe Plateau 140 – die Bahn berührt dessen Kante, weil er dort landen soll (Bot-Test dschungel_neu_stellen_a1)."
+ },
+ {
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
+  "spalte": 675,
+  "regel": "Bahn",
+  "grund": "Windrad-Treppe im Glühwald (früher Spalte 668): vom Schirm-Trampolin greift der Affe den Haken und schwingt direkt auf den Block 676 – die Bahn berührt dessen Kante, weil er dort landen soll (ohne Dash, Test dschungel_neu_stellen_a2)."
  }
 ]

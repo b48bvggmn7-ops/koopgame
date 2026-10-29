@@ -17,10 +17,20 @@ sys.path.insert(0, str(ROOT / 'tests'))
 class Level:
     def __init__(self, datei):
         self.datei = datei
+        self.notiz = []
+        if not (ROOT / 'levels' / 'editor-format' / datei).exists():   # alter Dschungel-Teil (im Abschnitt aufgegangen): nur lesen
+            import abschnitt as A
+            sp = A.teil_sicht(datei)
+            if sp is None: raise FileNotFoundError(ROOT / 'levels' / 'editor-format' / datei)
+            self.nur_lesen = True; self.alt_spiel = sp; self.t = {}
+            for s in sp.get('solids', []):
+                for c in range(int(s['x']) // 40, int(s['x'] + s['w'] - 1) // 40 + 1):
+                    for r in range(int(s['y']) // 40, int(s['y'] + s['h'] - 1) // 40 + 1): self.t[(c, r)] = s['type']
+            self.ed = {k: [dict(o, c=int(o['x']) // 40, r=int(o['y'] - 1) // 40) for o in v if isinstance(o, dict) and 'x' in o] if isinstance(v, list) else v for k, v in sp.items()}
+            return
         self.ed = json.loads((ROOT / 'levels' / 'editor-format' / datei).read_text(encoding='utf-8'))
         self.alt_spiel = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
         self.t = {(c, r): t for c, r, t in self.ed['tiles']}
-        self.notiz = []
     # --- Kacheln (Boden, Wand, Bröckel, Steg-Plattform, Eis, Band, Aufwind, Haftfläche, Lava …: werkzeug-Name) ---
     def kachel(self, c, r, typ):
         self.t[(c, r)] = typ; return self
@@ -92,6 +102,7 @@ async def _speichern(levels):
             fehler = []; p.on('pageerror', lambda e: fehler.append(str(e)))
             await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(600)
             for lv in levels:
+                if getattr(lv, 'nur_lesen', False): raise RuntimeError(f'{lv.datei}: alter Teil – im Abschnitt bearbeiten')
                 ed = lv.snapshot()
                 spiel = await p.evaluate("ed => { applySnapshot(ed); return JSON.parse(exportLevel()); }", ed)
                 for k, v in lv.alt_spiel.items():
