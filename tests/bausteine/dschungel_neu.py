@@ -247,11 +247,19 @@ def s05_schleuse(lv):
     lv.punkt_weg('switches', 498, 11); lv.punkt('windraeder', 501, 11, link=8)
     for cc, rr in ((473, 13), (474, 13), (477, 10), (478, 10), (473, 7), (474, 7), (477, 4), (478, 4)): lv.punkt('switchFloors', cc, rr, gruppe='B', link=8)   # Zickzack, je 3 Reihen, 2 Spalten Luft
     return lv.merke('Dschungel-Neu: Druckplatten-Schleuse mit Windrad-Treppe (Aufwind 479 -> Windrad 8)')
+def s05_pilz_flucht(lv):
+    """Teil 5, Pilz-Flucht (früher Pilz 531 vor der Bröckel-Reihe über den Dornen): Pilz weg, Mulde zu, ein Bröckel-Stein
+    mehr (536–537), der letzte (551–552) weg – von Stein zu Stein springen, am Ende mit Dash aufs feste Land."""
+    if not any(p['c'] == 531 for p in lv.ed.get('bouncers', [])): return False
+    lv.punkt_weg('bouncers', 531, 15); lv.kachel(531, 16, 'ground')
+    for c in (536, 537): lv.kachel(c, 16, 'crumble')
+    for c in (551, 552): lv.leer(c, 16)   # letzter Stein weg: ohne Dash holt die Wand ein (der Pilz kostete früher Zeit)
+    return lv.merke('Dschungel-Neu: Pilz-Flucht ohne Pilz 531 (Bröckel-Stein 536 statt 551)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
-    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse],
+    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse, s05_pilz_flucht],
     'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor, s06_sturm_pilz],
 }
 

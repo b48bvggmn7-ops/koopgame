@@ -9555,11 +9555,12 @@ def _d5_e1(dash):
     return {'m': [k_lauf(142, -14), {'use': True, 'frames': 2}] + flucht, 'f': [k_lauf(144, -4), {'wait': '!!linkOn[3]'}] + flucht}
 JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E1 Stachelwand-Jagd über die Bröckel-Steine', kat(133, 11), kat(134, 11), [], 'Wand', 3, _d5_e1, 198))
 def _d5_e3(dash):
-    pilz = [k_lauf(528, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 4}, {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(531)} - 6', 'left': f'P.x > {kx(531)} + 6'}, 'until': 'P.vy < -14', 'frames': 100}]
+    # Dschungel-Neu: Pilz 531 ist weg – von Bröckel-Stein zu Bröckel-Stein (536, 541, 546 …), am Ende mit Dash
+    steine = [k_lauf(530, 4)] + _sz(kx(536) + 20, 10) + _sz(kx(541) + 20, 10)
     if dash:
-        weg = pilz + [{'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 200}] + _sz(kx(546)) + _sz_dash(kx(558)) + [j_lauf(597, dash=True, dash_ab=559)]
+        weg = steine + _sz(kx(546) + 20, 10) + _sz_dash(kx(558)) + [j_lauf(597, dash=True, dash_ab=559)]
     else:
-        weg = pilz + [{'hold': ['right', 'jump'], 'until': 'P.grounded', 'frames': 200}] + _sz(kx(546)) + _sz(kx(551)) + _sz(kx(559)) + [j_lauf(597, dash=False)]
+        weg = steine + _sz(kx(546) + 20, 10) + _sz(kx(551) + 20, 10) + _sz(kx(559), 10) + [j_lauf(597, dash=False)]
     return {'m': [k_lauf(524, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(526, -4), {'wait': '!!linkOn[9]'}] + weg}
 JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E3 Pilz-Flucht', kat(515, 11), kat(516, 11), [], 'Wand', 9, _d5_e3, 596))
 def _d5_e4(dash):
