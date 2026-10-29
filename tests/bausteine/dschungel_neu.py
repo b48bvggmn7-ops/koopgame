@@ -237,11 +237,21 @@ def s05_hebel_sims(lv):
     for c in range(99, 104): lv.leer(c, 6); lv.kachel(c, 7, 'ground')
     lv.punkt_weg('switches', 102, 5); lv.punkt('switches', 102, 6, link=1)
     return lv.merke('Dschungel-Neu: Hebel-Sims 100 (Aufwind 97 -> Pusten)')
+def s05_schleuse(lv):
+    """Teil 5, Druckplatten-Schleuse (früher Aufwind-Schacht 479 mit Klappe 8): das Schweinchen hält Platte 7 (Tür 482),
+    der Affe schwingt an den Haken 487/495 auf den Block 498 und pustet dort das Windrad 8 an -> im Schacht erscheint eine
+    Wechsel-Treppe (B); das Schweinchen klettert hinauf, über die Mauer 482 und segelt hinüber."""
+    if not any(typ == 'wind' and 479 <= c <= 480 for (c, r), typ in lv.t.items()): return False
+    wind_weg(lv, 479, 480)
+    for c in (479, 480): lv.punkt_weg('doors', c, 8)
+    lv.punkt_weg('switches', 498, 11); lv.punkt('windraeder', 501, 11, link=8)
+    for cc, rr in ((473, 13), (474, 13), (477, 10), (478, 10), (473, 7), (474, 7), (477, 4), (478, 4)): lv.punkt('switchFloors', cc, rr, gruppe='B', link=8)   # Zickzack, je 3 Reihen, 2 Spalten Luft
+    return lv.merke('Dschungel-Neu: Druckplatten-Schleuse mit Windrad-Treppe (Aufwind 479 -> Windrad 8)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
-    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims],
+    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse],
     'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor, s06_sturm_pilz],
 }
 

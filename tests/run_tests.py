@@ -11998,6 +11998,13 @@ def _dn_06_luft_tor():
                   {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
                   {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]}, 'f')]}
 DN_STELLEN_EXTRA.append(('dschungel/06-wipfelsturm.json', 'Hohes Luft-Tor 431', kat(408, 15), kat(406, 15), _dn_06_luft_tor()))
+def _dn_stufen(stufen, hold=12):   # wie _dn_treppe, aber in beide Richtungen: genau an c0 stellen, zur Ziel-Spalte c1 springen
+    pl = []
+    for c0, c1 in stufen:
+        r = 'right' if c1 >= c0 else 'left'
+        pl += [k_hin(c0), {'press': ['jump'], 'hold': [r, 'jump'], 'frames': hold},
+               {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(c1)} - 6', 'left': f'P.x > {kx(c1)} + 6'}, 'until': 'P.grounded', 'frames': 200}]
+    return pl
 def _dn_treppe(stufen, hold=10):   # von Stufe zu Stufe springen: [(Absprung-Spalte, Ziel-Spalte), …]
     pl = []
     for c0, c1 in stufen:
@@ -12044,6 +12051,24 @@ def _dn_05_sims():
             'gegen': [('Schweinchen allein', {'f': [k_lauf(99, -4), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300}, k_lauf(112)]}, 'f'),
                       ('Affe allein', {'m': [k_lauf(99, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.grounded && f > 5', 'frames': 200}, k_lauf(112)]}, 'm')]}
 DN_STELLEN_EXTRA.append(('dschungel/05-dornenpfad.json', 'Hebel-Sims 100', kat(95, 15), kat(92, 15), _dn_05_sims()))
+def _dn_05_schleuse():
+    """Teil 5, Druckplatten-Schleuse: Schweinchen hält Platte 7, Affe über Haken 487/495 auf den Block, pustet Windrad 8
+    an; das Schweinchen klettert die Wechsel-Treppe im Schacht hinauf und segelt über die Mauer"""
+    vs = []
+    for rel in ('P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'P.x > P.anchor.x + 40 && P.vx > 1', 'P.x > P.anchor.x + 80 && P.vy < 0') + RELS_SPAET:
+        m = [{'wait': '!!linkOn[7]', 'frames': 600}, k_lauf(482, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+             {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+             {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(498)}', 'left': f'P.x > {kx(499)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+            k_pusten_seite(498, 1, '!!linkOn[8]', -10) + [{'wait': f'Q.grounded && Q.x >= {kx(498)}', 'frames': 2500}]
+        f = [k_hin(477), {'wait': '!!linkOn[8]', 'frames': 2500}] + _dn_stufen([(477, 474), (473, 477), (478, 474), (473, 477)]) + \
+            [k_hin(477), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(484)}', 'frames': 200}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(499)}', 'left': f'P.x > {kx(501)}'}, 'until': 'P.grounded', 'frames': 600}]
+        vs.append({'m': m, 'f': f})
+    return {'beide': vs, 'ziel': (498, 11), 'frames': 7000,
+            'gegen': [('Schweinchen allein (ohne Windrad)', {'f': [k_hin(477), {'frames': 60}] + _dn_stufen([(477, 474), (473, 477), (478, 474), (473, 477)])}, 'f'),
+                      ('Affe allein (ohne Platte)', {'m': [k_lauf(482, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 80},
+                                                    {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, 'm')],
+            'ziel_gegen': (483, 15)}
+DN_STELLEN_EXTRA.append(('dschungel/05-dornenpfad.json', 'Druckplatten-Schleuse 479', kat(476, 15), kat(474, 15), _dn_05_schleuse()))
 async def dn_stellen_pruefen(g, teile):
     fehler, aktuell = [], None
     for teil, name, ms, fs, pl in dn_stellen():
