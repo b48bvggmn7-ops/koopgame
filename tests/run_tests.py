@@ -5320,14 +5320,15 @@ async def liane_volle_laenge(g):
 @test
 async def liane_von_oben(g):
     """Nutzer-Video „von oben reinspringen, der Haken flippt rum“: liegt die Hand über dem Haken (Seil steiler als
-    LIANE_GRIFF_WINKEL), greift der Affe noch nicht – mit gehaltener Haken-Taste greift er, sobald er auf Hakenhöhe gefallen
-    ist; die Liane klappt nicht mehr über den Haken. Ohne gehaltene Taste wird nicht nachgegriffen."""
+    LIANE_GRIFF_WINKEL), spannt sich die Liane erst, sobald er auf Hakenhöhe gefallen ist (klappt nicht über den Haken).
+    Nutzer-Rückmeldung („man weiß nicht, ob man verbunden ist“): mit gehaltener Taste ist die Liane sofort sichtbar in der
+    Hand (locker, _wartZiel) und spannt sich dann; nur angetippt (losgelassen = los, wie immer an der Liane) greift er nicht."""
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 1000, 'y': 400, 'radius': 200}]))
     r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const P = p1, h = hooks[0], e = {};
       const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
-      const setz = () => { P.x = h.x + 40; P.y = h.y - 90 + P.h*0.6; P.vx = 1; P.vy = -2; P.grounded = false; P.hookAttached = false; P.lianeSperre = 0; };
-      setz(); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st();
-      e.sofort = P.hookAttached; let n = 0;
+      const setz = () => { P.x = h.x + 40; P.y = h.y - 90 + P.h*0.6; P.vx = 1; P.vy = -2; P.grounded = false; P.hookAttached = false; P.lianeSperre = 0; P._gegriffenA = null; P._hakenWarten = false; };
+      setz(); KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); st();
+      e.sofort = P.hookAttached; e.gleichInDerHand = P._wartZiel === h; let n = 0;
       while(!P.hookAttached && n < 80){ st(); n++; }
       e.spaeter = P.hookAttached; e.handUeber = Math.round(h.y - (P.y - P.h*0.6));
       e.winkel = Math.round(Math.abs(Math.atan2(P.x - h.x, P.y - P.h*0.6 - h.y))*180/Math.PI);
@@ -5336,7 +5337,7 @@ async def liane_von_oben(g):
       for(let i = 0; i < 40; i++) st(); e.ohneHalten = P.hookAttached;
       menuScreen = null; return e; })()""")
     assert not r['sofort'] and r['spaeter'] and r['winkel'] <= await g.ev('LIANE_GRIFF_WINKEL') + 1, f'von oben gegriffen: {r}'
-    assert not r['ohneHalten'], f'ohne gehaltene Taste nachgegriffen: {r}'
+    assert r['gleichInDerHand'] and not r['ohneHalten'], f'Liane nicht gleich in der Hand bzw. greift ohne Halten: {r}'
 
 @test
 async def liane_g_spammen(g):

@@ -275,11 +275,15 @@ function lianeUeberHaken(P, A){ const dx = P.x - A.x, dy = P.y - P.h*0.6 - A.y; 
 function lianeGriffPruefen(P){
   if(P.lianeSperre > 0) P.lianeSperre--;
   const K = P.keys || {};
-  // Von oben greifen (Nutzer-Video „von oben reinspringen, der Haken flippt rum“): ist die Hand höher als der Haken, greift
-  // der Affe noch nicht – hält er die Haken-Taste, greift er, sobald er auf Hakenhöhe gefallen ist (kein Überschlagen der Liane)
+  // Von oben greifen (Nutzer-Video „von oben reinspringen, der Haken flippt rum“): ist die Hand höher als der Haken, hält
+  // der Affe die Liane schon (locker durchhängend, man sieht: verbunden) – sie spannt sich erst, sobald er auf Hakenhöhe
+  // gefallen ist (kein Überschlagen). Wie immer an der Liane: Taste halten = festhalten (loslassen = los).
   if(P._hakenWarten && (!K.hook || !isDown(K.hook) || P.grounded || P.hookAttached)) P._hakenWarten = false;
+  P._wartZiel = null;
   if(P._hakenWarten){
     const t = findHookTarget(P);
+    if(!t) P._hakenWarten = false;   // außer Reichweite: loslassen
+    else P._wartZiel = t;
     if(t && !lianeUeberHaken(P, t) && !(P.lianeSperre > 0 && t === P.lianeSperreA)){
       P.hookAttached = true; P.anchor = t; P.ropeWasAirborne = true; P._hakenWarten = false;   // in der Luft gegriffen: Landen löst das Seil
       P.ropeLen = Math.hypot(t.x - P.x, t.y - (P.y - P.h*0.6)); P.ropeMax = Math.max(P.ropeLen, hookRange(t));

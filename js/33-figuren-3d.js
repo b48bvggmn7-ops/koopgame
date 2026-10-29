@@ -306,7 +306,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
     if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
       if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-1.45*e,0,-.2], armP:[-1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
-    if(male && P.hookAttached && P.anchor) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
+    if(male && ((P.hookAttached && P.anchor) || (P._hakenWarten && P._wartZiel))) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
     if(!male && P.gliding) return {p:{head:[-.1,0,0], armN:[0,0,-2.5], armP:[0,0,2.5], legN:[-.15+Math.sin(t*2.2)*.1,0,0], legP:[.2-Math.sin(t*2.2)*.1,0,0]}, key:'segeln'};
     if(P.haft && P.haft.flaeche === 'unten'){   // Haftfläche (Decke): erst greift der eine Arm nach vorn, dann der andere – im Stand bleiben die Arme still
       const ph = (S.hp||0)/72.8, A = .6, ea = x => x*x*(3 - 2*x);
@@ -484,7 +484,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     drawNode(H.wrap, M.id(), M.ortho(FR.x0, FR.x1, FR.y0, FR.y1, -20, 20), [0, 1.8, 30]);
     const fy = P.h*0.5 + 4 + hangSenke(ch, S.al||1, P.h, HAFT_ARM);   // 4 px tiefer: die Figur steht im Gras
     // Am Seil schwingt die ganze Figur mit (Körper hängt entlang des Seils, Drehpunkt = Hände) – wie im 2D-Spiel
-    let rs = 0; if(z.key === 'seil' && P.anchor){ const cx = P.x, cy = P.y - P.h*.6; rs = Math.atan2(P.anchor.x - cx, cy - P.anchor.y);
+    let rs = 0; if(z.key === 'seil' && P.hookAttached && P.anchor){   // von oben gegriffen (Liane locker): Körper bleibt aufrecht
+      const cx = P.x, cy = P.y - P.h*.6; rs = Math.atan2(P.anchor.x - cx, cy - P.anchor.y);
       // Nutzer: „ich schwinge durch Boden/Wand“ – der gezeichnete Körper hängt am Seil schräg, die Kollisionsbox bleibt aufrecht;
       // ragte der schräge Körper in Boden/Wand, wird er so weit aufgerichtet, bis er frei ist (nur Zeichnen, Raster festIst aus 32)
       if(rs && typeof festIst === 'function') for(let k = 0; k < 8; k++){
