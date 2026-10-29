@@ -7004,7 +7004,7 @@ KOOP_SCHRITTE = """menuScreen = 'pause'; deathState = null; let ts = 5e6; for(co
 async def koop_testlevel(g):
     srv = webserver()
     await g.p.goto(srv.url + 'index.html?testlevel=koop-aktionen')
-    await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length === 4 && menuScreen === null", timeout=10000)
+    await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length >= 4 && windraeder.length === 2 && menuScreen === null", timeout=10000)
     return srv
 
 @test
@@ -7083,6 +7083,36 @@ async def koop_pusten(g):
         assert r['wieder'] == 1, f'Balken lädt nicht wieder: {r}'
         assert r['ohneSchirm'], f'ohne Schirm darf der Wind nicht tragen: {r}'
         assert r['seite'] > 60 and r['affeStill2'], f'Seiten-Wind schiebt nicht: {r}'
+    finally:
+        srv.shutdown()
+
+@test
+async def windrad_anpusten(g):
+    """Dschungel-Neu (elemente/windrad.js): nur der Puste-Wind dreht ein Windrad. „umschalten“: dreht es sich voll, schaltet
+    es seine Nummer einmal um (Tür auf) und bleibt so, auch wenn es ausläuft; nochmal anpusten = wieder zu. „solange“: die
+    Nummer ist an, solange es sich dreht, läuft es aus, geht sie wieder aus. In die andere Richtung gepustet dreht sich nichts."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          const pusten = (n, r) => { r = r || p1.keys.right; KEYS[p1.keys.pusten] = true; KEYS[r] = true; for(let i = 0; i < n; i++) st(); KEYS[p1.keys.pusten] = false; KEYS[r] = false; };
+          const tuer = l => solids.filter(s => s.type === 'door' && s.link === l).every(s => s.open);
+          try {
+            stell(p2, 1900, 720); stell(p1, 1960, 720); for(let i = 0; i < 6; i++) st();
+            pusten(60, p1.keys.left); e.weit = windraeder[0].dreh;   // vom Windrad weg gepustet
+            stell(p1, 1960, 720); for(let i = 0; i < 6; i++) st(); p1.puste = 1; p1.pusteLeer = false;
+            pusten(40); e.an1 = !!linkOn[1] && tuer(1);
+            for(let i = 0; i < 300; i++) st(); e.bleibt = !!linkOn[1] && windraeder[0].dreh < 0.1;
+            p1.puste = 1; p1.pusteLeer = false; pusten(40); e.wiederAus = !linkOn[1]; for(let i = 0; i < 200; i++) st();
+            stell(p1, 2560, 720); for(let i = 0; i < 6; i++) st(); p1.puste = 1; p1.pusteLeer = false;
+            pusten(40); e.an2 = !!linkOn[2] && tuer(2);
+            for(let i = 0; i < 300; i++) st(); e.aus2 = !linkOn[2];
+            e.log = SFX_LOG.slice(-80);
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['weit'] == 0, f'vom Windrad weg gepustet: es darf sich nicht drehen: {r}'
+        assert r['an1'] and r['bleibt'] and r['wiederAus'], f'Windrad „umschalten“ falsch: {r}'
+        assert r['an2'] and r['aus2'], f'Windrad „solange es dreht“ falsch: {r}'
+        assert 'windrad' in r['log'], f'Ton fehlt: {r["log"]}'
     finally:
         srv.shutdown()
 
@@ -7948,7 +7978,8 @@ async def element_register(g):
                  ['eis', 'eis', True, True], ['foerderband', 'baender', True, True], ['leuchtkristall', 'leuchtkristalle', True, True],
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
                  ['presse', 'pressen', True, True],
-                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
+                 ['windrad', 'windraeder', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -7967,7 +7998,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'wechsel'], logik
+        assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad'], logik   # + Windrad (Dschungel-Neu)
         licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
         assert licht == ['lichtquelle', 'spiegel', 'kristall', 'leucht', 'dunkel'], licht
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung

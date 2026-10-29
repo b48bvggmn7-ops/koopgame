@@ -347,6 +347,7 @@ const SFX = {
   hinlegen(pl){ sfxLog('hinlegen'); sfxPlay('land', {x: pl.x, vol: 0.5, rate: 0.8}); sTone(230, 0.04, 0.12, {to: 170, type: 'triangle', vol: 0.035}); },
   polster(pl){ sfxLog('polster'); sfxPlay('mushroom', {x: pl.x, rate: 0.82}); sTone(320, 0, 0.18, {to: 520, type: 'triangle', vol: 0.04}); },
   pustenStart(pl){ sfxLog('pustenstart'); sNoise(0, 0.18, {filter: 'bandpass', f: 500, to: 1400, q: 0.8, vol: 0.05, attack: 0.05}); },
+  windrad(x){ sfxLog('windrad'); sNoise(0, 0.5, {filter: 'bandpass', f: 1800, to: 700, q: 2, vol: 0.05, attack: 0.02}); sTone(520, 0, 0.12, {to: 760, type: 'triangle', vol: 0.03}); },
   pusten(pl, k){ sfxLog('pusten'); sNoise(0, 0.34, {filter: 'bandpass', f: 900 + Math.random()*200, to: 650, q: 0.6, vol: 0.06*(0.6 + 0.4*(k || 1)), attack: 0.03}); },
   wechsel(fest, x){ sfxLog(fest ? 'wechselan' : 'wechselweg'); sfxPlay(fest ? 'wechselAn' : 'wechselAus', {x}); },   // Wechselboden
   platsch(x, tempo){ sfxLog('platsch'); sfxPlay('platsch', {x, vol: Math.min(1, 0.4 + (tempo || 0)/12)}); },   // Wasser

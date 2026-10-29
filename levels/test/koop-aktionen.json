@@ -1,5 +1,5 @@
 {
-  "hinweis": "Testlevel Dschungel-Neu: Schweinchen hinlegen (Num 4) = Sprungpolster für den Affen (Sims links, 6 Reihen hoch); Affe pusten (H, W = nach oben) trägt das Schweinchen mit Schirm auf den hohen Sims (9 Reihen); Seiten-Wind schiebt es über die Grube. Öffnen: index.html?testlevel=koop-aktionen",
+  "hinweis": "Testlevel Dschungel-Neu: Schweinchen hinlegen (Num 4) = Sprungpolster für den Affen (Sims links, 6 Reihen hoch); Affe pusten (H, W = nach oben) trägt das Schweinchen mit Schirm auf den hohen Sims (9 Reihen); Seiten-Wind schiebt es über die Grube. Öffnen: index.html?testlevel=koop-aktionen; Windrad „umschalten“ (Nummer 1, Tür bei 2420) und „solange es dreht“ (Nummer 2, Tür bei 3020)",
   "welt": "dschungel",
   "tageszeit": "mittag",
   "wetter": "trocken",
@@ -14,7 +14,7 @@
     {
       "x": 1880,
       "y": 720,
-      "w": 1400,
+      "w": 1800,
       "h": 40,
       "type": "ground"
     },
@@ -124,7 +124,48 @@
   "movingPlatforms": [],
   "checkpoints": [],
   "switches": [],
-  "doors": [],
+  "doors": [
+    {
+      "x": 2420,
+      "y": 580,
+      "link": 1
+    },
+    {
+      "x": 2420,
+      "y": 620,
+      "link": 1
+    },
+    {
+      "x": 2420,
+      "y": 660,
+      "link": 1
+    },
+    {
+      "x": 2420,
+      "y": 700,
+      "link": 1
+    },
+    {
+      "x": 3020,
+      "y": 580,
+      "link": 2
+    },
+    {
+      "x": 3020,
+      "y": 620,
+      "link": 2
+    },
+    {
+      "x": 3020,
+      "y": 660,
+      "link": 2
+    },
+    {
+      "x": 3020,
+      "y": 700,
+      "link": 2
+    }
+  ],
   "startM": {
     "x": 180,
     "y": 720
@@ -134,7 +175,20 @@
     "y": 720
   },
   "goal": {
-    "x": 3100,
+    "x": 3500,
     "y": 720
-  }
+  },
+  "windraeder": [
+    {
+      "x": 2100,
+      "y": 720,
+      "link": 1
+    },
+    {
+      "x": 2700,
+      "y": 720,
+      "link": 2,
+      "art": "solange"
+    }
+  ]
 }

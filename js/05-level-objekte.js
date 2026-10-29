@@ -153,6 +153,7 @@ function updatePlates(players){
     want[pl.link] = want[pl.link] || down;
   }
   if(typeof lichtWunsch === 'function') lichtWunsch(want);   // Lichtkristall im Licht = wie gedrückte Platte (elemente/licht.js)
+  if(typeof windradWunsch === 'function') windradWunsch(want);   // Windrad „solange es dreht“ = wie gedrückte Platte (elemente/windrad.js)
   for(const link in want){ if(!!linkOn[link] !== want[link]) setLink(Number(link), want[link]); }
 }
 // Aufwind (inWind, WIND_LIFT) und Sprungpilz (checkBounce, BOUNCE_V): jetzt in elemente/aufwind.js bzw. elemente/sprungpilz.js

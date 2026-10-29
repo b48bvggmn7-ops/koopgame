@@ -2132,6 +2132,12 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - Testlevel levels/test/koop-aktionen.json (index.html?testlevel=koop-aktionen): Sims 6 Reihen (Hinlegen), Sims 9 Reihen
   (Pusten nach oben), Stachelgrube (Seiten-Wind).
 - Bahnen-Test der alten Mechaniken unverändert grün (nur über die Haken der neuen Bewegung eingeklinkt).
+- **Windrad** (elemente/windrad.js, Editor-Reiter „Logik“, Werkzeug „Windrad“, im Dschungel empfohlen): Blätter-Windrad auf
+  einem kurzen Holzpfahl (Nabe auf Mundhöhe des Affen), Edelstein in der Nummernfarbe. Nur der Puste-Wind dreht es: läuft an,
+  dreht kräftig (Bewegungsunschärfe), läuft gut 2 s nach. Auswahl „umschalten“ (Standard): jedes Anpusten schaltet die
+  Nummer einmal um, wie ein Hebel (Tür auf / wieder zu); „solange es dreht“: Nummer an, solange es sich dreht (wie eine
+  Druckplatte, verträgt sich mit Platten derselben Nummer). Ton beim Anlaufen + Hebel-Klack. Rolle: nur der Affe schaltet es –
+  oft von einem Platz aus, auf den ihn das Schweinchen bringt. Test windrad_anpusten (Testlevel koop-aktionen).
 
 ## Level-Editor (editor/)
 ```
