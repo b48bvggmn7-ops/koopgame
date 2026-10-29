@@ -11970,6 +11970,33 @@ def _dn_06_insel():
               {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]
     return {'beide': vs, 'ziel': (240, 15), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'ziel_gegen': (226, 15), 'frames': 7000}
 DN_STELLEN_EXTRA.append(('dschungel/06-wipfelsturm.json', 'Puste-Insel 226', kat(207, 15), kat(205, 15), _dn_06_insel()))
+def _dn_06_luft_tor():
+    """Teil 6, Hohes Luft-Tor 431: Affe schwingt an Haken 420 auf den Pfeiler 427 und pustet, das Schweinchen segelt aus dem
+    Teleporter-Ausgang (415) in den Wind und hinüber zu 445; der Affe springt vom Pfeiler an Haken 434"""
+    vs = []
+    for rel in ('P.x > P.anchor.x + 40 && P.vx > 1', 'P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + 60', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'):
+        for rel2 in ('P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 100'):
+            m = [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200}, {'hold': ['right'], 'hookWhen': 'true', 'until': 'P.hookAttached', 'frames': 60},
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(427)}', 'left': f'P.x > {kx(428)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+                k_pusten_hoch(427, f'Q.grounded && Q.x > {kx(444)}', 20) + [
+                k_hin(427, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel2, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+            f = [{'wait': f'Q.pusteAn && Q.x > {kx(426)}', 'frames': 2000}, k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200},
+                 {'hold': ['right', 'glide'], 'until': f'P.x > {kx(425)}', 'frames': 400},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(427)} + 12', 'left': f'P.x > {kx(427)} + 28'}, 'until': f'P.y < {ky(7)}', 'frames': 300},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(446)}'}, 'until': 'P.grounded', 'frames': 600}]
+            vs.append({'m': m, 'f': f})
+    allein = lambda dx: [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(dx)}', 'frames': 400},
+                         {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 700},
+                         {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
+                         {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]
+    return {'beide': vs, 'ziel': (445, 15), 'frames': 7000,
+            'gegen': [(f'Schweinchen allein (Dash bei {dx})', {'f': allein(dx)}, 'f') for dx in (420, 424, 428)] + [
+                ('Schweinchen allein über den Pfeiler', {'f': [k_lauf(409, 0), {'until': f'P.x > {kx(414)}', 'frames': 200},
+                  {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(427)}', 'left': f'P.x > {kx(428)}'}, 'until': 'P.grounded', 'frames': 700}, k_hin(427, -12),
+                  {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
+                  {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]}, 'f')]}
+DN_STELLEN_EXTRA.append(('dschungel/06-wipfelsturm.json', 'Hohes Luft-Tor 431', kat(408, 15), kat(406, 15), _dn_06_luft_tor()))
 async def dn_stellen_pruefen(g, teile):
     fehler, aktuell = [], None
     for teil, name, ms, fs, pl in dn_stellen():

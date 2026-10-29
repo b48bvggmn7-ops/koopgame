@@ -186,11 +186,21 @@ def s06_puste_insel(lv):
         for r in (15, 16): lv.kachel(c, r, 'ground')
     lv.haken_weg(231, 10); lv.haken(235, 10, 4.5)   # von der Insel aus mit Anlauf
     return lv.merke('Dschungel-Neu: Puste-Insel 226 (Aufwinde 218/229 -> zweimal Pusten)')
+def s06_luft_tor(lv):
+    """Teil 6, Hohes Luft-Tor (Teleporter-Ausgang 415 hoch über den Dornen, früher Aufwind 431): Puste-Pfeiler 427–428
+    unten in der Dornen-Grube (weit genug weg, dass das Schweinchen von dort allein nicht hinüberkommt). Der Affe schwingt am Haken 420 hinüber, landet auf dem Pfeiler und pustet nach oben; das
+    Schweinchen segelt aus dem Tor in den Wind, steigt und segelt zum Boden 445. Allein segelt es zu kurz (gemessen 441).
+    Der Affe springt vom Pfeiler an den neuen Haken 434 und schwingt weiter."""
+    if lv.typ(427, 16) == 'ground': return False
+    wind_weg(lv, 431, 432)
+    for c in (427, 428): lv.kachel(c, 16, 'ground')   # nur eine Reihe hoch: von dort springt das Schweinchen allein zu kurz
+    lv.haken(434, 10, 4.5)
+    return lv.merke('Dschungel-Neu: Hohes Luft-Tor 431 (Aufwind -> Puste-Pfeiler 427, Haken 434)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
-    'dschungel/06-wipfelsturm.json': [s06_puste_insel],
+    'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_luft_tor],
 }
 
 def haken_setzen(lv, c, g):
