@@ -31,7 +31,8 @@ def stelle(z, c, r):
 
 def level_liste():
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
-    return [l for welt in w['welten'] if welt['id'] != 'wasser' for l in welt['level']]
+    import abschnitt as A   # Dschungel-Neu: Abschnitte -> ihre Teile
+    return [l for welt in w['welten'] if welt['id'] != 'wasser' for l in A.level_dateien(welt)]
 
 if __name__ == '__main__':
     import level_bau as L

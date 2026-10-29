@@ -10138,7 +10138,7 @@ async def haken_schwung_frei(g):
     frei = {(a['level'], a['spalte']) for a in aus if a['regel'] in ('Schwung', 'Bahn')}
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
     befunde, n = [], 0
-    for lv in [f for welt in w['welten'] for f in welt.get('level', []) + ([welt['boss']] if welt.get('boss') else [])]:
+    for lv in [f for welt in w['welten'] for f in ABS.level_dateien(welt) + ([welt['boss']] if welt.get('boss') else [])]:
         d = json.loads((ROOT / 'levels' / lv).read_text(encoding='utf-8'))
         hs = [h for h in d.get('hooks', []) if 'targetX' not in h and (lv, int(h['x'] // 40)) not in frei]
         if not hs: continue
@@ -10155,7 +10155,7 @@ async def keine_holzplattform_mehr(g):
     """Nutzerwunsch („Ich weiß gar nicht, was das sein soll“): das Holz-Plattform-Material (Kachel 'platform') ist aus allen
     Leveln heraus – ersetzt durch Wand, wo es an Boden stieß, sonst Boden (bewegte Böden fahren weiter, nur im neuen Material)."""
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
-    for f in [f for welt in w['welten'] for f in welt.get('level', []) + ([welt['boss']] if welt.get('boss') else [])]:
+    for f in [f for welt in w['welten'] for f in ABS.level_dateien(welt) + ([welt['boss']] if welt.get('boss') else [])]:   # Abschnitte -> Teile
         ed = json.loads((ROOT / 'levels' / 'editor-format' / f).read_text(encoding='utf-8'))
         assert not [t for t in ed['tiles'] if t[2] == 'platform'], f'{f}: noch Holz-Plattform'
         spiel = json.loads((ROOT / 'levels' / f).read_text(encoding='utf-8'))
@@ -11812,13 +11812,13 @@ def _dn_03_haken_treppe():
     return {'beide': vs, 'ziel': (140, 3), 'gegen': [('Affe ohne Trampolin', {'m': allein}, 'm')], 'frames': 6000}
 DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Haken-Treppe 124', kat(122, 12), kat(124, 12), _dn_03_haken_treppe()))
 def _dn_03_kreuzung():
-    """Teil 3, Kreuzung 414: Affe springt auf den Pfeiler 419 und pustet, das Schweinchen fliegt auf den oberen Weg (Hebel 7);
+    """Teil 3, Kreuzung 414: Affe springt auf den Pfeiler 419–420 und pustet, das Schweinchen fliegt auf den oberen Weg (Hebel 7);
     der Affe schwingt am Haken 425 auf den unteren Weg (Hebel 6)"""
     vs = []
     for weg in (4, 6):
         for rel in ('P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'):
-            m = [k_lauf(415, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'holdIf': {'right': f'P.x < {kx(420)}', 'left': f'P.x > {kx(421)}'}, 'until': 'P.grounded', 'frames': 300}] + \
-                k_pusten_hoch(420, f'Q.grounded && Q.y < {ky(6)}') + [k_hin(421), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+            m = [k_lauf(415, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'holdIf': {'right': f'P.x < {kx(419)}', 'left': f'P.x > {kx(420)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+                k_pusten_hoch(419,  f'Q.grounded && Q.y < {ky(6)}', 20) + [k_hin(420, 6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
                  {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(436)}'}, 'until': 'P.grounded', 'frames': 300},
                  k_hin(438), {'use': True, 'frames': 5}, {'wait': '!!linkOn[7]', 'frames': 900}, k_lauf(450)]
             f = [{'wait': 'Q.pusteAn', 'frames': 600}, k_lauf(415, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
@@ -11827,7 +11827,7 @@ def _dn_03_kreuzung():
                  k_hin(436), {'use': True, 'frames': 5}, {'wait': '!!linkOn[6]', 'frames': 1200}, k_lauf(445)]
             vs.append({'m': m, 'f': f})
     allein = [k_lauf(415, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300},
-              k_hin(421), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
+              k_hin(420, 6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
               {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 400}]
     return {'beide': vs, 'ziel': (444, 14), 'gegen': [('Schweinchen allein nach oben', {'f': allein}, 'f')], 'ziel_gegen': (431, 5), 'frames': 6000}
 DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Kreuzung 414', kat(411, 14), kat(409, 14), _dn_03_kreuzung()))

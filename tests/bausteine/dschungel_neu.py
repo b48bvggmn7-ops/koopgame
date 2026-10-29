@@ -142,13 +142,13 @@ def s03_haken_treppe(lv):
     return lv.merke('Dschungel-Neu: Haken-Treppe 124 (Trampolin -> Haken -> Windrad 13 -> Treppe)')
 def s03_kreuzung(lv):
     """Teil 3, Pilz-Kreuzung 414 (Hebel über Kreuz: oben Hebel 7 öffnet Tür 7 unten, unten Hebel 6 öffnet Tür 6 oben):
-    neuer Pfeiler 419–421 (Oberkante Reihe 13) in der Stachelgrube. Der Affe springt hinüber und pustet, das Schweinchen
+    neuer Pfeiler 419–420 (Oberkante Reihe 13) in der Stachelgrube. Der Affe springt hinüber und pustet, das Schweinchen
     fliegt auf den OBEREN Weg; der Affe schwingt am neuen Haken 425 (Reihe 9, statt 421/Reihe 5) auf den UNTEREN Weg.
     Allein kommen beide nur nach unten – oben braucht es den Wind."""
     if any(h['c'] == 425 and h['r'] == 9 for h in lv.ed.get('hooks', [])): return False
     lv.punkt_weg('bouncers', 414, 14); lv.kachel(414, 15, 'ground')
     lv.haken_weg(421, 5); lv.haken_weg(422, 8); lv.haken(425, 9, 4.5)
-    for c in (419, 420, 421):
+    for c in (419, 420):   # nur 2 breit: an 421 stieße der Schwung am Haken 425 an (Test haken_schwung_frei)
         lv.stachel_weg(c, 16)
         for r in range(13, 18): lv.kachel(c, r, 'ground')
     return lv.merke('Dschungel-Neu: Kreuzung 414 (Puste-Pfeiler 419, Haken 425)')
