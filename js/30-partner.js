@@ -10,7 +10,7 @@
 // Werte (Reaktionszeit, Abstand …) in js/02-physik-werte.js (PARTNER_*).
 
 const PARTNER_SPEICHER = 'monchichi_partner';   // {an, ich: 'm' | 'f'} – im Browser gemerkt (Editor-Auswahl „Allein testen“)
-const PARTNER_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'padUse', 'dash'];
+const PARTNER_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'padUse', 'dash', 'spezial'];
 const partnerCode = a => 'Partner_' + a;   // Tasten, die der Partner drückt
 const soloCode = a => 'Solo_' + a;         // meine Tasten (beide Tastaturhälften + beide Controller zusammen)
 
@@ -44,9 +44,9 @@ function partnerTasten(male){
   const istPartner = (partner.ich === 'm') !== male;
   const c = istPartner ? partnerCode : soloCode;
   return male ? {left: c('left'), right: c('right'), jump: c('jump'), hook: c('ability'), pull: c('pull'), slack: c('slack'),
-                 use: c('use'), padUse: c('padUse'), swimUp: c('pull'), swimDown: c('slack'), dash: c('dash')}
+                 use: c('use'), padUse: c('padUse'), swimUp: c('pull'), swimDown: c('slack'), dash: c('dash'), pusten: c('spezial')}
               : {left: c('left'), right: c('right'), jump: c('jump'), glide: c('ability'), use: c('use'), padUse: c('padUse'),
-                 swimUp: c('pull'), swimDown: c('slack'), dash: c('dash')};
+                 swimUp: c('pull'), swimDown: c('slack'), dash: c('dash'), liegen: c('spezial')};
 }
 function partnerTastenNeu(){
   if(typeof p1 === 'undefined' || !p1) return;

@@ -6996,6 +6996,96 @@ async def tasten_menue_oeffnen(g, srv):
 async def tb_knopf(g, n, aktion):
     await g.p.click(f'#sm-tb-grid button[data-n="{n}"][data-a="{aktion}"]'); await g.p.wait_for_timeout(300)
 
+# Dschungel-Neu (js/34-koop-aktionen.js): Schritte direkt rechnen (Spiel angehalten), Tasten wie ein Spieler
+KOOP_SCHRITTE = """menuScreen = 'pause'; deathState = null; let ts = 5e6; for(const k in KEYS) KEYS[k] = false;
+  const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+  const stell = (P, x, y) => { P.x = x; P.y = y; P.vx = P.vy = 0; P.grounded = false; };"""
+
+async def koop_testlevel(g):
+    srv = webserver()
+    await g.p.goto(srv.url + 'index.html?testlevel=koop-aktionen')
+    await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length === 4 && menuScreen === null", timeout=10000)
+    return srv
+
+@test
+async def koop_hinlegen_polster(g):
+    """Dschungel-Neu: Schweinchen hält die Spezial-Taste (Num 4) -> legt sich hin, steht still (kein Laufen, kein Springen).
+    Fällt der Affe von oben drauf, federt er hoch wie vom früheren Sprungpilz (≈ 6 Reihen, POLSTER_V) und kommt so auf den
+    6 Reihen hohen Sims (Testlevel koop-aktionen). Drüberlaufen tut nichts; steht das Schweinchen, gibt es keinen Schwung;
+    Taste los = steht wieder auf und läuft normal."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          try {
+            stell(p2, 600, 720); stell(p1, 300, 720); for(let i = 0; i < 6; i++) st();
+            KEYS[p2.keys.liegen] = true; for(let i = 0; i < 4; i++) st(); e.liegt = p2.liegt;
+            KEYS[p2.keys.left] = true; KEYS[p2.keys.jump] = true; KEYS[p2.keys.jump + '_pressed'] = true; for(let i = 0; i < 10; i++) st();
+            e.still = Math.abs(p2.x - 600) < 1 && p2.grounded; KEYS[p2.keys.left] = false; KEYS[p2.keys.jump] = false;
+            // drüberlaufen: kein Schwung
+            stell(p1, 500, 720); for(let i = 0; i < 4; i++) st(); KEYS[p1.keys.right] = true; let minY = 1e9;
+            for(let i = 0; i < 30; i++){ st(); minY = Math.min(minY, p1.y); } KEYS[p1.keys.right] = false; e.drueber = 720 - minY;
+            // von oben (neben dem Sims 640–880, Oberkante y 480): hoch und hinüber
+            stell(p1, 600, 560); let boing = 0, top = 1e9;
+            for(let i = 0; i < 90; i++){ KEYS[p1.keys.right] = p1.vy > -6 && p1.y < 560 && p1.x < 720; st(); top = Math.min(top, p1.y); if(p1.vy <= POLSTER_V + 0.01) boing++; }
+            KEYS[p1.keys.right] = false; for(let i = 0; i < 60; i++) st();
+            e.boing = boing; e.hoch = (720 - top)/40; e.aufSims = p1.grounded && Math.abs(p1.y - 480) < 1 && p1.x > 640;
+            e.log = SFX_LOG.slice(-40);
+            // steht auf: kein Polster mehr
+            KEYS[p2.keys.liegen] = false; for(let i = 0; i < 4; i++) st(); e.steht = !p2.liegt;
+            stell(p1, 600, 560); let b2 = 0; for(let i = 0; i < 40; i++){ st(); if(p1.vy < -10) b2++; } e.ohne = b2;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['liegt'] and r['still'], f'Schweinchen legt sich nicht hin / bewegt sich im Liegen: {r}'
+        assert r['drueber'] < 2, f'Drüberlaufen darf nicht hochschleudern: {r}'
+        assert r['boing'] >= 1 and 5.5 < r['hoch'] < 7.5 and r['aufSims'], f'Affe federt nicht auf den Sims: {r}'
+        assert 'hinlegen' in r['log'] and 'polster' in r['log'], f'Ton fehlt: {r["log"]}'
+        assert r['steht'] and r['ohne'] == 0, f'nach dem Aufstehen noch Polster: {r}'
+    finally:
+        srv.shutdown()
+
+@test
+async def koop_pusten(g):
+    """Dschungel-Neu: Affe hält die Spezial-Taste (H) -> pustet und steht still; W = nach oben, A/D = zur Seite (dreht sich nur).
+    Der Strahl trägt das Schweinchen mit offenem Schirm hinauf (wie ein Aufwind) bis auf den 9 Reihen hohen Sims, zur Seite
+    schiebt er es. Der Puste-Balken leert sich in PUSTE_DAUER Schritten, ganz leer geht es erst ab PUSTE_NEUSTART weiter, ohne
+    Pusten lädt er wieder voll. Ohne Schirm trägt der Wind nicht nach oben. Der Affe selbst fliegt nicht."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          try {
+            // hoch: Schweinchen über dem Affen mit Schirm -> auf den hohen Sims (1080–1280, y 360, 9 Reihen)
+            stell(p1, 1060, 720); stell(p2, 1060, 720); for(let i = 0; i < 6; i++) st();
+            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; KEYS[p1.keys.right] = true;
+            for(let i = 0; i < 4; i++) st(); e.affeStill = Math.abs(p1.x - 1060) < 1; e.richtung = p1.pusteRichtung;
+            KEYS[p2.keys.jump] = true; KEYS[p2.keys.jump + '_pressed'] = true; st(); KEYS[p2.keys.glide] = true;
+            let top = 1e9; for(let i = 0; i < 110; i++){ if(i === 20) KEYS[p2.keys.jump] = false; KEYS[p2.keys.right] = p2.y < 350 && p2.x < 1160; st(); top = Math.min(top, p2.y); }
+            KEYS[p2.keys.right] = false; KEYS[p2.keys.glide] = false; for(let i = 0; i < 40; i++) st();
+            e.schweinHoch = (720 - top)/40; e.aufSims = p2.grounded && Math.abs(p2.y - 360) < 1; e.affeY = p1.y; e.log = SFX_LOG.slice(-60);
+            // Balken: leer pusten, dann laden
+            for(const k in KEYS) KEYS[k] = false; for(let i = 0; i < 400; i++) st(); e.voll = p1.puste;
+            KEYS[p1.keys.pusten] = true; let n = 0; while(p1.pusteAn || n === 0){ st(); n++; if(n > 400) break; } e.dauer = n; e.leer = p1.pusteLeer;
+            for(let i = 0; i < 30; i++) st(); e.nochAus = !p1.pusteAn;
+            KEYS[p1.keys.pusten] = false; for(let i = 0; i < 400; i++) st(); e.wieder = p1.puste;
+            // ohne Schirm: trägt nicht nach oben
+            stell(p1, 1060, 720); stell(p2, 1060, 640); KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true;
+            for(let i = 0; i < 60; i++) st(); e.ohneSchirm = p2.grounded && p2.y === 720;
+            // zur Seite: Schweinchen mit Schirm wird nach rechts geschoben
+            for(const k in KEYS) KEYS[k] = false; p1.puste = 1; p1.pusteLeer = false; stell(p1, 300, 720); for(let i = 0; i < 4; i++) st(); stell(p2, 420, 700);
+            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.right] = true; KEYS[p2.keys.glide] = true; for(let i = 0; i < 30; i++) st();
+            e.seite = p2.x - 400; e.affeStill2 = Math.abs(p1.x - 300) < 1;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['affeStill'] and r['richtung'] == 'hoch', f'Affe soll still stehen und nach oben pusten: {r}'
+        assert r['schweinHoch'] > 8.5 and r['aufSims'], f'Wind trägt das Schweinchen nicht auf den Sims: {r}'
+        assert abs(r['affeY'] - 720) < 1, f'der Affe selbst darf nicht fliegen: {r}'
+        assert 'pustenstart' in r['log'] and 'pusten' in r['log'], f'Ton fehlt: {r["log"]}'
+        assert r['voll'] == 1 and abs(r['dauer'] - 160) <= 3 and r['leer'] and r['nochAus'], f'Puste-Balken falsch: {r}'
+        assert r['wieder'] == 1, f'Balken lädt nicht wieder: {r}'
+        assert r['ohneSchirm'], f'ohne Schirm darf der Wind nicht tragen: {r}'
+        assert r['seite'] > 60 and r['affeStill2'], f'Seiten-Wind schiebt nicht: {r}'
+    finally:
+        srv.shutdown()
+
 @test
 async def tasten_belegen_menue(g):
     """Nacht-Ausbau: Optionen → Tasten belegen. Standard = alte Belegung (+ Dash K / Num 3). Taste ändern, Esc bricht ab,
@@ -7065,15 +7155,15 @@ async def tasten_controller_je_typ(g):
         assert await g2.ev("padTypAktuell[0]") == 'xbox'
         await p.click('#sm-tb-seg button[data-art="pad"]'); await p.wait_for_timeout(300)
         assert 'Xbox' in await g2.ev("document.getElementById('sm-tb-typ').textContent")
-        # Dash von Spieler 1 auf RB (Knopf 5)
+        # Dash von Spieler 1 auf LB (Knopf 4; RB = 5 ist Standard für die Spezial-Taste, Dschungel-Neu)
         async def druck(knopf, bis, wert="{pressed: true, value: 1}"):
             # gedrückt halten, bis das Menü reagiert hat (langsame Rechner: nicht feste Zeiten), dann loslassen
             await g2.ev(f"__pad.buttons[{knopf}] = {wert}")
             await p.wait_for_function(bis, timeout=8000)
             await g2.ev(f"__pad.buttons[{knopf}] = {{pressed: false, value: 0}}"); await p.wait_for_timeout(300)
         await tb_knopf(g2, 1, 'dash')
-        await druck(5, "PADSETS[1].xbox.dash === 5")
-        assert await g2.ev("PADSETS[1].xbox.dash") == 5
+        await druck(4, "PADSETS[1].xbox.dash === 4")
+        assert await g2.ev("PADSETS[1].xbox.dash") == 4
         assert await g2.ev("PADSETS[1].playstation.dash") == 3 and await g2.ev("PADSETS[2].xbox.dash") == 3
         # Trigger (analog, nur value) auf Fähigkeit
         await tb_knopf(g2, 1, 'ability')
@@ -7087,16 +7177,16 @@ async def tasten_controller_je_typ(g):
         assert await g2.ev("!document.querySelector('.tb-k.fang')") and await g2.ev("PADSETS[1].xbox.use") == 1
         await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
         gesp = await g2.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")
-        assert gesp['pad']['1']['xbox']['dash'] == 5 and gesp['pad']['1']['playstation']['dash'] == 3, gesp['pad']['1']
-        # im Spiel: RB dasht mit dem Xbox-Controller, Y (3) nicht mehr
+        assert gesp['pad']['1']['xbox']['dash'] == 4 and gesp['pad']['1']['playstation']['dash'] == 3, gesp['pad']['1']
+        # im Spiel: LB dasht mit dem Xbox-Controller, Y (3) nicht mehr
         await p.goto(srv.url + 'index.html?testlevel=bahnen')
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
         await g2.ev("__pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
         assert not await g2.ev("!!PAD[KEYSETS[1].dash]")
-        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; __pad.buttons[5] = {pressed: true, value: 1}; pollGamepads()")
+        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; __pad.buttons[4] = {pressed: true, value: 1}; pollGamepads()")
         assert await g2.ev("!!PAD[KEYSETS[1].dash]")
         # derselbe Platz mit PlayStation-Controller: Standard (△ = 3) gilt
-        await g2.ev("__pad.buttons[5] = {pressed: false, value: 0}; __pad.id = 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)'; __pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
+        await g2.ev("__pad.buttons[4] = {pressed: false, value: 0}; __pad.id = 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)'; __pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
         assert await g2.ev("padTypAktuell[0]") == 'playstation' and await g2.ev("!!PAD[KEYSETS[1].dash]")
         await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; pollGamepads()")
     finally:

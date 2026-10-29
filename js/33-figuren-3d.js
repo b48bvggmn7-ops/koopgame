@@ -171,8 +171,10 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x
  K(H,{pos:[0,-.36,.88],sc:[.56,.42,.34],color:GES,spec:34});   // Schnauze
  K(H,{pos:[0,-.28,1.185],sc:[.1,.065,.05],color:0x4b2d22,spec:60});
  const mp=[];for(let i=0;i<=10;i++){const x=-.25+i*.05;const y=-.5-.11*(1-(x/.25)**2);const q=Math.max(0,1-(x/.52)**2-((y+.42)/.38)**2);mp.push([x,y,.88+.34*Math.sqrt(q)+.012])}
- K(H,{geo:tube(mp,.03,.03,1,30,8),color:0x5a2f25});
- K(H,{pos:[0,-.585,1.14],sc:[.1,.05,.04],color:0xff7d8f,spec:40});
+ const lae=[K(H,{geo:tube(mp,.03,.03,1,30,8),color:0x5a2f25}), K(H,{pos:[0,-.585,1.14],sc:[.1,.05,.04],color:0xff7d8f,spec:40})];
+ // Pusten (js/34): aufgeblasene Backen und ein runder Mund – nur sichtbar, solange er pustet (Größe in fussFigurZeichnen)
+ const backen=[-1,1].map(s=>{const b=K(H,{pos:[s*.42,-.34,.86],sc:[.3,.27,.26],color:GES,spec:40});b.visible=false;b.sc0=b.sc.slice();return b});
+ const mundO=K(H,{pos:[0,-.5,1.16],sc:[.1,.11,.05],color:0x3a1a12,spec:20});mundO.visible=false;mundO.sc0=mundO.sc.slice();
  const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.16,1.42,.1]}));   // Arme wie beim Schwein (nicht an den Ohren)
   F(A,{pos:[0,-.3,0],sc:[.2,.4,.2],root:ROOT,tip:TIP,len:.08,tat:true});K(A,{pos:[0,-.75,.04],sc:[.19,.19,.19],color:GES,spec:30});for(const fx of [-.09,0,.09])K(A,{pos:[fx,-.9+Math.abs(fx)*.3,.1],sc:[.065,.085,.065],color:GES,spec:30});K(A,{pos:[-s*.17,-.78,.08],sc:[.06,.08,.06],color:GES,spec:30});AP.push(A)}
  const LP=[];for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,.7,.1]}));
@@ -190,7 +192,7 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x
  for(const A of AP){A.kids.forEach((q,i)=>{q.sc=i===0?[q.sc[0]*1.35,q.sc[1],q.sc[2]*1.35]:q.sc.map(v=>v*1.45)})}
  for(const L of LP){L.kids[0].visible=false;for(const q of L.kids.slice(1)){q.pos=q.pos.map(v=>v*1.98);q.sc=q.sc.map(v=>v*1.98)}L.pos[1]=.01+.7*1.98;L.base=L.pos.slice()}
  for(const k of R.kids){if(LP.includes(k))continue;if(AP.includes(k)){k.pos=[k.pos[0],k.pos[1]+.12,k.pos[2]];continue}k.pos=[k.pos[0],k.pos[1]-.22,k.pos[2]]}
- return {root:R,head:H,armN:AP[0],armP:AP[1],legN:LP[0],legP:LP[1],eyes,tail:TL}}
+ return {root:R,head:H,armN:AP[0],armP:AP[1],legN:LP[0],legP:LP[1],eyes,tail:TL,backen,mundO,lae}}
 // ---------- Schwein ----------
 function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffdde8,D=40;
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
@@ -256,6 +258,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const ch = male ? buildMonkey() : buildPig();
     const wrap = new Nd(), yawN = wrap.add(new Nd()); yawN.kids.push(ch.root);
     ch.armN.cap = true; ch.armP.cap = true; ch.head.cap = true; ch.eyes.forEach(e => { e.n.cap = true; });
+    if(ch.mundO) ch.mundO.cap = true;   // Mund: Startpunkt des Puste-Winds (js/34)
     return halter[male] = {ch, wrap, yawN};
   }
   const lerpA = (a,b,t) => a.map((v,i) => v + (b[i]-v)*t);
@@ -291,6 +294,13 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   function zielPose(P, S, t, flip, sinceWJ){
     const sp = S.spG, male = P.male, s = Math.sin(S.phase), w = Math.min(1, sp/4.4);
     if(typeof baumTanzt === 'function' && baumTanzt()) return {p: tanzPose(P, S), key:'tanz'};   // gemeinsamer Siegestanz
+    // Dschungel-Neu (js/34): Schweinchen liegt flach auf dem Bauch (Arme und Beine von sich gestreckt), Affe pustet
+    if(!male && P.liegt) return {p: {head:[.22,0,0], armN:[-1.25,0,-1.05], armP:[-1.25,0,1.05], legN:[-1.5,0,-.35], legP:[-1.5,0,.35]}, key:'liegen'};
+    if(male && P.pusteAn){
+      const luft = Math.min(1, (performance.now() - (P._pusteStartT || 0))/200), zit = Math.sin(t*38)*.04*luft;   // erst Luft holen, dann kräftig
+      if(P.pusteRichtung === 'hoch') return {p: {head:[-1.3*luft + .2*(1 - luft) + zit,0,0], armN:[.25,0,-1.15], armP:[.25,0,1.15], legN:[-.25,0,-.12], legP:[-.25,0,.12]}, key:'pusten'};
+      return {p: {head:[-.12*luft + .25*(1 - luft) + zit,0,0], armN:[1.15*luft,0,-.45], armP:[1.15*luft,0,.45], legN:[-.5,0,0], legP:[.45,0,0]}, key:'pusten'};
+    }
     if(P.dash) return {p: TUCK, key:'dash'};
     if(sinceWJ < WJ_ZEIT){ const k = sinceWJ/WJ_ZEIT, tk = Math.sin(Math.min(1,k*1.15)*Math.PI);   // Salto: erst einrollen, am Ende strecken
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
@@ -395,6 +405,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(z.key === 'haft') ty = flip*1.2;   // Profil: man sieht, wie die Arme abwechselnd nach vorn greifen
     if(z.key === 'seil') ty = flip*1.57;   // am Seil: ganz von der Seite   // fast von vorn: beide Arme sichtbar          // zur Wand gedreht
     if(z.key === 'tanz') ty = S.tz && S.tz.near ? S.tz.side*.3 : 0;   // zur Kamera, leicht zum Partner
+    if(z.key === 'liegen') ty = 0;   // liegt zur Kamera hin
+    if(z.key === 'pusten') ty = P.pusteRichtung === 'hoch' ? .25*flip : P.pusteRichtung*1.42;   // nach oben: fast von vorn, sonst im Profil zur Blasrichtung
     if(z.key === 'hebel') ty = (P.leverAnim && P.leverAnim.dir < 0 ? -1 : 1)*1.4;   // zum Hebel hin im Profil
     if(P._yawTest != null) ty = P._yawTest;   // nur fuer Tests
     S.yaw += (ty - S.yaw)*(1 - Math.exp(-dt*14));
@@ -403,7 +415,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(z.key === 'dash'){ S.rollA += -flip*dt*16; rollA = S.rollA; }
     else { S.rollA = 0; if(z.key === 'wj') rollA = -flip*ease(Math.min(1, sinceWJ/WJ_ZEIT))*Math.PI*2; }
     // leichte Neigung: beim Laufen nach vorn, an der Wand weg von der Wand
-    const leanZiel = z.key === 'lauf' ? 0 : (z.key === 'ws' ? (wandRichtung(P) > 0 ? .1 : -.1) : 0);
+    const pusteLehne = z.key === 'pusten' && P.pusteRichtung !== 'hoch' ? (Math.min(1, (performance.now() - (P._pusteStartT || 0))/200) < 1 ? .1 : -.16)*P.pusteRichtung : 0;   // erst zurück (Luft holen), dann in den Wind
+    const leanZiel = z.key === 'lauf' ? 0 : (z.key === 'ws' ? (wandRichtung(P) > 0 ? .1 : -.1) : pusteLehne);
     S.lean += (leanZiel - S.lean)*(1 - Math.exp(-dt*12)); rollA += S.lean;
     rollA += IT.roll;
     if(S.trick && (S.trick.typ === 'salto' || S.trick.typ === 'schraube') && !z.key.startsWith('w')) rollA += -flip*2*Math.PI*tke;
@@ -449,7 +462,18 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(now > S.nb){ S.bl = now + 130; S.nb = now + 2200 + Math.random()*2800; }
     const zu = now < S.bl;
     for(const e of ch.eyes){ e.n.sc = [e.n.sc[0], zu ? e.y*.16 : e.y, e.n.sc[2]]; for(const g of e.g) g.visible = !zu; }
-    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14, (1 + sq), (1 - sq*.5)*1.14];   // Affe und Schwein gleich groß
+    // Pusten: Backen blasen sich auf (pulsieren leicht), runder Mund statt Lächeln; Augen beim kräftigen Pusten zusammengekniffen
+    S.pu = (S.pu || 0) + ((z.key === 'pusten' ? 1 : 0) - (S.pu || 0))*(1 - Math.exp(-dt*14));
+    if(ch.backen){ const pu = S.pu, puls = 1 + Math.sin(t*20)*.05*pu;
+      for(const b of ch.backen){ b.visible = pu > .04; b.sc = b.sc0.map(v => v*(.45 + .65*pu)*puls); }
+      ch.mundO.visible = pu > .3; ch.mundO.sc = ch.mundO.sc0.map(v => v*(.6 + .5*pu));
+      for(const q of ch.lae) q.visible = pu <= .3;
+      if(pu > .5 && !zu) for(const e of ch.eyes) e.n.sc = [e.n.sc[0], e.y*(1 - .45*pu), e.n.sc[2]]; }
+    // Liegen: flach und breit wie ein Kissen; federt nach, wenn der Affe abspringt
+    S.lg = (S.lg || 0) + ((z.key === 'liegen' ? 1 : 0) - (S.lg || 0))*(1 - Math.exp(-dt*16));
+    let lgX = 1 + .16*S.lg, lgY = 1 - .36*S.lg;
+    if(P._polsterT){ const q = (now - P._polsterT)/360; if(q < 1){ const a = Math.sin(q*Math.PI*2.5)*(1 - q)*.3; lgY *= 1 - a; lgX *= 1 + a*.55; } }
+    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14*lgX, (1 + sq)*lgY, (1 - sq*.5)*1.14*lgX];   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
     // in die kleine Leinwand zeichnen
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
@@ -490,7 +514,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const hp = handPunkt(ch.armP, 0, -.75*(ch.armP.alF||1), .04), h2 = handPunkt(ch.armN, 0, -.75*(ch.armN.alF||1), .04), hd = dev(0, 2.4);
     const a = dev(hp[0], hp[1]), b = dev(h2[0], h2[1]);
     P._handDev = {x: a.x, y: a.y, f: P._frameNo = (P._frameNo||0) + 1}; P._hand2Dev = {x: b.x, y: b.y}; P._headDev = {x: hd.x, y: hd.y};
-    { const fu = dev(0, 0); P._fussDev = {x: fu.x, y: fu.y, skala: Math.hypot(Tm.a, Tm.b)}; }   // für Tests: Fußpunkt und Maßstab (Gerätepixel je Spielpixel)
+    { const fu = dev(0, 0); P._fussDev = {x: fu.x, y: fu.y, skala: Math.hypot(Tm.a, Tm.b)}; }
+    if(ch.mundO && ch.mundO.capM){ const w = ch.mundO.capM;   // Mund in Weltkoordinaten (nur Anzeige: dort beginnt der Puste-Wind, js/34)
+      P._mund = {x: P.x + w[12]*SC, y: P.y - P.h*0.5 + fy - w[13]*SC - IT.hop*42, t: now}; }   // für Tests: Fußpunkt und Maßstab (Gerätepixel je Spielpixel)
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.shadowColor = 'rgba(46,28,14,.8)'; c.shadowBlur = Math.max(1, Math.min(5, 1.5*Math.hypot(Tm.a, Tm.b))); c.shadowOffsetX = 0; c.shadowOffsetY = 0;   // weiche dunkle Kontur
     c.drawImage(cv, FR.x0*SC, fy - FR.y1*SC - IT.hop*42, (FR.x1 - FR.x0)*SC, (FR.y1 - FR.y0)*SC);

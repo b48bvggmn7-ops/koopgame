@@ -2108,6 +2108,31 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - Tests: boden_dekor_dschungel, boden_dekor_freihalten (deko_vogel_flattert_weg und deko_frei_von_spielobjekten prüfen
   das alte Dekor jetzt in der Ruinen-Welt).
 
+### Dschungel-Neu: Koop-Aktionen Hinlegen und Pusten (js/34-koop-aktionen.js; Werte in js/02-physik-werte.js)
+- Neue Taste „Spezial“ je Spieler (Standard: Spieler 1 = H, Spieler 2 = Num 4 bzw. die normale 4; Controller R1/RB; frei
+  belegbar unter Optionen -> Tasten belegen). Wer den Affen spielt, pustet damit; wer das Schweinchen spielt, legt sich hin.
+  H ist dafür nicht mehr als „Hilfe“ gesperrt (war nirgends belegt). Rolle: das Schweinchen bringt den Affen hoch, der Affe
+  das Schweinchen – ersetzt im Dschungel Sprungpilz und Aufwind.
+- **Schweinchen hinlegen** (Taste halten): legt sich am Boden flach auf den Bauch (3D: Arme und Beine von sich gestreckt,
+  flach und breit wie ein Kissen), läuft und springt nicht, solange es liegt; Taste los = steht auf. Springt oder fällt der
+  Affe von oben drauf, federt er hoch wie früher vom Sprungpilz (POLSTER_V = −17,2, ≈ 6 Reihen); drüberlaufen tut nichts.
+  Das Schweinchen federt sichtbar nach. Töne: weiches Plumps beim Hinlegen, Boing beim Abfedern. Test koop_hinlegen_polster.
+- **Affe pusten** (Taste halten, nur am Boden, nicht am Seil): steht still und bläst; W = nach oben (legt den Kopf in den
+  Nacken), A/D = nach links/rechts (dreht sich nur, läuft nicht). Der Wind kommt in jeder Ansicht aus dem Mund (die 3D-Figur
+  meldet ihren Mund je Bild, `P._mund`), öffnet sich zum Trichter und sieht aus wie der Aufwind (gemeinsame Zeichnung
+  `windInhaltZeichnen` in elemente/aufwind.js: weiche Fläche, lange Schlieren, Funkel-Staub, Blättchen – nur schneller).
+  Animation: holt kurz Luft (lehnt sich zurück), dann aufgeblasene Backen, runder Mund, zusammengekniffene Augen, lehnt sich
+  in den Wind und zittert leicht; Druckringe vor dem Mund. Wirkung: nach oben trägt der Strahl (8 Kästchen über dem Kopf,
+  PUSTE_WEITE_HOCH) das Schweinchen mit offenem Schirm wie ein Aufwind (es steigt gut 9 Reihen); zur Seite (Mundhöhe, gut 2
+  Kästchen breit, PUSTE_WEITE_SEITE 300 px) schiebt er es mit Schirm kräftig, ohne Schirm nur leicht. Ohne Schirm trägt er
+  nicht nach oben; den Affen selbst bewegt er nicht. Wände halten den Wind auf. Puste-Balken über dem Kopf (beim Pusten nach
+  oben daneben): reicht ≈ 3 s (PUSTE_DAUER 160 Schritte), lädt nach kurzer Pause wieder auf (PUSTE_LADEN 190); ganz leer
+  gepustet geht es erst ab 30 % wieder (PUSTE_NEUSTART). Töne: Luftholen, kräftiges Wind-Rauschen. Wind wirkt auch auf leichte
+  Dinge (`pusteTrifft`, z. B. Windrad). Test koop_pusten.
+- Testlevel levels/test/koop-aktionen.json (index.html?testlevel=koop-aktionen): Sims 6 Reihen (Hinlegen), Sims 9 Reihen
+  (Pusten nach oben), Stachelgrube (Seiten-Wind).
+- Bahnen-Test der alten Mechaniken unverändert grün (nur über die Haken der neuen Bewegung eingeklinkt).
+
 ## Level-Editor (editor/)
 ```
   MONCHICHI LEVEL-EDITOR – FUNKTIONSLISTE

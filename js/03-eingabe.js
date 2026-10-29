@@ -9,17 +9,18 @@ const KEYS = {};
 // Nacht-Ausbau: frei belegbar im Optionen-Menü „Tasten“ (gespeichert unter TASTEN_SPEICHER). Die STANDARD-Belegung der
 // alten Aktionen ist genau die bisherige; neu ist nur „dash“ (Affe/Spieler 1: K, Spieler 2: Num 3, Controller: △).
 const TASTEN_STANDARD = {
-  1: {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', pull:'KeyW', slack:'KeyS', use:'KeyJ', dash:'KeyK'},
-  2: {left:'ArrowLeft', right:'ArrowRight', jump:'Numpad0', ability:'Numpad1', pull:'ArrowUp', slack:'ArrowDown', use:'Numpad2', dash:'Numpad3'},
+  1: {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', pull:'KeyW', slack:'KeyS', use:'KeyJ', dash:'KeyK', spezial:'KeyH'},
+  2: {left:'ArrowLeft', right:'ArrowRight', jump:'Numpad0', ability:'Numpad1', pull:'ArrowUp', slack:'ArrowDown', use:'Numpad2', dash:'Numpad3', spezial:'Numpad4'},
+  // spezial (Dschungel-Neu): Affe = pusten (Wind), Schweinchen = hinlegen (Sprungpolster) – js/34-koop-aktionen.js
 };
 // Controller-Knöpfe (Standard-Belegung): ✕ 0, ○ 1, □ 2, △ 3, Steuerkreuz 12–15. Laufen geht immer auch mit dem Stick.
-const PAD_STANDARD = {jump:0, ability:2, use:1, dash:3, pull:12, slack:13, left:14, right:15};
-const TASTEN_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'dash'];
+const PAD_STANDARD = {jump:0, ability:2, use:1, dash:3, pull:12, slack:13, left:14, right:15, spezial:5};   // 5 = R1 / RB
+const TASTEN_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'dash', 'spezial'];
 const TASTEN_SPEICHER = 'monchichi.tasten';
 // Diese Tasten gehören dem Spiel selbst und sind nicht belegbar (Menü/Pause, Neustart, Leistungsanzeige, Ton, Test-Sprung)
 const TASTEN_GESCHUETZT = {Escape: 'Pause/Menü', Enter: 'Menü bestätigen', Tab: 'System', KeyR: 'Neustart', KeyF: 'Leistungsanzeige',
   KeyM: 'Ton aus/an', KeyC: 'Test-Sprung', KeyX: 'Test-Sprung', KeyP: 'Partner', KeyQ: 'Partner', KeyE: 'Partner', KeyV: 'Partner',
-  KeyT: 'Tageszeit (Test)', KeyZ: 'Wetter (Test)', KeyH: 'Hilfe', Backspace: 'System', MetaLeft: 'System', MetaRight: 'System', ContextMenu: 'System'};
+  KeyT: 'Tageszeit (Test)', KeyZ: 'Wetter (Test)', Backspace: 'System', MetaLeft: 'System', MetaRight: 'System', ContextMenu: 'System'};
 const PAD_GESCHUETZT = {8: 'Share/Ansicht', 9: 'Options/Menü (Pause)', 16: 'PS/Xbox-Taste'};
 // Controller-Belegung je Spieler UND je Controller-Typ (Xbox, PlayStation, andere): wer einen anderen Controller ansteckt,
 // bekommt dessen eigene gespeicherte Belegung bzw. die Standard-Belegung als Rückfall. Laufen/Zielen: linker Stick (fest).
@@ -62,16 +63,16 @@ function tastenAnwenden(){
   if(typeof updateHudKeys === 'function') updateHudKeys();
 }
 tastenLaden();
-const trackedKeysFest = ['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyF','Enter','KeyH','KeyR'];
+const trackedKeysFest = ['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyF','Enter','KeyR'];
 function istSpielTaste(code){
   if(trackedKeysFest.includes(code)) return true;
   for(const n of [1, 2]) for(const a of TASTEN_AKTIONEN) if(KEYSETS[n][a] === code) return true;
-  return ['Digit0', 'Digit1', 'Digit2', 'Digit3'].includes(code) && keyAlias(code) !== code;
+  return ['Digit0', 'Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(code) && keyAlias(code) !== code;
 }
 // Spielerin 2 springt mit der 0 vom Nummernblock; die normale 0 (1, 2, 3) zählt als Ausweich (Laptops ohne Nummernblock) –
 // aber nur, solange die Ziffer nicht selbst irgendwo belegt ist
 function keyAlias(code){
-  const ersatz = {Digit0: 'Numpad0', Digit1: 'Numpad1', Digit2: 'Numpad2', Digit3: 'Numpad3'}[code];
+  const ersatz = {Digit0: 'Numpad0', Digit1: 'Numpad1', Digit2: 'Numpad2', Digit3: 'Numpad3', Digit4: 'Numpad4'}[code];
   if(!ersatz) return code;
   for(const n of [1, 2]) for(const a of TASTEN_AKTIONEN) if(KEYSETS[n][a] === code) return code;
   return ersatz;
@@ -102,8 +103,9 @@ function keysFor(male){
   const s = KEYSETS[male ? monkeyPlayer : 3 - monkeyPlayer];
   // swimUp/swimDown: Hoch/Runter beim Schwimmen (Ausbau 5) – dieselben Tasten wie Seil ranziehen/geben
   // dash (Nacht-Ausbau): Dash-Taste; hoch/runter für die Dash-Richtung und zum Festhalten an Haftflächen = swimUp/swimDown
-  return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash}
-              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash};
+  // pusten (Affe) / liegen (Schweinchen): die Spezial-Taste des Spielers (js/34-koop-aktionen.js)
+  return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, pusten:s.spezial}
+              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, liegen:s.spezial};
 }
 function setMonkeyPlayer(n){
   monkeyPlayer = n === 2 ? 2 : 1;
@@ -150,7 +152,7 @@ function updateHudKeys(){
 // Controller i (0/1) drückt die „virtuellen Tasten“ von Spieler i+1 (Belegung PADSETS, Stick geht immer zusätzlich)
 function padMap(i){
   const n = i + 1, K = KEYSETS[n];
-  return {left:K.left, right:K.right, jump:K.jump, ability:K.ability, pull:K.pull, slack:K.slack, use:K.padUse, dash:K.dash};
+  return {left:K.left, right:K.right, jump:K.jump, ability:K.ability, pull:K.pull, slack:K.slack, use:K.padUse, dash:K.dash, spezial:K.spezial};
 }
 let padBlocked = false;
 function isDown(code){ return !!(KEYS[code] || PAD[code]); }
@@ -174,7 +176,7 @@ function pollGamepads(){
     const el = document.getElementById('pad'+(i+1));
     padConnected[i] = !!gp;
     if(!gp){
-      for(const k of ['left','right','jump','ability','pull','slack','use','dash']) setPad(m[k], false);
+      for(const k of ['left','right','jump','ability','pull','slack','use','dash','spezial']) setPad(m[k], false);
       if(el){ el.classList.remove('on');
         el.textContent = padBlocked ? '🎮 Controller hier blockiert – Spiel im eigenen Tab öffnen'
                                     : '🎮 Controller '+(i+1)+': nicht verbunden (Taste drücken)'; }
@@ -197,6 +199,7 @@ function pollGamepads(){
     setPad(m.slack, b(P.slack) || (vert && ay > 0));
     setPad(m.use,   b(P.use));             // Standard: Kreis / B = Schalter betätigen
     setPad(m.dash,  b(P.dash));            // Standard: Dreieck / Y = Dash (Nacht-Ausbau)
+    setPad(m.spezial, b(P.spezial));       // Standard: R1 / RB = pusten (Affe) bzw. hinlegen (Schweinchen)
     if(b(9)) restart = true;               // Options / Start
     if(el){ el.classList.add('on'); el.textContent = '🎮 Controller '+(i+1)+' verbunden'; }
   }

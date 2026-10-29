@@ -231,3 +231,23 @@ const PARTNER_WEG_BUDGET = 120000;      // … und so viele Vorausschritte (≈ 
 const PARTNER_WEG_PAUSE = 300;          // Schritte: so lange keine neue Wegsuche zum selben Ziel, wenn keine gefunden wurde
 const PARTNER_DASH_BODEN = 6;     // Computer-Partner auf der Flucht: so viele Kästchen fester, freier Boden vor ihm, damit er dasht (Umbau)
 const PARTNER_BRUCH_NAH = 24;   // Computer-Partner: so nah (px) vor einer Durchbruch-Wand dasht er hindurch (Umbau)
+
+// ---------- Dschungel-Neu: Spezial-Aktionen (js/34-koop-aktionen.js) ----------
+// Schweinchen hinlegen (Spezial-Taste halten): liegt still am Boden; springt/fällt der Affe von oben drauf, federt er hoch
+// wie früher vom Sprungpilz (gleiche Höhe, ca. 6 Kästchen). Drüberlaufen tut nichts.
+const POLSTER_V = -17.2;          // Abwurf-Tempo nach oben (= Sprungpilz BOUNCE_V)
+const POLSTER_TREFFER = 20;       // px: so weit (plus halbe Figurenbreite) neben der Schweinchen-Mitte zählt das Draufspringen
+const POLSTER_HOEHE = 18;         // px: so hoch über dem Boden liegt die Oberseite des liegenden Schweinchens
+// Affe pusten (Spezial-Taste halten): steht still, W = nach oben, A/D = nach links/rechts; der Windstrahl trägt das
+// Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge (Windrad …)
+const PUSTE_DAUER = 160;          // Schritte (≈ 3 s): so lange reicht ein voller Puste-Balken
+const PUSTE_LADEN = 190;          // Schritte vom leeren bis zum vollen Balken (lädt nur, wenn nicht gepustet wird) …
+const PUSTE_PAUSE = 24;           // … nach so vielen Schritten Pause
+const PUSTE_NEUSTART = 0.3;       // ganz leer gepustet: erst ab diesem Füllstand geht es wieder (kurz verschnaufen)
+const PUSTE_WEITE_HOCH = 320;     // px: so weit reicht der Strahl nach oben (8 Kästchen) …
+const PUSTE_WEITE_SEITE = 300;    // … und zur Seite
+const PUSTE_BREITE = 84;          // px: Breite des Strahls (gut 2 Kästchen)
+const PUSTE_ANLAUF = 6;           // Schritte, bis der Strahl voll bläst (weicher Start)
+const PUSTE_SCHUB = 0.85;         // px/Schritt²: Seiten-Schub auf das Schweinchen mit Schirm …
+const PUSTE_SCHUB_OHNE = 0.3;     // … ohne Schirm (wird nur leicht geschoben)
+const PUSTE_SEITE_MAX = 7.5;      // höchstens so schnell schiebt der Wind zur Seite

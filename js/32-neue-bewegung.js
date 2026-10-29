@@ -381,6 +381,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   const K = P.keys || {};
   if(P.male && LIANE_HALTEN && !window.hakenTippen) lianeGriffPruefen(P);
   if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
+  if(typeof koopAktionVorher === 'function' && koopAktionVorher(P, moveDir, jumpPressed, nass)) return true;   // Dschungel-Neu: hinlegen / pusten (js/34)
   if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }
   if(P.dashPause > 0 && !P.dash) P.dashPause--;
@@ -448,6 +449,7 @@ function kanteAbrutschen(P){
   if(spotFree(nx, P.y, P)) P.x = nx;
 }
 function neueBewegungNachher(P, altX, altY){
+  if(typeof koopAktionNachher === 'function') koopAktionNachher(P, altX, altY);   // Dschungel-Neu: Affe federt vom liegenden Schweinchen (js/34)
   if(P.hookAttached || P.dash || P.haft || P.inWater) P.rutscht = false;
   const d = P.dash;
   if(d){
@@ -484,8 +486,9 @@ function neueBewegungSchritt(figuren){
   }
   for(let i = neuFx.length - 1; i >= 0; i--) if(neuFx[i].leben <= 0) neuFx.splice(i, 1);
   if(typeof bruchNachwachsen === 'function') bruchNachwachsen(figuren);
+  if(typeof koopAktionSchritt === 'function') koopAktionSchritt();   // Dschungel-Neu: Windstrahl, Puste-Balken, Wind-Teilchen (js/34)
 }
-function neueBewegungZuruecksetzen(){ neuFx.length = 0; neuTrefferStopp = 0; }
+function neueBewegungZuruecksetzen(){ neuFx.length = 0; neuTrefferStopp = 0; if(typeof koopAktionZuruecksetzen === 'function') koopAktionZuruecksetzen(); }
 
 // ---------- Zeichnen (nur Anzeige) ----------
 // Stauchen/Strecken der Figur beim Dash, am Haftpunkt und beim Wand-Rutschen (multipliziert mit charSquash)
@@ -496,9 +499,11 @@ function neueBewegungSquash(P){
     if(Math.abs(P._dashDx) >= Math.abs(P._dashDy)){ sx += a; sy -= a*0.6; } else { sy += a; sx -= a*0.6; } } }
   if(P.rutscht){ sx *= 0.9; sy *= 1.06; }
   if(P.haft && P.haft.flaeche === 'unten'){ sy *= 0.92; sx *= 1.05; }
+  if(typeof koopAktionSquash === 'function'){ const [a, b] = koopAktionSquash(P); sx *= a; sy *= b; }   // Dschungel-Neu (js/34)
   return [sx, sy];
 }
 function neueBewegungZeichnen(){
+  if(typeof pusteZeichnen === 'function') pusteZeichnen();   // Dschungel-Neu: Windstrahl + Puste-Balken (js/34)
   for(const f of neuFx){
     const k = f.leben/f.max, x = f.x - camX;
     if(x < -80 || x > VW + 80) continue;

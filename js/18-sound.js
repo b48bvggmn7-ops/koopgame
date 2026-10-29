@@ -342,6 +342,12 @@ const SFX = {
   checkpoint(x){ sfxLog('checkpoint'); sfxPlay('checkpoint', {x}); },
   coin(combo, x){ sfxLog('coin'); return sfxPlay('coin', {x, rate: Math.pow(2, combo/12)}); },
   mushroom(x){ sfxLog('mushroom'); sfxPlay('mushroom', {x}); },
+  // Dschungel-Neu (js/34-koop-aktionen.js): Schweinchen legt sich hin (weiches Plumps + kleines Grunzen), Affe federt ab,
+  // Affe pustet (holt Luft, dann kräftiges Wind-Rauschen, das je Schub neu ansetzt)
+  hinlegen(pl){ sfxLog('hinlegen'); sfxPlay('land', {x: pl.x, vol: 0.5, rate: 0.8}); sTone(230, 0.04, 0.12, {to: 170, type: 'triangle', vol: 0.035}); },
+  polster(pl){ sfxLog('polster'); sfxPlay('mushroom', {x: pl.x, rate: 0.82}); sTone(320, 0, 0.18, {to: 520, type: 'triangle', vol: 0.04}); },
+  pustenStart(pl){ sfxLog('pustenstart'); sNoise(0, 0.18, {filter: 'bandpass', f: 500, to: 1400, q: 0.8, vol: 0.05, attack: 0.05}); },
+  pusten(pl, k){ sfxLog('pusten'); sNoise(0, 0.34, {filter: 'bandpass', f: 900 + Math.random()*200, to: 650, q: 0.6, vol: 0.06*(0.6 + 0.4*(k || 1)), attack: 0.03}); },
   wechsel(fest, x){ sfxLog(fest ? 'wechselan' : 'wechselweg'); sfxPlay(fest ? 'wechselAn' : 'wechselAus', {x}); },   // Wechselboden
   platsch(x, tempo){ sfxLog('platsch'); sfxPlay('platsch', {x, vol: Math.min(1, 0.4 + (tempo || 0)/12)}); },   // Wasser
   luftWarn(x, tick){ sfxLog('luftwarn'); sfxPlay('luftWarn', {x, rate: tick ? 1.15 : 1}); },
