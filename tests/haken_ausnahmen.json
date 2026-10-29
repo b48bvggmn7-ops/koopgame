@@ -180,18 +180,6 @@
   "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
  },
  {
-  "level": "dschungel/03-lianenschlucht.json",
-  "spalte": 136,
-  "regel": "Bahn",
-  "grund": "Lianenschlucht, vom Nutzer gebaut: Pilz 124 -> Haken 130 -> Haken 136 -> hohes Plateau 140 (Kamin-Sprung oben). Seit Dash nur waagerecht braucht der Affe den zweiten Haken dicht vor dem Plateau – dort landet er gewollt"
- },
- {
-  "level": "dschungel/03-lianenschlucht.json",
-  "spalte": 136,
-  "regel": "Ring",
-  "grund": "Lianenschlucht, vom Nutzer gebaut: Pilz 124 -> Haken 130 -> Haken 136 -> hohes Plateau 140 (Kamin-Sprung oben). Seit Dash nur waagerecht braucht der Affe den zweiten Haken dicht vor dem Plateau – dort landet er gewollt"
- },
- {
   "level": "ruinen/02-mondnacht.json",
   "spalte": 468,
   "regel": "Schwung",
@@ -226,5 +214,11 @@
   "level": "dschungel/01-dschungel.json",
   "spalte": 786,
   "grund": "Dschungel-Neu Trampolin-Ende 776: der Affe kommt nur vom Schirm-Trampolin an den Haken und dasht nach dem Schwung durch die Durchbruch-Wand 790 – dass die Schwungbahn die Wand streift, ist gewollt (Bot-Test dschungel_neu_stellen_a1)."
+ },
+ {
+  "level": "dschungel/03-lianenschlucht.json",
+  "spalte": 137,
+  "regel": "Bahn",
+  "grund": "Haken-Treppe 124: vom Haken 137 schwingt der Affe hinauf aufs hohe Plateau 140 – die Bahn berührt dessen Kante, weil er dort landen soll (Bot-Test dschungel_neu_stellen_a1)."
  }
 ]

@@ -273,7 +273,7 @@
   {
    "level": "dschungel/03-lianenschlucht.json",
    "regel": "Haken",
-   "spalte": 130,
+   "spalte": 129,
    "begruendung": "Dschungel-Neu Haken-Treppe 124: der Affe erreicht die Hakenreihe vom Schirm-Trampolin aus (nicht vom Absprung 129), Höhe bewusst so (sonst ginge es ohne Schweinchen); Bot-Test dschungel_neu_stellen_a1 „Haken-Treppe 124“."
   },
   {

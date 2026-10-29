@@ -131,15 +131,21 @@ def s02_bruecke(lv):
     return lv.merke('Dschungel-Neu: Puste-Brücke 764 (+ Haken 782)')
 def s03_haken_treppe(lv):
     """Teil 3, Stachelgrube 132–139 vor dem hohen Block 140 (früher Pilz 124 + Aufwind 134): der Affe federt vom
-    Schirm-Trampolin an die Haken 130 und 136 und schwingt auf den Block, dort pustet er das Windrad 13 an – in der
-    Grube erscheint eine Wechselboden-Treppe (4 Stufen, B) für das Schweinchen."""
+    Schirm-Trampolin an die Haken 129 und 137 und schwingt auf den Block, dort pustet er das Windrad 13 an – in der
+    Grube erscheint eine Wechselboden-Treppe (4 Stufen, B) für das Schweinchen. Die Haken (früher 130/3 und 136/1, Kreise
+    überschnitten sich – Nutzer-Rückmeldung) hängen jetzt bei 129/4 und 137/2, Radius 4: Kreise berühren sich nicht."""
     if any(p['c'] == 132 and p['r'] == 12 for p in lv.ed.get('switchFloors', [])): return False
     lv.punkt_weg('bouncers', 124, 12); lv.kachel(124, 13, 'ground')
     wind_weg(lv, 134, 135)
     lv.punkt('windraeder', 144, 3, link=13)
     for p in [p for p in lv.ed.get('switchFloors', []) if p.get('link') == 13]: lv.punkt_weg('switchFloors', p['c'], p['r'])
     for k in range(8): lv.punkt('switchFloors', 132 + k, 12 - k, gruppe='B', link=13)   # Treppe: je Spalte eine Reihe höher
+    haken_treppe_haken(lv)
     return lv.merke('Dschungel-Neu: Haken-Treppe 124 (Trampolin -> Haken -> Windrad 13 -> Treppe)')
+def haken_treppe_haken(lv):
+    if any(h['c'] == 129 and h['r'] == 4 for h in lv.ed.get('hooks', [])): return False
+    lv.haken_weg(130, 3); lv.haken_weg(136, 1); lv.haken(129, 4, 4); lv.haken(137, 2, 4)
+    return lv.merke('Dschungel-Neu: Haken-Treppe ohne überschneidende Haken (129/4, 137/2)')
 def s03_kreuzung(lv):
     """Teil 3, Pilz-Kreuzung 414 (Hebel über Kreuz: oben Hebel 7 öffnet Tür 7 unten, unten Hebel 6 öffnet Tür 6 oben):
     neuer Pfeiler 419–420 (Oberkante Reihe 13) in der Stachelgrube. Der Affe springt hinüber und pustet, das Schweinchen
@@ -272,7 +278,7 @@ def s05_finale_pilz(lv):
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
-    'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
+    'dschungel/03-lianenschlucht.json': [s03_haken_treppe, haken_treppe_haken, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
     'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse, s05_pilz_flucht, s05_zwei_gaenge, s05_finale_pilz],
     'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor, s06_sturm_pilz],
 }

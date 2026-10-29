@@ -11832,7 +11832,7 @@ def _dn_02_bruecke():
     return {'beide': vs, 'ziel': (788, 5), 'gegen': [('Affe ohne Stein', {'m': allein}, 'm'), ('Schweinchen ohne Wind', {'f': allein_f}, 'f')], 'frames': 6000}
 DN_STELLEN_EXTRA.append(('dschungel/02-baumkronen.json', 'Puste-Brücke 764', kat(762, 4), kat(760, 4), _dn_02_bruecke()))
 def _dn_03_haken_treppe():
-    """Teil 3, Haken-Treppe 124: Affe vom Trampolin an die Haken 130/136 auf den Block, Windrad 13 -> Treppe fürs Schweinchen"""
+    """Teil 3, Haken-Treppe 124: Affe vom Trampolin an die Haken 129/137 auf den Block, Windrad 13 -> Treppe fürs Schweinchen"""
     vs = []
     for rel1, rel2 in (('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + 50 && P.vy < 0'), ('P.x > P.anchor.x + 40', 'P.x > P.anchor.x + 80'),
                        ('P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'), ('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + 100')):
