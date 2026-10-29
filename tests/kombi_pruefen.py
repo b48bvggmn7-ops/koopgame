@@ -9,6 +9,8 @@
 import json, math, re, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import abschnitt as A   # Dschungel-Neu: Abschnitte aus Teilen
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bildregel_pruefen as B
 
 ROOT = B.ROOT
@@ -239,7 +241,7 @@ def mindest(datei, d):
     wl = next(x for x in w['welten'] if x['id'] == welt)
     cols = max(1, max([B.spalte(s['x'] + s.get('w', 40) - 1) for s in d.get('solids', [])] + [0]) + 1)
     if wl.get('boss') == datei: return m.get('boss'), m.get('boss')
-    i = wl['level'].index(datei)
+    i = A.level_dateien(wl).index(datei)   # Abschnitte (Dschungel-Neu): Teil = altes Level
     faktor = min(1, cols / REF_SPALTEN)
     return math.ceil(m['level'][i] * faktor - 1e-9), m['etappe'][i]
 

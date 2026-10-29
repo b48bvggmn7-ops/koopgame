@@ -1,13 +1,31 @@
 [
  {
+  "datei": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "name": "Abschnitt 1",
+  "titel": "Spur der Sternschnuppe",
+  "abschnitt": true
+ },
+ {
+  "datei": "dschungel/abschnitt-2-meteoritenherz.json",
+  "name": "Abschnitt 2",
+  "titel": "Das Herz des Meteoriten",
+  "abschnitt": true
+ },
+ {
   "datei": "dschungel/01-dschungel.json",
   "name": "Level 1",
-  "titel": "Dschungel"
+  "titel": "Dschungel",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "teil": 1
  },
  {
   "datei": "dschungel/02-baumkronen.json",
   "name": "Level 2",
-  "titel": "Baumkronen"
+  "titel": "Baumkronen",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "teil": 2
  },
  {
   "datei": "ruinen/01-ruinen.json",
@@ -35,7 +53,7 @@
   "versteckt": true
  },
  {
-  "datei": "dschungel/boss-bruno.json",
+  "datei": "archiv/dschungel-boss-bruno.json",
   "name": "Boss 1: Bruno",
   "titel": "Kokos-Gorilla",
   "versteckt": true,
@@ -44,12 +62,18 @@
  {
   "datei": "dschungel/03-lianenschlucht.json",
   "name": "Level 7",
-  "titel": "Lianenschlucht"
+  "titel": "Lianenschlucht",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "teil": 3
  },
  {
   "datei": "dschungel/04-gluehwald.json",
   "name": "Level 8",
-  "titel": "Glühwald"
+  "titel": "Glühwald",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-2-meteoritenherz.json",
+  "teil": 1
  },
  {
   "datei": "ruinen/03-fallengang.json",
@@ -124,12 +148,18 @@
  {
   "datei": "dschungel/05-dornenpfad.json",
   "name": "Dschungel 5",
-  "titel": "Dornenpfad"
+  "titel": "Dornenpfad",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-2-meteoritenherz.json",
+  "teil": 2
  },
  {
   "datei": "dschungel/06-wipfelsturm.json",
   "name": "Dschungel 6",
-  "titel": "Wipfelsturm"
+  "titel": "Wipfelsturm",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-2-meteoritenherz.json",
+  "teil": 3
  },
  {
   "datei": "ruinen/06-tempelherz.json",

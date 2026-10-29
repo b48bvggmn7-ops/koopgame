@@ -209,7 +209,7 @@ function saveUmbenennen(s) {
   s.unlocked = einmal((s.unlocked || []).map(neu));
   s.completed = einmal((s.completed || []).map(neu));
   const st = {}; for (const k in (s.stats || {})) st[neu(k)] = s.stats[k]; s.stats = st;
-  return s;
+  return typeof abschnittUmzug === 'function' ? abschnittUmzug(s) : s;   // Dschungel-Neu: Teile -> Abschnitte (01a)
 }
 function migrateSave(raw) {
   if (!raw || typeof raw !== 'object') return blankSave();
@@ -254,7 +254,7 @@ const lastUnlocked = () => { let k = 0; for (let i = 0; i < realCount(); i++) if
    öffnet sie ebenfalls. In der Welt geht es wie bisher Level für Level. */
 function mapWorlds() {
   const ws = (CONFIG.worlds || []).filter(w => w && w.id).slice().sort((a, b) => (a.reihenfolge || 0) - (b.reihenfolge || 0))
-    .map(w => ({ id: w.id, name: w.name || w.id, titel: w.titel || w.name || w.id, boss: w.boss || null, bossName: w.bossName || null,
+    .map(w => ({ id: w.id, name: w.name || w.id, titel: w.titel || w.name || w.id, boss: w.boss || null, ohneBoss: !!w.ohneBoss, bossName: w.bossName || null,
                  idx: CONFIG.levels.map((l, i) => i).filter(i => !CONFIG.levels[i].soon && CONFIG.levels[i].welt === w.id) }));
   const rest = CONFIG.levels.map((l, i) => i).filter(i => !CONFIG.levels[i].soon && !(CONFIG.levels[i].welt && ws.some(w => w.id === CONFIG.levels[i].welt)));
   if (rest.length) ws.push({ id: '_rest', name: ws.length ? 'Weitere Level' : 'Level', titel: ws.length ? 'Weitere Level' : 'Level', boss: null, idx: rest });
@@ -472,7 +472,8 @@ async function playLevel(i) {
       const r = await fetch(PROJECT_LEVELS + levelPfadUrl(lvl.datei) + (tryNo ? '?t=' + Date.now() : ''), { cache: 'no-store' });
       if (!r.ok) { why = 'Datei nicht erreichbar (HTTP ' + r.status + ')'; await wait(300); continue; }
       data = JSON.parse(await r.text());
-    } catch (e) { why = (e && e.message) || String(e); await wait(300); }
+      if (typeof abschnittLaden === 'function') data = await abschnittLaden(data);   // Dschungel-Neu: Abschnitt = Teile hintereinander (15a)
+    } catch (e) { data = null; why = (e && e.message) || String(e); await wait(300); }
   }
   if (!data) { levelLoadFailed(lvl, why); return; }
   try {
@@ -1074,20 +1075,22 @@ S.levels = {
     if (arg !== 'keep') {   // zurück aus der Spielerwahl: Auswahl behalten, sonst das letzte offene Level der Welt
       let k = 0; this.list.forEach((i, j) => { if (isUnlocked(i)) k = j; }); this.idx = k;
     }
-    this.idx = clamp(this.idx, 0, this.list.length);
+    this.idx = clamp(this.idx, 0, this.list.length - (this.mitBoss() ? 0 : 1));
     this.top = '';
     $('#sm-l-title').textContent = w.name;
     $('#sm-l-world').textContent = w.titel && w.titel !== w.name ? w.titel : '';
     const box = $('#sm-cards'); box.innerHTML = '';
-    box.style.setProperty('--n', this.list.length + 1);   // Kartenzahl (+ Boss) -> gleiche Spaltenbreite (Design-Politur F)
+    box.style.setProperty('--n', this.list.length + (this.mitBoss() ? 1 : 0));   // Kartenzahl (+ Boss) -> gleiche Spaltenbreite (Design-Politur F)
     this.list.forEach((i, j) => {
       const b = mk('<button class="lc" type="button" tabindex="-1"></button>');
       b.addEventListener('click', () => { if (this.idx === j) this.act('confirm'); else this.select(j); });
       box.appendChild(b);
     });
-    const bc = mk('<button class="lc boss" type="button" tabindex="-1"></button>');   // Boss (kommt mit Ausbau 6)
-    bc.addEventListener('click', () => { if (this.idx === this.list.length) this.act('confirm'); else this.select(this.list.length); });
-    box.appendChild(bc);
+    if (this.mitBoss()) {   // Boss (kommt mit Ausbau 6); Welten mit "ohneBoss" (Dschungel-Neu: am Ende wartet der Meteorit) haben keine Boss-Karte
+      const bc = mk('<button class="lc boss" type="button" tabindex="-1"></button>');
+      bc.addEventListener('click', () => { if (this.idx === this.list.length) this.act('confirm'); else this.select(this.list.length); });
+      box.appendChild(bc);
+    }
     box.appendChild(mk(`<div class="pair nt" id="sm-pair">${monkeySVG()}${pigSVG()}</div>`));
     const done = this.list.filter(isDone).length, n = this.list.length || 1;
     $('#sm-l-count').innerHTML = `Fortschritt<b>${done} / ${this.list.length}</b>`;
@@ -1099,7 +1102,8 @@ S.levels = {
     const uj = this.list.indexOf(unlock);
     if (uj >= 0 && $$('#sm-cards .lc')[uj]) { this.idx = uj; this.paint(true); unlockAnimation($$('#sm-cards .lc')[uj], `Level ${nrInWelt(unlock)} freigeschaltet!`); }
   },
-  isBoss(j) { return j === this.list.length; },
+  isBoss(j) { return this.mitBoss() && j === this.list.length; },
+  mitBoss() { const w = worldById(this.world); return !(w && w.ohneBoss); },
   paint(instant) {
     const cards = $$('#sm-cards .lc');
     cards.forEach((b, j) => {
@@ -1163,7 +1167,7 @@ S.levels = {
   },
   back() { Snd.play('back'); go('map', { sel: this.world }); },
   act(type) {
-    const n = this.list.length + 1;   // + Boss-Karte
+    const n = this.list.length + (this.mitBoss() ? 1 : 0);   // + Boss-Karte
     if (this.top) {   // obere Reihe (Packages / Umkleide) ausgewählt
       if (type === 'confirm') { if (this.top === 'pack') this.openPacks(); else this.openColl(); }
       else if (type === 'swap') this.openColl();
@@ -1658,7 +1662,12 @@ window.startMenuLevelWon = () => {
   // Packages: 1 fürs Schaffen, +1 wenn alle Münzen gesammelt – für beide Figuren (26-kosmetik-daten.js)
   const packs = n && typeof awardPackages === 'function' ? awardPackages(typeof coins !== 'undefined' && coins.every(c => c.taken)) : 0;
   if (n && st && typeof addCoins === 'function') addCoins(st.cm, st.cf);   // selbst gesammelte Münzen aufs Konto (Pakete kaufen)
-  if (n) { const fresh = completeLevel(n, true); showMenuScreen('results', { n, st, fresh, packs, freshWorld: lastFreshWorld, bossOpen: lastBossOpen }); }
+  if (n) {
+    const fresh = completeLevel(n, true), zeigen = () => showMenuScreen('results', { n, st, fresh, packs, freshWorld: lastFreshWorld, bossOpen: lastBossOpen });
+    // Dschungel-Neu: nach einem Abschnitt kommt seine Szene (story/story.json, "nachSzene" in der Abschnitt-Datei), dann die Statistik
+    const sz = typeof levelNachSzene === 'string' ? levelNachSzene : null;
+    if (sz && typeof szeneSpielen === 'function') { hideMenu(); szeneSpielen(sz, zeigen); } else zeigen();
+  }
   else showMenuScreen('menu');
 };
 window.showTitleScreen = () => showMenuScreen('title');

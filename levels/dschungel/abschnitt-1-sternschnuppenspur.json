@@ -1,0 +1,14 @@
+{
+ "abschnitt": 1,
+ "titel": "Spur der Sternschnuppe",
+ "hinweis": "Abschnitt (Dschungel-Neu): KEIN Gelände hier – das Level besteht aus den Teilen unten, hintereinander gesetzt (js/15a-abschnitte.js). Jeden Teil im Editor einzeln bearbeiten.",
+ "teile": [
+  "dschungel/01-dschungel.json",
+  "dschungel/02-baumkronen.json",
+  "dschungel/03-lianenschlucht.json"
+ ],
+ "welt": "dschungel",
+ "tageszeit": "morgen",
+ "wetter": "wechselnd",
+ "nachSzene": "abschnitt1_ende"
+}

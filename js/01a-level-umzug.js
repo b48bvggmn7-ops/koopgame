@@ -11,7 +11,7 @@ const LEVEL_UMZUG = {
   "level-2.json": "dschungel/02-baumkronen.json",
   "level-7.json": "dschungel/03-lianenschlucht.json",
   "level-8.json": "dschungel/04-gluehwald.json",
-  "boss-1.json": "dschungel/boss-bruno.json",
+  "boss-1.json": "archiv/dschungel-boss-bruno.json",
   "level-3.json": "ruinen/01-ruinen.json",
   "level-4.json": "ruinen/02-mondnacht.json",
   "level-9.json": "ruinen/03-fallengang.json",
@@ -30,8 +30,24 @@ const LEVEL_UMZUG = {
   "level-20.json": "vulkan/05-schlackewerk.json",
   "level-21.json": "vulkan/06-feuerschlund.json",
   "level-22.json": "vulkan/07-kraterherz.json",
-  "level-3-alter-entwurf.json": "archiv/level-3-alter-entwurf.json"
+  "level-3-alter-entwurf.json": "archiv/level-3-alter-entwurf.json",
+  "dschungel/boss-bruno.json": "archiv/dschungel-boss-bruno.json"
 };
+// Dschungel-Neu: die 6 Dschungel-Level sind jetzt Teile von 2 Abschnitten (js/15a-abschnitte.js). Ein Spielstand, der
+// einen Teil freigeschaltet hat, hat auch seinen Abschnitt offen; wer den letzten Teil geschafft hat, hat den Abschnitt
+// geschafft (die Einträge der Teile bleiben stehen – nichts geht verloren).
+const ABSCHNITT_UMZUG = {
+  "dschungel/abschnitt-1-sternschnuppenspur.json": ["dschungel/01-dschungel.json", "dschungel/02-baumkronen.json", "dschungel/03-lianenschlucht.json"],
+  "dschungel/abschnitt-2-meteoritenherz.json": ["dschungel/04-gluehwald.json", "dschungel/05-dornenpfad.json", "dschungel/06-wipfelsturm.json"]
+};
+function abschnittUmzug(s){
+  for(const a in ABSCHNITT_UMZUG){
+    const teile = ABSCHNITT_UMZUG[a];
+    if(teile.some(f => s.unlocked.includes(f)) && !s.unlocked.includes(a)) s.unlocked.push(a);
+    if(s.completed.includes(teile[teile.length - 1]) && !s.completed.includes(a)) s.completed.push(a);
+  }
+  return s;
+}
 // alter Dateiname -> neuer (unbekannte Namen bleiben, wie sie sind)
 function levelNeuerName(datei){ return LEVEL_UMZUG[datei] || datei; }
 // Pfad für fetch: jeder Teil einzeln kodiert (der Schrägstrich zwischen Welt und Datei bleibt ein Schrägstrich)

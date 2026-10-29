@@ -186,7 +186,7 @@ function load(){
 }
 
 function updateName(){
-  const anz = currentProjectFile && typeof levelAnzeige === 'function' ? levelAnzeige(currentProjectFile) : null;   // „Vulkan 3“
+  const anz = currentProjectFile && typeof levelAnzeige === 'function' ? levelAnzeige(currentProjectFile, (typeof projectLevelList !== 'undefined' && Array.isArray(projectLevelList) ? projectLevelList : []).find(x => x.datei === currentProjectFile)) : null;   // „Vulkan 3“ / „Abschnitt 1 · Teil 2“
   document.getElementById('curName').textContent = (anz ? anz + ' · ' + (meta.titel || currentLevelName || '') : (currentLevelName || 'Unbenanntes Level'))
     + (dirty && currentLevelName ? ' •' : '');
 }

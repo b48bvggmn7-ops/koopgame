@@ -21,8 +21,8 @@ async function ghOpen(){
     const r = await fetch(PROJECT_DIR+'levels.json', {cache:'no-store'}); if(!r.ok) throw 0;
     const list = await r.json();
     for(const P of list){
-      if(P.versteckt) continue;
-      const o = document.createElement('option'); o.value = P.datei; o.textContent = `${levelAnzeige(P.datei) || P.name}${P.titel ? ' – '+P.titel : ''} (${P.datei})`;
+      if((P.versteckt && !P.teilVon) || P.abschnitt) continue;   // Dschungel-Neu: Teile eines Abschnitts ja, die Abschnitt-Datei selbst nicht (kein Gelände)
+      const o = document.createElement('option'); o.value = P.datei; o.textContent = `${levelAnzeige(P.datei, P) || P.name}${P.titel ? ' – '+P.titel : ''} (${P.datei})`;
       o.dataset.name = P.name || ''; sel.appendChild(o);
     }
     // als NEUES Level speichern: Datei im Ordner der Welt aus der Level-Info, nächste freie Nummer dieser Welt
@@ -80,6 +80,13 @@ async function ghProjectFiles(sha, datei, name, neu){
   const worlds = JSON.parse(await ghReadText('levels/worlds.json', sha));
   const ziel = (worlds.welten || []).find(w => w.id === meta.welt);
   if(!ziel) throw new Error('Welt „' + meta.welt + '“ gibt es in worlds.json nicht');
+  const list = JSON.parse(await ghReadText('levels/levels.json', sha));
+  let L = list.find(x => x.datei === datei), changed = false;
+  // Dschungel-Neu: ein Teil eines Abschnitts steht nicht selbst in der Welt (der Abschnitt tut es) – worlds.json bleibt
+  if(L && L.teilVon){
+    if(meta.titel && L.titel !== meta.titel){ L.titel = meta.titel; out.push({path:'levels/levels.json', content: JSON.stringify(list, null, 1)}); }
+    return out;
+  }
   for(const w of worlds.welten) w.level = (w.level || []).filter(d => d !== datei);
   const istBoss = elementPunkte.boss && elementPunkte.boss.length > 0;   // Boss-Level (Ausbau 6): Boss der Welt, keine Levelkarte
   if(istBoss){ for(const w of worlds.welten) if(w.boss === datei) w.boss = null; ziel.boss = datei; }
@@ -89,8 +96,6 @@ async function ghProjectFiles(sha, datei, name, neu){
     ziel.level.splice(pos, 0, datei);
   }
   out.push({path:'levels/worlds.json', content: formatWorlds(worlds)});
-  const list = JSON.parse(await ghReadText('levels/levels.json', sha));
-  let L = list.find(x => x.datei === datei), changed = false;
   if(!L){ L = {datei, name}; list.push(L); changed = true; }
   if(istBoss && !L.versteckt){ L.versteckt = true; L.boss = true; changed = true; }   // Boss erscheint nicht als Levelkarte
   if(meta.titel && L.titel !== meta.titel){ L.titel = meta.titel; changed = true; }

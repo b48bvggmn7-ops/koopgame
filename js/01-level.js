@@ -81,6 +81,7 @@ let levelWelt = '';   // Welt des Levels (Level-Info „welt“), z. B. für DAS
 function buildLevel(data){
   deathCount = {m: 0, f: 0};
   levelWelt = data.welt || '';
+  levelNachSzene = data.nachSzene || null;   // Dschungel-Neu: Szene nach dem Abschnitt (24-startmenue.js, 29-story.js)
   solids = (data.solids||[]).filter(s=>s.type!=='fake').map(s=>({...s}));
   fakeWalls = (data.solids||[]).filter(s=>s.type==='fake').map(s=>({...s}));
   for(const E of ELEMENTE) if(E.spiel && E.spiel.laden) E.spiel.laden(data);   // Hebel, Türen, Druckplatten, Pilze, Aufwind … (elemente/)
@@ -147,6 +148,7 @@ function buildLevel(data){
   if(typeof setWeatherMode === 'function') setWeatherMode(levelLayers.wetter);   // 19-wetter.js
 }
 let levelTheme = 'dschungel';
+let levelNachSzene = null;
 let levelLayers = {welt: null, tageszeit: null, wetter: 'wechselnd', vorschau: false};   // Ausbau 1
 
 // Für schön gezeichneten Boden: welche Seiten eines Bodenstücks grenzen an ein gleichartiges Stück?

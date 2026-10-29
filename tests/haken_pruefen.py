@@ -10,6 +10,8 @@
 # Aufruf: python3 tests/haken_pruefen.py [--level <welt>/<datei>] [--alle]  (Ausgabe: Befunde je Level; Rückgabe 1 bei Befunden)
 import json, math, sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import abschnitt as A   # Dschungel-Neu: Abschnitte aus Teilen
 ROOT = Path(__file__).resolve().parent.parent
 T = 40
 W, H = 28.5, 32.3            # Figur (js/04-figuren-kollision.js)
@@ -22,7 +24,7 @@ def welten_level():
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
     out = []
     for welt in w['welten']:
-        out += welt.get('level', [])
+        out += A.level_dateien(welt)   # Abschnitte (Dschungel-Neu): ihre Teile
         if welt.get('boss'): out.append(welt['boss'])
     return out
 

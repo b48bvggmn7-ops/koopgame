@@ -96,13 +96,25 @@ async def startmenue_bis_level(g, tasten_vorher=()):
         await p.wait_for_timeout(100)
     raise AssertionError('Level startet nach der Spielerwahl nicht')
 
+async def szene_ueberspringen(g, ms=2500):
+    """Dschungel-Neu: nach einem Abschnitt kommt eine Spielszene (nachSzene) – mit Esc überspringen, falls sie läuft"""
+    for _ in range(ms // 100):
+        if await g.ev("menuScreen === 'szene'"):
+            await g.p.keyboard.press('Escape'); await g.p.wait_for_timeout(300); return True
+        if await g.ev("!!document.querySelector('#sm-s-results.active')"): return False
+        await g.p.wait_for_timeout(100)
+    return False
+
 async def sm_screen(g):
     return await g.ev("(()=>{ const a = document.querySelector('#sm.on .screen.active'); return a ? a.id : null; })()")
 
 async def menu_texte(p):
     return await p.eval_on_selector_all('#menuItems .mItem', 'els => els.map(e => e.textContent)')
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import abschnitt as ABS   # Dschungel-Neu: Abschnitte aus Teilen (wie js/15a-abschnitte.js)
 TESTS = []
+A1, A2 = 'dschungel/abschnitt-1-sternschnuppenspur.json', 'dschungel/abschnitt-2-meteoritenherz.json'   # Dschungel-Neu: die zwei Abschnitte
 # ---------- Koop-Bot für Level-Tests (Ausbau 7, tests/koop_bot.js) ----------
 KOOP_BOT = (ROOT / 'tests' / 'koop_bot.js').read_text(encoding='utf-8')
 def kx(c): return c * 40 + 20          # Mitte von Spalte c (px)
@@ -357,13 +369,14 @@ async def duell_unter_levelkarte(g):
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && menuScreen === null", timeout=10000)
         await g.ev("deathCount.m = 1; deathCount.f = 4; let k = 0; for(const c of coins){ if(c.color === 'blue' && k < 3){ c.taken = true; c.takenBy = 'm'; k++; } }"
                    " deathState = null; won = true; winSteps = 0; winT0 = performance.now()")
+        await szene_ueberspringen(g, 20000)
         await p.wait_for_function("document.querySelector('#sm-s-results.active')", timeout=20000)
         await p.wait_for_timeout(1800)   # Zahlen zählen hoch
         r = await g.ev("({m: document.getElementById('sm-r-m').textContent, f: document.getElementById('sm-r-f').textContent})")
         assert 'Münzen' in r['m'] and 'Tode' in r['m'] and '3' in r['m'] and '4' in r['f'], f'Statistik falsch: {r}'
         assert 'Mehr Münzen' in r['m'] and 'Mehr Tode' in r['f'], f'Hervorhebung falsch: {r}'
         st = await g.ev("GameMenu.getSave()")
-        assert st['stats']['dschungel/01-dschungel.json']['m'] == 1 and st['stats']['dschungel/01-dschungel.json']['f'] == 4 and 'dschungel/02-baumkronen.json' in st['unlocked'], f'Stand nicht gemerkt: {st}'
+        assert st['stats'][A1]['m'] == 1 and st['stats'][A1]['f'] == 4 and A2 in st['unlocked'], f'Stand nicht gemerkt: {st}'
         await p.keyboard.press('Enter')
         await p.wait_for_function("document.querySelector('#sm-s-levels.active')", timeout=5000)
         await p.wait_for_function("document.querySelector('#sm-cards .lc .ulock')", timeout=3000)   # Schloss auf Level 2
@@ -706,9 +719,12 @@ async def editor_projekt_levels(g):
         liste = json.loads((ROOT / 'levels' / 'levels.json').read_text())
         namen = await p.eval_on_selector_all('#projectList .lvl .nm', 'els => els.map(e => e.textContent)')
         welt = {'dschungel': 'Dschungel', 'ruinen': 'Ruinen', 'hoehle': 'Höhle', 'wasser': 'Wasser', 'vulkan': 'Vulkan', 'archiv': 'Archiv'}
-        def anzeige(L):   # Editor-Umbau: Welt + Nummer aus dem Pfad (levels/<welt>/<nr>-<titel>.json)
+        def anzeige(L):   # Editor-Umbau: Welt + Nummer aus dem Pfad (levels/<welt>/<nr>-<titel>.json); Dschungel-Neu: Abschnitte und ihre Teile
             w, f = L['datei'].split('/')
+            if f.startswith('abschnitt-'): return f"Abschnitt {int(f.split('-')[1])}"
+            if L.get('teilVon'): return f"Abschnitt {int(L['teilVon'].split('/')[1].split('-')[1])} · Teil {L['teil']}"
             return f"{welt[w]} {int(f[:2])}" if f[:2].isdigit() else f"{welt[w]} Boss" if f.startswith('boss-') else None
+        teil_von = {L['datei']: (L.get('teilVon') or L['datei'], L.get('teil', 0)) for L in liste}
         assert sorted(namen) == sorted(f"{anzeige(L)} · {L.get('titel') or L['name']}" if anzeige(L) else L['name'] for L in liste), f'Projekt-Liste falsch: {namen}'
         # Welt-Ordner (Nutzerwunsch): je Welt ein aufklappbarer Ordner in Spiel-Reihenfolge, darin nach Nummer, Boss zuletzt
         ordner = await p.eval_on_selector_all('#projectList > details.welt-ordner', '''els => els.map(d => ({w: d.dataset.welt,
@@ -717,12 +733,14 @@ async def editor_projekt_levels(g):
         for o in ordner:
             assert all(z.startswith(o['w'] + '/') for z in o['z']), o
             assert o['s'] == f"📁 {welt[o['w']]} ({len(o['z'])})", o
-            assert o['z'] == sorted(o['z'], key=lambda z: (z.split('/')[1].startswith('boss-'), z)), o
+            assert o['z'] == sorted(o['z'], key=lambda z: (z.split('/')[1].startswith('boss-'), teil_von[z][0], teil_von[z][1])), o   # Teile unter ihrem Abschnitt
             assert not o['offen'], 'ohne geladenes Projekt-Level sind alle Ordner zu'
-        assert [z for o in ordner if o['w'] == 'dschungel' for z in o['z']][-1] == 'dschungel/boss-bruno.json'
-        await projekt_laden(p, liste[0]['datei'])
-        erwartet = json.loads((ROOT / 'levels' / 'editor-format' / liste[0]['datei']).read_text())
-        assert (await p.text_content('#curName')).startswith('Dschungel 1 · Dschungel'), f"Welt/Nummer/Titel nicht übernommen: {await p.text_content('#curName')}"
+        assert [z for o in ordner if o['w'] == 'dschungel' for z in o['z']][:2] == ['dschungel/abschnitt-1-sternschnuppenspur.json', 'dschungel/01-dschungel.json']
+        assert await p.evaluate("!document.querySelector('#projectList .lvl.abschnitt button')"), 'Abschnitt (ohne Gelände) hat einen Laden-Knopf'
+        erste = 'dschungel/01-dschungel.json'   # Dschungel-Neu: Teil 1 von Abschnitt 1
+        await projekt_laden(p, erste)
+        erwartet = json.loads((ROOT / 'levels' / 'editor-format' / erste).read_text())
+        assert (await p.text_content('#curName')).startswith('Abschnitt 1 · Teil 1 · Dschungel'), f"Welt/Nummer/Titel nicht übernommen: {await p.text_content('#curName')}"
         await p.click('#levelsBtn'); await p.wait_for_timeout(300)
         offen = await p.eval_on_selector_all('#projectList > details[open]', 'els => els.map(d => d.dataset.welt)')
         assert offen == ['dschungel'], f'Ordner des geladenen Levels sollte offen sein: {offen}'
@@ -765,7 +783,7 @@ async def menue_projekt_levels(g):
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await startmenue_bis_level(g)
-        spiel = json.loads((ROOT / 'levels' / 'dschungel/01-dschungel.json').read_text())
+        spiel = ABS.laden(A1)   # Dschungel-Neu: Level 1 = Abschnitt 1 (aus drei Teilen)
         assert await g.ev('coins.length') == len(spiel['coins']), 'Level 1 nicht geladen'
         assert not await g.ev("document.getElementById('sm').classList.contains('on')"), 'Startmenü bleibt offen'
         # Pause -> zurück zum Menü -> Fortfahren -> Levelauswahl
@@ -782,14 +800,11 @@ async def menue_projekt_levels(g):
         assert await sm_screen(g) == 'sm-s-levels', 'Weltkarte öffnet die Welt-Seite nicht'
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
         echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-        assert echte[:4] == ['Dschungel', 'Baumkronen', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
-        assert namen == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Wipfelsturm', 'Bruno'], f'Karten der Welt Dschungel: {namen}'   # Boss-Karte (Ausbau 6), Level 7/8 (Ausbau 7)
+        assert echte[:4] == ['Spur der Sternschnuppe', 'Das Herz des Meteoriten', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
+        assert namen == ['Spur der Sternschnuppe', 'Das Herz des Meteoriten'], f'Karten der Welt Dschungel: {namen}'   # Dschungel-Neu: 2 Abschnitte, kein Boss
         # Level 2 gesperrt
         await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
         assert await g.ev("menuScreen") == 'start', 'gesperrtes Level startet'
-        # Boss-Karte („bald“) startet nie
-        await p.keyboard.press('ArrowRight'); await p.wait_for_timeout(100); await p.keyboard.press('Enter'); await p.wait_for_timeout(600)
-        assert await g.ev("menuScreen") == 'start' and await sm_screen(g) == 'sm-s-levels', 'Boss-Karte startet etwas'
         # freigeschaltetes Level 2: erst Spielerwahl, dann startet es
         await g.ev("GameMenu.unlockAll()")
         await g.ev("startMenuShow('levels', {world: 'dschungel'})"); await p.wait_for_timeout(700)   # Auswahl: letztes offenes Level (2)
@@ -803,7 +818,7 @@ async def menue_projekt_levels(g):
             if await g.ev("menuScreen === null"): break
             await p.wait_for_timeout(100)
         letzt = json.loads((ROOT / 'levels' / 'worlds.json').read_text())['welten'][0]['level'][-1]   # letztes Dschungel-Level (6er-Welten: aus worlds.json)
-        spiel2 = json.loads((ROOT / 'levels' / letzt).read_text())
+        spiel2 = ABS.laden(letzt)
         assert await g.ev('coins.length') == len(spiel2['coins']), 'letztes offenes Level nicht geladen'
     finally:
         srv.shutdown()
@@ -822,10 +837,10 @@ async def startmenue_fortschritt_und_wahl(g):
         assert 'Spieler 2' in await p.text_content('#hudMHead'), 'Anzeige zeigt die Tauschung nicht'
         x0 = await g.ev('p2.x'); await g.hold(('KeyD',), 400)
         assert await g.ev('p2.x') > x0 + 20, 'Spieler 1 steuert das Schweinchen nicht'
-        await g.ev("winFinish()"); await p.wait_for_timeout(700)
+        await g.ev("winFinish()"); await szene_ueberspringen(g); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-results', 'nach dem Ziel kein Statistik-Bildschirm'
         sv = await g.ev("GameMenu.getSave()")
-        assert 'dschungel/01-dschungel.json' in sv['completed'] and 'dschungel/02-baumkronen.json' in sv['unlocked'], f'Fortschritt nicht gemerkt: {sv}'
+        assert A1 in sv['completed'] and A2 in sv['unlocked'], f'Fortschritt nicht gemerkt: {sv}'
         await p.wait_for_timeout(400); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
         assert await sm_screen(g) == 'sm-s-levels', 'nach der Statistik keine Levelauswahl'
         await p.wait_for_function("document.getElementById('sm-toast').textContent.includes('freigeschaltet')", timeout=5000)
@@ -973,6 +988,8 @@ async def projekt_levels_beide_formate_gleich(g):
     for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
         spiel = json.loads((ROOT / 'levels' / L['datei']).read_text())
         ed = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
+        if ABS.ist_abschnitt(spiel):   # Dschungel-Neu: Abschnitt-Datei (nur Teile-Liste, kein Gelände) – in beiden Ordnern gleich
+            assert ed == spiel and L.get('abschnitt'), L['datei']; continue
         umg = await g.ev(f"convertEditorSnapshot({json.dumps(ed)})")
         assert ed.get('name') == L['name'], f"{L['datei']}: Name {ed.get('name')} statt {L['name']}"
         diff = [k for k in set(umg) | set(spiel) if not k.startswith('_') and k not in META + ('name',)   # name/_…: nur Beschriftung
@@ -4701,34 +4718,36 @@ async def menue_ton_dezent(g):
 
 @test
 async def levelkarten_gleich_breit(g):
-    """Design-Politur F: auf der Welt-Seite sind alle Levelkarten (auch die Boss-Karte, mit und ohne Statistik-Zeile)
-    gleich breit und gleich hoch, liegen ganz im Bild und kein Titel ragt aus seiner Karte – bei 1920×1080 und 1366×768,
-    mit 6, 5 und 4 Leveln in der Welt. Lange Titel werden kleiner bzw. an einer Silbe umgebrochen."""
+    """Design-Politur F: auf der Welt-Seite sind alle Levelkarten (mit und ohne Statistik-Zeile) gleich breit und gleich
+    hoch, liegen ganz im Bild und kein Titel ragt aus seiner Karte – bei 1920×1080 und 1366×768, mit 6, 5 und 4 Leveln in
+    der Welt (Ruinen) und mit den 2 Abschnitten im Dschungel (Dschungel-Neu, keine Boss-Karte mehr). Lange Titel werden
+    kleiner bzw. an einer Silbe umgebrochen."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
-        await g.ev("""localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json'],
-            completed: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], stats: {'dschungel/01-dschungel.json': {m: 2, f: 3}}, bosse: []})); localStorage.setItem('monchichi.introGesehen', 'true')""")
+        await g.ev("""localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['%s', '%s', 'ruinen/01-ruinen.json'],
+            completed: ['%s', '%s', 'ruinen/01-ruinen.json'], stats: {'%s': {m: 2, f: 3}, 'ruinen/01-ruinen.json': {m: 1, f: 1}}, bosse: []})); localStorage.setItem('monchichi.introGesehen', 'true')""" % (A1, A2, A1, A2, A1))
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
-        alle = await g.ev("GameMenu.config.levels.map((l, i) => i).filter(i => GameMenu.config.levels[i].welt === 'dschungel')")
+        alle = await g.ev("GameMenu.config.levels.map((l, i) => i).filter(i => GameMenu.config.levels[i].welt === 'ruinen')")
         assert len(alle) >= 6, alle
         for w, h in ((1920, 1080), (1366, 768)):
             await p.set_viewport_size({'width': w, 'height': h}); await p.wait_for_timeout(200)
             for n in (6, 5, 4):
-                await g.ev(f"{alle}.forEach((i, k) => GameMenu.config.levels[i].welt = k < {n} ? 'dschungel' : '_weg')")
+                await g.ev(f"{alle}.forEach((i, k) => GameMenu.config.levels[i].welt = k < {n} ? 'ruinen' : '_weg')")
                 for welt in ('dschungel', 'ruinen'):
                     await g.ev(f"GameMenu.show('levels', {{world: '{welt}'}})"); await p.wait_for_timeout(450)
                     k = await g.ev("""[...document.querySelectorAll('#sm-cards .lc')].map(b => { const r = b.getBoundingClientRect(), nm = b.querySelector('.nm');
                         return {w: r.width, h: r.height, l: r.left, r: r.right, boss: b.classList.contains('boss'), duel: !!b.querySelector('.duel'),
                                 t: nm.textContent, rausW: nm.scrollWidth - nm.clientWidth, rausH: nm.scrollHeight - nm.clientHeight, nmR: nm.getBoundingClientRect().right}; })""")
                     wo = f'{w}x{h}, {welt}, {n} Level'
-                    if welt == 'dschungel': assert len(k) == n + 1 and k[-1]['boss'] and k[0]['duel'], f'{wo}: {k}'
+                    if welt == 'dschungel': assert len(k) == 2 and not any(c['boss'] for c in k) and k[0]['duel'], f'{wo}: {k}'   # ohneBoss
+                    else: assert len(k) == n + 1 and k[-1]['boss'] and k[0]['duel'], f'{wo}: {k}'   # Boss-Karte „bald“
                     assert max(c['w'] for c in k) - min(c['w'] for c in k) < 1, f'{wo}: Breiten {[round(c["w"], 1) for c in k]}'
                     assert max(c['h'] for c in k) - min(c['h'] for c in k) < 1, f'{wo}: Höhen {[round(c["h"], 1) for c in k]}'
                     assert min(c['l'] for c in k) >= 0 and max(c['r'] for c in k) <= w, f'{wo}: Karten ragen aus dem Bild'
                     for c in k:
                         assert c['rausW'] <= 1 and c['rausH'] <= 2 and c['nmR'] <= c['r'], f'{wo}: Titel ragt heraus: {c}'
-            await g.ev(f"{alle}.forEach(i => GameMenu.config.levels[i].welt = 'dschungel')")
+            await g.ev(f"{alle}.forEach(i => GameMenu.config.levels[i].welt = 'ruinen')")
     finally:
         await p.set_viewport_size({'width': 1280, 'height': 720})
         await g.ev("localStorage.clear()")
@@ -6090,7 +6109,7 @@ async def welten_laden(g):
     ids = [x['id'] for x in sorted(w['welten'], key=lambda x: x['reihenfolge'])]
     assert ids == ['dschungel', 'ruinen', 'hoehle', 'wasser', 'vulkan'], ids
     for x in w['welten']:
-        assert set(x) >= {'id', 'name', 'titel', 'reihenfolge', 'level', 'boss'} and x['boss'] == ('dschungel/boss-bruno.json' if x['id'] == 'dschungel' else None), x   # Ausbau 6: Boss 1
+        assert set(x) >= {'id', 'name', 'titel', 'reihenfolge', 'level', 'boss'} and x['boss'] is None, x   # Dschungel-Neu: Boss 1 (Bruno) ist raus (levels/archiv/)
         for d in x['level']: assert (ROOT / 'levels' / d).exists(), f'Level-Datei fehlt: {d}'
     srv = webserver(); p = g.p
     try:
@@ -6100,17 +6119,17 @@ async def welten_laden(g):
         assert k['w'] == ids, k
         # Ausbau 7: Dschungel hat jetzt 4 Level (Level 7 und 8 hinter Level 2), Ruinen 5 (Level 9–11 hinter Level 4)
         assert [x[0] for x in k['l']] == [d for x in w['welten'] for d in x['level']] == [   # Editor-Umbau: Welt-Ordner
-            'dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json',
+            A1, A2,   # Dschungel-Neu: 2 Abschnitte (aus den 6 alten Dschungel-Leveln)
             'ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json',
             'hoehle/02-tropfsteingang.json', 'hoehle/03-eisgrotte.json', 'hoehle/01-kristallhoehle.json', 'hoehle/04-leuchtgrotte.json',
             'hoehle/05-foerderwerk.json', 'hoehle/06-tiefenschlund.json', 'vulkan/01-glutpfad.json', 'vulkan/02-aschefeld.json',
             'vulkan/03-feuerberg.json', 'vulkan/04-magmakammer.json', 'vulkan/05-schlackewerk.json', 'vulkan/06-feuerschlund.json',
             'vulkan/07-kraterherz.json'], f'Reihenfolge geändert: {k}'
-        assert [x[1] for x in k['l']] == ['Dschungel', 'Baumkronen', 'Lianenschlucht', 'Glühwald', 'Dornenpfad', 'Wipfelsturm', 'Ruinen', 'Fallengang', 'Sonnentempel',
+        assert [x[1] for x in k['l']] == ['Spur der Sternschnuppe', 'Das Herz des Meteoriten', 'Ruinen', 'Fallengang', 'Sonnentempel',
                                           'Mondnacht', 'Felsenflucht', 'Tempelherz', 'Tropfsteingang', 'Eisgrotte', 'Kristallhöhle', 'Leuchtgrotte',
                                           'Förderwerk', 'Tiefenschlund', 'Glutpfad', 'Aschefeld', 'Feuerberg', 'Magmakammer',
                                           'Schlackewerk', 'Feuerschlund', 'Kraterherz'], f'Namen geändert: {k}'
-        assert [x[2] for x in k['l']] == ['dschungel'] * 6 + ['ruinen'] * 6 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
+        assert [x[2] for x in k['l']] == ['dschungel'] * 2 + ['ruinen'] * 6 + ['hoehle'] * 6 + ['vulkan'] * 7, k   # Ausbau 7: Höhle 6 Level, Vulkan 7 Level
         # Rückfall ohne worlds.json: Reihenfolge aus levels.json (versteckte nicht); nicht einsortierte Level hinten dran
         f = await g.ev("""(() => { const list = [{datei:'a.json', titel:'A'}, {datei:'b.json', titel:'B'}, {datei:'x.json', versteckt:true}, {datei:'c.json'}];
           return { ohne: GameMenu.buildLevelOrder(list, null).map(l => l.datei),
@@ -6135,8 +6154,15 @@ async def level_ordner_nach_welten(g):
         for d in x['level'] + ([x['boss']] if x.get('boss') else []):
             assert (lv / d).exists(), f'Datei aus worlds.json fehlt: {d}'
             assert d.startswith(x['id'] + '/'), f'{d} liegt nicht im Ordner der Welt {x["id"]}'
-            assert re.fullmatch(r'[a-z]+/(\d\d-[a-z0-9-]+|boss-[a-z0-9-]+)\.json', d), f'Name passt nicht zum Schema: {d}'
+            assert re.fullmatch(r'[a-z]+/(\d\d-[a-z0-9-]+|boss-[a-z0-9-]+|abschnitt-\d-[a-z0-9-]+)\.json', d), f'Name passt nicht zum Schema: {d}'
             eingetragen.append(d)
+            ab = ABS.lies(d)   # Dschungel-Neu: ein Abschnitt besteht aus Teilen – sie liegen im Ordner der Welt und gehören dazu
+            if ABS.ist_abschnitt(ab):
+                for tl in ab['teile']:
+                    assert (lv / tl).exists() and tl.startswith(x['id'] + '/') and re.fullmatch(r'[a-z]+/\d\d-[a-z0-9-]+\.json', tl), tl
+                    L = next(L for L in liste if L['datei'] == tl)
+                    assert L.get('teilVon') == d and L.get('versteckt') and L.get('teil') == ab['teile'].index(tl) + 1, L
+                    eingetragen.append(tl)
     assert len(eingetragen) == len(set(eingetragen)), 'Datei in mehreren Welten'
     dateien = sorted(str(f.relative_to(lv)).replace('\\', '/') for f in lv.rglob('*.json')
                      if f.parent != lv and f.parts[len(lv.parts)] not in ('editor-format', 'test', 'partner'))
@@ -6163,12 +6189,13 @@ async def spielstand_umzug_welt_ordner(g):
         await g.ev(f"localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({json.dumps(alt)}))")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         sv = await g.ev("GameMenu.getSave()")
+        # Dschungel-Neu: wer einen Teil offen hat, hat seinen Abschnitt offen; letzter Teil geschafft = Abschnitt geschafft
         assert sv['unlocked'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json',
-                                  'dschungel/04-gluehwald.json', 'ruinen/01-ruinen.json', 'vulkan/01-glutpfad.json'], sv
+                                  'dschungel/04-gluehwald.json', 'ruinen/01-ruinen.json', 'vulkan/01-glutpfad.json', A1, A2], sv
         assert sv['completed'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json',
-                                   'dschungel/04-gluehwald.json', 'vulkan/03-feuerberg.json'], sv
+                                   'dschungel/04-gluehwald.json', 'vulkan/03-feuerberg.json', A1], sv
         assert sv['stats'] == {'vulkan/03-feuerberg.json': {'m': 4, 'f': 1}, 'dschungel/02-baumkronen.json': {'m': 0, 'f': 2}} and sv['bosse'] == ['dschungel'], sv
-        # im Menü: Dschungel ganz geschafft, Ruinen offen, Feuerberg geschafft
+        # im Menü: Abschnitt 1 geschafft, Ruinen offen, Feuerberg geschafft
         nr = lambda d: g.ev(f"GameMenu.config.levels.findIndex(l => l.datei === '{d}')")
         assert await g.ev(f"GameMenu.levelUnlocked({await nr('ruinen/01-ruinen.json')})") and await g.ev("GameMenu.worldUnlocked('ruinen')")
         assert await g.ev(f"GameMenu.levelDone({await nr('vulkan/03-feuerberg.json')})"), 'Feuerberg nicht mehr geschafft'
@@ -6197,13 +6224,14 @@ async def spielstand_migration(g):
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         sv = await g.ev("GameMenu.getSave()")
         assert sv['v'] == 2 and sv['played'] is True, sv
-        assert sv['unlocked'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json', 'ruinen/02-mondnacht.json'], sv
+        assert sv['unlocked'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json', 'ruinen/02-mondnacht.json', A1], sv   # Dschungel-Neu: + Abschnitt 1
         assert sv['completed'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json'], sv
         assert sv['stats'] == {'dschungel/01-dschungel.json': {'m': 2, 'f': 3}, 'ruinen/01-ruinen.json': {'m': 0, 'f': 5}}, sv
         assert json.loads(await g.ev("localStorage.getItem('monchichi.save_v1_backup')")) == alt, 'Sicherung fehlt/verändert'
         # Level: 4 offen, 3 geschafft – wie vorher (seit Ausbau 3 auf die Welten verteilt)
-        offen = await g.ev("[1, 2, 3, 4, 5, 6].map(i => GameMenu.levelUnlocked(GameMenu.config.levels.findIndex(l => l.datei === levelNeuerName(`level-${i}.json`))))")
-        assert offen == [True, True, True, True, False, False], offen
+        # Dschungel-Neu: Level 1 und 2 sind Teile von Abschnitt 1 (der ist offen)
+        offen = await g.ev(f"[...['{A1}'], ...[3, 4, 5, 6].map(i => levelNeuerName(`level-${{i}}.json`))].map(f => GameMenu.levelUnlocked(GameMenu.config.levels.findIndex(l => l.datei === f)))")
+        assert offen == [True, True, True, False, False], offen
         # Weiterspielen: Level 4 schaffen schaltet das nächste Ruinen-Level frei (neue Reihenfolge: Felsenflucht), Sicherung bleibt unverändert
         assert await g.ev("(() => { const nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1; return GameMenu.completeLevel(nr('ruinen/02-mondnacht.json'), true) === nr('ruinen/05-felsenflucht.json'); })()")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
@@ -6213,7 +6241,7 @@ async def spielstand_migration(g):
         # kaputte/zu große Werte: nichts stürzt ab
         m = await g.ev("GameMenu.migrateSave({unlocked: 99, completed: [7, 'x', 2]})")
         assert m['unlocked'] == ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json', 'ruinen/01-ruinen.json', 'ruinen/02-mondnacht.json',
-                                 'hoehle/01-kristallhoehle.json', 'vulkan/03-feuerberg.json'] and m['completed'] == ['dschungel/02-baumkronen.json'], m
+                                 'hoehle/01-kristallhoehle.json', 'vulkan/03-feuerberg.json', A1] and m['completed'] == ['dschungel/02-baumkronen.json'], m
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()
@@ -8173,10 +8201,10 @@ async def neues_level_in_welt_offen(g):
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         # Spielstand, in dem Level 1 geschafft, Level 2 aber nie freigeschaltet wurde (wie ein neu eingefügtes Level)
-        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: ['dschungel/01-dschungel.json'], stats: {}, bosse: []}))")
+        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['%s'], completed: ['%s'], stats: {}, bosse: []}))" % (A1, A1))
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         assert await g.ev("[0, 1].map(i => GameMenu.levelUnlocked(i))") == [True, True], 'Level nach geschafftem Vorgänger gesperrt'
-        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: [], stats: {}, bosse: []}))")
+        await g.ev("localStorage.setItem(GameMenu.config.storageKey + '.save', JSON.stringify({v: 2, played: true, unlocked: ['%s'], completed: [], stats: {}, bosse: []}))" % A1)
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         assert await g.ev("[0, 1].map(i => GameMenu.levelUnlocked(i))") == [True, False], 'Level für Level gilt nicht mehr'
     finally:
@@ -8198,15 +8226,10 @@ async def welten_freischaltung(g):
         await g.ev("window.nr = f => GameMenu.config.levels.findIndex(l => l.datei === f) + 1")   # Nummer der Levelkarte (Ausbau 7: Dschungel hat 4 Level)
         fertig = lambda d: g.ev(f"GameMenu.completeLevel(nr('{d}'), true)")
         nr = lambda d: g.ev(f"nr('{d}')")
-        assert await fertig('dschungel/01-dschungel.json') == await nr('dschungel/02-baumkronen.json') and await g.ev("GameMenu.lastFreshWorld()") is None
+        # Dschungel-Neu: 2 Abschnitte, kein Boss mehr – nach Abschnitt 2 öffnen die Ruinen
+        assert await fertig(A1) == await nr(A2) and await g.ev("GameMenu.lastFreshWorld()") is None
         assert await g.ev(offen) == [True, False, False, False, False]
-        assert await fertig('dschungel/02-baumkronen.json') == await nr('dschungel/03-lianenschlucht.json') and await fertig('dschungel/03-lianenschlucht.json') == await nr('dschungel/04-gluehwald.json')
-        # Ausbau 6: Dschungel hat einen Boss -> nach dem letzten Level erst der Boss, dann öffnen die Ruinen
-        assert await fertig('dschungel/04-gluehwald.json') == await nr('dschungel/05-dornenpfad.json')   # 6er-Welten: Dschungel 5
-        assert await fertig('dschungel/05-dornenpfad.json') == await nr('dschungel/06-wipfelsturm.json')
-        assert await fertig('dschungel/06-wipfelsturm.json') == 0 and await g.ev("GameMenu.lastFreshWorld()") is None
-        assert await g.ev(offen) == [True, False, False, False, False], 'Ruinen offen ohne besiegten Boss'
-        assert await g.ev("GameMenu.completeBoss('dschungel')") == 'ruinen'
+        assert await fertig(A2) == await nr('ruinen/01-ruinen.json') and await g.ev("GameMenu.lastFreshWorld()") == 'ruinen'
         assert await g.ev(offen) == [True, True, False, False, False]
         assert await g.ev("['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json'].map(f => GameMenu.levelUnlocked(nr(f) - 1))") == [True, False], 'in der Welt nicht Level für Level'
         for d in ('ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json'): await fertig(d)   # Ausbau 7: Ruinen haben 5 Level
@@ -8230,8 +8253,8 @@ async def welten_freischaltung(g):
         assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Dschungel'
         assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
         await p.wait_for_function("!document.querySelector('.ulock')", timeout=6000)
-        # letzter Sieg der Welt (Ausbau 6: der Boss) -> Weltkarte mit Freischalt-Animation auf „Ruinen“
-        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json'].forEach(f => GameMenu.completeLevel(nr(f), true)); GameMenu.completeBoss('dschungel')")
+        # letzter Sieg der Welt (Dschungel-Neu: Abschnitt 2) -> Weltkarte mit Freischalt-Animation auf „Ruinen“
+        await g.ev(f"GameMenu.completeLevel(nr('{A2}'), true)")
         await g.ev("GameMenu.show('results', {n: 2, fresh: 3, freshWorld: 'ruinen', packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
         assert await sm_screen(g) == 'sm-s-map', 'nach der letzten Level einer Welt nicht zur Weltkarte'
@@ -8248,7 +8271,7 @@ async def welten_freischaltung(g):
         assert await g.ev(offen) == [True, True, False, False, False]
         await g.ev("GameMenu.show('map')"); await p.wait_for_timeout(400)
         isl = await wk_inseln(g)
-        assert [i['info'] for i in isl] == [f"2 / {nl['dschungel']} Level", f"1 / {nl['ruinen']} Level", f"0 / {nl['hoehle']} Level", 'Bald', f"0 / {nl['vulkan']} Level"] and isl[1]['sel'], isl   # Ruinen bleiben offen
+        assert [i['info'] for i in isl] == [f"0 / {nl['dschungel']} Level", f"1 / {nl['ruinen']} Level", f"0 / {nl['hoehle']} Level", 'Bald', f"0 / {nl['vulkan']} Level"] and isl[1]['sel'], isl   # Ruinen bleiben offen
     finally:
         await g.ev("localStorage.clear()")
         srv.shutdown()
@@ -8890,7 +8913,7 @@ async def intro_szene(g):
         assert await g.ev("p1.x") == x0, 'Figuren lassen sich in der Szene steuern'
         await p.keyboard.press('Escape')
         await p.wait_for_function("menuScreen === null", timeout=15000)
-        spiel = json.loads((ROOT / 'levels' / 'dschungel/01-dschungel.json').read_text())
+        spiel = ABS.laden(A1)   # Dschungel-Neu: Level 1 = Abschnitt 1
         assert await g.ev("!szene && kameraFest === null && coins.length") == len(spiel['coins']), 'Level 1 startet nach der Szene nicht'
         assert await g.ev("localStorage.getItem('monchichi.introGesehen')") == 'true'
         # zweites neues Spiel: keine Szene
@@ -9297,16 +9320,18 @@ async def editor_boss(g):
 
 @test
 async def boss1_bruno(g):
-    """Ausbau 6: Boss 1 „Bruno“ (Dschungel, levels/dschungel/boss-bruno.json): 3 Phasen à 3 Treffer, Helm-Schalter je Phase
-    (Platte links, Platte rechts, Hebel oben am Aufwind mit Rückklappen nach 5 s); Ast nur per Seil oder Aufwind
-    erreichbar. Boss-Karte erst nach allen Dschungel-Leveln offen; Spielerwahl -> Vorhang „Boss“ -> Start-Szene ->
-    Kampf; Sieg -> Sieges-Szene -> „Boss besiegt“ -> Weltkarte schaltet die Ruinen frei."""
+    """Ausbau 6: Boss 1 „Bruno“ (seit Dschungel-Neu im Archiv: levels/archiv/dschungel-boss-bruno.json, nicht mehr in der
+    Welt – Nutzerwunsch): 3 Phasen à 3 Treffer, Helm-Schalter je Phase (Platte links, Platte rechts, Hebel oben am Aufwind
+    mit Rückklappen nach 5 s); Ast nur per Seil oder Aufwind erreichbar. Das Boss-Gerüst bleibt geprüft: mit einer
+    worlds.json, in der Bruno wieder Boss des Dschungels ist, ist die Boss-Karte erst nach allen Dschungel-Leveln offen;
+    Spielerwahl -> Vorhang „Boss“ -> Start-Szene -> Kampf; Sieg -> Sieges-Szene -> „Boss besiegt“ -> Ruinen frei."""
     srv = webserver(); p = g.p
     try:
         w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
         dsch = next(x for x in w['welten'] if x['id'] == 'dschungel')
-        assert dsch['boss'] == 'dschungel/boss-bruno.json', dsch
-        L = json.loads((ROOT / 'levels' / 'dschungel/boss-bruno.json').read_text(encoding='utf-8'))
+        assert not dsch['boss'], dsch
+        BRUNO = 'archiv/dschungel-boss-bruno.json'
+        L = json.loads((ROOT / 'levels' / BRUNO).read_text(encoding='utf-8'))
         b = L['boss'][0]
         assert b['name'] == 'Bruno' and len(b['phasen']) == 3 and all(ph['treffer'] == 3 for ph in b['phasen']), b
         links = sorted(pl['link'] for pl in L['bossPlaetze'])
@@ -9316,15 +9341,17 @@ async def boss1_bruno(g):
         for h in L['hooks']: assert abs((680 - 20) - h['y']) <= h['radius'], h
         assert ast['x'] < 740 < ast['x'] + ast['w'] and ast['y'] == 320
         assert min(wi['y'] for wi in L['winds']) < L['switches'][0]['y']
-        # Menü: Boss-Karte gesperrt, bis beide Dschungel-Level geschafft sind
+        # Menü (worlds.json mit Bruno als Dschungel-Boss): Boss-Karte gesperrt, bis beide Dschungel-Abschnitte geschafft sind
+        dsch['boss'] = BRUNO; dsch['bossName'] = 'Bruno'; dsch.pop('ohneBoss', None)
+        await p.route('**/levels/worlds.json*', lambda route: route.fulfill(status=200, content_type='application/json', body=json.dumps(w)))
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
-        await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json', 'dschungel/02-baumkronen.json'], completed: ['dschungel/01-dschungel.json'], stats: {}}));"
-                   "localStorage.setItem('monchichi.introGesehen', 'true')")
+        await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['%s'], completed: [], stats: {}}));"
+                   "localStorage.setItem('monchichi.introGesehen', 'true')" % A1)
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         boss = "document.querySelector('#sm-cards .lc.boss')"
         assert await g.ev(f"{boss}.classList.contains('lock')"), 'Boss-Karte offen, obwohl Level 2 fehlt'
-        await g.ev("['dschungel/02-baumkronen.json', 'dschungel/03-lianenschlucht.json', 'dschungel/04-gluehwald.json', 'dschungel/05-dornenpfad.json', 'dschungel/06-wipfelsturm.json'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # alle Dschungel-Level (Ausbau 7: 4)
+        await g.ev(f"['{A1}', '{A2}'].forEach(f => GameMenu.completeLevel(GameMenu.config.levels.findIndex(l => l.datei === f) + 1, true))")   # beide Abschnitte
         assert await g.ev("GameMenu.worldUnlocked('ruinen')") is False, 'Ruinen offen ohne Boss'
         await g.ev("GameMenu.show('levels', {world: 'dschungel'})"); await p.wait_for_timeout(500)
         assert not await g.ev(f"{boss}.classList.contains('lock')") and 'Bruno' in await g.ev(f"{boss}.textContent"), await g.ev(f"{boss}.outerHTML")
@@ -9374,7 +9401,7 @@ async def editor_boss_github(g):
         }""", [worlds, lv])
         w = {x['id']: x for x in out['levels/worlds.json']['welten']}
         assert w['ruinen']['boss'] == 'boss-2.json' and w['ruinen']['level'] == ['ruinen/01-ruinen.json', 'ruinen/03-fallengang.json', 'ruinen/04-sonnentempel.json', 'ruinen/02-mondnacht.json', 'ruinen/05-felsenflucht.json', 'ruinen/06-tempelherz.json'], w['ruinen']
-        assert w['dschungel']['boss'] == 'dschungel/boss-bruno.json'
+        assert w['dschungel']['boss'] is None and w['dschungel']['ohneBoss'] is True and w['dschungel']['level'] == [A1, A2]   # Dschungel-Neu: kein Boss
         e = out['levels/levels.json'][-1]
         assert e['datei'] == 'boss-2.json' and e['versteckt'] and e['boss'], e
     finally:
@@ -11679,6 +11706,53 @@ async def partner_koop_dschungel(g):
     finally:
         srv.shutdown()
     assert not fehler, fehler
+
+# ---------------------------------------------------------------- Dschungel-Neu: Abschnitte (js/15a-abschnitte.js)
+async def abschnitt_laden(g, datei):
+    """Abschnitt (aus seinen Teilen zusammengesetzt, tests/abschnitt.py = js/15a-abschnitte.js) ins Spiel laden"""
+    pfad = TMP / ('abschnitt_' + datei.replace('/', '_'))
+    pfad.write_text(json.dumps(ABS.laden(datei)), encoding='utf-8')
+    await g.load(str(pfad)); g.datei = datei
+
+@test
+async def abschnitt_zusammensetzen(g):
+    """Dschungel-Neu: die 6 Dschungel-Level sind Teile von 2 Abschnitten (worlds.json: nur noch die zwei Abschnitte, kein
+    Boss). Das Spiel setzt die Teile beim Laden hintereinander – genau wie tests/abschnitt.py (Feld für Feld gleich):
+    Teil k rückt um die Breite der Teile davor, Nummern um 20·k; nur Start des ersten und Ziel des letzten Teils; an
+    den Nähten keine Rand-Mauer. Im Spiel: ein langes Level (beide am Anfang, Ziel am Ende, Nummern verschieden)."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    dsch = next(x for x in w['welten'] if x['id'] == 'dschungel')
+    assert dsch['level'] == ['dschungel/abschnitt-1-sternschnuppenspur.json', 'dschungel/abschnitt-2-meteoritenherz.json'] and not dsch.get('boss'), dsch
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
+        rund = lambda o: json.loads(json.dumps(o), parse_float=lambda s: round(float(s), 3))
+        for datei in dsch['level']:
+            d = ABS.lies(datei)
+            assert ABS.ist_abschnitt(d) and len(d['teile']) == 3 and d.get('nachSzene'), d
+            js = await p.evaluate("async f => abschnittLaden(await (await fetch('levels/' + f)).json())", datei)
+            py = ABS.laden(datei)
+            assert rund(js) == rund(py), f'{datei}: Spiel und tests/abschnitt.py setzen verschieden zusammen'
+            teile = [ABS.lies(t) for t in d['teile']]
+            spalten = [ABS.teil_spalten(t) for t in teile]
+            assert py['goal']['x'] == teile[-1]['goal']['x'] + sum(spalten[:-1]) * 40 and py['startM'] == teile[0]['startM']
+            # Nähte: in den 3 Spalten um jede Naht steht über dem Boden nichts Festes (Weg frei)
+            naht = 0
+            for k, sp in enumerate(spalten[:-1]):
+                naht += sp
+                boden = min(teile[k]['goal']['y'], teile[k + 1]['startM']['y'])
+                zu = [s for s in py['solids'] if s['x'] < (naht + 2) * 40 and s['x'] + s['w'] > (naht - 2) * 40 and s['y'] + s['h'] <= boden - 40]
+                assert not zu, f'{datei}: Naht bei Spalte {naht} zu: {zu[:3]}'
+            # Nummern der Teile überschneiden sich nicht
+            for k, t in enumerate(teile):
+                eigene = {o['link'] + 20 * k for f in ('switches', 'doors', 'plates') for o in t.get(f, []) if o.get('link')}
+                andere = {o['link'] + 20 * j for j, u in enumerate(teile) if j != k for f in ('switches', 'doors', 'plates') for o in u.get(f, []) if o.get('link')}
+                assert not (eigene & andere) and all(n <= 60 for n in eigene), (datei, k, eigene & andere)
+            await p.evaluate("d => { window.baumIntroAus = true; startLevel(d); menuScreen = null; }", js)
+            st = await p.evaluate("[LEVEL_W, goal.x, p1.x, p2.x, solids.length, checkpointDefs.length]")
+            assert st[0] > 2200 * 40 and st[1] > 2200 * 40 and st[2] < 400 and st[3] < 400, st
+    finally:
+        srv.shutdown()
 
 async def main(filter_):
     async with async_playwright() as pw:

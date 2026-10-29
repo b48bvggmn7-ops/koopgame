@@ -98,7 +98,11 @@ function projectHint(t){
 // Editor-Umbau (Teil I): Level liegen in Welt-Ordnern (levels/<welt>/<nr>-<titel>.json) -> im Editor sichtbar als
 // „Welt Nummer“, z. B. „Vulkan 3“ (Boss: „Dschungel Boss“); null für Dateien außerhalb der Welt-Ordner
 const WELT_ANZEIGE = {dschungel:'Dschungel', ruinen:'Ruinen', hoehle:'Höhle', wasser:'Wasser', vulkan:'Vulkan', archiv:'Archiv'};
-function levelAnzeige(datei){
+function levelAnzeige(datei, P){
+  // Dschungel-Neu: Abschnitte (Level aus mehreren Teilen, js/15a-abschnitte.js) und ihre Teile (levels.json: teilVon/teil)
+  const ab = /\/abschnitt-(\d+)-/.exec(datei || '');
+  if(ab) return `Abschnitt ${Number(ab[1])}`;
+  if(P && P.teilVon){ const n = /\/abschnitt-(\d+)-/.exec(P.teilVon); return `Abschnitt ${n ? Number(n[1]) : '?'} · Teil ${P.teil || '?'}`; }
   const m = /^([a-z0-9-]+)\/(?:(\d+)|boss)-/.exec(datei || '');
   if(!m) return null;
   const wn = WELT_ANZEIGE[m[1]] || m[1];
@@ -129,9 +133,11 @@ async function refreshProjectList(){
   const offenWelt = (/^([a-z0-9-]+)\//.exec(currentProjectFile || '') || [])[1];
   for(const key of keys){
     const box=document.createElement('details'); box.className='welt-ordner'; box.dataset.welt=key;
+    // Teile stehen direkt unter ihrem Abschnitt (Dschungel-Neu), Bosse zuletzt
+    const reihe = P => { const f = (P.teilVon || P.datei || '').split('/').pop(); return [f.startsWith('boss-') ? 1 : 0, f, P.teilVon ? (P.teil || 1) : 0]; };
     const lv = ordner.get(key).sort((a,b)=>{
-      const fa=(a.datei||'').split('/').pop(), fb=(b.datei||'').split('/').pop();
-      return (fa.startsWith('boss-')?1:0)-(fb.startsWith('boss-')?1:0) || fa.localeCompare(fb);
+      const ra = reihe(a), rb = reihe(b);
+      return ra[0] - rb[0] || ra[1].localeCompare(rb[1]) || ra[2] - rb[2];
     });
     if(key===offenWelt || keys.length===1) box.open = true;
     const sm=document.createElement('summary');
@@ -142,8 +148,8 @@ async function refreshProjectList(){
   }
 }
 function projektZeile(P){
-    const row=document.createElement('div'); row.className='lvl'+(P.datei===currentProjectFile?' cur':''); row.dataset.datei=P.datei;
-    const nm=document.createElement('span'); nm.className='nm'; const anz = levelAnzeige(P.datei); nm.textContent = anz ? `${anz} · ${P.titel || P.name || ''}` : (P.name||P.datei);
+    const row=document.createElement('div'); row.className='lvl'+(P.datei===currentProjectFile?' cur':'')+(P.teilVon?' teil':'')+(P.abschnitt?' abschnitt':''); row.dataset.datei=P.datei;
+    const nm=document.createElement('span'); nm.className='nm'; const anz = levelAnzeige(P.datei, P); nm.textContent = anz ? `${anz} · ${P.titel || P.name || ''}` : (P.name||P.datei);
     const dt=document.createElement('span'); dt.className='dt'; dt.textContent=P.datei;
     const ld=document.createElement('button'); ld.className='mini'; ld.textContent='Laden';
     const doLoad = async ()=>{
@@ -160,6 +166,11 @@ function projektZeile(P){
       if(dirty) armConfirm(ld, 'Ungespeichertes geht verloren – laden?', doLoad);
       else doLoad();
     };
+    if(P.abschnitt){   // Abschnitt: hat kein eigenes Gelände – seine Teile (darunter) einzeln laden und bearbeiten
+      const hw=document.createElement('span'); hw.className='hw'; hw.textContent='besteht aus den Teilen darunter (im Spiel hintereinander)';
+      row.append(nm, dt, hw);
+      return row;
+    }
     row.append(nm, dt, ld);
     return row;
 }

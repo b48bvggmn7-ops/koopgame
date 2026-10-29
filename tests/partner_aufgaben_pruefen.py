@@ -17,6 +17,8 @@
 import asyncio, json, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import abschnitt as A   # Dschungel-Neu: Abschnitte aus Teilen
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_tests as T
 from playwright.async_api import async_playwright
 
@@ -99,7 +101,7 @@ async def main(argv):
     elif '--welt' in argv:
         w = argv[argv.index('--welt') + 1]
         welt = next(x for x in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten'] if x['id'] == w)
-        dateien = list(welt['level'])
+        dateien = A.level_dateien(welt)   # Abschnitte (Dschungel-Neu): ihre Teile
     else:
         print(__doc__ if __doc__ else 'Aufruf: --level <welt>/<datei> [--schreiben] | --welt <welt>'); return 1
     schreiben = '--schreiben' in argv

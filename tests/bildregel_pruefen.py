@@ -10,6 +10,8 @@
 #   ohne --alle: nur Verstöße/Warnungen;  Ausnahmen (begründet) stehen in tests/bildregel_ausnahmen.json
 import json, math, re, sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import abschnitt as A   # Dschungel-Neu: Abschnitte aus Teilen
 
 import os
 ROOT = Path(os.environ.get('BILDREGEL_ROOT') or Path(__file__).resolve().parent.parent)   # BILDREGEL_ROOT: anderer Stand (Vorher-Vergleich)
@@ -32,11 +34,11 @@ def welten_level():
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
     out = []
     for welt in sorted(w['welten'], key=lambda x: x['reihenfolge']):
-        for d in welt['level']: out.append(d)
+        for d in A.level_dateien(welt): out.append(d)   # Abschnitte (Dschungel-Neu): ihre Teile
         if welt.get('boss'): out.append(welt['boss'])
     return out
 
-def lade(datei): return json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+def lade(datei): return A.laden(datei)   # Abschnitt-Dateien (Dschungel-Neu) werden aus ihren Teilen zusammengesetzt
 
 def felder_zellen(o):
     """Kästchen eines Rechtecks (x,y,w,h)"""

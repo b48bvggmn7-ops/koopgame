@@ -1,0 +1,14 @@
+{
+ "abschnitt": 2,
+ "titel": "Das Herz des Meteoriten",
+ "hinweis": "Abschnitt (Dschungel-Neu): KEIN Gelände hier – das Level besteht aus den Teilen unten, hintereinander gesetzt (js/15a-abschnitte.js). Jeden Teil im Editor einzeln bearbeiten.",
+ "teile": [
+  "dschungel/04-gluehwald.json",
+  "dschungel/05-dornenpfad.json",
+  "dschungel/06-wipfelsturm.json"
+ ],
+ "welt": "dschungel",
+ "tageszeit": "nacht",
+ "wetter": "trocken",
+ "nachSzene": "meteorit_gefunden"
+}

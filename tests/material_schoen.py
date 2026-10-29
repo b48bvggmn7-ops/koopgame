@@ -10,6 +10,8 @@
 # Speichern über den echten Editor-Export (tests/level_bau.py), so bleiben Spiel- und Editor-Datei gleich.
 import json, sys, math
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import abschnitt as A   # Dschungel-Neu: Abschnitte aus Teilen
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'tests'))
 
@@ -29,7 +31,7 @@ def welten_level():
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
     out = []
     for welt in w['welten']:
-        out += welt.get('level', [])
+        out += A.level_dateien(welt)   # Abschnitte (Dschungel-Neu): ihre Teile
     return out   # Boss-Arenen bleiben, wie sie sind
 
 def hsh(c, s=0):
