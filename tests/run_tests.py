@@ -6014,7 +6014,7 @@ async def editor_github_speichern(g):
         # merken, ob die GitHub-Abfragen am Browser-Zwischenspeicher vorbei gehen (sonst alter Stand -> HTTP 422)
         await g.ev("window.__ghCache = []; const f0 = window.fetch; window.fetch = (u, o) => { if (String(u).includes('api.github.com')) __ghCache.push((o||{}).cache); return f0(u, o); }")
         await p.click('#levelsBtn'); await p.wait_for_timeout(500)
-        await projekt_laden(p, json.loads((ROOT / 'levels' / 'levels.json').read_text())[2]['datei'])   # Level 3 laden
+        await projekt_laden(p, 'ruinen/01-ruinen.json')   # Ruinen 1 laden (Dschungel-Neu: feste Datei statt Listenplatz)
         await p.click('#githubBtn'); await p.wait_for_timeout(500)
         assert await g.ev("getComputedStyle(document.getElementById('ghKeySect')).display !== 'none'"), 'ohne Schlüssel keine Anleitung'
         await p.fill('#ghToken', 'github_pat_TEST123'); await p.click('#ghKeySave'); await p.wait_for_timeout(200)
