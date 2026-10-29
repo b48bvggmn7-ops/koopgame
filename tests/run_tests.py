@@ -7077,6 +7077,36 @@ async def koop_schirm_trampolin(g):
         srv.shutdown()
 
 @test
+async def koop_pusten_schraeg(g):
+    """Nutzerwunsch: Pusten auch schräg nach oben – W + D = oben-rechts, W + A = oben-links. Der Strahl trägt das Schweinchen
+    mit Schirm nach oben und zur Seite; der Affe steht still und schaut zur Blasrichtung."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          try {
+            for(const [taste, sx] of [['right', 1], ['left', -1]]){
+              for(const k in KEYS) KEYS[k] = false; p1.puste = 1; p1.pusteLeer = false;
+              stell(p1, 1060, 720); stell(p2, 300, 720); for(let i = 0; i < 6; i++) st();
+              KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; KEYS[p1.keys[taste]] = true;
+              for(let i = 0; i < 8; i++) st();
+              const S = pusteStrahlJetzt;
+              e[taste] = {richtung: p1.pusteRichtung, still: Math.abs(p1.x - 1060) < 1, schaut: p1.facing === sx};
+              // Schweinchen mit offenem Schirm 2 Kästchen schräg über dem Mund in den Strahl setzen
+              p2.x = S.ox + S.ux*90; p2.y = S.oy + S.uy*90 + 20; p2.vx = 0; p2.vy = 0; p2.grounded = false; p2._px = p2.x; p2._py = p2.y;
+              const x0 = p2.x, y0 = p2.y; KEYS[p2.keys.glide] = true;
+              for(let i = 0; i < 20; i++) st();
+              e[taste].dx = Math.round((p2.x - x0)*sx); e[taste].dy = Math.round(y0 - p2.y);
+            }
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        for taste, dirn in (('right', 'hr'), ('left', 'hl')):
+            e = r[taste]
+            assert e['richtung'] == dirn and e['still'] and e['schaut'], (taste, e)
+            assert e['dx'] > 20 and e['dy'] > 10, f'schräger Strahl trägt nicht nach oben und zur Seite: {taste} {e}'
+    finally:
+        srv.shutdown()
+
+@test
 async def koop_pusten(g):
     """Dschungel-Neu: Affe hält die Spezial-Taste (H) -> pustet und steht still; W = nach oben, A/D = zur Seite (dreht sich nur).
     Der Strahl trägt das Schweinchen mit offenem Schirm hinauf (wie ein Aufwind) bis auf den 9 Reihen hohen Sims, zur Seite
@@ -7088,7 +7118,7 @@ async def koop_pusten(g):
           try {
             // hoch: Schweinchen über dem Affen mit Schirm -> auf den hohen Sims (1080–1280, y 360, 9 Reihen)
             stell(p1, 1060, 720); stell(p2, 1060, 720); for(let i = 0; i < 6; i++) st();
-            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; KEYS[p1.keys.right] = true;
+            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true;   // (W + D wäre schräg, Test koop_pusten_schraeg)
             for(let i = 0; i < 4; i++) st(); e.affeStill = Math.abs(p1.x - 1060) < 1; e.richtung = p1.pusteRichtung;
             KEYS[p2.keys.jump] = true; KEYS[p2.keys.jump + '_pressed'] = true; st(); KEYS[p2.keys.glide] = true;
             let top = 1e9; for(let i = 0; i < 110; i++){ if(i === 20) KEYS[p2.keys.jump] = false; KEYS[p2.keys.right] = p2.y < 350 && p2.x < 1160; st(); top = Math.min(top, p2.y); }

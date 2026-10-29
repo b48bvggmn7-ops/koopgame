@@ -255,3 +255,6 @@ const PUSTE_ANLAUF = 6;           // Schritte, bis der Strahl voll bläst (weich
 const PUSTE_SCHUB = 0.85;         // px/Schritt²: Seiten-Schub auf das Schweinchen mit Schirm …
 const PUSTE_SCHUB_OHNE = 0.3;     // … ohne Schirm (wird nur leicht geschoben)
 const PUSTE_SEITE_MAX = 7.5;      // höchstens so schnell schiebt der Wind zur Seite
+const PUSTE_WEITE_SCHRAEG = 300;  // px: so weit reicht der Strahl schräg nach oben (W + A / W + D, Nutzerwunsch)
+const PUSTE_SCHRAEG_HUB = 0.9;     // px/Schritt²: schräg trägt der Wind das Schweinchen mit Schirm (etwas schwächer als gerade hoch) …
+const PUSTE_SCHRAEG_HOCH_MAX = 4.5; // … höchstens so schnell nach oben; zur Seite schiebt er mit 80 % von PUSTE_SCHUB

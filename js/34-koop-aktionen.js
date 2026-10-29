@@ -5,14 +5,15 @@
 // Zwei Koop-Aktionen auf der Spezial-Taste des Spielers (Standard: Affe H / R1, Schweinchen Num 4 / R1):
 //   - Schweinchen SCHIRM-TRAMPOLIN (Taste halten): steht still und spannt den offenen Schirm über sich; der Affe federt
 //     vom Schirm hoch (höchster Punkt wie früher vom Sprungpilz).
-//   - Affe PUSTEN (Taste halten): steht still und bläst einen Windstrahl nach oben / links / rechts (W, A, D). Der Strahl
+//   - Affe PUSTEN (Taste halten): steht still und bläst einen Windstrahl nach oben / links / rechts (W, A, D) oder schräg
+//     nach oben (W + A / W + D). Der Strahl
 //     trägt das Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge
 //     (`pusteTrifft`, z. B. Windrad). Ein Balken über dem Kopf leert sich beim Pusten und lädt danach wieder auf.
 // Rollen: das Schweinchen hilft dem Affen nach oben, der Affe dem Schweinchen – keine Figur kommt allein durch.
 // Einklinken nur über die Haken der neuen Bewegung (js/32: neueBewegungVorher / neueBewegungNachher) – die alte Physik in
 // 08 bleibt unberührt; ohne Spezial-Taste läuft alles Schritt für Schritt wie vorher (Test bahnen_alte_mechaniken).
 // Werte: js/02-physik-werte.js (Abschnitt „Dschungel-Neu“). Zustand an der Figur: P.trampolin, P.puste (0…1), P.pusteAn,
-// P.pusteRichtung ('hoch' | -1 | 1), P.pusteT (Schritte seit Beginn), P.pusteLeer (ganz leer gepustet), P.pustePause.
+// P.pusteRichtung ('hoch' | 'hl' | 'hr' | -1 | 1), P.pusteT (Schritte seit Beginn), P.pusteLeer (ganz leer gepustet), P.pustePause.
 
 // Der Windstrahl steht – solange der Affe pustet – als Aufwind-Bereich in `winds` (elemente/aufwind.js): so trägt er das
 // Schweinchen beim Segeln mit genau derselben Regel wie ein Aufwind-Feld. Gezeichnet wird er hier (aufwind.js überspringt ihn).
@@ -48,10 +49,26 @@ function trampolinPruefen(P, altY){
 
 // ---------- Affe pusten ----------
 function pusteRichtungAus(P){
-  if(koopTaste(P, 'pull')) return 'hoch';
-  if(koopTaste(P, 'left')) return -1;
-  if(koopTaste(P, 'right')) return 1;
-  return P.pusteRichtung === 'hoch' ? 'hoch' : (P.facing < 0 ? -1 : 1);
+  const hoch = koopTaste(P, 'pull'), li = koopTaste(P, 'left'), re = koopTaste(P, 'right');
+  if(hoch && re && !li) return 'hr';   // Nutzerwunsch: auch schräg nach oben (W + D / W + A)
+  if(hoch && li && !re) return 'hl';
+  if(hoch) return 'hoch';
+  if(li) return -1;
+  if(re) return 1;
+  return typeof P.pusteRichtung === 'string' ? P.pusteRichtung : (P.facing < 0 ? -1 : 1);
+}
+// Richtungs-Hilfen: 'hoch' | 'hr' | 'hl' (schräg nach oben) | 1 | -1 (zur Seite)
+function pusteSchraeg(r){ return r === 'hr' || r === 'hl'; }
+function pusteSeiteVon(r){ return r === 'hr' ? 1 : r === 'hl' ? -1 : r === 'hoch' ? 0 : r; }   // waagerechter Anteil -1/0/1
+function pusteDrehung(r){ return r === 'hoch' ? 0 : pusteSchraeg(r) ? pusteSeiteVon(r)*Math.PI/4 : r*Math.PI/2; }   // Zeichnen: 0 = nach oben
+// schräger Strahl: Ursprung (oberer Kopf, leicht zur Blasrichtung), Einheits-Richtung, Länge bis zur ersten Wand
+function pusteSchraegStrahl(P, r){
+  const sx = pusteSeiteVon(r), ux = sx*Math.SQRT1_2, uy = -Math.SQRT1_2;
+  const ox = P.x + sx*PUSTE_MUND_VOR*0.5, oy = P.y - PUSTE_MUND_HOCH_Y*0.85;
+  const fest = (x, y) => solids.some(t => !t.gone && !t.open && t.type !== 'oneway' && t.type !== 'fake' && x >= t.x && x < t.x + t.w && y >= t.y && y < t.y + t.h);
+  let L = PUSTE_WEITE_SCHRAEG;
+  for(let d = 10; d < L; d += 10) if(fest(ox + ux*d, oy + uy*d)){ L = d; break; }
+  return {ox, oy, ux, uy, L, x: Math.min(ox, ox + ux*L) - PUSTE_BREITE/2, y: oy + uy*L - PUSTE_BREITE/2, w: Math.abs(ux*L) + PUSTE_BREITE, h: -uy*L + PUSTE_BREITE};
 }
 // Strahl-Rechteck für eine Richtung (vom Mund aus)
 // Mund der (kleinen, runden) 3D-Figur: seitlich gut 10 px über dem Boden und PUSTE_MUND_VOR vor der Mitte, nach oben (Kopf
@@ -87,7 +104,7 @@ function pustenVorher(P){
   }
   if(!P.pusteAn){ P.pusteAn = true; P.pusteT = 0; P._pusteStartT = performance.now(); if(typeof SFX !== 'undefined' && SFX.pustenStart) SFX.pustenStart(P); }
   P.pusteRichtung = pusteRichtungAus(P);
-  if(P.pusteRichtung !== 'hoch') P.facing = P.pusteRichtung;
+  if(P.pusteRichtung !== 'hoch') P.facing = pusteSeiteVon(P.pusteRichtung);
   P.pusteT++;
   P.puste = Math.max(0, P.puste - 1/PUSTE_DAUER);
   P.pustePause = PUSTE_PAUSE;
@@ -107,6 +124,11 @@ function pusteStrahlSetzen(P){
     return;
   }
   const r = P.pusteRichtung, kraft = Math.min(1, P.pusteT/PUSTE_ANLAUF);
+  if(pusteSchraeg(r)){   // schräg: eigener Strahl (kein Aufwind-Rechteck), Wirkung in pusteSchieben
+    pusteStrahlJetzt = Object.assign({dir: r, kraft, von: P}, pusteSchraegStrahl(P, r));
+    if(i >= 0) winds.splice(i, 1);
+    return;
+  }
   const b = pusteKuerzen(P, pusteBereich(P, r), r);
   pusteStrahlJetzt = Object.assign({dir: r, kraft, von: P}, b);
   if(r === 'hoch' && kraft >= 1){ Object.assign(pusteWind, b); if(i < 0) winds.push(pusteWind); }
@@ -117,6 +139,11 @@ function pusteTrifft(rect){
   const s = pusteStrahlJetzt; if(!s || !rect) return 0;
   if(!(rect.x < s.x + s.w && rect.x + rect.w > s.x && rect.y < s.y + s.h && rect.y + rect.h > s.y)) return 0;
   const P = s.von, mx = rect.x + rect.w/2, my = rect.y + rect.h/2;
+  if(pusteSchraeg(s.dir)){   // schräg: Abstand zur Strahl-Achse
+    const t = (mx - s.ox)*s.ux + (my - s.oy)*s.uy, q = Math.abs((mx - s.ox)*s.uy - (my - s.oy)*s.ux);
+    if(t < -10 || t > s.L || q > PUSTE_BREITE/2 + Math.min(rect.w, rect.h)/2) return 0;
+    return s.kraft*Math.max(0.35, 1 - Math.max(0, t)/PUSTE_WEITE_SCHRAEG*0.65);
+  }
   const d = s.dir === 'hoch' ? (P.y - PUSTE_MUND_HOCH_Y - my) : Math.abs(mx - P.x);
   const weite = s.dir === 'hoch' ? PUSTE_WEITE_HOCH : PUSTE_WEITE_SEITE;
   return s.kraft*Math.max(0.35, 1 - Math.max(0, d)/weite*0.65);
@@ -126,6 +153,12 @@ function pusteSchieben(S){
   const s = pusteStrahlJetzt; if(!s || s.dir === 'hoch' || S.male || S.grounded) return;   // am Boden stemmt es sich dagegen
   const k = pusteTrifft({x: S.x - S.w/2, y: S.y - S.h, w: S.w, h: S.h}); if(!k) return;
   const schirm = !S.grounded && S.keys && isDown(S.keys.glide);
+  if(pusteSchraeg(s.dir)){   // schräg nach oben: trägt (wie Aufwind, etwas schwächer) und schiebt zur Seite
+    const sx = pusteSeiteVon(s.dir);
+    if(schirm){ S.vy = Math.max(-PUSTE_SCHRAEG_HOCH_MAX, S.vy - PUSTE_SCHRAEG_HUB*k); if(sx*S.vx < PUSTE_SEITE_MAX) S.vx += sx*PUSTE_SCHUB*0.8*k; }
+    else if(sx*S.vx < 3) S.vx += sx*PUSTE_SCHUB_OHNE*k;
+    return;
+  }
   const a = (schirm ? PUSTE_SCHUB : PUSTE_SCHUB_OHNE)*k*s.dir, max = schirm ? PUSTE_SEITE_MAX : 3;
   if(s.dir*S.vx < max) S.vx = s.dir > 0 ? Math.min(max, S.vx + a) : Math.max(-max, S.vx + a);
   if(schirm && S.vy > 0) S.vy *= 0.9;   // trägt ein wenig (fällt langsamer, solange der Wind drückt)
@@ -175,7 +208,7 @@ function pusteBalkenZeichnen(P, px, py){
   if(P.puste === undefined) return;
   const voll = P.puste >= 1 && !P.pusteAn;
   if(voll && !(P._pusteEndeT && performance.now() - P._pusteEndeT < 600)) return;   // voll und ruhig: kein Balken
-  const w = 30, h = 5, seite = P.pusteAn && P.pusteRichtung === 'hoch';   // pustet nach oben: Balken neben den Kopf (nicht in den Wind)
+  const w = 30, h = 5, seite = P.pusteAn && (P.pusteRichtung === 'hoch' || pusteSchraeg(P.pusteRichtung));   // pustet nach oben: Balken neben den Kopf (nicht in den Wind)
   const x = seite ? px - w - 34 : px - w/2, y = seite ? py - P.h - 4 : py - P.h - 34;
   ctx.fillStyle = 'rgba(20,30,40,0.5)'; roundRect(x - 1.5, y - 1.5, w + 3, h + 3, 3); ctx.fill();
   const leer = P.pusteLeer;   // grau, bis man loslässt und er wieder bis PUSTE_NEUSTART geladen hat
@@ -189,8 +222,8 @@ function pusteBalkenZeichnen(P, px, py){
 function pusteMund(P){
   const m = P._mund;
   if(m && performance.now() - m.t < 200) return m;
-  const hoch = P.pusteRichtung === 'hoch';
-  return {x: P.x + (hoch ? 0 : (P.pusteRichtung || P.facing || 1)*PUSTE_MUND_VOR), y: P.y - (hoch ? PUSTE_MUND_HOCH_Y : PUSTE_MUND_SEITE_Y)};
+  const r = P.pusteRichtung, hoch = r === 'hoch' || pusteSchraeg(r);
+  return {x: P.x + (r === 'hoch' ? 0 : (pusteSeiteVon(r) || P.facing || 1)*PUSTE_MUND_VOR*(hoch ? 0.5 : 1)), y: P.y - (hoch ? PUSTE_MUND_HOCH_Y*(r === 'hoch' ? 1 : 0.85) : PUSTE_MUND_SEITE_Y)};
 }
 // Windstrahl = derselbe Wind wie der Aufwind im Spiel (windInhaltZeichnen, elemente/aufwind.js: weiche helle Säule, lange
 // Schlieren, Funkel-Staub, Blättchen), als gerade Säule vom Mund aus in Blasrichtung gedreht und etwas schneller.
@@ -202,7 +235,7 @@ function pusteSaeuleZeichnen(s, mx, my, len){
   const hoch = s.dir === 'hoch', tw = performance.now()*0.001, B = PUSTE_SAEULE_BREITE;
   ctx.save();
   ctx.translate(mx, my);
-  ctx.rotate(hoch ? 0 : s.dir*Math.PI/2);   // Zeichenrichtung „nach oben“ = Blasrichtung
+  ctx.rotate(pusteDrehung(s.dir));   // Zeichenrichtung „nach oben“ = Blasrichtung (auch schräg)
   // am Mund schmal (Mundbreite), auf den ersten 30 px zur vollen Säule – sonst stünde vor dem Mund eine harte Kante
   ctx.beginPath(); ctx.moveTo(-9, 3); ctx.quadraticCurveTo(-B/2, -6, -B/2, -32); ctx.lineTo(-B/2, -len); ctx.lineTo(B/2, -len);
   ctx.lineTo(B/2, -32); ctx.quadraticCurveTo(B/2, -6, 9, 3); ctx.closePath(); ctx.clip();
@@ -211,6 +244,7 @@ function pusteSaeuleZeichnen(s, mx, my, len){
   ctx.restore(); ctx.globalAlpha = 1;
 }
 function pusteLaenge(s, mWelt){
+  if(pusteSchraeg(s.dir)) return Math.max(30, s.L);
   return Math.max(30, s.dir === 'hoch' ? mWelt.y - s.y : Math.abs((s.dir > 0 ? s.x + s.w : s.x) - mWelt.x));
 }
 function pusteAmMundZeichnen(P, mx, my){

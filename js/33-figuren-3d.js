@@ -299,6 +299,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(male && P.pusteAn){
       const luft = Math.min(1, (performance.now() - (P._pusteStartT || 0))/200), zit = Math.sin(t*38)*.04*luft;   // erst Luft holen, dann kräftig
       if(P.pusteRichtung === 'hoch') return {p: {head:[-1.3*luft + .2*(1 - luft) + zit,0,0], armN:[.25,0,-1.15], armP:[.25,0,1.15], legN:[-.25,0,-.12], legP:[-.25,0,.12]}, key:'pusten'};
+      if(typeof pusteSchraeg === 'function' && pusteSchraeg(P.pusteRichtung))   // schräg nach oben: Kopf halb in den Nacken
+        return {p: {head:[-.75*luft + .2*(1 - luft) + zit,0,0], armN:[.8*luft,0,-.6], armP:[.8*luft,0,.6], legN:[-.4,0,0], legP:[.35,0,0]}, key:'pusten'};
       return {p: {head:[-.12*luft + .25*(1 - luft) + zit,0,0], armN:[1.15*luft,0,-.45], armP:[1.15*luft,0,.45], legN:[-.5,0,0], legP:[.45,0,0]}, key:'pusten'};
     }
     if(P.dash) return {p: TUCK, key:'dash'};
@@ -406,7 +408,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(z.key === 'seil') ty = flip*1.57;   // am Seil: ganz von der Seite   // fast von vorn: beide Arme sichtbar          // zur Wand gedreht
     if(z.key === 'tanz') ty = S.tz && S.tz.near ? S.tz.side*.3 : 0;   // zur Kamera, leicht zum Partner
     if(z.key === 'trampolin') ty = 0;   // hält den Schirm zur Kamera hin
-    if(z.key === 'pusten') ty = P.pusteRichtung === 'hoch' ? .25*flip : P.pusteRichtung*1.42;   // nach oben: fast von vorn, sonst im Profil zur Blasrichtung
+    if(z.key === 'pusten') ty = P.pusteRichtung === 'hoch' ? .25*flip : pusteSeiteVon(P.pusteRichtung)*(pusteSchraeg(P.pusteRichtung) ? 1.1 : 1.42);   // nach oben: fast von vorn, sonst im Profil zur Blasrichtung
     if(z.key === 'hebel') ty = (P.leverAnim && P.leverAnim.dir < 0 ? -1 : 1)*1.4;   // zum Hebel hin im Profil
     if(P._yawTest != null) ty = P._yawTest;   // nur fuer Tests
     S.yaw += (ty - S.yaw)*(1 - Math.exp(-dt*14));
@@ -415,7 +417,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(z.key === 'dash'){ S.rollA += -flip*dt*16; rollA = S.rollA; }
     else { S.rollA = 0; if(z.key === 'wj') rollA = -flip*ease(Math.min(1, sinceWJ/WJ_ZEIT))*Math.PI*2; }
     // leichte Neigung: beim Laufen nach vorn, an der Wand weg von der Wand
-    const pusteLehne = z.key === 'pusten' && P.pusteRichtung !== 'hoch' ? (Math.min(1, (performance.now() - (P._pusteStartT || 0))/200) < 1 ? .1 : -.16)*P.pusteRichtung : 0;   // erst zurück (Luft holen), dann in den Wind
+    const pusteLehne = z.key === 'pusten' && P.pusteRichtung !== 'hoch' ? (Math.min(1, (performance.now() - (P._pusteStartT || 0))/200) < 1 ? .1 : -.16)*pusteSeiteVon(P.pusteRichtung) : 0;   // erst zurück (Luft holen), dann in den Wind
     const leanZiel = z.key === 'lauf' ? 0 : (z.key === 'ws' ? (wandRichtung(P) > 0 ? .1 : -.1) : pusteLehne);
     S.lean += (leanZiel - S.lean)*(1 - Math.exp(-dt*12)); rollA += S.lean;
     rollA += IT.roll;

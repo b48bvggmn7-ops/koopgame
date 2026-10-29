@@ -194,7 +194,7 @@
 | Seil ranziehen / geben | W / S | – | hoch / runter |
 | Hebel | J | Num 2 | ○ |
 | Dash (Nacht-Ausbau) | K | Num 3 | △ |
-| Spezial (Dschungel-Neu): Affe pusten / Schweinchen Schirm-Trampolin | H (+ W/A/D = Richtung) | Num 4 | R1 |
+| Spezial (Dschungel-Neu): Affe pusten / Schweinchen Schirm-Trampolin | H (+ W/A/D = Richtung, W+A/W+D = schräg) | Num 4 | R1 |
 | Haftfläche festhalten | G halten | Num 1 halten | □ |
 | Neustart / Leistungsanzeige / Test-Sprung | R / F / C, X | | – |
 | Pausenmenü (mit Neustart) | Esc | | Options |

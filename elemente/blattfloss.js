@@ -59,7 +59,7 @@ elementRegistrieren({
       for(const s of blattFloesse){
         // Seiten-Wind schiebt; nicht das Blatt, auf dem der Pustende selbst steht
         const st = pusteStrahlJetzt, k = st && st.dir !== 'hoch' && st.von.standingOn !== s ? pusteTrifft({x: s.x, y: s.y - 6, w: s.w, h: s.h + 12}) : 0;
-        if(k > 0) s.v = Math.max(-BLATT_MAX, Math.min(BLATT_MAX, s.v + st.dir*BLATT_SCHUB*k));
+        if(k > 0) s.v = Math.max(-BLATT_MAX, Math.min(BLATT_MAX, s.v + pusteSeiteVon(st.dir)*BLATT_SCHUB*k*(pusteSchraeg(st.dir) ? 0.7 : 1)));
         else { s.v *= BLATT_AUSLAUF; if(Math.abs(s.v) < 0.03) s.v = 0; }
         if(!s.v) continue;
         let nx = Math.max(s.x0, Math.min(s.x1, s.x + s.v));

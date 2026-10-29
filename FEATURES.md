@@ -2162,6 +2162,11 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - Puste-Balken: leer gepustet muss man die Taste loslassen; er lädt auch bei gehaltener Taste wieder auf (vorher sprang der
   Affe bei 30 % immer wieder kurz an – Balken nie voll, Flackern). Test koop_pusten.
 - Edelstein an per Hebel bewegten Haken sitzt mitten im Ring und füllt ihn aus.
+- **Pusten schräg** (Nutzerwunsch): W + D = schräg nach oben-rechts, W + A = oben-links (Kopf halb im Nacken, Strahl 45°,
+  Reichweite PUSTE_WEITE_SCHRAEG 300 px, Wände kürzen ihn). Er trägt das Schweinchen mit Schirm nach oben (PUSTE_SCHRAEG_HUB,
+  höchstens PUSTE_SCHRAEG_HOCH_MAX) und schiebt es zur Seite; Windrad/Blatt-Floß spüren ihn wie den Seiten-Wind. Test koop_pusten_schraeg.
+- **Liane von oben:** hält der Affe über dem Haken die Haken-Taste, hängt die Liane sofort locker in seiner Hand (man sieht:
+  verbunden) und spannt sich, sobald er auf Hakenhöhe gefallen ist (kein Überschlagen). Test liane_von_oben.
 - **Zwei Abschnitte statt sechs Level** (js/15a-abschnitte.js, Spiegel tests/abschnitt.py): Die Dschungel-Welt hat nur noch
   „Abschnitt 1 – Spur der Sternschnuppe“ (Teile 01 Dschungel, 02 Baumkronen, 03 Lianenschlucht, 07 Windrad-Lichtung, morgens)
   und „Abschnitt 2 – Herz des Meteoriten“ (04 Glühwald, 05 Dornenpfad, 06 Wipfelsturm, 08 Meteoritenkrater, nachts).
