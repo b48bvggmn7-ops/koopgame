@@ -384,7 +384,7 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     S.front = clamp((S.front || 0) + dt/(wantFront ? (schirmTr ? 0.12 : 0.5) : 0.2)*(wantFront ? 1 : -1), 0, 1);
     let frPose = null, frRot = 0;
     if(S.front > 0 && schirmTr){
-      frPose = frBase({dy:15, lean:0, na:[FX-26,-32,FX-24,-20,FX-5,-18], fa:[FX+26,-32,FX+24,-20,FX+5,-18]});
+      frPose = frBase({dy:15, lean:0, na:[FX-26,-32,FX-8,-24,FX+15,-18], fa:[FX+26,-32,FX+34,-22,FX+23,-18]});   // beide Pfoten rechts am Stock
       S.antic = undefined; S.anticT = 0; S.prevFr = null; S.curFr = frPose; S.umbA = 0; S.umbVis = false; S.ropeOn = false; S.idleT = 0;
     }
     else if(S.front > 0){

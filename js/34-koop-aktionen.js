@@ -284,7 +284,8 @@ function pusteZeichnen(){
     }
     if(P.male) pusteBalkenZeichnen(P, px, py);
     else if(P.trampolin && ohne3d && typeof drawUmbrella === 'function')   // bisherige Figuren: Schirm über dem Kopf (3D: js/33)
-      drawUmbrella(P, px, py, {u: 1, hand: [px, py - P.h*0.35], stick: TRAMPOLIN_HOEHE - 22 - P.h*0.35, tilt: 0, quetsch: 0,   // Kuppel-Spitze = Landefläche
+      drawUmbrella(P, px, py, {u: 1, hand: [px + SCHIRM_HAND_SEITE, py - P.h*0.35],   // Stock seitlich: Gesicht bleibt frei (Nutzerwunsch)
+                               stick: TRAMPOLIN_HOEHE - 22 - P.h*0.35, tilt: 0, quetsch: 0,   // Kuppel-Spitze = Landefläche
                                haende: {schulter: [0, 0], farbe: '#f7aac4', rand: '#cf7d9b'}});   // Arme zeichnet die Figur selbst (Vorderansicht, js/10c)   // Schirm tief auf dem Kopf, Pfoten vor dem Bauch (Nutzerwunsch)
   }
 }
