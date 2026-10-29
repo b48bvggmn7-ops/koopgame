@@ -5989,6 +5989,7 @@ async def paket_kaufen_und_muenzkonto(g):
 async def level_ladefehler_mit_grund(g):
     """Lässt sich ein Level nicht laden, springt das Spiel nicht still zurück, sondern zeigt in der Levelauswahl den Grund."""
     srv = webserver(); p = g.p
+    await alle_welten(p)   # Ruinen sind im Spiel ausgeblendet – hier mit allen Welten
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(600)
         await p.route('**/levels/ruinen/01-ruinen.json*', lambda r: r.fulfill(status=404, body='weg'))
