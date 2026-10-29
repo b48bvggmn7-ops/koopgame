@@ -2156,6 +2156,21 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).
 
 ### Dschungel-Neu: zwei Abschnitte, neue Geschichte, Meteorit, Logik-Rätsel
+- **Level 1–3 und 4–6 fest zusammengefügt** (Nutzerwunsch, auch im Editor): jeder Abschnitt ist EINE Level-Datei
+  (levels/dschungel/abschnitt-1-sternschnuppenspur.json, abschnitt-2-meteoritenherz.json, beide Formate), im Editor ein langes
+  Level (Nummern bis 80, `MAX_LINK`; die Szene danach bleibt beim Speichern erhalten, Level-Info „nachSzene“). Die alten
+  Teil-Dateien liegen in levels/archiv/dschungel-teile/ (nur noch zum Nachschauen); im Level steht unter „_teile“, wo jeder
+  alte Teil liegt (für die Tests, tests/abschnitt.py `teil_sicht`). An den Übergängen neue Checkpoints. Werkzeug:
+  tests/bausteine/abschnitte_zusammenfuegen.py. Test abschnitt_zusammensetzen.
+- **Kein Dash im Dschungel** (Nutzer: „man schafft zu viel nur durch den Dash“): `DASH_AUS_WELTEN = ['dschungel']` (die
+  Mechanik bleibt für andere Welten). **Durchbruch-Wände pustet der Affe um**: trifft sein Wind ein Kästchen, wackelt die Wand;
+  nach BRUCH_PUSTE_NOETIG (45) Schritten voller Wind bricht die ganze zusammenhängende Wand. Tests dash_welt_aus, bruch_pusten.
+  **Verfolgungen:** die Stachelwände sind langsamer (gemessen: ohne Dash gerade so zu schaffen), Durchbruch-Wände in den
+  Fluchtwegen (Dornenpfad-Finale, Sturm-Jagd) sind raus, der Bröckel-Stein der Pilz-Flucht ist zurück. Test jagden_dschungel.
+- **Liane:** fällt nicht mehr sofort in die volle Länge (`LIANE_VOLLE_LAENGE = false`): in der Luft gegriffen bleibt sie so
+  lang wie beim Greifen. Test liane_volle_laenge.
+- **Hohle Bäume raus** (`BAUM_AN = false`, js/12a): Start und Ziel im Dschungel wieder ohne Baumhaus (Ziel-Schild wie in den
+  anderen Welten); der Ablauf bleibt im Code. Test hohler_baum_start_ziel.
 - **Nur Dschungel, keine Weltkarte** (Nutzerwunsch): die Welten nach dem Dschungel sind ausgeblendet (`"aus": true` in
   levels/worlds.json, ihre Dateien bleiben); „Fortfahren“ öffnet direkt die Dschungel-Seite, Esc dort führt ins Hauptmenü.
   Die Weltkarte bleibt im Code (für später), ist aber nicht mehr erreichbar. Test nur_dschungel_ohne_karte.

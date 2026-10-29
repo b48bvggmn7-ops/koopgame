@@ -67,8 +67,11 @@
   07 Fenster „Level-Info“ (Welt, Position, Titel, Tageszeit, Wetter, Look) · 08 Rückgängig/Wiederholen + Rechteck-Auswahl ·
   09 Werkzeugleiste (Reiter, „Zuletzt“, Eigenschaften-Zeile nur fürs aktive Werkzeug, Welt-Voreinstellung, Hilfe) ·
   99 Start (früher alles in einer `editor.js`); davor `00-welt-werkzeuge.js` = Tabelle, welche Werkzeuge je Welt empfohlen sind.
-- **Dschungel-Neu:** Die Dschungel-Welt hat nur 2 Abschnitte (`levels/dschungel/abschnitt-*.json` = nur Liste der Teile, kein
-  Gelände; Teile 01–03 + 07 Rätsel bzw. 04–06 + 08 Rätsel mit Meteorit), kein Boss (Bruno im Archiv), keine Sprungpilze/Aufwinde.
+- **Dschungel-Neu:** Die Dschungel-Welt hat nur 2 Abschnitte, seit „Level 1–3 zusammen“ je EINE normale Level-Datei
+  (`levels/dschungel/abschnitt-*.json`, alte Teile 01–03 + 07 Rätsel bzw. 04–06 + 08 Rätsel in `levels/archiv/dschungel-teile/`;
+  „_teile“ im Level sagt, wo sie liegen – Tests schneiden sie mit `tests/abschnitt.py teil_sicht` heraus, `koop_level`/`level_pfad`
+  tun das automatisch). Kein Boss (Bruno im Archiv), keine Sprungpilze/Aufwinde, kein Dash (`DASH_AUS_WELTEN`), keine hohlen
+  Bäume (`BAUM_AN`). Andere Welten sind im Spiel ausgeblendet (`"aus": true` in worlds.json), Weltkarte nicht erreichbar.
   Umbau-Skripte: `tests/bausteine/dschungel_neu.py` (Stellen), `raetsel_teile.py` (Rätsel-Teile), `meteoriten_setzen.py` (Spur);
   Bot-Tests `dschungel_neu_stellen_a1/_a2`, `raetsel_dschungel_neu`. Prüfwerkzeuge lesen Abschnitte als ihre Teile (`A.level_dateien`).
 - `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), seit dem Editor-Umbau **nach Welten in Ordnern**:
@@ -193,7 +196,7 @@
 | Fähigkeit | G = Haken | Num 1 halten = Schirm | □ |
 | Seil ranziehen / geben | W / S | – | hoch / runter |
 | Hebel | J | Num 2 | ○ |
-| Dash (Nacht-Ausbau) | K | Num 3 | △ |
+| Dash (Nacht-Ausbau; im Dschungel aus) | K | Num 3 | △ |
 | Spezial (Dschungel-Neu): Affe pusten / Schweinchen Schirm-Trampolin | H (+ W/A/D = Richtung, W+A/W+D = schräg) | Num 4 | R1 |
 | Haftfläche festhalten | G halten | Num 1 halten | □ |
 | Neustart / Leistungsanzeige / Test-Sprung | R / F / C, X | | – |
