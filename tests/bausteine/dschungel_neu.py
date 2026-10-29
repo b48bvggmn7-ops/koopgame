@@ -261,11 +261,19 @@ def s05_zwei_gaenge(lv):
     if not any(typ == 'wind' and 610 <= c <= 611 for (c, r), typ in lv.t.items()): return False
     wind_weg(lv, 610, 611)
     return lv.merke('Dschungel-Neu: Zwei-Gänge-Staffel per Pusten (Aufwind 610)')
+def s05_finale_pilz(lv):
+    """Teil 5, Finale-Flucht (früher Pilz 703 vor der Grube 704–711): Pilz weg, Grube 1 kürzer (705–711, ein Sprung);
+    dahinter eine Durchbruch-Wand 716 (4 hoch) – nur mit Dash entkommt man der Stachelwand."""
+    if not any(p['c'] == 703 for p in lv.ed.get('bouncers', [])): return False
+    lv.punkt_weg('bouncers', 703, 15)
+    for c in (703, 704): lv.kachel(c, 16, 'ground'); lv.kachel(c, 17, 'ground')
+    for r in (12, 13, 14, 15): lv.punkt('bruchWaende', 716, r)
+    return lv.merke('Dschungel-Neu: Finale-Flucht ohne Pilz 703 (Durchbruch-Wand 716)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
-    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse, s05_pilz_flucht, s05_zwei_gaenge],
+    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse, s05_pilz_flucht, s05_zwei_gaenge, s05_finale_pilz],
     'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor, s06_sturm_pilz],
 }
 

@@ -9564,9 +9564,10 @@ def _d5_e3(dash):
     return {'m': [k_lauf(524, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(526, -4), {'wait': '!!linkOn[9]'}] + weg}
 JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E3 Pilz-Flucht', kat(515, 11), kat(516, 11), [], 'Wand', 9, _d5_e3, 596))
 def _d5_e4(dash):
-    pilz = [{'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(703)} - 6', 'left': f'P.x > {kx(703)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
-            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
-    weg = [j_lauf(700, [688], dash=dash, dash_ab=693, dash_bis=696)] + pilz + [j_lauf(773, [724, 734], dash=dash, dash_ab=712, ohne=[724, 734])]
+    # Dschungel-Neu: Pilz 703 ist weg – über die Grube 705–711 springen (Schweinchen mit Schirm)
+    grube = [{'hold': ['right'], 'until': f'P.x >= {kx(704)} + 4', 'frames': 300}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
+             {'hold': ['right'], 'holdIf': {'glide': 'P === p2'}, 'until': 'P.grounded', 'frames': 300}]
+    weg = [j_lauf(700, [688], dash=dash, dash_ab=693, dash_bis=696)] + grube + [j_lauf(773, [724, 734], dash=dash, dash_ab=712, ohne=[724, 734])]
     return {'m': [k_lauf(682, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + weg}
 JAGDEN_BOT.append(('dschungel/05-dornenpfad.json', 'E4 Finale', kat(671, 11), kat(672, 11), [], 'Wand', 14, _d5_e4, 772))
 def _d6_e1(dash):
