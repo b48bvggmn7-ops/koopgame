@@ -218,10 +218,30 @@ def s06_sturm_pilz(lv):
     for c in (699, 700): lv.kachel(c, 16, 'ground'); lv.kachel(c, 17, 'ground')
     for r in (12, 13, 14, 15): lv.punkt('bruchWaende', 714, r)
     return lv.merke('Dschungel-Neu: Sturm-Jagd ohne Pilz 699')
+def s05_puste_insel(lv):
+    """Teil 5, Stachel-Schlucht 62–89 (früher Pilz 61 und Aufwind 75): Puste-Insel 78–83. Der Affe pustet am Rand (59)
+    das Schweinchen hoch, es segelt auf die Insel; der Affe schwingt an den Haken 66/75 hinterher, pustet auf der Insel
+    noch einmal, das Schweinchen segelt zum Boden 90; der Affe nimmt den Haken 87 (früher 84, direkt über der Insel)."""
+    if lv.typ(80, 15) == 'ground': return False
+    lv.punkt_weg('bouncers', 61, 15); lv.kachel(61, 16, 'ground')
+    wind_weg(lv, 75, 76)
+    for c in range(78, 84):
+        for r in (15, 16): lv.kachel(c, r, 'ground')
+    lv.haken_weg(84, 10); lv.haken(87, 10, 4.5)
+    return lv.merke('Dschungel-Neu: Puste-Insel 78 (Pilz 61 + Aufwind 75 -> zweimal Pusten)')
+def s05_hebel_sims(lv):
+    """Teil 5, Hebel 1 auf dem Sims 99–103 (früher Aufwind 97): der Affe pustet bei 97 nach oben, das Schweinchen fliegt
+    aufs Sims und legt den Hebel um (Tür 110). Das Sims rückt eine Reihe tiefer (so hoch trägt der Puste-Wind)."""
+    if not any(typ == 'wind' and 97 <= c <= 98 for (c, r), typ in lv.t.items()): return False
+    wind_weg(lv, 97, 98)
+    for c in range(99, 104): lv.leer(c, 6); lv.kachel(c, 7, 'ground')
+    lv.punkt_weg('switches', 102, 5); lv.punkt('switches', 102, 6, link=1)
+    return lv.merke('Dschungel-Neu: Hebel-Sims 100 (Aufwind 97 -> Pusten)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
+    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims],
     'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor, s06_sturm_pilz],
 }
 

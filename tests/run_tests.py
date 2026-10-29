@@ -12018,6 +12018,32 @@ def _dn_06_turm():
     return {'beide': vs, 'ziel': (327, 3), 'ziel_gegen': (312, 7), 'frames': 6000,
             'gegen': [(f'{w} allein die Säulen hoch', {w: _dn_treppe(alles, h)}, w) for w in ('m', 'f') for h in (10, 16)]}
 DN_STELLEN_EXTRA.append(('dschungel/06-wipfelsturm.json', 'Puste-Turm 308', kat(304, 15), kat(301, 15), _dn_06_turm()))
+def _dn_05_insel():
+    """Teil 5, Puste-Insel 78: zweimal Pusten (Rand 59, dann auf der Insel), der Affe über die Haken 66/75 und 87"""
+    vs = []
+    for rel in ('P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'):
+        for rel2 in ('P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 100'):
+            m = k_pusten_hoch(59, f'Q.grounded && Q.x > {kx(78)}') + [
+                k_lauf(60, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+                {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(79)}', 'left': f'P.x > {kx(81)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+                k_pusten_hoch(81, f'Q.grounded && Q.x > {kx(90)}', 8) + [
+                k_lauf(83, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel2, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+            f = [k_hin(56)] + k_puste_flug(79, 83, 7) + [k_hin(79, -8), {'wait': f'Q.pusteAn && Q.x > {kx(80)}', 'frames': 1500}] + k_puste_flug(91, 94, 9)
+            vs.append({'m': m, 'f': f})
+    allein = [k_lauf(60, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
+              {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]
+    return {'beide': vs, 'ziel': (90, 15), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'ziel_gegen': (78, 15), 'frames': 7000}
+DN_STELLEN_EXTRA.append(('dschungel/05-dornenpfad.json', 'Puste-Insel 78', kat(58, 15), kat(55, 15), _dn_05_insel()))
+def _dn_05_sims():
+    """Teil 5, Hebel-Sims 100: der Affe pustet bei 97, das Schweinchen fliegt aufs Sims und legt Hebel 1 um"""
+    m = k_pusten_hoch(97, '!!linkOn[1]', -10) + [{'wait': '!!linkOn[1]', 'frames': 900}, k_lauf(112)]
+    f = [k_hin(94)] + k_puste_flug(100, 103, 6) + [k_hin(102), {'use': True, 'frames': 3}, {'wait': '!!linkOn[1]', 'frames': 30}, k_lauf(112)]
+    return {'beide': [{'m': m, 'f': f}], 'ziel': (111, 15), 'frames': 4000,
+            'gegen': [('Schweinchen allein', {'f': [k_lauf(99, -4), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300}, k_lauf(112)]}, 'f'),
+                      ('Affe allein', {'m': [k_lauf(99, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'true', 'until': 'P.grounded && f > 5', 'frames': 200}, k_lauf(112)]}, 'm')]}
+DN_STELLEN_EXTRA.append(('dschungel/05-dornenpfad.json', 'Hebel-Sims 100', kat(95, 15), kat(92, 15), _dn_05_sims()))
 async def dn_stellen_pruefen(g, teile):
     fehler, aktuell = [], None
     for teil, name, ms, fs, pl in dn_stellen():
