@@ -2156,6 +2156,12 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).
 
 ### Dschungel-Neu: zwei Abschnitte, neue Geschichte, Meteorit, Logik-Rätsel
+- **Nur Dschungel, keine Weltkarte** (Nutzerwunsch): die Welten nach dem Dschungel sind ausgeblendet (`"aus": true` in
+  levels/worlds.json, ihre Dateien bleiben); „Fortfahren“ öffnet direkt die Dschungel-Seite, Esc dort führt ins Hauptmenü.
+  Die Weltkarte bleibt im Code (für später), ist aber nicht mehr erreichbar. Test nur_dschungel_ohne_karte.
+- Puste-Balken: leer gepustet muss man die Taste loslassen; er lädt auch bei gehaltener Taste wieder auf (vorher sprang der
+  Affe bei 30 % immer wieder kurz an – Balken nie voll, Flackern). Test koop_pusten.
+- Edelstein an per Hebel bewegten Haken sitzt mitten im Ring und füllt ihn aus.
 - **Zwei Abschnitte statt sechs Level** (js/15a-abschnitte.js, Spiegel tests/abschnitt.py): Die Dschungel-Welt hat nur noch
   „Abschnitt 1 – Spur der Sternschnuppe“ (Teile 01 Dschungel, 02 Baumkronen, 03 Lianenschlucht, 07 Windrad-Lichtung, morgens)
   und „Abschnitt 2 – Herz des Meteoriten“ (04 Glühwald, 05 Dornenpfad, 06 Wipfelsturm, 08 Meteoritenkrater, nachts).

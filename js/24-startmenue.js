@@ -252,6 +252,7 @@ const lastUnlocked = () => { let k = 0; for (let i = 0; i < realCount(); i++) if
    der vorigen Welt mit Leveln geschafft sind. Welten ohne Level („Bald“, z. B. Wasser) sind nicht anwählbar und
    werden übersprungen. Ein schon freigeschaltetes Level einer Welt (alter Spielstand, „Alle Level freischalten“)
    öffnet sie ebenfalls. In der Welt geht es wie bisher Level für Level. */
+function ersteWelt() { const w = mapWorlds()[0]; return w ? w.id : undefined; }
 function mapWorlds() {
   const ws = (CONFIG.worlds || []).filter(w => w && w.id).slice().sort((a, b) => (a.reihenfolge || 0) - (b.reihenfolge || 0))
     .map(w => ({ id: w.id, name: w.name || w.id, titel: w.titel || w.name || w.id, boss: w.boss || null, ohneBoss: !!w.ohneBoss, bossName: w.bossName || null,
@@ -712,7 +713,7 @@ S.menu = {
         });
       } else go('select', 'new');
     }
-    else if (id === 'continue') go('map');              // Fortfahren: Weltkarte -> Welt -> Level -> Spielerwahl
+    else if (id === 'continue') go('levels', { world: ersteWelt() });   // Fortfahren: Welt -> Level -> Spielerwahl (Weltkarte raus, Nutzerwunsch)
     else if (id === 'options') go('options');
     else if (id === 'story') { hideMenu(); szeneSpielen('intro', () => showMenuScreen('menu')); }   // Intro nochmal ansehen (29-story.js)
     else if (id === 'quit') quitGame();
@@ -1136,10 +1137,10 @@ S.levels = {
     }
     const i = this.list[this.idx];
     const bw = worldById(this.world);
-    $('#sm-l-hint').textContent = this.isBoss(this.idx) ? (!bw || !bw.boss ? 'Boss – kommt bald · Esc zurück zur Weltkarte'
-        : bossOpen(bw) ? 'Boss · Springen starten · Esc Karte' : 'Gesperrt – schafft erst alle Level dieser Welt')
+    $('#sm-l-hint').textContent = this.isBoss(this.idx) ? (!bw || !bw.boss ? 'Boss – kommt bald · Esc zurück ins Menü'
+        : bossOpen(bw) ? 'Boss · Springen starten · Esc Menü' : 'Gesperrt – schafft erst alle Level dieser Welt')
       : !isUnlocked(i) ? `Gesperrt – schafft erst Level ${this.idx}`
-      : '◀ ▶ wählen · Springen starten · ▲ Packages/Umkleide · Esc Karte';
+      : '◀ ▶ wählen · Springen starten · ▲ Packages/Umkleide · Esc Menü';
     if (this.top) $('#sm-l-hint').textContent = `◀ ▶ wählen · Springen: ${this.top === 'pack' ? 'Packages öffnen' : 'Umkleide öffnen'} · ▼ zurück zu den Leveln`;
   },
   // Menüpunkte oben rechts (28-packages.js): „Packages öffnen“ und „Umkleide“ (nur Ausrüsten, auch gesperrte zu sehen).
@@ -1165,7 +1166,7 @@ S.levels = {
     if (j === this.idx) return;
     this.idx = j; this.paint(); Snd.play('move');
   },
-  back() { Snd.play('back'); go('map', { sel: this.world }); },
+  back() { Snd.play('back'); go('menu'); },   // Weltkarte raus (Nutzerwunsch): zurück ins Hauptmenü
   act(type) {
     const n = this.list.length + (this.mitBoss() ? 1 : 0);   // + Boss-Karte
     if (this.top) {   // obere Reihe (Packages / Umkleide) ausgewählt
@@ -1435,7 +1436,7 @@ S.results = {
   // (neu freigeschaltetes Level mit Schloss-Animation)
   ret() {
     const a = this.arg || {};
-    if (a.freshWorld) return ['map', { unlockWorld: a.freshWorld }];
+    if (a.freshWorld) return ['levels', { world: a.freshWorld }];   // Weltkarte raus: direkt die neue Welt
     if (a.boss) return ['levels', { world: a.boss }];
     if (a.bossOpen) return ['levels', { world: a.bossOpen, unlockBoss: true }];
     if (a.fresh) return ['levels', { unlock: a.fresh - 1 }];
@@ -1629,9 +1630,11 @@ function buildLevelOrder(list, worlds) {
   list = Array.isArray(list) ? list : [];
   const byFile = {}; for (const l of list) if (l && l.datei) byFile[l.datei] = l;
   const entry = (datei, welt) => { const l = byFile[datei] || {}; return { name: l.titel || l.name || datei, datei, welt: welt || null }; };
-  const ws = worlds && Array.isArray(worlds.welten) ? worlds.welten.filter(w => w && w.id && Array.isArray(w.level)) : null;
+  const ws = worlds && Array.isArray(worlds.welten) ? worlds.welten.filter(w => w && w.id && Array.isArray(w.level) && !w.aus) : null;
   if (!ws) return list.filter(l => l && l.datei && !l.versteckt).map(l => entry(l.datei, null));
   const out = [], seen = new Set();
+  // ausgeblendete Welten ("aus": true, Nutzerwunsch: erst nur der Dschungel): ihre Level tauchen auch nicht als „Weitere Level“ auf
+  for (const w of worlds.welten) if (w && w.aus && Array.isArray(w.level)) for (const d of w.level) seen.add(d);
   for (const w of ws.slice().sort((a, b) => (a.reihenfolge || 0) - (b.reihenfolge || 0)))
     for (const d of w.level) if (!seen.has(d)) { seen.add(d); out.push(entry(d, w.id)); }
   for (const l of list) if (l && l.datei && !l.versteckt && !seen.has(l.datei)) { seen.add(l.datei); out.push(entry(l.datei, null)); }
@@ -1639,7 +1642,7 @@ function buildLevelOrder(list, worlds) {
 }
 async function loadLevelList() {
   const [list, worlds] = await Promise.all([fetchJSON('levels.json'), fetchJSON('worlds.json')]);
-  CONFIG.worlds = worlds && Array.isArray(worlds.welten) ? worlds.welten : [];
+  CONFIG.worlds = worlds && Array.isArray(worlds.welten) ? worlds.welten.filter(w => w && !w.aus) : [];   // "aus": im Spiel ausgeblendet
   if (typeof weltAussehenUebernehmen === 'function') weltAussehenUebernehmen(CONFIG.worlds);   // Welt-Look aus worlds.json (Ausbau 7)
   const lv = buildLevelOrder(list, worlds);
   while (lv.length < CONFIG.slots) lv.push({ name: 'Coming soon', soon: true });

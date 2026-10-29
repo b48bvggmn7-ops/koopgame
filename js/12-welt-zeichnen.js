@@ -813,7 +813,7 @@ function linkTargets(link){
     if(g.switchCtl && g.switchLink===link) pts.push({x:(g.minX+g.maxX)/2, y:(g.minY+g.maxY)/2 + 3, kind:'plat', active:g.tripActive});
   }
   for(const h of hooks){
-    if(h.moving && h.switchCtl && h.switchLink===link) pts.push({x:h.x+18, y:h.y-18, kind:'hook', active:h.tripActive});
+    if(h.moving && h.switchCtl && h.switchLink===link) pts.push({x:h.x, y:h.y, kind:'hook', active:h.tripActive});   // mitten im Ring (Nutzerwunsch)
   }
   for(const b of wasserBecken) for(const pg of b.pegel){   // Wasserstand-Marke (elemente/stroemung.js)
     if(pg.link===link) pts.push({x:pg.x, y:pg.y-12, kind:'pegel', active:!!linkOn[link]});
@@ -956,6 +956,7 @@ function drawSolidLook(s, look, x){
       if(t.kind === 'door' || t.kind === 'wechsel' || t.kind === 'tele') continue;
       const x = t.x - camX; if(x < -20 || x > VW+20) continue;
       // nie über den oberen Bildrand hinaus (Tür bis in die oberste Himmel-Reihe: Plakette ins oberste Türteil)
+      if(t.kind === 'hook'){ elementEdelstein(x, t.y, 9.5, linkColor(sw.link)); continue; }   // Haken: Edelstein füllt den Ring aus
       drawLinkBadge(Math.round(x), Math.round(Math.max(t.y, -SKY_ROOM + 14)), sw.link, t.active);
     }
   }

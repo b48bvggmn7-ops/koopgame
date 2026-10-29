@@ -78,6 +78,13 @@ def webserver():
     srv.url = f'http://127.0.0.1:{srv.server_address[1]}/'
     return srv
 
+async def alle_welten(p):
+    """Nutzerwunsch: im Spiel nur der Dschungel ("aus": true in worlds.json). Tests für Weltkarte, Freischalten der nächsten
+    Welt und Spielstände über mehrere Welten laufen mit allen Welten (worlds.json ohne "aus")."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    for x in w['welten']: x.pop('aus', None)
+    await p.route('**/levels/worlds.json*', lambda route: route.fulfill(status=200, content_type='application/json', body=json.dumps(w)))
+
 async def startmenue_bis_level(g, tasten_vorher=()):
     """Startmenü bedienen: Titel -> Menü -> Spielen -> Spielerwahl (beide bereit) -> Countdown -> Level 1."""
     p = g.p
@@ -831,9 +838,10 @@ async def menue_projekt_levels(g):
         texte = await p.eval_on_selector_all('#sm-menu .mi', 'els => els.map(e => e.textContent)')
         assert texte == ['Spielen', 'Fortfahren', 'Optionen', 'Geschichte', 'Beenden'], f'Menü: {texte}'
         await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
-        assert await sm_screen(g) == 'sm-s-map', 'Fortfahren führt nicht zur Weltkarte (Ausbau 3)'
-        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)   # Dschungel (erste Welt) öffnen
-        assert await sm_screen(g) == 'sm-s-levels', 'Weltkarte öffnet die Welt-Seite nicht'
+        assert await sm_screen(g) == 'sm-s-levels', 'Fortfahren führt nicht zur Dschungel-Seite (Weltkarte raus, Nutzerwunsch)'
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(600)
+        assert await sm_screen(g) == 'sm-s-menu', 'Esc auf der Welt-Seite führt nicht ins Hauptmenü'
+        await p.keyboard.press('Enter'); await p.wait_for_timeout(700)   # Fortfahren ist noch gewählt
         namen = await p.eval_on_selector_all('#sm-cards .lc .nm', 'els => els.map(e => e.textContent)')
         echte = [L['titel'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
         assert echte[:4] == ['Spur der Sternschnuppe', 'Das Herz des Meteoriten', 'Ruinen', 'Mondnacht'], f'Levelliste: {echte}'
@@ -4716,6 +4724,7 @@ async def levelkarten_gleich_breit(g):
     der Welt (Ruinen) und mit den 2 Abschnitten im Dschungel (Dschungel-Neu, keine Boss-Karte mehr). Lange Titel werden
     kleiner bzw. an einer Silbe umgebrochen."""
     srv = webserver(); p = g.p
+    await alle_welten(p)   # Weltkarte/weitere Welten: im Spiel ausgeblendet, hier mit allen Welten
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         await g.ev("""localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['%s', '%s', 'ruinen/01-ruinen.json'],
@@ -6105,6 +6114,7 @@ async def welten_laden(g):
         assert set(x) >= {'id', 'name', 'titel', 'reihenfolge', 'level', 'boss'} and x['boss'] is None, x   # Dschungel-Neu: Boss 1 (Bruno) ist raus (levels/archiv/)
         for d in x['level']: assert (ROOT / 'levels' / d).exists(), f'Level-Datei fehlt: {d}'
     srv = webserver(); p = g.p
+    await alle_welten(p)   # Weltkarte/weitere Welten: im Spiel ausgeblendet, hier mit allen Welten
     try:
         await p.goto(srv.url + 'index.html')
         await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
@@ -6175,6 +6185,7 @@ async def spielstand_umzug_welt_ordner(g):
     Pfade umgeschrieben – nichts geht verloren (Freischaltungen, Geschafft, Statistik); auch der Editor findet sein
     zuletzt geladenes Projekt-Level (alter Name) unter dem neuen Pfad wieder."""
     srv = webserver(); p = g.p
+    await alle_welten(p)   # Weltkarte/weitere Welten: im Spiel ausgeblendet, hier mit allen Welten
     alt = {'v': 2, 'played': True, 'unlocked': ['level-1.json', 'level-2.json', 'level-7.json', 'level-8.json', 'level-3.json', 'level-17.json'],
            'completed': ['level-1.json', 'level-2.json', 'level-7.json', 'level-8.json', 'level-6.json'], 'stats': {'level-6.json': {'m': 4, 'f': 1}, 'level-2.json': {'m': 0, 'f': 2}}, 'bosse': ['dschungel']}
     try:
@@ -6210,6 +6221,7 @@ async def spielstand_migration(g):
     """Ausbau 1: alter Spielstand (Level-Nummern) wird auf Dateinamen umgerechnet, nichts geht verloren; das Original
     bleibt unverändert als Sicherung (monchichi.save_v1_backup) und wird nie überschrieben."""
     srv = webserver(); p = g.p
+    await alle_welten(p)   # Weltkarte/weitere Welten: im Spiel ausgeblendet, hier mit allen Welten
     alt = {'played': True, 'unlocked': 4, 'completed': [1, 2, 3], 'stats': {'1': {'m': 2, 'f': 3}, '3': {'m': 0, 'f': 5}}}
     try:
         await p.goto(srv.url + 'index.html')
@@ -8062,11 +8074,35 @@ async def wk_inseln(g):
       info: b.querySelector('small').textContent, boss: !!b.querySelector('.boss .ico') }))""")
 
 @test
+async def nur_dschungel_ohne_karte(g):
+    """Nutzerwunsch: Weltkarte raus und alle Welten nach dem Dschungel ausgeblendet ("aus": true in worlds.json, Dateien
+    bleiben). Im Spiel gibt es nur die Welt Dschungel mit ihren 2 Abschnitten; „Fortfahren“ öffnet direkt ihre Seite, Esc
+    führt ins Hauptmenü."""
+    w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
+    assert [x['id'] for x in w['welten'] if not x.get('aus')] == ['dschungel'], w
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        info = await g.ev("({w: GameMenu.config.worlds.map(x => x.id), l: GameMenu.config.levels.filter(l => !l.soon).map(l => l.datei)})")
+        assert info['w'] == ['dschungel'] and info['l'] == [A1, A2], info
+        await g.ev(f"localStorage.setItem('monchichi.save', JSON.stringify({{v: 2, played: true, unlocked: ['{A1}'], completed: [], stats: {{}}}}))")
+        await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
+        await g.ev("GameMenu.show('menu')"); await p.wait_for_timeout(400)
+        await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.wait_for_timeout(700)
+        t = [await sm_screen(g), await g.ev("document.getElementById('sm-l-title').textContent")]
+        assert t == ['sm-s-levels', 'Dschungel'], t
+        await p.keyboard.press('Escape'); await p.wait_for_timeout(600)
+        assert await sm_screen(g) == 'sm-s-menu', await sm_screen(g)
+    finally:
+        srv.shutdown()
+
+@test
 async def weltkarte_gemalt_ohne_fehler(g):
     """Design-Politur E: die Weltkarte lädt ohne JavaScript-Fehler; gemaltes Meer mit Nägeln auf den Seil-Ecken (ohne Seil-Linien), Kompass, Brücken und
     Fußspuren; jede Insel hat ihre Stimmungsfarbe (--mood), ein eigenes Wetter und ein Tier; gesperrte Welten liegen im
     Nebel (nicht grau); Affe und Schweinchen wippen auf der gewählten Insel."""
     srv = webserver(); p = g.p; fehler = []
+    await alle_welten(p)   # Weltkarte/weitere Welten: im Spiel ausgeblendet, hier mit allen Welten
     p.on('pageerror', lambda e: fehler.append(str(e)))
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
@@ -8110,12 +8146,15 @@ async def weltkarte_und_navigation(g):
     Boss-Symbol); gesperrte Welten verschleiert mit Schloss, Wasser ohne Level = „Bald“ (nicht anwählbar). Tasten wie in
     den anderen Menüs: ◀ ▶ wählen, Springen öffnet die Welt-Seite (Level der Welt + Boss-Karte), Esc zurück."""
     srv = webserver(); p = g.p
+    await alle_welten(p)   # Weltkarte/weitere Welten: im Spiel ausgeblendet, hier mit allen Welten
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['dschungel/01-dschungel.json'], completed: [], stats: {}}))")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000); await p.wait_for_timeout(300)
         await p.keyboard.press('Enter'); await p.wait_for_function("document.querySelector('#sm-s-menu.active')", timeout=8000); await p.wait_for_timeout(300)
-        await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter')   # Fortfahren
+        await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter')   # Fortfahren: Weltkarte raus (Nutzerwunsch) -> gleich die Dschungel-Seite
+        await p.wait_for_function("document.querySelector('#sm-s-levels.active')", timeout=8000); await p.wait_for_timeout(300)
+        await g.ev("GameMenu.show('map')")   # die Weltkarte selbst bleibt im Code (für später) – hier direkt geöffnet
         await p.wait_for_function("document.querySelector('#sm-s-map.active')", timeout=8000); await p.wait_for_timeout(300)
         isl = await wk_inseln(g)
         assert [i['name'] for i in isl] == ['Dschungel', 'Ruinen', 'Höhle', 'Wasser', 'Vulkan'], isl
@@ -8139,9 +8178,7 @@ async def weltkarte_und_navigation(g):
         k = await g.ev("({t: document.getElementById('sm-l-title').textContent, n: [...document.querySelectorAll('#sm-cards .lc')].map(b => b.classList.contains('boss')), c: document.getElementById('sm-l-count').textContent})")
         assert k['t'] == 'Dschungel' and k['n'] == [False] * nl['dschungel'] and f"0 / {nl['dschungel']}" in k['c'], k   # Dschungel-Neu: keine Boss-Karte
         assert await p.is_visible('#sm-l-pack') and await p.is_visible('#sm-l-coll'), 'Packages/Umkleide fehlen auf der Welt-Seite'
-        # Esc -> Weltkarte (Dschungel gewählt), Esc -> Hauptmenü
-        await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
-        assert await sm_screen(g) == 'sm-s-map' and (await wk_inseln(g))[0]['sel']
+        # Esc -> Hauptmenü (Weltkarte raus, Nutzerwunsch)
         await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
         assert await sm_screen(g) == 'sm-s-menu'
         # Controller (simuliert): Steuerkreuz rechts + ✕ funktionieren auch auf der Karte (gleiche Eingabe wie die anderen Menüs)
@@ -8181,6 +8218,7 @@ async def welten_freischaltung(g):
     zurück zur Welt-Seite (Schloss auf dem neuen Level), nach dem letzten Level einer Welt zur Weltkarte mit
     Freischalt-Animation auf der neuen Welt. Alte Spielstände passen weiter."""
     srv = webserver(); p = g.p
+    await alle_welten(p)   # Weltkarte/weitere Welten: im Spiel ausgeblendet, hier mit allen Welten
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         await g.ev("GameMenu.resetSave()")
@@ -8216,18 +8254,13 @@ async def welten_freischaltung(g):
         assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Dschungel'
         assert await g.ev("[...document.querySelectorAll('#sm-cards .lc')].indexOf(document.querySelector('.ulock').parentNode)") == 1, 'Schloss nicht auf Level 2'
         await p.wait_for_function("!document.querySelector('.ulock')", timeout=6000)
-        # letzter Sieg der Welt (Dschungel-Neu: Abschnitt 2) -> Weltkarte mit Freischalt-Animation auf „Ruinen“
+        # letzter Sieg der Welt (Dschungel-Neu: Abschnitt 2) -> Seite der Ruinen
         await g.ev(f"GameMenu.completeLevel(nr('{A2}'), true)")
         await g.ev("GameMenu.show('results', {n: 2, fresh: 3, freshWorld: 'ruinen', packs: 0, st: {m: 0, f: 0, cm: 0, cf: 0, tm: 0, tf: 0}})"); await p.wait_for_timeout(400)
         await p.keyboard.press('Enter'); await p.wait_for_timeout(300)
-        assert await sm_screen(g) == 'sm-s-map', 'nach der letzten Level einer Welt nicht zur Weltkarte'
-        k = await g.ev("(() => { const l = document.querySelector('#sm-wm .ulock'); return l ? [...document.querySelectorAll('#sm-wm .isl')].indexOf(l.parentNode) : -1; })()")
-        assert k == 1, f'keine Freischalt-Animation auf Ruinen: {k}'
-        await p.wait_for_function("document.querySelector('#sm-wm .ulock.burst')", timeout=5000)
-        await p.wait_for_function("!document.querySelector('#sm-wm .ulock')", timeout=6000)
-        isl = await wk_inseln(g)
-        nl = {w['id']: len(w['level']) for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']}   # 6er-Welten: Anzahl aus worlds.json
-        assert not isl[1]['lock'] and isl[1]['sel'] and isl[0]['info'] == f"{nl['dschungel']} / {nl['dschungel']} Level", isl
+        nl = {w['id']: len(w['level']) for w in json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))['welten']}
+        # Weltkarte raus (Nutzerwunsch): gleich die Seite der neu offenen Welt
+        assert await sm_screen(g) == 'sm-s-levels' and await g.ev("document.getElementById('sm-l-title').textContent") == 'Ruinen', 'nach der letzten Level einer Welt nicht zur neuen Welt'
         # alter Spielstand (Nummern): Level 1–3 geschafft, 4 offen -> Dschungel fertig, Ruinen offen, Höhle zu
         await g.ev("localStorage.clear(); localStorage.setItem('monchichi.save', JSON.stringify({played: true, unlocked: 4, completed: [1, 2, 3]}))")
         await p.reload(); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
@@ -9306,6 +9339,7 @@ async def boss1_bruno(g):
         assert min(wi['y'] for wi in L['winds']) < L['switches'][0]['y']
         # Menü (worlds.json mit Bruno als Dschungel-Boss): Boss-Karte gesperrt, bis beide Dschungel-Abschnitte geschafft sind
         dsch['boss'] = BRUNO; dsch['bossName'] = 'Bruno'; dsch.pop('ohneBoss', None)
+        for x in w['welten']: x.pop('aus', None)   # weitere Welten (im Spiel ausgeblendet) hier sichtbar
         await p.route('**/levels/worlds.json*', lambda route: route.fulfill(status=200, content_type='application/json', body=json.dumps(w)))
         await p.goto(srv.url + 'index.html'); await p.wait_for_function("GameMenu.levelsReady()", timeout=8000)
         await g.ev("localStorage.setItem('monchichi.save', JSON.stringify({v: 2, played: true, unlocked: ['%s'], completed: [], stats: {}}));"
@@ -9342,8 +9376,8 @@ async def boss1_bruno(g):
         assert 'Boss besiegt' in await g.ev("document.getElementById('sm-r-level').textContent")
         assert await g.ev("GameMenu.getSave().bosse") == ['dschungel'] and await g.ev("GameMenu.worldUnlocked('ruinen')") is True
         await p.wait_for_timeout(600); await p.keyboard.press('Enter')
-        await p.wait_for_function("document.querySelector('#sm-s-map.active')", timeout=8000)
-        await p.wait_for_function("document.querySelector('#sm-wm .ulock')", timeout=5000)
+        # Weltkarte raus (Nutzerwunsch): nach dem Sieg gleich die Seite der neuen Welt
+        await p.wait_for_function("document.querySelector('#sm-s-levels.active') && document.getElementById('sm-l-title').textContent === 'Ruinen'", timeout=8000)
     finally:
         srv.shutdown()
 
