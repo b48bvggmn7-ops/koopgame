@@ -46,7 +46,7 @@ function partnerTasten(male){
   return male ? {left: c('left'), right: c('right'), jump: c('jump'), hook: c('ability'), pull: c('pull'), slack: c('slack'),
                  use: c('use'), padUse: c('padUse'), swimUp: c('pull'), swimDown: c('slack'), dash: c('dash'), pusten: c('spezial')}
               : {left: c('left'), right: c('right'), jump: c('jump'), glide: c('ability'), use: c('use'), padUse: c('padUse'),
-                 swimUp: c('pull'), swimDown: c('slack'), dash: c('dash'), liegen: c('spezial')};
+                 swimUp: c('pull'), swimDown: c('slack'), dash: c('dash'), trampolin: c('spezial')};
 }
 function partnerTastenNeu(){
   if(typeof p1 === 'undefined' || !p1) return;
@@ -984,6 +984,36 @@ function partnerFolgen(P, M){
   return partnerNavi(P, Z, 'folgt dir');
 }
 
+// Dschungel-Neu (js/34-koop-aktionen.js): Hilfen, die der Partner von selbst gibt, wenn ich (der Mensch) sie gerade brauche
+//   Partner-Schweinchen: bin ich als Affe über ihm in der Luft (oder springe gerade darauf zu), hält es den Schirm auf
+//   Partner-Affe: segle ich als Schweinchen direkt über ihm, pustet er nach oben; halte ich den Schirm auf, läuft er hin
+//   und springt darauf (federt hoch)
+function partnerKoopReflex(P, M, e){
+  if(!P || !M || P.inWater) { if(P) P._reflex = null; return e; }
+  const dx = M.x - P.x;
+  // Partner-Affe springt gerade auf den Schirm: Taste halten (volle Sprunghöhe) und auf die Schirm-Mitte lenken
+  if(!P.grounded && P._reflex === 'springen' && M.trampolin) return {dir: Math.abs(dx) > 6 ? Math.sign(dx) : 0, sprungHalten: P.vy < 0};
+  if(!P.grounded){ P._reflex = null; return e; }
+  // nur, wenn er sonst ohnehin stehen würde (nicht mitten in einer Flucht/Aufgabe) – außer er hilft gerade schon
+  const frei = !e || (!e.dir && !e.springen && !e.dash) || !!P._reflex;
+  if(!frei){ P._reflex = null; return e; }
+  if(!P.male){
+    const ueber = !M.grounded && Math.abs(dx) < PARTNER_TRAMPOLIN_NAH && M.y < P.y - TRAMPOLIN_HOEHE + 10;
+    const halten = P._reflex === 'trampolin' && !M.grounded && Math.abs(dx) < PARTNER_TRAMPOLIN_NAH + 30;
+    if(ueber || halten){ P._reflex = 'trampolin'; partner.text = 'Schirm-Trampolin'; return {dir: 0, spezial: true}; }
+  } else {
+    const breite = PUSTE_BREITE/2 + (P._reflex === 'pusten' ? 18 : 0);   // pustet er schon, hält er etwas großzügiger durch
+    if(!M.grounded && M.gliding && Math.abs(dx) < breite && M.y < P.y - 30 && (P.puste === undefined || P.puste > 0.05 && !(P.pusteLeer && P.puste < PUSTE_NEUSTART))){
+      P._reflex = 'pusten'; partner.text = 'pustet dich hoch'; return {dir: 0, spezial: true, pull: true};
+    }
+    if(M.trampolin && Math.abs(dx) < PARTNER_TRAMPOLIN_WEG && Math.abs(P.y - M.y) < 6){   // nur von derselben Höhe aus (oben angekommen: nicht zurück)
+      P._reflex = 'springen'; partner.text = 'springt auf den Schirm';
+      return {dir: Math.abs(dx) > 6 ? Math.sign(dx) : 0, springen: Math.abs(dx) < 60, sprungHalten: true};
+    }
+  }
+  P._reflex = null;
+  return e;
+}
 // Plan-Eingaben -> echte Tasten
 function partnerTastenAus(P, e){
   const halten = {}, druecken = [];
@@ -998,6 +1028,7 @@ function partnerTastenAus(P, e){
   if(e.pull) halten.pull = true;
   if(e.slack) halten.slack = true;
   if(e.dash) druecken.push('dash');
+  if(e.spezial) halten.spezial = true;   // Dschungel-Neu: Affe pustet / Schweinchen hält den Schirm als Trampolin (js/34)
   return {halten, druecken};
 }
 // Umbau: steht direkt vor ihm eine Durchbruch-Wand (in Laufrichtung, in Körperhöhe), bricht er sie mit einem Dash auf
@@ -1010,7 +1041,8 @@ function partnerDenken(P, M){
   if(typeof deathState !== 'undefined' && deathState) return {halten: {}, druecken: []};
   if(partner.modus === 'warten') return partnerTastenAus(P, partnerWarten(P));
   // Aufgaben (31-partner-aufgaben.js) haben Vorrang; sonst folgen
-  const e = (typeof partnerAufgabeSchritt === 'function' && partnerAufgabeSchritt(P, M)) || partnerFolgen(P, M);
+  let e = (typeof partnerAufgabeSchritt === 'function' && partnerAufgabeSchritt(P, M)) || partnerFolgen(P, M);
+  e = partnerKoopReflex(P, M, e);   // Dschungel-Neu: Schirm-Trampolin / Pusten / auf den Schirm springen
   if(e && P.grounded && typeof dashKannStarten === 'function' && dashKannStarten(P) && partnerBruchVorn(P, e.dir)) e.dash = true;
   return partnerTastenAus(P, e);
 }

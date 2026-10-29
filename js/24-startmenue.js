@@ -800,7 +800,7 @@ $('#sm-fs').addEventListener('click', () => { S.options.idx = 4; S.options.paint
    ===================================================================== */
 const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wandsprung', ability: 'Fähigkeit (Haken / Schirm)',
   pull: 'Hoch (Seil ran, Festhalten)', slack: 'Runter (Seil geben)', use: 'Hebel', dash: 'Dash',
-  spezial: 'Spezial (Affe: pusten / Schwein: hinlegen)'};
+  spezial: 'Spezial (Affe: pusten / Schwein: Schirm-Trampolin)'};
 const TB_TYPNAME = {playstation: 'PlayStation', xbox: 'Xbox', andere: 'anderer Controller'};
 let tbFang = null;    // {n, a, art, typ, vorher: gedrückte Knöpfe beim Start} – wartet auf die neue Taste
 S.tasten = {

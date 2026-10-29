@@ -381,7 +381,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   const K = P.keys || {};
   if(P.male && LIANE_HALTEN && !window.hakenTippen) lianeGriffPruefen(P);
   if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
-  if(typeof koopAktionVorher === 'function' && koopAktionVorher(P, moveDir, jumpPressed, nass)) return true;   // Dschungel-Neu: hinlegen / pusten (js/34)
+  if(typeof koopAktionVorher === 'function' && koopAktionVorher(P, moveDir, jumpPressed, nass)) return true;   // Dschungel-Neu: Schirm-Trampolin / pusten (js/34)
   if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }
   if(P.dashPause > 0 && !P.dash) P.dashPause--;
@@ -449,7 +449,7 @@ function kanteAbrutschen(P){
   if(spotFree(nx, P.y, P)) P.x = nx;
 }
 function neueBewegungNachher(P, altX, altY){
-  if(typeof koopAktionNachher === 'function') koopAktionNachher(P, altX, altY);   // Dschungel-Neu: Affe federt vom liegenden Schweinchen (js/34)
+  if(typeof koopAktionNachher === 'function') koopAktionNachher(P, altX, altY);   // Dschungel-Neu: Affe federt vom Schirm-Trampolin (js/34)
   if(P.hookAttached || P.dash || P.haft || P.inWater) P.rutscht = false;
   const d = P.dash;
   if(d){

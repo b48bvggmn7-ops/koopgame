@@ -231,13 +231,17 @@ const PARTNER_WEG_BUDGET = 120000;      // … und so viele Vorausschritte (≈ 
 const PARTNER_WEG_PAUSE = 300;          // Schritte: so lange keine neue Wegsuche zum selben Ziel, wenn keine gefunden wurde
 const PARTNER_DASH_BODEN = 6;     // Computer-Partner auf der Flucht: so viele Kästchen fester, freier Boden vor ihm, damit er dasht (Umbau)
 const PARTNER_BRUCH_NAH = 24;   // Computer-Partner: so nah (px) vor einer Durchbruch-Wand dasht er hindurch (Umbau)
+const PARTNER_TRAMPOLIN_NAH = 70;    // Partner-Schweinchen: ist der Affe so nah (px, waagerecht) über ihm in der Luft, hält es den Schirm auf (Dschungel-Neu)
+const PARTNER_TRAMPOLIN_WEG = 200;   // Partner-Affe: hält das Schweinchen den Schirm auf und ist so nah, läuft er hin und springt darauf
 
 // ---------- Dschungel-Neu: Spezial-Aktionen (js/34-koop-aktionen.js) ----------
-// Schweinchen hinlegen (Spezial-Taste halten): liegt still am Boden; springt/fällt der Affe von oben drauf, federt er hoch
-// wie früher vom Sprungpilz (gleiche Höhe, ca. 6 Kästchen). Drüberlaufen tut nichts.
-const POLSTER_V = -17.2;          // Abwurf-Tempo nach oben (= Sprungpilz BOUNCE_V)
-const POLSTER_TREFFER = 20;       // px: so weit (plus halbe Figurenbreite) neben der Schweinchen-Mitte zählt das Draufspringen
-const POLSTER_HOEHE = 18;         // px: so hoch über dem Boden liegt die Oberseite des liegenden Schweinchens
+// Schirm-Trampolin (Spezial-Taste des Schweinchens halten): es steht still und spannt den offenen Schirm über sich; springt
+// oder fällt der Affe von oben auf den Schirm, federt er hoch – etwas höher als früher vom Sprungpilz (≈ 6,6 Reihen über
+// dem Boden). Drunterlaufen tut nichts.
+const TRAMPOLIN_HOEHE = 74;       // px: so hoch über den Füßen des Schweinchens liegt die Schirm-Kuppel (Landefläche)
+const TRAMPOLIN_V = -15.4;        // Abwurf-Tempo nach oben (von der Kuppel aus: ≈ 6,6 Reihen über dem Boden – etwas mehr als der
+                                  // Pilz, damit eine 6 Reihen hohe Kante sicher klappt)
+const TRAMPOLIN_TREFFER = 30;     // px: so weit (plus halbe Figurenbreite) neben der Schirm-Mitte zählt das Landen
 // Affe pusten (Spezial-Taste halten): steht still, W = nach oben, A/D = nach links/rechts; der Windstrahl trägt das
 // Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge (Windrad …)
 const PUSTE_DAUER = 160;          // Schritte (≈ 3 s): so lange reicht ein voller Puste-Balken

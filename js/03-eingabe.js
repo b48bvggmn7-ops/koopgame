@@ -11,7 +11,7 @@ const KEYS = {};
 const TASTEN_STANDARD = {
   1: {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', pull:'KeyW', slack:'KeyS', use:'KeyJ', dash:'KeyK', spezial:'KeyH'},
   2: {left:'ArrowLeft', right:'ArrowRight', jump:'Numpad0', ability:'Numpad1', pull:'ArrowUp', slack:'ArrowDown', use:'Numpad2', dash:'Numpad3', spezial:'Numpad4'},
-  // spezial (Dschungel-Neu): Affe = pusten (Wind), Schweinchen = hinlegen (Sprungpolster) – js/34-koop-aktionen.js
+  // spezial (Dschungel-Neu): Affe = pusten (Wind), Schweinchen = Schirm-Trampolin – js/34-koop-aktionen.js
 };
 // Controller-Knöpfe (Standard-Belegung): ✕ 0, ○ 1, □ 2, △ 3, Steuerkreuz 12–15. Laufen geht immer auch mit dem Stick.
 const PAD_STANDARD = {jump:0, ability:2, use:1, dash:3, pull:12, slack:13, left:14, right:15, spezial:5};   // 5 = R1 / RB
@@ -103,9 +103,9 @@ function keysFor(male){
   const s = KEYSETS[male ? monkeyPlayer : 3 - monkeyPlayer];
   // swimUp/swimDown: Hoch/Runter beim Schwimmen (Ausbau 5) – dieselben Tasten wie Seil ranziehen/geben
   // dash (Nacht-Ausbau): Dash-Taste; hoch/runter für die Dash-Richtung und zum Festhalten an Haftflächen = swimUp/swimDown
-  // pusten (Affe) / liegen (Schweinchen): die Spezial-Taste des Spielers (js/34-koop-aktionen.js)
+  // pusten (Affe) / trampolin (Schweinchen): die Spezial-Taste des Spielers (js/34-koop-aktionen.js)
   return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, pusten:s.spezial}
-              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, liegen:s.spezial};
+              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, trampolin:s.spezial};
 }
 function setMonkeyPlayer(n){
   monkeyPlayer = n === 2 ? 2 : 1;
@@ -199,7 +199,7 @@ function pollGamepads(){
     setPad(m.slack, b(P.slack) || (vert && ay > 0));
     setPad(m.use,   b(P.use));             // Standard: Kreis / B = Schalter betätigen
     setPad(m.dash,  b(P.dash));            // Standard: Dreieck / Y = Dash (Nacht-Ausbau)
-    setPad(m.spezial, b(P.spezial));       // Standard: R1 / RB = pusten (Affe) bzw. hinlegen (Schweinchen)
+    setPad(m.spezial, b(P.spezial));       // Standard: R1 / RB = pusten (Affe) bzw. Schirm-Trampolin (Schweinchen)
     if(b(9)) restart = true;               // Options / Start
     if(el){ el.classList.add('on'); el.textContent = '🎮 Controller '+(i+1)+' verbunden'; }
   }

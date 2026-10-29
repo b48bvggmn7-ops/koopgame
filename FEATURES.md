@@ -2108,36 +2108,53 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - Tests: boden_dekor_dschungel, boden_dekor_freihalten (deko_vogel_flattert_weg und deko_frei_von_spielobjekten prüfen
   das alte Dekor jetzt in der Ruinen-Welt).
 
-### Dschungel-Neu: Koop-Aktionen Hinlegen und Pusten (js/34-koop-aktionen.js; Werte in js/02-physik-werte.js)
+### Dschungel-Neu: Koop-Aktionen Schirm-Trampolin und Pusten (js/34-koop-aktionen.js; Werte in js/02-physik-werte.js)
 - Neue Taste „Spezial“ je Spieler (Standard: Spieler 1 = H, Spieler 2 = Num 4 bzw. die normale 4; Controller R1/RB; frei
-  belegbar unter Optionen -> Tasten belegen). Wer den Affen spielt, pustet damit; wer das Schweinchen spielt, legt sich hin.
+  belegbar unter Optionen -> Tasten belegen). Wer den Affen spielt, pustet damit; wer das Schweinchen spielt, spannt den Schirm als Trampolin auf.
   H ist dafür nicht mehr als „Hilfe“ gesperrt (war nirgends belegt). Rolle: das Schweinchen bringt den Affen hoch, der Affe
   das Schweinchen – ersetzt im Dschungel Sprungpilz und Aufwind.
-- **Schweinchen hinlegen** (Taste halten): legt sich am Boden flach auf den Bauch (3D: Arme und Beine von sich gestreckt,
-  flach und breit wie ein Kissen), läuft und springt nicht, solange es liegt; Taste los = steht auf. Springt oder fällt der
-  Affe von oben drauf, federt er hoch wie früher vom Sprungpilz (POLSTER_V = −17,2, ≈ 6 Reihen); drüberlaufen tut nichts.
-  Das Schweinchen federt sichtbar nach. Töne: weiches Plumps beim Hinlegen, Boing beim Abfedern. Test koop_hinlegen_polster.
+- **Schirm-Trampolin** (Schweinchen, Taste halten; ersetzt das erste „Hinlegen“ – Nutzerwunsch: sah nicht gut aus): es
+  steht still zur Kamera und hält den offenen Schirm mit beiden Armen über den Kopf, läuft und springt nicht; Taste los =
+  Schirm zu. Springt oder fällt der Affe von oben auf den Schirm (Kuppel TRAMPOLIN_HOEHE = 74 px über ihren Füßen), federt er
+  hoch (TRAMPOLIN_V = −15,4; höchster Punkt ≈ 6,6 Reihen über dem Boden, etwas mehr als früher vom Sprungpilz, damit eine
+  6 Reihen hohe Kante sicher klappt); drunterlaufen tut nichts.
+  Die Kuppel gibt nach und das Schweinchen geht kurz in die Knie. Töne: Schirm-Wusch beim Aufspannen, gespanntes Tuch +
+  Boing beim Abfedern. Test koop_schirm_trampolin.
 - **Affe pusten** (Taste halten, nur am Boden, nicht am Seil): steht still und bläst; W = nach oben (legt den Kopf in den
-  Nacken), A/D = nach links/rechts (dreht sich nur, läuft nicht). Der Wind kommt in jeder Ansicht aus dem Mund (die 3D-Figur
-  meldet ihren Mund je Bild, `P._mund`), öffnet sich zum Trichter und sieht aus wie der Aufwind (gemeinsame Zeichnung
-  `windInhaltZeichnen` in elemente/aufwind.js: weiche Fläche, lange Schlieren, Funkel-Staub, Blättchen – nur schneller).
+  Nacken), A/D = nach links/rechts (dreht sich nur, läuft nicht). Der Wind ist derselbe wie der Aufwind im Spiel (gemeinsame
+  Zeichnung `windInhaltZeichnen` in elemente/aufwind.js: weiche helle Säule gut 2 Kästchen breit, lange Schlieren,
+  Funkel-Staub, Blättchen – nur etwas schneller), als gerade Säule in Blasrichtung gedreht; die 3D-Figur zeichnet ihn direkt
+  mit (`pusteAmMundZeichnen`), sodass er in jeder Ansicht genau an ihrem Mund beginnt.
   Animation: holt kurz Luft (lehnt sich zurück), dann aufgeblasene Backen, runder Mund, zusammengekniffene Augen, lehnt sich
   in den Wind und zittert leicht; Druckringe vor dem Mund. Wirkung: nach oben trägt der Strahl (8 Kästchen über dem Kopf,
   PUSTE_WEITE_HOCH) das Schweinchen mit offenem Schirm wie ein Aufwind (es steigt gut 9 Reihen); zur Seite (Mundhöhe, gut 2
-  Kästchen breit, PUSTE_WEITE_SEITE 300 px) schiebt er es mit Schirm kräftig, ohne Schirm nur leicht. Ohne Schirm trägt er
+  Kästchen breit, PUSTE_WEITE_SEITE 300 px) schiebt er es in der Luft mit Schirm kräftig, ohne Schirm nur leicht (am Boden stemmt es sich dagegen). Ohne Schirm trägt er
   nicht nach oben; den Affen selbst bewegt er nicht. Wände halten den Wind auf. Puste-Balken über dem Kopf (beim Pusten nach
   oben daneben): reicht ≈ 3 s (PUSTE_DAUER 160 Schritte), lädt nach kurzer Pause wieder auf (PUSTE_LADEN 190); ganz leer
   gepustet geht es erst ab 30 % wieder (PUSTE_NEUSTART). Töne: Luftholen, kräftiges Wind-Rauschen. Wind wirkt auch auf leichte
   Dinge (`pusteTrifft`, z. B. Windrad). Test koop_pusten.
-- Testlevel levels/test/koop-aktionen.json (index.html?testlevel=koop-aktionen): Sims 6 Reihen (Hinlegen), Sims 9 Reihen
-  (Pusten nach oben), Stachelgrube (Seiten-Wind).
+- Testlevel levels/test/koop-aktionen.json (index.html?testlevel=koop-aktionen): Sims 6 Reihen (Schirm-Trampolin), Sims 9 Reihen
+  (Pusten nach oben), Grube mit Blatt-Floß (Seiten-Wind), zwei Windräder mit Türen.
 - Bahnen-Test der alten Mechaniken unverändert grün (nur über die Haken der neuen Bewegung eingeklinkt).
+- **Computer-Partner** (Editor-Testmodus, js/30 `partnerKoopReflex`): hilft von selbst, wenn er sonst ohnehin stehen würde
+  (nie mitten in einer Flucht oder Aufgabe). Partner-Schweinchen: bin ich als Affe über ihm in der Luft (bis
+  PARTNER_TRAMPOLIN_NAH 70 px daneben), hält es den Schirm als Trampolin auf. Partner-Affe: segle ich als Schweinchen direkt
+  über ihm, pustet er nach oben (solange der Balken reicht); halte ich den Schirm auf und er steht auf derselben Höhe
+  (bis PARTNER_TRAMPOLIN_WEG 200 px), läuft er hin, springt mit voller Höhe und federt hoch. Begleiter-Aufgaben (Abläufe in
+  levels/partner/…) kennen die Schritte hold `pusten` / `trampolin`. Test partner_koop_aktionen.
 - **Windrad** (elemente/windrad.js, Editor-Reiter „Logik“, Werkzeug „Windrad“, im Dschungel empfohlen): Blätter-Windrad auf
   einem kurzen Holzpfahl (Nabe auf Mundhöhe des Affen), Edelstein in der Nummernfarbe. Nur der Puste-Wind dreht es: läuft an,
   dreht kräftig (Bewegungsunschärfe), läuft gut 2 s nach. Auswahl „umschalten“ (Standard): jedes Anpusten schaltet die
   Nummer einmal um, wie ein Hebel (Tür auf / wieder zu); „solange es dreht“: Nummer an, solange es sich dreht (wie eine
   Druckplatte, verträgt sich mit Platten derselben Nummer). Ton beim Anlaufen + Hebel-Klack. Rolle: nur der Affe schaltet es –
   oft von einem Platz aus, auf den ihn das Schweinchen bringt. Test windrad_anpusten (Testlevel koop-aktionen).
+- **Blatt-Floß** (elemente/blattfloss.js, Editor-Reiter „Bewegung“, Werkzeug „Blatt-Floß“, im Dschungel empfohlen): großes
+  festes Blatt (3 Kästchen breit) auf einer Ranken-Schiene nach rechts (Auswahl „Schiene“: 4–14 Kästchen; im Editor am
+  linken Ende setzen, die Schiene ist mitgezeichnet und gehört zum Floß). Nur der Seiten-Wind des Affen schiebt es in
+  Blasrichtung (BLATT_SCHUB, höchstens BLATT_MAX 3,2 px/Schritt), ohne Wind gleitet es kurz aus und bleibt liegen; an den
+  Schienen-Enden und an festen Teilen hält es an. Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
+  schiebt sein Wind nicht. Neustart/Tod: zurück an den Anfang. Rolle: der Affe pustet, das Schweinchen fährt.
+  Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).
 
 ## Level-Editor (editor/)
 ```

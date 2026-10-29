@@ -1,5 +1,5 @@
 {
-  "hinweis": "Testlevel Dschungel-Neu: Schweinchen hinlegen (Num 4) = Sprungpolster für den Affen (Sims links, 6 Reihen hoch); Affe pusten (H, W = nach oben) trägt das Schweinchen mit Schirm auf den hohen Sims (9 Reihen); Seiten-Wind schiebt es über die Grube. Öffnen: index.html?testlevel=koop-aktionen; Windrad „umschalten“ (Nummer 1, Tür bei 2420) und „solange es dreht“ (Nummer 2, Tür bei 3020)",
+  "hinweis": "Testlevel Dschungel-Neu: Schirm-Trampolin (Schweinchen Num 4 halten, Affe federt vom Schirm) auf den Sims links (6 Reihen hoch); Affe pusten (H, W = nach oben) trägt das Schweinchen mit Schirm auf den hohen Sims (9 Reihen); Blatt-Floß über der Grube (Schiene 6 Kästchen, danach ein Sprung; Seiten-Wind schiebt es); Windrad „umschalten“ (Nummer 1, Tür bei 2420) und „solange es dreht“ (Nummer 2, Tür bei 3020). Öffnen: index.html?testlevel=koop-aktionen",
   "welt": "dschungel",
   "tageszeit": "mittag",
   "wetter": "trocken",
@@ -34,92 +34,7 @@
     }
   ],
   "hooks": [],
-  "spikes": [
-    {
-      "x": 1420,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1460,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1500,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1540,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1580,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1620,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1660,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1700,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1740,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1780,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1820,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    },
-    {
-      "x": 1860,
-      "y": 720,
-      "w": 40,
-      "h": 40,
-      "dir": 0
-    }
-  ],
+  "spikes": [],
   "coins": [],
   "movingPlatforms": [],
   "checkpoints": [],
@@ -189,6 +104,13 @@
       "y": 720,
       "link": 2,
       "art": "solange"
+    }
+  ],
+  "blattFloesse": [
+    {
+      "x": 1400,
+      "y": 720,
+      "schiene": 6
     }
   ]
 }

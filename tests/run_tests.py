@@ -7004,42 +7004,41 @@ KOOP_SCHRITTE = """menuScreen = 'pause'; deathState = null; let ts = 5e6; for(co
 async def koop_testlevel(g):
     srv = webserver()
     await g.p.goto(srv.url + 'index.html?testlevel=koop-aktionen')
-    await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length >= 4 && windraeder.length === 2 && menuScreen === null", timeout=10000)
+    await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length >= 4 && windraeder.length === 2 && blattFloesse.length === 1 && menuScreen === null", timeout=10000)
     return srv
 
 @test
-async def koop_hinlegen_polster(g):
-    """Dschungel-Neu: Schweinchen hält die Spezial-Taste (Num 4) -> legt sich hin, steht still (kein Laufen, kein Springen).
-    Fällt der Affe von oben drauf, federt er hoch wie vom früheren Sprungpilz (≈ 6 Reihen, POLSTER_V) und kommt so auf den
-    6 Reihen hohen Sims (Testlevel koop-aktionen). Drüberlaufen tut nichts; steht das Schweinchen, gibt es keinen Schwung;
-    Taste los = steht wieder auf und läuft normal."""
+async def koop_schirm_trampolin(g):
+    """Dschungel-Neu: Schweinchen hält die Spezial-Taste (Num 4) -> spannt den offenen Schirm über sich, steht still (kein
+    Laufen, kein Springen). Fällt der Affe von oben auf den Schirm (TRAMPOLIN_HOEHE über ihren Füßen), federt er hoch – höchster
+    Punkt wie früher vom Sprungpilz (≈ 6 Reihen über dem Boden) – und kommt so auf den 6 Reihen hohen Sims (Testlevel
+    koop-aktionen). Drunterlaufen tut nichts; ohne Schirm gibt es keinen Schwung; Taste los = Schirm zu, läuft normal."""
     srv = await koop_testlevel(g)
     try:
         r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
           try {
             stell(p2, 600, 720); stell(p1, 300, 720); for(let i = 0; i < 6; i++) st();
-            KEYS[p2.keys.liegen] = true; for(let i = 0; i < 4; i++) st(); e.liegt = p2.liegt;
+            KEYS[p2.keys.trampolin] = true; for(let i = 0; i < 4; i++) st(); e.schirm = p2.trampolin;
             KEYS[p2.keys.left] = true; KEYS[p2.keys.jump] = true; KEYS[p2.keys.jump + '_pressed'] = true; for(let i = 0; i < 10; i++) st();
             e.still = Math.abs(p2.x - 600) < 1 && p2.grounded; KEYS[p2.keys.left] = false; KEYS[p2.keys.jump] = false;
-            // drüberlaufen: kein Schwung
+            // drunterlaufen: kein Schwung
             stell(p1, 500, 720); for(let i = 0; i < 4; i++) st(); KEYS[p1.keys.right] = true; let minY = 1e9;
-            for(let i = 0; i < 30; i++){ st(); minY = Math.min(minY, p1.y); } KEYS[p1.keys.right] = false; e.drueber = 720 - minY;
+            for(let i = 0; i < 30; i++){ st(); minY = Math.min(minY, p1.y); } KEYS[p1.keys.right] = false; e.drunter = 720 - minY;
             // von oben (neben dem Sims 640–880, Oberkante y 480): hoch und hinüber
             stell(p1, 600, 560); let boing = 0, top = 1e9;
-            for(let i = 0; i < 90; i++){ KEYS[p1.keys.right] = p1.vy > -6 && p1.y < 560 && p1.x < 720; st(); top = Math.min(top, p1.y); if(p1.vy <= POLSTER_V + 0.01) boing++; }
+            for(let i = 0; i < 90; i++){ KEYS[p1.keys.right] = p1.vy > -6 && p1.y < 560 && p1.x < 720; st(); top = Math.min(top, p1.y); if(p1.vy <= TRAMPOLIN_V + 0.01) boing++; }
             KEYS[p1.keys.right] = false; for(let i = 0; i < 60; i++) st();
             e.boing = boing; e.hoch = (720 - top)/40; e.aufSims = p1.grounded && Math.abs(p1.y - 480) < 1 && p1.x > 640;
             e.log = SFX_LOG.slice(-40);
-            // steht auf: kein Polster mehr
-            KEYS[p2.keys.liegen] = false; for(let i = 0; i < 4; i++) st(); e.steht = !p2.liegt;
+            KEYS[p2.keys.trampolin] = false; for(let i = 0; i < 4; i++) st(); e.zu = !p2.trampolin;
             stell(p1, 600, 560); let b2 = 0; for(let i = 0; i < 40; i++){ st(); if(p1.vy < -10) b2++; } e.ohne = b2;
           } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
           return e; })()""")
-        assert r['liegt'] and r['still'], f'Schweinchen legt sich nicht hin / bewegt sich im Liegen: {r}'
-        assert r['drueber'] < 2, f'Drüberlaufen darf nicht hochschleudern: {r}'
-        assert r['boing'] >= 1 and 5.5 < r['hoch'] < 7.5 and r['aufSims'], f'Affe federt nicht auf den Sims: {r}'
-        assert 'hinlegen' in r['log'] and 'polster' in r['log'], f'Ton fehlt: {r["log"]}'
-        assert r['steht'] and r['ohne'] == 0, f'nach dem Aufstehen noch Polster: {r}'
+        assert r['schirm'] and r['still'], f'Schweinchen spannt den Schirm nicht / bewegt sich dabei: {r}'
+        assert r['drunter'] < 2, f'Drunterlaufen darf nicht hochschleudern: {r}'
+        assert r['boing'] >= 1 and 6.2 < r['hoch'] < 7.2 and r['aufSims'], f'Affe federt nicht auf den Sims: {r}'
+        assert 'schirmauf' in r['log'] and 'trampolin' in r['log'], f'Ton fehlt: {r["log"]}'
+        assert r['zu'] and r['ohne'] == 0, f'nach dem Loslassen noch Trampolin: {r}'
     finally:
         srv.shutdown()
 
@@ -7113,6 +7112,30 @@ async def windrad_anpusten(g):
         assert r['an1'] and r['bleibt'] and r['wiederAus'], f'Windrad „umschalten“ falsch: {r}'
         assert r['an2'] and r['aus2'], f'Windrad „solange es dreht“ falsch: {r}'
         assert 'windrad' in r['log'], f'Ton fehlt: {r["log"]}'
+    finally:
+        srv.shutdown()
+
+@test
+async def blattfloss_wind(g):
+    """Dschungel-Neu (elemente/blattfloss.js): das Blatt-Floß über der Grube bewegt sich ohne Wind nicht (auch nicht,
+    wenn jemand darauf läuft); der Seiten-Wind des Affen schiebt es samt Schweinchen bis ans Ende der Schiene, dort bleibt es
+    liegen; nach dem Neustart liegt es wieder am Anfang. Nach oben gepustet bewegt es sich nicht."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {}, B = blattFloesse[0];
+          try {
+            stell(p2, 1460, 720); stell(p1, 1330, 720); for(let i = 0; i < 30; i++) st();
+            e.traegt = p2.grounded && Math.abs(p2.y - 720) < 1; e.ruhig = B.x === 1400;
+            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; for(let i = 0; i < 30; i++) st(); e.hochNichts = B.x === 1400;
+            KEYS[p1.keys.pull] = false; KEYS[p1.keys.right] = true; for(let i = 0; i < 125; i++) st();   // (Balken reicht 160 Schritte; danach liefe er los)
+            KEYS[p1.keys.pusten] = false; KEYS[p1.keys.right] = false; for(let i = 0; i < 60; i++) st();
+            e.ende = B.x; e.schwein = p2.x; e.lebt = !deathState;
+            resetLevel(); for(let i = 0; i < 3; i++) st(); e.neu = B.x;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['traegt'] and r['ruhig'] and r['hochNichts'], f'Blatt-Floß trägt nicht / bewegt sich ohne Seiten-Wind: {r}'
+        assert r['ende'] == 1640 and r['schwein'] > 1640 and r['lebt'], f'Wind schiebt das Floß nicht samt Schweinchen ans Ende: {r}'
+        assert r['neu'] == 1400, f'nach dem Neustart nicht am Anfang: {r}'
     finally:
         srv.shutdown()
 
@@ -7979,7 +8002,7 @@ async def element_register(g):
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
-                 ['windrad', 'windraeder', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -7996,7 +8019,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['hook', 'wind', 'bounce'], reihe   # Schleuder entfernt (Nutzerwunsch)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['tele', 'band', 'move'], reihe   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
+        assert reihe == ['tele', 'band', 'blatt', 'move'], reihe   # + Blatt-Floß (Dschungel-Neu)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
         assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad'], logik   # + Windrad (Dschungel-Neu)
         licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
@@ -11307,6 +11330,46 @@ async def partner_folgt_gemuetlich(g):
             print(f'    {ich}: größter Abstand {weit:.0f} px, höchstens {vor:.0f} px voraus')
         finally:
             srv.shutdown()
+
+@test
+async def partner_koop_aktionen(g):
+    """Dschungel-Neu: der Computer-Partner (Editor-Testmodus) nutzt Schirm-Trampolin und Pusten von selbst.
+    1) Ich = Affe: springe ich über dem Partner-Schweinchen hoch, hält es den Schirm auf – ich federe ab und komme auf den
+       6 Reihen hohen Sims. 2) Ich = Schweinchen: segle ich direkt über dem Partner-Affen, pustet er mich hoch auf den
+       8 Reihen hohen Sims. 3) Ich = Schweinchen und halte den Schirm auf: der Partner-Affe läuft hin und federt hoch."""
+    sol = [ground(0, 680, 3000), ground(900, 440, 240), ground(1500, 360, 240)]
+    daten = level_daten(sol, {'x': 300, 'y': 680}, {'x': 200, 'y': 680})
+    ziel = {'right': 'P.x < Q.x - 3', 'left': 'P.x > Q.x + 3'}   # in der Luft auf den Partner zu lenken
+    # 1) Affe springt über das stehende Partner-Schweinchen (links vom Sims) und federt vom Schirm
+    srv = await partner_test_start(g, daten, ich='m')
+    try:
+        plan = [{'hold': ['right'], 'until': 'P.x >= 860'}, {'frames': 120},
+                {'holdIf': {'left': 'P.x > Q.x + 50', 'right': 'P.x < Q.x - 50'}, 'until': 'Math.abs(P.x - Q.x) <= 52', 'frames': 200},
+                {'press': ['jump'], 'hold': ['jump'], 'holdIf': ziel, 'until': 'P.vy < -12 && f > 20', 'frames': 120},
+                {'holdIf': {'right': 'P.x < 990', 'left': 'P.x > 1100'}, 'until': 'P.grounded && f > 20', 'frames': 240}]   # gleich nach dem Abfedern hinüber
+        r = await koop(g, m=[300, 680], f=[200, 680], plans={'m': plan}, maxFrames=1500)
+        assert r.get('done') and r['pos']['m'][1] == 10, f'1) Affe kommt nicht per Schirm-Trampolin auf den Sims: {r.get("pos")} {r.get("dead")}'
+    finally:
+        srv.shutdown()
+    # 2) Schweinchen segelt über dem Affen, er pustet es hoch
+    srv = await partner_test_start(g, daten, ich='f')
+    try:
+        plan = [{'hold': ['right'], 'until': 'P.x >= 1440'}, {'frames': 120},
+                {'holdIf': {'left': 'P.x > Q.x + 30', 'right': 'P.x < Q.x - 30'}, 'until': 'Math.abs(P.x - Q.x) <= 32', 'frames': 200},
+            {'press': ['jump'], 'hold': ['jump', 'glide'], 'holdIf': ziel, 'frames': 14},
+            {'hold': ['glide'], 'holdIf': {'right': 'P.y < 330 ? P.x < 1600 : P.x < Q.x - 3', 'left': 'P.y >= 330 && P.x > Q.x + 3'}, 'until': 'P.grounded && f > 20', 'frames': 400}]
+        r = await koop(g, m=[1300, 680], f=[1200, 680], plans={'f': plan}, maxFrames=2000)
+        assert r.get('done') and r['pos']['f'][1] == 8, f'2) Partner-Affe pustet das Schweinchen nicht auf den Sims: {r.get("pos")} {r.get("dead")}'
+    finally:
+        srv.shutdown()
+    # 3) Schweinchen hält den Schirm auf, der Partner-Affe springt darauf
+    srv = await partner_test_start(g, daten, ich='f')
+    try:
+        plan = [{'hold': ['right'], 'until': 'P.x >= 600'}, {'frames': 60}, {'hold': ['trampolin'], 'frames': 160}]
+        r = await koop(g, m=[400, 680], f=[500, 680], plans={'f': plan}, maxFrames=600)
+        assert r.get('done') and r['top']['m'] < 12, f'3) Partner-Affe federt nicht vom Schirm hoch: {r.get("top")} {r.get("pos")}'
+    finally:
+        srv.shutdown()
 
 PARTNER_VOR_MAX = 160   # px: so weit darf der Partner höchstens vor mir sein (Abstand 90 + Spielraum 40 + Rundung)
 

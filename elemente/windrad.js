@@ -3,7 +3,7 @@
 // es läuft an, dreht sich kräftig und läuft langsam aus. Zwei Arten (Editor-Auswahl „Windrad“):
 //   umschalten – jedes Anpusten (dreht sich voll) schaltet seine Nummer einmal um, wie ein Hebel (Standard)
 //   solange    – die Nummer ist AN, solange es sich dreht (wie eine Druckplatte; läuft es aus, geht sie wieder AUS)
-// Rolle: nur der Affe kann es schalten (pusten) – oft von einem Platz aus, an den ihn das Schweinchen bringt (Hinlegen),
+// Rolle: nur der Affe kann es schalten (pusten) – oft von einem Platz aus, an den ihn das Schweinchen bringt (Schirm-Trampolin),
 // während das Schweinchen den Weg nutzt, den es öffnet. Logik pro Schritt in spiel.schritt; „solange“ über windradWunsch
 // in updatePlates (js/05-level-objekte.js), damit es sich mit Druckplatten derselben Nummer verträgt.
 const WINDRAD_ANLAUF = 0.06;      // so viel Drehung je Schritt bei vollem Wind (bis 1 = volle Fahrt)

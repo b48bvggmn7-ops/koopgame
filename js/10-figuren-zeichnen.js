@@ -36,13 +36,14 @@ function drawBow(x, y, r){
 }
 
 // Segelschirm: runder Stoffschirm mit Bogenkante, Streifen, Speichen, Griff; klappt weich auf und schwingt mit
-function drawUmbrella(player, px, py){
-  const u = player.umbrella;                  // 0 = zu, 1 = ganz offen
+// o (optional, Dschungel-Neu: Schirm-Trampolin, js/34): {u (offen 0…1), hand: [x, y], stick, tilt, quetsch (Kuppel gibt nach 0…1)}
+function drawUmbrella(player, px, py, o){
+  const u = o ? o.u : player.umbrella;        // 0 = zu, 1 = ganz offen
   const t = performance.now()*0.004;
-  const tilt = Math.max(-0.4, Math.min(0.4, -player.vx*0.05)) + Math.sin(t)*0.05*u;
-  const R = 36, ry = 22;                      // Radius / Höhe der Kuppel
-  const handX = px + player.facing*5, handY = py - player.h*0.5 - 20;
-  const stick = 30;
+  const tilt = o ? (o.tilt || 0) : Math.max(-0.4, Math.min(0.4, -player.vx*0.05)) + Math.sin(t)*0.05*u;
+  const R = 36, ry = 22*(1 - 0.35*((o && o.quetsch) || 0));   // Radius / Höhe der Kuppel (gibt beim Trampolin nach)
+  const handX = o ? o.hand[0] : px + player.facing*5, handY = o ? o.hand[1] : py - player.h*0.5 - 20;
+  const stick = o ? o.stick : 30;
   ctx.save();
   ctx.translate(handX, handY);
   ctx.rotate(tilt);

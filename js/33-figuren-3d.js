@@ -294,8 +294,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   function zielPose(P, S, t, flip, sinceWJ){
     const sp = S.spG, male = P.male, s = Math.sin(S.phase), w = Math.min(1, sp/4.4);
     if(typeof baumTanzt === 'function' && baumTanzt()) return {p: tanzPose(P, S), key:'tanz'};   // gemeinsamer Siegestanz
-    // Dschungel-Neu (js/34): Schweinchen liegt flach auf dem Bauch (Arme und Beine von sich gestreckt), Affe pustet
-    if(!male && P.liegt) return {p: {head:[.22,0,0], armN:[-1.25,0,-1.05], armP:[-1.25,0,1.05], legN:[-1.5,0,-.35], legP:[-1.5,0,.35]}, key:'liegen'};
+    // Dschungel-Neu (js/34): Schweinchen hält den offenen Schirm mit beiden Armen über den Kopf (Trampolin), Affe pustet
+    if(!male && P.trampolin) return {p: {head:[-.22,0,0], armN:[-.15,0,-2.85], armP:[-.15,0,2.85], legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'};
     if(male && P.pusteAn){
       const luft = Math.min(1, (performance.now() - (P._pusteStartT || 0))/200), zit = Math.sin(t*38)*.04*luft;   // erst Luft holen, dann kräftig
       if(P.pusteRichtung === 'hoch') return {p: {head:[-1.3*luft + .2*(1 - luft) + zit,0,0], armN:[.25,0,-1.15], armP:[.25,0,1.15], legN:[-.25,0,-.12], legP:[-.25,0,.12]}, key:'pusten'};
@@ -405,7 +405,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(z.key === 'haft') ty = flip*1.2;   // Profil: man sieht, wie die Arme abwechselnd nach vorn greifen
     if(z.key === 'seil') ty = flip*1.57;   // am Seil: ganz von der Seite   // fast von vorn: beide Arme sichtbar          // zur Wand gedreht
     if(z.key === 'tanz') ty = S.tz && S.tz.near ? S.tz.side*.3 : 0;   // zur Kamera, leicht zum Partner
-    if(z.key === 'liegen') ty = 0;   // liegt zur Kamera hin
+    if(z.key === 'trampolin') ty = 0;   // hält den Schirm zur Kamera hin
     if(z.key === 'pusten') ty = P.pusteRichtung === 'hoch' ? .25*flip : P.pusteRichtung*1.42;   // nach oben: fast von vorn, sonst im Profil zur Blasrichtung
     if(z.key === 'hebel') ty = (P.leverAnim && P.leverAnim.dir < 0 ? -1 : 1)*1.4;   // zum Hebel hin im Profil
     if(P._yawTest != null) ty = P._yawTest;   // nur fuer Tests
@@ -469,10 +469,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       ch.mundO.visible = pu > .3; ch.mundO.sc = ch.mundO.sc0.map(v => v*(.6 + .5*pu));
       for(const q of ch.lae) q.visible = pu <= .3;
       if(pu > .5 && !zu) for(const e of ch.eyes) e.n.sc = [e.n.sc[0], e.y*(1 - .45*pu), e.n.sc[2]]; }
-    // Liegen: flach und breit wie ein Kissen; federt nach, wenn der Affe abspringt
-    S.lg = (S.lg || 0) + ((z.key === 'liegen' ? 1 : 0) - (S.lg || 0))*(1 - Math.exp(-dt*16));
-    let lgX = 1 + .16*S.lg, lgY = 1 - .36*S.lg;
-    if(P._polsterT){ const q = (now - P._polsterT)/360; if(q < 1){ const a = Math.sin(q*Math.PI*2.5)*(1 - q)*.3; lgY *= 1 - a; lgX *= 1 + a*.55; } }
+    // Schirm-Trampolin: federt der Affe ab, geht das Schweinchen kurz in die Knie (und wippt nach)
+    let lgX = 1, lgY = 1, trQ = 0;
+    if(P.trampolin && P._trampolinSprungT){ const q = (now - P._trampolinSprungT)/380; if(q < 1){ trQ = Math.sin(q*Math.PI*2)*(1 - q); const a = Math.max(0, trQ)*.2; lgY = 1 - a; lgX = 1 + a*.45; } }
     H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14*lgX, (1 + sq)*lgY, (1 - sq*.5)*1.14*lgX];   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
     // in die kleine Leinwand zeichnen
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);
@@ -562,6 +561,16 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     c.restore();
     c.restore();
     if(!male && P.umbrella > 0.03 && typeof drawUmbrella === 'function') drawUmbrella(P, 0, fy);   // bisheriger Schirm (2D), 3D-Schirm folgt ggf.
+    // Schirm-Trampolin (js/34): offener Schirm über dem Kopf, die Kuppel gibt nach, wenn der Affe abfedert
+    S.trU = (S.trU || 0) + ((P.trampolin ? 1 : 0) - (S.trU || 0))*(1 - Math.exp(-dt*(P.trampolin ? 16 : 22)));
+    if(!male && S.trU > .03 && typeof drawUmbrella === 'function'){
+      const kopf = fy - (2.4 + .55)*SC*lgY - IT.hop*42;   // knapp über dem Kopf, zwischen den erhobenen Händen
+      drawUmbrella(P, 0, fy, {u: S.trU, hand: [0, kopf + 8*Math.max(0, trQ)], stick: TRAMPOLIN_HOEHE - (fy - kopf) - 14, tilt: Math.sin(t*2.2)*.03, quetsch: Math.max(0, trQ)});
+    }
+    // Puste-Wind des Affen (js/34) direkt im Bild der Figur zeichnen: beginnt genau an ihrem Mund
+    if(male && P.pusteAn && ch.mundO && ch.mundO.capM && typeof pusteAmMundZeichnen === 'function'){
+      const w = ch.mundO.capM; pusteAmMundZeichnen(P, w[12]*SC, fy - w[13]*SC - IT.hop*42);
+    }
   };
   { const roh = window.fussFigurZeichnen;   // Zeit für die 3D-Figuren messen (Leistungs-Anzeige, Taste F)
     window.fussFigurZeichnen = function(P){ const t = performance.now(); try { return roh(P); } finally { F3D_QUALI.zeit = (F3D_QUALI.zeit || 0) + performance.now() - t; } }; }

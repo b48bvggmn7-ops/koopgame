@@ -8,7 +8,7 @@
 const GRUND_WERKZEUGE = ['ground', 'wall', 'fake', 'spike', 'coin', 'checkpoint', 'startM', 'startF', 'goal',
   'hook', 'switch', 'door', 'plate', 'move', 'erase', 'select', 'bruch', 'haft'];   // Nacht-Ausbau: Durchbruch-Wand + Haftfläche in allen Welten
 const WELT_WERKZEUGE = {
-  dschungel: ['crumble', 'oneway', 'wind', 'bounce', 'tele', 'wechsel', 'windrad'],
+  dschungel: ['crumble', 'oneway', 'wind', 'bounce', 'tele', 'wechsel', 'windrad', 'blatt'],
   ruinen:    ['falle', 'fels', 'lichtquelle', 'spiegel', 'kristall'],
   hoehle:    ['eis', 'band', 'dunkel', 'leucht'],
   wasser:    ['water', 'current', 'waterlevel'],

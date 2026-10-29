@@ -3,14 +3,15 @@
 // keine Module) und werden in index.html in fester Reihenfolge geladen.
 //
 // Zwei Koop-Aktionen auf der Spezial-Taste des Spielers (Standard: Affe H / R1, Schweinchen Num 4 / R1):
-//   - Schweinchen HINLEGEN (Taste halten): liegt still am Boden; der Affe federt von ihm hoch wie früher vom Sprungpilz.
+//   - Schweinchen SCHIRM-TRAMPOLIN (Taste halten): steht still und spannt den offenen Schirm über sich; der Affe federt
+//     vom Schirm hoch (höchster Punkt wie früher vom Sprungpilz).
 //   - Affe PUSTEN (Taste halten): steht still und bläst einen Windstrahl nach oben / links / rechts (W, A, D). Der Strahl
 //     trägt das Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge
 //     (`pusteTrifft`, z. B. Windrad). Ein Balken über dem Kopf leert sich beim Pusten und lädt danach wieder auf.
 // Rollen: das Schweinchen hilft dem Affen nach oben, der Affe dem Schweinchen – keine Figur kommt allein durch.
 // Einklinken nur über die Haken der neuen Bewegung (js/32: neueBewegungVorher / neueBewegungNachher) – die alte Physik in
 // 08 bleibt unberührt; ohne Spezial-Taste läuft alles Schritt für Schritt wie vorher (Test bahnen_alte_mechaniken).
-// Werte: js/02-physik-werte.js (Abschnitt „Dschungel-Neu“). Zustand an der Figur: P.liegt, P.puste (0…1), P.pusteAn,
+// Werte: js/02-physik-werte.js (Abschnitt „Dschungel-Neu“). Zustand an der Figur: P.trampolin, P.puste (0…1), P.pusteAn,
 // P.pusteRichtung ('hoch' | -1 | 1), P.pusteT (Schritte seit Beginn), P.pusteLeer (ganz leer gepustet), P.pustePause.
 
 // Der Windstrahl steht – solange der Affe pustet – als Aufwind-Bereich in `winds` (elemente/aufwind.js): so trägt er das
@@ -22,26 +23,26 @@ function koopTaste(P, name){ const k = P.keys && P.keys[name]; return !!(k && is
 function koopSchweinchen(){ return [p1, p2].find(P => P && !P.male); }
 function koopAffe(){ return [p1, p2].find(P => P && P.male); }
 
-// ---------- Schweinchen hinlegen ----------
-function liegenVorher(P, moveDir, jumpPressed){
-  const will = koopTaste(P, 'liegen') && P.grounded && !P.dash && !P.haft && !P.inWater && !(P.umbrella > 0.5);
-  if(!will){ if(P.liegt){ P.liegt = false; P._liegtEndeT = performance.now(); } return false; }
-  if(!P.liegt){ P.liegt = true; P._liegtT = performance.now(); if(typeof SFX !== 'undefined' && SFX.hinlegen) SFX.hinlegen(P); }
+// ---------- Schweinchen: Schirm-Trampolin ----------
+function trampolinVorher(P, moveDir, jumpPressed){
+  const will = koopTaste(P, 'trampolin') && P.grounded && !P.dash && !P.haft && !P.inWater;
+  if(!will){ if(P.trampolin){ P.trampolin = false; P._trampolinEndeT = performance.now(); } return false; }
+  if(!P.trampolin){ P.trampolin = true; P._trampolinT = performance.now(); if(typeof SFX !== 'undefined' && SFX.schirmAuf) SFX.schirmAuf(P); }
   P.vx *= 0.55; if(Math.abs(P.vx) < 0.05) P.vx = 0;
   P.vy = Math.min(MAX_FALL, P.vy + GRAVITY);
-  return true;   // liegt still: kein Laufen, kein Springen
+  return true;   // hält den Schirm: kein Laufen, kein Springen
 }
-// Affe landet von oben auf dem liegenden Schweinchen -> hoch wie vom Sprungpilz
-function polsterPruefen(P, altY){
+// Affe landet von oben auf dem Schirm -> hoch (höchster Punkt wie früher vom Sprungpilz)
+function trampolinPruefen(P, altY){
   const S = koopSchweinchen();
-  if(!S || !S.liegt || P.hookAttached || P.haft || P.inWater || (deathState && deathState.victim === S)) return false;
-  const oben = S.y - POLSTER_HOEHE;
+  if(!S || !S.trampolin || P.hookAttached || P.haft || P.inWater || (deathState && deathState.victim === S)) return false;
+  const oben = S.y - TRAMPOLIN_HOEHE;
   if(!(P.vy >= 0 || P.grounded) || altY > oben + 2 || P.y < oben - 1) return false;
-  if(Math.abs(P.x - S.x) >= POLSTER_TREFFER + P.w/2) return false;
-  P.y = oben; P.vy = POLSTER_V; P.grounded = false; P.glideTimer = 0; P.lastWallJumpSide = 0;
+  if(Math.abs(P.x - S.x) >= TRAMPOLIN_TREFFER + P.w/2) return false;
+  P.y = oben; P.vy = TRAMPOLIN_V; P.grounded = false; P.glideTimer = 0; P.lastWallJumpSide = 0;
   P.sprungKurzMoeglich = false; P.wjInputLock = 0;
-  S._polsterT = performance.now();
-  if(typeof SFX !== 'undefined' && SFX.polster) SFX.polster(S);
+  S._trampolinSprungT = performance.now(); S._trampolinSprungX = P.x - S.x;
+  if(typeof SFX !== 'undefined' && SFX.trampolin) SFX.trampolin(S);
   return true;
 }
 
@@ -118,9 +119,9 @@ function pusteTrifft(rect){
   const weite = s.dir === 'hoch' ? PUSTE_WEITE_HOCH : PUSTE_WEITE_SEITE;
   return s.kraft*Math.max(0.35, 1 - Math.max(0, d)/weite*0.65);
 }
-// Seiten-Wind schiebt das Schweinchen (vor seiner Physik, im selben Schritt)
+// Seiten-Wind schiebt das Schweinchen in der Luft (vor seiner Physik, im selben Schritt)
 function pusteSchieben(S){
-  const s = pusteStrahlJetzt; if(!s || s.dir === 'hoch' || S.male) return;
+  const s = pusteStrahlJetzt; if(!s || s.dir === 'hoch' || S.male || S.grounded) return;   // am Boden stemmt es sich dagegen
   const k = pusteTrifft({x: S.x - S.w/2, y: S.y - S.h, w: S.w, h: S.h}); if(!k) return;
   const schirm = !S.grounded && S.keys && isDown(S.keys.glide);
   const a = (schirm ? PUSTE_SCHUB : PUSTE_SCHUB_OHNE)*k*s.dir, max = schirm ? PUSTE_SEITE_MAX : 3;
@@ -129,16 +130,16 @@ function pusteSchieben(S){
 }
 
 // ---------- Einklinken (aus js/32-neue-bewegung.js) ----------
-// vor dem Tempo: true = Tempo gesetzt (liegt / pustet), normale Physik aus
+// vor dem Tempo: true = Tempo gesetzt (hält den Schirm / pustet), normale Physik aus
 function koopAktionVorher(P, moveDir, jumpPressed, nass){
-  if(nass){ P.liegt = false; P.pusteAn = false; return false; }
+  if(nass){ P.trampolin = false; P.pusteAn = false; return false; }
   if(P.male) return pustenVorher(P);
   pusteSchieben(P);
-  return liegenVorher(P, moveDir, jumpPressed);
+  return trampolinVorher(P, moveDir, jumpPressed);
 }
 // nach dem Bewegen
 function koopAktionNachher(P, altX, altY){
-  if(P.male) polsterPruefen(P, altY);
+  if(P.male) trampolinPruefen(P, altY);
 }
 // einmal pro Physik-Schritt: Windstrahl für den nächsten Schritt, Balken laden, Ton
 function koopAktionSchritt(){
@@ -151,20 +152,16 @@ function koopAktionSchritt(){
 }
 function koopAktionZuruecksetzen(){
   pusteStrahlJetzt = null;
-  for(const P of [p1, p2]) if(P){ P.liegt = false; P.pusteAn = false; P.puste = 1; P.pusteLeer = false; P.pustePause = 0; }
+  for(const P of [p1, p2]) if(P){ P.trampolin = false; P.pusteAn = false; P.puste = 1; P.pusteLeer = false; P.pustePause = 0; }
 }
 
 // ---------- Zeichnen (nur Anzeige) ----------
-// Stauchen der Figur: liegendes Schweinchen flach und breit, federt nach, wenn der Affe abspringt; pustender Affe holt Luft
+// Stauchen der Figur: Schweinchen geht beim Abfedern des Affen kurz in die Knie; pustender Affe holt Luft
 function koopAktionSquash(P){
   let sx = 1, sy = 1;
   if(window.figur3dMass && typeof neueFigurenAn === 'function' && neueFigurenAn()) return [sx, sy];   // 3D-Figuren: eigene Posen (js/33)
   const t = performance.now();
-  if(P.liegt){
-    const k = Math.min(1, (t - (P._liegtT || 0))/140), e = k*k*(3 - 2*k);
-    sx *= 1 + 0.22*e; sy *= 1 - 0.38*e;
-    if(P._polsterT){ const q = (t - P._polsterT)/320; if(q < 1){ const a = Math.sin(q*Math.PI*2.5)*(1 - q)*0.22; sy *= 1 - a; sx *= 1 + a*0.6; } }
-  }
+  if(P.trampolin && P._trampolinSprungT){ const q = (t - P._trampolinSprungT)/300; if(q < 1){ const a = Math.sin(q*Math.PI)*(1 - q)*0.18; sy *= 1 - a; sx *= 1 + a*0.5; } }   // geht beim Abfedern in die Knie
   if(P.pusteAn){
     const k = (t - (P._pusteStartT || 0))/180;
     if(k < 1){ const a = Math.sin(k*Math.PI)*0.12; sy *= 1 + a; sx *= 1 - a*0.5; }   // Luft holen
@@ -193,28 +190,43 @@ function pusteMund(P){
   const hoch = P.pusteRichtung === 'hoch';
   return {x: P.x + (hoch ? 0 : (P.pusteRichtung || P.facing || 1)*PUSTE_MUND_VOR), y: P.y - (hoch ? PUSTE_MUND_HOCH_Y : PUSTE_MUND_SEITE_Y)};
 }
-// Windstrahl im Aussehen des Aufwinds (windInhaltZeichnen, elemente/aufwind.js): am Mund schmal, öffnet sich zum Trichter,
-// in Blasrichtung gedreht und deutlich schneller als ein Aufwind; ein paar Druckringe direkt vor dem Mund
+// Windstrahl = derselbe Wind wie der Aufwind im Spiel (windInhaltZeichnen, elemente/aufwind.js: weiche helle Säule, lange
+// Schlieren, Funkel-Staub, Blättchen), als gerade Säule vom Mund aus in Blasrichtung gedreht und etwas schneller.
+// (mx, my) = Mund im aktuellen Zeichen-Bezugssystem. Die 3D-Figur ruft das direkt beim Zeichnen auf (js/33: genau an
+// ihrem Mund, auch beim Hüpfen/Stauchen); für die bisherigen Figuren zeichnet pusteZeichnen an einer festen Stelle.
+const PUSTE_SAEULE_BREITE = 76;   // px: so breit wie eine Aufwind-Säule von 2 Kästchen (sichtbar etwas schmaler, weich auslaufend)
+function pusteSaeuleZeichnen(s, mx, my, len){
+  if(typeof windInhaltZeichnen !== 'function') return;
+  const hoch = s.dir === 'hoch', tw = performance.now()*0.001, B = PUSTE_SAEULE_BREITE;
+  ctx.save();
+  ctx.translate(mx, my);
+  ctx.rotate(hoch ? 0 : s.dir*Math.PI/2);   // Zeichenrichtung „nach oben“ = Blasrichtung
+  // am Mund schmal (Mundbreite), auf den ersten 30 px zur vollen Säule – sonst stünde vor dem Mund eine harte Kante
+  ctx.beginPath(); ctx.moveTo(-9, 3); ctx.quadraticCurveTo(-B/2, -6, -B/2, -32); ctx.lineTo(-B/2, -len); ctx.lineTo(B/2, -len);
+  ctx.lineTo(B/2, -32); ctx.quadraticCurveTo(B/2, -6, 9, 3); ctx.closePath(); ctx.clip();
+  // das Schein-Bild reicht etwas hinter den Mund (dort ist es am hellsten, sein weicher Rand liegt hinter dem Mund)
+  windInhaltZeichnen(-B/2, -len, B, len*1.25, tw, 7.3, (0.9 + 0.1*Math.sin(tw*9))*s.kraft, 1.5, 1);
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function pusteLaenge(s, mWelt){
+  return Math.max(30, s.dir === 'hoch' ? mWelt.y - s.y : Math.abs((s.dir > 0 ? s.x + s.w : s.x) - mWelt.x));
+}
+function pusteAmMundZeichnen(P, mx, my){
+  const s = pusteStrahlJetzt; if(!s || s.von !== P) return;
+  P._mundGezeichnetT = performance.now();
+  pusteSaeuleZeichnen(s, mx, my, pusteLaenge(s, pusteMund(P)));
+}
 function pusteZeichnen(){
   const s = pusteStrahlJetzt;
-  if(s && typeof windInhaltZeichnen === 'function'){
-    const P = s.von, m = pusteMund(P), hoch = s.dir === 'hoch', tw = performance.now()*0.001;
-    const len = Math.max(30, hoch ? m.y - s.y : Math.abs((s.dir > 0 ? s.x + s.w : s.x) - m.x)), B = PUSTE_BREITE;
-    ctx.save();
-    ctx.translate(m.x - camX, m.y);
-    ctx.rotate(hoch ? 0 : s.dir*Math.PI/2);   // Zeichenrichtung „nach oben“ = Blasrichtung
-    ctx.beginPath(); ctx.moveTo(-5, 2); ctx.quadraticCurveTo(-B*0.2, -len*0.35, -B/2, -len); ctx.lineTo(B/2, -len);
-    ctx.quadraticCurveTo(B*0.2, -len*0.35, 5, 2); ctx.closePath(); ctx.clip();
-    windInhaltZeichnen(-B/2, -len, B, len*1.2, tw, 7.3, (0.95 + 0.05*Math.sin(tw*20))*s.kraft, 2.6, 1);
-    ctx.restore();
-    ctx.save(); ctx.translate(m.x - camX, m.y); ctx.rotate(hoch ? 0 : s.dir*Math.PI/2);
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6;
-    for(let i = 0; i < 3; i++){ const ph = ((tw*3.6 + i/3) % 1), r = 4 + ph*12;
-      ctx.globalAlpha = (1 - ph)*0.7*s.kraft; ctx.beginPath(); ctx.ellipse(0, -6 - ph*30, r, r*0.3, 0, 0, Math.PI*2); ctx.stroke(); }
-    ctx.restore(); ctx.globalAlpha = 1;
+  if(s && !(s.von._mundGezeichnetT && performance.now() - s.von._mundGezeichnetT < 200)){   // nur ohne 3D-Figur (sonst zeichnet js/33)
+    const m = pusteMund(s.von); pusteSaeuleZeichnen(s, m.x - camX, m.y, pusteLaenge(s, m));
   }
+  const ohne3d = !(window.figur3dMass && typeof neueFigurenAn === 'function' && neueFigurenAn());
   for(const P of [p1, p2]){
-    if(!P || !P.male || (deathState && P === deathState.victim)) continue;
-    pusteBalkenZeichnen(P, Math.round(P.x - camX), Math.round(P.y));
+    if(!P || (deathState && P === deathState.victim)) continue;
+    const px = Math.round(P.x - camX), py = Math.round(P.y);
+    if(P.male) pusteBalkenZeichnen(P, px, py);
+    else if(P.trampolin && ohne3d && typeof drawUmbrella === 'function')   // bisherige Figuren: Schirm über dem Kopf (3D: js/33)
+      drawUmbrella(P, px, py, {u: 1, hand: [px, py - P.h - 4], stick: TRAMPOLIN_HOEHE - P.h - 18, tilt: 0, quetsch: 0});
   }
 }
