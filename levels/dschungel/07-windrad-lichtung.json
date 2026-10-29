@@ -198,7 +198,8 @@
     {
       "x": 1020,
       "y": 620,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "meister"
     },
     {
       "x": 1460,
@@ -221,14 +222,16 @@
       "color": "blue"
     },
     {
-      "x": 2660,
-      "y": 540,
-      "color": "pink"
+      "x": 1980,
+      "y": 180,
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 2820,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 3220,

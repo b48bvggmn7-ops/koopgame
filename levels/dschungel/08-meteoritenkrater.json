@@ -212,7 +212,8 @@
     {
       "x": 1020,
       "y": 620,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 1460,
@@ -222,7 +223,8 @@
     {
       "x": 1820,
       "y": 380,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "meister"
     },
     {
       "x": 1980,
@@ -240,24 +242,28 @@
       "color": "blue"
     },
     {
-      "x": 2660,
-      "y": 540,
-      "color": "pink"
+      "x": 1980,
+      "y": 220,
+      "color": "pink",
+      "klasse": "meister"
     },
     {
       "x": 2820,
       "y": 540,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 3180,
       "y": 500,
-      "color": "pink"
+      "color": "pink",
+      "klasse": "geschick"
     },
     {
       "x": 3220,
       "y": 500,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     }
   ],
   "spikes": [

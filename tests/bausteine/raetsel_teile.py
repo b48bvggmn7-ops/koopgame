@@ -19,6 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / 'tests'))
 import level_bau as L
+sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
+import muenzen as MZ
 
 FEST = 'ground'
 
@@ -85,6 +87,8 @@ def raetsel1():
     lv.checkpoint(10, 15)
     muenzen(lv, [(14, 13, 'blue'), (15, 13, 'pink'), (25, 15, 'blue'), (36, 13, 'pink'), (49, 4, 'pink'), (49, 14, 'blue'),
                  (57, 13, 'blue'), (66, 13, 'pink'), (70, 13, 'blue'), (80, 13, 'pink')])
+    for c, r in ((22, 7), (49, 6), (76, 15)): lv.punkt('meteoriten', c, r)   # Spur (wie tests/bausteine/meteoriten_setzen.py)
+    MZ.einstufen(lv); MZ.meister(lv, 49, 4); MZ.meister(lv, 25, 15)   # Meister: über der hohen Mauer, auf der Brücke unter der Decke
     return lv.merke('Dschungel-Neu: Rätsel 1 Windrad-Lichtung')
 
 def raetsel2():
@@ -108,6 +112,7 @@ def raetsel2():
     lv.checkpoint(10, 15)
     muenzen(lv, [(14, 13, 'blue'), (15, 13, 'pink'), (25, 15, 'blue'), (36, 13, 'pink'), (45, 9, 'blue'), (49, 5, 'pink'),
                  (49, 14, 'pink'), (57, 13, 'blue'), (66, 13, 'pink'), (70, 13, 'blue'), (79, 12, 'pink'), (80, 12, 'blue')])
+    MZ.einstufen(lv); MZ.meister(lv, 45, 9); MZ.meister(lv, 49, 5)   # Meister: über dem Sims, über der Mauer
     return lv.merke('Dschungel-Neu: Rätsel 2 Meteoritenkrater')
 
 if __name__ == '__main__':

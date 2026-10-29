@@ -2075,8 +2075,7 @@
     {
       "x": 3140,
       "y": 540,
-      "color": "blue",
-      "klasse": "geschick"
+      "color": "blue"
     },
     {
       "x": 3380,
@@ -2453,7 +2452,8 @@
     {
       "x": 22060,
       "y": 580,
-      "color": "blue"
+      "color": "blue",
+      "klasse": "geschick"
     },
     {
       "x": 22420,
