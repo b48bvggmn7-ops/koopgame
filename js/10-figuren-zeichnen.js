@@ -52,7 +52,8 @@ function drawUmbrella(player, px, py, o){
   // Griff (Stock mit gebogenem Ende)
   ctx.strokeStyle = '#7a4a2e'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(0, -stick); ctx.lineTo(0, 0);
-  ctx.arc(-4, 0, 4, 0, Math.PI*0.9); ctx.stroke();
+  if(!(o && o.haende)) ctx.arc(-4, 0, 4, 0, Math.PI*0.9);   // Trampolin: kein Haken-Griff (die Pfoten halten den Stock), Schirm bleibt mittig
+  ctx.stroke();
 
   ctx.translate(0, -stick);
   ctx.scale(0.3 + 0.7*u, 0.45 + 0.55*u);
