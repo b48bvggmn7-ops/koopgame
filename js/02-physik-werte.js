@@ -99,7 +99,9 @@ const KANTE_WACKEL_RAND = 8;  // px: so weit vor der Kante wackelt eine stehende
 // Schritte = Physik-Schritte (60 = 1 Spielsekunde).
 const LIANE_VOLLE_LAENGE = false;  // Nutzer-Rückmeldung: in der Luft gegriffen bleibt die Liane so lang wie beim Greifen (true = gibt sofort bis zur Reichweite nach)
 const DASH_NUR_WAAGERECHT = true;   // Nutzerwunsch: Dash nur nach links/rechts (false = 8 Richtungen wie vorher)
-const DASH_AUS_WELTEN = [];   // Welten ohne Dash (dort auch keine Durchbruch-Wände), z. B. ['dschungel'] – Nutzer: im Dschungel bleibt er vorerst
+const DASH_AUS_WELTEN = ['dschungel'];   // Welten ohne Dash – Nutzer: „Dash erst mal komplett raus, man schafft zu viel nur durch den Dash“
+                                         // (dort bricht der Affe Durchbruch-Wände durch Anpusten, BRUCH_PUSTE_NOETIG)
+const BRUCH_PUSTE_NOETIG = 45;     // so lange (Schritte voller Wind) muss der Affe eine Durchbruch-Wand anpusten, bis sie bricht (ganze Wand)
 const DASH_TEMPO = 16;            // px pro Schritt (Spielwiese „Tempo“)
 const DASH_DAUER = 10;            // Schritte (Spielwiese „Dauer“) -> 160 px gerade Strecke (Variante A „fester Dash“)
 const DASH_BEHALTEN = 0.5;        // so viel Tempo bleibt nach dem Dash (nach oben höchstens die Sprungkraft)

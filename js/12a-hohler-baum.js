@@ -15,7 +15,8 @@ const BAUM_TUER_AB = 200, BAUM_TUER_DAUER = 45;     // Tür fährt herunter
 const BAUM_SIEG_ENDE = 300;                          // dann weiter wie nach dem Tanz (statt WIN_DANCE_STEPS)
 const BAUM_WARTE_ABSTAND = 30, BAUM_WARTE_TEMPO = 1.5;   // wer zuerst ankommt: geht bis 30 px vor den Eingang und wartet
 
-function baumAktiv(){ return typeof BG_STIL !== 'undefined' && !!(BG_STIL && BG_STIL.tiere); }
+let BAUM_AN = false;   // Nutzerwunsch: hohle Bäume raus (Start/Ziel wieder wie in den anderen Welten); true = wieder an (Tests)
+function baumAktiv(){ return BAUM_AN && typeof BG_STIL !== 'undefined' && !!(BG_STIL && BG_STIL.tiere); }
 function baumFarben(nacht){
   return nacht ? {rinde:'#2b2a3a', rindeH:'#45465e', rindeD:'#15151f', moos:'#2f6b6a', moosH:'#4f9c95', loch:'#05060a', licht:'255,170,80', blatt:'#1f4a4a', blattH:'#2f6b66', pilz:'#6af0ff', tuer:'#4a3a32', tuerH:'#6a5444'}
                : {rinde:'#6e4a2c', rindeH:'#9a6c43', rindeD:'#3d2614', moos:'#4f8f2f', moosH:'#86c454', loch:'#140a05', licht:'255,190,90', blatt:'#2f7d32', blattH:'#5cb84c', pilz:'#e0402e', tuer:'#8a5a30', tuerH:'#b07a44'};

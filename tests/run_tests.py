@@ -6454,6 +6454,7 @@ async def neue_mechaniken_messen(g, teil):
         await p.goto(srv.url + 'index.html?testlevel=neue-mechaniken')
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
         await p.evaluate("() => {" + (ROOT / 'tests' / 'neue_mechaniken.js').read_text(encoding='utf-8') + "}")
+        await p.evaluate("levelWelt = 'mechanik-test'")   # Dash prüfen (im Dschungel ist er aus – DASH_AUS_WELTEN; die Mechanik bleibt für andere Welten)
         return await p.evaluate(f"NM.{teil}()")
     finally:
         srv.shutdown()
@@ -6516,6 +6517,7 @@ async def durchbruch_kein_gratis_dash(g):
         await g.p.goto(srv.url + 'index.html?testlevel=neue-mechaniken')
         await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
         await g.p.evaluate("() => {" + (ROOT / 'tests' / 'neue_mechaniken.js').read_text(encoding='utf-8') + "}")
+        await g.p.evaluate("levelWelt = 'mechanik-test'")   # Dash prüfen (im Dschungel aus)
         r = await g.ev("""(() => { const S = NM; menuScreen = 'pause';
           S.start(); S.stellen(p1, 16, 17); S.stellen(p2, 12, 17); S.n(10, ['right']);
           S.schritt(['right','dash']); let i = 0; while(!S.weg() && i < 30){ S.schritt(['right']); i++; }
@@ -6828,6 +6830,17 @@ async def hohler_baum_start_ziel(g):
     teile = [ground(0, 680, 3000), ground(0, 400, 40, 280, 'wall')]
     await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='dschungel'))
     await g.steps(5)
+    # Nutzerwunsch „Baumhaus rausnehmen“: im Spiel stehen keine hohlen Bäume mehr (BAUM_AN = false) – der Ablauf bleibt im Code
+    assert await g.ev("BAUM_AN === false && !baumAktiv() && !baumZielAktiv()"), 'hohler Baum ist noch an'
+    await g.ev("BAUM_AN = true")
+    try:
+        await hohler_baum_ablauf(g, teile)
+    finally:
+        await g.ev("BAUM_AN = false")
+
+async def hohler_baum_ablauf(g, teile):
+    await g.load(level(teile, {'x': 60, 'y': 680}, {'x': 100, 'y': 680}, goal={'x': 600, 'y': 680}, welt='dschungel'))
+    await g.steps(5)
     r = await g.ev("({an: baumAktiv(), start: baumStartAktiv(), licht: baumZielLicht(), tuer: baumTuerAnteil()})")
     assert r['an'], 'im Dschungel soll der hohle Baum (am Ziel) stehen'
     assert not r['start'], f'am Start soll kein Baum mehr stehen: {r}'
@@ -6912,22 +6925,43 @@ async def haft_ende_anhalten(g):
 
 @test
 async def dash_welt_aus(g):
-    """Dash je Welt ausklammerbar (DASH_AUS_WELTEN, js/02; Nutzer: „nur ausklammern, in einer anderen Welt wieder aktivieren“):
-    steht die Welt des Levels in der Liste, startet kein Dash und es gibt dort keine Durchbruch-Wände (sonst Weg versperrt).
-    Standard: leer (Dash überall an)."""
+    """Dash je Welt ausklammerbar (DASH_AUS_WELTEN, js/02). Nutzer: „Dash erst mal komplett raus“ – Standard ['dschungel']:
+    im Dschungel startet kein Dash; die Durchbruch-Wände bleiben dort (der Affe pustet sie um, Test bruch_pusten). In anderen
+    Welten (ausgeblendet) bleibt der Dash an."""
     lv = lambda welt: level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, welt=welt,
                             bruchWaende=[{'x': 600, 'y': 600, 'w': 40, 'h': 80}])
-    assert await g.ev("DASH_AUS_WELTEN.length") == 0, 'Standard: Dash in allen Welten an'
-    try:
-        await g.ev("DASH_AUS_WELTEN.push('ruinen')")
-        await g.load(lv('ruinen')); await g.steps(5)
-        r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
-        assert not r['kann'] and r['bruch'] == 0, f'Welt in der Liste: Dash/Durchbruch noch da {r}'
-        await g.load(lv('vulkan')); await g.steps(5)
-        r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
-        assert r['kann'] and r['bruch'] > 0, f'andere Welt: Dash/Durchbruch fehlt {r}'
-    finally:
-        await g.ev("DASH_AUS_WELTEN.length = 0")
+    assert await g.ev("JSON.stringify(DASH_AUS_WELTEN)") == '["dschungel"]', 'Standard: Dash im Dschungel aus'
+    await g.load(lv('dschungel')); await g.steps(5)
+    r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
+    assert not r['kann'] and r['bruch'] > 0, f'Dschungel: Dash noch an oder Durchbruch-Wand weg {r}'
+    await g.load(lv('vulkan')); await g.steps(5)
+    r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
+    assert r['kann'] and r['bruch'] > 0, f'andere Welt: Dash/Durchbruch fehlt {r}'
+
+@test
+async def bruch_pusten(g):
+    """Nutzerwunsch (Dash im Dschungel aus): der Affe pustet eine Durchbruch-Wand um – sie wackelt im Wind und bricht nach
+    BRUCH_PUSTE_NOETIG Schritten voller Wind als GANZE zusammenhängende Wand (alle Kästchen); kurzes Anpusten reicht nicht,
+    der Druck geht danach langsam zurück. Danach ist der Weg frei; Neustart stellt sie wieder her."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 480, 'y': 680}, {'x': 100, 'y': 680}, welt='dschungel',
+                       bruchWaende=[{'x': 600, 'y': y, 'w': 40, 'h': 40} for y in (480, 520, 560, 600, 640)]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const e = {};
+      const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+      for(const k in KEYS) KEYS[k] = false; p1.x = 520; p1.y = 680; p1.vx = 0; for(let i = 0; i < 5; i++) st();
+      KEYS[p1.keys.pusten] = true; KEYS[p1.keys.right] = true; for(let i = 0; i < 15; i++) st();
+      e.kurz = solids.filter(s => s.type === 'bruch' && !s.gone).length; e.druck = Math.max(...solids.filter(s => s.type === 'bruch').map(s => s.pusteDruck || 0));
+      KEYS[p1.keys.pusten] = false; KEYS[p1.keys.right] = false; for(let i = 0; i < 20; i++) st();
+      e.druckDanach = Math.max(...solids.filter(s => s.type === 'bruch').map(s => s.pusteDruck || 0));
+      let n = 0; KEYS[p1.keys.pusten] = true; KEYS[p1.keys.right] = true;
+      while(solids.some(s => s.type === 'bruch' && !s.gone) && n < 200){ st(); n++; }
+      e.schritte = n; e.alleWeg = !solids.some(s => s.type === 'bruch' && !s.gone);
+      for(const k in KEYS) KEYS[k] = false; for(let i = 0; i < 160; i++){ KEYS[p1.keys.right] = true; st(); } e.durch = p1.x > 660;
+      KEYS[p1.keys.right] = false; menuScreen = null; return e; })()""")
+    assert r['kurz'] == 5 and 0 < r['druck'] < await g.ev('BRUCH_PUSTE_NOETIG'), f'kurzes Anpusten bricht schon: {r}'
+    assert r['druckDanach'] < r['druck'], f'Druck geht nicht zurück: {r}'
+    assert r['alleWeg'] and r['schritte'] < 120 and r['durch'], f'Wand bricht nicht ganz / Weg nicht frei: {r}'
+    await g.ev("resetLevel()"); await g.steps(3)
+    assert await g.ev("solids.filter(s => s.type === 'bruch' && !s.gone).length") == 5, 'Neustart stellt die Wand nicht wieder her'
 
 @test
 async def haftflaeche(g):

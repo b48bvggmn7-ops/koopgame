@@ -1,5 +1,5 @@
 // elemente/durchbruch.js – Element „Durchbruch-Wand“ (Nacht-Ausbau; Punkt-Element mit eigener Auswahl, siehe 00-register.js).
-// Rissige Steinkästchen: fest wie Boden/Wand, aber ein DASH zerbricht sie (normales Laufen/Springen nicht – dann ist es eine
+// Rissige Steinkästchen: fest wie Boden/Wand, aber ein DASH zerbricht sie (Welten ohne Dash, DASH_AUS_WELTEN: der Affe PUSTET sie um) (normales Laufen/Springen nicht – dann ist es eine
 // ganz normale Wand bzw. ein normaler Boden). Trefferstopp, Kamera-Wackeln, Bruchstücke und Staub, ein Teil des
 // Dash-Schwungs bleibt (BRUCH_BEHALTEN); kurz danach geht ein Sprung in der Luft (BRUCH_FENSTER; der kostenlose Anschluss-Dash ist raus, Nutzerwunsch).
 // Senkrecht (Wand), waagerecht (Boden, Decke) und in jeder Größe aus Kästchen baubar.
@@ -129,8 +129,9 @@ function bruchVariante(s){ return 1; }   // gewählt: Entwurf 2 „Feucht“
 function bruchZeichnen(){
   for(const s of solids){
     if(s.type !== 'bruch') continue;
-    const x = Math.round(s.x - camX);
+    let x = Math.round(s.x - camX);
     if(x + s.w < -20 || x > VW + 20) continue;
+    if(!s.gone && s.pusteDruck > 0) x += Math.sin(performance.now()*0.09 + s.y)*2.2*Math.min(1, s.pusteDruck/BRUCH_PUSTE_NOETIG + 0.3);   // wackelt im Wind
     if(s.gone){
       if(!(s.nachwachsen > 0)) continue;
       const k = Math.min(1, (s.bruchT || 0)/(s.nachwachsen*60));
@@ -150,12 +151,40 @@ function bruchZeichnen(){
     if(s.neuT > 0){ s.neuT -= 0.5; ctx.globalAlpha = s.neuT/12*0.5; ctx.fillStyle = '#fff'; ctx.fillRect(x, s.y, s.w, s.h); ctx.globalAlpha = 1; }
   }
 }
+// Pusten bricht Durchbruch-Wände (Nutzerwunsch, seit der Dash im Dschungel aus ist): trifft der Puste-Wind des Affen ein
+// Kästchen, sammelt es Druck (wackelt dabei); nach BRUCH_PUSTE_NOETIG Schritten voller Wind bricht die ganze zusammenhängende Wand.
+function bruchPustenSchritt(){
+  const st = typeof pusteStrahlJetzt !== 'undefined' ? pusteStrahlJetzt : null;
+  for(const s of solids){
+    if(s.type !== 'bruch' || s.gone) continue;
+    const k = st && typeof pusteTrifft === 'function' ? pusteTrifft(s) : 0;
+    if(k > 0){
+      s.pusteDruck = (s.pusteDruck || 0) + k;
+      if(s.pusteDruck >= BRUCH_PUSTE_NOETIG) bruchWandZerbrechen(s, typeof pusteSeiteVon === 'function' ? pusteSeiteVon(st.dir) : 0, st.dir === 'hoch' ? -1 : 0);
+    } else if(s.pusteDruck) s.pusteDruck = Math.max(0, s.pusteDruck - 0.5);
+  }
+}
+function bruchWandZerbrechen(start, dx, dy){   // ganze zusammenhängende Durchbruch-Wand (Kästchen, die sich berühren)
+  const offen = [start], seen = new Set([start]);
+  while(offen.length){
+    const s = offen.pop();
+    if(typeof bruchZerbrechen === 'function') bruchZerbrechen(s, dx, dy); else s.gone = true;
+    s.pusteDruck = 0;
+    for(const o of solids){
+      if(o.type !== 'bruch' || o.gone || seen.has(o)) continue;
+      const beruehrt = o.x <= s.x + s.w + 0.5 && o.x + o.w >= s.x - 0.5 && o.y <= s.y + s.h + 0.5 && o.y + o.h >= s.y - 0.5 &&
+                       !(Math.abs(o.x - (s.x + s.w)) < 0.5 && Math.abs(o.y - (s.y + s.h)) < 0.5);   // keine Ecken
+      if(beruehrt){ seen.add(o); offen.push(o); }
+    }
+  }
+  if(typeof kameraStoss === 'function') kameraStoss(6);
+}
 ELEMENT_SOLID_TYPEN.add('bruch');
 elementRegistrieren({
   id: 'durchbruch', name: 'Durchbruch-Wand', feld: 'bruchWaende',
   editor: {
     werkzeug: 'bruch', gruppe: 'gelaende', vor: 'fake', art: 'punkt', ziehbar: true,
-    titel: 'Durchbruch-Wand: fest wie eine Wand, aber ein Dash zerbricht sie (Laufen/Springen nicht). Senkrecht oder waagerecht bauen. ' +
+    titel: 'Durchbruch-Wand: fest wie eine Wand, aber ein Dash zerbricht sie (im Dschungel ohne Dash: der Affe pustet sie um; Laufen/Springen nicht). Senkrecht oder waagerecht bauen. ' +
            'Option: bleibt kaputt (bis Neustart/Tod) oder wächst nach X Sekunden nach (wartet, wenn jemand drin steht)',
     farbe: '#a38866',
     optionen: [
@@ -177,11 +206,11 @@ elementRegistrieren({
   },
   spiel: {
     laden(daten){
-      if(typeof DASH_AUS_WELTEN !== 'undefined' && DASH_AUS_WELTEN.includes(daten.welt)) return;   // ohne Dash keine Durchbruch-Wände (sonst Weg versperrt)
       for(const b of (daten.bruchWaende || []))
         solids.push({x: b.x, y: b.y, w: b.w || 40, h: b.h || 40, type: 'bruch', nachwachsen: Number(b.nachwachsen) || 0, gone: false, bruchT: 0, wartet: false});
     },
-    zuruecksetzen(){ for(const s of solids) if(s.type === 'bruch'){ s.gone = false; s.bruchT = 0; s.wartet = false; s.neuT = 0; } },
+    zuruecksetzen(){ for(const s of solids) if(s.type === 'bruch'){ s.gone = false; s.bruchT = 0; s.wartet = false; s.neuT = 0; s.pusteDruck = 0; } },
+    schritt: bruchPustenSchritt,
     zeichnen: bruchZeichnen,
   },
 });
