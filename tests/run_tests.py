@@ -11773,7 +11773,7 @@ def dn_windrad_treppe(c, F, g, link):
     varianten = []
     for vy in (-4, -1, 2):
         f = k_trampolin(c, f'Q.grounded && Q.x > {kx(b0)} - 10', 0) + [{'wait': f'!!linkOn[{link}]', 'frames': 500}] + \
-            k_hop(kx(c) + 10, 10) + k_hop(kx(c + 3), 10) + k_hop(kx(c + 7) + 8, 14) + [k_lauf(b0 + 1)]
+            k_hop(kx(c) + 10, 10) + k_hop(kx(c + 3), 10) + k_hop(kx(min(c + 7, b0 - 1)) - 6, 14) + [k_lauf(b0 + 1)]
         m = k_trampolin_sprung(vy, True, b0) + [{'hold': ['pusten', 'right'], 'until': f'!!linkOn[{link}]', 'frames': 200},
                                                 {'wait': f'Q.grounded && Q.x > {kx(b0)}', 'frames': 900}]
         varianten.append({'m': m, 'f': f})
@@ -11790,9 +11790,11 @@ def dn_stellen():
         pl = dn_puste_grube(c, F, g) if art == 'A' else dn_windrad_treppe(c, F, g, link)
         frei = sorted((x for x in range(c - 6, c) if DN.fest(lv, x, F) and not DN.fest(lv, x, F - 1) and not DN.fest(lv, x, F - 2)), reverse=True)[:3]   # Startplätze auf dem Muldenboden
         vorn, hinten = kat(frei[0], F - 1), kat(frei[-1], F - 1)   # wer zur Mulde muss, startet näher dran (Figuren schieben sich sonst)
+        if (teil, c) in DN_STARTS: vorn, hinten = (kat(x, F - 1) for x in DN_STARTS[(teil, c)])   # z. B. nicht auf einen Teleporter stellen
         out.append((teil, f'{"Puste-Grube" if art == "A" else "Windrad-Treppe"} {c}', vorn if art == 'A' else hinten, hinten if art == 'A' else vorn, pl))
     return out + DN_STELLEN_EXTRA
 DN_STELLEN_EXTRA = []   # weitere umgebaute Stellen (Puste-Inseln, Puste-Säulen …)
+DN_STARTS = {('dschungel/04-gluehwald.json', 668): (667, 666)}   # Startplätze (vorn, hinten) statt der automatischen
 def _dn_01_insel():
     """Teil 1, Puste-Insel 85: zweimal Pusten (Rand 66, dann auf der Säule), der Affe über die Haken 73 und 94"""
     vs = []
