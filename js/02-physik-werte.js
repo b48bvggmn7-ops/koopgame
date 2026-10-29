@@ -242,6 +242,8 @@ const TRAMPOLIN_HOEHE = 74;       // px: so hoch über den Füßen des Schweinch
 const TRAMPOLIN_V = -15.4;        // Abwurf-Tempo nach oben (von der Kuppel aus: ≈ 6,6 Reihen über dem Boden – etwas mehr als der
                                   // Pilz, damit eine 6 Reihen hohe Kante sicher klappt)
 const TRAMPOLIN_TREFFER = 30;     // px: so weit (plus halbe Figurenbreite) neben der Schirm-Mitte zählt das Landen
+const TRAMPOLIN_V_SCHUB = -17.4;  // Nutzerwunsch: drückt das Schweinchen im richtigen Moment Springen, federt der Affe höher (≈ 8,4 Reihen)
+const TRAMPOLIN_SCHUB_FENSTER = 7; // Schritte (≈ 0,13 s) vor oder nach dem Aufprall zählt der Druck als „im richtigen Moment“
 // Affe pusten (Spezial-Taste halten): steht still, W = nach oben, A/D = nach links/rechts; der Windstrahl trägt das
 // Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge (Windrad …)
 const PUSTE_DAUER = 160;          // Schritte (≈ 3 s): so lange reicht ein voller Puste-Balken

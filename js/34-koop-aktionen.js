@@ -29,6 +29,12 @@ function trampolinVorher(P, moveDir, jumpPressed){
   const will = koopTaste(P, 'trampolin') && P.grounded && !P.dash && !P.haft && !P.inWater;
   if(!will){ if(P.trampolin){ P.trampolin = false; P._trampolinEndeT = performance.now(); } return false; }
   if(!P.trampolin){ P.trampolin = true; P._trampolinT = performance.now(); if(typeof SFX !== 'undefined' && SFX.schirmAuf) SFX.schirmAuf(P); }
+  // Extra-Schub (Nutzerwunsch): Springen-Taste im richtigen Moment – kurz vor dem Aufprall gemerkt, kurz danach sofort
+  if(jumpPressed){
+    P._schubDruck = schrittNr();
+    const A = P._trampolinAffe;
+    if(A && schrittNr() - P._trampolinSchritt <= TRAMPOLIN_SCHUB_FENSTER && !P._schubGegeben && A.vy < 0) trampolinSchub(P, A);
+  }
   P.vx *= 0.55; if(Math.abs(P.vx) < 0.05) P.vx = 0;
   P.vy = Math.min(MAX_FALL, P.vy + GRAVITY);
   return true;   // hält den Schirm: kein Laufen, kein Springen
@@ -43,8 +49,17 @@ function trampolinPruefen(P, altY){
   P.y = oben; P.vy = TRAMPOLIN_V; P.grounded = false; P.glideTimer = 0; P.lastWallJumpSide = 0;
   P.sprungKurzMoeglich = false; P.wjInputLock = 0;
   S._trampolinSprungT = performance.now(); S._trampolinSprungX = P.x - S.x;
+  S._trampolinAffe = P; S._trampolinSchritt = schrittNr(); S._schubGegeben = false;
   if(typeof SFX !== 'undefined' && SFX.trampolin) SFX.trampolin(S);
+  if(S._schubDruck !== undefined && schrittNr() - S._schubDruck <= TRAMPOLIN_SCHUB_FENSTER) trampolinSchub(S, P);   // kurz vorher gedrückt
   return true;
+}
+// Extra-Schub: der Affe fliegt mit TRAMPOLIN_V_SCHUB statt TRAMPOLIN_V hinauf (höchstens einmal je Aufprall)
+function trampolinSchub(S, P){
+  S._schubGegeben = true; S._schubDruck = undefined; S._schubT = performance.now();
+  const schon = TRAMPOLIN_V - P.vy;   // seit dem Aufprall schon abgebremst
+  P.vy = Math.min(P.vy, TRAMPOLIN_V_SCHUB - schon);
+  if(typeof SFX !== 'undefined' && SFX.trampolinSchub) SFX.trampolinSchub(S);
 }
 
 // ---------- Affe pusten ----------
@@ -261,8 +276,15 @@ function pusteZeichnen(){
   for(const P of [p1, p2]){
     if(!P || (deathState && P === deathState.victim)) continue;
     const px = Math.round(P.x - camX), py = Math.round(P.y);
+    if(!P.male && P._schubT && performance.now() - P._schubT < 350){   // Extra-Schub: kurze helle Schwünge über dem Schirm
+      const q = (performance.now() - P._schubT)/350, y0 = py - TRAMPOLIN_HOEHE - 6 - q*40;
+      ctx.save(); ctx.globalAlpha = 1 - q; ctx.strokeStyle = '#fff6c8'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      for(const dx of [-16, 0, 16]){ ctx.beginPath(); ctx.moveTo(px + dx, y0 + 18); ctx.lineTo(px + dx*1.3, y0); ctx.stroke(); }
+      ctx.restore();
+    }
     if(P.male) pusteBalkenZeichnen(P, px, py);
     else if(P.trampolin && ohne3d && typeof drawUmbrella === 'function')   // bisherige Figuren: Schirm über dem Kopf (3D: js/33)
-      drawUmbrella(P, px, py, {u: 1, hand: [px, py - P.h - 4], stick: TRAMPOLIN_HOEHE - P.h - 18, tilt: 0, quetsch: 0});
+      drawUmbrella(P, px, py, {u: 1, hand: [px, py - P.h - 9], stick: TRAMPOLIN_HOEHE - P.h - 13, tilt: 0, quetsch: 0,
+                               haende: {schulter: [P.w*0.36, 13], farbe: '#f7aac4', rand: '#cf7d9b'}});   // Ärmchen vom Scheitel hinauf
   }
 }

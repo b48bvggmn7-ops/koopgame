@@ -2165,6 +2165,11 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - **Pusten schräg** (Nutzerwunsch): W + D = schräg nach oben-rechts, W + A = oben-links (Kopf halb im Nacken, Strahl 45°,
   Reichweite PUSTE_WEITE_SCHRAEG 300 px, Wände kürzen ihn). Er trägt das Schweinchen mit Schirm nach oben (PUSTE_SCHRAEG_HUB,
   höchstens PUSTE_SCHRAEG_HOCH_MAX) und schiebt es zur Seite; Windrad/Blatt-Floß spüren ihn wie den Seiten-Wind. Test koop_pusten_schraeg.
+- **Schirm-Trampolin überarbeitet** (Nutzer-Rückmeldung): das Schweinchen hält den Schirmstock mit BEIDEN Pfoten über dem
+  Kopf (zwei Ärmchen vom Scheitel hinauf, `schirmHaende` in js/10), der dunkle Streifen unter der Kuppel ist weg. **Extra-Schub:**
+  drückt das Schweinchen (Schirm gehalten) seine Springen-Taste kurz vor oder kurz nach dem Aufprall des Affen
+  (TRAMPOLIN_SCHUB_FENSTER 7 Schritte), fliegt der Affe mit TRAMPOLIN_V_SCHUB statt TRAMPOLIN_V hinauf (≈ 8,4 statt 6,6 Reihen);
+  heller Ton + Lichtschwünge über dem Schirm. Zu früh/zu spät: normale Höhe. Test koop_trampolin_schub.
 - **Liane von oben:** hält der Affe über dem Haken die Haken-Taste, hängt die Liane sofort locker in seiner Hand (man sieht:
   verbunden) und spannt sich, sobald er auf Hakenhöhe gefallen ist (kein Überschlagen). Test liane_von_oben.
 - **Zwei Abschnitte statt sechs Level** (js/15a-abschnitte.js, Spiegel tests/abschnitt.py): Die Dschungel-Welt hat nur noch

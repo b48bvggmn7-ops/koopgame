@@ -7042,6 +7042,36 @@ async def koop_testlevel(g):
     return srv
 
 @test
+async def koop_trampolin_schub(g):
+    """Nutzerwunsch: drückt das Schweinchen (Schirm-Trampolin gehalten) im richtigen Moment Springen – kurz vor oder kurz nach dem
+    Aufprall des Affen (TRAMPOLIN_SCHUB_FENSTER) –, bekommt der Affe einen Extra-Schub (TRAMPOLIN_V_SCHUB, deutlich höher).
+    Zu früh gedrückt oder gar nicht: normale Höhe. Höchstens ein Schub je Aufprall; eigener Ton."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          const flug = (wann) => {   // wann: Schritte relativ zum Aufprall (null = nie drücken)
+            for(const k in KEYS) KEYS[k] = false; stell(p2, 300, 720); stell(p1, 160, 720); for(let i = 0; i < 6; i++) st();
+            KEYS[p2.keys.trampolin] = true; for(let i = 0; i < 4; i++) st();
+            stell(p1, 300, 520); let top = 1e9, auf = null, gedrueckt = false;
+            for(let i = 0; i < 120; i++){
+              const vorher = p1.vy;
+              if(wann !== null && auf === null && wann < 0 && p1.vy > 0 && p1.y > 646 + wann*Math.max(1, p1.vy) && !gedrueckt){ KEYS[p2.keys.jump + '_pressed'] = true; gedrueckt = true; }
+              if(wann !== null && auf !== null && wann >= 0 && i - auf === wann && !gedrueckt){ KEYS[p2.keys.jump + '_pressed'] = true; gedrueckt = true; }
+              st(); if(auf === null && vorher > 0 && p1.vy < 0) auf = i;
+              top = Math.min(top, p1.y);
+            }
+            return Math.round((720 - top)/4)/10;
+          };
+          e.ohne = flug(null); e.kurzVorher = flug(-3); e.kurzNachher = flug(3); e.zuFrueh = flug(-40); e.zuSpaet = flug(20);
+          e.ton = SFX_LOG.includes('trampolinSchub');
+          for(const k in KEYS) KEYS[k] = false; menuScreen = null; return e; })()""")
+        assert r['kurzVorher'] > r['ohne'] + 1.2 and r['kurzNachher'] > r['ohne'] + 1.0, f'kein Extra-Schub im richtigen Moment: {r}'
+        assert abs(r['zuFrueh'] - r['ohne']) < 0.3 and abs(r['zuSpaet'] - r['ohne']) < 0.3, f'Schub auch zur falschen Zeit: {r}'
+        assert r['ton'], r
+    finally:
+        srv.shutdown()
+
+@test
 async def koop_schirm_trampolin(g):
     """Dschungel-Neu: Schweinchen hält die Spezial-Taste (Num 4) -> spannt den offenen Schirm über sich, steht still (kein
     Laufen, kein Springen). Fällt der Affe von oben auf den Schirm (TRAMPOLIN_HOEHE über ihren Füßen), federt er hoch – höchster

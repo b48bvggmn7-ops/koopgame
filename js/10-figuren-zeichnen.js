@@ -69,9 +69,11 @@ function drawUmbrella(player, px, py, o){
     }
     ctx.closePath();
   };
-  // Schatten unter dem Schirm
-  ctx.fillStyle = 'rgba(40,20,30,.12)';
-  ctx.beginPath(); ctx.ellipse(0, 3, R*0.95, 5, 0, 0, Math.PI*2); ctx.fill();
+  // Schatten unter dem Schirm (nicht beim Trampolin: dort sah der dunkle Streifen unter der Kuppel komisch aus – Nutzer)
+  if(!(o && o.haende)){
+    ctx.fillStyle = 'rgba(40,20,30,.12)';
+    ctx.beginPath(); ctx.ellipse(0, 3, R*0.95, 5, 0, 0, Math.PI*2); ctx.fill();
+  }
 
   ctx.save();
   canopy(); ctx.clip();
@@ -97,6 +99,25 @@ function drawUmbrella(player, px, py, o){
   ctx.fillStyle = '#c94d82';
   for(let i=0; i<=N; i++){ ctx.beginPath(); ctx.arc(rim(i), 0, 1.6, 0, Math.PI*2); ctx.fill(); }
   ctx.beginPath(); ctx.arc(0, -ry-2.5, 3, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  if(o && o.haende) schirmHaende(handX, handY, o.haende);
+}
+// Schirm-Trampolin (Nutzerwunsch „mit beiden Händen halten“): zwei Ärmchen von den Kopfseiten hinauf, beide Pfoten fest am
+// Stock (übereinander); h = {schulter: [dx, dy] relativ zur Hand, farbe, rand}
+function schirmHaende(hx, hy, h){
+  const [sx, sy] = h.schulter;
+  ctx.save(); ctx.lineCap = 'round';
+  for(const seite of [-1, 1]){
+    const px = hx, py = hy + (seite < 0 ? 2 : -7);   // linke Pfote unten, rechte darüber
+    ctx.strokeStyle = h.rand; ctx.lineWidth = 8.5;
+    ctx.beginPath(); ctx.moveTo(hx + seite*sx, hy + sy); ctx.quadraticCurveTo(hx + seite*sx*1.15, py + (sy - (py - hy))*0.35, px + seite*3, py); ctx.stroke();
+    ctx.strokeStyle = h.farbe; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(hx + seite*sx, hy + sy); ctx.quadraticCurveTo(hx + seite*sx*1.15, py + (sy - (py - hy))*0.35, px + seite*3, py); ctx.stroke();
+  }
+  for(const py of [hy + 2, hy - 7]){   // Pfoten um den Stock
+    ctx.fillStyle = h.farbe; ctx.strokeStyle = h.rand; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(hx, py, 5.2, 4.2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  }
   ctx.restore();
 }
 

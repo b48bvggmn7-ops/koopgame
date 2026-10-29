@@ -346,6 +346,7 @@ const SFX = {
   // (gespanntes Tuch + Boing), Affe pustet (holt Luft, dann kräftiges Wind-Rauschen, das je Schub neu ansetzt)
   schirmAuf(pl){ sfxLog('schirmauf'); sfxPlay('umbrella', {x: pl.x, rate: 0.9}); },
   trampolin(pl){ sfxLog('trampolin'); sfxPlay('mushroom', {x: pl.x, rate: 1.1}); sfxPlay('umbrella', {x: pl.x, rate: 1.3, vol: 0.6}); sTone(300, 0, 0.2, {to: 560, type: 'triangle', vol: 0.035}); },
+  trampolinSchub(pl){ sfxLog('trampolinSchub'); sfxPlay('umbrella', {x: pl.x, rate: 1.6, vol: 0.7}); sTone(420, 0, 0.18, {to: 980, type: 'triangle', vol: 0.045}); sTone(840, 0.05, 0.12, {to: 1400, type: 'sine', vol: 0.025}); },
   pustenStart(pl){ sfxLog('pustenstart'); sNoise(0, 0.18, {filter: 'bandpass', f: 500, to: 1400, q: 0.8, vol: 0.05, attack: 0.05}); },
   // Spielszenen (Dschungel-Neu): Meteorit fällt (Heulen + Einschlag), Glühen (tiefes Summen), Tor öffnet sich, Sog ins Tor
   szene_meteor(){ sfxLog('szene_meteor'); sNoise(0, 1.5, {filter: 'bandpass', f: 2600, to: 400, q: 1.2, vol: 0.06, attack: 0.3});
