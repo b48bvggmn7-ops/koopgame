@@ -11997,6 +11997,26 @@ def _dn_06_luft_tor():
                   {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
                   {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]}, 'f')]}
 DN_STELLEN_EXTRA.append(('dschungel/06-wipfelsturm.json', 'Hohes Luft-Tor 431', kat(408, 15), kat(406, 15), _dn_06_luft_tor()))
+def _dn_treppe(stufen, hold=10):   # von Stufe zu Stufe springen: [(Absprung-Spalte, Ziel-Spalte), …]
+    pl = []
+    for c0, c1 in stufen:
+        pl += [{'holdIf': {'right': f'P.x < {kx(c0)} - 4', 'left': f'P.x > {kx(c0)} + 12'}, 'until': f'P.grounded && P.x >= {kx(c0)} - 4', 'frames': 300},
+               {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold},
+               {'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(c1)}', 'left': f'P.x > {kx(c1)} + 10'}, 'until': 'P.grounded', 'frames': 200}]
+    return pl
+def _dn_06_turm():
+    """Teil 6, Puste-Turm 308: Affe pustet am Boden, das Schweinchen fliegt auf die Säule 312–315 und legt Hebel 16 um;
+    über die Wechsel-Stufen klettern beide hinauf (Säulen allein 4 Reihen zu hoch)"""
+    oben = [(315, 317), (317, 318), (319, 323), (324, 328)]
+    alles = [(305, 307), (307, 308), (309, 311), (311, 312)] + oben
+    vs = []
+    for hold in (10, 14):
+        m = k_pusten_hoch(305, f'Q.grounded && Q.x > {kx(311)}', -8) + [{'wait': '!!linkOn[16]', 'frames': 900}] + _dn_treppe(alles, hold) + [k_lauf(329)]
+        f = [k_hin(302)] + k_puste_flug(312, 315, 7) + [k_hin(314), {'use': True, 'frames': 3}, {'wait': '!!linkOn[16]', 'frames': 30}] + _dn_treppe(oben, hold) + [k_lauf(330)]
+        vs.append({'m': m, 'f': f})
+    return {'beide': vs, 'ziel': (327, 3), 'ziel_gegen': (312, 7), 'frames': 6000,
+            'gegen': [(f'{w} allein die Säulen hoch', {w: _dn_treppe(alles, h)}, w) for w in ('m', 'f') for h in (10, 16)]}
+DN_STELLEN_EXTRA.append(('dschungel/06-wipfelsturm.json', 'Puste-Turm 308', kat(304, 15), kat(301, 15), _dn_06_turm()))
 async def dn_stellen_pruefen(g, teile):
     fehler, aktuell = [], None
     for teil, name, ms, fs, pl in dn_stellen():

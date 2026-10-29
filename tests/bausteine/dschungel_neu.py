@@ -196,11 +196,25 @@ def s06_luft_tor(lv):
     for c in (427, 428): lv.kachel(c, 16, 'ground')   # nur eine Reihe hoch: von dort springt das Schweinchen allein zu kurz
     lv.haken(434, 10, 4.5)
     return lv.merke('Dschungel-Neu: Hohes Luft-Tor 431 (Aufwind -> Puste-Pfeiler 427, Haken 434)')
+def s06_puste_turm(lv):
+    """Teil 6, Pilz-Turm 308–323 (früher vier Sprungpilze): Puste-Turm. Die Säulen stehen jetzt 4 Reihen auseinander
+    (zu hoch zum Springen). Der Affe pustet am Boden (305), das Schweinchen fliegt auf die breite Säule 312–315 und legt
+    dort Hebel 16 um -> Wechselboden-Stufen (B) zwischen den Säulen; über sie kommen beide hinauf."""
+    if lv.typ(312, 8) == 'ground': return False
+    for c, r in ((308, 12), (313, 9), (318, 6), (323, 3)): lv.punkt_weg('bouncers', c, r)
+    lv.kachel(308, 12, 'ground'); lv.kachel(309, 12, 'ground')
+    for c in range(312, 316):
+        for r in range(8, 17): lv.kachel(c, r, 'ground')
+    for c in (318, 319):
+        for r in (4, 5, 6): lv.kachel(c, r, 'ground')
+    for cc, rr in ((307, 13), (311, 9), (317, 5)): lv.punkt('switchFloors', cc, rr, gruppe='B', link=16)   # je 3 Reihen (springbar), dicht an der Säule (kein Kopfstoß)
+    lv.punkt('switches', 314, 7, link=16)
+    return lv.merke('Dschungel-Neu: Puste-Turm 308 (Pilze -> Pusten + Hebel 16 mit Wechsel-Stufen)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
-    'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_luft_tor],
+    'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor],
 }
 
 def haken_setzen(lv, c, g):
