@@ -379,10 +379,15 @@ function neueFigurenAn(){ return NEUE_FIGUREN; }
     if(S.roll > 0 && S.roll < 1){ if(S.rollArt === 'seite') spinTh = -2*PI*flow(S.roll); else { rot = 2*PI*flow(S.roll)*S.rollSign; rotCenter = true; } }
     // Langeweile: nach IDLE_START Sekunden ohne Eingabe dreht sich die Figur zum Spieler (Vorderansicht) und macht Unsinn (Affe: Disco, Hüpfen, Salto, Klatschen, Kratzen; Schwein: Winken, Wackeln, Knicks, Tippeln)
     S.idleT = (key === 'idle' && !P._moveDir) ? (S.idleT || 0) + dt : 0;
-    const wantFront = S.idleT > IDLE_START;
-    S.front = clamp((S.front || 0) + dt/(wantFront ? 0.5 : 0.2)*(wantFront ? 1 : -1), 0, 1);
+    const schirmTr = !male && P.trampolin;   // Schirm-Trampolin (js/34): schaut zur Kamera, steht ruhig, Pfoten vor dem Bauch (Nutzerwunsch)
+    const wantFront = schirmTr || S.idleT > IDLE_START;
+    S.front = clamp((S.front || 0) + dt/(wantFront ? (schirmTr ? 0.12 : 0.5) : 0.2)*(wantFront ? 1 : -1), 0, 1);
     let frPose = null, frRot = 0;
-    if(S.front > 0){
+    if(S.front > 0 && schirmTr){
+      frPose = frBase({dy:15, lean:0, na:[FX-26,-32,FX-24,-20,FX-5,-18], fa:[FX+26,-32,FX+24,-20,FX+5,-18]});
+      S.antic = undefined; S.anticT = 0; S.prevFr = null; S.curFr = frPose; S.umbA = 0; S.umbVis = false; S.ropeOn = false; S.idleT = 0;
+    }
+    else if(S.front > 0){
       if(wantFront){
         S.anticT = (S.anticT || 0) + dt;
         if(S.antic === undefined || S.anticT > S.anticDur){
