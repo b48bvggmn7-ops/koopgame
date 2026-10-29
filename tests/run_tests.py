@@ -938,13 +938,14 @@ async def levelstart_vorhang(g):
 
 @test
 async def verknuepfungen_bis_60(g):
-    """Alle Projekt-Levels benutzen nur Verknüpfungen 1–60 (mehr kann der Editor nicht einstellen; bis Ausbau 2: 20)."""
+    """Alle Projekt-Levels benutzen nur Verknüpfungen 1–80 (mehr kann der Editor nicht einstellen, MAX_LINK; bis Ausbau 2: 20,
+    bis „Level 1–3 zusammen“: 60)."""
     for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
         d = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
         links = [s['link'] for s in d.get('switches', [])] + [x['link'] for x in d.get('doors', [])] + \
                 [m['link'] for m in d.get('movers', []) if m.get('link')] + \
                 [h['move']['link'] for h in d.get('hooks', []) if h.get('move') and h['move'].get('link')]
-        assert all(1 <= n <= 60 for n in links), f"{L['datei']}: Verknüpfungen über 60: {sorted(set(n for n in links if n > 60))}"
+        assert all(1 <= n <= 80 for n in links), f"{L['datei']}: Verknüpfungen über 80: {sorted(set(n for n in links if n > 80))}"
 
 @test
 async def vollbild_esc_bleibt(g):
