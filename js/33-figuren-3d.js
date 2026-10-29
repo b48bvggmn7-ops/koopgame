@@ -568,9 +568,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     S.trU = (S.trU || 0) + ((P.trampolin ? 1 : 0) - (S.trU || 0))*(1 - Math.exp(-dt*(P.trampolin ? 16 : 22)));
     if(!male && S.trU > .03 && typeof drawUmbrella === 'function'){
       const kopf = fy - (2.4 + .55)*SC*lgY - IT.hop*42;   // knapp über dem Kopf, zwischen den erhobenen Händen
-      const hy = kopf - 9 + 8*Math.max(0, trQ);   // Pfoten über dem Kopf, Ärmchen vom Scheitel hinauf (nicht übers Gesicht)
-      drawUmbrella(P, 0, fy, {u: S.trU, hand: [0, hy], stick: TRAMPOLIN_HOEHE - (fy - hy) - 14, tilt: Math.sin(t*2.2)*.03, quetsch: Math.max(0, trQ),
-                              haende: {schulter: [.65*SC, 14], farbe: '#f7aac4', rand: '#cf7d9b'}});
+      const hy = fy - (fy - kopf)*0.35 + 4*Math.max(0, trQ);   // Pfoten vor dem Bauch, Schirm tief auf dem Kopf (Nutzerwunsch)
+      drawUmbrella(P, 0, fy, {u: S.trU, hand: [0, hy], stick: Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22), tilt: Math.sin(t*2.2)*.03, quetsch: Math.max(0, trQ),
+                              haende: {schulter: [.8*SC, -2], farbe: '#f7aac4', rand: '#cf7d9b'}});
     }
     // Puste-Wind des Affen (js/34) direkt im Bild der Figur zeichnen: beginnt genau an ihrem Mund
     if(male && P.pusteAn && ch.mundO && ch.mundO.capM && typeof pusteAmMundZeichnen === 'function'){

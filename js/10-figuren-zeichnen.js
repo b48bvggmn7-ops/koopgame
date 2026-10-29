@@ -108,13 +108,13 @@ function schirmHaende(hx, hy, h){
   const [sx, sy] = h.schulter;
   ctx.save(); ctx.lineCap = 'round';
   for(const seite of [-1, 1]){
-    const px = hx, py = hy + (seite < 0 ? 2 : -7);   // linke Pfote unten, rechte darüber
+    const px = hx, py = hy + (seite < 0 ? 1 : -4);   // linke Pfote unten, rechte knapp darüber (kurzer Stock)
     ctx.strokeStyle = h.rand; ctx.lineWidth = 8.5;
     ctx.beginPath(); ctx.moveTo(hx + seite*sx, hy + sy); ctx.quadraticCurveTo(hx + seite*sx*1.15, py + (sy - (py - hy))*0.35, px + seite*3, py); ctx.stroke();
     ctx.strokeStyle = h.farbe; ctx.lineWidth = 6;
     ctx.beginPath(); ctx.moveTo(hx + seite*sx, hy + sy); ctx.quadraticCurveTo(hx + seite*sx*1.15, py + (sy - (py - hy))*0.35, px + seite*3, py); ctx.stroke();
   }
-  for(const py of [hy + 2, hy - 7]){   // Pfoten um den Stock
+  for(const py of [hy + 1, hy - 4]){   // Pfoten um den Stock
     ctx.fillStyle = h.farbe; ctx.strokeStyle = h.rand; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.ellipse(hx, py, 5.2, 4.2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   }
