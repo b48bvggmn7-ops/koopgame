@@ -223,8 +223,19 @@ async def projekt_laden(p, datei, warten=400):
     await p.evaluate("s => { const d = document.querySelector(s).closest('details'); if (d) d.open = true; }", sel)
     await p.click(sel + ' button'); await p.wait_for_timeout(warten)
 
+def level_pfad(datei):
+    """Pfad einer Level-Datei – alte Dschungel-Teile (seit „Level 1–3 zusammen“ im Abschnitt aufgegangen) werden aus dem
+    Abschnitt herausgeschnitten (tests/abschnitt.py teil_sicht) und als Datei in TMP abgelegt"""
+    p = ROOT / 'levels' / datei
+    if p.exists(): return str(p)
+    t = ABS.teil_sicht(datei)
+    if t is None: return str(p)
+    q = TMP / ('teil_' + datei.replace('/', '_'))
+    q.write_text(json.dumps(t), encoding='utf-8')
+    return str(q)
+
 async def koop_level(g, datei):
-    await g.load(str(ROOT / 'levels' / datei))
+    await g.load(level_pfad(datei))
     await g.p.evaluate("() => {" + KOOP_BOT + "}")
     await g.ev("closeMenu(); deathState = null; for(const k in KEYS) KEYS[k] = false;")
 
@@ -1030,7 +1041,7 @@ async def projekt_levels_beide_formate_gleich(g):
     beide in einem Commit, dieser Test hält sie deckungsgleich."""
     META = ('welt', 'tageszeit', 'wetter', 'look', 'theme')
     for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
-        spiel = json.loads((ROOT / 'levels' / L['datei']).read_text())
+        spiel = ABS.lies(L['datei'])
         ed = json.loads((ROOT / 'levels' / 'editor-format' / L['datei']).read_text())
         if ABS.ist_abschnitt(spiel):   # Dschungel-Neu: Abschnitt-Datei (nur Teile-Liste, kein Gelände) – in beiden Ordnern gleich
             assert ed == spiel and L.get('abschnitt'), L['datei']; continue
@@ -1085,11 +1096,11 @@ async def level2_und_3_regeln(g):
     Ziel ganz rechts, Start links; ab Level 4 ein eigenes Thema, ab Level 5 gleich viele blaue wie pinke Münzen
     (Level 2–4 hat der Nutzer selbst gestaltet)."""
     namen = [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]
-    namen = [t for n in namen for t in (ABS.lies(n)['teile'] if ABS.ist_abschnitt(ABS.lies(n)) else [n])]   # Dschungel-Neu: Abschnitte -> ihre Teile
+    namen = [t for n in namen for t in (ABS.teile_von(n) if n in ABS.abschnitte() else [n])]   # Dschungel-Neu: Abschnitte -> ihre (alten) Teile
     namen = [n for n in namen if n != 'dschungel/01-dschungel.json']
     assert 'ruinen/02-mondnacht.json' in namen, 'Level 4 fehlt in levels.json'
     for name in namen:
-        lv = json.loads((ROOT / 'levels' / name).read_text())
+        lv = ABS.lies(name)
         kurz = lv['goal']['x'] < 200 * 40   # Dschungel-Neu: kurze Rätsel-Teile (weniger Münzen, Ziel nah)
         farben = {c['color'] for c in lv['coins']}
         assert farben <= {'blue', 'pink'}, f"{name}: andere Münzfarben {farben}"
@@ -4098,7 +4109,7 @@ async def hebel_haben_grund(g):
     fehler = []
     for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()):
         if L.get('versteckt'): continue
-        await g.load(str(ROOT / 'levels' / L['datei']))
+        await g.load(level_pfad(L['datei']))
         fehler += await g.ev("""(() => {
           syncSwitchCarriers();
           const out = [], name = %s;
@@ -4201,12 +4212,12 @@ async def stachelwand_faehrt_mit(g):
         await g.p.wait_for_timeout(100)
     assert await g.ev("!!deathState"), 'fahrende Stacheln töten nicht'
     for name in [L['datei'] for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if not L.get('versteckt')]:
-        await g.load(str(ROOT / 'levels' / name))
+        await g.load(level_pfad(name))
         n = await g.ev("spikes.filter(s => s.carrier).length")
         # Soll-Zahl steht als Notiz „_mitfahrendeStacheln“ in der Level-Datei. Levels, die der Nutzer direkt aus dem
         # Editor hochlädt („☁ Auf GitHub speichern“), haben diese Notiz nicht – dort gilt, was er im Editor gebaut
         # und getestet hat, also hier nicht prüfen.
-        daten = json.loads((ROOT / 'levels' / name).read_text())
+        daten = ABS.lies(name)
         if '_mitfahrendeStacheln' not in daten and len(daten.get('movingPlatforms', [])) > 0 and n > 0: continue
         want = daten.get('_mitfahrendeStacheln', 0)
         assert n == want, f'{name}: {n} mitfahrende Stacheln, erwartet {want}'
@@ -5476,7 +5487,7 @@ async def level_themen(g):
     erwartet = {'dschungel/02-baumkronen.json': 'dschungel',   # Level 2: neue Nutzer-Datei ohne Abend-Look
                 'ruinen/01-ruinen.json': 'ruinen', 'ruinen/02-mondnacht.json': 'nacht', 'hoehle/01-kristallhoehle.json': 'hoehle', 'vulkan/03-feuerberg.json': 'vulkan'}
     for datei, th in erwartet.items():
-        d = json.loads((ROOT / 'levels' / datei).read_text())
+        d = ABS.lies(datei)
         assert d.get('theme') == th, f'{datei}: Thema {d.get("theme")} statt {th}'
     assert await g.ev("THEME_ORDER.join(',')") == 'dschungel,abend,ruinen,nacht,hoehle,vulkan'
     await g.load(level([ground(0, 680, 3000), ground(400, 560, 200, 40, 'wall'), ground(700, 680, 120, 40, 'crumble')],
@@ -6167,24 +6178,22 @@ async def level_ordner_nach_welten(g):
             assert d.startswith(x['id'] + '/'), f'{d} liegt nicht im Ordner der Welt {x["id"]}'
             assert re.fullmatch(r'[a-z]+/(\d\d-[a-z0-9-]+|boss-[a-z0-9-]+|abschnitt-\d-[a-z0-9-]+)\.json', d), f'Name passt nicht zum Schema: {d}'
             eingetragen.append(d)
-            ab = ABS.lies(d)   # Dschungel-Neu: ein Abschnitt besteht aus Teilen – sie liegen im Ordner der Welt und gehören dazu
-            if ABS.ist_abschnitt(ab):
-                for tl in ab['teile']:
-                    assert (lv / tl).exists() and tl.startswith(x['id'] + '/') and re.fullmatch(r'[a-z]+/\d\d-[a-z0-9-]+\.json', tl), tl
-                    L = next(L for L in liste if L['datei'] == tl)
-                    assert L.get('teilVon') == d and L.get('versteckt') and L.get('teil') == ab['teile'].index(tl) + 1, L
-                    eingetragen.append(tl)
+            ab = ABS.lies(d)   # Dschungel: Abschnitte sind fest zusammengefügt („Level 1–3 zusammen“), die alten Teile liegen im Archiv
+            if ABS.ist_zusammengefuegt(ab):
+                for t in ab['_teile']:
+                    assert (lv / 'archiv' / 'dschungel-teile' / Path(t['datei']).name).exists() and not (lv / t['datei']).exists(), t['datei']
     assert len(eingetragen) == len(set(eingetragen)), 'Datei in mehreren Welten'
     dateien = sorted(str(f.relative_to(lv)).replace('\\', '/') for f in lv.rglob('*.json')
                      if f.parent != lv and f.parts[len(lv.parts)] not in ('editor-format', 'test', 'partner'))
     archiv = [d for d in dateien if d.startswith('archiv/')]
     assert sorted(set(dateien) - set(archiv)) == sorted(eingetragen), f'Datei ohne Welt / Welt ohne Datei: {sorted(set(dateien) ^ set(eingetragen))}'
     versteckt = {L['datei'] for L in liste if L.get('versteckt')}
+    archiv = [d for d in archiv if not d.startswith('archiv/dschungel-teile/')]   # alte Dschungel-Teile: nur Archiv, stehen in keiner Liste
     assert all(d in versteckt for d in archiv), f'Archiv-Datei nicht versteckt: {archiv}'
     assert not [f.name for f in lv.glob('*.json') if f.name not in ('levels.json', 'worlds.json')], 'Level-Datei liegt noch flach in levels/'
     ed = sorted(str(f.relative_to(lv / 'editor-format')).replace('\\', '/') for f in (lv / 'editor-format').rglob('*.json'))
     assert ed == dateien, f'editor-format spiegelt nicht: {sorted(set(ed) ^ set(dateien))}'
-    assert sorted(L['datei'] for L in liste) == dateien, 'levels.json kennt nicht genau diese Dateien'
+    assert sorted(L['datei'] for L in liste) == [d for d in dateien if not d.startswith('archiv/dschungel-teile/')], 'levels.json kennt nicht genau diese Dateien'   # alte Dschungel-Teile: nur Archiv
     assert (lv / 'README.md').exists() and len((lv / 'README.md').read_text(encoding='utf-8').strip().splitlines()) <= 14
 
 @test
@@ -6406,9 +6415,9 @@ async def alte_levels_unveraendert(g):
     wechselndem Wetter; das Testlevel levels/test/schichten-dschungel.json lässt sich direkt öffnen, T/Z schalten durch."""
     for d in json.loads((ROOT / 'levels' / 'levels.json').read_text(encoding='utf-8')):
         if d.get('boss'): continue   # Boss-Level (Ausbau 6) sind neu, mit eigener Welt/Tageszeit
-        data = json.loads((ROOT / 'levels' / d['datei']).read_text(encoding='utf-8'))
+        data = ABS.lies(d['datei'])
         if data.get('welt'): continue   # neue Level (Ausbau 7) beschreiben ihr Aussehen mit welt/tageszeit/wetter
-        await g.load(str(ROOT / 'levels' / d['datei'])); await g.p.wait_for_timeout(150)
+        await g.load(level_pfad(d['datei'])); await g.p.wait_for_timeout(150)
         k = await g.ev("({look: levelTheme, mode: weatherMode, wash: !!THEME.layerWash})")
         assert k == {'look': data.get('theme') or 'dschungel', 'mode': 'wechselnd', 'wash': False}, f"{d['datei']}: {k}"
     srv = webserver(); p = g.p
@@ -7617,7 +7626,7 @@ async def editor_rundreise_alle_level(g):
             await p.click('#exportBtn'); await p.wait_for_timeout(150)
             out = json.loads(await p.input_value('#exportText'))
             await p.click('#closeExport')
-            erwartet = json.loads((ROOT / 'levels' / L['datei']).read_text(encoding='utf-8'))
+            erwartet = ABS.lies(L['datei'])
             META = ('welt', 'tageszeit', 'wetter', 'look')   # Level-Info (Ausbau 2) – kommt im Export dazu
             diff = [k for k in set(out) | set(erwartet) if not k.startswith('_') and k not in META and level_teil(k, out.get(k)) != level_teil(k, erwartet.get(k))]
             assert not diff, f"{L['datei']}: Export weicht ab bei {diff}"
@@ -9430,7 +9439,7 @@ async def boss1_bruno(g):
         dsch = next(x for x in w['welten'] if x['id'] == 'dschungel')
         assert not dsch['boss'], dsch
         BRUNO = 'archiv/dschungel-boss-bruno.json'
-        L = json.loads((ROOT / 'levels' / BRUNO).read_text(encoding='utf-8'))
+        L = ABS.lies(BRUNO)
         b = L['boss'][0]
         assert b['name'] == 'Bruno' and len(b['phasen']) == 3 and all(ph['treffer'] == 3 for ph in b['phasen']), b
         links = sorted(pl['link'] for pl in L['bossPlaetze'])
@@ -9522,7 +9531,7 @@ async def kombi_pruefung(g):
         assert re.search(r'\b' + n + r'\s*=', phys), f'Richtwert {n} fehlt in js/02-physik-werte.js'
     assert await g.ev("KAMIN_BEQUEM_MIN === 3 && KAMIN_BEQUEM_MAX === 5 && KAMIN_MAX === 8"), 'Richtwerte im Spiel geladen'
     res = KP.pruefe_alle()
-    assert len(res) >= 25, f'zu wenige Level geprüft: {len(res)}'   # Dschungel-Neu: Dschungel-Boss im Archiv
+    assert len(res) >= 21, f'zu wenige Level geprüft: {len(res)}'   # Dschungel: 2 lange Abschnitte (statt 8 Teile), Boss im Archiv
     neu = [f"{r['level']} [{b['regel']}] {b['spalte']}: {b['text']}" for r in res for b in r['befunde'] if not b['ausnahme']]
     assert not neu, 'neue Befunde (beheben oder begründet in tests/kombi_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
     alle = [(r['level'], b['regel'], b['spalte']) for r in res for b in r['befunde']]
@@ -10070,18 +10079,21 @@ async def kombi_stellen_pruefen(g, welt):
 
 async def jagden_pruefen(g, welt):
     """Umbau: jede Verfolgung aus JAGDEN_BOT – mit Dash kommen beide an (auch mit 10 Schritten Verzögerung der zweiten
-    Figur), ohne Dash holt der Verfolger jemanden ein (Spannung: schneller als Laufen)"""
+    Figur), ohne Dash holt der Verfolger jemanden ein (Spannung: schneller als Laufen). Welten ohne Dash (DASH_AUS_WELTEN,
+    Dschungel – Nutzer: „Dash erst mal komplett raus“): die Wände sind so viel langsamer, dass man OHNE Dash gerade so
+    entkommt (gemessen, auch mit 10 Schritten Verzögerung)."""
     fehler, aktuell = [], None
     for lv, name, ms, fs, links, art, link, plaene, ziel in JAGDEN_BOT:
         if not lv.startswith(welt + '/'): continue
         if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        ohne_dash = await g.ev("DASH_AUS_WELTEN.includes(levelWelt)")
         for delay in (0, 10):
-            pl = plaene(True)
+            pl = plaene(not ohne_dash)
             pl = {'m': pl['m'], 'f': [{'frames': delay}] + pl['f']} if delay else pl
             r = await koop(g, m=ms, f=fs, plans=pl, links=links, maxFrames=5000)
             if not (r.get('done') and not r.get('dead') and all(r['pos'][w][0] >= ziel - 0.5 for w in pl)):
                 fehler.append(f"{lv} {name} mit Dash (Verzögerung {delay}): {r.get('pos')} tot={r.get('dead')}")
-        if name in JAGDEN_TAKT: continue
+        if name in JAGDEN_TAKT or ohne_dash: continue
         r = await koop(g, m=ms, f=fs, plans=plaene(False), links=links, maxFrames=5000)
         if not r.get('dead'): fehler.append(f"{lv} {name}: ohne Dash NICHT eingeholt {r.get('pos')}")
     assert not fehler, fehler
@@ -10277,7 +10289,7 @@ async def haken_schwung_frei(g):
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
     befunde, n = [], 0
     for lv in [f for welt in w['welten'] for f in ABS.level_dateien(welt) + ([welt['boss']] if welt.get('boss') else [])]:
-        d = json.loads((ROOT / 'levels' / lv).read_text(encoding='utf-8'))
+        d = ABS.lies(lv)
         hs = [h for h in d.get('hooks', []) if 'targetX' not in h and (lv, int(h['x'] // 40)) not in frei]
         if not hs: continue
         await koop_level(g, lv)
@@ -10296,7 +10308,7 @@ async def keine_holzplattform_mehr(g):
     for f in [f for welt in w['welten'] for f in ABS.level_dateien(welt) + ([welt['boss']] if welt.get('boss') else [])]:   # Abschnitte -> Teile
         ed = json.loads((ROOT / 'levels' / 'editor-format' / f).read_text(encoding='utf-8'))
         assert not [t for t in ed['tiles'] if t[2] == 'platform'], f'{f}: noch Holz-Plattform'
-        spiel = json.loads((ROOT / 'levels' / f).read_text(encoding='utf-8'))
+        spiel = ABS.lies(f)
         assert not [s for s in spiel.get('solids', []) if s.get('type') == 'platform'], f'{f}: noch Holz-Plattform (Spiel-Datei)'
         assert not [m for m in spiel.get('movingPlatforms', []) if m.get('look') == 'platform'], f'{f}: bewegte Holz-Plattform'
 
@@ -10351,7 +10363,7 @@ async def bildregel_pruefung(g):
     assert await g.ev("typeof BILD_MAX_SPALTEN") == 'number' and await g.ev("BILD_MAX_SPALTEN * 40 <= FRONT_MAX * VW - CAM_BACK_MIN"), \
         'BILD_MAX_SPALTEN passt nicht mehr zur Kamera (beide sicher im Bild bis FRONT_MAX·VW − CAM_BACK_MIN)'
     res = BR.pruefe_alle()
-    assert len(res) >= 25, f'zu wenige Level geprüft: {len(res)}'   # Dschungel-Neu: Dschungel-Boss im Archiv
+    assert len(res) >= 21, f'zu wenige Level geprüft: {len(res)}'   # Dschungel: 2 lange Abschnitte (statt 8 Teile), Boss im Archiv
     neu = [f"{r['level']} [{v['regel']}] Spalte {v['spalte']}: {v['text']}" for r in res for v in r['befunde'] if not v['ausnahme']]
     assert not neu, 'neue Verstöße (beheben oder begründet in tests/bildregel_ausnahmen.json eintragen):\n  ' + '\n  '.join(neu)
     alle = [(r['level'], v['regel'], v['spalte']) for r in res for v in r['befunde']]
@@ -11710,7 +11722,7 @@ async def partner_aufgaben_welt(g, welt):
         datei = f'{welt}/{f.name}'
         bd = json.loads(f.read_text(encoding='utf-8'))
         assert bd.get('level') == datei, f'{f}: falsches Level {bd.get("level")}'
-        d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+        d = ABS.lies(datei)
         srv = await partner_test_start(g, d, ich='m')
         try:
             await g.ev('(() => { window.__probe = ' + PARTNER_PROBE_JS + '; return 1; })()')
@@ -11748,7 +11760,7 @@ async def partner_aufgaben_ruinen(g):
 
 async def partner_projekt_start(g, datei, ich):
     """Projekt-Level im Testmodus wie aus dem Editor (mit projektDatei -> Begleitdatei wird geladen)"""
-    d = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+    d = ABS.lies(datei)
     d['projektDatei'] = datei
     srv = await partner_test_start(g, d, ich=ich)
     await g.p.wait_for_function("partnerAufgaben.length > 0 && partnerAufgabenDatei !== null", timeout=8000)
@@ -12149,12 +12161,12 @@ async def dn_stellen_pruefen(g, teile):
 async def dschungel_neu_stellen_a1(g):
     """Dschungel-Neu, Abschnitt 1 (Teile 01–03): jede umgebaute Pilz-/Aufwind-Stelle mit dem Koop-Bot – mit beiden
     Koop-Aktionen (Pusten, Schirm-Trampolin) kommen beide an, allein bzw. in der falschen Reihenfolge nicht."""
-    await dn_stellen_pruefen(g, ABS.lies(A1)['teile'])
+    await dn_stellen_pruefen(g, ABS.teile_von(A1))
 
 @test
 async def dschungel_neu_stellen_a2(g):
     """Dschungel-Neu, Abschnitt 2 (Teile 04–06): wie dschungel_neu_stellen_a1."""
-    await dn_stellen_pruefen(g, ABS.lies(A2)['teile'])
+    await dn_stellen_pruefen(g, ABS.teile_von(A2))
 
 @test
 async def szene_nach_abschnitt(g):
@@ -12184,10 +12196,10 @@ async def meteorit_element(g):
     """Dschungel-Neu: Element „Meteorit“ (nur Aussehen) – Splitter/Brocken/Meteorit werden geladen und gezeichnet (ohne
     Kollision, ohne Fehler); die Spur liegt in allen Dschungel-Teilen, wird zum Ende dichter, der große Meteorit liegt im
     Meteoritenkrater vor dem Ziel."""
-    teile = ABS.lies(A1)['teile'] + ABS.lies(A2)['teile']
-    anzahl = [len(json.loads((ROOT / 'levels' / t).read_text(encoding='utf-8')).get('meteoriten', [])) for t in teile]
+    teile = ABS.teile_von(A1) + ABS.teile_von(A2)
+    anzahl = [len(ABS.lies(t).get('meteoriten', [])) for t in teile]
     assert all(anzahl), dict(zip(teile, anzahl))
-    gross = [m for t in teile for m in json.loads((ROOT / 'levels' / t).read_text(encoding='utf-8')).get('meteoriten', []) if m.get('art') == 'meteorit']
+    gross = [m for t in teile for m in ABS.lies(t).get('meteoriten', []) if m.get('art') == 'meteorit']
     assert len(gross) == 1, gross
     await koop_level(g, R2)
     info = await g.ev("({n: meteoriten.length, gross: meteoriten.filter(m => m.art === 'meteorit').map(m => [m.x, m.y]), ziel: goal.x,"
@@ -12267,43 +12279,34 @@ async def abschnitt_laden(g, datei):
 
 @test
 async def abschnitt_zusammensetzen(g):
-    """Dschungel-Neu: die 6 Dschungel-Level sind Teile von 2 Abschnitten (worlds.json: nur noch die zwei Abschnitte, kein
-    Boss). Das Spiel setzt die Teile beim Laden hintereinander – genau wie tests/abschnitt.py (Feld für Feld gleich):
-    Teil k rückt um die Breite der Teile davor, Nummern um 20·k; nur Start des ersten und Ziel des letzten Teils; an
-    den Nähten keine Rand-Mauer. Im Spiel: ein langes Level (beide am Anfang, Ziel am Ende, Nummern verschieden)."""
+    """Dschungel: 2 Abschnitte statt 6 Level, kein Boss. Nutzerwunsch „Level 1–3 zusammen, 4–6 genauso“ (auch im Editor): jeder
+    Abschnitt ist EINE Level-Datei (fest zusammengefügt mit tests/bausteine/abschnitte_zusammenfuegen.py; Teil k um die
+    Breite der Teile davor, Nummern um 20·k; die alten Teile liegen in levels/archiv/dschungel-teile/). Im Level steht unter
+    „_teile“, wo jeder alte Teil liegt; tests/abschnitt.py schneidet einen Teil daraus wieder heraus (gleiche Münzen, Haken,
+    Hebel wie die archivierte Teil-Datei). An den Übergängen keine Rand-Mauer; Nummern bis 80 (Editor MAX_LINK).
+    Im Spiel: ein langes Level (beide am Anfang, Ziel am Ende), danach die Szene des Abschnitts."""
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))
     dsch = next(x for x in w['welten'] if x['id'] == 'dschungel')
-    assert dsch['level'] == ['dschungel/abschnitt-1-sternschnuppenspur.json', 'dschungel/abschnitt-2-meteoritenherz.json'] and not dsch.get('boss'), dsch
-    srv = webserver(); p = g.p
-    try:
-        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(500)
-        rund = lambda o: json.loads(json.dumps(o), parse_float=lambda s: round(float(s), 3))
-        for datei in dsch['level']:
-            d = ABS.lies(datei)
-            assert ABS.ist_abschnitt(d) and len(d['teile']) == 4 and d.get('nachSzene'), d   # 3 Strecken + 1 Rätsel-Teil
-            js = await p.evaluate("async f => abschnittLaden(await (await fetch('levels/' + f)).json())", datei)
-            py = ABS.laden(datei)
-            assert rund(js) == rund(py), f'{datei}: Spiel und tests/abschnitt.py setzen verschieden zusammen'
-            teile = [ABS.lies(t) for t in d['teile']]
-            spalten = [ABS.teil_spalten(t) for t in teile]
-            assert py['goal']['x'] == teile[-1]['goal']['x'] + sum(spalten[:-1]) * 40 and py['startM'] == teile[0]['startM']
-            # Nähte: in den 3 Spalten um jede Naht steht über dem Boden nichts Festes (Weg frei)
-            naht = 0
-            for k, sp in enumerate(spalten[:-1]):
-                naht += sp
-                boden = min(teile[k]['goal']['y'], teile[k + 1]['startM']['y'])
-                zu = [s for s in py['solids'] if s['x'] < (naht + 2) * 40 and s['x'] + s['w'] > (naht - 2) * 40 and s['y'] + s['h'] <= boden - 40]
-                assert not zu, f'{datei}: Naht bei Spalte {naht} zu: {zu[:3]}'
-            # Nummern der Teile überschneiden sich nicht
-            for k, t in enumerate(teile):
-                eigene = {o['link'] + 20 * k for f in ('switches', 'doors', 'plates') for o in t.get(f, []) if o.get('link')}
-                andere = {o['link'] + 20 * j for j, u in enumerate(teile) if j != k for f in ('switches', 'doors', 'plates') for o in u.get(f, []) if o.get('link')}
-                assert not (eigene & andere) and all(n <= 20 * len(teile) for n in eigene), (datei, k, eigene & andere)
-            await p.evaluate("d => { window.baumIntroAus = true; startLevel(d); menuScreen = null; }", js)
-            st = await p.evaluate("[LEVEL_W, goal.x, p1.x, p2.x, solids.length, checkpointDefs.length]")
-            assert st[0] > 2200 * 40 and st[1] > 2200 * 40 and st[2] < 400 and st[3] < 400, st
-    finally:
-        srv.shutdown()
+    assert dsch['level'] == [A1, A2] and not dsch.get('boss'), dsch
+    for datei in dsch['level']:
+        d = ABS.lies(datei)
+        assert ABS.ist_zusammengefuegt(d) and len(d['_teile']) == 4 and d.get('nachSzene') and d.get('solids'), datei
+        assert not (ROOT / 'levels' / 'editor-format' / datei).read_text(encoding='utf-8').count('"teile"'), 'Editor-Datei ist noch eine Teile-Liste'
+        for t in d['_teile']:
+            alt = json.loads((ROOT / 'levels' / 'archiv' / 'dschungel-teile' / Path(t['datei']).name).read_text(encoding='utf-8'))
+            sicht = ABS.teil_sicht(t['datei'])
+            for feld in ('coins', 'hooks', 'switches', 'doors', 'checkpoints', 'windraeder'):
+                assert len(sicht.get(feld, [])) == len(alt.get(feld, [])), (t['datei'], feld, len(sicht.get(feld, [])), len(alt.get(feld, [])))
+            for k in range(1, len(d['_teile'])):
+                naht = d['_teile'][k]['von']
+                boden = min(d['_teile'][k - 1]['goal']['y'], d['_teile'][k]['startM']['y'])
+                zu = [s for s in d['solids'] if s['type'] in ('ground', 'wall') and s['x'] < (naht + 2) * 40 and s['x'] + s['w'] > (naht - 2) * 40 and s['y'] + s['h'] <= boden - 40]
+                assert not zu, f'{datei}: Übergang bei Spalte {naht} zu: {zu[:3]}'
+        nummern = {o.get('link') for f in ('switches', 'doors', 'plates', 'windraeder') for o in d.get(f, [])} - {None}
+        assert max(nummern) <= 80, max(nummern)
+    await g.load(level_pfad(A1)); await g.steps(3)
+    st = await g.ev("[LEVEL_W, goal.x, p1.x, p2.x, levelNachSzene]")
+    assert st[0] > 2200 * 40 and st[1] > 2200 * 40 and st[2] < 400 and st[3] < 400 and st[4] == 'abschnitt1_ende', st
 
 async def main(filter_):
     async with async_playwright() as pw:

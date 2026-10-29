@@ -1,0 +1,1063 @@
+{
+ "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus) – zusammengefügt aus den alten Teilen (Spalten/Nummern umgerechnet). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "01-nummer-1",
+   "zone": [
+    123,
+    140
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 1,
+   "wann": {
+    "ich_in": [
+     135,
+     139
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 1 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     132,
+     15
+    ],
+    "links": [],
+    "schritte": 382
+   }
+  },
+  {
+   "id": "01-nummer-2",
+   "zone": [
+    212,
+    227
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 2,
+   "probe": {
+    "figur": "m",
+    "start": [
+     232,
+     11
+    ],
+    "links": [],
+    "schritte": 404
+   }
+  },
+  {
+   "id": "01-nummer-3",
+   "zone": [
+    260,
+    294
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 3,
+   "wann": {
+    "ich_in": [
+     272,
+     274
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 3 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     296,
+     13
+    ],
+    "links": [],
+    "schritte": 372
+   }
+  },
+  {
+   "id": "01-insel-hebel-4",
+   "von_hand": true,
+   "zone": [
+    289,
+    317
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 4,
+   "wann": {
+    "ich_in": [
+     301,
+     303
+    ],
+    "ich_steht": true
+   },
+   "start": {
+    "c": 296,
+    "r": 13
+   },
+   "text": "Hebel 4 (wenn du auf der Plattform stehst): am Seil auf die Insel",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 12010"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "hookWhen": "P.vy > -3",
+     "until": "P.hookAttached",
+     "frames": 120
+    },
+    {
+     "swing": true,
+     "pull": 30,
+     "release": "P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0",
+     "frames": 500
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "holdIf": {
+      "left": "P.x > 12580 && P.vx > -1"
+     },
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 12580 - 4",
+      "left": "P.x > 12580 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     296,
+     13
+    ],
+    "links": [],
+    "schritte": 900
+   }
+  },
+  {
+   "id": "01-nummer-5",
+   "zone": [
+    350,
+    373
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     323,
+     13
+    ],
+    "links": [],
+    "schritte": 776
+   }
+  },
+  {
+   "id": "01-nummer-7",
+   "zone": [
+    420,
+    454
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 7,
+   "wann": {
+    "ich_in": [
+     432,
+     434
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 7 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     454,
+     15
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  },
+  {
+   "id": "01-nummer-8",
+   "zone": [
+    458,
+    481
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 8,
+   "probe": {
+    "figur": "m",
+    "start": [
+     454,
+     15
+    ],
+    "links": [],
+    "schritte": 1998
+   }
+  },
+  {
+   "id": "01-nummer-11",
+   "zone": [
+    624,
+    643
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     655,
+     14
+    ],
+    "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     5,
+     7,
+     8,
+     12
+    ],
+    "schritte": 1122
+   }
+  },
+  {
+   "id": "01-nummer-12",
+   "zone": [
+    616,
+    648
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 12,
+   "probe": {
+    "figur": "m",
+    "start": [
+     596,
+     14
+    ],
+    "links": [],
+    "schritte": 682
+   }
+  },
+  {
+   "id": "01-nummer-14",
+   "zone": [
+    657,
+    690
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 14,
+   "wann": {
+    "ich_in": [
+     669,
+     671
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 14 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     690,
+     14
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  },
+  {
+   "id": "02-nummer-2",
+   "zone": [
+    857,
+    892
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 22,
+   "wann": {
+    "ich_in": [
+     68,
+     70
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 2 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     897,
+     13
+    ],
+    "links": [],
+    "schritte": 424
+   }
+  },
+  {
+   "id": "02-nummer-3",
+   "zone": [
+    896,
+    915
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 23,
+   "wann": {
+    "ich_in": [
+     111,
+     112
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 3 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     897,
+     13
+    ],
+    "links": [],
+    "schritte": 448
+   }
+  },
+  {
+   "id": "02-nummer-4",
+   "zone": [
+    902,
+    922
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 24,
+   "probe": {
+    "figur": "m",
+    "start": [
+     897,
+     13
+    ],
+    "links": [
+     22,
+     23
+    ],
+    "schritte": 952
+   }
+  },
+  {
+   "id": "02-nummer-5",
+   "zone": [
+    939,
+    961
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 25,
+   "probe": {
+    "figur": "m",
+    "start": [
+     966,
+     13
+    ],
+    "links": [],
+    "schritte": 482
+   }
+  },
+  {
+   "id": "02-nummer-6",
+   "zone": [
+    969,
+    985
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 26,
+   "wann": {
+    "ich_in": [
+     180,
+     182
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 6 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     966,
+     13
+    ],
+    "links": [],
+    "schritte": 504
+   }
+  },
+  {
+   "id": "02-nummer-7",
+   "zone": [
+    1068,
+    1083
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 27,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1085,
+     14
+    ],
+    "links": [],
+    "schritte": 372
+   }
+  },
+  {
+   "id": "02-nummer-9",
+   "zone": [
+    1111,
+    1129
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 29,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1085,
+     14
+    ],
+    "links": [
+     22,
+     23,
+     24,
+     25,
+     26,
+     27,
+     28
+    ],
+    "schritte": 1426
+   }
+  },
+  {
+   "id": "02-nummer-11",
+   "zone": [
+    1125,
+    1143
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 31,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1149,
+     14
+    ],
+    "links": [],
+    "schritte": 548
+   }
+  },
+  {
+   "id": "02-nummer-13",
+   "zone": [
+    1436,
+    1451
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 33,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1456,
+     14
+    ],
+    "links": [],
+    "schritte": 404
+   }
+  },
+  {
+   "id": "02-nummer-15",
+   "zone": [
+    1398,
+    1424
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 35,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1391,
+     14
+    ],
+    "links": [],
+    "schritte": 554
+   }
+  },
+  {
+   "id": "03-dash-hebel-1",
+   "von_hand": true,
+   "zone": [
+    1660,
+    1681
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 41,
+   "start": {
+    "c": 1659,
+    "r": 14
+   },
+   "text": "Haken hoch aufs Sims, Hebel 1",
+   "schritte": [
+    {
+     "holdIf": {
+      "right": "P.x < 66620 - 34",
+      "left": "P.x > 66620 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (66620 - 30)) <= 5",
+     "frames": 300
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "jump"
+     ],
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
+    },
+    {
+     "hold": [
+      "pull"
+     ],
+     "holdIf": {
+      "left": "P.x > 66620 - 6"
+     },
+     "until": "P.y < 400 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 66900 - 4",
+      "left": "P.x > 66900 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     1659,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
+   "id": "03-brunnen-hebel-3",
+   "von_hand": true,
+   "zone": [
+    1829,
+    1847
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 43,
+   "start": {
+    "c": 1835,
+    "r": 14
+   },
+   "text": "am Seil zu Hebel 3",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 73610"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "hookWhen": "P.vy > -4",
+     "until": "P.hookAttached",
+     "frames": 80
+    },
+    {
+     "hold": [
+      "slack"
+     ],
+     "until": "P.y > 520 + 10",
+     "frames": 120
+    },
+    {
+     "frames": 60,
+     "pressIf": {
+      "use": "f % 10 === 0"
+     },
+     "until": "!!linkOn[3]"
+    },
+    {
+     "swing": true,
+     "pull": 0,
+     "release": "P.x > 73820 + 60 && P.vy < 0 && P.vx > 2"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
+     "frames": 200
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 74180"
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     1835,
+     14
+    ],
+    "links": [
+     41,
+     42
+    ],
+    "schritte": 1500
+   }
+  },
+  {
+   "id": "03-staffel-hebel-9",
+   "von_hand": true,
+   "zone": [
+    2195,
+    2230
+   ],
+   "rolle": "f",
+   "aktion": "ablauf",
+   "nummer": 49,
+   "start": {
+    "c": 2199,
+    "r": 14
+   },
+   "text": "Stege aufs Dach, Hebel 9",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 88120"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 16
+    },
+    {
+     "holdIf": {
+      "left": "P.vx > 0.8",
+      "right": "P.vx < -0.8"
+     },
+     "until": "P.grounded"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 88240"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 12
+    },
+    {
+     "holdIf": {
+      "left": "P.vx > 0.8",
+      "right": "P.vx < -0.8"
+     },
+     "until": "P.grounded"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 88360"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 16
+    },
+    {
+     "holdIf": {
+      "left": "P.vx > 0.8",
+      "right": "P.vx < -0.8"
+     },
+     "until": "P.grounded"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 88480"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 12
+    },
+    {
+     "holdIf": {
+      "left": "P.vx > 0.8",
+      "right": "P.vx < -0.8"
+     },
+     "until": "P.grounded"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 88600"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 8
+    },
+    {
+     "holdIf": {
+      "left": "P.vx > 0.8",
+      "right": "P.vx < -0.8"
+     },
+     "until": "P.grounded"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 88720"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "frames": 24
+    },
+    {
+     "holdIf": {
+      "left": "P.vx > 0.8",
+      "right": "P.vx < -0.8"
+     },
+     "until": "P.grounded"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 89210"
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "f",
+    "start": [
+     2199,
+     14
+    ],
+    "links": [],
+    "schritte": 1800
+   }
+  },
+  {
+   "id": "03-nummer-2",
+   "zone": [
+    1703,
+    1736
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 42,
+   "wann": {
+    "ich_in": [
+     100,
+     102
+    ],
+    "ich_steht": true
+   },
+   "text": "Hebel 2 (wenn du auf der Plattform stehst)",
+   "probe": {
+    "figur": "m",
+    "start": [
+     1737,
+     12
+    ],
+    "links": [],
+    "schritte": 360
+   }
+  },
+  {
+   "id": "03-nummer-4",
+   "zone": [
+    1873,
+    1891
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 44,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1892,
+     15
+    ],
+    "links": [],
+    "schritte": 360
+   }
+  },
+  {
+   "id": "03-nummer-5",
+   "zone": [
+    1885,
+    1908
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 45,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1892,
+     15
+    ],
+    "links": [],
+    "schritte": 378
+   }
+  },
+  {
+   "id": "03-nummer-8",
+   "zone": [
+    2110,
+    2125
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 48,
+   "probe": {
+    "figur": "m",
+    "start": [
+     2133,
+     14
+    ],
+    "links": [],
+    "schritte": 438
+   }
+  },
+  {
+   "id": "03-saeule-hebel-10",
+   "von_hand": true,
+   "zone": [
+    2224,
+    2243
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 50,
+   "start": {
+    "c": 2201,
+    "r": 14
+   },
+   "text": "am Seil auf die Säule, Hebel 10",
+   "schritte": [
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.x >= 89060"
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "right",
+      "jump"
+     ],
+     "hookWhen": "P.vy > -3",
+     "until": "P.hookAttached",
+     "frames": 120
+    },
+    {
+     "swing": true,
+     "pull": 0,
+     "release": "P.y < P.anchor.y + 90 && P.vx > 1 && P.vy < 0",
+     "frames": 500
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "holdIf": {
+      "left": "P.x > 89460 && P.vx > -1"
+     },
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 89460 - 4",
+      "left": "P.x > 89460 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     2201,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 6,
+   "spalte": 360,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 30,
+   "spalte": 336,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 32,
+   "spalte": 476,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 28,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 34,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 46,
+   "spalte": 438,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 47,
+   "spalte": 436,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 51,
+   "spalte": 641,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 52,
+   "spalte": 640,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 62,
+   "spalte": 53,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  }
+ ]
+}

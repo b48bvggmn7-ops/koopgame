@@ -1,0 +1,739 @@
+{
+ "level": "dschungel/abschnitt-2-meteoritenherz.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus) – zusammengefügt aus den alten Teilen (Spalten/Nummern umgerechnet). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [
+  {
+   "id": "04-dash-platte-7",
+   "von_hand": true,
+   "zone": [
+    356,
+    399
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 7,
+   "start": {
+    "c": 358,
+    "r": 14
+   },
+   "text": "Haken hoch aufs Sims, Platte 7",
+   "schritte": [
+    {
+     "holdIf": {
+      "right": "P.x < 14580 - 34",
+      "left": "P.x > 14580 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (14580 - 30)) <= 5",
+     "frames": 300
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "jump"
+     ],
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
+    },
+    {
+     "hold": [
+      "pull"
+     ],
+     "holdIf": {
+      "left": "P.x > 14580 - 6"
+     },
+     "until": "P.y < 400 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 14740 - 4",
+      "left": "P.x > 14740 + 4"
+     },
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 14740 - 4",
+      "left": "P.x > 14740 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "frames": 30
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     358,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
+   "id": "04-dash-hebel-6",
+   "von_hand": true,
+   "zone": [
+    298,
+    313
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 6,
+   "start": {
+    "c": 299,
+    "r": 14
+   },
+   "text": "Haken hoch aufs Sims, Hebel 6",
+   "schritte": [
+    {
+     "holdIf": {
+      "right": "P.x < 12180 - 34",
+      "left": "P.x > 12180 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (12180 - 30)) <= 5",
+     "frames": 300
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "jump"
+     ],
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
+    },
+    {
+     "hold": [
+      "pull"
+     ],
+     "holdIf": {
+      "left": "P.x > 12180 - 6"
+     },
+     "until": "P.y < 400 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 12420 - 4",
+      "left": "P.x > 12420 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     299,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
+   "id": "04-dash-hebel-2",
+   "von_hand": true,
+   "zone": [
+    44,
+    67
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 2,
+   "start": {
+    "c": 44,
+    "r": 14
+   },
+   "text": "Haken hoch aufs Sims, Hebel 2",
+   "schritte": [
+    {
+     "holdIf": {
+      "right": "P.x < 2020 - 34",
+      "left": "P.x > 2020 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (2020 - 30)) <= 5",
+     "frames": 300
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "jump"
+     ],
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
+    },
+    {
+     "hold": [
+      "pull"
+     ],
+     "holdIf": {
+      "left": "P.x > 2020 - 6"
+     },
+     "until": "P.y < 400 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 2260 - 4",
+      "left": "P.x > 2260 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     44,
+     14
+    ],
+    "links": [],
+    "schritte": 1200
+   }
+  },
+  {
+   "id": "04-nummer-1",
+   "zone": [
+    9,
+    40
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 1,
+   "probe": {
+    "figur": "m",
+    "start": [
+     42,
+     14
+    ],
+    "links": [],
+    "schritte": 372
+   }
+  },
+  {
+   "id": "04-nummer-4",
+   "zone": [
+    208,
+    230
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 4,
+   "probe": {
+    "figur": "m",
+    "start": [
+     202,
+     14
+    ],
+    "links": [],
+    "schritte": 434
+   }
+  },
+  {
+   "id": "04-nummer-5",
+   "zone": [
+    234,
+    249
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     233,
+     14
+    ],
+    "links": [],
+    "schritte": 466
+   }
+  },
+  {
+   "id": "04-nummer-11",
+   "zone": [
+    525,
+    544
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     540,
+     14
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  },
+  {
+   "id": "04-nummer-13",
+   "zone": [
+    555,
+    574
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 13,
+   "probe": {
+    "figur": "m",
+    "start": [
+     540,
+     14
+    ],
+    "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     5,
+     7
+    ],
+    "schritte": 642
+   }
+  },
+  {
+   "id": "05-dash-hebel-2",
+   "von_hand": true,
+   "zone": [
+    810,
+    832
+   ],
+   "rolle": "m",
+   "aktion": "ablauf",
+   "nummer": 22,
+   "start": {
+    "c": 811,
+    "r": 15
+   },
+   "text": "Haken hoch aufs Sims, Hebel 2",
+   "schritte": [
+    {
+     "holdIf": {
+      "right": "P.x < 32700 - 34",
+      "left": "P.x > 32700 - 26"
+     },
+     "until": "P.grounded && Math.abs(P.x - (32700 - 30)) <= 5",
+     "frames": 300
+    },
+    {
+     "press": [
+      "jump"
+     ],
+     "hold": [
+      "jump"
+     ],
+     "hookWhen": "P.vy > -5",
+     "until": "P.hookAttached",
+     "frames": 80
+    },
+    {
+     "hold": [
+      "pull"
+     ],
+     "holdIf": {
+      "left": "P.x > 32700 - 6"
+     },
+     "until": "P.y < 440 - 4",
+     "frames": 240
+    },
+    {
+     "swing": true,
+     "release": "true",
+     "after": "right"
+    },
+    {
+     "hold": [
+      "right"
+     ],
+     "until": "P.grounded",
+     "frames": 300
+    },
+    {
+     "holdIf": {
+      "right": "P.x < 32900 - 4",
+      "left": "P.x > 32900 + 4"
+     },
+     "frames": 60
+    },
+    {
+     "use": true,
+     "frames": 5
+    }
+   ],
+   "probe": {
+    "figur": "m",
+    "start": [
+     811,
+     15
+    ],
+    "links": [
+     21
+    ],
+    "schritte": 1200
+   }
+  },
+  {
+   "id": "05-nummer-1",
+   "zone": [
+    791,
+    814
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 21,
+   "probe": {
+    "figur": "m",
+    "start": [
+     794,
+     15
+    ],
+    "links": [],
+    "schritte": 1292
+   }
+  },
+  {
+   "id": "05-nummer-4",
+   "zone": [
+    938,
+    953
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 24,
+   "probe": {
+    "figur": "m",
+    "start": [
+     942,
+     15
+    ],
+    "links": [],
+    "schritte": 416
+   }
+  },
+  {
+   "id": "05-nummer-7",
+   "zone": [
+    1166,
+    1186
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 27,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1175,
+     15
+    ],
+    "links": [],
+    "schritte": 356
+   }
+  },
+  {
+   "id": "05-nummer-11",
+   "zone": [
+    1318,
+    1335
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 31,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1305,
+     15
+    ],
+    "links": [
+     22,
+     24,
+     30,
+     21,
+     27
+    ],
+    "schritte": 1250
+   }
+  },
+  {
+   "id": "05-nummer-13",
+   "zone": [
+    1343,
+    1360
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 33,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1366,
+     15
+    ],
+    "links": [],
+    "schritte": 760
+   }
+  },
+  {
+   "id": "06-nummer-2",
+   "zone": [
+    1546,
+    1578
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 42,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1554,
+     15
+    ],
+    "links": [],
+    "schritte": 366
+   }
+  },
+  {
+   "id": "06-nummer-3",
+   "zone": [
+    1566,
+    1584
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 43,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1554,
+     15
+    ],
+    "links": [],
+    "schritte": 924
+   }
+  },
+  {
+   "id": "06-nummer-5",
+   "zone": [
+    1757,
+    1780
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 45,
+   "probe": {
+    "figur": "f",
+    "start": [
+     1752,
+     15
+    ],
+    "links": [],
+    "schritte": 426
+   }
+  },
+  {
+   "id": "06-nummer-7",
+   "zone": [
+    1978,
+    2011
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 47,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1984,
+     15
+    ],
+    "links": [],
+    "schritte": 470
+   }
+  },
+  {
+   "id": "06-nummer-8",
+   "zone": [
+    1979,
+    2012
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 48,
+   "probe": {
+    "figur": "f",
+    "start": [
+     2025,
+     11
+    ],
+    "links": [],
+    "schritte": 494
+   }
+  },
+  {
+   "id": "06-nummer-10",
+   "zone": [
+    2102,
+    2119
+   ],
+   "rolle": "f",
+   "aktion": "hebel",
+   "nummer": 50,
+   "probe": {
+    "figur": "f",
+    "start": [
+     2092,
+     15
+    ],
+    "links": [],
+    "schritte": 528
+   }
+  },
+  {
+   "id": "06-nummer-11",
+   "zone": [
+    2113,
+    2130
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 51,
+   "probe": {
+    "figur": "m",
+    "start": [
+     2092,
+     15
+    ],
+    "links": [
+     43,
+     44,
+     45,
+     46,
+     48,
+     49,
+     50,
+     42,
+     47
+    ],
+    "schritte": 598
+   }
+  }
+ ],
+ "offen": [
+  {
+   "nummer": 3,
+   "spalte": 197,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 9,
+   "spalte": 508,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 10,
+   "spalte": 520,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 12,
+   "spalte": 549,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 30,
+   "spalte": 617,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 32,
+   "spalte": 642,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 46,
+   "spalte": 298,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 52,
+   "spalte": 639,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 53,
+   "spalte": 653,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  },
+  {
+   "nummer": 44,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 49,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 54,
+   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
+  },
+  {
+   "nummer": 62,
+   "spalte": 53,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  }
+ ]
+}

@@ -71,6 +71,7 @@ function exportLevel(){
       E.editor.exportieren(E.editor.art === 'kachel' ? byType[E.editor.werkzeug] : elementPunkte[E.feld], TILE, mergeRects)])),
     welt: meta.welt, ...(meta.tageszeit ? {tageszeit: meta.tageszeit} : {}), wetter: meta.wetter,
     ...(meta.look ? {look: meta.look, theme: meta.look} : {}),   // theme: für ältere Spielstände/Werkzeuge
+    ...(meta.nachSzene ? {nachSzene: meta.nachSzene} : {}),       // Spielszene nach dem Level (bleibt beim Speichern erhalten)
   };
   return JSON.stringify(out, null, 2);
 }

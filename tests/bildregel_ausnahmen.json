@@ -2,23 +2,23 @@
  "hinweis": "Begründete Ausnahmen zur Bild-Regel und den Leveldesign-Regeln (AUSBAU-REGELWERK.md Punkt 12). Je Eintrag: level, regel (Bild/Plattform/Haken/Checkpoint), spalte (wie im Prüfwerkzeug angezeigt), nummer (Verknüpfung oder Checkpoint, nur zur Info), begruendung. Der Test bildregel_pruefung schlägt bei jedem Befund fehl, der hier nicht steht.",
  "ausnahmen": [
   {
-   "level": "dschungel/03-lianenschlucht.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
-   "spalte": 668,
+   "spalte": 2283,
    "nummer": 13,
    "begruendung": "Lianen-Staffel (Spalte 610–668, zwei getrennte Wege) ist ein Rätsel am Stück – Checkpoint erst danach"
   },
   {
-   "level": "dschungel/05-dornenpfad.json",
+   "level": "dschungel/abschnitt-2-meteoritenherz.json",
    "regel": "Bild",
-   "spalte": 341,
+   "spalte": 1042,
    "nummer": 6,
    "begruendung": "Dornendecke ist eine Verfolgung: Hebel 6 startet die Decke (direkt daneben sichtbar), die Tür am Ende der Flucht (393) öffnet zugleich – man läuft auf sie zu"
   },
   {
-   "level": "dschungel/06-wipfelsturm.json",
+   "level": "dschungel/abschnitt-2-meteoritenherz.json",
    "regel": "Bild",
-   "spalte": 533,
+   "spalte": 2034,
    "nummer": 9,
    "begruendung": "Doppel-Jagd ist eine Verfolgung: Hebel 9 startet die Dornendecke (direkt daneben sichtbar), die Tür am Ende der Flucht (580) öffnet zugleich"
   },
@@ -176,79 +176,79 @@
    "begruendung": "Spiegel 630 (Affe) – Checkpoint 636 liegt 6 Spalten dahinter: nach einem Tod ist der Spiegel zurückgestellt, der Affe geht 6 Spalten zurück und hakt sich wieder hoch (kurzer Weg, Tür 12 und Brücke liegen in Sichtweite)"
   },
   {
-   "level": "dschungel/05-dornenpfad.json",
+   "level": "dschungel/abschnitt-2-meteoritenherz.json",
    "regel": "Plattform",
-   "spalte": 251,
+   "spalte": 952,
    "nummer": 5,
    "begruendung": "Dash-Umbau Seilbahn/Fähre: die Grube muss 21 breit und der Landesims 4 Reihen hoch sein, sonst kommt das Schweinchen mit Schirm + Dash ohne Fähre hinüber. Beide fahren dafür etwas weiter; die Figuren bleiben trotzdem zusammen im Bild (sichtbar ~37 Spalten)."
   },
   {
-   "level": "dschungel/05-dornenpfad.json",
+   "level": "dschungel/abschnitt-2-meteoritenherz.json",
    "regel": "Plattform",
-   "spalte": 254,
+   "spalte": 955,
    "nummer": 4,
    "begruendung": "Dash-Umbau Seilbahn/Fähre: die Grube muss 21 breit und der Landesims 4 Reihen hoch sein, sonst kommt das Schweinchen mit Schirm + Dash ohne Fähre hinüber. Beide fahren dafür etwas weiter; die Figuren bleiben trotzdem zusammen im Bild (sichtbar ~37 Spalten)."
   },
   {
-   "level": "dschungel/01-dschungel.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Haken",
    "spalte": 567,
    "nummer": null,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/01-dschungel.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
    "spalte": 131,
    "nummer": 3,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/01-dschungel.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
    "spalte": 147,
    "nummer": 4,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/01-dschungel.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
    "spalte": 428,
    "nummer": 9,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/02-baumkronen.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Bild",
-   "spalte": 651,
+   "spalte": 1452,
    "nummer": 13,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/02-baumkronen.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Plattform",
-   "spalte": 627,
+   "spalte": 1428,
    "nummer": 13,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/02-baumkronen.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Haken",
-   "spalte": 130,
+   "spalte": 931,
    "nummer": null,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/02-baumkronen.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
-   "spalte": 760,
+   "spalte": 1561,
    "nummer": 13,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
   {
-   "level": "dschungel/02-baumkronen.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
-   "spalte": 590,
+   "spalte": 1391,
    "nummer": 11,
    "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
   },
@@ -271,33 +271,33 @@
    "begruendung": "Ziel-Plateau: seit Dash nur waagerecht hängt hinter Haken 404 ein zweiter Haken 410 über der Plateau-Kante – man schwingt hinauf und landet auf dem Plateau (die Kante ist das Ziel); Test nacht_stellen_vulkan"
   },
   {
-   "level": "dschungel/03-lianenschlucht.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Haken",
-   "spalte": 129,
+   "spalte": 1744,
    "begruendung": "Dschungel-Neu Haken-Treppe 124: der Affe erreicht die Hakenreihe vom Schirm-Trampolin aus (nicht vom Absprung 129), Höhe bewusst so (sonst ginge es ohne Schweinchen); Bot-Test dschungel_neu_stellen_a1 „Haken-Treppe 124“."
   },
   {
-   "level": "dschungel/07-windrad-lichtung.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
-   "spalte": 10,
+   "spalte": 2431,
    "begruendung": "Rätsel-Teil (Dschungel-Neu): Checkpoint direkt am Anfang des Rätsels (Teil 4 von Abschnitt 1, davor die Lianenschlucht) – ein Fehler im Rätsel soll nicht die ganze Strecke davor kosten."
   },
   {
-   "level": "dschungel/07-windrad-lichtung.json",
+   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
-   "spalte": 84,
+   "spalte": 2505,
    "begruendung": "Rätsel-Teil (Dschungel-Neu): das Rätsel (Windrad 1 an drei Stellen, Hebel 2, Tunnel) läuft am Stück bis zum Ziel; ein Checkpoint mitten drin läge zwischen Windrad/Hebel und dem, was sie schalten."
   },
   {
-   "level": "dschungel/08-meteoritenkrater.json",
+   "level": "dschungel/abschnitt-2-meteoritenherz.json",
    "regel": "Checkpoint",
-   "spalte": 10,
+   "spalte": 2311,
    "begruendung": "Rätsel-Teil (Dschungel-Neu): Checkpoint direkt am Anfang des Rätsels (Teil 4 von Abschnitt 2) – nach der Puste-Falle (Sackgasse) startet man das Rätsel hier neu."
   },
   {
-   "level": "dschungel/08-meteoritenkrater.json",
+   "level": "dschungel/abschnitt-2-meteoritenherz.json",
    "regel": "Checkpoint",
-   "spalte": 90,
+   "spalte": 2391,
    "begruendung": "Rätsel-Teil (Dschungel-Neu): das Rätsel (Windrad 1, Hebel 2, Windrad 3, Tunnel) läuft am Stück bis zum Meteoriten und zum Ziel."
   }
  ]

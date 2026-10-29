@@ -27,7 +27,7 @@ GRUBE_MIN = 5         # so viele Spalten ohne Stehplatz = Lücke, über die man 
 
 # Mindestzahlen je Welt (Level in Welt-Reihenfolge; Boss eigener Wert) – gleiche Tabelle im AUSBAU-REGELWERK
 KOMBI_MINDEST = {
-    'dschungel': {'level': [6, 8, 10, 0, 10, 10, 10, 0], 'boss': 3, 'etappe': [1, 2, 2, 0, 2, 2, 2, 0]},   # Dschungel-Neu: Reihenfolge der Teile in den Abschnitten (01 02 03 07-Rätsel, 04 05 06 08-Rätsel)
+    'dschungel': {'level': [0, 0], 'etappe': [0, 0]},   # Dschungel-Neu: statt Einzel-Kombis zählt die Zusammenarbeit (Trampolin/Pusten); 2 Abschnitte
     'ruinen':    {'level': [12] * 6, 'etappe': [3] * 6, 'timing_anteil': 1 / 3},
     'hoehle':    {'level': [12] * 6, 'etappe': [3] * 6, 'timing_anteil': 1 / 3},
     'vulkan':    {'level': [15] * 7, 'etappe': [3] * 7},

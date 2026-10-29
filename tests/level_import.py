@@ -43,15 +43,17 @@ UMWANDELN = r"""(spiel) => {
       const rest = {...o}; for(const k of ['x', 'y', 'w', 'h']) delete rest[k];
       const cx = Math.floor(o.x/T), cy = Math.floor(o.y/T);
       for(let c = cx - 1; c <= cx + 1; c++) for(let r = cy - 2; r <= cy + 1; r++){
-        const p = {c, r, ...rest}, e = E.editor.exportieren([p], T, mergeRects)[0];
-        if(JSON.stringify(e) === JSON.stringify(o)) return p;
+        for(const extra of [{}, {schalter: 'nummer'}]){   // z. B. Teleporter per Nummer: im Editor mit Auswahl „schalter“
+          const p = {c, r, ...rest, ...extra}, e = E.editor.exportieren([p], T, mergeRects)[0];
+          if(JSON.stringify(e) === JSON.stringify(o)) return p;
+        }
       }
       fehler.push(E.feld + ' ' + JSON.stringify(o)); return {c: cx, r: cy, ...rest};
     });
   }
   d.tiles = [...zelle].map(([k, t]) => { const [c, r] = k.split(',').map(Number); return [c, r, t]; });
   d.cols = Math.max(MIN_COLS, ...d.tiles.map(t => t[0] + 1), (d.goal ? d.goal.c + 2 : 0));
-  d.welt = spiel.welt; d.wetter = spiel.wetter; if(spiel.tageszeit) d.tageszeit = spiel.tageszeit; if(spiel.look) d.theme = spiel.look;
+  d.welt = spiel.welt; d.wetter = spiel.wetter; if(spiel.tageszeit) d.tageszeit = spiel.tageszeit; if(spiel.look) d.theme = spiel.look; if(spiel.nachSzene) d.nachSzene = spiel.nachSzene;
   return {d, fehler};
 }"""
 
@@ -77,7 +79,7 @@ def normal(spiel):
 async def umwandeln(spiel):
     srv = T.webserver()
     async with async_playwright() as pw:
-        br = await pw.chromium.launch(); p = await (await br.new_context(viewport={'width': 1400, 'height': 840})).new_page()
+        br = await pw.chromium.launch(executable_path=__import__('os').environ.get('CHROMIUM_PATH') or None); p = await (await br.new_context(viewport={'width': 1400, 'height': 840})).new_page()
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
         r = await p.evaluate(UMWANDELN, spiel)
         rueck = await p.evaluate("d => { applySnapshot(d); return JSON.parse(exportLevel()); }", r['d'])

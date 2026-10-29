@@ -78,14 +78,14 @@
   "grund": "Lichtweiche: Hochzieh-Haken neben dem Platten-Sims – man springt gerade hoch, zieht sich hoch (W) und steigt aufs Sims; geschwungen wird hier nicht"
  },
  {
-  "level": "dschungel/06-wipfelsturm.json",
-  "spalte": 619,
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
+  "spalte": 2120,
   "regel": "Bahn",
   "grund": "Rechnung meldet den Boden bei -40°; mit der echten Spiel-Physik (Test haken_schwung_frei) schwingt man frei – Haken wurde dafür eine Reihe tiefer gesetzt"
  },
  {
-  "level": "dschungel/03-lianenschlucht.json",
-  "spalte": 645,
+  "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "spalte": 2260,
   "regel": "Schwung",
   "grund": "neben der Tür (Hebel-Tür): geschlossen stößt man an, offen schwingt man hindurch – gewollt"
  },
@@ -96,13 +96,13 @@
   "grund": "Sims unter dem Haken: ein anderer Platz überdeckt die Nachbar-Haken; man schwingt vom Sims aus nach rechts weiter"
  },
  {
-  "level": "dschungel/04-gluehwald.json",
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
   "spalte": 613,
   "regel": "Schwung",
   "grund": "über der Wechselboden-Treppe (Takt 1,5 s): ob man an eine Stufe stößt, hängt vom Takt ab – gewollt (Timing-Stelle)"
  },
  {
-  "level": "dschungel/04-gluehwald.json",
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
   "spalte": 625,
   "regel": "Schwung",
   "grund": "über der Wechselboden-Treppe (Takt 1,5 s): ob man an eine Stufe stößt, hängt vom Takt ab – gewollt (Timing-Stelle)"
@@ -120,31 +120,31 @@
   "grund": "neben der Hebel-Tür (Spalte 466): geschlossen stößt man an, offen schwingt man hindurch – gewollt; darunter Flammen im Takt (Timing)"
  },
  {
-  "level": "dschungel/03-lianenschlucht.json",
+  "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "spalte": 1665,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "spalte": 1864,
+  "regel": "Bahn",
+  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
+ },
+ {
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
   "spalte": 50,
   "regel": "Bahn",
   "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
  },
  {
-  "level": "dschungel/03-lianenschlucht.json",
-  "spalte": 249,
-  "regel": "Bahn",
-  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
- },
- {
-  "level": "dschungel/04-gluehwald.json",
-  "spalte": 50,
-  "regel": "Bahn",
-  "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
- },
- {
-  "level": "dschungel/04-gluehwald.json",
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
   "spalte": 304,
   "regel": "Bahn",
   "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
  },
  {
-  "level": "dschungel/04-gluehwald.json",
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
   "spalte": 364,
   "regel": "Bahn",
   "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
@@ -168,8 +168,8 @@
   "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
  },
  {
-  "level": "dschungel/05-dornenpfad.json",
-  "spalte": 116,
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
+  "spalte": 817,
   "regel": "Bahn",
   "grund": "Hochzieh-Haken vor dem Sims (früher Dash nach oben, seit Dash nur waagerecht): hochspringen, greifen, mit W hochziehen und aufs Sims schwingen – der Sims ist das Ziel, das Seil stößt dort gewollt an"
  },
@@ -211,13 +211,13 @@
  },
  {
   "regel": "Bahn",
-  "level": "dschungel/01-dschungel.json",
+  "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
   "spalte": 786,
   "grund": "Dschungel-Neu Trampolin-Ende 776: der Affe kommt nur vom Schirm-Trampolin an den Haken und dasht nach dem Schwung durch die Durchbruch-Wand 790 – dass die Schwungbahn die Wand streift, ist gewollt (Bot-Test dschungel_neu_stellen_a1)."
  },
  {
-  "level": "dschungel/03-lianenschlucht.json",
-  "spalte": 137,
+  "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "spalte": 1752,
   "regel": "Bahn",
   "grund": "Haken-Treppe 124: vom Haken 137 schwingt der Affe hinauf aufs hohe Plateau 140 – die Bahn berührt dessen Kante, weil er dort landen soll (Bot-Test dschungel_neu_stellen_a1)."
  }

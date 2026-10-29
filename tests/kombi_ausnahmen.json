@@ -1,59 +1,5 @@
 [
  {
-  "level": "dschungel/04-gluehwald.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "4 statt 9 eigenständige Kombi-Stellen (die Grube 681 schließt an den Landeplatz von 668 an = Kette). Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/04-gluehwald.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 200,
-  "begruendung": "Etappe 2 ohne Kombi-Stelle: Teleporter-Räume und Luft-Tor. Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/04-gluehwald.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 400,
-  "begruendung": "Etappe 3 nur 1 Kombi-Stelle (473): Wechselboden-Feld und Doppel-Gang-Staffel. Glühwald ist das Teleporter-Level: fast jede Strecke gehört zu einem Rätsel (Teleporter-Räume 146–244, Luft-Tor 316/325, Doppel-Gang-Staffel 488–592, Wechselboden-Felder 79–104, 412–440, 603–628). Probe-Einbauten bei 268, 284, 345, 456 und 575 haben Rätsel ausgehebelt (Sims-Haken 304 unnötig, Luft-Tor-Landung in der Grube, Abkürzung über den Landeplatz, Affen-Weg der Staffel) und wurden zurückgenommen. Mehr geht nur mit Umbau der Rätsel -> steht auf der Liste „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/04-gluehwald.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 600,
-  "begruendung": "Etappe 4 (nur 101 Spalten: Takt-Tempeltreppe 603–628, Teleporter 638/665, Ziel 694) hat die Kette 668 -> 681 als eine Stelle; für eine zweite eigenständige Grube fehlt Platz vor dem Ziel."
- },
- {
-  "level": "dschungel/05-dornenpfad.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "6 statt 10 Kombi-Stellen. Dornenpfad ist durchgehend mit Rätseln und Verfolgungen belegt (Stachelwand-Jagd 133–198, Inseln im Wechsel 207–235, Seilbahn/Fähre 244–300, Dornendecke 338–398, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht 515–596, Zwei-Gänge-Staffel 604–665, Finale-Jagd 674–760). Probe-Gruben bei 175, 275, 296 und 748 haben Jagden, Seilbahn und Kamin zerstört und wurden zurückgenommen; der Hohe Kamin 311 ist jetzt eine echte Kombi für beide (oben über Stacheln: Wandsprung + Haken / Wandsprung + Segeln). Mehr Kombis nur mit Umbau der Jagden -> „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/05-dornenpfad.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 0,
-  "begruendung": "Etappe 1 hat 1 Kombi-Stelle (Pilz + Aufwind/Haken 61). Dornenpfad ist durchgehend mit Rätseln und Verfolgungen belegt (Stachelwand-Jagd 133–198, Inseln im Wechsel 207–235, Seilbahn/Fähre 244–300, Dornendecke 338–398, Takt-Steine, Stachel-Pendel, Druckplatten-Schleuse, Pilz-Flucht 515–596, Zwei-Gänge-Staffel 604–665, Finale-Jagd 674–760). Probe-Gruben bei 175, 275, 296 und 748 haben Jagden, Seilbahn und Kamin zerstört und wurden zurückgenommen; der Hohe Kamin 311 ist jetzt eine echte Kombi für beide (oben über Stacheln: Wandsprung + Haken / Wandsprung + Segeln). Mehr Kombis nur mit Umbau der Jagden -> „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/06-wipfelsturm.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "5 statt 10 Kombi-Stellen (170, 190, Pilz-Turm 308, 392, 699). Wipfelsturm (schwerstes Dschungel-Level) ist ab Spalte 400 durchgehend Jagd/Staffel/Finale (Wechsel-Schleuse 413, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale 700–797). Probe-Gruben bei 372 (Bröckel-Abstieg), 712 (Sturm-Jagd) und 772 (Ziel-Weg) haben die Stellen zerstört und wurden zurückgenommen. Mehr nur mit Umbau der Jagden -> „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/06-wipfelsturm.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 400,
-  "begruendung": "Etappe 3 ohne eigene Kombi-Stelle. Wipfelsturm (schwerstes Dschungel-Level) ist ab Spalte 400 durchgehend Jagd/Staffel/Finale (Wechsel-Schleuse 413, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale 700–797). Probe-Gruben bei 372 (Bröckel-Abstieg), 712 (Sturm-Jagd) und 772 (Ziel-Weg) haben die Stellen zerstört und wurden zurückgenommen. Mehr nur mit Umbau der Jagden -> „braucht Entscheidung“."
- },
- {
-  "level": "dschungel/06-wipfelsturm.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 600,
-  "begruendung": "Etappe 4 hat 1 Kombi-Stelle (Pilz 699 in der Sturm-Jagd). Wipfelsturm (schwerstes Dschungel-Level) ist ab Spalte 400 durchgehend Jagd/Staffel/Finale (Wechsel-Schleuse 413, Doppel-Jagd, Wipfel-Staffel, Sturm-Finale 700–797). Probe-Gruben bei 372 (Bröckel-Abstieg), 712 (Sturm-Jagd) und 772 (Ziel-Weg) haben die Stellen zerstört und wurden zurückgenommen. Mehr nur mit Umbau der Jagden -> „braucht Entscheidung“."
- },
- {
   "level": "ruinen/01-ruinen.json",
   "regel": "Kombi-Level",
   "spalte": null,
@@ -504,15 +450,15 @@
   "begruendung": "Etappe 600–799: nur 0 Kombi-Stellen (mindestens 3). Vulkan: Lava-Kamine und Lava-Pilz-Gruben nur auf freien, flachen Strecken. Neu: Lava-Kamin 182, Lava-Pilz-Grube 324. Proben bei 384, 575 zerstörten Hebel-Kette und Gruben/Presse. Mehr nur mit Umbau bestehender Rätsel -> „braucht Entscheidung“."
  },
  {
-  "level": "dschungel/05-dornenpfad.json",
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
   "regel": "Kamin",
-  "spalte": 298,
+  "spalte": 999,
   "begruendung": "Kein Kamin: Pflicht-Durchbruch-Säule 298 (Umbau Regel 6) – man dasht unten hindurch; zusammen mit der Wand 311 sieht das Prüfwerkzeug einen 12 breiten „Kamin“, der nicht zum Klettern gedacht ist."
  },
  {
-  "level": "dschungel/06-wipfelsturm.json",
+  "level": "dschungel/abschnitt-2-meteoritenherz.json",
   "regel": "Kamin",
-  "spalte": 183,
+  "spalte": 1684,
   "begruendung": "Kein Kamin: Baumstamm 186 (Umbau) trennt den Pilz-Turm 180–183 vom zweiten Turm 200–203, damit man nicht mit Sprung + Dash von Turm zu Turm abkürzt; der 2 breite Spalt 184–185 ist nur Durchgang nach unten zum Pilz 190."
  },
  {
@@ -520,12 +466,6 @@
   "regel": "Kombi-Etappe",
   "spalte": 200,
   "begruendung": "Umbau: Etappe 2 hat 2 eigene Kombi-Stellen (Kamine 349/378 als Lava-Kamine). Die dritte war ein versehentlich begrabenes Münz-Versteck (Durchbruch 203 im Pilz-Dash-Landeplatz), das das Prüfwerkzeug als Kombi zählte; es liegt jetzt wieder oben auf dem Landeplatz (optional, keine Kombi)."
- },
- {
-  "level": "dschungel/02-baumkronen.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 600,
-  "begruendung": "Level vom Nutzer selbst im Editor gebaut und so übernommen (Austausch Dschungel 1+2) – Stelle ist so gewollt"
  },
  {
   "level": "hoehle/05-foerderwerk.json",
@@ -550,101 +490,5 @@
   "regel": "Kombi-Level",
   "spalte": null,
   "begruendung": "14 statt 15 Kombi-Stellen: die Stelle 390–392 (Kamin + Durchbruch-Säule, danach Mulde) ging nur mit Dash nach oben aus der Mulde heraus. Seit der Dash nur noch waagerecht geht (Nutzerwunsch), hat die Mulde eine Stufe 398–399 (Test glutpfad_mulde_nach_durchbruch) – die Säule bleibt eine Durchbruch-Pflichtstelle, zählt aber nicht mehr als Kombi."
- },
- {
-  "level": "dschungel/01-dschungel.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/01-dschungel.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 0,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/01-dschungel.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 200,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/02-baumkronen.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/02-baumkronen.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 0,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/02-baumkronen.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 400,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/03-lianenschlucht.json",
-  "regel": "Kombi-Level",
-  "spalte": null,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/03-lianenschlucht.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 0,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/03-lianenschlucht.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 200,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/03-lianenschlucht.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 400,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/03-lianenschlucht.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 600,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/04-gluehwald.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 0,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/05-dornenpfad.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 400,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/05-dornenpfad.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 600,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/06-wipfelsturm.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 0,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
- },
- {
-  "level": "dschungel/06-wipfelsturm.json",
-  "regel": "Kombi-Etappe",
-  "spalte": 200,
-  "begruendung": "Dschungel-Neu (Nutzerwunsch): Sprungpilze und Aufwinde sind raus; die früheren Pilz-Kombis (Pilz + Haken / Pilz + Segeln) sind jetzt Koop-Stellen mit Schirm-Trampolin und Pusten (Puste-Gruben, Windrad-Treppen, Puste-Inseln …, Test dschungel_neu_stellen_a1/_a2). Im Dschungel zählt die Zusammenarbeit statt der Einzel-Kombi; Kombi-Mindestzahlen gelten hier nicht mehr."
  }
 ]

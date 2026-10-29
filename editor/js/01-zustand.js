@@ -20,7 +20,7 @@ const COLORS = {
 // Kachel-Elemente aus dem Register (elemente/, z. B. Aufwind): Farbe im Raster
 for(const E of ELEMENTE) if(E.editor && E.editor.art === 'kachel') COLORS[E.editor.werkzeug] = E.editor.kachelFarbe || E.editor.farbe;
 const SOLID_TILES = ['ground','wall','platform','crumble','haft'];   // nur diese können sich bewegen (Haftfläche: Nutzerwunsch)
-const MAX_LINK = 60;          // höchste Verknüpfungs-Nummer (Ausbau 2: früher 20)
+const MAX_LINK = 80;          // höchste Verknüpfungs-Nummer (Ausbau 2: früher 20)
 
 let tiles = {}; // key "c,r" -> type
 let hooks = [];   // Hebel (switches), Türen (doors), Druckplatten (plates): jetzt in elementPunkte (Register)
@@ -67,7 +67,7 @@ linkNameInput.addEventListener('input', ()=>{
 const THEME_BG = {dschungel:'#13261b', abend:'#2e1c30', ruinen:'#2e2818', nacht:'#0c1428', hoehle:'#191329', vulkan:'#2e120e'};
 const WELT_BG = {dschungel:'dschungel', ruinen:'ruinen', hoehle:'hoehle', wasser:'dschungel', vulkan:'vulkan'};
 const THEME_WELT = {dschungel:'dschungel', abend:'dschungel', ruinen:'ruinen', nacht:'ruinen', hoehle:'hoehle', vulkan:'vulkan'};
-function blankMeta(){ return {welt:'dschungel', position:0, titel:'', tageszeit:'', wetter:'wechselnd', look:''}; }
+function blankMeta(){ return {welt:'dschungel', position:0, titel:'', tageszeit:'', wetter:'wechselnd', look:'', nachSzene:''}; }
 let meta = blankMeta();
 // Grundfarbe der Editor-Fläche: look-Override, sonst Welt (abends/nachts dunkler)
 function editorBgKey(){ return meta.look || (meta.tageszeit==='nacht' ? 'nacht' : meta.tageszeit==='abend' ? 'abend' : WELT_BG[meta.welt] || 'dschungel'); }
@@ -109,6 +109,7 @@ function snapshot(){
     plates: elementPunkte.plates, ...elementPunkte,
     theme: meta.look || undefined, welt: meta.welt, tageszeit: meta.tageszeit || undefined, wetter: meta.wetter,
     titel: meta.titel || undefined, position: meta.position || undefined,
+    nachSzene: meta.nachSzene || undefined,   // Spielszene nach dem Level (story/story.json), z. B. nach einem Dschungel-Abschnitt
     linkNames: Object.keys(linkNames).length ? {...linkNames} : undefined
   };
 }
@@ -125,7 +126,7 @@ function applySnapshot(d){
   for(const E of punktElemente()) elementPunkte[E.feld] = (d[E.feld]||[]).map(x=>({...x}));
   const lk = d.look || d.theme;
   meta = {welt: d.welt || THEME_WELT[d.theme] || 'dschungel', position: Number(d.position) || 0, titel: d.titel || '',
-          tageszeit: d.tageszeit || '', wetter: d.wetter || 'wechselnd', look: THEME_BG[lk] ? lk : ''};
+          tageszeit: d.tageszeit || '', wetter: d.wetter || 'wechselnd', look: THEME_BG[lk] ? lk : '', nachSzene: d.nachSzene || ''};
   if(typeof updateMetaUI === 'function') updateMetaUI();
   linkNames = {...(d.linkNames || {})}; showLinkName();
   fitCols(d.cols);
