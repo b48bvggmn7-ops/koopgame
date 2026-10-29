@@ -100,3 +100,19 @@ def nb_bruchnische_links(w):
             {'press': ['dash'], 'hold': ['left'], 'until': 'P.bruchFenster > 0', 'frames': 40},
             {'hold': ['left'], 'until': '!P.dash', 'frames': 30}, {'hold': ['left'], 'frames': 10},
             {'hold': ['right'], 'until': f'P.x >= {kx(w + 2)}', 'frames': 200}, {'until': 'P.grounded && Math.abs(P.vx) < 0.5', 'frames': 100}]
+
+def mit_pusten(plan):
+    """Welten ohne Dash (Dschungel, DASH_AUS_WELTEN): statt gegen die Durchbruch-Wand zu dashen, pustet der Affe sie um –
+    jeder Dash-Schritt eines Bruch-Plans wird zu „stehen und pusten, bis keine Durchbruch-Wand mehr vor ihm ist“"""
+    vor = "!solids.some(s => s.type === 'bruch' && !s.gone && Math.abs(s.x + s.w/2 - P.x) < 140 && s.y < P.y && s.y + s.h > P.y - 60)"
+    out = []
+    for st in plan:
+        if 'dash' in (st.get('press') or []):
+            richtung = [h for h in st.get('hold', []) if h in ('left', 'right')] or ['right']
+            out += [{'holdIf': {'left': 'P.vx > 0.4', 'right': 'P.vx < -0.4'}, 'until': 'P.grounded && Math.abs(P.vx) < 0.4', 'frames': 60},
+                    {'hold': ['pusten', richtung[0]], 'until': vor, 'frames': 260}]
+            continue
+        st = dict(st)
+        if isinstance(st.get('until'), str): st['until'] = st['until'].replace('P.bruchFenster > 0', 'true').replace('!P.dash', 'true')
+        out.append(st)
+    return out

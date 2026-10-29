@@ -1,6 +1,6 @@
 {
  "level": "dschungel/abschnitt-2-meteoritenherz.json",
- "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus) – zusammengefügt aus den alten Teilen (Spalten/Nummern umgerechnet). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
  "aufgaben": [
   {
    "id": "04-dash-platte-7",
@@ -240,113 +240,6 @@
    }
   },
   {
-   "id": "04-nummer-1",
-   "zone": [
-    9,
-    40
-   ],
-   "rolle": "beide",
-   "aktion": "hebel",
-   "nummer": 1,
-   "probe": {
-    "figur": "m",
-    "start": [
-     42,
-     14
-    ],
-    "links": [],
-    "schritte": 372
-   }
-  },
-  {
-   "id": "04-nummer-4",
-   "zone": [
-    208,
-    230
-   ],
-   "rolle": "m",
-   "aktion": "hebel",
-   "nummer": 4,
-   "probe": {
-    "figur": "m",
-    "start": [
-     202,
-     14
-    ],
-    "links": [],
-    "schritte": 434
-   }
-  },
-  {
-   "id": "04-nummer-5",
-   "zone": [
-    234,
-    249
-   ],
-   "rolle": "beide",
-   "aktion": "platte",
-   "nummer": 5,
-   "probe": {
-    "figur": "m",
-    "start": [
-     233,
-     14
-    ],
-    "links": [],
-    "schritte": 466
-   }
-  },
-  {
-   "id": "04-nummer-11",
-   "zone": [
-    525,
-    544
-   ],
-   "rolle": "beide",
-   "aktion": "hebel",
-   "nummer": 11,
-   "probe": {
-    "figur": "m",
-    "start": [
-     540,
-     14
-    ],
-    "links": [],
-    "schritte": 348
-   }
-  },
-  {
-   "id": "04-nummer-13",
-   "zone": [
-    555,
-    574
-   ],
-   "rolle": "beide",
-   "aktion": "hebel",
-   "nummer": 13,
-   "probe": {
-    "figur": "m",
-    "start": [
-     540,
-     14
-    ],
-    "links": [
-     1,
-     2,
-     3,
-     4,
-     6,
-     9,
-     10,
-     11,
-     12,
-     5,
-     7
-    ],
-    "schritte": 642
-   }
-  },
-  {
    "id": "05-dash-hebel-2",
    "von_hand": true,
    "zone": [
@@ -428,7 +321,114 @@
    }
   },
   {
-   "id": "05-nummer-1",
+   "id": "nummer-1",
+   "zone": [
+    9,
+    40
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 1,
+   "probe": {
+    "figur": "m",
+    "start": [
+     42,
+     14
+    ],
+    "links": [],
+    "schritte": 372
+   }
+  },
+  {
+   "id": "nummer-4",
+   "zone": [
+    208,
+    230
+   ],
+   "rolle": "m",
+   "aktion": "hebel",
+   "nummer": 4,
+   "probe": {
+    "figur": "m",
+    "start": [
+     202,
+     14
+    ],
+    "links": [],
+    "schritte": 434
+   }
+  },
+  {
+   "id": "nummer-5",
+   "zone": [
+    234,
+    249
+   ],
+   "rolle": "beide",
+   "aktion": "platte",
+   "nummer": 5,
+   "probe": {
+    "figur": "m",
+    "start": [
+     233,
+     14
+    ],
+    "links": [],
+    "schritte": 466
+   }
+  },
+  {
+   "id": "nummer-11",
+   "zone": [
+    525,
+    544
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 11,
+   "probe": {
+    "figur": "m",
+    "start": [
+     540,
+     14
+    ],
+    "links": [],
+    "schritte": 348
+   }
+  },
+  {
+   "id": "nummer-13",
+   "zone": [
+    555,
+    574
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 13,
+   "probe": {
+    "figur": "m",
+    "start": [
+     540,
+     14
+    ],
+    "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     5,
+     7
+    ],
+    "schritte": 642
+   }
+  },
+  {
+   "id": "nummer-21",
    "zone": [
     791,
     814
@@ -443,11 +443,11 @@
      15
     ],
     "links": [],
-    "schritte": 1292
+    "schritte": 1268
    }
   },
   {
-   "id": "05-nummer-4",
+   "id": "nummer-24",
    "zone": [
     938,
     953
@@ -466,7 +466,7 @@
    }
   },
   {
-   "id": "05-nummer-7",
+   "id": "nummer-27",
    "zone": [
     1166,
     1186
@@ -485,7 +485,7 @@
    }
   },
   {
-   "id": "05-nummer-11",
+   "id": "nummer-31",
    "zone": [
     1318,
     1335
@@ -500,17 +500,29 @@
      15
     ],
     "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     13,
      22,
      24,
      30,
      21,
+     5,
+     7,
      27
     ],
-    "schritte": 1250
+    "schritte": 1246
    }
   },
   {
-   "id": "05-nummer-13",
+   "id": "nummer-33",
    "zone": [
     1343,
     1360
@@ -525,11 +537,11 @@
      15
     ],
     "links": [],
-    "schritte": 760
+    "schritte": 764
    }
   },
   {
-   "id": "06-nummer-2",
+   "id": "nummer-42",
    "zone": [
     1546,
     1578
@@ -548,7 +560,7 @@
    }
   },
   {
-   "id": "06-nummer-3",
+   "id": "nummer-43",
    "zone": [
     1566,
     1584
@@ -563,11 +575,11 @@
      15
     ],
     "links": [],
-    "schritte": 924
+    "schritte": 1242
    }
   },
   {
-   "id": "06-nummer-5",
+   "id": "nummer-45",
    "zone": [
     1757,
     1780
@@ -586,10 +598,10 @@
    }
   },
   {
-   "id": "06-nummer-7",
+   "id": "nummer-47",
    "zone": [
     1978,
-    2011
+    2012
    ],
    "rolle": "beide",
    "aktion": "platte",
@@ -597,18 +609,18 @@
    "probe": {
     "figur": "m",
     "start": [
-     1984,
+     1983,
      15
     ],
     "links": [],
-    "schritte": 470
+    "schritte": 414
    }
   },
   {
-   "id": "06-nummer-8",
+   "id": "nummer-48",
    "zone": [
     1979,
-    2012
+    2014
    ],
    "rolle": "f",
    "aktion": "hebel",
@@ -620,11 +632,11 @@
      11
     ],
     "links": [],
-    "schritte": 494
+    "schritte": 472
    }
   },
   {
-   "id": "06-nummer-10",
+   "id": "nummer-50",
    "zone": [
     2102,
     2119
@@ -643,7 +655,7 @@
    }
   },
   {
-   "id": "06-nummer-11",
+   "id": "nummer-51",
    "zone": [
     2113,
     2130
@@ -658,17 +670,80 @@
      15
     ],
     "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     13,
+     22,
+     24,
+     30,
+     31,
+     32,
+     33,
+     21,
      43,
-     44,
      45,
      46,
-     48,
-     49,
      50,
+     48,
+     56,
+     5,
+     7,
+     27,
      42,
      47
     ],
-    "schritte": 598
+    "schritte": 782
+   }
+  },
+  {
+   "id": "nummer-56",
+   "zone": [
+    1796,
+    1821
+   ],
+   "rolle": "beide",
+   "aktion": "hebel",
+   "nummer": 56,
+   "probe": {
+    "figur": "m",
+    "start": [
+     1786,
+     15
+    ],
+    "links": [
+     1,
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     13,
+     22,
+     24,
+     30,
+     31,
+     32,
+     33,
+     21,
+     43,
+     45,
+     46,
+     5,
+     7,
+     27,
+     42
+    ],
+    "schritte": 1064
    }
   }
  ],
@@ -695,44 +770,32 @@
   },
   {
    "nummer": 30,
-   "spalte": 617,
+   "spalte": 1318,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   },
   {
    "nummer": 32,
-   "spalte": 642,
+   "spalte": 1343,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   },
   {
    "nummer": 46,
-   "spalte": 298,
+   "spalte": 1799,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   },
   {
    "nummer": 52,
-   "spalte": 639,
+   "spalte": 2140,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   },
   {
    "nummer": 53,
-   "spalte": 653,
+   "spalte": 2154,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   },
   {
-   "nummer": 44,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
-  },
-  {
-   "nummer": 49,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
-  },
-  {
-   "nummer": 54,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
-  },
-  {
    "nummer": 62,
-   "spalte": 53,
+   "spalte": 2354,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
   }
  ]

@@ -41,7 +41,8 @@ def main():
             sys.exit(1)
         rueck['_teile'] = spiel['_teile']
         defn = A.lies(a)
-        ed['name'] = defn.get('titel') or a; ed['titel'] = defn.get('titel')
+        L = json.loads((ROOT / 'levels' / 'levels.json').read_text(encoding='utf-8'))
+        ed['name'] = next((e['name'] for e in L if e['datei'] == a), a); ed['titel'] = defn.get('titel')
         if probe:
             z = Path(probe); z.mkdir(parents=True, exist_ok=True)
             (z / Path(a).name).write_text(json.dumps(rueck, indent=1, ensure_ascii=False), encoding='utf-8')

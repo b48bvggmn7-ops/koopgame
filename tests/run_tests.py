@@ -1059,7 +1059,7 @@ async def projekt_levels_beide_formate_gleich(g):
 async def level1_bis_spalte_800(g):
     """Level 1 geht bis Spalte ~800; Abschnitt 3: Affe legt Hebel 4 auf der hohen Insel um,
     die Brücke trägt das Schweinchen über die Grube (beide helfen sich gegenseitig)."""
-    await g.load(str(ROOT / 'levels' / 'dschungel/01-dschungel.json'))
+    await g.load(level_pfad('dschungel/01-dschungel.json'))
     assert await g.ev("goal.x") >= 790 * 40, "Ziel nicht am Ende (Spalte ~800)"
     assert await g.ev("coins.length") >= 200, "zu wenige Münzen"
     # Affe steht am Hebel auf der Insel (Spalte 314), Schweinchen auf der Brücke (Spalte 302)
@@ -1078,7 +1078,7 @@ async def level1_bis_spalte_800(g):
 @test
 async def level1_muenzen_und_haken(g):
     """Level 1: nur blaue/pinke Münzen, keine Münze in Boden/Wand/Tür, Haken-Radius höchstens 5 Kästchen."""
-    lv = json.loads((ROOT / 'levels' / 'dschungel/01-dschungel.json').read_text())
+    lv = ABS.lies('dschungel/01-dschungel.json')
     farben = {c['color'] for c in lv['coins']}
     assert farben <= {'blue', 'pink'}, f"andere Münzfarben: {farben}"
     feste = lv['solids'] + lv['doors'] + lv['movingPlatforms']
@@ -1182,10 +1182,9 @@ async def level7_lianenschlucht(g):
          {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300}, k_lauf(307, -10), {'frames': 10}]
     r = await koop(g, m=kat(279, 15), f=kat(286, 15), plans={'m': m, 'f': f}, maxFrames=3000)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 304, 'Schleuse (Schweinchen)', r.get('pos'))
-    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_sprung_dash(293, 304)}, links=[5], maxFrames=2000)
-    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 304 and k_pos(r, 'm')[1] == 15, 'Graben (Affe Sprung + Dash)', r.get('pos'))
-    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_sprung_dash(293, 304, dash=False)}, links=[5], maxFrames=2000)
-    soll(r.get('dead') == 'm', 'Graben: ohne Dash schafft der Affe es nicht', r.get('pos'))
+    # Graben: ohne Dash (Dschungel) 3 Kästchen schmaler – der Affe springt hinüber (Landung ab 301)
+    r = await koop(g, m=kat(291, 13), f=kat(307, 15), plans={'m': k_sprung_dash(293, 301, dash=False)}, links=[5], maxFrames=2000)
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 301 and k_pos(r, 'm')[1] == 15, 'Graben (Affe springt, ohne Dash)', r.get('pos'))
     # 8) Bröckel-Steine (beide)
     for who, other in (('m', 'f'), ('f', 'm')):
         plan = sum([k_hop(kx(e) + 20, b) for e, b in ((330, 16), (334, 20), (339, 20), (344, 20), (349, 24))], [])
@@ -1199,10 +1198,12 @@ async def level7_lianenschlucht(g):
     # 10) Fahrende Haken: Schweinchen segelt vom Turm zu Hebel 8; der Affe nimmt die fahrenden Haken (nur mit Hebel 8)
     r = await koop(g, f=kat(480, 4), m=kat(478, 4), plans={'f': k_segeln(482, 1)}, maxFrames=2500)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 507.5 and k_pos(r, 'f')[1] == 14, 'Turm -> Ufer (Schweinchen)', r.get('pos'))
+    # Liane fällt nicht mehr von selbst in die volle Länge (Nutzerwunsch): der Affe gibt etwas Seil (S) und lässt im Aufschwung los
+    rel = 'P.y < P.anchor.y + 60 && P.vx > 1 && P.vy < 0'
     plan = [k_lauf(482), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
-            {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1', 'frames': 400},
+            {'swing': True, 'pull': 0, 'slack': 30, 'release': rel, 'frames': 400},
             {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
-            {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0 && P.vx > 1'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+            {'swing': True, 'pull': 0, 'slack': 30, 'release': rel}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
     r = await koop(g, m=kat(480, 4), f=kat(513, 14), plans={'m': plan}, pre='setLink(8, true)', maxFrames=2500)
     soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 507.5 and k_pos(r, 'm')[1] == 14, 'fahrende Haken mit Hebel 8 (Affe)', r.get('pos'))
     r = await koop(g, m=kat(480, 4), f=kat(513, 14), plans={'m': plan}, maxFrames=2500)
@@ -1240,13 +1241,11 @@ async def level7_lianenschlucht(g):
     soll(await affe((638, 9), [9, 11], (663, 680, 14), 2, (R1, R2)), 'Säule B -> Ufer mit Tür 11 offen (Affe)')
     # 13) Finale: die Pilze auf die Äste -> Dschungel-Neu „Puste-Aufzüge 692“ (Test dschungel_neu_stellen_a1)
     # Umbau: letzte Schlucht 712–731 (Sims endet bei 711, Landung ab 732), Affe drei Haken, Schweinchen Schirm (+ Dash)
-    ok = False
-    for hold in (1, 6, 12):
-        for plan in (k_segeln(711, hold), [k_lauf(711), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': hold}, {'hold': ['right'], 'until': 'P.vy > -2', 'frames': 60},
-                                          {'press': ['dash'], 'hold': ['swimUp'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 600}]):
-            r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': plan}, maxFrames=1500)
-            ok = ok or bool(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 732 and k_pos(r, 'f')[1] == 8)
-    soll(ok, 'letzte Schlucht (Schweinchen)')
+    # ohne Dash (Dschungel): das Schweinchen kommt nur mit dem Puste-Wind des Affen hinüber (Koop), allein nicht
+    r = await koop(g, m=kat(710, 4), f=kat(707, 4), plans={'m': k_pusten_hoch(711, f'Q.grounded && Q.x > {kx(731)}'), 'f': [k_hin(708)] + k_puste_flug(732, 736, 4)}, maxFrames=3000)
+    soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 732 and k_pos(r, 'f')[1] == 8, 'letzte Schlucht (Schweinchen im Puste-Wind)', r.get('pos'))
+    r = await koop(g, f=kat(709, 4), m=kat(707, 4), plans={'f': k_segeln(711, 6)}, maxFrames=1500)
+    soll(not (k_pos(r, 'f') and k_pos(r, 'f')[0] >= 732), 'letzte Schlucht: allein segelt das Schweinchen zu kurz', r.get('pos'))
     soll(await affe((709, 4), [], (732, 745, 8), 3, ('P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', R1, R2) + RELS_SPAET, pulls=(0, 30)), 'letzte Schlucht mit drei Haken (Affe)')
     assert not fehler, fehler
 
@@ -1345,10 +1344,8 @@ async def level8_gluehwald(g):
         soll(k_pos(r, who) and k_pos(r, who)[0] >= 441.5 and k_pos(r, who)[1] == 14, f'Takt-Steine 1,5 s ({who})', r.get('pos'))
     r = await koop(g, f=kat(443, 14), m=kat(442, 14), plans={'f': k_segeln(443, 6)}, maxFrames=1500)
     soll(k_pos(r, 'f') and k_pos(r, 'f')[0] >= 453, 'letzte Lücke (Schweinchen)', r.get('pos'))
-    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_sprung_dash(443, 453)}, maxFrames=1500)   # Haken 447 entfernt (wurde nicht gebraucht)
-    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 453, 'letzte Lücke (Affe Sprung + Dash)', r.get('pos'))
-    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_sprung_dash(443, 453, dash=False)}, maxFrames=1500)
-    soll(r.get('dead') == 'm', 'letzte Lücke: ohne Dash schafft der Affe es nicht', r.get('pos'))
+    r = await koop(g, m=kat(442, 14), f=kat(443, 14), plans={'m': k_sprung_dash(443, 450, dash=False)}, maxFrames=1500)   # ohne Dash: Lücke 3 schmaler
+    soll(k_pos(r, 'm') and k_pos(r, 'm')[0] >= 450, 'letzte Lücke (Affe springt, ohne Dash)', r.get('pos'))
     if await g.ev("goal.x") < 690 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     def ueber_haken(land_x):
@@ -3587,12 +3584,7 @@ async def dschungel5_dornenpfad(g):
         r = await koop(g, m=kat(126, 15), f=kat(124, 15), plans={'m': [{'hold': ['right'], 'frames': 200}]}, links=[1], maxFrames=1000)
         soll(r['pos']['m'][0] < 128, 'E1 ohne Hebel 2 hält Tür 2', info(r))
         # Jagd: Affe zieht Hebel 3, beide fliehen (Umbau: Wand 5,6 statt 4,6 – nur mit Dash über die Bröckel-Steine zu schaffen)
-        for delay in (0, 10):
-            pl = _d5_e1(True)
-            r = await koop(g, m=kat(133, 11), f=kat(134, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
-            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 198 and r['pos']['f'][0] >= 198, f'E1 Stachelwand-Jagd mit Dash (Schwein {delay} Schritte später)', info(r))
-        r = await koop(g, m=kat(133, 11), f=kat(134, 11), plans=_d5_e1(False), maxFrames=4000)
-        soll(r.get('dead'), 'E1 ohne Dash holt die Wand die Flüchtenden ein', info(r))
+        # Verfolgung (_d5_e1) -> Test jagden_dschungel (Dschungel ohne Dash: langsamere Stachelwand, gemessen)
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
     if True:
@@ -3627,12 +3619,13 @@ async def dschungel5_dornenpfad(g):
         # Wandsprung + Segeln; die Wandspitzen (311/315) bröckeln, die zweite Figur schafft es trotzdem (beide nacheinander)
         hoch = [k_lauf(310, 0), {'climb': True, 'dir': 1, 'until': f'P.y < {ky(0)} && P.vy < 0 && P.vx > 2', 'frames': 900}]
         lande = {'holdIf': {'right': f'P.x < {kx(327)}', 'left': f'P.x > {kx(330)}'}, 'until': 'P.grounded', 'frames': 400}
-        kamin = lambda w: hoch + ([{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, {'press': ['dash'], 'hold': ['right'], 'frames': 3}, lande] if w == 'm'
+        kamin = lambda w: hoch + ([{'hold': ['right'], 'hookWhen': 'P.vy > -2', 'until': 'P.hookAttached || P.grounded', 'frames': 150},   # ohne Dash: Haken 320 über den Stacheln
+                                   {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'frames': 400}, lande] if w == 'm'
                                   else [{'hold': ['right'], 'until': 'P.vy > 0', 'frames': 100}, dict(lande, hold=['glide'])]) + [k_lauf(331)]
         await beide('E2 Hoher Kamin', 305, kamin, 330, delay=120)
         for w in ('m', 'f'):
             r = await koop(g, **{w: kat(305, 15), ('f' if w == 'm' else 'm'): kat(303, 15)}, plans={w: hoch + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, maxFrames=2000)
-            soll(r.get('dead') == w, f'E2 Hoher Kamin ohne Dash/Schirm in die Stacheln ({w})', info(r))
+            soll(r.get('dead') == w, f'E2 Hoher Kamin ohne Haken/Schirm in die Stacheln ({w})', info(r))
         # Dornendecke: Hebel 6, dann kurze Sprünge über die Stufen
         hupf = lambda c: [k_lauf(c - 2, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 2, 'kurzerSprung': True}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 100}]
         flucht = lambda w: hupf(352) + hupf(362) + hupf(372) + [k_lauf(399)]
@@ -3679,12 +3672,7 @@ async def dschungel5_dornenpfad(g):
         r = await koop(g, m=kat(480, 15), f=kat(470, 15), plans={'m': [{'hold': ['right'], 'frames': 150}]}, maxFrames=1000)
         soll(r['pos']['m'][0] < 482, 'E3 ohne Platte 7 hält Tür 7', info(r))
         # Pilz-Flucht (Umbau: Wand 5,8 statt 5,0 – nur mit Dash vom Bröckel-Stein aufs feste Land zu schaffen)
-        for delay in (0, 10):
-            pl = _d5_e3(True)
-            r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
-            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 596 and r['pos']['f'][0] >= 596, f'E3 Pilz-Flucht mit Dash (Schwein {delay} Schritte später)', info(r))
-        r = await koop(g, m=kat(515, 11), f=kat(516, 11), plans=_d5_e3(False), maxFrames=4000)
-        soll(r.get('dead'), 'E3 Pilz-Flucht ohne Dash: die Wand holt ein', info(r))
+        # Verfolgung (_d5_e3) -> Test jagden_dschungel (Dschungel ohne Dash: langsamere Stachelwand, gemessen)
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
@@ -3703,12 +3691,7 @@ async def dschungel5_dornenpfad(g):
         r = await koop(g, f=kat(615, 7), m=kat(616, 15), plans={'f': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
         soll(r['pos']['f'][0] < 619, 'E4 ohne Hebel 10 hält Tür 10', info(r))
         # Finale (Umbau: Wand 7,0 statt 5,2 – schneller als Laufen, nur mit Dash auf den freien Stücken zu entkommen)
-        for delay in (0, 10):
-            pl = _d5_e4(True)
-            r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
-            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 772 and r['pos']['f'][0] >= 772, f'E4 Finale mit Dash (Schwein {delay} Schritte später)', info(r))
-        r = await koop(g, m=kat(671, 11), f=kat(672, 11), plans=_d5_e4(False), maxFrames=4000)
-        soll(r.get('dead'), 'E4 Finale ohne Dash: die schnellste Wand holt ein', info(r))
+        # Verfolgung (_d5_e4) -> Test jagden_dschungel (Dschungel ohne Dash: langsamere Stachelwand, gemessen)
         r = await koop(g, m=kat(774, 15), f=kat(772, 15), plans={'m': [k_lauf(797)], 'f': [k_lauf(796)]}, maxFrames=2000)
         soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
     assert not fehler, fehler
@@ -3793,12 +3776,7 @@ async def dschungel6_wipfelsturm(g):
                 if r.get('done') and r['pos'][who][0] >= 108: n += 1
             soll(n > 0, f'E1 Takt-Treppe 1 s ({who})', (f'{n}/6', info(r)))
         # Jagd durchs Tor (Umbau: Wand 8,4 statt 4,8 – ohne Dash eingeholt)
-        for delay in (0, 10):
-            pl = _d6_e1(True)
-            r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
-            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 162 and r['pos']['f'][0] >= 162, f'E1 Jagd durchs Tor mit Dash (Schwein {delay} Schritte später)', info(r))
-        r = await koop(g, m=kat(115, 11), f=kat(116, 11), plans=_d6_e1(False), maxFrames=4000)
-        soll(r.get('dead'), 'E1 Jagd ohne Dash: die Wand holt ein', info(r))
+        # Verfolgung (_d6_e1) -> Test jagden_dschungel (Dschungel ohne Dash: langsamere Stachelwand, gemessen)
     if await g.ev("goal.x") < 390 * 40: assert not fehler, fehler; return
     # --- Etappe 2 ---
     if True:
@@ -3839,12 +3817,7 @@ async def dschungel6_wipfelsturm(g):
         r = await koop(g, m=kat(486, 13), f=kat(485, 13), plans={'m': [k_lauf(491, -10), {'hold': ['right'], 'frames': 200}]}, maxFrames=1500)
         soll(r.get('dead') == 'm' or r['pos']['m'][0] < 492, 'E3 ohne Hebel 8 bleibt die Klappe zu (Affe fällt nicht ins Tor)', info(r))
         # Doppel-Jagd (Umbau: Wand 8,0 statt 4,4 – über jeden Block hüpfen und sofort dashen, der Dash lädt dazwischen gerade auf)
-        for delay in (0, 10):
-            pl = _d6_e3(True)
-            r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
-            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 584 and r['pos']['f'][0] >= 584, f'E3 Doppel-Jagd mit Dash (Schwein {delay} Schritte später)', info(r))
-        r = await koop(g, m=kat(524, 11), f=kat(525, 11), plans=_d6_e3(False), maxFrames=4000)
-        soll(r.get('dead'), 'E3 Doppel-Jagd ohne Dash: Wand oder Decke erwischen', info(r))
+        # Verfolgung (_d6_e3) -> Test jagden_dschungel (Dschungel ohne Dash: langsamere Stachelwand, gemessen)
     if await g.ev("goal.x") < 790 * 40: assert not fehler, fehler; return
     # --- Etappe 4 ---
     if True:
@@ -3862,12 +3835,7 @@ async def dschungel6_wipfelsturm(g):
         r = await koop(g, m=kat(611, 7), f=kat(611, 15), plans={'m': [{'hold': ['right'], 'frames': 300}]}, maxFrames=1000)
         soll(r['pos']['m'][0] < 615, 'E4 ohne Hebel 10 hält Tür 10', info(r))
         # Sturm-Jagd (Umbau: Wand 6,6 statt 5,4)
-        for delay in (0, 10):
-            pl = _d6_e4(True)
-            r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans={'m': pl['m'], 'f': [{'frames': delay}] + pl['f']}, maxFrames=4000)
-            soll(r.get('done') and not r.get('dead') and r['pos']['m'][0] >= 766 and r['pos']['f'][0] >= 766, f'E4 Sturm-Jagd mit Dash (Schwein {delay} Schritte später)', info(r))
-        r = await koop(g, m=kat(670, 11), f=kat(671, 11), plans=_d6_e4(False), maxFrames=4000)
-        soll(r.get('dead'), 'E4 Sturm-Jagd ohne Dash: die Wand holt ein', info(r))
+        # Verfolgung (_d6_e4) -> Test jagden_dschungel (Dschungel ohne Dash: langsamere Stachelwand, gemessen)
         # Umbau: vor dem Ziel der Dash-Tunnel (zwei Dashes, auf dem Podest warten, bis er wieder voll ist)
         r = await koop(g, m=kat(764, 5), f=kat(762, 5), plans={'m': dash_kette([768, 781], 797), 'f': [{'frames': 30}] + dash_kette([768, 781], 796)}, maxFrames=3000)
         soll(r.get('done') and r['pos']['m'][0] >= 796, 'E4 Ziel', info(r))
@@ -4140,7 +4108,7 @@ async def hebel_haben_grund(g):
 async def level2_fahrstuhl_anhalten(g):
     """Level 2, Abschnitt 4 (Nutzer-Version): Schweinchen schaltet den Fahrstuhl (Hebel 3) an und auf Höhe des oberen
     Bodens wieder aus; der Affe läuft oben heraus (ganz oben warten Stacheln an der Decke)."""
-    await g.load(str(ROOT / 'levels' / 'dschungel/02-baumkronen.json'))
+    await g.load(level_pfad('dschungel/02-baumkronen.json'))
     await g.ev("p1.x=111*40+40; p1.y=14*40; p2.x=107*40+20; p2.y=14*40; p1.vx=p1.vy=p2.vx=p2.vy=0; deathState=null;")
     await g.p.wait_for_timeout(300)
     await g.p.keyboard.press('Numpad2')
@@ -6822,10 +6790,12 @@ async def figuren3d_brille_tattoo(g):
 
 @test
 async def level1_bei_nacht(g):
-    """Nutzerwunsch: Dschungel Level 1 spielt bei Nacht (Tageszeit „nacht“ in beiden Level-Dateien, Look dschungel@nacht)."""
-    for f in ('levels/dschungel/01-dschungel.json', 'levels/editor-format/dschungel/01-dschungel.json'):
-        assert json.loads((ROOT / f).read_text(encoding='utf-8')).get('tageszeit') == 'nacht', f
-    await g.load(str(ROOT / 'levels' / 'dschungel' / '01-dschungel.json'))
+    """Früher: Dschungel Level 1 bei Nacht. Seit „Level 1–3 zusammen“ (ein Level, Abschnitt 1) gilt EINE Tageszeit für den
+    ganzen Abschnitt: morgens (Abschnitt 2 nachts) – in beiden Level-Dateien gleich, Look passt dazu."""
+    for a, zeit in ((A1, 'morgen'), (A2, 'nacht')):
+        for f in ('levels/' + a, 'levels/editor-format/' + a):
+            assert json.loads((ROOT / f).read_text(encoding='utf-8')).get('tageszeit') == zeit, f
+    await g.load(level_pfad(A2))
     assert await g.ev("themeName") == 'dschungel@nacht', await g.ev("themeName")
 
 @test
@@ -7535,12 +7505,23 @@ async def nacht_stellen_pruefen(g, welt):
         if st['level'] != geladen:
             await koop_level(g, st['level']); geladen = st['level']
         wer = st['wer']; anders = 'f' if wer == 'm' else 'm'
+        plan = st['plan']; plaene = None
+        if st.get('baustein') in ('B2', 'S4') and await g.ev("DASH_AUS_WELTEN.includes(levelWelt)"):   # ohne Dash: der Affe pustet die Wand um
+            if st['baustein'] == 'S4' and wer == 'f':   # Schweinchen-Münze in der Nische: Affe pustet auf, dann holt das Schweinchen sie
+                plaene = {'m': NB.mit_pusten(st['plan']), 'f': [{'wait': "!solids.some(s => s.type === 'bruch' && !s.gone && Math.abs(s.x + s.w/2 - Q.x) < 140)", 'frames': 600},
+                                                               {'frames': 90}] + NB.mit_pusten(st['plan'])}
+            else:
+                wer, anders, plan = 'm', 'f', NB.mit_pusten(st['plan'])
         def ok(r):
             if not r.get('done'): return False
             c, rr = r['pos'][wer]
             return c >= st['ziel'] and (st.get('ziel_reihe') is None or abs(rr - st['ziel_reihe']) < 0.6)
-        r = await koop(g, **{wer: kat(*st['start']), anders: kat(*st['partner'])}, plans={wer: st['plan']}, links=st['links'], maxFrames=st.get('frames', 3000))
-        if not ok(r): fehler.append(f"{st['level']} {st['name']} ({wer}): {r.get('pos')} tot={r.get('dead')} schritte={r.get('steps')}")
+        if plaene:   # Affe ein Kästchen weiter vorn, das Schweinchen wartet auf seinem Platz dahinter
+            vorn = (st['start'][0] + 1 if st['partner'][0] < st['start'][0] else st['start'][0] - 1, st['start'][1])
+            r = await koop(g, m=kat(*vorn), f=kat(*st['start']), plans=plaene,
+                links=st['links'], maxFrames=st.get('frames', 3000) + 900)
+        else: r = await koop(g, **{wer: kat(*st['start']), anders: kat(*st['partner'])}, plans={wer: plan}, links=st['links'], maxFrames=st.get('frames', 3000))
+        if not (r.get('done') and not r.get('dead') if plaene else ok(r)): fehler.append(f"{st['level']} {st['name']} ({wer}): {r.get('pos')} tot={r.get('dead')} schritte={r.get('steps')}")
         elif st.get('muenze') and not await g.ev(f"coins.some(c => Math.abs(c.x - {kx(st['muenze'][0])}) < 2 && Math.abs(c.y - {st['muenze'][1] * 40 + 20}) < 2 && c.taken)"):
             fehler.append(f"{st['level']} {st['name']} ({wer}): Münze {st['muenze']} nicht eingesammelt")
         if st['gegen']:
@@ -7618,7 +7599,7 @@ async def editor_rundreise_alle_level(g):
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         liste = [L for L in json.loads((ROOT / 'levels' / 'levels.json').read_text()) if (not L.get('versteckt') and not L.get('abschnitt')) or L.get('teilVon')]
-        assert len(liste) == 27, liste   # Dschungel-Neu: statt der 2 Abschnitte ihre 8 Teile (Abschnitt-Dateien haben kein Gelände)
+        assert len(liste) == 21, liste   # Dschungel: 2 lange Abschnitte (fest zusammengefügt) + die anderen Welten
         for i, L in enumerate(liste):
             await p.click('#levelsBtn'); await p.wait_for_timeout(250)
             await p.wait_for_function("document.querySelectorAll('#projectList .lvl').length > 0", timeout=5000)
@@ -10122,8 +10103,14 @@ async def dash_ketten_pruefen(g, welt):
     for lv, name, ms, fs, kanten, ende in DASH_KETTEN_BOT:
         if not lv.startswith(welt + '/'): continue
         if lv != aktuell: await koop_level(g, lv); aktuell = lv
+        ohne_dash = await g.ev("DASH_AUS_WELTEN.includes(levelWelt)")
         for wer in ('m', 'f'):
             start = {'m': ms, 'f': fs} if wer == 'm' else {'m': fs, 'f': ms}
+            if ohne_dash:   # Dschungel ohne Dash: die Gruben im Tunnel sind schmaler – springend kommen beide hinüber
+                andere = 'f' if wer == 'm' else 'm'
+                r = await koop(g, **start, plans={wer: dash_kette(kanten, ende, 'ohne'), andere: [{'frames': 120}] + dash_kette(kanten, ende, 'ohne')}, maxFrames=4000)
+                if not (r.get('done') and not r.get('dead') and r['pos'][wer][0] >= ende - 0.5): fehler.append(f"{lv} {name} ({wer}, ohne Dash): gescheitert {r.get('pos')} tot={r.get('dead')}")
+                continue
             for art in ('warten', 'ungeduldig', 'ohne'):
                 andere = 'f' if wer == 'm' else 'm'   # die andere Figur folgt (sonst hält der Bildrand die vordere fest)
                 plaene = {wer: dash_kette(kanten, ende, art), andere: [{'frames': 120}] + dash_kette(kanten, ende, 'warten')}
@@ -10138,8 +10125,8 @@ async def dash_ketten_pruefen(g, welt):
 
 @test
 async def dash_ketten_dschungel(g):
-    """Umbau: Dash-Ketten im Dschungel – mit Dash und Warten aufs Aufladen geschafft; sofort weiter (Dash noch leer) und
-    ohne Dash gescheitert."""
+    """Umbau: Dash-Ketten im Dschungel – früher nur mit Dash; seit der Dash im Dschungel aus ist (Nutzerwunsch) sind die Gruben
+    im Wipfelsturm-Tunnel schmaler und beide Figuren kommen springend hinüber."""
     await dash_ketten_pruefen(g, 'dschungel')
 
 @test
@@ -10590,7 +10577,7 @@ async def spielstand_ohne_checkpoints(g):
     s = json.loads(raw)
     assert s['completed'] == ['dschungel/01-dschungel.json'] and 'dschungel/02-baumkronen.json' in s['unlocked'], s
     assert 'checkpoint' not in raw.lower() and 'activecp' not in raw.lower(), raw
-    await g.load(str(ROOT / 'levels' / 'dschungel/02-baumkronen.json'))
+    await g.load(level_pfad('dschungel/02-baumkronen.json'))
     assert await g.ev("activeCp") == -1 and await g.ev("checkpointDefs.length") == 13
     await g.p.evaluate("localStorage.removeItem('monchichi.save')")
 
@@ -11391,11 +11378,11 @@ async def editor_partner_wahl(g):
         await p.reload(); await p.wait_for_timeout(400)
         assert await p.input_value('#partnerWahl') == 'f', 'Auswahl nicht gemerkt'
         await p.click('#levelsBtn'); await p.wait_for_timeout(500)
-        await projekt_laden(p, 'dschungel/01-dschungel.json')
+        await projekt_laden(p, A1)
         await p.click('#testBtn'); await p.wait_for_url('**/index.html?test=1', timeout=8000)
         await p.wait_for_function("typeof editorTestMode !== 'undefined' && editorTestMode && typeof p1 !== 'undefined' && !!p1", timeout=8000)
         k = await g.ev("({an: partnerAktiv(), ich: partner.ich, datei: JSON.parse(localStorage.getItem('monchichi_test_level')).projektDatei, f: p1.keys.left})")
-        assert k == {'an': True, 'ich': 'f', 'datei': 'dschungel/01-dschungel.json', 'f': 'Partner_left'}, k
+        assert k == {'an': True, 'ich': 'f', 'datei': A1, 'f': 'Partner_left'}, k
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(400)
         await p.select_option('#partnerWahl', 'aus')
         assert json.loads(await g.ev("localStorage.getItem('monchichi_partner')")) == {'an': False, 'ich': 'f'}
