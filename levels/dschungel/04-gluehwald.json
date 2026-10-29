@@ -5261,7 +5261,37 @@
     }
   ],
   "blattFloesse": [],
-  "meteoriten": [],
+  "meteoriten": [
+    {
+      "x": 2740,
+      "y": 600
+    },
+    {
+      "x": 6580,
+      "y": 600
+    },
+    {
+      "x": 10540,
+      "y": 600
+    },
+    {
+      "x": 14300,
+      "y": 600
+    },
+    {
+      "x": 18140,
+      "y": 600,
+      "art": "brocken"
+    },
+    {
+      "x": 21980,
+      "y": 600
+    },
+    {
+      "x": 25660,
+      "y": 320
+    }
+  ],
   "welt": "dschungel",
   "tageszeit": "nacht",
   "wetter": "trocken"

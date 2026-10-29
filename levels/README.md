@@ -2,7 +2,7 @@
 
 1. Jede Welt hat einen eigenen Ordner: `dschungel/`, `ruinen/`, `hoehle/`, `wasser/` (noch leer), `vulkan/`.
 2. Darin heißt jedes Level `<Nummer>-<Titel>.json`, z. B. `vulkan/03-feuerberg.json`; Bosse heißen `boss-<Name>.json`.
-   Dschungel: `abschnitt-<n>-<titel>.json` = langes Level aus Teilen (die Level 01–06), im Spiel hintereinander gesetzt.
+   Dschungel: `abschnitt-<n>-<titel>.json` = langes Level aus Teilen (01–03 + Rätsel 07, 04–06 + Rätsel 08), im Spiel hintereinander gesetzt.
 3. Die Nummer wird beim Anlegen vergeben und bleibt; die Reihenfolge im Spiel steht in `worlds.json`.
 4. `worlds.json` = Welten mit ihren Leveln und dem Boss (Pfade ab `levels/`), `levels.json` = Namen/Titel aller Level.
 5. `editor-format/` = dieselben Level im Speicherformat des Editors, mit genau denselben Unterordnern und Namen.

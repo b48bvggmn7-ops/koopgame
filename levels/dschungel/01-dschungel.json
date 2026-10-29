@@ -5845,7 +5845,20 @@
     }
   ],
   "blattFloesse": [],
-  "meteoriten": [],
+  "meteoriten": [
+    {
+      "x": 25940,
+      "y": 600
+    },
+    {
+      "x": 28220,
+      "y": 240
+    },
+    {
+      "x": 30260,
+      "y": 40
+    }
+  ],
   "welt": "dschungel",
   "tageszeit": "nacht",
   "wetter": "wechselnd"

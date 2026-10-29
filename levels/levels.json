@@ -68,6 +68,14 @@
   "teil": 3
  },
  {
+  "datei": "dschungel/07-windrad-lichtung.json",
+  "name": "Windrad-Lichtung",
+  "titel": "Windrad-Lichtung",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-1-sternschnuppenspur.json",
+  "teil": 4
+ },
+ {
   "datei": "dschungel/04-gluehwald.json",
   "name": "Level 8",
   "titel": "Glühwald",
@@ -160,6 +168,14 @@
   "versteckt": true,
   "teilVon": "dschungel/abschnitt-2-meteoritenherz.json",
   "teil": 3
+ },
+ {
+  "datei": "dschungel/08-meteoritenkrater.json",
+  "name": "Meteoritenkrater",
+  "titel": "Meteoritenkrater",
+  "versteckt": true,
+  "teilVon": "dschungel/abschnitt-2-meteoritenherz.json",
+  "teil": 4
  },
  {
   "datei": "ruinen/06-tempelherz.json",

@@ -1,0 +1,12 @@
+{
+ "level": "dschungel/08-meteoritenkrater.json",
+ "hinweis": "Begleiter-Aufgaben für den Computer-Partner (Testmodus). Erzeugt und geprüft mit tests/partner_aufgaben_pruefen.py; eigene Aufgaben mit \"von_hand\": true bleiben beim Neu-Erzeugen erhalten.",
+ "aufgaben": [],
+ "offen": [
+  {
+   "nummer": 2,
+   "spalte": 53,
+   "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
+  }
+ ]
+}

@@ -89,7 +89,7 @@
     90,
     113
    ],
-   "rolle": "beide",
+   "rolle": "m",
    "aktion": "hebel",
    "nummer": 1,
    "probe": {
@@ -99,7 +99,7 @@
      15
     ],
     "links": [],
-    "schritte": 1412
+    "schritte": 1292
    }
   },
   {
@@ -141,25 +141,6 @@
    }
   },
   {
-   "id": "nummer-8",
-   "zone": [
-    467,
-    501
-   ],
-   "rolle": "beide",
-   "aktion": "hebel",
-   "nummer": 8,
-   "probe": {
-    "figur": "m",
-    "start": [
-     509,
-     15
-    ],
-    "links": [],
-    "schritte": 606
-   }
-  },
-  {
    "id": "nummer-11",
    "zone": [
     617,
@@ -175,15 +156,10 @@
      15
     ],
     "links": [
-     1,
      2,
-     3,
      4,
-     5,
-     6,
-     8,
-     9,
      10,
+     1,
      7
     ],
     "schritte": 1250
@@ -205,7 +181,7 @@
      15
     ],
     "links": [],
-    "schritte": 756
+    "schritte": 760
    }
   }
  ],
@@ -219,26 +195,6 @@
    "nummer": 12,
    "spalte": 642,
    "grund": "Partner erreicht den Auslöser nicht (Kamin/Umweg/Reihenfolge) – Rolle tauschen"
-  },
-  {
-   "nummer": 3,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
-  },
-  {
-   "nummer": 5,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
-  },
-  {
-   "nummer": 6,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
-  },
-  {
-   "nummer": 9,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
-  },
-  {
-   "nummer": 14,
-   "grund": "startet eine Jagd (Stachelwand) – das macht immer der Mensch"
   }
  ]
 }

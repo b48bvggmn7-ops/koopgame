@@ -5,7 +5,8 @@
  "teile": [
   "dschungel/01-dschungel.json",
   "dschungel/02-baumkronen.json",
-  "dschungel/03-lianenschlucht.json"
+  "dschungel/03-lianenschlucht.json",
+  "dschungel/07-windrad-lichtung.json"
  ],
  "welt": "dschungel",
  "tageszeit": "morgen",

@@ -5,7 +5,8 @@
  "teile": [
   "dschungel/04-gluehwald.json",
   "dschungel/05-dornenpfad.json",
-  "dschungel/06-wipfelsturm.json"
+  "dschungel/06-wipfelsturm.json",
+  "dschungel/08-meteoritenkrater.json"
  ],
  "welt": "dschungel",
  "tageszeit": "nacht",

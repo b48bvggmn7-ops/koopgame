@@ -6152,7 +6152,24 @@
     }
   ],
   "blattFloesse": [],
-  "meteoriten": [],
+  "meteoriten": [
+    {
+      "x": 4620,
+      "y": 560
+    },
+    {
+      "x": 16620,
+      "y": 600
+    },
+    {
+      "x": 22700,
+      "y": 600
+    },
+    {
+      "x": 28620,
+      "y": 600
+    }
+  ],
   "welt": "dschungel",
   "wetter": "wechselnd",
   "look": "dschungel",
