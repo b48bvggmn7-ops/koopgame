@@ -255,11 +255,17 @@ def s05_pilz_flucht(lv):
     for c in (536, 537): lv.kachel(c, 16, 'crumble')
     for c in (551, 552): lv.leer(c, 16)   # letzter Stein weg: ohne Dash holt die Wand ein (der Pilz kostete früher Zeit)
     return lv.merke('Dschungel-Neu: Pilz-Flucht ohne Pilz 531 (Bröckel-Stein 536 statt 551)')
+def s05_zwei_gaenge(lv):
+    """Teil 5, Zwei-Gänge-Staffel (früher Aufwind 610 zum oberen Gang): der Affe pustet bei 610 nach oben, das Schweinchen
+    steigt im Wind über die Mauer in den oberen Gang; danach nimmt der Affe den Teleporter 606 in den unteren Gang."""
+    if not any(typ == 'wind' and 610 <= c <= 611 for (c, r), typ in lv.t.items()): return False
+    wind_weg(lv, 610, 611)
+    return lv.merke('Dschungel-Neu: Zwei-Gänge-Staffel per Pusten (Aufwind 610)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
-    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse, s05_pilz_flucht],
+    'dschungel/05-dornenpfad.json': [s05_puste_insel, s05_hebel_sims, s05_schleuse, s05_pilz_flucht, s05_zwei_gaenge],
     'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor, s06_sturm_pilz],
 }
 

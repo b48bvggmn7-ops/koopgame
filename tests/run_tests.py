@@ -12070,6 +12070,14 @@ def _dn_05_schleuse():
                                                     {'swing': True, 'pull': 0, 'release': 'P.x > P.anchor.x + 40 && P.vx > 1', 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]}, 'm')],
             'ziel_gegen': (483, 15)}
 DN_STELLEN_EXTRA.append(('dschungel/05-dornenpfad.json', 'Druckplatten-Schleuse 479', kat(476, 15), kat(474, 15), _dn_05_schleuse()))
+def _dn_05_gaenge():
+    """Teil 5, Zwei-Gänge-Staffel: Affe pustet bei 610, das Schweinchen steigt in den oberen Gang; der Affe teleportiert
+    (606 -> 614) in den unteren Gang"""
+    m = k_pusten_hoch(610, f'Q.grounded && Q.y < {ky(8)}', 10) + [{'holdIf': {'left': f'P.x > {kx(606)}'}, 'until': f'P.x > {kx(612)}', 'frames': 400}, k_lauf(615)]
+    f = [k_hin(607)] + k_puste_flug(614, 616, 6)
+    return {'beide': [{'m': m, 'f': f}], 'ziel': (614, 15), 'ziel_gegen': (613, 7), 'frames': 3000,
+            'gegen': [('Schweinchen allein', {'f': [k_lauf(609, -4), {'press': ['jump'], 'hold': ['right', 'jump', 'glide'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 300}]}, 'f')]}
+DN_STELLEN_EXTRA.append(('dschungel/05-dornenpfad.json', 'Zwei-Gänge 610', kat(608, 15), kat(603, 15), _dn_05_gaenge()))
 async def dn_stellen_pruefen(g, teile):
     fehler, aktuell = [], None
     for teil, name, ms, fs, pl in dn_stellen():
