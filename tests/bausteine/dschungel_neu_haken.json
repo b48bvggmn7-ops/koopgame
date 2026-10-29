@@ -1,0 +1,13 @@
+[
+ {"teil": "dschungel/02-baumkronen.json", "c": 23, "haken": [27, 7]},
+ {"teil": "dschungel/02-baumkronen.json", "c": 443, "haken": [446, 7]},
+ {"teil": "dschungel/03-lianenschlucht.json", "c": 70, "haken": [73, 7]},
+ {"teil": "dschungel/03-lianenschlucht.json", "c": 360, "haken": [364, 7]},
+ {"teil": "dschungel/03-lianenschlucht.json", "c": 740, "haken": [744, 1]},
+ {"teil": "dschungel/03-lianenschlucht.json", "c": 780, "haken": [783, 1]},
+ {"teil": "dschungel/03-lianenschlucht.json", "c": 386, "haken": [392, 7]},
+ {"teil": "dschungel/04-gluehwald.json", "c": 121, "haken": [127, 7]},
+ {"teil": "dschungel/04-gluehwald.json", "c": 469, "haken": [475, 7]},
+ {"teil": "dschungel/06-wipfelsturm.json", "c": 166, "haken": [172, 8]},
+ {"teil": "dschungel/06-wipfelsturm.json", "c": 388, "haken": [394, 8]}
+]

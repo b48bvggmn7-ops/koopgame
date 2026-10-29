@@ -8,11 +8,13 @@
 const GRUND_WERKZEUGE = ['ground', 'wall', 'fake', 'spike', 'coin', 'checkpoint', 'startM', 'startF', 'goal',
   'hook', 'switch', 'door', 'plate', 'move', 'erase', 'select', 'bruch', 'haft'];   // Nacht-Ausbau: Durchbruch-Wand + Haftfläche in allen Welten
 const WELT_WERKZEUGE = {
-  dschungel: ['crumble', 'oneway', 'wind', 'bounce', 'tele', 'wechsel', 'windrad', 'blatt'],
+  // Dschungel-Neu: im Dschungel keine Sprungpilze und kein Aufwind mehr (Schirm-Trampolin und Pusten ersetzen sie),
+  // dafür Windrad, Blatt-Floß und die Meteoriten-Spur
+  dschungel: ['crumble', 'oneway', 'tele', 'wechsel', 'windrad', 'blatt', 'meteorit'],
   ruinen:    ['falle', 'fels', 'lichtquelle', 'spiegel', 'kristall'],
-  hoehle:    ['eis', 'band', 'dunkel', 'leucht'],
+  hoehle:    ['eis', 'band', 'dunkel', 'leucht', 'wind', 'bounce'],
   wasser:    ['water', 'current', 'waterlevel'],
-  vulkan:    ['lava', 'lavapegel', 'presse'],
+  vulkan:    ['lava', 'lavapegel', 'presse', 'wind', 'bounce'],
 };
 // Boss-Werkzeuge: nur in Boss-Leveln (= Level, in dem schon ein Boss/eine Arena liegt) oder mit „Alle Werkzeuge“
 const BOSS_WERKZEUGE = ['boss', 'arena', 'bossplatz'];

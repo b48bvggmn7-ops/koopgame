@@ -1,28 +1,21 @@
 {
- "hinweis": "Alle Texte der Spielszenen (Ausbau 6). Hier kannst du Sätze ändern: 'text' bei den Schritten. 'wer' ist affe, schwein, professor, kraehe oder bruno. 'dauer' = Sekunden, wie lange ein Schritt mindestens steht (Springen-Taste blättert weiter, Esc überspringt alles). 'geh' bewegt Figuren (x/y in Pixeln, die Bühne ist ca. 1500 breit, Boden bei y 640).",
- "figuren": {"affe": "Affe", "schwein": "Schweinchen", "professor": "Professor Uhu", "kraehe": "Baron Krähwald", "bruno": "Bruno"},
+ "hinweis": "Alle Texte der Spielszenen (Ausbau 6, Dschungel-Neu). Hier kannst du Sätze ändern: 'text' bei den Schritten. 'wer' ist affe, schwein, professor oder bruno. 'dauer' = Sekunden, wie lange ein Schritt mindestens steht (Springen-Taste blättert weiter, Esc überspringt alles). 'geh' bewegt Figuren (x/y in Pixeln, die Bühne ist ca. 1500 breit, Boden bei y 640). 'aktion': meteor (Sternschnuppe fällt in den Dschungel), gluehen (Leuchten hinter den Bäumen), portal (der Meteorit öffnet ein Tor), sog (das Tor zieht Affe und Schweinchen hinein).",
+ "figuren": {"affe": "Affe", "schwein": "Schweinchen", "professor": "Professor Uhu", "bruno": "Bruno", "erzaehler": ""},
  "intro": {
   "titel": "Die Nacht der Sternschnuppe",
   "welt": "dschungel",
   "tageszeit": "abend",
-  "start": {"affe": [430, 640], "schwein": [480, 640], "professor": [700, 640], "kraehe": [1700, 120], "fernrohr": [800, 640]},
+  "start": {"affe": [430, 640], "schwein": [480, 640], "professor": [700, 640], "fernrohr": [800, 640]},
   "schritte": [
-   {"wer": "professor", "text": "Gleich ist es so weit. Mein Wolken-Fernrohr zeigt uns heute die Sternschnuppe des Jahrhunderts.", "dauer": 3.4},
+   {"wer": "professor", "text": "Gleich ist es so weit. Heute Nacht fällt die Sternschnuppe des Jahrhunderts.", "dauer": 3.2},
    {"wer": "affe", "text": "Wir haben Kekse dabei.", "dauer": 1.8},
    {"wer": "schwein", "text": "Und Decken. Für die Romantik.", "dauer": 2.0},
-   {"geh": {"kraehe": [1000, 330]}, "dauer": 1.6, "ton": "kraehe"},
-   {"wer": "kraehe", "text": "Sternschnuppe? Ich sehe nur eins: glänzende Zahnräder.", "dauer": 2.8},
-   {"wer": "professor", "text": "Baron Krähwald! Finger weg von meinem Fernrohr!", "dauer": 2.4},
-   {"wer": "kraehe", "text": "Flügel, Professor. Und: nein.", "dauer": 2.0},
-   {"geh": {"kraehe": [810, 540]}, "dauer": 0.9, "aktion": "zahnraeder", "ton": "klau"},
-   {"geh": {"kraehe": [705, 560]}, "dauer": 0.8, "aktion": "schnapp"},
-   {"wer": "kraehe", "text": "Sie kommen gleich mit. Jemand muss die Dinger ja wieder zusammenbauen.", "dauer": 3.0},
-   {"geh": {"kraehe": [1750, 60]}, "dauer": 2.2},
-   {"wer": "professor", "text": "Hiiilfe! … Und bringt die Kekse mit!", "dauer": 2.4, "von": [1500, 120]},
-   {"wer": "kraehe", "text": "Meine Jungs passen auf die fünf Zahnräder auf. Viel Glück, ihr Knuddel!", "dauer": 3.2, "von": [1450, 90]},
-   {"wer": "affe", "text": "… Knuddel?!", "dauer": 1.6},
-   {"wer": "schwein", "text": "Fünf Zahnräder, fünf Welten. Den holen wir uns.", "dauer": 2.6},
+   {"aktion": "meteor", "ton": "meteor", "dauer": 2.6},
+   {"wer": "professor", "text": "Das war keine Sternschnuppe … das war ein Meteorit! Er ist mitten im Dschungel eingeschlagen!", "dauer": 3.4},
+   {"wer": "schwein", "text": "Da hinten leuchtet etwas. Siehst du das Glühen zwischen den Bäumen?", "dauer": 2.8},
+   {"wer": "professor", "text": "Ein Stein von den Sternen! Folgt den leuchtenden Splittern – sie führen euch zu ihm.", "dauer": 3.2},
    {"wer": "affe", "text": "Kekse einpacken. Los.", "dauer": 1.6},
+   {"wer": "professor", "text": "Und passt auf euch auf! Allein kommt im Dschungel keiner weit – nur zusammen.", "dauer": 3.0},
    {"geh": {"affe": [1650, 640], "schwein": [1610, 640]}, "dauer": 2.2}
   ]
  },
@@ -31,24 +24,54 @@
   "relativ": true,
   "start": {},
   "schritte": [
-   {"wer": "bruno", "text": "Halt! Das Zahnrad bleibt bei mir. Der Baron zahlt in Bananen.", "dauer": 3.0},
-   {"wer": "affe", "text": "Wir zahlen in Kopfnüssen.", "dauer": 2.0},
+   {"wer": "bruno", "text": "Halt! Hier kommt keiner durch. Das ist MEIN Dschungel.", "dauer": 3.0},
+   {"wer": "affe", "text": "Wir wollen nur vorbei. Höflich.", "dauer": 2.0},
    {"wer": "schwein", "text": "Sein Kokos-Helm! Solange einer auf der Platte steht, ist er ab – dann ab auf seinen Kopf.", "dauer": 3.6}
   ]
  },
  "boss1_sieg": {
-  "titel": "Zahnrad 1 von 5",
+  "titel": "Bruno gibt auf",
   "relativ": true,
-  "start": {"kraehe": [1650, 60]},
+  "start": {},
   "schritte": [
-   {"wer": "bruno", "text": "Uff. Okay, okay. Nehmt das Ding.", "dauer": 2.4},
-   {"geh": {"kraehe": [900, 150]}, "dauer": 1.4, "ton": "kraehe"},
-   {"wer": "kraehe", "text": "Bruno! Ich bezahle dich nicht fürs Rumliegen.", "dauer": 2.8},
-   {"wer": "bruno", "text": "Du bezahlst mich gar nicht.", "dauer": 2.2},
-   {"wer": "kraehe", "text": "… Touché. Ihr zwei: Das war nur Zahnrad Nummer eins.", "dauer": 3.0},
-   {"geh": {"kraehe": [1750, 30]}, "dauer": 1.6},
-   {"wer": "schwein", "text": "Eins von fünf. Läuft.", "dauer": 2.0},
-   {"wer": "affe", "text": "Und der Professor wartet. Weiter!", "dauer": 2.0}
+   {"wer": "bruno", "text": "Uff. Okay, okay. Geht schon durch.", "dauer": 2.4},
+   {"wer": "schwein", "text": "Danke. Und nichts für ungut.", "dauer": 2.0},
+   {"wer": "affe", "text": "Weiter!", "dauer": 1.6}
+  ]
+ },
+ "abschnitt1_ende": {
+  "titel": "Das Glühen im Wald",
+  "welt": "dschungel",
+  "tageszeit": "abend",
+  "start": {"affe": [520, 640], "schwein": [580, 640], "splitter": [760, 640], "gluehen": [1350, 560]},
+  "schritte": [
+   {"geh": {"affe": [680, 640], "schwein": [730, 640]}, "dauer": 1.4},
+   {"wer": "schwein", "text": "Die Splitter werden größer. Und wärmer.", "dauer": 2.4},
+   {"wer": "affe", "text": "Und es wird dunkel. Gut – dann sehen wir das Leuchten besser.", "dauer": 2.6},
+   {"aktion": "gluehen", "ton": "gluehen", "dauer": 1.8},
+   {"wer": "schwein", "text": "Da! Hinter dem Glühwald. Es pulsiert … wie ein Herz.", "dauer": 2.8},
+   {"wer": "affe", "text": "Ein Stein mit Herzschlag. Völlig normal.", "dauer": 2.2},
+   {"wer": "schwein", "text": "Ab hier wird es schwer. Du pustest, ich federe – und wir denken zuerst nach.", "dauer": 3.2},
+   {"wer": "affe", "text": "Denken. Mit Keksen geht das besser.", "dauer": 2.0},
+   {"geh": {"affe": [1650, 640], "schwein": [1610, 640]}, "dauer": 2.2}
+  ]
+ },
+ "meteorit_gefunden": {
+  "titel": "Das Herz des Meteoriten",
+  "welt": "dschungel",
+  "tageszeit": "nacht",
+  "start": {"affe": [300, 640], "schwein": [350, 640], "meteorit": [960, 640]},
+  "schritte": [
+   {"geh": {"affe": [690, 640], "schwein": [750, 640]}, "dauer": 2.0},
+   {"wer": "affe", "text": "Da ist er. Der Meteorit.", "dauer": 2.0},
+   {"wer": "schwein", "text": "Er summt. Hörst du das? Und er ist warm wie eine Tasse Kakao.", "dauer": 3.0},
+   {"aktion": "portal", "ton": "portal", "dauer": 2.4},
+   {"wer": "affe", "text": "Äh … der Stein macht gerade ein Loch in die Luft.", "dauer": 2.6},
+   {"wer": "schwein", "text": "Das ist kein Loch. Das ist ein Tor. Dahinter … sind Sterne. Und Fische? Und Sterne mit Fischen?!", "dauer": 3.6},
+   {"wer": "affe", "text": "Wir wollten nur einen Stein finden!", "dauer": 2.0},
+   {"aktion": "sog", "ton": "sog", "geh": {"affe": [960, 470], "schwein": [960, 470]}, "dauer": 1.8},
+   {"wer": "schwein", "text": "Festhalten!", "dauer": 1.4, "von": [960, 420]},
+   {"wer": "erzaehler", "text": "Und so begann ihre Reise durch die verrückten Welten hinter dem Meteoriten … Fortsetzung folgt!", "dauer": 4.0, "von": [760, 300]}
   ]
  }
 }

@@ -6,9 +6,9 @@
 // Kurze Szenen mit den Spielfiguren und Sprechblasen auf einer kleinen Bühne (Boden + Welt-Hintergrund).
 // ALLE Texte und Abläufe stehen in story/story.json (Nutzer kann sie dort ändern). Eine Szene ist eine Liste von
 // Schritten: {wer, text} = Sprechblase, {geh: {figur: [x, y]}} = Figuren bewegen sich (gleichzeitig), dauer = Sekunden,
-// aktion = besondere Momente ('zahnraeder': Krähe klaut die Zahnräder, 'schnapp': Krähe packt den Professor,
-// 'zahnrad_ab': Bruno lässt das Zahnrad fallen), ton = Geräusch, von = [x, y] Sprechblase an dieser Stelle (Sprecher
-// außerhalb des Bildes). Springen (Leertaste, Num 0, Enter, ✕) = weiter, Esc / Options / ○ = ganze Szene überspringen.
+// aktion = besondere Momente (Dschungel-Neu: 'meteor' = Sternschnuppe fällt in den Dschungel, 'gluehen' = Leuchten
+// hinter den Bäumen, 'portal' = der Meteorit öffnet ein Tor, 'sog' = das Tor zieht Affe und Schweinchen hinein),
+// ton = Geräusch, von = [x, y] Sprechblase an dieser Stelle (Sprecher außerhalb des Bildes). Springen (Leertaste, Num 0, Enter, ✕) = weiter, Esc / Options / ○ = ganze Szene überspringen.
 // Läuft, solange menuScreen === 'szene' (Spiel steht still); Kamera steht fest (kameraFest, 09-kamera.js).
 // Nur Anzeige – die Szene ändert keinen Spielstand außer am Ende über den Rückruf.
 let storyDaten = null;
@@ -43,8 +43,7 @@ async function szeneSpielen(name, fertig, opt){
   }
   const dx = def.relativ ? (kameraFest !== null ? kameraFest : Math.round(camPos)) : 0;
   const akteure = {};
-  for(const k in st) if(k !== 'affe' && k !== 'schwein') akteure[k] = {x: st[k][0] + dx, y: st[k][1], dir: -1, traegt: null, hatZahnraeder: false};
-  if(akteure.fernrohr) akteure.fernrohr.zahnraeder = true;
+  for(const k in st) if(k !== 'affe' && k !== 'schwein') akteure[k] = {x: st[k][0] + dx, y: st[k][1], dir: -1};
   szene = {def, name, i: -1, t0: 0, von: {}, nach: {}, akteure, fertig, start: performance.now(), dx, buehne, kameraVorher};
   if(window.GameMenu && GameMenu.hide) GameMenu.hide();   // Startmenü ausblenden
   menuScreen = 'szene';
@@ -59,9 +58,7 @@ function szeneSchritt(i){
   szene.i = i; szene.t0 = performance.now(); szene.von = {}; szene.nach = {};
   const s = szene.def.schritte[i];
   if(s.geh) for(const k in s.geh){ const a = szeneFigur(k); if(a){ szene.von[k] = {x: a.x, y: a.y}; szene.nach[k] = {x: s.geh[k][0] + szene.dx, y: s.geh[k][1]}; } }
-  if(s.ton && typeof SFX !== 'undefined'){
-    if(s.ton === 'kraehe' && SFX.kraehe) SFX.kraehe(); else if(s.ton === 'klau' && SFX.klau) SFX.klau();
-  }
+  if(s.ton && typeof SFX !== 'undefined' && typeof SFX['szene_' + s.ton] === 'function') SFX['szene_' + s.ton]();   // 18-sound.js
   if(s.wer && typeof SFX !== 'undefined' && SFX.menuTick) SFX.menuTick();
 }
 // Bewegungen dieses Schritts sofort ans Ziel setzen (beim Weiterblättern)
@@ -72,10 +69,11 @@ function szeneZiele(){
 function szeneAktion(s){
   if(!s || !s.aktion || s._erledigt === szene.start) return;
   s._erledigt = szene.start;
-  const A = szene.akteure;
-  if(s.aktion === 'zahnraeder' && A.fernrohr){ A.fernrohr.zahnraeder = false; if(A.kraehe) A.kraehe.hatZahnraeder = true; }
-  if(s.aktion === 'schnapp' && A.kraehe && A.professor) A.kraehe.traegt = 'professor';
-  if(s.aktion === 'zahnrad_ab' && A.zahnrad) A.zahnrad.sichtbar = true;
+  const jetzt = performance.now();
+  if(s.aktion === 'meteor') szene.meteorT0 = jetzt;                       // Feuerball fällt, danach Glühen am Horizont
+  if(s.aktion === 'gluehen' && szene.akteure.gluehen) szene.akteure.gluehen.an = jetzt;
+  if(s.aktion === 'portal' && szene.akteure.meteorit) szene.akteure.meteorit.portal = jetzt;
+  if(s.aktion === 'sog') szene.sogT0 = jetzt;                             // Figuren werden kleiner und verschwinden im Tor
 }
 function szeneWeiter(){
   if(!szene) return;
@@ -151,31 +149,6 @@ function zeichneProfessor(c, a, x, y){
   c.fillStyle = '#f0a020'; c.beginPath(); c.moveTo(-3, -25); c.lineTo(3, -25); c.lineTo(0, -20); c.fill();   // Schnabel
   c.restore();
 }
-function zeichneKraehe(c, a, x, y){
-  const t = performance.now(), flieg = y < SZENE_BODEN - 4, fl = flieg ? Math.sin(t*0.025) : 0.2, d = a.dir || -1;
-  if(a.traegt === 'professor' && szene && szene.akteure.professor){   // Professor hängt an den Krallen
-    const pr = szene.akteure.professor; pr.x = x; pr.y = y + 62; pr.dir = d;
-  }
-  c.save(); c.translate(x, y); c.scale(d < 0 ? -1 : 1, 1);
-  if(!flieg){ c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 0, 20, 4, 0, 0, Math.PI*2); c.fill(); }
-  c.translate(0, flieg ? 0 : -6);
-  c.fillStyle = '#20232e';
-  c.beginPath(); c.moveTo(-26, -18); c.lineTo(-42, -10); c.lineTo(-40, -22); c.closePath(); c.fill();          // Schwanz
-  c.beginPath(); c.ellipse(-4, -20, 24, 15, -0.15, 0, Math.PI*2); c.fill();                                     // Körper
-  c.beginPath(); c.arc(18, -32, 12, 0, Math.PI*2); c.fill();                                                     // Kopf
-  c.fillStyle = '#d6c27a'; c.beginPath(); c.moveTo(28, -34); c.lineTo(42, -30); c.lineTo(28, -27); c.closePath(); c.fill();   // Schnabel
-  c.fillStyle = '#111'; c.fillRect(13, -37, 16, 6); c.fillStyle = '#5a6a88'; c.fillRect(15, -36, 5, 3); c.fillRect(22, -36, 5, 3);   // Sonnenbrille
-  c.fillStyle = '#d23c3c'; c.beginPath(); c.moveTo(8, -24); c.quadraticCurveTo(-6, -20 + Math.sin(t*0.012)*3, -18, -12 + Math.sin(t*0.015)*4);   // Schal
-  c.lineTo(-14, -9); c.quadraticCurveTo(-4, -16, 10, -19); c.closePath(); c.fill();
-  c.fillStyle = '#2c3242'; c.save(); c.translate(-6, -24); c.rotate(-0.4 - fl*0.7);   // Flügel
-  c.beginPath(); c.ellipse(-4, -10, 9, 22, 0.3, 0, Math.PI*2); c.fill(); c.restore();
-  c.strokeStyle = '#d6c27a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-4, -6); c.lineTo(-6, 4); c.moveTo(4, -6); c.lineTo(4, 4); c.stroke();
-  if(a.hatZahnraeder){   // Beutel mit den Zahnrädern (glitzert)
-    c.fillStyle = '#7a5530'; c.beginPath(); c.ellipse(-6, 12, 9, 8, 0, 0, Math.PI*2); c.fill();
-    c.fillStyle = '#ffd34d'; c.globalAlpha = 0.6 + 0.4*Math.sin(t*0.01); c.beginPath(); c.arc(-3, 6, 2.2, 0, Math.PI*2); c.fill(); c.globalAlpha = 1;
-  }
-  c.restore();
-}
 function zahnradPfad(c, r, zaehne){
   c.beginPath();
   for(let i = 0; i < zaehne*2; i++){ const a = i/(zaehne*2)*Math.PI*2, rr = i % 2 ? r : r*1.25; c.lineTo(Math.cos(a)*rr, Math.sin(a)*rr); }
@@ -191,14 +164,72 @@ function zeichneFernrohr(c, a, x, y){
   c.save(); c.translate(x, y);
   c.strokeStyle = '#6b4a2a'; c.lineWidth = 4; c.lineCap = 'round';
   c.beginPath(); c.moveTo(0, -50); c.lineTo(-18, 0); c.moveTo(0, -50); c.lineTo(18, 0); c.moveTo(0, -50); c.lineTo(0, 0); c.stroke();   // Stativ
-  c.translate(0, -54); c.rotate(a.zahnraeder ? -0.5 : 0.35);   // ohne Zahnräder sackt das Rohr ab
+  c.translate(0, -54); c.rotate(-0.5);   // schaut in den Himmel
   c.fillStyle = '#c98b3a'; roundRect(-34, -9, 68, 18, 6); c.fill(); c.strokeStyle = '#7a4f1c'; c.lineWidth = 2; c.stroke();
   c.fillStyle = '#9ad8ff'; c.beginPath(); c.ellipse(34, 0, 4, 9, 0, 0, Math.PI*2); c.fill();
-  if(a.zahnraeder){ const w = performance.now()*0.002; zeichneZahnrad(c, -12, -12, 7, w); zeichneZahnrad(c, 4, -14, 5.5, -w*1.3); zeichneZahnrad(c, 16, -11, 4.5, w*1.6); }
   c.restore();
 }
+// ---- Dschungel-Neu: Meteorit (elemente/meteorit.js zeichnet Fels und Splitter), Feuerball, Glühen, Tor ----
+function zeichneSzeneMeteorit(c, a, x, y){
+  const t = performance.now()*0.001;
+  if(typeof meteorZeichnen === 'function') meteorZeichnen({x: a.x, y, art: 'meteorit'}, x, t);
+  if(!a.portal) return;
+  // Tor: wächst über dem Meteoriten auf, Ringe drehen sich, innen Sterne
+  const k = Math.min(1, (performance.now() - a.portal)/1400), e = k*k*(3 - 2*k), cy = y - 170, R = 110*e;
+  if(R < 2) return;
+  c.save(); c.translate(x, cy);
+  const tief = c.createRadialGradient(0, 0, 0, 0, 0, R);
+  tief.addColorStop(0, '#0b0730'); tief.addColorStop(0.7, '#241256'); tief.addColorStop(1, 'rgba(99,216,255,0)');
+  c.fillStyle = tief; c.beginPath(); c.ellipse(0, 0, R, R*1.15, 0, 0, Math.PI*2); c.fill();
+  for(let i = 0; i < 22; i++){   // Sterne im Tor
+    const z = Math.sin(i*12.9898)*43758.5453 % 1, w = Math.abs(z), a2 = i*2.399 + t*0.3, r2 = R*0.85*Math.sqrt((i + 0.5)/22);
+    c.globalAlpha = 0.5 + 0.5*Math.sin(t*4 + i); c.fillStyle = i % 3 ? '#ffffff' : '#9fe8ff';
+    c.beginPath(); c.arc(Math.cos(a2)*r2, Math.sin(a2)*r2*1.15, 1 + w*1.6, 0, Math.PI*2); c.fill();
+  }
+  c.globalAlpha = 1; c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+  for(let ring = 0; ring < 3; ring++){
+    c.strokeStyle = ring === 1 ? 'rgba(169,139,255,.8)' : 'rgba(99,216,255,.85)'; c.lineWidth = 5 - ring;
+    const rr = R*(1 - ring*0.12), dreh = t*(1.4 + ring*0.5)*(ring % 2 ? -1 : 1);
+    for(let s = 0; s < 4; s++){ c.beginPath(); c.ellipse(0, 0, rr, rr*1.15, 0, dreh + s*Math.PI/2, dreh + s*Math.PI/2 + 1.0); c.stroke(); }
+  }
+  c.restore();
+}
+function zeichneSzeneGluehen(c, a, x, y){
+  if(!a.an) return;
+  const k = Math.min(1, (performance.now() - a.an)/1200), puls = 0.75 + 0.25*Math.sin(performance.now()*0.0035);
+  const g = c.createRadialGradient(x, y, 0, x, y, 260);
+  g.addColorStop(0, `rgba(160,240,255,${0.75*k*puls})`); g.addColorStop(0.35, `rgba(99,216,255,${0.35*k*puls})`); g.addColorStop(1, 'rgba(99,216,255,0)');
+  c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.beginPath(); c.arc(x, y, 260, 0, Math.PI*2); c.fill(); c.restore();
+}
+// Feuerball über den Himmel (Bildschirm-Koordinaten der Bühne), danach Lichtblitz und Glühen am Horizont
+function zeichneSzeneFeuerball(){
+  if(!szene || !szene.meteorT0) return;
+  const t = (performance.now() - szene.meteorT0)/1000, flug = 1.5;
+  const x0 = VW + 120, y0 = -SKY_ROOM - 60, x1 = 120, y1 = 470;
+  if(t < flug){
+    const k = t/flug, x = x0 + (x1 - x0)*k, y = y0 + (y1 - y0)*k*k;
+    const dx = (x1 - x0)/flug, dy = 2*(y1 - y0)*k/flug, l = Math.hypot(dx, dy), ux = -dx/l, uy = -dy/l;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for(let i = 0; i < 4; i++){
+      const lang = 260 - i*50;
+      const g = ctx.createLinearGradient(x, y, x + ux*lang, y + uy*lang);
+      g.addColorStop(0, i ? 'rgba(99,216,255,.7)' : 'rgba(255,255,255,.95)'); g.addColorStop(1, 'rgba(99,216,255,0)');
+      ctx.strokeStyle = g; ctx.lineWidth = 16 - i*3.5; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + ux*lang, y + uy*lang); ctx.stroke();
+    }
+    const kopf = ctx.createRadialGradient(x, y, 0, x, y, 34);
+    kopf.addColorStop(0, 'rgba(255,255,255,1)'); kopf.addColorStop(0.4, 'rgba(160,240,255,.8)'); kopf.addColorStop(1, 'rgba(99,216,255,0)');
+    ctx.fillStyle = kopf; ctx.beginPath(); ctx.arc(x, y, 34, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  } else {
+    const k = t - flug, blitz = Math.max(0, 1 - k*2.2);
+    if(blitz > 0){ ctx.fillStyle = `rgba(220,248,255,${0.55*blitz})`; ctx.fillRect(-10, -SKY_ROOM - 10, VW + 20, H + SKY_ROOM + 20); }
+    zeichneSzeneGluehen(ctx, {an: szene.meteorT0 + flug*1000}, x1, y1 + 60);
+  }
+}
 SZENE_ZEICHNER.professor = (c, a) => zeichneProfessor(c, a, Math.round(a.x - camX), a.y);
-SZENE_ZEICHNER.kraehe = (c, a) => zeichneKraehe(c, a, Math.round(a.x - camX), a.y);
+SZENE_ZEICHNER.meteorit = (c, a) => zeichneSzeneMeteorit(c, a, Math.round(a.x - camX), a.y);
+SZENE_ZEICHNER.gluehen = (c, a) => zeichneSzeneGluehen(c, a, Math.round(a.x - camX), a.y);
+SZENE_ZEICHNER.splitter = (c, a) => { if(typeof meteorZeichnen === 'function') meteorZeichnen({x: a.x, y: a.y, art: 'brocken'}, Math.round(a.x - camX), performance.now()*0.001); };
 SZENE_ZEICHNER.fernrohr = (c, a) => zeichneFernrohr(c, a, Math.round(a.x - camX), a.y);
 SZENE_ZEICHNER.zahnrad = (c, a) => { if(a.sichtbar !== false) zeichneZahnrad(c, Math.round(a.x - camX), a.y - 30 + Math.sin(performance.now()*0.004)*4, 16, performance.now()*0.002); };
 // Sprechblase mit Namen, Text umgebrochen, im Bild gehalten
@@ -212,7 +243,7 @@ function szeneBlase(wer, text, ax, ay){
   const bw = Math.max(...zeilen.map(l => ctx.measureText(l).width), ctx.measureText(name).width*0.8) + 30, bh = zeilen.length*22 + 34;
   const sx = Math.round(ax - camX), cx = Math.max(bw/2 + 10, Math.min(VW - bw/2 - 10, sx)), top = Math.max(-SKY_ROOM + 8, ay - bh - 26);
   const tail = Math.max(-bw/2 + 18, Math.min(bw/2 - 18, sx - cx));
-  const farbe = {affe: '#4dabf7', schwein: '#f783ac', professor: '#e9b83a', kraehe: '#555c70', bruno: '#c77b3f'}[wer] || '#888';
+  const farbe = {affe: '#4dabf7', schwein: '#f783ac', professor: '#e9b83a', bruno: '#c77b3f', erzaehler: '#63a8c8'}[wer] || '#888';
   ctx.save(); ctx.translate(cx, top);
   ctx.fillStyle = 'rgba(0,0,0,.18)'; roundRect(-bw/2 + 3, 4, bw, bh, 14); ctx.fill();
   ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#2b2b33'; ctx.lineWidth = 2.5;
@@ -233,16 +264,24 @@ function szeneZeichnen(){
   if(!szene) return;
   szeneBlicke();
   const A = szene.akteure;
-  for(const k of ['fernrohr', 'zahnrad', 'professor', 'kraehe', 'bruno']) if(A[k] && SZENE_ZEICHNER[k] && !(k === 'professor' && A.kraehe && A.kraehe.traegt === 'professor')) SZENE_ZEICHNER[k](ctx, A[k]);
-  if(A.kraehe && A.kraehe.traegt === 'professor' && A.professor){ SZENE_ZEICHNER.kraehe(ctx, A.kraehe); SZENE_ZEICHNER.professor(ctx, A.professor); }
+  for(const k of ['gluehen', 'fernrohr', 'zahnrad', 'splitter', 'meteorit', 'professor', 'bruno']) if(A[k] && SZENE_ZEICHNER[k]) SZENE_ZEICHNER[k](ctx, A[k]);
+  zeichneSzeneFeuerball();
+  szeneSog();
   const s = szene.def.schritte[szene.i];
   if(s && s.wer && s.text){
     const sp = s.von ? {x: s.von[0] + szene.dx, y: s.von[1]} : szeneFigur(s.wer);
     if(sp){
-      const kopf = sp === p1 || sp === p2 ? sp.y - sp.h - 6 : s.wer === 'kraehe' ? sp.y - 50 : s.wer === 'bruno' ? sp.y - 112 : sp.y - 64;
+      const kopf = sp === p1 || sp === p2 ? sp.y - sp.h - 6 : s.wer === 'bruno' ? sp.y - 112 : sp.y - 64;
       szeneBlase(s.wer, s.text, sp.x, s.von ? sp.y : kopf);
     }
   }
+}
+// Sog ins Tor: sind die Figuren am Tor angekommen, verschwinden sie (aus dem Bild gestellt – nur in der Szene)
+function szeneSog(){
+  if(!szene || !szene.sogT0 || szene.sogFertig) return;
+  if(performance.now() - szene.sogT0 < 1700) return;
+  szene.sogFertig = true;
+  for(const pl of [p1, p2]){ pl.y = -4000; pl._py = pl.y; }
 }
 // Aufruf aus draw() in Bildschirm-Koordinaten: Kino-Balken, Titel, Hinweis
 function szeneRahmen(){

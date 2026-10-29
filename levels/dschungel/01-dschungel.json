@@ -2805,11 +2805,6 @@
       "radius": 140
     },
     {
-      "x": 3820,
-      "y": 460,
-      "radius": 140
-    },
-    {
       "x": 22260,
       "y": 380,
       "radius": 140
@@ -2835,8 +2830,13 @@
       "radius": 200
     },
     {
-      "x": 31380,
-      "y": 140,
+      "x": 3780,
+      "y": 460,
+      "radius": 180
+    },
+    {
+      "x": 31460,
+      "y": 100,
       "radius": 200
     }
   ],
@@ -5612,22 +5612,58 @@
     "y": 600
   },
   "plates": [],
-  "bouncers": [
+  "bouncers": [],
+  "winds": [],
+  "switchFloors": [
     {
-      "x": 3420,
-      "y": 680
+      "x": 9400,
+      "y": 400,
+      "w": 40,
+      "h": 40,
+      "gruppe": "B",
+      "link": 15
     },
     {
-      "x": 31060,
-      "y": 360
+      "x": 9440,
+      "y": 400,
+      "w": 40,
+      "h": 40,
+      "gruppe": "B",
+      "link": 15
     },
     {
-      "x": 9340,
-      "y": 480
+      "x": 9480,
+      "y": 400,
+      "w": 40,
+      "h": 40,
+      "gruppe": "B",
+      "link": 15
+    },
+    {
+      "x": 9520,
+      "y": 320,
+      "w": 40,
+      "h": 40,
+      "gruppe": "B",
+      "link": 15
+    },
+    {
+      "x": 9560,
+      "y": 320,
+      "w": 40,
+      "h": 40,
+      "gruppe": "B",
+      "link": 15
+    },
+    {
+      "x": 9600,
+      "y": 320,
+      "w": 40,
+      "h": 40,
+      "gruppe": "B",
+      "link": 15
     }
   ],
-  "winds": [],
-  "switchFloors": [],
   "teleporters": [],
   "oneways": [],
   "waters": [],
@@ -5801,6 +5837,15 @@
     }
   ],
   "haftflaechen": [],
+  "windraeder": [
+    {
+      "x": 9860,
+      "y": 320,
+      "link": 15
+    }
+  ],
+  "blattFloesse": [],
+  "meteoriten": [],
   "welt": "dschungel",
   "tageszeit": "nacht",
   "wetter": "wechselnd"

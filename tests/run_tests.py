@@ -151,6 +151,42 @@ def k_haken(n, release, jump_at=None, d=0):
         if k < n - 1: st.append({'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200})
     st.append({'hold': ['right'], 'until': 'P.grounded', 'frames': 300})
     return st
+# --- Dschungel-Neu: Bot-Bausteine für die Koop-Aktionen (Schirm-Trampolin, Pusten) ---
+def k_hin(c, d=0, toleranz=3):
+    """genau an Spalte c (Mitte + d px) laufen und still stehen bleiben"""
+    x = kx(c) + d
+    return {'holdIf': {'right': f'P.x < {x} - {toleranz}', 'left': f'P.x > {x} + {toleranz}'},
+            'until': f'P.grounded && Math.abs(P.x - {x}) <= {toleranz} && Math.abs(P.vx) < 0.4', 'frames': 600}
+def k_pusten_hoch(c, bis, d=0):
+    """Affe: an Spalte c stellen und nach oben pusten (H + W), bis die Bedingung bis gilt"""
+    return [k_hin(c, d), {'hold': ['pusten', 'pull'], 'until': bis, 'frames': 400}]
+def k_pusten_seite(c, richtung, bis, d=0):
+    """Affe: an Spalte c stellen und zur Seite pusten (H + D bzw. H + A)"""
+    return [k_hin(c, d), {'hold': ['pusten', 'right' if richtung > 0 else 'left'], 'until': bis, 'frames': 400}]
+def k_puste_flug(z0, z1, weg, landen_rechts=True):
+    """Schweinchen: wartet, bis der Affe pustet, springt über ihn in den Strahl (Schirm auf), steigt bis Reihe weg und
+    segelt dann auf die Fläche z0…z1"""
+    lande = {'right': f'P.x < {kx(z0)}', 'left': f'P.x > {kx(z1)}'} if landen_rechts else {'left': f'P.x > {kx(z1)}', 'right': f'P.x < {kx(z0)}'}
+    return [{'wait': 'Q.pusteAn', 'frames': 600},
+            {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': 'P.x < Q.x - 8', 'left': 'P.x > Q.x + 8'}, 'frames': 14},
+            {'hold': ['glide'], 'holdIf': {'right': 'P.x < Q.x - 8', 'left': 'P.x > Q.x + 8'}, 'until': f'P.y < {ky(weg)}', 'frames': 260},
+            {'hold': ['glide'], 'holdIf': lande, 'until': 'P.grounded', 'frames': 600}]
+def k_trampolin(c, bis, d=0):
+    """Schweinchen: an Spalte c stellen und den Schirm als Trampolin halten (Num 4), bis die Bedingung bis gilt"""
+    return [k_hin(c, d), {'hold': ['trampolin'], 'until': bis, 'frames': 900}]
+def k_trampolin_sprung(nach_vy=None, dash=True, ziel=None, abstand=60):
+    """Affe: neben das Schweinchen (abstand px links), still stehen, hochspringen und auf den Schirm fallen; nach dem
+    Abfedern nach rechts – mit nach_vy: bei dieser Fallgeschwindigkeit dashen; ziel = Spalte, auf der er landen soll"""
+    st = [{'wait': 'Q.trampolin', 'frames': 600},
+          {'holdIf': {'right': f'P.x < Q.x - {abstand + 4}', 'left': f'P.x > Q.x - {abstand - 4}'},
+           'until': f'P.grounded && P.x < Q.x - {abstand - 6} && P.x > Q.x - {abstand + 6} && Math.abs(P.vx) < 0.3', 'frames': 300},
+          {'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': 'P.x < Q.x - 8', 'left': 'P.x > Q.x + 8'}, 'until': 'P.vy < -13', 'frames': 90}]
+    if nach_vy is not None:
+        st += [{'hold': ['right'], 'until': f'P.vy > {nach_vy}', 'frames': 100}] + ([{'press': ['dash'], 'hold': ['right'], 'frames': 3}] if dash else [])
+    if ziel is not None:
+        st.append({'holdIf': {'right': f'P.x < {kx(ziel)}', 'left': f'P.x > {kx(ziel + 1)}'}, 'until': 'P.grounded && !P.dash', 'frames': 300})
+    return st
+
 async def koop(g, **o):
     """Koop-Bot laufen lassen: m=/f= Startpunkte, plans={'m': [...], 'f': [...]}, links=[...] vorher an"""
     if not await g.ev("typeof window.coopRun === 'function'"): await g.p.evaluate("() => {" + KOOP_BOT + "}")
@@ -7764,7 +7800,7 @@ async def editor_werkzeugleiste(g):
         await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
         aus = lambda t: p.evaluate(f"document.querySelector('.tool[data-tool={t}]').classList.contains('aus')")
         # Welt-Voreinstellung (neues Level = Dschungel): Dschungel-Werkzeuge da, Vulkan/Ruinen-Werkzeuge ausgeblendet
-        assert not await aus('crumble') and not await aus('bounce') and await aus('lava') and await aus('falle'), 'Dschungel-Voreinstellung'
+        assert not await aus('crumble') and not await aus('windrad') and await aus('bounce') and await aus('wind') and await aus('lava') and await aus('falle'), 'Dschungel-Voreinstellung'   # Dschungel-Neu: Pilz/Aufwind nicht mehr im Dschungel
         await p.click('#metaBtn'); await p.select_option('#metaWelt', 'vulkan'); await p.click('#metaClose'); await p.wait_for_timeout(100)
         assert not await aus('lava') and not await aus('presse') and await aus('falle') and await aus('crumble'), 'Vulkan-Voreinstellung'
         assert not await aus('ground') and not await aus('coin') and not await aus('switch'), 'Grundwerkzeuge fehlen'
@@ -8030,7 +8066,7 @@ async def element_register(g):
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
-                 ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True], ['meteorit', 'meteoriten', True, False]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -11706,6 +11742,245 @@ async def partner_koop_dschungel(g):
     finally:
         srv.shutdown()
     assert not fehler, fehler
+
+# ---------------------------------------------------------------- Dschungel-Neu: umgebaute Stellen (Koop-Aktionen)
+sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
+import dschungel_neu as DN   # Bausteine Puste-Grube / Windrad-Treppe (tests/bausteine/dschungel_neu.py)
+PUSTE_RELS = ('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 80',
+              'P.x > P.anchor.x + 100', 'P.x > P.anchor.x + 60 && P.vy < -2') + RELS_SPAET
+def dn_puste_grube(c, F, g):
+    """Puste-Grube: Affe pustet in der Mulde (Spalte c) nach oben, das Schweinchen segelt auf den Block; danach schwingt
+    der Affe am Haken hinüber. Gegenprobe: das Schweinchen allein (Sprung + Dash + Schirm) schafft es nicht."""
+    b0, b1, bt = g['b0'], g['b1'], g['bt']
+    varianten = []
+    for weg in (F - 9, F - 7, F - 11):
+        for rel in PUSTE_RELS:
+            for jx in (c - 1, c):
+                m = k_pusten_hoch(c, f'Q.grounded && Q.x > {kx(b0)} - 20 && Q.y <= {ky(bt - 1)} + 1') + [
+                    k_lauf(jx), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+                    {'swing': True, 'pull': 0, 'release': rel, 'frames': 500},
+                    {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(min(b1, b0 + 2))}'}, 'until': 'P.grounded', 'frames': 300}]
+                f = [k_hin(c - 2)] + k_puste_flug(b0, min(b1, b0 + 3), weg) + [k_hin(min(b1, b0 + 3))]
+                varianten.append({'m': m, 'f': f})
+    f_allein = [k_lauf(c + 1, 6), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.vy > -1', 'frames': 60},
+                {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+    return {'beide': varianten, 'ziel': (b0, bt - 1), 'gegen': [('Schweinchen allein', {'f': f_allein}, 'f')]}
+def dn_windrad_treppe(c, F, g, link):
+    """Windrad-Treppe: Schweinchen als Trampolin in der Mulde, Affe federt hoch und dasht auf den Block, pustet das
+    Windrad an -> Treppe erscheint, das Schweinchen steigt hinauf. Gegenproben: Affe allein (Sprung + Dash) und
+    Schweinchen ohne Treppe kommen nicht hinauf."""
+    b0, bt = g['b0'], g['bt']
+    varianten = []
+    for vy in (-4, -1, 2):
+        f = k_trampolin(c, f'Q.grounded && Q.x > {kx(b0)} - 10', 0) + [{'wait': f'!!linkOn[{link}]', 'frames': 500}] + \
+            k_hop(kx(c) + 10, 10) + k_hop(kx(c + 3), 10) + k_hop(kx(c + 7) + 8, 14) + [k_lauf(b0 + 1)]
+        m = k_trampolin_sprung(vy, True, b0) + [{'hold': ['pusten', 'right'], 'until': f'!!linkOn[{link}]', 'frames': 200},
+                                                {'wait': f'Q.grounded && Q.x > {kx(b0)}', 'frames': 900}]
+        varianten.append({'m': m, 'f': f})
+    allein = lambda glide: [k_lauf(c + 1, 6), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.vy > -1', 'frames': 60},
+                            {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right'] + (['glide'] if glide else []), 'until': 'P.grounded', 'frames': 400}]
+    return {'beide': varianten, 'ziel': (b0, bt - 1), 'gegen': [('Affe allein', {'m': allein(False)}, 'm'), ('Schweinchen ohne Treppe', {'f': allein(True)}, 'f')]}
+def dn_stellen():
+    """alle umgebauten Stellen: (Teil, Name, Affe-Start, Schweinchen-Start, Pläne)"""
+    out = []
+    for teil, c, F, art, haken, link in DN.GRUBEN:
+        lv = DN.L.Level(teil)
+        if art == 'X' or any(p['c'] == c and p['r'] == F - 1 for p in lv.ed.get('bouncers', [])): continue   # ohne Hilfe / noch nicht umgebaut
+        g = DN.geometrie(lv, c, F)
+        pl = dn_puste_grube(c, F, g) if art == 'A' else dn_windrad_treppe(c, F, g, link)
+        frei = sorted((x for x in range(c - 6, c) if DN.fest(lv, x, F) and not DN.fest(lv, x, F - 1) and not DN.fest(lv, x, F - 2)), reverse=True)[:3]   # Startplätze auf dem Muldenboden
+        vorn, hinten = kat(frei[0], F - 1), kat(frei[-1], F - 1)   # wer zur Mulde muss, startet näher dran (Figuren schieben sich sonst)
+        out.append((teil, f'{"Puste-Grube" if art == "A" else "Windrad-Treppe"} {c}', vorn if art == 'A' else hinten, hinten if art == 'A' else vorn, pl))
+    return out + DN_STELLEN_EXTRA
+DN_STELLEN_EXTRA = []   # weitere umgebaute Stellen (Puste-Inseln, Puste-Säulen …)
+def _dn_01_insel():
+    """Teil 1, Puste-Insel 85: zweimal Pusten (Rand 66, dann auf der Säule), der Affe über die Haken 73 und 94"""
+    vs = []
+    for rel1 in ('P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 100', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'):
+        for rel2 in ('P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 100'):
+            m = k_pusten_hoch(66, f'Q.grounded && Q.x > {kx(83)}') + [
+                k_lauf(66, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel1, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(84)}', 'left': f'P.x > {kx(86)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+                k_pusten_hoch(85, f'Q.grounded && Q.x > {kx(104)}', 8) + [
+                k_hin(86, 10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel2, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+            f = [k_hin(64)] + k_puste_flug(84, 86, 7) + [k_hin(84, -8), {'wait': f'Q.pusteAn && Q.x > {kx(84)}', 'frames': 1500}] + k_puste_flug(105, 107, 9)
+            vs.append({'m': m, 'f': f})
+    allein = [k_lauf(66, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
+              {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]
+    return {'beide': vs, 'ziel': (105, 15), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'frames': 7000}
+DN_STELLEN_EXTRA.append(('dschungel/01-dschungel.json', 'Puste-Insel 85', kat(60, 16), kat(58, 16), _dn_01_insel()))
+def _dn_durch(dx):   # bis kurz vor die Durchbruch-Wand, dann waagerecht dashen
+    return [{'hold': ['right'], 'until': f'P.x > {kx(dx) - 20} || P.grounded', 'frames': 200}, {'press': ['dash'], 'hold': ['right'], 'frames': 3},
+            {'hold': ['right'], 'until': 'P.grounded && !P.dash', 'frames': 300}]
+def _dn_01_ende():
+    """Teil 1, Ende: Affe vom Schirm-Trampolin zum Haken 784, Dash durch die Wand; das Schweinchen kommt allein nach"""
+    vs = []
+    for rel in ('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'P.x > P.anchor.x + 50 && P.vy < 0'):
+        for vy in (-1, 2):
+            m = k_trampolin_sprung() + [{'hold': ['right'], 'hookWhen': 'P.vy > -8', 'until': 'P.hookAttached || P.grounded', 'frames': 150},
+                                         {'swing': True, 'release': rel, 'frames': 600}] + _dn_durch(788) + [k_lauf(796)]
+            f = k_trampolin(775, f'Q.x > {kx(792)}') + [k_lauf(776, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+                 {'hold': ['right', 'glide'], 'until': f'P.vy > {vy}', 'frames': 100}, {'hold': ['right', 'glide'], 'until': f'P.x > {kx(787)} - 20 || P.grounded', 'frames': 300},
+                 {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 300}, k_lauf(795)]
+            vs.append({'m': m, 'f': f})
+    allein = [k_lauf(776, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+              {'swing': True, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0', 'frames': 600}] + _dn_durch(788)
+    return {'beide': vs, 'ziel': (791, 14), 'gegen': [('Affe ohne Trampolin', {'m': allein}, 'm')], 'frames': 5000}
+DN_STELLEN_EXTRA.append(('dschungel/01-dschungel.json', 'Trampolin-Ende 776', kat(770, 8), kat(772, 8), _dn_01_ende()))
+def _dn_02_haft():
+    """Teil 2, Haftdecken-Grube 382: das Schweinchen fliegt im Puste-Wind an der Decke vorbei nach oben, legt oben Hebel 20 um,
+    kommt am linken Rand wieder herunter; beide über die Steine und mit Dash durch die Durchbruch-Wand"""
+    stampfer = f"solids.find(s => s.type === 'moveplat' && Math.abs(s.startX - {400 * 40}) < 5)"
+    ueber = lambda: k_hop(kx(382) + 8, 12) + k_hop(kx(386) + 8, 12) + k_hop(kx(391) + 8, 12) + \
+        [k_hin(397, 4), {'wait': f'{stampfer}.y < 260 && {stampfer}.moveDir < 0', 'frames': 400},
+         {'press': ['jump'], 'hold': ['jump'], 'until': 'P.vy > -1 && f > 5', 'frames': 40}, {'press': ['dash'], 'hold': ['right'], 'frames': 3},
+         {'hold': ['right'], 'until': f'P.x > {kx(404)}', 'frames': 200}]
+    vs = []
+    for weg in (5, 3):
+        f = [k_hin(378)] + k_puste_flug(383, 386, weg) + [k_hin(395), {'use': True, 'frames': 5}, {'hold': ['left'], 'until': f'P.x < {kx(382)} - 12', 'frames': 400}, k_hin(380)] + ueber()
+        m = k_pusten_hoch(380, f'Q.grounded && Q.y < {ky(7)}', -6) + [{'wait': '!!linkOn[20]', 'frames': 1200}, {'wait': f'Q.x < {kx(383)} && Q.grounded', 'frames': 600}] + ueber()
+        vs.append({'m': m, 'f': f})
+    allein = [k_lauf(381, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
+              {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 400}]
+    return {'beide': vs, 'ziel': (399, 14), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'frames': 7000}
+DN_STELLEN_EXTRA.append(('dschungel/02-baumkronen.json', 'Haftdecken-Grube 382', kat(379, 14), kat(378, 14), _dn_02_haft()))
+def _dn_02_pfeiler():
+    """Teil 2, Puste-Pfeiler 637: Affe springt (+ Dash) auf den Pfeiler und pustet, das Schweinchen fliegt zum Block 651
+    und legt Hebel 13 um, der Affe fährt mit dem Haken hinüber"""
+    vs = []
+    for rel in (f'P.x > {kx(649)}', 'P.x > P.anchor.x + 60'):
+        for pull in (30, 60, 100):
+            m = [k_lauf(633, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.vy > -3', 'frames': 60}, {'press': ['dash'], 'hold': ['right'], 'frames': 3},
+                 {'holdIf': {'right': f'P.x < {kx(637)}', 'left': f'P.x > {kx(638)}'}, 'until': 'P.grounded && !P.dash', 'frames': 300}] + \
+                k_pusten_hoch(638, f'Q.grounded && Q.x > {kx(650)}') + [{'wait': '!!linkOn[13]', 'frames': 600},
+                {'wait': 'hooks.some(h => h.moving && Math.abs(h.x - P.x) < 50)', 'frames': 900},
+                {'hold': ['jump'], 'press': ['jump'], 'hookWhen': 'P.vy > -6', 'until': 'P.hookAttached', 'frames': 60},
+                {'swing': True, 'pull': pull, 'release': rel, 'frames': 900}, {'holdIf': {'right': f'P.x < {kx(652)}', 'left': f'P.x > {kx(654)}'}, 'until': 'P.grounded', 'frames': 300}]
+            f = [{'wait': f'Q.grounded && Q.x > {kx(636)}', 'frames': 600}, {'wait': 'Q.pusteAn', 'frames': 300}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
+                 {'hold': ['glide'], 'holdIf': {'right': 'P.x < Q.x - 8', 'left': 'P.x > Q.x + 8'}, 'until': f'P.y < {ky(6)}', 'frames': 300},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(651)}', 'left': f'P.x > {kx(653)}'}, 'until': 'P.grounded', 'frames': 600}, {'use': True, 'frames': 5}]
+            vs.append({'m': m, 'f': f})
+    allein = [k_lauf(633, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
+              {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 400}]
+    return {'beide': vs, 'ziel': (651, 7), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'frames': 7000}
+DN_STELLEN_EXTRA.append(('dschungel/02-baumkronen.json', 'Puste-Pfeiler 637', kat(632, 13), kat(633, 13), _dn_02_pfeiler()))
+def _dn_02_bruecke():
+    """Teil 2, Puste-Brücke 764: Schweinchen im Wind hoch (Affe am Brückenende 766), segelt mit einem Dash in der Luft zum
+    Block 788, Hebel 17 senkt den Zwischenstein, der Affe springt (+ Dash) über den Stein nach"""
+    vs = []
+    for weg, rel in ((-2, 'P.x > P.anchor.x + 50 && P.vy < 0'), (0, 'P.x > P.anchor.x + 80'), (-2, 'P.x > P.anchor.x + 20 && P.vy < 0')):
+        for dash_x in (774,):
+            f = [k_hin(763)] + k_puste_flug(788, 789, weg)[:3] + [{'hold': ['glide', 'right'], 'until': f'P.x > {kx(dash_x)}', 'frames': 400},
+                 {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(788)}', 'left': f'P.x > {kx(790)}'}, 'until': 'P.grounded && !P.dash', 'frames': 400},
+                 k_hin(788), {'use': True, 'frames': 5}]
+            m = k_pusten_hoch(766, f'Q.grounded && Q.x > {kx(784)}') + [{'wait': '!!linkOn[17]', 'frames': 900}, {'frames': 150}] + \
+                k_sprung_dash(766, 775) + [k_hin(777, 10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(789)}', 'left': f'P.x > {kx(790)}'}, 'until': 'P.grounded', 'frames': 300}]
+            vs.append({'m': m, 'f': f})
+    allein = k_sprung_dash(766, 787)
+    allein_f = [k_lauf(766, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
+                {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 400}]
+    return {'beide': vs, 'ziel': (788, 5), 'gegen': [('Affe ohne Stein', {'m': allein}, 'm'), ('Schweinchen ohne Wind', {'f': allein_f}, 'f')], 'frames': 6000}
+DN_STELLEN_EXTRA.append(('dschungel/02-baumkronen.json', 'Puste-Brücke 764', kat(762, 4), kat(760, 4), _dn_02_bruecke()))
+def _dn_03_haken_treppe():
+    """Teil 3, Haken-Treppe 124: Affe vom Trampolin an die Haken 130/136 auf den Block, Windrad 13 -> Treppe fürs Schweinchen"""
+    vs = []
+    for rel1, rel2 in (('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + 50 && P.vy < 0'), ('P.x > P.anchor.x + 40', 'P.x > P.anchor.x + 80'),
+                       ('P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'), ('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + 100')):
+        m = k_trampolin_sprung() + [{'hold': ['right'], 'hookWhen': 'P.vy > -8', 'until': 'P.hookAttached || P.grounded', 'frames': 150},
+             {'swing': True, 'release': rel1, 'frames': 600}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+             {'swing': True, 'release': rel2, 'frames': 600}, {'holdIf': {'right': f'P.x < {kx(140)}', 'left': f'P.x > {kx(141)}'}, 'until': 'P.grounded', 'frames': 300},
+             k_hin(141), {'hold': ['pusten', 'right'], 'until': '!!linkOn[13]', 'frames': 200}, {'wait': f'Q.grounded && Q.x > {kx(140)} && Q.y < {ky(4)}', 'frames': 1200}]
+        f = k_trampolin(127, f'Q.grounded && Q.y < {ky(4)}') + [{'wait': '!!linkOn[13]', 'frames': 900}] + \
+            [{'hold': ['right'], 'pressIf': {'jump': f'P.grounded && P.x > {kx(130)}'}, 'until': f'P.x > {kx(140)} && P.grounded', 'frames': 600}]
+        vs.append({'m': m, 'f': f})
+    allein = [k_lauf(127, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+              {'swing': True, 'release': 'P.x > P.anchor.x + 20 && P.vy < 0', 'frames': 600}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+    return {'beide': vs, 'ziel': (140, 3), 'gegen': [('Affe ohne Trampolin', {'m': allein}, 'm')], 'frames': 6000}
+DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Haken-Treppe 124', kat(122, 12), kat(124, 12), _dn_03_haken_treppe()))
+def _dn_03_kreuzung():
+    """Teil 3, Kreuzung 414: Affe springt auf den Pfeiler 419 und pustet, das Schweinchen fliegt auf den oberen Weg (Hebel 7);
+    der Affe schwingt am Haken 425 auf den unteren Weg (Hebel 6)"""
+    vs = []
+    for weg in (4, 6):
+        for rel in ('P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'):
+            m = [k_lauf(415, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'holdIf': {'right': f'P.x < {kx(420)}', 'left': f'P.x > {kx(421)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+                k_pusten_hoch(420, f'Q.grounded && Q.y < {ky(6)}') + [k_hin(421), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(436)}'}, 'until': 'P.grounded', 'frames': 300},
+                 k_hin(438), {'use': True, 'frames': 5}, {'wait': '!!linkOn[7]', 'frames': 900}, k_lauf(450)]
+            f = [{'wait': 'Q.pusteAn', 'frames': 600}, k_lauf(415, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
+                 {'hold': ['glide'], 'holdIf': {'right': 'P.x < Q.x - 8', 'left': 'P.x > Q.x + 8'}, 'until': f'P.y < {ky(weg)}', 'frames': 300},
+                 {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(432)}', 'left': f'P.x > {kx(435)}'}, 'until': 'P.grounded', 'frames': 500},
+                 k_hin(436), {'use': True, 'frames': 5}, {'wait': '!!linkOn[6]', 'frames': 1200}, k_lauf(445)]
+            vs.append({'m': m, 'f': f})
+    allein = [k_lauf(415, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300},
+              k_hin(421), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
+              {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 400}]
+    return {'beide': vs, 'ziel': (444, 14), 'gegen': [('Schweinchen allein nach oben', {'f': allein}, 'f')], 'ziel_gegen': (431, 5), 'frames': 6000}
+DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Kreuzung 414', kat(411, 14), kat(409, 14), _dn_03_kreuzung()))
+def _dn_stufe(rand, ziel_c, vy, glide=False):   # Sprung + Dash auf die nächste Säule, dann Dash aufladen
+    return [k_lauf(rand, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': f'P.vy > {vy}', 'frames': 60}, {'press': ['dash'], 'hold': ['right'], 'frames': 3},
+            {'hold': ['glide'] if glide else [], 'holdIf': {'right': f'P.x < {kx(ziel_c)}', 'left': f'P.x > {kx(ziel_c + 1)}'}, 'until': 'P.grounded && !P.dash', 'frames': 300}, {'frames': 125}]
+def _dn_03_saeulen():
+    """Teil 3, Säulen-Treppe (ohne Pilze): beide mit Sprung + Dash von Säule zu Säule bis auf den Block 564"""
+    erste = [k_lauf(540, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 20}, {'holdIf': {'right': f'P.x < {kx(545)}', 'left': f'P.x > {kx(546)}'}, 'until': 'P.grounded', 'frames': 300}]
+    vs = [{'m': erste + _dn_stufe(546, 552, vm) + _dn_stufe(553, 559, vm) + _dn_stufe(560, 564, vm) + [k_lauf(567)],
+           'f': [{'frames': 60}] + _dn_stufe(540, 545, vf, True) + _dn_stufe(546, 552, vf, True) + _dn_stufe(553, 559, vf, True) + _dn_stufe(560, 564, vf, True)}
+          for vm in (1, 2, 0) for vf in (0, 1, -1)]
+    return {'beide': vs, 'ziel': (564, 7), 'frames': 5000}
+DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Säulen-Treppe 546', kat(537, 14), kat(534, 14), _dn_03_saeulen()))
+def _dn_03_aeste():
+    """Teil 3, Finale: zwei Puste-Aufzüge (Hebel 14, 17), dann Haken (Affe) bzw. Segeln + Dash (Schweinchen) zur Landung 732"""
+    vs = []
+    for rel in ('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'P.x > P.anchor.x + 50 && P.vy < 0'):
+        for dash_x in (716, 720):
+            m = k_pusten_hoch(693, f'Q.grounded && Q.y < {ky(10)}') + [{'wait': '!!linkOn[14]', 'frames': 900}, {'wait': f'P.y < {ky(10)} && P.grounded', 'frames': 600},
+                 k_hin(703, 6)] + \
+                [{'holdIf': {'right': f'P.x < {kx(704)} - 3', 'left': f'P.x > {kx(704)} + 3'}, 'pressIf': {'jump': f'P.grounded && P.x > {kx(703)} + 14'}, 'until': f'P.grounded && Math.abs(P.x - {kx(704)}) <= 4 && P.y < {ky(10)} && P.y > {ky(8)}', 'frames': 300}] + \
+                [{'hold': ['pusten', 'pull'], 'until': f'Q.grounded && Q.y < {ky(5)}', 'frames': 400}, {'wait': '!!linkOn[17]', 'frames': 900},
+                 {'wait': f'P.y < {ky(5)} + 2 && P.grounded', 'frames': 600}, k_lauf(711, -6),
+                 {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(740)}'}, 'until': 'P.grounded', 'frames': 400}]
+            f = [k_hin(690)] + k_puste_flug(696, 699, 6) + [k_hin(698), {'use': True, 'frames': 5}, {'wait': f'Q.x > {kx(703)} && Q.pusteAn', 'frames': 1500}, k_hin(702)] + \
+                k_puste_flug(706, 708, 2) + [k_hin(709), {'use': True, 'frames': 5}, {'wait': f'Q.y < {ky(5)} + 2 && Q.x > {kx(705)}', 'frames': 900}, k_lauf(711, -2),
+                 {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['glide', 'right'], 'until': f'P.x > {kx(dash_x)}', 'frames': 300},
+                 {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(733)}', 'left': f'P.x > {kx(736)}'}, 'until': 'P.grounded && !P.dash', 'frames': 600}]
+            vs.append({'m': m, 'f': f})
+    return {'beide': vs, 'ziel': (732, 8), 'frames': 9000}
+DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Puste-Aufzüge 692', kat(688, 14), kat(686, 14), _dn_03_aeste()))
+async def dn_stellen_pruefen(g, teile):
+    fehler, aktuell = [], None
+    for teil, name, ms, fs, pl in dn_stellen():
+        if teil not in teile: continue
+        if os.environ.get('STELLEN_FILTER') and os.environ['STELLEN_FILTER'] not in name: continue
+        if teil != aktuell: await koop_level(g, teil); aktuell = teil
+        zc, zr = pl['ziel']
+        ok, r = False, {}
+        for v in pl['beide']:
+            r = await koop(g, m=ms, f=fs, plans=v, links=pl.get('links', []), maxFrames=pl.get('frames', 5000))
+            ok = r.get('done') and not r.get('dead') and all(r['pos'][w][0] >= zc - 0.6 and r['pos'][w][1] <= zr + 0.1 for w in ('m', 'f'))
+            if os.environ.get('DN_DEBUG'): print('   ', name, 'ok' if ok else '-', r.get('pos'), r.get('dead'), (r.get('log') or [])[-int(os.environ.get('DN_LOG', 3)):])
+            if ok: break
+        if not ok: fehler.append(f'{teil} {name}: beide kommen nicht an: {r.get("pos")} tot={r.get("dead")} {(r.get("log") or [])[-4:]}')
+        gc, gr = pl.get('ziel_gegen', (zc, zr))   # Gegenproben: dieses Ziel darf man allein nicht erreichen
+        for gname, plans, wer in pl.get('gegen', []):
+            r = await koop(g, m=ms, f=fs, plans=plans, links=pl.get('links', []), maxFrames=2500)
+            if r.get('done') and not r.get('dead') and r['pos'][wer][0] >= gc - 0.6 and r['pos'][wer][1] <= gr + 0.1:
+                fehler.append(f'{teil} {name}: Gegenprobe „{gname}“ trotzdem geschafft: {r.get("pos")}')
+    assert not fehler, fehler
+
+@test
+async def dschungel_neu_stellen_a1(g):
+    """Dschungel-Neu, Abschnitt 1 (Teile 01–03): jede umgebaute Pilz-/Aufwind-Stelle mit dem Koop-Bot – mit beiden
+    Koop-Aktionen (Pusten, Schirm-Trampolin) kommen beide an, allein bzw. in der falschen Reihenfolge nicht."""
+    await dn_stellen_pruefen(g, ABS.lies(A1)['teile'])
+
+@test
+async def dschungel_neu_stellen_a2(g):
+    """Dschungel-Neu, Abschnitt 2 (Teile 04–06): wie dschungel_neu_stellen_a1."""
+    await dn_stellen_pruefen(g, ABS.lies(A2)['teile'])
 
 # ---------------------------------------------------------------- Dschungel-Neu: Abschnitte (js/15a-abschnitte.js)
 async def abschnitt_laden(g, datei):

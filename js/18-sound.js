@@ -347,6 +347,13 @@ const SFX = {
   schirmAuf(pl){ sfxLog('schirmauf'); sfxPlay('umbrella', {x: pl.x, rate: 0.9}); },
   trampolin(pl){ sfxLog('trampolin'); sfxPlay('mushroom', {x: pl.x, rate: 1.1}); sfxPlay('umbrella', {x: pl.x, rate: 1.3, vol: 0.6}); sTone(300, 0, 0.2, {to: 560, type: 'triangle', vol: 0.035}); },
   pustenStart(pl){ sfxLog('pustenstart'); sNoise(0, 0.18, {filter: 'bandpass', f: 500, to: 1400, q: 0.8, vol: 0.05, attack: 0.05}); },
+  // Spielszenen (Dschungel-Neu): Meteorit fällt (Heulen + Einschlag), Glühen (tiefes Summen), Tor öffnet sich, Sog ins Tor
+  szene_meteor(){ sfxLog('szene_meteor'); sNoise(0, 1.5, {filter: 'bandpass', f: 2600, to: 400, q: 1.2, vol: 0.06, attack: 0.3});
+                  sTone(900, 0, 1.4, {to: 180, type: 'sine', vol: 0.03}); sNoise(1.5, 1.2, {filter: 'lowpass', f: 600, to: 90, q: 0.7, vol: 0.12, attack: 0.01}); sTone(70, 1.5, 0.9, {to: 40, type: 'sine', vol: 0.12}); },
+  szene_gluehen(){ sfxLog('szene_gluehen'); sTone(110, 0, 1.6, {to: 112, type: 'sine', vol: 0.05, attack: 0.4}); sTone(165, 0.1, 1.5, {to: 168, type: 'triangle', vol: 0.025, attack: 0.5}); },
+  szene_portal(){ sfxLog('szene_portal'); sNoise(0, 2.2, {filter: 'bandpass', f: 300, to: 2400, q: 1.5, vol: 0.05, attack: 0.6});
+                  for(let i = 0; i < 5; i++) sTone(440*Math.pow(1.26, i), 0.25 + i*0.22, 0.6, {type: 'sine', vol: 0.025}); },
+  szene_sog(){ sfxLog('szene_sog'); sNoise(0, 1.6, {filter: 'bandpass', f: 400, to: 3200, q: 0.8, vol: 0.08, attack: 0.1}); sTone(220, 0, 1.4, {to: 880, type: 'triangle', vol: 0.035}); },
   windrad(x){ sfxLog('windrad'); sNoise(0, 0.5, {filter: 'bandpass', f: 1800, to: 700, q: 2, vol: 0.05, attack: 0.02}); sTone(520, 0, 0.12, {to: 760, type: 'triangle', vol: 0.03}); },
   pusten(pl, k){ sfxLog('pusten'); sNoise(0, 0.34, {filter: 'bandpass', f: 900 + Math.random()*200, to: 650, q: 0.6, vol: 0.06*(0.6 + 0.4*(k || 1)), attack: 0.03}); },
   wechsel(fest, x){ sfxLog(fest ? 'wechselan' : 'wechselweg'); sfxPlay(fest ? 'wechselAn' : 'wechselAus', {x}); },   // Wechselboden
