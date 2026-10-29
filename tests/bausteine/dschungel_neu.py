@@ -210,11 +210,19 @@ def s06_puste_turm(lv):
     for cc, rr in ((307, 13), (311, 9), (317, 5)): lv.punkt('switchFloors', cc, rr, gruppe='B', link=16)   # je 3 Reihen (springbar), dicht an der Säule (kein Kopfstoß)
     lv.punkt('switches', 314, 7, link=16)
     return lv.merke('Dschungel-Neu: Puste-Turm 308 (Pilze -> Pusten + Hebel 16 mit Wechsel-Stufen)')
+def s06_sturm_pilz(lv):
+    """Teil 6, Sturm-Jagd (früher Pilz 699 vor der Dornen-Grube 700–707): Pilz weg, Grube 1 kürzer (701–707, ein Sprung
+    ohne Pilz); dahinter eine Durchbruch-Wand 714 (4 hoch) – nur mit Dash entkommt man der Stachelwand."""
+    if not any(p['c'] == 699 for p in lv.ed.get('bouncers', [])): return False
+    lv.punkt_weg('bouncers', 699, 15)
+    for c in (699, 700): lv.kachel(c, 16, 'ground'); lv.kachel(c, 17, 'ground')
+    for r in (12, 13, 14, 15): lv.punkt('bruchWaende', 714, r)
+    return lv.merke('Dschungel-Neu: Sturm-Jagd ohne Pilz 699')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
-    'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor],
+    'dschungel/06-wipfelsturm.json': [s06_puste_insel, s06_puste_turm, s06_luft_tor, s06_sturm_pilz],
 }
 
 def haken_setzen(lv, c, g):

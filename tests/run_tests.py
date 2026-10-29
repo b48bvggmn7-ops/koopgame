@@ -9583,9 +9583,10 @@ def _d6_e3(dash):
     return {'m': [k_lauf(533, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(535, -4), {'wait': '!!linkOn[9]'}] + weg}
 JAGDEN_BOT.append(('dschungel/06-wipfelsturm.json', 'E3 Doppel-Jagd', kat(524, 11), kat(525, 11), [], 'Wand', 9, _d6_e3, 584))
 def _d6_e4(dash):
-    pilz = [{'press': ['jump'], 'hold': ['jump'], 'holdIf': {'right': f'P.x < {kx(699)} - 6', 'left': f'P.x > {kx(699)} + 6'}, 'until': 'P.vy < -14', 'frames': 100},
-            {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
-    weg = [j_lauf(697, [686], dash=dash, ohne=[686])] + pilz + [j_lauf(742, dash=dash, dash_bis=734)] + _sz(kx(745)) + _sz(kx(751)) + _sz(kx(757)) + _sz(kx(764)) + [k_lauf(767)]
+    # Dschungel-Neu: Pilz 699 ist weg – über die Grube 701–707 springen (Schweinchen mit Schirm), dann mit Dash durch die Wand 714
+    grube = [{'hold': ['right'], 'until': f'P.x >= {kx(700)} + 4', 'frames': 300}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
+             {'hold': ['right'], 'holdIf': {'glide': 'P === p2'}, 'until': 'P.grounded', 'frames': 300}]
+    weg = [j_lauf(697, [686], dash=dash, ohne=[686], dash_bis=683)] + grube + [j_lauf(742, dash=dash, dash_ab=711, dash_bis=734)] + _sz(kx(745)) + _sz(kx(751)) + _sz(kx(757)) + _sz(kx(764)) + [k_lauf(767)]
     return {'m': [k_lauf(679, -14), {'use': True, 'frames': 2}] + weg, 'f': [k_lauf(681, -4), {'wait': '!!linkOn[14]'}] + weg}
 JAGDEN_BOT.append(('dschungel/06-wipfelsturm.json', 'E4 Sturm-Jagd', kat(670, 11), kat(671, 11), [], 'Wand', 14, _d6_e4, 766))
 def _d2_bruecken(dash):
