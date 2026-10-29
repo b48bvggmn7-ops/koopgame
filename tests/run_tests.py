@@ -7084,7 +7084,8 @@ async def koop_pusten(g):
             // Balken: leer pusten, dann laden
             for(const k in KEYS) KEYS[k] = false; for(let i = 0; i < 400; i++) st(); e.voll = p1.puste;
             KEYS[p1.keys.pusten] = true; let n = 0; while(p1.pusteAn || n === 0){ st(); n++; if(n > 400) break; } e.dauer = n; e.leer = p1.pusteLeer;
-            for(let i = 0; i < 30; i++) st(); e.nochAus = !p1.pusteAn;
+            // Taste weiter gehalten (Nutzer-Rückmeldung „lädt nicht, flackert“): bleibt aus und lädt trotzdem
+            let an = 0; for(let i = 0; i < 300; i++){ st(); if(p1.pusteAn) an++; } e.nochAus = !an; e.geladenGehalten = p1.puste;
             KEYS[p1.keys.pusten] = false; for(let i = 0; i < 400; i++) st(); e.wieder = p1.puste;
             // ohne Schirm: trägt nicht nach oben
             stell(p1, 1060, 720); stell(p2, 1060, 640); KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true;
@@ -7099,7 +7100,7 @@ async def koop_pusten(g):
         assert r['schweinHoch'] > 8.5 and r['aufSims'], f'Wind trägt das Schweinchen nicht auf den Sims: {r}'
         assert abs(r['affeY'] - 720) < 1, f'der Affe selbst darf nicht fliegen: {r}'
         assert 'pustenstart' in r['log'] and 'pusten' in r['log'], f'Ton fehlt: {r["log"]}'
-        assert r['voll'] == 1 and abs(r['dauer'] - 160) <= 3 and r['leer'] and r['nochAus'], f'Puste-Balken falsch: {r}'
+        assert r['voll'] == 1 and abs(r['dauer'] - 160) <= 3 and r['leer'] and r['nochAus'] and r['geladenGehalten'] > 0.9, f'Puste-Balken falsch: {r}'
         assert r['wieder'] == 1, f'Balken lädt nicht wieder: {r}'
         assert r['ohneSchirm'], f'ohne Schirm darf der Wind nicht tragen: {r}'
         assert r['seite'] > 60 and r['affeStill2'], f'Seiten-Wind schiebt nicht: {r}'

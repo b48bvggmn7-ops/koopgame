@@ -76,8 +76,10 @@ function pusteKuerzen(P, b, richtung){
 function pustenVorher(P){
   if(P.puste === undefined){ P.puste = 1; P.pustePause = 0; }
   const kann = P.grounded && !P.hookAttached && !P.dash && !P.haft && !P.inWater && !P.zielWartet;
-  const will = koopTaste(P, 'pusten') && kann && !(P.pusteLeer && P.puste < PUSTE_NEUSTART);
+  // leer gepustet: erst Taste loslassen UND bis PUSTE_NEUSTART laden – sonst sprang er bei gehaltener Taste immer wieder
+  // kurz an (Balken nie voll, Affe flackert hin und her; Nutzer-Rückmeldung)
   if(P.pusteLeer && P.puste >= PUSTE_NEUSTART && !koopTaste(P, 'pusten')) P.pusteLeer = false;
+  const will = koopTaste(P, 'pusten') && kann && !P.pusteLeer;
   if(!will || P.puste <= 0){
     if(P.pusteAn){ P.pusteAn = false; P._pusteEndeT = performance.now(); }
     if(P.puste <= 0) P.pusteLeer = true;
@@ -176,7 +178,7 @@ function pusteBalkenZeichnen(P, px, py){
   const w = 30, h = 5, seite = P.pusteAn && P.pusteRichtung === 'hoch';   // pustet nach oben: Balken neben den Kopf (nicht in den Wind)
   const x = seite ? px - w - 34 : px - w/2, y = seite ? py - P.h - 4 : py - P.h - 34;
   ctx.fillStyle = 'rgba(20,30,40,0.5)'; roundRect(x - 1.5, y - 1.5, w + 3, h + 3, 3); ctx.fill();
-  const leer = P.pusteLeer && P.puste < PUSTE_NEUSTART;
+  const leer = P.pusteLeer;   // grau, bis man loslässt und er wieder bis PUSTE_NEUSTART geladen hat
   const g = ctx.createLinearGradient(x, 0, x + w, 0);
   g.addColorStop(0, leer ? '#9aa7b0' : '#bff4ff'); g.addColorStop(1, leer ? '#cfd8de' : '#5fd0ff');
   ctx.fillStyle = g; roundRect(x, y, Math.max(0.01, w*P.puste), h, 2.5); ctx.fill();
