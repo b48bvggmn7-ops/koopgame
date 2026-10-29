@@ -295,7 +295,7 @@ function partnerKoerper(P){
           t: 0, lastWallTouch: P.lastWallTouch !== undefined && P.lastWallTouch > -9000 ? -1e9 : -1e9,
           kurz: !!P.sprungKurzMoeglich, los: !!P.sprungLosgelassen, fling: !!P.ropeFling, standingOn: P.standingOn,
           hook: P.male && P.hookAttached ? {anchor: P.anchor, len: P.ropeLen, ziel: P.lianeZiel ?? P.ropeLen, max: P.ropeMax ?? P.ropeLen, dehn: P._dehn || 0, frei: P._lianeFrei} : null, lastAnchor: null, inWater: !!P.inWater,
-          dashPunkte: P.dashPunkte || 0, dash: P.dash ? P.dash.zeit : 0, dashDx: P.dash ? P.dash.dx : 0};
+          dashPunkte: typeof dashAusHier === 'function' && dashAusHier() ? 0 : (P.dashPunkte || 0), dash: P.dash ? P.dash.zeit : 0, dashDx: P.dash ? P.dash.dx : 0};   // Welt ohne Dash: er plant auch keinen
 }
 function partnerKollision(U, b, achse){
   const box = {x: b.x - b.w/2, y: b.y - b.h, w: b.w, h: b.h};
@@ -731,7 +731,7 @@ function* partnerSuche(P, Z){
 // Bestensuche über Standplätze: von jedem Platz aus werden Pläne in BEIDE Richtungen vorausgerechnet (laufen, springen,
 // segeln, Haken, Kamin); jeder sichere Landeplatz ist ein neuer Platz. Gefahren im Takt zählen mit der Zeit, zu der er
 // dort wäre. Ergebnis: Liste von Plänen, die nacheinander ausgeführt werden. Wie partnerSuche über mehrere Spielschritte.
-function partnerPlatz(x, y, P, t){ return {x, y, vx: 0, vy: 0, w: P.w, h: P.h, male: P.male, grounded: true, glideTimer: 0, t, dashPunkte: P.dashPunkte || 0}; }
+function partnerPlatz(x, y, P, t){ return {x, y, vx: 0, vy: 0, w: P.w, h: P.h, male: P.male, grounded: true, glideTimer: 0, t, dashPunkte: typeof dashAusHier === 'function' && dashAusHier() ? 0 : (P.dashPunkte || 0)}; }
 function partnerMakroPlaene(platz, U){
   const L = [], x = platz.x;
   for(const d of [1, -1]){
@@ -955,6 +955,11 @@ function partnerBodenFrei(P, dir, n){
   }
   return true;
 }
+// kein Boden in den nächsten PARTNER_GRUBE_TIEFE Reihen unter ihm (dann segelt das Schweinchen bei der Flucht)
+function partnerUeberGrube(P){
+  const x0 = P.x - P.w/2, x1 = P.x + P.w/2, y0 = P.y, y1 = P.y + PARTNER_GRUBE_TIEFE*40;
+  return !solids.some(s => !s.gone && !s.open && s.x < x1 && s.x + s.w > x0 && s.y + s.h > y0 && s.y < y1);
+}
 function partnerFolgen(P, M){
   if(partner.modus === 'aufgabe') partner.modus = 'folgen';
   const F = partnerFluchtZiel(P);
@@ -970,13 +975,19 @@ function partnerFolgen(P, M){
       if(partnerDashFrei(P, F.dir)) e.dash = true;
       return e;
     }
+    // einfach rennen und springen: an der Grube möglichst spät abspringen (ohne Dash zählt jedes Stück Weite), vor einem
+    // Hindernis gleich; über einer Grube öffnet das Schweinchen den Schirm
+    const rennen = () => {
+      const grube = partnerUeberGrube({x: P.x + F.dir*40, y: P.y, w: 2});
+      const spaet = !grube || partnerUeberGrube({x: P.x + F.dir*PARTNER_KANTE_SPAET, y: P.y, w: 2});   // Mitte schon fast über der Kante
+      const kante = P.grounded && !partnerBodenFrei(P, F.dir, 1) && spaet;
+      return {dir: F.dir, springen: kante, sprungHalten: !P.grounded, gleiten: !P.male && !P.grounded && P.vy > 0 && partnerUeberGrube(P)};
+    };
+    if(typeof dashAusHier === 'function' && dashAusHier()) return rennen();   // Welt ohne Dash: Fluchtwege sind zum Rennen gebaut
     const e = partnerNavi(P, Z, 'flieht!');
     if(partner.modus !== 'fest') partner.text = 'flieht!';
     // noch kein Weg geplant (er überlegt), die Wand ist aber schneller: einfach nach vorn springen statt stehen zu bleiben
-    if(!e || (!e.dir && !e.springen && !e.sprungHalten)){
-      const kante = P.grounded && !partnerBodenFrei(P, F.dir, 1);   // erst an der Kante abspringen
-      return {dir: F.dir, springen: kante, sprungHalten: !P.grounded};
-    }
+    if(!e || (!e.dir && !e.springen && !e.sprungHalten)) return rennen();
     if(e.dir === F.dir && !e.springen && partnerDashFrei(P, F.dir)) e.dash = true;
     return e;
   }

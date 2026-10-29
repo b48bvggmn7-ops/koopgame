@@ -128,6 +128,46 @@ def teil_sicht(datei):
         return out
     return None
 
+def partner_teil_sicht(datei):
+    """Begleitdatei (levels/partner/) eines alten Teils aus der des Abschnitts herausschneiden – Spalten, Pixel und Nummern
+    wie in teil_sicht; None = kein solcher Teil"""
+    import re
+    for a in _welt_level():
+        d = _roh(a)
+        if not ist_zusammengefuegt(d): continue
+        t = next((t for t in d['_teile'] if t['datei'] == datei), None)
+        if not t: continue
+        q = ROOT / 'levels' / 'partner' / a
+        if not q.exists(): return None
+        pd = json.loads(q.read_text(encoding='utf-8'))
+        c0, c1, dl = t['von'], t['von'] + t['breite'], t['nummern']
+        x0 = c0 * TILE
+        def nr(n): return n - dl if dl < n <= dl + NUMMERN_JE_TEIL else n
+        def text(s):   # Pixel-Zahlen (x) in den Bot-Schritten verschieben, linkOn[n] umnummern
+            s = re.sub(r'(?<![\w.])(\d+(?:\.\d+)?)', lambda m: str(round(float(m.group(1)) - x0, 3)).rstrip('0').rstrip('.') if float(m.group(1)) >= x0 else m.group(1), s)
+            return re.sub(r'linkOn\[(\d+)\]', lambda m: f'linkOn[{nr(int(m.group(1)))}]', s)
+        def tief(o):
+            if isinstance(o, str): return text(o)
+            if isinstance(o, list): return [tief(x) for x in o]
+            if isinstance(o, dict): return {k: tief(v) for k, v in o.items()}
+            return o
+        aufgaben = []
+        for au in pd.get('aufgaben', []):
+            z = au.get('zone')
+            if not z or not (c0 <= z[0] < c1): continue
+            n = dict(au); n['zone'] = [z[0] - c0, z[1] - c0]
+            if isinstance(n.get('nummer'), int): n['nummer'] = nr(n['nummer'])
+            if isinstance(n.get('start'), dict): n['start'] = dict(n['start'], c=n['start']['c'] - c0)
+            if isinstance(n.get('probe'), dict):
+                pr = dict(n['probe'])
+                if pr.get('start'): pr['start'] = [pr['start'][0] - c0] + pr['start'][1:]
+                if pr.get('links'): pr['links'] = [nr(l) for l in pr['links']]
+                n['probe'] = pr
+            if 'schritte' in n: n['schritte'] = tief(n['schritte'])
+            aufgaben.append(n)
+        return dict(pd, level=datei, aufgaben=aufgaben, offen=[])
+    return None
+
 def level_dateien(welt_eintrag):
     """Level einer Welt aus worlds.json (alte Teile-Listen in ihre Teile aufgelöst; fest zusammengefügte Abschnitte sind ein Level)"""
     out = []

@@ -789,12 +789,12 @@ async def editor_projekt_levels(g):
             assert o['s'] == f"📁 {welt[o['w']]} ({len(o['z'])})", o
             assert o['z'] == sorted(o['z'], key=lambda z: (z.split('/')[1].startswith('boss-'), teil_von[z][0], teil_von[z][1])), o   # Teile unter ihrem Abschnitt
             assert not o['offen'], 'ohne geladenes Projekt-Level sind alle Ordner zu'
-        assert [z for o in ordner if o['w'] == 'dschungel' for z in o['z']][:2] == ['dschungel/abschnitt-1-sternschnuppenspur.json', 'dschungel/01-dschungel.json']
-        assert await p.evaluate("!document.querySelector('#projectList .lvl.abschnitt button')"), 'Abschnitt (ohne Gelände) hat einen Laden-Knopf'
-        erste = 'dschungel/01-dschungel.json'   # Dschungel-Neu: Teil 1 von Abschnitt 1
+        # „Level 1–3 zusammen“: jeder Abschnitt ist EIN Level (mit Laden-Knopf), keine Teile mehr in der Liste
+        assert [z for o in ordner if o['w'] == 'dschungel' for z in o['z']] == ['dschungel/abschnitt-1-sternschnuppenspur.json', 'dschungel/abschnitt-2-meteoritenherz.json']
+        erste = 'dschungel/abschnitt-1-sternschnuppenspur.json'
         await projekt_laden(p, erste)
         erwartet = json.loads((ROOT / 'levels' / 'editor-format' / erste).read_text())
-        assert (await p.text_content('#curName')).startswith('Abschnitt 1 · Teil 1 · Dschungel'), f"Welt/Nummer/Titel nicht übernommen: {await p.text_content('#curName')}"
+        assert (await p.text_content('#curName')).startswith('Abschnitt 1 · Spur der Sternschnuppe'), f"Welt/Nummer/Titel nicht übernommen: {await p.text_content('#curName')}"
         await p.click('#levelsBtn'); await p.wait_for_timeout(300)
         offen = await p.eval_on_selector_all('#projectList > details[open]', 'els => els.map(d => d.dataset.welt)')
         assert offen == ['dschungel'], f'Ordner des geladenen Levels sollte offen sein: {offen}'
@@ -802,11 +802,11 @@ async def editor_projekt_levels(g):
         p.on('download', lambda d: dateien.append(d))
         await p.click('#projectBtn'); await p.wait_for_timeout(800)
         namen = sorted(d.suggested_filename for d in dateien)
-        assert namen == ['level-1.editor.json', 'level-1.json'], f'Downloads: {namen}'
+        assert namen == ['abschnitt-1.editor.json', 'abschnitt-1.json'], f'Downloads: {namen}'
         inhalt = {d.suggested_filename: json.loads(Path(await d.path()).read_text()) for d in dateien}
-        ed = inhalt['level-1.editor.json']
-        assert ed['name'] == 'Level 1' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, erwartet['tiles'])), 'Editor-Datei falsch'
-        assert 'solids' in inhalt['level-1.json'] and len(ed['coins']) == len(erwartet['coins']), 'Spiel-Datei falsch'
+        ed = inhalt['abschnitt-1.editor.json']
+        assert ed['name'] == 'Abschnitt 1' and sorted(map(tuple, ed['tiles'])) == sorted(map(tuple, erwartet['tiles'])), 'Editor-Datei falsch'
+        assert 'solids' in inhalt['abschnitt-1.json'] and len(ed['coins']) == len(erwartet['coins']), 'Spiel-Datei falsch'
     finally:
         srv.shutdown()
 
@@ -9699,7 +9699,7 @@ def _r2_doppelwand(dash):
         [k_lauf(286, 0), {'use': True, 'frames': 2}, j_lauf(293, dash=False), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12},
          {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(308)} - 6', 'left': f'P.x > {kx(308)} + 6'}, 'until': 'P.grounded', 'frames': 400}, k_lauf(309)]
     m = [k_lauf(244, 0), {'use': True, 'frames': 2}, k_lauf(246, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]
-    for _ in range(5): m += [{'swing': True, 'pull': 10, 'release': 'f > 20 && P.vy < 0 && P.x > P.anchor.x + 60', 'frames': 900},   # Liane 2: früher loslassen
+    for _ in range(5): m += [{'swing': True, 'slack': 40, 'release': 'f > 20 && P.vy < 0 && P.x > P.anchor.x + 60', 'frames': 900},   # Liane 2: früher loslassen; kurze Liane (LIANE_VOLLE_LAENGE aus): erst nachgeben
                              {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
     m += [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}, k_lauf(309)]
     return {'m': m, 'f': f}
@@ -10578,7 +10578,9 @@ async def spielstand_ohne_checkpoints(g):
     assert s['completed'] == ['dschungel/01-dschungel.json'] and 'dschungel/02-baumkronen.json' in s['unlocked'], s
     assert 'checkpoint' not in raw.lower() and 'activecp' not in raw.lower(), raw
     await g.load(level_pfad('dschungel/02-baumkronen.json'))
-    assert await g.ev("activeCp") == -1 and await g.ev("checkpointDefs.length") == 13
+    # Start am Start: kein Checkpoint aktiv – oder nur der direkt am Start (seit „Level 1–3 zusammen“ am Übergang)
+    cp = await g.ev("[activeCp, checkpointDefs.length, activeCp >= 0 ? Math.abs(checkpointDefs[activeCp].x - levelStartM.x) : 0]")
+    assert (cp[0] == -1 or cp[2] < 4 * 40) and cp[1] == len(ABS.lies('dschungel/02-baumkronen.json')['checkpoints']), cp
     await g.p.evaluate("localStorage.removeItem('monchichi.save')")
 
 # ---------------------------------------------------------------- Ruinen-Überarbeitung
@@ -11749,6 +11751,9 @@ async def partner_projekt_start(g, datei, ich):
     """Projekt-Level im Testmodus wie aus dem Editor (mit projektDatei -> Begleitdatei wird geladen)"""
     d = ABS.lies(datei)
     d['projektDatei'] = datei
+    pt = ABS.partner_teil_sicht(datei)   # alter Dschungel-Teil: Begleitdatei aus der des Abschnitts herausgeschnitten
+    if pt is not None:
+        await g.p.route('**/levels/partner/' + datei + '*', lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(pt)))
     srv = await partner_test_start(g, d, ich=ich)
     await g.p.wait_for_function("partnerAufgaben.length > 0 && partnerAufgabenDatei !== null", timeout=8000)
     return srv
@@ -11770,7 +11775,7 @@ async def partner_koop_dschungel(g):
     for ich in ('m', 'f'):
         srv = await partner_projekt_start(g, 'dschungel/05-dornenpfad.json', ich)
         try:
-            weg = _d5_e4(True)['m'][2:]   # Umbau: Flucht mit Dash (Wand 7,0)
+            weg = _d5_e4(False)['m'][2:]   # Flucht ohne Dash (Dschungel)
             plan = [k_lauf(682, -6), {'wait': f'Q.x > {kx(679)} && Q.grounded', 'frames': 1200}, {'use': True, 'frames': 2}] + weg + \
                    [k_lauf(797), {'wait': f'Q.x > {kx(790)}', 'frames': 1500}]
             r = await koop(g, **{ich: kat(671, 11), ('f' if ich == 'm' else 'm'): kat(672, 11)}, plans={ich: plan}, pre='partnerHirnNeu()', maxFrames=5000)

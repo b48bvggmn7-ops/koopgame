@@ -5771,7 +5771,7 @@
       "group": 13,
       "targetX": 58440,
       "targetY": 480,
-      "speed": 7.4,
+      "speed": 6.66,
       "switchLink": 34
     },
     {
@@ -5783,7 +5783,7 @@
       "group": 13,
       "targetX": 58440,
       "targetY": 520,
-      "speed": 7.4,
+      "speed": 6.66,
       "switchLink": 34
     },
     {
@@ -5795,7 +5795,7 @@
       "group": 13,
       "targetX": 58440,
       "targetY": 560,
-      "speed": 7.4,
+      "speed": 6.66,
       "switchLink": 34
     },
     {
@@ -5807,7 +5807,7 @@
       "group": 13,
       "targetX": 58440,
       "targetY": 600,
-      "speed": 7.4,
+      "speed": 6.66,
       "switchLink": 34
     },
     {
