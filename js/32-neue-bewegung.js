@@ -298,7 +298,7 @@ function lianeGriffPruefen(P){
     // sofort hochzieht.
     const A = P.anchor, d = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y);
     P._lianeA = A; P._dehn = 0; P.ropeMax = Math.max(d, hookRange(A));
-    if(P.grounded){ P.lianeZiel = P.ropeLen = d; P._lianeFrei = undefined; }
+    if(P.grounded || !LIANE_VOLLE_LAENGE){ P.lianeZiel = P.ropeLen = d; P._lianeFrei = undefined; }   // Nutzer: nicht mehr in die volle Länge fallen
     else {
       // höchstens bis über Boden/Gefahr; von oben gegriffen (weiter weg als das erlaubt) wird die Liane weich eingeholt
       const frei = lianeFreiUnten(A, P);

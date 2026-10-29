@@ -5295,9 +5295,11 @@ async def seil_abflug_mit_schwung(g):
 
 @test
 async def liane_volle_laenge(g):
-    """Nutzerwunsch „die Liane soll immer erst mal in den weitesten Radius gehen“: in der Luft gegriffen gibt die Liane sofort
-    bis zur Reichweite nach (der Affe fällt hinein und schwingt) – aber nie so weit, dass er senkrecht unter dem Haken auf
-    Boden, Stacheln, Lava oder in eine Flammen-Falle kommt (LIANE_BODEN_ABSTAND). Vom Boden gegriffen bleibt sie straff (W zieht sofort hoch)."""
+    """Liane-Länge beim Greifen. Nutzer-Rückmeldung (zurückgenommen): NICHT mehr sofort in die volle Reichweite fallen –
+    LIANE_VOLLE_LAENGE = false: in der Luft gegriffen bleibt sie so lang wie der Abstand beim Greifen. Mit
+    LIANE_VOLLE_LAENGE = true (alter Wunsch) gibt sie bis zur Reichweite nach, aber nie bis auf Boden, Stacheln, Lava oder
+    in eine Flammen-Falle (LIANE_BODEN_ABSTAND)."""
+    assert await g.ev("LIANE_VOLLE_LAENGE") is False
     await g.load(level([ground(0, 680, 900), ground(1300, 680, 900)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
                        hooks=[{'x': 500, 'y': 200, 'radius': 260}, {'x': 1100, 'y': 400, 'radius': 400}],
                        spikes=[{'x': 1100, 'y': 680, 'w': 40, 'h': 40}]))
@@ -5308,9 +5310,10 @@ async def liane_volle_laenge(g):
       e.frei = greif(hooks[0], 20, 50);      // viel Luft: volle Reichweite
       e.stacheln = greif(hooks[1], 20, 50);  // Stacheln 280 px darunter, Reichweite 400: kürzer
       KEYS.KeyG = false; menuScreen = null; return e; })()""")
-    assert r['frei']['haengt'] and r['frei']['L'] == 260, f'nicht bis zur Reichweite nachgegeben: {r}'
+    abst = round((20**2 + 50**2) ** 0.5)
+    assert r['frei']['haengt'] and abs(r['frei']['L'] - abst) <= 2, f'Liane nicht so lang wie beim Greifen: {r}'
     s = r['stacheln']
-    assert s['haengt'] and not s['tot'] and s['L'] < 240 - 19, f'fällt in die Stacheln: {r}'
+    assert s['haengt'] and not s['tot'] and abs(s['L'] - abst) <= 2, f'Liane über den Stacheln: {r}'
     # Flammen-Falle nach oben im Boden unter dem Haken: die Liane bleibt über der Flamme (FLAMME_LAENGE Kästchen)
     await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 1000, 'y': 200, 'radius': 400}],
                        traps=[{'x': 980, 'y': 640, 'art': 'flamme', 'richtung': 'o', 'takt': 2, 'versatz': 0}]))
@@ -5394,8 +5397,11 @@ async def liane2_natuerliches_pendel(g):
       let x0 = P.x; for(let i = 0; i < 200 && !P.grounded; i++) st(); e.los.weite = Math.round(P.x - x0);
       menuScreen = null; KEYS.KeyG = false; return e; })()""")
     n = r['nah']
-    assert n['att'] and abs(n['ende'] - n['min']) < 1 and abs(n['laengen'][-1] - n['min']) <= 5, f'nah gegriffen: {n}'
-    assert max(n['laengen']) <= n['min'] + 30, f'nah gegriffen: federt zu weit nach {n}'
+    if await g.ev("LIANE_VOLLE_LAENGE"):
+        assert n['att'] and abs(n['ende'] - n['min']) < 1 and abs(n['laengen'][-1] - n['min']) <= 5, f'nah gegriffen: {n}'
+        assert max(n['laengen']) <= n['min'] + 30, f'nah gegriffen: federt zu weit nach {n}'
+    else:   # Nutzer-Rückmeldung: bleibt so lang wie beim Greifen (kein Hineinfallen in die volle Länge)
+        assert n['att'] and abs(n['ende'] - 40) <= 2 and max(n['laengen']) <= 45, f'nah gegriffen: {n}'
     p = r['pumpen']
     assert p['att'] and p['maxWinkel'] <= 100 and p['maxRuck'] < 3, f'Pumpen: Überschlag oder Ruck {p}'
     o = r['vonOben']
