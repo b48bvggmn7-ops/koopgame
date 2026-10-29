@@ -176,10 +176,21 @@ def s03_aeste(lv):
     lv.ed['movers'].append({'c': 704, 'r': 10, 'dc': 0, 'dr': -5, 'speed': 2.5, 'link': 17, 'einmal': True})
     lv.punkt('switches', 698, 9, link=14); lv.punkt('switches', 709, 4, link=17)
     return lv.merke('Dschungel-Neu: Finale Teil 3 mit zwei Puste-Aufzügen (Hebel 14, 17)')
+def s06_puste_insel(lv):
+    """Teil 6, Stachel-Schlucht 210–239 (früher Aufwinde 218 und 229): Puste-Insel 226–231. Der Affe pustet am Rand (208)
+    das Schweinchen hoch, es segelt auf die Insel; der Affe schwingt an den Haken 213/222 hinterher, pustet auf der Insel
+    noch einmal, das Schweinchen segelt zum Boden 240; der Affe nimmt den Haken 235 (früher 231, direkt über der Insel)."""
+    if lv.typ(229, 15) == 'ground': return False
+    wind_weg(lv, 218, 230)
+    for c in range(226, 232):
+        for r in (15, 16): lv.kachel(c, r, 'ground')
+    lv.haken_weg(231, 10); lv.haken(235, 10, 4.5)   # von der Insel aus mit Anlauf
+    return lv.merke('Dschungel-Neu: Puste-Insel 226 (Aufwinde 218/229 -> zweimal Pusten)')
 SONDER = {
     'dschungel/01-dschungel.json': [s01_puste_insel, s01_ende],
     'dschungel/02-baumkronen.json': [s02_haftgrube, s02_aufwinde, s02_bruecke],
     'dschungel/03-lianenschlucht.json': [s03_haken_treppe, s03_kreuzung, s03_saeulen_treppe, s03_aeste],
+    'dschungel/06-wipfelsturm.json': [s06_puste_insel],
 }
 
 def haken_setzen(lv, c, g):

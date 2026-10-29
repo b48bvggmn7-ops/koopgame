@@ -11952,6 +11952,24 @@ def _dn_03_aeste():
             vs.append({'m': m, 'f': f})
     return {'beide': vs, 'ziel': (732, 8), 'frames': 9000}
 DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Puste-Aufzüge 692', kat(688, 14), kat(686, 14), _dn_03_aeste()))
+def _dn_06_insel():
+    """Teil 6, Puste-Insel 226: zweimal Pusten (Rand 208, dann auf der Insel), der Affe über die Haken 213/222 und 235"""
+    vs = []
+    for rel in ('P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'):
+        for rel2 in ('P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 100'):
+            m = k_pusten_hoch(208, f'Q.grounded && Q.x > {kx(226)}') + [
+                k_lauf(209, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
+                {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(227)}', 'left': f'P.x > {kx(229)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+                k_pusten_hoch(229, f'Q.grounded && Q.x > {kx(240)}', 8) + [
+                k_lauf(231, 4), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
+                {'swing': True, 'pull': 0, 'release': rel2, 'frames': 500}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
+            f = [k_hin(205)] + k_puste_flug(227, 231, 7) + [k_hin(227, -8), {'wait': f'Q.pusteAn && Q.x > {kx(228)}', 'frames': 1500}] + k_puste_flug(241, 244, 9)
+            vs.append({'m': m, 'f': f})
+    allein = [k_lauf(209, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['right'], 'until': 'P.vy > -1', 'frames': 60},
+              {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 900}]
+    return {'beide': vs, 'ziel': (240, 15), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'ziel_gegen': (226, 15), 'frames': 7000}
+DN_STELLEN_EXTRA.append(('dschungel/06-wipfelsturm.json', 'Puste-Insel 226', kat(207, 15), kat(205, 15), _dn_06_insel()))
 async def dn_stellen_pruefen(g, teile):
     fehler, aktuell = [], None
     for teil, name, ms, fs, pl in dn_stellen():
