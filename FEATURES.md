@@ -1766,7 +1766,7 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
     Block über der Haftdecke nur 1 Reihe dick (oben geht es weiter); Mondnacht zwei Trittstufen (162–163, 165–166) zum
     Hakenblock 171; Glutpfad Stufe 398–399 in der Mulde hinter der Durchbruch-Säule 392. Tests dschungel1_ende_ohne_dash_hoch,
     lianenschlucht_pilz180_weiter, mondnacht_stufen_zum_hakenblock, glutpfad_mulde_nach_durchbruch. Ein Dash in
-    der Welt abschalten: DASH_AUS_WELTEN (leer; Dschungel behält den Dash, Nutzerentscheidung).
+    der Welt abschalten: DASH_AUS_WELTEN (leer; Dschungel behält den Dash, Nutzerentscheidung – später geändert, siehe „Kein Dash im Dschungel“).
     **Dschungel ganzheitlich: jede Hilfe wird gebraucht** (Nutzerwunsch „entweder ich brauch den Haken oder nicht“;
     je Stelle entschieden): Prüfwerkzeug `tests/hilfen_pruefen.py <welt>/<datei>` probiert jeden Haken, Pilz und Aufwind
     mit echter Physik mit und ohne die Hilfe. Pilz-Gruben: entweder Pilz + Haken 4 Spalten weiter von der Grube weg, so
@@ -2167,6 +2167,11 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   nach BRUCH_PUSTE_NOETIG (45) Schritten voller Wind bricht die ganze zusammenhängende Wand. Tests dash_welt_aus, bruch_pusten.
   **Verfolgungen:** die Stachelwände sind langsamer (gemessen: ohne Dash gerade so zu schaffen), Durchbruch-Wände in den
   Fluchtwegen (Dornenpfad-Finale, Sturm-Jagd) sind raus, der Bröckel-Stein der Pilz-Flucht ist zurück. Test jagden_dschungel.
+  **Stellen, die nur mit Dash gingen, umgebaut:** an jeder Windrad-Treppe ein Haken (der Affe kommt vom Schirm-Trampolin
+  hinauf), Ende Teil 1 eine Windrad-Brücke statt der Durchbruch-Wand, Haftdecken-Grube: der Affe pustet die Wand schräg um,
+  Graben Lianenschlucht/Glühwald-Lücke/Wipfelsturm-Tunnel schmaler, Haken über dem hohen Kamin, Puste-Brücke 764: Zielblock
+  3 Reihen tiefer und der Zwischenstein senkt sich auf Reihe 7, Puste-Aufzüge: oben pustet der Affe das Schweinchen noch einmal
+  hoch, damit es über die letzte Schlucht segelt. Test dschungel_neu_stellen_a1/_a2.
 - **Liane:** fällt nicht mehr sofort in die volle Länge (`LIANE_VOLLE_LAENGE = false`): in der Luft gegriffen bleibt sie so
   lang wie beim Greifen. Test liane_volle_laenge.
 - **Hohle Bäume raus** (`BAUM_AN = false`, js/12a): Start und Ziel im Dschungel wieder ohne Baumhaus (Ziel-Schild wie in den

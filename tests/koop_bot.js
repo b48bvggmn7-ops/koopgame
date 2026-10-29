@@ -11,7 +11,7 @@ window.coopRun = function(o){
   for(const k in KEYS) KEYS[k] = false;
   if(o.links) for(const l of o.links) setLink(l, true);
   if(o.m){ p1.x = o.m[0]; p1.y = o.m[1]; } if(o.f){ p2.x = o.f[0]; p2.y = o.f[1]; }
-  for(const P of [p1, p2]){ P.vx = 0; P.vy = 0; P.hookAttached = false; }
+  for(const P of [p1, p2]){ P.vx = 0; P.vy = 0; P.hookAttached = false; P.puste = 1; P.pusteLeer = false; P.pustePause = 0; P.pusteAn = false; }   // jede Szene mit vollem Puste-Balken
   camPos = Math.max(0, Math.min(LEVEL_W - VW, Math.min(p1.x, p2.x) - CAM_LEFT)); camX = Math.round(camPos);
   if(o.pre) Function(o.pre)();
   const plans = {m: o.plans.m || [], f: o.plans.f || []};

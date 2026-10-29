@@ -11882,31 +11882,37 @@ def _dn_01_ende():
 DN_STELLEN_EXTRA.append(('dschungel/01-dschungel.json', 'Trampolin-Ende 776', kat(770, 8), kat(772, 8), _dn_01_ende()))
 def _dn_02_haft():
     """Teil 2, Haftdecken-Grube 382: das Schweinchen fliegt im Puste-Wind an der Decke vorbei nach oben, legt oben Hebel 20 um,
-    kommt am linken Rand wieder herunter; beide über die Steine und mit Dash durch die Durchbruch-Wand"""
+    kommt am linken Rand wieder herunter; beide über die Steine. Ohne Dash (Nutzerwunsch): der Affe pustet die
+    Durchbruch-Wand 398 vom letzten Stein aus SCHRÄG nach oben-rechts um (W + D), dann springen beide hinauf"""
     stampfer = f"solids.find(s => s.type === 'moveplat' && Math.abs(s.startX - {400 * 40}) < 5)"
-    ueber = lambda: k_hop(kx(382) + 8, 12) + k_hop(kx(386) + 8, 12) + k_hop(kx(391) + 8, 12) + \
-        [k_hin(397, 4), {'wait': f'{stampfer}.y < 260 && {stampfer}.moveDir < 0', 'frames': 400},
-         {'press': ['jump'], 'hold': ['jump'], 'until': 'P.vy > -1 && f > 5', 'frames': 40}, {'press': ['dash'], 'hold': ['right'], 'frames': 3},
-         {'hold': ['right'], 'until': f'P.x > {kx(404)}', 'frames': 200}]
+    weg_frei = "!solids.some(s => s.type === 'bruch' && !s.gone && Math.abs(s.x - 398*40) < 5)"
+    def ueber(affe):
+        st = k_hop(kx(382) + 8, 12) + k_hop(kx(386) + 8, 12)
+        if affe: st += k_hop(kx(391) + 8, 12) + [k_hin(395, 0), {'hold': ['pusten', 'pull', 'right'], 'until': weg_frei, 'frames': 260}]   # schräg: über die Mauerkante weg
+        else: st += [k_hin(390, 0), {'wait': weg_frei, 'frames': 900}, {'frames': 30}] + k_hop(kx(391) + 8, 12)
+        st += [k_hin(396, 4)]
+        return st + [{'wait': f'{stampfer}.y < 260 && {stampfer}.moveDir < 0', 'frames': 400},
+                     {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14},
+                     {'holdIf': {'right': f'P.x < {kx(403)} - 4', 'left': f'P.x > {kx(403)} + 8'}, 'until': f'P.grounded && P.x > {kx(403)} - 6', 'frames': 200}]   # Lücke zwischen den Stampfern
     vs = []
     for weg in (5, 3):
-        f = [k_hin(378)] + k_puste_flug(383, 386, weg) + [k_hin(395), {'use': True, 'frames': 5}, {'hold': ['left'], 'until': f'P.x < {kx(382)} - 12', 'frames': 400}, k_hin(380)] + ueber()
-        m = k_pusten_hoch(380, f'Q.grounded && Q.y < {ky(7)}', -6) + [{'wait': '!!linkOn[20]', 'frames': 1200}, {'wait': f'Q.x < {kx(383)} && Q.grounded', 'frames': 600}] + ueber()
+        f = [k_hin(378)] + k_puste_flug(383, 386, weg) + [k_hin(395), {'use': True, 'frames': 5}, {'hold': ['left'], 'until': f'P.x < {kx(382)} - 12', 'frames': 400}, k_hin(380),
+             {'wait': f'Q.x > {kx(386)}', 'frames': 600}] + ueber(False)
+        m = k_pusten_hoch(380, f'Q.grounded && Q.y < {ky(7)}', -6) + [{'wait': '!!linkOn[20]', 'frames': 1200}, {'wait': f'Q.x < {kx(383)} && Q.grounded', 'frames': 600}] + ueber(True)
         vs.append({'m': m, 'f': f})
-    allein = [k_lauf(381, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
-              {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 400}]
-    return {'beide': vs, 'ziel': (399, 14), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'frames': 7000}
+    allein = [k_lauf(381, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+    return {'beide': vs, 'ziel': (399, 14), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'frames': 8000}
 DN_STELLEN_EXTRA.append(('dschungel/02-baumkronen.json', 'Haftdecken-Grube 382', kat(379, 14), kat(378, 14), _dn_02_haft()))
 def _dn_02_pfeiler():
-    """Teil 2, Puste-Pfeiler 637: Affe springt (+ Dash) auf den Pfeiler und pustet, das Schweinchen fliegt zum Block 651
+    """Teil 2, Puste-Pfeiler 637: Affe springt auf den Pfeiler und pustet, das Schweinchen fliegt zum Block 651
     und legt Hebel 13 um, der Affe fährt mit dem Haken hinüber"""
     vs = []
-    for rel in (f'P.x > {kx(649)}', 'P.x > P.anchor.x + 60'):
+    for rel in (f'P.anchor.x > {kx(645)} && P.vx > 1', f'P.anchor.x > {kx(644)} && P.x > P.anchor.x', f'P.x > {kx(649)}', 'P.x > P.anchor.x + 60'):   # kurze Liane: am Fahrt-Ende loslassen
         for pull in (30, 60, 100):
-            m = [k_lauf(633, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.vy > -3', 'frames': 60}, {'press': ['dash'], 'hold': ['right'], 'frames': 3},
+            m = [k_lauf(633, -4), {'press': ['jump'], 'hold': ['right', 'jump'], 'until': 'P.vy > -3', 'frames': 60},
                  {'holdIf': {'right': f'P.x < {kx(637)}', 'left': f'P.x > {kx(638)}'}, 'until': 'P.grounded && !P.dash', 'frames': 300}] + \
                 k_pusten_hoch(638, f'Q.grounded && Q.x > {kx(650)}') + [{'wait': '!!linkOn[13]', 'frames': 600},
-                {'wait': 'hooks.some(h => h.moving && Math.abs(h.x - P.x) < 50)', 'frames': 900},
+                {'wait': 'hooks.some(h => h.moving && h.moveDir === 1 && h.x < P.x - 10 && h.x > P.x - 60)', 'frames': 1200},   # Haken kommt von links (fährt nach rechts)
                 {'hold': ['jump'], 'press': ['jump'], 'hookWhen': 'P.vy > -6', 'until': 'P.hookAttached', 'frames': 60},
                 {'swing': True, 'pull': pull, 'release': rel, 'frames': 900}, {'holdIf': {'right': f'P.x < {kx(652)}', 'left': f'P.x > {kx(654)}'}, 'until': 'P.grounded', 'frames': 300}]
             f = [{'wait': f'Q.grounded && Q.x > {kx(636)}', 'frames': 600}, {'wait': 'Q.pusteAn', 'frames': 300}, {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 10},
@@ -11918,22 +11924,22 @@ def _dn_02_pfeiler():
     return {'beide': vs, 'ziel': (651, 7), 'gegen': [('Schweinchen allein', {'f': allein}, 'f')], 'frames': 7000}
 DN_STELLEN_EXTRA.append(('dschungel/02-baumkronen.json', 'Puste-Pfeiler 637', kat(632, 13), kat(633, 13), _dn_02_pfeiler()))
 def _dn_02_bruecke():
-    """Teil 2, Puste-Brücke 764: Schweinchen im Wind hoch (Affe am Brückenende 766), segelt mit einem Dash in der Luft zum
-    Block 788, Hebel 17 senkt den Zwischenstein, der Affe springt (+ Dash) über den Stein nach"""
+    """Teil 2, Puste-Brücke 764: Schweinchen im Wind hoch (Affe am Brückenende 766), segelt zum Block 788 (Oberkante
+    Reihe 9, ohne Dash: 3 Reihen tiefer als früher), Hebel 17 senkt den Zwischenstein 775 auf Reihe 6, der Affe springt
+    auf den Stein und schwingt am Haken 782 auf den Block"""
     vs = []
-    for weg, rel in ((-2, 'P.x > P.anchor.x + 50 && P.vy < 0'), (0, 'P.x > P.anchor.x + 80'), (-2, 'P.x > P.anchor.x + 20 && P.vy < 0')):
-        for dash_x in (774,):
-            f = [k_hin(763)] + k_puste_flug(788, 789, weg)[:3] + [{'hold': ['glide', 'right'], 'until': f'P.x > {kx(dash_x)}', 'frames': 400},
-                 {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(788)}', 'left': f'P.x > {kx(790)}'}, 'until': 'P.grounded && !P.dash', 'frames': 400},
+    for weg in (-3, -2, -1):
+        for rel in ('P.x > P.anchor.x + 50 && P.vy < 0', 'P.x > P.anchor.x + 80', 'P.x > P.anchor.x + 20 && P.vy < 0'):
+            f = [k_hin(763)] + k_puste_flug(788, 789, weg)[:3] + [{'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(788)}', 'left': f'P.x > {kx(790)}'}, 'until': 'P.grounded', 'frames': 600},
                  k_hin(788), {'use': True, 'frames': 5}]
-            m = k_pusten_hoch(766, f'Q.grounded && Q.x > {kx(784)}') + [{'wait': '!!linkOn[17]', 'frames': 900}, {'frames': 150}] + \
-                k_sprung_dash(766, 775) + [k_hin(777, 10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 80},
+            stein = f"solids.find(s => s.type === 'moveplat' && Math.abs(s.startX - {775 * 40}) < 5)"
+            m = k_pusten_hoch(766, f'Q.grounded && Q.x > {kx(784)}') + [{'wait': '!!linkOn[17]', 'frames': 900}, {'wait': f'{stein}.y > {7 * 40 - 3}', 'frames': 300}, k_hin(758)] + \
+                k_sprung_dash(766, 775, False) + [k_hin(777, 10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 80},
                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(789)}', 'left': f'P.x > {kx(790)}'}, 'until': 'P.grounded', 'frames': 300}]
             vs.append({'m': m, 'f': f})
-    allein = k_sprung_dash(766, 787)
-    allein_f = [k_lauf(766, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.vy > 0', 'frames': 60},
-                {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['right', 'glide'], 'until': 'P.grounded && !P.dash', 'frames': 400}]
-    return {'beide': vs, 'ziel': (788, 5), 'gegen': [('Affe ohne Stein', {'m': allein}, 'm'), ('Schweinchen ohne Wind', {'f': allein_f}, 'f')], 'frames': 6000}
+    allein = k_sprung_dash(766, 787, False)
+    allein_f = [k_lauf(766, 0), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 14}, {'hold': ['right', 'glide'], 'until': 'P.grounded', 'frames': 400}]
+    return {'beide': vs, 'ziel': (788, 8), 'gegen': [('Affe ohne Stein', {'m': allein}, 'm'), ('Schweinchen ohne Wind', {'f': allein_f}, 'f')], 'frames': 6000}
 DN_STELLEN_EXTRA.append(('dschungel/02-baumkronen.json', 'Puste-Brücke 764', kat(762, 4), kat(760, 4), _dn_02_bruecke()))
 def _dn_03_haken_treppe():
     """Teil 3, Haken-Treppe 124: Affe vom Trampolin an die Haken 129/137 auf den Block, Windrad 13 -> Treppe fürs Schweinchen"""
@@ -11983,24 +11989,26 @@ def _dn_03_saeulen():
     return {'beide': vs, 'ziel': (564, 7), 'frames': 5000}
 DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Säulen-Treppe 546', kat(537, 14), kat(534, 14), _dn_03_saeulen()))
 def _dn_03_aeste():
-    """Teil 3, Finale: zwei Puste-Aufzüge (Hebel 14, 17), dann Haken (Affe) bzw. Segeln + Dash (Schweinchen) zur Landung 732"""
+    """Teil 3, Finale: zwei Puste-Aufzüge (Hebel 14, 17); oben pustet der Affe das Schweinchen noch einmal hoch (ohne Dash
+    käme es nicht über die letzte Schlucht), es segelt zur Landung 732, der Affe schwingt an den Haken 717/726 nach"""
     vs = []
     for rel in ('P.x > P.anchor.x + 20 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0', 'P.x > P.anchor.x + 50 && P.vy < 0'):
-        for dash_x in (716, 720):
+        for weg in (-1, 1):
             m = k_pusten_hoch(693, f'Q.grounded && Q.y < {ky(10)}') + [{'wait': '!!linkOn[14]', 'frames': 900}, {'wait': f'P.y < {ky(10)} && P.grounded', 'frames': 600},
                  k_hin(703, 6)] + \
                 [{'holdIf': {'right': f'P.x < {kx(704)} - 3', 'left': f'P.x > {kx(704)} + 3'}, 'pressIf': {'jump': f'P.grounded && P.x > {kx(703)} + 14'}, 'until': f'P.grounded && Math.abs(P.x - {kx(704)}) <= 4 && P.y < {ky(10)} && P.y > {ky(8)}', 'frames': 300}] + \
                 [{'hold': ['pusten', 'pull'], 'until': f'Q.grounded && Q.y < {ky(5)}', 'frames': 400}, {'wait': '!!linkOn[17]', 'frames': 900},
-                 {'wait': f'P.y < {ky(5)} + 2 && P.grounded', 'frames': 600}, k_lauf(711, -6),
+                 {'wait': f'P.y < {ky(5)} + 2 && P.grounded', 'frames': 600}, {'wait': f'Q.y < {ky(5)} + 2 && Q.grounded', 'frames': 600}] + \
+                k_pusten_hoch(710, f'Q.grounded && Q.x > {kx(731)}') + [k_lauf(711, -6),
                  {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached || (P.grounded && f > 5)', 'frames': 120},
                  {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200},
-                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'hold': ['right'], 'holdIf': {'left': f'P.x > {kx(740)}'}, 'until': 'P.grounded', 'frames': 400}]
+                 {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(734)}', 'left': f'P.x > {kx(737)}'}, 'until': 'P.grounded', 'frames': 400}]
             f = [k_hin(690)] + k_puste_flug(696, 699, 6) + [k_hin(698), {'use': True, 'frames': 5}, {'wait': f'Q.x > {kx(703)} && Q.pusteAn', 'frames': 1500}, k_hin(702)] + \
-                k_puste_flug(706, 708, 2) + [k_hin(709), {'use': True, 'frames': 5}, {'wait': f'Q.y < {ky(5)} + 2 && Q.x > {kx(705)}', 'frames': 900}, k_lauf(711, -2),
-                 {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['glide', 'right'], 'until': f'P.x > {kx(dash_x)}', 'frames': 300},
-                 {'press': ['dash'], 'hold': ['right'], 'frames': 3}, {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(733)}', 'left': f'P.x > {kx(736)}'}, 'until': 'P.grounded && !P.dash', 'frames': 600}]
+                k_puste_flug(706, 708, 2) + [k_hin(709), {'use': True, 'frames': 5}, {'wait': f'Q.y < {ky(5)} + 2 && Q.x > {kx(705)}', 'frames': 900}, k_hin(707)] + \
+                k_puste_flug(733, 736, weg)
             vs.append({'m': m, 'f': f})
-    return {'beide': vs, 'ziel': (732, 8), 'frames': 9000}
+    allein_f = [k_lauf(711, -2), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, {'hold': ['glide', 'right'], 'until': 'P.grounded', 'frames': 600}]
+    return {'beide': vs, 'ziel': (732, 8), 'gegen': [('Schweinchen ohne Wind', {'f': allein_f}, 'f')], 'frames': 9000}
 DN_STELLEN_EXTRA.append(('dschungel/03-lianenschlucht.json', 'Puste-Aufzüge 692', kat(688, 14), kat(686, 14), _dn_03_aeste()))
 def _dn_06_insel():
     """Teil 6, Puste-Insel 226: zweimal Pusten (Rand 208, dann auf der Insel), der Affe über die Haken 213/222 und 235"""
