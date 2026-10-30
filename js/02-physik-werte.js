@@ -235,9 +235,18 @@ const PARTNER_WEG_PAUSE = 300;          // Schritte: so lange keine neue Wegsuch
 const PARTNER_DASH_BODEN = 6;     // Computer-Partner auf der Flucht: so viele Kästchen fester, freier Boden vor ihm, damit er dasht (Umbau)
 const PARTNER_KANTE_SPAET = 6;    // Computer-Partner auf der Flucht: erst abspringen, wenn so viele px vor seiner Mitte kein Boden mehr ist (ohne Dash: weiter)
 const PARTNER_GRUBE_TIEFE = 4;    // … und als Schweinchen den Schirm öffnen, wenn so viele Reihen unter ihm kein Boden ist
+const PARTNER_BRUCH_SUCHE = 320;   // Computer-Partner ohne Dash: findet er keinen Weg, sucht er so weit (px) vor sich eine Durchbruch-Wand zum Anpusten
 const PARTNER_BRUCH_NAH = 24;   // Computer-Partner: so nah (px) vor einer Durchbruch-Wand dasht er hindurch (Umbau)
 const PARTNER_TRAMPOLIN_NAH = 70;    // Partner-Schweinchen: ist der Affe so nah (px, waagerecht) über ihm in der Luft, hält es den Schirm auf (Dschungel-Neu)
 const PARTNER_TRAMPOLIN_WEG = 200;   // Partner-Affe: hält das Schweinchen den Schirm auf und ist so nah, läuft er hin und springt darauf
+const PARTNER_PUSTE_HIN = 140;      // Partner-Affe: segle ich als Schweinchen so nah (px, waagerecht) über ihm, läuft er darunter und pustet
+const PARTNER_PUSTE_FREI = 3;       // Partner-Affe pustet nur, wenn so viele Kästchen über seinem Kopf frei sind
+const PARTNER_WIND_NAH = 160;       // Partner-Schweinchen: pustet der Affe nach oben und ist es so nah (px, waagerecht, gleiche Höhe), läuft es hin …
+const PARTNER_WIND_SPRUNG = 40;     // … und springt in den Wind, sobald es so nah am Affen ist
+const PARTNER_SEGEL_SPALTEN = 24;   // Partner-Schweinchen oben im Wind: so weit (Kästchen) sucht es eine Landestelle
+const PARTNER_WIND_RAND = 16;       // Partner-Schweinchen steigt so weit (px) innerhalb des hinteren Strahl-Rands (Anlauf durch den Strahl)
+const PARTNER_WIND_SCHWEBEN = 70;  // Partner-Schweinchen: so viele Schritte oben im Wind schweben, ohne dass vorne eine Landestelle erreichbar ist -> irgendwo landen
+const PARTNER_SEGEL_VERSUCHE = 5;   // Partner-Schweinchen: so viele Landestellen (je eine Vorausrechnung) prüft es höchstens je Richtung
 
 // ---------- Dschungel-Neu: Spezial-Aktionen (js/34-koop-aktionen.js) ----------
 // Schirm-Trampolin (Spezial-Taste des Schweinchens halten): es steht still und spannt den offenen Schirm über sich; springt

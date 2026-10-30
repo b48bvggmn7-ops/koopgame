@@ -11845,6 +11845,62 @@ async def partner_koop_dschungel(g):
         srv.shutdown()
     assert not fehler, fehler
 
+@test
+async def partner_puste_insel(g):
+    """Computer-Partner an der ersten Puste-Stelle (Puste-Insel 85, Abschnitt 1; Nutzer: „komme nicht durch den Anfangsbereich, der
+    Partner überlegt ewig und tut nichts“). 1) Ich = Affe: ich puste am Rand nach oben, das Partner-Schweinchen springt in den Wind,
+    steigt am hinteren Strahl-Rand und segelt los, sobald die Vorausrechnung eine Landestelle in Zielrichtung findet (partnerLandeZiel),
+    landet auf der Säule 84–86; ich schwinge hinüber, puste noch einmal, es segelt bis 105. 2) Ich = Schweinchen: ich springe an
+    freier Stelle hoch und öffne den Schirm, der Partner-Affe läuft unter mich (nicht unter dem Vorsprung) und pustet, kommt per
+    Haken nach und pustet auf der Säule noch einmal."""
+    fehler = []
+    srv = await partner_projekt_start(g, A1, 'm')
+    try:
+        rel = 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'
+        m = k_pusten_hoch(66, f'Q.grounded && Q.x > {kx(80)} && Q.y < {ky(17)}') + [
+            k_lauf(66, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(84)}', 'left': f'P.x > {kx(86)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+            k_pusten_hoch(85, f'Q.grounded && Q.x > {kx(104)}', 8)
+        r = await koop(g, m=kat(60, 16), f=kat(58, 16), plans={'m': m}, pre='partnerHirnNeu()', maxFrames=2500)
+        if not (r.get('done') and not r.get('dead') and r['pos']['f'][0] >= 104.5): fehler.append(('Affe pustet, Partner-Schweinchen fliegt', r.get('dead'), r.get('pos'), (r.get('log') or [])[-3:]))
+    finally:
+        srv.shutdown()
+    srv = await partner_projekt_start(g, A1, 'f')
+    try:
+        def flug(z0, z1, hoch):   # wie ein Mensch: an freier Stelle hochspringen, Schirm auf, im Wind steigen, dann hinüber
+            return [{'wait': 'Q.grounded && Math.abs(Q.x - P.x) < 150', 'frames': 900}, {'press': ['jump'], 'hold': ['jump'], 'frames': 14},
+                    {'hold': ['glide'], 'until': f'P.grounded || P.y < Q.y - {hoch}', 'frames': 300},
+                    {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(z0)}', 'left': f'P.x > {kx(z1)}'}, 'until': 'P.grounded', 'frames': 600}]
+        ok, r = False, {}
+        for h1, h2 in ((220, 260), (220, 300), (240, 280)):
+            f = [k_hin(65)] + flug(84, 86, h1) + [{'wait': f'Q.grounded && Q.x > {kx(83)} && Q.y > {ky(14)}', 'frames': 1500}, k_hin(85)] + flug(105, 107, h2)
+            r = await koop(g, f=kat(60, 16), m=kat(58, 16), plans={'f': f}, pre='partnerHirnNeu()', maxFrames=2500)
+            if r.get('done') and not r.get('dead') and r['pos']['f'][0] >= 104.5: ok = True; break
+        if not ok: fehler.append(('Schweinchen segelt, Partner-Affe pustet', r.get('dead'), r.get('pos'), (r.get('log') or [])[-3:]))
+    finally:
+        srv.shutdown()
+    assert not fehler, fehler
+
+@test
+async def partner_kamin_135(g):
+    """Abschnitt 1, Kamin 135 (früher „Kamin mit Durchbruch oben“, nur per Dash): ohne Dash ist die obere Durchbruch-Wand raus,
+    die untere pustet der Affe um. Ich warte oben am Ausgang (147); der Partner kommt nach – als Affe pustet er die untere
+    Wand selbst um (partnerBruchPusten) und klettert per Wandsprung hinauf, als Schweinchen (Wand schon offen) klettert es."""
+    fehler = []
+    for ich, wand_weg in (('f', False), ('m', True)):
+        srv = await partner_projekt_start(g, A1, ich)
+        try:
+            await g.ev(f"""(() => {{ const P = partnerFigur(), M = meineFigur(); if({'true' if wand_weg else 'false'}) for(const s of solids) if(s.type === 'bruch' && s.x > 130*40 && s.x < 136*40) s.gone = true;
+                for(const F of [P, M]){{ F.vx = 0; F.vy = 0; }} P.x = {kx(131)}; P.y = {ky(15)}; M.x = {kx(147)}; M.y = {ky(7)}; camPos = Math.max(0, P.x - 300); camX = Math.round(camPos); partnerHirnNeu(); }})()""")
+            await g.p.wait_for_function(f"(() => {{ const P = partnerFigur(); return deathState || (P.grounded && P.x > {kx(143)} && P.y <= {ky(7)} + 1); }})()", timeout=60000)
+            st = await g.ev("[!!deathState, Math.round(partnerFigur().x/40), partner.text]")
+            if st[0]: fehler.append((ich, 'tot', st))
+        except Exception as e:
+            fehler.append((ich, 'kommt nicht hinauf', await g.ev("[Math.round(partnerFigur().x/4)/10, Math.round(partnerFigur().y/4)/10, partner.text]")))
+        finally:
+            srv.shutdown()
+    assert not fehler, fehler
+
 # ---------------------------------------------------------------- Dschungel-Neu: umgebaute Stellen (Koop-Aktionen)
 sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
 import dschungel_neu as DN   # Bausteine Puste-Grube / Windrad-Treppe (tests/bausteine/dschungel_neu.py)

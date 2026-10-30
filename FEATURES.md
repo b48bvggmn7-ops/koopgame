@@ -2178,6 +2178,16 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   breit – als EIN Bild zu breit für den Browser (weiße Fläche). Die Leinwand zeigt nur noch den sichtbaren Ausschnitt und
   wandert beim Scrollen mit (`fitView`/`ansichtX` in editor/js/01-zustand.js, Platzhalter `#cvsPlatz` für die Scrollleiste).
   Test editor_langes_level_sichtbar.
+- **Computer-Partner an den Puste-Stellen und ohne Dash** (Nutzer: „komme nicht durch den Anfangsbereich, der Test-Partner überlegt
+  ewig und tut nichts“): Partner-Schweinchen springt in meinen Puste-Wind (PARTNER_WIND_NAH/_SPRUNG), steigt am hinteren
+  Strahl-Rand (Anlauf durch den Strahl) und segelt los, sobald die Vorausrechnung eine Landestelle in Zielrichtung findet
+  (`partnerLandeZiel`, echte Physik `partnerSim`, Umgebung um die Mitte der Flugbahn); schwebt es zu lange, landet es irgendwo
+  sicher. Partner-Affe läuft unter mein segelndes Schweinchen (PARTNER_PUSTE_HIN), nie unter einem Vorsprung (über dem Kopf
+  PARTNER_PUSTE_FREI Kästchen frei), und pustet. Ohne Dash pustet der Partner-Affe Durchbruch-Wände selbst um
+  (`partnerBruchPusten`, PARTNER_BRUCH_SUCHE). Auf der Flucht rennt er und springt spät ab (s. o.). Tests partner_puste_insel,
+  partner_kamin_135.
+- **Kamin 135 (Abschnitt 1) ohne Dash schaffbar:** die obere Durchbruch-Wand (Spalte 140, Reihen 6–7; früher nur per Dash aus dem
+  Wandsprung) ist raus – Ausgang per Wandsprung oder vom Fahrstuhl; die untere Wand pustet der Affe um.
 - **Schirm-Trampolin: Schirm nehmen wie ein Mensch** (3D-Figur; Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig
   eingeblendet“, „warum ist der Schirm durchsichtig?“, „hol ihn von der Seite – wie sähe eine menschliche Bewegung aus?“): in
   SCHIRM_AUF_ZEIT (0,6 s) zieht die rechte Pfote den zugeklappten Schirm seitlich hinter der Hüfte hervor (dahinter gezeichnet,
