@@ -2178,10 +2178,12 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   breit – als EIN Bild zu breit für den Browser (weiße Fläche). Die Leinwand zeigt nur noch den sichtbaren Ausschnitt und
   wandert beim Scrollen mit (`fitView`/`ansichtX` in editor/js/01-zustand.js, Platzhalter `#cvsPlatz` für die Scrollleiste).
   Test editor_langes_level_sichtbar.
-- **Schirm-Trampolin aufklappen** (3D-Figur; Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig eingeblendet“):
-  in SCHIRM_AUF_ZEIT (0,32 s) erst die Pfoten von unten vor den Bauch, dabei schieben sie den zugeklappten Schirm hinauf, dann
-  klappt er auf und federt kurz nach; zuklappen in SCHIRM_ZU_ZEIT rückwärts. Die 3D-Arme bleiben dabei eng am Körper (nicht mehr
-  seitlich hoch). Aussehen am Ende wie bisher (Pfoten vor dem Bauch, Schirm tief auf dem Kopf). Test schirm_aufklappen.
+- **Schirm-Trampolin hervorholen und aufklappen** (3D-Figur; Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig
+  eingeblendet“, „warum ist der Schirm durchsichtig? er muss ihn hinter dem Rücken her holen“): in SCHIRM_AUF_ZEIT (0,5 s) holt
+  das Schweinchen den zugeklappten Schirm hinter dem Rücken über die Schulter hervor (hinter der Figur gezeichnet), setzt ihn vor
+  dem Kopf auf den Kopf, die Pfoten wandern von den Schultern zum Stock vor dem Bauch, dann klappt er auf und federt kurz nach;
+  loslassen = rückwärts (SCHIRM_ZU_ZEIT). Nie durchsichtig. Die 3D-Arme bleiben eng am Körper. Aussehen am Ende wie bisher.
+  Werte SCHIRM_HOLEN/SCHIRM_GREIFEN, Ablauf `schirmAblauf` (js/33). Test schirm_aufklappen.
 - **Abschnitt 1 bei Nacht** wie das frühere Level 1 (Nutzer: „Level 1 ist plötzlich am Tag“; Abschnitt 2 auch nachts).
   Test level1_bei_nacht.
 - **Hohle Bäume raus** (`BAUM_AN = false`, js/12a): Start und Ziel im Dschungel wieder ohne Baumhaus (Ziel-Schild wie in den

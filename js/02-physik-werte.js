@@ -250,10 +250,10 @@ const TRAMPOLIN_TREFFER = 30;     // px: so weit (plus halbe Figurenbreite) nebe
 const TRAMPOLIN_V_SCHUB = -18.3;  // Nutzerwunsch: drückt das Schweinchen im richtigen Moment Springen, federt der Affe höher (≈ 8,4 Reihen)
 const TRAMPOLIN_SCHUB_FENSTER = 7; // Schritte (≈ 0,13 s) vor oder nach dem Aufprall zählt der Druck als „im richtigen Moment“
 const SCHIRM_HAND_SEITE = 0;       // px: Schirm-Trampolin – Pfoten und Stock seitlich der Mitte (Nutzerwunsch: mittig, also 0; nur Aussehen)
-const SCHIRM_AUF_ZEIT = 0.32;      // s: Schirm-Trampolin (3D-Figur) – so lange dauert das Aufklappen (Pfoten hoch, Schirm raus, aufklappen)
-const SCHIRM_ZU_ZEIT = 0.16;       // s: … und das Zuklappen
-const SCHIRM_AUF_GRIFF = 0.4;      // Anteil davon: Pfoten kommen hoch und schieben den zugeklappten Schirm hinauf (danach klappt er auf)
-const SCHIRM_AUF_HUB = 10;         // px: so weit unten starten die Pfoten
+const SCHIRM_AUF_ZEIT = 0.5;       // s: Schirm-Trampolin (3D-Figur) – so lange dauert der ganze Ablauf (hervorholen, greifen, aufklappen)
+const SCHIRM_ZU_ZEIT = 0.3;        // s: … und rückwärts (zuklappen, hinter den Rücken stecken)
+const SCHIRM_HOLEN = 0.4;          // Anteil davon: zugeklappten Schirm hinter dem Rücken hervorholen (hinter der Figur hoch)
+const SCHIRM_GREIFEN = 0.2;        // Anteil: vor dem Kopf auf den Kopf setzen, die Pfoten greifen den Stock (Rest: aufklappen)
 // Affe pusten (Spezial-Taste halten): steht still, W = nach oben, A/D = nach links/rechts; der Windstrahl trägt das
 // Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge (Windrad …)
 const PUSTE_DAUER = 160;          // Schritte (≈ 3 s): so lange reicht ein voller Puste-Balken
