@@ -270,7 +270,10 @@ function pushOutOfMover(player, s, stepX, stepY){
   // dann obendrauf gesetzt) oder gar nicht mehr -> die Figur stirbt
   // (quer heraus nur knapp an der Kante, höchstens MOVER_QUETSCH_RAND px – sonst würde die Figur z. B. unter einem breiten,
   // sinkenden Boden um seine halbe Breite zur Seite versetzt)
-  if(MOVER_QUETSCHT && (!pick || pick === against || (pick !== first && cand[pick].d > MOVER_QUETSCH_RAND))){
+  // (wer auf dem Stück stand bzw. mitfährt und dabei irgendwo hängen bleibt, stirbt nicht – Nutzerwunsch; dann wie früher
+  // hinausschieben)
+  const standDrauf = box.y + box.h <= s.y - stepY + MOVER_QUETSCH_RAND;   // Füße oben auf dem Stück (vor diesem Schritt)
+  if(MOVER_QUETSCHT && !standDrauf && (!pick || pick === against || (pick !== first && cand[pick].d > MOVER_QUETSCH_RAND))){
     player.x = box.x + box.w/2; player.y = box.y + box.h; die(player); return;
   }
   if(!pick){ pick = first || order[0]; }

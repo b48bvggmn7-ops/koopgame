@@ -631,8 +631,10 @@ async def bewegter_boden_quetscht(g):
     den Boden, stirbt sie (vorher wurde sie obendrauf oder um die halbe Bodenbreite zur Seite versetzt); ebenso eine seitlich
     fahrende Wand gegen eine feste Wand. Streift das Stück die Figur nur an der Kante, rutscht sie heraus und lebt."""
     mps = [{'x': 400, 'y': 400, 'w': 160, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 400, 'targetY': 640, 'speed': 3},
-           {'x': 900, 'y': 600, 'w': 40, 'h': 80, 'look': 'wall', 'group': 2, 'targetX': 1100, 'targetY': 600, 'speed': 3}]
-    await g.load(level([ground(0, 680, 2000), ground(1160, 520, 40, 160, 'wall')], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, movingPlatforms=mps))
+           {'x': 900, 'y': 600, 'w': 40, 'h': 80, 'look': 'wall', 'group': 2, 'targetX': 1100, 'targetY': 600, 'speed': 3},
+           {'x': 1500, 'y': 640, 'w': 160, 'h': 40, 'look': 'ground', 'group': 3, 'targetX': 1500, 'targetY': 200, 'speed': 3}]
+    await g.load(level([ground(0, 680, 1400), ground(1160, 520, 40, 160, 'wall'), ground(1500, 360, 160, 40, 'wall')],
+                       {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, movingPlatforms=mps))
     r = await g.ev("""(() => { menuScreen = 'pause'; const e = {}; const [sinkt, schiebt] = solids.filter(s => s.type === 'moveplat');
       const lauf = (x, s, n) => { resetLevel(); deathState = null; for(const k in KEYS) KEYS[k] = false;
         const t = solids.filter(q => q.type === 'moveplat')[s]; p1.x = x; p1.y = 680; p1.vx = p1.vy = 0; p2.x = 60; p2.y = 680;
@@ -642,11 +644,18 @@ async def bewegter_boden_quetscht(g):
       e.kante = lauf(400 + 160 + 14 - 8, 0, 140);   // ragt nur 8 px unter die Kante: rutscht heraus
       e.wand = lauf(1130, 1, 160);      // zwischen fahrender und fester Wand
       e.frei = lauf(1300, 1, 160);      // hinter der festen Wand: nichts passiert
+      // Nutzer: „stehe ich auf dem bewegten Element und bleibe irgendwo hängen, sterbe ich“ -> wer mitfährt, stirbt nicht
+      // (der Fahrstuhl fährt bis unter eine Decke; die seitliche Wand nimmt ihn gegen die feste Wand mit)
+      const hoch = solids.filter(q => q.type === 'moveplat')[2];
+      resetLevel(); deathState = null; p1.x = hoch.x + 60; p1.y = hoch.y; p1.vx = p1.vy = 0; p1.grounded = true; hoch.tripActive = true;
+      { let ts = 5e6; for(let i = 0; i < 200 && !deathState; i++) stepSim(ts += 1000/54); }
+      e.mitfahren = {tot: !!deathState}; deathState = null;
       menuScreen = null; return e; })()""")
     assert r['mitte']['tot'], f'unter dem sinkenden Boden nicht gestorben: {r}'
     assert not r['kante']['tot'] and r['kante']['x'] > 560, f'an der Kante gestreift: sollte herausrutschen: {r}'
     assert r['wand']['tot'], f'zwischen den Wänden nicht gestorben: {r}'
     assert not r['frei']['tot'], r
+    assert not r['mitfahren']['tot'], f'beim Mitfahren unter eine Decke gestorben: {r}'
 
 @test
 async def fahrende_platte_kein_durchfahren(g):

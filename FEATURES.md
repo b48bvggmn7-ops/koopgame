@@ -653,6 +653,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         60 px davor). Zusammenhängende Scheinwand-Stücke sind **eine einheitliche Fläche** (ein Bild, eine Durchsichtigkeit –
         vorher sah man überlappende „Schichten“), und **dahinter liegt eine dunkle Rückwand** aus demselben Material statt
         des Dschungel-Hintergrunds (`matScheinFlaechen`, `SCHEIN_RUECKWAND` in js/12). Test scheinwand_eine_flaeche.
+        Deckend wird sie mit denselben Pfaden wie der Boden ringsum gezeichnet (kein eigenes Bild -> kein grüner Rand, keine
+        andere Körnung; Nutzer: „warum hat die Scheinwand einen grünen Rand“); nur beim Durchsichtig-Werden als Bild.
         Kein Verrat durch Deko: auf Flächen direkt unter einer Scheinwand wächst kein Moos/Gras, keine Pflanzen/Vögel,
         und an Wandseiten daneben keine Ranken (Scheinwände zählen für die Deko als fest; Test scheinwand_ohne_moos_verrat). In dunklen Themen leuchten versteckte
         Hebel/Münzen nicht durch.
@@ -1977,7 +1979,8 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     als ein Block, wenn sie ein Rechteck bildet; Outline wie die Flächen, kein Schatten, kein Restschatten.
     **Eingeklemmt = Tod** (Nutzerwunsch 30.10.): drückt ein bewegtes Stück eine Figur gegen Boden/Wand (kein Platz in
     Fahrtrichtung, quer nur knapp an der Kante, `MOVER_QUETSCH_RAND`), stirbt sie – vorher wurde sie obendrauf oder weit zur
-    Seite versetzt (`MOVER_QUETSCHT` in js/05). Test bewegter_boden_quetscht.
+    Seite versetzt (`MOVER_QUETSCHT` in js/05). Wer auf dem Stück steht bzw. mitfährt und dabei hängen bleibt (z. B. an
+    einer Decke), stirbt nicht (Nutzerwunsch) – dann wie früher hinausschieben. Test bewegter_boden_quetscht.
   - **Bröckelboden:** Erde wie der normale Boden, Klumpen und Kiesel, glatte Unterkante, Outline nur an freien Kanten –
     nebeneinander liegende Kästchen sind EINE durchgehende Fläche (kein Rahmen je Kästchen). Oben wieder das gelbe trockene
     Gras (`BROECKEL_GRAS`, durchgehende Welle; auch auf den Bruchstücken), runde Ecken an freien Ecken wie Boden/Wand (die

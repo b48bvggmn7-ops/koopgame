@@ -1105,6 +1105,11 @@ function drawSolidLook(s, look, x){
     F.alpha = F.alpha + ((matScheinBetreten(F) ? SCHEIN_DURCHSICHTIG : 1) - F.alpha)*Math.min(1, frameDt*0.01);
     if(F.alpha > 0.999) F.alpha = 1;
     for(const f of F.teile) f.alpha = F.alpha;
+    if(F.alpha === 1){   // deckend: mit denselben Pfaden wie der Boden ringsum (kein Bild -> keine Naht/kein grüner Rand, gleiche Körnung)
+      if(!F._pf || F._pf.v !== matRaster.version) F._pf = {v: matRaster.version, D: matPfadeBauen(F.zellen, [], -Infinity, Infinity)};
+      ctx.save(); ctx.translate(-camX, 0); matPfadeZeichnen(ctx, F._pf.D, matMassstab()); ctx.restore();
+      continue;
+    }
     const B = matScheinFlaecheBild(F);
     ctx.save(); ctx.globalAlpha = F.alpha;
     ctx.drawImage(B.c, B.x - camX, B.y, B.w, B.h);
