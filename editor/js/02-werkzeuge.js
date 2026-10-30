@@ -153,6 +153,7 @@ cvs.addEventListener('mousedown', e=>{
   eraseDrag = (e.button===2);
   const {c,r} = cellFromEvent(e);
   if(!eraseDrag && currentTool==='select'){ painting=false; selMouseDown(c,r); return; }   // Rechteck-Auswahl (08-auswahl.js)
+  if(!eraseDrag && currentTool==='verschieben'){ painting=false; verschiebStart(c,r); return; }   // Verschieben (08-auswahl.js)
   if(!eraseDrag && currentTool==='move'){
     painting=false;
     const hk = hooks.find(h=>h.c===c&&h.r===r);

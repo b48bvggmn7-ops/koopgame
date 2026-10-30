@@ -2351,6 +2351,12 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   - Rückgängig / Wiederholen (Ausbau 2, editor/js/08-auswahl.js): Strg+Z / Strg+Y (auch Strg+Umschalt+Z) und Knöpfe
     ↶ ↷ oben; jede Änderung ist ein Schritt, ein gezogener Pinselstrich zählt als EIN Schritt; bis 200 Schritte.
     Laden eines Levels / Neues Level beginnt einen frischen Verlauf. Auch Level-Info-Änderungen sind rückgängig machbar.
+  - **Verschieben ✥** (Werkzeug neben „Auswahl ⬚“, Nutzerwunsch 30.10.): ein einzelnes Ding anklicken und ziehen – nur
+    dieses wandert (Reihenfolge: Element wie Hebel/Tür/Floß – auch an einem anderen seiner Kästchen angefasst –, Haken,
+    Münze, Stacheln, Checkpoint, Start/Ziel, zuletzt das Boden-/Wand-Kästchen samt seiner Bewegung); in eine markierte
+    Auswahl klicken und ziehen – die ganze Auswahl wandert (Nummern bleiben, Start/Ziel gehen mit). Schon beim Ziehen am
+    neuen Platz (Live-Vorschau, gelber Rahmen), gespeichert erst beim Loslassen; Rückgängig nimmt es in einem Schritt
+    zurück. Gleiches Ding am Ziel wird ersetzt. Test editor_verschieben.
   - Rechteck-Auswahl (Werkzeug „Auswahl ⬚“ neben Radieren): Rechteck aufziehen (gelb gestrichelt); Strg+C kopieren,
     Strg+X ausschneiden, Strg+V fügt an der Maus ein (Mauskästchen = linke obere Ecke), darin ziehen = Inhalt
     verschieben, Entf = Inhalt löschen, Esc = Auswahl aufheben. Mit allen Objekten: Kästchen (auch Scheinwand/Aufwind),

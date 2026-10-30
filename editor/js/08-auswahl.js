@@ -13,7 +13,7 @@ let histCur = null, histMuted = false;
 function histState(){ return JSON.stringify(snapshot()); }
 function histReset(){ histCur = histState(); undoStack.length = 0; redoStack.length = 0; updateHistButtons(); }
 function histNote(){
-  if(histMuted || histCur === null || painting || moveDrag || selDrag) return;   // während Ziehen: erst beim Loslassen
+  if(histMuted || histCur === null || painting || moveDrag || selDrag || verschiebDrag) return;   // während Ziehen: erst beim Loslassen
   const s = histState();
   if(s === histCur) return;
   undoStack.push(histCur); if(undoStack.length > HIST_MAX) undoStack.shift();
@@ -189,10 +189,84 @@ function selMouseUp(){
     const R = selRect; flash(`Auswahl ${R.c1 - R.c0 + 1} × ${R.r1 - R.r0 + 1} – Strg+C kopieren, Strg+X ausschneiden, ziehen = verschieben, Entf = löschen`);
   }
 }
-window.addEventListener('mouseup', ()=>{ selMouseUp(); histNote(); });   // nach 02 (painting ist dann aus)
+// ---------- Werkzeug „Verschieben ✥“ (Nutzerwunsch: „Dinge auswählen und verschieben – einzelne und markierte“) ----------
+// Klick in eine markierte Auswahl + ziehen = die ganze Auswahl wandert (wie Ziehen mit „Auswahl“); sonst wandert nur das EINE
+// Ding unter der Maus: zuerst ein Element (Hebel, Tür, Floß … – auch an einem anderen seiner Kästchen angefasst), dann Haken,
+// Münze, Stacheln, Checkpoint, Start/Ziel, zuletzt das Boden-/Wand-Kästchen (seine Bewegung geht mit). Während des Ziehens
+// sieht man es schon am neuen Platz (der Stand vom Anfassen wird je neuem Kästchen wiederhergestellt und neu verschoben);
+// erst beim Loslassen wird gespeichert – Rückgängig nimmt das ganze Verschieben in einem Schritt zurück.
+let verschiebDrag = null;   // {start (JSON-Stand), art: 'auswahl'|'einzeln', R | ding, sc, sr, dc, dr, name}
+function verschiebDingFinden(c, r){
+  for(const E of punktElemente()){
+    const i = elementPunkte[E.feld].findIndex(p => punktBelegt(E, p, c, r));
+    if(i >= 0){ const p = elementPunkte[E.feld][i]; return {feld: E.feld, idx: i, c: p.c, r: p.r, name: E.editor.label || E.name}; }
+  }
+  for(const [feld, name] of [['hooks', 'Haken'], ['coins', 'Münze'], ['spikes', 'Stacheln'], ['checkpoints', 'Checkpoint']]){
+    const i = POINT_LISTS[feld]().findIndex(p => p.c === c && p.r === r);
+    if(i >= 0) return {feld, idx: i, c, r, name};
+  }
+  for(const [m, name] of [['startM', 'Start Affe'], ['startF', 'Start Schweinchen'], ['goal', 'Ziel']]){
+    const v = {startM, startF, goal}[m]; if(v && v.c === c && v.r === r) return {marker: m, c, r, name};
+  }
+  if(tiles[c + ',' + r]) return {tile: true, c, r, name: 'Kästchen'};
+  return null;
+}
+function verschiebAnwenden(d){
+  const ok = (c, r) => c >= 0 && r >= -SKY && r < ROWS;
+  if(d.art === 'auswahl'){
+    const clip = copyRect(d.R, true); eraseRect(d.R, true);
+    pasteClip(clip, d.R.c0 + d.dc, d.R.r0 + d.dr, false);   // setzt selRect an die neue Stelle; Nummern bleiben
+    return;
+  }
+  const x = d.ding, c = x.c + d.dc, r = x.r + d.dr;
+  if(!ok(c, r)) return;
+  if(x.feld){
+    const L = POINT_LISTS[x.feld](), p = L[x.idx]; if(!p) return;
+    SET_LIST[x.feld](L.filter(q => q === p || !(q.c === c && q.r === r)));   // was dort schon liegt (gleiche Sorte), wird ersetzt
+    p.c = c; p.r = r;
+    if(x.feld === 'spikes') delete tiles[c + ',' + r];
+  } else if(x.marker){
+    if(x.marker === 'startM') startM = {c, r}; else if(x.marker === 'startF') startF = {c, r}; else goal = {c, r};
+  } else if(x.tile){
+    const t = tiles[x.c + ',' + x.r]; delete tiles[x.c + ',' + x.r]; tiles[c + ',' + r] = t;
+    spikes = spikes.filter(s => !(s.c === c && s.r === r));
+    for(const m of movers) if(m.c === x.c && m.r === x.r){ m.c = c; m.r = r; }   // Bewegung des Stücks geht mit
+  }
+  ensureRoom(c);
+}
+function verschiebStart(c, r){
+  const R = selRect && inRect(selRect, c, r) ? {...selRect} : null;
+  const ding = R ? null : verschiebDingFinden(c, r);
+  if(!R && !ding){ selRect = null; flash('Verschieben: ein Ding oder eine markierte Auswahl anklicken und ziehen'); return; }
+  if(!R) selRect = null;
+  verschiebDrag = {start: JSON.stringify(snapshot()), art: R ? 'auswahl' : 'einzeln', R, ding, sc: c, sr: r, dc: 0, dr: 0,
+                   name: R ? `Auswahl ${R.c1 - R.c0 + 1} × ${R.r1 - R.r0 + 1}` : ding.name};
+  flash(`${verschiebDrag.name} – ziehen und loslassen`);
+}
+function verschiebZiehen(c, r){
+  const d = verschiebDrag; if(!d) return;
+  r = Math.max(-SKY, Math.min(ROWS - 1, r)); c = Math.max(0, c);
+  const dc = c - d.sc, dr = r - d.sr;
+  if(dc === d.dc && dr === d.dr) return;
+  d.dc = dc; d.dr = dr;
+  histMuted = true; applySnapshot(JSON.parse(d.start)); histMuted = false;   // Stand vom Anfassen …
+  if(dc || dr) verschiebAnwenden(d); else if(d.R) selRect = {...d.R};       // … und neu verschoben (Live-Vorschau)
+  flash(`${d.name}: ${dc >= 0 ? '+' : ''}${dc} Spalten, ${dr >= 0 ? '+' : ''}${dr} Reihen`);
+}
+function verschiebEnde(){
+  const d = verschiebDrag; if(!d) return;
+  verschiebDrag = null;
+  if(d.dc || d.dr){ save(); flash(`${d.name} verschoben`); }
+}
+window.addEventListener('mouseup', ()=>{ selMouseUp(); verschiebEnde(); histNote(); });   // nach 02 (painting ist dann aus)
+window.addEventListener('mousemove', e=>{ if(verschiebDrag){ const {c, r} = cellFromEvent(e); verschiebZiehen(c, r); } });   // auch außerhalb der Leinwand
 cvs.addEventListener('mousemove', e=>{ hoverCell = cellFromEvent(e); });
 // Auswahl zeichnen (aus draw() in 03-zeichnen.js; Ursprung = Reihe 0)
 function drawSelection(){
+  if(verschiebDrag && verschiebDrag.ding){   // einzelnes Ding beim Verschieben: gelber Rahmen am neuen Platz
+    const d = verschiebDrag, x = (d.ding.c + d.dc)*TILE, y = (d.ding.r + d.dr)*TILE;
+    ctx.save(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]); ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3); ctx.restore();
+  }
   if(!selRect) return;
   const R = selRect, off = selDrag && selDrag.mode === 'move' ? selDrag : {dc: 0, dr: 0};
   const x = (R.c0 + off.dc)*TILE, y = (R.r0 + off.dr)*TILE, w = (R.c1 - R.c0 + 1)*TILE, h = (R.r1 - R.r0 + 1)*TILE;

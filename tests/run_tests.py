@@ -4607,6 +4607,50 @@ async def bewegung_einmal(g):
     assert r3[0] is False and r3[2] is False and r3[1] == 600, f'Neustart setzt nicht zurück: {r3}'
 
 @test
+async def editor_verschieben(g):
+    """Editor-Werkzeug „Verschieben ✥“ (Nutzerwunsch): ein einzelnes Ding anklicken und ziehen – nur dieses wandert (Hebel,
+    Münze, Blatt-Floß auch an einem anderen seiner Kästchen angefasst, Boden-Kästchen, Start); in eine markierte Auswahl
+    klicken und ziehen – die ganze Auswahl wandert; schon beim Ziehen am neuen Platz; Rückgängig nimmt es in EINEM Schritt zurück."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(30)] + [[20, 10, 'wall']], 'hooks': [], 'spikes': [],
+                 'coins': [{'c': 8, 'r': 12, 'color': 'blue'}], 'checkpoints': [], 'startM': {'c': 2, 'r': 16},
+                 'switches': [{'c': 5, 'r': 16, 'link': 3}], 'blattFloesse': [{'c': 10, 'r': 14, 'schiene': 4, 'link': 2}]}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("setTool('verschieben')")
+        box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+        zelle = lambda c, r: (box['x'] + (c*40 + 20)*k - k*await_x[0], box['y'] + ((r + 3)*40 + 20)*k)
+        await_x = [await p.evaluate("ansichtX()")]
+        async def ziehen(a, b, mitte=None):
+            await p.mouse.move(*zelle(*a)); await p.mouse.down()
+            if mitte: await p.mouse.move(*zelle(*mitte), steps=3); zw = await p.evaluate("JSON.parse(JSON.stringify({s: elementPunkte.switches, sel: selRect}))")
+            else: zw = None
+            await p.mouse.move(*zelle(*b), steps=4); await p.mouse.up(); return zw
+        zw = await ziehen((5, 16), (7, 15), mitte=(6, 16))   # Hebel
+        assert zw['s'][0]['c'] == 6, f'beim Ziehen nicht schon am neuen Platz: {zw}'
+        await ziehen((8, 12), (9, 11))                         # Münze
+        await ziehen((12, 14), (13, 13))                       # Blatt-Floß am 3. Kästchen angefasst
+        await ziehen((20, 10), (22, 10))                       # Wand-Kästchen
+        await ziehen((2, 16), (3, 16))                         # Start Affe
+        r = await p.evaluate("""({s: elementPunkte.switches.map(x => [x.c, x.r]), m: coins.map(x => [x.c, x.r]), b: elementPunkte.blattFloesse.map(x => [x.c, x.r, x.link]),
+                                 w: tiles['22,10'], alt: tiles['20,10'] || null, boden: tiles['5,17'], start: startM})""")
+        assert r['s'] == [[7, 15]] and r['m'] == [[9, 11]] and r['b'] == [[11, 13, 2]], f'einzelnes Ding nicht verschoben: {r}'
+        assert r['w'] == 'wall' and r['alt'] is None and r['boden'] == 'ground' and r['start'] == {'c': 3, 'r': 16}, f'Kästchen/Start: {r}'
+        # Auswahl verschieben: Rechteck um Münze und Wand markieren, im Werkzeug „Verschieben“ hineinklicken und ziehen
+        await p.evaluate("selRect = {c0: 9, r0: 10, c1: 22, r1: 11}")
+        await ziehen((15, 10), (15, 8))
+        r = await p.evaluate("({m: coins.map(x => [x.c, x.r]), w: tiles['22,8'], alt: tiles['22,10'] || null, sel: selRect, hebel: elementPunkte.switches.map(x => [x.c, x.r])})")
+        assert r['m'] == [[9, 9]] and r['w'] == 'wall' and r['alt'] is None and r['sel'] == {'c0': 9, 'r0': 8, 'c1': 22, 'r1': 9}, f'Auswahl nicht verschoben: {r}'
+        assert r['hebel'] == [[7, 15]], f'außerhalb der Auswahl hat sich etwas bewegt: {r}'
+        await p.keyboard.press('Control+z')
+        r = await p.evaluate("({m: coins.map(x => [x.c, x.r]), w: tiles['22,10']})")
+        assert r['m'] == [[9, 11]] and r['w'] == 'wall', f'Rückgängig nimmt das Verschieben nicht in einem Schritt zurück: {r}'
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_nichts_ueber_dem_himmel(g):
     """Nutzer: „warum ist da ganz oben Wand? ich habe da nichts gesetzt“ – Kästchen über dem bebaubaren Himmel (Reihe < -SKY)
     zeigt der Editor nicht; sie werden beim Laden entfernt und landen nie in Spiel- oder Editor-Datei."""

@@ -6,7 +6,7 @@
 // Neue Welt: eine Zeile in WELT_WERKZEUGE. Neues Element: seinen Werkzeug-Namen (editor.werkzeug) in die passende
 // Welt (oder in GRUND_WERKZEUGE) eintragen – sonst sieht man es nur mit „Alle Werkzeuge“ (Test werkzeug_welten).
 const GRUND_WERKZEUGE = ['ground', 'wall', 'fake', 'spike', 'coin', 'checkpoint', 'startM', 'startF', 'goal',
-  'hook', 'switch', 'door', 'plate', 'move', 'erase', 'select', 'bruch', 'haft'];   // Nacht-Ausbau: Durchbruch-Wand + Haftfläche in allen Welten
+  'hook', 'switch', 'door', 'plate', 'move', 'erase', 'select', 'verschieben', 'bruch', 'haft'];   // Nacht-Ausbau: Durchbruch-Wand + Haftfläche in allen Welten
 const WELT_WERKZEUGE = {
   // Dschungel-Neu: im Dschungel keine Sprungpilze und kein Aufwind mehr (Schirm-Trampolin und Pusten ersetzen sie),
   // dafür Windrad, Blatt-Floß und die Meteoriten-Spur
