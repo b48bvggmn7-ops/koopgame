@@ -10429,11 +10429,11 @@ async def ruinen2_hakenreihe(g):
     assert hs == [181, 189, 197, 205, 213] and all(h['radius'] == 140 for h in lv['hooks'] if 175 < h['x'] / 40 < 220), hs
     await koop_level(g, 'ruinen/02-mondnacht.json')
     ok = False
-    for t in (150, 200, 250):
+    for t, slack in ((150, 0), (200, 0), (250, 0), (150, 40), (200, 40), (150, 80)):   # slack: kurze Liane (LIANE_VOLLE_LAENGE aus) erst nachgeben
         rel = f'f > {t} && P.y < P.anchor.y + 60 && P.vx > 1.5 && P.vy < 0'
         pl = [k_lauf(182, -10), {'holdIf': {'left': 'P.vx > 0.3'}, 'frames': 20}, {'hold': ['right'], 'until': f'P.x > {182 * 40 + 56}', 'frames': 40},
               {'hold': [], 'holdIf': {'left': 'P.vx > 0.8'}, 'hookWhen': 'P.y > 340', 'until': 'P.hookAttached', 'frames': 80}]
-        for k in range(4): pl += [{'swing': True, 'pull': 0, 'release': rel, 'frames': 900}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
+        for k in range(4): pl += [{'swing': True, 'pull': 0, 'slack': slack, 'release': rel, 'frames': 900}, {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
         pl += [{'wait': f'P.hookAttached && P.anchor.x === {kx(213)}'}]
         r = await koop(g, m=kat(178, 6), f=kat(174, 6), plans={'m': pl}, maxFrames=12000)
         if r.get('done'): ok = True; break

@@ -279,20 +279,8 @@
   {
    "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
    "regel": "Checkpoint",
-   "spalte": 2431,
-   "begruendung": "Rätsel-Teil (Dschungel-Neu): Checkpoint direkt am Anfang des Rätsels (Teil 4 von Abschnitt 1, davor die Lianenschlucht) – ein Fehler im Rätsel soll nicht die ganze Strecke davor kosten."
-  },
-  {
-   "level": "dschungel/abschnitt-1-sternschnuppenspur.json",
-   "regel": "Checkpoint",
    "spalte": 2505,
    "begruendung": "Rätsel-Teil (Dschungel-Neu): das Rätsel (Windrad 1 an drei Stellen, Hebel 2, Tunnel) läuft am Stück bis zum Ziel; ein Checkpoint mitten drin läge zwischen Windrad/Hebel und dem, was sie schalten."
-  },
-  {
-   "level": "dschungel/abschnitt-2-meteoritenherz.json",
-   "regel": "Checkpoint",
-   "spalte": 2311,
-   "begruendung": "Rätsel-Teil (Dschungel-Neu): Checkpoint direkt am Anfang des Rätsels (Teil 4 von Abschnitt 2) – nach der Puste-Falle (Sackgasse) startet man das Rätsel hier neu."
   },
   {
    "level": "dschungel/abschnitt-2-meteoritenherz.json",
