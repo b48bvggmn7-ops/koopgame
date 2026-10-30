@@ -2172,8 +2172,14 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Graben Lianenschlucht/Glühwald-Lücke/Wipfelsturm-Tunnel schmaler, Haken über dem hohen Kamin, Puste-Brücke 764: Zielblock
   3 Reihen tiefer und der Zwischenstein senkt sich auf Reihe 7, Puste-Aufzüge: oben pustet der Affe das Schweinchen noch einmal
   hoch, damit es über die letzte Schlucht segelt. Test dschungel_neu_stellen_a1/_a2.
-- **Liane:** fällt nicht mehr sofort in die volle Länge (`LIANE_VOLLE_LAENGE = false`): in der Luft gegriffen bleibt sie so
-  lang wie beim Greifen. Test liane_volle_laenge.
+- **Liane:** fiel zwischenzeitlich (29.10.) nicht mehr sofort in die volle Länge (`LIANE_VOLLE_LAENGE = false`). **Seit 30.10.
+  wieder an (Nutzerwunsch, `LIANE_VOLLE_LAENGE = true`):** in der Luft gegriffen gibt die Liane sofort bis zur Reichweite nach –
+  höchstens bis knapp über Boden/Stacheln/Lava/Flamme; vom Boden gegriffen bleibt sie straff. Test liane_volle_laenge.
+  Computer-Partner dazu: probiert beim Haken auch längeres Ranziehen (`PARTNER_HAKEN_ZIEHEN`), und seine Vorausrechnung lässt
+  beim Absprung von der Liane sofort los wie das Spiel (vorher ein Pendel-Schritt zu viel – bei schnellem Schwung flog er daneben).
+- **Tests mit Grafikkarte** (Nutzer-PC, Windows): der Test-Browser zeichnet mit der Grafikkarte (`MIT_GRAFIKKARTE`, ausschaltbar
+  mit `TESTS_OHNE_GRAFIKKARTE=1`); 3D-Figuren bleiben in Tests aus, außer ein Test erzwingt sie (`figuren3dAus`, js/33);
+  run_tests.py startet sich unter Windows im UTF-8-Modus. Test test_browser_grafikkarte.
 - **Editor zeigt lange Level** (Nutzer: „Level 1 wird nicht mehr angezeigt“): ein Abschnitt ist 2500 Spalten = 100 000 px
   breit – als EIN Bild zu breit für den Browser (weiße Fläche). Die Leinwand zeigt nur noch den sichtbaren Ausschnitt und
   wandert beim Scrollen mit (`fitView`/`ansichtX` in editor/js/01-zustand.js, Platzhalter `#cvsPlatz` für die Scrollleiste).

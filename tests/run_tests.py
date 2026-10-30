@@ -19,6 +19,11 @@ import asyncio, functools, http.server, json, os, re, sys, tempfile, threading
 from pathlib import Path
 from playwright.async_api import async_playwright
 
+# Windows (Nutzer-PC): Python liest Dateien sonst in der Windows-Kodierung (Umlaute in Level-Namen kaputt) -> neu im UTF-8-Modus starten
+if __name__ == '__main__' and sys.platform == 'win32' and not sys.flags.utf8_mode:
+    import subprocess
+    sys.exit(subprocess.call([sys.executable, '-X', 'utf8', *sys.argv]))
+
 ROOT = Path(__file__).resolve().parent.parent
 GAME = (ROOT / 'index.html').as_uri()
 # Test-Browser mit Grafikkarte (Nutzerwunsch; sonst rechnet Chromium die Grafik ohne sie = SwiftShader).
@@ -253,6 +258,7 @@ async def test_browser_grafikkarte(g):
     r = await g.ev("""(() => { const gl = document.createElement('canvas').getContext('webgl'); if (!gl) return null;
         const d = gl.getExtension('WEBGL_debug_renderer_info'); return gl.getParameter(d ? d.UNMASKED_RENDERER_WEBGL : gl.RENDERER); })()""")
     assert r, 'Test-Browser hat kein WebGL'
+    assert not await g.ev("!!window.figur3dMass"), '3D-Figuren in Tests an, ohne dass der Test sie erzwingt (figuren3dAus)'
     if MIT_GRAFIKKARTE:
         assert 'swiftshader' not in r.lower(), f'Grafikkarte nicht benutzt ({r}); ohne Grafikkarte testen: TESTS_OHNE_GRAFIKKARTE=1'
 
@@ -643,23 +649,27 @@ async def seil_runterlassen_bis_ring(g):
     await g.hold(('KeyS',), 2500); await g.steps(43)
     assert round(await g.ev('p1.ropeLen')) == 300, 'nicht bis zum Ring runtergelassen'
     await g.hold(('KeyW',), 3000); await g.steps(16)
-    y1 = await g.ev('p1.y'); await g.steps(27); y2 = await g.ev('p1.y')
-    assert abs(y2 - y1) < 3, f'hüpft oben ({y1} -> {y2})'
+    # oben je Schritt: kein Sprung nach oben/unten und nicht weiter vom Haken weg als das Seil lang ist (ein Rest-Pendeln
+    # ist erlaubt – mit Grafikkarte kommt er je nach Takt mit etwas mehr Schwung oben an; vorher: zwei Zeitpunkte verglichen)
+    await g.ev("window.__oben = []; const alt = stepSim; stepSim = function(){ const r = alt.apply(this, arguments); __oben.push([p1.y, Math.hypot(p1.x - p1.anchor.x, p1.y - p1.h*0.6 - p1.anchor.y) - p1.ropeLen]); return r; }")
+    await g.steps(27)
+    oben = await g.ev('__oben')
+    spruenge = [abs(b[0] - a[0]) for a, b in zip(oben, oben[1:])]
+    assert oben and max(spruenge) < 8 and max(d for _, d in oben) < 3, f'hüpft oben: {[(round(y), round(d, 1)) for y, d in oben]}'
     await g.p.keyboard.up('KeyG')
 
 @test
 async def seil_loest_beim_landen(g):
     """Landet der Affe am Seil auf etwas (hier ein Absatz rechts vom Haken), löst sich das Seil. (Liane: die Taste bleibt
-    gehalten; die Liane hängt höchstens bis knapp über den Boden unter dem Haken, also landet man seitlich auf dem Absatz.)"""
+    gehalten; volle Länge beim Greifen: kurz ranziehen, Schwung holen, über dem Absatz Seil geben – dann landet er darauf.)"""
     await g.load(level([ground(0, 680, 1400), ground(380, 600, 400, 80)], {'x': 200, 'y': 680}, {'x': 60, 'y': 680},
                        hooks=[{'x': 300, 'y': 470, 'radius': 300}]))
     # je Schritt mitschreiben: steht er am Seil länger als einen Schritt auf etwas, ist das Lösen kaputt
     await g.ev("window.__seil = []; const alt = stepSim; stepSim = function(){ const r = alt.apply(this, arguments); __seil.push([p1.hookAttached ? 1 : 0, p1.grounded ? 1 : 0, Math.round(p1.y)]); return r; }")
-    await g.p.keyboard.down('Space')
-    await g.p.wait_for_function("p1.y < 655 && p1.vy < 0", timeout=4000)   # kurz nach dem Absprung greifen (kurze Liane: die Länge beim Greifen zählt)
+    await g.p.keyboard.down('Space'); await g.steps(2)
     await g.p.keyboard.down('KeyG'); await g.steps(2); await g.p.keyboard.up('Space')   # im Aufsteigen greifen, Taste halten
     assert await g.ev('p1.hookAttached'), 'nicht gegriffen'
-    await g.hold(('KeyD',), 1500); await g.steps(10)
+    await g.hold(('KeyW',), 300); await g.hold(('KeyD',), 2500); await g.hold(('KeyD', 'KeyS'), 1500); await g.steps(10)
     await g.p.keyboard.up('KeyG')
     log = await g.ev('__seil')
     gelandet = [i for i, (h, gr, y) in enumerate(log) if gr and i > 4]
@@ -4639,8 +4649,9 @@ async def geraeusche(g):
     except Exception: pass
     log = await g.ev("SFX_LOG.slice()")
     assert 'jump' in log and 'land' in log, f'Sprung/Landung ohne Ton: {log}'
-    await g.p.keyboard.press('KeyG'); await g.p.wait_for_timeout(150)
+    await g.p.keyboard.down('KeyG'); await g.steps(8)   # Liane: Taste halten (nur angetippt war sie bei schnellem Bild schon los, bevor er griff)
     assert 'hook' in await g.ev("SFX_LOG.slice()"), 'Haken ohne Ton'
+    await g.p.keyboard.up('KeyG')
     await g.ev("solids.find(s=>s.type==='crumble').triggered = true")
     try: await g.p.wait_for_function("SFX_LOG.includes('crumblewarn') && SFX_LOG.includes('crumble')", timeout=3000)
     except Exception: pass
@@ -5334,11 +5345,10 @@ async def seil_abflug_mit_schwung(g):
 
 @test
 async def liane_volle_laenge(g):
-    """Liane-Länge beim Greifen. Nutzer-Rückmeldung (zurückgenommen): NICHT mehr sofort in die volle Reichweite fallen –
-    LIANE_VOLLE_LAENGE = false: in der Luft gegriffen bleibt sie so lang wie der Abstand beim Greifen. Mit
-    LIANE_VOLLE_LAENGE = true (alter Wunsch) gibt sie bis zur Reichweite nach, aber nie bis auf Boden, Stacheln, Lava oder
-    in eine Flammen-Falle (LIANE_BODEN_ABSTAND)."""
-    assert await g.ev("LIANE_VOLLE_LAENGE") is False
+    """Nutzerwunsch „die Liane soll immer erst mal in den weitesten Radius gehen“ (29.10. kurz zurückgenommen, 30.10. wieder an:
+    LIANE_VOLLE_LAENGE = true): in der Luft gegriffen gibt die Liane sofort bis zur Reichweite nach – aber nie so weit, dass
+    er unter dem Haken auf Boden, Stacheln, Lava oder in eine Flammen-Falle kommt (LIANE_BODEN_ABSTAND)."""
+    assert await g.ev("LIANE_VOLLE_LAENGE") is True
     await g.load(level([ground(0, 680, 900), ground(1300, 680, 900)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
                        hooks=[{'x': 500, 'y': 200, 'radius': 260}, {'x': 1100, 'y': 400, 'radius': 400}],
                        spikes=[{'x': 1100, 'y': 680, 'w': 40, 'h': 40}]))
@@ -5349,10 +5359,9 @@ async def liane_volle_laenge(g):
       e.frei = greif(hooks[0], 20, 50);      // viel Luft: volle Reichweite
       e.stacheln = greif(hooks[1], 20, 50);  // Stacheln 280 px darunter, Reichweite 400: kürzer
       KEYS.KeyG = false; menuScreen = null; return e; })()""")
-    abst = round((20**2 + 50**2) ** 0.5)
-    assert r['frei']['haengt'] and abs(r['frei']['L'] - abst) <= 2, f'Liane nicht so lang wie beim Greifen: {r}'
+    assert r['frei']['haengt'] and r['frei']['L'] == 260, f'nicht sofort bis zur Reichweite nachgegeben: {r}'
     s = r['stacheln']
-    assert s['haengt'] and not s['tot'] and abs(s['L'] - abst) <= 2, f'Liane über den Stacheln: {r}'
+    assert s['haengt'] and not s['tot'] and s['L'] < 240 - 19, f'fällt in die Stacheln: {r}'
     # Flammen-Falle nach oben im Boden unter dem Haken: die Liane bleibt über der Flamme (FLAMME_LAENGE Kästchen)
     await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 1000, 'y': 200, 'radius': 400}],
                        traps=[{'x': 980, 'y': 640, 'art': 'flamme', 'richtung': 'o', 'takt': 2, 'versatz': 0}]))
@@ -12439,6 +12448,7 @@ async def main(filter_):
         for fn in TESTS:
             if filter_ and not any(f in fn.__name__ for f in filter_.split(',')): continue   # Kurztest: mehrere Filter mit Komma
             ctx = await browser.new_context(viewport={'width': 1400, 'height': 840})
+            if MIT_GRAFIKKARTE: await ctx.add_init_script("window.figuren3dAus = true")   # wie mit Software-Grafik: 3D nur, wo ein Test es erzwingt (f3d_bereit)
             page = await ctx.new_page(); errors = []
             page.on('pageerror', lambda e: errors.append(str(e)))
             await page.goto(GAME); await page.wait_for_timeout(400)

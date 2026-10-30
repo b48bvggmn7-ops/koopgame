@@ -366,6 +366,9 @@ function partnerSimSchritt(U, b, e){
         else { const frei = lianeFreiUnten(t, b); b.hook.ziel = Math.max(HOOK_MIN_LEN, Math.min(b.hook.max, frei)); b.hook.len = Math.max(d, b.hook.ziel); b.hook.frei = frei + LIANE2_FANG_MAX; }
       } }
   }
+  // Loslassen per Sprung an der Liane 2: wie lianeSchritt (js/32) zuerst loslassen, dann normale Physik – kein Pendel-Schritt mehr
+  // (vorher erst gependelt: bei schnellem Schwung, z. B. nach dem Fallen in die volle Länge, flog er im Spiel deutlich anders)
+  if(b.hook && !b.grounded && partnerLiane2() && e.loslassen){ b.lastAnchor = b.hook.anchor; b.hook = null; b.vy += HOOK_RELEASE_BOOST; b.fling = true; }
   const liane2 = b.hook && !b.grounded && partnerLiane2();
   // Dash (js/32 dashStarten/dashSchritt): nur waagerecht, feste Strecke ohne Schwerkraft, danach halbes Tempo
   if(e.dash && !b.hook && !b.dash && b.dashPunkte > 0 && !b.inWater){ b.dashPunkte--; b.dash = DASH_DAUER; b.dashDx = dir || Math.sign(b.vx) || 1; b.kurz = false; }
@@ -575,6 +578,8 @@ function partnerGrubeVorn(x, y, d){
   return true;
 }
 // Affe: springen bei jx, Haken greifen, schwingen, loslassen hinter dem Haken; weitere Haken möglich
+// ziehen = so viele Schritte erst ranziehen; 60: in der Luft gegriffen fällt er in die volle Länge (LIANE_VOLLE_LAENGE) und muss weiter hinauf
+const PARTNER_HAKEN_ZIEHEN = LIANE_VOLLE_LAENGE ? [0, 30, 60] : [0, 30];
 function planHaken(d, jx, stopX, ziehen, zurueckX){
   return {art: 'haken', d,
     eingabe(k, b, st){
@@ -687,7 +692,7 @@ function* partnerSuche(P, Z){
       if(!gut() && !P.male) for(let i = 0; i <= 8; i++) for(const stopX of [d*Infinity, Z.x])
         yield* pruefe(planSprung(d, P.x + d*i*16, 10, stopX, true), 360, 25);
       const hakenNah = P.male && hooks.some(h => Math.abs(h.x - P.x) < 700);
-      if(!gut() && hakenNah) for(const ziehen of [0, 30]) for(let i = 0; i <= 8; i += 2) for(const stopX of [d*Infinity, Z.x])
+      if(!gut() && hakenNah) for(const ziehen of PARTNER_HAKEN_ZIEHEN) for(let i = 0; i <= 8; i += 2) for(const stopX of [d*Infinity, Z.x])
         yield* pruefe(planHaken(d, P.x + d*i*16, stopX, ziehen), 420, 40);
       if(!gut() && partnerDashDa(P) && partnerGrubeVorn(P.x, P.y, d)) for(const i of [0, 4, 8]) yield* pruefe(planSprungDash(d, P.x + d*i*16, 1), 300, 30);
       // mit Anlauf (z. B. direkt vor einer Wand stehend)
