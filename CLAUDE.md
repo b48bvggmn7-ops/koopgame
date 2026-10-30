@@ -23,6 +23,8 @@
      Level/Stelle, `dschungel_neu_stellen_*`, `raetsel_*`, `partner_puste_insel`/`partner_kamin_135`, Prüfwerkzeuge Bildregel/
      Haken/Kombi/Münzen …), weder ausführen noch reparieren und keine Level ändern, damit sie grün werden. Die Checkliste
      „Neues oder geändertes Level“ unten gilt nur noch, wenn der Nutzer ausdrücklich darum bittet.
+     Diese Tests stehen in `LEVEL_TESTS` (tests/run_tests.py) und werden automatisch ausgelassen (auch beim großen Lauf);
+     nur mit Umgebungsvariable `MIT_LEVELN=1` laufen sie mit. Neue Tests, die echte Level prüfen, dort eintragen.
 2. **Nur das ändern, was der Nutzer verlangt.** Kein „Aufräumen nebenbei“, keine stillen Verhaltensänderungen.
    Wenn eine Anfrage mehrdeutig ist oder eine bestehende Funktion beeinflusst, kurz nachfragen.
 3. **FEATURES.md pflegen:** Jede Verhaltensänderung dort eintragen. Nichts entfernen, ohne den Nutzer zu fragen.

@@ -440,6 +440,63 @@ function matScheinPfade(f){
   if(!f._pf || f._pf.v !== R.version) f._pf = {v: R.version, D: matPfadeBauen(matScheinZellen(f, R), [], -Infinity, Infinity)};
   return f._pf.D;
 }
+// Scheinwand-Flächen (Nutzer: „besteht aus 4 Schichten, soll eine einheitliche Fläche sein“): zusammenhängende Scheinwand-
+// Kästchen bilden EINE Fläche mit einem Bild und einer Durchsichtigkeit (vorher je Scheinwand-Stück ein Bild, die sich
+// überlappten). Dahinter eine dunkle Rückwand aus demselben Material (Nutzer: „nicht einfach der Dschungel-Hintergrund“).
+const SCHEIN_DURCHSICHTIG = 0.35;            // so sichtbar bleibt die Scheinwand, solange jemand drinsteht
+const SCHEIN_RUECKWAND = 'rgba(18,10,4,.58)'; // Abdunkelung der Rückwand
+let matScheinF = {v: -1, liste: []};
+function matScheinFlaechen(){
+  const R = matRasterHolen();
+  if(matScheinF.v === R.version) return matScheinF.liste;
+  const fertig = new Set(), liste = [];
+  for(const start of R.fake){
+    if(fertig.has(start)) continue;
+    const zellen = [], set = new Set([start]), stapel = [start]; fertig.add(start);
+    while(stapel.length){
+      const k = stapel.pop(), [c, r] = k.split(',').map(Number);
+      zellen.push({c, r, t: R.zellen.get(k)});
+      for(const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const n = (c + dc) + ',' + (r + dr);
+        if(R.fake.has(n) && !fertig.has(n)){ fertig.add(n); set.add(n); stapel.push(n); }
+      }
+    }
+    const cs = zellen.map(z => z.c), rs = zellen.map(z => z.r);
+    const teile = fakeWalls.filter(f => {   // Scheinwand-Stücke dieser Fläche (bekommen ihre Durchsichtigkeit, materialZeichnen/Glitzern)
+      for(let c = Math.floor(f.x/40 + 1e-6); c < Math.ceil((f.x + f.w)/40 - 1e-6); c++)
+        for(let r = Math.floor(f.y/40 + 1e-6); r < Math.ceil((f.y + f.h)/40 - 1e-6); r++) if(set.has(c + ',' + r)) return true;
+      return false; });
+    liste.push({zellen, set, teile, x: Math.min(...cs)*40, y: Math.min(...rs)*40, w: (Math.max(...cs) + 1)*40 - Math.min(...cs)*40, h: (Math.max(...rs) + 1)*40 - Math.min(...rs)*40, alpha: 1});
+  }
+  return (matScheinF = {v: R.version, liste}).liste;
+}
+// steht eine Figur IN der Fläche? (Nutzer: „erst erkennbar, wenn ich reingehe“ – vorher schon 60 px davor durchsichtig)
+function matScheinBetreten(F){
+  return [p1, p2].some(p => {
+    for(let c = Math.floor((p.x - p.w/2 + 1)/40); c <= Math.floor((p.x + p.w/2 - 1)/40); c++)
+      for(let r = Math.floor((p.y - p.h + 1)/40); r <= Math.floor((p.y - 1)/40); r++) if(F.set.has(c + ',' + r)) return true;
+    return false;
+  });
+}
+// Bild einer Fläche (Material wie ringsum, nahtlos) und ihrer dunklen Rückwand – je Fläche einmal, klein
+function matScheinFlaecheBild(F){
+  const S = matMassstab();
+  if(F._mat && F._mat.S === S) return F._mat;
+  const X = F.x - 4, Y = F.y - 20, w = F.w + 8, h = F.h + 26;
+  const neu = () => { const c = document.createElement('canvas'); c.width = Math.ceil(w*S); c.height = Math.ceil(h*S);
+    const q = c.getContext('2d'); q.setTransform(S, 0, 0, S, -X*S, -Y*S); matPfadeZeichnen(q, matPfadeBauen(F.zellen, [], -Infinity, Infinity), S); return [c, q]; };
+  const [c] = neu(), [hinten, q] = neu();
+  q.setTransform(1, 0, 0, 1, 0, 0); q.globalCompositeOperation = 'source-atop'; q.fillStyle = SCHEIN_RUECKWAND; q.fillRect(0, 0, hinten.width, hinten.height);
+  return F._mat = {c, hinten, x: X, y: Y, w, h, S};
+}
+// dunkle Rückwand hinter jeder gerade durchsichtigen Fläche (vor Hebeln/Münzen gezeichnet, nach Boden/Wand)
+function matScheinRueckwandZeichnen(){
+  for(const F of matScheinFlaechen()){
+    if(F.alpha > 0.98 || F.x + F.w - camX < -20 || F.x - camX > VW + 20) continue;
+    const B = matScheinFlaecheBild(F);
+    ctx.drawImage(B.hinten, B.x - camX, B.y, B.w, B.h);
+  }
+}
 // Scheinwand: dasselbe Material wie ringsum (Wand oder Erde, siehe matRasterHolen; nahtlos) als eigenes kleines Bild je Scheinwand,
 // damit sie beim Hineingehen als Ganzes durchsichtig werden kann (wenige, kleine Flächen)
 function matScheinwandBild(f){
@@ -852,6 +909,7 @@ function drawSolidLook(s, look, x){
   // Stücke als je ein Block (pieceDraw), Türen als je eine zusammenhängende Tür (drawGate)
   bodenDickichtZeichnen();   // Dschungel: Dickicht VOR den Bodenkacheln, schaut an den Kanten heraus (17a-dschungel-boden.js)
   materialZeichnen();
+  matScheinRueckwandZeichnen();   // dunkle Rückwand hinter offenen Scheinwänden
   matBeweglichZeichnen();
   for(const s of solids){
     if(ELEMENT_SOLID_TYPEN.has(s.type)) continue;   // zeichnet sich selbst (elemente/, z. B. Wechselboden)
@@ -1040,14 +1098,15 @@ function drawSolidLook(s, look, x){
     ctx.beginPath(); ctx.moveTo(gx,goal.y-48); ctx.lineTo(gx+28,goal.y-40); ctx.lineTo(gx,goal.y-32); ctx.fill();
   }
 
-  // Scheinwände: sehen aus wie Wand und liegen ÜBER Hebeln/Münzen (versteckt); wer drinsteht, sieht hindurch
-  for(const f of fakeWalls){
-    const x = Math.round(f.x - camX);
-    if(x + f.w < -20 || x > VW + 20) continue;
-    const inside = [p1, p2].some(p => rectsOverlap({x:p.x-p.w/2, y:p.y-p.h, w:p.w, h:p.h}, {x:f.x-60, y:f.y-60, w:f.w+120, h:f.h+120}));
-    f.alpha = f.alpha === undefined ? 1 : f.alpha + ((inside ? 0.35 : 1) - f.alpha)*Math.min(1, frameDt*0.01);
-    const B = matScheinwandBild(f);   // gleiche Wand wie ringsum (Zwischenspeicher je Scheinwand)
-    ctx.save(); ctx.globalAlpha = f.alpha;
+  // Scheinwände: sehen aus wie Wand und liegen ÜBER Hebeln/Münzen (versteckt); wer drinsteht, sieht hindurch – je
+  // zusammenhängende Fläche EIN Bild mit einer Durchsichtigkeit (nur Anzeige, ändert keinen Spielzustand)
+  for(const F of matScheinFlaechen()){
+    if(F.x + F.w - camX < -20 || F.x - camX > VW + 20) continue;
+    F.alpha = F.alpha + ((matScheinBetreten(F) ? SCHEIN_DURCHSICHTIG : 1) - F.alpha)*Math.min(1, frameDt*0.01);
+    if(F.alpha > 0.999) F.alpha = 1;
+    for(const f of F.teile) f.alpha = F.alpha;
+    const B = matScheinFlaecheBild(F);
+    ctx.save(); ctx.globalAlpha = F.alpha;
     ctx.drawImage(B.c, B.x - camX, B.y, B.w, B.h);
     ctx.restore();
   }

@@ -649,7 +649,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         Luftschlieren, Funkel-Staub und taumelnde Blättchen, gleichmäßig steigend über die ganze Säule. Test aufwind_saeule.
       Scheinwand (solids type 'fake', im Spiel in fakeWalls): sieht exakt aus wie Wand (nahtlos mit echten
         Wänden), liegt ÜBER Hebeln/Münzen und versteckt sie; keine Kollision (man läuft hindurch, kein Wandsprung).
-        Steht eine Figur drin oder direkt davor, wird sie halb durchsichtig.
+        Steht eine Figur drin, wird sie halb durchsichtig – **erst beim Hineingehen** (Nutzerwunsch 30.10.; vorher schon
+        60 px davor). Zusammenhängende Scheinwand-Stücke sind **eine einheitliche Fläche** (ein Bild, eine Durchsichtigkeit –
+        vorher sah man überlappende „Schichten“), und **dahinter liegt eine dunkle Rückwand** aus demselben Material statt
+        des Dschungel-Hintergrunds (`matScheinFlaechen`, `SCHEIN_RUECKWAND` in js/12). Test scheinwand_eine_flaeche.
         Kein Verrat durch Deko: auf Flächen direkt unter einer Scheinwand wächst kein Moos/Gras, keine Pflanzen/Vögel,
         und an Wandseiten daneben keine Ranken (Scheinwände zählen für die Deko als fest; Test scheinwand_ohne_moos_verrat). In dunklen Themen leuchten versteckte
         Hebel/Münzen nicht durch.
@@ -1972,6 +1975,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     Linie), wenn sie bis in die oberste Reihe reicht (Nutzerwunsch).
   - **Bewegliche Plattformen** aus Boden/Wand: ein abgerundeter Block im gleichen Material (`pieceDraw`), ganze Gruppe
     als ein Block, wenn sie ein Rechteck bildet; Outline wie die Flächen, kein Schatten, kein Restschatten.
+    **Eingeklemmt = Tod** (Nutzerwunsch 30.10.): drückt ein bewegtes Stück eine Figur gegen Boden/Wand (kein Platz in
+    Fahrtrichtung, quer nur knapp an der Kante, `MOVER_QUETSCH_RAND`), stirbt sie – vorher wurde sie obendrauf oder weit zur
+    Seite versetzt (`MOVER_QUETSCHT` in js/05). Test bewegter_boden_quetscht.
   - **Bröckelboden:** Erde wie der normale Boden, Klumpen und Kiesel, glatte Unterkante, Outline nur an freien Kanten –
     nebeneinander liegende Kästchen sind EINE durchgehende Fläche (kein Rahmen je Kästchen). Oben wieder das gelbe trockene
     Gras (`BROECKEL_GRAS`, durchgehende Welle; auch auf den Bruchstücken), runde Ecken an freien Ecken wie Boden/Wand (die

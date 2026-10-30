@@ -249,6 +249,26 @@ async def koop_level(g, datei):
     await g.ev("closeMenu(); deathState = null; for(const k in KEYS) KEYS[k] = false;")
 
 def test(fn): TESTS.append(fn); return fn
+# Level-Tests (Nutzerwunsch 30.10.: „ich spiele die Levels und passe sie an – das brauchst du nicht mehr testen“): prüfen Inhalt/
+# Spielbarkeit der echten Levels (Bots durch Levels und Stellen, Prüfwerkzeuge, Rätsel). Laufen nur mit MIT_LEVELN=1.
+LEVEL_TESTS = {
+    'level1_bis_spalte_800', 'level1_muenzen_und_haken', 'level2_und_3_regeln', 'level1_bei_nacht', 'level2_fahrstuhl_anhalten',
+    'level3_fahrstuhl_unter_stacheln', *(f'level{n}_{s}' for n, s in ((7, 'lianenschlucht'), (8, 'gluehwald'), (9, 'fallengang'),
+    (10, 'sonnentempel'), (11, 'felsenflucht'), (12, 'tropfsteingang'), (13, 'eisgrotte'), (14, 'leuchtgrotte'), (15, 'foerderwerk'),
+    (16, 'tiefenschlund'), (17, 'glutpfad'), (18, 'aschefeld'), (19, 'magmakammer'), (20, 'schlackewerk'), (21, 'feuerschlund'),
+    (22, 'kraterherz'))),
+    'dschungel5_dornenpfad', 'dschungel6_wipfelsturm', 'ruinen6_tempelherz', 'hebel_haben_grund', 'verknuepfungen_bis_60',
+    'keine_holzplattform_mehr', 'muenz_klassen_level', 'glutpfad_mulde_nach_durchbruch', 'mondnacht_stufen_zum_hakenblock',
+    'nacht_stellen_dschungel', 'nacht_stellen_ruinen', 'nacht_stellen_hoehle', 'nacht_stellen_vulkan', 'checkpoints_sicher',
+    'dash_ketten_dschungel', 'dash_ketten_ruinen', 'dash_ketten_hoehle', 'dash_ketten_vulkan', 'umbau_rollen_dschungel',
+    'jagden_dschungel', 'jagden_ruinen', 'jagden_vulkan', 'kombi_pruefung', 'kombi_stellen_dschungel', 'kombi_stellen_ruinen',
+    'kombi_stellen_hoehle', 'kombi_stellen_vulkan', 'haken_schwung_frei', 'material_schoen_pruefung', 'haken_pruefung',
+    'bildregel_pruefung', 'ruinen1_etappen_im_bild', 'ruinen2_hakenreihe', 'muenzen_haken_ketten', 'hoehle1_obere_route',
+    'hoehle1_faehre_im_bild', 'ruinen1_sonnenkammer', 'fallengang_lichtweiche', 'felsenflucht_felsbrecher_licht',
+    'mondnacht_mondspiegel', 'tempelherz_sonnenkrone', 'licht_raetsel_loeser', 'partner_aufgaben_dschungel',
+    'partner_aufgaben_ruinen', 'partner_koop_dschungel', 'partner_puste_insel', 'partner_kamin_135', 'dschungel_neu_stellen_a1',
+    'dschungel_neu_stellen_a2', 'raetsel_dschungel_neu', 'abschnitt_zusammensetzen'}
+MIT_LEVELN = bool(os.environ.get('MIT_LEVELN'))
 
 # ---------------------------------------------------------------- Tests
 
@@ -492,6 +512,27 @@ async def scheinwand_glitzert(g):
     assert r['drinnen'] == 0, 'Scheinwand glitzert, obwohl sie durchsichtig ist'
 
 @test
+async def scheinwand_eine_flaeche(g):
+    """Nutzer: Scheinwand „besteht aus 4 Schichten“ -> zusammenhängende Scheinwand-Stücke sind EINE Fläche mit einem Bild und
+    einer Durchsichtigkeit; „erst erkennbar, wenn ich reingehe“ -> davor stehen lässt sie deckend, erst drin wird sie
+    durchsichtig; dahinter dann eine dunkle Rückwand aus Erde (statt Dschungel-Hintergrund)."""
+    await g.load(level([ground(0, 680, 3000), ground(560, 360, 600, 80), ground(560, 560, 600, 120), ground(920, 440, 240, 120),
+                        ground(560, 440, 360, 40, 'fake'), ground(560, 480, 360, 40, 'fake'),
+                        ground(560, 520, 360, 40, 'fake')], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, welt='dschungel'))
+    r = await g.ev("""(() => { menuScreen = 'pause'; const e = {}; let hinten = 0; const alt = matScheinRueckwandZeichnen;
+      const bild = (n) => { for(let i = 0; i < n; i++){ frameDt = 50; draw(); } };
+      const F = () => matScheinFlaechen();
+      e.flaechen = F().length; e.teile = F()[0].teile.length;
+      p1.x = 540; p1.y = 560; p2.x = 100; p2.y = 680; bild(30); e.davor = F()[0].alpha;   // direkt davor (Kopf auf Tunnelhöhe)
+      p1.x = 620; bild(30); e.drin = F()[0].alpha; e.stuecke = fakeWalls.map(f => +f.alpha.toFixed(2));
+      matScheinRueckwandZeichnen = () => { hinten++; alt(); }; try { bild(1); } finally { matScheinRueckwandZeichnen = alt; }
+      e.hinten = hinten; p1.x = 300; p1.y = 680; bild(40); e.wieder = F()[0].alpha; menuScreen = null; return e; })()""")
+    assert r['flaechen'] == 1 and r['teile'] == 3, f'Scheinwand-Stücke nicht zu einer Fläche verbunden: {r}'
+    assert r['davor'] == 1, f'schon davor durchsichtig: {r}'
+    assert r['drin'] < 0.5 and len(set(r['stuecke'])) == 1, f'drin nicht (einheitlich) durchsichtig: {r}'
+    assert r['hinten'] == 1 and r['wieder'] == 1, r
+
+@test
 async def himmel_ohne_unsichtbare_decke(g):
     """Zoom zeigt über Reihe 0 einen Streifen Himmel: dort kann man hineinspringen (keine unsichtbare Decke mehr bei
     Reihe 0), die Decke ist der obere Bildrand. Im Editor sind die 3 Himmel-Reihen (−1 … −3) ganz normal bebaubar;
@@ -585,6 +626,29 @@ async def decke_kein_teleport(g):
     assert not bad, f'Teleport bei (Decke, Ganghöhe, Figur): {bad[:5]}'
 
 @test
+async def bewegter_boden_quetscht(g):
+    """Nutzerwunsch „wenn man unter den bewegenden Boden kommt, soll man sterben“: drückt ein sinkender Boden die Figur auf
+    den Boden, stirbt sie (vorher wurde sie obendrauf oder um die halbe Bodenbreite zur Seite versetzt); ebenso eine seitlich
+    fahrende Wand gegen eine feste Wand. Streift das Stück die Figur nur an der Kante, rutscht sie heraus und lebt."""
+    mps = [{'x': 400, 'y': 400, 'w': 160, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 400, 'targetY': 640, 'speed': 3},
+           {'x': 900, 'y': 600, 'w': 40, 'h': 80, 'look': 'wall', 'group': 2, 'targetX': 1100, 'targetY': 600, 'speed': 3}]
+    await g.load(level([ground(0, 680, 2000), ground(1160, 520, 40, 160, 'wall')], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, movingPlatforms=mps))
+    r = await g.ev("""(() => { menuScreen = 'pause'; const e = {}; const [sinkt, schiebt] = solids.filter(s => s.type === 'moveplat');
+      const lauf = (x, s, n) => { resetLevel(); deathState = null; for(const k in KEYS) KEYS[k] = false;
+        const t = solids.filter(q => q.type === 'moveplat')[s]; p1.x = x; p1.y = 680; p1.vx = p1.vy = 0; p2.x = 60; p2.y = 680;
+        t.tripActive = true; let ts = 4e6; for(let i = 0; i < n && !deathState; i++) stepSim(ts += 1000/54);
+        const r = {tot: !!deathState, x: Math.round(p1.x), y: Math.round(p1.y)}; deathState = null; return r; };
+      e.mitte = lauf(480, 0, 140);      // mitten unter dem sinkenden Boden
+      e.kante = lauf(400 + 160 + 14 - 8, 0, 140);   // ragt nur 8 px unter die Kante: rutscht heraus
+      e.wand = lauf(1130, 1, 160);      // zwischen fahrender und fester Wand
+      e.frei = lauf(1300, 1, 160);      // hinter der festen Wand: nichts passiert
+      menuScreen = null; return e; })()""")
+    assert r['mitte']['tot'], f'unter dem sinkenden Boden nicht gestorben: {r}'
+    assert not r['kante']['tot'] and r['kante']['x'] > 560, f'an der Kante gestreift: sollte herausrutschen: {r}'
+    assert r['wand']['tot'], f'zwischen den Wänden nicht gestorben: {r}'
+    assert not r['frei']['tot'], r
+
+@test
 async def fahrende_platte_kein_durchfahren(g):
     """Bewegte Platten (hoch/runter) schieben Figuren hinaus statt sie durchzulassen: wer unter einer sinkenden
     Platte springt oder steht, steckt nie darin und landet nie plötzlich obendrauf; mitfahren geht nicht durch Wände."""
@@ -614,6 +678,7 @@ async def fahrende_platte_kein_durchfahren(g):
           if(keys.l) KEYS[p1.keys.left]=true; if(keys.r) KEYS[p1.keys.right]=true;
           if(keys.j){ KEYS[p1.keys.jump]=true; if(f%15===0) KEYS[p1.keys.jump+'_pressed']=true; }
           const y0=p1.y; stepSim(ts);
+          if(deathState) break;   // eingeklemmt = Tod (Nutzerwunsch, MOVER_QUETSCHT; Test bewegter_boden_quetscht)
           if(inside()) { bad.push(['steckt drin', run, f]); break; }
           if(p1.y - y0 < -22) { bad.push(['nach oben versetzt', run, f]); break; }
         }
@@ -12478,16 +12543,26 @@ async def abschnitt_zusammensetzen(g):
 
 async def main(filter_):
     async with async_playwright() as pw:
-        browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None,
-                                           args=GRAFIKKARTE_ARGS if MIT_GRAFIKKARTE else [])
-        ok = fail = 0
+        starten = lambda: pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None,
+                                             args=GRAFIKKARTE_ARGS if MIT_GRAFIKKARTE else [])
+        browser = await starten()
+        ok = fail = ausgelassen = 0
+        assert LEVEL_TESTS <= {fn.__name__ for fn in TESTS}, f'LEVEL_TESTS: unbekannte Namen {LEVEL_TESTS - {fn.__name__ for fn in TESTS}}'
         for fn in TESTS:
             if filter_ and not any(f in fn.__name__ for f in filter_.split(',')): continue   # Kurztest: mehrere Filter mit Komma
-            ctx = await browser.new_context(viewport={'width': 1400, 'height': 840})
-            if MIT_GRAFIKKARTE: await ctx.add_init_script("window.figuren3dAus = true")   # wie mit Software-Grafik: 3D nur, wo ein Test es erzwingt (f3d_bereit)
-            page = await ctx.new_page(); errors = []
-            page.on('pageerror', lambda e: errors.append(str(e)))
-            await page.goto(GAME); await page.wait_for_timeout(400)
+            if fn.__name__ in LEVEL_TESTS and not MIT_LEVELN: ausgelassen += 1; continue   # Level testet der Nutzer selbst
+            for versuch in range(2):   # lädt die Spielseite nicht (Test-Browser hängt, z. B. nach vielen Tests mit Grafikkarte): Browser neu starten
+                ctx = await browser.new_context(viewport={'width': 1400, 'height': 840})
+                if MIT_GRAFIKKARTE: await ctx.add_init_script("window.figuren3dAus = true")   # wie mit Software-Grafik: 3D nur, wo ein Test es erzwingt (f3d_bereit)
+                page = await ctx.new_page(); errors = []
+                page.on('pageerror', lambda e: errors.append(str(e)))
+                try:
+                    await page.goto(GAME); await page.wait_for_timeout(400); break
+                except Exception:
+                    print(f'  … Spielseite lädt nicht ({fn.__name__}) – Test-Browser wird neu gestartet')
+                    try: await browser.close()
+                    except Exception: pass
+                    browser = await starten()
             try:
                 await fn(Game(page))
                 assert not errors, f'JavaScript-Fehler: {errors[:3]}'
@@ -12499,7 +12574,7 @@ async def main(filter_):
             try: await ctx.close()
             except Exception: pass
         await browser.close()
-        print(f'\n{ok} bestanden, {fail} fehlgeschlagen')
+        print(f'\n{ok} bestanden, {fail} fehlgeschlagen' + (f' ({ausgelassen} Level-Tests ausgelassen, mit MIT_LEVELN=1 dabei)' if ausgelassen else ''))
         return fail
 
 if __name__ == '__main__':

@@ -182,6 +182,8 @@ function updateDoorsAndSwitches(dt, players){
 }
 
 const MOVE_PLAT_SPEED = 4.5; // Standard, falls im Level kein Tempo angegeben ist
+const MOVER_QUETSCHT = true; // eingeklemmt von einem bewegten Stück (kein Platz außer gegen die Fahrtrichtung) = Tod (pushOutOfMover)
+const MOVER_QUETSCH_RAND = 16; // px: so weit darf ein bewegtes Stück eine Figur quer zur Fahrtrichtung hinausschieben
 function updateMovingPlatforms(dt, players){
   const carried = new Set(); // jeden Spieler pro Frame höchstens einmal mitnehmen (mehrteilige Stücke)
   for(const s of solids){
@@ -262,6 +264,14 @@ function pushOutOfMover(player, s, stepX, stepY){
   for(const k of order){
     player.x = cand[k].x; player.y = cand[k].y;
     if(!playerBlocked(player, s)){ pick = k; break; }
+  }
+  // eingeklemmt (Nutzerwunsch „kommt man unter den bewegenden Boden, soll man sterben“): kein Platz in Fahrtrichtung und
+  // quer dazu – nur noch gegen die Fahrtrichtung (z. B. eine sinkende Platte drückt die Figur auf den Boden; früher wurde sie
+  // dann obendrauf gesetzt) oder gar nicht mehr -> die Figur stirbt
+  // (quer heraus nur knapp an der Kante, höchstens MOVER_QUETSCH_RAND px – sonst würde die Figur z. B. unter einem breiten,
+  // sinkenden Boden um seine halbe Breite zur Seite versetzt)
+  if(MOVER_QUETSCHT && (!pick || pick === against || (pick !== first && cand[pick].d > MOVER_QUETSCH_RAND))){
+    player.x = box.x + box.w/2; player.y = box.y + box.h; die(player); return;
   }
   if(!pick){ pick = first || order[0]; }
   player.x = cand[pick].x; player.y = cand[pick].y;
