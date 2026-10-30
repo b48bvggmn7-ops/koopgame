@@ -642,7 +642,8 @@ async def seil_loest_beim_landen(g):
                        hooks=[{'x': 300, 'y': 470, 'radius': 300}]))
     # je Schritt mitschreiben: steht er am Seil länger als einen Schritt auf etwas, ist das Lösen kaputt
     await g.ev("window.__seil = []; const alt = stepSim; stepSim = function(){ const r = alt.apply(this, arguments); __seil.push([p1.hookAttached ? 1 : 0, p1.grounded ? 1 : 0, Math.round(p1.y)]); return r; }")
-    await g.p.keyboard.down('Space'); await g.steps(2)
+    await g.p.keyboard.down('Space')
+    await g.p.wait_for_function("p1.y < 655 && p1.vy < 0", timeout=4000)   # kurz nach dem Absprung greifen (kurze Liane: die Länge beim Greifen zählt)
     await g.p.keyboard.down('KeyG'); await g.steps(2); await g.p.keyboard.up('Space')   # im Aufsteigen greifen, Taste halten
     assert await g.ev('p1.hookAttached'), 'nicht gegriffen'
     await g.hold(('KeyD',), 1500); await g.steps(10)
