@@ -8056,7 +8056,10 @@ def github_attrappe(calls):
         body = {'GET /git/ref/heads/main': {'object': {'sha': 'c0'}}, 'GET /git/commits/c0': {'tree': {'sha': 't0'}},
                 'POST /git/trees': {'sha': 't1'}, 'POST /git/commits': {'sha': 'c1'}, 'PATCH /git/refs/heads/main': {'object': {'sha': 'c1'}}}
         if url.startswith('/contents/'):
-            body[req.method + ' ' + url] = {'content': base64.b64encode((ROOT / url.split('?')[0][len('/contents/'):]).read_bytes()).decode()}
+            datei = ROOT / url.split('?')[0][len('/contents/'):]
+            if not datei.exists():   # neues Level: GitHub antwortet 404 (Editor behält dann keine alten „_“-Felder)
+                await route.fulfill(status=404, content_type='application/json', body='{"message": "Not Found"}'); return
+            body[req.method + ' ' + url] = {'content': base64.b64encode(datei.read_bytes()).decode()}
         await route.fulfill(status=200, content_type='application/json', body=json.dumps(body.get(req.method + ' ' + url, {})))
     return api
 
@@ -8898,7 +8901,7 @@ async def wasser_luftblase(g):
     await g.p.keyboard.press('KeyG'); await g.steps(10); await g.p.keyboard.press('Numpad1'); await g.steps(3)
     assert await g.ev("!!luftblase && luftblase.pop < 0"), 'keine Luftblase'
     assert 'blaseauf' in await g.ev("SFX_LOG"), await g.ev("SFX_LOG")
-    await g.ev("p1.luft = p2.luft = 300"); await g.steps(40)
+    await g.ev("p1.luft = p2.luft = 300"); await g.steps(60)   # (40 reichten nur, weil langsame Software-Grafik mehr Schritte machte)
     assert await g.ev("p1.headUnder && p2.headUnder && p1.luft === LUFT_MAX && p2.luft === LUFT_MAX"), \
         f"Luft füllt sich in der Blase nicht: {await g.ev('[p1.headUnder, p1.luft, p2.luft]')}"
     # auseinander -> platzt
@@ -9318,7 +9321,7 @@ async def leuchtkristall_dunkelzone(g):
     assert vorher > 200 and aussen < 20, f'Dunkelzone nicht dunkel: drin {vorher}, draußen {aussen}'
     # Kristall anschlagen (Schweinchen, Num 2)
     await g.ev("p2.x = 1010; p2.y = 680"); await g.steps(2)
-    await g.p.keyboard.press('Numpad2'); await g.steps(3)
+    await g.p.keyboard.press('Numpad2'); await g.steps(10)   # blüht in 8 Schritten auf (3 reichten nur mit langsamer Software-Grafik)
     assert await g.ev("leuchtKristalle[0].t > 400"), 'Kristall leuchtet nach dem Anschlagen nicht'
     await g.ev("p2.x = 740; camPos = 300")
     nachher = await dunkel(1150, 560)
