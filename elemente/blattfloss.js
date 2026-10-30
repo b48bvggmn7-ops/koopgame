@@ -34,7 +34,11 @@ function blattBild(g, x, y, w, schwank, teil){
     g.quadraticCurveTo(L*0.6, 13, 0, 12); g.quadraticCurveTo(-L*0.62, 12, -L - 2, -6); g.fill();
     g.strokeStyle = 'rgba(120,190,90,.35)'; g.lineWidth = 1.2;   // feine Adern auf der Innenseite der Wand
     for(let i = -2; i <= 2; i++){ const px = i*L*0.3; g.beginPath(); g.moveTo(px, 1); g.quadraticCurveTo(px + L*0.08, 6, px + L*0.12, 10 - Math.abs(i)*0.8); g.stroke(); }
-    if(teil === 'hinten'){ g.restore(); return; }
+    if(teil === 'hinten'){
+      g.strokeStyle = 'rgba(20,45,16,.7)'; g.lineWidth = 1.2;   // dunkle Kante der hinteren Wand (hinter den Figuren)
+      g.beginPath(); g.moveTo(-L - 1, -5); g.quadraticCurveTo(-L*0.6, 12.5, 0, 12); g.quadraticCurveTo(L*0.6, 12.5, L + 10, -9); g.stroke();
+      g.restore(); return;
+    }
   }
   // vorderer Rand (die frühere Oberseite) – nur über dem Blatt selbst, damit Nachbarn nicht „im Blatt“ stehen
   if(teil === 'vorne'){ g.beginPath(); g.rect(-L + 3, -30, 2*L - 6, 60); g.clip(); }
@@ -46,8 +50,10 @@ function blattBild(g, x, y, w, schwank, teil){
   // heller Rand vorne (Licht von oben) und dunkle Kante unten
   g.strokeStyle = 'rgba(225,255,190,.55)'; g.lineWidth = 1.4;
   g.beginPath(); g.moveTo(-L + 2, -6.5); g.quadraticCurveTo(-L*0.55, -10.2, 0, -9.2); g.quadraticCurveTo(L*0.62, -9.2, L + 6, -8.8); g.stroke();
-  g.strokeStyle = 'rgba(20,45,16,.7)'; g.lineWidth = 1.2;
-  g.beginPath(); g.moveTo(-L - 1, -5); g.quadraticCurveTo(-L*0.6, 12.5, 0, 12); g.quadraticCurveTo(L*0.6, 12.5, L + 10, -9); g.stroke();
+  if(teil !== 'vorne'){   // dunkle Kante der hinteren Wand – gehört HINTER die Figuren (Nutzer: „Outline geht durch den Affen“)
+    g.strokeStyle = 'rgba(20,45,16,.7)'; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(-L - 1, -5); g.quadraticCurveTo(-L*0.6, 12.5, 0, 12); g.quadraticCurveTo(L*0.6, 12.5, L + 10, -9); g.stroke();
+  }
   // Mittelrippe und Adern
   g.strokeStyle = 'rgba(214,240,170,.8)'; g.lineWidth = 1.6;
   g.beginPath(); g.moveTo(-L + 4, -5); g.quadraticCurveTo(0, -1.5, L + 5, -8.5); g.stroke();
@@ -145,8 +151,11 @@ elementRegistrieren({
       ctx.strokeStyle = 'rgba(90,160,79,.5)'; ctx.strokeRect((c + n)*TILE + 2, r*TILE + 2, 3*TILE - 4, TILE - 4); ctx.setLineDash([]);   // Ende der Fahrt
       ctx.save(); ctx.translate(c*TILE, boden); ctx.scale(s, s); blattBild(ctx, 0, 0, 120, 0); ctx.restore();
       ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.strokeText('→' + n, (c + 3 + n)*TILE - 12, r*TILE + 18*s); ctx.fillText('→' + n, (c + 3 + n)*TILE - 12, r*TILE + 18*s);
-      if(p.link){ ctx.strokeText(String(p.link), c*TILE + 10, r*TILE + 9); ctx.fillText(String(p.link), c*TILE + 10, r*TILE + 9); }   // Nummer fürs Floß-Rad
+      ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.strokeText('↔' + n, (c + 3 + n)*TILE - 14, r*TILE + 18*s); ctx.fillText('↔' + n, (c + 3 + n)*TILE - 14, r*TILE + 18*s);   // Länge der Schiene
+      if(p.link){   // Verknüpfungs-Nummer (fürs Floß-Rad) als farbiges Abzeichen – nicht mit der Schienen-Länge verwechseln
+        ctx.fillStyle = typeof linkColor === 'function' ? linkColor(p.link) : '#ff9f43'; ctx.beginPath(); ctx.arc(c*TILE + 11, r*TILE + 10, 8, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.strokeText(String(p.link), c*TILE + 11, r*TILE + 10.5); ctx.fillText(String(p.link), c*TILE + 11, r*TILE + 10.5);
+      }
     },
     exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, schiene: Number(p.schiene) || 6, ...(p.link ? {link: p.link} : {})})),
   },

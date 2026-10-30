@@ -7484,30 +7484,31 @@ async def scheinwand_versteckt_leuchtet_nicht(g):
 async def flossrad_holt_partner(g):
     """Nutzerwunsch: „ein Rad auf der anderen Seite, damit ich den Affen als Schwein rüberholen kann“ (elemente/flossrad.js,
     Testlevel koop-aktionen: Rad rechts der Grube) – „cooler, wenn ich in eine Richtung drücke“: das Schweinchen hält am Rad
-    die Hebel-Taste und drückt rechts -> das Blatt (links, mit dem Affen darauf) fährt herüber bis ans Ende der Schiene; das
-    Schweinchen bleibt dabei stehen und kurbelt (Arm-Zug leverAnim, Rad dreht); loslassen hält an; links schickt es zurück;
+    die Hebel-Taste und drückt hoch (Nutzer: hoch/runter statt links/rechts – sonst rennt man danach in den Tod) -> das Blatt (links, mit dem Affen darauf) fährt herüber bis ans Ende der Schiene; das
+    Schweinchen bleibt dabei stehen und kurbelt (Arm-Zug leverAnim, Rad dreht); loslassen hält an; runter schickt es zurück;
     ohne Hebel-Taste läuft es normal; weit weg vom Rad passiert nichts."""
     srv = await koop_testlevel(g)
     try:
         r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {}, B = blattFloesse[0], R = flossRaeder[0], use = p2.keys.use;
           try {
             e.verbunden = flossradFloss(R) === B;
+            { const l0 = R.link, b0 = B.link; R.link = 14; B.link = 1; R.floss = undefined; e.fallback = flossradFloss(R) === B; R.link = l0; B.link = b0; R.floss = undefined; }   // Nummern passen nicht: das nächste Floß
             stell(p1, 1460, 720); stell(p2, 1905, 720); for(let i = 0; i < 20; i++) st();
             KEYS[use] = true; for(let i = 0; i < 10; i++) st(); e.nurTaste = B.x;   // nur Hebel-Taste: nichts
-            KEYS[p2.keys.right] = true; let arm = 0; const w0 = R.winkel;
+            KEYS[p2.keys.swimUp] = true; let arm = 0; const w0 = R.winkel;
             for(let i = 0; i < 40; i++){ st(); if(p2.leverAnim && performance.now() - p2.leverAnim.t0 < 50) arm++; }
             e.halb = B.x; e.schweinX = p2.x; e.dreht = R.winkel !== w0; e.arm = arm; e.schaut = p2.facing;
-            KEYS[p2.keys.right] = false; for(let i = 0; i < 20; i++) st(); e.steht = B.x;
-            KEYS[p2.keys.right] = true; for(let i = 0; i < 200; i++) st(); KEYS[p2.keys.right] = false;
+            KEYS[p2.keys.swimUp] = false; for(let i = 0; i < 20; i++) st(); e.steht = B.x;
+            KEYS[p2.keys.swimUp] = true; for(let i = 0; i < 200; i++) st(); KEYS[p2.keys.swimUp] = false;
             e.ende = B.x; e.affe = p1.x; e.affeDrauf = Math.abs(p1.y - B.y) < 1; e.lebt = !deathState;
-            KEYS[p2.keys.left] = true; for(let i = 0; i < 40; i++) st(); KEYS[p2.keys.left] = false; KEYS[use] = false;
+            KEYS[p2.keys.swimDown] = true; for(let i = 0; i < 40; i++) st(); KEYS[p2.keys.swimDown] = false; KEYS[use] = false;
             e.zurueck = B.x;
             KEYS[p2.keys.right] = true; for(let i = 0; i < 10; i++) st(); KEYS[p2.keys.right] = false; e.laeuft = p2.x > 1906;   // ohne Taste: normal laufen
             stell(p2, 1700, 720); for(let i = 0; i < 2; i++) st(); const x0 = B.x;   // weit weg vom Rad: nichts
-            KEYS[use] = true; KEYS[p2.keys.right] = true; for(let i = 0; i < 20; i++) st(); e.fern = B.x - x0;
+            KEYS[use] = true; KEYS[p2.keys.swimUp] = true; for(let i = 0; i < 20; i++) st(); e.fern = B.x - x0;
           } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
           return e; })()""")
-        assert r['verbunden'], f'Rad nicht mit dem Blatt-Floß verbunden: {r}'
+        assert r['verbunden'] and r['fallback'], f'Rad nicht mit dem Blatt-Floß verbunden: {r}'
         assert r['nurTaste'] == 1400, f'nur die Hebel-Taste bewegt schon das Blatt: {r}'
         assert 1400 < r['halb'] < 1640 and abs(r['schweinX'] - (1900 + 28)) < 2 and r['dreht'] and r['arm'] >= 1 and r['schaut'] == -1, \
             f'Rad zieht nicht / Schweinchen kurbelt nicht im Stehen: {r}'

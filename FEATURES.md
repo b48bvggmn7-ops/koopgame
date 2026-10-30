@@ -2195,8 +2195,11 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Kästchen); ein Zug-Tau führt vom Rad zur Umlenkrolle am Ende der Schiene (hängt locker, wiegt sich, strafft sich und
   zittert beim Kurbeln); rund um das Rad wachsen keine Bodenpflanzen (`bodenFreihaltePunkte`, js/17a – nichts schiebt sich
   davor).
-  Bedienung: vor dem Rad die **Hebel-Taste halten und links/rechts drücken** (Affe J, Schweinchen Num 2) – das Blatt fährt
-  gleichmäßig (`BLATT_RAD_TEMPO`) in diese Richtung, loslassen hält es sofort an; wer darauf steht, fährt mit. Die Figur tritt
+  Bedienung: vor dem Rad die **Hebel-Taste halten und hoch/runter drücken** (Affe J + W/S, Schweinchen Num 2 + ↑/↓;
+  Nutzer: „sonst rennt man danach direkt in den Tod“) – **hoch holt das Blatt zum Rad heran, runter schickt es weg**,
+  gleichmäßig (`BLATT_RAD_TEMPO`); loslassen hält es sofort an; wer darauf steht, fährt mit. Passt keine Nummer, zieht das Rad
+  das nächste Floß; im Editor zeigt eine gestrichelte Linie, mit welchem Floß ein Rad verbunden ist (keins: rotes „?“), und
+  die Nummern stehen als farbige Abzeichen da (die Schienen-Länge am Floß als „↔14“ – nicht mit der Nummer verwechseln). Die Figur tritt
   neben das Rad, schaut hin und **kurbelt** (Arm-Zug wie am Hebel alle `FLOSSRAD_KURBEL_TAKT` Schritte, Rad dreht und läuft
   aus, Klack-Ton); Tasten-Blase wie am Hebel. Ohne Hebel-Taste läuft man normal. Eingeklinkt über `flossradVorher` in
   `neueBewegungVorher` (js/32). Testlevel koop-aktionen (Rad rechts der Grube), Test flossrad_holt_partner.
