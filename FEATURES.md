@@ -2174,12 +2174,18 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Dschungelblatt (Oberseite mit Mittelrippe/Adern, aufgebogene Spitze, eingerollter Stiel, Tautropfen), das wie eine Gondel an
   zwei kurzen Lianen mit Ringen an einer straff gespannten Ranken-Schiene `BLATT_SCHIENE_HOCH` px über der Stehfläche hängt;
   die Schienen-Enden hängen an Material darüber (Halter) oder kommen aus dem Blätterdach, die Schiene liegt hinter dem Gelände.
-  Test blattfloss_aussehen. Seit 30.10. (Nutzerwünsche): das Blatt ist eine **Mulde** – man steht IM Blatt (Innenseite
-  hinter den Figuren, vorderer Rand davor über den Füßen, `zeichnenVorne`), **kein Schatten** mehr darunter; es liegt **im
+  Test blattfloss_aussehen. Seit 30.10. (Nutzerwünsche): **kein Schatten** mehr darunter (eine kurz eingebaute Mulde „man
+  steht im Blatt“ wurde wieder verworfen – „vorher war es besser“; man steht oben auf dem Blatt); es liegt **im
   Kästchen** (Stehfläche = Boden des Kästchens, Spiel und Editor gleich; das Testlevel koop-aktionen wurde eine Reihe
   höher gesetzt, damit es an derselben Stelle bleibt); im Editor **gedrückt halten und nach rechts ziehen** stellt die
   Schiene ein (bis zum Kästchen unter der Maus, höchstens `BLATT_SCHIENE_MAX`; Muster `editor.ziehen` für Elemente in
   editor/js/02-werkzeuge.js), ein gestrichelter Rahmen zeigt das Ende der Fahrt. Test editor_blattfloss_ziehen.
+- **Floß-Rad** (elemente/flossrad.js, Editor-Reiter „Bewegung“, Werkzeug „Floß-Rad“, im Dschungel empfohlen; Nutzerwunsch
+  „damit ich den Affen als Schwein rüberholen kann“): Kurbelrad auf einem Pfahl, mit einer Liane zum nächsten Ende einer
+  Blatt-Floß-Schiene verbunden (höchstens 10 Kästchen weit, etwa gleiche Höhe). Wer davorsteht und die **Hebel-Taste
+  gedrückt hält** (Affe J, Schweinchen Num 2), dreht es: das Blatt fährt gleichmäßig (`BLATT_RAD_TEMPO`) wie eine Fähre zum
+  anderen Ende – liegt es beim Rad, fährt es weg, sonst wird es herangezogen (Richtung je neuem Drücken); loslassen hält es
+  sofort an; wer darauf steht, fährt mit. Testlevel koop-aktionen (Rad rechts der Grube), Test flossrad_holt_partner.
   Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
   schiebt sein Wind nicht. Neustart/Tod: zurück an den Anfang. Rolle: der Affe pustet, das Schweinchen fährt.
   Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).

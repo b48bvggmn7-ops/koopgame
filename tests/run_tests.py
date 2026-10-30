@@ -7432,15 +7432,45 @@ async def blattfloss_aussehen(g):
     await g.steps(3)
     r = await g.ev("""(() => { const E = blattSchieneEnden(blattFloesse[0]); let n = 0, schatten = 0, teile = []; const alt = lianeZeichnen, gs = glanzSchatten, bb = blattBild;
       lianeZeichnen = (...a) => { n++; return alt(...a); }; glanzSchatten = (...a) => { schatten++; return gs(...a); };
-      blattBild = (...a) => { teile.push(a[5]); return bb(...a); };
+      blattBild = (...a) => { teile.push(a[5] || 'ganz'); return bb(...a); };
       try { draw(); } finally { lianeZeichnen = alt; glanzSchatten = gs; blattBild = bb; }
       return {E, n, boden: blattFloesse[0].y, teile}; })()""")
     E = r['E']
     # Nutzer: „im Kästchen statt auf der Linie“ -> Stehfläche = Boden des Kästchens (Reihe 11 -> y 480)
     assert r['boden'] == 480 and E['y'] == 480 - 72 and E['ya'] is None and E['yb'] == 160, f'Lage/Aufhängung falsch: {r}'
     assert r['n'] >= 5, f'Schiene/Lianen nicht gezeichnet: {r}'
-    # Nutzer: „das Schwein soll IM Blatt stehen“ -> Innenseite hinter, Rand vor den Figuren; „Schatten macht keinen Sinn“ -> keiner
-    assert sorted(r['teile']) == ['hinten', 'vorne'], f'Blatt nicht als Mulde (hinten/vorne) gezeichnet: {r}'
+    # Nutzer: „Schatten macht keinen Sinn“ -> keiner; die Mulde (im Blatt stehen) wurde wieder verworfen („vorher besser“)
+    assert r['teile'] == ['ganz'], f'Blatt wie vorher (oben drauf stehen): {r}'
+    assert 'glanzSchatten' not in (ROOT / 'elemente' / 'blattfloss.js').read_text(encoding='utf-8').split('zeichnen(){')[-1], 'Blatt-Floß wirft wieder einen Schatten'
+
+@test
+async def flossrad_holt_partner(g):
+    """Nutzerwunsch: „ein Rad auf der anderen Seite, damit ich den Affen als Schwein rüberholen kann“ (elemente/flossrad.js,
+    Testlevel koop-aktionen: Rad rechts der Grube). Das Schweinchen hält am Rad die Hebel-Taste: das Blatt (links, mit dem
+    Affen darauf) fährt herüber bis ans Ende der Schiene; loslassen hält es an; neu drücken schickt es zurück."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {}, B = blattFloesse[0], R = flossRaeder[0];
+          try {
+            e.verbunden = flossradFloss(R) === B;
+            stell(p1, 1460, 720); stell(p2, 1905, 720); for(let i = 0; i < 20; i++) st();
+            KEYS[p2.keys.use] = true; for(let i = 0; i < 40; i++) st();
+            e.halb = B.x; KEYS[p2.keys.use] = false; for(let i = 0; i < 20; i++) st(); e.steht = B.x;
+            KEYS[p2.keys.use] = true; for(let i = 0; i < 200; i++) st(); KEYS[p2.keys.use] = false;
+            e.ende = B.x; e.affe = p1.x; e.affeDrauf = Math.abs(p1.y - B.y) < 1; e.lebt = !deathState;
+            for(let i = 0; i < 5; i++) st(); KEYS[p2.keys.use] = true; for(let i = 0; i < 40; i++) st(); KEYS[p2.keys.use] = false;
+            e.zurueck = B.x;
+            stell(p2, 1700, 720); for(let i = 0; i < 2; i++) st(); const x0 = B.x;   // weit weg vom Rad: nichts
+            KEYS[p2.keys.use] = true; for(let i = 0; i < 20; i++) st(); KEYS[p2.keys.use] = false; e.fern = B.x - x0;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['verbunden'], f'Rad nicht mit dem Blatt-Floß verbunden: {r}'
+        assert 1400 < r['halb'] < 1640 and abs(r['steht'] - r['halb']) <= 4, f'Rad zieht nicht bzw. hält beim Loslassen nicht an: {r}'
+        assert r['ende'] == 1640 and r['affeDrauf'] and r['affe'] > 1640 and r['lebt'], f'Affe nicht herübergeholt: {r}'
+        assert r['zurueck'] < 1640, f'neu drücken schickt das Blatt nicht zurück: {r}'
+        assert r['fern'] == 0, f'Rad lässt sich aus der Ferne drehen: {r}'
+    finally:
+        srv.shutdown()
 
 @test
 async def blattfloss_wind(g):
@@ -8313,7 +8343,8 @@ async def element_register(g):
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
-                 ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True], ['meteorit', 'meteoriten', True, False]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
+                 ['meteorit', 'meteoriten', True, False]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -8330,7 +8361,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['hook', 'wind', 'bounce'], reihe   # Schleuder entfernt (Nutzerwunsch)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['tele', 'band', 'blatt', 'move'], reihe   # + Blatt-Floß (Dschungel-Neu)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
+        assert reihe == ['tele', 'band', 'blatt', 'flossrad', 'move'], reihe   # + Blatt-Floß, Floß-Rad (Dschungel-Neu)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
         assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad'], logik   # + Windrad (Dschungel-Neu)
         licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
