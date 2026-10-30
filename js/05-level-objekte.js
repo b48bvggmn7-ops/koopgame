@@ -184,11 +184,30 @@ function updateDoorsAndSwitches(dt, players){
 const MOVE_PLAT_SPEED = 4.5; // Standard, falls im Level kein Tempo angegeben ist
 const MOVER_QUETSCHT = true; // eingeklemmt von einem bewegten Stück (kein Platz außer gegen die Fahrtrichtung) = Tod (pushOutOfMover)
 const MOVER_QUETSCH_RAND = 16; // px: so weit darf ein bewegtes Stück eine Figur quer zur Fahrtrichtung hinausschieben
+// Nutzer: „werde ich mit hochgenommen und stoße mit dem Kopf an die Decke, werde ich einfach teleportiert“ -> ein Stück (mit
+// seiner ganzen Gruppe), das einen Mitfahrer nach oben gegen etwas Festes drücken würde, hält an und wartet, bis er weg ist
+function moverWartetAufMitfahrer(players){
+  const halt = new Set();
+  for(const s of solids){
+    if(s.type !== 'moveplat' || !s.tripActive) continue;
+    const speed = s.speed || MOVE_PLAT_SPEED, ty = s.moveDir === 1 ? s.targetY : s.startY, tx = s.moveDir === 1 ? s.targetX : s.startX;
+    const d = Math.hypot(tx - s.x, ty - s.y), stepY = d <= speed ? ty - s.y : (ty - s.y)/d*speed;
+    if(stepY >= 0) continue;
+    for(const P of players){
+      if(!P.grounded || Math.abs(P.y - s.y) >= 2 || P.x + P.w/2 <= s.x || P.x - P.w/2 >= s.x + s.w) continue;
+      P.y += stepY; const eng = playerBlocked(P, s); P.y -= stepY;
+      if(eng) halt.add(s.group === undefined || s.group === null ? s : s.group);
+    }
+  }
+  return halt;
+}
 function updateMovingPlatforms(dt, players){
   const carried = new Set(); // jeden Spieler pro Frame höchstens einmal mitnehmen (mehrteilige Stücke)
+  const halt = moverWartetAufMitfahrer(players);
   for(const s of solids){
     if(s.type!=='moveplat') continue;
     if(!s.tripActive) continue; // wartet auf Schalter bzw. bis es ins Bild kommt
+    if(halt.has(s) || halt.has(s.group)) continue;   // Mitfahrer stößt oben an: anhalten
     const speed = s.speed || MOVE_PLAT_SPEED;
     const tx = s.moveDir===1 ? s.targetX : s.startX;
     const ty = s.moveDir===1 ? s.targetY : s.startY;

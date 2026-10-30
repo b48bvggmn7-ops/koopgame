@@ -1980,7 +1980,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     **Eingeklemmt = Tod** (Nutzerwunsch 30.10.): drückt ein bewegtes Stück eine Figur gegen Boden/Wand (kein Platz in
     Fahrtrichtung, quer nur knapp an der Kante, `MOVER_QUETSCH_RAND`), stirbt sie – vorher wurde sie obendrauf oder weit zur
     Seite versetzt (`MOVER_QUETSCHT` in js/05). Wer auf dem Stück steht bzw. mitfährt und dabei hängen bleibt (z. B. an
-    einer Decke), stirbt nicht (Nutzerwunsch) – dann wie früher hinausschieben. Test bewegter_boden_quetscht.
+    einer Decke), stirbt nicht (Nutzerwunsch) – dann wie früher hinausschieben. Stößt ein Mitfahrer beim Hochfahren mit
+    dem Kopf an etwas Festes, **hält das Stück (mit seiner Gruppe) an** und wartet, bis er herunter ist – kein Versetzen
+    mehr (Nutzer: „werde ich einfach teleportiert“; `moverWartetAufMitfahrer`). Test bewegter_boden_quetscht.
   - **Bröckelboden:** Erde wie der normale Boden, Klumpen und Kiesel, glatte Unterkante, Outline nur an freien Kanten –
     nebeneinander liegende Kästchen sind EINE durchgehende Fläche (kein Rahmen je Kästchen). Oben wieder das gelbe trockene
     Gras (`BROECKEL_GRAS`, durchgehende Welle; auch auf den Bruchstücken), runde Ecken an freien Ecken wie Boden/Wand (die

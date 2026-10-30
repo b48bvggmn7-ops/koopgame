@@ -648,14 +648,20 @@ async def bewegter_boden_quetscht(g):
       // (der Fahrstuhl fährt bis unter eine Decke; die seitliche Wand nimmt ihn gegen die feste Wand mit)
       const hoch = solids.filter(q => q.type === 'moveplat')[2];
       resetLevel(); deathState = null; p1.x = hoch.x + 60; p1.y = hoch.y; p1.vx = p1.vy = 0; p1.grounded = true; hoch.tripActive = true;
-      { let ts = 5e6; for(let i = 0; i < 200 && !deathState; i++) stepSim(ts += 1000/54); }
-      e.mitfahren = {tot: !!deathState}; deathState = null;
+      const x0 = p1.x; { let ts = 5e6; for(let i = 0; i < 200 && !deathState; i++) stepSim(ts += 1000/54); }
+      e.mitfahren = {tot: !!deathState, dx: Math.round(p1.x - x0), auf: Math.abs(p1.y - hoch.y) < 2, platteY: Math.round(hoch.y)}; deathState = null;
+      // geht er herunter, fährt der Fahrstuhl weiter
+      p1.x = 1300; p1.y = 680; { let ts = 6e6; for(let i = 0; i < 60; i++) stepSim(ts += 1000/54); }
+      e.weiter = Math.round(hoch.y);
       menuScreen = null; return e; })()""")
     assert r['mitte']['tot'], f'unter dem sinkenden Boden nicht gestorben: {r}'
     assert not r['kante']['tot'] and r['kante']['x'] > 560, f'an der Kante gestreift: sollte herausrutschen: {r}'
     assert r['wand']['tot'], f'zwischen den Wänden nicht gestorben: {r}'
     assert not r['frei']['tot'], r
-    assert not r['mitfahren']['tot'], f'beim Mitfahren unter eine Decke gestorben: {r}'
+    m = r['mitfahren']
+    assert not m['tot'], f'beim Mitfahren unter eine Decke gestorben: {r}'
+    assert abs(m['dx']) < 4 and m['auf'] and m['platteY'] > 400, f'Mitfahrer an der Decke versetzt statt Fahrstuhl angehalten: {r}'
+    assert r['weiter'] < m['platteY'], f'Fahrstuhl fährt nicht weiter, wenn der Mitfahrer weg ist: {r}'
 
 @test
 async def fahrende_platte_kein_durchfahren(g):
