@@ -4607,6 +4607,32 @@ async def bewegung_einmal(g):
     assert r3[0] is False and r3[2] is False and r3[1] == 600, f'Neustart setzt nicht zurück: {r3}'
 
 @test
+async def editor_blattfloss_ziehen(g):
+    """Editor (Nutzerwunsch): Blatt-Floß setzen und gedrückt halten – nach rechts ziehen stellt die Schiene ein (bis zum
+    Kästchen unter der Maus); leicht verrutschen über dem Blatt ändert nichts; Spiel-Datei: Stehfläche = Boden des Kästchens."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)], 'hooks': [], 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        await ed_werkzeug(p, 'blatt')
+        box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+        zelle = lambda c, r: (box['x'] + (c*40 + 20)*k, box['y'] + ((r + 3)*40 + 20)*k)
+        x, y = zelle(5, 10)
+        await p.mouse.move(x, y); await p.mouse.down()
+        await p.mouse.move(x + 6*k, y, steps=2)   # verrutscht: bleibt
+        vorher = await p.evaluate("elementPunkte.blattFloesse[0].schiene")
+        await p.mouse.move(*zelle(16, 10), steps=6)   # Blatt soll bis Spalte 16 fahren: 5..7 Blatt, Schiene 16 - 7 = 9
+        await p.mouse.up()
+        r = await p.evaluate("({n: elementPunkte.blattFloesse.length, s: elementPunkte.blattFloesse[0].schiene, aus: JSON.parse(exportLevel()).blattFloesse})")
+        assert vorher is not None and int(vorher) >= 4, f'leicht verrutscht: Schiene verändert ({vorher})'
+        assert r['n'] == 1 and r['s'] == 9, f'Ziehen stellt die Schiene nicht ein: {r}'
+        assert r['aus'][0]['schiene'] == 9 and r['aus'][0]['y'] == 10*40, r
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_haken_ziehen(g):
     """Editor (Nutzerwunsch): Haken setzen und dabei die Maus gedrückt halten – nach oben ziehen macht die Reichweite größer,
     nach unten kleiner (½ Kästchen je HAKEN_ZIEH_PX px, 1 … HAKEN_RADIUS_MAX); erst beim Loslassen wird gespeichert."""
@@ -7402,14 +7428,19 @@ async def blattfloss_aussehen(g):
     Ranken-Schiene hängt; die Schienen-Enden hängen am Material darüber (Halter) oder kommen aus dem Blätterdach. Zeichnet
     ohne Fehler: hinten Schiene + 2 Aufhänge-Lianen, vorne 2 Hänge-Lianen."""
     await g.load(level([ground(0, 480, 360, 240), ground(1100, 480, 400, 240), ground(900, 120, 600, 40)],
-                       {'x': 300, 'y': 480}, {'x': 200, 'y': 480}, welt='dschungel', blattFloesse=[{'x': 360, 'y': 480, 'schiene': 14}]))
+                       {'x': 300, 'y': 480}, {'x': 200, 'y': 480}, welt='dschungel', blattFloesse=[{'x': 360, 'y': 440, 'schiene': 14}]))
     await g.steps(3)
-    r = await g.ev("""(() => { const E = blattSchieneEnden(blattFloesse[0]); let n = 0; const alt = lianeZeichnen;
-      lianeZeichnen = (...a) => { n++; return alt(...a); };
-      try { draw(); } finally { lianeZeichnen = alt; } return {E, n}; })()""")
+    r = await g.ev("""(() => { const E = blattSchieneEnden(blattFloesse[0]); let n = 0, schatten = 0, teile = []; const alt = lianeZeichnen, gs = glanzSchatten, bb = blattBild;
+      lianeZeichnen = (...a) => { n++; return alt(...a); }; glanzSchatten = (...a) => { schatten++; return gs(...a); };
+      blattBild = (...a) => { teile.push(a[5]); return bb(...a); };
+      try { draw(); } finally { lianeZeichnen = alt; glanzSchatten = gs; blattBild = bb; }
+      return {E, n, boden: blattFloesse[0].y, teile}; })()""")
     E = r['E']
-    assert E['y'] == 480 - 72 and E['ya'] is None and E['yb'] == 160, f'Aufhängung falsch: {E}'
+    # Nutzer: „im Kästchen statt auf der Linie“ -> Stehfläche = Boden des Kästchens (Reihe 11 -> y 480)
+    assert r['boden'] == 480 and E['y'] == 480 - 72 and E['ya'] is None and E['yb'] == 160, f'Lage/Aufhängung falsch: {r}'
     assert r['n'] >= 5, f'Schiene/Lianen nicht gezeichnet: {r}'
+    # Nutzer: „das Schwein soll IM Blatt stehen“ -> Innenseite hinter, Rand vor den Figuren; „Schatten macht keinen Sinn“ -> keiner
+    assert sorted(r['teile']) == ['hinten', 'vorne'], f'Blatt nicht als Mulde (hinten/vorne) gezeichnet: {r}'
 
 @test
 async def blattfloss_wind(g):

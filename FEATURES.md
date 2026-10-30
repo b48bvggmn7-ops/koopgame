@@ -2174,7 +2174,13 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Dschungelblatt (Oberseite mit Mittelrippe/Adern, aufgebogene Spitze, eingerollter Stiel, Tautropfen), das wie eine Gondel an
   zwei kurzen Lianen mit Ringen an einer straff gespannten Ranken-Schiene `BLATT_SCHIENE_HOCH` px über der Stehfläche hängt;
   die Schienen-Enden hängen an Material darüber (Halter) oder kommen aus dem Blätterdach, die Schiene liegt hinter dem Gelände.
-  Test blattfloss_aussehen. Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
+  Test blattfloss_aussehen. Seit 30.10. (Nutzerwünsche): das Blatt ist eine **Mulde** – man steht IM Blatt (Innenseite
+  hinter den Figuren, vorderer Rand davor über den Füßen, `zeichnenVorne`), **kein Schatten** mehr darunter; es liegt **im
+  Kästchen** (Stehfläche = Boden des Kästchens, Spiel und Editor gleich; das Testlevel koop-aktionen wurde eine Reihe
+  höher gesetzt, damit es an derselben Stelle bleibt); im Editor **gedrückt halten und nach rechts ziehen** stellt die
+  Schiene ein (bis zum Kästchen unter der Maus, höchstens `BLATT_SCHIENE_MAX`; Muster `editor.ziehen` für Elemente in
+  editor/js/02-werkzeuge.js), ein gestrichelter Rahmen zeigt das Ende der Fahrt. Test editor_blattfloss_ziehen.
+  Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
   schiebt sein Wind nicht. Neustart/Tod: zurück an den Anfang. Rolle: der Affe pustet, das Schweinchen fährt.
   Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).
 
