@@ -116,6 +116,25 @@ function wechselReihen(){
   __wKey = key; const alle = solids.filter(o => o.type === 'wechsel'), gesehen = new Set(), reihen = [];
   const gleich = (a, b) => a.gruppe === b.gruppe && a.takt === b.takt && a.link === b.link;
   const find = (s, dx, dy) => alle.find(o => o !== s && gleich(o, s) && Math.abs(o.x - (s.x + dx)) < 1 && Math.abs(o.y - (s.y + dy)) < 1);
+  // Nutzerwunsch („muss ein Block sein“): zusammenhängende Kästchen gleicher Gruppe/Nummer, die ein volles Rechteck bilden
+  // (z. B. zwei Reihen übereinander), sind EIN Block mit einem Edelstein; andere Formen weiter Reihe für Reihe
+  for(const s of alle){
+    if(gesehen.has(s)) continue;
+    const flaeche = [s], stapel = [s], drin = new Set([s]);
+    while(stapel.length){
+      const o = stapel.pop();
+      for(const [dx, dy] of [[o.w, 0], [-o.w, 0], [0, o.h], [0, -o.h]]){ const n = find(o, dx, dy); if(n && !drin.has(n)){ drin.add(n); flaeche.push(n); stapel.push(n); } }
+    }
+    if(flaeche.length < 2) continue;
+    const x0 = Math.min(...flaeche.map(o => o.x)), y0 = Math.min(...flaeche.map(o => o.y));
+    const w = Math.max(...flaeche.map(o => o.x + o.w)) - x0, h = Math.max(...flaeche.map(o => o.y + o.h)) - y0;
+    if(Math.abs(flaeche.reduce((z, o) => z + o.w*o.h, 0) - w*h) > 1 || w < 41 || h < 41) continue;   // kein Rechteck / nur eine Reihe: unten
+    for(const o of flaeche) gesehen.add(o);
+    const teile = flaeche.sort((a, b) => a.y - b.y || a.x - b.x);
+    const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + 48)*2);
+    const piece = {m: [0, 0, w, h, 'soil'], c, done: 0}; pieceDraw(piece);
+    reihen.push({teile, x: x0, y: y0, w, h, senkrecht: false, c});
+  }
   for(const s of alle){
     if(gesehen.has(s)) continue;
     const senkrecht = !(find(s, s.w, 0) || find(s, -s.w, 0)) && !!(find(s, 0, s.h) || find(s, 0, -s.h));

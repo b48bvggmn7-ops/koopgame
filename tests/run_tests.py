@@ -8541,6 +8541,24 @@ async def level_nummern_je_welt(g):
         srv.shutdown()
 
 @test
+async def wechselboden_ein_block(g):
+    """Nutzer: „der Wechselboden muss zusammenhängen, wenn alles mit einem Schalter betätigt wird – das muss ein Block sein“:
+    zwei Reihen gleicher Gruppe/Nummer übereinander sind EIN Block (ein Bild, ein Edelstein); eine andere Nummer daneben
+    bleibt eigener Block, eine L-Form wird weiter Reihe für Reihe gezeichnet."""
+    sf = [{'x': 400 + 40*i, 'y': 520 + 40*j, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 3} for i in range(5) for j in range(2)]
+    sf += [{'x': 640, 'y': 520, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 4}]   # andere Nummer direkt daneben
+    sf += [{'x': 900, 'y': 520, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 3}, {'x': 940, 'y': 520, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 3},
+           {'x': 900, 'y': 560, 'w': 40, 'h': 40, 'gruppe': 'B', 'link': 3}]   # L-Form
+    await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, switchFloors=sf))
+    r = await g.ev("""(() => { __wReihen = null; const R = wechselReihen().map(R => [R.x, R.y, R.w, R.h, R.teile.length, R.teile[0].link]);
+      let n = 0; const alt = wechselEdelstein; wechselEdelstein = (...a) => { n++; return alt(...a); };
+      try { wechselZeichnen(); } finally { wechselEdelstein = alt; } return {R, edelsteine: n}; })()""")
+    R = sorted(map(tuple, r['R']))
+    assert (400, 520, 200, 80, 10, 3) in R, f'zwei Reihen nicht ein Block: {R}'
+    assert (640, 520, 40, 40, 1, 4) in R, R
+    assert len(R) == 4 and r['edelsteine'] == 4, f'L-Form: zwei Reihen erwartet, ein Edelstein je Block: {r}'
+
+@test
 async def wechselboden(g):
     """Ausbau 4: Wechselboden. Gruppe A fest, solange die Nummer aus ist, B fest, solange sie an ist (Hebel); steht eine
     Figur dort, wo Boden fest werden soll, wartet dieses Kästchen, bis sie weg ist. Takt-Variante wechselt von selbst

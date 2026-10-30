@@ -1992,7 +1992,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     den Fugen, vorstehende Ziegel, dunkle Tropfspuren, Glanzpunkte; keine Löcher, keine Risse; je Kachel einmal
     gezeichnet. Beim Nachwachsen füllt sich ein blasser Block. Gemeinsame Hilfen `matTile`, `matBlock`, `grasKappe`, `bruchRisse`.
   - **Wechselboden** (elemente/wechselboden.js): waagerecht normaler Boden mit Gras, senkrecht normale Wand; eine
-    zusammenhängende Reihe ist ein Block (einmal zwischengespeichert). Weg: nur ein leichter weicher Schatten. Takt-Böden:
+    zusammenhängende Reihe ist ein Block (einmal zwischengespeichert); bilden mehrere Reihen gleicher Gruppe/Nummer zusammen
+    ein volles Rechteck (z. B. zwei Reihen übereinander), sind sie EIN Block mit einem Edelstein (Nutzerwunsch 30.10.,
+    Test wechselboden_ein_block; andere Formen weiter Reihe für Reihe). Weg: nur ein leichter weicher Schatten. Takt-Böden:
     Balken über die ganze Breite (senkrecht: Höhe), der bis zum Wechsel schrumpft. Hebel-Böden: kein Balken, Diamant
     mittig auf dunkler Platte (Gruppe A voll, Gruppe B mit dunklem Kern). Die A/B-Anzeige am Hebel entfällt.
   - **Haftfläche:** normales Wandmaterial mit Honig übergossen (welliger Rand, Glanzlichter, unten langsam tropfend).
