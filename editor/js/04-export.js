@@ -34,6 +34,7 @@ function exportLevel(){
   for(const key in tiles){
     if(movingKeys.has(key) || !byType[tiles[key]]) continue;
     const [c,r] = key.split(',').map(Number);
+    if(r < -SKY) continue;   // über dem bebaubaren Himmel (unsichtbar im Editor) nie ins Spiel
     byType[tiles[key]].push({c,r});
   }
   let solids = [];

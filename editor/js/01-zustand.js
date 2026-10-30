@@ -113,7 +113,7 @@ function fitCols(extra){ setCols(Math.max(extra||0, maxUsedCol() + 1 + EDGE_MARG
 function snapshot(){
   return {
     cols: COLS,
-    tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }),
+    tiles: Object.keys(tiles).map(k=>{ const [c,r]=k.split(',').map(Number); return [c,r,tiles[k]]; }).filter(([, r]) => r >= -SKY),   // nie unsichtbar über dem Himmel
     // Reihenfolge der Felder wie früher (Hebel/Türen/Druckplatten stehen jetzt in elementPunkte)
     hooks, switches: elementPunkte.switches, doors: elementPunkte.doors, spikes, coins, checkpoints, startM, startF, goal, movers,
     plates: elementPunkte.plates, ...elementPunkte,
@@ -127,6 +127,11 @@ function applySnapshot(d){
   tiles = {};
   if(Array.isArray(d.tiles)) for(const [c,r,t] of d.tiles) tiles[c+','+r]=t;
   else if(d.tiles) tiles = {...d.tiles};
+  // Kästchen über dem bebaubaren Himmel (Reihe < -SKY) zeigt der Editor nicht – im Spiel wären sie aber als Wand ganz oben
+  // zu sehen (Nutzer: „warum ist da ganz oben Wand? ich habe da nichts gesetzt“). Beim Laden entfernen und Bescheid sagen.
+  const zuHoch = Object.keys(tiles).filter(k => Number(k.split(',')[1]) < -SKY);
+  for(const k of zuHoch) delete tiles[k];
+  if(zuHoch.length && typeof flash === 'function') setTimeout(() => flash(`${zuHoch.length} unsichtbare Kästchen über dem Himmel entfernt`), 0);
   hooks = (d.hooks||(d.hook?[d.hook]:[])).map(x=>({...x}));
   startM=d.startM||null; startF=d.startF||null; goal=d.goal||null;
   movers = (d.movers||[]).map(x=>({...x}));

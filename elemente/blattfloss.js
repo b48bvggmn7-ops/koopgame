@@ -19,10 +19,12 @@ ELEMENT_SOLID_TYPEN.add('blatt');
 // (wie die Haken, js/12b) – so schwebt nichts einfach in der Luft. Nur Aussehen.
 const BLATT_SCHIENE_HOCH = 72;   // px: so hoch über der Stehfläche läuft die Schiene (über den Köpfen)
 const BLATT_HAENGER = 14;        // px: Abstand der beiden Hänge-Lianen von den Blatt-Enden
-// (Die Mulde „man steht im Blatt“ vom 30.10. wurde wieder verworfen – Nutzer: „vorher war es besser“, Figuren guckten unten
-// heraus bzw. der Affe daneben stand scheinbar im Blatt. Man steht wieder OBEN auf dem Blatt.)
+// (Die Mulde „man steht im Blatt“ vom 30.10. wurde wieder verworfen. Nutzerwahl am Bild: das alte Blatt UMGEDREHT – gewölbt
+// wie eine Kuppel, Stiel unten; man steht oben auf der Wölbung.) y = Stehfläche (= Scheitel der Wölbung); das Blatt reicht
+// von y bis y + 17. BLATT_WOELBUNG staucht die Höhe etwas, damit die Enden nicht weit unter den Füßen hängen.
+const BLATT_WOELBUNG = 0.75;
 function blattBild(g, x, y, w, schwank){
-  g.save(); g.translate(x + w/2, y + 4); g.rotate(schwank || 0);
+  g.save(); g.translate(x + w/2, y + 12*BLATT_WOELBUNG); g.rotate(schwank || 0); g.scale(1, -BLATT_WOELBUNG);
   const L = w/2;
   // Unterseite / Dicke (dunkel), Spitze vorn und Stielende hinten leicht hochgebogen
   g.fillStyle = '#24501f';
@@ -72,6 +74,7 @@ elementRegistrieren({
   id: 'blattfloss', name: 'Blatt-Floß', feld: 'blattFloesse',
   editor: {
     werkzeug: 'blatt', gruppe: 'bewegung', vor: 'move', art: 'punkt', ziehbar: false, farbe: '#6cbb53',
+    mitNummer: true, nummerName: 'Blatt-Floß',   // Floß-Rad mit derselben Nummer zieht dieses Blatt (elemente/flossrad.js)
     titel: 'Blatt-Floß: großes Blatt (3 Kästchen) auf einer Schiene nach rechts; nur der Seiten-Wind des Affen schiebt es, ' +
            'wer darin steht, fährt mit. Setzen am linken Ende (das Blatt liegt in der Reihe, man steht auf ihrem Boden); ' +
            'Maus gedrückt halten und nach rechts ziehen = Länge der Schiene',
@@ -92,14 +95,15 @@ elementRegistrieren({
       ctx.save(); ctx.translate(c*TILE, boden); ctx.scale(s, s); blattBild(ctx, 0, 0, 120, 0); ctx.restore();
       ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.strokeText('→' + n, (c + 3 + n)*TILE - 12, r*TILE + 18*s); ctx.fillText('→' + n, (c + 3 + n)*TILE - 12, r*TILE + 18*s);
+      if(p.link){ ctx.strokeText(String(p.link), c*TILE + 10, r*TILE + 9); ctx.fillText(String(p.link), c*TILE + 10, r*TILE + 9); }   // Nummer fürs Floß-Rad
     },
-    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, schiene: Number(p.schiene) || 6})),
+    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, schiene: Number(p.schiene) || 6, ...(p.link ? {link: p.link} : {})})),
   },
   spiel: {
     laden(daten){
       blattFloesse = (daten.blattFloesse || []).map(b => {
         // Stehfläche = Boden des Kästchens (das Blatt liegt IN seiner Reihe wie alles andere; vorher an der Oberkante)
-        const s = {x: b.x, y: b.y + 40, w: BLATT_BREITE, h: BLATT_DICKE, type: 'blatt', x0: b.x, x1: b.x + (Number(b.schiene) || 6)*40, v: 0};
+        const s = {x: b.x, y: b.y + 40, w: BLATT_BREITE, h: BLATT_DICKE, type: 'blatt', x0: b.x, x1: b.x + (Number(b.schiene) || 6)*40, v: 0, link: b.link || 0};
         solids.push(s); return s;
       });
     },
@@ -130,14 +134,19 @@ elementRegistrieren({
     },
     // Schiene und ihre Aufhängung HINTER Boden/Wand (läuft sie durch Gelände, verschwindet sie dahinter)
     zeichnenHinten(){
+      const t = performance.now()*0.001;
       for(const s of blattFloesse){
         const E = blattSchieneEnden(s), a = E.a - camX, b = E.b - camX;
         if(b < -60 || a > VW + 60) continue;
+        // Nutzer: „die Lianen sollen sich ein bisschen bewegen“ – sanftes Wiegen im Wind, stärker, solange das Blatt fährt
+        const fahrt = Math.min(1, Math.abs(s.v)/BLATT_MAX), wind = Math.sin(t*1.1 + s.x0*0.003);
         for(const [x, yo, wx] of [[a, E.ya, E.a], [b, E.yb, E.b]]){   // Enden: Liane nach oben bis zum Material bzw. ins Blätterdach
-          lianeZeichnen(x + Math.sin(wx*0.013)*3, yo !== null ? yo : -SKY_ROOM - 10, x, E.y, 0.35, 0, wx);
+          const pendel = Math.sin(t*0.9 + wx*0.01)*2.2 + fahrt*Math.sin(t*6 + wx)*1.2;
+          lianeZeichnen(x + Math.sin(wx*0.013)*3, yo !== null ? yo : -SKY_ROOM - 10, x, E.y, 0.35, pendel, wx);
           if(yo !== null && typeof hakenHalter === 'function') hakenHalter(x, yo, HAKEN_STIL.dschungel, 'dschungel');
         }
-        lianeZeichnen(a, E.y, b, E.y, 0, 0, s.x0, 0);   // straff gespannte Ranken-Schiene
+        // Ranken-Schiene: straff, hängt aber ein wenig durch und wippt (unter der Last des fahrenden Blatts mehr)
+        lianeZeichnen(a, E.y, b, E.y, 0, wind*1.2 + fahrt*Math.sin(t*9)*1.4, s.x0, 0.25 + 0.15*wind + fahrt*0.35);
         for(const x of [a, b]){ ctx.fillStyle = '#3b2412'; ctx.beginPath(); ctx.ellipse(x, E.y, 5, 4, 0, 0, Math.PI*2); ctx.fill(); }   // Knoten
       }
     },
@@ -148,10 +157,10 @@ elementRegistrieren({
         if(E.b - camX < -60 || E.a - camX > VW + 60) continue;
         const schwank = Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012, x = Math.round(s.x - camX);
         // zwei kurze Hänge-Lianen mit Ringen an der Schiene (schwingen leicht mit)
-        for(const hx of [x + BLATT_HAENGER, x + s.w - BLATT_HAENGER]){   // am hinteren, hochgebogenen Rand eingehängt
-          const dy = (hx - (x + s.w/2))*Math.sin(schwank);
-          lianeZeichnen(hx, E.y + 4, hx, s.y - 2 + dy, 0, 0, s.x0 + hx, 0);
-          blattRingZeichnen(hx, E.y);
+        for(const hx of [x + BLATT_HAENGER, x + s.w - BLATT_HAENGER]){
+          const dy = (hx - (x + s.w/2))*Math.sin(schwank), nach = -s.v*1.6;   // beim Fahren hängt das Blatt etwas nach
+          lianeZeichnen(hx - nach, E.y + 4, hx, s.y - 1 + dy, 0, Math.sin(t*1.4 + hx*0.05)*0.8, s.x0 + hx, 0.15);
+          blattRingZeichnen(hx - nach, E.y);
         }
         blattBild(ctx, x, s.y, s.w, schwank);   // (kein Schatten mehr – Nutzer: „macht keinen Sinn“, es hängt in der Luft)
       }

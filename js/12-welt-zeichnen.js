@@ -494,8 +494,16 @@ function matScheinFlaecheBild(F){
 // (Nutzer: „grüne Outline“ – an der Kante des Lochs im Boden schimmerte sonst durch einen haarfeinen Spalt der Hintergrund)
 const SCHEIN_RUECKWAND_RAND = 3, SCHEIN_RUECKWAND_FARBE = '#3a2718';
 function matScheinRueckwandZeichnen(){
+  // Durchsichtigkeit EINMAL je Bild, VOR Boden/Wand (Nutzer: „beim Rausspringen blitzt grüne Outline“): vorher rechnete erst
+  // das Zeichnen der Scheinwand den neuen Wert aus – der Boden nahm den vom letzten Bild, und ab 98 % fehlte schon die
+  // Rückwand, obwohl das Loch im Boden noch offen war. Jetzt gilt für Boden, Rückwand und Scheinwand derselbe Wert.
   for(const F of matScheinFlaechen()){
-    if(F.alpha > 0.98 || F.x + F.w - camX < -20 || F.x - camX > VW + 20) continue;
+    F.alpha = F.alpha + ((matScheinBetreten(F) ? SCHEIN_DURCHSICHTIG : 1) - F.alpha)*Math.min(1, frameDt*0.01);
+    if(F.alpha > 0.97) F.alpha = matScheinBetreten(F) ? 0.97 : 1;   // die letzten Prozente auf einmal (kein langes „fast deckend“)
+    for(const f of F.teile) f.alpha = F.alpha;
+  }
+  for(const F of matScheinFlaechen()){
+    if(F.alpha === 1 || F.x + F.w - camX < -20 || F.x - camX > VW + 20) continue;   // Loch im Boden offen -> immer Rückwand
     const B = matScheinFlaecheBild(F), r = SCHEIN_RUECKWAND_RAND;
     ctx.fillStyle = SCHEIN_RUECKWAND_FARBE;
     for(const z of F.zellen){   // nur zu Seiten hin größer, an denen Boden/Wand anschließt (nicht ins Freie)
@@ -1110,9 +1118,7 @@ function drawSolidLook(s, look, x){
   // zusammenhängende Fläche EIN Bild mit einer Durchsichtigkeit (nur Anzeige, ändert keinen Spielzustand)
   for(const F of matScheinFlaechen()){
     if(F.x + F.w - camX < -20 || F.x - camX > VW + 20) continue;
-    F.alpha = F.alpha + ((matScheinBetreten(F) ? SCHEIN_DURCHSICHTIG : 1) - F.alpha)*Math.min(1, frameDt*0.01);
-    if(F.alpha > 0.999) F.alpha = 1;
-    for(const f of F.teile) f.alpha = F.alpha;
+    // (F.alpha steht schon fest: matScheinRueckwandZeichnen, vor Boden/Wand)
     if(F.alpha === 1){   // deckend: mit denselben Pfaden wie der Boden ringsum (kein Bild -> keine Naht/kein grüner Rand, gleiche Körnung)
       if(!F._pf || F._pf.v !== matRaster.version) F._pf = {v: matRaster.version, D: matPfadeBauen(F.zellen, [], -Infinity, Infinity)};
       ctx.save(); ctx.translate(-camX, 0); matPfadeZeichnen(ctx, F._pf.D, matMassstab()); ctx.restore();

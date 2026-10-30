@@ -385,6 +385,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   const K = P.keys || {};
   if(P.male && LIANE_HALTEN && !window.hakenTippen) lianeGriffPruefen(P);
   if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
+  if(!nass && typeof flossradVorher === 'function' && flossradVorher(P, moveDir)) return true;   // am Floß-Rad kurbeln (elemente/flossrad.js)
   if(typeof koopAktionVorher === 'function' && koopAktionVorher(P, moveDir, jumpPressed, nass)) return true;   // Dschungel-Neu: Schirm-Trampolin / pusten (js/34)
   if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }

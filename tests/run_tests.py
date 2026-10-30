@@ -4607,6 +4607,25 @@ async def bewegung_einmal(g):
     assert r3[0] is False and r3[2] is False and r3[1] == 600, f'Neustart setzt nicht zurück: {r3}'
 
 @test
+async def editor_nichts_ueber_dem_himmel(g):
+    """Nutzer: „warum ist da ganz oben Wand? ich habe da nichts gesetzt“ – Kästchen über dem bebaubaren Himmel (Reihe < -SKY)
+    zeigt der Editor nicht; sie werden beim Laden entfernt und landen nie in Spiel- oder Editor-Datei."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(20)] + [[5, -4, 'wall'], [6, -5, 'wall'], [7, -3, 'wall']],
+                 'hooks': [], 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        r = await p.evaluate("""() => { tiles['8,-6'] = 'wall';   // auch wenn später doch etwas dorthin gerät
+          return {da: Object.keys(tiles).filter(k => +k.split(',')[1] < -2), snap: snapshot().tiles.filter(t => t[1] < -3).length,
+                  spiel: JSON.parse(exportLevel()).solids.filter(s => s.y < -120).length}; }""")
+        assert r['da'] == ['7,-3', '8,-6'] or sorted(r['da']) == ['7,-3', '8,-6'], f'Kästchen über dem Himmel nicht entfernt: {r}'
+        assert r['snap'] == 0 and r['spiel'] == 0, f'unsichtbare Kästchen landen in den Dateien: {r}'
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_blattfloss_ziehen(g):
     """Editor (Nutzerwunsch): Blatt-Floß setzen und gedrückt halten – nach rechts ziehen stellt die Schiene ein (bis zum
     Kästchen unter der Maus); leicht verrutschen über dem Blatt ändert nichts; Spiel-Datei: Stehfläche = Boden des Kästchens."""
@@ -7446,28 +7465,38 @@ async def blattfloss_aussehen(g):
 @test
 async def flossrad_holt_partner(g):
     """Nutzerwunsch: „ein Rad auf der anderen Seite, damit ich den Affen als Schwein rüberholen kann“ (elemente/flossrad.js,
-    Testlevel koop-aktionen: Rad rechts der Grube). Das Schweinchen hält am Rad die Hebel-Taste: das Blatt (links, mit dem
-    Affen darauf) fährt herüber bis ans Ende der Schiene; loslassen hält es an; neu drücken schickt es zurück."""
+    Testlevel koop-aktionen: Rad rechts der Grube) – „cooler, wenn ich in eine Richtung drücke“: das Schweinchen hält am Rad
+    die Hebel-Taste und drückt rechts -> das Blatt (links, mit dem Affen darauf) fährt herüber bis ans Ende der Schiene; das
+    Schweinchen bleibt dabei stehen und kurbelt (Arm-Zug leverAnim, Rad dreht); loslassen hält an; links schickt es zurück;
+    ohne Hebel-Taste läuft es normal; weit weg vom Rad passiert nichts."""
     srv = await koop_testlevel(g)
     try:
-        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {}, B = blattFloesse[0], R = flossRaeder[0];
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {}, B = blattFloesse[0], R = flossRaeder[0], use = p2.keys.use;
           try {
             e.verbunden = flossradFloss(R) === B;
             stell(p1, 1460, 720); stell(p2, 1905, 720); for(let i = 0; i < 20; i++) st();
-            KEYS[p2.keys.use] = true; for(let i = 0; i < 40; i++) st();
-            e.halb = B.x; KEYS[p2.keys.use] = false; for(let i = 0; i < 20; i++) st(); e.steht = B.x;
-            KEYS[p2.keys.use] = true; for(let i = 0; i < 200; i++) st(); KEYS[p2.keys.use] = false;
+            KEYS[use] = true; for(let i = 0; i < 10; i++) st(); e.nurTaste = B.x;   // nur Hebel-Taste: nichts
+            KEYS[p2.keys.right] = true; let arm = 0; const w0 = R.winkel;
+            for(let i = 0; i < 40; i++){ st(); if(p2.leverAnim && performance.now() - p2.leverAnim.t0 < 50) arm++; }
+            e.halb = B.x; e.schweinX = p2.x; e.dreht = R.winkel !== w0; e.arm = arm; e.schaut = p2.facing;
+            KEYS[p2.keys.right] = false; for(let i = 0; i < 20; i++) st(); e.steht = B.x;
+            KEYS[p2.keys.right] = true; for(let i = 0; i < 200; i++) st(); KEYS[p2.keys.right] = false;
             e.ende = B.x; e.affe = p1.x; e.affeDrauf = Math.abs(p1.y - B.y) < 1; e.lebt = !deathState;
-            for(let i = 0; i < 5; i++) st(); KEYS[p2.keys.use] = true; for(let i = 0; i < 40; i++) st(); KEYS[p2.keys.use] = false;
+            KEYS[p2.keys.left] = true; for(let i = 0; i < 40; i++) st(); KEYS[p2.keys.left] = false; KEYS[use] = false;
             e.zurueck = B.x;
+            KEYS[p2.keys.right] = true; for(let i = 0; i < 10; i++) st(); KEYS[p2.keys.right] = false; e.laeuft = p2.x > 1906;   // ohne Taste: normal laufen
             stell(p2, 1700, 720); for(let i = 0; i < 2; i++) st(); const x0 = B.x;   // weit weg vom Rad: nichts
-            KEYS[p2.keys.use] = true; for(let i = 0; i < 20; i++) st(); KEYS[p2.keys.use] = false; e.fern = B.x - x0;
+            KEYS[use] = true; KEYS[p2.keys.right] = true; for(let i = 0; i < 20; i++) st(); e.fern = B.x - x0;
           } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
           return e; })()""")
         assert r['verbunden'], f'Rad nicht mit dem Blatt-Floß verbunden: {r}'
-        assert 1400 < r['halb'] < 1640 and abs(r['steht'] - r['halb']) <= 4, f'Rad zieht nicht bzw. hält beim Loslassen nicht an: {r}'
+        assert r['nurTaste'] == 1400, f'nur die Hebel-Taste bewegt schon das Blatt: {r}'
+        assert 1400 < r['halb'] < 1640 and abs(r['schweinX'] - (1900 + 28)) < 2 and r['dreht'] and r['arm'] >= 1 and r['schaut'] == -1, \
+            f'Rad zieht nicht / Schweinchen kurbelt nicht im Stehen: {r}'
+        assert abs(r['steht'] - r['halb']) <= 4, f'hält beim Loslassen nicht an: {r}'
         assert r['ende'] == 1640 and r['affeDrauf'] and r['affe'] > 1640 and r['lebt'], f'Affe nicht herübergeholt: {r}'
-        assert r['zurueck'] < 1640, f'neu drücken schickt das Blatt nicht zurück: {r}'
+        assert r['zurueck'] < 1640, f'links schickt das Blatt nicht zurück: {r}'
+        assert r['laeuft'], f'ohne Hebel-Taste läuft die Figur nicht normal: {r}'
         assert r['fern'] == 0, f'Rad lässt sich aus der Ferne drehen: {r}'
     finally:
         srv.shutdown()
@@ -8361,9 +8390,9 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['hook', 'wind', 'bounce'], reihe   # Schleuder entfernt (Nutzerwunsch)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['tele', 'band', 'blatt', 'flossrad', 'move'], reihe   # + Blatt-Floß, Floß-Rad (Dschungel-Neu)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
+        assert reihe == ['tele', 'band', 'blatt', 'move'], reihe   # + Blatt-Floß (Dschungel-Neu; das Floß-Rad steht unter „Schalter“)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad'], logik   # + Windrad (Dschungel-Neu)
+        assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad', 'flossrad'], logik   # + Windrad, Floß-Rad (Dschungel-Neu)
         licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
         assert licht == ['lichtquelle', 'spiegel', 'kristall', 'leucht', 'dunkel'], licht
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung
