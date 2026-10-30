@@ -812,6 +812,30 @@ async def editor_projekt_levels(g):
         srv.shutdown()
 
 @test
+async def editor_langes_level_sichtbar(g):
+    """Nutzer: „Level 1 wird nicht mehr angezeigt“ – ein Abschnitt (2500 Spalten = 100 000 px) war als EIN Bild zu breit für den
+    Browser (weiße Fläche). Die Leinwand zeigt jetzt nur den sichtbaren Ausschnitt (fitView/ansichtX in editor/js/01-zustand.js),
+    #cvsPlatz ist so breit wie das Level (Scrollleiste). Hinten im Level: Kästchen sichtbar, Klick trifft die richtige Spalte."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+        await projekt_laden(p, A1)
+        st = await p.evaluate("[cvs.width, COLS, parseFloat(cvsPlatz.style.width) / ansichtS / 40]")
+        assert st[0] <= 4000 and st[1] > 2400 and abs(st[2] - st[1]) < 0.5, st
+        await p.evaluate("wrap.scrollLeft = 1580 * 40 * ansichtS"); await p.wait_for_timeout(300)
+        bunt = await p.evaluate("""(() => { const d = ctx.getImageData(0, 0, cvs.width, cvs.height).data, f = new Set();
+            for(let i = 0; i < d.length; i += 4 * 97) f.add(d[i] >> 4 << 8 | d[i+1] >> 4 << 4 | d[i+2] >> 4); return f.size; })()""")
+        assert bunt > 4, f'Ausschnitt hinten im Level leer: {bunt} Farben'
+        await p.evaluate("flashT = -1e9")   # Meldung nach dem Laden überspringen
+        box = await p.locator('#c').bounding_box(); s = await p.evaluate("ansichtS"); vx = await p.evaluate("ansichtX()")
+        mx, my = box['x'] + (1590 * 40 + 20 - vx) * s, box['y'] + (3 * 40 + 20) * s
+        await p.mouse.move(mx - 30, my); await p.mouse.move(mx, my); await p.wait_for_timeout(100)
+        assert (await p.text_content('#coordLabel')).startswith('Spalte 1590,'), await p.text_content('#coordLabel')
+    finally:
+        srv.shutdown()
+
+@test
 async def menue_beim_start(g):
     """Beim Start erscheint das Titelbild des Startmenüs, das Spiel steht still; Taste -> Hauptmenü
     (Spielen · Optionen · Beenden, ohne Level-Editor), Tastatur navigiert, Esc führt zurück."""
@@ -6792,13 +6816,15 @@ async def figuren3d_brille_tattoo(g):
 
 @test
 async def level1_bei_nacht(g):
-    """Früher: Dschungel Level 1 bei Nacht. Seit „Level 1–3 zusammen“ (ein Level, Abschnitt 1) gilt EINE Tageszeit für den
-    ganzen Abschnitt: morgens (Abschnitt 2 nachts) – in beiden Level-Dateien gleich, Look passt dazu."""
-    for a, zeit in ((A1, 'morgen'), (A2, 'nacht')):
+    """Dschungel Level 1 bei Nacht. Seit „Level 1–3 zusammen“ (ein Level, Abschnitt 1) gilt EINE Tageszeit für den ganzen
+    Abschnitt: wie das frühere Level 1 nachts (Nutzer: „Level 1 ist plötzlich am Tag“), Abschnitt 2 auch – in beiden
+    Level-Dateien gleich, Look passt dazu."""
+    for a, zeit in ((A1, 'nacht'), (A2, 'nacht')):
         for f in ('levels/' + a, 'levels/editor-format/' + a):
             assert json.loads((ROOT / f).read_text(encoding='utf-8')).get('tageszeit') == zeit, f
-    await g.load(level_pfad(A2))
-    assert await g.ev("themeName") == 'dschungel@nacht', await g.ev("themeName")
+    for a in (A1, A2):
+        await g.load(level_pfad(a))
+        assert await g.ev("themeName") == 'dschungel@nacht', (a, await g.ev("themeName"))
 
 @test
 async def hohler_baum_start_ziel(g):

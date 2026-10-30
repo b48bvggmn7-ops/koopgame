@@ -82,18 +82,28 @@ function maxUsedCol(){
 }
 function setCols(n){
   n = Math.max(MIN_COLS, n);
-  if(n === COLS && cvs.width === COLS*TILE) return;
-  COLS = n;
-  cvs.width = COLS*TILE; cvs.height = (ROWS + SKY)*TILE;
+  if(n === COLS && leinwandCols === COLS) return;
+  COLS = n; leinwandCols = COLS;
   fitView();
   document.getElementById('lenLabel').textContent = COLS + ' Spalten';
 }
+// Die Leinwand zeigt nur den sichtbaren Ausschnitt (ein Bild über die ganze Level-Breite wäre bei langen Abschnitten
+// – 2500 Spalten = 100 000 px – zu breit für den Browser und bliebe weiß). #cvsPlatz ist so breit wie das ganze Level
+// (für die Scrollleiste), die Leinwand wandert beim Scrollen mit (ansichtX, in draw()).
+const cvsPlatz = document.getElementById('cvsPlatz');
+let leinwandCols = 0, ansichtS = 1;   // ansichtS: Bildschirm-px je Editor-px
 // Ansicht so verkleinern, dass die ganze Höhe (Himmel + 18 Reihen) ohne Scrollen ins Fenster passt (nie vergrößern)
 function fitView(){
-  const avail = wrap.clientHeight - 16;   // Platz für die waagerechte Scrollleiste
-  const s = Math.min(1, Math.max(0.3, avail / cvs.height));
-  cvs.style.width = (cvs.width * s) + 'px'; cvs.style.height = (cvs.height * s) + 'px';
+  const H = (ROWS + SKY)*TILE, avail = wrap.clientHeight - 16;   // Platz für die waagerechte Scrollleiste
+  ansichtS = Math.min(1, Math.max(0.3, avail / H));
+  cvsPlatz.style.width = (COLS*TILE*ansichtS) + 'px'; cvsPlatz.style.height = (H*ansichtS) + 'px';
+  const breite = Math.min(COLS*TILE, Math.ceil(wrap.clientWidth / ansichtS) + TILE);
+  if(cvs.width !== breite) cvs.width = breite;
+  if(cvs.height !== H) cvs.height = H;
+  cvs.style.width = (cvs.width * ansichtS) + 'px'; cvs.style.height = (H * ansichtS) + 'px';
 }
+// Editor-px am linken Rand der Leinwand (= gescrollte Stelle, nie über das Level-Ende hinaus)
+function ansichtX(){ return Math.max(0, Math.min(wrap.scrollLeft / ansichtS, COLS*TILE - cvs.width)); }
 window.addEventListener('resize', fitView);
 requestAnimationFrame(fitView);   // nach dem ersten Aufbau der Seite (dann steht die Fensterhöhe fest)
 function ensureRoom(c){ if(c + EDGE_MARGIN > COLS) setCols(c + EDGE_MARGIN); }

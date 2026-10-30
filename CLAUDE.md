@@ -66,7 +66,7 @@
   03 Zeichnen · 04 Export/Testen/Herunterladen · 05 Fenster „Levels“ (+ Projekt-Levels in Welt-Ordnern; Test-Helfer `projekt_laden`) · 06 „☁ Auf GitHub speichern“ ·
   07 Fenster „Level-Info“ (Welt, Position, Titel, Tageszeit, Wetter, Look) · 08 Rückgängig/Wiederholen + Rechteck-Auswahl ·
   09 Werkzeugleiste (Reiter, „Zuletzt“, Eigenschaften-Zeile nur fürs aktive Werkzeug, Welt-Voreinstellung, Hilfe) ·
-  99 Start (früher alles in einer `editor.js`); davor `00-welt-werkzeuge.js` = Tabelle, welche Werkzeuge je Welt empfohlen sind.
+  99 Start (früher alles in einer `editor.js`; die Leinwand zeigt nur den sichtbaren Ausschnitt – `ansichtX()`, nie `cvs.width` als Level-Breite nehmen); davor `00-welt-werkzeuge.js` = Tabelle, welche Werkzeuge je Welt empfohlen sind.
 - **Dschungel-Neu:** Die Dschungel-Welt hat nur 2 Abschnitte, seit „Level 1–3 zusammen“ je EINE normale Level-Datei
   (`levels/dschungel/abschnitt-*.json`, alte Teile 01–03 + 07 Rätsel bzw. 04–06 + 08 Rätsel in `levels/archiv/dschungel-teile/`;
   „_teile“ im Level sagt, wo sie liegen – Tests schneiden sie mit `tests/abschnitt.py teil_sicht` heraus, `koop_level`/`level_pfad`

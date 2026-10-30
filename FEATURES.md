@@ -2174,6 +2174,12 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   hoch, damit es über die letzte Schlucht segelt. Test dschungel_neu_stellen_a1/_a2.
 - **Liane:** fällt nicht mehr sofort in die volle Länge (`LIANE_VOLLE_LAENGE = false`): in der Luft gegriffen bleibt sie so
   lang wie beim Greifen. Test liane_volle_laenge.
+- **Editor zeigt lange Level** (Nutzer: „Level 1 wird nicht mehr angezeigt“): ein Abschnitt ist 2500 Spalten = 100 000 px
+  breit – als EIN Bild zu breit für den Browser (weiße Fläche). Die Leinwand zeigt nur noch den sichtbaren Ausschnitt und
+  wandert beim Scrollen mit (`fitView`/`ansichtX` in editor/js/01-zustand.js, Platzhalter `#cvsPlatz` für die Scrollleiste).
+  Test editor_langes_level_sichtbar.
+- **Abschnitt 1 bei Nacht** wie das frühere Level 1 (Nutzer: „Level 1 ist plötzlich am Tag“; Abschnitt 2 auch nachts).
+  Test level1_bei_nacht.
 - **Hohle Bäume raus** (`BAUM_AN = false`, js/12a): Start und Ziel im Dschungel wieder ohne Baumhaus (Ziel-Schild wie in den
   anderen Welten); der Ablauf bleibt im Code. Test hohler_baum_start_ziel.
 - **Nur Dschungel, keine Weltkarte** (Nutzerwunsch): die Welten nach dem Dschungel sind ausgeblendet (`"aus": true` in

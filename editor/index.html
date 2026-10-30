@@ -63,6 +63,8 @@
   #main{flex:1; display:flex; overflow:hidden;}
   #canvasWrap{flex:1; overflow:auto; position:relative; background:#16202b;}
   canvas{display:block; cursor:crosshair;}
+  #cvsPlatz{position:relative;}   /* so breit wie das ganze Level; die Leinwand zeigt nur den sichtbaren Ausschnitt */
+  #cvsPlatz canvas{position:absolute; top:0; left:0;}
   #side{width:250px; background:var(--panel); border-left:1px solid var(--border); padding:12px; overflow-y:auto; font-size:12px; line-height:1.6; color:var(--sub);}
   #side h2{font-size:12.5px; color:var(--text); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.04em;}
   #side h2:first-child{margin-top:0;}
@@ -216,7 +218,7 @@
   </header>
   <div id="main">
     <div id="canvasWrap">
-      <canvas id="c"></canvas>
+      <div id="cvsPlatz"><canvas id="c"></canvas></div>
       <div class="coord" id="coordLabel">Spalte 0, Reihe 0</div>
     </div>
     <div id="side">

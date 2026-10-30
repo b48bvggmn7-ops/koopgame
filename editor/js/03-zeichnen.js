@@ -4,16 +4,20 @@
 // Zeichnen der Editor-Fläche (jedes Bild neu).
 
 function draw(){
-  ctx.clearRect(0,0,cvs.width,cvs.height);
-  ctx.fillStyle = THEME_BG[editorBgKey()] || THEME_BG.dschungel; ctx.fillRect(0, 0, cvs.width, cvs.height);
+  // Leinwand = sichtbarer Ausschnitt ab Editor-px vx (01-zustand.js fitView/ansichtX); gezeichnet wird in Level-Koordinaten
+  const vx = ansichtX(), c0 = Math.floor(vx/TILE), c1 = Math.min(COLS, Math.ceil((vx + cvs.width)/TILE));
+  cvs.style.left = (vx * ansichtS) + 'px';
+  ctx.setTransform(1, 0, 0, 1, -vx, 0);
+  ctx.clearRect(vx,0,cvs.width,cvs.height);
+  ctx.fillStyle = THEME_BG[editorBgKey()] || THEME_BG.dschungel; ctx.fillRect(vx, 0, cvs.width, cvs.height);
   ctx.save(); ctx.translate(0, SKY*TILE);   // ab hier: Reihe 0 bei y = 0, Himmel-Reihen negativ
   // Grid
   ctx.lineWidth = 1; ctx.strokeStyle = '#25323f';
-  for(let c=0;c<=COLS;c++){ ctx.beginPath(); ctx.moveTo(c*TILE,-SKY*TILE); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
-  for(let r=-SKY;r<=ROWS;r++){ ctx.beginPath(); ctx.moveTo(0,r*TILE); ctx.lineTo(COLS*TILE,r*TILE); ctx.stroke(); }
+  for(let c=c0;c<=c1;c++){ ctx.beginPath(); ctx.moveTo(c*TILE,-SKY*TILE); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
+  for(let r=-SKY;r<=ROWS;r++){ ctx.beginPath(); ctx.moveTo(c0*TILE,r*TILE); ctx.lineTo(c1*TILE,r*TILE); ctx.stroke(); }
   // stärkere Linie alle 5 Kästchen
   ctx.strokeStyle = '#33465a';
-  for(let c=0;c<=COLS;c+=5){ ctx.beginPath(); ctx.moveTo(c*TILE,-SKY*TILE); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
+  for(let c=c0-c0%5;c<=c1;c+=5){ ctx.beginPath(); ctx.moveTo(c*TILE,-SKY*TILE); ctx.lineTo(c*TILE,ROWS*TILE); ctx.stroke(); }
   for(let r=0;r<=ROWS;r+=5){ ctx.beginPath(); ctx.moveTo(0,r*TILE); ctx.lineTo(COLS*TILE,r*TILE); ctx.stroke(); }
 
   for(const key in tiles){
