@@ -291,11 +291,12 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(side > 0){ arm.armP = [0,0,innen]; arm.armN = [0,0,-aussen]; } else { arm.armN = [0,0,-innen]; arm.armP = [0,0,aussen]; }
     return Object.assign(arm, legs);
   }
-  // Schirm-Trampolin-Ablauf (a = 0…1): hinter dem Rücken hervorholen (zugeklappt, hinter der Figur) -> vor dem Kopf auf den
-  // Kopf setzen, die Pfoten greifen den Stock -> aufklappen mit kurzem Nachfedern. Rückwärts = zuklappen und wegstecken.
+  // Schirm-Trampolin-Ablauf (a = 0…1): wie ein Ninja-Schwert vom Rücken ziehen (zugeklappt, schräg hinter der Figur, Griff über
+  // der rechten Schulter; erst entlang der Schräge heraus, dann über den Kopf geschwungen) -> vor dem Kopf auf den Kopf setzen,
+  // die Pfoten greifen den Stock -> aufklappen mit kurzem Nachfedern. Rückwärts = zuklappen und zurück auf den Rücken.
   function schirmAblauf(a){
     const P1 = SCHIRM_HOLEN, P2 = SCHIRM_HOLEN + SCHIRM_GREIFEN, glatt = q => q*q*(3 - 2*q);
-    if(a < P1) return {hinten: true, hoch: glatt(a/P1), klapp: 0, pfoten: 0};
+    if(a < P1) return {hinten: true, q: a/P1, klapp: 0, pfoten: 0};
     if(a < P2){ const q = glatt((a - P1)/(P2 - P1)); return {hinten: false, runter: q, klapp: 0, pfoten: q}; }
     const q = (a - P2)/(1 - P2);
     return {hinten: false, runter: 1, pfoten: 1, klapp: q < 1 ? 1 + 2.7*Math.pow(q - 1, 3) + 1.7*Math.pow(q - 1, 2) : 1};   // aufklappen, federt kurz nach
@@ -304,7 +305,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const sp = S.spG, male = P.male, s = Math.sin(S.phase), w = Math.min(1, sp/4.4);
     if(typeof baumTanzt === 'function' && baumTanzt()) return {p: tanzPose(P, S), key:'tanz'};   // gemeinsamer Siegestanz
     // Dschungel-Neu (js/34): Schweinchen hält den offenen Schirm mit beiden Armen über den Kopf (Trampolin), Affe pustet
-    if(!male && P.trampolin) return {p: {head:[-.22,0,0], armN:[-1.0,0,.4], armP:[-1.0,0,-.4], legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'};   // 3D-Arme eng am Körper (nicht seitlich hoch – Nutzer), die Pfoten vor dem Bauch malt drawUmbrella
+    if(!male && (P.trampolin || (S.trA || 0) > 0)){   // Schirm-Trampolin (auch beim Wegstecken): 3D-Arme eng am Körper, die Pfoten vor dem Bauch malt drawUmbrella;
+      const ziehen = (S.trA || 0) < SCHIRM_HOLEN;   // beim Ziehen vom Rücken greift der rechte Arm über die Schulter zum Griff
+      return {p: {head:[-.22,0,0], armN:[-1.0,0,.4], armP: ziehen ? [-.3,0,2.5] : [-1.0,0,-.4], legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'}; }
     if(male && P.pusteAn){
       const luft = Math.min(1, (performance.now() - (P._pusteStartT || 0))/200), zit = Math.sin(t*38)*.04*luft;   // erst Luft holen, dann kräftig
       if(P.pusteRichtung === 'hoch') return {p: {head:[-1.3*luft + .2*(1 - luft) + zit,0,0], armN:[.25,0,-1.15], armP:[.25,0,1.15], legN:[-.25,0,-.12], legP:[-.25,0,.12]}, key:'pusten'};
@@ -536,10 +539,15 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       const A = schirmAblauf(S.trA); if(A.hinten !== hinten) return;
       const kopf = fy - (2.4 + .55)*SC*lgY - IT.hop*42;   // Kopf-Oberkante
       const hy = fy - (fy - kopf)*0.35 + 4*Math.max(0, trQ);   // Pfoten vor dem Bauch, Schirm tief auf dem Kopf (Nutzerwunsch)
-      const stickF = Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22), basisF = hy - stickF, basisO = kopf - 6, basisU = fy - 2;
+      const stickF = Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22), basisF = hy - stickF, basisO = kopf - 6;
       const o = {u: 1, klapp: A.klapp, tilt: 0, quetsch: Math.max(0, trQ), haende: {schulter: [.8*SC, -2], farbe: '#f7aac4', rand: '#cf7d9b'}, pfoten: A.pfoten};
-      if(A.hinten){ const basis = basisU + (basisO - basisU)*A.hoch;   // hinter dem Rücken hoch, über die Schulter (leicht schräg) aufgerichtet
-        Object.assign(o, {hand: [SCHIRM_HAND_SEITE + 7*(1 - A.hoch), basis + 6], stick: 6, tilt: .45*(1 - A.hoch), pfoten: 0}); }
+      if(A.hinten){   // Ninja-Schwert: schräg auf dem Rücken (Spitze unten links, Griff oben rechts), erst entlang der Schräge
+        // herausziehen (Griff kommt über der rechten Schulter hoch), dann über den Kopf schwingen, bis er senkrecht darüber steht
+        const glatt = q => q*q*(3 - 2*q), w = SCHIRM_RUECKEN_WINKEL, gx = Math.sin(w), gy = -Math.cos(w);   // Richtung zum Griff
+        const h0 = [SCHIRM_HAND_SEITE + 8, fy - 20], zug = SCHIRM_ZIEH_WEG, raus = glatt(Math.min(1, A.q/.6)), dreh = glatt(Math.max(0, (A.q - .6)/.4));
+        const h1 = [h0[0] + gx*zug, h0[1] + gy*zug], ende = [SCHIRM_HAND_SEITE, basisO + 6];
+        const hand = dreh > 0 ? [h1[0] + (ende[0] - h1[0])*dreh, h1[1] + (ende[1] - h1[1])*dreh - Math.sin(dreh*Math.PI)*8] : [h0[0] + gx*zug*raus, h0[1] + gy*zug*raus];
+        Object.assign(o, {hand, stick: 6, tilt: -(Math.PI - w)*(1 - dreh), pfoten: 0, haende: null}); }   // ohne Pfoten: Griff mit Haken sichtbar
       else { const basis = basisO + (basisF - basisO)*A.runter;   // vor dem Kopf herunter auf den Kopf, die Pfoten greifen den Stock
         Object.assign(o, {hand: [SCHIRM_HAND_SEITE, basis + stickF], stick: stickF}); }
       drawUmbrella(P, 0, fy, o);

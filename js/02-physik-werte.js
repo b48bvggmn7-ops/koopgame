@@ -250,10 +250,12 @@ const TRAMPOLIN_TREFFER = 30;     // px: so weit (plus halbe Figurenbreite) nebe
 const TRAMPOLIN_V_SCHUB = -18.3;  // Nutzerwunsch: drückt das Schweinchen im richtigen Moment Springen, federt der Affe höher (≈ 8,4 Reihen)
 const TRAMPOLIN_SCHUB_FENSTER = 7; // Schritte (≈ 0,13 s) vor oder nach dem Aufprall zählt der Druck als „im richtigen Moment“
 const SCHIRM_HAND_SEITE = 0;       // px: Schirm-Trampolin – Pfoten und Stock seitlich der Mitte (Nutzerwunsch: mittig, also 0; nur Aussehen)
-const SCHIRM_AUF_ZEIT = 0.5;       // s: Schirm-Trampolin (3D-Figur) – so lange dauert der ganze Ablauf (hervorholen, greifen, aufklappen)
-const SCHIRM_ZU_ZEIT = 0.3;        // s: … und rückwärts (zuklappen, hinter den Rücken stecken)
-const SCHIRM_HOLEN = 0.4;          // Anteil davon: zugeklappten Schirm hinter dem Rücken hervorholen (hinter der Figur hoch)
-const SCHIRM_GREIFEN = 0.2;        // Anteil: vor dem Kopf auf den Kopf setzen, die Pfoten greifen den Stock (Rest: aufklappen)
+const SCHIRM_AUF_ZEIT = 0.6;       // s: Schirm-Trampolin (3D-Figur) – so lange dauert der ganze Ablauf (vom Rücken ziehen, greifen, aufklappen)
+const SCHIRM_ZU_ZEIT = 0.35;       // s: … und rückwärts (zuklappen, zurück auf den Rücken)
+const SCHIRM_HOLEN = 0.5;          // Anteil davon: wie ein Ninja-Schwert vom Rücken ziehen und über den Kopf schwingen (hinter der Figur)
+const SCHIRM_RUECKEN_WINKEL = 0.7; // rad: so schräg liegt der Schirm auf dem Rücken (Griff oben rechts über der Schulter)
+const SCHIRM_ZIEH_WEG = 40;        // px: so weit wird er entlang der Schräge herausgezogen, bevor er über den Kopf schwingt
+const SCHIRM_GREIFEN = 0.17;       // Anteil: vor dem Kopf auf den Kopf setzen, die Pfoten greifen den Stock (Rest: aufklappen)
 // Affe pusten (Spezial-Taste halten): steht still, W = nach oben, A/D = nach links/rechts; der Windstrahl trägt das
 // Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge (Windrad …)
 const PUSTE_DAUER = 160;          // Schritte (≈ 3 s): so lange reicht ein voller Puste-Balken
