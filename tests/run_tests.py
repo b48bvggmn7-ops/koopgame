@@ -7918,7 +7918,7 @@ async def editor_level_info(g):
             await projekt_laden(p, datei)
         await lade('ruinen/02-mondnacht.json')
         m = await p.evaluate("({...meta})")
-        assert m == {'welt': 'ruinen', 'position': 4, 'titel': 'Mondnacht', 'tageszeit': '', 'wetter': 'wechselnd', 'look': 'nacht'}, m
+        assert m == {'welt': 'ruinen', 'position': 4, 'titel': 'Mondnacht', 'tageszeit': '', 'wetter': 'wechselnd', 'look': 'nacht', 'nachSzene': ''}, m   # nachSzene: Szene nach dem Level (Dschungel-Neu)
         assert 'Ruinen' in await p.text_content('#metaBtn')
         # Felder im Fenster ändern
         await p.click('#metaBtn'); await p.wait_for_timeout(150)
@@ -8062,7 +8062,7 @@ async def editor_verknuepfungen_60_mit_namen(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         n = await p.evaluate("[[...linkSelect.options].map(o => o.value), [...moveSwitchSelect.options].map(o => o.value)]")
-        assert n[0] == [str(i) for i in range(1, 61)] and n[1] == [''] + [str(i) for i in range(1, 61)], n
+        assert n[0] == [str(i) for i in range(1, 81)] and n[1] == [''] + [str(i) for i in range(1, 81)], n   # seit „Level 1–3 zusammen“: 1–80 (MAX_LINK)
         await ed_werkzeug(p, 'switch')   # Editor-Umbau: Nummer/Name stehen in der Eigenschaften-Zeile des Werkzeugs
         await p.select_option('#linkSelect', '45'); await p.fill('#linkName', 'Tor zum Turm')
         x, y = await ed_zelle(p, 5, 10); await p.mouse.click(x, y); await p.wait_for_timeout(100)
