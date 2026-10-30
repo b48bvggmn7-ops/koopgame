@@ -4313,6 +4313,23 @@ async def wetter_wechselt_selten(g):
     assert st == {'ph': 'sun', 'r': 0, 'bow': 0}, st
 
 @test
+async def stachelwand_zerschlaegt_broeckel(g):
+    """Nutzerwunsch: die Stachelwand fährt nicht einfach durch alles, sondern zerschlägt Bröckelwände (Brocken, Kamera
+    wackelt); ein bewegter Boden OHNE Stacheln (Fahrstuhl) lässt Bröckelwände heil."""
+    mps = [{'x': 400, 'y': 520, 'w': 40, 'h': 160, 'look': 'wall', 'group': 1, 'targetX': 1400, 'targetY': 520, 'speed': 6},
+           {'x': 400, 'y': 200, 'w': 80, 'h': 40, 'look': 'ground', 'group': 2, 'targetX': 1400, 'targetY': 200, 'speed': 6}]
+    sp = [{'x': 460, 'y': 680 - 40*k, 'w': 40, 'h': 40, 'dir': 1} for k in range(4)]
+    await g.load(level([ground(0, 680, 3000), ground(900, 560, 40, 120, 'crumble'), ground(900, 200, 40, 40, 'crumble')],
+                       {'x': 2000, 'y': 680}, {'x': 2100, 'y': 680}, movingPlatforms=mps, spikes=sp))
+    r = await g.ev("""(() => { menuScreen = 'pause'; deathState = null; let ts = 5e6, wackel = 0;
+      for(let i = 0; i < 160; i++){ stepSim(ts += 1000/54); wackel = Math.max(wackel, kameraWackeln || 0); }
+      const b = solids.filter(s => s.type === 'crumble'); menuScreen = null;
+      return {unten: b.filter(s => s.y >= 560).map(s => !!s.gone), oben: b.filter(s => s.y < 300).map(s => !!s.gone), wackel}; })()""")
+    assert r['unten'] and all(r['unten']), f'Stachelwand zerschlägt die Bröckelwand nicht: {r}'
+    assert r['oben'] and not any(r['oben']), f'bewegter Boden ohne Stacheln zerschlägt Bröckel: {r}'
+    assert r['wackel'] > 0, f'kein Kamera-Wackeln: {r}'
+
+@test
 async def stachelwand_faehrt_mit(g):
     """Stacheln, die mit dem Fuß an einem bewegten Stück kleben, fahren mit (bewegliche Stachelwand) und töten;
     in den bestehenden Levels fährt kein Stachel aus Versehen mit (außer in Levels, die direkt aus dem Editor kommen)."""

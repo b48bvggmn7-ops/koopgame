@@ -201,6 +201,24 @@ function moverWartetAufMitfahrer(players){
   }
   return halt;
 }
+// Nutzerwunsch: eine Stachelwand (bewegtes Stück mit angehefteten Stacheln, syncSpikeCarriers) fährt nicht mehr einfach durch
+// Bröckelwände hindurch, sondern zerschlägt sie – Brocken fliegen, die Kamera wackelt (wie der rollende Fels, elemente/fels.js).
+// Getroffen wird, was das Stück oder seine Stacheln berührt (Stacheln ragen ein Kästchen heraus).
+const STACHELWAND_STOSS = 7;   // Kamera-Wackeln je zerschlagener Bröckelwand
+function stachelwandZerschlaegt(s, stepX, stepY){
+  if(!stepX && !stepY) return;
+  const st = s._stacheln || spikes.filter(sp => sp.carrier === s);
+  if(spikes.every(sp => sp.carrier !== undefined)) s._stacheln = st;   // erst merken, wenn die Zuordnung fertig ist
+  if(!st.length) return;
+  const teile = [s, ...st.map(sp => ({x: sp.x - 20, y: sp.y - 40, w: 40, h: 40}))];   // Stachel-Kästchen (Fuß unten mittig)
+  for(const c of solids){
+    if(c.type !== 'crumble' || c.gone) continue;
+    if(teile.some(t => t.x < c.x + c.w - 1 && t.x + t.w > c.x + 1 && t.y < c.y + c.h - 1 && t.y + t.h > c.y + 1)){
+      breakCrumble(c);
+      if(typeof kameraStoss === 'function') kameraStoss(STACHELWAND_STOSS);
+    }
+  }
+}
 function updateMovingPlatforms(dt, players){
   const carried = new Set(); // jeden Spieler pro Frame höchstens einmal mitnehmen (mehrteilige Stücke)
   const halt = moverWartetAufMitfahrer(players);
@@ -223,6 +241,7 @@ function updateMovingPlatforms(dt, players){
     const onTopList = players.map(player => player.grounded && Math.abs(player.y - s.y) < 2 &&
       player.x+player.w/2 > s.x && player.x-player.w/2 < s.x+s.w);
     s.x += stepX; s.y += stepY;
+    stachelwandZerschlaegt(s, stepX, stepY);
     if(s.fertig) s.tripActive = false;
     players.forEach((player, i)=>{
     const onTop = onTopList[i];

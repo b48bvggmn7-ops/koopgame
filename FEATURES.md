@@ -1987,7 +1987,13 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     **Eingeklemmt = Tod** (Nutzerwunsch 30.10.): drückt ein bewegtes Stück eine Figur gegen Boden/Wand (kein Platz in
     Fahrtrichtung, quer nur knapp an der Kante, `MOVER_QUETSCH_RAND`), stirbt sie – vorher wurde sie obendrauf oder weit zur
     Seite versetzt (`MOVER_QUETSCHT` in js/05). Wer auf dem Stück steht bzw. mitfährt und dabei hängen bleibt (z. B. an
-    einer Decke), stirbt nicht (Nutzerwunsch) – dann wie früher hinausschieben. Stößt ein Mitfahrer beim Hochfahren mit
+    einer Decke), stirbt nicht (Nutzerwunsch) – dann wie früher hinausschieben. **Stachelwand zerschlägt Bröckelwände**
+    (Nutzerwunsch 30.10.): ein bewegtes Stück mit angehefteten Stacheln zerschlägt Bröckelboden/-wände, die es oder seine
+    Stacheln berührt (Brocken, Ton, Kamera-Wackeln `STACHELWAND_STOSS`; `stachelwandZerschlaegt` in js/05), Fahrstühle ohne
+    Stacheln nicht. Test stachelwand_zerschlaegt_broeckel. Abschnitt 1, Spalten 1097–1148 damit neu gebaut („Dornenjagd“,
+    tests/bausteine/dornenjagd_umbau.py): ganze Höhe, unten der Laufgang mit Bröckel-Decken, -Pfeiler und -Brücke, die
+    Stachelwand fährt nur noch einmal; oben der Kletterweg (Stufe/Haken, Türen mit Wand bis ganz oben, Bröckel-Brücke über
+    einer Stachel-Grube mit Rettungs-Haken); Wechsel-Hebel 28–31 wie vorher. Stößt ein Mitfahrer beim Hochfahren mit
     dem Kopf an etwas Festes, **hält das Stück (mit seiner Gruppe) an** und wartet, bis er herunter ist – kein Versetzen
     mehr (Nutzer: „werde ich einfach teleportiert“; `moverWartetAufMitfahrer`). Test bewegter_boden_quetscht.
   - **Bröckelboden:** Erde wie der normale Boden, Klumpen und Kiesel, glatte Unterkante, Outline nur an freien Kanten –
