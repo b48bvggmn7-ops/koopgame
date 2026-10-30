@@ -102,6 +102,15 @@ async function ghProjectFiles(sha, datei, name, neu){
   if(changed) out.push({path:'levels/levels.json', content: JSON.stringify(list, null, 1)});
   return out;
 }
+// Felder, die nur in der Spiel-Datei stehen und der Editor nicht kennt (Name beginnt mit „_“, z. B. „_teile“ der Dschungel-
+// Abschnitte für die Tests), aus dem bisherigen Stand übernehmen – sonst gingen sie beim Speichern verloren
+async function ghSpielDateiMitAlten(text, datei, sha){
+  let alt = null;
+  try { alt = JSON.parse(await ghReadText('levels/' + datei, sha)); } catch(e){ return text; }   // neues Level: nichts zu behalten
+  const neu = JSON.parse(text); let mehr = false;
+  for(const k of Object.keys(alt || {})) if(k.startsWith('_') && !(k in neu)){ neu[k] = alt[k]; mehr = true; }
+  return mehr ? JSON.stringify(neu, null, 2) + '\n' : text;
+}
 async function ghUpload(){
   const sel = document.getElementById('ghTarget'), datei = sel.value, opt = sel.selectedOptions[0];
   if(!datei){ ghSay('Bitte ein Level auswählen.', true); return; }
@@ -120,7 +129,8 @@ async function ghUpload(){
         // Ausbau 2: worlds.json (Welt + Position) und ggf. levels.json (Titel, neues Level) im SELBEN Commit anpassen –
         // dafür den aktuellen Stand genau dieses Commits holen
         const extra = await ghProjectFiles(ref.object.sha, datei, name, neu);
-        const allFiles = files.concat(extra);
+        const spiel = {...files[0], content: await ghSpielDateiMitAlten(files[0].content, datei, ref.object.sha)};
+        const allFiles = [spiel, ...files.slice(1), ...extra];
         const tree = await ghApi('/git/trees', {method:'POST', body: JSON.stringify({base_tree: head.tree.sha,
           tree: allFiles.map(f => ({path: f.path, mode:'100644', type:'blob', content: f.content}))})});
         const commit = await ghApi('/git/commits', {method:'POST', body: JSON.stringify({

@@ -6088,6 +6088,7 @@ async def editor_github_speichern(g):
         await p.wait_for_function("document.getElementById('ghStatus').textContent.includes('Gespeichert')", timeout=5000)
         wege = [c[0] + ' ' + c[1] for c in calls]
         assert wege == ['GET /git/ref/heads/main', 'GET /git/commits/c0', 'GET /contents/levels/worlds.json?ref=c0', 'GET /contents/levels/levels.json?ref=c0',
+                        'GET /contents/levels/ruinen/01-ruinen.json?ref=c0',   # bisherige Spiel-Datei: Felder mit „_“ behalten (editor_github_behaelt_teile)
                         'POST /git/trees', 'POST /git/commits', 'PATCH /git/refs/heads/main'], wege
         calls[:] = [c for c in calls if '/contents/' not in c[1]]
         assert all(c[2] == 'Bearer github_pat_TEST123' for c in calls), 'Schlüssel nicht mitgeschickt'
@@ -9561,6 +9562,28 @@ async def boss1_bruno(g):
         srv.shutdown()
 
 @test
+async def editor_github_behaelt_teile(g):
+    """Nutzer speicherte Abschnitt 1 aus dem Editor auf GitHub – dabei ging „_teile“ verloren (steht nur in der Spiel-Datei,
+    der Editor kennt es nicht; Tests finden die alten Teile damit). Felder mit „_“ aus dem bisherigen Stand bleiben erhalten,
+    neue Level bekommen nichts dazu; die Abschnitte haben ihre Teile-Info."""
+    for datei in ('abschnitt-1-sternschnuppenspur.json', 'abschnitt-2-meteoritenherz.json'):
+        assert ABS.ist_zusammengefuegt(json.loads((ROOT / 'levels' / 'dschungel' / datei).read_text(encoding='utf-8'))), f'{datei}: _teile fehlt'
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        r = await p.evaluate("""async () => {
+            const alt = ghReadText;
+            ghReadText = async path => { if(path.includes('neu')) throw new Error('404'); return JSON.stringify({solids: [], _teile: [{datei: 'x', von: 0}], nachSzene: 'a'}); };
+            try {
+              const text = JSON.stringify({solids: [{x: 1}], nachSzene: 'b'}, null, 2);
+              return {da: JSON.parse(await ghSpielDateiMitAlten(text, 'dschungel/abschnitt-1.json', 'sha')),
+                      neu: await ghSpielDateiMitAlten(text, 'dschungel/neu.json', 'sha') === text};
+            } finally { ghReadText = alt; } }""")
+        assert r['da'] == {'solids': [{'x': 1}], 'nachSzene': 'b', '_teile': [{'datei': 'x', 'von': 0}]} and r['neu'], r
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_boss_github(g):
     """Ausbau 6: „☁ Auf GitHub speichern“ mit einem Boss-Level: wird Boss der gewählten Welt in worlds.json (keine
     Levelkarte, aus allen Level-Listen heraus) und in levels.json versteckt eingetragen."""
@@ -11990,8 +12013,7 @@ def dn_stellen():
         if (teil, c) in DN_STARTS: vorn, hinten = (kat(x, F - 1) for x in DN_STARTS[(teil, c)])   # z. B. nicht auf einen Teleporter stellen
         out.append((teil, f'{"Puste-Grube" if art == "A" else "Windrad-Treppe"} {c}', vorn if art == 'A' else hinten, hinten if art == 'A' else vorn, pl))
     return out + DN_STELLEN_EXTRA
-DN_STELLEN_EXTRA = []   # weitere umgebaute Stellen (Puste-Inseln, Puste-Säulen …)
-DN_STARTS = {('dschungel/04-gluehwald.json', 668): (667, 666)}   # Startplätze (vorn, hinten) statt der automatischen
+DN_STELLEN_EXTRA = []   # weitere umgebaute Stellen (Puste-Inseln, Puste-Säulen …)DN_STARTS = {('dschungel/04-gluehwald.json', 668): (667, 666)}   # Startplätze (vorn, hinten) statt der automatischen
 def _dn_01_insel():
     """Teil 1, Puste-Insel 85: zweimal Pusten (Rand 66, dann auf der Säule), der Affe über die Haken 73 und 94"""
     vs = []

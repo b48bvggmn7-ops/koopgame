@@ -17831,5 +17831,6 @@
   "welt": "dschungel",
   "tageszeit": "morgen",
   "wetter": "wechselnd",
-  "nachSzene": "abschnitt1_ende"
+  "nachSzene": "abschnitt1_ende",
+  "_teile": [{"datei": "dschungel/01-dschungel.json", "von": 0, "breite": 801, "nummern": 0, "startM": {"x": 100, "y": 640}, "startF": {"x": 140, "y": 640}, "goal": {"x": 31940, "y": 600}}, {"datei": "dschungel/02-baumkronen.json", "von": 801, "breite": 814, "nummern": 20, "startM": {"x": 100, "y": 600}, "startF": {"x": 180, "y": 600}, "goal": {"x": 31780, "y": 600}}, {"datei": "dschungel/03-lianenschlucht.json", "von": 1615, "breite": 806, "nummern": 40, "startM": {"x": 100, "y": 600}, "startF": {"x": 180, "y": 600}, "goal": {"x": 31820, "y": 360}}, {"datei": "dschungel/07-windrad-lichtung.json", "von": 2421, "breite": 96, "nummern": 60, "startM": {"x": 380, "y": 640}, "startF": {"x": 460, "y": 640}, "goal": {"x": 3380, "y": 640}}]
 }

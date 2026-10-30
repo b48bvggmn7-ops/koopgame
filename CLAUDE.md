@@ -17,6 +17,12 @@
      NICHT mehr vor jedem Hochladen, sondern nachts bzw. wenn der Nutzer Pause macht oder ihn verlangt. Ist er rot: die
      schuldige Änderung finden, beheben, Kurztest, hochladen – und dem Nutzer sagen, was kaputt war.
    Für jede neue Funktion und jeden behobenen Fehler einen Test in `tests/run_tests.py` ergänzen.
+   - **Keine Level-Tests mehr (Nutzerwunsch 30.10.):** Der Nutzer spielt und gestaltet die Levels selbst („ob es möglich und
+     spannend ist, mache ich“). Claude testet nur, ob grundlegende Mechaniken/Elemente/Editor funktionieren (mit kleinen
+     Testleveln aus `level(...)` bzw. `levels/test/`). Tests, die echte Level-Dateien durchspielen oder prüfen (Koop-Bot je
+     Level/Stelle, `dschungel_neu_stellen_*`, `raetsel_*`, `partner_puste_insel`/`partner_kamin_135`, Prüfwerkzeuge Bildregel/
+     Haken/Kombi/Münzen …), weder ausführen noch reparieren und keine Level ändern, damit sie grün werden. Die Checkliste
+     „Neues oder geändertes Level“ unten gilt nur noch, wenn der Nutzer ausdrücklich darum bittet.
 2. **Nur das ändern, was der Nutzer verlangt.** Kein „Aufräumen nebenbei“, keine stillen Verhaltensänderungen.
    Wenn eine Anfrage mehrdeutig ist oder eine bestehende Funktion beeinflusst, kurz nachfragen.
 3. **FEATURES.md pflegen:** Jede Verhaltensänderung dort eintragen. Nichts entfernen, ohne den Nutzer zu fragen.

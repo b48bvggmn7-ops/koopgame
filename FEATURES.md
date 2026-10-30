@@ -2379,6 +2379,8 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
     zweiter Umrechner bestimmen, wie die Level im Spiel aussehen) – „☁ Auf GitHub speichern“ schreibt beide im selben
     Commit, und der Test projekt_levels_beide_formate_gleich prüft für jedes Level ALLE Felder (Kästchen, bewegte Teile,
     Haken, Münzen, Hebel, Türen, Druckplatten, Pilze, Aufwind, Start/Ziel) und dass Aussehen und Wetter gleich wirken.
+    Felder, die nur in der Spiel-Datei stehen (Name beginnt mit „_“, z. B. „_teile“ der Dschungel-Abschnitte), übernimmt
+    „☁ Auf GitHub speichern“ aus dem bisherigen Stand (`ghSpielDateiMitAlten`; vorher gingen sie verloren). Test editor_github_behaelt_teile.
     Die Notlösung „Level laden (JSON)“ mit einer Editor-Datei übernimmt jetzt auch Welt/Tageszeit/Wetter/Look.
   - Neue Werkzeuge: Scheinwand (Kachel, gestrichelt mit „?“; im Spiel durchlaufbar), Aufwind (Kachel, hellblau mit
     Pfeil; trägt das Schweinchen mit Schirm), Sprungpilz (Punkt), Druckplatte (Punkt mit Verknüpfungs-Nummer, wie
