@@ -21,6 +21,10 @@ from playwright.async_api import async_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 GAME = (ROOT / 'index.html').as_uri()
+# Test-Browser mit Grafikkarte (Nutzerwunsch; sonst rechnet Chromium die Grafik ohne sie = SwiftShader).
+# Nur unter Windows (Nutzer-PC); ausschalten mit Umgebungsvariable TESTS_OHNE_GRAFIKKARTE=1.
+MIT_GRAFIKKARTE = sys.platform == 'win32' and not os.environ.get('TESTS_OHNE_GRAFIKKARTE')
+GRAFIKKARTE_ARGS = ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist']
 TMP = Path(tempfile.mkdtemp())
 
 def level(solids, start_m, start_f, **extra):
@@ -242,6 +246,15 @@ async def koop_level(g, datei):
 def test(fn): TESTS.append(fn); return fn
 
 # ---------------------------------------------------------------- Tests
+
+@test
+async def test_browser_grafikkarte(g):
+    """Der Test-Browser zeichnet mit der Grafikkarte, nicht mit dem Software-Ersatz SwiftShader."""
+    r = await g.ev("""(() => { const gl = document.createElement('canvas').getContext('webgl'); if (!gl) return null;
+        const d = gl.getExtension('WEBGL_debug_renderer_info'); return gl.getParameter(d ? d.UNMASKED_RENDERER_WEBGL : gl.RENDERER); })()""")
+    assert r, 'Test-Browser hat kein WebGL'
+    if MIT_GRAFIKKARTE:
+        assert 'swiftshader' not in r.lower(), f'Grafikkarte nicht benutzt ({r}); ohne Grafikkarte testen: TESTS_OHNE_GRAFIKKARTE=1'
 
 @test
 async def tod_ohne_sprueche(g):
@@ -12317,7 +12330,8 @@ async def abschnitt_zusammensetzen(g):
 
 async def main(filter_):
     async with async_playwright() as pw:
-        browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None)
+        browser = await pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None,
+                                           args=GRAFIKKARTE_ARGS if MIT_GRAFIKKARTE else [])
         ok = fail = 0
         for fn in TESTS:
             if filter_ and not any(f in fn.__name__ for f in filter_.split(',')): continue   # Kurztest: mehrere Filter mit Komma

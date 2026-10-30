@@ -110,6 +110,9 @@
   warten, sondern `g.steps(n)` (n Physik-Schritte, 54 = 1 s; Zähler `simSteps` in 14-spielschleife.js) bzw. `g.hold`
   (zählt ebenfalls Schritte) oder `wait_for_function` auf das erwartete Ereignis – sonst sind Tests auf langsamen
   Rechnern mal rot.
+  Unter Windows startet der Test-Browser mit Grafikkarte (`MIT_GRAFIKKARTE`/`GRAFIKKARTE_ARGS`, Test `test_browser_grafikkarte`);
+  ohne Grafikkarte testen: Umgebungsvariable `TESTS_OHNE_GRAFIKKARTE=1`. Auf dem Nutzer-PC liegt Python unter
+  `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`, Git unter GitHub Desktop (`%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`).
 
 ## Technische Eckdaten
 - Spielfeld 1280×720 (16:9), Kästchen = 40 px → 32×18 Kästchen sichtbar. Koordinaten in Pixeln, y wächst nach unten.
