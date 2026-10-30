@@ -12301,7 +12301,8 @@ async def abschnitt_zusammensetzen(g):
             alt = json.loads((ROOT / 'levels' / 'archiv' / 'dschungel-teile' / Path(t['datei']).name).read_text(encoding='utf-8'))
             sicht = ABS.teil_sicht(t['datei'])
             for feld in ('coins', 'switches', 'doors', 'windraeder'):   # (Haken/Checkpoints/Gruben wurden seither im langen Level nachgebessert)
-                assert len(sicht.get(feld, [])) == len(alt.get(feld, [])), (t['datei'], feld, len(sicht.get(feld, [])), len(alt.get(feld, [])))
+                n, n_alt = len(sicht.get(feld, [])), len(alt.get(feld, []))
+                assert n == n_alt or (feld == 'windraeder' and n > n_alt), (t['datei'], feld, n, n_alt)   # ohne Dash: Windrad-Brücke am Ende von Teil 1 dazu
             for k in range(1, len(d['_teile'])):
                 naht = d['_teile'][k]['von']
                 boden = min(d['_teile'][k - 1]['goal']['y'], d['_teile'][k]['startM']['y'])
