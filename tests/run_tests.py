@@ -836,6 +836,22 @@ async def editor_langes_level_sichtbar(g):
         srv.shutdown()
 
 @test
+async def schirm_aufklappen(g):
+    """Schirm-Trampolin (3D-Figur), Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig eingeblendet“ –
+    drawUmbrella mit Ablauf o.auf: erst kommen die Pfoten von unten hoch und schieben den ZUGEKLAPPTEN Schirm (schmal) hinauf,
+    dann klappt er auf (Breite bis 1, kurzes Nachfedern); kein Ein-/Ausblenden des offenen Schirms."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 300, 'y': 680}))
+    r = await g.ev("""(() => { const out = [], s0 = ctx.scale, a = [];
+      ctx.scale = function(x, y){ a.push([x, y]); return s0.apply(this, arguments); };
+      try { for(const auf of [0.05, 0.3, 0.6, 0.8, 1]){ a.length = 0; ctx.save();
+        drawUmbrella(p2, 0, 0, {u: 1, auf, hand: [300, 600], stick: 10, tilt: 0, quetsch: 0, haende: {schulter: [8, -2], farbe: '#f7aac4', rand: '#cf7d9b'}});
+        ctx.restore(); out.push(a[0][0]); } } finally { ctx.scale = s0; }
+      return out; })()""")
+    assert r[0] < 0.2 and r[1] < 0.2, f'am Anfang nicht zugeklappt: {r}'
+    assert r[2] > r[1] and max(r[3], r[4]) >= 0.99 and abs(r[4] - 1) < 1e-6, f'klappt nicht auf: {r}'
+    assert await g.ev("SCHIRM_AUF_ZEIT > 0.2 && SCHIRM_AUF_ZEIT < 0.6 && SCHIRM_ZU_ZEIT < SCHIRM_AUF_ZEIT")
+
+@test
 async def menue_beim_start(g):
     """Beim Start erscheint das Titelbild des Startmenüs, das Spiel steht still; Taste -> Hauptmenü
     (Spielen · Optionen · Beenden, ohne Level-Editor), Tastatur navigiert, Esc führt zurück."""
