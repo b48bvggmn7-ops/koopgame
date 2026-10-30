@@ -654,7 +654,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         vorher sah man überlappende „Schichten“), und **dahinter liegt eine dunkle Rückwand** aus demselben Material statt
         des Dschungel-Hintergrunds (`matScheinFlaechen`, `SCHEIN_RUECKWAND` in js/12). Test scheinwand_eine_flaeche.
         Deckend wird sie mit denselben Pfaden wie der Boden ringsum gezeichnet (kein eigenes Bild -> kein grüner Rand, keine
-        andere Körnung; Nutzer: „warum hat die Scheinwand einen grünen Rand“); nur beim Durchsichtig-Werden als Bild.
+        andere Körnung; Nutzer: „warum hat die Scheinwand einen grünen Rand“); nur beim Durchsichtig-Werden als Bild. Die
+        Rückwand liegt UNTER dem Boden und ist zu angrenzendem Boden/Wand hin ein paar px größer (`SCHEIN_RUECKWAND_RAND`) –
+        sonst schimmerte an der Kante des Lochs der grüne Hintergrund durch. Durchsichtig wird sie erst, wenn die Mitte einer
+        Figur drin ist (nicht schon, wenn sie ein paar px hineinragt).
         Kein Verrat durch Deko: auf Flächen direkt unter einer Scheinwand wächst kein Moos/Gras, keine Pflanzen/Vögel,
         und an Wandseiten daneben keine Ranken (Scheinwände zählen für die Deko als fest; Test scheinwand_ohne_moos_verrat). In dunklen Themen leuchten versteckte
         Hebel/Münzen nicht durch.

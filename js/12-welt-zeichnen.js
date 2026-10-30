@@ -470,11 +470,12 @@ function matScheinFlaechen(){
   }
   return (matScheinF = {v: R.version, liste}).liste;
 }
-// steht eine Figur IN der Fläche? (Nutzer: „erst erkennbar, wenn ich reingehe“ – vorher schon 60 px davor durchsichtig)
+// steht eine Figur IN der Fläche? (Nutzer: „erst erkennbar, wenn ich reingehe“ – vorher schon 60 px davor durchsichtig;
+// dann reichten ein paar px am Rand) -> die Mitte der Figur muss drin sein
 function matScheinBetreten(F){
   return [p1, p2].some(p => {
-    for(let c = Math.floor((p.x - p.w/2 + 1)/40); c <= Math.floor((p.x + p.w/2 - 1)/40); c++)
-      for(let r = Math.floor((p.y - p.h + 1)/40); r <= Math.floor((p.y - 1)/40); r++) if(F.set.has(c + ',' + r)) return true;
+    const c = Math.floor(p.x/40);
+    for(let r = Math.floor((p.y - p.h + 1)/40); r <= Math.floor((p.y - 1)/40); r++) if(F.set.has(c + ',' + r)) return true;
     return false;
   });
 }
@@ -489,11 +490,18 @@ function matScheinFlaecheBild(F){
   q.setTransform(1, 0, 0, 1, 0, 0); q.globalCompositeOperation = 'source-atop'; q.fillStyle = SCHEIN_RUECKWAND; q.fillRect(0, 0, hinten.width, hinten.height);
   return F._mat = {c, hinten, x: X, y: Y, w, h, S};
 }
-// dunkle Rückwand hinter jeder gerade durchsichtigen Fläche (vor Hebeln/Münzen gezeichnet, nach Boden/Wand)
+// dunkle Rückwand hinter jeder gerade durchsichtigen Fläche – VOR Boden/Wand gezeichnet und je Kästchen ein paar px größer
+// (Nutzer: „grüne Outline“ – an der Kante des Lochs im Boden schimmerte sonst durch einen haarfeinen Spalt der Hintergrund)
+const SCHEIN_RUECKWAND_RAND = 3, SCHEIN_RUECKWAND_FARBE = '#3a2718';
 function matScheinRueckwandZeichnen(){
   for(const F of matScheinFlaechen()){
     if(F.alpha > 0.98 || F.x + F.w - camX < -20 || F.x - camX > VW + 20) continue;
-    const B = matScheinFlaecheBild(F);
+    const B = matScheinFlaecheBild(F), r = SCHEIN_RUECKWAND_RAND;
+    ctx.fillStyle = SCHEIN_RUECKWAND_FARBE;
+    for(const z of F.zellen){   // nur zu Seiten hin größer, an denen Boden/Wand anschließt (nicht ins Freie)
+      const l = Tn(z.c - 1, z.r) ? r : 0, o = Tn(z.c, z.r - 1) ? r : 0, re = Tn(z.c + 1, z.r) ? r : 0, u = Tn(z.c, z.r + 1) ? r : 0;
+      ctx.fillRect(z.c*40 - l - camX, z.r*40 - o, 40 + l + re, 40 + o + u);
+    }
     ctx.drawImage(B.hinten, B.x - camX, B.y, B.w, B.h);
   }
 }
@@ -908,8 +916,8 @@ function drawSolidLook(s, look, x){
   // Neues Aussehen: Boden und Wand als eine zusammenhängende Schicht (Zwischenspeicher-Stücke), bewegliche Boden-/Wand-
   // Stücke als je ein Block (pieceDraw), Türen als je eine zusammenhängende Tür (drawGate)
   bodenDickichtZeichnen();   // Dschungel: Dickicht VOR den Bodenkacheln, schaut an den Kanten heraus (17a-dschungel-boden.js)
+  matScheinRueckwandZeichnen();   // dunkle Rückwand hinter offenen Scheinwänden (unter dem Boden, siehe dort)
   materialZeichnen();
-  matScheinRueckwandZeichnen();   // dunkle Rückwand hinter offenen Scheinwänden
   matBeweglichZeichnen();
   for(const s of solids){
     if(ELEMENT_SOLID_TYPEN.has(s.type)) continue;   // zeichnet sich selbst (elemente/, z. B. Wechselboden)
