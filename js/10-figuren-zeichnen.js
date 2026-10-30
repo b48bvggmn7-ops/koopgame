@@ -42,12 +42,17 @@ function drawUmbrella(player, px, py, o){
   const t = performance.now()*0.004;
   const tilt = o ? (o.tilt || 0) : Math.max(-0.4, Math.min(0.4, -player.vx*0.05)) + Math.sin(t)*0.05*u;
   const R = 36, ry = 22*(1 - 0.35*((o && o.quetsch) || 0));   // Radius / Höhe der Kuppel (gibt beim Trampolin nach)
-  const handX = o ? o.hand[0] : px + player.facing*5, handY = o ? o.hand[1] : py - player.h*0.5 - 20;
-  const stick = o ? o.stick : 30;
+  // Schirm-Trampolin mit Aufklapp-Ablauf (o.auf 0…1, Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig
+  // eingeblendet“): erst kommen die Pfoten hoch und schieben den ZUGEKLAPPTEN Schirm nach oben, dann klappt er auf (federt kurz nach)
+  const ablauf = o && o.auf !== undefined;
+  const a1 = ablauf ? Math.min(1, o.auf/SCHIRM_AUF_GRIFF) : 1, a2 = ablauf ? Math.max(0, Math.min(1, (o.auf - SCHIRM_AUF_GRIFF)/(1 - SCHIRM_AUF_GRIFF))) : 1;
+  const raus = 1 - Math.pow(1 - a1, 3), klapp = a2 < 1 ? 1 + 2.7*Math.pow(a2 - 1, 3) + 1.7*Math.pow(a2 - 1, 2) : 1;   // weich raus / auf mit kleinem Nachfedern
+  const handX = o ? o.hand[0] : px + player.facing*5, handY = (o ? o.hand[1] : py - player.h*0.5 - 20) + (1 - raus)*SCHIRM_AUF_HUB;
+  const stick = (o ? o.stick : 30)*(ablauf ? 0.35 + 0.65*raus : 1);
   ctx.save();
   ctx.translate(handX, handY);
   ctx.rotate(tilt);
-  ctx.globalAlpha = Math.min(1, u*1.4);
+  ctx.globalAlpha = ablauf ? Math.min(1, a1*2.5) : Math.min(1, u*1.4);
 
   // Griff (Stock mit gebogenem Ende)
   ctx.strokeStyle = '#7a4a2e'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
@@ -56,7 +61,8 @@ function drawUmbrella(player, px, py, o){
   ctx.stroke();
 
   ctx.translate(0, -stick);
-  ctx.scale(0.3 + 0.7*u, 0.45 + 0.55*u);
+  if(ablauf) ctx.scale(0.13 + 0.87*klapp, 1.5 - 0.5*Math.min(1, klapp));   // zu: schmale Spitze, dann aufklappen
+  else ctx.scale(0.3 + 0.7*u, 0.45 + 0.55*u);
   const N = 6;
   const rim = i => -R + (2*R*i)/N;
   // Kuppel mit Bogenkante unten
@@ -101,7 +107,7 @@ function drawUmbrella(player, px, py, o){
   for(let i=0; i<=N; i++){ ctx.beginPath(); ctx.arc(rim(i), 0, 1.6, 0, Math.PI*2); ctx.fill(); }
   ctx.beginPath(); ctx.arc(0, -ry-2.5, 3, 0, Math.PI*2); ctx.fill();
   ctx.restore();
-  if(o && o.haende) schirmHaende(handX, handY, o.haende);
+  if(o && o.haende){ ctx.save(); ctx.globalAlpha = ablauf ? Math.min(1, a1*2.5) : 1; schirmHaende(handX, handY, o.haende); ctx.restore(); }
 }
 // Schirm-Trampolin (Nutzerwunsch „mit beiden Händen halten“): zwei Ärmchen von den Kopfseiten hinauf, beide Pfoten fest am
 // Stock (übereinander); h = {schulter: [dx, dy] relativ zur Hand, farbe, rand}

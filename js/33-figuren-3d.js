@@ -295,7 +295,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const sp = S.spG, male = P.male, s = Math.sin(S.phase), w = Math.min(1, sp/4.4);
     if(typeof baumTanzt === 'function' && baumTanzt()) return {p: tanzPose(P, S), key:'tanz'};   // gemeinsamer Siegestanz
     // Dschungel-Neu (js/34): Schweinchen hält den offenen Schirm mit beiden Armen über den Kopf (Trampolin), Affe pustet
-    if(!male && P.trampolin) return {p: {head:[-.22,0,0], armN:[-.15,0,-2.85], armP:[-.15,0,2.85], legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'};
+    if(!male && P.trampolin) return {p: {head:[-.22,0,0], armN:(window.__tA||[-.15,0,-2.85]), armP:(window.__tB||[-.15,0,2.85]), legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'};
     if(male && P.pusteAn){
       const luft = Math.min(1, (performance.now() - (P._pusteStartT || 0))/200), zit = Math.sin(t*38)*.04*luft;   // erst Luft holen, dann kräftig
       if(P.pusteRichtung === 'hoch') return {p: {head:[-1.3*luft + .2*(1 - luft) + zit,0,0], armN:[.25,0,-1.15], armP:[.25,0,1.15], legN:[-.25,0,-.12], legP:[-.25,0,.12]}, key:'pusten'};
@@ -565,11 +565,13 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     c.restore();
     if(!male && P.umbrella > 0.03 && typeof drawUmbrella === 'function') drawUmbrella(P, 0, fy);   // bisheriger Schirm (2D), 3D-Schirm folgt ggf.
     // Schirm-Trampolin (js/34): offener Schirm über dem Kopf, die Kuppel gibt nach, wenn der Affe abfedert
-    S.trU = (S.trU || 0) + ((P.trampolin ? 1 : 0) - (S.trU || 0))*(1 - Math.exp(-dt*(P.trampolin ? 16 : 22)));
-    if(!male && S.trU > .03 && typeof drawUmbrella === 'function'){
+    // Aufklapp-Ablauf: gleichmäßig in SCHIRM_AUF_ZEIT auf, in SCHIRM_ZU_ZEIT wieder zu (js/10 drawUmbrella o.auf)
+    S.trA = P.trampolin ? Math.min(1, (S.trA || 0) + dt/SCHIRM_AUF_ZEIT) : Math.max(0, (S.trA || 0) - dt/SCHIRM_ZU_ZEIT);
+    if(window.__trAFix != null) S.trA = window.__trAFix;
+    if(!male && S.trA > 0 && typeof drawUmbrella === 'function'){
       const kopf = fy - (2.4 + .55)*SC*lgY - IT.hop*42;   // knapp über dem Kopf, zwischen den erhobenen Händen
       const hy = fy - (fy - kopf)*0.35 + 4*Math.max(0, trQ);   // Pfoten vor dem Bauch, Schirm tief auf dem Kopf (Nutzerwunsch)
-      drawUmbrella(P, 0, fy, {u: S.trU, hand: [SCHIRM_HAND_SEITE, hy], stick: Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22), tilt: 0, quetsch: Math.max(0, trQ),   // steht ruhig (Nutzerwunsch)
+      drawUmbrella(P, 0, fy, {u: 1, auf: S.trA, hand: [SCHIRM_HAND_SEITE, hy], stick: Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22), tilt: 0, quetsch: Math.max(0, trQ),   // steht ruhig (Nutzerwunsch)
                               haende: {schulter: [.8*SC, -2], farbe: '#f7aac4', rand: '#cf7d9b'}});
     }
     // Puste-Wind des Affen (js/34) direkt im Bild der Figur zeichnen: beginnt genau an ihrem Mund
