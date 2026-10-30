@@ -113,11 +113,13 @@ elementRegistrieren({
         const x = Math.round(R.x - camX);
         if(x < -80 || x > VW + 80) continue;
         const s = flossradFloss(R), col = R.link ? linkColor(R.link) : '#c9d3dd';
-        // Liane vom Rad zum Ende der Schiene: hängt locker durch und schwingt leicht; beim Kurbeln strafft sie sich und zittert
-        if(s && typeof blattSchieneEnden === 'function'){
+        // Zug-Tau vom Rad über die Umlenkrolle am Ende der Schiene (gedrehtes Hanf-Tau, hebt sich vom Dschungel ab): hängt locker
+        // durch und wiegt sich; beim Kurbeln strafft es sich und zittert
+        if(s && typeof blattSchieneEnden === 'function' && typeof tauZeichnen === 'function'){
           const E = blattSchieneEnden(s), ex = (Math.abs(R.x - E.b) < Math.abs(R.x - E.a) ? E.b : E.a) - camX;
-          const zug = Math.min(1, Math.abs(R.dreh)/FLOSSRAD_DREH), wackel = Math.sin(t*1.6 + R.x*0.01)*1.5 + zug*Math.sin(t*23)*0.8;
-          lianeZeichnen(x, R.y - FLOSSRAD_HOEHE, ex, E.y, 0, wackel, R.x, 1.4 - zug*1.1);
+          const zug = Math.min(1, Math.abs(R.dreh)/FLOSSRAD_DREH);
+          const sag = (1 - zug)*(14 + Math.sin(t*1.3 + R.x*0.01)*3) + zug*(1.5 + Math.sin(t*23)*0.8);
+          tauZeichnen(x, R.y - FLOSSRAD_HOEHE - 15, ex, E.y + 5, sag, 2.4);   // oben vom Rad ab, unten in die Rolle
         }
         flossradBild(ctx, x, R.y, R.winkel, 1, col);
         aktionsHinweis(x, R.y - FLOSSRAD_HOEHE - 62, flossradNah(p1, R), flossradNah(p2, R));   // Tasten-Blase wie am Hebel

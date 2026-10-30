@@ -25,6 +25,7 @@ elementRegistrieren({
       for(const pl of plates){
         const x = Math.round(pl.x - camX);
         if(x < -40 || x > VW + 40) continue;
+        if(typeof scheinVerdeckt === 'function' && scheinVerdeckt(pl.x, pl.y)) continue;   // in geschlossener Scheinwand: nichts schimmert heraus
         // Nutzerwunsch: die Figur soll sichtbar AUF der Platte stehen. Die Platte sitzt in einer Vertiefung im Boden und ragt
         // frei 8 px heraus; gedrückt ist ihre Oberseite genau auf Bodenhöhe (dort stehen die Füße), der Rest steckt im Boden.
         // Weiche Bewegung nur in der Anzeige (gleich schnell bei jeder Bildrate, wie die Türen)

@@ -36,6 +36,8 @@ function bodenFreihaltePunkte(){
   for(const pl of plates) L.push([pl.x, pl.y]);
   if(typeof teleporters !== 'undefined') for(const tp of teleporters) L.push([tp.x, tp.y]);
   if(typeof fallen !== 'undefined') for(const f of fallen) L.push([f.x, f.y]);
+  // Floß-Rad (Nutzer: Pflanzen vor Rad und Seil vermischen sich mit dem Hintergrund): Rad und ein Stück daneben frei halten
+  if(typeof flossRaeder !== 'undefined') for(const R of flossRaeder) for(const dx of [-40, 0, 40]) L.push([R.x + dx, R.y - 20]);
   if(goal) L.push([goal.x, goal.y - 20]);
   return L;
 }

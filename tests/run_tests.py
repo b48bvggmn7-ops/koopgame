@@ -7457,10 +7457,28 @@ async def blattfloss_aussehen(g):
     E = r['E']
     # Nutzer: „im Kästchen statt auf der Linie“ -> Stehfläche = Boden des Kästchens (Reihe 11 -> y 480)
     assert r['boden'] == 480 and E['y'] == 480 - 72 and E['ya'] is None and E['yb'] == 160, f'Lage/Aufhängung falsch: {r}'
-    assert r['n'] >= 5, f'Schiene/Lianen nicht gezeichnet: {r}'
-    # Nutzer: „Schatten macht keinen Sinn“ -> keiner; die Mulde (im Blatt stehen) wurde wieder verworfen („vorher besser“)
-    assert r['teile'] == ['ganz'], f'Blatt wie vorher (oben drauf stehen): {r}'
+    assert r['n'] >= 2, f'Aufhänge-Lianen nicht gezeichnet: {r}'
+    # Nutzer: „Schatten macht keinen Sinn“ -> keiner; „ich will IM Blatt stehen“ -> hintere Wand hinter, vorderer Rand vor den Figuren
+    assert sorted(r['teile']) == ['hinten', 'vorne'], f'Blatt nicht in hinten/vorne geteilt (im Blatt stehen): {r}'
+    assert await g.ev("typeof tauZeichnen === 'function' && typeof rollenwagenZeichnen === 'function'"), 'Seilzug fehlt'   # Schiene/Hänge-Seile = Taue
     assert 'glanzSchatten' not in (ROOT / 'elemente' / 'blattfloss.js').read_text(encoding='utf-8').split('zeichnen(){')[-1], 'Blatt-Floß wirft wieder einen Schatten'
+
+@test
+async def scheinwand_versteckt_leuchtet_nicht(g):
+    """Nutzer: „bei der Scheinwand sehe ich oben und unten die Münzen glitzern/leuchten“ – Münzen und Hebel in einer
+    GESCHLOSSENEN Scheinwand werden gar nicht gezeichnet (kein Schein über den Rand); steht jemand drin, sind sie da."""
+    await g.load(level([ground(0, 680, 3000), ground(560, 360, 600, 80), ground(560, 560, 600, 120), ground(920, 440, 240, 120),
+                        ground(560, 440, 360, 40, 'fake'), ground(560, 480, 360, 40, 'fake'), ground(560, 520, 360, 40, 'fake')],
+                       {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, welt='dschungel',
+                       coins=[{'x': 700, 'y': 460, 'color': 'blue'}, {'x': 300, 'y': 640, 'color': 'red'}], switches=[{'x': 800, 'y': 540, 'link': 1}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; const e = {}; let n = 0; const alt = drawCoin3D;
+      drawCoin3D = (...a) => { n++; return alt(...a); };
+      const bild = k => { for(let i = 0; i < k; i++){ frameDt = 50; draw(); } };
+      try { p1.x = 300; p1.y = 680; p2.x = 100; p2.y = 680; bild(5); n = 0; bild(1); e.zu = n;
+            p1.x = 640; p1.y = 560; bild(30); n = 0; bild(1); e.offen = n; } finally { drawCoin3D = alt; menuScreen = null; }
+      return e; })()""")
+    assert r['zu'] == 1, f'Münze in geschlossener Scheinwand wird gezeichnet (schimmert heraus): {r}'
+    assert r['offen'] == 2, f'drin stehend fehlt die Münze: {r}'
 
 @test
 async def flossrad_holt_partner(g):

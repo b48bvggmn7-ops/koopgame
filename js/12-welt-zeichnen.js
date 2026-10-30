@@ -470,6 +470,14 @@ function matScheinFlaechen(){
   }
   return (matScheinF = {v: R.version, liste}).liste;
 }
+// liegt (x, y) in einer gerade GESCHLOSSENEN Scheinwand? Dann wird dort Verstecktes (Münzen, Hebel …) gar nicht gezeichnet –
+// sonst schimmerten Schein und Glitzern über den Rand der Scheinwand hinaus (Nutzer: „oben und unten sehe ich die Münzen
+// glitzern“). Gilt ab dem Moment, in dem die Scheinwand wieder ganz deckend ist (Durchsichtigkeit: matScheinRueckwandZeichnen).
+function scheinVerdeckt(x, y){
+  const k = Math.floor(x/40) + ',' + Math.floor(y/40);
+  for(const F of matScheinFlaechen()) if(F.alpha === 1 && F.set.has(k)) return true;
+  return false;
+}
 // steht eine Figur IN der Fläche? (Nutzer: „erst erkennbar, wenn ich reingehe“ – vorher schon 60 px davor durchsichtig;
 // dann reichten ein paar px am Rand) -> die Mitte der Figur muss drin sein
 function matScheinBetreten(F){
@@ -1080,6 +1088,7 @@ function drawSolidLook(s, look, x){
   for(const c of coins){
     let x = c.x-camX;
     if(x<-30||x>VW+30) continue;
+    if(!c.taken && scheinVerdeckt(c.x, c.y)) continue;   // in geschlossener Scheinwand: kein Schein/Glitzern am Rand (Nutzer)
     if(c.nudgeT && !c.taken){ const a = tNow - c.nudgeT; if(a < 380) x += Math.sin(a*0.07) * 4 * (1 - a/380); }
     const pal = COIN_PAL[c.color] || COIN_PAL.gold;
     let lift, alpha = 1, scale = 1, ang;

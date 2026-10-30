@@ -32,6 +32,7 @@ elementRegistrieren({
       for(const sw of switchDefs){
         const x=sw.x-camX;
         if(x<-30||x>VW+30) continue;
+        if(typeof scheinVerdeckt === 'function' && scheinVerdeckt(sw.x, sw.y)) continue;   // in geschlossener Scheinwand: nichts schimmert heraus
         const anyOpen = !!linkOn[sw.link];   // Hebel steht rechts, solange er eingeschaltet ist
         const col = linkColor(sw.link);
         // Hebel: Sockel am Boden, Stange mit Kugel. Aus = nach links geneigt, an = nach rechts.

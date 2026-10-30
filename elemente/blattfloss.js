@@ -18,19 +18,26 @@ ELEMENT_SOLID_TYPEN.add('blatt');
 // Lianen an einer straff gespannten Ranken-Schiene darüber; deren Enden hängen an Material darüber oder aus dem Blätterdach
 // (wie die Haken, js/12b) – so schwebt nichts einfach in der Luft. Nur Aussehen.
 const BLATT_SCHIENE_HOCH = 72;   // px: so hoch über der Stehfläche läuft die Schiene (über den Köpfen)
-const BLATT_HAENGER = 14;        // px: Abstand der beiden Hänge-Lianen von den Blatt-Enden
-// (Die Mulde „man steht im Blatt“ vom 30.10. wurde wieder verworfen. Nutzerwahl am Bild: das alte Blatt UMGEDREHT – gewölbt
-// wie eine Kuppel, Stiel unten; man steht oben auf der Wölbung.) y = Stehfläche (= Scheitel der Wölbung); das Blatt reicht
-// von y bis y + 17. BLATT_WOELBUNG staucht die Höhe etwas, damit die Enden nicht weit unter den Füßen hängen.
+// Nutzerwahl am Bild: das alte Blatt UMGEDREHT; Nutzer: „ich will IM Blatt stehen“ -> das umgedrehte Blatt ist eine Schale von
+// der Seite: die dunkle Wölbung ist die hintere Blattwand (HINTER den Figuren, teil 'hinten'), das helle Band davor der vordere
+// Rand (VOR den Füßen, teil 'vorne', nur über dem Blatt selbst – wer daneben steht, steht nicht „drin“). y = Stehfläche; die
+// Füße stecken BLATT_EINSINKEN px im vorderen Rand. Ohne teil: beides (Editor). BLATT_WOELBUNG staucht die Höhe etwas.
 const BLATT_WOELBUNG = 0.75;
-function blattBild(g, x, y, w, schwank){
-  g.save(); g.translate(x + w/2, y + 12*BLATT_WOELBUNG); g.rotate(schwank || 0); g.scale(1, -BLATT_WOELBUNG);
+const BLATT_EINSINKEN = 2;        // px: so liegt die Mitte des vorderen Rands unter der Stehfläche (Rand ~6 px über den Füßen)
+function blattBild(g, x, y, w, schwank, teil){
+  g.save(); g.translate(x + w/2, y - BLATT_EINSINKEN); g.rotate(schwank || 0); g.scale(1, -BLATT_WOELBUNG);
   const L = w/2;
-  // Unterseite / Dicke (dunkel), Spitze vorn und Stielende hinten leicht hochgebogen
-  g.fillStyle = '#24501f';
-  g.beginPath(); g.moveTo(-L - 2, -6); g.quadraticCurveTo(-L*0.55, -11, 0, -10); g.quadraticCurveTo(L*0.62, -10, L + 10, -9);
-  g.quadraticCurveTo(L*0.6, 13, 0, 12); g.quadraticCurveTo(-L*0.62, 12, -L - 2, -6); g.fill();
-  // Oberseite (die Stehfläche liegt oben am Rand)
+  if(teil !== 'vorne'){
+    // hintere Blattwand (die frühere Unterseite, jetzt gewölbt hinter den Figuren)
+    g.fillStyle = '#24501f';
+    g.beginPath(); g.moveTo(-L - 2, -6); g.quadraticCurveTo(-L*0.55, -11, 0, -10); g.quadraticCurveTo(L*0.62, -10, L + 10, -9);
+    g.quadraticCurveTo(L*0.6, 13, 0, 12); g.quadraticCurveTo(-L*0.62, 12, -L - 2, -6); g.fill();
+    g.strokeStyle = 'rgba(120,190,90,.35)'; g.lineWidth = 1.2;   // feine Adern auf der Innenseite der Wand
+    for(let i = -2; i <= 2; i++){ const px = i*L*0.3; g.beginPath(); g.moveTo(px, 1); g.quadraticCurveTo(px + L*0.08, 6, px + L*0.12, 10 - Math.abs(i)*0.8); g.stroke(); }
+    if(teil === 'hinten'){ g.restore(); return; }
+  }
+  // vorderer Rand (die frühere Oberseite) – nur über dem Blatt selbst, damit Nachbarn nicht „im Blatt“ stehen
+  if(teil === 'vorne'){ g.beginPath(); g.rect(-L + 3, -30, 2*L - 6, 60); g.clip(); }
   const gr = g.createLinearGradient(0, -10, 0, 6);
   gr.addColorStop(0, '#a6e47c'); gr.addColorStop(0.5, '#6fc055'); gr.addColorStop(1, '#3f8a37');
   g.fillStyle = gr;
@@ -65,10 +72,54 @@ function blattSchieneEnden(s){
   const hoch = x => typeof hakenAufhaengeY === 'function' ? hakenAufhaengeY(x, y) : null;
   return (s._enden = {y, a, b, ya: hoch(a), yb: hoch(b)});
 }
-function blattRingZeichnen(x, y){
-  ctx.strokeStyle = 'rgba(20,12,6,.6)'; ctx.lineWidth = 4.2; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI*2); ctx.stroke();
-  ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 2.6; ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,220,160,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 4.6, Math.PI*1.1, Math.PI*1.7); ctx.stroke();
+// ---------- Seilzug (Nutzer: „mach da doch mal kleine Seilzüge“, „Hintergrund und Vordergrund dürfen sich nicht vermischen“):
+// gedrehte Hanf-Taue statt beblätterter Lianen (heben sich klar vom Dschungel ab), Rollenwagen auf der Schiene, Knoten am Blatt
+const TAU_DUNKEL = '#3a2410', TAU_HELL = '#b98a4e', TAU_LICHT = 'rgba(255,230,180,.55)';
+// Tau von (x0,y0) nach (x1,y1) mit leichtem Durchhang (sag px nach unten); dick = Breite
+function tauZeichnen(x0, y0, x1, y1, sag, dick){
+  dick = dick || 3;
+  const cx = (x0 + x1)/2, cy = (y0 + y1)/2 + (sag || 0);
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(cx, cy, x1, y1);
+  ctx.strokeStyle = TAU_DUNKEL; ctx.lineWidth = dick + 1.8; ctx.stroke();
+  ctx.strokeStyle = TAU_HELL; ctx.lineWidth = dick; ctx.stroke();
+  ctx.setLineDash([2.2, 2.6]); ctx.strokeStyle = 'rgba(90,55,20,.75)'; ctx.lineWidth = dick*0.9; ctx.stroke();   // Drehung (Litzen)
+  ctx.setLineDash([]); ctx.strokeStyle = TAU_LICHT; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(x0, y0 - dick*0.25); ctx.quadraticCurveTo(cx, cy - dick*0.25, x1, y1 - dick*0.25); ctx.stroke();
+  ctx.restore();
+}
+// Rolle (Rad mit Achse): r Radius, w Drehwinkel
+function rolleZeichnen(x, y, r, w){
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#2a1a0c'; ctx.beginPath(); ctx.arc(0, 0, r + 1.2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#9a6a35'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+  ctx.rotate(w); ctx.strokeStyle = '#4a2e14'; ctx.lineWidth = 1.1;
+  for(let i = 0; i < 3; i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(-r + 0.8, 0); ctx.lineTo(r - 0.8, 0); ctx.stroke(); }
+  ctx.fillStyle = '#4b5563'; ctx.beginPath(); ctx.arc(0, 0, 1.4, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+// Rollenwagen auf der Schiene bei x: zwei Rollen oben auf dem Tau, Holzplatte darunter mit Öse fürs Hänge-Tau
+function rollenwagenZeichnen(x, y, drehung){
+  for(const dx of [-5, 5]) rolleZeichnen(x + dx, y - 4, 3.6, drehung);
+  ctx.fillStyle = '#2a1a0c'; ctx.beginPath(); ctx.roundRect(x - 9, y - 1.5, 18, 6, 2); ctx.fill();
+  const hz = ctx.createLinearGradient(0, y - 1, 0, y + 4); hz.addColorStop(0, '#b47a40'); hz.addColorStop(1, '#6b4019');
+  ctx.fillStyle = hz; ctx.beginPath(); ctx.roundRect(x - 8, y - 0.8, 16, 4.6, 1.6); ctx.fill();
+  ctx.fillStyle = '#9aa3ad'; for(const dx of [-5, 5]){ ctx.beginPath(); ctx.arc(x + dx, y + 1.5, 0.9, 0, Math.PI*2); ctx.fill(); }
+  ctx.strokeStyle = '#4b5563'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x, y + 6, 2.2, 0, Math.PI*2); ctx.stroke();   // Öse
+}
+// Knoten am Blatt: das Tau ist einmal um den Blattrand geschlungen
+function knotenZeichnen(x, y){
+  ctx.fillStyle = TAU_DUNKEL; ctx.beginPath(); ctx.ellipse(x, y, 4.2, 3.2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = TAU_HELL; ctx.beginPath(); ctx.ellipse(x, y - 0.3, 3.2, 2.3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,55,20,.8)'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(x - 2.5, y + 1.6); ctx.lineTo(x + 2.5, y - 1.8); ctx.stroke();
+  ctx.strokeStyle = TAU_HELL; ctx.lineWidth = 1.6; ctx.lineCap = 'round';   // kurzes loses Ende
+  ctx.beginPath(); ctx.moveTo(x + 2, y + 2); ctx.quadraticCurveTo(x + 4, y + 5, x + 3, y + 8); ctx.stroke();
+}
+const BLATT_KNOTEN_X = 46, BLATT_KNOTEN_Y = -5;   // px: Knoten an der hinteren Blattwand (von der Blattmitte / Stehfläche)
+// Durchhang der Tau-Schiene (nur Aussehen): sanftes Wippen, unter dem fahrenden Blatt etwas mehr
+function blattSchieneDurchhang(s, t){
+  const fahrt = Math.min(1, Math.abs(s.v)/BLATT_MAX);
+  return 3 + Math.sin(t*1.1 + s.x0*0.003)*1.2 + fahrt*(2.5 + Math.sin(t*9)*1);
 }
 elementRegistrieren({
   id: 'blattfloss', name: 'Blatt-Floß', feld: 'blattFloesse',
@@ -88,7 +139,7 @@ elementRegistrieren({
       p.schiene = n; return `Blatt-Floß: Schiene ${n} Kästchen`;
     },
     zeichnen(ctx, c, r, TILE, p){
-      const n = Number(p.schiene) || 6, s = TILE/40, boden = (r + 1)*TILE - 17*s;   // ganz im Kästchen (nicht auf der Linie)
+      const n = Number(p.schiene) || 6, s = TILE/40, boden = (r + 1)*TILE - 8*s;   // ganz im Kästchen (nicht auf der Linie)
       ctx.strokeStyle = 'rgba(90,160,79,.85)'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(c*TILE + 4, r*TILE + 6*s); ctx.lineTo((c + 3 + n)*TILE - 4, r*TILE + 6*s); ctx.stroke();   // Schiene
       ctx.strokeStyle = 'rgba(90,160,79,.5)'; ctx.strokeRect((c + n)*TILE + 2, r*TILE + 2, 3*TILE - 4, TILE - 4); ctx.setLineDash([]);   // Ende der Fahrt
@@ -142,12 +193,12 @@ elementRegistrieren({
         const fahrt = Math.min(1, Math.abs(s.v)/BLATT_MAX), wind = Math.sin(t*1.1 + s.x0*0.003);
         for(const [x, yo, wx] of [[a, E.ya, E.a], [b, E.yb, E.b]]){   // Enden: Liane nach oben bis zum Material bzw. ins Blätterdach
           const pendel = Math.sin(t*0.9 + wx*0.01)*2.2 + fahrt*Math.sin(t*6 + wx)*1.2;
-          lianeZeichnen(x + Math.sin(wx*0.013)*3, yo !== null ? yo : -SKY_ROOM - 10, x, E.y, 0.35, pendel, wx);
+          lianeZeichnen(x + Math.sin(wx*0.013)*3, yo !== null ? yo : -SKY_ROOM - 10, x, E.y - 6, 0.35, pendel, wx);
           if(yo !== null && typeof hakenHalter === 'function') hakenHalter(x, yo, HAKEN_STIL.dschungel, 'dschungel');
         }
-        // Ranken-Schiene: straff, hängt aber ein wenig durch und wippt (unter der Last des fahrenden Blatts mehr)
-        lianeZeichnen(a, E.y, b, E.y, 0, wind*1.2 + fahrt*Math.sin(t*9)*1.4, s.x0, 0.25 + 0.15*wind + fahrt*0.35);
-        for(const x of [a, b]){ ctx.fillStyle = '#3b2412'; ctx.beginPath(); ctx.ellipse(x, E.y, 5, 4, 0, 0, Math.PI*2); ctx.fill(); }   // Knoten
+        // Tau-Schiene: straff gespannt, hängt etwas durch und wippt (unter der Last des fahrenden Blatts mehr)
+        tauZeichnen(a, E.y, b, E.y, blattSchieneDurchhang(s, t), 3.2);
+        for(const x of [a, b]) rolleZeichnen(x, E.y - 1, 5.5, -s.x/5.5);   // Umlenkrollen an den Enden (drehen beim Fahren mit)
       }
     },
     zeichnen(){
@@ -155,14 +206,25 @@ elementRegistrieren({
       for(const s of blattFloesse){
         const E = blattSchieneEnden(s);
         if(E.b - camX < -60 || E.a - camX > VW + 60) continue;
-        const schwank = Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012, x = Math.round(s.x - camX);
-        // zwei kurze Hänge-Lianen mit Ringen an der Schiene (schwingen leicht mit)
-        for(const hx of [x + BLATT_HAENGER, x + s.w - BLATT_HAENGER]){
-          const dy = (hx - (x + s.w/2))*Math.sin(schwank), nach = -s.v*1.6;   // beim Fahren hängt das Blatt etwas nach
-          lianeZeichnen(hx - nach, E.y + 4, hx, s.y - 1 + dy, 0, Math.sin(t*1.4 + hx*0.05)*0.8, s.x0 + hx, 0.15);
-          blattRingZeichnen(hx - nach, E.y);
+        const schwank = Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012, x = Math.round(s.x - camX), mitte = x + s.w/2;
+        const sag = blattSchieneDurchhang(s, t), a = E.a - camX, b = E.b - camX;
+        blattBild(ctx, x, s.y, s.w, schwank, 'hinten');   // hintere Blattwand (hinter den Figuren); kein Schatten (Nutzer)
+        // zwei Seilzüge: Rollenwagen auf der Tau-Schiene, Tau hinunter, am Blatt festgeknotet (beim Fahren hängt es etwas nach)
+        for(const d of [-1, 1]){
+          const kx = mitte + d*BLATT_KNOTEN_X, ky = s.y + BLATT_KNOTEN_Y + d*BLATT_KNOTEN_X*Math.sin(schwank), nach = -s.v*2;
+          const wx = kx - nach, u = Math.max(0, Math.min(1, (wx - a)/(b - a))), wy = E.y + 2*sag*u*(1 - u);
+          tauZeichnen(wx, wy + 6, kx, ky, Math.sin(t*1.4 + kx*0.05)*0.8, 2.2);
+          rollenwagenZeichnen(wx, wy, -s.x/3.6);
+          knotenZeichnen(kx, ky);
         }
-        blattBild(ctx, x, s.y, s.w, schwank);   // (kein Schatten mehr – Nutzer: „macht keinen Sinn“, es hängt in der Luft)
+      }
+    },
+    zeichnenVorne(){   // vorderer Blattrand VOR den Figuren: wer im Blatt steht, steht drin (nur über dem Blatt selbst)
+      const t = performance.now()*0.001;
+      for(const s of blattFloesse){
+        const x = Math.round(s.x - camX);
+        if(x + s.w < -40 || x > VW + 40) continue;
+        blattBild(ctx, x, s.y, s.w, Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012, 'vorne');
       }
     },
   },

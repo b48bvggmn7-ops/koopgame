@@ -655,6 +655,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
         des Dschungel-Hintergrunds (`matScheinFlaechen`, `SCHEIN_RUECKWAND` in js/12). Test scheinwand_eine_flaeche.
         Deckend wird sie mit denselben Pfaden wie der Boden ringsum gezeichnet (kein eigenes Bild -> kein grüner Rand, keine
         andere Körnung; Nutzer: „warum hat die Scheinwand einen grünen Rand“); nur beim Durchsichtig-Werden als Bild. Die
+        Münzen, Hebel und Druckplatten in einer GESCHLOSSENEN Scheinwand werden gar nicht gezeichnet (`scheinVerdeckt`) –
+        sonst schimmerten Schein und Glitzern über den Rand (Test scheinwand_versteckt_leuchtet_nicht).
         Durchsichtigkeit wird einmal je Bild VOR Boden/Wand bestimmt (Boden, Rückwand und Scheinwand nutzen denselben Wert;
         die letzten Prozente zum Deckend-Werden auf einmal) – vorher blitzte beim Herausspringen kurz ein grüner Rand. Die
         Rückwand liegt UNTER dem Boden und ist zu angrenzendem Boden/Wand hin ein paar px größer (`SCHEIN_RUECKWAND_RAND`) –
@@ -2177,9 +2179,12 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   zwei kurzen Lianen mit Ringen an einer straff gespannten Ranken-Schiene `BLATT_SCHIENE_HOCH` px über der Stehfläche hängt;
   die Schienen-Enden hängen an Material darüber (Halter) oder kommen aus dem Blätterdach, die Schiene liegt hinter dem Gelände.
   Test blattfloss_aussehen. Seit 30.10. (Nutzerwünsche): **kein Schatten** mehr darunter; Form: das alte Blatt **umgedreht**
-  (Nutzerwahl am Bild: gewölbt wie eine Kuppel, Stiel unten, man steht oben auf der Wölbung, `BLATT_WOELBUNG`; eine kurz
-  eingebaute Mulde „man steht im Blatt“ wurde verworfen); die Lianen **wiegen sich leicht** (Aufhänge-Lianen pendeln, die
-  Ranke wippt, beim Fahren stärker, die Hänge-Lianen ziehen nach); **Verknüpfungs-Nummer** fürs Floß-Rad; es liegt **im
+  (Nutzerwahl am Bild), als Schale von der Seite – **man steht IM Blatt**: die dunkle Wölbung ist die hintere Blattwand
+  (hinter den Figuren), das helle Band der vordere Rand (vor den Füßen, `zeichnenVorne`, nur über dem Blatt selbst, Füße
+  `BLATT_EINSINKEN` darin); **Seilzüge** statt Lianen: Tau-Schiene (gedrehtes Hanf-Tau, hebt sich klar vom Dschungel ab) mit
+  Umlenkrollen an den Enden, zwei Rollenwagen (Rollen drehen beim Fahren), Taue hinunter, an der Blattwand festgeknotet
+  (`tauZeichnen`, `rollenwagenZeichnen`, `knotenZeichnen`); alles **wiegt sich leicht** (Aufhänge-Lianen pendeln, die
+  Tau-Schiene wippt, beim Fahren stärker, die Wagen ziehen nach); **Verknüpfungs-Nummer** fürs Floß-Rad; es liegt **im
   Kästchen** (Stehfläche = Boden des Kästchens, Spiel und Editor gleich; das Testlevel koop-aktionen wurde eine Reihe
   höher gesetzt, damit es an derselben Stelle bleibt); im Editor **gedrückt halten und nach rechts ziehen** stellt die
   Schiene ein (bis zum Kästchen unter der Maus, höchstens `BLATT_SCHIENE_MAX`; Muster `editor.ziehen` für Elemente in
@@ -2187,7 +2192,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - **Floß-Rad** (elemente/flossrad.js, Editor-Reiter **„Schalter“** (Logik), Werkzeug „Floß-Rad“, im Dschungel empfohlen;
   Nutzerwunsch „damit ich den Affen als Schwein rüberholen kann“): Kurbelrad auf einem Pfahl (Edelstein in der Nummernfarbe),
   **verknüpft über die Verknüpfungs-Nummer** mit dem Blatt-Floß derselben Nummer (ohne Nummer: das nächste Floß in 10
-  Kästchen); eine Liane führt vom Rad zum Ende der Schiene (hängt locker, wiegt sich, strafft sich und zittert beim Kurbeln).
+  Kästchen); ein Zug-Tau führt vom Rad zur Umlenkrolle am Ende der Schiene (hängt locker, wiegt sich, strafft sich und
+  zittert beim Kurbeln); rund um das Rad wachsen keine Bodenpflanzen (`bodenFreihaltePunkte`, js/17a – nichts schiebt sich
+  davor).
   Bedienung: vor dem Rad die **Hebel-Taste halten und links/rechts drücken** (Affe J, Schweinchen Num 2) – das Blatt fährt
   gleichmäßig (`BLATT_RAD_TEMPO`) in diese Richtung, loslassen hält es sofort an; wer darauf steht, fährt mit. Die Figur tritt
   neben das Rad, schaut hin und **kurbelt** (Arm-Zug wie am Hebel alle `FLOSSRAD_KURBEL_TAKT` Schritte, Rad dreht und läuft
