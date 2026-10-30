@@ -2178,12 +2178,13 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   breit – als EIN Bild zu breit für den Browser (weiße Fläche). Die Leinwand zeigt nur noch den sichtbaren Ausschnitt und
   wandert beim Scrollen mit (`fitView`/`ansichtX` in editor/js/01-zustand.js, Platzhalter `#cvsPlatz` für die Scrollleiste).
   Test editor_langes_level_sichtbar.
-- **Schirm-Trampolin wie ein Ninja-Schwert ziehen und aufklappen** (3D-Figur; Nutzer: „Hände kamen einfach vor den Bauch, Schirm
-  wurde zufällig eingeblendet“, „warum ist der Schirm durchsichtig?“, „eher wie ein Ninja-Schwert hinter dem Rücken“): in
-  SCHIRM_AUF_ZEIT (0,6 s) zieht das Schweinchen den zugeklappten Schirm schräg vom Rücken (Griff über der rechten Schulter, der
-  rechte Arm greift hin; hinter der Figur gezeichnet, SCHIRM_RUECKEN_WINKEL/SCHIRM_ZIEH_WEG), schwingt ihn über den Kopf, setzt ihn
-  vor dem Kopf auf den Kopf, die Pfoten wandern zum Stock vor dem Bauch, dann klappt er auf und federt kurz nach; loslassen =
-  rückwärts (SCHIRM_ZU_ZEIT). Nie durchsichtig. Aussehen am Ende wie bisher. Ablauf `schirmAblauf` (js/33). Test schirm_aufklappen.
+- **Schirm-Trampolin: Schirm nehmen wie ein Mensch** (3D-Figur; Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig
+  eingeblendet“, „warum ist der Schirm durchsichtig?“, „hol ihn von der Seite – wie sähe eine menschliche Bewegung aus?“): in
+  SCHIRM_AUF_ZEIT (0,6 s) zieht die rechte Pfote den zugeklappten Schirm seitlich hinter der Hüfte hervor (dahinter gezeichnet,
+  SCHIRM_HOLEN/SCHIRM_ZIEH_WEG/SCHIRM_HUEFT_WINKEL), schwingt ihn im Bogen vor dem Körper hoch, bis er senkrecht steht (schwingt
+  kurz über und pendelt sich ein; ab SCHIRM_VORNE_AB vor der Figur), beide Pfoten greifen den Stock vor dem Bauch (SCHIRM_GREIFEN),
+  dann klappt er auf und federt kurz nach; loslassen = rückwärts (SCHIRM_ZU_ZEIT). Nie durchsichtig. Aussehen am Ende wie bisher
+  (Pfoten vor dem Bauch, Schirm tief auf dem Kopf). Ablauf `schirmAblauf` (js/33). Test schirm_aufklappen.
 - **Abschnitt 1 bei Nacht** wie das frühere Level 1 (Nutzer: „Level 1 ist plötzlich am Tag“; Abschnitt 2 auch nachts).
   Test level1_bei_nacht.
 - **Hohle Bäume raus** (`BAUM_AN = false`, js/12a): Start und Ziel im Dschungel wieder ohne Baumhaus (Ziel-Schild wie in den
