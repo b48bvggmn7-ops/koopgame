@@ -7391,6 +7391,21 @@ async def windrad_anpusten(g):
         srv.shutdown()
 
 @test
+async def blattfloss_aussehen(g):
+    """Nutzer: Blatt-Floß „sieht echt nicht gut aus“ -> dickes Blatt, das wie eine Gondel an zwei Lianen an einer gespannten
+    Ranken-Schiene hängt; die Schienen-Enden hängen am Material darüber (Halter) oder kommen aus dem Blätterdach. Zeichnet
+    ohne Fehler: hinten Schiene + 2 Aufhänge-Lianen, vorne 2 Hänge-Lianen."""
+    await g.load(level([ground(0, 480, 360, 240), ground(1100, 480, 400, 240), ground(900, 120, 600, 40)],
+                       {'x': 300, 'y': 480}, {'x': 200, 'y': 480}, welt='dschungel', blattFloesse=[{'x': 360, 'y': 480, 'schiene': 14}]))
+    await g.steps(3)
+    r = await g.ev("""(() => { const E = blattSchieneEnden(blattFloesse[0]); let n = 0; const alt = lianeZeichnen;
+      lianeZeichnen = (...a) => { n++; return alt(...a); };
+      try { draw(); } finally { lianeZeichnen = alt; } return {E, n}; })()""")
+    E = r['E']
+    assert E['y'] == 480 - 72 and E['ya'] is None and E['yb'] == 160, f'Aufhängung falsch: {E}'
+    assert r['n'] >= 5, f'Schiene/Lianen nicht gezeichnet: {r}'
+
+@test
 async def blattfloss_wind(g):
     """Dschungel-Neu (elemente/blattfloss.js): das Blatt-Floß über der Grube bewegt sich ohne Wind nicht (auch nicht,
     wenn jemand darauf läuft); der Seiten-Wind des Affen schiebt es samt Schweinchen bis ans Ende der Schiene, dort bleibt es

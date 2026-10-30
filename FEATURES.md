@@ -2165,7 +2165,11 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   festes Blatt (3 Kästchen breit) auf einer Ranken-Schiene nach rechts (Auswahl „Schiene“: 4–14 Kästchen; im Editor am
   linken Ende setzen, die Schiene ist mitgezeichnet und gehört zum Floß). Nur der Seiten-Wind des Affen schiebt es in
   Blasrichtung (BLATT_SCHUB, höchstens BLATT_MAX 3,2 px/Schritt), ohne Wind gleitet es kurz aus und bleibt liegen; an den
-  Schienen-Enden und an festen Teilen hält es an. Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
+  Schienen-Enden und an festen Teilen hält es an. **Aussehen** (Nutzerwunsch 30.10., „sieht echt nicht gut aus“): dickes
+  Dschungelblatt (Oberseite mit Mittelrippe/Adern, aufgebogene Spitze, eingerollter Stiel, Tautropfen), das wie eine Gondel an
+  zwei kurzen Lianen mit Ringen an einer straff gespannten Ranken-Schiene `BLATT_SCHIENE_HOCH` px über der Stehfläche hängt;
+  die Schienen-Enden hängen an Material darüber (Halter) oder kommen aus dem Blätterdach, die Schiene liegt hinter dem Gelände.
+  Test blattfloss_aussehen. Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
   schiebt sein Wind nicht. Neustart/Tod: zurück an den Anfang. Rolle: der Affe pustet, das Schweinchen fährt.
   Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).
 

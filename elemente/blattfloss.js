@@ -11,22 +11,58 @@ const BLATT_MAX = 3.2;         // höchstens so schnell (px/Schritt)
 const BLATT_AUSLAUF = 0.9;     // ohne Wind: Tempo je Schritt mal diesem Wert
 let blattFloesse = [];
 ELEMENT_SOLID_TYPEN.add('blatt');
+// Aussehen (Nutzer: „sieht echt nicht gut aus“): ein breites, dickes Dschungelblatt, leicht von oben gesehen – Oberseite mit
+// Mittelrippe und Adern, aufgebogene Spitze und Stielende, dunkle Unterseite als Dicke. Es hängt wie eine Gondel an zwei kurzen
+// Lianen an einer straff gespannten Ranken-Schiene darüber; deren Enden hängen an Material darüber oder aus dem Blätterdach
+// (wie die Haken, js/12b) – so schwebt nichts einfach in der Luft. Nur Aussehen.
+const BLATT_SCHIENE_HOCH = 72;   // px: so hoch über der Stehfläche läuft die Schiene (über den Köpfen)
+const BLATT_HAENGER = 14;        // px: Abstand der beiden Hänge-Lianen von den Blatt-Enden
 function blattBild(g, x, y, w, schwank){
-  g.save(); g.translate(x + w/2, y + 6); g.rotate(schwank || 0);
-  const L = w/2 + 4;
-  g.fillStyle = '#2f6b2a';
-  g.beginPath(); g.moveTo(-L, 0); g.quadraticCurveTo(-L*0.4, -15, L*0.2, -11); g.quadraticCurveTo(L*0.85, -7, L + 6, 2);
-  g.quadraticCurveTo(L*0.6, 13, 0, 12); g.quadraticCurveTo(-L*0.6, 11, -L, 0); g.fill();
-  const gr = g.createLinearGradient(0, -12, 0, 12);
-  gr.addColorStop(0, '#9fe07a'); gr.addColorStop(0.55, '#6cbb53'); gr.addColorStop(1, '#3f8a37');
+  g.save(); g.translate(x + w/2, y + 4); g.rotate(schwank || 0);
+  const L = w/2;
+  // Unterseite / Dicke (dunkel), Spitze vorn und Stielende hinten leicht hochgebogen
+  g.fillStyle = '#24501f';
+  g.beginPath(); g.moveTo(-L - 2, -6); g.quadraticCurveTo(-L*0.55, -11, 0, -10); g.quadraticCurveTo(L*0.62, -10, L + 10, -9);
+  g.quadraticCurveTo(L*0.6, 13, 0, 12); g.quadraticCurveTo(-L*0.62, 12, -L - 2, -6); g.fill();
+  // Oberseite (die Stehfläche liegt oben am Rand)
+  const gr = g.createLinearGradient(0, -10, 0, 6);
+  gr.addColorStop(0, '#a6e47c'); gr.addColorStop(0.5, '#6fc055'); gr.addColorStop(1, '#3f8a37');
   g.fillStyle = gr;
-  g.beginPath(); g.moveTo(-L + 3, 0); g.quadraticCurveTo(-L*0.4, -12.5, L*0.2, -9); g.quadraticCurveTo(L*0.82, -5.5, L + 2, 2);
-  g.quadraticCurveTo(L*0.6, 10.5, 0, 9.5); g.quadraticCurveTo(-L*0.6, 9, -L + 3, 0); g.fill();
-  g.strokeStyle = 'rgba(40,90,35,.75)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(-L + 6, 0.5); g.quadraticCurveTo(0, -2, L, 2); g.stroke();
-  g.lineWidth = 1;
-  for(let i = -3; i <= 3; i++){ const px = i*L*0.26; g.beginPath(); g.moveTo(px, -0.8 + i*0.1); g.lineTo(px + L*0.13, -7 + Math.abs(i)*0.6); g.moveTo(px, -0.4); g.lineTo(px + L*0.12, 6.5 - Math.abs(i)*0.5); g.stroke(); }
-  g.fillStyle = 'rgba(255,255,255,.28)'; g.beginPath(); g.ellipse(-L*0.35, -6, L*0.28, 2, -0.12, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.moveTo(-L, -6); g.quadraticCurveTo(-L*0.55, -10.5, 0, -9.5); g.quadraticCurveTo(L*0.62, -9.5, L + 8, -9);
+  g.quadraticCurveTo(L*0.55, 5, 0, 5); g.quadraticCurveTo(-L*0.6, 5, -L, -6); g.fill();
+  // heller Rand vorne (Licht von oben) und dunkle Kante unten
+  g.strokeStyle = 'rgba(225,255,190,.55)'; g.lineWidth = 1.4;
+  g.beginPath(); g.moveTo(-L + 2, -6.5); g.quadraticCurveTo(-L*0.55, -10.2, 0, -9.2); g.quadraticCurveTo(L*0.62, -9.2, L + 6, -8.8); g.stroke();
+  g.strokeStyle = 'rgba(20,45,16,.7)'; g.lineWidth = 1.2;
+  g.beginPath(); g.moveTo(-L - 1, -5); g.quadraticCurveTo(-L*0.6, 12.5, 0, 12); g.quadraticCurveTo(L*0.6, 12.5, L + 10, -9); g.stroke();
+  // Mittelrippe und Adern
+  g.strokeStyle = 'rgba(214,240,170,.8)'; g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(-L + 4, -5); g.quadraticCurveTo(0, -1.5, L + 5, -8.5); g.stroke();
+  g.strokeStyle = 'rgba(40,95,34,.55)'; g.lineWidth = 1;
+  for(let i = -3; i <= 3; i++){
+    const px = i*L*0.27, py = -3 - (i + 3)*0.35;
+    g.beginPath(); g.moveTo(px, py); g.quadraticCurveTo(px + L*0.1, py - 3, px + L*0.18, -8.6 + Math.abs(i)*0.2);
+    g.moveTo(px, py + 0.5); g.quadraticCurveTo(px + L*0.1, py + 4, px + L*0.17, 3.5 - Math.abs(i)*0.4); g.stroke();
+  }
+  // Stiel hinten, eingerollt
+  g.strokeStyle = '#3d6f2e'; g.lineWidth = 2.6; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(-L, -5); g.quadraticCurveTo(-L - 9, -4, -L - 11, -11); g.quadraticCurveTo(-L - 12, -16, -L - 7, -15); g.stroke();
+  // Tautropfen
+  g.fillStyle = 'rgba(220,250,255,.75)'; g.beginPath(); g.ellipse(L*0.35, -4.5, 2.2, 1.6, 0, 0, Math.PI*2); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(L*0.35 - 0.7, -5, 0.7, 0, Math.PI*2); g.fill();
   g.restore();
+}
+// Aufhänge-Höhe einer Schienen-Ende (Material darüber oder Blätterdach), je Floß einmal gemerkt
+function blattSchieneEnden(s){
+  if(s._enden) return s._enden;
+  const y = s.y - BLATT_SCHIENE_HOCH, a = s.x0 - 8, b = s.x1 + s.w + 8;
+  const hoch = x => typeof hakenAufhaengeY === 'function' ? hakenAufhaengeY(x, y) : null;
+  return (s._enden = {y, a, b, ya: hoch(a), yb: hoch(b)});
+}
+function blattRingZeichnen(x, y){
+  ctx.strokeStyle = 'rgba(20,12,6,.6)'; ctx.lineWidth = 4.2; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 2.6; ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,220,160,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 4.6, Math.PI*1.1, Math.PI*1.7); ctx.stroke();
 }
 elementRegistrieren({
   id: 'blattfloss', name: 'Blatt-Floß', feld: 'blattFloesse',
@@ -77,18 +113,33 @@ elementRegistrieren({
         s.x = nx;
       }
     },
+    // Schiene und ihre Aufhängung HINTER Boden/Wand (läuft sie durch Gelände, verschwindet sie dahinter)
+    zeichnenHinten(){
+      for(const s of blattFloesse){
+        const E = blattSchieneEnden(s), a = E.a - camX, b = E.b - camX;
+        if(b < -60 || a > VW + 60) continue;
+        for(const [x, yo, wx] of [[a, E.ya, E.a], [b, E.yb, E.b]]){   // Enden: Liane nach oben bis zum Material bzw. ins Blätterdach
+          lianeZeichnen(x + Math.sin(wx*0.013)*3, yo !== null ? yo : -SKY_ROOM - 10, x, E.y, 0.35, 0, wx);
+          if(yo !== null && typeof hakenHalter === 'function') hakenHalter(x, yo, HAKEN_STIL.dschungel, 'dschungel');
+        }
+        lianeZeichnen(a, E.y, b, E.y, 0, 0, s.x0, 0);   // straff gespannte Ranken-Schiene
+        for(const x of [a, b]){ ctx.fillStyle = '#3b2412'; ctx.beginPath(); ctx.ellipse(x, E.y, 5, 4, 0, 0, Math.PI*2); ctx.fill(); }   // Knoten
+      }
+    },
     zeichnen(){
       const t = performance.now()*0.001;
       for(const s of blattFloesse){
-        const x0 = s.x0 - camX, x1 = s.x1 + s.w - camX;
-        if(x1 < -40 || x0 > VW + 40) continue;
-        // Ranken-Schiene mit kleinen Knoten
-        ctx.strokeStyle = 'rgba(60,110,50,.65)'; ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.moveTo(x0, s.y + 6); for(let x = x0; x <= x1; x += 20) ctx.lineTo(x, s.y + 6 + Math.sin(x*0.08)*1.5); ctx.stroke();
-        ctx.fillStyle = '#4f8f3f'; for(const x of [x0, x1]){ ctx.beginPath(); ctx.arc(x, s.y + 6, 4, 0, Math.PI*2); ctx.fill(); }
-        const schwank = Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012;
-        glanzSchatten(s.x - camX + s.w/2, s.y + 26, s.w*0.4, 3);
-        blattBild(ctx, Math.round(s.x - camX), s.y, s.w, schwank);
+        const E = blattSchieneEnden(s);
+        if(E.b - camX < -60 || E.a - camX > VW + 60) continue;
+        const schwank = Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012, x = Math.round(s.x - camX);
+        // zwei kurze Hänge-Lianen mit Ringen an der Schiene (schwingen leicht mit)
+        for(const hx of [x + BLATT_HAENGER, x + s.w - BLATT_HAENGER]){
+          const dy = (hx - (x + s.w/2))*Math.sin(schwank);
+          lianeZeichnen(hx, E.y + 4, hx, s.y - 2 + dy, 0, 0, s.x0 + hx, 0);
+          blattRingZeichnen(hx, E.y);
+        }
+        glanzSchatten(x + s.w/2, s.y + 30, s.w*0.38, 3);
+        blattBild(ctx, x, s.y, s.w, schwank);
       }
     },
   },
