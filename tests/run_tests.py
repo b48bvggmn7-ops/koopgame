@@ -22,7 +22,7 @@ from playwright.async_api import async_playwright
 # Windows (Nutzer-PC): Python liest Dateien sonst in der Windows-Kodierung (Umlaute in Level-Namen kaputt) -> neu im UTF-8-Modus starten
 if __name__ == '__main__' and sys.platform == 'win32' and not sys.flags.utf8_mode:
     import subprocess
-    sys.exit(subprocess.call([sys.executable, '-X', 'utf8', *sys.argv]))
+    sys.exit(subprocess.call([sys.executable, '-X', 'utf8', '-u', *sys.argv]))   # -u: Ergebnisse sofort zeigen (auch in eine Datei umgeleitet)
 
 ROOT = Path(__file__).resolve().parent.parent
 GAME = (ROOT / 'index.html').as_uri()
