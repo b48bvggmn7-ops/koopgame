@@ -7272,6 +7272,20 @@ async def koop_pusten(g):
         srv.shutdown()
 
 @test
+async def windrad_haelt_sich(g):
+    """Nutzer: „das Windrad hängt random in der Luft“ – auf Boden steht es auf dem Pfahl, neben einer Wand sitzt es auf einem
+    Holzarm aus der Wand, sonst hängt es an einer Liane (bis zum Material darüber bzw. aus dem Blätterdach); zeichnet ohne Fehler."""
+    await g.load(level([ground(0, 680, 1600), ground(600, 280, 80, 400, 'wall'), ground(0, 120, 1600, 40)],
+                       {'x': 160, 'y': 680}, {'x': 120, 'y': 680}, welt='dschungel',
+                       windraeder=[{'x': 300, 'y': 680, 'link': 1}, {'x': 700, 'y': 480, 'link': 2}, {'x': 950, 'y': 520, 'link': 3}]))
+    await g.steps(5)
+    r = await g.ev("""(() => { let pfahl = 0; const o = windradBild; windradBild = (...a) => { if(!a[7]) pfahl++; return o(...a); };
+      try { draw(); } finally { windradBild = o; } return {halt: windraeder.map(w => windradHalt(w)), pfahl}; })()""")
+    h = r['halt']
+    assert h[0]['art'] == 'boden' and h[1] == {'art': 'wand', 'wx': 680} and h[2] == {'art': 'haengt', 'y0': 160}, h
+    assert r['pfahl'] == 1, f'nur das Windrad auf dem Boden hat einen Pfahl: {r}'
+
+@test
 async def windrad_anpusten(g):
     """Dschungel-Neu (elemente/windrad.js): nur der Puste-Wind dreht ein Windrad. „umschalten“: dreht es sich voll, schaltet
     es seine Nummer einmal um (Tür auf) und bleibt so, auch wenn es ausläuft; nochmal anpusten = wieder zu. „solange“: die

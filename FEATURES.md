@@ -2147,6 +2147,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Nummer einmal um, wie ein Hebel (Tür auf / wieder zu); „solange es dreht“: Nummer an, solange es sich dreht (wie eine
   Druckplatte, verträgt sich mit Platten derselben Nummer). Ton beim Anlaufen + Hebel-Klack. Rolle: nur der Affe schaltet es –
   oft von einem Platz aus, auf den ihn das Schweinchen bringt. Test windrad_anpusten (Testlevel koop-aktionen).
+  **Halt** (Nutzer: „hängt random in der Luft“, nur Aussehen, `windradHalt`): auf Boden der Pfahl wie bisher; ohne Boden, aber
+  mit Wand/Boden höchstens 60 px neben der Nabe ein waagerechter Holzarm aus der Wand; sonst hängt das Windrad an einer Liane
+  (bis zum Material darüber oder aus dem Blätterdach, wie die Haken). Test windrad_haelt_sich.
 - **Blatt-Floß** (elemente/blattfloss.js, Editor-Reiter „Bewegung“, Werkzeug „Blatt-Floß“, im Dschungel empfohlen): großes
   festes Blatt (3 Kästchen breit) auf einer Ranken-Schiene nach rechts (Auswahl „Schiene“: 4–14 Kästchen; im Editor am
   linken Ende setzen, die Schiene ist mitgezeichnet und gehört zum Floß). Nur der Seiten-Wind des Affen schiebt es in
