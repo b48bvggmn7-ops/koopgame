@@ -235,9 +235,18 @@ const PARTNER_WEG_PAUSE = 300;          // Schritte: so lange keine neue Wegsuch
 const PARTNER_DASH_BODEN = 6;     // Computer-Partner auf der Flucht: so viele Kästchen fester, freier Boden vor ihm, damit er dasht (Umbau)
 const PARTNER_KANTE_SPAET = 6;    // Computer-Partner auf der Flucht: erst abspringen, wenn so viele px vor seiner Mitte kein Boden mehr ist (ohne Dash: weiter)
 const PARTNER_GRUBE_TIEFE = 4;    // … und als Schweinchen den Schirm öffnen, wenn so viele Reihen unter ihm kein Boden ist
+const PARTNER_BRUCH_SUCHE = 320;   // Computer-Partner ohne Dash: findet er keinen Weg, sucht er so weit (px) vor sich eine Durchbruch-Wand zum Anpusten
 const PARTNER_BRUCH_NAH = 24;   // Computer-Partner: so nah (px) vor einer Durchbruch-Wand dasht er hindurch (Umbau)
 const PARTNER_TRAMPOLIN_NAH = 70;    // Partner-Schweinchen: ist der Affe so nah (px, waagerecht) über ihm in der Luft, hält es den Schirm auf (Dschungel-Neu)
 const PARTNER_TRAMPOLIN_WEG = 200;   // Partner-Affe: hält das Schweinchen den Schirm auf und ist so nah, läuft er hin und springt darauf
+const PARTNER_PUSTE_HIN = 140;      // Partner-Affe: segle ich als Schweinchen so nah (px, waagerecht) über ihm, läuft er darunter und pustet
+const PARTNER_PUSTE_FREI = 3;       // Partner-Affe pustet nur, wenn so viele Kästchen über seinem Kopf frei sind
+const PARTNER_WIND_NAH = 160;       // Partner-Schweinchen: pustet der Affe nach oben und ist es so nah (px, waagerecht, gleiche Höhe), läuft es hin …
+const PARTNER_WIND_SPRUNG = 40;     // … und springt in den Wind, sobald es so nah am Affen ist
+const PARTNER_SEGEL_SPALTEN = 24;   // Partner-Schweinchen oben im Wind: so weit (Kästchen) sucht es eine Landestelle
+const PARTNER_WIND_RAND = 16;       // Partner-Schweinchen steigt so weit (px) innerhalb des hinteren Strahl-Rands (Anlauf durch den Strahl)
+const PARTNER_WIND_SCHWEBEN = 70;  // Partner-Schweinchen: so viele Schritte oben im Wind schweben, ohne dass vorne eine Landestelle erreichbar ist -> irgendwo landen
+const PARTNER_SEGEL_VERSUCHE = 5;   // Partner-Schweinchen: so viele Landestellen (je eine Vorausrechnung) prüft es höchstens je Richtung
 
 // ---------- Dschungel-Neu: Spezial-Aktionen (js/34-koop-aktionen.js) ----------
 // Schirm-Trampolin (Spezial-Taste des Schweinchens halten): es steht still und spannt den offenen Schirm über sich; springt
@@ -250,6 +259,13 @@ const TRAMPOLIN_TREFFER = 30;     // px: so weit (plus halbe Figurenbreite) nebe
 const TRAMPOLIN_V_SCHUB = -18.3;  // Nutzerwunsch: drückt das Schweinchen im richtigen Moment Springen, federt der Affe höher (≈ 8,4 Reihen)
 const TRAMPOLIN_SCHUB_FENSTER = 7; // Schritte (≈ 0,13 s) vor oder nach dem Aufprall zählt der Druck als „im richtigen Moment“
 const SCHIRM_HAND_SEITE = 0;       // px: Schirm-Trampolin – Pfoten und Stock seitlich der Mitte (Nutzerwunsch: mittig, also 0; nur Aussehen)
+const SCHIRM_AUF_ZEIT = 0.6;       // s: Schirm-Trampolin (3D-Figur) – so lange dauert der ganze Ablauf (seitlich hervorziehen, hochschwingen, aufklappen)
+const SCHIRM_ZU_ZEIT = 0.35;       // s: … und rückwärts (zuklappen, wegstecken)
+const SCHIRM_HOLEN = 0.3;          // Anteil davon: zugeklappten Schirm seitlich hinter der Hüfte hervorziehen (hinter der Figur)
+const SCHIRM_GREIFEN = 0.35;       // Anteil: im Bogen vor dem Körper hochschwingen, beide Pfoten greifen den Stock (Rest: aufklappen)
+const SCHIRM_VORNE_AB = 0.3;       // ab diesem Anteil des Hochschwingens wird er vor der Figur gezeichnet (vorher noch dahinter)
+const SCHIRM_HUEFT_WINKEL = 1.75;  // rad: so liegt er beim Hervorziehen (fast waagerecht, Spitze nach links hinter dem Körper)
+const SCHIRM_ZIEH_WEG = 26;        // px: so weit zieht die Pfote ihn zur Seite heraus
 // Affe pusten (Spezial-Taste halten): steht still, W = nach oben, A/D = nach links/rechts; der Windstrahl trägt das
 // Schweinchen mit offenem Schirm (nach oben wie ein Aufwind, zur Seite als Schub) und bewegt leichte Dinge (Windrad …)
 const PUSTE_DAUER = 160;          // Schritte (≈ 3 s): so lange reicht ein voller Puste-Balken

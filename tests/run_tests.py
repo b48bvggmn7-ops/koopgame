@@ -825,6 +825,51 @@ async def editor_projekt_levels(g):
         srv.shutdown()
 
 @test
+async def editor_langes_level_sichtbar(g):
+    """Nutzer: „Level 1 wird nicht mehr angezeigt“ – ein Abschnitt (2500 Spalten = 100 000 px) war als EIN Bild zu breit für den
+    Browser (weiße Fläche). Die Leinwand zeigt jetzt nur den sichtbaren Ausschnitt (fitView/ansichtX in editor/js/01-zustand.js),
+    #cvsPlatz ist so breit wie das Level (Scrollleiste). Hinten im Level: Kästchen sichtbar, Klick trifft die richtige Spalte."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+        await projekt_laden(p, A1)
+        st = await p.evaluate("[cvs.width, COLS, parseFloat(cvsPlatz.style.width) / ansichtS / 40]")
+        assert st[0] <= 4000 and st[1] > 2400 and abs(st[2] - st[1]) < 0.5, st
+        await p.evaluate("wrap.scrollLeft = 1580 * 40 * ansichtS"); await p.wait_for_timeout(300)
+        bunt = await p.evaluate("""(() => { const d = ctx.getImageData(0, 0, cvs.width, cvs.height).data, f = new Set();
+            for(let i = 0; i < d.length; i += 4 * 97) f.add(d[i] >> 4 << 8 | d[i+1] >> 4 << 4 | d[i+2] >> 4); return f.size; })()""")
+        assert bunt > 4, f'Ausschnitt hinten im Level leer: {bunt} Farben'
+        await p.evaluate("flashT = -1e9")   # Meldung nach dem Laden überspringen
+        box = await p.locator('#c').bounding_box(); s = await p.evaluate("ansichtS"); vx = await p.evaluate("ansichtX()")
+        mx, my = box['x'] + (1590 * 40 + 20 - vx) * s, box['y'] + (3 * 40 + 20) * s
+        await p.mouse.move(mx - 30, my); await p.mouse.move(mx, my); await p.wait_for_timeout(100)
+        assert (await p.text_content('#coordLabel')).startswith('Spalte 1590,'), await p.text_content('#coordLabel')
+    finally:
+        srv.shutdown()
+
+@test
+async def schirm_aufklappen(g):
+    """Schirm-Trampolin (3D-Figur), Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig eingeblendet“ und
+    „warum ist der Schirm durchsichtig? er muss den Schirm hinter dem Rücken her holen“ – Ablauf (js/33 schirmAblauf): zugeklappt
+    hinter dem Rücken hoch (hinter der Figur gezeichnet), vor dem Kopf auf den Kopf, die Pfoten greifen den Stock, dann aufklappen.
+    drawUmbrella mit o.klapp: zugeklappt schmal, offen volle Breite; nie durchsichtig."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 200, 'y': 680}, {'x': 300, 'y': 680}))
+    r = await g.ev("""(() => { const out = [], s0 = ctx.scale, f0 = ctx.fill, a = [], alpha = [];
+      ctx.scale = function(x, y){ a.push([x, y]); return s0.apply(this, arguments); };
+      ctx.fill = function(){ alpha.push(this.globalAlpha); return f0.apply(this, arguments); };
+      try { for(const [klapp, pfoten] of [[0, 0], [0, 0.5], [0.6, 1], [1, 1]]){ a.length = 0; ctx.save();
+        drawUmbrella(p2, 0, 0, {u: 1, klapp, pfoten, hand: [300, 600], stick: 10, tilt: 0, quetsch: 0, haende: {schulter: [8, -2], farbe: '#f7aac4', rand: '#cf7d9b'}});
+        ctx.restore(); out.push(a[0][0]); } } finally { ctx.scale = s0; ctx.fill = f0; }
+      return {breite: out, alpha: Math.min(...alpha)}; })()""")
+    b = r['breite']
+    assert b[0] < 0.2 and b[1] < 0.2 and b[2] > 0.5 and abs(b[3] - 1) < 1e-6, f'zu/auf falsch: {r}'
+    assert r['alpha'] == 1, f'Schirm durchsichtig: {r}'
+    assert await g.ev("SCHIRM_AUF_ZEIT > 0.3 && SCHIRM_AUF_ZEIT < 0.8 && SCHIRM_ZU_ZEIT < SCHIRM_AUF_ZEIT && SCHIRM_HOLEN + SCHIRM_GREIFEN < 1")
+    src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
+    assert src.index('schirm(true);') < src.index('c.drawImage(cv,') < src.index('schirm(false);'), 'Schirm wird nicht zuerst hinter der Figur gezeichnet'
+
+@test
 async def menue_beim_start(g):
     """Beim Start erscheint das Titelbild des Startmenüs, das Spiel steht still; Taste -> Hauptmenü
     (Spielen · Optionen · Beenden, ohne Level-Editor), Tastatur navigiert, Esc führt zurück."""
@@ -6805,13 +6850,15 @@ async def figuren3d_brille_tattoo(g):
 
 @test
 async def level1_bei_nacht(g):
-    """Früher: Dschungel Level 1 bei Nacht. Seit „Level 1–3 zusammen“ (ein Level, Abschnitt 1) gilt EINE Tageszeit für den
-    ganzen Abschnitt: morgens (Abschnitt 2 nachts) – in beiden Level-Dateien gleich, Look passt dazu."""
-    for a, zeit in ((A1, 'morgen'), (A2, 'nacht')):
+    """Dschungel Level 1 bei Nacht. Seit „Level 1–3 zusammen“ (ein Level, Abschnitt 1) gilt EINE Tageszeit für den ganzen
+    Abschnitt: wie das frühere Level 1 nachts (Nutzer: „Level 1 ist plötzlich am Tag“), Abschnitt 2 auch – in beiden
+    Level-Dateien gleich, Look passt dazu."""
+    for a, zeit in ((A1, 'nacht'), (A2, 'nacht')):
         for f in ('levels/' + a, 'levels/editor-format/' + a):
             assert json.loads((ROOT / f).read_text(encoding='utf-8')).get('tageszeit') == zeit, f
-    await g.load(level_pfad(A2))
-    assert await g.ev("themeName") == 'dschungel@nacht', await g.ev("themeName")
+    for a in (A1, A2):
+        await g.load(level_pfad(a))
+        assert await g.ev("themeName") == 'dschungel@nacht', (a, await g.ev("themeName"))
 
 @test
 async def hohler_baum_start_ziel(g):
@@ -11809,6 +11856,62 @@ async def partner_koop_dschungel(g):
         if not any(x[2] == 'Aufgabe: Platte 5 halten' and x[0] and x[1] < kx(284) for x in r['mess']): fehler.append(('Schleuse: Partner hält Platte 5 nicht', r['mess'][:10]))
     finally:
         srv.shutdown()
+    assert not fehler, fehler
+
+@test
+async def partner_puste_insel(g):
+    """Computer-Partner an der ersten Puste-Stelle (Puste-Insel 85, Abschnitt 1; Nutzer: „komme nicht durch den Anfangsbereich, der
+    Partner überlegt ewig und tut nichts“). 1) Ich = Affe: ich puste am Rand nach oben, das Partner-Schweinchen springt in den Wind,
+    steigt am hinteren Strahl-Rand und segelt los, sobald die Vorausrechnung eine Landestelle in Zielrichtung findet (partnerLandeZiel),
+    landet auf der Säule 84–86; ich schwinge hinüber, puste noch einmal, es segelt bis 105. 2) Ich = Schweinchen: ich springe an
+    freier Stelle hoch und öffne den Schirm, der Partner-Affe läuft unter mich (nicht unter dem Vorsprung) und pustet, kommt per
+    Haken nach und pustet auf der Säule noch einmal."""
+    fehler = []
+    srv = await partner_projekt_start(g, A1, 'm')
+    try:
+        rel = 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0'
+        m = k_pusten_hoch(66, f'Q.grounded && Q.x > {kx(80)} && Q.y < {ky(17)}') + [
+            k_lauf(66, -6), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 80},
+            {'swing': True, 'pull': 0, 'release': rel, 'frames': 500}, {'holdIf': {'right': f'P.x < {kx(84)}', 'left': f'P.x > {kx(86)}'}, 'until': 'P.grounded', 'frames': 300}] + \
+            k_pusten_hoch(85, f'Q.grounded && Q.x > {kx(104)}', 8)
+        r = await koop(g, m=kat(60, 16), f=kat(58, 16), plans={'m': m}, pre='partnerHirnNeu()', maxFrames=2500)
+        if not (r.get('done') and not r.get('dead') and r['pos']['f'][0] >= 104.5): fehler.append(('Affe pustet, Partner-Schweinchen fliegt', r.get('dead'), r.get('pos'), (r.get('log') or [])[-3:]))
+    finally:
+        srv.shutdown()
+    srv = await partner_projekt_start(g, A1, 'f')
+    try:
+        def flug(z0, z1, hoch):   # wie ein Mensch: an freier Stelle hochspringen, Schirm auf, im Wind steigen, dann hinüber
+            return [{'wait': 'Q.grounded && Math.abs(Q.x - P.x) < 150', 'frames': 900}, {'press': ['jump'], 'hold': ['jump'], 'frames': 14},
+                    {'hold': ['glide'], 'until': f'P.grounded || P.y < Q.y - {hoch}', 'frames': 300},
+                    {'hold': ['glide'], 'holdIf': {'right': f'P.x < {kx(z0)}', 'left': f'P.x > {kx(z1)}'}, 'until': 'P.grounded', 'frames': 600}]
+        ok, r = False, {}
+        for h1, h2 in ((220, 260), (220, 300), (240, 280)):
+            f = [k_hin(65)] + flug(84, 86, h1) + [{'wait': f'Q.grounded && Q.x > {kx(83)} && Q.y > {ky(14)}', 'frames': 1500}, k_hin(85)] + flug(105, 107, h2)
+            r = await koop(g, f=kat(60, 16), m=kat(58, 16), plans={'f': f}, pre='partnerHirnNeu()', maxFrames=2500)
+            if r.get('done') and not r.get('dead') and r['pos']['f'][0] >= 104.5: ok = True; break
+        if not ok: fehler.append(('Schweinchen segelt, Partner-Affe pustet', r.get('dead'), r.get('pos'), (r.get('log') or [])[-3:]))
+    finally:
+        srv.shutdown()
+    assert not fehler, fehler
+
+@test
+async def partner_kamin_135(g):
+    """Abschnitt 1, Kamin 135 (früher „Kamin mit Durchbruch oben“, nur per Dash): ohne Dash ist die obere Durchbruch-Wand raus,
+    die untere pustet der Affe um. Ich warte oben am Ausgang (147); der Partner kommt nach – als Affe pustet er die untere
+    Wand selbst um (partnerBruchPusten) und klettert per Wandsprung hinauf, als Schweinchen (Wand schon offen) klettert es."""
+    fehler = []
+    for ich, wand_weg in (('f', False), ('m', True)):
+        srv = await partner_projekt_start(g, A1, ich)
+        try:
+            await g.ev(f"""(() => {{ const P = partnerFigur(), M = meineFigur(); if({'true' if wand_weg else 'false'}) for(const s of solids) if(s.type === 'bruch' && s.x > 130*40 && s.x < 136*40) s.gone = true;
+                for(const F of [P, M]){{ F.vx = 0; F.vy = 0; }} P.x = {kx(131)}; P.y = {ky(15)}; M.x = {kx(147)}; M.y = {ky(7)}; camPos = Math.max(0, P.x - 300); camX = Math.round(camPos); partnerHirnNeu(); }})()""")
+            await g.p.wait_for_function(f"(() => {{ const P = partnerFigur(); return deathState || (P.grounded && P.x > {kx(143)} && P.y <= {ky(7)} + 1); }})()", timeout=60000)
+            st = await g.ev("[!!deathState, Math.round(partnerFigur().x/40), partner.text]")
+            if st[0]: fehler.append((ich, 'tot', st))
+        except Exception as e:
+            fehler.append((ich, 'kommt nicht hinauf', await g.ev("[Math.round(partnerFigur().x/4)/10, Math.round(partnerFigur().y/4)/10, partner.text]")))
+        finally:
+            srv.shutdown()
     assert not fehler, fehler
 
 # ---------------------------------------------------------------- Dschungel-Neu: umgebaute Stellen (Koop-Aktionen)

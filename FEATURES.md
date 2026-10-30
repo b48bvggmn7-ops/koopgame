@@ -2174,6 +2174,29 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   hoch, damit es über die letzte Schlucht segelt. Test dschungel_neu_stellen_a1/_a2.
 - **Liane:** fällt nicht mehr sofort in die volle Länge (`LIANE_VOLLE_LAENGE = false`): in der Luft gegriffen bleibt sie so
   lang wie beim Greifen. Test liane_volle_laenge.
+- **Editor zeigt lange Level** (Nutzer: „Level 1 wird nicht mehr angezeigt“): ein Abschnitt ist 2500 Spalten = 100 000 px
+  breit – als EIN Bild zu breit für den Browser (weiße Fläche). Die Leinwand zeigt nur noch den sichtbaren Ausschnitt und
+  wandert beim Scrollen mit (`fitView`/`ansichtX` in editor/js/01-zustand.js, Platzhalter `#cvsPlatz` für die Scrollleiste).
+  Test editor_langes_level_sichtbar.
+- **Computer-Partner an den Puste-Stellen und ohne Dash** (Nutzer: „komme nicht durch den Anfangsbereich, der Test-Partner überlegt
+  ewig und tut nichts“): Partner-Schweinchen springt in meinen Puste-Wind (PARTNER_WIND_NAH/_SPRUNG), steigt am hinteren
+  Strahl-Rand (Anlauf durch den Strahl) und segelt los, sobald die Vorausrechnung eine Landestelle in Zielrichtung findet
+  (`partnerLandeZiel`, echte Physik `partnerSim`, Umgebung um die Mitte der Flugbahn); schwebt es zu lange, landet es irgendwo
+  sicher. Partner-Affe läuft unter mein segelndes Schweinchen (PARTNER_PUSTE_HIN), nie unter einem Vorsprung (über dem Kopf
+  PARTNER_PUSTE_FREI Kästchen frei), und pustet. Ohne Dash pustet der Partner-Affe Durchbruch-Wände selbst um
+  (`partnerBruchPusten`, PARTNER_BRUCH_SUCHE). Auf der Flucht rennt er und springt spät ab (s. o.). Tests partner_puste_insel,
+  partner_kamin_135.
+- **Kamin 135 (Abschnitt 1) ohne Dash schaffbar:** die obere Durchbruch-Wand (Spalte 140, Reihen 6–7; früher nur per Dash aus dem
+  Wandsprung) ist raus – Ausgang per Wandsprung oder vom Fahrstuhl; die untere Wand pustet der Affe um.
+- **Schirm-Trampolin: Schirm nehmen wie ein Mensch** (3D-Figur; Nutzer: „Hände kamen einfach vor den Bauch, Schirm wurde zufällig
+  eingeblendet“, „warum ist der Schirm durchsichtig?“, „hol ihn von der Seite – wie sähe eine menschliche Bewegung aus?“): in
+  SCHIRM_AUF_ZEIT (0,6 s) zieht die rechte Pfote den zugeklappten Schirm seitlich hinter der Hüfte hervor (dahinter gezeichnet,
+  SCHIRM_HOLEN/SCHIRM_ZIEH_WEG/SCHIRM_HUEFT_WINKEL), schwingt ihn im Bogen vor dem Körper hoch, bis er senkrecht steht (schwingt
+  kurz über und pendelt sich ein; ab SCHIRM_VORNE_AB vor der Figur), beide Pfoten greifen den Stock vor dem Bauch (SCHIRM_GREIFEN),
+  dann klappt er auf und federt kurz nach; loslassen = rückwärts (SCHIRM_ZU_ZEIT). Nie durchsichtig. Aussehen am Ende wie bisher
+  (Pfoten vor dem Bauch, Schirm tief auf dem Kopf). Ablauf `schirmAblauf` (js/33). Test schirm_aufklappen.
+- **Abschnitt 1 bei Nacht** wie das frühere Level 1 (Nutzer: „Level 1 ist plötzlich am Tag“; Abschnitt 2 auch nachts).
+  Test level1_bei_nacht.
 - **Hohle Bäume raus** (`BAUM_AN = false`, js/12a): Start und Ziel im Dschungel wieder ohne Baumhaus (Ziel-Schild wie in den
   anderen Welten); der Ablauf bleibt im Code. Test hohler_baum_start_ziel.
 - **Nur Dschungel, keine Weltkarte** (Nutzerwunsch): die Welten nach dem Dschungel sind ausgeblendet (`"aus": true` in

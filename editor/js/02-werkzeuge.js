@@ -39,7 +39,7 @@ document.querySelectorAll('.tool').forEach(el=>{
 
 function cellFromEvent(e){
   const rect = cvs.getBoundingClientRect();
-  const px = (e.clientX - rect.left) * (cvs.width/rect.width);
+  const px = (e.clientX - rect.left) * (cvs.width/rect.width) + ansichtX();   // Leinwand = sichtbarer Ausschnitt
   const py = (e.clientY - rect.top) * (cvs.height/rect.height);
   return {c: Math.floor(px/TILE), r: Math.floor(py/TILE) - SKY};   // Reihe 0 = alte Oberkante, darüber Himmel (negativ)
 }
@@ -262,7 +262,7 @@ cvs.addEventListener('touchend', ()=>{ painting=false; finishMoveDrag(); });
 
 document.getElementById('extendBtn').addEventListener('click', ()=>{
   setCols(COLS + 20); save();
-  wrap.scrollTo({left: cvs.width, behavior:'smooth'});
+  wrap.scrollTo({left: wrap.scrollWidth, behavior:'smooth'});
 });
 
 // Bestätigung direkt am Button (1. Klick: "Wirklich …?", 2. Klick innerhalb 3 s: ausführen).

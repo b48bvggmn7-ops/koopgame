@@ -291,11 +291,24 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(side > 0){ arm.armP = [0,0,innen]; arm.armN = [0,0,-aussen]; } else { arm.armN = [0,0,-innen]; arm.armP = [0,0,aussen]; }
     return Object.assign(arm, legs);
   }
+  // Schirm-Trampolin-Ablauf (a = 0…1), wie ein Mensch einen Schirm nimmt (Nutzer: „hol ihn von der Seite, überleg dir, wie eine
+  // menschliche Bewegung aussieht“): 1) die rechte Pfote zieht den zugeklappten Schirm seitlich hinter der Hüfte hervor (hinter der
+  // Figur gezeichnet), 2) schwingt ihn in einem Bogen vor dem Körper hoch, bis er senkrecht steht (schwingt kurz über und pendelt
+  // sich ein), dabei greifen beide Pfoten den Stock vor dem Bauch, 3) aufklappen mit kurzem Nachfedern. Rückwärts = wegstecken.
+  const schirmUeber = q => q < 1 ? 1 + 2.7*Math.pow(q - 1, 3) + 1.7*Math.pow(q - 1, 2) : 1;   // weich mit kleinem Überschwingen
+  function schirmAblauf(a){
+    const P1 = SCHIRM_HOLEN, P2 = SCHIRM_HOLEN + SCHIRM_GREIFEN;
+    if(a < P1) return {hinten: true, phase: 1, q: a/P1, klapp: 0, pfoten: 0};
+    if(a < P2){ const q = (a - P1)/(P2 - P1); return {hinten: q < SCHIRM_VORNE_AB, phase: 2, q, klapp: 0}; }   // erst vor den Körper, wenn er seitlich hochkommt
+    return {hinten: false, phase: 3, q: 1, pfoten: 1, klapp: schirmUeber((a - P2)/(1 - P2))};
+  }
   function zielPose(P, S, t, flip, sinceWJ){
     const sp = S.spG, male = P.male, s = Math.sin(S.phase), w = Math.min(1, sp/4.4);
     if(typeof baumTanzt === 'function' && baumTanzt()) return {p: tanzPose(P, S), key:'tanz'};   // gemeinsamer Siegestanz
     // Dschungel-Neu (js/34): Schweinchen hält den offenen Schirm mit beiden Armen über den Kopf (Trampolin), Affe pustet
-    if(!male && P.trampolin) return {p: {head:[-.22,0,0], armN:[-.15,0,-2.85], armP:[-.15,0,2.85], legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'};
+    if(!male && (P.trampolin || (S.trA || 0) > 0)){   // Schirm-Trampolin (auch beim Wegstecken): 3D-Arme eng am Körper, die Pfoten vor dem Bauch malt drawUmbrella;
+      const ziehen = (S.trA || 0) < SCHIRM_HOLEN;   // beim Hervorziehen greift der rechte Arm seitlich nach unten zur Hüfte
+      return {p: {head:[-.22,0,0], armN:[-1.0,0,.4], armP: ziehen ? [-.2,0,1.0] : [-1.0,0,-.4], legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'}; }
     if(male && P.pusteAn){
       const luft = Math.min(1, (performance.now() - (P._pusteStartT || 0))/200), zit = Math.sin(t*38)*.04*luft;   // erst Luft holen, dann kräftig
       if(P.pusteRichtung === 'hoch') return {p: {head:[-1.3*luft + .2*(1 - luft) + zit,0,0], armN:[.25,0,-1.15], armP:[.25,0,1.15], legN:[-.25,0,-.12], legP:[-.25,0,.12]}, key:'pusten'};
@@ -519,6 +532,29 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     { const fu = dev(0, 0); P._fussDev = {x: fu.x, y: fu.y, skala: Math.hypot(Tm.a, Tm.b)}; }
     if(ch.mundO && ch.mundO.capM){ const w = ch.mundO.capM;   // Mund in Weltkoordinaten (nur Anzeige: dort beginnt der Puste-Wind, js/34)
       P._mund = {x: P.x + w[12]*SC, y: P.y - P.h*0.5 + fy - w[13]*SC - IT.hop*42, t: now}; }   // für Tests: Fußpunkt und Maßstab (Gerätepixel je Spielpixel)
+    // Schirm-Trampolin: Ablauf-Zeit (gleichmäßig in SCHIRM_AUF_ZEIT auf, in SCHIRM_ZU_ZEIT rückwärts wieder zu); in der ersten
+    // Phase holt das Schweinchen den zugeklappten Schirm hinter dem Rücken hervor -> dann wird er VOR dem Figurenbild gezeichnet
+    S.trA = P.trampolin ? Math.min(1, (S.trA || 0) + dt/SCHIRM_AUF_ZEIT) : Math.max(0, (S.trA || 0) - dt/SCHIRM_ZU_ZEIT);
+    const schirm = hinten => {
+      if(male || !(S.trA > 0) || typeof drawUmbrella !== 'function') return;
+      const A = schirmAblauf(S.trA); if(A.hinten !== hinten) return;
+      const kopf = fy - (2.4 + .55)*SC*lgY - IT.hop*42;   // Kopf-Oberkante
+      const hy = fy - (fy - kopf)*0.35 + 4*Math.max(0, trQ);   // Pfoten vor dem Bauch, Schirm tief auf dem Kopf (Nutzerwunsch)
+      const stickF = Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22);
+      const o = {u: 1, klapp: A.klapp, tilt: 0, quetsch: Math.max(0, trQ), haende: {schulter: [.8*SC, -2], farbe: '#f7aac4', rand: '#cf7d9b'}, pfoten: A.pfoten};
+      const glatt = q => q*q*(3 - 2*q), w = SCHIRM_HUEFT_WINKEL, h0 = [SCHIRM_HAND_SEITE + 20, fy - 14], h1 = [h0[0] + SCHIRM_ZIEH_WEG, h0[1]];
+      if(A.phase === 1){   // seitlich hinter der Hüfte hervorziehen: liegt fast waagerecht (Spitze nach links hinter dem Körper)
+        const z = glatt(A.q);
+        Object.assign(o, {hand: [h0[0] + (h1[0] - h0[0])*z, h0[1] - 3*Math.sin(z*Math.PI)], stick: 6, tilt: -w, haende: null}); }   // Griff mit Haken sichtbar
+      else if(A.phase === 2){   // im Bogen vor dem Körper hochschwingen, pendelt sich senkrecht ein; die Pfoten greifen den Stock
+        const z = glatt(A.q), d = schirmUeber(A.q), ende = [SCHIRM_HAND_SEITE, hy];
+        Object.assign(o, {hand: [h1[0] + (ende[0] - h1[0])*z, h1[1] + (ende[1] - h1[1])*z - Math.sin(z*Math.PI)*10], stick: 6 + (stickF - 6)*z,
+                          tilt: -w*(1 - d), pfoten: Math.max(0, (A.q - .35)/.65)});
+        if(o.pfoten <= 0) o.haende = null; }
+      else Object.assign(o, {hand: [SCHIRM_HAND_SEITE, hy], stick: stickF});   // aufklappen über dem Kopf, Pfoten vor dem Bauch
+      drawUmbrella(P, 0, fy, o);
+    };
+    schirm(true);
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.shadowColor = 'rgba(46,28,14,.8)'; c.shadowBlur = Math.max(1, Math.min(5, 1.5*Math.hypot(Tm.a, Tm.b))); c.shadowOffsetX = 0; c.shadowOffsetY = 0;   // weiche dunkle Kontur
     c.drawImage(cv, FR.x0*SC, fy - FR.y1*SC - IT.hop*42, (FR.x1 - FR.x0)*SC, (FR.y1 - FR.y0)*SC);
@@ -564,14 +600,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     c.restore();
     c.restore();
     if(!male && P.umbrella > 0.03 && typeof drawUmbrella === 'function') drawUmbrella(P, 0, fy);   // bisheriger Schirm (2D), 3D-Schirm folgt ggf.
-    // Schirm-Trampolin (js/34): offener Schirm über dem Kopf, die Kuppel gibt nach, wenn der Affe abfedert
-    S.trU = (S.trU || 0) + ((P.trampolin ? 1 : 0) - (S.trU || 0))*(1 - Math.exp(-dt*(P.trampolin ? 16 : 22)));
-    if(!male && S.trU > .03 && typeof drawUmbrella === 'function'){
-      const kopf = fy - (2.4 + .55)*SC*lgY - IT.hop*42;   // knapp über dem Kopf, zwischen den erhobenen Händen
-      const hy = fy - (fy - kopf)*0.35 + 4*Math.max(0, trQ);   // Pfoten vor dem Bauch, Schirm tief auf dem Kopf (Nutzerwunsch)
-      drawUmbrella(P, 0, fy, {u: S.trU, hand: [SCHIRM_HAND_SEITE, hy], stick: Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22), tilt: 0, quetsch: Math.max(0, trQ),   // steht ruhig (Nutzerwunsch)
-                              haende: {schulter: [.8*SC, -2], farbe: '#f7aac4', rand: '#cf7d9b'}});
-    }
+    schirm(false);   // Schirm-Trampolin (js/34): vor der Figur (ab dem Griff zum Stock), die Kuppel gibt nach, wenn der Affe abfedert
     // Puste-Wind des Affen (js/34) direkt im Bild der Figur zeichnen: beginnt genau an ihrem Mund
     if(male && P.pusteAn && ch.mundO && ch.mundO.capM && typeof pusteAmMundZeichnen === 'function'){
       const w = ch.mundO.capM; pusteAmMundZeichnen(P, w[12]*SC, fy - w[13]*SC - IT.hop*42);

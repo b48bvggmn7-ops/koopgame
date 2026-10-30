@@ -1004,18 +1004,61 @@ function partnerKoopReflex(P, M, e){
   const dx = M.x - P.x;
   // Partner-Affe springt gerade auf den Schirm: Taste halten (volle Sprunghöhe) und auf die Schirm-Mitte lenken
   if(!P.grounded && P._reflex === 'springen' && M.trampolin) return {dir: Math.abs(dx) > 6 ? Math.sign(dx) : 0, sprungHalten: P.vy < 0};
+  // Partner-Schweinchen im Puste-Wind des Affen (Nutzer: „der Test-Partner überlegt ewig und tut nichts“ – an den Puste-Stellen):
+  // mit offenem Schirm im Strahl steigen, oben (steigt nicht mehr / Wind aus) zur nächsten Landestelle in Richtung Ziel segeln
+  const windHoch = !P.male && M.male && M.pusteAn && (M.pusteRichtung === 'hoch' || (typeof pusteSchraeg === 'function' && pusteSchraeg(M.pusteRichtung)));
+  if(!P.male && windHoch && !P.grounded && P._reflex !== 'wind' && Math.abs(dx) < PUSTE_BREITE/2 + 10 && P.y < M.y - 10){   // schon in der Luft im Strahl
+    P._reflex = 'wind'; P._windOben = false; P._windT = 0; P._landung = null; P._windSchwebe = 0; }
+  if(!P.male && P._reflex === 'wind' && !P.grounded){
+    const strahlX = M.x + (windHoch && M.pusteRichtung !== 'hoch' ? pusteSeiteVon(M.pusteRichtung)*Math.max(0, M.y - P.y) : 0);   // schräger Strahl
+    P._windT = (P._windT || 0) + 1;
+    if(!P._windOben){   // erst los, wenn eine Landestelle in Richtung Ziel erreichbar ist (sonst weiter steigen); Wind aus / steht oben zu lange: irgendwo hin
+      const vorne = P._windT > 6 && P._windT % 4 === 0 ? partnerLandeZiel(P, true) : null;   // auch beim Steigen (der Schwung trägt weiter), alle 4 Schritte
+      if(P.vy > -0.3) P._windSchwebe = (P._windSchwebe || 0) + 1; else P._windSchwebe = 0;
+      if(vorne){ P._windOben = true; P._landung = vorne; }
+      else if(!windHoch || P._windSchwebe > PARTNER_WIND_SCHWEBEN) P._windOben = true;
+    }
+    if(!P._windOben){   // im Strahl steigen, dabei an seinen HINTEREN Rand treiben: von dort nimmt es Anlauf quer durch den
+      // Strahl (trägt weiter) und verlässt ihn vorn mit vollem Tempo – so kommt es oben am weitesten
+      partner.text = 'fliegt im Wind';
+      const vorn = (typeof goal !== 'undefined' && goal && goal.x < P.x) ? -1 : 1, zx = strahlX - vorn*(PUSTE_BREITE/2 - PARTNER_WIND_RAND);
+      return {dir: Math.abs(zx - P.x) > 6 ? Math.sign(zx - P.x) : 0, gleiten: true}; }
+    const L = P._landung = P._landung || (P._windT % 6 === 0 ? partnerLandeZiel(P) : null);
+    partner.text = L ? 'segelt hinüber' : 'segelt';
+    const zx = L ? L.x : M.x;
+    return {dir: Math.abs(zx - P.x) > 8 ? Math.sign(zx - P.x) : 0, gleiten: P.vy > 0 || !!L};
+  }
+  if(!P.male && P._reflex === 'wind' && P.grounded && P._windT > 3){ P._reflex = null; P._landung = null; P._windSchwebe = 0; }   // gelandet
   if(!P.grounded){ P._reflex = null; return e; }
   // nur, wenn er sonst ohnehin stehen würde (nicht mitten in einer Flucht/Aufgabe) – außer er hilft gerade schon
   const frei = !e || (!e.dir && !e.springen && !e.dash) || !!P._reflex;
   if(!frei){ P._reflex = null; return e; }
+  if(!P.male && windHoch && Math.abs(dx) < PARTNER_WIND_NAH && Math.abs(P.y - M.y) < 60){   // in den Wind springen
+    P._reflex = 'windAnlauf';
+    partner.text = 'springt in den Wind';
+    const bereit = Math.abs(dx) < PARTNER_WIND_SPRUNG;
+    if(bereit){ P._reflex = 'wind'; P._windOben = false; P._windT = 0; P._landung = null; P._windSchwebe = 0; }
+    return {dir: Math.abs(dx) > 6 ? Math.sign(dx) : 0, springen: bereit, sprungHalten: true};
+  }
   if(!P.male){
     const ueber = !M.grounded && Math.abs(dx) < PARTNER_TRAMPOLIN_NAH && M.y < P.y - TRAMPOLIN_HOEHE + 10;
     const halten = P._reflex === 'trampolin' && !M.grounded && Math.abs(dx) < PARTNER_TRAMPOLIN_NAH + 30;
     if(ueber || halten){ P._reflex = 'trampolin'; partner.text = 'Schirm-Trampolin'; return {dir: 0, spezial: true}; }
   } else {
     const breite = PUSTE_BREITE/2 + (P._reflex === 'pusten' ? 18 : 0);   // pustet er schon, hält er etwas großzügiger durch
-    if(!M.grounded && M.gliding && Math.abs(dx) < breite && M.y < P.y - 30 && (P.puste === undefined || P.puste > 0.05 && !(P.pusteLeer && P.puste < PUSTE_NEUSTART))){
+    const kannPusten = P.puste === undefined || P.puste > 0.05 && !(P.pusteLeer && P.puste < PUSTE_NEUSTART);
+    // über dem Kopf frei? (unter einem Vorsprung bläst der Wind ins Leere) – sonst ein Stück zur Seite, zum Schweinchen hin
+    const frei = x => { const c = Math.floor(x/40), r = Math.floor((P.y - P.h)/40); for(let k = 1; k <= PARTNER_PUSTE_FREI; k++) if(festIst(c, r - k + 1) || festIst(Math.floor((x - 14)/40), r - k + 1) || festIst(Math.floor((x + 14)/40), r - k + 1)) return false; return true; };
+    if(!M.grounded && M.gliding && Math.abs(dx) < PARTNER_PUSTE_HIN && M.y < P.y - 30 && kannPusten && !frei(P.x)){
+      const d = Math.sign(dx) || 1;
+      if(partnerBodenFrei(P, d, 1)){ P._reflex = 'pusteHin'; partner.text = 'läuft unter dich'; return {dir: d}; }
+    }
+    if(!M.grounded && M.gliding && Math.abs(dx) < breite && M.y < P.y - 30 && kannPusten){
       P._reflex = 'pusten'; partner.text = 'pustet dich hoch'; return {dir: 0, spezial: true, pull: true};
+    }
+    // segle ich (Schweinchen) etwas daneben über ihm: schnell darunter laufen (nur auf festem Boden, nie über eine Kante)
+    if(!M.grounded && M.gliding && Math.abs(dx) < PARTNER_PUSTE_HIN && M.y < P.y - 30 && M.y > P.y - PUSTE_WEITE_HOCH && kannPusten && partnerBodenFrei(P, Math.sign(dx), 1)){
+      P._reflex = 'pusteHin'; partner.text = 'läuft unter dich'; return {dir: Math.sign(dx)};
     }
     if(M.trampolin && Math.abs(dx) < PARTNER_TRAMPOLIN_WEG && Math.abs(P.y - M.y) < 6){   // nur von derselben Höhe aus (oben angekommen: nicht zurück)
       P._reflex = 'springen'; partner.text = 'springt auf den Schirm';
@@ -1024,6 +1067,31 @@ function partnerKoopReflex(P, M, e){
   }
   P._reflex = null;
   return e;
+}
+// Landestelle für das segelnde Partner-Schweinchen: die nächste feste, freie Oberkante in Richtung Ziel (sonst zurück), die es
+// mit dem Schirm noch erreicht (Höhe × PARTNER_SEGEL_VERH ≥ Weite), ohne Stacheln; {x, y} Mitte der Oberkante oder null
+// Landestelle für das segelnde Partner-Schweinchen (oben im Puste-Wind): die nächsten festen, freien Oberkanten unterhalb in
+// Richtung Ziel (nurVorne: nur dorthin, sonst auch zurück), jede mit der echten Vorausrechnung (partnerSim, Schirm offen, auf die
+// Stelle zu lenken) geprüft – die erste, auf der es sicher landet; {x, y} oder null
+function partnerLandeZiel(P, nurVorne){
+  const richtung = (typeof goal !== 'undefined' && goal && goal.x < P.x) ? -1 : 1, c0 = Math.floor(P.x/40), r0 = Math.floor(P.y/40);
+  for(const d of nurVorne ? [richtung] : [richtung, -richtung]){
+    let geprueft = 0, letzteR = null;
+    for(let k = nurVorne ? 3 : 1; k <= PARTNER_SEGEL_SPALTEN && geprueft < PARTNER_SEGEL_VERSUCHE; k++){   // vorne: nicht der Rand, an dem der Affe steht
+      const c = c0 + d*k;
+      let r = r0; while(r < 18 && !festIst(c, r)) r++;
+      if(r >= 18 || festIst(c, r - 1) || festIst(c, r - 2)){ letzteR = null; continue; }
+      if(r === letzteR) continue;   // dieselbe Fläche: nur ihre erste Spalte (+1) prüfen
+      letzteR = r;
+      const cx = (c + d)*40 + 20;
+      if(spikes.some(sp => Math.abs(sp.x - cx) < 30 && Math.abs(sp.y - r*40) < 30)) continue;
+      geprueft++;
+      const U = partnerUmgebung((P.x + cx)/2);   // Umgebung um die Mitte der Flugbahn (reicht ±750 px)
+      const res = partnerSim(U, P, {eingabe: (kk, b) => ({dir: Math.abs(cx - b.x) > 8 ? Math.sign(cx - b.x) : 0, gleiten: true}), fertig: (kk, b) => b.grounded}, 400);
+      if(!res.tod && res.boden && Math.abs(res.x - cx) < 40 && Math.abs(res.y - r*40) < 4) return {x: cx, y: r*40};
+    }
+  }
+  return null;
 }
 // Plan-Eingaben -> echte Tasten
 function partnerTastenAus(P, e){
@@ -1048,6 +1116,24 @@ function partnerBruchVorn(P, dir){
   const x0 = dir > 0 ? P.x + P.w/2 : P.x - P.w/2 - PARTNER_BRUCH_NAH, x1 = x0 + PARTNER_BRUCH_NAH;
   return solids.some(s => s.type === 'bruch' && !s.gone && s.x < x1 && s.x + s.w > x0 && s.y < P.y - 2 && s.y + s.h > P.y - P.h + 2);
 }
+// Welt ohne Dash (Dschungel): Durchbruch-Wände bricht der Affe durch Anpusten (elemente/durchbruch.js). Steht in Richtung zu mir
+// (oder in seiner Laufrichtung) eine Durchbruch-Wand in Körperhöhe nah vor ihm, läuft er heran und pustet sie zur Seite an,
+// bis sie bricht; findet er keinen Weg zu mir, sucht er sie bis PARTNER_BRUCH_SUCHE px weit.
+function partnerBruchPusten(P, M, e){
+  if(P.puste !== undefined && (P.puste <= 0.05 || (P.pusteLeer && P.puste < PUSTE_NEUSTART))) return null;
+  const d = (e && e.dir) || Math.sign(M.x - P.x) || 1, weit = (!e || (!e.dir && !e.springen)) ? PARTNER_BRUCH_SUCHE : PARTNER_BRUCH_NAH + 20;
+  const x0 = d > 0 ? P.x + P.w/2 : P.x - P.w/2 - weit, x1 = x0 + weit;
+  let naechste = null;
+  for(const s of solids){
+    if(s.type !== 'bruch' || s.gone || s.x >= x1 || s.x + s.w <= x0 || s.y >= P.y - 2 || s.y + s.h <= P.y - P.h + 2) continue;
+    const abst = d > 0 ? s.x - (P.x + P.w/2) : (P.x - P.w/2) - (s.x + s.w);
+    if(!naechste || abst < naechste) naechste = abst;
+  }
+  if(naechste === null) return null;
+  partner.text = 'pustet die Wand um';
+  if(naechste > PARTNER_BRUCH_NAH) return {dir: d};   // erst heran
+  return {dir: d, spezial: true};                       // zur Seite pusten (Laufen in die Wand schadet nicht)
+}
 function partnerDenken(P, M){
   if(typeof deathState !== 'undefined' && deathState) return {halten: {}, druecken: []};
   if(partner.modus === 'warten') return partnerTastenAus(P, partnerWarten(P));
@@ -1055,5 +1141,6 @@ function partnerDenken(P, M){
   let e = (typeof partnerAufgabeSchritt === 'function' && partnerAufgabeSchritt(P, M)) || partnerFolgen(P, M);
   e = partnerKoopReflex(P, M, e);   // Dschungel-Neu: Schirm-Trampolin / Pusten / auf den Schirm springen
   if(e && P.grounded && typeof dashKannStarten === 'function' && dashKannStarten(P) && partnerBruchVorn(P, e.dir)) e.dash = true;
+  else if(P.male && P.grounded && typeof dashAusHier === 'function' && dashAusHier()) e = partnerBruchPusten(P, M, e) || e;   // ohne Dash: Wand anpusten
   return partnerTastenAus(P, e);
 }

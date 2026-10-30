@@ -42,12 +42,15 @@ function drawUmbrella(player, px, py, o){
   const t = performance.now()*0.004;
   const tilt = o ? (o.tilt || 0) : Math.max(-0.4, Math.min(0.4, -player.vx*0.05)) + Math.sin(t)*0.05*u;
   const R = 36, ry = 22*(1 - 0.35*((o && o.quetsch) || 0));   // Radius / Höhe der Kuppel (gibt beim Trampolin nach)
+  // Schirm-Trampolin mit Ablauf (o.klapp 0 = zugeklappt … 1 = offen, darf kurz über 1 federn; o.pfoten 0…1 = Pfoten greifen
+  // den Stock; Ablauf in js/33 schirmAblauf). Nie ein-/ausgeblendet (Nutzer: „warum ist der Schirm durchsichtig?“)
+  const ablauf = o && o.klapp !== undefined;
   const handX = o ? o.hand[0] : px + player.facing*5, handY = o ? o.hand[1] : py - player.h*0.5 - 20;
   const stick = o ? o.stick : 30;
   ctx.save();
   ctx.translate(handX, handY);
   ctx.rotate(tilt);
-  ctx.globalAlpha = Math.min(1, u*1.4);
+  ctx.globalAlpha = ablauf ? 1 : Math.min(1, u*1.4);
 
   // Griff (Stock mit gebogenem Ende)
   ctx.strokeStyle = '#7a4a2e'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
@@ -56,7 +59,8 @@ function drawUmbrella(player, px, py, o){
   ctx.stroke();
 
   ctx.translate(0, -stick);
-  ctx.scale(0.3 + 0.7*u, 0.45 + 0.55*u);
+  if(ablauf) ctx.scale(0.13 + 0.87*o.klapp, 1.5 - 0.5*Math.min(1, o.klapp));   // zu: schmale Spitze, dann aufklappen
+  else ctx.scale(0.3 + 0.7*u, 0.45 + 0.55*u);
   const N = 6;
   const rim = i => -R + (2*R*i)/N;
   // Kuppel mit Bogenkante unten
@@ -101,23 +105,25 @@ function drawUmbrella(player, px, py, o){
   for(let i=0; i<=N; i++){ ctx.beginPath(); ctx.arc(rim(i), 0, 1.6, 0, Math.PI*2); ctx.fill(); }
   ctx.beginPath(); ctx.arc(0, -ry-2.5, 3, 0, Math.PI*2); ctx.fill();
   ctx.restore();
-  if(o && o.haende) schirmHaende(handX, handY, o.haende);
+  if(o && o.haende && (o.pfoten === undefined || o.pfoten > 0)) schirmHaende(handX, handY, o.haende, o.pfoten === undefined ? 1 : o.pfoten);
 }
 // Schirm-Trampolin (Nutzerwunsch „mit beiden Händen halten“): zwei Ärmchen von den Kopfseiten hinauf, beide Pfoten fest am
 // Stock (übereinander); h = {schulter: [dx, dy] relativ zur Hand, farbe, rand}
-function schirmHaende(hx, hy, h){
+function schirmHaende(hx, hy, h, k = 1){   // k < 1: die Pfoten sind noch auf dem Weg von den Schultern zum Stock
   const [sx, sy] = h.schulter;
   ctx.save(); ctx.lineCap = 'round';
+  const pfote = seite => [hx + seite*sx*(1 - k), hy + (seite < 0 ? 1 : -4) + (sy - (seite < 0 ? 1 : -4))*(1 - k)];   // linke Pfote unten, rechte knapp darüber
   for(const seite of [-1, 1]){
-    const px = hx, py = hy + (seite < 0 ? 1 : -4);   // linke Pfote unten, rechte knapp darüber (kurzer Stock)
-    ctx.strokeStyle = h.rand; ctx.lineWidth = 8.5;
-    ctx.beginPath(); ctx.moveTo(hx + seite*sx, hy + sy); ctx.quadraticCurveTo(hx + seite*sx*1.15, py + (sy - (py - hy))*0.35, px + seite*3, py); ctx.stroke();
-    ctx.strokeStyle = h.farbe; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(hx + seite*sx, hy + sy); ctx.quadraticCurveTo(hx + seite*sx*1.15, py + (sy - (py - hy))*0.35, px + seite*3, py); ctx.stroke();
+    const [px, py] = pfote(seite);
+    if(k > 0.15) for(const [farbe, breite] of [[h.rand, 8.5], [h.farbe, 6]]){
+      ctx.strokeStyle = farbe; ctx.lineWidth = breite;
+      ctx.beginPath(); ctx.moveTo(hx + seite*sx, hy + sy); ctx.quadraticCurveTo(hx + seite*sx*1.15, py + (sy - (py - hy))*0.35, px + seite*3*k, py); ctx.stroke();
+    }
   }
-  for(const py of [hy + 1, hy - 4]){   // Pfoten um den Stock
+  for(const seite of [-1, 1]){   // Pfoten um den Stock
+    const [px, py] = pfote(seite);
     ctx.fillStyle = h.farbe; ctx.strokeStyle = h.rand; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.ellipse(hx, py, 5.2, 4.2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(px, py, 5.2, 4.2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   }
   ctx.restore();
 }
