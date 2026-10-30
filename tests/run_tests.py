@@ -7470,6 +7470,7 @@ async def bausteine_nacht(g):
     B1 Dash-Grube · B2 Durchbruch-Tor + Grube (Bruch-Fenster) · B3 Haftfläche über Grube · B4 Kamin mit Durchbruch oben in der Seitenwand
     · B5 Haken -> Durchbruch (Schweinchen: Segeln + Dash) · B6 Haftfläche + Dash · B7 Segeln + Dash (Rolle Schweinchen)."""
     await koop_level(g, 'test/bausteine-nacht.json')
+    await g.ev("levelWelt = 'vulkan'")   # Testlevel im Dschungel-Look, dort ist der Dash aus (DASH_AUS_WELTEN) – hier geht es um den Dash
     faelle = [
         ('B1', 'm', 17, NB.nb_dashgrube(19), 30, [k_lauf(19, -8), {'press': ['jump'], 'hold': ['right', 'jump'], 'frames': 12}, NB.LANDEN]),
         ('B1', 'f', 17, k_segeln(19), 30, None),
