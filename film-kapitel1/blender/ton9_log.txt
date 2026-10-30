@@ -1,0 +1,2 @@
+bilder 2029 geraeusche [('plumps', 32.21), ('datei', 33.92), ('klick', 54.02), ('datei', 73.93)]
+wav 16695 KB

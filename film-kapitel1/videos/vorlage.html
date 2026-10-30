@@ -1,0 +1,61 @@
+<title>Kapitel 1 im Kino</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;700&family=Fredoka:wght@400;500;600&display=swap">
+<style>
+  /* Kinosaal bei Nacht: ein Bild in der Mitte, darüber nur der Kapitel-Titel, darunter zwei kleine Schalter. Bewusst nur dunkel. */
+  :root {
+    --nacht: #0f0c1f; --samt: #1b1633; --papier: #f6ecd6; --gold: #f2c46d; --leise: #b9b0cf; --rand: rgba(246, 236, 214, .16);
+    --titel: "Grandstander", "Comic Sans MS", cursive; --text: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(120% 80% at 50% 0%, var(--samt), var(--nacht) 70%) fixed, var(--nacht); color: var(--papier); font-family: var(--text);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 28px; }
+  main { max-width: 1180px; margin: 0 auto; display: grid; gap: 14px; }
+  header { display: grid; gap: 2px; text-align: center; }
+  .kapitel { font: 500 13px/1 var(--text); letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+  h1 { margin: 0; font: 700 clamp(26px, 4.2vw, 44px)/1.1 var(--titel); text-wrap: balance; }
+  .leinwand { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 0 0 1px var(--rand), 0 30px 80px -30px rgba(0, 0, 0, .9); }
+  video { width: 100%; height: 100%; display: block; background: #000; }
+  video::cue { font-family: var(--text); font-size: .95em; background: rgba(8, 6, 18, .72); color: var(--papier); }
+  .start, .ende { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center; }
+  .start { background: none; cursor: pointer; border: 0; color: inherit; font: inherit; width: 100%; isolation: isolate; }
+  .start img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .start::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(60% 60% at 50% 50%, rgba(15, 12, 31, .15), rgba(15, 12, 31, .7)); }
+  .knopf { display: inline-flex; align-items: center; gap: .55em; font: 600 clamp(16px, 2.2vw, 21px)/1 var(--text); color: #2a1c08; background: var(--gold);
+    padding: .75em 1.5em; border-radius: 999px; box-shadow: 0 5px 0 #b9852e; border: 0; cursor: pointer; }
+  .knopf:focus-visible, .schalter button:focus-visible { outline: 3px solid var(--papier); outline-offset: 3px; }
+  .start small { font-size: 14px; color: var(--papier); text-shadow: 0 1px 6px rgba(0, 0, 0, .9); }
+  .ende { background: rgba(10, 7, 22, .9); }
+  .ende p { margin: 0; font: 700 clamp(28px, 4.6vw, 48px)/1.1 var(--titel); color: var(--papier); }
+  .schalter { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .schalter button { font: 500 13px/1 var(--text); color: var(--papier); background: transparent; border: 1px solid var(--rand); border-radius: 999px; padding: .55em 1em; cursor: pointer; }
+  .hinweis { margin: 0 auto; max-width: 62ch; text-align: center; font-size: 14px; line-height: 1.5; color: var(--leise); }
+  @media (prefers-reduced-motion: no-preference) { .knopf { transition: transform .15s; } .knopf:hover { transform: translateY(-2px); } }
+</style>
+<main>
+  <header><span class="kapitel">Kapitel 1</span><h1>Die Nacht, in der der Stern fiel</h1></header>
+  <div class="leinwand">
+    <video id="film" playsinline preload="auto" src="__VIDEO__"><track id="spur" kind="subtitles" srclang="de" label="Deutsch" default></video>
+    <button class="start" id="start" aria-label="Film abspielen"><img src="__STANDBILD__" alt=""><span class="knopf">▶ Film ab</span><small>__DAUER__ · mit Ton</small></button>
+    <div class="ende" id="ende" hidden><p>Fortsetzung folgt …</p><button class="knopf" id="nochmal">Nochmal ansehen</button></div>
+  </div>
+  <div class="schalter"><button id="ut" aria-pressed="true">Untertitel: an</button><button id="vb">Vollbild</button></div>
+  <p class="hinweis">Alles in Blender gerendert: der Kameraflug ins Baumhaus, das Zimmer mit Kamera-Schnitten, Licht, Figuren mit Fell und die Decke als Stoff. 24 Bilder pro Sekunde, mit den echten Stimmen.</p>
+</main>
+<script>
+  const v = document.getElementById('film'), start = document.getElementById('start'), ende = document.getElementById('ende'), ut = document.getElementById('ut');
+  const vtt = __VTT__;
+  document.getElementById('spur').src = URL.createObjectURL(new Blob([vtt], {type: 'text/vtt'}));
+  const spur = () => v.textTracks[0];
+  v.addEventListener('loadedmetadata', () => { if(spur()) spur().mode = 'showing'; });
+  start.addEventListener('click', () => { start.hidden = true; v.controls = true; v.play().catch(() => {}); });
+  v.addEventListener('ended', () => { ende.hidden = false; });
+  document.getElementById('nochmal').addEventListener('click', () => { ende.hidden = true; v.currentTime = 0; v.play().catch(() => {}); });
+  ut.addEventListener('click', () => { const an = ut.getAttribute('aria-pressed') !== 'true'; ut.setAttribute('aria-pressed', an); ut.textContent = 'Untertitel: ' + (an ? 'an' : 'aus'); if(spur()) spur().mode = an ? 'showing' : 'hidden'; });
+  document.getElementById('vb').addEventListener('click', () => { const el = document.querySelector('.leinwand'); (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => {}); });
+</script>

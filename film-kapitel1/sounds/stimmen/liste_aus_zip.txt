@@ -1,0 +1,25 @@
+01	affe	01_affe.webm	Ich war heute auf dem höchsten Baum vom ganzen Wald! Ganz oben!
+02	schwein	(fehlt)	Er ist runtergefallen.
+03	affe	03_affe.webm	Ich bin gesprungen. Das ist ein Unterschied.
+04	prof	(fehlt)	Auf einen Ast, der zu dünn war, nehme ich an?
+05	affe	05_affe.webm	… Er sah dick aus.
+06	schwein	(fehlt)	Und ich war am See. Ich wollte schwimmen.
+07	affe	07_affe.webm	Sie stand zwanzig Minuten mit einem Fuß im Wasser.
+08	schwein	(fehlt)	Es war kalt!
+09	prof	(fehlt)	Mut kommt manchmal ganz langsam, Schweinchen. Erst ein Zeh, dann ein Fuß …
+10	schwein	(fehlt)	Dann der zweite Fuß. Morgen vielleicht.
+11	affe	11_affe.webm	Und was hast du heute gemacht, Professor?
+12	prof	(fehlt)	Ich habe den Himmel beobachtet. Wie jede Nacht.
+13	affe	13_affe.webm	Und? Was Spannendes?
+14	prof	(fehlt)	Ach was. Da oben passiert nie etwas Aufregendes.
+15	schwein	(fehlt)	Oh! Was war das?!
+16	affe	16_affe.webm	Da draußen! Da ist was runtergekommen!
+17	prof	(fehlt)	… Das war keine normale Sternschnuppe. Das war ein Meteorit.
+18	affe	18_affe.webm	Wir holen ihn!
+19	prof	(fehlt)	Morgen früh. Bei Tageslicht. Und jetzt: ab ins Bett, ihr zwei.
+20	schwein	(fehlt)	… Gute Nacht, Meteorit.
+21	affe	21_affe.webm	Psst! Schweinchen … bist du noch wach? Komm, lass uns los. Ich halt’s nicht mehr aus – wir müssen die Ersten sein!
+22	schwein	(fehlt)	Aber … eigentlich dürfen wir das nicht.
+23	affe	23_affe.webm	Du wolltest dich doch mal was trauen. So richtig. Jetzt ist die Gelegenheit!
+24	schwein	(fehlt)	… Na gut. Aber ganz leise.
+25	affe	25_affe.webm	Psst! Wir müssen ganz leise sein …

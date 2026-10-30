@@ -1,0 +1,64 @@
+<title>Die Nacht, in der der Stern fiel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Manrope:wght@600;800&family=Fredoka:wght@400;500;600&family=Grandstander:wght@600;700&display=swap">
+<style>
+  /* Kinobild 16:9 auf Nachtblau; Blätterwand und Titeltafel wie im Spiel; Bedienleiste klein und zurückhaltend */
+  :root{
+    --nacht: #0d0b1c; --papier: #fbf3df; --tinte: #3a2416; --gold: #e0b25a; --glas: rgba(251,243,223,.12); --laub: #062814;
+    --titel: "Grandstander", "Comic Sans MS", "Chalkboard SE", cursive; --text: "Fredoka", "Trebuchet MS", "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { background: var(--nacht); color: var(--papier); font-family: var(--text); overflow: hidden; margin: 0;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px; box-sizing: border-box; }
+  #rahmen { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+  #buehnenbox { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6); cursor: pointer; touch-action: manipulation; }
+  #buehne { display: block; background: #000; }
+  /* Blätterwand (aus css/startmenue.css, an die Bühne gebunden) */
+  #leafCurtain{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;display:none}
+  #leafCurtain.on{display:block}
+  #leafCurtain .cbg{position:absolute;inset:0;background:var(--laub);opacity:0;transition:opacity .2s ease 0s}
+  #leafCurtain.closed .cbg{opacity:1;transition:opacity .3s ease .55s}
+  #leafCurtain .leaf{position:absolute;translate:-50% -50%;will-change:transform,opacity;opacity:0;
+    transform:translate(var(--fx),var(--fy)) rotate(var(--r0)) scale(.6);
+    transition:transform .62s cubic-bezier(.2,.8,.3,1) var(--d),opacity .25s ease var(--d)}
+  #leafCurtain.closed .leaf{transform:rotate(var(--r));opacity:1}
+  #leafCurtain .leaf svg{display:block;width:100%;height:100%;overflow:visible}
+  #leafCurtain .lt{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .35s ease;text-align:center;
+    background:radial-gradient(ellipse 40% 34% at 50% 50%,rgba(2,20,9,.8),rgba(2,20,9,0))}
+  #leafCurtain.title .lt{opacity:1}
+  #leafCurtain .lt-n{display:block;font:900 calc(var(--sw) * .09)/.9 "Big Shoulders Display",Impact,sans-serif;text-transform:uppercase;transform:skewX(-8deg);
+    background:linear-gradient(#f6ffe0 20%,#c6ff3d 85%);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 calc(var(--sw) * .005) 0 rgba(0,0,0,.45))}
+  #leafCurtain .lt-name{display:block;margin-top:calc(var(--sw) * .012);font:800 calc(var(--sw) * .03)/1.1 "Manrope",system-ui,sans-serif;color:#eaf7ee;letter-spacing:.06em}
+  #hinweisStart { position: absolute; z-index: 6; left: 50%; bottom: 7%; transform: translateX(-50%); margin: 0; padding: .5em 1.1em; border-radius: 999px;
+    font: 600 clamp(12px, 1.5vw, 16px) "Manrope", system-ui, sans-serif; color: #eaf7ee; background: rgba(2,20,9,.6); letter-spacing: .04em; pointer-events: none;
+    animation: atmen 2.2s ease-in-out infinite; }
+  @keyframes atmen { 50% { opacity: .55; } }
+  button { font-family: var(--text); font-weight: 600; border: 0; cursor: pointer; }
+  #leiste { position: absolute; z-index: 7; top: 8px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  #leiste button { font-size: 12px; padding: .4em .85em; border-radius: 999px; color: var(--papier); background: var(--glas); border: 1px solid rgba(251,243,223,.25); }
+  #leiste button:hover { background: rgba(251,243,223,.22); }
+  #leiste button:focus-visible, #nochmal:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  #nochmal { position: absolute; z-index: 7; left: 50%; bottom: 16%; transform: translateX(-50%); font-size: clamp(15px, 2vw, 19px); padding: .6em 1.4em; border-radius: 999px; color: var(--tinte); background: var(--papier); box-shadow: 0 5px 0 #c9a26a; }
+  @media (prefers-reduced-motion: reduce) { #hinweisStart { animation: none; } }
+</style>
+<div id="rahmen">
+  <div id="buehnenbox">
+    <canvas id="buehne" aria-label="Szene: Kapitel 1, Die Nacht, in der der Stern fiel"></canvas>
+    <div id="leafCurtain"></div>
+    <p id="hinweisStart">Klicken, um die Szene abzuspielen</p>
+    <div id="leiste" hidden>
+      <button id="stimmen" type="button">Stimmen: echt</button>
+      <button id="untertitel" type="button">Untertitel: an</button>
+      <button id="ton" type="button" aria-pressed="true">Ton: an</button>
+          </div>
+    <button id="nochmal" type="button" hidden>↺ Nochmal ansehen</button>
+  </div>
+</div>
+<script>
+/*SKRIPT*/
+</script>

@@ -1,0 +1,15 @@
+hinten fertig
+sofa_s fertig
+sofa_sa fertig
+sessel_p fertig
+decke fertig
+keks fertig
+buendel fertig
+zettel_liegt fertig
+spr_keks0 fertig
+spr_keks1 fertig
+spr_keks2 fertig
+spr_keks3 fertig
+spr_zettel fertig
+spr_buendel fertig
+ALLES

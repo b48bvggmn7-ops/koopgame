@@ -1,0 +1,294 @@
+<title>Sprechstudio Kapitel 1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grandstander:wght@600;700&family=Nunito:wght@400;600;700&display=swap">
+<style>
+  /* Layout: eine Spalte wie ein Drehbuch – je Satz eine Zeile mit Figur, Text und Aufnahme-Knöpfen; oben Fortschritt */
+  :root {
+    --bg: #f7f1e8; --karte: #fffaf2; --fg: #2a2118; --leise: #6e6052; --linie: #e2d6c4;
+    --gold: #b7791f; --gold-fg: #fffaf2; --rot: #c0392b;
+    --affe: #8a5a2b; --schwein: #d0668a; --prof: #a3352d; --gut: #2f7d4f;
+    --titel: "Grandstander", "Comic Sans MS", cursive; --text: "Nunito", "Trebuchet MS", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #15111f; --karte: #1f1a2c; --fg: #f3ead9; --leise: #b3a8c4; --linie: #3a3150;
+    --gold: #f2c46d; --gold-fg: #1b1526; --rot: #ff7b6b;
+    --affe: #d9a066; --schwein: #f19bbb; --prof: #ff8a7a; --gut: #6fd39a; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #15111f; --karte: #1f1a2c; --fg: #f3ead9; --leise: #b3a8c4; --linie: #3a3150;
+    --gold: #f2c46d; --gold-fg: #1b1526; --rot: #ff7b6b;
+    --affe: #d9a066; --schwein: #f19bbb; --prof: #ff8a7a; --gut: #6fd39a; color-scheme: dark }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.5 var(--text);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+  main { max-width: 860px; margin: 0 auto; display: grid; gap: 22px; }
+  h1 { font: 700 clamp(26px, 5vw, 38px)/1.1 var(--titel); margin: 0; text-wrap: balance; }
+  h2 { font: 700 20px/1.2 var(--titel); margin: 0; }
+  .eyebrow { font-weight: 700; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  p { margin: 0; color: var(--leise); max-width: 66ch; }
+  .kopf { display: grid; gap: 8px; }
+  .stand { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .balken { flex: 1 1 220px; height: 10px; border-radius: 99px; background: var(--linie); overflow: hidden; }
+  .balken > i { display: block; height: 100%; width: 0; background: var(--gut); transition: width .3s; }
+  .zahl { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .hinweis { background: var(--karte); border: 1px solid var(--linie); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+  .hinweis.warn { border-color: var(--gold); }
+  .teil { display: grid; gap: 10px; }
+  .filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; }
+  .filter > span { font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--leise); }
+  .filter button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .filter .anz { font-weight: 600; opacity: .75; font-variant-numeric: tabular-nums; }
+  .regie { font-style: italic; color: var(--leise); padding-left: 4px; }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .satz { background: var(--karte); border: 1px solid var(--linie); border-radius: 12px; padding: 12px 14px;
+    display: grid; grid-template-columns: 2.4em minmax(0, 1fr); gap: 4px 12px; }
+  .satz.fertig { border-color: color-mix(in srgb, var(--gut) 55%, var(--linie)); }
+  .nr { font: 700 20px/1.3 var(--titel); color: var(--leise); font-variant-numeric: tabular-nums; }
+  .inhalt { display: grid; gap: 4px; min-width: 0; }
+  .wer { font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .wer[data-f="affe"] { color: var(--affe); } .wer[data-f="schwein"] { color: var(--schwein); } .wer[data-f="prof"] { color: var(--prof); } .wer[data-f="alle"] { color: var(--gold); }
+  .wer em { font-style: normal; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--leise); }
+  .text { font-size: 17px; }
+  .knoepfe { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+  button, .datei { font: 700 14px/1 var(--text); border-radius: 99px; padding: 9px 14px; cursor: pointer; border: 1px solid var(--linie);
+    background: transparent; color: var(--fg); display: inline-flex; align-items: center; gap: 6px; }
+  button:focus-visible, .datei:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+  button:disabled { opacity: .45; cursor: default; }
+  .rec { background: var(--gold); color: var(--gold-fg); border-color: var(--gold); }
+  .rec.laeuft { background: var(--rot); border-color: var(--rot); color: #fff; }
+  .datei input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  body.ohne-mic .rec { display: none; }
+  body.ohne-mic .datei { background: var(--gold); color: var(--gold-fg); border-color: var(--gold); }
+  .hinweis ol { list-style: decimal; padding-left: 1.3em; display: grid; gap: 4px; color: var(--leise); }
+  .status { font-size: 13px; color: var(--leise); }
+  .status.ok { color: var(--gut); font-weight: 700; }
+  .status.fehler { color: var(--rot); font-weight: 700; }
+  .punkt { width: .6em; height: .6em; border-radius: 50%; background: currentColor; display: inline-block; }
+  @media (prefers-reduced-motion: no-preference) { .rec.laeuft .punkt { animation: blink 1s infinite; } }
+  @keyframes blink { 50% { opacity: .2; } }
+  @media (max-width: 480px) { .satz { grid-template-columns: 1.8em minmax(0, 1fr); padding: 10px 12px; } .knoepfe { grid-column: 1 / -1; } }
+</style>
+
+<main>
+  <header class="kopf">
+    <span class="eyebrow">Kapitel 1 · Die Nacht, in der der Stern fiel</span>
+    <h1>Sprechstudio</h1>
+    <p>Nimm jeden Satz einzeln auf. Was du hier speicherst, kann Claude direkt abholen und in den Film einbauen. Du kannst jeden Satz so oft neu aufnehmen, wie du willst; es zählt immer die letzte Aufnahme.</p>
+    <div class="stand"><div class="balken" aria-hidden="true"><i id="balken"></i></div><span class="zahl" id="zahl">0 von 25 Sätzen</span></div>
+  </header>
+
+  <div class="hinweis" id="hinweis">
+    <strong>So geht's</strong>
+    <p>„Aufnehmen“ tippen, sprechen, „Stopp“ tippen. Dann anhören und mit „Speichern“ sichern. Vor und nach dem Satz ruhig eine halbe Sekunde Stille lassen.</p>
+    <p>Klappt das Mikrofon hier nicht, nimm mit „Datei“ eine Aufnahme vom Handy (Sprachmemo) oder Computer. Am Handy kann „Datei“ oft auch direkt aufnehmen.</p>
+  </div>
+
+  <div class="filter" role="group" aria-label="Nach Figur filtern" id="filter">
+    <span>Zeigen</span>
+    <button type="button" data-f="alle" aria-pressed="true">Alle</button>
+    <button type="button" data-f="affe" aria-pressed="false">Affe <span class="anz" data-anz="affe"></span></button>
+    <button type="button" data-f="schwein" aria-pressed="false">Schwein <span class="anz" data-anz="schwein"></span></button>
+    <button type="button" data-f="prof" aria-pressed="false">Professor <span class="anz" data-anz="prof"></span></button>
+  </div>
+
+  <section class="teil" id="liste" aria-label="Sätze"></section>
+</main>
+
+<script>
+const SAETZE = [
+  {teil: 'Teil A – Plaudern über den Tag'},
+  [1, 'affe', 'Ich war heute auf dem höchsten Baum vom ganzen Wald! Ganz oben!'],
+  [2, 'schwein', 'Er ist runtergefallen.'],
+  [3, 'affe', 'Ich bin gesprungen. Das ist ein Unterschied.'],
+  [4, 'prof', 'Auf einen Ast, der zu dünn war, nehme ich an?'],
+  [5, 'affe', '… Er sah dick aus.'],
+  [6, 'schwein', 'Und ich war am See. Ich wollte schwimmen.'],
+  [7, 'affe', 'Sie stand zwanzig Minuten mit einem Fuß im Wasser.'],
+  [8, 'schwein', 'Es war kalt!'],
+  [9, 'prof', 'Mut kommt manchmal ganz langsam, Schweinchen. Erst ein Zeh, dann ein Fuß …'],
+  [10, 'schwein', 'Dann der zweite Fuß. Morgen vielleicht.'],
+  [11, 'affe', 'Und was hast du heute gemacht, Professor?'],
+  [12, 'prof', 'Ich habe den Himmel beobachtet. Wie jede Nacht.'],
+  [13, 'affe', 'Und? Was Spannendes?'],
+  [14, 'prof', 'Ach was. Da oben passiert nie etwas Aufregendes.'],
+  {regie: 'Zischen, Lichtstreif am Fenster, BOOM'},
+  {teil: 'Teil B – Der Meteorit'},
+  [15, 'schwein', 'Oh! Was war das?!'],
+  [16, 'affe', 'Da draußen! Da ist was runtergekommen!'],
+  [17, 'prof', '… Das war keine normale Sternschnuppe. Das war ein Meteorit.'],
+  [18, 'affe', 'Wir holen ihn!'],
+  [19, 'prof', 'Morgen früh. Bei Tageslicht. Und jetzt: ab ins Bett, ihr zwei.'],
+  [20, 'schwein', '… Gute Nacht, Meteorit.'],
+  {regie: 'Licht aus, der Professor geht raus'},
+  {teil: 'Teil C – Im Dunkeln (alles geflüstert)'},
+  [21, 'affe', 'Psst! Schweinchen … bist du noch wach? Komm, lass uns los. Ich halt’s nicht mehr aus – wir müssen die Ersten sein!', 'flüstern'],
+  [22, 'schwein', 'Aber … eigentlich dürfen wir das nicht.', 'flüstern'],
+  [23, 'affe', 'Du wolltest dich doch mal was trauen. So richtig. Jetzt ist die Gelegenheit!', 'flüstern'],
+  [24, 'schwein', '… Na gut. Aber ganz leise.', 'flüstern'],
+  [25, 'affe', 'Psst! Wir müssen ganz leise sein …', 'flüstern'],
+  {teil: 'Extra (freiwillig)'},
+  [0, 'alle', 'Alles in einer langen Aufnahme – sag vor jedem Satz kurz die Nummer. Nur nötig, wenn du lieber nicht einzeln aufnimmst.'],
+];
+const NAMEN = {affe: 'Affe', schwein: 'Schwein', prof: 'Professor', alle: 'Ganze Aufnahme'};
+const ANZAHL = 25;
+const id2 = n => 's' + String(n).padStart(2, '0');
+
+let db = null, assets = null, gespeichert = {};
+const lokal = {};        // nr -> {blob, url} (noch nicht gespeicherte oder schon geladene Aufnahme)
+let rec = null;          // laufende Aufnahme {nr, mr, teile, stream}
+let micGeht = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+
+function el(tag, attrs = {}, kids = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v); }
+  for (const c of kids) e.append(c);
+  return e;
+}
+
+function aufbauen() {
+  const liste = document.getElementById('liste'); let ol = null;
+  for (const z of SAETZE) {
+    if (z.teil) { liste.append(el('h2', {text: z.teil})); ol = el('ol'); liste.append(ol); continue; }
+    if (z.regie) { liste.append(el('div', {class: 'regie', text: '– ' + z.regie + ' –'})); ol = el('ol'); liste.append(ol); continue; }
+    const [nr, f, text, art] = z;
+    const wer = el('div', {class: 'wer', 'data-f': f, text: NAMEN[f]}); if (art) wer.append(' ', el('em', {text: '(' + art + ')'}));
+    const dateiInput = el('input', {type: 'file', accept: 'audio/*', id: 'datei-' + nr, onchange: e => dateiGewaehlt(nr, e.target)});
+    const li = el('li', {class: 'satz', id: 'satz-' + nr}, [
+      el('div', {class: 'nr', text: nr ? String(nr) : '★'}),
+      el('div', {class: 'inhalt'}, [wer, el('div', {class: 'text', text})]),
+      el('div', {class: 'knoepfe'}, [
+        el('button', {class: 'rec', id: 'rec-' + nr, type: 'button', onclick: () => aufnahmeKnopf(nr)}, [el('span', {class: 'punkt'}), el('span', {text: 'Aufnehmen'})]),
+        el('label', {class: 'datei', for: 'datei-' + nr}, [dateiInput, el('span', {text: 'Datei'})]),
+        el('button', {type: 'button', id: 'play-' + nr, onclick: () => abspielen(nr), disabled: ''}, [el('span', {text: '▶ Anhören'})]),
+        el('button', {type: 'button', id: 'save-' + nr, onclick: () => speichern(nr), hidden: ''}, [el('span', {text: 'Speichern'})]),
+        el('span', {class: 'status', id: 'status-' + nr, text: 'noch nicht aufgenommen'}),
+      ]),
+    ]);
+    ol.append(li);
+  }
+}
+
+function status(nr, text, art) { const s = document.getElementById('status-' + nr); s.textContent = text; s.className = 'status' + (art ? ' ' + art : ''); }
+
+function zeigen() {
+  let n = 0;
+  for (const z of SAETZE) {
+    if (!Array.isArray(z)) continue; const nr = z[0], g = gespeichert[id2(nr)];
+    const li = document.getElementById('satz-' + nr), offen = lokal[nr] && !lokal[nr].gespeichert;
+    li.classList.toggle('fertig', !!g && !offen);
+    document.getElementById('play-' + nr).disabled = !(g || lokal[nr]);
+    document.getElementById('save-' + nr).hidden = !offen;
+    if (g && nr) n++;
+    if (rec && rec.nr === nr) continue;
+    if (offen) status(nr, 'neu aufgenommen – noch nicht gespeichert');
+    else if (g) status(nr, 'gespeichert ✓ (' + new Date(g.zeit).toLocaleString('de-DE', {day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'}) + ')', 'ok');
+    else status(nr, 'noch nicht aufgenommen');
+  }
+  document.getElementById('zahl').textContent = n + ' von ' + ANZAHL + ' Sätzen';
+  for (const f of ['affe', 'schwein', 'prof']) {
+    const alle = SAETZE.filter(z => Array.isArray(z) && z[1] === f), fertig = alle.filter(z => gespeichert[id2(z[0])]).length;
+    document.querySelector('[data-anz="' + f + '"]').textContent = fertig + '/' + alle.length;
+  }
+  document.getElementById('balken').style.width = (n / ANZAHL * 100) + '%';
+}
+
+async function aufnahmeKnopf(nr) {
+  if (rec && rec.nr === nr) { rec.mr.stop(); return; }
+  if (rec) { status(nr, 'Erst die laufende Aufnahme (Satz ' + rec.nr + ') stoppen.', 'fehler'); return; }
+  if (!micGeht) { micHinweis(); status(nr, 'Mikrofon hier nicht verfügbar – bitte „Datei“ nutzen.', 'fehler'); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}}); }
+  catch (e) { micGeht = false; micHinweis(); status(nr, 'Mikrofon gesperrt – bitte „Datei“ nutzen.', 'fehler'); return; }
+  const typ = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+  const mr = new MediaRecorder(stream, typ ? {mimeType: typ} : undefined), teile = [];
+  rec = {nr, mr, teile, stream};
+  mr.ondataavailable = e => { if (e.data.size) teile.push(e.data); };
+  mr.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    const blob = new Blob(teile, {type: (mr.mimeType || typ || 'audio/webm').split(';')[0]});
+    rec = null; knopf(nr, false); neueAufnahme(nr, blob);
+  };
+  mr.start(); knopf(nr, true); status(nr, 'Aufnahme läuft … zum Beenden „Stopp“ tippen', 'fehler');
+}
+function knopf(nr, laeuft) { const b = document.getElementById('rec-' + nr); b.classList.toggle('laeuft', laeuft); b.lastChild.textContent = laeuft ? 'Stopp' : 'Aufnehmen'; }
+// claude.ai erlaubt Seiten wie dieser kein Mikrofon: dann nur noch „Datei“ anbieten und den Ablauf erklären
+function micHinweis() {
+  document.body.classList.add('ohne-mic');
+  const h = document.getElementById('hinweis'); if (h.classList.contains('warn')) return;
+  h.classList.add('warn'); h.replaceChildren(
+    el('strong', {text: 'Aufnehmen direkt hier geht leider nicht – claude.ai erlaubt solchen Seiten kein Mikrofon.'}),
+    el('p', {text: 'So geht es stattdessen:'}),
+    el('ol', {}, [
+      el('li', {text: 'Satz mit der Sprachmemo-App (Handy) oder einem Aufnahme-Programm (Computer) aufnehmen.'}),
+      el('li', {text: 'Hier beim passenden Satz auf „Datei“ tippen und die Aufnahme auswählen.'}),
+      el('li', {text: 'Mit „Anhören“ prüfen und mit „Speichern“ sichern.'}),
+    ]),
+    el('p', {text: 'Am Handy bietet „Datei“ oft auch direkt „Aufnehmen“ an. Vor und nach dem Satz ruhig eine halbe Sekunde Stille lassen.'}));
+}
+
+function dateiGewaehlt(nr, input) { const f = input.files && input.files[0]; input.value = ''; if (f) neueAufnahme(nr, f, f.name); }
+function neueAufnahme(nr, blob, name) {
+  if (lokal[nr]) URL.revokeObjectURL(lokal[nr].url);
+  lokal[nr] = {blob, url: URL.createObjectURL(blob), name: name || ('satz-' + nr), gespeichert: false};
+  zeigen();
+}
+
+let spieler = null;
+async function abspielen(nr) {
+  if (spieler) { spieler.pause(); spieler = null; }
+  try {
+    if (!lokal[nr]) { status(nr, 'lädt …'); lokal[nr] = await laden(gespeichert[id2(nr)]); }
+    spieler = new Audio(lokal[nr].url); await spieler.play(); zeigen();
+  } catch (e) { status(nr, 'Abspielen klappt nicht (' + (e.message || e) + ')', 'fehler'); }
+}
+async function laden(g) {
+  const r = await fetch('/_blob/' + g.asset); const b64 = (await r.text()).trim();
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)), blob = new Blob([bin], {type: g.typ || 'audio/webm'});
+  return {blob, url: URL.createObjectURL(blob), name: g.name, gespeichert: true};
+}
+
+// Audio-Dateien gehen nicht direkt in den Speicher; sie werden als Text (Base64) abgelegt und von Claude zurückverwandelt
+function base64(blob) { return new Promise((ok, nein) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = () => nein(r.error); r.readAsDataURL(blob); }); }
+async function speichern(nr) {
+  const l = lokal[nr]; if (!l) return;
+  if (!db || !assets) { status(nr, 'Speichern geht nur, wenn du angemeldet bist und die Seite bearbeiten darfst.', 'fehler'); return; }
+  const btn = document.getElementById('save-' + nr); btn.disabled = true; status(nr, 'speichert …');
+  try {
+    const text = await base64(l.blob);
+    const up = await assets.upload(new Blob([text], {type: 'text/plain'}), {type: 'text/plain'});
+    const alt = gespeichert[id2(nr)];
+    await db.doc('aufnahmen/' + id2(nr)).set({nr, asset: up.id, typ: (l.blob.type || 'audio/webm').split(';')[0], name: l.name, bytes: l.blob.size, zeit: new Date().toISOString()});
+    l.gespeichert = true;
+    if (alt && alt.asset && alt.asset !== up.id) assets.delete(alt.asset).catch(() => {});
+  } catch (e) {
+    status(nr, e && e.code === 'too_large' ? 'Die Datei ist zu groß (max. ca. 15 MB).' : 'Speichern fehlgeschlagen (' + ((e && (e.code || e.message)) || e) + '). Bitte noch einmal versuchen.', 'fehler');
+  } finally { btn.disabled = false; zeigen(); }
+}
+
+// Filter nach Figur: blendet die anderen Sätze, Regie-Zeilen und leere Abschnitte aus
+let filterF = 'alle';
+try { filterF = localStorage.getItem('sprechstudio.filter') || 'alle'; } catch (e) {}
+function filtern(f) {
+  filterF = f; try { localStorage.setItem('sprechstudio.filter', f); } catch (e) {}
+  document.querySelectorAll('#filter button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === f)));
+  for (const z of SAETZE) if (Array.isArray(z)) document.getElementById('satz-' + z[0]).hidden = !(f === 'alle' || z[1] === f || z[1] === 'alle');
+  document.querySelectorAll('#liste .regie').forEach(r => { r.hidden = f !== 'alle'; });
+  document.querySelectorAll('#liste ol').forEach(ol => { ol.hidden = !ol.querySelector('li:not([hidden])'); });
+  document.querySelectorAll('#liste h2').forEach(h => { let n = h.nextElementSibling, sicht = false; while (n && n.tagName !== 'H2') { if (n.tagName === 'OL' && !n.hidden) sicht = true; n = n.nextElementSibling; } h.hidden = !sicht; });
+}
+document.querySelectorAll('#filter button').forEach(b => b.addEventListener('click', () => filtern(b.dataset.f)));
+
+// Mikrofon-Erlaubnis ohne Nachfrage prüfen: ist sie verweigert, gleich die Datei-Variante zeigen
+try { if (!micGeht) micHinweis(); else if (navigator.permissions) navigator.permissions.query({name: 'microphone'}).then(p => { if (p.state === 'denied') { micGeht = false; micHinweis(); } }).catch(() => {}); } catch (e) {}
+aufbauen(); zeigen(); filtern(['alle', 'affe', 'schwein', 'prof'].includes(filterF) ? filterF : 'alle');
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  [db, assets] = await Promise.all([claude.use('db'), claude.use('assets')]);
+  if (!db || !assets) {
+    const h = document.getElementById('hinweis');
+    h.prepend(el('strong', {text: 'Speichern ist hier nicht möglich.'}), el('p', {text: 'Öffne die Seite angemeldet in claude.ai (als Besitzer), dann kannst du die Aufnahmen speichern.'}));
+    h.classList.add('warn');
+  }
+  if (db) db.collection('aufnahmen').onSnapshot(s => { gespeichert = {}; s.docs.forEach(d => { gespeichert[d.id] = d.data(); }); zeigen(); });
+})();
+</script>

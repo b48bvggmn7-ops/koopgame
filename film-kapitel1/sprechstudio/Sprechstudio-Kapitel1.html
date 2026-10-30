@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprechstudio Kapitel 1</title>
+<style>
+  /* Eigenständige Aufnahme-Seite (läuft als Datei im Browser, dort ist das Mikrofon erlaubt).
+     Aufnahmen bleiben im Browser gespeichert (IndexedDB), am Ende als eine ZIP-Datei herunterladen. */
+  :root {
+    --bg: #15111f; --karte: #1f1a2c; --karte-an: #2a2340; --fg: #f3ead9; --leise: #b3a8c4; --linie: #3a3150;
+    --gold: #f2c46d; --gold-fg: #1b1526; --rot: #ff6b5b; --gut: #6fd39a;
+    --affe: #d9a066; --schwein: #f19bbb; --prof: #ff8a7a;
+    --titel: "Comic Sans MS", "Chalkboard SE", "Trebuchet MS", cursive; --text: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 var(--text); padding: 20px 16px 120px; }
+  main { max-width: 860px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { font: 700 34px/1.1 var(--titel); margin: 0; }
+  h2 { font: 700 20px/1.2 var(--titel); margin: 8px 0 0; }
+  .eyebrow { font-weight: 700; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  p { margin: 0; color: var(--leise); max-width: 70ch; }
+  .kopf { display: grid; gap: 8px; }
+  .stand { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .balken { flex: 1 1 220px; height: 10px; border-radius: 99px; background: var(--linie); overflow: hidden; }
+  .balken > i { display: block; height: 100%; width: 0; background: var(--gut); transition: width .3s; }
+  .zahl { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .hinweis { background: var(--karte); border: 1px solid var(--linie); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+  .hinweis.warn { border-color: var(--rot); }
+  .hinweis ol { margin: 0; padding-left: 1.3em; color: var(--leise); display: grid; gap: 3px; }
+  kbd { font: 700 12px/1 var(--text); border: 1px solid var(--linie); border-bottom-width: 2px; border-radius: 5px; padding: 2px 6px; color: var(--fg); }
+  .leiste { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 10px; }
+  .leiste > span { font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--leise); }
+  .leiste button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .anz { font-weight: 600; opacity: .75; font-variant-numeric: tabular-nums; }
+  .regie { font-style: italic; color: var(--leise); }
+  ol.saetze { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .satz { background: var(--karte); border: 2px solid var(--linie); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: 2.4em minmax(0, 1fr); gap: 4px 12px; cursor: pointer; }
+  .satz.aktiv { border-color: var(--gold); background: var(--karte-an); }
+  .satz.fertig .nr { color: var(--gut); }
+  .nr { font: 700 20px/1.3 var(--titel); color: var(--leise); font-variant-numeric: tabular-nums; }
+  .inhalt { display: grid; gap: 4px; min-width: 0; }
+  .wer { font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .wer[data-f="affe"] { color: var(--affe); } .wer[data-f="schwein"] { color: var(--schwein); } .wer[data-f="prof"] { color: var(--prof); } .wer[data-f="alle"] { color: var(--gold); }
+  .wer em { font-style: normal; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--leise); }
+  .text { font-size: 18px; }
+  .knoepfe { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+  button, .datei { font: 700 14px/1 var(--text); border-radius: 99px; padding: 10px 15px; cursor: pointer; border: 1px solid var(--linie); background: transparent; color: var(--fg); display: inline-flex; align-items: center; gap: 6px; }
+  button:focus-visible, .datei:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+  button:disabled { opacity: .4; cursor: default; }
+  .rec { background: var(--gold); color: var(--gold-fg); border-color: var(--gold); }
+  .rec.laeuft { background: var(--rot); border-color: var(--rot); color: #fff; }
+  .gross { background: var(--gut); color: #10241a; border-color: var(--gut); font-size: 15px; padding: 12px 18px; }
+  .datei input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .status { font-size: 13px; color: var(--leise); }
+  .status.ok { color: var(--gut); font-weight: 700; } .status.fehler { color: var(--rot); font-weight: 700; }
+  .pegel { width: 80px; height: 8px; border-radius: 99px; background: var(--linie); overflow: hidden; display: none; }
+  .pegel > i { display: block; height: 100%; width: 0; background: var(--rot); }
+  .laeuft-hier .pegel { display: block; }
+  .punkt { width: .6em; height: .6em; border-radius: 50%; background: currentColor; display: inline-block; }
+  .rec.laeuft .punkt { animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  .fuss { position: fixed; left: 0; right: 0; bottom: 0; background: var(--karte); border-top: 1px solid var(--linie); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: center; }
+  @media (max-width: 480px) { .satz { grid-template-columns: 1.8em minmax(0, 1fr); } .knoepfe { grid-column: 1 / -1; } }
+  @media (prefers-reduced-motion: reduce) { .rec.laeuft .punkt { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="kopf">
+    <span class="eyebrow">Kapitel 1 · Die Nacht, in der der Stern fiel</span>
+    <h1>Sprechstudio</h1>
+    <div class="stand"><div class="balken" aria-hidden="true"><i id="balken"></i></div><span class="zahl" id="zahl">0 von 25 Sätzen</span></div>
+  </header>
+
+  <div class="hinweis" id="hinweis">
+    <strong>So geht's</strong>
+    <ol>
+      <li>Satz antippen (er wird gelb umrandet) und <strong>Aufnehmen</strong> drücken – oder einfach die <kbd>Leertaste</kbd>.</li>
+      <li>Sprechen, dann <strong>Stopp</strong> (oder wieder <kbd>Leertaste</kbd>). Danach springt die Seite zum nächsten Satz.</li>
+      <li>Mit <strong>Anhören</strong> prüfen. Nicht zufrieden? Einfach nochmal aufnehmen – es zählt die letzte Aufnahme.</li>
+      <li>Wenn alles fertig ist: unten <strong>Alles herunterladen</strong> und die ZIP-Datei im Chat an Claude schicken.</li>
+    </ol>
+    <p>Beim ersten Mal fragt der Browser, ob die Seite das Mikrofon benutzen darf – bitte erlauben. Die Aufnahmen bleiben im Browser gespeichert, auch wenn du die Seite schließt und später wieder öffnest. <kbd>↑</kbd> <kbd>↓</kbd> wechseln den Satz, <kbd>P</kbd> spielt ab.</p>
+  </div>
+
+  <div class="leiste" role="group" aria-label="Nach Figur filtern" id="filter">
+    <span>Zeigen</span>
+    <button type="button" data-f="alle" aria-pressed="true">Alle</button>
+    <button type="button" data-f="affe" aria-pressed="false">Affe <span class="anz" data-anz="affe"></span></button>
+    <button type="button" data-f="schwein" aria-pressed="false">Schwein <span class="anz" data-anz="schwein"></span></button>
+    <button type="button" data-f="prof" aria-pressed="false">Professor <span class="anz" data-anz="prof"></span></button>
+  </div>
+
+  <section id="liste" aria-label="Sätze"></section>
+</main>
+
+<div class="fuss">
+  <button type="button" class="gross" id="zip">⬇ Alles herunterladen (ZIP)</button>
+  <span class="status" id="zipstatus">Noch keine Aufnahmen.</span>
+</div>
+
+<script>
+const SAETZE = [
+  {teil: 'Teil A – Plaudern über den Tag'},
+  [1, 'affe', 'Ich war heute auf dem höchsten Baum vom ganzen Wald! Ganz oben!'],
+  [2, 'schwein', 'Er ist runtergefallen.'],
+  [3, 'affe', 'Ich bin gesprungen. Das ist ein Unterschied.'],
+  [4, 'prof', 'Auf einen Ast, der zu dünn war, nehme ich an?'],
+  [5, 'affe', '… Er sah dick aus.'],
+  [6, 'schwein', 'Und ich war am See. Ich wollte schwimmen.'],
+  [7, 'affe', 'Sie stand zwanzig Minuten mit einem Fuß im Wasser.'],
+  [8, 'schwein', 'Es war kalt!'],
+  [9, 'prof', 'Mut kommt manchmal ganz langsam, Schweinchen. Erst ein Zeh, dann ein Fuß …'],
+  [10, 'schwein', 'Dann der zweite Fuß. Morgen vielleicht.'],
+  [11, 'affe', 'Und was hast du heute gemacht, Professor?'],
+  [12, 'prof', 'Ich habe den Himmel beobachtet. Wie jede Nacht.'],
+  [13, 'affe', 'Und? Was Spannendes?'],
+  [14, 'prof', 'Ach was. Da oben passiert nie etwas Aufregendes.'],
+  {regie: 'Zischen, Lichtstreif am Fenster, BOOM'},
+  {teil: 'Teil B – Der Meteorit'},
+  [15, 'schwein', 'Oh! Was war das?!'],
+  [16, 'affe', 'Da draußen! Da ist was runtergekommen!'],
+  [17, 'prof', '… Das war keine normale Sternschnuppe. Das war ein Meteorit.'],
+  [18, 'affe', 'Wir holen ihn!'],
+  [19, 'prof', 'Morgen früh. Bei Tageslicht. Und jetzt: ab ins Bett, ihr zwei.'],
+  [20, 'schwein', '… Gute Nacht, Meteorit.'],
+  {regie: 'Licht aus, der Professor geht raus'},
+  {teil: 'Teil C – Im Dunkeln (alles geflüstert)'},
+  [21, 'affe', 'Psst! Schweinchen … bist du noch wach? Komm, lass uns los. Ich halt’s nicht mehr aus – wir müssen die Ersten sein!', 'flüstern'],
+  [22, 'schwein', 'Aber … eigentlich dürfen wir das nicht.', 'flüstern'],
+  [23, 'affe', 'Du wolltest dich doch mal was trauen. So richtig. Jetzt ist die Gelegenheit!', 'flüstern'],
+  [24, 'schwein', '… Na gut. Aber ganz leise.', 'flüstern'],
+  [25, 'affe', 'Psst! Wir müssen ganz leise sein …', 'flüstern'],
+];
+const NAMEN = {affe: 'Affe', schwein: 'Schwein', prof: 'Professor'};
+const ZEILEN = SAETZE.filter(Array.isArray), ANZAHL = ZEILEN.length;
+const dateiname = (nr, f, typ) => String(nr).padStart(2, '0') + '_' + f + '.' + (/mp4|m4a|aac/.test(typ) ? 'm4a' : /ogg/.test(typ) ? 'ogg' : /mpeg|mp3/.test(typ) ? 'mp3' : /wav/.test(typ) ? 'wav' : 'webm');
+
+// ---------- Speicher im Browser (IndexedDB), damit nichts verloren geht ----------
+let idb = null;
+function dbOeffnen() { return new Promise(ok => { try { const r = indexedDB.open('sprechstudio-kapitel1', 1); r.onupgradeneeded = () => r.result.createObjectStore('aufnahmen'); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); } catch (e) { ok(null); } }); }
+function dbTx(modus, fn) { return new Promise(ok => { if (!idb) return ok(null); try { const t = idb.transaction('aufnahmen', modus), s = t.objectStore('aufnahmen'); const r = fn(s); t.oncomplete = () => ok(r && r.result); t.onerror = () => ok(null); } catch (e) { ok(null); } }); }
+const aufnahmen = {};   // nr -> {blob, typ, zeit, url}
+
+// ---------- Oberfläche ----------
+function el(tag, attrs = {}, kids = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v); }
+  for (const c of kids) e.append(c);
+  return e;
+}
+let aktiv = 1;
+function aufbauen() {
+  const liste = document.getElementById('liste'); let ol = null;
+  for (const z of SAETZE) {
+    if (z.teil) { liste.append(el('h2', {text: z.teil})); ol = el('ol', {class: 'saetze'}); liste.append(ol); continue; }
+    if (z.regie) { liste.append(el('div', {class: 'regie', text: '– ' + z.regie + ' –'})); ol = el('ol', {class: 'saetze'}); liste.append(ol); continue; }
+    const [nr, f, text, art] = z;
+    const wer = el('div', {class: 'wer', 'data-f': f, text: NAMEN[f]}); if (art) wer.append(' ', el('em', {text: '(' + art + ')'}));
+    const input = el('input', {type: 'file', accept: 'audio/*', id: 'datei-' + nr, onchange: e => { const d = e.target.files[0]; e.target.value = ''; if (d) neu(nr, d, d.type || 'audio/mpeg'); }});
+    ol.append(el('li', {class: 'satz', id: 'satz-' + nr, onclick: e => { if (!e.target.closest('button,label')) waehlen(nr); }}, [
+      el('div', {class: 'nr', text: String(nr)}),
+      el('div', {class: 'inhalt'}, [wer, el('div', {class: 'text', text})]),
+      el('div', {class: 'knoepfe'}, [
+        el('button', {class: 'rec', id: 'rec-' + nr, type: 'button', onclick: () => { waehlen(nr); aufnahme(nr); }}, [el('span', {class: 'punkt'}), el('span', {text: 'Aufnehmen'})]),
+        el('span', {class: 'pegel', 'aria-hidden': 'true'}, [el('i', {id: 'pegel-' + nr})]),
+        el('button', {type: 'button', id: 'play-' + nr, onclick: () => abspielen(nr), disabled: ''}, [el('span', {text: '▶ Anhören'})]),
+        el('label', {class: 'datei', for: 'datei-' + nr, title: 'Fertige Aufnahme-Datei für diesen Satz wählen'}, [input, el('span', {text: 'Datei'})]),
+        el('span', {class: 'status', id: 'status-' + nr, text: 'noch nicht aufgenommen'}),
+      ]),
+    ]));
+  }
+}
+function status(nr, text, art) { const s = document.getElementById('status-' + nr); s.textContent = text; s.className = 'status' + (art ? ' ' + art : ''); }
+function zeigen() {
+  let n = 0;
+  for (const [nr] of ZEILEN) {
+    const a = aufnahmen[nr]; if (a) n++;
+    document.getElementById('satz-' + nr).classList.toggle('fertig', !!a);
+    document.getElementById('play-' + nr).disabled = !a;
+    if (!(rec && rec.nr === nr)) status(nr, a ? 'aufgenommen ✓ (' + (a.dauer ? a.dauer.toFixed(1) + ' s' : 'Datei') + ')' : 'noch nicht aufgenommen', a ? 'ok' : '');
+  }
+  document.getElementById('zahl').textContent = n + ' von ' + ANZAHL + ' Sätzen';
+  document.getElementById('balken').style.width = (n / ANZAHL * 100) + '%';
+  for (const f of ['affe', 'schwein', 'prof']) { const z = ZEILEN.filter(x => x[1] === f); document.querySelector('[data-anz="' + f + '"]').textContent = z.filter(x => aufnahmen[x[0]]).length + '/' + z.length; }
+  document.getElementById('zipstatus').textContent = n ? n + ' Aufnahme' + (n === 1 ? '' : 'n') + ' bereit' + (n < ANZAHL ? ' – es fehlen noch ' + (ANZAHL - n) : ' – alle da!') : 'Noch keine Aufnahmen.';
+}
+function sichtbar(nr) { return !document.getElementById('satz-' + nr).hidden; }
+function waehlen(nr, scrollen) {
+  aktiv = nr; document.querySelectorAll('.satz').forEach(s => s.classList.toggle('aktiv', s.id === 'satz-' + nr));
+  if (scrollen) document.getElementById('satz-' + nr).scrollIntoView({block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+}
+function naechster(nr, schritt) { const l = ZEILEN.map(z => z[0]).filter(sichtbar); const i = l.indexOf(nr); return l[Math.max(0, Math.min(l.length - 1, i + schritt))] || nr; }
+
+// ---------- Aufnehmen ----------
+let rec = null, stream = null, ac = null;
+async function mikro() {
+  if (stream && stream.active) return stream;
+  stream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+  return stream;
+}
+async function aufnahme(nr) {
+  if (rec) { const war = rec.nr; rec.mr.stop(); if (war === nr) return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { warn('Dieser Browser kann nicht aufnehmen. Bitte Chrome, Edge oder Firefox benutzen.'); return; }
+  let s;
+  try { s = await mikro(); } catch (e) { warn('Das Mikrofon wurde nicht freigegeben. Oben in der Adresszeile auf das Mikrofon-/Schloss-Symbol klicken, „Erlauben“ wählen und die Seite neu laden.'); status(nr, 'kein Mikrofon', 'fehler'); return; }
+  const typ = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  const mr = new MediaRecorder(s, typ ? {mimeType: typ, audioBitsPerSecond: 128000} : undefined), teile = [], t0 = performance.now();
+  // Pegel-Anzeige, damit man sieht, dass das Mikrofon etwas hört
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const an = ac.createAnalyser(); an.fftSize = 1024; const src = ac.createMediaStreamSource(s); src.connect(an);
+  const buf = new Float32Array(an.fftSize), balken = document.getElementById('pegel-' + nr);
+  let lauf = true; (function pegel() { if (!lauf) return; an.getFloatTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v)); balken.style.width = Math.min(100, m * 140) + '%'; requestAnimationFrame(pegel); })();
+  rec = {nr, mr};
+  mr.ondataavailable = e => { if (e.data.size) teile.push(e.data); };
+  mr.onstop = () => {
+    lauf = false; src.disconnect(); balken.style.width = '0';
+    const t = (mr.mimeType || typ || 'audio/webm').split(';')[0];
+    rec = null; knopf(nr, false);
+    neu(nr, new Blob(teile, {type: t}), t, (performance.now() - t0) / 1000);
+    const n2 = naechster(nr, 1); if (n2 !== nr) waehlen(n2, true);
+  };
+  mr.start(); knopf(nr, true); status(nr, 'Aufnahme läuft … Stopp oder Leertaste', 'fehler');
+}
+function knopf(nr, laeuft) { const b = document.getElementById('rec-' + nr); b.classList.toggle('laeuft', laeuft); b.lastChild.textContent = laeuft ? 'Stopp' : 'Aufnehmen'; document.getElementById('satz-' + nr).classList.toggle('laeuft-hier', laeuft); }
+function warn(text) { const h = document.getElementById('hinweis'); h.classList.add('warn'); let w = document.getElementById('warnung'); if (!w) { w = el('strong', {id: 'warnung'}); h.prepend(w); } w.textContent = text; }
+async function neu(nr, blob, typ, dauer) {
+  if (aufnahmen[nr] && aufnahmen[nr].url) URL.revokeObjectURL(aufnahmen[nr].url);
+  const a = {blob, typ, dauer: dauer || 0, zeit: Date.now()};
+  await dbTx('readwrite', s => s.put({blob, typ, dauer: a.dauer, zeit: a.zeit}, nr));
+  a.url = URL.createObjectURL(blob); aufnahmen[nr] = a; zeigen();
+}
+
+// ---------- Abspielen ----------
+let spieler = null;
+function abspielen(nr) { const a = aufnahmen[nr]; if (!a) return; if (spieler) spieler.pause(); spieler = new Audio(a.url); spieler.play().catch(e => status(nr, 'Abspielen klappt nicht: ' + e.message, 'fehler')); }
+
+// ---------- ZIP ohne Kompression (alle Browser, keine Fremd-Bibliothek) ----------
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function zipBauen(dateien) {
+  const enc = new TextEncoder(), teile = [], zentral = []; let off = 0;
+  for (const d of dateien) {
+    const daten = new Uint8Array(await d.blob.arrayBuffer()), name = enc.encode(d.name), crc = crc32(daten);
+    const k = new DataView(new ArrayBuffer(30));
+    k.setUint32(0, 0x04034b50, true); k.setUint16(4, 20, true); k.setUint16(6, 0x0800, true); k.setUint16(8, 0, true);
+    k.setUint32(14, crc, true); k.setUint32(18, daten.length, true); k.setUint32(22, daten.length, true); k.setUint16(26, name.length, true);
+    teile.push(k, name, daten);
+    const z = new DataView(new ArrayBuffer(46));
+    z.setUint32(0, 0x02014b50, true); z.setUint16(4, 20, true); z.setUint16(6, 20, true); z.setUint16(8, 0x0800, true);
+    z.setUint32(16, crc, true); z.setUint32(20, daten.length, true); z.setUint32(24, daten.length, true); z.setUint16(28, name.length, true); z.setUint32(42, off, true);
+    zentral.push(z, name); off += 30 + name.length + daten.length;
+  }
+  const groesse = zentral.reduce((s, x) => s + x.byteLength, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, dateien.length, true); e.setUint16(10, dateien.length, true); e.setUint32(12, groesse, true); e.setUint32(16, off, true);
+  return new Blob([...teile, ...zentral, e], {type: 'application/zip'});
+}
+document.getElementById('zip').addEventListener('click', async () => {
+  const liste = ZEILEN.filter(z => aufnahmen[z[0]]).map(([nr, f, text]) => ({name: dateiname(nr, f, aufnahmen[nr].typ), blob: aufnahmen[nr].blob, text}));
+  if (!liste.length) { document.getElementById('zipstatus').textContent = 'Noch keine Aufnahmen zum Herunterladen.'; return; }
+  const info = ZEILEN.map(([nr, f, text]) => String(nr).padStart(2, '0') + '\t' + f + '\t' + (aufnahmen[nr] ? dateiname(nr, f, aufnahmen[nr].typ) : '(fehlt)') + '\t' + text).join('\n');
+  liste.push({name: 'liste.txt', blob: new Blob([info], {type: 'text/plain'})});
+  const zip = await zipBauen(liste), a = document.createElement('a');
+  a.href = URL.createObjectURL(zip); a.download = 'kapitel1-stimmen.zip'; document.body.append(a); a.click(); a.remove();
+  document.getElementById('zipstatus').textContent = 'Heruntergeladen: kapitel1-stimmen.zip – diese Datei im Chat an Claude schicken.';
+});
+
+// ---------- Filter und Tastatur ----------
+function filtern(f) {
+  document.querySelectorAll('#filter button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === f)));
+  for (const [nr, fig] of ZEILEN) document.getElementById('satz-' + nr).hidden = !(f === 'alle' || fig === f);
+  document.querySelectorAll('#liste .regie').forEach(r => { r.hidden = f !== 'alle'; });
+  document.querySelectorAll('#liste ol').forEach(ol => { ol.hidden = !ol.querySelector('li:not([hidden])'); });
+  document.querySelectorAll('#liste h2').forEach(h => { let n = h.nextElementSibling, s = false; while (n && n.tagName !== 'H2') { if (n.tagName === 'OL' && !n.hidden) s = true; n = n.nextElementSibling; } h.hidden = !s; });
+  if (!sichtbar(aktiv)) waehlen(ZEILEN.map(z => z[0]).find(sichtbar), true);
+  try { localStorage.setItem('sprechstudio.filter', f); } catch (e) {}
+}
+document.querySelectorAll('#filter button').forEach(b => b.addEventListener('click', () => filtern(b.dataset.f)));
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.code === 'Space') { e.preventDefault(); aufnahme(rec ? rec.nr : aktiv); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); waehlen(naechster(aktiv, 1), true); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); waehlen(naechster(aktiv, -1), true); }
+  else if (e.key === 'p' || e.key === 'P') abspielen(aktiv);
+});
+
+(async () => {
+  aufbauen(); waehlen(1); zeigen();
+  let f = 'alle'; try { f = localStorage.getItem('sprechstudio.filter') || 'alle'; } catch (e) {}
+  filtern(['alle', 'affe', 'schwein', 'prof'].includes(f) ? f : 'alle');
+  idb = await dbOeffnen();
+  if (!idb) warn('Achtung: Dieser Browser speichert die Aufnahmen nicht dauerhaft – bitte am Ende unbedingt „Alles herunterladen“.');
+  for (const [nr] of ZEILEN) { const d = await dbTx('readonly', s => s.get(nr)); if (d && d.blob) aufnahmen[nr] = {...d, url: URL.createObjectURL(d.blob)}; }
+  zeigen();
+})();
+</script>
+</body>
+</html>

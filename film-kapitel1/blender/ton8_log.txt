@@ -1,0 +1,2 @@
+bilder 2010 geraeusche [('plumps', 32.21), ('datei', 33.92), ('klick', 53.61), ('datei', 73.12)]
+wav 16546 KB

@@ -1,0 +1,2 @@
+bilder 1830 geraeusche [('plumps', 31.9), ('sternFlug', 33.63), ('sternLoop', 35.44), ('sternFall', 37.52), ('bumm', 38.32)]
+wav 15140 KB

@@ -1,0 +1,9 @@
+sofa_s fertig
+sofa_sa fertig
+polster_s fertig
+polster_sa fertig
+polster_p fertig
+keks fertig
+buendel fertig
+zettel_liegt fertig
+ALLES
