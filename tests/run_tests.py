@@ -10494,7 +10494,7 @@ async def muenzen_haken_ketten(g):
         x0, x1 = kx(anlauf), kx(ende)
         blau = {(cc * 40 + 20, rr * 40 + 20) for cc, rr in HK.MUENZEN[anlauf]}
         geholt, geschafft = set(), 0
-        for pull in (0, 10, 20, 40):
+        for pull in (0, 10, 20, 40, -30, -60):   # negativ: Liane nachgeben
             for d in (20, 40, 60, 80):
                 rel = f'f > 30 && P.vy < 0 && P.x > P.anchor.x + {d}'
                 res = await koop(g, m=kat(c, r), f=kat(c - 2, r), plans={'m': HK.kette(sys.modules[__name__], anlauf, n, pull, rel, art)}, maxFrames=4000, jeBild=HK.MITNEHMEN)

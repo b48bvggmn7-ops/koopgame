@@ -25,7 +25,7 @@ def kette(rt, anlauf, n, pull, rel, pilz):
     if pilz == 'pilz': pl = rt.kombi_pilz(anlauf + 3) + [{'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]   # auf den Pilz, dann Haken (Dash nur noch waagerecht)
     elif pilz == 'fallen': pl = [rt.k_lauf(anlauf, 0), {'hookWhen': 'P.vy > 1', 'until': 'P.hookAttached', 'frames': 400}]   # stehen bleiben, bis der Bröckelboden bricht
     else: pl = [k, {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached', 'frames': 120}]
-    for _ in range(n): pl += [{'swing': True, 'pull': pull, 'release': rel, 'frames': 900},
+    for _ in range(n): pl += [{'swing': True, 'pull': max(pull, 0), 'slack': max(-pull, 0), 'release': rel, 'frames': 900},   # pull < 0: Liane so lange nachgeben (kurze Liane, LIANE_VOLLE_LAENGE aus)
                               {'hold': ['right'], 'hookWhen': 'P.vy > -3', 'until': 'P.hookAttached || P.grounded', 'frames': 200}]
     return pl + [{'hold': ['right'], 'until': 'P.grounded', 'frames': 300}]
 
