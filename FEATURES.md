@@ -385,7 +385,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (`hakenHalteseilPunkt` in js/12b). Beim Auslösen reißt es, beide Enden fallen und lösen sich auf; Neustart/Tod bringt es
     zurück. Die Liane sitzt mittig auf dem Diamanten. Test haken_halteseil.
     Editor: waagerecht bewegte Haken zeigen ihren Pendel-Bogen (gelb gestrichelt, tiefster Punkt markiert, dünne Liane zum
-    Aufhängepunkt) – gleiche Rechnung wie im Spiel, zum Ausrichten von Münzen. Test editor_haken_bogen.
+    Aufhängepunkt) – gleiche Rechnung wie im Spiel, zum Ausrichten von Münzen. Dazu die Bahn des Affen (Nutzer: „ich muss
+    sehen, wo der Affe pendelt“): breites braunes Band in Figurengröße mit gestrichelter Mitte, Radius (volle Liane) unter
+    dem Haken, mit Liane und Affen-Umriss am Anfang, in der Mitte und am Ende. Test editor_haken_bogen.
   - Sprint (länger halten = schneller), Wandsprung nur mit Schwung UND Richtungstaste von der Wand weg
     (Streichen wurde getestet: zu einfach -> wieder aktiv), skaliert mit Tempo; pro Wandseite nur
     einmal (lastWallJumpSide, Reset bei Bodenkontakt) -> keine Einzelwand-Kletterei, Kamin-Klettern geht;

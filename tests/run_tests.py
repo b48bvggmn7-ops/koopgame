@@ -4682,6 +4682,15 @@ async def editor_haken_bogen(g):
         await p.goto(GAME); await p.wait_for_timeout(400); g2 = Game(p)
         await g2.load(str(pfad)); await g2.steps(2)
         sp = await p.evaluate("hooks.map(h => [0.15, 0.5, 0.85].map(u => { h.u = u; return hakenPosition(h); }))")
+        # Affen-Bahn (Nutzer: „ich muss sehen, wo der Affe pendelt“): mit voller Liane (= Radius) hängt seine Mitte
+        # Radius + 0,1 × Figurenhöhe unter dem Haken – so zeichnet es der Editor (ED_FIGUR_H)
+        affe = await p.evaluate("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1;
+          h.moving = false; h.x = h.startX; h.y = h.startY;
+          P.x = h.x; P.y = h.y + hookRange(h) + P.h*0.6; P.vx = P.vy = 0; P.grounded = false;
+          P.hookAttached = true; P.anchor = h; P.ropeLen = P.ropeMax = P.lianeZiel = hookRange(h); P.ropeWasAirborne = true;
+          KEYS[P.keys.hook] = true; for(let i = 0; i < 120; i++) stepSim(ts += 1000/54); KEYS[P.keys.hook] = false; menuScreen = null;
+          return {dran: P.hookAttached, dy: (P.y - P.h/2) - h.y, R: hookRange(h), h: P.h}; })()""")
+        assert affe['dran'] and abs(affe['dy'] - (affe['R'] + affe['h']*0.1)) < 3, f'Affe hängt anders als im Editor gezeichnet: {affe}'
         assert bogen == 2, f'Editor zeichnet den Bogen nicht: {bogen}'
         for a, b in zip(ed, sp):
             for (ex, ey), (gx, gy) in zip(a, b):
