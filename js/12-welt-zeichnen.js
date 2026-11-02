@@ -701,8 +701,24 @@ function tuerenZeichnen(){
   for(const d of tuerFlaechenHolen()){
     const x = Math.round(d.x - camX);
     if(x + d.w < -20 || x > VW + 20) continue;
+    if(d.teile.every(s => s.zerstoert)) continue;   // von der Stachelwand zerschlagen (js/05)
     drawGate(d, d.teile.some(s => s.open), x);   // offen, solange noch ein Teil offen ist (schließt erst, wenn niemand drinsteht)
   }
+  splitterZeichnen();
+}
+// Splitter zerschlagener Türen/Hebel (js/05 splitterErzeugen) – nur Anzeige
+function splitterZeichnen(){
+  if(!splitter.length) return;
+  ctx.save();
+  for(const p of splitter){
+    const x = p.x - camX; if(x < -20 || x > VW + 20) continue;
+    ctx.globalAlpha = Math.max(0, 1 - p.t/SPLITTER_LEBEN);
+    ctx.save(); ctx.translate(x, p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = 'rgba(20,12,6,.55)'; ctx.fillRect(-p.w/2 - 0.7, -p.h/2 - 0.7, p.w + 1.4, p.h + 1.4);
+    ctx.fillStyle = p.farbe; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    ctx.restore();
+  }
+  ctx.restore();
 }
 // ---------- Moos und Lianen an hohen freien Seitenflächen (Nutzerwunsch: ab 3 Reihen) ----------
 // Senkrechte freie Kanten von Boden/Wand werden über Stückgrenzen hinweg zusammengefasst; ist eine Fläche mindestens

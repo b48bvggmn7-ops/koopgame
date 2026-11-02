@@ -21,7 +21,9 @@ function resetLevel(){
   p2 = makePlayer({x:levelStartF.x,y:levelStartF.y, male:false,
     keys:keysFor(false), spawn:{x:levelStartF.x,y:levelStartF.y}, umbrella:0});
   for(const s of solids){ if(s.type==='crumble'){ s.triggered=false; s.gone=false; s.timer=0; s.fragments=null; s.breakElapsed=0; } }
-  for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; } }
+  for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; s.zerstoert=false; } }
+  for(const sw of switchDefs) sw.zerstoert = false;   // von der Stachelwand zerschlagene Hebel wieder da
+  splitter = [];
   linkOn = {};   // alle Hebel wieder aus
   for(const s of solids){ if(s.type==='moveplat'){ s.x=s.startX; s.y=s.startY; s.moveDir=1; s.tripActive=false; s.fertig=false; } }
   for(const sw of switchDefs) sw.wasPressed = false;

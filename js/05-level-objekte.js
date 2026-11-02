@@ -50,6 +50,7 @@ function breakCrumble(s){
 }
 
 function updateCrumbles(dt){
+  splitterSchritt();
   for(const s of solids){
     if(s.type!=='crumble') continue;
     if(s.triggered && !s.gone){
@@ -88,7 +89,7 @@ function leverNear(player, sw){
 function setLink(link, on){
   linkOn[link] = on;
   for(const d of solids){
-    if(d.type!=='door' || d.link!==link) continue;
+    if(d.type!=='door' || d.link!==link || d.zerstoert) continue;   // von der Stachelwand zerschlagen: bleibt weg
     if(on){ d.open = true; d.gone = true; d.closing = false; }
     else d.closing = true;            // schließt in updateDoorsAndSwitches, sobald frei
   }
@@ -164,7 +165,7 @@ function updateDoorsAndSwitches(dt, players){
     // nächstgelegenen Hebel in Reichweite betätigen
     let best = null, bd = Infinity;
     for(const sw of switchDefs){
-      if(!leverNear(player, sw)) continue;
+      if(sw.zerstoert || !leverNear(player, sw)) continue;   // zerschlagener Hebel: nicht mehr bedienbar
       const d = Math.abs(player.x - sw.x);
       if(d < bd){ bd = d; best = sw; }
     }
@@ -174,7 +175,7 @@ function updateDoorsAndSwitches(dt, players){
   }
   // Tür schließen, sobald keine Figur mehr darin steht (niemand wird eingeklemmt)
   for(const d of solids){
-    if(d.type==='door' && d.closing){
+    if(d.type==='door' && d.closing && !d.zerstoert){
       const blocked = players.some(p => rectsOverlap({x:p.x-p.w/2, y:p.y-p.h, w:p.w, h:p.h}, d));
       if(!blocked){ d.open = false; d.gone = false; d.closing = false; }
     }
@@ -211,13 +212,42 @@ function stachelwandZerschlaegt(s, stepX, stepY){
   if(spikes.every(sp => sp.carrier !== undefined)) s._stacheln = st;   // erst merken, wenn die Zuordnung fertig ist
   if(!st.length) return;
   const teile = [s, ...st.map(sp => ({x: sp.x - 20, y: sp.y - 40, w: 40, h: 40}))];   // Stachel-Kästchen (Fuß unten mittig)
+  const trifft = c => teile.some(t => t.x < c.x + c.w - 1 && t.x + t.w > c.x + 1 && t.y < c.y + c.h - 1 && t.y + t.h > c.y + 1);
   for(const c of solids){
     if(c.type !== 'crumble' || c.gone) continue;
-    if(teile.some(t => t.x < c.x + c.w - 1 && t.x + t.w > c.x + 1 && t.y < c.y + c.h - 1 && t.y + t.h > c.y + 1)){
+    if(trifft(c)){
       breakCrumble(c);
       if(typeof kameraStoss === 'function') kameraStoss(STACHELWAND_STOSS);
     }
   }
+  // Nutzerwunsch: auch Türen (die ganze zusammenhängende Tür) und Hebel – egal ob offen/umgelegt – werden zerschlagen
+  if(typeof tuerFlaechenHolen === 'function') for(const T of tuerFlaechenHolen()){
+    if(T.teile.every(d => d.zerstoert) || !trifft(T)) continue;
+    for(const d of T.teile){ d.zerstoert = true; d.gone = true; d.closing = false; }
+    splitterErzeugen(T.x, T.y, T.w, T.h, ['#8a5a2b', '#b47a40', '#5e3814', '#4a5059']);
+    if(typeof kameraStoss === 'function') kameraStoss(STACHELWAND_STOSS);
+    if(typeof SFX !== 'undefined' && SFX.crumbleBreak) SFX.crumbleBreak(T.x + T.w/2);
+  }
+  for(const sw of switchDefs){
+    if(sw.zerstoert || !trifft({x: sw.x - 18, y: sw.y - 20, w: 36, h: 40})) continue;
+    sw.zerstoert = true;
+    splitterErzeugen(sw.x - 14, sw.y - 18, 28, 38, ['#7a4b22', '#b47a40', '#a89c8c', '#6f655a', linkColor(sw.link)]);
+    if(typeof kameraStoss === 'function') kameraStoss(STACHELWAND_STOSS);
+    if(typeof SFX !== 'undefined' && SFX.crumbleBreak) SFX.crumbleBreak(sw.x);
+  }
+}
+// Splitter (Holz, Stein, Edelstein) zerschlagener Türen/Hebel – nur Anzeige, im festen Takt bewegt (splitterSchritt)
+let splitter = [];
+const SPLITTER_LEBEN = 55;   // Schritte
+function splitterErzeugen(x, y, w, h, farben){
+  const n = Math.min(26, 6 + Math.round(w*h/160));
+  for(let i = 0; i < n; i++) splitter.push({x: x + Math.random()*w, y: y + Math.random()*h, vx: (Math.random() - 0.3)*5, vy: -2 - Math.random()*4,
+    w: 3 + Math.random()*7, h: 2 + Math.random()*4, rot: Math.random()*6, vrot: (Math.random() - 0.5)*0.5,
+    farbe: farben[Math.floor(Math.random()*farben.length)], t: 0});
+}
+function splitterSchritt(){
+  for(const p of splitter){ p.vy += 0.45; p.x += p.vx; p.y += p.vy; p.rot += p.vrot; p.t++; }
+  if(splitter.length) splitter = splitter.filter(p => p.t < SPLITTER_LEBEN);
 }
 function updateMovingPlatforms(dt, players){
   const carried = new Set(); // jeden Spieler pro Frame höchstens einmal mitnehmen (mehrteilige Stücke)

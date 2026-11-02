@@ -1999,7 +1999,10 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     einer Decke), stirbt nicht (Nutzerwunsch) – dann wie früher hinausschieben. **Stachelwand zerschlägt Bröckelwände**
     (Nutzerwunsch 30.10.): ein bewegtes Stück mit angehefteten Stacheln zerschlägt Bröckelboden/-wände, die es oder seine
     Stacheln berührt (Brocken, Ton, Kamera-Wackeln `STACHELWAND_STOSS`; `stachelwandZerschlaegt` in js/05), Fahrstühle ohne
-    Stacheln nicht. Test stachelwand_zerschlaegt_broeckel. Abschnitt 1, Spalten 1097–1148 damit neu gebaut („Dornenjagd“,
+    Stacheln nicht. Seit 02.11. zerschlägt sie auch **Türen** (die ganze zusammenhängende Tür, offen oder zu – sie bleibt
+    weg, auch wenn die Nummer wieder ausgeht) und **Hebel** (umgelegt oder nicht – danach nicht mehr bedienbar), mit
+    Holz-/Stein-Splittern (`splitterErzeugen`) und Kamera-Wackeln; Tod/Neustart stellt alles wieder her.
+    Test stachelwand_zerschlaegt_broeckel. Abschnitt 1, Spalten 1097–1148 damit neu gebaut („Dornenjagd“,
     tests/bausteine/dornenjagd_umbau.py): ganze Höhe, unten der Laufgang mit Bröckel-Decken, -Pfeiler und -Brücke, die
     Stachelwand fährt nur noch einmal; oben der Kletterweg (Stufe/Haken, Türen mit Wand bis ganz oben, Bröckel-Brücke über
     einer Stachel-Grube mit Rettungs-Haken); Wechsel-Hebel 28–31 wie vorher. Stößt ein Mitfahrer beim Hochfahren mit

@@ -39,7 +39,9 @@ function continueAfterDeath(){
     keys:keysFor(false), spawn:{...fPos}, umbrella:0});
   // zerbröselter Boden und Türen kommen zurück, bewegte Teile an den Start
   for(const s of solids){ if(s.type==='crumble'){ s.triggered=false; s.gone=false; s.timer=0; s.fragments=null; s.breakElapsed=0; } }
-  for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; } }
+  for(const s of solids){ if(s.type==='door'){ s.open=false; s.gone=false; s.closing=false; s.zerstoert=false; } }
+  for(const sw of switchDefs) sw.zerstoert = false;   // von der Stachelwand zerschlagene Hebel wieder da
+  splitter = [];
   linkOn = {};   // alle Hebel wieder aus
   resetMovers();
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zuruecksetzen) E.spiel.zuruecksetzen();   // z. B. Wechselboden (elemente/)

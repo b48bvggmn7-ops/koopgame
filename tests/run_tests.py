@@ -4340,19 +4340,30 @@ async def wandsprung_nur_an_wand(g):
 @test
 async def stachelwand_zerschlaegt_broeckel(g):
     """Nutzerwunsch: die Stachelwand fährt nicht einfach durch alles, sondern zerschlägt Bröckelwände (Brocken, Kamera
-    wackelt); ein bewegter Boden OHNE Stacheln (Fahrstuhl) lässt Bröckelwände heil."""
+    wackelt) und – egal ob offen/umgelegt – Türen (die ganze Tür bleibt weg, auch wenn die Nummer wieder aus geht) und Hebel
+    (Splitter); ein bewegter Boden OHNE Stacheln (Fahrstuhl) lässt Bröckelwände heil; Neustart stellt alles wieder her."""
     mps = [{'x': 400, 'y': 520, 'w': 40, 'h': 160, 'look': 'wall', 'group': 1, 'targetX': 1400, 'targetY': 520, 'speed': 6},
            {'x': 400, 'y': 200, 'w': 80, 'h': 40, 'look': 'ground', 'group': 2, 'targetX': 1400, 'targetY': 200, 'speed': 6}]
     sp = [{'x': 460, 'y': 680 - 40*k, 'w': 40, 'h': 40, 'dir': 1} for k in range(4)]
+    tuer = [{'x': 1120, 'y': 680 - 40*k - 20, 'link': 5} for k in range(3)]   # Tür-Kästchen (Mitte), Nummer 5 (Hebel umgelegt: offen)
     await g.load(level([ground(0, 680, 3000), ground(900, 560, 40, 120, 'crumble'), ground(900, 200, 40, 40, 'crumble')],
-                       {'x': 2000, 'y': 680}, {'x': 2100, 'y': 680}, movingPlatforms=mps, spikes=sp))
+                       {'x': 2000, 'y': 680}, {'x': 2100, 'y': 680}, movingPlatforms=mps, spikes=sp, doors=tuer,
+                       switches=[{'x': 1300, 'y': 660, 'link': 5}, {'x': 1460, 'y': 660, 'link': 6}]))
     r = await g.ev("""(() => { menuScreen = 'pause'; deathState = null; let ts = 5e6, wackel = 0;
-      for(let i = 0; i < 160; i++){ stepSim(ts += 1000/54); wackel = Math.max(wackel, kameraWackeln || 0); }
-      const b = solids.filter(s => s.type === 'crumble'); menuScreen = null;
-      return {unten: b.filter(s => s.y >= 560).map(s => !!s.gone), oben: b.filter(s => s.y < 300).map(s => !!s.gone), wackel}; })()""")
+      setLink(5, true);   // Tür offen, Hebel 5 umgelegt – wird trotzdem zerschlagen (Nutzer: „egal ob umgelegt oder nicht“)
+      for(let i = 0; i < 200; i++){ stepSim(ts += 1000/54); wackel = Math.max(wackel, kameraWackeln || 0); }
+      const b = solids.filter(s => s.type === 'crumble'), t = solids.filter(s => s.type === 'door');
+      const e = {unten: b.filter(s => s.y >= 560).map(s => !!s.gone), oben: b.filter(s => s.y < 300).map(s => !!s.gone), wackel,
+                 tuer: t.map(s => !!s.zerstoert && !!s.gone), hebel: switchDefs.map(s => !!s.zerstoert), splitter: splitter.length > 0};
+      setLink(5, false); for(let i = 0; i < 30; i++) stepSim(ts += 1000/54); e.tuerBleibtWeg = t.every(s => s.gone);
+      resetLevel(); e.neu = {tuer: t.map(s => !!s.zerstoert || !!s.gone), hebel: switchDefs.map(s => !!s.zerstoert)};
+      menuScreen = null; return e; })()""")
     assert r['unten'] and all(r['unten']), f'Stachelwand zerschlägt die Bröckelwand nicht: {r}'
     assert r['oben'] and not any(r['oben']), f'bewegter Boden ohne Stacheln zerschlägt Bröckel: {r}'
     assert r['wackel'] > 0, f'kein Kamera-Wackeln: {r}'
+    assert all(r['tuer']) and r['hebel'] == [True, True] and r['splitter'], f'Tür/Hebel nicht zerschlagen: {r}'
+    assert r['tuerBleibtWeg'], f'zerschlagene Tür kommt beim Ausschalten zurück: {r}'
+    assert not any(r['neu']['tuer']) and not any(r['neu']['hebel']), f'Neustart stellt Tür/Hebel nicht wieder her: {r}'
 
 @test
 async def stachelwand_faehrt_mit(g):
