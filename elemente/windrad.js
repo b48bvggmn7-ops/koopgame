@@ -110,7 +110,8 @@ elementRegistrieren({
     zuruecksetzen(){ for(const w of windraeder){ w.dreh = 0; w.gezaehlt = false; } },
     schritt(){
       for(const w of windraeder){
-        const k = typeof pusteTrifft === 'function' ? pusteTrifft(windradRotor(w)) : 0;
+        let k = typeof pusteTrifft === 'function' ? pusteTrifft(windradRotor(w)) : 0;
+        if(w.mausWind > 0){ k = 1; w.mausWind--; }   // Editor-Test: per Maus angepustet (js/06 testMausSchritt)
         const vorher = w.dreh;
         w.dreh = k > 0 ? Math.min(1, w.dreh + WINDRAD_ANLAUF*k) : w.dreh*WINDRAD_AUSLAUF;
         if(w.dreh < 0.01) w.dreh = 0;

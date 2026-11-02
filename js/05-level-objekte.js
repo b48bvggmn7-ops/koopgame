@@ -144,8 +144,9 @@ function onPlate(player, pl){
 }
 function updatePlates(players){
   const want = {};
+  if(typeof testMausSchritt === 'function') testMausSchritt();   // Editor-Test: Maus-Klicks auf Schalter (js/06)
   for(const pl of plates){
-    const down = players.some(p => onPlate(p, pl));
+    const down = players.some(p => onPlate(p, pl)) || !!pl.mausDown;   // mausDown: per Maus gedrückt (Editor-Test, js/06)
     if(down && !pl.down){   // Platte wird BETRETEN (war frei, jetzt steht jemand drauf; beide zugleich = einmal)
       SFX.lever(true, pl.x); zielHinweisMerken(pl.link);
       if(typeof spiegelAusloesen === 'function') spiegelAusloesen(pl.link);   // schaltbare Spiegel drehen einmal (elemente/licht.js)

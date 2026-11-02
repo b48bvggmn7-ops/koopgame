@@ -84,6 +84,70 @@ function testHolen(){
   andere._px = andere.x; andere._py = andere.y;   // kein Wischen beim Zeichnen (Zwischenbilder)
   testJumpMsg = (andere.male ? 'Affe' : 'Schweinchen') + ' geholt (Q)'; testJumpT = performance.now();
 }
+// Test-Hilfe im Editor-Test (Nutzerwunsch: „mit der Maus auf Schalter klicken, um einfacher zu testen“): ein Klick auf
+//   Hebel, Tür, Wechselboden (mit Nummer) -> schaltet die Nummer um wie ein Hebel
+//   Druckplatte -> bleibt gedrückt (wie jemand drauf) bis zum nächsten Klick (pl.mausDown, wirkt in updatePlates)
+//   Windrad    -> wird angepustet (w.mausWind Schritte voller Wind, elemente/windrad.js) – dreht und schaltet wie echt
+//   Floß-Rad   -> sein Blatt-Floß fährt ans andere Ende der Schiene (wie gekurbelt, s.radZug)
+// Der Klick wird nur gemerkt; ausgeführt im festen Takt (testMausSchritt aus updatePlates).
+const TEST_MAUS_RADIUS = 34;      // px (Welt): so nah muss der Klick am Element sein
+const TEST_MAUS_FLOSS_MAX = 900;  // Schritte: so lange zieht ein Maus-Klick höchstens am Floß (falls es hängen bleibt)
+let testMausKlicks = [], testMausFloesse = [];
+function testMausWelt(e){   // Bildschirm -> Welt (Zoom wie applyWorldZoom in 09-kamera.js)
+  const r = cvs.getBoundingClientRect(); if(!r.width) return null;
+  const sx = (e.clientX - r.left)/r.width*W, sy = (e.clientY - r.top)/r.height*H;
+  return {x: sx/zoom + camX, y: (sy - H*(1 - zoom))/zoom};
+}
+function testMausZiel(p){   // nächstes klickbares Element in TEST_MAUS_RADIUS
+  let best = null, bd = TEST_MAUS_RADIUS;
+  const nimm = (d, ziel) => { if(d < bd){ bd = d; best = ziel; } };
+  const zuRechteck = (s) => Math.hypot(Math.max(s.x - p.x, 0, p.x - (s.x + s.w)), Math.max(s.y - p.y, 0, p.y - (s.y + s.h)));
+  for(const sw of switchDefs) if(!sw.zerstoert) nimm(Math.hypot(p.x - sw.x, p.y - (sw.y + 4)), {art: 'hebel', link: sw.link, x: sw.x, sw});
+  for(const pl of plates) nimm(Math.hypot(p.x - pl.x, p.y - (pl.y + 16)), {art: 'platte', pl});
+  for(const s of solids){
+    if(s.type === 'door' && s.link && !s.zerstoert) nimm(zuRechteck(s), {art: 'tuer', link: s.link, x: s.x + s.w/2});
+    if(s.type === 'wechsel' && s.link) nimm(zuRechteck(s), {art: 'wechsel', link: s.link, x: s.x + s.w/2});
+  }
+  if(typeof windraeder !== 'undefined') for(const w of windraeder) nimm(Math.hypot(p.x - w.x, p.y - (w.y - WINDRAD_HOEHE)), {art: 'windrad', w});
+  if(typeof flossRaeder !== 'undefined') for(const R of flossRaeder) nimm(Math.hypot(p.x - R.x, p.y - (R.y - FLOSSRAD_HOEHE)), {art: 'flossrad', R});
+  return best;
+}
+function testMausSchritt(){
+  for(const z of testMausKlicks){
+    if(z.art === 'hebel' || z.art === 'tuer' || z.art === 'wechsel'){
+      const an = !linkOn[z.link];
+      setLink(z.link, an);
+      if(typeof spiegelAusloesen === 'function') spiegelAusloesen(z.link);
+      zielHinweisMerken(z.link);
+      if(z.sw) z.sw.pulledT = performance.now();
+      SFX.lever(an, z.x);
+      testJumpMsg = 'Maus: Nummer ' + z.link + (an ? ' an' : ' aus');
+    } else if(z.art === 'platte'){
+      z.pl.mausDown = !z.pl.mausDown;
+      testJumpMsg = 'Maus: Druckplatte ' + z.pl.link + (z.pl.mausDown ? ' gedrückt' : ' frei');
+    } else if(z.art === 'windrad'){
+      z.w.mausWind = Math.ceil(WINDRAD_AN/WINDRAD_ANLAUF) + 6;
+      testJumpMsg = 'Maus: Windrad ' + z.w.link + ' angepustet';
+    } else if(z.art === 'flossrad'){
+      const s = flossradFloss(z.R);
+      if(s){
+        const dir = s.x - s.x0 < s.x1 - s.x ? 1 : -1;   // ans weiter entfernte Ende
+        testMausFloesse = testMausFloesse.filter(f => f.s !== s).concat([{s, dir, n: TEST_MAUS_FLOSS_MAX}]);
+        testJumpMsg = 'Maus: Floß fährt ' + (dir > 0 ? 'nach rechts' : 'nach links');
+      } else testJumpMsg = 'Maus: Floß-Rad ohne Blatt-Floß';
+    }
+    testJumpT = performance.now();
+  }
+  testMausKlicks = [];
+  for(const f of testMausFloesse){ f.s.radZug = f.dir; f.n--; }
+  testMausFloesse = testMausFloesse.filter(f => f.n > 0 && (f.dir > 0 ? f.s.x < f.s.x1 : f.s.x > f.s.x0));
+}
+window.addEventListener('pointerdown', e=>{
+  if(typeof editorTestMode === 'undefined' || !editorTestMode || e.button !== 0) return;
+  if((typeof menuActive === 'function' && menuActive()) || deathState) return;
+  const p = testMausWelt(e), z = p && testMausZiel(p);
+  if(z) testMausKlicks.push(z);
+});
 window.addEventListener('keydown', e=>{
   if(e.repeat) return;
   if(e.code==='KeyC') testJump(+1);

@@ -415,6 +415,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Test-Hilfe im Editor-Test („▶ Testen“, Nutzerwunsch): Taste Q holt die andere Figur direkt neben die eigene (die von
     Spieler 1, Tastatur links), Hinweis „… geholt (Q)“. Nur ohne Computer-Partner – mit Partner bleibt Q „Warte hier /
     Komm her“; im normalen Spiel ohne Wirkung. Test editor_test_q_holt_partner.
+  - Test-Hilfe im Editor-Test (auch online mit ?test=1; Nutzerwunsch 02.11.: „mit der Maus auf Schalter klicken, um einfacher
+    zu testen“): Linksklick auf Hebel, Tür oder Wechselboden (mit Nummer) schaltet die Nummer um wie ein Hebel; Druckplatte
+    bleibt gedrückt bis zum nächsten Klick; Windrad wird angepustet (dreht und schaltet wie echt); Floß-Rad schickt sein
+    Blatt-Floß ans andere Ende der Schiene. Hinweis oben („Maus: Nummer 3 an“ …); im normalen Spiel ohne Wirkung
+    (`testMausSchritt` in js/06, im festen Takt). Test test_maus_schalter.
   - (Artifact-Zeit) Das Spiel startete in der Artifact-Ansicht nicht, wenn der Kommentar VOR <html> > ~8 KB war.
     Im GitHub-Projekt nicht mehr relevant, Bilder liegen jetzt als Dateien in assets/.
   - Checkpoints aus dem Editor (data.checkpoints [{x,y}]): zählen erst, wenn BEIDE vorbei sind (Punkte am Mast

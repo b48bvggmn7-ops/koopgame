@@ -4660,6 +4660,38 @@ async def haken_weich_mitnehmen(g):
     assert r['seeds'] == [1000], f'Blätter der Liane springen (wechselnde Lage, auch an der Liane des Affen): {r}'
 
 @test
+async def test_maus_schalter(g):
+    """Nutzerwunsch: im Editor-Test mit der Maus auf Schalter klicken, um einfacher zu testen – Hebel/Tür/Wechselboden schalten
+    die Nummer um, die Druckplatte bleibt gedrückt bis zum nächsten Klick, das Windrad wird angepustet, das Floß-Rad schickt
+    sein Blatt ans andere Ende; ohne Editor-Test passiert nichts."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 140, 'y': 680}, welt='dschungel',
+                       switches=[{'x': 300, 'y': 660, 'link': 1}], doors=[{'x': 1100, 'y': 660, 'link': 2}],
+                       plates=[{'x': 400, 'y': 660, 'link': 3}], windraeder=[{'x': 500, 'y': 680, 'link': 4}],
+                       flossRaeder=[{'x': 600, 'y': 680, 'link': 5}], blattFloesse=[{'x': 640, 'y': 600, 'schiene': 5, 'link': 5}],
+                       switchFloors=[{'x': 900, 'y': 560, 'gruppe': 'A', 'link': 6}]))
+    await g.steps(3)
+    r = await g.ev("""(() => {
+      const klick = (x, y) => { const r = cvs.getBoundingClientRect(); menuScreen = null;   // im Pausenmenü zählt kein Klick
+        window.dispatchEvent(new PointerEvent('pointerdown', {button: 0, clientX: r.left + (x - camX)*zoom/W*r.width, clientY: r.top + (y*zoom + H*(1 - zoom))/H*r.height})); menuScreen = 'pause'; };
+      menuScreen = 'pause'; let ts = 5e6; const st = n => { for(let i = 0; i < n; i++) stepSim(ts += 1000/54); };
+      const e = {};
+      editorTestMode = false; klick(300, 664); st(2); e.ohneTest = !!linkOn[1];
+      editorTestMode = true;
+      klick(300, 664); st(2); e.hebel = !!linkOn[1];
+      klick(1100, 660); st(2); e.tuer = !!linkOn[2]; e.tuerOffen = solids.some(s => s.type === 'door' && s.open);
+      klick(400, 676); st(5); e.platte = !!linkOn[3]; st(30); e.platteBleibt = !!linkOn[3];
+      klick(400, 676); st(3); e.platteFrei = !linkOn[3];
+      klick(500, 680 - WINDRAD_HOEHE); st(25); e.windrad = !!linkOn[4];
+      const s = blattFloesse[0]; klick(600, 680 - FLOSSRAD_HOEHE); st(200); e.floss = [s.x, s.x0, s.x1];
+      klick(920, 580); st(2); e.wechsel = !!linkOn[6];
+      editorTestMode = false; menuScreen = null; return e; })()""")
+    assert not r['ohneTest'], f'Maus schaltet auch ohne Editor-Test: {r}'
+    assert r['hebel'] and r['tuer'] and r['tuerOffen'] and r['wechsel'], f'Hebel/Tür/Wechselboden per Maus: {r}'
+    assert r['platte'] and r['platteBleibt'] and r['platteFrei'], f'Druckplatte per Maus: {r}'
+    assert r['windrad'], f'Windrad per Maus nicht angepustet: {r}'
+    assert r['floss'][0] == r['floss'][2], f'Floß-Rad per Maus: Blatt nicht am anderen Ende: {r}'
+
+@test
 async def editor_haken_affenbahn(g):
     """Nutzer: „ich muss sehen, wo der Affe pendelt, sonst kann ich keine Münzen ausrichten“ – der Editor zeichnet an jedem
     bewegten Haken die Bahn des Affen (gerade Strecke, Radius + 0,1 × Figurenhöhe unter dem Haken); so hängt er im Spiel."""
