@@ -144,7 +144,7 @@ function draw(){
     ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#4fc3f7'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(h.c*TILE+TILE/2, h.r*TILE+TILE/2, TILE*0.42, 0, Math.PI*2); ctx.stroke(); ctx.restore();
     if(mv.dc!==0 || mv.dr!==0) drawMoveArrow(mv);
-    if(mv.dr===0 && mv.dc!==0) hakenBogenZeichnen(mv, h);   // waagerecht: pendelt im Spiel – Bogen zeigen (Münzen ausrichten)
+    if(mv.dc!==0 || mv.dr!==0) hakenAffenBahnZeichnen(mv, h);   // wo der Affe mitfährt (Münzen ausrichten)
   }
 
   // ausgewählte Bewegung gelb hervorheben (verschwindet, wenn das Stück inzwischen gelöscht wurde)
@@ -209,54 +209,29 @@ function draw(){
   requestAnimationFrame(draw);
 }
 
-// Pendel-Bogen eines waagerecht bewegten Hakens (Nutzer: „ich muss im Editor sehen, wie der Haken pendelt, sonst kann ich
-// keine Münzen daran ausrichten“) – dieselbe Rechnung wie im Spiel (hakenPendel/hakenPosition in js/05): Aufhängepunkt über
-// der Mitte = Unterkante von Boden/Wand höchstens 9 Reihen darüber, sonst das Blätterdach über dem Bildrand.
-// Dazu die Bahn des Affen (Nutzer: „ich muss sehen, wo der Affe pendelt“): er hängt mit voller Lianen-Länge (= Radius,
-// LIANE_VOLLE_LAENGE) an der Brust (0,6 × Figurenhöhe über den Füßen) senkrecht unter dem Haken – breites Band = seine Figur,
-// gestrichelte Mitte, dünne Lianen + Affen-Umriss am Anfang, in der Mitte und am Ende.
+// Bahn des Affen an einem bewegten Haken (Nutzer: „ich muss sehen, wo der Affe pendelt, sonst kann ich keine Münzen
+// ausrichten“): der Haken fährt gerade von Start zu Ziel; der Affe hängt mit voller Lianen-Länge (= Radius,
+// LIANE_VOLLE_LAENGE) an der Brust (0,6 × Figurenhöhe über den Füßen) senkrecht darunter – breites Band = seine Figur,
+// gestrichelte Mitte, Liane + Affen-Umriss am Start, in der Mitte und am Ziel.
 const ED_FIGUR_H = 32.3, ED_FIGUR_W = 22;
-function hakenBogenZeichnen(mv, h){
-  const {pkt, wmax, top, cx, sx, sy} = hakenBogenEditor(mv);
+function hakenAffenBahn(mv, h){
+  const sx = mv.c*TILE + TILE/2, sy = mv.r*TILE + TILE/2, tx = (mv.c + mv.dc)*TILE + TILE/2, ty = (mv.r + mv.dr)*TILE + TILE/2;
   const R = ((h && h.radius) || 6.5)*TILE, mitte = R + ED_FIGUR_H*0.1;   // Seil-Ende (Brust) -> Figurenmitte
-  const affe = w => { const [x, y] = pkt(w); return [x, y + mitte]; };
+  return {R, mitte, haken: [[sx, sy], [(sx + tx)/2, (sy + ty)/2], [tx, ty]]};
+}
+function hakenAffenBahnZeichnen(mv, h){
+  const {R, mitte, haken} = hakenAffenBahn(mv, h);
+  const [[sx, sy], , [tx, ty]] = haken;
   ctx.save();
   ctx.lineCap = 'round';
   ctx.strokeStyle = 'rgba(199,140,84,.22)'; ctx.lineWidth = ED_FIGUR_H;
-  ctx.beginPath();
-  for(let i = 0; i <= 32; i++){ const [x, y] = affe(-wmax + 2*wmax*i/32); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx, sy + mitte); ctx.lineTo(tx, ty + mitte); ctx.stroke();
   ctx.strokeStyle = 'rgba(232,170,110,.9)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]);
-  for(const w of [-wmax, 0, wmax]){
-    const [hx, hy] = pkt(w), [ax, ay] = affe(w);
+  for(const [hx, hy] of haken){
     ctx.strokeStyle = 'rgba(111,179,90,.85)'; ctx.lineWidth = 2;   // Liane Haken -> Affe
-    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(ax, ay - mitte + R); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx, hy + R); ctx.stroke();
     ctx.fillStyle = 'rgba(160,104,58,.55)'; ctx.strokeStyle = 'rgba(232,170,110,.95)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(ax, ay, ED_FIGUR_W/2, ED_FIGUR_H/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(hx, hy + mitte, ED_FIGUR_W/2, ED_FIGUR_H/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   }
   ctx.restore();
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,209,102,.85)'; ctx.lineWidth = 2.5; ctx.setLineDash([6, 4]);
-  ctx.beginPath();
-  for(let i = 0; i <= 32; i++){ const [x, y] = pkt(-wmax + 2*wmax*i/32); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-  ctx.stroke(); ctx.setLineDash([]);
-  // Liane vom Aufhängepunkt zum Start (dünn) und tiefster Punkt des Bogens
-  ctx.strokeStyle = 'rgba(111,179,90,.6)'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(cx, Math.max(top, -SKY*TILE)); ctx.lineTo(sx, sy); ctx.stroke();
-  const [mx, my] = pkt(0);
-  ctx.fillStyle = 'rgba(255,209,102,.9)'; ctx.beginPath(); ctx.arc(mx, my, 3.5, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
-}
-function hakenBogenEditor(mv){
-  const sx = mv.c*TILE + TILE/2, sy = mv.r*TILE + TILE/2, tx = (mv.c + mv.dc)*TILE + TILE/2;
-  const cx = (sx + tx)/2, A = Math.abs(tx - sx)/2, cc = Math.floor(cx/TILE);
-  let top = null;
-  for(let r = mv.r - 1; r >= mv.r - 10; r--){
-    const t = tiles[cc + ',' + r];
-    if(['ground', 'wall', 'crumble', 'haft'].includes(t) && (r + 1)*TILE <= sy - 14 && sy - (r + 1)*TILE <= 9*TILE){ top = (r + 1)*TILE; break; }
-  }
-  if(top === null) top = -(typeof SKY_ROOM !== 'undefined' ? SKY_ROOM : 127.06) - 10;
-  const H = Math.max(80, sy - top), L = Math.hypot(A, H), wmax = Math.asin(A/L), dy = L*Math.cos(wmax) - (sy - top);
-  const pkt = w => [cx + L*Math.sin(w), top + L*Math.cos(w) - dy];
-  return {pkt, wmax, top, cx, sx, sy};
 }

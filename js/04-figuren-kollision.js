@@ -30,7 +30,7 @@ function resetLevel(){
   if(typeof syncSwitchCarriers === 'function') syncSwitchCarriers();   // mitfahrende Hebel zurück an den Start
   for(const c of coins){ c.taken = false; c.pop = 0; c.takenAt = 0; }
   coinFx = []; // Neustart: Münzen wieder da (beim Sterben bleiben sie gesammelt)
-  for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; h.fertig=false; h.u=0; h.schnitt=undefined; } }
+  for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; h.fertig=false; h.u=0; } }
   activeCp = -1; deathState = null; zielHinweise = [];
   for(const cp of checkpointDefs){ cp.reachedM = false; cp.reachedF = false; cp.raiseT = 0; }
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zuruecksetzen) E.spiel.zuruecksetzen();   // z. B. Wechselboden (elemente/)

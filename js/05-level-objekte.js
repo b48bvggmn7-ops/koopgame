@@ -415,30 +415,18 @@ function activateVisibleMovers(){
 
 // Bewegte Haken (Nutzer: „die Liane fährt hin und her, das sieht nicht natürlich aus – sie soll eher schwingen“, „der Affe
 // wird durch die Gegend geschleudert“): der Haken läuft weich (langsam an den Enden, in der Mitte am schnellsten – kein
-// Ruck beim Umkehren); fährt er waagerecht, PENDELT er auf einem Bogen um einen Aufhängepunkt darüber (Material oder
-// Blätterdach, hakenPendel). Wer dranhängt, wird mit dem Haken mitgenommen (schwingt relativ zu ihm weiter wie bisher).
+// Ruck beim Umkehren) auf gerader Strecke. Wer dranhängt, wird mit dem Haken mitgenommen (schwingt relativ zu ihm weiter).
+// (Ein Pendeln auf einem Bogen samt Halteseil gab es kurz – Nutzer: „zu kompliziert“, wieder heraus.)
 // h.u = Fortschritt 0…1 auf der Strecke (gleiches Durchschnittstempo wie früher h.speed).
-function hakenPendel(h){
-  if(h._pendel !== undefined) return h._pendel;
-  if(h.startY !== h.targetY || h.startX === h.targetX) return (h._pendel = null);
-  const cx = (h.startX + h.targetX)/2, A = Math.abs(h.targetX - h.startX)/2;
-  const halt = typeof hakenAufhaengeY === 'function' ? hakenAufhaengeY(cx, h.startY) : null;
-  const top = halt !== null ? halt : -SKY_ROOM - 10, H = Math.max(80, h.startY - top), L = Math.hypot(A, H);
-  return (h._pendel = {cx, top, L, wmax: Math.asin(A/L), halt});
-}
 function hakenPosition(h){
   if(h.u <= 0) return [h.startX, h.startY];
   if(h.u >= 1) return [h.targetX, h.targetY];   // an den Enden genau auf Start/Ziel (keine Rundungsreste)
-  const e = (1 - Math.cos(Math.PI*h.u))/2, P = hakenPendel(h);   // weich: 0 … 1
-  if(P){ const w = P.wmax*(2*e - 1)*Math.sign(h.targetX - h.startX); return [P.cx + P.L*Math.sin(w), P.top + P.L*Math.cos(w) - (P.L*Math.cos(P.wmax) - (h.startY - P.top))]; }
+  const e = (1 - Math.cos(Math.PI*h.u))/2;   // weich: 0 … 1
   return [h.startX + (h.targetX - h.startX)*e, h.startY + (h.targetY - h.startY)*e];
 }
 function updateMovingHooks(){
   for(const h of hooks){
-    if(!h.moving) continue;
-    if(h.schnitt !== undefined && h.schnitt < 999) h.schnitt++;    // Halteseil seit so vielen Schritten durchgeschnitten (js/12b)
-    if(!h.tripActive) continue;
-    if(h.switchCtl && h.schnitt === undefined) h.schnitt = 0;        // erster Start per Schalter: Halteseil reißt
+    if(!h.moving || !h.tripActive) continue;
     const speed = h.speed || MOVE_PLAT_SPEED, laenge = Math.hypot(h.targetX - h.startX, h.targetY - h.startY) || 1;
     if(h.u === undefined) h.u = 0;
     h.u += h.moveDir*speed/laenge;

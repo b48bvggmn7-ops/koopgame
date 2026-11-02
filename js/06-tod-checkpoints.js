@@ -113,7 +113,7 @@ function updateCheckpoints(){
 }
 function resetMovers(){
   for(const s of solids){ if(s.type==='moveplat'){ s.x=s.startX; s.y=s.startY; s.moveDir=1; s.tripActive=false; s.fertig=false; } }
-  for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; h.fertig=false; h.u=0; h.schnitt=undefined; } }
+  for(const h of hooks){ if(h.moving){ h.x=h.startX; h.y=h.startY; h.moveDir=1; h.tripActive=false; h.fertig=false; h.u=0; } }
   for(const sw of switchDefs) sw.wasPressed = false;
   syncSwitchCarriers();   // mitfahrende Hebel gleich mit zurück
   // wer noch an einem bewegten Haken hängt, lässt los (der Haken springt ja zurück)

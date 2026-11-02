@@ -4634,18 +4634,18 @@ async def hebel_faehrt_mit_boden(g):
     assert st['px'] < 520 and abs(st['sx'] - (st['px'] + 60)) < 0.01, f'Hebel nach Neustart nicht mit dem Boden am Start: {st}'
 
 @test
-async def haken_pendelt(g):
-    """Nutzer: bewegte Liane „fährt hin und her, nicht natürlich – soll eher schwingen“, „der Affe wird durch die Gegend
-    geschleudert“, „die Blätter bewegen sich viel zu schnell“: ein waagerecht bewegter Haken pendelt auf einem Bogen um einen
-    festen Aufhängepunkt darüber (an den Enden langsam, in der Mitte schnell, Mitte etwas tiefer); wer dran hängt, wird
-    mitgenommen und nicht weggeschleudert; die Liane wird mit fester Blatt-Lage gezeichnet."""
+async def haken_weich_mitnehmen(g):
+    """Nutzer: bewegte Liane „fährt hin und her, nicht natürlich“, „der Affe wird durch die Gegend geschleudert“, „die Blätter
+    bewegen sich viel zu schnell“: ein bewegter Haken fährt weich (an den Enden langsam, in der Mitte schnell) auf GERADER
+    Strecke (Pendeln war zu kompliziert, Nutzer 02.11.); wer dran hängt, wird mitgenommen und nicht weggeschleudert; die
+    Liane wird mit fester Blatt-Lage gezeichnet."""
     await g.load(level([ground(0, 680, 3000)], {'x': 1000, 'y': 680}, {'x': 100, 'y': 680}, welt='dschungel',
                        hooks=[{'x': 1000, 'y': 300, 'radius': 260, 'targetX': 1400, 'targetY': 300, 'speed': 4}]))
     r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1, st = () => stepSim(ts += 1000/54);
       h.tripActive = true; const bahn = [];
       for(let i = 0; i < 100; i++){ st(); bahn.push([h.x, h.y]); }
       const v = bahn.slice(1).map((b, i) => Math.hypot(b[0] - bahn[i][0], b[1] - bahn[i][1]));
-      const e = {anfang: v[0], mitte: Math.max(...v), ymitte: Math.max(...bahn.map(b => b[1])), pendel: hakenPendel(h)};
+      const e = {anfang: v[0], mitte: Math.max(...v), ymax: Math.max(...bahn.map(b => Math.abs(b[1] - 300)))};
       // Affe hängt dran: wird mitgenommen, kein Herausschleudern (Tempo bleibt im Rahmen)
       KEYS[P.keys.hook] = true; P.x = h.x; P.y = h.y + 150 + P.h*0.6; P.vx = P.vy = 0; P.grounded = false;
       P.hookAttached = true; P.anchor = h; P.ropeLen = 150; P.ropeMax = 260; P.ropeWasAirborne = true;
@@ -4654,68 +4654,43 @@ async def haken_pendelt(g):
       let seeds = []; const alt = lianeZeichnen; lianeZeichnen = (...a) => { seeds.push(a[6]); return alt(...a); };
       try { draw(); st(); st(); st(); draw(); } finally { lianeZeichnen = alt; KEYS[P.keys.hook] = false; menuScreen = null; }
       e.seeds = [...new Set(seeds)]; return e; })()""")
-    assert r['pendel'] and r['pendel']['top'] < 0, f'kein Aufhängepunkt darüber: {r}'
     assert r['anfang'] < 2.5 and r['mitte'] > 2*r['anfang'] + 2, f'nicht weich (an den Enden langsam, in der Mitte schnell): {r}'
-    assert r['ymitte'] > 300 + 5, f'kein Bogen (Mitte nicht tiefer): {r}'
-    assert r['dran'] and r['vmax'] < 14, f'Affe wird vom pendelnden Haken weggeschleudert: {r}'
+    assert r['ymax'] < 0.01, f'Haken fährt nicht gerade (pendelt): {r}'
+    assert r['dran'] and r['vmax'] < 14, f'Affe wird vom bewegten Haken weggeschleudert: {r}'
     assert r['seeds'] == [1000], f'Blätter der Liane springen (wechselnde Lage, auch an der Liane des Affen): {r}'
 
 @test
-async def editor_haken_bogen(g):
-    """Nutzer: „ich muss im Editor sehen, wie der Haken pendelt, sonst kann ich keine Münzen daran ausrichten“ – der Editor
-    zeichnet für waagerecht bewegte Haken den Pendel-Bogen; er liegt genau dort, wo der Haken im Spiel schwingt (mit Decke
-    darüber und ohne)."""
+async def editor_haken_affenbahn(g):
+    """Nutzer: „ich muss sehen, wo der Affe pendelt, sonst kann ich keine Münzen ausrichten“ – der Editor zeichnet an jedem
+    bewegten Haken die Bahn des Affen (gerade Strecke, Radius + 0,1 × Figurenhöhe unter dem Haken); so hängt er im Spiel."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
-        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(60)] + [[c, 1, 'wall'] for c in range(30, 45)], 'spikes': [], 'coins': [],
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(60)], 'spikes': [], 'coins': [],
                  'checkpoints': [], 'startM': {'c': 2, 'r': 16},
-                 'hooks': [{'c': 10, 'r': 8, 'radius': 5, 'move': {'dc': 10, 'dr': 0, 'speed': 4}},
-                           {'c': 32, 'r': 7, 'radius': 5, 'move': {'dc': 8, 'dr': 0, 'speed': 4}}]}
+                 'hooks': [{'c': 10, 'r': 6, 'radius': 5, 'move': {'dc': 10, 'dr': 0, 'speed': 4}},
+                           {'c': 32, 'r': 5, 'radius': 4, 'move': {'dc': 8, 'dr': 2, 'speed': 4}}]}
         await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
         await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
-        ed = await p.evaluate("""hooks.map(h => { const B = hakenBogenEditor({c: h.c, r: h.r, ...h.move});
-          return [0.15, 0.5, 0.85].map(u => B.pkt(B.wmax*(2*(1 - Math.cos(Math.PI*u))/2 - 1))); })""")
-        bogen = await p.evaluate("(() => { let n = 0; const alt = hakenBogenZeichnen; hakenBogenZeichnen = (...a) => { n++; return alt(...a); }; try { draw(); } finally { hakenBogenZeichnen = alt; } return n; })()")
+        ed = await p.evaluate("hooks.map(h => { const B = hakenAffenBahn({c: h.c, r: h.r, ...h.move}, h); return B.haken.map(([x, y]) => [x, y + B.mitte]); })")
+        n = await p.evaluate("(() => { let n = 0; const alt = hakenAffenBahnZeichnen; hakenAffenBahnZeichnen = (...a) => { n++; return alt(...a); }; try { draw(); } finally { hakenAffenBahnZeichnen = alt; } return n; })()")
+        assert n == 2, f'Editor zeichnet die Affen-Bahn nicht: {n}'
         spiel = json.loads(await p.evaluate("exportLevel()"))
-        pfad = TMP / 'bogen.json'; pfad.write_text(json.dumps(spiel))
+        pfad = TMP / 'affenbahn.json'; pfad.write_text(json.dumps(spiel))
         await p.goto(GAME); await p.wait_for_timeout(400); g2 = Game(p)
         await g2.load(str(pfad)); await g2.steps(2)
-        sp = await p.evaluate("hooks.map(h => [0.15, 0.5, 0.85].map(u => { h.u = u; return hakenPosition(h); }))")
-        # Affen-Bahn (Nutzer: „ich muss sehen, wo der Affe pendelt“): mit voller Liane (= Radius) hängt seine Mitte
-        # Radius + 0,1 × Figurenhöhe unter dem Haken – so zeichnet es der Editor (ED_FIGUR_H)
-        affe = await p.evaluate("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1;
-          h.moving = false; h.x = h.startX; h.y = h.startY;
+        # im Spiel: Affe mit voller Liane an den Haken (an Start, Mitte, Ziel festgehalten) – seine Mitte muss auf der Editor-Bahn liegen
+        sp = await p.evaluate("""hooks.map(h => [0, 0.5, 1].map(u => { menuScreen = 'pause'; let ts = 5e6; const P = p1;
+          h.u = u; [h.x, h.y] = hakenPosition(h); h.moving = false;
           P.x = h.x; P.y = h.y + hookRange(h) + P.h*0.6; P.vx = P.vy = 0; P.grounded = false;
           P.hookAttached = true; P.anchor = h; P.ropeLen = P.ropeMax = P.lianeZiel = hookRange(h); P.ropeWasAirborne = true;
           KEYS[P.keys.hook] = true; for(let i = 0; i < 120; i++) stepSim(ts += 1000/54); KEYS[P.keys.hook] = false; menuScreen = null;
-          return {dran: P.hookAttached, dy: (P.y - P.h/2) - h.y, R: hookRange(h), h: P.h}; })()""")
-        assert affe['dran'] and abs(affe['dy'] - (affe['R'] + affe['h']*0.1)) < 3, f'Affe hängt anders als im Editor gezeichnet: {affe}'
-        assert bogen == 2, f'Editor zeichnet den Bogen nicht: {bogen}'
+          const r = [P.x, P.y - P.h/2, P.hookAttached]; P.hookAttached = false; h.moving = true; return r; }))""")
         for a, b in zip(ed, sp):
-            for (ex, ey), (gx, gy) in zip(a, b):
-                assert abs(ex - gx) < 1 and abs(ey - gy) < 1, f'Editor-Bogen weicht vom Spiel ab: Editor {ed} / Spiel {sp}'
+            for (ex, ey), (gx, gy, dran) in zip(a, b):
+                assert dran and abs(ex - gx) < 3 and abs(ey - gy) < 3, f'Affen-Bahn im Editor weicht vom Spiel ab: Editor {ed} / Spiel {sp}'
     finally:
         srv.shutdown()
-
-@test
-async def haken_halteseil(g):
-    """Nutzer: „ist ein Hebel mit einer Liane verknüpft, sollte ein Seil die Liane halten – das Seil wird durch das Betätigen
-    des Hebels durchgeschnitten“: eine per Schalter gestartete Pendel-Liane hat ein Halteseil zur nächsten Wand auf der
-    Gegenseite; beim Schalten reißt es (h.schnitt zählt), Neustart macht es wieder ganz; Liane endet mittig zum Ring."""
-    await g.load(level([ground(0, 680, 3000), ground(240, -120, 80, 680, 'wall')], {'x': 500, 'y': 680}, {'x': 450, 'y': 680}, welt='dschungel',
-                       hooks=[{'x': 440, 'y': 300, 'radius': 200, 'targetX': 840, 'targetY': 300, 'speed': 4, 'switchLink': 7}],
-                       switches=[{'x': 1100, 'y': 660, 'link': 7}]))
-    await g.steps(5)
-    r = await g.ev("""(() => { const h = hooks[0], e = {punkt: hakenHalteseilPunkt(h), vorher: h.schnitt === undefined};
-      let taue = 0; const alt = tauZeichnen; tauZeichnen = (...a) => { taue++; return alt(...a); };
-      try { draw(); } finally { tauZeichnen = alt; } e.taue = taue;
-      menuScreen = 'pause'; let ts = 5e6; setLink(7, true); for(let i = 0; i < 20; i++) stepSim(ts += 1000/54);
-      e.schnitt = h.schnitt; e.faehrt = h.x > 445; resetLevel(); e.neu = h.schnitt === undefined; menuScreen = null; return e; })()""")
-    assert r['punkt']['wand'] and r['punkt']['x'] == 320 and r['vorher'] and r['taue'] >= 1, f'kein Halteseil zur Wand: {r}'
-    assert r['schnitt'] and r['schnitt'] >= 15 and r['faehrt'], f'Halteseil reißt beim Schalten nicht / Liane schwingt nicht: {r}'
-    assert r['neu'], f'Neustart macht das Halteseil nicht wieder ganz: {r}'
-
 @test
 async def bewegung_einmal(g):
     """Bewegung „fährt die Strecke einmal“ (Nutzerwunsch): bewegter Boden und bewegter Haken fahren einmal zum Ziel und
