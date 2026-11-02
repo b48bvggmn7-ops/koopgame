@@ -34,6 +34,7 @@ const KAMIN_ZU_ENG = 2;                          // ≤ 2 zu eng: 1 = nur 1,5 Re
 const KAMIN_BEQUEM_MIN = 3, KAMIN_BEQUEM_MAX = 5; // bequem: 4–5 Reihen je Sprung, verzeiht bis 0,37 s Reaktionszeit
 const KAMIN_KNAPP_MAX = 7;                       // 6–7 knapp: Kette hält nur bei schneller Reaktion (≤ 0,17 s)
 const KAMIN_MAX = 8;                             // 8 Grenze; ab 9 zu weit (Kette reißt ab, man fällt)
+const WANDSPRUNG_NUR_WAND = true;                 // Nutzerwunsch 02.11.: Wandsprung (und an der Wand rutschen) nur an Wand, nicht an Erde (wandsprungFlaeche, js/08)
 const WANDSPRUNG_HOEHE_JE_SPRUNG = 4.5;          // Reihen Steigung je Wandsprung im bequemen Kamin (= Höhenabstand Wand zu Wand)
 const WAND_MIN_HOEHE = 4;                        // Reihen: niedriger springt man normal hinauf (Sprung 3,2 Reihen) -> kein Wandsprung nötig
 // Einzelwand (Abstoßen in die Gegenrichtung): Scheitel 5 Reihen über dem Absprung, 5,6 Kästchen vor der Wand

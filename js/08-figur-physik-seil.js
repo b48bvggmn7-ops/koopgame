@@ -36,9 +36,16 @@ function updateSpikes(player){
 function ropeFling(player){
   player.ropeFling = true;
 }
+// Taugt das feste Teil für den Wandsprung? (WANDSPRUNG_NUR_WAND, Nutzerwunsch: nur Wand – Ziegel, Haftfläche, Durchbruch-
+// Wand, bewegte Wand-Stücke –, nicht Erde/Bröckel/Türen). Auch für die Vorausrechnung des Computer-Partners (js/30, .orig).
+function wandsprungFlaeche(s){
+  if(!WANDSPRUNG_NUR_WAND) return true;
+  const o = s.orig || s;
+  return o.type === 'wall' || o.type === 'bruch' || (o.type === 'moveplat' && o.look === 'wall');
+}
 function touchingWall(player, side){
   const probe = {x: side<0 ? player.x-player.w/2-4 : player.x+player.w/2, y:player.y-player.h+4, w:4, h:player.h-8};
-  for(const s of solids){ if(!s.gone && s.type !== 'oneway' && rectsOverlap(probe,s)) return true; }   // Steg = keine Wand
+  for(const s of solids){ if(!s.gone && s.type !== 'oneway' && wandsprungFlaeche(s) && rectsOverlap(probe,s)) return true; }   // Steg = keine Wand
   return false;
 }
 

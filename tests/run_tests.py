@@ -4313,6 +4313,31 @@ async def wetter_wechselt_selten(g):
     assert st == {'ph': 'sun', 'r': 0, 'bow': 0}, st
 
 @test
+async def wandsprung_nur_an_wand(g):
+    """Nutzerwunsch: Wandsprung (und an der Wand hängen/rutschen) nur an Wand, nicht an Erde – in einem Kamin aus Erde kommt
+    man nicht hoch, im gleichen Kamin aus Wand schon; der Computer-Partner rechnet genauso (wandsprungFlaeche)."""
+    ergebnis = {}
+    for typ in ('ground', 'wall'):
+        await g.load(level([ground(0, 680, 2000), ground(400, 200, 40, 480, typ), ground(560, 200, 40, 480, typ)],
+                           {'x': 480, 'y': 680}, {'x': 100, 'y': 680}))
+        ergebnis[typ] = await g.ev("""(() => { menuScreen = 'pause'; deathState = null; let ts = 5e6, minY = p1.y, wand = 0;
+          const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
+          for(let i = 0; i < 5; i++) st();
+          let richt = 1, t = -99;
+          for(let i = 0; i < 300; i++){
+            for(const k in KEYS) KEYS[k] = false;
+            if(p1.grounded && i - t > 10){ KEYS[p1.keys.jump] = KEYS[p1.keys.jump + '_pressed'] = true; t = i; }
+            else if(p1.onWall && i - t > 3){ richt = -p1.onWall; KEYS[p1.keys.jump] = KEYS[p1.keys.jump + '_pressed'] = true; t = i; }
+            KEYS[richt > 0 ? p1.keys.right : p1.keys.left] = true;
+            st(); minY = Math.min(minY, p1.y); if(p1.onWall) wand++;
+          }
+          const U = partnerUmgebung(480);
+          menuScreen = null; for(const k in KEYS) KEYS[k] = false;
+          return {hoch: Math.round(680 - minY), wand, partner: partnerWandBeruehrt(U, {x: 440 + p1.w/2, y: 400, w: p1.w, h: p1.h}, -1)}; })()""")
+    assert ergebnis['wall']['hoch'] > 200 and ergebnis['wall']['wand'] > 0 and ergebnis['wall']['partner'], f'an Wand geht kein Wandsprung: {ergebnis}'
+    assert ergebnis['ground']['hoch'] < 150 and ergebnis['ground']['wand'] == 0 and not ergebnis['ground']['partner'], f'an Erde geht noch ein Wandsprung: {ergebnis}'
+
+@test
 async def stachelwand_zerschlaegt_broeckel(g):
     """Nutzerwunsch: die Stachelwand fährt nicht einfach durch alles, sondern zerschlägt Bröckelwände (Brocken, Kamera
     wackelt); ein bewegter Boden OHNE Stacheln (Fahrstuhl) lässt Bröckelwände heil."""

@@ -326,7 +326,7 @@ function partnerKollision(U, b, achse){
 }
 function partnerWandBeruehrt(U, b, side){
   const px = side < 0 ? b.x - b.w/2 - 4 : b.x + b.w/2, py = b.y - b.h + 4, ph = b.h - 8;
-  for(const s of U.feste) if(!s.gone && px < s.x + s.w && px + 4 > s.x && py < s.y + s.h && py + ph > s.y) return true;
+  for(const s of U.feste) if(!s.gone && wandsprungFlaeche(s) && px < s.x + s.w && px + 4 > s.x && py < s.y + s.h && py + ph > s.y) return true;
   return false;
 }
 function partnerHakenZiel(b){

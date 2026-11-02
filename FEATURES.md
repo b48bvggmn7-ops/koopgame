@@ -14,6 +14,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (JUMP_FULL_STEPS = 10 Schritte) genau die bisherige Höchsthöhe 134 px (≈ 3,4 Kästchen) – länger halten bringt nichts
     mehr, höher als früher geht nie (es wird nur gebremst). Erneutes Drücken in der Luft ändert nichts. Wandsprung,
     Seil-Abflug, Sprungpilz, Aufwind/Schirm und Schwimmen sind ausgenommen und unverändert. Test variable_sprunghoehe.
+  - WANDSPRUNG NUR AN WAND (Nutzerwunsch 02.11., `WANDSPRUNG_NUR_WAND` in js/02, `wandsprungFlaeche` in js/08): an der Wand
+    hängen, rutschen und abspringen geht nur an Wand (Ziegel, Haftfläche, Durchbruch-Wand, bewegte Wand-Stücke) – nicht an
+    Erde, Bröckelboden oder Türen. Der Computer-Partner rechnet genauso. Alte-Mechaniken-Test: Ausnahme einzelwand_decke ab
+    Schritt 350 (Schweinchen berührt dort Erde; mit Erlaubnis des Nutzers). Test wandsprung_nur_an_wand.
   - BILD-REGEL (Leveldesign, AUSBAU-REGELWERK Punkt 12): bei jedem Rätsel, jeder Schalter-Stelle und jeder Zusammenarbeit
     können beide Figuren und alles, was sie brauchen, gleichzeitig im Bild sein. Auslöser (Hebel, Druckplatte,
     Licht-Kristall/Spiegel) und Ziel liegen höchstens BILD_MAX_SPALTEN = 20 Spalten auseinander (js/09-kamera.js; die

@@ -161,7 +161,9 @@
   // Ausnahmen (nur mit ausdrücklicher Erlaubnis des Nutzers): Szenario -> Figur -> ab diesem Schritt nicht mehr verglichen.
   // segeln_aufwind: der Affe landet bei Schritt 141 31 px neben der Pilz-Mitte (Körper auf dem Hutrand) – seit der Sprungpilz
   // auf der ganzen Hutbreite federt (PILZ_TREFFER, elemente/sprungpilz.js; Nutzerwunsch) wird er dort hochgeschleudert.
-  const AUSNAHMEN = {segeln_aufwind: {0: 141}};
+  // einzelwand_decke: das Schweinchen berührt bei Schritt 350 eine Erd-Fläche – seit dem Wandsprung nur an Wand
+  // (WANDSPRUNG_NUR_WAND, Nutzerwunsch und ausdrückliche Erlaubnis 02.11.) zählt Erde nicht mehr als Wand.
+  const AUSNAHMEN = {segeln_aufwind: {0: 141}, einzelwand_decke: {1: 350}};
   // Abspielen gegen die Referenz: liefert die erste Abweichung je Szenario (oder null)
   window.bahnenAbspielen = (referenz) => referenz.map(ref => {
     const sz = SZENARIEN.find(z => z.name === ref.name);
