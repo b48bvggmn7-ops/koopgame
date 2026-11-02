@@ -4623,6 +4623,33 @@ async def hebel_faehrt_mit_boden(g):
     assert st['px'] < 520 and abs(st['sx'] - (st['px'] + 60)) < 0.01, f'Hebel nach Neustart nicht mit dem Boden am Start: {st}'
 
 @test
+async def haken_pendelt(g):
+    """Nutzer: bewegte Liane „fährt hin und her, nicht natürlich – soll eher schwingen“, „der Affe wird durch die Gegend
+    geschleudert“, „die Blätter bewegen sich viel zu schnell“: ein waagerecht bewegter Haken pendelt auf einem Bogen um einen
+    festen Aufhängepunkt darüber (an den Enden langsam, in der Mitte schnell, Mitte etwas tiefer); wer dran hängt, wird
+    mitgenommen und nicht weggeschleudert; die Liane wird mit fester Blatt-Lage gezeichnet."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 1000, 'y': 680}, {'x': 100, 'y': 680}, welt='dschungel',
+                       hooks=[{'x': 1000, 'y': 300, 'radius': 260, 'targetX': 1400, 'targetY': 300, 'speed': 4}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const h = hooks[0], P = p1, st = () => stepSim(ts += 1000/54);
+      h.tripActive = true; const bahn = [];
+      for(let i = 0; i < 100; i++){ st(); bahn.push([h.x, h.y]); }
+      const v = bahn.slice(1).map((b, i) => Math.hypot(b[0] - bahn[i][0], b[1] - bahn[i][1]));
+      const e = {anfang: v[0], mitte: Math.max(...v), ymitte: Math.max(...bahn.map(b => b[1])), pendel: hakenPendel(h)};
+      // Affe hängt dran: wird mitgenommen, kein Herausschleudern (Tempo bleibt im Rahmen)
+      KEYS[P.keys.hook] = true; P.x = h.x; P.y = h.y + 150 + P.h*0.6; P.vx = P.vy = 0; P.grounded = false;
+      P.hookAttached = true; P.anchor = h; P.ropeLen = 150; P.ropeMax = 260; P.ropeWasAirborne = true;
+      let vmax = 0; for(let i = 0; i < 200; i++){ st(); if(P.hookAttached) vmax = Math.max(vmax, Math.hypot(P.vx, P.vy)); }
+      e.vmax = vmax; e.dran = P.hookAttached;
+      let seeds = []; const alt = lianeZeichnen; lianeZeichnen = (...a) => { seeds.push(a[6]); return alt(...a); };
+      try { draw(); st(); st(); st(); draw(); } finally { lianeZeichnen = alt; KEYS[P.keys.hook] = false; menuScreen = null; }
+      e.seeds = [...new Set(seeds)]; return e; })()""")
+    assert r['pendel'] and r['pendel']['top'] < 0, f'kein Aufhängepunkt darüber: {r}'
+    assert r['anfang'] < 2.5 and r['mitte'] > 2*r['anfang'] + 2, f'nicht weich (an den Enden langsam, in der Mitte schnell): {r}'
+    assert r['ymitte'] > 300 + 5, f'kein Bogen (Mitte nicht tiefer): {r}'
+    assert r['dran'] and r['vmax'] < 14, f'Affe wird vom pendelnden Haken weggeschleudert: {r}'
+    assert r['seeds'] == [1000], f'Blätter der Liane springen (wechselnde Lage, auch an der Liane des Affen): {r}'
+
+@test
 async def bewegung_einmal(g):
     """Bewegung „fährt die Strecke einmal“ (Nutzerwunsch): bewegter Boden und bewegter Haken fahren einmal zum Ziel und
     bleiben dort stehen (auch per Hebel: erneutes Schalten startet nicht wieder); „hin und her“ pendelt wie bisher;

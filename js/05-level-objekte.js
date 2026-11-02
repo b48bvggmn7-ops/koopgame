@@ -383,19 +383,42 @@ function activateVisibleMovers(){
   }
 }
 
-// Bewegte Haken: gleiche Logik wie bewegter Boden. Hängt Spieler 1 dran, zieht das Seil ihn automatisch mit.
+// Bewegte Haken (Nutzer: „die Liane fährt hin und her, das sieht nicht natürlich aus – sie soll eher schwingen“, „der Affe
+// wird durch die Gegend geschleudert“): der Haken läuft weich (langsam an den Enden, in der Mitte am schnellsten – kein
+// Ruck beim Umkehren); fährt er waagerecht, PENDELT er auf einem Bogen um einen Aufhängepunkt darüber (Material oder
+// Blätterdach, hakenPendel). Wer dranhängt, wird mit dem Haken mitgenommen (schwingt relativ zu ihm weiter wie bisher).
+// h.u = Fortschritt 0…1 auf der Strecke (gleiches Durchschnittstempo wie früher h.speed).
+function hakenPendel(h){
+  if(h._pendel !== undefined) return h._pendel;
+  if(h.startY !== h.targetY || h.startX === h.targetX) return (h._pendel = null);
+  const cx = (h.startX + h.targetX)/2, A = Math.abs(h.targetX - h.startX)/2;
+  const halt = typeof hakenAufhaengeY === 'function' ? hakenAufhaengeY(cx, h.startY) : null;
+  const top = halt !== null ? halt : -SKY_ROOM - 10, H = Math.max(80, h.startY - top), L = Math.hypot(A, H);
+  return (h._pendel = {cx, top, L, wmax: Math.asin(A/L), halt});
+}
+function hakenPosition(h){
+  if(h.u <= 0) return [h.startX, h.startY];
+  if(h.u >= 1) return [h.targetX, h.targetY];   // an den Enden genau auf Start/Ziel (keine Rundungsreste)
+  const e = (1 - Math.cos(Math.PI*h.u))/2, P = hakenPendel(h);   // weich: 0 … 1
+  if(P){ const w = P.wmax*(2*e - 1)*Math.sign(h.targetX - h.startX); return [P.cx + P.L*Math.sin(w), P.top + P.L*Math.cos(w) - (P.L*Math.cos(P.wmax) - (h.startY - P.top))]; }
+  return [h.startX + (h.targetX - h.startX)*e, h.startY + (h.targetY - h.startY)*e];
+}
 function updateMovingHooks(){
   for(const h of hooks){
     if(!h.moving) continue;
     if(!h.tripActive) continue;
-    const speed = h.speed || MOVE_PLAT_SPEED;
-    const tx = h.moveDir===1 ? h.targetX : h.startX, ty = h.moveDir===1 ? h.targetY : h.startY;
-    const dx = tx-h.x, dy = ty-h.y, dist = Math.hypot(dx,dy);
-    if(dist <= speed){
-      h.x = tx; h.y = ty;
-      if(h.einmal){ h.fertig = true; h.tripActive = false; }   // „fährt die Strecke einmal“
-      else h.moveDir *= -1;
-    } else { h.x += dx/dist*speed; h.y += dy/dist*speed; }
+    const speed = h.speed || MOVE_PLAT_SPEED, laenge = Math.hypot(h.targetX - h.startX, h.targetY - h.startY) || 1;
+    if(h.u === undefined) h.u = 0;
+    h.u += h.moveDir*speed/laenge;
+    if(h.u >= 1 || h.u <= 0){
+      h.u = Math.max(0, Math.min(1, h.u));
+      if(h.einmal && h.u >= 1){ h.fertig = true; h.tripActive = false; }   // „fährt die Strecke einmal“
+      else h.moveDir = h.u >= 1 ? -1 : 1;
+    }
+    const [nx, ny] = hakenPosition(h), dx = nx - h.x, dy = ny - h.y;
+    h.x = nx; h.y = ny;
+    // wer dran hängt, fährt mit (statt vom Seil herumgerissen zu werden) – nur, wo Platz ist
+    for(const P of [p1, p2]) if(P && P.hookAttached && P.anchor === h && (dx || dy) && spotFree(P.x + dx, P.y + dy, P)){ P.x += dx; P.y += dy; }
   }
 }
 

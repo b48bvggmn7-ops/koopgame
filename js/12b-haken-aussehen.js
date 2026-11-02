@@ -77,12 +77,14 @@ function hakenHalter(x, y, S, welt){
 function hakenZeichnen(h, x, inRange){
   const welt = hakenWelt(), S = HAKEN_STIL[welt], t = performance.now();
   const y = h.y, ringR = 12, oben = -SKY_ROOM - 10;
-  const haeng = hakenAufhaengung(h);
-  // Liane / Kette nach oben
+  const P = h.moving && typeof hakenPendel === 'function' ? hakenPendel(h) : null;
+  const haeng = P ? P.halt : hakenAufhaengung(h);
+  const seed = h.moving ? h.startX : h.x;   // feste Lage der Blätter (Nutzer: „die Blätter bewegen sich viel zu schnell“)
+  // Liane / Kette nach oben – ein pendelnder Haken hängt an seinem festen Aufhängepunkt (schwingt um ihn)
   if(S.art === 'liane'){
-    const y0 = haeng !== null ? haeng : oben;
-    if(typeof lianeZeichnen === 'function') lianeZeichnen(x + Math.sin(h.x*0.013)*3, y0, x, y - ringR + 1, 0.35, 0, h.x);
-    if(haeng !== null) hakenHalter(x, haeng, S, welt);
+    const y0 = haeng !== null ? haeng : oben, x0 = P ? P.cx - camX : x + Math.sin(seed*0.013)*3;
+    if(typeof lianeZeichnen === 'function') lianeZeichnen(x0, y0, x, y - ringR + 1, 0.35, 0, seed, P ? 0.15 : undefined);
+    if(haeng !== null) hakenHalter(x0, haeng, S, welt);
   } else {
     if(haeng !== null){ hakenKette(x, y - ringR + 1, haeng + 3, S, false); hakenHalter(x, haeng, S, welt); }
     else hakenKette(x, y - ringR + 1, y - ringR - HAKEN_KETTE_FREI, S, true);

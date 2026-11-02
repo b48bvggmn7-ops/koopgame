@@ -373,7 +373,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     gesammelte Münzen, bei Neustart (R) sind alle wieder da; Aufsammel-Effekt: Münze schnellt hoch/dreht/verpufft,
     Funkelsterne, Lichtring, "+1", Zähler hüpft, kleiner "Bling"-Ton (WebAudio), schnelle Folge = jeweils höherer Ton
   - Bewegte Haken (hook.targetX/targetY/speed/switchLink aus dem Editor): pendeln wie bewegter Boden,
-    optional per Schalter gestartet, dann dauerhaft (ohne Schalter: erst ab Sichtbarkeit, s. activateVisibleMovers); Seil zieht Spieler 1 mit
+    optional per Schalter gestartet, dann dauerhaft (ohne Schalter: erst ab Sichtbarkeit, s. activateVisibleMovers); Seil zieht Spieler 1 mit.
+    Seit 02.11. (Nutzer: „fährt hin und her, nicht natürlich“, „der Affe wird geschleudert“, „Blätter zu schnell“): weich
+    (langsam an den Enden, in der Mitte am schnellsten, kein Ruck beim Umkehren); waagerecht bewegte Haken PENDELN auf einem
+    Bogen um einen festen Aufhängepunkt darüber (Material oder Blätterdach, `hakenPendel`/`hakenPosition` in js/05) und die
+    Liane hängt von dort; wer dran hängt, wird mitgenommen statt herumgerissen; Blätter an Haken- und Affen-Liane in fester
+    Lage. Test haken_pendelt.
   - Sprint (länger halten = schneller), Wandsprung nur mit Schwung UND Richtungstaste von der Wand weg
     (Streichen wurde getestet: zu einfach -> wieder aktiv), skaliert mit Tempo; pro Wandseite nur
     einmal (lastWallJumpSide, Reset bei Bodenkontakt) -> keine Einzelwand-Kletterei, Kamin-Klettern geht;
