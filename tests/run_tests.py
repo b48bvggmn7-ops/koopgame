@@ -4661,6 +4661,53 @@ async def haken_pendelt(g):
     assert r['seeds'] == [1000], f'Blätter der Liane springen (wechselnde Lage, auch an der Liane des Affen): {r}'
 
 @test
+async def editor_haken_bogen(g):
+    """Nutzer: „ich muss im Editor sehen, wie der Haken pendelt, sonst kann ich keine Münzen daran ausrichten“ – der Editor
+    zeichnet für waagerecht bewegte Haken den Pendel-Bogen; er liegt genau dort, wo der Haken im Spiel schwingt (mit Decke
+    darüber und ohne)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(60)] + [[c, 1, 'wall'] for c in range(30, 45)], 'spikes': [], 'coins': [],
+                 'checkpoints': [], 'startM': {'c': 2, 'r': 16},
+                 'hooks': [{'c': 10, 'r': 8, 'radius': 5, 'move': {'dc': 10, 'dr': 0, 'speed': 4}},
+                           {'c': 32, 'r': 7, 'radius': 5, 'move': {'dc': 8, 'dr': 0, 'speed': 4}}]}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        ed = await p.evaluate("""hooks.map(h => { const B = hakenBogenEditor({c: h.c, r: h.r, ...h.move});
+          return [0.15, 0.5, 0.85].map(u => B.pkt(B.wmax*(2*(1 - Math.cos(Math.PI*u))/2 - 1))); })""")
+        bogen = await p.evaluate("(() => { let n = 0; const alt = hakenBogenZeichnen; hakenBogenZeichnen = (...a) => { n++; return alt(...a); }; try { draw(); } finally { hakenBogenZeichnen = alt; } return n; })()")
+        spiel = json.loads(await p.evaluate("exportLevel()"))
+        pfad = TMP / 'bogen.json'; pfad.write_text(json.dumps(spiel))
+        await p.goto(GAME); await p.wait_for_timeout(400); g2 = Game(p)
+        await g2.load(str(pfad)); await g2.steps(2)
+        sp = await p.evaluate("hooks.map(h => [0.15, 0.5, 0.85].map(u => { h.u = u; return hakenPosition(h); }))")
+        assert bogen == 2, f'Editor zeichnet den Bogen nicht: {bogen}'
+        for a, b in zip(ed, sp):
+            for (ex, ey), (gx, gy) in zip(a, b):
+                assert abs(ex - gx) < 1 and abs(ey - gy) < 1, f'Editor-Bogen weicht vom Spiel ab: Editor {ed} / Spiel {sp}'
+    finally:
+        srv.shutdown()
+
+@test
+async def haken_halteseil(g):
+    """Nutzer: „ist ein Hebel mit einer Liane verknüpft, sollte ein Seil die Liane halten – das Seil wird durch das Betätigen
+    des Hebels durchgeschnitten“: eine per Schalter gestartete Pendel-Liane hat ein Halteseil zur nächsten Wand auf der
+    Gegenseite; beim Schalten reißt es (h.schnitt zählt), Neustart macht es wieder ganz; Liane endet mittig zum Ring."""
+    await g.load(level([ground(0, 680, 3000), ground(240, -120, 80, 680, 'wall')], {'x': 500, 'y': 680}, {'x': 450, 'y': 680}, welt='dschungel',
+                       hooks=[{'x': 440, 'y': 300, 'radius': 200, 'targetX': 840, 'targetY': 300, 'speed': 4, 'switchLink': 7}],
+                       switches=[{'x': 1100, 'y': 660, 'link': 7}]))
+    await g.steps(5)
+    r = await g.ev("""(() => { const h = hooks[0], e = {punkt: hakenHalteseilPunkt(h), vorher: h.schnitt === undefined};
+      let taue = 0; const alt = tauZeichnen; tauZeichnen = (...a) => { taue++; return alt(...a); };
+      try { draw(); } finally { tauZeichnen = alt; } e.taue = taue;
+      menuScreen = 'pause'; let ts = 5e6; setLink(7, true); for(let i = 0; i < 20; i++) stepSim(ts += 1000/54);
+      e.schnitt = h.schnitt; e.faehrt = h.x > 445; resetLevel(); e.neu = h.schnitt === undefined; menuScreen = null; return e; })()""")
+    assert r['punkt']['wand'] and r['punkt']['x'] == 320 and r['vorher'] and r['taue'] >= 1, f'kein Halteseil zur Wand: {r}'
+    assert r['schnitt'] and r['schnitt'] >= 15 and r['faehrt'], f'Halteseil reißt beim Schalten nicht / Liane schwingt nicht: {r}'
+    assert r['neu'], f'Neustart macht das Halteseil nicht wieder ganz: {r}'
+
+@test
 async def bewegung_einmal(g):
     """Bewegung „fährt die Strecke einmal“ (Nutzerwunsch): bewegter Boden und bewegter Haken fahren einmal zum Ziel und
     bleiben dort stehen (auch per Hebel: erneutes Schalten startet nicht wieder); „hin und her“ pendelt wie bisher;

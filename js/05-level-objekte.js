@@ -436,7 +436,9 @@ function hakenPosition(h){
 function updateMovingHooks(){
   for(const h of hooks){
     if(!h.moving) continue;
+    if(h.schnitt !== undefined && h.schnitt < 999) h.schnitt++;    // Halteseil seit so vielen Schritten durchgeschnitten (js/12b)
     if(!h.tripActive) continue;
+    if(h.switchCtl && h.schnitt === undefined) h.schnitt = 0;        // erster Start per Schalter: Halteseil reißt
     const speed = h.speed || MOVE_PLAT_SPEED, laenge = Math.hypot(h.targetX - h.startX, h.targetY - h.startY) || 1;
     if(h.u === undefined) h.u = 0;
     h.u += h.moveDir*speed/laenge;

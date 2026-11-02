@@ -144,6 +144,7 @@ function draw(){
     ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#4fc3f7'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(h.c*TILE+TILE/2, h.r*TILE+TILE/2, TILE*0.42, 0, Math.PI*2); ctx.stroke(); ctx.restore();
     if(mv.dc!==0 || mv.dr!==0) drawMoveArrow(mv);
+    if(mv.dr===0 && mv.dc!==0) hakenBogenZeichnen(mv);   // waagerecht: pendelt im Spiel – Bogen zeigen (Münzen ausrichten)
   }
 
   // ausgewählte Bewegung gelb hervorheben (verschwindet, wenn das Stück inzwischen gelöscht wurde)
@@ -206,4 +207,35 @@ function draw(){
   drawSelection();   // Rechteck-Auswahl (08-auswahl.js)
   ctx.restore();   // Verschiebung um die Himmel-Reihen
   requestAnimationFrame(draw);
+}
+
+// Pendel-Bogen eines waagerecht bewegten Hakens (Nutzer: „ich muss im Editor sehen, wie der Haken pendelt, sonst kann ich
+// keine Münzen daran ausrichten“) – dieselbe Rechnung wie im Spiel (hakenPendel/hakenPosition in js/05): Aufhängepunkt über
+// der Mitte = Unterkante von Boden/Wand höchstens 9 Reihen darüber, sonst das Blätterdach über dem Bildrand.
+function hakenBogenZeichnen(mv){
+  const {pkt, wmax, top, cx, sx, sy} = hakenBogenEditor(mv);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,209,102,.85)'; ctx.lineWidth = 2.5; ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  for(let i = 0; i <= 32; i++){ const [x, y] = pkt(-wmax + 2*wmax*i/32); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  // Liane vom Aufhängepunkt zum Start (dünn) und tiefster Punkt des Bogens
+  ctx.strokeStyle = 'rgba(111,179,90,.6)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx, Math.max(top, -SKY*TILE)); ctx.lineTo(sx, sy); ctx.stroke();
+  const [mx, my] = pkt(0);
+  ctx.fillStyle = 'rgba(255,209,102,.9)'; ctx.beginPath(); ctx.arc(mx, my, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function hakenBogenEditor(mv){
+  const sx = mv.c*TILE + TILE/2, sy = mv.r*TILE + TILE/2, tx = (mv.c + mv.dc)*TILE + TILE/2;
+  const cx = (sx + tx)/2, A = Math.abs(tx - sx)/2, cc = Math.floor(cx/TILE);
+  let top = null;
+  for(let r = mv.r - 1; r >= mv.r - 10; r--){
+    const t = tiles[cc + ',' + r];
+    if(['ground', 'wall', 'crumble', 'haft'].includes(t) && (r + 1)*TILE <= sy - 14 && sy - (r + 1)*TILE <= 9*TILE){ top = (r + 1)*TILE; break; }
+  }
+  if(top === null) top = -(typeof SKY_ROOM !== 'undefined' ? SKY_ROOM : 127.06) - 10;
+  const H = Math.max(80, sy - top), L = Math.hypot(A, H), wmax = Math.asin(A/L), dy = L*Math.cos(wmax) - (sy - top);
+  const pkt = w => [cx + L*Math.sin(w), top + L*Math.cos(w) - dy];
+  return {pkt, wmax, top, cx, sx, sy};
 }

@@ -379,6 +379,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Bogen um einen festen Aufhängepunkt darüber (Material oder Blätterdach, `hakenPendel`/`hakenPosition` in js/05) und die
     Liane hängt von dort; wer dran hängt, wird mitgenommen statt herumgerissen; Blätter an Haken- und Affen-Liane in fester
     Lage. Test haken_pendelt.
+    Halteseil (02.11., Nutzerwunsch): Ein pendelnder Haken mit Hebel/Platte hängt bis zum Auslösen an einem straffen Seil
+    zur Seite entgegen der Schwungrichtung – ist dort auf gleicher Höhe Boden/Wand/Bröckelwand in höchstens 9 Kästchen
+    Abstand, ist es mit einem Eisenhaken daran festgemacht, sonst führt es schräg nach oben ins Blätterdach
+    (`hakenHalteseilPunkt` in js/12b). Beim Auslösen reißt es, beide Enden fallen und lösen sich auf; Neustart/Tod bringt es
+    zurück. Die Liane sitzt mittig auf dem Diamanten. Test haken_halteseil.
+    Editor: waagerecht bewegte Haken zeigen ihren Pendel-Bogen (gelb gestrichelt, tiefster Punkt markiert, dünne Liane zum
+    Aufhängepunkt) – gleiche Rechnung wie im Spiel, zum Ausrichten von Münzen. Test editor_haken_bogen.
   - Sprint (länger halten = schneller), Wandsprung nur mit Schwung UND Richtungstaste von der Wand weg
     (Streichen wurde getestet: zu einfach -> wieder aktiv), skaliert mit Tempo; pro Wandseite nur
     einmal (lastWallJumpSide, Reset bei Bodenkontakt) -> keine Einzelwand-Kletterei, Kamin-Klettern geht;
