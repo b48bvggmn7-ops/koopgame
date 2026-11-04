@@ -2178,6 +2178,14 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   eigener gerundeter Kante bis 2,4 Welt-px heraus, an den Fugen 1,3 Welt-px Delle (`fotoMatWandMaske`,
   `FOTO_MAT_RAND_*`). Nur Optik – die Kollision bleibt das Kästchen. Die alte Ziegelwand wird darunter nicht mehr gemalt. Boden
   bleibt rund; die Formen werden beim Umschalten mit B neu berechnet.
+- **Bodenkanten wie eine Abbruchkante im Wald** im Foto-Look (Nutzer: „die Kanten vom Boden müssen realistischer
+  aussehen“): freie Seiten und Unterseiten der Erde sind bröckelig-unregelmäßig (zwei Wellen + feine Krümel, bis
+  3 Welt-px, eher nach innen ausgebrochen; oben bleibt die Lauffläche gerade, die Seiten laufen dort weich aus;
+  `fotoMatBodenMaske`, `FOTO_MAT_BROECKEL`), die Moos-Kante hängt an freien Ecken 6 Welt-px über die Kante
+  (`FOTO_MAT_UEBERHANG`), und unter schwebendem Boden wachsen gezeichnete dunkle Wurzeln heraus – je Kästchen 2–5,
+  4–20 Welt-px lang, leicht geschlängelt, teils mit Seitenästchen, an der Welt verankert (`fotoMatWurzeln`,
+  `FOTO_MAT_WURZEL_*`; die Wurzeln der Moos-Kante sahen dort als heller Streifen komisch aus). Nur Optik – die
+  Kollision bleibt das Kästchen; der alte Comic-Boden wird darunter nicht mehr gemalt.
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
   Foto-Look nie gezeichnet; mit Erde-Foto auch keine grünen Comic-Grasecken an Stufen. Tiere und ihre Regeln bleiben.

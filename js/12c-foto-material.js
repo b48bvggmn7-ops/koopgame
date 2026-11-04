@@ -27,7 +27,14 @@ const FOTO_MAT_TEXTUREN = {
 };
 // Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber Gras/Blätter; die
 // Moosmatte beginnt knapp darüber, die Füße sinken leicht ein; darunter hängen die Wurzeln)
-const FOTO_MAT_KANTE = {ueber: 20, weltH: FOTO_MAT_TEXTUREN.kante.weltH};
+const FOTO_MAT_KANTE = {ueber: 20, matteUnten: 27, weltH: FOTO_MAT_TEXTUREN.kante.weltH};   // matteUnten: Unterkante der Moosmatte
+// Bodenkanten im Foto-Look (Nutzer: „die Kanten vom Boden müssen realistischer aussehen“): Moos hängt an freien Ecken
+// FOTO_MAT_UEBERHANG Welt-px über die Kante, unter schwebendem Boden hängen Wurzeln (FOTO_MAT_WURZEL_H lang, aus der
+// Moos-Kante), die Seiten und die Unterseite sind bröckelig (FOTO_MAT_BROECKEL: bis so weit hinein/heraus)
+// Wurzeln unter schwebendem Boden: gezeichnet (die Wurzeln der Moos-Kante sahen dort als heller Streifen komisch aus):
+// je Kästchen FOTO_MAT_WURZEL_ANZAHL dunkle Wurzeln, FOTO_MAT_WURZEL_LANG Welt-px lang (min–max), mit Seitenästchen
+const FOTO_MAT_UEBERHANG = 6, FOTO_MAT_BROECKEL = 3, FOTO_MAT_WURZEL_ANZAHL = [2, 5], FOTO_MAT_WURZEL_LANG = [4, 20];
+const FOTO_MAT_WURZEL_FARBE = 'rgba(38,27,18,.9)', FOTO_MAT_WURZEL_HELL = 'rgba(92,72,52,.55)';
 // Kontur: im Foto-Look keine (Nutzerwunsch „nimm die Kontur weg“); Schatten innen am Rand gibt es auch nicht
 // Boden dunkler (Nutzerwunsch, zweimal): so viel Schwarz über das Erde-Foto (vorher 0,38)
 const FOTO_MAT_ERDE_DUNKEL = 0.52;
@@ -194,6 +201,52 @@ function fotoMatWandMaske(kaestchen){
   }
   return pfad;
 }
+// Bodenform mit bröckeligen Seiten/Unterseite (je Kästchen ein Umriss): oben bleibt die Lauffläche gerade (darauf liegt
+// die Moos-Kante), freie Seiten und Unterseiten wellen sich unregelmäßig (zwei Wellen + feine Krümel, an der Welt
+// verankert, eher nach innen ausgebrochen als heraus); nahe der Oberkante läuft das weich auf null aus.
+function fotoMatBodenMaske(kaestchen){
+  if(!kaestchen.length) return null;
+  const Bm = FOTO_MAT_BROECKEL, S = 1.4;
+  const zufall = (a, b) => { const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; return v - Math.floor(v); };
+  const welle = (u, linie) => { const f1 = zufall(linie, 1)*6.28, f2 = zufall(linie, 2)*6.28;
+    const v = 0.5*Math.sin(u*0.21 + f1) + 0.3*Math.sin(u*0.63 + f2) + 0.35*(zufall(Math.floor(u/2.3), linie) - 0.5)*2;
+    return (v - 0.35)*Bm; };   // eher nach innen (Ausbrüche)
+  const auslauf = d => Math.min(1, Math.max(0, d/6));   // nahe der Oberkante gerade
+  const pfad = new Path2D();
+  for(const k of kaestchen){
+    const X = k.cc*40, Y = k.rr*40, n = Math.round(40/S), pts = [];
+    pts.push([X, Y], [X + 40, Y]);                                                             // oben gerade
+    for(let i = 1; i <= n; i++){ const y = Y + 40*i/n;
+      pts.push([k.e ? X + 40 : X + 40 + welle(y, X + 40)*auslauf(k.n ? 40 : y - Y), y]); }    // rechts
+    for(let i = n - 1; i >= 0; i--){ const x = X + 40*i/n; pts.push([x, k.s ? Y + 40 : Y + 40 + welle(x, Y + 40.5)]); }   // unten
+    for(let i = n - 1; i > 0; i--){ const y = Y + 40*i/n; pts.push([k.wl ? X : X - welle(y, X)*auslauf(k.n ? 40 : y - Y), y]); }   // links
+    pts.forEach(([x, y], i) => i ? pfad.lineTo(x, y) : pfad.moveTo(x, y)); pfad.closePath();
+  }
+  return pfad;
+}
+// Wurzeln unter freien Unterseiten von Boden (je Kästchen; an der Welt verankert, immer gleich): beginnen 2 Welt-px in der
+// Erde, wachsen leicht schlängelnd nach unten, manche mit Seitenästchen. Rückgabe {dick, fein} oder null.
+function fotoMatWurzeln(kaestchen){
+  const liste = kaestchen.filter(k => !k.s); if(!liste.length) return null;
+  const zufall = (a, b) => { const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; return v - Math.floor(v); };
+  const dick = new Path2D(), fein = new Path2D(), [nMin, nMax] = FOTO_MAT_WURZEL_ANZAHL, [lMin, lMax] = FOTO_MAT_WURZEL_LANG;
+  const wurzel = (P, x, y, lang, seed, rich) => {
+    P.moveTo(x, y); let dx = 0;
+    for(let s = 2; s <= lang; s += 2){ dx += (zufall(seed, s) - 0.5)*1.4 + rich*0.15; P.lineTo(x + dx, y + s); }
+    return x + dx;
+  };
+  for(const k of liste){
+    const X = k.cc*40, Yu = k.rr*40 + 40, n = nMin + Math.floor(zufall(X, Yu)*(nMax - nMin + 1));
+    for(let i = 0; i < n; i++){
+      const x = X + 3 + zufall(X + i*7, Yu + 1)*34, lang = lMin + Math.pow(zufall(X + i*13, Yu + 2), 1.6)*(lMax - lMin), seed = X*3 + i*17 + Yu;
+      wurzel(dick, x, Yu - 2, lang, seed, zufall(seed, 9) - 0.5);
+      if(lang > 9){ const ay = Yu - 2 + lang*(0.35 + 0.3*zufall(seed, 3)), r = zufall(seed, 4) < 0.5 ? -1 : 1;   // Seitenast
+        wurzel(fein, x + r*0.5, ay, lang*0.45, seed + 5, r*3); }
+      wurzel(fein, x + (zufall(seed, 6) - 0.5)*6, Yu - 1.5, lang*0.5, seed + 11, 0);                       // Faser daneben
+    }
+  }
+  return {dick, fein};
+}
 // Textur einmal sauber auf Bildschirmgröße verkleinert (in Halbierungs-Schritten, hohe Glättung) – sonst flimmern
 // feine Muster (1024 Bildpunkte auf ~180), wenn das Muster beim Zeichnen stark verkleinert wird
 function fotoMatSkaliert(id, img){
@@ -211,13 +264,14 @@ function fotoMatSkaliert(id, img){
   return n;
 }
 // Muster der Textur, auf Weltgröße skaliert; dy = Versatz nach unten (Gras-Kante: je Oberkante eigene Höhe)
-function fotoMatMuster(q, id, dy){
+function fotoMatMuster(q, id, dy, gross){
   const img = fotoMatBild(id); if(!img) return null;
   const sc = typeof RS === 'number' ? RS : 1;
   let M = fotoMat.muster[id];
   if(!M || M.sc !== sc){ const b = fotoMatSkaliert(id, img); M = fotoMat.muster[id] = {sc, b, m: q.createPattern(b, FOTO_MAT_TEXTUREN[id].y ? 'repeat' : 'repeat-x')}; }
   const T = FOTO_MAT_TEXTUREN[id];
-  if(M.m.setTransform) M.m.setTransform(new DOMMatrix([T.weltB/M.b.width, 0, 0, T.weltH/M.b.height, 0, dy || 0]));
+  const f = gross || 1;
+  if(M.m.setTransform) M.m.setTransform(new DOMMatrix([f*T.weltB/M.b.width, 0, 0, f*T.weltH/M.b.height, 0, dy || 0]));
   return M.m;
 }
 // gilt der Foto-Look gerade (wie der Foto-Hintergrund)?
@@ -230,12 +284,17 @@ function fotoMatUeber(q, V){
   if(!fotoMatAn()) return false;
   const erde = V.hatG && fotoMatMuster(q, 'erde'), wand = V.hatW && fotoMatMuster(q, 'wand'), kante = fotoMatBild('kante');
   if(!erde && !wand && !kante) return false;
-  if(erde){ q.fillStyle = erde; q.fill(V.PG); q.fillStyle = 'rgba(0,0,0,' + FOTO_MAT_ERDE_DUNKEL + ')'; q.fill(V.PG); }
+  const PG = V.bodenMaske || V.PG;
+  if(erde){ q.fillStyle = erde; q.fill(PG); q.fillStyle = 'rgba(0,0,0,' + FOTO_MAT_ERDE_DUNKEL + ')'; q.fill(PG); }
   if(wand){
     q.fillStyle = wand;
     if(V.wandMaske && !V.maskeFehlt) q.fill(V.wandMaske);
     else q.fill(V.PW);
   }
   if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
+  // Wurzeln unter schwebendem Boden (gezeichnet): dicke dunkel, darüber feine hellere Fasern
+  if(erde && V.wurzeln){ q.save(); q.lineCap = 'round'; q.lineJoin = 'round';
+    q.strokeStyle = FOTO_MAT_WURZEL_FARBE; q.lineWidth = 1.3; q.stroke(V.wurzeln.dick);
+    q.lineWidth = 0.6; q.stroke(V.wurzeln.fein); q.strokeStyle = FOTO_MAT_WURZEL_HELL; q.lineWidth = 0.4; q.stroke(V.wurzeln.dick); q.restore(); }
   return true;
 }

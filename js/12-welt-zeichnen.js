@@ -312,7 +312,7 @@ function matPfadeNeu(){
   return {PG: P(), PW: P(), PA: P(), edge: P(), gras: P(), grasLinie: P(), grasLicht: P(), baender: new Map(),
           ecke: P(), eckeLinie: P(), eckeLicht: P(), ziegel: MAT_ZIEGEL.map(P), zLicht: P(), zSchatten: P(), zMoos: P(), zRiss: P(),
           wLicht: P(), wGras: P(), wGrasHell: P(), wMoos: P(), hatG: false, hatW: false,
-          streifen: new Map(), wandMaske: null, maskeFehlt: false};   // freie Boden-Oberkanten je Höhe y (Foto-Material: Moos-Kante, js/12c-foto-material.js)
+          streifen: new Map(), wandMaske: null, maskeFehlt: false, bodenMaske: null, wurzeln: null};   // freie Boden-Oberkanten je Höhe y (Foto-Material: Moos-Kante, js/12c-foto-material.js)
 }
 // Berechnet für die Kästchen 'liste' ({c, r, t}) alle Zeichenschritte von buildChunk (Vorschau) als Pfade in Welt-Koordinaten.
 // ziegelVon/ziegelBis: nur Ziegel mit linker Kante in diesem Bereich (jeder Ziegel gehört genau einem Stück); weitere
@@ -330,7 +330,11 @@ function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
     (k.t==1?D.PG:D.PW).roundRect(x,y,40,40,rad); D.PA.roundRect(x,y,40,40,rad);
     if(!n){edge.moveTo(x+rad[0],y);edge.lineTo(x+40-rad[1],y)}if(!e){edge.moveTo(x+40,y+rad[1]);edge.lineTo(x+40,y+40-rad[2])}if(!s){edge.moveTo(x+40-rad[2],y+40);edge.lineTo(x+rad[3],y+40)}if(!wl){edge.moveTo(x,y+40-rad[3]);edge.lineTo(x,y+rad[0])}
     // Moos-Kante: auf freien Boden-Oberkanten UND am Fuß von Wänden, die auf Boden stehen (weicher Übergang Wand/Boden)
-    if(k.t == 1 && (!n || Tc(k.cc, k.rr - 1) == 2)){ if(!D.streifen.has(y)) D.streifen.set(y, new Path2D()); D.streifen.get(y).rect(x, y - FOTO_MAT_KANTE.ueber, 40, FOTO_MAT_KANTE.weltH); }
+    if(k.t == 1 && (!n || Tc(k.cc, k.rr - 1) == 2)){ if(!D.streifen.has(y)) D.streifen.set(y, new Path2D());
+      // Foto-Look: an freien Ecken hängt das Moos ein Stück über die Kante (12c, FOTO_MAT_UEBERHANG)
+      const ul = eckig && !n && !wl ? FOTO_MAT_UEBERHANG : 0, ur = eckig && !n && !e ? FOTO_MAT_UEBERHANG : 0;
+      D.streifen.get(y).rect(x - ul, y - FOTO_MAT_KANTE.ueber, 40 + ul + ur, FOTO_MAT_KANTE.weltH); }
+
     if(rad[0]){edge.moveTo(x,y+rad[0]);edge.arc(x+rad[0],y+rad[0],rad[0],Math.PI,1.5*Math.PI)}if(rad[1]){edge.moveTo(x+40-rad[1],y);edge.arc(x+40-rad[1],y+rad[1],rad[1],1.5*Math.PI,2*Math.PI)}if(rad[2]){edge.moveTo(x+40,y+40-rad[2]);edge.arc(x+40-rad[2],y+40-rad[2],rad[2],0,.5*Math.PI)}if(rad[3]){edge.moveTo(x+rad[3],y+40);edge.arc(x+rad[3],y+40-rad[3],rad[3],.5*Math.PI,Math.PI)}
   }
   // Erde: Gras-Kappe auf freien Oberseiten (Schatten-Band, Grasfläche, dunkle Wellenlinie, helle Oberkante)
@@ -370,6 +374,9 @@ function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
     D.wandMaske = fotoMatWandMaske(kaestchen.filter(k => k.t == 2));
     D.maskeFehlt = !D.wandMaske;
   }
+  // Foto-Look: Boden mit bröckeligen, unregelmäßigen Seiten und Unterseite (12c)
+  if(eckig && D.hatG && typeof fotoMatBodenMaske === 'function'){ const kg = kaestchen.filter(k => k.t == 1);
+    D.bodenMaske = fotoMatBodenMaske(kg); D.wurzeln = fotoMatWurzeln(kg); }   // + Wurzeln unter schwebendem Boden
   return D;
 }
 // mehrere Stücke zu einem Ausschnitt zusammenfügen (je Pfad ein Aufruf beim Zeichnen, keine Nahtstellen zwischen Stücken)
@@ -382,13 +389,16 @@ function matPfadeVereinen(liste){
     for(const [y, p] of D.streifen){ if(!V.streifen.has(y)) V.streifen.set(y, new Path2D()); V.streifen.get(y).addPath(p); }
     if(D.wandMaske){ if(!V.wandMaske) V.wandMaske = new Path2D(); V.wandMaske.addPath(D.wandMaske); }
     if(D.maskeFehlt) V.maskeFehlt = true;
+    if(D.bodenMaske){ if(!V.bodenMaske) V.bodenMaske = new Path2D(); V.bodenMaske.addPath(D.bodenMaske); }
+    if(D.wurzeln){ if(!V.wurzeln) V.wurzeln = {dick: new Path2D(), fein: new Path2D()}; V.wurzeln.dick.addPath(D.wurzeln.dick); V.wurzeln.fein.addPath(D.wurzeln.fein); }
     V.hatG = V.hatG || D.hatG; V.hatW = V.hatW || D.hatW;
   }
   return V;
 }
 // Zeichnen der Pfade in den Kontext q (Welt-Koordinaten) – Reihenfolge wie buildChunk: Erde, Gras, Gras-Kanten, Wand, Outline
 function matPfadeZeichnen(q, V, S){
-  if(V.hatG){
+  // Foto-Look mit Erde-Foto und bröckeligen Kanten: alten Comic-Boden nicht darunter malen (schaute an den Kanten heraus)
+  if(V.hatG && !(V.bodenMaske && typeof fotoMatAn === 'function' && fotoMatAn() && fotoMatBild('erde'))){
     q.fillStyle=SOILBASE[soilK];q.fill(V.PG);
     q.fillStyle=matKornMuster(q,S);q.fill(V.PG);   // Vorschau: grain(q,k.x,k.y,r) je Kästchen
     q.save();q.clip(V.PG);
