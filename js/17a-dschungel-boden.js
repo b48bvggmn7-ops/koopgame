@@ -160,7 +160,7 @@ function bodenGrossePflanzen(){ if(!bodenDekorAn()) return []; bodenBereit(); re
 const bodenWindZeit = () => (typeof djAn === 'function' && djAn(djSchalter.wind)) ? performance.now()/1000 : null;
 // Dickicht: VOR den Bodenkacheln (hinter Boden, Figuren und Objekten), schaut an den Kanten heraus
 function bodenDickichtZeichnen(){
-  if(!bodenDekorAn()) return;
+  if(!bodenDekorAn() || (typeof fotoMatOhneDeko === 'function' && fotoMatOhneDeko())) return;
   bodenBereit();
   const P = bodenPoolHolen(hgNacht()), t = bodenWindZeit(), x0 = camX - 80, x1 = camX + VW + 80;
   const T = ctx.getTransform();

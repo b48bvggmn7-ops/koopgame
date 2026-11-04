@@ -1,0 +1,30 @@
+{
+ "hinweis": "Probe-Level der Werkstatt (werkstatt.html): Foto-Material ansehen. Öffnen: index.html?testlevel=werkstatt · Boden mit Stufen und Grube, schwebende Plattformen, eine Wand-Säule, ein Wandblock auf dem Boden, Erde mit Wand obendrauf. Taste B: Foto- und Comic-Look vergleichen.",
+ "welt": "dschungel",
+ "tageszeit": "mittag",
+ "wetter": "trocken",
+ "solids": [
+  {"x": 0, "y": 600, "w": 1200, "h": 160, "type": "ground"},
+  {"x": 400, "y": 520, "w": 160, "h": 80, "type": "ground"},
+  {"x": 480, "y": 440, "w": 80, "h": 80, "type": "ground"},
+  {"x": 760, "y": 360, "w": 80, "h": 240, "type": "wall"},
+  {"x": 960, "y": 480, "w": 120, "h": 120, "type": "wall"},
+  {"x": 1360, "y": 600, "w": 1400, "h": 160, "type": "ground"},
+  {"x": 1240, "y": 440, "w": 160, "h": 40, "type": "ground"},
+  {"x": 1600, "y": 400, "w": 240, "h": 80, "type": "ground"},
+  {"x": 1600, "y": 320, "w": 80, "h": 80, "type": "wall"},
+  {"x": 2000, "y": 280, "w": 120, "h": 40, "type": "wall"},
+  {"x": 2240, "y": 440, "w": 280, "h": 160, "type": "ground"}
+ ],
+ "switches": [],
+ "doors": [],
+ "hooks": [],
+ "plates": [],
+ "spikes": [],
+ "movingPlatforms": [],
+ "coins": [],
+ "checkpoints": [],
+ "startM": {"x": 200, "y": 600},
+ "startF": {"x": 140, "y": 600},
+ "goal": {"x": 2700, "y": 600}
+}

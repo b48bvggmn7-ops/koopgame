@@ -5303,11 +5303,11 @@ async def foto_hintergrund(g):
       const lueckenlos = S.every((s, i) => i === 0 || s.x === S[i - 1].x + S[i - 1].c.width - FOTO_HG_UEBERGANG)
         && fotoHg.per === S[3].x + S[3].c.width - FOTO_HG_UEBERGANG;
       let maxSichtbar = 0; for(let x = 0; x < fotoHg.per; x += 97){ ctx.save(); fotoHgPanorama(x); ctx.restore(); maxSichtbar = Math.max(maxSichtbar, fotoHg.sichtbar); }
-      return {a, gezeichnet, n: S.length, hoch: S.every(s => s.c.height === H), mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
+      return {a, gezeichnet, n: S.length, hoch: S.every(s => s.c.height === Math.round(H*FOTO_HG_HOEHE)) && FOTO_HG_HOEHE === 1, mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
               gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()""")
     assert r['a'] and r['gezeichnet'] == 0, f'Foto-Hintergrund nicht gezeichnet: {r}'
     assert r['gleich'], 'Zeichnen hat Spielzustand verändert'
-    assert r['n'] == 4 and r['hoch'] and r['lueckenlos'], f'Panorama 1-2-3-4 nicht bildhoch/lückenlos: {r}'
+    assert r['n'] == 4 and r['hoch'] and r['lueckenlos'], f'Panorama 1-2-3-4 nicht bildhoch (Nutzer: keine graue Fläche oben) / lückenhaft: {r}'
     assert all(a <= 2 and b == 255 for a, b in r['rand']), f'Nahtstellen nicht weich überblendet: {r}'
     assert r['maxSichtbar'] <= 2 and r['mbMax'] * r['maxSichtbar'] < 16, f'zu viel Bildspeicher je Bild (Chrome-Budget): {r}'
     # abschalten -> gezeichneter Stil
@@ -5329,6 +5329,85 @@ async def foto_hintergrund(g):
     assert await g.ev("fotoHgZeichnen()") is False, 'Foto-Hintergrund darf nur in der Dschungel-Welt gelten'
     await g.ev("try { localStorage.removeItem('monchichi.fotoHintergrund'); } catch(e){} fotoHg.an = null; menuScreen = null")
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
+
+FOTO_PROBE_JS = """(() => { const bild = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d')); return c.toDataURL('image/png'); };
+  localStorage.setItem('monchichi.werkstatt.erde', bild(64, 64, q => { q.fillStyle = '#5a3a20'; q.fillRect(0, 0, 64, 64); }));
+  localStorage.setItem('monchichi.werkstatt.wand', bild(64, 64, q => { q.fillStyle = '#607080'; q.fillRect(0, 0, 64, 64); }));
+  localStorage.setItem('monchichi.werkstatt.kante', bild(64, 16, q => { q.fillStyle = '#30a040'; q.fillRect(0, 6, 64, 6); }));
+  fotoMat.bilder = {}; fotoMat.muster = {}; })()"""
+
+@test
+async def foto_material(g):
+    """Foto-Material (Nutzerwunsch 04.11., js/12c-foto-material.js): liegen Texturen vor (hier Werkstatt-Proben im
+    localStorage), legt das Spiel im Foto-Look Erde/Wand/Gras-Kante über Boden und Wand (Kante auf jeder freien
+    Oberkante, auch auf Wänden), weiche Kontur statt Comic-Linie, Comic-Pflanzen am Boden entfallen; ohne Texturen oder
+    im Comic-Look (Taste B) alles wie bisher. Zeichnen ändert keinen Spielzustand."""
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)
+    teile = [ground(0, 600, 1200, 160), ground(400, 520, 160, 80), G_wand := {'x': 760, 'y': 360, 'w': 80, 'h': 240, 'type': 'wall'}]
+    await g.load(level(teile, {'x': 200, 'y': 600}, {'x': 140, 'y': 600}, welt='dschungel', tageszeit='mittag'))
+    await g.ev("fotoHgSetzen(true); fotoMat.bilder = {}; fotoMat.muster = {}")
+    pruefen = """(() => { const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps]); let kontur = 0, deko = 0;
+      const a1 = outlineDraw, a2 = bodenDekorZeichnen; outlineDraw = (...x) => { kontur++; return a1(...x); }; bodenDekorZeichnen = () => { deko++; };
+      camPos = camX = 0; matSicht = {key: ''}; draw(); outlineDraw = a1; bodenDekorZeichnen = a2;
+      return {kontur, deko, streifen: [...matSicht.V.streifen.keys()].sort((a, b) => a - b), gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()"""
+    await g.ev("menuScreen = 'pause'")
+    ohne = await g.ev(pruefen)
+    assert ohne['kontur'] >= 1 and ohne['deko'] == 1, f'ohne Texturen muss alles wie bisher sein: {ohne}'
+    await g.ev(FOTO_PROBE_JS)
+    await g.p.wait_for_function("['erde', 'wand', 'kante'].every(id => fotoMatBild(id))", timeout=5000)
+    mit = await g.ev(pruefen)
+    assert mit['kontur'] == 0 and mit['deko'] == 0 and mit['gleich'], f'Foto-Material nicht aktiv: {mit}'
+    assert mit['streifen'] == [360, 520, 600], f'Gras-Kante nicht auf allen freien Oberkanten (Boden, Stufe, Wand): {mit}'
+    # Farbe in der Mitte des Bodens = Erde-Probe, in der Wand = Wand-Probe (Welt -> Bildschirm)
+    farbe = await g.ev("""(() => { const px = (x, y) => { const d = ctx.getImageData(Math.round(x*zoom*RS), Math.round((y*zoom + H*(1 - zoom))*RS), 1, 1).data; return [d[0], d[1], d[2]]; };
+      return {erde: px(200, 680), wand: px(800, 500)}; })()""")
+    assert abs(farbe['erde'][0] - 0x5a) < 30 and farbe['erde'][2] < 60, f'Erde-Textur nicht im Boden: {farbe}'
+    assert farbe['wand'][2] > farbe['wand'][0], f'Wand-Textur nicht in der Wand: {farbe}'
+    # Comic-Look (B aus): wieder wie bisher
+    await g.ev("fotoHg.an = false")
+    aus = await g.ev(pruefen)
+    assert aus['kontur'] >= 1 and aus['deko'] == 1, f'im Comic-Look wie bisher: {aus}'
+    await g.ev("['erde', 'wand', 'kante'].forEach(id => localStorage.removeItem('monchichi.werkstatt.' + id)); localStorage.removeItem('monchichi.fotoHintergrund'); fotoHg.an = null; fotoMat.bilder = {}; fotoMat.muster = {}; menuScreen = null")
+    assert not fehler, f'Fehler beim Zeichnen: {fehler}'
+
+@test
+async def werkstatt_seite(g):
+    """Werkstatt (werkstatt.html): je Textur Vorlage in Zielgröße, Text für ChatGPT, Bild einlesen -> Zielgröße, Nähte
+    glätten (linker und rechter Rand passen danach zusammen, Erde/Wand auch oben/unten), Gras-Kante unten durchsichtig
+    (blendet in die Erde), ohne durchsichtigen Hintergrund oben ausgeblendet; Probe landet im localStorage."""
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    srv = webserver(); await g.p.goto(srv.url + 'werkstatt.html'); await g.p.wait_for_timeout(300)
+    r = await g.ev("""(() => { const bild = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); return c; };
+      // harte Kanten: links hell, rechts dunkel, oben hell -> ohne Glätten große Naht
+      const quelle = bild(800, 600, (q, w, h) => { const g2 = q.createLinearGradient(0, 0, w, 0); g2.addColorStop(0, '#e0c090'); g2.addColorStop(1, '#201008'); q.fillStyle = g2; q.fillRect(0, 0, w, h); q.fillStyle = '#ffffff'; q.fillRect(0, 0, w, 20); });
+      const naht = (E, quer) => { const q = E.getContext('2d'), n = quer ? E.height : E.width;
+        const a = quer ? q.getImageData(0, 0, 1, n).data : q.getImageData(0, 0, n, 1).data, b = quer ? q.getImageData(E.width - 1, 0, 1, n).data : q.getImageData(0, E.height - 1, n, 1).data;
+        let d = 0; for(let i = 0; i < a.length; i += 4) d += Math.abs(a[i] - b[i]); return d/(a.length/4); };
+      const e = {};
+      for(const id of ['erde', 'wand', 'kante']){
+        const T = FOTO_MAT_TEXTUREN[id], W = ws[id]; W.quelle = quelle;
+        W.el.glaetten.checked = false; wsVerarbeiten(id); const roh = naht(W.ergebnis, true);
+        W.el.glaetten.checked = true; wsVerarbeiten(id);
+        e[id] = {groesse: [W.ergebnis.width, W.ergebnis.height], ziel: [T.w, T.h], roh, glatt: naht(W.ergebnis, true), glattY: T.y ? naht(W.ergebnis, false) : null,
+                 knopf: !W.el.probe.disabled, text: document.querySelectorAll('textarea')[Object.keys(FOTO_MAT_TEXTUREN).indexOf(id)].value.includes('KACHELBAR')};
+      }
+      const K = ws.kante, kq = K.ergebnis.getContext('2d'), Tk = FOTO_MAT_TEXTUREN.kante;
+      K.el.oben.checked = true; wsVerarbeiten('kante');
+      e.kanteUnten = kq.getImageData(500, Tk.h - 1, 1, 1).data[3]; e.kanteOben = K.ergebnis.getContext('2d').getImageData(500, 0, 1, 1).data[3];
+      e.kanteLinie = K.ergebnis.getContext('2d').getImageData(500, Math.round(Tk.h*FOTO_MAT_KANTE.ueber/Tk.weltH) + 4, 1, 1).data[3];
+      e.vorlagen = Object.keys(FOTO_MAT_TEXTUREN).map(id => { const c = wsVorlage(id); return [c.width, c.height]; });
+      localStorage.setItem('monchichi.werkstatt.erde', wsDaten('erde')); e.probe = (localStorage.getItem('monchichi.werkstatt.erde') || '').startsWith('data:image/');
+      localStorage.removeItem('monchichi.werkstatt.erde');
+      return e; })()""")
+    for id in ('erde', 'wand', 'kante'):
+        x = r[id]
+        assert x['groesse'] == x['ziel'] and x['knopf'] and x['text'], f'{id}: {x}'
+        assert x['roh'] > 60 and x['glatt'] < 6, f'{id}: Naht links/rechts nicht geglättet {x}'
+        if x['glattY'] is not None: assert x['glattY'] < 6, f'{id}: Naht oben/unten nicht geglättet {x}'
+    assert r['kanteUnten'] <= 8 and r['kanteOben'] == 0 and r['kanteLinie'] > 200, f'Gras-Kante ausblenden falsch: {r}'
+    assert r['vorlagen'] == [[1024, 1024], [1024, 1024], [1024, 256]] and r['probe'], f'{r}'
+    assert not fehler, f'Fehler: {fehler}'
 
 @test
 async def neue_figuren_kante_wackeln(g):

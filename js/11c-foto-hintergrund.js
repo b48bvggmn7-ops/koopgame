@@ -15,10 +15,16 @@
 const FOTO_HG_BILDER = [1, 2, 3, 4].map(n => 'assets/hintergrund/nebelwald-' + n + '.webp');
 const FOTO_HG_UEBERGANG = 60;       // weiche Überblendung an jeder Nahtstelle (Spiel-Bildpunkte)
 const FOTO_HG_PAR = 0.15;           // Parallaxe: Anteil der Kamerabewegung
-const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.14;   // Nebelschwaden: Farbe, Deckkraft
+// Größe: Panorama FOTO_HG_HOEHE der Bildhöhe hoch, unten bündig. 1 = bildhoch (so wenig vergrößert wie möglich, ohne
+// Lücke). Ein Versuch mit 0,75 (darüber Nebel-Himmel) gefiel nicht: „oben einfach eine graue Wand“ -> wieder 1.
+// Nur bei < 1: darüber Nebel in der Himmel-Farbe der Bilder, der obere Bildrand blendet auf FOTO_HG_OBEN_WEICH weich hinein.
+const FOTO_HG_HOEHE = 1, FOTO_HG_OBEN_WEICH = 170;
+const FOTO_HG_HIMMEL_ERSATZ = '206,214,212';            // Himmel-Farbe, falls sie sich nicht aus den Bildern lesen lässt
+const FOTO_HG_DUNST_A = 0.07;       // leichter Dunst über dem ganzen Panorama (Nutzerwunsch: Nebel, aber nicht zu dicht)
+const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.16;   // Nebelschwaden: Farbe, Deckkraft
 const FOTO_HG_NACHT = 'rgba(8,22,48,.62)';         // Tönung nachts
 
-const fotoHg = {an: null, bilder: {}, stuecke: null, per: 0, nebel: null, sichtbar: 0};
+const fotoHg = {an: null, bilder: {}, stuecke: null, per: 0, nebel: null, sichtbar: 0, himmel: null, hoehe: 0};
 function fotoHgAn(){
   if(fotoHg.an === null){ let aus = false; try { aus = localStorage.getItem('monchichi.fotoHintergrund') === 'aus'; } catch(e){} fotoHg.an = !aus; }
   return fotoHg.an;
@@ -32,7 +38,7 @@ window.addEventListener('keydown', e => {
   if(e.code !== 'KeyB' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
   const el = document.activeElement; if(el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
   fotoHgSetzen(!fotoHgAn());
-  testJumpMsg = fotoHgAn() ? '🌲 Foto-Hintergrund an (B)' : '🎨 Gezeichneter Hintergrund (B)'; testJumpT = performance.now();
+  testJumpMsg = fotoHgAn() ? '🌲 Foto-Look an (B)' : '🎨 Comic-Look (B)'; testJumpT = performance.now();
 });
 // Bild laden (einmal); null, solange es noch nicht da ist
 function fotoHgBild(src){
@@ -40,14 +46,25 @@ function fotoHgBild(src){
   if(!B){ B = fotoHg.bilder[src] = {img: new Image(), ok: false, fehler: false}; B.img.onload = () => { B.ok = true; }; B.img.onerror = () => { B.fehler = true; }; B.img.src = src; }
   return B.ok ? B.img : null;
 }
-// ein Stück: Bild auf Bildhöhe H, linker Rand auf u Bildpunkten weich eingeblendet (liegt über dem Ende des vorigen)
-function fotoHgStueck(img, u){
-  const w = Math.round(img.width*H/img.height), c = document.createElement('canvas'); c.width = w; c.height = H;
-  const q = c.getContext('2d'); q.drawImage(img, 0, 0, w, H);
+// ein Stück: Bild auf Höhe h, linker Rand auf u Bildpunkten weich eingeblendet (liegt über dem Ende des vorigen),
+// oberer Rand weich ausgeblendet (geht in den Nebel darüber über)
+function fotoHgStueck(img, u, h){
+  const w = Math.round(img.width*h/img.height), c = document.createElement('canvas'); c.width = w; c.height = h;
+  const q = c.getContext('2d'); q.drawImage(img, 0, 0, w, h);
   q.globalCompositeOperation = 'destination-in';
   const gr = q.createLinearGradient(0, 0, u, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
-  q.fillStyle = gr; q.fillRect(0, 0, w, H);
+  q.fillStyle = gr; q.fillRect(0, 0, w, h);
+  if(h < H){ const go = q.createLinearGradient(0, 0, 0, FOTO_HG_OBEN_WEICH); go.addColorStop(0, 'rgba(0,0,0,0)'); go.addColorStop(1, 'rgba(0,0,0,1)'); q.fillStyle = go; q.fillRect(0, 0, w, h); }
   return c;
+}
+// Himmel-Farbe = Mittel der obersten Bildreihen (bei file:// nicht lesbar -> Ersatzfarbe)
+function fotoHgHimmel(imgs){
+  try {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 4; const q = c.getContext('2d'); let r = 0, g2 = 0, b = 0, n = 0;
+    for(const img of imgs){ q.drawImage(img, 0, 0, img.width, img.height*0.04, 0, 0, 32, 4); const d = q.getImageData(0, 0, 32, 4).data;
+      for(let i = 0; i < d.length; i += 4){ r += d[i]; g2 += d[i + 1]; b += d[i + 2]; n++; } }
+    return [r, g2, b].map(v => Math.round(v/n)).join(',');
+  } catch(e){ return FOTO_HG_HIMMEL_ERSATZ; }
 }
 // Stücke bauen, sobald alle Bilder geladen sind; false = noch nicht bereit
 function fotoHgBereit(){
@@ -55,7 +72,8 @@ function fotoHgBereit(){
   const imgs = FOTO_HG_BILDER.map(fotoHgBild);
   if(imgs.some(b => !b)) return false;
   let x = 0;
-  fotoHg.stuecke = imgs.map(img => { const c = fotoHgStueck(img, FOTO_HG_UEBERGANG), s = {c, x}; x += c.width - FOTO_HG_UEBERGANG; return s; });
+  fotoHg.hoehe = Math.round(H*FOTO_HG_HOEHE); fotoHg.himmel = fotoHgHimmel(imgs);
+  fotoHg.stuecke = imgs.map(img => { const c = fotoHgStueck(img, FOTO_HG_UEBERGANG, fotoHg.hoehe), s = {c, x}; x += c.width - FOTO_HG_UEBERGANG; return s; });
   fotoHg.per = x;   // Schleife: nach dem letzten Stück kommt wieder das erste (es blendet über das Ende des letzten)
   return true;
 }
@@ -67,7 +85,13 @@ function fotoHgPanorama(off){
     if(x < W && x + s.c.width > 0) liste.push([x, s.c]);
   }
   liste.sort((a, b) => a[0] - b[0]);
-  for(const [x, c] of liste) ctx.drawImage(c, x, 0, c.width, H);
+  // Nebel-Himmel oben (oben etwas heller), Panorama unten bündig darauf
+  const y0 = H - fotoHg.hoehe;
+  if(y0 > 0){ const gr = ctx.createLinearGradient(0, 0, 0, y0 + FOTO_HG_OBEN_WEICH);
+    gr.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',1)'); gr.addColorStop(1, 'rgba(' + fotoHg.himmel + ',1)');
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, y0 + FOTO_HG_OBEN_WEICH); }
+  for(const [x, c] of liste) ctx.drawImage(c, x, y0, c.width, c.height);
+  ctx.fillStyle = 'rgba(' + fotoHg.himmel + ',' + FOTO_HG_DUNST_A + ')'; ctx.fillRect(0, 0, W, H);
   fotoHg.sichtbar = liste.length;
 }
 // Nebelschwade: einmal vorgezeichnet (weicher, breiter Fleck), pro Bild nur verschoben (Zeit aus der Uhr, reine Deko)
@@ -83,7 +107,7 @@ function fotoHgNebel(t){
   const breit = 1100, hoch = 300;
   ctx.save();
   for(let i = 0; i < 4; i++){
-    const y = 260 + i*95, x = ((t*(6 + i*2) - camX*(0.2 + i*0.05) + i*520) % (W + breit) + (W + breit)) % (W + breit) - breit;
+    const y = 200 + i*110, x = ((t*(6 + i*2) - camX*(0.2 + i*0.05) + i*520) % (W + breit) + (W + breit)) % (W + breit) - breit;
     ctx.globalAlpha = FOTO_HG_NEBEL_A*(0.8 + 0.2*Math.sin(t*0.3 + i));
     ctx.drawImage(fotoHg.nebel, x, y - hoch/2, breit, hoch);
   }

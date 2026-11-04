@@ -2122,9 +2122,12 @@ js/17-deko.js).
 Code in `js/11c-foto-hintergrund.js`, Bilder des Nutzers in `assets/hintergrund/nebelwald-1…4.webp` (je 2000×667,
 vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
 - In der Dschungel-Welt (alle Tageszeiten, d. h. überall, wo der Dschungel-Look aus 11b gilt) zeigt das Spiel statt des
-  gezeichneten Hintergrunds ein langes Nebelwald-Panorama: die vier Bilder bildhoch nebeneinander, an jeder Nahtstelle
-  60 px weich überblendet, als Endlos-Schleife (nach 4 kommt wieder 1), Parallaxe 0,15. Davor vier langsam ziehende,
-  leichte Nebelschwaden; nachts dunkelblau getönt. (Erste Fassung mit drei eigenen Fotos und Unterholz-Ebene ersetzt –
+  gezeichneten Hintergrunds ein langes Nebelwald-Panorama: die vier Bilder nebeneinander, an jeder Nahtstelle
+  60 px weich überblendet, als Endlos-Schleife (nach 4 kommt wieder 1), Parallaxe 0,15. Nicht vergrößert (Nutzerwunsch):
+  das Panorama ist 75 % der Bildhöhe hoch (`FOTO_HG_HOEHE`, kleiner als die Bilder selbst) und unten bündig; darüber
+  Nebel in der Himmel-Farbe der Bilder, in den der obere Bildrand weich übergeht. Leichter Dunst über allem und vier
+  langsam ziehende, lockere Nebelschwaden (nicht zu dicht, Nutzerwunsch); nachts dunkelblau getönt. Taste B schaltet
+  den Nebel mit dem ganzen Foto-Look an/aus. (Erste Fassung mit drei eigenen Fotos und Unterholz-Ebene ersetzt –
   man sah die Stückelung.) Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und Nacht-Licht am Boden bleiben wie
   bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.
 - **Abschaltbar:** im Spiel **Taste B** (Hinweis oben im Bild, wie M für den Ton; nicht im Pausenmenü) oder
@@ -2132,6 +2135,27 @@ vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
   wieder der gezeichnete Dschungel-Hintergrund. Solange die Fotos laden, wird ebenfalls der gezeichnete gezeigt.
 - Speicher: je Bild ein vorgezeichnetes Stück (~6 MB); jedes ist breiter als der Bildschirm, darum sind pro Bild
   höchstens 2 sichtbar (~12 MB). Test foto_hintergrund.
+
+### Foto-Material für Boden und Wand + Werkstatt (Nutzerwunsch 04.11. – Schritt 2 zum fotorealistischen Look)
+Code in `js/12c-foto-material.js` (Spiel) und `werkstatt.html` + `werkstatt/werkstatt.js` (Werkstatt). Reine Optik.
+- **Im Spiel:** Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher). Liegt eine Foto-Textur vor, wird sie
+  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, 1024×1024 = 240×240 Welt-px), **Wand**
+  (Inneres der Wände, ebenso) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
+  und Wand; die Oberfläche liegt 32 Welt-px unter dem oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine
+  weiche dunkle Kontur und einen Schatten innen am Rand. Mit Gras-Kante entfallen die gezeichneten Comic-Pflanzen am
+  Boden (Dickicht, Gras, Farne, Blumen, 17a); Tiere und ihre Regeln bleiben. Fehlt eine Textur, bleibt dort der alte
+  Look. Gilt nur in der Dschungel-Welt und nur im Foto-Look (Taste B / Optionen schalten Hintergrund UND Material).
+- **Herkunft der Texturen:** zuerst eine Probe aus der Werkstatt (localStorage `monchichi.werkstatt.<id>`, nur in diesem
+  Browser), sonst `assets/texturen/<id>.webp` (id = erde, wand, kante).
+- **Werkstatt** (`werkstatt.html`): je Textur 1) Vorlage in Zielgröße mit Kästchen-Raster und Figur zum Größenvergleich
+  (Kante: rote Linie = Bodenoberfläche, gestrichelt = höchstes Gras) zum Herunterladen, 2) fertiger Text für ChatGPT zum
+  Kopieren, 3) Bild hineinziehen/auswählen -> auf Zielgröße zugeschnitten, „Nähte glätten“ (an: Ränder werden mit den
+  um die halbe Größe verschobenen Bildern weich überblendet, danach nahtlos kachelbar; Erde/Wand in beide Richtungen,
+  Kante nach links/rechts), Kante unten weich in die Erde ausgeblendet und – ohne durchsichtigen Hintergrund –
+  oben weich ausgeblendet, 4) Vorschau mehrfach nebeneinander (Kante auf Nebelwald + Erde), „Im Spiel ausprobieren“
+  (Probe speichern + Probe-Level `levels/test/werkstatt.json` öffnen), „Probe entfernen“, „Herunterladen“,
+  „☁ Auf GitHub speichern“ (assets/texturen/<id>.webp nach main; GitHub-Schlüssel wie im Editor). Tests foto_material,
+  werkstatt_seite.
 
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:
