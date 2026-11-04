@@ -78,8 +78,10 @@ const DEFAULT_LEVEL = {
 // Tode je Figur im aktuellen Level (Anzeige oben rechts: wer stirbt öfter?) – beim Laden eines Levels wieder 0
 let deathCount = {m: 0, f: 0};
 let levelWelt = '';   // Welt des Levels (Level-Info „welt“), z. B. für DASH_AUS_WELTEN
+let levelRoh = null;  // die geladenen Level-Daten, wie sie in der Datei stehen (z. B. für die Tier-Sperrflächen in 20-tiere.js)
 function buildLevel(data){
   deathCount = {m: 0, f: 0};
+  levelRoh = data;
   levelWelt = data.welt || '';
   levelNachSzene = data.nachSzene || null;   // Dschungel-Neu: Szene nach dem Abschnitt (24-startmenue.js, 29-story.js)
   solids = (data.solids||[]).filter(s=>s.type!=='fake').map(s=>({...s}));

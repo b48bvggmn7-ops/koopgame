@@ -2281,6 +2281,12 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   Schwanz und hüpft weg, wenn jemand kommt (Frosch-Logik, ohne Quaken; `fotoEichhoernchen`). Schmetterling, Glühwürmchen,
   Faultier, Fledermaus, Schnecke und Eidechse sind im Foto-Look ausgeblendet, samt ihrer Töne (`FOTO_TIERE_AUS`,
   `fotoTierTon`). Nur Aussehen – Taste B schaltet sofort um; Pilze/Knospen wie bisher. Test foto_tiere.
+- **Tiere nie in/vor Elementen** (Nutzerwunsch „muss sichergestellt sein“, gilt für beide Looks und alle Welten): alle
+  Spiel-Elemente des Levels (Stacheln, Münzen, Hebel, Türen, Platten, Windräder, Pressen samt Weg, Floß/Draisine samt
+  Schiene, bewegte Teile samt Ziel … – allgemein aus den Level-Daten, neue Elemente zählen automatisch) sind mit 24 px Rand
+  Sperrflächen (`tierSperrFlaechen`/`tierGesperrt`, `TIER_SPERR_RAND` in js/20-tiere.js). Vögel, Eichhörnchen/Frosch, Pilze,
+  Knospen, Schmetterlinge und Faultier werden nur gesetzt, wo ihr ganzer Umriss frei ist; Eichhörnchen/Frosch/Schnecke
+  hüpfen/laufen nie in eine Sperrfläche. Test tiere_nie_in_elementen.
 - **Diamant-Größe passend zum Element** (Nutzerwunsch, beide Looks): Tür, bewegte Plattform, Presse und Wechselboden
   bekommen eine Edelstein-Platte, die mit dem Element wächst – vor allem mit der schmalen Seite, etwas mit der langen
   (`edelsteinGroesse`, `EDELSTEIN_MASS` in js/12: 40×40 ≈ 11, 40×160 ≈ 13, ab 2 Reihen dick 15; vorher fest 10–12).

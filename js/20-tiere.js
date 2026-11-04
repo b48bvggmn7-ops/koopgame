@@ -75,7 +75,7 @@ function buildCritters(){
     // Faultier bzw. Fledermaus unter schwebendem Boden (Unterseite frei, darunter Luft)
     if(slothCount < (CT.hanging === 'bat' ? 4 : 2) && s.w >= 120 && s.y > 120 && s.y + s.h + 90 < LEVEL_H){
       const ux = s.x + s.w*0.5;
-      if(!decoSolidAt(ux, s.y + s.h + 4) && !decoSolidAt(ux, s.y + s.h + 70) && decoHash(s.x, s.y) < 0.5 && !blocked(ux, s.y + s.h + 60)){
+      if(!decoSolidAt(ux, s.y + s.h + 4) && !decoSolidAt(ux, s.y + s.h + 70) && decoHash(s.x, s.y) < 0.5 && !blocked(ux, s.y + s.h + 60) && !tierGesperrt(ux, s.y + s.h + 75, 26, 75)){
         if(CT.hanging === 'bat') critters.push({kind: 'bat', x: ux, y: s.y + s.h, hx: ux, hy: s.y + s.h, state: 'hang', t: 0, vx: 0, vy: 0, ph: Math.random()*9});
         else critters.push({kind: 'sloth', x: ux, y: s.y + s.h, awake: 0, wave: 0, found: false});
         slothCount++;
@@ -396,6 +396,54 @@ const DJT_ABSTAND_HAENGER = 1300;   // höchstens ein Faultier/eine Fledermaus j
 const DJT_RAND = 45;                // Abstand zum Rand der Fläche
 const DJT_FREI_X = 34, DJT_FREI_H = 46;   // um das Tier herum kein Block, keine Stufe
 const DJT_LAUF_MIN = 70;            // Frosch/Schnecke brauchen so viel freie Laufstrecke
+// Sperrflächen für Tiere (Nutzerwunsch: „Tiere nie so, dass sie wichtige Elemente verdecken, in Elementen oder in
+// Stacheln stehen – das muss sichergestellt sein“): ALLE Spiel-Elemente des Levels als Rechtecke (Stacheln, Münzen,
+// Hebel, Türen, Platten, Windräder, Pressen samt Weg nach unten, Floß/Draisine samt Schiene, bewegte Teile samt Ziel …),
+// rundum TIER_SPERR_RAND px dazu. Tiere (Vögel, Eichhörnchen/Frosch, Pilze, Knospen, Schmetterlinge, Faultier) werden
+// nur gesetzt, wo ihr ganzer Umriss frei ist; Läufer laufen/hüpfen nie in eine Sperrfläche.
+// Allgemein über die Level-Daten, damit auch künftige Elemente automatisch zählen; nur reine Deko/große Zonen nicht.
+const TIER_SPERR_RAND = 24;
+const TIER_SPERR_OHNE = new Set(['solids', 'hooks', 'meteoriten', 'dunkelzonen', 'bossArena', 'haftflaechen', 'eis', 'startM', 'startF', '_teile']);
+const TIER_UMRISS = {laeufer: [30, 48], vogel: [14, 28], klein: [16, 32]};   // [halbe Breite, Höhe] über dem Boden-Punkt
+let tierSperrFuer = null, tierSperrListe = [];
+function tierSperrFlaechen(){
+  if(tierSperrFuer === solids) return tierSperrListe;
+  const L = [], R = TIER_SPERR_RAND, zahl = v => typeof v === 'number' && isFinite(v);
+  const dazu = (x0, y0, x1, y1) => L.push([Math.min(x0, x1) - R, Math.min(y0, y1) - R, Math.max(x0, x1) + R, Math.max(y0, y1) + R]);
+  const stueck = (o, feld) => {
+    if(!o || !zahl(o.x) || !zahl(o.y)) return;
+    let x0, y0, x1, y1;
+    if(feld === 'solids'){ x0 = o.x; y0 = o.y; x1 = o.x + o.w; y1 = o.y + o.h; }
+    else if(zahl(o.w) && zahl(o.h)){ x0 = o.x - o.w/2; y0 = o.y - o.h; x1 = o.x + o.w; y1 = o.y + o.h; }   // links-oben ODER Mitte-unten (Stacheln) – beides abdecken
+    else { x0 = o.x - 40; y0 = o.y - 40; x1 = o.x + 40 + (zahl(o.breite) ? (o.breite - 1)*40 : 0); y1 = o.y + 40; }   // Punkt-Element: Kästchen in jeder Lesart
+    if(zahl(o.schiene)) x1 += o.schiene*40 + 40;                        // Blatt-Floß, Draisine: ganze Schiene
+    if(feld === 'pressen') y1 += 480;                                    // Presse: Weg nach unten
+    if(zahl(o.targetX) || zahl(o.targetY)){                              // bewegte Teile/Haken: auch das Ziel und der Weg
+      const dx = (zahl(o.targetX) ? o.targetX : o.x) - o.x, dy = (zahl(o.targetY) ? o.targetY : o.y) - o.y;
+      x0 = Math.min(x0, x0 + dx); x1 = Math.max(x1, x1 + dx); y0 = Math.min(y0, y0 + dy); y1 = Math.max(y1, y1 + dy);
+    }
+    dazu(x0, y0, x1, y1);
+  };
+  const D = levelRoh || {};
+  for(const k in D){
+    if(TIER_SPERR_OHNE.has(k)) continue;
+    const v = D[k];
+    if(Array.isArray(v)) for(const o of v) stueck(o, k);
+    else if(k === 'goal' || k === 'boss') stueck(v, k);
+  }
+  // Spiel-Listen dazu (auch was ein Element selbst anlegt): Stacheln, Münzen, besondere solids (Tür, Bröckel, bewegte Teile …)
+  for(const sp of spikes) stueck(sp, 'spikes');
+  for(const c of coins) stueck(c, 'coins');
+  for(const s of solids) if(s.type !== 'ground' && s.type !== 'wall' && s.type !== 'platform') stueck(s, 'solids');
+  if(goal) stueck(goal, 'goal');
+  tierSperrFuer = solids; tierSperrListe = L;
+  return L;
+}
+// true = Umriss (x ± hb, von yUnten - h bis yUnten) berührt eine Sperrfläche
+function tierGesperrt(x, yUnten, hb, h){
+  for(const [a, b, c, d] of tierSperrFlaechen()) if(x + hb > a && x - hb < c && yUnten > b && yUnten - h < d) return true;
+  return false;
+}
 function buildCrittersDschungel(){
   const N = hgNacht();
   const CT = {air: N ? 'firefly' : 'butterfly', airCols: N ? [GLUEH_KERN] : ['#7ec8ff', '#ff9ecb', '#ffd166', '#b69cff'], hanging: N ? 'bat' : 'sloth', mushGlow: N};   // nachts orange Glühwürmchen (boden-dekor-paket)
@@ -416,6 +464,7 @@ function buildCrittersDschungel(){
       let acc = 0, kind = null;
       for(const [k, w] of DJT_BODEN){ acc += w; if(r < acc){ kind = k; break; } }
       if(kind && (Math.abs(mid - lastG) < DJT_ABSTAND_BODEN || mid < s.x + DJT_RAND || mid > s.x + s.w - DJT_RAND || !boxFree(mid, s.y))) kind = null;
+      if(kind && tierGesperrt(mid, s.y, ...TIER_UMRISS[(kind === 'frog' || kind === 'snail') ? 'laeufer' : 'klein'])) kind = null;   // nie in/vor Elementen
       if(N && kind === 'frog') kind = 'snail';   // nachts Schnecke statt Frosch
       let c = null;
       if(kind === 'frog' && far('frog')){ last.frog = mid;
@@ -431,7 +480,7 @@ function buildCrittersDschungel(){
       if(c){ critters.push(c); lastG = mid; c.pl = [s.x + DJT_RAND, s.x + s.w - DJT_RAND]; }
       // Schmetterling (nachts Glühwürmchen): selten, nur wo darüber nichts im Weg ist; wie bisher EIN goldener je Level
       const rb = decoHash(cx + 77, s.y + 31);
-      if(rb < DJT_FLIEGER_P && far('fly') && !decoSolidAt(mid, s.y - 50) && !decoSolidAt(mid - 30, s.y - 50) && !decoSolidAt(mid + 30, s.y - 50)){
+      if(rb < DJT_FLIEGER_P && far('fly') && !tierGesperrt(mid, s.y - 15, 60, 70) && !decoSolidAt(mid, s.y - 50) && !decoSolidAt(mid - 30, s.y - 50) && !decoSolidAt(mid + 30, s.y - 50)){
         last.fly = mid;
         const gold = !goldDone && rb > 0.05 && mid > levelStartM.x + 800;
         if(gold) goldDone = true;
@@ -443,7 +492,7 @@ function buildCrittersDschungel(){
     // Faultier bzw. Fledermaus unter schwebendem Boden: höchstens eins je DJT_ABSTAND_HAENGER px
     if(slot < 8 && s.w >= 120 && s.y > 120 && s.y + s.h + 90 < LEVEL_H){
       const ux = s.x + s.w*0.5;
-      if(Math.abs(ux - lastH) > DJT_ABSTAND_HAENGER && !decoSolidAt(ux, s.y + s.h + 4) && !decoSolidAt(ux, s.y + s.h + 70) && decoHash(s.x, s.y) < 0.5 && !blocked(ux, s.y + s.h + 60)){
+      if(Math.abs(ux - lastH) > DJT_ABSTAND_HAENGER && !decoSolidAt(ux, s.y + s.h + 4) && !decoSolidAt(ux, s.y + s.h + 70) && decoHash(s.x, s.y) < 0.5 && !blocked(ux, s.y + s.h + 60) && !tierGesperrt(ux, s.y + s.h + 75, 26, 75)){
         slot++; lastH = ux;
         critters.push(CT.hanging === 'bat' ? {kind: 'bat', x: ux, y: s.y + s.h, hx: ux, hy: s.y + s.h, state: 'hang', t: 0, vx: 0, vy: 0, ph: Math.random()*9}
                                           : {kind: 'sloth', x: ux, y: s.y + s.h, awake: 0, wave: 0, found: false});
@@ -461,7 +510,7 @@ function buildCrittersDschungel(){
     let ok = false;
     for(let d = 50; d <= 450 && !ok; d += 40) for(const sd of [1, -1]){
       const nx = c.x + sd*d;
-      if(nx < c.pl[0] || nx > c.pl[1] || bad(nx, c.y, 16) || !boxFree(nx, c.y) || blocked(nx, c.y) || critters.some(o => o !== c && o.pl && Math.abs(o.x - nx) < 400 && Math.abs(o.y - c.y) < 80)) continue;
+      if(nx < c.pl[0] || nx > c.pl[1] || bad(nx, c.y, 16) || !boxFree(nx, c.y) || blocked(nx, c.y) || tierGesperrt(nx, c.y, ...TIER_UMRISS[c.minX !== undefined ? 'laeufer' : 'klein']) || critters.some(o => o !== c && o.pl && Math.abs(o.x - nx) < 400 && Math.abs(o.y - c.y) < 80)) continue;
       const dx = nx - c.x; c.x = nx; if(c.home !== undefined) c.home = nx; if(c.minX !== undefined){ c.minX += dx; c.maxX += dx; }
       ok = true; break;
     }
@@ -473,8 +522,8 @@ function buildCrittersDschungel(){
   for(const c of critters){
     if(c.minX === undefined) continue;
     let lo = c.x, hi = c.x;
-    while(lo > c.minX && !decoSolidAt(lo - 8, c.y - 6) && !bad(lo - 8, c.y, 14)) lo -= 8;
-    while(hi < c.maxX && !decoSolidAt(hi + 8, c.y - 6) && !bad(hi + 8, c.y, 14)) hi += 8;
+    while(lo > c.minX && !decoSolidAt(lo - 8, c.y - 6) && !bad(lo - 8, c.y, 14) && !tierGesperrt(lo - 8, c.y, ...TIER_UMRISS.laeufer)) lo -= 8;
+    while(hi < c.maxX && !decoSolidAt(hi + 8, c.y - 6) && !bad(hi + 8, c.y, 14) && !tierGesperrt(hi + 8, c.y, ...TIER_UMRISS.laeufer)) hi += 8;
     c.minX = Math.max(c.minX, lo + 6); c.maxX = Math.min(c.maxX, hi - 6);
     for(const [kx, ky] of frei){
       if(ky < c.y - 120 || ky > c.y + 40) continue;

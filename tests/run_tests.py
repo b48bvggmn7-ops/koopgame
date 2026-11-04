@@ -5880,6 +5880,41 @@ async def foto_tiere(g):
     assert 'frog' not in r['tonFoto'], f'Eichhörnchen quakt: {r}'
 
 @test
+async def tiere_nie_in_elementen(g):
+    """Nutzerwunsch „Tiere nur so setzen, dass sie keine wichtigen Elemente verdecken oder in Elementen/Stacheln stehen –
+    das muss sichergestellt sein“: Dschungel-Level voller Stacheln, Münzen, Hebel, Türen, Druckplatten – kein Tier/Vogel
+    (samt ganzer Laufstrecke von Eichhörnchen/Frosch) überlappt eines davon; es gibt trotzdem Tiere."""
+    sp, co, sw, do, pl = [], [], [], [], []
+    for i, x in enumerate(range(700, 11000, 260)):
+        k = i % 5
+        if k == 0: sp.append({'x': x, 'y': 680, 'w': 40, 'h': 40})
+        elif k == 1: co.append({'x': x, 'y': 655})
+        elif k == 2: sw.append({'x': x, 'y': 660, 'link': 1})
+        elif k == 3: do.append({'x': x, 'y': 660, 'link': 1})
+        else: pl.append({'x': x, 'y': 680, 'link': 2})
+    await g.load(level([ground(0, 680, 11400)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit='mittag',
+                       spikes=sp, coins=co, switches=sw, doors=do, plates=pl))
+    r = await g.ev("""(() => { decoFor = null; buildDeco(); buildCritters();
+      const E = [];   // echte Element-Flächen (ohne Rand)
+      for(const s of spikes) E.push([s.x - s.w/2, s.y - s.h, s.x + s.w/2, s.y, 'stachel']);
+      for(const c of coins) E.push([c.x - 12, c.y - 12, c.x + 12, c.y + 12, 'muenze']);
+      for(const s of switchDefs) E.push([s.x - 20, s.y - 30, s.x + 20, s.y + 20, 'hebel']);
+      for(const p of plates) E.push([p.x - 20, p.y - 15, p.x + 20, p.y + 5, 'platte']);
+      for(const s of solids) if(s.type === 'door') E.push([s.x, s.y, s.x + s.w, s.y + s.h, 'tuer']);
+      const treffer = [], box = (a, b, c, d, wer) => { for(const e of E) if(c > e[0] && a < e[2] && d > e[1] && b < e[3]) treffer.push(wer + '@' + Math.round(a) + ' in ' + e[4]); };
+      for(const c of critters){
+        if(c.minX !== undefined) box(Math.min(c.minX, c.x) - 22, c.y - 40, Math.max(c.maxX, c.x) + 22, c.y, c.kind);
+        else if(c.hx !== undefined) box(c.hx - 45, c.hy - 25, c.hx + 45, c.hy + 25, c.kind);
+        else if(c.kind === 'sloth' || c.kind === 'bat') box(c.x - 20, c.y, c.x + 20, c.y + 60, c.kind);
+        else box(c.x - 12, c.y - 26, c.x + 12, c.y, c.kind);
+      }
+      for(const b of birds) box(b.homeX - 12, b.homeY - 24, b.homeX + 12, b.homeY, 'vogel');
+      return {regeln: hgTierRegeln(), tiere: critters.length, voegel: birds.length, treffer: treffer.slice(0, 10), n: treffer.length}; })()""")
+    assert r['regeln'], f'Dschungel-Tierregeln nicht aktiv: {r}'
+    assert r['n'] == 0, f'Tier in/vor Element: {r}'
+    assert r['tiere'] + r['voegel'] >= 3, f'gar keine Tiere mehr: {r}'
+
+@test
 async def liane_runter_langsam(g):
     """Nutzerwunsch „runter klettern an der Liane geht viel zu schnell“: Liane geben (S) verlängert nur um LIANE2_GEBEN je Schritt."""
     r = await g.ev("""(() => { const A = {x: 0, y: 0}, S = {hx: 0, hy: 100, vx: 0, vy: 0, len: 100, ziel: 100, max: 400, dehn: 0, frei: undefined};
