@@ -279,6 +279,65 @@ function fotoMatAn(){ return typeof fotoHgAn === 'function' && fotoHgAn() && typ
 // Im Foto-Look entfallen die gezeichneten grünen Comic-Pflanzen am Boden (Dickicht, Gras, Farne, Blumen aus 17a) –
 // Nutzerwunsch „grüne Pflanzen im Vordergrund im Foto-Look raus“. Tiere und ihre Abstands-Regeln bleiben unverändert.
 function fotoMatOhneDeko(){ return typeof fotoLookAktiv === 'function' && fotoLookAktiv(); }
+
+// ---------- Foto-Pflanzen (Nutzerwunsch: „hier und da, nicht zu viel, Spielelemente nicht verdecken, passend zum Rest“) ----------
+// Freigestellte Pflanzen-Fotos des Nutzers (assets/pflanzen/), im Foto-Look sparsam auf freien Boden-Oberseiten verteilt
+// (fester Zufall je Level). Regeln: Abstand FOTO_PFLANZEN_ABSTAND zwischen zwei Pflanzen, steht ganz auf der Fläche (nicht
+// über die Kante hinaus), darüber frei (keine Wand/Decke im Weg), nie in der Freihalte-Zone um Spielobjekte, Münzen und
+// Start (bodenSperre / bodenNahStart aus 17a). Gezeichnet hinter Hebeln, Haken, Münzen und Figuren (aus drawGroundDeco).
+// hoehe = Welt-px (eine Figur ist rund 40 hoch), oft = wie häufig im Vergleich.
+const FOTO_PFLANZEN = [
+  {name: 'farn',         hoehe: 46, oft: 3},
+  {name: 'farn-strauch', hoehe: 54, oft: 2},
+  {name: 'busch',        hoehe: 56, oft: 2},
+  {name: 'brombeere',    hoehe: 58, oft: 2},
+  {name: 'baeumchen-1',  hoehe: 112, oft: 1},
+  {name: 'baeumchen-2',  hoehe: 100, oft: 1},
+];
+const FOTO_PFLANZEN_ABSTAND = [260, 560];   // Welt-px zwischen zwei Pflanzen (zufällig dazwischen)
+const FOTO_PFLANZEN_FUSS = 0.035;            // so viel (Anteil der Höhe) steckt der Fuß im Moos
+const fotoPfl = {bilder: {}, liste: null, quelle: null};
+function fotoPflBild(name){
+  let B = fotoPfl.bilder[name];
+  if(!B){ B = fotoPfl.bilder[name] = {img: new Image(), ok: false}; B.img.onload = () => { B.ok = true; }; B.img.src = 'assets/pflanzen/' + name + '.webp'; }
+  return B.ok ? B.img : null;
+}
+// Plätze suchen (einmal je Level, sobald alle Bilder geladen sind – die Breite hängt am Bild)
+function fotoPflanzenAufbauen(){
+  const bilder = FOTO_PFLANZEN.map(P => fotoPflBild(P.name)); if(bilder.some(b => !b)) return null;
+  const R = matRasterHolen(), r = rnd(9157), sperre = typeof bodenSperre === 'function' ? bodenSperre() : () => false;
+  const frei = (c, rr) => Tc(c, rr) === 0, liste = [];
+  // freie Boden-Oberseiten als zusammenhängende Läufe je Reihe
+  const ober = [];
+  for(const [k, t] of R.zellen){ if(t !== 1 || R.fake.has(k)) continue; const [c, rr] = k.split(',').map(Number); if(frei(c, rr - 1)) ober.push([rr, c]); }
+  ober.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const laeufe = []; for(const [rr, c] of ober){ const L = laeufe[laeufe.length - 1]; if(L && L.rr === rr && L.c1 === c - 1) L.c1 = c; else laeufe.push({rr, c0: c, c1: c}); }
+  const summe = FOTO_PFLANZEN.reduce((s, P) => s + P.oft, 0);
+  for(const L of laeufe){
+    const y = L.rr*40, xa = L.c0*40, xb = L.c1*40 + 40;
+    for(let x = xa + 20 + r()*FOTO_PFLANZEN_ABSTAND[0]*0.6; x < xb; x += FOTO_PFLANZEN_ABSTAND[0] + r()*(FOTO_PFLANZEN_ABSTAND[1] - FOTO_PFLANZEN_ABSTAND[0])){
+      let w = r()*summe, i = 0; while(w >= FOTO_PFLANZEN[i].oft){ w -= FOTO_PFLANZEN[i].oft; i++; }
+      const P = FOTO_PFLANZEN[i], img = bilder[i], h = P.hoehe*(0.85 + r()*0.3), b = h*img.width/img.height, halb = b*0.4;
+      if(x - halb < xa || x + halb > xb) continue;                                   // ganz auf der Fläche
+      let ok = !sperre(x, y) && !sperre(x - halb, y) && !sperre(x + halb, y) && !(typeof bodenNahStart === 'function' && bodenNahStart(x));
+      for(let c = Math.floor((x - halb)/40); ok && c <= Math.floor((x + halb)/40); c++)   // darüber frei
+        for(let rr = L.rr - 1; rr >= Math.floor((y - h)/40); rr--) if(!frei(c, rr)){ ok = false; break; }
+      if(ok) liste.push({img, x, y, b, h, spiegel: r() < 0.5});
+    }
+  }
+  return liste;
+}
+// Zeichnen (aus drawGroundDeco, 17-deko.js; Kamera: x - camX wie dort)
+function fotoPflanzenZeichnen(){
+  if(fotoPfl.quelle !== solids || !fotoPfl.liste){ const L = fotoPflanzenAufbauen(); if(!L) return; fotoPfl.liste = L; fotoPfl.quelle = solids; }
+  for(const p of fotoPfl.liste){
+    const x = p.x - camX; if(x + p.b < -20 || x - p.b > VW + 20) continue;
+    const y0 = p.y - p.h*(1 - FOTO_PFLANZEN_FUSS);
+    ctx.save(); ctx.translate(x, 0); if(p.spiegel) ctx.scale(-1, 1);
+    ctx.drawImage(p.img, -p.b/2, y0, p.b, p.h);
+    ctx.restore();
+  }
+}
 // aus matPfadeZeichnen (12): Texturen über die gezeichnete Füllung legen; true = erledigt (dann keine Comic-Kontur)
 function fotoMatUeber(q, V){
   if(!fotoMatAn()) return false;

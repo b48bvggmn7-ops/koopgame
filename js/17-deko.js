@@ -170,7 +170,11 @@ function buildDeco(){
 
 function drawGroundDeco(){
   if(decoFor !== solids) buildDeco();
-  if(bodenDekorAn()){ if(!(typeof fotoMatOhneDeko === 'function' && fotoMatOhneDeko())) bodenDekorZeichnen(); return; }   // Dschungel: Gras, Farnbüsche, Blumen, Pilze (17a-dschungel-boden.js)
+  if(bodenDekorAn()){
+    if(typeof fotoMatOhneDeko === 'function' && fotoMatOhneDeko()){ if(typeof fotoPflanzenZeichnen === 'function') fotoPflanzenZeichnen(); }   // Foto-Look: Foto-Pflanzen (12c)
+    else bodenDekorZeichnen();
+    return;
+  }   // Dschungel: Gras, Farnbüsche, Blumen, Pilze (17a-dschungel-boden.js)
   const t = performance.now();
   // Moos auf Wand-Oberseiten und Ranken an Wandseiten
   for(const m of decoMoss){

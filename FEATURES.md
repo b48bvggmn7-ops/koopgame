@@ -2188,6 +2188,12 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   `FOTO_MAT_WURZEL_*`; die Wurzeln der Moos-Kante sahen dort als heller Streifen komisch aus). Nur Optik – die
   Kollision bleibt das Kästchen; der alte Comic-Boden wird darunter nicht mehr gemalt.
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
+- **Foto-Pflanzen** im Foto-Look (Nutzerwunsch: „hier und da, nicht zu viel, Spielelemente nicht verdecken“): sechs
+  freigestellte Pflanzen-Fotos des Nutzers (`assets/pflanzen/`: Farn, Farn-Strauch, Busch, Brombeere, zwei Bäumchen;
+  Höhe 46–112 Welt-px, ±15 %, zufällig gespiegelt; Farne/Büsche häufiger) stehen auf freien Boden-Oberseiten, 260–560
+  Welt-px auseinander (fester Zufall je Level). Nur dort, wo die Pflanze ganz auf der Fläche steht und darüber frei
+  ist, nie in der Freihalte-Zone um Spielobjekte, Münzen und Start (`bodenSperre`/`bodenNahStart`). Gezeichnet hinter
+  Hebeln, Haken, Münzen und Figuren (`fotoPflanzenZeichnen` aus `drawGroundDeco`, Werte `FOTO_PFLANZEN*`).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
   Foto-Look nie gezeichnet; mit Erde-Foto auch keine grünen Comic-Grasecken an Stufen. Tiere und ihre Regeln bleiben.
   Im Comic-Look alles wie bisher. Test foto_material.
