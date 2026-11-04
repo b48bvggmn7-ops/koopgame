@@ -2211,6 +2211,19 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   Foto-Look nie gezeichnet; mit Erde-Foto auch keine grünen Comic-Grasecken an Stufen. Tiere und ihre Regeln bleiben.
   Im Comic-Look alles wie bisher. Test foto_material.
 
+### Elemente im Foto-Look (Nutzerwunsch: „alle Elemente umgestalten – Hebel und Druckplatte bleiben“)
+Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); gilt nur im Foto-Look (Taste B).
+- **Holz** erzeugt das Spiel selbst (`fotoHolz`, einmal, nahtlos): verwitterte grau-braune Bretter mit unregelmäßiger
+  Maserung (weiches Rauschen), Astlöchern, Rissen, dunklen Fugen und etwas Moos; dazu rostiges Eisen mit Nieten
+  (`fotoEisenBand`).
+- **Tür:** Holztor aus diesen Brettern entlang der langen Achse, rostige Eisenbänder quer (eins je ~56 px), Licht oben,
+  unten dunkler (`fotoTuerInnen` aus `drawGate`); Nische, Aufgleiten, Edelstein und Rahmen wie bisher.
+- **Haken:** dicke, gedrehte Holz-Liane mit Moosflecken und ein paar dunklen Blättern (`fotoLiane`) bis zum rostigen
+  Eisenring (einmal umschlungen); das warme Leuchten nur in Reichweite des Affen (`fotoHakenZeichnen`).
+- **Blatt-Floß:** Plattform aus Holzbrettern auf zwei Tragebalken statt Blatt (`fotoFlossBild`, ganz hinter den
+  Figuren), Aufhänge-Lianen als Foto-Lianen; **Floß-Rad** aus verwittertem Holz mit olivgrüner Ranke; Taue, Rollen und
+  Rollenwagen in altem grau-braunem Hanf/Holz (`tauFarben` in elemente/blattfloss.js).
+
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:
 `js/17a-dschungel-boden.js` (neu), Anpassungen in 11b, 12, 17, 20. Gilt Tag UND Nacht, für alle Dschungel-Auswahlen.

@@ -25,6 +25,8 @@ const BLATT_SCHIENE_HOCH = 72;   // px: so hoch über der Stehfläche läuft die
 const BLATT_WOELBUNG = 0.75;
 const BLATT_EINSINKEN = 2;        // px: so liegt die Mitte des vorderen Rands unter der Stehfläche (Rand ~6 px über den Füßen)
 function blattBild(g, x, y, w, schwank, teil){
+  // Foto-Look: Floß aus verwitterten Brettern statt Blatt (js/12e-foto-elemente.js)
+  if(g === ctx && typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoFlossBild === 'function'){ fotoFlossBild(g, x, y, w, schwank, teil); return; }
   g.save(); g.translate(x + w/2, y - BLATT_EINSINKEN); g.rotate(schwank || 0); g.scale(1, -BLATT_WOELBUNG);
   const L = w/2;
   if(teil !== 'vorne'){
@@ -81,24 +83,30 @@ function blattSchieneEnden(s){
 // ---------- Seilzug (Nutzer: „mach da doch mal kleine Seilzüge“, „Hintergrund und Vordergrund dürfen sich nicht vermischen“):
 // gedrehte Hanf-Taue statt beblätterter Lianen (heben sich klar vom Dschungel ab), Rollenwagen auf der Schiene, Knoten am Blatt
 const TAU_DUNKEL = '#3a2410', TAU_HELL = '#b98a4e', TAU_LICHT = 'rgba(255,230,180,.55)';
+// Farben von Tau, Rollen und Holz: im Foto-Look altes grau-braunes Hanfseil und verwittertes Holz (12e), sonst wie bisher
+function tauFarben(){
+  if(typeof fotoLookAktiv === 'function' && fotoLookAktiv())
+    return {dunkel: '#2a231a', hell: '#7d6c55', licht: 'rgba(225,215,190,.35)', litze: 'rgba(55,45,32,.7)', rolle: '#6e5f4a', rolleDunkel: '#1f1a14', holzA: '#7a6a54', holzB: '#4a3d2e'};
+  return {dunkel: TAU_DUNKEL, hell: TAU_HELL, licht: TAU_LICHT, litze: 'rgba(90,55,20,.75)', rolle: '#9a6a35', rolleDunkel: '#2a1a0c', holzA: '#b47a40', holzB: '#6b4019'};
+}
 // Tau von (x0,y0) nach (x1,y1) mit leichtem Durchhang (sag px nach unten); dick = Breite
 function tauZeichnen(x0, y0, x1, y1, sag, dick){
-  dick = dick || 3;
+  dick = dick || 3; const F = tauFarben();
   const cx = (x0 + x1)/2, cy = (y0 + y1)/2 + (sag || 0);
   ctx.save(); ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(cx, cy, x1, y1);
-  ctx.strokeStyle = TAU_DUNKEL; ctx.lineWidth = dick + 1.8; ctx.stroke();
-  ctx.strokeStyle = TAU_HELL; ctx.lineWidth = dick; ctx.stroke();
-  ctx.setLineDash([2.2, 2.6]); ctx.strokeStyle = 'rgba(90,55,20,.75)'; ctx.lineWidth = dick*0.9; ctx.stroke();   // Drehung (Litzen)
-  ctx.setLineDash([]); ctx.strokeStyle = TAU_LICHT; ctx.lineWidth = 0.8;
+  ctx.strokeStyle = F.dunkel; ctx.lineWidth = dick + 1.8; ctx.stroke();
+  ctx.strokeStyle = F.hell; ctx.lineWidth = dick; ctx.stroke();
+  ctx.setLineDash([2.2, 2.6]); ctx.strokeStyle = F.litze; ctx.lineWidth = dick*0.9; ctx.stroke();   // Drehung (Litzen)
+  ctx.setLineDash([]); ctx.strokeStyle = F.licht; ctx.lineWidth = 0.8;
   ctx.beginPath(); ctx.moveTo(x0, y0 - dick*0.25); ctx.quadraticCurveTo(cx, cy - dick*0.25, x1, y1 - dick*0.25); ctx.stroke();
   ctx.restore();
 }
 // Rolle (Rad mit Achse): r Radius, w Drehwinkel
 function rolleZeichnen(x, y, r, w){
-  ctx.save(); ctx.translate(x, y);
-  ctx.fillStyle = '#2a1a0c'; ctx.beginPath(); ctx.arc(0, 0, r + 1.2, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#9a6a35'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(x, y); const F = tauFarben();
+  ctx.fillStyle = F.rolleDunkel; ctx.beginPath(); ctx.arc(0, 0, r + 1.2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = F.rolle; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
   ctx.rotate(w); ctx.strokeStyle = '#4a2e14'; ctx.lineWidth = 1.1;
   for(let i = 0; i < 3; i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(-r + 0.8, 0); ctx.lineTo(r - 0.8, 0); ctx.stroke(); }
   ctx.fillStyle = '#4b5563'; ctx.beginPath(); ctx.arc(0, 0, 1.4, 0, Math.PI*2); ctx.fill();
@@ -107,18 +115,20 @@ function rolleZeichnen(x, y, r, w){
 // Rollenwagen auf der Schiene bei x: zwei Rollen oben auf dem Tau, Holzplatte darunter mit Öse fürs Hänge-Tau
 function rollenwagenZeichnen(x, y, drehung){
   for(const dx of [-5, 5]) rolleZeichnen(x + dx, y - 4, 3.6, drehung);
-  ctx.fillStyle = '#2a1a0c'; ctx.beginPath(); ctx.roundRect(x - 9, y - 1.5, 18, 6, 2); ctx.fill();
-  const hz = ctx.createLinearGradient(0, y - 1, 0, y + 4); hz.addColorStop(0, '#b47a40'); hz.addColorStop(1, '#6b4019');
+  const F = tauFarben();
+  ctx.fillStyle = F.rolleDunkel; ctx.beginPath(); ctx.roundRect(x - 9, y - 1.5, 18, 6, 2); ctx.fill();
+  const hz = ctx.createLinearGradient(0, y - 1, 0, y + 4); hz.addColorStop(0, F.holzA); hz.addColorStop(1, F.holzB);
   ctx.fillStyle = hz; ctx.beginPath(); ctx.roundRect(x - 8, y - 0.8, 16, 4.6, 1.6); ctx.fill();
   ctx.fillStyle = '#9aa3ad'; for(const dx of [-5, 5]){ ctx.beginPath(); ctx.arc(x + dx, y + 1.5, 0.9, 0, Math.PI*2); ctx.fill(); }
   ctx.strokeStyle = '#4b5563'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x, y + 6, 2.2, 0, Math.PI*2); ctx.stroke();   // Öse
 }
 // Knoten am Blatt: das Tau ist einmal um den Blattrand geschlungen
 function knotenZeichnen(x, y){
-  ctx.fillStyle = TAU_DUNKEL; ctx.beginPath(); ctx.ellipse(x, y, 4.2, 3.2, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = TAU_HELL; ctx.beginPath(); ctx.ellipse(x, y - 0.3, 3.2, 2.3, 0, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = 'rgba(90,55,20,.8)'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(x - 2.5, y + 1.6); ctx.lineTo(x + 2.5, y - 1.8); ctx.stroke();
-  ctx.strokeStyle = TAU_HELL; ctx.lineWidth = 1.6; ctx.lineCap = 'round';   // kurzes loses Ende
+  const F = tauFarben();
+  ctx.fillStyle = F.dunkel; ctx.beginPath(); ctx.ellipse(x, y, 4.2, 3.2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = F.hell; ctx.beginPath(); ctx.ellipse(x, y - 0.3, 3.2, 2.3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = F.litze; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(x - 2.5, y + 1.6); ctx.lineTo(x + 2.5, y - 1.8); ctx.stroke();
+  ctx.strokeStyle = F.hell; ctx.lineWidth = 1.6; ctx.lineCap = 'round';   // kurzes loses Ende
   ctx.beginPath(); ctx.moveTo(x + 2, y + 2); ctx.quadraticCurveTo(x + 4, y + 5, x + 3, y + 8); ctx.stroke();
 }
 const BLATT_KNOTEN_X = 46, BLATT_KNOTEN_Y = -5;   // px: Knoten an der hinteren Blattwand (von der Blattmitte / Stehfläche)
@@ -202,7 +212,9 @@ elementRegistrieren({
         const fahrt = Math.min(1, Math.abs(s.v)/BLATT_MAX), wind = Math.sin(t*1.1 + s.x0*0.003);
         for(const [x, yo, wx] of [[a, E.ya, E.a], [b, E.yb, E.b]]){   // Enden: Liane nach oben bis zum Material bzw. ins Blätterdach
           const pendel = Math.sin(t*0.9 + wx*0.01)*2.2 + fahrt*Math.sin(t*6 + wx)*1.2;
-          lianeZeichnen(x + Math.sin(wx*0.013)*3, yo !== null ? yo : -SKY_ROOM - 10, x, E.y - 6, 0.35, pendel, wx);
+          if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoLiane === 'function')   // Foto-Look: echte Liane (12e)
+            fotoLiane(ctx, x + Math.sin(wx*0.013)*3 + pendel, yo !== null ? yo : -SKY_ROOM - 10, x, E.y - 6, wx, 4.4);
+          else lianeZeichnen(x + Math.sin(wx*0.013)*3, yo !== null ? yo : -SKY_ROOM - 10, x, E.y - 6, 0.35, pendel, wx);
           if(yo !== null && typeof hakenHalter === 'function') hakenHalter(x, yo, HAKEN_STIL.dschungel, 'dschungel');
         }
         // Tau-Schiene: straff gespannt, hängt etwas durch und wippt (unter der Last des fahrenden Blatts mehr)

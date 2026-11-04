@@ -699,6 +699,10 @@ function drawGate(d, open, x){
  if(vis>1&&vw>1){g.save();g.beginPath();g.rect(ix,iy,vert?iw:vw,vert?vis:ih);g.clip();
   const off=vert?-(ih-vis):0,offx=vert?0:-(iw-vw);
   g.translate(offx,off);
+  const L=vert?ih:iw;
+  // Foto-Look: verwittertes Holz + rostige Eisenbänder (12e-foto-elemente.js)
+  if(typeof fotoLookAktiv==='function'&&fotoLookAktiv()&&typeof fotoTuerInnen==='function') fotoTuerInnen(g,ix,iy,iw,ih,vert);
+  else {
   // Bretter entlang der langen Achse
   const cross=vert?iw:ih,np=Math.max(2,Math.round(cross/13)),pw=cross/np;
   for(let i=0;i<np;i++){const bx=vert?ix+i*pw:ix,by=vert?iy:iy+i*pw,bw=vert?pw:iw,bh=vert?ih:pw;
@@ -711,11 +715,12 @@ function drawGate(d, open, x){
    if(vert){const m=bx+bw*(.3+hsh(i,y)*.4);g.moveTo(m,by+5);g.quadraticCurveTo(m+3,by+bh*.5,m-1,by+bh-5)}else{const m=by+bh*(.3+hsh(i,d.x)*.4);g.moveTo(bx+5,m);g.quadraticCurveTo(bx+bw*.5,m+3,bx+bw-5,m-1)}g.stroke();
    if(hsh(d.x+i,y+3)<.35){const kx=vert?bx+bw/2:bx+bw*(.2+hsh(i,y)*.6),ky=vert?by+bh*(.15+hsh(i,d.x)*.7):by+bh/2;g.fillStyle='rgba(60,34,12,.5)';g.beginPath();g.ellipse(kx,ky,2.4,3.2,0,0,7);g.fill()}}
   // Eisenbänder quer zur langen Achse
-  const L=vert?ih:iw,ns=Math.max(1,Math.round(L/56));
+  const ns=Math.max(1,Math.round(L/56));
   for(let i=0;i<ns;i++){const p=(i+.5)/ns*L,bx=vert?ix:ix+p-3.5,by=vert?iy+p-3.5:iy,bw=vert?iw:7,bh=vert?7:ih;
    const gr=vert?g.createLinearGradient(0,by,0,by+bh):g.createLinearGradient(bx,0,bx+bw,0);gr.addColorStop(0,'#6b727c');gr.addColorStop(.5,'#4a5059');gr.addColorStop(1,'#2c3036');g.fillStyle=gr;g.fillRect(bx,by,bw,bh);
    g.fillStyle='rgba(255,255,255,.3)';g.fillRect(bx,by,vert?bw:1.3,vert?1.3:bh);g.strokeStyle='rgba(18,20,24,.8)';g.lineWidth=1;g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
    g.fillStyle='#b8c0c9';const n=Math.max(2,Math.round((vert?bw:bh)/16));for(let k=0;k<n;k++){const q=((k+.5)/n)*(vert?bw:bh);g.beginPath();g.arc(vert?bx+q:bx+bw/2,vert?by+bh/2:by+q,1.4,0,7);g.fill()}}
+  }
   // Edelstein-Platte, mittig (ein Diamant pro Tür)
   const ng=1;
   for(let i=0;i<ng;i++){const p=(i+.5)/ng*L,cx=vert?ix+iw/2:ix+p,cy=vert?iy+p:iy+ih/2;

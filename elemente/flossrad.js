@@ -64,22 +64,26 @@ function flossradBild(g, x, y, winkel, s, farbe){
   s = s || 1;
   g.save(); g.translate(x, y); g.scale(s, s);
   const H = FLOSSRAD_HOEHE;
-  const holz = g.createLinearGradient(-4, 0, 4, 0); holz.addColorStop(0, '#6b4019'); holz.addColorStop(0.5, '#a86f3a'); holz.addColorStop(1, '#5e3814');
-  g.fillStyle = '#3b2412'; g.fillRect(-4.5, -H - 1, 9, H + 1);
-  g.fillStyle = holz; g.fillRect(-3.2, -H, 6.4, H);
-  g.strokeStyle = '#5aa04f'; g.lineWidth = 1.8; g.beginPath(); g.moveTo(-3, -2); g.quadraticCurveTo(5, -9, -3, -17); g.stroke();
-  g.fillStyle = '#7cc36b'; g.beginPath(); g.ellipse(3, -9, 3, 1.7, 0.5, 0, Math.PI*2); g.fill();
+  // Foto-Look: verwittertes graubraunes Holz, olivgrüne Ranke, Eisennabe (Nutzerwunsch „alle Elemente umgestalten“)
+  const foto = g === ctx && typeof fotoLookAktiv === 'function' && fotoLookAktiv();
+  const F = foto ? {dunkel: '#221b14', a: '#4a3d2e', m: '#6e5f4a', b: '#3d3226', speiche: '#5a4b39', ranke: '#4d5a2c', blatt: '#5e6b34', knauf: '#3b3127', nabe: '#2a2420', licht: 'rgba(230,220,200,.3)'}
+                 : {dunkel: '#3b2412', a: '#6b4019', m: '#a86f3a', b: '#5e3814', speiche: '#8a5a2b', ranke: '#5aa04f', blatt: '#7cc36b', knauf: '#6b4019', nabe: '#3b2412', licht: 'rgba(255,225,170,.45)'};
+  const holz = g.createLinearGradient(-4, 0, 4, 0); holz.addColorStop(0, F.a); holz.addColorStop(0.5, F.m); holz.addColorStop(1, F.b);
+  g.fillStyle = F.dunkel; g.fillRect(-4.5, -H - 1, 9, H + 1);
+  g.fillStyle = foto && typeof fotoHolzMuster === 'function' ? fotoHolzMuster(g, false, -3.2, 0) : holz; g.fillRect(-3.2, -H, 6.4, H);
+  g.strokeStyle = F.ranke; g.lineWidth = 1.8; g.beginPath(); g.moveTo(-3, -2); g.quadraticCurveTo(5, -9, -3, -17); g.stroke();
+  g.fillStyle = F.blatt; g.beginPath(); g.ellipse(3, -9, 3, 1.7, 0.5, 0, Math.PI*2); g.fill();
   g.translate(0, -H); g.rotate(winkel || 0);
   g.lineCap = 'round';
-  g.strokeStyle = '#3b2412'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 15, 0, Math.PI*2); g.stroke();
-  g.strokeStyle = '#a86f3a'; g.lineWidth = 3.6; g.stroke();
-  for(let i = 0; i < 6; i++){ const a = i*Math.PI/3; g.strokeStyle = '#3b2412'; g.lineWidth = 3.4; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a)*14, Math.sin(a)*14); g.stroke();
-    g.strokeStyle = '#8a5a2b'; g.lineWidth = 1.8; g.stroke(); }
-  g.strokeStyle = '#3b2412'; g.lineWidth = 5; g.beginPath(); g.moveTo(15, 0); g.lineTo(21, 0); g.stroke();   // Griff
-  g.fillStyle = '#6b4019'; g.beginPath(); g.arc(22, 0, 3.6, 0, Math.PI*2); g.fill();
+  g.strokeStyle = F.dunkel; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 15, 0, Math.PI*2); g.stroke();
+  g.strokeStyle = F.m; g.lineWidth = 3.6; g.stroke();
+  for(let i = 0; i < 6; i++){ const a = i*Math.PI/3; g.strokeStyle = F.dunkel; g.lineWidth = 3.4; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a)*14, Math.sin(a)*14); g.stroke();
+    g.strokeStyle = F.speiche; g.lineWidth = 1.8; g.stroke(); }
+  g.strokeStyle = F.dunkel; g.lineWidth = 5; g.beginPath(); g.moveTo(15, 0); g.lineTo(21, 0); g.stroke();   // Griff
+  g.fillStyle = F.knauf; g.beginPath(); g.arc(22, 0, 3.6, 0, Math.PI*2); g.fill();
   g.rotate(-(winkel || 0));   // Lichtkante bleibt oben
-  g.strokeStyle = 'rgba(255,225,170,.45)'; g.lineWidth = 1.2; g.beginPath(); g.arc(0, 0, 15.5, Math.PI*1.1, Math.PI*1.6); g.stroke();
-  g.fillStyle = '#3b2412'; g.beginPath(); g.arc(0, 0, 5.4, 0, Math.PI*2); g.fill();
+  g.strokeStyle = F.licht; g.lineWidth = 1.2; g.beginPath(); g.arc(0, 0, 15.5, Math.PI*1.1, Math.PI*1.6); g.stroke();
+  g.fillStyle = F.nabe; g.beginPath(); g.arc(0, 0, 5.4, 0, Math.PI*2); g.fill();
   if(typeof elementEdelstein === 'function' && g === ctx && farbe) elementEdelstein(0, 0, 4.4, farbe);
   else { g.fillStyle = farbe || '#aab8c8'; g.beginPath(); g.arc(0, 0, 3.8, 0, Math.PI*2); g.fill(); }
   g.restore();

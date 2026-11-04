@@ -79,6 +79,10 @@ function hakenZeichnen(h, x, inRange){
   const y = h.y, ringR = 12, oben = -SKY_ROOM - 10;
   const haeng = hakenAufhaengung(h);
   const seed = h.moving ? h.startX : h.x;   // feste Lage der Blätter (Nutzer: „die Blätter bewegen sich viel zu schnell“)
+  // Foto-Look: echte, bemooste Liane mit rostigem Eisenring (12e-foto-elemente.js)
+  if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoHakenZeichnen === 'function'){
+    fotoHakenZeichnen(x, y, haeng !== null ? haeng : oben, seed, ringR, inRange, h.x); return;
+  }
   // Liane / Kette nach oben
   if(S.art === 'liane'){
     const y0 = haeng !== null ? haeng : oben, x0 = x + Math.sin(seed*0.013)*3;

@@ -7756,10 +7756,11 @@ async def blattfloss_aussehen(g):
     await g.load(level([ground(0, 480, 360, 240), ground(1100, 480, 400, 240), ground(900, 120, 600, 40)],
                        {'x': 300, 'y': 480}, {'x': 200, 'y': 480}, welt='dschungel', blattFloesse=[{'x': 360, 'y': 440, 'schiene': 14}]))
     await g.steps(3)
-    r = await g.ev("""(() => { const E = blattSchieneEnden(blattFloesse[0]); let n = 0, schatten = 0, teile = []; const alt = lianeZeichnen, gs = glanzSchatten, bb = blattBild;
+    r = await g.ev("""(() => { fotoHg.an = false;   // prüft den Comic-Look (im Foto-Look Holz-Floß und Foto-Lianen, 12e)
+      const E = blattSchieneEnden(blattFloesse[0]); let n = 0, schatten = 0, teile = []; const alt = lianeZeichnen, gs = glanzSchatten, bb = blattBild;
       lianeZeichnen = (...a) => { n++; return alt(...a); }; glanzSchatten = (...a) => { schatten++; return gs(...a); };
       blattBild = (...a) => { teile.push(a[5] || 'ganz'); return bb(...a); };
-      try { draw(); } finally { lianeZeichnen = alt; glanzSchatten = gs; blattBild = bb; }
+      try { draw(); } finally { lianeZeichnen = alt; glanzSchatten = gs; blattBild = bb; fotoHg.an = null; }
       return {E, n, boden: blattFloesse[0].y, teile}; })()""")
     E = r['E']
     # Nutzer: „im Kästchen statt auf der Linie“ -> Stehfläche = Boden des Kästchens (Reihe 11 -> y 480)
