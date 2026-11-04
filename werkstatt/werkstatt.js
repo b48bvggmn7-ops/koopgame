@@ -7,8 +7,8 @@ const WS_GH = {owner: 'b48bvggmn7-ops', repo: 'koopgame', branch: 'main', api: '
 const WS_RAND = 0.22;          // Nähte glätten: so breit (Anteil) wird an jedem Rand überblendet
 const WS_KANTE_UNTEN = 0.72;   // Gras-Kante: ab hier (Anteil der Höhe) nach unten weich in die Erde ausblenden
 const WS_QUALITAET = 0.88;     // WebP-Qualität beim Speichern
-const WS_SPIEL_MASSSTAB = 0.85; // Vorschau: Bildpunkte je Welt-px wie im Spiel (Zoom 0,85 auf 1280×720) – die Vorschau
-                                // zeigt also so viele Steine wie ein gleich breiter Spielausschnitt
+const WS_SPIEL_MASSSTAB = 1.275; // Vorschau: Bildpunkte je Welt-px wie im Spiel im Vollbild (1920 breit, Zoom 0,85) – die Vorschau
+                                // zeigt also die Steine so groß wie im Vollbild-Spiel
 
 const WS_TEXTE = {
   erde: 'Erstelle eine fotorealistische, NAHTLOS KACHELBARE Textur, quadratisch (1024×1024 Pixel): dunkler, feuchter Waldboden ' +
@@ -124,7 +124,7 @@ function wsNahtlos(d, inX, inY){
 const wsNebel = new Image(); wsNebel.src = 'assets/hintergrund/nebelwald-1.webp';
 function wsVorschau(id){
   const W = ws[id], T = FOTO_MAT_TEXTUREN[id], c = W.el.vorschau, q = c.getContext('2d'), E = W.ergebnis;
-  // Leinwand so breit wie angezeigt -> 1 Bildpunkt = 1 Bildschirmpunkt, Steine so groß wie im Spiel (1280er Fenster)
+  // Leinwand so breit wie angezeigt -> 1 Bildpunkt = 1 Bildschirmpunkt, Steine so groß wie im Vollbild-Spiel
   const breit = Math.round(c.clientWidth) || 900, hoch = Math.round(id === 'kante' ? breit*0.47 : breit);
   if(c.width !== breit || c.height !== hoch){ c.width = breit; c.height = hoch; }
   if(!E){ q.fillStyle = '#111'; q.fillRect(0, 0, c.width, c.height); return; }

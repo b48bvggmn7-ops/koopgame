@@ -2139,8 +2139,9 @@ vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
 ### Foto-Material für Boden und Wand + Werkstatt (Nutzerwunsch 04.11. – Schritt 2 zum fotorealistischen Look)
 Code in `js/12c-foto-material.js` (Spiel) und `werkstatt.html` + `werkstatt/werkstatt.js` (Werkstatt). Reine Optik.
 - **Im Spiel:** Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher). Liegt eine Foto-Textur vor, wird sie
-  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, 1024×1024 = 480×480 Welt-px = 12×12 Kästchen;
-  mit 240 waren die Steine im Spiel zu grob), **Wand** (Inneres der Wände, ebenso) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
+  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, 1024×1024 = 140×140 Welt-px = 3,5 Kästchen;
+  Nutzerwunsch: Kachelgröße wie in der ersten Werkstatt-Vorschau, 240/480 waren zu grob; die Textur wird einmal
+  sauber auf Bildschirmgröße verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres der Wände, ebenso) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
   und Wand; die Oberfläche liegt 32 Welt-px unter dem oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine
   dünne, weiche dunkle Kontur (kein Schatten innen am Rand – wirkte wie ein Schlagschatten, Nutzerwunsch). Mit Gras-Kante entfallen die gezeichneten Comic-Pflanzen am
   Boden (Dickicht, Gras, Farne, Blumen, 17a); Tiere und ihre Regeln bleiben. Fehlt eine Textur, bleibt dort der alte
@@ -2152,7 +2153,7 @@ Code in `js/12c-foto-material.js` (Spiel) und `werkstatt.html` + `werkstatt/werk
   Kopieren, 3) Bild hineinziehen/auswählen -> auf Zielgröße zugeschnitten, „Nähte glätten“ (an: Ränder werden mit den
   um die halbe Größe verschobenen Bildern weich überblendet, danach nahtlos kachelbar; Erde/Wand in beide Richtungen,
   Kante nach links/rechts), Kante unten weich in die Erde ausgeblendet und – ohne durchsichtigen Hintergrund –
-  oben weich ausgeblendet, 4) Vorschau in echter Spielgröße (wie ein 1280er Spielfenster, mehrfach nebeneinander,
+  oben weich ausgeblendet, 4) Vorschau in echter Spielgröße (wie im Vollbild 1920 breit, mehrfach nebeneinander,
   mit Figur zum Vergleich; Kante auf Nebelwald + Erde), „Im Spiel ausprobieren“
   (Probe speichern + Probe-Level `levels/test/werkstatt.json` öffnen), „Probe entfernen“, „Herunterladen“,
   „☁ Auf GitHub speichern“ (assets/texturen/<id>.webp nach main; GitHub-Schlüssel wie im Editor). Tests foto_material,

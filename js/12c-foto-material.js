@@ -16,10 +16,10 @@
 // Aufrufe in 12-welt-zeichnen.js (streifen, fotoMatUeber).
 // Maße: Bildpunkte der Textur (w × h) und wie groß sie in der Welt ist (weltB × weltH, 1 Kästchen = 40).
 const FOTO_MAT_TEXTUREN = {
-  // Erde/Wand: ein Bild = 480×480 Welt-px (12×12 Kästchen) – mit 240 wirkten die Steine im Spiel doppelt so grob wie
-  // in der Werkstatt-Vorschau (Nutzer: „plötzlich so grob“)
-  erde:  {name: 'Erde',            w: 1024, h: 1024, weltB: 480, weltH: 480, x: true, y: true},
-  wand:  {name: 'Wand',            w: 1024, h: 1024, weltB: 480, weltH: 480, x: true, y: true},
+  // Erde/Wand: ein Bild = 140×140 Welt-px (3,5 Kästchen). Nutzerwunsch: Kachelgröße wie in der ersten Werkstatt-
+  // Vorschau (dort ~175 Bildschirmpunkte je Bild = im Vollbild 1920 rund 140 Welt-px); 240 und 480 waren zu grob.
+  erde:  {name: 'Erde',            w: 1024, h: 1024, weltB: 140, weltH: 140, x: true, y: true},
+  wand:  {name: 'Wand',            w: 1024, h: 1024, weltB: 140, weltH: 140, x: true, y: true},
   kante: {name: 'Gras-/Moos-Kante', w: 1024, h: 256,  weltB: 320, weltH: 80,  x: true, y: false},
 };
 // Gras-Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber ragt Gras hoch)
@@ -38,14 +38,31 @@ function fotoMatBild(id){
   if(!B){ B = fotoMat.bilder[id] = {img: new Image(), ok: false}; B.img.onload = () => { B.ok = true; }; B.img.onerror = () => {}; B.img.src = fotoMatQuelle(id); }
   return B.ok ? B.img : null;
 }
+// Textur einmal sauber auf Bildschirmgröße verkleinert (in Halbierungs-Schritten, hohe Glättung) – sonst flimmern
+// feine Muster (1024 Bildpunkte auf ~180), wenn das Muster beim Zeichnen stark verkleinert wird
+function fotoMatSkaliert(id, img){
+  const T = FOTO_MAT_TEXTUREN[id], sc = typeof RS === 'number' && typeof zoom === 'number' ? RS*zoom : 1;
+  const zw = Math.max(16, Math.round(T.weltB*sc)), zh = Math.max(4, Math.round(T.weltH*sc));
+  if(img.width <= zw*1.4) return img;
+  let c = img, w = img.width, h = img.height;
+  while(w/2 >= zw){
+    w = Math.round(w/2); h = Math.round(h/2);
+    const n = document.createElement('canvas'); n.width = w; n.height = h;
+    const q = n.getContext('2d'); q.imageSmoothingQuality = 'high'; q.drawImage(c, 0, 0, w, h); c = n;
+  }
+  const n = document.createElement('canvas'); n.width = zw; n.height = zh;
+  const q = n.getContext('2d'); q.imageSmoothingQuality = 'high'; q.drawImage(c, 0, 0, zw, zh);
+  return n;
+}
 // Muster der Textur, auf Weltgröße skaliert; dy = Versatz nach unten (Gras-Kante: je Oberkante eigene Höhe)
 function fotoMatMuster(q, id, dy){
   const img = fotoMatBild(id); if(!img) return null;
-  let m = fotoMat.muster[id];
-  if(!m){ m = fotoMat.muster[id] = q.createPattern(img, FOTO_MAT_TEXTUREN[id].y ? 'repeat' : 'repeat-x'); }
+  const sc = typeof RS === 'number' ? RS : 1;
+  let M = fotoMat.muster[id];
+  if(!M || M.sc !== sc){ const b = fotoMatSkaliert(id, img); M = fotoMat.muster[id] = {sc, b, m: q.createPattern(b, FOTO_MAT_TEXTUREN[id].y ? 'repeat' : 'repeat-x')}; }
   const T = FOTO_MAT_TEXTUREN[id];
-  if(m.setTransform) m.setTransform(new DOMMatrix([T.weltB/img.width, 0, 0, T.weltH/img.height, 0, dy || 0]));
-  return m;
+  if(M.m.setTransform) M.m.setTransform(new DOMMatrix([T.weltB/M.b.width, 0, 0, T.weltH/M.b.height, 0, dy || 0]));
+  return M.m;
 }
 // gilt der Foto-Look gerade (wie der Foto-Hintergrund)?
 function fotoMatAn(){ return typeof fotoHgAn === 'function' && fotoHgAn() && typeof BG_STIL !== 'undefined' && !!BG_STIL; }
