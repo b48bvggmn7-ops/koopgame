@@ -13,11 +13,13 @@
 // Bilder noch laden (oder fehlen), bleibt der gezeichnete Hintergrund. Ganz entfernen: diese Datei + Eintrag in index.html.
 // Speicher: ein Stück ~6 MB; weil jedes breiter als der Bildschirm ist, sind pro Bild höchstens 2 sichtbar (~12 MB,
 // Chrome-Budget je Bild ~32 MB, siehe CLAUDE.md).
-// Neues, höheres Bild (2000×848) im Look des Nutzer-Screenshots; nur EIN Bild, darum gespiegelt wiederholt
-// (Bild, gespiegelt, Bild … – die Übergänge passen dann von selbst)
-const FOTO_HG_BILDER = ['assets/hintergrund/nebelwald-hoch.webp'];
-const FOTO_HG_SPIEGELN = true;
-const FOTO_HG_UEBERGANG = 60;       // weiche Überblendung an jeder Nahtstelle (Spiel-Bildpunkte)
+// Neues, höheres Bild (Original 2000×848) im Look des Nutzer-Screenshots. Gespiegelt wiederholen gefiel nicht (man sah
+// es); darum einmal vorab zur nahtlosen Schleife gemacht (nebelwald-schleife.webp, 1580×848): Ende und Anfang
+// überlappen 420 Bildpunkte, der Übergang läuft entlang eines Schnitts durch den Nebel, wo beide am ähnlichsten sind
+// (nur ±6 Bildpunkte weich, kein Durchscheinen). Es schließt also an sich selbst an – keine Überblendung nötig.
+const FOTO_HG_BILDER = ['assets/hintergrund/nebelwald-schleife.webp'];
+const FOTO_HG_SPIEGELN = false;
+const FOTO_HG_UEBERGANG = 0;        // weiche Überblendung an jeder Nahtstelle (Spiel-Bildpunkte; 0 = Bilder passen schon nahtlos)
 const FOTO_HG_PAR = 0.15;           // Parallaxe: Anteil der Kamerabewegung
 // Größe: Panorama FOTO_HG_HOEHE der Bildhöhe hoch, unten bündig. 1 = bildhoch (so wenig vergrößert wie möglich, ohne
 // Lücke). Ein Versuch mit 0,75 (darüber Nebel-Himmel) gefiel nicht: „oben einfach eine graue Wand“ -> wieder 1.
@@ -62,8 +64,8 @@ function fotoHgStueck(img, u, h, spiegel){
   const q = c.getContext('2d');
   if(spiegel){ q.save(); q.translate(c.width, 0); q.scale(-1, 1); q.drawImage(img, 0, 0); q.restore(); } else q.drawImage(img, 0, 0);
   q.globalCompositeOperation = 'destination-in';
-  const gr = q.createLinearGradient(0, 0, u*k, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
-  q.fillStyle = gr; q.fillRect(0, 0, c.width, c.height);
+  if(u > 0){ const gr = q.createLinearGradient(0, 0, u*k, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
+    q.fillStyle = gr; q.fillRect(0, 0, c.width, c.height); }
   if(h < H){ const go = q.createLinearGradient(0, 0, 0, FOTO_HG_OBEN_WEICH*k); go.addColorStop(0, 'rgba(0,0,0,0)'); go.addColorStop(1, 'rgba(0,0,0,1)'); q.fillStyle = go; q.fillRect(0, 0, c.width, c.height); }
   return {c, w: Math.round(img.width/k), h};
 }

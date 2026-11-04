@@ -54,7 +54,7 @@
     Kacheln, Nacht-Einfärbung beim Vorzeichnen, Leuchtpflanzen, Hintergrund-Licht; Haken `hgBodenLicht`/`hgStilVorne` in 12; Schalter
     localStorage `monchichi.dschungelWind`/`monchichi.dschungelNachtlicht`; Tier-Regeln `buildCrittersDschungel`, Hintergrund-Tiere und
     `tierLeuchtenNacht` in 20, Vogel-Sitzplätze `vogelSitzplaetze` in 17) · 11c Foto-Hintergrund (Nebelwald-Bild
-    `assets/hintergrund/nebelwald-hoch.webp`, gespiegelt wiederholt, statt 11b, abschaltbar in Optionen, `fotoHgZeichnen` aus `drawBackground`) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
+    `assets/hintergrund/nebelwald-schleife.webp`, nahtlose Schleife, statt 11b, abschaltbar in Optionen, `fotoHgZeichnen` aus `drawBackground`) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
     Asche) · 12a hohler Baum (Start/Ziel im Dschungel, Tür beim Sieg) · 12c Foto-Material (Erde/Wand/Gras-Kante als Foto-Texturen über Boden/Wand, `fotoMatUeber` aus `matPfadeZeichnen`,
     Texturen `assets/texturen/<id>.webp`) · 12b Haken-Aussehen (Ring an Liane/Kette je Welt, Aufhängung an Material darüber `hakenAufhaengung`) · 12 Welt zeichnen (Neues Aussehen: Boden/Wand als EINE Schicht – Raster `Tc`, je Abschnitt `MAT_STUECK` einmal
     zu Zeichenpfaden berechnet (`matPfadeBauen`), pro Bild nur gefüllt (`materialZeichnen`); KEINE vorgezeichneten Bilder

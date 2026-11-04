@@ -2119,14 +2119,15 @@ js/17-deko.js).
   dschungel_leuchtpflanzen.
 
 ### Foto-Hintergrund (Nebelwald, Nutzerwunsch 04.11. – erster Schritt zum fotorealistischen Look)
-Code in `js/11c-foto-hintergrund.js`, Bild des Nutzers `assets/hintergrund/nebelwald-hoch.webp` (2000×848, Look wie
+Code in `js/11c-foto-hintergrund.js`, Bild des Nutzers `assets/hintergrund/nebelwald-schleife.webp` (Original 2000×848, Look wie
 sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Optik.
 - In der Dschungel-Welt (alle Tageszeiten, d. h. überall, wo der Dschungel-Look aus 11b gilt) zeigt das Spiel statt des
   gezeichneten Hintergrunds das Nebelwald-Bild, **bildhoch** (keine graue Fläche oben – ein Versuch mit verkleinertem
   Bild und Nebel bzw. gespiegeltem Blätterdach darüber gefiel nicht), unten bündig, Parallaxe 0,15. Es ist nur EIN
-  Bild, darum wird es **gespiegelt wiederholt** (Bild, gespiegelt, Bild … – die Übergänge passen von selbst,
-  `FOTO_HG_SPIEGELN`); mehrere Bilder in `FOTO_HG_BILDER`, die aneinander passen, laufen als Endlos-Schleife, an jeder
-  Nahtstelle 60 px weich überblendet. (Vorher vier flache Panoramen 3:1 – wirkten zu „rangezoomt“, weil ein flaches
+  Bild, darum einmal vorab zur **nahtlosen Schleife** gemacht (1580×848): Ende und Anfang überlappen 420 Bildpunkte,
+  der Übergang folgt einem Schnitt durch den Nebel, wo beide am ähnlichsten sind (nur ±6 Bildpunkte weich, kein
+  Durchscheinen, keine Spiegelung – gespiegelt wiederholen gefiel nicht). Mehrere Bilder in `FOTO_HG_BILDER`, die
+  aneinander passen, laufen als Endlos-Schleife (`FOTO_HG_UEBERGANG` = weiche Überblendung, hier 0). (Vorher vier flache Panoramen 3:1 – wirkten zu „rangezoomt“, weil ein flaches
   Bild auf Bildschirmhöhe stark vergrößert wird; davor drei eigene Fotos mit Unterholz-Ebene – man sah die Stückelung.)
 - **Nebel:** nur noch wenig zusätzlicher Nebel, weil das Bild selbst schon neblig ist (Nutzerwunsch „mit weniger
   Nebel“): leichter Dunst, schwacher Bodennebel (steigt 300 px vom unteren Rand auf) und vier lockere, langsam ziehende

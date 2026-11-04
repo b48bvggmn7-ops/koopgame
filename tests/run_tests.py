@@ -5306,12 +5306,12 @@ async def foto_hintergrund(g):
       const px = (s, x) => Array.from(s.c.getContext('2d').getImageData(x, 300, 1, 1).data).slice(0, 3);
       const spiegel = S.length < 2 || JSON.stringify(px(S[0], 500)) === JSON.stringify(px(S[1], S[1].c.width - 1 - 500));
       let maxSichtbar = 0; for(let x = 0; x < fotoHg.per; x += 97){ ctx.save(); fotoHgPanorama(x); ctx.restore(); maxSichtbar = Math.max(maxSichtbar, fotoHg.sichtbar); }
-      return {a, gezeichnet, n: S.length, soll: FOTO_HG_BILDER.length*(FOTO_HG_SPIEGELN ? 2 : 1), spiegel, hoch: S.every(s => s.h === Math.round(H*FOTO_HG_HOEHE) && s.c.height >= 600) && FOTO_HG_HOEHE === 1, mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
+      return {a, gezeichnet, uebergang: FOTO_HG_UEBERGANG, n: S.length, soll: FOTO_HG_BILDER.length*(FOTO_HG_SPIEGELN ? 2 : 1), spiegel, hoch: S.every(s => s.h === Math.round(H*FOTO_HG_HOEHE) && s.c.height >= 600) && FOTO_HG_HOEHE === 1, mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
               gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()""")
     assert r['a'] and r['gezeichnet'] == 0, f'Foto-Hintergrund nicht gezeichnet: {r}'
     assert r['gleich'], 'Zeichnen hat Spielzustand verändert'
     assert r['n'] == r['soll'] and r['spiegel'] and r['hoch'] and r['lueckenlos'], f'Bild nicht bildhoch (Nutzer: keine graue Fläche oben) / nicht gespiegelt / lückenhaft: {r}'
-    assert all(a <= 2 and b == 255 for a, b in r['rand']), f'Nahtstellen nicht weich überblendet: {r}'
+    assert r['uebergang'] == 0 or all(a <= 2 and b == 255 for a, b in r['rand']), f'Nahtstellen nicht weich überblendet: {r}'
     assert r['maxSichtbar'] <= 2 and r['mbMax'] * r['maxSichtbar'] < 16, f'zu viel Bildspeicher je Bild (Chrome-Budget): {r}'
     # abschalten -> gezeichneter Stil
     r = await g.ev("""(() => { fotoHgSetzen(false); let gezeichnet = 0; const alt = hgStilZeichnen; hgStilZeichnen = () => { gezeichnet++; };
