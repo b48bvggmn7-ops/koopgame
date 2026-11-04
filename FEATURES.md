@@ -2152,13 +2152,17 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   darüber (`assets/texturen/<id>.webp`; jede Textur wird einmal sauber auf Bildschirmgröße verkleinert, damit feine
   Muster nicht flimmern). Fehlt eine Textur, bleibt dort der alte Look.
   - **Erde** (Inneres des Bodens): Waldboden-Foto des Nutzers, 727×727, nahtlos gemacht (Ränder weich mit verschobenen
-    Kopien überblendet), ein Bild = 180×180 Welt-px; **dunkler** gemacht (38 % Schwarz darüber, Nutzerwunsch).
-  - **Wand**: Bruchstein-Mauer mit Moos/Efeu des Nutzers, per Schnitt entlang der Fugen nahtlos (Überblenden hätte
-    doppelte Fugen ergeben), 579×595; **kleinere Blöcke** (Nutzerwunsch): ein Bild = 74×76 Welt-px, ein Stein rund
-    15 Welt-px hoch (vorher 148×152; davor kurz die nachgeschärften Säulen-Steine aus dem Testbild).
+    Kopien überblendet), ein Bild = 180×180 Welt-px; **dunkler** gemacht (52 % Schwarz darüber, Nutzerwunsch, zweimal).
+  - **Wand**: eine **Mauer, die das Spiel einmal selbst aufbaut** (`fotoMatMauer`; Nutzer: „mehr Steine, die sich
+    weniger wiederholen – man sieht Copy-Paste; die Steine sollen richtig aufeinander liegen“): Reihen 13–19 Welt-px
+    hoch, darin Steine 20–44 Welt-px breit, jede Reihe anders versetzt (Fugen nie übereinander), dunkle Fuge 1,6 Welt-px.
+    Jeder Stein ist ein eigener Ausschnitt aus dem Mauer-Foto des Nutzers (`assets/texturen/wand-steine.webp`,
+    bevorzugt ohne Fugen des Fotos), leicht heller/dunkler, oben eine helle, unten eine dunkle Kante. Wiederholt sich
+    erst nach 480 Welt-px (12 Kästchen) in beide Richtungen, fester Zufall (immer gleich). Werte in `FOTO_MAT_MAUER`.
+    (Vorher das Foto selbst als Kachel – zuletzt 74×76 Welt-px – und davor die nachgeschärften Säulen-Steine.)
   - **Moos-Kante** (nur auf freien Oberkanten von BODEN, nicht auf Wänden): Moosmatte mit Gras, Blättern und
-    hängenden Wurzeln des Nutzers, freigestellt und per Schnitt nach links/rechts nahtlos, 1628×374 = 326×75 Welt-px;
-    die Bodenoberfläche liegt 30 Welt-px unter dem oberen Streifenrand (Moos beginnt knapp darüber, Wurzeln hängen
+    hängenden Wurzeln des Nutzers, freigestellt und per Schnitt nach links/rechts nahtlos, 1628×374; **kleiner**
+    (Nutzerwunsch): 220×51 Welt-px (vorher 326×75); die Bodenoberfläche liegt 20 Welt-px unter dem oberen Streifenrand (Moos beginnt knapp darüber, Wurzeln hängen
     in die Erde).
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im

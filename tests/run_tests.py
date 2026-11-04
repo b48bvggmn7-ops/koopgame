@@ -5367,14 +5367,15 @@ async def foto_material(g):
     assert mit['streifen'] == [520, 600], f'Moos-Kante nur auf freien Boden-Oberkanten (Boden, Stufe – nicht auf der Wand): {mit}'
     # Farbe in der Mitte des Bodens = Erde-Probe, in der Wand = Wand-Probe (Welt -> Bildschirm)
     farbe = await g.ev("""(() => { const px = (x, y) => { const d = ctx.getImageData(Math.round(x*zoom*RS), Math.round((y*zoom + H*(1 - zoom))*RS), 1, 1).data; return [d[0], d[1], d[2]]; };
-      return {erde: px(200, 680), wand: px(800, 500)}; })()""")
+      const mittel = (x0, y0) => { const d = ctx.getImageData(Math.round(x0*zoom*RS), Math.round((y0*zoom + H*(1 - zoom))*RS), 30, 30).data; let r = 0, g2 = 0, b = 0; for(let i = 0; i < d.length; i += 4){ r += d[i]; g2 += d[i+1]; b += d[i+2]; } const n = d.length/4; return [r/n, g2/n, b/n]; };
+      return {erde: px(200, 680), wand: mittel(780, 420)}; })()""")
     assert abs(farbe['erde'][0] - 0x5a*(1 - 0.38)) < 20 and farbe['erde'][2] < 45, f'Erde-Textur (abgedunkelt) nicht im Boden: {farbe}'
     assert farbe['wand'][2] > farbe['wand'][0], f'Wand-Textur nicht in der Wand: {farbe}'
     # Comic-Look (B aus): wieder wie bisher
     await g.ev("fotoHg.an = false")
     aus = await g.ev(pruefen)
     assert aus['kontur'] >= 1 and aus['deko'] == 1, f'im Comic-Look wie bisher: {aus}'
-    assert await g.ev("delete window.fotoMatTestQuellen, fotoMatQuelle('wand').startsWith('assets/texturen/wand.webp')"), 'im Spiel kommt die Wand aus der Datei'
+    assert await g.ev("delete window.fotoMatTestQuellen, fotoMatQuelle('wand').startsWith('assets/texturen/wand-steine.webp')"), 'im Spiel kommt die Wand aus der Datei'
     await g.ev("localStorage.removeItem('monchichi.fotoHintergrund'); fotoHg.an = null; fotoMat.bilder = {}; fotoMat.muster = {}; menuScreen = null")
     await g.p.unroute('**/assets/texturen/**')
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
