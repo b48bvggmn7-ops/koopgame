@@ -5821,10 +5821,10 @@ async def seil_abflug_mit_schwung(g):
 @test
 async def liane_volle_laenge(g):
     """Liane beim Greifen: Nutzerwunsch erst „immer erst mal in den weitesten Radius“ (LIANE_VOLLE_LAENGE an), dann
-    „ohne Maximal-Länge ausprobieren“ (jetzt aus): in der Luft gegriffen bleibt die Liane so lang wie der Abstand beim
-    Greifen (kein Hineinfallen bis zur Reichweite). Ist die Einstellung an, nie bis auf Boden/Stacheln/Lava/Flamme
-    (LIANE_BODEN_ABSTAND)."""
-    assert await g.ev("LIANE_VOLLE_LAENGE") is False
+    „ohne Maximal-Länge ausprobieren“ (aus), seit 04.11. wieder an („direkt in die maximale Länge fallen“): in der Luft
+    gegriffen gibt die Liane sofort bis zur Reichweite nach und der Affe fällt hinein – nie bis auf Boden/Stacheln/Lava/
+    Flamme (LIANE_BODEN_ABSTAND)."""
+    assert await g.ev("LIANE_VOLLE_LAENGE") is True
     await g.load(level([ground(0, 680, 900), ground(1300, 680, 900)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
                        hooks=[{'x': 500, 'y': 200, 'radius': 260}]))
     r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const P = p1, h = hooks[0];
@@ -5832,12 +5832,33 @@ async def liane_volle_laenge(g):
       P.x = h.x + 20; P.y = h.y + 50 + P.h*0.6; P.vx = 0; P.vy = 0; P.grounded = false; P.hookAttached = false; P.lianeSperre = 0;
       KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); const L = P.ropeLen; for(let i = 0; i < 60; i++) st();
       const e = {L: Math.round(L), spaeter: Math.round(P.ropeLen), haengt: P.hookAttached}; KEYS.KeyG = false; menuScreen = null; return e; })()""")
-    assert r['haengt'] and r['L'] < 70 and r['spaeter'] < 70, f'Liane fällt doch bis zur Reichweite: {r}'
+    assert r['haengt'] and r['L'] >= 250 and r['spaeter'] >= 200, f'Liane fällt nicht bis zur Reichweite: {r}'
     # Flammen-Falle nach oben im Boden unter dem Haken: die Liane bleibt über der Flamme (FLAMME_LAENGE Kästchen)
     await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 1000, 'y': 200, 'radius': 400}],
                        traps=[{'x': 980, 'y': 640, 'art': 'flamme', 'richtung': 'o', 'takt': 2, 'versatz': 0}]))
     frei = await g.ev("lianeFreiUnten(hooks[0], p1) + hooks[0].y + p1.h*0.6")   # tiefste Füße
     assert frei < 640 - await g.ev('FLAMME_LAENGE')*40, f'Liane hängt in die Flamme: Füße bis {frei}'
+
+@test
+async def seil_drehung_eigene_achse(g):
+    """Nutzerwunsch „der Affe macht beim Hin- und Herschwingen mal eine Drehung um die eigene Achse – natürlich“ (nur
+    Anzeige, js/33 SEIL_DREHUNG): bei kräftigem Schwung dreht er sich im tiefen Teil des Bogens einmal ganz herum
+    (Drehwinkel erreicht 2π), danach dreht die Liane ein Stück zurück und er hängt wieder im Profil; ohne Schwung nie."""
+    await f3d_bereit(g)
+    await g.load(level([ground(0, 680, 2400)], {'x': 600, 'y': 680}, {'x': 520, 'y': 680}, hooks=[{'x': 1000, 'y': 200, 'radius': 260}], welt='ruinen'))
+    await g.steps(5)
+    haengen = "p1.x = 1000; p1.y = 470; p1.grounded = false; p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 255;"
+    # ohne Schwung: nie
+    ruhe = await g.p.evaluate(F3D_ZEICHNEN, {'n': 30, 'wer': 'm', 'vorher': haengen + "p1.vx = 0; p1.vy = 0; p1._f3 && (p1._f3.sh = 9, p1._f3.sdNext = 0);",
+                                             'merk': "!!p1._f3.sd"})
+    # kräftiger Schwung im tiefsten Punkt: dreht sich (ganz herum), danach zurück ins Profil
+    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 45, 'wer': 'm', 'vorher': haengen + "p1.vx = 6; p1.vy = 0; if(!p1._f3.sd && !p1._f3._lief) p1._f3.sdNext = 0; if(p1._f3.sd) p1._f3._lief = 1;",
+                                          'merk': "[!!p1._f3.sd, p1._f3.dY || 0]"})
+    await g.ev("p1.hookAttached = false; p1.anchor = null; menuScreen = null; delete p1._f3._lief")
+    werte = [abs(d) for _, d in r]
+    assert not any(ruhe), 'Drehung ohne Schwung gestartet'
+    assert any(s for s, _ in r) and max(werte) > 6, f'keine ganze Drehung am Seil: max {max(werte):.2f} rad'
+    assert not r[-1][0] and abs(r[-1][1]) < 0.05, f'nach der Drehung nicht wieder im Profil: {r[-1]}'
 
 @test
 async def liane_nah_ruhiger(g):

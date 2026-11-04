@@ -2216,8 +2216,16 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   Im Comic-Look alles wie bisher. Test foto_material.
 
 ### Liane: ohne Maximal-Länge, nah am Haken ruhiger (Nutzerwunsch)
-- Beim Greifen fällt der Affe nicht mehr bis zur vollen Reichweite: `LIANE_VOLLE_LAENGE = false` (Nutzer „noch mal ohne
-  Maximal-Länge ausprobieren“), die Liane bleibt so lang wie der Abstand beim Greifen.
+- ~~Beim Greifen fällt der Affe nicht mehr bis zur vollen Reichweite~~ (Nutzer „noch mal ohne Maximal-Länge
+  ausprobieren“). **Seit 04.11. wieder an** (`LIANE_VOLLE_LAENGE = true`, Nutzer: „direkt in die maximale Länge fallen“):
+  in der Luft gegriffen fällt der Affe mit normaler Schwerkraft, bis die Liane an der Reichweite straff ist, wird weich
+  aufgefangen (federt kurz nach) und schwingt; nie bis auf Boden/Stacheln/Lava/Flamme. Vom Boden gegriffen bleibt sie straff.
+- **Drehung um die eigene Achse am Seil** (Nutzerwunsch 04.11., „natürlich, Liebe zum Detail“; nur Anzeige, 3D-Figur
+  js/33 `SEIL_DREHUNG`): schwingt der Affe kräftig, dreht er sich ab und zu (frühestens 1,6 s nach dem Greifen, dann
+  zufällig alle paar Sekunden) im tiefen Teil des Bogens einmal ganz um die Liane – in Schwungrichtung, weich an- und
+  auslaufend (knapp 1 s), zieht dabei die Beine an, der Schwanz fliegt nach außen und der Kopf schaut kurz voraus;
+  danach dreht die Liane ein Stück zurück und schwingt aus. Nie beim Hoch-/Runterklettern oder ohne Schwung; eine
+  begonnene Drehung läuft auch nach dem Loslassen zu Ende. Test seil_drehung_eigene_achse.
 - Ranziehen (W) an der Liane 2 (js/32 `lianeKern`): je näher am Haken, desto kleinere Schritte (ganz nah 35 % von
   `ROPE_PULL_SPEED`) und desto weniger Pendeln (ganz nah je Schritt 7 % Schwung weniger); „nah“ beginnt ab 170 px
   Seillänge, stufenlos (`LIANE2_ZIEH_NAH`, `LIANE2_RUHIG_NAH`, `LIANE2_NAH_BIS`). Alte Seil-Physik (Bahnen-Test)

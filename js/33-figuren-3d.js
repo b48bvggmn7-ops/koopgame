@@ -11,7 +11,14 @@
   const FIGUR_HALB = 30;                           // px: halbe gezeichnete Breite der 3D-Figur mit Armen und Fell (Stoßfläche: 14,25)
   const SEIL_KOERPER_PROBEN = [10, 20, 30];       // px vom Griff am Körper entlang: so weit darf der schräge Körper frei sein
   const SEIL_KOERPER_BREITE = [-FIGUR_HALB, 0, FIGUR_HALB];   // px quer dazu (halbe gezeichnete Dicke mit Armen und Fell) (Nutzer: waagerecht am Seil ragte der Bauch in den Boden)
-  const FIGUR_GROESSE = 0.9;                       // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
+  // Drehung um die eigene Achse am Seil (Nutzerwunsch „ab und zu eine Drehung, soll natürlich aussehen“; nur Anzeige):
+  // frühestens erstNach s nach dem Greifen (+ zufall s, danach je Drehung neu ausgewürfelt), nur bei kräftigem Schwung
+  // (minTempo px/Schritt) und im tiefsten Teil des Bogens (untenWinkel rad), nie beim Hoch-/Runterklettern. Dreht in
+  // Schwungrichtung in dauer ms (weich an/ab), zieht dabei die Beine an, Schwanz fliegt nach außen, der Kopf schaut kurz
+  // voraus; danach dreht die Liane um nachWinkel zurück und schwingt aus (nachDauer ms). Für Tests: window.SEIL_DREHUNG.
+  const SEIL_DREHUNG = window.SEIL_DREHUNG = {erstNach: 1.6, zufall: 4.5, minTempo: 4, untenWinkel: .3, dauer: 950,
+    nachWinkel: .38, nachDauer: 900, beine: .85, kopf: .45};
+  const FIGUR_GROESSE = 0.9;                      // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
   const SC = 17*FIGUR_GROESSE;                     // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 45 px)
   const FR = {x0:-3.3, x1:3.3, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0);
   // breiter als früher (±2,4): von der Seite war der Affen-Schwanz abgeschnitten (Nutzer-Rückmeldung); SPR wächst mit (gleiche Schärfe)
@@ -428,6 +435,25 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(P._draisineSeite) ty = -P._draisineSeite*1.3;   // hält den Hebel der Pump-Draisine: schaut zum Hebel (elemente/draisine.js)
     if(P._yawTest != null) ty = P._yawTest;   // nur fuer Tests
     S.yaw += (ty - S.yaw)*(1 - Math.exp(-dt*14));
+    // Drehung um die eigene Achse am Seil (SEIL_DREHUNG oben) – eine begonnene Drehung läuft auch nach dem Loslassen zu Ende
+    { const SD = SEIL_DREHUNG;
+      if(z.key === 'seil' && P.hookAttached){
+        S.sh = (S.sh || 0) + dt;
+        if(S.sdNext == null) S.sdNext = SD.erstNach + Math.random()*SD.zufall;
+        const v = Math.hypot(P.vx, P.vy);
+        if(!S.sd && S.sh > S.sdNext && v > SD.minTempo && Math.abs(S.rs || 0) < SD.untenWinkel && (S.cs || 0) < .3 && !P.grounded)
+          S.sd = {u: 0, dir: P.vx >= 0 ? 1 : -1};
+      } else { S.sh = 0; S.sdNext = null; }
+      S.dY = 0; S.dT = 0; S.dK = 0;
+      if(S.sd){
+        S.sd.u += dt*1000/SD.dauer;   // Ablauf mit der Bildzeit der Figur (wie alles hier)
+        const u = S.sd.u, d = S.sd.dir;
+        if(u < 1){ const e = u*u*u*(u*(u*6 - 15) + 10);   // weich an- und auslaufen
+          S.dY = d*Math.PI*2*e; S.dT = Math.sin(u*Math.PI); S.dK = -d*SD.kopf*Math.sin(Math.min(1, u*1.6)*Math.PI); }
+        else { const w = (u - 1)*SD.dauer/SD.nachDauer;
+          if(w < 1) S.dY = -d*SD.nachWinkel*Math.sin(w*Math.PI*1.5)*(1 - w)*(1 - w);   // Liane dreht zurück, schwingt aus
+          else { S.sd = null; S.sh = 0; S.sdNext = null; } }
+      } }
     // Drehung: Dash = Rolle, Wandsprung = ganzer Salto weg von der Wand
     let rollA = 0;
     if(z.key === 'dash'){ S.rollA += -flip*dt*16; rollA = S.rollA; }
@@ -457,11 +483,15 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     }
     if(ch.tail){   // Affen-Schwanz: rollt sich langsam ein und wieder aus, wedelt dabei; beim Laufen etwas schneller
       const wv = Math.min(1, S.spG/4.4); S.tp = (S.tp||0) + dt*(.8 + 1.4*wv + IT.tail*IT.env);
-      const k = .15 + .55*(.5 - .5*Math.cos(S.tp)), n = ch.tail.segs.length;   // 0 = ausgerollt, 1 = eingerollt (nie ganz eingerollt: bleibt sichtbar)
+      const k = (.15 + .55*(.5 - .5*Math.cos(S.tp)))*(1 - .85*(S.dT || 0)), n = ch.tail.segs.length;   // 0 = ausgerollt, 1 = eingerollt (nie ganz eingerollt: bleibt sichtbar); Seil-Drehung: fliegt nach außen
       ch.tail.segs.forEach((sg, i) => { sg.rot = [(i === 0 ? -.55 : .05) + (i === 0 ? 0 : .6)*k + Math.sin(t*5 - i*.9)*.07*(i ? 1 : 0), 0, Math.sin(t*3 - i*.7)*(.14 - .07*k)*(i ? 1 : 0)]; });
     }
     ch.head.rot = S.cur.head; ch.armN.rot = S.cur.armN; ch.armP.rot = S.cur.armP; ch.legN.rot = S.cur.legN; ch.legP.rot = S.cur.legP;
     if(IT.pose){ for(const nm of ['head','armN','armP','legN','legP']) if(IT.pose[nm]) ch[nm].rot = lerpA(S.cur[nm], IT.pose[nm], IT.env); }
+    if(S.dT > 0 || S.dK){   // Seil-Drehung: Beine anziehen (wie beim Pirouetten-Dreh), Kopf schaut kurz voraus
+      const b = SEIL_DREHUNG.beine*S.dT;
+      ch.legN.rot = [ch.legN.rot[0] - b, ch.legN.rot[1], ch.legN.rot[2]]; ch.legP.rot = [ch.legP.rot[0] - b*.8, ch.legP.rot[1], ch.legP.rot[2]];
+      ch.head.rot = [ch.head.rot[0] - .12*S.dT, ch.head.rot[1] + S.dK, ch.head.rot[2]]; }
     // Fuesse: grosse Schritte (nur Fuesse, keine Beine) – Schritt nach vorn/hinten + Anheben
     S.lw = (S.lw||0) + ((z.key === 'lauf' ? 1 : 0) - (S.lw||0))*(1 - Math.exp(-dt*18));
     for(const [L,off] of [[ch.legN,0],[ch.legP,Math.PI]]){
@@ -490,7 +520,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     // Schirm-Trampolin: federt der Affe ab, geht das Schweinchen kurz in die Knie (und wippt nach)
     let lgX = 1, lgY = 1, trQ = 0;
     if(P.trampolin && P._trampolinSprungT){ const q = (now - P._trampolinSprungT)/380; if(q < 1){ trQ = Math.sin(q*Math.PI*2)*(1 - q); const a = Math.max(0, trQ)*.2; lgY = 1 - a; lgX = 1 + a*.45; } }
-    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14*lgX, (1 + sq)*lgY, (1 - sq*.5)*1.14*lgX];   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
+    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.dY || 0) +(S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14*lgX, (1 + sq)*lgY, (1 - sq*.5)*1.14*lgX];   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
     // in die kleine Leinwand zeichnen
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);

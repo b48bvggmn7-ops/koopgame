@@ -98,7 +98,7 @@ const KANTE_WACKEL_RAND = 8;  // px: so weit vor der Kante wackelt eine stehende
 // ---------- Nacht-Ausbau: neue Mechaniken (js/32-neue-bewegung.js; Werte aus der Spielwiese, spielwiese/js/02-werte.js) ----------
 // Alles NEUE Konstanten – keine der Konstanten oben wurde geändert (harte Regel, Test bahnen_alte_mechaniken).
 // Schritte = Physik-Schritte (60 = 1 Spielsekunde).
-const LIANE_VOLLE_LAENGE = false;  // Nutzerwunsch (wieder aus, „ohne Maximal-Länge ausprobieren“; vorher 30.10. an): true = beim Greifen gibt die Liane sofort bis zur Reichweite nach, false = bleibt so lang wie beim Greifen
+const LIANE_VOLLE_LAENGE = true;   // Nutzerwunsch 04.11. wieder an („direkt in die maximale Länge fallen“; zwischendurch aus: „ohne Maximal-Länge ausprobieren“): true = beim Greifen gibt die Liane sofort bis zur Reichweite nach, false = bleibt so lang wie beim Greifen
 // Ranziehen an der Liane (Liane 2, js/32): je näher am Haken, desto kleinere Schritte und desto weniger Pendeln (Nutzerwunsch)
 const LIANE2_ZIEH_NAH = 0.35;      // so viel vom Ranzieh-Tempo (ROPE_PULL_SPEED) bleibt ganz nah am Haken (weit weg: volles Tempo)
 const LIANE2_RUHIG_NAH = 0.07;     // so viel Schwung geht ganz nah am Haken je Schritt zusätzlich verloren (weit weg: nichts)
