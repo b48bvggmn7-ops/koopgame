@@ -1188,6 +1188,7 @@ function drawSolidLook(s, look, x){
   }
   ctx.restore();
   hgStilVorne();   // neuer Hintergrund-Stil: Lichtstaub vor dem Spielfeld, nachts Glühwürmchen (11b)
+  if(typeof fotoHgVorne === 'function') fotoHgVorne();   // Foto-Look: leichter Nebel vor dem Spielfeld (11c)
   if(THEME.tint && !hgEigenesLicht() && !(typeof fotoLookAktiv === 'function' && fotoLookAktiv())){ ctx.fillStyle = THEME.tint; ctx.fillRect(0, 0, W, H); }
   drawThemeDarkness();   // Nacht/Höhle: dunkel, Licht um Figuren und leuchtende Dinge (10a-themen.js)
   drawFakeGlints();      // dezentes Glitzern an Scheinwänden (auch im Dunkeln sichtbar)

@@ -2129,9 +2129,11 @@ sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Op
   Durchscheinen, keine Spiegelung – gespiegelt wiederholen gefiel nicht). Mehrere Bilder in `FOTO_HG_BILDER`, die
   aneinander passen, laufen als Endlos-Schleife (`FOTO_HG_UEBERGANG` = weiche Überblendung, hier 0). (Vorher vier flache Panoramen 3:1 – wirkten zu „rangezoomt“, weil ein flaches
   Bild auf Bildschirmhöhe stark vergrößert wird; davor drei eigene Fotos mit Unterholz-Ebene – man sah die Stückelung.)
-- **Nebel:** nur noch wenig zusätzlicher Nebel, weil das Bild selbst schon neblig ist (Nutzerwunsch „mit weniger
-  Nebel“): leichter Dunst, schwacher Bodennebel (steigt 300 px vom unteren Rand auf) und vier lockere, langsam ziehende
-  Schwaden in der unteren Bildhälfte; nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
+- **Nebel** (Nutzerwünsche: erst „weniger“, dann „wieder mehr, gerne auch an der Naht, etwas durchsichtiger Nebel im
+  Vordergrund“): Dunst über dem Bild, Bodennebel (steigt 300 px vom unteren Rand auf), vier lockere, langsam ziehende
+  Schwaden in der unteren Bildhälfte, eine weiche senkrechte Nebelwolke über jeder Naht der Schleife (wandert mit dem
+  Bild) und drei durchsichtige Schwaden VOR dem Spielfeld (Deckkraft 0,1, ziehen etwas schneller als die Kamera);
+  nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
   Tiere vorne, Glühwürmchen und Nacht-Licht am Boden bleiben; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm
   usw.) entfallen dabei.
 - **Farben 1:1 wie die Bilder:** Im Foto-Look liegen keine Farbfilter des Comic-Looks über dem Bild (kein warmer

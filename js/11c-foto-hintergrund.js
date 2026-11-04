@@ -26,11 +26,16 @@ const FOTO_HG_PAR = 0.15;           // Parallaxe: Anteil der Kamerabewegung
 // Nur bei < 1: darüber Nebel in der Himmel-Farbe der Bilder, der obere Bildrand blendet auf FOTO_HG_OBEN_WEICH weich hinein.
 const FOTO_HG_HOEHE = 1, FOTO_HG_OBEN_WEICH = 170;
 const FOTO_HG_HIMMEL_ERSATZ = '206,214,212';            // Himmel-Farbe, falls sie sich nicht aus den Bildern lesen lässt
-// Zusätzlicher Nebel (über dem Bild): das neue Bild ist selbst schon sehr neblig – darum nur noch wenig
-// (Nutzerwunsch „mit weniger Nebel“; vorher Dunst 0,07, Schwaden 0,3, Bodennebel 0,38 für die alten Panoramen)
-const FOTO_HG_DUNST_A = 0.02;       // leichter Dunst über dem ganzen Bild
-const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.12;   // Nebelschwaden: Farbe, Deckkraft
-const FOTO_HG_BODENNEBEL_A = 0.14, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: steigt vom unteren Rand auf (Deckkraft unten, Höhe)
+// Zusätzlicher Nebel (über dem Bild). Verlauf der Nutzerwünsche: alte Panoramen Dunst 0,07/Schwaden 0,3/Bodennebel
+// 0,38 -> neues Bild „mit weniger Nebel“ 0,02/0,12/0,14 -> „wieder mehr Nebel, gerne auch an der Naht“ (jetzt):
+const FOTO_HG_DUNST_A = 0.05;       // leichter Dunst über dem ganzen Bild
+const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.22;   // Nebelschwaden: Farbe, Deckkraft
+const FOTO_HG_BODENNEBEL_A = 0.26, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: steigt vom unteren Rand auf (Deckkraft unten, Höhe)
+// Nebelwolke über der Naht der Schleife (wandert mit dem Bild): Mitte FOTO_HG_NAHT_X Bildpunkte (Original) nach dem
+// Anfang jedes Stücks (dort liegt der Schnitt, 55–149), so breit/deckend
+const FOTO_HG_NAHT_X = 100, FOTO_HG_NAHT_B = 260, FOTO_HG_NAHT_A = 0.32;
+// leichter, durchsichtiger Nebel VOR dem Spielfeld (Nutzerwunsch): zieht schneller als die Kamera (nah = Tiefe)
+const FOTO_HG_VORNE_A = 0.1, FOTO_HG_VORNE_PAR = 1.15;
 const FOTO_HG_NACHT = 'rgba(8,22,48,.62)';         // Tönung nachts
 
 const fotoHg = {an: null, bilder: {}, stuecke: null, per: 0, nebel: null, sichtbar: 0, himmel: null, hoehe: 0};
@@ -106,7 +111,32 @@ function fotoHgPanorama(off){
   ctx.imageSmoothingQuality = 'high';
   for(const [x, s] of liste) ctx.drawImage(s.c, x, y0, s.w, s.h);
   ctx.fillStyle = 'rgba(' + fotoHg.himmel + ',' + FOTO_HG_DUNST_A + ')'; ctx.fillRect(0, 0, W, H);
+  // Nebelwolke über jeder Naht (Anfang eines Stücks) – senkrecht, weich, über die ganze Höhe
+  if(!fotoHg.nahtNebel){
+    const c = document.createElement('canvas'); c.width = 64; c.height = 256; const q = c.getContext('2d');
+    const gx = q.createLinearGradient(0, 0, 64, 0); gx.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',0)'); gx.addColorStop(0.5, 'rgba(' + FOTO_HG_NEBEL + ',1)'); gx.addColorStop(1, 'rgba(' + FOTO_HG_NEBEL + ',0)');
+    q.fillStyle = gx; q.fillRect(0, 0, 64, 256);
+    q.globalCompositeOperation = 'destination-in';
+    const gy = q.createLinearGradient(0, 0, 0, 256); gy.addColorStop(0, 'rgba(0,0,0,.55)'); gy.addColorStop(0.5, 'rgba(0,0,0,1)'); gy.addColorStop(1, 'rgba(0,0,0,.8)');
+    q.fillStyle = gy; q.fillRect(0, 0, 64, 256);
+    fotoHg.nahtNebel = c;
+  }
+  ctx.save(); ctx.globalAlpha = FOTO_HG_NAHT_A;
+  for(const [x, s] of liste){ const nx = x + FOTO_HG_NAHT_X*s.w/s.c.width; if(nx > -FOTO_HG_NAHT_B && nx < W + FOTO_HG_NAHT_B) ctx.drawImage(fotoHg.nahtNebel, nx - FOTO_HG_NAHT_B/2, y0, FOTO_HG_NAHT_B, s.h); }
+  ctx.restore();
   fotoHg.sichtbar = liste.length;
+}
+// leichter Nebel VOR dem Spielfeld (aus 12-welt-zeichnen.js nach der Spielwelt): drei lockere Schwaden, reine Deko
+function fotoHgVorne(){
+  if(!(typeof fotoLookAktiv === 'function' && fotoLookAktiv()) || !fotoHg.nebel) return;
+  const t = performance.now()/1000, breit = 1600, hoch = 300;
+  ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+  for(let i = 0; i < 3; i++){
+    const y = 470 + i*90, x = ((t*(9 + i*3) - camX*zoom*FOTO_HG_VORNE_PAR + i*700) % (W + breit) + (W + breit)) % (W + breit) - breit;
+    ctx.globalAlpha = FOTO_HG_VORNE_A*(0.7 + 0.3*Math.sin(t*0.25 + i*2));
+    ctx.drawImage(fotoHg.nebel, x, y - hoch/2, breit, hoch);
+  }
+  ctx.restore();
 }
 // Nebelschwade: einmal vorgezeichnet (weicher, breiter Fleck), pro Bild nur verschoben (Zeit aus der Uhr, reine Deko)
 function fotoHgNebel(t){
