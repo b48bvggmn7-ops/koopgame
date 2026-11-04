@@ -134,11 +134,7 @@ function fotoHgVorne(){
   if(!(typeof fotoLookAktiv === 'function' && fotoLookAktiv()) || !fotoHg.nebel) return;
   const t = performance.now()/1000, breit = 1600, hoch = 300;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
-  for(let i = 0; i < 4; i++){
-    const y = 430 + i*85, x = ((t*(9 + i*3) - camX*zoom*FOTO_HG_VORNE_PAR + i*560) % (W + breit) + (W + breit)) % (W + breit) - breit;
-    ctx.globalAlpha = FOTO_HG_VORNE_A*(0.7 + 0.3*Math.sin(t*0.25 + i*2));
-    ctx.drawImage(fotoHg.nebel, x, y - hoch/2, breit, hoch);
-  }
+  fotoHgWolkenZeichnen(fotoHg.wolkenVorne || (fotoHg.wolkenVorne = fotoHgWolkenListe(FOTO_HG_WOLKEN_VORNE)), t);
   // Bodennebel ganz vorne: liegt unten über der Erde, zieht schneller als die Kamera (nah = Tiefe)
   ctx.globalAlpha = 1;
   const gb = ctx.createLinearGradient(0, H, 0, H - FOTO_HG_VORNE_BODEN_H);
@@ -164,21 +160,46 @@ function fotoHgNebel(t){
   const gb = ctx.createLinearGradient(0, H, 0, H - FOTO_HG_BODENNEBEL_H);
   gb.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',' + FOTO_HG_BODENNEBEL_A + ')'); gb.addColorStop(1, 'rgba(' + FOTO_HG_NEBEL + ',0)');
   ctx.fillStyle = gb; ctx.fillRect(0, H - FOTO_HG_BODENNEBEL_H, W, FOTO_HG_BODENNEBEL_H);
-  const breit = 1300, hoch = 340;
   ctx.save();
-  for(let i = 0; i < 4; i++){
-    const y = 330 + i*95, x = ((t*(6 + i*2) - camX*(0.2 + i*0.05) + i*520) % (W + breit) + (W + breit)) % (W + breit) - breit;
-    ctx.globalAlpha = FOTO_HG_NEBEL_A*(0.8 + 0.2*Math.sin(t*0.3 + i));
-    ctx.drawImage(fotoHg.nebel, x, y - hoch/2, breit, hoch);
-  }
-  // Nebelbank zwischen Wald und Spielfeld (Nutzer: „Nebel im Vordergrund und Hintergrund, damit es tiefer wirkt“):
-  // breite, dichtere Schwaden auf Höhe der Bodenflächen, bewegen sich schneller als der Wald, langsamer als das Spielfeld
-  for(let i = 0; i < 3; i++){
-    const b2 = 1700, h2 = 380, y = 560 + i*55, x = ((t*(4 + i*2) - camX*zoom*FOTO_HG_BANK_PAR + i*610) % (W + b2) + (W + b2)) % (W + b2) - b2;
-    ctx.globalAlpha = FOTO_HG_BANK_A*(0.8 + 0.2*Math.sin(t*0.22 + i*1.7));
-    ctx.drawImage(fotoHg.nebel, x, y - h2/2, b2, h2);
-  }
+  fotoHgWolkenZeichnen(fotoHg.wolkenHinten || (fotoHg.wolkenHinten = fotoHgWolkenListe(FOTO_HG_WOLKEN_HINTEN)), t);
   ctx.restore();
+}
+// ---------- Nebelwolken (Nutzer: „Nebel dynamischer – mal eine Wolke oben, mal eine unten“) ----------
+// Statt gleichmäßiger Bänder einzelne weiche Wolken in verschiedenen Höhen, Größen und Dichten (fester Zufall), jede
+// zieht mit eigenem Tempo, schwebt leicht auf und ab und wird mal dichter, mal dünner. Hinten: zwischen Wald und
+// Spielfeld (Parallaxe kleiner als 1), vorne: vor dem Spielfeld (Parallaxe größer als 1, durchsichtiger). Reine Deko.
+// Werte je Ebene: n Wolken, y (Bildschirm-px von–bis), b/h Größe, a Deckkraft, par Parallaxe, v Eigentempo (px/s).
+const FOTO_HG_WOLKEN_HINTEN = {n: 9, saat: 31, y: [40, 700], b: [600, 1500], h: [180, 430], a: [0.12, 0.34], par: [0.15, 0.5], v: [2, 8]};
+const FOTO_HG_WOLKEN_VORNE  = {n: 5, saat: 77, y: [110, 720], b: [700, 1400], h: [200, 380], a: [0.06, 0.15], par: [1.1, 1.5], v: [6, 14]};
+function fotoHgWolkenListe(E){
+  const r = rnd(E.saat), z = ([a, b]) => a + r()*(b - a), L = [];
+  // weiche, unregelmäßige Wolken-Bilder (einmal): mehrere überlappende runde Flecken
+  if(!fotoHg.wolkenBilder){
+    fotoHg.wolkenBilder = [0, 1, 2].map(k => {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 128; const q = c.getContext('2d'), rr = rnd(500 + k);
+      for(let i = 0; i < 9; i++){
+        const x = 50 + rr()*156, y = 44 + rr()*40, rad = 26 + rr()*40, g = q.createRadialGradient(x, y, 0, x, y, rad);
+        g.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',.55)'); g.addColorStop(1, 'rgba(' + FOTO_HG_NEBEL + ',0)');
+        q.fillStyle = g; q.fillRect(0, 0, 256, 128);
+      }
+      return c;
+    });
+  }
+  for(let i = 0; i < E.n; i++){
+    // Höhe gleichmäßig über den Bereich verteilt (+ Zufall), damit oben UND unten Wolken sind
+    const y = E.y[0] + (i + r())/E.n*(E.y[1] - E.y[0]);
+    L.push({y, b: z(E.b), h: z(E.h), a: z(E.a), par: z(E.par), v: z(E.v), ph: r(), bild: fotoHg.wolkenBilder[i % 3]});
+  }
+  return L.sort((a, b) => a.par - b.par);
+}
+function fotoHgWolkenZeichnen(L, t){
+  for(const w of L){
+    const span = W + w.b, x = (((w.ph*span + t*w.v - camX*zoom*w.par) % span) + span) % span - w.b;
+    const y = w.y + Math.sin(t*0.07 + w.ph*6.28)*18;
+    ctx.globalAlpha = w.a*(0.7 + 0.3*Math.sin(t*0.19 + w.ph*9));
+    ctx.drawImage(w.bild, x, y - w.h/2, w.b, w.h);
+  }
+  ctx.globalAlpha = 1;
 }
 // Foto-Look gerade sichtbar? Dann keine Farbfilter des Comic-Looks über dem Bild (Nutzer: „sieht nicht 1:1 so aus wie
 // die Bilder“ – warmer Schimmer, Abend-Farbstich THEME.tint und grüne Vignette färbten die Fotos gelblich/dunkel)

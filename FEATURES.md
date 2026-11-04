@@ -2132,10 +2132,12 @@ sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Op
 - **Nebel** (Nutzerwünsche: erst „weniger“, dann „wieder mehr, gerne auch an der Naht, etwas durchsichtiger Nebel im
   Vordergrund“): Dunst über dem Bild, Bodennebel (steigt 300 px vom unteren Rand auf), vier lockere, langsam ziehende
   Schwaden in der unteren Bildhälfte, eine weiche senkrechte Nebelwolke über jeder Naht der Schleife (wandert mit dem
-  Bild); für mehr Tiefe (Nutzerwunsch „Nebel im Vorder- und Hintergrund“) eine **Nebelbank** zwischen Wald und
-  Spielfeld auf Höhe der Böden (Deckkraft 0,3, Parallaxe 0,45) und VOR dem Spielfeld vier Schwaden (Deckkraft 0,16,
-  etwas schneller als die Kamera) plus ein **Bodennebel ganz vorne** über der Erde (unten 0,2, 150 px hoch, mit
-  eigenen schnellen Schwaden);
+  Bild); für mehr Tiefe (Nutzerwünsche „Nebel im Vorder- und Hintergrund“, dann „dynamischer – mal eine Wolke oben,
+  mal eine unten“) einzelne weiche **Nebelwolken** in verschiedenen Höhen, Größen und Dichten (fester Zufall): hinten
+  9 Wolken zwischen Wald und Spielfeld (Deckkraft 0,12–0,34, Parallaxe 0,15–0,5), vorne 5 durchsichtige Wolken vor dem
+  Spielfeld (0,06–0,15, Parallaxe 1,1–1,5); jede zieht mit eigenem Tempo, schwebt leicht auf und ab und wird mal
+  dichter, mal dünner (`FOTO_HG_WOLKEN_HINTEN/VORNE`); dazu ein **Bodennebel ganz vorne** über der Erde (unten 0,2,
+  150 px hoch, mit eigenen schnellen Schwaden);
   nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
   Tiere vorne, Glühwürmchen und Nacht-Licht am Boden bleiben; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm
   usw.) entfallen dabei.
