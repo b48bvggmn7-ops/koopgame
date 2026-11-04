@@ -2132,7 +2132,10 @@ sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Op
 - **Nebel** (Nutzerwünsche: erst „weniger“, dann „wieder mehr, gerne auch an der Naht, etwas durchsichtiger Nebel im
   Vordergrund“): Dunst über dem Bild, Bodennebel (steigt 300 px vom unteren Rand auf), vier lockere, langsam ziehende
   Schwaden in der unteren Bildhälfte, eine weiche senkrechte Nebelwolke über jeder Naht der Schleife (wandert mit dem
-  Bild) und drei durchsichtige Schwaden VOR dem Spielfeld (Deckkraft 0,1, ziehen etwas schneller als die Kamera);
+  Bild); für mehr Tiefe (Nutzerwunsch „Nebel im Vorder- und Hintergrund“) eine **Nebelbank** zwischen Wald und
+  Spielfeld auf Höhe der Böden (Deckkraft 0,3, Parallaxe 0,45) und VOR dem Spielfeld vier Schwaden (Deckkraft 0,16,
+  etwas schneller als die Kamera) plus ein **Bodennebel ganz vorne** über der Erde (unten 0,2, 150 px hoch, mit
+  eigenen schnellen Schwaden);
   nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
   Tiere vorne, Glühwürmchen und Nacht-Licht am Boden bleiben; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm
   usw.) entfallen dabei.
@@ -2161,7 +2164,9 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
     trapezförmig), jede Kante eigene Wölbung nach außen oder innen, unterschiedlich – manchmal stark – abgeschlagene
     Ecken, feine Ausfransung; eigener Ausschnitt aus dem Mauer-Foto des Nutzers (`assets/texturen/wand-steine.webp`,
     bevorzugt ohne Fugen des Fotos, zufällig gespiegelt), eigene Helligkeit und Tönung (wärmer, grauer, grünlicher),
-    knapp jeder fünfte mit Moos an der Oberseite, weiches Licht von oben. Fugen ohne Rand ringsum: dahinter das stark abgedunkelte Foto
+    knapp jeder fünfte mit Moos an der Oberseite, weiches Licht von oben, gewölbt (Mitte heller, Ränder dunkler). Jeder
+    Stein zeigt ein größeres, verkleinertes Stück des Fotos (5,5 Foto-Bildpunkte je Welt-px statt 3,6) – feinere,
+    schärfere Oberfläche (Nutzer: „pixelig“). Fugen ohne Rand ringsum: dahinter das stark abgedunkelte Foto
     (Mörtel/Moos), dazu nur ein weicher Schatten unter/rechts neben jedem Stein – die Fugenbreite schwankt natürlich.
     Wiederholt sich erst nach 480 Welt-px (12 Kästchen) in beide Richtungen, fester Zufall. Werte in `FOTO_MAT_MAUER`.
     Aufgebaut mit 3 Bildpunkten je Welt-px: scharf bis 4K (Nutzerwunsch; Erde-Foto und Moos-Kante reichen dafür schon).
@@ -2186,11 +2191,17 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   (`FOTO_MAT_UEBERHANG`), und unter schwebendem Boden wachsen gezeichnete dunkle Wurzeln heraus – je Kästchen 2–5,
   4–20 Welt-px lang, leicht geschlängelt, teils mit Seitenästchen, an der Welt verankert (`fotoMatWurzeln`,
   `FOTO_MAT_WURZEL_*`; die Wurzeln der Moos-Kante sahen dort als heller Streifen komisch aus). Nur Optik – die
-  Kollision bleibt das Kästchen; der alte Comic-Boden wird darunter nicht mehr gemalt.
+  Kollision bleibt das Kästchen; der alte Comic-Boden wird darunter nicht mehr gemalt. Am Levelrand (unten am
+  Bildschirmrand, links/rechts am Levelende) bleiben Boden- und Mauerkanten gerade, ohne Wurzeln (`fotoMatLevelRand`).
+- **Mauer steht vor dem Boden** (Nutzer: „sieht aus, als stünden die Steine hinter dem Boden – das sollte andersrum
+  sein; Moos sehr abgeschnitten; mach die Lücken weg“): grenzt eine Mauer seitlich an Erde, ragen ihre Randsteine uneben
+  über die Erde; die Erde läuft 8 Welt-px verdeckt unter die Mauer (`FOTO_MAT_HINTER_WAND`, keine Lücken); Reihenfolge
+  Erde → Moos-Kante → Mauer → Moos am Mauerfuß, das Moos endet also hinter den Randsteinen.
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
 - **Foto-Pflanzen** im Foto-Look (Nutzerwunsch: „hier und da, nicht zu viel, Spielelemente nicht verdecken“): sechs
   freigestellte Pflanzen-Fotos des Nutzers (`assets/pflanzen/`: Farn, Farn-Strauch, Busch, Brombeere, zwei Bäumchen;
-  Höhe 46–112 Welt-px, ±15 %, zufällig gespiegelt; Farne/Büsche häufiger) stehen auf freien Boden-Oberseiten, 260–560
+  Höhe 46–112 Welt-px, ±15 %, zufällig gespiegelt; Farne/Büsche häufiger; beim Laden in Boden-/Moosfarben getönt –
+  dunkler, olivgrün statt orange, Nutzerwunsch) stehen auf freien Boden-Oberseiten, 150–340 (vorher 260–560)
   Welt-px auseinander (fester Zufall je Level). Nur dort, wo die Pflanze ganz auf der Fläche steht und darüber frei
   ist, nie in der Freihalte-Zone um Spielobjekte, Münzen und Start (`bodenSperre`/`bodenNahStart`). Gezeichnet hinter
   Hebeln, Haken, Münzen und Figuren (`fotoPflanzenZeichnen` aus `drawGroundDeco`, Werte `FOTO_PFLANZEN*`).

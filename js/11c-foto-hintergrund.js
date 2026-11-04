@@ -35,7 +35,10 @@ const FOTO_HG_BODENNEBEL_A = 0.26, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: 
 // Anfang jedes Stücks (dort liegt der Schnitt, 55–149), so breit/deckend
 const FOTO_HG_NAHT_X = 100, FOTO_HG_NAHT_B = 260, FOTO_HG_NAHT_A = 0.32;
 // leichter, durchsichtiger Nebel VOR dem Spielfeld (Nutzerwunsch): zieht schneller als die Kamera (nah = Tiefe)
-const FOTO_HG_VORNE_A = 0.1, FOTO_HG_VORNE_PAR = 1.15;
+// (Nutzer danach: „Nebel im Vordergrund und Hintergrund, damit es tiefer wirkt“ -> vorne kräftiger (vorher 0,1) + Bodennebel
+// ganz vorne über der Erde; hinten eine Nebelbank zwischen Wald und Spielfeld mit eigener Parallaxe)
+const FOTO_HG_VORNE_A = 0.16, FOTO_HG_VORNE_PAR = 1.15, FOTO_HG_VORNE_BODEN_A = 0.2, FOTO_HG_VORNE_BODEN_H = 150;
+const FOTO_HG_BANK_A = 0.3, FOTO_HG_BANK_PAR = 0.45;
 const FOTO_HG_NACHT = 'rgba(8,22,48,.62)';         // Tönung nachts
 
 const fotoHg = {an: null, bilder: {}, stuecke: null, per: 0, nebel: null, sichtbar: 0, himmel: null, hoehe: 0};
@@ -131,10 +134,20 @@ function fotoHgVorne(){
   if(!(typeof fotoLookAktiv === 'function' && fotoLookAktiv()) || !fotoHg.nebel) return;
   const t = performance.now()/1000, breit = 1600, hoch = 300;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
-  for(let i = 0; i < 3; i++){
-    const y = 470 + i*90, x = ((t*(9 + i*3) - camX*zoom*FOTO_HG_VORNE_PAR + i*700) % (W + breit) + (W + breit)) % (W + breit) - breit;
+  for(let i = 0; i < 4; i++){
+    const y = 430 + i*85, x = ((t*(9 + i*3) - camX*zoom*FOTO_HG_VORNE_PAR + i*560) % (W + breit) + (W + breit)) % (W + breit) - breit;
     ctx.globalAlpha = FOTO_HG_VORNE_A*(0.7 + 0.3*Math.sin(t*0.25 + i*2));
     ctx.drawImage(fotoHg.nebel, x, y - hoch/2, breit, hoch);
+  }
+  // Bodennebel ganz vorne: liegt unten über der Erde, zieht schneller als die Kamera (nah = Tiefe)
+  ctx.globalAlpha = 1;
+  const gb = ctx.createLinearGradient(0, H, 0, H - FOTO_HG_VORNE_BODEN_H);
+  gb.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',' + FOTO_HG_VORNE_BODEN_A + ')'); gb.addColorStop(1, 'rgba(' + FOTO_HG_NEBEL + ',0)');
+  ctx.fillStyle = gb; ctx.fillRect(0, H - FOTO_HG_VORNE_BODEN_H, W, FOTO_HG_VORNE_BODEN_H);
+  for(let i = 0; i < 3; i++){
+    const b2 = 1100, h2 = 220, x = ((t*(14 + i*4) - camX*zoom*1.45 + i*640) % (W + b2) + (W + b2)) % (W + b2) - b2;
+    ctx.globalAlpha = FOTO_HG_VORNE_A*1.2*(0.75 + 0.25*Math.sin(t*0.3 + i));
+    ctx.drawImage(fotoHg.nebel, x, H - 40 - i*30 - h2/2, b2, h2);
   }
   ctx.restore();
 }
@@ -157,6 +170,13 @@ function fotoHgNebel(t){
     const y = 330 + i*95, x = ((t*(6 + i*2) - camX*(0.2 + i*0.05) + i*520) % (W + breit) + (W + breit)) % (W + breit) - breit;
     ctx.globalAlpha = FOTO_HG_NEBEL_A*(0.8 + 0.2*Math.sin(t*0.3 + i));
     ctx.drawImage(fotoHg.nebel, x, y - hoch/2, breit, hoch);
+  }
+  // Nebelbank zwischen Wald und Spielfeld (Nutzer: „Nebel im Vordergrund und Hintergrund, damit es tiefer wirkt“):
+  // breite, dichtere Schwaden auf Höhe der Bodenflächen, bewegen sich schneller als der Wald, langsamer als das Spielfeld
+  for(let i = 0; i < 3; i++){
+    const b2 = 1700, h2 = 380, y = 560 + i*55, x = ((t*(4 + i*2) - camX*zoom*FOTO_HG_BANK_PAR + i*610) % (W + b2) + (W + b2)) % (W + b2) - b2;
+    ctx.globalAlpha = FOTO_HG_BANK_A*(0.8 + 0.2*Math.sin(t*0.22 + i*1.7));
+    ctx.drawImage(fotoHg.nebel, x, y - h2/2, b2, h2);
   }
   ctx.restore();
 }

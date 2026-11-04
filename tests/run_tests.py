@@ -5366,7 +5366,8 @@ async def foto_material(g):
     assert mit['kontur'] == 0 and mit['deko'] == 0 and mit['gleich'], f'Foto-Material nicht aktiv: {mit}'
     assert mit['streifen'] == [520, 600], f'Moos-Kante nur auf freien Boden-Oberkanten (Boden, Stufe – nicht auf der Wand): {mit}'
     # Farbe in der Mitte des Bodens = Erde-Probe, in der Wand = Wand-Probe (Welt -> Bildschirm)
-    farbe = await g.ev("""(() => { const px = (x, y) => { const d = ctx.getImageData(Math.round(x*zoom*RS), Math.round((y*zoom + H*(1 - zoom))*RS), 1, 1).data; return [d[0], d[1], d[2]]; };
+    farbe = await g.ev("""(() => { const altV = fotoHgVorne; fotoHgVorne = () => {}; draw(); fotoHgVorne = altV;   // ohne Vordergrund-Nebel messen
+      const px = (x, y) => { const d = ctx.getImageData(Math.round(x*zoom*RS), Math.round((y*zoom + H*(1 - zoom))*RS), 1, 1).data; return [d[0], d[1], d[2]]; };
       const mittel = (x0, y0) => { const d = ctx.getImageData(Math.round(x0*zoom*RS), Math.round((y0*zoom + H*(1 - zoom))*RS), 30, 30).data; let r = 0, g2 = 0, b = 0; for(let i = 0; i < d.length; i += 4){ r += d[i]; g2 += d[i+1]; b += d[i+2]; } const n = d.length/4; return [r/n, g2/n, b/n]; };
       return {erde: px(200, 680), wand: mittel(780, 420)}; })()""")
     assert abs(farbe['erde'][0] - 0x5a*(1 - 0.38)) < 20 and farbe['erde'][2] < 45, f'Erde-Textur (abgedunkelt) nicht im Boden: {farbe}'

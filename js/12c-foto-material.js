@@ -33,7 +33,7 @@ const FOTO_MAT_KANTE = {ueber: 20, matteUnten: 27, weltH: FOTO_MAT_TEXTUREN.kant
 // Moos-Kante), die Seiten und die Unterseite sind bröckelig (FOTO_MAT_BROECKEL: bis so weit hinein/heraus)
 // Wurzeln unter schwebendem Boden: gezeichnet (die Wurzeln der Moos-Kante sahen dort als heller Streifen komisch aus):
 // je Kästchen FOTO_MAT_WURZEL_ANZAHL dunkle Wurzeln, FOTO_MAT_WURZEL_LANG Welt-px lang (min–max), mit Seitenästchen
-const FOTO_MAT_UEBERHANG = 6, FOTO_MAT_BROECKEL = 3, FOTO_MAT_WURZEL_ANZAHL = [2, 5], FOTO_MAT_WURZEL_LANG = [4, 20];
+const FOTO_MAT_HINTER_WAND = 8, FOTO_MAT_UEBERHANG = 6, FOTO_MAT_BROECKEL = 3, FOTO_MAT_WURZEL_ANZAHL = [2, 5], FOTO_MAT_WURZEL_LANG = [4, 20];
 const FOTO_MAT_WURZEL_FARBE = 'rgba(38,27,18,.9)', FOTO_MAT_WURZEL_HELL = 'rgba(92,72,52,.55)';
 // Kontur: im Foto-Look keine (Nutzerwunsch „nimm die Kontur weg“); Schatten innen am Rand gibt es auch nicht
 // Boden dunkler (Nutzerwunsch, zweimal): so viel Schwarz über das Erde-Foto (vorher 0,38)
@@ -47,7 +47,7 @@ const FOTO_MAT_ERDE_DUNKEL = 0.52;
 const FOTO_MAT_MAUER = {periode: 480, reiheMin: 11, reiheMax: 16, breitMin: 17, breitMax: 36, fuge: 1.3, rau: 0.45, ecke: 1.6,
                         verform: 1.1, woelbung: 0.9, moos: 0.18,
                         farben: [null, null, 'rgba(120,90,60,.12)', 'rgba(90,95,100,.14)', 'rgba(70,90,50,.12)', 'rgba(40,30,20,.14)', 'rgba(170,150,120,.10)'],
-                        aufloesung: 3, quelleJeWelt: 3.6, saat: 7};   // aufloesung 3: scharf bis 4K (3840 breit = 2,55 Bildpunkte je Welt-px)
+                        aufloesung: 3, quelleJeWelt: 5.5, saat: 7};   // quelleJeWelt 5,5 (vorher 3,6): jeder Stein zeigt mehr vom Foto, verkleinert -> feinere, schärfere Oberfläche (Nutzer: „pixelig“)   // aufloesung 3: scharf bis 4K (3840 breit = 2,55 Bildpunkte je Welt-px)
 
 const fotoMat = {bilder: {}, muster: {}};
 // (window.fotoMatTestQuellen: nur für automatische Tests – eigene Bilder statt der Dateien)
@@ -132,6 +132,10 @@ function fotoMatMauer(img){
       const gr = q.createLinearGradient(0, Y + dy, 0, Y + dy + Hd);   // weiches Licht von oben
       gr.addColorStop(0, 'rgba(255,240,215,.1)'); gr.addColorStop(0.35, 'rgba(255,240,215,0)'); gr.addColorStop(0.75, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.16)');
       q.fillStyle = gr; q.fillRect(X + dx, Y + dy, Wd, Hd);
+      // Rundung: Mitte (etwas oben links) heller, Ränder dunkler – der Stein wirkt gewölbt statt flach (realistischer)
+      const cx = X + dx + Wd*0.42, cy = Y + dy + Hd*0.36, rg = q.createRadialGradient(cx, cy, 0, cx, cy, Math.max(Wd, Hd)*0.72);
+      rg.addColorStop(0, 'rgba(255,246,228,.11)'); rg.addColorStop(0.5, 'rgba(0,0,0,0)'); rg.addColorStop(1, 'rgba(0,0,0,.4)');
+      q.fillStyle = rg; q.fillRect(X + dx - 2*s, Y + dy - 2*s, Wd + 4*s, Hd + 4*s);
       q.restore();
     }
   };
@@ -189,7 +193,10 @@ function fotoMatWandMaske(kaestchen){
   const seitenFuge = (y, x) => { const [a, b] = steinBei(reihe(y), x), da = x - a, db = b - x;
     return da <= db ? (da <= G ? a : x) : (db <= G ? b : x); };
   const pfad = new Path2D();
-  for(const k of kaestchen){
+  for(const k0 of kaestchen){
+    // am Levelrand gerade; seitlich neben Erde wie frei (die Randsteine ragen dort uneben über die Erde – Mauer steht davor)
+    const LR = fotoMatLevelRand(k0), erdeL = Tc(k0.cc - 1, k0.rr) === 1, erdeR = Tc(k0.cc + 1, k0.rr) === 1;
+    const k = {cc: k0.cc, rr: k0.rr, n: k0.n, s: k0.s || LR.s, wl: (k0.wl && !erdeL) || LR.wl, e: (k0.e && !erdeR) || LR.e};
     const X = k.cc*40, Y = k.rr*40, pts = [];
     const n = Math.max(2, Math.round(40/S)), oY = k.n ? Y : reihenFuge(Y), uY = k.s ? Y + 40 : reihenFuge(Y + 40);
     for(let i = 0; i <= n; i++){ const x = X + 40*i/n; pts.push([x, k.n ? Y : oY - waagerecht(x, oY + 0.5)]); }               // oben
@@ -204,6 +211,13 @@ function fotoMatWandMaske(kaestchen){
 // Bodenform mit bröckeligen Seiten/Unterseite (je Kästchen ein Umriss): oben bleibt die Lauffläche gerade (darauf liegt
 // die Moos-Kante), freie Seiten und Unterseiten wellen sich unregelmäßig (zwei Wellen + feine Krümel, an der Welt
 // verankert, eher nach innen ausgebrochen als heraus); nahe der Oberkante läuft das weich auf null aus.
+// Am Rand des Levels (unten am Bildschirmrand, links/rechts am Levelende) bleibt die Kante gerade (Nutzerwunsch). Grenzt
+// die Erde seitlich an eine Mauer, steht die Mauer DAVOR (Nutzer: „es sieht so aus, als wenn die Steine hinter dem Boden
+// stehen – das sollte andersrum sein“): ihre Randsteine ragen dort uneben über die Erde (fotoMatWandMaske).
+function fotoMatLevelRand(k){   // {wl, e, s}: Seite liegt am Levelrand (dort nichts bröckeln lassen)
+  const X = k.cc*40, Y = k.rr*40;
+  return {wl: X <= 0, e: X + 40 >= LEVEL_W, s: Y + 40 >= LEVEL_H};
+}
 function fotoMatBodenMaske(kaestchen){
   if(!kaestchen.length) return null;
   const Bm = FOTO_MAT_BROECKEL, S = 1.4;
@@ -214,12 +228,16 @@ function fotoMatBodenMaske(kaestchen){
   const auslauf = d => Math.min(1, Math.max(0, d/6));   // nahe der Oberkante gerade
   const pfad = new Path2D();
   for(const k of kaestchen){
-    const X = k.cc*40, Y = k.rr*40, n = Math.round(40/S), pts = [];
+    const X = k.cc*40, Y = k.rr*40, n = Math.round(40/S), pts = [], LR = fotoMatLevelRand(k);
+    // neben einer Mauer läuft die Erde FOTO_MAT_HINTER_WAND Welt-px unter die Mauer weiter (verdeckt): springt ein
+    // Randstein dort etwas zurück, sieht man Erde statt einer Lücke (Nutzer: „mach die Lücken weg“)
+    const wandL = Tc(k.cc - 1, k.rr) === 2, wandR = Tc(k.cc + 1, k.rr) === 2;
+    const seite = (frei, wand, y, linie) => frei ? welle(y, linie)*auslauf(k.n ? 40 : y - Y) : wand ? FOTO_MAT_HINTER_WAND : 0;
     pts.push([X, Y], [X + 40, Y]);                                                             // oben gerade
     for(let i = 1; i <= n; i++){ const y = Y + 40*i/n;
-      pts.push([k.e ? X + 40 : X + 40 + welle(y, X + 40)*auslauf(k.n ? 40 : y - Y), y]); }    // rechts
-    for(let i = n - 1; i >= 0; i--){ const x = X + 40*i/n; pts.push([x, k.s ? Y + 40 : Y + 40 + welle(x, Y + 40.5)]); }   // unten
-    for(let i = n - 1; i > 0; i--){ const y = Y + 40*i/n; pts.push([k.wl ? X : X - welle(y, X)*auslauf(k.n ? 40 : y - Y), y]); }   // links
+      pts.push([X + 40 + seite(!k.e && !LR.e, wandR, y, X + 40), y]); }                        // rechts
+    for(let i = n - 1; i >= 0; i--){ const x = X + 40*i/n; pts.push([x, k.s || LR.s ? Y + 40 : Y + 40 + welle(x, Y + 40.5)]); }   // unten
+    for(let i = n - 1; i > 0; i--){ const y = Y + 40*i/n; pts.push([X - seite(!k.wl && !LR.wl, wandL, y, X), y]); }          // links
     pts.forEach(([x, y], i) => i ? pfad.lineTo(x, y) : pfad.moveTo(x, y)); pfad.closePath();
   }
   return pfad;
@@ -227,7 +245,7 @@ function fotoMatBodenMaske(kaestchen){
 // Wurzeln unter freien Unterseiten von Boden (je Kästchen; an der Welt verankert, immer gleich): beginnen 2 Welt-px in der
 // Erde, wachsen leicht schlängelnd nach unten, manche mit Seitenästchen. Rückgabe {dick, fein} oder null.
 function fotoMatWurzeln(kaestchen){
-  const liste = kaestchen.filter(k => !k.s); if(!liste.length) return null;
+  const liste = kaestchen.filter(k => !k.s && !fotoMatLevelRand(k).s); if(!liste.length) return null;   // nicht am unteren Rand
   const zufall = (a, b) => { const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; return v - Math.floor(v); };
   const dick = new Path2D(), fein = new Path2D(), [nMin, nMax] = FOTO_MAT_WURZEL_ANZAHL, [lMin, lMax] = FOTO_MAT_WURZEL_LANG;
   const wurzel = (P, x, y, lang, seed, rich) => {
@@ -294,13 +312,24 @@ const FOTO_PFLANZEN = [
   {name: 'baeumchen-1',  hoehe: 112, oft: 1},
   {name: 'baeumchen-2',  hoehe: 100, oft: 1},
 ];
-const FOTO_PFLANZEN_ABSTAND = [260, 560];   // Welt-px zwischen zwei Pflanzen (zufällig dazwischen)
+// Nutzer: „mehr Pflanzen, eher in den Farben vom Boden/Moos“ -> dichter (vorher 260–560) und beim Laden eingefärbt
+const FOTO_PFLANZEN_ABSTAND = [150, 340];   // Welt-px zwischen zwei Pflanzen (zufällig dazwischen)
+const FOTO_PFLANZEN_TOENUNG = {mal: 'rgb(150,160,118)', moos: 'rgba(72,88,44,.22)'};   // multiplizieren (dunkler, olivgrün) + Moos-Schimmer
 const FOTO_PFLANZEN_FUSS = 0.035;            // so viel (Anteil der Höhe) steckt der Fuß im Moos
 const fotoPfl = {bilder: {}, liste: null, quelle: null};
 function fotoPflBild(name){
   let B = fotoPfl.bilder[name];
-  if(!B){ B = fotoPfl.bilder[name] = {img: new Image(), ok: false}; B.img.onload = () => { B.ok = true; }; B.img.src = 'assets/pflanzen/' + name + '.webp'; }
-  return B.ok ? B.img : null;
+  if(!B){ B = fotoPfl.bilder[name] = {img: new Image(), ok: false}; B.img.onload = () => { B.ok = true; B.bild = fotoPflToenen(B.img); }; B.img.src = 'assets/pflanzen/' + name + '.webp'; }
+  return B.ok ? B.bild : null;
+}
+// einmal einfärben: Farben in Richtung Boden/Moos (dunkler, olivgrün statt orange), Durchsichtigkeit bleibt
+function fotoPflToenen(img){
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const q = c.getContext('2d');
+  q.drawImage(img, 0, 0);
+  q.globalCompositeOperation = 'multiply'; q.fillStyle = FOTO_PFLANZEN_TOENUNG.mal; q.fillRect(0, 0, c.width, c.height);
+  q.globalCompositeOperation = 'source-over'; q.fillStyle = FOTO_PFLANZEN_TOENUNG.moos; q.fillRect(0, 0, c.width, c.height);
+  q.globalCompositeOperation = 'destination-in'; q.drawImage(img, 0, 0);
+  return c;
 }
 // Plätze suchen (einmal je Level, sobald alle Bilder geladen sind – die Breite hängt am Bild)
 function fotoPflanzenAufbauen(){
@@ -344,13 +373,16 @@ function fotoMatUeber(q, V){
   const erde = V.hatG && fotoMatMuster(q, 'erde'), wand = V.hatW && fotoMatMuster(q, 'wand'), kante = fotoMatBild('kante');
   if(!erde && !wand && !kante) return false;
   const PG = V.bodenMaske || V.PG;
+  // Reihenfolge: Erde, Moos-Kante, Mauer (steht davor – das Moos endet hinter den Randsteinen statt abgeschnitten),
+  // zuletzt das Moos am Fuß der Mauer (wächst über die untersten Steine)
   if(erde){ q.fillStyle = erde; q.fill(PG); q.fillStyle = 'rgba(0,0,0,' + FOTO_MAT_ERDE_DUNKEL + ')'; q.fill(PG); }
+  if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
   if(wand){
     q.fillStyle = wand;
     if(V.wandMaske && !V.maskeFehlt) q.fill(V.wandMaske);
     else q.fill(V.PW);
   }
-  if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
+  if(kante) for(const [y, p] of V.streifenFuss){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
   // Wurzeln unter schwebendem Boden (gezeichnet): dicke dunkel, darüber feine hellere Fasern
   if(erde && V.wurzeln){ q.save(); q.lineCap = 'round'; q.lineJoin = 'round';
     q.strokeStyle = FOTO_MAT_WURZEL_FARBE; q.lineWidth = 1.3; q.stroke(V.wurzeln.dick);
