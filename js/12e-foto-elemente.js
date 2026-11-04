@@ -238,11 +238,11 @@ function fotoTuerAnliegend(d){
 // Haken-Reichweite im Foto-Look (Nutzerwunsch): der Ring taucht regelmäßig auf (pulsAn s lang, dann pulsAus s nichts; alle
 // Haken im selben Takt, außer nach dem Loslassen – s. u.). Hängt jemand an diesem Haken, ist sein Ring aus. Nur Zeichnen (Zeit aus der Uhr), ändert keinen
 // Spielzustand. zeit = fest (für Tests). fotoHakenKreisAlpha = Helligkeit des Pulses (0 … pulsMax).
-// Nutzerwunsch 04.11.: alle 12 s (pulsAn 6,4 s Ablauf – darin 2,5 s ganzer Ring, s. FOTO_HAKEN_BLAETTER – + pulsAus 5,6 s).
-// Nach dem Loslassen eines Hakens (Affe springt ab) wartet DIESER Haken nachLoslassen s (12) und beginnt dann von vorn
+// Nutzerwunsch 04.11.: alle 20 s (pulsAn 6,9 s Ablauf – darin 3 s ganzer Ring, s. FOTO_HAKEN_BLAETTER – + pulsAus 13,1 s).
+// Nach dem Loslassen eines Hakens (Affe springt ab) wartet DIESER Haken nachLoslassen s (20) und beginnt dann von vorn
 // (vorher lief der allgemeine Takt weiter und der Ring tauchte mitten im Ablauf wieder auf). Stand je Haken: h._ringHing,
 // h._ringBasis (nur Anzeige).
-const FOTO_HAKEN_KREIS = {pulsAn: 6.4, pulsAus: 5.6, pulsMax: 0.6, nachLoslassen: 12, zeit: null};
+const FOTO_HAKEN_KREIS = {pulsAn: 6.9, pulsAus: 13.1, pulsMax: 0.6, nachLoslassen: 20, zeit: null};
 // Stand im Puls: 0 … 1 während er sichtbar ist, -1 = nichts (Pause oder jemand hängt an diesem Haken)
 function fotoHakenKreisPhase(h){
   const K = FOTO_HAKEN_KREIS;
@@ -270,8 +270,35 @@ function fotoHakenKreisAlpha(h){
 const FOTO_HAKEN_BLAETTER = {blattAbstand: 22, art: 'herbst',
   farben: {gruen: ['150,170,110', '196,186,140'], herbst: ['196,112,48', '214,158,62', '160,72,38', '186,140,84']},
   deckkraft: {gruen: 0.52, herbst: 0.66}, rippe: {gruen: '120,135,95', herbst: '110,62,30'},
-  // letztes Blatt liegt nach einStreu + einDauer + 0,35 = 2,2 s; erstes löst sich bei fallAb = 4,7 s -> 2,5 s ganzer Ring
-  einStreu: 0.9, einDauer: 0.95, einHoehe: 55, fallAb: 4.7, fallStreu: 0.55, fallDauer: 0.85, fallWeg: 85, pendel: 11, zittern: 0.15};
+  // letztes Blatt liegt nach einStreu + einDauer + 0,35 = 2,2 s; erstes löst sich bei fallAb = 5,2 s -> 3 s ganzer Ring
+  // lianeAbstand: px Luft zwischen Blatt und Liane (Nutzerwunsch: Blätter und Liane sollen sich nicht berühren)
+  lianeAbstand: 7,
+  einStreu: 0.9, einDauer: 0.95, einHoehe: 55, fallAb: 5.2, fallStreu: 0.55, fallDauer: 0.85, fallWeg: 85, pendel: 11, zittern: 0.15};
+// Was den Ring unterbricht: Boden, Wände, Türen, Bröckelboden, bewegte Teile (nicht offen/weg), Stacheln. Raster je 40 px
+// (einmal je Level gebaut, Muster lichtGitterHolen) – pro Blatt nur ein paar Nachschläge.
+let fotoRingGitter = null;
+function fotoRingGitterHolen(){
+  if(fotoRingGitter && fotoRingGitter.src === solids && fotoRingGitter.n === solids.length && fotoRingGitter.sp === spikes) return fotoRingGitter;
+  const G = new Map(), dazu = (o, x0, y0, x1, y1) => {
+    for(let cx = Math.floor(x0/40); cx <= Math.floor((x1 - 0.01)/40); cx++) for(let cy = Math.floor(y0/40); cy <= Math.floor((y1 - 0.01)/40); cy++){
+      const k = cx + ',' + cy; if(!G.has(k)) G.set(k, []); G.get(k).push(o); } };
+  const bewegt = [];
+  for(const s of solids){ if(s.type === 'oneway') continue; if(s.type === 'moveplat'){ bewegt.push(s); continue; } dazu(s, s.x, s.y, s.x + s.w, s.y + s.h); }
+  for(const sp of spikes) if(sp.carrier === undefined) dazu({x: sp.x - sp.w/2, y: sp.y - sp.h, w: sp.w, h: sp.h, stachel: true}, sp.x - sp.w/2, sp.y - sp.h, sp.x + sp.w/2, sp.y);
+  return fotoRingGitter = {src: solids, n: solids.length, sp: spikes, G, bewegt};
+}
+function fotoRingFest(wx, wy){
+  const R = fotoRingGitterHolen(), L = R.G.get(Math.floor(wx/40) + ',' + Math.floor(wy/40));
+  if(L) for(const o of L) if(!o.gone && wx >= o.x && wx <= o.x + o.w && wy >= o.y && wy <= o.y + o.h) return true;
+  for(const o of R.bewegt) if(!o.gone && wx >= o.x && wx <= o.x + o.w && wy >= o.y && wy <= o.y + o.h) return true;
+  return false;
+}
+// Blatt-Platz frei? = vom Haken aus geradeaus bis zum Ring nichts Festes (alle 8 px geprüft)
+function fotoRingFrei(h, w, rr){
+  const cw = Math.cos(w), sw = Math.sin(w);
+  for(let d = 12; d <= rr + 6; d += 8) if(fotoRingFest(h.x + cw*d, h.y + sw*d)) return false;
+  return true;
+}
 function fotoHakenKreis(h, x, range){
   const p = fotoHakenKreisPhase(h);
   if(p < 0) return;
@@ -282,9 +309,7 @@ function fotoHakenKreis(h, x, range){
   const clamp = v => Math.max(0, Math.min(1, v)), weich = v => v*v*(3 - 2*v);
   const F = B.farben[B.art] || B.farben.gruen, deck = B.deckkraft[B.art] || 0.52, rippe = B.rippe[B.art] || B.rippe.gruen;
   c.save();
-  c.globalAlpha = Math.pow(Math.sin(p*Math.PI), 2);   // ganz zarte Fläche im Kreis
-  c.fillStyle = 'rgba(235,238,230,0.025)';
-  c.beginPath(); c.arc(x, h.y, range, 0, Math.PI*2); c.fill();
+  const wx = h.x - x;   // Bild -> Welt (waagerecht)
   for(let i = 0; i < n; i++){
     const einAb = hs(i, 6)*B.einStreu, einD = B.einDauer + hs(i, 8)*0.35;
     const fallAb = B.fallAb + hs(i, 9)*B.fallStreu, fallD = B.fallDauer + hs(i, 10)*0.3;
@@ -294,6 +319,10 @@ function fotoHakenKreis(h, x, range){
     const w = (i + hs(i, 1)*0.5)/n*Math.PI*2, rr = range + (hs(i, 2) - 0.5)*4;
     let px = x + Math.cos(w)*rr, py = h.y + Math.sin(w)*rr;
     const gr = 5.5 + hs(i, 3)*3;
+    // Platz an der Liane (geht vom Haken senkrecht nach oben): dort kein Blatt
+    if(py < h.y && Math.abs(px - x) < B.lianeAbstand + gr) continue;
+    // unterbrochen durch Boden/Wand/Stacheln (Nutzerwunsch): verdeckt ODER dahinter (vom Haken aus gesehen) -> kein Blatt
+    if(!fotoRingFrei(h, w, rr)) continue;
     let dreh = w + Math.PI/2 + (hs(i, 4) - 0.5)*0.9 + Math.sin(zeit*1.1 + i*1.7)*0.1, wende = 1, a = 1;
     if(e < 1){   // fällt pendelnd von oben auf seinen Platz und setzt sich weich
       const th = e*(2.2 + hs(i, 11)*1.4)*Math.PI + phi, rest = Math.pow(1 - e, 1.3), amp = amp0*rest;
@@ -311,6 +340,8 @@ function fotoHakenKreis(h, x, range){
       a *= 1 - weich(clamp((f - 0.45)/0.55));
     }
     if(a < 0.01) continue;
+    if(fotoRingFest(px + wx, py)) continue;                                 // fliegt gerade hinter Boden/Wand/Stacheln
+    if(py < h.y - 4 && Math.abs(px - x) < B.lianeAbstand*0.6) continue;   // nie über die Liane
     c.save(); c.globalAlpha = a; c.translate(px, py); c.rotate(dreh); c.scale(1, Math.max(0.12, Math.abs(wende)));   // wendet sich
     c.fillStyle = `rgba(${F[Math.floor(hs(i, 5)*F.length)]},${deck})`;
     c.beginPath(); c.moveTo(-gr, 0); c.quadraticCurveTo(-gr*0.1, -gr*0.6, gr, 0); c.quadraticCurveTo(gr*0.1, gr*0.5, -gr, 0); c.fill();

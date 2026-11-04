@@ -30,14 +30,23 @@ const FOTO_HG_HIMMEL_ERSATZ = '206,214,212';            // Himmel-Farbe, falls s
 // 0,38 -> neues Bild „mit weniger Nebel“ 0,02/0,12/0,14 -> „wieder mehr Nebel, gerne auch an der Naht“ (jetzt):
 const FOTO_HG_DUNST_A = 0.05;       // leichter Dunst über dem ganzen Bild
 const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.22;   // Nebelschwaden: Farbe, Deckkraft
-const FOTO_HG_BODENNEBEL_A = 0.26, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: steigt vom unteren Rand auf (Deckkraft unten, Höhe)
+// Nutzer 04.11.: „unten ganz viel, darüber kaum noch – hier und da mal ein bisschen Nebel, oben und unten, mal mehr mal
+// weniger, ich will durchlaufen können“ -> Bodennebel hinten 0,26 -> 0,1, vorne 0,2 -> 0,06, die drei Bodenschwaden vorne
+// weg; dafür Nebelfelder in der Welt (FOTO_HG_FELDER, unten).
+const FOTO_HG_BODENNEBEL_A = 0.1, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: steigt vom unteren Rand auf (Deckkraft unten, Höhe)
 // Nebelwolke über der Naht der Schleife (wandert mit dem Bild): Mitte FOTO_HG_NAHT_X Bildpunkte (Original) nach dem
 // Anfang jedes Stücks (dort liegt der Schnitt, 55–149), so breit/deckend
 const FOTO_HG_NAHT_X = 100, FOTO_HG_NAHT_B = 260, FOTO_HG_NAHT_A = 0.32;
 // leichter, durchsichtiger Nebel VOR dem Spielfeld (Nutzerwunsch): zieht schneller als die Kamera (nah = Tiefe)
 // (Nutzer danach: „Nebel im Vordergrund und Hintergrund, damit es tiefer wirkt“ -> vorne kräftiger (vorher 0,1) + Bodennebel
 // ganz vorne über der Erde; hinten eine Nebelbank zwischen Wald und Spielfeld mit eigener Parallaxe)
-const FOTO_HG_VORNE_A = 0.16, FOTO_HG_VORNE_PAR = 1.15, FOTO_HG_VORNE_BODEN_A = 0.2, FOTO_HG_VORNE_BODEN_H = 150;
+const FOTO_HG_VORNE_A = 0.16, FOTO_HG_VORNE_PAR = 1.15, FOTO_HG_VORNE_BODEN_A = 0.06, FOTO_HG_VORNE_BODEN_H = 150;
+// Nebelfelder IN der Spielwelt (fest an ihrer Stelle, man läuft hindurch): je abstand px ein Platz, ob dort Nebel liegt,
+// entscheidet eine langsam wechselnde Dichte (mal ein Stück mit viel Nebel, mal fast keiner); Höhe y (Welt-px) über die
+// ganze Bildhöhe verteilt, Größe b/h, Deckkraft a. Jedes Feld atmet (dichter/dünner) und treibt leicht; wo eine Figur
+// steht, wird es dünner (teilt sich um sie: in der Mitte des Felds bis teilen weniger). Reine Anzeige.
+const FOTO_HG_FELDER = {abstand: 210, y: [-90, 640], b: [420, 1050], h: [150, 320], a: [0.3, 0.75], dichteWelle: 1900,
+  treiben: 22, teilen: 0.55};
 const FOTO_HG_BANK_A = 0.3, FOTO_HG_BANK_PAR = 0.45;
 const FOTO_HG_NACHT = 'rgba(8,22,48,.62)';         // Tönung nachts
 
@@ -140,11 +149,53 @@ function fotoHgVorne(){
   const gb = ctx.createLinearGradient(0, H, 0, H - FOTO_HG_VORNE_BODEN_H);
   gb.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',' + FOTO_HG_VORNE_BODEN_A + ')'); gb.addColorStop(1, 'rgba(' + FOTO_HG_NEBEL + ',0)');
   ctx.fillStyle = gb; ctx.fillRect(0, H - FOTO_HG_VORNE_BODEN_H, W, FOTO_HG_VORNE_BODEN_H);
-  for(let i = 0; i < 3; i++){
-    const b2 = 1100, h2 = 220, x = ((t*(14 + i*4) - camX*zoom*1.45 + i*640) % (W + b2) + (W + b2)) % (W + b2) - b2;
-    ctx.globalAlpha = FOTO_HG_VORNE_A*1.2*(0.75 + 0.25*Math.sin(t*0.3 + i));
-    ctx.drawImage(fotoHg.nebel, x, H - 40 - i*30 - h2/2, b2, h2);
+  fotoHgFelderZeichnen(t);
+  ctx.restore();
+}
+// Nebelfelder in der Welt (FOTO_HG_FELDER): einmal je Level ausgewürfelt (fester Zufall nach Position)
+function fotoHgFelderListe(){
+  if(fotoHg.felder && fotoHg.felderFuer === solids) return fotoHg.felder;
+  const E = FOTO_HG_FELDER, L = [], breite = typeof LEVEL_W === 'number' ? LEVEL_W : 4000;
+  const zz = (i, k) => { const v = Math.sin(i*127.1 + k*311.7)*43758.5453; return v - Math.floor(v); };
+  const z = (i, k, [a, b]) => a + zz(i, k)*(b - a);
+  if(!fotoHg.wolkenBilder) fotoHgWolkenListe(FOTO_HG_WOLKEN_HINTEN);   // legt die weichen Wolken-Bilder an
+  for(let i = 0, x = -400; x < breite + 400; i++, x += E.abstand){
+    // Dichte wechselt langsam entlang des Levels (zwei überlagerte Wellen): 0 = fast kein Nebel, 1 = viel
+    const d = 0.5 + 0.32*Math.sin(x/E.dichteWelle + 1.3) + 0.18*Math.sin(x/(E.dichteWelle*0.37) + 4.1);
+    if(zz(i, 1) > d) continue;
+    L.push({x: x + (zz(i, 2) - 0.5)*E.abstand, y: z(i, 3, E.y), b: z(i, 4, E.b), h: z(i, 5, E.h), a: z(i, 6, E.a)*(0.6 + 0.4*d),
+            ph: zz(i, 7)*6.28, bild: fotoHg.wolkenBilder[i % 3]});
   }
+  fotoHg.felderFuer = solids;
+  return fotoHg.felder = L;
+}
+function fotoHgFelderZeichnen(t){
+  const E = FOTO_HG_FELDER, L = fotoHgFelderListe(), oy = H*(1 - zoom);
+  // Nebel liegt nur in der Luft: Boden/Wände (sichtbare, feste Teile) werden ausgespart (Ausschneide-Pfad, keine Zusatz-
+  // Leinwand) – sonst lag ein grauer Fleck vor der Erde. Die Figuren laufen hindurch (Nebel wird vor ihnen gezeichnet).
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H);
+  for(const s of solids){
+    if(s.gone || s.type === 'oneway') continue;
+    const x0 = (s.x - camX)*zoom, x1 = x0 + s.w*zoom; if(x1 < 0 || x0 > W) continue;
+    const y0 = s.y*zoom + oy, y1 = y0 + s.h*zoom;
+    ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); ctx.lineTo(x1, y1); ctx.lineTo(x1, y0); ctx.closePath();   // gegen den Uhrzeigersinn = Loch
+  }
+  ctx.clip();
+  for(const f of L){
+    const dx = Math.sin(t*0.05 + f.ph)*E.treiben, dy = Math.sin(t*0.08 + f.ph*1.7)*E.treiben*0.4;
+    const sx = (f.x + dx - f.b/2 - camX)*zoom, sb = f.b*zoom;
+    if(sx > W || sx + sb < 0) continue;
+    let a = f.a*(0.72 + 0.28*Math.sin(t*0.17 + f.ph*3));   // atmet
+    // wo eine Figur drin steht, teilt sich der Nebel (dünner)
+    for(const P of [p1, p2]){
+      if(!P) continue;
+      const nx = (P.x - f.x - dx)/(f.b/2), ny = (P.y - P.h*0.5 - f.y - dy)/(f.h/2), r = Math.hypot(nx, ny);
+      if(r < 1) a *= 1 - E.teilen*(1 - r)*(1 - r)*(3 - 2*(1 - r));
+    }
+    ctx.globalAlpha = a;
+    ctx.drawImage(f.bild, sx, (f.y + dy - f.h/2)*zoom + oy, sb, f.h*zoom);
+  }
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 // Nebelschwade: einmal vorgezeichnet (weicher, breiter Fleck), pro Bild nur verschoben (Zeit aus der Uhr, reine Deko)

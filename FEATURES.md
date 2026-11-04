@@ -2138,6 +2138,12 @@ sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Op
   Spielfeld (0,06–0,15, Parallaxe 1,1–1,5); jede zieht mit eigenem Tempo, schwebt leicht auf und ab und wird mal
   dichter, mal dünner (`FOTO_HG_WOLKEN_HINTEN/VORNE`); dazu ein **Bodennebel ganz vorne** über der Erde (unten 0,2,
   150 px hoch, mit eigenen schnellen Schwaden);
+  **seit 04.11. natürlicher verteilt** (Nutzer: „unten ganz viel, darüber kaum noch – hier und da mal ein bisschen
+  Nebel, oben und unten, mal mehr mal weniger, ich will durchlaufen können“): Bodennebel hinten 0,26 -> 0,1, vorne
+  0,2 -> 0,06, die schnellen Bodenschwaden vorne entfallen. Dafür **Nebelfelder in der Spielwelt** (`FOTO_HG_FELDER`,
+  `fotoHgFelderZeichnen`): fest an ihrer Stelle im Level (man läuft hindurch), über die ganze Bildhöhe verteilt, je Stück
+  des Levels mal dicht, mal kaum (langsam wechselnde Dichte), unterschiedlich groß; jedes atmet und treibt leicht. Sie
+  liegen nur in der Luft (Boden/Wände werden ausgespart) und vor den Figuren; wo eine Figur steht, wird das Feld dünner.
   nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
   Tiere vorne, Glühwürmchen und Nacht-Licht am Boden bleiben; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm
   usw.) entfallen dabei.
@@ -2264,8 +2270,11 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   sich in Bewegungsrichtung und wendet sich (Unterseite heller). Bilden: jedes Blatt kommt zu seiner eigenen Zeit von
   oben, das Pendeln klingt ab, es setzt sich weich auf seinen Platz – der Kreis entsteht Blatt für Blatt. Auflösen: kurz
   zittern, lösen, erst langsam, dann schneller sinken, immer weiter auspendeln, etwas zur Seite treiben, verblassen.
-  Blätter mit Stiel und Mittelrippe. **Takt seit 04.11. (Nutzerwunsch): alle 12 s**, der ganze Ring bleibt **2,5 s**
-  stehen (Ablauf 6,4 s, dann 5,6 s nichts). Beim Hängen am Haken aus; **nach dem Loslassen wartet dieser Haken 12 s** und
+  Blätter mit Stiel und Mittelrippe. **Takt seit 04.11. (Nutzerwunsch): alle 20 s**, der ganze Ring bleibt **3 s**
+  stehen (Ablauf 6,9 s, dann 13,1 s nichts). **Unterbrochen** durch Boden, Wände, Türen, Bröckelboden, bewegte Teile und
+  Stacheln: wo vom Haken aus etwas Festes im Weg ist, liegt kein Blatt – auch nicht dahinter; fallende Blätter
+  verschwinden hinter Boden/Wand (`fotoRingFrei`, `fotoRingFest`, Raster `fotoRingGitterHolen`). An der Liane über dem
+  Haken bleibt Platz (`lianeAbstand` 7 px + Blattgröße), Blätter berühren sie nie. Beim Hängen am Haken aus; **nach dem Loslassen wartet dieser Haken 20 s** und
   beginnt dann von vorn (vorher tauchte der Ring mitten im Ablauf wieder auf; `fotoHakenKreisPhase`, `nachLoslassen`).
   Die **orange Glut** am Ring geht in Reichweite schnell an (0,15 s), erlischt außerhalb aber langsam wie verglühende
   Glut (1,6 s, wird dabei dunkler, röter und kleiner; Nutzer: „nicht direkt komplett aus“; `fotoHakenGlutStand`,

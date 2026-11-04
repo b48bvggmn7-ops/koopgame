@@ -5965,16 +5965,19 @@ async def foto_tuer_fuesse_haken_kreis(g):
       K.zeit = K.pulsAn/2; p1.hookAttached = true; p1.anchor = h; e.haengt = fotoHakenKreisAlpha(h);
       p1.hookAttached = false; p1.anchor = null; K.zeit = null; e.max = K.pulsMax; h._ringHing = false; h._ringBasis = null; return e; })()""")
     assert abs(pu['mitte'] - pu['max']) < 0.01 and pu['pause'] == 0 and pu['haengt'] == 0, f'Haken-Puls: {pu}'
-    assert await g.ev("Math.abs(FOTO_HAKEN_KREIS.pulsAn + FOTO_HAKEN_KREIS.pulsAus - 12) < 0.01"), 'Haken-Kreis nicht alle 12 s'
-    # 2,5 s ganzer Ring (letztes Blatt gelandet bis erstes fällt) und nach dem Loslassen 12 s Pause, dann von vorn
+    assert await g.ev("Math.abs(FOTO_HAKEN_KREIS.pulsAn + FOTO_HAKEN_KREIS.pulsAus - 20) < 0.01"), 'Haken-Kreis nicht alle 20 s'
+    # 3 s ganzer Ring (letztes Blatt gelandet bis erstes fällt) und nach dem Loslassen 20 s Pause, dann von vorn
     halt = await g.ev("FOTO_HAKEN_BLAETTER.fallAb - (FOTO_HAKEN_BLAETTER.einStreu + FOTO_HAKEN_BLAETTER.einDauer + 0.35)")
-    assert abs(halt - 2.5) < 0.01, f'Ring nicht 2,5 s ganz: {halt}'
+    assert abs(halt - 3) < 0.01, f'Ring nicht 3 s ganz: {halt}'
+    # unterbrochen an Boden/Stacheln: Richtung durch den Boden (unten) gesperrt, nach oben frei (Haken bei 300,400, Boden ab 680)
+    frei = await g.ev("[fotoRingFrei({x: 300, y: 400}, Math.PI/2, 320), fotoRingFrei({x: 300, y: 400}, -Math.PI/2, 200), fotoRingFest(300, 700)]")
+    assert frei == [False, True, True], f'Ring an Boden nicht unterbrochen: {frei}'
     los = await g.ev("""(() => { const K = FOTO_HAKEN_KREIS, h = {x: 300, y: 400}, e = {};
       K.zeit = 102; p1.hookAttached = true; p1.anchor = h; e.haengt = fotoHakenKreisPhase(h);
       p1.hookAttached = false; p1.anchor = null; K.zeit = 103; e.los = fotoHakenKreisPhase(h);
-      K.zeit = 114.9; e.fast = fotoHakenKreisPhase(h); K.zeit = 115.5; e.dann = fotoHakenKreisPhase(h);
+      K.zeit = 121.9; e.fast = fotoHakenKreisPhase(h); K.zeit = 123.5; e.dann = fotoHakenKreisPhase(h);
       K.zeit = null; return e; })()""")
-    assert los['haengt'] == -1 and los['los'] == -1 and los['fast'] == -1 and 0 < los['dann'] < 0.1, f'nach dem Loslassen nicht 12 s Pause / nicht von vorn: {los}'
+    assert los['haengt'] == -1 and los['los'] == -1 and los['fast'] == -1 and 0 < los['dann'] < 0.1, f'nach dem Loslassen nicht 20 s Pause / nicht von vorn: {los}'
     # Glut erlischt langsam (Nutzerwunsch „nicht direkt komplett aus“): nach 0,5 s außer Reichweite noch etwas da, nach 2 s aus
     gl = await g.ev("""(() => { const h = {}; fotoHakenGlutStand(h, true); const an = h._glut;
       h._glutT = performance.now() - 200; fotoHakenGlutStand(h, false); const halb = h._glut;
@@ -5985,12 +5988,15 @@ async def foto_tuer_fuesse_haken_kreis(g):
     assert gl['an'] == 1 and 0.6 < gl['halb'] < 0.99 and gl['aus'] == 0, f'Haken-Glut erlischt nicht langsam: {gl}'
     r = await g.ev("""(() => { let fuss = 0, kreis = []; const alt = fotoTuerFuesse, aF = fotoLookAktiv;
       fotoLookAktiv = () => true; fotoTuerFuesse = function(){ fuss++; }; FOTO_HAKEN_KREIS.zeit = FOTO_HAKEN_KREIS.pulsAn/2;
-      const arc = CanvasRenderingContext2D.prototype.arc;
-      CanvasRenderingContext2D.prototype.arc = function(x, y, rr){ if(Math.abs(rr - 200) < 1) kreis.push(String(this.strokeStyle)); return arc.apply(this, arguments); };
-      try { draw(); p1.x = 300; p1.y = 520; draw(); } finally { CanvasRenderingContext2D.prototype.arc = arc; fotoTuerFuesse = alt; fotoLookAktiv = aF; FOTO_HAKEN_KREIS.zeit = null; }
+      // Foto-Look: Haken-Ring = Herbstblätter (fotoHakenKreis), gleich ob in Reichweite oder nicht; kein farbiger Comic-Kreis (arc mit Radius 200)
+      const arc = CanvasRenderingContext2D.prototype.arc, aK = fotoHakenKreis; let comic = 0;
+      fotoHakenKreis = function(){ kreis.push(1); return aK.apply(this, arguments); };
+      CanvasRenderingContext2D.prototype.arc = function(x, y, rr){ if(Math.abs(rr - 200) < 1) comic++; return arc.apply(this, arguments); };
+      try { draw(); p1.x = 300; p1.y = 520; draw(); } finally { CanvasRenderingContext2D.prototype.arc = arc; fotoTuerFuesse = alt; fotoLookAktiv = aF; fotoHakenKreis = aK; FOTO_HAKEN_KREIS.zeit = null; }
+      if(comic) kreis.push('comic');
       return {fuss, kreis}; })()""")
     assert r['fuss'] >= 1, f'Tür ohne Füße im Foto-Look: {r}'
-    assert len(r['kreis']) >= 2 and len(set(r['kreis'])) == 1, f'Haken-Kreis fehlt oder verfärbt sich: {r}'
+    assert len(r['kreis']) >= 2 and 'comic' not in r['kreis'], f'Haken-Ring fehlt oder farbiger Comic-Kreis im Foto-Look: {r}'
     # Füße nur, wo etwas anliegt (Nutzerwunsch): Tür steht auf dem Boden, oben frei; liegende Tür zwischen zwei Wänden
     await g.load(level([ground(0, 680, 3000), {'x': 1000, 'y': 400, 'w': 40, 'h': 120, 'type': 'wall'}, {'x': 1160, 'y': 400, 'w': 40, 'h': 120, 'type': 'wall'}],
                        {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
