@@ -1,7 +1,6 @@
 // 12c-foto-material.js – Teil des Spiels "Monchichi Koop".
 // Alle js/*.js-Dateien teilen sich einen gemeinsamen Gültigkeitsbereich (klassische <script>-Tags,
 // keine Module) und werden in index.html in fester Reihenfolge geladen.
-// Die Werkstatt (werkstatt.html) lädt diese Datei ebenfalls – beim Laden darum nichts vom Spiel benutzen.
 
 // ---------- Foto-Material für Boden und Wand (Nutzerwunsch 04.11.: fotorealistischer Look, Schritt 2) ----------
 // Boden und Wand behalten ihre Formen aus 12-welt-zeichnen.js (Raster, runde Ecken, Pfade je Stück). Liegt eine
@@ -10,18 +9,16 @@
 //  - wand:  Inneres der Wand (nahtlos in beide Richtungen),
 //  - kante: Gras-/Moos-Streifen auf jeder freien Oberkante (Boden UND Wand; nahtlos nach links/rechts, oben durchsichtig).
 // Statt der Comic-Kontur gibt es dann eine dünne, weiche Kontur. Fehlt eine Textur, bleibt dort der alte Look.
-// Herkunft je Textur: zuerst eine Probe aus der Werkstatt (localStorage 'monchichi.werkstatt.<id>', nur in diesem Browser),
-// sonst die Datei assets/texturen/<id>.webp. Gilt wie der Foto-Hintergrund (11c) nur in der Dschungel-Welt und nur,
+// Herkunft je Textur: die Datei assets/texturen/<id>.webp (die Werkstatt-Seite wurde auf Nutzerwunsch gelöscht). Gilt wie der Foto-Hintergrund (11c) nur in der Dschungel-Welt und nur,
 // solange der Foto-Look an ist (Taste B / Optionen). Ganz entfernen: diese Datei + Eintrag in index.html + die zwei
 // Aufrufe in 12-welt-zeichnen.js (streifen, fotoMatUeber).
-// Maße: Bildpunkte der Textur (w × h) und wie groß sie in der Welt ist (weltB × weltH, 1 Kästchen = 40).
+// Maße: wie groß ein Texturbild in der Welt ist (weltB × weltH, 1 Kästchen = 40); y: auch senkrecht wiederholen.
 const FOTO_MAT_TEXTUREN = {
-  // Erde/Wand: ein Bild = 140×140 Welt-px (3,5 Kästchen). Nutzerwunsch: Kachelgröße wie in der ersten Werkstatt-
-  // Vorschau (dort ~175 Bildschirmpunkte je Bild = im Vollbild 1920 rund 140 Welt-px); 240 und 480 waren zu grob.
-  erde:  {name: 'Erde',            w: 1024, h: 1024, weltB: 140, weltH: 140, x: true, y: true},
+  // Erde: ein Bild = 140×140 Welt-px (3,5 Kästchen) – Nutzerwunsch feine Kachelgröße (240 und 480 waren zu grob)
+  erde:  {weltB: 140, weltH: 140, y: true},
   // Wand 150: die Steine aus dem Testbild des Nutzers (Säulen, 112 Bildpunkte ≙ 150 Welt-px) erscheinen 1:1 so groß
-  wand:  {name: 'Wand',            w: 1024, h: 1024, weltB: 150, weltH: 150, x: true, y: true},
-  kante: {name: 'Gras-/Moos-Kante', w: 1024, h: 256,  weltB: 320, weltH: 80,  x: true, y: false},
+  wand:  {weltB: 150, weltH: 150, y: true},
+  kante: {weltB: 320, weltH: 80,  y: false},
 };
 // Gras-Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber ragt Gras hoch)
 const FOTO_MAT_KANTE = {ueber: 32, weltH: FOTO_MAT_TEXTUREN.kante.weltH};
@@ -29,9 +26,11 @@ const FOTO_MAT_KONTUR = 'rgba(14,12,8,.55)', FOTO_MAT_KONTUR_B = 2.2;   // weich
 // (Schatten innen am Rand entfernt – Nutzer: „wie ein Schlagschatten nach innen“)
 
 const fotoMat = {bilder: {}, muster: {}};
+// (window.fotoMatTestQuellen: nur für automatische Tests – eigene Bilder statt der Dateien)
 function fotoMatQuelle(id){
-  let probe = null; try { probe = localStorage.getItem('monchichi.werkstatt.' + id); } catch(e){}
-  return probe || ('assets/texturen/' + id + '.webp?v=' + (window.__ladeZeit || (window.__ladeZeit = Date.now())));
+  const T = window.fotoMatTestQuellen;
+  if(T) return T[id] || 'assets/texturen/fehlt-im-test.webp';
+  return 'assets/texturen/' + id + '.webp?v=' + (window.__ladeZeit || (window.__ladeZeit = Date.now()));
 }
 // Textur laden (einmal); null, solange sie lädt oder fehlt
 function fotoMatBild(id){

@@ -5331,15 +5331,16 @@ async def foto_hintergrund(g):
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
 
 FOTO_PROBE_JS = """(() => { const bild = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d')); return c.toDataURL('image/png'); };
-  localStorage.setItem('monchichi.werkstatt.erde', bild(64, 64, q => { q.fillStyle = '#5a3a20'; q.fillRect(0, 0, 64, 64); }));
-  localStorage.setItem('monchichi.werkstatt.wand', bild(64, 64, q => { q.fillStyle = '#607080'; q.fillRect(0, 0, 64, 64); }));
-  localStorage.setItem('monchichi.werkstatt.kante', bild(64, 16, q => { q.fillStyle = '#30a040'; q.fillRect(0, 6, 64, 6); }));
+  window.fotoMatTestQuellen = {
+    erde: bild(64, 64, q => { q.fillStyle = '#5a3a20'; q.fillRect(0, 0, 64, 64); }),
+    wand: bild(64, 64, q => { q.fillStyle = '#607080'; q.fillRect(0, 0, 64, 64); }),
+    kante: bild(64, 16, q => { q.fillStyle = '#30a040'; q.fillRect(0, 6, 64, 6); })};
   fotoMat.bilder = {}; fotoMat.muster = {}; })()"""
 
 @test
 async def foto_material(g):
-    """Foto-Material (Nutzerwunsch 04.11., js/12c-foto-material.js): liegen Texturen vor (hier Werkstatt-Proben im
-    localStorage), legt das Spiel im Foto-Look Erde/Wand/Gras-Kante über Boden und Wand (Kante auf jeder freien
+    """Foto-Material (Nutzerwunsch 04.11., js/12c-foto-material.js): liegen Texturen vor (hier Test-Bilder über
+    window.fotoMatTestQuellen), legt das Spiel im Foto-Look Erde/Wand/Gras-Kante über Boden und Wand (Kante auf jeder freien
     Oberkante, auch auf Wänden), weiche Kontur statt Comic-Linie; die grünen Comic-Pflanzen am Boden entfallen im Foto-Look
     immer (Nutzerwunsch); ohne Texturen sonst wie bisher, im Comic-Look (Taste B) alles wie bisher. Zeichnen ändert keinen Spielzustand."""
     fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
@@ -5370,7 +5371,8 @@ async def foto_material(g):
     await g.ev("fotoHg.an = false")
     aus = await g.ev(pruefen)
     assert aus['kontur'] >= 1 and aus['deko'] == 1, f'im Comic-Look wie bisher: {aus}'
-    await g.ev("['erde', 'wand', 'kante'].forEach(id => localStorage.removeItem('monchichi.werkstatt.' + id)); localStorage.removeItem('monchichi.fotoHintergrund'); fotoHg.an = null; fotoMat.bilder = {}; fotoMat.muster = {}; menuScreen = null")
+    assert await g.ev("delete window.fotoMatTestQuellen, fotoMatQuelle('wand').startsWith('assets/texturen/wand.webp')"), 'im Spiel kommt die Wand aus der Datei'
+    await g.ev("localStorage.removeItem('monchichi.fotoHintergrund'); fotoHg.an = null; fotoMat.bilder = {}; fotoMat.muster = {}; menuScreen = null")
     await g.p.unroute('**/assets/texturen/**')
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
 
@@ -5392,44 +5394,6 @@ async def foto_look_ohne_farbfilter(g):
     aus = await g.ev("fotoHg.an = false, 0") or await g.ev(pruefen)
     assert 'vignette' in aus, f'im Comic-Look muss die Vignette bleiben: {aus}'
     await g.ev("try { localStorage.removeItem('monchichi.fotoHintergrund'); } catch(e){} fotoHg.an = null; menuScreen = null")
-
-@test
-async def werkstatt_seite(g):
-    """Werkstatt (werkstatt.html): je Textur Vorlage in Zielgröße, Text für ChatGPT, Bild einlesen -> Zielgröße, Nähte
-    glätten (linker und rechter Rand passen danach zusammen, Erde/Wand auch oben/unten), Gras-Kante unten durchsichtig
-    (blendet in die Erde), ohne durchsichtigen Hintergrund oben ausgeblendet; Probe landet im localStorage."""
-    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
-    srv = webserver(); await g.p.goto(srv.url + 'werkstatt.html'); await g.p.wait_for_timeout(300)
-    r = await g.ev("""(() => { const bild = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); return c; };
-      // harte Kanten: links hell, rechts dunkel, oben hell -> ohne Glätten große Naht
-      const quelle = bild(800, 600, (q, w, h) => { const g2 = q.createLinearGradient(0, 0, w, 0); g2.addColorStop(0, '#e0c090'); g2.addColorStop(1, '#201008'); q.fillStyle = g2; q.fillRect(0, 0, w, h); q.fillStyle = '#ffffff'; q.fillRect(0, 0, w, 20); });
-      const naht = (E, quer) => { const q = E.getContext('2d'), n = quer ? E.height : E.width;
-        const a = quer ? q.getImageData(0, 0, 1, n).data : q.getImageData(0, 0, n, 1).data, b = quer ? q.getImageData(E.width - 1, 0, 1, n).data : q.getImageData(0, E.height - 1, n, 1).data;
-        let d = 0; for(let i = 0; i < a.length; i += 4) d += Math.abs(a[i] - b[i]); return d/(a.length/4); };
-      const e = {};
-      for(const id of ['erde', 'wand', 'kante']){
-        const T = FOTO_MAT_TEXTUREN[id], W = ws[id]; W.quelle = quelle;
-        W.el.glaetten.checked = false; wsVerarbeiten(id); const roh = naht(W.ergebnis, true);
-        W.el.glaetten.checked = true; wsVerarbeiten(id);
-        e[id] = {groesse: [W.ergebnis.width, W.ergebnis.height], ziel: [T.w, T.h], roh, glatt: naht(W.ergebnis, true), glattY: T.y ? naht(W.ergebnis, false) : null,
-                 knopf: !W.el.probe.disabled, text: document.querySelectorAll('textarea')[Object.keys(FOTO_MAT_TEXTUREN).indexOf(id)].value.includes('KACHELBAR')};
-      }
-      const K = ws.kante, kq = K.ergebnis.getContext('2d'), Tk = FOTO_MAT_TEXTUREN.kante;
-      K.el.oben.checked = true; wsVerarbeiten('kante');
-      e.kanteUnten = kq.getImageData(500, Tk.h - 1, 1, 1).data[3]; e.kanteOben = K.ergebnis.getContext('2d').getImageData(500, 0, 1, 1).data[3];
-      e.kanteLinie = K.ergebnis.getContext('2d').getImageData(500, Math.round(Tk.h*FOTO_MAT_KANTE.ueber/Tk.weltH) + 4, 1, 1).data[3];
-      e.vorlagen = Object.keys(FOTO_MAT_TEXTUREN).map(id => { const c = wsVorlage(id); return [c.width, c.height]; });
-      localStorage.setItem('monchichi.werkstatt.erde', wsDaten('erde')); e.probe = (localStorage.getItem('monchichi.werkstatt.erde') || '').startsWith('data:image/');
-      localStorage.removeItem('monchichi.werkstatt.erde');
-      return e; })()""")
-    for id in ('erde', 'wand', 'kante'):
-        x = r[id]
-        assert x['groesse'] == x['ziel'] and x['knopf'] and x['text'], f'{id}: {x}'
-        assert x['roh'] > 60 and x['glatt'] < 6, f'{id}: Naht links/rechts nicht geglättet {x}'
-        if x['glattY'] is not None: assert x['glattY'] < 6, f'{id}: Naht oben/unten nicht geglättet {x}'
-    assert r['kanteUnten'] <= 8 and r['kanteOben'] == 0 and r['kanteLinie'] > 200, f'Gras-Kante ausblenden falsch: {r}'
-    assert r['vorlagen'] == [[1024, 1024], [1024, 1024], [1024, 256]] and r['probe'], f'{r}'
-    assert not fehler, f'Fehler: {fehler}'
 
 @test
 async def neue_figuren_kante_wackeln(g):

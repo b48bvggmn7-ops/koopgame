@@ -56,7 +56,7 @@
     `tierLeuchtenNacht` in 20, Vogel-Sitzplätze `vogelSitzplaetze` in 17) · 11c Foto-Hintergrund (Nebelwald-Panorama
     `assets/hintergrund/nebelwald-1…4.webp` als Endlos-Schleife statt 11b, abschaltbar in Optionen, `fotoHgZeichnen` aus `drawBackground`) · 11a Welt-Details (Details in der mittleren Ebene, Fackeln/Tropfen/
     Asche) · 12a hohler Baum (Start/Ziel im Dschungel, Tür beim Sieg) · 12c Foto-Material (Erde/Wand/Gras-Kante als Foto-Texturen über Boden/Wand, `fotoMatUeber` aus `matPfadeZeichnen`,
-    Texturen `assets/texturen/<id>.webp` oder Werkstatt-Probe; Werkstatt-Seite `werkstatt.html` + `werkstatt/werkstatt.js`) · 12b Haken-Aussehen (Ring an Liane/Kette je Welt, Aufhängung an Material darüber `hakenAufhaengung`) · 12 Welt zeichnen (Neues Aussehen: Boden/Wand als EINE Schicht – Raster `Tc`, je Abschnitt `MAT_STUECK` einmal
+    Texturen `assets/texturen/<id>.webp`) · 12b Haken-Aussehen (Ring an Liane/Kette je Welt, Aufhängung an Material darüber `hakenAufhaengung`) · 12 Welt zeichnen (Neues Aussehen: Boden/Wand als EINE Schicht – Raster `Tc`, je Abschnitt `MAT_STUECK` einmal
     zu Zeichenpfaden berechnet (`matPfadeBauen`), pro Bild nur gefüllt (`materialZeichnen`); KEINE vorgezeichneten Bilder
     dafür: Chrome hat je Bild ~32 MB Bild-Budget und der Hintergrund braucht fast alles. Bewegliche Plattformen `pieceDraw`,
     Bröckelboden `broeckelKachel`, Türen `drawGate` (zusammenhängend = eine Tür); Moos/Lianen an hohen Flächen `hoheFlaechen`) · 13 Anzeige/Leistung ·

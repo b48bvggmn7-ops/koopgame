@@ -2139,31 +2139,22 @@ vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
 - Speicher: je Bild ein vorgezeichnetes Stück (~6 MB); jedes ist breiter als der Bildschirm, darum sind pro Bild
   höchstens 2 sichtbar (~12 MB). Test foto_hintergrund.
 
-### Foto-Material für Boden und Wand + Werkstatt (Nutzerwunsch 04.11. – Schritt 2 zum fotorealistischen Look)
-Code in `js/12c-foto-material.js` (Spiel) und `werkstatt.html` + `werkstatt/werkstatt.js` (Werkstatt). Reine Optik.
+### Foto-Material für Boden und Wand (Nutzerwunsch 04.11. – Schritt 2 zum fotorealistischen Look)
+Code in `js/12c-foto-material.js`. Reine Optik. (Die Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf
+Nutzerwunsch wieder gelöscht – „brauchen wir nicht“.)
 - **Im Spiel:** Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher). Liegt eine Foto-Textur vor, wird sie
-  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, 1024×1024 = 140×140 Welt-px = 3,5 Kästchen;
-  Nutzerwunsch: Kachelgröße wie in der ersten Werkstatt-Vorschau, 240/480 waren zu grob; die Textur wird einmal
-  sauber auf Bildschirmgröße verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres der Wände, 150×150
-  Welt-px; Datei `assets/texturen/wand.webp` = die Steine der Säulen aus dem Testbild des Nutzers, 1:1 in derselben
-  Größe, nahtlos gemacht und stark nachgeschärft – Unschärfe-Maske grob + fein, nahtlos über 3×3-Kacheln) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
-  und Wand; die Oberfläche liegt 32 Welt-px unter dem oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine
-  dünne, weiche dunkle Kontur (kein Schatten innen am Rand – wirkte wie ein Schlagschatten, Nutzerwunsch). Fehlt eine Textur, bleibt dort der alte
-  Look. Gilt nur in der Dschungel-Welt und nur im Foto-Look (Taste B / Optionen schalten Hintergrund UND Material).
+  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, ein Bild = 140×140 Welt-px = 3,5 Kästchen;
+  Nutzerwunsch feine Kachelgröße, 240/480 waren zu grob; jede Textur wird einmal sauber auf Bildschirmgröße
+  verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres der Wände, 150×150 Welt-px; Datei
+  `assets/texturen/wand.webp` = die Steine der Säulen aus dem Testbild des Nutzers, 1:1 in derselben Größe, nahtlos
+  gemacht und stark nachgeschärft – Unschärfe-Maske grob + fein, nahtlos über 3×3-Kacheln) und **Gras-/Moos-Kante**
+  (ein Bild = 320×80 Welt-px, auf jeder freien Oberkante von Boden und Wand; die Oberfläche liegt 32 Welt-px unter dem
+  oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine dünne, weiche dunkle Kontur (kein Schatten innen am
+  Rand – wirkte wie ein Schlagschatten, Nutzerwunsch). Fehlt eine Textur, bleibt dort der alte Look. Gilt nur in der
+  Dschungel-Welt und nur im Foto-Look (Taste B / Optionen schalten Hintergrund UND Material).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
   Foto-Look nie gezeichnet (unabhängig von den Texturen); Tiere und ihre Regeln bleiben. Im Comic-Look wie bisher.
-- **Herkunft der Texturen:** zuerst eine Probe aus der Werkstatt (localStorage `monchichi.werkstatt.<id>`, nur in diesem
-  Browser), sonst `assets/texturen/<id>.webp` (id = erde, wand, kante).
-- **Werkstatt** (`werkstatt.html`): je Textur 1) Vorlage in Zielgröße mit Kästchen-Raster und Figur zum Größenvergleich
-  (Kante: rote Linie = Bodenoberfläche, gestrichelt = höchstes Gras) zum Herunterladen, 2) fertiger Text für ChatGPT zum
-  Kopieren, 3) Bild hineinziehen/auswählen -> auf Zielgröße zugeschnitten, „Nähte glätten“ (an: Ränder werden mit den
-  um die halbe Größe verschobenen Bildern weich überblendet, danach nahtlos kachelbar; Erde/Wand in beide Richtungen,
-  Kante nach links/rechts), Kante unten weich in die Erde ausgeblendet und – ohne durchsichtigen Hintergrund –
-  oben weich ausgeblendet, 4) Vorschau in echter Spielgröße (wie im Vollbild 1920 breit, mehrfach nebeneinander,
-  mit Figur zum Vergleich; Kante auf Nebelwald + Erde), „Im Spiel ausprobieren“
-  (Probe speichern + Probe-Level `levels/test/werkstatt.json` öffnen), „Probe entfernen“, „Herunterladen“,
-  „☁ Auf GitHub speichern“ (assets/texturen/<id>.webp nach main; GitHub-Schlüssel wie im Editor). Tests foto_material,
-  werkstatt_seite.
+- **Texturen:** Dateien `assets/texturen/<id>.webp` (id = erde, wand, kante; derzeit nur wand). Test foto_material.
 
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:
