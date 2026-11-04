@@ -315,7 +315,12 @@ const FOTO_PFLANZEN = [
 // Nutzer: „mehr Pflanzen, eher in den Farben vom Boden/Moos“ -> dichter (vorher 260–560) und beim Laden eingefärbt
 const FOTO_PFLANZEN_ABSTAND = [150, 340];   // Welt-px zwischen zwei Pflanzen (zufällig dazwischen)
 const FOTO_PFLANZEN_TOENUNG = {mal: 'rgb(150,160,118)', moos: 'rgba(72,88,44,.22)'};   // multiplizieren (dunkler, olivgrün) + Moos-Schimmer
-const FOTO_PFLANZEN_FUSS = 0.035;            // so viel (Anteil der Höhe) steckt der Fuß im Moos
+// Einbindung (Nutzer: „die Büsche stehen irgendwie in der Gegend rum, sehen nicht passend aus“): Fuß tiefer im Moos, das
+// Moos wird VOR den Fuß gezeichnet, kleine Gruppen statt Einzelpflanzen, Kontaktschatten, Nebelschleier, leichter Wind
+const FOTO_PFLANZEN_FUSS = 0.09;             // so viel (Anteil der Höhe) steckt der Fuß im Moos
+const FOTO_PFLANZEN_NEBEL = 'rgba(205,212,208,.13)';   // derselbe Dunst wie in der Umgebung (beim Laden darübergelegt)
+const FOTO_PFLANZEN_WIND = 0.016;            // so weit (Bogenmaß) wiegen sie sich höchstens
+const FOTO_PFLANZEN_BEGLEITER = [0, 2];      // so viele kleinere Pflanzen stehen bei jeder großen
 const fotoPfl = {bilder: {}, liste: null, quelle: null};
 function fotoPflBild(name){
   let B = fotoPfl.bilder[name];
@@ -328,6 +333,7 @@ function fotoPflToenen(img){
   q.drawImage(img, 0, 0);
   q.globalCompositeOperation = 'multiply'; q.fillStyle = FOTO_PFLANZEN_TOENUNG.mal; q.fillRect(0, 0, c.width, c.height);
   q.globalCompositeOperation = 'source-over'; q.fillStyle = FOTO_PFLANZEN_TOENUNG.moos; q.fillRect(0, 0, c.width, c.height);
+  q.fillStyle = FOTO_PFLANZEN_NEBEL; q.fillRect(0, 0, c.width, c.height);
   q.globalCompositeOperation = 'destination-in'; q.drawImage(img, 0, 0);
   return c;
 }
@@ -346,25 +352,41 @@ function fotoPflanzenAufbauen(){
     const y = L.rr*40, xa = L.c0*40, xb = L.c1*40 + 40;
     for(let x = xa + 20 + r()*FOTO_PFLANZEN_ABSTAND[0]*0.6; x < xb; x += FOTO_PFLANZEN_ABSTAND[0] + r()*(FOTO_PFLANZEN_ABSTAND[1] - FOTO_PFLANZEN_ABSTAND[0])){
       let w = r()*summe, i = 0; while(w >= FOTO_PFLANZEN[i].oft){ w -= FOTO_PFLANZEN[i].oft; i++; }
-      const P = FOTO_PFLANZEN[i], img = bilder[i], h = P.hoehe*(0.85 + r()*0.3), b = h*img.width/img.height, halb = b*0.4;
-      if(x - halb < xa || x + halb > xb) continue;                                   // ganz auf der Fläche
-      let ok = !sperre(x, y) && !sperre(x - halb, y) && !sperre(x + halb, y) && !(typeof bodenNahStart === 'function' && bodenNahStart(x));
-      for(let c = Math.floor((x - halb)/40); ok && c <= Math.floor((x + halb)/40); c++)   // darüber frei
-        for(let rr = L.rr - 1; rr >= Math.floor((y - h)/40); rr--) if(!frei(c, rr)){ ok = false; break; }
-      if(ok) liste.push({img, x, y, b, h, spiegel: r() < 0.5});
+      // passt eine Pflanze (Bild-Nr. k, Höhe h) bei px? (ganz auf der Fläche, darüber frei, nicht an Spielobjekten)
+      const passt = (k, px, h) => { const b = h*bilder[k].width/bilder[k].height, halb = b*0.4;
+        if(px - halb < xa || px + halb > xb) return null;
+        if(sperre(px, y) || sperre(px - halb, y) || sperre(px + halb, y) || (typeof bodenNahStart === 'function' && bodenNahStart(px))) return null;
+        for(let c = Math.floor((px - halb)/40); c <= Math.floor((px + halb)/40); c++)
+          for(let rr = L.rr - 1; rr >= Math.floor((y - h)/40); rr--) if(!frei(c, rr)) return null;
+        return {img: bilder[k], x: px, y, b, h, spiegel: r() < 0.5, ph: r()*6.28, tiefe: 0}; };
+      const haupt = passt(i, x, FOTO_PFLANZEN[i].hoehe*(0.85 + r()*0.3)); if(!haupt) continue;
+      liste.push(haupt);
+      // Begleiter: kleinere Farne/Büsche dicht daneben, teils dahinter (dunkler), teils davor
+      const n = FOTO_PFLANZEN_BEGLEITER[0] + Math.floor(r()*(FOTO_PFLANZEN_BEGLEITER[1] - FOTO_PFLANZEN_BEGLEITER[0] + 1));
+      for(let k = 0; k < n; k++){
+        const j = Math.floor(r()*4), seite = r() < 0.5 ? -1 : 1, px = x + seite*(haupt.b*0.32 + 4 + r()*16);
+        const B = passt(j, px, FOTO_PFLANZEN[j].hoehe*(0.5 + r()*0.25)); if(!B) continue;
+        B.tiefe = r() < 0.5 ? -1 : 1; liste.push(B);
+      }
     }
   }
   return liste;
 }
-// Zeichnen (aus drawGroundDeco, 17-deko.js; Kamera: x - camX wie dort)
-function fotoPflanzenZeichnen(){
-  if(fotoPfl.quelle !== solids || !fotoPfl.liste){ const L = fotoPflanzenAufbauen(); if(!L) return; fotoPfl.liste = L; fotoPfl.quelle = solids; }
+// Zeichnen aus fotoMatUeber (q in Welt-Koordinaten, Kamera schon verschoben): NACH der Erde, VOR der Moos-Kante – das Moos
+// liegt so vor dem Fuß, die Pflanzen wachsen heraus. Hintere Begleiter zuerst (dunkler), dann die großen, dann vordere.
+// Wind: nur Zeichnen (Zeit aus der Uhr), kippt um den Fuß.
+function fotoPflanzenZeichnen(q){
+  if(fotoPfl.quelle !== solids || !fotoPfl.liste){ const L = fotoPflanzenAufbauen(); if(!L) return; fotoPfl.liste = L.sort((a, b) => a.tiefe - b.tiefe); fotoPfl.quelle = solids; }
+  const t = performance.now()/1000;
   for(const p of fotoPfl.liste){
-    const x = p.x - camX; if(x + p.b < -20 || x - p.b > VW + 20) continue;
-    const y0 = p.y - p.h*(1 - FOTO_PFLANZEN_FUSS);
-    ctx.save(); ctx.translate(x, 0); if(p.spiegel) ctx.scale(-1, 1);
-    ctx.drawImage(p.img, -p.b/2, y0, p.b, p.h);
-    ctx.restore();
+    if(p.x + p.b < camX - 20 || p.x - p.b > camX + VW + 20) continue;
+    const fuss = p.y + p.h*FOTO_PFLANZEN_FUSS*0.4;
+    q.save();
+    q.fillStyle = 'rgba(8,6,4,.32)'; q.beginPath(); q.ellipse(p.x, p.y + 1, p.b*0.3, 2.6, 0, 0, 7); q.fill();   // Kontaktschatten am Boden
+    q.translate(p.x, fuss); q.rotate(Math.sin(t*0.9 + p.ph)*FOTO_PFLANZEN_WIND*(p.h/60)); if(p.spiegel) q.scale(-1, 1);
+    if(p.tiefe < 0) q.filter = 'brightness(0.78)';
+    q.drawImage(p.img, -p.b/2, p.y + p.h*FOTO_PFLANZEN_FUSS - fuss - p.h, p.b, p.h);   // Unterkante steckt FUSS tief im Moos
+    q.restore();
   }
 }
 // aus matPfadeZeichnen (12): Texturen über die gezeichnete Füllung legen; true = erledigt (dann keine Comic-Kontur)
@@ -376,6 +398,8 @@ function fotoMatUeber(q, V){
   // Reihenfolge: Erde, Moos-Kante, Mauer (steht davor – das Moos endet hinter den Randsteinen statt abgeschnitten),
   // zuletzt das Moos am Fuß der Mauer (wächst über die untersten Steine)
   if(erde){ q.fillStyle = erde; q.fill(PG); q.fillStyle = 'rgba(0,0,0,' + FOTO_MAT_ERDE_DUNKEL + ')'; q.fill(PG); }
+  // Pflanzen zwischen Erde und Moos-Kante (nur im Hauptbild, nicht bei Scheinwand-Flächen)
+  if(typeof matSicht !== 'undefined' && V === matSicht.V && fotoMatOhneDeko()) fotoPflanzenZeichnen(q);
   if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
   if(wand){
     q.fillStyle = wand;

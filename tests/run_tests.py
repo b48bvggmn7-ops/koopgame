@@ -4652,7 +4652,8 @@ async def haken_weich_mitnehmen(g):
       let vmax = 0; for(let i = 0; i < 200; i++){ st(); if(P.hookAttached) vmax = Math.max(vmax, Math.hypot(P.vx, P.vy)); }
       e.vmax = vmax; e.dran = P.hookAttached;
       let seeds = []; const alt = lianeZeichnen; lianeZeichnen = (...a) => { seeds.push(a[6]); return alt(...a); };
-      try { draw(); st(); st(); st(); draw(); } finally { lianeZeichnen = alt; KEYS[P.keys.hook] = false; menuScreen = null; }
+      fotoHg.an = false;   // Comic-Liane prüfen (im Foto-Look Holz-Liane, 12e)
+      try { draw(); st(); st(); st(); draw(); } finally { lianeZeichnen = alt; KEYS[P.keys.hook] = false; menuScreen = null; fotoHg.an = null; }
       e.seeds = [...new Set(seeds)]; return e; })()""")
     assert r['anfang'] < 2.5 and r['mitte'] > 2*r['anfang'] + 2, f'nicht weich (an den Enden langsam, in der Mitte schnell): {r}'
     assert r['ymax'] < 0.01, f'Haken fährt nicht gerade (pendelt): {r}'
@@ -5777,28 +5778,38 @@ async def seil_abflug_mit_schwung(g):
 
 @test
 async def liane_volle_laenge(g):
-    """Nutzerwunsch „die Liane soll immer erst mal in den weitesten Radius gehen“ (29.10. kurz zurückgenommen, 30.10. wieder an:
-    LIANE_VOLLE_LAENGE = true): in der Luft gegriffen gibt die Liane sofort bis zur Reichweite nach – aber nie so weit, dass
-    er unter dem Haken auf Boden, Stacheln, Lava oder in eine Flammen-Falle kommt (LIANE_BODEN_ABSTAND)."""
-    assert await g.ev("LIANE_VOLLE_LAENGE") is True
+    """Liane beim Greifen: Nutzerwunsch erst „immer erst mal in den weitesten Radius“ (LIANE_VOLLE_LAENGE an), dann
+    „ohne Maximal-Länge ausprobieren“ (jetzt aus): in der Luft gegriffen bleibt die Liane so lang wie der Abstand beim
+    Greifen (kein Hineinfallen bis zur Reichweite). Ist die Einstellung an, nie bis auf Boden/Stacheln/Lava/Flamme
+    (LIANE_BODEN_ABSTAND)."""
+    assert await g.ev("LIANE_VOLLE_LAENGE") is False
     await g.load(level([ground(0, 680, 900), ground(1300, 680, 900)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680},
-                       hooks=[{'x': 500, 'y': 200, 'radius': 260}, {'x': 1100, 'y': 400, 'radius': 400}],
-                       spikes=[{'x': 1100, 'y': 680, 'w': 40, 'h': 40}]))
-    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const P = p1, e = {};
+                       hooks=[{'x': 500, 'y': 200, 'radius': 260}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const P = p1, h = hooks[0];
       const st = () => { stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; };
-      const greif = (h, dx, dy) => { P.x = h.x + dx; P.y = h.y + dy + P.h*0.6; P.vx = 0; P.vy = 0; P.grounded = false; P.hookAttached = false; P.lianeSperre = 0;
-        KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); const L = P.ropeLen; for(let i = 0; i < 60; i++) st(); return {L: Math.round(L), haengt: P.hookAttached, tot: !!deathState}; };
-      e.frei = greif(hooks[0], 20, 50);      // viel Luft: volle Reichweite
-      e.stacheln = greif(hooks[1], 20, 50);  // Stacheln 280 px darunter, Reichweite 400: kürzer
-      KEYS.KeyG = false; menuScreen = null; return e; })()""")
-    assert r['frei']['haengt'] and r['frei']['L'] == 260, f'nicht sofort bis zur Reichweite nachgegeben: {r}'
-    s = r['stacheln']
-    assert s['haengt'] and not s['tot'] and s['L'] < 240 - 19, f'fällt in die Stacheln: {r}'
+      P.x = h.x + 20; P.y = h.y + 50 + P.h*0.6; P.vx = 0; P.vy = 0; P.grounded = false; P.hookAttached = false; P.lianeSperre = 0;
+      KEYS.KeyG = true; KEYS.KeyG_pressed = true; st(); const L = P.ropeLen; for(let i = 0; i < 60; i++) st();
+      const e = {L: Math.round(L), spaeter: Math.round(P.ropeLen), haengt: P.hookAttached}; KEYS.KeyG = false; menuScreen = null; return e; })()""")
+    assert r['haengt'] and r['L'] < 70 and r['spaeter'] < 70, f'Liane fällt doch bis zur Reichweite: {r}'
     # Flammen-Falle nach oben im Boden unter dem Haken: die Liane bleibt über der Flamme (FLAMME_LAENGE Kästchen)
     await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 100, 'y': 680}, hooks=[{'x': 1000, 'y': 200, 'radius': 400}],
                        traps=[{'x': 980, 'y': 640, 'art': 'flamme', 'richtung': 'o', 'takt': 2, 'versatz': 0}]))
     frei = await g.ev("lianeFreiUnten(hooks[0], p1) + hooks[0].y + p1.h*0.6")   # tiefste Füße
     assert frei < 640 - await g.ev('FLAMME_LAENGE')*40, f'Liane hängt in die Flamme: Füße bis {frei}'
+
+@test
+async def liane_nah_ruhiger(g):
+    """Nutzerwunsch: beim Ranziehen an der Liane kleinere Schritte, je näher am Haken; je näher, desto weniger Pendeln
+    (LIANE2_ZIEH_NAH, LIANE2_RUHIG_NAH, LIANE2_NAH_BIS – nur Liane 2, alte Seil-Physik unverändert)."""
+    r = await g.ev("""(() => { const A = {x: 0, y: 0}, lauf = (len, ziehen) => {
+        const S = {hx: len, hy: 0, vx: 0, vy: 0, len, ziel: len, max: 400, dehn: 0, frei: undefined};   // waagerecht ausgelenkt
+        const z0 = S.ziel; lianeKern(S, A, 0, ziehen, false); const zug = z0 - S.ziel;
+        let vmax = 0; for(let i = 0; i < 400; i++){ lianeKern(S, A, 0, false, false); S.hx += S.vx; S.hy += S.vy; if(i > 300) vmax = Math.max(vmax, Math.abs(Math.atan2(S.hx - A.x, S.hy - A.y))*180/Math.PI); }   // Ausschlag in Grad
+        return {zug, spaet: vmax}; };
+      return {weit: lauf(260, true), nah: lauf(70, true)}; })()""")
+    assert r['nah']['zug'] < r['weit']['zug']*0.6, f'nah am Haken keine kleineren Ranzieh-Schritte: {r}'
+    w, n = r['weit']['spaet'], r['nah']['spaet']
+    assert n < w*0.6, f'nah am Haken pendelt er nicht deutlich weniger (Ausschlag in Grad): {r}'
 
 @test
 async def liane_von_oben(g):
@@ -7852,6 +7863,122 @@ async def blattfloss_wind(g):
     finally:
         srv.shutdown()
 
+async def draisine_testlevel(g):
+    srv = webserver()
+    await g.p.goto(srv.url + 'index.html?testlevel=draisine')
+    await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && typeof draisinen !== 'undefined' && draisinen.length === 1 && menuScreen === null", timeout=10000)
+    return srv
+
+# Pump-Draisine: beide auf die Plattform stellen; pumpen(n, alle, wer) = n Schritte, wer (0 Affe, 1 Schwein) drückt alle k Schritte Springen
+DRAISINE_JS = KOOP_SCHRITTE + """ const D = draisinen[0];
+  const drauf = () => { stell(p1, D.x + 40, D.y); stell(p2, D.x + 120, D.y); for(let i = 0; i < 12; i++) st(); };
+  const pumpen = (n, alle, wer) => { for(let i = 0; i < n; i++){ for(const w of wer){ const P = w ? p2 : p1; if(i % alle === w*Math.floor(alle/2)) KEYS[P.keys.jump + '_pressed'] = true; } st(); } };"""
+
+@test
+async def draisine_pumpen_zu_zweit(g):
+    """Pump-Draisine (elemente/draisine.js, Testlevel draisine): nur wenn BEIDE darauf stehen, die Griff-Taste halten (Q / Num 7)
+    und beide immer wieder Springen drücken, fährt sie – zum weiter entfernten Ende (hier rechts) und nimmt beide mit. Pumpt nur
+    eine Figur oder hält nur eine den Griff: nichts. Am Ende hält sie an; nach der kurzen Pause schickt Pumpen sie zurück.
+    Mit gehaltenem Griff kein Springen und kein Laufen (Figur bleibt am Hebel), losgelassen sofort normal. Knarz-Ton je Stoß."""
+    srv = await draisine_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + DRAISINE_JS + """ const e = {};
+          try {
+            e.tasten = [p1.keys.griff, p2.keys.griff, draisineTastenText(p1), draisineTastenText(p2)];
+            drauf(); e.traegt = p1.grounded && p2.grounded && p1.standingOn === D && p2.standingOn === D;
+            // nur der Affe hält und pumpt
+            KEYS[p1.keys.griff] = true; pumpen(80, 7, [0]); e.nurAffe = D.x; e.kraftAffe = D.kraft[0];
+            // beide halten, nur das Schweinchen pumpt (Affe greift neu: seine Kraft von eben ist dann weg)
+            KEYS[p1.keys.griff] = false; st(); e.losGleichNull = D.kraft[0] === 0; KEYS[p1.keys.griff] = true;
+            KEYS[p2.keys.griff] = true; pumpen(80, 7, [1]); e.nurSchwein = D.x;
+            // beide halten, keiner pumpt: Springen gesperrt, Laufen gesperrt
+            const y0 = p1.y; let minY = 1e9; KEYS[p1.keys.right] = true;
+            for(let i = 0; i < 30; i++){ KEYS[p1.keys.jump + '_pressed'] = i === 3; KEYS[p1.keys.jump] = true; st(); minY = Math.min(minY, p1.y); }
+            KEYS[p1.keys.jump] = false; KEYS[p1.keys.right] = false;
+            e.keinSprung = minY >= y0 - 0.5 && p1.grounded; e.amHebel = Math.round(p1.x - (D.x + D.w/2)); e.schweinAmHebel = Math.round(p2.x - (D.x + D.w/2));
+            e.blickZumHebel = [p1.facing, p2.facing];
+            // beide pumpen: fährt nach rechts, beide fahren mit
+            const xa = D.x, pa = p1.x; pumpen(60, 7, [0, 1]); e.fahrt = D.x - xa; e.mit = Math.round((p1.x - pa) - (D.x - xa)); e.richtung = D.richtung;
+            let maxT = 0; for(let i = 0; i < 400 && D.x < D.x1; i++){ pumpen(1, 1, i % 7 === 0 ? [0] : i % 7 === 3 ? [1] : []); maxT = Math.max(maxT, D.tempo); }
+            e.maxTempo = maxT; e.ende = D.x; e.x1 = D.x1;
+            e.drauf = draisineDrauf(p1, D) && draisineDrauf(p2, D) && !deathState;
+            pumpen(10, 7, [0, 1]); e.stehtAmEnde = D.x === D.x1 && D.tempo === 0;   // Pause nach der Ankunft
+            pumpen(80, 7, [0, 1]); e.zurueck = D.x < D.x1 && D.richtung === -1;
+            // Griff los: sofort normal springen
+            KEYS[p1.keys.griff] = false; KEYS[p2.keys.griff] = false; for(let i = 0; i < 150; i++) st();
+            e.rolltAus = D.tempo === 0;
+            KEYS[p1.keys.jump] = true; KEYS[p1.keys.jump + '_pressed'] = true; st(); e.springt = p1.vy < 0; KEYS[p1.keys.jump] = false; for(let i = 0; i < 60; i++) st();
+            e.ton = SFX_LOG.includes('draisine');
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['tasten'][0] == 'KeyQ' and r['tasten'][1] == 'Numpad7' and 'Q halten' in r['tasten'][2] and 'Leertaste' in r['tasten'][2] \
+            and 'Num 7 halten' in r['tasten'][3] and 'Num 0' in r['tasten'][3], f'Griff-Tasten/Hinweis falsch: {r}'
+        assert r['traegt'], f'Draisine trägt nicht: {r}'
+        assert r['nurAffe'] == 800 and r['kraftAffe'] > 0.3, f'eine Figur allein darf nichts bewegen: {r}'
+        assert r['losGleichNull'] and r['nurSchwein'] == 800, f'nur eine pumpt: darf nichts bewegen: {r}'
+        assert r['keinSprung'], f'mit gehaltenem Griff darf man nicht springen: {r}'
+        assert abs(r['amHebel'] + 44) <= 2 and abs(r['schweinAmHebel'] - 44) <= 2 and r['blickZumHebel'] == [1, -1], f'Figuren stehen nicht am Hebel: {r}'
+        assert r['fahrt'] > 20 and r['richtung'] == 1 and abs(r['mit']) <= 1, f'fährt nicht zu zweit / nimmt nicht mit: {r}'
+        assert r['ende'] == r['x1'] and r['drauf'], f'nicht bis ans Ende gefahren / Figuren verloren: {r}'
+        assert 0 < r['maxTempo'] <= 3.0001, f'Tempo falsch: {r}'
+        assert r['stehtAmEnde'] and r['zurueck'], f'am Ende nicht angehalten / nicht zurück: {r}'
+        assert r['rolltAus'] and r['springt'], f'nach dem Loslassen nicht normal: {r}'
+        assert r['ton'], r
+    finally:
+        srv.shutdown()
+
+@test
+async def draisine_tempo_und_ausrollen(g):
+    """Pump-Draisine: schneller pumpen = schneller (zählt die langsamere Figur, höchstens DRAISINE_MAX); hört eine Figur auf
+    zu pumpen oder lässt den Griff los, rollt sie weich aus (nicht schlagartig). Neustart: zurück an den Anfang."""
+    srv = await draisine_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + DRAISINE_JS + """ const e = {};
+          try {
+            const lauf = (alle1, alle2) => { resetLevel(); for(let i = 0; i < 3; i++) st(); drauf(); KEYS[p1.keys.griff] = true; KEYS[p2.keys.griff] = true;
+              for(let i = 0; i < 70; i++){ if(i % alle1 === 0) KEYS[p1.keys.jump + '_pressed'] = true; if(i % alle2 === 2) KEYS[p2.keys.jump + '_pressed'] = true; st(); }
+              return D.tempo; };
+            e.schnell = lauf(5, 5); e.langsam = lauf(14, 14); e.gemischt = lauf(5, 14);
+            // einer hört auf: weich ausrollen
+            lauf(6, 6); const t0 = D.tempo; for(let i = 0; i < 40; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.nach40 = [t0, D.tempo];
+            for(let i = 0; i < 200; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.steht = D.tempo;
+            resetLevel(); for(let i = 0; i < 3; i++) st(); e.neu = D.x;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['schnell'] > r['langsam'] + 0.5 and r['schnell'] <= 3.0001, f'schneller pumpen ist nicht schneller: {r}'
+        assert abs(r['gemischt'] - r['langsam']) < 0.5, f'die langsamere Figur soll das Tempo bestimmen: {r}'
+        assert 0.3 < r['nach40'][1] < r['nach40'][0], f'rollt nicht weich aus: {r}'
+        assert r['steht'] == 0 and r['neu'] == 800, f'kommt nicht zum Stehen / Neustart falsch: {r}'
+    finally:
+        srv.shutdown()
+
+@test
+async def editor_draisine_ziehen(g):
+    """Editor: Pump-Draisine setzen und gedrückt halten – nach rechts ziehen stellt die Schiene ein (Plattform 4 Kästchen);
+    Spiel-Datei: Feld draisinen, Stehfläche = Boden des Kästchens; Spiel lädt sie als solid type 'draisine'."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)], 'hooks': [], 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        await ed_werkzeug(p, 'draisine')
+        box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+        zelle = lambda c, r: (box['x'] + (c*40 + 20)*k, box['y'] + ((r + 3)*40 + 20)*k)
+        x, y = zelle(5, 10)
+        await p.mouse.move(x, y); await p.mouse.down()
+        await p.mouse.move(*zelle(17, 10), steps=6)   # bis Spalte 17: 5..8 Plattform, Schiene 17 - 8 = 9
+        await p.mouse.up()
+        r = await p.evaluate("({n: elementPunkte.draisinen.length, s: elementPunkte.draisinen[0].schiene, aus: JSON.parse(exportLevel()).draisinen})")
+        assert r['n'] == 1 and r['s'] == 9, f'Ziehen stellt die Schiene nicht ein: {r}'
+        assert r['aus'] == [{'x': 200, 'y': 400, 'schiene': 9}], r
+    finally:
+        srv.shutdown()
+    await p.goto(GAME); await p.wait_for_timeout(400)
+    await g.load(level([ground(0, 480, 200, 240)], {'x': 100, 'y': 480}, {'x': 60, 'y': 480}, welt='dschungel', draisinen=[{'x': 200, 'y': 440, 'schiene': 9}]))
+    s = await g.ev("(() => { const s = solids.find(o => o.type === 'draisine'); draw(); return s && [s.x, s.y, s.w, s.x1]; })()")
+    assert s == [200, 480, 160, 560], s
+
 @test
 async def tasten_belegen_menue(g):
     """Nacht-Ausbau: Optionen → Tasten belegen. Standard = alte Belegung (+ Dash K / Num 3). Taste ändern, Esc bricht ab,
@@ -7921,15 +8048,15 @@ async def tasten_controller_je_typ(g):
         assert await g2.ev("padTypAktuell[0]") == 'xbox'
         await p.click('#sm-tb-seg button[data-art="pad"]'); await p.wait_for_timeout(300)
         assert 'Xbox' in await g2.ev("document.getElementById('sm-tb-typ').textContent")
-        # Dash von Spieler 1 auf LB (Knopf 4; RB = 5 ist Standard für die Spezial-Taste, Dschungel-Neu)
+        # Dash von Spieler 1 auf LT (Knopf 6; RB = 5 ist Standard für die Spezial-Taste, Dschungel-Neu; LB = 4 für den Griff der Pump-Draisine)
         async def druck(knopf, bis, wert="{pressed: true, value: 1}"):
             # gedrückt halten, bis das Menü reagiert hat (langsame Rechner: nicht feste Zeiten), dann loslassen
             await g2.ev(f"__pad.buttons[{knopf}] = {wert}")
             await p.wait_for_function(bis, timeout=8000)
             await g2.ev(f"__pad.buttons[{knopf}] = {{pressed: false, value: 0}}"); await p.wait_for_timeout(300)
         await tb_knopf(g2, 1, 'dash')
-        await druck(4, "PADSETS[1].xbox.dash === 4")
-        assert await g2.ev("PADSETS[1].xbox.dash") == 4
+        await druck(6, "PADSETS[1].xbox.dash === 6")
+        assert await g2.ev("PADSETS[1].xbox.dash") == 6
         assert await g2.ev("PADSETS[1].playstation.dash") == 3 and await g2.ev("PADSETS[2].xbox.dash") == 3
         # Trigger (analog, nur value) auf Fähigkeit
         await tb_knopf(g2, 1, 'ability')
@@ -7943,14 +8070,17 @@ async def tasten_controller_je_typ(g):
         assert await g2.ev("!document.querySelector('.tb-k.fang')") and await g2.ev("PADSETS[1].xbox.use") == 1
         await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
         gesp = await g2.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")
-        assert gesp['pad']['1']['xbox']['dash'] == 4 and gesp['pad']['1']['playstation']['dash'] == 3, gesp['pad']['1']
-        # im Spiel: LB dasht mit dem Xbox-Controller, Y (3) nicht mehr
+        assert gesp['pad']['1']['xbox']['dash'] == 6 and gesp['pad']['1']['playstation']['dash'] == 3, gesp['pad']['1']
+        # im Spiel: LT dasht mit dem Xbox-Controller, Y (3) nicht mehr
         await p.goto(srv.url + 'index.html?testlevel=bahnen')
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
         await g2.ev("__pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
         assert not await g2.ev("!!PAD[KEYSETS[1].dash]")
-        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; __pad.buttons[4] = {pressed: true, value: 1}; pollGamepads()")
+        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; __pad.buttons[6] = {pressed: true, value: 1}; pollGamepads()")
         assert await g2.ev("!!PAD[KEYSETS[1].dash]")
+        # Griff der Pump-Draisine: Standard LB (4)
+        await g2.ev("__pad.buttons[6] = {pressed: false, value: 0}; __pad.buttons[4] = {pressed: true, value: 1}; pollGamepads()")
+        assert await g2.ev("!!PAD[KEYSETS[1].griff] && !PAD[KEYSETS[1].dash]")
         # derselbe Platz mit PlayStation-Controller: Standard (△ = 3) gilt
         await g2.ev("__pad.buttons[4] = {pressed: false, value: 0}; __pad.id = 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)'; __pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
         assert await g2.ev("padTypAktuell[0]") == 'playstation' and await g2.ev("!!PAD[KEYSETS[1].dash]")
@@ -8700,7 +8830,7 @@ async def element_register(g):
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
                  ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
-                 ['meteorit', 'meteoriten', True, False]], k   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
+                 ['draisine', 'draisinen', True, True], ['meteorit', 'meteoriten', True, False]], k   # + Pump-Draisine   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        bouncers=[{'x': 500, 'y': 680}], winds=[{'x': 800, 'y': 400, 'w': 80, 'h': 280}]))
@@ -8717,7 +8847,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['hook', 'wind', 'bounce'], reihe   # Schleuder entfernt (Nutzerwunsch)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['tele', 'band', 'blatt', 'move'], reihe   # + Blatt-Floß (Dschungel-Neu; das Floß-Rad steht unter „Schalter“)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
+        assert reihe == ['tele', 'band', 'blatt', 'draisine', 'move'], reihe   # + Pump-Draisine   # + Blatt-Floß (Dschungel-Neu; das Floß-Rad steht unter „Schalter“)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
         assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad', 'flossrad'], logik   # + Windrad, Floß-Rad (Dschungel-Neu)
         licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")

@@ -46,7 +46,7 @@ function stepSim(ts){
 // alles, was sich bewegt: Position vor dem Rechenschritt merken
 function movingThings(){
   const list = [p1, p2];
-  for(const s of solids) if(s.type==='moveplat') list.push(s);
+  for(const s of solids) if(s.type==='moveplat' || s.type==='draisine') list.push(s);   // Pump-Draisine (elemente/draisine.js) weich zeichnen
   for(const h of hooks) if(h.moving) list.push(h);
   for(const sw of switchDefs) if(sw.carrier) list.push(sw);
   for(const sp of spikes) if(sp.carrier) list.push(sp);   // mitfahrende Stacheln weich zeichnen

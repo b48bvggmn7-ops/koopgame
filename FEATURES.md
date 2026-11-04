@@ -2200,7 +2200,11 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   über die Erde; die Erde läuft 8 Welt-px verdeckt unter die Mauer (`FOTO_MAT_HINTER_WAND`, keine Lücken); Reihenfolge
   Erde → Moos-Kante → Mauer → Moos am Mauerfuß, das Moos endet also hinter den Randsteinen.
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
-- **Foto-Pflanzen** im Foto-Look (Nutzerwunsch: „hier und da, nicht zu viel, Spielelemente nicht verdecken“): sechs
+- **Foto-Pflanzen** im Foto-Look (Nutzerwunsch: „hier und da, nicht zu viel, Spielelemente nicht verdecken“; dann „stehen
+  in der Gegend rum, sehen nicht passend aus“ -> besser eingebunden: gezeichnet zwischen Erde und Moos-Kante, das Moos
+  liegt also vor dem Fuß (9 % der Höhe stecken darin), kleine Gruppen – zu jeder Pflanze 0–2 kleinere Farne/Büsche dicht
+  daneben, teils dahinter und dunkler –, Kontaktschatten, derselbe Nebelschleier wie die Umgebung, leichtes Wiegen im
+  Wind): sechs
   freigestellte Pflanzen-Fotos des Nutzers (`assets/pflanzen/`: Farn, Farn-Strauch, Busch, Brombeere, zwei Bäumchen;
   Höhe 46–112 Welt-px, ±15 %, zufällig gespiegelt; Farne/Büsche häufiger; beim Laden in Boden-/Moosfarben getönt –
   dunkler, olivgrün statt orange, Nutzerwunsch) stehen auf freien Boden-Oberseiten, 150–340 (vorher 260–560)
@@ -2211,6 +2215,14 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   Foto-Look nie gezeichnet; mit Erde-Foto auch keine grünen Comic-Grasecken an Stufen. Tiere und ihre Regeln bleiben.
   Im Comic-Look alles wie bisher. Test foto_material.
 
+### Liane: ohne Maximal-Länge, nah am Haken ruhiger (Nutzerwunsch)
+- Beim Greifen fällt der Affe nicht mehr bis zur vollen Reichweite: `LIANE_VOLLE_LAENGE = false` (Nutzer „noch mal ohne
+  Maximal-Länge ausprobieren“), die Liane bleibt so lang wie der Abstand beim Greifen.
+- Ranziehen (W) an der Liane 2 (js/32 `lianeKern`): je näher am Haken, desto kleinere Schritte (ganz nah 35 % von
+  `ROPE_PULL_SPEED`) und desto weniger Pendeln (ganz nah je Schritt 7 % Schwung weniger); „nah“ beginnt ab 170 px
+  Seillänge, stufenlos (`LIANE2_ZIEH_NAH`, `LIANE2_RUHIG_NAH`, `LIANE2_NAH_BIS`). Alte Seil-Physik (Bahnen-Test)
+  unverändert. Tests liane_volle_laenge, liane_nah_ruhiger.
+
 ### Elemente im Foto-Look (Nutzerwunsch: „alle Elemente umgestalten – Hebel und Druckplatte bleiben“)
 Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); gilt nur im Foto-Look (Taste B).
 - **Holz** erzeugt das Spiel selbst (`fotoHolz`, einmal, nahtlos): verwitterte grau-braune Bretter mit unregelmäßiger
@@ -2219,7 +2231,12 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
 - **Tür:** Holztor aus diesen Brettern entlang der langen Achse, rostige Eisenbänder quer (eins je ~56 px), Licht oben,
   unten dunkler (`fotoTuerInnen` aus `drawGate`); Nische, Aufgleiten, Edelstein und Rahmen wie bisher.
 - **Haken:** dicke, gedrehte Holz-Liane mit Moosflecken und ein paar dunklen Blättern (`fotoLiane`) bis zum rostigen
-  Eisenring (einmal umschlungen); das warme Leuchten nur in Reichweite des Affen (`fotoHakenZeichnen`).
+  Eisenring (einmal umschlungen). Kein Reichweiten-Kreis im Foto-Look (Nutzerwunsch) – stattdessen **glüht der Ring
+  orange**, sobald der Affe greifen kann, sonst kein Leuchten (`fotoHakenZeichnen`, `FOTO_HAKEN_GLUT`). Die **Liane des
+  Affen** (vom Haken zur Hand) ist dieselbe Holz-Liane, etwas dünner, mit Durchhang wie bisher (`fotoAffenLiane`).
+- **Stacheln:** angespitzte Holzpflöcke statt Metall (Nutzer: „warum ist das noch aus Metall?“) – je Kästchen 4 Pflöcke,
+  unterschiedlich hoch und leicht schief (an der Welt verankert), Holz mit dunkel angekohlter, heller Spitze, Moos am Fuß;
+  in allen 4 Richtungen (`fotoStachelnZeichnen`).
 - **Blatt-Floß:** hängende Holzplattform statt Blatt, von der Seite: zwei Bretter mit Fuge, Maserung längs und Hirnholz-
   Enden, darunter zwei Querbalken als Stirnseiten, kein Schatten (`fotoFlossBild`, ganz hinter den
   Figuren), Aufhänge-Lianen als Foto-Lianen; **Floß-Rad** aus verwittertem Holz mit olivgrüner Ranke; Taue, Rollen und
@@ -2339,6 +2356,28 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Wer darauf steht, fährt mit. Das Blatt, auf dem der Pustende selbst steht,
   schiebt sein Wind nicht. Neustart/Tod: zurück an den Anfang. Rolle: der Affe pustet, das Schweinchen fährt.
   Test blattfloss_wind (Testlevel koop-aktionen: über der Grube).
+- **Pump-Draisine** (elemente/draisine.js, Editor-Reiter „Bewegung“, Werkzeug „Pump-Draisine“, im Dschungel empfohlen;
+  Nutzerwunsch „wie eine Hand-Draisine, zwei stehen sich gegenüber und drücken einen Hebel auf und ab“): breite Holzplattform
+  (4 Kästchen) mit einem Pump-Hebel (Wippe auf einem Pfosten) in der Mitte; hängt wie das Blatt-Floß an zwei Seilzügen an einer
+  Tau-Schiene nach rechts (Editor: am linken Ende setzen, Maus gedrückt halten und nach rechts ziehen = Länge, Auswahl
+  „Schiene“; Standard 8 Kästchen). **Nur zu zweit:** beide stehen darauf, jede Figur **hält die Griff-Taste** (Affe **Q**,
+  Schweinchen **Num 7**, Controller **L1**/LB) und **drückt immer wieder ihre Sprung-Taste** (Leertaste / Num 0 / ✕) = pumpen.
+  Gefahren wird nur, wenn beide halten und beide pumpen; pumpt nur eine Figur, bewegt sich nichts bzw. die Draisine rollt
+  langsam aus. Mit gehaltenem Griff steht die Figur an ihrem Griff (links bzw. rechts vom Hebel, schaut zum Hebel), kann
+  weder laufen noch springen; loslassen = sofort normal. Richtung von allein: zum Ende der Schiene, das weiter weg ist; die
+  Richtung bleibt bis zur Ankunft (kurz verschnaufen und weiterpumpen fährt weiter), am Ende hält sie an, nach einer kurzen
+  Pause (`DRAISINE_ENDE_PAUSE` = 30 Schritte) schickt neues Pumpen sie zurück. Tempo: jeder Druck gibt Pump-Kraft
+  (`DRAISINE_STOSS` 0,25, klingt je Schritt mit 0,97 ab, höchstens 1,5); es zählt die **langsamere** Figur (Kraft × 3, höchstens
+  `DRAISINE_MAX` = 3 px/Schritt ≈ 6–7 Drücke pro Sekunde), weich anfahren und ausrollen. Wer darauf steht, fährt mit.
+  Aussehen: Hebel kippt bei jedem Stoß zur Seite der pumpenden Figur (abwechselnd = Wippe), zwei Lämpchen am Pfosten (gelb
+  Affe, rosa Schweinchen) leuchten, solange die Figur pumpt; leises Holz-Knarzen je Stoß. Tasten-Blase über dem Hebel mit den
+  Tasten jeder Figur in der Nähe („Affe: Q halten + Leertaste pumpen“, bei Controller L1 + ✕; allein: „nur zu zweit!“).
+  Foto-Look: verwitterte Holzbohlen, Eisenwinkel, Foto-Lianen an den Schienen-Enden. Neustart/Tod: zurück an den Anfang.
+  Rolle: beide gleich – reines Koop-Timing. Im Editor-Test holt Q nur dann den Partner, wenn niemand auf einer Draisine
+  steht (sonst ist Q der Griff); dasselbe für Q = „Warte/Komm“ beim Computer-Partner. Neue Taste „Griff“ im Menü
+  Optionen → Tasten belegen (Q ist dafür nicht mehr gesperrt). Eingeklinkt über `draisineVorher` in `neueBewegungVorher`
+  (js/32). Testlevel `draisine` (index.html?testlevel=draisine), Tests draisine_pumpen_zu_zweit, draisine_tempo_und_ausrollen,
+  editor_draisine_ziehen.
 
 ### Dschungel-Neu: zwei Abschnitte, neue Geschichte, Meteorit, Logik-Rätsel
 - **Level 1–3 und 4–6 fest zusammengefügt** (Nutzerwunsch, auch im Editor): jeder Abschnitt ist EINE Level-Datei

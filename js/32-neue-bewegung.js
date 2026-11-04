@@ -324,7 +324,9 @@ function lianeNeu(P){ return !!(P.male && P.hookAttached && LIANE_HALTEN && !win
 // Kern des Pendels (auch für die Vorausrechnung des Computer-Partners, js/30): S = {hx, hy (Griff-Punkt), vx, vy,
 // len (Seillänge), ziel (Wunschlänge), max, dehn (Fang-Dehnung), frei (so tief darf es höchstens gehen)} wird um einen Schritt weitergerechnet
 function lianeKern(S, A, moveDir, ziehen, geben){
-  if(ziehen) S.ziel = Math.max(HOOK_MIN_LEN, S.ziel - ROPE_PULL_SPEED);
+  // nah = 0 (weit weg) … 1 (ganz nah am Haken): kleinere Ranzieh-Schritte und weniger Pendeln (Nutzerwunsch, LIANE2_*_NAH)
+  const nah = Math.max(0, Math.min(1, (LIANE2_NAH_BIS - S.len)/Math.max(1, LIANE2_NAH_BIS - HOOK_MIN_LEN)));
+  if(ziehen) S.ziel = Math.max(HOOK_MIN_LEN, S.ziel - ROPE_PULL_SPEED*(1 - nah*(1 - LIANE2_ZIEH_NAH)));
   if(geben) S.ziel = Math.min(S.max, S.ziel + ROPE_ADJUST_SPEED);
   // Seillänge zur Wunschlänge
   S.len += Math.max(-LIANE2_ABROLL, Math.min(LIANE2_ABROLL, S.ziel - S.len));
@@ -333,7 +335,7 @@ function lianeKern(S, A, moveDir, ziehen, geben){
   const tx = dy0/d0, ty = -dx0/d0, a = Math.atan2(dx0, dy0)*180/Math.PI;   // Tangente (rechts herum), Winkel (0 = unten)
   if(moveDir && Math.abs(a) < LIANE2_PUMP_WINKEL && vx*moveDir > -0.3) vx += moveDir*LIANE2_PUMP;   // wie bisher: waagerecht schieben
   const amSeil = d0 > S.len + S.dehn - 2;   // hängt straff (fliegt er frei über dem Haken / fällt hinein: kein Schwung-Verlust)
-  const dmp = Math.abs(a) > LIANE2_BREMS_WINKEL && amSeil && vy < 0 ? LIANE2_DAEMPF_OBEN : LIANE2_DAEMPF; vx *= dmp; vy *= dmp;
+  const dmp = (Math.abs(a) > LIANE2_BREMS_WINKEL && amSeil && vy < 0 ? LIANE2_DAEMPF_OBEN : LIANE2_DAEMPF)*(amSeil ? 1 - nah*LIANE2_RUHIG_NAH : 1); vx *= dmp; vy *= dmp;
   let nx = hx + vx, ny = hy + vy;
   const dx = nx - A.x, dy = ny - A.y, d = Math.hypot(dx, dy) || 1, ux = dx/d, uy = dy/d;
   // straff: auf den Kreis (Länge + kleine Fang-Dehnung). Fällt der Affe ins Seil, wird das Hinausfliegen über mehrere
@@ -386,6 +388,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   if(P.male && LIANE_HALTEN && !window.hakenTippen) lianeGriffPruefen(P);
   if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
   if(!nass && typeof flossradVorher === 'function' && flossradVorher(P)) return true;   // am Floß-Rad kurbeln (elemente/flossrad.js)
+  if(!nass && typeof draisineVorher === 'function' && draisineVorher(P, jumpPressed)) return true;   // Pump-Draisine: Griff halten + pumpen (elemente/draisine.js)
   if(typeof koopAktionVorher === 'function' && koopAktionVorher(P, moveDir, jumpPressed, nass)) return true;   // Dschungel-Neu: Schirm-Trampolin / pusten (js/34)
   if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }

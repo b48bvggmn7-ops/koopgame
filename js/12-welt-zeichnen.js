@@ -1046,7 +1046,9 @@ function drawSolidLook(s, look, x){
   hgBodenLicht();     // neuer Nacht-Look: Boden abdunkeln, Leuchtpflanzen, Licht um die Figuren (11b)
 
   // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
-  for(const h of hooks){
+  // Reichweiten-Kreis – im Foto-Look ausgeblendet (Nutzerwunsch; dort leuchtet der Ring orange, wenn man greifen kann)
+  const hakenKreis = !(typeof fotoLookAktiv === 'function' && fotoLookAktiv());
+  for(const h of (hakenKreis ? hooks : [])){
     const x=h.x-camX, range=hookRange(h);
     if(x<-range-30||x>VW+range+30) continue;
     const originX = p1.x, originY = p1.y - p1.h*0.6;
@@ -1071,6 +1073,8 @@ function drawSolidLook(s, look, x){
     ctx.save();
     ctx.translate(Math.round(x), sp.y - sp.h/2);
     ctx.rotate((sp.dir||0) * Math.PI/2);
+    // Foto-Look: angespitzte Holzpflöcke statt Metall (12e-foto-elemente.js)
+    if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoStachelnZeichnen === 'function'){ fotoStachelnZeichnen(ctx, sp); ctx.restore(); continue; }
     // Design-Politur C: Gefahr bleibt besonders lesbar – dunkler, warm-roter Schein hinter den Spitzen
     const gw = ctx.createLinearGradient(0, -sp.h/2, 0, sp.h/2);
     gw.addColorStop(0, 'rgba(120,20,10,0)'); gw.addColorStop(0.55, 'rgba(120,20,10,.22)'); gw.addColorStop(1, 'rgba(60,10,5,.3)');

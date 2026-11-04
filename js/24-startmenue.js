@@ -811,7 +811,9 @@ $('#sm-foto').addEventListener('click', () => { S.options.idx = 7; S.options.pai
    ===================================================================== */
 const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wandsprung', ability: 'Fähigkeit (Haken / Schirm)',
   pull: 'Hoch (Seil ran, Festhalten)', slack: 'Runter (Seil geben)', use: 'Hebel', dash: 'Dash',
-  spezial: 'Spezial (Affe: pusten / Schwein: Schirm-Trampolin)'};
+  spezial: 'Spezial (Affe: pusten / Schwein: Schirm-Trampolin)', griff: 'Griff (Pump-Draisine halten)'};
+// Zeilen im Menü: 0 = Tastatur/Controller, 1 … TB_N = Aktionen, TB_N + 1 = Standard, TB_N + 2 = Zurück
+const TB_N = TASTEN_AKTIONEN.length;
 const TB_TYPNAME = {playstation: 'PlayStation', xbox: 'Xbox', andere: 'anderer Controller'};
 let tbFang = null;    // {n, a, art, typ, vorher: gedrückte Knöpfe beim Start} – wartet auf die neue Taste
 S.tasten = {
@@ -858,13 +860,13 @@ S.tasten = {
     });
     const r = mk(`<div class="tb-z opt-row"><span>Auf Standard zurücksetzen</span></div>`);
     for (const n of [1, 2]) {
-      const b = mk(`<button type="button" tabindex="-1" class="tb-k tb-std${this.idx === 9 && this.col === n - 1 ? ' sel' : ''}">Spieler ${n}</button>`);
-      b.addEventListener('click', () => { this.idx = 9; this.col = n - 1; this.standard(n); });
+      const b = mk(`<button type="button" tabindex="-1" class="tb-k tb-std${this.idx === TB_N + 1 && this.col === n - 1 ? ' sel' : ''}">Spieler ${n}</button>`);
+      b.addEventListener('click', () => { this.idx = TB_N + 1; this.col = n - 1; this.standard(n); });
       r.appendChild(b);
     }
     g.appendChild(r);
     $('#sm-tb-seg').classList.toggle('sel', this.idx === 0);
-    $('#sm-tb-back').classList.toggle('sel', this.idx === 10);
+    $('#sm-tb-back').classList.toggle('sel', this.idx === TB_N + 2);
     const k = this.konflikte().filter(([x]) => x === artKey).length;
     $('#sm-tb-tip').innerHTML = k ? '<b class="tb-warn">Rot = doppelt belegt. Bitte eine der Tasten ändern, sonst lässt sich das Menü nicht verlassen.</b>'
       : (this.art === 'tastatur' ? 'Gesperrt: Esc, Enter, R, F, M, C, X, H (Pause, Neustart, Anzeige, Ton, Test). '
@@ -932,16 +934,17 @@ S.tasten = {
   },
   act(type) {
     if (tbFang) return;    // wartet auf Taste/Knopf
-    if (type === 'up') { this.idx = (this.idx + 10) % 11; Snd.play('move'); this.draw(); }
-    else if (type === 'down') { this.idx = (this.idx + 1) % 11; Snd.play('move'); this.draw(); }
+    // (Zeilenzahl aus TASTEN_AKTIONEN – vorher fest 11, mit „Spezial“ und „Griff“ wären sonst Zeilen doppelt)
+    if (type === 'up') { this.idx = (this.idx + TB_N + 2) % (TB_N + 3); Snd.play('move'); this.draw(); }
+    else if (type === 'down') { this.idx = (this.idx + 1) % (TB_N + 3); Snd.play('move'); this.draw(); }
     else if (type === 'left' || type === 'right') {
       if (this.idx === 0) this.wechselArt(type === 'left' ? -1 : 1);
-      else if (this.idx <= 9) { this.col = type === 'left' ? 0 : 1; Snd.play('move'); this.draw(); }
+      else if (this.idx <= TB_N + 1) { this.col = type === 'left' ? 0 : 1; Snd.play('move'); this.draw(); }
     }
     else if (type === 'confirm') {
       if (this.idx === 0) this.wechselArt(1);
-      else if (this.idx <= 8) this.fangen();
-      else if (this.idx === 9) this.standard(this.col + 1);
+      else if (this.idx <= TB_N) this.fangen();
+      else if (this.idx === TB_N + 1) this.standard(this.col + 1);
       else this.verlassen();
     }
     else if (type === 'back') this.verlassen();

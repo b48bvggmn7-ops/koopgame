@@ -356,6 +356,9 @@ const SFX = {
                   for(let i = 0; i < 5; i++) sTone(440*Math.pow(1.26, i), 0.25 + i*0.22, 0.6, {type: 'sine', vol: 0.025}); },
   szene_sog(){ sfxLog('szene_sog'); sNoise(0, 1.6, {filter: 'bandpass', f: 400, to: 3200, q: 0.8, vol: 0.08, attack: 0.1}); sTone(220, 0, 1.4, {to: 880, type: 'triangle', vol: 0.035}); },
   windrad(x){ sfxLog('windrad'); sNoise(0, 0.5, {filter: 'bandpass', f: 1800, to: 700, q: 2, vol: 0.05, attack: 0.02}); sTone(520, 0, 0.12, {to: 760, type: 'triangle', vol: 0.03}); },
+  // Pump-Draisine (elemente/draisine.js): leises Holz-Knarzen je Pump-Stoß, die beiden Hebel-Seiten etwas verschieden hoch
+  draisinePumpe(x, rechts){ sfxLog('draisine'); sNoise(0, 0.13, {filter: 'bandpass', f: rechts ? 520 : 440, to: rechts ? 300 : 260, q: 6, vol: 0.035, attack: 0.01});
+                            sTone(rechts ? 190 : 160, 0, 0.1, {to: rechts ? 150 : 125, type: 'triangle', vol: 0.02}); },
   pusten(pl, k){ sfxLog('pusten'); sNoise(0, 0.34, {filter: 'bandpass', f: 900 + Math.random()*200, to: 650, q: 0.6, vol: 0.06*(0.6 + 0.4*(k || 1)), attack: 0.03}); },
   wechsel(fest, x){ sfxLog(fest ? 'wechselan' : 'wechselweg'); sfxPlay(fest ? 'wechselAn' : 'wechselAus', {x}); },   // Wechselboden
   platsch(x, tempo){ sfxLog('platsch'); sfxPlay('platsch', {x, vol: Math.min(1, 0.4 + (tempo || 0)/12)}); },   // Wasser

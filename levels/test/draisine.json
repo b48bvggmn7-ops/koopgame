@@ -1,0 +1,23 @@
+{
+  "hinweis": "Testlevel Pump-Draisine (elemente/draisine.js): Grube von 800 bis 1280, die Draisine hängt links an einer Schiene über 8 Kästchen. Beide stellen sich darauf, halten die Griff-Taste (Affe Q, Schweinchen Num 7, Controller L1) und drücken immer wieder Springen (Leertaste / Num 0 / ✕) – dann fährt sie nach rechts; am Ende kurz warten und weiterpumpen = zurück. Öffnen: index.html?testlevel=draisine",
+  "welt": "dschungel",
+  "tageszeit": "mittag",
+  "wetter": "trocken",
+  "solids": [
+    {"x": 0, "y": 480, "w": 800, "h": 280, "type": "ground"},
+    {"x": 1280, "y": 480, "w": 1200, "h": 280, "type": "ground"}
+  ],
+  "hooks": [],
+  "spikes": [],
+  "coins": [],
+  "movingPlatforms": [],
+  "checkpoints": [],
+  "switches": [],
+  "doors": [],
+  "startM": {"x": 700, "y": 480},
+  "startF": {"x": 620, "y": 480},
+  "goal": {"x": 2300, "y": 480},
+  "draisinen": [
+    {"x": 800, "y": 440, "schiene": 8}
+  ]
+}

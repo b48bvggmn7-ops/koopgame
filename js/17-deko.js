@@ -171,7 +171,7 @@ function buildDeco(){
 function drawGroundDeco(){
   if(decoFor !== solids) buildDeco();
   if(bodenDekorAn()){
-    if(typeof fotoMatOhneDeko === 'function' && fotoMatOhneDeko()){ if(typeof fotoPflanzenZeichnen === 'function') fotoPflanzenZeichnen(); }   // Foto-Look: Foto-Pflanzen (12c)
+    if(typeof fotoMatOhneDeko === 'function' && fotoMatOhneDeko()){}   // Foto-Look: Foto-Pflanzen kommen aus fotoMatUeber (12c, zwischen Erde und Moos)
     else bodenDekorZeichnen();
     return;
   }   // Dschungel: Gras, Farnbüsche, Blumen, Pilze (17a-dschungel-boden.js)

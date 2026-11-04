@@ -250,13 +250,17 @@ function drawCharacter(player, camX){
     const jit = st > 0.3 ? (Math.random()-0.5)*st*3 : 0;
     let rx = px, ry = py-player.h*0.6;
     if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
-    lianeZeichnen(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.moving ? player.anchor.startX : player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);   // bewegter Haken: feste Blatt-Lage
+    if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoAffenLiane === 'function')   // Foto-Look: echte Liane (12e)
+      fotoAffenLiane(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.moving ? player.anchor.startX : player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);
+    else lianeZeichnen(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.moving ? player.anchor.startX : player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);   // bewegter Haken: feste Blatt-Lage
   }
   else if(player.male && player._hakenWarten && player._wartZiel){
     // von oben gegriffen (js/32): die Liane ist schon in der Hand und hängt locker durch, bis sie sich unter dem Haken spannt
     let rx = px, ry = py-player.h*0.6;
     if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
-    lianeZeichnen(rx, ry, player._wartZiel.x-camX, player._wartZiel.y, 0, 0, player._wartZiel.moving ? player._wartZiel.startX : player._wartZiel.x, 1);
+    if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoAffenLiane === 'function')
+      fotoAffenLiane(rx, ry, player._wartZiel.x-camX, player._wartZiel.y, 0, 0, player._wartZiel.moving ? player._wartZiel.startX : player._wartZiel.x, 1);
+    else lianeZeichnen(rx, ry, player._wartZiel.x-camX, player._wartZiel.y, 0, 0, player._wartZiel.moving ? player._wartZiel.startX : player._wartZiel.x, 1);
   }
   if(!player.male && player.umbrella > 0.02 && !(typeof neueFigurenAn === 'function' && neueFigurenAn())) drawUmbrella(player, px, py);
 }

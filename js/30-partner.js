@@ -132,7 +132,7 @@ window.addEventListener('keydown', e => {
   if(e.code === 'KeyP'){ partnerSetzen(!partner.an); return; }
   if(!partnerAktiv()) return;
   if(e.code === 'KeyV') partnerTauschen();
-  if(e.code === 'KeyQ') partnerWarteOderKomm();
+  if(e.code === 'KeyQ' && !(typeof draisineJemandDrauf === 'function' && draisineJemandDrauf())) partnerWarteOderKomm();   // auf der Pump-Draisine ist Q der Griff
   if(e.code === 'KeyE') partnerAufgabeJetzt();
 });
 

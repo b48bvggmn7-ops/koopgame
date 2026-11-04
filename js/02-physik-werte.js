@@ -98,7 +98,11 @@ const KANTE_WACKEL_RAND = 8;  // px: so weit vor der Kante wackelt eine stehende
 // ---------- Nacht-Ausbau: neue Mechaniken (js/32-neue-bewegung.js; Werte aus der Spielwiese, spielwiese/js/02-werte.js) ----------
 // Alles NEUE Konstanten – keine der Konstanten oben wurde geändert (harte Regel, Test bahnen_alte_mechaniken).
 // Schritte = Physik-Schritte (60 = 1 Spielsekunde).
-const LIANE_VOLLE_LAENGE = true;   // Nutzerwunsch 30.10. (wieder an): beim Greifen gibt die Liane sofort bis zur Reichweite nach (false = bleibt so lang wie beim Greifen)
+const LIANE_VOLLE_LAENGE = false;  // Nutzerwunsch (wieder aus, „ohne Maximal-Länge ausprobieren“; vorher 30.10. an): true = beim Greifen gibt die Liane sofort bis zur Reichweite nach, false = bleibt so lang wie beim Greifen
+// Ranziehen an der Liane (Liane 2, js/32): je näher am Haken, desto kleinere Schritte und desto weniger Pendeln (Nutzerwunsch)
+const LIANE2_ZIEH_NAH = 0.35;      // so viel vom Ranzieh-Tempo (ROPE_PULL_SPEED) bleibt ganz nah am Haken (weit weg: volles Tempo)
+const LIANE2_RUHIG_NAH = 0.07;     // so viel Schwung geht ganz nah am Haken je Schritt zusätzlich verloren (weit weg: nichts)
+const LIANE2_NAH_BIS = 170;        // px Seillänge: ab hier beginnt „nah“ (darunter wird es stufenlos langsamer/ruhiger)
 const DASH_NUR_WAAGERECHT = true;   // Nutzerwunsch: Dash nur nach links/rechts (false = 8 Richtungen wie vorher)
 const DASH_AUS_WELTEN = ['dschungel'];   // Welten ohne Dash – Nutzer: „Dash erst mal komplett raus, man schafft zu viel nur durch den Dash“
                                          // (dort bricht der Affe Durchbruch-Wände durch Anpusten, BRUCH_PUSTE_NOETIG)

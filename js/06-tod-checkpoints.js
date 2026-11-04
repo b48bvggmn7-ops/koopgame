@@ -153,7 +153,8 @@ window.addEventListener('keydown', e=>{
   if(e.code==='KeyC') testJump(+1);
   if(e.code==='KeyX') testJump(-1);
   if(e.code==='KeyQ' && typeof editorTestMode !== 'undefined' && editorTestMode && !(typeof partnerAktiv === 'function' && partnerAktiv())
-     && !(typeof menuActive === 'function' && menuActive()) && !deathState) testHolen();
+     && !(typeof menuActive === 'function' && menuActive()) && !deathState
+     && !(typeof draisineJemandDrauf === 'function' && draisineJemandDrauf())) testHolen();   // auf der Pump-Draisine ist Q der Griff (elemente/draisine.js)
 });
 window.addEventListener('pointerdown', requestContinue);
 

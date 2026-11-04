@@ -425,6 +425,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(z.key === 'trampolin') ty = 0;   // hält den Schirm zur Kamera hin
     if(z.key === 'pusten') ty = P.pusteRichtung === 'hoch' ? .25*flip : pusteSeiteVon(P.pusteRichtung)*(pusteSchraeg(P.pusteRichtung) ? 1.1 : 1.42);   // nach oben: fast von vorn, sonst im Profil zur Blasrichtung
     if(z.key === 'hebel') ty = (P.leverAnim && P.leverAnim.dir < 0 ? -1 : 1)*1.4;   // zum Hebel hin im Profil
+    if(P._draisineSeite) ty = -P._draisineSeite*1.3;   // hält den Hebel der Pump-Draisine: schaut zum Hebel (elemente/draisine.js)
     if(P._yawTest != null) ty = P._yawTest;   // nur fuer Tests
     S.yaw += (ty - S.yaw)*(1 - Math.exp(-dt*14));
     // Drehung: Dash = Rolle, Wandsprung = ganzer Salto weg von der Wand

@@ -82,9 +82,11 @@ function fotoTuerInnen(q, ix, iy, iw, ih, vert){
 // ---------- Liane (Foto-Look): dicke, gedrehte Holz-Liane mit Moos und ein paar dunklen Blättern ----------
 // von (x0, y0) nach (x1, y1) (Bildschirm-x, Welt-y), leicht durchhängend; seed = feste Lage der Blätter/Moosflecken.
 // Auch für Floß-Lianen benutzt. dick = Grundstärke.
-function fotoLiane(q, x0, y0, x1, y1, seed, dick){
+function fotoLiane(q, x0, y0, x1, y1, seed, dick, durchhang, jit){
   const D = dick || 5, len = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0)/len, ny = (x1 - x0)/len;
-  const cx = (x0 + x1)/2 + nx*Math.min(10, len/30)*(Math.sin(seed*0.7) > 0 ? 1 : -1), cy = (y0 + y1)/2 + ny*4;
+  // Durchhang: vorgegeben (Affen-Liane: nach unten, je nach Spannung) oder leichte feste Biegung (hängende Lianen)
+  const cx = durchhang !== undefined ? (x0 + x1)/2 + (jit || 0) : (x0 + x1)/2 + nx*Math.min(10, len/30)*(Math.sin(seed*0.7) > 0 ? 1 : -1);
+  const cy = durchhang !== undefined ? (y0 + y1)/2 + durchhang + (jit || 0) : (y0 + y1)/2 + ny*4;
   const pt = t => [(1 - t)*(1 - t)*x0 + 2*(1 - t)*t*cx + t*t*x1, (1 - t)*(1 - t)*y0 + 2*(1 - t)*t*cy + t*t*y1];
   const pfad = (off, ph, amp) => { q.beginPath(); const n = Math.max(8, Math.round(len/6));
     for(let i = 0; i <= n; i++){ const t = i/n, [px, py] = pt(t), w = Math.sin(t*len*0.09 + ph)*amp + off; i ? q.lineTo(px + nx*w, py + ny*w) : q.moveTo(px + nx*w, py + ny*w); } };
@@ -107,14 +109,22 @@ function fotoLiane(q, x0, y0, x1, y1, seed, dick){
   }
   q.restore();
 }
-// Haken im Foto-Look: Liane von oben (oder vom Material darüber) bis zum rostigen Eisenring; Schein nur in Reichweite
-// (spielwichtig: zeigt, dass der Affe greifen kann), sonst kaum
+// Liane des Affen (vom Haken zur Hand) im Foto-Look – gleiche Holz-Liane wie am Haken, etwas dünner (Nutzer: „Liane vom
+// Affen überarbeiten, damit sie besser ins Spiel passt“). Durchhang wie lianeZeichnen (10): 9 px × (sagF ?? 1 − Spannung);
+// stark gedehnt wird sie dünner und zittert (jit).
+function fotoAffenLiane(x0, y0, x1, y1, st, jit, seed, sagF){
+  const len = Math.hypot(x1 - x0, y1 - y0) || 1, sag = 9*(sagF !== undefined ? sagF : 1 - st)*Math.min(1, len/120);
+  fotoLiane(ctx, x0, y0, x1, y1, seed, 3.8 - (st || 0)*1.2, sag, jit);
+}
+// Haken im Foto-Look: Liane von oben (oder vom Material darüber) bis zum rostigen Eisenring. Kann der Affe greifen,
+// leuchtet der Ring orange (Nutzerwunsch; der Reichweiten-Kreis ist im Foto-Look ausgeblendet), sonst kein Leuchten.
+const FOTO_HAKEN_GLUT = '255,140,30';
 function fotoHakenZeichnen(x, y, y0, seed, ringR, inRange, hx){
   const x0 = x + Math.sin(seed*0.013)*3, dx = x0 - x, dy = y0 - y, d = Math.hypot(dx, dy) || 1;
   fotoLiane(ctx, x0, y0, x + dx/d*(ringR + 1), y + dy/d*(ringR + 1), seed, 5);
-  const t = performance.now(), puls = inRange ? 0.7 + 0.3*Math.sin(t*0.008 + hx*0.05) : 0.12;
-  const g = ctx.createRadialGradient(x, y, 2, x, y, 30); g.addColorStop(0, `rgba(255,236,190,${0.42*puls})`); g.addColorStop(1, 'rgba(255,236,190,0)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 30, 0, 7); ctx.fill();
+  const t = performance.now(), puls = 0.75 + 0.25*Math.sin(t*0.008 + hx*0.05);
+  if(inRange){ const g = ctx.createRadialGradient(x, y, 2, x, y, 34); g.addColorStop(0, `rgba(${FOTO_HAKEN_GLUT},${0.7*puls})`); g.addColorStop(1, `rgba(${FOTO_HAKEN_GLUT},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 34, 0, 7); ctx.fill(); }
   ctx.save();
   ctx.strokeStyle = 'rgba(12,9,7,.75)'; ctx.lineWidth = 7.5; ctx.beginPath(); ctx.arc(x, y + 0.6, ringR, 0, 7); ctx.stroke();
   const rg = ctx.createLinearGradient(x - ringR, y - ringR, x + ringR, y + ringR);
@@ -122,8 +132,9 @@ function fotoHakenZeichnen(x, y, y0, seed, ringR, inRange, hx){
   ctx.strokeStyle = rg; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(x, y, ringR, 0, 7); ctx.stroke();
   for(let i = 0; i < 9; i++){ const a = i*0.7 + seed*0.01; ctx.fillStyle = i % 3 ? 'rgba(150,80,35,.55)' : 'rgba(40,30,22,.6)';
     ctx.beginPath(); ctx.arc(x + Math.cos(a)*ringR, y + Math.sin(a)*ringR, 1 + (i % 2)*0.6, 0, 7); ctx.fill(); }   // Rost
-  ctx.strokeStyle = inRange ? 'rgba(255,240,215,.75)' : 'rgba(255,240,215,.28)'; ctx.lineWidth = 1.4;
+  ctx.strokeStyle = 'rgba(255,240,215,.28)'; ctx.lineWidth = 1.4;
   ctx.beginPath(); ctx.arc(x, y, ringR + 0.6, Math.PI*1.05, Math.PI*1.65); ctx.stroke();
+  if(inRange){ ctx.strokeStyle = `rgba(${FOTO_HAKEN_GLUT},${0.85*puls})`; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(x, y, ringR, 0, 7); ctx.stroke(); }   // Ring glüht orange
   // Liane einmal um den Ring geschlungen
   ctx.strokeStyle = '#3e3326'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(x, y - ringR + 1, 4, 2.6, 0, 0, 7); ctx.stroke();
   ctx.restore();
@@ -160,6 +171,34 @@ function fotoFlossBild(q, x, y, w, schwank, teil){
   q.fillStyle = 'rgba(8,6,4,.8)'; q.fillRect(-L + 2, 0, w - 5, 1);   // Fuge
   brett(-L, -4, w, 4.5, 0.7);             // oberes Brett (Lauffläche)
   q.restore();
+}
+// ---------- Stacheln (Foto-Look): angespitzte Holzpflöcke statt Metall (Nutzer: „warum ist das noch aus Metall?“) ----------
+// Im gedrehten Kasten des Stachels (−w/2…w/2, −h/2…h/2, Spitzen nach oben = −y): je 40 px FOTO_PFLOCK_JE Pflöcke,
+// unterschiedlich hoch und leicht schief (an der Welt verankert), Holz mit dunkel angekohlter, heller Spitze, unten Moos.
+// Gefahr bleibt lesbar: helle, scharfe Spitzen vor dunklem Grund.
+const FOTO_PFLOCK_JE = 4;
+function fotoStachelnZeichnen(q, sp){
+  const w = sp.w, h = sp.h, n = Math.max(2, Math.round(w/40*FOTO_PFLOCK_JE)), b = w/n;
+  const zuf = (i, k) => { const v = Math.sin((sp.x + i*13.7)*12.9898 + (sp.y + k)*78.233)*43758.5453; return v - Math.floor(v); };
+  const unten = h/2, holz = fotoHolzMuster(q, false, sp.x*0.37, 0);
+  for(let i = 0; i < n; i++){
+    const mx = -w/2 + (i + 0.5)*b, hoch = h*(0.62 + zuf(i, 1)*0.3), schief = (zuf(i, 2) - 0.5)*0.16, br = b*0.78;
+    q.save(); q.translate(mx, unten); q.rotate(schief);
+    const sy = -hoch, ss = -hoch + hoch*0.42;   // Spitze, Beginn der Spitze
+    q.beginPath(); q.moveTo(-br/2, 0); q.lineTo(-br/2, ss); q.lineTo((zuf(i, 3) - 0.5)*2, sy); q.lineTo(br/2, ss); q.lineTo(br/2, 0); q.closePath();
+    q.fillStyle = holz; q.fill();
+    const g = q.createLinearGradient(-br/2, 0, br/2, 0); g.addColorStop(0, 'rgba(255,240,210,.14)'); g.addColorStop(0.5, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.42)');
+    q.fillStyle = g; q.fill();
+    q.save(); q.clip();   // angekohlter, scharf geschnitzter Spitzenbereich
+    const gs = q.createLinearGradient(0, sy, 0, ss + 3); gs.addColorStop(0, 'rgba(230,215,185,.9)'); gs.addColorStop(0.25, 'rgba(70,52,36,.85)'); gs.addColorStop(1, 'rgba(30,22,16,0)');
+    q.fillStyle = gs; q.fillRect(-br, sy, br*2, ss - sy + 3);
+    q.restore();
+    q.strokeStyle = 'rgba(12,9,6,.75)'; q.lineWidth = 0.8; q.stroke();
+    q.restore();
+  }
+  // Moos/Erde am Fuß der Pflöcke
+  q.fillStyle = 'rgba(62,76,36,.85)';
+  for(let i = 0; i < n*2; i++){ const x = -w/2 + (i + zuf(i, 5))*b/2; q.beginPath(); q.ellipse(x, unten - 1, b*0.32, 2.4, 0, 0, 7); q.fill(); }
 }
 // rostiges Eisen: Band (x, y, w, h) mit Nieten im Abstand 'niet' (0 = keine)
 function fotoEisenBand(q, x, y, w, h, niet){

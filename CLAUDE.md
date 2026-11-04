@@ -70,7 +70,9 @@
   type 'oneway' in `collideAxis`); Ausbau 5: `wasser.js` (Wasserflächen, Schwimmen `schwimmPhysik`, Luft `luftSchritt`,
   vor den Figuren gezeichnet über `spiel.zeichnenVorne`), `stroemung.js` (Strömung + Wasserstand/Schleuse); Ausbau 6: `boss.js` (Endgegner-Gerüst: Boss/Arena/Boss-Platz, Zustandsautomat, Lebensbalken über `spiel.zeichnenOben`); Ausbau 7: `falle.js` (Pfeil/Flamme im Takt, Takt-Uhr `fallenSchritte`), `fels.js` (rollender Fels, startet per Nummer nach ½ s Wackeln, kündigt sich am Bildrand an, bricht durch Bröckel-Wände), `licht.js` (Lichtquelle/Spiegel/Kristall; Kristall wirkt in `updatePlates` über `lichtWunsch`, Spiegel drehen von Hand über `spiegelBedienen`, schaltbare Spiegel (Nummer) über `spiegelAusloesen` bei Platte-Betreten/Hebel; Strahl-Randzeichen `lichtRandListe`); Höhle: `eis.js` (rutschiger Boden, Sonderregel `aufEis` in 08), `foerderband.js` (nimmt Figuren in `nachBewegung` mit), `leuchtkristall.js` (Leuchtkristall anschlagen über `leuchtAnschlagen`, Dunkelzonen über `dunkelZeichnen` in `drawThemeDarkness`); Vulkan: `durchbruch.js` (Nacht-Ausbau: Durchbruch-Wand, solids type 'bruch', bricht nur per Dash, Option nachwachsen), `haftflaeche.js` (Nacht-Ausbau: Kachel, solids type 'wall' mit `haft: true`); `schleuder.js` (EIN Punkt: Liane an den Punkt, weglaufen spannt, loslassen = Katapult hinauf zum Punkt; Logik `schleuderVorher` aus `neueBewegungVorher` in 32); `lava.js` (Lava-Becken + Lava-Marke, steigt per Nummer oder „sobald jemand kommt“; gezeichnet über den neuen Haken `spiel.zeichnenHinten` HINTER Boden/Wänden), `presse.js` (Stachelpresse im Takt, eigene Takt-Uhr je Presse); Dschungel-Neu: `windrad.js` (Schalter mit Nummer, den nur der Puste-Wind dreht – „umschalten“ wie ein Hebel oder „solange es dreht“ über `windradWunsch` in `updatePlates`), `blattfloss.js` (Blatt auf einer Schiene, solids type 'blatt', schiebt nur der Seiten-Wind, nimmt Figuren mit; Schiene im
   Editor per Ziehen über `editor.ziehen`), `flossrad.js` (Kurbelrad mit Nummer: Hebel-Taste + links/rechts zieht das Blatt-Floß derselben Nummer über `radZug`;
-  Figur kurbelt über `flossradVorher` aus `neueBewegungVorher`), `meteorit.js` (Meteoriten-Spur: Splitter/Brocken/Meteorit, nur Aussehen über `zeichnenHinten`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
+  Figur kurbelt über `flossradVorher` aus `neueBewegungVorher`), `draisine.js` (Pump-Draisine: Plattform mit Pump-Hebel an einer
+  Tau-Schiene, solids type 'draisine'; beide halten die Griff-Taste (neue Aktion `griff`) und pumpen mit Springen – über
+  `draisineVorher` aus `neueBewegungVorher`; Schiene im Editor per Ziehen), `meteorit.js` (Meteoriten-Spur: Splitter/Brocken/Meteorit, nur Aussehen über `zeichnenHinten`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `WELTEN.md` – Design je Welt (Thema, Look, Tiere, Musik, Mechaniken je Level, Rollen von Affe und Schweinchen; Ausbau 7/8).
 - `story/story.json` – alle Texte und Abläufe der Spielszenen (Intro, Boss-Siege); vom Nutzer direkt änderbar.
@@ -217,6 +219,7 @@
 | Dash (Nacht-Ausbau; im Dschungel aus) | K | Num 3 | △ |
 | Spezial (Dschungel-Neu): Affe pusten / Schweinchen Schirm-Trampolin | H (+ W/A/D = Richtung, W+A/W+D = schräg) | Num 4 | R1 |
 | Haftfläche festhalten | G halten | Num 1 halten | □ |
+| Pump-Draisine: Griff halten (+ Springen = pumpen) | Q | Num 7 | L1 |
 | Neustart / Leistungsanzeige / Test-Sprung | R / F / C, X | | – |
 | Pausenmenü (mit Neustart) | Esc | | Options |
 | (Tasten gehören zu Spielern; wer welche Figur spielt, wählt man im Startmenü) | | | |
