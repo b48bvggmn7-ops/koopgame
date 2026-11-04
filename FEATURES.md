@@ -2126,7 +2126,8 @@ Code in `js/11c-foto-hintergrund.js`, Fotos des Nutzers in `assets/hintergrund/w
   dunkles Unterholz (untere Fotostreifen, 280 px hoch, oben weich ausgeblendet, abgedunkelt, Parallaxe 0,4). Leichte
   grau-grüne Nebel-Tönung über den Fotos; nachts dunkelblau getönt. Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und
   Nacht-Licht am Boden bleiben wie bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.
-- **Abschaltbar:** Optionen → „Foto-Hintergrund: an / aus“ (gespeichert localStorage `monchichi.fotoHintergrund`); aus =
+- **Abschaltbar:** im Spiel **Taste B** (Hinweis oben im Bild, wie M für den Ton; nicht im Pausenmenü) oder
+  Optionen → „Foto-Hintergrund: an / aus“ (gespeichert localStorage `monchichi.fotoHintergrund`); aus =
   wieder der gezeichnete Dschungel-Hintergrund. Solange die Fotos laden, wird ebenfalls der gezeichnete gezeigt.
 - Speicher: beide Ebenen zusammen ~11 MB (vorgezeichnet höchstens in 1,5-facher Spielauflösung). Test foto_hintergrund.
 

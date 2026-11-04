@@ -220,6 +220,7 @@
 | Pausenmenü (mit Neustart) | Esc | | Options |
 | (Tasten gehören zu Spielern; wer welche Figur spielt, wählt man im Startmenü) | | | |
 | Ton aus/an | M | | (Pausenmenü) |
+| Foto-Hintergrund an/aus | B | | (Optionen) |
 | (Standard-Belegung; frei änderbar unter Optionen → Tasten belegen, gespeichert `monchichi.tasten`, Controller je Typ) | | | |
 
 ## Geplante nächste Schritte (mit dem Nutzer abgesprochen)

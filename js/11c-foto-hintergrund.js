@@ -8,7 +8,7 @@
 //  - davor ziehende Nebelschwaden (gezeichnet, verbinden die Fotos zu einer Szene),
 //  - vorne dunkles Unterholz (untere Fotostreifen, oben weich ausgeblendet, bewegt sich schneller = Tiefe).
 // Gilt für alle Level mit neuem Hintergrund-Stil (BG_STIL, also die Dschungel-Welt); nachts dunkelblau getönt.
-// Abschaltbar: Optionen → „Foto-Hintergrund“ (localStorage 'monchichi.fotoHintergrund' = 'aus'). Solange die Fotos
+// Abschaltbar: Taste B oder Optionen → „Foto-Hintergrund“ (localStorage 'monchichi.fotoHintergrund' = 'aus'). Solange die Fotos
 // noch laden (oder fehlen), bleibt der gezeichnete Hintergrund. Ganz entfernen: diese Datei + Eintrag in index.html.
 // Speicher: beide Ebenen zusammen rund 10 MB (Chrome-Budget je Bild ~32 MB, siehe CLAUDE.md).
 const FOTO_HG_FERN = ['assets/hintergrund/wald-3.jpg', 'assets/hintergrund/wald-4.jpg', 'assets/hintergrund/wald-2.jpg'];
@@ -32,6 +32,13 @@ function fotoHgSetzen(an){
   fotoHg.an = !!an;
   try { localStorage.setItem('monchichi.fotoHintergrund', an ? 'an' : 'aus'); } catch(e){}
 }
+// Taste B schaltet um (wie M für den Ton), mit kurzem Hinweis oben im Bild
+window.addEventListener('keydown', e => {
+  if(e.code !== 'KeyB' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+  const el = document.activeElement; if(el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+  fotoHgSetzen(!fotoHgAn());
+  testJumpMsg = fotoHgAn() ? '🌲 Foto-Hintergrund an (B)' : '🎨 Gezeichneter Hintergrund (B)'; testJumpT = performance.now();
+});
 // Foto laden (einmal); null, solange es noch nicht da ist
 function fotoHgBild(src){
   let B = fotoHg.bilder[src];

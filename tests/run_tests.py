@@ -5319,6 +5319,11 @@ async def foto_hintergrund(g):
     r = await g.ev("""(() => { const k = document.querySelector('#sm-foto'); k.click(); k.click(); const t1 = k.textContent; k.click();
       const t2 = k.textContent, an = fotoHgAn(); k.click(); return {t1, t2, an, zurueck: fotoHgAn()}; })()""")
     assert r == {'t1': 'Foto-Hintergrund: an', 't2': 'Foto-Hintergrund: aus', 'an': False, 'zurueck': True}, f'Optionen-Knopf: {r}'
+    # Taste B schaltet um, mit Hinweis (im Spiel, nicht im Pausenmenü)
+    await g.ev("menuScreen = null")
+    await g.p.keyboard.press('KeyB'); r1 = await g.ev("({an: fotoHgAn(), msg: testJumpMsg})")
+    await g.p.keyboard.press('KeyB'); r2 = await g.ev("({an: fotoHgAn(), msg: testJumpMsg})")
+    assert r1['an'] is False and '(B)' in r1['msg'] and r2['an'] is True and r2['msg'] != r1['msg'], f'Taste B: {r1} {r2}'
     # andere Welt: unberührt
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen', tageszeit='mittag'))
     assert await g.ev("fotoHgZeichnen()") is False, 'Foto-Hintergrund darf nur in der Dschungel-Welt gelten'
