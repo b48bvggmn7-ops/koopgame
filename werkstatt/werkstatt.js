@@ -7,6 +7,8 @@ const WS_GH = {owner: 'b48bvggmn7-ops', repo: 'koopgame', branch: 'main', api: '
 const WS_RAND = 0.22;          // Nähte glätten: so breit (Anteil) wird an jedem Rand überblendet
 const WS_KANTE_UNTEN = 0.72;   // Gras-Kante: ab hier (Anteil der Höhe) nach unten weich in die Erde ausblenden
 const WS_QUALITAET = 0.88;     // WebP-Qualität beim Speichern
+const WS_SPIEL_MASSSTAB = 0.85; // Vorschau: Bildpunkte je Welt-px wie im Spiel (Zoom 0,85 auf 1280×720) – die Vorschau
+                                // zeigt also so viele Steine wie ein gleich breiter Spielausschnitt
 
 const WS_TEXTE = {
   erde: 'Erstelle eine fotorealistische, NAHTLOS KACHELBARE Textur, quadratisch (1024×1024 Pixel): dunkler, feuchter Waldboden ' +
@@ -67,10 +69,10 @@ function wsVorlage(id){
   }
   return c;
 }
-// Größenvergleich: Spielfigur (22 × 32 Welt-px) mit den Füßen bei (x, y)
+// Größenvergleich: Spielfigur, so groß wie sie im Spiel gezeichnet wird (rund 36 × 40 Welt-px), Füße bei (x, y)
 function wsFigur(q, x, y, k){
-  q.fillStyle = 'rgba(255,190,120,.9)'; q.beginPath(); q.roundRect(x - 11*k, y - 32*k, 22*k, 32*k, 8*k); q.fill();
-  q.fillStyle = 'rgba(255,255,255,.9)'; q.font = 'bold ' + Math.round(9*k) + 'px system-ui'; q.fillText('Figur', x - 11*k, y - 36*k);
+  q.fillStyle = 'rgba(255,190,120,.9)'; q.beginPath(); q.roundRect(x - 18*k, y - 40*k, 36*k, 40*k, 14*k); q.fill();
+  q.fillStyle = 'rgba(255,255,255,.95)'; q.font = 'bold ' + Math.max(11, Math.round(10*k)) + 'px system-ui'; q.fillText('Figur', x - 18*k, y - 45*k);
 }
 
 // ---------- Bild verarbeiten: Zielgröße (füllend zuschneiden), Nähte glätten, Kante unten/oben ausblenden ----------
@@ -122,17 +124,23 @@ function wsNahtlos(d, inX, inY){
 const wsNebel = new Image(); wsNebel.src = 'assets/hintergrund/nebelwald-1.webp';
 function wsVorschau(id){
   const W = ws[id], T = FOTO_MAT_TEXTUREN[id], c = W.el.vorschau, q = c.getContext('2d'), E = W.ergebnis;
+  // Leinwand so breit wie angezeigt -> 1 Bildpunkt = 1 Bildschirmpunkt, Steine so groß wie im Spiel (1280er Fenster)
+  const breit = Math.round(c.clientWidth) || 900, hoch = Math.round(id === 'kante' ? breit*0.47 : breit);
+  if(c.width !== breit || c.height !== hoch){ c.width = breit; c.height = hoch; }
   if(!E){ q.fillStyle = '#111'; q.fillRect(0, 0, c.width, c.height); return; }
   if(id === 'kante'){
-    const n = 3, bw = c.width/n, bh = bw*T.h/T.w, linie = bh*FOTO_MAT_KANTE.ueber/T.weltH, y0 = c.height*0.45;
+    const M = WS_SPIEL_MASSSTAB, bw = T.weltB*M, bh = T.weltH*M, linie = FOTO_MAT_KANTE.ueber*M, y0 = c.height*0.5;
     if(wsNebel.complete && wsNebel.naturalWidth) q.drawImage(wsNebel, 0, 0, c.width, c.height); else { q.fillStyle = '#8a9a92'; q.fillRect(0, 0, c.width, c.height); }
-    const erde = ws.erde && ws.erde.ergebnis;
-    if(erde){ const s = bw/(FOTO_MAT_TEXTUREN.kante.weltB/FOTO_MAT_TEXTUREN.erde.weltB)/erde.width; for(let x = 0; x < c.width; x += erde.width*s) for(let y = y0 + linie; y < c.height; y += erde.height*s) q.drawImage(erde, x, y, erde.width*s, erde.height*s); }
+    const erde = ws.erde && ws.erde.ergebnis, eb = FOTO_MAT_TEXTUREN.erde.weltB*M;
+    if(erde){ for(let x = 0; x < c.width; x += eb) for(let y = y0 + linie; y < c.height; y += eb) q.drawImage(erde, x, y, eb, eb); }
     else { q.fillStyle = '#3c2f24'; q.fillRect(0, y0 + linie, c.width, c.height); }
-    for(let i = 0; i < n; i++) q.drawImage(E, i*bw, y0, bw, bh);
+    for(let x = 0; x < c.width; x += bw) q.drawImage(E, x, y0, bw, bh);
+    wsFigur(q, c.width/2, y0 + linie, M);
   } else {
-    const n = 3, b = c.width/n;
-    for(let i = 0; i < n; i++) for(let j = 0; j < n; j++) q.drawImage(E, i*b, j*b, b, b);
+    // in echter Spielgröße (Welt-px × Spiel-Zoom), mehrfach nebeneinander, mit Figur zum Vergleich
+    const b = T.weltB*WS_SPIEL_MASSSTAB;
+    for(let x = 0; x < c.width; x += b) for(let y = 0; y < c.height; y += b) q.drawImage(E, x, y, b, b);
+    wsFigur(q, c.width/2, c.height*0.6, WS_SPIEL_MASSSTAB);
   }
 }
 
@@ -223,7 +231,7 @@ function wsKarte(id){
     ]),
     $n('div', {className: 'reihe'}, [
       $n('div', {className: 'feld'}, [$n('h3', {textContent: '3 · Bild einlesen'}), ablage, datei, ...schalter]),
-      $n('div', {className: 'feld'}, [$n('h3', {textContent: '4 · Vorschau (mehrfach nebeneinander – sieht man Nähte?)'}), el.vorschau,
+      $n('div', {className: 'feld'}, [$n('h3', {textContent: '4 · Vorschau in Spielgröße (Figur zum Vergleich – sieht man Nähte?)'}), el.vorschau,
         el.probe, el.probeWeg, el.laden, el.github, el.meldung]),
     ]),
   ]);

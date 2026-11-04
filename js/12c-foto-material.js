@@ -9,21 +9,23 @@
 //  - erde:  Inneres des Bodens (nahtlos in beide Richtungen),
 //  - wand:  Inneres der Wand (nahtlos in beide Richtungen),
 //  - kante: Gras-/Moos-Streifen auf jeder freien Oberkante (Boden UND Wand; nahtlos nach links/rechts, oben durchsichtig).
-// Statt der Comic-Kontur gibt es dann einen weichen Schatten am Rand. Fehlt eine Textur, bleibt dort der alte Look.
+// Statt der Comic-Kontur gibt es dann eine dünne, weiche Kontur. Fehlt eine Textur, bleibt dort der alte Look.
 // Herkunft je Textur: zuerst eine Probe aus der Werkstatt (localStorage 'monchichi.werkstatt.<id>', nur in diesem Browser),
 // sonst die Datei assets/texturen/<id>.webp. Gilt wie der Foto-Hintergrund (11c) nur in der Dschungel-Welt und nur,
 // solange der Foto-Look an ist (Taste B / Optionen). Ganz entfernen: diese Datei + Eintrag in index.html + die zwei
 // Aufrufe in 12-welt-zeichnen.js (streifen, fotoMatUeber).
 // Maße: Bildpunkte der Textur (w × h) und wie groß sie in der Welt ist (weltB × weltH, 1 Kästchen = 40).
 const FOTO_MAT_TEXTUREN = {
-  erde:  {name: 'Erde',            w: 1024, h: 1024, weltB: 240, weltH: 240, x: true, y: true},
-  wand:  {name: 'Wand',            w: 1024, h: 1024, weltB: 240, weltH: 240, x: true, y: true},
+  // Erde/Wand: ein Bild = 480×480 Welt-px (12×12 Kästchen) – mit 240 wirkten die Steine im Spiel doppelt so grob wie
+  // in der Werkstatt-Vorschau (Nutzer: „plötzlich so grob“)
+  erde:  {name: 'Erde',            w: 1024, h: 1024, weltB: 480, weltH: 480, x: true, y: true},
+  wand:  {name: 'Wand',            w: 1024, h: 1024, weltB: 480, weltH: 480, x: true, y: true},
   kante: {name: 'Gras-/Moos-Kante', w: 1024, h: 256,  weltB: 320, weltH: 80,  x: true, y: false},
 };
 // Gras-Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber ragt Gras hoch)
 const FOTO_MAT_KANTE = {ueber: 32, weltH: FOTO_MAT_TEXTUREN.kante.weltH};
 const FOTO_MAT_KONTUR = 'rgba(14,12,8,.55)', FOTO_MAT_KONTUR_B = 2.2;   // weiche Kontur
-const FOTO_MAT_RANDSCHATTEN = 'rgba(0,0,0,.22)', FOTO_MAT_RANDSCHATTEN_B = 16;   // Schatten innen am Rand (Tiefe)
+// (Schatten innen am Rand entfernt – Nutzer: „wie ein Schlagschatten nach innen“)
 
 const fotoMat = {bilder: {}, muster: {}};
 function fotoMatQuelle(id){
@@ -57,8 +59,6 @@ function fotoMatUeber(q, V){
   if(!erde && !wand && !kante) return false;
   if(erde){ q.fillStyle = erde; q.fill(V.PG); }
   if(wand){ q.fillStyle = wand; q.fill(V.PW); }
-  // Schatten innen am Rand: die Form wirkt plastisch statt flach
-  q.save(); q.clip(V.PA); q.strokeStyle = FOTO_MAT_RANDSCHATTEN; q.lineWidth = FOTO_MAT_RANDSCHATTEN_B; q.stroke(V.edge); q.restore();
   q.strokeStyle = FOTO_MAT_KONTUR; q.lineWidth = FOTO_MAT_KONTUR_B; q.stroke(V.edge);
   if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
   return true;

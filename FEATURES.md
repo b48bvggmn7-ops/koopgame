@@ -2139,10 +2139,10 @@ vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
 ### Foto-Material für Boden und Wand + Werkstatt (Nutzerwunsch 04.11. – Schritt 2 zum fotorealistischen Look)
 Code in `js/12c-foto-material.js` (Spiel) und `werkstatt.html` + `werkstatt/werkstatt.js` (Werkstatt). Reine Optik.
 - **Im Spiel:** Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher). Liegt eine Foto-Textur vor, wird sie
-  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, 1024×1024 = 240×240 Welt-px), **Wand**
-  (Inneres der Wände, ebenso) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
+  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, 1024×1024 = 480×480 Welt-px = 12×12 Kästchen;
+  mit 240 waren die Steine im Spiel zu grob), **Wand** (Inneres der Wände, ebenso) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
   und Wand; die Oberfläche liegt 32 Welt-px unter dem oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine
-  weiche dunkle Kontur und einen Schatten innen am Rand. Mit Gras-Kante entfallen die gezeichneten Comic-Pflanzen am
+  dünne, weiche dunkle Kontur (kein Schatten innen am Rand – wirkte wie ein Schlagschatten, Nutzerwunsch). Mit Gras-Kante entfallen die gezeichneten Comic-Pflanzen am
   Boden (Dickicht, Gras, Farne, Blumen, 17a); Tiere und ihre Regeln bleiben. Fehlt eine Textur, bleibt dort der alte
   Look. Gilt nur in der Dschungel-Welt und nur im Foto-Look (Taste B / Optionen schalten Hintergrund UND Material).
 - **Herkunft der Texturen:** zuerst eine Probe aus der Werkstatt (localStorage `monchichi.werkstatt.<id>`, nur in diesem
@@ -2152,7 +2152,8 @@ Code in `js/12c-foto-material.js` (Spiel) und `werkstatt.html` + `werkstatt/werk
   Kopieren, 3) Bild hineinziehen/auswählen -> auf Zielgröße zugeschnitten, „Nähte glätten“ (an: Ränder werden mit den
   um die halbe Größe verschobenen Bildern weich überblendet, danach nahtlos kachelbar; Erde/Wand in beide Richtungen,
   Kante nach links/rechts), Kante unten weich in die Erde ausgeblendet und – ohne durchsichtigen Hintergrund –
-  oben weich ausgeblendet, 4) Vorschau mehrfach nebeneinander (Kante auf Nebelwald + Erde), „Im Spiel ausprobieren“
+  oben weich ausgeblendet, 4) Vorschau in echter Spielgröße (wie ein 1280er Spielfenster, mehrfach nebeneinander,
+  mit Figur zum Vergleich; Kante auf Nebelwald + Erde), „Im Spiel ausprobieren“
   (Probe speichern + Probe-Level `levels/test/werkstatt.json` öffnen), „Probe entfernen“, „Herunterladen“,
   „☁ Auf GitHub speichern“ (assets/texturen/<id>.webp nach main; GitHub-Schlüssel wie im Editor). Tests foto_material,
   werkstatt_seite.
