@@ -2125,8 +2125,8 @@ vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
   gezeichneten Hintergrunds ein langes Nebelwald-Panorama: die vier Bilder nebeneinander, an jeder Nahtstelle
   60 px weich überblendet, als Endlos-Schleife (nach 4 kommt wieder 1), Parallaxe 0,15. Nicht vergrößert (Nutzerwunsch):
   das Panorama ist 75 % der Bildhöhe hoch (`FOTO_HG_HOEHE`, kleiner als die Bilder selbst) und unten bündig; darüber
-  Nebel in der Himmel-Farbe der Bilder, in den der obere Bildrand weich übergeht. Leichter Dunst über allem und vier
-  langsam ziehende, lockere Nebelschwaden (nicht zu dicht, Nutzerwunsch); nachts dunkelblau getönt. Taste B schaltet
+  Nebel in der Himmel-Farbe der Bilder, in den der obere Bildrand weich übergeht. Leichter Dunst über allem, Bodennebel (steigt 300 px vom unteren Rand auf)
+  und vier langsam ziehende, lockere Nebelschwaden in der unteren Bildhälfte (sichtbar, aber nicht zu dicht, Nutzerwunsch); nachts dunkelblau getönt. Taste B schaltet
   den Nebel mit dem ganzen Foto-Look an/aus. (Erste Fassung mit drei eigenen Fotos und Unterholz-Ebene ersetzt –
   man sah die Stückelung.) Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und Nacht-Licht am Boden bleiben wie
   bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.

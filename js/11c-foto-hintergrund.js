@@ -21,7 +21,8 @@ const FOTO_HG_PAR = 0.15;           // Parallaxe: Anteil der Kamerabewegung
 const FOTO_HG_HOEHE = 1, FOTO_HG_OBEN_WEICH = 170;
 const FOTO_HG_HIMMEL_ERSATZ = '206,214,212';            // Himmel-Farbe, falls sie sich nicht aus den Bildern lesen lässt
 const FOTO_HG_DUNST_A = 0.07;       // leichter Dunst über dem ganzen Panorama (Nutzerwunsch: Nebel, aber nicht zu dicht)
-const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.16;   // Nebelschwaden: Farbe, Deckkraft
+const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.3;   // Nebelschwaden: Farbe, Deckkraft (0,16 sah man nicht)
+const FOTO_HG_BODENNEBEL_A = 0.38, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: steigt vom unteren Rand auf (Deckkraft unten, Höhe)
 const FOTO_HG_NACHT = 'rgba(8,22,48,.62)';         // Tönung nachts
 
 const fotoHg = {an: null, bilder: {}, stuecke: null, per: 0, nebel: null, sichtbar: 0, himmel: null, hoehe: 0};
@@ -104,10 +105,13 @@ function fotoHgNebel(t){
     q.fillStyle = gr; q.fillRect(0, 0, 256, 256);
     fotoHg.nebel = c;
   }
-  const breit = 1100, hoch = 300;
+  const gb = ctx.createLinearGradient(0, H, 0, H - FOTO_HG_BODENNEBEL_H);
+  gb.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',' + FOTO_HG_BODENNEBEL_A + ')'); gb.addColorStop(1, 'rgba(' + FOTO_HG_NEBEL + ',0)');
+  ctx.fillStyle = gb; ctx.fillRect(0, H - FOTO_HG_BODENNEBEL_H, W, FOTO_HG_BODENNEBEL_H);
+  const breit = 1300, hoch = 340;
   ctx.save();
   for(let i = 0; i < 4; i++){
-    const y = 200 + i*110, x = ((t*(6 + i*2) - camX*(0.2 + i*0.05) + i*520) % (W + breit) + (W + breit)) % (W + breit) - breit;
+    const y = 330 + i*95, x = ((t*(6 + i*2) - camX*(0.2 + i*0.05) + i*520) % (W + breit) + (W + breit)) % (W + breit) - breit;
     ctx.globalAlpha = FOTO_HG_NEBEL_A*(0.8 + 0.2*Math.sin(t*0.3 + i));
     ctx.drawImage(fotoHg.nebel, x, y - hoch/2, breit, hoch);
   }
