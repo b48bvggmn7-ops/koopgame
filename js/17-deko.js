@@ -281,6 +281,7 @@ function drawBirds(){
     if(x < -40 || x > VW + 40) continue;
     const pal = b.pal, flying = b.state === 'fly';
     const hopY = b.hop > 0 ? -Math.sin((1 - b.hop/280)*Math.PI)*7 : 0;
+    if(typeof fotoVogelZeichnen === 'function' && fotoTiereAn()){ fotoVogelZeichnen(b, x, hopY); continue; }   // Foto-Look: Rotkehlchen/Kohlmeise (20b)
     ctx.save(); ctx.translate(Math.round(x), Math.round(b.y + hopY)); ctx.scale(b.dir, 1);
     if(!flying){
       ctx.strokeStyle = '#c47a2a'; ctx.lineWidth = 1.4;

@@ -2244,7 +2244,10 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   Winkel hinüber auf den Türrahmen, Moos auf der Schwelle bzw. unter dem Sturz hängende Moosfäden.
 - **Haken:** dicke, gedrehte Holz-Liane mit Moosflecken und ein paar dunklen Blättern (`fotoLiane`) bis zum rostigen
   Eisenring (einmal umschlungen). Reichweite als **schwacher, hell-neutraler Kreis**, der sich nie verfärbt (Nutzer: „leicht
-  sichtbarer Radius, soll sich aber nicht verfärben“; vorher ganz ausgeblendet) – dazu **glüht der Ring
+  sichtbarer Radius, soll sich aber nicht verfärben“; vorher ganz ausgeblendet). **Puls** (Nutzer: „weniger auffällig“):
+  der Kreis taucht nur kurz schemenhaft auf – ca. 1,6 s ein- und wieder ausblenden, am hellsten nur etwa so stark wie
+  vorher halb –, dann 5 s gar nicht; alle Haken im selben Takt. Hängt der Affe an einem Haken, zeigt dieser Haken keinen
+  Kreis (`fotoHakenKreis`/`fotoHakenKreisAlpha`, `FOTO_HAKEN_KREIS` in 12e; Comic-Look unverändert) – dazu **glüht der Ring
   orange**, sobald der Affe greifen kann, sonst kein Leuchten (`fotoHakenZeichnen`, `FOTO_HAKEN_GLUT`). Die **Liane des
   Affen** (vom Haken zur Hand) ist dieselbe Holz-Liane, etwas dünner, mit Durchhang wie bisher (`fotoAffenLiane`).
 - **Stacheln:** angespitzte Holzpflöcke statt Metall (Nutzer: „warum ist das noch aus Metall?“) – je Kästchen 4 Pflöcke,
@@ -2270,6 +2273,14 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   Auf Erd-Stücken (bewegter Boden, Wechselboden) sitzt die Plakette knapp unter der Oberfläche und die **Moos-Kante hängt
   über den Diamanten** (Nutzerwunsch): das Moos liegt in einer eigenen Schicht (`p.cm`), gezeichnet nach den Plaketten
   (`fotoStueckMoosZeichnen`, `fotoMoosPlaketteY`, `FOTO_STUECK.moosUeber`).
+- **Tiere** (Nutzer: „andere Tiere, das passt nur halb zum Wald“; gewählt: Vögel + Eichhörnchen; `js/20b-foto-tiere.js`):
+  selbst gezeichnet, gedämpft und halb-realistisch (keine Kontur, keine Bäckchen, kleine Knopfaugen, feine Feder-/Fellstriche).
+  Die Vögel sitzen auf denselben Plätzen und picken/hüpfen wie bisher, sind aber **Rotkehlchen** (graubraun, orange Brust)
+  oder **Kohlmeise** (schwarzer Kopf, weiße Wangen, gelber Bauch mit Streifen), fest je Sitzplatz (`fotoVogelZeichnen`).
+  Statt des Froschs sitzt ein **Eichhörnchen** mit buschigem Schwanz da, knabbert ab und zu an einer Nuss, wippt mit dem
+  Schwanz und hüpft weg, wenn jemand kommt (Frosch-Logik, ohne Quaken; `fotoEichhoernchen`). Schmetterling, Glühwürmchen,
+  Faultier, Fledermaus, Schnecke und Eidechse sind im Foto-Look ausgeblendet, samt ihrer Töne (`FOTO_TIERE_AUS`,
+  `fotoTierTon`). Nur Aussehen – Taste B schaltet sofort um; Pilze/Knospen wie bisher. Test foto_tiere.
 - **Diamant-Größe passend zum Element** (Nutzerwunsch, beide Looks): Tür, bewegte Plattform, Presse und Wechselboden
   bekommen eine Edelstein-Platte, die mit dem Element wächst – vor allem mit der schmalen Seite, etwas mit der langen
   (`edelsteinGroesse`, `EDELSTEIN_MASS` in js/12: 40×40 ≈ 11, 40×160 ≈ 13, ab 2 Reihen dick 15; vorher fest 10–12).

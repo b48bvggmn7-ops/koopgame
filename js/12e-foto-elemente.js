@@ -220,6 +220,27 @@ function fotoTuerAnliegend(d){
   d._fussN = solids.length; d._fussQ = solids; d._fuss = r;
   return r;
 }
+// Haken-Reichweite im Foto-Look (Nutzerwunsch): der Kreis taucht alle paar Sekunden kurz schemenhaft auf – pulsAn s
+// ein- und wieder ausblenden (am hellsten pulsMax), dann pulsAus s nichts. Alle Haken im selben Takt. Hängt jemand an
+// diesem Haken, ist sein Puls aus. Nur Zeichnen (Zeit aus der Uhr), ändert keinen Spielzustand. zeit = fest (für Tests).
+const FOTO_HAKEN_KREIS = {pulsAn: 1.6, pulsAus: 5, pulsMax: 0.6, zeit: null};
+function fotoHakenKreisAlpha(h){
+  const K = FOTO_HAKEN_KREIS;
+  for(const q of [p1, p2]) if(q && q.hookAttached && (q.anchor === h || q._lianeA === h)) return 0;
+  const s = K.zeit != null ? K.zeit : (typeof performance !== 'undefined' ? performance.now() : 0) / 1000;
+  const ph = s % (K.pulsAn + K.pulsAus);
+  if(ph >= K.pulsAn) return 0;
+  return K.pulsMax * Math.pow(Math.sin(ph / K.pulsAn * Math.PI), 2);
+}
+function fotoHakenKreis(h, x, range){
+  const a = fotoHakenKreisAlpha(h);
+  if(a < 0.01) return;
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.fillStyle = 'rgba(235,238,230,0.05)'; ctx.strokeStyle = 'rgba(235,238,230,0.26)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(x, h.y, range, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
 function fotoTuerFuesse(q, x, y, w, h, vert, d){
   const F = FOTO_TUER_FUSS, an = d ? fotoTuerAnliegend(d) : {oben: true, unten: true, links: true, rechts: true};
   const zuf = (a, b) => { const v = Math.sin((a + (d ? d.x : x)*0.13)*12.9898 + (b + y*0.07)*78.233)*43758.5453; return v - Math.floor(v); };

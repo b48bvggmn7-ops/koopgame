@@ -1064,12 +1064,13 @@ function drawSolidLook(s, look, x){
   hgBodenLicht();     // neuer Nacht-Look: Boden abdunkeln, Leuchtpflanzen, Licht um die Figuren (11b)
 
   // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
-  // Reichweiten-Kreis – im Foto-Look nur leicht sichtbar und ohne Farbwechsel (Nutzerwunsch; ob man greifen kann, zeigt
-  // dort der orange glühende Ring)
+  // Reichweiten-Kreis – im Foto-Look nur ab und zu kurz schemenhaft (Puls, fotoHakenKreis in 12e; Nutzerwunsch; ob man
+  // greifen kann, zeigt dort der orange glühende Ring)
   const hakenFoto = typeof fotoLookAktiv === 'function' && fotoLookAktiv();
   for(const h of hooks){
     const x=h.x-camX, range=hookRange(h);
     if(x<-range-30||x>VW+range+30) continue;
+    if(hakenFoto && typeof fotoHakenKreis === 'function'){ fotoHakenKreis(h, x, range); continue; }
     if(hakenFoto){ ctx.fillStyle = 'rgba(235,238,230,0.05)'; ctx.strokeStyle = 'rgba(235,238,230,0.22)'; ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.arc(x,h.y,range,0,Math.PI*2); ctx.fill(); ctx.stroke(); continue; }
     const originX = p1.x, originY = p1.y - p1.h*0.6;

@@ -96,6 +96,8 @@ function buildCritters(){
 
 function updateCritters(dt){
   const t = performance.now();
+  // Foto-Look: ausgeblendete Tiere und das Eichhörnchen (statt Frosch) machen keine Töne (20b-foto-tiere.js)
+  const SFX = fotoTierTon();
   for(const c of critters){
     if(c.kind === 'butterfly'){
       c.ph += dt*0.006;
@@ -183,7 +185,8 @@ function drawCritters(){
     const x = Math.round(c.x - camX);
     if(x < -60 || x > VW + 60) continue;
     ctx.save();
-    if(c.kind === 'butterfly') drawButterfly(c, x, t);
+    if(typeof fotoTierZeichnen === 'function' && fotoTierZeichnen(c, x, t)){}   // Foto-Look: Eichhörnchen statt Frosch, bunte Tiere aus (20b)
+    else if(c.kind === 'butterfly') drawButterfly(c, x, t);
     else if(c.kind === 'frog') drawFrog(c, x, t);
     else if(c.kind === 'snail') drawSnail(c, x, t);
     else if(c.kind === 'mush') drawMushroom(c, x);
@@ -490,6 +493,7 @@ function tierLeuchtenNacht(){
   for(const c of critters){
     const x = Math.round(c.x - camX);
     if(x < -60 || x > VW + 60) continue;
+    if(typeof fotoTierStumm === 'function' && fotoTierStumm(c)) continue;   // Foto-Look: kein Leuchten am Eichhörnchen/ausgeblendeten Tieren
     if(c.kind === 'frog'){ const s = 1.35*c.dir, y = c.y + (c.jy || 0); halo(x, y - 8, 22, '110,255,230', 0.16); [[-3, -11], [1, -13], [4, -10], [-6, -8]].forEach(([a, b]) => dot(x + a*s, y + b*1.35, 1.5, '140,255,235', 0.8)); }
     else if(c.kind === 'snail'){
       const s = 1.25*c.dir; halo(x - 1*s, c.y - 10, 18, '110,230,255', 0.2);

@@ -4995,7 +4995,8 @@ async def tiere_reagieren(g):
     """Süße Tiere: Frosch hüpft weg, Pilz federt mit Ton, Knospe geht auf, Faultier wacht auf (alles nur Deko)."""
     await g.load(level([ground(0, 680, 4000), ground(1200, 400, 200, 40)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
     await g.p.wait_for_timeout(200)
-    # feste Testtiere einsetzen (die zufällige Verteilung hängt vom Level ab)
+    # feste Testtiere einsetzen (die zufällige Verteilung hängt vom Level ab); Comic-Look (im Foto-Look sind Faultier & Co. aus)
+    await g.ev("fotoHg.an = false")
     await g.ev("""critters = [
       {kind:'frog', x:700, y:680, home:700, minX:300, maxX:3900, dir:1, hop:null, t:0, nextCroak:99},
       {kind:'mush', x:1000, y:680, squish:0, lastT:0, big:false},
@@ -5011,6 +5012,7 @@ async def tiere_reagieren(g):
     await g.ev("p1.x = 1600"); await g.p.wait_for_timeout(800)
     assert await g.ev("critters[2].open") > 0.8, 'Knospe geht nicht auf'
     assert not await g.ev('!!deathState'), 'Deko beeinflusst das Spiel'
+    await g.ev("fotoHg.an = null")
 
 @test
 async def figuren_leben(g):
@@ -5852,6 +5854,32 @@ async def liane_nah_ruhiger(g):
     assert n < w*0.6, f'nah am Haken pendelt er nicht deutlich weniger (Ausschlag in Grad): {r}'
 
 @test
+async def foto_tiere(g):
+    """Foto-Look (Nutzer: „andere Tiere, das passt nur halb zum Wald“, Wahl: Vögel + Eichhörnchen): Vögel als Rotkehlchen/
+    Kohlmeise (fotoVogelZeichnen), Frosch als Eichhörnchen (fotoEichhoernchen, stumm), Schmetterling/Faultier & Co.
+    ausgeblendet; im Comic-Look alles wie bisher."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    r = await g.ev("""(() => { const zaehl = {}, alt = {}, aF = fotoLookAktiv;
+      for(const n of ['fotoEichhoernchen', 'fotoVogelZeichnen', 'drawFrog', 'drawButterfly', 'drawSloth']){ alt[n] = window[n]; zaehl[n] = 0; window[n] = function(){ zaehl[n]++; }; }
+      birds.length = 0; birds.push({x: 400, y: 680, homeX: 400, homeY: 680, pal: THEME.birds[0] || {}, dir: 1, state: 'sit', t: 0, vx: 0, vy: 0, flap: 0, hop: 0, peck: 0, bleibt: true});
+      critters.length = 0; critFor = solids;
+      critters.push({kind: 'frog', x: 500, y: 680, home: 500, minX: 420, maxX: 800, dir: 1, hop: null, t: 0, nextCroak: 99},
+                    {kind: 'butterfly', hx: 600, hy: 600, x: 600, y: 600, ph: 1, flee: 0, gold: false, col: '#7ec8ff'},
+                    {kind: 'sloth', x: 700, y: 600, awake: 0, wave: 0, found: false});
+      const e = {};
+      try {
+        fotoLookAktiv = () => true; drawCritters(); drawBirds(); e.foto = Object.assign({}, zaehl);
+        SFX_LOG.length = 0; p1.x = 470; p1.y = 680; critters[0].hop = null; updateCritters(16); e.tonFoto = SFX_LOG.slice();
+        for(const n in zaehl) zaehl[n] = 0;
+        fotoLookAktiv = () => false; drawCritters(); drawBirds(); e.comic = Object.assign({}, zaehl);
+      } finally { fotoLookAktiv = aF; for(const n in alt) window[n] = alt[n]; }
+      return e; })()""")
+    f, c = r['foto'], r['comic']
+    assert f['fotoEichhoernchen'] == 1 and f['fotoVogelZeichnen'] == 1 and f['drawFrog'] == 0 and f['drawButterfly'] == 0 and f['drawSloth'] == 0, f'Foto-Look-Tiere: {r}'
+    assert c['drawFrog'] == 1 and c['drawButterfly'] == 1 and c['drawSloth'] == 1 and c['fotoEichhoernchen'] == 0 and c['fotoVogelZeichnen'] == 0, f'Comic-Look verändert: {r}'
+    assert 'frog' not in r['tonFoto'], f'Eichhörnchen quakt: {r}'
+
+@test
 async def liane_runter_langsam(g):
     """Nutzerwunsch „runter klettern an der Liane geht viel zu schnell“: Liane geben (S) verlängert nur um LIANE2_GEBEN je Schritt."""
     r = await g.ev("""(() => { const A = {x: 0, y: 0}, S = {hx: 0, hy: 100, vx: 0, vy: 0, len: 100, ziel: 100, max: 400, dehn: 0, frei: undefined};
@@ -5871,14 +5899,21 @@ async def muenz_kette_geraeusch(g):
 @test
 async def foto_tuer_fuesse_haken_kreis(g):
     """Foto-Look: Tür bekommt Balken oben/unten (fotoTuerFuesse), Haken-Reichweite ist ein schwacher, neutraler Kreis
-    (verfärbt sich nicht, auch nicht in Reichweite)."""
+    (verfärbt sich nicht, auch nicht in Reichweite). Nutzerwunsch Puls: der Kreis taucht nur kurz auf (pulsAn s, am
+    hellsten pulsMax), dann pulsAus s nichts; hängt der Affe an dem Haken, ist dessen Kreis aus."""
     await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                        doors=[{'x': 600, 'y': yy, 'link': 1} for yy in (560, 600, 640)], hooks=[{'x': 300, 'y': 400, 'radius': 200}]))
+    pu = await g.ev("""(() => { const K = FOTO_HAKEN_KREIS, h = hooks[0], e = {};
+      K.zeit = K.pulsAn/2; e.mitte = fotoHakenKreisAlpha(h);
+      K.zeit = K.pulsAn + K.pulsAus/2; e.pause = fotoHakenKreisAlpha(h);
+      K.zeit = K.pulsAn/2; p1.hookAttached = true; p1.anchor = h; e.haengt = fotoHakenKreisAlpha(h);
+      p1.hookAttached = false; p1.anchor = null; K.zeit = null; e.max = K.pulsMax; return e; })()""")
+    assert abs(pu['mitte'] - pu['max']) < 0.01 and pu['pause'] == 0 and pu['haengt'] == 0, f'Haken-Puls: {pu}'
     r = await g.ev("""(() => { let fuss = 0, kreis = []; const alt = fotoTuerFuesse, aF = fotoLookAktiv;
-      fotoLookAktiv = () => true; fotoTuerFuesse = function(){ fuss++; };
+      fotoLookAktiv = () => true; fotoTuerFuesse = function(){ fuss++; }; FOTO_HAKEN_KREIS.zeit = FOTO_HAKEN_KREIS.pulsAn/2;
       const arc = CanvasRenderingContext2D.prototype.arc;
       CanvasRenderingContext2D.prototype.arc = function(x, y, rr){ if(Math.abs(rr - 200) < 1) kreis.push(String(this.strokeStyle)); return arc.apply(this, arguments); };
-      try { draw(); p1.x = 300; p1.y = 520; draw(); } finally { CanvasRenderingContext2D.prototype.arc = arc; fotoTuerFuesse = alt; fotoLookAktiv = aF; }
+      try { draw(); p1.x = 300; p1.y = 520; draw(); } finally { CanvasRenderingContext2D.prototype.arc = arc; fotoTuerFuesse = alt; fotoLookAktiv = aF; FOTO_HAKEN_KREIS.zeit = null; }
       return {fuss, kreis}; })()""")
     assert r['fuss'] >= 1, f'Tür ohne Füße im Foto-Look: {r}'
     assert len(r['kreis']) >= 2 and len(set(r['kreis'])) == 1, f'Haken-Kreis fehlt oder verfärbt sich: {r}'
