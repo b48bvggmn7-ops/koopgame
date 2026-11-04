@@ -312,7 +312,7 @@ function matPfadeNeu(){
   return {PG: P(), PW: P(), PA: P(), edge: P(), gras: P(), grasLinie: P(), grasLicht: P(), baender: new Map(),
           ecke: P(), eckeLinie: P(), eckeLicht: P(), ziegel: MAT_ZIEGEL.map(P), zLicht: P(), zSchatten: P(), zMoos: P(), zRiss: P(),
           wLicht: P(), wGras: P(), wGrasHell: P(), wMoos: P(), hatG: false, hatW: false,
-          streifen: new Map()};   // freie Oberkanten je Höhe y (Foto-Material: Gras-Kante, js/12c-foto-material.js)
+          streifen: new Map()};   // freie Boden-Oberkanten je Höhe y (Foto-Material: Moos-Kante, js/12c-foto-material.js)
 }
 // Berechnet für die Kästchen 'liste' ({c, r, t}) alle Zeichenschritte von buildChunk (Vorschau) als Pfade in Welt-Koordinaten.
 // ziegelVon/ziegelBis: nur Ziegel mit linker Kante in diesem Bereich (jeder Ziegel gehört genau einem Stück); weitere
@@ -327,7 +327,7 @@ function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
     const {x, y, rad, n, s, wl, e} = k, edge = D.edge;
     (k.t==1?D.PG:D.PW).roundRect(x,y,40,40,rad); D.PA.roundRect(x,y,40,40,rad);
     if(!n){edge.moveTo(x+rad[0],y);edge.lineTo(x+40-rad[1],y)}if(!e){edge.moveTo(x+40,y+rad[1]);edge.lineTo(x+40,y+40-rad[2])}if(!s){edge.moveTo(x+40-rad[2],y+40);edge.lineTo(x+rad[3],y+40)}if(!wl){edge.moveTo(x,y+40-rad[3]);edge.lineTo(x,y+rad[0])}
-    if(!n){ if(!D.streifen.has(y)) D.streifen.set(y, new Path2D()); D.streifen.get(y).rect(x, y - FOTO_MAT_KANTE.ueber, 40, FOTO_MAT_KANTE.weltH); }
+    if(!n && k.t == 1){ if(!D.streifen.has(y)) D.streifen.set(y, new Path2D()); D.streifen.get(y).rect(x, y - FOTO_MAT_KANTE.ueber, 40, FOTO_MAT_KANTE.weltH); }
     if(rad[0]){edge.moveTo(x,y+rad[0]);edge.arc(x+rad[0],y+rad[0],rad[0],Math.PI,1.5*Math.PI)}if(rad[1]){edge.moveTo(x+40-rad[1],y);edge.arc(x+40-rad[1],y+rad[1],rad[1],1.5*Math.PI,2*Math.PI)}if(rad[2]){edge.moveTo(x+40,y+40-rad[2]);edge.arc(x+40-rad[2],y+40-rad[2],rad[2],0,.5*Math.PI)}if(rad[3]){edge.moveTo(x+rad[3],y+40);edge.arc(x+rad[3],y+40-rad[3],rad[3],.5*Math.PI,Math.PI)}
   }
   // Erde: Gras-Kappe auf freien Oberseiten (Schatten-Band, Grasfläche, dunkle Wellenlinie, helle Oberkante)

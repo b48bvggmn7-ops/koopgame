@@ -5364,11 +5364,11 @@ async def foto_material(g):
     await g.p.wait_for_function("['erde', 'wand', 'kante'].every(id => fotoMatBild(id))", timeout=5000)
     mit = await g.ev(pruefen)
     assert mit['kontur'] == 0 and mit['deko'] == 0 and mit['gleich'], f'Foto-Material nicht aktiv: {mit}'
-    assert mit['streifen'] == [360, 520, 600], f'Gras-Kante nicht auf allen freien Oberkanten (Boden, Stufe, Wand): {mit}'
+    assert mit['streifen'] == [520, 600], f'Moos-Kante nur auf freien Boden-Oberkanten (Boden, Stufe – nicht auf der Wand): {mit}'
     # Farbe in der Mitte des Bodens = Erde-Probe, in der Wand = Wand-Probe (Welt -> Bildschirm)
     farbe = await g.ev("""(() => { const px = (x, y) => { const d = ctx.getImageData(Math.round(x*zoom*RS), Math.round((y*zoom + H*(1 - zoom))*RS), 1, 1).data; return [d[0], d[1], d[2]]; };
       return {erde: px(200, 680), wand: px(800, 500)}; })()""")
-    assert abs(farbe['erde'][0] - 0x5a) < 30 and farbe['erde'][2] < 60, f'Erde-Textur nicht im Boden: {farbe}'
+    assert abs(farbe['erde'][0] - 0x5a*(1 - 0.38)) < 20 and farbe['erde'][2] < 45, f'Erde-Textur (abgedunkelt) nicht im Boden: {farbe}'
     assert farbe['wand'][2] > farbe['wand'][0], f'Wand-Textur nicht in der Wand: {farbe}'
     # Comic-Look (B aus): wieder wie bisher
     await g.ev("fotoHg.an = false")

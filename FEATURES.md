@@ -2146,23 +2146,24 @@ sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Op
   darum sind pro Bild höchstens 2 sichtbar (~14 MB). Test foto_hintergrund.
 
 ### Foto-Material für Boden und Wand (Nutzerwunsch 04.11. – Schritt 2 zum fotorealistischen Look)
-Code in `js/12c-foto-material.js`. Reine Optik. (Die Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf
-Nutzerwunsch wieder gelöscht – „brauchen wir nicht“.)
-- **Im Spiel:** Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher). Liegt eine Foto-Textur vor, wird sie
-  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens; `assets/texturen/erde.webp` = Waldboden-Foto des
-  Nutzers, 727×727, nahtlos gemacht (Ränder weich mit verschobenen Kopien überblendet); ein Bild = 180×180 Welt-px;
-  jede Textur wird einmal sauber auf Bildschirmgröße verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres
-  der Wände; `assets/texturen/wand.webp` = Bruchstein-Mauer mit Moos/Efeu des Nutzers, per Schnitt entlang der Fugen
-  nahtlos gemacht – Überblenden hätte doppelte Fugen ergeben –, 579×595 = 148×152 Welt-px, ein Stein rund 30 Welt-px
-  hoch; davor kurz die nachgeschärften Säulen-Steine aus dem Testbild) und **Gras-/Moos-Kante**
-  (ein Bild = 320×80 Welt-px, auf jeder freien Oberkante von Boden und Wand; die Oberfläche liegt 32 Welt-px unter dem
-  oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine dünne, weiche dunkle Kontur (kein Schatten innen am
-  Rand – wirkte wie ein Schlagschatten, Nutzerwunsch). Fehlt eine Textur, bleibt dort der alte Look. Gilt nur in der
-  Dschungel-Welt und nur im Foto-Look (Taste B / Optionen schalten Hintergrund UND Material).
+Code in `js/12c-foto-material.js`. Reine Optik, gilt nur im Foto-Look (Taste B / Optionen) in der Dschungel-Welt. (Die
+Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder gelöscht.)
+- Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher); die Foto-Texturen liegen an der Welt verankert
+  darüber (`assets/texturen/<id>.webp`; jede Textur wird einmal sauber auf Bildschirmgröße verkleinert, damit feine
+  Muster nicht flimmern). Fehlt eine Textur, bleibt dort der alte Look.
+  - **Erde** (Inneres des Bodens): Waldboden-Foto des Nutzers, 727×727, nahtlos gemacht (Ränder weich mit verschobenen
+    Kopien überblendet), ein Bild = 180×180 Welt-px; **dunkler** gemacht (38 % Schwarz darüber, Nutzerwunsch).
+  - **Wand**: Bruchstein-Mauer mit Moos/Efeu des Nutzers, per Schnitt entlang der Fugen nahtlos (Überblenden hätte
+    doppelte Fugen ergeben), 579×595; **kleinere Blöcke** (Nutzerwunsch): ein Bild = 74×76 Welt-px, ein Stein rund
+    15 Welt-px hoch (vorher 148×152; davor kurz die nachgeschärften Säulen-Steine aus dem Testbild).
+  - **Moos-Kante** (nur auf freien Oberkanten von BODEN, nicht auf Wänden): Moosmatte mit Gras, Blättern und
+    hängenden Wurzeln des Nutzers, freigestellt und per Schnitt nach links/rechts nahtlos, 1628×374 = 326×75 Welt-px;
+    die Bodenoberfläche liegt 30 Welt-px unter dem oberen Streifenrand (Moos beginnt knapp darüber, Wurzeln hängen
+    in die Erde).
+- **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
-  Foto-Look nie gezeichnet (unabhängig von den Texturen); Tiere und ihre Regeln bleiben. Im Comic-Look wie bisher.
-- **Texturen:** Dateien `assets/texturen/<id>.webp` (id = erde, wand, kante; derzeit erde und wand). Mit Erde-Foto
-  entfallen im Foto-Look auch die grünen Comic-Grasecken an Stufen. Test foto_material.
+  Foto-Look nie gezeichnet; mit Erde-Foto auch keine grünen Comic-Grasecken an Stufen. Tiere und ihre Regeln bleiben.
+  Im Comic-Look alles wie bisher. Test foto_material.
 
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:

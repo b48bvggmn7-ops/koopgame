@@ -7,8 +7,8 @@
 // Foto-Textur vor, wird sie ÜBER die bisherige Füllung gelegt (an der Welt verankert, wandert nicht mit der Kamera):
 //  - erde:  Inneres des Bodens (nahtlos in beide Richtungen),
 //  - wand:  Inneres der Wand (nahtlos in beide Richtungen),
-//  - kante: Gras-/Moos-Streifen auf jeder freien Oberkante (Boden UND Wand; nahtlos nach links/rechts, oben durchsichtig).
-// Statt der Comic-Kontur gibt es dann eine dünne, weiche Kontur. Fehlt eine Textur, bleibt dort der alte Look.
+//  - kante: Moos-/Wurzel-Streifen auf jeder freien Oberkante von BODEN (nahtlos nach links/rechts, oben durchsichtig).
+// Statt der Comic-Kontur gibt es dann keine Kontur. Fehlt eine Textur, bleibt dort der alte Look.
 // Herkunft je Textur: die Datei assets/texturen/<id>.webp (die Werkstatt-Seite wurde auf Nutzerwunsch gelöscht). Gilt wie der Foto-Hintergrund (11c) nur in der Dschungel-Welt und nur,
 // solange der Foto-Look an ist (Taste B / Optionen). Ganz entfernen: diese Datei + Eintrag in index.html + die zwei
 // Aufrufe in 12-welt-zeichnen.js (streifen, fotoMatUeber).
@@ -16,15 +16,18 @@
 const FOTO_MAT_TEXTUREN = {
   // Erde: Waldboden-Foto des Nutzers (727×727, nahtlos gemacht) = 180×180 Welt-px (4,5 Kästchen) – Steinchen klein
   erde:  {weltB: 180, weltH: 180, y: true},
-  // Wand: Bruchstein-Mauer des Nutzers (per Schnitt entlang der Fugen nahtlos, 579×595) – ein Stein rund 30 Welt-px hoch
-  // (gut drei Viertel einer Figur), ein Bild 148×152 Welt-px
-  wand:  {weltB: 148, weltH: 152, y: true},
-  kante: {weltB: 320, weltH: 80,  y: false},
+  // Wand: Bruchstein-Mauer des Nutzers (per Schnitt entlang der Fugen nahtlos, 579×595) – Nutzer „kleinere Blöcke“:
+  // ein Bild 74×76 Welt-px, ein Stein rund 15 Welt-px hoch (vorher 148×152)
+  wand:  {weltB: 74, weltH: 76, y: true},
+  // Moos-/Wurzel-Kante des Nutzers (freigestellt, per Schnitt nahtlos, 1628×374) = 326×75 Welt-px; nur auf Boden-Oberkanten
+  kante: {weltB: 326, weltH: 75, y: false},
 };
-// Gras-Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber ragt Gras hoch)
-const FOTO_MAT_KANTE = {ueber: 32, weltH: FOTO_MAT_TEXTUREN.kante.weltH};
-const FOTO_MAT_KONTUR = 'rgba(14,12,8,.55)', FOTO_MAT_KONTUR_B = 2.2;   // weiche Kontur
-// (Schatten innen am Rand entfernt – Nutzer: „wie ein Schlagschatten nach innen“)
+// Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber Gras/Blätter; die
+// Moosmatte beginnt rund 4 Welt-px über der Oberfläche, die Füße sinken leicht ein; darunter hängen die Wurzeln)
+const FOTO_MAT_KANTE = {ueber: 30, weltH: FOTO_MAT_TEXTUREN.kante.weltH};
+// Kontur: im Foto-Look keine (Nutzerwunsch „nimm die Kontur weg“); Schatten innen am Rand gibt es auch nicht
+// Boden dunkler (Nutzerwunsch): so viel Schwarz über das Erde-Foto
+const FOTO_MAT_ERDE_DUNKEL = 0.38;
 
 const fotoMat = {bilder: {}, muster: {}};
 // (window.fotoMatTestQuellen: nur für automatische Tests – eigene Bilder statt der Dateien)
@@ -75,9 +78,8 @@ function fotoMatUeber(q, V){
   if(!fotoMatAn()) return false;
   const erde = V.hatG && fotoMatMuster(q, 'erde'), wand = V.hatW && fotoMatMuster(q, 'wand'), kante = fotoMatBild('kante');
   if(!erde && !wand && !kante) return false;
-  if(erde){ q.fillStyle = erde; q.fill(V.PG); }
+  if(erde){ q.fillStyle = erde; q.fill(V.PG); q.fillStyle = 'rgba(0,0,0,' + FOTO_MAT_ERDE_DUNKEL + ')'; q.fill(V.PG); }
   if(wand){ q.fillStyle = wand; q.fill(V.PW); }
-  q.strokeStyle = FOTO_MAT_KONTUR; q.lineWidth = FOTO_MAT_KONTUR_B; q.stroke(V.edge);
   if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
   return true;
 }
