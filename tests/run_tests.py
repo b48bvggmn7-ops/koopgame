@@ -5299,11 +5299,11 @@ async def foto_hintergrund(g):
       hgStilZeichnen = alt;
       const S = fotoHg.stuecke, mb = c => c.width*c.height*4/1e6;
       // je Stück: linker Rand weich (durchsichtig -> deckend), liegt auf dem Ende des vorigen; Schleife 4 -> 1
-      const rand = S.map(s => { const q = s.c.getContext('2d'); return [q.getImageData(0, 360, 1, 1).data[3], q.getImageData(FOTO_HG_UEBERGANG + 2, 360, 1, 1).data[3]]; });
-      const lueckenlos = S.every((s, i) => i === 0 || s.x === S[i - 1].x + S[i - 1].c.width - FOTO_HG_UEBERGANG)
-        && fotoHg.per === S[3].x + S[3].c.width - FOTO_HG_UEBERGANG;
+      const rand = S.map(s => { const q = s.c.getContext('2d'); return [q.getImageData(0, 360, 1, 1).data[3], q.getImageData(Math.ceil(FOTO_HG_UEBERGANG*s.c.height/s.h) + 2, 360, 1, 1).data[3]]; });
+      const lueckenlos = S.every((s, i) => i === 0 || s.x === S[i - 1].x + S[i - 1].w - FOTO_HG_UEBERGANG)
+        && fotoHg.per === S[3].x + S[3].w - FOTO_HG_UEBERGANG;
       let maxSichtbar = 0; for(let x = 0; x < fotoHg.per; x += 97){ ctx.save(); fotoHgPanorama(x); ctx.restore(); maxSichtbar = Math.max(maxSichtbar, fotoHg.sichtbar); }
-      return {a, gezeichnet, n: S.length, hoch: S.every(s => s.c.height === Math.round(H*FOTO_HG_HOEHE)) && FOTO_HG_HOEHE === 1, mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
+      return {a, gezeichnet, n: S.length, hoch: S.every(s => s.h === Math.round(H*FOTO_HG_HOEHE) && s.c.height >= 600) && FOTO_HG_HOEHE === 1, mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
               gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()""")
     assert r['a'] and r['gezeichnet'] == 0, f'Foto-Hintergrund nicht gezeichnet: {r}'
     assert r['gleich'], 'Zeichnen hat Spielzustand verändert'
@@ -5343,6 +5343,7 @@ async def foto_material(g):
     Oberkante, auch auf Wänden), weiche Kontur statt Comic-Linie, Comic-Pflanzen am Boden entfallen; ohne Texturen oder
     im Comic-Look (Taste B) alles wie bisher. Zeichnen ändert keinen Spielzustand."""
     fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    await g.p.route('**/assets/texturen/**', lambda route: route.abort())   # gespeicherte Texturen ausblenden: „ohne Texturen“ prüfen
     srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)
     teile = [ground(0, 600, 1200, 160), ground(400, 520, 160, 80), G_wand := {'x': 760, 'y': 360, 'w': 80, 'h': 240, 'type': 'wall'}]
     await g.load(level(teile, {'x': 200, 'y': 600}, {'x': 140, 'y': 600}, welt='dschungel', tageszeit='mittag'))
@@ -5369,7 +5370,27 @@ async def foto_material(g):
     aus = await g.ev(pruefen)
     assert aus['kontur'] >= 1 and aus['deko'] == 1, f'im Comic-Look wie bisher: {aus}'
     await g.ev("['erde', 'wand', 'kante'].forEach(id => localStorage.removeItem('monchichi.werkstatt.' + id)); localStorage.removeItem('monchichi.fotoHintergrund'); fotoHg.an = null; fotoMat.bilder = {}; fotoMat.muster = {}; menuScreen = null")
+    await g.p.unroute('**/assets/texturen/**')
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
+
+@test
+async def foto_look_ohne_farbfilter(g):
+    """Foto-Look (Nutzer: „sieht nicht 1:1 so aus wie die Bilder“): über dem Foto-Hintergrund keine Farbfilter des
+    Comic-Looks – kein warmer Schimmer, kein Abend-Farbstich (THEME.tint), keine Vignette; im Comic-Look (B) wie bisher."""
+    srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit='morgen'))
+    await g.ev("fotoHgSetzen(true)")
+    await g.p.wait_for_function("fotoHgBereit()", timeout=15000)
+    await g.ev("menuScreen = 'pause'")
+    pruefen = """(() => { const f = []; const alt = ctx.fillRect, altB = ctx.drawImage;
+      ctx.fillRect = function(x, y, w, h){ if(w >= W && h >= H) f.push(String(this.fillStyle)); return alt.apply(this, arguments); };
+      ctx.drawImage = function(b){ if(b === VIGNETTE || (typeof DJ !== 'undefined' && b === DJ.vign)) f.push('vignette'); return altB.apply(this, arguments); };
+      draw(); ctx.fillRect = alt; ctx.drawImage = altB; return f; })()"""
+    an = await g.ev(pruefen)
+    assert 'vignette' not in an and not any(s.startswith('rgba(255, 190') or s.startswith('#') for s in an), f'Farbfilter im Foto-Look: {an}'
+    aus = await g.ev("fotoHg.an = false, 0") or await g.ev(pruefen)
+    assert 'vignette' in aus, f'im Comic-Look muss die Vignette bleiben: {aus}'
+    await g.ev("try { localStorage.removeItem('monchichi.fotoHintergrund'); } catch(e){} fotoHg.an = null; menuScreen = null")
 
 @test
 async def werkstatt_seite(g):

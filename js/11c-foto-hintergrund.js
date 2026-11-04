@@ -49,14 +49,16 @@ function fotoHgBild(src){
 }
 // ein Stück: Bild auf Höhe h, linker Rand auf u Bildpunkten weich eingeblendet (liegt über dem Ende des vorigen),
 // oberer Rand weich ausgeblendet (geht in den Nebel darüber über)
+// Das Stück behält die Bildpunkte des Originals (wird erst beim Zeichnen EINMAL auf Bildschirmgröße gebracht – vorher
+// wurde zweimal umgerechnet, das machte es unscharf). Rückgabe {c, w, h}: Leinwand + Größe in Spiel-Bildpunkten.
 function fotoHgStueck(img, u, h){
-  const w = Math.round(img.width*h/img.height), c = document.createElement('canvas'); c.width = w; c.height = h;
-  const q = c.getContext('2d'); q.drawImage(img, 0, 0, w, h);
+  const k = img.height/h, c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const q = c.getContext('2d'); q.drawImage(img, 0, 0);
   q.globalCompositeOperation = 'destination-in';
-  const gr = q.createLinearGradient(0, 0, u, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
-  q.fillStyle = gr; q.fillRect(0, 0, w, h);
-  if(h < H){ const go = q.createLinearGradient(0, 0, 0, FOTO_HG_OBEN_WEICH); go.addColorStop(0, 'rgba(0,0,0,0)'); go.addColorStop(1, 'rgba(0,0,0,1)'); q.fillStyle = go; q.fillRect(0, 0, w, h); }
-  return c;
+  const gr = q.createLinearGradient(0, 0, u*k, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
+  q.fillStyle = gr; q.fillRect(0, 0, c.width, c.height);
+  if(h < H){ const go = q.createLinearGradient(0, 0, 0, FOTO_HG_OBEN_WEICH*k); go.addColorStop(0, 'rgba(0,0,0,0)'); go.addColorStop(1, 'rgba(0,0,0,1)'); q.fillStyle = go; q.fillRect(0, 0, c.width, c.height); }
+  return {c, w: Math.round(img.width/k), h};
 }
 // Himmel-Farbe = Mittel der obersten Bildreihen (bei file:// nicht lesbar -> Ersatzfarbe)
 function fotoHgHimmel(imgs){
@@ -74,7 +76,7 @@ function fotoHgBereit(){
   if(imgs.some(b => !b)) return false;
   let x = 0;
   fotoHg.hoehe = Math.round(H*FOTO_HG_HOEHE); fotoHg.himmel = fotoHgHimmel(imgs);
-  fotoHg.stuecke = imgs.map(img => { const c = fotoHgStueck(img, FOTO_HG_UEBERGANG, fotoHg.hoehe), s = {c, x}; x += c.width - FOTO_HG_UEBERGANG; return s; });
+  fotoHg.stuecke = imgs.map(img => { const s = fotoHgStueck(img, FOTO_HG_UEBERGANG, fotoHg.hoehe); s.x = x; x += s.w - FOTO_HG_UEBERGANG; return s; });
   fotoHg.per = x;   // Schleife: nach dem letzten Stück kommt wieder das erste (es blendet über das Ende des letzten)
   return true;
 }
@@ -83,7 +85,7 @@ function fotoHgPanorama(off){
   const per = fotoHg.per, o = Math.round((((off % per) + per) % per)*RS)/RS, liste = [];
   for(const s of fotoHg.stuecke) for(const k of [-1, 0, 1]){
     const x = s.x - o + k*per;
-    if(x < W && x + s.c.width > 0) liste.push([x, s.c]);
+    if(x < W && x + s.w > 0) liste.push([x, s]);
   }
   liste.sort((a, b) => a[0] - b[0]);
   // Nebel-Himmel oben (oben etwas heller), Panorama unten bündig darauf
@@ -91,7 +93,8 @@ function fotoHgPanorama(off){
   if(y0 > 0){ const gr = ctx.createLinearGradient(0, 0, 0, y0 + FOTO_HG_OBEN_WEICH);
     gr.addColorStop(0, 'rgba(' + FOTO_HG_NEBEL + ',1)'); gr.addColorStop(1, 'rgba(' + fotoHg.himmel + ',1)');
     ctx.fillStyle = gr; ctx.fillRect(0, 0, W, y0 + FOTO_HG_OBEN_WEICH); }
-  for(const [x, c] of liste) ctx.drawImage(c, x, y0, c.width, c.height);
+  ctx.imageSmoothingQuality = 'high';
+  for(const [x, s] of liste) ctx.drawImage(s.c, x, y0, s.w, s.h);
   ctx.fillStyle = 'rgba(' + fotoHg.himmel + ',' + FOTO_HG_DUNST_A + ')'; ctx.fillRect(0, 0, W, H);
   fotoHg.sichtbar = liste.length;
 }
@@ -117,6 +120,9 @@ function fotoHgNebel(t){
   }
   ctx.restore();
 }
+// Foto-Look gerade sichtbar? Dann keine Farbfilter des Comic-Looks über dem Bild (Nutzer: „sieht nicht 1:1 so aus wie
+// die Bilder“ – warmer Schimmer, Abend-Farbstich THEME.tint und grüne Vignette färbten die Fotos gelblich/dunkel)
+function fotoLookAktiv(){ return !!BG_STIL && fotoHgAn() && !!fotoHg.stuecke; }
 // aus drawBackground (11-hintergrund.js): true = Foto-Hintergrund gezeichnet, false = gezeichneten Stil nehmen
 function fotoHgZeichnen(){
   if(!BG_STIL || !fotoHgAn() || !fotoHgBereit()) return false;

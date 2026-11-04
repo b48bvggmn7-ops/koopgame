@@ -19,7 +19,8 @@ const FOTO_MAT_TEXTUREN = {
   // Erde/Wand: ein Bild = 140×140 Welt-px (3,5 Kästchen). Nutzerwunsch: Kachelgröße wie in der ersten Werkstatt-
   // Vorschau (dort ~175 Bildschirmpunkte je Bild = im Vollbild 1920 rund 140 Welt-px); 240 und 480 waren zu grob.
   erde:  {name: 'Erde',            w: 1024, h: 1024, weltB: 140, weltH: 140, x: true, y: true},
-  wand:  {name: 'Wand',            w: 1024, h: 1024, weltB: 140, weltH: 140, x: true, y: true},
+  // Wand 150: die Steine aus dem Testbild des Nutzers (Säulen, 112 Bildpunkte ≙ 150 Welt-px) erscheinen 1:1 so groß
+  wand:  {name: 'Wand',            w: 1024, h: 1024, weltB: 150, weltH: 150, x: true, y: true},
   kante: {name: 'Gras-/Moos-Kante', w: 1024, h: 256,  weltB: 320, weltH: 80,  x: true, y: false},
 };
 // Gras-Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber ragt Gras hoch)

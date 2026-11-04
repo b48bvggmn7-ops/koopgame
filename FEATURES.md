@@ -2130,6 +2130,9 @@ vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
   den Nebel mit dem ganzen Foto-Look an/aus. (Erste Fassung mit drei eigenen Fotos und Unterholz-Ebene ersetzt –
   man sah die Stückelung.) Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und Nacht-Licht am Boden bleiben wie
   bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.
+- **Farben 1:1 wie die Bilder:** Im Foto-Look liegen keine Farbfilter des Comic-Looks über dem Bild (kein warmer
+  Schimmer, kein Abend-Farbstich `THEME.tint`, keine Vignette; Nacht-Abdunklung bleibt). Die Bilder werden nur einmal
+  auf Bildschirmgröße umgerechnet (vorher zweimal = unschärfer). Test foto_look_ohne_farbfilter.
 - **Abschaltbar:** im Spiel **Taste B** (Hinweis oben im Bild, wie M für den Ton; nicht im Pausenmenü) oder
   Optionen → „Foto-Hintergrund: an / aus“ (gespeichert localStorage `monchichi.fotoHintergrund`); aus =
   wieder der gezeichnete Dschungel-Hintergrund. Solange die Fotos laden, wird ebenfalls der gezeichnete gezeigt.
@@ -2141,7 +2144,9 @@ Code in `js/12c-foto-material.js` (Spiel) und `werkstatt.html` + `werkstatt/werk
 - **Im Spiel:** Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher). Liegt eine Foto-Textur vor, wird sie
   an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, 1024×1024 = 140×140 Welt-px = 3,5 Kästchen;
   Nutzerwunsch: Kachelgröße wie in der ersten Werkstatt-Vorschau, 240/480 waren zu grob; die Textur wird einmal
-  sauber auf Bildschirmgröße verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres der Wände, ebenso) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
+  sauber auf Bildschirmgröße verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres der Wände, 150×150
+  Welt-px; Datei `assets/texturen/wand.webp` = die Steine der Säulen aus dem Testbild des Nutzers, 1:1 in derselben
+  Größe, nahtlos gemacht) und **Gras-/Moos-Kante** (1024×256 = 320×80 Welt-px, auf jeder freien Oberkante von Boden
   und Wand; die Oberfläche liegt 32 Welt-px unter dem oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine
   dünne, weiche dunkle Kontur (kein Schatten innen am Rand – wirkte wie ein Schlagschatten, Nutzerwunsch). Mit Gras-Kante entfallen die gezeichneten Comic-Pflanzen am
   Boden (Dickicht, Gras, Farne, Blumen, 17a); Tiere und ihre Regeln bleiben. Fehlt eine Textur, bleibt dort der alte
