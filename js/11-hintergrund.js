@@ -519,7 +519,7 @@ function drawWaterfallFlow(off, t){
   }
 }
 function drawBackground(){
-  if(BG_STIL){ hgStilZeichnen(); if(typeof weatherBgTint === 'function') weatherBgTint(); return; }   // neuer Stil (11b)
+  if(BG_STIL){ if(!(typeof fotoHgZeichnen === 'function' && fotoHgZeichnen())) hgStilZeichnen(); if(typeof weatherBgTint === 'function') weatherBgTint(); return; }   // neuer Stil (11b)
   ctx.drawImage(BG_SKY, 0, 0);
   if(typeof weatherSkyFx === 'function') weatherSkyFx();   // Sonnenstrahlen, Regenbogen (19-wetter.js)
   const t = performance.now();

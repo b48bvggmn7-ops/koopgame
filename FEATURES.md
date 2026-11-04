@@ -2118,6 +2118,18 @@ js/17-deko.js).
   Nacht-Licht 38. Tests: dschungel_look_auswahl, dschungel_hintergrund_tag_nacht, dschungel_tiere_regeln,
   dschungel_leuchtpflanzen.
 
+### Foto-Hintergrund (Nebelwald, Nutzerwunsch 04.11. – erster Schritt zum fotorealistischen Look)
+Code in `js/11c-foto-hintergrund.js`, Fotos des Nutzers in `assets/hintergrund/wald-1…4.jpg`. Reine Optik.
+- In der Dschungel-Welt (alle Tageszeiten, d. h. überall, wo der Dschungel-Look aus 11b gilt) zeigt das Spiel statt des
+  gezeichneten Hintergrunds die Wald-Fotos: hinten ein langes Panorama aus wald-3, wald-4, wald-2 (bildhoch, Fotos weich
+  ineinander überblendet, wiederholt sich ohne Naht, Parallaxe 0,1), davor vier langsam ziehende Nebelschwaden, vorne
+  dunkles Unterholz (untere Fotostreifen, 280 px hoch, oben weich ausgeblendet, abgedunkelt, Parallaxe 0,4). Leichte
+  grau-grüne Nebel-Tönung über den Fotos; nachts dunkelblau getönt. Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und
+  Nacht-Licht am Boden bleiben wie bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.
+- **Abschaltbar:** Optionen → „Foto-Hintergrund: an / aus“ (gespeichert localStorage `monchichi.fotoHintergrund`); aus =
+  wieder der gezeichnete Dschungel-Hintergrund. Solange die Fotos laden, wird ebenfalls der gezeichnete gezeigt.
+- Speicher: beide Ebenen zusammen ~11 MB (vorgezeichnet höchstens in 1,5-facher Spielauflösung). Test foto_hintergrund.
+
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:
 `js/17a-dschungel-boden.js` (neu), Anpassungen in 11b, 12, 17, 20. Gilt Tag UND Nacht, für alle Dschungel-Auswahlen.

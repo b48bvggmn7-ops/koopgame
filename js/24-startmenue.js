@@ -60,6 +60,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
       <div class="opt-row vol" id="sm-row-sfx"><label>Effekte <b id="sm-v-sfx"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-sfx" tabindex="-1"></div>
       <div class="opt-row" id="sm-row-fs"><button class="btn unlock" id="sm-fs" type="button" tabindex="-1">Vollbild an / aus</button></div>
       <div class="opt-row" id="sm-row-unlock"><button class="btn unlock" id="sm-unlock" type="button" tabindex="-1">Alle Level freischalten (zum Testen)</button></div>
+      <div class="opt-row" id="sm-row-foto"><button class="btn unlock" id="sm-foto" type="button" tabindex="-1">Foto-Hintergrund: an</button></div>
     </div>
     <button class="btn back" id="sm-opt-back" type="button" tabindex="-1">← Zurück</button>
   </section>
@@ -730,8 +731,8 @@ function quitGame() {
 S.options = {
   el: $('#sm-s-options'), idx: 0, view: 'keyboard', rows: [],
   enter(arg) {
-    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-row-keys'), $('#sm-opt-back')];   // „Tasten belegen“ hinten: alte Reihenfolge bleibt
-    this.idx = arg === 'tasten' ? 6 : 0; this.drawControls(); this.syncVol(); this.paint();
+    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-row-keys'), $('#sm-row-foto'), $('#sm-opt-back')];   // „Tasten belegen“, „Foto-Hintergrund“ hinten: alte Reihenfolge bleibt
+    this.idx = arg === 'tasten' ? 6 : 0; this.drawControls(); this.syncVol(); fotoHgKnopf(); this.paint();
   },
   paint() { this.rows.forEach((r, i) => r.classList.toggle('sel', i === this.idx)); },
   syncVol() {
@@ -768,7 +769,8 @@ S.options = {
       else if (this.idx === 4) toggleFullscreen();
       else if (this.idx === 5) unlockAll();
       else if (this.idx === 6) { Snd.play('ok'); go('tasten'); }
-      else if (this.idx === 7) { Snd.play('back'); go('menu'); }
+      else if (this.idx === 7) fotoHgUmschalten();
+      else if (this.idx === 8) { Snd.play('back'); go('menu'); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
   }
@@ -792,6 +794,13 @@ function unlockAll() {
 }
 $('#sm-unlock').addEventListener('click', () => { S.options.idx = 5; S.options.paint(); unlockAll(); });
 $('#sm-fs').addEventListener('click', () => { S.options.idx = 4; S.options.paint(); toggleFullscreen(); });
+// Foto-Hintergrund an / aus (js/11c-foto-hintergrund.js)
+function fotoHgKnopf() { $('#sm-foto').textContent = 'Foto-Hintergrund: ' + (typeof fotoHgAn === 'function' && fotoHgAn() ? 'an' : 'aus'); }
+function fotoHgUmschalten() {
+  if (typeof fotoHgSetzen !== 'function') return;
+  fotoHgSetzen(!fotoHgAn()); fotoHgKnopf(); Snd.play('ok');
+}
+$('#sm-foto').addEventListener('click', () => { S.options.idx = 7; S.options.paint(); fotoHgUmschalten(); });
 /* =====================================================================
    3b) TASTEN BELEGEN (Nacht-Ausbau)
    Spieler 1 und 2 getrennt, Tastatur und Controller (je Controller-Typ PlayStation / Xbox / andere).

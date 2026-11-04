@@ -5252,7 +5252,7 @@ async def dschungel_hintergrund_tag_nacht(g):
     for zeit in ('mittag', 'nacht'):
         await g.load(level([G(0, 680, 4000), G(600, 520, 200), G(1200, 440, 120, 240, 'wall')], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
                            welt='dschungel', tageszeit=zeit))
-        await g.steps(10); await g.ev("menuScreen = 'pause'")
+        await g.steps(10); await g.ev("menuScreen = 'pause'; fotoHg.an = false")   # prüft den gezeichneten Stil (ohne Foto-Hintergrund, 11c)
         r = await g.ev("""(() => { djSchalter.wind.an = true; djSchalter.licht.an = true; const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps]);
           camPos = camX = 300; draw(); draw();
           const H2 = hgNacht() ? DJ.skyNacht : DJ.sky, himmel = Array.from(H2.getContext('2d').getImageData(H2.width/2, 2, 1, 1).data).slice(0, 3);
@@ -5278,7 +5278,51 @@ async def dschungel_hintergrund_tag_nacht(g):
           try { localStorage.removeItem('monchichi.dschungelWind'); localStorage.removeItem('monchichi.dschungelNachtlicht'); } catch(e){}
           djSchalter.wind.an = vorW; djSchalter.licht.an = vorL; return r; })()""")
         assert r2['wind'] is False and r2['licht'] is False and r2['kacheln'] >= 1, f'{zeit}: Schalter wirken nicht {r2}'
-        await g.ev("menuScreen = null")
+        await g.ev("menuScreen = null; fotoHg.an = null")
+    assert not fehler, f'Fehler beim Zeichnen: {fehler}'
+
+@test
+async def foto_hintergrund(g):
+    """Foto-Hintergrund (Nutzerwunsch 04.11., js/11c-foto-hintergrund.js): in der Dschungel-Welt zeigt das Spiel die
+    Wald-Fotos als Ebenen (Panorama hinten, Unterholz vorne) statt des gezeichneten Hintergrunds; Speicher klein,
+    Zeichnen ändert keinen Spielzustand, abschaltbar (Optionen / localStorage) -> wieder der gezeichnete Stil;
+    andere Welten bleiben unberührt."""
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)   # Fotos lesbar (nicht file://)
+    await g.load(level([ground(0, 680, 4000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit='mittag'))
+    await g.ev("fotoHgSetzen(true)")
+    await g.p.wait_for_function("fotoHgBereit()", timeout=15000)
+    await g.ev("menuScreen = 'pause'")
+    r = await g.ev("""(() => { const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps]);
+      let gezeichnet = 0; const alt = hgStilZeichnen; hgStilZeichnen = () => { gezeichnet++; };
+      camPos = camX = 500; draw(); const a = fotoHgZeichnen(); camPos = camX = 900; draw();
+      hgStilZeichnen = alt;
+      const mb = c => c.width*c.height*4/1e6, F = fotoHg.fern, N = fotoHg.nah;
+      // Naht: Panorama-Anfang und -Ende passen (wiederholt sich ohne harten Sprung)
+      const q = F.getContext('2d'), l = q.getImageData(0, 0, 1, F.height).data, rr = q.getImageData(F.width - 1, 0, 1, F.height).data;
+      let d = 0; for(let i = 0; i < l.length; i += 4) d += Math.abs(l[i] - rr[i]) + Math.abs(l[i+1] - rr[i+1]) + Math.abs(l[i+2] - rr[i+2]);
+      const nq = N.getContext('2d'), oben = nq.getImageData(N.width/2, 0, 1, 1).data[3], unten = nq.getImageData(N.width/2, N.height - 1, 1, 1).data[3];
+      return {a, gezeichnet, mb: mb(F) + mb(N), hFern: F.height/fotoHg.sc, naht: d/(l.length/4*3), oben, unten,
+              gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()""")
+    assert r['a'] and r['gezeichnet'] == 0, f'Foto-Hintergrund nicht gezeichnet: {r}'
+    assert r['gleich'], 'Zeichnen hat Spielzustand verändert'
+    assert r['mb'] < 16, f'Foto-Ebenen zu groß (Chrome-Bildbudget): {r}'
+    assert abs(r['hFern'] - 720) < 1, f'Panorama nicht bildhoch: {r}'
+    assert r['naht'] < 40, f'Panorama hat eine sichtbare Naht: {r}'
+    assert r['oben'] <= 2 and r['unten'] == 255, f'Unterholz oben nicht weich ausgeblendet: {r}'
+    # abschalten -> gezeichneter Stil
+    r = await g.ev("""(() => { fotoHgSetzen(false); let gezeichnet = 0; const alt = hgStilZeichnen; hgStilZeichnen = () => { gezeichnet++; };
+      draw(); hgStilZeichnen = alt; const aus = localStorage.getItem('monchichi.fotoHintergrund'); fotoHg.an = null;
+      const an2 = fotoHgAn(); fotoHgSetzen(true); return {gezeichnet, aus, an2}; })()""")
+    assert r == {'gezeichnet': 1, 'aus': 'aus', 'an2': False}, f'Abschalten wirkt nicht: {r}'
+    # Optionen-Knopf schaltet um
+    r = await g.ev("""(() => { const k = document.querySelector('#sm-foto'); k.click(); k.click(); const t1 = k.textContent; k.click();
+      const t2 = k.textContent, an = fotoHgAn(); k.click(); return {t1, t2, an, zurueck: fotoHgAn()}; })()""")
+    assert r == {'t1': 'Foto-Hintergrund: an', 't2': 'Foto-Hintergrund: aus', 'an': False, 'zurueck': True}, f'Optionen-Knopf: {r}'
+    # andere Welt: unberührt
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='ruinen', tageszeit='mittag'))
+    assert await g.ev("fotoHgZeichnen()") is False, 'Foto-Hintergrund darf nur in der Dschungel-Welt gelten'
+    await g.ev("try { localStorage.removeItem('monchichi.fotoHintergrund'); } catch(e){} fotoHg.an = null; menuScreen = null")
     assert not fehler, f'Fehler beim Zeichnen: {fehler}'
 
 @test
