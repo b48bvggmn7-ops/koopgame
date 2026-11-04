@@ -34,6 +34,26 @@ function audioOut(){
   }
   return masterGain;
 }
+// Münzketten: Münzen gleicher Farbe, die höchstens MUENZ_KETTE_ABSTAND auseinander liegen, gehören zu einer Kette (über
+// Nachbarn verbunden). Ketten mit mindestens MUENZ_KETTE_MIN Münzen; einmal je Münz-Liste berechnet.
+const MUENZ_KETTE_ABSTAND = 62, MUENZ_KETTE_MIN = 3;
+let muenzKetten = {quelle: null, n: -1, von: new Map()};
+function muenzKetteVon(c){
+  if(muenzKetten.quelle !== coins || muenzKetten.n !== coins.length){
+    const von = new Map(), frei = new Set(coins);
+    for(const start of coins){
+      if(!frei.has(start)) continue;
+      const kette = [start], stapel = [start]; frei.delete(start);
+      while(stapel.length){ const a = stapel.pop();
+        for(const b of [...frei]) if((b.color || 'gold') === (a.color || 'gold') && Math.hypot(b.x - a.x, b.y - a.y) <= MUENZ_KETTE_ABSTAND){ frei.delete(b); kette.push(b); stapel.push(b); } }
+      for(const m of kette) von.set(m, kette);
+    }
+    muenzKetten = {quelle: coins, n: coins.length, von};
+  }
+  return muenzKetten.von.get(c) || [c];
+}
+// ist mit dieser Münze die ganze Kette eingesammelt?
+function muenzKetteFertig(c){ const K = muenzKetteVon(c); return K.length >= MUENZ_KETTE_MIN && K.every(m => m.taken); }
 function coinPickupFx(c){
   const now = performance.now();
   c.takenAt = now;
@@ -49,6 +69,8 @@ function coinPickupFx(c){
                  size: 4 + Math.random()*3.5, star: i%2===0, col: c.color==='gold' ? null : pal});
   }
   if(!(typeof SFX !== 'undefined' && SFX.coin(coinCombo, c.x))) playCoinSound(coinCombo);   // gläsernes Klirren (18-sound.js), sonst alter Ton
+  // letzte Münze einer zusammenhängenden Kette eingesammelt: extra Glitzer-Ton (Nutzerwunsch)
+  if(muenzKetteFertig(c) && typeof SFX !== 'undefined' && SFX.muenzKette){ c.ketteFertig = true; SFX.muenzKette(c.x); }
   const cc = document.querySelector('#coinCard .cc.' + (c.color === 'pink' ? 'f' : 'm'));   // Spalte der Münzfarbe hüpft
   if(cc){ cc.classList.remove('bump'); void cc.offsetWidth; cc.classList.add('bump'); }
 }

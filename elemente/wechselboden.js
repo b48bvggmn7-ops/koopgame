@@ -102,11 +102,12 @@ function wechselMuster(c, x, y, w, h, gruppe, farbe){
   }
   c.restore();
 }
-function wechselEdelstein(cx, cy, s, a){   // wie auf den Türen: dunkle Platte mit Edelstein in der Hebel-Farbe; B = mit dunklem Kern
-  const col = linkColor(s.link); ctx.save(); ctx.globalAlpha = a;
-  ctx.fillStyle = '#3a3f46'; ctx.beginPath(); ctx.roundRect(cx - 12, cy - 12, 24, 24, 5); ctx.fill(); ctx.strokeStyle = '#15171a'; ctx.lineWidth = 1; ctx.stroke();
-  elementEdelstein(cx, cy, 8.5, col);
-  if(s.gruppe === 'B'){ ctx.fillStyle = 'rgba(30,18,10,.85)'; ctx.beginPath(); ctx.moveTo(cx, cy - 3.6); ctx.lineTo(cx + 3.2, cy); ctx.lineTo(cx, cy + 3.6); ctx.lineTo(cx - 3.2, cy); ctx.closePath(); ctx.fill(); }
+function wechselEdelstein(cx, cy, s, a, r = 12){   // wie auf den Türen: dunkle Platte mit Edelstein in der Hebel-Farbe; B = mit dunklem Kern; r = halbe Plattengröße (edelsteinGroesse)
+  const col = linkColor(s.link), k = r/12; ctx.save(); ctx.globalAlpha = a;
+  if(typeof fotoVerknuepfungsPlatte === 'function' && fotoEl2An()) fotoVerknuepfungsPlatte(cx, cy, r);   // Foto-Look: rostige Eisenplatte (js/12f)
+  else { ctx.fillStyle = '#3a3f46'; ctx.beginPath(); ctx.roundRect(cx - r, cy - r, 2*r, 2*r, 5*k); ctx.fill(); ctx.strokeStyle = '#15171a'; ctx.lineWidth = 1; ctx.stroke(); }
+  elementEdelstein(cx, cy, 8.5*k, col);
+  if(s.gruppe === 'B'){ ctx.fillStyle = 'rgba(30,18,10,.85)'; ctx.beginPath(); ctx.moveTo(cx, cy - 3.6*k); ctx.lineTo(cx + 3.2*k, cy); ctx.lineTo(cx, cy + 3.6*k); ctx.lineTo(cx - 3.2*k, cy); ctx.closePath(); ctx.fill(); }
   ctx.restore();
 }
 let __wReihen = null, __wKey = '';
@@ -133,7 +134,7 @@ function wechselReihen(){
     const teile = flaeche.sort((a, b) => a.y - b.y || a.x - b.x);
     const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + 48)*2);
     const piece = {m: [0, 0, w, h, 'soil'], c, done: 0}; pieceDraw(piece);
-    reihen.push({teile, x: x0, y: y0, w, h, senkrecht: false, c});
+    reihen.push({teile, x: x0, y: y0, w, h, senkrecht: false, c, piece});
   }
   for(const s of alle){
     if(gesehen.has(s)) continue;
@@ -145,7 +146,7 @@ function wechselReihen(){
     const w = senkrecht ? a.w : teile.reduce((z, o) => z + o.w, 0), h = senkrecht ? teile.reduce((z, o) => z + o.h, 0) : a.h;
     const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + 48)*2);
     const piece = {m: [0, 0, w, h, senkrecht ? 'wall' : 'soil'], c, done: 0}; pieceDraw(piece);   // gleiche Zeichnung wie die beweglichen Plattformen: Gras-Kappe, Erde bzw. Wand, Outline
-    reihen.push({teile, x: a.x, y: a.y, w, h, senkrecht, c});
+    reihen.push({teile, x: a.x, y: a.y, w, h, senkrecht, c, piece});
   }
   return __wReihen = reihen;
 }
@@ -156,11 +157,14 @@ function wechselZeichnen(){
     const gone = R.teile.every(o => o.gone);
     if(gone){   // weg: nur ein leichter, weicher Schatten; bei Hebel-Böden bleibt der Edelstein
       ctx.fillStyle = 'rgba(12,24,14,.15)'; ctx.beginPath(); ctx.roundRect(x + 1, R.y + 1, R.w - 2, R.h - 2, 7); ctx.fill();
-      if(!(s.takt > 0) && s.link) wechselEdelstein(x + R.w/2, R.y + R.h/2, s, .5);
+      if(!(s.takt > 0) && s.link) wechselEdelstein(x + R.w/2, R.y + R.h/2, s, .5, edelsteinGroesse(R.w, R.h));
       continue;
     }
+    if(typeof fotoStueckVeraltet === 'function' && fotoStueckVeraltet(R.piece)) pieceDraw(R.piece);   // Foto-Look an/aus: neu zeichnen (js/12f)
     ctx.drawImage(R.c, x - 24, R.y - 24, R.w + 48, R.h + 48);
-    if(!(s.takt > 0) && s.link) wechselEdelstein(x + R.w/2, R.y + R.h/2, s, 1);
+    if(!(s.takt > 0) && s.link){ const r = edelsteinGroesse(R.w, R.h);
+      wechselEdelstein(x + R.w/2, R.piece.cm ? fotoMoosPlaketteY(R.y, R.h, r) : R.y + R.h/2, s, 1, r); }
+    if(R.piece.cm) ctx.drawImage(R.piece.cm, x - 24, R.y - 24, R.w + 48, R.h + 48);   // Foto-Look: Moos hängt über dem Edelstein (js/12f)
     if(s.takt > 0){   // Takt: ein Balken über die ganze Reihe, schrumpft bis zum Wechsel
       const rest = 1 - (wechselSchritte % wechselTaktSchritte(s)) / wechselTaktSchritte(s);
       const bx = R.senkrecht ? x + R.w/2 : x + 2, by = R.senkrecht ? R.y + 2 : R.y + R.h - 6, len = (R.senkrecht ? R.h : R.w) - 4;

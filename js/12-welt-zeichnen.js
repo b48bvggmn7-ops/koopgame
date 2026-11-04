@@ -101,6 +101,7 @@ function drawCrumbleWarning(s, x, y, t){
 }
 // Zerbrechen: drehende Brocken (oben mit Gras), Steinchen und Staubwolke
 function drawCrumbleBreak(s){
+  if(typeof fotoBroeckelBruch === 'function' && fotoBroeckelBruch(s)) return;   // Foto-Look: Erdbrocken mit Moos (12f)
   const pal = {grass:BROECKEL_GRAS.grass, grassTop:BROECKEL_GRAS.gt, dirt1:CRUMBLE_PAL.light, dirt2:CRUMBLE_PAL.dark, edge:CRUMBLE_PAL.edge};
   const k = Math.min(1, s.breakElapsed/CRUMBLE_FRAGMENT_LIFE);
   const fade = k < 0.6 ? 1 : 1 - (k - 0.6)/0.4;
@@ -206,6 +207,13 @@ function hinweisPfeil(x, y, col){
     ctx.globalAlpha = blink; ctx.fillStyle = '#fffbe8'; ctx.beginPath(); ctx.arc(fx, fy, 2.8, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
+}
+// Größe der Edelstein-Platte (halbe Kantenlänge) passend zum Element (Nutzerwunsch „Diamant an der Größe des jeweiligen
+// Elements ausrichten“): wächst vor allem mit der schmalen Seite, etwas mit der langen; 40×40 ≈ 11, 40×160 ≈ 13, ab 2 Reihen 15
+const EDELSTEIN_MASS = {min: 7, max: 15, schmal: 0.25, lang: 0.02};
+function edelsteinGroesse(w, h){
+  const E = EDELSTEIN_MASS, a = Math.min(w, h), b = Math.max(w, h);
+  return Math.max(E.min, Math.min(E.max, a*E.schmal + b*E.lang));
 }
 // Edelstein (Raute) in der Verknüpfungs-Farbe – wie auf den Türen, damit man sieht, was zusammengehört
 function elementEdelstein(x, y, r, col){
@@ -568,7 +576,8 @@ function matScheinwandBild(f){
 }
 // Bewegliche Plattform aus Boden/Wand (pieceDraw aus der Vorschau): ein abgerundeter Block in Erde mit Gras-Kappe bzw. Wand,
 // Outline wie die Flächen, kein Schatten. Gezeichnet 2-fach in ein eigenes Bild (Rand 24 px), vorher geleert (kein Restschatten).
-function pieceDraw(p){const [x,y,w,h,look]=p.m,q=p.c.getContext('2d');q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,p.c.width,p.c.height);q.setTransform(2,0,0,2,24*2,24*2);const sv=g;g=q;const r=rnd(w*7+h);const path=()=>{q.beginPath();q.roundRect(0,0,w,h,9)};
+function pieceDraw(p){if(typeof fotoStueckZeichnen==='function'&&fotoStueckZeichnen(p))return;   // Foto-Look: Mauer bzw. Erde mit Moos (12f)
+ const [x,y,w,h,look]=p.m,q=p.c.getContext('2d');q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,p.c.width,p.c.height);q.setTransform(2,0,0,2,24*2,24*2);const sv=g;g=q;const r=rnd(w*7+h);const path=()=>{q.beginPath();q.roundRect(0,0,w,h,9)};
  if(look=='wall'&&wallK!='O'){path();q.fillStyle='#98a8b2';q.fill();q.save();path();q.clip();for(let cx=0;cx<w;cx+=40)for(let cy=0;cy<h;cy+=40)wallTile({x:cx,y:cy},r,wallK);q.restore()}
  else if(look=='wall'){path();q.fillStyle='#98a8b2';q.fill();q.save();path();q.clip();for(let cy=0;cy<h;cy+=20)for(let cx=-((cy/20&1)?20:0);cx<w;cx+=40){q.fillStyle='rgba(58,70,79,.42)';q.fillRect(cx-1,cy,2,20);q.fillRect(0,cy-1,w,2);const v=r();q.fillStyle=v>.5?'rgba(255,255,255,'+((v-.5)*.16)+')':'rgba(30,40,48,'+((.5-v)*.14)+')';q.fillRect(cx+1,cy+1,38,18)}q.fillStyle='rgba(255,255,255,.3)';q.fillRect(3,1.5,w-6,1.5);q.restore()}
  else{path();q.fillStyle=SOILBASE[soilK];q.fill();q.save();path();q.clip();for(let cx=0;cx<w;cx+=40)for(let cy=0;cy<h;cy+=40)grain(q,cx,cy,r);q.beginPath();q.moveTo(0,-3);q.lineTo(w,-3);for(let px=w;px>=0;px-=5)q.lineTo(px,12+waveY(px));q.closePath();q.fillStyle=EA.grass;q.fill();q.strokeStyle=EA.gd;q.lineWidth=2.5;q.beginPath();for(let px=0;px<=w;px+=5){px?q.lineTo(px,13+waveY(px)):q.moveTo(px,13+waveY(px))}q.stroke();q.fillStyle=EA.gt;q.fillRect(0,2,w,3);q.restore()}
@@ -609,7 +618,7 @@ function matBeweglichZeichnen(){
   for(const B of matBeweglicheStuecke()){
     const s0 = B.teile[0], x = Math.round(B.x0 + (s0.x - s0.startX) - camX), y = Math.round(B.y0 + (s0.y - s0.startY));
     if(x + B.w < -20 || x > VW + 20) continue;
-    if(!B.piece.done) pieceDraw(B.piece);
+    if(!B.piece.done || (typeof fotoStueckVeraltet === 'function' && fotoStueckVeraltet(B.piece))) pieceDraw(B.piece);   // Foto-Look an/aus: neu zeichnen
     ctx.drawImage(B.piece.c, x - 24, y - 24 - B.oben, B.w + 48, B.h + B.oben + 48);
   }
 }
@@ -724,15 +733,18 @@ function drawGate(d, open, x){
   // Edelstein-Platte, mittig (ein Diamant pro Tür)
   const ng=1;
   for(let i=0;i<ng;i++){const p=(i+.5)/ng*L,cx=vert?ix+iw/2:ix+p,cy=vert?iy+p:iy+ih/2;
+   const gk=edelsteinGroesse(w,h)/12;g.save();g.translate(cx,cy);g.scale(gk,gk);g.translate(-cx,-cy);   // Größe passend zur Tür (Nutzerwunsch)
    g.fillStyle='#3a3f46';g.beginPath();g.roundRect(cx-12,cy-12,24,24,5);g.fill();g.strokeStyle='#15171a';g.lineWidth=1;g.stroke();
    g.fillStyle=col;g.beginPath();g.moveTo(cx,cy-10);g.lineTo(cx+9,cy);g.lineTo(cx,cy+10);g.lineTo(cx-9,cy);g.closePath();g.fill();g.strokeStyle='rgba(0,0,0,.5)';g.stroke();
-   g.fillStyle='rgba(255,255,255,.75)';g.fillRect(cx-3.5,cy-6,3,4);glanzFunkeln(cx-2,cy-3,5,d.x*.03+y+i*5)}
+   g.fillStyle='rgba(255,255,255,.75)';g.fillRect(cx-3.5,cy-6,3,4);glanzFunkeln(cx-2,cy-3,5,d.x*.03+y+i*5);g.restore()}
   // Weiche Tiefe: Licht von oben links
   const sg=g.createLinearGradient(ix,iy,ix+iw*.6,iy+ih*.6);sg.addColorStop(0,'rgba(255,240,200,.16)');sg.addColorStop(1,'rgba(20,10,0,.12)');g.fillStyle=sg;g.fillRect(ix,iy,iw,ih);
   g.restore()}
  // dunkler Rahmen, durchgehend um die ganze Tür
  rr(x+1.5,y+1.5,w-3,h-3,6);g.strokeStyle='rgba(34,20,8,.85)';g.lineWidth=3;g.stroke();
  // Eckbeschläge bei größeren Türen
+ // Foto-Look: Balken oben und unten (bzw. links/rechts), mit denen die Tür an Boden/Wand befestigt ist (12e)
+ if(typeof fotoLookAktiv==='function'&&fotoLookAktiv()&&typeof fotoTuerFuesse==='function'){fotoTuerFuesse(g,x,y,w,h,h>=w,d);g.restore();g=sv;return}
  if(w>=80||h>=80){g.fillStyle='#4a5059';[[x+2,y+2],[x+w-12,y+2],[x+2,y+h-12],[x+w-12,y+h-12]].forEach(([a,b])=>{g.beginPath();g.roundRect(a,b,10,10,2);g.fill();g.strokeStyle='#15171a';g.lineWidth=.8;g.stroke();g.fillStyle='#b8c0c9';g.beginPath();g.arc(a+5,b+5,1.3,0,7);g.fill();g.fillStyle='#4a5059'})}
  g.restore();g=sv}
 function tuerenZeichnen(){
@@ -914,7 +926,7 @@ function moverGroupInfo(){
     const key = s.group===undefined ? s : s.group;
     let g = map.get(key);
     if(!g){ g = {minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity, sMinX:Infinity,sMinY:Infinity,sMaxX:-Infinity,sMaxY:-Infinity,
-                 dx:s.targetX-s.startX, dy:s.targetY-s.startY, switchCtl:s.switchCtl, switchLink:s.switchLink, tripActive:s.tripActive};
+                 dx:s.targetX-s.startX, dy:s.targetY-s.startY, switchCtl:s.switchCtl, switchLink:s.switchLink, tripActive:s.tripActive, look:s.look};
             map.set(key, g); }
     g.minX=Math.min(g.minX,s.x); g.minY=Math.min(g.minY,s.y); g.maxX=Math.max(g.maxX,s.x+s.w); g.maxY=Math.max(g.maxY,s.y+s.h);
     g.sMinX=Math.min(g.sMinX,s.startX); g.sMinY=Math.min(g.sMinY,s.startY); g.sMaxX=Math.max(g.sMaxX,s.startX+s.w); g.sMaxY=Math.max(g.sMaxY,s.startY+s.h);
@@ -923,16 +935,18 @@ function moverGroupInfo(){
 }
 // Plakette an allem, was ein Hebel/eine Druckplatte steuert (bewegliche Plattform, bewegter Haken, Wasser-/Lava-Marke,
 // Presse): neues Aussehen – keine Zahl mehr, sondern wie an der Tür ein Diamant in der Hebel-Farbe auf dunkler Fassung
-function verknuepfungsDiamant(x, y, col){
-  ctx.fillStyle = '#3a3f46'; ctx.beginPath(); ctx.roundRect(x - 10, y - 10, 20, 20, 4.5); ctx.fill();
+function verknuepfungsDiamant(x, y, col, r = 10){
+  ctx.fillStyle = '#3a3f46'; ctx.beginPath(); ctx.roundRect(x - r, y - r, 2*r, 2*r, r*0.45); ctx.fill();
   ctx.strokeStyle = '#15171a'; ctx.lineWidth = 1; ctx.stroke();
-  elementEdelstein(x, y, 8, col);
+  elementEdelstein(x, y, r*0.8, col);
 }
-function drawLinkBadge(x, y, link, active){
+// r = halbe Plattengröße (edelsteinGroesse des Elements; ohne Angabe 10 wie bisher)
+function drawLinkBadge(x, y, link, active, r = 10){
   const col = linkColor(link);
   if(active){ ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
-    ctx.beginPath(); ctx.arc(x, y, 15 + Math.sin(performance.now()*0.008)*1.5, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
-  verknuepfungsDiamant(x, y, col);
+    ctx.beginPath(); ctx.arc(x, y, r + 5 + Math.sin(performance.now()*0.008)*1.5, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
+  if(typeof fotoVerknuepfungsPlatte === 'function' && fotoEl2An()){ fotoVerknuepfungsPlatte(x, y, r); elementEdelstein(x, y, r*0.75, col); return; }   // Foto-Look: rostige Eisenplatte (12f)
+  verknuepfungsDiamant(x, y, col, r);
 }
 // Was steuert Schalter n? Liefert Punkte (Weltkoordinaten) für Plaketten und Verbindungslinien
 function linkTargets(link){
@@ -945,7 +959,10 @@ function linkTargets(link){
   }
   for(const g of moverGroupInfo()){
     // Plakette direkt AUF dem bewegten Boden (nicht darüber), damit sie nicht wie ein zweites Tür-Schild wirkt
-    if(g.switchCtl && g.switchLink===link) pts.push({x:(g.minX+g.maxX)/2, y:(g.minY+g.maxY)/2 + 3, kind:'plat', active:g.tripActive});
+    if(g.switchCtl && g.switchLink===link) { const gw = g.maxX-g.minX, gh = g.maxY-g.minY;
+      // Foto-Look, Erd-Boden: Plakette etwas höher, damit das Moos der Kante über den Diamanten hängt (Nutzerwunsch; 12f)
+      const y = (typeof fotoEl2An === 'function' && fotoEl2An() && g.look === 'ground') ? fotoMoosPlaketteY(g.minY, gh, edelsteinGroesse(gw, gh)) : (g.minY+g.maxY)/2 + 3;
+      pts.push({x:(g.minX+g.maxX)/2, y, kind:'plat', active:g.tripActive, gw, gh}); }
   }
   for(const h of hooks){
     if(h.moving && h.switchCtl && h.switchLink===link) pts.push({x:h.x, y:h.y, kind:'hook', active:h.tripActive});   // mitten im Ring (Nutzerwunsch)
@@ -957,7 +974,7 @@ function linkTargets(link){
     if(m.link===link) pts.push({x:m.x, y:m.y-12, kind:'pegel', active:!!linkOn[link]});
   }
   for(const P of pressen){   // Stachelpresse per Nummer (elemente/presse.js): Plakette auf dem Block
-    if(P.link===link) pts.push({x:P.x+P.w/2, y:P.y+20, kind:'plat', active:!!linkOn[link]});
+    if(P.link===link) pts.push({x:P.x+P.w/2, y:P.y+20, kind:'plat', active:!!linkOn[link], gw:P.w, gh:P.h});
   }
   for(const t of teleporters){   // Teleporter per Verknüpfung (elemente/teleporter.js): Plakette über dem Tor
     if(t.link===link) pts.push({x:t.x+20, y:t.y-46, kind:'tele', active:!!linkOn[link]});
@@ -1014,6 +1031,7 @@ function drawSolidLook(s, look, x){
       ctx.strokeStyle='#1e6f96'; ctx.lineWidth=2;
       ctx.strokeRect(x+2,s.y+2,s.w-4,s.h-4);
     } else if(s.type==='crumble'){
+      if(typeof fotoBroeckelZeichnen === 'function' && fotoBroeckelZeichnen(s, x)) continue;   // Foto-Look: rissige Erdscholle (12f)
       // Vorwarnung: zittert immer stärker, Risse wachsen, Krümel rieseln, glüht rot (nur Anzeige)
       const t = s.triggered ? Math.min(1, s.timer/CRUMBLE_TRIGGER_MS) : 0;
       const shake = t > 0 ? Math.sin(s.timer*0.09 + s.x)*(0.4 + 2.8*Math.pow(t, 1.5)) : 0;
@@ -1046,11 +1064,14 @@ function drawSolidLook(s, look, x){
   hgBodenLicht();     // neuer Nacht-Look: Boden abdunkeln, Leuchtpflanzen, Licht um die Figuren (11b)
 
   // (Fahrweg-Linie bewegter Haken auf Nutzerwunsch entfernt)
-  // Reichweiten-Kreis – im Foto-Look ausgeblendet (Nutzerwunsch; dort leuchtet der Ring orange, wenn man greifen kann)
-  const hakenKreis = !(typeof fotoLookAktiv === 'function' && fotoLookAktiv());
-  for(const h of (hakenKreis ? hooks : [])){
+  // Reichweiten-Kreis – im Foto-Look nur leicht sichtbar und ohne Farbwechsel (Nutzerwunsch; ob man greifen kann, zeigt
+  // dort der orange glühende Ring)
+  const hakenFoto = typeof fotoLookAktiv === 'function' && fotoLookAktiv();
+  for(const h of hooks){
     const x=h.x-camX, range=hookRange(h);
     if(x<-range-30||x>VW+range+30) continue;
+    if(hakenFoto){ ctx.fillStyle = 'rgba(235,238,230,0.05)'; ctx.strokeStyle = 'rgba(235,238,230,0.22)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(x,h.y,range,0,Math.PI*2); ctx.fill(); ctx.stroke(); continue; }
     const originX = p1.x, originY = p1.y - p1.h*0.6;
     const dist = Math.hypot(h.x-originX, h.y-originY);
     const inRange = dist <= range;
@@ -1097,9 +1118,10 @@ function drawSolidLook(s, look, x){
       const x = t.x - camX; if(x < -20 || x > VW+20) continue;
       // nie über den oberen Bildrand hinaus (Tür bis in die oberste Himmel-Reihe: Plakette ins oberste Türteil)
       if(t.kind === 'hook'){ elementEdelstein(x, t.y, 9.5, linkColor(sw.link)); continue; }   // Haken: Edelstein füllt den Ring aus
-      drawLinkBadge(Math.round(x), Math.round(Math.max(t.y, -SKY_ROOM + 14)), sw.link, t.active);
+      drawLinkBadge(Math.round(x), Math.round(Math.max(t.y, -SKY_ROOM + 14)), sw.link, t.active, t.gw ? edelsteinGroesse(t.gw, t.gh) : 10);
     }
   }
+  if(typeof fotoStueckMoosZeichnen === 'function') fotoStueckMoosZeichnen();   // Foto-Look: Moos bewegter Böden hängt über dem Diamanten (12f)
 
   // Checkpoint-Fahnen
   for(let i=0;i<checkpointDefs.length;i++){

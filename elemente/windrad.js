@@ -42,6 +42,8 @@ function windradHalt(w){
 // Bild eines Windrads (Spiel und Editor): Pfahl, vier Blätter in Dschungel-Grün um eine Nabe mit Edelstein in der Nummernfarbe
 // (ohnePfahl: nur Rotor – das Windrad hängt an einer Liane bzw. an einem Arm aus der Wand)
 function windradBild(g, x, y, winkel, farbe, dreh, s, ohnePfahl){
+  // Foto-Look (nur im Spiel): altes Holz-Windrad mit rostiger Eisennabe (js/12f-foto-elemente2.js)
+  if(typeof fotoWindradBild === 'function' && typeof ctx !== 'undefined' && g === ctx && fotoEl2An()){ fotoWindradBild(g, x, y, winkel, farbe, dreh, s, ohnePfahl); return; }
   s = s || 1;
   g.save(); g.translate(x, y); g.scale(s, s);
   // Pfahl mit Ranke
@@ -74,6 +76,7 @@ function windradBild(g, x, y, winkel, farbe, dreh, s, ohnePfahl){
 }
 // waagerechter Holzarm von der Wandkante (wx) zur Nabe, mit Wurzelknoten an der Wand und einer Ranke
 function windradArm(wx, x, y){
+  if(typeof fotoWindradArm === 'function' && fotoEl2An()){ fotoWindradArm(wx, x, y); return; }   // Foto-Look: Holzbalken mit Eisenwinkel (12f)
   const d = Math.sign(x - wx) || 1;
   ctx.save();
   const holz = ctx.createLinearGradient(0, y - 4, 0, y + 4);
@@ -141,8 +144,9 @@ elementRegistrieren({
         else if(halt.art === 'wand') windradArm(Math.round(halt.wx - camX), x, nabeY);
         else {   // an einer Liane von oben (wie die Haken)
           const y0 = halt.y0 !== null ? halt.y0 : -SKY_ROOM - 10;
-          if(typeof lianeZeichnen === 'function') lianeZeichnen(x + Math.sin(w.x*0.013)*3, y0, x, nabeY - 5, 0.35, 0, w.x);
-          if(halt.y0 !== null && typeof hakenHalter === 'function') hakenHalter(x, halt.y0, HAKEN_STIL.dschungel, 'dschungel');
+          if(typeof fotoWindradLiane === 'function' && fotoWindradLiane(x, y0, nabeY, w.x)){}   // Foto-Look: bemooste Liane (12f)
+          else if(typeof lianeZeichnen === 'function') lianeZeichnen(x + Math.sin(w.x*0.013)*3, y0, x, nabeY - 5, 0.35, 0, w.x);
+          if(halt.y0 !== null && typeof hakenHalter === 'function' && !(typeof fotoEl2An === 'function' && fotoEl2An())) hakenHalter(x, halt.y0, HAKEN_STIL.dschungel, 'dschungel');
         }
         windradBild(ctx, x, w.y, w.winkel, col, w.dreh, 1, halt.art !== 'boden');
         if(an){ ctx.strokeStyle = col; ctx.globalAlpha = 0.35 + 0.25*Math.sin(performance.now()*0.008); ctx.lineWidth = 2.5;

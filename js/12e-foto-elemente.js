@@ -200,6 +200,80 @@ function fotoStachelnZeichnen(q, sp){
   q.fillStyle = 'rgba(62,76,36,.85)';
   for(let i = 0; i < n*2; i++){ const x = -w/2 + (i + zuf(i, 5))*b/2; q.beginPath(); q.ellipse(x, unten - 1, b*0.32, 2.4, 0, 0, 7); q.fill(); }
 }
+// Tür-Füße (Nutzer: „der Tür oben und unten noch einen Fuß geben, so dass sie richtig mit Boden/Wand befestigt ist“;
+// danach: „nur da, wo sie etwas berühren, und mehr Liebe zum Detail“): an den Enden der langen Achse, aber NUR wo Boden,
+// Wand o. Ä. direkt anliegt (fotoTuerAnliegend), ein dunkler, alter Holzbalken: etwas breiter als die Tür, greift ein
+// Stück in Boden/Wand, Hirnholz mit Jahresringen an den Enden, abgegriffene helle Kante, Risse, zwei Vierkant-Bolzen,
+// rostige Winkel hinüber zum Türrahmen, Moos auf der Schwelle bzw. unter dem Sturz hängende Moosfäden. Statisch.
+const FOTO_TUER_FUSS = {dick: 9, ueber: 6, rein: 3, winkel: 9, moos: 'rgba(66,82,36,.9)'};   // Balkenstärke, Überstand je Seite, so weit in Boden/Wand hinein, Länge Eisenwinkel
+// liegt an Seite 'oben'/'unten'/'links'/'rechts' der Tür (Weltmaße d) etwas Festes an? (gemerkt je Tür und solids-Stand)
+function fotoTuerAnliegend(d){
+  if(d._fussN === solids.length && d._fussQ === solids) return d._fuss;
+  const fest = s => !s.gone && s.type !== 'door' && s.type !== 'oneway' && s.type !== 'moveplat' && s.type !== 'crumble' && s.type !== 'wechsel';
+  const quer = (s, a0, a1) => s.x < a1 - 1 && s.x + s.w > a0 + 1, hoch = (s, b0, b1) => s.y < b1 - 1 && s.y + s.h > b0 + 1;
+  const r = {oben: false, unten: false, links: false, rechts: false};
+  for(const s of solids){ if(!fest(s)) continue;
+    if(quer(s, d.x, d.x + d.w)){ if(Math.abs(s.y + s.h - d.y) < 2) r.oben = true; if(Math.abs(s.y - (d.y + d.h)) < 2) r.unten = true; }
+    if(hoch(s, d.y, d.y + d.h)){ if(Math.abs(s.x + s.w - d.x) < 2) r.links = true; if(Math.abs(s.x - (d.x + d.w)) < 2) r.rechts = true; }
+  }
+  if(d.y <= -SKY_ROOM + 2) r.oben = true;   // Tür bis an den oberen Bildrand: hängt an der „Decke“
+  d._fussN = solids.length; d._fussQ = solids; d._fuss = r;
+  return r;
+}
+function fotoTuerFuesse(q, x, y, w, h, vert, d){
+  const F = FOTO_TUER_FUSS, an = d ? fotoTuerAnliegend(d) : {oben: true, unten: true, links: true, rechts: true};
+  const zuf = (a, b) => { const v = Math.sin((a + (d ? d.x : x)*0.13)*12.9898 + (b + y*0.07)*78.233)*43758.5453; return v - Math.floor(v); };
+  // seite: wo der Boden/die Wand liegt (+1 = unten/rechts, -1 = oben/links)
+  const balken = (bx, by, bw, bh, quer, seite) => {
+    const L = quer ? bw : bh, D = quer ? bh : bw;
+    q.fillStyle = 'rgba(10,8,6,.5)'; q.fillRect(bx - 1, by - 1, bw + 2, bh + 2);                     // dunkle Fuge rundum
+    q.fillStyle = fotoHolzMuster(q, quer, bx, by); q.fillRect(bx, by, bw, bh);
+    q.fillStyle = 'rgba(20,14,8,.38)'; q.fillRect(bx, by, bw, bh);                                  // dunkler als die Tür (altes, nasses Holz)
+    const g2 = quer ? q.createLinearGradient(0, by, 0, by + bh) : q.createLinearGradient(bx, 0, bx + bw, 0);
+    g2.addColorStop(0, 'rgba(255,240,210,.2)'); g2.addColorStop(0.25, 'rgba(255,240,210,0)'); g2.addColorStop(1, 'rgba(0,0,0,.42)');
+    q.fillStyle = g2; q.fillRect(bx, by, bw, bh);
+    q.fillStyle = 'rgba(232,214,180,.28)'; q.fillRect(bx + (quer ? 1 : 0), by + (quer ? 0 : 1), quer ? bw - 2 : 1, quer ? 1 : bh - 2);   // abgegriffene helle Kante
+    // Hirnholz an beiden Enden: hellere Schnittfläche mit Jahresringen
+    for(const e of [0, 1]){
+      const ex = quer ? (e ? bx + bw - 2.5 : bx) : bx, ey = quer ? by : (e ? by + bh - 2.5 : by), ew = quer ? 2.5 : bw, eh = quer ? bh : 2.5;
+      q.fillStyle = 'rgba(150,118,82,.85)'; q.fillRect(ex, ey, ew, eh);
+      q.strokeStyle = 'rgba(70,48,28,.7)'; q.lineWidth = 0.5;
+      const mx = ex + ew/2, my = ey + eh/2;
+      for(const rr of [D*0.18, D*0.34]){ q.beginPath(); q.ellipse(mx, my, quer ? 1 : rr, quer ? rr : 1, 0, 0, 7); q.stroke(); }
+    }
+    // Risse längs der Maserung
+    q.strokeStyle = 'rgba(18,12,7,.6)'; q.lineWidth = 0.6;
+    for(let i = 0; i < 2; i++){ const a = L*(0.2 + zuf(i, L)*0.6), l = 4 + zuf(L, i)*Math.min(10, L*0.25), o = D*(0.35 + zuf(i + 3, 1)*0.3);
+      q.beginPath(); if(quer){ q.moveTo(bx + a, by + o); q.lineTo(bx + a + l, by + o + 0.6); } else { q.moveTo(bx + o, by + a); q.lineTo(bx + o + 0.6, by + a + l); } q.stroke(); }
+    // zwei Vierkant-Bolzen mit Rostfahne
+    for(const t of [0.1, 0.9]){
+      const px = quer ? bx + bw*t : bx + bw/2, py = quer ? by + bh/2 : by + bh*t;
+      q.fillStyle = 'rgba(120,60,24,.35)'; q.beginPath(); q.ellipse(px + (quer ? 0 : 0.6), py + (quer ? 1.6 : 0.6), 1.4, 2.4, 0, 0, 7); q.fill();   // Rostfahne
+      q.fillStyle = '#1b1613'; q.fillRect(px - 1.7, py - 1.7, 3.4, 3.4);
+      q.fillStyle = 'rgba(255,235,210,.35)'; q.fillRect(px - 1.5, py - 1.5, 1.4, 0.7);
+    }
+    // rostige Winkel vom Balken hinüber auf den Türrahmen (nur bei Sturz/Schwelle der stehenden Tür bzw. Seiten der liegenden)
+    const W = F.winkel;
+    if(quer){ const wy = seite > 0 ? by - W + 1 : by + bh - 1;
+      fotoEisenBand(q, x + 0.5, wy, 3, W, 0); fotoEisenBand(q, x + w - 3.5, wy, 3, W, 0); }
+    else { const wx = seite > 0 ? bx - W + 1 : bx + bw - 1;
+      fotoEisenBand(q, wx, y + 0.5, W, 3, 0); fotoEisenBand(q, wx, y + h - 3.5, W, 3, 0); }
+    // Moos: auf der Schwelle (oben drauf) bzw. unter dem Sturz hängende Fäden
+    q.fillStyle = F.moos;
+    if(quer && seite > 0){ for(let i = 0; i < 5; i++){ const mx = bx + zuf(i, 7)*bw; if(Math.abs(mx - (x + w/2)) < w*0.32) continue;
+        q.beginPath(); q.ellipse(mx, by + 0.5, 2 + zuf(7, i)*2.5, 1.3 + zuf(i, i)*0.8, 0, 0, 7); q.fill(); } }
+    else if(quer){ q.strokeStyle = 'rgba(70,86,40,.75)'; q.lineWidth = 0.8; q.lineCap = 'round';
+      for(let i = 0; i < 4; i++){ const mx = bx + 2 + zuf(i, 9)*(bw - 4), l = 3 + zuf(9, i)*7; q.beginPath(); q.moveTo(mx, by + bh); q.quadraticCurveTo(mx + 1, by + bh + l*0.6, mx - 0.5, by + bh + l); q.stroke(); } }
+    else { for(let i = 0; i < 3; i++){ const my = by + 2 + zuf(i, 11)*(bh - 4); q.beginPath(); q.ellipse(bx + (seite > 0 ? 1 : bw - 1), my, 1.2, 2 + zuf(11, i)*2, 0, 0, 7); q.fill(); } }
+  };
+  if(vert){
+    if(an.oben) balken(x - F.ueber, y - F.rein, w + 2*F.ueber, F.dick, true, -1);                 // oben (Sturz)
+    if(an.unten) balken(x - F.ueber, y + h - F.dick + F.rein, w + 2*F.ueber, F.dick, true, 1);    // unten (Schwelle)
+  } else {
+    if(an.links) balken(x - F.rein, y - F.ueber, F.dick, h + 2*F.ueber, false, -1);               // links
+    if(an.rechts) balken(x + w - F.dick + F.rein, y - F.ueber, F.dick, h + 2*F.ueber, false, 1);  // rechts
+  }
+}
 // rostiges Eisen: Band (x, y, w, h) mit Nieten im Abstand 'niet' (0 = keine)
 function fotoEisenBand(q, x, y, w, h, niet){
   const g = q.createLinearGradient(0, y, 0, y + h);

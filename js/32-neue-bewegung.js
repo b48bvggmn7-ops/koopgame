@@ -327,7 +327,7 @@ function lianeKern(S, A, moveDir, ziehen, geben){
   // nah = 0 (weit weg) … 1 (ganz nah am Haken): kleinere Ranzieh-Schritte und weniger Pendeln (Nutzerwunsch, LIANE2_*_NAH)
   const nah = Math.max(0, Math.min(1, (LIANE2_NAH_BIS - S.len)/Math.max(1, LIANE2_NAH_BIS - HOOK_MIN_LEN)));
   if(ziehen) S.ziel = Math.max(HOOK_MIN_LEN, S.ziel - ROPE_PULL_SPEED*(1 - nah*(1 - LIANE2_ZIEH_NAH)));
-  if(geben) S.ziel = Math.min(S.max, S.ziel + ROPE_ADJUST_SPEED);
+  if(geben) S.ziel = Math.min(S.max, S.ziel + LIANE2_GEBEN);   // runterklettern: langsam (Nutzerwunsch)
   // Seillänge zur Wunschlänge
   S.len += Math.max(-LIANE2_ABROLL, Math.min(LIANE2_ABROLL, S.ziel - S.len));
   const hx = S.hx, hy = S.hy, dx0 = hx - A.x, dy0 = hy - A.y, d0 = Math.hypot(dx0, dy0) || 1;

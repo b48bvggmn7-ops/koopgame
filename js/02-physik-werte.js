@@ -103,6 +103,7 @@ const LIANE_VOLLE_LAENGE = false;  // Nutzerwunsch (wieder aus, „ohne Maximal-
 const LIANE2_ZIEH_NAH = 0.35;      // so viel vom Ranzieh-Tempo (ROPE_PULL_SPEED) bleibt ganz nah am Haken (weit weg: volles Tempo)
 const LIANE2_RUHIG_NAH = 0.07;     // so viel Schwung geht ganz nah am Haken je Schritt zusätzlich verloren (weit weg: nichts)
 const LIANE2_NAH_BIS = 170;        // px Seillänge: ab hier beginnt „nah“ (darunter wird es stufenlos langsamer/ruhiger)
+const LIANE2_GEBEN = 1.3;          // px/Schritt: so schnell klettert der Affe an der Liane runter (S) – Nutzer „viel zu schnell“; vorher ROPE_ADJUST_SPEED 4,2 (≈ 3,2 durch LIANE2_ABROLL)
 const DASH_NUR_WAAGERECHT = true;   // Nutzerwunsch: Dash nur nach links/rechts (false = 8 Richtungen wie vorher)
 const DASH_AUS_WELTEN = ['dschungel'];   // Welten ohne Dash – Nutzer: „Dash erst mal komplett raus, man schafft zu viel nur durch den Dash“
                                          // (dort bricht der Affe Durchbruch-Wände durch Anpusten, BRUCH_PUSTE_NOETIG)

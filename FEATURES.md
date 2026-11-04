@@ -2222,6 +2222,13 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   `ROPE_PULL_SPEED`) und desto weniger Pendeln (ganz nah je Schritt 7 % Schwung weniger); „nah“ beginnt ab 170 px
   Seillänge, stufenlos (`LIANE2_ZIEH_NAH`, `LIANE2_RUHIG_NAH`, `LIANE2_NAH_BIS`). Alte Seil-Physik (Bahnen-Test)
   unverändert. Tests liane_volle_laenge, liane_nah_ruhiger.
+- Runterklettern (S) an der Liane 2 ist langsamer (Nutzer: „geht viel zu schnell“): je Schritt nur `LIANE2_GEBEN` = 1,3 px
+  länger. Test liane_runter_langsam.
+
+### Münzketten-Geräusch (Nutzerwunsch)
+- Wer die **letzte Münze einer zusammenhängenden Münzkette** einsammelt, hört ein eigenes Geräusch (vier aufsteigende
+  Glastöne, `SFX.muenzKette`). Kette = mindestens 3 Münzen gleicher Farbe, je höchstens 62 px auseinander (über Nachbarn
+  verbunden; `MUENZ_KETTE_MIN`, `MUENZ_KETTE_ABSTAND`, `muenzKetteFertig` in js/07). Test muenz_kette_geraeusch.
 
 ### Elemente im Foto-Look (Nutzerwunsch: „alle Elemente umgestalten – Hebel und Druckplatte bleiben“)
 Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); gilt nur im Foto-Look (Taste B).
@@ -2229,9 +2236,15 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   Maserung (weiches Rauschen), Astlöchern, Rissen, dunklen Fugen und etwas Moos; dazu rostiges Eisen mit Nieten
   (`fotoEisenBand`).
 - **Tür:** Holztor aus diesen Brettern entlang der langen Achse, rostige Eisenbänder quer (eins je ~56 px), Licht oben,
-  unten dunkler (`fotoTuerInnen` aus `drawGate`); Nische, Aufgleiten, Edelstein und Rahmen wie bisher.
+  unten dunkler (`fotoTuerInnen` aus `drawGate`); Nische, Aufgleiten, Edelstein und Rahmen wie bisher. **Füße:** oben und
+  unten (bei liegenden Türen links/rechts) je ein dunkler Holzbalken, etwas breiter als die Tür und ein Stück in
+  Boden/Wand hinein – so sitzt die Tür sichtbar fest (`fotoTuerFuesse`, `FOTO_TUER_FUSS`; bewegt sich beim Öffnen nicht mit).
+  Nur dort, wo Boden, Wand o. Ä. direkt anliegt (Nutzerwunsch; `fotoTuerAnliegend`, oberer Bildrand zählt als Decke).
+  Details: Hirnholz mit Jahresringen an den Enden, abgegriffene helle Kante, Risse, Vierkant-Bolzen mit Rostfahne, rostige
+  Winkel hinüber auf den Türrahmen, Moos auf der Schwelle bzw. unter dem Sturz hängende Moosfäden.
 - **Haken:** dicke, gedrehte Holz-Liane mit Moosflecken und ein paar dunklen Blättern (`fotoLiane`) bis zum rostigen
-  Eisenring (einmal umschlungen). Kein Reichweiten-Kreis im Foto-Look (Nutzerwunsch) – stattdessen **glüht der Ring
+  Eisenring (einmal umschlungen). Reichweite als **schwacher, hell-neutraler Kreis**, der sich nie verfärbt (Nutzer: „leicht
+  sichtbarer Radius, soll sich aber nicht verfärben“; vorher ganz ausgeblendet) – dazu **glüht der Ring
   orange**, sobald der Affe greifen kann, sonst kein Leuchten (`fotoHakenZeichnen`, `FOTO_HAKEN_GLUT`). Die **Liane des
   Affen** (vom Haken zur Hand) ist dieselbe Holz-Liane, etwas dünner, mit Durchhang wie bisher (`fotoAffenLiane`).
 - **Stacheln:** angespitzte Holzpflöcke statt Metall (Nutzer: „warum ist das noch aus Metall?“) – je Kästchen 4 Pflöcke,
@@ -2241,6 +2254,31 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   Enden, darunter zwei Querbalken als Stirnseiten, kein Schatten (`fotoFlossBild`, ganz hinter den
   Figuren), Aufhänge-Lianen als Foto-Lianen; **Floß-Rad** aus verwittertem Holz mit olivgrüner Ranke; Taue, Rollen und
   Rollenwagen in altem grau-braunem Hanf/Holz (`tauFarben` in elemente/blattfloss.js).
+- **Windrad** (Code in `js/12f-foto-elemente2.js`, `fotoWindradBild`): altes Holz-Windrad – vier verwitterte Holzflügel
+  (Brettchen an einer Latte, mit Nägeln, zwei leicht bemoost) um eine rostige Eisennabe mit Nieten; der Edelstein in der
+  Nummernfarbe sitzt aufrecht mitten in der Nabe. Dreht es schnell, verwischen die Flügel (Nachbilder + leichter Schleier).
+  Auf dem Boden: Holzpfahl mit zwei Eisenbändern und Moos am Fuß; an der Wand: Holzbalken mit rostigem Eisenwinkel
+  (`fotoWindradArm`); hängend: bemooste Foto-Liane wie bei den Haken (`fotoWindradLiane`). Leuchten/Hinweis wie bisher.
+  Rotor 5 % kleiner als im Comic (Nutzerwunsch, `FOTO_WINDRAD.groesse` 0,95; die Nabe bleibt an ihrer Stelle, der
+  Wind trifft wie bisher).
+- **Bewegter Boden / bewegte Wand** (und Wechselboden, gleiche Zeichnung; `fotoStueckZeichnen` aus `pieceDraw`): Wand-
+  Stücke als Bruchsteinmauer (dasselbe Mauer-Muster wie die Wände, am Stück verankert – fährt mit), leicht unebener Rand,
+  Licht oben, unten dunkler, rostige Eisenwinkel an den Ecken; Boden-Stücke aus Erde wie der feste Boden (abgedunkelt),
+  Seiten/Unterseite leicht ausgebrochen, oben die Moos-Kante, unten ein paar Wurzeln. Keine Kontur, kein Schatten. Die
+  **Plakette** mit dem Edelstein (bewegte Plattform, Presse, Wasser-/Lava-Marke, Wechselboden) ist im Foto-Look eine
+  rostige Eisenplatte mit Nieten (`fotoVerknuepfungsPlatte`). Beim Umschalten (Taste B) werden die Stücke neu gezeichnet.
+  Auf Erd-Stücken (bewegter Boden, Wechselboden) sitzt die Plakette knapp unter der Oberfläche und die **Moos-Kante hängt
+  über den Diamanten** (Nutzerwunsch): das Moos liegt in einer eigenen Schicht (`p.cm`), gezeichnet nach den Plaketten
+  (`fotoStueckMoosZeichnen`, `fotoMoosPlaketteY`, `FOTO_STUECK.moosUeber`).
+- **Diamant-Größe passend zum Element** (Nutzerwunsch, beide Looks): Tür, bewegte Plattform, Presse und Wechselboden
+  bekommen eine Edelstein-Platte, die mit dem Element wächst – vor allem mit der schmalen Seite, etwas mit der langen
+  (`edelsteinGroesse`, `EDELSTEIN_MASS` in js/12: 40×40 ≈ 11, 40×160 ≈ 13, ab 2 Reihen dick 15; vorher fest 10–12).
+- **Bröckelboden** (`fotoBroeckelKachel`/`fotoBroeckelZeichnen`): trockene, rissige Erdscholle – Erde etwas heller und
+  trockener als der feste Boden, feine Risse, Klumpen, an freien Seiten/unten ausgebrochen, lose Krümel und dünne
+  Würzelchen unten, oben eine vertrocknete, lückenhafte Moos-Kante; nebeneinander liegende Schollen durch unregelmäßige
+  Spalten getrennt. **Vorwarnung:** zittert wie bisher, statt des roten Scheins wachsen die Risse und klaffen auf, die
+  Spalten öffnen sich, die Scholle dunkelt nach, Krümel und kleine Brocken fallen. **Zerbrechen:** Erdbrocken mit Moos
+  (abgerundet, Erde-Foto) und grau-brauner Staub statt gelber Comic-Stücke (`fotoBroeckelBruch`).
 
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:

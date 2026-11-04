@@ -5402,6 +5402,46 @@ async def foto_look_ohne_farbfilter(g):
     await g.ev("try { localStorage.removeItem('monchichi.fotoHintergrund'); } catch(e){} fotoHg.an = null; menuScreen = null")
 
 @test
+async def foto_elemente_windrad_plattform_broeckel(g):
+    """Foto-Look für Windrad, bewegten Boden/bewegte Wand (+ Wechselboden) und Bröckelboden (js/12f-foto-elemente2.js):
+    im Foto-Look zeichnen die Foto-Funktionen (Holz-Windrad, Mauer/Erde-Stücke mit Eisenplatte, rissige Erdscholle –
+    auch beim Bröckeln und Zerbrechen) ohne Fehler und ohne Spielzustand zu ändern; im Comic-Look (B) wieder die alten
+    Zeichnungen (die zwischengespeicherten Stücke werden neu gezeichnet)."""
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)
+    teile = [ground(0, 600, 1600, 160), {'x': 920, 'y': 480, 'w': 160, 'h': 40, 'type': 'crumble'}, ground(1100, 280, 40, 40)]
+    await g.load(level(teile, {'x': 100, 'y': 600}, {'x': 60, 'y': 600}, welt='dschungel', tageszeit='mittag',
+        windraeder=[{'x': 260, 'y': 600, 'link': 2}, {'x': 1120, 'y': 400, 'link': 3}],
+        switches=[{'x': 160, 'y': 580, 'link': 1}],
+        movingPlatforms=[{'x': 440, 'y': 440, 'w': 160, 'h': 40, 'look': 'ground', 'group': 1, 'targetX': 440, 'targetY': 360, 'speed': 2, 'switchLink': 1},
+                         {'x': 700, 'y': 360, 'w': 80, 'h': 160, 'look': 'wall', 'group': 2, 'targetX': 700, 'targetY': 300, 'speed': 2}],
+        switchFloors=[{'x': 1360, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 1}, {'x': 1400, 'y': 480, 'w': 40, 'h': 40, 'gruppe': 'A', 'link': 1}]))
+    await g.ev("fotoHgSetzen(true)")
+    await g.p.wait_for_function("fotoHgBereit() && ['erde', 'wand', 'kante'].every(id => fotoMatBild(id))", timeout=20000)
+    await g.ev("menuScreen = 'pause'")
+    zaehlen = """(() => { const namen = ['fotoWindradBild', 'fotoStueckZeichnen', 'fotoBroeckelZeichnen', 'fotoBroeckelBruch', 'fotoVerknuepfungsPlatte'];
+      const n = {}, alt = {}; const vor = JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps, windraeder.map(w => w.winkel)]);
+      for(const k of namen){ n[k] = 0; alt[k] = window[k]; window[k] = function(){ const r = alt[k].apply(this, arguments); if(r !== false) n[k]++; return r; }; }
+      try { camPos = camX = 0; matBeweglich = {quelle: null, n: -1, liste: []}; draw(); } finally { for(const k of namen) window[k] = alt[k]; }
+      n.gleich = vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps, windraeder.map(w => w.winkel)]);
+      n.keys = matBeweglicheStuecke().map(B => B.piece.fotoKey).concat(wechselReihen().map(R => R.piece.fotoKey)); return n; })()"""
+    an = await g.ev(zaehlen)
+    assert an['fotoWindradBild'] >= 2 and an['fotoStueckZeichnen'] >= 2 and an['fotoBroeckelZeichnen'] >= 1 and an['fotoVerknuepfungsPlatte'] >= 2, f'Foto-Zeichnungen fehlen: {an}'
+    assert an['gleich'] and all(k == 'f111' for k in an['keys']), f'Zeichnen darf nichts ändern / Stücke im Foto-Look: {an}'
+    # Bröckeln (Vorwarnung) und Zerbrechen im Foto-Look
+    await g.ev("for(const s of solids) if(s.type === 'crumble'){ s.triggered = true; s.timer = 400; }")
+    assert (await g.ev(zaehlen))['fotoBroeckelZeichnen'] >= 1
+    await g.ev("for(const s of solids) if(s.type === 'crumble'){ breakCrumble(s); s.breakElapsed = 100; }")
+    assert (await g.ev(zaehlen))['fotoBroeckelBruch'] >= 1, 'Zerbrechen im Foto-Look'
+    # Comic-Look: alte Zeichnungen, Stücke neu (ohne Foto-Schlüssel)
+    await g.ev("fotoHg.an = false; for(const s of solids) if(s.type === 'crumble'){ s.triggered = false; s.gone = false; s.timer = 0; s.fragments = null; }")
+    aus = await g.ev(zaehlen)
+    assert aus['fotoWindradBild'] == 0 and aus['fotoStueckZeichnen'] == 0 and aus['fotoBroeckelZeichnen'] == 0 and aus['fotoVerknuepfungsPlatte'] == 0, f'im Comic-Look wie bisher: {aus}'
+    assert all(k == '' for k in aus['keys']), f'Stücke im Comic-Look neu gezeichnet: {aus}'
+    await g.ev("try { localStorage.removeItem('monchichi.fotoHintergrund'); } catch(e){} fotoHg.an = null; menuScreen = null")
+    assert not fehler, f'Fehler beim Zeichnen: {fehler}'
+
+@test
 async def neue_figuren_kante_wackeln(g):
     """Kante (Nutzerwunsch): Steht der Fuß (Mitte ± KANTE_FUSS) nicht mehr auf dem Boden, rutscht eine stehende Figur ab
     und fällt; steht er noch halb drauf, bleibt sie stehen. Wackeln (Pose „kante“: auf einem Fuß, Arme wedeln, Blick zum
@@ -5810,6 +5850,48 @@ async def liane_nah_ruhiger(g):
     assert r['nah']['zug'] < r['weit']['zug']*0.6, f'nah am Haken keine kleineren Ranzieh-Schritte: {r}'
     w, n = r['weit']['spaet'], r['nah']['spaet']
     assert n < w*0.6, f'nah am Haken pendelt er nicht deutlich weniger (Ausschlag in Grad): {r}'
+
+@test
+async def liane_runter_langsam(g):
+    """Nutzerwunsch „runter klettern an der Liane geht viel zu schnell“: Liane geben (S) verlängert nur um LIANE2_GEBEN je Schritt."""
+    r = await g.ev("""(() => { const A = {x: 0, y: 0}, S = {hx: 0, hy: 100, vx: 0, vy: 0, len: 100, ziel: 100, max: 400, dehn: 0, frei: undefined};
+      const z0 = S.ziel; for(let i = 0; i < 10; i++) lianeKern(S, A, 0, false, true); return {plus: S.ziel - z0, geben: LIANE2_GEBEN}; })()""")
+    assert r['geben'] <= 1.5 and abs(r['plus'] - 10*r['geben']) < 0.01, f'Liane geben nicht langsam: {r}'
+
+@test
+async def muenz_kette_geraeusch(g):
+    """Nutzerwunsch: eigenes Geräusch, wenn die letzte Münze einer zusammenhängenden Münzkette (≥ MUENZ_KETTE_MIN gleiche
+    Münzen, je ≤ MUENZ_KETTE_ABSTAND auseinander) eingesammelt wird – nicht vorher, nicht bei Einzelmünzen."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680}))
+    r = await g.ev("""(() => { coins = [{x: 500, y: 600}, {x: 540, y: 600}, {x: 580, y: 600}, {x: 1200, y: 600}];
+      const e = []; const nimm = (c) => { c.taken = true; SFX_LOG.length = 0; coinPickupFx(c); e.push(SFX_LOG.includes('muenzkette')); };
+      nimm(coins[1]); nimm(coins[3]); nimm(coins[0]); nimm(coins[2]); return e; })()""")
+    assert r == [False, False, False, True], f'Ketten-Geräusch falsch: {r}'
+
+@test
+async def foto_tuer_fuesse_haken_kreis(g):
+    """Foto-Look: Tür bekommt Balken oben/unten (fotoTuerFuesse), Haken-Reichweite ist ein schwacher, neutraler Kreis
+    (verfärbt sich nicht, auch nicht in Reichweite)."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       doors=[{'x': 600, 'y': yy, 'link': 1} for yy in (560, 600, 640)], hooks=[{'x': 300, 'y': 400, 'radius': 200}]))
+    r = await g.ev("""(() => { let fuss = 0, kreis = []; const alt = fotoTuerFuesse, aF = fotoLookAktiv;
+      fotoLookAktiv = () => true; fotoTuerFuesse = function(){ fuss++; };
+      const arc = CanvasRenderingContext2D.prototype.arc;
+      CanvasRenderingContext2D.prototype.arc = function(x, y, rr){ if(Math.abs(rr - 200) < 1) kreis.push(String(this.strokeStyle)); return arc.apply(this, arguments); };
+      try { draw(); p1.x = 300; p1.y = 520; draw(); } finally { CanvasRenderingContext2D.prototype.arc = arc; fotoTuerFuesse = alt; fotoLookAktiv = aF; }
+      return {fuss, kreis}; })()""")
+    assert r['fuss'] >= 1, f'Tür ohne Füße im Foto-Look: {r}'
+    assert len(r['kreis']) >= 2 and len(set(r['kreis'])) == 1, f'Haken-Kreis fehlt oder verfärbt sich: {r}'
+    # Füße nur, wo etwas anliegt (Nutzerwunsch): Tür steht auf dem Boden, oben frei; liegende Tür zwischen zwei Wänden
+    await g.load(level([ground(0, 680, 3000), {'x': 1000, 'y': 400, 'w': 40, 'h': 120, 'type': 'wall'}, {'x': 1160, 'y': 400, 'w': 40, 'h': 120, 'type': 'wall'}],
+                       {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       doors=[{'x': 620, 'y': yy, 'link': 1} for yy in (580, 620, 660)] + [{'x': xx, 'y': 460, 'link': 2} for xx in (1060, 1100, 1140)]))
+    an = await g.ev("tuerFlaechenHolen().map(d => fotoTuerAnliegend(d))")
+    assert {'oben': False, 'unten': True, 'links': False, 'rechts': False} in an, f'stehende Tür: Fuß nur unten erwartet: {an}'
+    assert {'oben': False, 'unten': False, 'links': True, 'rechts': True} in an, f'liegende Tür zwischen Wänden: Füße links/rechts erwartet: {an}'
+    # Diamant wächst mit dem Element (edelsteinGroesse), bleibt aber in Grenzen
+    gr = await g.ev("[edelsteinGroesse(40, 40), edelsteinGroesse(160, 40), edelsteinGroesse(80, 80), edelsteinGroesse(400, 400), edelsteinGroesse(10, 10)]")
+    assert gr[0] < gr[1] < gr[2] and gr[3] == await g.ev('EDELSTEIN_MASS.max') and gr[4] == await g.ev('EDELSTEIN_MASS.min'), f'Diamant-Größen: {gr}'
 
 @test
 async def liane_von_oben(g):
@@ -11472,7 +11554,7 @@ def wb_halt(x):
     """genau bei x stehen bleiben (Insel bzw. Naht zwischen zwei Wechselboden-Gruppen)"""
     return {'holdIf': {'right': f'P.x < {x} - 3 && (P.x < {x} - 60 || P.vx < 1.5)', 'left': f'P.x > {x} + 3 && (P.x > {x} + 60 || P.vx > -1.5)'},
             'until': f'P.grounded && Math.abs(P.x - {x}) <= 3 && Math.abs(P.vx) < 0.6', 'frames': 600}
-def wb_haken(jx, land_r, pull=60):
+def wb_haken(jx, land_r, pull=90):   # 90 statt 60: nah am Haken zieht die Liane langsamer (LIANE2_ZIEH_NAH)
     return [k_lauf(jx, -10), {'press': ['jump'], 'hold': ['right', 'jump'], 'hookWhen': 'P.vy > -4', 'until': 'P.hookAttached', 'frames': 80},
             {'swing': True, 'pull': pull, 'release': f'P.y < {ky(land_r)} + 4 && P.vx > 0.3 && f > 10'}, {'hold': ['right'], 'until': 'P.grounded', 'frames': 200}]
 def wb_aufwind(c, r_hoch, ziel):

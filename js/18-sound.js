@@ -143,6 +143,9 @@ function* sfxBuild(a, out){
     wall:      ()=>{ const b = mk(0.3); modal(b, 0, rnd(380, 460), wood, 0.03, 0.9, 0, 0.8); swish(b, 0.01, 0.16, 700, 2600, 1.4, 0.8, 0, 0.3); return b; },
     coin:      ()=>{ const b = mk(0.9); modal(b, 0, 1568, glass, 0.35, 0.8, -0.1, 0.4); modal(b, 0.065, 2349, glass, 0.4, 0.6, 0.12, 0.3);
                      grains(b, 0.04, 0.45, 18, 6000, 10000, 0.003, 0.012, 0.15, 0.9, 'decay'); return b; },
+    // letzte Münze einer zusammenhängenden Münzkette (Nutzerwunsch): aufsteigendes, gläsernes Dreiklang-Glitzern
+    muenzKette:()=>{ const b = mk(1.4); [1568, 1976, 2349, 3136].forEach((f, i) => modal(b, i*0.075, f, glass, 0.5, 0.55 - i*0.06, -0.3 + i*0.2, 0.35));
+                     grains(b, 0.2, 0.9, 30, 6000, 11000, 0.003, 0.012, 0.18, 0.9, 'decay'); return b; },
     hookAttach:()=>{ const b = mk(0.45); modal(b, 0, 3300, metal, 0.012, 0.8, 0, 0.9); modal(b, 0.035, 3600, metal, 0.01, 0.6, 0, 0.8); modal(b, 0.03, 1780, metal, 0.22, 0.25, 0); return b; },
     rope:      ()=>{ const b = mk(0.22); swish(b, 0, 0.18, 2400, 700, 2.2, 1.0, 0, 0.25); grains(b, 0, 0.15, 14, 3000, 7000, 0.0003, 0.0008, 0.15, 0.3); return b; },
     umbrella:  ()=>{ const b = mk(0.4); puff(b, 0, 0.09, 1200, 0.9, 0, 0.03); swish(b, 0.02, 0.28, 600, 300, 0.9, 0.6, 0, 0.15);
@@ -341,6 +344,7 @@ const SFX = {
   haft(pl){ sfxLog('haft'); sfxPlay('haft', {x: pl.x, rate: pl.male ? 1 : 1.15}); },
   checkpoint(x){ sfxLog('checkpoint'); sfxPlay('checkpoint', {x}); },
   coin(combo, x){ sfxLog('coin'); return sfxPlay('coin', {x, rate: Math.pow(2, combo/12)}); },
+  muenzKette(x){ sfxLog('muenzkette'); return sfxPlay('muenzKette', {x}); },
   mushroom(x){ sfxLog('mushroom'); sfxPlay('mushroom', {x}); },
   // Dschungel-Neu (js/34-koop-aktionen.js): Schweinchen spannt den Schirm auf (Stoff-Wusch), Affe federt vom Schirm
   // (gespanntes Tuch + Boing), Affe pustet (holt Luft, dann kräftiges Wind-Rauschen, das je Schub neu ansetzt)
