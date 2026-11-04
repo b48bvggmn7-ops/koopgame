@@ -2474,6 +2474,17 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   editor_draisine_ziehen.
 
 ### Dschungel-Neu: zwei Abschnitte, neue Geschichte, Meteorit, Logik-Rätsel
+- **Rhythmus Action/Entspannung (Abschnitt 1, Nutzerwunsch 04.11.):** vorher folgte Action-Stelle auf Action-Stelle
+  (Pausen meist nur 10–20 Spalten). Jetzt sind je **3–5 Stellen zu einem Action-Block** zusammengerückt (gleichförmige
+  Laufstücke dazwischen auf 7 Spalten gekürzt, Haken-Abstände bleiben ≥ 10) und zwischen den Blöcken liegt eine
+  **entspannte Strecke** von 180–235 Spalten (durchgerannt ca. 20 s, mit Münzen und oberen Wegen ca. 30–40 s): leichte
+  Gruben 2–3 breit mit Stacheln (man kann sterben), flache Mulden ohne Gefahr, kleine Mauern 1–2 hoch, Stufen, ab und zu
+  ein schwebender Sims mit Münzen (oberer Weg), Münzbögen über den Gruben; nach jeder Gefahr mindestens 6–7 Kästchen
+  Boden. Checkpoint am Anfang jeder entspannten Strecke (gleich nach dem Block) und höchstens alle ~65 Spalten.
+  Münzen blau/pink ausgeglichen. Reihenfolge der Stellen unverändert, nie zwischen Hebel und Ziel geschnitten.
+  Abschnitt 1: 46 Stellen -> 12 Blöcke, 11 entspannte Strecken, 2532 -> 4607 Spalten. Skript
+  `tests/bausteine/rhythmus_umbau.py <welt>/<datei> [--schreiben]` (ohne: nur Plan; verschiebt „_teile“ und die
+  Begleitdatei des Computer-Partners mit). Abschnitt 2 noch nicht umgebaut.
 - **Level 1–3 und 4–6 fest zusammengefügt** (Nutzerwunsch, auch im Editor): jeder Abschnitt ist EINE Level-Datei
   (levels/dschungel/abschnitt-1-sternschnuppenspur.json, abschnitt-2-meteoritenherz.json, beide Formate), im Editor ein langes
   Level (Nummern bis 80, `MAX_LINK`; die Szene danach bleibt beim Speichern erhalten, Level-Info „nachSzene“). Die alten
@@ -2590,6 +2601,13 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   - Aufbau (Ausbau 2): editor/index.html lädt editor/js/01-zustand, 02-werkzeuge, 03-zeichnen, 04-export,
     05-levelliste, 06-github, 99-start (früher eine editor.js) – Verhalten unverändert: alle Projekt-Level laden und
     wieder exportieren ergibt dieselben Level-Daten wie in levels/ (Test editor_rundreise_alle_level).
+  - Minikarte (Navigation, Nutzerwunsch 04.11., editor/js/10-minikarte.js): Unter der Werkzeugleiste zeigt ein schmaler
+    Streifen das ganze Level verkleinert – Boden/Wände als Umriss, Stacheln rot, Checkpoints als orange Linie, Start ♂/♀
+    und Ziel als große Punkte, Haken (gelb), Hebel/Druckplatten (orange) und Türen (lila) als kleine Punkte, Spalten-
+    Zahlen mit Linien alle 100 Spalten. Ein gelber Rahmen zeigt den sichtbaren Ausschnitt; Klicken oder Ziehen springt
+    dorthin (Stelle in die Mitte), das Mausrad über der Karte scrollt in großen Schritten. Ein/aus mit dem Knopf
+    „▭ Minikarte“ (neben „Alle Werkzeuge“) oder Taste M, gemerkt im Browser (`monchichi.editorMinikarte`, Standard an).
+    Nur nach Änderungen (Malen, Radieren, Rückgängig, Laden) neu gezeichnet. Test editor_minikarte.
   - Werkzeuge: Boden, Wand, Bröckelboden, Stacheln, Haken (mit Radius in Kästchen),
     Checkpoint ⚐ (zählt, wenn beide vorbei sind; Export sortiert nach x, Fußpunkt wie Start),
     Stacheln in 4 Richtungen (Auswahl „Spitzen“ ▲▶▼◀; Klick auf vorhandene Stacheln dreht um 90°; Export dir 0-3),

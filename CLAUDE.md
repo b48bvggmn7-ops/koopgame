@@ -83,13 +83,16 @@
   03 Zeichnen · 04 Export/Testen/Herunterladen · 05 Fenster „Levels“ (+ Projekt-Levels in Welt-Ordnern; Test-Helfer `projekt_laden`) · 06 „☁ Auf GitHub speichern“ ·
   07 Fenster „Level-Info“ (Welt, Position, Titel, Tageszeit, Wetter, Look) · 08 Rückgängig/Wiederholen + Rechteck-Auswahl ·
   09 Werkzeugleiste (Reiter, „Zuletzt“, Eigenschaften-Zeile nur fürs aktive Werkzeug, Welt-Voreinstellung, Hilfe) ·
+  10 Minikarte (Streifen über der Arbeitsfläche: ganzes Level verkleinert, Rahmen = Ausschnitt, Klick/Ziehen scrollt; nur bei
+  save/applySnapshot neu vorgezeichnet; Taste M / Knopf, localStorage `monchichi.editorMinikarte`; Test-Hilfen minikarteKlick/minikarteAn) ·
   99 Start (früher alles in einer `editor.js`; die Leinwand zeigt nur den sichtbaren Ausschnitt – `ansichtX()`, nie `cvs.width` als Level-Breite nehmen); davor `00-welt-werkzeuge.js` = Tabelle, welche Werkzeuge je Welt empfohlen sind.
 - **Dschungel-Neu:** Die Dschungel-Welt hat nur 2 Abschnitte, seit „Level 1–3 zusammen“ je EINE normale Level-Datei
   (`levels/dschungel/abschnitt-*.json`, alte Teile 01–03 + 07 Rätsel bzw. 04–06 + 08 Rätsel in `levels/archiv/dschungel-teile/`;
   „_teile“ im Level sagt, wo sie liegen – Tests schneiden sie mit `tests/abschnitt.py teil_sicht` heraus, `koop_level`/`level_pfad`
   tun das automatisch). Kein Boss (Bruno im Archiv), keine Sprungpilze/Aufwinde, kein Dash (`DASH_AUS_WELTEN`), keine hohlen
   Bäume (`BAUM_AN`). Andere Welten sind im Spiel ausgeblendet (`"aus": true` in worlds.json), Weltkarte nicht erreichbar.
-  Umbau-Skripte: `tests/bausteine/dschungel_neu.py` (Stellen), `raetsel_teile.py` (Rätsel-Teile), `meteoriten_setzen.py` (Spur);
+  Umbau-Skripte: `tests/bausteine/dschungel_neu.py` (Stellen), `raetsel_teile.py` (Rätsel-Teile), `meteoriten_setzen.py` (Spur),
+  `rhythmus_umbau.py` (Action-Blöcke + entspannte Strecken; Abschnitt 1 umgebaut, „_teile“-Grenzen und Teil-Ziele mitgerechnet);
   Bot-Tests `dschungel_neu_stellen_a1/_a2`, `raetsel_dschungel_neu`. Prüfwerkzeuge lesen Abschnitte als ihre Teile (`A.level_dateien`).
 - `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), seit dem Editor-Umbau **nach Welten in Ordnern**:
   `levels/<welt>/<nr>-<titel>.json` (z. B. `vulkan/03-feuerberg.json`), Bosse `<welt>/boss-<name>.json`, alte Entwürfe in

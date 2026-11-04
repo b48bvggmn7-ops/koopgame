@@ -8544,6 +8544,44 @@ def level_teil(k, v):
     return v
 
 @test
+async def editor_minikarte(g):
+    """Minikarte im Editor (editor/js/10-minikarte.js): ganzes Level verkleinert über der Arbeitsfläche, Rahmen = sichtbarer
+    Ausschnitt, Klick/Ziehen scrollt dorthin (Stelle mittig). Nur nach Änderungen neu vorgezeichnet (nicht beim Scrollen).
+    Ein/Aus per Taste M und Knopf, gemerkt in localStorage 'monchichi.editorMinikarte' (Standard an)."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.evaluate("localStorage.removeItem('monchichi.editorMinikarte')")
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.evaluate("minikarteAn()") is True, 'Minikarte ist nicht standardmäßig an'
+        await p.click('#levelsBtn'); await p.wait_for_timeout(300)
+        await projekt_laden(p, A1)
+        cols = await p.evaluate("COLS")
+        box = await p.locator('#minikarteCvs').bounding_box()
+        assert box and box['height'] > 50 and box['width'] > 600, box
+        mitte = "(wrap.scrollLeft + wrap.clientWidth / 2) / ansichtS / TILE"
+        await p.mouse.click(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2); await p.wait_for_timeout(150)
+        assert abs(await p.evaluate(mitte) - cols / 2) < 5, 'Klick in die Kartenmitte scrollt nicht in die Level-Mitte'
+        await p.mouse.move(box['x'] + box['width'] / 2, box['y'] + 40); await p.mouse.down()
+        await p.mouse.move(box['x'] + box['width'] / 4, box['y'] + 40, steps=5); await p.mouse.up(); await p.wait_for_timeout(150)
+        assert abs(await p.evaluate(mitte) - cols / 4) < 5, 'Ziehen in der Karte scrollt nicht mit'
+        n0 = await p.evaluate("minikarteZaehler")
+        await p.evaluate("minikarteKlick(0.75)"); await p.wait_for_timeout(150)
+        assert abs(await p.evaluate(mitte) - cols * 0.75) < 5
+        assert await p.evaluate("minikarteZaehler") == n0, 'Scrollen darf das Level-Bild nicht neu vorzeichnen'
+        await p.evaluate("tiles['5,5'] = 'ground'; save()"); await p.wait_for_timeout(150)
+        assert await p.evaluate("minikarteZaehler") == n0 + 1, 'Änderung zeichnet die Karte nicht neu'
+        h0 = await p.evaluate("wrap.clientHeight")
+        await p.click('#side h2'); await p.keyboard.press('m'); await p.wait_for_timeout(150)
+        assert await p.evaluate("[minikarteAn(), localStorage.getItem('monchichi.editorMinikarte')]") == [False, 'aus']
+        assert await p.evaluate("wrap.clientHeight") > h0, 'Ausgeblendet: Arbeitsfläche wird nicht größer'
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        assert await p.evaluate("minikarteAn()") is False, 'Aus-Zustand nicht gemerkt'
+        await p.click('#minikarteBtn'); await p.wait_for_timeout(100)
+        assert await p.evaluate("minikarteAn()") is True
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_rundreise_alle_level(g):
     """Ausbau 2: Jedes Projekt-Level (1–22) im Editor laden („Levels im Projekt“) und wieder exportieren ergibt genau
     die Spiel-Datei in levels/ (gleiche Daten) – Beweis, dass der Editor beim Umbau nichts verändert."""
