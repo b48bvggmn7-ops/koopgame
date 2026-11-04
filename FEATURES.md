@@ -2257,6 +2257,15 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   sichtbarer Radius, soll sich aber nicht verfärben“; vorher ganz ausgeblendet). **Puls** (Nutzer: „weniger auffällig“):
   der Kreis taucht nur kurz schemenhaft auf – ca. 1,6 s ein- und wieder ausblenden, am hellsten nur etwa so stark wie
   vorher halb –, dann gar nicht, sodass er nur **alle 7 s** erscheint (Nutzerwunsch 04.11.; vorher alle 6,6 s); alle Haken im selben Takt.
+  **Aussehen seit 04.11.: Ring aus Herbstblättern** statt der dünnen Linie (Nutzerwunsch; Orange, Gold, Rostrot, Braun
+  gemischt, feste Lage je Haken; `FOTO_HAKEN_BLAETTER`, `art` 'herbst' – 'gruen' geht auch). **Jedes Blatt fällt wie
+  echtes Laub** (Nutzer: „Liebe zum Detail … sodass sich der Kreis natürlich bildet und wieder auflöst“): Pendel-Taumeln –
+  schwingt seitlich hin und her, sinkt in der Mitte des Schwungs schneller, hebt sich an den Umkehrpunkten kurz an, neigt
+  sich in Bewegungsrichtung und wendet sich (Unterseite heller). Bilden: jedes Blatt kommt zu seiner eigenen Zeit von
+  oben, das Pendeln klingt ab, es setzt sich weich auf seinen Platz – der Kreis entsteht Blatt für Blatt. Auflösen: kurz
+  zittern, lösen, erst langsam, dann schneller sinken, immer weiter auspendeln, etwas zur Seite treiben, verblassen.
+  Blätter mit Stiel und Mittelrippe. Ganzer Ablauf 3,8 s, dann 3,2 s nichts – alle 7 s; beim Hängen am Haken aus
+  (`fotoHakenKreisPhase`).
   Die **orange Glut** am Ring geht in Reichweite schnell an (0,15 s), erlischt außerhalb aber langsam wie verglühende
   Glut (1,6 s, wird dabei dunkler, röter und kleiner; Nutzer: „nicht direkt komplett aus“; `fotoHakenGlutStand`,
   `FOTO_HAKEN_GLUT_ZEIT`). Hängt der Affe an einem Haken, zeigt dieser Haken keinen

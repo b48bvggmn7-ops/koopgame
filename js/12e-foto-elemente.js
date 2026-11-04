@@ -235,25 +235,81 @@ function fotoTuerAnliegend(d){
   d._fussN = solids.length; d._fussQ = solids; d._fuss = r;
   return r;
 }
-// Haken-Reichweite im Foto-Look (Nutzerwunsch): der Kreis taucht alle paar Sekunden kurz schemenhaft auf – pulsAn s
-// ein- und wieder ausblenden (am hellsten pulsMax), dann pulsAus s nichts. Alle Haken im selben Takt. Hängt jemand an
-// diesem Haken, ist sein Puls aus. Nur Zeichnen (Zeit aus der Uhr), ändert keinen Spielzustand. zeit = fest (für Tests).
-const FOTO_HAKEN_KREIS = {pulsAn: 1.6, pulsAus: 5.4, pulsMax: 0.6, zeit: null};   // alle 7 s (1,6 + 5,4; Nutzerwunsch)
-function fotoHakenKreisAlpha(h){
+// Haken-Reichweite im Foto-Look (Nutzerwunsch): der Ring taucht alle 7 s auf (pulsAn s lang, dann pulsAus s nichts; alle
+// Haken im selben Takt). Hängt jemand an diesem Haken, ist sein Ring aus. Nur Zeichnen (Zeit aus der Uhr), ändert keinen
+// Spielzustand. zeit = fest (für Tests). fotoHakenKreisAlpha = Helligkeit des Pulses (0 … pulsMax).
+const FOTO_HAKEN_KREIS = {pulsAn: 3.8, pulsAus: 3.2, pulsMax: 0.6, zeit: null};   // alle 7 s (3,8 + 3,2; Nutzerwunsch)
+// Stand im Puls: 0 … 1 während er sichtbar ist, -1 = nichts (Pause oder jemand hängt an diesem Haken)
+function fotoHakenKreisPhase(h){
   const K = FOTO_HAKEN_KREIS;
-  for(const q of [p1, p2]) if(q && q.hookAttached && (q.anchor === h || q._lianeA === h)) return 0;
+  for(const q of [p1, p2]) if(q && q.hookAttached && (q.anchor === h || q._lianeA === h)) return -1;
   const s = K.zeit != null ? K.zeit : (typeof performance !== 'undefined' ? performance.now() : 0) / 1000;
   const ph = s % (K.pulsAn + K.pulsAus);
-  if(ph >= K.pulsAn) return 0;
-  return K.pulsMax * Math.pow(Math.sin(ph / K.pulsAn * Math.PI), 2);
+  return ph < K.pulsAn ? ph / K.pulsAn : -1;
 }
+function fotoHakenKreisAlpha(h){
+  const p = fotoHakenKreisPhase(h);
+  return p < 0 ? 0 : FOTO_HAKEN_KREIS.pulsMax * Math.pow(Math.sin(p * Math.PI), 2);
+}
+// Aussehen (Nutzerwunsch 04.11.): Ring aus Herbstblättern – feste Lage je Haken (kein Zufall pro Bild). Jedes Blatt fällt
+// wie echtes Laub (Nutzer: „Liebe zum Detail, jedes Blatt natürlich fallen lassen, sodass sich der Kreis natürlich bildet
+// und wieder auflöst“): Pendel-Taumeln – es schwingt seitlich hin und her, sinkt in der Mitte des Schwungs schneller und
+// hebt sich an den Umkehrpunkten kurz an, neigt sich in Bewegungsrichtung und wendet sich dabei (Unterseite heller).
+// Bilden: jedes Blatt kommt zu seiner eigenen (zufälligen, festen) Zeit von oben, das Pendeln klingt ab und es setzt sich
+// weich auf seinen Platz – der Kreis entsteht Blatt für Blatt. Auflösen: kurz zittern, dann löst es sich, sinkt erst
+// langsam, dann schneller, pendelt immer weiter aus, treibt etwas zur Seite und verblasst. Zeiten in s im Puls.
+const FOTO_HAKEN_BLAETTER = {blattAbstand: 22, art: 'herbst',
+  farben: {gruen: ['150,170,110', '196,186,140'], herbst: ['196,112,48', '214,158,62', '160,72,38', '186,140,84']},
+  deckkraft: {gruen: 0.52, herbst: 0.66}, rippe: {gruen: '120,135,95', herbst: '110,62,30'},
+  einStreu: 0.9, einDauer: 0.95, einHoehe: 55, fallAb: 2.15, fallStreu: 0.55, fallDauer: 0.85, fallWeg: 85, pendel: 11, zittern: 0.15};
 function fotoHakenKreis(h, x, range){
-  const a = fotoHakenKreisAlpha(h);
-  if(a < 0.01) return;
-  ctx.save(); ctx.globalAlpha = a;
-  ctx.fillStyle = 'rgba(235,238,230,0.05)'; ctx.strokeStyle = 'rgba(235,238,230,0.26)'; ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(x, h.y, range, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.restore();
+  const p = fotoHakenKreisPhase(h);
+  if(p < 0) return;
+  const c = ctx, B = FOTO_HAKEN_BLAETTER, t = p*FOTO_HAKEN_KREIS.pulsAn;
+  const n = Math.max(10, Math.round(Math.PI*2*range/B.blattAbstand));
+  const zeit = (typeof performance !== 'undefined' ? performance.now() : 0)/1000;
+  const hs = (i, k) => { const v = Math.sin(h.x*0.37 + h.y*0.91 + i*12.9898 + k*78.233)*43758.5453; return v - Math.floor(v); };
+  const clamp = v => Math.max(0, Math.min(1, v)), weich = v => v*v*(3 - 2*v);
+  const F = B.farben[B.art] || B.farben.gruen, deck = B.deckkraft[B.art] || 0.52, rippe = B.rippe[B.art] || B.rippe.gruen;
+  c.save();
+  c.globalAlpha = Math.pow(Math.sin(p*Math.PI), 2);   // ganz zarte Fläche im Kreis
+  c.fillStyle = 'rgba(235,238,230,0.025)';
+  c.beginPath(); c.arc(x, h.y, range, 0, Math.PI*2); c.fill();
+  for(let i = 0; i < n; i++){
+    const einAb = hs(i, 6)*B.einStreu, einD = B.einDauer + hs(i, 8)*0.35;
+    const fallAb = B.fallAb + hs(i, 9)*B.fallStreu, fallD = B.fallDauer + hs(i, 10)*0.3;
+    const e = clamp((t - einAb)/einD), f = clamp((t - fallAb)/fallD);
+    if(e <= 0 || f >= 1) continue;
+    const seite = hs(i, 7) < 0.5 ? -1 : 1, phi = hs(i, 12)*Math.PI*2, amp0 = B.pendel + hs(i, 13)*6;
+    const w = (i + hs(i, 1)*0.5)/n*Math.PI*2, rr = range + (hs(i, 2) - 0.5)*4;
+    let px = x + Math.cos(w)*rr, py = h.y + Math.sin(w)*rr;
+    const gr = 5.5 + hs(i, 3)*3;
+    let dreh = w + Math.PI/2 + (hs(i, 4) - 0.5)*0.9 + Math.sin(zeit*1.1 + i*1.7)*0.1, wende = 1, a = 1;
+    if(e < 1){   // fällt pendelnd von oben auf seinen Platz und setzt sich weich
+      const th = e*(2.2 + hs(i, 11)*1.4)*Math.PI + phi, rest = Math.pow(1 - e, 1.3), amp = amp0*rest;
+      py -= (B.einHoehe + hs(i, 14)*30)*Math.pow(1 - e, 2.1) + amp*0.22*Math.pow(Math.sin(th), 2);   // an den Umkehrpunkten kurz angehoben
+      px += amp*Math.sin(th) - seite*8*rest;
+      dreh += 0.7*Math.cos(th)*rest; wende = Math.cos((th*0.6 + phi)*rest*1.6);
+      a = weich(clamp(e/0.3));
+    }
+    if(t > fallAb - B.zittern && f <= 0) dreh += Math.sin(zeit*38 + i)*0.09*clamp((t - fallAb + B.zittern)/B.zittern);   // zittert kurz, bevor es sich löst
+    if(f > 0){   // löst sich, sinkt erst langsam, dann schneller, pendelt immer weiter aus und verblasst
+      const th = f*(2.4 + hs(i, 15)*1.2)*Math.PI + phi, an = clamp(f*2.2), amp = amp0*1.25*an;
+      py += (B.fallWeg + hs(i, 16)*40)*Math.pow(f, 1.6) - amp*0.22*Math.pow(Math.sin(th), 2);
+      px += amp*Math.sin(th) + seite*10*f;
+      dreh += 0.7*Math.cos(th)*an + seite*0.5*f; wende = Math.cos((th*0.6 + phi)*an*1.6);
+      a *= 1 - weich(clamp((f - 0.45)/0.55));
+    }
+    if(a < 0.01) continue;
+    c.save(); c.globalAlpha = a; c.translate(px, py); c.rotate(dreh); c.scale(1, Math.max(0.12, Math.abs(wende)));   // wendet sich
+    c.fillStyle = `rgba(${F[Math.floor(hs(i, 5)*F.length)]},${deck})`;
+    c.beginPath(); c.moveTo(-gr, 0); c.quadraticCurveTo(-gr*0.1, -gr*0.6, gr, 0); c.quadraticCurveTo(gr*0.1, gr*0.5, -gr, 0); c.fill();
+    if(wende < 0){ c.fillStyle = 'rgba(255,236,200,0.2)'; c.fill(); }   // Unterseite: heller, matter
+    c.strokeStyle = `rgba(${rippe},0.4)`; c.lineWidth = 0.6;
+    c.beginPath(); c.moveTo(-gr*0.8, 0); c.lineTo(gr*0.8, 0); c.moveTo(-gr, 0); c.lineTo(-gr - 2.2, 0.6); c.stroke();   // Mittelrippe + Stiel
+    c.restore();
+  }
+  c.restore();
 }
 
 function fotoTuerFuesse(q, x, y, w, h, vert, d){
