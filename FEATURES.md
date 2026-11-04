@@ -2482,9 +2482,14 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   ein schwebender Sims mit Münzen (oberer Weg), Münzbögen über den Gruben; nach jeder Gefahr mindestens 6–7 Kästchen
   Boden. Checkpoint am Anfang jeder entspannten Strecke (gleich nach dem Block) und höchstens alle ~65 Spalten.
   Münzen blau/pink ausgeglichen. Reihenfolge der Stellen unverändert, nie zwischen Hebel und Ziel geschnitten.
-  Abschnitt 1: 46 Stellen -> 12 Blöcke, 11 entspannte Strecken, 2532 -> 4607 Spalten. Skript
-  `tests/bausteine/rhythmus_umbau.py <welt>/<datei> [--schreiben]` (ohne: nur Plan; verschiebt „_teile“ und die
-  Begleitdatei des Computer-Partners mit). Abschnitt 2 noch nicht umgebaut.
+  Abschnitt 1: 46 Stellen -> 12 Blöcke, 11 entspannte Strecken, 2532 -> 4607 Spalten. **Entspannter Start**
+  (Nutzer: „das Level startet direkt mit einem Action-Bereich – lieber entspannt starten“): vor dem ersten Block eine
+  entspannte Strecke von 234 Spalten, jetzt 4841 Spalten. (Beim ersten Umbau war das Ziel in eine gekürzte Lücke
+  gefallen und lag bei Spalte 0 – behoben, Ziel auf Spalte 4821; das Skript rückt Start/Ziel jetzt nie weg und speichert
+  nicht, wenn Start/Ziel fehlen oder das Ziel nicht am Ende liegt.) Skript
+  `tests/bausteine/rhythmus_umbau.py <welt>/<datei> [--anfang] [--schreiben]` (ohne --schreiben: nur Plan; --anfang:
+  nur die Strecke vor der ersten Stelle; verschiebt „_teile“ und die Begleitdatei des Computer-Partners mit; Marke
+  „_rhythmus“ im Level verhindert doppeltes Umbauen). Abschnitt 2 noch nicht umgebaut.
 - **Level 1–3 und 4–6 fest zusammengefügt** (Nutzerwunsch, auch im Editor): jeder Abschnitt ist EINE Level-Datei
   (levels/dschungel/abschnitt-1-sternschnuppenspur.json, abschnitt-2-meteoritenherz.json, beide Formate), im Editor ein langes
   Level (Nummern bis 80, `MAX_LINK`; die Szene danach bleibt beim Speichern erhalten, Level-Info „nachSzene“). Die alten

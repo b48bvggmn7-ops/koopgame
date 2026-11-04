@@ -87,6 +87,7 @@ def objekte_in_spalte(E, c):
         if isinstance(v, list) and k != 'tiles':
             for o in v:
                 if isinstance(o, dict) and o.get('c') == c and k not in ('coins', 'meteoriten', 'checkpoints'): n += 1
+        elif isinstance(v, dict) and k in ('startM', 'startF', 'goal') and v.get('c') is not None and abs(v['c'] - c) <= 3: n += 1   # Start/Ziel samt Umfeld bleiben
     return n
 
 def schnitt_ok(A, E, x):
@@ -241,9 +242,20 @@ def entspannt(L, R, rnd):
                 CP.append(k); letzter = k
     return T, S, M, CP, teile
 
-def umbauen(datei, schreiben=False, saat=7):
+def umbauen(datei, schreiben=False, saat=7, nur_anfang=False):
     E = lade(datei)
+    spiel_alt = json.loads((ROOT / 'levels' / datei).read_text(encoding='utf-8'))
+    if spiel_alt.get('_rhythmus') and not nur_anfang:   # schon umgebaut: ein zweiter Lauf würde alles noch einmal einfügen
+        raise RuntimeError(f'{datei} ist schon umgebaut ("_rhythmus": {spiel_alt["_rhythmus"]}) – nicht doppelt umbauen')
     A, bloecke, einfuegen, entfernen = planen(E)
+    if nur_anfang:
+        # Nutzerwunsch: „das Level startet direkt mit einem Action-Bereich – lieber entspannt starten“: nur EINE entspannte
+        # Strecke vor der ersten Stelle (zwischen Startpunkt und erster Stelle), sonst nichts ändern
+        erste = A['st'][0][0]
+        x0 = next((x for x in range(erste - 4, 4, -1) if schnitt_ok(A, E, x) is not None), None)
+        if x0 is None: raise RuntimeError('vor der ersten Stelle kein flacher Platz zum Einfügen')
+        bloecke, einfuegen, entfernen = [(0, len(A['st']) - 1)], [x0], set()
+        saat += 1000
     st, rnd = A['st'], random.Random(saat)
     laengen = [rnd.randint(*ENTSPANNT) for _ in einfuegen]
     # Abbildung alte Spalte -> neue Spalte
@@ -290,7 +302,13 @@ def umbauen(datei, schreiben=False, saat=7):
             neu_liste.append(o)
         ed[k] = neu_liste
     for k in ('startM', 'startF', 'goal'):
-        if isinstance(ed.get(k), dict): ed[k] = dict(ed[k], c=nc(ed[k]['c']))
+        # (Start/Ziel nie verlieren: liegt es in einer gekürzten Spalte, rückt es auf die nächste erhaltene – vorher ging so
+        #  das Ziel von Abschnitt 1 verloren)
+        if isinstance(ed.get(k), dict) and isinstance(ed[k].get('c'), (int, float)): ed[k] = dict(ed[k], c=nc_fest(ed[k]['c']))
+    # Sicherheitsprüfung: Start und Ziel vorhanden, Ziel am Ende (sonst nicht speichern)
+    for k in ('startM', 'goal'):
+        if not (isinstance(ed.get(k), dict) and isinstance(ed[k].get('c'), (int, float))): raise RuntimeError(f'{k} fehlt nach dem Umbau')
+    if ed['goal']['c'] < neu_cols*0.9: raise RuntimeError(f'Ziel liegt nicht am Ende: Spalte {ed["goal"]["c"]} von {neu_cols}')
     # entspannte Strecken einsetzen
     cps_neu = []
     for x, L in zip(einfuegen, laengen):
@@ -336,6 +354,7 @@ def umbauen(datei, schreiben=False, saat=7):
                     n = nc_fest(min(alt_c, A['COLS'] - 1))
                     tl[f] = dict(tl[f], x=(n - v2)*40 + tl[f]['x'] % 40)
             tl['von'], tl['breite'] = v2, e2 - v2
+    lv.alt_spiel['_rhythmus'] = (lv.alt_spiel.get('_rhythmus', '') + (' +anfang' if nur_anfang else 'umgebaut')).strip()
     LB.speichern([lv])
     # Begleitdatei des Computer-Partners mitverschieben
     pd = ROOT / 'levels' / 'partner' / datei
@@ -359,4 +378,4 @@ def umbauen(datei, schreiben=False, saat=7):
     print('geschrieben:', datei)
 
 if __name__ == '__main__':
-    umbauen(sys.argv[1], '--schreiben' in sys.argv)
+    umbauen(sys.argv[1], '--schreiben' in sys.argv, nur_anfang='--anfang' in sys.argv)
