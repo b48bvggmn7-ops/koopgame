@@ -5963,9 +5963,18 @@ async def foto_tuer_fuesse_haken_kreis(g):
       K.zeit = K.pulsAn/2; e.mitte = fotoHakenKreisAlpha(h);
       K.zeit = K.pulsAn + K.pulsAus/2; e.pause = fotoHakenKreisAlpha(h);
       K.zeit = K.pulsAn/2; p1.hookAttached = true; p1.anchor = h; e.haengt = fotoHakenKreisAlpha(h);
-      p1.hookAttached = false; p1.anchor = null; K.zeit = null; e.max = K.pulsMax; return e; })()""")
+      p1.hookAttached = false; p1.anchor = null; K.zeit = null; e.max = K.pulsMax; h._ringHing = false; h._ringBasis = null; return e; })()""")
     assert abs(pu['mitte'] - pu['max']) < 0.01 and pu['pause'] == 0 and pu['haengt'] == 0, f'Haken-Puls: {pu}'
-    assert await g.ev("Math.abs(FOTO_HAKEN_KREIS.pulsAn + FOTO_HAKEN_KREIS.pulsAus - 7) < 0.01"), 'Haken-Kreis nicht alle 7 s'
+    assert await g.ev("Math.abs(FOTO_HAKEN_KREIS.pulsAn + FOTO_HAKEN_KREIS.pulsAus - 12) < 0.01"), 'Haken-Kreis nicht alle 12 s'
+    # 2,5 s ganzer Ring (letztes Blatt gelandet bis erstes fällt) und nach dem Loslassen 12 s Pause, dann von vorn
+    halt = await g.ev("FOTO_HAKEN_BLAETTER.fallAb - (FOTO_HAKEN_BLAETTER.einStreu + FOTO_HAKEN_BLAETTER.einDauer + 0.35)")
+    assert abs(halt - 2.5) < 0.01, f'Ring nicht 2,5 s ganz: {halt}'
+    los = await g.ev("""(() => { const K = FOTO_HAKEN_KREIS, h = {x: 300, y: 400}, e = {};
+      K.zeit = 102; p1.hookAttached = true; p1.anchor = h; e.haengt = fotoHakenKreisPhase(h);
+      p1.hookAttached = false; p1.anchor = null; K.zeit = 103; e.los = fotoHakenKreisPhase(h);
+      K.zeit = 114.9; e.fast = fotoHakenKreisPhase(h); K.zeit = 115.5; e.dann = fotoHakenKreisPhase(h);
+      K.zeit = null; return e; })()""")
+    assert los['haengt'] == -1 and los['los'] == -1 and los['fast'] == -1 and 0 < los['dann'] < 0.1, f'nach dem Loslassen nicht 12 s Pause / nicht von vorn: {los}'
     # Glut erlischt langsam (Nutzerwunsch „nicht direkt komplett aus“): nach 0,5 s außer Reichweite noch etwas da, nach 2 s aus
     gl = await g.ev("""(() => { const h = {}; fotoHakenGlutStand(h, true); const an = h._glut;
       h._glutT = performance.now() - 200; fotoHakenGlutStand(h, false); const halb = h._glut;

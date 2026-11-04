@@ -2264,8 +2264,9 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   sich in Bewegungsrichtung und wendet sich (Unterseite heller). Bilden: jedes Blatt kommt zu seiner eigenen Zeit von
   oben, das Pendeln klingt ab, es setzt sich weich auf seinen Platz – der Kreis entsteht Blatt für Blatt. Auflösen: kurz
   zittern, lösen, erst langsam, dann schneller sinken, immer weiter auspendeln, etwas zur Seite treiben, verblassen.
-  Blätter mit Stiel und Mittelrippe. Ganzer Ablauf 3,8 s, dann 3,2 s nichts – alle 7 s; beim Hängen am Haken aus
-  (`fotoHakenKreisPhase`).
+  Blätter mit Stiel und Mittelrippe. **Takt seit 04.11. (Nutzerwunsch): alle 12 s**, der ganze Ring bleibt **2,5 s**
+  stehen (Ablauf 6,4 s, dann 5,6 s nichts). Beim Hängen am Haken aus; **nach dem Loslassen wartet dieser Haken 12 s** und
+  beginnt dann von vorn (vorher tauchte der Ring mitten im Ablauf wieder auf; `fotoHakenKreisPhase`, `nachLoslassen`).
   Die **orange Glut** am Ring geht in Reichweite schnell an (0,15 s), erlischt außerhalb aber langsam wie verglühende
   Glut (1,6 s, wird dabei dunkler, röter und kleiner; Nutzer: „nicht direkt komplett aus“; `fotoHakenGlutStand`,
   `FOTO_HAKEN_GLUT_ZEIT`). Hängt der Affe an einem Haken, zeigt dieser Haken keinen

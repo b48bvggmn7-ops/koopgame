@@ -235,16 +235,25 @@ function fotoTuerAnliegend(d){
   d._fussN = solids.length; d._fussQ = solids; d._fuss = r;
   return r;
 }
-// Haken-Reichweite im Foto-Look (Nutzerwunsch): der Ring taucht alle 7 s auf (pulsAn s lang, dann pulsAus s nichts; alle
-// Haken im selben Takt). Hängt jemand an diesem Haken, ist sein Ring aus. Nur Zeichnen (Zeit aus der Uhr), ändert keinen
+// Haken-Reichweite im Foto-Look (Nutzerwunsch): der Ring taucht regelmäßig auf (pulsAn s lang, dann pulsAus s nichts; alle
+// Haken im selben Takt, außer nach dem Loslassen – s. u.). Hängt jemand an diesem Haken, ist sein Ring aus. Nur Zeichnen (Zeit aus der Uhr), ändert keinen
 // Spielzustand. zeit = fest (für Tests). fotoHakenKreisAlpha = Helligkeit des Pulses (0 … pulsMax).
-const FOTO_HAKEN_KREIS = {pulsAn: 3.8, pulsAus: 3.2, pulsMax: 0.6, zeit: null};   // alle 7 s (3,8 + 3,2; Nutzerwunsch)
+// Nutzerwunsch 04.11.: alle 12 s (pulsAn 6,4 s Ablauf – darin 2,5 s ganzer Ring, s. FOTO_HAKEN_BLAETTER – + pulsAus 5,6 s).
+// Nach dem Loslassen eines Hakens (Affe springt ab) wartet DIESER Haken nachLoslassen s (12) und beginnt dann von vorn
+// (vorher lief der allgemeine Takt weiter und der Ring tauchte mitten im Ablauf wieder auf). Stand je Haken: h._ringHing,
+// h._ringBasis (nur Anzeige).
+const FOTO_HAKEN_KREIS = {pulsAn: 6.4, pulsAus: 5.6, pulsMax: 0.6, nachLoslassen: 12, zeit: null};
 // Stand im Puls: 0 … 1 während er sichtbar ist, -1 = nichts (Pause oder jemand hängt an diesem Haken)
 function fotoHakenKreisPhase(h){
   const K = FOTO_HAKEN_KREIS;
-  for(const q of [p1, p2]) if(q && q.hookAttached && (q.anchor === h || q._lianeA === h)) return -1;
   const s = K.zeit != null ? K.zeit : (typeof performance !== 'undefined' ? performance.now() : 0) / 1000;
-  const ph = s % (K.pulsAn + K.pulsAus);
+  let haengt = false;
+  for(const q of [p1, p2]) if(q && q.hookAttached && (q.anchor === h || q._lianeA === h)) haengt = true;
+  if(haengt){ h._ringHing = true; return -1; }
+  if(h._ringHing){ h._ringHing = false; h._ringBasis = s + K.nachLoslassen; }   // gerade losgelassen: erst in nachLoslassen s wieder, dann von vorn
+  const basis = h._ringBasis != null ? h._ringBasis : 0;
+  if(s < basis) return -1;
+  const ph = (s - basis) % (K.pulsAn + K.pulsAus);
   return ph < K.pulsAn ? ph / K.pulsAn : -1;
 }
 function fotoHakenKreisAlpha(h){
@@ -261,7 +270,8 @@ function fotoHakenKreisAlpha(h){
 const FOTO_HAKEN_BLAETTER = {blattAbstand: 22, art: 'herbst',
   farben: {gruen: ['150,170,110', '196,186,140'], herbst: ['196,112,48', '214,158,62', '160,72,38', '186,140,84']},
   deckkraft: {gruen: 0.52, herbst: 0.66}, rippe: {gruen: '120,135,95', herbst: '110,62,30'},
-  einStreu: 0.9, einDauer: 0.95, einHoehe: 55, fallAb: 2.15, fallStreu: 0.55, fallDauer: 0.85, fallWeg: 85, pendel: 11, zittern: 0.15};
+  // letztes Blatt liegt nach einStreu + einDauer + 0,35 = 2,2 s; erstes löst sich bei fallAb = 4,7 s -> 2,5 s ganzer Ring
+  einStreu: 0.9, einDauer: 0.95, einHoehe: 55, fallAb: 4.7, fallStreu: 0.55, fallDauer: 0.85, fallWeg: 85, pendel: 11, zittern: 0.15};
 function fotoHakenKreis(h, x, range){
   const p = fotoHakenKreisPhase(h);
   if(p < 0) return;
