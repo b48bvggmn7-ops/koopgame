@@ -67,9 +67,9 @@ function fotoMatMuster(q, id, dy){
 }
 // gilt der Foto-Look gerade (wie der Foto-Hintergrund)?
 function fotoMatAn(){ return typeof fotoHgAn === 'function' && fotoHgAn() && typeof BG_STIL !== 'undefined' && !!BG_STIL; }
-// Foto-Gras-Kante da? Dann entfallen die gezeichneten Comic-Pflanzen am Boden (Dickicht, Gras, Farne, Blumen aus 17a) –
-// die Kante bringt ihre eigenen Pflanzen mit. Tiere und ihre Abstands-Regeln bleiben unverändert.
-function fotoMatOhneDeko(){ return fotoMatAn() && !!fotoMatBild('kante'); }
+// Im Foto-Look entfallen die gezeichneten grünen Comic-Pflanzen am Boden (Dickicht, Gras, Farne, Blumen aus 17a) –
+// Nutzerwunsch „grüne Pflanzen im Vordergrund im Foto-Look raus“. Tiere und ihre Abstands-Regeln bleiben unverändert.
+function fotoMatOhneDeko(){ return typeof fotoLookAktiv === 'function' && fotoLookAktiv(); }
 // aus matPfadeZeichnen (12): Texturen über die gezeichnete Füllung legen; true = erledigt (dann keine Comic-Kontur)
 function fotoMatUeber(q, V){
   if(!fotoMatAn()) return false;

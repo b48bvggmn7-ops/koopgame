@@ -5340,8 +5340,8 @@ FOTO_PROBE_JS = """(() => { const bild = (w, h, f) => { const c = document.creat
 async def foto_material(g):
     """Foto-Material (Nutzerwunsch 04.11., js/12c-foto-material.js): liegen Texturen vor (hier Werkstatt-Proben im
     localStorage), legt das Spiel im Foto-Look Erde/Wand/Gras-Kante über Boden und Wand (Kante auf jeder freien
-    Oberkante, auch auf Wänden), weiche Kontur statt Comic-Linie, Comic-Pflanzen am Boden entfallen; ohne Texturen oder
-    im Comic-Look (Taste B) alles wie bisher. Zeichnen ändert keinen Spielzustand."""
+    Oberkante, auch auf Wänden), weiche Kontur statt Comic-Linie; die grünen Comic-Pflanzen am Boden entfallen im Foto-Look
+    immer (Nutzerwunsch); ohne Texturen sonst wie bisher, im Comic-Look (Taste B) alles wie bisher. Zeichnen ändert keinen Spielzustand."""
     fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
     await g.p.route('**/assets/texturen/**', lambda route: route.abort())   # gespeicherte Texturen ausblenden: „ohne Texturen“ prüfen
     srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)
@@ -5353,8 +5353,9 @@ async def foto_material(g):
       camPos = camX = 0; matSicht = {key: ''}; draw(); outlineDraw = a1; bodenDekorZeichnen = a2;
       return {kontur, deko, streifen: [...matSicht.V.streifen.keys()].sort((a, b) => a - b), gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()"""
     await g.ev("menuScreen = 'pause'")
+    await g.p.wait_for_function("fotoHgBereit()", timeout=15000)
     ohne = await g.ev(pruefen)
-    assert ohne['kontur'] >= 1 and ohne['deko'] == 1, f'ohne Texturen muss alles wie bisher sein: {ohne}'
+    assert ohne['kontur'] >= 1 and ohne['deko'] == 0, f'ohne Texturen: Comic-Kontur wie bisher, Comic-Pflanzen im Foto-Look aus: {ohne}'
     await g.ev(FOTO_PROBE_JS)
     await g.p.wait_for_function("['erde', 'wand', 'kante'].every(id => fotoMatBild(id))", timeout=5000)
     mit = await g.ev(pruefen)
@@ -5513,6 +5514,7 @@ async def boden_dekor_dschungel(g):
     nächtliche Lichtschäfte sind aus. Zeichnen ändert keinen Spielzustand."""
     teile = [ground(0, 680, 6000), ground(1600, 520, 400), ground(2600, 440, 240, 240, 'wall')]
     srv = webserver(); await g.p.goto(srv.url + 'index.html'); await g.p.wait_for_timeout(400)   # Leinwand lesbar (nicht file://)
+    await g.ev("fotoHg.an = false")   # prüft den Comic-Look (im Foto-Look gibt es kein Boden-Dekor, 12c)
     assert not await g.ev("DJ_LEUCHTKREISE || DJ_SCHWEBESAMEN || DJ_LICHTSTRAHLEN"), 'Leuchtkreise/Schwebesamen/Lichtstrahlen sollen aus sein'
     for zeit in ('morgen', 'mittag', 'abend', 'nacht'):
         await g.load(level(teile, {'x': 100, 'y': 680}, {'x': 60, 'y': 680}, welt='dschungel', tageszeit=zeit))
