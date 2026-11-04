@@ -5283,8 +5283,8 @@ async def dschungel_hintergrund_tag_nacht(g):
 
 @test
 async def foto_hintergrund(g):
-    """Foto-Hintergrund (Nutzerwunsch 04.11., js/11c-foto-hintergrund.js): in der Dschungel-Welt zeigt das Spiel die
-    Wald-Fotos als Ebenen (Panorama hinten, Unterholz vorne) statt des gezeichneten Hintergrunds; Speicher klein,
+    """Foto-Hintergrund (Nutzerwunsch 04.11., js/11c-foto-hintergrund.js): in der Dschungel-Welt zeigt das Spiel das
+    Nebelwald-Bild bildhoch statt des gezeichneten Hintergrunds (ein Bild: gespiegelt wiederholt); Speicher klein,
     Zeichnen ändert keinen Spielzustand, abschaltbar (Optionen / localStorage) -> wieder der gezeichnete Stil;
     andere Welten bleiben unberührt."""
     fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
@@ -5298,16 +5298,19 @@ async def foto_hintergrund(g):
       camPos = camX = 500; draw(); const a = fotoHgZeichnen(); camPos = camX = 900; draw();
       hgStilZeichnen = alt;
       const S = fotoHg.stuecke, mb = c => c.width*c.height*4/1e6;
-      // je Stück: linker Rand weich (durchsichtig -> deckend), liegt auf dem Ende des vorigen; Schleife 4 -> 1
+      // je Stück: linker Rand weich (durchsichtig -> deckend), liegt auf dem Ende des vorigen; Schleife letztes -> erstes
       const rand = S.map(s => { const q = s.c.getContext('2d'); return [q.getImageData(0, 360, 1, 1).data[3], q.getImageData(Math.ceil(FOTO_HG_UEBERGANG*s.c.height/s.h) + 2, 360, 1, 1).data[3]]; });
       const lueckenlos = S.every((s, i) => i === 0 || s.x === S[i - 1].x + S[i - 1].w - FOTO_HG_UEBERGANG)
-        && fotoHg.per === S[3].x + S[3].w - FOTO_HG_UEBERGANG;
+        && fotoHg.per === S[S.length - 1].x + S[S.length - 1].w - FOTO_HG_UEBERGANG;
+      // gespiegelt: Stück 2 ist Stück 1 spiegelverkehrt (Punkt in der Mitte der Höhe, ein Viertel von links bzw. rechts)
+      const px = (s, x) => Array.from(s.c.getContext('2d').getImageData(x, 300, 1, 1).data).slice(0, 3);
+      const spiegel = S.length < 2 || JSON.stringify(px(S[0], 500)) === JSON.stringify(px(S[1], S[1].c.width - 1 - 500));
       let maxSichtbar = 0; for(let x = 0; x < fotoHg.per; x += 97){ ctx.save(); fotoHgPanorama(x); ctx.restore(); maxSichtbar = Math.max(maxSichtbar, fotoHg.sichtbar); }
-      return {a, gezeichnet, n: S.length, hoch: S.every(s => s.h === Math.round(H*FOTO_HG_HOEHE) && s.c.height >= 600) && FOTO_HG_HOEHE === 1, mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
+      return {a, gezeichnet, n: S.length, soll: FOTO_HG_BILDER.length*(FOTO_HG_SPIEGELN ? 2 : 1), spiegel, hoch: S.every(s => s.h === Math.round(H*FOTO_HG_HOEHE) && s.c.height >= 600) && FOTO_HG_HOEHE === 1, mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
               gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()""")
     assert r['a'] and r['gezeichnet'] == 0, f'Foto-Hintergrund nicht gezeichnet: {r}'
     assert r['gleich'], 'Zeichnen hat Spielzustand verändert'
-    assert r['n'] == 4 and r['hoch'] and r['lueckenlos'], f'Panorama 1-2-3-4 nicht bildhoch (Nutzer: keine graue Fläche oben) / lückenhaft: {r}'
+    assert r['n'] == r['soll'] and r['spiegel'] and r['hoch'] and r['lueckenlos'], f'Bild nicht bildhoch (Nutzer: keine graue Fläche oben) / nicht gespiegelt / lückenhaft: {r}'
     assert all(a <= 2 and b == 255 for a, b in r['rand']), f'Nahtstellen nicht weich überblendet: {r}'
     assert r['maxSichtbar'] <= 2 and r['mbMax'] * r['maxSichtbar'] < 16, f'zu viel Bildspeicher je Bild (Chrome-Budget): {r}'
     # abschalten -> gezeichneter Stil

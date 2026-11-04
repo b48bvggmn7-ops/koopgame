@@ -2119,25 +2119,28 @@ js/17-deko.js).
   dschungel_leuchtpflanzen.
 
 ### Foto-Hintergrund (Nebelwald, Nutzerwunsch 04.11. – erster Schritt zum fotorealistischen Look)
-Code in `js/11c-foto-hintergrund.js`, Bilder des Nutzers in `assets/hintergrund/nebelwald-1…4.webp` (je 2000×667,
-vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
+Code in `js/11c-foto-hintergrund.js`, Bild des Nutzers `assets/hintergrund/nebelwald-hoch.webp` (2000×848, Look wie
+sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Optik.
 - In der Dschungel-Welt (alle Tageszeiten, d. h. überall, wo der Dschungel-Look aus 11b gilt) zeigt das Spiel statt des
-  gezeichneten Hintergrunds ein langes Nebelwald-Panorama: die vier Bilder nebeneinander, an jeder Nahtstelle
-  60 px weich überblendet, als Endlos-Schleife (nach 4 kommt wieder 1), Parallaxe 0,15. Nicht vergrößert (Nutzerwunsch):
-  das Panorama ist 75 % der Bildhöhe hoch (`FOTO_HG_HOEHE`, kleiner als die Bilder selbst) und unten bündig; darüber
-  Nebel in der Himmel-Farbe der Bilder, in den der obere Bildrand weich übergeht. Leichter Dunst über allem, Bodennebel (steigt 300 px vom unteren Rand auf)
-  und vier langsam ziehende, lockere Nebelschwaden in der unteren Bildhälfte (sichtbar, aber nicht zu dicht, Nutzerwunsch); nachts dunkelblau getönt. Taste B schaltet
-  den Nebel mit dem ganzen Foto-Look an/aus. (Erste Fassung mit drei eigenen Fotos und Unterholz-Ebene ersetzt –
-  man sah die Stückelung.) Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und Nacht-Licht am Boden bleiben wie
-  bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.
+  gezeichneten Hintergrunds das Nebelwald-Bild, **bildhoch** (keine graue Fläche oben – ein Versuch mit verkleinertem
+  Bild und Nebel bzw. gespiegeltem Blätterdach darüber gefiel nicht), unten bündig, Parallaxe 0,15. Es ist nur EIN
+  Bild, darum wird es **gespiegelt wiederholt** (Bild, gespiegelt, Bild … – die Übergänge passen von selbst,
+  `FOTO_HG_SPIEGELN`); mehrere Bilder in `FOTO_HG_BILDER`, die aneinander passen, laufen als Endlos-Schleife, an jeder
+  Nahtstelle 60 px weich überblendet. (Vorher vier flache Panoramen 3:1 – wirkten zu „rangezoomt“, weil ein flaches
+  Bild auf Bildschirmhöhe stark vergrößert wird; davor drei eigene Fotos mit Unterholz-Ebene – man sah die Stückelung.)
+- **Nebel:** nur noch wenig zusätzlicher Nebel, weil das Bild selbst schon neblig ist (Nutzerwunsch „mit weniger
+  Nebel“): leichter Dunst, schwacher Bodennebel (steigt 300 px vom unteren Rand auf) und vier lockere, langsam ziehende
+  Schwaden in der unteren Bildhälfte; nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
+  Tiere vorne, Glühwürmchen und Nacht-Licht am Boden bleiben; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm
+  usw.) entfallen dabei.
 - **Farben 1:1 wie die Bilder:** Im Foto-Look liegen keine Farbfilter des Comic-Looks über dem Bild (kein warmer
   Schimmer, kein Abend-Farbstich `THEME.tint`, keine Vignette; Nacht-Abdunklung bleibt). Die Bilder werden nur einmal
   auf Bildschirmgröße umgerechnet (vorher zweimal = unschärfer). Test foto_look_ohne_farbfilter.
 - **Abschaltbar:** im Spiel **Taste B** (Hinweis oben im Bild, wie M für den Ton; nicht im Pausenmenü) oder
   Optionen → „Foto-Hintergrund: an / aus“ (gespeichert localStorage `monchichi.fotoHintergrund`); aus =
   wieder der gezeichnete Dschungel-Hintergrund. Solange die Fotos laden, wird ebenfalls der gezeichnete gezeigt.
-- Speicher: je Bild ein vorgezeichnetes Stück (~6 MB); jedes ist breiter als der Bildschirm, darum sind pro Bild
-  höchstens 2 sichtbar (~12 MB). Test foto_hintergrund.
+- Speicher: je Bild ein vorgezeichnetes Stück in Original-Auflösung (~7 MB); jedes ist breiter als der Bildschirm,
+  darum sind pro Bild höchstens 2 sichtbar (~14 MB). Test foto_hintergrund.
 
 ### Foto-Material für Boden und Wand (Nutzerwunsch 04.11. – Schritt 2 zum fotorealistischen Look)
 Code in `js/12c-foto-material.js`. Reine Optik. (Die Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf

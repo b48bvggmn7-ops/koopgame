@@ -3,16 +3,20 @@
 // keine Module) und werden in index.html in fester Reihenfolge geladen.
 
 // ---------- Foto-Hintergrund (Nutzerwunsch 04.11.: fotorealistischer Nebelwald statt gezeichnetem Dschungel) ----------
-// Statt des gezeichneten Hintergrunds aus 11b zeigt das Spiel ein langes Nebelwald-Panorama aus den Bildern
-// assets/hintergrund/nebelwald-1 … 4 (vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt = Endlos-Schleife).
-// Jedes Bild ist ein eigenes vorgezeichnetes Stück (bildhoch); an den Nahtstellen blendet das rechte Stück auf
+// Statt des gezeichneten Hintergrunds aus 11b zeigt das Spiel ein Nebelwald-Bild des Nutzers (FOTO_HG_BILDER; mehrere
+// Bilder, die aneinander passen, laufen als Endlos-Schleife; ein einzelnes wird gespiegelt wiederholt, FOTO_HG_SPIEGELN).
+// Die alten flachen Panoramen (3:1) wirkten zu „rangezoomt“ – das neue Bild ist höher (2000×848, Look wie der
+// Screenshot des Nutzers). Jedes Bild ist ein eigenes vorgezeichnetes Stück (bildhoch); an den Nahtstellen blendet das rechte Stück auf
 // FOTO_HG_UEBERGANG Bildpunkten weich über das linke (kein harter Strich). Davor ziehen leichte Nebelschwaden.
 // Gilt für alle Level mit neuem Hintergrund-Stil (BG_STIL, also die Dschungel-Welt); nachts dunkelblau getönt.
 // Abschaltbar: Taste B oder Optionen → „Foto-Hintergrund“ (localStorage 'monchichi.fotoHintergrund' = 'aus'). Solange die
 // Bilder noch laden (oder fehlen), bleibt der gezeichnete Hintergrund. Ganz entfernen: diese Datei + Eintrag in index.html.
 // Speicher: ein Stück ~6 MB; weil jedes breiter als der Bildschirm ist, sind pro Bild höchstens 2 sichtbar (~12 MB,
 // Chrome-Budget je Bild ~32 MB, siehe CLAUDE.md).
-const FOTO_HG_BILDER = [1, 2, 3, 4].map(n => 'assets/hintergrund/nebelwald-' + n + '.webp');
+// Neues, höheres Bild (2000×848) im Look des Nutzer-Screenshots; nur EIN Bild, darum gespiegelt wiederholt
+// (Bild, gespiegelt, Bild … – die Übergänge passen dann von selbst)
+const FOTO_HG_BILDER = ['assets/hintergrund/nebelwald-hoch.webp'];
+const FOTO_HG_SPIEGELN = true;
 const FOTO_HG_UEBERGANG = 60;       // weiche Überblendung an jeder Nahtstelle (Spiel-Bildpunkte)
 const FOTO_HG_PAR = 0.15;           // Parallaxe: Anteil der Kamerabewegung
 // Größe: Panorama FOTO_HG_HOEHE der Bildhöhe hoch, unten bündig. 1 = bildhoch (so wenig vergrößert wie möglich, ohne
@@ -20,9 +24,11 @@ const FOTO_HG_PAR = 0.15;           // Parallaxe: Anteil der Kamerabewegung
 // Nur bei < 1: darüber Nebel in der Himmel-Farbe der Bilder, der obere Bildrand blendet auf FOTO_HG_OBEN_WEICH weich hinein.
 const FOTO_HG_HOEHE = 1, FOTO_HG_OBEN_WEICH = 170;
 const FOTO_HG_HIMMEL_ERSATZ = '206,214,212';            // Himmel-Farbe, falls sie sich nicht aus den Bildern lesen lässt
-const FOTO_HG_DUNST_A = 0.07;       // leichter Dunst über dem ganzen Panorama (Nutzerwunsch: Nebel, aber nicht zu dicht)
-const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.3;   // Nebelschwaden: Farbe, Deckkraft (0,16 sah man nicht)
-const FOTO_HG_BODENNEBEL_A = 0.38, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: steigt vom unteren Rand auf (Deckkraft unten, Höhe)
+// Zusätzlicher Nebel (über dem Bild): das neue Bild ist selbst schon sehr neblig – darum nur noch wenig
+// (Nutzerwunsch „mit weniger Nebel“; vorher Dunst 0,07, Schwaden 0,3, Bodennebel 0,38 für die alten Panoramen)
+const FOTO_HG_DUNST_A = 0.02;       // leichter Dunst über dem ganzen Bild
+const FOTO_HG_NEBEL = '232,238,234', FOTO_HG_NEBEL_A = 0.12;   // Nebelschwaden: Farbe, Deckkraft
+const FOTO_HG_BODENNEBEL_A = 0.14, FOTO_HG_BODENNEBEL_H = 300;   // Bodennebel: steigt vom unteren Rand auf (Deckkraft unten, Höhe)
 const FOTO_HG_NACHT = 'rgba(8,22,48,.62)';         // Tönung nachts
 
 const fotoHg = {an: null, bilder: {}, stuecke: null, per: 0, nebel: null, sichtbar: 0, himmel: null, hoehe: 0};
@@ -51,9 +57,10 @@ function fotoHgBild(src){
 // oberer Rand weich ausgeblendet (geht in den Nebel darüber über)
 // Das Stück behält die Bildpunkte des Originals (wird erst beim Zeichnen EINMAL auf Bildschirmgröße gebracht – vorher
 // wurde zweimal umgerechnet, das machte es unscharf). Rückgabe {c, w, h}: Leinwand + Größe in Spiel-Bildpunkten.
-function fotoHgStueck(img, u, h){
+function fotoHgStueck(img, u, h, spiegel){
   const k = img.height/h, c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-  const q = c.getContext('2d'); q.drawImage(img, 0, 0);
+  const q = c.getContext('2d');
+  if(spiegel){ q.save(); q.translate(c.width, 0); q.scale(-1, 1); q.drawImage(img, 0, 0); q.restore(); } else q.drawImage(img, 0, 0);
   q.globalCompositeOperation = 'destination-in';
   const gr = q.createLinearGradient(0, 0, u*k, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
   q.fillStyle = gr; q.fillRect(0, 0, c.width, c.height);
@@ -76,7 +83,8 @@ function fotoHgBereit(){
   if(imgs.some(b => !b)) return false;
   let x = 0;
   fotoHg.hoehe = Math.round(H*FOTO_HG_HOEHE); fotoHg.himmel = fotoHgHimmel(imgs);
-  fotoHg.stuecke = imgs.map(img => { const s = fotoHgStueck(img, FOTO_HG_UEBERGANG, fotoHg.hoehe); s.x = x; x += s.w - FOTO_HG_UEBERGANG; return s; });
+  const folge = FOTO_HG_SPIEGELN ? imgs.flatMap(img => [[img, false], [img, true]]) : imgs.map(img => [img, false]);
+  fotoHg.stuecke = folge.map(([img, sp]) => { const s = fotoHgStueck(img, FOTO_HG_UEBERGANG, fotoHg.hoehe, sp); s.x = x; x += s.w - FOTO_HG_UEBERGANG; return s; });
   fotoHg.per = x;   // Schleife: nach dem letzten Stück kommt wieder das erste (es blendet über das Ende des letzten)
   return true;
 }
