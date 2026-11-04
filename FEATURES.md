@@ -2119,17 +2119,19 @@ js/17-deko.js).
   dschungel_leuchtpflanzen.
 
 ### Foto-Hintergrund (Nebelwald, Nutzerwunsch 04.11. – erster Schritt zum fotorealistischen Look)
-Code in `js/11c-foto-hintergrund.js`, Fotos des Nutzers in `assets/hintergrund/wald-1…4.jpg`. Reine Optik.
+Code in `js/11c-foto-hintergrund.js`, Bilder des Nutzers in `assets/hintergrund/nebelwald-1…4.webp` (je 2000×667,
+vom Nutzer so gemacht, dass 1→2→3→4→1 aneinander passt). Reine Optik.
 - In der Dschungel-Welt (alle Tageszeiten, d. h. überall, wo der Dschungel-Look aus 11b gilt) zeigt das Spiel statt des
-  gezeichneten Hintergrunds die Wald-Fotos: hinten ein langes Panorama aus wald-3, wald-4, wald-2 (bildhoch, Fotos weich
-  ineinander überblendet, wiederholt sich ohne Naht, Parallaxe 0,1), davor vier langsam ziehende Nebelschwaden, vorne
-  dunkles Unterholz (untere Fotostreifen, 280 px hoch, oben weich ausgeblendet, abgedunkelt, Parallaxe 0,4). Leichte
-  grau-grüne Nebel-Tönung über den Fotos; nachts dunkelblau getönt. Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und
-  Nacht-Licht am Boden bleiben wie bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.
+  gezeichneten Hintergrunds ein langes Nebelwald-Panorama: die vier Bilder bildhoch nebeneinander, an jeder Nahtstelle
+  60 px weich überblendet, als Endlos-Schleife (nach 4 kommt wieder 1), Parallaxe 0,15. Davor vier langsam ziehende,
+  leichte Nebelschwaden; nachts dunkelblau getönt. (Erste Fassung mit drei eigenen Fotos und Unterholz-Ebene ersetzt –
+  man sah die Stückelung.) Boden-Dekor, Tiere vorne, Glühwürmchen, Vignette und Nacht-Licht am Boden bleiben wie
+  bisher; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm usw.) entfallen dabei.
 - **Abschaltbar:** im Spiel **Taste B** (Hinweis oben im Bild, wie M für den Ton; nicht im Pausenmenü) oder
   Optionen → „Foto-Hintergrund: an / aus“ (gespeichert localStorage `monchichi.fotoHintergrund`); aus =
   wieder der gezeichnete Dschungel-Hintergrund. Solange die Fotos laden, wird ebenfalls der gezeichnete gezeigt.
-- Speicher: beide Ebenen zusammen ~11 MB (vorgezeichnet höchstens in 1,5-facher Spielauflösung). Test foto_hintergrund.
+- Speicher: je Bild ein vorgezeichnetes Stück (~6 MB); jedes ist breiter als der Bildschirm, darum sind pro Bild
+  höchstens 2 sichtbar (~12 MB). Test foto_hintergrund.
 
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:

@@ -5297,19 +5297,19 @@ async def foto_hintergrund(g):
       let gezeichnet = 0; const alt = hgStilZeichnen; hgStilZeichnen = () => { gezeichnet++; };
       camPos = camX = 500; draw(); const a = fotoHgZeichnen(); camPos = camX = 900; draw();
       hgStilZeichnen = alt;
-      const mb = c => c.width*c.height*4/1e6, F = fotoHg.fern, N = fotoHg.nah;
-      // Naht: Panorama-Anfang und -Ende passen (wiederholt sich ohne harten Sprung)
-      const q = F.getContext('2d'), l = q.getImageData(0, 0, 1, F.height).data, rr = q.getImageData(F.width - 1, 0, 1, F.height).data;
-      let d = 0; for(let i = 0; i < l.length; i += 4) d += Math.abs(l[i] - rr[i]) + Math.abs(l[i+1] - rr[i+1]) + Math.abs(l[i+2] - rr[i+2]);
-      const nq = N.getContext('2d'), oben = nq.getImageData(N.width/2, 0, 1, 1).data[3], unten = nq.getImageData(N.width/2, N.height - 1, 1, 1).data[3];
-      return {a, gezeichnet, mb: mb(F) + mb(N), hFern: F.height/fotoHg.sc, naht: d/(l.length/4*3), oben, unten,
+      const S = fotoHg.stuecke, mb = c => c.width*c.height*4/1e6;
+      // je Stück: linker Rand weich (durchsichtig -> deckend), liegt auf dem Ende des vorigen; Schleife 4 -> 1
+      const rand = S.map(s => { const q = s.c.getContext('2d'); return [q.getImageData(0, 360, 1, 1).data[3], q.getImageData(FOTO_HG_UEBERGANG + 2, 360, 1, 1).data[3]]; });
+      const lueckenlos = S.every((s, i) => i === 0 || s.x === S[i - 1].x + S[i - 1].c.width - FOTO_HG_UEBERGANG)
+        && fotoHg.per === S[3].x + S[3].c.width - FOTO_HG_UEBERGANG;
+      let maxSichtbar = 0; for(let x = 0; x < fotoHg.per; x += 97){ ctx.save(); fotoHgPanorama(x); ctx.restore(); maxSichtbar = Math.max(maxSichtbar, fotoHg.sichtbar); }
+      return {a, gezeichnet, n: S.length, hoch: S.every(s => s.c.height === H), mbMax: Math.max(...S.map(s => mb(s.c))), rand, lueckenlos, maxSichtbar,
               gleich: vor === JSON.stringify([p1.x, p1.y, p2.x, p2.y, simSteps])}; })()""")
     assert r['a'] and r['gezeichnet'] == 0, f'Foto-Hintergrund nicht gezeichnet: {r}'
     assert r['gleich'], 'Zeichnen hat Spielzustand verändert'
-    assert r['mb'] < 16, f'Foto-Ebenen zu groß (Chrome-Bildbudget): {r}'
-    assert abs(r['hFern'] - 720) < 1, f'Panorama nicht bildhoch: {r}'
-    assert r['naht'] < 40, f'Panorama hat eine sichtbare Naht: {r}'
-    assert r['oben'] <= 2 and r['unten'] == 255, f'Unterholz oben nicht weich ausgeblendet: {r}'
+    assert r['n'] == 4 and r['hoch'] and r['lueckenlos'], f'Panorama 1-2-3-4 nicht bildhoch/lückenlos: {r}'
+    assert all(a <= 2 and b == 255 for a, b in r['rand']), f'Nahtstellen nicht weich überblendet: {r}'
+    assert r['maxSichtbar'] <= 2 and r['mbMax'] * r['maxSichtbar'] < 16, f'zu viel Bildspeicher je Bild (Chrome-Budget): {r}'
     # abschalten -> gezeichneter Stil
     r = await g.ev("""(() => { fotoHgSetzen(false); let gezeichnet = 0; const alt = hgStilZeichnen; hgStilZeichnen = () => { gezeichnet++; };
       draw(); hgStilZeichnen = alt; const aus = localStorage.getItem('monchichi.fotoHintergrund'); fotoHg.an = null;
