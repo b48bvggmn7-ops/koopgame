@@ -7,7 +7,7 @@
 (function(){
   'use strict';
   const QS = new URLSearchParams(location.search);
-  const SPR = 352, FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
+  const SPR = Math.round(352*8.4/6.6), FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
   const FIGUR_HALB = 30;                           // px: halbe gezeichnete Breite der 3D-Figur mit Armen und Fell (Stoßfläche: 14,25)
   const SEIL_KOERPER_PROBEN = [10, 20, 30];       // px vom Griff am Körper entlang: so weit darf der schräge Körper frei sein
   const SEIL_KOERPER_BREITE = [-FIGUR_HALB, 0, FIGUR_HALB];   // px quer dazu (halbe gezeichnete Dicke mit Armen und Fell) (Nutzer: waagerecht am Seil ragte der Bauch in den Boden)
@@ -20,7 +20,8 @@
     nachWinkel: .38, nachDauer: 900, beine: .85, kopf: .45};
   const FIGUR_GROESSE = 0.9;                      // Figuren 10 % kleiner (Nutzerwunsch); Umkleide-Effekte schrumpfen mit (figur3dMass, js/27)
   const SC = 17*FIGUR_GROESSE;                     // Spielpixel je 3D-Einheit (Figur ~3 Einheiten hoch ≈ 45 px)
-  const FR = {x0:-3.3, x1:3.3, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0);
+  // ±4,2 statt ±3,3 (Nutzer-Bild: am Seil war der lang ausgestreckte Schwanz hinten abgeschnitten); SPR wächst im selben Maß
+  const FR = {x0:-4.2, x1:4.2, y0:-0.7, y1:5.7}, SPRH = Math.round(256*(5.7 + .7)/4.8);   // Ausschnitt der Figur in 3D-Einheiten (Füße bei y = 0);
   // breiter als früher (±2,4): von der Seite war der Affen-Schwanz abgeschnitten (Nutzer-Rückmeldung); SPR wächst mit (gleiche Schärfe)
   // Leistung (Nutzer: „ruckelt“): läuft das Spiel länger als ca. 2 s unter ~45 Bildern/s, nimmt die 3D-Figur weniger Fell-Schichten
   // (14 -> 8 -> 5; das Fell bleibt gleich lang, nur weniger fein). Wird nie wieder hochgestellt (kein Hin und Her). Nur Zeichnen.

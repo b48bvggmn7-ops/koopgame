@@ -2226,6 +2226,8 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   auslaufend (knapp 1 s), zieht dabei die Beine an, der Schwanz fliegt nach außen und der Kopf schaut kurz voraus;
   danach dreht die Liane ein Stück zurück und schwingt aus. Nie beim Hoch-/Runterklettern oder ohne Schwung; eine
   begonnene Drehung läuft auch nach dem Loslassen zu Ende. Test seil_drehung_eigene_achse.
+- **Schwanz nicht mehr abgeschnitten** (Nutzer-Bild 04.11.: am Seil war der ausgestreckte Affen-Schwanz hinten gekappt):
+  das Bild der 3D-Figur ist breiter (±4,2 statt ±3,3 Einheiten, gleiche Schärfe – `FR`/`SPR` in js/33).
 - Ranziehen (W) an der Liane 2 (js/32 `lianeKern`): je näher am Haken, desto kleinere Schritte (ganz nah 35 % von
   `ROPE_PULL_SPEED`) und desto weniger Pendeln (ganz nah je Schritt 7 % Schwung weniger); „nah“ beginnt ab 170 px
   Seillänge, stufenlos (`LIANE2_ZIEH_NAH`, `LIANE2_RUHIG_NAH`, `LIANE2_NAH_BIS`). Alte Seil-Physik (Bahnen-Test)
@@ -2254,7 +2256,10 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   Eisenring (einmal umschlungen). Reichweite als **schwacher, hell-neutraler Kreis**, der sich nie verfärbt (Nutzer: „leicht
   sichtbarer Radius, soll sich aber nicht verfärben“; vorher ganz ausgeblendet). **Puls** (Nutzer: „weniger auffällig“):
   der Kreis taucht nur kurz schemenhaft auf – ca. 1,6 s ein- und wieder ausblenden, am hellsten nur etwa so stark wie
-  vorher halb –, dann 5 s gar nicht; alle Haken im selben Takt. Hängt der Affe an einem Haken, zeigt dieser Haken keinen
+  vorher halb –, dann gar nicht, sodass er nur **alle 7 s** erscheint (Nutzerwunsch 04.11.; vorher alle 6,6 s); alle Haken im selben Takt.
+  Die **orange Glut** am Ring geht in Reichweite schnell an (0,15 s), erlischt außerhalb aber langsam wie verglühende
+  Glut (1,6 s, wird dabei dunkler, röter und kleiner; Nutzer: „nicht direkt komplett aus“; `fotoHakenGlutStand`,
+  `FOTO_HAKEN_GLUT_ZEIT`). Hängt der Affe an einem Haken, zeigt dieser Haken keinen
   Kreis (`fotoHakenKreis`/`fotoHakenKreisAlpha`, `FOTO_HAKEN_KREIS` in 12e; Comic-Look unverändert) – dazu **glüht der Ring
   orange**, sobald der Affe greifen kann, sonst kein Leuchten (`fotoHakenZeichnen`, `FOTO_HAKEN_GLUT`). Die **Liane des
   Affen** (vom Haken zur Hand) ist dieselbe Holz-Liane, etwas dünner, mit Durchhang wie bisher (`fotoAffenLiane`).

@@ -5965,6 +5965,15 @@ async def foto_tuer_fuesse_haken_kreis(g):
       K.zeit = K.pulsAn/2; p1.hookAttached = true; p1.anchor = h; e.haengt = fotoHakenKreisAlpha(h);
       p1.hookAttached = false; p1.anchor = null; K.zeit = null; e.max = K.pulsMax; return e; })()""")
     assert abs(pu['mitte'] - pu['max']) < 0.01 and pu['pause'] == 0 and pu['haengt'] == 0, f'Haken-Puls: {pu}'
+    assert await g.ev("Math.abs(FOTO_HAKEN_KREIS.pulsAn + FOTO_HAKEN_KREIS.pulsAus - 7) < 0.01"), 'Haken-Kreis nicht alle 7 s'
+    # Glut erlischt langsam (Nutzerwunsch „nicht direkt komplett aus“): nach 0,5 s außer Reichweite noch etwas da, nach 2 s aus
+    gl = await g.ev("""(() => { const h = {}; fotoHakenGlutStand(h, true); const an = h._glut;
+      h._glutT = performance.now() - 200; fotoHakenGlutStand(h, false); const halb = h._glut;
+      h._glutT = performance.now() - 250; fotoHakenGlutStand(h, false); h._glutT = performance.now() - 250; fotoHakenGlutStand(h, false);
+      h._glutT = performance.now() - 250; fotoHakenGlutStand(h, false); h._glutT = performance.now() - 250; fotoHakenGlutStand(h, false);
+      h._glutT = performance.now() - 250; fotoHakenGlutStand(h, false); h._glutT = performance.now() - 250; fotoHakenGlutStand(h, false);
+      h._glutT = performance.now() - 250; fotoHakenGlutStand(h, false); return {an, halb, aus: h._glut}; })()""")
+    assert gl['an'] == 1 and 0.6 < gl['halb'] < 0.99 and gl['aus'] == 0, f'Haken-Glut erlischt nicht langsam: {gl}'
     r = await g.ev("""(() => { let fuss = 0, kreis = []; const alt = fotoTuerFuesse, aF = fotoLookAktiv;
       fotoLookAktiv = () => true; fotoTuerFuesse = function(){ fuss++; }; FOTO_HAKEN_KREIS.zeit = FOTO_HAKEN_KREIS.pulsAn/2;
       const arc = CanvasRenderingContext2D.prototype.arc;
@@ -7347,7 +7356,9 @@ async def figuren3d_affe_monchichi(g):
     finally:
         await g.ev("p1._yawTest = p2._yawTest = null; menuScreen = null")
     src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
-    assert 'male?1.05' not in src and 'x0:-3.3, x1:3.3' in src, 'Affe gestreckt bzw. Bild wieder zu schmal (Schwanz abgeschnitten)'
+    import re as _re
+    m = _re.search(r'const FR = \{x0:(-?[\d.]+), x1:([\d.]+)', src)   # seit 04.11. ±4,2 (Schwanz am Seil ausgestreckt war abgeschnitten)
+    assert 'male?1.05' not in src and m and float(m.group(2)) >= 4.2 and float(m.group(1)) <= -4.2, 'Affe gestreckt bzw. Bild wieder zu schmal (Schwanz abgeschnitten)'
 
 @test
 async def figuren3d_leistung_stufen(g):

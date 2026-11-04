@@ -119,12 +119,27 @@ function fotoAffenLiane(x0, y0, x1, y1, st, jit, seed, sagF){
 // Haken im Foto-Look: Liane von oben (oder vom Material darüber) bis zum rostigen Eisenring. Kann der Affe greifen,
 // leuchtet der Ring orange (Nutzerwunsch; der Reichweiten-Kreis ist im Foto-Look ausgeblendet), sonst kein Leuchten.
 const FOTO_HAKEN_GLUT = '255,140,30';
-function fotoHakenZeichnen(x, y, y0, seed, ringR, inRange, hx){
+// Glut an/aus (Nutzerwunsch „nicht direkt komplett aus, sondern erlöschen lassen“): in Reichweite in an s hell, außerhalb
+// erlischt sie langsam in aus s wie Glut – wird dabei dunkler und röter (glutAus). Nur Anzeige: Stand je Haken (h._glut),
+// fortgeschrieben mit der echten Uhr, ändert keinen Spielzustand.
+const FOTO_HAKEN_GLUT_ZEIT = {an: 0.15, aus: 1.6};
+const FOTO_HAKEN_GLUT_AUS = [190, 55, 18];
+function fotoHakenGlutStand(h, inRange){
+  if(!h) return inRange ? 1 : 0;
+  const t = performance.now(), dt = h._glutT ? Math.min(0.25, (t - h._glutT)/1000) : 1; h._glutT = t;
+  const g = h._glut || 0, Z = FOTO_HAKEN_GLUT_ZEIT;
+  h._glut = inRange ? Math.min(1, g + dt/Z.an) : Math.max(0, g - dt/Z.aus);
+  return h._glut;
+}
+function fotoHakenZeichnen(x, y, y0, seed, ringR, inRange, hx, h){
   const x0 = x + Math.sin(seed*0.013)*3, dx = x0 - x, dy = y0 - y, d = Math.hypot(dx, dy) || 1;
   fotoLiane(ctx, x0, y0, x + dx/d*(ringR + 1), y + dy/d*(ringR + 1), seed, 5);
-  const t = performance.now(), puls = 0.75 + 0.25*Math.sin(t*0.008 + hx*0.05);
-  if(inRange){ const g = ctx.createRadialGradient(x, y, 2, x, y, 34); g.addColorStop(0, `rgba(${FOTO_HAKEN_GLUT},${0.7*puls})`); g.addColorStop(1, `rgba(${FOTO_HAKEN_GLUT},0)`);
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 34, 0, 7); ctx.fill(); }
+  const t = performance.now(), gl = fotoHakenGlutStand(h, inRange), glE = gl*gl*(3 - 2*gl);
+  const puls = (0.75 + 0.25*Math.sin(t*0.008 + hx*0.05))*glE;
+  // Farbe: hell-orange, beim Erlöschen dunkler und röter (wie verglühende Glut)
+  const farbe = inRange || gl >= 1 ? FOTO_HAKEN_GLUT : FOTO_HAKEN_GLUT.split(',').map((v, i) => Math.round(FOTO_HAKEN_GLUT_AUS[i] + (Number(v) - FOTO_HAKEN_GLUT_AUS[i])*glE)).join(',');
+  if(gl > 0.01){ const rr = 22 + 12*glE, g = ctx.createRadialGradient(x, y, 2, x, y, rr); g.addColorStop(0, `rgba(${farbe},${0.7*puls})`); g.addColorStop(1, `rgba(${farbe},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rr, 0, 7); ctx.fill(); }
   ctx.save();
   ctx.strokeStyle = 'rgba(12,9,7,.75)'; ctx.lineWidth = 7.5; ctx.beginPath(); ctx.arc(x, y + 0.6, ringR, 0, 7); ctx.stroke();
   const rg = ctx.createLinearGradient(x - ringR, y - ringR, x + ringR, y + ringR);
@@ -134,7 +149,7 @@ function fotoHakenZeichnen(x, y, y0, seed, ringR, inRange, hx){
     ctx.beginPath(); ctx.arc(x + Math.cos(a)*ringR, y + Math.sin(a)*ringR, 1 + (i % 2)*0.6, 0, 7); ctx.fill(); }   // Rost
   ctx.strokeStyle = 'rgba(255,240,215,.28)'; ctx.lineWidth = 1.4;
   ctx.beginPath(); ctx.arc(x, y, ringR + 0.6, Math.PI*1.05, Math.PI*1.65); ctx.stroke();
-  if(inRange){ ctx.strokeStyle = `rgba(${FOTO_HAKEN_GLUT},${0.85*puls})`; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(x, y, ringR, 0, 7); ctx.stroke(); }   // Ring glüht orange
+  if(gl > 0.01){ ctx.strokeStyle = `rgba(${farbe},${0.85*puls})`; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(x, y, ringR, 0, 7); ctx.stroke(); }   // Ring glüht orange
   // Liane einmal um den Ring geschlungen
   ctx.strokeStyle = '#3e3326'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(x, y - ringR + 1, 4, 2.6, 0, 0, 7); ctx.stroke();
   ctx.restore();
@@ -223,7 +238,7 @@ function fotoTuerAnliegend(d){
 // Haken-Reichweite im Foto-Look (Nutzerwunsch): der Kreis taucht alle paar Sekunden kurz schemenhaft auf – pulsAn s
 // ein- und wieder ausblenden (am hellsten pulsMax), dann pulsAus s nichts. Alle Haken im selben Takt. Hängt jemand an
 // diesem Haken, ist sein Puls aus. Nur Zeichnen (Zeit aus der Uhr), ändert keinen Spielzustand. zeit = fest (für Tests).
-const FOTO_HAKEN_KREIS = {pulsAn: 1.6, pulsAus: 5, pulsMax: 0.6, zeit: null};
+const FOTO_HAKEN_KREIS = {pulsAn: 1.6, pulsAus: 5.4, pulsMax: 0.6, zeit: null};   // alle 7 s (1,6 + 5,4; Nutzerwunsch)
 function fotoHakenKreisAlpha(h){
   const K = FOTO_HAKEN_KREIS;
   for(const q of [p1, p2]) if(q && q.hookAttached && (q.anchor === h || q._lianeA === h)) return 0;
