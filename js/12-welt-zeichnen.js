@@ -367,7 +367,7 @@ function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
   for(const z of nachbarn) if(z.t==2) ziegelAus(z.c*40, z.r*40);
   // Foto-Look: Wandrand aus ganzen Mauer-Steinen statt glatter Kante (12c)
   if(eckig && D.hatW && typeof fotoMatWandMaske === 'function'){
-    D.wandMaske = fotoMatWandMaske(kaestchen.filter(k => k.t == 2), Tc);
+    D.wandMaske = fotoMatWandMaske(kaestchen.filter(k => k.t == 2));
     D.maskeFehlt = !D.wandMaske;
   }
   return D;
@@ -380,7 +380,7 @@ function matPfadeVereinen(liste){
     D.ziegel.forEach((p, i) => V.ziegel[i].addPath(p));
     for(const [y, p] of D.baender){ if(!V.baender.has(y)) V.baender.set(y, new Path2D()); V.baender.get(y).addPath(p); }
     for(const [y, p] of D.streifen){ if(!V.streifen.has(y)) V.streifen.set(y, new Path2D()); V.streifen.get(y).addPath(p); }
-    if(D.wandMaske){ if(!V.wandMaske) V.wandMaske = {innen: new Path2D(), aussen: new Path2D()}; V.wandMaske.innen.addPath(D.wandMaske.innen); V.wandMaske.aussen.addPath(D.wandMaske.aussen); }
+    if(D.wandMaske){ if(!V.wandMaske) V.wandMaske = new Path2D(); V.wandMaske.addPath(D.wandMaske); }
     if(D.maskeFehlt) V.maskeFehlt = true;
     V.hatG = V.hatG || D.hatG; V.hatW = V.hatW || D.hatW;
   }

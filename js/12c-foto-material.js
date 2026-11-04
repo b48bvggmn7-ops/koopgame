@@ -32,12 +32,12 @@ const FOTO_MAT_KANTE = {ueber: 20, weltH: FOTO_MAT_TEXTUREN.kante.weltH};
 // Boden dunkler (Nutzerwunsch, zweimal): so viel Schwarz über das Erde-Foto (vorher 0,38)
 const FOTO_MAT_ERDE_DUNKEL = 0.52;
 // Mauer (Welt-px): Wiederholung nach 'periode', Reihen 'reiheMin'–'reiheMax' hoch, Steine 'breitMin'–'breitMax' breit
-// (Nutzer „noch etwas kleiner“: vorher 13–19 / 20–44), Fuge 'fuge' (mittlere Breite, schwankt durch die rauen Kanten),
+// (Nutzer erst „noch etwas kleiner“ – 13–19 / 20–44 -> 9–14 / 14–32 –, dann „nicht zu klein“ -> 11–16 / 17–36), Fuge 'fuge' (mittlere Breite, schwankt durch die rauen Kanten),
 // 'rau' = wie stark die Kanten ausgefranst sind, 'ecke' = abgeschlagene Ecken bis so viel; 'aufloesung' Bildpunkte je
 // Welt-px beim Aufbauen; 'quelleJeWelt' Foto-Bildpunkte je Welt-px (Steingröße im Foto ≈ Steingröße im Spiel)
 // 'verform' = so weit wandert jede Ecke (Stein leicht schief), 'woelbung' = Kanten nach außen/innen gewölbt,
 // 'farben' = Tönungen je Stein (null = keine), 'moos' = Anteil der Steine mit Moos oben
-const FOTO_MAT_MAUER = {periode: 480, reiheMin: 9, reiheMax: 14, breitMin: 14, breitMax: 32, fuge: 1.3, rau: 0.45, ecke: 1.6,
+const FOTO_MAT_MAUER = {periode: 480, reiheMin: 11, reiheMax: 16, breitMin: 17, breitMax: 36, fuge: 1.3, rau: 0.45, ecke: 1.6,
                         verform: 1.1, woelbung: 0.9, moos: 0.18,
                         farben: [null, null, 'rgba(120,90,60,.12)', 'rgba(90,95,100,.14)', 'rgba(70,90,50,.12)', 'rgba(40,30,20,.14)', 'rgba(170,150,120,.10)'],
                         aufloesung: 2.5, quelleJeWelt: 3.6, saat: 7};
@@ -132,52 +132,67 @@ function fotoMatMauer(img){
   while(y < P - 0.01){
     let h = M.reiheMin + r()*(M.reiheMax - M.reiheMin);
     if(P - y - h < M.reiheMin) h = P - y;                       // letzte Reihe passt genau (nahtlos)
-    let x = 0; const off = r()*M.breitMax;
+    let x = 0; const off = r()*M.breitMax, fugen = [];
     while(x < P - 0.01){
       let w = M.breitMin + r()*(M.breitMax - M.breitMin);
       if(P - x - w < M.breitMin) w = P - x;
       stein((x + off) % P, y, w, h);
-      lage.push({x: (x + off) % P, y, w, h});
+      fugen.push((x + off) % P);
       x += w;
     }
+    lage.push({y, h, fugen: fugen.sort((a, b) => a - b)});
     y += h;
   }
-  fotoMat.lage = lage;   // Lage aller Steine (Welt-px, eine Periode) – für den Wandrand aus ganzen Steinen
+  fotoMat.lage = lage;   // Reihen der Mauer mit ihren Fugen (Welt-px, eine Periode) – für den Wandrand
   return c;
 }
-// Wandrand aus ganzen Steinen (Nutzer: „das muss ja keine 100 % glatte Kante ergeben – wir haben einzelne Steine“):
-// Zeichenbereich der Wand = alle Mauer-Steine, deren Mitte in einem Wand-Kästchen liegt (sie dürfen etwas über die
-// Kante hinausragen), dazu Steine, die in eine Wand hineinreichen und deren Mitte in Boden/anderem Material steckt
-// (dort keine Lücke). Steine mit der Mitte in der Luft fehlen -> die Kante springt Stein für Stein vor und zurück.
-// Nur Optik – die Kollision bleibt das Kästchen. kaestchen: Wand-Kästchen dieses Stücks ({cc, rr}); null = Lage fehlt noch
-// Nutzer danach: „nicht so stark, nur minimal uneben“ -> die Kante folgt den Steinen nur innerhalb ±FOTO_MAT_RAND_UNEBEN
-// Welt-px um die Kästchenkante: innen ist die Wand immer bis zur Kante minus diesen Wert gefüllt (keine tiefen Lücken),
-// außen wird bei plus diesem Wert abgeschnitten (keine weit vorstehenden Steine). Rückgabe {innen, aussen}.
-const FOTO_MAT_RAND_UNEBEN = 2.5;
-function fotoMatWandMaske(kaestchen, Tc){
+// Wandrand wie bei einer Bruchsteinmauer im Wald (Nutzer: „muss keine 100 % glatte Kante sein“, dann „nur minimal
+// uneben“, dann „Lücken an den Kanten nicht zu gerade, sieht teilweise gerade abgeschnitten aus“): an jeder freien Seite
+// einer Wand endet jeder Randstein mit seiner eigenen leicht gerundeten Kante – an den Fugen der Mauer geht der Rand
+// FOTO_MAT_RAND_DELLE Welt-px hinein, dazwischen wölbt sich jeder Stein bis zu FOTO_MAT_RAND_BUCKEL Welt-px heraus
+// (je Stein anders). Oben/unten folgen die Buckel den Steinen der obersten/untersten Reihe, seitlich den Reihen.
+// Nur Optik – die Kollision bleibt das Kästchen. kaestchen: Wand-Kästchen dieses Stücks ({cc, rr, n, s, wl, e});
+// Rückgabe: Path2D (eine Form je Kästchen) oder null, solange die Mauer noch nicht gebaut ist.
+// Damit am Rand keine dünnen Steinstreifen bleiben, endet der Rand an der nächsten Fuge, wenn sie höchstens
+// FOTO_MAT_RAND_FUGE Welt-px von der Kästchenkante entfernt ist (oben/unten: Reihenfuge, seitlich: Fuge je Reihe).
+const FOTO_MAT_RAND_BUCKEL = 2.4, FOTO_MAT_RAND_DELLE = 1.3, FOTO_MAT_RAND_SCHRITT = 1.5, FOTO_MAT_RAND_FUGE = 5;
+function fotoMatWandMaske(kaestchen){
   const L = fotoMat.lage; if(!L || !kaestchen.length) return null;
-  const U = FOTO_MAT_RAND_UNEBEN, aussen = new Path2D();
-  const P = FOTO_MAT_MAUER.periode, eigen = new Set(kaestchen.map(k => k.cc + ',' + k.rr)), pfad = new Path2D();
-  for(const k of kaestchen){   // je Kästchen: an freien Seiten innen U schmaler (Füllung) bzw. außen U breiter (Grenze)
-    const l = k.wl ? 0 : U, o = k.n ? 0 : U, rr = k.e ? 0 : U, u = k.s ? 0 : U, x = k.cc*40, y = k.rr*40;
-    pfad.rect(x + l, y + o, 40 - l - rr, 40 - o - u);
-    aussen.rect(x - l, y - o, 40 + l + rr, 40 + o + u);
+  const P = FOTO_MAT_MAUER.periode, B = FOTO_MAT_RAND_BUCKEL, D = FOTO_MAT_RAND_DELLE, S = FOTO_MAT_RAND_SCHRITT, G = FOTO_MAT_RAND_FUGE;
+  const zufall = (a, b) => { const v = Math.sin(a*12.9898 + b*78.233)*43758.5453; return v - Math.floor(v); };
+  const mod = v => ((v % P) + P) % P;
+  const reihe = y => { const yy = mod(y); for(const R of L) if(yy < R.y + R.h) return R; return L[L.length - 1]; };
+  // Stein (Fugen a < b, Welt-px) in Reihe R, in dem x liegt
+  const steinBei = (R, x) => {
+    const xx = mod(x), F = R.fugen; let a = F[F.length - 1] - P, b = F[0];
+    for(let i = 0; i < F.length; i++){ if(F[i] <= xx){ a = F[i]; b = i + 1 < F.length ? F[i + 1] : F[0] + P; } }
+    return [x - xx + a, x - xx + b];
+  };
+  // Ausbeulung: an der Fuge -D, in der Steinmitte bis +Buckel (je Stein anders), dazu feine Rauheit
+  const beule = (t, k1, k2, fein) => { const A = B*(0.45 + 0.55*zufall(k1, k2)), w = Math.pow(Math.sin(Math.PI*Math.max(0, Math.min(1, t))), 0.55);
+    return -D + (D + A)*w + (zufall(fein, k2 + 3) - 0.5)*0.5; };
+  // oben/unten: Buckel je Stein der angrenzenden Reihe (wy = Höhe in der Reihe)
+  const waagerecht = (x, wy) => { const R = reihe(wy), [a, b] = steinBei(R, x); return beule((x - a)/(b - a), mod(a), R.y, x); };
+  // links/rechts: Buckel je Reihe (wx = Stelle in der Wand, die den Randstein bestimmt)
+  const senkrecht = (y, wx) => { const R = reihe(y), y0 = y - mod(y) + R.y, [a] = steinBei(R, wx); return beule((y - y0)/R.h, mod(a), R.y + 7, y); };
+  // nächste Reihenfuge zu y (höchstens G entfernt), sonst y
+  const reihenFuge = y => { const R = reihe(y), y0 = y - mod(y) + R.y, y1 = y0 + R.h, d0 = y - y0, d1 = y1 - y;
+    return d0 <= d1 ? (d0 <= G ? y0 : y) : (d1 <= G ? y1 : y); };
+  // seitlich: nächste Fuge in der Reihe bei y zu x (höchstens G entfernt), sonst x
+  const seitenFuge = (y, x) => { const [a, b] = steinBei(reihe(y), x), da = x - a, db = b - x;
+    return da <= db ? (da <= G ? a : x) : (db <= G ? b : x); };
+  const pfad = new Path2D();
+  for(const k of kaestchen){
+    const X = k.cc*40, Y = k.rr*40, pts = [];
+    const n = Math.max(2, Math.round(40/S)), oY = k.n ? Y : reihenFuge(Y), uY = k.s ? Y + 40 : reihenFuge(Y + 40);
+    for(let i = 0; i <= n; i++){ const x = X + 40*i/n; pts.push([x, k.n ? Y : oY - waagerecht(x, oY + 0.5)]); }               // oben
+    for(let i = 1; i <= n; i++){ const y = Y + 40*i/n, yy = Math.min(y, Y + 39.99);
+      pts.push([k.e ? X + 40 : seitenFuge(yy, X + 40) + senkrecht(yy, X + 39.5), y]); }                                     // rechts
+    for(let i = n - 1; i >= 0; i--){ const x = X + 40*i/n; pts.push([x, k.s ? Y + 40 : uY + waagerecht(x, uY - 0.5)]); }    // unten
+    for(let i = n - 1; i > 0; i--){ const y = Y + 40*i/n; pts.push([k.wl ? X : seitenFuge(y, X) - senkrecht(y, X + 0.5), y]); }   // links
+    pts.forEach(([x, y], i) => i ? pfad.lineTo(x, y) : pfad.moveTo(x, y)); pfad.closePath();
   }
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for(const k of kaestchen){ x0 = Math.min(x0, k.cc*40); x1 = Math.max(x1, k.cc*40 + 40); y0 = Math.min(y0, k.rr*40); y1 = Math.max(y1, k.rr*40 + 40); }
-  const rand = FOTO_MAT_MAUER.breitMax;
-  for(let tx = Math.floor((x0 - rand)/P); tx*P <= x1 + rand; tx++) for(let ty = Math.floor((y0 - rand)/P); ty*P <= y1 + rand; ty++)
-    for(const s of L){
-      const sx = s.x + tx*P, sy = s.y + ty*P;
-      if(sx > x1 || sx + s.w < x0 || sy > y1 || sy + s.h < y0) continue;
-      const mc = Math.floor((sx + s.w/2)/40), mr = Math.floor((sy + s.h/2)/40), mt = Tc(mc, mr);
-      let rein = false;
-      if(mt === 2) rein = eigen.has(mc + ',' + mr);
-      else if(mt > 0)    // Mitte in Boden o. Ä.: dabei, wenn eine Ecke in einer eigenen Wand liegt (doppelt schadet nicht)
-        rein = [[sx, sy], [sx + s.w - 0.01, sy], [sx, sy + s.h - 0.01], [sx + s.w - 0.01, sy + s.h - 0.01]].some(([ex, ey]) => eigen.has(Math.floor(ex/40) + ',' + Math.floor(ey/40)));
-      if(rein) pfad.rect(sx, sy, s.w, s.h);
-    }
-  return {innen: pfad, aussen};
+  return pfad;
 }
 // Textur einmal sauber auf Bildschirmgröße verkleinert (in Halbierungs-Schritten, hohe Glättung) – sonst flimmern
 // feine Muster (1024 Bildpunkte auf ~180), wenn das Muster beim Zeichnen stark verkleinert wird
@@ -218,7 +233,7 @@ function fotoMatUeber(q, V){
   if(erde){ q.fillStyle = erde; q.fill(V.PG); q.fillStyle = 'rgba(0,0,0,' + FOTO_MAT_ERDE_DUNKEL + ')'; q.fill(V.PG); }
   if(wand){
     q.fillStyle = wand;
-    if(V.wandMaske && !V.maskeFehlt){ q.save(); q.clip(V.wandMaske.aussen); q.fill(V.wandMaske.innen); q.restore(); }
+    if(V.wandMaske && !V.maskeFehlt) q.fill(V.wandMaske);
     else q.fill(V.PW);
   }
   if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }

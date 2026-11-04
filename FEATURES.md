@@ -2155,7 +2155,7 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
     Kopien überblendet), ein Bild = 180×180 Welt-px; **dunkler** gemacht (52 % Schwarz darüber, Nutzerwunsch, zweimal).
   - **Wand**: eine **Mauer, die das Spiel einmal selbst aufbaut** (`fotoMatMauer`; Nutzer: „mehr Steine, die sich
     weniger wiederholen – man sieht Copy-Paste; die Steine sollen richtig aufeinander liegen“, dann „keine Outline,
-    achte darauf, wie die Steine geschnitten sind, etwas kleiner“): Reihen 9–14 Welt-px hoch, darin Steine 14–32
+    achte darauf, wie die Steine geschnitten sind, etwas kleiner“): Reihen 11–16 Welt-px hoch, darin Steine 17–36
     Welt-px breit, jede Reihe anders versetzt (Fugen nie übereinander). Jeder Stein ist ein behauener Bruchstein und
     sieht anders aus (Nutzer: „jeder einzelne Stein muss etwas Besonderes sein“): Ecken leicht verschoben (schief/
     trapezförmig), jede Kante eigene Wölbung nach außen oder innen, unterschiedlich – manchmal stark – abgeschlagene
@@ -2170,11 +2170,13 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
     hängenden Wurzeln des Nutzers, freigestellt und per Schnitt nach links/rechts nahtlos, 1628×374; **kleiner**
     (Nutzerwunsch): 220×51 Welt-px (vorher 326×75); die Bodenoberfläche liegt 20 Welt-px unter dem oberen Streifenrand (Moos beginnt knapp darüber, Wurzeln hängen
     in die Erde).
-- **Wandrand aus ganzen Steinen** im Foto-Look (Nutzer: „muss keine 100 % glatte Kante sein – wir haben einzelne
-  Steine“; vorher kurz scharfe, davor runde Ecken): gezeichnet werden alle Mauer-Steine, deren Mitte in einem
-  Wand-Kästchen liegt, Steine mit der Mitte in der Luft fehlen; an Boden/anderem Material keine Lücken
-  (`fotoMatWandMaske`). Nutzer danach „nicht so stark, nur minimal uneben“: die Kante folgt den Steinen nur ±2,5
-  Welt-px um die Kästchenkante (`FOTO_MAT_RAND_UNEBEN`). Nur Optik – die Kollision bleibt das Kästchen. Die alte Ziegelwand wird darunter nicht mehr gemalt. Boden
+- **Wandrand wie bei einer Bruchsteinmauer im Wald** im Foto-Look (Nutzerwünsche nacheinander: „muss keine 100 %
+  glatte Kante sein“ – „nur minimal uneben“ – „Lücken an den Kanten nicht zu gerade, sieht teilweise gerade
+  abgeschnitten aus; Steine nicht zu klein“; vorher kurz scharfe, davor runde Ecken): an jeder freien Wandseite
+  endet der Rand an der nächsten Fuge der Mauer, wenn sie höchstens 5 Welt-px entfernt ist (oben/unten Reihenfuge,
+  seitlich je Reihe) – so liegen am Rand ganze Steine statt dünner Streifen –, und jeder Randstein wölbt sich mit
+  eigener gerundeter Kante bis 2,4 Welt-px heraus, an den Fugen 1,3 Welt-px Delle (`fotoMatWandMaske`,
+  `FOTO_MAT_RAND_*`). Nur Optik – die Kollision bleibt das Kästchen. Die alte Ziegelwand wird darunter nicht mehr gemalt. Boden
   bleibt rund; die Formen werden beim Umschalten mit B neu berechnet.
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
