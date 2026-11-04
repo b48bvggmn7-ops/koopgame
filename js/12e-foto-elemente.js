@@ -282,14 +282,15 @@ function fotoRingGitterHolen(){
   const G = new Map(), dazu = (o, x0, y0, x1, y1) => {
     for(let cx = Math.floor(x0/40); cx <= Math.floor((x1 - 0.01)/40); cx++) for(let cy = Math.floor(y0/40); cy <= Math.floor((y1 - 0.01)/40); cy++){
       const k = cx + ',' + cy; if(!G.has(k)) G.set(k, []); G.get(k).push(o); } };
-  const bewegt = [];
-  for(const s of solids){ if(s.type === 'oneway') continue; if(s.type === 'moveplat'){ bewegt.push(s); continue; } dazu(s, s.x, s.y, s.x + s.w, s.y + s.h); }
+  const bewegt = [];   // was fährt (bewegter Boden/Wand, Blatt-Floß, Draisine), wird jedes Mal an seiner jetzigen Stelle geprüft
+  for(const s of solids){ if(s.type === 'oneway') continue; if(s.type === 'moveplat' || s.type === 'blatt' || s.type === 'draisine'){ bewegt.push(s); continue; } dazu(s, s.x, s.y, s.x + s.w, s.y + s.h); }
   for(const sp of spikes) if(sp.carrier === undefined) dazu({x: sp.x - sp.w/2, y: sp.y - sp.h, w: sp.w, h: sp.h, stachel: true}, sp.x - sp.w/2, sp.y - sp.h, sp.x + sp.w/2, sp.y);
   return fotoRingGitter = {src: solids, n: solids.length, sp: spikes, G, bewegt};
 }
-function fotoRingFest(wx, wy){
+// (auch für die 3D-Figur am Seil, js/33: ohneStacheln = nur feste Teile – gilt in beiden Looks)
+function fotoRingFest(wx, wy, ohneStacheln){
   const R = fotoRingGitterHolen(), L = R.G.get(Math.floor(wx/40) + ',' + Math.floor(wy/40));
-  if(L) for(const o of L) if(!o.gone && wx >= o.x && wx <= o.x + o.w && wy >= o.y && wy <= o.y + o.h) return true;
+  if(L) for(const o of L) if(!o.gone && !(ohneStacheln && o.stachel) && wx >= o.x && wx <= o.x + o.w && wy >= o.y && wy <= o.y + o.h) return true;
   for(const o of R.bewegt) if(!o.gone && wx >= o.x && wx <= o.x + o.w && wy >= o.y && wy <= o.y + o.h) return true;
   return false;
 }

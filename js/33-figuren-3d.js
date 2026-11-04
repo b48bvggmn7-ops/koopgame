@@ -9,8 +9,10 @@
   const QS = new URLSearchParams(location.search);
   const SPR = Math.round(352*8.4/6.6), FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
   const FIGUR_HALB = 30;                           // px: halbe gezeichnete Breite der 3D-Figur mit Armen und Fell (Stoßfläche: 14,25)
-  const SEIL_KOERPER_PROBEN = [10, 20, 30];       // px vom Griff am Körper entlang: so weit darf der schräge Körper frei sein
-  const SEIL_KOERPER_BREITE = [-FIGUR_HALB, 0, FIGUR_HALB];   // px quer dazu (halbe gezeichnete Dicke mit Armen und Fell) (Nutzer: waagerecht am Seil ragte der Bauch in den Boden)
+  // Prüfpunkte des gezeichneten Körpers am Seil (darf nicht in Boden/Wand ragen): Höhen in 3D-Einheiten über den Füßen
+  // (0 = Füße, 3 = Kopf oben) und quer dazu in px (halbe gezeichnete Dicke mit Fell)
+  const SEIL_KOERPER_HOEHEN = [0.1, 1, 2, 2.9];
+  const SEIL_KOERPER_BREITE = [-24, 0, 24];
   // Drehung um die eigene Achse am Seil (Nutzerwunsch „ab und zu eine Drehung, soll natürlich aussehen“; nur Anzeige):
   // frühestens erstNach s nach dem Greifen (+ zufall s, danach je Drehung neu ausgewürfelt), nur bei kräftigem Schwung
   // (minTempo px/Schritt) und im tiefsten Teil des Bogens (untenWinkel rad), nie beim Hoch-/Runterklettern. Dreht in
@@ -533,17 +535,30 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     drawNode(H.wrap, M.id(), M.ortho(FR.x0, FR.x1, FR.y0, FR.y1, -20, 20), [0, 1.8, 30]);
     const fy = P.h*0.5 + 4 + hangSenke(ch, S.al||1, P.h, HAFT_ARM);   // 4 px tiefer: die Figur steht im Gras
     // Am Seil schwingt die ganze Figur mit (Körper hängt entlang des Seils, Drehpunkt = Hände) – wie im 2D-Spiel
+    // Drehpunkt am Seil = Spitze des Greif-Arms (Hand), gemessen ab dem Figuren-Ursprung (Körpermitte P.x, P.y - P.h/2)
+    const tipPx = (() => { const a0 = ch.armP; let top = 0; (a0.k0||[]).forEach((b, i) => { top = Math.max(top, i === 0 ? (Math.abs(b.p[1]) + b.s[1])*(a0.alF||1) : Math.abs(b.p[1])*(a0.alF||1) + b.s[1]); }); return (a0.pos[1] + top)*SC*.98; })();
+    const drehY = fy - tipPx;
     let rs = 0; if(z.key === 'seil' && P.hookAttached && P.anchor){   // von oben gegriffen (Liane locker): Körper bleibt aufrecht
       const cx = P.x, cy = P.y - P.h*.6; rs = Math.atan2(P.anchor.x - cx, cy - P.anchor.y);
-      // Nutzer: „ich schwinge durch Boden/Wand“ – der gezeichnete Körper hängt am Seil schräg, die Kollisionsbox bleibt aufrecht;
-      // ragte der schräge Körper in Boden/Wand, wird er so weit aufgerichtet, bis er frei ist (nur Zeichnen, Raster festIst aus 32)
-      if(rs && typeof festIst === 'function') for(let k = 0; k < 8; k++){
-        let stoss = false;
-        for(const d of SEIL_KOERPER_PROBEN) for(const q of SEIL_KOERPER_BREITE){   // entlang des Körpers UND quer (dicker Körper mit Fell)
-          const bx = cx - Math.sin(rs)*d + Math.cos(rs)*q, by = cy + Math.cos(rs)*d + Math.sin(rs)*q;
-          if(festIst(Math.floor(bx/40), Math.floor(by/40))){ stoss = true; break; } }
-        if(!stoss) break; rs *= 0.7;
-      } }
+      // Nutzer: „ich schwinge durch Boden/Wand“ / „der Affe schwingt komplett in den Boden rein – gilt für alle Materialien“:
+      // der gezeichnete Körper hängt am Seil schräg (Drehpunkt Hand), die Kollisionsbox bleibt aufrecht. Ragt IRGENDEIN Teil
+      // des gezeichneten Körpers (Kopf, Bauch, Füße – je links/Mitte/rechts, SEIL_KOERPER_*) in etwas Festes (Boden, Wand,
+      // Tür, Bröckelboden, bewegte Teile, Floß, Draisine), wird er so weit aufgerichtet, bis er frei ist. Vorher wurden nur
+      // 10–30 px unter der Hand geprüft – am Seil sind die Arme aber lang, Kopf und Bauch lagen weiter weg (nur Zeichnen).
+      const fest = typeof fotoRingFest === 'function' ? (x, y) => fotoRingFest(x, y, true)
+                 : (typeof festIst === 'function' ? (x, y) => festIst(Math.floor(x/40), Math.floor(y/40)) : null);
+      const ox = P.x, oy = P.y - P.h*0.5;
+      const stoesst = r => { const co = Math.cos(r), si = Math.sin(r);
+        for(const ly of SEIL_KOERPER_HOEHEN) for(const lx of SEIL_KOERPER_BREITE){
+          const ry = fy - ly*SC - drehY;   // Punkt relativ zum Drehpunkt (ungedreht)
+          if(fest(ox + lx*co - ry*si, oy + drehY + lx*si + ry*co)) return true; }
+        return false; };
+      if(rs && fest) for(let k = 0; k < 10 && stoesst(rs); k++) rs *= 0.7;
+      // für Tests: die Prüfpunkte des gezeichneten Körpers in Welt-px (nur Anzeige-Daten wie P._handDev)
+      { const co = Math.cos(rs), si = Math.sin(rs), L = [];
+        for(const ly of SEIL_KOERPER_HOEHEN) for(const lx of SEIL_KOERPER_BREITE){ const ry = fy - ly*SC - drehY; L.push([ox + lx*co - ry*si, oy + drehY + lx*si + ry*co]); }
+        P._seilKoerper = L; }
+    }
     S.rs = (S.rs||0) + (rs - (S.rs||0))*(1 - Math.exp(-dt*18));
     c.save();
     // An Wänden: die 3D-Figur ist breiter gezeichnet als ihre Stoßfläche – liegt Boden/Wand im gezeichneten Rand, wird sie
@@ -557,7 +572,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       }
       S.wn = (S.wn || 0) + (ziel - (S.wn || 0))*(1 - Math.exp(-dt*25));
       if(Math.abs(S.wn) > .05) c.translate(S.wn, 0); }
-    if(Math.abs(S.rs) > .001){ const a0 = ch.armP, tipPx = (() => { let top = 0; (a0.k0||[]).forEach((b, i) => { top = Math.max(top, i === 0 ? (Math.abs(b.p[1]) + b.s[1])*(a0.alF||1) : Math.abs(b.p[1])*(a0.alF||1) + b.s[1]); }); return (a0.pos[1] + top)*SC*.98; })(), py = fy - tipPx; c.translate(0, py); c.rotate(S.rs); c.translate(0, -py); }
+    if(Math.abs(S.rs) > .001){ c.translate(0, drehY); c.rotate(S.rs); c.translate(0, -drehY); }
     const Tm = c.getTransform();
     const dev = (x, y) => Tm.transformPoint(new DOMPoint(x*SC, fy - y*SC));
     const hp = handPunkt(ch.armP, 0, -.75*(ch.armP.alF||1), .04), h2 = handPunkt(ch.armN, 0, -.75*(ch.armN.alF||1), .04), hd = dev(0, 2.4);

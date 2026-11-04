@@ -163,6 +163,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - 3D-Figur am Seil (Nutzer-Screenshot „schwinge in Boden/Wand“): der gedreht gezeichnete Körper wird auch QUER zum Seil auf
     Boden/Wand geprüft (SEIL_KOERPER_BREITE = halbe Figurenbreite, js/33) und sonst aufgerichtet – waagerecht am Seil über
     einer Kante ragt der Bauch nicht mehr in die Erde. Test figuren3d_seil_waagerecht_nicht_im_boden.
+    **Seit 04.11. der ganze Körper** (Nutzer-Bild „der Affe schwingt komplett in den Boden rein – gilt für alle
+    Materialien“): geprüft wurde nur 10–30 px unter dem Seil-Punkt, gedreht wird die Figur aber um ihre gezeichnete Hand
+    (am Seil lange Greif-Arme, gut 55 px höher) – Kopf und Bauch lagen ungeprüft in der Erde darüber. Jetzt: Prüfpunkte an
+    Füßen, Bauch, Brust und Kopf, je links/Mitte/rechts (`SEIL_KOERPER_HOEHEN` × `SEIL_KOERPER_BREITE`), um den echten
+    Drehpunkt gerechnet, gegen ALLE festen Teile (Boden, Wand, Tür, Bröckelboden, bewegte Böden/Wände, Floß, Draisine;
+    `fotoRingFest(x, y, true)`, beide Looks). Ragt etwas hinein, richtet er sich auf, bis er frei ist. Test
+    figuren3d_seil_nicht_in_decke.
   - Von oben greifen (Nutzer-Video „von oben reinspringen, der Haken flippt rum“): liegt die Hand über dem Haken (Seil wäre
     steiler als LIANE_GRIFF_WINKEL 100°), greift der Affe noch nicht; hält er die Haken-Taste, greift er, sobald er weit genug
     gefallen ist – die Liane klappt nicht mehr über den Haken. Von oben gegriffen gibt die Liane höchstens bis über

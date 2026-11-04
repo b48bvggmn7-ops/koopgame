@@ -7253,8 +7253,32 @@ async def figuren3d_seil_waagerecht_nicht_im_boden(g):
     await g.steps(5)
     r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': 'm', 'vorher': """p1.x = 1016; p1.y = 555; p1.vx = 0; p1.vy = 0; p1.grounded = false;
         p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 176; p1._seilTest = 1""", 'merk': "p1._f3 ? p1._f3.rs : null"})
+    drin = await g.ev("(p1._seilKoerper || []).filter(([x, y]) => fotoRingFest(x, y, true)).length")
     await g.ev("p1.hookAttached = false; p1.anchor = null; menuScreen = null")
-    assert r[-1] is not None and abs(r[-1]) < 0.45, f'Körper liegt gedreht im Boden: Drehung {r[-1]:.2f} rad'
+    # (seit 04.11. wird der ganze gezeichnete Körper um den gezeichneten Griff geprüft – vorher galt „Drehung < 0,45“)
+    assert r[-1] is not None and drin == 0, f'Körper liegt gedreht im Boden: {drin} Prüfpunkte in der Erde (Drehung {r[-1]:.2f} rad)'
+
+@test
+async def figuren3d_seil_nicht_in_decke(g):
+    """Nutzer-Bild „der Affe schwingt komplett in den Boden rein – gilt für alle Materialien“: Haken knapp unter einer
+    Bodenplatte, der Affe schwingt seitlich hoch (über Hakenhöhe) – der schräg gezeichnete Körper ragte mit Kopf und Bauch in
+    die Erde, weil nur 10–30 px unter der Hand geprüft wurde (am Seil sind die Arme lang). Jetzt wird der ganze gezeichnete
+    Körper geprüft (SEIL_KOERPER_HOEHEN × SEIL_KOERPER_BREITE) und aufgerichtet; ohne Hindernis hängt er weiter schräg."""
+    await f3d_bereit(g)
+    await g.load(level([ground(0, 680, 2400), ground(600, 360, 900, 80)], {'x': 300, 'y': 680}, {'x': 220, 'y': 680},
+                       hooks=[{'x': 960, 'y': 520, 'radius': 200}], welt='ruinen'))
+    await g.steps(5)
+    haengen = "p1.vx = 0; p1.vy = 0; p1.grounded = false; p1.hookAttached = true; p1.anchor = hooks[0]; p1.ropeLen = 180;"
+    # rechts vom Haken, etwas über Hakenhöhe (Hand bei 1140/505): ohne Aufrichten läge der Körper in der Platte darüber
+    r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 14, 'wer': 'm', 'vorher': haengen + "p1.x = 1138; p1.y = 505 + p1.h*0.6;",
+                                          'merk': "p1._f3 ? p1._f3.rs : null"})
+    drin = await g.ev("(p1._seilKoerper || []).filter(([x, y]) => fotoRingFest(x, y, true)).length")
+    frei = await g.p.evaluate(F3D_ZEICHNEN, {'n': 14, 'wer': 'm', 'vorher': haengen + "p1.y = 650; p1.x = 1080; hooks[0].y = 520;",
+                                             'merk': "p1._f3 ? p1._f3.rs : null"})
+    await g.ev("p1.hookAttached = false; p1.anchor = null; menuScreen = null")
+    roh = await g.ev("Math.atan2(960 - 1138, 505 - 520)")
+    assert r[-1] is not None and drin == 0 and abs(r[-1]) < abs(roh) - 0.1, f'Körper ragt in die Platte: {drin} Prüfpunkte drin, Drehung {r[-1]:.2f} rad (Seil {roh:.2f})'
+    assert frei[-1] is not None and abs(frei[-1]) > 0.5, f'ohne Hindernis nicht mehr schräg am Seil: {frei[-1]}'
 
 @test
 async def brillen_steg_und_buegel(g):
