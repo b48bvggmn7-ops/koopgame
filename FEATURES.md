@@ -2220,7 +2220,8 @@ Code in `js/12e-foto-elemente.js` (+ kurze Weichen in den Zeichen-Funktionen); g
   unten dunkler (`fotoTuerInnen` aus `drawGate`); Nische, Aufgleiten, Edelstein und Rahmen wie bisher.
 - **Haken:** dicke, gedrehte Holz-Liane mit Moosflecken und ein paar dunklen Blättern (`fotoLiane`) bis zum rostigen
   Eisenring (einmal umschlungen); das warme Leuchten nur in Reichweite des Affen (`fotoHakenZeichnen`).
-- **Blatt-Floß:** Plattform aus Holzbrettern auf zwei Tragebalken statt Blatt (`fotoFlossBild`, ganz hinter den
+- **Blatt-Floß:** hängende Holzplattform statt Blatt, von der Seite: zwei Bretter mit Fuge, Maserung längs und Hirnholz-
+  Enden, darunter zwei Querbalken als Stirnseiten, kein Schatten (`fotoFlossBild`, ganz hinter den
   Figuren), Aufhänge-Lianen als Foto-Lianen; **Floß-Rad** aus verwittertem Holz mit olivgrüner Ranke; Taue, Rollen und
   Rollenwagen in altem grau-braunem Hanf/Holz (`tauFarben` in elemente/blattfloss.js).
 

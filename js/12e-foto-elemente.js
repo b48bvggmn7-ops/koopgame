@@ -133,13 +133,32 @@ function fotoHakenZeichnen(x, y, y0, seed, ringR, inRange, hx){
 function fotoFlossBild(q, x, y, w, schwank, teil){
   if(teil === 'vorne') return;
   q.save(); q.translate(x + w/2, y); q.rotate(schwank || 0);
-  const L = w/2;
-  q.fillStyle = 'rgba(10,8,6,.55)'; q.fillRect(-L - 2, -1, w + 4, 14);                 // dunkle Unterkante/Schatten
-  q.fillStyle = fotoHolzMuster(q, true, -L, -3); q.fillRect(-L, -3, w, 11);            // Bretter (quer)
-  q.fillStyle = 'rgba(0,0,0,.25)'; for(let i = 1; i < 6; i++) q.fillRect(-L + i*w/6 - 0.6, -3, 1.2, 11);   // Brettfugen
-  for(const s of [-1, 1]){ q.fillStyle = fotoHolzMuster(q, false, s*(L - 14), 6); q.fillRect(s*(L - 14) - 5, 6, 10, 6); }   // Tragebalken unten
-  const g = q.createLinearGradient(0, -3, 0, 12); g.addColorStop(0, 'rgba(255,240,210,.14)'); g.addColorStop(0.3, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.35)');
-  q.fillStyle = g; q.fillRect(-L - 2, -3, w + 4, 15);
+  // Seitenansicht einer Holzplattform (Nutzer: „sieht komisch aus“ – vorher ein flacher Block mit Strichen):
+  // zwei übereinander liegende Bretter (Maserung längs, leicht unterschiedlich lang, dunkle Fuge dazwischen), an den
+  // Enden Hirnholz mit Jahresringen, darunter zwei Querbalken (Stirnseiten), kein Block-Rahmen
+  const L = w/2, brett = (x0, y0, bw, bh, ph) => {
+    q.save(); q.beginPath();
+    q.moveTo(x0 + 1, y0); for(let i = 1; i <= 8; i++) q.lineTo(x0 + bw*i/8, y0 + Math.sin(ph + i*1.7)*0.35);   // leicht unebene Oberkante
+    q.lineTo(x0 + bw - 0.5, y0 + bh); q.lineTo(x0 + 0.5, y0 + bh); q.closePath(); q.clip();
+    q.fillStyle = fotoHolzMuster(q, true, x0 + ph*37, y0 - ph*13); q.fillRect(x0, y0 - 1, bw, bh + 1);
+    const g = q.createLinearGradient(0, y0, 0, y0 + bh); g.addColorStop(0, 'rgba(255,240,210,.18)'); g.addColorStop(0.35, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.4)');
+    q.fillStyle = g; q.fillRect(x0, y0 - 1, bw, bh + 1);
+    for(const ex of [x0, x0 + bw - 3]){   // Hirnholz an den Enden
+      q.fillStyle = '#3a3026'; q.fillRect(ex, y0, 3, bh);
+      q.strokeStyle = 'rgba(110,95,72,.6)'; q.lineWidth = 0.5; for(let k = 1; k < 3; k++){ q.beginPath(); q.ellipse(ex + 1.5, y0 + bh/2, 0.6*k, bh*0.18*k, 0, 0, 7); q.stroke(); }
+    }
+    q.restore();
+  };
+  for(const s of [-1, 1]){   // Querbalken: Stirnseite (fast quadratisch) mit Jahresringen
+    const bx = s*(L - 16) - 5;
+    q.fillStyle = '#2c241b'; q.fillRect(bx - 0.5, 4.5, 11, 8.5);
+    q.fillStyle = '#5a4b3a'; q.fillRect(bx, 5, 10, 7.5);
+    q.strokeStyle = 'rgba(30,24,18,.7)'; q.lineWidth = 0.6; for(let k = 1; k <= 3; k++){ q.beginPath(); q.ellipse(bx + 5, 8.7, 1.4*k, 1.1*k, 0, 0, 7); q.stroke(); }
+    q.fillStyle = 'rgba(255,240,210,.15)'; q.fillRect(bx, 5, 10, 1);
+  }
+  brett(-L + 2, 0.5, w - 5, 4.5, 2.3);     // unteres Brett (etwas kürzer)
+  q.fillStyle = 'rgba(8,6,4,.8)'; q.fillRect(-L + 2, 0, w - 5, 1);   // Fuge
+  brett(-L, -4, w, 4.5, 0.7);             // oberes Brett (Lauffläche)
   q.restore();
 }
 // rostiges Eisen: Band (x, y, w, h) mit Nieten im Abstand 'niet' (0 = keine)
