@@ -2149,18 +2149,20 @@ sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Op
 Code in `js/12c-foto-material.js`. Reine Optik. (Die Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf
 Nutzerwunsch wieder gelöscht – „brauchen wir nicht“.)
 - **Im Spiel:** Boden und Wand behalten ihre Formen (runde Ecken, Treppen, Löcher). Liegt eine Foto-Textur vor, wird sie
-  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens, ein Bild = 140×140 Welt-px = 3,5 Kästchen;
-  Nutzerwunsch feine Kachelgröße, 240/480 waren zu grob; jede Textur wird einmal sauber auf Bildschirmgröße
-  verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres der Wände, 150×150 Welt-px; Datei
-  `assets/texturen/wand.webp` = die Steine der Säulen aus dem Testbild des Nutzers, 1:1 in derselben Größe, nahtlos
-  gemacht und stark nachgeschärft – Unschärfe-Maske grob + fein, nahtlos über 3×3-Kacheln) und **Gras-/Moos-Kante**
+  an der Welt verankert darübergelegt: **Erde** (Inneres des Bodens; `assets/texturen/erde.webp` = Waldboden-Foto des
+  Nutzers, 727×727, nahtlos gemacht (Ränder weich mit verschobenen Kopien überblendet); ein Bild = 180×180 Welt-px;
+  jede Textur wird einmal sauber auf Bildschirmgröße verkleinert, damit feine Muster nicht flimmern), **Wand** (Inneres
+  der Wände; `assets/texturen/wand.webp` = Bruchstein-Mauer mit Moos/Efeu des Nutzers, per Schnitt entlang der Fugen
+  nahtlos gemacht – Überblenden hätte doppelte Fugen ergeben –, 579×595 = 148×152 Welt-px, ein Stein rund 30 Welt-px
+  hoch; davor kurz die nachgeschärften Säulen-Steine aus dem Testbild) und **Gras-/Moos-Kante**
   (ein Bild = 320×80 Welt-px, auf jeder freien Oberkante von Boden und Wand; die Oberfläche liegt 32 Welt-px unter dem
   oberen Streifenrand). Statt der Comic-Kontur gibt es dann eine dünne, weiche dunkle Kontur (kein Schatten innen am
   Rand – wirkte wie ein Schlagschatten, Nutzerwunsch). Fehlt eine Textur, bleibt dort der alte Look. Gilt nur in der
   Dschungel-Welt und nur im Foto-Look (Taste B / Optionen schalten Hintergrund UND Material).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
   Foto-Look nie gezeichnet (unabhängig von den Texturen); Tiere und ihre Regeln bleiben. Im Comic-Look wie bisher.
-- **Texturen:** Dateien `assets/texturen/<id>.webp` (id = erde, wand, kante; derzeit nur wand). Test foto_material.
+- **Texturen:** Dateien `assets/texturen/<id>.webp` (id = erde, wand, kante; derzeit erde und wand). Mit Erde-Foto
+  entfallen im Foto-Look auch die grünen Comic-Grasecken an Stufen. Test foto_material.
 
 ### Boden-Dekor-Paket: Dickicht, Gras, Blumen, Farn im Dschungel + Nachbesserung Tiere
 Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-dekor-paket/bilder/`). Code:

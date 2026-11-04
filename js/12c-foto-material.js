@@ -14,10 +14,11 @@
 // Aufrufe in 12-welt-zeichnen.js (streifen, fotoMatUeber).
 // Maße: wie groß ein Texturbild in der Welt ist (weltB × weltH, 1 Kästchen = 40); y: auch senkrecht wiederholen.
 const FOTO_MAT_TEXTUREN = {
-  // Erde: ein Bild = 140×140 Welt-px (3,5 Kästchen) – Nutzerwunsch feine Kachelgröße (240 und 480 waren zu grob)
-  erde:  {weltB: 140, weltH: 140, y: true},
-  // Wand 150: die Steine aus dem Testbild des Nutzers (Säulen, 112 Bildpunkte ≙ 150 Welt-px) erscheinen 1:1 so groß
-  wand:  {weltB: 150, weltH: 150, y: true},
+  // Erde: Waldboden-Foto des Nutzers (727×727, nahtlos gemacht) = 180×180 Welt-px (4,5 Kästchen) – Steinchen klein
+  erde:  {weltB: 180, weltH: 180, y: true},
+  // Wand: Bruchstein-Mauer des Nutzers (per Schnitt entlang der Fugen nahtlos, 579×595) – ein Stein rund 30 Welt-px hoch
+  // (gut drei Viertel einer Figur), ein Bild 148×152 Welt-px
+  wand:  {weltB: 148, weltH: 152, y: true},
   kante: {weltB: 320, weltH: 80,  y: false},
 };
 // Gras-Kante: die Bodenoberfläche liegt 'ueber' Welt-px unter dem oberen Rand des Streifens (darüber ragt Gras hoch)

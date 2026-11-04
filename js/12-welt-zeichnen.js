@@ -386,7 +386,10 @@ function matPfadeZeichnen(q, V, S){
     for(const [y, p] of V.baender){ let sg = V.grad.get(y); if(!sg){ sg=q.createLinearGradient(0,y+12,0,y+26);sg.addColorStop(0,'rgba('+EA.edge+',.24)');sg.addColorStop(1,'rgba('+EA.edge+',0)'); V.grad.set(y, sg); } q.fillStyle=sg;q.fill(p); }
     q.fillStyle=EA.grass;q.fill(V.gras);q.strokeStyle=EA.gd;q.lineWidth=2.5;q.stroke(V.grasLinie);q.fillStyle=EA.gt;q.fill(V.grasLicht);
     q.restore();
-    q.fillStyle=EA.grass;q.fill(V.ecke);q.strokeStyle=EA.gd;q.lineWidth=2;q.stroke(V.eckeLinie);q.strokeStyle=EA.gt;q.lineWidth=1.6;q.stroke(V.eckeLicht);
+    // Gras-Ecken an Stufen – im Foto-Look mit Erde-Foto nicht (grüne Comic-Dreiecke, 12c)
+    if(!(typeof fotoMatAn === 'function' && fotoMatAn() && fotoMatBild('erde'))){
+      q.fillStyle=EA.grass;q.fill(V.ecke);q.strokeStyle=EA.gd;q.lineWidth=2;q.stroke(V.eckeLinie);q.strokeStyle=EA.gt;q.lineWidth=1.6;q.stroke(V.eckeLicht);
+    }
   }
   if(V.hatW){
     q.fillStyle='#7d7062';q.fill(V.PW);q.save();q.clip(V.PW);
