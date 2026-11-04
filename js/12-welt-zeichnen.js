@@ -319,15 +319,18 @@ function matPfadeNeu(){
 // Kästchen für Ziegel, die von nebenan herüberragen, in 'nachbarn'. Zufall der Vorschau (r()) hier je Kästchen fest.
 function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
   const D = matPfadeNeu(), ziegelGesehen = new Set();
+  const eckig = typeof fotoMatAn === 'function' && fotoMatAn();   // Foto-Look: Wände mit scharfen Ecken (Nutzerwunsch, 12c)
   const kaestchen = liste.map(({c: cc, r: rr, t}) => {
-    const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr),rad=[(!n&&!wl)?9:0,(!n&&!e)?9:0,(!s&&!e)?9:0,(!s&&!wl)?9:0],x=cc*40,y=rr*40;
+    const R = eckig && t == 2 ? 0 : 9;
+    const n=Tn(cc,rr-1),s=Tn(cc,rr+1),wl=Tn(cc-1,rr),e=Tn(cc+1,rr),rad=[(!n&&!wl)?R:0,(!n&&!e)?R:0,(!s&&!e)?R:0,(!s&&!wl)?R:0],x=cc*40,y=rr*40;
     return {t,x,y,n,s,wl,e,rad,cc,rr,nG:Tc(cc,rr-1)==1};
   });
   for(const k of kaestchen){
     const {x, y, rad, n, s, wl, e} = k, edge = D.edge;
     (k.t==1?D.PG:D.PW).roundRect(x,y,40,40,rad); D.PA.roundRect(x,y,40,40,rad);
     if(!n){edge.moveTo(x+rad[0],y);edge.lineTo(x+40-rad[1],y)}if(!e){edge.moveTo(x+40,y+rad[1]);edge.lineTo(x+40,y+40-rad[2])}if(!s){edge.moveTo(x+40-rad[2],y+40);edge.lineTo(x+rad[3],y+40)}if(!wl){edge.moveTo(x,y+40-rad[3]);edge.lineTo(x,y+rad[0])}
-    if(!n && k.t == 1){ if(!D.streifen.has(y)) D.streifen.set(y, new Path2D()); D.streifen.get(y).rect(x, y - FOTO_MAT_KANTE.ueber, 40, FOTO_MAT_KANTE.weltH); }
+    // Moos-Kante: auf freien Boden-Oberkanten UND am Fuß von Wänden, die auf Boden stehen (weicher Übergang Wand/Boden)
+    if(k.t == 1 && (!n || Tc(k.cc, k.rr - 1) == 2)){ if(!D.streifen.has(y)) D.streifen.set(y, new Path2D()); D.streifen.get(y).rect(x, y - FOTO_MAT_KANTE.ueber, 40, FOTO_MAT_KANTE.weltH); }
     if(rad[0]){edge.moveTo(x,y+rad[0]);edge.arc(x+rad[0],y+rad[0],rad[0],Math.PI,1.5*Math.PI)}if(rad[1]){edge.moveTo(x+40-rad[1],y);edge.arc(x+40-rad[1],y+rad[1],rad[1],1.5*Math.PI,2*Math.PI)}if(rad[2]){edge.moveTo(x+40,y+40-rad[2]);edge.arc(x+40-rad[2],y+40-rad[2],rad[2],0,.5*Math.PI)}if(rad[3]){edge.moveTo(x+rad[3],y+40);edge.arc(x+rad[3],y+40-rad[3],rad[3],.5*Math.PI,Math.PI)}
   }
   // Erde: Gras-Kappe auf freien Oberseiten (Schatten-Band, Grasfläche, dunkle Wellenlinie, helle Oberkante)
@@ -421,6 +424,9 @@ function matStueckDaten(ci){
 // Boden und Wand des Levels: Pfade der sichtbaren Stücke (einmal je Ausschnitt vereint) füllen
 function materialZeichnen(){
   const R = matRasterHolen();
+  // Foto-Look an/aus (Taste B) ändert die Formen (eckige Wände) -> vorberechnete Pfade neu bauen
+  const foto = typeof fotoMatAn === 'function' && fotoMatAn();
+  if(R.foto !== foto){ R.foto = foto; matStuecke.clear(); matSicht = {key: ''}; }
   const a = Math.floor((camX - MAT_RAND)/MAT_STUECK), b = Math.floor((camX + VW + MAT_RAND)/MAT_STUECK), key = R.version + ':' + a + ':' + b;
   // Scheinwände, in denen gerade niemand steht, kommen mit in dieselben Pfade -> keine feinen Kanten zum echten Boden;
   // sie werden später trotzdem noch einmal deckend darübergemalt (verdecken Münzen/Hebel), erst durchsichtig ohne sie

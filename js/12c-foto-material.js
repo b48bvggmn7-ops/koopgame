@@ -31,11 +31,16 @@ const FOTO_MAT_KANTE = {ueber: 20, weltH: FOTO_MAT_TEXTUREN.kante.weltH};
 // Kontur: im Foto-Look keine (Nutzerwunsch „nimm die Kontur weg“); Schatten innen am Rand gibt es auch nicht
 // Boden dunkler (Nutzerwunsch, zweimal): so viel Schwarz über das Erde-Foto (vorher 0,38)
 const FOTO_MAT_ERDE_DUNKEL = 0.52;
-// Mauer (Welt-px): Wiederholung nach 'periode', Reihen 'reiheMin'–'reiheMax' hoch, Steine 'breitMin'–'breitMax' breit,
-// Fuge 'fuge'; 'aufloesung' Bildpunkte je Welt-px beim Aufbauen; 'quelleJeWelt' Foto-Bildpunkte je Welt-px (Steingröße
-// im Foto ≈ Steingröße im Spiel)
-const FOTO_MAT_MAUER = {periode: 480, reiheMin: 13, reiheMax: 19, breitMin: 20, breitMax: 44, fuge: 1.6, aufloesung: 2.5,
-                        quelleJeWelt: 3.6, saat: 7};
+// Mauer (Welt-px): Wiederholung nach 'periode', Reihen 'reiheMin'–'reiheMax' hoch, Steine 'breitMin'–'breitMax' breit
+// (Nutzer „noch etwas kleiner“: vorher 13–19 / 20–44), Fuge 'fuge' (mittlere Breite, schwankt durch die rauen Kanten),
+// 'rau' = wie stark die Kanten ausgefranst sind, 'ecke' = abgeschlagene Ecken bis so viel; 'aufloesung' Bildpunkte je
+// Welt-px beim Aufbauen; 'quelleJeWelt' Foto-Bildpunkte je Welt-px (Steingröße im Foto ≈ Steingröße im Spiel)
+// 'verform' = so weit wandert jede Ecke (Stein leicht schief), 'woelbung' = Kanten nach außen/innen gewölbt,
+// 'farben' = Tönungen je Stein (null = keine), 'moos' = Anteil der Steine mit Moos oben
+const FOTO_MAT_MAUER = {periode: 480, reiheMin: 9, reiheMax: 14, breitMin: 14, breitMax: 32, fuge: 1.3, rau: 0.45, ecke: 1.6,
+                        verform: 1.1, woelbung: 0.9, moos: 0.18,
+                        farben: [null, null, 'rgba(120,90,60,.12)', 'rgba(90,95,100,.14)', 'rgba(70,90,50,.12)', 'rgba(40,30,20,.14)', 'rgba(170,150,120,.10)'],
+                        aufloesung: 2.5, quelleJeWelt: 3.6, saat: 7};
 
 const fotoMat = {bilder: {}, muster: {}};
 // (window.fotoMatTestQuellen: nur für automatische Tests – eigene Bilder statt der Dateien)
@@ -53,14 +58,20 @@ function fotoMatBild(id){
   return B.img;
 }
 // Mauer aufbauen (einmal, fester Zufall): Reihen unterschiedlicher Höhe, darin Steine unterschiedlicher Breite, jede
-// Reihe anders versetzt (die Fugen liegen nie übereinander) – nahtlos wiederholbar nach FOTO_MAT_MAUER.periode. Jeder
-// Stein: eigener Ausschnitt aus dem Foto (bevorzugt ohne Fugen des Fotos), leicht heller/dunkler, Kante oben hell,
-// unten dunkel; dazwischen dunkle Fuge.
+// Reihe anders versetzt (die Fugen liegen nie übereinander) – nahtlos wiederholbar nach FOTO_MAT_MAUER.periode. Wie
+// behauene Bruchsteine (Nutzer: „Steine haben eine Outline – achte darauf, wie die Steine geschnitten sind“): jeder Stein
+// eine raue Form mit ausgefransten Kanten und abgeschlagenen Ecken (keine runden Rechtecke), eigener Ausschnitt aus dem
+// Foto (bevorzugt ohne Fugen des Fotos), leicht heller/dunkler, weiches Licht von oben. Die Fugen sind KEIN dunkler
+// Rand ringsum: dahinter liegt das abgedunkelte Foto (Mörtel/Moos), dazu nur ein weicher Schatten unter/rechts neben
+// jedem Stein; dadurch schwankt die Fugenbreite natürlich.
 function fotoMatMauer(img){
   const M = FOTO_MAT_MAUER, P = M.periode, s = M.aufloesung, c = document.createElement('canvas');
   c.width = c.height = Math.round(P*s);
   const q = c.getContext('2d'), r = rnd(M.saat);
-  q.fillStyle = '#1f1b16'; q.fillRect(0, 0, c.width, c.height);
+  // Fugen-Grund: das Foto selbst, gekachelt und stark abgedunkelt (Mörtel, Moos, Erde in den Fugen)
+  const k = s/M.quelleJeWelt;
+  for(let x = 0; x < c.width; x += img.width*k) for(let y = 0; y < c.height; y += img.height*k) q.drawImage(img, x, y, img.width*k, img.height*k);
+  q.fillStyle = 'rgba(14,12,8,.62)'; q.fillRect(0, 0, c.width, c.height);
   // helle Zeilen des Fotos = Steinflächen (dunkle Zeilen = Fugen) – Ausschnitte möglichst dort hineinlegen
   let hell = null;
   try { const t = document.createElement('canvas'); t.width = 1; t.height = img.height; const tq = t.getContext('2d'); tq.drawImage(img, 0, 0, 1, img.height);
@@ -75,16 +86,44 @@ function fotoMatMauer(img){
     }
     return best;
   };
+  // raue Steinform (Punkte, Bildpunkte) – jeder Stein anders (Nutzer: „jeder einzelne Stein muss etwas Besonderes
+  // sein“): Ecken unterschiedlich weit verschoben (der Stein ist leicht schief/trapezförmig), jede Kante eigene Wölbung
+  // nach außen oder innen, manchmal eine große abgeschlagene Ecke, dazu feine Ausfransung alle ~2,5 Welt-px
+  const form = (X, Y, Wd, Hd) => {
+    const V = M.verform*s, ecken = [[X, Y], [X + Wd, Y], [X + Wd, Y + Hd], [X, Y + Hd]].map(([x, y]) => [x + (r() - 0.5)*2*V, y + (r() - 0.5)*2*V]);
+    const ec = () => (r() < 0.2 ? 1.8 : 0.3 + r()*0.7)*M.ecke*s, pts = [];
+    for(let i = 0; i < 4; i++){
+      const [ax, ay] = ecken[i], [bx, by] = ecken[(i + 1) % 4], L = Math.hypot(bx - ax, by - ay) || 1, ux = (bx - ax)/L, uy = (by - ay)/L, nx = uy, ny = -ux;
+      const ca = ec(), cb = ec(), w = (r() - 0.5)*2*M.woelbung*s, n = Math.max(2, Math.round(L/(2.5*s)));
+      for(let k = 0; k <= n; k++){
+        const t = k/n, d = ca + (L - ca - cb)*t, b = Math.sin(Math.PI*t)*w + (k && k < n ? (r() - 0.5)*2*M.rau*s : 0);
+        pts.push([ax + ux*d + nx*b, ay + uy*d + ny*b]);
+      }
+    }
+    return pts;
+  };
+  const pfad = (pts, dx, dy) => { q.beginPath(); pts.forEach(([x, y], i) => i ? q.lineTo(x + dx, y + dy) : q.moveTo(x + dx, y + dy)); q.closePath(); };
   const stein = (x, y, w, h) => {
-    const g = M.fuge*s/2, X = x*s + g, Y = y*s + g, Wd = w*s - 2*g, Hd = h*s - 2*g, rad = Math.min(3*s, Hd/3);
+    const g = M.fuge*s/2, X = x*s + g, Y = y*s + g, Wd = w*s - 2*g, Hd = h*s - 2*g, pts = form(X, Y, Wd, Hd);
     const sw = Math.min(img.width, w*M.quelleJeWelt), sh = Math.min(img.height, h*M.quelleJeWelt), [sx, sy] = ausschnitt(sw, sh);
+    const v = r(), ton = v < 0.5 ? 'rgba(0,0,0,' + (0.26*(0.5 - v)) + ')' : 'rgba(255,245,225,' + (0.1*(v - 0.5)) + ')';
+    // eigene Färbung je Stein (mal wärmer, grauer, grünlicher) und manchmal Moos an der Oberseite
+    const f = M.farben[Math.floor(r()*M.farben.length)], moos = r() < M.moos, spiegel = r() < 0.5;
     for(const dx of [0, -P*s]) for(const dy of [0, -P*s]){
-      if(X + dx > c.width || Y + dy > c.height || X + dx + Wd < 0 || Y + dy + Hd < 0) continue;
-      q.save(); q.beginPath(); q.roundRect(X + dx, Y + dy, Wd, Hd, rad); q.clip();
-      q.drawImage(img, sx, sy, sw, sh, X + dx, Y + dy, Wd, Hd);
-      const v = r(); q.fillStyle = v < 0.5 ? 'rgba(0,0,0,' + (0.28*(0.5 - v)) + ')' : 'rgba(255,245,225,' + (0.12*(v - 0.5)) + ')'; q.fillRect(X + dx, Y + dy, Wd, Hd);
-      const gr = q.createLinearGradient(0, Y + dy, 0, Y + dy + Hd);
-      gr.addColorStop(0, 'rgba(255,240,210,.16)'); gr.addColorStop(0.25, 'rgba(255,240,210,0)'); gr.addColorStop(0.7, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.38)');
+      if(X + dx > c.width || Y + dy > c.height || X + dx + Wd + 2*s < 0 || Y + dy + Hd + 2*s < 0) continue;
+      // weicher Schatten unter/rechts neben dem Stein (in die Fuge), kein Rand ringsum
+      q.fillStyle = 'rgba(0,0,0,.22)'; pfad(pts, dx + 0.5*s, dy + 0.8*s); q.fill();
+      q.fillStyle = 'rgba(0,0,0,.18)'; pfad(pts, dx + 1.0*s, dy + 1.5*s); q.fill();
+      q.save(); pfad(pts, dx, dy); q.clip();
+      if(spiegel){ q.save(); q.translate(2*(X + dx) + Wd, 0); q.scale(-1, 1); }
+      q.drawImage(img, sx, sy, sw, sh, X + dx - 2*s, Y + dy - 2*s, Wd + 4*s, Hd + 4*s);   // etwas größer: Form ist verschoben
+      if(spiegel) q.restore();
+      q.fillStyle = ton; q.fillRect(X + dx - 2*s, Y + dy - 2*s, Wd + 4*s, Hd + 4*s);
+      if(f){ q.fillStyle = f; q.fillRect(X + dx - 2*s, Y + dy - 2*s, Wd + 4*s, Hd + 4*s); }
+      if(moos){ const gm = q.createLinearGradient(0, Y + dy - 2*s, 0, Y + dy + Hd*0.6);
+        gm.addColorStop(0, 'rgba(78,104,40,.45)'); gm.addColorStop(1, 'rgba(78,104,40,0)'); q.fillStyle = gm; q.fillRect(X + dx - 2*s, Y + dy - 2*s, Wd + 4*s, Hd + 4*s); }
+      const gr = q.createLinearGradient(0, Y + dy, 0, Y + dy + Hd);   // weiches Licht von oben
+      gr.addColorStop(0, 'rgba(255,240,215,.1)'); gr.addColorStop(0.35, 'rgba(255,240,215,0)'); gr.addColorStop(0.75, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.16)');
       q.fillStyle = gr; q.fillRect(X + dx, Y + dy, Wd, Hd);
       q.restore();
     }

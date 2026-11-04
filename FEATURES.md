@@ -2154,16 +2154,24 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
   - **Erde** (Inneres des Bodens): Waldboden-Foto des Nutzers, 727×727, nahtlos gemacht (Ränder weich mit verschobenen
     Kopien überblendet), ein Bild = 180×180 Welt-px; **dunkler** gemacht (52 % Schwarz darüber, Nutzerwunsch, zweimal).
   - **Wand**: eine **Mauer, die das Spiel einmal selbst aufbaut** (`fotoMatMauer`; Nutzer: „mehr Steine, die sich
-    weniger wiederholen – man sieht Copy-Paste; die Steine sollen richtig aufeinander liegen“): Reihen 13–19 Welt-px
-    hoch, darin Steine 20–44 Welt-px breit, jede Reihe anders versetzt (Fugen nie übereinander), dunkle Fuge 1,6 Welt-px.
-    Jeder Stein ist ein eigener Ausschnitt aus dem Mauer-Foto des Nutzers (`assets/texturen/wand-steine.webp`,
-    bevorzugt ohne Fugen des Fotos), leicht heller/dunkler, oben eine helle, unten eine dunkle Kante. Wiederholt sich
-    erst nach 480 Welt-px (12 Kästchen) in beide Richtungen, fester Zufall (immer gleich). Werte in `FOTO_MAT_MAUER`.
+    weniger wiederholen – man sieht Copy-Paste; die Steine sollen richtig aufeinander liegen“, dann „keine Outline,
+    achte darauf, wie die Steine geschnitten sind, etwas kleiner“): Reihen 9–14 Welt-px hoch, darin Steine 14–32
+    Welt-px breit, jede Reihe anders versetzt (Fugen nie übereinander). Jeder Stein ist ein behauener Bruchstein und
+    sieht anders aus (Nutzer: „jeder einzelne Stein muss etwas Besonderes sein“): Ecken leicht verschoben (schief/
+    trapezförmig), jede Kante eigene Wölbung nach außen oder innen, unterschiedlich – manchmal stark – abgeschlagene
+    Ecken, feine Ausfransung; eigener Ausschnitt aus dem Mauer-Foto des Nutzers (`assets/texturen/wand-steine.webp`,
+    bevorzugt ohne Fugen des Fotos, zufällig gespiegelt), eigene Helligkeit und Tönung (wärmer, grauer, grünlicher),
+    knapp jeder fünfte mit Moos an der Oberseite, weiches Licht von oben. Fugen ohne Rand ringsum: dahinter das stark abgedunkelte Foto
+    (Mörtel/Moos), dazu nur ein weicher Schatten unter/rechts neben jedem Stein – die Fugenbreite schwankt natürlich.
+    Wiederholt sich erst nach 480 Welt-px (12 Kästchen) in beide Richtungen, fester Zufall. Werte in `FOTO_MAT_MAUER`.
     (Vorher das Foto selbst als Kachel – zuletzt 74×76 Welt-px – und davor die nachgeschärften Säulen-Steine.)
-  - **Moos-Kante** (nur auf freien Oberkanten von BODEN, nicht auf Wänden): Moosmatte mit Gras, Blättern und
+  - **Moos-Kante** (auf freien Oberkanten von BODEN und am Fuß von Wänden, die auf Boden stehen – Gras und Moos
+    wachsen dort über die untersten Steine, weicher Übergang Wand/Boden; nicht oben auf Wänden): Moosmatte mit Gras, Blättern und
     hängenden Wurzeln des Nutzers, freigestellt und per Schnitt nach links/rechts nahtlos, 1628×374; **kleiner**
     (Nutzerwunsch): 220×51 Welt-px (vorher 326×75); die Bodenoberfläche liegt 20 Welt-px unter dem oberen Streifenrand (Moos beginnt knapp darüber, Wurzeln hängen
     in die Erde).
+- **Wände mit scharfen Ecken** im Foto-Look (Nutzerwunsch, keine abgerundeten Außenecken; Boden bleibt rund; die
+  Formen werden beim Umschalten mit B neu berechnet).
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
   Foto-Look nie gezeichnet; mit Erde-Foto auch keine grünen Comic-Grasecken an Stufen. Tiere und ihre Regeln bleiben.
