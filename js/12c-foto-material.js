@@ -65,7 +65,7 @@ function fotoMatBild(id){
 // Rand ringsum: dahinter liegt das abgedunkelte Foto (Mörtel/Moos), dazu nur ein weicher Schatten unter/rechts neben
 // jedem Stein; dadurch schwankt die Fugenbreite natürlich.
 function fotoMatMauer(img){
-  const M = FOTO_MAT_MAUER, P = M.periode, s = M.aufloesung, c = document.createElement('canvas');
+  const M = FOTO_MAT_MAUER, P = M.periode, s = M.aufloesung, c = document.createElement('canvas'), lage = [];
   c.width = c.height = Math.round(P*s);
   const q = c.getContext('2d'), r = rnd(M.saat);
   // Fugen-Grund: das Foto selbst, gekachelt und stark abgedunkelt (Mörtel, Moos, Erde in den Fugen)
@@ -137,11 +137,47 @@ function fotoMatMauer(img){
       let w = M.breitMin + r()*(M.breitMax - M.breitMin);
       if(P - x - w < M.breitMin) w = P - x;
       stein((x + off) % P, y, w, h);
+      lage.push({x: (x + off) % P, y, w, h});
       x += w;
     }
     y += h;
   }
+  fotoMat.lage = lage;   // Lage aller Steine (Welt-px, eine Periode) – für den Wandrand aus ganzen Steinen
   return c;
+}
+// Wandrand aus ganzen Steinen (Nutzer: „das muss ja keine 100 % glatte Kante ergeben – wir haben einzelne Steine“):
+// Zeichenbereich der Wand = alle Mauer-Steine, deren Mitte in einem Wand-Kästchen liegt (sie dürfen etwas über die
+// Kante hinausragen), dazu Steine, die in eine Wand hineinreichen und deren Mitte in Boden/anderem Material steckt
+// (dort keine Lücke). Steine mit der Mitte in der Luft fehlen -> die Kante springt Stein für Stein vor und zurück.
+// Nur Optik – die Kollision bleibt das Kästchen. kaestchen: Wand-Kästchen dieses Stücks ({cc, rr}); null = Lage fehlt noch
+// Nutzer danach: „nicht so stark, nur minimal uneben“ -> die Kante folgt den Steinen nur innerhalb ±FOTO_MAT_RAND_UNEBEN
+// Welt-px um die Kästchenkante: innen ist die Wand immer bis zur Kante minus diesen Wert gefüllt (keine tiefen Lücken),
+// außen wird bei plus diesem Wert abgeschnitten (keine weit vorstehenden Steine). Rückgabe {innen, aussen}.
+const FOTO_MAT_RAND_UNEBEN = 2.5;
+function fotoMatWandMaske(kaestchen, Tc){
+  const L = fotoMat.lage; if(!L || !kaestchen.length) return null;
+  const U = FOTO_MAT_RAND_UNEBEN, aussen = new Path2D();
+  const P = FOTO_MAT_MAUER.periode, eigen = new Set(kaestchen.map(k => k.cc + ',' + k.rr)), pfad = new Path2D();
+  for(const k of kaestchen){   // je Kästchen: an freien Seiten innen U schmaler (Füllung) bzw. außen U breiter (Grenze)
+    const l = k.wl ? 0 : U, o = k.n ? 0 : U, rr = k.e ? 0 : U, u = k.s ? 0 : U, x = k.cc*40, y = k.rr*40;
+    pfad.rect(x + l, y + o, 40 - l - rr, 40 - o - u);
+    aussen.rect(x - l, y - o, 40 + l + rr, 40 + o + u);
+  }
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for(const k of kaestchen){ x0 = Math.min(x0, k.cc*40); x1 = Math.max(x1, k.cc*40 + 40); y0 = Math.min(y0, k.rr*40); y1 = Math.max(y1, k.rr*40 + 40); }
+  const rand = FOTO_MAT_MAUER.breitMax;
+  for(let tx = Math.floor((x0 - rand)/P); tx*P <= x1 + rand; tx++) for(let ty = Math.floor((y0 - rand)/P); ty*P <= y1 + rand; ty++)
+    for(const s of L){
+      const sx = s.x + tx*P, sy = s.y + ty*P;
+      if(sx > x1 || sx + s.w < x0 || sy > y1 || sy + s.h < y0) continue;
+      const mc = Math.floor((sx + s.w/2)/40), mr = Math.floor((sy + s.h/2)/40), mt = Tc(mc, mr);
+      let rein = false;
+      if(mt === 2) rein = eigen.has(mc + ',' + mr);
+      else if(mt > 0)    // Mitte in Boden o. Ä.: dabei, wenn eine Ecke in einer eigenen Wand liegt (doppelt schadet nicht)
+        rein = [[sx, sy], [sx + s.w - 0.01, sy], [sx, sy + s.h - 0.01], [sx + s.w - 0.01, sy + s.h - 0.01]].some(([ex, ey]) => eigen.has(Math.floor(ex/40) + ',' + Math.floor(ey/40)));
+      if(rein) pfad.rect(sx, sy, s.w, s.h);
+    }
+  return {innen: pfad, aussen};
 }
 // Textur einmal sauber auf Bildschirmgröße verkleinert (in Halbierungs-Schritten, hohe Glättung) – sonst flimmern
 // feine Muster (1024 Bildpunkte auf ~180), wenn das Muster beim Zeichnen stark verkleinert wird
@@ -180,7 +216,11 @@ function fotoMatUeber(q, V){
   const erde = V.hatG && fotoMatMuster(q, 'erde'), wand = V.hatW && fotoMatMuster(q, 'wand'), kante = fotoMatBild('kante');
   if(!erde && !wand && !kante) return false;
   if(erde){ q.fillStyle = erde; q.fill(V.PG); q.fillStyle = 'rgba(0,0,0,' + FOTO_MAT_ERDE_DUNKEL + ')'; q.fill(V.PG); }
-  if(wand){ q.fillStyle = wand; q.fill(V.PW); }
+  if(wand){
+    q.fillStyle = wand;
+    if(V.wandMaske && !V.maskeFehlt){ q.save(); q.clip(V.wandMaske.aussen); q.fill(V.wandMaske.innen); q.restore(); }
+    else q.fill(V.PW);
+  }
   if(kante) for(const [y, p] of V.streifen){ q.fillStyle = fotoMatMuster(q, 'kante', y - FOTO_MAT_KANTE.ueber); q.fill(p); }
   return true;
 }

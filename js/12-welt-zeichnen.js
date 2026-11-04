@@ -312,7 +312,7 @@ function matPfadeNeu(){
   return {PG: P(), PW: P(), PA: P(), edge: P(), gras: P(), grasLinie: P(), grasLicht: P(), baender: new Map(),
           ecke: P(), eckeLinie: P(), eckeLicht: P(), ziegel: MAT_ZIEGEL.map(P), zLicht: P(), zSchatten: P(), zMoos: P(), zRiss: P(),
           wLicht: P(), wGras: P(), wGrasHell: P(), wMoos: P(), hatG: false, hatW: false,
-          streifen: new Map()};   // freie Boden-Oberkanten je Höhe y (Foto-Material: Moos-Kante, js/12c-foto-material.js)
+          streifen: new Map(), wandMaske: null, maskeFehlt: false};   // freie Boden-Oberkanten je Höhe y (Foto-Material: Moos-Kante, js/12c-foto-material.js)
 }
 // Berechnet für die Kästchen 'liste' ({c, r, t}) alle Zeichenschritte von buildChunk (Vorschau) als Pfade in Welt-Koordinaten.
 // ziegelVon/ziegelBis: nur Ziegel mit linker Kante in diesem Bereich (jeder Ziegel gehört genau einem Stück); weitere
@@ -365,6 +365,11 @@ function matPfadeBauen(liste, nachbarn, ziegelVon, ziegelBis){
     if(!k.wl&&r()<.5){const my=k.y+10+r()*20,mr=5+r()*4;D.wMoos.moveTo(k.x+3+mr,my);D.wMoos.ellipse(k.x+3,my,mr,4,0,0,7)}
   }
   for(const z of nachbarn) if(z.t==2) ziegelAus(z.c*40, z.r*40);
+  // Foto-Look: Wandrand aus ganzen Mauer-Steinen statt glatter Kante (12c)
+  if(eckig && D.hatW && typeof fotoMatWandMaske === 'function'){
+    D.wandMaske = fotoMatWandMaske(kaestchen.filter(k => k.t == 2), Tc);
+    D.maskeFehlt = !D.wandMaske;
+  }
   return D;
 }
 // mehrere Stücke zu einem Ausschnitt zusammenfügen (je Pfad ein Aufruf beim Zeichnen, keine Nahtstellen zwischen Stücken)
@@ -375,6 +380,8 @@ function matPfadeVereinen(liste){
     D.ziegel.forEach((p, i) => V.ziegel[i].addPath(p));
     for(const [y, p] of D.baender){ if(!V.baender.has(y)) V.baender.set(y, new Path2D()); V.baender.get(y).addPath(p); }
     for(const [y, p] of D.streifen){ if(!V.streifen.has(y)) V.streifen.set(y, new Path2D()); V.streifen.get(y).addPath(p); }
+    if(D.wandMaske){ if(!V.wandMaske) V.wandMaske = {innen: new Path2D(), aussen: new Path2D()}; V.wandMaske.innen.addPath(D.wandMaske.innen); V.wandMaske.aussen.addPath(D.wandMaske.aussen); }
+    if(D.maskeFehlt) V.maskeFehlt = true;
     V.hatG = V.hatG || D.hatG; V.hatW = V.hatW || D.hatW;
   }
   return V;
@@ -394,7 +401,8 @@ function matPfadeZeichnen(q, V, S){
       q.fillStyle=EA.grass;q.fill(V.ecke);q.strokeStyle=EA.gd;q.lineWidth=2;q.stroke(V.eckeLinie);q.strokeStyle=EA.gt;q.lineWidth=1.6;q.stroke(V.eckeLicht);
     }
   }
-  if(V.hatW){
+  // Foto-Look mit Mauer-Steinen: alte Ziegelwand nicht darunter malen (sie schaute sonst an den Steinrändern heraus)
+  if(V.hatW && !(V.wandMaske && !V.maskeFehlt && typeof fotoMatAn === 'function' && fotoMatAn() && fotoMatBild('wand'))){
     q.fillStyle='#7d7062';q.fill(V.PW);q.save();q.clip(V.PW);
     V.ziegel.forEach((p,i)=>{q.fillStyle=MAT_ZIEGEL[i];q.fill(p)});
     q.fillStyle='rgba(255,235,200,.25)';q.fill(V.zLicht);q.fillStyle='rgba(40,20,10,.25)';q.fill(V.zSchatten);
@@ -425,7 +433,7 @@ function matStueckDaten(ci){
 function materialZeichnen(){
   const R = matRasterHolen();
   // Foto-Look an/aus (Taste B) ändert die Formen (eckige Wände) -> vorberechnete Pfade neu bauen
-  const foto = typeof fotoMatAn === 'function' && fotoMatAn();
+  const foto = typeof fotoMatAn === 'function' && fotoMatAn() ? (fotoMat.lage ? 2 : 1) : 0;   // 2 = Mauer-Steine bereit
   if(R.foto !== foto){ R.foto = foto; matStuecke.clear(); matSicht = {key: ''}; }
   const a = Math.floor((camX - MAT_RAND)/MAT_STUECK), b = Math.floor((camX + VW + MAT_RAND)/MAT_STUECK), key = R.version + ':' + a + ':' + b;
   // Scheinwände, in denen gerade niemand steht, kommen mit in dieselben Pfade -> keine feinen Kanten zum echten Boden;

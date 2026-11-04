@@ -2170,8 +2170,12 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
     hängenden Wurzeln des Nutzers, freigestellt und per Schnitt nach links/rechts nahtlos, 1628×374; **kleiner**
     (Nutzerwunsch): 220×51 Welt-px (vorher 326×75); die Bodenoberfläche liegt 20 Welt-px unter dem oberen Streifenrand (Moos beginnt knapp darüber, Wurzeln hängen
     in die Erde).
-- **Wände mit scharfen Ecken** im Foto-Look (Nutzerwunsch, keine abgerundeten Außenecken; Boden bleibt rund; die
-  Formen werden beim Umschalten mit B neu berechnet).
+- **Wandrand aus ganzen Steinen** im Foto-Look (Nutzer: „muss keine 100 % glatte Kante sein – wir haben einzelne
+  Steine“; vorher kurz scharfe, davor runde Ecken): gezeichnet werden alle Mauer-Steine, deren Mitte in einem
+  Wand-Kästchen liegt, Steine mit der Mitte in der Luft fehlen; an Boden/anderem Material keine Lücken
+  (`fotoMatWandMaske`). Nutzer danach „nicht so stark, nur minimal uneben“: die Kante folgt den Steinen nur ±2,5
+  Welt-px um die Kästchenkante (`FOTO_MAT_RAND_UNEBEN`). Nur Optik – die Kollision bleibt das Kästchen. Die alte Ziegelwand wird darunter nicht mehr gemalt. Boden
+  bleibt rund; die Formen werden beim Umschalten mit B neu berechnet.
 - **Keine Kontur** im Foto-Look (Nutzerwunsch; vorher kurz eine dünne weiche, ganz früher ein Schatten innen am Rand).
 - **Keine grünen Comic-Pflanzen im Foto-Look** (Nutzerwunsch): Dickicht, Gras, Farne und Blumen am Boden (17a) werden im
   Foto-Look nie gezeichnet; mit Erde-Foto auch keine grünen Comic-Grasecken an Stufen. Tiere und ihre Regeln bleiben.
