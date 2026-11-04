@@ -47,7 +47,7 @@ const FOTO_MAT_ERDE_DUNKEL = 0.52;
 const FOTO_MAT_MAUER = {periode: 480, reiheMin: 11, reiheMax: 16, breitMin: 17, breitMax: 36, fuge: 1.3, rau: 0.45, ecke: 1.6,
                         verform: 1.1, woelbung: 0.9, moos: 0.18,
                         farben: [null, null, 'rgba(120,90,60,.12)', 'rgba(90,95,100,.14)', 'rgba(70,90,50,.12)', 'rgba(40,30,20,.14)', 'rgba(170,150,120,.10)'],
-                        aufloesung: 2.5, quelleJeWelt: 3.6, saat: 7};
+                        aufloesung: 3, quelleJeWelt: 3.6, saat: 7};   // aufloesung 3: scharf bis 4K (3840 breit = 2,55 Bildpunkte je Welt-px)
 
 const fotoMat = {bilder: {}, muster: {}};
 // (window.fotoMatTestQuellen: nur für automatische Tests – eigene Bilder statt der Dateien)

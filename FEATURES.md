@@ -2164,6 +2164,7 @@ Werkstatt-Seite zum Erstellen der Texturen gab es kurz; auf Nutzerwunsch wieder 
     knapp jeder fünfte mit Moos an der Oberseite, weiches Licht von oben. Fugen ohne Rand ringsum: dahinter das stark abgedunkelte Foto
     (Mörtel/Moos), dazu nur ein weicher Schatten unter/rechts neben jedem Stein – die Fugenbreite schwankt natürlich.
     Wiederholt sich erst nach 480 Welt-px (12 Kästchen) in beide Richtungen, fester Zufall. Werte in `FOTO_MAT_MAUER`.
+    Aufgebaut mit 3 Bildpunkten je Welt-px: scharf bis 4K (Nutzerwunsch; Erde-Foto und Moos-Kante reichen dafür schon).
     (Vorher das Foto selbst als Kachel – zuletzt 74×76 Welt-px – und davor die nachgeschärften Säulen-Steine.)
   - **Moos-Kante** (auf freien Oberkanten von BODEN und am Fuß von Wänden, die auf Boden stehen – Gras und Moos
     wachsen dort über die untersten Steine, weicher Übergang Wand/Boden; nicht oben auf Wänden): Moosmatte mit Gras, Blättern und
