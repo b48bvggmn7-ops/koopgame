@@ -9,11 +9,14 @@
 // voegel.mp3 bei Sonne (verstummen im Regen, kommen danach langsam zurück)
 // regen.mp3  mit dem Schauer ein-/ausgeblendet (ersetzt den erzeugten Regen; nur die "Plopps" bleiben leise dazu)
 // fluss.mp3  immer leise; nach Regen mehr Wasser, lauter wenn der Wasserfall im Hintergrund ins Bild kommt
+// draussen.mp3 (Nutzer 06.11., „outside_room“): DER allgemeine Hintergrund-Ton – ersetzt Vögel und Fluss (beide nicht mehr
+//            geladen, Dateien bleiben liegen) und den erzeugten Wind/Grillen/Bach; läuft gleichmäßig als Schleife.
 // Kurze Dateien laufen als nahtlose Schleife (Ende und Anfang weich ineinander geblendet).
 // Lädt eine Datei nicht (z. B. Spiel als Datei geöffnet), bleibt der erzeugte Klang aus 19/22 aktiv.
 const AUDIO_FILES = {music: 'assets/audio/musik.mp3', birds: 'assets/audio/voegel.mp3',
-                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3'};
-const FILE_VOL = {music: 0.38, birds: 0.6, rain: 0.8, river: 2.0};   // Musik vorne, Vögel/Fluss dezent dahinter (Fluss-Aufnahme ist sehr leise)
+                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/draussen.mp3'};
+const FILE_VOL = {music: 0.38, birds: 0.6, rain: 0.8, river: 2.0, atmo: 0.7};   // Musik vorne, Hintergrund dezent dahinter
+const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
 const MUSIC_START_DELAY = 2.5;   // Sekunden Stille, bevor die Musik einsetzt
 const MUSIC_FADE_IN = 7;         // Sekunden Einblenden
 const MUSIC_RESTART_DELAY = 1.5; // nach dem Weitermachen (Tod) erst kurz still, dann von vorne
@@ -61,11 +64,11 @@ function fileAudioStart(){
     setTimeout(()=> fileMusicRestart(MUSIC_FADE_IN, 0), MUSIC_START_DELAY*1000);
   }catch(e){}
   // kurze Schleifen: laden, dekodieren, nahtlos machen
-  for(const key of ['birds', 'rain', 'river']){
+  for(const key of ATMO_STATT_VOEGEL_FLUSS ? ['atmo', 'rain'] : ['birds', 'rain', 'river']){
     fetch(AUDIO_FILES[key]).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
       .then(ab => a.decodeAudioData(ab))
       .then(buf => {
-        const src = a.createBufferSource(); src.buffer = fileLoopBuffer(a, buf, 1.0); src.loop = true;
+        const src = a.createBufferSource(); src.buffer = fileLoopBuffer(a, buf, key === 'atmo' ? 2.5 : 1.0); src.loop = true;
         const g = a.createGain(); g.gain.value = 0;
         src.connect(g); g.connect(audioOut()); src.start(0, Math.random()*src.buffer.duration*0.5);
         fileAudio.loops[key] = g; fileAudio.ok[key] = true;
@@ -118,11 +121,15 @@ function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rai
 // die kräftigen Knarzer, „her“ = die leiseren (Hebel hin und her), sonst zufällig. Lautstärke GERAEUSCH_VOL × Ton-Regler,
 // links/rechts nach Ort. Lädt eine Datei nicht, bleibt der erzeugte Klang aus 18-sound.js.
 const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav'};
-const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.3};   // „nicht zu laut, nicht zu leise“ (etwa wie Hebel/Tür)
-const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s] (gemessen an der Hüllkurve)
+// kurbel.wav = das QUIETSCHEN (Nutzer-Datei „quietschen.wav“, Schuhspanner Holz/Metall). Nutzer 06.11.: „nicht das Knarzen
+// lauter, sondern das Quietschen“ -> Knarzen wieder 0,34; Quietschen 0,3 -> 0,8 und jetzt auch an der Pump-Draisine
+// (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben).
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.8};
+const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor] (gemessen an der Hüllkurve)
   knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
             her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},
-  kurbel: {zug: [[0.16, .45]], klein: [[1.93, .21]]},
+  kurbel: {zug: [[0.16, .45]], klein: [[1.93, .21, 1.6]],
+           hin: [[0.14, .4]], her: [[1.92, .17, 1.6], [1.24, .24, 2]]},
 };
 const geraeusche = {buf: {}, laedt: false};
 function geraeuscheLaden(){
@@ -142,9 +149,9 @@ function geraeuschSpielen(name, o){
   try{
     const S = GERAEUSCH_STUECKE[name] || {}, gruppen = Object.values(S);
     const liste = (o.stueck && S[o.stueck]) || gruppen[Math.floor(Math.random()*gruppen.length)] || [[0, buf.duration]];
-    const [ab, dauer] = liste[Math.floor(Math.random()*liste.length)];
+    const [ab, dauer, faktor] = liste[Math.floor(Math.random()*liste.length)];
     const src = a.createBufferSource(); src.buffer = buf; src.playbackRate.value = (o.rate || 1)*(1 + (Math.random() - 0.5)*0.08);
-    const g = a.createGain(), t = a.currentTime, vol = (GERAEUSCH_VOL[name] || 0.3)*(o.vol || 1)*VOL.sfx;
+    const g = a.createGain(), t = a.currentTime, vol = (GERAEUSCH_VOL[name] || 0.3)*(faktor || 1)*(o.vol || 1)*VOL.sfx;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.012);
     g.gain.setValueAtTime(vol, t + Math.max(0.02, dauer - 0.06)); g.gain.linearRampToValueAtTime(0.0001, t + dauer);
     src.connect(g);
@@ -183,6 +190,7 @@ function fileAudioUpdate(){
   // Ausbau 7: Welt + Tageszeit regeln Vögel/Fluss mit (THEME.ambiente, 10a-themen.js) – z. B. nachts keine Vögel
   const amb = (typeof THEME !== 'undefined' && THEME && THEME.ambiente) || {voegel: 1, fluss: 1};
   if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.sfx*sun*sun*fileAudio.birdsBack*amb.voegel, now, 1.2);
+  if(L.atmo) L.atmo.gain.setTargetAtTime(FILE_VOL.atmo*VOL.sfx, now, 1.5);
   if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*VOL.sfx*r, now, 0.8);
   if(L.river){
     // Wasserfall im Bild? (Hintergrund-Ebene mit Wasserfall, gleiche Rechnung wie beim Zeichnen)

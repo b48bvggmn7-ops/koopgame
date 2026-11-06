@@ -291,6 +291,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Dateien = nahtlose Schleife (MP3-Stille abgeschnitten, letzte Sekunde in den Anfang geblendet). Lautstärken:
     FILE_VOL (Musik 0,38, Vögel 0,6, Regen 0,8, Fluss 2,0). Gesamtlautstärke aller Töne: MASTER_VOL 0,7 (07-…js). Blockiert der Browser das Abspielen, startet die Musik beim
     nächsten Tastendruck/Klick. Leistungsanzeige (F) zeigt den Musik-Zustand (spielt/lädt/blockiert/Datei lädt nicht).
+    **Seit 06.11. neuer Hintergrund-Ton** (Nutzerwunsch, Datei „outside_room“ -> assets/audio/draussen.mp3): läuft gleichmäßig
+    als Schleife (2,5 s weich überblendet, Lautstärke `FILE_VOL.atmo` 0,7) und ERSETZT den bisherigen Hintergrund – Vögel
+    (voegel.mp3) und Fluss (fluss.mp3) werden nicht mehr geladen (Dateien liegen noch da; zurück mit
+    `ATMO_STATT_VOEGEL_FLUSS = false` in js/23), der erzeugte Wind, Grillen und Bach (js/22) sind aus, solange draussen.mp3 läuft.
     Lädt eine Datei nicht, bleibt der erzeugte Klang (Klavier, Grillen, Bach, Regen) als Ersatz.
   - Hintergrundmusik + Sonnen-Ambiente (js/22-musik-ambiente.js, alles im Browser erzeugt, keine Aufnahmen):
     ruhiges, verträumtes Klavier (Nutzerwahl), live komponiert: warme Akkordfolgen in F-Dur (~64 Schläge/min), gebrochene
@@ -2465,26 +2469,21 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Aussehen: Hebel kippt bei jedem Stoß zur Seite der pumpenden Figur (abwechselnd = Wippe), zwei Lämpchen am Pfosten (gelb
   Affe, rosa Schweinchen) leuchten, solange die Figur pumpt; leises Holz-Knarzen je Stoß. Tasten-Blase über dem Hebel mit den
   Tasten jeder Figur in der Nähe („Affe: Q halten + Leertaste pumpen“, bei Controller L1 + ✕; allein: „nur zu zweit!“).
-  **Seit 06.11. Takt-Pumpen** (Nutzer: „der User muss immer im richtigen Moment eine Taste drücken“; „wo die beiden stehen
-  passt nicht und die Bewegung auch nicht“): Der Hebel ist eine Wippe – die beiden drücken **abwechselnd**. Nach einem Stoß
-  kippt der Hebel in 14 Schritten herüber, dann ist der Griff des Partners oben und **sein Moment kommt**. **Anzeige wie bei
-  Quick-Time-Events/Mario Party** (Nutzer: „ich checke nicht, wann ich drücken soll – schau, wie andere Spiele das machen“):
-  über dem Kopf dessen, der dran ist, steht groß SEINE Taste (Tastenkappe mit Tastenname bzw. Controller-Knopf); ein Ring
-  in seiner Farbe (Affe gelb, Schweinchen rosa) füllt sich darum wie eine Uhr; ist er voll, wird die Taste grün, pulsiert und
-  darüber steht **„JETZT!“** (= perfekt: Kraft 0,42, kleines helles Glöckchen); danach läuft der Ring orange rückwärts ab
-  (noch **gut**: 0,26). Der Partner sieht seine Taste klein und grau, vor dem Start stehen beide Tasten weiß mit „los!“. Nach
-  dem Druck springt „Perfekt!“ / „Gut“ / „Zu früh!“ aus der Taste. **Ton-Takt:** leises Holz-Tick, sobald man dran ist, heller
-  Klick bei „JETZT!“ (`SFX.draisineTakt`). Drücken, während der Hebel noch unterwegs ist oder obwohl man nicht dran ist =
-  **Klack** (Kraft −0,15, dumpfes Holz-Klack, „Zu früh!“); verpasst man das Fenster (28 Schritte nach dem Ankommen), kippt der
-  Hebel zurück in die Mitte und jeder darf neu anfangen. Die Erklär-Blase verschwindet, sobald beide den Griff halten. Kraft klingt je Schritt mit 0,99 ab (höchstens 1,3), Tempo = schwächere Kraft × 2,6
-  (perfekter Takt ≈ fast Höchsttempo). Werte `DRAISINE_TAKT_WEG/FENSTER_VOR/BEST/PERFEKT/FENSTER_NACH/STOSS/STOSS_PERFEKT/FEHL`.
+  **Takt-Pumpen wieder entfernt** (06.11. kurz eingebaut – abwechselnd im richtigen Moment drücken mit Tasten-Anzeige über
+  dem Kopf, „JETZT!“, Ton-Takt; Nutzer am selben Tag: „nimm das raus, dass man im richtigen Moment eine Taste drücken muss“):
+  wieder einfaches Pumpen wie oben, jeder Druck zählt. Geblieben sind: der Hebel kippt bei jedem Druck **weich** (12 Schritte,
+  `DRAISINE_HEBEL_WEG`) zur Seite des Drückers, und jeder Druck **quietscht** (siehe unten).
   **Figuren am Griff** (Nutzer: „die beiden stehen in dem Gerät und fassen in die Luft“): Plattform jetzt **5 Kästchen** breit
   (vorher 4), Hebel länger (Arm 44 px, Ausschlag ±0,28), Affe steht 69 px, Schweinchen 60 px neben der Mitte; die 3D-Arme
   folgen dem Griff mit GEMESSENEN Winkeln je Figur (`DRAISINE_ARM_POSE`, `draisineArmWinkel`, Arm-Länge 2,0) – die gezeichnete
   Hand liegt in jeder Hebelstellung höchstens ~9 px neben dem T-Griff (Test draisine_haende_am_griff). Beim Runterdrücken in
   die Knie (gestaucht) und Kopf gebeugt, oben aufgerichtet (Pose „pumpen“, js/33). Der Hebel kippt weich (statt zu springen).
   **Geräusch:** echtes Holz-Knarzen (Aufnahme des Nutzers, assets/audio/knarzen.wav): je Stoß ein Knarzer, die beiden
-  Hebel-Seiten mit kräftigen bzw. leiseren Knarzern (hin/her); ohne Datei das erzeugte Knarzen.
+  Hebel-Seiten mit kräftigen bzw. leiseren Knarzern (hin/her); ohne Datei das erzeugte Knarzen. **Seit 06.11. Quietschen statt
+  Knarzen** (Nutzer: „nicht das Knarzen lauter machen, sondern das Quietschen“): je Druck ein Quietscher aus
+  assets/audio/kurbel.wav (= Nutzer-Datei quietschen.wav, Schuhspanner Holz/Metall) – Hebel zur einen Seite das große
+  Quietschen („hin“), zur anderen die kleineren („her“, ×1,6–2); Quietschen insgesamt lauter (`GERAEUSCH_VOL.kurbel` 0,3 → 0,8,
+  gilt auch fürs Floß-Rad). Das Knarzen bleibt leise (0,34) und nur beim fahrenden Blatt-Floß.
 - **Seile geben nach** (Blatt-Floß und Pump-Draisine, Nutzer 06.11.: „das Seil muss ein bisschen nachgeben – realistischer“;
   nur Aussehen, elemente/blattfloss.js `seilNachgebenSchritt`, Werte `SEIL_NACHGEBEN`): beim Anfahren hängt die Plattform hinter
   ihren Rollenwagen her, beim Bremsen schwingt sie vor und pendelt aus (Seile schräg); jede Figur darauf drückt sie etwas

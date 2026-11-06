@@ -18,23 +18,14 @@ const DRAISINE_BREITE = 200, DRAISINE_DICKE = 14;
 const DRAISINE_SCHIENE_HOCH = 84;   // px: so hoch über der Stehfläche läuft die Tau-Schiene (über Köpfen und Hebel)
 const DRAISINE_SCHIENE_MAX = 40;    // Kästchen: so lang darf die Schiene im Editor gezogen werden
 const DRAISINE_MAX = 3;             // px/Schritt: höchstens so schnell (Blatt-Floß 3,2)
-// Takt-Pumpen (Nutzerwunsch 06.11.: „der User muss immer im richtigen Moment eine Taste drücken“): wie eine echte Hand-
-// Draisine ist der Hebel eine WIPPE – die beiden drücken ABWECHSELND ihre Seite herunter. Nach einem Stoß kippt der Hebel in
-// DRAISINE_TAKT_WEG Schritten herüber; dann ist der Griff des Partners oben und SEIN Moment kommt: ein Leuchtring zieht sich
-// um seinen Griff zusammen und trifft ihn DRAISINE_BEST Schritte nach dem Ankommen = perfekt (± DRAISINE_PERFEKT). Drücken
-// davor (Hebel noch unterwegs) oder obwohl man nicht dran ist = „Klack“, Schwung weg; verpasst er das Fenster
-// (DRAISINE_FENSTER_NACH), kippt der Hebel zurück in die Mitte und jeder darf wieder anfangen. Schritte = Physik-Schritte.
-const DRAISINE_TAKT_WEG = 14;        // Schritte: so lange kippt der Hebel nach einem Stoß herüber
-const DRAISINE_FENSTER_VOR = 3;      // Schritte vor dem Ankommen zählt ein Druck schon (Gnade)
-const DRAISINE_BEST = 6;             // Schritte nach dem Ankommen: Ring trifft den Griff = perfekter Moment
-const DRAISINE_PERFEKT = 4;          // ± Schritte um den besten Moment = perfekt
-const DRAISINE_FENSTER_NACH = 28;    // Schritte nach dem Ankommen: danach ist der Takt verpasst
-const DRAISINE_STOSS = 0.26;         // Pump-Kraft je gutem Stoß
-const DRAISINE_STOSS_PERFEKT = 0.42; // … je perfektem Stoß
-const DRAISINE_FEHL = 0.15;          // so viel Kraft kostet ein Druck im falschen Moment
-const DRAISINE_ABKLINGEN = 0.99;     // Pump-Kraft je Schritt mal diesem Wert (ohne Pumpen fällt sie ab)
-const DRAISINE_KRAFT_MAX = 1.3;      // höchstens so viel Pump-Kraft sammelt eine Figur (perfekter Takt ≈ 1,2 -> fast Höchsttempo)
-const DRAISINE_TEMPO_JE_KRAFT = 2.6; // Ziel-Tempo = kleinere Kraft der beiden × diesem Wert
+// Pumpen (Nutzer 06.11.: das Drücken im richtigen Moment wieder raus): jeder Druck auf die Sprung-Taste ist ein Pump-Stoß –
+// die Seite der Figur geht nach unten (der Hebel kippt in DRAISINE_HEBEL_WEG Schritten weich hinüber, Wippe), es knarzt.
+// Gefahren wird nur, wenn beide halten und beide pumpen; es zählt die langsamere Figur (wie vor dem Takt-Versuch).
+const DRAISINE_HEBEL_WEG = 12;       // Schritte: so lange kippt der Hebel nach einem Stoß herüber
+const DRAISINE_STOSS = 0.25;         // Pump-Kraft je Druck auf die Sprung-Taste
+const DRAISINE_ABKLINGEN = 0.97;     // Pump-Kraft je Schritt mal diesem Wert (ohne Pumpen fällt sie ab)
+const DRAISINE_KRAFT_MAX = 1.5;      // höchstens so viel Pump-Kraft sammelt eine Figur
+const DRAISINE_TEMPO_JE_KRAFT = 3;   // Ziel-Tempo = kleinere Kraft der beiden × diesem Wert (Kraft 1 ≈ 6–7 Drücke/s = Höchsttempo)
 const DRAISINE_ANFAHREN = 0.05;     // Anteil je Schritt, mit dem das Tempo zum Ziel-Tempo wächst (weich anfahren)
 const DRAISINE_BREMSEN = 0.035;     // … bzw. abnimmt (weich ausrollen)
 const DRAISINE_ENDE_PAUSE = 30;     // Schritte nach der Ankunft, in denen Pumpen nichts tut (sonst fährt sie gleich zurück)
@@ -75,28 +66,16 @@ function draisineVorher(P, jumpPressed){
   if(jumpPressed && s.pause <= 0) draisineDruck(s, P, i);
   return true;
 }
-// Ein Druck auf die Sprung-Taste (Takt-Pumpen, s. o.): im richtigen Moment = Stoß, sonst Klack
+// Ein Druck auf die Sprung-Taste = Pump-Stoß: diese Seite des Hebels geht nach unten, es knarzt (Aufnahme knarzen.wav)
 function draisineDruck(s, P, i){
-  const T = s.takt, seite = P._draisineSeite, rel = T.t - DRAISINE_TAKT_WEG;
-  let art;
-  if(!T.dran) art = 'gut';                                       // Takt beginnt: wer zuerst drückt, fängt an
-  else if(T.dran !== seite || rel < -DRAISINE_FENSTER_VOR) art = 'fehl';   // nicht dran oder Hebel noch unterwegs
-  else art = Math.abs(rel - DRAISINE_BEST) <= DRAISINE_PERFEKT ? 'perfekt' : 'gut';
-  s.fx = {art, seite, t: 0};
-  if(art === 'fehl'){
-    s.kraft[i] = Math.max(0, s.kraft[i] - DRAISINE_FEHL);
-    if(typeof SFX !== 'undefined' && SFX.draisineFehl) SFX.draisineFehl(s.x + s.w/2);
-    return;
-  }
-  // Stoß: diese Seite geht nach unten, der Griff des Partners kommt hoch – jetzt ist er dran
-  s.kraft[i] = Math.min(DRAISINE_KRAFT_MAX, s.kraft[i] + (art === 'perfekt' ? DRAISINE_STOSS_PERFEKT : DRAISINE_STOSS));
-  T.dran = -seite; T.t = 0; s.hebelVon = s.hebel; s.hebelZiel = seite*DRAISINE_HEBEL_WINKEL;
-  if(typeof seilStoss === 'function') seilStoss(s, art === 'perfekt' ? 1.1 : 0.8);   // Plattform federt im Seil
+  const seite = P._draisineSeite;
+  s.kraft[i] = Math.min(DRAISINE_KRAFT_MAX, s.kraft[i] + DRAISINE_STOSS);
+  if(s.hebelZiel !== seite*DRAISINE_HEBEL_WINKEL){ s.hebelVon = s.hebel; s.hebelZiel = seite*DRAISINE_HEBEL_WINKEL; s.hebelT = 0; }
+  if(typeof seilStoss === 'function') seilStoss(s, 0.8);   // Plattform federt im Seil
   s.pendV = (s.pendV || 0) + seite*0.15;
-  const knarz = typeof geraeuschSpielen === 'function' && geraeuschSpielen('knarzen', {x: s.x + s.w/2, stueck: seite > 0 ? 'hin' : 'her', vol: art === 'perfekt' ? 1 : 0.8});
+  const knarz = typeof geraeuschSpielen === 'function' && geraeuschSpielen('kurbel', {x: s.x + s.w/2, stueck: seite > 0 ? 'hin' : 'her'});   // Quietschen (Nutzer 06.11.)
   if(!knarz && typeof SFX !== 'undefined' && SFX.draisinePumpe) SFX.draisinePumpe(s.x + s.w/2, seite > 0);
   else if(typeof sfxLog === 'function') sfxLog('draisine');
-  if(art === 'perfekt' && typeof SFX !== 'undefined' && SFX.draisinePerfekt) SFX.draisinePerfekt(s.x + s.w/2);
 }
 // Armhaltung der 3D-Figur am Griff (js/33, Pose „pumpen“): Arm-Winkel nach vorn bei Griff unten bzw. oben – GEMESSEN, damit
 // die gezeichneten Hände auf den T-Griffen liegen (Test draisine_haende_am_griff)
@@ -187,104 +166,23 @@ function draisineBild(g, x, y, w, winkel, kraft, schwank){
   g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.arc(-0.8, -0.9, 1.1, 0, 7); g.fill();
   g.restore();
 }
-// Takt-Anzeige (Nutzer 06.11.: „ich checke nicht, wann ich drücken soll – schau, wie andere Spiele das machen“): wie bei
-// Quick-Time-Events/Mario Party steht ÜBER DEM KOPF dessen, der dran ist, groß SEINE TASTE (Tastenkappe mit Tastenname bzw.
-// Controller-Knopf). Ein Ring um die Taste füllt sich wie eine Uhr; ist er voll, wird die Taste grün, pulsiert und darüber
-// steht „JETZT!“ (= perfekter Moment); danach läuft der Ring orange rückwärts ab (noch drücken, aber schnell). Der Partner
-// sieht seine Taste klein und grau („warte“). Vor dem Start stehen beide Tasten weiß mit „los!“. Nach dem Druck springt kurz
-// „Perfekt!“ (grün), „Gut“ (weiß) oder „Zu früh!“ (rot) aus der Taste. Dazu am Griff ein Leuchten im perfekten Moment und ein
-// Ton-Takt (Tick, wenn man dran ist; heller Klick bei „JETZT“; js/18 draisineTakt). Nur Anzeige.
-const DRAISINE_TASTE = {ueberKopf: 62, gross: 1, klein: 0.62, fx: 40};
 function draisineGriffPunkt(s, seite, mitte, y, schwank){
   const a = s.hebel || 0, gx = seite*DRAISINE_ARM*Math.cos(a), gy = -DRAISINE_PFOSTEN + seite*DRAISINE_ARM*Math.sin(a);
   return [mitte + gx*Math.cos(schwank) - gy*Math.sin(schwank), y + gx*Math.sin(schwank) + gy*Math.cos(schwank)];
-}
-function draisineSeitenFarbe(seite){
-  for(const P of [p1, p2]) if(P && P._draisineSeite === seite) return P.male ? '255,205,90' : '255,150,200';
-  return '255,240,210';
-}
-// kurzer Name der Pump-Taste dieser Figur (Tastatur oder Controller)
-function draisineTasteName(P){
-  const n = P.male ? monkeyPlayer : 3 - monkeyPlayer, pad = typeof padConnected !== 'undefined' && padConnected[n - 1];
-  if(pad){ const typ = padTypAktuell[n - 1], S = PADSETS[n][typ] || {}; return padName(S.jump, typ); }
-  return tasteName(P.keys.jump);
-}
-// eine Tastenkappe bei (x, y) zeichnen: zustand 'warte' | 'bald' | 'jetzt' | 'spaet' | 'start'; k = Ring-Füllung 0…1
-function draisineTastenkappe(g, x, y, text, zustand, k, farbe, t){
-  const D = DRAISINE_TASTE, s = zustand === 'warte' ? D.klein : D.gross*(zustand === 'jetzt' ? 1.12 + 0.08*Math.sin(t*22) : 1);
-  g.save(); g.translate(x, y); g.scale(s, s);
-  g.font = 'bold 15px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  const w = Math.max(30, g.measureText(text).width + 16), h = 28, r = 7;
-  const grund = {warte: 'rgba(60,60,64,.75)', bald: 'rgba(250,250,245,.95)', jetzt: 'rgba(90,220,110,.98)', spaet: 'rgba(255,170,70,.95)', start: 'rgba(250,250,245,.95)'}[zustand];
-  const schrift = zustand === 'warte' ? 'rgba(230,230,230,.85)' : '#1d1d1d';
-  // Ring (Uhr) um die Kappe: füllt sich bis „JETZT“, läuft danach rückwärts ab
-  if(zustand !== 'warte' && zustand !== 'start'){
-    const R = Math.max(w, h)/2 + 9;
-    g.lineWidth = 5; g.strokeStyle = 'rgba(20,14,8,.55)'; g.beginPath(); g.arc(0, 0, R, 0, 7); g.stroke();
-    g.strokeStyle = zustand === 'jetzt' ? 'rgb(120,255,140)' : zustand === 'spaet' ? 'rgb(255,170,70)' : `rgb(${farbe})`;
-    g.lineWidth = 4; g.beginPath(); g.arc(0, 0, R, -Math.PI/2, -Math.PI/2 + Math.PI*2*Math.max(0.001, k)); g.stroke();
-  }
-  // Kappe mit „Tiefe“ (Unterkante dunkler) – wie eine echte Taste
-  g.fillStyle = 'rgba(0,0,0,.45)'; roundRect(-w/2, -h/2 + 3, w, h, r); g.fill();
-  g.fillStyle = grund; roundRect(-w/2, -h/2, w, h, r); g.fill();
-  g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1.2; roundRect(-w/2, -h/2, w, h, r); g.stroke();
-  g.fillStyle = schrift; g.fillText(text, 0, 0.5);
-  if(zustand === 'jetzt' || zustand === 'start'){   // Wort darüber
-    g.font = 'bold 16px sans-serif'; g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.65)';
-    const wort = zustand === 'jetzt' ? 'JETZT!' : 'los!';
-    g.strokeText(wort, 0, -h/2 - 16); g.fillStyle = zustand === 'jetzt' ? 'rgb(140,255,150)' : '#fff'; g.fillText(wort, 0, -h/2 - 16);
-  }
-  g.restore();
-}
-function draisineTaktZeichnen(s, mitte, y, schwank){
-  const T = s.takt, g = ctx, D = DRAISINE_TASTE, t = performance.now()*0.001;
-  if(!(s.hielt[0] && s.hielt[1])) return;   // erst wenn beide den Griff halten (vorher erklärt die Tasten-Blase)
-  g.save();
-  const rel = T.t - DRAISINE_TAKT_WEG, perfekt = T.dran && Math.abs(rel - DRAISINE_BEST) <= DRAISINE_PERFEKT;
-  for(const P of [p1, p2]){
-    if(!P || !P._draisineSeite || P._draisineS !== s) continue;
-    const x = P.x - camX, ky = P.y + (P._standDy || 0) - D.ueberKopf, farbe = P.male ? '255,205,90' : '255,150,200';
-    let zustand, k = 0;
-    if(!T.dran) zustand = 'start';
-    else if(T.dran !== P._draisineSeite) zustand = 'warte';
-    else if(perfekt) { zustand = 'jetzt'; k = 1; }
-    else if(rel < DRAISINE_BEST) { zustand = 'bald'; k = Math.max(0, Math.min(1, T.t/(DRAISINE_TAKT_WEG + DRAISINE_BEST - DRAISINE_PERFEKT))); }
-    else { zustand = 'spaet'; k = Math.max(0, 1 - (rel - DRAISINE_BEST - DRAISINE_PERFEKT)/(DRAISINE_FENSTER_NACH - DRAISINE_BEST - DRAISINE_PERFEKT)); }
-    draisineTastenkappe(g, x, ky, draisineTasteName(P), zustand, k, farbe, t);
-  }
-  if(perfekt){   // der Griff leuchtet im perfekten Moment
-    const [gx, gy] = draisineGriffPunkt(s, T.dran, mitte, y, schwank), farbe = draisineSeitenFarbe(T.dran);
-    const q = g.createRadialGradient(gx, gy, 0, gx, gy, 20); q.addColorStop(0, `rgba(${farbe},.9)`); q.addColorStop(1, `rgba(${farbe},0)`);
-    g.fillStyle = q; g.beginPath(); g.arc(gx, gy, 20, 0, 7); g.fill();
-  }
-  const F = s.fx;
-  if(F){   // Rückmeldung zum letzten Druck: Wort springt aus der Taste der drückenden Figur
-    const P = [p1, p2].find(q => q && q._draisineSeite === F.seite);
-    if(P){
-      const k = F.t/D.fx, x = P.x - camX, ky = P.y + (P._standDy || 0) - D.ueberKopf - 22 - 22*k;
-      const [wort, fb] = F.art === 'perfekt' ? ['Perfekt!', '140,255,150'] : F.art === 'gut' ? ['Gut', '255,255,255'] : ['Zu früh!', '255,110,90'];
-      g.globalAlpha = Math.max(0, 1 - k*k); g.font = `bold ${F.art === 'perfekt' ? 17 : 15}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.6)'; g.strokeText(wort, x, ky); g.fillStyle = `rgb(${fb})`; g.fillText(wort, x, ky);
-      g.globalAlpha = 1;
-    }
-  }
-  g.restore();
 }
 // Tasten-Blase über dem Hebel: welche Tasten jede Figur halten bzw. drücken muss (wie aktionsHinweis am Hebel). Nur Anzeige.
 function draisineTastenText(P){
   const n = P.male ? monkeyPlayer : 3 - monkeyPlayer, pad = typeof padConnected !== 'undefined' && padConnected[n - 1];
   const name = P.male ? 'Affe' : 'Schwein';
-  if(pad){ const typ = padTypAktuell[n - 1], S = PADSETS[n][typ] || {}; return `${name}: ${padName(S.griff, typ)} halten + ${padName(S.jump, typ)} im Takt`; }
-  return `${name}: ${tasteName(P.keys.griff)} halten + ${tasteName(P.keys.jump)} im Takt`;
+  if(pad){ const typ = padTypAktuell[n - 1], S = PADSETS[n][typ] || {}; return `${name}: ${padName(S.griff, typ)} halten + ${padName(S.jump, typ)} pumpen`; }
+  return `${name}: ${tasteName(P.keys.griff)} halten + ${tasteName(P.keys.jump)} pumpen`;
 }
 function draisineHinweis(xr, y, s){
   const nah = P => !!P && Math.abs(P.y - s.y) < 60 && P.x > s.x - 40 && P.x < s.x + s.w + 40;
-  if(s.hielt && s.hielt[0] && s.hielt[1]) return;   // beide am Griff: jetzt erklären die Tasten über den Köpfen (Takt-Anzeige)
   const zeilen = [];
   for(const [P, i] of [[p1, 0], [p2, 1]]) if(nah(P) && !(s.hielt && s.hielt[i] && s.kraft[i] > 0.3)) zeilen.push(draisineTastenText(P));
   if(!zeilen.length) return;
   if(zeilen.length === 1 && !(nah(p1) && nah(p2))) zeilen.push('nur zu zweit!');
-  else if(zeilen.length) zeilen.push('abwechselnd drücken – wenn über dir JETZT! steht');
   ctx.save(); ctx.font = 'bold 12px sans-serif';
   const tw = Math.max(...zeilen.map(z => ctx.measureText(z).width)) + 14, hh = zeilen.length*16 + 6;
   const hy = y - hh + Math.sin(performance.now()*0.006)*2;
@@ -325,13 +223,13 @@ elementRegistrieren({
         // Stehfläche = Boden des Kästchens (liegt IN seiner Reihe, wie das Blatt-Floß)
         const s = {x: d.x, y: d.y + 40, w: DRAISINE_BREITE, h: DRAISINE_DICKE, type: 'draisine', x0: d.x, x1: d.x + (Number(d.schiene) || 8)*40,
           v: 0, tempo: 0, richtung: 0, pause: 0, kraft: [0, 0], greift: [false, false], hielt: [false, false], hebel: 0, hebelZiel: 0,
-          hebelVon: 0, takt: {dran: 0, t: 99}, fx: null};
+          hebelVon: 0, hebelT: 99};
         solids.push(s); return s;
       });
     },
     zuruecksetzen(){
       for(const s of draisinen){ s.x = s.x0; s._px = s.x; s._py = s.y; s.v = s.tempo = 0; s.richtung = 0; s.pause = 0; s.kraft = [0, 0];
-        s.hebel = s.hebelZiel = s.hebelVon = 0; s.takt = {dran: 0, t: 99}; s.fx = null; if(typeof seilNachgebenZurueck === 'function') seilNachgebenZurueck(s); }
+        s.hebel = s.hebelZiel = s.hebelVon = 0; s.hebelT = 99; if(typeof seilNachgebenZurueck === 'function') seilNachgebenZurueck(s); }
       for(const P of [p1, p2]) if(P) P._draisineSeite = 0;
     },
     schritt(figuren){
@@ -342,18 +240,12 @@ elementRegistrieren({
         const beide = s.greift[0] && s.greift[1];
         s.hielt = s.greift; s.greift = [false, false];   // hielt: fürs Zeichnen (Tasten-Blase)
         if(s.pause > 0) s.pause--;
-        // Takt: Hebel kippt nach dem Stoß in DRAISINE_TAKT_WEG Schritten herüber (weich); Fenster verpasst -> zurück in die Mitte
-        const T = s.takt; T.t++;
-        if(T.dran && T.t > DRAISINE_TAKT_WEG + DRAISINE_FENSTER_NACH){ T.dran = 0; s.hebelVon = s.hebel; s.hebelZiel = 0; }
-        if(!(s.hielt[0] || s.hielt[1])){ T.dran = 0; s.hebelZiel = 0; }   // keiner hält: Takt vorbei
-        if(T.dran && T.t <= DRAISINE_TAKT_WEG){ const k = T.t/DRAISINE_TAKT_WEG, e = k*k*(3 - 2*k); s.hebel = s.hebelVon + (s.hebelZiel - s.hebelVon)*e; }
-        else s.hebel += (s.hebelZiel - s.hebel)*(T.dran ? 0.3 : 0.06);
-        if(s.fx && ++s.fx.t > 40) s.fx = null;
-        // Ton-Takt (Nutzer 06.11.: klarer, wann man drücken muss): leises Tick, sobald man dran ist, heller Klick bei „JETZT!“
-        if(T.dran && s.hielt[0] && s.hielt[1] && typeof SFX !== 'undefined' && SFX.draisineTakt){
-          if(T.t === DRAISINE_TAKT_WEG - DRAISINE_FENSTER_VOR) SFX.draisineTakt(s.x + s.w/2, false);
-          if(T.t === DRAISINE_TAKT_WEG + DRAISINE_BEST - DRAISINE_PERFEKT) SFX.draisineTakt(s.x + s.w/2, true);
-        }
+        // Hebel kippt nach einem Stoß in DRAISINE_HEBEL_WEG Schritten weich hinüber (nur Aussehen, im festen Takt);
+        // hält keiner mehr den Griff, kehrt er langsam in die Mitte zurück
+        if(!(s.hielt[0] || s.hielt[1]) && s.hebelZiel){ s.hebelVon = s.hebel; s.hebelZiel = 0; s.hebelT = 0; }
+        s.hebelT = (s.hebelT || 0) + 1;
+        if(s.hebelT <= DRAISINE_HEBEL_WEG){ const k = s.hebelT/DRAISINE_HEBEL_WEG, e = k*k*(3 - 2*k); s.hebel = s.hebelVon + (s.hebelZiel - s.hebelVon)*e; }
+        else s.hebel = s.hebelZiel;
         const ziel = beide && s.pause <= 0 ? Math.min(DRAISINE_MAX, Math.min(s.kraft[0], s.kraft[1])*DRAISINE_TEMPO_JE_KRAFT) : 0;
         if(ziel > 0.05 && !s.richtung) s.richtung = (s.x - s.x0) <= (s.x1 - s.x) ? 1 : -1;   // zum weiter entfernten Ende
         s.tempo += (ziel - s.tempo)*(ziel > s.tempo ? DRAISINE_ANFAHREN : DRAISINE_BREMSEN);
@@ -415,14 +307,6 @@ elementRegistrieren({
         }
         draisineBild(ctx, x, s.y + dy, s.w, s.hebel, s.kraft, schwank);   // kein Schatten (hängt in der Luft)
         draisineHinweis(mitte, E.y - 14, s);
-      }
-    },
-    zeichnenVorne(){   // Takt-Ring und Rückmeldung VOR den Figuren (sonst verdeckt die Figur ihren eigenen Griff)
-      const t = performance.now()*0.001;
-      for(const s of draisinen){
-        const x = Math.round(s.x - camX); if(x + s.w < -60 || x > VW + 60) continue;
-        const schwank = Math.sin(t*1.5 + s.x0*0.01)*0.006 - (s.pend || 0)*0.004 + (s.neig || 0) + (s.hebel || 0)*0.02;
-        draisineTaktZeichnen(s, x + s.w/2, s.y + (s.wipp || 0), schwank);
       }
     },
   },
