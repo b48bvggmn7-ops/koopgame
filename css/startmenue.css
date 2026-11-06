@@ -181,6 +181,8 @@
 #sm #sm-s-options input[type=range]{height:1.8cqw}
 #sm #sm-s-options .btn.unlock{padding-top:.8cqh;padding-bottom:.8cqh;font-size:1.35cqw}
 #sm #sm-s-options .back{bottom:3cqh}
+#sm #sm-ctrl-cards{cursor:pointer}
+#sm #sm-ctrl-cards:hover .key{border-color:var(--lime)}
 /* Blätter-Vorhang beim Levelstart (curtainIntoLevel in js/24-startmenue.js): einzelne Blätter fliegen zusammen */
 #leafCurtain{position:fixed;inset:0;z-index:80;pointer-events:none;overflow:hidden;display:none}
 #leafCurtain.on{display:block}
@@ -345,6 +347,14 @@
 #sm #sm-s-levels .lc.boss .st{white-space:normal}
 /* Tasten belegen (Nacht-Ausbau, S.tasten in js/24-startmenue.js) – gleicher Stil wie die Optionen */
 #sm .tb-pan{left:6cqw;right:6cqw;top:19cqh;height:auto;padding:1.6cqh 2cqw}
+/* Tasten belegen kompakter (06.11., wie Optionen): Kasten zwischen Titel und „← Fertig“ eingespannt, scrollt notfalls */
+#sm #sm-s-tasten .o-title{top:4cqh;font-size:5cqw}
+#sm #sm-s-tasten .tb-pan{top:15cqh;bottom:13cqh;overflow-y:auto;padding:1.2cqh 1.8cqw}
+#sm #sm-s-tasten .tb-grid{gap:.35cqh;margin-top:.8cqh}
+#sm #sm-s-tasten .tb-z{font-size:1.3cqw}
+#sm #sm-s-tasten .tb-k{font-size:1.3cqw;padding:.55cqh 1cqw}
+#sm #sm-s-tasten .tip{margin-top:.8cqh;font-size:1.15cqw}
+#sm #sm-s-tasten .back{bottom:3cqh}
 #sm #sm-tb-seg{display:flex;align-items:center;gap:1.4cqw}
 #sm .tb-typ{cursor:pointer;font-weight:800;font-size:1.6cqw;display:flex;align-items:center;gap:.6cqw}
 #sm .tb-grid{display:grid;gap:.5cqh;margin-top:1.2cqh}

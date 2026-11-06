@@ -799,6 +799,8 @@ VOL_REGLER.forEach((k, i) => {
   $('#sm-row-' + k).addEventListener('pointerdown', () => { S.options.idx = i + 1; S.options.paint(); });
 });
 $('#sm-opt-back').addEventListener('click', () => optionenZurueck());
+// Klick auf die Steuerungs-Übersicht öffnet „Tasten belegen“ (Nutzer 06.11.: „ich kann die Steuerung nicht verändern“)
+$('#sm-ctrl-cards').addEventListener('click', () => { Snd.play('ok'); go('tasten'); });
 // Optionen auch beim Spielen (Nutzerwunsch 06.11.): Pausenmenü (16-menue.js) -> „⚙ Optionen“ öffnet diesen Bildschirm;
 // „Zurück“ führt dann wieder ins Pausenmenü statt ins Hauptmenü (auch im Editor-Test).
 let optionenAusPause = false;
@@ -893,7 +895,7 @@ S.tasten = {
     $('#sm-tb-back').classList.toggle('sel', this.idx === TB_N + 2);
     const k = this.konflikte().filter(([x]) => x === artKey).length;
     $('#sm-tb-tip').innerHTML = k ? '<b class="tb-warn">Rot = doppelt belegt. Bitte eine der Tasten ändern, sonst lässt sich das Menü nicht verlassen.</b>'
-      : (this.art === 'tastatur' ? 'Gesperrt: Esc, Enter, R, F, M, C, X, H (Pause, Neustart, Anzeige, Ton, Test). '
+      : (this.art === 'tastatur' ? 'Klick auf eine Taste, dann die neue Taste drücken. Gesperrt: Esc, O, Enter, R, F, M, C, X (Pause, Optionen, Neustart, Anzeige, Ton, Test). '
         : 'Laufen und Zielen geht immer zusätzlich mit dem linken Stick. Gesperrt: Options, Share, PS-/Xbox-Taste. ') +
         (this.art === 'pad' ? `Die Belegung gilt nur für ${TB_TYPNAME[this.typ]}-Controller.` : 'Gespeichert wird beim Verlassen.');
   },

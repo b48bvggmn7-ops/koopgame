@@ -1136,6 +1136,13 @@ async def optionen_im_spiel(g):
     await p.keyboard.press('Escape'); await p.wait_for_timeout(400)
     assert await g.ev("menuScreen") == 'pause'
     assert await g.ev("TASTEN_GESCHUETZT.KeyO") == 'Optionen'
+    # Klick auf die Steuerungs-Übersicht öffnet „Tasten belegen“; der Bildschirm passt ins Bild, „Fertig“ liegt frei
+    await g.ev("GameMenu.optionenAusPause(); 0"); await p.wait_for_timeout(500)
+    await p.click('#sm-ctrl-cards'); await p.wait_for_timeout(600)
+    t = await g.ev("""(() => { const pan = document.querySelector('#sm-s-tasten .tb-pan'), b = document.querySelector('#sm-tb-back').getBoundingClientRect();
+      return {aktiv: document.querySelector('#sm-s-tasten').classList.contains('active'), frei: pan.getBoundingClientRect().bottom <= b.top + 1,
+              voll: pan.scrollHeight <= pan.clientHeight + 2, dash: document.querySelector('#sm-tb-grid').textContent.includes('Dash')}; })()""")
+    assert t['aktiv'] and t['frei'] and t['voll'] and not t['dash'], f'Tasten belegen: {t}'
 
 @test
 async def startmenue_lautstaerke(g):
