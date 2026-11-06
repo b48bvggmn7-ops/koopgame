@@ -66,6 +66,8 @@ function showPauseMenu(){
   menuAddItem('↺ Level neu starten', ()=>{ resetLevel(); if(typeof baumIntroStarten === 'function') baumIntroStarten(); closeMenu(); });   // Start-Ablauf am Baum (12a)
   menuAddItem('☰ Zurück zum Menü', showMainMenu);
   menuAddItem(soundMuted ? '🔇 Ton ist aus – einschalten (M)' : '🔊 Ton ist an – ausschalten (M)', ()=>{ setMuted(!soundMuted); showPauseMenu(); menuSelect(3); });
+  // Optionen (Lautstärke, Steuerung, Tasten) auch beim Spielen und im Editor-Test (Nutzerwunsch 06.11.; Bildschirm aus 24)
+  if(window.GameMenu && GameMenu.optionenAusPause) menuAddItem('⚙ Optionen', ()=> GameMenu.optionenAusPause());
   if(editorTestMode) menuAddItem('✏️ Zurück zum Editor (Esc)', backToEditor);
   menuSelect(0);
 }
@@ -194,6 +196,10 @@ function convertEditorSnapshot(d){
   };
 }
 
+const OPTIONEN_TASTE = 'KeyO';
+function optionenTasteBelegt(){
+  try{ return typeof KEYSETS !== 'undefined' && Object.values(KEYSETS).some(s => s && Object.values(s).includes(OPTIONEN_TASTE)); }catch(e){ return false; }
+}
 // ---------- Tastatur ----------
 // Läuft vor den Spiel-Tasten (capture auf document): solange ein Menü offen ist, sieht das Spiel
 // keine Tastendrücke. Losgelassene Tasten (keyup) kommen weiter an, damit nichts "hängen" bleibt.
@@ -205,6 +211,11 @@ document.addEventListener('keydown', e=>{
   if(!menuActive()){
     // Testmodus aus dem Editor: Esc beendet den Test sofort (auch auf dem Tod-Bildschirm) -> zurück zum Editor
     if(e.code === 'Escape' && editorTestMode){ e.preventDefault(); e.stopPropagation(); backToEditor(); return; }
+    // Taste O: Optionen direkt öffnen (beim Spielen und im Editor-Test; Nutzerwunsch 06.11.) – „Zurück“ führt ins Pausenmenü.
+    // Nicht, wenn jemand O unter „Tasten belegen“ für seine Figur gewählt hat.
+    if(e.code === OPTIONEN_TASTE && !e.repeat && !deathState && window.GameMenu && GameMenu.optionenAusPause && !optionenTasteBelegt()){
+      e.preventDefault(); e.stopPropagation(); GameMenu.optionenAusPause(); return;
+    }
     if(e.code === 'Escape' && !deathState){ e.preventDefault(); e.stopPropagation(); showPauseMenu(); }
     return;
   }

@@ -527,6 +527,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Num 1 = Haken, ↑/↓ = Seil, Num 2 = Hebel; Controller 1 steuert dann das Schweinchen. Anzeige oben passt sich an.
   - Pausenmenü: Esc bzw. Options im Spiel (nicht auf dem Tod-Bildschirm, dort macht jede Taste wie bisher weiter):
     „Weiterspielen“, „Level neu starten“, „Zurück zum Menü“; Esc/Options/○ schließt die Pause wieder
+    **Optionen beim Spielen** (Nutzerwunsch 06.11.): Pausenmenü-Eintrag „⚙ Optionen“ und **Taste O** (im Spiel und im
+    Editor-Test, wo Esc direkt zurück zum Editor führt; O ist unter „Tasten belegen“ gesperrt) öffnen den Optionen-Bildschirm
+    des Startmenüs; „← Zurück“/Esc führt dann ins Pausenmenü statt ins Hauptmenü (`optionenAusPause` in js/24).
+    Optionen aufgeräumt: Steuerung zeigt Pusten (Affe) / Schirm-Trampolin (Schweinchen) und Draisine-Griff, Dash nur, wenn
+    eine spielbare Welt ihn hat (`dashSpielbar`; auch in „Tasten belegen“); Kästen passen ins Bild (zwischen Titel und
+    Zurück-Knopf, scrollen notfalls), „Zurück“ liegt nicht mehr über dem Hinweis-Text. Test optionen_im_spiel.
     Knöpfe unten links („Level neu starten“, „☰ Menü“, „Level laden (JSON)“) sind auf Nutzerwunsch AUSGEBLENDET
     (R = Neustart, Esc / Options = Pause gehen weiter; Level aus Datei laden geht damit nicht mehr per Knopf).
   - Spielansicht aufgeräumt (Nutzerwunsch): Steuerungs-Erklärungen oben links/rechts ausgeblendet (stehen im

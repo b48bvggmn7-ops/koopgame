@@ -1109,6 +1109,35 @@ async def vollbild_esc_bleibt(g):
     assert await g.ev("window.__lock") == 'frei', 'Sperre wird nach dem Vollbild nicht gelöst'
 
 @test
+async def optionen_im_spiel(g):
+    """Nutzer 06.11.: Optionen auch beim Spielen und im Editor-Test – Pausenmenü „⚙ Optionen“ und Taste O öffnen sie,
+    „Zurück“/Esc führt wieder ins Pausenmenü. Steuerung ohne Dash (Dschungel), mit Pusten/Schirm-Trampolin und Draisine-Griff;
+    die Kästen ragen nicht aus dem Bild und „Zurück“ liegt nicht über dem Text."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 120, 'y': 680}))
+    p = g.p
+    await g.ev("showPauseMenu(); 0")
+    eintraege = await g.ev("menuList.map(m => m.el.textContent)")
+    assert any('Optionen' in t for t in eintraege), f'Pausenmenü ohne Optionen: {eintraege}'
+    await g.ev("menuList.find(m => m.el.textContent.includes('Optionen')).action(); 0"); await p.wait_for_timeout(500)
+    assert await g.ev("menuScreen === 'start' && document.querySelector('#sm-s-options').classList.contains('active')"), 'Optionen gehen nicht auf'
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(400)
+    assert await g.ev("menuScreen") == 'pause', 'Zurück aus den Optionen führt nicht ins Pausenmenü'
+    await g.ev("closeMenu(); 0"); await p.wait_for_timeout(100)
+    await p.keyboard.press('KeyO'); await p.wait_for_timeout(500)
+    assert await g.ev("menuScreen === 'start' && document.querySelector('#sm-s-options').classList.contains('active')"), 'Taste O öffnet die Optionen nicht'
+    r = await g.ev("""(() => { const t = document.querySelector('#sm-ctrl-cards').textContent;
+      const bild = document.querySelector('#sm').getBoundingClientRect(), zur = document.querySelector('#sm-opt-back').getBoundingClientRect();
+      const kaesten = [...document.querySelectorAll('#sm-s-options .pan')].map(p => p.getBoundingClientRect());
+      return {dash: t.includes('Dash'), pusten: t.includes('Pusten'), trampolin: t.includes('Schirm-Trampolin'), griff: t.includes('Draisine-Griff'),
+        drin: kaesten.every(k => k.bottom <= bild.bottom + 1), frei: kaesten.every(k => k.bottom <= zur.top + 1),
+        ueberlauf: [...document.querySelectorAll('#sm-s-options .pan')].some(p => p.scrollHeight > p.clientHeight + 2)}; })()""")
+    assert not r['dash'] and r['pusten'] and r['trampolin'] and r['griff'], f'Steuerungs-Liste veraltet: {r}'
+    assert r['drin'] and r['frei'], f'Optionen ragen heraus / Zurück liegt über dem Text: {r}'
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(400)
+    assert await g.ev("menuScreen") == 'pause'
+    assert await g.ev("TASTEN_GESCHUETZT.KeyO") == 'Optionen'
+
+@test
 async def startmenue_lautstaerke(g):
     """Optionen: Regler Gesamt/Musik/Effekte ändern die Lautstärke im Spiel und werden gemerkt."""
     p = g.p
@@ -8436,10 +8465,11 @@ async def tasten_controller_je_typ(g):
             await g2.ev(f"__pad.buttons[{knopf}] = {wert}")
             await p.wait_for_function(bis, timeout=8000)
             await g2.ev(f"__pad.buttons[{knopf}] = {{pressed: false, value: 0}}"); await p.wait_for_timeout(300)
-        await tb_knopf(g2, 1, 'dash')
-        await druck(6, "PADSETS[1].xbox.dash === 6")
-        assert await g2.ev("PADSETS[1].xbox.dash") == 6
-        assert await g2.ev("PADSETS[1].playstation.dash") == 3 and await g2.ev("PADSETS[2].xbox.dash") == 3
+        # (seit 06.11. Draisine-Griff statt Dash – Dash steht im Dschungel nicht mehr in der Liste)
+        await tb_knopf(g2, 1, 'griff')
+        await druck(6, "PADSETS[1].xbox.griff === 6")
+        assert await g2.ev("PADSETS[1].xbox.griff") == 6
+        assert await g2.ev("PADSETS[1].playstation.griff") == 4 and await g2.ev("PADSETS[2].xbox.griff") == 4
         # Trigger (analog, nur value) auf Fähigkeit
         await tb_knopf(g2, 1, 'ability')
         await druck(7, "PADSETS[1].xbox.ability === 7", "{pressed: false, value: 0.9}")
@@ -8452,21 +8482,18 @@ async def tasten_controller_je_typ(g):
         assert await g2.ev("!document.querySelector('.tb-k.fang')") and await g2.ev("PADSETS[1].xbox.use") == 1
         await p.click('#sm-tb-back'); await p.wait_for_timeout(500)
         gesp = await g2.ev("JSON.parse(localStorage.getItem('monchichi.tasten'))")
-        assert gesp['pad']['1']['xbox']['dash'] == 6 and gesp['pad']['1']['playstation']['dash'] == 3, gesp['pad']['1']
-        # im Spiel: LT dasht mit dem Xbox-Controller, Y (3) nicht mehr
+        assert gesp['pad']['1']['xbox']['griff'] == 6 and gesp['pad']['1']['playstation']['griff'] == 4, gesp['pad']['1']
+        # im Spiel: LT greift (Draisine) mit dem Xbox-Controller, LB (4) nicht mehr
         await p.goto(srv.url + 'index.html?testlevel=bahnen')
         await p.wait_for_function("typeof p1 !== 'undefined' && p1 && solids.length > 3 && menuScreen === null", timeout=15000)
-        await g2.ev("__pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
-        assert not await g2.ev("!!PAD[KEYSETS[1].dash]")
-        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; __pad.buttons[6] = {pressed: true, value: 1}; pollGamepads()")
-        assert await g2.ev("!!PAD[KEYSETS[1].dash]")
-        # Griff der Pump-Draisine: Standard LB (4)
-        await g2.ev("__pad.buttons[6] = {pressed: false, value: 0}; __pad.buttons[4] = {pressed: true, value: 1}; pollGamepads()")
-        assert await g2.ev("!!PAD[KEYSETS[1].griff] && !PAD[KEYSETS[1].dash]")
-        # derselbe Platz mit PlayStation-Controller: Standard (△ = 3) gilt
-        await g2.ev("__pad.buttons[4] = {pressed: false, value: 0}; __pad.id = 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)'; __pad.buttons[3] = {pressed: true, value: 1}; pollGamepads()")
-        assert await g2.ev("padTypAktuell[0]") == 'playstation' and await g2.ev("!!PAD[KEYSETS[1].dash]")
-        await g2.ev("__pad.buttons[3] = {pressed: false, value: 0}; pollGamepads()")
+        await g2.ev("__pad.buttons[4] = {pressed: true, value: 1}; pollGamepads()")
+        assert not await g2.ev("!!PAD[KEYSETS[1].griff]")
+        await g2.ev("__pad.buttons[4] = {pressed: false, value: 0}; __pad.buttons[6] = {pressed: true, value: 1}; pollGamepads()")
+        assert await g2.ev("!!PAD[KEYSETS[1].griff]")
+        # derselbe Platz mit PlayStation-Controller: Standard (L1 = 4) gilt
+        await g2.ev("__pad.buttons[6] = {pressed: false, value: 0}; __pad.id = 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)'; __pad.buttons[4] = {pressed: true, value: 1}; pollGamepads()")
+        assert await g2.ev("padTypAktuell[0]") == 'playstation' and await g2.ev("!!PAD[KEYSETS[1].griff]")
+        await g2.ev("__pad.buttons[4] = {pressed: false, value: 0}; pollGamepads()")
     finally:
         await kx.close(); srv.shutdown()
 

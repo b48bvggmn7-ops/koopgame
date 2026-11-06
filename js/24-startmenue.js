@@ -159,26 +159,35 @@ const CONFIG = {
   levels: [],                                // Reihenfolge aus levels/worlds.json, Namen aus levels/levels.json (+ „Coming soon“ bis Level SLOTS)
   worlds: [],                                // levels/worlds.json (Welten: id, name, titel, reihenfolge, level, boss)
   slots: 6,
-  tip: 'Wandsprung: an der Wand springen und dabei von der Wand weg steuern. Im Spiel: Esc / Options = Pause, M = Ton aus/an.'
+  tip: 'Wandsprung: an der Wand springen und dabei von der Wand weg steuern. Draisine: Griff halten und mit Springen pumpen. Im Spiel: Esc = Pause, O = Optionen, M = Ton aus/an.'
 };
-// Tasten je Figur – hängen davon ab, wer welche Figur spielt (Spielerwahl)
+// Tasten je Figur – hängen davon ab, wer welche Figur spielt (Spielerwahl). Stand Dschungel-Neu (Nutzerwunsch 06.11.
+// „Optionen updaten“): Dash nur, wenn eine spielbare Welt ihn hat (im Dschungel aus); neu Pusten / Schirm-Trampolin
+// (Spezial) und Draisine-Griff.
+function dashSpielbar() {
+  const aus = typeof DASH_AUS_WELTEN !== 'undefined' ? DASH_AUS_WELTEN : [];
+  return CONFIG.worlds.some(w => w && w.id && !aus.includes(w.id));
+}
 function controlsData(view) {
-  const mP = lastPlayers.monkey, fP = 3 - mP;
+  const mP = lastPlayers.monkey, fP = 3 - mP, dash = dashSpielbar();
+  const zeilen = (x, affe) => [
+    ['Bewegen', x.bewegen], ['Springen', [x('jump')]],
+    affe ? ['Haken', [x('ability')]] : ['Schirm (halten)', [x('ability')]],
+    ...(affe ? [['Seil ran / geben', [x('pull'), x('slack')]]] : []),
+    [affe ? 'Pusten' : 'Schirm-Trampolin', [x('spezial')]],
+    ['Hebel', [x('use')]], ['Draisine-Griff', [x('griff')]],
+    ...(dash ? [['Dash', [x('dash')]]] : []),
+  ];
   if (view === 'gamepad') {
-    const P = n => a => padName(PADSETS[n][padTypAktuell[n - 1]][a], padTypAktuell[n - 1]);
-    const m = P(mP), f = P(fP);
+    const P = n => { const f = a => padName(PADSETS[n][padTypAktuell[n - 1]][a], padTypAktuell[n - 1]); f.bewegen = ['Stick']; return f; };
     return {
-      monkey: [['Controller', ['Nr. ' + mP]], ['Bewegen', ['Stick']], ['Springen', [m('jump')]], ['Haken', [m('ability')]], ['Seil ran / geben', [m('pull'), m('slack')]], ['Hebel', [m('use')]], ['Dash', [m('dash')]]],
-      pig:    [['Controller', ['Nr. ' + fP]], ['Bewegen', ['Stick']], ['Springen', [f('jump')]], ['Schirm (halten)', [f('ability')]], ['Hebel', [f('use')]], ['Dash', [f('dash')]]]
+      monkey: [['Controller', ['Nr. ' + mP]], ...zeilen(P(mP), true)],
+      pig:    [['Controller', ['Nr. ' + fP]], ...zeilen(P(fP), false)]
     };
   }
-  // Tastatur: aktuelle Belegung (Optionen → Tasten belegen; Standard = wie früher, neu nur Dash)
-  const K = n => a => tasteName(KEYSETS[n][a]);
-  const m = K(mP), f = K(fP);
-  return {
-    monkey: [['Bewegen', [m('left'), m('right')]], ['Springen', [m('jump')]], ['Haken', [m('ability')]], ['Seil ran / geben', [m('pull'), m('slack')]], ['Hebel', [m('use')]], ['Dash', [m('dash')]]],
-    pig:    [['Bewegen', [f('left'), f('right')]], ['Springen', [f('jump')]], ['Schirm (halten)', [f('ability')]], ['Hebel', [f('use')]], ['Dash', [f('dash')]]]
-  };
+  // Tastatur: aktuelle Belegung (Optionen → Tasten belegen)
+  const K = n => { const f = a => tasteName(KEYSETS[n][a]); f.bewegen = [f('left'), f('right')]; return f; };
+  return { monkey: zeilen(K(mP), true), pig: zeilen(K(fP), false) };
 }
 const realCount = () => CONFIG.levels.filter(l => !l.soon).length || 1;
 let currentLevelNo = 0;
@@ -774,9 +783,9 @@ S.options = {
       else if (this.idx === 6) unlockAll();
       else if (this.idx === 7) { Snd.play('ok'); go('tasten'); }
       else if (this.idx === 8) fotoHgUmschalten();
-      else if (this.idx === 9) { Snd.play('back'); go('menu'); }
+      else if (this.idx === 9) optionenZurueck();
     }
-    else if (type === 'back') { Snd.play('back'); go('menu'); }
+    else if (type === 'back') optionenZurueck();
   }
 };
 $$('#sm-opt-seg button').forEach(b => b.addEventListener('click', () => { S.options.idx = 0; S.options.paint(); S.options.setView(b.dataset.view); Snd.play('swap'); }));
@@ -789,7 +798,16 @@ VOL_REGLER.forEach((k, i) => {
   });
   $('#sm-row-' + k).addEventListener('pointerdown', () => { S.options.idx = i + 1; S.options.paint(); });
 });
-$('#sm-opt-back').addEventListener('click', () => { Snd.play('back'); go('menu'); });
+$('#sm-opt-back').addEventListener('click', () => optionenZurueck());
+// Optionen auch beim Spielen (Nutzerwunsch 06.11.): Pausenmenü (16-menue.js) -> „⚙ Optionen“ öffnet diesen Bildschirm;
+// „Zurück“ führt dann wieder ins Pausenmenü statt ins Hauptmenü (auch im Editor-Test).
+let optionenAusPause = false;
+function optionenAusPauseOeffnen() { optionenAusPause = true; showMenuScreen('options'); }
+function optionenZurueck() {
+  Snd.play('back');
+  if (optionenAusPause) { optionenAusPause = false; hideMenu(); if (typeof showPauseMenu === 'function') showPauseMenu(); }
+  else go('menu');
+}
 // zum Testen: alle fertigen Level sofort spielbar
 function unlockAll() {
   for (let i = 0; i < realCount(); i++) if (fileOf(i) && !save.unlocked.includes(fileOf(i))) save.unlocked.push(fileOf(i));
@@ -817,13 +835,15 @@ const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wa
   pull: 'Hoch (Seil ran, Festhalten)', slack: 'Runter (Seil geben)', use: 'Hebel', dash: 'Dash',
   spezial: 'Spezial (Affe: pusten / Schwein: Schirm-Trampolin)', griff: 'Griff (Pump-Draisine halten)'};
 // Zeilen im Menü: 0 = Tastatur/Controller, 1 … TB_N = Aktionen, TB_N + 1 = Standard, TB_N + 2 = Zurück
-const TB_N = TASTEN_AKTIONEN.length;
+// Dash nur, wenn eine spielbare Welt ihn hat (im Dschungel aus) – Liste beim Öffnen neu (Nutzerwunsch 06.11.)
+let tbListe = TASTEN_AKTIONEN.slice(), TB_N = tbListe.length;
+function tbListeNeu() { tbListe = TASTEN_AKTIONEN.filter(a => a !== 'dash' || dashSpielbar()); TB_N = tbListe.length; }
 const TB_TYPNAME = {playstation: 'PlayStation', xbox: 'Xbox', andere: 'anderer Controller'};
 let tbFang = null;    // {n, a, art, typ, vorher: gedrückte Knöpfe beim Start} – wartet auf die neue Taste
 S.tasten = {
   el: $('#sm-s-tasten'), idx: 1, col: 0, art: 'tastatur', typ: 'playstation', sicherung: null,
   enter() {
-    this.sicherung = JSON.stringify({k: KEYSETS, p: PADSETS});
+    this.sicherung = JSON.stringify({k: KEYSETS, p: PADSETS}); tbListeNeu();
     this.idx = 1; this.col = 0; this.art = 'tastatur'; tbFang = null;
     this.typ = padTypAktuell[0] || 'playstation';
     this.draw();
@@ -833,11 +853,11 @@ S.tasten = {
   konflikte() {
     const aus = [];
     const kb = {};
-    for (const n of [1, 2]) for (const a of TASTEN_AKTIONEN) { const c = KEYSETS[n][a]; if (c) (kb[c] = kb[c] || []).push(['tastatur', n, a]); }
+    for (const n of [1, 2]) for (const a of tbListe) { const c = KEYSETS[n][a]; if (c) (kb[c] = kb[c] || []).push(['tastatur', n, a]); }
     for (const c in kb) if (kb[c].length > 1) aus.push(...kb[c]);
     for (const n of [1, 2]) for (const typ of PAD_TYPEN) {
       const pb = {};
-      for (const a of TASTEN_AKTIONEN) { const b = PADSETS[n][typ][a]; if (b !== undefined && b !== null) (pb[b] = pb[b] || []).push([typ, n, a]); }
+      for (const a of tbListe) { const b = PADSETS[n][typ][a]; if (b !== undefined && b !== null) (pb[b] = pb[b] || []).push([typ, n, a]); }
       for (const b in pb) if (pb[b].length > 1) aus.push(...pb[b]);
     }
     return aus;
@@ -851,7 +871,7 @@ S.tasten = {
     const figur = n => (n === lastPlayers.monkey ? 'Affe' : 'Schweinchen');
     g.appendChild(mk(`<div class="tb-z tb-kopf"><span></span><b class="pl1">Spieler 1 <small>${figur(1)}</small></b><b class="pl2">Spieler 2 <small>${figur(2)}</small></b></div>`));
     const artKey = this.art === 'tastatur' ? 'tastatur' : this.typ;
-    TASTEN_AKTIONEN.forEach((a, i) => {
+    tbListe.forEach((a, i) => {
       const z = mk(`<div class="tb-z opt-row"><span>${TB_NAMEN[a]}</span></div>`);
       for (const n of [1, 2]) {
         const fang = tbFang && tbFang.n === n && tbFang.a === a;
@@ -878,7 +898,7 @@ S.tasten = {
         (this.art === 'pad' ? `Die Belegung gilt nur für ${TB_TYPNAME[this.typ]}-Controller.` : 'Gespeichert wird beim Verlassen.');
   },
   fangen() {
-    const n = this.col + 1, a = TASTEN_AKTIONEN[this.idx - 1];
+    const n = this.col + 1, a = tbListe[this.idx - 1];
     if (!a) return;
     const vorher = {};
     (navigator.getGamepads ? Array.from(navigator.getGamepads()) : []).forEach((p, i) => { if (p) vorher[i] = p.buttons.map(b => !!(b && (b.pressed || b.value > 0.4))); });
@@ -1697,7 +1717,7 @@ document.getElementById('loadLevelInput').addEventListener('change', () => { cur
 window.GameMenu = { config: CONFIG, snd: Snd, completeLevel, completeBoss, playBoss, resetSave, unlockAll, getSave: () => JSON.parse(JSON.stringify(save)),
                     migrateSave, buildLevelOrder, mapWorlds, worldUnlocked: id => worldUnlocked(worldById(id)),
                     levelUnlocked: i => isUnlocked(i), levelDone: i => isDone(i), lastFreshWorld: () => lastFreshWorld,
-                    show: showMenuScreen, hide: hideMenu, levelsReady: () => CONFIG.levels.length > 0,
+                    show: showMenuScreen, hide: hideMenu, levelsReady: () => CONFIG.levels.length > 0, optionenAusPause: optionenAusPauseOeffnen,
                     // für weitere Menü-Bildschirme (28-packages.js)
                     ui: { S, go, toast, mk, $, $$, Snd, charSVG, ICON, giftSVG, config: CONFIG,
                           whoOf: src => { const p = srcPlayer(src); return !p ? null : p === lastPlayers.monkey ? 'm' : 'f'; },

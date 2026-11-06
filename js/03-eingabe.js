@@ -19,7 +19,7 @@ const PAD_STANDARD = {jump:0, ability:2, use:1, dash:3, pull:12, slack:13, left:
 const TASTEN_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'dash', 'spezial', 'griff'];
 const TASTEN_SPEICHER = 'monchichi.tasten';
 // Diese Tasten gehören dem Spiel selbst und sind nicht belegbar (Menü/Pause, Neustart, Leistungsanzeige, Ton, Test-Sprung)
-const TASTEN_GESCHUETZT = {Escape: 'Pause/Menü', Enter: 'Menü bestätigen', Tab: 'System', KeyR: 'Neustart', KeyF: 'Leistungsanzeige',
+const TASTEN_GESCHUETZT = {Escape: 'Pause/Menü', KeyO: 'Optionen',Enter: 'Menü bestätigen', Tab: 'System', KeyR: 'Neustart', KeyF: 'Leistungsanzeige',
   KeyM: 'Ton aus/an', KeyC: 'Test-Sprung', KeyX: 'Test-Sprung', KeyP: 'Partner', KeyE: 'Partner', KeyV: 'Partner',
   KeyT: 'Tageszeit (Test)', KeyZ: 'Wetter (Test)', Backspace: 'System', MetaLeft: 'System', MetaRight: 'System', ContextMenu: 'System'};
 const PAD_GESCHUETZT = {8: 'Share/Ansicht', 9: 'Options/Menü (Pause)', 16: 'PS/Xbox-Taste'};
