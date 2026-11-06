@@ -1158,6 +1158,25 @@ async def optionen_im_spiel(g):
     assert t['aktiv'] and t['frei'] and t['voll'] and not t['dash'], f'Tasten belegen: {t}'
 
 @test
+async def haft_eigene_taste(g):
+    """Nutzer 06.11.: „in der Tastenbelegung fehlt Halten für Haftfläche“ – eigene Aktion „haft“ (Standard = Fähigkeits-Taste,
+    alte gespeicherte Belegungen übernehmen ihre Fähigkeits-Taste); umbelegt hält nur noch die neue Taste fest. Gleiche Taste
+    wie die Fähigkeit derselben Figur ist kein Konflikt."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}))
+    r = await g.ev("""(() => { const e = {}, alt = JSON.stringify({k: KEYSETS, p: PADSETS});
+      e.standard = [KEYSETS[1].haft, KEYSETS[2].haft, PADSETS[1].playstation.haft];
+      const P = p1.male ? p1 : p2;
+      KEYS[P.keys.hook] = true; e.mitG = haftHalten(P); KEYS[P.keys.hook] = false;
+      const n = P === p1 ? 1 : 2; KEYSETS[n].haft = 'KeyU'; tastenAnwenden(); const Q = p1.male ? p1 : p2;
+      KEYS.KeyU = true; e.mitU = haftHalten(Q); KEYS.KeyU = false; KEYS[Q.keys.hook] = true; e.gNichtMehr = !haftHalten(Q); KEYS[Q.keys.hook] = false;
+      const o = JSON.parse(alt); for(const m of [1, 2]){ Object.assign(KEYSETS[m], o.k[m]); } tastenAnwenden();
+      e.konflikt = GameMenu.ui.S.tasten.konflikte().length;
+      return e; })()""")
+    assert r['standard'] == ['KeyG', 'Numpad1', 2], f'Standard-Belegung „Haftfläche halten“ falsch: {r}'
+    assert r['mitG'] and r['mitU'] and r['gNichtMehr'], f'eigene Haftflächen-Taste wirkt nicht: {r}'
+    assert r['konflikt'] == 0, f'Fähigkeit + Haftfläche auf derselben Taste gilt fälschlich als doppelt: {r}'
+
+@test
 async def startmenue_lautstaerke(g):
     """Optionen: Regler Gesamt/Musik/Effekte ändern die Lautstärke im Spiel und werden gemerkt."""
     p = g.p
@@ -8331,12 +8350,12 @@ async def draisine_pumpen_zu_zweit(g):
             e.keinSprung = minY >= y0 - 0.5 && p1.grounded; e.amHebel = Math.round(p1.x - (D.x + D.w/2)); e.schweinAmHebel = Math.round(p2.x - (D.x + D.w/2));
             e.blickZumHebel = [p1.facing, p2.facing];
             // beide pumpen: fährt nach rechts, beide fahren mit
-            const xa = D.x, pa = p1.x; pumpen(120, 7, [0, 1]); e.fahrt = D.x - xa; e.mit = Math.round((p1.x - pa) - (D.x - xa)); e.richtung = D.richtung;
+            const xa = D.x, pa = p1.x; pumpen(40, 7, [0, 1]); e.fahrt = D.x - xa; e.mit = Math.round((p1.x - pa) - (D.x - xa)); e.richtung = D.richtung;
             let maxT = 0; for(let i = 0; i < 600 && D.x < D.x1; i++){ for(const P of [p1, p2]) if((i + (P === p2 ? 3 : 0)) % 7 === 0) KEYS[P.keys.jump + '_pressed'] = true; st(); maxT = Math.max(maxT, D.tempo); }
             e.maxTempo = maxT; e.ende = D.x; e.x1 = D.x1;
             e.drauf = draisineDrauf(p1, D) && draisineDrauf(p2, D) && !deathState;
             pumpen(10, 7, [0, 1]); e.stehtAmEnde = D.x === D.x1 && D.tempo === 0;   // Pause nach der Ankunft
-            pumpen(160, 7, [0, 1]); e.zurueck = D.x < D.x1 && D.richtung === -1;
+            pumpen(70, 7, [0, 1]); e.zurueck = D.x < D.x1 && D.richtung === -1;   // (seit 06.11. schneller: nicht zu lange, sonst ist sie schon wieder drüben)
             // Griff los: sofort normal springen
             KEYS[p1.keys.griff] = false; KEYS[p2.keys.griff] = false; for(let i = 0; i < 150; i++) st();
             e.rolltAus = D.tempo === 0;
@@ -8371,14 +8390,16 @@ async def draisine_tempo_und_ausrollen(g):
             const lauf = (alle1, alle2) => { resetLevel(); for(let i = 0; i < 3; i++) st(); drauf(); KEYS[p1.keys.griff] = true; KEYS[p2.keys.griff] = true;
               for(let i = 0; i < 70; i++){ if(i % alle1 === 0) KEYS[p1.keys.jump + '_pressed'] = true; if(i % alle2 === 2) KEYS[p2.keys.jump + '_pressed'] = true; st(); }
               return D.tempo; };
-            e.schnell = lauf(5, 5); e.langsam = lauf(14, 14); e.gemischt = lauf(5, 14);
+            // (seit 06.11. reichen gut 2–3 Drücke/s für volle Fahrt: „langsam“ = alle 35 Schritte ≈ 1,5/s)
+            e.schnell = lauf(18, 18); e.langsam = lauf(35, 35); e.gemischt = lauf(18, 35); e.flott = lauf(5, 5);
             // einer hört auf: weich ausrollen
             lauf(6, 6); const t0 = D.tempo; for(let i = 0; i < 40; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.nach40 = [t0, D.tempo];
             for(let i = 0; i < 300; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.steht = D.tempo;
             resetLevel(); for(let i = 0; i < 3; i++) st(); e.neu = D.x;
           } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
           return e; })()""")
-        assert r['schnell'] > r['langsam'] + 0.5 and r['schnell'] <= 3.0001, f'schneller pumpen ist nicht schneller: {r}'
+        assert r['schnell'] > r['langsam'] + 0.5 and r['flott'] <= 3.0001, f'schneller pumpen ist nicht schneller: {r}'
+        assert r['schnell'] > 2.0, f'mit 3 Drücken/s soll sie fast volle Fahrt machen (Nutzer: „zu oft pumpen“): {r}'
         assert abs(r['gemischt'] - r['langsam']) < 0.5, f'die langsamere Figur soll das Tempo bestimmen: {r}'
         assert 0.3 < r['nach40'][1] < r['nach40'][0], f'rollt nicht weich aus: {r}'
         assert r['steht'] == 0 and r['neu'] == 800, f'kommt nicht zum Stehen / Neustart falsch: {r}'

@@ -350,9 +350,9 @@
 /* Tasten belegen kompakter (06.11., wie Optionen): Kasten zwischen Titel und „← Fertig“ eingespannt, scrollt notfalls */
 #sm #sm-s-tasten .o-title{top:4cqh;font-size:5cqw}
 #sm #sm-s-tasten .tb-pan{top:15cqh;bottom:13cqh;overflow-y:auto;padding:1.2cqh 1.8cqw}
-#sm #sm-s-tasten .tb-grid{gap:.35cqh;margin-top:.8cqh}
-#sm #sm-s-tasten .tb-z{font-size:1.3cqw}
-#sm #sm-s-tasten .tb-k{font-size:1.3cqw;padding:.55cqh 1cqw}
+#sm #sm-s-tasten .tb-grid{gap:.2cqh;margin-top:.6cqh}
+#sm #sm-s-tasten .tb-z{font-size:1.25cqw}
+#sm #sm-s-tasten .tb-k{font-size:1.25cqw;padding:.4cqh 1cqw}
 #sm #sm-s-tasten .tip{margin-top:.8cqh;font-size:1.15cqw}
 #sm #sm-s-tasten .back{bottom:3cqh}
 #sm #sm-tb-seg{display:flex;align-items:center;gap:1.4cqw}

@@ -173,7 +173,7 @@ function controlsData(view) {
   const zeilen = (x, affe) => [
     ['Bewegen', x.bewegen], ['Springen', [x('jump')]],
     affe ? ['Haken', [x('ability')]] : ['Schirm (halten)', [x('ability')]],
-    ['Haftfläche (halten)', [x('ability')]],   // Nutzer 06.11.: „in der Tastenbelegung fehlt Halten für Haftfläche“ (gleiche Taste)
+    ['Haftfläche (halten)', [x('haft')]],   // Nutzer 06.11.: „in der Tastenbelegung fehlt Halten für Haftfläche“ (eigene Taste)
     ...(affe ? [['Seil ran / geben', [x('pull'), x('slack')]]] : []),
     [affe ? 'Pusten' : 'Schirm-Trampolin', [x('spezial')]],
     ['Hebel', [x('use')]], ['Draisine-Griff', [x('griff')]],
@@ -834,7 +834,8 @@ $('#sm-foto').addEventListener('click', () => { S.options.idx = 7; S.options.pai
    Doppelt belegte Tasten werden sofort rot markiert; verlassen geht erst, wenn alle Konflikte aufgelöst sind
    (oder man verwirft die Änderungen). Gespeichert wird beim Verlassen (tastenSpeichern, js/03-eingabe.js).
    ===================================================================== */
-const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wandsprung', ability: 'Fähigkeit (Haken / Schirm / Haftfläche halten)',
+const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wandsprung', ability: 'Fähigkeit (Haken / Schirm)',
+  haft: 'Haftfläche halten',   // eigene Taste (Nutzer 06.11.), darf dieselbe wie die Fähigkeit sein
   pull: 'Hoch (Seil ran, Festhalten)', slack: 'Runter (Seil geben)', use: 'Hebel', dash: 'Dash',
   spezial: 'Spezial (Affe: pusten / Schwein: Schirm-Trampolin)', griff: 'Griff (Pump-Draisine halten)'};
 // Zeilen im Menü: 0 = Tastatur/Controller, 1 … TB_N = Aktionen, TB_N + 1 = Standard, TB_N + 2 = Zurück
@@ -857,11 +858,14 @@ S.tasten = {
     const aus = [];
     const kb = {};
     for (const n of [1, 2]) for (const a of tbListe) { const c = KEYSETS[n][a]; if (c) (kb[c] = kb[c] || []).push(['tastatur', n, a]); }
-    for (const c in kb) if (kb[c].length > 1) aus.push(...kb[c]);
+    // Fähigkeit + Haftfläche halten derselben Figur auf einer Taste ist gewollt (Standard) – kein Konflikt
+    const echt = L => L.length > 1 && !(L.length === 2 && L[0][1] === L[1][1] && new Set([L[0][2], L[1][2]]).size === 2 &&
+                                       [L[0][2], L[1][2]].every(a => a === 'ability' || a === 'haft'));
+    for (const c in kb) if (echt(kb[c])) aus.push(...kb[c]);
     for (const n of [1, 2]) for (const typ of PAD_TYPEN) {
       const pb = {};
       for (const a of tbListe) { const b = PADSETS[n][typ][a]; if (b !== undefined && b !== null) (pb[b] = pb[b] || []).push([typ, n, a]); }
-      for (const b in pb) if (pb[b].length > 1) aus.push(...pb[b]);
+      for (const b in pb) if (echt(pb[b])) aus.push(...pb[b]);
     }
     return aus;
   },

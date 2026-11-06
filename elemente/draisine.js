@@ -23,10 +23,12 @@ const DRAISINE_MAX = 3;             // px/Schritt: höchstens so schnell (Blatt-
 // Gefahren wird nur, wenn beide halten und beide pumpen; es zählt die langsamere Figur (wie vor dem Takt-Versuch).
 const DRAISINE_KNARZ_VOL = 1.3;       // Knarzen je Druck: × GERAEUSCH_VOL.knarzen (Quietschen kommt dazu)
 const DRAISINE_HEBEL_WEG = 12;      // Schritte: so lange kippt der Hebel nach einem Stoß herüber
-const DRAISINE_STOSS = 0.25;         // Pump-Kraft je Druck auf die Sprung-Taste
-const DRAISINE_ABKLINGEN = 0.97;     // Pump-Kraft je Schritt mal diesem Wert (ohne Pumpen fällt sie ab)
+// Nutzer 06.11.: „man muss zu oft pumpen, um nach vorne zu kommen“ -> Stoß 0,25 -> 0,45, Abklingen 0,97 -> 0,98:
+// volle Fahrt jetzt mit gut 2–3 Drücken/s je Figur (vorher 6–7)
+const DRAISINE_STOSS = 0.45;         // Pump-Kraft je Druck auf die Sprung-Taste
+const DRAISINE_ABKLINGEN = 0.98;     // Pump-Kraft je Schritt mal diesem Wert (ohne Pumpen fällt sie ab)
 const DRAISINE_KRAFT_MAX = 1.5;      // höchstens so viel Pump-Kraft sammelt eine Figur
-const DRAISINE_TEMPO_JE_KRAFT = 3;   // Ziel-Tempo = kleinere Kraft der beiden × diesem Wert (Kraft 1 ≈ 6–7 Drücke/s = Höchsttempo)
+const DRAISINE_TEMPO_JE_KRAFT = 3;   // Ziel-Tempo = kleinere Kraft der beiden × diesem Wert (Kraft 1 ≈ 2–3 Drücke/s = Höchsttempo)
 const DRAISINE_ANFAHREN = 0.05;     // Anteil je Schritt, mit dem das Tempo zum Ziel-Tempo wächst (weich anfahren)
 const DRAISINE_BREMSEN = 0.035;     // … bzw. abnimmt (weich ausrollen)
 const DRAISINE_ENDE_PAUSE = 30;     // Schritte nach der Ankunft, in denen Pumpen nichts tut (sonst fährt sie gleich zurück)

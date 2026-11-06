@@ -541,8 +541,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Zurück-Knopf, scrollen notfalls), „Zurück“ liegt nicht mehr über dem Hinweis-Text. Test optionen_im_spiel.
     „Tasten belegen“ ebenso kompakt (Liste lief unten aus dem Bild, „← Fertig“ lag über einer Zeile); ein Klick auf die
     Steuerungs-Übersicht in den Optionen öffnet „Tasten belegen“ direkt; Hinweis nennt die gesperrten Tasten richtig (mit O).
-    „Haftfläche (halten)“ steht in der Übersicht bei beiden Figuren (gleiche Taste wie Haken/Schirm), in „Tasten belegen“
-    heißt die Zeile „Fähigkeit (Haken / Schirm / Haftfläche halten)“ (Nutzer 06.11.).
+    **Eigene Taste „Haftfläche halten“** (Nutzer 06.11.: „in der Tastenbelegung fehlt Halten für Haftfläche“): neue Aktion
+    `haft` (Tastatur und Controller, eigene Zeile in „Tasten belegen“ und „Haftfläche (halten)“ in der Übersicht). Standard =
+    dieselbe Taste wie die Fähigkeit (G / Num 1 / □) – das gilt nicht als doppelt belegt; alte gespeicherte Belegungen nehmen
+    ihre Fähigkeits-Taste. Umbelegt hält nur noch die neue Taste fest (`haftHalten` in js/32; Controller über einen eigenen
+    virtuellen Knopf `padHaft`). Test haft_eigene_taste.
   - Grafik-Korrekturen (Nutzer 06.11.): Nebelfelder (Foto-Look, 11c) sparen auch Scheinwände aus – der graue Schleier
     verriet sie (Test scheinwand_kein_nebel). Mitfahrende Stacheln flackern nicht mehr: ihr „zufälliges“ Aussehen (Pflock-
     Länge, Schräge, Maserung, Funkeln) hängt an der festen Startstelle (`stachelSamen`), nicht an der jetzigen Position;
@@ -2526,6 +2529,8 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Pause (`DRAISINE_ENDE_PAUSE` = 30 Schritte) schickt neues Pumpen sie zurück. Tempo: jeder Druck gibt Pump-Kraft
   (`DRAISINE_STOSS` 0,25, klingt je Schritt mit 0,97 ab, höchstens 1,5); es zählt die **langsamere** Figur (Kraft × 3, höchstens
   `DRAISINE_MAX` = 3 px/Schritt ≈ 6–7 Drücke pro Sekunde), weich anfahren und ausrollen. Wer darauf steht, fährt mit.
+  **Weniger pumpen** (Nutzer 06.11.: „man muss zu oft pumpen, um nach vorne zu kommen“): Stoß 0,25 -> 0,45, Abklingen
+  0,97 -> 0,98 – volle Fahrt jetzt mit gut 2–3 Drücken pro Sekunde je Figur.
   Aussehen: Hebel kippt bei jedem Stoß zur Seite der pumpenden Figur (abwechselnd = Wippe), zwei Lämpchen am Pfosten (gelb
   Affe, rosa Schweinchen) leuchten, solange die Figur pumpt; leises Holz-Knarzen je Stoß. Tasten-Blase über dem Hebel mit den
   Tasten jeder Figur in der Nähe („Affe: Q halten + Leertaste pumpen“, bei Controller L1 + ✕; allein: „nur zu zweit!“).

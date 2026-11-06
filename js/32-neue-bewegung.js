@@ -19,7 +19,13 @@ const neuFx = [];          // kurze Effekte (Nachbilder, Bruchstücke, Kratzspur
 // ---------- Hilfen ----------
 function neuOben(P){ return P.keys && P.keys.swimUp && isDown(P.keys.swimUp); }
 // Festhalten an der Haftfläche (Nutzerwunsch: nicht mehr „hoch“, sondern die Fähigkeits-Taste – Affe G, Schweinchen Num 1, □)
-function haftHalten(P){ const k = P.keys && (P.male ? P.keys.hook : P.keys.glide); return !!(k && isDown(k)); }
+// seit 06.11. eigene Taste „Haftfläche halten“ (keys.haft / keys.padHaft, Standard = Fähigkeits-Taste); ohne sie (z. B.
+// Computer-Partner) wie bisher die Fähigkeits-Taste
+function haftHalten(P){
+  const K = P.keys; if(!K) return false;
+  if(K.haft || K.padHaft) return !!((K.haft && isDown(K.haft)) || (K.padHaft && isDown(K.padHaft)));
+  const k = P.male ? K.hook : K.glide; return !!(k && isDown(k));
+}
 function neuUnten(P){ return P.keys && P.keys.swimDown && isDown(P.keys.swimDown); }
 function neuFxDazu(o){ neuFx.push(o); if(neuFx.length > 260) neuFx.splice(0, neuFx.length - 260); }
 function neuFigurBox(P, x, y){ return {x: (x === undefined ? P.x : x) - P.w/2, y: (y === undefined ? P.y : y) - P.h, w: P.w, h: P.h}; }

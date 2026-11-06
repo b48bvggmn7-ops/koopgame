@@ -9,14 +9,16 @@ const KEYS = {};
 // Nacht-Ausbau: frei belegbar im Optionen-Menü „Tasten“ (gespeichert unter TASTEN_SPEICHER). Die STANDARD-Belegung der
 // alten Aktionen ist genau die bisherige; neu ist nur „dash“ (Affe/Spieler 1: K, Spieler 2: Num 3, Controller: △).
 const TASTEN_STANDARD = {
-  1: {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', pull:'KeyW', slack:'KeyS', use:'KeyJ', dash:'KeyK', spezial:'KeyH', griff:'KeyQ'},
-  2: {left:'ArrowLeft', right:'ArrowRight', jump:'Numpad0', ability:'Numpad1', pull:'ArrowUp', slack:'ArrowDown', use:'Numpad2', dash:'Numpad3', spezial:'Numpad4', griff:'Numpad7'},
+  1: {left:'KeyA', right:'KeyD', jump:'Space', ability:'KeyG', haft:'KeyG', pull:'KeyW', slack:'KeyS', use:'KeyJ', dash:'KeyK', spezial:'KeyH', griff:'KeyQ'},
+  2: {left:'ArrowLeft', right:'ArrowRight', jump:'Numpad0', ability:'Numpad1', haft:'Numpad1', pull:'ArrowUp', slack:'ArrowDown', use:'Numpad2', dash:'Numpad3', spezial:'Numpad4', griff:'Numpad7'},
+  // haft (Nutzer 06.11.: eigene Taste „Haftfläche halten“): Standard = dieselbe Taste wie die Fähigkeit (wie bisher);
+  // fehlt sie in einer gespeicherten Belegung, gilt die dort gespeicherte Fähigkeits-Taste
   // spezial (Dschungel-Neu): Affe = pusten (Wind), Schweinchen = Schirm-Trampolin – js/34-koop-aktionen.js
   // griff: Hebel der Pump-Draisine festhalten (elemente/draisine.js; gepumpt wird dann mit der Sprung-Taste)
 };
 // Controller-Knöpfe (Standard-Belegung): ✕ 0, ○ 1, □ 2, △ 3, Steuerkreuz 12–15. Laufen geht immer auch mit dem Stick.
-const PAD_STANDARD = {jump:0, ability:2, use:1, dash:3, pull:12, slack:13, left:14, right:15, spezial:5, griff:4};   // 5 = R1 / RB, 4 = L1 / LB
-const TASTEN_AKTIONEN = ['left', 'right', 'jump', 'ability', 'pull', 'slack', 'use', 'dash', 'spezial', 'griff'];
+const PAD_STANDARD = {jump:0, ability:2, haft:2, use:1, dash:3, pull:12, slack:13, left:14, right:15, spezial:5, griff:4};   // 5 = R1 / RB, 4 = L1 / LB
+const TASTEN_AKTIONEN = ['left', 'right', 'jump', 'ability', 'haft', 'pull', 'slack', 'use', 'dash', 'spezial', 'griff'];
 const TASTEN_SPEICHER = 'monchichi.tasten';
 // Diese Tasten gehören dem Spiel selbst und sind nicht belegbar (Menü/Pause, Neustart, Leistungsanzeige, Ton, Test-Sprung)
 const TASTEN_GESCHUETZT = {Escape: 'Pause/Menü', KeyO: 'Optionen',Enter: 'Menü bestätigen', Tab: 'System', KeyR: 'Neustart', KeyF: 'Leistungsanzeige',
@@ -39,13 +41,18 @@ function tastenLaden(){
   let gespeichert = null;
   try{ gespeichert = JSON.parse(localStorage.getItem(TASTEN_SPEICHER) || 'null'); }catch(e){ gespeichert = null; }
   for(const n of [1, 2]){
-    const k = Object.assign({}, TASTEN_STANDARD[n], gespeichert && gespeichert.tastatur && gespeichert.tastatur[n] || {});
+    const kg = gespeichert && gespeichert.tastatur && gespeichert.tastatur[n] || {};
+    const k = Object.assign({}, TASTEN_STANDARD[n], kg);
+    if(kg.haft === undefined && kg.ability) k.haft = kg.ability;   // alte Belegung: Haftfläche wie die Fähigkeit
     for(const a of TASTEN_AKTIONEN) KEYSETS[n][a] = k[a];
     for(const typ of PAD_TYPEN){
-      const p = Object.assign({}, PAD_STANDARD, gespeichert && gespeichert.pad && gespeichert.pad[n] && gespeichert.pad[n][typ] || {});
+      const pg = gespeichert && gespeichert.pad && gespeichert.pad[n] && gespeichert.pad[n][typ] || {};
+      const p = Object.assign({}, PAD_STANDARD, pg);
+      if(pg.haft === undefined && pg.ability !== undefined) p.haft = pg.ability;
       PADSETS[n][typ] = {}; for(const a of TASTEN_AKTIONEN) PADSETS[n][typ][a] = p[a];
     }
     KEYSETS[n].padUse = 'Pad' + n + 'Use';   // Controller-Schalter (Kreis) meldet sich unter eigenem Namen
+    KEYSETS[n].padHaft = 'Pad' + n + 'Haft';   // Controller „Haftfläche halten“ ebenso (darf derselbe Knopf wie die Fähigkeit sein)
   }
 }
 function tastenSpeichern(){
@@ -106,8 +113,9 @@ function keysFor(male){
   // dash (Nacht-Ausbau): Dash-Taste; hoch/runter für die Dash-Richtung und zum Festhalten an Haftflächen = swimUp/swimDown
   // pusten (Affe) / trampolin (Schweinchen): die Spezial-Taste des Spielers (js/34-koop-aktionen.js)
   // griff: Pump-Draisine festhalten (elemente/draisine.js)
-  return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, pusten:s.spezial, griff:s.griff}
-              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, trampolin:s.spezial, griff:s.griff};
+  // haft/padHaft: Haftfläche festhalten (eigene Taste, Standard wie die Fähigkeit; js/32 haftHalten)
+  return male ? {left:s.left, right:s.right, jump:s.jump, hook:s.ability, pull:s.pull, slack:s.slack, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, pusten:s.spezial, griff:s.griff, haft:s.haft, padHaft:s.padHaft}
+              : {left:s.left, right:s.right, jump:s.jump, glide:s.ability, use:s.use, padUse:s.padUse, swimUp:s.pull, swimDown:s.slack, dash:s.dash, trampolin:s.spezial, griff:s.griff, haft:s.haft, padHaft:s.padHaft};
 }
 function setMonkeyPlayer(n){
   monkeyPlayer = n === 2 ? 2 : 1;
@@ -154,7 +162,7 @@ function updateHudKeys(){
 // Controller i (0/1) drückt die „virtuellen Tasten“ von Spieler i+1 (Belegung PADSETS, Stick geht immer zusätzlich)
 function padMap(i){
   const n = i + 1, K = KEYSETS[n];
-  return {left:K.left, right:K.right, jump:K.jump, ability:K.ability, pull:K.pull, slack:K.slack, use:K.padUse, dash:K.dash, spezial:K.spezial, griff:K.griff};
+  return {left:K.left, right:K.right, jump:K.jump, ability:K.ability, pull:K.pull, slack:K.slack, use:K.padUse, dash:K.dash, spezial:K.spezial, griff:K.griff, haft:K.padHaft};
 }
 let padBlocked = false;
 function isDown(code){ return !!(KEYS[code] || PAD[code]); }
@@ -178,7 +186,7 @@ function pollGamepads(){
     const el = document.getElementById('pad'+(i+1));
     padConnected[i] = !!gp;
     if(!gp){
-      for(const k of ['left','right','jump','ability','pull','slack','use','dash','spezial','griff']) setPad(m[k], false);
+      for(const k of ['left','right','jump','ability','pull','slack','use','dash','spezial','griff','haft']) setPad(m[k], false);
       if(el){ el.classList.remove('on');
         el.textContent = padBlocked ? '🎮 Controller hier blockiert – Spiel im eigenen Tab öffnen'
                                     : '🎮 Controller '+(i+1)+': nicht verbunden (Taste drücken)'; }
@@ -203,6 +211,7 @@ function pollGamepads(){
     setPad(m.dash,  b(P.dash));            // Standard: Dreieck / Y = Dash (Nacht-Ausbau)
     setPad(m.spezial, b(P.spezial));       // Standard: R1 / RB = pusten (Affe) bzw. Schirm-Trampolin (Schweinchen)
     setPad(m.griff, b(P.griff));           // Standard: L1 / LB = Hebel der Pump-Draisine halten (elemente/draisine.js)
+    setPad(m.haft, b(P.haft));             // Standard: wie die Fähigkeit = Haftfläche festhalten (eigener virtueller Knopf)
     if(b(9)) restart = true;               // Options / Start
     if(el){ el.classList.add('on'); el.textContent = '🎮 Controller '+(i+1)+' verbunden'; }
   }
