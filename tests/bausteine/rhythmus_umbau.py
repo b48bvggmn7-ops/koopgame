@@ -190,7 +190,7 @@ def entspannt(L, R, rnd):
         c += n
     teile = []
     flach(8)              # Anlauf (Checkpoint)
-    CP.append(3)
+    CP.append((3, R - 1))   # (Spalte, Reihe über dem Boden)
     while c < L - 16:
         wahl = rnd.random()
         rest = L - 16 - c
@@ -234,12 +234,20 @@ def entspannt(L, R, rnd):
         flach(6)
     while c < L: flach(1)
     # weitere Checkpoints höchstens alle ~65 Spalten (an Stellen mit Boden, nicht vor Mauern)
-    letzter = CP[0]
+    # Boden einer Spalte = oberste Reihe des durchgehenden Bodens von unten (ein schwebender Sims darüber zählt nicht;
+    # Nutzer-Bild 06.11.: Checkpoints standen im Boden, weil immer die Grundhöhe R genommen wurde)
+    def boden(k):
+        if T.get((k, 17)) not in FEST: return None
+        r = 17
+        while T.get((k, r - 1)) in FEST: r -= 1
+        return r
+    stachel = {(s[0], s[1]) for s in S}
+    letzter = CP[0][0]
     for k in range(1, L - 20):
-        if k - letzter >= 62 and (k, 16) not in [(s[0], s[1]) for s in S]:
-            col_top = min([r for (cc, r), t in T.items() if cc == k and t in FEST and r >= 0] or [99])
-            if all((k + d, 17) in T and min([r for (cc, r), t in T.items() if cc == k + d] or [99]) == col_top for d in (-2, -1, 0, 1, 2)):
-                CP.append(k); letzter = k
+        b = boden(k)
+        if k - letzter >= 62 and b is not None and (k, b - 1) not in stachel and (k, b - 1) not in T and (k, b - 2) not in T:
+            if all(boden(k + d) == b for d in (-2, -1, 1, 2)):
+                CP.append((k, b - 1)); letzter = k
     return T, S, M, CP, teile
 
 def umbauen(datei, schreiben=False, saat=7, nur_anfang=False):
@@ -317,7 +325,7 @@ def umbauen(datei, schreiben=False, saat=7, nur_anfang=False):
         for (c, r), t in T.items(): t2[(c0 + c, r)] = t
         for c, r in S: ed.setdefault('spikes', []).append({'c': c0 + c, 'r': r, 'dir': 0})
         for c, r, f in M: ed.setdefault('coins', []).append({'c': c0 + c, 'r': r, 'color': f, '_neu': True})
-        for c in CP: cps_neu.append({'c': c0 + c, 'r': R - 1, '_entspannt': True})
+        for c, r in CP: cps_neu.append({'c': c0 + c, 'r': r, '_entspannt': True})
         print(f'    entspannt neu {c0}-{c0 + L - 1}: ' + ' '.join(teile))
     # Münz-Ausgleich (Münzregel: gleich viele blaue/Affe und pinke/Schweinchen): neue Münzen umfärben, bis es aufgeht
     alle_m = ed.get('coins', [])
@@ -338,6 +346,8 @@ def umbauen(datei, schreiben=False, saat=7, nur_anfang=False):
             else: continue
         behalten.append(p)
     ed['checkpoints'] = [{k: v for k, v in p.items() if k != '_entspannt'} for p in behalten]
+    im_boden = [p for p in ed['checkpoints'] if t2.get((p['c'], p['r'])) in FEST]
+    if im_boden: raise RuntimeError(f'Checkpoints im Boden: {im_boden[:5]}')   # (Nutzer-Bild 06.11.)
     ed['cols'] = neu_cols
     lv.t = t2
     # "_teile" (Spiel-Format): Spalten der alten Teile mitrechnen
