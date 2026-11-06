@@ -295,6 +295,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     als Schleife (2,5 s weich überblendet, Lautstärke `FILE_VOL.atmo` 2,6 – erst 0,7, dann 1,6, Nutzer zweimal: „zu leise“ / „lauter“) und ERSETZT den bisherigen Hintergrund – Vögel
     (voegel.mp3) und Fluss (fluss.mp3) werden nicht mehr geladen (Dateien liegen noch da; zurück mit
     `ATMO_STATT_VOEGEL_FLUSS = false` in js/23), der erzeugte Wind, Grillen und Bach (js/22) sind aus, solange draussen.mp3 läuft.
+    **Danach Wald-Ton** (Nutzer 06.11., Splice „Forest_05“ -> assets/audio/wald.wav, 21 s, 16 Bit Stereo): ist jetzt der
+    Hintergrund-Ton statt draussen.mp3 (gleich laut gemessen, gleiche Lautstärke 2,6; draussen.mp3 bleibt liegen).
     **Keine Musik mehr** (Nutzer 06.11.: „die Akkorde können raus“): `MUSIK_AUS = true` in js/23 – musik.mp3 wird nicht
     geladen und das erzeugte Klavier (js/22) spielt auch nicht; Datei bleibt liegen, zurück mit `MUSIK_AUS = false`.
     Leistungsanzeige (F): „Musik: aus“.

@@ -14,7 +14,9 @@
 // Kurze Dateien laufen als nahtlose Schleife (Ende und Anfang weich ineinander geblendet).
 // Lädt eine Datei nicht (z. B. Spiel als Datei geöffnet), bleibt der erzeugte Klang aus 19/22 aktiv.
 const AUDIO_FILES = {music: 'assets/audio/musik.mp3', birds: 'assets/audio/voegel.mp3',
-                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/draussen.mp3'};
+                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/wald.wav'};
+// atmo: seit 06.11. wald.wav (Nutzer-Datei Splice „Forest_05“, 21 s, auf 16 Bit verkleinert) statt draussen.mp3 – gemessen
+// gleich laut (RMS 0,003), daher gleiche Lautstärke; draussen.mp3 bleibt liegen.
 const FILE_VOL = {music: 0.38, birds: 0.6, rain: 0.8, river: 2.0, atmo: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
 const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
 const MUSIK_AUS = true;   // Nutzer 06.11.: „die Akkorde können raus“ – weder musik.mp3 noch das erzeugte Klavier (22)

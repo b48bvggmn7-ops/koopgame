@@ -5768,7 +5768,7 @@ async def musik_und_ambiente(g):
 
 @test
 async def eigene_aufnahmen(g):
-    """Eigene Aufnahmen: Hintergrund draussen.mp3 (seit 06.11. statt Vögel/Fluss) und Regen laufen als nahtlose Schleife,
+    """Eigene Aufnahmen: Hintergrund wald.wav (seit 06.11. statt Vögel/Fluss, kurz draussen.mp3) und Regen laufen als nahtlose Schleife,
     der erzeugte Wind/Bach ist dann aus. Seit 06.11. keine Akkord-Musik mehr (MUSIK_AUS): musik.mp3 wird nicht geladen.
     (Die Musik-Prüfungen – einblenden, beim Tod aus, von vorne – laufen nur, wenn MUSIK_AUS wieder false ist.)"""
     srv = webserver(); p = g.p
