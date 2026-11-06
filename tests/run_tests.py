@@ -4411,6 +4411,33 @@ async def wandsprung_nur_an_wand(g):
     assert ergebnis['ground']['hoch'] < 150 and ergebnis['ground']['wand'] == 0 and not ergebnis['ground']['partner'], f'an Erde geht noch ein Wandsprung: {ergebnis}'
 
 @test
+async def stachelwand_zerschlaegt_wechsel(g):
+    """Nutzer 06.11.: „der Wechselboden geht von der Stachelwand beim Fahren nicht kaputt“ – ein gerade fester Wechselboden
+    wird zerschlagen (Splitter, Kamera wackelt) und bleibt weg, auch wenn seine Nummer umschaltet; ein gerade weggeschalteter
+    bleibt heil; Neustart holt alles zurück."""
+    mps = [{'x': 400, 'y': 520, 'w': 40, 'h': 160, 'look': 'wall', 'group': 1, 'targetX': 1400, 'targetY': 520, 'speed': 6}]
+    sp = [{'x': 460, 'y': 680 - 40*k, 'w': 40, 'h': 40, 'dir': 1} for k in range(4)]
+    # Gruppe A (fest, solange Nummer 3 aus) unten im Weg; Gruppe B (gerade weg) ebenfalls im Weg, etwas weiter
+    wb = [{'x': 900 + 20, 'y': 640 - 40*k + 20, 'gruppe': 'A', 'link': 3} for k in range(2)] + \
+         [{'x': 1100 + 20, 'y': 640 - 40*k + 20, 'gruppe': 'B', 'link': 3} for k in range(2)]
+    await g.load(level([ground(0, 680, 3000)], {'x': 2000, 'y': 680}, {'x': 2100, 'y': 680}, movingPlatforms=mps, spikes=sp, switchFloors=wb))
+    r = await g.ev("""(() => { menuScreen = 'pause'; deathState = null; let ts = 5e6, wackel = 0;
+      const W = solids.filter(s => s.type === 'wechsel'), A = W.filter(s => s.gruppe === 'A'), B = W.filter(s => s.gruppe === 'B');
+      const vorher = {A: A.map(s => !s.gone), B: B.map(s => !s.gone)};
+      let spl = 0;
+      for(let i = 0; i < 200; i++){ stepSim(ts += 1000/54); wackel = Math.max(wackel, kameraWackeln || 0); spl = Math.max(spl, splitter.length); }
+      const e = {vorher, A: A.map(s => !!s.zerstoert && !!s.gone), B: B.map(s => !!s.zerstoert), wackel, splitter: spl > 0};
+      // Nummer umschalten (A soll dann ohnehin weg sein) und wieder zurück (A soll fest werden): zerschlagen bleibt weg
+      setLink(3, true); stepSim(ts += 1000/54); setLink(3, false); for(let i = 0; i < 3; i++) stepSim(ts += 1000/54);
+      e.bleibtWeg = A.every(s => s.gone);
+      resetLevel(); e.neu = A.every(s => !s.zerstoert && !s.gone);
+      menuScreen = null; return e; })()""")
+    assert all(r['vorher']['A']) and not any(r['vorher']['B']), f'Aufbau: {r}'
+    assert all(r['A']) and r['wackel'] > 0 and r['splitter'], f'Stachelwand zerschlägt den Wechselboden nicht: {r}'
+    assert not any(r['B']), f'weggeschalteter Wechselboden wurde zerschlagen: {r}'
+    assert r['bleibtWeg'] and r['neu'], f'zerschlagen bleibt nicht weg / Neustart falsch: {r}'
+
+@test
 async def stachelwand_zerschlaegt_broeckel(g):
     """Nutzerwunsch: die Stachelwand fährt nicht einfach durch alles, sondern zerschlägt Bröckelwände (Brocken, Kamera
     wackelt) und – egal ob offen/umgelegt – Türen (die ganze Tür bleibt weg, auch wenn die Nummer wieder aus geht) und Hebel
@@ -7995,6 +8022,36 @@ async def haft_bewegt(g):
         srv.shutdown()
 
 @test
+async def haft_boden(g):
+    """Nutzer 06.11.: „Haftfläche im Editor einstellbar, ob aus Boden oder Wand, damit ich entscheiden kann, ob ein Wandsprung
+    erlaubt ist“ – neues Werkzeug „Haftfläche (Boden)“ (haftb, elemente/haftboden.js): festhalten von unten wie gehabt, aber aus
+    Erde (type 'ground') -> an den Seiten kein Wandsprung; die aus Wand erlaubt ihn weiter. Bewegt: look 'haftb'."""
+    await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
+                       haftboeden=[{'x': 400, 'y': 360, 'w': 160, 'h': 160}], haftflaechen=[{'x': 900, 'y': 360, 'w': 160, 'h': 160}],
+                       movingPlatforms=[{'x': 1300, 'y': 400, 'w': 80, 'h': 40, 'look': 'haftb', 'group': 1, 'targetX': 1500, 'targetY': 400, 'speed': 2}]))
+    await g.steps(3)
+    r = await g.ev("""(() => {
+      const P = p1, B = solids.find(s => s.haft && s.type === 'ground'), W = solids.find(s => s.haft && s.type === 'wall'),
+            M = solids.find(s => s.type === 'moveplat' && s.haft); for(const k in KEYS) KEYS[k] = false;
+      let t = performance.now() + 1e6; const st = () => { stepSim(t); t += 1000/54; };
+      P.x = B.x + 60; P.y = B.y + B.h + P.h + 6; P.vx = 0; P.vy = 0; P.grounded = false;
+      KEYS[P.keys.haft] = true; for(let i = 0; i < 3 && !P.haft; i++) st(); const greift = !!P.haft; KEYS[P.keys.haft] = false; for(let i = 0; i < 3; i++) st();
+      return {boden: !!B, greift, wandsprungBoden: wandsprungFlaeche(B), wandsprungWand: wandsprungFlaeche(W),
+              bewegt: !!M && M.look === 'ground' && wandsprungFlaeche(M) === false}; })()""")
+    assert r['boden'] and r['greift'], f'an der Haftfläche aus Boden nicht festgehalten: {r}'
+    assert r['wandsprungBoden'] is False and r['wandsprungWand'] is True and r['bewegt'], f'Wandsprung Boden/Wand falsch: {r}'
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
+        await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
+        await ed_werkzeug(p, 'haftb')
+        await ed_ziehen(p, (10, 8), (13, 8)); await p.wait_for_timeout(100)
+        ex = await p.evaluate("(() => { const o = JSON.parse(exportLevel()); return {hb: o.haftboeden || [], hw: o.haftflaechen || []}; })()")
+        assert len(ex['hb']) == 1 and ex['hb'][0]['w'] == 160 and ex['hw'] == [], f'Haftfläche (Boden) falsch exportiert: {ex}'
+    finally:
+        srv.shutdown()
+
+@test
 async def druckplatte_ganz_gedrueckt(g):
     """Nutzerwunsch: steht eine Figur auf der Druckplatte, ist sie ganz eingesunken (Anzeige), sonst oben."""
     await g.load(level([ground(0, 680, 2000)], {'x': 300, 'y': 680}, {'x': 60, 'y': 680},
@@ -9385,6 +9442,7 @@ async def element_register(g):
                  ['dunkelzone', 'dunkelzonen', True, False], ['lava', 'lava', True, False], ['lavapegel', 'lavaPegel', True, False],
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
+                 ['haftboden', 'haftboeden', True, False],   # Honig zeichnet die Haftfläche (aus Wand) für beide
                  ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
                  ['draisine', 'draisinen', True, True], ['meteorit', 'meteoriten', True, False]], k   # + Pump-Draisine   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
@@ -9906,7 +9964,7 @@ async def editor_einseitige_plattform(g):
         await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(300)
         await p.evaluate("localStorage.clear()"); await p.reload(); await p.wait_for_timeout(400)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=gelaende] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'bruch', 'haft', 'fake'], reihe   # + Eis (Ausbau 7, Höhle); + Durchbruch, Haftfläche (Nacht-Ausbau); Dunkelzone steht seit dem Editor-Umbau im Reiter „Licht“
+        assert reihe == ['ground', 'wall', 'crumble', 'oneway', 'eis', 'bruch', 'haft', 'haftb', 'fake'], reihe   # + Eis (Ausbau 7, Höhle); + Durchbruch, Haftfläche (Nacht-Ausbau); Dunkelzone steht seit dem Editor-Umbau im Reiter „Licht“
         await ed_werkzeug(p, 'oneway'); await ed_ziehen(p, (4, 12), (7, 12))
         await p.click('#exportBtn'); out = json.loads(await p.input_value('#exportText')); await p.click('#closeExport')
         assert out['oneways'] == [{'x': 160, 'y': 480, 'w': 160, 'h': 12}], out['oneways']

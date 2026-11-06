@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'tests'))
 import level_bau as L
 
-STEH = {'ground', 'wall', 'crumble', 'oneway', 'haft', 'eis', 'band'}
+STEH = {'ground', 'wall', 'crumble', 'oneway', 'haft', 'haftb', 'eis', 'band'}
 RELS = ['P.x > P.anchor.x + 30 && P.vx > 1', 'P.x > P.anchor.x + P.ropeLen*0.6 && P.vy < 0',
         'P.x > P.anchor.x + P.ropeLen*0.8 && P.vy < 0', 'P.x > P.anchor.x + P.ropeLen*0.4 && P.vy < 0']
 

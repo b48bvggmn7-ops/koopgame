@@ -67,7 +67,7 @@ function haftSchichtZeichnen(){
   }
 }
 elementRegistrieren({
-  id: 'haftflaeche', name: 'Haftfläche', feld: 'haftflaechen',
+  id: 'haftflaeche', name: 'Haftfläche (Wand)', feld: 'haftflaechen',   // „(Wand)“: seit 06.11. gibt es auch eine aus Boden (haftboden.js)
   editor: {
     werkzeug: 'haft', gruppe: 'gelaende', vor: 'fake', art: 'kachel', ziehbar: true,
     titel: 'Haftfläche: Wand/Decke mit klebriger Unterseite – „hoch“ halten = von unten festhalten, links/rechts hangeln ' +

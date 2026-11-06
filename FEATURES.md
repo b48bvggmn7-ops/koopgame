@@ -1892,6 +1892,11 @@ HAFT_*); die Logik steht in `js/32-neue-bewegung.js`, die Elemente in `elemente/
 - **Wand-Rutschen** (automatisch, keine Taste): wer an einer Wand schneller als 4,5 herunterfällt, rutscht gebremst mit
   höchstens WAND_RUTSCH_MAX_FALL 4,5 (Rutsch-Haltung, Kratz-Staub, leises Schaben). Nicht beim Segeln, nicht am Seil,
   nicht im Dash. Der Wandsprung ist der alte (gleiche Werte, gleiche Bedingungen) – er geht auch mitten im Rutschen.
+- **Haftfläche aus Wand oder Boden** (Nutzer 06.11.: „einstellbar, ob aus Boden oder Wand, damit ich entscheiden kann, ob ein
+  Wandsprung erlaubt ist“): zwei Werkzeuge im Reiter Gelände – „Haftfläche (Wand)“ (wie bisher, Wandsprung/Rutschen an den
+  Seiten erlaubt) und „Haftfläche (Boden)“ (elemente/haftboden.js, Werkzeug `haftb`, Daten `haftboeden`): gleiche klebrige
+  Unterseite, aber aus Erde (solids type 'ground', haft: true) – an den Seiten KEIN Wandsprung. Beide auch mit „Bewegung“
+  (bewegt: look 'haft' bzw. 'haftb'). Bestehende Haftflächen bleiben aus Wand. Test haft_boden.
 - **Haftfläche** (Editor: Gelände → „Haftfläche“): Wand-/Deckenkästchen mit Honig-Schicht NUR an der Unterseite
   (Nutzerwunsch; Band an den runden Ecken passend abgeschnitten, Tropfen darunter). Wer darunter die
   Fähigkeits-Taste hält (Affe G, Schweinchen Num 1, Controller □; Nutzerwunsch – vorher „hoch“; ein gerade erst gegriffener
@@ -2084,7 +2089,9 @@ Wasserwelt, Boss-Level und Spielwiese sind unverändert.
     Stacheln nicht. Seit 02.11. zerschlägt sie auch **Türen** (die ganze zusammenhängende Tür, offen oder zu – sie bleibt
     weg, auch wenn die Nummer wieder ausgeht) und **Hebel** (umgelegt oder nicht – danach nicht mehr bedienbar), mit
     Holz-/Stein-Splittern (`splitterErzeugen`) und Kamera-Wackeln; Tod/Neustart stellt alles wieder her.
-    Test stachelwand_zerschlaegt_broeckel. Abschnitt 1, Spalten 1097–1148 damit neu gebaut („Dornenjagd“,
+    Test stachelwand_zerschlaegt_broeckel. Seit 06.11. (Nutzer: „der Wechselboden geht von der Stachelwand beim Fahren
+    nicht kaputt“) auch **Wechselböden**, die gerade fest sind: Splitter, Ton, Kamera-Wackeln, sie bleiben weg (auch wenn
+    die Nummer umschaltet, `zerstoert`), weggeschaltete bleiben heil; Neustart holt sie zurück. Test stachelwand_zerschlaegt_wechsel. Abschnitt 1, Spalten 1097–1148 damit neu gebaut („Dornenjagd“,
     tests/bausteine/dornenjagd_umbau.py): ganze Höhe, unten der Laufgang mit Bröckel-Decken, -Pfeiler und -Brücke, die
     Stachelwand fährt nur noch einmal; oben der Kletterweg (Stufe/Haken, Türen mit Wand bis ganz oben, Bröckel-Brücke über
     einer Stachel-Grube mit Rettungs-Haken); Wechsel-Hebel 28–31 wie vorher. Stößt ein Mitfahrer beim Hochfahren mit

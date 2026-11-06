@@ -106,8 +106,8 @@ function buildLevel(data){
   movingPlatforms = (data.movingPlatforms||[]).map(m=>({...m}));
   for(const mp of movingPlatforms){
     solids.push({x:mp.x, y:mp.y, w:mp.w||40, h:mp.h||40, type:'moveplat', link:mp.link,
-      look: mp.look==='crumble' ? 'ground' : mp.look==='haft' ? 'wall' : mp.look, group: mp.group, speed: mp.speed,
-      ...(mp.look==='haft' ? {haft: true} : {}),   // bewegte Haftfläche: sieht aus wie Wand, Unterseite klebt (32-neue-bewegung.js)
+      look: mp.look==='crumble' || mp.look==='haftb' ? 'ground' : mp.look==='haft' ? 'wall' : mp.look, group: mp.group, speed: mp.speed,
+      ...(mp.look==='haft' || mp.look==='haftb' ? {haft: true} : {}),   // bewegte Haftfläche: aus Wand bzw. Boden (haftb), Unterseite klebt (32-neue-bewegung.js)
       switchLink: mp.switchLink||null,
       // Nur schaltergesteuert, wenn es im Level auch einen Schalter mit dieser Nummer gibt
       switchCtl: !!(mp.switchLink && (switchDefs.some(sw=>sw.link===mp.switchLink) || plates.some(p=>p.link===mp.switchLink))), tripActive:false,

@@ -67,7 +67,7 @@ function wechselSchritt(players){
   wechselSchritte++;
   let an = null, weg = null, warn = null;
   for(const s of solids){
-    if(s.type !== 'wechsel') continue;
+    if(s.type !== 'wechsel' || s.zerstoert) continue;   // von der Stachelwand zerschlagen (js/05): bleibt weg bis zum Neustart
     if(s.takt > 0 && wechselImBild(s) && (wechselTaktSchritte(s) - wechselSchritte % wechselTaktSchritte(s)) === WECHSEL_WARN_STEPS) warn = s;
     const soll = wechselSoll(s);
     if(soll === !s.gone){ s.wartet = false; continue; }
@@ -84,6 +84,7 @@ function wechselZuruecksetzen(){
   wechselSchritte = 0;
   for(const s of solids){
     if(s.type !== 'wechsel') continue;
+    s.zerstoert = false;   // Neustart: zerschlagene Wechselböden wieder da
     const soll = wechselSoll(s), drin = soll && [p1, p2].some(p => p && wechselFigurDrin(p, s));
     s.gone = !soll || drin; s.wartet = drin; s.wechselT = -999;   // steht jemand drin: warten (wie im Spiel)
   }
@@ -155,6 +156,7 @@ function wechselZeichnen(){
     const s = R.teile[0], x = Math.round(R.x - camX);
     if(x + R.w < -20 || x > VW + 20) continue;
     const gone = R.teile.every(o => o.gone);
+    if(R.teile.every(o => o.zerstoert)) continue;   // zerschlagen: gar nichts mehr (kein Schatten, kein Edelstein)
     if(gone){   // weg: nur ein leichter, weicher Schatten; bei Hebel-Böden bleibt der Edelstein
       ctx.fillStyle = 'rgba(12,24,14,.15)'; ctx.beginPath(); ctx.roundRect(x + 1, R.y + 1, R.w - 2, R.h - 2, 7); ctx.fill();
       if(!(s.takt > 0) && s.link) wechselEdelstein(x + R.w/2, R.y + R.h/2, s, .5, edelsteinGroesse(R.w, R.h));

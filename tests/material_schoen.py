@@ -24,8 +24,8 @@ REICH_SEITE_B, REICH_HOCH_B = 8, 12     # B: Sprung + Dash (8 Reihen) + Körper 
 PILZ_SEITE, PILZ_HOCH = 9, 17           # B: Pilz (≈ 6 Reihen) + Dash darüber + Luft
 HAKEN_LUFT = 5                          # B: so viele Reihen über einem Haken bleiben frei (Abflug nach oben)
 DECKE_MAX = 5                           # B: höchstens so tief (Reihen ab −3) hängt eine Decke
-STEH = {'ground', 'wall', 'crumble', 'oneway', 'platform', 'haft'}   # Kacheln, auf denen man stehen kann
-FEST = {'ground', 'wall', 'crumble', 'haft'}                         # Kacheln, die Material sind
+STEH = {'ground', 'wall', 'crumble', 'oneway', 'platform', 'haft', 'haftb'}   # Kacheln, auf denen man stehen kann
+FEST = {'ground', 'wall', 'crumble', 'haft', 'haftb'}                         # Kacheln, die Material sind
 
 def welten_level():
     w = json.loads((ROOT / 'levels' / 'worlds.json').read_text(encoding='utf-8'))

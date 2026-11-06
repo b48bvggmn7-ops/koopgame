@@ -19,7 +19,7 @@ const COLORS = {
 };
 // Kachel-Elemente aus dem Register (elemente/, z. B. Aufwind): Farbe im Raster
 for(const E of ELEMENTE) if(E.editor && E.editor.art === 'kachel') COLORS[E.editor.werkzeug] = E.editor.kachelFarbe || E.editor.farbe;
-const SOLID_TILES = ['ground','wall','platform','crumble','haft'];   // nur diese können sich bewegen (Haftfläche: Nutzerwunsch)
+const SOLID_TILES = ['ground','wall','platform','crumble','haft','haftb'];   // nur diese können sich bewegen (Haftfläche aus Wand/Boden: Nutzerwunsch)
 const MAX_LINK = 80;          // höchste Verknüpfungs-Nummer (Ausbau 2: früher 20)
 
 let tiles = {}; // key "c,r" -> type

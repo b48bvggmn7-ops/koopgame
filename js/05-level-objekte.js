@@ -215,6 +215,16 @@ function stachelwandZerschlaegt(s, stepX, stepY){
   const teile = [s, ...st.map(sp => ({x: sp.x - 20, y: sp.y - 40, w: 40, h: 40}))];   // Stachel-Kästchen (Fuß unten mittig)
   const trifft = c => teile.some(t => t.x < c.x + c.w - 1 && t.x + t.w > c.x + 1 && t.y < c.y + c.h - 1 && t.y + t.h > c.y + 1);
   for(const c of solids){
+    if(c.type === 'wechsel'){
+      // Nutzer 06.11.: „der Wechselboden geht von der Stachelwand beim Fahren nicht kaputt“ – ein gerade FESTER Wechselboden
+      // wird zerschlagen und bleibt bis zum Neustart weg (wechselSchritt lässt zerstörte aus, wechselZuruecksetzen holt ihn zurück)
+      if(c.gone || c.zerstoert || !trifft(c)) continue;
+      c.zerstoert = true; c.gone = true; c.wartet = false;
+      splitterErzeugen(c.x, c.y, c.w, c.h, ['#6f5a3a', '#8f7650', '#4e3e28', '#9aa58a']);
+      if(typeof kameraStoss === 'function') kameraStoss(STACHELWAND_STOSS);
+      if(typeof SFX !== 'undefined' && SFX.crumbleBreak) SFX.crumbleBreak(c.x + c.w/2);
+      continue;
+    }
     if(c.type !== 'crumble' || c.gone) continue;
     if(trifft(c)){
       breakCrumble(c);

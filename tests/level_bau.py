@@ -423,7 +423,7 @@ def s4_bruchnische(lv, w, g, muenze=None, richtung=1):
 def oberkante(lv, c, ab=-3, bis=17):
     """oberste feste Reihe (ground/wall/haft) in Spalte c zwischen ab und bis, sonst None"""
     for r in range(ab, bis + 1):
-        if lv.typ(c, r) in ('ground', 'wall', 'haft'): return r
+        if lv.typ(c, r) in ('ground', 'wall', 'haft', 'haftb'): return r
     return None
 
 def landung_heben(lv, c0, c1, neue_oben, typ='ground', unter=None):
