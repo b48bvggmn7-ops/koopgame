@@ -5,7 +5,7 @@
   "wetter": "trocken",
   "solids": [
     {"x": 0, "y": 480, "w": 800, "h": 280, "type": "ground"},
-    {"x": 1280, "y": 480, "w": 1200, "h": 280, "type": "ground"}
+    {"x": 1320, "y": 480, "w": 1160, "h": 280, "type": "ground"}
   ],
   "hooks": [],
   "spikes": [],

@@ -8148,7 +8148,7 @@ async def draisine_pumpen_zu_zweit(g):
         assert r['nurAffe'] == 800 and r['kraftAffe'] > 0.1, f'eine Figur allein darf nichts bewegen: {r}'
         assert r['losGleichNull'] and r['nurSchwein'] == 800, f'nur eine pumpt: darf nichts bewegen: {r}'
         assert r['keinSprung'], f'mit gehaltenem Griff darf man nicht springen: {r}'
-        assert abs(r['amHebel'] + 50) <= 2 and abs(r['schweinAmHebel'] - 50) <= 2 and r['blickZumHebel'] == [1, -1], f'Figuren stehen nicht am Hebel: {r}'
+        assert abs(r['amHebel'] + 69) <= 2 and abs(r['schweinAmHebel'] - 60) <= 2 and r['blickZumHebel'] == [1, -1], f'Figuren stehen nicht am Hebel: {r}'
         assert r['fahrt'] > 20 and r['richtung'] == 1 and abs(r['mit']) <= 1, f'fährt nicht zu zweit / nimmt nicht mit: {r}'
         assert r['ende'] == r['x1'] and r['drauf'], f'nicht bis ans Ende gefahren / Figuren verloren: {r}'
         assert 0 < r['maxTempo'] <= 3.0001, f'Tempo falsch: {r}'
@@ -8229,6 +8229,36 @@ async def draisine_takt_und_seile(g):
         srv.shutdown()
 
 @test
+async def draisine_haende_am_griff(g):
+    """Nutzer 06.11.: „die beiden stehen in dem Gerät und fassen in die Luft“ – Plattform 5 Kästchen, Affe/Schweinchen stehen
+    neben dem Hebel (DRAISINE_STAND/_SCHWEIN), die 3D-Arme folgen dem Griff (gemessener Armwinkel draisineArmWinkel): in jeder
+    Hebelstellung liegt die gezeichnete Hand höchstens 12 px neben dem T-Griff. Dazu die Takt-Anzeige: über dem Kopf dessen,
+    der dran ist, seine Taste (Ton-Tick beim Drankommen, heller Klick bei „JETZT!“)."""
+    await f3d_bereit(g)
+    srv = await draisine_testlevel(g)
+    try:
+        await g.ev("""(() => { """ + DRAISINE_JS + """ stell(p1, D.x + 40, D.y); stell(p2, D.x + D.w - 40, D.y); for(let i = 0; i < 12; i++) st();
+          KEYS[p1.keys.griff] = true; KEYS[p2.keys.griff] = true; for(let i = 0; i < 40; i++) st(); })()""")
+        k = await g.ev("cvs.width/1280*zoom")
+        fehler = []
+        for wer, P in (('m', 'p1'), ('f', 'p2')):
+            for h in (0.0, 0.5, 1.0):
+                vorher = f"const D = draisinen[0], P = {P}; D.takt.dran = 0; D.hebel = D.hebelZiel = P._draisineSeite*(0.5 - {h})*2*DRAISINE_HEBEL_WINKEL;"
+                r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 10, 'wer': wer, 'vorher': vorher, 'merk': f"[{P}._handDev, {P}._griffDev]"})
+                hand, griff = r[-1]
+                d = ((hand['x'] - griff['x'])**2 + (hand['y'] - griff['y'])**2) ** 0.5 / k
+                if d > 12: fehler.append((wer, h, round(d, 1)))
+        assert not fehler, f'Hände nicht am Griff (Figur, Griffhöhe, Abstand px): {fehler}'
+        # Ton-Takt: Tick, sobald das Schweinchen dran ist, Klick bei „JETZT!“
+        t = await g.ev("""(() => { """ + DRAISINE_JS + """ menuScreen = 'pause'; KEYS[p1.keys.griff] = true; KEYS[p2.keys.griff] = true; drauf(); for(let i = 0; i < 40; i++) st();
+          D.takt.dran = 0; SFX_LOG.length = 0; KEYS[p1.keys.jump + '_pressed'] = true; st();
+          while(D.takt.t < DRAISINE_TAKT_WEG + DRAISINE_BEST) st(); const log = SFX_LOG.slice(); for(const k in KEYS) KEYS[k] = false; menuScreen = null; return log; })()""")
+        assert 'draisinetick' in t and 'draisinejetzt' in t, f'Ton-Takt fehlt: {t}'
+    finally:
+        await g.ev("for(const k in KEYS) KEYS[k] = false; menuScreen = null; 0")
+        srv.shutdown()
+
+@test
 async def editor_draisine_ziehen(g):
     """Editor: Pump-Draisine setzen und gedrückt halten – nach rechts ziehen stellt die Schiene ein (Plattform 4 Kästchen);
     Spiel-Datei: Feld draisinen, Stehfläche = Boden des Kästchens; Spiel lädt sie als solid type 'draisine'."""
@@ -8243,17 +8273,17 @@ async def editor_draisine_ziehen(g):
         zelle = lambda c, r: (box['x'] + (c*40 + 20)*k, box['y'] + ((r + 3)*40 + 20)*k)
         x, y = zelle(5, 10)
         await p.mouse.move(x, y); await p.mouse.down()
-        await p.mouse.move(*zelle(17, 10), steps=6)   # bis Spalte 17: 5..8 Plattform, Schiene 17 - 8 = 9
+        await p.mouse.move(*zelle(17, 10), steps=6)   # bis Spalte 17: 5..9 Plattform (5 Kästchen), Schiene 17 - 9 = 8
         await p.mouse.up()
         r = await p.evaluate("({n: elementPunkte.draisinen.length, s: elementPunkte.draisinen[0].schiene, aus: JSON.parse(exportLevel()).draisinen})")
-        assert r['n'] == 1 and r['s'] == 9, f'Ziehen stellt die Schiene nicht ein: {r}'
-        assert r['aus'] == [{'x': 200, 'y': 400, 'schiene': 9}], r
+        assert r['n'] == 1 and r['s'] == 8, f'Ziehen stellt die Schiene nicht ein: {r}'
+        assert r['aus'] == [{'x': 200, 'y': 400, 'schiene': 8}], r
     finally:
         srv.shutdown()
     await p.goto(GAME); await p.wait_for_timeout(400)
     await g.load(level([ground(0, 480, 200, 240)], {'x': 100, 'y': 480}, {'x': 60, 'y': 480}, welt='dschungel', draisinen=[{'x': 200, 'y': 440, 'schiene': 9}]))
     s = await g.ev("(() => { const s = solids.find(o => o.type === 'draisine'); draw(); return s && [s.x, s.y, s.w, s.x1]; })()")
-    assert s == [200, 480, 160, 560], s
+    assert s == [200, 480, 200, 560], s   # Plattform seit 06.11. 5 Kästchen breit
 
 @test
 async def tasten_belegen_menue(g):
@@ -8595,6 +8625,20 @@ def level_teil(k, v):
         return out
     if isinstance(v, list): return sorted(json.dumps(o, sort_keys=True) for o in v)
     return v
+
+@test
+async def rhythmus_entspannt_checkpoints(g):
+    """Nutzer-Bild 06.11. „Checkpoints stehen im Boden“: die entspannten Strecken (tests/bausteine/rhythmus_umbau.py) setzen
+    jeden Checkpoint auf den Boden der Spalte (Stufen/Sims beachtet) – nie in die Erde, nie in die Luft."""
+    import random, importlib
+    sys.path.insert(0, str(ROOT / 'tests' / 'bausteine'))
+    R = importlib.import_module('rhythmus_umbau')
+    schlecht = []
+    for saat in range(20):
+        for boden in (8, 12, 15, 16):
+            T, S, M, CP, _ = R.entspannt(210, boden, random.Random(saat))
+            schlecht += [(saat, boden, c, r) for c, r in CP if T.get((c, r)) in R.FEST or T.get((c, r + 1)) not in R.FEST]
+    assert not schlecht, f'Checkpoints im Boden oder in der Luft: {schlecht[:5]}'
 
 @test
 async def editor_minikarte(g):

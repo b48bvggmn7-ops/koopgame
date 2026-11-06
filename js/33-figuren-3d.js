@@ -336,7 +336,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     // die Knie und beugt den Kopf (Stauchen in fussFigurZeichnen über S.pumpH), beim Hochkommen richtet sie sich auf
     if(P._draisineSeite && P._draisineS && typeof draisineGriffHoehe === 'function'){
       const h = draisineGriffHoehe(P._draisineS, P._draisineSeite), d = 1 - h; S.pumpH = h;
-      return {p:{head:[.22*d - .08*h,0,0], armN:[-1.05 - .95*h,0,-.12], armP:[-1.0 - .95*h,0,.12], legN:[-.42*d,0,0], legP:[-.38*d,0,0]}, key:'pumpen'};
+      // Armwinkel gemessen je Figur (elemente/draisine.js draisineArmWinkel); _pumpArmTest: nur für die Messung
+      const ax = P._pumpArmTest != null ? P._pumpArmTest : (typeof draisineArmWinkel === 'function' ? draisineArmWinkel(male, h) : -1.05 - .95*h);
+      return {p:{head:[.22*d - .08*h,0,0], armN:[ax,0,-.12], armP:[ax + .05,0,.12], legN:[-.42*d,0,0], legP:[-.38*d,0,0]}, key:'pumpen'};
     }
     if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
       if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-1.45*e,0,-.2], armP:[-1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
@@ -366,6 +368,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const c = ctx, now = performance.now(), male = P.male;
     if(male) F3D_QUALI.bild(now);
     let S = P._f3; if(!S) S = P._f3 = {t:now, phase:0, yaw:.8, rollA:0, cur:null, nb:now + 1500, bl:0, lean:0};
+    S.tm0 = c.getTransform();   // Ursprung der Figur (für die Griff-Messung an der Draisine)
     const dt = Math.min(.05, Math.max(0, (now - S.t)/1000)); S.t = now;
     const t = now/1000, sp = Math.abs(P.vx), flip = P.facing < 0 ? -1 : 1;
     S.spG = S.spG == null ? sp : S.spG + (sp - S.spG)*(1 - Math.exp(-dt*8));   // geglättetes Tempo: gleichmäßige Bewegungen
@@ -477,7 +480,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const H = holen(male), ch = H.ch;
     // Hangeln: lange Arme (Hände kleben oben an der Haftfläche), sonst normale Arme
     S.al = (S.al||1) + ((z.key === 'haft' ? HAFT_ARM : 1) - (S.al||1))*(1 - Math.exp(-dt*14));
-    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : (z.key === 'pumpen' ? 1.7 : 1))) - (S.as||1))*(1 - Math.exp(-dt*12));
+    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : (z.key === 'pumpen' ? 2.0 : 1))) - (S.as||1))*(1 - Math.exp(-dt*12));
     // Seil hochklettern/herablassen (W/S): Hand über Hand – ein Arm zieht, der andere greift nach
     if(z.key === 'seil' && P.ropeLen != null){ const d = S.rl == null ? 0 : Math.abs(P.ropeLen - S.rl); S.rl = P.ropeLen; S.cp = (S.cp||0) + d; S.cs = (S.cs||0) + (d - (S.cs||0))*.3; } else { S.rl = null; S.cs = 0; }
     const klet = Math.sin(2*Math.PI*(S.cp||0)/46)*Math.min(1, (S.cs||0)/.6);
@@ -586,6 +589,12 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const hp = handPunkt(ch.armP, 0, -.75*(ch.armP.alF||1), .04), h2 = handPunkt(ch.armN, 0, -.75*(ch.armN.alF||1), .04), hd = dev(0, 2.4);
     const a = dev(hp[0], hp[1]), b = dev(h2[0], h2[1]);
     P._handDev = {x: a.x, y: a.y, f: P._frameNo = (P._frameNo||0) + 1}; P._hand2Dev = {x: b.x, y: b.y}; P._headDev = {x: hd.x, y: hd.y};
+    // Pump-Draisine: Griff in denselben Geräte-Pixeln (für Test/Messung „Hände am Griff“)
+    if(P._draisineSeite && P._draisineS && typeof draisineGriffWelt === 'function'){
+      const [wx, wy] = draisineGriffWelt(P._draisineS, P._draisineSeite);
+      const gp = S.tm0.transformPoint(new DOMPoint(wx - P.x, wy - (Math.round(P.y + (P._standDy || 0)) - P.h*0.5)));
+      P._griffDev = {x: gp.x, y: gp.y};
+    }
     { const fu = dev(0, 0); P._fussDev = {x: fu.x, y: fu.y, skala: Math.hypot(Tm.a, Tm.b)}; }
     if(ch.mundO && ch.mundO.capM){ const w = ch.mundO.capM;   // Mund in Weltkoordinaten (nur Anzeige: dort beginnt der Puste-Wind, js/34)
       P._mund = {x: P.x + w[12]*SC, y: P.y - P.h*0.5 + fy - w[13]*SC - IT.hop*42, t: now}; }   // für Tests: Fußpunkt und Maßstab (Gerätepixel je Spielpixel)

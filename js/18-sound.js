@@ -365,6 +365,10 @@ const SFX = {
                             sTone(rechts ? 190 : 160, 0, 0.1, {to: rechts ? 150 : 125, type: 'triangle', vol: 0.02}); },
   // Takt-Pumpen (Nutzer 06.11.): falscher Moment = dumpfes Holz-Klack; perfekt = kleines helles Glöckchen über dem Knarzen
   draisineFehl(x){ sfxLog('draisinefehl'); sNoise(0, 0.07, {filter: 'bandpass', f: 380, to: 220, q: 4, vol: 0.06, attack: 0.003}); sTone(130, 0, 0.08, {to: 90, type: 'square', vol: 0.018}); },
+  // Ton-Takt der Draisine: leises Holz-Tick (du bist dran), heller Klick im perfekten Moment („JETZT!“)
+  draisineTakt(x, jetzt){ sfxLog(jetzt ? 'draisinejetzt' : 'draisinetick');
+    if(jetzt){ sTone(1760, 0, 0.09, {type: 'triangle', vol: 0.045}); sTone(2640, 0.01, 0.06, {type: 'sine', vol: 0.02}); }
+    else sNoise(0, 0.04, {filter: 'bandpass', f: 1500, q: 5, vol: 0.05, attack: 0.002}); },
   draisinePerfekt(x){ sfxLog('draisineperfekt'); sTone(1320, 0.02, 0.22, {type: 'sine', vol: 0.03}); sTone(1980, 0.05, 0.18, {type: 'sine', vol: 0.016}); },
   // Floß-Rad kurbeln (Fallback, wenn kurbel.wav nicht lädt): Holz reibt an Metall
   kurbel(x){ sfxLog('kurbel'); if(typeof geraeuschSpielen === 'function' && geraeuschSpielen('kurbel', {x, stueck: 'zug'})) return;

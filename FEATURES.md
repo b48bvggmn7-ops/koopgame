@@ -2467,16 +2467,22 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Tasten jeder Figur in der Nähe („Affe: Q halten + Leertaste pumpen“, bei Controller L1 + ✕; allein: „nur zu zweit!“).
   **Seit 06.11. Takt-Pumpen** (Nutzer: „der User muss immer im richtigen Moment eine Taste drücken“; „wo die beiden stehen
   passt nicht und die Bewegung auch nicht“): Der Hebel ist eine Wippe – die beiden drücken **abwechselnd**. Nach einem Stoß
-  kippt der Hebel in 14 Schritten herüber, dann ist der Griff des Partners oben und **sein Moment kommt**: ein Leuchtring in
-  seiner Farbe (Affe gelb, Schweinchen rosa, dunkler Rand) zieht sich auf einen feinen Zielkreis am Griff zusammen; trifft er
-  ihn, leuchtet der Griff = **perfekt** (Kraft 0,42, grüner Funkenkranz, kleines helles Glöckchen), sonst im Fenster **gut**
-  (0,26, weißer Ring). Drücken, während der Hebel noch unterwegs ist oder obwohl man nicht dran ist = **Klack** (Kraft −0,15,
-  rotes Kreuz, dumpfes Holz-Klack); verpasst man das Fenster (28 Schritte nach dem Ankommen), kippt der Hebel zurück in die
-  Mitte und jeder darf neu anfangen. Kraft klingt je Schritt mit 0,99 ab (höchstens 1,3), Tempo = schwächere Kraft × 2,6
+  kippt der Hebel in 14 Schritten herüber, dann ist der Griff des Partners oben und **sein Moment kommt**. **Anzeige wie bei
+  Quick-Time-Events/Mario Party** (Nutzer: „ich checke nicht, wann ich drücken soll – schau, wie andere Spiele das machen“):
+  über dem Kopf dessen, der dran ist, steht groß SEINE Taste (Tastenkappe mit Tastenname bzw. Controller-Knopf); ein Ring
+  in seiner Farbe (Affe gelb, Schweinchen rosa) füllt sich darum wie eine Uhr; ist er voll, wird die Taste grün, pulsiert und
+  darüber steht **„JETZT!“** (= perfekt: Kraft 0,42, kleines helles Glöckchen); danach läuft der Ring orange rückwärts ab
+  (noch **gut**: 0,26). Der Partner sieht seine Taste klein und grau, vor dem Start stehen beide Tasten weiß mit „los!“. Nach
+  dem Druck springt „Perfekt!“ / „Gut“ / „Zu früh!“ aus der Taste. **Ton-Takt:** leises Holz-Tick, sobald man dran ist, heller
+  Klick bei „JETZT!“ (`SFX.draisineTakt`). Drücken, während der Hebel noch unterwegs ist oder obwohl man nicht dran ist =
+  **Klack** (Kraft −0,15, dumpfes Holz-Klack, „Zu früh!“); verpasst man das Fenster (28 Schritte nach dem Ankommen), kippt der
+  Hebel zurück in die Mitte und jeder darf neu anfangen. Die Erklär-Blase verschwindet, sobald beide den Griff halten. Kraft klingt je Schritt mit 0,99 ab (höchstens 1,3), Tempo = schwächere Kraft × 2,6
   (perfekter Takt ≈ fast Höchsttempo). Werte `DRAISINE_TAKT_WEG/FENSTER_VOR/BEST/PERFEKT/FENSTER_NACH/STOSS/STOSS_PERFEKT/FEHL`.
-  **Figuren am Griff:** stehen 50 px neben der Mitte (Hände am T-Griff; vorher 44 und zu weit weg), die 3D-Figur folgt dem
-  Griff (Pose „pumpen“, js/33): oben Arme nach vorn oben gestreckt und aufgerichtet, beim Runterdrücken Arme nach vorn unten,
-  in die Knie (gestaucht) und Kopf gebeugt (`draisineGriffHoehe`). Der Hebel kippt weich (statt zu springen).
+  **Figuren am Griff** (Nutzer: „die beiden stehen in dem Gerät und fassen in die Luft“): Plattform jetzt **5 Kästchen** breit
+  (vorher 4), Hebel länger (Arm 44 px, Ausschlag ±0,28), Affe steht 69 px, Schweinchen 60 px neben der Mitte; die 3D-Arme
+  folgen dem Griff mit GEMESSENEN Winkeln je Figur (`DRAISINE_ARM_POSE`, `draisineArmWinkel`, Arm-Länge 2,0) – die gezeichnete
+  Hand liegt in jeder Hebelstellung höchstens ~9 px neben dem T-Griff (Test draisine_haende_am_griff). Beim Runterdrücken in
+  die Knie (gestaucht) und Kopf gebeugt, oben aufgerichtet (Pose „pumpen“, js/33). Der Hebel kippt weich (statt zu springen).
   **Geräusch:** echtes Holz-Knarzen (Aufnahme des Nutzers, assets/audio/knarzen.wav): je Stoß ein Knarzer, die beiden
   Hebel-Seiten mit kräftigen bzw. leiseren Knarzern (hin/her); ohne Datei das erzeugte Knarzen.
 - **Seile geben nach** (Blatt-Floß und Pump-Draisine, Nutzer 06.11.: „das Seil muss ein bisschen nachgeben – realistischer“;
@@ -2511,6 +2517,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   `tests/bausteine/rhythmus_umbau.py <welt>/<datei> [--anfang] [--schreiben]` (ohne --schreiben: nur Plan; --anfang:
   nur die Strecke vor der ersten Stelle; verschiebt „_teile“ und die Begleitdatei des Computer-Partners mit; Marke
   „_rhythmus“ im Level verhindert doppeltes Umbauen). Abschnitt 2 noch nicht umgebaut.
+  (06.11. behoben, Nutzer-Bild „Checkpoints stehen im Boden“: die Checkpoints der entspannten Strecken standen immer auf der
+  Grundhöhe – auf Stufen steckten 18 in der Erde, 2 schwebten über Mulden; alle auf den Boden ihrer Spalte gesetzt, das Skript
+  nimmt jetzt den Boden der Spalte und speichert nicht, wenn ein Checkpoint im Boden steckt. Test rhythmus_entspannt_checkpoints.)
 - **Level 1–3 und 4–6 fest zusammengefügt** (Nutzerwunsch, auch im Editor): jeder Abschnitt ist EINE Level-Datei
   (levels/dschungel/abschnitt-1-sternschnuppenspur.json, abschnitt-2-meteoritenherz.json, beide Formate), im Editor ein langes
   Level (Nummern bis 80, `MAX_LINK`; die Szene danach bleibt beim Speichern erhalten, Level-Info „nachSzene“). Die alten
