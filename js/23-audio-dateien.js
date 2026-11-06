@@ -155,7 +155,8 @@ const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/
                            landen: 'assets/audio/landen.wav', schritt: 'assets/audio/schritte.wav',
                            schalter: 'assets/audio/schalter.wav', tuer: 'assets/audio/tuer.wav'};
 // Nutzer 06.11. (Splice, auf 16 Bit Mono verkleinert): schalter.wav („RKU_DST Low Crunch“, 0,37 s) = Hebel umlegen und
-// Bodenplatte drücken; tuer.wav („Creepy Game Door Mechanism Unlock Gears Wheel Turning 1“, Zahnräder, 3,3 s) = Tür auf/zu;
+// Bodenplatte drücken; tuer.wav = Tür auf/zu – erst „Creepy Game Door Mechanism Unlock Gears“, seit
+// Nutzerwunsch („nimm das für die Tür“) „Steampunk Game Contraption Mech Interlock Gears Transform Wood 03“ (Holz-Zahnräder, 3,4 s);
 // (Liane-Knarzen liane.wav kurz drin, auf Nutzerwunsch „Liane sound raus“ wieder entfernt.) Das Quietschen (kurbel.wav) kommt außerdem, solange sich ein Windrad dreht.
 // Nutzer 06.11.: landen.wav (Splice „RockTumble1“, 0,9 s) = Landen nach einem Sprung; schritte.wav (Splice „Footstep Grass
 // Walk 1“, 11 s gemütliches Gehen, ~0,58 s je Schritt) – daraus wird je Schritt im Spiel EIN Gras-Tritt gespielt, so passt es
@@ -172,7 +173,7 @@ const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor]
            hin: [[0.14, .4]], her: [[1.92, .17, 1.6], [1.24, .24, 2]]},
   landen: {ganz: [[0, .75]]},
   schalter: {ganz: [[0, .37]]},
-  tuer: {ganz: [[0, 2.4]]},
+  tuer: {ganz: [[0.05, 2.7]]},
   // je Gras-Tritt [Anfang, Dauer, Ausgleich] – Ausgleich = alle Tritte etwa gleich laut (gemessen an der Hüllkurve)
   schritt: {tritt: [[0.80, .2, 1.6], [1.47, .2, 1.6], [2.10, .2, 1], [2.62, .2, 1.9], [3.21, .2, 1.9], [3.77, .2, 1.5],
                     [4.35, .2, 1.2], [4.85, .2, 1.3], [5.38, .2, .85], [5.90, .2, 2], [6.53, .2, 1], [7.09, .2, 1],
