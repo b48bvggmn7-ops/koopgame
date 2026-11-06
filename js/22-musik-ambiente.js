@@ -219,10 +219,10 @@ function musicUpdate(){
   mus.bus.gain.setTargetAtTime(own.music || musikAus ? 0 : MUSIC_VOL*VOL.music*(1 - 0.4*weather.rain), now, 1.5);
   // Hintergrund-Aufnahme draussen.mp3 (Nutzer 06.11.) ersetzt den erzeugten Wind/Grillen/Bach ganz
   const atmo = own.atmo ? 0 : 1;
-  mus.ambNodes.wind.gain.setTargetAtTime(atmo*AMB_VOL.wind*VOL.sfx*(0.35 + 0.65*sun)*(own.birds ? 0.5 : 1), now, 1);
+  mus.ambNodes.wind.gain.setTargetAtTime(atmo*AMB_VOL.wind*VOL.atmo*(0.35 + 0.65*sun)*(own.birds ? 0.5 : 1), now, 1);
   // Grillen: mit eigenen Aufnahmen sonst aus; Welt + Tageszeit (THEME.ambiente, Ausbau 7) holen sie z. B. nachts dazu
   const amb = typeof THEME !== 'undefined' && THEME && THEME.ambiente;
   const grillen = own.birds ? (amb ? amb.grillen : 0) : 1;
-  mus.ambNodes.crickets.gain.setTargetAtTime(atmo*AMB_VOL.crickets*VOL.sfx*sun*grillen, now, 1);
-  mus.ambNodes.brook.gain.setTargetAtTime(own.river || own.atmo ? 0 : AMB_VOL.brook*VOL.sfx*(0.5 + 0.5*sun), now, 1);
+  mus.ambNodes.crickets.gain.setTargetAtTime(atmo*AMB_VOL.crickets*VOL.atmo*sun*grillen, now, 1);
+  mus.ambNodes.brook.gain.setTargetAtTime(own.river || own.atmo ? 0 : AMB_VOL.brook*VOL.atmo*(0.5 + 0.5*sun), now, 1);
 }

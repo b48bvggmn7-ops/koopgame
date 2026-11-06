@@ -11,8 +11,9 @@ let audioCtx = null;
 // Gesamtlautstärke (Ton aus/an mit M, siehe 18-sound.js) – alle Geräusche laufen hier durch
 const MASTER_VOL = 0.7;   // Gesamtlautstärke aller Geräusche, Musik und Umgebung (1 = voll)
 // Lautstärke-Regler aus dem Menü „Optionen“ (0–1, 1 = wie bisher), im Browser gemerkt:
-// master = alles, music = Musik (Akkorde/Klavier), sfx = Geräusche und Umgebung (Vögel, Regen, Fluss)
-const VOL = {master: 1, music: 1, sfx: 1};
+// master = alles, music = Musik, sfx = Geräusche (Sprung, Hebel, Tür …), atmo = Hintergrund-Ton (Umgebung, Regen, Wind)
+// (atmo eigener Regler seit Nutzerwunsch 06.11., vorher hing der Hintergrund am Effekte-Regler)
+const VOL = {master: 1, music: 1, sfx: 1, atmo: 1};
 try{ Object.assign(VOL, JSON.parse(localStorage.getItem('monchichi_vol') || '{}')); }catch(e){}
 function masterLevel(){ return soundMuted ? 0 : MASTER_VOL*VOL.master; }
 function setVolume(k, v){

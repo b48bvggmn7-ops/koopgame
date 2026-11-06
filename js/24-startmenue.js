@@ -58,6 +58,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
       <div class="opt-row vol" id="sm-row-master"><label>Gesamt <b id="sm-v-master"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-master" tabindex="-1"></div>
       <div class="opt-row vol" id="sm-row-music"><label>Musik <b id="sm-v-music"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-music" tabindex="-1"></div>
       <div class="opt-row vol" id="sm-row-sfx"><label>Effekte <b id="sm-v-sfx"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-sfx" tabindex="-1"></div>
+      <div class="opt-row vol" id="sm-row-atmo"><label>Hintergrund <b id="sm-v-atmo"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-atmo" tabindex="-1"></div>
       <div class="opt-row" id="sm-row-fs"><button class="btn unlock" id="sm-fs" type="button" tabindex="-1">Vollbild an / aus</button></div>
       <div class="opt-row" id="sm-row-unlock"><button class="btn unlock" id="sm-unlock" type="button" tabindex="-1">Alle Level freischalten (zum Testen)</button></div>
       <div class="opt-row" id="sm-row-foto"><button class="btn unlock" id="sm-foto" type="button" tabindex="-1">Foto-Hintergrund: an</button></div>
@@ -393,7 +394,7 @@ function buildBackground() {
 const Snd = (() => {
   // Menü-Klänge kommen aus dem Spiel (18-sound.js), die Musik läuft wie im Spiel weiter;
   // die Regler steuern die Lautstärke des Spiels (VOL in 07-effekte-ton-muenzen.js)
-  const vol = { get master() { return VOL.master; }, get music() { return VOL.music; }, get sfx() { return VOL.sfx; } };
+  const vol = { get master() { return VOL.master; }, get music() { return VOL.music; }, get sfx() { return VOL.sfx; }, get atmo() { return VOL.atmo; } };
   // Design-Politur: Cursor/Wechsel/Zurück = leises Holz-Tap (bei schnellem Weiterschalten nicht jeder Schritt),
   // Bestätigen = weiches Tock, Start (Level/Countdown/bereit) = etwas deutlicheres Doppel-Tock – nichts klingelt
   const soft = ['move', 'back', 'tick', 'locked', 'swap'], deutlich = ['start', 'go', 'ready'];
@@ -728,15 +729,17 @@ function quitGame() {
 /* =====================================================================
    3) OPTIONEN
    ===================================================================== */
+// Lautstärke-Regler in dieser Reihenfolge (Zeilen 1–4 der Optionen); „Hintergrund“ = VOL.atmo (Nutzerwunsch 06.11.)
+const VOL_REGLER = ['master', 'music', 'sfx', 'atmo'];
 S.options = {
   el: $('#sm-s-options'), idx: 0, view: 'keyboard', rows: [],
   enter(arg) {
-    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-row-keys'), $('#sm-row-foto'), $('#sm-opt-back')];   // „Tasten belegen“, „Foto-Hintergrund“ hinten: alte Reihenfolge bleibt
-    this.idx = arg === 'tasten' ? 6 : 0; this.drawControls(); this.syncVol(); fotoHgKnopf(); this.paint();
+    this.rows = [$('#sm-opt-seg'), $('#sm-row-master'), $('#sm-row-music'), $('#sm-row-sfx'), $('#sm-row-atmo'), $('#sm-row-fs'), $('#sm-row-unlock'), $('#sm-row-keys'), $('#sm-row-foto'), $('#sm-opt-back')];   // „Tasten belegen“, „Foto-Hintergrund“ hinten: alte Reihenfolge bleibt
+    this.idx = arg === 'tasten' ? 7 : 0; this.drawControls(); this.syncVol(); fotoHgKnopf(); this.paint();
   },
   paint() { this.rows.forEach((r, i) => r.classList.toggle('sel', i === this.idx)); },
   syncVol() {
-    ['master', 'music', 'sfx'].forEach(k => {
+    VOL_REGLER.forEach(k => {
       const r = $('#sm-r-' + k), v = Math.round(Snd.vol[k] * 100);
       r.value = v; r.style.setProperty('--p', v + '%'); $('#sm-v-' + k).textContent = v + ' %';
     });
@@ -758,30 +761,30 @@ S.options = {
     else if (type === 'down') { this.idx = (this.idx + 1) % n; this.paint(); Snd.play('move'); }
     else if (type === 'left' || type === 'right') {
       if (this.idx === 0) this.toggleView();
-      else if (this.idx <= 3) {
-        const k = ['master', 'music', 'sfx'][this.idx - 1], r = $('#sm-r-' + k);
+      else if (this.idx <= VOL_REGLER.length) {
+        const k = VOL_REGLER[this.idx - 1], r = $('#sm-r-' + k);
         r.value = clamp(+r.value + (type === 'left' ? -10 : 10), 0, 100);
         r.dispatchEvent(new Event('input'));
       }
     }
     else if (type === 'confirm') {
       if (this.idx === 0) this.toggleView();
-      else if (this.idx === 4) toggleFullscreen();
-      else if (this.idx === 5) unlockAll();
-      else if (this.idx === 6) { Snd.play('ok'); go('tasten'); }
-      else if (this.idx === 7) fotoHgUmschalten();
-      else if (this.idx === 8) { Snd.play('back'); go('menu'); }
+      else if (this.idx === 5) toggleFullscreen();
+      else if (this.idx === 6) unlockAll();
+      else if (this.idx === 7) { Snd.play('ok'); go('tasten'); }
+      else if (this.idx === 8) fotoHgUmschalten();
+      else if (this.idx === 9) { Snd.play('back'); go('menu'); }
     }
     else if (type === 'back') { Snd.play('back'); go('menu'); }
   }
 };
 $$('#sm-opt-seg button').forEach(b => b.addEventListener('click', () => { S.options.idx = 0; S.options.paint(); S.options.setView(b.dataset.view); Snd.play('swap'); }));
-['master', 'music', 'sfx'].forEach((k, i) => {
+VOL_REGLER.forEach((k, i) => {
   const r = $('#sm-r-' + k);
   r.addEventListener('input', () => {
     Snd.setVol(k, +r.value);
     r.style.setProperty('--p', r.value + '%'); $('#sm-v-' + k).textContent = r.value + ' %';
-    if (k !== 'music') Snd.play('move');
+    if (k !== 'music' && k !== 'atmo') Snd.play('move');
   });
   $('#sm-row-' + k).addEventListener('pointerdown', () => { S.options.idx = i + 1; S.options.paint(); });
 });

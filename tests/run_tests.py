@@ -1119,6 +1119,11 @@ async def startmenue_lautstaerke(g):
     assert abs(await g.ev("VOL.music") - 0.8) < 0.01, f"Musik-Regler wirkt nicht: {await g.ev('VOL.music')}"
     assert '0.8' in await g.ev("localStorage.getItem('monchichi_vol')"), 'Lautstärke nicht gemerkt'
     assert await g.ev("VOL.master") == 1 and await g.ev("VOL.sfx") == 1, 'andere Regler verstellt'
+    # Regler „Hintergrund“ (Nutzer 06.11.) zwei Zeilen tiefer, nach „Effekte“
+    await p.keyboard.press('ArrowDown'); await p.keyboard.press('ArrowDown'); await p.wait_for_timeout(100)
+    await p.keyboard.press('ArrowLeft'); await p.wait_for_timeout(200)
+    assert abs(await g.ev("VOL.atmo") - 0.9) < 0.01 and await g.ev("VOL.sfx") == 1, f"Hintergrund-Regler wirkt nicht: {await g.ev('({...VOL})')}"
+    assert await g.ev("document.querySelector('#sm-row-atmo').classList.contains('sel')"), 'Hintergrund-Zeile nicht ausgewählt'
 
 @test
 async def pause_tastatur(g):
@@ -5768,7 +5773,7 @@ async def musik_und_ambiente(g):
 
 @test
 async def eigene_aufnahmen(g):
-    """Eigene Aufnahmen: Hintergrund wald.wav (seit 06.11. statt Vögel/Fluss, kurz draussen.mp3) und Regen laufen als nahtlose Schleife,
+    """Eigene Aufnahmen: Hintergrund hintergrund.mp3 (seit 06.11. statt Vögel/Fluss, kurz draussen.mp3, dann wald.wav) und Regen laufen als nahtlose Schleife,
     der erzeugte Wind/Bach ist dann aus. Musik seit 06.11. musik-nebel.mp3 („Warm Analog Fog“) als nahtlose Schleife
     (0:48 … 2:44, vor dem Sprung übergeblendet); einblenden, beim Tod aus, danach von vorne."""
     srv = webserver(); p = g.p
@@ -5796,7 +5801,13 @@ async def eigene_aufnahmen(g):
             assert sl['diff'] < 0.02, f'Naht hörbar (Ende passt nicht zum Anfang): {sl}'
         await p.wait_for_timeout(2500)
         amb = await g.ev("({atmo: fileAudio.loops.atmo.gain.value, wind: mus.ambNodes.wind.gain.value, bach: mus.ambNodes.brook.gain.value})")
-        assert amb['atmo'] > 0.1 and amb['wind'] < 0.01 and amb['bach'] < 0.01, f'Hintergrund-Ton falsch: {amb}'
+        assert amb['atmo'] > 0.03 and amb['wind'] < 0.01 and amb['bach'] < 0.01, f'Hintergrund-Ton falsch: {amb}'
+        # Regler „Hintergrund“ (VOL.atmo, Nutzer 06.11.): regelt nur den Hintergrund-Ton, nicht Effekte/Musik
+        await g.ev("setVolume('atmo', 0.2); 0"); await p.wait_for_timeout(2500)
+        leise = await g.ev("({atmo: fileAudio.loops.atmo.gain.value, sfx: VOL.sfx, music: VOL.music})")
+        await g.ev("setVolume('atmo', 1); 0")
+        assert leise['atmo'] < amb['atmo']*0.4 and leise['sfx'] == 1 and leise['music'] == 1, f'Hintergrund-Regler wirkt nicht: {amb} -> {leise}'
+        assert 'hintergrund.mp3' in await g.ev("AUDIO_FILES.atmo")
         # nahtlose Schleife: Anfang/Ende ohne Stille
         assert await g.ev("""(()=>{ const src = audioCtx.createBuffer(2, 44100*4, 44100);
             for(let c=0;c<2;c++){ const d=src.getChannelData(c); for(let i=0;i<d.length;i++) d[i]=Math.random()*0.4-0.2; }

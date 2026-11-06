@@ -312,6 +312,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     vor 0:48 übergeblendet, so gibt es keine Lücke und keinen Ruck. Das Ausklingen am Ende des Stücks kommt nie. Wie früher:
     setzt nach 2,5 s ein, blendet ein, beim Tod aus und danach von vorne; Pausenmenü gedämpft. Das erzeugte Klavier bleibt
     immer aus (`KLAVIER_AUS`, auch als Ersatz). Leistungsanzeige (F): Stelle im Stück und Lautstärke.
+    **Neuer Hintergrund-Ton** (Nutzer 06.11., Datei „untitled.mp3“ -> assets/audio/hintergrund.mp3, 3:30, gleichmäßig laut):
+    ersetzt wald.wav (bleibt liegen) als Hintergrund-Schleife (nahtlos, 2,5 s überblendet). Die Datei ist viel lauter
+    abgemischt, daher `FILE_VOL.atmo` 2,6 -> 0,075 (gemessen so laut wie vorher der Wald).
+    **Eigener Regler „Hintergrund“** unter Optionen → Lautstärke (nach Gesamt/Musik/Effekte; `VOL.atmo`, `VOL_REGLER` in js/24,
+    gemerkt in `monchichi_vol`): regelt Hintergrund-Ton, Regen und den erzeugten Wind/Grillen/Bach. Vorher hingen diese am
+    Effekte-Regler; „Effekte“ regelt jetzt nur noch die Geräusche (Sprung, Hebel, Tür …).
+    **Tür-Ton in normalem Tempo** (Nutzer: „klingt, als würde er langsamer abgespielt“): Schließen lief bewusst mit 0,9 (tiefer
+    und langsamer) – jetzt auf und zu gleich, Tempo 1, ohne die kleine Zufalls-Tonhöhe (`festesTempo`).
     **Hebel, Bodenplatte, Tür, Liane, Windrad** (Nutzer 06.11., Splice-Dateien, auf 16 Bit Mono verkleinert):
     Hebel umlegen und Bodenplatte betreten = schalter.wav (tiefer „Crunch“, `SFX.schalter`); Tür auf/zu = tuer.wav
     (Zahnräder, zu etwas tiefer; seit Nutzerwunsch „nimm das für die Tür“ die Steampunk-Datei „Contraption Mech Interlock

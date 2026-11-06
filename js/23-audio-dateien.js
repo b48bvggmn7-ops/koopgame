@@ -18,11 +18,14 @@
 //            Stellen wiederholt sich das Stück fast gleich (gemessen: Tonart-Ähnlichkeit 0,93, gleiche Lautstärke); die letzten
 //            4 s vor dem Sprung werden schon in den Klang von kurz vor 0:48 übergeblendet, so gibt es keinen Ruck.
 const AUDIO_FILES = {music: 'assets/audio/musik-nebel.mp3', birds: 'assets/audio/voegel.mp3',
-                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/wald.wav'};
+                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/hintergrund.mp3'};
+// atmo seit Nutzerwunsch (06.11., Datei „untitled.mp3“, 3:30, gleichmäßig laut) hintergrund.mp3 statt wald.wav (bleibt liegen);
+// nahtlose Schleife wie bisher (2,5 s überblendet). Die Datei ist rund 36× lauter abgemischt (RMS 0,108 statt 0,003) – damit
+// sie so laut ist wie der Wald-Ton, FILE_VOL.atmo 2,6 -> 0,075. Eigener Regler „Hintergrund“ (VOL.atmo) unter Optionen.
 // atmo: seit 06.11. wald.wav (Nutzer-Datei Splice „Forest_05“, 21 s, auf 16 Bit verkleinert) statt draussen.mp3 – gemessen
 // gleich laut (RMS 0,003), daher gleiche Lautstärke; draussen.mp3 bleibt liegen.
 // music 0,38 -> 0,15: die neue Musik ist kräftig abgemischt, „halbleise“ (Nutzer 06.11.); dann „3 % leiser“ -> 0,1455
-const FILE_VOL = {music: 0.1455, birds: 0.6, rain: 0.8, river: 2.0, atmo: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
+const FILE_VOL = {music: 0.1455, birds: 0.6, rain: 0.8, river: 2.0, atmo: 0.075};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
 const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
 const MUSIK_AUS = false;  // Nutzer 06.11.: erst „die Akkorde können raus“, dann „Warm Analog Fog“ als Musik; das erzeugte Klavier (22) bleibt aus
 const KLAVIER_AUS = true;   // das erzeugte Klavier (22) spielt nie mehr, auch nicht als Ersatz
@@ -198,7 +201,7 @@ function geraeuschSpielen(name, o){
     const S = GERAEUSCH_STUECKE[name] || {}, gruppen = Object.values(S);
     const liste = (o.stueck && S[o.stueck]) || gruppen[Math.floor(Math.random()*gruppen.length)] || [[0, buf.duration]];
     const [ab, dauer, faktor] = liste[Math.floor(Math.random()*liste.length)];
-    const src = a.createBufferSource(); src.buffer = buf; src.playbackRate.value = (o.rate || 1)*(1 + (Math.random() - 0.5)*0.08);
+    const src = a.createBufferSource(); src.buffer = buf; src.playbackRate.value = (o.rate || 1)*(o.festesTempo ? 1 : 1 + (Math.random() - 0.5)*0.08);
     const g = a.createGain(), t = a.currentTime, vol = (GERAEUSCH_VOL[name] || 0.3)*(faktor || 1)*(o.vol || 1)*VOL.sfx;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.012);
     g.gain.setValueAtTime(vol, t + Math.max(0.02, dauer - 0.06)); g.gain.linearRampToValueAtTime(0.0001, t + dauer);
@@ -237,9 +240,9 @@ function fileAudioUpdate(){
   const L = fileAudio.loops;
   // Ausbau 7: Welt + Tageszeit regeln Vögel/Fluss mit (THEME.ambiente, 10a-themen.js) – z. B. nachts keine Vögel
   const amb = (typeof THEME !== 'undefined' && THEME && THEME.ambiente) || {voegel: 1, fluss: 1};
-  if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.sfx*sun*sun*fileAudio.birdsBack*amb.voegel, now, 1.2);
-  if(L.atmo) L.atmo.gain.setTargetAtTime(FILE_VOL.atmo*VOL.sfx, now, 1.5);
-  if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*VOL.sfx*r, now, 0.8);
+  if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.atmo*sun*sun*fileAudio.birdsBack*amb.voegel, now, 1.2);
+  if(L.atmo) L.atmo.gain.setTargetAtTime(FILE_VOL.atmo*VOL.atmo, now, 1.5);
+  if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*VOL.atmo*r, now, 0.8);
   if(L.river){
     // Wasserfall im Bild? (Hintergrund-Ebene mit Wasserfall, gleiche Rechnung wie beim Zeichnen)
     let near = 0;
@@ -248,6 +251,6 @@ function fileAudioUpdate(){
       for(const base of [0, BG_TW]){ const x = wf.x - off + base; near = Math.max(near, 1 - Math.min(1, Math.abs(x - VW/2)/(VW*0.7))); }
     }
     const afterRain = weather.phase === 'clear' || (weather.phase === 'sun' && weather.t < 30) ? 0.3 : 0;
-    L.river.gain.setTargetAtTime(FILE_VOL.river*VOL.sfx*(0.45 + 0.35*near + 0.3*r + afterRain)*amb.fluss, now, 1.5);
+    L.river.gain.setTargetAtTime(FILE_VOL.river*VOL.atmo*(0.45 + 0.35*near + 0.3*r + afterRain)*amb.fluss, now, 1.5);
   }
 }
