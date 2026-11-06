@@ -5943,6 +5943,40 @@ async def ton_schalter_tuer_liane_windrad(g):
     assert r['auf'] == 1 and r['zu'] == 1, f'Tür-Ton mehrfach / fehlt: {r}'
 
 @test
+async def haken_nach_wandrutschen(g):
+    """Nutzer 06.11. (Bug): Wand runterrutschen, von der Wand abspringen und an einen Haken – der Haken muss greifen
+    (auch bei kurzem Antippen von G in Reichweite). Ursachen: G zu früh gedrückt (noch außer Reichweite) und gehalten griff nie;
+    an der Wand in Reichweite gedrückt hing er an der Wand am Seil, der Wandsprung löste es, derselbe Haken war gesperrt.
+    Jetzt: G gehalten = greift, sobald ein Haken in Reichweite ist und der Affe von der Wand weg ist."""
+    await g.load(level([ground(0, 680, 3000), ground(360, 0, 40, 680, 'wall')], {'x': 420, 'y': 300}, {'x': 120, 'y': 680},
+                       hooks=[{'x': 640, 'y': 260, 'radius': 260}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const P = p1, h = hooks[0], log = [];
+      const st = n => { for(let i = 0; i < n; i++){ stepSim(ts += 1000/54); for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false;
+        log.push([Math.round(P.x), Math.round(P.y), +P.vy.toFixed(1), P.rutscht ? 1 : 0, P.onWall, P.hookAttached ? 1 : 0, P._hakenWarten ? 1 : 0]); } };
+      const ergebnis = [];
+      // [Schritte nach dem Absprung bis G, so lange G gehalten, G schon an der Wand gedrückt und gehalten]
+      // (kurz angetippt ÜBER dem Haken greift bewusst nicht: an der Liane gilt „G halten = festhalten“)
+      for(const [warte, halten, vorher] of [[4, 1, 0], [8, 1, 0], [12, 1, 0], [4, 30, 0], [8, 30, 0], [14, 30, 0], [0, 60, 1], [0, 45, 1]]){
+        P.x = 520; P.y = 260; P.vx = -9; P.vy = 0; P.grounded = false; P.hookAttached = false; P._hakenWarten = false; P.onWall = 0;
+        P.lianeSperre = 0; P._gegriffenA = null; P.lastWallJumpSide = 0; P.wjInputLock = 0; P._px = P.x; P._py = P.y; log.length = 0;
+        KEYS.KeyA = true; st(22);                     // gegen die Wand fliegen und runterrutschen
+        if(vorher){ KEYS.KeyG = true; KEYS.KeyG_pressed = true; }   // G schon beim Rutschen gedrückt (zu früh) und gehalten
+        st(8);
+        const rutschte = log.some(z => z[3]), wandLog = log.slice(-9).map(z => z.join(' '));
+        KEYS.KeyA = false; KEYS.KeyD = true; KEYS.Space = true; KEYS.Space_pressed = true; st(1); KEYS.Space = false;   // Wandsprung weg von der Wand
+        const sprung = P.vx > 2;
+        st(warte); KEYS.KeyG = true; if(!vorher) KEYS.KeyG_pressed = true; let griff = false;
+        for(let i = 0; i < 60; i++){ st(1); if(i + 1 >= halten) KEYS.KeyG = false; if(P.hookAttached){ griff = true; break; } }
+        KEYS.KeyG = false; KEYS.KeyD = false;
+        const d = Math.round(Math.hypot(P.x - h.x, P.y - P.h*0.6 - h.y));
+        ergebnis.push({warte, halten, vorher, rutschte, sprung, griff, d, wandLog});
+        P.hookAttached = false;
+      }
+      menuScreen = null; return ergebnis; })()""")
+    assert all(e['rutschte'] and e['sprung'] for e in r), f'Aufbau stimmt nicht: {r}'
+    assert all(e['griff'] for e in r), f'Haken greift nach dem Wand-Rutschen nicht: {[e for e in r if not e["griff"]]}'
+
+@test
 async def seil_abflug_mit_schwung(g):
     """Vom Seil loslassen (Springen) mit Schwung: Affe fliegt weit weiter, auch ohne Taste (kein Abbremsen auf 7,2).
     (Schritt für Schritt im festen Takt – unabhängig davon, wie schnell der Rechner ist; Liane 2 seit Nutzerwunsch.)"""

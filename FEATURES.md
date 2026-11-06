@@ -177,6 +177,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - Haken-Taste hektisch drücken (Nutzer-Video „G spammen“): nach dem Loslassen lässt sich DERSELBE Haken ⅓ s lang nicht
     wieder greifen (LIANE_SPERRE), und den Loslass-Schub gibt es erst, wenn der Affe mindestens ¼ s am Seil hing
     (LIANE_BOOST_HALTEN) – kein wildes Hüpfen um den Haken mehr. Ein anderer Haken (Haken-Kette) geht sofort. Test liane_g_spammen.
+  - **G gehalten = greift, sobald es geht** (Nutzer-Bug 06.11.: „Wand runterrutschen, von der Wand an einen Haken springen –
+    Haken funktioniert nicht“): G in der Luft gedrückt, aber noch kein Haken in Reichweite -> der Affe wartet und greift, sobald
+    einer in Reichweite kommt, solange G gehalten wird (vorher war der Druck verloren). An der Wand gedrückt (z. B. beim
+    Runterrutschen) wird nur vorgemerkt: er greift erst, wenn er von der Wand weg ist (vorher hing er an der Wand am Seil, der
+    Wandsprung löste es und derselbe Haken war gesperrt). Nur mit „Liane halten“ (`hakenDanebenGedrueckt`, `lianeGriffPruefen`
+    in js/32), alte Antipp-Bedienung unverändert. Test haken_nach_wandrutschen.
   - Liane HALTEN (Nutzerwunsch): Die Haken-Taste (G / Num 1 / □) muss GEDRÜCKT GEHALTEN werden, solange der Affe am Seil
     hängt; Taste loslassen = abspringen, ohne Leertaste (js/32 lianeLoslassen; LIANE_HALTEN in 02, false = alte
     Antipp-Bedienung). Mit Schwung gibt es einen Absprung-Schub in Schwungrichtung (LIANE_BOOST 2,4 px/Schritt

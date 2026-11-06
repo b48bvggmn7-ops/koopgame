@@ -272,6 +272,11 @@ function lianeFreiUnten(A, P){
 }
 // Hand so weit über dem Haken, dass das Seil steiler als LIANE_GRIFF_WINKEL (von unten gemessen) nach oben zeigen würde?
 function lianeUeberHaken(P, A){ const dx = P.x - A.x, dy = P.y - P.h*0.6 - A.y; return Math.abs(Math.atan2(dx, dy))*180/Math.PI > LIANE_GRIFF_WINKEL; }
+// G in der Luft gedrückt, aber (noch) kein Haken in Reichweite (Aufruf aus 08): solange G gehalten wird, greift der Affe,
+// sobald einer in Reichweite kommt (nur Liane 2 mit „halten“-Bedienung, nicht in der alten Antipp-Bedienung des Bahnen-Tests)
+function hakenDanebenGedrueckt(P){
+  if(P.male && !P.grounded && !P.hookAttached && LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus) P._hakenWarten = true;
+}
 function lianeGriffPruefen(P){
   if(P.lianeSperre > 0) P.lianeSperre--;
   const K = P.keys || {};
@@ -282,9 +287,10 @@ function lianeGriffPruefen(P){
   P._wartZiel = null;
   if(P._hakenWarten){
     const t = findHookTarget(P);
-    if(!t) P._hakenWarten = false;   // außer Reichweite: loslassen
-    else P._wartZiel = t;
-    if(t && !lianeUeberHaken(P, t) && !(P.lianeSperre > 0 && t === P.lianeSperreA)){
+    // außer Reichweite: weiter warten, solange G gehalten wird (Nutzer-Bug 06.11.: „Wand runterrutschen, abspringen, Haken
+    // geht nicht“ – G zu früh gedrückt, noch weit weg; dann griff er nie). Greift, sobald ein Haken in Reichweite kommt.
+    if(t) P._wartZiel = t;
+    if(t && !P.onWall && !lianeUeberHaken(P, t) && !(P.lianeSperre > 0 && t === P.lianeSperreA)){
       P.hookAttached = true; P.anchor = t; P.ropeWasAirborne = true; P._hakenWarten = false;   // in der Luft gegriffen: Landen löst das Seil
       P.ropeLen = Math.hypot(t.x - P.x, t.y - (P.y - P.h*0.6)); P.ropeMax = Math.max(P.ropeLen, hookRange(t));
     }
@@ -292,6 +298,9 @@ function lianeGriffPruefen(P){
   if(P.hookAttached && P._gegriffenA !== P.anchor){   // gerade gegriffen (08)
     if(P.lianeSperre > 0 && P.anchor === P.lianeSperreA){ P.hookAttached = false; return; }   // zu schnell wieder derselbe Haken
     if(!P.grounded && lianeUeberHaken(P, P.anchor)){ P.hookAttached = false; P._hakenWarten = true; return; }   // über dem Haken: erst fallen
+    // an der Wand (z. B. beim Runterrutschen) gedrückt: nur vormerken – greift, sobald der Affe von der Wand weg ist (Wandsprung).
+    // Sonst hing er an der Wand am Seil, der Wandsprung löste es, und derselbe Haken war gesperrt (Nutzer-Bug 06.11.)
+    if(!P.grounded && P.onWall && LIANE_HALTEN && !window.hakenTippen && !window.liane2Aus){ P.hookAttached = false; P._hakenWarten = true; return; }
     P._gegriffenA = P.anchor; P._lianeHalten = 0; P._griffSchritt = schrittNr();
     // Nutzerwunsch: die Liane gibt sofort bis an den Rand der Reichweite nach – der Affe fällt hinein und schwingt dann
     // (ganz nah hängen ist selten gewollt; hochziehen geht weiter mit W). Vom Boden aus gegriffen bleibt es straff, damit W

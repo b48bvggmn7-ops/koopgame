@@ -104,7 +104,7 @@ function updatePlayer(player, now){
           player.ropeLen = Math.hypot(target.x-player.x, target.y-(player.y-player.h*0.6));
           // runterlassen bis an den äußeren Rand des Reichweiten-Rings
           player.ropeMax = Math.max(player.ropeLen, hookRange(target));
-        }
+        } else if(typeof hakenDanebenGedrueckt === 'function') hakenDanebenGedrueckt(player);   // G gehalten: greift, sobald ein Haken in Reichweite kommt (js/32)
       }
     }
   }
