@@ -5762,15 +5762,15 @@ async def musik_und_ambiente(g):
     assert st['up'] > 8, f'Regenbogen-Musik nicht heller: {st}'
     await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
-        # Nutzer 06.11.: Akkorde raus (MUSIK_AUS) – das erzeugte Klavier darf nicht spielen
+        # Nutzer 06.11.: Akkorde raus (KLAVIER_AUS) – das erzeugte Klavier darf nie spielen, auch nicht als Ersatz
         await g.p.wait_for_timeout(3000)
-        assert await g.ev("MUSIK_AUS && mus.log.length === 0 && (!mus.bus || mus.bus.gain.value < 0.01)"), 'Klavier-Musik spielt trotz MUSIK_AUS'
+        assert await g.ev("KLAVIER_AUS && mus.log.length === 0 && (!mus.bus || mus.bus.gain.value < 0.01)"), 'Klavier-Musik spielt trotz KLAVIER_AUS'
 
 @test
 async def eigene_aufnahmen(g):
     """Eigene Aufnahmen: Hintergrund wald.wav (seit 06.11. statt Vögel/Fluss, kurz draussen.mp3) und Regen laufen als nahtlose Schleife,
-    der erzeugte Wind/Bach ist dann aus. Seit 06.11. keine Akkord-Musik mehr (MUSIK_AUS): musik.mp3 wird nicht geladen.
-    (Die Musik-Prüfungen – einblenden, beim Tod aus, von vorne – laufen nur, wenn MUSIK_AUS wieder false ist.)"""
+    der erzeugte Wind/Bach ist dann aus. Musik seit 06.11. musik-nebel.mp3 („Warm Analog Fog“) als nahtlose Schleife
+    (0:48 … 2:44, vor dem Sprung übergeblendet); einblenden, beim Tod aus, danach von vorne."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
@@ -5784,9 +5784,16 @@ async def eigene_aufnahmen(g):
         ok = await g.ev("({...fileAudio.ok})")
         assert ok.get('atmo') and ok.get('rain') and 'birds' not in ok and 'river' not in ok, f'Schleifen nicht geladen / alte noch da: {ok}'
         if musik_aus:
-            assert not await g.ev("!!fileAudio.el"), 'musik.mp3 wird trotz MUSIK_AUS geladen'
+            assert not await g.ev("!!fileAudio.musikBuf"), 'Musik wird trotz MUSIK_AUS geladen'
         else:
             assert ok.get('music'), f'Musik spielt nicht: {ok}'
+            # Schleife: Quelle springt von „bis“ nach „ab“; kurz vor „bis“ klingt der Puffer schon wie kurz vor „ab“
+            sl = await g.ev("""(()=>{ const m = fileAudio.musikBuf, q = fileAudio.musikQuelle, sr = m.buf.sampleRate;
+                const d = m.buf.getChannelData(0), bis = Math.round(m.bis*sr), ab = Math.round(m.ab*sr);
+                let diff = 0; for(let i=1;i<200;i++) diff = Math.max(diff, Math.abs(d[bis-i] - d[ab-i]));
+                return {loop: q.loop, ab: q.loopStart, bis: q.loopEnd, dauer: m.buf.duration, diff}; })()""")
+            assert sl['loop'] and 46 < sl['ab'] < 50 and 160 < sl['bis'] < 166 and abs(sl['dauer'] - sl['bis']) < 0.01, f'Musik-Schleife falsch: {sl}'
+            assert sl['diff'] < 0.02, f'Naht hörbar (Ende passt nicht zum Anfang): {sl}'
         await p.wait_for_timeout(2500)
         amb = await g.ev("({atmo: fileAudio.loops.atmo.gain.value, wind: mus.ambNodes.wind.gain.value, bach: mus.ambNodes.brook.gain.value})")
         assert amb['atmo'] > 0.1 and amb['wind'] < 0.01 and amb['bach'] < 0.01, f'Hintergrund-Ton falsch: {amb}'
@@ -5797,13 +5804,13 @@ async def eigene_aufnahmen(g):
             return Math.abs(b.length - 44100*3) < 50 && Math.abs(d[0]) < 0.25; })()"""), 'Schleife kaputt'
         if musik_aus: return
         await p.wait_for_timeout(3000)
-        t1 = await g.ev("fileAudio.el.currentTime")
+        t1 = await g.ev("musikPosition()")
         assert t1 > 1, f'Musik läuft nicht weiter: {t1}'
         # Tod -> ausblenden; weitermachen -> von vorne
         await g.ev("die(p1)"); await p.wait_for_timeout(1500)
         assert await g.ev("fileAudio.gain.gain.value") < 0.05, 'Musik blendet beim Tod nicht aus'
         await p.keyboard.press('KeyA'); await p.wait_for_timeout(2600)
-        assert await g.ev("fileAudio.el.currentTime") < 3, 'Musik startet nach dem Tod nicht von vorne'
+        assert await g.ev("musikPosition()") < 3, 'Musik startet nach dem Tod nicht von vorne'
     finally:
         srv.shutdown()
 
@@ -5826,6 +5833,47 @@ async def ton_landen_und_schritte(g):
         assert r['alle'] and r['n'] >= 10, f'Gras-Tritte falsch geschnitten: {r}'
     finally:
         srv.shutdown()
+
+@test
+async def ton_schalter_tuer_liane_windrad(g):
+    """Nutzer 06.11.: Hebel + Bodenplatte = schalter.wav (Crunch), Tür = tuer.wav (Zahnräder), Affe an der Liane = je
+    Umkehrpunkt ein Knarzer aus liane.wav, Windrad = Quietschen (kurbel.wav), solange es sich dreht – beim Auslaufen hört es auf."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
+        await startmenue_bis_level(g)
+        if await g.ev("audioCtx && audioCtx.state === 'running'"):
+            await g.ev("geraeuscheLaden(); 0")
+            await p.wait_for_function("geraeusche.buf.schalter && geraeusche.buf.tuer && geraeusche.buf.liane", timeout=15000)
+            r = await g.ev("""(() => { const ok = {};
+              for(const n of ['schalter', 'tuer', 'liane']){ const d = geraeusche.buf[n].duration;
+                ok[n] = Object.values(GERAEUSCH_STUECKE[n]).flat().every(([a, l]) => a + l <= d + 0.01); }
+              ok.spielt = geraeuschSpielen('schalter', {}) && geraeuschSpielen('tuer', {}) && geraeuschSpielen('liane', {}); return ok; })()""")
+            assert all(r.values()), f'Aufnahmen fehlen / falsch geschnitten: {r}'
+    finally:
+        srv.shutdown()
+    # Auslöser im Spiel (Log zählt auch ohne Tonausgabe)
+    await g.load(level([ground(0, 680, 4000)], {'x': 200, 'y': 680}, {'x': 120, 'y': 680},
+                       switches=[{'x': 400, 'y': 680, 'link': 1}], plates=[{'x': 600, 'y': 660, 'link': 2}],
+                       hooks=[{'x': 1500, 'y': 250, 'radius': 260}], windraeder=[{'x': 900, 'y': 680, 'link': 3}]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const st = n => { for(let i = 0; i < n; i++){ stepSim(ts += 1000/54);
+        for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false; } };
+      const n = name => SFX_LOG.filter(s => s === name).length;
+      SFX_LOG.length = 0; triggerSwitch(switchDefs[0], p1); const hebel = n('schalter');
+      SFX_LOG.length = 0; p2.x = plates[0].x; p2.y = plates[0].y + 20; p2.vx = 0; p2.vy = 0; p2.grounded = true; st(3); const platte = n('schalter');
+      SFX_LOG.length = 0; SFX.door(true, 0); const tuer = n('dooropen');
+      // Windrad: angepustet -> quietscht wiederholt; ohne Wind läuft es aus und hört auf
+      SFX_LOG.length = 0; const w = windraeder[0]; for(let i = 0; i < 120; i++){ w.mausWind = 1; st(1); } const wind = n('windradquietsch');
+      st(400); SFX_LOG.length = 0; st(120); const windAus = n('windradquietsch');
+      // Liane: Affe schwingt (ohne Tasten) – an den Umkehrpunkten knarzt es, nicht bei jedem Schritt
+      const h = hooks[0], P = p1; P.x = h.x - 150; P.y = h.y + 100 + P.h*0.6; P.vx = 0; P.vy = 0; P.grounded = false; P._px = P.x; P._py = P.y;
+      P.hookAttached = true; P.ropeWasAirborne = true; P.anchor = h; P.ropeLen = 180; P.ropeMax = 220; KEYS.KeyG = true;
+      SFX_LOG.length = 0; st(300); KEYS.KeyG = false; const liane = n('lianeknarz'), haengt = P.hookAttached;
+      menuScreen = null; return {hebel, platte, tuer, wind, windAus, liane, haengt}; })()""")
+    # (geraeuschSpielen schreibt den Namen der Aufnahme noch einmal ins Log – daher mit Ton 2 Einträge)
+    assert 1 <= r['hebel'] <= 2 and 1 <= r['platte'] <= 2 and r['tuer'] == 1, f'Hebel/Platte/Tür ohne neuen Laut: {r}'
+    assert 2 <= r['wind'] <= 6 and r['windAus'] == 0, f'Windrad quietscht falsch: {r}'
+    assert r['haengt'] and 2 <= r['liane'] <= 8, f'Liane knarzt falsch: {r}'
 
 @test
 async def seil_abflug_mit_schwung(g):

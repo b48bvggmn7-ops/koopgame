@@ -212,7 +212,8 @@ function musicUpdate(){
   musicPrepare();
   if(!mus.ready) return;
   if(mus.nextT < audioCtx.currentTime) mus.nextT = audioCtx.currentTime + 0.1;   // nach Pause/Tab-Wechsel nicht nachholen
-  const musikAus = typeof MUSIK_AUS !== 'undefined' && MUSIK_AUS;   // Akkorde raus (Nutzer 06.11., js/23)
+  // Akkorde/Klavier raus (Nutzer 06.11.) – auch als Ersatz, wenn die Musik-Datei (js/23) nicht lädt
+  const musikAus = typeof KLAVIER_AUS !== 'undefined' && KLAVIER_AUS;
   if(!own.music && !musikAus) musicSchedule();
   const now = audioCtx.currentTime, sun = 1 - weather.rain;
   mus.bus.gain.setTargetAtTime(own.music || musikAus ? 0 : MUSIC_VOL*VOL.music*(1 - 0.4*weather.rain), now, 1.5);

@@ -305,6 +305,20 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     **Keine Musik mehr** (Nutzer 06.11.: „die Akkorde können raus“): `MUSIK_AUS = true` in js/23 – musik.mp3 wird nicht
     geladen und das erzeugte Klavier (js/22) spielt auch nicht; Datei bleibt liegen, zurück mit `MUSIK_AUS = false`.
     Leistungsanzeige (F): „Musik: aus“.
+    **Neue Musik „Warm Analog Fog“** (Nutzer 06.11.: „halbleise“, „als Loop ohne dass man es bemerkt“) ->
+    assets/audio/musik-nebel.mp3 (3:40), `MUSIK_AUS = false`, Lautstärke `FILE_VOL.music` 0,15. Wird ganz geladen und als
+    nahtlose Schleife gespielt: einmal von vorne (mit dem sanften Anfang), danach immer 0:48 … 2:44 (`MUSIK_SCHLEIFE`) – an
+    diesen Stellen wiederholt sich das Stück fast gleich (gemessen), und die letzten 4 s vor dem Sprung sind schon in den Klang
+    vor 0:48 übergeblendet, so gibt es keine Lücke und keinen Ruck. Das Ausklingen am Ende des Stücks kommt nie. Wie früher:
+    setzt nach 2,5 s ein, blendet ein, beim Tod aus und danach von vorne; Pausenmenü gedämpft. Das erzeugte Klavier bleibt
+    immer aus (`KLAVIER_AUS`, auch als Ersatz). Leistungsanzeige (F): Stelle im Stück und Lautstärke.
+    **Hebel, Bodenplatte, Tür, Liane, Windrad** (Nutzer 06.11., Splice-Dateien, auf 16 Bit Mono verkleinert):
+    Hebel umlegen und Bodenplatte betreten = schalter.wav (tiefer „Crunch“, `SFX.schalter`); Tür auf/zu = tuer.wav
+    (Zahnräder, zu etwas tiefer); Affe an der Liane = an jedem Umkehrpunkt des Schwungs ein Holz-/Seil-Knarzer aus liane.wav
+    (nur wenn richtig geschwungen, `LIANE_KNARZ_TEMPO`, höchstens alle 0,3 s, kräftiger je schneller); Windrad = das
+    Quietschen (kurbel.wav), solange es sich dreht – je zwei Umdrehungen ein Laut (`WINDRAD_QUIETSCH_WEG`), beim Auslaufen
+    leiser und tiefer, steht es, ist Ruhe. Windrad-Umschalten und Draisine behalten ihren Klack. Ohne Datei die erzeugten
+    Klänge. Test ton_schalter_tuer_liane_windrad.
     Lädt eine Datei nicht, bleibt der erzeugte Klang (Klavier, Grillen, Bach, Regen) als Ersatz.
   - Hintergrundmusik + Sonnen-Ambiente (js/22-musik-ambiente.js, alles im Browser erzeugt, keine Aufnahmen):
     ruhiges, verträumtes Klavier (Nutzerwahl), live komponiert: warme Akkordfolgen in F-Dur (~64 Schläge/min), gebrochene

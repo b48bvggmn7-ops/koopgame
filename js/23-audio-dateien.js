@@ -13,13 +13,20 @@
 //            geladen, Dateien bleiben liegen) und den erzeugten Wind/Grillen/Bach; läuft gleichmäßig als Schleife.
 // Kurze Dateien laufen als nahtlose Schleife (Ende und Anfang weich ineinander geblendet).
 // Lädt eine Datei nicht (z. B. Spiel als Datei geöffnet), bleibt der erzeugte Klang aus 19/22 aktiv.
-const AUDIO_FILES = {music: 'assets/audio/musik.mp3', birds: 'assets/audio/voegel.mp3',
+// musik-nebel.mp3 (Nutzer 06.11., „Warm Analog Fog“, 3:40): Hintergrund-Musik „halbleise“ statt musik.mp3 (bleibt liegen).
+//            Läuft als unhörbare Schleife: einmal von vorne (mit dem sanften Anfang), dann immer 0:48 … 2:43,96 – an diesen
+//            Stellen wiederholt sich das Stück fast gleich (gemessen: Tonart-Ähnlichkeit 0,93, gleiche Lautstärke); die letzten
+//            4 s vor dem Sprung werden schon in den Klang von kurz vor 0:48 übergeblendet, so gibt es keinen Ruck.
+const AUDIO_FILES = {music: 'assets/audio/musik-nebel.mp3', birds: 'assets/audio/voegel.mp3',
                      rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/wald.wav'};
 // atmo: seit 06.11. wald.wav (Nutzer-Datei Splice „Forest_05“, 21 s, auf 16 Bit verkleinert) statt draussen.mp3 – gemessen
 // gleich laut (RMS 0,003), daher gleiche Lautstärke; draussen.mp3 bleibt liegen.
-const FILE_VOL = {music: 0.38, birds: 0.6, rain: 0.8, river: 2.0, atmo: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
+// music 0,38 -> 0,15: die neue Musik ist kräftig abgemischt, „halbleise“ (Nutzer 06.11.)
+const FILE_VOL = {music: 0.15, birds: 0.6, rain: 0.8, river: 2.0, atmo: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
 const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
-const MUSIK_AUS = true;   // Nutzer 06.11.: „die Akkorde können raus“ – weder musik.mp3 noch das erzeugte Klavier (22)
+const MUSIK_AUS = false;  // Nutzer 06.11.: erst „die Akkorde können raus“, dann „Warm Analog Fog“ als Musik; das erzeugte Klavier (22) bleibt aus
+const KLAVIER_AUS = true;   // das erzeugte Klavier (22) spielt nie mehr, auch nicht als Ersatz
+const MUSIK_SCHLEIFE ={ab: 48.0, bis: 163.958, blende: 4};   // Sekunden: Schleifen-Anfang, -Ende, Überblenden davor
 const MUSIC_START_DELAY = 2.5;   // Sekunden Stille, bevor die Musik einsetzt
 const MUSIC_FADE_IN = 7;         // Sekunden Einblenden
 const MUSIC_RESTART_DELAY = 1.5; // nach dem Weitermachen (Tod) erst kurz still, dann von vorne
@@ -54,17 +61,19 @@ function fileAudioStart(){
   const a = audioCtx;
   geraeuscheLaden();   // Knarzen/Kurbel (unten)
   // Musik: gestreamt über ein <audio>-Element, durch Klangfilter und Lautstärke geleitet
+  // Musik: ganz geladen und dekodiert (nahtlose Schleife, siehe musikSchleifeBauen), durch Klangfilter und Lautstärke geleitet
   if(!MUSIK_AUS) try{
-    const el = new Audio(); el.src = AUDIO_FILES.music; el.loop = true; el.preload = 'auto';
-    const node = a.createMediaElementSource(el);
     fileAudio.shelf = a.createBiquadFilter(); fileAudio.shelf.type = 'highshelf'; fileAudio.shelf.frequency.value = 3500; fileAudio.shelf.gain.value = 0;
     fileAudio.muffle = a.createBiquadFilter(); fileAudio.muffle.type = 'lowpass'; fileAudio.muffle.frequency.value = 20000; fileAudio.muffle.Q.value = 0.5;
     fileAudio.gain = a.createGain(); fileAudio.gain.gain.value = 0;
-    node.connect(fileAudio.shelf); fileAudio.shelf.connect(fileAudio.muffle); fileAudio.muffle.connect(fileAudio.gain); fileAudio.gain.connect(audioOut());
-    fileAudio.el = el;
-    el.addEventListener('playing', ()=>{ fileAudio.ok.music = true; fileAudio.blocked = false; });
-    el.addEventListener('error', ()=>{ fileAudio.ok.music = false; fileAudio.err = true; });
-    setTimeout(()=> fileMusicRestart(MUSIC_FADE_IN, 0), MUSIC_START_DELAY*1000);
+    fileAudio.shelf.connect(fileAudio.muffle); fileAudio.muffle.connect(fileAudio.gain); fileAudio.gain.connect(audioOut());
+    const bereit = Date.now() + MUSIC_START_DELAY*1000;
+    fetch(AUDIO_FILES.music).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(ab => a.decodeAudioData(ab))
+      .then(buf => {
+        fileAudio.musikBuf = musikSchleifeBauen(a, buf);
+        setTimeout(()=> fileMusicRestart(MUSIC_FADE_IN, 0), Math.max(0, bereit - Date.now()));
+      }).catch(()=>{ fileAudio.ok.music = false; fileAudio.err = true; });
   }catch(e){}
   // kurze Schleifen: laden, dekodieren, nahtlos machen
   for(const key of ATMO_STATT_VOEGEL_FLUSS ? ['atmo', 'rain'] : ['birds', 'rain', 'river']){
@@ -78,38 +87,56 @@ function fileAudioStart(){
       }).catch(()=>{ fileAudio.ok[key] = false; });
   }
 }
-// Abspielen; blockiert der Browser das (Autoplay-Regeln), klappt es beim nächsten Tastendruck/Klick
-function fileMusicPlay(){
-  const el = fileAudio.el; if(!el) return;
-  const p = el.play();
-  if(p && p.catch) p.catch(()=>{ fileAudio.blocked = true; });
+// Schleife ohne hörbare Naht: die letzten „blende“ Sekunden vor dem Schleifen-Ende werden in den Klang von kurz vor dem
+// Schleifen-Anfang übergeblendet (gleiche Leistung). Springt das Abspielen dann von „bis“ nach „ab“, geht es genau dort weiter.
+function musikSchleifeBauen(a, buf){
+  const sr = buf.sampleRate, S = MUSIK_SCHLEIFE;
+  const ab = Math.round(S.ab*sr), bis = Math.min(buf.length, Math.round(S.bis*sr)), f = Math.min(Math.round(S.blende*sr), ab);
+  if(bis - ab < 2*f) return {buf, ab: 0, bis: buf.duration};
+  const out = a.createBuffer(buf.numberOfChannels, bis, sr);
+  for(let ch = 0; ch < buf.numberOfChannels; ch++){
+    const src = buf.getChannelData(ch), dst = out.getChannelData(ch);
+    dst.set(src.subarray(0, bis));
+    for(let i = 0; i < f; i++){
+      const k = (i/f)*Math.PI/2;
+      dst[bis - f + i] = src[bis - f + i]*Math.cos(k) + src[ab - f + i]*Math.sin(k);
+    }
+  }
+  return {buf: out, ab: ab/sr, bis: bis/sr};
 }
-function fileMusicUnblock(){ if(fileAudio.el && fileAudio.blocked && fileAudio.el.paused) fileMusicPlay(); }
-window.addEventListener('keydown', fileMusicUnblock);
-window.addEventListener('pointerdown', fileMusicUnblock);
 // Zustand für die Leistungsanzeige (Taste F)
 function audioStatusText(){
   if(soundMuted) return 'Ton: aus (M)';
   if(!audioCtx || audioCtx.state !== 'running') return 'Ton: wartet auf ersten Tastendruck';
   if(MUSIK_AUS) return 'Musik: aus (nur Hintergrund-Ton)';
-  const el = fileAudio.el;
-  if(!el) return 'Musik: startet gleich';
   if(fileAudio.err) return 'Musik: Datei lädt nicht';
-  if(fileAudio.blocked) return 'Musik: vom Browser blockiert – Taste drücken';
-  if(el.paused) return 'Musik: Pause';
-  const t = Math.floor(el.currentTime), vol = fileAudio.gain ? fileAudio.gain.gain.value : 0;
-  return 'Musik: spielt ' + Math.floor(t/60) + ':' + String(t%60).padStart(2, '0') + '  Lautst. ' + Math.round(vol*100) + '%' +
-         (el.readyState < 3 ? ' (lädt…)' : '');
+  const m = fileAudio.musikBuf, q = fileAudio.musikQuelle;
+  if(!m) return 'Musik: lädt…';
+  if(!q) return 'Musik: startet gleich';
+  const t = Math.floor(musikPosition()), vol = fileAudio.gain ? fileAudio.gain.gain.value : 0;
+  return 'Musik: spielt ' + Math.floor(t/60) + ':' + String(t%60).padStart(2, '0') + '  Lautst. ' + Math.round(vol*100) + '%';
+}
+// Stelle im Stück (Sekunden), Schleife eingerechnet
+function musikPosition(){
+  const m = fileAudio.musikBuf; if(!m || !fileAudio.musikQuelle) return 0;
+  const t = audioCtx.currentTime - fileAudio.musikStart;
+  return t < m.bis ? t : m.ab + (t - m.bis) % (m.bis - m.ab);
 }
 // Musik von vorne, nach "delay" Sekunden Stille über "fade" Sekunden weich einblenden
 function fileMusicRestart(fade, delay){
-  const el = fileAudio.el, g = fileAudio.gain; if(!el || !g) return;
+  const g = fileAudio.gain; if(!fileAudio.musikBuf || !g) return;
   const now = audioCtx.currentTime;
   g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now);
   g.gain.linearRampToValueAtTime(0, now + 0.05);
   setTimeout(()=>{
     if(deathState) return;               // inzwischen gestorben -> Neustart kommt nach dem Weitermachen
-    try{ el.currentTime = 0; fileMusicPlay(); }catch(e){}
+    try{
+      if(fileAudio.musikQuelle){ fileAudio.musikQuelle.stop(); fileAudio.musikQuelle.disconnect(); }
+      const m = fileAudio.musikBuf, q = audioCtx.createBufferSource();
+      q.buffer = m.buf; q.loop = true; q.loopStart = m.ab; q.loopEnd = m.bis;
+      q.connect(fileAudio.shelf); q.start();
+      fileAudio.musikQuelle = q; fileAudio.musikStart = audioCtx.currentTime; fileAudio.ok.music = true;
+    }catch(e){}
     const t = audioCtx.currentTime;
     g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(fileMusicTarget(), t + fade);
@@ -125,7 +152,12 @@ function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rai
 // die kräftigen Knarzer, „her“ = die leiseren (Hebel hin und her), sonst zufällig. Lautstärke GERAEUSCH_VOL × Ton-Regler,
 // links/rechts nach Ort. Lädt eine Datei nicht, bleibt der erzeugte Klang aus 18-sound.js.
 const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav',
-                           landen: 'assets/audio/landen.wav', schritt: 'assets/audio/schritte.wav'};
+                           landen: 'assets/audio/landen.wav', schritt: 'assets/audio/schritte.wav',
+                           schalter: 'assets/audio/schalter.wav', tuer: 'assets/audio/tuer.wav', liane: 'assets/audio/liane.wav'};
+// Nutzer 06.11. (Splice, auf 16 Bit Mono verkleinert): schalter.wav („RKU_DST Low Crunch“, 0,37 s) = Hebel umlegen und
+// Bodenplatte drücken; tuer.wav („Creepy Game Door Mechanism Unlock Gears Wheel Turning 1“, Zahnräder, 3,3 s) = Tür auf/zu;
+// liane.wav („Pirate Game Wood Creaks“, Nutzer-Name liane_schwingen) = Holz-/Seil-Knarzen, wenn der Affe an der Liane schwingt
+// (je Umkehrpunkt ein Knarzer). Das Quietschen (kurbel.wav) kommt außerdem, solange sich ein Windrad dreht.
 // Nutzer 06.11.: landen.wav (Splice „RockTumble1“, 0,9 s) = Landen nach einem Sprung; schritte.wav (Splice „Footstep Grass
 // Walk 1“, 11 s gemütliches Gehen, ~0,58 s je Schritt) – daraus wird je Schritt im Spiel EIN Gras-Tritt gespielt, so passt es
 // immer zum Lauftempo (Schritt-Takt kommt aus sfxObserve in 18, alle 46 px). Beide auf 16 Bit Mono 48 kHz verkleinert.
@@ -133,13 +165,17 @@ const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/
 // lauter, sondern das Quietschen“ -> Knarzen wieder 0,34; Quietschen 0,3 -> 0,8 und jetzt auch an der Pump-Draisine
 // (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben). Danach „Quietschen zu laut“ -> 0,4,
 // und die Draisine knarzt wieder dazu.
-const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0};
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0, schalter: 0.55, tuer: 0.32, liane: 0.55};
 const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor] (gemessen an der Hüllkurve)
   knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
             her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},
   kurbel: {zug: [[0.16, .45]], klein: [[1.93, .21, 1.6]],
            hin: [[0.14, .4]], her: [[1.92, .17, 1.6], [1.24, .24, 2]]},
   landen: {ganz: [[0, .75]]},
+  schalter: {ganz: [[0, .37]]},
+  tuer: {ganz: [[0, 2.4]]},
+  // einzelne Knarzer [Anfang, Dauer, Ausgleich auf gleiche Lautstärke]
+  liane: {knarz: [[0.43, .35, 1.4], [0.92, .2, .65], [1.27, .18, 1.4], [1.85, .3, 1], [2.4, .2, 1.8], [3.17, .2, 1.3]]},
   // je Gras-Tritt [Anfang, Dauer, Ausgleich] – Ausgleich = alle Tritte etwa gleich laut (gemessen an der Hüllkurve)
   schritt: {tritt: [[0.80, .2, 1.6], [1.47, .2, 1.6], [2.10, .2, 1], [2.62, .2, 1.9], [3.21, .2, 1.9], [3.77, .2, 1.5],
                     [4.35, .2, 1.2], [4.85, .2, 1.3], [5.38, .2, .85], [5.90, .2, 2], [6.53, .2, 1], [7.09, .2, 1],

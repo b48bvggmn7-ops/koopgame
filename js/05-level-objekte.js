@@ -135,7 +135,7 @@ function triggerSwitch(sw, player){
   zielHinweisMerken(sw.link);
   player.leverAnim = {t0: now, dir: Math.sign(sw.x - player.x) || player.facing || 1};
   sw.pulledT = now;
-  SFX.lever(on, sw.x);   // Holz-Klack (18-sound.js)
+  SFX.schalter(on, sw.x);   // Aufnahme schalter.wav (Nutzer 06.11.), sonst Holz-Klack (18-sound.js)
 }
 // Druckplatte: Verknüpfung ist AN, solange mindestens eine Figur auf einer Platte dieser Nummer steht.
 // Steigt man herunter, geht sie wieder AUS (Tür schließt, sobald niemand mehr drinsteht; Bewegung hält an).
@@ -148,7 +148,7 @@ function updatePlates(players){
   for(const pl of plates){
     const down = players.some(p => onPlate(p, pl)) || !!pl.mausDown;   // mausDown: per Maus gedrückt (Editor-Test, js/06)
     if(down && !pl.down){   // Platte wird BETRETEN (war frei, jetzt steht jemand drauf; beide zugleich = einmal)
-      SFX.lever(true, pl.x); zielHinweisMerken(pl.link);
+      SFX.schalter(true, pl.x); zielHinweisMerken(pl.link);
       if(typeof spiegelAusloesen === 'function') spiegelAusloesen(pl.link);   // schaltbare Spiegel drehen einmal (elemente/licht.js)
     }
     pl.down = down;

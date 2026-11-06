@@ -10,6 +10,7 @@ const WINDRAD_ANLAUF = 0.06;      // so viel Drehung je Schritt bei vollem Wind 
 const WINDRAD_AUSLAUF = 0.975;    // ohne Wind: Drehung je Schritt mal diesem Wert (läuft gut 2 s nach)
 const WINDRAD_AN = 0.55;          // ab dieser Drehung gilt es als „angepustet“ (umschalten) bzw. als „dreht“ (solange)
 const WINDRAD_RUHE = 0.12;        // darunter steht es wieder (danach zählt das nächste Anpusten neu)
+const WINDRAD_QUIETSCH_WEG = Math.PI*4;   // Drehweg (2 Umdrehungen) je Quietscher; bei voller Fahrt ≈ alle 0,55 s
 let windraeder = [];              // {x, y (Fußpunkt), link, art, dreh (0…1), winkel, gezaehlt}
 const WINDRAD_HOEHE = 34;         // px: Nabe über dem Boden (auf Mundhöhe des Affen – sein Puste-Wind zur Seite trifft die Blätter)
 const windradRotor = w => ({x: w.x - 22, y: w.y - WINDRAD_HOEHE - 22, w: 44, h: 44});   // Trefferfläche des Windes (Rotor oben am Pfahl)
@@ -110,7 +111,7 @@ elementRegistrieren({
   },
   spiel: {
     laden(daten){ windraeder = (daten.windraeder || []).map(w => ({x: w.x, y: w.y, link: w.link, art: w.art === 'solange' ? 'solange' : 'umschalten', dreh: 0, winkel: 0, gezaehlt: false})); },
-    zuruecksetzen(){ for(const w of windraeder){ w.dreh = 0; w.gezaehlt = false; } },
+    zuruecksetzen(){ for(const w of windraeder){ w.dreh = 0; w.gezaehlt = false; w.quietschWeg = 0; } },
     schritt(){
       for(const w of windraeder){
         let k = typeof pusteTrifft === 'function' ? pusteTrifft(windradRotor(w)) : 0;
@@ -119,6 +120,12 @@ elementRegistrieren({
         w.dreh = k > 0 ? Math.min(1, w.dreh + WINDRAD_ANLAUF*k) : w.dreh*WINDRAD_AUSLAUF;
         if(w.dreh < 0.01) w.dreh = 0;
         w.winkel = (w.winkel + w.dreh*0.42) % (Math.PI*2);
+        // Quietschen, solange es sich dreht (Nutzer 06.11.): je zwei Umdrehungen ein Laut, leiser beim Auslaufen
+        w.quietschWeg = (w.quietschWeg || 0) + w.dreh*0.42;
+        if(w.quietschWeg >= WINDRAD_QUIETSCH_WEG){
+          w.quietschWeg = 0;
+          if(w.dreh > 0.12 && typeof SFX !== 'undefined' && SFX.windradQuietsch) SFX.windradQuietsch(w.x, w.dreh);
+        }
         if(vorher < WINDRAD_AN && w.dreh >= WINDRAD_AN){
           if(typeof SFX !== 'undefined' && SFX.windrad) SFX.windrad(w.x);
           if(w.art === 'umschalten' && !w.gezaehlt && w.link){
