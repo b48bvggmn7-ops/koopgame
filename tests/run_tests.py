@@ -5808,6 +5808,16 @@ async def eigene_aufnahmen(g):
         await g.ev("setVolume('atmo', 1); 0")
         assert leise['atmo'] < amb['atmo']*0.4 and leise['sfx'] == 1 and leise['music'] == 1, f'Hintergrund-Regler wirkt nicht: {amb} -> {leise}'
         assert 'hintergrund.mp3' in await g.ev("AUDIO_FILES.atmo")
+        # Musik komplett raus, dafür Wald-Geräusche (wald.wav) als Schleife, Regler „Wald“ = VOL.music (Nutzer 06.11.)
+        for _ in range(20):
+            if await g.ev("!!fileAudio.ok.wald"): break
+            await p.wait_for_timeout(500)
+        wald = await g.ev("({ok: fileAudio.ok.wald, g: fileAudio.loops.wald && fileAudio.loops.wald.gain.value, aus: MUSIK_AUS, musik: !!fileAudio.musikBuf, schleife: true})")
+        assert wald['ok'] and wald['g'] > 0.5 and wald['aus'] and not wald['musik'], f'Wald-Geräusche / Musik falsch: {wald}'
+        await g.ev("setVolume('music', 0.2); 0"); await p.wait_for_timeout(2500)
+        leiser = await g.ev("fileAudio.loops.wald.gain.value"); await g.ev("setVolume('music', 1); 0")
+        assert leiser < wald['g']*0.4, f'Regler „Wald“ wirkt nicht: {wald} -> {leiser}'
+        assert await g.ev("GERAEUSCH_STUECKE.tuer.ganz.every(([a, l]) => l <= 1.05)"), 'Tür-Ton zu lang'
         # nahtlose Schleife: Anfang/Ende ohne Stille
         assert await g.ev("""(()=>{ const src = audioCtx.createBuffer(2, 44100*4, 44100);
             for(let c=0;c<2;c++){ const d=src.getChannelData(c); for(let i=0;i<d.length;i++) d[i]=Math.random()*0.4-0.2; }

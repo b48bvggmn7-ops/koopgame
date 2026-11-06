@@ -18,16 +18,21 @@
 //            Stellen wiederholt sich das Stück fast gleich (gemessen: Tonart-Ähnlichkeit 0,93, gleiche Lautstärke); die letzten
 //            4 s vor dem Sprung werden schon in den Klang von kurz vor 0:48 übergeblendet, so gibt es keinen Ruck.
 const AUDIO_FILES = {music: 'assets/audio/musik-nebel.mp3', birds: 'assets/audio/voegel.mp3',
-                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/hintergrund.mp3'};
+                     rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/hintergrund.mp3',
+                     wald: 'assets/audio/wald.wav'};
+// wald (Nutzer 06.11.: „Musik komplett raus, die Forest-Geräusche für Musik rein, auch über Optionen steuerbar, im Loop“):
+// wald.wav (Splice „Forest_05“) läuft wieder – als nahtlose Schleife NEBEN dem Hintergrund-Ton, an Stelle der Musik; geregelt
+// über den Regler „Wald“ (früher „Musik“, VOL.music). Lautstärke wie damals als Hintergrund (2,6).
 // atmo seit Nutzerwunsch (06.11., Datei „untitled.mp3“, 3:30, gleichmäßig laut) hintergrund.mp3 statt wald.wav (bleibt liegen);
 // nahtlose Schleife wie bisher (2,5 s überblendet). Die Datei ist rund 36× lauter abgemischt (RMS 0,108 statt 0,003) – damit
 // sie so laut ist wie der Wald-Ton, FILE_VOL.atmo 2,6 -> 0,075. Eigener Regler „Hintergrund“ (VOL.atmo) unter Optionen.
 // atmo: seit 06.11. wald.wav (Nutzer-Datei Splice „Forest_05“, 21 s, auf 16 Bit verkleinert) statt draussen.mp3 – gemessen
 // gleich laut (RMS 0,003), daher gleiche Lautstärke; draussen.mp3 bleibt liegen.
 // music 0,38 -> 0,15: die neue Musik ist kräftig abgemischt, „halbleise“ (Nutzer 06.11.); dann „3 % leiser“ -> 0,1455
-const FILE_VOL = {music: 0.1455, birds: 0.6, rain: 0.8, river: 2.0, atmo: 0.075};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
+const FILE_VOL = {music: 0.1455, birds: 0.6, rain: 0.8, river: 2.0, atmo: 0.075, wald: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
 const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
-const MUSIK_AUS = false;  // Nutzer 06.11.: erst „die Akkorde können raus“, dann „Warm Analog Fog“ als Musik; das erzeugte Klavier (22) bleibt aus
+const MUSIK_AUS = true;   // Nutzer 06.11.: erst „die Akkorde können raus“, dann „Warm Analog Fog“ als Musik, dann „Musik komplett raus“
+                          // (musik-nebel.mp3 bleibt liegen, zurück mit false); das erzeugte Klavier (22) bleibt aus
 const KLAVIER_AUS = true;   // das erzeugte Klavier (22) spielt nie mehr, auch nicht als Ersatz
 const MUSIK_SCHLEIFE ={ab: 48.0, bis: 163.958, blende: 4};   // Sekunden: Schleifen-Anfang, -Ende, Überblenden davor
 const MUSIC_START_DELAY = 2.5;   // Sekunden Stille, bevor die Musik einsetzt
@@ -79,11 +84,11 @@ function fileAudioStart(){
       }).catch(()=>{ fileAudio.ok.music = false; fileAudio.err = true; });
   }catch(e){}
   // kurze Schleifen: laden, dekodieren, nahtlos machen
-  for(const key of ATMO_STATT_VOEGEL_FLUSS ? ['atmo', 'rain'] : ['birds', 'rain', 'river']){
+  for(const key of ATMO_STATT_VOEGEL_FLUSS ? ['atmo', 'wald', 'rain'] : ['birds', 'rain', 'river']){
     fetch(AUDIO_FILES[key]).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
       .then(ab => a.decodeAudioData(ab))
       .then(buf => {
-        const src = a.createBufferSource(); src.buffer = fileLoopBuffer(a, buf, key === 'atmo' ? 2.5 : 1.0); src.loop = true;
+        const src = a.createBufferSource(); src.buffer = fileLoopBuffer(a, buf, key === 'atmo' || key === 'wald' ? 2.5 : 1.0); src.loop = true;
         const g = a.createGain(); g.gain.value = 0;
         src.connect(g); g.connect(audioOut()); src.start(0, Math.random()*src.buffer.duration*0.5);
         fileAudio.loops[key] = g; fileAudio.ok[key] = true;
@@ -176,7 +181,7 @@ const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor]
            hin: [[0.14, .4]], her: [[1.92, .17, 1.6], [1.24, .24, 2]]},
   landen: {ganz: [[0, .75]]},
   schalter: {ganz: [[0, .37]]},
-  tuer: {ganz: [[0.05, 2.7]]},
+  tuer: {ganz: [[0.05, 1.0]]},   // „Tür-Sound zu lang“ (Nutzer 06.11.): 2,7 s -> 1 s (die ersten beiden Zahnrad-Schübe), sanft ausgeblendet
   // je Gras-Tritt [Anfang, Dauer, Ausgleich] – Ausgleich = alle Tritte etwa gleich laut (gemessen an der Hüllkurve)
   schritt: {tritt: [[0.80, .2, 1.6], [1.47, .2, 1.6], [2.10, .2, 1], [2.62, .2, 1.9], [3.21, .2, 1.9], [3.77, .2, 1.5],
                     [4.35, .2, 1.2], [4.85, .2, 1.3], [5.38, .2, .85], [5.90, .2, 2], [6.53, .2, 1], [7.09, .2, 1],
@@ -204,7 +209,8 @@ function geraeuschSpielen(name, o){
     const src = a.createBufferSource(); src.buffer = buf; src.playbackRate.value = (o.rate || 1)*(o.festesTempo ? 1 : 1 + (Math.random() - 0.5)*0.08);
     const g = a.createGain(), t = a.currentTime, vol = (GERAEUSCH_VOL[name] || 0.3)*(faktor || 1)*(o.vol || 1)*VOL.sfx;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.012);
-    g.gain.setValueAtTime(vol, t + Math.max(0.02, dauer - 0.06)); g.gain.linearRampToValueAtTime(0.0001, t + dauer);
+    const ausZeit = Math.min(dauer*0.5, o.ausblenden || 0.06);   // o.ausblenden: längeres Ausklingen (Tür)
+    g.gain.setValueAtTime(vol, t + Math.max(0.02, dauer - ausZeit)); g.gain.linearRampToValueAtTime(0.0001, t + dauer);
     src.connect(g);
     let aus = g;
     if(a.createStereoPanner){ const p = a.createStereoPanner(); p.pan.value = typeof sfxPan === 'function' ? sfxPan(o.x) : 0; g.connect(p); aus = p; }
@@ -242,6 +248,7 @@ function fileAudioUpdate(){
   const amb = (typeof THEME !== 'undefined' && THEME && THEME.ambiente) || {voegel: 1, fluss: 1};
   if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.atmo*sun*sun*fileAudio.birdsBack*amb.voegel, now, 1.2);
   if(L.atmo) L.atmo.gain.setTargetAtTime(FILE_VOL.atmo*VOL.atmo, now, 1.5);
+  if(L.wald) L.wald.gain.setTargetAtTime(FILE_VOL.wald*VOL.music, now, 1.5);   // Wald-Geräusche statt Musik, Regler „Wald“
   if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*VOL.atmo*r, now, 0.8);
   if(L.river){
     // Wasserfall im Bild? (Hintergrund-Ebene mit Wasserfall, gleiche Rechnung wie beim Zeichnen)

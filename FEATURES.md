@@ -322,6 +322,10 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     und langsamer) – jetzt auf und zu gleich, Tempo 1, ohne die kleine Zufalls-Tonhöhe (`festesTempo`). Eigentlicher Grund: jede Tür besteht aus mehreren Kästchen
     und JEDES spielte den Ton selbst – 3–4 leicht verstimmte Kopien zugleich klangen verschmiert. Jetzt kommt der Ton je
     Nummer und Richtung nur einmal (aus der Mitte der Kästchen, `sfxObserve`).
+    **Musik komplett raus, Wald-Geräusche statt Musik** (Nutzer 06.11.): `MUSIK_AUS = true` (musik-nebel.mp3 bleibt liegen);
+    dafür läuft wald.wav (Splice „Forest_05“) wieder – als nahtlose Schleife NEBEN dem Hintergrund-Ton (`AUDIO_FILES.wald`,
+    `FILE_VOL.wald` 2,6). Der Regler „Musik“ unter Optionen heißt jetzt **„Wald“** und regelt diese Wald-Geräusche (VOL.music).
+    **Tür-Ton kürzer** („zu lang“): 2,7 s -> 1 s (die ersten beiden Zahnrad-Schübe), 0,3 s sanft ausgeblendet (`ausblenden`).
     **Hebel, Bodenplatte, Tür, Liane, Windrad** (Nutzer 06.11., Splice-Dateien, auf 16 Bit Mono verkleinert):
     Hebel umlegen und Bodenplatte betreten = schalter.wav (tiefer „Crunch“, `SFX.schalter`); Tür auf/zu = tuer.wav
     (Zahnräder, zu etwas tiefer; seit Nutzerwunsch „nimm das für die Tür“ die Steampunk-Datei „Contraption Mech Interlock

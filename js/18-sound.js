@@ -341,7 +341,7 @@ const SFX = {
   // Tür auf/zu: Zahnrad-Aufnahme tuer.wav (Nutzer 06.11.), beide Richtungen in normalem Tempo (zu war erst 0,9 = „klingt
   // langsamer“, Nutzer) und ohne die kleine Zufalls-Tonhöhe
   door(open, x){ sfxLog(open ? 'dooropen' : 'doorclose');
-    if(typeof geraeuschSpielen === 'function' && geraeuschSpielen('tuer', {x, rate: 1, festesTempo: true})) return;
+    if(typeof geraeuschSpielen === 'function' && geraeuschSpielen('tuer', {x, rate: 1, festesTempo: true, ausblenden: 0.3})) return;
     sfxPlay(open ? 'doorOpen' : 'doorClose', {x}); },
   // Windrad dreht sich: Quietschen (kurbel.wav) je zwei Umdrehungen, leiser beim Auslaufen
   windradQuietsch(x, k){ sfxLog('windradquietsch'); if(typeof geraeuschSpielen === 'function') geraeuschSpielen('kurbel', {x, stueck: Math.random() < 0.5 ? 'hin' : 'her', vol: 0.35 + 0.65*k, rate: 0.9 + 0.2*k}); },

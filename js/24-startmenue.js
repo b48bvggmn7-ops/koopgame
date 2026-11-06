@@ -56,7 +56,7 @@ const SM_HTML = `<svg width="0" height="0" style="position:absolute" aria-hidden
     <div class="pan glass" style="right:6cqw;width:30cqw">
       <h4>Lautstärke</h4>
       <div class="opt-row vol" id="sm-row-master"><label>Gesamt <b id="sm-v-master"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-master" tabindex="-1"></div>
-      <div class="opt-row vol" id="sm-row-music"><label>Musik <b id="sm-v-music"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-music" tabindex="-1"></div>
+      <div class="opt-row vol" id="sm-row-music"><label>Wald <b id="sm-v-music"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-music" tabindex="-1"></div>
       <div class="opt-row vol" id="sm-row-sfx"><label>Effekte <b id="sm-v-sfx"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-sfx" tabindex="-1"></div>
       <div class="opt-row vol" id="sm-row-atmo"><label>Hintergrund <b id="sm-v-atmo"></b></label><input type="range" min="0" max="100" step="5" id="sm-r-atmo" tabindex="-1"></div>
       <div class="opt-row" id="sm-row-fs"><button class="btn unlock" id="sm-fs" type="button" tabindex="-1">Vollbild an / aus</button></div>
@@ -729,7 +729,8 @@ function quitGame() {
 /* =====================================================================
    3) OPTIONEN
    ===================================================================== */
-// Lautstärke-Regler in dieser Reihenfolge (Zeilen 1–4 der Optionen); „Hintergrund“ = VOL.atmo (Nutzerwunsch 06.11.)
+// Lautstärke-Regler in dieser Reihenfolge (Zeilen 1–4 der Optionen); „Hintergrund“ = VOL.atmo (Nutzerwunsch 06.11.);
+// „Wald“ = VOL.music: die Musik ist raus, der Regler steuert jetzt die Wald-Geräusche (wald.wav, js/23)
 const VOL_REGLER = ['master', 'music', 'sfx', 'atmo'];
 S.options = {
   el: $('#sm-s-options'), idx: 0, view: 'keyboard', rows: [],
