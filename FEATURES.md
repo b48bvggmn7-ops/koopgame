@@ -292,7 +292,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     FILE_VOL (Musik 0,38, Vögel 0,6, Regen 0,8, Fluss 2,0). Gesamtlautstärke aller Töne: MASTER_VOL 0,7 (07-…js). Blockiert der Browser das Abspielen, startet die Musik beim
     nächsten Tastendruck/Klick. Leistungsanzeige (F) zeigt den Musik-Zustand (spielt/lädt/blockiert/Datei lädt nicht).
     **Seit 06.11. neuer Hintergrund-Ton** (Nutzerwunsch, Datei „outside_room“ -> assets/audio/draussen.mp3): läuft gleichmäßig
-    als Schleife (2,5 s weich überblendet, Lautstärke `FILE_VOL.atmo` 1,6 – erst 0,7, Nutzer: „zu leise“) und ERSETZT den bisherigen Hintergrund – Vögel
+    als Schleife (2,5 s weich überblendet, Lautstärke `FILE_VOL.atmo` 2,6 – erst 0,7, dann 1,6, Nutzer zweimal: „zu leise“ / „lauter“) und ERSETZT den bisherigen Hintergrund – Vögel
     (voegel.mp3) und Fluss (fluss.mp3) werden nicht mehr geladen (Dateien liegen noch da; zurück mit
     `ATMO_STATT_VOEGEL_FLUSS = false` in js/23), der erzeugte Wind, Grillen und Bach (js/22) sind aus, solange draussen.mp3 läuft.
     **Keine Musik mehr** (Nutzer 06.11.: „die Akkorde können raus“): `MUSIK_AUS = true` in js/23 – musik.mp3 wird nicht
