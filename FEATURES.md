@@ -314,8 +314,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     immer aus (`KLAVIER_AUS`, auch als Ersatz). Leistungsanzeige (F): Stelle im Stück und Lautstärke.
     **Hebel, Bodenplatte, Tür, Liane, Windrad** (Nutzer 06.11., Splice-Dateien, auf 16 Bit Mono verkleinert):
     Hebel umlegen und Bodenplatte betreten = schalter.wav (tiefer „Crunch“, `SFX.schalter`); Tür auf/zu = tuer.wav
-    (Zahnräder, zu etwas tiefer); Affe an der Liane = an jedem Umkehrpunkt des Schwungs ein Holz-/Seil-Knarzer aus liane.wav
-    (nur wenn richtig geschwungen, `LIANE_KNARZ_TEMPO`, höchstens alle 0,3 s, kräftiger je schneller); Windrad = das
+    (Zahnräder, zu etwas tiefer); Liane-Knarzen (liane.wav je Umkehrpunkt) war kurz drin, Nutzer 06.11. „Liane sound raus“ ->
+    entfernt, Schwingen an der Liane macht keinen eigenen Laut (Haken-Geräusche beim Greifen/Loslassen bleiben); Windrad = das
     Quietschen (kurbel.wav), solange es sich dreht – je zwei Umdrehungen ein Laut (`WINDRAD_QUIETSCH_WEG`), beim Auslaufen
     leiser und tiefer, steht es, ist Ruhe. Windrad-Umschalten und Draisine behalten ihren Klack. Ohne Datei die erzeugten
     Klänge. Test ton_schalter_tuer_liane_windrad.

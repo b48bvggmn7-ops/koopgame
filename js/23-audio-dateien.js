@@ -153,11 +153,10 @@ function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rai
 // links/rechts nach Ort. Lädt eine Datei nicht, bleibt der erzeugte Klang aus 18-sound.js.
 const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav',
                            landen: 'assets/audio/landen.wav', schritt: 'assets/audio/schritte.wav',
-                           schalter: 'assets/audio/schalter.wav', tuer: 'assets/audio/tuer.wav', liane: 'assets/audio/liane.wav'};
+                           schalter: 'assets/audio/schalter.wav', tuer: 'assets/audio/tuer.wav'};
 // Nutzer 06.11. (Splice, auf 16 Bit Mono verkleinert): schalter.wav („RKU_DST Low Crunch“, 0,37 s) = Hebel umlegen und
 // Bodenplatte drücken; tuer.wav („Creepy Game Door Mechanism Unlock Gears Wheel Turning 1“, Zahnräder, 3,3 s) = Tür auf/zu;
-// liane.wav („Pirate Game Wood Creaks“, Nutzer-Name liane_schwingen) = Holz-/Seil-Knarzen, wenn der Affe an der Liane schwingt
-// (je Umkehrpunkt ein Knarzer). Das Quietschen (kurbel.wav) kommt außerdem, solange sich ein Windrad dreht.
+// (Liane-Knarzen liane.wav kurz drin, auf Nutzerwunsch „Liane sound raus“ wieder entfernt.) Das Quietschen (kurbel.wav) kommt außerdem, solange sich ein Windrad dreht.
 // Nutzer 06.11.: landen.wav (Splice „RockTumble1“, 0,9 s) = Landen nach einem Sprung; schritte.wav (Splice „Footstep Grass
 // Walk 1“, 11 s gemütliches Gehen, ~0,58 s je Schritt) – daraus wird je Schritt im Spiel EIN Gras-Tritt gespielt, so passt es
 // immer zum Lauftempo (Schritt-Takt kommt aus sfxObserve in 18, alle 46 px). Beide auf 16 Bit Mono 48 kHz verkleinert.
@@ -165,7 +164,7 @@ const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/
 // lauter, sondern das Quietschen“ -> Knarzen wieder 0,34; Quietschen 0,3 -> 0,8 und jetzt auch an der Pump-Draisine
 // (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben). Danach „Quietschen zu laut“ -> 0,4,
 // und die Draisine knarzt wieder dazu.
-const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0, schalter: 0.55, tuer: 0.32, liane: 0.55};
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0, schalter: 0.55, tuer: 0.32};
 const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor] (gemessen an der Hüllkurve)
   knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
             her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},
@@ -174,8 +173,6 @@ const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor]
   landen: {ganz: [[0, .75]]},
   schalter: {ganz: [[0, .37]]},
   tuer: {ganz: [[0, 2.4]]},
-  // einzelne Knarzer [Anfang, Dauer, Ausgleich auf gleiche Lautstärke]
-  liane: {knarz: [[0.43, .35, 1.4], [0.92, .2, .65], [1.27, .18, 1.4], [1.85, .3, 1], [2.4, .2, 1.8], [3.17, .2, 1.3]]},
   // je Gras-Tritt [Anfang, Dauer, Ausgleich] – Ausgleich = alle Tritte etwa gleich laut (gemessen an der Hüllkurve)
   schritt: {tritt: [[0.80, .2, 1.6], [1.47, .2, 1.6], [2.10, .2, 1], [2.62, .2, 1.9], [3.21, .2, 1.9], [3.77, .2, 1.5],
                     [4.35, .2, 1.2], [4.85, .2, 1.3], [5.38, .2, .85], [5.90, .2, 2], [6.53, .2, 1], [7.09, .2, 1],

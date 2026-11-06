@@ -342,8 +342,6 @@ const SFX = {
   door(open, x){ sfxLog(open ? 'dooropen' : 'doorclose');
     if(typeof geraeuschSpielen === 'function' && geraeuschSpielen('tuer', {x, rate: open ? 1 : 0.9})) return;
     sfxPlay(open ? 'doorOpen' : 'doorClose', {x}); },
-  // Affe schwingt an der Liane: je Umkehrpunkt ein Holz-/Seil-Knarzer aus liane.wav (Nutzer 06.11.), kräftiger je schneller
-  lianeKnarz(pl, k){ sfxLog('lianeknarz'); if(typeof geraeuschSpielen === 'function') geraeuschSpielen('liane', {x: pl.x, vol: 0.4 + 0.6*k}); },
   // Windrad dreht sich: Quietschen (kurbel.wav) je zwei Umdrehungen, leiser beim Auslaufen
   windradQuietsch(x, k){ sfxLog('windradquietsch'); if(typeof geraeuschSpielen === 'function') geraeuschSpielen('kurbel', {x, stueck: Math.random() < 0.5 ? 'hin' : 'her', vol: 0.35 + 0.65*k, rate: 0.9 + 0.2*k}); },
   crumbleWarn(x){ sfxLog('crumblewarn'); sfxPlay('crumbleWarn', {x}); },
@@ -430,7 +428,6 @@ const SFX = {
   menuStart(){ sfxPlay('menuStart'); },
 };
 
-const LIANE_KNARZ_TEMPO = 2.5;   // so schnell (px/Schritt quer) muss der Affe vor dem Umkehrpunkt geschwungen sein, damit es knarzt
 // ---------- Beobachter: erkennt Ereignisse an Zustandsänderungen (ändert selbst nichts) ----------
 function sfxObserve(){
   for(const pl of [p1, p2]){
@@ -444,16 +441,6 @@ function sfxObserve(){
     if(pl.grounded && !pr.grounded && pr.vy > 3.5){ SFX.land(pl, pr.vy); if(typeof fxLand === 'function') fxLand(pl, pr.vy);
       if(pl.standingOn && pl.standingOn.type === 'oneway') SFX.steg(pl.x); }   // Steg knarzt (elemente/einseitig.js)
     if(pl.hookAttached && !pr.hook) SFX.hookAttach(pl);
-    // Liane knarzt am Umkehrpunkt des Schwungs (Richtung kippt, vorher richtig geschwungen; höchstens alle 0,3 s)
-    if(pl.hookAttached){
-      const r = Math.sign(pl.vx);
-      pr.lianeMax = Math.max(pr.lianeMax || 0, Math.abs(pl.vx));
-      pr.lianeT = (pr.lianeT || 0) + 1;
-      if(r && pr.lianeR && r !== pr.lianeR && pr.lianeMax > LIANE_KNARZ_TEMPO && pr.lianeT > 16){
-        SFX.lianeKnarz(pl, Math.min(1, pr.lianeMax/9)); pr.lianeMax = 0; pr.lianeT = 0;
-      }
-      if(r) pr.lianeR = r;
-    } else { pr.lianeR = 0; pr.lianeMax = 0; }
     if(!pl.male && (pl.umbrella || 0) > 0.2 && pr.umb <= 0.2) SFX.umbrella(pl);
     if(pl.grounded && Math.abs(pl.vx) > 1){
       pr.dist += Math.abs(pl.vx);

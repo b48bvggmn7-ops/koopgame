@@ -5836,19 +5836,19 @@ async def ton_landen_und_schritte(g):
 
 @test
 async def ton_schalter_tuer_liane_windrad(g):
-    """Nutzer 06.11.: Hebel + Bodenplatte = schalter.wav (Crunch), Tür = tuer.wav (Zahnräder), Affe an der Liane = je
-    Umkehrpunkt ein Knarzer aus liane.wav, Windrad = Quietschen (kurbel.wav), solange es sich dreht – beim Auslaufen hört es auf."""
+    """Nutzer 06.11.: Hebel + Bodenplatte = schalter.wav (Crunch), Tür = tuer.wav (Zahnräder), Windrad = Quietschen (kurbel.wav),
+    solange es sich dreht – beim Auslaufen hört es auf. Liane-Knarzen wieder raus („Liane sound raus“): Schwingen bleibt still."""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
         await startmenue_bis_level(g)
         if await g.ev("audioCtx && audioCtx.state === 'running'"):
             await g.ev("geraeuscheLaden(); 0")
-            await p.wait_for_function("geraeusche.buf.schalter && geraeusche.buf.tuer && geraeusche.buf.liane", timeout=15000)
+            await p.wait_for_function("geraeusche.buf.schalter && geraeusche.buf.tuer", timeout=15000)
             r = await g.ev("""(() => { const ok = {};
-              for(const n of ['schalter', 'tuer', 'liane']){ const d = geraeusche.buf[n].duration;
+              for(const n of ['schalter', 'tuer']){ const d = geraeusche.buf[n].duration;
                 ok[n] = Object.values(GERAEUSCH_STUECKE[n]).flat().every(([a, l]) => a + l <= d + 0.01); }
-              ok.spielt = geraeuschSpielen('schalter', {}) && geraeuschSpielen('tuer', {}) && geraeuschSpielen('liane', {}); return ok; })()""")
+              ok.spielt = geraeuschSpielen('schalter', {}) && geraeuschSpielen('tuer', {}); ok.keineLiane = !GERAEUSCH_DATEIEN.liane; return ok; })()""")
             assert all(r.values()), f'Aufnahmen fehlen / falsch geschnitten: {r}'
     finally:
         srv.shutdown()
@@ -5865,15 +5865,15 @@ async def ton_schalter_tuer_liane_windrad(g):
       // Windrad: angepustet -> quietscht wiederholt; ohne Wind läuft es aus und hört auf
       SFX_LOG.length = 0; const w = windraeder[0]; for(let i = 0; i < 120; i++){ w.mausWind = 1; st(1); } const wind = n('windradquietsch');
       st(400); SFX_LOG.length = 0; st(120); const windAus = n('windradquietsch');
-      // Liane: Affe schwingt (ohne Tasten) – an den Umkehrpunkten knarzt es, nicht bei jedem Schritt
+      // Liane: Affe schwingt (ohne Tasten) – es knarzt nichts mehr
       const h = hooks[0], P = p1; P.x = h.x - 150; P.y = h.y + 100 + P.h*0.6; P.vx = 0; P.vy = 0; P.grounded = false; P._px = P.x; P._py = P.y;
       P.hookAttached = true; P.ropeWasAirborne = true; P.anchor = h; P.ropeLen = 180; P.ropeMax = 220; KEYS.KeyG = true;
-      SFX_LOG.length = 0; st(300); KEYS.KeyG = false; const liane = n('lianeknarz'), haengt = P.hookAttached;
+      SFX_LOG.length = 0; st(300); KEYS.KeyG = false; const liane = n('lianeknarz') + n('liane'), haengt = P.hookAttached;
       menuScreen = null; return {hebel, platte, tuer, wind, windAus, liane, haengt}; })()""")
     # (geraeuschSpielen schreibt den Namen der Aufnahme noch einmal ins Log – daher mit Ton 2 Einträge)
     assert 1 <= r['hebel'] <= 2 and 1 <= r['platte'] <= 2 and r['tuer'] == 1, f'Hebel/Platte/Tür ohne neuen Laut: {r}'
     assert 2 <= r['wind'] <= 6 and r['windAus'] == 0, f'Windrad quietscht falsch: {r}'
-    assert r['haengt'] and 2 <= r['liane'] <= 8, f'Liane knarzt falsch: {r}'
+    assert r['haengt'] and r['liane'] == 0, f'Liane knarzt noch: {r}'
 
 @test
 async def seil_abflug_mit_schwung(g):
