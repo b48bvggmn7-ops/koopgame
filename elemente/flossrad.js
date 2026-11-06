@@ -54,7 +54,8 @@ function flossradVorher(P){
     P._kurbelT = (P._kurbelT || 0) + 1;
     if(P._kurbelT % FLOSSRAD_KURBEL_TAKT === 1){   // Arm-Zug (dieselbe Bewegung wie beim Hebel, js/33 bzw. 10)
       P.leverAnim = {t0: performance.now(), dir: P.facing};
-      if(!amEnde && typeof SFX !== 'undefined' && SFX.lever) SFX.lever(moveDir > 0, R.x);
+      // Holz/Metall-Reiben (Aufnahme kurbel.wav, js/23) – jeden zweiten Zug, die Aufnahme ist länger als ein Zug
+      if(!amEnde && P._kurbelT % (FLOSSRAD_KURBEL_TAKT*2) === 1 && typeof SFX !== 'undefined' && SFX.kurbel) SFX.kurbel(R.x);
     }
   } else P._kurbelT = 0;
   return true;

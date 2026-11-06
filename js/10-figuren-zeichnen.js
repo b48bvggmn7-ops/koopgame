@@ -170,7 +170,8 @@ function lianeZeichnen(x0, y0, x1, y1, st, jit, seed, sagF){
 function drawCharacter(player, camX){
   if(deathState && player === deathState.victim) return; // verpufft
   // auf ganze Pixel runden: Figur, Boden und Kamera liegen im selben Raster -> kein Zittern gegeneinander
-  const px = Math.round(player.x - camX), py = Math.round(player.y);
+  // _standDy: steht die Figur auf Floß/Draisine, federt sie mit den nachgebenden Seilen (nur Anzeige, elemente/blattfloss.js)
+  const px = Math.round(player.x - camX), py = Math.round(player.y + (player._standDy || 0));
   // Zwinkern: kurz (ca. 0,13 s) das Bild mit geschlossenen Augen zeigen, alle paar Sekunden
   const blinking = player.blink < 130;
   const img = player.male ? (blinking ? ASSETS.monkeyBlink : ASSETS.monkey)

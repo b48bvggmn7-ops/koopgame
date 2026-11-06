@@ -131,11 +131,40 @@ function knotenZeichnen(x, y){
   ctx.strokeStyle = F.hell; ctx.lineWidth = 1.6; ctx.lineCap = 'round';   // kurzes loses Ende
   ctx.beginPath(); ctx.moveTo(x + 2, y + 2); ctx.quadraticCurveTo(x + 4, y + 5, x + 3, y + 8); ctx.stroke();
 }
+// ---------- Seile geben nach (Nutzer: „das Seil muss ein bisschen nachgeben – realistischer“; nur Aussehen) ----------
+// Für Blatt-Floß und Pump-Draisine (hängen an Seilzügen unter einer Tau-Schiene), im festen Takt aus spiel.schritt:
+// pend = wie weit die Plattform hinter ihren Rollenwagen herhängt (px; beim Anfahren bleibt sie zurück, beim Bremsen schwingt
+// sie vor und pendelt aus), wipp = wie tief sie unter der Last federt (px; jede Figur drückt sie etwas herunter, Aufspringen und
+// Pump-Stöße federn nach), neig = Schräglage zur Seite mit mehr Gewicht (Bogenmaß). Wer darauf steht, wird um wipp tiefer
+// gezeichnet (P._standDy, js/10) – so stehen die Füße auch beim Federn auf den Brettern. Ändert keine Spiel-Physik.
+const SEIL_NACHGEBEN = {pendFeder: 0.03, pendDaempf: 0.962, traegheit: 0.75, pendMax: 16, wippFeder: 0.16, wippDaempf: 0.8,
+  wippJeFigur: 1.5, wippMax: 4.5, landen: 1.8, neigJe: 0.035, neigWeich: 0.08};
+function seilNachgebenSchritt(s, figuren){
+  const N = SEIL_NACHGEBEN, v = s.v || 0, a = v - (s._vAlt || 0); s._vAlt = v;
+  s.pendV = ((s.pendV || 0) - (s.pend || 0)*N.pendFeder - a*N.traegheit)*N.pendDaempf;
+  s.pend = Math.max(-N.pendMax, Math.min(N.pendMax, (s.pend || 0) + s.pendV));
+  let n = 0, neig = 0;
+  for(const P of figuren){
+    const drauf = !!P && P.grounded && Math.abs(P.y - s.y) <= 2 && P.x + P.w/2 > s.x && P.x - P.w/2 < s.x + s.w;
+    if(drauf){ n++; neig += (P.x - (s.x + s.w/2))/(s.w/2)*N.neigJe; P._standDyS = s; }
+    else if(P && P._standDyS === s){ P._standDyS = null; P._standDy = 0; }
+  }
+  if(n > (s._nAlt || 0)) s.wippV = (s.wippV || 0) + N.landen;   // jemand springt auf: federt nach
+  s._nAlt = n;
+  s.wippV = ((s.wippV || 0) + (n*N.wippJeFigur - (s.wipp || 0))*N.wippFeder)*N.wippDaempf;
+  s.wipp = Math.max(-N.wippMax, Math.min(N.wippMax, (s.wipp || 0) + s.wippV));
+  s.neig = (s.neig || 0) + (neig - (s.neig || 0))*N.neigWeich;
+  for(const P of figuren) if(P && P._standDyS === s) P._standDy = s.wipp;
+}
+// Schräglage beim Zeichnen: leichtes Wiegen + Pendeln (hängt nach) + Gewicht zur Seite
+function blattSchwank(s, t){ return Math.sin(t*1.7 + s.x0*0.01)*0.012 - (s.pend || 0)*0.004 + (s.neig || 0); }
+function seilStoss(s, k){ s.wippV = (s.wippV || 0) + k; }   // z. B. ein Pump-Stoß drückt die Plattform kurz herunter
+function seilNachgebenZurueck(s){ s.pend = s.pendV = s.wipp = s.wippV = s.neig = 0; s._vAlt = 0; s._nAlt = 0; }
 const BLATT_KNOTEN_X = 46, BLATT_KNOTEN_Y = -5;   // px: Knoten an der hinteren Blattwand (von der Blattmitte / Stehfläche)
 // Durchhang der Tau-Schiene (nur Aussehen): sanftes Wippen, unter dem fahrenden Blatt etwas mehr
 function blattSchieneDurchhang(s, t){
   const fahrt = Math.min(1, Math.abs(s.v)/BLATT_MAX);
-  return 3 + Math.sin(t*1.1 + s.x0*0.003)*1.2 + fahrt*(2.5 + Math.sin(t*9)*1);
+  return 3 + Math.sin(t*1.1 + s.x0*0.003)*1.2 + fahrt*(2.5 + Math.sin(t*9)*1) + (s.wipp || 0)*1.4;   // unter Last hängt die Schiene mehr durch
 }
 elementRegistrieren({
   id: 'blattfloss', name: 'Blatt-Floß', feld: 'blattFloesse',
@@ -177,9 +206,14 @@ elementRegistrieren({
         solids.push(s); return s;
       });
     },
-    zuruecksetzen(){ for(const s of blattFloesse){ s.x = s.x0; s.v = 0; } },
+    zuruecksetzen(){ for(const s of blattFloesse){ s.x = s.x0; s.v = 0; seilNachgebenZurueck(s); } },
     schritt(figuren){
       for(const s of blattFloesse){
+        seilNachgebenSchritt(s, figuren);   // Seile geben nach (nur Aussehen, s. o.)
+        if(Math.abs(s.v) > 0.6 && typeof geraeuschSpielen === 'function'){   // fahrendes Floß: Seile/Rollen knarzen ab und zu leise
+          s._knarzT = (s._knarzT || 0) - 1;
+          if(s._knarzT <= 0){ s._knarzT = 55 + Math.floor(Math.random()*40); geraeuschSpielen('knarzen', {x: s.x + s.w/2, vol: 0.45}); }
+        }
         // Seiten-Wind schiebt; nicht das Blatt, auf dem der Pustende selbst steht
         const st = pusteStrahlJetzt, k = st && st.dir !== 'hoch' && st.von.standingOn !== s ? pusteTrifft({x: s.x, y: s.y - 6, w: s.w, h: s.h + 12}) : 0;
         if(s.radZug){ s.v = s.radZug*BLATT_RAD_TEMPO; s.radZug = 0; s.vomRad = true; }   // Floß-Rad wird gedreht (elemente/flossrad.js): gleichmäßig ziehen
@@ -227,13 +261,14 @@ elementRegistrieren({
       for(const s of blattFloesse){
         const E = blattSchieneEnden(s);
         if(E.b - camX < -60 || E.a - camX > VW + 60) continue;
-        const schwank = Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012, x = Math.round(s.x - camX), mitte = x + s.w/2;
+        const schwank = blattSchwank(s, t), x = Math.round(s.x - camX), mitte = x + s.w/2, dy = s.wipp || 0;
         const sag = blattSchieneDurchhang(s, t), a = E.a - camX, b = E.b - camX;
-        blattBild(ctx, x, s.y, s.w, schwank, 'hinten');   // hintere Blattwand (hinter den Figuren); kein Schatten (Nutzer)
-        // zwei Seilzüge: Rollenwagen auf der Tau-Schiene, Tau hinunter, am Blatt festgeknotet (beim Fahren hängt es etwas nach)
+        blattBild(ctx, x, s.y + dy, s.w, schwank, 'hinten');   // hintere Blattwand (hinter den Figuren); kein Schatten (Nutzer)
+        // zwei Seilzüge: Rollenwagen auf der Tau-Schiene, Tau hinunter, am Blatt festgeknotet. Die Wagen laufen voraus bzw.
+        // hinterher, solange das Blatt nachschwingt (s.pend, Seile geben nach)
         for(const d of [-1, 1]){
-          const kx = mitte + d*BLATT_KNOTEN_X, ky = s.y + BLATT_KNOTEN_Y + d*BLATT_KNOTEN_X*Math.sin(schwank), nach = -s.v*2;
-          const wx = kx - nach, u = Math.max(0, Math.min(1, (wx - a)/(b - a))), wy = E.y + 2*sag*u*(1 - u);
+          const kx = mitte + d*BLATT_KNOTEN_X, ky = s.y + dy + BLATT_KNOTEN_Y + d*BLATT_KNOTEN_X*Math.sin(schwank);
+          const wx = kx - (s.pend || 0), u = Math.max(0, Math.min(1, (wx - a)/(b - a))), wy = E.y + 2*sag*u*(1 - u);
           tauZeichnen(wx, wy + 6, kx, ky, Math.sin(t*1.4 + kx*0.05)*0.8, 2.2);
           rollenwagenZeichnen(wx, wy, -s.x/3.6);
           knotenZeichnen(kx, ky);
@@ -245,7 +280,7 @@ elementRegistrieren({
       for(const s of blattFloesse){
         const x = Math.round(s.x - camX);
         if(x + s.w < -40 || x > VW + 40) continue;
-        blattBild(ctx, x, s.y, s.w, Math.sin(t*1.7 + s.x0*0.01)*0.015 + s.v*0.012, 'vorne');
+        blattBild(ctx, x, s.y + (s.wipp || 0), s.w, blattSchwank(s, t), 'vorne');
       }
     },
   },

@@ -46,6 +46,7 @@ function fileAudioStart(){
   if(fileAudio.started || !audioCtx || audioCtx.state !== 'running') return;
   fileAudio.started = true;
   const a = audioCtx;
+  geraeuscheLaden();   // Knarzen/Kurbel (unten)
   // Musik: gestreamt über ein <audio>-Element, durch Klangfilter und Lautstärke geleitet
   try{
     const el = new Audio(); el.src = AUDIO_FILES.music; el.loop = true; el.preload = 'auto';
@@ -111,6 +112,50 @@ function fileMusicRestart(fade, delay){
 }
 function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rain); }
 
+// ---------- Geräusch-Aufnahmen (Nutzer 06.11.: Knarzen für Pump-Draisine/Floß, Kurbel-Reiben fürs Floß-Rad) ----------
+// assets/audio/knarzen.wav (Schaukelstuhl, 12,8 s, 16 einzelne Knarzer) und kurbel.wav (Holz/Metall-Reiben, 2,7 s), vorher
+// auf 16 Bit Mono 22 kHz verkleinert. Gespielt wird je Aufruf EIN Laut (Ausschnitt mit kurzem Ein-/Ausblenden): „hin“ =
+// die kräftigen Knarzer, „her“ = die leiseren (Hebel hin und her), sonst zufällig. Lautstärke GERAEUSCH_VOL × Ton-Regler,
+// links/rechts nach Ort. Lädt eine Datei nicht, bleibt der erzeugte Klang aus 18-sound.js.
+const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav'};
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.3};   // „nicht zu laut, nicht zu leise“ (etwa wie Hebel/Tür)
+const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s] (gemessen an der Hüllkurve)
+  knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
+            her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},
+  kurbel: {zug: [[0.16, .45]], klein: [[1.93, .21]]},
+};
+const geraeusche = {buf: {}, laedt: false};
+function geraeuscheLaden(){
+  if(geraeusche.laedt || !audioCtx) return;
+  geraeusche.laedt = true;
+  for(const [name, pfad] of Object.entries(GERAEUSCH_DATEIEN))
+    fetch(pfad).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); }).then(ab => audioCtx.decodeAudioData(ab))
+      .then(buf => { geraeusche.buf[name] = buf; }).catch(() => {});
+}
+// spielt einen Laut; o = {x (Weltposition), stueck ('hin'/'her'/'zug'/…), vol, rate}; true = gespielt
+function geraeuschSpielen(name, o){
+  o = o || {};
+  const a = typeof sfxCtx === 'function' ? sfxCtx() : null;
+  if(a) geraeuscheLaden();
+  const buf = geraeusche.buf[name];
+  if(!a || soundMuted || !buf) return false;
+  try{
+    const S = GERAEUSCH_STUECKE[name] || {}, gruppen = Object.values(S);
+    const liste = (o.stueck && S[o.stueck]) || gruppen[Math.floor(Math.random()*gruppen.length)] || [[0, buf.duration]];
+    const [ab, dauer] = liste[Math.floor(Math.random()*liste.length)];
+    const src = a.createBufferSource(); src.buffer = buf; src.playbackRate.value = (o.rate || 1)*(1 + (Math.random() - 0.5)*0.08);
+    const g = a.createGain(), t = a.currentTime, vol = (GERAEUSCH_VOL[name] || 0.3)*(o.vol || 1)*VOL.sfx;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.012);
+    g.gain.setValueAtTime(vol, t + Math.max(0.02, dauer - 0.06)); g.gain.linearRampToValueAtTime(0.0001, t + dauer);
+    src.connect(g);
+    let aus = g;
+    if(a.createStereoPanner){ const p = a.createStereoPanner(); p.pan.value = typeof sfxPan === 'function' ? sfxPan(o.x) : 0; g.connect(p); aus = p; }
+    aus.connect(audioOut());
+    src.start(t, ab, dauer + 0.02);
+    if(typeof sfxLog === 'function') sfxLog(name);
+    return true;
+  }catch(e){ return false; }
+}
 // jedes Bild (aus musicUpdate) – nur Lautstärken/Filter, nichts am Spiel
 function fileAudioUpdate(){
   fileAudioStart();

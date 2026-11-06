@@ -8095,7 +8095,15 @@ async def draisine_testlevel(g):
 # Pump-Draisine: beide auf die Plattform stellen; pumpen(n, alle, wer) = n Schritte, wer (0 Affe, 1 Schwein) drückt alle k Schritte Springen
 DRAISINE_JS = KOOP_SCHRITTE + """ const D = draisinen[0];
   const drauf = () => { stell(p1, D.x + 40, D.y); stell(p2, D.x + 120, D.y); for(let i = 0; i < 12; i++) st(); };
-  const pumpen = (n, alle, wer) => { for(let i = 0; i < n; i++){ for(const w of wer){ const P = w ? p2 : p1; if(i % alle === w*Math.floor(alle/2)) KEYS[P.keys.jump + '_pressed'] = true; } st(); } };"""
+  const pumpen = (n, alle, wer) => { for(let i = 0; i < n; i++){ for(const w of wer){ const P = w ? p2 : p1; if(i % alle === w*Math.floor(alle/2)) KEYS[P.keys.jump + '_pressed'] = true; } st(); } };
+  // Takt-Pumpen (06.11.): wer dran ist, drückt genau im perfekten Moment ('perfekt') bzw. spät im Fenster ('spaet');
+  // ist noch keiner dran, fängt der Affe an. guete2 = Güte des Schweinchens (sonst wie guete)
+  const imTakt = (n, guete, guete2) => { for(let i = 0; i < n; i++){ const T = D.takt;
+      if(!T.dran) KEYS[p1.keys.jump + '_pressed'] = true;
+      else { const P = [p1, p2].find(q => q._draisineSeite === T.dran), gu = P === p2 && guete2 ? guete2 : guete;
+        const ziel = DRAISINE_TAKT_WEG + (gu === 'spaet' ? DRAISINE_BEST + DRAISINE_PERFEKT + 8 : DRAISINE_BEST);
+        if(P && T.t === ziel) KEYS[P.keys.jump + '_pressed'] = true; }
+      st(); } };"""
 
 @test
 async def draisine_pumpen_zu_zweit(g):
@@ -8110,7 +8118,7 @@ async def draisine_pumpen_zu_zweit(g):
             e.tasten = [p1.keys.griff, p2.keys.griff, draisineTastenText(p1), draisineTastenText(p2)];
             drauf(); e.traegt = p1.grounded && p2.grounded && p1.standingOn === D && p2.standingOn === D;
             // nur der Affe hält und pumpt
-            KEYS[p1.keys.griff] = true; pumpen(80, 7, [0]); e.nurAffe = D.x; e.kraftAffe = D.kraft[0];
+            KEYS[p1.keys.griff] = true; pumpen(1, 1, [0]); pumpen(79, 200, []); e.nurAffe = D.x; e.kraftAffe = D.kraft[0];
             // beide halten, nur das Schweinchen pumpt (Affe greift neu: seine Kraft von eben ist dann weg)
             KEYS[p1.keys.griff] = false; st(); e.losGleichNull = D.kraft[0] === 0; KEYS[p1.keys.griff] = true;
             KEYS[p2.keys.griff] = true; pumpen(80, 7, [1]); e.nurSchwein = D.x;
@@ -8121,12 +8129,12 @@ async def draisine_pumpen_zu_zweit(g):
             e.keinSprung = minY >= y0 - 0.5 && p1.grounded; e.amHebel = Math.round(p1.x - (D.x + D.w/2)); e.schweinAmHebel = Math.round(p2.x - (D.x + D.w/2));
             e.blickZumHebel = [p1.facing, p2.facing];
             // beide pumpen: fährt nach rechts, beide fahren mit
-            const xa = D.x, pa = p1.x; pumpen(60, 7, [0, 1]); e.fahrt = D.x - xa; e.mit = Math.round((p1.x - pa) - (D.x - xa)); e.richtung = D.richtung;
-            let maxT = 0; for(let i = 0; i < 400 && D.x < D.x1; i++){ pumpen(1, 1, i % 7 === 0 ? [0] : i % 7 === 3 ? [1] : []); maxT = Math.max(maxT, D.tempo); }
+            const xa = D.x, pa = p1.x; imTakt(120, 'perfekt'); e.fahrt = D.x - xa; e.mit = Math.round((p1.x - pa) - (D.x - xa)); e.richtung = D.richtung;
+            let maxT = 0; for(let i = 0; i < 600 && D.x < D.x1; i++){ imTakt(1, 'perfekt'); maxT = Math.max(maxT, D.tempo); }
             e.maxTempo = maxT; e.ende = D.x; e.x1 = D.x1;
             e.drauf = draisineDrauf(p1, D) && draisineDrauf(p2, D) && !deathState;
-            pumpen(10, 7, [0, 1]); e.stehtAmEnde = D.x === D.x1 && D.tempo === 0;   // Pause nach der Ankunft
-            pumpen(80, 7, [0, 1]); e.zurueck = D.x < D.x1 && D.richtung === -1;
+            imTakt(10, 'perfekt'); e.stehtAmEnde = D.x === D.x1 && D.tempo === 0;   // Pause nach der Ankunft
+            imTakt(160, 'perfekt'); e.zurueck = D.x < D.x1 && D.richtung === -1;
             // Griff los: sofort normal springen
             KEYS[p1.keys.griff] = false; KEYS[p2.keys.griff] = false; for(let i = 0; i < 150; i++) st();
             e.rolltAus = D.tempo === 0;
@@ -8137,10 +8145,10 @@ async def draisine_pumpen_zu_zweit(g):
         assert r['tasten'][0] == 'KeyQ' and r['tasten'][1] == 'Numpad7' and 'Q halten' in r['tasten'][2] and 'Leertaste' in r['tasten'][2] \
             and 'Num 7 halten' in r['tasten'][3] and 'Num 0' in r['tasten'][3], f'Griff-Tasten/Hinweis falsch: {r}'
         assert r['traegt'], f'Draisine trägt nicht: {r}'
-        assert r['nurAffe'] == 800 and r['kraftAffe'] > 0.3, f'eine Figur allein darf nichts bewegen: {r}'
+        assert r['nurAffe'] == 800 and r['kraftAffe'] > 0.1, f'eine Figur allein darf nichts bewegen: {r}'
         assert r['losGleichNull'] and r['nurSchwein'] == 800, f'nur eine pumpt: darf nichts bewegen: {r}'
         assert r['keinSprung'], f'mit gehaltenem Griff darf man nicht springen: {r}'
-        assert abs(r['amHebel'] + 44) <= 2 and abs(r['schweinAmHebel'] - 44) <= 2 and r['blickZumHebel'] == [1, -1], f'Figuren stehen nicht am Hebel: {r}'
+        assert abs(r['amHebel'] + 50) <= 2 and abs(r['schweinAmHebel'] - 50) <= 2 and r['blickZumHebel'] == [1, -1], f'Figuren stehen nicht am Hebel: {r}'
         assert r['fahrt'] > 20 and r['richtung'] == 1 and abs(r['mit']) <= 1, f'fährt nicht zu zweit / nimmt nicht mit: {r}'
         assert r['ende'] == r['x1'] and r['drauf'], f'nicht bis ans Ende gefahren / Figuren verloren: {r}'
         assert 0 < r['maxTempo'] <= 3.0001, f'Tempo falsch: {r}'
@@ -8152,26 +8160,71 @@ async def draisine_pumpen_zu_zweit(g):
 
 @test
 async def draisine_tempo_und_ausrollen(g):
-    """Pump-Draisine: schneller pumpen = schneller (zählt die langsamere Figur, höchstens DRAISINE_MAX); hört eine Figur auf
-    zu pumpen oder lässt den Griff los, rollt sie weich aus (nicht schlagartig). Neustart: zurück an den Anfang."""
+    """Pump-Draisine (Takt-Pumpen 06.11.): im perfekten Moment pumpen = schneller als spät im Fenster (zählt die schwächere
+    Figur, höchstens DRAISINE_MAX); hört eine Figur auf (oder drückt nur noch im falschen Moment), rollt sie weich aus (nicht
+    schlagartig). Neustart: zurück an den Anfang."""
     srv = await draisine_testlevel(g)
     try:
         r = await g.ev("""(() => { """ + DRAISINE_JS + """ const e = {};
           try {
-            const lauf = (alle1, alle2) => { resetLevel(); for(let i = 0; i < 3; i++) st(); drauf(); KEYS[p1.keys.griff] = true; KEYS[p2.keys.griff] = true;
-              for(let i = 0; i < 70; i++){ if(i % alle1 === 0) KEYS[p1.keys.jump + '_pressed'] = true; if(i % alle2 === 2) KEYS[p2.keys.jump + '_pressed'] = true; st(); }
-              return D.tempo; };
-            e.schnell = lauf(5, 5); e.langsam = lauf(14, 14); e.gemischt = lauf(5, 14);
-            // einer hört auf: weich ausrollen
-            lauf(6, 6); const t0 = D.tempo; for(let i = 0; i < 40; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.nach40 = [t0, D.tempo];
-            for(let i = 0; i < 200; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.steht = D.tempo;
+            const lauf = (g1, g2, n) => { resetLevel(); for(let i = 0; i < 3; i++) st(); drauf(); KEYS[p1.keys.griff] = true; KEYS[p2.keys.griff] = true;
+              imTakt(n || 220, g1, g2); return D.tempo; };
+            e.schnell = lauf('perfekt', 'perfekt'); e.langsam = lauf('spaet', 'spaet'); e.gemischt = lauf('perfekt', 'spaet');
+            // einer hört auf (der Affe drückt nur noch im falschen Moment): weich ausrollen (kurzer Anlauf: nicht schon am Schienenende)
+            lauf('perfekt', 'perfekt', 130); const t0 = D.tempo; for(let i = 0; i < 40; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.nach40 = [t0, D.tempo];
+            for(let i = 0; i < 300; i++){ if(i % 6 === 0) KEYS[p1.keys.jump + '_pressed'] = true; st(); } e.steht = D.tempo;
             resetLevel(); for(let i = 0; i < 3; i++) st(); e.neu = D.x;
           } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
           return e; })()""")
-        assert r['schnell'] > r['langsam'] + 0.5 and r['schnell'] <= 3.0001, f'schneller pumpen ist nicht schneller: {r}'
-        assert abs(r['gemischt'] - r['langsam']) < 0.5, f'die langsamere Figur soll das Tempo bestimmen: {r}'
+        assert r['schnell'] > r['langsam'] + 0.4 and r['schnell'] <= 3.0001, f'im Takt pumpen ist nicht schneller: {r}'
+        assert abs(r['gemischt'] - r['langsam']) < 0.5, f'die schwächere Figur soll das Tempo bestimmen: {r}'
         assert 0.3 < r['nach40'][1] < r['nach40'][0], f'rollt nicht weich aus: {r}'
         assert r['steht'] == 0 and r['neu'] == 800, f'kommt nicht zum Stehen / Neustart falsch: {r}'
+    finally:
+        srv.shutdown()
+
+@test
+async def draisine_takt_und_seile(g):
+    """Nutzer 06.11.: Takt-Pumpen – abwechselnd, wer dran ist, drückt, wenn der Ring seinen Griff trifft: perfekt = mehr Kraft
+    als gut; zu früh (Hebel noch unterwegs) oder nicht dran = Klack (Kraft weg); Fenster verpasst = Takt vorbei, Hebel zurück
+    in die Mitte. Figuren stehen am Griff (DRAISINE_STAND) und die Pose folgt dem Griff (draisineGriffHoehe). Seile geben nach
+    (elemente/blattfloss.js): beim Anfahren hängt die Plattform nach (pend), mit zwei Figuren federt sie tiefer (wipp) und die
+    Figuren werden mitgefedert gezeichnet (_standDy)."""
+    srv = await draisine_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + DRAISINE_JS + """ const e = {};
+          try {
+            drauf(); KEYS[p1.keys.griff] = true; KEYS[p2.keys.griff] = true; for(let i = 0; i < 10; i++) st();
+            e.wipp = D.wipp; e.standDy = [p1._standDy, p2._standDy];
+            // erster Druck (Affe): Takt beginnt, das Schweinchen ist dran
+            KEYS[p1.keys.jump + '_pressed'] = true; st(); e.start = [D.fx.art, D.takt.dran === p2._draisineSeite, +D.kraft[0].toFixed(2)];
+            e.griffAffeUnten = draisineGriffHoehe(D, p1._draisineSeite); for(let i = 0; i < DRAISINE_TAKT_WEG; i++) st(); e.griffAffeNach = +draisineGriffHoehe(D, p1._draisineSeite).toFixed(2);
+            // Affe drückt nochmal (nicht dran) -> Klack
+            const k0 = D.kraft[0]; KEYS[p1.keys.jump + '_pressed'] = true; st(); e.nichtDran = [D.fx.art, D.kraft[0] < k0];
+            // Schweinchen perfekt
+            while(D.takt.t < DRAISINE_TAKT_WEG + DRAISINE_BEST) st();
+            KEYS[p2.keys.jump + '_pressed'] = true; st(); e.perfekt = [D.fx.art, +D.kraft[1].toFixed(2)];
+            // Affe zu früh (Hebel noch unterwegs)
+            st(); st(); const k1 = D.kraft[0]; KEYS[p1.keys.jump + '_pressed'] = true; st(); e.zuFrueh = [D.fx.art, D.kraft[0] < k1];
+            // Fenster verpassen -> Takt vorbei
+            for(let i = 0; i < DRAISINE_TAKT_WEG + DRAISINE_FENSTER_NACH + 5; i++) st(); e.verpasst = [D.takt.dran, Math.abs(D.hebelZiel)];
+            // gut (spät im Fenster) gibt weniger als perfekt
+            KEYS[p1.keys.jump + '_pressed'] = true; st(); while(D.takt.t < DRAISINE_TAKT_WEG + DRAISINE_BEST + DRAISINE_PERFEKT + 6) st();
+            const k2 = D.kraft[1]; KEYS[p2.keys.jump + '_pressed'] = true; st(); e.gut = [D.fx.art, +(D.kraft[1] - k2*DRAISINE_ABKLINGEN).toFixed(2)];
+            // anfahren: Plattform hängt nach (pend), wippt
+            imTakt(200, 'perfekt'); e.fahrt = D.tempo; e.pendMax = 0; for(let i = 0; i < 40; i++){ imTakt(1, 'perfekt'); e.pendMax = Math.max(e.pendMax, Math.abs(D.pend)); }
+            draw(); e.ok = true;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['wipp'] > 1.5 and all(d and d > 1.5 for d in r['standDy']), f'mit zwei Figuren federt die Plattform nicht / Figuren nicht mitgefedert: {r}'
+        assert r['start'][0] == 'gut' and r['start'][1] and r['start'][2] > 0.2, f'Takt-Start falsch: {r}'
+        assert r['griffAffeNach'] < 0.1, f'Griff des Drückers geht nicht nach unten: {r}'
+        assert r['nichtDran'] == ['fehl', True], f'nicht dran -> Klack fehlt: {r}'
+        assert r['perfekt'][0] == 'perfekt' and r['perfekt'][1] > 0.35, f'perfekter Moment nicht erkannt: {r}'
+        assert r['zuFrueh'] == ['fehl', True], f'zu früh -> Klack fehlt: {r}'
+        assert r['verpasst'] == [0, 0], f'verpasstes Fenster beendet den Takt nicht: {r}'
+        assert r['gut'][0] == 'gut' and abs(r['gut'][1] - await g.ev('DRAISINE_STOSS')) < 0.03, f'spät im Fenster = gut: {r}'
+        assert r['fahrt'] > 1.5 and r['pendMax'] > 0.3 and r['ok'], f'fährt nicht / Seile geben nicht nach: {r}'
     finally:
         srv.shutdown()
 

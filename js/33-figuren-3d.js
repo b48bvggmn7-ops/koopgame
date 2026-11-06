@@ -331,6 +331,13 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(P.dash) return {p: TUCK, key:'dash'};
     if(sinceWJ < WJ_ZEIT){ const k = sinceWJ/WJ_ZEIT, tk = Math.sin(Math.min(1,k*1.15)*Math.PI);   // Salto: erst einrollen, am Ende strecken
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
+    // Pump-Draisine (Nutzer: „wo die beiden stehen passt nicht und die Bewegung auch nicht“): beide Hände am T-Griff, die Arme
+    // folgen dem Griff (oben = nach vorn oben gestreckt, unten = nach vorn unten gedrückt), beim Runterdrücken geht die Figur in
+    // die Knie und beugt den Kopf (Stauchen in fussFigurZeichnen über S.pumpH), beim Hochkommen richtet sie sich auf
+    if(P._draisineSeite && P._draisineS && typeof draisineGriffHoehe === 'function'){
+      const h = draisineGriffHoehe(P._draisineS, P._draisineSeite), d = 1 - h; S.pumpH = h;
+      return {p:{head:[.22*d - .08*h,0,0], armN:[-1.05 - .95*h,0,-.12], armP:[-1.0 - .95*h,0,.12], legN:[-.42*d,0,0], legP:[-.38*d,0,0]}, key:'pumpen'};
+    }
     if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
       if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-1.45*e,0,-.2], armP:[-1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
     if(male && ((P.hookAttached && P.anchor) || (P._hakenWarten && P._wartZiel))) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
@@ -470,7 +477,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const H = holen(male), ch = H.ch;
     // Hangeln: lange Arme (Hände kleben oben an der Haftfläche), sonst normale Arme
     S.al = (S.al||1) + ((z.key === 'haft' ? HAFT_ARM : 1) - (S.al||1))*(1 - Math.exp(-dt*14));
-    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : 1)) - (S.as||1))*(1 - Math.exp(-dt*12));
+    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : (z.key === 'pumpen' ? 1.7 : 1))) - (S.as||1))*(1 - Math.exp(-dt*12));
     // Seil hochklettern/herablassen (W/S): Hand über Hand – ein Arm zieht, der andere greift nach
     if(z.key === 'seil' && P.ropeLen != null){ const d = S.rl == null ? 0 : Math.abs(P.ropeLen - S.rl); S.rl = P.ropeLen; S.cp = (S.cp||0) + d; S.cs = (S.cs||0) + (d - (S.cs||0))*.3; } else { S.rl = null; S.cs = 0; }
     const klet = Math.sin(2*Math.PI*(S.cp||0)/46)*Math.min(1, (S.cs||0)/.6);
@@ -522,6 +529,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       if(pu > .5 && !zu) for(const e of ch.eyes) e.n.sc = [e.n.sc[0], e.y*(1 - .45*pu), e.n.sc[2]]; }
     // Schirm-Trampolin: federt der Affe ab, geht das Schweinchen kurz in die Knie (und wippt nach)
     let lgX = 1, lgY = 1, trQ = 0;
+    if(z.key === 'pumpen'){ const d = 1 - (S.pumpH == null ? 1 : S.pumpH); lgY = 1 - 0.11*d; lgX = 1 + 0.05*d; }   // Draisine: in die Knie beim Runterdrücken
     if(P.trampolin && P._trampolinSprungT){ const q = (now - P._trampolinSprungT)/380; if(q < 1){ trQ = Math.sin(q*Math.PI*2)*(1 - q); const a = Math.max(0, trQ)*.2; lgY = 1 - a; lgX = 1 + a*.45; } }
     H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.dY || 0) +(S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14*lgX, (1 + sq)*lgY, (1 - sq*.5)*1.14*lgX];   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
     // in die kleine Leinwand zeichnen

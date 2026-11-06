@@ -2150,8 +2150,7 @@ sein Screenshot: dunkle Stämme vorne, milchiger Nebel, kühle Farben). Reine Op
   0,2 -> 0,06, die schnellen Bodenschwaden vorne entfallen. Dafür **Nebelfelder in der Spielwelt** (`FOTO_HG_FELDER`,
   `fotoHgFelderZeichnen`): fest an ihrer Stelle im Level (man läuft hindurch), über die ganze Bildhöhe verteilt, je Stück
   des Levels mal dicht, mal kaum (langsam wechselnde Dichte), unterschiedlich groß; jedes atmet und treibt leicht. Sie
-  liegen nur in der Luft (Boden/Wände werden ausgespart) und vor den Figuren; wo eine Figur steht, wird das Feld dünner.
-  nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
+  liegen nur in der Luft (Boden/Wände werden ausgespart) und vor den Figuren; wo eine Figur steht, wird das Feld dünner.  nachts dunkelblau getönt. Taste B schaltet den Nebel mit dem ganzen Foto-Look an/aus.
   Tiere vorne, Glühwürmchen und Nacht-Licht am Boden bleiben; die gezeichneten Hintergrund-Tiere (Schnecken am Stamm
   usw.) entfallen dabei.
 - **Farben 1:1 wie die Bilder:** Im Foto-Look liegen keine Farbfilter des Comic-Looks über dem Bild (kein warmer
@@ -2466,6 +2465,28 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Aussehen: Hebel kippt bei jedem Stoß zur Seite der pumpenden Figur (abwechselnd = Wippe), zwei Lämpchen am Pfosten (gelb
   Affe, rosa Schweinchen) leuchten, solange die Figur pumpt; leises Holz-Knarzen je Stoß. Tasten-Blase über dem Hebel mit den
   Tasten jeder Figur in der Nähe („Affe: Q halten + Leertaste pumpen“, bei Controller L1 + ✕; allein: „nur zu zweit!“).
+  **Seit 06.11. Takt-Pumpen** (Nutzer: „der User muss immer im richtigen Moment eine Taste drücken“; „wo die beiden stehen
+  passt nicht und die Bewegung auch nicht“): Der Hebel ist eine Wippe – die beiden drücken **abwechselnd**. Nach einem Stoß
+  kippt der Hebel in 14 Schritten herüber, dann ist der Griff des Partners oben und **sein Moment kommt**: ein Leuchtring in
+  seiner Farbe (Affe gelb, Schweinchen rosa, dunkler Rand) zieht sich auf einen feinen Zielkreis am Griff zusammen; trifft er
+  ihn, leuchtet der Griff = **perfekt** (Kraft 0,42, grüner Funkenkranz, kleines helles Glöckchen), sonst im Fenster **gut**
+  (0,26, weißer Ring). Drücken, während der Hebel noch unterwegs ist oder obwohl man nicht dran ist = **Klack** (Kraft −0,15,
+  rotes Kreuz, dumpfes Holz-Klack); verpasst man das Fenster (28 Schritte nach dem Ankommen), kippt der Hebel zurück in die
+  Mitte und jeder darf neu anfangen. Kraft klingt je Schritt mit 0,99 ab (höchstens 1,3), Tempo = schwächere Kraft × 2,6
+  (perfekter Takt ≈ fast Höchsttempo). Werte `DRAISINE_TAKT_WEG/FENSTER_VOR/BEST/PERFEKT/FENSTER_NACH/STOSS/STOSS_PERFEKT/FEHL`.
+  **Figuren am Griff:** stehen 50 px neben der Mitte (Hände am T-Griff; vorher 44 und zu weit weg), die 3D-Figur folgt dem
+  Griff (Pose „pumpen“, js/33): oben Arme nach vorn oben gestreckt und aufgerichtet, beim Runterdrücken Arme nach vorn unten,
+  in die Knie (gestaucht) und Kopf gebeugt (`draisineGriffHoehe`). Der Hebel kippt weich (statt zu springen).
+  **Geräusch:** echtes Holz-Knarzen (Aufnahme des Nutzers, assets/audio/knarzen.wav): je Stoß ein Knarzer, die beiden
+  Hebel-Seiten mit kräftigen bzw. leiseren Knarzern (hin/her); ohne Datei das erzeugte Knarzen.
+- **Seile geben nach** (Blatt-Floß und Pump-Draisine, Nutzer 06.11.: „das Seil muss ein bisschen nachgeben – realistischer“;
+  nur Aussehen, elemente/blattfloss.js `seilNachgebenSchritt`, Werte `SEIL_NACHGEBEN`): beim Anfahren hängt die Plattform hinter
+  ihren Rollenwagen her, beim Bremsen schwingt sie vor und pendelt aus (Seile schräg); jede Figur darauf drückt sie etwas
+  herunter (Schiene hängt mehr durch), Aufspringen und Pump-Stöße federn nach; sie neigt sich zur Seite mit mehr Gewicht. Wer
+  darauf steht, federt beim Zeichnen mit (`_standDy`, js/10). Ändert keine Spiel-Physik.
+- **Floß-Geräusche** (Nutzer 06.11.): Floß-Rad kurbeln = Holz/Metall-Reiben (Aufnahme assets/audio/kurbel.wav, jeden zweiten
+  Arm-Zug; vorher Hebel-Klick), fahrendes Blatt-Floß = ab und zu leises Seil-Knarzen (knarzen.wav). Beide Aufnahmen auf 16 Bit
+  Mono 22 kHz verkleinert (zusammen ~680 KB), Lautstärke `GERAEUSCH_VOL` (etwa wie Hebel/Tür), js/23 `geraeuschSpielen`.
   Foto-Look: verwitterte Holzbohlen, Eisenwinkel, Foto-Lianen an den Schienen-Enden. Neustart/Tod: zurück an den Anfang.
   Rolle: beide gleich – reines Koop-Timing. Im Editor-Test holt Q nur dann den Partner, wenn niemand auf einer Draisine
   steht (sonst ist Q der Griff); dasselbe für Q = „Warte/Komm“ beim Computer-Partner. Neue Taste „Griff“ im Menü
