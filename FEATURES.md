@@ -292,9 +292,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     FILE_VOL (Musik 0,38, Vögel 0,6, Regen 0,8, Fluss 2,0). Gesamtlautstärke aller Töne: MASTER_VOL 0,7 (07-…js). Blockiert der Browser das Abspielen, startet die Musik beim
     nächsten Tastendruck/Klick. Leistungsanzeige (F) zeigt den Musik-Zustand (spielt/lädt/blockiert/Datei lädt nicht).
     **Seit 06.11. neuer Hintergrund-Ton** (Nutzerwunsch, Datei „outside_room“ -> assets/audio/draussen.mp3): läuft gleichmäßig
-    als Schleife (2,5 s weich überblendet, Lautstärke `FILE_VOL.atmo` 0,7) und ERSETZT den bisherigen Hintergrund – Vögel
+    als Schleife (2,5 s weich überblendet, Lautstärke `FILE_VOL.atmo` 1,6 – erst 0,7, Nutzer: „zu leise“) und ERSETZT den bisherigen Hintergrund – Vögel
     (voegel.mp3) und Fluss (fluss.mp3) werden nicht mehr geladen (Dateien liegen noch da; zurück mit
     `ATMO_STATT_VOEGEL_FLUSS = false` in js/23), der erzeugte Wind, Grillen und Bach (js/22) sind aus, solange draussen.mp3 läuft.
+    **Keine Musik mehr** (Nutzer 06.11.: „die Akkorde können raus“): `MUSIK_AUS = true` in js/23 – musik.mp3 wird nicht
+    geladen und das erzeugte Klavier (js/22) spielt auch nicht; Datei bleibt liegen, zurück mit `MUSIK_AUS = false`.
+    Leistungsanzeige (F): „Musik: aus“.
     Lädt eine Datei nicht, bleibt der erzeugte Klang (Klavier, Grillen, Bach, Regen) als Ersatz.
   - Hintergrundmusik + Sonnen-Ambiente (js/22-musik-ambiente.js, alles im Browser erzeugt, keine Aufnahmen):
     ruhiges, verträumtes Klavier (Nutzerwahl), live komponiert: warme Akkordfolgen in F-Dur (~64 Schläge/min), gebrochene
@@ -2483,7 +2486,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Knarzen** (Nutzer: „nicht das Knarzen lauter machen, sondern das Quietschen“): je Druck ein Quietscher aus
   assets/audio/kurbel.wav (= Nutzer-Datei quietschen.wav, Schuhspanner Holz/Metall) – Hebel zur einen Seite das große
   Quietschen („hin“), zur anderen die kleineren („her“, ×1,6–2); Quietschen insgesamt lauter (`GERAEUSCH_VOL.kurbel` 0,3 → 0,8,
-  gilt auch fürs Floß-Rad). Das Knarzen bleibt leise (0,34) und nur beim fahrenden Blatt-Floß.
+  gilt auch fürs Floß-Rad). Danach (Nutzer: „jetzt ist das Knarzen komplett weg und das Quietschen zu laut“): je Druck
+  **Knarzen UND Quietschen** – Knarzen wie früher (hin/her, × `DRAISINE_KNARZ_VOL` 1,3), Quietschen leiser (`GERAEUSCH_VOL.kurbel`
+  0,8 → 0,4, auch Floß-Rad).
 - **Seile geben nach** (Blatt-Floß und Pump-Draisine, Nutzer 06.11.: „das Seil muss ein bisschen nachgeben – realistischer“;
   nur Aussehen, elemente/blattfloss.js `seilNachgebenSchritt`, Werte `SEIL_NACHGEBEN`): beim Anfahren hängt die Plattform hinter
   ihren Rollenwagen her, beim Bremsen schwingt sie vor und pendelt aus (Seile schräg); jede Figur darauf drückt sie etwas

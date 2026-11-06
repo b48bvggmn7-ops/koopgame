@@ -15,8 +15,9 @@
 // Lädt eine Datei nicht (z. B. Spiel als Datei geöffnet), bleibt der erzeugte Klang aus 19/22 aktiv.
 const AUDIO_FILES = {music: 'assets/audio/musik.mp3', birds: 'assets/audio/voegel.mp3',
                      rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/draussen.mp3'};
-const FILE_VOL = {music: 0.38, birds: 0.6, rain: 0.8, river: 2.0, atmo: 0.7};   // Musik vorne, Hintergrund dezent dahinter
+const FILE_VOL = {music: 0.38, birds: 0.6, rain: 0.8, river: 2.0, atmo: 1.6};   // Hintergrund 0,7 -> 1,6 („zu leise“, 06.11.)
 const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
+const MUSIK_AUS = true;   // Nutzer 06.11.: „die Akkorde können raus“ – weder musik.mp3 noch das erzeugte Klavier (22)
 const MUSIC_START_DELAY = 2.5;   // Sekunden Stille, bevor die Musik einsetzt
 const MUSIC_FADE_IN = 7;         // Sekunden Einblenden
 const MUSIC_RESTART_DELAY = 1.5; // nach dem Weitermachen (Tod) erst kurz still, dann von vorne
@@ -51,7 +52,7 @@ function fileAudioStart(){
   const a = audioCtx;
   geraeuscheLaden();   // Knarzen/Kurbel (unten)
   // Musik: gestreamt über ein <audio>-Element, durch Klangfilter und Lautstärke geleitet
-  try{
+  if(!MUSIK_AUS) try{
     const el = new Audio(); el.src = AUDIO_FILES.music; el.loop = true; el.preload = 'auto';
     const node = a.createMediaElementSource(el);
     fileAudio.shelf = a.createBiquadFilter(); fileAudio.shelf.type = 'highshelf'; fileAudio.shelf.frequency.value = 3500; fileAudio.shelf.gain.value = 0;
@@ -88,6 +89,7 @@ window.addEventListener('pointerdown', fileMusicUnblock);
 function audioStatusText(){
   if(soundMuted) return 'Ton: aus (M)';
   if(!audioCtx || audioCtx.state !== 'running') return 'Ton: wartet auf ersten Tastendruck';
+  if(MUSIK_AUS) return 'Musik: aus (nur Hintergrund-Ton)';
   const el = fileAudio.el;
   if(!el) return 'Musik: startet gleich';
   if(fileAudio.err) return 'Musik: Datei lädt nicht';
@@ -123,8 +125,9 @@ function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rai
 const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav'};
 // kurbel.wav = das QUIETSCHEN (Nutzer-Datei „quietschen.wav“, Schuhspanner Holz/Metall). Nutzer 06.11.: „nicht das Knarzen
 // lauter, sondern das Quietschen“ -> Knarzen wieder 0,34; Quietschen 0,3 -> 0,8 und jetzt auch an der Pump-Draisine
-// (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben).
-const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.8};
+// (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben). Danach „Quietschen zu laut“ -> 0,4,
+// und die Draisine knarzt wieder dazu.
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4};
 const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor] (gemessen an der Hüllkurve)
   knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
             her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},

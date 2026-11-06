@@ -5762,28 +5762,31 @@ async def musik_und_ambiente(g):
     assert st['up'] > 8, f'Regenbogen-Musik nicht heller: {st}'
     await g.p.keyboard.press('KeyF'); await g.p.keyboard.press('KeyF')
     if await g.ev("audioCtx && audioCtx.state === 'running'"):
-        for _ in range(60):   # Musik wird im Hintergrund berechnet – langsame Rechner brauchen länger (bis 30 s)
-            if await g.ev("mus.ready && mus.log.length > 0"): break
-            await g.p.wait_for_timeout(500)
-        assert await g.ev("mus.ready && mus.log.length > 0"), 'Musik spielt nicht'
+        # Nutzer 06.11.: Akkorde raus (MUSIK_AUS) – das erzeugte Klavier darf nicht spielen
+        await g.p.wait_for_timeout(3000)
+        assert await g.ev("MUSIK_AUS && mus.log.length === 0 && (!mus.bus || mus.bus.gain.value < 0.01)"), 'Klavier-Musik spielt trotz MUSIK_AUS'
 
 @test
 async def eigene_aufnahmen(g):
     """Eigene Aufnahmen: Hintergrund draussen.mp3 (seit 06.11. statt Vögel/Fluss) und Regen laufen als nahtlose Schleife,
-    der erzeugte Wind/Bach ist dann aus; Musik streamt, blendet ein, blendet beim Tod aus und startet nach dem Weitermachen
-    von vorne."""
+    der erzeugte Wind/Bach ist dann aus. Seit 06.11. keine Akkord-Musik mehr (MUSIK_AUS): musik.mp3 wird nicht geladen.
+    (Die Musik-Prüfungen – einblenden, beim Tod aus, von vorne – laufen nur, wenn MUSIK_AUS wieder false ist.)"""
     srv = webserver(); p = g.p
     try:
         await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
         await startmenue_bis_level(g)   # Ton freischalten + über das Startmenü ins Level
         if not await g.ev("audioCtx && audioCtx.state === 'running'"):
             return   # ohne Tonausgabe (manche Testumgebungen) nichts zu prüfen
+        musik_aus = await g.ev("MUSIK_AUS")
         for _ in range(30):
-            if await g.ev("fileAudio.ok.atmo && fileAudio.ok.rain && fileAudio.ok.music"): break
+            if await g.ev("fileAudio.ok.atmo && fileAudio.ok.rain && (MUSIK_AUS || fileAudio.ok.music)"): break
             await p.wait_for_timeout(500)
         ok = await g.ev("({...fileAudio.ok})")
         assert ok.get('atmo') and ok.get('rain') and 'birds' not in ok and 'river' not in ok, f'Schleifen nicht geladen / alte noch da: {ok}'
-        assert ok.get('music'), f'Musik spielt nicht: {ok}'
+        if musik_aus:
+            assert not await g.ev("!!fileAudio.el"), 'musik.mp3 wird trotz MUSIK_AUS geladen'
+        else:
+            assert ok.get('music'), f'Musik spielt nicht: {ok}'
         await p.wait_for_timeout(2500)
         amb = await g.ev("({atmo: fileAudio.loops.atmo.gain.value, wind: mus.ambNodes.wind.gain.value, bach: mus.ambNodes.brook.gain.value})")
         assert amb['atmo'] > 0.1 and amb['wind'] < 0.01 and amb['bach'] < 0.01, f'Hintergrund-Ton falsch: {amb}'
@@ -5792,6 +5795,7 @@ async def eigene_aufnahmen(g):
             for(let c=0;c<2;c++){ const d=src.getChannelData(c); for(let i=0;i<d.length;i++) d[i]=Math.random()*0.4-0.2; }
             const b = fileLoopBuffer(audioCtx, src, 1); const d = b.getChannelData(0);
             return Math.abs(b.length - 44100*3) < 50 && Math.abs(d[0]) < 0.25; })()"""), 'Schleife kaputt'
+        if musik_aus: return
         await p.wait_for_timeout(3000)
         t1 = await g.ev("fileAudio.el.currentTime")
         assert t1 > 1, f'Musik läuft nicht weiter: {t1}'
@@ -8194,7 +8198,7 @@ async def draisine_seile_und_knarzen(g):
             SFX_LOG.length = 0; KEYS[p1.keys.jump + '_pressed'] = true; st(); e.kraft = +D.kraft[0].toFixed(2);
             for(let i = 0; i < DRAISINE_HEBEL_WEG; i++) st(); e.griffAffeNach = +draisineGriffHoehe(D, p1._draisineSeite).toFixed(2);
             e.ton = SFX_LOG.includes('draisine') || SFX_LOG.length === 0;
-            e.vol = GERAEUSCH_VOL.kurbel; e.stuecke = !!(GERAEUSCH_STUECKE.kurbel.hin && GERAEUSCH_STUECKE.kurbel.her);
+            e.vol = GERAEUSCH_VOL.kurbel; e.knarz = DRAISINE_KNARZ_VOL*GERAEUSCH_VOL.knarzen;e.stuecke = !!(GERAEUSCH_STUECKE.kurbel.hin && GERAEUSCH_STUECKE.kurbel.her);
             e.pendMax = 0; for(let i = 0; i < 60; i++){ for(const P of [p1, p2]) if((i + (P === p2 ? 3 : 0)) % 7 === 0) KEYS[P.keys.jump + '_pressed'] = true; st(); e.pendMax = Math.max(e.pendMax, Math.abs(D.pend)); }
             e.fahrt = D.tempo;
             draw(); e.ok = true;
@@ -8202,7 +8206,7 @@ async def draisine_seile_und_knarzen(g):
           return e; })()""")
         assert r['wipp'] > 1.5 and all(d and d > 1.5 for d in r['standDy']), f'mit zwei Figuren federt die Plattform nicht / Figuren nicht mitgefedert: {r}'
         assert r['kraft'] > 0.2 and r['griffAffeNach'] < 0.1, f'Druck kippt den Hebel nicht: {r}'
-        assert r['vol'] >= 0.8 and r['stuecke'], f'Quietschen zu leise / keine Draisine-Ausschnitte: {r}'
+        assert r['knarz'] > 0 and 0 < r['vol'] < 0.8 and r['stuecke'], f'Knarzen fehlt / Quietschen-Lautstärke / Ausschnitte: {r}'
         assert r['fahrt'] > 1.5 and r['pendMax'] > 0.3 and r['ok'], f'fährt nicht / Seile geben nicht nach: {r}'
     finally:
         srv.shutdown()

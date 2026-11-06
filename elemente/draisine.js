@@ -21,7 +21,8 @@ const DRAISINE_MAX = 3;             // px/Schritt: höchstens so schnell (Blatt-
 // Pumpen (Nutzer 06.11.: das Drücken im richtigen Moment wieder raus): jeder Druck auf die Sprung-Taste ist ein Pump-Stoß –
 // die Seite der Figur geht nach unten (der Hebel kippt in DRAISINE_HEBEL_WEG Schritten weich hinüber, Wippe), es knarzt.
 // Gefahren wird nur, wenn beide halten und beide pumpen; es zählt die langsamere Figur (wie vor dem Takt-Versuch).
-const DRAISINE_HEBEL_WEG = 12;       // Schritte: so lange kippt der Hebel nach einem Stoß herüber
+const DRAISINE_KNARZ_VOL = 1.3;       // Knarzen je Druck: × GERAEUSCH_VOL.knarzen (Quietschen kommt dazu)
+const DRAISINE_HEBEL_WEG = 12;      // Schritte: so lange kippt der Hebel nach einem Stoß herüber
 const DRAISINE_STOSS = 0.25;         // Pump-Kraft je Druck auf die Sprung-Taste
 const DRAISINE_ABKLINGEN = 0.97;     // Pump-Kraft je Schritt mal diesem Wert (ohne Pumpen fällt sie ab)
 const DRAISINE_KRAFT_MAX = 1.5;      // höchstens so viel Pump-Kraft sammelt eine Figur
@@ -73,7 +74,9 @@ function draisineDruck(s, P, i){
   if(s.hebelZiel !== seite*DRAISINE_HEBEL_WINKEL){ s.hebelVon = s.hebel; s.hebelZiel = seite*DRAISINE_HEBEL_WINKEL; s.hebelT = 0; }
   if(typeof seilStoss === 'function') seilStoss(s, 0.8);   // Plattform federt im Seil
   s.pendV = (s.pendV || 0) + seite*0.15;
-  const knarz = typeof geraeuschSpielen === 'function' && geraeuschSpielen('kurbel', {x: s.x + s.w/2, stueck: seite > 0 ? 'hin' : 'her'});   // Quietschen (Nutzer 06.11.)
+  // je Druck Knarzen UND Quietschen (Nutzer 06.11.: „jetzt ist das Knarzen komplett weg“)
+  const knarz = typeof geraeuschSpielen === 'function' && geraeuschSpielen('knarzen', {x: s.x + s.w/2, stueck: seite > 0 ? 'hin' : 'her', vol: DRAISINE_KNARZ_VOL});
+  if(typeof geraeuschSpielen === 'function') geraeuschSpielen('kurbel', {x: s.x + s.w/2, stueck: seite > 0 ? 'hin' : 'her'});
   if(!knarz && typeof SFX !== 'undefined' && SFX.draisinePumpe) SFX.draisinePumpe(s.x + s.w/2, seite > 0);
   else if(typeof sfxLog === 'function') sfxLog('draisine');
 }

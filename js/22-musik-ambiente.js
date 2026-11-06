@@ -212,9 +212,10 @@ function musicUpdate(){
   musicPrepare();
   if(!mus.ready) return;
   if(mus.nextT < audioCtx.currentTime) mus.nextT = audioCtx.currentTime + 0.1;   // nach Pause/Tab-Wechsel nicht nachholen
-  if(!own.music) musicSchedule();
+  const musikAus = typeof MUSIK_AUS !== 'undefined' && MUSIK_AUS;   // Akkorde raus (Nutzer 06.11., js/23)
+  if(!own.music && !musikAus) musicSchedule();
   const now = audioCtx.currentTime, sun = 1 - weather.rain;
-  mus.bus.gain.setTargetAtTime(own.music ? 0 : MUSIC_VOL*VOL.music*(1 - 0.4*weather.rain), now, 1.5);
+  mus.bus.gain.setTargetAtTime(own.music || musikAus ? 0 : MUSIC_VOL*VOL.music*(1 - 0.4*weather.rain), now, 1.5);
   // Hintergrund-Aufnahme draussen.mp3 (Nutzer 06.11.) ersetzt den erzeugten Wind/Grillen/Bach ganz
   const atmo = own.atmo ? 0 : 1;
   mus.ambNodes.wind.gain.setTargetAtTime(atmo*AMB_VOL.wind*VOL.sfx*(0.35 + 0.65*sun)*(own.birds ? 0.5 : 1), now, 1);
