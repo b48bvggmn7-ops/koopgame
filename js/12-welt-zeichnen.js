@@ -833,6 +833,13 @@ function designPlattform(x, y, w, h){
   if(D.licht > 0){ ctx.fillStyle = `rgba(255,240,210,${D.licht*0.8})`; ctx.fillRect(x + 3, y + 1, w - 6, 1.5); }
   if(D.kante > 0){ ctx.strokeStyle = `rgba(${D.kanteFarbe},${D.kante*0.85})`; ctx.lineWidth = 2; roundRect(x + 1, y + 1, w - 2, h - 2, 4); ctx.stroke(); }
 }
+// feste Stelle eines Stachels für sein „zufälliges“ Aussehen (Pflock-Längen, Maserung, Funkeln): mitfahrende Stacheln nehmen
+// ihre Startstelle auf dem bewegten Boden – sonst änderte sich das Aussehen mit jeder Bewegung (Flackern, Nutzer 06.11.)
+function stachelSamen(sp){
+  const c = sp.carrier;
+  if(c && c.startX !== undefined) return [c.startX + sp.offX, c.startY + sp.offY];
+  return [sp.x, sp.y];
+}
 function draw(){
   // Kamera schaut nach vorn: die hintere Figur steht nah am linken Rand (CAM_BACK_MIN..CAM_BACK_PUSH px,
   // Totzone gegen Wackeln, cameraTarget in 09-kamera.js), damit man möglichst viel von dem sieht,
@@ -1093,7 +1100,8 @@ function drawSolidLook(s, look, x){
     if(x<-30||x>VW+30) continue;
     // Stacheln können in 4 Richtungen zeigen (dir 0=oben, 1=rechts, 2=unten, 3=links)
     ctx.save();
-    ctx.translate(Math.round(x), sp.y - sp.h/2);
+    // mitfahrende Stacheln nicht auf ganze Pixel runden – sonst ruckeln sie gegen den weich fahrenden Boden
+    ctx.translate(sp.carrier ? x : Math.round(x), sp.y - sp.h/2);
     ctx.rotate((sp.dir||0) * Math.PI/2);
     // Foto-Look: angespitzte Holzpflöcke statt Metall (12e-foto-elemente.js)
     if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoStachelnZeichnen === 'function'){ fotoStachelnZeichnen(ctx, sp); ctx.restore(); continue; }
@@ -1102,7 +1110,8 @@ function drawSolidLook(s, look, x){
     gw.addColorStop(0, 'rgba(120,20,10,0)'); gw.addColorStop(0.55, 'rgba(120,20,10,.22)'); gw.addColorStop(1, 'rgba(60,10,5,.3)');
     ctx.fillStyle = gw; ctx.fillRect(-sp.w/2 + 1, -sp.h/2 + 6, sp.w - 2, sp.h - 8);
     ctx.drawImage(SPIKE_SPRITE, -sp.w/2, -sp.h/2, sp.w, sp.h);
-    glanzFunkeln(-sp.w/2 + 5 + ((sp.x/40)%4)*10, -sp.h/2 + 9, 5, sp.x*0.37 + sp.y);
+    const [sx0, sy0] = stachelSamen(sp);   // feste Stelle (mitfahrende Stacheln: Funkeln wandert nicht)
+    glanzFunkeln(-sp.w/2 + 5 + ((sx0/40)%4)*10, -sp.h/2 + 9, 5, sx0*0.37 + sy0);
     ctx.restore();
   }
 

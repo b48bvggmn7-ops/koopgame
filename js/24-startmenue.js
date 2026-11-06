@@ -173,6 +173,7 @@ function controlsData(view) {
   const zeilen = (x, affe) => [
     ['Bewegen', x.bewegen], ['Springen', [x('jump')]],
     affe ? ['Haken', [x('ability')]] : ['Schirm (halten)', [x('ability')]],
+    ['Haftfläche (halten)', [x('ability')]],   // Nutzer 06.11.: „in der Tastenbelegung fehlt Halten für Haftfläche“ (gleiche Taste)
     ...(affe ? [['Seil ran / geben', [x('pull'), x('slack')]]] : []),
     [affe ? 'Pusten' : 'Schirm-Trampolin', [x('spezial')]],
     ['Hebel', [x('use')]], ['Draisine-Griff', [x('griff')]],
@@ -833,7 +834,7 @@ $('#sm-foto').addEventListener('click', () => { S.options.idx = 7; S.options.pai
    Doppelt belegte Tasten werden sofort rot markiert; verlassen geht erst, wenn alle Konflikte aufgelöst sind
    (oder man verwirft die Änderungen). Gespeichert wird beim Verlassen (tastenSpeichern, js/03-eingabe.js).
    ===================================================================== */
-const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wandsprung', ability: 'Fähigkeit (Haken / Schirm)',
+const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wandsprung', ability: 'Fähigkeit (Haken / Schirm / Haftfläche halten)',
   pull: 'Hoch (Seil ran, Festhalten)', slack: 'Runter (Seil geben)', use: 'Hebel', dash: 'Dash',
   spezial: 'Spezial (Affe: pusten / Schwein: Schirm-Trampolin)', griff: 'Griff (Pump-Draisine halten)'};
 // Zeilen im Menü: 0 = Tastatur/Controller, 1 … TB_N = Aktionen, TB_N + 1 = Standard, TB_N + 2 = Zurück

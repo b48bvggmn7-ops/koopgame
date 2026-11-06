@@ -541,6 +541,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Zurück-Knopf, scrollen notfalls), „Zurück“ liegt nicht mehr über dem Hinweis-Text. Test optionen_im_spiel.
     „Tasten belegen“ ebenso kompakt (Liste lief unten aus dem Bild, „← Fertig“ lag über einer Zeile); ein Klick auf die
     Steuerungs-Übersicht in den Optionen öffnet „Tasten belegen“ direkt; Hinweis nennt die gesperrten Tasten richtig (mit O).
+    „Haftfläche (halten)“ steht in der Übersicht bei beiden Figuren (gleiche Taste wie Haken/Schirm), in „Tasten belegen“
+    heißt die Zeile „Fähigkeit (Haken / Schirm / Haftfläche halten)“ (Nutzer 06.11.).
+  - Grafik-Korrekturen (Nutzer 06.11.): Nebelfelder (Foto-Look, 11c) sparen auch Scheinwände aus – der graue Schleier
+    verriet sie (Test scheinwand_kein_nebel). Mitfahrende Stacheln flackern nicht mehr: ihr „zufälliges“ Aussehen (Pflock-
+    Länge, Schräge, Maserung, Funkeln) hängt an der festen Startstelle (`stachelSamen`), nicht an der jetzigen Position;
+    sie werden nicht mehr auf ganze Pixel gerundet (Test stacheln_fahren_ohne_flackern). Honig der Haftfläche reicht
+    `HAFT_UEBER` (4 px) unter die Kästchen-Unterkante – sonst sah man die Stein-Unterkante als dunklen Streifen darunter.
     Knöpfe unten links („Level neu starten“, „☰ Menü“, „Level laden (JSON)“) sind auf Nutzerwunsch AUSGEBLENDET
     (R = Neustart, Esc / Options = Pause gehen weiter; Level aus Datei laden geht damit nicht mehr per Knopf).
   - Spielansicht aufgeräumt (Nutzerwunsch): Steuerungs-Erklärungen oben links/rechts ausgeblendet (stehen im

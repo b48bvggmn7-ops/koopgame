@@ -512,6 +512,19 @@ async def scheinwand_glitzert(g):
     assert r['drinnen'] == 0, 'Scheinwand glitzert, obwohl sie durchsichtig ist'
 
 @test
+async def scheinwand_kein_nebel(g):
+    """Nutzer 06.11.: „hier sieht man aber die Scheinwand … liegt am Nebel“ – die Nebelfelder (Foto-Look, 11c) sparen
+    Boden/Wände aus; Scheinwände (fakeWalls) müssen ebenso ausgespart werden, sonst liegt ein grauer Schleier genau auf ihnen."""
+    await g.load(level([ground(0, 680, 3000), ground(400, 320, 800, 120), ground(400, 560, 800, 120),
+                        ground(400, 440, 400, 120, 'fake')], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, welt='dschungel'))
+    r = await g.ev("""(() => { const pfad = [], alt = ctx.moveTo;
+      ctx.moveTo = function(x, y){ pfad.push([Math.round(x), Math.round(y)]); return alt.apply(this, arguments); };
+      try{ fotoHgFelderZeichnen(1); } finally { ctx.moveTo = alt; }
+      const f = fakeWalls[0], oy = H*(1 - zoom), x0 = Math.round((f.x - camX)*zoom), y0 = Math.round(f.y*zoom + oy);
+      return {ausgespart: pfad.some(([x, y]) => Math.abs(x - x0) <= 1 && Math.abs(y - y0) <= 1), n: pfad.length, x0, y0}; })()""")
+    assert r['ausgespart'], f'Nebel liegt über der Scheinwand: {r}'
+
+@test
 async def scheinwand_eine_flaeche(g):
     """Nutzer: Scheinwand „besteht aus 4 Schichten“ -> zusammenhängende Scheinwand-Stücke sind EINE Fläche mit einem Bild und
     einer Durchsichtigkeit; „erst erkennbar, wenn ich reingehe“ -> davor stehen lässt sie deckend, erst drin wird sie
@@ -1128,11 +1141,11 @@ async def optionen_im_spiel(g):
     r = await g.ev("""(() => { const t = document.querySelector('#sm-ctrl-cards').textContent;
       const bild = document.querySelector('#sm').getBoundingClientRect(), zur = document.querySelector('#sm-opt-back').getBoundingClientRect();
       const kaesten = [...document.querySelectorAll('#sm-s-options .pan')].map(p => p.getBoundingClientRect());
-      return {dash: t.includes('Dash'), pusten: t.includes('Pusten'), trampolin: t.includes('Schirm-Trampolin'), griff: t.includes('Draisine-Griff'),
+      return {dash: t.includes('Dash'), haft: t.includes('Haftfläche (halten)'), pusten: t.includes('Pusten'), trampolin: t.includes('Schirm-Trampolin'), griff: t.includes('Draisine-Griff'),
         drin: kaesten.every(k => k.bottom <= bild.bottom + 1), frei: kaesten.every(k => k.bottom <= zur.top + 1),
         ueberlauf: [...document.querySelectorAll('#sm-s-options .pan')].some(p => p.scrollHeight > p.clientHeight + 2)}; })()""")
-    assert not r['dash'] and r['pusten'] and r['trampolin'] and r['griff'], f'Steuerungs-Liste veraltet: {r}'
-    assert r['drin'] and r['frei'], f'Optionen ragen heraus / Zurück liegt über dem Text: {r}'
+    assert not r['dash'] and r['haft'] and r['pusten'] and r['trampolin'] and r['griff'], f'Steuerungs-Liste veraltet: {r}'
+    assert r['drin'] and r['frei'] and not r['ueberlauf'], f'Optionen ragen heraus / Zurück liegt über dem Text / Rollbalken: {r}'
     await p.keyboard.press('Escape'); await p.wait_for_timeout(400)
     assert await g.ev("menuScreen") == 'pause'
     assert await g.ev("TASTEN_GESCHUETZT.KeyO") == 'Optionen'
@@ -4405,6 +4418,26 @@ async def stachelwand_zerschlaegt_broeckel(g):
     assert all(r['tuer']) and r['hebel'] == [True, True] and r['splitter'], f'Tür/Hebel nicht zerschlagen: {r}'
     assert r['tuerBleibtWeg'], f'zerschlagene Tür kommt beim Ausschalten zurück: {r}'
     assert not any(r['neu']['tuer']) and not any(r['neu']['hebel']), f'Neustart stellt Tür/Hebel nicht wieder her: {r}'
+
+@test
+async def stacheln_fahren_ohne_flackern(g):
+    """Nutzer 06.11.: „hier flackern die Stacheln, wenn sie sich bewegen“ – das zufällige Aussehen der Holzpflöcke (Länge,
+    Schräge, Maserung) hing an der jetzigen Position; mitfahrende Stacheln nehmen jetzt ihre feste Startstelle
+    (stachelSamen) – beim Fahren bleibt die Zeichnung (relativ zum Stachel) exakt gleich."""
+    plat = {'x': 400, 'y': 400, 'w': 160, 'h': 40, 'type': 'moveplat', 'look': 'wall', 'group': 1, 'targetX': 900, 'targetY': 400, 'speed': 2}
+    sp = [{'x': 420 + 40*k, 'y': 400, 'w': 40, 'h': 40, 'dir': 0} for k in range(4)]
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 100, 'y': 680}, movingPlatforms=[plat], spikes=sp, welt='dschungel'))
+    r = await g.ev("""(() => { const s = spikes[0]; if(!s.carrier) return {fehlt: true};
+      const zeichnung = () => { const L = []; const q = {save(){}, restore(){}, translate(x, y){ L.push(['t', +x.toFixed(3), +y.toFixed(3)]); }, rotate(a){ L.push(['r', +a.toFixed(4)]); },
+        beginPath(){}, moveTo(x, y){ L.push(['m', +x.toFixed(3), +y.toFixed(3)]); }, lineTo(x, y){ L.push(['l', +x.toFixed(3), +y.toFixed(3)]); },
+        closePath(){}, fill(){}, stroke(){}, clip(){}, fillRect(){}, ellipse(x){ L.push(['e', +x.toFixed(3)]); },
+        createLinearGradient(){ return {addColorStop(){}}; }, createPattern(){ return null; }, set fillStyle(v){}, set strokeStyle(v){}, set lineWidth(v){} };
+        try{ fotoStachelnZeichnen(q, s); }catch(e){ return 'fehler ' + e; } return JSON.stringify(L); };
+      const a = zeichnung(), s0 = stachelSamen(s).join(',');
+      let ts = 5e6; menuScreen = 'pause'; for(let i = 0; i < 40; i++) stepSim(ts += 1000/54); menuScreen = null;
+      return {fehlt: false, gefahren: s.x - s._px >= 0 && s.carrier.x !== s.carrier.startX, gleich: a === zeichnung(), samen: s0 === stachelSamen(s).join(','), a: a.slice(0, 80)}; })()""")
+    assert not r['fehlt'] and r['gefahren'], f'Aufbau: {r}'
+    assert r['samen'] and r['gleich'], f'Stacheln ändern beim Fahren ihr Aussehen (Flackern): {r}'
 
 @test
 async def stachelwand_faehrt_mit(g):

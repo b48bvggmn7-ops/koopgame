@@ -194,8 +194,11 @@ function fotoFlossBild(q, x, y, w, schwank, teil){
 const FOTO_PFLOCK_JE = 4;
 function fotoStachelnZeichnen(q, sp){
   const w = sp.w, h = sp.h, n = Math.max(2, Math.round(w/40*FOTO_PFLOCK_JE)), b = w/n;
-  const zuf = (i, k) => { const v = Math.sin((sp.x + i*13.7)*12.9898 + (sp.y + k)*78.233)*43758.5453; return v - Math.floor(v); };
-  const unten = h/2, holz = fotoHolzMuster(q, false, sp.x*0.37, 0);
+  // Zufall aus einer FESTEN Stelle je Stachel (stachelSamen) – mit der jetzigen Position änderten sich Länge/Schräge/Maserung
+  // bei mitfahrenden Stacheln jedes Bild („die Stacheln flackern, wenn sie sich bewegen“, Nutzer 06.11.)
+  const [sx0, sy0] = stachelSamen(sp);
+  const zuf = (i, k) => { const v = Math.sin((sx0 + i*13.7)*12.9898 + (sy0 + k)*78.233)*43758.5453; return v - Math.floor(v); };
+  const unten = h/2, holz = fotoHolzMuster(q, false, sx0*0.37, 0);
   for(let i = 0; i < n; i++){
     const mx = -w/2 + (i + 0.5)*b, hoch = h*(0.62 + zuf(i, 1)*0.3), schief = (zuf(i, 2) - 0.5)*0.16, br = b*0.78;
     q.save(); q.translate(mx, unten); q.rotate(schief);

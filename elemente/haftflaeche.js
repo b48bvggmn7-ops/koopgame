@@ -11,6 +11,7 @@
 // nach dem Segeln im Aufwind.
 // Im Spiel: solids mit type 'wall' und haft: true (Kollision und Aussehen wie Wand, dazu die lila Schicht).
 const HAFT_LILA = {schicht: '#e9a620', hell: '#fff1a8', dunkel: '#9a5a08'};
+const HAFT_UEBER = 4;   // px: so weit reicht das Honigband unter die Kästchen-Unterkante (deckt die herausragende Wandkante ab)
 // bewegte Haftfläche: liegt an (dx, dy) relativ zum Stück s (Startlage) ein Kästchen desselben Stücks oder derselben Gruppe?
 function haftBewegtBelegt(s, dx, dy){
   const x = s.startX + dx + 20, y = s.startY + dy + 20;
@@ -37,20 +38,23 @@ function haftSchichtZeichnen(){
       {
         // Band auf die Form der Kachel zuschneiden (runde Ecken unten wie Wand/Boden), die Tropfen hängen frei darunter
         const rad = bewegt ? [0, 0, haftBewegtBelegt(s, cx + 40, cy) ? 0 : 9, haftBewegtBelegt(s, cx - 40, cy) ? 0 : 9] : (typeof kachelRad === 'function' ? kachelRad(c, r) : 0);
-        ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, 40, 40, rad); ctx.clip();
+        // HAFT_UEBER px über die Kästchen-Unterkante hinaus: die Wand-/Steinkante (Foto-Look) ragt etwas heraus und war
+        // sonst als dunkler Streifen unter dem Honig zu sehen (Nutzer 06.11.: „man sieht unten die Wand darunter“)
+        const U = HAFT_UEBER;
+        ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, 40, 40 + U, rad); ctx.clip();
         ctx.beginPath(); ctx.moveTo(x, y + 28);
         for(let i = 0; i <= 8; i++) ctx.lineTo(x + i*5, y + 31 + 2*Math.sin(c*1.3 + i*1.5));
-        ctx.lineTo(x + 40, y + 40); ctx.lineTo(x, y + 40); ctx.fill();
+        ctx.lineTo(x + 40, y + 40 + U); ctx.lineTo(x, y + 40 + U); ctx.fill();
         ctx.restore();
         // dicke Tropfen, die langsam wandern
         for(let k = 0; k < 2; k++){
           const dx = 10 + k*20 + ((c*7 + k*3) % 6), ph = t/900 + c*1.9 + k*2.7;
           const lang = 6 + 7*(0.5 + 0.5*Math.sin(ph));
           ctx.beginPath(); ctx.moveTo(x + dx - 4.5, y + 33);
-          ctx.quadraticCurveTo(x + dx - 2, y + 38, x + dx - 2.6, y + 40 + lang*0.6);
-          ctx.arc(x + dx, y + 40 + lang*0.6, 2.8, Math.PI, 0, true);
-          ctx.quadraticCurveTo(x + dx + 2, y + 38, x + dx + 4.5, y + 33); ctx.fill();
-          ctx.fillStyle = H.hell; ctx.globalAlpha = .8; ctx.beginPath(); ctx.ellipse(x + dx - 0.9, y + 41 + lang*0.5, 0.9, 1.6, 0, 0, 6.3); ctx.fill();
+          ctx.quadraticCurveTo(x + dx - 2, y + 38 + U, x + dx - 2.6, y + 40 + U + lang*0.6);
+          ctx.arc(x + dx, y + 40 + U + lang*0.6, 2.8, Math.PI, 0, true);
+          ctx.quadraticCurveTo(x + dx + 2, y + 38 + U, x + dx + 4.5, y + 33); ctx.fill();
+          ctx.fillStyle = H.hell; ctx.globalAlpha = .8; ctx.beginPath(); ctx.ellipse(x + dx - 0.9, y + 41 + U + lang*0.5, 0.9, 1.6, 0, 0, 6.3); ctx.fill();
           ctx.fillStyle = H.schicht; ctx.globalAlpha = .93;
         }
         ctx.fillStyle = H.dunkel; ctx.globalAlpha = .35; ctx.fillRect(x, y + 31, 40, 1.2);

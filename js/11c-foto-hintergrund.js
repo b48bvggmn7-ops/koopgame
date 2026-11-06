@@ -174,7 +174,9 @@ function fotoHgFelderZeichnen(t){
   // Nebel liegt nur in der Luft: Boden/Wände (sichtbare, feste Teile) werden ausgespart (Ausschneide-Pfad, keine Zusatz-
   // Leinwand) – sonst lag ein grauer Fleck vor der Erde. Die Figuren laufen hindurch (Nebel wird vor ihnen gezeichnet).
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H);
-  for(const s of solids){
+  // auch Scheinwände (fakeWalls, keine solids) aussparen – sonst lag der Nebel genau auf ihnen und verriet sie
+  // (Nutzer 06.11.: „hier sieht man aber die Scheinwand … liegt am Nebel“)
+  for(const s of solids.concat(fakeWalls)){
     if(s.gone || s.type === 'oneway') continue;
     const x0 = (s.x - camX)*zoom, x1 = x0 + s.w*zoom; if(x1 < 0 || x0 > W) continue;
     const y0 = s.y*zoom + oy, y1 = y0 + s.h*zoom;
