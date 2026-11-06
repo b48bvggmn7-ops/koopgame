@@ -324,8 +324,11 @@ function sfxPlay(name, o){
 const SFX = {
   jump(pl){ sfxLog('jump'); sfxPlay('jump', {x: pl.x, rate: pl.male ? 1 : 1.18}); },
   wallJump(pl){ sfxLog('walljump'); sfxPlay('wall', {x: pl.x, rate: pl.male ? 1 : 1.12}); },
-  land(pl, speed){ sfxLog('land'); sfxPlay('land', {x: pl.x, vol: 0.45 + 0.55*Math.min(1, (speed - 3)/10), rate: pl.male ? 1 : 1.1}); },
-  step(pl, n){ sfxPlay('step', {x: pl.x, vol: pl.male ? 1 : 0.8, rate: pl.male ? 1 : 1.15}); },
+  // Landen/Schritte: Aufnahmen des Nutzers (landen.wav / schritte.wav, js/23) – ohne Datei die erzeugten Klänge
+  land(pl, speed){ sfxLog('land'); const o = {x: pl.x, vol: 0.45 + 0.55*Math.min(1, (speed - 3)/10), rate: pl.male ? 1 : 1.1};
+    if(!(typeof geraeuschSpielen === 'function' && geraeuschSpielen('landen', o))) sfxPlay('land', o); },
+  step(pl, n){ const o = {x: pl.x, vol: pl.male ? 1 : 0.8, rate: pl.male ? 1 : 1.15};
+    if(!(typeof geraeuschSpielen === 'function' && geraeuschSpielen('schritt', o))) sfxPlay('step', o); },
   hookThrow(pl){ sfxLog('hookthrow'); sfxPlay('rope', {x: pl && pl.x}); },
   hookAttach(pl){ sfxLog('hook'); sfxPlay('hookAttach', {x: pl && pl.x}); },
   hookRelease(pl){ sfxLog('hookrelease'); sfxPlay('rope', {x: pl && pl.x, rate: 1.15}); },

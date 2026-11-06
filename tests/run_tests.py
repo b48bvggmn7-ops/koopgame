@@ -5808,6 +5808,26 @@ async def eigene_aufnahmen(g):
         srv.shutdown()
 
 @test
+async def ton_landen_und_schritte(g):
+    """Nutzer 06.11.: Landen = Aufnahme landen.wav (Stein-Poltern), Laufen = je Schritt ein Gras-Tritt aus schritte.wav (passt so
+    immer zum Lauftempo); alle Ausschnitte liegen in der Datei. Ohne Datei bleiben die erzeugten Klänge."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'index.html'); await p.wait_for_timeout(300)
+        await startmenue_bis_level(g)
+        if not await g.ev("audioCtx && audioCtx.state === 'running'"):
+            return
+        await g.ev("geraeuscheLaden(); 0")
+        await p.wait_for_function("geraeusche.buf.landen && geraeusche.buf.schritt", timeout=15000)
+        r = await g.ev("""(() => { SFX_LOG.length = 0; SFX.land(p1, 9); SFX.step(p1, 0); SFX.step(p2, 1);
+          const d = geraeusche.buf.schritt.duration, alle = GERAEUSCH_STUECKE.schritt.tritt.every(([a, l]) => a + l <= d);
+          return {log: SFX_LOG.slice(), alle, n: GERAEUSCH_STUECKE.schritt.tritt.length}; })()""")
+        assert 'landen' in r['log'] and r['log'].count('schritt') == 2, f'Aufnahmen spielen nicht: {r}'
+        assert r['alle'] and r['n'] >= 10, f'Gras-Tritte falsch geschnitten: {r}'
+    finally:
+        srv.shutdown()
+
+@test
 async def seil_abflug_mit_schwung(g):
     """Vom Seil loslassen (Springen) mit Schwung: Affe fliegt weit weiter, auch ohne Taste (kein Abbremsen auf 7,2).
     (Schritt für Schritt im festen Takt – unabhängig davon, wie schnell der Rechner ist; Liane 2 seit Nutzerwunsch.)"""

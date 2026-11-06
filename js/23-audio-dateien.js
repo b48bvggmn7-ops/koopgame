@@ -124,17 +124,26 @@ function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rai
 // auf 16 Bit Mono 22 kHz verkleinert. Gespielt wird je Aufruf EIN Laut (Ausschnitt mit kurzem Ein-/Ausblenden): „hin“ =
 // die kräftigen Knarzer, „her“ = die leiseren (Hebel hin und her), sonst zufällig. Lautstärke GERAEUSCH_VOL × Ton-Regler,
 // links/rechts nach Ort. Lädt eine Datei nicht, bleibt der erzeugte Klang aus 18-sound.js.
-const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav'};
+const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav',
+                           landen: 'assets/audio/landen.wav', schritt: 'assets/audio/schritte.wav'};
+// Nutzer 06.11.: landen.wav (Splice „RockTumble1“, 0,9 s) = Landen nach einem Sprung; schritte.wav (Splice „Footstep Grass
+// Walk 1“, 11 s gemütliches Gehen, ~0,58 s je Schritt) – daraus wird je Schritt im Spiel EIN Gras-Tritt gespielt, so passt es
+// immer zum Lauftempo (Schritt-Takt kommt aus sfxObserve in 18, alle 46 px). Beide auf 16 Bit Mono 48 kHz verkleinert.
 // kurbel.wav = das QUIETSCHEN (Nutzer-Datei „quietschen.wav“, Schuhspanner Holz/Metall). Nutzer 06.11.: „nicht das Knarzen
 // lauter, sondern das Quietschen“ -> Knarzen wieder 0,34; Quietschen 0,3 -> 0,8 und jetzt auch an der Pump-Draisine
 // (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben). Danach „Quietschen zu laut“ -> 0,4,
 // und die Draisine knarzt wieder dazu.
-const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4};
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0};
 const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor] (gemessen an der Hüllkurve)
   knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
             her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},
   kurbel: {zug: [[0.16, .45]], klein: [[1.93, .21, 1.6]],
            hin: [[0.14, .4]], her: [[1.92, .17, 1.6], [1.24, .24, 2]]},
+  landen: {ganz: [[0, .75]]},
+  // je Gras-Tritt [Anfang, Dauer, Ausgleich] – Ausgleich = alle Tritte etwa gleich laut (gemessen an der Hüllkurve)
+  schritt: {tritt: [[0.80, .2, 1.6], [1.47, .2, 1.6], [2.10, .2, 1], [2.62, .2, 1.9], [3.21, .2, 1.9], [3.77, .2, 1.5],
+                    [4.35, .2, 1.2], [4.85, .2, 1.3], [5.38, .2, .85], [5.90, .2, 2], [6.53, .2, 1], [7.09, .2, 1],
+                    [7.62, .2, .8], [8.19, .2, .45], [8.75, .2, .9], [9.37, .2, 1.1], [9.99, .2, .9]]},
 };
 const geraeusche = {buf: {}, laedt: false};
 function geraeuscheLaden(){
