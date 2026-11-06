@@ -450,16 +450,23 @@ function sfxObserve(){
     pr.wall = pl.onWall ? 8 : Math.max(0, pr.wall - 1);   // kurz nach Wandkontakt zählt ein Sprung als Wandsprung
     pr.grounded = pl.grounded; pr.vy = pl.vy; pr.hook = pl.hookAttached; pr.umb = pl.umbrella || 0;
   }
+  // Türen: jedes Kästchen ist ein eigenes solid – der Ton kommt je Nummer und Richtung nur EINMAL (Mitte der Kästchen).
+  // Vorher spielte jedes Kästchen ihn selbst: 3–4 leicht verstimmte Kopien zugleich klangen verschmiert/„langsamer“ (Nutzer 06.11.).
+  const tuerTon = {};
   for(const s of solids){
-    if(s.type === 'crumble'){
+    if(s.type === 'door'){
+      if(s._sO !== undefined && s.open !== s._sO){
+        const k = s.link + (s.open ? '+' : '-'), t = tuerTon[k] || (tuerTon[k] = {open: s.open, x: 0, n: 0});
+        t.x += s.x + s.w/2; t.n++;
+      }
+      s._sO = s.open;
+    } else if(s.type === 'crumble'){
       if(s.triggered && !s._sT && !s.gone) SFX.crumbleWarn(s.x + s.w/2);
       if(s.gone && !s._sG) SFX.crumbleBreak(s.x + s.w/2);
       s._sT = s.triggered; s._sG = s.gone;
-    } else if(s.type === 'door'){
-      if(s._sO !== undefined && s.open !== s._sO) SFX.door(s.open, s.x + s.w/2);
-      s._sO = s.open;
     }
   }
+  for(const k in tuerTon) SFX.door(tuerTon[k].open, tuerTon[k].x/tuerTon[k].n);
 }
 
 // ---------- Ton aus/an: Taste M und Pausenmenü ----------

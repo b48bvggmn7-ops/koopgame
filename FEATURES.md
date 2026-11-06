@@ -319,7 +319,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     gemerkt in `monchichi_vol`): regelt Hintergrund-Ton, Regen und den erzeugten Wind/Grillen/Bach. Vorher hingen diese am
     Effekte-Regler; „Effekte“ regelt jetzt nur noch die Geräusche (Sprung, Hebel, Tür …).
     **Tür-Ton in normalem Tempo** (Nutzer: „klingt, als würde er langsamer abgespielt“): Schließen lief bewusst mit 0,9 (tiefer
-    und langsamer) – jetzt auf und zu gleich, Tempo 1, ohne die kleine Zufalls-Tonhöhe (`festesTempo`).
+    und langsamer) – jetzt auf und zu gleich, Tempo 1, ohne die kleine Zufalls-Tonhöhe (`festesTempo`). Eigentlicher Grund: jede Tür besteht aus mehreren Kästchen
+    und JEDES spielte den Ton selbst – 3–4 leicht verstimmte Kopien zugleich klangen verschmiert. Jetzt kommt der Ton je
+    Nummer und Richtung nur einmal (aus der Mitte der Kästchen, `sfxObserve`).
     **Hebel, Bodenplatte, Tür, Liane, Windrad** (Nutzer 06.11., Splice-Dateien, auf 16 Bit Mono verkleinert):
     Hebel umlegen und Bodenplatte betreten = schalter.wav (tiefer „Crunch“, `SFX.schalter`); Tür auf/zu = tuer.wav
     (Zahnräder, zu etwas tiefer; seit Nutzerwunsch „nimm das für die Tür“ die Steampunk-Datei „Contraption Mech Interlock

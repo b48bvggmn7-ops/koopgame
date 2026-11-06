@@ -5885,6 +5885,16 @@ async def ton_schalter_tuer_liane_windrad(g):
     assert 1 <= r['hebel'] <= 2 and 1 <= r['platte'] <= 2 and r['tuer'] == 1, f'Hebel/Platte/Tür ohne neuen Laut: {r}'
     assert 2 <= r['wind'] <= 6 and r['windAus'] == 0, f'Windrad quietscht falsch: {r}'
     assert r['haengt'] and r['liane'] == 0, f'Liane knarzt noch: {r}'
+    # Tür aus 4 Kästchen: der Ton kommt beim Öffnen und Schließen nur EINMAL (vorher 4 verstimmte Kopien = „klingt langsamer“)
+    await g.load(level([ground(0, 680, 4000)], {'x': 200, 'y': 680}, {'x': 120, 'y': 680},
+                       switches=[{'x': 400, 'y': 680, 'link': 1}],
+                       doors=[{'x': 700, 'y': 660 - 40*i, 'link': 1} for i in range(4)]))
+    r = await g.ev("""(() => { menuScreen = 'pause'; let ts = 5e6; const st = n => { for(let i = 0; i < n; i++) stepSim(ts += 1000/54); };
+      const n = name => SFX_LOG.filter(s => s === name).length; st(2);
+      SFX_LOG.length = 0; triggerSwitch(switchDefs[0], p1); st(3); const auf = n('dooropen');
+      SFX_LOG.length = 0; triggerSwitch(switchDefs[0], p1); st(3); const zu = n('doorclose');
+      menuScreen = null; return {auf, zu}; })()""")
+    assert r['auf'] == 1 and r['zu'] == 1, f'Tür-Ton mehrfach / fehlt: {r}'
 
 @test
 async def seil_abflug_mit_schwung(g):
