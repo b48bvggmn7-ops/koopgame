@@ -21,8 +21,8 @@ const AUDIO_FILES = {music: 'assets/audio/musik-nebel.mp3', birds: 'assets/audio
                      rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/wald.wav'};
 // atmo: seit 06.11. wald.wav (Nutzer-Datei Splice „Forest_05“, 21 s, auf 16 Bit verkleinert) statt draussen.mp3 – gemessen
 // gleich laut (RMS 0,003), daher gleiche Lautstärke; draussen.mp3 bleibt liegen.
-// music 0,38 -> 0,15: die neue Musik ist kräftig abgemischt, „halbleise“ (Nutzer 06.11.)
-const FILE_VOL = {music: 0.15, birds: 0.6, rain: 0.8, river: 2.0, atmo: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
+// music 0,38 -> 0,15: die neue Musik ist kräftig abgemischt, „halbleise“ (Nutzer 06.11.); dann „3 % leiser“ -> 0,1455
+const FILE_VOL = {music: 0.1455, birds: 0.6, rain: 0.8, river: 2.0, atmo: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
 const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
 const MUSIK_AUS = false;  // Nutzer 06.11.: erst „die Akkorde können raus“, dann „Warm Analog Fog“ als Musik; das erzeugte Klavier (22) bleibt aus
 const KLAVIER_AUS = true;   // das erzeugte Klavier (22) spielt nie mehr, auch nicht als Ersatz

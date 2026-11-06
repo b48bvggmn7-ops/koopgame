@@ -306,7 +306,7 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     geladen und das erzeugte Klavier (js/22) spielt auch nicht; Datei bleibt liegen, zurück mit `MUSIK_AUS = false`.
     Leistungsanzeige (F): „Musik: aus“.
     **Neue Musik „Warm Analog Fog“** (Nutzer 06.11.: „halbleise“, „als Loop ohne dass man es bemerkt“) ->
-    assets/audio/musik-nebel.mp3 (3:40), `MUSIK_AUS = false`, Lautstärke `FILE_VOL.music` 0,15. Wird ganz geladen und als
+    assets/audio/musik-nebel.mp3 (3:40), `MUSIK_AUS = false`, Lautstärke `FILE_VOL.music` 0,15, danach „3 % leiser“ -> 0,1455. Wird ganz geladen und als
     nahtlose Schleife gespielt: einmal von vorne (mit dem sanften Anfang), danach immer 0:48 … 2:44 (`MUSIK_SCHLEIFE`) – an
     diesen Stellen wiederholt sich das Stück fast gleich (gemessen), und die letzten 4 s vor dem Sprung sind schon in den Klang
     vor 0:48 übergeblendet, so gibt es keine Lücke und keinen Ruck. Das Ausklingen am Ende des Stücks kommt nie. Wie früher:
