@@ -1,0 +1,26 @@
+{
+  "hinweis": "Testlevel Trommel-Station (elemente/trommel.js): links eine Station (Nummer 1, Lied leicht) vor Tür 1, rechts eine (Nummer 2, Lied schwer) vor Tür 2. Beide stellen sich an die Trommeln, einer drückt die Hebel-Taste (Affe J, Schweinchen Num 2, Controller ○) -> einzählen, dann Kugeln im Takt treffen: links / springen / rechts / Hebel-Taste = Trommel 1–4. Blau = Affe, rosa = Schweinchen, gold = beide. Öffnen: index.html?testlevel=trommel",
+  "welt": "dschungel",
+  "tageszeit": "mittag",
+  "wetter": "trocken",
+  "solids": [
+    {"x": 0, "y": 480, "w": 2600, "h": 280, "type": "ground"}
+  ],
+  "hooks": [],
+  "spikes": [],
+  "coins": [],
+  "movingPlatforms": [],
+  "checkpoints": [],
+  "switches": [],
+  "doors": [
+    {"x": 900, "y": 460, "link": 1}, {"x": 900, "y": 420, "link": 1}, {"x": 900, "y": 380, "link": 1},
+    {"x": 1900, "y": 460, "link": 2}, {"x": 1900, "y": 420, "link": 2}, {"x": 1900, "y": 380, "link": 2}
+  ],
+  "startM": {"x": 260, "y": 480},
+  "startF": {"x": 200, "y": 480},
+  "goal": {"x": 2400, "y": 480},
+  "trommeln": [
+    {"x": 520, "y": 480, "link": 1, "lied": "leicht"},
+    {"x": 1520, "y": 480, "link": 2, "lied": "schwer"}
+  ]
+}

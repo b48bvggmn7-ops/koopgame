@@ -9,8 +9,8 @@ const GRUND_WERKZEUGE = ['ground', 'wall', 'fake', 'spike', 'coin', 'checkpoint'
   'hook', 'switch', 'door', 'plate', 'move', 'erase', 'select', 'verschieben', 'bruch', 'haft', 'haftb'];   // Nacht-Ausbau: Durchbruch-Wand + Haftfläche (aus Wand, seit 06.11. auch aus Boden) in allen Welten
 const WELT_WERKZEUGE = {
   // Dschungel-Neu: im Dschungel keine Sprungpilze und kein Aufwind mehr (Schirm-Trampolin und Pusten ersetzen sie),
-  // dafür Windrad, Blatt-Floß, Pump-Draisine und die Meteoriten-Spur
-  dschungel: ['crumble', 'oneway', 'tele', 'wechsel', 'windrad', 'blatt', 'flossrad', 'draisine', 'meteorit'],
+  // dafür Windrad, Trommel-Station, Blatt-Floß, Pump-Draisine und die Meteoriten-Spur
+  dschungel: ['crumble', 'oneway', 'tele', 'wechsel', 'windrad', 'trommel', 'blatt', 'flossrad', 'draisine', 'meteorit'],
   ruinen:    ['falle', 'fels', 'lichtquelle', 'spiegel', 'kristall'],
   hoehle:    ['eis', 'band', 'dunkel', 'leucht', 'wind', 'bounce'],
   wasser:    ['water', 'current', 'waterlevel'],

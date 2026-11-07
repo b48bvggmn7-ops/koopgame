@@ -371,6 +371,18 @@ const SFX = {
   szene_portal(){ sfxLog('szene_portal'); sNoise(0, 2.2, {filter: 'bandpass', f: 300, to: 2400, q: 1.5, vol: 0.05, attack: 0.6});
                   for(let i = 0; i < 5; i++) sTone(440*Math.pow(1.26, i), 0.25 + i*0.22, 0.6, {type: 'sine', vol: 0.025}); },
   szene_sog(){ sfxLog('szene_sog'); sNoise(0, 1.6, {filter: 'bandpass', f: 400, to: 3200, q: 0.8, vol: 0.08, attack: 0.1}); sTone(220, 0, 1.4, {to: 880, type: 'triangle', vol: 0.035}); },
+  // Trommel-Station (elemente/trommel.js): vier Trommeln von tief (Bass) bis hoch; Einzählen mit Holz-Klicks; Patzer = schiefes
+  // Plonk; Abbruch = absteigendes Brummen; geschafft = kleiner Trommelwirbel mit hellem Abschluss
+  trommelSchlag(d, x){ sfxLog('trommel'); const f = [70, 105, 150, 210][d] || 120;
+    sTone(f*1.6, 0, 0.32, {to: f, type: 'sine', vol: 0.12, attack: 0.002}); sTone(f*3.1, 0, 0.08, {to: f*2, type: 'triangle', vol: 0.025, attack: 0.002});
+    sNoise(0, 0.09, {filter: 'lowpass', f: 900 + d*500, to: 250, q: 1, vol: 0.07, attack: 0.001}); },
+  trommelKlick(letzter){ sfxLog('trommel_klick'); sNoise(0, 0.04, {filter: 'bandpass', f: letzter ? 2600 : 1900, q: 6, vol: 0.09, attack: 0.001});
+    sTone(letzter ? 1250 : 950, 0, 0.05, {type: 'triangle', vol: 0.03}); },
+  trommelLos(){ sfxLog('trommel_los'); for(let i = 0; i < 6; i++) sNoise(i*0.045, 0.05, {filter: 'lowpass', f: 700, to: 300, q: 1, vol: 0.04 + i*0.006, attack: 0.002}); },
+  trommelPatzer(){ sfxLog('trommel_patzer'); sTone(196, 0, 0.22, {to: 160, type: 'square', vol: 0.02}); sTone(208, 0, 0.22, {to: 150, type: 'triangle', vol: 0.04}); },
+  trommelAus(){ sfxLog('trommel_aus'); sTone(180, 0, 0.7, {to: 70, type: 'triangle', vol: 0.06}); },
+  trommelGeschafft(){ sfxLog('trommel_geschafft'); for(let i = 0; i < 8; i++) sNoise(i*0.05, 0.06, {filter: 'lowpass', f: 900, to: 300, q: 1, vol: 0.05, attack: 0.002});
+    for(const [i, f] of [[0, 523], [1, 659], [2, 784], [3, 1047]]) sTone(f, 0.42 + i*0.08, 0.4, {type: 'triangle', vol: 0.035}); },
   windrad(x){ sfxLog('windrad'); sNoise(0, 0.5, {filter: 'bandpass', f: 1800, to: 700, q: 2, vol: 0.05, attack: 0.02}); sTone(520, 0, 0.12, {to: 760, type: 'triangle', vol: 0.03}); },
   // Pump-Draisine (elemente/draisine.js): leises Holz-Knarzen je Pump-Stoß, die beiden Hebel-Seiten etwas verschieden hoch
   draisinePumpe(x, rechts){ sfxLog('draisine'); sNoise(0, 0.13, {filter: 'bandpass', f: rechts ? 520 : 440, to: rechts ? 300 : 260, q: 6, vol: 0.035, attack: 0.01});

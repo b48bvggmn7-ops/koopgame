@@ -2487,6 +2487,36 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   **Halt** (Nutzer: „hängt random in der Luft“, nur Aussehen, `windradHalt`): auf Boden der Pfahl wie bisher; ohne Boden, aber
   mit Wand/Boden höchstens 60 px neben der Nabe ein waagerechter Holzarm aus der Wand; sonst hängt das Windrad an einer Liane
   (bis zum Material darüber oder aus dem Blätterdach, wie die Haken). Test windrad_haelt_sich.
+- **Trommel-Station** (Nutzerwünsche 07.11., elemente/trommel.js, Editor-Reiter „Logik“, Werkzeug „Trommel-Station“, im Dschungel
+  empfohlen): Rhythmus-Spiel zu zweit, 7 Kästchen breit ab dem gesetzten Kästchen nach rechts (kein Hindernis). Reihenfolge auf
+  dem Boden: Trommel 1 – **Affe** – Trommel 2 · Trommel 3 – **Schweinchen** – Trommel 4; jeder spielt SEINE zwei Trommeln:
+  **links-Taste = linke Trommel, rechts-Taste = rechte Trommel** (Controller: Steuerkreuz ◀/▶).
+  **Mitspielen**: Wer neben der Station steht, drückt die Hebel-Taste -> die Figur läuft von selbst an ihren Platz zwischen ihren
+  Trommeln, nimmt die Trommelstöcke und wartet (Schild: „Affe: bereit ✓ / Schwein: Hebel-Taste = mitspielen“); nochmal Hebel-Taste
+  = wieder aussteigen, solange der Partner fehlt. Sind beide da: 4 Holz-Klicks zum Einzählen (große Zahl auf dem Schild), dann das
+  Lied – bis zum Ende lässt sich niemand mehr steuern (links/rechts hauen nur noch, Hebel-Taste und Springen tun nichts).
+  **Spielen**: Leuchtbeeren gleiten an moosigen Seilen herab (blau = Affe über Trommel 1+2, rosa = Schweinchen über 3+4, die
+  Taste steht darauf); ist die Beere im Kranz, haut man. Treffer-Fenster ±8 Schritte (≈ 0,13 s). Hauen ohne Beere oder Beere
+  verpasst = Patzer (schiefes Plonk, rotes Aufblitzen, welkes Blatt fällt, ein Lampion erlischt); 3 Patzer -> Abbruch („Nochmal!“),
+  beide sind wieder frei. Geschafft -> Trommelwirbel, „Geschafft!“ mit Blütenblättern, Nummer umschalten wie ein Hebel (nochmal
+  spielen = zurück) bzw. „bleibt an“. Lieder (Auswahl „Lied“): leicht ≈ 15 s, mittel ≈ 20 s mit Tempowechseln, schwer ≈ 20 s
+  schnell; mit gleichzeitigen Schlägen beider Figuren und beider Hände (Muster in `TROMMEL_LIEDER`: A1/A2, S1/S2, A1+S2 …).
+  **Aussehen (Nebelwald)**: Hintergrund = geflochtene Weidenwand (jedes Rutenstück einzeln, abwechselnd vor/hinter den Stäben,
+  Licht oben, Schatten unten, dunkle Zwischenräume), oben in den Nebel auslaufend, warmes Lampion-Licht darauf, Moos-Polster;
+  warmes Gegenlicht hinter den beiden Spielplätzen (Figuren heben sich ab); zwei verwitterte Holzpfosten mit Rissen, Randlicht und
+  Moos, ein knorriger Ast mit Bartflechte, Moos und Knospen (blühen mit dem Fortschritt auf), drei Lampions (Patzer-Leben),
+  Glühwürmchen, Leuchtpilze, Edelstein in der Nummernfarbe; moosige Seile, geflochtene Kränze. Trommeln (Nutzer: „mehr Liebe zum
+  Detail, gut ausgerichtet“): schlanke Handtrommeln mit Taille, geschnitzter Fuß, Maserung und Ast-Auge, bemaltes Zackenband,
+  Seilspannung im V-Muster, Lederrand mit Messingnägeln, helles Fell mit Fransen, Glanzkante und kühles Randlicht; jede leicht
+  zur Figur gekippt (`TROMMEL_KIPP`), Fell unter den Händen (`TROMMEL_HOCH` 27), damit der Stock schräg von oben schlägt.
+  **Die Figuren spielen**: sitzen auf Baumscheiben-Hockern (Rinde, Jahresringe, Moos, kleiner Pilz; Figur `TROMMEL_HOCKER` höher
+  gezeichnet über `P._standDy`, Füße unten leicht gespreizt – weit nach vorn gestreckt verdeckten sie das Gesicht) zwischen ihren
+  Trommeln, schauen zur Kamera; die Arme gehen seitlich und etwas nach hinten (nie vor die Augen). In jeder Pfote ein Trommelstock
+  (Lederwicklung, verjüngt, Filzkopf in der Spielerfarbe), an den echten Händen der 3D-Figur gezeichnet (`P._handDev`), die Pfote
+  liegt über dem Griff; bereit = Stöcke hoch, beim Schlag saust der Stock genau auf das Fell seiner Trommel (`trommelFellPunkt`),
+  Arm geht mit, Kopf nickt; das Fell federt, helle Ringe laufen, Staub springt, Funken am Kranz.
+  Holzschild an Seilen: Mitspiel-Hinweis mit Tasten, Einzählen, Ergebnis. Steuerung über `trommelVorher` (js/32), Pose in js/33
+  (`P._trommel`). Testlevel `index.html?testlevel=trommel` (links leicht -> Tür 1, rechts schwer -> Tür 2). Test trommel_station.
 - **Blatt-Floß** (elemente/blattfloss.js, Editor-Reiter „Bewegung“, Werkzeug „Blatt-Floß“, im Dschungel empfohlen): großes
   festes Blatt (3 Kästchen breit) auf einer Ranken-Schiene nach rechts (Auswahl „Schiene“: 4–14 Kästchen; im Editor am
   linken Ende setzen, die Schiene ist mitgezeichnet und gehört zum Floß). Nur der Seiten-Wind des Affen schiebt es in

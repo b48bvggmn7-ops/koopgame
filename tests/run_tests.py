@@ -8269,6 +8269,65 @@ async def windrad_anpusten(g):
         srv.shutdown()
 
 @test
+async def trommel_station(g):
+    """Nutzerwünsche 07.11. (elemente/trommel.js): Trommel-Station zu zweit. Wer daneben steht, drückt die Hebel-Taste = mitspielen:
+    die Figur läuft von selbst an ihren Platz (Affe zwischen Trommel 1+2, Schweinchen zwischen 3+4) und wartet; nochmal Hebel-Taste
+    = aussteigen. Sind beide da: einzählen + Lied, bis zum Ende kann niemand weg. Jeder spielt seine zwei Trommeln (links/rechts-
+    Taste). Fehlerfrei -> Tür auf, danach frei. Nichts drücken -> 3 Patzer, Abbruch, Tür bleibt. Hauen ohne Beere = Patzer.
+    Auch das schnelle Lied „schwer“ (gleichzeitige Noten) geht."""
+    srv = webserver()
+    try:
+        await g.p.goto(srv.url + 'index.html?testlevel=trommel')
+        await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && typeof trommeln !== 'undefined' && trommeln.length === 2 && menuScreen === null", timeout=10000)
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          const tuer = l => solids.filter(s => s.type === 'door' && s.link === l).every(s => s.open);
+          const hebel = P => { KEYS[P.keys.use + '_pressed'] = true; st(); };
+          const n = k => { for(let i = 0; i < k; i++) st(); };
+          const seite = (P, s) => { KEYS[(s ? P.keys.right : P.keys.left) + '_pressed'] = true; };
+          const spielen = (S, fehlerfrei) => { let z = 0;
+            while((S.phase === 'zaehlen' || S.phase === 'lied') && z++ < 5000){
+              if(S.phase === 'lied' && fehlerfrei) for(const no of S.noten) if(no.t === S.t){ const P = no.wer === 'm' ? p1 : p2; seite(P, TROMMEL_EIGENE[no.wer].indexOf(no.d)); }
+              st(); if(S.phase === 'lied') e.platz = (e.platz === undefined ? true : e.platz) && Math.abs(p1.x - (S.x + TROMMEL_PLATZ.m)) < 4 && Math.abs(p2.x - (S.x + TROMMEL_PLATZ.f)) < 4; } };
+          const beide = S => { stell(p1, S.x - 30, S.y - 2); stell(p2, S.x + 320, S.y - 2); n(8); hebel(p1); hebel(p2); n(90); };
+          try {
+            const A = trommeln[0], B = trommeln[1];
+            // allein: mitspielen -> läuft an seinen Platz, wartet, lässt sich nicht wegsteuern; nochmal Hebel = aussteigen
+            stell(p1, A.x - 40, A.y - 2); stell(p2, 200, 478); n(8);
+            hebel(p1); n(80); e.allein = A.dabei.m && A.phase === 'warten' && Math.abs(p1.x - (A.x + TROMMEL_PLATZ.m)) < 4;
+            KEYS[p1.keys.right] = true; n(20); KEYS[p1.keys.right] = false; e.gesperrt = Math.abs(p1.x - (A.x + TROMMEL_PLATZ.m)) < 4;
+            hebel(p1); n(2); e.aussteigen = !A.dabei.m;
+            KEYS[p1.keys.right] = true; n(20); KEYS[p1.keys.right] = false; e.freiWarten = p1.x > A.x + TROMMEL_PLATZ.m + 20;
+            // zu zweit: beide mitspielen -> einzählen; während des Spiels kein Aussteigen
+            SFX_LOG.length = 0; beide(A); e.start = A.phase === 'zaehlen' || A.phase === 'lied';
+            hebel(p1); e.bleibtDabei = A.dabei.m;
+            spielen(A, true); e.patzer1 = A.patzer; e.auf1 = !!linkOn[1] && tuer(1); e.log = SFX_LOG.slice(-30);
+            n(90); const x0 = p1.x; KEYS[p1.keys.left] = true; n(20); KEYS[p1.keys.left] = false; e.frei = p1.x < x0 - 20;
+            // nichts drücken: 3 Patzer, Abbruch, Tür bleibt offen, beide wieder frei
+            beide(A); spielen(A, false); e.abbruch = A.phase === 'aus' && A.patzer === 3 && !!linkOn[1] && !A.dabei.m && !A.dabei.f;
+            n(90);
+            // Hauen ohne Beere gleich zu Beginn = Patzer
+            beide(A); while(A.phase === 'zaehlen') st(); seite(p1, 1); st(); e.falsch = A.patzer === 1;   // erste Beere liegt links -> rechts = ohne Beere
+            spielen(A, false); n(90);
+            // schweres Lied fehlerfrei -> Tür 2
+            beide(B); spielen(B, true); e.patzer2 = B.patzer; e.auf2 = !!linkOn[2] && tuer(2);
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert r['allein'], f'Hebel-Taste = mitspielen: Figur muss an ihren Platz laufen und warten: {r}'
+        assert r['gesperrt'], f'wer mitspielt, lässt sich nicht wegsteuern: {r}'
+        assert r['aussteigen'] and r['freiWarten'], f'nochmal Hebel-Taste beim Warten = aussteigen: {r}'
+        assert r['start'], f'beide dabei -> Lied muss starten: {r}'
+        assert r['bleibtDabei'], f'während des Spiels kein Aussteigen: {r}'
+        assert r['patzer1'] == 0 and r['auf1'], f'fehlerfrei gespielt muss Tür 1 öffnen: {r}'
+        assert r['platz'], f'während des Lieds stehen beide fest zwischen ihren Trommeln: {r}'
+        assert 'trommel' in r['log'] and 'trommel_geschafft' in r['log'] and 'trommel_klick' in r['log'], r['log']
+        assert r['frei'], f'nach dem Lied muss man wieder laufen können: {r}'
+        assert r['abbruch'], f'ohne Drücken: 3 Patzer, Abbruch, Tür bleibt, beide frei: {r}'
+        assert r['falsch'], f'Hauen ohne Beere muss ein Patzer sein: {r}'
+        assert r['patzer2'] == 0 and r['auf2'], f'schweres Lied fehlerfrei muss Tür 2 öffnen: {r}'
+    finally:
+        srv.shutdown()
+
+@test
 async def blattfloss_aussehen(g):
     """Nutzer: Blatt-Floß „sieht echt nicht gut aus“ -> dickes Blatt, das wie eine Gondel an zwei Lianen an einer gespannten
     Ranken-Schiene hängt; die Schienen-Enden hängen am Material darüber (Halter) oder kommen aus dem Blätterdach. Zeichnet
@@ -9443,7 +9502,7 @@ async def element_register(g):
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
                  ['haftboden', 'haftboeden', True, False],   # Honig zeichnet die Haftfläche (aus Wand) für beide
-                 ['windrad', 'windraeder', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
+                 ['windrad', 'windraeder', True, True], ['trommel', 'trommeln', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
                  ['draisine', 'draisinen', True, True], ['meteorit', 'meteoriten', True, False]], k   # + Pump-Draisine   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
@@ -9463,7 +9522,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['tele', 'band', 'blatt', 'draisine', 'move'], reihe   # + Pump-Draisine   # + Blatt-Floß (Dschungel-Neu; das Floß-Rad steht unter „Schalter“)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad', 'flossrad'], logik   # + Windrad, Floß-Rad (Dschungel-Neu)
+        assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad', 'trommel', 'flossrad'], logik   # + Windrad, Floß-Rad (Dschungel-Neu), Trommel-Station
         licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
         assert licht == ['lichtquelle', 'spiegel', 'kristall', 'leucht', 'dunkel'], licht
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung

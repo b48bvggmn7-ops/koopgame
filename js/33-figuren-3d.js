@@ -331,6 +331,21 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(P.dash) return {p: TUCK, key:'dash'};
     if(sinceWJ < WJ_ZEIT){ const k = sinceWJ/WJ_ZEIT, tk = Math.sin(Math.min(1,k*1.15)*Math.PI);   // Salto: erst einrollen, am Ende strecken
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
+    // Trommel-Station (elemente/trommel.js, Nutzer 07.11.: „wie soll das aussehen, wenn die trommeln?“): die Figur steht hinter
+    // den Trommeln, schaut zur Kamera, beide Arme vorn erhoben (bereit), wippt im Takt; beim Schlag holt ein Arm aus und haut
+    // nach vorn unten auf die Trommel (abwechselnd links/rechts), der Kopf nickt mit, die Knie federn
+    // Nutzer 07.11. (2): die Figur steht ZWISCHEN ihren zwei Trommeln; der linke Arm haut auf die linke, der rechte auf die rechte
+    if(P._trommel && P._trommel.da && Math.abs(P.vx) < 1 && typeof trommelHauKurve === 'function'){
+      const T = P._trommel, wipp = Math.sin(t*7)*.07;
+      const pLinks = P._handDev && P._hand2Dev ? P._handDev.x < P._hand2Dev.x : true;   // ist armP im Bild links? (letztes Bild)
+      const hL = trommelHauKurve(T.hit[0]), hR = trommelHauKurve(T.hit[1]);
+      // sitzt auf dem Hocker (Beine leicht gespreizt nach unten – weit nach vorn verdecken sie das Gesicht; elemente/trommel.js hebt die Figur an); Arme seitlich über den Trommeln (bereit),
+      // beim Schlag saust der Arm herunter auf das Fell daneben
+      // Arme seitlich nach außen und etwas nach hinten (nie vor dem Gesicht – Nutzer: „die haben keine Augen“), beim Schlag tiefer
+      const arm = h => 1.5 + wipp - .45*h;
+      const zP = arm(pLinks ? hL : hR), zN = arm(pLinks ? hR : hL), h = Math.max(hL, hR);
+      return {p:{head:[-.04 + h*.12,0,0], armN:[.4,0,-zN], armP:[.4,0,zP], legN:[-.55,0,-.5], legP:[-.55,0,.5]}, key:'trommeln'};
+    }
     // Pump-Draisine (Nutzer: „wo die beiden stehen passt nicht und die Bewegung auch nicht“): beide Hände am T-Griff, die Arme
     // folgen dem Griff (oben = nach vorn oben gestreckt, unten = nach vorn unten gedrückt), beim Runterdrücken geht die Figur in
     // die Knie und beugt den Kopf (Stauchen in fussFigurZeichnen über S.pumpH), beim Hochkommen richtet sie sich auf
@@ -386,7 +401,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     { const tt = z.key === 'tanz' && S.tz && S.tz.near ? 1 : 0; S.ti = (S.ti||0) + (tt - (S.ti||0))*(1 - Math.exp(-dt*5));
       let dxT = 0; if(tt){ const o = S.tz.o; dxT = (P.x + o.x)/2 - S.tz.side*TANZ_ABSTAND/2 - P.x; }
       S.dxs = (S.dxs||0) + (dxT - (S.dxs||0))*(1 - Math.exp(-dt*(tt ? 6 : 10))); if(Math.abs(S.dxs) > .05) c.translate(S.dxs, 0); }
-    const k = 1 - Math.exp(-dt*(z.key === 'lauf' ? 30 : (z.key === 'haft' ? 9 : 22)));
+    const k = 1 - Math.exp(-dt*(z.key === 'lauf' ? 30 : (z.key === 'haft' ? 9 : (z.key === 'trommeln' ? 45 : 22))));
     if(!S.cur) S.cur = JSON.parse(JSON.stringify(z.p));
     for(const n in z.p) S.cur[n] = lerpA(S.cur[n], z.p[n], k);
     const bewegt = sp > 0.8 || !P.grounded;
@@ -446,6 +461,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(z.key === 'pusten') ty = P.pusteRichtung === 'hoch' ? .25*flip : pusteSeiteVon(P.pusteRichtung)*(pusteSchraeg(P.pusteRichtung) ? 1.1 : 1.42);   // nach oben: fast von vorn, sonst im Profil zur Blasrichtung
     if(z.key === 'hebel') ty = (P.leverAnim && P.leverAnim.dir < 0 ? -1 : 1)*1.4;   // zum Hebel hin im Profil
     if(P._draisineSeite) ty = -P._draisineSeite*1.3;   // hält den Hebel der Pump-Draisine: schaut zum Hebel (elemente/draisine.js)
+    if(z.key === 'trommeln') ty = 0;   // zur Kamera, die Trommeln links und rechts neben sich
     if(P._yawTest != null) ty = P._yawTest;   // nur fuer Tests
     S.yaw += (ty - S.yaw)*(1 - Math.exp(-dt*14));
     // Drehung um die eigene Achse am Seil (SEIL_DREHUNG oben) – eine begonnene Drehung läuft auch nach dem Loslassen zu Ende

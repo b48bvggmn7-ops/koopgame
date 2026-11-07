@@ -402,6 +402,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   const K = P.keys || {};
   if(P.male && LIANE_HALTEN && !window.hakenTippen) lianeGriffPruefen(P);
   if(P.male && P.hookAttached && LIANE_HALTEN && !window.hakenTippen && K.hook && !isDown(K.hook)) lianeLoslassen(P);
+  if(!nass && typeof trommelVorher === 'function' && trommelVorher(P, jumpPressed)) return true;   // Trommel-Station: fest am Platz, Tasten hauen (elemente/trommel.js)
   if(!nass && typeof flossradVorher === 'function' && flossradVorher(P)) return true;   // am Floß-Rad kurbeln (elemente/flossrad.js)
   if(!nass && typeof draisineVorher === 'function' && draisineVorher(P, jumpPressed)) return true;   // Pump-Draisine: Griff halten + pumpen (elemente/draisine.js)
   if(typeof koopAktionVorher === 'function' && koopAktionVorher(P, moveDir, jumpPressed, nass)) return true;   // Dschungel-Neu: Schirm-Trampolin / pusten (js/34)
