@@ -393,6 +393,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     // Sprung-Tricks: beim Absprung vom Boden zufällig Salto, Drehung oder Schraube (nur Anzeige)
     if(P.grounded){ S.trick = null; S.wasG = true; }
     else if(S.wasG){ S.wasG = false; if(P.vy < -1 && sinceWJ > WJ_ZEIT && !P.dash){ const r = Math.random(); S.trick = r < .4 ? null : {typ: r < .65 ? 'salto' : (r < .85 ? 'dreh' : 'schraube'), t0: now}; } }
+    if(P._pirouetteT && P._pirouetteT !== S.pirT){ S.pirT = P._pirouetteT; S.trick = {typ: 'dreh', t0: P._pirouetteT}; }   // Perfekt-Aufspannen: Pirouette (js/35)
     let z = zielPose(P, S, t, flip, sinceWJ);
     const tk = S.trick ? Math.min(1, (now - S.trick.t0)/(S.trick.typ === 'dreh' ? 520 : 650)) : 1, tke = ease(tk);
     if(S.trick && (S.trick.typ === 'salto' || S.trick.typ === 'schraube') && (z.key === 'up' || z.key === 'down')) z = {p: TUCK, key: z.key};

@@ -98,6 +98,7 @@ function schirmPerfektPruefen(P){
   if(note === 'gut') hoehe *= SCHIRM_GUT_ANTEIL;
   P.vy = -Math.sqrt(2*GRAVITY*hoehe);
   P._schirmSchub = true; P._hoechsterY = P.y; P.glideTimer = 0; P.sprungKurzMoeglich = false;
+  P._pirouetteT = performance.now();   // nur Anzeige: Pirouette mit Schirm (js/33, js/10)
   const boden = P.y + Math.max(0, perfektBodenAbstand(P));
   perfektBelohnen(P, note, P.x, boden, 'schirm');
 }
@@ -172,7 +173,9 @@ function perfektBelohnen(P, note, x, y, art){
     if(art === 'schirm' && typeof kameraStoss === 'function') kameraStoss(2.5);
   }
   const text = perfekt ? (k >= 2 ? 'PERFEKT ×' + k : 'PERFEKT!') : 'GUT';
-  perfektFxDazu({art: 'text', x: P.x, y: P.y - P.h - (art === 'schirm' ? 128 : 56), text, perfekt, leben: perfekt ? 66 : 46, max: perfekt ? 66 : 46, figur: P});
+  // Schweinchen: Schrift fliegt über dem Schirm mit (sie steigt sonst in die Schrift hinein und verdeckt die Pirouette)
+  perfektFxDazu({art: 'text', x: P.x, y: P.y - P.h - (art === 'schirm' ? 128 : 56), text, perfekt, leben: perfekt ? 66 : 46, max: perfekt ? 66 : 46, figur: P,
+                 folgen: art === 'schirm' ? P.h + 104 : 0});
   const n = perfekt ? 18 : 7;
   if(art === 'liane'){
     perfektFxDazu({art: 'ring', x, y, r0: 8, r1: perfekt ? 70 : 36, leben: 20, max: 20, perfekt});
@@ -351,8 +354,9 @@ function perfektTextZeichnen(f){
   const q = 1 - f.leben/f.max;
   const pop = q < 0.12 ? 0.55 + q/0.12*0.7 : 1.25 - Math.min(0.25, (q - 0.12)*1.6);   // springt auf, setzt sich
   const a = q > 0.65 ? 1 - (q - 0.65)/0.35 : 1;
-  const y = f.y - 30*(1 - Math.pow(1 - Math.min(1, q*1.5), 3));
-  const x = f.x - camX, gr = f.perfekt ? 36 : 24;
+  const y0 = f.folgen ? f.figur.y - f.folgen : f.y, x0 = f.folgen ? f.figur.x : f.x;
+  const y = y0 - 30*(1 - Math.pow(1 - Math.min(1, q*1.5), 3));
+  const x = x0 - camX, gr = f.perfekt ? 36 : 24;
   ctx.save(); ctx.translate(x, y); ctx.scale(pop, pop); ctx.globalAlpha = a;
   ctx.font = `900 ${gr}px "Big Shoulders Display", "Manrope", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   if(f.perfekt){

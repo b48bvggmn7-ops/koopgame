@@ -8359,7 +8359,7 @@ async def perfekt_momente(g):
               i = 0; while(i++ < 200){ if(p2.vy > 0 && perfektSchritteBisBoden(p2) <= bis){ druck(p2, 'glide'); break; } st(); }
               const y0 = p2.y; let minY = Infinity; for(let k = 0; k < 50; k++){ st(); minY = Math.min(minY, p2.y); }
               KEYS[p2.keys.glide] = false; n(60); return y0 - minY; };
-            e.steigPerfekt = fall(3); e.steigGut = fall(9); e.steigFrueh = fall(40);
+            SFX_LOG.length = 0; p2._pirouetteT = 0; e.steigPerfekt = fall(3); e.logS = SFX_LOG.slice(); e.pirouette = p2._pirouetteT > 0; e.steigGut = fall(9); e.steigFrueh = fall(40);
             // Flug-Balken: vom Felsen segeln, bis er leer ist
             resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
             KEYS[p2.keys.right] = true; let q = 0; while(p2.grounded && q++ < 40) st(); druck(p2, 'glide');
@@ -8381,6 +8381,8 @@ async def perfekt_momente(g):
         assert G['note'] == 'gut' and G['flug'] == 'gut' and G['kette'] == 0 and 'perfektgut' in r['logG'], f'„gut“ falsch: {r}'
         assert G['v1'] < P['v1'] or G['v1'] < G['v0'] * 1.25, f'„gut“ muss weniger Schub geben: {r}'
         assert r['steigPerfekt'] > 250, f'Perfekt-Aufspannen muss weit hochschleudern: {r}'
+        assert 'perfekt' in r['logS'] and 'jump' not in r['logS'] and 'umbrella' not in r['logS'], f'Perfekt-Aufspannen: Bing statt Sprung-/Schirm-Ton: {r["logS"]}'
+        assert r['pirouette'], f'Perfekt-Aufspannen: Pirouette fehlt: {r}'
         assert 120 < r['steigGut'] < r['steigPerfekt'], f'„gut“ aufgespannt: weniger hoch: {r}'
         assert r['steigFrueh'] < 30, f'zu früh aufgespannt: kein Luftpolster: {r}'
         assert 55 <= r['leerNach'] <= 95, f'Balken muss nach etwa SCHIRM_DAUER Schritten Segeln leer sein: {r}'

@@ -367,13 +367,17 @@ const SFX = {
   // GUT = ein weicher Ton, Perfekt-Landen = leises „Tapp“ + Glitzern; Schirm-Balken: knapp = Flattern, leer = Stoff klappt zu;
   // Pusteblume = Hauch + Ton aus der Tonleiter (mehrere in einem Flug = kleine Melodie)
   perfekt(pl, kette, art){ sfxLog('perfekt'); const st = PERFEKT_TON[Math.min(PERFEKT_TON.length - 1, Math.max(0, kette - 1))], f = 659*st;
+    if(art === 'schirm'){ SFX.schirmBing(1046*st, 1); return; }   // Schweinchen: heller gläserner Bing (Nutzerwunsch 08.11.)
     sNoise(0, 0.28, {filter: 'bandpass', f: 700, to: 3200, q: 0.9, vol: 0.05, attack: 0.02});
-    if(art === 'schirm'){ sfxPlay('umbrella', {x: pl.x, rate: 1.45, vol: 0.8}); sTone(150, 0, 0.2, {to: 55, type: 'sine', vol: 0.12}); }
     sTone(f, 0.02, 0.5, {type: 'sine', vol: 0.05}); sTone(f*1.5, 0.07, 0.45, {type: 'sine', vol: 0.03}); sTone(f*2, 0.12, 0.4, {type: 'triangle', vol: 0.016});
     sTone(f*4, 0.14, 0.18, {type: 'sine', vol: 0.008}); },
-  perfektGut(pl, art){ sfxLog('perfektgut'); sNoise(0, 0.18, {filter: 'bandpass', f: 700, to: 1800, q: 0.9, vol: 0.03, attack: 0.02});
-    if(art === 'schirm') sfxPlay('umbrella', {x: pl.x, rate: 1.25, vol: 0.6});
+  perfektGut(pl, art){ sfxLog('perfektgut');
+    if(art === 'schirm'){ SFX.schirmBing(784, 0.55); return; }
+    sNoise(0, 0.18, {filter: 'bandpass', f: 700, to: 1800, q: 0.9, vol: 0.03, attack: 0.02});
     sTone(523, 0.02, 0.3, {type: 'sine', vol: 0.035}); },
+  // gläserner Bing: Grundton lang ausklingend + glockenartige (unharmonische) Obertöne, sehr kurzer Anschlag
+  schirmBing(f, laut){ sTone(f, 0, 1.1, {type: 'sine', vol: 0.06*laut, attack: 0.002}); sTone(f*2, 0, 0.7, {type: 'sine', vol: 0.02*laut, attack: 0.002});
+    sTone(f*2.76, 0, 0.45, {type: 'sine', vol: 0.022*laut, attack: 0.002}); sTone(f*5.4, 0, 0.2, {type: 'sine', vol: 0.01*laut, attack: 0.002}); },
   perfektLanden(pl){ sfxLog('perfektlanden'); sNoise(0, 0.08, {filter: 'lowpass', f: 700, to: 250, q: 0.8, vol: 0.06, attack: 0.003});
     sTone(1568, 0.03, 0.3, {type: 'sine', vol: 0.02}); sTone(2093, 0.08, 0.25, {type: 'sine', vol: 0.012}); },
   schirmKnapp(pl){ sfxLog('schirmknapp'); for(let i = 0; i < 3; i++) sNoise(i*0.07, 0.06, {filter: 'bandpass', f: 1500 - i*200, q: 3, vol: 0.03, attack: 0.004}); },
@@ -465,7 +469,7 @@ function sfxObserve(){
   for(const pl of [p1, p2]){
     if(!pl) continue;
     const pr = pl._snd || (pl._snd = {grounded: pl.grounded, vy: pl.vy, hook: pl.hookAttached, umb: pl.umbrella || 0, dist: 0, n: 0, wall: 0});
-    if(pl.vy < -7 && pr.vy > -3 && !pl.hookAttached){
+    if(pl.vy < -7 && pr.vy > -3 && !pl.hookAttached && !pl._schirmSchub){   // Perfekt-Aufspannen (js/35) ist kein Sprung: eigener Bing-Ton
       if(pr.hook) SFX.hookRelease(pl);
       else if(pr.wall){ SFX.wallJump(pl); if(typeof fxJump === 'function') fxJump(pl, true); }
       else { SFX.jump(pl); if(typeof fxJump === 'function') fxJump(pl, false); }
@@ -473,7 +477,7 @@ function sfxObserve(){
     if(pl.grounded && !pr.grounded && pr.vy > 3.5){ SFX.land(pl, pr.vy); if(typeof fxLand === 'function') fxLand(pl, pr.vy);
       if(pl.standingOn && pl.standingOn.type === 'oneway') SFX.steg(pl.x); }   // Steg knarzt (elemente/einseitig.js)
     if(pl.hookAttached && !pr.hook) SFX.hookAttach(pl);
-    if(!pl.male && (pl.umbrella || 0) > 0.2 && pr.umb <= 0.2) SFX.umbrella(pl);
+    if(!pl.male && (pl.umbrella || 0) > 0.2 && pr.umb <= 0.2 && !pl._schirmSchub) SFX.umbrella(pl);
     if(pl.grounded && Math.abs(pl.vx) > 1){
       pr.dist += Math.abs(pl.vx);
       if(pr.dist > 46){ pr.dist = 0; SFX.step(pl, pr.n++); }

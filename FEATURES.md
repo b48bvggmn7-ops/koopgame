@@ -2530,7 +2530,8 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   **Schweinchen – Perfekt-Aufspannen**: Schirm zu lassen, fallen (mind. 2,5 Reihen) und KURZ vor dem Aufprall aufspannen
   (≤ 5 Schritte = PERFEKT, ≤ 11 = GUT; auch über Stacheln/Lava): das Luftpolster schleudert sie mit offenem Schirm hoch – Steighöhe
   80 % der Fallhöhe + 1 Reihe, höchstens 7,5 Reihen (GUT: 60 % davon); zu früh = normales Segeln. Luftpolster-Ring am Boden, Staub,
-  Funken, leichtes Kamera-Wackeln.
+  Funken, leichtes Kamera-Wackeln. Dabei eine schnelle Pirouette um die eigene Achse (der Schirm dreht mit) und ein heller gläserner
+  „Bing“ (Serie: jedes Mal einen Ton höher) statt Sprung-/Schirm-Ton (Nutzerwunsch 08.11.); die Schrift fliegt über dem Schirm mit.
   **Belohnung (beide)**: PERFEKT = kurzer Trefferstopp (3 Schritte), goldene Schrift „PERFEKT!“ (springt auf, steigt, glitzert),
   Funken/Ring, Luftzug + Glocken-Akkord; mehrere hintereinander ohne Landen = Serie „PERFEKT ×2, ×3 …“, jedes Mal einen Ton höher
   (Pentatonik `PERFEKT_TON`). GUT = silberne Schrift, weicher Ton (Serie endet). Landen beendet die Serie.
