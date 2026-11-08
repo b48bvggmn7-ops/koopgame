@@ -8328,6 +8328,71 @@ async def trommel_station(g):
         srv.shutdown()
 
 @test
+async def perfekt_momente(g):
+    """Nutzerwunsch 08.11. (js/35-perfekt.js, elemente/pusteblume.js): Affe PERFEKT-ABSPRUNG (Liane im Aufschwung im richtigen
+    Moment loslassen = schneller + Serie; „gut“ etwas daneben; sicheres Landen ohne Rutschen). Schweinchen FLUG-BALKEN (Segeln
+    leert ihn in SCHIRM_DAUER Schritten, leer = Schirm zu, am Boden lädt er), PERFEKT-AUFSPANNEN (kurz vor dem Boden = hoch
+    geschleudert, zu früh = nichts) und PUSTEBLUME (füllt den Balken in der Luft auf, wächst nach)."""
+    srv = webserver()
+    try:
+        await g.p.goto(srv.url + 'index.html?testlevel=perfekt')
+        await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && typeof pusteblumen !== 'undefined' && pusteblumen.length === 3 && menuScreen === null", timeout=10000)
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          const n = k => { for(let i = 0; i < k; i++) st(); };
+          const druck = (P, a) => { KEYS[P.keys[a]] = true; KEYS[P.keys[a] + '_pressed'] = true; };
+          try {
+            // Affe: an den Haken (G halten), Schwung holen, loslassen, wenn die Bewertung passt
+            const lauf = wann => { resetLevel(); stell(p2, 150, 680); n(3); stell(p1, 340, 380); druck(p1, 'hook'); st();
+              let i = 0, schwung = 0, note = null, glanz = 0;
+              while(i++ < 700){ const r = p1.vx >= 0; KEYS[p1.keys.right] = r; KEYS[p1.keys.left] = !r; st(); if(!p1.hookAttached) break;
+                if(Math.hypot(p1.vx, p1.vy) > 7) schwung++;
+                const b = lianePerfektBewerten(p1); if(b === 'perfekt') glanz = Math.max(glanz, p1._lianeGlanz);
+                if(schwung > 120 && b === wann){ note = b; KEYS[p1.keys.right] = KEYS[p1.keys.left] = false; KEYS[p1.keys.hook] = false; break; } }
+              const v0 = Math.hypot(p1.vx, p1.vy); st(); const v1 = Math.hypot(p1.vx, p1.vy);
+              const o = {note, flug: p1._perfektFlug, kette: p1._kette, v0, v1, glanz};
+              let k = 0; while(!p1.grounded && k++ < 300) st(); o.gelandet = p1.grounded; o.stehtStill = p1.vx === 0; o.ketteNachLanden = p1._kette;
+              return o; };
+            SFX_LOG.length = 0; e.perfekt = lauf('perfekt'); e.logP = SFX_LOG.slice(); SFX_LOG.length = 0; e.gut = lauf('gut'); e.logG = SFX_LOG.slice();
+            // Schweinchen: vom Felsen fallen, Schirm im richtigen Moment aufspannen
+            const fall = bis => { resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
+              KEYS[p2.keys.right] = true; let i = 0; while(p2.grounded && i++ < 40) st(); KEYS[p2.keys.right] = false;
+              i = 0; while(i++ < 200){ if(p2.vy > 0 && perfektSchritteBisBoden(p2) <= bis){ druck(p2, 'glide'); break; } st(); }
+              const y0 = p2.y; let minY = Infinity; for(let k = 0; k < 50; k++){ st(); minY = Math.min(minY, p2.y); }
+              KEYS[p2.keys.glide] = false; n(60); return y0 - minY; };
+            e.steigPerfekt = fall(3); e.steigGut = fall(9); e.steigFrueh = fall(40);
+            // Flug-Balken: vom Felsen segeln, bis er leer ist
+            resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
+            KEYS[p2.keys.right] = true; let q = 0; while(p2.grounded && q++ < 40) st(); druck(p2, 'glide');
+            let s = 0; while(!p2.schirmLeer && s++ < 400) st(); e.leerNach = s; n(2); e.segeltLeer = p2.gliding;
+            let w = 0; while(!p2.grounded && w++ < 300) st(); KEYS[p2.keys.glide] = false; KEYS[p2.keys.right] = false;
+            n(SCHIRM_LADE_PAUSE + SCHIRM_LADEN + 2); e.geladen = p2.schirmKraft;
+            // Pusteblume: mit fast leerem Balken hindurch -> auffüllen, Blume weg, wächst nach
+            resetLevel(); stell(p1, 300, 680); n(2); stell(p2, 1700, 440); p2.schirmKraft = 0.1; p2.schirmLeer = true; st();
+            e.blume = [p2.schirmKraft, p2.schirmLeer, pusteblumen[0].wuchs]; n(PUSTEBLUME_NACHWACHSEN + 2); e.nachgewachsen = pusteblumen[0].wuchs;
+            stell(p2, 2000, 400); p2.schirmKraft = 1; st(); e.vollBleibt = pusteblumen[1].wuchs;   // Balken voll: Blume bleibt
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        P, G = r['perfekt'], r['gut']
+        assert P['note'] == 'perfekt' and P['flug'] == 'perfekt' and P['kette'] == 1, f'Perfekt-Absprung nicht erkannt: {r}'
+        assert P['v1'] > P['v0'] * 1.1 and P['v1'] > 16, f'Perfekt-Absprung muss deutlich schneller machen (auch über die normale Höchstgeschwindigkeit 15): {r}'
+        assert P['glanz'] > 0.6, f'im Perfekt-Fenster muss die Liane glimmen: {r}'
+        assert P['gelandet'] and P['stehtStill'] and P['ketteNachLanden'] == 0, f'nach Perfekt-Absprung sicher landen, Serie endet: {r}'
+        assert 'perfekt' in r['logP'] and 'perfektlanden' in r['logP'], r['logP']
+        assert G['note'] == 'gut' and G['flug'] == 'gut' and G['kette'] == 0 and 'perfektgut' in r['logG'], f'„gut“ falsch: {r}'
+        assert G['v1'] < P['v1'] or G['v1'] < G['v0'] * 1.25, f'„gut“ muss weniger Schub geben: {r}'
+        assert r['steigPerfekt'] > 250, f'Perfekt-Aufspannen muss weit hochschleudern: {r}'
+        assert 120 < r['steigGut'] < r['steigPerfekt'], f'„gut“ aufgespannt: weniger hoch: {r}'
+        assert r['steigFrueh'] < 30, f'zu früh aufgespannt: kein Luftpolster: {r}'
+        assert 55 <= r['leerNach'] <= 95, f'Balken muss nach etwa SCHIRM_DAUER Schritten Segeln leer sein: {r}'
+        assert not r['segeltLeer'], f'leer: Schirm muss zu sein: {r}'
+        assert r['geladen'] == 1, f'am Boden lädt der Balken wieder voll: {r}'
+        assert r['blume'][0] > 0.55 and not r['blume'][1] and r['blume'][2] < 0.1, f'Pusteblume muss auffüllen und verschwinden: {r}'
+        assert r['nachgewachsen'] == 1, f'Pusteblume wächst nach: {r}'
+        assert r['vollBleibt'] == 1, f'mit vollem Balken bleibt die Pusteblume stehen: {r}'
+    finally:
+        srv.shutdown()
+
+@test
 async def blattfloss_aussehen(g):
     """Nutzer: Blatt-Floß „sieht echt nicht gut aus“ -> dickes Blatt, das wie eine Gondel an zwei Lianen an einer gespannten
     Ranken-Schiene hängt; die Schienen-Enden hängen am Material darüber (Halter) oder kommen aus dem Blätterdach. Zeichnet
@@ -9502,7 +9567,7 @@ async def element_register(g):
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
                  ['haftboden', 'haftboeden', True, False],   # Honig zeichnet die Haftfläche (aus Wand) für beide
-                 ['windrad', 'windraeder', True, True], ['trommel', 'trommeln', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
+                 ['windrad', 'windraeder', True, True], ['trommel', 'trommeln', True, True], ['pusteblume', 'pusteblumen', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
                  ['draisine', 'draisinen', True, True], ['meteorit', 'meteoriten', True, False]], k   # + Pump-Draisine   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
@@ -9518,7 +9583,7 @@ async def element_register(g):
         # Editor-Umbau: Haken/Aufwind/Sprungpilz im Reiter „Haken & Sprung“, Teleporter/Förderband/Bewegung in „Bewegung“,
         # Licht-Werkzeuge im eigenen Reiter „Licht“; Optionen nicht mehr in der Gruppe, sondern in der Eigenschaften-Zeile
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=haken] .tool')].map(t => t.dataset.tool)")
-        assert reihe == ['hook', 'wind', 'bounce'], reihe   # Schleuder entfernt (Nutzerwunsch)
+        assert reihe == ['hook', 'wind', 'pusteblume', 'bounce'], reihe   # Schleuder entfernt (Nutzerwunsch)   # + Pusteblume (08.11.)
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['tele', 'band', 'blatt', 'draisine', 'move'], reihe   # + Pump-Draisine   # + Blatt-Floß (Dschungel-Neu; das Floß-Rad steht unter „Schalter“)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")

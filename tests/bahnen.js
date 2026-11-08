@@ -163,7 +163,9 @@
   // auf der ganzen Hutbreite federt (PILZ_TREFFER, elemente/sprungpilz.js; Nutzerwunsch) wird er dort hochgeschleudert.
   // einzelwand_decke: das Schweinchen berührt bei Schritt 350 eine Erd-Fläche – seit dem Wandsprung nur an Wand
   // (WANDSPRUNG_NUR_WAND, Nutzerwunsch und ausdrückliche Erlaubnis 02.11.) zählt Erde nicht mehr als Wand.
-  const AUSNAHMEN = {segeln_aufwind: {0: 141}, einzelwand_decke: {1: 350}};
+  // Flug-Balken (js/35, Nutzerwunsch und ausdrückliche Erlaubnis 08.11.): das Schweinchen segelt nur noch SCHIRM_DAUER Schritte –
+  // ab dort weichen seine Bahnen ab (segeln_aufwind ab 100, pilz_kombi ab 139, einzelwand_decke ab 237).
+  const AUSNAHMEN = {segeln_aufwind: {0: 141, 1: 100}, pilz_kombi: {1: 139}, einzelwand_decke: {1: 237}};
   // Abspielen gegen die Referenz: liefert die erste Abweichung je Szenario (oder null)
   window.bahnenAbspielen = (referenz) => referenz.map(ref => {
     const sz = SZENARIEN.find(z => z.name === ref.name);

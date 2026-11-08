@@ -59,6 +59,7 @@ function drawUmbrella(player, px, py, o){
   ctx.stroke();
 
   ctx.translate(0, -stick);
+  if(!o){ player._schirmMat = ctx.getTransform(); player._schirmMatT = performance.now(); }   // Kuppel-Mitte für den Flug-Balken (js/35)
   if(ablauf) ctx.scale(0.13 + 0.87*o.klapp, 1.5 - 0.5*Math.min(1, o.klapp));   // zu: schmale Spitze, dann aufklappen
   else ctx.scale(0.3 + 0.7*u, 0.45 + 0.55*u);
   const N = 6;

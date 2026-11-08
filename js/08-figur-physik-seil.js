@@ -179,14 +179,17 @@ function updatePlayer(player, now){
       }
       // Abflug vom Seil: vorhandener Schwung (bis ROPE_FLING_MAX) bleibt, aber Taste halten beschleunigt
       // nicht über die normale Höchstgeschwindigkeit hinaus
-      const vmax = player.ropeFling ? Math.min(ROPE_FLING_MAX, Math.max(SPRINT_MAX_SPEED, Math.abs(vxBefore))) : SPRINT_MAX_SPEED;
+      // Perfekt-Absprung (js/35): darf um LIANE_PERFEKT_FAKTOR schneller fliegen als sonst nach dem Loslassen
+      const flingMax = ROPE_FLING_MAX*(player._perfektFlug === 'perfekt' ? LIANE_PERFEKT_FAKTOR : player._perfektFlug === 'gut' ? LIANE_GUT_FAKTOR : 1);
+      const vmax = player.ropeFling ? Math.min(flingMax, Math.max(SPRINT_MAX_SPEED, Math.abs(vxBefore))) : SPRINT_MAX_SPEED;
       player.vx = Math.max(-vmax, Math.min(vmax, player.vx));
     }
 
     let gliding = false;
     // Schweinchen segelt mit eigener Taste (Num 1 halten), Springen bleibt auf Num 0
     const windy = !player.male && winds.length && inWind(player);
-    if(!player.male && !frozen && isDown(player.keys.glide) && !player.grounded && (player.vy > -1 || windy)){
+    // Flug-Balken (js/35): leer geflogen -> Schirm bleibt zu, bis er am Boden (oder per Pusteblume) wieder geladen ist
+    if(!player.male && !frozen && isDown(player.keys.glide) && !player.schirmLeer && !player.grounded && (player.vy > -1 || windy)){
       gliding = true;
       player.glideTimer += 16.6;
       const t = Math.min(1, player.glideTimer/GLIDE_RAMP_MS);

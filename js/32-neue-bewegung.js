@@ -249,6 +249,7 @@ function haftNachher(P, altX, altY){
 // Leichter Schub in Richtung des Schwungs (Bahn-Richtung) plus kleiner Hub – nur mit Schwung, weich ansteigend, damit
 // es zur Pendel-Physik passt. Danach fliegt die Figur wie nach jedem Loslassen weiter (ropeFling, ROPE_FLING_* in 02).
 function lianeLoslassen(P){
+  const note = typeof lianePerfektBewerten === 'function' ? lianePerfektBewerten(P) : null;   // Perfekt-Absprung (js/35)
   lianeSperren(P); P.hookAttached = false; P._lianeA = null;
   const v = Math.hypot(P.vx, P.vy), k = (P._lianeHalten || 0) < LIANE_BOOST_HALTEN ? 0 : Math.max(0, Math.min(1, (v - LIANE_MIN_SCHWUNG)/LIANE_SCHWUNG_VOLL));
   if(k > 0){
@@ -256,6 +257,7 @@ function lianeLoslassen(P){
     P.vy += P.vy/v*LIANE_BOOST*k + LIANE_HUB*k;
     P.lianeSchub = k;
   } else P.lianeSchub = 0;
+  if(note) lianePerfektAnwenden(P, note);
   ropeFling(P);
 }
 
@@ -382,7 +384,10 @@ function lianeKern(S, A, moveDir, ziehen, geben){
 function lianeSchritt(P, moveDir, jumpPressed){
   const A = P.anchor, K = P.keys || {};
   if(jumpPressed){   // Springen am Seil: loslassen mit Hub (wie bisher), Schwung bleibt
-    lianeSperren(P); P.hookAttached = false; P._lianeA = null; P.vy += HOOK_RELEASE_BOOST; ropeFling(P); return false;
+    const note = typeof lianePerfektBewerten === 'function' ? lianePerfektBewerten(P) : null;   // Perfekt-Absprung (js/35)
+    lianeSperren(P); P.hookAttached = false; P._lianeA = null; P.vy += HOOK_RELEASE_BOOST;
+    if(note) lianePerfektAnwenden(P, note);
+    ropeFling(P); return false;
   }
   const d0 = Math.hypot(P.x - A.x, P.y - P.h*0.6 - A.y) || 1;
   if(P._lianeA !== A){   // gerade gegriffen
@@ -406,6 +411,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
   if(!nass && typeof flossradVorher === 'function' && flossradVorher(P)) return true;   // am Floß-Rad kurbeln (elemente/flossrad.js)
   if(!nass && typeof draisineVorher === 'function' && draisineVorher(P, jumpPressed)) return true;   // Pump-Draisine: Griff halten + pumpen (elemente/draisine.js)
   if(typeof koopAktionVorher === 'function' && koopAktionVorher(P, moveDir, jumpPressed, nass)) return true;   // Dschungel-Neu: Schirm-Trampolin / pusten (js/34)
+  if(typeof perfektVorher === 'function' && perfektVorher(P, moveDir)) return true;   // Perfekt-Aufspannen: Steigen mit offenem Schirm (js/35)
   if(nass){ if(P.dash) dashBeenden(P); P.haft = null; P.dashPuffer = 0; if(K.dash) KEYS[K.dash + '_pressed'] = false; return false; }   // im Wasser: keine neuen Mechaniken
   if(K.dash && KEYS[K.dash + '_pressed']){ KEYS[K.dash + '_pressed'] = false; P.dashPuffer = DASH_PUFFER + 1; }
   if(P.dashPause > 0 && !P.dash) P.dashPause--;
@@ -493,6 +499,7 @@ function neueBewegungNachher(P, altX, altY){
     P.dashLadung += 1/DASH_LADEZEIT;
     if(P.dashLadung >= 1){ P.dashLadung = 0; P.dashPunkte++; P._dashVollT = performance.now(); if(typeof SFX !== 'undefined' && SFX.dashVoll) SFX.dashVoll(P); }
   } else P.dashLadung = 0;
+  if(typeof perfektNachher === 'function') perfektNachher(P);   // Schirm-Balken, Perfekt-Landen, Liane-Hinweis (js/35)
   // Rutsch-Bild (nur Anzeige): Staub und Kratzspur an der Wand
   if(P.rutscht && schrittNr() % 3 === 0){
     const wx = P.x + P.onWall*P.w/2;
@@ -511,8 +518,10 @@ function neueBewegungSchritt(figuren){
   for(let i = neuFx.length - 1; i >= 0; i--) if(neuFx[i].leben <= 0) neuFx.splice(i, 1);
   if(typeof bruchNachwachsen === 'function') bruchNachwachsen(figuren);
   if(typeof koopAktionSchritt === 'function') koopAktionSchritt();   // Dschungel-Neu: Windstrahl, Puste-Balken, Wind-Teilchen (js/34)
+  if(typeof perfektSchritt === 'function') perfektSchritt();         // Perfekt-Effekte (js/35)
 }
-function neueBewegungZuruecksetzen(){ neuFx.length = 0; neuTrefferStopp = 0; if(typeof koopAktionZuruecksetzen === 'function') koopAktionZuruecksetzen(); }
+function neueBewegungZuruecksetzen(){ neuFx.length = 0; neuTrefferStopp = 0; if(typeof koopAktionZuruecksetzen === 'function') koopAktionZuruecksetzen();
+  if(typeof perfektZuruecksetzen === 'function') perfektZuruecksetzen(); }
 
 // ---------- Zeichnen (nur Anzeige) ----------
 // Stauchen/Strecken der Figur beim Dash, am Haftpunkt und beim Wand-Rutschen (multipliziert mit charSquash)
@@ -562,6 +571,7 @@ function neueBewegungZeichnen(){
     }
     dashPunktZeichnen(P, px, py);
   }
+  if(typeof perfektZeichnen === 'function') perfektZeichnen();   // Liane-Glanz, Schirm-Balken, PERFEKT-Schrift (js/35)
 }
 // Dash-Punkt über dem Kopf (wie in der Spielwiese: Punkt, das Tortenstück zeigt das Aufladen); nur sichtbar, wenn das Level
 // Dash-Stellen hat oder der Punkt gerade fehlt/lädt

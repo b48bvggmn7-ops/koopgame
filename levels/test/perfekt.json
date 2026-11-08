@@ -1,0 +1,23 @@
+{
+  "hinweis": "Testlevel Timing-Fähigkeiten (js/35-perfekt.js): links ein Haken für den Perfekt-Absprung des Affen (Liane im Aufschwung loslassen, wenn sie golden glimmt). In der Mitte ein hoher Felsen: das Schweinchen springt herunter, Schirm zu lassen und KURZ VOR DEM BODEN aufspannen = Perfekt-Aufspannen. Rechts Pusteblumen in der Luft (füllen den Schirm-Balken auf). Öffnen: index.html?testlevel=perfekt",
+  "welt": "dschungel",
+  "tageszeit": "mittag",
+  "wetter": "trocken",
+  "solids": [
+    {"x": 0, "y": 680, "w": 3200, "h": 80, "type": "ground"},
+    {"x": 1120, "y": 280, "w": 200, "h": 400, "type": "wall"}
+  ],
+  "hooks": [{"x": 520, "y": 280}],
+  "spikes": [],
+  "coins": [],
+  "movingPlatforms": [],
+  "checkpoints": [],
+  "switches": [],
+  "doors": [],
+  "startM": {"x": 260, "y": 680},
+  "startF": {"x": 200, "y": 680},
+  "goal": {"x": 3000, "y": 680},
+  "pusteblumen": [
+    {"x": 1700, "y": 420}, {"x": 2000, "y": 400}, {"x": 2300, "y": 380, "menge": "voll"}
+  ]
+}

@@ -363,6 +363,25 @@ const SFX = {
   schirmAuf(pl){ sfxLog('schirmauf'); sfxPlay('umbrella', {x: pl.x, rate: 0.9}); },
   trampolin(pl){ sfxLog('trampolin'); sfxPlay('mushroom', {x: pl.x, rate: 1.1}); sfxPlay('umbrella', {x: pl.x, rate: 1.3, vol: 0.6}); sTone(300, 0, 0.2, {to: 560, type: 'triangle', vol: 0.035}); },
   trampolinSchub(pl){ sfxLog('trampolinSchub'); sfxPlay('umbrella', {x: pl.x, rate: 1.6, vol: 0.7}); sTone(420, 0, 0.18, {to: 980, type: 'triangle', vol: 0.045}); sTone(840, 0.05, 0.12, {to: 1400, type: 'sine', vol: 0.025}); },
+  // Timing-Fähigkeiten (js/35): PERFEKT = Luftzug + heller Glocken-Akkord (Serie: jedes Mal einen Ton höher, PERFEKT_TON),
+  // GUT = ein weicher Ton, Perfekt-Landen = leises „Tapp“ + Glitzern; Schirm-Balken: knapp = Flattern, leer = Stoff klappt zu;
+  // Pusteblume = Hauch + Ton aus der Tonleiter (mehrere in einem Flug = kleine Melodie)
+  perfekt(pl, kette, art){ sfxLog('perfekt'); const st = PERFEKT_TON[Math.min(PERFEKT_TON.length - 1, Math.max(0, kette - 1))], f = 659*st;
+    sNoise(0, 0.28, {filter: 'bandpass', f: 700, to: 3200, q: 0.9, vol: 0.05, attack: 0.02});
+    if(art === 'schirm'){ sfxPlay('umbrella', {x: pl.x, rate: 1.45, vol: 0.8}); sTone(150, 0, 0.2, {to: 55, type: 'sine', vol: 0.12}); }
+    sTone(f, 0.02, 0.5, {type: 'sine', vol: 0.05}); sTone(f*1.5, 0.07, 0.45, {type: 'sine', vol: 0.03}); sTone(f*2, 0.12, 0.4, {type: 'triangle', vol: 0.016});
+    sTone(f*4, 0.14, 0.18, {type: 'sine', vol: 0.008}); },
+  perfektGut(pl, art){ sfxLog('perfektgut'); sNoise(0, 0.18, {filter: 'bandpass', f: 700, to: 1800, q: 0.9, vol: 0.03, attack: 0.02});
+    if(art === 'schirm') sfxPlay('umbrella', {x: pl.x, rate: 1.25, vol: 0.6});
+    sTone(523, 0.02, 0.3, {type: 'sine', vol: 0.035}); },
+  perfektLanden(pl){ sfxLog('perfektlanden'); sNoise(0, 0.08, {filter: 'lowpass', f: 700, to: 250, q: 0.8, vol: 0.06, attack: 0.003});
+    sTone(1568, 0.03, 0.3, {type: 'sine', vol: 0.02}); sTone(2093, 0.08, 0.25, {type: 'sine', vol: 0.012}); },
+  schirmKnapp(pl){ sfxLog('schirmknapp'); for(let i = 0; i < 3; i++) sNoise(i*0.07, 0.06, {filter: 'bandpass', f: 1500 - i*200, q: 3, vol: 0.03, attack: 0.004}); },
+  schirmLeer(pl){ sfxLog('schirmleer'); sNoise(0, 0.3, {filter: 'bandpass', f: 1300, to: 300, q: 1.2, vol: 0.06, attack: 0.01});
+    sTone(480, 0, 0.32, {to: 200, type: 'triangle', vol: 0.03}); },
+  pusteblume(x, n){ sfxLog('pusteblume'); const f = 784*PERFEKT_TON[Math.min(PERFEKT_TON.length - 1, Math.max(0, n - 1))];
+    sNoise(0, 0.4, {filter: 'highpass', f: 2500, q: 0.7, vol: 0.035, attack: 0.04});
+    sTone(f, 0.01, 0.55, {type: 'sine', vol: 0.04}); sTone(f*2, 0.03, 0.3, {type: 'triangle', vol: 0.01}); },
   pustenStart(pl){ sfxLog('pustenstart'); sNoise(0, 0.18, {filter: 'bandpass', f: 500, to: 1400, q: 0.8, vol: 0.05, attack: 0.05}); },
   // Spielszenen (Dschungel-Neu): Meteorit fällt (Heulen + Einschlag), Glühen (tiefes Summen), Tor öffnet sich, Sog ins Tor
   szene_meteor(){ sfxLog('szene_meteor'); sNoise(0, 1.5, {filter: 'bandpass', f: 2600, to: 400, q: 1.2, vol: 0.06, attack: 0.3});

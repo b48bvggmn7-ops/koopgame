@@ -10,7 +10,7 @@ const GRUND_WERKZEUGE = ['ground', 'wall', 'fake', 'spike', 'coin', 'checkpoint'
 const WELT_WERKZEUGE = {
   // Dschungel-Neu: im Dschungel keine Sprungpilze und kein Aufwind mehr (Schirm-Trampolin und Pusten ersetzen sie),
   // dafür Windrad, Trommel-Station, Blatt-Floß, Pump-Draisine und die Meteoriten-Spur
-  dschungel: ['crumble', 'oneway', 'tele', 'wechsel', 'windrad', 'trommel', 'blatt', 'flossrad', 'draisine', 'meteorit'],
+  dschungel: ['crumble', 'oneway', 'tele', 'wechsel', 'windrad', 'trommel', 'pusteblume', 'blatt', 'flossrad', 'draisine', 'meteorit'],
   ruinen:    ['falle', 'fels', 'lichtquelle', 'spiegel', 'kristall'],
   hoehle:    ['eis', 'band', 'dunkel', 'leucht', 'wind', 'bounce'],
   wasser:    ['water', 'current', 'waterlevel'],

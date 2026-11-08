@@ -2517,6 +2517,31 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Arm geht mit, Kopf nickt; das Fell federt, helle Ringe laufen, Staub springt, Funken am Kranz.
   Holzschild an Seilen: Mitspiel-Hinweis mit Tasten, Einzählen, Ergebnis. Steuerung über `trommelVorher` (js/32), Pose in js/33
   (`P._trommel`). Testlevel `index.html?testlevel=trommel` (links leicht -> Tür 1, rechts schwer -> Tür 2). Test trommel_station.
+- **Perfekte Momente** (Nutzerwunsch 08.11., js/35-perfekt.js; in allen Welten): beide Figuren bekommen eine Timing-Fähigkeit.
+  **Affe – Perfekt-Absprung**: Liane im Aufschwung loslassen, wenn sie ~30° hinter dem tiefsten Punkt ist
+  (`LIANE_PERFEKT_WINKEL` ± 9° = PERFEKT, ± 22° = GUT; nur mit Schwung ≥ 5 px/Schritt und nach mind. 12 Schritten am Seil).
+  PERFEKT = 30 % schneller (darf dabei auch schneller als die normale Abflug-Grenze 15 fliegen) + Hub, GUT = 12 %. Hinweis: die
+  Liane glimmt golden mit Lichtpunkten, die zur Hand laufen, am Griff ein Stern = jetzt (`LIANE_PERFEKT_HINWEIS`). Danach Goldspur
+  hinter dem Affen; **sicher landen**: ohne Richtungstaste steht er sofort still (kein Rutschen), goldener Staubring + Glitzer-Ton.
+  **Schweinchen – Flug-Balken**: Segeln leert einen Bogen über der Schirmkuppel in `SCHIRM_DAUER` 60 Schritten (1 Spielsekunde;
+  im Aufwind kein Verbrauch); dabei lösen sich Pusteblumen-Samen vom Schirm. Unter 30 % wird der Bogen orange-rot, pulsiert und die
+  Schirmkante flattert (+ Flatter-Ton). Leer -> Schirm klappt zu (Stoff-Ton), er geht erst wieder auf, wenn der Balken 20 % hat:
+  am Boden lädt er in 40 Schritten voll (kleiner Bogen über dem Kopf, verschwindet mit einem Lichtring, wenn voll).
+  **Schweinchen – Perfekt-Aufspannen**: Schirm zu lassen, fallen (mind. 2,5 Reihen) und KURZ vor dem Aufprall aufspannen
+  (≤ 5 Schritte = PERFEKT, ≤ 11 = GUT; auch über Stacheln/Lava): das Luftpolster schleudert sie mit offenem Schirm hoch – Steighöhe
+  80 % der Fallhöhe + 1 Reihe, höchstens 7,5 Reihen (GUT: 60 % davon); zu früh = normales Segeln. Luftpolster-Ring am Boden, Staub,
+  Funken, leichtes Kamera-Wackeln.
+  **Belohnung (beide)**: PERFEKT = kurzer Trefferstopp (3 Schritte), goldene Schrift „PERFEKT!“ (springt auf, steigt, glitzert),
+  Funken/Ring, Luftzug + Glocken-Akkord; mehrere hintereinander ohne Landen = Serie „PERFEKT ×2, ×3 …“, jedes Mal einen Ton höher
+  (Pentatonik `PERFEKT_TON`). GUT = silberne Schrift, weicher Ton (Serie endet). Landen beendet die Serie.
+  Testlevel `index.html?testlevel=perfekt`. Test perfekt_momente.
+- **Pusteblume** (Nutzerwunsch 08.11., elemente/pusteblume.js, Editor-Reiter „Haken & Sprung“, Werkzeug „Pusteblume“, im Dschungel
+  empfohlen): schwebende Pusteblume (flauschige Kugel aus 30 Samen, abgebrochener Stiel mit Blatt, dunkler Grund + warmer Schein,
+  damit sie sich vom Nebel abhebt; wippt leicht). Fliegt das Schweinchen hindurch und ist sein Schirm-Balken nicht voll, fliegen die
+  Samen zum Schirm und füllen ihn auf (Auswahl „Füllt“: halb / ganz; der Bogen leuchtet kurz auf) – auch leer geflogen geht der
+  Schirm sofort wieder auf. Mehrere in einem Flug = kleine Melodie (jede einen Ton höher). Danach wächst sie in 5 s nach (Samen
+  erscheinen einzeln, Funkeln wenn fertig). Mit vollem Balken bzw. für den Affen: sie wackelt nur. Je näher das Schweinchen mit
+  nicht vollem Balken kommt, desto heller leuchtet sie.
 - **Blatt-Floß** (elemente/blattfloss.js, Editor-Reiter „Bewegung“, Werkzeug „Blatt-Floß“, im Dschungel empfohlen): großes
   festes Blatt (3 Kästchen breit) auf einer Ranken-Schiene nach rechts (Auswahl „Schiene“: 4–14 Kästchen; im Editor am
   linken Ende setzen, die Schiene ist mitgezeichnet und gehört zum Floß). Nur der Seiten-Wind des Affen schiebt es in
