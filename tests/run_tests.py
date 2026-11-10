@@ -8331,8 +8331,9 @@ async def trommel_station(g):
 async def perfekt_momente(g):
     """Nutzerwunsch 08.11. (js/35-perfekt.js, elemente/pusteblume.js): Affe PERFEKT-ABSPRUNG (Liane im Aufschwung im richtigen
     Moment loslassen = schneller + Serie; „gut“ etwas daneben; sicheres Landen ohne Rutschen). Schweinchen FLUG-BALKEN (Segeln
-    leert ihn in SCHIRM_DAUER Schritten, leer = Schirm zu, am Boden lädt er), PERFEKT-AUFSPANNEN (kurz vor dem Boden = hoch
-    geschleudert, zu früh = nichts) und PUSTEBLUME (füllt den Balken in der Luft auf, wächst nach)."""
+    leert ihn in SCHIRM_DAUER Schritten, leer = Schirm zu, am Boden lädt er), PERFEKT-AUFSPANNEN (10.11.: Schirm beim Segeln
+    zuklappen, Lichtpunkt läuft über den Bogen, im Gold wieder aufspannen = Schwung, nie höher als beim Zuklappen, kostet Balken;
+    zu früh = nichts) und PUSTEBLUME (füllt den Balken in der Luft auf, wächst nach)."""
     srv = webserver()
     try:
         await g.p.goto(srv.url + 'index.html?testlevel=perfekt')
@@ -8353,13 +8354,20 @@ async def perfekt_momente(g):
               let k = 0; while(!p1.grounded && k++ < 300) st(); o.gelandet = p1.grounded; o.stehtStill = p1.vx === 0; o.ketteNachLanden = p1._kette;
               return o; };
             SFX_LOG.length = 0; e.perfekt = lauf('perfekt'); e.logP = SFX_LOG.slice(); SFX_LOG.length = 0; e.gut = lauf('gut'); e.logG = SFX_LOG.slice();
-            // Schweinchen: vom Felsen fallen, Schirm im richtigen Moment aufspannen
-            const fall = bis => { resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
+            // Schweinchen: vom Felsen segeln, Schirm zuklappen (Fang-Fenster), im goldenen Moment wieder aufspannen
+            const fall = ziel => { resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
               KEYS[p2.keys.right] = true; let i = 0; while(p2.grounded && i++ < 40) st(); KEYS[p2.keys.right] = false;
-              i = 0; while(i++ < 200){ if(p2.vy > 0 && perfektSchritteBisBoden(p2) <= bis){ druck(p2, 'glide'); break; } st(); }
-              const y0 = p2.y; let minY = Infinity; for(let k = 0; k < 50; k++){ st(); minY = Math.min(minY, p2.y); }
-              KEYS[p2.keys.glide] = false; n(60); return y0 - minY; };
-            SFX_LOG.length = 0; p2._pirouetteT = 0; e.steigPerfekt = fall(3); e.logS = SFX_LOG.slice(); e.pirouette = p2._pirouetteT > 0; e.steigGut = fall(9); e.steigFrueh = fall(40);
+              druck(p2, 'glide'); n(10); const yZu = p2.y; KEYS[p2.keys.glide] = false; st();
+              const o = {fang: !!p2._fang}; i = 0;
+              while(p2._fang && i++ < 60){ const q = schirmFangStand(p2), nt = schirmFangNote(q);
+                if(ziel === 'frueh' ? q > 0.25 : nt === ziel) break; st(); }
+              const k0 = p2.schirmKraft; SFX_LOG.length = 0; druck(p2, 'glide'); st(); o.kosten = k0 - p2.schirmKraft;
+              const y0 = p2.y; let minY = Infinity; for(let k = 0; k < 20; k++){ st(); minY = Math.min(minY, p2.y); } o.log = SFX_LOG.slice();
+              for(let k = 0; k < 30; k++){ st(); minY = Math.min(minY, p2.y); }
+              o.steig = y0 - minY; o.unterZu = minY > yZu; KEYS[p2.keys.glide] = false; n(60); return o; };
+            p2._pirouetteT = 0; const fp = fall('perfekt'); e.logS = fp.log; e.pirouette = p2._pirouetteT > 0;
+            const fg = fall('gut'), ff = fall('frueh');
+            e.fangStart = fp.fang; e.steigPerfekt = fp.steig; e.unterZu = fp.unterZu; e.kosten = fp.kosten; e.steigGut = fg.steig; e.steigFrueh = ff.steig;
             // Flug-Balken: vom Felsen segeln, bis er leer ist
             resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
             KEYS[p2.keys.right] = true; let q = 0; while(p2.grounded && q++ < 40) st(); druck(p2, 'glide');
@@ -8380,11 +8388,14 @@ async def perfekt_momente(g):
         assert 'perfekt' in r['logP'] and 'perfektlanden' in r['logP'], r['logP']
         assert G['note'] == 'gut' and G['flug'] == 'gut' and G['kette'] == 0 and 'perfektgut' in r['logG'], f'„gut“ falsch: {r}'
         assert G['v1'] < P['v1'] or G['v1'] < G['v0'] * 1.25, f'„gut“ muss weniger Schub geben: {r}'
-        assert r['steigPerfekt'] > 250, f'Perfekt-Aufspannen muss weit hochschleudern: {r}'
+        assert r['fangStart'], f'Schirm-Taste beim Segeln losgelassen: Fang-Fenster muss starten: {r}'
+        assert r['steigPerfekt'] > 80, f'Perfekt-Aufspannen muss hochschwingen: {r}'
+        assert r['unterZu'], f'Boost bringt nie höher als beim Zuklappen: {r}'
+        assert r['kosten'] > 0.14, f'Boost kostet ein Stück Balken: {r}'
         assert 'perfekt' in r['logS'] and 'jump' not in r['logS'] and 'umbrella' not in r['logS'], f'Perfekt-Aufspannen: Bing statt Sprung-/Schirm-Ton: {r["logS"]}'
         assert r['pirouette'], f'Perfekt-Aufspannen: Pirouette fehlt: {r}'
-        assert 120 < r['steigGut'] < r['steigPerfekt'], f'„gut“ aufgespannt: weniger hoch: {r}'
-        assert r['steigFrueh'] < 30, f'zu früh aufgespannt: kein Luftpolster: {r}'
+        assert 20 < r['steigGut'] < r['steigPerfekt'], f'„gut“ aufgespannt: weniger hoch: {r}'
+        assert r['steigFrueh'] < 5, f'zu früh aufgespannt: kein Schwung: {r}'
         assert 55 <= r['leerNach'] <= 95, f'Balken muss nach etwa SCHIRM_DAUER Schritten Segeln leer sein: {r}'
         assert not r['segeltLeer'], f'leer: Schirm muss zu sein: {r}'
         assert r['geladen'] == 1, f'am Boden lädt der Balken wieder voll: {r}'

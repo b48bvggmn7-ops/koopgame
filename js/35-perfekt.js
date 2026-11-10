@@ -9,8 +9,11 @@
 //     Hinweis: die Liane glimmt golden, solange das Fenster offen ist (LIANE_PERFEKT_HINWEIS).
 //   - SCHWEINCHEN: FLUG-BALKEN + PERFEKT-AUFSPANNEN. Der Schirm verbraucht beim Segeln Kraft (SCHIRM_DAUER Schritte bis
 //     leer; im Aufwind nicht). Leer -> Schirm klappt zu, erst am Boden (oder mit einer Pusteblume) wieder. Pusteblumen
-//     (elemente/pusteblume.js) füllen ihn in der Luft auf. Schirm zu, fallen, und KURZ VOR DEM BODEN aufspannen
-//     (SCHIRM_PERFEKT_SCHRITTE vor dem Aufprall): das Luftpolster schleudert sie hoch – je tiefer der Fall, desto höher.
+//     (elemente/pusteblume.js) füllen ihn in der Luft auf. PERFEKT-AUFSPANNEN (Nutzerwunsch 10.11., „Zone im Balken“):
+//     beim Segeln die Schirm-Taste loslassen -> über dem Kopf läuft ein Lichtpunkt über den Bogen (SCHIRM_FANG_DAUER),
+//     ein Stück leuchtet golden (SCHIRM_FANG_GOLD). Wieder aufspannen, während der Punkt im Gold ist = PERFEKT (knapp
+//     daneben = GUT): Schwung nach oben, immer etwas weniger als die Fallhöhe seit dem Zuklappen (kein endloses
+//     Hochschaukeln), kostet SCHIRM_FANG_KOSTEN vom Balken. Geht überall in der Luft (kein Boden nötig).
 // Psychologie (Nutzerwunsch „satisfying“): Vorfreude (Liane glimmt, Schirm flattert, wenn er knapp wird), sofortige
 // Belohnung (kurzer Trefferstopp, Funken, Ton, Schrift), abgestufte Rückmeldung (GUT / PERFEKT – knapp daneben lädt zum
 // Nochmal ein), Serien (PERFEKT ×2, ×3 … ohne Landen: jedes Mal ein Ton höher), Pusteblumen-Ketten = kleine Melodie.
@@ -32,14 +35,13 @@ const SCHIRM_LADEN = 40;             // Schritte am Boden von leer bis voll
 const SCHIRM_LADE_PAUSE = 5;         // so lange nach dem Landen, bevor er lädt
 const SCHIRM_NEUSTART = 0.2;         // leer geflogen: ab so viel Ladung geht der Schirm wieder auf
 const SCHIRM_KNAPP = 0.3;            // darunter flattert der Schirm (Warnung)
-const SCHIRM_PERFEKT_MIN_HOEHE = 100;   // px Fallhöhe (2,5 Reihen): erst dann gibt es ein Luftpolster
-const SCHIRM_PERFEKT_MIN_VY = 6;     // px/Schritt Fall-Tempo
-const SCHIRM_PERFEKT_SCHRITTE = 5;   // so viele Schritte vor dem Aufprall aufgespannt = perfekt (≈ 0,09 s)
-const SCHIRM_GUT_SCHRITTE = 11;      // … = gut
-const SCHIRM_SCHUB_ANTEIL = 0.8;     // Steighöhe = so viel von der Fallhöhe + SCHIRM_SCHUB_EXTRA (gut: SCHIRM_GUT_ANTEIL davon)
-const SCHIRM_SCHUB_EXTRA = 40;
-const SCHIRM_SCHUB_MAX = 300;        // px: höchstens so hoch (7,5 Reihen)
+const SCHIRM_FANG_DAUER = 32;        // Schritte (gut ½ s): so lange läuft der Lichtpunkt einmal über den Bogen
+const SCHIRM_FANG_GOLD = [0.62, 0.76];   // goldener Bereich auf dem Bogen (Anteil der Laufzeit) = PERFEKT
+const SCHIRM_FANG_GUT = 0.09;        // so viel davor/danach = GUT
+const SCHIRM_FANG_ANTEIL = 0.9;      // Steighöhe = so viel der Fallhöhe seit dem Zuklappen (GUT: SCHIRM_GUT_ANTEIL davon)
 const SCHIRM_GUT_ANTEIL = 0.6;
+const SCHIRM_SCHUB_MAX = 300;        // px: höchstens so hoch (7,5 Reihen)
+const SCHIRM_FANG_KOSTEN = 0.15;     // so viel vom Balken kostet ein Boost
 const PERFEKT_STOPP = 3;             // Trefferstopp (Schritte) bei PERFEKT
 const PERFEKT_SPUR = 60;             // Schritte: so lange zieht der Affe nach einem Perfekt-Absprung eine Goldspur
 const PERFEKT_TON = [1, 9/8, 5/4, 3/2, 5/3, 2, 9/4, 5/2, 3, 10/3, 4];   // Tonleiter für Serien (Pentatonik, immer schön)
@@ -73,41 +75,39 @@ function lianePerfektAnwenden(P, note){
 
 // ---------- Schweinchen: Flug-Balken ----------
 function schirmTaste(P){ return !!(P.keys && P.keys.glide && isDown(P.keys.glide)); }
-// Boden (oder Stacheln/Lava) unter den Füßen: Abstand in px (Infinity = nichts)
-function perfektBodenAbstand(P){
-  const x0 = P.x - P.w/2 + 2, x1 = P.x + P.w/2 - 2;
-  let oben = Infinity;
-  for(const s of solids) if(!s.gone && !s.open && s.type !== 'fake' && s.y >= P.y - 1 && s.x < x1 && s.x + s.w > x0) oben = Math.min(oben, s.y);
-  for(const sp of spikes) if(sp.y - sp.h >= P.y - 1 && sp.x - sp.w/2 < x1 && sp.x + sp.w/2 > x0) oben = Math.min(oben, sp.y - sp.h);
-  if(typeof lavaBecken !== 'undefined') for(const b of lavaBecken) if(P.x >= b.minX && P.x < b.maxX && b.surf >= P.y - 1) oben = Math.min(oben, b.surf);
-  return oben - P.y;
+// Fang-Fenster: wo steht der Lichtpunkt (0…1 über den Bogen) und wie ist der Moment? 'perfekt' | 'gut' | null
+function schirmFangStand(P){ return P._fang ? P._fang.t/SCHIRM_FANG_DAUER : -1; }
+function schirmFangNote(q){
+  const [a, b] = SCHIRM_FANG_GOLD;
+  if(q >= a && q <= b) return 'perfekt';
+  if(q >= a - SCHIRM_FANG_GUT && q <= b + SCHIRM_FANG_GUT) return 'gut';
+  return null;
 }
-// Schritte bis zum Aufprall bei geschlossenem Schirm (Schwerkraft voll)
-function perfektSchritteBisBoden(P){
-  const d = perfektBodenAbstand(P); if(!isFinite(d)) return Infinity;
-  const v = P.vy, g = GRAVITY;
-  return (-v + Math.sqrt(v*v + 2*g*Math.max(0, d)))/g;
-}
-function schirmPerfektPruefen(P){
-  const H = P.y - (P._hoechsterY === undefined ? P.y : P._hoechsterY);
-  if(H < SCHIRM_PERFEKT_MIN_HOEHE || P.vy < SCHIRM_PERFEKT_MIN_VY) return;
-  const t = perfektSchritteBisBoden(P);
-  const note = t <= SCHIRM_PERFEKT_SCHRITTE ? 'perfekt' : t <= SCHIRM_GUT_SCHRITTE ? 'gut' : null;
-  if(!note) return;
-  let hoehe = Math.min(SCHIRM_SCHUB_MAX, H*SCHIRM_SCHUB_ANTEIL + SCHIRM_SCHUB_EXTRA);
+function schirmFangBoost(P, note){
+  const fall = Math.max(0, P.y - P._fang.y0);   // so tief ist sie seit dem Zuklappen gefallen
+  let hoehe = Math.min(SCHIRM_SCHUB_MAX, fall*SCHIRM_FANG_ANTEIL);
   if(note === 'gut') hoehe *= SCHIRM_GUT_ANTEIL;
+  P._fang = null;
+  if(hoehe < 4) return;
   P.vy = -Math.sqrt(2*GRAVITY*hoehe);
-  P._schirmSchub = true; P._hoechsterY = P.y; P.glideTimer = 0; P.sprungKurzMoeglich = false;
+  P.schirmKraft = Math.max(0, P.schirmKraft - SCHIRM_FANG_KOSTEN);
+  P._schirmSchub = true; P.glideTimer = 0; P.sprungKurzMoeglich = false;
   P._pirouetteT = performance.now();   // nur Anzeige: Pirouette mit Schirm (js/33, js/10)
-  const boden = P.y + Math.max(0, perfektBodenAbstand(P));
-  perfektBelohnen(P, note, P.x, boden, 'schirm');
+  perfektBelohnen(P, note, P.x, P.y - P.h - 40, 'schirm');
 }
 // vor dem Tempo (aus js/32): true = Tempo gesetzt (Steigen nach dem Perfekt-Aufspannen, Schirm offen)
 function schirmVorher(P, moveDir){
   if(P.schirmKraft === undefined){ P.schirmKraft = 1; P.schirmLeer = false; P._schirmPause = 0; }
-  const taste = schirmTaste(P), neu = taste && !P._schirmTasteWar;
+  const taste = schirmTaste(P), neu = taste && !P._schirmTasteWar, los = !taste && P._schirmTasteWar;
   P._schirmTasteWar = taste;
-  if(!P._schirmSchub && neu && !P.grounded && !P.inWater && !P.haft && !P.trampolin && !P.schirmLeer && !P.dash && P.vy > 0) schirmPerfektPruefen(P);
+  const frei = P.grounded || P.inWater || P.haft || P.trampolin || P.dash;
+  // Zuklappen beim Segeln: das Fang-Fenster startet (Lichtpunkt läuft los)
+  if(los && P.gliding && !P._schirmSchub && !frei && !P.schirmLeer) P._fang = {t: 0, y0: P.y};
+  if(P._fang){
+    if(frei || P.schirmLeer){ P._fang = null; }
+    else if(neu){ const note = schirmFangNote(schirmFangStand(P)); if(note) schirmFangBoost(P, note); else P._fang = null; }
+    else if(++P._fang.t > SCHIRM_FANG_DAUER) P._fang = null;   // Punkt ist durchgelaufen
+  }
   if(!P._schirmSchub) return false;
   if(!taste || P.grounded || P.inWater || P.haft || P.vy > -1){ P._schirmSchub = false; return false; }
   // Steigen mit offenem Schirm (vom Luftpolster getragen): Luft-Steuerung wie sonst, kein Segel-Bremsen
@@ -170,7 +170,7 @@ function perfektBelohnen(P, note, x, y, art){
   }
   if(perfekt){
     neuTrefferStopp = Math.max(neuTrefferStopp, PERFEKT_STOPP);
-    if(art === 'schirm' && typeof kameraStoss === 'function') kameraStoss(2.5);
+    if(art === 'schirm' && typeof kameraStoss === 'function') kameraStoss(1.5);
   }
   const text = perfekt ? (k >= 2 ? 'PERFEKT ×' + k : 'PERFEKT!') : 'GUT';
   // Schweinchen: Schrift fliegt über dem Schirm mit (sie steigt sonst in die Schrift hinein und verdeckt die Pirouette)
@@ -183,10 +183,10 @@ function perfektBelohnen(P, note, x, y, art){
     for(let i = 0; i < n; i++){ const w = perfektZufall(0, Math.PI*2), v = perfektZufall(1.5, perfekt ? 5 : 3);
       perfektFxDazu({art: 'funke', x, y, vx: Math.cos(w)*v + P.vx*0.3, vy: Math.sin(w)*v + P.vy*0.3, leben: 30, max: 30, perfekt}); }
   } else {
-    // Luftpolster: flacher Ring am Boden, Staub zur Seite, Samen fliegen vom Schirm hoch
-    perfektFxDazu({art: 'polster', x, y, leben: 22, max: 22, perfekt});
-    for(const s of [-1, 1]) for(let i = 0; i < (perfekt ? 5 : 3); i++)
-      perfektFxDazu({art: 'staub', x: x + s*perfektZufall(4, 14), y: y - 3, vx: s*perfektZufall(1.5, 4), vy: perfektZufall(-1.2, -0.2), r: perfektZufall(3, 6), leben: 30, max: 30});
+    // Luftstoß unter dem aufschnappenden Schirm: flacher Ring (weht nach unten weg), Samen fliegen vom Schirm
+    perfektFxDazu({art: 'polster', x, y: y + 30, leben: 22, max: 22, perfekt});
+    for(let i = 0; i < (perfekt ? 8 : 4); i++) perfektFxDazu({art: 'samen', x: x + perfektZufall(-30, 30), y: y + perfektZufall(-6, 6),
+      vx: perfektZufall(-1.6, 1.6), vy: perfektZufall(0.4, 1.6), dreh: perfektZufall(0, 6), leben: 60, max: 60});
     for(let i = 0; i < n; i++){ const w = perfektZufall(-Math.PI*0.9, -Math.PI*0.1), v = perfektZufall(1.5, perfekt ? 5 : 3);
       perfektFxDazu({art: 'funke', x: P.x + Math.cos(w)*20, y: P.y - P.h - 30, vx: Math.cos(w)*v, vy: Math.sin(w)*v, leben: 30, max: 30, perfekt}); }
   }
@@ -249,7 +249,7 @@ function perfektSchritt(){
 function perfektZuruecksetzen(){
   perfektFx.length = 0;
   for(const P of [p1, p2]) if(P){ P.schirmKraft = 1; P.schirmLeer = false; P._schirmPause = 0; P._schirmSchub = false; P._kette = 0;
-    P._blumenKette = 0; P._perfektFlug = null; P._perfektSpur = 0; P._lianeGlanz = 0; P._hoechsterY = undefined; }
+    P._blumenKette = 0; P._perfektFlug = null; P._perfektSpur = 0; P._lianeGlanz = 0; P._hoechsterY = undefined; P._fang = null; }
 }
 
 // ---------- Zeichnen (nur Anzeige) ----------
@@ -332,13 +332,47 @@ function schirmBalkenZeichnen(P){
     ctx.restore();
     return;
   }
-  if(k >= 1 && !frischVoll && !fuell) return;   // voll und ruhig: nichts anzeigen
   const px = P.x - camX, py = P.y + (P._standDy || 0);
+  if(P._fang){ schirmFangZeichnen(P, px, py - P.h - 18, k, farbe); return; }
+  if(k >= 1 && !frischVoll && !fuell) return;   // voll und ruhig: nichts anzeigen
   ctx.save();
   ctx.globalAlpha = k >= 1 ? Math.max(0, 1 - (jetzt - (P._schirmVollT || 0))/500) : 1;
   schirmBalkenBogen(px, py - P.h - 8, 15, 11, k, 3.2, farbe, P.schirmLeer, fuell);
   if(frischVoll){ const q = (jetzt - P._schirmVollT)/500; ctx.globalAlpha = 1 - q; ctx.strokeStyle = '#fff6d8'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.ellipse(px, py - P.h - 8, 15 + q*10, 11 + q*7, 0, Math.PI, Math.PI*2); ctx.stroke(); }
+  ctx.restore();
+}
+// Fang-Fenster (Schirm zu): großer Bogen über dem Kopf (so groß wie die Schirmkuppel) – darauf der Flug-Balken (gedämpft),
+// das goldene Stück (PERFEKT) mit silbernen Rändern (GUT) und der laufende Lichtpunkt mit Schweif. Ist der Punkt im Gold,
+// leuchtet das Gold auf (jetzt!).
+function schirmFangZeichnen(P, cx, cy, k, farbe){
+  const rx = 40, ry = 28, a0 = Math.PI + 0.18, a1 = Math.PI*2 - 0.18, w = q => a0 + (a1 - a0)*Math.max(0, Math.min(1, q));
+  const q = schirmFangStand(P), note = schirmFangNote(q), [g0, g1] = SCHIRM_FANG_GOLD, t = performance.now();
+  const ein = Math.min(1, P._fang.t/4);   // weich einblenden
+  ctx.save(); ctx.globalAlpha = 0.6*ein;
+  schirmBalkenBogen(cx, cy, rx, ry, k, 3.5, farbe, P.schirmLeer, 0);
+  ctx.globalAlpha = ein; ctx.lineCap = 'round';
+  const bogen = (qa, qb, breite, farbe2) => { ctx.strokeStyle = farbe2; ctx.lineWidth = breite; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, w(qa), w(qb)); ctx.stroke(); };
+  bogen(g0 - SCHIRM_FANG_GUT, g0, 4, 'rgba(225,240,255,.75)');   // GUT davor/danach
+  bogen(g1, g1 + SCHIRM_FANG_GUT, 4, 'rgba(225,240,255,.75)');
+  const jetztGold = note === 'perfekt', glanz = jetztGold ? 0.75 + 0.25*Math.sin(t*0.03) : 0.35;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  bogen(g0, g1, jetztGold ? 16 : 11, `rgba(255,190,60,${0.35*glanz})`);
+  ctx.restore();
+  bogen(g0, g1, 6, '#5a3a10');                                   // dunkler Rand: Gold hebt sich vom Nebel ab
+  bogen(g0, g1, 4.5, jetztGold ? '#fff2a8' : '#ffd24a');
+  // Schweif + Lichtpunkt
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for(let i = 1; i <= 6; i++){ const qq = q - i*0.025; if(qq < 0) break;
+    const a = w(qq); ctx.fillStyle = `rgba(255,250,230,${0.45*(1 - i/7)})`;
+    ctx.beginPath(); ctx.arc(cx + Math.cos(a)*rx, cy + Math.sin(a)*ry, 4.5 - i*0.5, 0, Math.PI*2); ctx.fill(); }
+  const a = w(q), dx = cx + Math.cos(a)*rx, dy = cy + Math.sin(a)*ry;
+  const sg = ctx.createRadialGradient(dx, dy, 0, dx, dy, 14);
+  sg.addColorStop(0, 'rgba(255,255,240,.95)'); sg.addColorStop(1, 'rgba(255,230,160,0)');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(dx, dy, 14, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = 'rgba(60,40,20,.7)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(dx, dy, 4.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   ctx.restore();
 }
 // Pusteblumen-Samen (fliegen weg bzw. zum Schirm): feiner Stiel + Schirmchen

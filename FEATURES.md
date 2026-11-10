@@ -2528,10 +2528,13 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   im Aufwind kein Verbrauch); dabei lösen sich Pusteblumen-Samen vom Schirm. Unter 30 % wird der Bogen orange-rot, pulsiert und die
   Schirmkante flattert (+ Flatter-Ton). Leer -> Schirm klappt zu (Stoff-Ton), er geht erst wieder auf, wenn der Balken 20 % hat:
   am Boden lädt er in 40 Schritten voll (kleiner Bogen über dem Kopf, verschwindet mit einem Lichtring, wenn voll).
-  **Schweinchen – Perfekt-Aufspannen**: Schirm zu lassen, fallen (mind. 2,5 Reihen) und KURZ vor dem Aufprall aufspannen
-  (≤ 5 Schritte = PERFEKT, ≤ 11 = GUT; auch über Stacheln/Lava): das Luftpolster schleudert sie mit offenem Schirm hoch – Steighöhe
-  80 % der Fallhöhe + 1 Reihe, höchstens 7,5 Reihen (GUT: 60 % davon); zu früh = normales Segeln. Luftpolster-Ring am Boden, Staub,
-  Funken, leichtes Kamera-Wackeln. Dabei eine schnelle Pirouette um die eigene Achse (der Schirm dreht mit) und ein heller gläserner
+  **Schweinchen – Perfekt-Aufspannen** (Nutzerwunsch 10.11. „Zone im Balken“, ersetzt das frühere „kurz vor dem Boden“): beim
+  Segeln die Schirm-Taste loslassen -> über dem Kopf erscheint ein großer Bogen (der Flug-Balken, gedämpft) mit einem goldenen
+  Stück (dunkel umrandet, silberne Ränder = GUT); ein heller Lichtpunkt mit Schweif läuft in `SCHIRM_FANG_DAUER` 32 Schritten
+  einmal darüber, im Gold leuchtet das Gold auf. Wieder aufspannen, während der Punkt im Gold ist (62–76 % = PERFEKT, ±9 % = GUT):
+  Schwung nach oben mit offenem Schirm – 90 % der Fallhöhe seit dem Zuklappen (GUT: 60 % davon), also nie höher als vorher;
+  kostet 15 % vom Balken. Zu früh/zu spät = normales Segeln bzw. weiter fallen. Geht überall in der Luft, auch über Abgründen.
+  Luftstoß-Ring unter dem Schirm, Samen wirbeln, Funken, leichtes Kamera-Wackeln. Dabei eine schnelle Pirouette um die eigene Achse (der Schirm dreht mit) und ein heller gläserner
   „Bing“ (Serie: jedes Mal einen Ton höher) statt Sprung-/Schirm-Ton (Nutzerwunsch 08.11.); die Schrift fliegt über dem Schirm mit.
   **Belohnung (beide)**: PERFEKT = kurzer Trefferstopp (3 Schritte), goldene Schrift „PERFEKT!“ (springt auf, steigt, glitzert),
   Funken/Ring, Luftzug + Glocken-Akkord; mehrere hintereinander ohne Landen = Serie „PERFEKT ×2, ×3 …“, jedes Mal einen Ton höher
