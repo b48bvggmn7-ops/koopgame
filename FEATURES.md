@@ -2520,7 +2520,8 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - **Perfekte Momente** (Nutzerwunsch 08.11., js/35-perfekt.js; in allen Welten): beide Figuren bekommen eine Timing-Fähigkeit.
   **Affe – Perfekt-Absprung**: Liane im Aufschwung loslassen, wenn sie ~30° hinter dem tiefsten Punkt ist
   (`LIANE_PERFEKT_WINKEL` ± 9° = PERFEKT, ± 22° = GUT; nur mit Schwung ≥ 5 px/Schritt und nach mind. 12 Schritten am Seil).
-  PERFEKT = 30 % schneller (darf dabei auch schneller als die normale Abflug-Grenze 15 fliegen) + Hub, GUT = 12 %. Hinweis: die
+  PERFEKT = 10 % schneller (darf dabei auch etwas schneller als die normale Abflug-Grenze 15 fliegen) + kleiner Hub, GUT = 4 %
+  (Nutzerwunsch 08.11.: vorher 30 % / 12 % „viel zu stark“). Hinweis: die
   Liane glimmt golden mit Lichtpunkten, die zur Hand laufen, am Griff ein Stern = jetzt (`LIANE_PERFEKT_HINWEIS`). Danach Goldspur
   hinter dem Affen; **sicher landen**: ohne Richtungstaste steht er sofort still (kein Rutschen), goldener Staubring + Glitzer-Ton.
   **Schweinchen – Flug-Balken**: Segeln leert einen Bogen über der Schirmkuppel in `SCHIRM_DAUER` 60 Schritten (1 Spielsekunde;

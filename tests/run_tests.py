@@ -8374,7 +8374,7 @@ async def perfekt_momente(g):
           return e; })()""")
         P, G = r['perfekt'], r['gut']
         assert P['note'] == 'perfekt' and P['flug'] == 'perfekt' and P['kette'] == 1, f'Perfekt-Absprung nicht erkannt: {r}'
-        assert P['v1'] > P['v0'] * 1.1 and P['v1'] > 16, f'Perfekt-Absprung muss deutlich schneller machen (auch über die normale Höchstgeschwindigkeit 15): {r}'
+        assert P['v1'] > P['v0'] * 1.05 and P['v1'] > 15.5, f'Perfekt-Absprung muss etwas schneller machen (auch über die normale Höchstgeschwindigkeit 15): {r}'
         assert P['glanz'] > 0.6, f'im Perfekt-Fenster muss die Liane glimmen: {r}'
         assert P['gelandet'] and P['stehtStill'] and P['ketteNachLanden'] == 0, f'nach Perfekt-Absprung sicher landen, Serie endet: {r}'
         assert 'perfekt' in r['logP'] and 'perfektlanden' in r['logP'], r['logP']

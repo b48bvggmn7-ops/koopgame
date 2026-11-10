@@ -23,9 +23,9 @@ const LIANE_PERFEKT_WINKEL = 30;     // Grad hinter dem tiefsten Punkt (in Schwu
 const LIANE_PERFEKT_BREITE = 9;      // ± Grad: perfekt (bei normalem Schwung ≈ 6 Schritte = 0,1 s)
 const LIANE_GUT_BREITE = 22;         // ± Grad: gut
 const LIANE_PERFEKT_MIN = 5;         // px/Schritt: darunter (kaum Schwung) gibt es keinen Perfekt-Absprung
-const LIANE_PERFEKT_FAKTOR = 1.3;    // so viel schneller fliegt er nach einem Perfekt-Absprung (gut: LIANE_GUT_FAKTOR)
-const LIANE_GUT_FAKTOR = 1.12;
-const LIANE_PERFEKT_HUB = -1.5;      // dazu ein Hub nach oben (gut: die Hälfte)
+const LIANE_PERFEKT_FAKTOR = 1.1;    // so viel schneller fliegt er nach einem Perfekt-Absprung (gut: LIANE_GUT_FAKTOR); 08.11.: vorher 1,3 – „viel zu stark“
+const LIANE_GUT_FAKTOR = 1.04;
+const LIANE_PERFEKT_HUB = -0.6;      // dazu ein Hub nach oben (gut: die Hälfte); vorher -1,5
 const LIANE_PERFEKT_HINWEIS = true;  // Liane glimmt golden, solange das Fenster offen ist (false = ohne Hilfe)
 const SCHIRM_DAUER = 60;             // Schritte Segeln (1 Spielsekunde), bis der Schirm-Balken leer ist
 const SCHIRM_LADEN = 40;             // Schritte am Boden von leer bis voll
