@@ -5,7 +5,8 @@
 
 const TILE = 40;
 const MIN_COLS = 60, ROWS = 18;
-// Himmel: so viele Reihen ÜBER Reihe 0 zeigt das Spiel durch den Zoom (Reihen −1 … −3); dort darf man ganz normal bauen
+// Himmel: so viele Reihen ÜBER Reihe 0 zeigt das Spiel durch den Zoom (Reihen −1 … −3; SKY_ROOM ≈ 128 px – bei Zoom 0,75
+// bleibt das dank der schwarzen Balken oben/unten gleich, js/09 BALKEN); dort darf man ganz normal bauen
 const SKY = 3;
 const EDGE_MARGIN = 15;   // so viele leere Spalten bleiben rechts immer frei
 let COLS = MIN_COLS;

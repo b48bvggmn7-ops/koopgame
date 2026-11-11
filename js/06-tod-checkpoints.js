@@ -96,7 +96,7 @@ let testMausKlicks = [], testMausFloesse = [];
 function testMausWelt(e){   // Bildschirm -> Welt (Zoom wie applyWorldZoom in 09-kamera.js)
   const r = cvs.getBoundingClientRect(); if(!r.width) return null;
   const sx = (e.clientX - r.left)/r.width*W, sy = (e.clientY - r.top)/r.height*H;
-  return {x: sx/zoom + camX, y: (sy - H*(1 - zoom))/zoom};
+  return {x: sx/zoom + camX, y: (sy - WELT_OY)/zoom};
 }
 function testMausZiel(p){   // nächstes klickbares Element in TEST_MAUS_RADIUS
   let best = null, bd = TEST_MAUS_RADIUS;

@@ -170,7 +170,7 @@ function fotoHgFelderListe(){
   return fotoHg.felder = L;
 }
 function fotoHgFelderZeichnen(t){
-  const E = FOTO_HG_FELDER, L = fotoHgFelderListe(), oy = H*(1 - zoom);
+  const E = FOTO_HG_FELDER, L = fotoHgFelderListe(), oy = WELT_OY;
   // Nebel liegt nur in der Luft: Boden/Wände (sichtbare, feste Teile) werden ausgespart (Ausschneide-Pfad, keine Zusatz-
   // Leinwand) – sonst lag ein grauer Fleck vor der Erde. Die Figuren laufen hindurch (Nebel wird vor ihnen gezeichnet).
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H);

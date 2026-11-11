@@ -156,7 +156,7 @@ function drawOffscreenArrows(){
   for(const pl of [p1, p2]){
     if(deathState && pl === deathState.victim) continue;
     const sx = (pl.x - camX) * zoom;
-    const sy = (pl.y - pl.h*0.5) * zoom + H*(1-zoom);
+    const sy = (pl.y - pl.h*0.5) * zoom + WELT_OY;
     let side = 0;
     if(sx < -6) side = -1; else if(sx > W + 6) side = 1;
     if(!side) continue;
@@ -196,7 +196,7 @@ function drawZielHinweise(){
     if(sx < -6) side = -1; else if(sx > W + 6) side = 1;
     if(!side) continue;
     zielHinweisPfeile++;
-    const sy = Math.max(70, Math.min(H - 60, h.y * zoom + H*(1-zoom)));
+    const sy = Math.max(70, Math.min(H - 60, h.y * zoom + WELT_OY));
     const x = side < 0 ? 34 : W - 34;
     const col = typeof linkColor === 'function' ? linkColor(h.link) : '#ffd23f';
     const bob = Math.sin(performance.now()*0.012) * 4 * side;

@@ -148,7 +148,8 @@
   über weite Strecken – sonst „teleportieren“ Figuren beim Springen unter Decken (Test `decke_kein_teleport`).
   Einseitige Stege (type 'oneway') zählen nur beim Landen von oben; Wandprüfung, Seil-Sicht, `spotFree` ignorieren sie.
 - Figurenhöhe 32,3 px (Kommazahl!) – bei Positionsberechnungen an Rundung denken.
-- Zoom 0,85 (15 % heraus, Nutzerwunsch; vorher 0,95, davor 0,9, früher kein Zoom) -> sichtbare Weltbreite `VW` statt `W` benutzen.
+- Zoom 0,75 mit schwarzen Balken oben/unten (`BALKEN` in 09; 11.11., vorher 0,85 ohne Balken, davor 0,95/0,9) -> sichtbare
+  Weltbreite `VW` statt `W` benutzen; Welt-y -> Bildschirm = `y*zoom + WELT_OY` (nie `H*(1-zoom)` von Hand rechnen).
   Kamera mit Totzone gegen Wackeln (`cameraTarget`), folgt der vorderen Figur, wenn beide nicht ins Bild passen.
   Über Reihe 0 ist ein Streifen Himmel sichtbar (`SKY_ROOM` ≈ 127 px), Decke = oberer Bildrand. Im Editor sind das
   die bebaubaren Reihen −1 … −3 (`SKY` in editor.js; Level-Daten dürfen negative Reihen/y haben) – bei Zoom-Änderung

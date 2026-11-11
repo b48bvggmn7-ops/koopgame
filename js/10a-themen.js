@@ -251,7 +251,7 @@ function drawThemeDarkness(){
   g.fillStyle = `rgba(${THEME.darkCol},${a})`; g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out';
   for(const [wx, wy, r] of themeLights()){
-    const sx = (wx - camX)*zoom, sy = wy*zoom + H*(1 - zoom), rr = r*zoom;
+    const sx = (wx - camX)*zoom, sy = wy*zoom + WELT_OY, rr = r*zoom;
     if(sx < -rr || sx > W + rr || sy < -rr || sy > H + rr) continue;
     const gr = g.createRadialGradient(sx, sy, 0, sx, sy, rr);
     gr.addColorStop(0, 'rgba(0,0,0,0.95)'); gr.addColorStop(0.5, 'rgba(0,0,0,0.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)');

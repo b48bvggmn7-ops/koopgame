@@ -191,6 +191,7 @@ function fallenZeichnen(){
   for(const a of fallenPfeile){
     const x = a.x - camX; if(x < -90 || x > VW + 90) continue;
     ctx.save(); ctx.translate(x, a.y); ctx.rotate(Math.atan2(a.dy, a.dx));
+    const pz = 0.9/zoom; ctx.scale(pz, pz);   // nur Bild: bei Zoom 0,75 (11.11.) etwas größer als früher bei 0,85 (Trefferfläche bleibt)
     if(a.steckt >= 0){
       // steckt: Einschlag-Riss im Stein, der Pfeil zittert kurz nach und verblasst
       const k = a.steckt/PFEIL_STECKT, zit = a.steckt < 10 ? Math.sin(a.steckt*2.2)*2.2*(1 - a.steckt/10) : 0;

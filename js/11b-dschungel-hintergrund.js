@@ -368,7 +368,7 @@ function djAufbauen(){
 function djHimmelTag(){   // (in Spiel-Bildpunkten wie BG_SKY: 1:1 kopieren ist ohne Grafikkarte viel billiger als vergrößern)
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const q = c.getContext('2d'), Y0 = DJ_BASE - H/zoom, VHH = H/zoom;
-  q.setTransform(zoom, 0, 0, zoom, 0, H*(1 - zoom));
+  q.setTransform(zoom, 0, 0, zoom, 0, WELT_OY);
   const gr = q.createLinearGradient(0, Y0, 0, DJ_BASE);
   gr.addColorStop(0, '#0b4a3a'); gr.addColorStop(0.45, '#2f8a62'); gr.addColorStop(1, '#17613a');
   q.fillStyle = gr; q.fillRect(0, Y0, VW, VHH);
@@ -407,7 +407,7 @@ function djBand(name, list, f, t, wind, nacht){
     djKachelZeichnen(djKachel(name, DJ_PER, () => list.map(b => ({s: b.s, x: b.x, y: b.y, rot: b.rot, b})), nacht), off);
     return;
   }
-  const S = RS*zoom, Y = RS*H*(1 - zoom);
+  const S = RS*zoom, Y = RS*WELT_OY;
   for(const b of list){
     const s = nacht ? djNachtSprite(b.s, b) : b.s, a = b.rot + (djWind(b.x, t)*b.amp + Math.sin(t*0.7 + b.ph)*0.006)*b.k;
     const x = ((b.x - off) % DJ_PER + DJ_PER) % DJ_PER;
@@ -450,11 +450,11 @@ function djKachel(name, per, teile, nacht, extra){
 }
 // Kachel mit Versatz off (Einheiten) zeichnen – auf ganze Spiel-Bildpunkte gerundet
 function djKachelZeichnen(K, off){
-  const k = zoom/K.sc, per = K.per*zoom, x0 = -Math.round((((off % K.per) + K.per) % K.per)*zoom), y = Math.round(K.y0*zoom + H*(1 - zoom));
+  const k = zoom/K.sc, per = K.per*zoom, x0 = -Math.round((((off % K.per) + K.per) % K.per)*zoom), y = Math.round(K.y0*zoom + WELT_OY);
   ctx.setTransform(RS, 0, 0, RS, 0, 0);
   for(let x = x0; x < W; x += per) ctx.drawImage(K.c, x, y, K.c.width*k, K.c.height*k);
 }
-function djEinheiten(){ ctx.setTransform(RS*zoom, 0, 0, RS*zoom, 0, RS*H*(1 - zoom)); }
+function djEinheiten(){ ctx.setTransform(RS*zoom, 0, 0, RS*zoom, 0, RS*WELT_OY); }
 // kleines Bild in Spiel-Bildpunkten vorzeichnen: Bereich (x0, y0, w, h) in Einheiten; zeichnen(q) in Einheiten
 function djVorBild(x0, y0, w, h, zeichnen){
   const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w*zoom)); c.height = Math.max(1, Math.ceil(h*zoom));
@@ -464,7 +464,7 @@ function djVorBild(x0, y0, w, h, zeichnen){
 // vorgezeichnetes Bild an (ux, uy) Einheiten setzen – auf ganze Spiel-Bildpunkte gerundet (1:1, ohne Grafikkarte billig)
 function djBildSetzen(B, ux, uy){
   ctx.setTransform(RS, 0, 0, RS, 0, 0);
-  ctx.drawImage(B.c, Math.round((ux + B.x0)*zoom), Math.round((uy + B.y0)*zoom + H*(1 - zoom)));
+  ctx.drawImage(B.c, Math.round((ux + B.x0)*zoom), Math.round((uy + B.y0)*zoom + WELT_OY));
 }
 // Baumstämme (Vorschau: trunks, Periode 2600, zweiter Stamm gespiegelt) – still
 function djStaemme(nacht){

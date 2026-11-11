@@ -554,7 +554,8 @@ async def himmel_ohne_unsichtbare_decke(g):
     await g.load(level([ground(0, 680, 3000), ground(200, 120, 160, 40), ground(600, -120, 40, 520, 'wall')],
                        {'x': 280, 'y': 120}, {'x': 100, 'y': 680}))
     sky = await g.ev("SKY_ROOM")
-    assert abs(sky - (720/0.85 - 720)) < 0.5, f'Himmelsstreifen falsch: {sky}'
+    # 11.11.: Zoom 0,75 mit schwarzen Balken (BALKEN oben/unten) – der Himmel bleibt so hoch wie vorher bei Zoom 0,85 (≈ 127 px)
+    assert abs(sky - ((720 - 2*await g.ev("BALKEN"))/0.75 - 720)) < 0.5 and abs(sky - (720/0.85 - 720)) < 2, f'Himmelsstreifen falsch: {sky}'
     wand = await g.ev("(() => { const w = solids.find(s => s.type === 'wall'); return [w.y, w.h]; })()")
     assert wand == [-120, 520], f'Wand im Himmel verändert: {wand}'
     await g.ev("p1.x = 280; p1.y = 120; p1.vx = p1.vy = 0; deathState = null; window.__minTop = 1e9")
@@ -6580,9 +6581,9 @@ async def editor_neue_werkzeuge(g):
 @test
 async def kamera_ruhig_bei_zwei(g):
     """Kamera wackelt nicht: kleine Hin-und-her-Bewegungen der hinteren Figur bewegen das Bild nicht,
-    gemeinsames Vorwärtslaufen schon; Bild ist 15 % herausgezoomt (0,85)."""
-    assert abs(await g.ev('zoom') - 0.85) < 1e-9, 'Zoom ist nicht 0,85'
-    assert abs(await g.ev('VW') - 1280/0.85) < 1, 'sichtbare Weltbreite passt nicht zum Zoom'
+    gemeinsames Vorwärtslaufen schon; Bild ist 25 % herausgezoomt (0,75; 11.11., vorher 0,85)."""
+    assert abs(await g.ev('zoom') - 0.75) < 1e-9, 'Zoom ist nicht 0,75'
+    assert abs(await g.ev('VW') - 1280/0.75) < 1, 'sichtbare Weltbreite passt nicht zum Zoom'
     await g.load(level([ground(0, 680, 6000)], {'x': 600, 'y': 680}, {'x': 700, 'y': 680}))
     await g.p.wait_for_timeout(1500)
     await g.hold(('KeyA',), 700); await g.p.wait_for_timeout(1200)   # Affe ganz hinten im ruhigen Bereich
@@ -6603,7 +6604,6 @@ async def kamera_ruhig_bei_zwei(g):
     back = await g.ev('Math.min(p1.x,p2.x) - camPos')
     front = await g.ev('Math.max(p1.x,p2.x) - camPos')
     assert back > 100 and front < await g.ev('VW') - 100, f'Figuren nicht gut im Bild: {back:.0f} / {front:.0f}'
-
 @test
 async def spieltempo_langsamer(g):
     """Spiel läuft 10 % langsamer (GAME_SPEED 0,9): in 1 s laufen ~10 % weniger Weg, Sprünge gleich weit."""
@@ -8354,23 +8354,12 @@ async def perfekt_momente(g):
               let k = 0; while(!p1.grounded && k++ < 300) st(); o.gelandet = p1.grounded; o.stehtStill = p1.vx === 0; o.ketteNachLanden = p1._kette;
               return o; };
             SFX_LOG.length = 0; e.perfekt = lauf('perfekt'); e.logP = SFX_LOG.slice(); SFX_LOG.length = 0; e.gut = lauf('gut'); e.logG = SFX_LOG.slice();
-            // Schweinchen: vom Felsen segeln, Schirm zuklappen (Fang-Fenster), im goldenen Moment wieder aufspannen
-            const fall = ziel => { resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
-              KEYS[p2.keys.right] = true; let i = 0; while(p2.grounded && i++ < 40) st(); KEYS[p2.keys.right] = false;
-              druck(p2, 'glide'); n(10); const yZu = p2.y; KEYS[p2.keys.glide] = false; st();
-              const o = {fang: !!p2._fang}; i = 0;
-              while(p2._fang && i++ < 60){ const q = schirmFangStand(p2), nt = schirmFangNote(q);
-                if(ziel === 'frueh' ? q > 0.25 : nt === ziel) break; st(); }
-              const k0 = p2.schirmKraft; SFX_LOG.length = 0; druck(p2, 'glide'); st(); o.kosten = k0 - p2.schirmKraft; o.vor = Math.abs(p2.vx);
-              const y0 = p2.y; let minY = Infinity; for(let k = 0; k < 20; k++){ st(); minY = Math.min(minY, p2.y); } o.log = SFX_LOG.slice();
-              for(let k = 0; k < 30; k++){ st(); minY = Math.min(minY, p2.y); }
-              o.segeltDanach = p2.gliding && !p2.grounded;   // Taste weiter gehalten: nach dem Boost kein Segeln bis zur Landung
-              KEYS[p2.keys.glide] = false; st(); o.fangNochmal = !!p2._fang;
-              o.steig = y0 - minY; o.unterZu = minY > yZu; KEYS[p2.keys.glide] = false; n(60); return o; };
-            p2._pirouetteT = 0; const fp = fall('perfekt'); e.logS = fp.log; e.pirouette = p2._pirouetteT > 0;
-            const fg = fall('gut'), ff = fall('frueh');
-            e.fangStart = fp.fang; e.steigPerfekt = fp.steig; e.unterZu = fp.unterZu; e.kosten = fp.kosten; e.steigGut = fg.steig; e.steigFrueh = ff.steig;
-            e.vor = fp.vor; e.segeltDanach = fp.segeltDanach; e.fangNochmal = fp.fangNochmal;
+            // Schweinchen: Perfekt-Aufspannen ist aus (11.11.) – Zuklappen beim Segeln startet kein Fang-Fenster, wieder
+            // aufspannen gibt keinen Schwung
+            resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
+            KEYS[p2.keys.right] = true; let f0 = 0; while(p2.grounded && f0++ < 40) st(); KEYS[p2.keys.right] = false;
+            druck(p2, 'glide'); n(10); KEYS[p2.keys.glide] = false; st(); e.fangStart = !!p2._fang;
+            n(20); druck(p2, 'glide'); st(); e.schubOhneFang = p2.vy < 0;
             // Flug-Balken: vom Felsen segeln, bis er leer ist
             resetLevel(); stell(p1, 300, 680); stell(p2, 1220, 280); n(5);
             KEYS[p2.keys.right] = true; let q = 0; while(p2.grounded && q++ < 40) st(); druck(p2, 'glide');
@@ -8385,22 +8374,13 @@ async def perfekt_momente(g):
           return e; })()""")
         P, G = r['perfekt'], r['gut']
         assert P['note'] == 'perfekt' and P['flug'] == 'perfekt' and P['kette'] == 1, f'Perfekt-Absprung nicht erkannt: {r}'
-        assert P['v1'] > P['v0'] * 1.05 and P['v1'] > 15.5, f'Perfekt-Absprung muss etwas schneller machen (auch über die normale Höchstgeschwindigkeit 15): {r}'
+        assert P['v1'] > P['v0'], f'Perfekt-Absprung muss etwas Schub geben: {r}'
+        assert await g.ev("LIANE_PERFEKT_FAKTOR === LIANE_GUT_FAKTOR"), 'Perfekt darf nicht stärker sein als gut (11.11.)'
         assert P['glanz'] > 0.6, f'im Perfekt-Fenster muss die Liane glimmen: {r}'
         assert P['gelandet'] and P['stehtStill'] and P['ketteNachLanden'] == 0, f'nach Perfekt-Absprung sicher landen, Serie endet: {r}'
         assert 'perfekt' in r['logP'] and 'perfektlanden' in r['logP'], r['logP']
         assert G['note'] == 'gut' and G['flug'] == 'gut' and G['kette'] == 0 and 'perfektgut' in r['logG'], f'„gut“ falsch: {r}'
-        assert G['v1'] < P['v1'] or G['v1'] < G['v0'] * 1.25, f'„gut“ muss weniger Schub geben: {r}'
-        assert r['fangStart'], f'Schirm-Taste beim Segeln losgelassen: Fang-Fenster muss starten: {r}'
-        assert 90 < r['steigPerfekt'] < 135, f'Perfekt-Aufspannen (11.11.): so hoch wie ein normaler Sprung (3 Reihen): {r}'
-        assert r['vor'] >= 6, f'Perfekt-Aufspannen: eher ein Sprung nach vorn: {r}'
-        assert not r['segeltDanach'] and not r['fangNochmal'], f'nach dem Boost bis zur Landung kein Segeln und kein zweiter Boost: {r}'
-        assert r['unterZu'], f'Boost bringt nie höher als beim Zuklappen: {r}'
-        assert r['kosten'] > 0.14, f'Boost kostet ein Stück Balken: {r}'
-        assert 'perfekt' in r['logS'] and 'jump' not in r['logS'] and 'umbrella' not in r['logS'], f'Perfekt-Aufspannen: Bing statt Sprung-/Schirm-Ton: {r["logS"]}'
-        assert r['pirouette'], f'Perfekt-Aufspannen: Pirouette fehlt: {r}'
-        assert 3 < r['steigGut'] < r['steigPerfekt'], f'„gut“ aufgespannt: weniger hoch: {r}'
-        assert r['steigFrueh'] < 5, f'zu früh aufgespannt: kein Schwung: {r}'
+        assert not r['fangStart'] and not r['schubOhneFang'], f'Perfekt-Aufspannen des Schweinchens ist aus (11.11.): {r}'
         assert 55 <= r['leerNach'] <= 95, f'Balken muss nach etwa SCHIRM_DAUER Schritten Segeln leer sein: {r}'
         assert not r['segeltLeer'], f'leer: Schirm muss zu sein: {r}'
         assert r['geladen'] == 1, f'am Boden lädt der Balken wieder voll: {r}'
@@ -12137,7 +12117,7 @@ PIXEL_VERGLEICH_JS = """async ([A, B, C]) => {
 async def pfeil_messen(g, x, y, dx, dy):
     """Pfeil an (x, y) zeichnen lassen (Spiel steht, Zeit eingefroren) und gegen den Hintergrund dahinter messen"""
     import base64
-    sx, sy = await g.ev(f"[Math.round(({x} - camX)*zoom), Math.round(({y} + SKY_ROOM)*zoom)]")
+    sx, sy = await g.ev(f"[Math.round(({x} - camX)*zoom), Math.round({y}*zoom + WELT_OY)]")   # Welt -> Bildschirm (09: WELT_OY, Balken)
     clip = {'x': max(0, sx - 70), 'y': max(0, sy - 70), 'width': 140, 'height': 140}
     async def foto():
         await g.p.wait_for_timeout(60); return base64.b64encode(await g.p.screenshot(clip=clip)).decode()

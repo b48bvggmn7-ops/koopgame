@@ -1265,6 +1265,7 @@ function drawSolidLook(s, look, x){
   for(const E of ELEMENTE) if(E.spiel && E.spiel.zeichnenOben) E.spiel.zeichnenOben();   // Bildschirm-Anzeigen, z. B. Boss-Lebensbalken (elemente/)
   if(typeof partnerZeichnen === 'function') partnerZeichnen();   // Computer-Partner: Symbol über seiner Figur (30-partner.js, nur Testmodus)
   weatherFront();   // Regen, Spritzer, warmer Schimmer, Vignette (19-wetter.js)
+  balkenZeichnen();   // schwarze Balken oben und unten (09-kamera.js, BALKEN)
   drawOffscreenArrows();
   drawZielHinweise();   // kurzer Pfeil am Bildrand zum Ziel eines eben geschalteten Hebels (07-effekte-ton-muenzen.js)
   drawContinuePrompt();

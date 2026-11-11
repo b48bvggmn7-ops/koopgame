@@ -26,9 +26,11 @@ const LIANE_PERFEKT_WINKEL = 30;     // Grad hinter dem tiefsten Punkt (in Schwu
 const LIANE_PERFEKT_BREITE = 9;      // ± Grad: perfekt (bei normalem Schwung ≈ 6 Schritte = 0,1 s)
 const LIANE_GUT_BREITE = 22;         // ± Grad: gut
 const LIANE_PERFEKT_MIN = 5;         // px/Schritt: darunter (kaum Schwung) gibt es keinen Perfekt-Absprung
-const LIANE_PERFEKT_FAKTOR = 1.1;    // so viel schneller fliegt er nach einem Perfekt-Absprung (gut: LIANE_GUT_FAKTOR); 08.11.: vorher 1,3 – „viel zu stark“
-const LIANE_GUT_FAKTOR = 1.04;
-const LIANE_PERFEKT_HUB = -0.6;      // dazu ein Hub nach oben (gut: die Hälfte); vorher -1,5
+// Nutzerwunsch 11.11.: „perfekt sollte nicht stärker sein als gut“ – beide geben denselben kleinen Schub, PERFEKT ist nur
+// schöner (Schrift, Trefferstopp, Goldspur, sicheres Landen, Serie). Vorher 1,3 -> 1,1 (perfekt) / 1,04 (gut).
+const LIANE_PERFEKT_FAKTOR = 1.04;   // so viel schneller fliegt er nach einem Perfekt-Absprung
+const LIANE_GUT_FAKTOR = 1.04;       // … nach „gut“ (gleich)
+const LIANE_PERFEKT_HUB = -0.3;      // dazu ein kleiner Hub nach oben (beide gleich)
 const LIANE_PERFEKT_HINWEIS = true;  // Liane glimmt golden, solange das Fenster offen ist (false = ohne Hilfe)
 const SCHIRM_DAUER = 60;             // Schritte Segeln (1 Spielsekunde), bis der Schirm-Balken leer ist
 // Abklingzeit wie beim Pusten (Nutzerwunsch 11.11.: „nach einem Flug nicht direkt wieder fliegen“; vorher 40 / 5 / 0,2)
@@ -36,7 +38,10 @@ const SCHIRM_LADEN = 150;            // Schritte am Boden von leer bis voll (2,5
 const SCHIRM_LADE_PAUSE = 24;        // so lange nach dem Landen, bevor er lädt (wie PUSTE_PAUSE)
 const SCHIRM_NEUSTART = 0.3;         // leer geflogen: ab so viel Ladung geht der Schirm wieder auf (wie PUSTE_NEUSTART)
 const SCHIRM_KNAPP = 0.3;            // darunter flattert der Schirm (Warnung)
-const SCHIRM_FANG_DAUER = 32;        // Schritte (gut ½ s): so lange läuft der Lichtpunkt einmal über den Bogen
+// Perfekt-Aufspannen (Fang-Fenster) ist AUS (Nutzerwunsch 11.11.: „das mit dem Schwein muss raus, zu krass – dann lieber
+// irgendwo durchfliegen, um einen Boost zu bekommen“). true = wieder an (Zuklappen beim Segeln startet den Lichtpunkt).
+const SCHIRM_FANG_AN = false;
+const SCHIRM_FANG_DAUER = 32;       // Schritte (gut ½ s): so lange läuft der Lichtpunkt einmal über den Bogen
 const SCHIRM_FANG_GOLD = [0.62, 0.76];   // goldener Bereich auf dem Bogen (Anteil der Laufzeit) = PERFEKT
 const SCHIRM_FANG_GUT = 0.09;        // so viel davor/danach = GUT
 // Gezähmt (Nutzerwunsch 11.11.: „man schafft alles ohne die Puste-Hilfe vom Affen“): nur EINMAL pro Flug, wenig Höhe, eher ein
@@ -74,7 +79,7 @@ function lianePerfektBewerten(P){
 function lianePerfektAnwenden(P, note){
   if(!note) return;
   const f = note === 'perfekt' ? LIANE_PERFEKT_FAKTOR : LIANE_GUT_FAKTOR;
-  P.vx *= f; P.vy = P.vy*f + LIANE_PERFEKT_HUB*(note === 'perfekt' ? 1 : 0.5);
+  P.vx *= f; P.vy = P.vy*f + LIANE_PERFEKT_HUB;
   P._perfektFlug = note; P._perfektSpur = note === 'perfekt' ? PERFEKT_SPUR : 0;
   perfektBelohnen(P, note, P.x, P.y - P.h*0.6, 'liane');
 }
@@ -112,7 +117,7 @@ function schirmVorher(P, moveDir){
   const frei = P.grounded || P.inWater || P.haft || P.trampolin || P.dash;
   if(P.grounded || P.inWater || P.haft){ P._fangGenutzt = false; P._schirmZuBisLanden = false; }   // gelandet: wieder frei
   // Zuklappen beim Segeln: das Fang-Fenster startet (Lichtpunkt läuft los) – nur einmal pro Flug
-  if(los && P.gliding && !P._schirmSchub && !frei && !P.schirmLeer && !P._fangGenutzt) P._fang = {t: 0, y0: P.y};
+  if(SCHIRM_FANG_AN && los && P.gliding && !P._schirmSchub && !frei && !P.schirmLeer && !P._fangGenutzt) P._fang = {t: 0, y0: P.y};
   if(P._fang){
     if(frei || P.schirmLeer){ P._fang = null; }
     else if(neu){ const note = schirmFangNote(schirmFangStand(P)); if(note) schirmFangBoost(P, note, moveDir); else P._fang = null; }

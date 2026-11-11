@@ -109,7 +109,7 @@ function partnerVorSchritt(){
 function partnerZeichnen(){
   if(!partnerAktiv() || !p1 || !p2) return;
   const P = partnerFigur();
-  const sx = (P.x - camX) * zoom, sy = (P.y - P.h - 14) * zoom + H*(1 - zoom) + CEILING_MARGIN;
+  const sx = (P.x - camX) * zoom, sy = (P.y - P.h - 14) * zoom + WELT_OY + CEILING_MARGIN;
   const fest = partner.modus === 'fest', warten = partner.modus === 'warten', aufgabe = partner.modus === 'aufgabe';
   const txt = (fest ? '⚠ ' : warten ? '✋ ' : aufgabe ? '🔧 ' : '🤖 ') + (partner.text || 'Partner');
   ctx.save();

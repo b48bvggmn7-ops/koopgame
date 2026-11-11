@@ -57,7 +57,7 @@ const imDunkel = (x, y) => dunkelZonen.some(z => x >= z.x && x < z.x + z.w && y 
 let dunkelCanvas = null;
 function dunkelZeichnen(){
   if(!dunkelZonen.length) return;
-  const sx = wx => (wx - camX)*zoom, sy = wy => wy*zoom + H*(1 - zoom);
+  const sx = wx => (wx - camX)*zoom, sy = wy => wy*zoom + WELT_OY;
   const sicht = dunkelZonen.filter(z => sx(z.x + z.w) > -80 && sx(z.x) < W + 80);
   if(!sicht.length) return;
   const k = typeof DUNKEL_AUFLOESUNG === 'number' ? DUNKEL_AUFLOESUNG : 1;   // halbe Auflösung wie die Nacht (10a)

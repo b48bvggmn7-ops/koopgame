@@ -210,8 +210,14 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
   - ZOOM 15 % heraus (zoom 0,85; Nutzerwunsch: erst 10 % = 0,9, dann „5 % weniger“ = 0,95, dann „noch mal 10 % raus“;
     früher „kein Zoom“): Bild bleibt 16:9, Boden unten bündig, oben ein Streifen Hintergrund/Himmel; sichtbare
     Weltbreite VW = 1280/0,85 ≈ 1506 px (≈ 37,6 Kästchen).
+    **11.11. (Nutzerwunsch „mehr sehen nach links und rechts“): Zoom 0,75 mit schwarzen Balken oben und unten** (je
+    `BALKEN` 42 Bildpunkte, Kino-Look, js/09): sichtbare Weltbreite 1280/0,75 ≈ 1707 px (≈ 42,7 Kästchen, 5 mehr);
+    die Welt endet über dem unteren Balken, oben bleibt genauso viel Himmel wie vorher (SKY_ROOM ≈ 128 px) – Decke,
+    Sprünge und die Editor-Himmelreihen bleiben gleich. Figuren/Elemente wirken etwa 12 % kleiner; das Foto im
+    Hintergrund füllt weiter den ganzen Bildschirm (die Balken liegen darüber). Fallen-Pfeile werden etwas größer
+    gezeichnet (Lesbarkeit, Trefferfläche unverändert).
   - Himmel über dem Level (Nutzerwunsch „keine durchsichtige Decke“): durch den Zoom sind über Reihe 0 gut 3 Kästchen
-    Himmel sichtbar (SKY_ROOM = 720/0,85 − 720 ≈ 127 px). Dort kann man hineinspringen; die Decke ist der obere
+    Himmel sichtbar (SKY_ROOM = 720/0,85 − 720 ≈ 127 px; seit 11.11. (720 − 2·BALKEN)/0,75 − 720 ≈ 128 px). Dort kann man hineinspringen; die Decke ist der obere
     Bildrand (früher: unsichtbare Decke genau bei Reihe 0). Im Editor sind das die 3 Himmel-Reihen −1 … −3 über
     Reihe 0 – dort kann man ganz normal bauen (Nutzerwunsch), deshalb ohne besondere Kennzeichnung; im Spiel steht
     alles an derselben Stelle. In Level 1–6 wurden Wände/Böden/Türen/Scheinwände und waagerecht fahrende Wände, die
@@ -2520,8 +2526,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
 - **Perfekte Momente** (Nutzerwunsch 08.11., js/35-perfekt.js; in allen Welten): beide Figuren bekommen eine Timing-Fähigkeit.
   **Affe – Perfekt-Absprung**: Liane im Aufschwung loslassen, wenn sie ~30° hinter dem tiefsten Punkt ist
   (`LIANE_PERFEKT_WINKEL` ± 9° = PERFEKT, ± 22° = GUT; nur mit Schwung ≥ 5 px/Schritt und nach mind. 12 Schritten am Seil).
-  PERFEKT = 10 % schneller (darf dabei auch etwas schneller als die normale Abflug-Grenze 15 fliegen) + kleiner Hub, GUT = 4 %
-  (Nutzerwunsch 08.11.: vorher 30 % / 12 % „viel zu stark“). Hinweis: die
+  PERFEKT und GUT geben denselben kleinen Schub: 4 % schneller + kleiner Hub (Nutzerwunsch 11.11.: „perfekt sollte nicht stärker
+  sein als gut“; vorher 30 % / 12 %, dann 10 % / 4 %) – PERFEKT ist nur schöner (Schrift, Trefferstopp, Goldspur, sicheres
+  Landen, Serie). Hinweis: die
   Liane glimmt golden mit Lichtpunkten, die zur Hand laufen, am Griff ein Stern = jetzt (`LIANE_PERFEKT_HINWEIS`). Danach Goldspur
   hinter dem Affen; **sicher landen**: ohne Richtungstaste steht er sofort still (kein Rutschen), goldener Staubring + Glitzer-Ton.
   **Schweinchen – Flug-Balken**: Segeln leert einen Bogen über der Schirmkuppel in `SCHIRM_DAUER` 60 Schritten (1 Spielsekunde;
@@ -2529,7 +2536,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Schirmkante flattert (+ Flatter-Ton). Leer -> Schirm klappt zu (Stoff-Ton), er geht erst wieder auf, wenn der Balken 30 % hat:
   am Boden lädt er nach einer kurzen Pause (24 Schritte) in 150 Schritten voll – Abklingzeit wie beim Pusten (Nutzerwunsch 11.11.;
   vorher 5 + 40 Schritte, 20 %) (kleiner Bogen über dem Kopf, verschwindet mit einem Lichtring, wenn voll).
-  **Schweinchen – Perfekt-Aufspannen** (Nutzerwunsch 10.11. „Zone im Balken“, ersetzt das frühere „kurz vor dem Boden“): beim
+  **Schweinchen – Perfekt-Aufspannen: AUSGESCHALTET** (Nutzerwunsch 11.11.: „muss raus, zu krass – dann lieber irgendwo
+  durchfliegen, um einen Boost zu bekommen“; Schalter `SCHIRM_FANG_AN` = false in js/35). Beschreibung des ausgeschalteten Stands
+  (Nutzerwunsch 10.11. „Zone im Balken“, ersetzt das frühere „kurz vor dem Boden“): beim
   Segeln die Schirm-Taste loslassen -> über dem Kopf erscheint ein großer Bogen (der Flug-Balken, gedämpft) mit einem goldenen
   Stück (dunkel umrandet, silberne Ränder = GUT); ein heller Lichtpunkt mit Schweif läuft in `SCHIRM_FANG_DAUER` 32 Schritten
   einmal darüber, im Gold leuchtet das Gold auf. Wieder aufspannen, während der Punkt im Gold ist (62–76 % = PERFEKT, ±9 % = GUT):

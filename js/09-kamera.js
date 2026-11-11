@@ -10,10 +10,18 @@ const CAM_LEFT = 300, CAM_RIGHT = 70;
 // oben wird ein Streifen Himmel/Hintergrund sichtbar.
 // Passen beide nicht ins Bild, folgt die Kamera der vorderen Figur; die hintere erscheint als Pfeil am Rand.
 const FRONT_MAX = 0.75;   // vordere Figur steht höchstens bei 75 % der Bildbreite -> immer Blick nach vorn
-const zoom = 0.85;
-// so viel Welt (px) ist über Reihe 0 sichtbar (Himmels-Streifen ≈ 127 px): dort darf man hinspringen und im Editor
-// bauen (Himmel-Reihen −1 … −3, editor.js SKY); die Decke ist der obere Bildrand
-const SKY_ROOM = H / zoom - H;
+// 11.11. (Nutzerwunsch „ich will mehr sehen nach links und rechts, mit Lianen und Fliegen kommt man sehr weit“): 0,75
+// statt 0,85 -> 42,7 statt 37,6 Kästchen breit, 6 Reihen Himmel statt 3
+const zoom = 0.75;
+// Schwarze Balken oben und unten (Nutzerwunsch 11.11., Kino-Look): je BALKEN Bildschirm-px. Die Welt wird um BALKEN nach
+// oben geschoben (Boden endet über dem unteren Balken); so hoch, dass oben genauso viel Himmel sichtbar bleibt wie bei
+// Zoom 0,85 ohne Balken (≈ 128 px) -> Decke, Sprünge und Editor-Himmelreihen bleiben gleich, nur links/rechts sieht man mehr
+const BALKEN = 42;
+const WELT_OY = H*(1 - zoom) - BALKEN;   // Bildschirm-y der Welt-Oberkante y=0 minus Himmel: Welt-y -> Bildschirm = y*zoom + WELT_OY
+// so viel Welt (px) ist über Reihe 0 sichtbar (Himmels-Streifen ≈ 128 px, zwischen den Balken): dort darf man hinspringen
+// und im Editor bauen (Himmel-Reihen −1 … −3, editor/js/01-zustand.js SKY); die Decke ist die Unterkante des oberen Balkens
+const SKY_ROOM = (H - 2*BALKEN) / zoom - H;
+function balkenZeichnen(){ ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, BALKEN); ctx.fillRect(0, H - BALKEN, W, BALKEN); ctx.restore(); }
 const VW = W / zoom;   // sichtbare Weltbreite   // (CAM_LEFT war 150 -> zu eng)   // Kamera: Abstand hintere Figur zum linken / vordere zum rechten Rand
 // Ruhige Kamera (gegen Wackeln bei zwei Spielern): Totzone für die hintere Figur. Solange sie zwischen
 // CAM_BACK_MIN und CAM_BACK_PUSH px vom linken Rand steht, bleibt das Bild stehen (Zappeln, Springen,
@@ -46,7 +54,7 @@ function cameraTarget(cur){
   return Math.max(0, Math.min(LEVEL_W - VW, t));
 }
 // Weltkoordinaten auf den Bildschirm (für Dinge, die außerhalb von draw() in Welt-Koordinaten zeichnen)
-function applyWorldZoom(){ if(zoom !== 1){ ctx.translate(0, H*(1-zoom)); ctx.scale(zoom, zoom); } }
+function applyWorldZoom(){ if(zoom !== 1 || BALKEN){ ctx.translate(0, WELT_OY); ctx.scale(zoom, zoom); } }
 function keepTogether(){
   const sep = p2.x - p1.x;
   if(Math.abs(sep) <= MAX_SEPARATION) return;
