@@ -2526,8 +2526,9 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   hinter dem Affen; **sicher landen**: ohne Richtungstaste steht er sofort still (kein Rutschen), goldener Staubring + Glitzer-Ton.
   **Schweinchen – Flug-Balken**: Segeln leert einen Bogen über der Schirmkuppel in `SCHIRM_DAUER` 60 Schritten (1 Spielsekunde;
   im Aufwind kein Verbrauch); dabei lösen sich Pusteblumen-Samen vom Schirm. Unter 30 % wird der Bogen orange-rot, pulsiert und die
-  Schirmkante flattert (+ Flatter-Ton). Leer -> Schirm klappt zu (Stoff-Ton), er geht erst wieder auf, wenn der Balken 20 % hat:
-  am Boden lädt er in 40 Schritten voll (kleiner Bogen über dem Kopf, verschwindet mit einem Lichtring, wenn voll).
+  Schirmkante flattert (+ Flatter-Ton). Leer -> Schirm klappt zu (Stoff-Ton), er geht erst wieder auf, wenn der Balken 30 % hat:
+  am Boden lädt er nach einer kurzen Pause (24 Schritte) in 150 Schritten voll – Abklingzeit wie beim Pusten (Nutzerwunsch 11.11.;
+  vorher 5 + 40 Schritte, 20 %) (kleiner Bogen über dem Kopf, verschwindet mit einem Lichtring, wenn voll).
   **Schweinchen – Perfekt-Aufspannen** (Nutzerwunsch 10.11. „Zone im Balken“, ersetzt das frühere „kurz vor dem Boden“): beim
   Segeln die Schirm-Taste loslassen -> über dem Kopf erscheint ein großer Bogen (der Flug-Balken, gedämpft) mit einem goldenen
   Stück (dunkel umrandet, silberne Ränder = GUT); ein heller Lichtpunkt mit Schweif läuft in `SCHIRM_FANG_DAUER` 32 Schritten

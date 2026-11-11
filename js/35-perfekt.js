@@ -31,9 +31,10 @@ const LIANE_GUT_FAKTOR = 1.04;
 const LIANE_PERFEKT_HUB = -0.6;      // dazu ein Hub nach oben (gut: die Hälfte); vorher -1,5
 const LIANE_PERFEKT_HINWEIS = true;  // Liane glimmt golden, solange das Fenster offen ist (false = ohne Hilfe)
 const SCHIRM_DAUER = 60;             // Schritte Segeln (1 Spielsekunde), bis der Schirm-Balken leer ist
-const SCHIRM_LADEN = 40;             // Schritte am Boden von leer bis voll
-const SCHIRM_LADE_PAUSE = 5;         // so lange nach dem Landen, bevor er lädt
-const SCHIRM_NEUSTART = 0.2;         // leer geflogen: ab so viel Ladung geht der Schirm wieder auf
+// Abklingzeit wie beim Pusten (Nutzerwunsch 11.11.: „nach einem Flug nicht direkt wieder fliegen“; vorher 40 / 5 / 0,2)
+const SCHIRM_LADEN = 150;            // Schritte am Boden von leer bis voll (2,5 Spielsekunden; Pusten: 190)
+const SCHIRM_LADE_PAUSE = 24;        // so lange nach dem Landen, bevor er lädt (wie PUSTE_PAUSE)
+const SCHIRM_NEUSTART = 0.3;         // leer geflogen: ab so viel Ladung geht der Schirm wieder auf (wie PUSTE_NEUSTART)
 const SCHIRM_KNAPP = 0.3;            // darunter flattert der Schirm (Warnung)
 const SCHIRM_FANG_DAUER = 32;        // Schritte (gut ½ s): so lange läuft der Lichtpunkt einmal über den Bogen
 const SCHIRM_FANG_GOLD = [0.62, 0.76];   // goldener Bereich auf dem Bogen (Anteil der Laufzeit) = PERFEKT
