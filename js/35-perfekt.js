@@ -38,7 +38,10 @@ const SCHIRM_KNAPP = 0.3;            // darunter flattert der Schirm (Warnung)
 const SCHIRM_FANG_DAUER = 32;        // Schritte (gut ½ s): so lange läuft der Lichtpunkt einmal über den Bogen
 const SCHIRM_FANG_GOLD = [0.62, 0.76];   // goldener Bereich auf dem Bogen (Anteil der Laufzeit) = PERFEKT
 const SCHIRM_FANG_GUT = 0.09;        // so viel davor/danach = GUT
-const SCHIRM_FANG_ANTEIL = 0.9;      // Steighöhe = so viel der Fallhöhe seit dem Zuklappen (GUT: SCHIRM_GUT_ANTEIL davon)
+// Gezähmt (Nutzerwunsch 11.11.: „man schafft alles ohne die Puste-Hilfe vom Affen“): nur EINMAL pro Flug, wenig Höhe, eher ein
+// Sprung nach vorn, danach bleibt der Schirm bis zur Landung zu – nur um irgendwo drauf zu kommen
+const SCHIRM_FANG_ANTEIL = 0.25;     // Steighöhe = so viel der Fallhöhe seit dem Zuklappen (GUT: SCHIRM_GUT_ANTEIL davon); vorher 0,9
+const SCHIRM_FANG_VOR = 6.5;         // px/Schritt: Schwung nach vorn (Richtungstaste, sonst Flugrichtung/Blickrichtung)
 const SCHIRM_GUT_ANTEIL = 0.6;
 const SCHIRM_SCHUB_MAX = 300;        // px: höchstens so hoch (7,5 Reihen)
 const SCHIRM_FANG_KOSTEN = 0.15;     // so viel vom Balken kostet ein Boost
@@ -83,13 +86,16 @@ function schirmFangNote(q){
   if(q >= a - SCHIRM_FANG_GUT && q <= b + SCHIRM_FANG_GUT) return 'gut';
   return null;
 }
-function schirmFangBoost(P, note){
+function schirmFangBoost(P, note, moveDir){
   const fall = Math.max(0, P.y - P._fang.y0);   // so tief ist sie seit dem Zuklappen gefallen
   let hoehe = Math.min(SCHIRM_SCHUB_MAX, fall*SCHIRM_FANG_ANTEIL);
   if(note === 'gut') hoehe *= SCHIRM_GUT_ANTEIL;
   P._fang = null;
-  if(hoehe < 4) return;
-  P.vy = -Math.sqrt(2*GRAVITY*hoehe);
+  P._fangGenutzt = true;                 // nur einmal pro Flug
+  P._schirmZuBisLanden = true;           // danach kein Segeln mehr bis zur Landung (08)
+  const dir = moveDir || Math.sign(P.vx) || P.facing || 1;
+  P.vx = dir*Math.max(Math.abs(P.vx), SCHIRM_FANG_VOR*(note === 'gut' ? 0.75 : 1));   // Sprung nach vorn
+  P.vy = -Math.sqrt(2*GRAVITY*Math.max(4, hoehe));
   P.schirmKraft = Math.max(0, P.schirmKraft - SCHIRM_FANG_KOSTEN);
   P._schirmSchub = true; P.glideTimer = 0; P.sprungKurzMoeglich = false;
   P._pirouetteT = performance.now();   // nur Anzeige: Pirouette mit Schirm (js/33, js/10)
@@ -101,11 +107,12 @@ function schirmVorher(P, moveDir){
   const taste = schirmTaste(P), neu = taste && !P._schirmTasteWar, los = !taste && P._schirmTasteWar;
   P._schirmTasteWar = taste;
   const frei = P.grounded || P.inWater || P.haft || P.trampolin || P.dash;
-  // Zuklappen beim Segeln: das Fang-Fenster startet (Lichtpunkt läuft los)
-  if(los && P.gliding && !P._schirmSchub && !frei && !P.schirmLeer) P._fang = {t: 0, y0: P.y};
+  if(P.grounded || P.inWater || P.haft){ P._fangGenutzt = false; P._schirmZuBisLanden = false; }   // gelandet: wieder frei
+  // Zuklappen beim Segeln: das Fang-Fenster startet (Lichtpunkt läuft los) – nur einmal pro Flug
+  if(los && P.gliding && !P._schirmSchub && !frei && !P.schirmLeer && !P._fangGenutzt) P._fang = {t: 0, y0: P.y};
   if(P._fang){
     if(frei || P.schirmLeer){ P._fang = null; }
-    else if(neu){ const note = schirmFangNote(schirmFangStand(P)); if(note) schirmFangBoost(P, note); else P._fang = null; }
+    else if(neu){ const note = schirmFangNote(schirmFangStand(P)); if(note) schirmFangBoost(P, note, moveDir); else P._fang = null; }
     else if(++P._fang.t > SCHIRM_FANG_DAUER) P._fang = null;   // Punkt ist durchgelaufen
   }
   if(!P._schirmSchub) return false;
@@ -249,7 +256,8 @@ function perfektSchritt(){
 function perfektZuruecksetzen(){
   perfektFx.length = 0;
   for(const P of [p1, p2]) if(P){ P.schirmKraft = 1; P.schirmLeer = false; P._schirmPause = 0; P._schirmSchub = false; P._kette = 0;
-    P._blumenKette = 0; P._perfektFlug = null; P._perfektSpur = 0; P._lianeGlanz = 0; P._hoechsterY = undefined; P._fang = null; }
+    P._blumenKette = 0; P._perfektFlug = null; P._perfektSpur = 0; P._lianeGlanz = 0; P._hoechsterY = undefined; P._fang = null;
+    P._fangGenutzt = false; P._schirmZuBisLanden = false; }
 }
 
 // ---------- Zeichnen (nur Anzeige) ----------
@@ -318,7 +326,7 @@ function schirmBalkenZeichnen(P){
   const fuell = P._schirmFuellT ? Math.max(0, 1 - (jetzt - P._schirmFuellT)/450) : 0;
   const knapp = k < SCHIRM_KNAPP && !P.schirmLeer;
   const puls = knapp ? 0.5 + 0.5*Math.sin(jetzt*0.025) : 0;
-  const farbe = P.schirmLeer ? ['#b9b0b8', '#d8d0d6'] : knapp ? [`rgb(255,${Math.round(120 + 60*puls)},${Math.round(90 + 40*puls)})`, '#ff6f61'] : ['#fff3cf', '#ff8fc0'];
+  const farbe = P.schirmLeer || P._schirmZuBisLanden ? ['#b9b0b8', '#d8d0d6'] : knapp ? [`rgb(255,${Math.round(120 + 60*puls)},${Math.round(90 + 40*puls)})`, '#ff6f61'] : ['#fff3cf', '#ff8fc0'];
   const offen = P.umbrella > 0.25 && P._schirmMat && jetzt - P._schirmMatT < 60;
   if(offen){
     ctx.save(); ctx.setTransform(P._schirmMat);

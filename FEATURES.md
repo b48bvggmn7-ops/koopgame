@@ -2532,8 +2532,10 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Segeln die Schirm-Taste loslassen -> über dem Kopf erscheint ein großer Bogen (der Flug-Balken, gedämpft) mit einem goldenen
   Stück (dunkel umrandet, silberne Ränder = GUT); ein heller Lichtpunkt mit Schweif läuft in `SCHIRM_FANG_DAUER` 32 Schritten
   einmal darüber, im Gold leuchtet das Gold auf. Wieder aufspannen, während der Punkt im Gold ist (62–76 % = PERFEKT, ±9 % = GUT):
-  Schwung nach oben mit offenem Schirm – 90 % der Fallhöhe seit dem Zuklappen (GUT: 60 % davon), also nie höher als vorher;
-  kostet 15 % vom Balken. Zu früh/zu spät = normales Segeln bzw. weiter fallen. Geht überall in der Luft, auch über Abgründen.
+  ein Hüpfer nach vorn mit offenem Schirm (Gezähmt, Nutzerwunsch 11.11.: „man schafft alles ohne die Puste-Hilfe vom Affen“):
+  nur 25 % der Fallhöhe seit dem Zuklappen zurück (GUT: 60 % davon), dazu Schwung nach vorn (`SCHIRM_FANG_VOR` 6,5 px/Schritt
+  in Richtung der Taste bzw. Flugrichtung); **nur einmal pro Flug**, und danach bleibt der Schirm bis zur Landung zu (auch eine
+  Pusteblume öffnet ihn dann nicht; Bogen grau) – nur, um irgendwo drauf zu kommen. Kostet 15 % vom Balken. Zu früh/zu spät = normales Segeln bzw. weiter fallen. Geht überall in der Luft, auch über Abgründen.
   Luftstoß-Ring unter dem Schirm, Samen wirbeln, Funken, leichtes Kamera-Wackeln. Dabei eine schnelle Pirouette um die eigene Achse (der Schirm dreht mit) und ein heller gläserner
   „Bing“ (Serie: jedes Mal einen Ton höher) statt Sprung-/Schirm-Ton (Nutzerwunsch 08.11.); die Schrift fliegt über dem Schirm mit.
   **Belohnung (beide)**: PERFEKT = kurzer Trefferstopp (3 Schritte), goldene Schrift „PERFEKT!“ (springt auf, steigt, glitzert),

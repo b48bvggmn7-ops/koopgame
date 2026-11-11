@@ -189,7 +189,8 @@ function updatePlayer(player, now){
     // Schweinchen segelt mit eigener Taste (Num 1 halten), Springen bleibt auf Num 0
     const windy = !player.male && winds.length && inWind(player);
     // Flug-Balken (js/35): leer geflogen -> Schirm bleibt zu, bis er am Boden (oder per Pusteblume) wieder geladen ist
-    if(!player.male && !frozen && isDown(player.keys.glide) && !player.schirmLeer && !player.grounded && (player.vy > -1 || windy)){
+    // (nach dem Perfekt-Aufspannen bleibt er bis zur Landung zu: _schirmZuBisLanden)
+    if(!player.male && !frozen && isDown(player.keys.glide) && !player.schirmLeer && !player._schirmZuBisLanden && !player.grounded && (player.vy > -1 || windy)){
       gliding = true;
       player.glideTimer += 16.6;
       const t = Math.min(1, player.glideTimer/GLIDE_RAMP_MS);
