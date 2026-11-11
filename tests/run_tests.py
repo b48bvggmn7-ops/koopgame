@@ -8392,7 +8392,7 @@ async def perfekt_momente(g):
         assert G['note'] == 'gut' and G['flug'] == 'gut' and G['kette'] == 0 and 'perfektgut' in r['logG'], f'„gut“ falsch: {r}'
         assert G['v1'] < P['v1'] or G['v1'] < G['v0'] * 1.25, f'„gut“ muss weniger Schub geben: {r}'
         assert r['fangStart'], f'Schirm-Taste beim Segeln losgelassen: Fang-Fenster muss starten: {r}'
-        assert 15 < r['steigPerfekt'] < 120, f'Perfekt-Aufspannen (gezähmt 11.11.): kleiner Hüpfer nach oben (25 % der Fallhöhe): {r}'
+        assert 90 < r['steigPerfekt'] < 135, f'Perfekt-Aufspannen (11.11.): so hoch wie ein normaler Sprung (3 Reihen): {r}'
         assert r['vor'] >= 6, f'Perfekt-Aufspannen: eher ein Sprung nach vorn: {r}'
         assert not r['segeltDanach'] and not r['fangNochmal'], f'nach dem Boost bis zur Landung kein Segeln und kein zweiter Boost: {r}'
         assert r['unterZu'], f'Boost bringt nie höher als beim Zuklappen: {r}'

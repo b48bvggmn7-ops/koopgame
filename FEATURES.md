@@ -2533,7 +2533,8 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Stück (dunkel umrandet, silberne Ränder = GUT); ein heller Lichtpunkt mit Schweif läuft in `SCHIRM_FANG_DAUER` 32 Schritten
   einmal darüber, im Gold leuchtet das Gold auf. Wieder aufspannen, während der Punkt im Gold ist (62–76 % = PERFEKT, ±9 % = GUT):
   ein Hüpfer nach vorn mit offenem Schirm (Gezähmt, Nutzerwunsch 11.11.: „man schafft alles ohne die Puste-Hilfe vom Affen“):
-  nur 25 % der Fallhöhe seit dem Zuklappen zurück (GUT: 60 % davon), dazu Schwung nach vorn (`SCHIRM_FANG_VOR` 6,5 px/Schritt
+  so hoch wie ein normaler Sprung (`SCHIRM_FANG_SPRUNG` 3 Reihen; GUT: 60 % davon; 11.11.: vorher 25 % der Fallhöhe – „nicht einmal
+  ein Sprung“), aber nie höher als dort, wo sie zugeklappt hat; dazu Schwung nach vorn (`SCHIRM_FANG_VOR` 6,5 px/Schritt
   in Richtung der Taste bzw. Flugrichtung); **nur einmal pro Flug**, und danach bleibt der Schirm bis zur Landung zu (auch eine
   Pusteblume öffnet ihn dann nicht; Bogen grau) – nur, um irgendwo drauf zu kommen. Kostet 15 % vom Balken. Zu früh/zu spät = normales Segeln bzw. weiter fallen. Geht überall in der Luft, auch über Abgründen.
   Luftstoß-Ring unter dem Schirm, Samen wirbeln, Funken, leichtes Kamera-Wackeln. Dabei eine schnelle Pirouette um die eigene Achse (der Schirm dreht mit) und ein heller gläserner

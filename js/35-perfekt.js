@@ -40,7 +40,9 @@ const SCHIRM_FANG_GOLD = [0.62, 0.76];   // goldener Bereich auf dem Bogen (Ante
 const SCHIRM_FANG_GUT = 0.09;        // so viel davor/danach = GUT
 // Gezähmt (Nutzerwunsch 11.11.: „man schafft alles ohne die Puste-Hilfe vom Affen“): nur EINMAL pro Flug, wenig Höhe, eher ein
 // Sprung nach vorn, danach bleibt der Schirm bis zur Landung zu – nur um irgendwo drauf zu kommen
-const SCHIRM_FANG_ANTEIL = 0.25;     // Steighöhe = so viel der Fallhöhe seit dem Zuklappen (GUT: SCHIRM_GUT_ANTEIL davon); vorher 0,9
+const SCHIRM_FANG_ANTEIL = 0.9;      // höchstens so viel der Fallhöhe seit dem Zuklappen (nie höher als beim Zuklappen)
+const SCHIRM_FANG_SPRUNG = 120;      // px Steighöhe = ein normaler Sprung (3 Reihen; GUT: SCHIRM_GUT_ANTEIL davon) – 11.11.: 25 % der
+                                     // Fallhöhe war „nicht einmal ein Sprung“
 const SCHIRM_FANG_VOR = 6.5;         // px/Schritt: Schwung nach vorn (Richtungstaste, sonst Flugrichtung/Blickrichtung)
 const SCHIRM_GUT_ANTEIL = 0.6;
 const SCHIRM_SCHUB_MAX = 300;        // px: höchstens so hoch (7,5 Reihen)
@@ -88,10 +90,10 @@ function schirmFangNote(q){
 }
 function schirmFangBoost(P, note, moveDir){
   const fall = Math.max(0, P.y - P._fang.y0);   // so tief ist sie seit dem Zuklappen gefallen
-  let hoehe = Math.min(SCHIRM_SCHUB_MAX, fall*SCHIRM_FANG_ANTEIL);
-  if(note === 'gut') hoehe *= SCHIRM_GUT_ANTEIL;
+  let hoehe = SCHIRM_FANG_SPRUNG*(note === 'gut' ? SCHIRM_GUT_ANTEIL : 1);
+  hoehe = Math.min(hoehe, fall*SCHIRM_FANG_ANTEIL);
   P._fang = null;
-  P._fangGenutzt = true;                 // nur einmal pro Flug
+  P._fangGenutzt = true;                // nur einmal pro Flug
   P._schirmZuBisLanden = true;           // danach kein Segeln mehr bis zur Landung (08)
   const dir = moveDir || Math.sign(P.vx) || P.facing || 1;
   P.vx = dir*Math.max(Math.abs(P.vx), SCHIRM_FANG_VOR*(note === 'gut' ? 0.75 : 1));   // Sprung nach vorn
