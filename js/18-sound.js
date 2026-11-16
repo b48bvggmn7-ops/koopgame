@@ -386,6 +386,16 @@ const SFX = {
   pusteblume(x, n){ sfxLog('pusteblume'); const f = 784*PERFEKT_TON[Math.min(PERFEKT_TON.length - 1, Math.max(0, n - 1))];
     sNoise(0, 0.4, {filter: 'highpass', f: 2500, q: 0.7, vol: 0.035, attack: 0.04});
     sTone(f, 0.01, 0.55, {type: 'sine', vol: 0.04}); sTone(f*2, 0.03, 0.3, {type: 'triangle', vol: 0.01}); },
+  // Rammbalken (elemente/rammbalken.js): Einschlag = dumpfer Holz-Wumms + Eisenklirren + kurzes Knarzen; beim Zurückgleiten
+  // klickt die Sperrklinke über die Kerben (wird zum Ende hin höher = hörbare Uhr); ganz heraus = weiches „Klonk“
+  rammTreffer(x){ sfxLog('ramm');
+    sTone(105, 0, 0.26, {to: 42, type: 'sine', vol: 0.2, attack: 0.003}); sNoise(0, 0.2, {filter: 'lowpass', f: 620, to: 110, q: 0.8, vol: 0.14, attack: 0.002});
+    sTone(1180, 0.005, 0.1, {to: 860, type: 'square', vol: 0.018, attack: 0.002}); sTone(2240, 0.012, 0.07, {to: 1900, type: 'triangle', vol: 0.014, attack: 0.002});
+    sNoise(0.13, 0.28, {filter: 'bandpass', f: 330, to: 250, q: 9, vol: 0.035, attack: 0.03}); },
+  rammKlick(x, k){ sfxLog('rammklick'); const f = 1500 + 900*(k || 0);
+    sNoise(0, 0.03, {filter: 'bandpass', f, q: 7, vol: 0.03, attack: 0.001}); sTone(f*0.42, 0, 0.035, {type: 'square', vol: 0.007, attack: 0.001}); },
+  rammRaus(x){ sfxLog('rammraus'); sTone(170, 0, 0.12, {to: 105, type: 'triangle', vol: 0.05, attack: 0.003});
+    sNoise(0, 0.07, {filter: 'lowpass', f: 480, to: 200, q: 0.8, vol: 0.05, attack: 0.002}); },
   pustenStart(pl){ sfxLog('pustenstart'); sNoise(0, 0.18, {filter: 'bandpass', f: 500, to: 1400, q: 0.8, vol: 0.05, attack: 0.05}); },
   // Spielszenen (Dschungel-Neu): Meteorit fällt (Heulen + Einschlag), Glühen (tiefes Summen), Tor öffnet sich, Sog ins Tor
   szene_meteor(){ sfxLog('szene_meteor'); sNoise(0, 1.5, {filter: 'bandpass', f: 2600, to: 400, q: 1.2, vol: 0.06, attack: 0.3});

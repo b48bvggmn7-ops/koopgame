@@ -31,9 +31,13 @@ function neuFxDazu(o){ neuFx.push(o); if(neuFx.length > 260) neuFx.splice(0, neu
 function neuFigurBox(P, x, y){ return {x: (x === undefined ? P.x : x) - P.w/2, y: (y === undefined ? P.y : y) - P.h, w: P.w, h: P.h}; }
 
 // ---------- Dash ----------
-const dashAusHier = () => DASH_AUS_WELTEN.includes(levelWelt);   // Dash in dieser Welt ausgeklammert (DASH_AUS_WELTEN)
+// Dash in dieser Welt ausgeklammert (DASH_AUS_WELTEN)? Mit Figur gefragt: das Schweinchen dasht dort trotzdem
+// (DASH_SCHWEIN_IN_AUS_WELTEN, Nutzerwunsch 16.11.); ohne Figur gefragt (Computer-Partner, js/30): „Welt ohne freien Dash“
+const dashAusHier = P => DASH_AUS_WELTEN.includes(levelWelt) && !(DASH_SCHWEIN_IN_AUS_WELTEN && P && !P.male);
+const dashNurSchweinWelt = () => DASH_SCHWEIN_IN_AUS_WELTEN && DASH_AUS_WELTEN.includes(levelWelt);
+const dashLadezeit = P => dashNurSchweinWelt() && !P.male ? DASH_LADEZEIT_SCHWEIN : DASH_LADEZEIT;
 function dashKannStarten(P){
-  if(P.dash || P.dashPause > 0 || P.inWater || dashAusHier()) return false;
+  if(P.dash || P.dashPause > 0 || P.inWater || dashAusHier(P)) return false;
   return P.dashPunkte > 0;   // kein kostenloser Anschluss-Dash nach einem Durchbruch mehr (Nutzerwunsch: ein Dash, dann aufladen)
 }
 function dashRichtung(P, moveDir){
@@ -95,7 +99,8 @@ function dashBewegen(P){
     if(bx){
       bruchTreffen(P, sx, 0);
       const v = P.vx; P.x += sx; collideAxis(P, 'x');
-      if(P.vx === 0 && v !== 0){ d.stossX = Math.sign(v); bx = false; }
+      if(P.vx === 0 && v !== 0){ d.stossX = Math.sign(v); bx = false;
+        if(typeof rammTreffen === 'function' && rammTreffen(P, Math.sign(v))) d.gerammt = true; }   // Rammbalken getroffen (elemente/rammbalken.js)
     }
     if(by){
       bruchTreffen(P, 0, sy);
@@ -114,6 +119,7 @@ function bruchUnter(P){
 }
 // bewegt sich die Figur gleich um (dx, dy): Durchbruch-Wände in diesem Weg zerbrechen (nur im Dash)
 function bruchTreffen(P, dx, dy){
+  if(dashNurSchweinWelt()) return;   // dort bricht nur der Puste-Wind des Affen (der Dash des Schweinchens ist ein Rammstoß für den Rammbalken)
   const box = neuFigurBox(P, P.x + dx, P.y + dy);
   let zerbrochen = 0;
   for(const s of solids){
@@ -484,7 +490,9 @@ function neueBewegungNachher(P, altX, altY){
   const d = P.dash;
   if(d){
     if(d.dy >= 0 && P.vy < -10 && !d.stossY){ P.dash = null; }          // Sprungpilz hat übernommen
-    else if(d.stossX && d.dx && Math.abs(d.dy) < 0.5){ dashBeenden(P); if(typeof SFX !== 'undefined' && SFX.dashBonk) SFX.dashBonk(P); }
+    else if(d.stossX && d.dx && Math.abs(d.dy) < 0.5){ dashBeenden(P);
+      if(d.gerammt && typeof rammRueckstoss === 'function') rammRueckstoss(P, d.stossX);   // Rammbalken: federt kurz zurück (eigener Ton)
+      else if(typeof SFX !== 'undefined' && SFX.dashBonk) SFX.dashBonk(P); }
     else if(d.stossY && d.dy && !d.dx){ dashBeenden(P); }
     else if(d.stossY > 0 && d.dx){ d.dy = 0; d.dx = Math.sign(d.dx); }  // schräg auf den Boden: flach weiter
     else if(--d.zeit <= 0) dashBeenden(P);
@@ -496,7 +504,7 @@ function neueBewegungNachher(P, altX, altY){
   kanteAbrutschen(P);
   // Dash aufladen: immer (auch frei in der Luft; Nutzerwunsch – früher nur mit festem Halt, dafür doppelt so schnell)
   if(P.dashPunkte < DASH_LUFT && !P.dash){
-    P.dashLadung += 1/DASH_LADEZEIT;
+    P.dashLadung += 1/dashLadezeit(P);
     if(P.dashLadung >= 1){ P.dashLadung = 0; P.dashPunkte++; P._dashVollT = performance.now(); if(typeof SFX !== 'undefined' && SFX.dashVoll) SFX.dashVoll(P); }
   } else P.dashLadung = 0;
   if(typeof perfektNachher === 'function') perfektNachher(P);   // Schirm-Balken, Perfekt-Landen, Liane-Hinweis (js/35)
@@ -576,6 +584,7 @@ function neueBewegungZeichnen(){
 // Dash-Punkt über dem Kopf (wie in der Spielwiese: Punkt, das Tortenstück zeigt das Aufladen); nur sichtbar, wenn das Level
 // Dash-Stellen hat oder der Punkt gerade fehlt/lädt
 function dashPunktZeichnen(P, px, py){
+  if(!P.male && typeof schirmDashPunktZeichnen === 'function'){ schirmDashPunktZeichnen(P, px, py); return; }   // Schweinchen: passend zum Flug-Bogen (js/35)
   const voll = P.dashPunkte >= DASH_LUFT, t = performance.now();
   const frisch = P._dashVollT && t - P._dashVollT < 400;
   if(voll && !frisch && !P.dash) return;   // voll und ruhig: kein Punkt (Bild bleibt aufgeräumt)

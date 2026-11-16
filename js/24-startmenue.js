@@ -168,8 +168,13 @@ function dashSpielbar() {
   const aus = typeof DASH_AUS_WELTEN !== 'undefined' ? DASH_AUS_WELTEN : [];
   return CONFIG.worlds.some(w => w && w.id && !aus.includes(w.id));
 }
+// Nutzerwunsch 16.11.: in den Welten ohne Dash (Dschungel) dasht das Schweinchen trotzdem (Rammstoß) -> Zeile nur bei ihm
+function dashSchweinSpielbar() {
+  const aus = typeof DASH_AUS_WELTEN !== 'undefined' ? DASH_AUS_WELTEN : [];
+  return typeof DASH_SCHWEIN_IN_AUS_WELTEN !== 'undefined' && DASH_SCHWEIN_IN_AUS_WELTEN && CONFIG.worlds.some(w => w && w.id && aus.includes(w.id));
+}
 function controlsData(view) {
-  const mP = lastPlayers.monkey, fP = 3 - mP, dash = dashSpielbar();
+  const mP = lastPlayers.monkey, fP = 3 - mP, dashAlle = dashSpielbar(), dashSchwein = dashSchweinSpielbar();
   const zeilen = (x, affe) => [
     ['Bewegen', x.bewegen], ['Springen', [x('jump')]],
     affe ? ['Haken', [x('ability')]] : ['Schirm (halten)', [x('ability')]],
@@ -177,7 +182,7 @@ function controlsData(view) {
     ...(affe ? [['Seil ran / geben', [x('pull'), x('slack')]]] : []),
     [affe ? 'Pusten' : 'Schirm-Trampolin', [x('spezial')]],
     ['Hebel', [x('use')]], ['Draisine-Griff', [x('griff')]],
-    ...(dash ? [['Dash', [x('dash')]]] : []),
+    ...(dashAlle ? [['Dash', [x('dash')]]] : (!affe && dashSchwein ? [['Dash (Rammstoß)', [x('dash')]]] : [])),
   ];
   if (view === 'gamepad') {
     const P = n => { const f = a => padName(PADSETS[n][padTypAktuell[n - 1]][a], padTypAktuell[n - 1]); f.bewegen = ['Stick']; return f; };
@@ -841,7 +846,7 @@ const TB_NAMEN = {left: 'Nach links', right: 'Nach rechts', jump: 'Springen / Wa
 // Zeilen im Menü: 0 = Tastatur/Controller, 1 … TB_N = Aktionen, TB_N + 1 = Standard, TB_N + 2 = Zurück
 // Dash nur, wenn eine spielbare Welt ihn hat (im Dschungel aus) – Liste beim Öffnen neu (Nutzerwunsch 06.11.)
 let tbListe = TASTEN_AKTIONEN.slice(), TB_N = tbListe.length;
-function tbListeNeu() { tbListe = TASTEN_AKTIONEN.filter(a => a !== 'dash' || dashSpielbar()); TB_N = tbListe.length; }
+function tbListeNeu() { tbListe = TASTEN_AKTIONEN.filter(a => a !== 'dash' || dashSpielbar() || dashSchweinSpielbar()); TB_N = tbListe.length; }   // 16.11.: Dash des Schweinchens im Dschungel -> Taste belegbar
 const TB_TYPNAME = {playstation: 'PlayStation', xbox: 'Xbox', andere: 'anderer Controller'};
 let tbFang = null;    // {n, a, art, typ, vorher: gedrückte Knöpfe beim Start} – wartet auf die neue Taste
 S.tasten = {

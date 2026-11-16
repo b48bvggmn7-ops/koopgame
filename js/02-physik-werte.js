@@ -107,7 +107,12 @@ const LIANE2_GEBEN = 1.3;          // px/Schritt: so schnell klettert der Affe a
 const DASH_NUR_WAAGERECHT = true;   // Nutzerwunsch: Dash nur nach links/rechts (false = 8 Richtungen wie vorher)
 const DASH_AUS_WELTEN = ['dschungel'];   // Welten ohne Dash – Nutzer: „Dash erst mal komplett raus, man schafft zu viel nur durch den Dash“
                                          // (dort bricht der Affe Durchbruch-Wände durch Anpusten, BRUCH_PUSTE_NOETIG)
-const BRUCH_PUSTE_NOETIG = 45;     // so lange (Schritte voller Wind) muss der Affe eine Durchbruch-Wand anpusten, bis sie bricht (ganze Wand)
+// Nutzerwunsch 16.11. „gib Schwein den Dash zurück, auch in der Luft; soll etwas dauern, bis er sich wieder auflädt“: in den
+// Welten aus DASH_AUS_WELTEN dasht NUR das Schweinchen (Rammstoß; rammt den Rammbalken, elemente/rammbalken.js) – der Affe
+// bleibt dort ohne Dash, und die Durchbruch-Wände dort bricht weiter nur der Puste-Wind des Affen (nicht der Dash).
+const DASH_SCHWEIN_IN_AUS_WELTEN = true;
+const DASH_LADEZEIT_SCHWEIN = 180;   // Schritte (3 s): so lange lädt der Dash des Schweinchens in diesen Welten (sonst DASH_LADEZEIT)
+const BRUCH_PUSTE_NOETIG = 45;    // so lange (Schritte voller Wind) muss der Affe eine Durchbruch-Wand anpusten, bis sie bricht (ganze Wand)
 const DASH_TEMPO = 16;            // px pro Schritt (Spielwiese „Tempo“)
 const DASH_DAUER = 10;            // Schritte (Spielwiese „Dauer“) -> 160 px gerade Strecke (Variante A „fester Dash“)
 const DASH_BEHALTEN = 0.5;        // so viel Tempo bleibt nach dem Dash (nach oben höchstens die Sprungkraft)

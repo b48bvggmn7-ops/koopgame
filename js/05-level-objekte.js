@@ -156,6 +156,7 @@ function updatePlates(players){
   }
   if(typeof lichtWunsch === 'function') lichtWunsch(want);   // Lichtkristall im Licht = wie gedrückte Platte (elemente/licht.js)
   if(typeof windradWunsch === 'function') windradWunsch(want);   // Windrad „solange es dreht“ = wie gedrückte Platte (elemente/windrad.js)
+  if(typeof rammWunsch === 'function') rammWunsch(want);         // Rammbalken „Zeitfenster“: an, solange er eingerammt ist (elemente/rammbalken.js)
   for(const link in want){ if(!!linkOn[link] !== want[link]) setLink(Number(link), want[link]); }
 }
 // Aufwind (inWind, WIND_LIFT) und Sprungpilz (checkBounce, BOUNCE_V): jetzt in elemente/aufwind.js bzw. elemente/sprungpilz.js

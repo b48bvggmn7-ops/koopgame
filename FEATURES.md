@@ -2672,7 +2672,40 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Teil-Dateien liegen in levels/archiv/dschungel-teile/ (nur noch zum Nachschauen); im Level steht unter „_teile“, wo jeder
   alte Teil liegt (für die Tests, tests/abschnitt.py `teil_sicht`). An den Übergängen neue Checkpoints. Werkzeug:
   tests/bausteine/abschnitte_zusammenfuegen.py. Test abschnitt_zusammensetzen.
-- **Kein Dash im Dschungel** (Nutzer: „man schafft zu viel nur durch den Dash“): `DASH_AUS_WELTEN = ['dschungel']` (die
+- **Dash im Dschungel nur fürs Schweinchen** (Nutzerwunsch 16.11.: „gib Schwein den Dash zurück, er kann ihn auch in der Luft
+  benutzen, soll etwas dauern, bis er sich wieder auflädt“; `DASH_SCHWEIN_IN_AUS_WELTEN`, js/02): in den Welten aus
+  `DASH_AUS_WELTEN` dasht das Schweinchen wieder (Num 3 / △, am Boden und in der Luft, nur waagerecht, 160 px; nach dem Dash
+  segelt es normal weiter – der Flug-Balken begrenzt die Strecke). Aufladen dauert dort `DASH_LADEZEIT_SCHWEIN` 180 Schritte
+  (3 Spielsekunden; sonst 120). Der Affe bleibt im Dschungel OHNE Dash. Die Durchbruch-Wände bricht dort weiter nur der
+  Puste-Wind des Affen – der Dash des Schweinchens ist ein Rammstoß für den Rammbalken (bestehende Rätsel bleiben gleich).
+  Anzeige: kleiner Ring über dem Kopf in den Farben des Flug-Bogens (leer dunkel, lädt im Uhrzeigersinn cremefarben ->
+  bernstein, voll = kurzer Lichtring, dann unsichtbar). In den Optionen steht „Dash (Rammstoß)“ nur beim Schweinchen, die
+  Taste ist unter „Tasten belegen“ wieder änderbar. Tests dash_welt_aus, rammbalken_dash.
+- **Rammbalken** (Nutzerwunsch 16.11., elemente/rammbalken.js, Editor-Reiter „Logik“, Werkzeug „Rammbalken“, im Dschungel
+  empfohlen): der Schalter des Schweinchens – so wie das Windrad der Schalter des Affen ist. Ein schwerer, verwitterter
+  Eichenbalken (2 Kästchen lang, 22 px dick) ragt waagerecht aus einer Wand. **Nur ein Dash gegen die Stirnseite** rammt ihn
+  hinein (Laufen, Springen, Pusten nicht; die Figur muss die Stirnseite mind. 6 px in der Höhe treffen). Im Editor ins
+  Kästchen direkt neben der Wand setzen; Auswahl „Wand“: Wand rechts (Stoß nach rechts) / Wand links.
+  **Zeitfenster** (Standard): eingerammt ist die Nummer AN (wie eine gedrückte Druckplatte); nach ½ s gleitet der Balken
+  gleichmäßig wieder heraus – wie weit er herausragt, zeigt die restliche Zeit; die Sperrklinke klickt über 8 Kerben
+  (wird zum Ende hin höher = hörbare Uhr); genau nach „Zeit“ (3 / 5 / 8 / 12 s, Standard 5) ist die Nummer wieder AUS.
+  Ein neuer Rammstoß währenddessen startet das Zeitfenster neu. **Umschalten**: jeder Rammstoß schaltet die Nummer einmal um
+  (wie ein Hebel), der Balken kommt in 1 s wieder heraus.
+  Der Balken ist fest: man kann darauf stehen (wird er eingerammt, fällt man herunter); beim Herausgleiten schiebt er Figuren
+  sanft vor sich her (klemmt jemand zwischen Balken und Wand, wartet er). Hoch an einer Wand angebracht muss das Schweinchen
+  heransegeln und im richtigen Moment dashen (der Dash fliegt waagerecht – zu hoch oder zu tief prallt es nur an die Wand).
+  **Treffer**: kurzer Trefferstopp, Kamera-Wackeln, Staub aus der Führung, Holzsplitter, heller Funke an der Eisenkappe,
+  dumpfer Holz-Wumms mit Eisenklirren und Knarzen; das Schweinchen federt ein Stück zurück. Neustart/Tod: wieder draußen.
+  **Aussehen (Foto-Look, wie Tür und Windrad)**: verwittertes Eichenholz mit Maserung, Rissen und abgegriffener heller
+  Oberkante, Moos oben und Moosfäden unten, Sägezahn-Kerben für die Sperrklinke; rostige Eisenkappe mit Nieten, Delle und
+  blanker Schlagkante, zweites schmales Eisenband; an der Wand eine Eisenplatte mit Bolzen und ein Führungsklotz aus
+  Hartholz mit zwei Eisenbändern, Bolzen mit Rostfahnen, Moos und der eisernen Sperrklinke; in einer Eisenfassung der
+  Edelstein in der Nummernfarbe (leuchtet, solange die Nummer an ist). Eingerammt bleibt die Eisenkappe vor dem Klotz
+  sichtbar. Maserung, Kerben und Moos gleiten mit dem Balken.
+  Rolle: nur das Schweinchen schaltet (Dash) und öffnet dem Affen einen Weg auf Zeit; der Affe hilft ihm zum Balken (Puste-
+  Wind, Trampolin-Gegenstück) oder nutzt das Zeitfenster. Testlevel `index.html?testlevel=rammbalken`. Test rammbalken_dash.
+- **Kein Dash im Dschungel für den Affen** (Nutzer: „man schafft zu viel nur durch den Dash“; seit 16.11. dasht dort wieder
+  das Schweinchen, siehe oben): `DASH_AUS_WELTEN = ['dschungel']` (die
   Mechanik bleibt für andere Welten). **Durchbruch-Wände pustet der Affe um**: trifft sein Wind ein Kästchen, wackelt die Wand;
   nach BRUCH_PUSTE_NOETIG (45) Schritten voller Wind bricht die ganze zusammenhängende Wand. Tests dash_welt_aus, bruch_pusten.
   **Verfolgungen:** die Stachelwände sind langsamer (gemessen: ohne Dash gerade so zu schaffen), Durchbruch-Wände in den

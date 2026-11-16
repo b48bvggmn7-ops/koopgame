@@ -358,6 +358,26 @@ function schirmBalkenZeichnen(P){
     ctx.beginPath(); ctx.ellipse(px, py - P.h - 8, 15 + q*10, 11 + q*7, 0, Math.PI, Math.PI*2); ctx.stroke(); }
   ctx.restore();
 }
+// Dash-Anzeige des Schweinchens (aus dashPunktZeichnen, js/32; Nutzerwunsch 16.11. „Dash zurück, soll etwas dauern, bis er
+// sich auflädt“): kleiner Ring über dem Kopf, knapp über dem kleinen Flug-Bogen – gleiche Farben wie der Bogen. Leer = dunkler Ring,
+// lädt im Uhrzeigersinn (cremefarben -> bernstein), voll = kurzer heller Lichtring, danach unsichtbar (Bild bleibt ruhig).
+function schirmDashPunktZeichnen(P, px, py){
+  const voll = P.dashPunkte >= DASH_LUFT, t = performance.now();
+  const frisch = P._dashVollT && t - P._dashVollT < 450;
+  if(voll && !frisch && !P.dash) return;
+  const x = px, y = py + (P._standDy || 0) - P.h - 28, r = 4.6, k = voll ? 1 : Math.max(0, Math.min(1, P.dashLadung || 0));
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.fillStyle = 'rgba(38,22,40,.6)'; ctx.beginPath(); ctx.arc(x, y, r + 1.6, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,230,240,.2)'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(x, y, r - 0.8, 0, Math.PI*2); ctx.stroke();
+  if(k > 0.01){
+    const g = ctx.createLinearGradient(x - r, y - r, x + r, y + r); g.addColorStop(0, '#fff3cf'); g.addColorStop(1, '#ffb45e');
+    ctx.strokeStyle = g; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(x, y, r - 0.8, -Math.PI/2, -Math.PI/2 + k*Math.PI*2); ctx.stroke();
+  }
+  if(voll){ ctx.fillStyle = '#fff3cf'; ctx.beginPath(); ctx.arc(x, y, 1.9, 0, Math.PI*2); ctx.fill(); }
+  if(frisch){ const q = (t - P._dashVollT)/450; ctx.strokeStyle = `rgba(255,246,216,${1 - q})`; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(x, y, r + 1 + q*11, 0, Math.PI*2); ctx.stroke(); }
+  ctx.restore();
+}
 // Fang-Fenster (Schirm zu): großer Bogen über dem Kopf (so groß wie die Schirmkuppel) – darauf der Flug-Balken (gedämpft),
 // das goldene Stück (PERFEKT) mit silbernen Rändern (GUT) und der laufende Lichtpunkt mit Schweif. Ist der Punkt im Gold,
 // leuchtet das Gold auf (jetzt!).

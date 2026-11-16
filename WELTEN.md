@@ -259,7 +259,9 @@ typisch/schwerste steigt von 1/2 bis 3–4/6, danach Bruno.
   (Rätsel). **Abschnitt 2 „Das Herz des Meteoriten“** (nachts): 04 Glühwald, 05 Dornenpfad, 06 Wipfelsturm, 08 Meteoritenkrater
   (Rätsel, am Ende der Meteorit als Tor). Kein Boss mehr (Bruno im Archiv).
 - **Keine Sprungpilze, keine Aufwinde.** Rollen: das Schweinchen bringt den Affen hoch (Schirm-Trampolin), der Affe das
-  Schweinchen (Pusten nach oben / zur Seite); nur der Affe dreht Windräder. Bausteine: Puste-Grube, Windrad-Treppe,
+  Schweinchen (Pusten nach oben / zur Seite); nur der Affe dreht Windräder, nur das Schweinchen rammt Rammbalken (seit
+  16.11. dasht im Dschungel wieder das Schweinchen – und nur es; Zeitfenster-Schalter, auch hoch an der Wand: segeln +
+  dashen). Bausteine: Puste-Grube, Windrad-Treppe,
   Puste-Insel, Puste-Pfeiler, Puste-Turm, Puste-Aufzug, Windrad-Schleuse (Liste mit Spalten: FEATURES.md, Dschungel-Neu).
 - **Geschichte:** Meteorit fällt in den Dschungel (Intro), Splitter als Spur (Element Meteorit, zum Ende hin dichter), Szene
   nach Abschnitt 1 „Das Glühen im Wald“, nach Abschnitt 2 „Das Herz des Meteoriten“ (Tor in die nächsten Welten).

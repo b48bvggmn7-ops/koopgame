@@ -7905,8 +7905,9 @@ async def dash_welt_aus(g):
                             bruchWaende=[{'x': 600, 'y': 600, 'w': 40, 'h': 80}])
     assert await g.ev("JSON.stringify(DASH_AUS_WELTEN)") == '["dschungel"]', 'Standard: Dash im Dschungel aus'
     await g.load(lv('dschungel')); await g.steps(5)
-    r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
-    assert not r['kann'] and r['bruch'] > 0, f'Dschungel: Dash noch an oder Durchbruch-Wand weg {r}'
+    r = await g.ev("({kann: dashKannStarten(p1), schwein: dashKannStarten(p2), bruch: solids.filter(s => s.type === 'bruch').length})")
+    assert not r['kann'] and r['bruch'] > 0, f'Dschungel: Dash des Affen noch an oder Durchbruch-Wand weg {r}'
+    assert r['schwein'], f'Dschungel: das Schweinchen dasht seit 16.11. wieder (DASH_SCHWEIN_IN_AUS_WELTEN) {r}'
     await g.load(lv('vulkan')); await g.steps(5)
     r = await g.ev("({kann: dashKannStarten(p1), bruch: solids.filter(s => s.type === 'bruch').length})")
     assert r['kann'] and r['bruch'] > 0, f'andere Welt: Dash/Durchbruch fehlt {r}'
@@ -8387,6 +8388,81 @@ async def perfekt_momente(g):
         assert r['blume'][0] > 0.55 and not r['blume'][1] and r['blume'][2] < 0.1, f'Pusteblume muss auffüllen und verschwinden: {r}'
         assert r['nachgewachsen'] == 1, f'Pusteblume wächst nach: {r}'
         assert r['vollBleibt'] == 1, f'mit vollem Balken bleibt die Pusteblume stehen: {r}'
+    finally:
+        srv.shutdown()
+
+@test
+async def rammbalken_dash(g):
+    """Nutzerwunsch 16.11. (elemente/rammbalken.js, js/32): im Dschungel dasht NUR das Schweinchen (auch in der Luft, lädt
+    DASH_LADEZEIT_SCHWEIN Schritte), der Affe nicht; Durchbruch-Wände bricht dort weiter nur der Puste-Wind. RAMMBALKEN: nur ein
+    Dash gegen die Stirnseite rammt ihn hinein (Laufen/Springen nicht) -> „Zeitfenster“: Nummer an, er gleitet klickend zurück,
+    nach „Zeit“ Sekunden wieder aus; hoch an der Wand: segeln + im richtigen Moment dashen (zu hoch = daneben);
+    „umschalten“ (Wand links): jeder Stoß schaltet um. Wer darauf steht, fällt; beim Herausgleiten schiebt er Figuren."""
+    srv = webserver()
+    try:
+        await g.p.goto(srv.url + 'index.html?testlevel=rammbalken')
+        await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && typeof rammbalken !== 'undefined' && rammbalken.length === 3 && menuScreen === null", timeout=10000)
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          const n = k => { for(let i = 0; i < k; i++) st(); };
+          const druck = (P, a) => { KEYS[P.keys[a]] = true; KEYS[P.keys[a] + '_pressed'] = true; };
+          const los = () => { for(const k in KEYS) KEYS[k] = false; };
+          const tuer = l => solids.filter(s => s.type === 'door' && s.link === l).every(s => s.open);
+          const bisTreffer = b => { let i = 0; while(b.phase === 'ruhe' && i++ < 40) st(); return b.phase !== 'ruhe'; };
+          const B = rammbalken;
+          try {
+            // Dschungel: der Affe hat keinen Dash, das Schweinchen schon; Laufen und Springen rammen nicht
+            resetLevel(); stell(p1, 300, 680); stell(p2, 520, 680); n(5);
+            druck(p1, 'dash'); st(); e.affeDash = !!p1.dash;
+            KEYS[p1.keys.right] = true; KEYS[p2.keys.right] = true; n(60); druck(p1, 'jump'); n(40); los();
+            e.ohneDash = B[0].tief === 0 && !linkOn[1]; e.fest = p2.x < 630;
+            // Rammstoß am Boden: Tür 1 auf, Balken gleitet klickend zurück, nach 5 s wieder zu
+            stell(p1, 300, 680); stell(p2, 520, 680); n(5); SFX_LOG.length = 0;
+            KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); e.schweinDash = !!p2.dash; los();
+            e.getroffen = bisTreffer(B[0]); let seit = 0, klicks = 0, mitte = null;
+            while((linkOn[1] || seit < 20) && seit < 900){ st(); seit++; if(seit === 12){ e.tief = B[0].tief; e.an1 = !!linkOn[1]; e.rueck = p2.x; }
+              if(seit === 150) mitte = [tuer(1), B[0].tief]; if(SFX_LOG[SFX_LOG.length - 1] === 'rammklick'){ klicks++; SFX_LOG.push('-'); } }
+            e.zeit = seit; e.mitte = mitte; e.klicks = klicks; n(50); e.raus = B[0].phase === 'ruhe' && B[0].tief === 0; e.zu1 = !tuer(1); e.log = SFX_LOG.filter(s => s !== '-' && s !== 'rammklick');
+            // Aufladen dauert DASH_LADEZEIT_SCHWEIN
+            resetLevel(); stell(p2, 300, 680); n(5); druck(p2, 'dash'); n(DASH_DAUER + 4); e.leer = p2.dashPunkte === 0;
+            n(DASH_LADEZEIT_SCHWEIN - 30); e.nochLeer = p2.dashPunkte === 0; n(40); e.wiederVoll = p2.dashPunkte === 1;
+            // hoch an der Wand: heransegeln und im richtigen Moment dashen
+            resetLevel(); stell(p1, 1300, 560); stell(p2, 1440, 512); p2.vx = 4; st(); KEYS[p2.keys.glide] = true; KEYS[p2.keys.right] = true; n(5);
+            e.segelt = p2.gliding; druck(p2, 'dash'); e.hochTreffer = bisTreffer(B[1]); n(6); e.an2 = !!linkOn[2]; los();
+            // zu hoch angeflogen: sie prallt nur an die Wand
+            resetLevel(); stell(p1, 1300, 560); stell(p2, 1560, 455); st(); KEYS[p2.keys.right] = true; druck(p2, 'dash'); n(16); los();
+            e.daneben = B[1].phase === 'ruhe' && !linkOn[2];
+            // „umschalten“ an einer Wand links: Stoß nach links schaltet um und bleibt, der nächste schaltet zurück
+            resetLevel(); stell(p1, 2100, 680); stell(p2, 2620, 680); n(5); KEYS[p2.keys.left] = true; druck(p2, 'dash'); st(); los();
+            e.umTreffer = bisTreffer(B[2]); n(RAMM_UM_ZURUECK + 40); e.um1 = !!linkOn[3] && B[2].phase === 'ruhe' && tuer(3);
+            n(DASH_LADEZEIT_SCHWEIN); stell(p2, 2620, 680); n(5); KEYS[p2.keys.left] = true; druck(p2, 'dash'); st(); los(); bisTreffer(B[2]); n(20); e.um2 = !linkOn[3];
+            // wer auf dem Balken steht, fällt beim Einrammen; beim Herausgleiten schiebt der Balken ihn vor sich her
+            resetLevel(); stell(p1, 660, 649); stell(p2, 500, 680); n(12); e.steht = p1.grounded && Math.abs(p1.y - 649) < 1;
+            KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); los(); bisTreffer(B[0]); n(30); e.faellt = p1.grounded && Math.abs(p1.y - 680) < 1;
+            stell(p2, 300, 680); let w = 0; while(B[0].phase !== 'ruhe' && w++ < 900) st();
+            e.geschoben = p1.x + p1.w/2 <= B[0].solid.x + 0.5 && B[0].tief === 0;
+            // Durchbruch-Wand: der Dash des Schweinchens bricht sie im Dschungel nicht
+            resetLevel(); stell(p2, 3100, 680); n(5); KEYS[p2.keys.right] = true; druck(p2, 'dash'); n(16); los();
+            e.bruchHeil = solids.filter(s => s.type === 'bruch' && !s.gone).length === 2;
+            // Neustart setzt alles zurück
+            stell(p2, 520, 680); n(DASH_LADEZEIT_SCHWEIN); KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); los(); bisTreffer(B[0]); n(10);
+            const war = !!linkOn[1]; resetLevel(); n(2); e.reset = war && B.every(b => b.tief === 0 && b.phase === 'ruhe') && !linkOn[1];
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert not r['affeDash'] and r['schweinDash'], f'Dschungel: nur das Schweinchen darf dashen: {r}'
+        assert r['ohneDash'] and r['fest'], f'Laufen/Springen darf den Balken nicht bewegen, er ist fest: {r}'
+        assert r['getroffen'] and r['tief'] == 1 and r['an1'], f'Dash gegen die Stirnseite muss den Balken einrammen und die Nummer schalten: {r}'
+        assert r['rueck'] < 640 - 14, f'das Schweinchen federt vom Balken zurück: {r}'
+        assert r['mitte'][0] and 0.2 < r['mitte'][1] < 0.8, f'mitten im Zeitfenster: Tür offen, Balken halb heraus: {r}'
+        assert 292 <= r['zeit'] <= 316, f'Zeitfenster 5 s (300 Schritte): {r}'
+        assert r['klicks'] >= 6 and 'ramm' in r['log'] and 'rammraus' in r['log'], f'Töne (Einschlag, Klicks der Sperrklinke, heraus) fehlen: {r}'
+        assert r['raus'] and r['zu1'], f'nach dem Zeitfenster: Balken heraus, Tür zu: {r}'
+        assert r['leer'] and r['nochLeer'] and r['wiederVoll'], f'Dash des Schweinchens lädt DASH_LADEZEIT_SCHWEIN Schritte: {r}'
+        assert r['segelt'] and r['hochTreffer'] and r['an2'], f'hoch an der Wand: segeln + dashen muss treffen: {r}'
+        assert r['daneben'], f'zu hoch gedasht: kein Treffer: {r}'
+        assert r['umTreffer'] and r['um1'] and r['um2'], f'„umschalten“ (Wand links): jeder Stoß schaltet um: {r}'
+        assert r['steht'] and r['faellt'] and r['geschoben'], f'auf dem Balken stehen / fallen / beim Herausgleiten geschoben werden: {r}'
+        assert r['bruchHeil'], f'Durchbruch-Wand im Dschungel darf der Dash nicht brechen: {r}'
+        assert r['reset'], f'Neustart muss Balken und Nummer zurücksetzen: {r}'
     finally:
         srv.shutdown()
 
@@ -9565,7 +9641,7 @@ async def element_register(g):
                  ['presse', 'pressen', True, True],
                  ['durchbruch', 'bruchWaende', True, True], ['haftflaeche', 'haftflaechen', True, True],
                  ['haftboden', 'haftboeden', True, False],   # Honig zeichnet die Haftfläche (aus Wand) für beide
-                 ['windrad', 'windraeder', True, True], ['trommel', 'trommeln', True, True], ['pusteblume', 'pusteblumen', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
+                 ['windrad', 'windraeder', True, True], ['trommel', 'trommeln', True, True], ['rammbalken', 'rammbalken', True, True], ['pusteblume', 'pusteblumen', True, True], ['blattfloss', 'blattFloesse', True, True], ['flossrad', 'flossRaeder', True, True],
                  ['draisine', 'draisinen', True, True], ['meteorit', 'meteoriten', True, False]], k   # + Pump-Draisine   # Nacht-Ausbau: + Durchbruch-Wand, Haftfläche   # Lava: zeichnenHinten   # Wasser: zeichnenVorne   # Tür: gezeichnet mit den Wänden
     # Spiel: Laden und Zeichnen laufen über das Register
     await g.load(level([ground(0, 680, 2000)], {'x': 100, 'y': 680}, {'x': 60, 'y': 680},
@@ -9585,7 +9661,7 @@ async def element_register(g):
         reihe = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=bewegung] .tool')].map(t => t.dataset.tool)")
         assert reihe == ['tele', 'band', 'blatt', 'draisine', 'move'], reihe   # + Pump-Draisine   # + Blatt-Floß (Dschungel-Neu; das Floß-Rad steht unter „Schalter“)   # + Teleporter (Ausbau 4), Förderband (Ausbau 7)
         logik = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=logik] .tgb > *')].map(t => t.dataset.tool || t.tagName)")
-        assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad', 'trommel', 'flossrad'], logik   # + Windrad, Floß-Rad (Dschungel-Neu), Trommel-Station
+        assert logik == ['switch', 'door', 'plate', 'wechsel', 'windrad', 'trommel', 'ramm', 'flossrad'], logik   # + Windrad, Floß-Rad (Dschungel-Neu), Trommel-Station, Rammbalken (16.11.)
         licht = await p.evaluate("[...document.querySelectorAll('.tgroup[data-group=licht] .tool')].map(t => t.dataset.tool)")
         assert licht == ['lichtquelle', 'spiegel', 'kristall', 'leucht', 'dunkel'], licht
         # Hebel/Tür/Druckplatte übers Register: mit Nummer setzen, Export, ✓-Markierung

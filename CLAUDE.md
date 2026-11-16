@@ -77,7 +77,9 @@
   `neueBewegungVorher`, Pose `P._trommel` in 33, Stöcke an `P._handDev`, Lieder `TROMMEL_LIEDER`), `blattfloss.js` (Blatt auf einer Schiene, solids type 'blatt', schiebt nur der Seiten-Wind, nimmt Figuren mit; Schiene im
   Editor per Ziehen über `editor.ziehen`), `flossrad.js` (Kurbelrad mit Nummer: Hebel-Taste + links/rechts zieht das Blatt-Floß derselben Nummer über `radZug`;
   Figur kurbelt über `flossradVorher` aus `neueBewegungVorher`), `draisine.js` (Pump-Draisine: Plattform mit Pump-Hebel an einer
-  Tau-Schiene, solids type 'draisine'; `pusteblume.js` = schwebende Pusteblume, füllt den Schirm-Balken (js/35); beide halten die Griff-Taste (neue Aktion `griff`) und pumpen mit Springen – über
+  Tau-Schiene, solids type 'draisine'; `pusteblume.js` = schwebende Pusteblume, füllt den Schirm-Balken (js/35); `rammbalken.js` = Rammbalken (Schalter des
+  Schweinchens: Balken aus der Wand, solids type 'ramm', nur ein Dash gegen die Stirnseite rammt ihn hinein – `rammTreffen` aus
+  `dashBewegen` in 32; „Zeitfenster“ über `rammWunsch` in `updatePlates`, gleitet klickend zurück; Aussehen `rammBild` im Foto-Look); beide halten die Griff-Taste (neue Aktion `griff`) und pumpen mit Springen – über
   `draisineVorher` aus `neueBewegungVorher`; Schiene im Editor per Ziehen), `meteorit.js` (Meteoriten-Spur: Splitter/Brocken/Meteorit, nur Aussehen über `zeichnenHinten`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
 - `WELTEN.md` – Design je Welt (Thema, Look, Tiere, Musik, Mechaniken je Level, Rollen von Affe und Schweinchen; Ausbau 7/8).
@@ -94,7 +96,8 @@
 - **Dschungel-Neu:** Die Dschungel-Welt hat nur 2 Abschnitte, seit „Level 1–3 zusammen“ je EINE normale Level-Datei
   (`levels/dschungel/abschnitt-*.json`, alte Teile 01–03 + 07 Rätsel bzw. 04–06 + 08 Rätsel in `levels/archiv/dschungel-teile/`;
   „_teile“ im Level sagt, wo sie liegen – Tests schneiden sie mit `tests/abschnitt.py teil_sicht` heraus, `koop_level`/`level_pfad`
-  tun das automatisch). Kein Boss (Bruno im Archiv), keine Sprungpilze/Aufwinde, kein Dash (`DASH_AUS_WELTEN`), keine hohlen
+  tun das automatisch). Kein Boss (Bruno im Archiv), keine Sprungpilze/Aufwinde, Dash nur fürs Schweinchen (`DASH_AUS_WELTEN` +
+  `DASH_SCHWEIN_IN_AUS_WELTEN`, lädt `DASH_LADEZEIT_SCHWEIN`; Durchbruch-Wände dort weiter nur per Puste-Wind), keine hohlen
   Bäume (`BAUM_AN`). Andere Welten sind im Spiel ausgeblendet (`"aus": true` in worlds.json), Weltkarte nicht erreichbar.
   Umbau-Skripte: `tests/bausteine/dschungel_neu.py` (Stellen), `raetsel_teile.py` (Rätsel-Teile), `meteoriten_setzen.py` (Spur),
   `rhythmus_umbau.py` (Action-Blöcke + entspannte Strecken; Abschnitt 1 umgebaut, „_teile“-Grenzen und Teil-Ziele mitgerechnet);
@@ -226,7 +229,7 @@
 | Fähigkeit | G = Haken | Num 1 halten = Schirm | □ |
 | Seil ranziehen / geben | W / S | – | hoch / runter |
 | Hebel | J | Num 2 | ○ |
-| Dash (Nacht-Ausbau; im Dschungel aus) | K | Num 3 | △ |
+| Dash (Nacht-Ausbau; im Dschungel nur das Schweinchen – Rammstoß, rammt Rammbalken) | K | Num 3 | △ |
 | Spezial (Dschungel-Neu): Affe pusten / Schweinchen Schirm-Trampolin | H (+ W/A/D = Richtung, W+A/W+D = schräg) | Num 4 | R1 |
 | Haftfläche festhalten | G halten | Num 1 halten | □ |
 | Pump-Draisine: Griff halten (+ Springen = pumpen) | Q | Num 7 | L1 |

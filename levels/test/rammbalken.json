@@ -1,0 +1,36 @@
+{
+  "hinweis": "Testlevel Rammbalken (elemente/rammbalken.js) + Dash des Schweinchens (Num 3 / △). 1) Links ein Rammbalken dicht über dem Boden (Nummer 1, Zeitfenster 5 s): mit dem Schweinchen dagegen dashen -> Tür 1 geht auf, der Balken gleitet klickend zurück, dann fällt die Tür zu. 2) Mitte: Rammbalken hoch an der Wand (Nummer 2): vom Podest links lossegeln und im richtigen Moment dashen -> Tür 2. 3) Rechts: Rammbalken an einer Wand LINKS (Nummer 3, umschalten): nach links dagegen dashen schaltet Tür 3 um. Ganz rechts eine Durchbruch-Wand: die bricht im Dschungel nur der Puste-Wind des Affen, nicht der Dash. Öffnen: index.html?testlevel=rammbalken",
+  "welt": "dschungel",
+  "tageszeit": "mittag",
+  "wetter": "trocken",
+  "solids": [
+    {"x": 0, "y": 680, "w": 4000, "h": 80, "type": "ground"},
+    {"x": 720, "y": 600, "w": 80, "h": 80, "type": "wall"},
+    {"x": 1000, "y": -160, "w": 40, "h": 720, "type": "wall"},
+    {"x": 1240, "y": 560, "w": 160, "h": 120, "type": "wall"},
+    {"x": 1680, "y": 160, "w": 80, "h": 400, "type": "wall"},
+    {"x": 2040, "y": -160, "w": 40, "h": 720, "type": "wall"},
+    {"x": 2360, "y": 560, "w": 80, "h": 120, "type": "wall"},
+    {"x": 2760, "y": -160, "w": 40, "h": 720, "type": "wall"}
+  ],
+  "hooks": [],
+  "spikes": [],
+  "coins": [],
+  "movingPlatforms": [],
+  "checkpoints": [],
+  "switches": [],
+  "doors": [
+    {"x": 1000, "y": 660, "link": 1}, {"x": 1000, "y": 620, "link": 1}, {"x": 1000, "y": 580, "link": 1},
+    {"x": 2040, "y": 660, "link": 2}, {"x": 2040, "y": 620, "link": 2}, {"x": 2040, "y": 580, "link": 2},
+    {"x": 2760, "y": 660, "link": 3}, {"x": 2760, "y": 620, "link": 3}, {"x": 2760, "y": 580, "link": 3}
+  ],
+  "startM": {"x": 300, "y": 680},
+  "startF": {"x": 220, "y": 680},
+  "goal": {"x": 3800, "y": 680},
+  "rammbalken": [
+    {"x": 720, "y": 660, "link": 1},
+    {"x": 1680, "y": 500, "link": 2},
+    {"x": 2440, "y": 660, "link": 3, "wand": "links", "art": "umschalten"}
+  ],
+  "bruchWaende": [{"x": 3200, "y": 600, "w": 40, "h": 40}, {"x": 3200, "y": 640, "w": 40, "h": 40}]
+}
