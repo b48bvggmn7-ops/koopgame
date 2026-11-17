@@ -21,10 +21,7 @@ function pusteblumeBild(c, x, y, wuchs, wackel, t, nah, gr){
   const hr = 40 + 10*nah, sg = c.createRadialGradient(0, 0, 0, 0, 0, hr);
   sg.addColorStop(0, `rgba(255,236,170,${(0.28 + 0.3*nah)*(0.3 + 0.7*wuchs)})`); sg.addColorStop(0.4, `rgba(255,240,200,${(0.1 + 0.14*nah)*wuchs})`); sg.addColorStop(1, 'rgba(255,240,200,0)');
   c.fillStyle = sg; c.beginPath(); c.arc(0, 0, hr, 0, Math.PI*2); c.fill();
-  // Stiel (abgebrochen, schwebt) mit kleinem Blatt
-  c.strokeStyle = '#3f5a32'; c.lineWidth = 2.4; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(0, 4); c.quadraticCurveTo(3 + wackel*2, 18, -3, 32); c.stroke();
-  c.fillStyle = '#5f8448'; c.beginPath(); c.ellipse(-1, 22, 6, 2.4, -0.7, 0, Math.PI*2); c.fill();
+  // (kein Stiel, kein Blatt – Nutzerwunsch 17.11.: nur die schwebende Samenkugel)
   // Samen: feine Fäden mit Schirmchen, im Kreis; beim Nachwachsen erscheinen sie einer nach dem anderen
   const n = Math.floor(PUSTEBLUME_SAMEN*wuchs + 0.001);
   if(wuchs > 0.05){   // flauschige Kugel (durchscheinend), wächst mit
@@ -46,6 +43,9 @@ function pusteblumeBild(c, x, y, wuchs, wackel, t, nah, gr){
   c.fillStyle = 'rgba(255,248,220,.6)'; c.beginPath(); c.arc(-1.2, -1.3, 1.6, 0, Math.PI*2); c.fill();
   c.restore();
 }
+// Dash aufladen (Nutzerwunsch 17.11.): fehlt dem Schweinchen der Dash (und darf es hier dashen), lädt die Pusteblume ihn sofort
+const pusteblumeDashFehlt = P => typeof dashAusHier === 'function' && typeof DASH_LUFT !== 'undefined' && !dashAusHier(P) && !P.dash && P.dashPunkte < DASH_LUFT;
+const pusteblumeNuetzt = P => P.schirmKraft < 0.999 || pusteblumeDashFehlt(P);
 function pusteblumenSchritt(figuren){
   for(const b of pusteblumen){
     if(b.wuchs < 1){ b.wuchs = Math.min(1, b.wuchs + 1/PUSTEBLUME_NACHWACHSEN); if(b.wuchs >= 1) b._fertigT = performance.now(); }
@@ -54,9 +54,13 @@ function pusteblumenSchritt(figuren){
       if(!P || (deathState && deathState.victim === P)) continue;
       const d = Math.hypot(P.x - b.x, P.y - P.h/2 - b.y);
       if(d > PUSTEBLUME_RADIUS + P.w/2) continue;
-      if(!P.male && b.wuchs >= 1 && P.schirmKraft !== undefined && P.schirmKraft < 0.999 && typeof schirmAuffuellen === 'function'){
+      if(!P.male && b.wuchs >= 1 && P.schirmKraft !== undefined && pusteblumeNuetzt(P) && typeof schirmAuffuellen === 'function'){
         b.wuchs = 0; b.wackel = 1;
         schirmAuffuellen(P, b.menge === 'voll' ? 1 : SCHIRM_PUSTE_HALB, b);
+        if(pusteblumeDashFehlt(P)){   // Dash sofort wieder da (Nutzerwunsch 17.11.)
+          P.dashPunkte = DASH_LUFT; P.dashLadung = 0; P._dashVollT = performance.now();
+          if(typeof SFX !== 'undefined' && SFX.dashVoll) SFX.dashVoll(P);
+        }
       } else b.wackel = Math.max(b.wackel, 0.6);   // nur gestreift (Affe / Schirm voll)
     }
   }
@@ -65,7 +69,7 @@ elementRegistrieren({
   id: 'pusteblume', name: 'Pusteblume', feld: 'pusteblumen',
   editor: {
     werkzeug: 'pusteblume', gruppe: 'haken', vor: 'bounce', art: 'punkt', ziehbar: false, farbe: '#e8f6ff',
-    titel: 'Pusteblume: schwebt; das Schweinchen fliegt hindurch und füllt seinen Schirm-Balken auf (halb oder ganz), wächst nach 5 s nach',
+    titel: 'Pusteblume: schwebt; das Schweinchen fliegt hindurch und füllt seinen Schirm-Balken auf (halb oder ganz) und lädt den Dash sofort wieder auf, wächst nach 5 s nach',
     optionen: [{key: 'menge', label: 'Füllt', titel: 'wie viel vom Schirm-Balken die Pusteblume auffüllt', werte: [['halb', 'halb'], ['voll', 'ganz']]}],
     zeichnen(ctx, c, r, TILE, p){
       pusteblumeBild(ctx, c*TILE + TILE/2, r*TILE + TILE/2 - 4, 1, 0, 0, 0, TILE/40*0.8);
@@ -83,7 +87,7 @@ elementRegistrieren({
       const t = performance.now()*0.001, S = [p1, p2].find(P => P && !P.male);
       for(const b of pusteblumen){
         const x = b.x - camX; if(x < -60 || x > VW + 60) continue;
-        const nah = S && S.schirmKraft < 0.999 && b.wuchs >= 1 ? Math.max(0, 1 - Math.hypot(S.x - b.x, S.y - b.y)/220) : 0;
+        const nah = S && pusteblumeNuetzt(S) && b.wuchs >= 1 ? Math.max(0, 1 - Math.hypot(S.x - b.x, S.y - b.y)/220) : 0;
         const bob = Math.sin(t*1.6 + b.x*0.013)*3;
         pusteblumeBild(ctx, x, b.y + bob, b.wuchs, b.wackel, t, nah, 1);
         if(b._fertigT && performance.now() - b._fertigT < 500){   // wieder da: kurzes Funkeln

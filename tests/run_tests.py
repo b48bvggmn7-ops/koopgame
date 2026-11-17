@@ -8370,7 +8370,14 @@ async def perfekt_momente(g):
             // Pusteblume: mit fast leerem Balken hindurch -> auffüllen, Blume weg, wächst nach
             resetLevel(); stell(p1, 300, 680); n(2); stell(p2, 1700, 440); p2.schirmKraft = 0.1; p2.schirmLeer = true; st();
             e.blume = [p2.schirmKraft, p2.schirmLeer, pusteblumen[0].wuchs]; n(PUSTEBLUME_NACHWACHSEN + 2); e.nachgewachsen = pusteblumen[0].wuchs;
-            stell(p2, 2000, 400); p2.schirmKraft = 1; st(); e.vollBleibt = pusteblumen[1].wuchs;   // Balken voll: Blume bleibt
+            // (Affe mit hinüber: sonst holt die Bildgrenze das Schweinchen zurück und es berührt die Blume gar nicht)
+            stell(p1, 1800, 680); n(2); stell(p2, 2000, 400); p2.schirmKraft = 1; st();
+            e.vollBleibt = pusteblumen[1].wuchs; e.vollNah = Math.abs(p2.x - 2000) < 5;   // Balken voll: Blume bleibt
+            // 17.11.: fehlt der Dash, lädt die Pusteblume ihn sofort auf (auch mit vollem Balken); der Affe bekommt nichts
+            stell(p2, 2000, 400); p2.schirmKraft = 1; p2.dashPunkte = 0; p2.dashLadung = 0.2; st();
+            e.dashBlume = [p2.dashPunkte, DASH_LUFT, pusteblumen[1].wuchs, p2.dashLadung];
+            n(PUSTEBLUME_NACHWACHSEN + 2); stell(p2, 1800, 680); stell(p1, 2000, 400); p1.dashPunkte = 0; st();
+            e.dashAffe = [p1.dashPunkte, pusteblumen[1].wuchs, Math.abs(p1.x - 2000) < 5];
           } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
           return e; })()""")
         P, G = r['perfekt'], r['gut']
@@ -8387,7 +8394,9 @@ async def perfekt_momente(g):
         assert r['geladen'] == 1, f'am Boden lädt der Balken wieder voll: {r}'
         assert r['blume'][0] > 0.55 and not r['blume'][1] and r['blume'][2] < 0.1, f'Pusteblume muss auffüllen und verschwinden: {r}'
         assert r['nachgewachsen'] == 1, f'Pusteblume wächst nach: {r}'
-        assert r['vollBleibt'] == 1, f'mit vollem Balken bleibt die Pusteblume stehen: {r}'
+        assert r['vollBleibt'] == 1 and r['vollNah'] and r['dashAffe'][2], f'mit vollem Balken bleibt die Pusteblume stehen: {r}'
+        assert r['dashBlume'][0] == r['dashBlume'][1] and r['dashBlume'][2] < 0.1 and r['dashBlume'][3] == 0, f'Pusteblume muss den Dash sofort aufladen: {r}'
+        assert r['dashAffe'][0] == 0 and r['dashAffe'][1] == 1, f'der Affe bekommt von der Pusteblume keinen Dash: {r}'
     finally:
         srv.shutdown()
 

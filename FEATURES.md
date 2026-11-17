@@ -2554,12 +2554,14 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   (Pentatonik `PERFEKT_TON`). GUT = silberne Schrift, weicher Ton (Serie endet). Landen beendet die Serie.
   Testlevel `index.html?testlevel=perfekt`. Test perfekt_momente.
 - **Pusteblume** (Nutzerwunsch 08.11., elemente/pusteblume.js, Editor-Reiter „Haken & Sprung“, Werkzeug „Pusteblume“, im Dschungel
-  empfohlen): schwebende Pusteblume (flauschige Kugel aus 30 Samen, abgebrochener Stiel mit Blatt, dunkler Grund + warmer Schein,
+  empfohlen): schwebende Pusteblume (flauschige Kugel aus 30 Samen, ohne Stiel und Blatt – Nutzerwunsch 17.11., dunkler Grund + warmer Schein,
   damit sie sich vom Nebel abhebt; wippt leicht). Fliegt das Schweinchen hindurch und ist sein Schirm-Balken nicht voll, fliegen die
   Samen zum Schirm und füllen ihn auf (Auswahl „Füllt“: halb / ganz; der Bogen leuchtet kurz auf) – auch leer geflogen geht der
   Schirm sofort wieder auf. Mehrere in einem Flug = kleine Melodie (jede einen Ton höher). Danach wächst sie in 5 s nach (Samen
   erscheinen einzeln, Funkeln wenn fertig). Mit vollem Balken bzw. für den Affen: sie wackelt nur. Je näher das Schweinchen mit
-  nicht vollem Balken kommt, desto heller leuchtet sie.
+  nicht vollem Balken kommt, desto heller leuchtet sie. **Lädt auch den Dash auf** (Nutzerwunsch 17.11.): fehlt dem Schweinchen
+  der Dash, ist er nach der Pusteblume sofort wieder da (Ring über dem Kopf blitzt, Ton) – zusätzlich zum Flug-Balken; sie wird
+  dann auch mit vollem Balken eingesammelt und leuchtet beim Näherkommen. Der Affe bekommt nichts.
 - **Blatt-Floß** (elemente/blattfloss.js, Editor-Reiter „Bewegung“, Werkzeug „Blatt-Floß“, im Dschungel empfohlen): großes
   festes Blatt (3 Kästchen breit) auf einer Ranken-Schiene nach rechts (Auswahl „Schiene“: 4–14 Kästchen; im Editor am
   linken Ende setzen, die Schiene ist mitgezeichnet und gehört zum Floß). Nur der Seiten-Wind des Affen schiebt es in
