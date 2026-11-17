@@ -8410,7 +8410,7 @@ async def rammbalken_dash(g):
     srv = webserver()
     try:
         await g.p.goto(srv.url + 'index.html?testlevel=rammbalken')
-        await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && typeof rammbalken !== 'undefined' && rammbalken.length === 3 && menuScreen === null", timeout=10000)
+        await g.p.wait_for_function("typeof p1 !== 'undefined' && p1 && typeof rammbalken !== 'undefined' && rammbalken.length === 5 && menuScreen === null", timeout=10000)
         r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
           const n = k => { for(let i = 0; i < k; i++) st(); };
           const druck = (P, a) => { KEYS[P.keys[a]] = true; KEYS[P.keys[a] + '_pressed'] = true; };
@@ -8452,6 +8452,27 @@ async def rammbalken_dash(g):
             // Durchbruch-Wand: der Dash des Schweinchens bricht sie im Dschungel nicht
             resetLevel(); stell(p2, 3100, 680); n(5); KEYS[p2.keys.right] = true; druck(p2, 'dash'); n(16); los();
             e.bruchHeil = solids.filter(s => s.type === 'bruch' && !s.gone).length === 2;
+            // 17.11. alle vier Richtungen: Balken aus dem BODEN (B[3], Spitze y 600) – seitlich dagegen dashen rammt nicht,
+            // am Boden gibt runter + Dash nur einen normalen Dash; daraufstehen + runter + Dash stampft ihn hinein
+            const hoch = p2.keys.swimUp, runter = p2.keys.swimDown;
+            resetLevel(); stell(p1, 3300, 680); stell(p2, 3400, 680); n(5); KEYS[p2.keys.right] = true; druck(p2, 'dash'); n(16); los();
+            e.seitlich = B[3].phase === 'ruhe' && !linkOn[4];
+            n(DASH_LADEZEIT_SCHWEIN); stell(p2, 3300, 680); n(5); KEYS[runter] = true; druck(p2, 'dash'); st(); e.bodenFlach = !!p2.dash && p2.dash.dy === 0; los(); n(20);
+            n(DASH_LADEZEIT_SCHWEIN); stell(p2, 3500, 600); n(5); e.stehtOben = p2.grounded && Math.abs(p2.y - 600) < 1;
+            KEYS[runter] = true; druck(p2, 'dash'); st(); e.dashRunter = p2._dashDy === 1 && p2._dashDx === 0; los();
+            e.stampf = bisTreffer(B[3]); n(8); e.an4 = !!linkOn[4] && tuer(4); e.huepfer = p2.vy < 0 || p2.y < 640;
+            let w4 = 0; while(B[3].phase !== 'ruhe' && w4++ < 900) st(); e.faehrtHoch = p2.grounded && Math.abs(p2.y - 600) < 1 && !linkOn[4];
+            // aus der Luft von oben
+            n(DASH_LADEZEIT_SCHWEIN); stell(p2, 3500, 540); KEYS[runter] = true; druck(p2, 'dash'); st(); los(); e.stampfLuft = bisTreffer(B[3]);
+            // Balken von der DECKE (B[4], Spitze y 520): darunter hoch + Dash; ohne „hoch“ kein Treffer
+            resetLevel(); stell(p1, 3900, 680); stell(p2, 4020, 680); n(5); druck(p2, 'dash'); n(16); e.ohneHoch = B[4].phase === 'ruhe';
+            n(DASH_LADEZEIT_SCHWEIN); stell(p2, 4020, 680); n(5); KEYS[hoch] = true; druck(p2, 'dash'); st(); e.dashHoch = !!p2.dash && p2.dash.dy === -1; los();
+            e.deckeTreffer = bisTreffer(B[4]); n(8); e.an5 = !!linkOn[5] && tuer(5);
+            // Dash nach oben ins Freie: so hoch kommt sie (Kästchen)
+            resetLevel(); stell(p1, 3000, 680); stell(p2, 2900, 680); n(5); KEYS[hoch] = true; druck(p2, 'dash'); st(); los();
+            let top = 680, q = 0; while(q++ < 80){ st(); top = Math.min(top, p2.y); } e.dashHoehe = (680 - top)/40;
+            // der Affe dasht anderswo weiter nur waagerecht (Regel gilt nur fürs Schweinchen im Dschungel)
+            e.affeRichtung = dashRichtung(p1, 0).dy === 0;
             // Neustart setzt alles zurück
             stell(p2, 520, 680); n(DASH_LADEZEIT_SCHWEIN); KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); los(); bisTreffer(B[0]); n(10);
             const war = !!linkOn[1]; resetLevel(); n(2); e.reset = war && B.every(b => b.tief === 0 && b.phase === 'ruhe') && !linkOn[1];
@@ -8471,6 +8492,13 @@ async def rammbalken_dash(g):
         assert r['umTreffer'] and r['um1'] and r['um2'], f'„umschalten“ (Wand links): jeder Stoß schaltet um: {r}'
         assert r['steht'] and r['faellt'] and r['geschoben'], f'auf dem Balken stehen / fallen / beim Herausgleiten geschoben werden: {r}'
         assert r['bruchHeil'], f'Durchbruch-Wand im Dschungel darf der Dash nicht brechen: {r}'
+        assert r['seitlich'] and r['bodenFlach'], f'Boden-Balken: seitlicher Dash rammt nicht; am Boden ohne Balken bleibt runter + Dash waagerecht: {r}'
+        assert r['stehtOben'] and r['dashRunter'] and r['stampf'] and r['an4'] and r['huepfer'], f'Boden-Balken: daraufstehen + runter + Dash muss ihn einrammen: {r}'
+        assert r['faehrtHoch'], f'Boden-Balken: wer oben steht, fährt beim Herausgleiten mit hoch: {r}'
+        assert r['stampfLuft'], f'Boden-Balken: Stampfer aus der Luft muss treffen: {r}'
+        assert r['ohneHoch'] and r['dashHoch'] and r['deckeTreffer'] and r['an5'], f'Decken-Balken: nur hoch + Dash von unten rammt ihn: {r}'
+        assert 3.8 <= r['dashHoehe'] <= 4.3, f'Dash nach oben: Höhe unerwartet: {r}'
+        assert r['affeRichtung'], f'Affe: Dash bleibt waagerecht: {r}'
         assert r['reset'], f'Neustart muss Balken und Nummer zurücksetzen: {r}'
     finally:
         srv.shutdown()
@@ -9214,12 +9242,16 @@ window.__daten = t => {
 window.__sichtZelle = (t, p) => {
   const E = elementNachWerkzeug(t);
   if(!E || E.editor.art !== 'punkt' || !E.editor.zeichnen) return [p.c, p.r];
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, tx = 0, ty = 0; const st = [];
-  const add = (x, y) => { x += tx; y += ty; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  // m = Lage-Matrix [a, b, c, d, e, f] wie im Canvas (verschieben, spiegeln/vergrößern, drehen – z. B. Rammbalken in 4 Richtungen)
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, m = [1, 0, 0, 1, 0, 0]; const st = [];
+  const mal = (a, b, c, d, e, f2) => { m = [m[0]*a + m[2]*b, m[1]*a + m[3]*b, m[0]*c + m[2]*d, m[1]*c + m[3]*d, m[0]*e + m[2]*f2 + m[4], m[1]*e + m[3]*f2 + m[5]]; };
+  const add = (x, y) => { const X = m[0]*x + m[2]*y + m[4], Y = m[1]*x + m[3]*y + m[5]; x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); };
   const f = new Proxy({}, {get(o, k){
-    if(k === 'save') return () => st.push([tx, ty]);
-    if(k === 'restore') return () => { const s = st.pop(); if(s){ tx = s[0]; ty = s[1]; } };
-    if(k === 'translate') return (a, b) => { tx += a; ty += b; };
+    if(k === 'save') return () => st.push(m.slice());
+    if(k === 'restore') return () => { const s = st.pop(); if(s) m = s; };
+    if(k === 'translate') return (a, b) => mal(1, 0, 0, 1, a, b);
+    if(k === 'scale') return (a, b) => mal(a, 0, 0, b, 0, 0);
+    if(k === 'rotate') return w => mal(Math.cos(w), Math.sin(w), -Math.sin(w), Math.cos(w), 0, 0);
     if(['fillRect', 'strokeRect', 'rect', 'roundRect'].includes(k)) return (x, y, w, h) => { add(x, y); add(x + w, y + h); };
     if(k === 'arc') return (x, y, r) => { add(x - r, y - r); add(x + r, y + r); };
     if(k === 'ellipse') return (x, y, a, b) => { add(x - a, y - b); add(x + a, y + b); };

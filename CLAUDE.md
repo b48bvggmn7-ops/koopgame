@@ -78,7 +78,8 @@
   Editor per Ziehen über `editor.ziehen`), `flossrad.js` (Kurbelrad mit Nummer: Hebel-Taste + links/rechts zieht das Blatt-Floß derselben Nummer über `radZug`;
   Figur kurbelt über `flossradVorher` aus `neueBewegungVorher`), `draisine.js` (Pump-Draisine: Plattform mit Pump-Hebel an einer
   Tau-Schiene, solids type 'draisine'; `pusteblume.js` = schwebende Pusteblume, füllt den Schirm-Balken (js/35); `rammbalken.js` = Rammbalken (Schalter des
-  Schweinchens: Balken aus der Wand, solids type 'ramm', nur ein Dash gegen die Stirnseite rammt ihn hinein – `rammTreffen` aus
+  Schweinchens: Balken aus Wand/Boden/Decke (`wand` rechts/links/unten/oben -> `b.dx/b.dy`; das Schweinchen dasht im Dschungel mit
+  hoch/runter auch senkrecht, `dashRichtung` in 32), solids type 'ramm', nur ein Dash gegen die Stirnseite rammt ihn hinein – `rammTreffen` aus
   `dashBewegen` in 32; „Zeitfenster“ über `rammWunsch` in `updatePlates`, gleitet klickend zurück; Aussehen `rammBild` im Foto-Look); beide halten die Griff-Taste (neue Aktion `griff`) und pumpen mit Springen – über
   `draisineVorher` aus `neueBewegungVorher`; Schiene im Editor per Ziehen), `meteorit.js` (Meteoriten-Spur: Splitter/Brocken/Meteorit, nur Aussehen über `zeichnenHinten`); Aufbau in `00-register.js`. Die Schalt-Logik der Nummern bleibt
   gemeinsam im Verknüpfungs-System (`js/05-level-objekte.js`: setLink, updateDoorsAndSwitches, updatePlates).
@@ -229,7 +230,7 @@
 | Fähigkeit | G = Haken | Num 1 halten = Schirm | □ |
 | Seil ranziehen / geben | W / S | – | hoch / runter |
 | Hebel | J | Num 2 | ○ |
-| Dash (Nacht-Ausbau; im Dschungel nur das Schweinchen – Rammstoß, rammt Rammbalken) | K | Num 3 | △ |
+| Dash (Nacht-Ausbau; im Dschungel nur das Schweinchen – Rammstoß, rammt Rammbalken; dort mit hoch/runter auch senkrecht) | K | Num 3 | △ |
 | Spezial (Dschungel-Neu): Affe pusten / Schweinchen Schirm-Trampolin | H (+ W/A/D = Richtung, W+A/W+D = schräg) | Num 4 | R1 |
 | Haftfläche festhalten | G halten | Num 1 halten | □ |
 | Pump-Draisine: Griff halten (+ Springen = pumpen) | Q | Num 7 | L1 |

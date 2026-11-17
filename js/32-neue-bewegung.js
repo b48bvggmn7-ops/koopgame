@@ -41,6 +41,12 @@ function dashKannStarten(P){
   return P.dashPunkte > 0;   // kein kostenloser Anschluss-Dash nach einem Durchbruch mehr (Nutzerwunsch: ein Dash, dann aufladen)
 }
 function dashRichtung(P, moveDir){
+  // Nutzerwunsch 17.11.: das Schweinchen im Dschungel dasht mit hoch/runter auch SENKRECHT (für Rammbalken an Boden/Decke);
+  // hoch/runter hat Vorrang vor links/rechts, schräg gibt es nicht. Am Boden nach unten nur, wenn sie auf einem Rammbalken steht.
+  if(dashNurSchweinWelt() && !P.male){
+    const dy = neuOben(P) ? -1 : (neuUnten(P) ? 1 : 0);
+    if(dy && !(dy > 0 && P.grounded && !(typeof rammUnter === 'function' && rammUnter(P)))) return {dx: 0, dy};
+  }
   if(DASH_NUR_WAAGERECHT){   // Nutzerwunsch: nur nach links/rechts – Richtungstaste, sonst Schwung am Seil, sonst Blickrichtung
     let dx = moveDir || (P.hookAttached && Math.abs(P.vx) > 1 ? Math.sign(P.vx) : 0) || P.facing || 1;
     return {dx, dy: 0};
@@ -78,13 +84,14 @@ function dashBeenden(P){
   P.dash = null;
   P.vx *= DASH_BEHALTEN;
   P.vy = P.vy < 0 ? Math.max(P.vy*DASH_BEHALTEN, JUMP_V) : P.vy*DASH_BEHALTEN;
+  if(d.dy < 0 && !d.dx && dashNurSchweinWelt() && !P.male) P.vy *= DASH_HOCH_SCHWEIN_BEHALTEN;   // senkrecht hoch: kein Schwung obendrauf
   if(P.grounded) P.dashPause = DASH_PAUSE;
 }
 // während des Dashs: Tempo fest in Dash-Richtung, keine Schwerkraft, kein Schirm
 function dashSchritt(P){
   const d = P.dash;
   P.vx = d.dx*DASH_TEMPO*d.faktor; P.vy = d.dy*DASH_TEMPO*d.faktor;
-  if(P.grounded && d.dy > 0 && !bruchUnter(P)) P.vy = 0;   // schräg nach unten am Boden: flach weiter
+  if(P.grounded && d.dy > 0 && !bruchUnter(P) && !(typeof rammUnter === 'function' && rammUnter(P))) P.vy = 0;   // schräg nach unten am Boden: flach weiter
   P.gliding = false;
 }
 // Bewegen während des Dashs in Teilschritten (nie mehr als DASH_TEILSCHRITT px auf einmal: kein Durchtunneln durch Wände,
@@ -100,12 +107,13 @@ function dashBewegen(P){
       bruchTreffen(P, sx, 0);
       const v = P.vx; P.x += sx; collideAxis(P, 'x');
       if(P.vx === 0 && v !== 0){ d.stossX = Math.sign(v); bx = false;
-        if(typeof rammTreffen === 'function' && rammTreffen(P, Math.sign(v))) d.gerammt = true; }   // Rammbalken getroffen (elemente/rammbalken.js)
+        if(typeof rammTreffen === 'function' && rammTreffen(P, Math.sign(v), 0)) d.gerammt = true; }   // Rammbalken getroffen (elemente/rammbalken.js)
     }
     if(by){
       bruchTreffen(P, 0, sy);
       const v = P.vy; P.y += sy; collideAxis(P, 'y');
-      if(P.vy === 0 && v !== 0){ d.stossY = Math.sign(v); by = false; }
+      if(P.vy === 0 && v !== 0){ d.stossY = Math.sign(v); by = false;
+        if(typeof rammTreffen === 'function' && rammTreffen(P, 0, Math.sign(v))) d.gerammt = true; }   // Rammbalken an Boden/Decke
     }
   }
   // Teilschritte haben P.vx/P.vy evtl. auf 0 gesetzt; für die Auswertung zählt das Dash-Tempo
@@ -491,9 +499,10 @@ function neueBewegungNachher(P, altX, altY){
   if(d){
     if(d.dy >= 0 && P.vy < -10 && !d.stossY){ P.dash = null; }          // Sprungpilz hat übernommen
     else if(d.stossX && d.dx && Math.abs(d.dy) < 0.5){ dashBeenden(P);
-      if(d.gerammt && typeof rammRueckstoss === 'function') rammRueckstoss(P, d.stossX);   // Rammbalken: federt kurz zurück (eigener Ton)
+      if(d.gerammt && typeof rammRueckstoss === 'function') rammRueckstoss(P, d.stossX, 0);   // Rammbalken: federt kurz zurück (eigener Ton)
       else if(typeof SFX !== 'undefined' && SFX.dashBonk) SFX.dashBonk(P); }
-    else if(d.stossY && d.dy && !d.dx){ dashBeenden(P); }
+    else if(d.stossY && d.dy && !d.dx){ dashBeenden(P);
+      if(d.gerammt && typeof rammRueckstoss === 'function') rammRueckstoss(P, 0, d.stossY); }
     else if(d.stossY > 0 && d.dx){ d.dy = 0; d.dx = Math.sign(d.dx); }  // schräg auf den Boden: flach weiter
     else if(--d.zeit <= 0) dashBeenden(P);
     // Dash nach oben gegen eine Haftfläche: festhalten, wenn die Fähigkeits-Taste gehalten wird

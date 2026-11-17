@@ -2683,11 +2683,23 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Anzeige: kleiner Ring über dem Kopf in den Farben des Flug-Bogens (leer dunkel, lädt im Uhrzeigersinn cremefarben ->
   bernstein, voll = kurzer Lichtring, dann unsichtbar). In den Optionen steht „Dash (Rammstoß)“ nur beim Schweinchen, die
   Taste ist unter „Tasten belegen“ wieder änderbar. Tests dash_welt_aus, rammbalken_dash.
+  **Dash auch hoch/runter** (Nutzerwunsch 17.11., für Rammbalken an Boden/Decke): hält das Schweinchen dort hoch oder runter
+  (Pfeil hoch/runter, Stick) und drückt Dash, dasht es SENKRECHT (hoch/runter hat Vorrang vor links/rechts, schräg gibt es
+  nicht). Nach oben genau 4 Kästchen, danach kein Schwung obendrauf (`DASH_HOCH_SCHWEIN_BEHALTEN` 0). Am Boden nach unten
+  nur, wenn es auf der Stirnseite eines Boden-Rammbalkens steht (sonst normaler Dash in Blickrichtung). Affe und andere
+  Welten unverändert (nur waagerecht).
 - **Rammbalken** (Nutzerwunsch 16.11., elemente/rammbalken.js, Editor-Reiter „Logik“, Werkzeug „Rammbalken“, im Dschungel
   empfohlen): der Schalter des Schweinchens – so wie das Windrad der Schalter des Affen ist. Ein schwerer, verwitterter
   Eichenbalken (2 Kästchen lang, 22 px dick) ragt waagerecht aus einer Wand. **Nur ein Dash gegen die Stirnseite** rammt ihn
   hinein (Laufen, Springen, Pusten nicht; die Figur muss die Stirnseite mind. 6 px in der Höhe treffen). Im Editor ins
-  Kästchen direkt neben der Wand setzen; Auswahl „Wand“: Wand rechts (Stoß nach rechts) / Wand links.
+  Kästchen direkt neben der Wand setzen; Auswahl „Richtung“: Wand rechts (Stoß nach rechts) / Wand links.
+  **Alle vier Richtungen** (Nutzerwunsch 17.11.): außerdem „Boden (ragt hoch)“ – ins Kästchen direkt über dem Boden setzen;
+  rammen von oben: daraufstehen oder darüber sein, runter + Dash (kleiner Hüpfer danach; wer oben steht, fährt beim
+  Herausgleiten wieder mit hoch) – und „Decke (hängt runter)“ – ins Kästchen direkt unter der Decke; rammen von unten mit
+  hoch + Dash (die Stirnseite muss seitlich mind. 6 px getroffen werden; beim Herausgleiten schiebt er nach unten). Ein
+  seitlicher Dash rammt senkrechte Balken nicht. Aussehen senkrecht: gleiche Teile gedreht, helle Seite links, Moos als
+  flache Flecken – nichts, was „nach unten“ hängt oder läuft (Moosfäden, Rostfahnen), liegt quer. Level-Feld
+  `wand`: rechts (Standard) / links / unten / oben.
   **Zeitfenster** (Standard): eingerammt ist die Nummer AN (wie eine gedrückte Druckplatte); nach ½ s gleitet der Balken
   gleichmäßig wieder heraus – wie weit er herausragt, zeigt die restliche Zeit; die Sperrklinke klickt über 8 Kerben
   (wird zum Ende hin höher = hörbare Uhr); genau nach „Zeit“ (3 / 5 / 8 / 12 s, Standard 5) ist die Nummer wieder AUS.

@@ -24,33 +24,59 @@ const RAMM_TREFFER_MIN = 6;    // px: so viel muss die Figur die Stirnseite in d
 const RAMM_KERBEN = 8;         // Kerben auf dem Balken = Klicks der Sperrklinke beim Zurückgleiten
 const RAMM_STOPP = 4;          // Trefferstopp (Schritte)
 const RAMM_RUECK = 3.2;        // px/Schritt: so stark federt die Figur vom Balken zurück
-let rammbalken = [];           // {x (Wandkante), y (Mitte), dir (+1 = ragt nach rechts, −1 = nach links), link, art, zeit, tief (0…1), phase, t, solid}
+const RAMM_HUEPFER = 5;        // px/Schritt: kleiner Hüpfer nach einem Stampfer von oben
+let rammbalken = [];           // {x, y (Mitte der Stelle, wo er aus der Fläche kommt), dx, dy (wohin er ragt), link, art, zeit, tief (0…1), phase, t, solid}
 const rammFx = [];             // Holzsplitter (nur Anzeige, im Takt gerechnet)
 
 function rammLaenge(b){ return RAMM_REST + (RAMM_LAENGE - RAMM_REST)*(1 - b.tief); }
+// Richtung (Nutzerwunsch 17.11.: alle vier): b.dx/b.dy = wohin der Balken aus seiner Fläche ragt. Level-Feld „wand“ = wo die
+// Fläche ist: rechts (Standard, ragt nach links), links, unten (Boden, ragt nach oben), oben (Decke, hängt nach unten).
+const RAMM_RICHTUNG = {rechts: [-1, 0], links: [1, 0], unten: [0, -1], oben: [0, 1]};
+const rammRichtungVon = p => RAMM_RICHTUNG[p && p.wand] || RAMM_RICHTUNG.rechts;
+// Editor: Kästchen (c, r) direkt an der Fläche -> Punkt, an dem der Balken aus der Fläche kommt
+function rammAnker(c, r, T, dx, dy){
+  return dx ? [dx > 0 ? c*T : (c + 1)*T, r*T + T/2] : [c*T + T/2, dy < 0 ? (r + 1)*T : r*T];
+}
 function rammSolidSetzen(b){
-  const S = b.solid, len = rammLaenge(b);
-  S.x = b.dir < 0 ? b.x - len : b.x; S.w = len; S.y = b.y - RAMM_DICK/2; S.h = RAMM_DICK;
+  const S = b.solid, len = rammLaenge(b), D = RAMM_DICK;
+  if(b.dx){ S.x = b.dx < 0 ? b.x - len : b.x; S.w = len; S.y = b.y - D/2; S.h = D; }
+  else { S.y = b.dy < 0 ? b.y - len : b.y; S.h = len; S.x = b.x - D/2; S.w = D; }
+}
+// Punkt an der Stirnseite (Mitte)
+function rammSpitze(b){ const len = rammLaenge(b); return [b.x + b.dx*len, b.y + b.dy*len]; }
+// steht die Figur auf der Stirnseite eines Balkens, der aus dem Boden ragt? (dann darf sie am Boden nach unten dashen, js/32)
+function rammUnter(P){
+  for(const b of rammbalken){
+    if(b.dy >= 0) continue; const S = b.solid;
+    if(Math.abs(P.y - S.y) <= 3 && Math.min(P.x + P.w/2, S.x + S.w) - Math.max(P.x - P.w/2, S.x) >= RAMM_TREFFER_MIN) return true;
+  }
+  return false;
 }
 // „zeit“: wirkt wie eine gedrückte Druckplatte, solange der Balken drin steckt (aus updatePlates, js/05)
 function rammWunsch(want){
   for(const b of rammbalken) if(b.art === 'zeit' && b.link) want[b.link] = want[b.link] || b.phase === 'rein' || b.tief > RAMM_AN;
 }
-// aus dashBewegen (js/32): die Figur ist im Dash waagerecht gegen etwas gestoßen (dir = Dash-Richtung) – war es die
+// aus dashBewegen (js/32): die Figur ist im Dash gegen etwas gestoßen (sx/sy = Dash-Richtung, eins davon 0) – war es die
 // Stirnseite eines Rammbalkens? true = eingerammt
-function rammTreffen(P, dir){
+function rammTreffen(P, sx, sy){
   for(const b of rammbalken){
-    if(b.dir !== -dir) continue;                         // nur in Richtung Wand
-    const S = b.solid, spitze = b.dir < 0 ? S.x : S.x + S.w, vorn = P.x + dir*P.w/2;
-    if(Math.abs(vorn - spitze) > 3) continue;            // steht nicht an der Stirnseite
-    const hoch = Math.min(P.y, S.y + S.h) - Math.max(P.y - P.h, S.y);
-    if(hoch < RAMM_TREFFER_MIN) continue;                // zu hoch / zu tief
-    rammEinschlag(b, dir);
+    if(b.dx !== -sx || b.dy !== -sy) continue;           // nur genau in Richtung der Fläche, aus der er ragt
+    const S = b.solid;
+    if(sx){
+      const spitze = b.dx < 0 ? S.x : S.x + S.w, vorn = P.x + sx*P.w/2;
+      if(Math.abs(vorn - spitze) > 3) continue;          // steht nicht an der Stirnseite
+      if(Math.min(P.y, S.y + S.h) - Math.max(P.y - P.h, S.y) < RAMM_TREFFER_MIN) continue;   // zu hoch / zu tief
+    } else {
+      const spitze = b.dy < 0 ? S.y : S.y + S.h, vorn = sy > 0 ? P.y : P.y - P.h;   // Füße bzw. Kopf
+      if(Math.abs(vorn - spitze) > 3) continue;
+      if(Math.min(P.x + P.w/2, S.x + S.w) - Math.max(P.x - P.w/2, S.x) < RAMM_TREFFER_MIN) continue;   // seitlich daneben
+    }
+    rammEinschlag(b);
     return true;
   }
   return false;
 }
-function rammEinschlag(b, dir){
+function rammEinschlag(b){
   b.phase = 'rein'; b._hitT = performance.now(); b._klickT = 0;
   if(b.link){
     if(b.art === 'umschalten'){ const an = !linkOn[b.link]; setLink(b.link, an); if(typeof SFX !== 'undefined') SFX.lever(an, b.x); }
@@ -61,13 +87,20 @@ function rammEinschlag(b, dir){
   if(typeof kameraStoss === 'function') kameraStoss(6);
   if(typeof SFX !== 'undefined' && SFX.rammTreffer) SFX.rammTreffer(b.x);
   // Staub aus der Führung an der Wand, Splitter von der Stirnseite
-  const spitze = b.x + b.dir*rammLaenge(b);
-  if(typeof dustPuff === 'function'){ dustPuff(b.x + b.dir*10, b.y - 6, 8, b.dir*0.9, 5); dustPuff(b.x + b.dir*6, b.y + 10, 5, b.dir*0.5, 4); }
-  for(let i = 0; i < 9; i++) rammFx.push({x: spitze + b.dir*2, y: b.y + (Math.random() - 0.5)*RAMM_DICK, vx: b.dir*(1 + Math.random()*3.5), vy: -1 - Math.random()*3.2,
-    w: Math.random()*Math.PI, vw: (Math.random() - 0.5)*0.6, l: 3 + Math.random()*6, f: i % 3, leben: 34 + Math.random()*20, max: 54});
+  const [sx, sy] = rammSpitze(b), qx = -b.dy, qy = b.dx;   // q = quer zum Balken
+  if(typeof dustPuff === 'function'){ dustPuff(b.x + b.dx*10 - qx*6, b.y + b.dy*10 - qy*6, 8, b.dx*0.9, 5); dustPuff(b.x + b.dx*6 + qx*10, b.y + b.dy*6 + qy*10, 5, b.dx*0.5, 4); }
+  for(let i = 0; i < 9; i++){
+    const q = (Math.random() - 0.5)*RAMM_DICK, v = 1 + Math.random()*3.5, s = (Math.random() - 0.5)*3;   // v = von der Fläche weg, s = seitlich
+    rammFx.push({x: sx + b.dx*2 + qx*q, y: sy + b.dy*2 + qy*q, vx: b.dx*v + qx*s, vy: b.dy*v + qy*s - (b.dx ? 1 + Math.random()*3.2 : 0.6),
+      w: Math.random()*Math.PI, vw: (Math.random() - 0.5)*0.6, l: 3 + Math.random()*6, f: i % 3, leben: 34 + Math.random()*20, max: 54});
+  }
 }
-// aus neueBewegungNachher (js/32), nach dem Dash-Ende: die Figur federt ein Stück zurück
-function rammRueckstoss(P, dir){ P.vx = -dir*RAMM_RUECK; if(!P.grounded) P.vy = Math.min(P.vy, -2.4); }
+// aus neueBewegungNachher (js/32), nach dem Dash-Ende: die Figur federt ein Stück zurück (sx/sy = Dash-Richtung)
+function rammRueckstoss(P, sx, sy){
+  if(sx){ P.vx = -sx*RAMM_RUECK; if(!P.grounded) P.vy = Math.min(P.vy, -2.4); }
+  else if(sy > 0){ P.vy = -RAMM_HUEPFER; P.grounded = false; }   // von oben draufgestampft: kleiner Hüpfer
+  else P.vy = RAMM_RUECK;                                        // von unten gegen den hängenden Balken: fällt zurück
+}
 function rammSchritt(figuren){
   for(const f of rammFx){ f.leben--; f.x += f.vx; f.y += f.vy; f.vy += 0.42; f.vx *= 0.97; f.w += f.vw; }
   for(let i = rammFx.length - 1; i >= 0; i--) if(rammFx[i].leben <= 0) rammFx.splice(i, 1);
@@ -87,9 +120,19 @@ function rammSchritt(figuren){
       for(const P of figuren){
         if(!P || (deathState && deathState.victim === P)) continue;
         const S = b.solid, box = {x: P.x - P.w/2, y: P.y - P.h, w: P.w, h: P.h};
-        if(!rectsOverlap(box, S)) continue;
-        const nx = b.dir < 0 ? S.x - P.w/2 - 0.01 : S.x + S.w + P.w/2 + 0.01;
-        if(spotFree(nx, P.y, P)) P.x = nx; else klemmt = true;
+        if(b.dx){
+          if(!rectsOverlap(box, S)) continue;
+          const nx = b.dx < 0 ? S.x - P.w/2 - 0.01 : S.x + S.w + P.w/2 + 0.01;
+          if(spotFree(nx, P.y, P)) P.x = nx; else klemmt = true;
+        } else if(b.dy < 0){   // ragt aus dem Boden: wer oben draufsteht, fährt mit hoch
+          if(!rectsOverlap(box, {x: S.x, y: S.y - 2, w: S.w, h: S.h + 2}) || P.vy < 0) continue;
+          const ny = S.y - 0.01;
+          if(spotFree(P.x, ny, P)){ P.y = ny; if(P.vy > 0) P.vy = 0; } else klemmt = true;
+        } else {               // hängt von der Decke: schiebt nach unten
+          if(!rectsOverlap(box, S)) continue;
+          const ny = S.y + S.h + P.h + 0.01;
+          if(spotFree(P.x, ny, P)) P.y = ny; else klemmt = true;
+        }
       }
       if(klemmt){ b.tief = alt; rammSolidSetzen(b); continue; }
       if(Math.floor(alt*RAMM_KERBEN - 1e-9) !== Math.floor(b.tief*RAMM_KERBEN - 1e-9) && b.tief > 0){   // Sperrklinke springt über eine Kerbe
@@ -108,7 +151,8 @@ function rammBild(g, o){
   const L = o.len, D = RAMM_DICK, h = D/2, foto = o.foto && typeof fotoHolzMuster === 'function';
   const eisen = (x, y, w, hh, niet) => { if(typeof fotoEisenBand === 'function') fotoEisenBand(g, x, y, w, hh, niet); else { g.fillStyle = '#3e352f'; g.fillRect(x, y, w, hh); } };
   const eisenV = (u, v, w, hh, niet) => { g.save(); g.translate(u + w, v); g.rotate(Math.PI/2); eisen(0, 0, hh, w, niet); g.restore(); };   // senkrechtes Band
-  const bolzen = (u, v) => { g.fillStyle = 'rgba(120,60,24,.35)'; g.beginPath(); g.ellipse(u + 0.3, v + 1.8, 1.4, 2.6, 0, 0, 7); g.fill();   // Rostfahne
+  const senk = !!o.senk;   // senkrecht eingebaut (Boden/Decke): nichts zeichnen, was „nach unten“ hängt oder läuft – das läge sonst quer
+  const bolzen = (u, v) => { if(!senk){ g.fillStyle = 'rgba(120,60,24,.35)'; g.beginPath(); g.ellipse(u + 0.3, v + 1.8, 1.4, 2.6, 0, 0, 7); g.fill(); }   // Rostfahne
     g.fillStyle = '#1b1613'; g.fillRect(u - 1.7, v - 1.7, 3.4, 3.4); g.fillStyle = 'rgba(255,235,210,.35)'; g.fillRect(u - 1.5, v - 1.5, 1.4, 0.7); };
   // Mauerplatte an der Wand (rostiges Eisen, vier Bolzen)
   eisenV(-2, -25, 4.5, 50, 0);
@@ -134,19 +178,27 @@ function rammBild(g, o){
     g.strokeStyle = 'rgba(232,214,180,.3)'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(u + 0.5, -h + 3); g.lineTo(u + 1.2, -h); g.stroke();
   }
   // Moos oben (zwischen den Kerben) und zwei Moosfäden unten
+  if(senk){   // senkrecht: Moos sitzt flach als Flecken auf beiden Seiten (wetterseitig mehr), keine Polster, keine Fäden
+    g.fillStyle = 'rgba(70,88,40,.6)';
+    for(const [a, rx, v, ry] of [[24, 5, -h + 2.2, 2.2], [45, 6.5, -h + 2.6, 2.6], [61, 4, -h + 1.8, 1.8], [52, 4, h - 2, 1.6]]){ const u = L - a; if(u < 22) continue;
+      g.beginPath(); g.ellipse(u, v, rx, ry, 0, 0, 7); g.fill(); }
+    g.fillStyle = 'rgba(96,116,54,.5)';
+    for(const [a, rx] of [[22, 2.2], [46.5, 3]]){ const u = L - a; if(u < 22) continue; g.beginPath(); g.ellipse(u, -h + 1.6, rx, 1.1, 0, 0, 7); g.fill(); }
+  } else {
   g.fillStyle = 'rgba(70,88,40,.88)';
   for(const [a, rx] of [[22, 4.6], [43, 5.8], [60, 3.6]]){ const u = L - a; if(u < 20) continue; g.beginPath(); g.ellipse(u, -h + 0.2, rx, 1.9, 0, Math.PI, 0); g.fill(); }
   g.fillStyle = 'rgba(96,116,54,.7)';
   for(const [a, rx] of [[20.5, 2], [44.5, 2.6]]){ const u = L - a; if(u < 20) continue; g.beginPath(); g.ellipse(u, -h - 0.4, rx, 1, 0, Math.PI, 0); g.fill(); }
   g.strokeStyle = 'rgba(70,86,40,.75)'; g.lineWidth = 0.8;
   for(const [a, l] of [[30, 6], [47, 4], [58, 7]]){ const u = L - a; if(u < 20) continue; g.beginPath(); g.moveTo(u, h - 0.5); g.quadraticCurveTo(u + 1, h + l*0.6, u - 0.6, h + l); g.stroke(); }
+  }
   // zweites, schmales Eisenband und die Eisenkappe an der Stirnseite (zwei Nieten, Dellen, helle Schlagkante)
   if(L - 34 > 19) eisenV(L - 34, -h - 0.6, 3.6, D + 1.2, 0);
   eisenV(L - 10, -h - 1.6, 10, D + 3.2, 0);
   for(const v of [-6, 6]){ g.fillStyle = '#17120f'; g.beginPath(); g.arc(L - 5.6, v, 1.5, 0, 7); g.fill(); g.fillStyle = 'rgba(255,235,210,.4)'; g.beginPath(); g.arc(L - 6, v - 0.5, 0.55, 0, 7); g.fill(); }
   g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(L - 2.2, 1.5, 1.6, 3, 0, 0, 7); g.fill();          // Delle vom vielen Rammen
   g.fillStyle = 'rgba(255,238,215,.3)'; g.fillRect(L - 1, -h - 1.2, 1, D + 2.4);                             // blanke Schlagkante
-  g.fillStyle = 'rgba(150,76,30,.4)'; g.fillRect(L - 10, h - 1, 9, 2.8);                                     // Rost läuft unten ab
+  if(!senk){ g.fillStyle = 'rgba(150,76,30,.4)'; g.fillRect(L - 10, h - 1, 9, 2.8); }                        // Rost läuft unten ab
   if(o.funke > 0){   // Einschlag: kurzes helles Aufblitzen an der Stirnseite
     g.save(); g.globalCompositeOperation = 'lighter';
     const gf = g.createRadialGradient(L, 0, 0, L, 0, 30); gf.addColorStop(0, `rgba(255,236,190,${0.75*o.funke})`); gf.addColorStop(1, 'rgba(255,200,120,0)');
@@ -165,7 +217,7 @@ function rammBild(g, o){
   g.fillStyle = 'rgba(150,118,82,.5)'; g.fillRect(15, -19.5, 1, 39);                                         // Hirnholz-Kante vorn
   eisen(1.5, -20.5, 15.5, 4.2, 0); eisen(1.5, 16.3, 15.5, 4.2, 0);
   bolzen(9.2, -18.4); bolzen(9.2, 18.4);
-  g.fillStyle = 'rgba(64,78,36,.85)'; g.beginPath(); g.ellipse(7, -20.6, 4.6, 1.7, 0, Math.PI, 0); g.fill();   // Moos oben auf dem Klotz
+  if(!senk){ g.fillStyle = 'rgba(64,78,36,.85)'; g.beginPath(); g.ellipse(7, -20.6, 4.6, 1.7, 0, Math.PI, 0); g.fill(); }   // Moos oben auf dem Klotz
   // Sperrklinke: kleiner Eisenhaken oben am Klotz, liegt in den Kerben (hebt sich bei jedem Klick)
   const lift = (o.klick || 0)*2.6;
   g.strokeStyle = '#14100d'; g.lineWidth = 4; g.lineCap = 'round'; g.lineJoin = 'round';
@@ -183,6 +235,12 @@ function rammBild(g, o){
   if(typeof elementEdelstein === 'function' && typeof ctx !== 'undefined' && g === ctx) elementEdelstein(9.2, 0, 4.8, o.farbe);
   else { g.fillStyle = o.farbe; g.beginPath(); g.arc(9.2, 0, 4, 0, 7); g.fill(); }
 }
+// dreht das Bild so, dass +u in Balken-Richtung zeigt; die helle Seite (Bild-oben) liegt bei senkrechten Balken immer links
+function rammDrehen(g, dx, dy){
+  if(dx) g.scale(dx, 1);
+  else if(dy < 0) g.rotate(-Math.PI/2);
+  else { g.rotate(Math.PI/2); g.scale(1, -1); }
+}
 function rammZeichnen(){
   const now = performance.now(), foto = typeof fotoEl2An === 'function' && fotoEl2An();
   for(const b of rammbalken){
@@ -191,10 +249,14 @@ function rammZeichnen(){
     const col = linkColor(b.link), an = !!linkOn[b.link];
     const seit = b._hitT ? now - b._hitT : 1e9, klick = b._klickT ? Math.max(0, 1 - (now - b._klickT)/140) : 0;
     const wackel = seit < 340 ? Math.sin(seit*0.075)*2.4*(1 - seit/340) : 0;
-    ctx.save(); ctx.translate(x, b.y); ctx.scale(b.dir, 1);
-    rammBild(ctx, {len: rammLaenge(b), farbe: col, an, wackel, klick, funke: seit < 160 ? 1 - seit/160 : 0, foto});
+    ctx.save(); ctx.translate(x, b.y); rammDrehen(ctx, b.dx, b.dy);
+    rammBild(ctx, {len: rammLaenge(b), farbe: col, an, wackel, klick, funke: seit < 160 ? 1 - seit/160 : 0, foto, senk: !b.dx});
     ctx.restore();
-    if(b.phase === 'ruhe' && !an && typeof hinweisPfeil === 'function') hinweisPfeil(x + b.dir*(RAMM_LAENGE - 14), b.y - 36, col);
+    if(b.phase === 'ruhe' && !an && typeof hinweisPfeil === 'function'){
+      if(b.dx) hinweisPfeil(x + b.dx*(RAMM_LAENGE - 14), b.y - 36, col);
+      else if(b.dy < 0) hinweisPfeil(x, b.y - RAMM_LAENGE - 30, col);
+      else hinweisPfeil(x - 34, b.y + RAMM_LAENGE - 24, col);
+    }
   }
   for(const f of rammFx){   // Holzsplitter
     const x = f.x - camX; if(x < -40 || x > VW + 40) continue;
@@ -210,21 +272,22 @@ elementRegistrieren({
   editor: {
     werkzeug: 'ramm', gruppe: 'logik', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#7d6245',
     mitNummer: true, nummerName: 'Rammbalken',
-    titel: 'Rammbalken: ragt 2 Kästchen aus einer Wand, nur ein Dash gegen die Stirnseite rammt ihn hinein (im Dschungel dasht nur das ' +
-           'Schweinchen). Ins Kästchen direkt NEBEN der Wand setzen. „Zeitfenster“: Nummer AN, bis er wieder herausgeglitten ist; ' +
+    titel: 'Rammbalken: ragt 2 Kästchen aus einer Wand, dem Boden oder der Decke (Auswahl „Richtung“), nur ein Dash gegen die Stirnseite rammt ihn hinein (im Dschungel dasht nur das ' +
+           'Schweinchen; hoch/runter + Dash = senkrecht). Ins Kästchen direkt AN der Fläche setzen. „Zeitfenster“: Nummer AN, bis er wieder herausgeglitten ist; ' +
            '„umschalten“: jeder Stoß schaltet um (wie ein Hebel)',
     optionen: [
-      {key: 'wand', label: 'Wand', titel: 'auf welcher Seite die Wand ist, aus der der Balken ragt', werte: [['rechts', 'Wand rechts'], ['links', 'Wand links']]},
+      {key: 'wand', label: 'Richtung', titel: 'woraus der Balken ragt: Wand rechts/links, Boden (ragt nach oben, von oben draufstampfen) oder Decke (hängt nach unten, von unten rammen)',
+       werte: [['rechts', 'Wand rechts'], ['links', 'Wand links'], ['unten', 'Boden (ragt hoch)'], ['oben', 'Decke (hängt runter)']]},
       {key: 'art', label: 'Rammbalken', titel: 'Zeitfenster: an, bis er wieder heraus ist – oder: jeder Stoß schaltet um', werte: [['zeit', 'Zeitfenster'], ['umschalten', 'umschalten']]},
       {key: 'zeit', label: 'Zeit', zahl: true, titel: 'so lange bleibt die Nummer nach dem Rammstoß an (nur „Zeitfenster“)',
        werte: [['5', '5 s'], ['3', '3 s'], ['8', '8 s'], ['12', '12 s']]},
     ],
     // sichtbar belegt: das Kästchen an der Wand und das davor (Rechtsklick/Radierer)
-    bereich: p => [[p.c, p.r], [p.c + (p.wand === 'links' ? 1 : -1), p.r]],
+    bereich: p => { const [dx, dy] = rammRichtungVon(p); return [[p.c, p.r], [p.c + dx, p.r + dy]]; },
     zeichnen(ctx, c, r, TILE, p){
-      const links = p && p.wand === 'links', d = links ? 1 : -1, wx = links ? c*TILE : (c + 1)*TILE, y = r*TILE + TILE/2, k = TILE/40;
+      const [dx, dy] = rammRichtungVon(p), [wx, y] = rammAnker(c, r, TILE, dx, dy), k = TILE/40;
       const col = typeof linkColor === 'function' && p ? linkColor(p.link) : '#ff9f43';
-      ctx.save(); ctx.translate(wx, y); ctx.scale(d*k, k);
+      ctx.save(); ctx.translate(wx, y); rammDrehen(ctx, dx, dy); ctx.scale(k, k);
       ctx.fillStyle = '#3e352f'; ctx.fillRect(-2, -25, 4.5, 50);
       ctx.fillStyle = '#7d6245'; ctx.fillRect(0, -11, RAMM_LAENGE, 22);
       ctx.fillStyle = 'rgba(255,240,210,.25)'; ctx.fillRect(0, -11, RAMM_LAENGE, 3); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(0, 6, RAMM_LAENGE, 5);
@@ -236,17 +299,18 @@ elementRegistrieren({
       if(p){
         ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; const t = (p.art === 'umschalten' ? '' : '~') + String(p.link);
-        const tx = wx + d*TILE*1.2, ty = r*TILE + 7;
+        const tx = dx ? wx + dx*TILE*1.2 : wx + TILE*0.27, ty = dx ? r*TILE + 7 : y + dy*TILE*1.5;   // bleibt in den belegten Kästchen
         ctx.strokeText(t, tx, ty); ctx.fillText(t, tx, ty);
       }
     },
-    exportieren: (liste, TILE) => liste.map(p => ({x: p.wand === 'links' ? p.c*TILE : (p.c + 1)*TILE, y: p.r*TILE + TILE/2, link: p.link,
-      ...(p.wand === 'links' ? {wand: 'links'} : {}), ...(p.art === 'umschalten' ? {art: 'umschalten'} : {}),
-      ...(Number(p.zeit) > 0 && Number(p.zeit) !== RAMM_ZEIT_STD ? {zeit: Number(p.zeit)} : {})})),
+    exportieren: (liste, TILE) => liste.map(p => { const [dx, dy] = rammRichtungVon(p), [x, y] = rammAnker(p.c, p.r, TILE, dx, dy);
+      return {x, y, link: p.link,
+        ...(RAMM_RICHTUNG[p.wand] && p.wand !== 'rechts' ? {wand: p.wand} : {}), ...(p.art === 'umschalten' ? {art: 'umschalten'} : {}),
+        ...(Number(p.zeit) > 0 && Number(p.zeit) !== RAMM_ZEIT_STD ? {zeit: Number(p.zeit)} : {})}; }),
   },
   spiel: {
     laden(daten){
-      rammbalken = (daten.rammbalken || []).map(b => ({x: b.x, y: b.y, dir: b.wand === 'links' ? 1 : -1, link: b.link, art: b.art === 'umschalten' ? 'umschalten' : 'zeit',
+      rammbalken = (daten.rammbalken || []).map(b => ({x: b.x, y: b.y, dx: rammRichtungVon(b)[0], dy: rammRichtungVon(b)[1], link: b.link, art: b.art === 'umschalten' ? 'umschalten' : 'zeit',
         zeit: Number(b.zeit) > 0 ? Number(b.zeit) : RAMM_ZEIT_STD, tief: 0, phase: 'ruhe', t: 0, solid: {type: 'ramm', x: 0, y: 0, w: 0, h: 0}}));
       rammFx.length = 0;
       for(const b of rammbalken){ rammSolidSetzen(b); solids.push(b.solid); }

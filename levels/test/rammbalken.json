@@ -1,10 +1,13 @@
 {
-  "hinweis": "Testlevel Rammbalken (elemente/rammbalken.js) + Dash des Schweinchens (Num 3 / △). 1) Links ein Rammbalken dicht über dem Boden (Nummer 1, Zeitfenster 5 s): mit dem Schweinchen dagegen dashen -> Tür 1 geht auf, der Balken gleitet klickend zurück, dann fällt die Tür zu. 2) Mitte: Rammbalken hoch an der Wand (Nummer 2): vom Podest links lossegeln und im richtigen Moment dashen -> Tür 2. 3) Rechts: Rammbalken an einer Wand LINKS (Nummer 3, umschalten): nach links dagegen dashen schaltet Tür 3 um. Ganz rechts eine Durchbruch-Wand: die bricht im Dschungel nur der Puste-Wind des Affen, nicht der Dash. Öffnen: index.html?testlevel=rammbalken",
+  "hinweis": "Testlevel Rammbalken (elemente/rammbalken.js) + Dash des Schweinchens (Num 3 / △). 1) Links ein Rammbalken dicht über dem Boden (Nummer 1, Zeitfenster 5 s): mit dem Schweinchen dagegen dashen -> Tür 1 geht auf, der Balken gleitet klickend zurück, dann fällt die Tür zu. 2) Mitte: Rammbalken hoch an der Wand (Nummer 2): vom Podest links lossegeln und im richtigen Moment dashen -> Tür 2. 3) Rechts: Rammbalken an einer Wand LINKS (Nummer 3, umschalten): nach links dagegen dashen schaltet Tür 3 um. Ganz rechts eine Durchbruch-Wand: die bricht im Dschungel nur der Puste-Wind des Affen, nicht der Dash. 4) Dahinter ein Rammbalken, der aus dem BODEN ragt (Nummer 4): daraufspringen und mit runter + Dash stampfen -> Tür 4. 5) Ein Rammbalken, der von der DECKE hängt (Nummer 5): darunter stellen, hoch + Dash -> Tür 5. Öffnen: index.html?testlevel=rammbalken",
   "welt": "dschungel",
   "tageszeit": "mittag",
   "wetter": "trocken",
   "solids": [
-    {"x": 0, "y": 680, "w": 4000, "h": 80, "type": "ground"},
+    {"x": 0, "y": 680, "w": 5000, "h": 80, "type": "ground"},
+    {"x": 3720, "y": -160, "w": 40, "h": 720, "type": "wall"},
+    {"x": 3920, "y": 400, "w": 200, "h": 40, "type": "wall"},
+    {"x": 4320, "y": -160, "w": 40, "h": 720, "type": "wall"},
     {"x": 720, "y": 600, "w": 80, "h": 80, "type": "wall"},
     {"x": 1000, "y": -160, "w": 40, "h": 720, "type": "wall"},
     {"x": 1240, "y": 560, "w": 160, "h": 120, "type": "wall"},
@@ -22,15 +25,19 @@
   "doors": [
     {"x": 1000, "y": 660, "link": 1}, {"x": 1000, "y": 620, "link": 1}, {"x": 1000, "y": 580, "link": 1},
     {"x": 2040, "y": 660, "link": 2}, {"x": 2040, "y": 620, "link": 2}, {"x": 2040, "y": 580, "link": 2},
-    {"x": 2760, "y": 660, "link": 3}, {"x": 2760, "y": 620, "link": 3}, {"x": 2760, "y": 580, "link": 3}
+    {"x": 2760, "y": 660, "link": 3}, {"x": 2760, "y": 620, "link": 3}, {"x": 2760, "y": 580, "link": 3},
+    {"x": 3720, "y": 660, "link": 4}, {"x": 3720, "y": 620, "link": 4}, {"x": 3720, "y": 580, "link": 4},
+    {"x": 4320, "y": 660, "link": 5}, {"x": 4320, "y": 620, "link": 5}, {"x": 4320, "y": 580, "link": 5}
   ],
   "startM": {"x": 300, "y": 680},
   "startF": {"x": 220, "y": 680},
-  "goal": {"x": 3800, "y": 680},
+  "goal": {"x": 4700, "y": 680},
   "rammbalken": [
     {"x": 720, "y": 660, "link": 1},
     {"x": 1680, "y": 500, "link": 2},
-    {"x": 2440, "y": 660, "link": 3, "wand": "links", "art": "umschalten"}
+    {"x": 2440, "y": 660, "link": 3, "wand": "links", "art": "umschalten"},
+    {"x": 3500, "y": 680, "link": 4, "wand": "unten"},
+    {"x": 4020, "y": 440, "link": 5, "wand": "oben"}
   ],
   "bruchWaende": [{"x": 3200, "y": 600, "w": 40, "h": 40}, {"x": 3200, "y": 640, "w": 40, "h": 40}]
 }

@@ -111,6 +111,7 @@ const DASH_AUS_WELTEN = ['dschungel'];   // Welten ohne Dash – Nutzer: „Dash
 // Welten aus DASH_AUS_WELTEN dasht NUR das Schweinchen (Rammstoß; rammt den Rammbalken, elemente/rammbalken.js) – der Affe
 // bleibt dort ohne Dash, und die Durchbruch-Wände dort bricht weiter nur der Puste-Wind des Affen (nicht der Dash).
 const DASH_SCHWEIN_IN_AUS_WELTEN = true;
+const DASH_HOCH_SCHWEIN_BEHALTEN = 0;   // Dash senkrecht nach oben (Schweinchen im Dschungel, 17.11.): so viel Schwung bleibt danach – 0 = genau 4 Kästchen hoch
 const DASH_LADEZEIT_SCHWEIN = 180;   // Schritte (3 s): so lange lädt der Dash des Schweinchens in diesen Welten (sonst DASH_LADEZEIT)
 const BRUCH_PUSTE_NOETIG = 45;    // so lange (Schritte voller Wind) muss der Affe eine Durchbruch-Wand anpusten, bis sie bricht (ganze Wand)
 const DASH_TEMPO = 16;            // px pro Schritt (Spielwiese „Tempo“)
