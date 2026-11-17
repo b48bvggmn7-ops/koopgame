@@ -24,7 +24,8 @@ const RAMM_TREFFER_MIN = 6;    // px: so viel muss die Figur die Stirnseite in d
 const RAMM_KERBEN = 8;         // Kerben auf dem Balken = Klicks der Sperrklinke beim Zurückgleiten
 const RAMM_STOPP = 4;          // Trefferstopp (Schritte)
 const RAMM_RUECK = 3.2;        // px/Schritt: so stark federt die Figur vom Balken zurück
-const RAMM_HUEPFER = 5;        // px/Schritt: kleiner Hüpfer nach einem Stampfer von oben
+const RAMM_STOSS_MIN = 0.25;   // Teil-Treffer: so weit (Anteil) geht er auch beim schwächsten Rammstoß mindestens hinein
+const RAMM_HUEPFER = 5;       // px/Schritt: kleiner Hüpfer nach einem Stampfer von oben
 let rammbalken = [];           // {x, y (Mitte der Stelle, wo er aus der Fläche kommt), dx, dy (wohin er ragt), link, art, zeit, tief (0…1), phase, t, solid}
 const rammFx = [];             // Holzsplitter (nur Anzeige, im Takt gerechnet)
 
@@ -58,7 +59,8 @@ function rammWunsch(want){
 }
 // aus dashBewegen (js/32): die Figur ist im Dash gegen etwas gestoßen (sx/sy = Dash-Richtung, eins davon 0) – war es die
 // Stirnseite eines Rammbalkens? true = eingerammt
-function rammTreffen(P, sx, sy){
+// rest = Dash-Strecke (px), die beim Aufprall noch übrig war: so weit schiebt die Figur den Balken hinein (Teil-Treffer)
+function rammTreffen(P, sx, sy, rest){
   for(const b of rammbalken){
     if(b.dx !== -sx || b.dy !== -sy) continue;           // nur genau in Richtung der Fläche, aus der er ragt
     const S = b.solid;
@@ -71,12 +73,16 @@ function rammTreffen(P, sx, sy){
       if(Math.abs(vorn - spitze) > 3) continue;
       if(Math.min(P.x + P.w/2, S.x + S.w) - Math.max(P.x - P.w/2, S.x) < RAMM_TREFFER_MIN) continue;   // seitlich daneben
     }
-    rammEinschlag(b);
+    rammEinschlag(b, rest);
     return true;
   }
   return false;
 }
-function rammEinschlag(b){
+// Nutzerwunsch 17.11. Teil-Treffer („zeit“): der Dash schiebt den Balken nur so weit hinein, wie er noch reicht – halb drin =
+// halbe Zeit (er gleitet von dort gleich schnell zurück). „umschalten“ fährt immer ganz hinein. k = Stärke 0…1 (für Ton/Wackeln)
+function rammEinschlag(b, rest){
+  const k = b.art === 'umschalten' || rest == null ? 1 : Math.max(RAMM_STOSS_MIN, Math.min(1, rest/(RAMM_LAENGE - RAMM_REST)));
+  b.ziel = Math.min(1, b.tief + k); b.staerke = k;
   b.phase = 'rein'; b._hitT = performance.now(); b._klickT = 0;
   if(b.link){
     if(b.art === 'umschalten'){ const an = !linkOn[b.link]; setLink(b.link, an); if(typeof SFX !== 'undefined') SFX.lever(an, b.x); }
@@ -84,13 +90,13 @@ function rammEinschlag(b){
     if(typeof zielHinweisMerken === 'function') zielHinweisMerken(b.link);
   }
   if(typeof neuTrefferStopp !== 'undefined') neuTrefferStopp = Math.max(neuTrefferStopp, RAMM_STOPP);
-  if(typeof kameraStoss === 'function') kameraStoss(6);
-  if(typeof SFX !== 'undefined' && SFX.rammTreffer) SFX.rammTreffer(b.x);
+  if(typeof kameraStoss === 'function') kameraStoss(2 + 4*k);
+  if(typeof SFX !== 'undefined' && SFX.rammTreffer) SFX.rammTreffer(b.x, k);
   // Staub aus der Führung an der Wand, Splitter von der Stirnseite
   const [sx, sy] = rammSpitze(b), qx = -b.dy, qy = b.dx;   // q = quer zum Balken
   if(typeof dustPuff === 'function'){ dustPuff(b.x + b.dx*10 - qx*6, b.y + b.dy*10 - qy*6, 8, b.dx*0.9, 5); dustPuff(b.x + b.dx*6 + qx*10, b.y + b.dy*6 + qy*10, 5, b.dx*0.5, 4); }
-  for(let i = 0; i < 9; i++){
-    const q = (Math.random() - 0.5)*RAMM_DICK, v = 1 + Math.random()*3.5, s = (Math.random() - 0.5)*3;   // v = von der Fläche weg, s = seitlich
+  for(let i = 0, anz = Math.round(3 + 6*k); i < anz; i++){
+    const q = (Math.random() - 0.5)*RAMM_DICK, v = (1 + Math.random()*3.5)*(0.5 + 0.5*k), s = (Math.random() - 0.5)*3;   // v = von der Fläche weg, s = seitlich
     rammFx.push({x: sx + b.dx*2 + qx*q, y: sy + b.dy*2 + qy*q, vx: b.dx*v + qx*s, vy: b.dy*v + qy*s - (b.dx ? 1 + Math.random()*3.2 : 0.6),
       w: Math.random()*Math.PI, vw: (Math.random() - 0.5)*0.6, l: 3 + Math.random()*6, f: i % 3, leben: 34 + Math.random()*20, max: 54});
   }
@@ -106,8 +112,9 @@ function rammSchritt(figuren){
   for(let i = rammFx.length - 1; i >= 0; i--) if(rammFx[i].leben <= 0) rammFx.splice(i, 1);
   for(const b of rammbalken){
     if(b.phase === 'rein'){
-      b.tief = Math.min(1, b.tief + 1/RAMM_REIN);
-      if(b.tief >= 1){ b.phase = 'halt'; b.t = b.art === 'umschalten' ? 10 : RAMM_HALT; }
+      const ziel = b.ziel || 1;
+      b.tief = Math.min(ziel, b.tief + 1/RAMM_REIN);
+      if(b.tief >= ziel){ b.phase = 'halt'; b.t = b.art === 'umschalten' ? 10 : Math.max(4, Math.round(RAMM_HALT*ziel)); }
       rammSolidSetzen(b);
     } else if(b.phase === 'halt'){
       if(--b.t <= 0) b.phase = 'raus';

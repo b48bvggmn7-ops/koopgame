@@ -388,10 +388,11 @@ const SFX = {
     sTone(f, 0.01, 0.55, {type: 'sine', vol: 0.04}); sTone(f*2, 0.03, 0.3, {type: 'triangle', vol: 0.01}); },
   // Rammbalken (elemente/rammbalken.js): Einschlag = dumpfer Holz-Wumms + Eisenklirren + kurzes Knarzen; beim Zurückgleiten
   // klickt die Sperrklinke über die Kerben (wird zum Ende hin höher = hörbare Uhr); ganz heraus = weiches „Klonk“
-  rammTreffer(x){ sfxLog('ramm');
-    sTone(105, 0, 0.26, {to: 42, type: 'sine', vol: 0.2, attack: 0.003}); sNoise(0, 0.2, {filter: 'lowpass', f: 620, to: 110, q: 0.8, vol: 0.14, attack: 0.002});
+  // k = Stärke 0…1 (Teil-Treffer): schwach = leiser, dünner (weniger Wumms, höher), kaum Knarzen
+  rammTreffer(x, k){ sfxLog('ramm'); if(k == null) k = 1; if(k < 0.999) sfxLog('rammschwach'); const w = k*k, hoch = 1 + 0.5*(1 - k);
+    sTone(105*hoch, 0, 0.12 + 0.14*k, {to: 42*hoch, type: 'sine', vol: 0.05 + 0.15*w, attack: 0.003}); sNoise(0, 0.08 + 0.12*k, {filter: 'lowpass', f: 620, to: 110, q: 0.8, vol: 0.04 + 0.1*w, attack: 0.002});
     sTone(1180, 0.005, 0.1, {to: 860, type: 'square', vol: 0.018, attack: 0.002}); sTone(2240, 0.012, 0.07, {to: 1900, type: 'triangle', vol: 0.014, attack: 0.002});
-    sNoise(0.13, 0.28, {filter: 'bandpass', f: 330, to: 250, q: 9, vol: 0.035, attack: 0.03}); },
+    sNoise(0.13, 0.28*k, {filter: 'bandpass', f: 330, to: 250, q: 9, vol: 0.035*w, attack: 0.03}); },
   rammKlick(x, k){ sfxLog('rammklick'); const f = 1500 + 900*(k || 0);
     sNoise(0, 0.03, {filter: 'bandpass', f, q: 7, vol: 0.03, attack: 0.001}); sTone(f*0.42, 0, 0.035, {type: 'square', vol: 0.007, attack: 0.001}); },
   rammRaus(x){ sfxLog('rammraus'); sTone(170, 0, 0.12, {to: 105, type: 'triangle', vol: 0.05, attack: 0.003});

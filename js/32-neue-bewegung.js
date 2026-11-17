@@ -102,19 +102,22 @@ function dashBewegen(P){
   const sx = P.vx/n, sy = P.vy/n;
   d.stossX = 0; d.stossY = 0;
   let bx = sx !== 0, by = sy !== 0;
+  // d.weg = schon geflogene Dash-Strecke (px); der Rest bis DASH_DAUER*DASH_TEMPO ist die Kraft für den Rammbalken (Teil-Treffer)
+  const rest = () => Math.max(0, DASH_DAUER*DASH_TEMPO - (d.weg || 0));
   for(let i = 0; i < n; i++){
     if(bx){
       bruchTreffen(P, sx, 0);
       const v = P.vx; P.x += sx; collideAxis(P, 'x');
       if(P.vx === 0 && v !== 0){ d.stossX = Math.sign(v); bx = false;
-        if(typeof rammTreffen === 'function' && rammTreffen(P, Math.sign(v), 0)) d.gerammt = true; }   // Rammbalken getroffen (elemente/rammbalken.js)
+        if(typeof rammTreffen === 'function' && rammTreffen(P, Math.sign(v), 0, rest())) d.gerammt = true; }   // Rammbalken getroffen (elemente/rammbalken.js)
     }
     if(by){
       bruchTreffen(P, 0, sy);
       const v = P.vy; P.y += sy; collideAxis(P, 'y');
       if(P.vy === 0 && v !== 0){ d.stossY = Math.sign(v); by = false;
-        if(typeof rammTreffen === 'function' && rammTreffen(P, 0, Math.sign(v))) d.gerammt = true; }   // Rammbalken an Boden/Decke
+        if(typeof rammTreffen === 'function' && rammTreffen(P, 0, Math.sign(v), rest())) d.gerammt = true; }   // Rammbalken an Boden/Decke
     }
+    d.weg = (d.weg || 0) + Math.max(bx ? Math.abs(sx) : 0, by ? Math.abs(sy) : 0);
   }
   // Teilschritte haben P.vx/P.vy evtl. auf 0 gesetzt; für die Auswertung zählt das Dash-Tempo
   if(bx) P.vx = sx*n; if(by) P.vy = sy*n;

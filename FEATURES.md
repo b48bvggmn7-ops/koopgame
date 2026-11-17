@@ -2711,7 +2711,12 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   **Zeitfenster** (Standard): eingerammt ist die Nummer AN (wie eine gedrückte Druckplatte); nach ½ s gleitet der Balken
   gleichmäßig wieder heraus – wie weit er herausragt, zeigt die restliche Zeit; die Sperrklinke klickt über 8 Kerben
   (wird zum Ende hin höher = hörbare Uhr); genau nach „Zeit“ (3 / 5 / 8 / 12 s, Standard 5) ist die Nummer wieder AUS.
-  Ein neuer Rammstoß währenddessen startet das Zeitfenster neu. **Umschalten**: jeder Rammstoß schaltet die Nummer einmal um
+  Ein neuer Rammstoß währenddessen startet das Zeitfenster neu. **Teil-Treffer** (Nutzerwunsch 17.11., nur „Zeitfenster“):
+  der Dash schiebt den Balken nur so weit hinein, wie er beim Aufprall noch reicht (Dash = 4 Kästchen, Hub des Balkens 50 px:
+  bis etwa 2¾ Kästchen Abstand zur Stirnseite geht er ganz hinein, von weiter weg nur ein Stück, mindestens ¼ –
+  `RAMM_STOSS_MIN`). Die Tür geht trotzdem sofort auf, bleibt aber entsprechend kürzer offen (halb drin = etwa halbe Zeit,
+  er gleitet von dort gleich schnell zurück). Schwacher Treffer: dünnerer, leiserer Ton, weniger Wackeln und Splitter. Ein
+  zweiter Rammstoß schiebt ihn von dort weiter hinein. **Umschalten** (fährt immer ganz hinein): jeder Rammstoß schaltet die Nummer einmal um
   (wie ein Hebel), der Balken kommt in 1 s wieder heraus.
   Der Balken ist fest: man kann darauf stehen (wird er eingerammt, fällt man herunter); beim Herausgleiten schiebt er Figuren
   sanft vor sich her (klemmt jemand zwischen Balken und Wand, wartet er). Hoch an einer Wand angebracht muss das Schweinchen

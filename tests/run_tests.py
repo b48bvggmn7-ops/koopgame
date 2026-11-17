@@ -8478,6 +8478,12 @@ async def rammbalken_dash(g):
             while((linkOn[1] || seit < 20) && seit < 900){ st(); seit++; if(seit === 12){ e.tief = B[0].tief; e.an1 = !!linkOn[1]; e.rueck = p2.x; }
               if(seit === 150) mitte = [tuer(1), B[0].tief]; if(SFX_LOG[SFX_LOG.length - 1] === 'rammklick'){ klicks++; SFX_LOG.push('-'); } }
             e.zeit = seit; e.mitte = mitte; e.klicks = klicks; n(50); e.raus = B[0].phase === 'ruhe' && B[0].tief === 0; e.zu1 = !tuer(1); e.log = SFX_LOG.filter(s => s !== '-' && s !== 'rammklick');
+            // 17.11. Teil-Treffer: aus großer Entfernung reicht der Dash nur noch ein Stück -> Balken halb drin, Tür sofort auf,
+            // aber deutlich kürzer; schwächerer Ton
+            resetLevel(); stell(p1, 300, 680); stell(p2, 485, 680); n(5); SFX_LOG.length = 0;
+            KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); los(); e.teilTreffer = bisTreffer(B[0]);
+            let ts = 0, tmax = 0, tauf = false; while((linkOn[1] || ts < 12) && ts < 900){ st(); ts++; tmax = Math.max(tmax, B[0].tief); if(ts === 8) tauf = tuer(1) && !!linkOn[1]; }
+            e.teilTief = tmax; e.teilAuf = tauf; e.teilZeit = ts; e.teilTon = SFX_LOG.includes('rammschwach');
             // Aufladen dauert DASH_LADEZEIT_SCHWEIN
             resetLevel(); stell(p2, 300, 680); n(5); druck(p2, 'dash'); n(DASH_DAUER + 4); e.leer = p2.dashPunkte === 0;
             n(DASH_LADEZEIT_SCHWEIN - 30); e.nochLeer = p2.dashPunkte === 0; n(40); e.wiederVoll = p2.dashPunkte === 1;
@@ -8533,6 +8539,9 @@ async def rammbalken_dash(g):
         assert 292 <= r['zeit'] <= 316, f'Zeitfenster 5 s (300 Schritte): {r}'
         assert r['klicks'] >= 6 and 'ramm' in r['log'] and 'rammraus' in r['log'], f'Töne (Einschlag, Klicks der Sperrklinke, heraus) fehlen: {r}'
         assert r['raus'] and r['zu1'], f'nach dem Zeitfenster: Balken heraus, Tür zu: {r}'
+        assert 'rammschwach' not in r['log'], f'voller Treffer aus der Nähe darf nicht schwach klingen: {r}'
+        assert r['teilTreffer'] and 0.2 <= r['teilTief'] < 0.8 and r['teilAuf'], f'Teil-Treffer aus der Ferne: Balken nur ein Stück drin, Tür trotzdem sofort auf: {r}'
+        assert 20 < r['teilZeit'] < 0.8*r['zeit'] and r['teilTon'], f'Teil-Treffer: kürzeres Zeitfenster und schwächerer Ton: {r}'
         assert r['leer'] and r['nochLeer'] and r['wiederVoll'], f'Dash des Schweinchens lädt DASH_LADEZEIT_SCHWEIN Schritte: {r}'
         assert r['segelt'] and r['hochTreffer'] and r['an2'], f'hoch an der Wand: segeln + dashen muss treffen: {r}'
         assert r['daneben'], f'zu hoch gedasht: kein Treffer: {r}'
