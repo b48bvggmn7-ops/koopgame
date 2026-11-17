@@ -437,6 +437,9 @@ elementRegistrieren({
     nummerAktiv: p => p.schalter === 'nummer' && !!p.link,
     mitNummer: false, nummerName: 'Sonnenstein an',
     klick(p){ const o = ['r', 'u', 'l', 'o']; p.richtung = o[(o.indexOf(p.richtung || 'r') + 1) % 4]; },
+    // gedrückt halten und ziehen: der Strahl zeigt in die Zieh-Richtung
+    drehen(p, rx, ry){ const n = rx > 0 ? 'r' : rx < 0 ? 'l' : ry < 0 ? 'o' : 'u'; if(n === p.richtung) return ''; p.richtung = n;
+      return 'Lichtquelle: Strahl nach ' + {r: 'rechts', l: 'links', o: 'oben', u: 'unten'}[n]; },
     zeichnen(ctx, c, r, TILE, p){ const [dx, dy] = LICHT_RICHTUNG[p.richtung] || [1, 0]; ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); lichtQuelleBild(ctx, 0, 0, dx, dy, true, p.schalter === 'nummer' ? p.link : null); ctx.restore(); },
     zeichnenAlle: lichtEditorVorschau,
     exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, richtung: p.richtung || 'r',
@@ -477,6 +480,9 @@ elementRegistrieren({
     nummerAktiv: p => p.schalter === 'nummer' && !!p.link,
     mitNummer: false, nummerName: 'Spiegel dreht',
     klick(p){ p.stellung = p.stellung === '/' ? '\\' : '/'; },
+    // gedrückt halten und SCHRÄG ziehen: der Spiegel liegt so wie die Zieh-Linie (rechts hoch / links runter = „/“)
+    drehen(p, rx, ry, dx, dy){ if(Math.min(Math.abs(dx), Math.abs(dy)) < 6) return ''; const n = dx*dy < 0 ? '/' : '\\'; if(n === p.stellung) return ''; p.stellung = n;
+      return 'Spiegel: Stellung ' + n; },
     zeichnen(ctx, c, r, TILE, p){ ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40); spiegelBild(ctx, 0, 0, p.stellung || '/', 0, null, p.schalter === 'nummer' ? p.link : null); ctx.restore(); },
     exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, stellung: p.stellung === '\\' ? '\\' : '/',
       ...(p.schalter === 'nummer' && p.link ? {link: p.link} : {})})),

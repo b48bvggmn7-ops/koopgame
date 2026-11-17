@@ -4988,6 +4988,53 @@ async def editor_haken_ziehen(g):
         srv.shutdown()
 
 @test
+async def editor_drehen_ziehen(g):
+    """Editor (Nutzerwunsch 17.11.): Element setzen bzw. anklicken und die Maus gedrückt halten – in eine Richtung ziehen dreht es
+    dorthin (editor.drehen: Rammbalken 4 Richtungen, Falle, Lichtquelle, Fels links/rechts, Spiegel schräg). Das Auswahl-Feld
+    oben zieht mit, es entsteht kein zweites Element, gespeichert wird beim Loslassen; ein Klick ohne Ziehen dreht wie bisher."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)], 'hooks': [], 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_timeout(300)
+        box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+        sky = await p.evaluate("SKY")
+        ort = lambda c, r: (box['x'] + (c*40 + 20)*k, box['y'] + ((r + sky)*40 + 20)*k)
+        async def zieh(c, r, dx, dy):
+            x, y = ort(c, r); await p.mouse.move(x, y); await p.mouse.down(); await p.mouse.move(x + dx, y + dy, steps=4); await p.mouse.up(); await p.wait_for_timeout(40)
+        hole = lambda feld, key: p.evaluate("([f, k]) => elementPunkte[f].map(d => d[k])", [feld, key])
+        # Rammbalken: setzen und dabei nach oben ziehen -> ragt nach oben (aus dem Boden); danach in jede Richtung
+        await ed_werkzeug(p, 'ramm')
+        await zieh(10, 10, 0, -40); assert await hole('rammbalken', 'wand') == ['unten'], await hole('rammbalken', 'wand')
+        assert await p.evaluate("document.getElementById('opt-ramm-wand').value") == 'unten', 'Auswahl-Feld zieht nicht mit'
+        for dx, dy, soll in [(40, 0, 'links'), (0, 40, 'oben'), (-40, 0, 'rechts')]:
+            await zieh(10, 10, dx, dy); assert await hole('rammbalken', 'wand') == [soll], f'{dx},{dy}: {await hole("rammbalken", "wand")}'
+        d = await p.evaluate("JSON.parse(localStorage.getItem('monchichi_level_editor_v2'))")
+        assert 'rechts' in json.dumps(d.get('rammbalken', d)), f'nach dem Loslassen nicht gespeichert: {d.get("rammbalken")}'
+        await zieh(10, 10, 5, 3); assert await hole('rammbalken', 'wand') == ['rechts'], 'winziges Ziehen darf nicht drehen'
+        # Falle und Lichtquelle: 4 Richtungen
+        for wz, feld in [('falle', 'traps'), ('lichtquelle', 'lichtquellen')]:
+            await ed_werkzeug(p, wz)
+            await zieh(14, 10, 0, 40); assert await hole(feld, 'richtung') == ['u'], f'{wz}: {await hole(feld, "richtung")}'
+            await zieh(14, 10, -40, 0); assert await hole(feld, 'richtung') == ['l'], f'{wz}: {await hole(feld, "richtung")}'
+            await zieh(14, 10, 0, -40); assert await hole(feld, 'richtung') == ['o'], f'{wz}: {await hole(feld, "richtung")}'
+            await ed_werkzeug(p, 'erase'); x, y = ort(14, 10); await p.mouse.click(x, y)
+        # Fels: nur links/rechts; hoch ziehen ändert nichts
+        await ed_werkzeug(p, 'fels')
+        await zieh(20, 12, -40, 0); assert await hole('boulders', 'richtung') == ['l'], await hole('boulders', 'richtung')
+        await zieh(20, 12, 40, 0); assert await hole('boulders', 'richtung') == ['r'], await hole('boulders', 'richtung')
+        # Spiegel: schräg ziehen legt ihn wie die Zieh-Linie
+        await ed_werkzeug(p, 'spiegel')
+        await zieh(26, 10, 30, 30); assert await hole('spiegel', 'stellung') == ['\\\\'[0]], await hole('spiegel', 'stellung')
+        await zieh(26, 10, 30, -30); assert await hole('spiegel', 'stellung') == ['/'], await hole('spiegel', 'stellung')
+        # Klick ohne Ziehen dreht wie bisher eine Stufe weiter
+        x, y = ort(26, 10); await p.mouse.click(x, y); assert await hole('spiegel', 'stellung') == ['\\\\'[0]], 'Klick dreht nicht mehr'
+        assert await p.evaluate("elementPunkte.rammbalken.length + elementPunkte.boulders.length + elementPunkte.spiegel.length") == 3, 'beim Ziehen entstehen weitere Elemente'
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_bewegung_nachbearbeiten(g):
     """Editor: Klick auf bewegtes Stück wählt es aus; Tempo/Schalter änderbar; Entf entfernt. Vergebene Nummern mit ✓."""
     srv = webserver(); p = g.p

@@ -283,6 +283,9 @@ elementRegistrieren({
     nummerAktiv: p => p.schalter === 'nummer' && !!p.link,
     mitNummer: false, nummerName: 'Falle aus',
     klick(p){ const o = ['r', 'u', 'l', 'o']; p.richtung = o[(o.indexOf(p.richtung || 'r') + 1) % 4]; },
+    // gedrückt halten und ziehen: die Falle schießt in die Zieh-Richtung
+    drehen(p, rx, ry){ const n = rx > 0 ? 'r' : rx < 0 ? 'l' : ry < 0 ? 'o' : 'u'; if(n === p.richtung) return ''; p.richtung = n;
+      return 'Falle: schießt nach ' + {r: 'rechts', l: 'links', o: 'oben', u: 'unten'}[n]; },
     zeichnen(ctx, c, r, TILE, p){
       const f = {art: p.art || 'pfeil', dx: (FALLE_RICHTUNG[p.richtung] || [1, 0])[0], dy: (FALLE_RICHTUNG[p.richtung] || [1, 0])[1]};
       ctx.save(); ctx.translate(c*TILE, r*TILE); ctx.scale(TILE/40, TILE/40);

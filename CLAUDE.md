@@ -184,7 +184,8 @@
 6. Element mit Verknüpfungs-Nummer: `editor.mitNummer: true` + `nummerName` (Muster `hebel.js`); was beim An/Aus der
    Nummer passiert, gehört ins Verknüpfungs-System in `js/05-level-objekte.js`. Sonderfälle in der Figuren-Physik
    (z. B. Aufwind beim Segeln) bleiben in `js/08-figur-physik-seil.js`, die Werte/Hilfsfunktionen in der Element-Datei.
-7. Eigene Auswahl-Felder im Editor: `editor.optionen`; eigene solids-Sorte, die das Element selbst zeichnet:
+7. Eigene Auswahl-Felder im Editor: `editor.optionen`; hat das Element eine Richtung: `editor.drehen(p, rx, ry, dx, dy)`
+   (gedrückt halten und ziehen dreht es; gibt den Hinweis-Text zurück oder '' = nichts geändert; Muster `rammbalken.js`); eigene solids-Sorte, die das Element selbst zeichnet:
    `ELEMENT_SOLID_TYPEN.add('<type>')` (Muster `wechselboden.js`).
 8. Zeichen-Hilfen, die Elemente brauchen (z. B. `linkColor`), müssen außerhalb von `draw()` stehen (12-welt-zeichnen.js).
 9. Editor-Reiter: `editor.gruppe` = gelaende, gefahren, licht, logik, haken, bewegung, wasser, boss oder marken;

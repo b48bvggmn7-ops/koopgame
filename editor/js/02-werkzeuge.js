@@ -176,7 +176,31 @@ cvs.addEventListener('mousedown', e=>{
     const p = elementPunkte[EZ.feld].find(d=>d.c===c&&d.r===r);
     if(p){ painting=false; elementZiehen = {E: EZ, p, geaendert: false}; }
   }
+  // Element mit editor.drehen (Nutzerwunsch 17.11.): gedrückt halten und in eine Richtung ziehen dreht es dorthin – nicht bei
+  // Werkzeugen, die beim Ziehen malen (ziehbar: Förderband, Strömung …; dort bleibt Klick = drehen)
+  if(!eraseDrag && EZ && EZ.editor.drehen && !EZ.editor.ziehbar){
+    const p = elementPunkte[EZ.feld].find(d=>d.c===c&&d.r===r);
+    if(p){ painting=false; elementDrehen = {E: EZ, p, x0: e.clientX, y0: e.clientY, geaendert: false}; }
+  }
 });
+// Drehen beim Ziehen: ab DREH_ZIEH_PX Bildschirm-Pixeln Abstand vom Klick zählt die Zieh-Richtung (rechts/links/hoch/runter;
+// das Element bekommt zusätzlich die genauen Pixel – der Spiegel braucht „schräg“). Die Auswahl-Felder oben ziehen mit, damit
+// das nächste gesetzte Element gleich herum steht.
+const DREH_ZIEH_PX = 14;
+let elementDrehen = null;
+function elementDrehenBewegen(e){
+  if(!elementDrehen) return;
+  const D = elementDrehen, dx = e.clientX - D.x0, dy = e.clientY - D.y0;
+  if(Math.hypot(dx, dy) < DREH_ZIEH_PX) return;
+  const waag = Math.abs(dx) >= Math.abs(dy), msg = D.E.editor.drehen(D.p, waag ? Math.sign(dx) : 0, waag ? 0 : Math.sign(dy), dx, dy);
+  if(!msg) return;
+  D.geaendert = true; flash(msg);
+  for(const o of (D.E.editor.optionen || [])){
+    const el = document.getElementById(`opt-${D.E.editor.werkzeug}-${o.key}`);
+    if(el && D.p[o.key] !== undefined && [...el.options].some(op => op.value === String(D.p[o.key]))) el.value = String(D.p[o.key]);
+  }
+}
+function elementDrehenEnde(){ if(!elementDrehen) return; const g = elementDrehen.geaendert; elementDrehen = null; if(g) save(); }
 let elementZiehen = null;
 function elementZiehenBewegen(e){
   if(!elementZiehen) return;
@@ -243,8 +267,8 @@ speedSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.speed
 moveSwitchSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ d.link = curMoveLink(); save(); } });
 moveModeSelect.addEventListener('change', ()=>{ const d = selData(); if(d){ curMoveMode(d); save(); } });
 moveDelBtn.addEventListener('click', deleteSelMove);
-window.addEventListener('mouseup', ()=>{ painting=false; eraseDrag=false; finishMoveDrag(); hakenZiehenEnde(); elementZiehenEnde(); });
-window.addEventListener('mousemove', e=>{ hakenZiehenBewegen(e); elementZiehenBewegen(e); });   // auch außerhalb der Leinwand weiterziehen
+window.addEventListener('mouseup', ()=>{ painting=false; eraseDrag=false; finishMoveDrag(); hakenZiehenEnde(); elementZiehenEnde(); elementDrehenEnde(); });
+window.addEventListener('mousemove', e=>{ hakenZiehenBewegen(e); elementZiehenBewegen(e); elementDrehenBewegen(e); });   // auch außerhalb der Leinwand weiterziehen
 let flashT=0, flashMsg='';
 function flash(m){ flashMsg=m; flashT=performance.now(); document.getElementById('coordLabel').textContent=m; }
 cvs.addEventListener('mousemove', e=>{

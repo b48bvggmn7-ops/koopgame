@@ -273,7 +273,7 @@ elementRegistrieren({
     werkzeug: 'ramm', gruppe: 'logik', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#7d6245',
     mitNummer: true, nummerName: 'Rammbalken',
     titel: 'Rammbalken: ragt 2 Kästchen aus einer Wand, dem Boden oder der Decke (Auswahl „Richtung“), nur ein Dash gegen die Stirnseite rammt ihn hinein (im Dschungel dasht nur das ' +
-           'Schweinchen; hoch/runter + Dash = senkrecht). Ins Kästchen direkt AN der Fläche setzen. „Zeitfenster“: Nummer AN, bis er wieder herausgeglitten ist; ' +
+           'Schweinchen; hoch/runter + Dash = senkrecht). Ins Kästchen direkt AN der Fläche setzen; gedrückt halten und ziehen dreht ihn in die Zieh-Richtung. „Zeitfenster“: Nummer AN, bis er wieder herausgeglitten ist; ' +
            '„umschalten“: jeder Stoß schaltet um (wie ein Hebel)',
     optionen: [
       {key: 'wand', label: 'Richtung', titel: 'woraus der Balken ragt: Wand rechts/links, Boden (ragt nach oben, von oben draufstampfen) oder Decke (hängt nach unten, von unten rammen)',
@@ -282,6 +282,9 @@ elementRegistrieren({
       {key: 'zeit', label: 'Zeit', zahl: true, titel: 'so lange bleibt die Nummer nach dem Rammstoß an (nur „Zeitfenster“)',
        werte: [['5', '5 s'], ['3', '3 s'], ['8', '8 s'], ['12', '12 s']]},
     ],
+    // gedrückt halten und ziehen: der Balken ragt in die Zieh-Richtung (die Fläche, aus der er kommt, liegt gegenüber)
+    drehen(p, rx, ry){ const n = rx > 0 ? 'links' : rx < 0 ? 'rechts' : ry < 0 ? 'unten' : 'oben'; if(n === (p.wand || 'rechts')) return ''; p.wand = n;
+      return 'Rammbalken: ragt nach ' + {links: 'rechts (Wand links)', rechts: 'links (Wand rechts)', unten: 'oben (aus dem Boden)', oben: 'unten (von der Decke)'}[n]; },
     // sichtbar belegt: das Kästchen an der Wand und das davor (Rechtsklick/Radierer)
     bereich: p => { const [dx, dy] = rammRichtungVon(p); return [[p.c, p.r], [p.c + dx, p.r + dy]]; },
     zeichnen(ctx, c, r, TILE, p){

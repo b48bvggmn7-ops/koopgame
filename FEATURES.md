@@ -2674,6 +2674,14 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   Teil-Dateien liegen in levels/archiv/dschungel-teile/ (nur noch zum Nachschauen); im Level steht unter „_teile“, wo jeder
   alte Teil liegt (für die Tests, tests/abschnitt.py `teil_sicht`). An den Übergängen neue Checkpoints. Werkzeug:
   tests/bausteine/abschnitte_zusammenfuegen.py. Test abschnitt_zusammensetzen.
+- **Editor: Drehen per Gedrückt-Halten und Ziehen** (Nutzerwunsch 17.11., `editor.drehen` im Element-Register,
+  `elementDrehenBewegen` in editor/js/02): ein Element setzen oder ein vorhandenes mit seinem Werkzeug anklicken, die Maustaste
+  gedrückt halten und in eine Richtung ziehen (ab 14 px) – es dreht sich dorthin; das Auswahl-Feld oben zieht mit (das nächste
+  steht gleich herum), gespeichert wird beim Loslassen. Kann: **Rammbalken** (ragt in die
+  Zieh-Richtung, 4 Richtungen), **Falle** und **Lichtquelle** (schießt/strahlt in die Zieh-Richtung), **rollender Fels**
+  (links/rechts), **Spiegel** (schräg ziehen: liegt wie die Zieh-Linie). Klick ohne Ziehen dreht wie bisher eine Stufe weiter.
+  Nicht bei Werkzeugen, die beim Ziehen malen (Stacheln, Förderband, Strömung) – dort bleibt Klick = drehen. Test
+  editor_drehen_ziehen.
 - **Dash im Dschungel nur fürs Schweinchen** (Nutzerwunsch 16.11.: „gib Schwein den Dash zurück, er kann ihn auch in der Luft
   benutzen, soll etwas dauern, bis er sich wieder auflädt“; `DASH_SCHWEIN_IN_AUS_WELTEN`, js/02): in den Welten aus
   `DASH_AUS_WELTEN` dasht das Schweinchen wieder (Num 3 / △, am Boden und in der Luft, nur waagerecht, 160 px; nach dem Dash
