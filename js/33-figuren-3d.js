@@ -625,7 +625,7 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     // um diesen Unterschied davon weggeschoben (nur Zeichnen; Nutzer: „schwinge durch Boden/Wand“)
     { let ziel = 0;
       if(typeof festIst === 'function'){
-        const halb = !male && window.F3D_SCHWEIN_FOTO ? FIGUR_HALB_FOTO : FIGUR_HALB;   // Foto-Look-Schweinchen ist schmaler gezeichnet -> näher an die Wand
+        const halb = (male ? window.F3D_AFFE_FOTO : window.F3D_SCHWEIN_FOTO) ? FIGUR_HALB_FOTO : FIGUR_HALB;   // Foto-Look-Schweinchen ist schmaler gezeichnet -> näher an die Wand
         const by = Math.floor((P.y - P.h*.55)/40), rand = halb - P.w/2;
         const rechts = P.x + halb, links = P.x - halb;
         if(festIst(Math.floor(rechts/40), by) && !festIst(Math.floor((P.x + P.w/2 - 1)/40), by)) ziel = -Math.min(rand, rechts - Math.floor(rechts/40)*40);
