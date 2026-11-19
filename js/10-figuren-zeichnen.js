@@ -37,7 +37,25 @@ function drawBow(x, y, r){
 
 // Segelschirm: runder Stoffschirm mit Bogenkante, Streifen, Speichen, Griff; klappt weich auf und schwingt mit
 // o (optional, Dschungel-Neu: Schirm-Trampolin, js/34): {u (offen 0…1), hand: [x, y], stick, tilt, quetsch (Kuppel gibt nach 0…1)}
-function drawUmbrella(player, px, py, o){
+// Holzstiel (Foto-Look-Schweinchen, Nutzer 19.11.: „wie ein Holzstiel, nicht wie ein gemalter Strich“; „der Griff sieht seltsam aus“):
+// EIN durchgehender runder Holzstab von (x0, y0) nach (x1, y1) – dunkle Kante, Holzton, helle Lichtkante; mit haken > 0 läuft er am Ende
+// ohne Absatz in einen gebogenen Griff aus (Radius haken, wie beim Regenschirm). Schlank (SCHIRM_STIEL_DICKE), damit die kleinen Hufe ihn umfassen.
+const SCHIRM_STIEL_DICKE = 3.4, SCHIRM_GRIFF_RADIUS = 3.3;   // px
+const SCHIRM_GRIFF_AB = 2.6, SCHIRM_GRIFF_BIS = 7;           // px: Flug – so weit unter dem Huf beginnt das sichtbare Stielstück bzw. der Griff-Bogen
+const SCHIRM_GRIFF_SITZ = 5;                                // px: Schirm-Trampolin – so weit unter den Hufen beginnt der Griff-Bogen
+function holzStiel(x0, y0, x1, y1, w, haken){
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1;
+  ctx.save(); ctx.translate(x0, y0); ctx.rotate(Math.atan2(-dx, dy));   // lokal läuft der Stiel nach +y
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const pfad = () => { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, L); if(haken) ctx.arc(-haken, L, haken, 0, Math.PI*1.05); };
+  for(const [farbe, breite, vx] of [['#35220f', w + 1.3, 0], ['#8f6338', w, 0], ['#b98a54', w*.62, -w*.1], ['#dcb886', w*.24, -w*.2]]){
+    ctx.save(); ctx.translate(vx, 0); ctx.strokeStyle = farbe; ctx.lineWidth = breite; pfad(); ctx.stroke(); ctx.restore(); }
+  ctx.restore();
+}
+// Foto-Look-Schweinchen im Flug (js/33): player._stielZiel = Huf des Arms, der zur Kamera zeigt. teil 'stiel' = nur der Holzstiel von der
+// Kuppel durch den Huf (ein Stück Griff schaut unten heraus) – wird HINTER der Figur gezeichnet, so umschließt der echte Huf den Stiel;
+// danach zeichnet der normale Aufruf alles außer dem Stiel.
+function drawUmbrella(player, px, py, o, teil){
   const u = o ? o.u : player.umbrella;        // 0 = zu, 1 = ganz offen
   const t = performance.now()*0.004;
   const tilt = o ? (o.tilt || 0) : Math.max(-0.4, Math.min(0.4, -player.vx*0.05)) + Math.sin(t)*0.05*u;
@@ -52,11 +70,24 @@ function drawUmbrella(player, px, py, o){
   ctx.rotate(tilt);
   ctx.globalAlpha = ablauf ? 1 : Math.min(1, u*1.4);
 
+  const fotoSchwein = !player.male && !!window.F3D_SCHWEIN_FOTO, ziel = !o && fotoSchwein ? player._stielZiel : null;
+  if(teil === 'stiel'){   // nur der Stiel, in der gedrehten Schirm-Lage; läuft durch den Huf und schaut unten ein Stück heraus
+    if(ziel){ const dxw = ziel.x - handX, dyw = ziel.y - handY, co = Math.cos(-tilt), si = Math.sin(-tilt), lx = dxw*co - dyw*si, ly = dxw*si + dyw*co + stick, ll = Math.hypot(lx, ly) || 1, ue = 3/ll;
+      holzStiel(0, -stick, lx*(1 + ue), -stick + ly*(1 + ue), SCHIRM_STIEL_DICKE); }
+    ctx.restore(); return; }
   // Griff (Stock mit gebogenem Ende)
+  // Nutzer 19.11.: „warum endet der Stiel einfach bei der Hand?“ -> der Stiel läuft durch die Hufe weiter und endet in einem gebogenen Holzgriff
+  if(ziel){   // Flug: der Stiel oben liegt hinter der Figur (teil 'stiel'); hier das Stück UNTER dem Huf mit dem Griff, vor der Figur
+    const dxw = ziel.x - handX, dyw = ziel.y - handY, co = Math.cos(-tilt), si = Math.sin(-tilt), lx = dxw*co - dyw*si, ly = dxw*si + dyw*co;
+    const ux0 = lx, uy0 = ly + stick, ul = Math.hypot(ux0, uy0) || 1, ux = ux0/ul, uy = uy0/ul;
+    holzStiel(lx + ux*SCHIRM_GRIFF_AB, ly + uy*SCHIRM_GRIFF_AB, lx + ux*SCHIRM_GRIFF_BIS, ly + uy*SCHIRM_GRIFF_BIS, SCHIRM_STIEL_DICKE, SCHIRM_GRIFF_RADIUS); }
+  else if(fotoSchwein && o && o.ohneStiel){ /* der Stiel ist ein echtes Teil der Figur (js/32a), die Hufe greifen darüber */ }
+  else if(fotoSchwein) holzStiel(0, -stick, 0, o && o.haende ? SCHIRM_GRIFF_SITZ : 0, SCHIRM_STIEL_DICKE, SCHIRM_GRIFF_RADIUS);   // Trampolin: zwischen den Hufen hindurch bis zum Griff
+  else {
   ctx.strokeStyle = '#7a4a2e'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(0, -stick); ctx.lineTo(0, 0);
   if(!(o && o.haende)) ctx.arc(-4, 0, 4, 0, Math.PI*0.9);   // Trampolin: kein Haken-Griff (die Pfoten halten den Stock), Schirm bleibt mittig
-  ctx.stroke();
+  ctx.stroke(); }
 
   ctx.translate(0, -stick);
   if(!o){ player._schirmMat = ctx.getTransform(); player._schirmMatT = performance.now(); }   // Kuppel-Mitte für den Flug-Balken (js/35)
@@ -113,8 +144,9 @@ function drawUmbrella(player, px, py, o){
   if(o && o.haende && (o.pfoten === undefined || o.pfoten > 0)) schirmHaende(handX, handY, o.haende, o.pfoten === undefined ? 1 : o.pfoten);
 }
 // Schirm-Trampolin (Nutzerwunsch „mit beiden Händen halten“): zwei Ärmchen von den Kopfseiten hinauf, beide Pfoten fest am
-// Stock (übereinander); h = {schulter: [dx, dy] relativ zur Hand, farbe, rand}
+// Stock (übereinander); h = {schulter: [dx, dy] relativ zur Hand, farbe, rand, pfote?, pfoteRand?} (pfote = eigene Farbe der Pfoten, z. B. Hufe)
 function schirmHaende(hx, hy, h, k = 1){   // k < 1: die Pfoten sind noch auf dem Weg von den Schultern zum Stock
+  if(h.unsichtbar) return;   // Foto-Look-Schweinchen: die echten 3D-Arme halten den Stock (js/33), hier wird nichts gemalt
   const [sx, sy] = h.schulter;
   ctx.save(); ctx.lineCap = 'round';
   const pfote = seite => [hx + seite*sx*(1 - k), hy + (seite < 0 ? 1 : -4) + (sy - (seite < 0 ? 1 : -4))*(1 - k)];   // linke Pfote unten, rechte knapp darüber
@@ -127,7 +159,7 @@ function schirmHaende(hx, hy, h, k = 1){   // k < 1: die Pfoten sind noch auf de
   }
   for(const seite of [-1, 1]){   // Pfoten um den Stock
     const [px, py] = pfote(seite);
-    ctx.fillStyle = h.farbe; ctx.strokeStyle = h.rand; ctx.lineWidth = 1.4;
+    ctx.fillStyle = h.pfote || h.farbe; ctx.strokeStyle = h.pfoteRand || h.rand; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.ellipse(px, py, 5.2, 4.2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   }
   ctx.restore();

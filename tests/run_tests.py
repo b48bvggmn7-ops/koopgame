@@ -7703,6 +7703,27 @@ async def figuren3d_affe_monchichi(g):
     assert 'male?1.05' not in src and m and float(m.group(2)) >= 4.2 and float(m.group(1)) <= -4.2, 'Affe gestreckt bzw. Bild wieder zu schmal (Schwanz abgeschnitten)'
 
 @test
+async def schwein_foto_look(g):
+    """Schweinchen im Foto-Look (js/32a, Nutzer 19.11.: „nur die Charaktere auswechseln“): js/33 baut das Schweinchen über die
+    zweite Bau-Art, die Haltungen laufen unverändert weiter (Arme hoch beim Segeln), nichts wirft Fehler, die Figur ist oben
+    altrosa. ?schwein=alt bleibt das bisherige (Schalter im Code geprüft)."""
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    await f3d_bereit(g)
+    assert await g.ev("window.F3D_SCHWEIN_FOTO === true"), 'Foto-Look-Schweinchen wird nicht gebaut (js/32a fehlt oder Fehler dort)'
+    try:
+        arme = await g.p.evaluate(F3D_ZEICHNEN, {'n': 12, 'wer': 'f', 'vorher': "p2.gliding = true; p2.grounded = false; p2.vx = 0;", 'merk': "[Math.abs(p2._f3.cur[p2._f3.halt][2]), !!p2._stielZiel, p2._f3.halt]"})
+        assert arme[-1][0] > 2.2 and arme[-1][2] in ('armN', 'armP'), f'Segeln: der Halte-Arm geht mit dem neuen Schweinchen nicht hoch: {arme[-1]}'
+        await g.ev("p2.gliding = false; p2.grounded = true")
+        pk = await g.p.evaluate(F3D_BILD, {'n': 8, 'vorher': "p1._yawTest = p2._yawTest = 0", 'merk': "[p2._headDev.x, p2._headDev.y]"})
+        farbe = await g.p.evaluate(F3D_PIXEL, pk)
+        assert farbe[0] > 150 and farbe[0] > farbe[2] + 8 and farbe[1] > 100, f'Schweinchen oben nicht altrosa: {farbe}'
+    finally:
+        await g.ev("p1._yawTest = p2._yawTest = null; menuScreen = null")
+    assert not fehler, f'Fehler beim Zeichnen: {fehler[:2]}'
+    src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
+    assert "QS.get('schwein')!=='alt'" in src and 'buildPigAlt' in src, 'Schalter ?schwein=alt bzw. das bisherige Schweinchen fehlt'
+
+@test
 async def figuren3d_leistung_stufen(g):
     """Leistung (Nutzer: „ruckelt“): läuft das Spiel länger als ca. 2 s unter ~45 Bildern/s, nimmt die 3D-Figur weniger
     Fell-Schichten (14 -> 8 -> 5) und stellt nie wieder hoch; die Leistungs-Anzeige (F) zeigt Zeit und Stufe der 3D-Figuren."""

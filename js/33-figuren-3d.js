@@ -8,6 +8,7 @@
   'use strict';
   const QS = new URLSearchParams(location.search);
   const SPR = Math.round(352*8.4/6.6), FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
+  const FIGUR_HALB_FOTO = 23;                      // px: dasselbe für das Foto-Look-Schweinchen (nicht in die Breite gezogen; Nutzer 19.11.: „beim Wandsliden nicht an der Wand“)
   const FIGUR_HALB = 30;                           // px: halbe gezeichnete Breite der 3D-Figur mit Armen und Fell (Stoßfläche: 14,25)
   // Prüfpunkte des gezeichneten Körpers am Seil (darf nicht in Boden/Wand ragen): Höhen in 3D-Einheiten über den Füßen
   // (0 = Füße, 3 = Kopf oben) und quer dazu in px (halbe gezeichnete Dicke mit Fell)
@@ -157,7 +158,8 @@ function K(par,o){const n=par.add(new Nd(o));n.part={geo:o.geo||SPH(1),fur:false
 function drawNode(n,pm,VPm,cam){const loc=M.mul(M.mul(M.mul(M.T(...n.pos),M.RZ(n.rot[2])),M.mul(M.RY(n.rot[1]),M.RX(n.rot[0]))),M.S(...n.sc));
  let parentOnly=M.mul(pm,M.mul(M.mul(M.T(...n.pos),M.RZ(n.rot[2])),M.mul(M.RY(n.rot[1]),M.RX(n.rot[0]))));if(n.gs)parentOnly=M.mul(parentOnly,M.S(...n.gs));const w=M.mul(pm,loc);
  if(n.cap)n.capM=w;
- if(n.part&&n.visible){const p=n.part;gl.bindVertexArray(p.geo.vao);
+ if(n.part&&n.visible&&n.part.neu){FOTO.teil(n,n.part,w,VPm,cam);gl.useProgram(PRG);}   // Foto-Look-Teil (js/32a): eigener Fell-Shader
+ else if(n.part&&n.visible){const p=n.part;gl.bindVertexArray(p.geo.vao);
   gl.uniformMatrix4fv(U.uVP,false,VPm);gl.uniformMatrix4fv(U.uM,false,w);gl.uniformMatrix3fv(U.uNM,false,M.nm(w));
   gl.uniform3f(U.uScale,...n.sc);gl.uniform1f(U.uLen,p.len);gl.uniform1f(U.uGrav,p.grav);gl.uniform2f(U.uTile,...p.tile);
   gl.uniform3f(U.uRoot,...p.root);gl.uniform3f(U.uTip,...p.tip);gl.uniform3f(U.uCam,...cam);
@@ -206,7 +208,13 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x
  for(const k of R.kids){if(LP.includes(k))continue;if(AP.includes(k)){k.pos=[k.pos[0],k.pos[1]+.12,k.pos[2]];continue}k.pos=[k.pos[0],k.pos[1]-.22,k.pos[2]]}
  return {root:R,head:H,armN:AP[0],armP:AP[1],legN:LP[0],legP:LP[1],eyes,tail:TL,backen,mundO,lae}}
 // ---------- Schwein ----------
-function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffdde8,D=40;
+// Schweinchen im Foto-Look (js/32a, Nutzer 19.11.: nur das Aussehen tauschen, alle Haltungen bleiben); ?schwein=alt oder ein Fehler dort = bisheriges
+let FOTO=null;
+function buildPig(){
+ if(FOTO===null){FOTO=false;try{if(typeof window.figurenFotoBauen==='function'&&QS.get('schwein')!=='alt')FOTO=window.figurenFotoBauen({gl,M,Nd,schichten:()=>F3D_QUALI.schichten(),tat:()=>TAT.on});}catch(e){console.warn('Foto-Look-Schweinchen nicht verfügbar:',e);FOTO=false}}
+ if(FOTO){try{const p=FOTO.buildPig();window.F3D_SCHWEIN_FOTO=true;return p}catch(e){console.warn('Foto-Look-Schweinchen nicht verfügbar:',e)}}
+ window.F3D_SCHWEIN_FOTO=false;return buildPigAlt()}
+function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffdde8,D=40;
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
  F(H,{sc:[1,1,1],root:ROOT,tip:TIP,len:.045,dens:D,tat:true});
  for(const s of [-1,1]){
@@ -276,7 +284,14 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
   const lerpA = (a,b,t) => a.map((v,i) => v + (b[i]-v)*t);
   const ease = x => x*x*(3-2*x);
   const TUCK = {head:[.55,0,0], armN:[-1.75,0,.25], armP:[-1.75,0,-.25], legN:[-1.45,0,.1], legP:[-1.45,0,-.1]};
+  // Foto-Look-Schweinchen im Dash (Rammstoß): Kopf voran, Arme und Beine nach hinten gestreckt; die ganze Figur neigt sich in Stoßrichtung
+  // (RAMM_NEIGUNG vorwärts, bei senkrechtem Dash RAMM_HOCH / RAMM_RUNTER) – keine Kugel-Rolle wie beim bisherigen Schweinchen
+  const RAMM = {head:[.08,0,0], armN:[1.05,0,-.45], armP:[1.05,0,.45], legN:[.95,0,0], legP:[.7,0,0]};
+  const RAMM_NEIGUNG = .16, RAMM_HOCH = 1.1, RAMM_RUNTER = 1.25, WAND_ARM_FOTO = 1.7;   // rad bzw. Armlänge beim Wand-Rutschen (Hufe erreichen die Wand)
   const TANZ_ARM = .75, TANZ_ABSTAND = 44;   // Siegestanz: Verlängerung des Einhak-Arms, Abstand der beiden Figuren (px)
+  // Foto-Look-Schweinchen im Flug: der Halte-Arm wird länger (ARM), zeigt fast senkrecht hoch (HOCH, rad; π = senkrecht) und etwas nach vorn (VOR, rad)
+  const SCHIRM_FLUG_ARM = 2.75, SCHIRM_FLUG_HOCH = 2.75, SCHIRM_FLUG_VOR = -.3;
+  const SCHIRM_ARM_FOTO = 3.45;   // Foto-Look-Schweinchen am Schirm-Trampolin: so viel länger werden die echten Arme, damit die Hufe den Stock vor dem Bauch erreichen
   const HAFT_ARM = 3.0;   // Armlänge (Faktor) beim Hangeln an der Haftfläche – Affe wie Schwein
   const WJ_ZEIT = 480;   // ms: Salto nach dem Wandsprung
   // wie tief die Figur beim Hangeln unter der Fläche hängt: die Hand-Spitze (Arm mit Faktor al) soll genau die Unterkante der Fläche (Oberkante der Hitbox) berühren
@@ -320,7 +335,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     // Dschungel-Neu (js/34): Schweinchen hält den offenen Schirm mit beiden Armen über den Kopf (Trampolin), Affe pustet
     if(!male && (P.trampolin || (S.trA || 0) > 0)){   // Schirm-Trampolin (auch beim Wegstecken): 3D-Arme eng am Körper, die Pfoten vor dem Bauch malt drawUmbrella;
       const ziehen = (S.trA || 0) < SCHIRM_HOLEN;   // beim Hervorziehen greift der rechte Arm seitlich nach unten zur Hüfte
-      return {p: {head:[-.22,0,0], armN:[-1.0,0,.4], armP: ziehen ? [-.2,0,1.0] : [-1.0,0,-.4], legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'}; }
+      const fo = !!window.F3D_SCHWEIN_FOTO;   // Foto-Look: die echten Arme greifen nach vorn zum Stock (statt gemalter Ärmchen)
+      return {p: {head:[-.22,0,0], armN: fo && !ziehen ? [-.97,0,1.06] : [-1.0,0,.4], armP: ziehen ? [-.2,0,1.0] : (fo ? [-1.0,0,-1.22] : [-1.0,0,-.4]), legN:[-.2,0,-.18], legP:[-.2,0,.18]}, key:'trampolin'}; }
     if(male && P.pusteAn){
       const luft = Math.min(1, (performance.now() - (P._pusteStartT || 0))/200), zit = Math.sin(t*38)*.04*luft;   // erst Luft holen, dann kräftig
       if(P.pusteRichtung === 'hoch') return {p: {head:[-1.3*luft + .2*(1 - luft) + zit,0,0], armN:[.25,0,-1.15], armP:[.25,0,1.15], legN:[-.25,0,-.12], legP:[-.25,0,.12]}, key:'pusten'};
@@ -328,7 +344,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         return {p: {head:[-.75*luft + .2*(1 - luft) + zit,0,0], armN:[.8*luft,0,-.6], armP:[.8*luft,0,.6], legN:[-.4,0,0], legP:[.35,0,0]}, key:'pusten'};
       return {p: {head:[-.12*luft + .25*(1 - luft) + zit,0,0], armN:[1.15*luft,0,-.45], armP:[1.15*luft,0,.45], legN:[-.5,0,0], legP:[.45,0,0]}, key:'pusten'};
     }
-    if(P.dash) return {p: TUCK, key:'dash'};
+    if(P.dash) return {p: !male && window.F3D_SCHWEIN_FOTO ? RAMM : TUCK, key:'dash'};
     if(sinceWJ < WJ_ZEIT){ const k = sinceWJ/WJ_ZEIT, tk = Math.sin(Math.min(1,k*1.15)*Math.PI);   // Salto: erst einrollen, am Ende strecken
       return {p: {head:[.35*tk,0,0], armN:[-1.75*tk,0,.25+.8*(1-tk)], armP:[-1.75*tk,0,-.25-.8*(1-tk)], legN:[-1.45*tk-.2,0,.1], legP:[-1.45*tk-.2,0,-.1]}, key:'wj'}; }
     // Trommel-Station (elemente/trommel.js, Nutzer 07.11.: „wie soll das aussehen, wenn die trommeln?“): die Figur steht hinter
@@ -358,6 +374,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
       if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-1.45*e,0,-.2], armP:[-1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
     if(male && ((P.hookAttached && P.anchor) || (P._hakenWarten && P._wartZiel))) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
+    if(!male && P.gliding && window.F3D_SCHWEIN_FOTO){   // Foto-Look: der Arm zur Kamera (je nach Flugrichtung links oder rechts) reckt sich hoch und hält den Holzstiel
+      const nN = flip > 0; S.halt = nN ? 'armN' : 'armP';   // Blick nach rechts: armN liegt vorn (zur Kamera), sonst armP (im Spiel geprüft)
+      return {p:{head:[-.1,0,0], armN: nN ? [SCHIRM_FLUG_VOR,0,-SCHIRM_FLUG_HOCH] : [.25,0,-.75], armP: nN ? [.25,0,.75] : [SCHIRM_FLUG_VOR,0,SCHIRM_FLUG_HOCH], legN:[-.15+Math.sin(t*2.2)*.1,0,0], legP:[.2-Math.sin(t*2.2)*.1,0,0]}, key:'segeln'}; }
     if(!male && P.gliding) return {p:{head:[-.1,0,0], armN:[0,0,-2.5], armP:[0,0,2.5], legN:[-.15+Math.sin(t*2.2)*.1,0,0], legP:[.2-Math.sin(t*2.2)*.1,0,0]}, key:'segeln'};
     if(P.haft && P.haft.flaeche === 'unten'){   // Haftfläche (Decke): erst greift der eine Arm nach vorn, dann der andere – im Stand bleiben die Arme still
       const ph = (S.hp||0)/72.8, A = .6, ea = x => x*x*(3 - 2*x);
@@ -486,7 +505,10 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       } }
     // Drehung: Dash = Rolle, Wandsprung = ganzer Salto weg von der Wand
     let rollA = 0;
-    if(z.key === 'dash'){ S.rollA += -flip*dt*16; rollA = S.rollA; }
+    if(z.key === 'dash' && !male && window.F3D_SCHWEIN_FOTO){   // Rammstoß: in Stoßrichtung geneigt, nicht rollen
+      const dy = P.dash ? P.dash.dy : 0, dx = P.dash ? P.dash.dx : 0, ziel = dx ? -flip*RAMM_NEIGUNG : (dy < 0 ? flip*RAMM_HOCH : -flip*RAMM_RUNTER);
+      S.rollA += (ziel - S.rollA)*(1 - Math.exp(-dt*40)); rollA = S.rollA; }
+    else if(z.key === 'dash'){ S.rollA += -flip*dt*16; rollA = S.rollA; }
     else { S.rollA = 0; if(z.key === 'wj') rollA = -flip*ease(Math.min(1, sinceWJ/WJ_ZEIT))*Math.PI*2; }
     // leichte Neigung: beim Laufen nach vorn, an der Wand weg von der Wand
     const pusteLehne = z.key === 'pusten' && P.pusteRichtung !== 'hoch' ? (Math.min(1, (performance.now() - (P._pusteStartT || 0))/200) < 1 ? .1 : -.16)*pusteSeiteVon(P.pusteRichtung) : 0;   // erst zurück (Luft holen), dann in den Wind
@@ -497,7 +519,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     const H = holen(male), ch = H.ch;
     // Hangeln: lange Arme (Hände kleben oben an der Haftfläche), sonst normale Arme
     S.al = (S.al||1) + ((z.key === 'haft' ? HAFT_ARM : 1) - (S.al||1))*(1 - Math.exp(-dt*14));
-    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : (z.key === 'pumpen' ? 2.0 : 1))) - (S.as||1))*(1 - Math.exp(-dt*12));
+    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : (z.key === 'pumpen' ? 2.0 : (z.key === 'trampolin' && window.F3D_SCHWEIN_FOTO && (S.trA || 0) >= SCHIRM_HOLEN ? SCHIRM_ARM_FOTO : (z.key === 'segeln' && window.F3D_SCHWEIN_FOTO ? SCHIRM_FLUG_ARM : (z.key === 'ws' && !male && window.F3D_SCHWEIN_FOTO ? WAND_ARM_FOTO : 1)))))) - (S.as||1))*(1 - Math.exp(-dt*12));
     // Seil hochklettern/herablassen (W/S): Hand über Hand – ein Arm zieht, der andere greift nach
     if(z.key === 'seil' && P.ropeLen != null){ const d = S.rl == null ? 0 : Math.abs(P.ropeLen - S.rl); S.rl = P.ropeLen; S.cp = (S.cp||0) + d; S.cs = (S.cs||0) + (d - (S.cs||0))*.3; } else { S.rl = null; S.cs = 0; }
     const klet = Math.sin(2*Math.PI*(S.cp||0)/46)*Math.min(1, (S.cs||0)/.6);
@@ -506,6 +528,7 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       let al = S.al;
       if(z.key !== 'haft') al = S.as;   // am Seil/Haken: langer Greif-Arm (der andere etwas länger)
       if(z.key === 'seil') al *= 1 + (a === ch.armN ? 1 : -1)*.16*klet;
+      if(z.key === 'segeln' && window.F3D_SCHWEIN_FOTO && !male && S.halt && a !== ch[S.halt]) al = 1;   // nur der Halte-Arm ist lang
       if(z.key === 'tanz' && S.tz && S.tz.near && a === (S.tz.side > 0 ? ch.armP : ch.armN)) al = 1 + TANZ_ARM*S.ti;   // eingehakter Arm etwas länger, damit die Hände sich treffen
       a.alF = al;
       a.kids.forEach((q,i) => { if(i > 0) q.visible = z.key !== 'seil'; });   // am Seil: keine Hand-Knubbel oben, die Hände sind im Seil
@@ -516,6 +539,9 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       const k = (.15 + .55*(.5 - .5*Math.cos(S.tp)))*(1 - .85*(S.dT || 0)), n = ch.tail.segs.length;   // 0 = ausgerollt, 1 = eingerollt (nie ganz eingerollt: bleibt sichtbar); Seil-Drehung: fliegt nach außen
       ch.tail.segs.forEach((sg, i) => { sg.rot = [(i === 0 ? -.55 : .05) + (i === 0 ? 0 : .6)*k + Math.sin(t*5 - i*.9)*.07*(i ? 1 : 0), 0, Math.sin(t*3 - i*.7)*(.14 - .07*k)*(i ? 1 : 0)]; });
     }
+    if(ch.stiel){   // Foto-Look-Schweinchen: echter Holzstiel am Schirm-Trampolin, sobald beide Hufe greifen (davor malt drawUmbrella den Stiel)
+      const an = z.key === 'trampolin' && (S.trA || 0) >= SCHIRM_HOLEN + SCHIRM_GREIFEN; ch.stiel.visible = an;
+      if(an) ch.stielOben.sc = [1, Math.max(.2, (S.stielTop || 3.2) - 1.3), 1]; }
     ch.head.rot = S.cur.head; ch.armN.rot = S.cur.armN; ch.armP.rot = S.cur.armP; ch.legN.rot = S.cur.legN; ch.legP.rot = S.cur.legP;
     if(IT.pose){ for(const nm of ['head','armN','armP','legN','legP']) if(IT.pose[nm]) ch[nm].rot = lerpA(S.cur[nm], IT.pose[nm], IT.env); }
     if(S.dT > 0 || S.dK){   // Seil-Drehung: Beine anziehen (wie beim Pirouetten-Dreh), Kopf schaut kurz voraus
@@ -551,7 +577,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
     let lgX = 1, lgY = 1, trQ = 0;
     if(z.key === 'pumpen'){ const d = 1 - (S.pumpH == null ? 1 : S.pumpH); lgY = 1 - 0.11*d; lgX = 1 + 0.05*d; }   // Draisine: in die Knie beim Runterdrücken
     if(P.trampolin && P._trampolinSprungT){ const q = (now - P._trampolinSprungT)/380; if(q < 1){ trQ = Math.sin(q*Math.PI*2)*(1 - q); const a = Math.max(0, trQ)*.2; lgY = 1 - a; lgX = 1 + a*.45; } }
-    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.dY || 0) +(S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; H.yawN.gs = [(1 - sq*.5)*1.14*lgX, (1 + sq)*lgY, (1 - sq*.5)*1.14*lgX];   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
+    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.dY || 0) +(S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; { const br = !male && window.F3D_SCHWEIN_FOTO ? 1 : 1.14;   // Foto-Look-Schweinchen: Form wie freigegeben (nicht in die Breite gezogen)
+      H.yawN.gs = [(1 - sq*.5)*br*lgX, (1 + sq)*lgY, (1 - sq*.5)*br*lgX]; }   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
     // in die kleine Leinwand zeichnen
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
@@ -588,13 +615,15 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         P._seilKoerper = L; }
     }
     S.rs = (S.rs||0) + (rs - (S.rs||0))*(1 - Math.exp(-dt*18));
+    const TmAussen = c.getTransform();   // Lage, in der danach der Schirm gezeichnet wird
     c.save();
     // An Wänden: die 3D-Figur ist breiter gezeichnet als ihre Stoßfläche – liegt Boden/Wand im gezeichneten Rand, wird sie
     // um diesen Unterschied davon weggeschoben (nur Zeichnen; Nutzer: „schwinge durch Boden/Wand“)
     { let ziel = 0;
       if(typeof festIst === 'function'){
-        const by = Math.floor((P.y - P.h*.55)/40), rand = FIGUR_HALB - P.w/2;
-        const rechts = P.x + FIGUR_HALB, links = P.x - FIGUR_HALB;
+        const halb = !male && window.F3D_SCHWEIN_FOTO ? FIGUR_HALB_FOTO : FIGUR_HALB;   // Foto-Look-Schweinchen ist schmaler gezeichnet -> näher an die Wand
+        const by = Math.floor((P.y - P.h*.55)/40), rand = halb - P.w/2;
+        const rechts = P.x + halb, links = P.x - halb;
         if(festIst(Math.floor(rechts/40), by) && !festIst(Math.floor((P.x + P.w/2 - 1)/40), by)) ziel = -Math.min(rand, rechts - Math.floor(rechts/40)*40);
         else if(festIst(Math.floor(links/40), by) && !festIst(Math.floor((P.x - P.w/2 + 1)/40), by)) ziel = Math.min(rand, Math.floor(links/40)*40 + 40 - links);
       }
@@ -624,7 +653,8 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
       const kopf = fy - (2.4 + .55)*SC*lgY - IT.hop*42;   // Kopf-Oberkante
       const hy = fy - (fy - kopf)*0.35 + 4*Math.max(0, trQ);   // Pfoten vor dem Bauch, Schirm tief auf dem Kopf (Nutzerwunsch)
       const stickF = Math.max(4, TRAMPOLIN_HOEHE - (fy - hy) - 22);
-      const o = {u: 1, klapp: A.klapp, tilt: 0, quetsch: Math.max(0, trQ), haende: {schulter: [.8*SC, -2], farbe: '#f7aac4', rand: '#cf7d9b'}, pfoten: A.pfoten};
+      const o = {u: 1, klapp: A.klapp, tilt: 0, quetsch: Math.max(0, trQ), haende: window.F3D_SCHWEIN_FOTO ? {schulter: [.8*SC, -2], unsichtbar: true}   // Foto-Look: nichts malen, die echten Arme mit den Hufen halten den Stock
+        : {schulter: [.8*SC, -2], farbe: '#f7aac4', rand: '#cf7d9b'}, pfoten: A.pfoten};
       const glatt = q => q*q*(3 - 2*q), w = SCHIRM_HUEFT_WINKEL, h0 = [SCHIRM_HAND_SEITE + 20, fy - 14], h1 = [h0[0] + SCHIRM_ZIEH_WEG, h0[1]];
       if(A.phase === 1){   // seitlich hinter der Hüfte hervorziehen: liegt fast waagerecht (Spitze nach links hinter dem Körper)
         const z = glatt(A.q);
@@ -634,10 +664,16 @@ function buildPig(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffd
         Object.assign(o, {hand: [h1[0] + (ende[0] - h1[0])*z, h1[1] + (ende[1] - h1[1])*z - Math.sin(z*Math.PI)*10], stick: 6 + (stickF - 6)*z,
                           tilt: -w*(1 - d), pfoten: Math.max(0, (A.q - .35)/.65)});
         if(o.pfoten <= 0) o.haende = null; }
-      else Object.assign(o, {hand: [SCHIRM_HAND_SEITE, hy], stick: stickF});   // aufklappen über dem Kopf, Pfoten vor dem Bauch
+      else { Object.assign(o, {hand: [SCHIRM_HAND_SEITE, hy], stick: stickF, ohneStiel: !!(ch.stiel && ch.stiel.visible)});   // aufklappen über dem Kopf, Pfoten vor dem Bauch
+        S.stielTop = (fy - (hy - stickF))/SC; }   // Höhe der Kuppel in Figuren-Einheiten: bis dorthin reicht der echte Stiel im nächsten Bild
       drawUmbrella(P, 0, fy, o);
     };
     schirm(true);
+    // Foto-Look-Schweinchen im Flug: der Holzstiel läuft von der Kuppel durch den Huf des Halte-Arms und liegt HINTER der Figur – der echte Huf umschließt ihn
+    P._stielZiel = null;
+    if(!male && window.F3D_SCHWEIN_FOTO && z.key === 'segeln' && S.halt && P.umbrella > 0.03 && typeof drawUmbrella === 'function'){
+      const ar = ch[S.halt], q = handPunkt(ar, 0, -.64*(ar.alF||1), .03), lq = TmAussen.inverse().transformPoint(Tm.transformPoint(new DOMPoint(q[0]*SC, fy - q[1]*SC)));
+      P._stielZiel = {x: lq.x, y: lq.y}; c.save(); c.setTransform(TmAussen); drawUmbrella(P, 0, fy, undefined, 'stiel'); c.restore(); }
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.shadowColor = 'rgba(46,28,14,.8)'; c.shadowBlur = Math.max(1, Math.min(5, 1.5*Math.hypot(Tm.a, Tm.b))); c.shadowOffsetX = 0; c.shadowOffsetY = 0;   // weiche dunkle Kontur
     c.drawImage(cv, FR.x0*SC, fy - FR.y1*SC - IT.hop*42, (FR.x1 - FR.x0)*SC, (FR.y1 - FR.y0)*SC);

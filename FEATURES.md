@@ -1722,6 +1722,24 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
+  - **Schweinchen im Foto-Look (19.11., js/32a-figuren-foto.js):** das vom Nutzer freigegebene neue Schweinchen (altrosa Flaum mit
+    Büscheln, spitze Schlappohren, braune Augen mit Lidstrich und Wimper, glatte Schnauze, offenes Lächeln mit Zunge, braune Hufe,
+    Fell-Stummel an Armen und Beinen, Ringelschwanz) ersetzt NUR das Aussehen. Alle Haltungen und Abläufe bleiben die des Spiels
+    (Laufen, Springen, Fliegen, Dash, Schirm-Trampolin, Hangeln, Hebel, Tanz …): js/33 baut die Figur über `buildPig` mit denselben
+    Griffen (root, head, armN/armP, legN/legP, eyes) und bewegt sie wie bisher; Teile mit `part.neu` zeichnet der eigene Fell-Shader
+    aus js/32a (`figurenFotoBauen` -> `teil`). Körperform wie freigegeben (nicht 14 % in die Breite gezogen). Tattoos aus der Umkleide
+    färben auch das neue Fell (Kopf, Arme).
+    Schirm beim neuen Schweinchen (Nutzer 19.11.): der Stiel ist ein runder Holzstab mit Maserung (`holzStiel`) und endet unten in einem
+    gebogenen Holzgriff (`holzGriff`). Am Schirm-Trampolin greifen die ECHTEN Fell-Arme nach vorn (verlängert, `SCHIRM_ARM_FOTO`), die
+    Hufe liegen am Stiel, der durch sie hindurch bis zum Griff läuft – die gemalten Ärmchen/Pfoten entfallen. Im Flug hält der Arm, der
+    zur Kamera zeigt (je nach Flugrichtung der linke oder rechte; `SCHIRM_FLUG_ARM/HOCH/VOR`), den Stiel: der Stiel liegt oberhalb des
+    Hufs hinter der Figur (der Huf umschließt ihn), darunter schaut der Griff heraus; der andere Arm hängt locker. Kuppel, Lage und
+    Neigung des Schirms bleiben unverändert.
+    Dash des neuen Schweinchens (Nutzer 19.11.): Rammstoß-Haltung statt Kugel-Rolle – Kopf voran, Arme und Beine nach hinten, die Figur
+    neigt sich in Stoßrichtung (`RAMM`, `RAMM_NEIGUNG/HOCH/RUNTER` in js/33); die Nachbilder sind altrosa und liegen nie über der Figur
+    selbst (js/32). Beim Wand-Rutschen sind die Arme länger (`WAND_ARM_FOTO`), damit die Hufe die Wand erreichen.
+    Schalter: `?schwein=alt` in der Adresse = bisheriges Schweinchen (`buildPigAlt`); schlägt js/32a fehl, bleibt es automatisch.
+    Der Affe ist noch der bisherige. Test schwein_foto_look.
   - Affe wie der Monchichi aus dem Video (Nutzerwunsch; ersetzt „komplett hellbraun“): dunkelbraunes Fell überall, großes
     helles Gesicht in Herzform (zwei Augen-Felder + Schnauze), große glänzende schwarze Augen, helles Innenohr, helle Hände
     und Füße. Keine Erhöhung oben auf dem Kopf (ausprobiert, Nutzerwunsch: wieder weg). Schwanz von der Seite sichtbar (vorher abgeschnitten): Ansatz am Rücken, rollt sich nie ganz ein, das Bild der

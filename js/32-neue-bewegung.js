@@ -606,7 +606,9 @@ function neueBewegungZeichnen(){
       ctx.globalAlpha = 0.55*k; ctx.fillStyle = '#efe2c8';
       ctx.beginPath(); ctx.arc(x, f.y, f.r*(1.4 - k*0.4), 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
     } else if(f.art === 'nachbild'){
-      ctx.globalAlpha = 0.3*k; ctx.fillStyle = f.male ? '#c58a52' : '#ff9cc8';
+      const foto = !f.male && window.F3D_SCHWEIN_FOTO;   // Foto-Look-Schweinchen: Nachbilder altrosa und nie über der Figur selbst (sonst färbt die Scheibe sie knallrosa)
+      if(foto && p2 && Math.abs(f.x - p2.x) < 26 && Math.abs(f.y - p2.y) < 26) continue;
+      ctx.globalAlpha = 0.3*k; ctx.fillStyle = f.male ? '#c58a52' : (foto ? '#e8b4a8' : '#ff9cc8');
       ctx.beginPath(); ctx.arc(x, f.y - 16, 15, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
     }
   }
