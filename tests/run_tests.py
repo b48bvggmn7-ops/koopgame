@@ -7692,8 +7692,8 @@ async def figuren3d_affe_monchichi(g):
         fell = await g.p.evaluate(F3D_PIXEL, [pk[0][0], pk[0][1] - 0.25*k])
         schnauze = await g.p.evaluate(F3D_PIXEL, [pk[0][0], pk[0][1] + 1.25*k])
         schwein = await g.p.evaluate(F3D_PIXEL, pk[1])
-        assert fell[0] < 150 and fell[0] > fell[2] + 15, f'Affe oben nicht dunkelbraun: {fell}'
-        assert schnauze[0] > 190 and schnauze[1] > 150 and schnauze[0] > schnauze[2] + 20, f'Affen-Gesicht nicht hell-beige: {schnauze}'
+        assert fell[0] < 190 and fell[0] > fell[2] + 15, f'Affe oben nicht braun: {fell}'   # 19.11. Foto-Look-Affe: mittelbraun (vorher < 150)
+        assert schnauze[0] > 160 and schnauze[1] > 120 and schnauze[0] > schnauze[2] + 20, f'Affen-Gesicht nicht hell-beige: {schnauze}'   # 19.11. Foto-Look: etwas dunkler (vorher > 190/150)
         assert schwein[0] > 200 and schwein[0] > schwein[1] + 20, f'Schwein oben nicht pink: {schwein}'
     finally:
         await g.ev("p1._yawTest = p2._yawTest = null; menuScreen = null")
@@ -7722,6 +7722,27 @@ async def schwein_foto_look(g):
     assert not fehler, f'Fehler beim Zeichnen: {fehler[:2]}'
     src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
     assert "QS.get('schwein')!=='alt'" in src and 'buildPigAlt' in src, 'Schalter ?schwein=alt bzw. das bisherige Schweinchen fehlt'
+
+@test
+async def affe_foto_look(g):
+    """Affe im Foto-Look (js/32a, Nutzer 19.11.: derselbe Look wie freigegeben, aber mit dem Schichten-Fell des Schweinchens statt
+    einer halben Million Haare): js/33 baut den Affen über die zweite Bau-Art, nichts wirft Fehler, oben braun, Gesicht
+    hell (Herz-Form), die Griffe fürs Pusten/Schwanz sind da. ?affe=alt bleibt der bisherige (Schalter im Code geprüft)."""
+    fehler = []; g.p.on('pageerror', lambda e: fehler.append(str(e)))
+    await f3d_bereit(g)
+    assert await g.ev("window.F3D_AFFE_FOTO === true"), 'Foto-Look-Affe wird nicht gebaut (js/32a fehlt oder Fehler dort)'
+    try:
+        pk = await g.p.evaluate(F3D_BILD, {'n': 8, 'vorher': "p1._yawTest = p2._yawTest = 0", 'merk': "[p1._headDev.x, p1._headDev.y, p1._fussDev.skala]"})
+        k = pk[2]*17*0.9
+        oben = await g.p.evaluate(F3D_PIXEL, [pk[0], pk[1] - 0.25*k])
+        wange = await g.p.evaluate(F3D_PIXEL, [pk[0] + 0.55*k, pk[1] + 0.95*k])
+        assert oben[0] < 190 and oben[0] > oben[2] + 25, f'Affe oben nicht braun: {oben}'
+        assert wange[0] > 170 and wange[1] > 140 and wange[1] > oben[1] + 30, f'Affen-Gesicht (Herz) nicht hell: {wange} gegen oben {oben}'
+    finally:
+        await g.ev("p1._yawTest = p2._yawTest = null; menuScreen = null")
+    assert not fehler, f'Fehler beim Zeichnen: {fehler[:2]}'
+    src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
+    assert "QS.get('affe')!=='alt'" in src and 'buildMonkeyAlt' in src, 'Schalter ?affe=alt bzw. der bisherige Affe fehlt'
 
 @test
 async def figuren3d_leistung_stufen(g):

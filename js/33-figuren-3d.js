@@ -170,7 +170,7 @@ function drawNode(n,pm,VPm,cam){const loc=M.mul(M.mul(M.mul(M.T(...n.pos),M.RZ(n
 // ---------- Affe ----------
 function glints(H,x,y,z,s){return [K(H,{geo:SPH(1),pos:[x+.07*s,y+.105,z+.085],sc:[.075,.075,.04],color:0xffffff,emit:1}),
  K(H,{geo:SPH(1),pos:[x-.06*s,y-.1,z+.08],sc:[.036,.036,.025],color:0xffffff,emit:1})]}
-function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x6a3e20,GES=0xf2d3a6;
+function buildMonkeyAlt(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x6a3e20,GES=0xf2d3a6;
  // Affe wie der Monchichi aus dem Video (Nutzerwunsch): dunkelbraunes Fell überall, großes helles Gesicht (Herzform: zwei
  // Augen-Felder + Schnauze), große glänzende schwarze Augen, runde Ohren mit hellem Innenohr; Hände/Füße hell
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
@@ -210,9 +210,13 @@ function buildMonkey(){const R=new Nd();const eyes=[];const ROOT=0x2e180a,TIP=0x
 // ---------- Schwein ----------
 // Schweinchen im Foto-Look (js/32a, Nutzer 19.11.: nur das Aussehen tauschen, alle Haltungen bleiben); ?schwein=alt oder ein Fehler dort = bisheriges
 let FOTO=null;
+function fotoWelt(){if(FOTO===null){FOTO=false;try{if(typeof window.figurenFotoBauen==='function')FOTO=window.figurenFotoBauen({gl,M,Nd,schichten:()=>F3D_QUALI.schichten(),tat:()=>TAT.on});}catch(e){console.warn('Foto-Look-Figuren nicht verfügbar:',e);FOTO=false}}return FOTO}
+// Affe im Foto-Look (js/32a, Nutzer 19.11.: derselbe Look mit dem Schichten-Fell des Schweinchens statt einer halben Million Haare); ?affe=alt oder ein Fehler dort = bisheriger
+function buildMonkey(){
+ if(QS.get('affe')!=='alt'&&fotoWelt()&&FOTO.buildMonkey){try{const p=FOTO.buildMonkey();window.F3D_AFFE_FOTO=true;return p}catch(e){console.warn('Foto-Look-Affe nicht verfügbar:',e)}}
+ window.F3D_AFFE_FOTO=false;return buildMonkeyAlt()}
 function buildPig(){
- if(FOTO===null){FOTO=false;try{if(typeof window.figurenFotoBauen==='function'&&QS.get('schwein')!=='alt')FOTO=window.figurenFotoBauen({gl,M,Nd,schichten:()=>F3D_QUALI.schichten(),tat:()=>TAT.on});}catch(e){console.warn('Foto-Look-Schweinchen nicht verfügbar:',e);FOTO=false}}
- if(FOTO){try{const p=FOTO.buildPig();window.F3D_SCHWEIN_FOTO=true;return p}catch(e){console.warn('Foto-Look-Schweinchen nicht verfügbar:',e)}}
+ if(QS.get('schwein')!=='alt'&&fotoWelt()){try{const p=FOTO.buildPig();window.F3D_SCHWEIN_FOTO=true;return p}catch(e){console.warn('Foto-Look-Schweinchen nicht verfügbar:',e)}}
  window.F3D_SCHWEIN_FOTO=false;return buildPigAlt()}
 function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0xffdde8,D=40;
  const H=R.add(new Nd({pos:[0,1.8,.05]}));H.gs=[1.25,1.25,1.25];
@@ -577,7 +581,7 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     let lgX = 1, lgY = 1, trQ = 0;
     if(z.key === 'pumpen'){ const d = 1 - (S.pumpH == null ? 1 : S.pumpH); lgY = 1 - 0.11*d; lgX = 1 + 0.05*d; }   // Draisine: in die Knie beim Runterdrücken
     if(P.trampolin && P._trampolinSprungT){ const q = (now - P._trampolinSprungT)/380; if(q < 1){ trQ = Math.sin(q*Math.PI*2)*(1 - q); const a = Math.max(0, trQ)*.2; lgY = 1 - a; lgX = 1 + a*.45; } }
-    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.dY || 0) +(S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; { const br = !male && window.F3D_SCHWEIN_FOTO ? 1 : 1.14;   // Foto-Look-Schweinchen: Form wie freigegeben (nicht in die Breite gezogen)
+    H.wrap.pos = [0, 1.6 + bob, 0]; H.wrap.rot = [0, 0, rollA]; H.yawN.pos = [0, -1.6, 0]; H.yawN.rot = [0, S.yaw + IT.yaw + (S.dY || 0) +(S.trick && S.trick.typ !== 'salto' ? flip*2*Math.PI*tke*(S.trick.typ === 'schraube' ? 2 : 1) : 0), 0]; { const br = (male ? window.F3D_AFFE_FOTO : window.F3D_SCHWEIN_FOTO) ? 1 : 1.14;   // Foto-Look-Schweinchen: Form wie freigegeben (nicht in die Breite gezogen)
       H.yawN.gs = [(1 - sq*.5)*br*lgX, (1 + sq)*lgY, (1 - sq*.5)*br*lgX]; }   // Affe und Schwein gleich groß (lgX/lgY: Liegen)
     // in die kleine Leinwand zeichnen
     gl.viewport(0, 0, SPR, SPRH); gl.disable(gl.SCISSOR_TEST); gl.clearColor(0, 0, 0, 0);

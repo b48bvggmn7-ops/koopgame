@@ -25,7 +25,7 @@ void main(){float la=aLayer*uLayerMul;vec3 wn=normalize(uNM*aNrm);vec4 w=uM*vec4
  vW=w.xyz;vN=wn;vUv0=aUv;vUv=aUv*uTile;vL=la;vO=aPos;gl_Position=uVP*w;}`;
 const FS=`#version 300 es
 precision highp float;
-uniform sampler2D uStr,uNz,uTat;uniform vec3 uRoot,uTip,uCam;uniform int uMat;uniform float uSpec,uOcc,uVar,uSss,uGy,uClump,uThin,uCurl,uBlush,uTatOn;
+uniform sampler2D uStr,uNz,uTat;uniform vec3 uRoot,uTip,uCam;uniform int uMat;uniform float uSpec,uOcc,uVar,uSss,uGy,uClump,uThin,uCurl,uBlush,uTatOn,uHerz;uniform vec3 uRoot2,uTip2;
 in vec2 vUv;in vec2 vUv0;in vec3 vN;in vec3 vT;in float vL;in vec3 vW;in vec3 vO;out vec4 o;
 const vec3 LK=vec3(-.44,.70,.56);const vec3 KEYC=vec3(1.22,1.02,.76);
 const vec3 SKY=vec3(.60,.63,.58);const vec3 GND=vec3(.085,.085,.06);
@@ -42,6 +42,9 @@ void main(){
   float h=(s.r-uThin)/(1.-uThin)*(.78+.22*nz);float l=vL;
   if(l>.001){alpha=smoothstep(l-.04,l+.06,h);if(alpha<.06)discard;}
   vec3 base=mix(uRoot,uTip,smoothstep(.15,1.,l));
+  if(uHerz>.5){vec3 ph=normalize(vO);float ax=abs(ph.x);   // Affe: helles Fell in der Herz-Form des Gesichts
+   float hd=min(length(vec2((ax-.36)/.47,(ph.y-.14)/.58)),length(vec2(ph.x/.8,(ph.y+.18)/.6)));
+   base=mix(base,mix(uRoot2,uTip2,smoothstep(.15,1.,l)),(1.-smoothstep(.95,1.03,hd))*step(.12,ph.z));}
   base*=1.+uVar*((s.g-.5)*1.0+(nz2-.5)*.25+(nz-.5)*.12);
   {vec3 pb=normalize(vO);float bl=uBlush*smoothstep(.34,.04,length(vec2(abs(pb.x)-.62,pb.y+.26)))*step(0.,pb.z);base=mix(base,vec3(.90,.50,.50),bl*.6);}
   base=pow(max(base,0.),vec3(2.2));
@@ -89,7 +92,7 @@ void main(){
  col=mix(col,vec3(.36,.40,.39),.035);
  o=vec4(pow(aces(col*1.32),vec3(1./2.2)),alpha);}`;
 const PRG=prog(VS,FS);
-const U={};for(const n of ['uVP','uM','uNM','uLen','uGrav','uComb','uTile','uGroom','uStr','uNz','uRoot','uTip','uCam','uMat','uSpec','uOcc','uVar','uSss','uGy','uClump','uThin','uCurl','uBlush','uWild','uLayerMul','uTat','uTatOn'])U[n]=gl.getUniformLocation(PRG,n);
+const U={};for(const n of ['uVP','uM','uNM','uLen','uGrav','uComb','uTile','uGroom','uStr','uNz','uRoot','uTip','uCam','uMat','uSpec','uOcc','uVar','uSss','uGy','uClump','uThin','uCurl','uBlush','uWild','uLayerMul','uTat','uTatOn','uHerz','uRoot2','uTip2'])U[n]=gl.getUniformLocation(PRG,n);
 function tex(c,rep,mip){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);
  if(mip)gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,mip?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
  const w=rep?gl.REPEAT:gl.CLAMP_TO_EDGE;gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,w);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,w);return t}
@@ -135,7 +138,7 @@ function tube(pts,r0,r1,shells,seg,rad,uvl,uvc){seg=seg||60;rad=rad||14;uvl=uvl|
 const h=x=>[(x>>16&255)/255,(x>>8&255)/255,(x&255)/255];
 // Fell: len = Haarlänge, dens = Haare je Einheit, comb = wie stark gekämmt, occ = Schatten am Haaransatz
 function F(par,o){const n=par.add(new Nd(o));const r=(n.sc[0]+n.sc[1]+n.sc[2])/3;
- n.part=Object.assign({neu:true,tat:!!o.tat,mat:0,geo:o.geo||SPH(SH),root:h(o.root),tip:h(o.tip),len:.1,grav:.03,comb:.9,occ:.16,vari:.5,spec:1,sss:0,clump:2.2,thin:0,curl:.5,wild:1.4,blush:0,tile:r*1.5708*Math.min(o.dens||46,DMAX)/CELLS},
+ n.part=Object.assign({neu:true,tat:!!o.tat,herz:o.herz?[h(o.herz[0]),h(o.herz[1])]:null,mat:0,geo:o.geo||SPH(SH),root:h(o.root),tip:h(o.tip),len:.1,grav:.03,comb:.9,occ:.16,vari:.5,spec:1,sss:0,clump:2.2,thin:0,curl:.5,wild:1.4,blush:0,tile:o.tile!=null?o.tile:r*1.5708*Math.min(o.dens||46,DMAX)/CELLS},
   ['len','grav','comb','occ','vari','spec','clump','groom','thin','curl','blush','wild'].reduce((a,k)=>{if(o[k]!=null)a[k]=o[k];return a},{}));
  return n}
 function K(par,o){const n=par.add(new Nd(o));n.part={neu:true,mat:o.mat||1,geo:o.geo||SPH(1),root:h(o.color),tip:h(o.color),len:0,grav:0,comb:0,occ:o.occ==null?1:o.occ,vari:o.vari==null?.25:o.vari,spec:o.spec==null?20:o.spec,sss:o.sss||0,clump:1,curl:0,blush:o.blush||0,tile:1};return n}
@@ -148,7 +151,7 @@ function teil(n,p,w,VPm,cam){gl.useProgram(PRG);
  gl.uniform1f(U.uLen,p.len);gl.uniform1f(U.uGrav,p.grav);gl.uniform1f(U.uComb,p.comb);gl.uniform1f(U.uTile,p.tile);
  const g=p.groom||GROOM,gn=Math.hypot(g[0],g[1],g[2]);gl.uniform3f(U.uGroom,g[0]/gn,g[1]/gn,g[2]/gn);
  gl.uniform3f(U.uRoot,p.root[0],p.root[1],p.root[2]);gl.uniform3f(U.uTip,p.tip[0],p.tip[1],p.tip[2]);gl.uniform3f(U.uCam,cam[0],cam[1],cam[2]);gl.uniform1i(U.uMat,p.mat);
- gl.uniform1f(U.uSpec,p.spec);gl.uniform1f(U.uOcc,p.occ);gl.uniform1f(U.uVar,p.vari);gl.uniform1f(U.uSss,p.sss);gl.uniform1f(U.uGy,0);gl.uniform1f(U.uClump,p.clump);gl.uniform1f(U.uThin,p.thin||0);gl.uniform1f(U.uCurl,p.curl||0);gl.uniform1f(U.uWild,p.wild||0);gl.uniform1f(U.uBlush,p.blush||0);gl.uniform1i(U.uTat,1);gl.uniform1f(U.uTatOn,p.tat&&tatAn()?1:0);
+ gl.uniform1f(U.uSpec,p.spec);gl.uniform1f(U.uOcc,p.occ);gl.uniform1f(U.uVar,p.vari);gl.uniform1f(U.uSss,p.sss);gl.uniform1f(U.uGy,0);gl.uniform1f(U.uClump,p.clump);gl.uniform1f(U.uThin,p.thin||0);gl.uniform1f(U.uCurl,p.curl||0);gl.uniform1f(U.uWild,p.wild||0);gl.uniform1f(U.uBlush,p.blush||0);gl.uniform1i(U.uTat,1);gl.uniform1f(U.uTatOn,p.tat&&tatAn()?1:0);gl.uniform1f(U.uHerz,p.herz?1:0);if(p.herz){gl.uniform3fv(U.uRoot2,p.herz[0]);gl.uniform3fv(U.uTip2,p.herz[1])}
  const sh=p.geo.shells,nS=sh>1?Math.max(4,Math.min(sh,Math.round(schichten()*SH/14))):1;gl.uniform1f(U.uLayerMul,sh>1&&nS>1?(sh-1)/(nS-1):1);
  gl.drawElementsInstanced(gl.TRIANGLES,p.geo.n,gl.UNSIGNED_INT,0,nS)}
 // ---------- Bausteine fürs Gesicht ----------
@@ -167,12 +170,12 @@ function lachen(H,zf,w,y0,dT,dB,zt){zt=zt||.012;const u=x=>1-(x/w)**2;
  const kurve=(d,n)=>{n=n||16;const p=[];for(let i=0;i<=n;i++){const x=-w*1.08+2.16*w*i/n,y=y0-d*(1-(x/(w*1.08))**2)+.012*(Math.abs(x)/w)**3;p.push([x,y,zf(x,y)+.012])}return p};
  K(H,{geo:tube(kurve(dT),.011,.011,1,30,8),color:0x8a4438,spec:2,vari:0});}                                   // Oberlippe, Mundwinkel leicht hoch
 // Auge: Lidrand (Haut), Augapfel mit Iris/Pupille/Glanz, Lidstrich, Wimpern; gibt den Augapfel zurück (js/33 lässt ihn blinzeln)
-function auge(H,x,y,z,sx,sy,iris,lid,s,wimper){
+function auge(H,x,y,z,sx,sy,iris,lid,s,wimper,ohneWimper){
  K(H,{pos:[x,y,z-.022],sc:[sx*1.1,sy*1.1,.08],color:lid,spec:5,vari:.04});
  const ball=K(H,{pos:[x,y,z],sc:[sx,sy,.085],color:iris,mat:2,vari:.93,sss:.86,spec:.8,occ:1});
  const bogen=[];for(let i=0;i<=12;i++){const a=(18+144*i/12)*P2/180;bogen.push([x+sx*1.04*Math.cos(a),y+sy*1.04*Math.sin(a),z+.045-.05*Math.abs(Math.cos(a))])}
  K(H,{geo:tube(bogen,.009,.009,1,24,6),color:wimper,spec:2,vari:0});          // Lidstrich
- { const a=(s>0?180-158:158)*P2/180,c=Math.cos(a),sn=Math.sin(a);              // Wimper außen
+ if(!ohneWimper){ const a=(s>0?180-158:158)*P2/180,c=Math.cos(a),sn=Math.sin(a);              // Wimper außen
   K(H,{geo:tube([[x+sx*1.02*c,y+sy*1.02*sn,z+.01],[x+sx*1.3*c,y+sy*1.34*sn,z-.01],[x+sx*1.48*c,y+sy*1.62*sn,z-.04]],.008,.003,1,10,6),color:wimper,spec:2,vari:0}); }
  return ball}
 function braue(H,x,y,z,w,s,farbe){const p=[];for(let i=0;i<=8;i++){const u=i/8*2-1;p.push([x+u*w,y+.05*(1-u*u)+s*u*.035,z-.035*u*u])}   // freundlich: hoch, weich gebogen
@@ -208,5 +211,48 @@ function buildPig(){const R=new Nd();const eyes=[];
  K(ST,{geo:tube([[0,1.32,0],[0,1.0,0],[0,.82,0],[-.03,.68,0],[-.13,.57,0],[-.26,.56,0],[-.36,.65,0],[-.39,.78,0]],.125,.125,1,40,10),color:HOLZ,mat:3,spec:28,vari:.3});
  const STO=K(ST,{geo:tube([[0,0,0],[0,.34,0],[0,.67,0],[0,1,0]],.125,.125,1,8,10),pos:[0,1.3,0],color:HOLZ,mat:3,spec:28,vari:.3});
  return {root:R,head:H,armN:R['a-1'],armP:R['a1'],legN:R['l-1'],legP:R['l1'],eyes,stiel:ST,stielOben:STO}}
-return {buildPig,teil};
+// ---------- Affe (wie freigegeben: entwurf-figuren/affe-modell-*.png, hier mit demselben Schichten-Fell wie das Schweinchen) ----------
+// Gleiche Griffe wie buildMonkey in js/33 (Haltungen bleiben dort): root, head, armN/armP (kids[0] = Fell-Arm, danach Hand), legN/legP,
+// eyes, tail (Glieder segs), backen + mundO (Pusten), lae (Lächeln).
+function buildMonkey(){const R=new Nd();const eyes=[];
+ const HAUT=0xe8a77e,BR_W=0x7a4e2c,BR_S=0xc08c58,HE_W=0xe2bc98,HE_S=0xfff4e6;
+ const fell={root:BR_W,tip:BR_S,len:.12,grav:.01,comb:1.1,occ:.5,vari:.16,spec:.5,dens:64,curl:.2,wild:.45,clump:2.2,thin:.3};
+ const H=R.add(new Nd({pos:[0,1.58,.05]}));H.gs=[1.25,1.25,1.25];
+ F(H,Object.assign({sc:[1,1,1],groom:[0,-1,.1],tat:true,herz:[HE_W,HE_S]},fell));      // braunes Fell, helles Herz-Gesicht (Farbe im Shader)
+ F(H,Object.assign({},fell,{pos:[0,.88,.06],sc:[.34,.22,.52],len:.11}));                    // leichter Irokese: schmaler Kamm aus demselben Fell
+ const zH=(x,y)=>Math.sqrt(Math.max(0,1-x*x-y*y));
+ for(const s of [-1,1]){
+  K(H,{pos:[s*1.0,.14,-.02],sc:[.3,.3,.085],rot:[0,s*.75,0],color:0xe59a78,spec:8,sss:2.6,vari:.05});    // Ohr: glatt und rosa
+  K(H,{pos:[s*1.03,.14,.05],sc:[.21,.22,.05],rot:[0,s*.75,0],color:0xd9756c,spec:4,sss:2.2,vari:.05});  // Ohrmuschel
+  eyes.push({n:auge(H,s*.345,.05,.945,.2,.215,0x4a2a14,0xd9ad82,s,0x2a160b,true),g:[],y:.215});          // dunkelbraune Augen, nur Lidstrich oben
+  braue(H,s*.365,.42,zH(s*.365,.42)+.1,.14,-s,0x4a2c16);
+ }
+ K(H,{pos:[0,-.37,.84],sc:[.36,.27,.3],color:0xe9a882,spec:14,sss:1.6,vari:.04});                           // glattes Schnäuzchen
+ K(H,{pos:[0,-.25,1.12],sc:[.06,.042,.04],color:0xdf8f7c,spec:22,sss:1.6,vari:0});                          // Nase
+ for(const s of [-1,1])K(H,{pos:[s*.022,-.262,1.152],sc:[.012,.009,.008],color:0x4e241a,spec:2,vari:0});
+ const zS=(x,y)=>.84+.3*Math.sqrt(Math.max(0,1-(x/.36)**2-((y+.37)/.27)**2));
+ const mp=[];for(let i=0;i<=12;i++){const x=-.2+.4*i/12,y=-.5+.075*(x/.2)**2;mp.push([x,y,zS(x,y)+.008])}
+ const lae=[K(H,{geo:tube(mp,.012,.012,1,30,8),color:0x55261a,spec:2,vari:0}),                              // Lächeln
+  K(H,{geo:tube([[0,-.3,zS(0,-.3)+.006],[0,-.37,zS(0,-.37)+.006],[0,-.44,zS(0,-.44)+.006]],.006,.006,1,10,6),color:0xb9785c,spec:2,vari:0})];   // Rinne unter der Nase
+ // Pusten (js/34): aufgeblasene Backen und runder Mund – js/33 blendet sie ein
+ const backen=[-1,1].map(s=>{const b=K(H,{pos:[s*.3,-.36,.9],sc:[.24,.22,.22],color:0xe9a882,spec:14,sss:1.6,vari:.04});b.visible=false;b.sc0=b.sc.slice();return b});
+ const mundO=K(H,{pos:[0,-.5,1.13],sc:[.07,.08,.04],color:0x3a1a12,spec:10,vari:0});mundO.visible=false;mundO.sc0=mundO.sc.slice();
+ const AP=[];for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.16,1.54,.1]}));
+  F(A,Object.assign({},fell,{pos:[0,-.3,0],sc:[.25,.4,.25],len:.09,tat:true}));
+  K(A,{pos:[0,-.74,.04],sc:[.17,.16,.13],color:HAUT,spec:10,sss:.8,vari:.06});
+  for(const fx of [-.1,0,.1])K(A,{pos:[fx,-.9+Math.abs(fx)*.25,.07],sc:[.055,.08,.055],color:HAUT,spec:10,sss:.8,vari:.06});
+  K(A,{pos:[-s*.17,-.76,.08],sc:[.055,.075,.055],color:HAUT,spec:10,sss:.8,vari:.06});AP.push(A)}
+ const LP=[];for(const s of [-1,1]){const L=R.add(new Nd({pos:[s*.5,1.396,.1]}));
+  F(L,Object.assign({},fell,{pos:[0,-.92,.06],sc:[.36,.26,.38],len:.09}));
+  K(L,{pos:[0,-1.21,.16],sc:[.27,.15,.31],color:HAUT,spec:10,sss:1,vari:.06});
+  for(let i=0;i<4;i++)K(L,{pos:[(i-1.5)*.12,-1.25,.42],sc:[.062,.068,.085],color:HAUT,spec:10,sss:1,vari:.06});
+  L.base=L.pos.slice();LP.push(L)}
+ const TL=R.add(new Nd({pos:[0,.93,-1.0]}));TL.segs=[];   // Schwanz aus Gliedern: rollt sich wie bisher ein und aus
+ { let par=TL;const NS=7,SEG=.33;
+   for(let i=0;i<NS;i++){const Si=par.add(new Nd({pos:i?[0,0,-SEG]:[0,0,0]})),rd=.13-.01*i;
+    F(Si,Object.assign({},fell,{pos:[0,0,-SEG/2],sc:[rd,rd,SEG*.68],len:.07,occ:.2,groom:[0,-.3,-1]}));   // ein Glied = ein längliches Fell-Stück, überlappend (keine Ringe)
+    TL.segs.push(Si);par=Si}
+   F(par,Object.assign({},fell,{pos:[0,0,-SEG],sc:[.11,.11,.11],len:.06})); }
+ return {root:R,head:H,armN:AP[0],armP:AP[1],legN:LP[0],legP:LP[1],eyes,tail:TL,backen,mundO,lae}}
+return {buildPig,buildMonkey,teil};
 };

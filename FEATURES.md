@@ -1722,6 +1722,12 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
+  - **Affe im Foto-Look (19.11., js/32a-figuren-foto.js):** der vom Nutzer freigegebene neue Affe (mittelbraunes lockiges Fell rundum,
+    helles Herz-Gesicht, glattes Schnäuzchen, dunkelbraune Augen ohne Ring, glatte rosa Ohren, leichter Irokese, Schwanz) – gebaut mit
+    demselben sparsamen Schichten-Fell wie das Schweinchen (`buildMonkey` in js/32a, Herz-Farbe im Shader über `herz`), NICHT mit
+    einzelnen Haaren (zu langsam). Alle Bewegungen/Haltungen bleiben wie bisher in js/33 (Seil mit langen Armen, Pusten mit Backen,
+    Wand, Schwanz rollt). Schalter: `?affe=alt` = bisheriger Affe (`buildMonkeyAlt`); schlägt js/32a fehl, bleibt er automatisch.
+    Test `affe_foto_look`.
   - **Schweinchen im Foto-Look (19.11., js/32a-figuren-foto.js):** das vom Nutzer freigegebene neue Schweinchen (altrosa Flaum mit
     Büscheln, spitze Schlappohren, braune Augen mit Lidstrich und Wimper, glatte Schnauze, offenes Lächeln mit Zunge, braune Hufe,
     Fell-Stummel an Armen und Beinen, Ringelschwanz) ersetzt NUR das Aussehen. Alle Haltungen und Abläufe bleiben die des Spiels
