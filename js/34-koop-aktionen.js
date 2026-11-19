@@ -113,10 +113,14 @@ function pustenVorher(P){
   if(P.pusteLeer && P.puste >= PUSTE_NEUSTART && !koopTaste(P, 'pusten')) P.pusteLeer = false;
   const will = koopTaste(P, 'pusten') && kann && !P.pusteLeer;
   if(!will || P.puste <= 0){
-    if(P.pusteAn){ P.pusteAn = false; P._pusteEndeT = performance.now(); }
+    if(P.pusteAn){ P.pusteAn = false; P._pusteEndeT = performance.now();
+      // Richtungstaste vom Pusten noch gedrückt: nicht gleich loslaufen (Feedback: „rennt danach in den Abgrund“)
+      const l = koopTaste(P, 'left'), r = koopTaste(P, 'right');
+      P._pusteSperre = (l || r) ? {l, r} : null; }
     if(P.puste <= 0) P.pusteLeer = true;
     return false;
   }
+  P._pusteSperre = null;
   if(!P.pusteAn){ P.pusteAn = true; P.pusteT = 0; P._pusteStartT = performance.now(); if(typeof SFX !== 'undefined' && SFX.pustenStart) SFX.pustenStart(P); }
   P.pusteRichtung = pusteRichtungAus(P);
   if(P.pusteRichtung !== 'hoch') P.facing = pusteSeiteVon(P.pusteRichtung);
@@ -124,6 +128,18 @@ function pustenVorher(P){
   P.puste = Math.max(0, P.puste - 1/PUSTE_DAUER);
   P.pustePause = PUSTE_PAUSE;
   P.vx *= 0.5; if(Math.abs(P.vx) < 0.05) P.vx = 0;   // steht still, nur Ausrichten
+  P.vy = Math.min(MAX_FALL, P.vy + GRAVITY);
+  return true;
+}
+// Nach dem Pusten (Feedback „rennt nach dem Pusten nach rechts/links in den Abgrund“): solange die Richtungstaste vom Pusten
+// noch gehalten wird, bleibt der Affe stehen. Erst loslassen (oder Springen) gibt die Richtung wieder frei.
+function pusteSperreVorher(P, jumpPressed){
+  const s = P._pusteSperre; if(!s) return false;
+  if(jumpPressed || !P.grounded || P.hookAttached || P.dash || P.haft || P.inWater){ P._pusteSperre = null; return false; }
+  if(s.l && !koopTaste(P, 'left')) s.l = false;
+  if(s.r && !koopTaste(P, 'right')) s.r = false;
+  if(!s.l && !s.r){ P._pusteSperre = null; return false; }
+  P.vx *= 0.5; if(Math.abs(P.vx) < 0.05) P.vx = 0;   // steht still wie beim Pusten
   P.vy = Math.min(MAX_FALL, P.vy + GRAVITY);
   return true;
 }
@@ -163,6 +179,33 @@ function pusteTrifft(rect){
   const weite = s.dir === 'hoch' ? PUSTE_WEITE_HOCH : PUSTE_WEITE_SEITE;
   return s.kraft*Math.max(0.35, 1 - Math.max(0, d)/weite*0.65);
 }
+// Schweinchen mit offenem Schirm im Puste-Wind (vor seiner Physik). true = Tempo gesetzt (schräger Strahl trägt es).
+// Feedback: „schräges Pusten beim Schirm funktioniert nicht gut“ – der schräge Strahl trägt jetzt wie ein Aufwind entlang
+// seiner Achse (45°), der Schirm bleibt offen und der Flug-Balken wird im Wind nicht verbraucht (S._pusteGetragen, js/35).
+// Feedback: „nach oben gepustet klappt es oben den Schirm einmal ein“ – wer mit offenem Schirm aus dem Strahl hinaus steigt
+// (oben hinaus oder der Affe hört auf), behält den Schirm offen und steigt aus (wie nach dem Perfekt-Aufspannen, _schirmSchub).
+function pusteSchweinVorher(S, moveDir){
+  const n = schrittNr(), box = {x: S.x - S.w/2, y: S.y - S.h, w: S.w, h: S.h};
+  const schirm = !S.grounded && !!(S.keys && S.keys.glide && isDown(S.keys.glide)) && !S.schirmLeer && !S._schirmZuBisLanden && !S.dash && !S.haft;
+  const s = pusteStrahlJetzt;
+  if(schirm && s && pusteSchraeg(s.dir)){
+    const k = pusteTrifft(box);
+    if(k){
+      const sx = pusteSeiteVon(s.dir), V = PUSTE_SCHRAEG_HOCH_MAX, a = PUSTE_SCHRAEG_HUB*k;
+      const zx = sx*V + moveDir*PUSTE_SCHRAEG_STEUERN, zy = -V;   // Ziel-Tempo entlang des Strahls (+ etwas Steuern)
+      S.vx += Math.max(-a, Math.min(a, zx - S.vx));
+      S.vy += Math.max(-a, Math.min(a, zy - S.vy));
+      if(moveDir) S.facing = moveDir;
+      S.gliding = true; S.glideTimer = 0; S._pusteGetragen = n;
+      return true;
+    }
+  }
+  const hoch = winds.length && winds.includes(pusteWind) && rectsOverlap(box, pusteWind);
+  if(schirm && hoch) S._pusteGetragen = n;
+  else if(schirm && S.gliding && S.vy < -1 && S._pusteGetragen === n - 1 && !(winds.length && inWind(S))) S._schirmSchub = true;
+  pusteSchieben(S);
+  return false;
+}
 // Seiten-Wind schiebt das Schweinchen in der Luft (vor seiner Physik, im selben Schritt)
 function pusteSchieben(S){
   const s = pusteStrahlJetzt; if(!s || s.dir === 'hoch' || S.male || S.grounded) return;   // am Boden stemmt es sich dagegen
@@ -183,8 +226,8 @@ function pusteSchieben(S){
 // vor dem Tempo: true = Tempo gesetzt (hält den Schirm / pustet), normale Physik aus
 function koopAktionVorher(P, moveDir, jumpPressed, nass){
   if(nass){ P.trampolin = false; P.pusteAn = false; return false; }
-  if(P.male) return pustenVorher(P);
-  pusteSchieben(P);
+  if(P.male) return pustenVorher(P) || pusteSperreVorher(P, jumpPressed);
+  if(pusteSchweinVorher(P, moveDir)) return true;
   return trampolinVorher(P, moveDir, jumpPressed);
 }
 // nach dem Bewegen
@@ -202,7 +245,7 @@ function koopAktionSchritt(){
 }
 function koopAktionZuruecksetzen(){
   pusteStrahlJetzt = null;
-  for(const P of [p1, p2]) if(P){ P.trampolin = false; P.pusteAn = false; P.puste = 1; P.pusteLeer = false; P.pustePause = 0; }
+  for(const P of [p1, p2]) if(P){ P.trampolin = false; P.pusteAn = false; P._pusteSperre = null; P.puste = 1; P.pusteLeer = false; P.pustePause = 0; }
 }
 
 // ---------- Zeichnen (nur Anzeige) ----------

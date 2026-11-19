@@ -14,6 +14,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     (JUMP_FULL_STEPS = 10 Schritte) genau die bisherige Höchsthöhe 134 px (≈ 3,4 Kästchen) – länger halten bringt nichts
     mehr, höher als früher geht nie (es wird nur gebremst). Erneutes Drücken in der Luft ändert nichts. Wandsprung,
     Seil-Abflug, Sprungpilz, Aufwind/Schirm und Schwimmen sind ausgenommen und unverändert. Test variable_sprunghoehe.
+  - SPRUNG-HILFEN (Feedback 19.11.: „mehrfach hintereinander springen manchmal nicht möglich / sloppy“, „Controller reagiert
+    spät“; js/32 `sprungHilfe`, Werte in 02): Springen bis SPRUNG_PUFFER_SCHRITTE (6 ≈ 0,1 s) VOR der Landung gedrückt -> sie
+    springt beim Aufsetzen (Taste schon losgelassen = kurzer Hüpfer). Eben über eine Kante gelaufen (ohne Sprung): bis
+    SPRUNG_KANTE_SCHRITTE (5) danach zählt Springen noch als Sprung vom Boden. Kein zweiter Sprung in der Luft. Beide Figuren,
+    Tastatur und Controller gleich. Test sprung_puffer_und_kante.
   - WANDSPRUNG NUR AN WAND (Nutzerwunsch 02.11., `WANDSPRUNG_NUR_WAND` in js/02, `wandsprungFlaeche` in js/08): an der Wand
     hängen, rutschen und abspringen geht nur an Wand (Ziegel, Haftfläche, Durchbruch-Wand, bewegte Wand-Stücke) – nicht an
     Erde, Bröckelboden oder Türen. Der Computer-Partner rechnet genauso. Alte-Mechaniken-Test: Ausnahme einzelwand_decke ab
@@ -2791,6 +2796,15 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   drückt das Schweinchen (Schirm gehalten) seine Springen-Taste kurz vor oder kurz nach dem Aufprall des Affen
   (TRAMPOLIN_SCHUB_FENSTER 7 Schritte), fliegt der Affe mit TRAMPOLIN_V_SCHUB (−18,3) statt TRAMPOLIN_V hinauf (≈ 8,4 statt 6,6 Reihen);
   heller Ton + Lichtschwünge über dem Schirm. Zu früh/zu spät: normale Höhe. Test koop_trampolin_schub.
+- **Pusten – Feedback 19.11.:**
+  - Nach dem Pusten zur Seite läuft der Affe nicht mehr los, solange die Richtungstaste vom Pusten noch gehalten wird (auch
+    wenn der Balken leer ist) – erst loslassen und neu drücken; Springen geht sofort. Test puste_ende_nicht_loslaufen.
+  - Nach oben gepustet: oben am Strahl-Ende (oder wenn der Affe mitten im Steigen aufhört) bleibt der Schirm offen – das
+    Schweinchen steigt aus und segelt weiter (wie nach dem Perfekt-Aufspannen), statt ihn einmal zuzuklappen. Solange der
+    Puste-Wind trägt und bis PUSTE_SCHIRM_NACHLAUF (30 Schritte) danach verbraucht der Schirm keinen Flug-Balken.
+  - Schräg pusten: der Strahl trägt das Schweinchen mit offenem Schirm jetzt wie ein Aufwind entlang seiner Achse (45°, Tempo
+    bis PUSTE_SCHRAEG_HOCH_MAX in beide Richtungen, mit links/rechts etwas gegensteuern: PUSTE_SCHRAEG_STEUERN); der Schirm
+    klappt nicht mehr zu, kein Flug-Balken-Verbrauch im Strahl. Test puste_feedback_schirm.
 - **Liane von oben:** hält der Affe über dem Haken die Haken-Taste, hängt die Liane sofort locker in seiner Hand (man sieht:
   verbunden) und spannt sich, sobald er auf Hakenhöhe gefallen ist (kein Überschlagen). Test liane_von_oben.
 - **Zwei Abschnitte statt sechs Level** (js/15a-abschnitte.js, Spiegel tests/abschnitt.py): Die Dschungel-Welt hat nur noch

@@ -17,6 +17,11 @@ const JUMP_V = -12.6;
 // (10 Schritte ≈ 0,19 s), springt genau so hoch wie früher; kürzer = stufenlos kleiner (Antippen ≈ 1 Kästchen).
 const JUMP_FULL_STEPS = 10;
 const JUMP_CUT_VY = JUMP_V + GRAVITY * JUMP_FULL_STEPS;   // -6,4
+// Sprung-Hilfen (Feedback: „mehrfach direkt hintereinander springen ist manchmal nicht möglich / sloppy“, Controller „reagiert
+// spät“; js/32 sprungHilfe): Springen kurz VOR der Landung gedrückt -> springt beim Aufsetzen; kurz NACH dem Verlassen einer
+// Kante (ohne Sprung) gedrückt -> zählt noch als Sprung vom Boden
+const SPRUNG_PUFFER_SCHRITTE = 6;   // Schritte (≈ 0,1 s) vor der Landung
+const SPRUNG_KANTE_SCHRITTE = 5;    // Schritte nach dem Verlassen der Kante
 const JUMP_CUT_SMOOTH = 0.3;   // je Schritt bleibt die Hälfte des Überschusses -> Bremsen über 2–3 Schritte statt Ruck
 const WALL_JUMP_VX_MIN = 6.96, WALL_JUMP_VX_MAX = 12.8;
 const MIN_WALLJUMP_SPEED = 1.3; // unterhalb davon: kein Wandsprung mehr (kein "aus dem Stand")
@@ -294,3 +299,5 @@ const PUSTE_SEITE_MAX = 7.5;      // höchstens so schnell schiebt der Wind zur 
 const PUSTE_WEITE_SCHRAEG = 300;  // px: so weit reicht der Strahl schräg nach oben (W + A / W + D, Nutzerwunsch)
 const PUSTE_SCHRAEG_HUB = 0.9;     // px/Schritt²: schräg trägt der Wind das Schweinchen mit Schirm (etwas schwächer als gerade hoch) …
 const PUSTE_SCHRAEG_HOCH_MAX = 4.5; // … höchstens so schnell nach oben; zur Seite schiebt er mit 80 % von PUSTE_SCHUB
+const PUSTE_SCHRAEG_STEUERN = 1.5; // px/Schritt: so viel kann das Schweinchen im schrägen Strahl mit links/rechts gegensteuern
+const PUSTE_SCHIRM_NACHLAUF = 30;  // Schritte: so lange nach dem Puste-Wind verbraucht der Schirm noch keinen Flug-Balken (schwebt oben am Strahl-Ende)

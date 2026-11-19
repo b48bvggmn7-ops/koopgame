@@ -469,7 +469,33 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
     if(moveDir) P.vx = moveDir*Math.max(Math.abs(P.vx), MOVE_SPEED);
     return true;
   }
+  if(!P.hookAttached && sprungHilfe(P, jumpPressed, jumpHeld)) return true;   // Sprung-Puffer + Kanten-Gnade
   return false;
+}
+// Sprung-Hilfen (SPRUNG_PUFFER_SCHRITTE / SPRUNG_KANTE_SCHRITTE in js/02): der normale Sprung in 08 geht nur, wenn die Taste
+// genau im Schritt mit Bodenkontakt gedrückt wird – ein paar Schritte zu früh (kurz vor der Landung) oder zu spät (eben über
+// die Kante gelaufen) ging er verloren. true = Sprung hier ausgeführt (normale Physik für diesen Schritt aus).
+function sprungHilfe(P, jumpPressed, jumpHeld){
+  const n = schrittNr();
+  if(P.grounded){ P._bodenSchritt = n; P._kanteFrei = true; }
+  else if(P.vy < 0) P._kanteFrei = false;   // gesprungen/hochgeschleudert: keine Kanten-Gnade mehr
+  if(jumpPressed && !P.grounded){
+    if(P._kanteFrei && n - (P._bodenSchritt === undefined ? -99 : P._bodenSchritt) <= SPRUNG_KANTE_SCHRITTE && !P.onWall){
+      sprungJetzt(P, false); return true;
+    }
+    P._sprungPuffer = n; P._sprungPufferWj = P._wjT;   // gleich landen -> dann springen (nicht, wenn inzwischen ein Wandsprung kam)
+    return false;
+  }
+  if(P.grounded && !jumpPressed && P._sprungPuffer !== undefined){
+    const gilt = n - P._sprungPuffer <= SPRUNG_PUFFER_SCHRITTE && P._wjT === P._sprungPufferWj;
+    P._sprungPuffer = undefined;
+    if(gilt){ sprungJetzt(P, !jumpHeld); return true; }   // schon losgelassen: kurzer Hüpfer (variable Sprunghöhe)
+  }
+  return false;
+}
+function sprungJetzt(P, kurz){
+  P.vy = JUMP_V; P.grounded = false; P.glideTimer = 0; P._kanteFrei = false; P._sprungPuffer = undefined;
+  P.sprungKurzMoeglich = true; P.sprungLosgelassen = kurz;
 }
 // nach dem Bewegen: Dash auswerten, Haftfläche nachführen, Dash aufladen
 // ---------- Kante: Fuß nicht mehr auf dem Boden -> abrutschen (Nutzerwunsch) ----------

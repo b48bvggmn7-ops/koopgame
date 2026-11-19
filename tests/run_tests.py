@@ -7976,7 +7976,8 @@ async def bruch_pusten(g):
       let n = 0; KEYS[p1.keys.pusten] = true; KEYS[p1.keys.right] = true;
       while(solids.some(s => s.type === 'bruch' && !s.gone) && n < 200){ st(); n++; }
       e.schritte = n; e.alleWeg = !solids.some(s => s.type === 'bruch' && !s.gone);
-      for(const k in KEYS) KEYS[k] = false; for(let i = 0; i < 160; i++){ KEYS[p1.keys.right] = true; st(); } e.durch = p1.x > 660;
+      for(const k in KEYS) KEYS[k] = false; st();   // D kurz loslassen (nach dem Pusten bleibt der Affe stehen, solange D gehalten bleibt)
+      for(let i = 0; i < 160; i++){ KEYS[p1.keys.right] = true; st(); } e.durch = p1.x > 660;
       KEYS[p1.keys.right] = false; menuScreen = null; return e; })()""")
     assert r['kurz'] == 5 and 0 < r['druck'] < await g.ev('BRUCH_PUSTE_NOETIG'), f'kurzes Anpusten bricht schon: {r}'
     assert r['druckDanach'] < r['druck'], f'Druck geht nicht zurück: {r}'
@@ -8271,6 +8272,124 @@ async def koop_pusten(g):
         assert r['seite'] > 60 and r['affeStill2'], f'Seiten-Wind schiebt nicht: {r}'
     finally:
         srv.shutdown()
+
+@test
+async def puste_feedback_schirm(g):
+    """Feedback 19.11.: (1) nach oben gepustet klappte das Schweinchen oben am Strahl-Ende den Schirm einmal ein (verlor Höhe und
+    Zeit) – jetzt bleibt er offen, auch wenn der Affe mitten im Steigen aufhört; (2) schräges Pusten trug schlecht (Schirm
+    klappte zu, kaum Hub) – jetzt trägt der schräge Strahl wie ein Aufwind entlang seiner Achse, Schirm bleibt offen, der
+    Flug-Balken wird im Wind nicht verbraucht."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          try {
+            for(const aufhoeren of [false, true]){
+              for(const k in KEYS) KEYS[k] = false; p1.puste = 1; p1.pusteLeer = false; p2.schirmKraft = 1; p2.schirmLeer = false;
+              stell(p1, 300, 720); stell(p2, 300, 720); for(let i = 0; i < 6; i++) st();
+              KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; for(let i = 0; i < 8; i++) st();
+              KEYS[p2.keys.jump] = true; KEYS[p2.keys.jump + '_pressed'] = true; st(); KEYS[p2.keys.glide] = true;
+              let zu = 0, offen = false, top = 1e9;
+              for(let i = 0; i < 150; i++){ if(i === 20) KEYS[p2.keys.jump] = false;
+                if(aufhoeren && i === 40) KEYS[p1.keys.pusten] = false;
+                st(); top = Math.min(top, p2.y);
+                if(p2.gliding) offen = true; else if(offen && !p2.grounded && !p2.schirmLeer) zu++; }
+              e[(aufhoeren ? 'aufhoeren' : 'oben') + 'Kraft'] = p2.schirmKraft;
+              e[aufhoeren ? 'aufhoeren' : 'oben'] = {zu, hoch: Math.round(720 - top)};
+            }
+            for(const k in KEYS) KEYS[k] = false; p1.puste = 1; p1.pusteLeer = false; p2.schirmKraft = 1; p2.schirmLeer = false;
+            stell(p1, 300, 720); stell(p2, 900, 720); for(let i = 0; i < 6; i++) st();
+            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; KEYS[p1.keys.right] = true; for(let i = 0; i < 8; i++) st();
+            const S = pusteStrahlJetzt;
+            p2.x = S.ox + S.ux*90; p2.y = S.oy + S.uy*90 + 20; p2.vx = 0; p2.vy = 0; p2.grounded = false; p2._px = p2.x; p2._py = p2.y;
+            const x0 = p2.x, y0 = p2.y; KEYS[p2.keys.glide] = true; let zu = 0;
+            for(let i = 0; i < 30; i++){ st(); if(!p2.gliding) zu++; }
+            e.schraeg = {zu, dx: Math.round(p2.x - x0), dy: Math.round(y0 - p2.y), kraft: p2.schirmKraft};
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        for k in ('oben', 'aufhoeren'):
+            assert r[k]['zu'] == 0, f'Schirm klappt beim Hoch-Pusten zu ({k}): {r}'
+        assert r['oben']['hoch'] > 300, f'Schweinchen steigt nicht hoch genug: {r}'
+        assert r['obenKraft'] > 0.7, f'oben auf dem Strahl verbraucht der Schirm den Flug-Balken: {r}'
+        e = r['schraeg']
+        assert e['zu'] == 0 and e['dx'] > 60 and e['dy'] > 60 and e['kraft'] == 1, f'schräger Strahl trägt nicht gut: {r}'
+    finally:
+        srv.shutdown()
+
+@test
+async def puste_ende_nicht_loslaufen(g):
+    """Feedback 19.11.: „wenn der Affe zu Ende pustet nach rechts oder links, rennt er in die Richtung und fällt in den Abgrund“ –
+    solange die Richtungstaste vom Pusten noch gehalten wird, bleibt er stehen (auch wenn der Balken leer ist). Loslassen und
+    neu drücken = läuft wieder; Springen geht sofort."""
+    srv = await koop_testlevel(g)
+    try:
+        r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+          try {
+            p1.puste = 1; p1.pusteLeer = false; stell(p1, 300, 720); for(let i = 0; i < 6; i++) st();
+            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.right] = true; for(let i = 0; i < 20; i++) st();
+            KEYS[p1.keys.pusten] = false; for(let i = 0; i < 40; i++) st();
+            e.losgelassen = Math.round(p1.x - 300);
+            KEYS[p1.keys.right] = false; st(); KEYS[p1.keys.right] = true; for(let i = 0; i < 20; i++) st();
+            e.wieder = Math.round(p1.x - 300);
+            // leer gepustet, Taste gehalten
+            KEYS[p1.keys.right] = false; p1.puste = 0.05; stell(p1, 300, 720); for(let i = 0; i < 4; i++) st();
+            KEYS[p1.keys.pusten] = true; KEYS[p1.keys.left] = true; for(let i = 0; i < 60; i++) st();
+            e.leer = p1.pusteLeer; e.leerX = Math.round(p1.x - 300);
+            KEYS[p1.keys.jump] = true; KEYS[p1.keys.jump + '_pressed'] = true; st(); e.springt = p1.vy < -8;
+          } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+          return e; })()""")
+        assert abs(r['losgelassen']) < 2, f'Affe läuft nach dem Pusten los: {r}'
+        assert r['wieder'] > 40, f'nach Loslassen und neu Drücken läuft er nicht: {r}'
+        assert r['leer'] and abs(r['leerX']) < 2, f'leer gepustet läuft er los: {r}'
+        assert r['springt'], f'Springen nach dem Pusten geht nicht: {r}'
+    finally:
+        srv.shutdown()
+
+@test
+async def sprung_puffer_und_kante(g):
+    """Feedback 19.11.: „mehrfach direkt hintereinander springen ist manchmal nicht möglich bzw. sehr sloppy“ / „Controller
+    reagiert spät“: Springen bis SPRUNG_PUFFER_SCHRITTE vor der Landung gedrückt -> springt beim Aufsetzen (gehalten = voller
+    Sprung); viel zu früh -> nicht. Eben über eine Kante gelaufen (bis SPRUNG_KANTE_SCHRITTE) -> zählt als Sprung vom Boden;
+    später nicht; nach einem echten Sprung gibt es keinen zweiten in der Luft."""
+    await g.load(level([ground(0, 680, 600), ground(0, 900, 1600)], {'x': 100, 'y': 680}, {'x': 160, 'y': 680}))
+    r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+      try {
+        for(const P of [p1, p2]){
+          const n = P.male ? 'affe' : 'schwein';
+          for(const vorher of [3, 6, 14]){   // Schritte vor der Landung gedrückt
+            for(const k in KEYS) KEYS[k] = false; stell(P, 300, 680); for(let i = 0; i < 4; i++) st();
+            KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st(); KEYS[P.keys.jump] = false;
+            const bahn = []; let i = 0; while(!P.grounded && i < 200){ st(); i++; }
+            const landeSchritt = i;
+            stell(P, 300, 680); for(let j = 0; j < 4; j++) st();
+            KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st(); KEYS[P.keys.jump] = false;
+            let top = 1e9;
+            for(let j = 0; j < landeSchritt + 40; j++){
+              if(j === landeSchritt - vorher){ KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; }
+              st(); if(j > landeSchritt) top = Math.min(top, P.y); }
+            KEYS[P.keys.jump] = false;
+            e[n + vorher] = Math.round(680 - top);
+          }
+          for(const spaet of [3, 12]){
+            for(const k in KEYS) KEYS[k] = false; stell(P, 560, 680); for(let i = 0; i < 4; i++) st();
+            KEYS[P.keys.right] = true; let i = 0; while(P.grounded && i < 60){ st(); i++; }
+            for(let j = 1; j < spaet; j++) st();
+            const y0 = P.y; KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st();
+            e[n + 'kante' + spaet] = P.vy < -8;
+            for(let j = 0; j < 4; j++) st(); KEYS[P.keys.jump] = false; KEYS[P.keys.right] = false;
+          }
+          // nach einem echten Sprung: doppelt tippen gibt keinen zweiten Sprung
+          for(const k in KEYS) KEYS[k] = false; stell(P, 300, 680); for(let i = 0; i < 4; i++) st();
+          KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st(); KEYS[P.keys.jump] = false; st(); st();
+          const vy = P.vy; KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st(); KEYS[P.keys.jump] = false;
+          e[n + 'doppelt'] = P.vy > vy;
+        }
+      } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+      return e; })()""")
+    for n in ('affe', 'schwein'):
+        assert r[n + '3'] > 100 and r[n + '6'] > 100, f'{n}: Sprung kurz vor der Landung geht verloren: {r}'
+        assert r[n + '14'] < 10, f'{n}: viel zu früh gedrückt springt trotzdem: {r}'
+        assert r[n + 'kante3'] and not r[n + 'kante12'], f'{n}: Kanten-Sprung falsch: {r}'
+        assert r[n + 'doppelt'], f'{n}: zweiter Sprung in der Luft: {r}'
 
 @test
 async def windrad_haelt_sich(g):

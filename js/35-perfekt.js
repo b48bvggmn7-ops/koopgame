@@ -139,7 +139,7 @@ function schirmNachher(P){
   const frei = P.grounded || P.inWater || P.haft;
   P._hoechsterY = frei || P._hoechsterY === undefined ? P.y : Math.min(P._hoechsterY, P.y);   // höchster Punkt seit dem Abheben
   if(P.gliding && !P._schirmSchub && !P.grounded){
-    if(!(winds.length && typeof inWind === 'function' && inWind(P))){   // im Aufwind trägt der Wind – kein Verbrauch
+    if(!(winds.length && typeof inWind === 'function' && inWind(P)) && !(schrittNr() - (P._pusteGetragen === undefined ? -1e9 : P._pusteGetragen) <= PUSTE_SCHIRM_NACHLAUF)){   // im Aufwind/Puste-Wind (und kurz danach, oben am Strahl-Ende) trägt der Wind – kein Verbrauch
       const vorher = P.schirmKraft;
       P.schirmKraft = Math.max(0, P.schirmKraft - 1/SCHIRM_DAUER);
       if(vorher >= SCHIRM_KNAPP && P.schirmKraft < SCHIRM_KNAPP && typeof SFX !== 'undefined' && SFX.schirmKnapp) SFX.schirmKnapp(P);
