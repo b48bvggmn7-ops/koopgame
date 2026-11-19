@@ -9,6 +9,9 @@ const SPRINT_MAX_SPEED = 7.2;
 const SPRINT_ACCEL = 0.045;
 const AIR_CONTROL = 0.85;
 const FRICTION_GROUND = 0.78;
+// Kleines Anlaufen (Nutzerwunsch 19.11.; js/32 anlaufen): aus dem Stand braucht die Figur am Boden ANLAUF_SCHRITTE Schritte
+// (≈ 0,1 s) bis zum vollen Lauftempo statt 3. In der Luft, auf Eis und beim Umdrehen unverändert. 0 = aus.
+const ANLAUF_SCHRITTE = 6;
 const FRICTION_AIR = 0.94;
 const JUMP_V = -12.6;
 // Variable Sprunghöhe (nur der normale Sprung vom Boden): lässt man die Sprungtaste während des Aufstiegs los, wird die

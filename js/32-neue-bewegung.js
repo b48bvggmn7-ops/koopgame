@@ -469,6 +469,7 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
     if(moveDir) P.vx = moveDir*Math.max(Math.abs(P.vx), MOVE_SPEED);
     return true;
   }
+  anlaufen(P, moveDir);   // kleines Anlaufen aus dem Stand (ändert nur das Tempo, normale Physik läuft weiter)
   if(!P.hookAttached && sprungHilfe(P, jumpPressed, jumpHeld)) return true;   // Sprung-Puffer + Kanten-Gnade
   return false;
 }
@@ -492,6 +493,17 @@ function sprungHilfe(P, jumpPressed, jumpHeld){
     if(gilt){ sprungJetzt(P, !jumpHeld); return true; }   // schon losgelassen: kurzer Hüpfer (variable Sprunghöhe)
   }
   return false;
+}
+// Kleines Anlaufen (ANLAUF_SCHRITTE in js/02): 08 legt am Boden je Schritt MOVE_SPEED*0,35 drauf (volles Tempo nach 3
+// Schritten). Hier wird das Tempo vorher so gesetzt, dass nach diesem Zuschlag nur MOVE_SPEED/ANLAUF_SCHRITTE mehr dazukommt.
+// window.anlaufAus: Bahnen-Test der alten Mechaniken (tests/bahnen.js) läuft ohne.
+function anlaufen(P, moveDir){
+  if(!ANLAUF_SCHRITTE || window.anlaufAus || !P.grounded || !moveDir || P.hookAttached || P.wjInputLock > 0) return;
+  if(typeof aufEis === 'function' && aufEis(P)) return;
+  const v = P.vx*moveDir, schub = MOVE_SPEED*0.35;
+  if(v < 0 || v >= MOVE_SPEED) return;   // bremst/dreht gerade um oder läuft schon voll
+  const ziel = Math.min(MOVE_SPEED, v + MOVE_SPEED/ANLAUF_SCHRITTE);
+  if(v + schub > ziel) P.vx = (ziel - schub)*moveDir;
 }
 function sprungJetzt(P, kurz){
   P.vy = JUMP_V; P.grounded = false; P.glideTimer = 0; P._kanteFrei = false; P._sprungPuffer = undefined;

@@ -19,6 +19,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     springt beim Aufsetzen (Taste schon losgelassen = kurzer Hüpfer). Eben über eine Kante gelaufen (ohne Sprung): bis
     SPRUNG_KANTE_SCHRITTE (5) danach zählt Springen noch als Sprung vom Boden. Kein zweiter Sprung in der Luft. Beide Figuren,
     Tastatur und Controller gleich. Test sprung_puffer_und_kante.
+  - KLEINES ANLAUFEN (Nutzerwunsch 19.11.; js/32 `anlaufen`, ANLAUF_SCHRITTE in 02): aus dem Stand am Boden erreicht die
+    Figur das volle Lauftempo erst nach 6 Schritten (≈ 0,1 s) statt nach 3 – etwas mehr Gewicht, Steuerung bleibt direkt.
+    Sprint-Aufbau, Luft-Steuerung, Eis und Umdrehen unverändert; beide Figuren. Der Bahnen-Test der alten Mechaniken läuft
+    ohne Anlaufen (`window.anlaufAus`). Test kleines_anlaufen.
+  - (Wand-Klettersprung an einer einzelnen Wand: am 19.11. kurz eingebaut, auf Nutzerwunsch wieder entfernt.)
   - WANDSPRUNG NUR AN WAND (Nutzerwunsch 02.11., `WANDSPRUNG_NUR_WAND` in js/02, `wandsprungFlaeche` in js/08): an der Wand
     hängen, rutschen und abspringen geht nur an Wand (Ziegel, Haftfläche, Durchbruch-Wand, bewegte Wand-Stücke) – nicht an
     Erde, Bröckelboden oder Türen. Der Computer-Partner rechnet genauso. Alte-Mechaniken-Test: Ausnahme einzelwand_decke ab

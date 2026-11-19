@@ -8392,6 +8392,32 @@ async def sprung_puffer_und_kante(g):
         assert r[n + 'doppelt'], f'{n}: zweiter Sprung in der Luft: {r}'
 
 @test
+async def kleines_anlaufen(g):
+    """Nutzerwunsch 19.11.: kleines Anlaufen – aus dem Stand am Boden erst nach ANLAUF_SCHRITTE Schritten volles Lauftempo
+    (vorher 3), danach wie immer (Sprint baut weiter auf). Beide Figuren; in der Luft unverändert."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 1200, 'y': 680}))
+    r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+      try {
+        for(const P of [p1, p2]){
+          const n = P.male ? 'affe' : 'schwein';
+          for(const k in KEYS) KEYS[k] = false; stell(P, P.male ? 300 : 1200, 680); for(let i = 0; i < 6; i++) st();
+          KEYS[P.keys.right] = true; const v = [];
+          for(let i = 0; i < 12; i++){ st(); v.push(Math.round(P.vx*100)/100); }
+          e[n] = v;
+          KEYS[P.keys.right] = false; for(let i = 0; i < 30; i++) st();
+          // in der Luft: wie bisher
+          stell(P, P.x, 400); P.vx = 0; KEYS[P.keys.right] = true; st(); e[n + 'Luft'] = P.vx; KEYS[P.keys.right] = false;
+        }
+      } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+      return e; })()""")
+    ms = await g.ev("MOVE_SPEED"); n = await g.ev("ANLAUF_SCHRITTE")
+    for f in ('affe', 'schwein'):
+        v = r[f]
+        assert v[2] < ms*0.7, f'{f}: läuft zu schnell an: {v}'
+        assert abs(v[n - 1] - ms) < 0.3 and all(b >= a for a, b in zip(v, v[1:])), f'{f}: nach {n} Schritten nicht volles Tempo: {v}'
+        assert abs(r[f + 'Luft'] - ms*0.35*0.85) < 0.01, f'{f}: in der Luft verändert: {r}'
+
+@test
 async def windrad_haelt_sich(g):
     """Nutzer: „das Windrad hängt random in der Luft“ – auf Boden steht es auf dem Pfahl, neben einer Wand sitzt es auf einem
     Holzarm aus der Wand, sonst hängt es an einer Liane (bis zum Material darüber bzw. aus dem Blätterdach); zeichnet ohne Fehler."""

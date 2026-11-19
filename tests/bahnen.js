@@ -145,6 +145,7 @@
     for(let k = 0; k < 3; k++){ tastenSetzen(p1, []); tastenSetzen(p2, []); stepSim(TS0 - (3 - k) * TS_SCHRITT); }
   }
   function lauf(sz, tasten){
+    window.anlaufAus = true;   // kleines Anlaufen (19.11., js/32) ist neu – die alten Bahnen laufen ohne
     vorbereiten(sz);
     const bahn = [], gedrueckt = [], s = {};
     for(let i = 0; i < sz.schritte; i++){
@@ -155,6 +156,7 @@
       bahn.push([zustand(p1), zustand(p2)]);
     }
     alleLos();
+    window.anlaufAus = false;
     return {name: sz.name, tasten: gedrueckt, bahn};
   }
   window.bahnenAufzeichnen = () => SZENARIEN.map(sz => lauf(sz, null));
