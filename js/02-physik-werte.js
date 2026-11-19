@@ -29,15 +29,6 @@ const WALL_JUMP_VY_MIN = -14.4, WALL_JUMP_VY_MAX = -16.06;
 const WALL_JUMP_BUFFER = 180; // Zeitfenster nach letztem Wandkontakt, Tastatur (Verlauf: 160 -> 200 -> 130 -> 170 -> 150 -> 180)
 const WALL_JUMP_BUFFER_PAD = 250; // dasselbe, wenn der Sprung vom Controller kommt
 const WALL_SLIDE_MAX_FALL = 2.4;
-// Wand-Klettersprung (Nutzerwunsch 19.11.: „an einer Wand hochspringen sollte möglich sein“, beide Figuren; js/32
-// wandKletterSprung): in der Luft an einer Wand, Richtung IN die Wand gedrückt + Springen -> kurzer Sprung an der Wand hoch,
-// leicht von ihr weg; weiter in die Wand drücken = wieder dran, nächster Sprung. Lenkt man in den ersten
-// WAND_KLETTER_UMLENKEN Schritten von der Wand weg, wird daraus der normale Wandsprung (Kamin-Technik bleibt).
-const WAND_KLETTERN = true;
-const WAND_KLETTER_VY = -11.2;      // Steigtempo (≈ 2,5 Reihen je Sprung; normaler Sprung −12,6)
-const WAND_KLETTER_VX = 3.2;        // Abstoß von der Wand weg
-const WAND_KLETTER_SPERRE = 7;      // Schritte ohne Gegensteuern nach dem Abstoß
-const WAND_KLETTER_UMLENKEN = 6;    // Schritte, in denen „weg von der Wand“ noch zum normalen Wandsprung wird
 const MAX_FALL = 15;
 
 // ---------- Leveldesign-Richtwerte Wandsprung (GEMESSEN, Kombi-Nachschärfen) ----------

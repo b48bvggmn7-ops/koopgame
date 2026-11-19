@@ -469,7 +469,6 @@ function neueBewegungVorher(P, now, moveDir, jumpPressed, jumpHeld, nass){
     if(moveDir) P.vx = moveDir*Math.max(Math.abs(P.vx), MOVE_SPEED);
     return true;
   }
-  if(!P.hookAttached && wandKletterSprung(P, moveDir, jumpPressed)) return true;   // an einer Wand hoch (beide Figuren)
   if(!P.hookAttached && sprungHilfe(P, jumpPressed, jumpHeld)) return true;   // Sprung-Puffer + Kanten-Gnade
   return false;
 }
@@ -493,30 +492,6 @@ function sprungHilfe(P, jumpPressed, jumpHeld){
     if(gilt){ sprungJetzt(P, !jumpHeld); return true; }   // schon losgelassen: kurzer Hüpfer (variable Sprunghöhe)
   }
   return false;
-}
-// Wand-Klettersprung (WAND_KLETTER_* in js/02): Richtung in die Wand + Springen in der Luft = an der Wand hoch. Kommt kurz
-// danach doch „weg von der Wand“, wird daraus der normale Wandsprung mit denselben Regeln und Werten wie in 08.
-function wandKletterSprung(P, moveDir, jumpPressed){
-  const k = P._kletter, n = schrittNr();
-  if(k && !P.grounded && !jumpPressed && n - k.n <= WAND_KLETTER_UMLENKEN && moveDir === -k.seite){
-    P._kletter = null;
-    if(k.seite !== P.lastWallJumpSide && k.eintritt > MIN_WALLJUMP_SPEED){   // wäre ein normaler Wandsprung gewesen
-      const m = Math.min(1, k.eintritt/SPRINT_MAX_SPEED);
-      P.vy = WALL_JUMP_VY_MIN + (WALL_JUMP_VY_MAX - WALL_JUMP_VY_MIN)*m + GRAVITY*(n - k.n);
-      P.vx = (WALL_JUMP_VX_MIN + (WALL_JUMP_VX_MAX - WALL_JUMP_VX_MIN)*m)*moveDir;
-      P.lastWallJumpSide = k.seite; P.wjInputLock = 260; P._wjT = performance.now();
-      return true;
-    }
-    return false;
-  }
-  if(k && n - k.n > WAND_KLETTER_UMLENKEN) P._kletter = null;
-  if(!WAND_KLETTERN || !jumpPressed || P.grounded || P.inWater || !moveDir || !touchingWall(P, moveDir)) return false;
-  P._kletter = {n, seite: moveDir, eintritt: P.wallEntrySpeed || 0};
-  P.vy = WAND_KLETTER_VY; P.vx = -moveDir*WAND_KLETTER_VX;
-  P.wjInputLock = WAND_KLETTER_SPERRE*16.6; P.glideTimer = 0; P.sprungKurzMoeglich = false;
-  P._wjT = performance.now(); P.lastWallTouch = -9999; P.wjPendingUntil = 0; P.lastWallSide = moveDir;
-  P._kanteFrei = false; P._sprungPuffer = undefined; P.onWall = 0;
-  return true;
 }
 function sprungJetzt(P, kurz){
   P.vy = JUMP_V; P.grounded = false; P.glideTimer = 0; P._kanteFrei = false; P._sprungPuffer = undefined;

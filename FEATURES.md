@@ -19,12 +19,6 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     springt beim Aufsetzen (Taste schon losgelassen = kurzer Hüpfer). Eben über eine Kante gelaufen (ohne Sprung): bis
     SPRUNG_KANTE_SCHRITTE (5) danach zählt Springen noch als Sprung vom Boden. Kein zweiter Sprung in der Luft. Beide Figuren,
     Tastatur und Controller gleich. Test sprung_puffer_und_kante.
-  - WAND-KLETTERSPRUNG (Nutzerwunsch 19.11.: „an einer Wand hochspringen sollte möglich sein“, beide Figuren; js/32
-    `wandKletterSprung`, Werte WAND_KLETTER_* in 02): in der Luft an einer Wand, Richtung IN die Wand halten + Springen -> kurzer
-    Sprung an der Wand hoch (≈ 2,5 Reihen), leicht von ihr weg; weiter in die Wand drücken = wieder dran, nächster Sprung – so
-    kommt man an einer einzelnen Wand ganz hoch. Wie der Wandsprung nur an Wand (nicht Erde/Bröckel/Türen). Lenkt man in den
-    ersten WAND_KLETTER_UMLENKEN (6) Schritten von der Wand weg, wird daraus der normale weite Wandsprung (Kamin-Technik und
-    Regeln bleiben). Test wand_klettern.
   - WANDSPRUNG NUR AN WAND (Nutzerwunsch 02.11., `WANDSPRUNG_NUR_WAND` in js/02, `wandsprungFlaeche` in js/08): an der Wand
     hängen, rutschen und abspringen geht nur an Wand (Ziegel, Haftfläche, Durchbruch-Wand, bewegte Wand-Stücke) – nicht an
     Erde, Bröckelboden oder Türen. Der Computer-Partner rechnet genauso. Alte-Mechaniken-Test: Ausnahme einzelwand_decke ab
