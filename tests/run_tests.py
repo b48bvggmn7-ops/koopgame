@@ -8392,6 +8392,43 @@ async def sprung_puffer_und_kante(g):
         assert r[n + 'doppelt'], f'{n}: zweiter Sprung in der Luft: {r}'
 
 @test
+async def wand_klettern(g):
+    """Nutzerwunsch 19.11.: an EINER Wand mit Wandsprüngen hochkommen (beide Figuren): in der Luft an der Wand, Richtung in die
+    Wand + Springen = kurzer Sprung an der Wand hoch (WAND_KLETTER_*), weiter in die Wand drücken = wieder dran. Nur an Wand
+    (nicht Erde). Gleich nach dem Sprung von der Wand weg gelenkt = der normale, weite Wandsprung."""
+    await g.load(level([ground(0, 680, 1600), ground(600, 0, 80, 680, 'wall'), ground(1000, 0, 80, 680)],
+                       {'x': 400, 'y': 680}, {'x': 440, 'y': 680}))
+    r = await g.ev("""(() => { """ + KOOP_SCHRITTE + """ const e = {};
+      try {
+        for(const P of [p1, p2]){
+          const n = P.male ? 'affe' : 'schwein';
+          for(const [wx, art] of [[580, 'wand'], [980, 'erde']]){
+            for(const k in KEYS) KEYS[k] = false; stell(P, wx - P.w/2 - 2, 680); for(let i = 0; i < 4; i++) st();
+            KEYS[P.keys.right] = true; KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st();
+            let top = 1e9, spr = 0;
+            for(let i = 0; i < 300; i++){
+              KEYS[P.keys.jump] = false;
+              if(!P.grounded && touchingWall(P, 1) && P.vy > -3){ KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; spr++; }
+              st(); top = Math.min(top, P.y); }
+            e[n + art] = Math.round((680 - top)/40*10)/10; e[n + art + 'Sprünge'] = spr;
+          }
+          // von der Wand weg gelenkt: weiter Wandsprung
+          for(const k in KEYS) KEYS[k] = false; stell(P, 300, 680); for(let i = 0; i < 4; i++) st();
+          KEYS[P.keys.right] = true; let i = 0; while(P.x < 520 && i < 100){ st(); i++; }
+          KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st(); KEYS[P.keys.jump] = false;
+          i = 0; while(!touchingWall(P, 1) && i < 60){ st(); i++; }
+          KEYS[P.keys.jump] = true; KEYS[P.keys.jump + '_pressed'] = true; st(); KEYS[P.keys.jump] = false;
+          KEYS[P.keys.right] = false; st(); KEYS[P.keys.left] = true; st(); st();
+          e[n + 'weg'] = P.vx; KEYS[P.keys.left] = false;
+        }
+      } finally { for(const k in KEYS) KEYS[k] = false; menuScreen = null; }
+      return e; })()""")
+    for n in ('affe', 'schwein'):
+        assert r[n + 'wand'] > 10, f'{n}: kommt an der Wand nicht hoch: {r}'
+        assert r[n + 'erde'] < 4, f'{n}: klettert an Erde hoch: {r}'
+        assert r[n + 'weg'] < -6, f'{n}: von der Wand weg kein weiter Wandsprung: {r}'
+
+@test
 async def windrad_haelt_sich(g):
     """Nutzer: „das Windrad hängt random in der Luft“ – auf Boden steht es auf dem Pfahl, neben einer Wand sitzt es auf einem
     Holzarm aus der Wand, sonst hängt es an einer Liane (bis zum Material darüber bzw. aus dem Blätterdach); zeichnet ohne Fehler."""
