@@ -1737,6 +1737,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     seiner Ruhelage zählt nicht als Hindernis) und steht dort sichtbar AUF dem Boden: er wird 13 px höher gezeichnet (`BLATT_AUFZUG_HEBUNG`,
     die Tragebalken liegen auf), wer darauf steht, wird mit angehoben gezeichnet – die Physik bleibt (kein Stufe). Test `blattfloss_aufzug`.
     Rammbalken: Zeit jetzt auch 15 s wählbar.
+    Aufzug (20.11.): bewegt er sich, ohne dass jemand kurbelt (sinkt zurück, Wind hebt ihn), dreht das Floß-Rad mit (beim Sinken
+    rückwärts) und quietscht ab und zu. Der Schatten der Figur liegt auf dem gezeichneten Brett; der Nebel spart das Brett dort aus, wo
+    es gezeichnet ist (vorher ein heller Streifen wie ein Schatten darunter).
+    **Wechselboden ohne Gras unter Boden/Wand (20.11.):** liegt direkt über einem Wechselboden fester Boden oder Wand, bekommt er dort keine
+    Gras-/Moos-Kante (`wechselZugedeckt` -> `piece.zu`; Kästchen für Kästchen, frei liegende Teile behalten sie). Test `wechselboden_kein_gras_unter_wand`.
     **Tür mit mehreren Nummern (20.11., elemente/tuer.js):** im Editor bei der Tür „und Nummer“ (bis zu zwei weitere Nummern, – = keine).
     Die Tür geht erst auf, wenn ALLE ihre Nummern an sind – jeder Auslöser (Hebel, Druckplatte, Rammbalken, Windrad …) bekommt seine
     eigene Nummer; geht eine wieder aus (z. B. Zeitfenster abgelaufen), schließt sie. Auf der Tür sitzt je Nummer ein Edelstein in deren

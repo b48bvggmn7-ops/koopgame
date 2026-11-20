@@ -7881,7 +7881,9 @@ async def blattfloss_aufzug(g):
       // runter kurbeln
       KEYS[p1.keys.use] = true; KEYS[p1.keys.swimDown] = true; n(160); los(); e.unten = A.y === 640;
       // Aufzug 2 „sinkt zurück“: hochkurbeln, loslassen -> gleitet wieder hinunter
-      stell(p1, 1328, 680); stell(p2, 300, 680); n(8); KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(80); const hoch = B.y; los(); n(30); e.sinkt = hoch < 420 && B.y > hoch + 10;
+      stell(p1, 1328, 680); stell(p2, 300, 680); n(8); KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(80); const hoch = B.y; los(); SFX_LOG.length = 0; n(30); e.sinkt = hoch < 420 && B.y > hoch + 10;
+      // Nutzer 20.11.: sinkt der Aufzug von selbst, dreht das Rad rückwärts mit und quietscht
+      e.radRueckwaerts = flossRaeder[1].dreh < -0.01; e.radQuietscht = SFX_LOG.includes('kurbel');
       n(400); e.wiederUnten = B.y === B.y0;
       // Wind des Affen nach oben hebt ihn von unten (Affe steht darunter)
       stell(p1, 1460, 680); n(8); KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; n(50); e.windHebt = B.y < B.y0 - 20 && p1.pusteAn; los(); n(5);
@@ -7896,6 +7898,8 @@ async def blattfloss_aufzug(g):
         los(); n(400); e.bodenWiederUnten = D.y === 680 && Math.abs(p2.y - 680) < 1.5 && p2.grounded;
         // „das Brett soll AUF dem Boden stehen“: der Aufzug wird 13 px höher gezeichnet, wer darauf steht, mit (nur Anzeige)
         e.hebung = D.hebung === BLATT_AUFZUG_HEBUNG && Math.abs(p2._standDy + BLATT_AUFZUG_HEBUNG) < 2.5 && !blattFloesse[2].hebung;
+        // … und der Schatten der Figur liegt auf dem gezeichneten Brett, nicht darunter (groundBelow.versatz)
+        e.schattenAufBrett = groundBelow(p2) === D.y && Math.abs(groundBelow.versatz - blattDy(D)) < 0.01 && groundBelow(p1) !== null && (groundBelow(p1), groundBelow.versatz === 0);
         stell(p2, 300, 680); n(3); e.hebungWeg = !p2._standDy; }
       // Neustart: Aufzug 1 wieder unten
       stell(p1, 528, 680); n(5); KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(50); los(); const zw = A.y; resetLevel(); n(5); e.reset = zw < 640 && A.y === 640;
@@ -7903,6 +7907,23 @@ async def blattfloss_aufzug(g):
     assert all(r.values()), f'Blatt-Floß als Aufzug: {r}'
     src = (ROOT / 'elemente' / 'blattfloss.js').read_text(encoding='utf-8')
     assert "key: 'richtung'" in src and "richtung: 'hoch'" in src and "key: 'sinkt'" in src, 'Editor: Auswahl Richtung/Aufzug bzw. Export fehlt'
+
+@test
+async def wechselboden_kein_gras_unter_wand(g):
+    """Nutzer 20.11.: „das Gras beim Wechselboden wegmachen, wenn es oben auf Boden oder Wand trifft“ – liegt direkt über dem
+    Wechselboden fester Boden oder Wand, hat das Stück dort keine Moos-/Gras-Kante (piece.zu); ein frei liegender behält sie."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel'))
+    r = await g.ev("""(() => { startLevel({solids:[{x:0,y:680,w:3000,h:40,type:'ground'},{x:600,y:440,w:80,h:120,type:'ground'},{x:1000,y:520,w:40,h:40,type:'wall'}],
+        hooks:[],switches:[],doors:[],spikes:[],coins:[],movingPlatforms:[],checkpoints:[],
+        switchFloors:[{x:600,y:560,w:40,h:40,gruppe:'A',link:1},{x:640,y:560,w:40,h:40,gruppe:'A',link:1},{x:600,y:600,w:40,h:40,gruppe:'A',link:1},{x:640,y:600,w:40,h:40,gruppe:'A',link:1},
+                      {x:800,y:560,w:40,h:40,gruppe:'A',link:2},{x:840,y:560,w:40,h:40,gruppe:'A',link:2},
+                      {x:960,y:560,w:40,h:40,gruppe:'A',link:3},{x:1000,y:560,w:40,h:40,gruppe:'A',link:3},{x:1040,y:560,w:40,h:40,gruppe:'A',link:3}],
+        startM:{x:300,y:680},startF:{x:200,y:680},goal:{x:2800,y:680},welt:'dschungel'});
+      const R = wechselReihen(), bei = x => R.find(q => Math.abs(q.x - x) < 1);
+      return {unterBoden: bei(600).piece.zu, frei: bei(800).piece.zu, halb: bei(960).piece.zu}; })()""")
+    assert r['unterBoden'] == [[0, 40], [40, 80]], f'Wechselboden unter festem Boden: Gras muss weg sein: {r}'
+    assert r['frei'] == [], f'frei liegender Wechselboden behält sein Gras: {r}'
+    assert r['halb'] == [[40, 80]], f'nur das Kästchen unter der Wand verliert das Gras: {r}'
 
 @test
 async def tuer_mehrere_nummern(g):

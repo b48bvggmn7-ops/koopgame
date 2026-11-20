@@ -116,6 +116,8 @@ function fotoStueckZeichnen(p){
   const key = fotoStueckSchluessel(); p.fotoKey = key; p.cm = null;
   if(!key) return false;
   const [, , w, h, look] = p.m, wand = look === 'wall', q = p.c.getContext('2d');
+  // p.zu: oben zugedeckte Abschnitte [von, bis] (Wechselboden unter Boden/Wand, elemente/wechselboden.js) – dort kein Moos
+  const zu = p.zu || [], istZu = x => zu.some(([a, b]) => x >= a - 0.5 && x <= b + 0.5);
   const M = fotoMatMuster(q, wand ? 'wand' : 'erde'); if(!M) return false;
   q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(0, 0, p.c.width, p.c.height); q.setTransform(2, 0, 0, 2, 48, 48);
   const B = FOTO_STUECK.rand, sd = w*7 + h*3;
@@ -138,7 +140,7 @@ function fotoStueckZeichnen(p){
   if(wand){
     // Moosbüschel oben auf der Mauer
     q.fillStyle = 'rgba(70,88,40,.75)';
-    for(let x = 4; x < w - 4; x += 9){ const z = fotoEl2Zufall(x + sd, 3); if(z < 0.45) continue; q.beginPath(); q.ellipse(x + z*4, 0.5, 2.5 + z*3, 1.5 + z, 0, 0, 7); q.fill(); }
+    for(let x = 4; x < w - 4; x += 9){ const z = fotoEl2Zufall(x + sd, 3); if(z < 0.45 || istZu(x)) continue; q.beginPath(); q.ellipse(x + z*4, 0.5, 2.5 + z*3, 1.5 + z, 0, 0, 7); q.fill(); }
     // rostige Eisenwinkel an den vier Ecken (je ein waagerechtes und ein senkrechtes Stück mit Niete)
     const E = Math.min(FOTO_STUECK.eisen, w/3, h/3);
     for(const [ex, ey, sx, sy] of [[0, 0, 1, 1], [w, 0, -1, 1], [0, h, 1, -1], [w, h, -1, -1]]){
@@ -169,7 +171,10 @@ function fotoStueckZeichnen(p){
     const K = fotoMatMuster(qm, 'kante', -FOTO_MAT_KANTE.ueber), U = typeof FOTO_MAT_UEBERHANG === 'number' ? FOTO_MAT_UEBERHANG : 5;
     if(K){ qm.fillStyle = K; const mu = FOTO_MAT_KANTE.matteUnten - FOTO_MAT_KANTE.ueber;
       qm.fillRect(-U*0.7, -FOTO_MAT_KANTE.ueber, w + 1.4*U, FOTO_MAT_KANTE.ueber + mu);
-      qm.fillRect(1, mu, w - 2, Math.min(h - mu, FOTO_MAT_KANTE.weltH - FOTO_MAT_KANTE.ueber - mu)); }
+      qm.fillRect(1, mu, w - 2, Math.min(h - mu, FOTO_MAT_KANTE.weltH - FOTO_MAT_KANTE.ueber - mu));
+      for(const [a, b] of zu) qm.clearRect(a <= 0.5 ? -2*U : a, -FOTO_MAT_KANTE.ueber - 2, (b >= w - 0.5 ? w + 2*U : b) - (a <= 0.5 ? -2*U : a), FOTO_MAT_KANTE.weltH + 4); }   // zugedeckt: kein Moos
+    // ganz zugedeckt: gar keine Moos-Schicht – dann sitzt der Edelstein in der Mitte (er rückt nur nach oben, damit Moos über ihm hängt)
+    if(zu.reduce((z, [a, b]) => z + b - a, 0) >= w - 1) p.cm = null;
   }
   p.done = 1;
   return true;

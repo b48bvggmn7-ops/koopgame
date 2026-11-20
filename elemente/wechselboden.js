@@ -111,6 +111,19 @@ function wechselEdelstein(cx, cy, s, a, r = 12){   // wie auf den Türen: dunkle
   if(s.gruppe === 'B'){ ctx.fillStyle = 'rgba(30,18,10,.85)'; ctx.beginPath(); ctx.moveTo(cx, cy - 3.6*k); ctx.lineTo(cx + 3.2*k, cy); ctx.lineTo(cx, cy + 3.6*k); ctx.lineTo(cx - 3.2*k, cy); ctx.closePath(); ctx.fill(); }
   ctx.restore();
 }
+// Nutzer 20.11.: „das Gras beim Wechselboden wegmachen, wenn es oben auf Boden oder Wand trifft“ – liegt direkt über einem Kästchen der
+// obersten Reihe fester Boden oder Wand, bekommt das Stück dort keine Gras-/Moos-Kante. Ergebnis: Liste der zugedeckten
+// Abschnitte [von, bis] in px ab der linken Kante des Stücks (piece.zu; gezeichnet in js/12f fotoStueckZeichnen bzw. pieceDraw).
+function wechselZugedeckt(teile, x0, y0){
+  const zu = [];
+  for(const o of teile){
+    if(Math.abs(o.y - y0) > 1) continue;   // nur die oberste Reihe
+    const drueber = solids.some(t => (t.type === 'ground' || t.type === 'wall') && Math.abs(t.y + t.h - o.y) < 1.5 &&
+      Math.min(t.x + t.w, o.x + o.w) - Math.max(t.x, o.x) >= o.w/2);
+    if(drueber) zu.push([o.x - x0, o.x - x0 + o.w]);
+  }
+  return zu;
+}
 let __wReihen = null, __wKey = '';
 function wechselReihen(){
   const key = outK + wallK + soilK + solids.length;
@@ -134,7 +147,7 @@ function wechselReihen(){
     for(const o of flaeche) gesehen.add(o);
     const teile = flaeche.sort((a, b) => a.y - b.y || a.x - b.x);
     const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + 48)*2);
-    const piece = {m: [0, 0, w, h, 'soil'], c, done: 0}; pieceDraw(piece);
+    const piece = {m: [0, 0, w, h, 'soil'], c, done: 0, zu: wechselZugedeckt(teile, x0, y0)}; pieceDraw(piece);
     reihen.push({teile, x: x0, y: y0, w, h, senkrecht: false, c, piece});
   }
   for(const s of alle){
@@ -146,7 +159,7 @@ function wechselReihen(){
     for(let k = 0; k < 200; k++){ const l = teile[teile.length - 1], n = senkrecht ? find(l, 0, l.h) : find(l, l.w, 0); if(!n || gesehen.has(n)) break; teile.push(n); gesehen.add(n); }
     const w = senkrecht ? a.w : teile.reduce((z, o) => z + o.w, 0), h = senkrecht ? teile.reduce((z, o) => z + o.h, 0) : a.h;
     const c = document.createElement('canvas'); c.width = Math.ceil((w + 48)*2); c.height = Math.ceil((h + 48)*2);
-    const piece = {m: [0, 0, w, h, senkrecht ? 'wall' : 'soil'], c, done: 0}; pieceDraw(piece);   // gleiche Zeichnung wie die beweglichen Plattformen: Gras-Kappe, Erde bzw. Wand, Outline
+    const piece = {m: [0, 0, w, h, senkrecht ? 'wall' : 'soil'], c, done: 0, zu: wechselZugedeckt(teile, a.x, a.y)}; pieceDraw(piece);   // gleiche Zeichnung wie die beweglichen Plattformen: Gras-Kappe, Erde bzw. Wand, Outline
     reihen.push({teile, x: a.x, y: a.y, w, h, senkrecht, c, piece});
   }
   return __wReihen = reihen;
