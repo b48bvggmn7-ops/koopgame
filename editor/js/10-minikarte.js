@@ -10,7 +10,7 @@
 // Test-Hilfen: minikarteKlick(anteil 0…1), minikarteAn(), minikarteSchalten(an), minikarteZaehler (wie oft neu vorgezeichnet).
 
 const MINIKARTE_SPEICHER = 'monchichi.editorMinikarte';
-const MINIKARTE_HOEHE = 78;          // Höhe des Streifens in px (Lineal oben + Karte)
+const MINIKARTE_HOEHE = 84;          // Höhe des Streifens in px (Lineal oben + Karte)
 const MINIKARTE_LINEAL = 13;         // Höhe der Zahlen-Zeile über der Karte
 const MINIKARTE_RAND = 8;            // Abstand links/rechts
 const MINIKARTE_MAL_PAUSE = 200;     // ms: beim gedrückten Malen höchstens so oft neu vorzeichnen
@@ -25,7 +25,7 @@ const MINIKARTE_FARBEN = {
 // Bröckelboden und alle Elemente wie Hebel, Tür, Druckplatte, Rammbalken, Windrad, Wechselboden, Floß, Draisine, Falle …).
 // Einfache Gruben und Stacheln zählen nicht. Kurze Lücken (< MINIKARTE_SPANNUNG_LUECKE Spalten) zwischen zwei spannenden
 // Stellen gehören zum Abschnitt. Nur Aussehen/Deko zählt nicht (MINIKARTE_SPANNUNG_OHNE).
-const MINIKARTE_SPANNUNG_UMKREIS = 12, MINIKARTE_SPANNUNG_LUECKE = 30, MINIKARTE_SPANNUNG_HOEHE = 3;
+const MINIKARTE_SPANNUNG_UMKREIS = 12, MINIKARTE_SPANNUNG_LUECKE = 30, MINIKARTE_SPANNUNG_HOEHE = 8;   // Streifen-Höhe in px (20.11.: 8 statt 3, „dicker“)
 const MINIKARTE_SPANNUNG_OHNE = ['meteoriten', 'dunkelzonen', 'bossArena', 'bossPlaetze', 'eis', 'lava', 'lavaPegel', 'waterLevels'];
 const MINIKARTE_SPANNUNG_FARBEN = {spannend: '#ff8a3d', entspannt: '#58c08a'};
 // je Spalte: 1 = spannend, 0 = entspannt
@@ -106,7 +106,7 @@ applySnapshot = function(){ const r = _applyVorMinikarte.apply(this, arguments);
 function minikarteMasse(){
   const dpr = window.devicePixelRatio || 1;
   const w = Math.max(10, minikarteCvs.clientWidth), h = Math.max(10, minikarteCvs.clientHeight);
-  const kartenH = h - MINIKARTE_LINEAL - 3;
+  const kartenH = h - MINIKARTE_LINEAL - MINIKARTE_SPANNUNG_HOEHE - 2;   // unten bleibt Platz für den Spannungs-Streifen
   return {dpr, w, h, x0: 0, y0: MINIKARTE_LINEAL, kw: w, kh: kartenH, sx: w / COLS, sy: kartenH / (ROWS + SKY)};
 }
 
@@ -179,7 +179,7 @@ function minikarteVorzeichnen(){
   // Spannungs-Streifen unter der Karte: orange = spannend, grün = entspannt
   for(const A of minikarteAbschnitte()){
     g.fillStyle = A.spannend ? MINIKARTE_SPANNUNG_FARBEN.spannend : MINIKARTE_SPANNUNG_FARBEN.entspannt;
-    g.fillRect(M.x0 + A.von*M.sx, M.y0 + M.kh, (A.bis - A.von + 1)*M.sx, MINIKARTE_SPANNUNG_HOEHE);
+    g.fillRect(M.x0 + A.von*M.sx, M.y0 + M.kh + 1, (A.bis - A.von + 1)*M.sx, MINIKARTE_SPANNUNG_HOEHE);
   }
   minikarteGezeichnet = minikarteVersion;
   minikarteLetztesMal = performance.now();
