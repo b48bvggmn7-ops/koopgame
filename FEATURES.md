@@ -1730,8 +1730,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
     **Dash zur Seite des Schweinchens (Dschungel, 20.11.):** ebenfalls nur noch 3 Kästchen (`DASH_SEITE_SCHWEIN_PX` 120, vorher 4); für
     einen vollen Rammstoß muss es deshalb näher am Rammbalken stehen (höchstens ~70 px vor der Stirnseite statt ~110). Nach unten unverändert.
-    **Dash nach oben des Schweinchens (Dschungel, 20.11.):** nur noch 3 Kästchen hoch (`DASH_HOCH_SCHWEIN_PX` 120, vorher 4) und am
-    höchsten Punkt schwebt es kurz, statt wie ein Stein zu fallen (`dashSchweben`, `DASH_HOCH_SCHWEB` 16 Schritte). Test `dash_hoch_schwebt`.
+    **Dash nach oben des Schweinchens (Dschungel, 20.11.):** höchstens 3 Kästchen (`DASH_HOCH_SCHWEIN_PX` 120, vorher 4): die ersten
+    2 Kästchen volles Tempo (`DASH_HOCH_VOLL_PX`), danach läuft er weich aus (Tempo ~ Rest-Strecke, in `dashSchritt`) statt abrupt zu
+    stoppen; kein Schweben danach (erster Versuch `dashSchweben` wieder ausgebaut). Test `dash_hoch_schwebt`.
     Testlevel `levels/test/rammbalken.json`: Decken-Balken ein Kästchen tiefer.
     **Kanten-Halt (20.11., `kanteHalt` in js/32):** Wer die Lauftaste losgelassen hat und nur noch ausrutscht, rutscht nicht mehr über
     die Kante, sondern bleibt an ihr stehen (und wackelt); wer die Taste hält, läuft wie bisher runter. Nicht auf Eis. Wackel-Streifen
@@ -2936,7 +2937,7 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   - Rückgängig / Wiederholen (Ausbau 2, editor/js/08-auswahl.js): Strg+Z / Strg+Y (auch Strg+Umschalt+Z) und Knöpfe
     ↶ ↷ oben; jede Änderung ist ein Schritt, ein gezogener Pinselstrich zählt als EIN Schritt; bis 200 Schritte.
     Laden eines Levels / Neues Level beginnt einen frischen Verlauf. Auch Level-Info-Änderungen sind rückgängig machbar.
-  - **Minikarte: spannend/entspannt (20.11., editor/js/10-minikarte.js):** Farbstreifen unter der Karte – orange = spannender
+  - **Minikarte: spannend/entspannt (20.11., editor/js/10-minikarte.js):** Farbstreifen (8 px) unter der Karte – orange = spannender
     Abschnitt, grün = entspannte Strecke. Automatisch erkannt (`minikarteSpannung`/`minikarteAbschnitte`): spannend ist, wo im Umkreis
     von 12 Spalten etwas zu tun ist (Haken, bewegte Teile, Bröckelboden, alle Elemente wie Hebel/Tür/Platte/Rammbalken/Windrad/
     Wechselboden/Floß/Draisine/Falle …); einfache Gruben und Stacheln zählen nicht; Lücken unter 30 Spalten gehören zum Abschnitt.
@@ -2945,6 +2946,8 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
     (kein Neu-Setzen): Punkt-Elemente aus dem Register (Hebel, Tür, Druckplatte, Rammbalken, Windrad, Wechselboden … – Nummer und
     eigene Auswahl-Felder), Haken (Reichweite), Stacheln (Richtung), Münzen (Farbe, Klasse). Blauer gestrichelter Rahmen um das
     angewählte Ding; Esc, Klick ins Leere oder ein anderes Werkzeug hebt die Auswahl auf; Rückgängig geht. Test `editor_anwaehlen`.
+    **Zusammenhängende Teile:** ein Klick wählt alle direkt aneinander liegenden Teile derselben Sorte mit denselben Einstellungen
+    (alle Kästchen einer Tür, eine Reihe Wechselboden A, eine Reihe Stacheln) – die Änderung gilt für alle; Umschalt+Klick = nur das eine.
   - **Verschieben ✥** (Werkzeug neben „Auswahl ⬚“, Nutzerwunsch 30.10.): ein einzelnes Ding anklicken und ziehen – nur
     dieses wandert (Reihenfolge: Element wie Hebel/Tür/Floß – auch an einem anderen seiner Kästchen angefasst –, Haken,
     Münze, Stacheln, Checkpoint, Start/Ziel, zuletzt das Boden-/Wand-Kästchen samt seiner Bewegung); in eine markierte

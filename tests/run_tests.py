@@ -5015,7 +5015,8 @@ async def editor_anwaehlen(g):
         draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)] + [[20, r, 'wall'] for r in range(12, 17)], 'hooks': [{'c': 30, 'r': 8, 'radius': 6.5}],
                  'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16},
                  'switches': [{'c': 5, 'r': 16, 'link': 3}, {'c': 8, 'r': 16, 'link': 3}],
-                 'rammbalken': [{'c': 19, 'r': 15, 'link': 2}], 'switchFloors': [{'c': 12, 'r': 14, 'link': 2, 'gruppe': 'A', 'takt': 0}]}
+                 'rammbalken': [{'c': 19, 'r': 15, 'link': 2}], 'switchFloors': [{'c': 12, 'r': 14, 'link': 2, 'gruppe': 'A', 'takt': 0}],
+                 'doors': [{'c': 25, 'r': 14, 'link': 4}, {'c': 25, 'r': 15, 'link': 4}, {'c': 25, 'r': 16, 'link': 4}, {'c': 26, 'r': 16, 'link': 5}]}
         await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
         await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
         await p.evaluate("setTool('anwaehlen')")
@@ -5053,6 +5054,18 @@ async def editor_anwaehlen(g):
         await p.evaluate("undo()"); assert await p.evaluate("hooks[0].radius") == 6.5, 'Rückgängig nimmt die Änderung nicht zurück'
         ex = await p.evaluate("(e => (typeof e === 'string' ? JSON.parse(e) : e).rammbalken[0])(exportLevel())")
         assert ex.get('art') == 'umschalten' and ex['link'] == 7, f'Export ohne die Änderung: {ex}'
+        # zusammenhängende Teile (Nutzer 20.11.): ein Klick auf ein Tür-Kästchen wählt alle 3 Kästchen der Tür (gleiche Nummer), nicht
+        # das Nachbar-Kästchen mit anderer Nummer; die Änderung gilt für alle drei. Umschalt+Klick = nur das eine Kästchen
+        await klick(25, 15)
+        assert await p.evaluate("gewaehlt.gruppe.length") == 3, 'Tür aus 3 Kästchen wird nicht als Gruppe angewählt'
+        await waehle('#linkSelect', '6')
+        r = await p.evaluate("elementPunkte.doors.map(d => d.link)")
+        assert r == [6, 6, 6, 5], f'Änderung gilt nicht für genau die drei zusammenhängenden Tür-Kästchen: {r}'
+        await p.keyboard.down('Shift'); await klick(25, 14); await p.keyboard.up('Shift')
+        assert await p.evaluate("gewaehlt.gruppe.length") == 1, 'Umschalt+Klick wählt nicht nur das eine Teil'
+        await waehle('#linkSelect', '8')
+        r = await p.evaluate("elementPunkte.doors.map(d => d.link)")
+        assert r == [8, 6, 6, 5], f'Umschalt+Klick: nur das eine Kästchen darf sich ändern: {r}'
         # Klick ins Leere / Esc: Auswahl weg, nichts wird gesetzt
         await klick(34, 5)
         assert await p.evaluate("gewaehlt === null && hooks.length === 1 && elementPunkte.rammbalken.length === 1"), 'Klick ins Leere: Auswahl bleibt oder etwas wurde gesetzt'
@@ -7799,22 +7812,23 @@ async def schwein_foto_look(g):
 
 @test
 async def dash_hoch_schwebt(g):
-    """Nutzer 20.11.: „wenn das Schwein mit dem Dash in die Luft springt, fällt es wie ein Stein“ – nach dem Dash senkrecht nach oben
-    (Dschungel, nur Schweinchen) schwebt es kurz am höchsten Punkt (dashSchweben, js/32): die Höhe ist 3 Kästchen (20.11., vorher 4), aber kurz
-    danach fällt es noch langsam; später fällt es wieder normal schnell."""
+    """Nutzer 20.11.: Dash des Schweinchens senkrecht nach oben (Dschungel) – „nicht abrupt nach 3 Kästchen stoppen, ab 2 Kästchen
+    fadet es langsam aus, maximal schafft er drei“: die ersten 2 Kästchen volles Tempo, danach wird er Schritt für Schritt
+    langsamer und kommt bei 3 Kästchen zur Ruhe; kein Stehenbleiben in der Luft danach (fällt normal). Zur Seite: 3 Kästchen."""
     await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 500, 'y': 680}, welt='dschungel'))
     await g.steps(20)
     await g.ev("p2.dashPunkte = 1; p2.dashPause = 0")
-    await g.p.keyboard.down('ArrowUp'); await g.p.keyboard.down('Numpad3'); await g.steps(3); await g.p.keyboard.up('Numpad3'); await g.p.keyboard.up('ArrowUp')
-    await g.p.wait_for_function("!p2.dash && !p2.grounded", timeout=4000)
-    oben = await g.ev("p2.y")
-    await g.steps(10)
-    r = await g.ev("({y: p2.y, vy: p2.vy})")
-    assert 112 <= 680 - oben <= 128, f'Dash nach oben nicht 3 Kästchen hoch (Nutzer 20.11., vorher 4): {680 - oben}'
-    assert r['vy'] < 3 and r['y'] - oben < 20, f'10 Schritte nach dem Dash fällt das Schweinchen schon schnell (wie ein Stein): {r}, oben {oben}'
-    await g.steps(22)
-    r2 = await g.ev("({y: p2.y, vy: p2.vy, g: p2.grounded})")
-    assert r2['g'] or r2['vy'] > 8, f'nach dem Schweben fällt es nicht wieder normal: {r2}'
+    r = await g.ev("""(() => { const K = p2.keys, ys = [];
+      KEYS[K.swimUp] = true; KEYS[K.dash] = true; KEYS[K.dash + '_pressed'] = true; stepSim(); KEYS[K.dash] = false; KEYS[K.swimUp] = false;
+      let n = 0; while(p2.dash && n++ < 60){ ys.push(p2.y); stepSim(); } ys.push(p2.y);
+      const oben = p2.y, vyEnde = p2.vy; for(let i = 0; i < 10; i++) stepSim();
+      return {ys, oben, vyEnde, nach10: p2.y, vy10: p2.vy}; })()""")
+    ys = r['ys']; tempo = [round(ys[i] - ys[i + 1], 2) for i in range(len(ys) - 1)]
+    assert 112 <= 680 - r['oben'] <= 128, f'Dash nach oben nicht 3 Kästchen hoch: {680 - r["oben"]} {tempo}'
+    voll = [v for v in tempo if v > 15]; aus = [v for v in tempo if 0 < v <= 15]
+    assert 4 <= len(voll) <= 6, f'die ersten 2 Kästchen nicht mit vollem Tempo: {tempo}'
+    assert len(aus) >= 5 and all(aus[i] >= aus[i + 1] - 0.01 for i in range(len(aus) - 1)) and aus[-1] < 3, f'läuft nicht weich aus (wird nicht Schritt für Schritt langsamer): {tempo}'
+    assert abs(r['vyEnde']) < 0.7 and r['vy10'] > 4, f'danach kein Stehenbleiben in der Luft, sondern normal fallen: {r["vyEnde"]} / {r["vy10"]}'
     # Nutzer 20.11.: „der Dash zu den Seiten bitte auch nur 3“ (Schweinchen im Dschungel)
     await g.p.wait_for_function("p2.grounded", timeout=4000)
     await g.ev("p2.x = p2._px = 500; p2.vx = 0; p2.dashPunkte = 1; p2.dashPause = 0"); await g.steps(3)

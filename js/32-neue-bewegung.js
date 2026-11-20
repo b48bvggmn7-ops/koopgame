@@ -74,7 +74,10 @@ function dashStarten(P, moveDir){
   // DASH_HOCH_SCHWEIN_PX hoch (vorher 160 = 4 Kästchen): weniger Schritte, Tempo so angepasst, dass es genau aufgeht
   // … und zur SEITE ebenso („der Dash zu den Seiten bitte auch nur 3“, DASH_SEITE_SCHWEIN_PX). Nach unten (Stampfer) bleibt er wie bisher.
   if(!P.male && dashNurSchweinWelt() && ((dy < 0 && !dx) || (dx && !dy))){ const px = dx ? DASH_SEITE_SCHWEIN_PX : DASH_HOCH_SCHWEIN_PX, z = Math.ceil(px/DASH_TEMPO);
-    P.dash.zeit = z; P.dash.faktor = px/(z*DASH_TEMPO); P.dash.strecke = px; }
+    P.dash.zeit = z; P.dash.faktor = px/(z*DASH_TEMPO); P.dash.strecke = px;
+    // nach OBEN: kein abrupter Stopp – bis DASH_HOCH_VOLL_PX (2 Kästchen) volles Tempo, dann läuft er weich aus (dashSchritt),
+    // höchstens DASH_HOCH_SCHWEIN_PX (3 Kästchen); er endet, wenn die Strecke geschafft ist (Nutzer 20.11.: „so ein bisschen ausfaden“)
+    if(!dx){ P.dash.faktor = 1; P.dash.ausAb = DASH_HOCH_VOLL_PX; P.dash.zeit = DASH_HOCH_ZEIT_MAX; } }
   P.dashPuffer = 0;
   if(dx) P.facing = Math.sign(dx);
   P.vx = dx*DASH_TEMPO; P.vy = dy*DASH_TEMPO;
@@ -84,29 +87,23 @@ function dashStarten(P, moveDir){
   if(typeof dustPuff === 'function') dustPuff(P.x, P.y - P.h*0.5, 7, -Math.sign(dx)*1.2 || 0, 4);
   if(typeof SFX !== 'undefined' && SFX.dash) SFX.dash(P);
 }
-// Nutzer 20.11.: „wenn das Schwein mit dem Dash in die Luft springt, fällt es sehr hart nach unten – wie ein Stein“. Nach dem Dash
-// senkrecht nach oben stand das Tempo schlagartig auf 0 und die volle Schwerkraft griff sofort. Jetzt schwebt es am höchsten Punkt
-// DASH_HOCH_SCHWEB Schritte: die Schwerkraft wirkt erst schwach und nimmt bis zum Ende wieder voll zu (Höhe bleibt 4 Kästchen).
-function dashSchweben(P){
-  if(!(P._dashSchweb > 0)) return;
-  if(P.grounded || P.dash || P.hookAttached || P.haft || P.inWater || P.gliding || P.vy < 0){ if(P.grounded || P.dash) P._dashSchweb = 0; else P._dashSchweb--; return; }
-  P.vy -= GRAVITY*DASH_HOCH_SCHWEB_ANTEIL*(P._dashSchweb/DASH_HOCH_SCHWEB);
-  if(P.vy < 0) P.vy = 0;
-  P._dashSchweb--;
-}
 function dashBeenden(P){
   const d = P.dash; if(!d) return;
   P.dash = null;
   P.vx *= DASH_BEHALTEN;
   P.vy = P.vy < 0 ? Math.max(P.vy*DASH_BEHALTEN, JUMP_V) : P.vy*DASH_BEHALTEN;
-  if(d.dy < 0 && !d.dx && dashNurSchweinWelt() && !P.male){ P.vy *= DASH_HOCH_SCHWEIN_BEHALTEN;   // senkrecht hoch: kein Schwung obendrauf
-    P._dashSchweb = DASH_HOCH_SCHWEB; }   // … dafür kurz schweben statt wie ein Stein zu fallen (dashSchweben)
+  if(d.dy < 0 && !d.dx && dashNurSchweinWelt() && !P.male) P.vy *= DASH_HOCH_SCHWEIN_BEHALTEN;   // senkrecht hoch: kein Schwung obendrauf (er ist oben schon weich ausgelaufen)
   if(P.grounded) P.dashPause = DASH_PAUSE;
 }
 // während des Dashs: Tempo fest in Dash-Richtung, keine Schwerkraft, kein Schirm
 function dashSchritt(P){
   const d = P.dash;
   P.vx = d.dx*DASH_TEMPO*d.faktor; P.vy = d.dy*DASH_TEMPO*d.faktor;
+  if(d.ausAb != null){   // Auslaufen: nach d.ausAb px wird er immer langsamer (Tempo ~ Rest-Strecke), nie über d.strecke hinaus
+    const rest = d.strecke - (d.weg || 0);
+    if(rest <= 0.01){ P.vx = P.vy = 0; d.zeit = 0; }
+    else if((d.weg || 0) >= d.ausAb){ const v = Math.min(rest, Math.max(DASH_HOCH_AUS_MIN, DASH_TEMPO*rest/(d.strecke - d.ausAb))); P.vx = d.dx*v; P.vy = d.dy*v; }
+  }
   if(P.grounded && d.dy > 0 && !bruchUnter(P) && !(typeof rammUnter === 'function' && rammUnter(P))) P.vy = 0;   // schräg nach unten am Boden: flach weiter
   P.gliding = false;
 }
@@ -583,7 +580,6 @@ function neueBewegungNachher(P, altX, altY){
     if(d && schrittNr() % 2 === 0) neuFxDazu({art: 'nachbild', x: P.x, y: P.y, male: P.male, roll: P.rollAngle, facing: P.facing, leben: 12, max: 12});
   }
   if(P.haft) haftNachher(P, altX, altY);
-  dashSchweben(P);
   kanteHalt(P, altX);
   kanteAbrutschen(P);
   // Dash aufladen: immer (auch frei in der Luft; Nutzerwunsch – früher nur mit festem Halt, dafür doppelt so schnell)
