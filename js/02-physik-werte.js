@@ -122,6 +122,7 @@ const DASH_AUS_WELTEN = ['dschungel'];   // Welten ohne Dash – Nutzer: „Dash
 const DASH_SCHWEIN_IN_AUS_WELTEN = true;
 const DASH_HOCH_SCHWEIN_BEHALTEN = 0;   // Dash senkrecht nach oben (Schweinchen im Dschungel, 17.11.): so viel Schwung bleibt danach – 0 = genau 4 Kästchen hoch
 const DASH_HOCH_SCHWEIN_PX = 120;    // px: so hoch geht der Dash senkrecht nach oben (Schweinchen im Dschungel; 20.11.: 3 Kästchen statt 4)
+const DASH_SEITE_SCHWEIN_PX = 120;   // px: so weit geht der Dash zur Seite (Schweinchen im Dschungel; 20.11.: 3 Kästchen statt 4)
 const DASH_HOCH_SCHWEB = 16;        // Schritte: so lange schwebt das Schweinchen nach dem Dash senkrecht nach oben (20.11., statt „fällt wie ein Stein“)
 const DASH_HOCH_SCHWEB_ANTEIL = 0.9; // so viel der Schwerkraft ist am Anfang des Schwebens aufgehoben (nimmt bis zum Ende auf 0 ab)
 const DASH_LADEZEIT_SCHWEIN = 180;   // Schritte (3 s): so lange lädt der Dash des Schweinchens in diesen Welten (sonst DASH_LADEZEIT)

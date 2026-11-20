@@ -7815,6 +7815,13 @@ async def dash_hoch_schwebt(g):
     await g.steps(22)
     r2 = await g.ev("({y: p2.y, vy: p2.vy, g: p2.grounded})")
     assert r2['g'] or r2['vy'] > 8, f'nach dem Schweben fällt es nicht wieder normal: {r2}'
+    # Nutzer 20.11.: „der Dash zu den Seiten bitte auch nur 3“ (Schweinchen im Dschungel)
+    await g.p.wait_for_function("p2.grounded", timeout=4000)
+    await g.ev("p2.x = p2._px = 500; p2.vx = 0; p2.dashPunkte = 1; p2.dashPause = 0"); await g.steps(3)
+    await g.p.keyboard.down('ArrowRight'); await g.p.keyboard.down('Numpad3'); await g.steps(2); await g.p.keyboard.up('Numpad3'); await g.p.keyboard.up('ArrowRight')
+    await g.p.wait_for_function("!p2.dash", timeout=4000)
+    weit = await g.ev("p2.x - 500")
+    assert 108 <= weit <= 132, f'Dash zur Seite nicht 3 Kästchen weit (vorher 4): {weit}'
 
 @test
 async def kante_halt_beim_loslassen(g):
@@ -8803,7 +8810,7 @@ async def rammbalken_dash(g):
             KEYS[p1.keys.right] = true; KEYS[p2.keys.right] = true; n(60); druck(p1, 'jump'); n(40); los();
             e.ohneDash = B[0].tief === 0 && !linkOn[1]; e.fest = p2.x < 630;
             // Rammstoß am Boden: Tür 1 auf, Balken gleitet klickend zurück, nach 5 s wieder zu
-            stell(p1, 300, 680); stell(p2, 520, 680); n(5); SFX_LOG.length = 0;
+            stell(p1, 300, 680); stell(p2, 560, 680); n(5); SFX_LOG.length = 0;   // 20.11.: Dash zur Seite nur noch 3 Kästchen -> 40 px näher
             KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); e.schweinDash = !!p2.dash; los();
             e.getroffen = bisTreffer(B[0]); let seit = 0, klicks = 0, mitte = null;
             while((linkOn[1] || seit < 20) && seit < 900){ st(); seit++; if(seit === 12){ e.tief = B[0].tief; e.an1 = !!linkOn[1]; e.rueck = p2.x; }
@@ -8811,7 +8818,7 @@ async def rammbalken_dash(g):
             e.zeit = seit; e.mitte = mitte; e.klicks = klicks; n(50); e.raus = B[0].phase === 'ruhe' && B[0].tief === 0; e.zu1 = !tuer(1); e.log = SFX_LOG.filter(s => s !== '-' && s !== 'rammklick');
             // 17.11. Teil-Treffer: aus großer Entfernung reicht der Dash nur noch ein Stück -> Balken halb drin, Tür sofort auf,
             // aber deutlich kürzer; schwächerer Ton
-            resetLevel(); stell(p1, 300, 680); stell(p2, 485, 680); n(5); SFX_LOG.length = 0;
+            resetLevel(); stell(p1, 300, 680); stell(p2, 525, 680); n(5); SFX_LOG.length = 0;
             KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); los(); e.teilTreffer = bisTreffer(B[0]);
             let ts = 0, tmax = 0, tauf = false; while((linkOn[1] || ts < 12) && ts < 900){ st(); ts++; tmax = Math.max(tmax, B[0].tief); if(ts === 8) tauf = tuer(1) && !!linkOn[1]; }
             e.teilTief = tmax; e.teilAuf = tauf; e.teilZeit = ts; e.teilTon = SFX_LOG.includes('rammschwach');
@@ -8829,7 +8836,7 @@ async def rammbalken_dash(g):
             e.umTreffer = bisTreffer(B[2]); n(RAMM_UM_ZURUECK + 40); e.um1 = !!linkOn[3] && B[2].phase === 'ruhe' && tuer(3);
             n(DASH_LADEZEIT_SCHWEIN); stell(p2, 2620, 680); n(5); KEYS[p2.keys.left] = true; druck(p2, 'dash'); st(); los(); bisTreffer(B[2]); n(20); e.um2 = !linkOn[3];
             // wer auf dem Balken steht, fällt beim Einrammen; beim Herausgleiten schiebt der Balken ihn vor sich her
-            resetLevel(); stell(p1, 660, 649); stell(p2, 500, 680); n(12); e.steht = p1.grounded && Math.abs(p1.y - 649) < 1;
+            resetLevel(); stell(p1, 660, 649); stell(p2, 540, 680); n(12); e.steht = p1.grounded && Math.abs(p1.y - 649) < 1;
             KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); los(); bisTreffer(B[0]); n(30); e.faellt = p1.grounded && Math.abs(p1.y - 680) < 1;
             stell(p2, 300, 680); let w = 0; while(B[0].phase !== 'ruhe' && w++ < 900) st();
             e.geschoben = p1.x + p1.w/2 <= B[0].solid.x + 0.5 && B[0].tief === 0;

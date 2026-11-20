@@ -72,8 +72,9 @@ function dashStarten(P, moveDir){
   P.dash = {zeit: DASH_DAUER, dx, dy, faktor: 1, stossX: 0, stossY: 0};
   // Nutzer 20.11.: „kann der Dash bitte nur 3 Kästchen sein“ – der Dash senkrecht nach OBEN des Schweinchens (Dschungel) geht nur
   // DASH_HOCH_SCHWEIN_PX hoch (vorher 160 = 4 Kästchen): weniger Schritte, Tempo so angepasst, dass es genau aufgeht
-  if(dy < 0 && !dx && !P.male && dashNurSchweinWelt()){ const z = Math.ceil(DASH_HOCH_SCHWEIN_PX/DASH_TEMPO);
-    P.dash.zeit = z; P.dash.faktor = DASH_HOCH_SCHWEIN_PX/(z*DASH_TEMPO); P.dash.strecke = DASH_HOCH_SCHWEIN_PX; }
+  // … und zur SEITE ebenso („der Dash zu den Seiten bitte auch nur 3“, DASH_SEITE_SCHWEIN_PX). Nach unten (Stampfer) bleibt er wie bisher.
+  if(!P.male && dashNurSchweinWelt() && ((dy < 0 && !dx) || (dx && !dy))){ const px = dx ? DASH_SEITE_SCHWEIN_PX : DASH_HOCH_SCHWEIN_PX, z = Math.ceil(px/DASH_TEMPO);
+    P.dash.zeit = z; P.dash.faktor = px/(z*DASH_TEMPO); P.dash.strecke = px; }
   P.dashPuffer = 0;
   if(dx) P.facing = Math.sign(dx);
   P.vx = dx*DASH_TEMPO; P.vy = dy*DASH_TEMPO;

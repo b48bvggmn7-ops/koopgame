@@ -1728,6 +1728,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Mund statt Lächeln (`angstMund`), Schweißperlen spritzen vom Kopf. Nicht nach einer Landung (`S.gel`), nicht beim Durchlaufen (wer
     läuft, fällt einfach runter – Physik unverändert, `kanteAbrutschen` in js/32). Gilt für Affe und Schweinchen. Test `figuren3d_kante_wackeln`.
     Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
+    **Dash zur Seite des Schweinchens (Dschungel, 20.11.):** ebenfalls nur noch 3 Kästchen (`DASH_SEITE_SCHWEIN_PX` 120, vorher 4); für
+    einen vollen Rammstoß muss es deshalb näher am Rammbalken stehen (höchstens ~70 px vor der Stirnseite statt ~110). Nach unten unverändert.
     **Dash nach oben des Schweinchens (Dschungel, 20.11.):** nur noch 3 Kästchen hoch (`DASH_HOCH_SCHWEIN_PX` 120, vorher 4) und am
     höchsten Punkt schwebt es kurz, statt wie ein Stein zu fallen (`dashSchweben`, `DASH_HOCH_SCHWEB` 16 Schritte). Test `dash_hoch_schwebt`.
     Testlevel `levels/test/rammbalken.json`: Decken-Balken ein Kästchen tiefer.
