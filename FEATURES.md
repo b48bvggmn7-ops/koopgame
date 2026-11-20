@@ -1733,7 +1733,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     demselben sparsamen Schichten-Fell wie das Schweinchen (`buildMonkey` in js/32a, Herz-Farbe im Shader über `herz`), NICHT mit
     einzelnen Haaren (zu langsam). Alle Bewegungen/Haltungen bleiben wie bisher in js/33 (Seil mit langen Armen, Pusten mit Backen,
     Wand, Schwanz rollt). Schalter: `?affe=alt` = bisheriger Affe (`buildMonkeyAlt`); schlägt js/32a fehl, bleibt er automatisch.
-    An der Liane hält nur EIN Arm (der zur Kamera, `S.halt`), der andere hängt locker (`SEIL_ARM_FREI`, Nutzerwunsch 20.11.).
+    An der Liane liegen beide Arme genau hintereinander (von der Seite wie EIN Arm; kein Handwechsel bei der Wende beim Schwingen,
+    Nutzer 20.11.: der schnelle Wechsel „sieht nicht flüssig aus“).
     Die Hand bleibt sichtbar und greift das Lianen-Ende (20.11.; Liane wird dafür vor der Figur gezeichnet,
     `affenSeilZeichnen` in js/10, Finger bleiben an der Hand). Test `affe_foto_look`.
   - **Schweinchen im Foto-Look (19.11., js/32a-figuren-foto.js):** das vom Nutzer freigegebene neue Schweinchen (altrosa Flaum mit
