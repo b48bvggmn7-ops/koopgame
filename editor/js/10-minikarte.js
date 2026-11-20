@@ -19,6 +19,42 @@ const MINIKARTE_FARBEN = {
   haken: '#ffd166', hebel: '#ffa94d', tuer: '#c3a6ff', platte: '#ffa94d', rahmen: '#ffd23f',
 };
 
+// Spannung (Nutzerwunsch 20.11.: „in der Minikarte anzeigen, wo entspannte Stellen sind und wo ein spannender Abschnitt ist“):
+// ein Farbstreifen unter der Karte – orange = spannend, grün = entspannt. Automatisch erkannt (im Level ist das nirgends
+// gespeichert): spannend ist, wo im Umkreis von MINIKARTE_SPANNUNG_UMKREIS Spalten etwas zu TUN ist (Haken, bewegte Teile,
+// Bröckelboden und alle Elemente wie Hebel, Tür, Druckplatte, Rammbalken, Windrad, Wechselboden, Floß, Draisine, Falle …).
+// Einfache Gruben und Stacheln zählen nicht. Kurze Lücken (< MINIKARTE_SPANNUNG_LUECKE Spalten) zwischen zwei spannenden
+// Stellen gehören zum Abschnitt. Nur Aussehen/Deko zählt nicht (MINIKARTE_SPANNUNG_OHNE).
+const MINIKARTE_SPANNUNG_UMKREIS = 12, MINIKARTE_SPANNUNG_LUECKE = 30, MINIKARTE_SPANNUNG_HOEHE = 3;
+const MINIKARTE_SPANNUNG_OHNE = ['meteoriten', 'dunkelzonen', 'bossArena', 'bossPlaetze', 'eis', 'lava', 'lavaPegel', 'waterLevels'];
+const MINIKARTE_SPANNUNG_FARBEN = {spannend: '#ff8a3d', entspannt: '#58c08a'};
+// je Spalte: 1 = spannend, 0 = entspannt
+function minikarteSpannung(){
+  const a = new Uint8Array(COLS), U = MINIKARTE_SPANNUNG_UMKREIS;
+  const mark = (c0, c1) => { for(let c = Math.max(0, Math.min(c0, c1) - U), e = Math.min(COLS - 1, Math.max(c0, c1) + U); c <= e; c++) a[c] = 1; };
+  for(const h of hooks) mark(h.c, h.move ? h.c + (h.move.dc || 0) : h.c);
+  for(const m of movers) mark(m.c, m.c + (m.dc || 0));
+  for(const key in tiles) if(tiles[key] === 'crumble'){ const c = +key.slice(0, key.indexOf(',')); mark(c, c); }
+  for(const E of punktElemente()){
+    if(MINIKARTE_SPANNUNG_OHNE.includes(E.feld)) continue;
+    for(const p of elementPunkte[E.feld] || []) mark(p.c, p.c);
+  }
+  // kurze Lücken zwischen zwei spannenden Stellen schließen (nicht am Anfang/Ende des Levels)
+  let c = 0;
+  while(c < COLS){
+    if(a[c]){ c++; continue; }
+    let e = c; while(e < COLS && !a[e]) e++;
+    if(c > 0 && e < COLS && e - c < MINIKARTE_SPANNUNG_LUECKE) for(let i = c; i < e; i++) a[i] = 1;
+    c = e;
+  }
+  return a;
+}
+// Abschnitte als Liste [{von, bis (einschließlich), spannend}] – für Tests und den Streifen
+function minikarteAbschnitte(){
+  const a = minikarteSpannung(), out = [];
+  for(let c = 0; c < COLS; c++){ const l = out[out.length - 1]; if(l && l.spannend === !!a[c]) l.bis = c; else out.push({von: c, bis: c, spannend: !!a[c]}); }
+  return out;
+}
 let minikarteSichtbar = true;
 try{ if(localStorage.getItem(MINIKARTE_SPEICHER) === 'aus') minikarteSichtbar = false; }catch(e){}
 let minikarteVersion = 1, minikarteGezeichnet = 0, minikarteZaehler = 0, minikarteLetztesMal = 0;
@@ -27,7 +63,7 @@ let minikarteBildSchluessel = '';    // was zuletzt auf die sichtbare Leinwand k
 // ---------- Aufbau: Streifen zwischen Kopfzeile und Arbeitsfläche, Knopf in der Kopfzeile ----------
 const minikarteBox = document.createElement('div');
 minikarteBox.id = 'minikarte';
-minikarteBox.title = 'Minikarte: ganzes Level im Überblick – klicken oder ziehen springt an die Stelle (Taste M = ein/aus)';
+minikarteBox.title = 'Minikarte: ganzes Level im Überblick – klicken oder ziehen springt an die Stelle (Taste M = ein/aus). Streifen unten: orange = spannender Abschnitt, grün = entspannte Strecke';
 minikarteBox.style.cssText = `position:relative; flex:0 0 ${MINIKARTE_HOEHE}px; height:${MINIKARTE_HOEHE}px; background:#121a23;` +
   ` border-bottom:1px solid var(--border); padding:0 ${MINIKARTE_RAND}px; user-select:none;`;
 const minikarteCvs = document.createElement('canvas');
@@ -139,6 +175,11 @@ function minikarteVorzeichnen(){
   for(const [p, farbe] of [[startM, MINIKARTE_FARBEN.startM], [startF, MINIKARTE_FARBEN.startF], [goal, MINIKARTE_FARBEN.ziel]]){
     if(!p) continue;
     punkt(p, '#fff', 3.6); punkt(p, farbe, 2.6);
+  }
+  // Spannungs-Streifen unter der Karte: orange = spannend, grün = entspannt
+  for(const A of minikarteAbschnitte()){
+    g.fillStyle = A.spannend ? MINIKARTE_SPANNUNG_FARBEN.spannend : MINIKARTE_SPANNUNG_FARBEN.entspannt;
+    g.fillRect(M.x0 + A.von*M.sx, M.y0 + M.kh, (A.bis - A.von + 1)*M.sx, MINIKARTE_SPANNUNG_HOEHE);
   }
   minikarteGezeichnet = minikarteVersion;
   minikarteLetztesMal = performance.now();
