@@ -149,6 +149,7 @@
       <div class="tool" data-tool="erase"><span class="swatch" style="background:#c0392b"></span>Radieren</div>
       <div class="tool" data-tool="select" title="Rechteck aufziehen · Strg+C kopieren · Strg+X ausschneiden · Strg+V an der Maus einfügen · darin ziehen = verschieben · Entf = löschen"><span class="swatch" style="background:transparent; outline:2px dashed #ffd23f; outline-offset:-2px"></span>Auswahl ⬚</div>
       <div class="tool" data-tool="verschieben" title="Verschieben: ein Ding (Hebel, Münze, Haken, Start/Ziel, Kästchen …) anklicken und ziehen – oder in eine markierte Auswahl klicken und die ganze Auswahl ziehen"><span class="swatch" style="background:#ffd23f"></span>Verschieben ✥</div>
+      <div class="tool" data-tool="anwaehlen" title="Anwählen: ein gesetztes Ding anklicken (Hebel, Tür, Rammbalken, Wechselboden, Windrad, Haken …) – oben stehen dann SEINE Einstellungen (Nummer, Art, Zeit, Richtung) und lassen sich ändern, ohne es neu zu setzen. Esc = fertig"><span class="swatch" style="background:#7fdcff"></span>Anwählen ✎</div>
       <label class="alle" title="Alle Werkzeuge zeigen – sonst nur die Grundwerkzeuge, die für die Welt des Levels empfohlenen und die, die im Level schon vorkommen"><input type="checkbox" id="alleWerkzeuge"> Alle Werkzeuge</label>
     </div>
     <div class="trow" id="toolRow">
@@ -341,7 +342,7 @@
 ['00-register', 'hebel', 'tuer', 'druckplatte', 'sprungpilz', 'aufwind', 'wechselboden', 'teleporter', 'einseitig', 'wasser', 'stroemung', 'boss', 'falle', 'fels', 'licht', 'eis', 'foerderband', 'leuchtkristall', 'lava', 'presse', 'durchbruch', 'haftflaeche', 'haftboden', 'windrad', 'trommel', 'rammbalken', 'pusteblume', 'blattfloss', 'flossrad', 'draisine', 'meteorit'].forEach(function(n){
   document.write('<script src="../elemente/' + n + '.js?v=' + Date.now() + '"><\/script>');
 });
-['../../js/01a-level-umzug', '00-welt-werkzeuge', '01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '07-level-info', '08-auswahl', '09-werkzeugleiste', '10-minikarte', '99-start'].forEach(function(n){
+['../../js/01a-level-umzug', '00-welt-werkzeuge', '01-zustand', '02-werkzeuge', '03-zeichnen', '04-export', '05-levelliste', '06-github', '07-level-info', '08-auswahl', '09-werkzeugleiste', '10-minikarte', '11-anwaehlen', '99-start'].forEach(function(n){
   document.write('<script src="js/' + n + '.js?v=' + Date.now() + '"><\/script>');
 });
 </script>

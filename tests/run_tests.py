@@ -4988,6 +4988,64 @@ async def editor_haken_ziehen(g):
         srv.shutdown()
 
 @test
+async def editor_anwaehlen(g):
+    """Editor-Werkzeug „Anwählen ✎“ (Nutzerwunsch 20.11.: gesetzte Dinge anwählen und ihre Einstellungen ändern, statt sie neu zu
+    setzen): Klick auf ein gesetztes Ding zeigt SEINE Werte in der Eigenschaften-Zeile; Änderungen dort (Nummer, Art, Zeit,
+    Haken-Reichweite) gelten sofort für genau dieses Ding, es entsteht kein neues, andere bleiben unberührt; Rückgängig geht;
+    Klick ins Leere / Esc hebt die Auswahl auf."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 60, 'tiles': [[c, 17, 'ground'] for c in range(40)] + [[20, r, 'wall'] for r in range(12, 17)], 'hooks': [{'c': 30, 'r': 8, 'radius': 6.5}],
+                 'spikes': [], 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16},
+                 'switches': [{'c': 5, 'r': 16, 'link': 3}, {'c': 8, 'r': 16, 'link': 3}],
+                 'rammbalken': [{'c': 19, 'r': 15, 'link': 2}], 'switchFloors': [{'c': 12, 'r': 14, 'link': 2, 'gruppe': 'A', 'takt': 0}]}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        await p.evaluate("setTool('anwaehlen')")
+        box = await p.locator('#c').bounding_box(); k = box['width'] / await p.evaluate("document.getElementById('c').width")
+        sky = await p.evaluate("SKY"); ax = await p.evaluate("ansichtX()")
+        async def klick(c, r):
+            await p.mouse.click(box['x'] + (c*40 + 20 - ax)*k, box['y'] + ((r + sky)*40 + 20)*k); await p.wait_for_timeout(40)
+        async def waehle(sel, wert):
+            await p.select_option(sel, wert); await p.wait_for_timeout(40)
+        zeigt = lambda sel: p.evaluate("s => { const e = document.querySelector(s), l = e.closest('.prop') || e; return l.classList.contains('zeig'); }", sel)
+        # Rammbalken anwählen: seine Felder erscheinen mit seinen Werten
+        await klick(19, 15)
+        r = await p.evaluate("({w: gewaehlt && gewaehlt.werkzeug, nr: linkSelect.value, art: document.getElementById('opt-ramm-art').value, name: document.getElementById('propName').textContent})")
+        assert r['w'] == 'ramm' and r['nr'] == '2' and r['art'] == 'zeit' and 'angewählt' in r['name'], f'Rammbalken nicht angewählt bzw. Felder falsch: {r}'
+        assert await zeigt('#opt-ramm-art') and await zeigt('#linkSelect'), 'Einstellungen des angewählten Rammbalkens sind nicht zu sehen'
+        await waehle('#opt-ramm-art', 'umschalten'); await waehle('#opt-ramm-zeit', '8'); await waehle('#linkSelect', '7')
+        r = await p.evaluate("elementPunkte.rammbalken")
+        assert len(r) == 1 and r[0]['art'] == 'umschalten' and r[0]['zeit'] == 8 and r[0]['link'] == 7 and (r[0]['c'], r[0]['r']) == (19, 15), f'Rammbalken nicht geändert: {r}'
+        # Hebel: nur der angeklickte bekommt die neue Nummer
+        await klick(5, 16)
+        assert await p.evaluate("linkSelect.value") == '3', 'Nummer des angewählten Hebels steht nicht im Feld'
+        await waehle('#linkSelect', '9')
+        r = await p.evaluate("elementPunkte.switches.map(d => d.link)")
+        assert r == [9, 3], f'nur der angewählte Hebel darf sich ändern: {r}'
+        # Wechselboden: Takt statt Nummer
+        await klick(12, 14); await waehle('#opt-wechsel-takt', await p.evaluate("[...document.getElementById('opt-wechsel-takt').options].find(o => Number(o.value) > 0).value"))
+        r = await p.evaluate("elementPunkte.switchFloors")
+        assert len(r) == 1 and r[0]['takt'] > 0, f'Wechselboden-Takt nicht geändert: {r}'
+        # Haken: Reichweite
+        await klick(30, 8)
+        assert await p.evaluate("radiusInput.value") == '6.5'
+        await p.fill('#radiusInput', '9'); await p.dispatch_event('#radiusInput', 'change'); await p.wait_for_timeout(40)
+        assert await p.evaluate("hooks[0].radius") == 9, 'Haken-Reichweite nicht geändert'
+        # Rückgängig nimmt die letzte Änderung zurück; im Export steht der geänderte Rammbalken
+        await p.evaluate("undo()"); assert await p.evaluate("hooks[0].radius") == 6.5, 'Rückgängig nimmt die Änderung nicht zurück'
+        ex = await p.evaluate("(e => (typeof e === 'string' ? JSON.parse(e) : e).rammbalken[0])(exportLevel())")
+        assert ex.get('art') == 'umschalten' and ex['link'] == 7, f'Export ohne die Änderung: {ex}'
+        # Klick ins Leere / Esc: Auswahl weg, nichts wird gesetzt
+        await klick(34, 5)
+        assert await p.evaluate("gewaehlt === null && hooks.length === 1 && elementPunkte.rammbalken.length === 1"), 'Klick ins Leere: Auswahl bleibt oder etwas wurde gesetzt'
+        await klick(8, 16); await p.keyboard.press('Escape')
+        assert await p.evaluate("gewaehlt === null"), 'Esc hebt die Auswahl nicht auf'
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_drehen_ziehen(g):
     """Editor (Nutzerwunsch 17.11.): Element setzen bzw. anklicken und die Maus gedrückt halten – in eine Richtung ziehen dreht es
     dorthin (editor.drehen: Rammbalken 4 Richtungen, Falle, Lichtquelle, Fels links/rechts, Spiegel schräg). Das Auswahl-Feld

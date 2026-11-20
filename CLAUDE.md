@@ -93,6 +93,7 @@
   09 Werkzeugleiste (Reiter, „Zuletzt“, Eigenschaften-Zeile nur fürs aktive Werkzeug, Welt-Voreinstellung, Hilfe) ·
   10 Minikarte (Streifen über der Arbeitsfläche: ganzes Level verkleinert, Rahmen = Ausschnitt, Klick/Ziehen scrollt; nur bei
   save/applySnapshot neu vorgezeichnet; Taste M / Knopf, localStorage `monchichi.editorMinikarte`; Test-Hilfen minikarteKlick/minikarteAn) ·
+  11 Anwählen (Werkzeug „Anwählen ✎“: gesetztes Ding anklicken, die Eigenschaften-Zeile zeigt und ändert SEINE Einstellungen; `gewaehlt`, `anwaehlenKlick`) ·
   99 Start (früher alles in einer `editor.js`; die Leinwand zeigt nur den sichtbaren Ausschnitt – `ansichtX()`, nie `cvs.width` als Level-Breite nehmen); davor `00-welt-werkzeuge.js` = Tabelle, welche Werkzeuge je Welt empfohlen sind.
 - **Dschungel-Neu:** Die Dschungel-Welt hat nur 2 Abschnitte, seit „Level 1–3 zusammen“ je EINE normale Level-Datei
   (`levels/dschungel/abschnitt-*.json`, alte Teile 01–03 + 07 Rätsel bzw. 04–06 + 08 Rätsel in `levels/archiv/dschungel-teile/`;

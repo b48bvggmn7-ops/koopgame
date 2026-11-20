@@ -205,6 +205,7 @@ function draw(){
 
 
   drawSelection();   // Rechteck-Auswahl (08-auswahl.js)
+  if(typeof drawGewaehlt === 'function') drawGewaehlt();   // angewähltes Ding (11-anwaehlen.js)
   ctx.restore();   // Verschiebung um die Himmel-Reihen
   requestAnimationFrame(draw);
 }

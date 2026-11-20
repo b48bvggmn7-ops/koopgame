@@ -60,16 +60,18 @@ function brauchtNummer(t){
   return !!(ed && (ed.mitNummer || (ed.optionen || []).some(o => o.key === 'schalter' || o.key === 'start')));
 }
 function eigenschaftenZeigen(){
-  const nummer = brauchtNummer(currentTool);
+  // Werkzeug „Anwählen“ (11-anwaehlen.js): die Felder des angewählten Dings zeigen
+  const G = currentTool === 'anwaehlen' && typeof gewaehlt !== 'undefined' ? gewaehlt : null, werk = G ? G.werkzeug : currentTool;
+  const nummer = brauchtNummer(werk) && !(G && G.art === 'element' && G.E.editor.nummerAktiv && !G.E.editor.nummerAktiv(G.p));
   let n = 0;
   for(const el of document.querySelectorAll('#propRow .prop')){
     const fuer = el.dataset.for.split(' ');
-    const zeig = fuer.includes(currentTool) || (nummer && fuer.includes('@nummer'));
+    const zeig = fuer.includes(werk) || (nummer && fuer.includes('@nummer'));
     el.classList.toggle('zeig', zeig);
     if(zeig) n++;
   }
   document.getElementById('propLeer').style.display = n ? 'none' : '';
-  document.getElementById('propName').textContent = werkzeugName(currentTool) + ':';
+  document.getElementById('propName').textContent = (G ? werkzeugName(werk) + ' (angewählt)' : werkzeugName(currentTool)) + ':';
 }
 
 function leisteAktualisieren(){
