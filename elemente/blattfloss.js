@@ -21,6 +21,11 @@ const BLATT_RAD_TEMPO = 2;     // px/Schritt, solange jemand ein Floß-Rad dreht
 // oder steht jemand darunter, bleibt das Floß stehen. Rolle: einer bedient, der andere fährt.
 const BLATT_WIND_HOCH = 1.6;   // px/Schritt: so schnell hebt der Wind nach oben das Floß (bei vollem Treffer)
 const BLATT_SINK = 0.7;        // px/Schritt: so schnell sinkt ein Aufzug „sinkt zurück“
+// Nutzer 20.11.: „kann das Brett vom Blattfloß bitte AUF dem Boden stehen – aktuell steht es IN dem Boden, die zwei Vierecke“: die
+// Tragebalken des Floßes liegen 13 px unter der Stehfläche. Der Aufzug wird deshalb um so viel höher GEZEICHNET (s.hebung), wer darauf
+// steht, wird mit angehoben gezeichnet (P._standDy) – die Stehfläche der Physik bleibt, wo sie ist (man läuft weiter ohne Stufe darauf).
+const BLATT_AUFZUG_HEBUNG = 13;
+const blattDy = s => (s.wipp || 0) - (s.hebung || 0);   // so weit ist das Floß gegenüber seiner Stehfläche versetzt gezeichnet
 const BLATT_SEIL_ABSTAND = 54; // px: so weit links/rechts der Floß-Mitte hängen die Umlenkrollen des Aufzugs
 // steht das Floß am Ende seiner Schiene in Zug-Richtung? (richtung +1 = zum fernen Ende: rechts bzw. oben) – fürs Floß-Rad
 function blattAmEnde(s, richtung){ return s.senk ? (richtung > 0 ? s.y <= s.y1 : s.y >= s.y0) : (richtung > 0 ? s.x >= s.x1 : s.x <= s.x0); }
@@ -186,15 +191,15 @@ function seilNachgebenSchritt(s, figuren){
   let n = 0, neig = 0;
   for(const P of figuren){
     const drauf = !!P && P.grounded && Math.abs(P.y - s.y) <= 2 && P.x + P.w/2 > s.x && P.x - P.w/2 < s.x + s.w;
-    if(drauf){ n++; neig += (P.x - (s.x + s.w/2))/(s.w/2)*N.neigJe; P._standDyS = s; }
-    else if(P && P._standDyS === s){ P._standDyS = null; P._standDy = 0; }
+    if(drauf){ n++; neig += (P.x - (s.x + s.w/2))/(s.w/2)*N.neigJe; P._standDyS = s; P._standHeb = (P._standHeb || 0) + ((s.hebung || 0) - (P._standHeb || 0))*0.4; }   // Hebung weich (Aufsteigen)
+    else if(P && P._standDyS === s){ P._standDyS = null; P._standDy = 0; P._standHeb = 0; }
   }
   if(n > (s._nAlt || 0)) s.wippV = (s.wippV || 0) + N.landen;   // jemand springt auf: federt nach
   s._nAlt = n;
   s.wippV = ((s.wippV || 0) + (n*N.wippJeFigur - (s.wipp || 0))*N.wippFeder)*N.wippDaempf;
   s.wipp = Math.max(-N.wippMax, Math.min(N.wippMax, (s.wipp || 0) + s.wippV));
   s.neig = (s.neig || 0) + (neig - (s.neig || 0))*N.neigWeich;
-  for(const P of figuren) if(P && P._standDyS === s) P._standDy = s.wipp;
+  for(const P of figuren) if(P && P._standDyS === s) P._standDy = s.wipp - (P._standHeb || 0);
 }
 // Schräglage beim Zeichnen: leichtes Wiegen + Pendeln (hängt nach) + Gewicht zur Seite
 function blattSchwank(s, t){ return Math.sin(t*1.7 + s.x0*0.01)*0.012 - (s.pend || 0)*0.004 + (s.neig || 0); }
@@ -261,7 +266,7 @@ elementRegistrieren({
         // Stehfläche = Boden des Kästchens (das Blatt liegt IN seiner Reihe wie alles andere; vorher an der Oberkante)
         const senk = b.richtung === 'hoch', n = Number(b.schiene) || 6;
         const s = {x: b.x, y: b.y + 40, w: BLATT_BREITE, h: BLATT_DICKE, type: 'blatt', x0: b.x, x1: senk ? b.x : b.x + n*40, v: 0, link: b.link || 0,
-                   senk, y0: b.y + 40, y1: b.y + 40 - (senk ? n*40 : 0), sinkt: senk && b.sinkt === 'ja', vy: 0};
+                   senk, y0: b.y + 40, y1: b.y + 40 - (senk ? n*40 : 0), sinkt: senk && b.sinkt === 'ja', vy: 0, hebung: senk ? BLATT_AUFZUG_HEBUNG : 0};
         solids.push(s); return s;
       });
     },
@@ -321,7 +326,7 @@ elementRegistrieren({
       for(const s of blattFloesse){
         const E = blattSchieneEnden(s);
         if(E.b - camX < -60 || E.a - camX > VW + 60) continue;
-        const schwank = blattSchwank(s, t), x = Math.round(s.x - camX), mitte = x + s.w/2, dy = s.wipp || 0;
+        const schwank = blattSchwank(s, t), x = Math.round(s.x - camX), mitte = x + s.w/2, dy = blattDy(s);
         const sag = blattSchieneDurchhang(s, t), a = E.a - camX, b = E.b - camX;
         blattBild(ctx, x, s.y + dy, s.w, schwank, 'hinten');   // hintere Blattwand (hinter den Figuren); kein Schatten (Nutzer)
         // zwei Seilzüge: Rollenwagen auf der Tau-Schiene, Tau hinunter, am Blatt festgeknotet. Die Wagen laufen voraus bzw.
@@ -340,7 +345,7 @@ elementRegistrieren({
       for(const s of blattFloesse){
         const x = Math.round(s.x - camX);
         if(x + s.w < -40 || x > VW + 40) continue;
-        blattBild(ctx, x, s.y + (s.wipp || 0), s.w, blattSchwank(s, t), 'vorne');
+        blattBild(ctx, x, s.y + blattDy(s), s.w, blattSchwank(s, t), 'vorne');
       }
     },
   },

@@ -1734,7 +1734,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     ihn von unten. Wer darauf steht, fährt mit. Auswahl „Aufzug“: bleibt stehen (Standard) oder sinkt langsam zurück, sobald niemand mehr
     kurbelt/pustet. Niemand wird eingeklemmt (stößt ein Mitfahrer oben an oder steht jemand darunter, bleibt er stehen). Er hängt an zwei
     Umlenkrollen über dem oberen Ende, das Zug-Tau des Rads läuft dort hinauf. Er darf normal auf dem Boden stehen (der Boden unter
-    seiner Ruhelage zählt nicht als Hindernis). Test `blattfloss_aufzug`.
+    seiner Ruhelage zählt nicht als Hindernis) und steht dort sichtbar AUF dem Boden: er wird 13 px höher gezeichnet (`BLATT_AUFZUG_HEBUNG`,
+    die Tragebalken liegen auf), wer darauf steht, wird mit angehoben gezeichnet – die Physik bleibt (kein Stufe). Test `blattfloss_aufzug`.
+    Rammbalken: Zeit jetzt auch 15 s wählbar.
     **Tür mit mehreren Nummern (20.11., elemente/tuer.js):** im Editor bei der Tür „und Nummer“ (bis zu zwei weitere Nummern, – = keine).
     Die Tür geht erst auf, wenn ALLE ihre Nummern an sind – jeder Auslöser (Hebel, Druckplatte, Rammbalken, Windrad …) bekommt seine
     eigene Nummer; geht eine wieder aus (z. B. Zeitfenster abgelaufen), schließt sie. Auf der Tür sitzt je Nummer ein Edelstein in deren

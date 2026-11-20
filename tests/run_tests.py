@@ -7883,7 +7883,10 @@ async def blattfloss_aufzug(g):
       // ragt in den Boden) – er muss trotzdem hochfahren, das Schweinchen mitnehmen und wieder ganz hinunter sinken
       { const D = blattFloesse[3]; stell(p1, 2328, 680); stell(p2, 2460, 680); n(8); e.aufBoden = D.y0 === 680 && p2.grounded;
         KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(60); e.bodenHoch = D.y < 600 && Math.abs(p2.y - D.y) < 2; n(80); e.bodenOben = D.y === D.y1;
-        los(); n(400); e.bodenWiederUnten = D.y === 680 && Math.abs(p2.y - 680) < 1.5 && p2.grounded; stell(p2, 300, 680); }
+        los(); n(400); e.bodenWiederUnten = D.y === 680 && Math.abs(p2.y - 680) < 1.5 && p2.grounded;
+        // „das Brett soll AUF dem Boden stehen“: der Aufzug wird 13 px höher gezeichnet, wer darauf steht, mit (nur Anzeige)
+        e.hebung = D.hebung === BLATT_AUFZUG_HEBUNG && Math.abs(p2._standDy + BLATT_AUFZUG_HEBUNG) < 2.5 && !blattFloesse[2].hebung;
+        stell(p2, 300, 680); n(3); e.hebungWeg = !p2._standDy; }
       // Neustart: Aufzug 1 wieder unten
       stell(p1, 528, 680); n(5); KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(50); los(); const zw = A.y; resetLevel(); n(5); e.reset = zw < 640 && A.y === 640;
       return e; })()""")
