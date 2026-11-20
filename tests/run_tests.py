@@ -6115,16 +6115,13 @@ async def ton_schalter_tuer_liane_windrad(g):
         await startmenue_bis_level(g)
         if await g.ev("audioCtx && audioCtx.state === 'running'"):
             await g.ev("geraeuscheLaden(); 0")
-            await p.wait_for_function("geraeusche.buf.schalter && geraeusche.buf.tuer && geraeusche.buf.rammtreffer && geraeusche.buf.rammgleiten", timeout=15000)
+            await p.wait_for_function("geraeusche.buf.schalter && geraeusche.buf.tuer && geraeusche.buf.rammtreffer && geraeusche.buf.rammratsche", timeout=15000)
             r = await g.ev("""(() => { const ok = {};
-              for(const n of ['schalter', 'tuer', 'rammtreffer']){ const d = geraeusche.buf[n].duration;
+              for(const n of ['schalter', 'tuer', 'rammtreffer', 'rammratsche']){ const d = geraeusche.buf[n].duration;
                 ok[n] = Object.values(GERAEUSCH_STUECKE[n]).flat().every(([a, l]) => a + l <= d + 0.01); }
               ok.spielt = geraeuschSpielen('schalter', {}) && geraeuschSpielen('tuer', {});
-              SFX_LOG.length = 0; SFX.rammTreffer(p2.x, 1); SFX.rammTreffer(p2.x, 0.4); ok.ramm = SFX_LOG.filter(s => s === 'rammtreffer').length === 2;   // Rammstoß: Aufnahme ramm-treffer.wav (Nutzer 20.11.)
-              // Zurückgleiten: nahtlose Schleife aus ramm-gleiten.wav (Nutzer 20.11.) – Schleifen-Punkte in der Datei, läuft an und wieder aus
-              const SP = GERAEUSCH_SCHLEIFEN.rammgleiten; ok.schleifePunkte = SP[0] >= 0 && SP[1] > SP[0] + 0.2 && SP[1] <= geraeusche.buf.rammgleiten.duration;
-              ok.schleifeAn = geraeuschSchleife('test', 'rammgleiten', true, {}) && !!geraeuschSchleifen.test && geraeuschSchleifen.test.src.loop === true;
-              geraeuschSchleife('test', 'rammgleiten', false, {}); ok.schleifeAus = !geraeuschSchleifen.test;
+              SFX_LOG.length = 0; SFX.rammTreffer(p2.x, 1); SFX.rammTreffer(p2.x, 0.4); ok.ramm = SFX_LOG.filter(s => s === 'rammtreffer').length === 2;
+              SFX_LOG.length = 0; SFX.rammKlick(p2.x, 0); SFX.rammKlick(p2.x, 1); ok.klick = SFX_LOG.filter(s => s === 'rammratsche').length === 2;   // je Kerbe ein Klick aus ramm-gleiten.wav   // Rammstoß: Aufnahme ramm-treffer.wav (Nutzer 20.11.)
               ok.keineLiane = !GERAEUSCH_DATEIEN.liane; return ok; })()""")
             assert all(r.values()), f'Aufnahmen fehlen / falsch geschnitten: {r}'
     finally:

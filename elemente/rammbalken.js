@@ -25,7 +25,6 @@ const RAMM_KERBEN = 8;         // Kerben auf dem Balken = Klicks der Sperrklinke
 const RAMM_STOPP = 4;          // Trefferstopp (Schritte)
 const RAMM_RUECK = 3.2;        // px/Schritt: so stark federt die Figur vom Balken zurück
 const RAMM_STOSS_MIN = 0.25;   // Teil-Treffer: so weit (Anteil) geht er auch beim schwächsten Rammstoß mindestens hinein
-const RAMM_HOERWEITE = 0.75;   // Gleit-Geräusch: nur, wenn der Balken höchstens so viele Bildbreiten von der Bildmitte entfernt ist
 const RAMM_HUEPFER = 5;       // px/Schritt: kleiner Hüpfer nach einem Stampfer von oben
 let rammbalken = [];           // {x, y (Mitte der Stelle, wo er aus der Fläche kommt), dx, dy (wohin er ragt), link, art, zeit, tief (0…1), phase, t, solid}
 const rammFx = [];             // Holzsplitter (nur Anzeige, im Takt gerechnet)
@@ -111,12 +110,7 @@ function rammRueckstoss(P, sx, sy){
 function rammSchritt(figuren){
   for(const f of rammFx){ f.leben--; f.x += f.vx; f.y += f.vy; f.vy += 0.42; f.vx *= 0.97; f.w += f.vw; }
   for(let i = rammFx.length - 1; i >= 0; i--) if(rammFx[i].leben <= 0) rammFx.splice(i, 1);
-  for(let bi = 0; bi < rammbalken.length; bi++){ const b = rammbalken[bi];
-    // Gleit-Geräusch (Schleife): nur während er wirklich herausgleitet und in Hörweite (ungefähr im Bild) ist
-    if(typeof SFX !== 'undefined' && SFX.rammGleiten){
-      const nah = typeof camX === 'undefined' || Math.abs(b.x - (camX + VW/2)) < VW*RAMM_HOERWEITE;
-      SFX.rammGleiten(bi, b.x, b.phase === 'raus' && !b._klemmt && nah, 1 - b.tief);
-    }
+  for(const b of rammbalken){
     if(b.phase === 'rein'){
       const ziel = b.ziel || 1;
       b.tief = Math.min(ziel, b.tief + 1/RAMM_REIN);
@@ -147,7 +141,6 @@ function rammSchritt(figuren){
           if(spotFree(P.x, ny, P)) P.y = ny; else klemmt = true;
         }
       }
-      b._klemmt = klemmt;
       if(klemmt){ b.tief = alt; rammSolidSetzen(b); continue; }
       if(Math.floor(alt*RAMM_KERBEN - 1e-9) !== Math.floor(b.tief*RAMM_KERBEN - 1e-9) && b.tief > 0){   // Sperrklinke springt über eine Kerbe
         b._klickT = performance.now();
@@ -332,8 +325,7 @@ elementRegistrieren({
       rammFx.length = 0;
       for(const b of rammbalken){ rammSolidSetzen(b); solids.push(b.solid); }
     },
-    zuruecksetzen(){ rammFx.length = 0; if(typeof geraeuschSchleifeAus === 'function') rammbalken.forEach((b, i) => geraeuschSchleifeAus('ramm' + i));
-      for(const b of rammbalken){ b.tief = 0; b.phase = 'ruhe'; b.t = 0; b._hitT = 0; b._klickT = 0; rammSolidSetzen(b); } },
+    zuruecksetzen(){ rammFx.length = 0; for(const b of rammbalken){ b.tief = 0; b.phase = 'ruhe'; b.t = 0; b._hitT = 0; b._klickT = 0; rammSolidSetzen(b); } },
     schritt(figuren){ if(rammbalken.length || rammFx.length) rammSchritt(figuren); },
     zeichnen: rammZeichnen,
   },
