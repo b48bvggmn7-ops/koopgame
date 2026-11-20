@@ -8919,10 +8919,10 @@ async def rammbalken_dash(g):
             // Rammstoß am Boden: Tür 1 auf, Balken gleitet klickend zurück, nach 5 s wieder zu
             stell(p1, 300, 680); stell(p2, 560, 680); n(5); SFX_LOG.length = 0;   // 20.11.: Dash zur Seite nur noch 3 Kästchen -> 40 px näher
             KEYS[p2.keys.right] = true; druck(p2, 'dash'); st(); e.schweinDash = !!p2.dash; los();
-            e.getroffen = bisTreffer(B[0]); let seit = 0, klicks = 0, mitte = null;
+            e.getroffen = bisTreffer(B[0]); let seit = 0, klicks = 0, mitte = null; const klickBei = [], frueh = SFX_LOG.slice();   // das Ton-Protokoll ist begrenzt: den Anfang (dash, ramm) vor den vielen Klicks merken
             while((linkOn[1] || seit < 20) && seit < 900){ st(); seit++; if(seit === 12){ e.tief = B[0].tief; e.an1 = !!linkOn[1]; e.rueck = p2.x; }
-              if(seit === 150) mitte = [tuer(1), B[0].tief]; if(SFX_LOG[SFX_LOG.length - 1] === 'rammklick'){ klicks++; SFX_LOG.push('-'); } }
-            e.zeit = seit; e.mitte = mitte; e.klicks = klicks; n(50); e.raus = B[0].phase === 'ruhe' && B[0].tief === 0; e.zu1 = !tuer(1); e.log = SFX_LOG.filter(s => s !== '-' && s !== 'rammklick');
+              if(seit === 150) mitte = [tuer(1), B[0].tief]; if(SFX_LOG[SFX_LOG.length - 1] === 'rammklick'){ klicks++; klickBei.push(seit); SFX_LOG.push('-'); } }
+            e.zeit = seit; e.mitte = mitte; e.klicks = klicks; e.klickAbstand = klickBei.slice(1).map((t, i) => t - klickBei[i]); n(50); e.raus = B[0].phase === 'ruhe' && B[0].tief === 0; e.zu1 = !tuer(1); e.log = [...new Set(frueh.concat(SFX_LOG))].filter(s => s !== '-' && s !== 'rammklick');
             // 17.11. Teil-Treffer: aus großer Entfernung reicht der Dash nur noch ein Stück -> Balken halb drin, Tür sofort auf,
             // aber deutlich kürzer; schwächerer Ton
             resetLevel(); stell(p1, 300, 680); stell(p2, 525, 680); n(5); SFX_LOG.length = 0;
@@ -8982,7 +8982,10 @@ async def rammbalken_dash(g):
         assert r['rueck'] < 640 - 14, f'das Schweinchen federt vom Balken zurück: {r}'
         assert r['mitte'][0] and 0.2 < r['mitte'][1] < 0.8, f'mitten im Zeitfenster: Tür offen, Balken halb heraus: {r}'
         assert 292 <= r['zeit'] <= 316, f'Zeitfenster 5 s (300 Schritte): {r}'
-        assert r['klicks'] >= 6 and 'ramm' in r['log'] and 'rammraus' in r['log'], f'Töne (Einschlag, Klicks der Sperrklinke, heraus) fehlen: {r}'
+        assert r['klicks'] >= 16 and 'ramm' in r['log'] and 'rammraus' in r['log'], f'Töne (Einschlag, Klicks der Sperrklinke, heraus) fehlen: {r}'
+        # Nutzer 20.11.: die Klinke tickt öfter (20 Kerben) und zum Ende hin langsamer – die Abstände wachsen, der letzte ist ein Vielfaches des ersten
+        ab = r['klickAbstand']
+        assert all(ab[i] <= ab[i + 1] + 1 for i in range(len(ab) - 1)) and ab[-1] >= 2.5*ab[0], f'Ticken wird zum Ende hin nicht langsamer: {ab}'
         assert r['raus'] and r['zu1'], f'nach dem Zeitfenster: Balken heraus, Tür zu: {r}'
         assert 'rammschwach' not in r['log'], f'voller Treffer aus der Nähe darf nicht schwach klingen: {r}'
         assert r['teilTreffer'] and 0.2 <= r['teilTief'] < 0.8 and r['teilAuf'], f'Teil-Treffer aus der Ferne: Balken nur ein Stück drin, Tür trotzdem sofort auf: {r}'

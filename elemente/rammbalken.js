@@ -21,7 +21,14 @@ const RAMM_AN = 0.08;          // „zeit“: die Nummer ist an, solange er tief
 const RAMM_ZEIT_STD = 5;       // Sekunden: Standard-Zeitfenster
 const RAMM_UM_ZURUECK = 60;    // Schritte: „umschalten“ – so schnell kommt er wieder ganz heraus
 const RAMM_TREFFER_MIN = 6;    // px: so viel muss die Figur die Stirnseite in der Höhe überdecken
-const RAMM_KERBEN = 8;         // Kerben auf dem Balken = Klicks der Sperrklinke beim Zurückgleiten
+// Kerben auf dem Balken = Klicks der Sperrklinke beim Zurückgleiten. Nutzer 20.11.: „das Ticken öfter abspielen, der kleine Haken
+// muss häufiger tik, tik, tik machen – und zum Ende hin langsamer werden“: mehr Kerben (20 statt 8), und sie liegen zum
+// Wand-Ende hin immer weiter auseinander (RAMM_KERBEN_HOCH) – der Balken gleitet weiter gleichmäßig (die Zeit bleibt exakt), aber
+// die Klinke springt am Anfang schnell und am Ende langsam. Kerbe i wird überfahren, wenn der Balken (i/RAMM_KERBEN)^HOCH heraus ist.
+const RAMM_KERBEN = 20;
+const RAMM_KERBEN_HOCH = 1.5;  // 1 = gleichmäßig; größer = am Anfang dichter, am Ende weiter auseinander
+const rammKerbeNr = tief => Math.floor(RAMM_KERBEN*Math.pow(Math.max(0, 1 - tief), 1/RAMM_KERBEN_HOCH) + 1e-9);   // so viele Kerben sind schon vorbei
+const RAMM_KLINKE_U = 20.5;    // px: dort (von der Wand aus) liegt die Sperrklinke auf dem Balken (rammBild)
 const RAMM_STOPP = 4;          // Trefferstopp (Schritte)
 const RAMM_RUECK = 3.2;        // px/Schritt: so stark federt die Figur vom Balken zurück
 const RAMM_STOSS_MIN = 0.25;   // Teil-Treffer: so weit (Anteil) geht er auch beim schwächsten Rammstoß mindestens hinein
@@ -142,7 +149,7 @@ function rammSchritt(figuren){
         }
       }
       if(klemmt){ b.tief = alt; rammSolidSetzen(b); continue; }
-      if(Math.floor(alt*RAMM_KERBEN - 1e-9) !== Math.floor(b.tief*RAMM_KERBEN - 1e-9) && b.tief > 0){   // Sperrklinke springt über eine Kerbe
+      if(rammKerbeNr(alt) !== rammKerbeNr(b.tief) && b.tief > 0){   // Sperrklinke springt über eine Kerbe
         b._klickT = performance.now();
         if(typeof SFX !== 'undefined' && SFX.rammKlick) SFX.rammKlick(b.x, 1 - b.tief);
       }
@@ -177,12 +184,14 @@ function rammBild(g, o){
   g.strokeStyle = 'rgba(18,12,7,.55)'; g.lineWidth = 0.7; g.lineCap = 'round';                    // Risse längs der Maserung
   for(const [a, l, v] of [[15, 17, -2.5], [36, 12, 4.5], [50, 10, -0.5], [24, 8, 6.5]]){ const u1 = L - a, u0 = Math.max(18, u1 - l); if(u1 <= 19) continue;
     g.beginPath(); g.moveTo(u0, v); g.quadraticCurveTo((u0 + u1)/2, v + 0.9, u1, v + 0.3); g.stroke(); }
-  // Kerben für die Sperrklinke (oben), gleichmäßig über den Hub
+  // Kerben für die Sperrklinke (oben): genau dort, wo die Klinke beim Zurückgleiten tickt (rammKerbeNr) – zur Spitze hin dicht,
+  // zur Wand hin weiter auseinander. Kerbe i liegt unter der Klinke, wenn der Balken (i/RAMM_KERBEN)^HOCH heraus ist.
   const hub = RAMM_LAENGE - RAMM_REST;
-  for(let i = 0; i < RAMM_KERBEN; i++){
-    const u = L - 13 - i*(hub - 4)/RAMM_KERBEN; if(u < 17) break;
-    g.fillStyle = 'rgba(12,8,5,.9)'; g.beginPath(); g.moveTo(u - 2, -h); g.lineTo(u + 0.5, -h + 3); g.lineTo(u + 1.2, -h); g.closePath(); g.fill();
-    g.strokeStyle = 'rgba(232,214,180,.3)'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(u + 0.5, -h + 3); g.lineTo(u + 1.2, -h); g.stroke();
+  for(let i = 1; i < RAMM_KERBEN; i++){
+    const u = L - (RAMM_REST - RAMM_KLINKE_U + hub*Math.pow(i/RAMM_KERBEN, RAMM_KERBEN_HOCH)); if(u < 17) continue;
+    const eng = i < 8 ? 0.45 : i < 13 ? 0.7 : 1;   // die ersten liegen sehr dicht: schmaler zeichnen
+    g.fillStyle = 'rgba(12,8,5,.9)'; g.beginPath(); g.moveTo(u - 2*eng, -h); g.lineTo(u + 0.5*eng, -h + 3); g.lineTo(u + 1.2*eng, -h); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(232,214,180,.3)'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(u + 0.5*eng, -h + 3); g.lineTo(u + 1.2*eng, -h); g.stroke();
   }
   // Moos oben (zwischen den Kerben) und zwei Moosfäden unten
   if(senk){   // senkrecht: Moos sitzt flach als Flecken auf beiden Seiten (wetterseitig mehr), keine Polster, keine Fäden
@@ -228,8 +237,13 @@ function rammBild(g, o){
   // Sperrklinke: kleiner Eisenhaken oben am Klotz, liegt in den Kerben (hebt sich bei jedem Klick)
   const lift = (o.klick || 0)*2.6;
   g.strokeStyle = '#14100d'; g.lineWidth = 4; g.lineCap = 'round'; g.lineJoin = 'round';
-  g.beginPath(); g.moveTo(10, -22.5); g.lineTo(20.5, -17.5 - lift); g.lineTo(20.5, -h - 0.4 - lift); g.stroke();
-  g.strokeStyle = '#4b423b'; g.lineWidth = 2.4; g.beginPath(); g.moveTo(10, -22.5); g.lineTo(20.5, -17.5 - lift); g.lineTo(20.5, -h - 0.4 - lift); g.stroke();
+  // Arm bis zum Knick, dann ein spitzer Zahn, der in die Kerben greift (Nutzer 20.11.: „den Haken spitzer hin zu den Einkerbungen“)
+  const ky = -17.5 - lift, sy = -h + 2.4 - lift;   // Knick und Spitze (taucht ein Stück in die Kerbe)
+  g.beginPath(); g.moveTo(10, -22.5); g.lineTo(20.5, ky); g.stroke();
+  g.fillStyle = '#14100d'; g.beginPath(); g.moveTo(17.6, ky - 1.2); g.lineTo(23.4, ky - 1.2); g.lineTo(23, ky + 2); g.lineTo(20.9, sy + 0.6); g.lineTo(20.1, sy + 0.6); g.lineTo(18, ky + 2); g.closePath(); g.fill();
+  g.strokeStyle = '#4b423b'; g.lineWidth = 2.4; g.beginPath(); g.moveTo(10, -22.5); g.lineTo(20.5, ky); g.stroke();
+  g.fillStyle = '#4b423b'; g.beginPath(); g.moveTo(18.9, ky - 0.4); g.lineTo(22.1, ky - 0.4); g.lineTo(21.9, ky + 1.8); g.lineTo(20.5, sy - 0.8); g.lineTo(19.1, ky + 1.8); g.closePath(); g.fill();
+  g.fillStyle = 'rgba(255,238,215,.28)'; g.beginPath(); g.moveTo(19.1, ky + 1.6); g.lineTo(19.9, ky + 1.6); g.lineTo(20.4, sy - 1.4); g.closePath(); g.fill();   // Lichtkante am Zahn
   g.strokeStyle = 'rgba(255,238,215,.22)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(10.4, -23.4); g.lineTo(20, -18.4 - lift); g.stroke();   // Lichtkante
   g.fillStyle = '#1b1613'; g.beginPath(); g.arc(10, -22.5, 2.3, 0, 7); g.fill();
   g.fillStyle = 'rgba(255,235,210,.35)'; g.beginPath(); g.arc(9.5, -23, 0.8, 0, 7); g.fill();

@@ -1747,6 +1747,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     **Rammbalken-Ton (20.11.):** der Rammstoß spielt die Aufnahme `assets/audio/ramm-treffer.wav` (Splice, tiefer Holzschlag; Teil-Treffer
     leiser und höher). Beim Zurückgleiten tickt die Sperrklinke: je Kerbe (8) EIN Ratschen-Klick aus `assets/audio/ramm-gleiten.wav` (Splice),
     genau wenn der kleine Haken über die Kerbe springt – passt so zu jeder eingestellten Zeit (3/5/8/12 s). „Ganz heraus“ ist weiter erzeugt.
+    Seit 20.11. (2): 20 statt 8 Kerben, zur Wand hin immer weiter auseinander (`RAMM_KERBEN_HOCH`) – die Klinke tickt am Anfang schnell
+    und zum Ende hin langsamer; der Balken gleitet weiter gleichmäßig, die eingestellte Zeit bleibt exakt. Die Kerben sind dort gezeichnet, wo es tickt.
     **Dash zur Seite des Schweinchens (Dschungel, 20.11.):** ebenfalls nur noch 3 Kästchen (`DASH_SEITE_SCHWEIN_PX` 120, vorher 4); für
     einen vollen Rammstoß muss es deshalb näher am Rammbalken stehen (höchstens ~70 px vor der Stirnseite statt ~110). Nach unten unverändert.
     **Dash nach oben des Schweinchens (Dschungel, 20.11.):** höchstens 3 Kästchen (`DASH_HOCH_SCHWEIN_PX` 120, vorher 4): die ersten
