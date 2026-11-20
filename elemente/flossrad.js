@@ -41,14 +41,15 @@ function flossradVorher(P){
   if(!R) return false;
   const K = P.keys || {}, hoch = K.swimUp && isDown(K.swimUp), runter = K.swimDown && isDown(K.swimDown);
   const s0 = flossradFloss(R), radRechts = Math.abs(R.x - (s0.x1 + s0.w)) < Math.abs(R.x - s0.x0);
-  const moveDir = hoch === runter ? 0 : (hoch ? 1 : -1)*(radRechts ? 1 : -1);   // hoch = zum Rad hin
+  // Aufzug (Blatt-Floß „nach oben“): hoch = hinauf, runter = hinab – egal, wo das Rad steht
+  const moveDir = hoch === runter ? 0 : s0.senk ? (hoch ? 1 : -1) : (hoch ? 1 : -1)*(radRechts ? 1 : -1);   // hoch = zum Rad hin
   // tritt neben das Rad (sonst verdeckt die Figur Rad und Kurbel) und bleibt dort stehen; etwas Schwerkraft, damit sie sicher
   // auf dem Boden bleibt
   const platz = R.x + (P.x >= R.x ? FLOSSRAD_STAND : -FLOSSRAD_STAND);
   P.vx = Math.max(-1.5, Math.min(1.5, (platz - P.x)*0.3)); P.vy = GRAVITY;
   P.facing = Math.sign(R.x - P.x) || P.facing;
   if(moveDir){
-    const s = flossradFloss(R), amEnde = (moveDir > 0 && s.x >= s.x1) || (moveDir < 0 && s.x <= s.x0);
+    const s = flossradFloss(R), amEnde = typeof blattAmEnde === 'function' ? blattAmEnde(s, moveDir) : (moveDir > 0 && s.x >= s.x1) || (moveDir < 0 && s.x <= s.x0);
     s.radZug = moveDir;
     R.kurbler = P; R.richtung = moveDir; R.amEnde = amEnde;
     P._kurbelT = (P._kurbelT || 0) + 1;
@@ -95,7 +96,7 @@ elementRegistrieren({
     werkzeug: 'flossrad', gruppe: 'logik', vor: '#linkSelect', art: 'punkt', ziehbar: false, farbe: '#a86f3a',
     mitNummer: true, nummerName: 'Floß-Rad',
     titel: 'Floß-Rad: zieht das Blatt-Floß mit derselben Verknüpfungs-Nummer. Im Spiel davor die Hebel-Taste halten und ' +
-           'links/rechts drücken – das Blatt fährt in diese Richtung (z. B. den Partner herüberholen)',
+           'hoch/runter drücken – hoch holt das Blatt zum Rad, runter schickt es weg (z. B. den Partner herüberholen); beim Aufzug (Blatt-Floß nach oben): hoch = hinauf, runter = hinab',
     zeichnen(ctx, c, r, TILE, p){
       flossradBild(ctx, c*TILE + TILE/2, (r + 1)*TILE, 0.4, TILE/40*0.8, typeof linkColor === 'function' ? linkColor(p.link) : '#ff9f43');
       ctx.fillStyle = typeof linkColor === 'function' ? linkColor(p.link) : '#ff9f43'; ctx.beginPath(); ctx.arc(c*TILE + TILE - 9, r*TILE + 10, 8, 0, Math.PI*2); ctx.fill();   // Nummer als Abzeichen (wie am Blatt-Floß)
@@ -107,14 +108,14 @@ elementRegistrieren({
     zeichnenAlle(ctx, liste, TILE){
       const floesse = (typeof elementPunkte !== 'undefined' && elementPunkte.blattFloesse) || [];
       for(const p of liste){
-        const ende = b => { const a = b.c*TILE, e = (b.c + 3 + (Number(b.schiene) || 6))*TILE; return Math.abs(p.c*TILE - a) < Math.abs(p.c*TILE - e) ? a : e; };
+        const ende = b => { if(b.richtung === 'hoch') return (b.c + 1.5)*TILE; const a = b.c*TILE, e = (b.c + 3 + (Number(b.schiene) || 6))*TILE; return Math.abs(p.c*TILE - a) < Math.abs(p.c*TILE - e) ? a : e; };
         let b = p.link ? floesse.find(f => f.link === p.link) : null;
         if(!b){ let bd = Infinity; for(const f of floesse){ const d = Math.abs(ende(f) - (p.c*TILE + TILE/2)); if(Math.abs(f.r - p.r) <= 4 && d <= FLOSSRAD_REICHWEITE && d < bd){ bd = d; b = f; } } }
         const x0 = p.c*TILE + TILE/2, y0 = p.r*TILE + TILE*0.3;
         ctx.save();
         if(b){
           ctx.strokeStyle = b.link === p.link ? 'rgba(185,138,78,.9)' : 'rgba(255,190,90,.75)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
-          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(ende(b), b.r*TILE + 6*TILE/40); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(ende(b), b.richtung === 'hoch' ? (b.r - (Number(b.schiene) || 6))*TILE + 4 : b.r*TILE + 6*TILE/40); ctx.stroke();
         } else {
           ctx.fillStyle = '#e5484d'; ctx.beginPath(); ctx.arc(x0, p.r*TILE - 6, 8, 0, Math.PI*2); ctx.fill();
           ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', x0, p.r*TILE - 5.5);

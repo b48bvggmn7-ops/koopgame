@@ -11,6 +11,42 @@ const BLATT_MAX = 3.2;         // höchstens so schnell (px/Schritt)
 const BLATT_AUSLAUF = 0.9;     // ohne Wind: Tempo je Schritt mal diesem Wert
 const BLATT_SCHIENE_MAX = 40;  // Kästchen: so lang darf die Schiene im Editor gezogen werden
 const BLATT_RAD_TEMPO = 2;     // px/Schritt, solange jemand ein Floß-Rad dreht (elemente/flossrad.js)
+// ---------- Aufzug (Nutzer 20.11.: „ich würde das Blattfloß gerne nach oben benutzen – einer soll unten stehen und das Rad drehen“) ----------
+// Editor-Auswahl „Richtung: nach oben“: die Schiene führt senkrecht nach oben (s.senk, y0 = unten/Start, y1 = oben). Bewegt wird es
+//  - vom Floß-Rad derselben Nummer (hoch = hinauf, runter = hinab; mehrere Räder dürfen dieselbe Nummer haben – eins unten, eins oben:
+//    erst kurbelt einer den Partner hoch, dann holt der Partner von oben nach),
+//  - vom Puste-Wind des Affen NACH OBEN von unten gegen das Floß (hebt es, solange er pustet – der Affe hebt das Schweinchen ohne Rad).
+// Auswahl „Aufzug“: „bleibt stehen“ (Standard) oder „sinkt zurück“ – dann gleitet es langsam wieder hinunter, sobald niemand mehr
+// kurbelt/pustet (einer muss halten, bis der andere oben abgesprungen ist). Niemand wird eingeklemmt: stößt ein Mitfahrer oben an
+// oder steht jemand darunter, bleibt das Floß stehen. Rolle: einer bedient, der andere fährt.
+const BLATT_WIND_HOCH = 1.6;   // px/Schritt: so schnell hebt der Wind nach oben das Floß (bei vollem Treffer)
+const BLATT_SINK = 0.7;        // px/Schritt: so schnell sinkt ein Aufzug „sinkt zurück“
+const BLATT_SEIL_ABSTAND = 54; // px: so weit links/rechts der Floß-Mitte hängen die Umlenkrollen des Aufzugs
+// steht das Floß am Ende seiner Schiene in Zug-Richtung? (richtung +1 = zum fernen Ende: rechts bzw. oben) – fürs Floß-Rad
+function blattAmEnde(s, richtung){ return s.senk ? (richtung > 0 ? s.y <= s.y1 : s.y >= s.y0) : (richtung > 0 ? s.x >= s.x1 : s.x <= s.x0); }
+function blattSenkrechtSchritt(s, figuren){
+  const st = pusteStrahlJetzt, k = st && st.dir === 'hoch' && st.von.standingOn !== s ? pusteTrifft({x: s.x, y: s.y - 6, w: s.w, h: s.h + 12}) : 0;
+  let vy = 0;
+  if(s.radZug){ vy = -s.radZug*BLATT_RAD_TEMPO; s.radZug = 0; }
+  else if(k > 0) vy = -BLATT_WIND_HOCH*k;
+  else if(s.sinkt && s.y < s.y0) vy = BLATT_SINK;
+  s.vy = 0;
+  if(!vy) return;
+  const ny = Math.max(s.y1, Math.min(s.y0, s.y + vy)), dy = ny - s.y;
+  if(!dy) return;
+  // nicht in Decke/Boden fahren
+  if(solids.some(o => o !== s && !o.gone && o.type !== 'oneway' && o.type !== 'fake' && o.type !== 'door' &&
+      s.x < o.x + o.w && s.x + s.w > o.x && ny < o.y + o.h && ny + s.h > o.y)) return;
+  const fahrer = [];
+  for(const P of figuren){
+    if(!P || (typeof deathState !== 'undefined' && deathState && deathState.victim === P)) continue;
+    const drauf = P.grounded && Math.abs(P.y - s.y) <= 2 && P.x + P.w/2 > s.x && P.x - P.w/2 < s.x + s.w;
+    if(drauf){ if(dy < 0 && !spotFree(P.x, P.y + dy, P)) return; fahrer.push(P); }   // Mitfahrer stößt oben an: stehen bleiben
+    else if(rectsOverlap({x: P.x - P.w/2, y: P.y - P.h, w: P.w, h: P.h}, {x: s.x, y: ny, w: s.w, h: s.h})) return;   // jemand im Weg (darunter): stehen bleiben
+  }
+  for(const P of fahrer){ P.y += dy; if(dy > 0 && P.vy < 0) P.vy = 0; }
+  s.y = ny; s.vy = dy;
+}
 let blattFloesse = [];
 ELEMENT_SOLID_TYPEN.add('blatt');
 // Aussehen (Nutzer: „sieht echt nicht gut aus“): ein breites, dickes Dschungelblatt, leicht von oben gesehen – Oberseite mit
@@ -76,7 +112,8 @@ function blattBild(g, x, y, w, schwank, teil){
 // Aufhänge-Höhe einer Schienen-Ende (Material darüber oder Blätterdach), je Floß einmal gemerkt
 function blattSchieneEnden(s){
   if(s._enden) return s._enden;
-  const y = s.y - BLATT_SCHIENE_HOCH, a = s.x0 - 8, b = s.x1 + s.w + 8;
+  const mitte = s.x0 + s.w/2;
+  const y = (s.senk ? s.y1 : s.y) - BLATT_SCHIENE_HOCH, a = s.senk ? mitte - BLATT_SEIL_ABSTAND : s.x0 - 8, b = s.senk ? mitte + BLATT_SEIL_ABSTAND : s.x1 + s.w + 8;
   const hoch = x => typeof hakenAufhaengeY === 'function' ? hakenAufhaengeY(x, y) : null;
   return (s._enden = {y, a, b, ya: hoch(a), yb: hoch(b)});
 }
@@ -163,7 +200,8 @@ function seilNachgebenZurueck(s){ s.pend = s.pendV = s.wipp = s.wippV = s.neig =
 const BLATT_KNOTEN_X = 46, BLATT_KNOTEN_Y = -5;   // px: Knoten an der hinteren Blattwand (von der Blattmitte / Stehfläche)
 // Durchhang der Tau-Schiene (nur Aussehen): sanftes Wippen, unter dem fahrenden Blatt etwas mehr
 function blattSchieneDurchhang(s, t){
-  const fahrt = Math.min(1, Math.abs(s.v)/BLATT_MAX);
+  const fahrt = Math.min(1, (Math.abs(s.v) + Math.abs(s.vy || 0))/BLATT_MAX);
+  if(s.senk) return 1.5 + fahrt*Math.sin(t*9)*0.6 + (s.wipp || 0)*0.5;   // kurzer Träger zwischen den Umlenkrollen: fast gerade
   return 3 + Math.sin(t*1.1 + s.x0*0.003)*1.2 + fahrt*(2.5 + Math.sin(t*9)*1) + (s.wipp || 0)*1.4;   // unter Last hängt die Schiene mehr durch
 }
 elementRegistrieren({
@@ -173,47 +211,66 @@ elementRegistrieren({
     mitNummer: true, nummerName: 'Blatt-Floß',   // Floß-Rad mit derselben Nummer zieht dieses Blatt (elemente/flossrad.js)
     titel: 'Blatt-Floß: großes Blatt (3 Kästchen) auf einer Schiene nach rechts; nur der Seiten-Wind des Affen schiebt es, ' +
            'wer darin steht, fährt mit. Setzen am linken Ende (das Blatt liegt in der Reihe, man steht auf ihrem Boden); ' +
-           'Maus gedrückt halten und nach rechts ziehen = Länge der Schiene',
-    optionen: [{key: 'schiene', label: 'Schiene', zahl: true, titel: 'so viele Kästchen weit kann der Wind das Blatt nach rechts schieben (oder beim Setzen ziehen)',
-                werte: [['4', '4 Kästchen'], ['6', '6 Kästchen'], ['8', '8 Kästchen'], ['10', '10 Kästchen'], ['14', '14 Kästchen']]}],
-    bereich: p => Array.from({length: 3 + (Number(p.schiene) || 6)}, (_, k) => [p.c + k, p.r]),   // Blatt + gezeichnete Schiene
+           'Maus gedrückt halten und nach rechts ziehen = Länge der Schiene. Nach OBEN ziehen (oder „Richtung: nach oben“) = Aufzug: ' +
+           'ein Floß-Rad derselben Nummer kurbelt ihn hoch/runter, der Wind des Affen nach oben hebt ihn von unten',
+    optionen: [{key: 'schiene', label: 'Schiene', zahl: true, titel: 'so viele Kästchen weit fährt das Blatt nach rechts bzw. nach oben (oder beim Setzen ziehen)',
+                werte: [['4', '4 Kästchen'], ['6', '6 Kästchen'], ['8', '8 Kästchen'], ['10', '10 Kästchen'], ['14', '14 Kästchen']]},
+               {key: 'richtung', label: 'Richtung', titel: 'nach rechts (Wind schiebt) oder nach oben (Aufzug: Floß-Rad kurbelt, Wind nach oben hebt)', werte: [['rechts', 'nach rechts'], ['hoch', 'nach oben (Aufzug)']]},
+               {key: 'sinkt', label: 'Aufzug', titel: 'nur „nach oben“: bleibt er stehen, wenn niemand mehr kurbelt/pustet – oder sinkt er langsam zurück (einer muss halten)', werte: [['nein', 'bleibt stehen'], ['ja', 'sinkt zurück']]}],
+    // Blatt + gezeichnete Schiene (nach oben: die Spalte über der Blatt-Mitte)
+    bereich: p => p.richtung === 'hoch' ? [[p.c, p.r], [p.c + 1, p.r], [p.c + 2, p.r], ...Array.from({length: Number(p.schiene) || 6}, (_, k) => [p.c + 1, p.r - 1 - k])]
+                                        : Array.from({length: 3 + (Number(p.schiene) || 6)}, (_, k) => [p.c + k, p.r]),
     // Nutzerwunsch: beim Setzen gedrückt halten und ziehen bestimmt die Länge (Maus über dem Kästchen, bis zu dem das Blatt fahren soll)
-    ziehen(p, c){
+    // nach oben ziehen (über dem Blatt) macht daraus einen Aufzug, nach rechts ziehen wieder ein Floß
+    ziehen(p, c, r){
+      if(r !== undefined && r < p.r && c >= p.c && c < p.c + 3){   // Maus über dem Blatt: Schiene nach oben
+        const n = Math.min(BLATT_SCHIENE_MAX, p.r - r); if(p.richtung === 'hoch' && n === Number(p.schiene)) return null;
+        p.richtung = 'hoch'; p.schiene = n; return `Blatt-Floß: Aufzug ${n} Kästchen nach oben`;
+      }
       if(c < p.c + 3) return null;   // noch über dem Blatt (z. B. beim Klicken leicht verrutscht): nichts ändern
-      const n = Math.min(BLATT_SCHIENE_MAX, c - p.c - 2); if(n === Number(p.schiene)) return null;
-      p.schiene = n; return `Blatt-Floß: Schiene ${n} Kästchen`;
+      const n = Math.min(BLATT_SCHIENE_MAX, c - p.c - 2); if(p.richtung !== 'hoch' && n === Number(p.schiene)) return null;
+      p.richtung = 'rechts'; p.schiene = n; return `Blatt-Floß: Schiene ${n} Kästchen`;
     },
     zeichnen(ctx, c, r, TILE, p){
       const n = Number(p.schiene) || 6, s = TILE/40, boden = (r + 1)*TILE - 8*s;   // ganz im Kästchen (nicht auf der Linie)
+      const hoch = p.richtung === 'hoch';
       ctx.strokeStyle = 'rgba(90,160,79,.85)'; ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(c*TILE + 4, r*TILE + 6*s); ctx.lineTo((c + 3 + n)*TILE - 4, r*TILE + 6*s); ctx.stroke();   // Schiene
-      ctx.strokeStyle = 'rgba(90,160,79,.5)'; ctx.strokeRect((c + n)*TILE + 2, r*TILE + 2, 3*TILE - 4, TILE - 4); ctx.setLineDash([]);   // Ende der Fahrt
+      ctx.beginPath();
+      if(hoch){ ctx.moveTo((c + 1.5)*TILE, r*TILE + 4); ctx.lineTo((c + 1.5)*TILE, (r - n)*TILE + 4); }   // Schiene nach oben
+      else { ctx.moveTo(c*TILE + 4, r*TILE + 6*s); ctx.lineTo((c + 3 + n)*TILE - 4, r*TILE + 6*s); }   // Schiene
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(90,160,79,.5)'; if(hoch) ctx.strokeRect(c*TILE + 2, (r - n)*TILE + 2, 3*TILE - 4, TILE - 4); else ctx.strokeRect((c + n)*TILE + 2, r*TILE + 2, 3*TILE - 4, TILE - 4); ctx.setLineDash([]);   // Ende der Fahrt
       ctx.save(); ctx.translate(c*TILE, boden); ctx.scale(s, s); blattBild(ctx, 0, 0, 120, 0); ctx.restore();
       ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; ctx.strokeText('↔' + n, (c + 3 + n)*TILE - 14, r*TILE + 18*s); ctx.fillText('↔' + n, (c + 3 + n)*TILE - 14, r*TILE + 18*s);   // Länge der Schiene
+      ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 3; { const tx = hoch ? (c + 1.5)*TILE + 16 : (c + 3 + n)*TILE - 14, ty = hoch ? (r - n)*TILE + 14 : r*TILE + 18*s, tt = (hoch ? '↕' : '↔') + n + (hoch && p.sinkt === 'ja' ? '↓' : '');
+        ctx.strokeText(tt, tx, ty); ctx.fillText(tt, tx, ty); }   // Länge der Schiene
       if(p.link){   // Verknüpfungs-Nummer (fürs Floß-Rad) als farbiges Abzeichen – nicht mit der Schienen-Länge verwechseln
         ctx.fillStyle = typeof linkColor === 'function' ? linkColor(p.link) : '#ff9f43'; ctx.beginPath(); ctx.arc(c*TILE + 11, r*TILE + 10, 8, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.strokeText(String(p.link), c*TILE + 11, r*TILE + 10.5); ctx.fillText(String(p.link), c*TILE + 11, r*TILE + 10.5);
       }
     },
-    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, schiene: Number(p.schiene) || 6, ...(p.link ? {link: p.link} : {})})),
+    exportieren: (liste, TILE) => liste.map(p => ({x: p.c*TILE, y: p.r*TILE, schiene: Number(p.schiene) || 6, ...(p.link ? {link: p.link} : {}),
+      ...(p.richtung === 'hoch' ? {richtung: 'hoch', ...(p.sinkt === 'ja' ? {sinkt: 'ja'} : {})} : {})})),
   },
   spiel: {
     laden(daten){
       blattFloesse = (daten.blattFloesse || []).map(b => {
         // Stehfläche = Boden des Kästchens (das Blatt liegt IN seiner Reihe wie alles andere; vorher an der Oberkante)
-        const s = {x: b.x, y: b.y + 40, w: BLATT_BREITE, h: BLATT_DICKE, type: 'blatt', x0: b.x, x1: b.x + (Number(b.schiene) || 6)*40, v: 0, link: b.link || 0};
+        const senk = b.richtung === 'hoch', n = Number(b.schiene) || 6;
+        const s = {x: b.x, y: b.y + 40, w: BLATT_BREITE, h: BLATT_DICKE, type: 'blatt', x0: b.x, x1: senk ? b.x : b.x + n*40, v: 0, link: b.link || 0,
+                   senk, y0: b.y + 40, y1: b.y + 40 - (senk ? n*40 : 0), sinkt: senk && b.sinkt === 'ja', vy: 0};
         solids.push(s); return s;
       });
     },
-    zuruecksetzen(){ for(const s of blattFloesse){ s.x = s.x0; s.v = 0; seilNachgebenZurueck(s); } },
+    zuruecksetzen(){ for(const s of blattFloesse){ s.x = s.x0; s.y = s.y0; s.v = 0; s.vy = 0; seilNachgebenZurueck(s); } },
     schritt(figuren){
       for(const s of blattFloesse){
         seilNachgebenSchritt(s, figuren);   // Seile geben nach (nur Aussehen, s. o.)
-        if(Math.abs(s.v) > 0.6 && typeof geraeuschSpielen === 'function'){   // fahrendes Floß: Seile/Rollen knarzen ab und zu leise
+        if(Math.abs(s.v) + Math.abs(s.vy || 0) > 0.6 && typeof geraeuschSpielen === 'function'){   // fahrendes Floß: Seile/Rollen knarzen ab und zu leise
           s._knarzT = (s._knarzT || 0) - 1;
           if(s._knarzT <= 0){ s._knarzT = 55 + Math.floor(Math.random()*40); geraeuschSpielen('knarzen', {x: s.x + s.w/2, vol: 0.45}); }
         }
+        if(s.senk){ blattSenkrechtSchritt(s, figuren); continue; }   // Aufzug (s. o.)
         // Seiten-Wind schiebt; nicht das Blatt, auf dem der Pustende selbst steht
         const st = pusteStrahlJetzt, k = st && st.dir !== 'hoch' && st.von.standingOn !== s ? pusteTrifft({x: s.x, y: s.y - 6, w: s.w, h: s.h + 12}) : 0;
         if(s.radZug){ s.v = s.radZug*BLATT_RAD_TEMPO; s.radZug = 0; s.vomRad = true; }   // Floß-Rad wird gedreht (elemente/flossrad.js): gleichmäßig ziehen
@@ -243,7 +300,7 @@ elementRegistrieren({
         const E = blattSchieneEnden(s), a = E.a - camX, b = E.b - camX;
         if(b < -60 || a > VW + 60) continue;
         // Nutzer: „die Lianen sollen sich ein bisschen bewegen“ – sanftes Wiegen im Wind, stärker, solange das Blatt fährt
-        const fahrt = Math.min(1, Math.abs(s.v)/BLATT_MAX), wind = Math.sin(t*1.1 + s.x0*0.003);
+        const fahrt = Math.min(1, (Math.abs(s.v) + Math.abs(s.vy || 0))/BLATT_MAX), wind = Math.sin(t*1.1 + s.x0*0.003);
         for(const [x, yo, wx] of [[a, E.ya, E.a], [b, E.yb, E.b]]){   // Enden: Liane nach oben bis zum Material bzw. ins Blätterdach
           const pendel = Math.sin(t*0.9 + wx*0.01)*2.2 + fahrt*Math.sin(t*6 + wx)*1.2;
           if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoLiane === 'function')   // Foto-Look: echte Liane (12e)
@@ -253,7 +310,7 @@ elementRegistrieren({
         }
         // Tau-Schiene: straff gespannt, hängt etwas durch und wippt (unter der Last des fahrenden Blatts mehr)
         tauZeichnen(a, E.y, b, E.y, blattSchieneDurchhang(s, t), 3.2);
-        for(const x of [a, b]) rolleZeichnen(x, E.y - 1, 5.5, -s.x/5.5);   // Umlenkrollen an den Enden (drehen beim Fahren mit)
+        for(const x of [a, b]) rolleZeichnen(x, E.y - 1, 5.5, -(s.x + s.y)/5.5);   // Umlenkrollen an den Enden (drehen beim Fahren mit)
       }
     },
     zeichnen(){
@@ -270,7 +327,7 @@ elementRegistrieren({
           const kx = mitte + d*BLATT_KNOTEN_X, ky = s.y + dy + BLATT_KNOTEN_Y + d*BLATT_KNOTEN_X*Math.sin(schwank);
           const wx = kx - (s.pend || 0), u = Math.max(0, Math.min(1, (wx - a)/(b - a))), wy = E.y + 2*sag*u*(1 - u);
           tauZeichnen(wx, wy + 6, kx, ky, Math.sin(t*1.4 + kx*0.05)*0.8, 2.2);
-          rollenwagenZeichnen(wx, wy, -s.x/3.6);
+          rollenwagenZeichnen(wx, wy, -(s.x + s.y)/3.6);
           knotenZeichnen(kx, ky);
         }
       }

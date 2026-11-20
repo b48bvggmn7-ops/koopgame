@@ -7841,6 +7841,48 @@ async def dash_hoch_schwebt(g):
     assert 108 <= weit <= 132, f'Dash zur Seite nicht 3 Kästchen weit (vorher 4): {weit}'
 
 @test
+async def blattfloss_aufzug(g):
+    """Nutzer 20.11.: „das Blattfloß nach oben benutzen – einer soll unten stehen und das Rad drehen“. Blatt-Floß mit Richtung „hoch“ =
+    Aufzug: das Floß-Rad derselben Nummer kurbelt es hinauf (hoch) und hinab (runter), wer darauf steht, fährt mit bis auf Höhe des
+    Simses; losgelassen bleibt es stehen – mit „sinkt zurück“ gleitet es wieder hinunter; der Puste-Wind des Affen nach oben hebt es
+    von unten; steht jemand darunter, wird er nicht eingeklemmt; Neustart stellt es wieder nach unten."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}, welt='dschungel'))
+    r = await g.ev("""(() => { const e = {}, st = () => stepSim(), n = k => { for(let i = 0; i < k; i++) st(); };
+      const stell = (P, x, y) => { P.x = P._px = x; P.y = P._py = y; P.vx = P.vy = 0; };
+      const los = () => { for(const P of [p1, p2]) for(const k of Object.values(P.keys)) if(typeof k === 'string'){ KEYS[k] = false; KEYS[k + '_pressed'] = false; } };
+      startLevel({solids:[{x:0,y:680,w:3000,h:40,type:'ground'},{x:720,y:400,w:400,h:40,type:'ground'}],hooks:[],switches:[],doors:[],spikes:[],coins:[],movingPlatforms:[],checkpoints:[],
+        blattFloesse:[{x:600,y:600,schiene:6,link:1,richtung:'hoch'},{x:1400,y:480,schiene:5,link:2,richtung:'hoch',sinkt:'ja'},{x:2000,y:600,schiene:4}],
+        flossRaeder:[{x:500,y:680,link:1},{x:1300,y:680,link:2}],
+        startM:{x:528,y:680},startF:{x:660,y:640},goal:{x:2800,y:680},welt:'dschungel'});
+      n(20);
+      const A = blattFloesse[0], B = blattFloesse[1], C = blattFloesse[2];
+      e.form = A.senk && A.y0 === 640 && A.y1 === 400 && !C.senk && C.x1 === 2160;
+      // Affe kurbelt unten (Hebel-Taste + hoch), Schweinchen steht auf dem Floß und fährt mit hinauf
+      stell(p1, 528, 680); stell(p2, 660, 640); n(8); e.steht = p2.grounded && Math.abs(p2.y - 640) < 1;
+      KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(60); e.mitte = A.y < 560 && Math.abs(p2.y - A.y) < 2 && Math.abs(p1.y - 680) < 1;
+      n(140); e.oben = A.y === 400 && Math.abs(p2.y - 400) < 1.5 && p2.grounded;
+      los(); n(40); e.bleibt = A.y === 400;
+      // Schweinchen geht oben auf den Sims
+      KEYS[p2.keys.right] = true; n(40); los(); n(10); e.aufSims = p2.x > 740 && Math.abs(p2.y - 400) < 1.5;
+      // runter kurbeln
+      KEYS[p1.keys.use] = true; KEYS[p1.keys.swimDown] = true; n(160); los(); e.unten = A.y === 640;
+      // Aufzug 2 „sinkt zurück“: hochkurbeln, loslassen -> gleitet wieder hinunter
+      stell(p1, 1328, 680); stell(p2, 300, 680); n(8); KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(80); const hoch = B.y; los(); n(30); e.sinkt = hoch < 420 && B.y > hoch + 10;
+      n(400); e.wiederUnten = B.y === B.y0;
+      // Wind des Affen nach oben hebt ihn von unten (Affe steht darunter)
+      stell(p1, 1460, 680); n(8); KEYS[p1.keys.pusten] = true; KEYS[p1.keys.pull] = true; n(50); e.windHebt = B.y < B.y0 - 20 && p1.pusteAn; los(); n(5);
+      // niemand wird eingeklemmt: Affe steht unter dem sinkenden Floß -> es bleibt über ihm stehen, er lebt
+      n(300); e.nichtEingeklemmt = !deathState && B.y + 0.01 < B.y0 && B.y >= p1.y - 1e-6 - 0 || B.y === B.y0;
+      e.ueberKopf = B.y <= p1.y - p1.h + 30;
+      stell(p1, 300, 680); n(300); e.dannUnten = B.y === B.y0;
+      // Neustart: Aufzug 1 wieder unten
+      stell(p1, 528, 680); n(5); KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(50); los(); const zw = A.y; resetLevel(); n(5); e.reset = zw < 640 && A.y === 640;
+      return e; })()""")
+    assert all(r.values()), f'Blatt-Floß als Aufzug: {r}'
+    src = (ROOT / 'elemente' / 'blattfloss.js').read_text(encoding='utf-8')
+    assert "key: 'richtung'" in src and "richtung: 'hoch'" in src and "key: 'sinkt'" in src, 'Editor: Auswahl Richtung/Aufzug bzw. Export fehlt'
+
+@test
 async def tuer_mehrere_nummern(g):
     """Nutzer 20.11.: „kann eine Tür mehrere Hebel/Rammbalken/Windräder brauchen, bis sie sich öffnet?“ – Tür mit „und Nummer“
     (und/und2, elemente/tuer.js): geht erst auf, wenn ALLE ihre Nummern an sind; geht eine wieder aus, schließt sie. Eine normale

@@ -1728,6 +1728,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Mund statt Lächeln (`angstMund`), Schweißperlen spritzen vom Kopf. Nicht nach einer Landung (`S.gel`), nicht beim Durchlaufen (wer
     läuft, fällt einfach runter – Physik unverändert, `kanteAbrutschen` in js/32). Gilt für Affe und Schweinchen. Test `figuren3d_kante_wackeln`.
     Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
+    **Blatt-Floß als Aufzug (20.11., elemente/blattfloss.js):** Editor-Auswahl „Richtung: nach oben“ (oder beim Setzen die Maus über dem
+    Blatt nach oben ziehen) – die Schiene führt senkrecht hinauf. Ein Floß-Rad derselben Nummer kurbelt ihn (Hebel-Taste + hoch = hinauf,
+    runter = hinab; mehrere Räder dürfen dieselbe Nummer haben, z. B. eins unten und eins oben), der Puste-Wind des Affen nach oben hebt
+    ihn von unten. Wer darauf steht, fährt mit. Auswahl „Aufzug“: bleibt stehen (Standard) oder sinkt langsam zurück, sobald niemand mehr
+    kurbelt/pustet. Niemand wird eingeklemmt (stößt ein Mitfahrer oben an oder steht jemand darunter, bleibt er stehen). Er hängt an zwei
+    Umlenkrollen über dem oberen Ende, das Zug-Tau des Rads läuft dort hinauf. Das Floß muss frei stehen (nicht im Boden): eine Reihe über
+    dem Boden setzen. Test `blattfloss_aufzug`.
     **Tür mit mehreren Nummern (20.11., elemente/tuer.js):** im Editor bei der Tür „und Nummer“ (bis zu zwei weitere Nummern, – = keine).
     Die Tür geht erst auf, wenn ALLE ihre Nummern an sind – jeder Auslöser (Hebel, Druckplatte, Rammbalken, Windrad …) bekommt seine
     eigene Nummer; geht eine wieder aus (z. B. Zeitfenster abgelaufen), schließt sie. Auf der Tür sitzt je Nummer ein Edelstein in deren
