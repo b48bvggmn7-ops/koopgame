@@ -1,6 +1,6 @@
 # tests/bausteine/finale_a1_messen.py – misst die knappen Stellen des Rätsels am Ende von Abschnitt 1 (finale_a1.py) mit echter Physik:
 # je Stelle ein Raster aus Absprung-Ort und Tasten-Zeitpunkt; Ergebnis = bei welchen es klappt (= wie groß das Zeitfenster ist),
-# dazu Gegenproben (nur Dash / nur Sprung / vom Boden aus). Aufruf: python tests/bausteine/finale_a1_messen.py [A B D E F G H I]
+# dazu Gegenproben (nur Dash / nur Sprung / vom Boden aus). Aufruf: python tests/bausteine/finale_a1_messen.py [L T]
 import asyncio, functools, http.server, json, sys, threading
 from pathlib import Path
 from playwright.async_api import async_playwright
@@ -30,43 +30,18 @@ window.M = (() => {
 })();
 """
 STELLEN = [
- ('A  Boden -> Stufe (3 Reihen hoch), Affe', r"""(() => { let n = 0, alle = 0; const kante = %(stufe1)s*40, gut = [];
-     for(let ab = 12; ab <= 90; ab += 6){ alle++; if(M.sprung(p1, kante - ab, 640, 1, 0, P => P.grounded && Math.abs(P.y - 520) < 2)){ n++; gut.push(ab); } }
-     return {klappt: n, von: alle, abstand_px: gut}; })()"""),
- ('B  Stufe -> Kanzel (5 Kästchen Lücke, 3 Reihen höher), Affe', r"""(() => { let n = 0, alle = 0; const rechts = (%(stufe1)s + 2)*40, gut = [];
-     for(let vor = 0; vor <= 14; vor++){ alle++; if(M.sprung(p1, rechts - 16, 520, -1, vor, P => P.grounded && Math.abs(P.y - 400) < 2 && P.x < (%(kanzel1)s + 2)*40 + 14, 120)){ n++; gut.push(vor); } }
-     return {klappt: n, von: alle, anlauf_schritte: gut}; })()"""),
- ('D  K1 Balken über dem Durchgang: Sprung + Dash zur Seite, Schweinchen', r"""(() => { const spitze = %(balken1)s*40 - 40, out = {};
-     for(const ab of [40, 70, 100, 130, 160]){ const gut = []; for(let dn = 2; dn <= 34; dn += 2){ if(M.sprungDash(spitze - ab, 640, 1, 0, dn, '', () => !!linkOn[66])) gut.push(dn); } out['abstand ' + ab] = gut; }
-     // ohne Sprung (Dash am Boden) und nur Sprung (ohne Dash) dürfen nicht reichen
-     M.neu(); M.setz(p2, spitze - 60, 640); F.n(4); p2.dashPunkte = 1; F.an(p2, 'right'); F.an(p2, 'dash'); F.st(); F.los(); F.n(40); out.nurDash = !!linkOn[66];
-     M.neu(); M.setz(p2, spitze - 60, 640); F.n(4); F.an(p2, 'right'); F.an(p2, 'jump'); F.n(40); F.los(); F.n(30); out.nurSprung = !!linkOn[66];
+ ('L  Luke 1: Schweinchen allein hinauf (Sprung + Dash nach oben) – bei welchem Dash-Zeitpunkt, je Abstand von der Lukenmitte', r"""(() => { const out = {}, T = 40, mitte = (%(luke1)s + 1)*T;
+     for(const vers of [0, 10, 20, 27]){ const gut = [];
+       for(let dn = 8; dn <= 30; dn++){ M.neu(); M.setz(p2, mitte + vers, 640); p1.x = p1._px = mitte - 160; F.n(4); F.an(p2, 'jump'); F.n(dn); F.an(p2, 'swimUp'); F.an(p2, 'dash'); F.st(); F.aus(p2, 'dash');
+         let i = 0; while(i++ < 120){ if(p2.y < 404){ F.aus(p2, 'swimUp'); F.an(p2, 'right'); } F.st(); if(i > 12 && p2.grounded) break; } F.los(); F.n(10);
+         if(p2.grounded && Math.abs(p2.y - 400) < 2) gut.push(dn); }
+       out['abstand ' + vers] = gut; }
      return out; })()"""),
- ('E  K2 Balken jenseits der Lücke: vom Sims abspringen, im Flug dashen, Schweinchen', r"""(() => { const kante = (%(sims_bis)s + 1)*40, out = {};
-     for(const vor of [0, 2, 4, 6, 8]){ const gut = []; for(let dn = 6; dn <= 44; dn++){ if(M.sprungDash(kante - 14 - vor*7.2 - 2, 120, 1, vor, dn, '', () => !!linkOn[69])) gut.push(dn); } out['anlauf ' + vor] = gut; }
-     M.neu(); M.setz(p2, kante - 20, 120); F.n(4); p2.dashPunkte = 1; F.an(p2, 'right'); F.an(p2, 'dash'); F.st(); F.los(); F.n(60); out.nurDashVomSims = !!linkOn[69];
-     M.neu(); M.setz(p2, kante - 20, 120); F.n(4); F.an(p2, 'right'); F.an(p2, 'jump'); F.n(70); F.los(); F.n(30); out.nurSprung = !!linkOn[69]; out.lebt = !deathState;
-     return out; })()"""),
- ('F  hängender Balken (Stirnseite 6 hoch): Sprung + Dash nach oben, Schweinchen', r"""(() => { const out = {};
-     for(const versatz of [0, 8, 14]){ const gut = []; for(let dn = 4; dn <= 36; dn += 2){ if(M.sprungDash(%(haeng3)s*40 + 20 + versatz, 640, 0, 0, dn, 'swimUp', () => !!linkOn[69])) gut.push(dn); } out['versatz ' + versatz] = gut; }
-     M.neu(); M.setz(p2, %(haeng3)s*40 + 20, 640); F.n(4); p2.dashPunkte = 1; F.an(p2, 'swimUp'); F.an(p2, 'dash'); F.st(); F.los(); F.n(50); out.nurDash = !!linkOn[69];
-     return out; })()"""),
- ('I  Windräder: von der Kanzel nach oben, vom Boden nach oben (gerade so), Gegenproben', r"""(() => { const out = {}, rad = c => windraeder.filter(w => Math.abs(w.x - (c*40 + 20)) < 2);
-     const blas = (x, y, n) => { M.neu(); M.setz(p1, x, y); F.n(4); F.an(p1, 'pusten'); F.an(p1, 'pull'); F.n(n || 40); const r = windraeder.map(w => w.dreh > 0.55 ? Math.round(w.x/40) + '/' + Math.round(w.y/40) : null).filter(Boolean); F.los(); return r; };
-     out.kanzel1 = blas(%(kanzel1)s*40 + 20, 400); out.kanzel1_rand = blas(%(kanzel1)s*40 + 66, 400);
-     out.unterKanzel1_vomBoden = blas(%(kanzel1)s*40 + 20, 640); out.nebenKanzel1_vomBoden = blas(%(kanzel1)s*40 - 30, 640);
-     out.wind2_mitte = blas(%(wind2)s*40 + 20, 640); out.wind2_40daneben = blas(%(wind2)s*40 + 60, 640); out.wind2_70daneben = blas(%(wind2)s*40 + 90, 640);
-     out.doppel = blas(%(wind3b)s*40 + 20, 640); out.kanzel4 = blas(%(kanzel4)s*40 + 20, 400); out.nebenKanzel4_vomBoden = blas(%(kanzel4)s*40 - 30, 640);
-     return out; })()"""),
- ('H  Schirm-Trampolin -> Kanzel (6 Reihen), Affe springt von links auf den Schirm', r"""(() => { const out = {}, px = %(kanzel4)s*40 - 20, oben = 400;
-     for(const ab of [30, 45, 60, 75]){ const gut = [];
-       for(let los = 0; los <= 16; los += 2){ M.neu(); M.setz(p1, px - ab, 640); p2.x = p2._px = px; F.n(4); F.an(p2, 'trampolin'); F.n(45);
-         F.an(p1, 'right'); F.an(p1, 'jump'); F.n(los); F.aus(p1, 'right'); let i = 0, boing = false;
-         while(i++ < 140){ if(p1.vy < -15) boing = true; if(boing){ if(p1.y < 470 && p1.x < px + 70) F.an(p1, 'right'); else F.aus(p1, 'right'); } F.st(); if(boing && p1.grounded) break; }
-         F.los(); F.n(10); if(p1.grounded && Math.abs(p1.y - oben) < 2) gut.push(los); }
-       out['abstand ' + ab] = gut; }
-     // ohne Schirm kommt der Affe nicht hinauf
-     M.neu(); M.setz(p1, px - 40, 640); F.n(4); F.an(p1, 'right'); F.an(p1, 'jump'); F.n(60); F.los(); F.n(20); out.ohneSchirm = p1.grounded && Math.abs(p1.y - oben) < 2;
+ ('T  Luke 1: Affe über den Schirm hinauf – Schweinchen-Platz (Versatz) und Abstand des Affen', r"""(() => { const out = {}, T = 40, mitte = (%(luke1)s + 1)*T;
+     for(const sv of [-15, 0, 15]) for(const ab of [0, 30, 45]){ M.neu(); M.setz(p2, mitte + sv, 640); p1.x = p1._px = mitte + sv - ab; p1.y = p1._py = 640; F.n(4); F.an(p2, 'trampolin'); F.n(45); F.an(p1, 'jump'); if(ab) F.an(p1, 'right'); F.n(2); F.aus(p1, 'right');
+       let i = 0, boing = false; while(i++ < 200){ if(p1.vy < -15) boing = true; if(boing && p1.y < 430) F.an(p1, 'left'); F.st(); if(boing && i > 30 && p1.grounded) break; } F.los(); F.n(10);
+       out['schwein ' + sv + ', affe ' + ab] = p1.grounded && Math.abs(p1.y - 400) < 2; }
+     M.neu(); M.setz(p1, mitte, 640); F.n(4); F.an(p1, 'jump'); let m = 640; for(let i = 0; i < 80; i++){ F.st(); m = Math.min(m, p1.y); } F.los(); out.affeAlleinHoehe_px = Math.round(640 - m);
      return out; })()"""),
 ]
 async def main():

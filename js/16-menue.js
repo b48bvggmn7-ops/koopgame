@@ -68,6 +68,8 @@ function showPauseMenu(){
   menuAddItem(soundMuted ? '🔇 Ton ist aus – einschalten (M)' : '🔊 Ton ist an – ausschalten (M)', ()=>{ setMuted(!soundMuted); showPauseMenu(); menuSelect(3); });
   // Optionen (Lautstärke, Steuerung, Tasten) auch beim Spielen und im Editor-Test (Nutzerwunsch 06.11.; Bildschirm aus 24)
   if(window.GameMenu && GameMenu.optionenAusPause) menuAddItem('⚙ Optionen', ()=> GameMenu.optionenAusPause());
+  // Rätsel verfahren? Beide zurück an die letzte Fahne, Schalter/Türen wie nach einem Tod (Nutzer 20.11.: Maschine am Ende von Abschnitt 1)
+  menuAddItem('⚑ Zurück zum Checkpoint', ()=>{ zumCheckpointZurueck(); closeMenu(); });
   if(editorTestMode) menuAddItem('✏️ Zurück zum Editor (Esc)', backToEditor);
   menuSelect(0);
 }

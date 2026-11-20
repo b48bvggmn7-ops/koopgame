@@ -319,6 +319,13 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     `ATMO_STATT_VOEGEL_FLUSS = false` in js/23), der erzeugte Wind, Grillen und Bach (js/22) sind aus, solange draussen.mp3 läuft.
     **Danach Wald-Ton** (Nutzer 06.11., Splice „Forest_05“ -> assets/audio/wald.wav, 21 s, 16 Bit Stereo): ist jetzt der
     Hintergrund-Ton statt draussen.mp3 (gleich laut gemessen, gleiche Lautstärke 2,6; draussen.mp3 bleibt liegen).
+    **Musik = Gitarren-Schleife (Nutzer 20.11.):** `assets/audio/musik-gitarre.wav` (Splice „Jazz Hop 2 – kit loop pella guitar Fmin“,
+    **Pausenmenü „⚑ Zurück zum Checkpoint“ (20.11.):** setzt beide Figuren an die letzte Fahne und alle Schalter/Türen zurück – wie nach einem Tod, aber ohne Tod zu zählen. Gedacht für Rätsel, in denen man sich verfahren kann (Maschine am Ende von Abschnitt 1). „Level neu starten“ bleibt der Neustart ganz von vorn.
+    **Rammbalken 4 s:** Zeitfenster jetzt auch 4 s wählbar (3, 4, 5, 8, 12, 15 s).
+    **Ende von Abschnitt 1 (3. Fassung, 20.11., „deutlich schwerer“):** zwei Zeit-Hindernisse (Rammen und rennen: Balken 4 s, Tür hoch oben über Stufe und Kanzel; Atem-Treppe: Wechselboden-Stufen, solange der Affe pustet bzw. 3 s nach dem Rammstoß), Checkpoint, dann die „Maschine“: sechs Räume auf zwei Etagen, vier Nummern, Wände aus je zwei Wechselboden-Kästchen mit verschiedenen Bedingungen, drei Luken (Schweinchen kommt allein mit Sprung + Dash hinauf, der Affe nur über den Schirm), Tor mit drei Edelsteinen. Kürzester Weg: 10-mal schalten. Aufbau und Lösung: tests/bausteine/finale_a1.py, finale_a1_logik.py, finale_a1_loesung.py.
+    genau 4 Takte bei 90 bpm = 10,67 s) läuft das ganze Spiel über unverändert im Kreis (kein Überblenden, sonst verschöbe sich der Takt).
+    Regler „Musik“ (VOL.music, hieß zwischendurch „Wald“); die Wald-Geräusche laufen weiter und hängen jetzt am Regler „Hintergrund“.
+    Die alte Musik (Akkorde, „Warm Analog Fog“, Klavier) bleibt aus. Test `eigene_aufnahmen`.
   - **Landen und Schritte als Aufnahmen** (Nutzer 06.11.): Landen nach einem Sprung = assets/audio/landen.wav (Splice
     „RockTumble1“, Stein-Poltern, lauter je schneller der Fall); Laufen = je Schritt EIN Gras-Tritt aus assets/audio/schritte.wav
     (Splice „Footstep Grass Walk 1“; 17 einzelne Tritte ausgeschnitten und gleich laut gemacht, `GERAEUSCH_STUECKE.schritt`) –

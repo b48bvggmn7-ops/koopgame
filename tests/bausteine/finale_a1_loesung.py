@@ -69,104 +69,139 @@ window.F = (() => {
 # Der Lösungsweg in Etappen (nach jeder gibt es ein Bild). Jede Etappe ist ein JS-Stück, das F.sag(...) für jede Prüfung ruft.
 # %(name)s = Spalte aus finale_a1.S
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import finale_a1 as FA
 from finale_a1 import S
+# Helfer für die dritte Fassung (Zeit-Hindernisse + Maschine)
+HILFEN2 = r"""
+window.G = (() => { const T = 40, NR = [71, 72, 73, 74];
+  const an = () => NR.map((n, i) => linkOn[n] ? 'ABCD'[i] : '').join('');
+  const raum = P => { const c = P.x/T, e = P.y < 420 ? 'U' : 'G'; if(c >= %(tor)s + 2) return 'Z';
+    const i = c < %(w0)s ? 0 : c < %(w0)s + 2 ? -1 : c < %(w1)s ? 1 : c < %(w1)s + 2 ? -1 : c < %(tor)s ? 2 : -1; return i < 0 ? 'Wand' : e + i; };
+  const lage = () => raum(p1) + ' ' + raum(p2) + ' ' + an();
+  const pruef = (was, soll) => F.sag(was + '   [' + soll + ']', lage() === soll && !deathState, lage());
+  // alles zurück auf Anfang (ohne resetLevel – das startet die Start-Szene am Level-Anfang)
+  const neu = () => { F.los(); for(let k = 60; k <= 80; k++) if(linkOn[k]) setLink(k, false);
+    for(const b of rammbalken){ b.tief = 0; b.phase = 'ruhe'; b.t = 0; rammSolidSetzen(b); }
+    for(const w of windraeder){ w.dreh = 0; w.gezaehlt = false; }
+    for(const P of [p1, p2]){ P.dash = null; P.dashPunkte = 1; P.dashPause = 0; P.vx = P.vy = 0; P.puste = 1; P.pusteLeer = false; P.pustePause = 0; P.pusteAn = false; }
+    F.n(40); };
+  // Schweinchen: Sprung + Dash nach oben; gibt den Schritt zurück, in dem die Nummer anging (0 = nicht)
+  const rammHoch = nr => { F.dashBereit(); const vor = !!linkOn[nr]; F.an(p2, 'jump'); F.n(18); F.an(p2, 'swimUp'); F.an(p2, 'dash'); F.st(); F.aus(p2, 'dash'); let i = 0, t0 = 0;
+    while(i++ < 90){ F.st(); if(!t0 && !!linkOn[nr] !== vor) t0 = simSteps; if(i > 6 && p2.grounded) break; } F.los(); return t0; };
+  // ohne anzuhalten nach rechts rennen und an jeder Kante (x in px) abspringen
+  const rennKurs = (P, kanten, bisX) => { F.an(P, 'right'); for(const kx of kanten){ let i = 0; while(P.x + P.w/2 < kx - 3 && i++ < 300) F.st(); F.an(P, 'jump'); i = 0; while(i++ < 140){ F.st(); if(i > 3 && P.grounded) break; } F.aus(P, 'jump'); F.st(); }
+    let i = 0; while(P.x < bisX && i++ < 300) F.st(); F.aus(P, 'right'); };
+  // Affe pustet, bis die Nummer umschaltet
+  const blas = (dir, nr, max) => { const vor = !!linkOn[nr]; F.warteWind(); const k = dir === 'hoch' ? 'pull' : dir; F.an(p1, 'pusten'); F.an(p1, k); let i = 0; while(i++ < (max || 150) && !!linkOn[nr] === vor) F.st(); F.n(3); F.aus(p1, 'pusten'); F.aus(p1, k); F.n(6); return !!linkOn[nr] !== vor; };
+  const blasSchraeg = (dir, k) => { F.warteWind(); F.an(p1, 'pusten'); F.an(p1, 'pull'); F.an(p1, dir); F.n(k || 45); F.los(); F.n(6); };
+  // Schweinchen allein durch die Luke (Sprung + Dash nach oben), oben nach dir
+  const schweinHoch = (c, dir) => { F.dashBereit(); F.lauf(p2, (c + 1)*T + 10*dir); F.n(6); F.an(p2, 'jump'); F.n(20); F.an(p2, 'swimUp'); F.an(p2, 'dash'); F.st(); F.aus(p2, 'dash');
+    const d = dir > 0 ? 'right' : 'left'; let i = 0; while(i++ < 120){ if(p2.y < 404){ F.aus(p2, 'swimUp'); F.an(p2, d); } F.st(); if(i > 12 && p2.grounded) break; } F.los(); F.n(12); return p2.y < 420; };
+  // Affe über den Schirm des Schweinchens durch die Luke, oben nach dir
+  const affeHoch = (c, dir) => { const x = (c + 1)*T; F.lauf(p2, x); F.lauf(p1, x); F.n(6); F.an(p2, 'trampolin'); F.n(45); F.an(p1, 'jump'); const d = dir > 0 ? 'right' : 'left'; let i = 0, boing = false;
+    while(i++ < 220){ if(p1.vy < -15) boing = true; if(boing && p1.y < 430) F.an(p1, d); F.st(); if(boing && i > 30 && p1.grounded && (p1.y > 420 || Math.abs(p1.x - x) > 56)) break; } F.los(); F.n(12); return p1.y < 420; };
+  // durch die offene Luke hinunter
+  const runter = (P, c) => { F.lauf(P, (c + 1)*T, 300); let i = 0; while(P.y < 600 && i++ < 120) F.st(); F.n(15); return P.y > 600; };
+  // über die offene Luke springen (dir = Richtung)
+  const ueber = (P, c, dir) => { const d = dir > 0 ? 'right' : 'left'; F.lauf(P, dir > 0 ? c*T - 70 : (c + 2)*T + 70); F.an(P, d); let i = 0; while(i++ < 60 && (dir > 0 ? P.x + P.w/2 < c*T - 4 : P.x - P.w/2 > (c + 2)*T + 4)) F.st();
+    F.an(P, 'jump'); i = 0; while(i++ < 120){ F.st(); if(i > 3 && P.grounded) break; } F.los(); F.n(12); return P.y < 420; };
+  // auf einen Sims (2 breit, Spalte c) springen: von der Seite seite (+1 = von rechts) aus
+  const aufSims = (P, c, seite) => { F.lauf(P, seite > 0 ? (c + 2)*T + 60 : c*T - 60); F.sprung(P, -seite); F.n(6); };
+  return {an, raum, lage, pruef, neu, rammHoch, rennKurs, blas, blasSchraeg, schweinHoch, affeHoch, runter, ueber, aufSims};
+})();
+"""
 ETAPPEN_ROH = [
- ('k0_affe_auf_die_kanzel', r"""
-   F.stell(p1, %(kanzel1)s + 4); F.stell(p2, %(tuer1)s - 2); F.n(20);
-   F.sag('Start: Tür 1 zu', !F.tuerAuf(66));
-   // Gegenprobe: vom Boden aus (unter und neben der Kanzel) erreicht der Wind das Windrad nicht
-   F.lauf(p1, %(kanzel1)s + 0.5); F.pusteHoch(40); F.lauf(p1, %(kanzel1)s - 1); F.pusteHoch(40);
-   F.sag('Gegenprobe K0: vom Boden aus dreht das Windrad nicht', !F.tuerAuf(66) && !linkOn[66]); F.warteWind();
-   // auf die Stufe springen, dann der Weitsprung zur Kanzel
-   F.lauf(p1, %(stufe1)s*40 - 60); F.sprung(p1, 1); F.sag('Affe steht auf der Stufe', p1.grounded && Math.abs(p1.y - 520) < 2, {y: p1.y});
-   F.lauf(p1, (%(stufe1)s + 2)*40 - 16); F.weitsprung(p1, -1, %(stufe1)s*40);
-   F.sag('Weitsprung: Affe steht auf der Kanzel', p1.grounded && Math.abs(p1.y - 400) < 2, {x: p1.x/40, y: p1.y});"""),
- ('k0_schwein_durch', r"""
-   F.lauf(p1, %(kanzel1)s + 0.5); F.an(p1, 'pusten'); F.an(p1, 'pull'); F.n(24); F.sag('Affe pustet von der Kanzel nach oben: Tür 1 offen', F.tuerAuf(66));
-   F.an(p2, 'right'); let i = 0; while(p2.x < (%(tuer1)s + 2.7)*40 && i++ < 160) F.st(); F.aus(p2, 'right'); F.aus(p1, 'pusten'); F.aus(p1, 'pull'); F.n(90);
-   F.sag('Schweinchen ist in K1', p2.x > (%(tuer1)s + 2)*40); F.sag('Tür 1 wieder zu', !F.tuerAuf(66));"""),
- ('k1_affe_nach', r"""
-   const spitze = %(balken1)s*40 - 40;
-   // Gegenproben: nur Dash am Boden bzw. nur Sprung rammt den Balken nicht
-   F.lauf(p2, spitze - 60); F.dash('right'); F.sag('Gegenprobe: Dash am Boden trifft den Balken nicht', !linkOn[66]);
-   F.lauf(p2, spitze - 100); F.sprungDash(1, 20, ''); F.sag('Sprung + Dash: Balken über dem Durchgang gerammt, Tür 1 offen', linkOn[66] && F.tuerAuf(66));
-   F.sag('Affe läuft von der Kanzel nach', F.lauf(p1, %(tuer1)s + 3.5, 600) && p1.x > (%(tuer1)s + 2)*40);
-   let i = 0; while(linkOn[66] && i++ < 700) F.st(); F.n(20); F.sag('Zeitfenster abgelaufen: Tür 1 zu, beide in K1', !F.tuerAuf(66) && p1.x > (%(tuer1)s + 2)*40 && p2.x > (%(tuer1)s + 2)*40);"""),
- ('k1_schleuse_affe', r"""
-   F.sag('Schleuse am Anfang: vorn zu, hinten offen', !F.wandOffen(%(s1)s) && F.wandOffen(%(s2)s));
-   F.lauf(p2, %(sims2)s); F.hebel(p2); F.sag('Gegenprobe: vom Boden aus erreicht man den Hebel nicht', !linkOn[67]);
-   F.lauf(p2, (%(sims2)s + 2)*40 + 60); F.sprung(p2, -1); F.sag('Schweinchen springt (von rechts) auf den Sims', p2.grounded && Math.abs(p2.y - 520) < 2, {y: p2.y});
-   F.lauf(p2, %(sims2)s); F.hebel(p2); F.sag('Hebel AN: vorn offen, hinten zu', F.wandOffen(%(s1)s) && !F.wandOffen(%(s2)s) && linkOn[67]);
-   F.lauf(p1, %(s2)s + 3, 400); F.sag('Gegenprobe Schleuse: hinten bleibt zu', p1.x < %(s2)s*40);
-   F.lauf(p1, %(schleuse)s); F.sag('Affe steht in der Schleuse', p1.x > (%(s1)s + 2)*40 && p1.x < %(s2)s*40);
-   F.hebel(p2); F.sag('Hebel AUS: hinten offen', F.wandOffen(%(s2)s) && !F.wandOffen(%(s1)s));
-   F.sag('Affe ist in K2', F.lauf(p1, %(wind2)s, 400) && p1.x > (%(s2)s + 2)*40);"""),
- ('k1_schleuse_schwein', r"""
-   F.pusteHoch(40); F.sag('Affe pustet nach oben (gerade so in Reichweite): 67 AN, vorn offen', linkOn[67] && F.wandOffen(%(s1)s));
-   F.sag('Schweinchen geht vom Sims in die Schleuse', F.lauf(p2, %(schleuse)s, 500) && p2.x > (%(s1)s + 2)*40);
-   F.warteWind(); F.pusteHoch(40); F.sag('Affe pustet wieder: 67 AUS, hinten offen', !linkOn[67] && F.wandOffen(%(s2)s));
-   F.sag('Schweinchen ist in K2', F.lauf(p2, %(wind2)s + 1, 400) && p2.x > (%(s2)s + 2)*40);"""),
- ('k2_aufzug', r"""
-   const A = blattFloesse.find(s => s.link === 68);
-   F.lauf(p1, %(rad)s + 0.7); F.lauf(p2, %(aufzug)s + 1); F.n(10); F.sag('Schweinchen steht auf dem Aufzug', p2.grounded && Math.abs(p2.y - A.y) < 2);
-   F.an(p1, 'use'); F.an(p1, 'swimUp'); let i = 0; while(A.y > A.y1 && i++ < 500) F.st();
-   F.sag('Aufzug oben, Schweinchen mit', A.y === A.y1 && Math.abs(p2.y - A.y1) < 2, {y: A.y, y1: A.y1, schwein: p2.y});
-   F.an(p2, 'right'); i = 0; while(p2.x < (%(sims)s + 0.8)*40 && i++ < 200) F.st(); F.aus(p2, 'right'); F.n(6);
-   F.aus(p1, 'use'); F.aus(p1, 'swimUp'); F.n(10);
-   F.sag('Schweinchen steht auf dem Sims', p2.grounded && Math.abs(p2.y - 3*40) < 2 && p2.x > %(sims)s*40, {x: p2.x/40, y: p2.y});"""),
- ('k2_schwein_durch', r"""
-   F.lauf(p1, %(wind3)s); F.pusteHoch(30); F.sag('Gegenprobe Tür 3: Windrad allein öffnet nicht', !F.tuerAuf(69)); F.warteWind();
-   F.lauf(p2, (%(sims_bis)s + 1)*40 - 30); F.sprungDash(1, 22, '');
-   F.sag('Vom Sims abgesprungen und den Balken im Flug gerammt: 69 AN', !!linkOn[69], {schwein: [p2.x/40, p2.y]});
-   const t0 = simSteps; let i = 0; while(!p2.grounded && i++ < 200) F.st(); F.n(4);
-   F.sag('Schweinchen ist unten gelandet, lebt', p2.y > 600 && !deathState, {y: p2.y});
-   F.an(p2, 'right'); i = 0; while(p2.x < (%(tuer3)s - 2.5)*40 && i++ < 400) F.st();
-   F.an(p1, 'pusten'); F.an(p1, 'pull'); i = 0; while(p2.x < (%(tuer3)s + 2.7)*40 && i++ < 300) F.st();
-   F.aus(p2, 'right'); F.aus(p1, 'pusten'); F.aus(p1, 'pull'); F.n(10);
-   F.sag('Schweinchen ist durch Tür 3 (in der Zeit)', p2.x > (%(tuer3)s + 2)*40, {schritte: simSteps - t0, von: 8*60, x: p2.x/40});
-   i = 0; while(linkOn[69] && i++ < 700) F.st(); F.n(60); F.sag('Tür 3 wieder zu, Affe noch in K2', !F.tuerAuf(69) && p1.x < %(tuer3)s*40);"""),
- ('k2_affe_nach', r"""
-   F.warteWind();
-   F.lauf(p2, %(haeng3)s); F.dash('swimUp'); F.sag('Gegenprobe: Dash nach oben ohne Sprung erreicht den hängenden Balken nicht', !linkOn[69]);
-   F.lauf(p2, %(haeng3)s); F.sprungDash(0, 18, 'swimUp'); F.sag('Sprung + Dash nach oben: hängender Balken gerammt, 69 AN', !!linkOn[69]);
-   // das Windrad hängt gerade so in Reichweite: es läuft langsam an – erst voll drehen lassen, dann loslaufen
-   F.lauf(p1, %(wind3)s); F.an(p1, 'pusten'); F.an(p1, 'pull'); F.n(70); F.sag('Windrad über dem Platz vor der Tür dreht: Tür 3 offen', F.tuerAuf(69), {an69: !!linkOn[69], an70: !!linkOn[70], balken: rammbalken.filter(b => b.link === 69).map(b => [b.phase, Math.round(b.tief*100)/100, b.staerke]), wind: windraeder.filter(w => w.link === 70).map(w => Math.round(w.dreh*100)/100), puste: p1.puste, affe: p1.x/40});
-   F.aus(p1, 'pusten'); F.aus(p1, 'pull'); F.st(); F.an(p1, 'right'); let i = 0; while(p1.x < (%(tuer3)s + 2.7)*40 && i++ < 200) F.st(); F.aus(p1, 'right'); F.n(10);
-   F.sag('Affe schlüpft durch Tür 3 (2 dick), bevor das Windrad ausläuft', p1.x > (%(tuer3)s + 2)*40, {x: p1.x/40});
-   i = 0; while(linkOn[69] && i++ < 700) F.st(); F.n(60); F.sag('beide in K3, Tür 3 zu', !F.tuerAuf(69) && p1.x > (%(tuer3)s + 2)*40 && p2.x > (%(tuer3)s + 2)*40);
-   F.warteWind(); F.lauf(p1, %(wind3b)s); F.an(p1, 'pusten'); F.an(p1, 'pull'); F.n(70);
-   F.sag('von K3 aus: ein Puste-Strahl nach oben dreht beide Windräder und öffnet Tür 3 (Rückweg)', F.tuerAuf(69), {an70: !!linkOn[70], an69: !!linkOn[69]});
-   F.aus(p1, 'pusten'); F.aus(p1, 'pull'); F.n(120);"""),
- ('k3_auf_die_kanzel', r"""
-   F.sag('Sternentor: Weg in den Rammraum zu, Hebelkammer-Wand offen, Tor zu', !F.wandOffen(%(wa)s) && F.wandOffen(%(wb)s) && !F.tuerAuf(71));
-   F.warteWind(); F.lauf(p1, %(kanzel4)s + 0.5); F.pusteHoch(40); F.lauf(p1, %(kanzel4)s - 1); F.pusteHoch(40);
-   F.sag('Gegenprobe: vom Boden aus dreht das Windrad über der Kanzel nicht', !linkOn[71]);
-   F.lauf(p1, %(kanzel4)s*40 - 60); F.sprung(p1, 1); F.sag('Gegenprobe: mit einem Sprung kommt der Affe nicht auf die Kanzel', !(p1.grounded && Math.abs(p1.y - 400) < 2));
-   F.sag('Schirm-Trampolin: Affe steht auf der Kanzel', F.trampolin(%(kanzel4)s*40 - 20, 400), {affe: [p1.x/40, p1.y]});"""),
- ('k3_rammraum', r"""
-   F.warteWind(); F.lauf(p1, %(kanzel4)s + 0.5); F.pusteHoch(40); F.sag('Affe pustet: 71 AN, Rammraum offen', linkOn[71] && F.wandOffen(%(wa)s) && !F.wandOffen(%(wb)s));
-   F.lauf(p2, %(wind5)s, 700); F.sag('Gegenprobe: Hebelkammer bleibt mit 71 AN zu', p2.x < %(wb)s*40 && p2.x > (%(wa)s + 1)*40);
-   F.lauf(p2, %(haeng4)s); F.sprungDash(0, 18, 'swimUp'); F.sag('Schweinchen rammt im Rammraum (Sprung + Dash nach oben): 72 AN', !!linkOn[72]);"""),
- ('k3_hebel', r"""
-   F.warteWind(); F.pusteHoch(40); F.sag('Affe pustet: 71 AUS, Hebelkammer offen', !linkOn[71] && F.wandOffen(%(wb)s) && !F.wandOffen(%(wa)s));
-   F.sag('Schweinchen geht in die Hebelkammer', F.lauf(p2, (%(sims4)s + 2)*40 + 60, 600) && p2.x > (%(wb)s + 2)*40);
-   F.sprung(p2, -1); F.lauf(p2, %(sims4)s); F.sag('Schweinchen steht auf dem Sims beim Hebel', p2.grounded && Math.abs(p2.y - 520) < 2, {y: p2.y});
-   F.hebel(p2); F.sag('Hebel: 73 AN', !!linkOn[73]); F.sag('Tor noch zu (71 fehlt)', !F.tuerAuf(71));"""),
- ('k3_affe_rammraum', r"""
-   F.warteWind(); F.pusteHoch(40); F.sag('Affe pustet: 71 AN – alle drei an, Tor offen', linkOn[71] && linkOn[72] && linkOn[73] && F.tuerAuf(71));
-   F.sag('Affe springt von der Kanzel und geht in den Rammraum', F.lauf(p1, %(haeng4)s, 700) && p1.x > (%(wa)s + 2)*40);
-   F.lauf(p1, %(wind5)s, 400); F.sag('Gegenprobe: Affe kommt mit 71 AN nicht in die Hebelkammer', p1.x < %(wb)s*40);"""),
- ('k3_affe_hebelkammer', r"""
-   const spitze = %(balken5)s*40 - 40;
-   F.lauf(p2, spitze - 100); F.sprungDash(1, 20, ''); F.sag('Schweinchen rammt den Balken über dem Tor: 71 AUS', !linkOn[71]);
-   F.sag('Tor wieder zu, Wand zur Hebelkammer offen', !F.tuerAuf(71) && F.wandOffen(%(wb)s));
-   F.sag('Affe kommt in die Hebelkammer', F.lauf(p1, %(wind5)s, 600) && p1.x > (%(wb)s + 2)*40);"""),
- ('k3_tor', r"""
-   const spitze = %(balken5)s*40 - 40;
-   F.lauf(p2, spitze - 100); F.sprungDash(1, 20, ''); F.sag('Schweinchen rammt noch einmal: 71 AN', !!linkOn[71]);
-   F.sag('Tor offen (71 + 72 + 73)', F.tuerAuf(71));
-   F.lauf(p1, %(ziel)s - 1, 600); F.lauf(p2, %(ziel)s - 1, 600); F.n(30);
-   F.sag('beide hinter dem Tor am Ziel', p1.x > (%(tor)s + 2)*40 && p2.x > (%(tor)s + 2)*40 && !deathState, F.zustand());"""),
+ ('h1_affe_wartet_oben', r"""
+   F.stell(p1, %(haeng1)s - 2); F.stell(p2, %(haeng1)s - 1); F.n(20);
+   F.sag('Start: Tür H1 zu', !F.tuerAuf(66));
+   F.lauf(p2, %(haeng1)s*40 + 20); F.dash('swimUp'); F.sag('Gegenprobe: Dash vom Boden rammt den hängenden Balken nicht', !linkOn[66]);
+   F.an(p2, 'jump'); F.n(50); F.los(); F.n(20); F.sag('Gegenprobe: nur springen auch nicht', !linkOn[66]);
+   F.lauf(p1, %(stufe1)s*40 - 60); F.sprung(p1, 1); F.sag('Affe auf der Stufe', p1.grounded && Math.abs(p1.y - 520) < 2, {y: p1.y});
+   F.lauf(p1, %(stufe1)s*40 + 16); F.weitsprung(p1, 1, (%(stufe1)s + 2)*40); F.sag('Weitsprung: Affe auf der Kanzel', p1.grounded && Math.abs(p1.y - 400) < 2, {x: p1.x/40, y: p1.y});
+   F.lauf(p1, (%(kanzel1)s + 1)*40 + 20);"""),
+ ('h1_rammen_und_rennen', r"""
+   F.lauf(p2, %(haeng1)s*40 + 20); const t0 = G.rammHoch(66); F.sag('Schweinchen rammt (Sprung + Dash nach oben): 66 AN, Tür offen', t0 && linkOn[66] && F.tuerAuf(66));
+   G.rennKurs(p2, [%(stufe1)s*40 - 50, (%(stufe1)s + 2)*40, (%(kanzel1)s + 2)*40], (%(tuer1)s + 2)*40 + 20); const tS = simSteps - t0;
+   F.sag('Schweinchen ist rechtzeitig durch die Tür', p2.x > (%(tuer1)s + 2)*40 && linkOn[66], {schritte: tS, von: %(zeit1)s*60, x: p2.x/40, y: p2.y});
+   G.rennKurs(p1, [(%(kanzel1)s + 2)*40], (%(tuer1)s + 2)*40 + 20); const tA = simSteps - t0;
+   F.sag('Affe (wartete auf der Kanzel) kommt im selben Zeitfenster durch', p1.x > (%(tuer1)s + 2)*40 && linkOn[66], {schritte: tA, von: %(zeit1)s*60});
+   let i = 0; while(linkOn[66] && i++ < 500) F.st(); F.n(60); F.sag('danach Tür wieder zu, beide drüben', !F.tuerAuf(66) && p1.y > 600 && p2.y > 600, {zeitfenster: simSteps - 60 - t0});"""),
+ ('h2_atem_treppe', r"""
+   F.lauf(p1, %(wind2)s); F.lauf(p2, %(tritt1)s*40 - 60);
+   F.sag('Start: Stufen sind nicht fest', !linkOn[67]);
+   F.an(p1, 'pusten'); F.an(p1, 'pull'); let i = 0; while(!linkOn[67] && i++ < 150) F.st(); const tAn = i, t0 = simSteps;
+   G.rennKurs(p2, [%(tritt1)s*40 - 50, (%(tritt1)s + 2)*40, (%(tritt2)s + 2)*40], %(mauer)s*40 + 30); const tS = simSteps - t0; const oben = p2.grounded && Math.abs(p2.y - 280) < 2 && linkOn[67];
+   i = 0; while(linkOn[67] && i++ < 300) F.st(); const tAus = simSteps - t0; F.los(); F.n(10);
+   F.sag('Schweinchen ist auf der Mauer, bevor dem Affen die Puste ausgeht', oben, {windradBraucht: tAn, schweinBraucht: tS, pusteReichtNoch: tAus, y: p2.y});"""),
+ ('h2_affe_hinterher', r"""
+   F.lauf(p2, %(haeng2)s*40 + 20, 400); F.sag('Schweinchen steht drüben unter dem Balken', p2.y > 600 && p2.x > (%(mauer)s + 2)*40);
+   F.warteWind(); F.lauf(p1, %(tritt1)s*40 - 60);
+   const t0 = G.rammHoch(67); F.sag('Schweinchen rammt: 67 AN', t0 && linkOn[67]);
+   G.rennKurs(p1, [%(tritt1)s*40 - 50, (%(tritt1)s + 2)*40, (%(tritt2)s + 2)*40], %(mauer)s*40 + 30); const tA = simSteps - t0;
+   F.sag('Affe ist rechtzeitig auf der Mauer', p1.grounded && Math.abs(p1.y - 280) < 2 && linkOn[67], {schritte: tA, von: %(zeit2)s*60, y: p1.y, x: p1.x/40});
+   F.lauf(p1, %(checkpoint)s, 500); F.lauf(p2, %(checkpoint)s + 1, 500); F.n(40); F.sag('beide am Checkpoint vor der Maschine', p1.y > 600 && p2.y > 600 && activeCp === checkpointDefs.length - 1, {cp: activeCp});"""),
+ ('m_schalter_proben', r"""
+   // jeder Schalter der Maschine: geht mit der gedachten Technik, nicht mit der einfachen
+   G.neu(); F.stell(p1, %(m0)s + 4); F.stell(p2, %(m0)s + 5); F.n(20);
+   F.lauf(p1, %(m0)s + 2); G.blasSchraeg('left'); F.sag('Gegenprobe Windrad A: vom Boden schräg kommt nichts in den Schacht', !linkOn[71]);
+   F.lauf(p1, %(m0)s + 3); G.blasSchraeg('left'); F.sag('Gegenprobe Windrad A: schräg von weiter weg auch nicht', !linkOn[71]);
+   F.stell(p1, %(m0)s); F.n(10); F.warteWind(); F.puste('hoch', 60); F.sag('Gegenprobe Windrad A: unter dem Sims nach oben pusten geht nicht', !linkOn[71]);
+   G.aufSims(p1, %(sims_a)s, 1); F.sag('Affe steht auf dem Sims', p1.grounded && Math.abs(p1.y - 520) < 2, {y: p1.y, x: p1.x/40});
+   F.lauf(p1, %(sims_a)s + 1); F.warteWind(); F.puste('hoch', 60); F.sag('Gegenprobe Windrad A: auf dem Sims neben dem Schacht geht es nicht', !linkOn[71]);
+   F.lauf(p1, %(sims_a)s); F.sag('Windrad A: auf dem Sims unter dem Schacht nach oben pusten schaltet', G.blas('hoch', 71) && linkOn[71]);
+   // U0: Rammbalken C (ragt nach rechts aus dem Klotz)
+   G.neu(); F.stell(p2, %(m0)s + 5, 400); F.stell(p1, %(m0)s + 8, 400); F.n(20); const spC = (%(balken_c)s + 2)*40;
+   F.lauf(p2, spC + 60); F.dash('left'); F.sag('Gegenprobe Balken C: Dash am Boden trifft nicht', !linkOn[73]);
+   F.lauf(p2, spC + 100); F.sprungDash(-1, 20, ''); F.sag('Balken C: Sprung + Dash zur Seite schaltet', !!linkOn[73]);
+   // U1: hängender Balken D
+   G.neu(); F.stell(p2, %(haeng_d)s, 400); F.stell(p1, %(haeng_d)s + 1, 400); F.n(20);
+   F.lauf(p2, %(haeng_d)s*40 + 20); F.dash('swimUp'); F.sag('Gegenprobe Balken D: Dash vom Boden reicht nicht', !linkOn[74]);
+   F.sag('Balken D: Sprung + Dash nach oben schaltet', G.rammHoch(74) && linkOn[74]);
+   // U2: Windrad D hoch oben
+   G.neu(); F.stell(p1, %(wind_d)s, 400); F.stell(p2, %(wind_d)s + 1, 400); F.n(20);
+   F.sag('Windrad D: von der oberen Etage nach oben pusten schaltet', G.blas('hoch', 74) && linkOn[74]);
+   G.neu(); F.stell(p1, %(wind_d)s, 640); F.stell(p2, %(wind_d)s + 1, 640); F.n(20); F.puste('hoch', 60); F.sag('Gegenprobe Windrad D: von unten nicht', !linkOn[74]);
+   G.neu();"""),
+ ('m01_A_an', r"""
+   F.stell(p1, %(checkpoint)s + 1); F.stell(p2, %(checkpoint)s + 2); F.n(20); G.pruef('Start in der Maschine', 'G0 G0 ');
+   F.lauf(p2, %(w0)s + 4, 300); F.sag('Gegenprobe: Wand G0|G1 ist zu', p2.x < %(w0)s*40);
+   G.schweinHoch(%(luke0)s, 1); F.sag('Gegenprobe: Luke 0 ist zu', p2.y > 600);
+   G.aufSims(p1, %(sims_a)s, 1); F.lauf(p1, %(sims_a)s); F.sag('Affe pustet vom Sims in den Schacht', G.blas('hoch', 71)); G.pruef('A ist an', 'G0 G0 A');"""),
+ ('m02_schwein_nach_G1', r"""
+   F.lauf(p2, %(w0)s + 4, 500); G.pruef('Schweinchen geht durch die Wand nach G1', 'G0 G1 A');
+   G.schweinHoch(%(luke1)s, -1); F.sag('Gegenprobe: Luke 1 ist zu (A an)', p2.y > 600);"""),
+ ('m03_A_aus_schwein_hoch', r"""
+   F.sag('Affe pustet noch einmal', G.blas('hoch', 71)); G.pruef('A ist aus – Luke 1 offen', 'G0 G1 ');
+   F.sag('Schweinchen springt + dasht durch die Luke hinauf', G.schweinHoch(%(luke1)s, -1)); G.pruef('Schweinchen ist oben in U1', 'G0 U1 ');"""),
+ ('m04_A_an_C_an', r"""
+   F.sag('Affe pustet', G.blas('hoch', 71)); G.pruef('A an', 'G0 U1 A');
+   F.lauf(p2, %(w1)s + 2, 300); F.sag('Gegenprobe: Wand U1|U2 lässt noch nicht durch (das zweite Kästchen braucht C)', p2.x < (%(w1)s + 1)*40);
+   G.aufSims(p2, %(sims_c)s, 1); F.lauf(p2, %(sims_c)s); F.sag('Schweinchen steht auf dem Sims beim Hebel', p2.grounded && Math.abs(p2.y - 280) < 2, {y: p2.y, x: p2.x/40});
+   F.hebel(p2); G.pruef('Hebel: C an', 'G0 U1 AC');"""),
+ ('m05_schwein_rammt_B', r"""
+   F.lauf(p2, %(w1)s + 2, 600); G.pruef('Schweinchen geht oben nach U2', 'G0 U2 AC');
+   F.sag('Sprung über die offene Luke 2', G.ueber(p2, %(luke2)s, 1) && p2.x > (%(luke2)s + 2)*40, {x: p2.x/40, y: p2.y});
+   const spB = %(balken_b)s*40 - 40; F.lauf(p2, spB - 100); F.sprungDash(1, 20, ''); G.pruef('Balken über dem Tor gerammt: B an', 'G0 U2 ABC'); F.sag('Tor noch zu (D fehlt)', !F.tuerAuf(71));"""),
+ ('m06_affe_nach_G2', r"""
+   F.lauf(p2, %(w1)s - 2, 600); G.pruef('Schweinchen zurück nach U1', 'G0 U1 ABC');
+   F.lauf(p1, %(sims_a)s + 3, 200); F.lauf(p1, %(w0)s + 4, 600); G.pruef('Affe geht nach G1', 'G1 U1 ABC');
+   F.lauf(p1, %(w1)s + 4, 400); F.sag('Gegenprobe: Wand G1|G2 lässt nicht durch (das zweite Kästchen braucht C aus)', p1.x < (%(w1)s + 1)*40); F.lauf(p1, %(w1)s - 2);
+   G.aufSims(p2, %(sims_c)s, 1); F.lauf(p2, %(sims_c)s); F.hebel(p2); G.pruef('Hebel: C aus', 'G1 U1 AB');
+   F.lauf(p1, %(w1)s + 4, 600); G.pruef('Affe geht nach G2', 'G2 U1 AB');
+   F.hebel(p2); G.pruef('Hebel: C wieder an', 'G2 U1 ABC');"""),
+ ('m07_schwein_faellt_nach_G2', r"""
+   F.lauf(p2, %(w1)s + 2, 600); const spB = %(balken_b)s*40 - 40; F.lauf(p2, spB - 100, 400); G.pruef('Schweinchen oben in U2', 'G2 U2 ABC');
+   F.sprungDash(1, 20, ''); G.pruef('rammt noch einmal: B aus – Luke 2 offen', 'G2 U2 AC');
+   F.sag('Schweinchen lässt sich durch die Luke fallen', G.runter(p2, %(luke2)s)); G.pruef('beide unten in G2', 'G2 G2 AC');
+   F.lauf(p1, (%(luke2)s + 1)*40); F.an(p1, 'jump'); F.n(60); F.los(); F.n(20); F.sag('Gegenprobe: der Affe kommt allein nicht durch die Luke', p1.y > 600);"""),
+ ('m08_affe_hoch_D_an', r"""
+   F.sag('Schirm-Trampolin: Affe durch die Luke hinauf', G.affeHoch(%(luke2)s, 1)); G.pruef('Affe oben in U2', 'U2 G2 AC');
+   F.lauf(p1, %(wind_d)s); F.sag('Affe pustet nach oben zum Windrad D', G.blas('hoch', 74)); G.pruef('D an', 'U2 G2 ACD');"""),
+ ('m09_schwein_hoch_tor', r"""
+   F.sag('Schweinchen springt + dasht durch Luke 2 hinauf', G.schweinHoch(%(luke2)s, 1)); G.pruef('beide oben in U2', 'U2 U2 ACD');
+   const spB = %(balken_b)s*40 - 40; F.lauf(p2, spB - 100); F.sprungDash(1, 20, ''); G.pruef('letzter Rammstoß: B an', 'U2 U2 ABCD'); F.sag('Tor offen (A + B + D)', F.tuerAuf(71));
+   F.lauf(p2, %(ziel)s - 1, 600); F.lauf(p1, %(ziel)s - 1, 600); F.n(60);
+   F.sag('beide durch das Tor am Ziel', p1.x > (%(tor)s + 2)*40 && p2.x > (%(tor)s + 2)*40 && !deathState, F.zustand());"""),
 ]
 
 async def main():
@@ -181,13 +216,14 @@ async def main():
         await p.goto(url + 'index.html?testlevel=koop-aktionen'); await p.wait_for_timeout(3000)
         await p.evaluate("""async () => { window.baumIntroAus = true; const d = await (await fetch('levels/dschungel/abschnitt-1-sternschnuppenspur.json?x=' + Date.now())).json(); startLevel(d); }""")
         await p.wait_for_timeout(2500)
-        await p.evaluate(HILFEN)
+        SS = dict(S, zeit1=FA.ZEIT_H1, zeit2=FA.ZEIT_H2)
+        await p.evaluate(HILFEN); await p.evaluate(HILFEN2 % SS)
         await p.evaluate("menuScreen = 'pause'; 0")
-        for name, js in [(n, j % S) for n, j in ETAPPEN_ROH]:
+        for name, js in [(n, j % SS) for n, j in ETAPPEN_ROH]:
             log = await p.evaluate("(() => { F.log.length = 0; try { " + js + " } catch(e){ F.sag('FEHLER im Skript: ' + e.message, false); } F.los(); return {log: F.log.slice(), z: F.zustand()}; })()")
             print(f'--- {name}   {log["z"]}')
             for e in log['log']:
-                print(('   ok   ' if e['ok'] else '   NEIN ') + e['was'] + ('' if e['ok'] or e.get('mehr') is None else '   ' + json.dumps(e['mehr'], ensure_ascii=False)))
+                print(('   ok   ' if e['ok'] else '   NEIN ') + e['was'] + ('' if e.get('mehr') is None else '   ' + json.dumps(e['mehr'], ensure_ascii=False)))
                 alles_ok = alles_ok and e['ok']
             if BILDER:
                 await p.evaluate("menuScreen = null"); await p.wait_for_timeout(900); await p.evaluate("menuScreen = 'pause'"); await p.wait_for_timeout(120)

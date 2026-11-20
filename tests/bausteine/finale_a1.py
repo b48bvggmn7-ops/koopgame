@@ -1,30 +1,29 @@
-# tests/bausteine/finale_a1.py – Nutzerwunsch 20.11.: das Ende von Abschnitt 1 (Spalten 4756 bis Ziel) als großes Logik-Rätsel
-# neu bauen („mega schwer, mehrere Abhängigkeiten, der Spieler darf 5 min überlegen, es muss aber möglich sein; Rammbalken,
-# Windrad, Wechselboden kombinieren“). Zweite Fassung nach der Rückmeldung des Nutzers: „Türen immer mindestens zwei dick, genauso
-# die Wand darüber; Schalter wie Windrad und Rammbalken gerade eben so erwischen (weiter Sprung, Sprung + Dash) statt einfach
-# drunter stehen; die Höhe nutzen – nicht mehrere Windräder nebeneinander auf dem Boden, das ist zu offensichtlich“.
+# tests/bausteine/finale_a1.py – Nutzerwunsch 20.11.: das Ende von Abschnitt 1 (Spalten 4756 bis Ziel) als großes Logik-Rätsel.
+# DRITTE Fassung („deutlich schwerer … das ist mir echt zu einfach“; gewählt: mehr Denken, knappere Zeit, härtere Sprünge – KEINE
+# Stacheln). Weiter gilt aus der zweiten Fassung: Türen/Wände immer 2 dick, Schalter nur mit Sprung + Dash bzw. von einem Sims aus
+# gerade so, die Höhe nutzen.
 #
-# Vier abgeschlossene Kammern (Wände aus Erde, 2 dick, bis zum oberen Bildrand: kein Wandsprung, kein Darüberfliegen, kein Wind):
-#   K0 Vorraum    Das Windrad (66, „solange“) hängt ganz oben über einer kleinen Kanzel. Der Affe muss über eine Stufe mit einem
-#                 knappen Weitsprung hinauf und von dort NACH OBEN pusten; nur dann ist Tür 1 offen – das Schweinchen läuft durch.
-#                 Drinnen rammt es mit Sprung + Dash den Balken über dem Durchgang (66, Zeitfenster): der Affe kommt nach.
-#   K1 Schleuse   Der Hebel (67) sitzt auf einem Sims (hochspringen). Er schaltet zwei Wechselboden-Wände gegenläufig: hinein nur
-#                 mit AN, hinaus nur mit AUS. Drüben hängt ein Windrad (67), das der Affe gerade so mit Wind nach oben erreicht –
-#                 also muss der AFFE zuerst hindurch und holt dann das Schweinchen nach.
-#   K2 Aufzug     Tür 3 braucht ZWEI Nummern zugleich: 69 = Rammbalken hoch oben jenseits einer Lücke (nur der Aufzug kommt
-#                 hinauf: Affe kurbelt; das Schweinchen springt vom Sims ab und rammt ihn im Flug mit dem Dash, dann fällt es
-#                 hinunter) und 70 = Windrad hoch über dem Platz vor der Tür (Affe pustet nach oben). Für den Affen rammt das
-#                 Schweinchen drüben den hängenden Balken (69, Sprung + Dash nach oben), der Affe pustet und schlüpft durch.
-#   K3 Sternentor Tor braucht 71 + 72 + 73. 71 schaltet zwei Wechselboden-Wände gegenläufig: AN = Weg in den Rammraum, AUS = Weg
-#                 vom Rammraum in die Hebelkammer. Das Windrad für 71 hängt über einer Kanzel, auf die der Affe nur über den
-#                 Schirm des Schweinchens kommt (Schirm-Trampolin). Lösung: Schweinchen hebt den Affen hinauf – Affe 71 AN –
-#                 Schweinchen in den Rammraum, rammt 72 (Sprung + Dash nach oben) – Affe 71 AUS – Schweinchen in die Hebelkammer,
-#                 Hebel 73 auf dem Sims – Affe 71 AN, springt hinunter und geht in den Rammraum – Schweinchen rammt den Balken
-#                 über dem Tor (71 AUS) – Affe kommt in die Hebelkammer – Schweinchen rammt noch einmal (71 AN): das Tor geht auf.
-# Keine Sackgassen: in jeder Lage kann einer von beiden die nötige Nummer wieder schalten (zwei Windräder übereinander hinter
-# Tür 3 als Rückweg, zweites Windrad für 71 in der Hebelkammer). Kein Stachel im Rätsel: wer einen Sprung verpasst, fällt nur
-# hinunter und versucht es noch einmal. Geprüft mit tests/bausteine/finale_a1_loesung.py (echte Physik, mit Gegenproben und
-# gemessenen Zeitfenstern für jeden knappen Sprung).
+# Teil 1 – zwei Hindernisse auf Zeit:
+#   H1 „Rammen und rennen“  Der hängende Balken (66, Zeitfenster 4 s) öffnet eine Tür HOCH oben in der Wand. Das Schweinchen rammt
+#       ihn (Sprung + Dash nach oben) und muss dann selbst über Stufe -> Kanzel (Weitsprung, 3 Reihen höher) -> Tür-Schwelle hinauf,
+#       bevor der Balken wieder draußen ist. Der Affe wartet oben auf der Kanzel und schlüpft im selben Zeitfenster durch.
+#   H2 „Atem-Treppe“        Über die hohe Mauer führen nur zwei Wechselboden-Stufen (67, fest solange AN). Diesseits hängt ein Windrad
+#       (67, „solange es dreht“): der Affe pustet, das Schweinchen muss hinüber, bevor ihm die Puste ausgeht. Drüben hängt ein Balken
+#       (67, Zeitfenster 3 s): das Schweinchen rammt ihn, der Affe klettert in dieser Zeit hinterher.
+# Checkpoint – danach
+# Teil 2 – die „Maschine“: sechs Räume auf zwei Etagen (unten G0 G1 G2, oben U0 U1 U2), vier Nummern A B C D (71–74).
+#   Wände (2 dick, jedes Kästchen ein eigener Wechselboden – man kommt nur durch, wenn BEIDE offen sind):
+#       G0|G1: A AN und D AUS      G1|G2: B AN und C AUS      U0|U1: C AUS und A AUS      U1|U2: A AN und C AN
+#   Luken im Boden der oberen Etage (offen = man fällt hinunter; hinauf kommt das Schweinchen allein mit Sprung + Dash nach oben,
+#   der Affe nur über den Schirm des Schweinchens darunter):   Luke 0: D AN     Luke 1: A AUS     Luke 2: B AUS
+#   Schalter:  G0 Windrad A (im Schacht über dem Sims: hinaufspringen, nach oben pusten)    U0 Rammbalken C (Sprung + Dash)
+#              U1 Hebel C (auf dem Sims) und Rammbalken D (hängt, Sprung + Dash nach oben)
+#              U2 Rammbalken B (über dem Tor) und Windrad D (hoch oben, gerade so)
+#   Tor (oben rechts, 2 dick): braucht A + B + D.
+#   Kürzester Weg: 10-mal schalten (durchgerechnet in tests/bausteine/finale_a1_logik.py, dort steht auch der Lösungsweg). Es gibt
+#   wenige Lagen, aus denen es nicht weitergeht (beide getrennt, keiner erreicht mehr einen passenden Schalter) – dafür der
+#   Checkpoint am Eingang und im Pausenmenü „Zurück zum Checkpoint“ (setzt nur die Maschine zurück).
+# Geprüft mit tests/bausteine/finale_a1_loesung.py (echte Physik, Gegenproben).
 # Aufruf: python tests/bausteine/finale_a1.py   (baut neu, schreibt beide Level-Formate über den Editor-Export)
 import sys
 from pathlib import Path
@@ -35,63 +34,73 @@ DATEI = 'dschungel/abschnitt-1-sternschnuppenspur.json'
 AB = 4756            # ab dieser Spalte wird alles neu gebaut (Checkpoint bei 4755 bleibt)
 BODEN = 16           # Reihe des Bodens (man steht auf seiner Oberkante)
 OBEN = -3            # oberste bebaubare Reihe
-N_TUER1, N_SCHLEUSE, N_AUFZUG, N_RAMM3, N_WIND3, N_STERN, N_RAMM4, N_HEBEL4 = 66, 67, 68, 69, 70, 71, 72, 73
-KANZEL_REIHE = 10    # Kanzeln: 6 Reihen über dem Boden (ein Sprung reicht nicht, das Schirm-Trampolin gerade so)
-STUFE_REIHE = 13     # Stufen/Simse: 3 Reihen über dem Boden (ein voller Sprung)
-WIND_HOCH = 3        # Windrad über einer Kanzel (vom Boden aus reicht kein Wind hinauf, die Kanzel verdeckt es)
-WIND_BODEN = 7       # Windrad, das der Wind nach oben vom Boden aus gerade so erreicht (8 Kästchen)
-SIMS_REIHE = 3       # Sims des Aufzugs: 13 Reihen über dem Boden
-HAENG_REIHE = 8      # hängender Rammbalken: Stirnseite 6 Kästchen über dem Boden – nur Sprung + Dash nach oben erreicht sie
+ETAGE = 10           # Reihe des Bodens der oberen Etage (6 Reihen über dem Boden: ein Sprung reicht nicht)
+N_H1, N_H2 = 66, 67
+N_A, N_B, N_C, N_D = 71, 72, 73, 74
+ZEIT_H1, ZEIT_H2 = 4, 3
+STUFE_REIHE = 13     # Stufen/Simse unten: 3 Reihen über dem Boden (ein voller Sprung)
+HAENG_REIHE = 8      # hängender Rammbalken unten: Stirnseite 6 Kästchen über dem Boden – nur Sprung + Dash nach oben erreicht sie
+WIND_BODEN = 7       # Windrad, das der Wind nach oben vom Boden aus gerade so erreicht
+MAUER_REIHE = 7      # Oberkante der Mauer von H2 (9 Reihen hoch)
+SCHACHT_REIHE = 6    # Windrad A im Schacht: vom Boden aus reicht der Wind nach oben nur bis Reihe 7
+M0 = 4806            # erste Spalte der Maschine (Raum 0); Räume je 10 breit, Wände je 2 dick
 
 # Alle Spalten an einer Stelle (das Lösungs-Skript finale_a1_loesung.py benutzt dieselben)
 S = dict(
-    kanzel1=4760,                     # K0: Kanzel (2 breit), darüber das Windrad 66
-    stufe1=4767,                      # K0: Stufe (2 breit) – von hier der Weitsprung zur Kanzel (5 Kästchen Lücke, 3 Reihen höher)
-    tuer1=4772,                       # Tür 1 (2 dick: tuer1, tuer1+1)
-    sims2=4775,                       # K1: Sims mit dem Hebel der Schleuse
-    balken1=4783,                     # K1: Rammbalken über dem Durchgang der Schleuse (ragt nach links aus der Wand)
-    s1=4784, schleuse=4787, s2=4789,  # Schleuse: A-Wand (2 dick), Kammer (Mitte), B-Wand (2 dick)
-    wind2=4792,                       # K2: Windrad „umschalten“ (Schleuse), hoch
-    rad=4794, aufzug=4796,            # K2: Floß-Rad, Aufzug (3 breit)
-    sims=4799, sims_bis=4800,         # Sims oben (kurz), danach die Lücke
-    balken3=4807,                     # Rammbalken jenseits der Lücke, 4 Reihen ÜBER dem Sims: Stirnseite 5 Kästchen hinter der Kante – nur Sprung + Dash am höchsten Punkt
-    wind3=4812,                       # K2: Windrad „solange“ hoch über dem Platz vor Tür 3
-    tuer3=4813,                       # Tür 3 (2 dick)
-    wind3b=4816,                      # K3: zwei Windräder übereinander (70 und 69) – Rückweg, falls einer drüben festsitzt
-    haeng3=4819,                      # K3: hängender Rammbalken (69, Zeitfenster)
-    kanzel4=4823,                     # K3: Kanzel (2 breit), darüber das Windrad 71 – nur über das Schirm-Trampolin
-    wa=4829,                          # A-Wand (2 dick; offen, solange 71 AN) -> Rammraum
-    haeng4=4834,                      # Rammraum: hängender Rammbalken (72 umschalten)
-    wb=4838,                          # B-Wand (2 dick; offen, solange 71 AUS) -> Hebelkammer
-    sims4=4840, wind5=4843, balken5=4848,   # Hebelkammer: Sims mit Hebel (73) gleich hinter der Wand, Windrad (71), Rammbalken über dem Tor (71)
-    tor=4849, ziel=4856, boden_bis=4866,
+    haeng1=4759,                      # H1: hängender Rammbalken (66, 5 s)
+    stufe1=4763,                      # H1: Stufe (2 breit, Reihe 13)
+    kanzel1=4769,                     # H1: Kanzel (2 breit, Reihe 10) – 4 Kästchen Lücke, 3 Reihen höher (5 gehen nur mit vollem Anlauf)
+    tuer1=4776,                       # H1: Wand (2 dick) mit der Tür oben (Reihen 7–9), 5 Kästchen Lücke hinter der Kanzel
+    wind2=4780,                       # H2: Windrad (67, solange es dreht), hoch
+    tritt1=4783, tritt2=4789,         # H2: zwei Wechselboden-Stufen (je 2 breit; Reihe 13 und Reihe 10)
+    mauer=4795,                       # H2: Mauer (2 dick, Oberkante Reihe 7)
+    haeng2=4799,                      # H2: hängender Rammbalken (67, 3 s) hinter der Mauer
+    checkpoint=4802,
+    m0=M0,
+    wand_links=M0 - 2,                # Außenwand der oberen Etage (2 dick)
+    wind_a=M0, sims_a=M0,             # G0: Sims (Reihe 13, 2 breit); das Windrad A sitzt darüber in einem Schacht in der Decke (Reihe 6)
+    balken_c=M0 + 2,                  # U0: Rammbalken C ragt aus dem Schacht-Klotz nach rechts
+    luke0=M0 + 6,
+    w0=M0 + 10,                       # Wand Raum 0 | Raum 1 (unten und oben)
+    sims_c=M0 + 13,                   # U1: Sims mit dem Hebel C
+    luke1=M0 + 16,
+    haeng_d=M0 + 19,                  # U1: hängender Rammbalken D
+    w1=M0 + 22,                       # Wand Raum 1 | Raum 2
+    luke2=M0 + 26,
+    wind_d=M0 + 30,                   # U2: Windrad D hoch oben
+    balken_b=M0 + 33,                 # U2: Rammbalken B über dem Tor
+    tor=M0 + 34,                      # Tor (2 dick, oben)
+    ziel=M0 + 40, boden_bis=4866,
 )
 
 FELDER = ['hooks', 'switches', 'doors', 'spikes', 'coins', 'plates', 'switchFloors', 'windraeder', 'rammbalken', 'blattFloesse',
-          'flossRaeder', 'draisinen', 'meteoriten', 'bouncers', 'bruchWaende', 'pusteblumen', 'trommeln']
-T3 = (13, 14, 15)    # Reihen der Durchgänge
+          'flossRaeder', 'draisinen', 'meteoriten', 'bouncers', 'bruchWaende', 'pusteblumen', 'trommeln', 'checkpoints']
+UNTEN3 = (13, 14, 15)      # Reihen der Durchgänge unten
+OBEN3 = (7, 8, 9)          # Reihen der Durchgänge oben
 
-def wand(lv, c, dick=2):
-    """Erd-Wand (2 dick) bis zum oberen Bildrand, unten bleibt der Durchgang frei (dort kommt Tür bzw. Wechselboden hin)."""
-    for cc in range(c, c + dick):
-        for r in range(OBEN, BODEN):
-            if r in T3: lv.leer(cc, r)
+def gruppe(an):
+    """Wechselboden, der OFFEN ist, wenn die Nummer AN (an=1) bzw. AUS (an=0) ist: A = fest solange aus, B = fest solange an."""
+    return 'A' if an else 'B'
+
+def mauer(lv, c, r0, r1, frei=()):
+    for cc in (c, c + 1):
+        for r in range(r0, r1 + 1):
+            if r in frei: lv.leer(cc, r)
             else: lv.kachel(cc, r, 'ground')
 
-def tuer(lv, c, **nummern):
-    wand(lv, c)
-    for cc in (c, c + 1):
-        for r in T3: lv.punkt('doors', cc, r, **nummern)
+def wechselwand(lv, c, reihen, bed):
+    """bed = [(nummer, an), (nummer, an)]: je Kästchen-Spalte eine Bedingung."""
+    for k, (nr, an) in enumerate(bed):
+        for r in reihen: lv.punkt('switchFloors', c + k, r, gruppe=gruppe(an), link=nr, takt=0)
 
-def wechselwand(lv, c, gruppe, link):
-    wand(lv, c)
+def luke(lv, c, nr, an):
     for cc in (c, c + 1):
-        for r in T3: lv.punkt('switchFloors', cc, r, gruppe=gruppe, link=link, takt=0)
+        lv.leer(cc, ETAGE); lv.punkt('switchFloors', cc, ETAGE, gruppe=gruppe(an), link=nr, takt=0)
 
-def haengebalken(lv, c, link, **extra):
-    """Erd-Klotz (2 breit) mit einem Rammbalken, der nach unten hängt: Stirnseite 6 Kästchen über dem Boden."""
-    lv.kachel(c, HAENG_REIHE - 1, 'ground'); lv.kachel(c + 1, HAENG_REIHE - 1, 'ground')
-    lv.punkt('rammbalken', c, HAENG_REIHE, link=link, wand='oben', **extra)
+def haengebalken(lv, c, reihe, link, **extra):
+    """Erd-Klotz (2 breit) mit einem Rammbalken, der nach unten hängt."""
+    lv.kachel(c, reihe - 1, 'ground'); lv.kachel(c + 1, reihe - 1, 'ground')
+    lv.punkt('rammbalken', c, reihe, link=link, wand='oben', **extra)
 
 def bauen():
     lv = L.Level(DATEI)
@@ -101,54 +110,66 @@ def bauen():
     lv.ed['movers'] = [m for m in lv.ed.get('movers', []) if m['c'] < AB]
     lv.rechteck(AB, BODEN, S['boden_bis'], BODEN + 1, 'ground')
 
-    # ---- K0 Vorraum ----
-    lv.rechteck(S['kanzel1'], KANZEL_REIHE, S['kanzel1'] + 1, KANZEL_REIHE, 'ground')
-    lv.punkt('windraeder', S['kanzel1'], WIND_HOCH, link=N_TUER1, art='solange')
+    # ---- H1 Rammen und rennen ----
+    haengebalken(lv, S['haeng1'], HAENG_REIHE, N_H1, art='zeit', zeit=ZEIT_H1)
     lv.rechteck(S['stufe1'], STUFE_REIHE, S['stufe1'] + 1, STUFE_REIHE, 'ground')
-    tuer(lv, S['tuer1'], link=N_TUER1)
-    # ---- K1: Sims mit Hebel, Rammbalken über dem Durchgang, Schleuse ----
-    lv.rechteck(S['sims2'], STUFE_REIHE, S['sims2'] + 1, STUFE_REIHE, 'ground')
-    lv.punkt('switches', S['sims2'], STUFE_REIHE - 1, link=N_SCHLEUSE)
-    wechselwand(lv, S['s1'], 'A', N_SCHLEUSE); wechselwand(lv, S['s2'], 'B', N_SCHLEUSE)
-    lv.punkt('rammbalken', S['balken1'], 12, link=N_TUER1, wand='rechts', art='zeit', zeit=8)
-    # ---- K2: Windrad (Schleuse von drüben), Aufzug mit Rad, Sims, Lücke, Rammbalken, Tür mit zwei Nummern ----
-    lv.punkt('windraeder', S['wind2'], WIND_BODEN, link=N_SCHLEUSE)
-    lv.punkt('flossRaeder', S['rad'], 15, link=N_AUFZUG)
-    lv.punkt('blattFloesse', S['aufzug'], 15, link=N_AUFZUG, schiene=BODEN - SIMS_REIHE, richtung='hoch', sinkt='ja')
-    lv.rechteck(S['sims'], SIMS_REIHE, S['sims_bis'], SIMS_REIHE, 'ground')
-    lv.rechteck(S['balken3'] + 1, OBEN, S['balken3'] + 2, SIMS_REIHE, 'ground')          # Kappe (2 dick), hängt von oben herab
-    lv.punkt('rammbalken', S['balken3'], SIMS_REIHE - 4, link=N_RAMM3, wand='rechts', art='zeit', zeit=8)
-    lv.punkt('windraeder', S['wind3'], WIND_BODEN, link=N_WIND3, art='solange')
-    tuer(lv, S['tuer3'], link=N_RAMM3, und=N_WIND3, und2=0)
-    # ---- K3 Eingang: von hier aus kann jeder dem anderen öffnen (keine Sackgasse, egal wer zuerst ging) ----
-    lv.punkt('windraeder', S['wind3b'], WIND_BODEN, link=N_WIND3, art='solange')         # ein Puste-Strahl nach oben dreht beide …
-    lv.punkt('windraeder', S['wind3b'], WIND_BODEN + 1, link=N_RAMM3, art='solange')     # … also 70 und 69 zugleich
-    haengebalken(lv, S['haeng3'], N_RAMM3, art='zeit', zeit=8)
-    # ---- K3 Sternentor ----
-    lv.rechteck(S['kanzel4'], KANZEL_REIHE, S['kanzel4'] + 1, KANZEL_REIHE, 'ground')
-    lv.punkt('windraeder', S['kanzel4'], WIND_HOCH, link=N_STERN)
-    wechselwand(lv, S['wa'], 'A', N_STERN); wechselwand(lv, S['wb'], 'B', N_STERN)
-    tuer(lv, S['tor'], link=N_STERN, und=N_RAMM4, und2=N_HEBEL4)
-    haengebalken(lv, S['haeng4'], N_RAMM4, art='umschalten')
-    lv.punkt('windraeder', S['wind5'], WIND_BODEN, link=N_STERN)
-    lv.rechteck(S['sims4'], STUFE_REIHE, S['sims4'] + 1, STUFE_REIHE, 'ground')
-    lv.punkt('switches', S['sims4'], STUFE_REIHE - 1, link=N_HEBEL4)
-    lv.punkt('rammbalken', S['balken5'], 12, link=N_STERN, wand='rechts', art='umschalten')
-    # ---- Ziel, Meteoriten-Spur ----
-    lv.ed['goal'] = {'c': S['ziel'], 'r': 15}
-    lv.punkt('meteoriten', S['ziel'] + 3, 15); lv.punkt('meteoriten', S['balken3'] - 2, 9); lv.punkt('meteoriten', S['kanzel4'] + 4, 5)
+    lv.rechteck(S['kanzel1'], ETAGE, S['kanzel1'] + 1, ETAGE, 'ground')
+    mauer(lv, S['tuer1'], OBEN, BODEN - 1, frei=OBEN3)
+    for cc in (S['tuer1'], S['tuer1'] + 1):
+        for r in OBEN3: lv.punkt('doors', cc, r, link=N_H1)
+    # ---- H2 Atem-Treppe ----
+    lv.punkt('windraeder', S['wind2'], WIND_BODEN, link=N_H2, art='solange')
+    for c, r in ((S['tritt1'], STUFE_REIHE), (S['tritt2'], ETAGE)):
+        for cc in (c, c + 1): lv.punkt('switchFloors', cc, r, gruppe='B', link=N_H2, takt=0)
+    mauer(lv, S['mauer'], MAUER_REIHE, BODEN - 1)
+    haengebalken(lv, S['haeng2'], HAENG_REIHE, N_H2, art='zeit', zeit=ZEIT_H2)
+    lv.checkpoint(S['checkpoint'], 15)
+
+    # ---- die Maschine ----
+    m = M0
+    lv.rechteck(m - 2, ETAGE, S['tor'] + 1, ETAGE, 'ground')                    # Boden der oberen Etage
+    mauer(lv, S['wand_links'], OBEN, ETAGE)                                     # Außenwand oben links
+    for c, unten, oben in ((S['w0'], [(N_A, 1), (N_D, 0)], [(N_C, 0), (N_A, 0)]),
+                           (S['w1'], [(N_B, 1), (N_C, 0)], [(N_A, 1), (N_C, 1)])):
+        mauer(lv, c, OBEN, BODEN - 1, frei=UNTEN3 + OBEN3)
+        wechselwand(lv, c, UNTEN3, unten); wechselwand(lv, c, OBEN3, oben)
+    luke(lv, S['luke0'], N_D, 1); luke(lv, S['luke1'], N_A, 0); luke(lv, S['luke2'], N_B, 0)
+    # rechte Außenwand: unten zu, oben das Tor
+    mauer(lv, S['tor'], OBEN, BODEN - 1, frei=OBEN3)
+    for cc in (S['tor'], S['tor'] + 1):
+        for r in OBEN3: lv.punkt('doors', cc, r, link=N_A, und=N_B, und2=N_D)
+    # G0: Sims; darüber ein Schacht durch die Decke (ragt als Klotz in U0), ganz oben das Windrad A – nur vom Sims aus nach oben
+    # gepustet reicht der Wind hinauf (vom Boden aus ist es zu weit und der Sims ist im Weg, schräg kommt nichts in den Schacht)
+    lv.leer(S['wind_a'], ETAGE)
+    for r in range(SCHACHT_REIHE, ETAGE): lv.kachel(S['wind_a'] + 1, r, 'ground')
+    lv.kachel(S['wind_a'], SCHACHT_REIHE - 1, 'ground'); lv.kachel(S['wind_a'] + 1, SCHACHT_REIHE - 1, 'ground')
+    lv.punkt('windraeder', S['wind_a'], SCHACHT_REIHE, link=N_A)
+    lv.rechteck(S['sims_a'], STUFE_REIHE, S['sims_a'] + 1, STUFE_REIHE, 'ground')
+    # U0: Rammbalken C aus dem Schacht-Klotz, 3 Reihen über dem Boden
+    lv.punkt('rammbalken', S['balken_c'], ETAGE - 4, link=N_C, wand='links', art='umschalten')
+    # U1: Sims mit Hebel C, hängender Balken D
+    lv.rechteck(S['sims_c'], ETAGE - 3, S['sims_c'] + 1, ETAGE - 3, 'ground'); lv.punkt('switches', S['sims_c'], ETAGE - 4, link=N_C)
+    haengebalken(lv, S['haeng_d'], HAENG_REIHE - 6, N_D, art='umschalten')
+    # U2: Windrad D hoch oben, Rammbalken B über dem Tor
+    lv.punkt('windraeder', S['wind_d'], WIND_BODEN - 6, link=N_D)
+    lv.punkt('rammbalken', S['balken_b'], ETAGE - 4, link=N_B, wand='rechts', art='umschalten')
+    # ---- Ziel auf dem Podest hinter dem Tor ----
+    lv.rechteck(S['tor'] + 2, ETAGE, S['boden_bis'], BODEN - 1, 'ground')
+    lv.ed['goal'] = {'c': S['ziel'], 'r': ETAGE - 1}
+    lv.punkt('meteoriten', S['ziel'] + 3, ETAGE - 1); lv.punkt('meteoriten', S['kanzel1'] + 3, 5); lv.punkt('meteoriten', S['luke1'] + 1, 3)
     # ---- Münzen: Blau (Affe) und Pink (Schweinchen) wieder gleich viele im ganzen Level ----
-    blau = [(S['kanzel1'], 8), (S['kanzel1'] + 1, 8), (S['stufe1'], 11), (S['wind2'] + 1, 13), (S['kanzel4'], 8), (S['kanzel4'] + 1, 8)]
-    pink = [(S['balken1'] - 2, 11), (S['sims'], 1), (S['sims'] + 1, 1), (S['balken3'] - 2, -2), (S['haeng3'], 11), (S['haeng4'], 11),
-            (S['haeng4'] + 1, 11), (S['sims4'], 10), (S['sims4'] + 1, 10), (S['balken5'] - 2, 11), (S['tor'] + 4, 14)]
+    blau = [(S['kanzel1'], 8), (S['kanzel1'] + 1, 8), (S['tritt2'], 8), (S['sims_a'], 11), (S['sims_a'] + 1, 11), (S['wind_d'], 6)]
+    pink = [(S['haeng1'], 11), (S['stufe1'], 11), (S['tritt1'], 11), (S['mauer'], 5), (S['mauer'] + 1, 5), (S['haeng2'], 11),
+            (S['balken_c'] + 2, 7), (S['sims_c'], 5), (S['haeng_d'], 6), (S['haeng_d'] + 1, 6), (S['tor'] + 4, 8)]
     for c, r in blau: lv.muenze(c, r, 'blue')
     for c, r in pink: lv.muenze(c, r, 'pink')
-    n = {f: sum(1 for m in lv.ed['coins'] if m.get('color') == f) for f in ('blue', 'pink')}
-    assert n['blue'] == n['pink'], f'Münzen nicht ausgeglichen: {n}'
-    lv.merke('Ende ab Spalte 4756 neu: Logik-Rätsel in vier Kammern (tests/bausteine/finale_a1.py)')
+    n = {f: sum(1 for mz in lv.ed['coins'] if mz.get('color') == f) for f in ('blue', 'pink')}
+    lv.merke('Ende ab Spalte 4756 neu (3. Fassung): zwei Zeit-Hindernisse + Maschine mit sechs Räumen (tests/bausteine/finale_a1.py)')
     return lv, n
 
 if __name__ == '__main__':
     lv, n = bauen()
+    print('Münzen', n)
+    assert n['blue'] == n['pink'], f'Münzen nicht ausgeglichen: {n}'
     L.speichern([lv])
-    print('gebaut und gespeichert; Münzen', n)
+    print('gebaut und gespeichert')

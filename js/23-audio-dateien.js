@@ -19,7 +19,11 @@
 //            4 s vor dem Sprung werden schon in den Klang von kurz vor 0:48 übergeblendet, so gibt es keinen Ruck.
 const AUDIO_FILES = {music: 'assets/audio/musik-nebel.mp3', birds: 'assets/audio/voegel.mp3',
                      rain: 'assets/audio/regen.mp3', river: 'assets/audio/fluss.mp3', atmo: 'assets/audio/hintergrund.mp3',
-                     wald: 'assets/audio/wald.wav'};
+                     wald: 'assets/audio/wald.wav', gitarre: 'assets/audio/musik-gitarre.wav'};
+// gitarre (Nutzer 20.11.: „kannst du die Gitarre als Loop das ganze Level im Hintergrund laufen lassen … mach einfach nur das“):
+// musik-gitarre.wav (Splice „Jazz Hop 2 – kit loop pella guitar Fmin“, 4 Takte bei 90 bpm = 10,67 s, auf 16 Bit verkleinert) ist DIE
+// Musik des Spiels. Sie ist schon eine genaue Schleife: läuft unverändert im Kreis (KEIN Überblenden wie bei den Hintergrund-Tönen –
+// das würde den Takt verschieben). Regler „Musik“ (VOL.music); die Wald-Geräusche hängen seitdem am Regler „Hintergrund“.
 // wald (Nutzer 06.11.: „Musik komplett raus, die Forest-Geräusche für Musik rein, auch über Optionen steuerbar, im Loop“):
 // wald.wav (Splice „Forest_05“) läuft wieder – als nahtlose Schleife NEBEN dem Hintergrund-Ton, an Stelle der Musik; geregelt
 // über den Regler „Wald“ (früher „Musik“, VOL.music). Lautstärke wie damals als Hintergrund (2,6).
@@ -29,7 +33,7 @@ const AUDIO_FILES = {music: 'assets/audio/musik-nebel.mp3', birds: 'assets/audio
 // atmo: seit 06.11. wald.wav (Nutzer-Datei Splice „Forest_05“, 21 s, auf 16 Bit verkleinert) statt draussen.mp3 – gemessen
 // gleich laut (RMS 0,003), daher gleiche Lautstärke; draussen.mp3 bleibt liegen.
 // music 0,38 -> 0,15: die neue Musik ist kräftig abgemischt, „halbleise“ (Nutzer 06.11.); dann „3 % leiser“ -> 0,1455
-const FILE_VOL = {music: 0.1455, birds: 0.6, rain: 0.8, river: 2.0, atmo: 0.075, wald: 2.6};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
+const FILE_VOL = {music: 0.1455, birds: 0.6, rain: 0.8, river: 2.0, atmo: 0.075, wald: 2.6, gitarre: 0.3};   // Hintergrund 0,7 -> 1,6 -> 2,6 (zweimal „lauter“, 06.11.)
 const ATMO_STATT_VOEGEL_FLUSS = true;   // false = alter Hintergrund (Vögel + Fluss) statt draussen.mp3
 const MUSIK_AUS = true;   // Nutzer 06.11.: erst „die Akkorde können raus“, dann „Warm Analog Fog“ als Musik, dann „Musik komplett raus“
                           // (musik-nebel.mp3 bleibt liegen, zurück mit false); das erzeugte Klavier (22) bleibt aus
@@ -84,13 +88,14 @@ function fileAudioStart(){
       }).catch(()=>{ fileAudio.ok.music = false; fileAudio.err = true; });
   }catch(e){}
   // kurze Schleifen: laden, dekodieren, nahtlos machen
-  for(const key of ATMO_STATT_VOEGEL_FLUSS ? ['atmo', 'wald', 'rain'] : ['birds', 'rain', 'river']){
+  for(const key of ATMO_STATT_VOEGEL_FLUSS ? ['atmo', 'wald', 'rain', 'gitarre'] : ['birds', 'rain', 'river', 'gitarre']){
     fetch(AUDIO_FILES[key]).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
       .then(ab => a.decodeAudioData(ab))
       .then(buf => {
-        const src = a.createBufferSource(); src.buffer = fileLoopBuffer(a, buf, key === 'atmo' || key === 'wald' ? 2.5 : 1.0); src.loop = true;
+        const takt = key === 'gitarre';   // Musik-Schleife: genau so lang lassen, von vorne beginnen
+        const src = a.createBufferSource(); src.buffer = takt ? buf : fileLoopBuffer(a, buf, key === 'atmo' || key === 'wald' ? 2.5 : 1.0); src.loop = true;
         const g = a.createGain(); g.gain.value = 0;
-        src.connect(g); g.connect(audioOut()); src.start(0, Math.random()*src.buffer.duration*0.5);
+        src.connect(g); g.connect(audioOut()); src.start(0, takt ? 0 : Math.random()*src.buffer.duration*0.5);
         fileAudio.loops[key] = g; fileAudio.ok[key] = true;
       }).catch(()=>{ fileAudio.ok[key] = false; });
   }
@@ -116,7 +121,7 @@ function musikSchleifeBauen(a, buf){
 function audioStatusText(){
   if(soundMuted) return 'Ton: aus (M)';
   if(!audioCtx || audioCtx.state !== 'running') return 'Ton: wartet auf ersten Tastendruck';
-  if(MUSIK_AUS) return 'Musik: aus (nur Hintergrund-Ton)';
+  if(MUSIK_AUS) return fileAudio.loops.gitarre ? 'Musik: Gitarren-Schleife' : 'Musik: lädt…';
   if(fileAudio.err) return 'Musik: Datei lädt nicht';
   const m = fileAudio.musikBuf, q = fileAudio.musikQuelle;
   if(!m) return 'Musik: lädt…';
@@ -256,7 +261,8 @@ function fileAudioUpdate(){
   const amb = (typeof THEME !== 'undefined' && THEME && THEME.ambiente) || {voegel: 1, fluss: 1};
   if(L.birds) L.birds.gain.setTargetAtTime(FILE_VOL.birds*VOL.atmo*sun*sun*fileAudio.birdsBack*amb.voegel, now, 1.2);
   if(L.atmo) L.atmo.gain.setTargetAtTime(FILE_VOL.atmo*VOL.atmo, now, 1.5);
-  if(L.wald) L.wald.gain.setTargetAtTime(FILE_VOL.wald*VOL.music, now, 1.5);   // Wald-Geräusche statt Musik, Regler „Wald“
+  if(L.wald) L.wald.gain.setTargetAtTime(FILE_VOL.wald*VOL.atmo, now, 1.5);   // Wald-Geräusche: seit der Gitarre am Regler „Hintergrund“
+  if(L.gitarre) L.gitarre.gain.setTargetAtTime(FILE_VOL.gitarre*VOL.music, now, 1.5);   // Musik (Gitarren-Schleife), Regler „Musik“
   if(L.rain) L.rain.gain.setTargetAtTime(FILE_VOL.rain*VOL.atmo*r, now, 0.8);
   if(L.river){
     // Wasserfall im Bild? (Hintergrund-Ebene mit Wasserfall, gleiche Rechnung wie beim Zeichnen)

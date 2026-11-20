@@ -301,7 +301,7 @@ elementRegistrieren({
        werte: [['rechts', 'Wand rechts'], ['links', 'Wand links'], ['unten', 'Boden (ragt hoch)'], ['oben', 'Decke (hängt runter)']]},
       {key: 'art', label: 'Rammbalken', titel: 'Zeitfenster: an, bis er wieder heraus ist – oder: jeder Stoß schaltet um', werte: [['zeit', 'Zeitfenster'], ['umschalten', 'umschalten']]},
       {key: 'zeit', label: 'Zeit', zahl: true, titel: 'so lange bleibt die Nummer nach dem Rammstoß an (nur „Zeitfenster“)',
-       werte: [['5', '5 s'], ['3', '3 s'], ['8', '8 s'], ['12', '12 s'], ['15', '15 s']]},
+       werte: [['5', '5 s'], ['3', '3 s'], ['4', '4 s'], ['8', '8 s'], ['12', '12 s'], ['15', '15 s']]},
     ],
     // gedrückt halten und ziehen: der Balken ragt in die Zieh-Richtung (die Fläche, aus der er kommt, liegt gegenüber)
     drehen(p, rx, ry){ const n = rx > 0 ? 'links' : rx < 0 ? 'rechts' : ry < 0 ? 'unten' : 'oben'; if(n === (p.wand || 'rechts')) return ''; p.wand = n;

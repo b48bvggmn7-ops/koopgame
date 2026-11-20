@@ -1123,6 +1123,28 @@ async def vollbild_esc_bleibt(g):
     assert await g.ev("window.__lock") == 'frei', 'Sperre wird nach dem Vollbild nicht gelöst'
 
 @test
+async def pause_zum_checkpoint(g):
+    """Nutzer 20.11. (Maschine am Ende von Abschnitt 1): Pausenmenü „Zurück zum Checkpoint“ setzt beide an die letzte Fahne und
+    alle Schalter zurück (wie nach einem Tod), ohne einen Tod zu zählen und ohne das Level von vorn zu starten."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 200, 'y': 680}, {'x': 120, 'y': 680},
+                       switches=[{'x': 1100, 'y': 660, 'link': 1}], doors=[{'x': 1400, 'y': 560, 'w': 40, 'h': 120, 'link': 1}],
+                       checkpoints=[{'x': 900, 'y': 680}]))
+    await g.ev("p1.x = 900; p2.x = 900; 0"); await g.steps(20)
+    assert await g.ev("activeCp") == 0, 'Checkpoint nicht erreicht'
+    await g.ev("p1.x = 1250; p2.x = 1300; setLink(1, true); 0"); await g.steps(20)
+    assert await g.ev("!!linkOn[1]"), 'Vorbereitung: Nummer nicht an'
+    await g.ev("showPauseMenu(); 0")
+    eintraege = await g.ev("menuList.map(m => m.el.textContent)")
+    assert any('Checkpoint' in t for t in eintraege), f'Pausenmenü ohne „Zurück zum Checkpoint“: {eintraege}'
+    assert eintraege.index(next(t for t in eintraege if 'Ton' in t)) == 3, f'Ton-Eintrag verrutscht: {eintraege}'
+    await g.ev("menuList.find(m => m.el.textContent.includes('Checkpoint')).action(); 0"); await g.steps(10)
+    r = await g.ev("({m: menuScreen, x1: p1.x, x2: p2.x, an: !!linkOn[1], tode: deathCount.m + deathCount.f, cp: activeCp, tuer: solids.filter(s => s.type === 'door').every(s => !s.gone)})")
+    assert not r['m'], f'Menü bleibt offen: {r}'
+    assert abs(r['x1'] - 900) < 60 and abs(r['x2'] - 900) < 60, f'Figuren stehen nicht an der Fahne: {r}'
+    assert not r['an'] and r['tuer'], f'Schalter/Tür nicht zurückgesetzt: {r}'
+    assert r['tode'] == 0 and r['cp'] == 0, f'Tod gezählt oder Checkpoint verloren: {r}'
+
+@test
 async def optionen_im_spiel(g):
     """Nutzer 06.11.: Optionen auch beim Spielen und im Editor-Test – Pausenmenü „⚙ Optionen“ und Taste O öffnen sie,
     „Zurück“/Esc führt wieder ins Pausenmenü. Steuerung ohne Dash (Dschungel), mit Pusten/Schirm-Trampolin und Draisine-Griff;
@@ -6061,15 +6083,22 @@ async def eigene_aufnahmen(g):
         await g.ev("setVolume('atmo', 1); 0")
         assert leise['atmo'] < amb['atmo']*0.4 and leise['sfx'] == 1 and leise['music'] == 1, f'Hintergrund-Regler wirkt nicht: {amb} -> {leise}'
         assert 'hintergrund.mp3' in await g.ev("AUDIO_FILES.atmo")
-        # Musik komplett raus, dafür Wald-Geräusche (wald.wav) als Schleife, Regler „Wald“ = VOL.music (Nutzer 06.11.)
-        for _ in range(20):
-            if await g.ev("!!fileAudio.ok.wald"): break
+        # Nutzer 20.11.: die Gitarren-Schleife (musik-gitarre.wav) ist die Musik – genau 4 Takte bei 90 bpm, unverändert im Kreis (kein
+        # Überblenden), Regler „Musik“ = VOL.music; die Wald-Geräusche (wald.wav) laufen weiter, jetzt am Regler „Hintergrund“.
+        # Die alte Musik (Akkorde, „Warm Analog Fog“) bleibt aus.
+        for _ in range(30):
+            if await g.ev("!!fileAudio.ok.wald && !!fileAudio.ok.gitarre"): break
             await p.wait_for_timeout(500)
-        wald = await g.ev("({ok: fileAudio.ok.wald, g: fileAudio.loops.wald && fileAudio.loops.wald.gain.value, aus: MUSIK_AUS, musik: !!fileAudio.musikBuf, schleife: true})")
-        assert wald['ok'] and wald['g'] > 0.5 and wald['aus'] and not wald['musik'], f'Wald-Geräusche / Musik falsch: {wald}'
+        await p.wait_for_timeout(2500)
+        ton = await g.ev("""({wald: fileAudio.loops.wald && fileAudio.loops.wald.gain.value, gitarre: fileAudio.loops.gitarre && fileAudio.loops.gitarre.gain.value,
+            aus: MUSIK_AUS, alt: !!fileAudio.musikBuf, datei: AUDIO_FILES.gitarre})""")
+        assert ton['wald'] > 0.5 and ton['gitarre'] > 0.1 and ton['aus'] and not ton['alt'] and 'musik-gitarre.wav' in ton['datei'], f'Gitarren-Musik / Wald-Geräusche falsch: {ton}'
+        import wave as _wave
+        with _wave.open(str(ROOT / 'assets' / 'audio' / 'musik-gitarre.wav'), 'rb') as w: dauer = w.getnframes()/w.getframerate()
+        assert abs(dauer - 4*4*60/90) < 0.002, f'Gitarren-Schleife ist nicht genau 4 Takte bei 90 bpm lang: {dauer}'
         await g.ev("setVolume('music', 0.2); 0"); await p.wait_for_timeout(2500)
-        leiser = await g.ev("fileAudio.loops.wald.gain.value"); await g.ev("setVolume('music', 1); 0")
-        assert leiser < wald['g']*0.4, f'Regler „Wald“ wirkt nicht: {wald} -> {leiser}'
+        leiser = await g.ev("({wald: fileAudio.loops.wald.gain.value, gitarre: fileAudio.loops.gitarre.gain.value})"); await g.ev("setVolume('music', 1); 0")
+        assert leiser['gitarre'] < ton['gitarre']*0.4 and leiser['wald'] > ton['wald']*0.9, f'Regler „Musik“ muss nur die Gitarre regeln: {ton} -> {leiser}'
         assert await g.ev("GERAEUSCH_STUECKE.tuer.ganz.every(([a, l]) => l <= 1.05)"), 'Tür-Ton zu lang'
         # nahtlose Schleife: Anfang/Ende ohne Stille
         assert await g.ev("""(()=>{ const src = audioCtx.createBuffer(2, 44100*4, 44100);

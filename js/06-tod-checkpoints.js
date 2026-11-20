@@ -50,6 +50,12 @@ function continueAfterDeath(){
   for(const k in KEYS) if(k.endsWith('_pressed')) KEYS[k] = false;
   deathState = null;
 }
+// Pausenmenü „Zurück zum Checkpoint“: wie nach einem Tod (beide an die letzte Fahne, Schalter aus), aber ohne Tod zu zählen
+function zumCheckpointZurueck(){
+  if(won) return;
+  continueAfterDeath();
+  camPos = Math.max(0, Math.min(LEVEL_W-VW, Math.min(p1.x,p2.x) - CAM_LEFT));
+}
 function requestContinue(){
   if(deathState && performance.now() >= deathState.canContinueAt) deathState.go = true;
 }
