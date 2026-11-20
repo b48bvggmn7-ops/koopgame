@@ -7,7 +7,9 @@
 // bis zu zwei weitere Nummern verlangen („und Nummer“, Felder und/und2). Sie geht erst auf, wenn ALLE ihre Nummern an sind – jeder
 // Auslöser (Hebel, Druckplatte, Rammbalken, Windrad …) bekommt dafür seine eigene Nummer. Auf der Tür sitzt je Nummer ein Edelstein
 // in deren Farbe; er leuchtet, sobald diese Nummer an ist (so sieht man, was noch fehlt).
-const TUER_UND_WERTE = [['0', '–'], ...Array.from({length: 60}, (_, i) => [String(i + 1), String(i + 1)])];
+// so viele Nummern wie der Editor kennt (MAX_LINK aus editor/js/01-zustand.js – wird erst nach dieser Datei geladen, deshalb erst
+// beim Aufbau der Auswahl gelesen; Nutzer 20.11.: „und Nummer geht nur bis 60, aber wir haben mehr Schalter“)
+const tuerUndWerte = () => [['0', '–'], ...Array.from({length: typeof MAX_LINK === 'number' ? MAX_LINK : 80}, (_, i) => [String(i + 1), String(i + 1)])];
 elementRegistrieren({
   id: 'tuer', name: 'Tür', feld: 'doors',
   editor: {
@@ -15,8 +17,8 @@ elementRegistrieren({
     mitNummer: true, nummerName: 'Tür', farbe: '#9b59b6',
     titel: 'Tür: geht auf, solange ihre Verknüpfungs-Nummer an ist. Mit „und Nummer“ braucht sie zusätzlich eine zweite (und dritte) Nummer – sie öffnet erst, wenn ALLE an sind (jeder Auslöser bekommt seine eigene Nummer)',
     optionen: [
-      {key: 'und', label: 'und Nummer', zahl: true, titel: 'zweite Nummer, die AUCH an sein muss, damit die Tür aufgeht (– = keine)', werte: TUER_UND_WERTE},
-      {key: 'und2', label: 'und Nummer', zahl: true, titel: 'dritte Nummer, die AUCH an sein muss (– = keine)', werte: TUER_UND_WERTE},
+      {key: 'und', label: 'und Nummer', zahl: true, titel: 'zweite Nummer, die AUCH an sein muss, damit die Tür aufgeht (– = keine)', get werte(){ return tuerUndWerte(); }},
+      {key: 'und2', label: 'und Nummer', zahl: true, titel: 'dritte Nummer, die AUCH an sein muss (– = keine)', get werte(){ return tuerUndWerte(); }},
     ],
     zeichnen(ctx, c, r, TILE, p){
       const mehr = [p.und, p.und2].filter(n => n > 0);

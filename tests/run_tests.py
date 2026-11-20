@@ -5054,6 +5054,9 @@ async def editor_anwaehlen(g):
         await p.evaluate("undo()"); assert await p.evaluate("hooks[0].radius") == 6.5, 'Rückgängig nimmt die Änderung nicht zurück'
         ex = await p.evaluate("(e => (typeof e === 'string' ? JSON.parse(e) : e).rammbalken[0])(exportLevel())")
         assert ex.get('art') == 'umschalten' and ex['link'] == 7, f'Export ohne die Änderung: {ex}'
+        # Tür „und Nummer“ kennt alle Nummern des Editors (Nutzer 20.11.: ging nur bis 60, es gibt aber mehr Schalter)
+        r = await p.evaluate("[document.getElementById('opt-door-und').options.length - 1, document.getElementById('opt-door-und2').options.length - 1, MAX_LINK, linkSelect.options.length]")
+        assert r[0] == r[2] and r[1] == r[2] and r[3] == r[2], f'„und Nummer“ hat nicht alle Nummern: {r}'
         # zusammenhängende Teile (Nutzer 20.11.): ein Klick auf ein Tür-Kästchen wählt alle 3 Kästchen der Tür (gleiche Nummer), nicht
         # das Nachbar-Kästchen mit anderer Nummer; die Änderung gilt für alle drei. Umschalt+Klick = nur das eine Kästchen
         await klick(25, 15)
