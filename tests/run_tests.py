@@ -7841,6 +7841,32 @@ async def dash_hoch_schwebt(g):
     assert 108 <= weit <= 132, f'Dash zur Seite nicht 3 Kästchen weit (vorher 4): {weit}'
 
 @test
+async def tuer_mehrere_nummern(g):
+    """Nutzer 20.11.: „kann eine Tür mehrere Hebel/Rammbalken/Windräder brauchen, bis sie sich öffnet?“ – Tür mit „und Nummer“
+    (und/und2, elemente/tuer.js): geht erst auf, wenn ALLE ihre Nummern an sind; geht eine wieder aus, schließt sie. Eine normale
+    Tür (nur eine Nummer) bleibt wie bisher. Der Editor exportiert die Zusatz-Nummern."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 200, 'y': 680}))
+    await g.ev("""startLevel({solids:[{x:0,y:680,w:3000,h:40,type:'ground'}],hooks:[],switches:[],spikes:[],coins:[],movingPlatforms:[],checkpoints:[],
+      doors:[{x:820,y:660,link:1,und:2,und2:3},{x:820,y:620,link:1,und:2,und2:3},{x:1220,y:660,link:4},{x:1420,y:660,link:5,und:6}],
+      startM:{x:300,y:680},startF:{x:200,y:680},goal:{x:2800,y:680}})""")
+    await g.steps(10)
+    r = await g.ev("""(() => { const T = l => solids.filter(s => s.type === 'door' && s.link === l), auf = l => T(l).every(s => s.gone), zu = l => T(l).every(s => !s.gone), e = {};
+      const n = k => { for(let i = 0; i < k; i++) stepSim(); };
+      e.start = zu(1) && zu(4) && zu(5);
+      setLink(1, true); n(3); e.eine = zu(1);
+      setLink(3, true); n(3); e.zwei = zu(1);
+      setLink(2, true); n(3); e.alle = auf(1);
+      setLink(3, false); n(3); e.wiederZu = zu(1);
+      setLink(3, true); n(3); e.wiederAuf = auf(1);
+      setLink(4, true); n(3); e.normal = auf(4); setLink(4, false); n(3); e.normalZu = zu(4);
+      setLink(6, true); n(3); e.nurZusatz = zu(5); setLink(5, true); n(3); e.beide = auf(5);
+      e.pfeil = zielPunkte(2).length === 2 && zielPunkte(6).length === 1;
+      return e; })()""")
+    assert all(r.values()), f'Tür mit mehreren Nummern: {r}'
+    src = (ROOT / 'elemente' / 'tuer.js').read_text(encoding='utf-8')
+    assert "key: 'und'" in src and "key: 'und2'" in src and 'und: Number(liste[i].und)' in src, 'Editor: Auswahl „und Nummer“ bzw. Export fehlt'
+
+@test
 async def kante_halt_beim_loslassen(g):
     """Nutzer 20.11.: „ich falle zu schnell runter an den Kanten“ – wer die Lauftaste losgelassen hat und nur noch ausrutscht,
     bleibt an der Kante stehen (kanteHalt, js/32) statt drüberzurutschen; wer die Taste hält, läuft wie bisher runter."""

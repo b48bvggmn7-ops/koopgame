@@ -1728,6 +1728,11 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Mund statt Lächeln (`angstMund`), Schweißperlen spritzen vom Kopf. Nicht nach einer Landung (`S.gel`), nicht beim Durchlaufen (wer
     läuft, fällt einfach runter – Physik unverändert, `kanteAbrutschen` in js/32). Gilt für Affe und Schweinchen. Test `figuren3d_kante_wackeln`.
     Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
+    **Tür mit mehreren Nummern (20.11., elemente/tuer.js):** im Editor bei der Tür „und Nummer“ (bis zu zwei weitere Nummern, – = keine).
+    Die Tür geht erst auf, wenn ALLE ihre Nummern an sind – jeder Auslöser (Hebel, Druckplatte, Rammbalken, Windrad …) bekommt seine
+    eigene Nummer; geht eine wieder aus (z. B. Zeitfenster abgelaufen), schließt sie. Auf der Tür sitzt je Nummer ein Edelstein in deren
+    Farbe: matt = noch aus, leuchtend = an. Test `tuer_mehrere_nummern`.
+    **Dash zur Seite läuft aus (20.11.):** wie nach oben – 2 Kästchen volles Tempo (`DASH_SEITE_VOLL_PX`), das dritte läuft weich aus.
     **Rammbalken-Ton (20.11.):** der Rammstoß spielt die Aufnahme `assets/audio/ramm-treffer.wav` (Splice, tiefer Holzschlag; Teil-Treffer
     leiser und höher). Beim Zurückgleiten tickt die Sperrklinke: je Kerbe (8) EIN Ratschen-Klick aus `assets/audio/ramm-gleiten.wav` (Splice),
     genau wenn der kleine Haken über die Kerbe springt – passt so zu jeder eingestellten Zeit (3/5/8/12 s). „Ganz heraus“ ist weiter erzeugt.

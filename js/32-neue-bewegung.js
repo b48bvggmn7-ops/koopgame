@@ -77,7 +77,8 @@ function dashStarten(P, moveDir){
     P.dash.zeit = z; P.dash.faktor = px/(z*DASH_TEMPO); P.dash.strecke = px;
     // nach OBEN: kein abrupter Stopp – bis DASH_HOCH_VOLL_PX (2 Kästchen) volles Tempo, dann läuft er weich aus (dashSchritt),
     // höchstens DASH_HOCH_SCHWEIN_PX (3 Kästchen); er endet, wenn die Strecke geschafft ist (Nutzer 20.11.: „so ein bisschen ausfaden“)
-    if(!dx){ P.dash.faktor = 1; P.dash.ausAb = DASH_HOCH_VOLL_PX; P.dash.zeit = DASH_HOCH_ZEIT_MAX; } }
+    // (seit „ja bitte auch zur Seite einbauen“ genauso für links/rechts: DASH_SEITE_VOLL_PX volles Tempo, dann auslaufen)
+    P.dash.faktor = 1; P.dash.ausAb = dx ? DASH_SEITE_VOLL_PX : DASH_HOCH_VOLL_PX; P.dash.zeit = DASH_HOCH_ZEIT_MAX; }
   P.dashPuffer = 0;
   if(dx) P.facing = Math.sign(dx);
   P.vx = dx*DASH_TEMPO; P.vy = dy*DASH_TEMPO;
