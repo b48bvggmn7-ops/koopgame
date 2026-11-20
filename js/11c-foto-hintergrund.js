@@ -179,7 +179,10 @@ function fotoHgFelderZeichnen(t){
   for(const s of solids.concat(fakeWalls)){
     if(s.gone || s.type === 'oneway') continue;
     const x0 = (s.x - camX)*zoom, x1 = x0 + s.w*zoom; if(x1 < 0 || x0 > W) continue;
-    const y0 = s.y*zoom + oy, y1 = y0 + s.h*zoom;
+    // Aufzug (Blatt-Floß nach oben): das Brett ist höher gezeichnet als seine Stehfläche – das Loch im Nebel gehört dorthin, wo es
+    // gezeichnet ist (sonst lag ein heller Streifen wie ein Schatten unter dem Brett, Nutzer 20.11.)
+    const vy = s.type === 'blatt' && typeof blattDy === 'function' ? blattDy(s) : 0;
+    const y0 = (s.y + vy)*zoom + oy, y1 = y0 + s.h*zoom;
     ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); ctx.lineTo(x1, y1); ctx.lineTo(x1, y0); ctx.closePath();   // gegen den Uhrzeigersinn = Loch
   }
   ctx.clip();

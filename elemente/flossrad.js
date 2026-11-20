@@ -13,6 +13,7 @@ const FLOSSRAD_GRIFF_X = 38, FLOSSRAD_GRIFF_Y = 40;   // px: so nah muss die Fig
 const FLOSSRAD_HOEHE = 30;           // px: Nabe über dem Boden
 const FLOSSRAD_KURBEL_TAKT = 16;     // Schritte je Arm-Zug beim Kurbeln
 const FLOSSRAD_DREH = 0.13;          // Drehung des Rads je Schritt (Bogenmaß), solange gekurbelt wird
+const FLOSSRAD_MIT_QUIETSCH = 46;    // Schritte zwischen zwei Quietschern, solange das Rad von selbst mitdreht (Aufzug sinkt)
 const FLOSSRAD_STAND = 28;           // px: so weit neben der Radmitte steht, wer kurbelt
 let flossRaeder = [];                // {x, y (Fußpunkt), link, winkel, dreh (Tempo fürs Auslaufen), floss, kurbler}
 // zugehöriges Blatt-Floß (je Rad einmal): gleiche Nummer – sonst das nächste Schienen-Ende in Reichweite, etwa gleiche Höhe
@@ -131,7 +132,14 @@ elementRegistrieren({
     schritt(){
       for(const R of flossRaeder){
         // dreht, solange in diesem Schritt gekurbelt wurde (flossradVorher), sonst kurz auslaufen
-        const ziel = R.kurbler && !R.amEnde ? R.richtung*FLOSSRAD_DREH : 0;
+        // Nutzer 20.11.: „wenn das Blattfloß automatisch wieder runterkommt, kann sich das Rad dann auch rückwärts drehen und
+        // quietschen“ – bewegt sich der Aufzug, ohne dass jemand kurbelt (sinkt zurück oder der Wind hebt ihn), dreht das Rad mit:
+        // rückwärts beim Sinken, vorwärts beim Heben, so schnell wie der Aufzug fährt; dazu ab und zu das Quietschen der Kurbel
+        const s = flossradFloss(R), mit = !R.kurbler && s && s.senk && s.vy ? -s.vy/BLATT_RAD_TEMPO : 0;
+        if(mit){ R._mitT = (R._mitT || 0) + 1;
+          if(R._mitT % FLOSSRAD_MIT_QUIETSCH === 1 && typeof SFX !== 'undefined' && SFX.kurbel && (typeof camX === 'undefined' || Math.abs(R.x - (camX + VW/2)) < VW)) SFX.kurbel(R.x);
+        } else R._mitT = 0;
+        const ziel = R.kurbler && !R.amEnde ? R.richtung*FLOSSRAD_DREH : mit*FLOSSRAD_DREH;
         R.dreh += (ziel - R.dreh)*(ziel ? 0.35 : 0.12);
         if(Math.abs(R.dreh) < 0.002) R.dreh = 0;
         R.winkel = (R.winkel + R.dreh) % (Math.PI*2);

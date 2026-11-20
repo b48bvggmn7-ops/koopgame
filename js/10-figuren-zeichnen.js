@@ -168,12 +168,15 @@ function schirmHaende(hx, hy, h, k = 1){   // k < 1: die Pfoten sind noch auf de
 // Mitte des runden Kopfes im Figurenbild (Anteil von Breite/Höhe, gemessen an assets/*.png; Ohren nicht mitgerechnet)
 const HEAD_CENTER = {monkey: [153.5/308, 132/257], pig: [153.5/308, 139.5/257]};
 // Oberkante des Bodens direkt unter einer Figur (für den Schatten), null = nichts darunter
+// Nutzer 20.11. („die Schatten spielen verrückt … das Schwein sollte den Schatten auf dem Holz haben und nicht darunter“): der
+// Aufzug (Blatt-Floß nach oben) wird höher gezeichnet als seine Stehfläche (blattDy, elemente/blattfloss.js) – der Schatten muss
+// dort liegen, wo das Brett GEZEICHNET ist. groundBelow.versatz = so viel liegt die gezeichnete Oberkante über/unter der echten.
 function groundBelow(P){
-  let best = null;
+  let best = null; groundBelow.versatz = 0;
   for(const s of solids){
     if(s.gone || s.type === 'fake') continue;
     if(s.x > P.x + P.w*0.3 || s.x + s.w < P.x - P.w*0.3 || s.y < P.y - 2 || s.y > P.y + 400) continue;
-    if(best === null || s.y < best) best = s.y;
+    if(best === null || s.y < best || (s.y === best && s.type === 'blatt')){ best = s.y; groundBelow.versatz = s.type === 'blatt' && typeof blattDy === 'function' ? blattDy(s) : 0; }
   }
   return best;
 }
@@ -251,7 +254,7 @@ function drawCharacter(player, camX){
   if(gy !== null){
     const hgt0 = Math.max(0, gy - player.y), k = Math.max(0, 1 - hgt0/220);
     if(k > 0){
-      const sy0 = gy - (py - player.h*0.5) - 1, rw = player.w*(0.45 + 0.35*k), a = 0.42*k;
+      const sy0 = gy + groundBelow.versatz - (py - player.h*0.5) - 1, rw = player.w*(0.45 + 0.35*k), a = 0.42*k;
       const g = ctx.createRadialGradient(0, sy0, 0, 0, sy0, rw);
       g.addColorStop(0, `rgba(10,18,8,${a})`); g.addColorStop(0.55, `rgba(10,18,8,${a*0.55})`); g.addColorStop(1, 'rgba(10,18,8,0)');
       ctx.save(); ctx.translate(0, sy0); ctx.scale(1, 0.24); ctx.translate(0, -sy0);
