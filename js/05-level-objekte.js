@@ -89,8 +89,11 @@ function leverNear(player, sw){
 function setLink(link, on){
   linkOn[link] = on;
   for(const d of solids){
-    if(d.type!=='door' || d.link!==link || d.zerstoert) continue;   // von der Stachelwand zerschlagen: bleibt weg
-    if(on){ d.open = true; d.gone = true; d.closing = false; }
+    if(d.type!=='door' || d.zerstoert) continue;   // von der Stachelwand zerschlagen: bleibt weg
+    if(d.link!==link && d.und!==link && d.und2!==link) continue;
+    // Tür mit mehreren Nummern (Nutzer 20.11., elemente/tuer.js „und Nummer“): geht erst auf, wenn ALLE ihre Nummern an sind
+    const auf = !!linkOn[d.link] && (!d.und || !!linkOn[d.und]) && (!d.und2 || !!linkOn[d.und2]);
+    if(auf){ d.open = true; d.gone = true; d.closing = false; }
     else d.closing = true;            // schließt in updateDoorsAndSwitches, sobald frei
   }
   for(const m of solids){
@@ -108,7 +111,7 @@ let zielHinweise = [];              // {link, x, y, bis}
 function zielPunkte(link){   // Weltpunkte der Ziele einer Nummer (Tür, bewegtes Teil, fahrender Haken, Tor, Presse, Wechselboden, Lava-Marke)
   const pts = [];
   for(const s of solids){
-    if(s.type === 'door' && s.link === link) pts.push({x: s.x + s.w/2, y: s.y});
+    if(s.type === 'door' && (s.link === link || s.und === link || s.und2 === link)) pts.push({x: s.x + s.w/2, y: s.y});
     if(s.type === 'moveplat' && s.switchLink === link) pts.push({x: s.x + s.w/2, y: s.y});
     if(s.type === 'wechsel' && s.link === link) pts.push({x: s.x + s.w/2, y: s.y});
   }

@@ -730,13 +730,17 @@ function drawGate(d, open, x){
    g.fillStyle='rgba(255,255,255,.3)';g.fillRect(bx,by,vert?bw:1.3,vert?1.3:bh);g.strokeStyle='rgba(18,20,24,.8)';g.lineWidth=1;g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
    g.fillStyle='#b8c0c9';const n=Math.max(2,Math.round((vert?bw:bh)/16));for(let k=0;k<n;k++){const q=((k+.5)/n)*(vert?bw:bh);g.beginPath();g.arc(vert?bx+q:bx+bw/2,vert?by+bh/2:by+q,1.4,0,7);g.fill()}}
   }
-  // Edelstein-Platte, mittig (ein Diamant pro Tür)
-  const ng=1;
-  for(let i=0;i<ng;i++){const p=(i+.5)/ng*L,cx=vert?ix+iw/2:ix+p,cy=vert?iy+p:iy+ih/2;
-   const gk=edelsteinGroesse(w,h)/12;g.save();g.translate(cx,cy);g.scale(gk,gk);g.translate(-cx,-cy);   // Größe passend zur Tür (Nutzerwunsch)
+  // Edelstein-Platte, mittig (ein Diamant pro Tür). Tür mit mehreren Nummern (elemente/tuer.js, und/und2): je Nummer ein Diamant in
+  // deren Farbe – matt, solange die Nummer aus ist, leuchtend, sobald sie an ist (man sieht, welcher Auslöser noch fehlt)
+  const t0=d.teile&&d.teile[0],nummern=[d.l,...(t0?[t0.und,t0.und2].filter(n=>n>0):[])],ng=nummern.length,einzeln=ng===1;
+  for(let i=0;i<ng;i++){const p=(i+.5)/ng*L,cx=vert?ix+iw/2:ix+p,cy=vert?iy+p:iy+ih/2;const col=linkColor(nummern[i]),an=einzeln||!!linkOn[nummern[i]];
+   const gk=edelsteinGroesse(w,h)/12*(einzeln?1:Math.min(1,L/ng/30));g.save();g.translate(cx,cy);g.scale(gk,gk);g.translate(-cx,-cy);   // Größe passend zur Tür (Nutzerwunsch)
    g.fillStyle='#3a3f46';g.beginPath();g.roundRect(cx-12,cy-12,24,24,5);g.fill();g.strokeStyle='#15171a';g.lineWidth=1;g.stroke();
    g.fillStyle=col;g.beginPath();g.moveTo(cx,cy-10);g.lineTo(cx+9,cy);g.lineTo(cx,cy+10);g.lineTo(cx-9,cy);g.closePath();g.fill();g.strokeStyle='rgba(0,0,0,.5)';g.stroke();
-   g.fillStyle='rgba(255,255,255,.75)';g.fillRect(cx-3.5,cy-6,3,4);glanzFunkeln(cx-2,cy-3,5,d.x*.03+y+i*5);g.restore()}
+   if(!an){g.fillStyle='rgba(12,10,8,.62)';g.fill()}   // Nummer noch aus: matt
+   else{g.fillStyle='rgba(255,255,255,.75)';g.fillRect(cx-3.5,cy-6,3,4);glanzFunkeln(cx-2,cy-3,5,d.x*.03+y+i*5);
+    if(!einzeln){g.save();g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(cx,cy,0,cx,cy,22);gl.addColorStop(0,typeof farbeMitAlpha==='function'?farbeMitAlpha(col,.55):'rgba(255,230,160,.5)');gl.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gl;g.beginPath();g.arc(cx,cy,22,0,7);g.fill();g.restore()}}
+   g.restore()}
   // Weiche Tiefe: Licht von oben links
   const sg=g.createLinearGradient(ix,iy,ix+iw*.6,iy+ih*.6);sg.addColorStop(0,'rgba(255,240,200,.16)');sg.addColorStop(1,'rgba(20,10,0,.12)');g.fillStyle=sg;g.fillRect(ix,iy,iw,ih);
   g.restore()}
