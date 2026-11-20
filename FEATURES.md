@@ -1722,12 +1722,20 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     - Test level20_schlackewerk (Koop-Bot + Checkpoint-Abstände).
 
 ### 3D-Figuren (Affe und Schweinchen als 3D-Fellfiguren; js/33-figuren-3d.js)
+  - **Fast runterfallen an der Kante (20.11., 3D-Figuren js/33, Pose „kante“):** Ist eine Figur an eine Kante GELAUFEN und bleibt dort
+    stehen (höchstens `KANTE_WACKEL_RAND` 8 px davor), steht sie auf einem Fuß, der andere hängt über dem Abgrund, der Körper kippt vor
+    und zurück, beide Arme rudern (etwas länger, `KANTE_ARM`), sie dreht sich halb zur Kamera (`KANTE_DREHUNG`), Augen weit auf, runder
+    Mund statt Lächeln (`angstMund`), Schweißperlen spritzen vom Kopf. Nicht nach einer Landung (`S.gel`), nicht beim Durchlaufen (wer
+    läuft, fällt einfach runter – Physik unverändert, `kanteAbrutschen` in js/32). Gilt für Affe und Schweinchen. Test `figuren3d_kante_wackeln`.
+    Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
   - **Affe im Foto-Look (19.11., js/32a-figuren-foto.js):** der vom Nutzer freigegebene neue Affe (mittelbraunes lockiges Fell rundum,
     helles Herz-Gesicht, glattes Schnäuzchen, dunkelbraune Augen ohne Ring, glatte rosa Ohren, leichter Irokese, Schwanz) – gebaut mit
     demselben sparsamen Schichten-Fell wie das Schweinchen (`buildMonkey` in js/32a, Herz-Farbe im Shader über `herz`), NICHT mit
     einzelnen Haaren (zu langsam). Alle Bewegungen/Haltungen bleiben wie bisher in js/33 (Seil mit langen Armen, Pusten mit Backen,
     Wand, Schwanz rollt). Schalter: `?affe=alt` = bisheriger Affe (`buildMonkeyAlt`); schlägt js/32a fehl, bleibt er automatisch.
-    Test `affe_foto_look`.
+    An der Liane hält nur EIN Arm (der zur Kamera, `S.halt`), der andere hängt locker (`SEIL_ARM_FREI`, Nutzerwunsch 20.11.).
+    Die Hand bleibt sichtbar und greift das Lianen-Ende (20.11.; Liane wird dafür vor der Figur gezeichnet,
+    `affenSeilZeichnen` in js/10, Finger bleiben an der Hand). Test `affe_foto_look`.
   - **Schweinchen im Foto-Look (19.11., js/32a-figuren-foto.js):** das vom Nutzer freigegebene neue Schweinchen (altrosa Flaum mit
     Büscheln, spitze Schlappohren, braune Augen mit Lidstrich und Wimper, glatte Schnauze, offenes Lächeln mit Zunge, braune Hufe,
     Fell-Stummel an Armen und Beinen, Ringelschwanz) ersetzt NUR das Aussehen. Alle Haltungen und Abläufe bleiben die des Spiels

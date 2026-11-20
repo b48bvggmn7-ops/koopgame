@@ -396,9 +396,9 @@ async def neue_figuren_drehung_seil_dash(g):
     await g.ev(rolle); await g.p.keyboard.press('KeyK'); await g.steps(5); await g.p.keyboard.up('KeyD')
     r = await g.ev("({dash: !!p1.dash, roll: p1._ff.roll, rot: p1._ff.rotE})")
     assert r['roll'] < 0 and abs(r['rot']) < 0.6, f'Dash mitten in der Rolle: Drehung läuft nicht in Dash-Richtung aus: {r}'
-    # Seil = Liane (gezeichnet über lianeZeichnen)
-    n = await g.ev("""(() => { let n = 0; const o = lianeZeichnen; lianeZeichnen = (...a) => { n++; return o(...a); };
-      p1.hookAttached = true; p1.anchor = hooks[0]; try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { lianeZeichnen = o; p1.hookAttached = false; p1.anchor = null; } return n; })()""")
+    # Seil = Liane (gezeichnet über lianeZeichnen; im Foto-Look über fotoAffenLiane, js/12e)
+    n = await g.ev("""(() => { let n = 0; const o = lianeZeichnen, o2 = fotoAffenLiane; lianeZeichnen = (...a) => { n++; return o(...a); }; fotoAffenLiane = (...a) => { n++; return o2(...a); };
+      p1.hookAttached = true; p1.anchor = hooks[0]; try { ctx.save(); drawCharacter(p1, camX); ctx.restore(); } finally { lianeZeichnen = o; fotoAffenLiane = o2; p1.hookAttached = false; p1.anchor = null; } return n; })()""")
     assert n == 1, 'Seil wird nicht als Liane gezeichnet'
 
 @test
@@ -520,7 +520,7 @@ async def scheinwand_kein_nebel(g):
     r = await g.ev("""(() => { const pfad = [], alt = ctx.moveTo;
       ctx.moveTo = function(x, y){ pfad.push([Math.round(x), Math.round(y)]); return alt.apply(this, arguments); };
       try{ fotoHgFelderZeichnen(1); } finally { ctx.moveTo = alt; }
-      const f = fakeWalls[0], oy = H*(1 - zoom), x0 = Math.round((f.x - camX)*zoom), y0 = Math.round(f.y*zoom + oy);
+      const f = fakeWalls[0], oy = WELT_OY, x0 = Math.round((f.x - camX)*zoom), y0 = Math.round(f.y*zoom + oy);
       return {ausgespart: pfad.some(([x, y]) => Math.abs(x - x0) <= 1 && Math.abs(y - y0) <= 1), n: pfad.length, x0, y0}; })()""")
     assert r['ausgespart'], f'Nebel liegt über der Scheinwand: {r}'
 
@@ -7724,6 +7724,33 @@ async def schwein_foto_look(g):
     assert "QS.get('schwein')!=='alt'" in src and 'buildPigAlt' in src, 'Schalter ?schwein=alt bzw. das bisherige Schweinchen fehlt'
 
 @test
+async def figuren3d_kante_wackeln(g):
+    """Nutzer 20.11.: an die Kante GELAUFEN und dort stehen geblieben -> Affe und Schweinchen wackeln (Pose „kante“: auf einem Fuß,
+    Arme rudern, erschrockenes Gesicht mit rundem Mund, Schweißperlen). Nach einer Landung/dem Hinstellen nicht; mitten auf dem
+    Boden nicht. Nur Anzeige: die Figuren bewegen sich dabei nicht."""
+    await f3d_bereit(g)
+    await g.load(level([ground(0, 560, 600, 160), ground(800, 560, 600, 160)], {'x': 500, 'y': 560}, {'x': 900, 'y': 560}, welt='dschungel'))
+    await g.steps(30)
+    await g.ev("p1.x = p1._px = 597; p2.x = p2._px = 803; p1.vx = p2.vx = 0")
+    await g.steps(5)
+    async def bild(gel):
+        vor = await g.ev("JSON.stringify([p1.x, p1.y, p2.x, p2.y])")
+        r = await g.p.evaluate(F3D_ZEICHNEN, {'n': 30, 'wer': 'beide', 'vorher': f"for(const P of [p1, p2]) if(P._f3) P._f3.gel = {'true' if gel else 'false'};",
+                                              'merk': "[p1._f3 ? p1._f3.an || 0 : 0, p2._f3 ? p2._f3.an || 0 : 0]"})
+        nach = await g.ev("menuScreen = null, JSON.stringify([p1.x, p1.y, p2.x, p2.y])")
+        return {'an': r[-1], 'gleich': vor == nach}
+    ohne = await bild(False)
+    mit = await bild(True)
+    assert max(ohne['an']) < 0.3, f'nach dem Hinstellen/Landen darf niemand wackeln: {ohne}'
+    assert min(mit['an']) > 0.5 and mit['gleich'], f'an die Kante gelaufen: beide wackeln, ohne sich zu bewegen: {mit}'
+    await g.ev("p1.x = p1._px = 300; p2.x = p2._px = 1100")
+    await g.steps(5)
+    mitte = await bild(True)
+    assert max(mitte['an']) < 0.3, f'mitten auf dem Boden kein Wackeln: {mitte}'
+    src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
+    assert "key:'kante'" in src and 'angstMund' in src, 'Pose „kante“ bzw. das erschrockene Gesicht fehlt in js/33'
+
+@test
 async def affe_foto_look(g):
     """Affe im Foto-Look (js/32a, Nutzer 19.11.: derselbe Look wie freigegeben, aber mit dem Schichten-Fell des Schweinchens statt
     einer halben Million Haare): js/33 baut den Affen über die zweite Bau-Art, nichts wirft Fehler, oben braun, Gesicht
@@ -7743,6 +7770,15 @@ async def affe_foto_look(g):
     assert not fehler, f'Fehler beim Zeichnen: {fehler[:2]}'
     src = (ROOT / 'js' / '33-figuren-3d.js').read_text(encoding='utf-8')
     assert "QS.get('affe')!=='alt'" in src and 'buildMonkeyAlt' in src, 'Schalter ?affe=alt bzw. der bisherige Affe fehlt'
+    # Nutzer 20.11.: „warum hat der Affe an der Liane keine Hand?“ -> Hand bleibt am Seil sichtbar, die Liane wird vor dem Figuren-Bild gezeichnet
+    await g.load(level([ground(0, 680, 3000)], {'x': 400, 'y': 680}, {'x': 300, 'y': 680}, welt='dschungel'))
+    await f3d_bereit(g)
+    r = await g.ev("""(() => { p1.hookAttached = true; p1.anchor = {x: 560, y: 400}; p1.ropeLen = 200; p1.grounded = false; let fertig = null;
+      try { for(let i = 0; i < 6; i++){ ctx.save(); drawCharacter(p1, camX); ctx.restore(); fertig = p1._seilFertig; } }
+      finally { p1.hookAttached = false; p1.anchor = null; }
+      const a = p1._f3 && p1._f3.ch ? p1._f3.ch.armP : null; return {fertig, hand: a ? a.kids.slice(1).every(q => q.visible !== false) : null}; })()""")
+    assert r['fertig'] is True, f'Liane wird beim Foto-Look-Affen nicht vor der Figur gezeichnet: {r}'
+    assert r['hand'] in (True, None), f'Hand des Affen ist am Seil ausgeblendet: {r}'
 
 @test
 async def figuren3d_leistung_stufen(g):

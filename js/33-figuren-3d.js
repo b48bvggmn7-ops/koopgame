@@ -8,7 +8,12 @@
   'use strict';
   const QS = new URLSearchParams(location.search);
   const SPR = Math.round(352*8.4/6.6), FELL_DICHTE = parseFloat(QS.get('fell')) || 0.2, FELL_SCHICHTEN = parseInt(QS.get('schichten')) || 14;
-  const FIGUR_HALB_FOTO = 23;                      // px: dasselbe für das Foto-Look-Schweinchen (nicht in die Breite gezogen; Nutzer 19.11.: „beim Wandsliden nicht an der Wand“)
+  const KANTE_DREHUNG = 0.95;                      // rad: so weit ist die Figur an der Kante zum Abgrund gedreht (0 = Blick in die Kamera)
+  const KANTE_ARM = 1.7;                           // an der Kante rudern die Arme etwas länger (sonst verschwinden sie hinter dem großen Kopf)
+  const KANTE_TAKT_3D = 0.6;                       // Sekunden je Wackeln an der Kante (Pose „kante“)
+  const SEIL_HAND_GROSS = 1.7;                     // Foto-Look-Affe: so viel größer ist die Hand, die die Liane hält
+  const SEIL_ARM_FREI = [.25, 0, -.35];   // Foto-Look-Affe an der Liane: Haltung des freien Arms (haengt locker, leicht abgespreizt)
+  const FIGUR_HALB_FOTO = 23;                     // px: dasselbe für das Foto-Look-Schweinchen (nicht in die Breite gezogen; Nutzer 19.11.: „beim Wandsliden nicht an der Wand“)
   const FIGUR_HALB = 30;                           // px: halbe gezeichnete Breite der 3D-Figur mit Armen und Fell (Stoßfläche: 14,25)
   // Prüfpunkte des gezeichneten Körpers am Seil (darf nicht in Boden/Wand ragen): Höhen in 3D-Einheiten über den Füßen
   // (0 = Füße, 3 = Kopf oben) und quer dazu in px (halbe gezeichnete Dicke mit Fell)
@@ -377,7 +382,8 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     }
     if(P.leverAnim){ const k = (performance.now() - P.leverAnim.t0)/320;   // Hebel ziehen: der Arm greift nach vorn und zieht herunter
       if(k >= 0 && k < 1){ const e = Math.sin(k*Math.PI); return {p:{head:[.18*e,0,0], armN:[-1.45*e,0,-.2], armP:[-1.3*e,0,.2], legN:[-.15*e,0,0], legP:[.15*e,0,0]}, key:'hebel'}; } }
-    if(male && ((P.hookAttached && P.anchor) || (P._hakenWarten && P._wartZiel))) return {p:{head:[0,0,0], armN:[0,0,-3.58], armP:[0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'};
+    if(male && ((P.hookAttached && P.anchor) || (P._hakenWarten && P._wartZiel))) { const fo = !!window.F3D_AFFE_FOTO, nN = flip > 0; if(fo) S.halt = nN ? 'armN' : 'armP';   // Foto-Look-Affe: nur der Arm zur Kamera hält die Liane (wie beim Schirm des Schweinchens), der andere hängt locker
+      return {p:{head:[0,0,0], armN: fo && !nN ? [SEIL_ARM_FREI[0], 0, SEIL_ARM_FREI[2]] : [0,0,-3.58], armP: fo && nN ? [SEIL_ARM_FREI[0], 0, -SEIL_ARM_FREI[2]] : [0,0,3.58], legN:[-.3,0,0], legP:[.25,0,0]}, key:'seil'}; }
     if(!male && P.gliding && window.F3D_SCHWEIN_FOTO){   // Foto-Look: der Arm zur Kamera (je nach Flugrichtung links oder rechts) reckt sich hoch und hält den Holzstiel
       const nN = flip > 0; S.halt = nN ? 'armN' : 'armP';   // Blick nach rechts: armN liegt vorn (zur Kamera), sonst armP (im Spiel geprüft)
       return {p:{head:[-.1,0,0], armN: nN ? [SCHIRM_FLUG_VOR,0,-SCHIRM_FLUG_HOCH] : [.25,0,-.75], armP: nN ? [.25,0,.75] : [SCHIRM_FLUG_VOR,0,SCHIRM_FLUG_HOCH], legN:[-.15+Math.sin(t*2.2)*.1,0,0], legP:[.2-Math.sin(t*2.2)*.1,0,0]}, key:'segeln'}; }
@@ -394,6 +400,12 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
       return {p:{head:[-.18,0,0], armN:[-2.75+sh,0,.18], armP:[-2.6-sh,0,-.18], legN:[-1.1+sh,0,0], legP:[-.35-sh,0,0]}, key:'ws'}; }
     if(!P.grounded){ const up = P.vy < 0;   // Sprung: nach oben Arme jubelnd hoch, beim Fallen Arme seitlich
       return {p:{head:[up?-.15:.12,0,Math.sin(t*3)*.03], armN:[0,0,up?-2.6:-1.35], armP:[0,0,up?2.6:1.35], legN:[up?-1.1:-.45,0,0], legP:[up?-.35:-.85,0,0]}, key:up?'up':'down'}; }
+    // Fast runterfallen (Nutzer 20.11., wie früher kantePose in js/10c): an die Kante GELAUFEN und dort stehen geblieben -> auf einem Fuß,
+    // der andere hängt über dem Abgrund, der Körper kippt vor und zurück, beide Arme rudern; erschrockenes Gesicht + Schweißperlen (unten)
+    if(S.gel && sp <= 0.8 && typeof kanteRichtung === 'function' && typeof KANTE_WACKEL_RAND === 'number' && kanteRichtung(P, KANTE_WACKEL_RAND)){
+      const w = 2*Math.PI*t/KANTE_TAKT_3D, sw = Math.sin(w), a = w*1.6; S.kd = kanteRichtung(P, KANTE_WACKEL_RAND);   // Blick zum Abgrund
+      return {p:{head:[.17 + .12*sw, 0, .05*Math.sin(w*.5)], armN:[-1.5 + 1.4*Math.sin(a), 0, -1.0 - .3*Math.cos(a)], armP:[-1.5 + 1.4*Math.sin(a + 2.2), 0, 1.0 + .3*Math.cos(a + 2.2)],
+                 legN:[-.55 + .2*sw, 0, 0], legP:[.08, 0, 0]}, key:'kante'}; }
     if(sp > 0.8) return {p:{head:[Math.abs(s)*.012,0,Math.sin(S.phase)*.015], armN:[-s*1.9*w*(vieleSchritte?.35:1),0,-.2], armP:[s*1.9*w*(vieleSchritte?.35:1),0,.2], legN:[0,0,0], legP:[0,0,0]}, key:'lauf'};
     const b = Math.sin(t*2.4);
     return {p:{head:[0,0,Math.sin(t*1.1)*.06], armN:[0,0,-.55-b*.05], armP:[0,0,.55+b*.05], legN:[0,0,0], legP:[0,0,0]}, key:'idle'};
@@ -409,6 +421,7 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     S.tm0 = c.getTransform();   // Ursprung der Figur (für die Griff-Messung an der Draisine)
     const dt = Math.min(.05, Math.max(0, (now - S.t)/1000)); S.t = now;
     const t = now/1000, sp = Math.abs(P.vx), flip = P.facing < 0 ? -1 : 1;
+    if(!P.grounded) S.gel = false; else if(P._moveDir) S.gel = true;   // Wackeln an der Kante nur nach Laufen, nicht nach einer Landung (nur Anzeige)
     S.spG = S.spG == null ? sp : S.spG + (sp - S.spG)*(1 - Math.exp(-dt*8));   // geglättetes Tempo: gleichmäßige Bewegungen
     if(P.haft){ if(sp < .05) S.spG *= Math.exp(-dt*25); S.hp = (S.hp||0) + S.spG*54*dt; }
     if(P.grounded && sp > 0.3) S.phase += (vieleSchritte ? (male?19:21) : (male?6.5:7.5))*(S.spG/4.4)*dt;
@@ -479,6 +492,7 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     if(z.key === 'dash' || z.key === 'wj') ty = flip*1.42;
     if(z.key === 'ws') ty = (wandRichtung(P) > 0 ? 1 : -1)*1.2;
     if(z.key === 'haft') ty = flip*1.2;   // Profil: man sieht, wie die Arme abwechselnd nach vorn greifen
+    if(z.key === 'kante') ty = (S.kd || flip)*KANTE_DREHUNG;   // halb zur Kamera: Gesicht und beide rudernden Arme zu sehen
     if(z.key === 'seil') ty = flip*1.57;   // am Seil: ganz von der Seite   // fast von vorn: beide Arme sichtbar          // zur Wand gedreht
     if(z.key === 'tanz') ty = S.tz && S.tz.near ? S.tz.side*.3 : 0;   // zur Kamera, leicht zum Partner
     if(z.key === 'trampolin') ty = 0;   // hält den Schirm zur Kamera hin
@@ -523,7 +537,7 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     const H = holen(male), ch = H.ch;
     // Hangeln: lange Arme (Hände kleben oben an der Haftfläche), sonst normale Arme
     S.al = (S.al||1) + ((z.key === 'haft' ? HAFT_ARM : 1) - (S.al||1))*(1 - Math.exp(-dt*14));
-    S.as = (S.as||1) + ((z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : (z.key === 'pumpen' ? 2.0 : (z.key === 'trampolin' && window.F3D_SCHWEIN_FOTO && (S.trA || 0) >= SCHIRM_HOLEN ? SCHIRM_ARM_FOTO : (z.key === 'segeln' && window.F3D_SCHWEIN_FOTO ? SCHIRM_FLUG_ARM : (z.key === 'ws' && !male && window.F3D_SCHWEIN_FOTO ? WAND_ARM_FOTO : 1)))))) - (S.as||1))*(1 - Math.exp(-dt*12));
+    S.as = (S.as||1) + ((z.key === 'kante' ? KANTE_ARM : z.key === 'seil' ? 4.0 : (z.key === 'hebel' ? 2.4 : (z.key === 'pumpen' ? 2.0 : (z.key === 'trampolin' && window.F3D_SCHWEIN_FOTO && (S.trA || 0) >= SCHIRM_HOLEN ? SCHIRM_ARM_FOTO : (z.key === 'segeln' && window.F3D_SCHWEIN_FOTO ? SCHIRM_FLUG_ARM : (z.key === 'ws' && !male && window.F3D_SCHWEIN_FOTO ? WAND_ARM_FOTO : 1)))))) - (S.as||1))*(1 - Math.exp(-dt*12));
     // Seil hochklettern/herablassen (W/S): Hand über Hand – ein Arm zieht, der andere greift nach
     if(z.key === 'seil' && P.ropeLen != null){ const d = S.rl == null ? 0 : Math.abs(P.ropeLen - S.rl); S.rl = P.ropeLen; S.cp = (S.cp||0) + d; S.cs = (S.cs||0) + (d - (S.cs||0))*.3; } else { S.rl = null; S.cs = 0; }
     const klet = Math.sin(2*Math.PI*(S.cp||0)/46)*Math.min(1, (S.cs||0)/.6);
@@ -532,11 +546,16 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
       let al = S.al;
       if(z.key !== 'haft') al = S.as;   // am Seil/Haken: langer Greif-Arm (der andere etwas länger)
       if(z.key === 'seil') al *= 1 + (a === ch.armN ? 1 : -1)*.16*klet;
+      if(z.key === 'seil' && male && window.F3D_AFFE_FOTO && S.halt && a !== ch[S.halt]) al = 1;   // Foto-Look-Affe: nur EIN Arm hält die Liane, der andere hängt normal lang locker herunter (Nutzer 20.11.)
       if(z.key === 'segeln' && window.F3D_SCHWEIN_FOTO && !male && S.halt && a !== ch[S.halt]) al = 1;   // nur der Halte-Arm ist lang
       if(z.key === 'tanz' && S.tz && S.tz.near && a === (S.tz.side > 0 ? ch.armP : ch.armN)) al = 1 + TANZ_ARM*S.ti;   // eingehakter Arm etwas länger, damit die Hände sich treffen
       a.alF = al;
-      a.kids.forEach((q,i) => { if(i > 0) q.visible = z.key !== 'seil'; });   // am Seil: keine Hand-Knubbel oben, die Hände sind im Seil
+      a.kids.forEach((q,i) => { if(i > 0) q.visible = z.key !== 'seil' || (male && !!window.F3D_AFFE_FOTO); });   // am Seil: keine Hand-Knubbel oben, die Hände sind im Seil (Foto-Look-Affe: Hand bleibt sichtbar und greift die Liane, Nutzer 20.11.)
       a.kids.forEach((q,i) => { const b = a.k0[i]; q.pos = [b.p[0], b.p[1]*al, b.p[2]]; if(i === 0) q.sc = [b.s[0], b.s[1]*al, b.s[2]]; });
+      if(male && window.F3D_AFFE_FOTO && a.k0.length > 1){ const hy = a.k0[1].p[1];   // Foto-Look-Affe: Finger und Daumen bleiben an der Hand (nicht mit dem langen Arm auseinandergezogen)
+        const hg = 1 + (SEIL_HAND_GROSS - 1)*Math.max(0, Math.min(1, (al - 1)/3)), h0 = a.k0[1].p;   // am Seil greift die Hand größer zu (Nutzer 20.11.: „Hand im Vergleich zur Liane sehr klein“)
+        a.kids.forEach((q,i) => { if(i < 1) return; const b = a.k0[i]; q.sc = [b.s[0]*hg, b.s[1]*hg, b.s[2]*hg];
+          if(i > 1) q.pos = [h0[0] + (b.p[0] - h0[0])*hg, hy*al + (b.p[1] - hy)*hg, h0[2] + (b.p[2] - h0[2])*hg]; }); }
     }
     if(ch.tail){   // Affen-Schwanz: rollt sich langsam ein und wieder aus, wedelt dabei; beim Laufen etwas schneller
       const wv = Math.min(1, S.spG/4.4); S.tp = (S.tp||0) + dt*(.8 + 1.4*wv + IT.tail*IT.env);
@@ -577,6 +596,12 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
       ch.mundO.visible = pu > .3; ch.mundO.sc = ch.mundO.sc0.map(v => v*(.6 + .5*pu));
       for(const q of ch.lae) q.visible = pu <= .3;
       if(pu > .5 && !zu) for(const e of ch.eyes) e.n.sc = [e.n.sc[0], e.y*(1 - .45*pu), e.n.sc[2]]; }
+    // Kante: erschrockenes Gesicht – Augen weit auf, runder Mund statt Lächeln
+    S.an = (S.an || 0) + ((z.key === 'kante' ? 1 : 0) - (S.an || 0))*(1 - Math.exp(-dt*14));
+    if(ch.angstMund && !(S.pu > .04)){ const an = S.an;
+      ch.angstMund.visible = an > .3; if(an > .3) ch.angstMund.sc = ch.angstMund.sc0.map(v => v*(.9 + .6*an));
+      if(ch.lae) for(const q of ch.lae) q.visible = an <= .3;
+      if(an > .3 && !zu) for(const e of ch.eyes) e.n.sc = [e.n.sc[0], e.y*(1 + .2*an), e.n.sc[2]]; }
     // Schirm-Trampolin: federt der Affe ab, geht das Schweinchen kurz in die Knie (und wippt nach)
     let lgX = 1, lgY = 1, trQ = 0;
     if(z.key === 'pumpen'){ const d = 1 - (S.pumpH == null ? 1 : S.pumpH); lgY = 1 - 0.11*d; lgX = 1 + 0.05*d; }   // Draisine: in die Knie beim Runterdrücken
@@ -595,7 +620,8 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     const fy = P.h*0.5 + 4 + hangSenke(ch, S.al||1, P.h, HAFT_ARM);   // 4 px tiefer: die Figur steht im Gras
     // Am Seil schwingt die ganze Figur mit (Körper hängt entlang des Seils, Drehpunkt = Hände) – wie im 2D-Spiel
     // Drehpunkt am Seil = Spitze des Greif-Arms (Hand), gemessen ab dem Figuren-Ursprung (Körpermitte P.x, P.y - P.h/2)
-    const tipPx = (() => { const a0 = ch.armP; let top = 0; (a0.k0||[]).forEach((b, i) => { top = Math.max(top, i === 0 ? (Math.abs(b.p[1]) + b.s[1])*(a0.alF||1) : Math.abs(b.p[1])*(a0.alF||1) + b.s[1]); }); return (a0.pos[1] + top)*SC*.98; })();
+    const tipPx = (() => { const a0 = male && window.F3D_AFFE_FOTO && z.key === 'seil' && S.halt ? ch[S.halt] : ch.armP;   // Drehpunkt = Hand an der Liane (Foto-Look-Affe: der haltende Arm)
+ let top = 0; (a0.k0||[]).forEach((b, i) => { top = Math.max(top, i === 0 ? (Math.abs(b.p[1]) + b.s[1])*(a0.alF||1) : Math.abs(b.p[1])*(a0.alF||1) + b.s[1]); }); return (a0.pos[1] + top)*SC*.98; })();
     const drehY = fy - tipPx;
     let rs = 0; if(z.key === 'seil' && P.hookAttached && P.anchor){   // von oben gegriffen (Liane locker): Körper bleibt aufrecht
       const cx = P.x, cy = P.y - P.h*.6; rs = Math.atan2(P.anchor.x - cx, cy - P.anchor.y);
@@ -636,7 +662,8 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
     if(Math.abs(S.rs) > .001){ c.translate(0, drehY); c.rotate(S.rs); c.translate(0, -drehY); }
     const Tm = c.getTransform();
     const dev = (x, y) => Tm.transformPoint(new DOMPoint(x*SC, fy - y*SC));
-    const hp = handPunkt(ch.armP, 0, -.75*(ch.armP.alF||1), .04), h2 = handPunkt(ch.armN, 0, -.75*(ch.armN.alF||1), .04), hd = dev(0, 2.4);
+    const hArm = male && window.F3D_AFFE_FOTO && z.key === 'seil' && S.halt ? ch[S.halt] : ch.armP;   // Foto-Look-Affe: die Liane beginnt in der Hand, die sie hält
+    const hp = handPunkt(hArm, 0, -.75*(hArm.alF||1), .04), h2 = handPunkt(ch.armN, 0, -.75*(ch.armN.alF||1), .04), hd = dev(0, 2.4);
     const a = dev(hp[0], hp[1]), b = dev(h2[0], h2[1]);
     P._handDev = {x: a.x, y: a.y, f: P._frameNo = (P._frameNo||0) + 1}; P._hand2Dev = {x: b.x, y: b.y}; P._headDev = {x: hd.x, y: hd.y};
     // Pump-Draisine: Griff in denselben Geräte-Pixeln (für Test/Messung „Hände am Griff“)
@@ -680,7 +707,16 @@ function buildPigAlt(){const R=new Nd();const eyes=[];const ROOT=0xf08fab,TIP=0x
       P._stielZiel = {x: lq.x, y: lq.y}; c.save(); c.setTransform(TmAussen); drawUmbrella(P, 0, fy, undefined, 'stiel'); c.restore(); }
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.shadowColor = 'rgba(46,28,14,.8)'; c.shadowBlur = Math.max(1, Math.min(5, 1.5*Math.hypot(Tm.a, Tm.b))); c.shadowOffsetX = 0; c.shadowOffsetY = 0;   // weiche dunkle Kontur
+    if(male && window.F3D_AFFE_FOTO && P._seilVor && typeof affenSeilZeichnen === 'function'){   // Foto-Look-Affe: Liane zuerst, die Hand greift davor (Nutzer 20.11.: „warum hat der Affe an der Liane keine Hand?“)
+      const v = P._seilVor; c.save(); c.setTransform(v.tm); affenSeilZeichnen(P, v.px, v.py, v.camX); c.restore(); P._seilFertig = true; }
     c.drawImage(cv, FR.x0*SC, fy - FR.y1*SC - IT.hop*42, (FR.x1 - FR.x0)*SC, (FR.y1 - FR.y0)*SC);
+    if((S.an || 0) > .3){   // Kante: Schweißperlen spritzen vom Kopf weg (nur gemalt)
+      for(let i = 0; i < 3; i++){ const u = (t*1.7 + i/3) % 1, sd = i === 1 ? 1 : -1, r = 1.9 + .5*(i % 2);
+        const tx = sd*(1.05 + .75*u)*SC*(i === 2 ? .55 : 1), ty = fy - (2.75 + (i === 2 ? .5 : 0) + .9*u - 1.5*u*u)*SC;
+        c.save(); c.globalAlpha = Math.min(1, S.an)*(1 - u)*.95; c.translate(tx, ty); c.rotate(sd*(.5 + .9*u));
+        c.beginPath(); c.moveTo(0, -r*1.9); c.quadraticCurveTo(r*1.15, -r*.2, r*.8, r*.45); c.arc(0, r*.45, r*.8, 0, Math.PI); c.quadraticCurveTo(-r*1.15, -r*.2, 0, -r*1.9);
+        c.fillStyle = '#c9ecff'; c.fill(); c.lineWidth = .5; c.strokeStyle = 'rgba(70,130,180,.75)'; c.stroke();
+        c.beginPath(); c.arc(-r*.25, r*.3, r*.25, 0, 7); c.fillStyle = 'rgba(255,255,255,.9)'; c.fill(); c.restore(); } }
     // Brille/Tattoo (Umkleide, js/27): als 2D-Auflage auf die projizierten Augen der 3D-Figur – von vorn beide Gläser, von der Seite ein Glas
     try{
       const wear = typeof cosItemsOf === 'function' ? cosItemsOf(male ? 'm' : 'f') : null;

@@ -164,11 +164,11 @@ const ohrCache={};function ohrGeo(sh){if(ohrCache[sh])return ohrCache[sh];const 
 function lippe(zf,w,yT,yB,off){const pos=[],nrm=[],uv=[],idx=[],nx=24,ny=6;
  for(let i=0;i<=nx;i++)for(let j=0;j<=ny;j++){const x=-w+2*w*i/nx,v=j/ny,y=yT(x)+(yB(x)-yT(x))*v;pos.push(x,y,zf(x,y)+off);nrm.push(0,.15,1);uv.push(i/nx,v)}
  for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){const q=i*(ny+1)+j,r=q+ny+1;idx.push(q,r,q+1,r,r+1,q+1)}return mkGeo(pos,nrm,uv,idx,1)}
-function lachen(H,zf,w,y0,dT,dB,zt){zt=zt||.012;const u=x=>1-(x/w)**2;
- K(H,{geo:lippe(zf,w,x=>y0-dT*u(x),x=>y0-dB*u(x),.006),color:0x5c1f1c,spec:2,vari:0});                       // Mund innen
- K(H,{geo:lippe(zf,w*.6,x=>y0-dB*u(x)+(dB-dT)*.6*(1-(x/(w*.6))**2),x=>y0-dB*u(x)*.97,zt),color:0xe58a92,spec:20,sss:1,vari:0});   // Zunge
+function lachen(H,zf,w,y0,dT,dB,zt){zt=zt||.012;const u=x=>1-(x/w)**2;const L=[];   // gibt die Teile zurück (js/33 blendet sie beim Erschrecken aus)
+ L.push(K(H,{geo:lippe(zf,w,x=>y0-dT*u(x),x=>y0-dB*u(x),.006),color:0x5c1f1c,spec:2,vari:0}));                       // Mund innen
+ L.push(K(H,{geo:lippe(zf,w*.6,x=>y0-dB*u(x)+(dB-dT)*.6*(1-(x/(w*.6))**2),x=>y0-dB*u(x)*.97,zt),color:0xe58a92,spec:20,sss:1,vari:0}));   // Zunge
  const kurve=(d,n)=>{n=n||16;const p=[];for(let i=0;i<=n;i++){const x=-w*1.08+2.16*w*i/n,y=y0-d*(1-(x/(w*1.08))**2)+.012*(Math.abs(x)/w)**3;p.push([x,y,zf(x,y)+.012])}return p};
- K(H,{geo:tube(kurve(dT),.011,.011,1,30,8),color:0x8a4438,spec:2,vari:0});}                                   // Oberlippe, Mundwinkel leicht hoch
+ L.push(K(H,{geo:tube(kurve(dT),.011,.011,1,30,8),color:0x8a4438,spec:2,vari:0}));return L}                                   // Oberlippe, Mundwinkel leicht hoch
 // Auge: Lidrand (Haut), Augapfel mit Iris/Pupille/Glanz, Lidstrich, Wimpern; gibt den Augapfel zurück (js/33 lässt ihn blinzeln)
 function auge(H,x,y,z,sx,sy,iris,lid,s,wimper,ohneWimper){
  K(H,{pos:[x,y,z-.022],sc:[sx*1.1,sy*1.1,.08],color:lid,spec:5,vari:.04});
@@ -196,7 +196,9 @@ function buildPig(){const R=new Nd();const eyes=[];
  K(H,{pos:[0,-.2,.9],sc:[.5,.4,.3],color:0xe5a094,spec:10,sss:1.8,vari:.04});
  K(H,{pos:[0,-.2,.98],sc:[.42,.32,.3],color:0xeeaa9f,spec:34,sss:1.8,vari:.05});
  for(const s of [-1,1])K(H,{pos:[s*.14,-.2,1.262],sc:[.05,.08,.03],color:0x8f4848,spec:4,vari:.04});
- lachen(H,(x,y)=>zH(x,y)+.075,.2,-.62,.02,.14);
+ const lae=lachen(H,(x,y)=>zH(x,y)+.075,.2,-.62,.02,.14);
+ // Erschrecken an der Kante (js/33, Pose „kante“): runder offener Mund statt Lächeln
+ const angstMund=K(H,{pos:[0,-.68,zH(0,-.68)+.07],sc:[.085,.11,.04],color:0x4a1716,spec:8,vari:0});angstMund.visible=false;angstMund.sc0=angstMund.sc.slice();
  for(const s of [-1,1]){const A=R.add(new Nd({pos:[s*1.14,1.57,.1]}));   // Stellung der Arme gibt js/33 vor (Haltungen)
   F(A,Object.assign({},flaum,{pos:[0,-.26,0],sc:[.26,.36,.26],tat:true}));
   for(const hx of [-.075,.075])K(A,{pos:[hx,-.64,.03],sc:[.08,.12,.11],color:0x5a4238,spec:3,vari:.05});R['a'+s]=A}
@@ -210,7 +212,7 @@ function buildPig(){const R=new Nd();const eyes=[];
  const ST=R.add(new Nd({pos:[0,0,1.8]}));ST.visible=false;const HOLZ=0xb9824a;
  K(ST,{geo:tube([[0,1.32,0],[0,1.0,0],[0,.82,0],[-.03,.68,0],[-.13,.57,0],[-.26,.56,0],[-.36,.65,0],[-.39,.78,0]],.125,.125,1,40,10),color:HOLZ,mat:3,spec:28,vari:.3});
  const STO=K(ST,{geo:tube([[0,0,0],[0,.34,0],[0,.67,0],[0,1,0]],.125,.125,1,8,10),pos:[0,1.3,0],color:HOLZ,mat:3,spec:28,vari:.3});
- return {root:R,head:H,armN:R['a-1'],armP:R['a1'],legN:R['l-1'],legP:R['l1'],eyes,stiel:ST,stielOben:STO}}
+ return {root:R,head:H,armN:R['a-1'],armP:R['a1'],legN:R['l-1'],legP:R['l1'],eyes,stiel:ST,stielOben:STO,lae,angstMund}}
 // ---------- Affe (wie freigegeben: entwurf-figuren/affe-modell-*.png, hier mit demselben Schichten-Fell wie das Schweinchen) ----------
 // Gleiche Griffe wie buildMonkey in js/33 (Haltungen bleiben dort): root, head, armN/armP (kids[0] = Fell-Arm, danach Hand), legN/legP,
 // eyes, tail (Glieder segs), backen + mundO (Pusten), lae (Lächeln).
@@ -253,6 +255,6 @@ function buildMonkey(){const R=new Nd();const eyes=[];
     F(Si,Object.assign({},fell,{pos:[0,0,-SEG/2],sc:[rd,rd,SEG*.68],len:.07,occ:.2,groom:[0,-.3,-1]}));   // ein Glied = ein längliches Fell-Stück, überlappend (keine Ringe)
     TL.segs.push(Si);par=Si}
    F(par,Object.assign({},fell,{pos:[0,0,-SEG],sc:[.11,.11,.11],len:.06})); }
- return {root:R,head:H,armN:AP[0],armP:AP[1],legN:LP[0],legP:LP[1],eyes,tail:TL,backen,mundO,lae}}
+ return {root:R,head:H,armN:AP[0],armP:AP[1],legN:LP[0],legP:LP[1],eyes,tail:TL,backen,mundO,lae,angstMund:mundO}}
 return {buildPig,buildMonkey,teil};
 };

@@ -204,11 +204,38 @@ function lianeZeichnen(x0, y0, x1, y1, st, jit, seed, sagF){
   }
   ctx.restore();
 }
+// Seil/Liane des Affen. Eigene Funktion (20.11.): beim Foto-Look-Affen ruft js/33 sie VOR dem Figuren-Bild auf (player._seilVor),
+// damit die Hand sichtbar um die Liane greift statt dahinter zu verschwinden; sonst wie bisher nach der Figur.
+function affenSeilZeichnen(player, px, py, camX){
+  if(player.male && player.hookAttached){
+    // Seil als Liane (Nutzerwunsch): grüner Strang mit hellem Kern, leicht durchhängend, kleine Blätter.
+    // Gedehnt: wird dünner, färbt sich orange-rot, hängt nicht mehr durch und zittert (wie bisher)
+    const st = Math.min(1, (player.ropeStretch||0) / ROPE_SNAP_STRETCH);
+    // Liane 2 (js/32): das Seil ist straff, solange der Affe daran hängt – hängt nur durch, wenn es locker ist (z. B. beim Fallen)
+    const neu = typeof lianeNeu === 'function' && lianeNeu(player);
+    const locker = neu ? Math.max(0, Math.min(1, (player.ropeLen - Math.hypot(player.x - player.anchor.x, player.y - player.h*0.6 - player.anchor.y))/30)) : null;
+    const jit = st > 0.3 ? (Math.random()-0.5)*st*3 : 0;
+    let rx = px, ry = py-player.h*0.6;
+    if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
+    if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoAffenLiane === 'function')   // Foto-Look: echte Liane (12e)
+      fotoAffenLiane(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.moving ? player.anchor.startX : player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);
+    else lianeZeichnen(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.moving ? player.anchor.startX : player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);   // bewegter Haken: feste Blatt-Lage
+  }
+  else if(player.male && player._hakenWarten && player._wartZiel){
+    // von oben gegriffen (js/32): die Liane ist schon in der Hand und hängt locker durch, bis sie sich unter dem Haken spannt
+    let rx = px, ry = py-player.h*0.6;
+    if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
+    if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoAffenLiane === 'function')
+      fotoAffenLiane(rx, ry, player._wartZiel.x-camX, player._wartZiel.y, 0, 0, player._wartZiel.moving ? player._wartZiel.startX : player._wartZiel.x, 1);
+    else lianeZeichnen(rx, ry, player._wartZiel.x-camX, player._wartZiel.y, 0, 0, player._wartZiel.moving ? player._wartZiel.startX : player._wartZiel.x, 1);
+  }
+}
 function drawCharacter(player, camX){
   if(deathState && player === deathState.victim) return; // verpufft
   // auf ganze Pixel runden: Figur, Boden und Kamera liegen im selben Raster -> kein Zittern gegeneinander
   // _standDy: steht die Figur auf Floß/Draisine, federt sie mit den nachgebenden Seilen (nur Anzeige, elemente/blattfloss.js)
   const px = Math.round(player.x - camX), py = Math.round(player.y + (player._standDy || 0));
+  player._seilFertig = false; player._seilVor = player.male ? {tm: ctx.getTransform(), px, py, camX} : null;   // für js/33: Liane hinter die Hand
   // Zwinkern: kurz (ca. 0,13 s) das Bild mit geschlossenen Augen zeigen, alle paar Sekunden
   const blinking = player.blink < 130;
   const img = player.male ? (blinking ? ASSETS.monkeyBlink : ASSETS.monkey)
@@ -278,27 +305,6 @@ function drawCharacter(player, camX){
   ctx.restore();
   if(typeof cosmeticsDrawFront === 'function') cosmeticsDrawFront(player, camX);
 
-  if(player.male && player.hookAttached){
-    // Seil als Liane (Nutzerwunsch): grüner Strang mit hellem Kern, leicht durchhängend, kleine Blätter.
-    // Gedehnt: wird dünner, färbt sich orange-rot, hängt nicht mehr durch und zittert (wie bisher)
-    const st = Math.min(1, (player.ropeStretch||0) / ROPE_SNAP_STRETCH);
-    // Liane 2 (js/32): das Seil ist straff, solange der Affe daran hängt – hängt nur durch, wenn es locker ist (z. B. beim Fallen)
-    const neu = typeof lianeNeu === 'function' && lianeNeu(player);
-    const locker = neu ? Math.max(0, Math.min(1, (player.ropeLen - Math.hypot(player.x - player.anchor.x, player.y - player.h*0.6 - player.anchor.y))/30)) : null;
-    const jit = st > 0.3 ? (Math.random()-0.5)*st*3 : 0;
-    let rx = px, ry = py-player.h*0.6;
-    if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
-    if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoAffenLiane === 'function')   // Foto-Look: echte Liane (12e)
-      fotoAffenLiane(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.moving ? player.anchor.startX : player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);
-    else lianeZeichnen(rx, ry, player.anchor.x-camX, player.anchor.y, st, jit, player.anchor.moving ? player.anchor.startX : player.anchor.x, neu ? 0.08 + 0.9*locker : undefined);   // bewegter Haken: feste Blatt-Lage
-  }
-  else if(player.male && player._hakenWarten && player._wartZiel){
-    // von oben gegriffen (js/32): die Liane ist schon in der Hand und hängt locker durch, bis sie sich unter dem Haken spannt
-    let rx = px, ry = py-player.h*0.6;
-    if(typeof neueFigurenAn==='function' && neueFigurenAn() && player._handDev){ const q = ctx.getTransform().inverse().transformPoint(new DOMPoint(player._handDev.x, player._handDev.y)); rx = q.x; ry = q.y; }
-    if(typeof fotoLookAktiv === 'function' && fotoLookAktiv() && typeof fotoAffenLiane === 'function')
-      fotoAffenLiane(rx, ry, player._wartZiel.x-camX, player._wartZiel.y, 0, 0, player._wartZiel.moving ? player._wartZiel.startX : player._wartZiel.x, 1);
-    else lianeZeichnen(rx, ry, player._wartZiel.x-camX, player._wartZiel.y, 0, 0, player._wartZiel.moving ? player._wartZiel.startX : player._wartZiel.x, 1);
-  }
+  if(!player._seilFertig) affenSeilZeichnen(player, px, py, camX);
   if(!player.male && player.umbrella > 0.02 && !(typeof neueFigurenAn === 'function' && neueFigurenAn())) drawUmbrella(player, px, py);
 }
