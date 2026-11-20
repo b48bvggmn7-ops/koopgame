@@ -1742,6 +1742,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     eigene Nummer; geht eine wieder aus (z. B. Zeitfenster abgelaufen), schließt sie. Auf der Tür sitzt je Nummer ein Edelstein in deren
     Farbe: matt = noch aus, leuchtend = an. Test `tuer_mehrere_nummern`.
     **Dash zur Seite läuft aus (20.11.):** wie nach oben – 2 Kästchen volles Tempo (`DASH_SEITE_VOLL_PX`), das dritte läuft weich aus.
+    Das Auslaufen beginnt genau nach 2 Kästchen (je Schritt 30 % der Rest-Strecke, `DASH_AUS_ANTEIL`). Wer die Richtung weiter hält, bremst
+    nur bis aufs Lauftempo (`DASH_AUS_LAUF`) und läuft/fliegt ohne Stillstand weiter (vorher: fast Stopp in der Luft, dann wieder los).
     **Rammbalken-Ton (20.11.):** der Rammstoß spielt die Aufnahme `assets/audio/ramm-treffer.wav` (Splice, tiefer Holzschlag; Teil-Treffer
     leiser und höher). Beim Zurückgleiten tickt die Sperrklinke: je Kerbe (8) EIN Ratschen-Klick aus `assets/audio/ramm-gleiten.wav` (Splice),
     genau wenn der kleine Haken über die Kerbe springt – passt so zu jeder eingestellten Zeit (3/5/8/12 s). „Ganz heraus“ ist weiter erzeugt.

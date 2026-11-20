@@ -125,6 +125,8 @@ const DASH_HOCH_SCHWEIN_PX = 120;    // px: so hoch geht der Dash senkrecht nach
 const DASH_SEITE_SCHWEIN_PX = 120;   // px: so weit geht der Dash zur Seite (Schweinchen im Dschungel; 20.11.: 3 Kästchen statt 4)
 const DASH_HOCH_VOLL_PX = 80;       // px: bis hierhin geht der Dash nach oben mit vollem Tempo (2 Kästchen), danach läuft er weich aus (20.11.)
 const DASH_SEITE_VOLL_PX = 80;      // px: dasselbe für den Dash zur Seite (2 Kästchen volles Tempo, das dritte läuft aus; 20.11.)
+const DASH_AUS_ANTEIL = 0.3;        // Auslaufen: je Schritt so viel der Rest-Strecke (0,4 = der erste Schritt wäre noch volles Tempo gewesen; 20.11.)
+const DASH_AUS_LAUF = 7.2;          // px/Schritt: Dash zur Seite mit gehaltener Richtung bremst nur bis hierher (gemessenes Lauftempo) und geht dann nahtlos ins Laufen über
 const DASH_HOCH_AUS_MIN = 1.2;      // px/Schritt: langsamstes Tempo beim Auslaufen
 const DASH_HOCH_ZEIT_MAX = 30;      // Schritte: spätestens dann endet der Dash nach oben
 const DASH_LADEZEIT_SCHWEIN = 180;   // Schritte (3 s): so lange lädt der Dash des Schweinchens in diesen Welten (sonst DASH_LADEZEIT)

@@ -7832,7 +7832,7 @@ async def dash_hoch_schwebt(g):
     ys = r['ys']; tempo = [round(ys[i] - ys[i + 1], 2) for i in range(len(ys) - 1)]
     assert 112 <= 680 - r['oben'] <= 128, f'Dash nach oben nicht 3 Kästchen hoch: {680 - r["oben"]} {tempo}'
     voll = [v for v in tempo if v > 15]; aus = [v for v in tempo if 0 < v <= 15]
-    assert 4 <= len(voll) <= 6, f'die ersten 2 Kästchen nicht mit vollem Tempo: {tempo}'
+    assert len(voll) in (4, 5) and max(aus) <= 12.5, f'genau die ersten 2 Kästchen (5 Schritte) volles Tempo, danach sofort langsamer: {tempo}'
     assert len(aus) >= 5 and all(aus[i] >= aus[i + 1] - 0.01 for i in range(len(aus) - 1)) and aus[-1] < 3, f'läuft nicht weich aus (wird nicht Schritt für Schritt langsamer): {tempo}'
     assert abs(r['vyEnde']) < 0.7 and r['vy10'] > 4, f'danach kein Stehenbleiben in der Luft, sondern normal fallen: {r["vyEnde"]} / {r["vy10"]}'
     # Nutzer 20.11.: „der Dash zu den Seiten bitte auch nur 3“ (Schweinchen im Dschungel)
@@ -7842,6 +7842,16 @@ async def dash_hoch_schwebt(g):
     await g.p.wait_for_function("!p2.dash", timeout=4000)
     weit = await g.ev("p2.x - 500")
     assert 108 <= weit <= 132, f'Dash zur Seite nicht 3 Kästchen weit (vorher 4): {weit}'
+    # Nutzer 20.11.: „harter Stopp in der Luft, und wenn ich weiter drücke, geht er nachträglich noch in die Richtung“ – mit weiter
+    # gehaltener Richtung bremst der Dash zur Seite nur bis aufs Lauftempo und geht ohne Stillstand ins Weiterlaufen über
+    r = await g.ev("""(() => { const K = p2.keys, xs = []; p2.x = p2._px = 700; p2.y = p2._py = 480; p2.vx = p2.vy = 0; p2.dashPunkte = 1; p2.dashPause = 0;
+      for(let i = 0; i < 3; i++) stepSim();
+      KEYS[K.right] = true; KEYS[K.dash] = true; KEYS[K.dash + '_pressed'] = true; stepSim(); KEYS[K.dash] = false;
+      for(let i = 0; i < 18; i++){ xs.push(p2.x); stepSim(); } xs.push(p2.x); KEYS[K.right] = false;
+      return xs.slice(1).map((x, i) => Math.round((x - xs[i])*10)/10); })()""")
+    fahrt = r[2:]   # nach dem kurzen Trefferstopp am Anfang
+    assert max(fahrt) > 15 and min(fahrt) >= 4, f'Dash zur Seite mit gehaltener Richtung: bleibt zwischendurch (fast) stehen: {r}'
+    assert all(fahrt[i] >= fahrt[i + 1] - 0.05 for i in range(len(fahrt) - 1)), f'Dash zur Seite: Tempo springt nach dem Auslaufen wieder hoch: {r}'
 
 @test
 async def blattfloss_aufzug(g):

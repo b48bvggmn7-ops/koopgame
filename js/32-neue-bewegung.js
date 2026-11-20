@@ -88,10 +88,16 @@ function dashStarten(P, moveDir){
   if(typeof dustPuff === 'function') dustPuff(P.x, P.y - P.h*0.5, 7, -Math.sign(dx)*1.2 || 0, 4);
   if(typeof SFX !== 'undefined' && SFX.dash) SFX.dash(P);
 }
+// Auslaufen: langsamstes Tempo. Zur Seite mit weiter gehaltener Richtung nie unter das Lauftempo – sonst blieb das Schweinchen in der
+// Luft fast stehen und lief danach wieder los (Nutzer 20.11.: „harter Stopp in der Luft, und wenn ich weiter drücke, geht er
+// nachträglich noch in die Richtung, das ist komisch“). Ohne gehaltene Richtung läuft er bis fast 0 aus.
+function dashHaeltRichtung(P, d){ return !!d.dx && P._moveDir === d.dx; }
+function dashAusMin(P, d){ return dashHaeltRichtung(P, d) ? DASH_AUS_LAUF : DASH_HOCH_AUS_MIN; }
 function dashBeenden(P){
   const d = P.dash; if(!d) return;
   P.dash = null;
-  P.vx *= DASH_BEHALTEN;
+  if(d.ausAb != null && dashHaeltRichtung(P, d)) P.vx = d.dx*DASH_AUS_LAUF;   // ausgelaufener Dash zur Seite geht nahtlos ins Laufen über
+  else P.vx *= DASH_BEHALTEN;
   P.vy = P.vy < 0 ? Math.max(P.vy*DASH_BEHALTEN, JUMP_V) : P.vy*DASH_BEHALTEN;
   if(d.dy < 0 && !d.dx && dashNurSchweinWelt() && !P.male) P.vy *= DASH_HOCH_SCHWEIN_BEHALTEN;   // senkrecht hoch: kein Schwung obendrauf (er ist oben schon weich ausgelaufen)
   if(P.grounded) P.dashPause = DASH_PAUSE;
@@ -102,8 +108,9 @@ function dashSchritt(P){
   P.vx = d.dx*DASH_TEMPO*d.faktor; P.vy = d.dy*DASH_TEMPO*d.faktor;
   if(d.ausAb != null){   // Auslaufen: nach d.ausAb px wird er immer langsamer (Tempo ~ Rest-Strecke), nie über d.strecke hinaus
     const rest = d.strecke - (d.weg || 0);
-    if(rest <= 0.01){ P.vx = P.vy = 0; d.zeit = 0; }
-    else if((d.weg || 0) >= d.ausAb){ const v = Math.min(rest, Math.max(DASH_HOCH_AUS_MIN, DASH_TEMPO*rest/(d.strecke - d.ausAb))); P.vx = d.dx*v; P.vy = d.dy*v; }
+    const haelt = dashHaeltRichtung(P, d);   // Richtung weiter gehalten: nur bis aufs Lauftempo abbremsen, ohne Stillstand weiter (s. dashAusMin)
+    if(rest <= 0.01){ const v = haelt ? DASH_AUS_LAUF : 0; P.vx = d.dx*v; P.vy = d.dy*v; d.zeit = 0; }
+    else if((d.weg || 0) >= d.ausAb){ const v = haelt ? Math.max(DASH_AUS_LAUF, rest*DASH_AUS_ANTEIL) : Math.min(rest, Math.max(DASH_HOCH_AUS_MIN, rest*DASH_AUS_ANTEIL)); P.vx = d.dx*v; P.vy = d.dy*v; }
   }
   if(P.grounded && d.dy > 0 && !bruchUnter(P) && !(typeof rammUnter === 'function' && rammUnter(P))) P.vy = 0;   // schräg nach unten am Boden: flach weiter
   P.gliding = false;
