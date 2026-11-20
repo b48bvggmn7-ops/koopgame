@@ -1728,6 +1728,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Mund statt Lächeln (`angstMund`), Schweißperlen spritzen vom Kopf. Nicht nach einer Landung (`S.gel`), nicht beim Durchlaufen (wer
     läuft, fällt einfach runter – Physik unverändert, `kanteAbrutschen` in js/32). Gilt für Affe und Schweinchen. Test `figuren3d_kante_wackeln`.
     Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
+    **Dash nach oben des Schweinchens (Dschungel, 20.11.):** nur noch 3 Kästchen hoch (`DASH_HOCH_SCHWEIN_PX` 120, vorher 4) und am
+    höchsten Punkt schwebt es kurz, statt wie ein Stein zu fallen (`dashSchweben`, `DASH_HOCH_SCHWEB` 16 Schritte). Test `dash_hoch_schwebt`.
+    Testlevel `levels/test/rammbalken.json`: Decken-Balken ein Kästchen tiefer.
     **Kanten-Halt (20.11., `kanteHalt` in js/32):** Wer die Lauftaste losgelassen hat und nur noch ausrutscht, rutscht nicht mehr über
     die Kante, sondern bleibt an ihr stehen (und wackelt); wer die Taste hält, läuft wie bisher runter. Nicht auf Eis. Wackel-Streifen
     `KANTE_WACKEL_RAND` von 8 auf 14 px. Gemessen: Loslassen in den letzten ~35 px vor der Kante = stehen + wackeln. Test `kante_halt_beim_loslassen`.
@@ -2931,6 +2934,10 @@ Ergänzt das Dschungel-Paket (Vorschau level1_dschungel.html, Bilder in `boden-d
   - Rückgängig / Wiederholen (Ausbau 2, editor/js/08-auswahl.js): Strg+Z / Strg+Y (auch Strg+Umschalt+Z) und Knöpfe
     ↶ ↷ oben; jede Änderung ist ein Schritt, ein gezogener Pinselstrich zählt als EIN Schritt; bis 200 Schritte.
     Laden eines Levels / Neues Level beginnt einen frischen Verlauf. Auch Level-Info-Änderungen sind rückgängig machbar.
+  - **Minikarte: spannend/entspannt (20.11., editor/js/10-minikarte.js):** Farbstreifen unter der Karte – orange = spannender
+    Abschnitt, grün = entspannte Strecke. Automatisch erkannt (`minikarteSpannung`/`minikarteAbschnitte`): spannend ist, wo im Umkreis
+    von 12 Spalten etwas zu tun ist (Haken, bewegte Teile, Bröckelboden, alle Elemente wie Hebel/Tür/Platte/Rammbalken/Windrad/
+    Wechselboden/Floß/Draisine/Falle …); einfache Gruben und Stacheln zählen nicht; Lücken unter 30 Spalten gehören zum Abschnitt.
   - **Anwählen ✎** (Werkzeug neben „Verschieben ✥“, Nutzerwunsch 20.11., editor/js/11-anwaehlen.js): ein gesetztes Ding anklicken –
     die Eigenschaften-Zeile zeigt SEINE Einstellungen („… (angewählt):“), jede Änderung dort gilt sofort für genau dieses Ding
     (kein Neu-Setzen): Punkt-Elemente aus dem Register (Hebel, Tür, Druckplatte, Rammbalken, Windrad, Wechselboden … – Nummer und

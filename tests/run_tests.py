@@ -4988,6 +4988,22 @@ async def editor_haken_ziehen(g):
         srv.shutdown()
 
 @test
+async def minikarte_spannung(g):
+    """Minikarte (Nutzerwunsch 20.11.): Streifen „spannend/entspannt“ – spannend ist, wo im Umkreis von 12 Spalten etwas zu tun ist
+    (Haken, Hebel …); Stacheln allein zählen nicht; eine kurze Lücke (< 30 Spalten) zwischen zwei Stellen gehört zum Abschnitt."""
+    srv = webserver(); p = g.p
+    try:
+        await p.goto(srv.url + 'editor/index.html'); await p.wait_for_timeout(200)
+        draft = {'cols': 300, 'tiles': [[c, 17, 'ground'] for c in range(300)], 'hooks': [{'c': 50, 'r': 8, 'radius': 6.5}], 'spikes': [{'c': 150, 'r': 16, 'dir': 0}],
+                 'coins': [], 'checkpoints': [], 'startM': {'c': 2, 'r': 16}, 'switches': [{'c': 90, 'r': 16, 'link': 1}, {'c': 220, 'r': 16, 'link': 2}]}
+        await p.evaluate("d => localStorage.setItem('monchichi_level_editor_v2', JSON.stringify(d))", draft)
+        await p.reload(); await p.wait_for_function("window.editorBereit", timeout=8000)
+        ab = await p.evaluate("minikarteAbschnitte().map(a => [a.von, a.bis, a.spannend])")
+        assert ab[:4] == [[0, 37, False], [38, 102, True], [103, 207, False], [208, 232, True]] and len(ab) == 5 and ab[4][0] == 233 and ab[4][2] is False, f'Abschnitte falsch erkannt: {ab}'
+    finally:
+        srv.shutdown()
+
+@test
 async def editor_anwaehlen(g):
     """Editor-Werkzeug „Anwählen ✎“ (Nutzerwunsch 20.11.: gesetzte Dinge anwählen und ihre Einstellungen ändern, statt sie neu zu
     setzen): Klick auf ein gesetztes Ding zeigt SEINE Werte in der Eigenschaften-Zeile; Änderungen dort (Nummer, Art, Zeit,
@@ -7782,6 +7798,25 @@ async def schwein_foto_look(g):
     assert "QS.get('schwein')!=='alt'" in src and 'buildPigAlt' in src, 'Schalter ?schwein=alt bzw. das bisherige Schweinchen fehlt'
 
 @test
+async def dash_hoch_schwebt(g):
+    """Nutzer 20.11.: „wenn das Schwein mit dem Dash in die Luft springt, fällt es wie ein Stein“ – nach dem Dash senkrecht nach oben
+    (Dschungel, nur Schweinchen) schwebt es kurz am höchsten Punkt (dashSchweben, js/32): die Höhe ist 3 Kästchen (20.11., vorher 4), aber kurz
+    danach fällt es noch langsam; später fällt es wieder normal schnell."""
+    await g.load(level([ground(0, 680, 3000)], {'x': 300, 'y': 680}, {'x': 500, 'y': 680}, welt='dschungel'))
+    await g.steps(20)
+    await g.ev("p2.dashPunkte = 1; p2.dashPause = 0")
+    await g.p.keyboard.down('ArrowUp'); await g.p.keyboard.down('Numpad3'); await g.steps(3); await g.p.keyboard.up('Numpad3'); await g.p.keyboard.up('ArrowUp')
+    await g.p.wait_for_function("!p2.dash && !p2.grounded", timeout=4000)
+    oben = await g.ev("p2.y")
+    await g.steps(10)
+    r = await g.ev("({y: p2.y, vy: p2.vy})")
+    assert 112 <= 680 - oben <= 128, f'Dash nach oben nicht 3 Kästchen hoch (Nutzer 20.11., vorher 4): {680 - oben}'
+    assert r['vy'] < 3 and r['y'] - oben < 20, f'10 Schritte nach dem Dash fällt das Schweinchen schon schnell (wie ein Stein): {r}, oben {oben}'
+    await g.steps(22)
+    r2 = await g.ev("({y: p2.y, vy: p2.vy, g: p2.grounded})")
+    assert r2['g'] or r2['vy'] > 8, f'nach dem Schweben fällt es nicht wieder normal: {r2}'
+
+@test
 async def kante_halt_beim_loslassen(g):
     """Nutzer 20.11.: „ich falle zu schnell runter an den Kanten“ – wer die Lauftaste losgelassen hat und nur noch ausrutscht,
     bleibt an der Kante stehen (kanteHalt, js/32) statt drüberzurutschen; wer die Taste hält, läuft wie bisher runter."""
@@ -8813,7 +8848,7 @@ async def rammbalken_dash(g):
             let w4 = 0; while(B[3].phase !== 'ruhe' && w4++ < 900) st(); e.faehrtHoch = p2.grounded && Math.abs(p2.y - 600) < 1 && !linkOn[4];
             // aus der Luft von oben
             n(DASH_LADEZEIT_SCHWEIN); stell(p2, 3500, 540); KEYS[runter] = true; druck(p2, 'dash'); st(); los(); e.stampfLuft = bisTreffer(B[3]);
-            // Balken von der DECKE (B[4], Spitze y 520): darunter hoch + Dash; ohne „hoch“ kein Treffer
+            // Balken von der DECKE (B[4], Spitze y 560; 20.11. ein Kästchen tiefer, weil der Dash nach oben nur noch 3 Kästchen geht): darunter hoch + Dash; ohne „hoch“ kein Treffer
             resetLevel(); stell(p1, 3900, 680); stell(p2, 4020, 680); n(5); druck(p2, 'dash'); n(16); e.ohneHoch = B[4].phase === 'ruhe';
             n(DASH_LADEZEIT_SCHWEIN); stell(p2, 4020, 680); n(5); KEYS[hoch] = true; druck(p2, 'dash'); st(); e.dashHoch = !!p2.dash && p2.dash.dy === -1; los();
             e.deckeTreffer = bisTreffer(B[4]); n(8); e.an5 = !!linkOn[5] && tuer(5);
@@ -8849,7 +8884,7 @@ async def rammbalken_dash(g):
         assert r['faehrtHoch'], f'Boden-Balken: wer oben steht, fährt beim Herausgleiten mit hoch: {r}'
         assert r['stampfLuft'], f'Boden-Balken: Stampfer aus der Luft muss treffen: {r}'
         assert r['ohneHoch'] and r['dashHoch'] and r['deckeTreffer'] and r['an5'], f'Decken-Balken: nur hoch + Dash von unten rammt ihn: {r}'
-        assert 3.8 <= r['dashHoehe'] <= 4.3, f'Dash nach oben: Höhe unerwartet: {r}'
+        assert 2.8 <= r['dashHoehe'] <= 3.2, f'Dash nach oben: Höhe unerwartet (Nutzer 20.11.: 3 Kästchen, vorher 4): {r}'
         assert r['affeRichtung'], f'Affe: Dash bleibt waagerecht: {r}'
         assert r['reset'], f'Neustart muss Balken und Nummer zurücksetzen: {r}'
     finally:
