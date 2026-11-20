@@ -103,6 +103,9 @@
   Bäume (`BAUM_AN`). Andere Welten sind im Spiel ausgeblendet (`"aus": true` in worlds.json), Weltkarte nicht erreichbar.
   Umbau-Skripte: `tests/bausteine/dschungel_neu.py` (Stellen), `raetsel_teile.py` (Rätsel-Teile), `meteoriten_setzen.py` (Spur),
   `rhythmus_umbau.py` (Action-Blöcke + entspannte Strecken; Abschnitt 1 umgebaut, „_teile“-Grenzen und Teil-Ziele mitgerechnet);
+  `finale_a1.py` (20.11.: Ende von Abschnitt 1 ab Spalte 4756 als Logik-Rätsel in vier Kammern – Aufbau und Lösung stehen oben in der Datei;
+  `finale_a1_loesung.py` spielt den Lösungsweg samt Gegenproben mit echter Physik durch, auf Nutzerwunsch „es muss möglich sein“; `finale_a1_messen.py` misst die Zeitfenster der knappen
+  Sprung-/Dash-Stellen. Merke: die Figuren dürfen höchstens 40 Kästchen auseinander sein, sonst wird die hintere nachgezogen);
   Bot-Tests `dschungel_neu_stellen_a1/_a2`, `raetsel_dschungel_neu`. Prüfwerkzeuge lesen Abschnitte als ihre Teile (`A.level_dateien`).
 - `levels/` – Levels im **Spiel-Format** (vom Editor exportiert), seit dem Editor-Umbau **nach Welten in Ordnern**:
   `levels/<welt>/<nr>-<titel>.json` (z. B. `vulkan/03-feuerberg.json`), Bosse `<welt>/boss-<name>.json`, alte Entwürfe in
