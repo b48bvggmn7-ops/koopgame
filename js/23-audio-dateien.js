@@ -161,7 +161,10 @@ function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rai
 // links/rechts nach Ort. Lädt eine Datei nicht, bleibt der erzeugte Klang aus 18-sound.js.
 const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav',
                            landen: 'assets/audio/landen.wav', schritt: 'assets/audio/schritte.wav',
-                           schalter: 'assets/audio/schalter.wav', tuer: 'assets/audio/tuer.wav'};
+                           schalter: 'assets/audio/schalter.wav', tuer: 'assets/audio/tuer.wav',
+                           rammtreffer: 'assets/audio/ramm-treffer.wav'};
+// Nutzer 20.11. (Splice „ESM Dumbell Weight On Table 1 Deep Thud Impact Heavy Wood“, auf 16 Bit Mono 48 kHz verkleinert und auf den
+// Schlag zugeschnitten, 0,7 s): ramm-treffer.wav = Rammstoß gegen den Rammbalken (SFX.rammTreffer in 18; Teil-Treffer leiser und höher).
 // Nutzer 06.11. (Splice, auf 16 Bit Mono verkleinert): schalter.wav („RKU_DST Low Crunch“, 0,37 s) = Hebel umlegen und
 // Bodenplatte drücken; tuer.wav = Tür auf/zu – erst „Creepy Game Door Mechanism Unlock Gears“, seit
 // Nutzerwunsch („nimm das für die Tür“) „Steampunk Game Contraption Mech Interlock Gears Transform Wood 03“ (Holz-Zahnräder, 3,4 s);
@@ -173,7 +176,7 @@ const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/
 // lauter, sondern das Quietschen“ -> Knarzen wieder 0,34; Quietschen 0,3 -> 0,8 und jetzt auch an der Pump-Draisine
 // (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben). Danach „Quietschen zu laut“ -> 0,4,
 // und die Draisine knarzt wieder dazu.
-const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0, schalter: 0.55, tuer: 0.32};
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0, schalter: 0.55, tuer: 0.32, rammtreffer: 0.7};
 const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor] (gemessen an der Hüllkurve)
   knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
             her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},
@@ -181,6 +184,7 @@ const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor]
            hin: [[0.14, .4]], her: [[1.92, .17, 1.6], [1.24, .24, 2]]},
   landen: {ganz: [[0, .75]]},
   schalter: {ganz: [[0, .37]]},
+  rammtreffer: {ganz: [[0, .45]]},   // nur der Schlag (danach kommt in der Aufnahme noch ein kleiner Nachhüpfer)
   tuer: {ganz: [[0.05, 1.0]]},   // „Tür-Sound zu lang“ (Nutzer 06.11.): 2,7 s -> 1 s (die ersten beiden Zahnrad-Schübe), sanft ausgeblendet
   // je Gras-Tritt [Anfang, Dauer, Ausgleich] – Ausgleich = alle Tritte etwa gleich laut (gemessen an der Hüllkurve)
   schritt: {tritt: [[0.80, .2, 1.6], [1.47, .2, 1.6], [2.10, .2, 1], [2.62, .2, 1.9], [3.21, .2, 1.9], [3.77, .2, 1.5],

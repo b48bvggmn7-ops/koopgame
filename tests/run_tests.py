@@ -6115,11 +6115,13 @@ async def ton_schalter_tuer_liane_windrad(g):
         await startmenue_bis_level(g)
         if await g.ev("audioCtx && audioCtx.state === 'running'"):
             await g.ev("geraeuscheLaden(); 0")
-            await p.wait_for_function("geraeusche.buf.schalter && geraeusche.buf.tuer", timeout=15000)
+            await p.wait_for_function("geraeusche.buf.schalter && geraeusche.buf.tuer && geraeusche.buf.rammtreffer", timeout=15000)
             r = await g.ev("""(() => { const ok = {};
-              for(const n of ['schalter', 'tuer']){ const d = geraeusche.buf[n].duration;
+              for(const n of ['schalter', 'tuer', 'rammtreffer']){ const d = geraeusche.buf[n].duration;
                 ok[n] = Object.values(GERAEUSCH_STUECKE[n]).flat().every(([a, l]) => a + l <= d + 0.01); }
-              ok.spielt = geraeuschSpielen('schalter', {}) && geraeuschSpielen('tuer', {}); ok.keineLiane = !GERAEUSCH_DATEIEN.liane; return ok; })()""")
+              ok.spielt = geraeuschSpielen('schalter', {}) && geraeuschSpielen('tuer', {});
+              SFX_LOG.length = 0; SFX.rammTreffer(p2.x, 1); SFX.rammTreffer(p2.x, 0.4); ok.ramm = SFX_LOG.filter(s => s === 'rammtreffer').length === 2;   // Rammstoß: Aufnahme ramm-treffer.wav (Nutzer 20.11.)
+              ok.keineLiane = !GERAEUSCH_DATEIEN.liane; return ok; })()""")
             assert all(r.values()), f'Aufnahmen fehlen / falsch geschnitten: {r}'
     finally:
         srv.shutdown()

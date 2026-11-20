@@ -390,6 +390,8 @@ const SFX = {
   // klickt die Sperrklinke über die Kerben (wird zum Ende hin höher = hörbare Uhr); ganz heraus = weiches „Klonk“
   // k = Stärke 0…1 (Teil-Treffer): schwach = leiser, dünner (weniger Wumms, höher), kaum Knarzen
   rammTreffer(x, k){ sfxLog('ramm'); if(k == null) k = 1; if(k < 0.999) sfxLog('rammschwach'); const w = k*k, hoch = 1 + 0.5*(1 - k);
+    // Aufnahme ramm-treffer.wav (Nutzer 20.11., js/23); ohne Datei der erzeugte Klang darunter
+    if(typeof geraeuschSpielen === 'function' && geraeuschSpielen('rammtreffer', {x, vol: 0.3 + 0.7*w, rate: 1 + 0.3*(1 - k), festesTempo: true, ausblenden: 0.12})) return;
     sTone(105*hoch, 0, 0.12 + 0.14*k, {to: 42*hoch, type: 'sine', vol: 0.05 + 0.15*w, attack: 0.003}); sNoise(0, 0.08 + 0.12*k, {filter: 'lowpass', f: 620, to: 110, q: 0.8, vol: 0.04 + 0.1*w, attack: 0.002});
     sTone(1180, 0.005, 0.1, {to: 860, type: 'square', vol: 0.018, attack: 0.002}); sTone(2240, 0.012, 0.07, {to: 1900, type: 'triangle', vol: 0.014, attack: 0.002});
     sNoise(0.13, 0.28*k, {filter: 'bandpass', f: 330, to: 250, q: 9, vol: 0.035*w, attack: 0.03}); },
