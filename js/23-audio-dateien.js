@@ -162,7 +162,7 @@ function fileMusicTarget(){ return FILE_VOL.music*VOL.music*(1 - 0.3*weather.rai
 const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/audio/kurbel.wav',
                            landen: 'assets/audio/landen.wav', schritt: 'assets/audio/schritte.wav',
                            schalter: 'assets/audio/schalter.wav', tuer: 'assets/audio/tuer.wav',
-                           rammtreffer: 'assets/audio/ramm-treffer.wav'};
+                           rammtreffer: 'assets/audio/ramm-treffer.wav', rammgleiten: 'assets/audio/ramm-gleiten.wav'};
 // Nutzer 20.11. (Splice „ESM Dumbell Weight On Table 1 Deep Thud Impact Heavy Wood“, auf 16 Bit Mono 48 kHz verkleinert und auf den
 // Schlag zugeschnitten, 0,7 s): ramm-treffer.wav = Rammstoß gegen den Rammbalken (SFX.rammTreffer in 18; Teil-Treffer leiser und höher).
 // Nutzer 06.11. (Splice, auf 16 Bit Mono verkleinert): schalter.wav („RKU_DST Low Crunch“, 0,37 s) = Hebel umlegen und
@@ -176,7 +176,12 @@ const GERAEUSCH_DATEIEN = {knarzen: 'assets/audio/knarzen.wav', kurbel: 'assets/
 // lauter, sondern das Quietschen“ -> Knarzen wieder 0,34; Quietschen 0,3 -> 0,8 und jetzt auch an der Pump-Draisine
 // (je Druck: „hin“ = großes Quietschen, „her“ = die kleineren, ×1,6–2 angehoben). Danach „Quietschen zu laut“ -> 0,4,
 // und die Draisine knarzt wieder dazu.
-const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0, schalter: 0.55, tuer: 0.32, rammtreffer: 0.7};
+const GERAEUSCH_VOL = {knarzen: 0.34, kurbel: 0.4, landen: 0.26, schritt: 1.0, schalter: 0.55, tuer: 0.32, rammtreffer: 0.7, rammgleiten: 0.3};
+// Nutzer 20.11. (Splice „FF JO foley metal crank slowdown“, Kurbel-Ratsche): ramm-gleiten.wav = das Zurückgleiten des Rammbalkens.
+// „Schneid dir da was raus und spiel das im Loop ab, so dass man es nicht hört“: drei gleichmäßige Klicks (0,33 s), die Schleifen-Punkte
+// liegen in der Stille zwischen zwei Klicks (Pegel < 1 %) -> keine hörbare Naht. Gespielt als echte Schleife, solange der Balken gleitet.
+const GERAEUSCH_SCHLEIFEN = {rammgleiten: [0.026, 0.360]};   // [Anfang s, Ende s] in der Datei
+const GERAEUSCH_SCHLEIFE_PAUSE = 160;   // ms: wird eine Schleife so lange nicht mehr „gehalten“ (Pause, Tod, Neustart), blendet sie aus
 const GERAEUSCH_STUECKE = {   // Ausschnitte [ab s, Dauer s, Lautstärke-Faktor] (gemessen an der Hüllkurve)
   knarzen: {hin: [[1.03, .46], [2.64, .52], [4.38, .47], [6.11, .45], [7.82, .5], [9.51, .46], [11.19, .51]],
             her: [[0.1, .37], [3.42, .37], [6.8, .34], [8.51, .32], [10.22, .32]]},
@@ -221,6 +226,41 @@ function geraeuschSpielen(name, o){
     aus.connect(audioOut());
     src.start(t, ab, dauer + 0.02);
     if(typeof sfxLog === 'function') sfxLog(name);
+    return true;
+  }catch(e){ return false; }
+}
+// Schleife halten: solange das jeden Spielschritt mit an = true aufgerufen wird, läuft der Laut als nahtlose Schleife (id = wer ihn
+// spielt, z. B. 'ramm3'); an = false oder kein Aufruf mehr -> blendet in ~60 ms aus. o = {x, vol, rate}. true = läuft.
+const geraeuschSchleifen = {};
+let geraeuschSchleifenUhr = 0;
+function geraeuschSchleifeAus(id){
+  const S = geraeuschSchleifen[id]; if(!S) return;
+  delete geraeuschSchleifen[id];
+  try{ const t = S.a.currentTime; S.g.gain.cancelScheduledValues(t); S.g.gain.setTargetAtTime(0.0001, t, 0.02); S.src.stop(t + 0.15); }catch(e){}
+}
+function geraeuschSchleife(id, name, an, o){
+  o = o || {};
+  const a = typeof sfxCtx === 'function' ? sfxCtx() : null;
+  if(a) geraeuscheLaden();
+  const buf = geraeusche.buf[name], P = GERAEUSCH_SCHLEIFEN[name];
+  if(!an || !a || soundMuted || !buf || !P){ geraeuschSchleifeAus(id); return false; }
+  try{
+    let S = geraeuschSchleifen[id];
+    const vol = (GERAEUSCH_VOL[name] || 0.3)*(o.vol == null ? 1 : o.vol)*VOL.sfx, t = a.currentTime;
+    if(!S){
+      const src = a.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = P[0]; src.loopEnd = P[1];
+      const g = a.createGain(); g.gain.setValueAtTime(0.0001, t); src.connect(g);
+      let aus = g, pan = null;
+      if(a.createStereoPanner){ pan = a.createStereoPanner(); g.connect(pan); aus = pan; }
+      aus.connect(audioOut()); src.start(t, P[0]);
+      S = geraeuschSchleifen[id] = {a, src, g, pan, name};
+      if(typeof sfxLog === 'function') sfxLog(name);
+      if(!geraeuschSchleifenUhr) geraeuschSchleifenUhr = setInterval(() => { const jetzt = performance.now();
+        for(const k in geraeuschSchleifen) if(jetzt - geraeuschSchleifen[k].zuletzt > GERAEUSCH_SCHLEIFE_PAUSE || soundMuted) geraeuschSchleifeAus(k); }, 80);
+    }
+    S.zuletzt = performance.now();
+    S.g.gain.setTargetAtTime(vol, t, 0.03); S.src.playbackRate.setTargetAtTime(o.rate || 1, t, 0.05);
+    if(S.pan) S.pan.pan.value = typeof sfxPan === 'function' ? sfxPan(o.x) : 0;
     return true;
   }catch(e){ return false; }
 }

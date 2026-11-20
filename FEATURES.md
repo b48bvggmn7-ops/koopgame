@@ -1729,7 +1729,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     läuft, fällt einfach runter – Physik unverändert, `kanteAbrutschen` in js/32). Gilt für Affe und Schweinchen. Test `figuren3d_kante_wackeln`.
     Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
     **Rammbalken-Ton (20.11.):** der Rammstoß spielt die Aufnahme `assets/audio/ramm-treffer.wav` (Splice, tiefer Holzschlag; Teil-Treffer
-    leiser und höher); Klicks und „ganz heraus“ sind weiter erzeugte Klänge.
+    leiser und höher). Das Zurückgleiten spielt `assets/audio/ramm-gleiten.wav` (Splice, Kurbel-Ratsche) als nahtlose Schleife
+    (`geraeuschSchleife` in js/23: drei Klicks, Schleifen-Punkte in der Stille), solange der Balken gleitet und ungefähr im Bild ist;
+    zum Ende hin langsamer und tiefer; stoppt bei Pause/Tod/Neustart. „Ganz heraus“ ist weiter ein erzeugter Klang.
     **Dash zur Seite des Schweinchens (Dschungel, 20.11.):** ebenfalls nur noch 3 Kästchen (`DASH_SEITE_SCHWEIN_PX` 120, vorher 4); für
     einen vollen Rammstoß muss es deshalb näher am Rammbalken stehen (höchstens ~70 px vor der Stirnseite statt ~110). Nach unten unverändert.
     **Dash nach oben des Schweinchens (Dschungel, 20.11.):** höchstens 3 Kästchen (`DASH_HOCH_SCHWEIN_PX` 120, vorher 4): die ersten

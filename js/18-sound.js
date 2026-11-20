@@ -395,7 +395,11 @@ const SFX = {
     sTone(105*hoch, 0, 0.12 + 0.14*k, {to: 42*hoch, type: 'sine', vol: 0.05 + 0.15*w, attack: 0.003}); sNoise(0, 0.08 + 0.12*k, {filter: 'lowpass', f: 620, to: 110, q: 0.8, vol: 0.04 + 0.1*w, attack: 0.002});
     sTone(1180, 0.005, 0.1, {to: 860, type: 'square', vol: 0.018, attack: 0.002}); sTone(2240, 0.012, 0.07, {to: 1900, type: 'triangle', vol: 0.014, attack: 0.002});
     sNoise(0.13, 0.28*k, {filter: 'bandpass', f: 330, to: 250, q: 9, vol: 0.035*w, attack: 0.03}); },
-  rammKlick(x, k){ sfxLog('rammklick'); const f = 1500 + 900*(k || 0);
+  // Zurückgleiten als Schleife aus der Aufnahme ramm-gleiten.wav (Nutzer 20.11., js/23): solange der Balken gleitet; zum Ende hin
+  // langsamer und tiefer (die Ratsche läuft aus = hörbare Uhr). id je Balken; an = false stoppt. true = die Aufnahme läuft
+  rammGleiten(id, x, an, k){ return typeof geraeuschSchleife === 'function' && geraeuschSchleife('ramm' + id, 'rammgleiten', an, {x, rate: 0.72 + 0.4*(1 - (k || 0))}); },
+  rammKlick(x, k){ sfxLog('rammklick'); if(typeof geraeusche !== 'undefined' && geraeusche.buf.rammgleiten && Object.keys(geraeuschSchleifen).some(n => n.startsWith('ramm'))) return;   // die Aufnahme klickt schon
+    const f = 1500 + 900*(k || 0);
     sNoise(0, 0.03, {filter: 'bandpass', f, q: 7, vol: 0.03, attack: 0.001}); sTone(f*0.42, 0, 0.035, {type: 'square', vol: 0.007, attack: 0.001}); },
   rammRaus(x){ sfxLog('rammraus'); sTone(170, 0, 0.12, {to: 105, type: 'triangle', vol: 0.05, attack: 0.003});
     sNoise(0, 0.07, {filter: 'lowpass', f: 480, to: 200, q: 0.8, vol: 0.05, attack: 0.002}); },
