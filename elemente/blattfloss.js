@@ -34,8 +34,11 @@ function blattSenkrechtSchritt(s, figuren){
   if(!vy) return;
   const ny = Math.max(s.y1, Math.min(s.y0, s.y + vy)), dy = ny - s.y;
   if(!dy) return;
-  // nicht in Decke/Boden fahren
-  if(solids.some(o => o !== s && !o.gone && o.type !== 'oneway' && o.type !== 'fake' && o.type !== 'door' &&
+  // nicht in Decke/Boden fahren. Ausnahme: der Boden, in dem das Floß in seiner Ruhelage unten liegt (es ist dicker als seine
+  // Stehfläche und ragt dort hinein) – sonst käme ein Aufzug, der normal AUF dem Boden steht, nie los (Nutzer 20.11.: „ich kann es
+  // so nicht hochziehen“)
+  if(!s._ruheFest) s._ruheFest = solids.filter(o => o !== s && s.x < o.x + o.w && s.x + s.w > o.x && s.y0 < o.y + o.h && s.y0 + s.h > o.y);
+  if(solids.some(o => o !== s && !o.gone && o.type !== 'oneway' && o.type !== 'fake' && o.type !== 'door' && !s._ruheFest.includes(o) &&
       s.x < o.x + o.w && s.x + s.w > o.x && ny < o.y + o.h && ny + s.h > o.y)) return;
   const fahrer = [];
   for(const P of figuren){

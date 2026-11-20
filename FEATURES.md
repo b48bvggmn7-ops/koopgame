@@ -1733,8 +1733,8 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     runter = hinab; mehrere Räder dürfen dieselbe Nummer haben, z. B. eins unten und eins oben), der Puste-Wind des Affen nach oben hebt
     ihn von unten. Wer darauf steht, fährt mit. Auswahl „Aufzug“: bleibt stehen (Standard) oder sinkt langsam zurück, sobald niemand mehr
     kurbelt/pustet. Niemand wird eingeklemmt (stößt ein Mitfahrer oben an oder steht jemand darunter, bleibt er stehen). Er hängt an zwei
-    Umlenkrollen über dem oberen Ende, das Zug-Tau des Rads läuft dort hinauf. Das Floß muss frei stehen (nicht im Boden): eine Reihe über
-    dem Boden setzen. Test `blattfloss_aufzug`.
+    Umlenkrollen über dem oberen Ende, das Zug-Tau des Rads läuft dort hinauf. Er darf normal auf dem Boden stehen (der Boden unter
+    seiner Ruhelage zählt nicht als Hindernis). Test `blattfloss_aufzug`.
     **Tür mit mehreren Nummern (20.11., elemente/tuer.js):** im Editor bei der Tür „und Nummer“ (bis zu zwei weitere Nummern, – = keine).
     Die Tür geht erst auf, wenn ALLE ihre Nummern an sind – jeder Auslöser (Hebel, Druckplatte, Rammbalken, Windrad …) bekommt seine
     eigene Nummer; geht eine wieder aus (z. B. Zeitfenster abgelaufen), schließt sie. Auf der Tür sitzt je Nummer ein Edelstein in deren

@@ -7851,8 +7851,9 @@ async def blattfloss_aufzug(g):
       const stell = (P, x, y) => { P.x = P._px = x; P.y = P._py = y; P.vx = P.vy = 0; };
       const los = () => { for(const P of [p1, p2]) for(const k of Object.values(P.keys)) if(typeof k === 'string'){ KEYS[k] = false; KEYS[k + '_pressed'] = false; } };
       startLevel({solids:[{x:0,y:680,w:3000,h:40,type:'ground'},{x:720,y:400,w:400,h:40,type:'ground'}],hooks:[],switches:[],doors:[],spikes:[],coins:[],movingPlatforms:[],checkpoints:[],
-        blattFloesse:[{x:600,y:600,schiene:6,link:1,richtung:'hoch'},{x:1400,y:480,schiene:5,link:2,richtung:'hoch',sinkt:'ja'},{x:2000,y:600,schiene:4}],
-        flossRaeder:[{x:500,y:680,link:1},{x:1300,y:680,link:2}],
+        blattFloesse:[{x:600,y:600,schiene:6,link:1,richtung:'hoch'},{x:1400,y:480,schiene:5,link:2,richtung:'hoch',sinkt:'ja'},{x:2000,y:600,schiene:4},
+                      {x:2400,y:640,schiene:5,link:3,richtung:'hoch',sinkt:'ja'}],
+        flossRaeder:[{x:500,y:680,link:1},{x:1300,y:680,link:2},{x:2300,y:680,link:3}],
         startM:{x:528,y:680},startF:{x:660,y:640},goal:{x:2800,y:680},welt:'dschungel'});
       n(20);
       const A = blattFloesse[0], B = blattFloesse[1], C = blattFloesse[2];
@@ -7875,6 +7876,11 @@ async def blattfloss_aufzug(g):
       n(300); e.nichtEingeklemmt = !deathState && B.y + 0.01 < B.y0 && B.y >= p1.y - 1e-6 - 0 || B.y === B.y0;
       e.ueberKopf = B.y <= p1.y - p1.h + 30;
       stell(p1, 300, 680); n(300); e.dannUnten = B.y === B.y0;
+      // Nutzer 20.11. („ich kann es so nicht hochziehen“): Aufzug steht normal AUF dem Boden (Stehfläche = Boden-Oberkante, das Floß
+      // ragt in den Boden) – er muss trotzdem hochfahren, das Schweinchen mitnehmen und wieder ganz hinunter sinken
+      { const D = blattFloesse[3]; stell(p1, 2328, 680); stell(p2, 2460, 680); n(8); e.aufBoden = D.y0 === 680 && p2.grounded;
+        KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(60); e.bodenHoch = D.y < 600 && Math.abs(p2.y - D.y) < 2; n(80); e.bodenOben = D.y === D.y1;
+        los(); n(400); e.bodenWiederUnten = D.y === 680 && Math.abs(p2.y - 680) < 1.5 && p2.grounded; stell(p2, 300, 680); }
       // Neustart: Aufzug 1 wieder unten
       stell(p1, 528, 680); n(5); KEYS[p1.keys.use] = true; KEYS[p1.keys.swimUp] = true; n(50); los(); const zw = A.y; resetLevel(); n(5); e.reset = zw < 640 && A.y === 640;
       return e; })()""")
