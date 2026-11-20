@@ -1728,6 +1728,9 @@ verloren geht; nach jeder Verhaltensänderung hier ergänzen. Nichts entfernen o
     Mund statt Lächeln (`angstMund`), Schweißperlen spritzen vom Kopf. Nicht nach einer Landung (`S.gel`), nicht beim Durchlaufen (wer
     läuft, fällt einfach runter – Physik unverändert, `kanteAbrutschen` in js/32). Gilt für Affe und Schweinchen. Test `figuren3d_kante_wackeln`.
     Die Hand des Affen an der Liane ist größer (`SEIL_HAND_GROSS`).
+    **Kanten-Halt (20.11., `kanteHalt` in js/32):** Wer die Lauftaste losgelassen hat und nur noch ausrutscht, rutscht nicht mehr über
+    die Kante, sondern bleibt an ihr stehen (und wackelt); wer die Taste hält, läuft wie bisher runter. Nicht auf Eis. Wackel-Streifen
+    `KANTE_WACKEL_RAND` von 8 auf 14 px. Gemessen: Loslassen in den letzten ~35 px vor der Kante = stehen + wackeln. Test `kante_halt_beim_loslassen`.
   - **Affe im Foto-Look (19.11., js/32a-figuren-foto.js):** der vom Nutzer freigegebene neue Affe (mittelbraunes lockiges Fell rundum,
     helles Herz-Gesicht, glattes Schnäuzchen, dunkelbraune Augen ohne Ring, glatte rosa Ohren, leichter Irokese, Schwanz) – gebaut mit
     demselben sparsamen Schichten-Fell wie das Schweinchen (`buildMonkey` in js/32a, Herz-Farbe im Shader über `herz`), NICHT mit

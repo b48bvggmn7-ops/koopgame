@@ -7724,6 +7724,21 @@ async def schwein_foto_look(g):
     assert "QS.get('schwein')!=='alt'" in src and 'buildPigAlt' in src, 'Schalter ?schwein=alt bzw. das bisherige Schweinchen fehlt'
 
 @test
+async def kante_halt_beim_loslassen(g):
+    """Nutzer 20.11.: „ich falle zu schnell runter an den Kanten“ – wer die Lauftaste losgelassen hat und nur noch ausrutscht,
+    bleibt an der Kante stehen (kanteHalt, js/32) statt drüberzurutschen; wer die Taste hält, läuft wie bisher runter."""
+    await g.load(level([ground(0, 560, 600, 160), ground(0, 900, 3000, 40)], {'x': 300, 'y': 560}, {'x': 100, 'y': 560}))
+    await g.steps(20)
+    await g.ev("p1.x = p1._px = 588; p1.vx = 4.4")   # volles Tempo, keine Taste: rutscht ~16 px nach – ohne Halt über die Kante
+    await g.steps(60)
+    r = await g.ev("({x: p1.x, y: p1.y, g: p1.grounded})")
+    assert r['g'] and r['y'] == 560 and 596 <= r['x'] <= 604, f'losgelassen kurz vor der Kante: muss an der Kante stehen bleiben {r}'
+    await g.ev("p1.x = p1._px = 540; p1.vx = 0")
+    await g.p.keyboard.down('KeyD'); await g.steps(50); await g.p.keyboard.up('KeyD')
+    r = await g.ev("({x: p1.x, y: p1.y})")
+    assert r['y'] > 600 and r['x'] > 610, f'Taste gehalten: läuft wie bisher über die Kante {r}'
+
+@test
 async def figuren3d_kante_wackeln(g):
     """Nutzer 20.11.: an die Kante GELAUFEN und dort stehen geblieben -> Affe und Schweinchen wackeln (Pose „kante“: auf einem Fuß,
     Arme rudern, erschrockenes Gesicht mit rundem Mund, Schweißperlen). Nach einer Landung/dem Hinstellen nicht; mitten auf dem

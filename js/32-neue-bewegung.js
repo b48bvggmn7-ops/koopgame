@@ -524,6 +524,22 @@ function kanteRichtung(P, rand){
   if(!kanteTraegt(P, P.x - rand) && kanteTraegt(P, P.x + halb)) return -1;
   return 0;
 }
+// Kanten-Halt (Nutzer 20.11.: „ich falle zu schnell runter an den Kanten“): Die Figur läuft sofort Höchsttempo und rutscht nach dem
+// Loslassen noch ~16 px nach – so rutschte sie fast immer über die Kante, die Wackel-Haltung kam praktisch nie. Jetzt: wer die
+// Lauftaste LOSGELASSEN hat und nur noch ausrutscht, bleibt an der Kante stehen (Fuß gerade noch drauf) statt drüberzurutschen.
+// Wer die Taste hält, läuft wie bisher einfach runter. Nicht auf Eis (dort ist Rutschen gewollt). altX = x vor diesem Schritt.
+function kanteHalt(P, altX){
+  if(!P.grounded || P.hookAttached || P.dash || P.haft || P.inWater || P._moveDir) return;
+  if(typeof aufEis === 'function' && aufEis(P)) return;
+  const dir = Math.sign(P.x - altX);
+  if(!dir || Math.sign(P.vx) !== dir || Math.abs(P.vx) < KANTE_HALT_MIN) return;   // steht, oder wird nur mitgenommen (Plattform, Förderband)
+  const F = KANTE_FUSS - 1;
+  if(kanteTraegt(P, P.x - dir*F) || kanteTraegt(P, P.x + dir*F)) return;          // Fuß steht noch / davor geht der Boden weiter
+  if(!kanteTraegt(P, altX - dir*F)) return;                                         // stand schon vorher darüber (z. B. so gelandet)
+  let x = altX;
+  for(let k = 0; k < 24; k++){ const nx = x + dir*0.5; if((nx - P.x)*dir > 0 || !kanteTraegt(P, nx - dir*F)) break; x = nx; }
+  P.x = x; P.vx = 0;
+}
 function kanteAbrutschen(P){
   if(!P.grounded || P.hookAttached || P.dash || P.haft || P.inWater) return;
   if(kanteTraegt(P, P.x - KANTE_FUSS) || kanteTraegt(P, P.x + KANTE_FUSS)) return;   // Fuß steht noch (teilweise)
@@ -551,6 +567,7 @@ function neueBewegungNachher(P, altX, altY){
     if(d && schrittNr() % 2 === 0) neuFxDazu({art: 'nachbild', x: P.x, y: P.y, male: P.male, roll: P.rollAngle, facing: P.facing, leben: 12, max: 12});
   }
   if(P.haft) haftNachher(P, altX, altY);
+  kanteHalt(P, altX);
   kanteAbrutschen(P);
   // Dash aufladen: immer (auch frei in der Luft; Nutzerwunsch – früher nur mit festem Halt, dafür doppelt so schnell)
   if(P.dashPunkte < DASH_LUFT && !P.dash){
